@@ -675,24 +675,59 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-17 | Hecha. **La guía** (`docs/ux/GUIA-UX-UI.md`): I.1.3 suma las barras de la lista cerrada de D-1; I.5, la letra (D-3); I.6, el acento como una sola luz y los tokens de la etapa A (D-3); I.7, la gramática de las marcas (D-3); II.4, que el tramo del ciclo no es una cobertura; II.6, el minigráfico (D-5, que reemplaza a «No se quita ningún punto por falta de lugar: se achica la marca»), las tarjetas del Resumen y el Espacio (D-2 y D-4); la pauta nueva **II.12 «Decisiones guiadas»**; y **V.4**, lo que cambia con la etapa A. **El criterio de auditoría de las maquetas** (`BE-maquetas/CRITERIO-Y-AUDITORIA.md`, fuera del repo): la vara de la §6 con el monograma (D-2) y las barras de la lista cerrada (D-1), y la validación del 2026-10-10 asentada. **DEUDA_LEGAJO:** el estado de DL-163 al día y la nota que confronta los minigráficos de E-53 y E-54, que leen API-PRJ-01, con DEC-10-UX-01. **Las cuatro desalineaciones,** corregidas: DL-161 figuraba «sin integrar» (se integró el 2026-11-02, #229 y #224); el criterio decía validación «Pendiente»; la guía contaba 105 íconos (son 115); y faltaba la nota de DEC-10-UX-01. **Lo que la guía deja dicho que falta:** los enlaces de texto en tinta con un subrayado fino (D-3), que tocan todas las pantallas, y el cajón con un lector de pantalla y en un proyector | `docs/ux/GUIA-UX-UI.md`, `docs/DEUDA_LEGAJO.md` |
 | TB-48 | A medias (TA-47). **Hecho:** la nota de cada ítem en el editor de Nutrición, en un renglón debajo del ítem, a pedido («Agregar una nota sobre …»), hasta 300 caracteres: el campo ya estaba en el contrato y la persona ya la lee en la app; **los topes** del contrato, avisados antes de guardar en los dos editores (7 días tipo, 12 comidas, 12 opciones y 40 ítems; 12 bloques, 26 microciclos, 30 sesiones por bloque y 14 por microciclo, 40 ejercicios, 20 series y 12 parámetros), cada uno como un problema más de lo que no deja guardar, con su lugar, y el autoguardado espera; y el cuadro sin plantillas, que prometía que «se escriben en «Plantillas y habituales»» y ahora dice «Se guardan desde una versión de plan, con «Guardar como plantilla». En «Plantillas y habituales» se ven y se cambian.». **Falta:** duplicar (un día tipo, una comida, una opción, una sesión y un ejercicio); reordenar con algo más que «Subir»; quitar una serie del medio; el microciclo ofrecido también con sesiones sueltas; «Validar plan» → «Revisar el plan», que liste también lo incompleto sin bloquear; «Guardar como plantilla» con su texto; la receta como opción, con buscador; y las zonas de un ejercicio propio desde «Mis ejercicios». Ninguno pide la API | `advisees/topes-del-plan.ts`, `nutrition/comida-del-editor.tsx`, `apps/web/test/editores.test.mjs` |
 
-**Para seguir.** De TB-00 a TB-12, TB-16, TB-24, TB-25 y TB-49 están hechas, con el arreglo de base de TEST-TAG-032.
-Lo próximo, en el orden de §8.1:
+**Para seguir.** De TB-00 a TB-12, TB-15, TB-16, TB-17, TB-24, TB-25 y TB-49 están hechas, con el arreglo de base de
+TEST-TAG-032; TB-48, a medias. Lo próximo:
 - **Un paso pendiente de TB-24, que decide Dirección:** cargar en la base de `test` las masas de Durnin y Womersley de la
   cohorte: los cálculos de los dos métodos nuevos sobre las tomas de Diego y Camila que ya están (la fase `calculos` de
   `cargar.mjs`, que hoy no se repite porque su estado la da por hecha). Pide la IP del operador. Hasta entonces, en `test`
   la composición de Diego y Camila se ve como el caso sin método (la línea de los pesos), y solo la CI la muestra partida.
 - **El cajón queda apagado** hasta que Dirección vea su recaptura (las capturas lo prenden con `BE_CAJON_DE_A_UNA=si`).
-  Prenderlo es una variable de la compilación del website en Render, sin código.
-- **Lo que falta de TB-07 y de TB-12 con el cajón apagado:** volver a /pro con el lugar guardado (el filtro, el modo y la
-  fila) desde una ficha de «Tu semana» o un verbo de «Te toca a vos». Hoy cada uno lleva a su destino exacto, y el lugar
-  se guarda solo al salir del cajón.
-- **TB-15** (website, sin tocar la API): aplicar desde el cajón, con la operación de Revisiones (API-TRN-24 y API-NUT-20,
-  su idempotencia y sus conflictos) y el efecto escrito antes del botón; y «¿Cuándo la revisás?» en «Lo que decidís» y al
-  activar. Los oráculos TEST-TAG-013 (integración: lo corre la CI con la API) y el de la pregunta.
-- **En la rama de la API, aparte:** TB-13 y TB-14 (las dos pruebas de la cola y API-DSH-02).
-- Después, TB-17 y el resto de §8.1.
+  Prenderlo es una variable de la compilación del website en Render, sin código. Con TB-15 aplica, así que conviene
+  verlo con una revisión registrada y sin aplicar: la cohorte ya no la tiene (Federico Álvarez tiene la suya aplicada);
+  para verlo en las capturas, la cohorte necesita una revisión sin aplicar con su fecha relativa a hoy.
+- **TB-30 y TB-32 piden antes los lugares del cuerpo (no se programaron).** El mapa corporal usa el set de capas de
+  Dirección (`public/zonas/`: el cuerpo de frente y de espalda y una máscara por zona muscular). La capa Medidas necesita
+  dónde va cada sitio de perímetro y de pliegue sobre ese cuerpo, y la de Molestias declaradas, dónde va cada región de
+  «Antes de entrenar» (cuello, hombros, codos, muñecas o manos, espalda alta, zona lumbar, cadera, rodillas y tobillos o
+  pies), que no son zonas musculares. El repo no tiene esos lugares: la maqueta midió solo cuatro sobre las máscaras
+  (brazo flexionado, muslo y los dos hombros). Son puntos anatómicos nuevos, y no se inventan: hace falta medirlos sobre
+  las máscaras, verlos en pantalla en los dos temas y que Dirección los dé por buenos, como la figura de la toma (DL-073).
+  Con eso, la pieza (las pestañas por capa, la columna de composición de TB-24 y la tabla) se arma sin la API: Medidas
+  lee las tomas como la Serie de la lámina (`componerSerie`), y Molestias, las respuestas de «Antes de entrenar» como
+  «Lo que contó al empezar». *Otra opción, si Dirección prefiere no esperar:* la capa Medidas por zona (el perímetro del
+  brazo en el bíceps, el del muslo en el cuádriceps) y solo con la tabla para lo que no tiene zona.
+- **TB-45 pide la API en lo principal (no se programó).** «Lo indicado de cada semana en escalones» necesita las semanas
+  del bloque (TB-43, API-PLE) y «el esfuerzo de la sesión que contó la persona», TB-35 (API-ESF, etapa B). Sin ellas
+  quedaría la primera serie registrada frente a lo indicado de cada versión, que la pestaña Entrenamiento ya muestra en
+  la evolución de cada serie. Va después de TB-43, en su rama.
+- **TB-46, en parte (no se programó en este tramo).** El cuadro con las tres salidas (una plantilla, con lo que trae a la
+  vista; la versión anterior; desde cero), qué se copia y qué no, y la agenda en Entrenamiento se arman con las
+  operaciones de hoy. «El programa y el hito que cierra el plan» piden TB-33 (API-PRG) y «seguirlo o descartarlo»,
+  TB-47 (API-PLN-07 y API-PLE-05): hasta entonces, el cuadro ofrece seguir el borrador, sin descartar.
+- **Lo que falta de TB-48,** en el website y sin la API: duplicar (un día tipo, una comida, una opción, una sesión y un
+  ejercicio), reordenar, quitar una serie del medio, el microciclo ofrecido también con sesiones sueltas, «Revisar el
+  plan» que liste lo incompleto sin bloquear, «Guardar como plantilla» con su texto, la receta como opción con buscador y
+  las zonas de un ejercicio propio desde «Mis ejercicios».
+- **En la rama de la API, aparte:** TB-13 y TB-14 (las dos pruebas de la cola y API-DSH-02); con TB-13, los textos de
+  «Sin fecha por ahora» (TA-41) cambian con la cola. Y TB-26, TB-27, TB-29, TB-31, TB-33, TB-34, TB-38 a TB-41, TB-43 y
+  TB-47.
+- **Los enlaces de texto en tinta, con un subrayado fino** (D-3): la guía lo deja dicho como pendiente; tocan todas las
+  pantallas y sus capturas, así que van en su propia parte.
 - **El recorrido local del Espacio** (`EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/recorrido.mjs espacio`, que no corre
-  en la CI) busca las vistas dentro de «Pendientes»: con TB-11 pasaron a las cifras. Se actualiza cuando se use.
+  en la CI) busca las vistas dentro de «Pendientes»: con TB-11 pasaron a las cifras, y desde TB-07 los destinos llevan
+  `origen=espacio`. Se actualiza cuando se use.
+
+**Lo medido en el sexto tramo** (las corridas de `capturas-del-tablero` sobre ae418e0 y cc98a08, y la de la CI del PR
+sobre ae418e0):
+- **Las peticiones al abrir no cambiaron:** las quince páginas dieron las mismas cuentas que la tabla de TA-30 (el
+  Espacio, 6; el cajón, 8; los Resúmenes de Sofía Paz, 18; el de Martín Acosta, 14). Ni TB-15 ni el lugar del Espacio
+  suman una lectura al abrir: el lugar se lee antes que la cartera.
+- **«Ocultar nombres»:** ningún nombre ni inicial en el cajón, el Espacio ni el Resumen de los dos profesionales, y
+  ningún error de la página.
+- **La integración:** 994 pruebas, todas verdes, con las dos de TEST-TAG-013 (Nutrición y Entrenamiento).
+- **La revisión nueva de Nutrición** se suma a las capturas, para ver «¿Cuándo la revisás?» en pantalla, sin nada
+  elegido, en los dos temas y los tres tamaños: pide 6 peticiones al abrir (medidas en la corrida de 05f398b; la tabla de
+  TA-30 la suma). La página entera mide 1425 a 1440 y a 1920, y 1730 a 1280.
 
 **Lo medido en el quinto tramo** (las corridas de `capturas-del-tablero` sobre cfc8855, 1e6cfb5 y 3305525):
 - **Las peticiones al abrir,** iguales en cada corrida para las páginas que no cambiaron: los Resúmenes de Diego, Federico
