@@ -14335,3 +14335,182 @@ a.cifras-desde-la-revision__celda:focus-visible {
 .lo-que-conto__otras {
   margin: 0.6rem 0 0;
 }
+
+/* ─── La composición corporal en kg (WP-TABLERO-ALTA-GAMA TB-24; DL-163 D-11) ──────────────────────────────────────
+   La pieza de la pestaña Antropometría y de la pregunta de «Analizar»: las columnas de cada toma, «Cuánto cambió cada
+   parte» y la tabla. Los dos tramos de una columna nunca se tocan: un corte fino deja ver la superficie. */
+.composicion {
+  display: grid;
+  gap: 1rem;
+}
+
+.composicion__metodos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.composicion__metodos legend {
+  margin-bottom: 0.3rem;
+  color: var(--tenue);
+  font-size: 0.875rem;
+}
+
+.composicion__metodos label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+}
+
+.composicion__parte {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.composicion__titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.composicion__resumen {
+  margin: 0;
+}
+
+.composicion__resumen .cifra,
+.composicion-de-la-toma__cifra .cifra,
+.composicion__cifras .cifra {
+  font-variant-numeric: tabular-nums;
+}
+
+.composicion__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1rem;
+  margin: 0;
+  padding: 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+.composicion__leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.composicion__muestra {
+  flex: none;
+  width: 12px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.composicion__muestra[data-parte='libre'] {
+  background: var(--composicion-libre);
+}
+
+.composicion__muestra[data-parte='grasa'] {
+  background: var(--composicion-grasa);
+}
+
+.composicion__muestra[data-parte='contorno'] {
+  box-shadow: inset 0 0 0 1.25px var(--tenue);
+}
+
+.composicion__muestra[data-parte='cambio'] {
+  width: 2px;
+  height: 12px;
+  border-radius: 0;
+  background: repeating-linear-gradient(to bottom, var(--borde-control) 0 2px, transparent 2px 5px);
+}
+
+.composicion__columnas,
+.composicion__linea {
+  min-width: 0;
+}
+
+.composicion__filas {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada fila: el nombre, su línea con las mismas fechas que las columnas y la primera y la última cifra con la diferencia. */
+.composicion__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) minmax(0, 12.5rem);
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.composicion__cifras {
+  text-align: right;
+}
+
+.composicion__tabla > summary {
+  min-height: 2.75rem;
+}
+
+.composicion__limite {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .composicion__fila {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+
+  .composicion__cifras {
+    text-align: left;
+  }
+}
+
+/* La barra de la última toma, en la tarjeta de Antropometría del Resumen: 8 de alto, libre de grasa y grasa, con un corte
+   de 2 entre las dos. Lo que dice está escrito debajo, con su método. */
+.barra-de-la-composicion {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  min-width: 4rem;
+}
+
+.barra-de-la-composicion > span {
+  flex-basis: 0;
+  min-width: 3px;
+}
+
+.barra-de-la-composicion > span[data-parte='libre'] {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  background: var(--composicion-libre);
+}
+
+.barra-de-la-composicion > span[data-parte='grasa'] {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  background: var(--composicion-grasa);
+}
+
+.pieza-del-area--plegada > summary > .barra-de-la-composicion {
+  flex: 1 1 auto;
+}
+
+.pieza-del-area > .barra-de-la-composicion {
+  margin-bottom: 0.4rem;
+}
+
+.composicion-de-la-toma__cifra,
+.composicion-de-la-toma__cambio {
+  margin: 0.2rem 0 0;
+  font-size: 0.875rem;
+}

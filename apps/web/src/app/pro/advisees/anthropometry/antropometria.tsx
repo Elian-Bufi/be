@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Pestaña Antropometría del workspace (B10-07). Navegación local Tomas / Evolución / Lámina.
+ * Pestaña Antropometría del workspace (B10-07). Navegación local Tomas / Evolución / Composición corporal (TB-24) / Lámina.
  * - 404 = no hay nada que mostrar, con el texto neutral de siempre, igual que en Nutrición (10-B10:407).
  * - Una **escritura** denegada retira el contenido de toda la pestaña, no solo la acción: «siguiente operación deny →
  *   UI limpia contenido» (B10-06:1145-1148; DL-091 punto 1).
@@ -37,6 +37,7 @@ import { AyudaDeLaLamina } from './ayuda-de-la-lamina';
 import { AyudaDeTomas } from './ayuda-de-tomas';
 import { VistaDeEvaluaciones } from './evaluaciones';
 import { VistaDeEvolucion } from './evolucion';
+import { AyudaDeLaComposicion, VistaDeComposicion } from './composicion';
 import { VistaDePreparacion } from './preparacion';
 
 // La lámina (DL-111) se carga recién cuando se abre: la pestaña no paga su peso de entrada.
@@ -46,12 +47,14 @@ const VistaDeLamina = dynamic(() => import('./lamina').then((m) => m.VistaDeLami
 export const SECCIONES = [
   { clave: 'evaluaciones', texto: COPY_ANTROPOMETRIA.tomas, icono: 'lista', pista: COPY_PISTAS.secciones.tomas },
   { clave: 'evolucion', texto: COPY_ANTROPOMETRIA.evolucion, icono: 'analizar', pista: COPY_PISTAS.secciones.evolucion },
+  // TB-24 (DL-163 D-11): el peso de cada toma y de qué está hecho, al lado de «Evolución».
+  { clave: 'composicion', texto: 'Composición corporal', icono: 'peso', pista: 'El peso de cada toma y de qué está hecho, en kg, con un método por gráfico.' },
   { clave: 'lamina', texto: COPY_ANTROPOMETRIA.lamina, icono: 'imagen', pista: COPY_PISTAS.secciones.lamina },
 ] as const;
 type Seccion = (typeof SECCIONES)[number]['clave'];
 
 /** Los valores de `vista` que la página admite: las tres secciones y la carga de una toma, que se abre desde «Tomas». */
-export const VISTAS = ['evaluaciones', 'preparacion', 'evolucion', 'lamina'] as const;
+export const VISTAS = ['evaluaciones', 'preparacion', 'evolucion', 'composicion', 'lamina'] as const;
 export type Vista = (typeof VISTAS)[number];
 
 export interface ContextoDeAntropometria {
@@ -147,7 +150,7 @@ export function Antropometria() {
       retirado={retirado}
       onActualizar={volverALeer}
       ancho
-      ayuda={vista === 'evaluaciones' ? <AyudaDeTomas /> : vista === 'preparacion' ? <AyudaDeLaCarga /> : vista === 'evolucion' ? <AyudaDeEvolucion /> : <AyudaDeLaLamina />}
+      ayuda={vista === 'evaluaciones' ? <AyudaDeTomas /> : vista === 'preparacion' ? <AyudaDeLaCarga /> : vista === 'evolucion' ? <AyudaDeEvolucion /> : vista === 'composicion' ? <AyudaDeLaComposicion /> : <AyudaDeLaLamina />}
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>
@@ -163,6 +166,7 @@ export function Antropometria() {
             />
           ) : null}
           {vista === 'evolucion' ? <VistaDeEvolucion /> : null}
+          {vista === 'composicion' ? <VistaDeComposicion /> : null}
           {vista === 'lamina' ? <VistaDeLamina /> : null}
         </Contexto.Provider>
       ) : null}

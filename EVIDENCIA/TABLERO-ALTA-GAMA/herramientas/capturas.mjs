@@ -18,6 +18,8 @@
 // aparece el nombre de alguien de la cohorte, una inicial o un nombre en el título de la pestaña, la corrida falla.
 // Desde TB-10, en cada Resumen anota en `primeraPantalla` dónde terminan las tarjetas, los valores de los indicadores y
 // sus minigráficos, y el alto de la tarjeta más alta (A13 de la propuesta).
+// Desde TB-24, la composición corporal de Diego en la pestaña y en la pregunta de «Analizar», el Resumen de Héctor (sin
+// pliegues: la línea de los pesos) y, en `composicion`, cuántas columnas van partidas y qué dice la barra de la tarjeta.
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
@@ -139,6 +141,11 @@ const PAGINAS = {
     ['analizar-calorias', '/pro/advisees?id={diego}&vista=analizar', 'Calorías'],
     ['nutricion', '/pro/advisees/nutrition?id={diego}&vista=resumen'],
     ['antropometria', '/pro/advisees/anthropometry?id={diego}&vista=evolucion'],
+    // TB-24: la composición corporal en la pestaña y en la pregunta de «Analizar», y el Resumen de Héctor Funes, que no
+    // tiene pliegues: su tarjeta de Antropometría muestra la línea de los pesos, sin partir.
+    ['antropometria-composicion', '/pro/advisees/anthropometry?id={diego}&vista=composicion'],
+    ['analizar-composicion', '/pro/advisees?id={diego}&vista=analizar&pregunta=composicion-del-peso'],
+    ['resumen-hector', '/pro/advisees?id={hector}'],
   ],
   PRO_T: [
     ['espacio', '/pro'],
@@ -170,6 +177,8 @@ async function capturarTodo() {
   if (!diego) throw new Error('La cohorte no dejó a Diego Sosa en estado.json.');
   const federico = estado.personas?.federico?.aseId;
   if (!federico) throw new Error('La cohorte no dejó a Federico Álvarez en estado.json.');
+  const hector = estado.personas?.hector?.aseId;
+  if (!hector) throw new Error('La cohorte no dejó a Héctor Funes en estado.json.');
   const c = cuentas();
   const mediciones = { hoy: estado.hoy, commit: process.env.GITHUB_SHA ?? null, paginas: [], errores: [] };
   const navegador = await puppeteer.launch({
@@ -196,7 +205,7 @@ async function capturarTodo() {
       await page.waitForFunction(() => location.pathname.startsWith('/pro'), { timeout: 60_000 });
       await asentar(page);
       for (const [nombre, plantilla, metrica] of paginas) {
-        const ruta = plantilla.replace('{diego}', diego).replace('{federico}', federico);
+        const ruta = plantilla.replace('{diego}', diego).replace('{federico}', federico).replace('{hector}', hector);
         // Para contar lo que pide una página al abrirse, se llega desde otra: la cuenta, que no comparte lecturas.
         await page.evaluate(() => window.next.router.push('/account'));
         await asentar(page);
@@ -216,7 +225,16 @@ async function capturarTodo() {
         }
         // TB-09: la acción del momento que ofrece el marco de la ficha, si la hay (TEST-TAG-010, en pantalla).
         const accionDelMarco = await page.evaluate(() => document.querySelector('[data-accion-de-la-ficha]')?.textContent?.trim() ?? null);
-        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, accionDelMarco, alto: {} };
+        // TB-24: cuántas columnas de la composición van partidas y cuántas no, y si la tarjeta de Antropometría del
+        // Resumen muestra la barra de la última toma o la línea de los pesos.
+        const composicion = await page.evaluate(() => ({
+          partidas: document.querySelectorAll('.composicion__columna[data-partida="si"]').length,
+          sinPartir: document.querySelectorAll('.composicion__columna[data-partida="no"]').length,
+          cambios: document.querySelectorAll('.composicion__cambio').length,
+          barraDeLaUltimaToma: document.querySelectorAll('.barra-de-la-composicion').length > 0,
+          texto: document.querySelector('.composicion-de-la-toma__cifra, .composicion__resumen')?.textContent?.trim() ?? null,
+        }));
+        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, accionDelMarco, composicion, alto: {} };
         for (const tema of TEMAS) {
           await ponerTema(page, tema);
           for (const [ancho, alto] of TAMANOS) {

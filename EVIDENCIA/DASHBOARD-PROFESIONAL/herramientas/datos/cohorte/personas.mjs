@@ -21,6 +21,9 @@ export const PERSONAS = [
     nacimiento: '1990-06-03',
     talla: 176.0,
     dias: 1095,
+    // TB-24 (WP-TABLERO-ALTA-GAMA; DL-163 D-11): su profesional de Antropometría calcula también las masas de Durnin y
+    // Womersley en cada toma con pliegues, para que la composición corporal en kg tenga datos.
+    masas: true,
     areas: { NUTRICION: 'N', ENTRENAMIENTO: 'T', ANTROPOMETRIA: 'N' },
     evaluacionNut: {
       contexto: 'Primera consulta. Trabaja en una oficina contable, almuerza afuera y cena tarde. Quiere bajar de peso: en el último control le marcaron el colesterol alto.',
@@ -142,6 +145,7 @@ export const PERSONAS = [
     nacimiento: '1997-03-21',
     talla: 163.5,
     dias: 548,
+    masas: true,
     areas: { ENTRENAMIENTO: 'T', ANTROPOMETRIA: 'A' },
     evaluacionTrn: {
       entradas: [['Experiencia en entrenamiento de fuerza', 'Funcional en un gimnasio de barrio; nunca con barra', null], ['Días disponibles', 'Lunes, miércoles y viernes', null]],
@@ -399,6 +403,9 @@ export const PERSONAS = [
     nacimiento: '1960-11-02',
     talla: 171.0,
     dias: 365,
+    // TB-24: las masas se piden también para Héctor, pero sus tomas no tienen pliegues (`sinPliegues`): el método no
+    // tiene con qué calcular y la cohorte no lo inventa. Es el caso sin método, el de la línea de los pesos.
+    masas: true,
     areas: { NUTRICION: 'N', ANTROPOMETRIA: 'N' },
     evaluacionNut: {
       contexto: 'Lo derivó su médico clínico: glucemia en ayunas en el límite y sobrepeso. Contador, trabaja desde su casa.',
@@ -509,4 +516,12 @@ export const METODOS = {
   H: ['be/imc@1', 'be/suma-6-pliegues-isak@1', 'be/grasa-durnin-womersley-hombres@1', 'be/indice-cintura-talla@1'],
   M: ['be/imc@1', 'be/suma-6-pliegues-isak@1', 'be/grasa-durnin-womersley-mujeres@1', 'be/indice-cintura-talla@1'],
   sinPliegues: { H: ['be/imc@1', 'be/grasa-rfm-hombres@1', 'be/indice-cintura-talla@1'], M: ['be/imc@1', 'be/grasa-rfm-mujeres@1', 'be/indice-cintura-talla@1'] },
+  /**
+   * TB-24 (DL-163 D-11): las masas de dos compartimentos de Durnin y Womersley con Siri, para quien tiene `masas: true`. Su
+   * masa grasa y su masa libre de grasa suman el peso de la toma. Una toma sin los cuatro pliegues no las tiene.
+   */
+  masas: {
+    H: ['be/masa-grasa-durnin-womersley-hombres@1', 'be/masa-libre-de-grasa-durnin-womersley-hombres@1'],
+    M: ['be/masa-grasa-durnin-womersley-mujeres@1', 'be/masa-libre-de-grasa-durnin-womersley-mujeres@1'],
+  },
 };

@@ -10,7 +10,8 @@
 //                    planes        objetivos y revisiones por SQL; cada versión del plan, como borrador por la API y
 //                                  activada en el pasado por SQL (la misma instantánea y los mismos hechos que la API);
 //                    registros     comidas, sesiones y tomas por SQL, en lotes (la base de test está lejos);
-//                    calculos      por la API: IMC, sumas de pliegues, % de grasa e índice cintura-talla de cada toma;
+//                    calculos      por la API: IMC, sumas de pliegues, % de grasa e índice cintura-talla de cada toma
+//                                  y, para quien tiene `masas` (TB-24), la masa grasa y la libre de grasa de Durnin y Womersley;
 //                    hoy           lo de esta semana: revisiones pendientes, aplicadas hoy o con el objetivo cambiado.
 //   nombres-demo   (solo test) los nombres de las cuentas de demostración DEMO-A01 y DEMO-A02, por la API.
 //   resumen        cuenta lo cargado de cada persona.
@@ -518,7 +519,8 @@ async function cargarPersona(p, hoy) {
     if (!estado.tomas?.length) return {};
     const token = await sesionDe(proDe(p, 'ANTROPOMETRIA'));
     const metodos = await metodosDe(token);
-    const claves = p.sinPliegues ? METODOS.sinPliegues[p.sexo] : METODOS[p.sexo];
+    // TB-24: las masas de Durnin y Womersley se suman a quien las tiene; una toma sin sus entradas no las calcula.
+    const claves = [...(p.sinPliegues ? METODOS.sinPliegues[p.sexo] : METODOS[p.sexo]), ...(p.masas ? METODOS.masas[p.sexo] : [])];
     let n = 0;
     for (const toma of estado.tomas) {
       for (const regla of claves) {

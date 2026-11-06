@@ -21,13 +21,15 @@
  * ciclo** (`tramo-del-ciclo.tsx`), que lleva la próxima revisión acordada; lo nuevo desde la revisión va **en cifras, en
  * fila**; y después, **la pieza propia** del área (`pieza-del-area.tsx`): la barra partida de los registros en Nutrición
  * y las sesiones por ejercicio en Entrenamiento. Un área sin nada registrado muestra **«Empezar el plan» en miniatura**.
- * La de Antropometría llega con la composición corporal (TB-24, TA-20).
+ * Desde TB-24 (TA-20), la de Antropometría es la composición de la última toma (`ComposicionDeLaUltimaToma`), con la línea
+ * de los pesos de las tomas cuando ninguna tiene un método que los parta.
  */
 import {
   COPY_PISTAS,
   COPY_PRIMER_PLAN,
   claveDeObservacion,
   COPY_VINCULO,
+  fechaCivil,
   NOMBRE_DEL_AREA,
   numero,
   partesDeObservacion,
@@ -51,12 +53,14 @@ import { useId, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
-import { diaSinElAnioEnCurso } from '../../../../lib/formato';
+import { diaDelAnioEnCurso, diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { tramoDelCiclo } from '../../../../lib/reloj';
 import { useLectura, useSeguimiento } from './contexto';
 import { conRetorno, hoyEn, restarDias, valorDeRetorno } from './estado';
 import { ICONO_DEL_AREA } from './iconos-de-metrica';
-import { CifrasDesdeLaRevision, PrimerPlanEnMiniatura, RegistrosDelPeriodo, SesionesPorEjercicio } from './pieza-del-area';
+import { DIAS_POR_LECTURA } from './composicion';
+import { useLecturaDeLaComposicion } from './composicion-en-pantalla';
+import { CifrasDesdeLaRevision, ComposicionDeLaUltimaToma, PrimerPlanEnMiniatura, RegistrosDelPeriodo, SesionesPorEjercicio } from './pieza-del-area';
 import { losRegistrosDelPeriodo, sesionesPorEjercicio } from './piezas-del-area';
 import type { Disponibles } from './series';
 import { TiraDelObjetivo, type MacrosDelObjetivo } from './tira-del-objetivo';
@@ -137,6 +141,7 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
   const delArea = (area: AreaDelResumen) => (p.observaciones === null ? null : p.observaciones.filter((o) => o.area === area));
   const comunes = { formato: p.formato, enlaceDe };
   const c = p.disponibles.coberturaNutricional;
+  const ultimaToma = d.anthropometry.available ? (d.anthropometry.summary?.lastEvaluation?.occurredAt ?? null) : null;
   return (
     <>
       {d.nutrition.available ? (
@@ -266,7 +271,16 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
           ) : (
             <p className="tenue area__sin-datos">{COPY_VINCULO.sinDatosTodavia}</p>
           )}
-          <Hechos area="ANTROPOMETRIA" observaciones={delArea('ANTROPOMETRIA')} revision={null} revisiones={null} detallesDeLaCobertura={[]} {...comunes} />
+          <Hechos
+            area="ANTROPOMETRIA"
+            observaciones={delArea('ANTROPOMETRIA')}
+            revision={null}
+            revisiones={null}
+            // TB-24 (TA-20): la composición de la última toma o, sin método, la línea de los pesos.
+            pieza={() => <PiezaDeAntropometria ultimaToma={ultimaToma} plegada={plegada} href={ruta('ANTROPOMETRIA', 'composicion')} />}
+            detallesDeLaCobertura={[]}
+            {...comunes}
+          />
           <div className="area__accion">
             {/* Abre la toma en preparación: no guarda ni registra nada hasta que se confirme allá. */}
             <Link className="boton boton--secundario" href={ruta('ANTROPOMETRIA', 'preparacion')}>
@@ -281,6 +295,22 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
 }
 
 const cuenta = (n: number, uno: string, varios: string): ParteDeObservacion => ({ cifra: numero(n), texto: n === 1 ? uno : varios });
+
+/**
+ * La pieza de Antropometría (TB-24; TA-20 y TA-26): lee API-ANT-06 en la ventana de 92 días que termina en la última
+ * toma, con el peso y las masas, para la barra de esa toma y lo que cambió desde la anterior. Una lectura más al abrir el
+ * Resumen, solo con Antropometría y alguna toma.
+ */
+function PiezaDeAntropometria({ ultimaToma, plegada, href }: { ultimaToma: string | null; plegada: boolean; href: string }) {
+  const { token, asesoradoId, sesionPerdida } = useSeguimiento();
+  const hasta = ultimaToma ? fechaCivil(ultimaToma, ZONA_DE_LA_FICHA) : null;
+  const desde = hasta ? restarDias(hasta, DIAS_POR_LECTURA - 1) : null;
+  const { lectura, recargar } = useLecturaDeLaComposicion(token, asesoradoId, desde, hasta, sesionPerdida);
+  if (!desde || !hasta) return null;
+  const hoy = hoyEn();
+  return <ComposicionDeLaUltimaToma lectura={lectura} recargar={recargar} desde={desde} hasta={hasta} fecha={(c) => diaDelAnioEnCurso(c, hoy)} href={href} plegada={plegada} />;
+}
+const ZONA_DE_LA_FICHA = 'America/Argentina/Buenos_Aires';
 
 /**
  * Un área todavía sin nada registrado (ni objetivo, ni plan, ni registros): lo que hay que hacer es empezar el plan. Desde

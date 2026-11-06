@@ -206,6 +206,12 @@ const PARES_GRAFICO = [
   ['ahora', 'pista', NO_TEXTO, 'la marca de hoy sobre la pista del tramo'],
   ['texto', 'pista', NO_TEXTO, 'la marca de la fecha acordada sobre la pista del tramo'],
   ['borde-control', 'superficie', NO_TEXTO, 'lo transcurrido del tramo y lo vencido, en discontinua, contra la tarjeta'],
+  // TB-24 (DL-163 D-11): las dos partes de la columna de composición y sus filas, sobre la tarjeta y sobre el fondo suave
+  // de la pestaña. Entre las dos partes va un corte que deja ver la superficie: la distinción no depende del color solo.
+  ['composicion-libre', 'superficie', NO_TEXTO, 'la masa libre de grasa en la columna, la fila y la barra de la última toma'],
+  ['composicion-grasa', 'superficie', NO_TEXTO, 'la masa grasa en la columna, la fila y la barra de la última toma'],
+  ['composicion-libre', 'fondo-suave', NO_TEXTO, 'la masa libre de grasa al pasar el puntero por el renglón plegado'],
+  ['composicion-grasa', 'fondo-suave', NO_TEXTO, 'la masa grasa al pasar el puntero por el renglón plegado'],
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
@@ -432,6 +438,28 @@ test('website · la luz de hoy no se confunde con las métricas (TB-04)', () => 
     for (const m of ['metrica-1', 'metrica-2', 'metrica-3']) {
       const d = deltaE(tema.ahora, tema[m]);
       if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${m} ${tema[m]}: ΔE ${d.toFixed(1)}`);
+    }
+  }
+  assert.deepEqual(fallas, []);
+});
+
+/**
+ * TB-24 (DL-163 D-11; TEST-TAG-005): las dos partes de la composición se distinguen entre sí (ΔE 20 o más, en los dos
+ * temas) y de «hoy», y ninguna tiene un matiz de juicio. El verde de «bien» anda por los 120°: las dos van entre los 160°
+ * y los 300° (un verde azulado y un azul), lejos del rojo y del ámbar. Los valores son los validados para daltonismo en la
+ * propuesta (§18.7).
+ */
+test('website · las dos partes de la composición se distinguen y no califican (TB-24)', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    const partes = ['composicion-libre', 'composicion-grasa'];
+    const entre = deltaE(tema[partes[0]], tema[partes[1]]);
+    if (entre < 20) fallas.push(`${nombreDelTema} · las dos partes: ΔE ${entre.toFixed(1)}`);
+    for (const p of partes) {
+      const h = matiz(tema[p]);
+      if (h === null || h < 160 || h > 300) fallas.push(`${nombreDelTema} · ${p} ${tema[p]}: matiz ${h === null ? 'gris' : h.toFixed(0)}°`);
+      const d = deltaE(tema.ahora, tema[p]);
+      if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${p} ${tema[p]}: ΔE ${d.toFixed(1)}`);
     }
   }
   assert.deepEqual(fallas, []);

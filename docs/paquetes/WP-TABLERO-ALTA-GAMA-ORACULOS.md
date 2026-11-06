@@ -13,9 +13,9 @@
 > en el código que cita cada uno. Un oráculo dice qué hay que observar para aceptar la prueba. No inventa la regla: la
 > lee.
 >
-> **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05
-> y TB-10; los de TB-24, con su parte), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014
-> (TB-16) y TEST-TAG-033 (TB-49). Los demás se escriben con su parte (§10 del paquete).
+> **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05,
+> TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
+> (TB-24) y TEST-TAG-033 (TB-49). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -87,14 +87,21 @@ EXPECTED             1-2 → TB-03: --banda contra --superficie, 1,3:1 o más en
                      con las iniciales y las métricas contra --ahora a ΔE 20 o más. TB-05:
                      --retrato-tinta sobre --retrato-fondo, 4,5:1; la tinta y el círculo, a ΔE 20 o más de
                      --ahora; la tinta con croma de CIELAB de 12 o menos, y el círculo, de 16 o menos: neutros,
-                     nunca el acento.
+                     nunca el acento. TB-24: --composicion-libre y --composicion-grasa (#0b62a4 y #0f9488 en Claro,
+                     #4f97ea y #16a085 en Azul noche, los validados en la propuesta, §18.7) contra --superficie y
+                     --fondo-suave, 3:1 o más; entre ellas y contra --ahora, ΔE 20 o más; cada una con su matiz
+                     entre los 160° y los 300° (un azul y un verde azulado: ni rojo, ni ámbar, ni el verde de «bien»).
                      3 → --grafico-planificado y --grafico-registrado no se definen ni se usan.
 NEGATIVE_ASSERTIONS  Ningún estilo escribe un color fuera de los tokens (la prueba que ya existía). Un gráfico de
                      Entrenamiento no distingue lo planificado de lo registrado por un naranja contra un azul: lo
-                     distingue la forma.
+                     distingue la forma. Las dos partes de la composición nunca se distinguen solo por el color: un
+                     corte deja ver la superficie entre las dos. Mutaciones verificadas (TB-24): con la grasa en un
+                     verde (#2e8b57, 146°) falla por el matiz; con la libre de grasa casi igual a la grasa en Azul
+                     noche, por ΔE 4,5.
 AUTOMATION           scripts/contraste.test.cjs (los pares de PARES_GRAFICO con FONDO_DE_DATO, «los gráficos ya
-                     no usan los colores de planificado y registrado (TB-03)» y «las iniciales van en tinta neutra
-                     y lejos de la luz de hoy (TB-05)»), en `npm test`
+                     no usan los colores de planificado y registrado (TB-03)», «las iniciales van en tinta neutra
+                     y lejos de la luz de hoy (TB-05)» y «las dos partes de la composición se distinguen y no
+                     califican (TB-24)»), en `npm test`
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas de la corrida de TB-03 en los dos temas
 ```
@@ -447,4 +454,70 @@ AUTOMATION           apps/web/test/lo-que-conto.test.mjs («TEST-TAG-033 · …�
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas, la tarjeta en el Resumen de Diego Sosa si
                      la cohorte tiene solicitudes respondidas de Sofía Paz, y las peticiones al abrir anotadas
+```
+
+---
+
+## TEST-TAG-017 — La composición no mezcla métodos
+
+```text
+TEST_ID              TEST-TAG-017
+TITLE                La columna de la composición se parte solo con las dos masas de un mismo método de dos
+                     compartimentos que suman el peso; un cambio de método corta las diferencias; una toma con solo
+                     peso va en contorno
+LEVEL                Unidad (funciones puras del website, sin navegador ni API)
+PRIORITY             P1 — una columna partida con dos métodos dice algo que nadie midió: dos ecuaciones dan hasta
+                     3 kg de diferencia sobre la misma toma
+SOURCES              DL-163 D-11 («La columna se parte solo con un método de dos compartimentos (Durnin y Womersley o
+                     Faulkner); la masa muscular de Lee va en su fila, porque no suma el peso; un cambio de método
+                     corta las diferencias; sin «%» en el Resumen») · WP-TABLERO-ALTA-GAMA TB-24 («Una prueba
+                     confirma que nunca parte una columna con métodos distintos ni con un método que no suma el
+                     peso») · la propuesta, §18.2 (reglas 3, 4 y 6) y §18.3 · REG-06-162 · DL-112 (las masas de dos
+                     compartimentos) · TA-24 a TA-27
+PRECONDITIONS        Ninguna: tomasDeLaEvolucion, particionDe, composicionDe, laUltimaToma, escalaComun y
+                     tramosDeLectura (apps/web/src/app/pro/advisees/seguimiento/composicion.ts).
+SYNTHETIC_FIXTURE    Respuestas de API-ANT-06 armadas como las arma la API (un bloque por métrica, cada punto con su
+                     evaluación y su grupo de comparabilidad), con las versiones de método del catálogo (Durnin y
+                     Womersley, Faulkner, Lee y cuatro componentes), de junio a octubre de 2026; y 300 casos al azar
+                     con una semilla fija (20261106), de 2 a 10 tomas cada uno, con métodos, masas sueltas, masas que
+                     no suman y cambios de protocolo.
+STEPS                1. Una toma con el peso y las dos masas de Durnin y Womersley que lo suman.
+                     2. Tres tomas: la grasa de un método con la libre de grasa de otro; la grasa con Lee; dos masas
+                        de un método que no suman el peso. Y dos tomas partidas con Lee al lado.
+                     3. Dos tomas de Durnin y Womersley y dos de Faulkner; las mismas, eligiendo Durnin y Womersley;
+                        y tres de Durnin y Womersley con un cambio de protocolo.
+                     4. Una toma con solo peso entre dos partidas.
+                     5. Los 300 casos al azar, con cada método pedido y sin pedir ninguno.
+                     6. La tarjeta del Resumen: dos tomas del mismo método, dos de métodos distintos, una partida y
+                        una posterior con solo peso, y dos tomas sin método.
+                     7. Los textos, la lectura en tramos de un año y la escala de las filas.
+EXPECTED             1 → 80,8 kg = 66,6 libre de grasa + 14,2 grasa, con Durnin y Womersley; con Faulkner, sin
+                        partir; con una sola toma partida, «el cambio aparece con la segunda».
+                     2 → ninguna columna se parte, todas dicen por qué («sus masas no suman el peso»); Lee va en su
+                        fila, con su diferencia y «no suma con las otras», y cada columna es libre + grasa.
+                     3 → el método que se mira es el de la toma partida más reciente (Faulkner); una vertical
+                        «Cambia el método» el 9 jun; las diferencias, del 9 jun al 21 jul (grasa −0,6); las de Durnin y
+                        Womersley van sin partir, «Partida con Durnin y Womersley». Eligiendo Durnin y Womersley, sus
+                        diferencias van del 2 mar al 13 abr. El cambio de protocolo es otra vertical («PROTOCOLO»).
+                     4 → la del medio va en contorno («SOLO_PESO»), está en la fila del peso y no la corta; la grasa
+                        y la libre de grasa, solo de las dos partidas; ninguna vertical.
+                     5 → toda columna partida es del método que se mira, con sus dos masas de esa toma, que suman el
+                        peso (±0,15 kg); ninguna parte es una masa que no suma; toda toma que se puede partir con ese
+                        método se parte; ninguna diferencia cruza un cambio; las tres filas tienen las mismas fechas.
+                     6 → «Desde la toma del …: peso −0,4 kg · grasa −0,5 kg · libre de grasa +0,1 kg»; con otro
+                        método antes, sin diferencias; la posterior con solo peso, aparte; sin método, sin barra y con
+                        la línea de los pesos.
+                     7 → sin «%», «bien», «mal», «normal» ni «ideal»; un año son cuatro lecturas de 92 días o menos,
+                        seguidas y sin solapes; dos respuestas con los grupos nombrados distinto no inventan un cambio
+                        de método; las filas usan el mismo largo de escala, nunca menos de 2 kg.
+NEGATIVE_ASSERTIONS  Nunca se parte una columna con métodos distintos ni con un método que no suma el peso; ninguna
+                     diferencia cruza un cambio de método o de protocolo. Mutaciones verificadas: sin la prueba de la
+                     suma, fallan los pasos 2 y 5; sin las verticales, falla el paso 3; con Lee como libre de grasa,
+                     fallan ocho casos; con la libre de grasa de otro método, fallan los pasos 2 y 5.
+AUTOMATION           apps/web/test/composicion.test.mjs («TEST-TAG-017 · …», cinco casos, y cuatro más de la tarjeta,
+                     los textos, la lectura y la escala), en `npm run test -w @be/web`
+ENVIRONMENT          CI (verificar · typecheck · unit · build · audit) y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, la pestaña Composición corporal y la
+                     pregunta de «Analizar» de Diego Sosa vistas por Sofía Paz, con `composicion.partidas` y
+                     `composicion.sinPartir` en mediciones.json, y el Resumen de Héctor Funes con la línea de los pesos
 ```

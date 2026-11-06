@@ -13,6 +13,8 @@ import { COPY_PRIMER_PLAN, numero, type ParteDeObservacion } from '@be/domain';
 import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
+import { DOS_COMPARTIMENTOS, laUltimaToma, pesosDeLasTomas, textoDeLaParticion, textoDeLasDiferencias } from './composicion';
+import { LineaDeLosPesos, type LecturaDeLaComposicion } from './composicion-en-pantalla';
 import { losRegistrosDelPeriodo, pasosDelPrimerPlan, sesionesPorEjercicio, textoDeLasComidas, textoDeLosRectificados } from './piezas-del-area';
 import type { Disponibles } from './series';
 
@@ -146,6 +148,90 @@ export function SesionesPorEjercicio({ ejercicios, fecha, plegada = false, child
         <p className="pieza-del-area__nota">y {s.mas === 1 ? '1 ejercicio más' : `${numero(s.mas)} ejercicios más`}</p>
       ) : null}
       {children}
+    </Pieza>
+  );
+}
+
+/**
+ * La composición de la última toma (Antropometría; TB-24, D-11 y TA-20): la barra horizontal del peso partido en masa
+ * libre de grasa y masa grasa, con su método, y lo que cambió desde la toma anterior del mismo método. Sin una toma
+ * partida, la línea de los pesos de las tomas (R-6). Sin «%» (T13). Lee API-ANT-06: la ventana de 92 días que termina en
+ * la última toma.
+ */
+export function ComposicionDeLaUltimaToma({
+  lectura,
+  recargar,
+  desde,
+  hasta,
+  fecha,
+  href,
+  plegada = false,
+}: {
+  lectura: LecturaDeLaComposicion;
+  recargar: () => void;
+  desde: string;
+  hasta: string;
+  fecha: (civil: string) => string;
+  href: string;
+  plegada?: boolean;
+}) {
+  if (lectura.tipo === 'cargando' || lectura.tipo === 'no-disponible') return null;
+  if (lectura.tipo === 'error') {
+    return (
+      <p className="pieza-del-area__nota">
+        No pudimos leer las tomas para la composición.{' '}
+        <button type="button" className="boton boton--enlace" onClick={recargar}>
+          Reintentar
+        </button>
+      </p>
+    );
+  }
+  const ultima = laUltimaToma(lectura.tomas);
+  if (ultima) {
+    const p = ultima.particion;
+    const barra = (
+      <span className="barra-de-la-composicion" aria-hidden="true">
+        <span data-parte="libre" style={{ flexGrow: p.libre }} />
+        <span data-parte="grasa" style={{ flexGrow: p.grasa }} />
+      </span>
+    );
+    return (
+      <Pieza titulo="Composición de la última toma" plegada={plegada} aLaVista={barra}>
+        <p className="composicion-de-la-toma__cifra">
+          <strong className="cifra">{textoDeLaParticion(p)}</strong>
+        </p>
+        <p className="pieza-del-area__nota">
+          {DOS_COMPARTIMENTOS[p.familia].nombre} · toma del {fecha(ultima.fecha)}
+        </p>
+        {ultima.anterior ? (
+          <p className="composicion-de-la-toma__cambio">
+            Desde la toma del {fecha(ultima.anterior.fecha)}: <span className="cifra">{textoDeLasDiferencias(ultima.anterior.particion, p)}</span>
+          </p>
+        ) : ultima.cambioDeMetodo ? (
+          <p className="pieza-del-area__nota">La toma anterior se partió con otro método o protocolo: no se comparan.</p>
+        ) : null}
+        {ultima.despues ? (
+          <p className="pieza-del-area__nota">
+            Después, el {fecha(ultima.despues.fecha)}, una toma con solo el peso: {numero(ultima.despues.peso, 1)} kg.
+          </p>
+        ) : null}
+        <p className="pieza-del-area__nota">
+          <Link href={href}>Ver la composición corporal</Link>
+        </p>
+      </Pieza>
+    );
+  }
+  // Sin una toma partida: la línea de los pesos de las tomas, como respaldo (R-6).
+  const pesos = pesosDeLasTomas(lectura.tomas);
+  if (pesos.length === 0) return null;
+  const ultimo = pesos[pesos.length - 1] as (typeof pesos)[number];
+  return (
+    <Pieza titulo="Peso en las tomas" plegada={plegada} aLaVista={plegada ? <span className="tenue">{numero(ultimo.valor, 1)} kg</span> : null}>
+      <LineaDeLosPesos pesos={pesos} desde={desde} hasta={hasta} />
+      <p className="pieza-del-area__nota">
+        {pesos.length === 1 ? `Una toma con peso, el ${fecha(ultimo.fecha)}: ${numero(ultimo.valor, 1)} kg.` : `${numero(pesos.length, 0)} tomas con peso; la última, el ${fecha(ultimo.fecha)}: ${numero(ultimo.valor, 1)} kg.`} Ninguna tiene un método que parta el peso
+        en masa libre de grasa y masa grasa.
+      </p>
     </Pieza>
   );
 }
