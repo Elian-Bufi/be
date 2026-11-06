@@ -1,8 +1,8 @@
 /**
  * WP-FORMULARIOS-DE-INICIO (DL-164) · la lógica pura de «Pedir información» con tipos nuevos y de «Cargar con la
  * persona» (`apps/web/src/app/pro/advisees/forms/formulario-de-inicio.ts`), sin React:
- *  1. lo que viene marcado al pedir (todas pedidas; requeridas las que la plantilla sugiere), la precarga de
- *     entrenamiento con los seis códigos de DL-100, el pedido desde Nutrición y el «para qué» sugerido (FR-02);
+ *  1. lo que viene marcado al pedir (todas pedidas; requeridas las que la plantilla sugiere), también desde Entrenamiento
+ *     (DL-165 D-29, con la tabla de los días y su tope), el pedido desde Nutrición y el «para qué» sugerido (FR-02);
  *  2. cada tipo dicho en palabras con sus opciones, y la condición de una pregunta con las etiquetas, nunca los códigos;
  *  3. el estado del formulario: una respuesta por campo, en orden, y lo oculto por una condición se retira;
  *  4. la revisión antes de enviar: lo que la API rechazaría frena; un obligatorio sin responder se marca y no frena;
@@ -14,7 +14,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const m = await import('../src/app/pro/advisees/forms/formulario-de-inicio.ts');
-const { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_PROBLEMA_V2, CONTEXTO_DE_ENTRENAMIENTO, CONTEXTO_DE_NUTRICION, COPY_FORMULARIOS, COPY_HABITOS, MENSAJE_DE_PROBLEMA_V2 } = await import('@be/domain');
+const {
+  camposEnOrden,
+  CODIGO_DE_NUMERO_FUERA_DE_LIMITES,
+  CODIGO_DE_PROBLEMA_V2,
+  CONTEXTO_DE_ENTRENAMIENTO,
+  CONTEXTO_DE_NUTRICION,
+  COPY_FORMULARIOS,
+  COPY_HABITOS,
+  MENSAJE_DE_PROBLEMA_V2,
+  PLANTILLA_ENTRENAMIENTO_V4,
+  validarRespuestasV2,
+} = await import('@be/domain');
 
 // ─── Una versión con los nueve tipos y una condicional ──────────────────────────────────────────
 
@@ -59,14 +70,37 @@ test('pedir · vienen todas pedidas y, requeridas, solo las que la plantilla sug
   assert.deepEqual(marcado.requeridas, ['nut_jornada', 'nut_alergias', 'nut_alergias_detalle']);
 });
 
-test('pedir · la precarga desde Entrenamiento toma los seis códigos de DL-100 solo si la versión los tiene', () => {
-  const conTodos = m.precargaDeEntrenamiento([...CONTEXTO_DE_ENTRENAMIENTO.campos, 'trn_tecnica', 'trn_otro_deporte']);
-  assert.deepEqual(conTodos.pedidas, CONTEXTO_DE_ENTRENAMIENTO.campos);
-  assert.deepEqual(conTodos.requeridas, CONTEXTO_DE_ENTRENAMIENTO.requeridos);
-  assert.equal(conTodos.pedidas.length, 6, 'FRM-ENTRENAMIENTO v2 reutiliza los seis códigos (DL-164 D-7)');
-  const sinUno = m.precargaDeEntrenamiento(CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => c !== 'trn_preferencias'));
-  assert.equal(sinUno.pedidas.includes('trn_preferencias'), false, 'no se pide una pregunta que la versión no tiene');
-  assert.deepEqual(sinUno.requeridas, CONTEXTO_DE_ENTRENAMIENTO.requeridos);
+test('pedir · DL-165 D-29: desde Entrenamiento, «Antes de entrenar» llega completo, como desde «Más», y el tope de los días actúa', () => {
+  // Ya no hay una precarga aparte de seis preguntas: llegando desde el área se marca lo mismo que al elegirlo en «Más».
+  assert.equal('precargaDeEntrenamiento' in m, false);
+  const secciones = PLANTILLA_ENTRENAMIENTO_V4.sections;
+  const marcado = m.marcadoPorOmision(secciones);
+  // Todas pedidas, salvo el embarazo, que la plantilla no trae pedido (D-4): el profesional lo suma cuando corresponde.
+  assert.deepEqual(camposEnOrden(secciones).filter((c) => !marcado.pedidas.includes(c.fieldCode)).map((c) => c.fieldCode), ['trn_embarazo']);
+  // Las seis de DL-100 siguen adentro, y también la tabla «¿Qué días y en qué momento podés?», que antes no venía.
+  for (const codigo of [...CONTEXTO_DE_ENTRENAMIENTO.campos, 'trn_dias_y_horario']) assert.ok(marcado.pedidas.includes(codigo), codigo);
+  // Requeridas, las 18 que sugiere la plantilla (D-21): la tabla y los días por semana, sí; las preferencias, no.
+  assert.equal(marcado.requeridas.length, 18);
+  for (const codigo of ['trn_dias_y_horario', 'trn_dias_por_semana']) assert.ok(marcado.requeridas.includes(codigo), codigo);
+  assert.equal(marcado.requeridas.includes('trn_preferencias'), false);
+
+  // El porqué (D-5): con la tabla pedida, «días por semana» no pasa de los días marcados en ella.
+  const tresDias = r('trn_dias_y_horario', { type: 'MATRIX', cells: [{ row: 'lun', column: 'manana' }, { row: 'mie', column: 'tarde' }, { row: 'vie', column: 'noche' }, { row: 'dom', column: 'no_puedo' }] });
+  const cinco = r('trn_dias_por_semana', { type: 'NUMBER', number: 5, unit: null });
+  const completo = { requestedFieldCodes: marcado.pedidas, requiredFieldCodes: marcado.requeridas };
+  assert.deepEqual(
+    validarRespuestasV2(secciones, completo, [tresDias, cinco])
+      .filter((p) => p.code !== CODIGO_DE_PROBLEMA_V2.REQUIRED)
+      .map((p) => [p.fieldCode, p.code]),
+    [['trn_dias_por_semana', CODIGO_DE_PROBLEMA_V2.MORE_THAN_MARKED]],
+  );
+  // Con las seis de antes, la persona no veía la tabla, y el número no tenía tope.
+  const deSeis = { requestedFieldCodes: [...CONTEXTO_DE_ENTRENAMIENTO.campos], requiredFieldCodes: [] };
+  assert.deepEqual(validarRespuestasV2(secciones, deSeis, [cinco]), []);
+
+  // Lo que sí precarga el área: el formulario y el área, desde el Resumen y desde el Plan, y su «para qué».
+  for (const origen of ['entrenamiento', 'entrenamiento-plan']) assert.deepEqual(m.PRECARGA_DEL_ORIGEN[origen], { plantilla: PLANTILLA_ENTRENAMIENTO_V4.clave, area: 'ENTRENAMIENTO' }, origen);
+  assert.equal(m.propositoAlElegir('', null, PLANTILLA_ENTRENAMIENTO_V4.clave).proposito, COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento);
 });
 
 test('pedir · FR-02: desde Nutrición se llega con «Cómo comés hoy» y su área, y se vuelve a su Resumen', () => {

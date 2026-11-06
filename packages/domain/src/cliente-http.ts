@@ -1572,7 +1572,8 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     habitosDeLaPersona(token: string, asesoradoId: string) {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits`, { token, esquema: HabitosCompartidosResponseSchema });
     },
-    // Ronda 2.1 (DL-165 D-17 nueva): «Pedir acceso a sus hábitos». 06 y 07, del website; 08 y 09, de la APK 0.22.
+    // Ronda 2.1 (DL-165 D-17 nueva): «Pedir acceso a sus hábitos». 06 y 07, del website; 08 y 09, de la APK
+    // 0.22.0-candidata.1, con la forma congelada (DL-152).
     /** API-HBT-06: el profesional le pide a la persona ver sus hábitos, desde su área. Le llega como novedad importante. */
     pedirAccesoAHabitos(token: string, asesoradoId: string, cuerpo: PedirAccesoAHabitosRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/habits/access-requests`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoCreadoResponseSchema, cuerpo });

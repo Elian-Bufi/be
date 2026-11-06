@@ -241,8 +241,9 @@ export const COPY_ENTRENAMIENTO = {
   // PF-02 · contexto declarado conectado con la evaluación (DL-100, DL-102)
   /** Antes «Solicitar contexto»: lo mismo se llama igual en todos lados (DL-145). */
   solicitarContexto: 'Pedir información',
+  /** DL-165 D-29: llega «Antes de entrenar» completo, no las seis preguntas de «Antecedentes para entrenamiento» (DL-100). */
   ayudaSolicitarContexto:
-    'Le pide a la persona «Antecedentes para entrenamiento»: qué busca, su experiencia, cuánto tiempo tiene, dónde entrena y qué prefiere. Pedir no da acceso a nada nuevo hasta que responda.',
+    'Le pide a la persona «Antes de entrenar»: su salud, dolor y lesiones, su experiencia, lo que busca, su semana y sus preferencias. Pedir no da acceso a nada nuevo hasta que responda.',
   contextoDeclarado: 'Contexto declarado por la persona',
   ayudaContextoDeclarado:
     'Marcá las respuestas que usás para fundar esta evaluación. Quedan citadas tal como están ahora, con su fecha; no se copian como datos observados por vos.',

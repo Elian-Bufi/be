@@ -2675,7 +2675,8 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.3 y §4.4 (FR-10) · RNF-SEC-006 · 08 §11, §14.1, C-11 · 08 §19.7',
   },
   // ─── Ronda 2.1 (DL-165 D-17 nueva, 2026-11-06): «Pedir acceso a sus hábitos». Operaciones nuevas: las cuatro que lee la
-  // 0.21 no cambian de forma (DL-152). 06 y 07 son del website; 08 y 09, de la APK 0.22. ────────────────────────────────
+  // 0.21 no cambian de forma (DL-152). 06 y 07 son del website; 08 y 09, de la APK 0.22.0-candidata.1, con la forma
+  // congelada (DL-152). ──────────────────────────────────────────────────────────────────────────────────────────────────
   {
     id: 'API-HBT-06',
     metodo: 'post',

@@ -1,18 +1,22 @@
-# WP-FORMULARIOS-RONDA-2 — los diez oráculos TEST-FR2
+# WP-FORMULARIOS-RONDA-2 — los oráculos TEST-FR2
 
 > **Qué es esto.** Lo que la ronda 2 de los formularios cambió (DL-165), escrito como oráculos con los trece campos que la
 > §6 del 11A declara obligatorios (11A:150-169), igual que los TEST-FRI de WP-FORMULARIOS-DE-INICIO
 > (`WP-FORMULARIOS-DE-INICIO-ORACULOS.md`). El paquete (`WP-FORMULARIOS-RONDA-2.md`) no los había declarado: salen de sus
-> criterios de aceptación (§1 y §3) y del FR-10 (§4).
+> criterios de aceptación (§1 y §3) y del FR-10 (§4). Los seis de la ronda 2.1 (TEST-FR2-011 a 016) salen de FR-12 a
+> FR-16 (§8).
 >
 > **Qué no es esto.** No modifica el 11A, que está protegido por `docs/MANIFEST.sha256`. Los TEST-FRM de WP-07 y los
-> TEST-FRI siguen como están. Cuando Dirección consolide, toma estos diez y reemite el documento.
+> TEST-FRI siguen como están. Cuando Dirección consolide, toma estos dieciséis y reemite el documento.
 >
 > **De dónde sale cada oráculo.** De DL-165 (`docs/DEUDA_LEGAJO.md`, ratificada el 2026-11-05 con D-1 a D-9; D-10 a D-13
-> ratificadas el mismo día; D-14 a D-19, del FR-10, a ratificar), del paquete y de las normas que cita, con referencia
-> `archivo:línea`. Un oráculo derivado dice qué hay que observar para aceptar la prueba; no inventa la regla, la lee.
+> ratificadas el mismo día; del FR-10, D-14, D-16 y D-18 ratificadas el 2026-11-06, D-15 y D-17 reemplazadas ese día por
+> las nuevas, y D-19 a ratificar; de la ronda 2.1, D-20 a D-28, a ratificar), del paquete y de las normas que cita, con
+> referencia `archivo:línea`. Un oráculo derivado dice qué hay que observar para aceptar la prueba; no inventa la regla,
+> la lee. Las referencias a DEUDA_LEGAJO y al paquete se actualizaron el 2026-11-06: las de los diez primeros se habían
+> corrido con la ronda 2.1. Las de D-15 y D-17 anteriores, que ya no están en DL-165, apuntan al §7 del paquete.
 >
-> **Estado de la automatización.** Los diez se ejecutan en la CI: lo de la API, con PostgreSQL 16 real
+> **Estado de la automatización.** Los dieciséis se ejecutan en la CI: lo de la API, con PostgreSQL 16 real
 > (Testcontainers); lo del dominio, la APK y el website, en `npm test`. Lo que solo se ve en el teléfono o en el
 > escritorio se dice en EVIDENCE_EXPECTED y está en la guía de la prueba de Dirección
 > (`EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`).
@@ -26,10 +30,11 @@ TEST_ID              TEST-FR2-001
 TITLE                El formulario se responde por partes, con el aviso de lo que falta y un repaso antes de enviar
 LEVEL                Dominio (la lógica de las partes) y APK (lógica pura); el recorrido, en el teléfono
 PRIORITY             P1 — la experiencia de la persona; no cambia lo que se guarda
-SOURCES              DL-165 D-1 (DEUDA_LEGAJO:6216: «"Parte N de 6", "Anterior", "Siguiente" y un repaso antes
+SOURCES              DL-165 D-1 (DEUDA_LEGAJO:6569: «"Parte N de 6", "Anterior", "Siguiente" y un repaso antes
                      de enviar. Si falta una obligatoria, se avisa al pasar de parte y se deja seguir y volver») ·
-                     DL-165 D-3 (DEUDA_LEGAJO:6225) y D-15 (DEUDA_LEGAJO:6324, siete partes) ·
-                     WP-FORMULARIOS-RONDA-2.md FR-03 y FR-04 (:87-88) · 05 UC-P33 (05:15197)
+                     DL-165 D-3 (DEUDA_LEGAJO:6578) y la D-15 anterior (WP-FORMULARIOS-RONDA-2.md:261, siete
+                     partes; reemplazada el 2026-11-06 por la nueva, DEUDA_LEGAJO:6678) ·
+                     WP-FORMULARIOS-RONDA-2.md FR-03 y FR-04 (:89-90) · 05 UC-P33 (05:15197)
 PRECONDITIONS        Una versión con secciones (las partes) y una Solicitud que pide algunas de sus preguntas,
                      con obligatorias, una condicional y una sección sin nada pedido.
 SYNTHETIC_FIXTURE    PARTES y PEDIDO de formularios-ronda-2.test.ts: cuatro secciones; «El detalle» se abre con
@@ -70,10 +75,10 @@ TITLE                Los días por semana no pasan de los marcados en la tabla; 
 LEVEL                Integración (API + PostgreSQL real), dominio, APK y website (lógica pura), y contrato
                      congelado de la 0.21.0-candidata.1
 PRIORITY             P1 — la coherencia del dato con el que se arma el plan
-SOURCES              DL-165 D-5 (DEUDA_LEGAJO:6233: «`trn_dias_por_semana` no puede pasar de los días marcados:
+SOURCES              DL-165 D-5 (DEUDA_LEGAJO:6586: «`trn_dias_por_semana` no puede pasar de los días marcados:
                      es una regla del dominio y de la API, y la app la avisa antes de enviar») · DL-165 D-11
-                     (DEUDA_LEGAJO:6288: «Lo aplican igual la API (FRI-04, 05 y 06), la app y la web, que además
-                     dicen junto al número cuánto admite») · WP-FORMULARIOS-RONDA-2.md FR-07 (:90)
+                     (DEUDA_LEGAJO:6642: «Lo aplican igual la API (FRI-04, 05 y 06), la app y la web, que además
+                     dicen junto al número cuánto admite») · WP-FORMULARIOS-RONDA-2.md FR-07 (:92)
 PRECONDITIONS        Profesional de Nutrición verificado y habilitado; persona con A3, vínculo aceptado y B2; una
                      versión de formato 3 con la tabla de días y un número con su tope en ella (maxFromMatrix), y
                      una Solicitud sobre esa versión.
@@ -117,10 +122,10 @@ TITLE                El subtipo de varias opciones en un renglón (formato 3) se
                      rectifica con la capacidad forms-format-3; sin ella, no existe
 LEVEL                Integración (API + PostgreSQL real), dominio y contrato congelado de cada APK publicada
 PRIORITY             P0 — compatibilidad: una APK instalada no se actualiza sola
-SOURCES              DL-165 D-6 (DEUDA_LEGAJO:6238) · DL-165 D-10 (DEUDA_LEGAJO:6278: «Se entregan solo a un
+SOURCES              DL-165 D-6 (DEUDA_LEGAJO:6591) · DL-165 D-10 (DEUDA_LEGAJO:6632: «Se entregan solo a un
                      cliente que declara `forms-format-3` en `X-BE-Capabilities` […]: para los demás, FRI-02 no
                      las lista y FRI-01 y FRI-03 a 08 responden el 404 de lo inexistente») · WP-FORMULARIOS-
-                     RONDA-2.md FR-08 (:89) · DL-152 (lo que lee cada APK, congelado) · DL-122 (las capacidades)
+                     RONDA-2.md FR-08 (:91) · DL-152 (lo que lee cada APK, congelado) · DL-122 (las capacidades)
 PRECONDITIONS        Las de TEST-FR2-002. Congeladas, la 0.20.0-candidata.1 (sin la capacidad) y la
                      0.21.0-candidata.1 (con ella).
 SYNTHETIC_FIXTURE    SECCIONES_V3: «Otras actividades de tu semana», con «Cuál» (con su ejemplo) y «Qué días»
@@ -171,9 +176,9 @@ TITLE                En las versiones nuevas, el embarazo no viene pedido ni es 
                      suma si corresponde
 LEVEL                Dominio, website (lógica pura) e integración (lo que sirve la API)
 PRIORITY             P1 — minimización: el profesional decide qué pedir
-SOURCES              DL-165 D-4 (DEUDA_LEGAJO:6227: «El embarazo, sin elegir al pedir y no obligatorio, en los dos
+SOURCES              DL-165 D-4 (DEUDA_LEGAJO:6580: «El embarazo, sin elegir al pedir y no obligatorio, en los dos
                      formularios; cada pregunta dice si viene pedida por defecto»; cita 09:1528) · DL-165 D-12
-                     (DEUDA_LEGAJO:6295: «"pedida por defecto" es `requestedByDefault`, que va solo cuando es
+                     (DEUDA_LEGAJO:6649: «"pedida por defecto" es `requestedByDefault`, que va solo cuando es
                      `false`») · 04 RNF-PRI-001 (04:788) · 06 REG-06-209 (06:8485)
 PRECONDITIONS        Las versiones de formato 3 del catálogo, sembradas por la migración
                      20261105120000_formularios_ronda_2_plantillas: FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO
@@ -209,9 +214,9 @@ TITLE                Los formularios entran en la Línea de tiempo como hechos d
                      respondido, y solo para el profesional que los pidió
 LEVEL                Integración (API + PostgreSQL real) y website (lógica pura)
 PRIORITY             P0 — segregación: otro profesional no ve qué se le preguntó a la persona
-SOURCES              DL-165 D-8 (DEUDA_LEGAJO:6245) · DL-165 D-13 (DEUDA_LEGAJO:6309: «Los ve solo el profesional
+SOURCES              DL-165 D-8 (DEUDA_LEGAJO:6598) · DL-165 D-13 (DEUDA_LEGAJO:6663: «Los ve solo el profesional
                      que pidió el formulario, en sus Alcances permitidos: la regla de API-FRI-03») · 08 §11
-                     (08:183) · 04 RNF-SEC-006 (04:777) · WP-FORMULARIOS-RONDA-2.md FR-09 (:92) · DL-127
+                     (08:183) · 04 RNF-SEC-006 (04:777) · WP-FORMULARIOS-RONDA-2.md FR-09 (:94) · DL-127
                      (API-DSH-04)
 PRECONDITIONS        Profesional de Nutrición y persona con A3, vínculo aceptado y B2, con una Solicitud V2; otra
                      profesional, de Entrenamiento, vinculada con la misma persona.
@@ -249,10 +254,10 @@ TITLE                Responder un formulario con «Tus hábitos» agrega una ver
 LEVEL                Integración (API + PostgreSQL real), dominio, APK (lógica pura) y contrato congelado de la
                      0.21.0-candidata.1
 PRIORITY             P0 — el dato es de la persona: cada cambio queda, ninguno se pisa
-SOURCES              DL-165 D-9 (DEUDA_LEGAJO:6251) · DL-165 D-16 (DEUDA_LEGAJO:6335: «Lo que el formulario
+SOURCES              DL-165 D-9 (DEUDA_LEGAJO:6604) · DL-165 D-16 (DEUDA_LEGAJO:6698: «Lo que el formulario
                      preguntó de la parte […] reemplaza lo vigente […]. Rectificar una respuesta (FRI-05) no
-                     cambia los hábitos») · DL-165 D-18 (DEUDA_LEGAJO:6353) · WP-FORMULARIOS-RONDA-2.md §4.2
-                     (:149) · 06 T-06-77 (06:8298, SELF_REPORTED) · 06 REG-06-209 (06:8485)
+                     cambia los hábitos») · DL-165 D-18 (DEUDA_LEGAJO:6726) · WP-FORMULARIOS-RONDA-2.md §4.2
+                     (:152) · 06 T-06-77 (06:8298, SELF_REPORTED) · 06 REG-06-209 (06:8485)
 PRECONDITIONS        Persona con A3; una nutricionista y un entrenador con su vínculo aceptado y su B2; las
                      versiones vigentes del catálogo, con la parte «Tus hábitos».
 SYNTHETIC_FIXTURE    HABITOS de habitos-de-la-persona.int-spec.ts: horarios de semana y de fin de semana, 7,5 h
@@ -301,11 +306,12 @@ TITLE                Los hábitos los ve solo el profesional que la persona elig
 LEVEL                Integración (API + PostgreSQL real), dominio, APK y website (lógica pura), y contrato
                      congelado de la 0.21.0-candidata.1
 PRIORITY             P0 — segregación por dominio, salvo autorización explícita
-SOURCES              DL-165 D-9 (DEUDA_LEGAJO:6251: «La ven los profesionales de la persona solo si ella activa
+SOURCES              DL-165 D-9 (DEUDA_LEGAJO:6604: «La ven los profesionales de la persona solo si ella activa
                      en su app "Compartir mis hábitos con mis profesionales", con la lista de quiénes los ven») ·
-                     DL-165 D-17 y D-19 (DEUDA_LEGAJO:6343, 6358) · 04 RNF-SEC-006 (04:777, «salvo autorización
+                     DL-165, la D-17 anterior (WP-FORMULARIOS-RONDA-2.md:270; su mecanismo sigue, D-26:
+                     DEUDA_LEGAJO:6804) y D-19 (DEUDA_LEGAJO:6732) · 04 RNF-SEC-006 (04:777, «salvo autorización
                      explícita») · 08 §11 (08:183), C-11 y C-12 (08:47-48) · WP-FORMULARIOS-RONDA-2.md §4.3 y
-                     §4.4 (:167, :192)
+                     §4.4 (:170, :195)
 PRECONDITIONS        Las de TEST-FR2-006, con hábitos registrados; un profesional de Nutrición sin vínculo con la
                      persona.
 SYNTHETIC_FIXTURE    HABITOS; el texto del acto `habitos-compartidos-2026-11-propuesta`, una propuesta pendiente
@@ -355,8 +361,8 @@ TITLE                Retirar la autorización corta a futuro y para todos, sin b
 LEVEL                Integración (API + PostgreSQL real), website (lógica pura) y contrato congelado de la
                      0.21.0-candidata.1
 PRIORITY             P0 — revocación efectiva y verificable
-SOURCES              04 RNF-PRI-002 (04:797) · DL-165 D-19 (DEUDA_LEGAJO:6358: «retirar no pide el A3, porque
-                     siempre se puede […] Cerrar la cuenta la retira») · WP-FORMULARIOS-RONDA-2.md §4.5 (:202) ·
+SOURCES              04 RNF-PRI-002 (04:797) · DL-165 D-19 (DEUDA_LEGAJO:6732: «retirar no pide el A3, porque
+                     siempre se puede […] Cerrar la cuenta la retira») · WP-FORMULARIOS-RONDA-2.md §4.5 (:205) ·
                      08 §14.1 (08:410)
 PRECONDITIONS        Las de TEST-FR2-006, con la autorización activa para los dos profesionales.
 SYNTHETIC_FIXTURE    HABITOS.
@@ -397,9 +403,10 @@ LEVEL                Integración (API + PostgreSQL real), dominio, APK (lógica
                      0.21.0-candidata.1
 PRIORITY             P0 — una ampliación exige una aceptación nueva del titular
 SOURCES              08 C-12 (08:48: «una ampliación de categoría o detalle exige nueva versión B2 y nueva
-                     aceptación del titular») · DL-165 D-17 (DEUDA_LEGAJO:6343: «Un profesional que vuelve con
-                     otro vínculo después de terminar es alguien que llega después (`NOT_ASKED`)») ·
-                     WP-FORMULARIOS-RONDA-2.md §4.3 (:173-175)
+                     aceptación del titular») · la D-17 anterior (WP-FORMULARIOS-RONDA-2.md:272: «Un profesional
+                     que vuelve con otro vínculo después de terminar es alguien que llega después, y se le
+                     pregunta»; su mecanismo sigue por D-26, DEUDA_LEGAJO:6804) ·
+                     WP-FORMULARIOS-RONDA-2.md §4.3 (:176-178)
 PRECONDITIONS        Las de TEST-FR2-006, con la autorización activa para los dos; una antropometrista que se
                      vincula después.
 SYNTHETIC_FIXTURE    HABITOS.
@@ -478,6 +485,342 @@ EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; EVIDENCIA/FORMULARIOS-R
 
 ---
 
-**Lo que estos oráculos no cubren y queda a la vista.** El recorrido con TalkBack, la pregunta por un profesional nuevo
-en el teléfono y la revisión legal del texto del acto y de D-9 antes de usarlo con personas reales (y el gate del 08
-§42). Los tres están en `EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`.
+## Ronda 2.1 · «Tus hábitos» aparte y «Pedir acceso a sus hábitos» (2026-11-06)
+
+Seis oráculos más, de FR-12 a FR-16 (`WP-FORMULARIOS-RONDA-2.md` §8). Salen de D-15 y D-17 nuevas, que decidió Dirección,
+y de D-20 a D-28, a ratificar. Lo que ve la persona en el teléfono se prueba con la 0.22.0-candidata.1; lo de la 0.21, con
+la que está instalada.
+
+---
+
+## TEST-FR2-011 — «Tus hábitos», un formulario aparte
+
+```text
+TEST_ID              TEST-FR2-011
+TITLE                «Tus hábitos» es un formulario propio que cualquier profesional pide y vuelve a pedir; las de
+                     área ya no traen la parte, y las de la ronda 2 pedidas antes siguen andando
+LEVEL                Integración (API + PostgreSQL real), dominio, APK (lógica pura) y contrato congelado de la
+                     0.21.0-candidata.1 y la 0.22.0-candidata.1
+PRIORITY             P1 — el dato de hábitos se pide una vez para todos, sin perder lo ya pedido
+SOURCES              DL-165 D-15 nueva (DEUDA_LEGAJO:6678; :6686: «La pide y la vuelve a pedir cualquier
+                     profesional con el vínculo vigente, en su área»; :6690: «cualquier versión que tenga las
+                     preguntas de hábitos agrega una versión de los hábitos») · DL-165 D-20 y D-21
+                     (DEUDA_LEGAJO:6744, 6751) · D-18 (DEUDA_LEGAJO:6726, «¿Sigue igual?» también en «Tus hábitos»
+                     aparte) · D-27 (DEUDA_LEGAJO:6815: «Un formulario de una sola parte («Tus hábitos») no dice
+                     «Parte 1 de 1»») · WP-FORMULARIOS-RONDA-2.md FR-12 (:336) y §8.3 (:342) · 06 REG-06-209
+                     (06:8485) · 05 UC-P33 (05:15197)
+PRECONDITIONS        Persona con A3; una nutricionista y un entrenador con su vínculo aceptado y su B2; el catálogo
+                     con la migración 20261106120000_formularios_ronda_2_1_plantillas.
+SYNTHETIC_FIXTURE    HABITOS (las seis preguntas de la parte, en su forma canónica); FRM-HABITOS v2, «Cómo comés
+                     hoy» v3 y «Antes de entrenar» v4, del catálogo; una Solicitud de «Cómo comés hoy» v2 sembrada
+                     como pedida antes de la ronda 2.1.
+STEPS                1. Leer las versiones del catálogo: las tres vigentes y sus partes.
+                     2. La nutricionista pide «Tus hábitos» desde Nutrición, con todo; el entrenador, desde
+                        Entrenamiento, solo dos preguntas. La persona responde las dos.
+                     3. La persona responde «Cómo comés hoy» v3 y «Antes de entrenar» v4.
+                     4. Pedir «Cómo comés hoy» v2 o FRM-HABITOS v1; responder la Solicitud de la v2 pedida antes.
+                     5. En la APK 0.22: abrir «Tus hábitos» con hábitos ya contados; abrir «Antes de entrenar» v4.
+EXPECTED             1 → FRM-HABITOS v2 es de formato 3, sin área propia, con la parte `tus_habitos` sola (6
+                     preguntas, 5 obligatorias, 4 a la vista); «Cómo comés hoy» v3 y «Antes de entrenar» v4 tienen
+                     seis partes y son la v2 y la v3 sin la parte, campo por campo, salvo «¿En qué momento del día
+                     solés entrenar?», a la vista, opcional y con «No entreno»; 19 (18 a la vista) y 18
+                     obligatorias. 2 → la primera agrega la versión v1 de los hábitos con origin FORM; la segunda,
+                     la v2, que cambia solo lo que preguntó (D-16). 3 → no agregan ninguna versión. 4 → 422
+                     FORM_TEMPLATE_NOT_SELECTABLE, sin escribir nada; la Solicitud de antes se responde y agrega
+                     otra versión. 5 → una sola parte, sin «Parte 1 de 1», con el repaso y «Ya lo respondiste el
+                     …: ¿sigue igual?»; «Antes de entrenar», «Parte N de 6», sin la parte «Tus hábitos».
+NEGATIVE_ASSERTIONS  Las versiones de la ronda 2 no se tocan (REG-06-209): la migración solo agrega, y las dos
+                     anteriores salen iguales byte por byte. FRM-HABITOS v1 (P0) no tiene la parte, y responderla no
+                     cambia los hábitos.
+AUTOMATION           packages/domain/src/plantillas-de-inicio.test.ts («las siete versiones son las pedidas …»,
+                     «ronda 2.1 · «Tus hábitos» es FRM-HABITOS v2 …» y «ronda 2.1 · «Cómo comés hoy» v3 y «Antes de
+                     entrenar» v4 …») · packages/domain/src/habitos-de-la-persona.test.ts («D-9 y D-20 · la parte
+                     «Tus hábitos» es la misma …») · test/integration/habitos-de-la-persona.int-spec.ts («cualquier
+                     profesional pide «Tus hábitos» en su área …») · test/integration/plantillas-de-inicio.int-spec.ts
+                     («FRM-01 lista las tres …» y «FRM-03: las anteriores ya no se piden …») ·
+                     apps/mobile/src/formulario-v2.test.ts (««Tus hábitos» aparte es una sola parte …») ·
+                     apps/mobile/src/habitos-en-el-telefono.test.ts («ronda 2.1: «Tus hábitos» aparte (FRM-HABITOS
+                     v2) también abre con lo vigente …») · test/integration/lecturas-de-las-apk.int-spec.ts (la
+                     0.21.0-candidata.1 y la 0.22.0-candidata.1 leen «Tus hábitos» aparte, de una parte, y lo
+                     responden)
+ENVIRONMENT          CI (PostgreSQL 16 real, Testcontainers); el dominio y la APK, en `npm test`; el teléfono con
+                     la 0.22.0-candidata.1 contra `test`
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md, «La prueba de la
+                     0.22», parte 2 y parte 4
+```
+
+---
+
+## TEST-FR2-012 — «Sumar «Tus hábitos»» al pedir
+
+```text
+TEST_ID              TEST-FR2-012
+TITLE                Al pedir un formulario de área, el escritorio sugiere sumar «Tus hábitos» solo con lo que ese
+                     profesional ya puede ver, y manda las dos solicitudes en un paso
+LEVEL                Integración (API + PostgreSQL real), dominio, website (lógica pura) y contrato
+PRIORITY             P0 — la sugerencia nunca revela lo que la persona le contó a otro profesional
+SOURCES              DL-165 D-15 nueva (DEUDA_LEGAJO:6694: «Nunca puede revelar que la persona contó sus hábitos a
+                     otro profesional: se decide solo con lo que este profesional ya puede ver») · DL-165 D-22
+                     (DEUDA_LEGAJO:6761; :6765: «"Más de 3 meses" es de calendario») · WP-FORMULARIOS-RONDA-2.md
+                     §8.1, 2 (:309) y FR-13 (:337) · 04 RNF-SEC-006 (04:777) · 08 §11 (08:183)
+PRECONDITIONS        Persona con A3; una nutricionista y un entrenador con su vínculo aceptado y su B2; un
+                     profesional sin vínculo con la persona.
+SYNTHETIC_FIXTURE    HABITOS; «Tus hábitos» v2 pedida por el entrenador; instantes fijos para los tres meses.
+STEPS                1. Cada profesional lee API-HBT-07 sin nada respondido ni compartido.
+                     2. El entrenador pide «Tus hábitos» y la persona la responde; los dos leen API-HBT-07.
+                     3. La persona le comparte sus hábitos a la nutricionista; ella lee API-HBT-07.
+                     4. El profesional ajeno, una persona que no existe y un vínculo en pausa.
+                     5. La sugerencia con: nada visto; visto hace un mes; visto hace más de 3 meses; una
+                        Solicitud con la parte esperando respuesta; justo 3 meses y un instante después.
+                     6. En el escritorio: pedir «Cómo comés hoy» v3 o «Antes de entrenar» v4 con la casilla
+                        marcada; con una falla en la segunda; sin saber si llegó.
+EXPECTED             1 → sus áreas, sin hábitos, sin pedido, y que puede pedir acceso. 2 → el entrenador tiene
+                     lo más nuevo que ve (el momento de su respuesta) y ninguna pendiente; para la nutricionista
+                     no cambió nada. 3 → recibe, desde cuándo, y lo más nuevo que ve es la versión vigente. 4 →
+                     el 404 de lo inexistente, con el mismo cuerpo. 5 → marcada (SIN_HABITOS); sin marcar, con
+                     su fecha (RECIENTES); marcada, con su fecha (VIEJOS); sin marcar (PENDIENTE); 3 meses justos
+                     todavía no son «más». 6 → primero la de área y después «Tus hábitos», en la misma área, con
+                     todas sus preguntas, las obligatorias que sugiere y el «para qué»; se dice si salieron las
+                     dos, una o ninguna; si falla la de área no se manda la otra, y sin saber si llegó se
+                     reintenta con la misma clave.
+NEGATIVE_ASSERTIONS  API-HBT-07 no trae ningún hábito ni qué respondió la persona a un pedido. Las Solicitudes de
+                     otro profesional nunca cuentan. La casilla no se ofrece con las versiones que ya traen la
+                     parte, ni con «Tus hábitos» mismo, ni con el 404. Mientras se lee, o si la lectura falla,
+                     aparece sin marcar y sin motivo: no se afirma lo que no se sabe.
+AUTOMATION           test/integration/habitos-de-la-persona.int-spec.ts («lo más nuevo que ve sale de sus
+                     respuestas y de lo compartido …») · packages/domain/src/habitos-de-la-persona.test.ts («D-22 ·
+                     «Sumar «Tus hábitos»» …» y «los contratos de la ronda 2.1 son estrictos …») ·
+                     apps/web/test/sumar-habitos.test.mjs (los siete casos, de «1 · se ofrece …» a «5 · los textos
+                     del cajón …») · test/integration/contrato.int-spec.ts («TEST-CT (DL-165, ronda 2.1): HBT-06 a
+                     09 …»)
+ENVIRONMENT          CI (PostgreSQL 16 real, Testcontainers); el dominio y el website, en `npm test`
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md, «La prueba de la
+                     0.22», parte 2 y parte 5
+```
+
+---
+
+## TEST-FR2-013 — Pedir acceso, con su límite de 7 días
+
+```text
+TEST_ID              TEST-FR2-013
+TITLE                El profesional pide acceso a los hábitos; a la persona le llega como novedad importante, y no
+                     se puede insistir: una pendiente por vez y 7 días entre pedidos
+LEVEL                Integración (API + PostgreSQL real), dominio, APK y website (lógica pura), contrato y contrato
+                     congelado de la 0.22.0-candidata.1
+PRIORITY             P0 — la persona decide sin presión; la novedad y el aviso no llevan datos de salud
+SOURCES              DL-165 D-17 nueva (DEUDA_LEGAJO:6707; :6713: «el acceso de sus datos a terceros es su
+                     decisión... nunca una obligación»; :6722: «Un límite para que no sea insistente») · DL-165
+                     D-23 (DEUDA_LEGAJO:6776; :6782: «El push, "Tenés una novedad.", como siempre») · DL-165 D-24
+                     (DEUDA_LEGAJO:6788; :6790: «esté pendiente o respondido») · D-27 (DEUDA_LEGAJO:6812:
+                     «"Importante" se dice con la palabra y el ícono, y TalkBack lo lee antes del título») ·
+                     WP-FORMULARIOS-RONDA-2.md FR-14 (:338) y §8.4 (:365, :370, :374) · 08 Expo Push (08:764:
+                     «sin C4 jamás en payloads») · DL-133
+PRECONDITIONS        Las de TEST-FR2-012, con hábitos registrados y sin compartir.
+SYNTHETIC_FIXTURE    HABITOS; un pedido del entrenador sembrado en la base con fecha de hace 8 días.
+STEPS                1. La nutricionista pide acceso desde Nutrición; repite el pedido con la misma clave.
+                     2. La persona lee sus novedades.
+                     3. La nutricionista vuelve a pedir enseguida; pide desde Entrenamiento, que no es su área, y
+                        para una persona que no existe.
+                     4. Insertar en la base una segunda pendiente para la misma nutricionista.
+                     5. El entrenador, con su pedido de hace 8 días sin responder, pide de nuevo.
+                     6. La persona le comparte sus hábitos a otro profesional, que pide acceso.
+                     7. Cambiar el estado de un pedido resuelto, o borrarlo, en la base.
+                     8. En la APK 0.22: el centro de novedades, la novedad y TalkBack.
+EXPECTED             1 → 201, PENDING, en el área pedida; el reintento responde lo mismo y no pide dos veces.
+                     2 → «Te piden ver tus hábitos», de la nutricionista, que abre MY_HABITS con el pedido como
+                     referencia; dice quién pide, desde qué área, «Le ayuda a armar un plan de comidas que entre
+                     en tu semana.» y «Es tu decisión». 3 → 422 HABITS_ACCESS_REQUEST_TOO_SOON con availableFrom
+                     a los 7 días exactos; API-HBT-07 dice el pedido pendiente y desde cuándo puede volver a
+                     pedir; el 404 de lo inexistente para lo demás. 4 → la base lo rechaza. 5 → 201; el anterior
+                     queda REEMPLAZADO y hay una sola pendiente por profesional; los hechos son
+                     PedidoDeAccesoAHabitosReemplazado y PedidoDeAccesoAHabitosHecho. 6 → 422
+                     HABITS_ALREADY_SHARED. 7 → la base lo rechaza: se resuelve una sola vez y no se borra.
+                     8 → la novedad lleva «Importante», con la palabra; TalkBack lee «Sin leer. Importante.»
+                     antes del título; las demás novedades no la llevan.
+NEGATIVE_ASSERTIONS  La novedad nunca lleva un hábito, y el aviso del teléfono dice solo «Tenés una novedad.».
+                     Ningún pedido vence solo. La novedad no tiene un campo nuevo: se destaca por su tipo, para no
+                     dejar sin leer el centro a las APK instaladas.
+AUTOMATION           test/integration/habitos-de-la-persona.int-spec.ts («le llega a la persona como novedad
+                     importante, sin un hábito …») · packages/domain/src/habitos-de-la-persona.test.ts («D-24 · el
+                     límite …» y «D-23 · la novedad del pedido …») · apps/mobile/src/novedades-en-el-telefono.test.ts
+                     («ronda 2.1: el pedido de un profesional para ver los hábitos abre «Mis hábitos» …», «el
+                     pedido para ver los hábitos lleva «Importante» …», «TalkBack lee …» y «el texto del pedido
+                     dice quién pide …») · apps/web/test/sus-habitos.test.mjs (los cuatro casos «6 · …») ·
+                     test/integration/contrato.int-spec.ts («TEST-CT (DL-165, ronda 2.1): HBT-06 a 09 …») ·
+                     test/integration/lecturas-de-las-apk.int-spec.ts (la 0.22.0-candidata.1 lee la novedad y la
+                     abre en «Mis hábitos» con el pedido)
+ENVIRONMENT          CI (PostgreSQL 16 real, Testcontainers); el dominio, la APK y el website, en `npm test`; el
+                     teléfono con la 0.22.0-candidata.1 y TalkBack
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md, «La prueba de la
+                     0.22», parte 3 y parte 6
+```
+
+---
+
+## TEST-FR2-014 — «Sí, que los vea»
+
+```text
+TEST_ID              TEST-FR2-014
+TITLE                Responder que sí a un pedido es compartir: con el A3 y el texto vigente, solo para quien pidió
+                     si todavía no comparte, y sumándolo si ya comparte
+LEVEL                Integración (API + PostgreSQL real), dominio, APK (lógica pura) y contrato congelado de la
+                     0.22.0-candidata.1
+PRIORITY             P0 — una ampliación exige una aceptación nueva del titular
+SOURCES              DL-165 D-25 (DEUDA_LEGAJO:6795; :6797: «Con la autorización activa, suma a quien pidió y
+                     nadie más cambia»; :6798: «Sin compartir todavía (nunca o retirada), la activa solo para quien
+                     pidió»; :6802: «con el vínculo terminado ya no se responde») · DL-165 D-17 nueva
+                     (DEUDA_LEGAJO:6720: «"Sí, que los vea" y "No, por ahora" tienen el mismo peso») · D-27
+                     (DEUDA_LEGAJO:6813) · DL-165 D-19 (DEUDA_LEGAJO:6732) · 08 C-12 (08:48: «una ampliación de
+                     categoría o detalle exige nueva versión B2 y nueva aceptación del titular») ·
+                     WP-FORMULARIOS-RONDA-2.md FR-14 y FR-15 (:338-339) y §8.4 (:367-368)
+PRECONDITIONS        Las de TEST-FR2-013, con un pedido de cada profesional; el del entrenador, respondido «No, por
+                     ahora» (TEST-FR2-015).
+SYNTHETIC_FIXTURE    HABITOS; el texto del acto `habitos-compartidos-2026-11-propuesta`; un pedido nuevo del
+                     entrenador sembrado en la base, como si volviera a pedir a los 7 días.
+STEPS                1. La persona lee sus pedidos (API-HBT-08).
+                     2. Un profesional responde el pedido de la persona; ella responde uno que no existe, y «Sí»
+                        sin la autorización que vio.
+                     3. «Sí» a la nutricionista con otro texto; después, con el vigente y sin compartir todavía.
+                     4. El entrenador vuelve a pedir; la persona dice «Sí» con la autorización de antes y con la
+                        vigente.
+                     5. Sin el A3: leer los pedidos y decir «Sí».
+                     6. Un pedido de un vínculo en pausa; reanudado; con el vínculo terminado, «Sí».
+                     7. En la APK 0.22: «Sí, que los vea», con otros profesionales y sin compartir todavía; con
+                        un rechazo.
+EXPECTED             1 → cada pedido con su versión, quién pide y desde qué área. 2 → 404 para los dos primeros;
+                     400 para el tercero. 3 → 409 CONSENT_VERSION_STALE; después, 200 SHARE: la autorización v1,
+                     ACTIVE, con el texto aceptado; la nutricionista RECEIVES, el entrenador DOES_NOT_RECEIVE, y no
+                     se le pregunta por él; el pedido queda ACEPTADO y ya no se lista. 4 → 409 VERSION_CONFLICT;
+                     después, 200, la v2, y todos los reciben; los hechos son Hecho, NoPorAhora y Aceptado.
+                     5 → 403 ACTION_FORBIDDEN en los dos. 6 → no se lista en pausa; vuelve al reanudar; terminado,
+                     no se lista y «Sí» es 422 HABITS_RECIPIENT_NOT_AVAILABLE. 7 → el «Sí» pide leer el texto
+                     antes de «Acepto y comparto», y avisa «Solo ‹Nombre› los va a ver.»; el cuerpo lleva el
+                     pedido, la autorización y el texto que se vieron; un 409 dice que algo cambió mientras
+                     respondía, y se vuelve a leer.
+NEGATIVE_ASSERTIONS  Decir que sí a uno no comparte con nadie más. Sin el texto vigente o sin el A3 no se comparte.
+                     «Sí» y «No, por ahora» son el mismo tipo de botón, sin «recomendado».
+AUTOMATION           test/integration/habitos-de-la-persona.int-spec.ts (««No, por ahora» no cambia nada y no pide
+                     el A3; «Sí, que los vea» sin compartir todavía …», «sin el A3, los pedidos no se leen y «Sí» no
+                     se puede …» y «sumarlo desde «Mis hábitos» (API-HBT-03, también desde la 0.21) …») ·
+                     packages/domain/src/habitos-de-la-persona.test.ts («D-25 · «Sí, que los vea» a un pedido …» y
+                     «los contratos de la ronda 2.1 son estrictos …») · apps/mobile/src/habitos-en-el-telefono.test.ts
+                     (««Sí» lleva el pedido que se vio …», «el «Sí» amplía la lista …», «sin compartir todavía, el
+                     «Sí» avisa …» y «los rechazos que piden volver a leer …») ·
+                     test/integration/lecturas-de-las-apk.int-spec.ts (la 0.22.0-candidata.1 dice «Sí» sin
+                     compartir y con la autorización activa, y lee el 409, el 404 y el 422)
+ENVIRONMENT          CI (PostgreSQL 16 real, Testcontainers); el dominio y la APK, en `npm test`; el teléfono con
+                     la 0.22.0-candidata.1
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md, «La prueba de la
+                     0.22», parte 5
+```
+
+---
+
+## TEST-FR2-015 — «No, por ahora», y cambiar de opinión
+
+```text
+TEST_ID              TEST-FR2-015
+TITLE                «No, por ahora» solo cierra el pedido: no cambia lo compartido ni pide el A3, el profesional no
+                     sabe qué respondió, y la persona lo puede sumar cuando quiera
+LEVEL                Integración (API + PostgreSQL real), dominio, APK y website (lógica pura) y contrato congelado
+                     de la 0.21.0-candidata.1 y la 0.22.0-candidata.1
+PRIORITY             P0 — decir que no siempre se puede, y no es definitivo
+SOURCES              DL-165 D-25 (DEUDA_LEGAJO:6800: «"No, por ahora" solo resuelve el pedido: no cambia la
+                     autorización ni pide el A3»; :6801: «Sumarlo desde "Mis hábitos" (API-HBT-03, también desde la
+                     0.21) da por aceptado su pedido») · DL-165 D-23 (DEUDA_LEGAJO:6783: «nunca qué respondió») ·
+                     DL-165 D-26 (DEUDA_LEGAJO:6804; :6807: «No hay repregunta automática»; :6810: «el pedido la
+                     reemplaza») · DL-165 D-17 nueva (DEUDA_LEGAJO:6707) · 04 RNF-PRI-002 (04:797) ·
+                     WP-FORMULARIOS-RONDA-2.md §8.1, 6 (:316, :328)
+PRECONDITIONS        Las de TEST-FR2-013, con hábitos registrados.
+SYNTHETIC_FIXTURE    HABITOS; profesionales sintéticos de habitos-en-el-telefono.test.ts (Marcos, el nuevo; Paula,
+                     la que no los veía).
+STEPS                1. «No, por ahora» al pedido del entrenador; otra vez el mismo.
+                     2. El entrenador lee API-HBT-07.
+                     3. Sin el A3, «No, por ahora» a otro pedido.
+                     4. La persona suma al entrenador desde «Mis hábitos» («Cambiar con quiénes», API-HBT-03).
+                     5. En la APK: un pedido de un profesional que además es nuevo; actualizar los hábitos sin
+                        compartir con todos; «Cambiar con quiénes» con alguien que dijo que no.
+                     6. En el escritorio: la tarjeta «Sus hábitos» después del «no».
+EXPECTED             1 → 200 NOT_NOW; la autorización no cambia (ninguna escrita); después, 409 VERSION_CONFLICT.
+                     2 → el pedido figura respondido (ANSWERED), sin decir qué. 3 → 200; el pedido queda
+                     NO_POR_AHORA. 4 → su pedido queda ACEPTADO y ya no se lista; el entrenador los ve.
+                     5 → la pregunta «… empezó a acompañarte» no aparece: el pedido la reemplaza; actualizar no
+                     hace aparecer ninguna pregunta; marcar a quien no los veía lo suma y pide el texto. 6 → «Le
+                     pediste acceso el …» y desde cuándo puede volver a pedirlo, sin lo que respondió la persona.
+NEGATIVE_ASSERTIONS  «No, por ahora» no pide el A3 ni el texto. El profesional no recibe una novedad cuando ella
+                     responde. Lo que dice la app después del «no» le recuerda que lo puede cambiar, sin culpa.
+AUTOMATION           test/integration/habitos-de-la-persona.int-spec.ts (««No, por ahora» no cambia nada …», «sin el
+                     A3, … «No, por ahora» sí …» y «sumarlo desde «Mis hábitos» … da por aceptado su pedido …») ·
+                     apps/mobile/src/habitos-en-el-telefono.test.ts («lo que se le dice después nombra a quien
+                     pidió, y el «No» le recuerda que lo puede cambiar», «quien pidió verlos no recibe además la
+                     pregunta por un profesional nuevo» y «cambiar de opinión (D-17 nueva) …») ·
+                     apps/web/test/sus-habitos.test.mjs («6 · sin que se los comparta …») ·
+                     test/integration/lecturas-de-las-apk.int-spec.ts (la 0.22.0-candidata.1 dice «No, por ahora» y
+                     lee el 409 de responderlo otra vez; la 0.21 y la 0.22 suman desde «Cambiar con quiénes» y eso
+                     acepta el pedido)
+ENVIRONMENT          CI (PostgreSQL 16 real, Testcontainers); el dominio, la APK y el website, en `npm test`; el
+                     teléfono con la 0.22.0-candidata.1
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md, «La prueba de la
+                     0.22», parte 3 y parte 4
+```
+
+---
+
+## TEST-FR2-016 — La 0.21 frente a la novedad nueva
+
+```text
+TEST_ID              TEST-FR2-016
+TITLE                Las APK instaladas siguen leyendo todo: la 0.21 muestra la novedad sin destacarla, responde
+                     «Tus hábitos» aparte y cierra el pedido sumando desde «Mis hábitos»
+LEVEL                Integración (API + PostgreSQL real) y contrato congelado de la 0.13.2, la 0.20.0-candidata.1
+                     y la 0.21.0-candidata.1; APK (lógica pura de la 0.22, para lo que no conoce)
+PRIORITY             P0 — compatibilidad: una APK instalada no se actualiza sola
+SOURCES              DL-165 D-28 (DEUDA_LEGAJO:6819: «La 0.21 recibe la novedad y la muestra con su texto, sin
+                     destacarla; al abrirla se queda en Novedades») · DL-165 D-23 (DEUDA_LEGAJO:6776: «un campo
+                     nuevo en `NovedadSchema` dejaría sin leer el centro a las APK instaladas») · D-27
+                     (DEUDA_LEGAJO:6815: «La 0.21 sí lo dice») · DL-152 (lo que lee cada APK, congelado) ·
+                     WP-FORMULARIOS-RONDA-2.md §8.1, 7 (:329) y §8.5 (:390) · 09v7 T19 (un cliente instalado no
+                     cambia de forma)
+PRECONDITIONS        Congeladas en `packages/domain/fixtures/lecturas-de-la-apk/`, la 0.13.2, la 0.20.0-candidata.1,
+                     la 0.21.0-candidata.1 y la 0.22.0-candidata.1; una persona con A3, una nutricionista y un
+                     entrenador con su vínculo y su B2.
+SYNTHETIC_FIXTURE    HABITOS; una nota de coordinación; «Tus hábitos» v2 pedida por el entrenador.
+STEPS                1. El entrenador pide acceso; cada APK que lee el centro de novedades lo lee y abre la
+                        novedad nueva.
+                     2. La 0.21 lee «Tus hábitos» v2 (FRI-01) y la responde (FRI-04).
+                     3. Con un pedido esperando, la 0.21 lee y cambia «Mis hábitos» (HBT-01 a 04) y suma al
+                        entrenador desde «Cambiar con quiénes».
+                     4. La 0.20, que no declara `forms-format-3`, lee la bandeja con una Solicitud de formato 3.
+                     5. En la APK 0.22: a qué pantalla lleva una vista que no conoce.
+                     6. En un teléfono con la 0.21: la novedad y «Tus hábitos» aparte.
+EXPECTED             1 → cada respuesta se lee con el esquema de esa APK, sin rechazos: `kind` y `open.view` son
+                     texto (HABITS_ACCESS_REQUESTED, MY_HABITS). 2 → formato 3, una sola parte `tus_habitos`; 201,
+                     y agrega una versión de los hábitos. 3 → «Mis hábitos» no cambia de forma; el pedido del
+                     entrenador queda ACEPTADO. 4 → no la ve, como a ninguna de la ronda 2.1, que son de formato
+                     3: la bandeja no la trae, y la estructura y el detalle son el 404 de lo inexistente.
+                     5 → ninguna: queda leída en el centro, con su texto. 6 → la novedad, sin
+                     «Importante», se queda en Novedades al tocarla; «Tus hábitos» dice «Parte 1 de 1».
+NEGATIVE_ASSERTIONS  Ninguna lectura congelada cambia de forma: lo nuevo va en operaciones nuevas (HBT-06 a 09) y
+                     en un tipo de novedad nuevo, sin campos nuevos. El texto del acto no cambia, así que nadie
+                     tiene que volver a aceptarlo.
+AUTOMATION           test/integration/lecturas-de-las-apk.int-spec.ts («las novedades, los avisos del teléfono …»,
+                     «el formato 3: … y la parte «Tus hábitos»», ««Mis hábitos»: leerlos, contarlos, compartirlos
+                     …» y el cierre «leyó con su esquema cada respuesta que esta APK lee …», para cada APK
+                     congelada) · packages/domain/src/lecturas-de-la-apk.test.ts (las cuatro vigentes y el contrato
+                     de hoy) · packages/domain/src/habitos-de-la-persona.test.ts («DL-152 · las APK congeladas hasta
+                     la 0.20 no leen API-HBT …») · apps/mobile/src/novedades-en-el-telefono.test.ts («una vista que
+                     no conoce (como `MY_HABITS` para la 0.21) …») · test/integration/plantillas-de-inicio.int-spec.ts
+                     («FRM-03: … su Solicitud la ve solo la app que lee el formato 3»)
+ENVIRONMENT          CI (PostgreSQL 16 real, Testcontainers); el dominio y la APK, en `npm test`; un teléfono con
+                     la 0.21.0-candidata.1, opcional
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md, «La prueba de la
+                     0.22», parte 7 (opcional)
+```
+
+---
+
+**Lo que estos oráculos no cubren y queda a la vista.** El recorrido con TalkBack (en la 0.21 y en la 0.22), la pregunta
+por un profesional nuevo en el teléfono, y la revisión legal del texto del acto, de D-9 y de la D-17 nueva (el pedido de
+acceso) antes de usarlos con personas reales (y el gate del 08 §42). Los tres están en
+`EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`.
