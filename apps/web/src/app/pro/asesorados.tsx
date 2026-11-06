@@ -53,7 +53,7 @@ export function Asesorados({
   const mas = listo && !listo.completa ? '+' : '';
 
   return (
-    <section className="tarjeta-del-espacio directorio" aria-labelledby={`${id}-titulo`}>
+    <section id="tus-asesorados" className="tarjeta-del-espacio directorio" aria-labelledby={`${id}-titulo`} tabIndex={-1}>
       <div className="tarjeta-del-espacio__cabecera">
         <Icono nombre="asesorados" tamano={24} />
         <h2 id={`${id}-titulo`}>Tus asesorados</h2>

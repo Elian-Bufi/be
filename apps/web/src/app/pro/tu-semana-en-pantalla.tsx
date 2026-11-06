@@ -19,7 +19,7 @@ import { Retrato } from '../../components/retrato';
 import { diaDelAnioEnCurso } from '../../lib/formato';
 import { useNombres } from '../../lib/nombres-ocultos';
 import { ICONO_DEL_AREA_DE_CARTERA, rutaQueResuelve } from './pendiente-en-una-fila';
-import type { EstadoDeLaCartera } from './pendientes';
+import type { EstadoDeLaCartera } from './te-toca-a-vos';
 import { claveDeLaFicha, FICHAS_POR_DIA, semanaDeRevisiones, type ColumnaDeLaSemana, type FichaDeLaSemana } from './tu-semana';
 
 const SEMANA_CORTA = new Intl.DateTimeFormat('es-AR', { weekday: 'short', timeZone: 'UTC' });

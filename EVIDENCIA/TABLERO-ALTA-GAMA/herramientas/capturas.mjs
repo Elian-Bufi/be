@@ -271,6 +271,26 @@ async function capturarTodo() {
             await page.screenshot({ path: path.join(carpeta, `${nombre}-${ancho}-pantalla.png`) });
             // TB-10 (A13 de la propuesta): en el Resumen, dónde terminan las tarjetas, el valor de cada indicador y sus
             // minigráficos, y el alto de la tarjeta más alta, para comparar con la primera pantalla de cada tamaño.
+            // TB-06 y TB-11 (§1 del paquete): en el Espacio, dónde terminan las cifras, «Tu semana» y las primeras tres
+            // personas de «Te toca a vos», y dónde empieza y termina «Esperan respuesta».
+            if (nombre === 'espacio') {
+              const medida = await page.evaluate(() => {
+                const caja = (selector) => document.querySelector(selector)?.getBoundingClientRect() ?? null;
+                const personas = [...document.querySelectorAll('.mesa-persona')].map((e) => Math.round(e.getBoundingClientRect().bottom));
+                const esperan = caja('#esperan-respuesta');
+                return {
+                  cifras: caja('.cifras-del-espacio') ? Math.round(caja('.cifras-del-espacio').bottom) : null,
+                  tuSemana: caja('.tu-semana') ? Math.round(caja('.tu-semana').bottom) : null,
+                  personas: personas.slice(0, 3),
+                  esperanArriba: esperan ? Math.round(esperan.top) : null,
+                  esperanAbajo: esperan ? Math.round(esperan.bottom) : null,
+                  saludo: document.querySelector('.encabezado-del-espacio__saludo')?.textContent ?? null,
+                  cifrasEnPalabras: [...document.querySelectorAll('.cifra-del-espacio__principal')].map((e) => e.textContent.replace(/\s+/g, ' ').trim()),
+                };
+              });
+              fila.primeraPantalla ??= {};
+              fila.primeraPantalla[`${tema}-${ancho}`] = { ...medida, alto, personasQueEntran: medida.personas.filter((b) => b <= alto).length, entraEsperan: medida.esperanArriba !== null && medida.esperanArriba < alto };
+            }
             if (nombre.startsWith('resumen')) {
               const medida = await page.evaluate(() => {
                 const cajas = (selector) => [...document.querySelectorAll(selector)].map((e) => e.getBoundingClientRect());

@@ -15,7 +15,8 @@
 >
 > **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-010 (TB-09), TEST-TAG-005 (con los pares de TB-03, TB-04, TB-05,
 > TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
-> (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49) y TEST-TAG-032 (el arreglo de base del quinto tramo). Los demás se
+> (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49), TEST-TAG-032 (el arreglo de base del quinto tramo) y TEST-TAG-008
+> (TB-11). Los demás se
 > escriben con su parte (§10 del paquete).
 
 ---
@@ -616,4 +617,49 @@ AUTOMATION           scripts/guardian-de-peticiones.test.mjs («TEST-TAG-032 · 
 ENVIRONMENT          CI y local, sin servicios; el paso 5, en capturas-del-tablero
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR y dos corridas de capturas-del-tablero con el mismo código y las
                      mismas cuentas
+```
+
+---
+
+## TEST-TAG-008 — El orden de «Te toca a vos» sale de DL-107
+
+```text
+TEST_ID              TEST-TAG-008
+TITLE                «Te toca a vos» agrupa por persona sin inventar otro orden: las personas por su pendiente más
+                     urgente según compararPendientes, sus renglones en ese orden, y «Por pendiente» exactamente como
+                     llega de la API
+LEVEL                Unidad (funciones puras del website, sin React)
+PRIORITY             P1 — ubicar, nunca calificar: el orden de la mesa no puede salir de la actividad de la persona
+SOURCES              DL-163 D-4 («las personas se ordenan por su pendiente más urgente»; «se agrupa por identityId,
+                     nunca por nombre»; «compararPendientes intacta, con tres pruebas de orden») · WP-TABLERO-ALTA-GAMA
+                     TB-11 · DL-107 · TA-32 a TA-35
+PRECONDITIONS        Ninguna: porPersona, delCarril, loQueEspera, saludo y primerNombre, en
+                     apps/web/src/app/pro/mesa.ts; compararPendientes y ordenarPendientes, de @be/domain.
+SYNTHETIC_FIXTURE    Filas de API-CAR-01 armadas en la prueba (octubre de 2026), con los siete tipos, tres áreas y
+                     nombres repetidos entre personas distintas; 300 carteras al azar con una semilla fija, ordenadas
+                     como las ordena la API.
+STEPS                1. Agrupar una cartera chica con una persona que tiene una vencida y un borrador.
+                     2. Agrupar dos personas distintas con el mismo nombre.
+                     3. En cada cartera al azar: el carril de «Te toca a vos», su agrupado y el agrupado de las mismas
+                        filas mezcladas.
+                     4. Partir los siete tipos en los dos carriles.
+                     5. Armar «Esperan respuesta» con formularios, solicitudes (una aceptada) e invitaciones (una vencida).
+                     6. El saludo con títulos, un emoji, sin nombre y con los nombres ocultos.
+EXPECTED             1 → la persona con la vencida de más días primero; sus renglones, la vencida y después el borrador.
+                     2 → dos grupos de un renglón.
+                     3 → «Por pendiente» es la misma secuencia que llegó, sin el otro carril; el agrupado tiene las
+                        mismas filas, cada persona una vez, sus renglones y las personas en el orden de
+                        compararPendientes; mezcladas, las mismas personas en el mismo orden.
+                     4 → revisiones, planes y tomas te tocan; los formularios esperan; ninguno en los dos.
+                     5 → solo lo que espera, lo más antiguo primero.
+                     6 → «Buen día, Sofía» con «Lic. Sofía Paz»; a secas sin nombre o con los nombres ocultos.
+NEGATIVE_ASSERTIONS  Ninguna persona sube o baja por su nombre, su actividad ni el orden de llegada. Un nombre repetido
+                     no junta a dos personas. Los textos nuevos no tienen términos de la cartera, «cumplimiento»,
+                     «adherencia», «racha» ni «px». Mutaciones verificadas: agrupando por nombre fallan tres casos; sin
+                     ordenar las personas, falla el paso 3; reordenando «Por pendiente», falla el paso 3.
+AUTOMATION           apps/web/test/mesa.test.mjs («TEST-TAG-008 · …», tres casos, y cinco más), en
+                     `npm run test -w @be/web`; T13 (scripts/copy-pantallas.test.cjs) suma mesa.ts al Espacio
+ENVIRONMENT          CI y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, el Espacio de los dos profesionales
+                     con el saludo, las cifras y la mesa en dos carriles, y en `primeraPantalla` cuántas personas entran
 ```

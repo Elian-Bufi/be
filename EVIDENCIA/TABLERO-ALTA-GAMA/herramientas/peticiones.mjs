@@ -18,23 +18,24 @@ export const ESPERA_MAXIMA_MS = 30_000;
  * dónde sale: el encabezado (la cuenta y las novedades) y lo que lee la página.
  */
 export const PETICIONES_AL_ABRIR = {
-  // El Espacio: la cuenta, las novedades, los pendientes (API-CAR-01), los vínculos y las solicitudes enviadas.
-  'sofia-paz/espacio': 5,
+  // El Espacio: la cuenta, las novedades, los pendientes (API-CAR-01), los vínculos, las solicitudes enviadas y, desde
+  // TB-06, las invitaciones sin usar, para «Esperan respuesta».
+  'sofia-paz/espacio': 6,
   // El Resumen: la cuenta, las novedades, el resumen por área y los vínculos (el marco), la cobertura de las tres áreas,
   // la línea de tiempo, los indicadores guardados y sus cuatro series, el objetivo vigente, las solicitudes respondidas
   // (TB-49) y la composición de la última toma (TB-24).
   'sofia-paz/resumen': 18,
   'sofia-paz/resumen-federico': 18,
   'sofia-paz/analizar': 11,
-  // «Analizar» con Calorías elegida en pantalla: lo de «Analizar» más la serie de Calorías y lo que pide el gráfico.
-  'sofia-paz/analizar-calorias': 14,
+  // «Analizar» con Calorías elegida en pantalla: lo de «Analizar» más la serie de Calorías (medido en la corrida de cfc8855).
+  'sofia-paz/analizar-calorias': 12,
   'sofia-paz/nutricion': 7,
   'sofia-paz/antropometria': 4,
   // La composición de un año: las cuatro lecturas de 92 días de API-ANT-06 (TA-24) y las del marco.
   'sofia-paz/antropometria-composicion': 7,
   'sofia-paz/analizar-composicion': 5,
   'sofia-paz/resumen-hector': 18,
-  'martin-acosta/espacio': 5,
+  'martin-acosta/espacio': 6,
   'martin-acosta/resumen': 14,
   'martin-acosta/entrenamiento': 8,
 };

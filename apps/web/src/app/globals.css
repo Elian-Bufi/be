@@ -14514,3 +14514,215 @@ a.cifras-desde-la-revision__celda:focus-visible {
   margin: 0.2rem 0 0;
   font-size: 0.875rem;
 }
+
+/* ─── WP-TABLERO-ALTA-GAMA TB-06 y TB-11: el saludo, las tres cifras y la mesa en dos carriles ─────────────────── */
+
+.encabezado-del-espacio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.encabezado-del-espacio__saludo {
+  margin: 0;
+  font-family: var(--letra-marca, Poppins), var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* Tres cifras en fila desde 48 rem; debajo, una por renglón. Ningún color dice nada: el elegido va invertido. */
+.cifras-del-espacio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .cifras-del-espacio {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.cifra-del-espacio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.cifra-del-espacio__principal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin: -0.25rem -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cifra-del-espacio__principal:hover {
+  background: var(--fondo-suave);
+}
+
+.cifra-del-espacio__principal[aria-pressed='true'] {
+  border-color: var(--texto);
+}
+
+.cifra-del-espacio__numero {
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifra-del-espacio__nombre {
+  font-weight: 600;
+}
+
+.cifra-del-espacio__desglose {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+p.cifra-del-espacio__desglose {
+  display: block;
+}
+
+.cifra-del-espacio__parte {
+  min-height: 36px;
+  padding: 0.15rem 0.7rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.cifra-del-espacio__parte:hover {
+  background: var(--fondo-suave);
+}
+
+.cifra-del-espacio__parte[aria-pressed='true'] {
+  border-color: var(--texto);
+  background: var(--texto);
+  color: var(--superficie);
+}
+
+.cifra-del-espacio .cifra {
+  font-variant-numeric: tabular-nums;
+}
+
+.espacio-profesional__costado {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Los dos modos de «Te toca a vos», con la forma de las vistas con nombre. */
+.mesa__modo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mesa-por-persona,
+.mesa-persona__renglones,
+.esperan__lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mesa-persona {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.mesa-persona:first-child {
+  border-top: 0;
+  padding-top: 0.25rem;
+}
+
+.mesa-persona__quien {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.mesa-persona__nombre {
+  font-weight: 600;
+}
+
+/* Un renglón por pendiente: el área, qué está pendiente y su verbo. Angosto, el verbo baja. */
+.mesa-renglon,
+.esperan__renglon {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  min-height: 44px;
+  padding: 0.25rem 0 0.25rem 2.25rem;
+}
+
+.mesa-renglon .pendiente__area {
+  grid-column: 1 / -1;
+  color: var(--tenue);
+}
+
+@media (min-width: 48rem) {
+  .mesa-renglon {
+    grid-template-columns: 10rem minmax(0, 1fr) auto;
+  }
+
+  .mesa-renglon .pendiente__area {
+    grid-column: auto;
+  }
+}
+
+.esperan__renglon {
+  padding-left: 0;
+  border-top: 1px solid var(--borde);
+}
+
+.esperan__renglon:first-child {
+  border-top: 0;
+}
+
+.esperan__quien {
+  grid-column: 1 / -1;
+  font-weight: 600;
+}
+
+.esperan__que {
+  min-width: 0;
+}
+
+.esperan__falla {
+  margin: 0;
+}

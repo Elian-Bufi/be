@@ -902,3 +902,27 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   vacía (el punto de «Lic.» iba sin escapar y quitaba toda palabra): ahora busca los nombres de verdad. *Otra opción:*
   dejar la ficha como estaba y medir con un margen de seis peticiones, que esconde justo una subida chica como las dos
   lecturas de TB-24 y TB-25.
+- **TA-31 · El saludo va debajo del título, que sigue siendo «Espacio profesional».** «Buen día» de 5 a 12, «Buenas
+  tardes» de 12 a 20 y «Buenas noches» el resto, con la hora del navegador, y la primera palabra del nombre con que la
+  ven las personas (TA-10) que no sea un título («Lic.», «Dra», «Prof.»); sin nombre todavía, o con «Ocultar nombres»,
+  a secas. El título de la página no cambia: el lector de pantalla y la pestaña siguen diciendo dónde se está. *Otra
+  opción:* el saludo como título, que deja la página sin nombre propio.
+- **TA-32 · Las vistas de «Pendientes» pasan a las cifras.** «Te toca a vos» y su desglose (Revisiones, Planes y Tomas)
+  son botones con `aria-pressed` que filtran el carril; tocar el elegido vuelve a «Todo». La fila de vistas sale de la
+  tarjeta, que conserva «Más filtros» (el área, un tipo exacto y el período del último registro) y suma «Por persona /
+  Por pendiente». «Formularios» deja de ser una vista: los formularios van a «Esperan respuesta». *Otra opción:* dejar
+  las vistas también en la tarjeta, dos controles del mismo estado en la misma pantalla.
+- **TA-33 · «Esperan respuesta» va por antigüedad, sin selector.** Los formularios sin responder (de la cartera, con el
+  monograma y «Ver la solicitud»), las solicitudes de vínculo sin responder (sin monograma, «Ver las solicitudes» abre
+  la lista) y las invitaciones sin usar («Todavía sin persona», con el área y el vencimiento; «Ver las invitaciones»
+  abre el cuadro de invitar, donde se anulan). Lo que espera hace más va primero. La lectura nueva es la de las
+  invitaciones (`state=PENDING`), que se repite al cerrar el cuadro de invitar. «Personas» cuenta las de «Tus
+  asesorados» y se desglosa por área con acceso. *Otra opción:* el selector «Por persona / Por pendiente» también acá,
+  que no sirve para las invitaciones, que todavía no tienen persona.
+- **TA-34 · Por persona es el modo por omisión, y la elección se recuerda en el navegador.** Es lo que pide D-4; «Por
+  pendiente» es la tabla de DL-107 tal cual, a un clic. Se guarda solo el modo, sin datos de personas, y sin
+  almacenamiento vale por la visita. *Otra opción:* que no se recuerde, y quien prefiere la tabla la elige en cada visita.
+- **TA-35 · La mesa: «Te toca a vos» a la izquierda y, a la derecha, «Esperan respuesta» encima de «Tus asesorados».**
+  Desde 75 rem, como el corte que ya tenía el Espacio; más angosto, uno debajo del otro. Las cifras de «Esperan
+  respuesta» y «Personas» llevan a su sección, que toma el foco. *Otra opción:* tres columnas, que a 1440 deja «Te toca a
+  vos» demasiado angosto para el renglón de cada pendiente.

@@ -20,8 +20,17 @@
  *   se dice.
  * - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita (el retorno del inicio
  *   de sesión admite `/pro` a secas).
+ *
+ * WP-TABLERO-ALTA-GAMA TB-06 y TB-11 (DL-163 D-3 y D-4; TA-16):
+ * - **El encabezado:** el saludo («Buen día, Sofía»), con el nombre con que la ven las personas, de los vínculos ya
+ *   leídos (TA-10), o a secas; y las tres cifras (`cifras-del-espacio.tsx`). El filtro de «Te toca a vos» vive acá: lo
+ *   eligen las cifras y «Más filtros».
+ * - **La mesa:** «Te toca a vos» por persona (`te-toca-a-vos.tsx`), y al lado «Esperan respuesta»
+ *   (`esperan-respuesta.tsx`) encima de «Tus asesorados». La única lectura nueva es la de las invitaciones sin usar
+ *   (API-INV-02), para «Esperan respuesta»; las solicitudes ya se leían.
+ * - **Por persona o por pendiente** se recuerda en el navegador (§5 del paquete), sin datos de personas.
  */
-import { COPY_INVITACION, COPY_VINCULO, numero } from '@be/domain';
+import { COPY_INVITACION, COPY_VINCULO, numero, type FiltroDePendientes } from '@be/domain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../components/ayuda';
@@ -35,13 +44,46 @@ import { useSesionRequerida } from '../../lib/sesion-requerida';
 import type { Periodo } from './advisees/periodo';
 import { Asesorados } from './asesorados';
 import { InvitarPersona } from './invitar-persona';
-import { Pendientes, type PaginaDeCartera } from './pendientes';
+import { TeTocaAVos, TODO, type PaginaDeCartera } from './te-toca-a-vos';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
 import { TuSemana } from './tu-semana-en-pantalla';
-import { areaUnicaDelProfesional } from './directorio';
+import { areaUnicaDelProfesional, armarElDirectorio } from './directorio';
 import { EsperandoSesion } from '../../lib/sesion';
-import { anotarNombrePropio, nombrePropioEn } from '../../lib/nombre-propio';
+import { anotarNombrePropio, nombrePropioEn, useNombrePropio } from '../../lib/nombre-propio';
+import { useNombres } from '../../lib/nombres-ocultos';
+import { CifrasDelEspacio, type Cuenta } from './cifras-del-espacio';
+import { EsperanRespuesta, type ListaQueEspera } from './esperan-respuesta';
+import { delCarril, personasPorArea, saludo as saludoDelEspacio, TIPOS_QUE_ESPERAN, TIPOS_QUE_TE_TOCAN, type ModoDeLaMesa } from './mesa';
+
+/** Por persona o por pendiente: una preferencia del navegador, sin datos de personas. Puede no haber dónde guardarla. */
+const CLAVE_DEL_MODO = 'be-mesa-modo';
+function useModoDeLaMesa(): [ModoDeLaMesa, (m: ModoDeLaMesa) => void] {
+  const [modo, setModo] = useState<ModoDeLaMesa>('persona');
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(CLAVE_DEL_MODO) === 'pendiente') setModo('pendiente');
+    } catch {
+      // Sin almacenamiento, por persona.
+    }
+  }, []);
+  const elegir = useCallback((m: ModoDeLaMesa) => {
+    setModo(m);
+    try {
+      window.localStorage.setItem(CLAVE_DEL_MODO, m);
+    } catch {
+      // Vale por la visita.
+    }
+  }, []);
+  return [modo, elegir];
+}
+
+/** Una lista completa, como la espera «Esperan respuesta». */
+function comoLista<T>(estado: { tipo: string; items?: readonly T[]; completa?: boolean }, filtrar: (items: readonly T[]) => readonly T[] = (x) => x): ListaQueEspera<T> {
+  if (estado.tipo === 'listo' && estado.items) return { tipo: 'listo', items: filtrar(estado.items), completa: estado.completa ?? true };
+  return estado.tipo === 'error' ? { tipo: 'error' } : { tipo: 'cargando' };
+}
+const cuentaDe = (l: ListaQueEspera<unknown>, n?: number): Cuenta => (l.tipo === 'listo' ? { n: n ?? l.items.length, completa: l.completa } : null);
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -125,6 +167,16 @@ export function EspacioProfesional() {
     sesionPerdida,
     DE_UNA_LISTA,
   );
+  // TB-06: las invitaciones sin usar, para «Esperan respuesta». Es la única lectura nueva del Espacio.
+  const invitaciones = useListaCompleta(
+    useMemo(() => (token && id ? (filtro: { cursor?: string }) => api.consultarInvitaciones(token, { state: 'PENDING', limit: '20', cursor: filtro.cursor }) : null), [token, id]),
+    sesionPerdida,
+    DE_UNA_LISTA,
+  );
+  const [filtro, setFiltro] = useState<FiltroDePendientes>(TODO);
+  const [modo, setModo] = useModoDeLaMesa();
+  const nombres = useNombres();
+  const nombrePropio = useNombrePropio();
 
   const [formulario, setFormulario] = useState(false);
   // WP-INVITACION (DL-136): invitar por enlace, QR o código es el camino principal; el identificador queda como alternativa.
@@ -158,12 +210,28 @@ export function EspacioProfesional() {
     void cartera.recargar();
     void vinculos.recargar();
     void enviadas.recargar();
+    void invitaciones.recargar();
   };
   const propias = enviadas.estado.tipo === 'listo' ? solicitudesEnviadasPor(enviadas.estado.items, yo.id) : null;
   // DL-146: si trabajás en una sola área, invitar y solicitar la traen elegida.
   const areaSugerida = vinculos.estado.tipo === 'listo' ? areaUnicaDelProfesional(vinculos.estado.items, yo.id) : null;
   const sinResponder = propias ? propias.filter((s) => s.state === 'PENDIENTE').length : 0;
   const hoy = cartera.estado.tipo === 'listo' ? cartera.estado.primera.meta.today : null;
+  const zona = cartera.estado.tipo === 'listo' ? cartera.estado.primera.meta.timeZone : 'America/Argentina/Buenos_Aires';
+  const leida = cartera.estado.tipo === 'listo' ? cartera.estado : null;
+  // TB-06: las cifras. Cada una sale de su lista leída; sin lectura, no hay número.
+  const formularios = leida ? delCarril(leida.items, TIPOS_QUE_ESPERAN) : null;
+  const solicitudesQueEsperan = comoLista(enviadas.estado, (items) => solicitudesEnviadasPor(items, yo.id).filter((s) => s.state === 'PENDIENTE'));
+  const invitacionesQueEsperan = comoLista(invitaciones.estado, (items) => items.filter((i) => i.state === 'PENDING'));
+  const cuentaDeFormularios: Cuenta = formularios && leida ? { n: formularios.length, completa: leida.completa } : null;
+  const cuentaDeSolicitudes = cuentaDe(solicitudesQueEsperan);
+  const cuentaDeInvitaciones = cuentaDe(invitacionesQueEsperan);
+  const totalQueEspera: Cuenta =
+    cuentaDeFormularios && cuentaDeSolicitudes && cuentaDeInvitaciones
+      ? { n: cuentaDeFormularios.n + cuentaDeSolicitudes.n + cuentaDeInvitaciones.n, completa: cuentaDeFormularios.completa && cuentaDeSolicitudes.completa && cuentaDeInvitaciones.completa }
+      : null;
+  const directorio = vinculos.estado.tipo === 'listo' ? armarElDirectorio(vinculos.estado.items, yo.id, nombres.delAsesorado) : null;
+  const elSaludo = saludoDelEspacio(new Date().getHours(), nombrePropio, nombres.ocultos);
 
   return (
     <Pagina
@@ -181,12 +249,43 @@ export function EspacioProfesional() {
         </>
       }
     >
+      {/* TB-06: el saludo y las tres cifras, que filtran «Te toca a vos» o llevan a su sección. */}
+      <CifrasDelEspacio
+        saludo={elSaludo}
+        teTocan={leida ? delCarril(leida.items, TIPOS_QUE_TE_TOCAN) : null}
+        completa={leida?.completa ?? true}
+        filtro={filtro}
+        onFiltro={setFiltro}
+        esperan={{ total: totalQueEspera, formularios: cuentaDeFormularios, solicitudes: cuentaDeSolicitudes, invitaciones: cuentaDeInvitaciones }}
+        personas={{ total: directorio && vinculos.estado.tipo === 'listo' ? { n: directorio.length, completa: vinculos.estado.completa } : null, porArea: directorio ? personasPorArea(directorio) : [] }}
+      />
       {/* TB-07: las revisiones que acordaste, de hoy a siete días. Sale de la cartera ya leída: ninguna lectura nueva. */}
       <TuSemana cartera={cartera.estado} />
-      {/* Primero lo que hay que hacer (API-CAR-01, DL-107); al lado, a quién abrir. */}
+      {/* TB-11: lo que te toca, por persona; al lado, lo que espera a la persona y a quién abrir. */}
       <div className="espacio-profesional__cuerpo">
-        {/* Cada lista con su «Reintentar», que vuelve a leer solo esa; «Actualizar» lee las tres. */}
-        <Pendientes cartera={cartera.estado} periodo={periodo} onPeriodo={setPeriodo} onActualizar={actualizar} onReintentar={() => void cartera.recargar()} onVerMas={() => void cartera.verMas()} />
+        {/* Cada lista con su «Reintentar», que vuelve a leer solo esa; «Actualizar» lee todas. */}
+        <TeTocaAVos
+          cartera={cartera.estado}
+          periodo={periodo}
+          onPeriodo={setPeriodo}
+          filtro={filtro}
+          onFiltro={setFiltro}
+          modo={modo}
+          onModo={setModo}
+          onActualizar={actualizar}
+          onReintentar={() => void cartera.recargar()}
+          onVerMas={() => void cartera.verMas()}
+        />
+        <div className="espacio-profesional__costado">
+        <EsperanRespuesta
+          cartera={cartera.estado}
+          solicitudes={solicitudesQueEsperan}
+          invitaciones={invitacionesQueEsperan}
+          hoy={hoy ?? ''}
+          zona={zona}
+          onVerSolicitudes={() => setSolicitudes({ abiertas: true, aviso: null })}
+          onVerInvitaciones={() => setInvitar(true)}
+        />
         <Asesorados vinculos={vinculos.estado} profesionalId={yo.id} onReintentar={() => void vinculos.recargar()} onVerMas={() => void vinculos.verMas()}>
           <button type="button" className="boton boton--enlace directorio__solicitudes" aria-haspopup="dialog" onClick={() => setSolicitudes({ abiertas: true, aviso: null })}>
             <Icono nombre="solicitar" tamano={18} />
@@ -199,6 +298,7 @@ export function EspacioProfesional() {
             </span>
           ) : null}
         </Asesorados>
+        </div>
       </div>
 
       <InvitarPersona
@@ -206,7 +306,11 @@ export function EspacioProfesional() {
         areaSugerida={areaSugerida}
         token={token}
         sesionPerdida={sesionPerdida}
-        onCerrar={() => setInvitar(false)}
+        onCerrar={() => {
+          setInvitar(false);
+          // Lo creado o anulado en el cuadro cambia «Esperan respuesta».
+          void invitaciones.recargar();
+        }}
         onConElIdentificador={() => {
           setInvitar(false);
           setFormulario(true);
