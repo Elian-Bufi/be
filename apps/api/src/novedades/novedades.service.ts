@@ -296,8 +296,9 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
       occurredAt: f.momentoDeOcurrencia?.toISOString() ?? null,
       recordedAt: f.momentoDeRegistro.toISOString(),
       readAt: f.lectura?.momentoDeRegistro.toISOString() ?? null,
-      // DL-164: `FORMS` abre la Solicitud que la persona tiene que confirmar; la referencia es esa Solicitud.
-      open: { view: vista, referenceId: vista === 'ADVISEE' ? ficha : vista === 'NUTRITION_REVIEW' || vista === 'TRAINING_REVIEW' || vista === 'FORMS' ? f.referenciaId : null },
+      // DL-164: `FORMS` abre la Solicitud que la persona tiene que confirmar; la referencia es esa Solicitud. DL-165 (ronda
+      // 2.1): `MY_HABITS` abre «Mis hábitos» con el pedido de acceso que la referencia nombra.
+      open: { view: vista, referenceId: vista === 'ADVISEE' ? ficha : vista === 'NUTRITION_REVIEW' || vista === 'TRAINING_REVIEW' || vista === 'FORMS' || vista === 'MY_HABITS' ? f.referenciaId : null },
     };
   });
 }

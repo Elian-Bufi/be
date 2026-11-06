@@ -9,6 +9,12 @@
  * - API-HBT-04 · `POST /me/habits/sharing/withdrawal` — la persona: dejar de compartirlos, para todos a la vez.
  * - API-HBT-05 · `GET /advisees/{adviseeId}/habits` — el profesional: lo vigente, si la persona se los comparte a él y el
  *   PDP lo permite. Si no, el 404 de lo inexistente: no se entera de que hay hábitos.
+ * Ronda 2.1 (2026-11-06; D-17 nueva de Dirección): «Pedir acceso a sus hábitos».
+ * - API-HBT-06 · `POST /advisees/{adviseeId}/habits/access-requests` — el profesional pide acceso, desde su área.
+ * - API-HBT-07 · `GET /advisees/{adviseeId}/habits/status` — el profesional: si los recibe, lo más nuevo que ve, su último
+ *   pedido y si puede pedir de nuevo. Con eso el cajón sugiere sumar «Tus hábitos» (D-22).
+ * - API-HBT-08 · `GET /me/habits/access-requests` — la persona: los pedidos que esperan su respuesta.
+ * - API-HBT-09 · `POST /me/habits/access-requests/{accessRequestId}/answer` — la persona responde: sí o no, por ahora.
  *
  * Las de la persona (01 a 04) las lee la APK 0.21.0-candidata.1, y su forma quedó congelada (DL-152): lo que la cambie va
  * en una operación nueva. La 05 es del website, y la 0.20 no conoce ninguna. Objetos estrictos, como el resto de los
@@ -18,7 +24,7 @@ import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
 import { AprobacionDelTextoSchema } from './contratos-evidencia-visual';
 import { RespuestaDeCampoV2EntradaSchema, RespuestaDeCampoV2Schema, SeccionDePlantillaV2Schema } from './contratos-formularios-v2';
-import { ResumenDeActorSchema, ResumenDeAlcanceSchema, TokenDeVersionSchema } from './contratos-vinculo';
+import { AlcanceSchema, ResumenDeActorSchema, ResumenDeAlcanceSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 /** De dónde salió una versión: un formulario respondido o confirmado, o «Mis hábitos». Nunca de qué formulario ni de qué área. */
 export const OrigenDeHabitosSchema = z.enum(['FORM', 'MY_HABITS']);
@@ -146,3 +152,96 @@ export const HabitosCompartidosResponseSchema = z.strictObject({
   }),
 });
 export type HabitosCompartidosResponse = z.infer<typeof HabitosCompartidosResponseSchema>;
+
+// ─── Ronda 2.1 (2026-11-06) · «Pedir acceso a sus hábitos» y lo que el profesional sabe (D-17 nueva; D-22 a D-25) ─────
+// Operaciones nuevas, no cambios de las cuatro que lee la 0.21 (DL-152; DL-137 D-7): 06 y 07 son del website; 08 y 09, de
+// la APK 0.22. Lo que dicen del profesional sale solo de lo que él ya puede ver: sus propias solicitudes y respuestas, y lo
+// que la persona le comparte (API-HBT-05). Nunca si la persona le contó sus hábitos a otro.
+
+/** El estado de un pedido de acceso para quien lo hizo: esperando la respuesta, o respondido (sin decir qué: lo dice HBT-05). */
+export const EstadoDelPedidoDeAccesoSchema = z.enum(['PENDING', 'ANSWERED']);
+export type EstadoDelPedidoDeAcceso = z.infer<typeof EstadoDelPedidoDeAccesoSchema>;
+
+/** Un pedido de acceso, como lo ve el profesional que lo hizo. */
+export const PedidoDeAccesoDelProfesionalSchema = z.strictObject({
+  accessRequestId: IdOpaco,
+  /** El área desde la que lo pidió: es lo que dice el «para qué» de la novedad. */
+  scope: AlcanceSchema,
+  status: EstadoDelPedidoDeAccesoSchema,
+  requestedAt: Instante,
+});
+export type PedidoDeAccesoDelProfesional = z.infer<typeof PedidoDeAccesoDelProfesionalSchema>;
+
+// ─── API-HBT-06 — El profesional pide acceso ───────────────────────────────────────────────────
+export const PedirAccesoAHabitosRequestSchema = z.strictObject({
+  /** El área desde la que lo pide: tiene que tener el vínculo vigente con la persona en esa área. */
+  scope: AlcanceSchema,
+});
+export type PedirAccesoAHabitosRequest = z.infer<typeof PedirAccesoAHabitosRequestSchema>;
+export const PedidoDeAccesoCreadoResponseSchema = z.strictObject({ data: PedidoDeAccesoDelProfesionalSchema });
+export type PedidoDeAccesoCreadoResponse = z.infer<typeof PedidoDeAccesoCreadoResponseSchema>;
+
+// ─── API-HBT-07 — Lo que el profesional sabe de los hábitos de la persona ───────────────────────
+export const HabitosParaElProfesionalResponseSchema = z.strictObject({
+  data: z.strictObject({
+    /** Las áreas en las que hoy la acompaña con el acceso vigente (las que el PDP permite): desde ahí puede pedir acceso. */
+    scopes: z.array(AlcanceSchema).min(1),
+    /** Si hoy los recibe (lo mismo que dice API-HBT-05 con un 200). */
+    receives: z.boolean(),
+    /** Desde cuándo los recibe; `null` si no los recibe. */
+    sharedSince: Instante.nullable(),
+    /**
+     * Lo más nuevo que este profesional ve de los hábitos: la fecha de la última respuesta a una solicitud suya con la
+     * parte «Tus hábitos», o la de los hábitos que la persona le comparte. `null` si no ve ninguno.
+     */
+    latestSeenAt: Instante.nullable(),
+    /** Desde cuándo espera la respuesta de una solicitud suya con la parte «Tus hábitos»; `null` si no tiene ninguna pendiente. */
+    pendingHabitsRequestSince: Instante.nullable(),
+    /** Su último pedido de acceso, o `null` si nunca pidió. */
+    accessRequest: PedidoDeAccesoDelProfesionalSchema.nullable(),
+    /** Si hoy puede pedir acceso: no los recibe, no tiene uno pendiente de menos de 7 días y pasaron 7 días del último. */
+    canRequestAccess: z.boolean(),
+    /** Desde cuándo va a poder pedirlo de nuevo, si hoy no puede por el límite de 7 días; `null` en los demás casos. */
+    canRequestAccessFrom: Instante.nullable(),
+  }),
+});
+export type HabitosParaElProfesionalResponse = z.infer<typeof HabitosParaElProfesionalResponseSchema>;
+
+// ─── API-HBT-08 — Los pedidos que esperan la respuesta de la persona ────────────────────────────
+export const PedidoDeAccesoParaLaPersonaSchema = z.strictObject({
+  accessRequestId: IdOpaco,
+  /** El token del pedido: `expectedVersion` de API-HBT-09. */
+  version: TokenDeVersionSchema,
+  professional: ResumenDeActorSchema,
+  /** El área desde la que se lo pide: con ella, la app dice para qué le sirve. */
+  scope: ResumenDeAlcanceSchema,
+  requestedAt: Instante,
+});
+export type PedidoDeAccesoParaLaPersona = z.infer<typeof PedidoDeAccesoParaLaPersonaSchema>;
+export const PedidosDeAccesoResponseSchema = z.strictObject({ data: z.array(PedidoDeAccesoParaLaPersonaSchema) });
+export type PedidosDeAccesoResponse = z.infer<typeof PedidosDeAccesoResponseSchema>;
+
+// ─── API-HBT-09 — La persona responde un pedido ─────────────────────────────────────────────────
+/**
+ * «Sí, que los vea» (`SHARE`) o «No, por ahora» (`NOT_NOW`), las dos con el mismo peso. `SHARE` es compartir: lleva la
+ * versión de la autorización que se vio y el texto que se mostró (08 §12.2), como API-HBT-03. `NOT_NOW` no cambia la
+ * autorización y va sin `sharing`.
+ */
+export const ResponderPedidoDeAccesoRequestSchema = z
+  .strictObject({
+    /** El token del pedido que se vio. */
+    expectedVersion: TokenDeVersionSchema,
+    answer: z.enum(['SHARE', 'NOT_NOW']),
+    sharing: z.strictObject({ expectedVersion: TokenDeVersionSchema.nullable(), textVersionId: IdOpaco }).nullable(),
+  })
+  .refine((p) => (p.answer === 'SHARE') === (p.sharing !== null), { path: ['sharing'], message: 'SHARE lleva sharing; NOT_NOW, null.' });
+export type ResponderPedidoDeAccesoRequest = z.infer<typeof ResponderPedidoDeAccesoRequestSchema>;
+
+export const PedidoDeAccesoRespondidoResponseSchema = z.strictObject({
+  data: z.strictObject({
+    accessRequestId: IdOpaco,
+    answer: z.enum(['SHARE', 'NOT_NOW']),
+    answeredAt: Instante,
+  }),
+});
+export type PedidoDeAccesoRespondidoResponse = z.infer<typeof PedidoDeAccesoRespondidoResponseSchema>;

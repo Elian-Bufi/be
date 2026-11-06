@@ -8301,6 +8301,29 @@ button.comida-del-dia__fila > .icono:last-child {
   border-top: 1px solid var(--borde);
 }
 
+/* Ronda 2.1 (DL-165 D-22) · «Sumar «Tus hábitos»», debajo de la lista de formularios: la casilla, qué es y por qué viene
+   marcada o no. */
+.pedido__sumar-habitos {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.pedido__sumar-habitos-casilla {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.pedido__sumar-habitos .nota {
+  margin: 0.2rem 0 0;
+}
+
 .formulario-del-pedido:first-child {
   border-radius: 11px 11px 0 0;
 }
@@ -13457,6 +13480,19 @@ details[open] > summary:not([class])::before {
 }
 
 .sus-habitos__procedencia .nota {
+  margin: 0;
+}
+
+/* Ronda 2.1 (DL-165 D-17 nueva) · «Pedir acceso a sus hábitos»: qué le llega a la persona, junto al botón. */
+.sus-habitos__pedir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.sus-habitos__pedir .nota {
   margin: 0;
 }
 

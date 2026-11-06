@@ -316,10 +316,16 @@ import {
   HabitosCompartidosEstadoResponseSchema,
   HabitosCompartidosResponseSchema,
   HabitosRegistradosResponseSchema,
+  HabitosParaElProfesionalResponseSchema,
   MisHabitosResponseSchema,
+  PedidoDeAccesoCreadoResponseSchema,
+  PedidoDeAccesoRespondidoResponseSchema,
+  PedidosDeAccesoResponseSchema,
   type CompartirHabitosRequest,
   type DejarDeCompartirHabitosRequest,
+  type PedirAccesoAHabitosRequest,
   type RegistrarHabitosRequest,
+  type ResponderPedidoDeAccesoRequest,
 } from './contratos-habitos-de-la-persona';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
@@ -1557,6 +1563,23 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-HBT-05: los hábitos que la persona le comparte a este profesional. Si no se los comparte, el 404 de lo inexistente. */
     habitosDeLaPersona(token: string, asesoradoId: string) {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits`, { token, esquema: HabitosCompartidosResponseSchema });
+    },
+    // Ronda 2.1 (DL-165 D-17 nueva): «Pedir acceso a sus hábitos». 06 y 07, del website; 08 y 09, de la APK 0.22.
+    /** API-HBT-06: el profesional le pide a la persona ver sus hábitos, desde su área. Le llega como novedad importante. */
+    pedirAccesoAHabitos(token: string, asesoradoId: string, cuerpo: PedirAccesoAHabitosRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/habits/access-requests`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoCreadoResponseSchema, cuerpo });
+    },
+    /** API-HBT-07: lo que el profesional sabe de los hábitos de la persona (si los recibe, lo más nuevo que ve, su último pedido). */
+    habitosParaElProfesional(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/habits/status`, { token, esquema: HabitosParaElProfesionalResponseSchema });
+    },
+    /** API-HBT-08: los pedidos de acceso que esperan la respuesta de la persona. */
+    pedidosDeAccesoAMisHabitos(token: string) {
+      return llamar('GET', '/me/habits/access-requests', { token, esquema: PedidosDeAccesoResponseSchema });
+    },
+    /** API-HBT-09: la persona responde un pedido: «Sí, que los vea» o «No, por ahora». */
+    responderPedidoDeAcceso(token: string, pedidoId: string, cuerpo: ResponderPedidoDeAccesoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/habits/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoRespondidoResponseSchema, cuerpo });
     },
   };
 }

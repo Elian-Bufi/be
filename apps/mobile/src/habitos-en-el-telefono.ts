@@ -12,7 +12,11 @@
  * - **Ampliar pide el texto** (08 C-12): compartir por primera vez o de nuevo, sumar a alguien que hoy no los recibe, o
  *   un texto vigente distinto del que aceptó. Sacar a alguien no amplía nada.
  * - **«¿Sigue igual?»** (D-18): una solicitud nueva cuya versión trae la parte «Tus hábitos» se abre con lo vigente de lo
- *   que pide, en el teléfono de la persona. Nunca sobre una respuesta, lo cargado por el profesional o un borrador.
+ *   que pide, en el teléfono de la persona. Nunca sobre una respuesta, lo cargado por el profesional o un borrador. Vale
+ *   igual para «Tus hábitos» aparte (FRM-HABITOS v2, ronda 2.1), que es esa misma parte sola.
+ * - **Un profesional pide verlos** (ronda 2.1, D-17 nueva; API-HBT-08 y 09): «Sí, que los vea» es compartir con él, con el
+ *   texto a la vista como cualquier ampliación; «No, por ahora» no cambia nada. Las dos pesan lo mismo, y quien tiene un
+ *   pedido esperando no recibe además la pregunta por un profesional nuevo: el pedido la reemplaza.
  */
 import {
   camposVisibles,
@@ -23,6 +27,8 @@ import {
   traeLaParteDeHabitos,
   type CompartirHabitosRequest,
   type MisHabitosResponse,
+  type PedidoDeAccesoParaLaPersona,
+  type ResponderPedidoDeAccesoRequest,
   type ProfesionalParaHabitos,
   type RespuestaDeCampoV2Entrada,
   type Resultado,
@@ -181,4 +187,90 @@ export function precargaDelFormulario(
   if (!vigente) return null;
   const respuestas = precargaDeHabitos(secciones, solicitud, vigente.answers.map((a) => ({ fieldCode: a.fieldCode, answer: a.answer })));
   return respuestas.length > 0 ? { respuestas, desde: vigente.recordedAt } : null;
+}
+
+// ─── Ronda 2.1 · un profesional pide ver los hábitos (D-17 nueva; API-HBT-08 y 09) ───────────────
+
+/** Un pedido que espera la respuesta de la persona, como lo devuelve API-HBT-08. */
+export type PedidoDeAcceso = PedidoDeAccesoParaLaPersona;
+export type RespuestaAUnPedido = 'si' | 'no';
+
+/** Los pedidos de un profesional: sirven para no preguntarle además «… empezó a acompañarte». */
+const conPedido = (pedidos: readonly Pick<PedidoDeAcceso, 'professional'>[]): Set<string> => new Set(pedidos.map((p) => p.professional.identityId.toLowerCase()));
+
+/**
+ * A quiénes se les pregunta por ser nuevos, sin los que pidieron verlos: el pedido ya es la pregunta, con su «para qué»,
+ * y responderlo resuelve las dos. Preguntar dos veces lo mismo sería insistir.
+ */
+export function aQuienesPreguntarSinPedido(d: ConLaAutorizacion, pedidos: readonly Pick<PedidoDeAcceso, 'professional'>[]): ProfesionalParaHabitos[] {
+  const piden = conPedido(pedidos);
+  return aQuienesPreguntar(d).filter((p) => !piden.has(p.professional.identityId.toLowerCase()));
+}
+
+/** Los pedidos, del más reciente al más viejo: así se muestran, sin depender del orden en que lleguen. */
+export const pedidosEnOrden = (pedidos: readonly PedidoDeAcceso[]): PedidoDeAcceso[] =>
+  [...pedidos].sort((a, b) => b.requestedAt.localeCompare(a.requestedAt) || a.accessRequestId.localeCompare(b.accessRequestId));
+
+/** Para qué le sirven los hábitos a quien los pide, según el área desde la que pidió. */
+export const paraQueLeSirven = (pedido: Pick<PedidoDeAcceso, 'scope'>): string => COPY_HABITOS.paraQueLeSirven[pedido.scope.code];
+
+/**
+ * El cuerpo de API-HBT-09: el pedido que se vio y la respuesta. «Sí» es compartir: lleva la versión de la autorización que
+ * se vio y el texto que se mostró (08 §12.2), como API-HBT-03. «No» va sin nada de la autorización: no la cambia.
+ */
+export function respuestaAlPedido(d: Pick<MisHabitos, 'sharing' | 'text'>, pedido: Pick<PedidoDeAcceso, 'version'>, respuesta: RespuestaAUnPedido): ResponderPedidoDeAccesoRequest {
+  return respuesta === 'si'
+    ? { expectedVersion: pedido.version, answer: 'SHARE', sharing: { expectedVersion: d.sharing.version, textVersionId: d.text.id } }
+    : { expectedVersion: pedido.version, answer: 'NOT_NOW', sharing: null };
+}
+
+/**
+ * Si el «Sí» pide leer el texto antes: suma a alguien que hoy no los recibe, así que amplía la lista (08 C-12), salvo que
+ * ya los reciba (entonces no hay nada que aceptar). Es la misma regla que al sumar desde «Mis hábitos».
+ */
+export function elSiPideElTexto(d: ConLaAutorizacion & Pick<MisHabitos, 'text'>, profesionalId: string): boolean {
+  return pideElTexto(d, { professionalIds: [...quienesLosReciben(d), profesionalId] });
+}
+
+/**
+ * Si al decir «Sí» se avisa que solo él los va a ver: todavía no los comparte con nadie (la API la activa solo para quien
+ * pidió) y tiene otros profesionales, que quedan sin verlos hasta que ella los sume.
+ */
+export function seAvisaQueSoloElLosVe(d: ConLaAutorizacion, profesionalId: string): boolean {
+  if (d.sharing.status === 'ACTIVE') return false;
+  const id = profesionalId.toLowerCase();
+  return d.professionals.some((p) => p.professional.identityId.toLowerCase() !== id);
+}
+
+/** Lo que se le dice a la persona cuando respondió un pedido. */
+export const exitoDeLaRespuesta = (pedido: Pick<PedidoDeAcceso, 'professional'>, respuesta: RespuestaAUnPedido): string =>
+  respuesta === 'si' ? A.pedidoAceptado(pedido.professional.displayName) : A.pedidoNoPorAhora(pedido.professional.displayName);
+
+/**
+ * Un rechazo de API-HBT-09 que pide volver a leer, con lo que se le dice. `null`: otro fallo, que decide `falloDe` (y el A3,
+ * que la pantalla trata como el resto de «Mis hábitos»).
+ * - El pedido ya no espera (lo respondió en otro teléfono, o el profesional ya no la acompaña): `pedidoYaNoEsta`.
+ * - Con el «Sí», un conflicto de versión puede ser del pedido o de la autorización: se dice que cambió alguno de los dos.
+ * - Un texto vigente nuevo: lo que comparte cambió.
+ */
+export function rechazoDeLaRespuesta(r: Resultado<unknown>, respuesta: RespuestaAUnPedido): string | null {
+  if (r.ok || r.tipo !== 'API') return null;
+  if (r.codigo === 'HABITS_RECIPIENT_NOT_AVAILABLE' || r.codigo === 'RESOURCE_NOT_FOUND') return A.pedidoYaNoEsta;
+  if (r.codigo === 'VERSION_CONFLICT') return respuesta === 'si' ? A.cambioMientrasRespondias : A.pedidoYaNoEsta;
+  if (r.codigo === 'CONSENT_VERSION_STALE') return A.cambioLaAutorizacion;
+  return null;
+}
+
+/**
+ * La tarjeta «Tus hábitos» de Inicio: primero un pedido que espera (el más reciente); si no hay,
+ * la pregunta por un profesional nuevo que no pidió nada; si no, nada (`null`: la tarjeta no se dibuja). Sin una de las dos
+ * lecturas (una falla, el A3), se decide con la otra.
+ */
+export type TarjetaDeHabitosEnInicio = { readonly tipo: 'pedido'; readonly pedido: PedidoDeAcceso } | { readonly tipo: 'nuevo'; readonly profesional: ProfesionalParaHabitos };
+
+export function tarjetaDeHabitosEnInicio(d: ConLaAutorizacion | null, pedidos: readonly PedidoDeAcceso[] | null): TarjetaDeHabitosEnInicio | null {
+  const pedido = pedidosEnOrden(pedidos ?? [])[0];
+  if (pedido) return { tipo: 'pedido', pedido };
+  const nuevo = d ? (aQuienesPreguntarSinPedido(d, pedidos ?? [])[0] ?? null) : null;
+  return nuevo ? { tipo: 'nuevo', profesional: nuevo } : null;
 }

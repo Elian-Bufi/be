@@ -20,6 +20,8 @@ import {
   type Alcance,
   type CompartirHabitos,
   type ComponenteParaHabitos,
+  type EstadoDelPedidoDeAcceso,
+  type PedidoDeAccesoDelProfesional,
   type OrigenDeHabitos,
   type Procedencia,
   type ProfesionalDeLaPersona,
@@ -30,7 +32,7 @@ import {
   type VersionDeHabitos,
 } from '@be/domain';
 import { Prisma } from '@prisma/client';
-import type { AutorizacionDeHabitos as FilaDeAutorizacion, HabitosDeLaPersona as FilaDeHabitos } from '@prisma/client';
+import type { AutorizacionDeHabitos as FilaDeAutorizacion, HabitosDeLaPersona as FilaDeHabitos, PedidoDeAccesoAHabitos as FilaDePedido } from '@prisma/client';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { nombreDeProfesional } from '../vinculo/lectura';
 import { registrarEventoDeFormulario } from './eventos';
@@ -320,3 +322,159 @@ export async function retirarAutorizacionDeHabitosPorCierre(tx: Tx, p: { readonl
 
 /** La hora de la base para una escritura de hábitos, tomada después de los cerrojos. */
 export const momentoDeLosHabitos = momentoDeLaBase;
+
+// ─── Ronda 2.1 (2026-11-06) · los pedidos de acceso (D-17 nueva; D-23 a D-25) ───────────────────
+
+/**
+ * Los pedidos de acceso de una persona, con un cerrojo de transacción por persona: exclusivo para crear o resolver uno. Se
+ * toma después del de la autorización (que va antes en API-HBT-03, 06 y 09): el orden es el mismo en todas.
+ */
+export async function tomarLosPedidos(tx: Tx, personaId: string): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`pedidos-de-acceso-a-habitos|${personaId}`}, 0))`;
+}
+
+/** Para quien lo hizo: esperando la respuesta, o respondido (aceptado, «no, por ahora» o reemplazado), sin decir qué. */
+const ESTADO_DEL_PEDIDO_API: Readonly<Record<FilaDePedido['estado'], EstadoDelPedidoDeAcceso>> = {
+  PENDIENTE: 'PENDING',
+  ACEPTADO: 'ANSWERED',
+  NO_POR_AHORA: 'ANSWERED',
+  REEMPLAZADO: 'ANSWERED',
+};
+
+export function pedidoDelProfesionalApi(f: FilaDePedido): PedidoDeAccesoDelProfesional {
+  return { accessRequestId: f.id, scope: f.alcance, status: ESTADO_DEL_PEDIDO_API[f.estado], requestedAt: f.pedidoEn.toISOString() };
+}
+
+/** El último pedido de este profesional a esta persona, en cualquier estado: de él salen el límite de 7 días y lo que ve. */
+export function ultimoPedidoDelProfesional(tx: Tx, profesionalId: string, personaId: string): Promise<FilaDePedido | null> {
+  return tx.pedidoDeAccesoAHabitos.findFirst({ where: { profesionalId, asesoradoId: personaId }, orderBy: [{ pedidoEn: 'desc' }, { momentoDeRegistro: 'desc' }] });
+}
+
+type EstadoResuelto = 'ACEPTADO' | 'NO_POR_AHORA' | 'REEMPLAZADO';
+const HECHO_DEL_PEDIDO = {
+  PENDIENTE: 'PedidoDeAccesoAHabitosHecho',
+  ACEPTADO: 'PedidoDeAccesoAHabitosAceptado',
+  NO_POR_AHORA: 'PedidoDeAccesoAHabitosNoPorAhora',
+  REEMPLAZADO: 'PedidoDeAccesoAHabitosReemplazado',
+} as const;
+
+/** Un pedido nuevo, PENDIENTE, con su hecho. Con el cerrojo de los pedidos ya tomado. */
+export async function crearPedidoDeAcceso(
+  tx: Tx,
+  p: { readonly profesionalId: string; readonly personaId: string; readonly alcanceDeVinculoId: string; readonly alcance: Alcance; readonly procedencia: Procedencia; readonly momento: Date },
+): Promise<FilaDePedido> {
+  const fila = await tx.pedidoDeAccesoAHabitos.create({
+    data: {
+      profesionalId: p.profesionalId,
+      asesoradoId: p.personaId,
+      alcanceDeVinculoId: p.alcanceDeVinculoId,
+      alcance: p.alcance,
+      pedidoEn: p.momento,
+      procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
+    },
+  });
+  await registrarEventoDeFormulario(tx, {
+    tipo: HECHO_DEL_PEDIDO.PENDIENTE,
+    profesionalId: p.profesionalId,
+    asesoradoId: p.personaId,
+    recurso: { tipo: 'PedidoDeAccesoAHabitos', id: fila.id },
+    estadoPrevio: null,
+    estadoPosterior: 'PENDIENTE',
+    actorId: p.profesionalId,
+    procedencia: p.procedencia,
+    momento: p.momento,
+  });
+  return fila;
+}
+
+/**
+ * Resolver un pedido que espera, una sola vez, con su hecho: `false` si ya no esperaba (otra operación lo resolvió en el
+ * medio). El actor es quien lo resuelve: la persona (aceptar, «no, por ahora») o el profesional (un pedido nuevo lo reemplaza).
+ */
+export async function resolverPedidoDeAcceso(
+  tx: Tx,
+  p: {
+    readonly pedido: Pick<FilaDePedido, 'id' | 'version' | 'profesionalId' | 'asesoradoId'>;
+    readonly estado: EstadoResuelto;
+    readonly actorId: string;
+    readonly procedencia: Procedencia;
+    readonly momento: Date;
+  },
+): Promise<boolean> {
+  const r = await tx.pedidoDeAccesoAHabitos.updateMany({ where: { id: p.pedido.id, estado: 'PENDIENTE', version: p.pedido.version }, data: { estado: p.estado, resueltoEn: p.momento } });
+  if (r.count !== 1) return false;
+  await registrarEventoDeFormulario(tx, {
+    tipo: HECHO_DEL_PEDIDO[p.estado],
+    profesionalId: p.pedido.profesionalId,
+    asesoradoId: p.pedido.asesoradoId,
+    recurso: { tipo: 'PedidoDeAccesoAHabitos', id: p.pedido.id },
+    estadoPrevio: 'PENDIENTE',
+    estadoPosterior: p.estado,
+    actorId: p.actorId,
+    procedencia: p.procedencia,
+    momento: p.momento,
+  });
+  return true;
+}
+
+/**
+ * D-25 · cuando la persona comparte con alguien (API-HBT-03 desde «Mis hábitos», también con la 0.21, o API-HBT-09), el
+ * pedido que esperaba de ese profesional queda aceptado: ya los ve. Con los cerrojos de la autorización y de los pedidos ya
+ * tomados, después de escribir la versión nueva.
+ */
+export async function aceptarLosPedidosDeQuienesLosReciben(
+  tx: Tx,
+  p: { readonly personaId: string; readonly renglones: readonly RenglonDeLaAutorizacion[]; readonly procedencia: Procedencia; readonly momento: Date },
+): Promise<number> {
+  const reciben = [...new Set(p.renglones.filter((r) => r.incluido).map((r) => r.profesionalId))];
+  if (reciben.length === 0) return 0;
+  const pendientes = await tx.pedidoDeAccesoAHabitos.findMany({ where: { asesoradoId: p.personaId, estado: 'PENDIENTE', profesionalId: { in: reciben } } });
+  let n = 0;
+  for (const pedido of pendientes) if (await resolverPedidoDeAcceso(tx, { pedido, estado: 'ACEPTADO', actorId: p.personaId, procedencia: p.procedencia, momento: p.momento })) n++;
+  return n;
+}
+
+/**
+ * API-HBT-08 · los pedidos que esperan la respuesta de la persona: solo de un componente de vínculo que hoy está aceptado
+ * (en pausa no se muestran; terminado, ya no se responden), con el nombre del profesional. Del más nuevo al más viejo.
+ */
+export async function pedidosQueEsperan(tx: Tx, personaId: string): Promise<(FilaDePedido & { readonly nombre: string })[]> {
+  const filas = await tx.pedidoDeAccesoAHabitos.findMany({
+    where: { asesoradoId: personaId, estado: 'PENDIENTE', alcanceDeVinculo: { estado: 'ACEPTADO' } },
+    orderBy: [{ pedidoEn: 'desc' }, { momentoDeRegistro: 'desc' }],
+  });
+  if (filas.length === 0) return [];
+  const perfiles = await tx.perfilProfesional.findMany({ where: { identidadId: { in: [...new Set(filas.map((f) => f.profesionalId))] } }, select: { identidadId: true, nombreVisible: true } });
+  const nombres = new Map(perfiles.map((p) => [p.identidadId, nombreDeProfesional(p)] as const));
+  return filas.map((f) => ({ ...f, nombre: nombres.get(f.profesionalId) ?? nombreDeProfesional(null) }));
+}
+
+/**
+ * API-HBT-07 (D-22) · lo más nuevo que este profesional ve de los hábitos de la persona por sus propias solicitudes, y desde
+ * cuándo espera una: solo las suyas, en las áreas que el PDP le permite hoy, de versiones con la parte «Tus hábitos» y que
+ * pidieron alguna pregunta de la parte. Nunca mira lo que la persona le contó a otro profesional.
+ */
+export async function habitosDeSusSolicitudes(
+  tx: Tx,
+  p: { readonly profesionalId: string; readonly personaId: string; readonly alcances: readonly Alcance[] },
+): Promise<{ readonly respondidaEl: Date | null; readonly pendienteDesde: Date | null }> {
+  const solicitudes = await tx.solicitudDeFormulario.findMany({
+    where: { profesionalId: p.profesionalId, asesoradoId: p.personaId, alcance: { in: [...p.alcances] } },
+    select: { momentoDeRegistro: true, camposSolicitados: true, templateVersion: { select: { contenido: true } }, respuesta: { select: { momentoDeRegistro: true } } },
+  });
+  let respondidaEl: Date | null = null;
+  let pendienteDesde: Date | null = null;
+  for (const s of solicitudes) {
+    const secciones = (s.templateVersion.contenido as { sections?: SeccionDePlantillaV2[] } | null)?.sections ?? [];
+    const parte = parteDeHabitos(secciones);
+    if (!parte) continue;
+    const pedidos = new Set(Array.isArray(s.camposSolicitados) ? (s.camposSolicitados as string[]) : []);
+    if (!parte.fields.some((c) => pedidos.has(c.fieldCode))) continue;
+    if (s.respuesta) {
+      if (!respondidaEl || s.respuesta.momentoDeRegistro > respondidaEl) respondidaEl = s.respuesta.momentoDeRegistro;
+    } else if (!pendienteDesde || s.momentoDeRegistro < pendienteDesde) {
+      pendienteDesde = s.momentoDeRegistro;
+    }
+  }
+  return { respondidaEl, pendienteDesde };
+}

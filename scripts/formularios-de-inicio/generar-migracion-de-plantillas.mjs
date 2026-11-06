@@ -6,6 +6,9 @@
  *   FRM-NUTRICION-INICIO v1 y FRM-ENTRENAMIENTO v2, de formato 2.
  * - WP-FORMULARIOS-RONDA-2 (DL-165, FR-06) → prisma/migrations/20261105120000_formularios_ronda_2_plantillas/migration.sql:
  *   FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO v3, de formato 3, sucesoras de las de DL-164.
+ * - WP-FORMULARIOS-RONDA-2, ronda 2.1 (DL-165 D-15 nueva, FR-12) →
+ *   prisma/migrations/20261106120000_formularios_ronda_2_1_plantillas/migration.sql: «Tus hábitos» aparte (FRM-HABITOS v2,
+ *   sucesora de la v1 de P0) y las de área sin la parte (FRM-NUTRICION-INICIO v3 y FRM-ENTRENAMIENTO v4), de formato 3.
  *
  * Uso: npm run build -w @be/domain && node scripts/formularios-de-inicio/generar-migracion-de-plantillas.mjs [--comprobar]
  * Con --comprobar no escribe nada: falla si una migración del repositorio no es exactamente la que sale del dominio, así el
@@ -24,7 +27,17 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DIST = join(RAIZ, 'packages', 'domain', 'dist');
-const { PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3, SECCION_DE_HABITOS, contenidoDePlantillaDeInicio } = require(join(DIST, 'plantillas-de-inicio.js'));
+const {
+  PLANTILLA_NUTRICION_INICIO,
+  PLANTILLA_ENTRENAMIENTO_V2,
+  PLANTILLA_NUTRICION_INICIO_V2,
+  PLANTILLA_ENTRENAMIENTO_V3,
+  PLANTILLA_HABITOS_V2,
+  PLANTILLA_NUTRICION_INICIO_V3,
+  PLANTILLA_ENTRENAMIENTO_V4,
+  SECCION_DE_HABITOS,
+  contenidoDePlantillaDeInicio,
+} = require(join(DIST, 'plantillas-de-inicio.js'));
 const { loQueUsaDelFormato3 } = require(join(DIST, 'formularios-v2.js'));
 
 /** UUID fijos: las pruebas y las otras capas los nombran, y cada migración tiene que dar lo mismo en cada ambiente. */
@@ -38,6 +51,12 @@ const IDS = {
   // DL-165 (FR-06): las sucesoras de formato 3.
   versionDeNutricionInicioV2: '98fb045a-af5d-4122-98c4-71240587adc9',
   versionDeEntrenamientoV3: '3bb9b4c2-efd8-4d80-9c0c-2a4769819478',
+  // DL-165, ronda 2.1 (FR-12): FRM-HABITOS ya existe (migración 20260921220000, P0); la v2 sucede a su v1.
+  plantillaDeHabitos: 'd5e96564-ee21-4ef2-a58f-4cf0fa4ee8a1',
+  versionDeHabitosV1: '4879e539-235f-4f91-83fc-2e113c404393',
+  versionDeHabitosV2: '413d919a-14ca-4793-8fab-32a6a9b2d6f0',
+  versionDeNutricionInicioV3: '292e559f-ff77-413e-83e0-296c8a9fac20',
+  versionDeEntrenamientoV4: '423d3f49-03aa-4f88-b726-21719ac20a4d',
 };
 
 // ─── Lo que las migraciones dan por sentado del dominio ──────────────────────────────────────────
@@ -49,20 +68,31 @@ exigir(PLANTILLA_NUTRICION_INICIO.clave === 'FRM-NUTRICION-INICIO' && PLANTILLA_
 exigir(PLANTILLA_ENTRENAMIENTO_V2.clave === 'FRM-ENTRENAMIENTO' && PLANTILLA_ENTRENAMIENTO_V2.version === '2', 'la plantilla de Entrenamiento tiene que ser FRM-ENTRENAMIENTO v2');
 exigir(PLANTILLA_NUTRICION_INICIO_V2.clave === 'FRM-NUTRICION-INICIO' && PLANTILLA_NUTRICION_INICIO_V2.version === '2', 'la sucesora de Nutrición tiene que ser FRM-NUTRICION-INICIO v2');
 exigir(PLANTILLA_ENTRENAMIENTO_V3.clave === 'FRM-ENTRENAMIENTO' && PLANTILLA_ENTRENAMIENTO_V3.version === '3', 'la sucesora de Entrenamiento tiene que ser FRM-ENTRENAMIENTO v3');
+exigir(PLANTILLA_HABITOS_V2.clave === 'FRM-HABITOS' && PLANTILLA_HABITOS_V2.version === '2' && PLANTILLA_HABITOS_V2.dominio === null, '«Tus hábitos» tiene que ser FRM-HABITOS v2, sin área propia');
+exigir(PLANTILLA_NUTRICION_INICIO_V3.clave === 'FRM-NUTRICION-INICIO' && PLANTILLA_NUTRICION_INICIO_V3.version === '3', 'la de Nutrición sin la parte tiene que ser FRM-NUTRICION-INICIO v3');
+exigir(PLANTILLA_ENTRENAMIENTO_V4.clave === 'FRM-ENTRENAMIENTO' && PLANTILLA_ENTRENAMIENTO_V4.version === '4', 'la de Entrenamiento sin la parte tiene que ser FRM-ENTRENAMIENTO v4');
 // DL-165 D-9 (FR-10): la parte «Tus hábitos» es la misma en las dos de formato 3, campo por campo, y no está en las de
 // formato 2. Responderla agrega una versión de los hábitos de la persona (API-FRI-04).
-for (const p of [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3]) {
+// Ronda 2.1 (D-15 nueva; D-20): «Tus hábitos» es esa misma parte, sola; las de área nuevas ya no la traen.
+for (const p of [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3, PLANTILLA_HABITOS_V2]) {
   const parte = p.sections.filter((s) => s.sectionCode === SECCION_DE_HABITOS.sectionCode);
   exigir(parte.length === 1 && JSON.stringify(parte[0]) === JSON.stringify(SECCION_DE_HABITOS), `${p.clave} v${p.version}: la parte «Tus hábitos» tiene que ser SECCION_DE_HABITOS, una vez`);
 }
 for (const p of [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2]) {
   exigir(!p.sections.some((s) => s.sectionCode === SECCION_DE_HABITOS.sectionCode), `${p.clave} v${p.version}: una versión de formato 2 no trae la parte «Tus hábitos»`);
 }
+exigir(PLANTILLA_HABITOS_V2.sections.length === 1, '«Tus hábitos» tiene una sola parte');
+for (const p of [PLANTILLA_NUTRICION_INICIO_V3, PLANTILLA_ENTRENAMIENTO_V4]) {
+  exigir(!p.sections.some((s) => s.sectionCode === SECCION_DE_HABITOS.sectionCode), `${p.clave} v${p.version}: una versión de área de la ronda 2.1 no trae la parte «Tus hábitos»`);
+}
 for (const [p, formato] of [
   [PLANTILLA_NUTRICION_INICIO, 2],
   [PLANTILLA_ENTRENAMIENTO_V2, 2],
   [PLANTILLA_NUTRICION_INICIO_V2, 3],
   [PLANTILLA_ENTRENAMIENTO_V3, 3],
+  [PLANTILLA_HABITOS_V2, 3],
+  [PLANTILLA_NUTRICION_INICIO_V3, 3],
+  [PLANTILLA_ENTRENAMIENTO_V4, 3],
 ]) {
   const c = contenidoDePlantillaDeInicio(p);
   // Lo que exigen los CHECK de la base: nombre, propósito y versión con texto, y al menos una sección.
@@ -166,11 +196,51 @@ ${filaDeVersion({ id: IDS.versionDeNutricionInicioV2, plantillaId: IDS.plantilla
 ${filaDeVersion({ id: IDS.versionDeEntrenamientoV3, plantillaId: IDS.plantillaDeEntrenamiento, predecesoraId: IDS.versionDeEntrenamientoV2, plantilla: entrenamientoV3, procedencia: PROCEDENCIA_DE_LA_RONDA_2, momento: MOMENTO_DE_LA_RONDA_2 })};
 `;
 
+// ─── DL-165, ronda 2.1 · FR-12 ───────────────────────────────────────────────────────────────────
+
+/** El día en que Dirección decidió «Tus hábitos» aparte (D-15 nueva). */
+const MOMENTO_DE_LA_RONDA_2_1 = '2026-11-06T00:00:00.000Z';
+const PROCEDENCIA_DE_LA_RONDA_2_1 = {
+  rotulo: 'Catálogo sintético de demostración: preguntas de producto, no un instrumento clínico ni una evaluación de aptitud (DL-165 FR-12, ronda 2.1; D-D, docs/paquetes/WP-07.md).',
+};
+
+const habitosV2 = PLANTILLA_HABITOS_V2;
+const nutricionV3 = PLANTILLA_NUTRICION_INICIO_V3;
+const entrenamientoV4 = PLANTILLA_ENTRENAMIENTO_V4;
+const sqlDeLaRonda21 = `-- WP-FORMULARIOS-RONDA-2, ronda 2.1 · FR-12 (DEUDA_LEGAJO DL-165, D-15 nueva de Dirección del 2026-11-06): «Tus hábitos»
+-- pasa a ser un formulario aparte, que puede pedir y volver a pedir cualquier profesional con el vínculo vigente, en su
+-- área; y las plantillas de área salen en versiones nuevas sin esa parte. Las de la ronda 2 (FRM-NUTRICION-INICIO v2 y
+-- FRM-ENTRENAMIENTO v3) ya corrieron en test y no cambian: quedan históricas, y sus Solicitudes siguen en su versión
+-- (REG-06-209) y siguen sumando hábitos al responderse. Cualquier versión con la parte «Tus hábitos» agrega una versión de
+-- los hábitos de la persona (API-FRI-04, D-20).
+-- - ${habitosV2.clave} v${habitosV2.version} «${habitosV2.nombre}» (sin área propia, ${cantidadDeCampos(habitosV2)} campos en ${habitosV2.sections.length} parte): sucede a la v1 de P0 «Hábitos y contexto»
+--   (predecesora_id = ${IDS.versionDeHabitosV1}), que queda histórica. Es la parte «Tus hábitos» de la ronda 2,
+--   campo por campo.
+-- - ${nutricionV3.clave} v${nutricionV3.version} «${nutricionV3.nombre}» (${nutricionV3.dominio}, ${cantidadDeCampos(nutricionV3)} campos en ${nutricionV3.sections.length} partes): sucede a la v2 (predecesora_id =
+--   ${IDS.versionDeNutricionInicioV2}), sin la parte. «¿En qué momento del día solés entrenar?» se abría con el «Sí»
+--   de la parte: queda a la vista, opcional, con «No entreno» (D-21).
+-- - ${entrenamientoV4.clave} v${entrenamientoV4.version} «${entrenamientoV4.nombre}» (${entrenamientoV4.dominio}, ${cantidadDeCampos(entrenamientoV4)} campos en ${entrenamientoV4.sections.length} partes): sucede a la v3 (predecesora_id =
+--   ${IDS.versionDeEntrenamientoV3}), sin la parte. Conserva los seis códigos de la v1 (DL-100).
+-- D-10: las tres son de formato 3 y solo se le entregan a un cliente que declara forms-format-3 (la APK 0.21 lo declara).
+-- Solo agrega filas (be_solo_agregar; sucesión del mismo objeto, 20260921220000). Sin minutos estimados (D-3).
+--
+-- GENERADO desde @be/domain (packages/domain/src/plantillas-de-inicio.ts, contenidoDePlantillaDeInicio) por
+-- scripts/formularios-de-inicio/generar-migracion-de-plantillas.mjs. Con --comprobar falla si este archivo difiere. No se
+-- edita a mano.
+
+INSERT INTO "version_de_plantilla_de_formulario"
+  ("id", "plantilla_id", "predecesora_id", "version", "nombre", "proposito", "dominio", "contenido", "procedencia", "momento_de_registro") VALUES
+${filaDeVersion({ id: IDS.versionDeHabitosV2, plantillaId: IDS.plantillaDeHabitos, predecesoraId: IDS.versionDeHabitosV1, plantilla: habitosV2, procedencia: PROCEDENCIA_DE_LA_RONDA_2_1, momento: MOMENTO_DE_LA_RONDA_2_1 })},
+${filaDeVersion({ id: IDS.versionDeNutricionInicioV3, plantillaId: IDS.plantillaDeNutricionInicio, predecesoraId: IDS.versionDeNutricionInicioV2, plantilla: nutricionV3, procedencia: PROCEDENCIA_DE_LA_RONDA_2_1, momento: MOMENTO_DE_LA_RONDA_2_1 })},
+${filaDeVersion({ id: IDS.versionDeEntrenamientoV4, plantillaId: IDS.plantillaDeEntrenamiento, predecesoraId: IDS.versionDeEntrenamientoV3, plantilla: entrenamientoV4, procedencia: PROCEDENCIA_DE_LA_RONDA_2_1, momento: MOMENTO_DE_LA_RONDA_2_1 })};
+`;
+
 // ─── Escribir o comprobar ────────────────────────────────────────────────────────────────────────
 
 const MIGRACIONES = [
   { carpeta: '20261104130000_formularios_de_inicio_plantillas', sql: sqlDeInicio },
   { carpeta: '20261105120000_formularios_ronda_2_plantillas', sql: sqlDeLaRonda2 },
+  { carpeta: '20261106120000_formularios_ronda_2_1_plantillas', sql: sqlDeLaRonda21 },
 ];
 
 let distintas = 0;

@@ -6,6 +6,8 @@
  * Y «Tus hábitos» (DL-165 D-9, FR-10), solo cuando hay algo que preguntar: un profesional empezó a acompañar a la persona
  * después de que ella compartió sus hábitos, y no los recibe solo (§4.3). La tarjeta pregunta y lleva a «Mis hábitos»,
  * donde se responde con el texto a la vista. Sin A3, con una falla o sin nada que preguntar, no se dibuja: no es una tarea.
+ * Ronda 2.1 (D-17 nueva): si un profesional pidió verlos (API-HBT-08), la tarjeta muestra ese pedido primero, y lleva a
+ * «Mis hábitos», donde se responde. Quien pidió no recibe además la pregunta por un profesional nuevo.
  */
 import { COPY_FORMULARIOS, COPY_FORMULARIOS_V2, COPY_HABITOS, numero } from '@be/domain';
 import { useCallback, type ReactNode } from 'react';
@@ -14,7 +16,7 @@ import { api } from '../api';
 import { SinActualizar } from '../estados';
 import { dia as diaDe } from '../formato';
 import { TEXTOS_DE_FORMULARIO_V2 } from '../formulario-v2';
-import { areasEnPalabras, preguntaDeInicio } from '../habitos-en-el-telefono';
+import { areasEnPalabras, paraQueLeSirven, tarjetaDeHabitosEnInicio } from '../habitos-en-el-telefono';
 import { useLecturaRecordada } from '../lecturas';
 import { leerPendientes, PENDIENTES_EN_INICIO } from '../lecturas-de-inicio';
 import type { Ir } from '../navegacion';
@@ -67,12 +69,29 @@ export function Pendientes({ token, sesionPerdida, ir }: { token: string; sesion
   );
 }
 
-/** API-HBT-01, la misma lectura que «Mis hábitos»: la tarjeta aparece solo si hay un profesional por el que preguntar. */
+/**
+ * API-HBT-01 y API-HBT-08, las mismas lecturas que «Mis hábitos»: la tarjeta aparece solo si un profesional pidió verlos o
+ * si hay un profesional nuevo por el que preguntar. El pedido va primero (`tarjetaDeHabitosEnInicio`).
+ */
 export function PreguntaDeHabitos({ token, sesionPerdida, ir }: { token: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
   const pedir = useCallback(() => api.misHabitos(token), [token]);
   const { r } = useLecturaRecordada(token, 'mis-habitos', pedir, sesionPerdida);
-  const nuevo = r?.ok ? preguntaDeInicio(r.datos.data) : null;
-  if (!nuevo) return null;
+  const pedirPedidos = useCallback(() => api.pedidosDeAccesoAMisHabitos(token), [token]);
+  const pedidos = useLecturaRecordada(token, 'pedidos-de-acceso', pedirPedidos, sesionPerdida);
+  const tarjeta = tarjetaDeHabitosEnInicio(r?.ok ? r.datos.data : null, pedidos.r?.ok ? pedidos.r.datos.data : null);
+  if (!tarjeta) return null;
+  if (tarjeta.tipo === 'pedido') {
+    const { pedido } = tarjeta;
+    return (
+      <TarjetaDeInicio zona="informacion" titulo={COPY_HABITOS.apk.pedidosTitulo}>
+        <Text style={estilos.pregunta}>{COPY_HABITOS.apk.pedidoDe(pedido.professional.displayName, pedido.scope.label)}</Text>
+        <Parrafo tenue>{paraQueLeSirven(pedido)}</Parrafo>
+        <Parrafo tenue>{COPY_HABITOS.apk.esTuDecision}</Parrafo>
+        <Boton texto={COPY_HABITOS.apk.nuevoResponder} onPress={() => ir({ nombre: 'mis-habitos' })} />
+      </TarjetaDeInicio>
+    );
+  }
+  const nuevo = tarjeta.profesional;
   return (
     <TarjetaDeInicio zona="informacion" titulo={COPY_HABITOS.apk.nuevoTitulo}>
       <Text style={estilos.pregunta}>{COPY_HABITOS.apk.nuevoPregunta(nuevo.professional.displayName)}</Text>

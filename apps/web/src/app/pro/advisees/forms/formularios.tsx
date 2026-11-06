@@ -21,8 +21,9 @@
  * «Actualizar» lo conserva.
  *
  * WP-FORMULARIOS-RONDA-2 (FR-10; DL-165 D-9): arriba de «Solicitudes», la tarjeta «Sus hábitos»
- * (`tarjeta-de-sus-habitos.tsx`) con lo que la persona le comparte a este profesional (API-HBT-05). Si no se los comparte,
- * la tarjeta no existe.
+ * (`tarjeta-de-sus-habitos.tsx`) con lo que la persona le comparte a este profesional (API-HBT-05). Ronda 2.1 (D-17 nueva):
+ * si no se los comparte y el PDP lo deja acompañarla (API-HBT-07), la tarjeta lo dice y ofrece «Pedir acceso a sus
+ * hábitos»; si el PDP no lo deja, la tarjeta no existe.
  */
 import { COPY_PISTAS, COPY_FORMULARIOS } from '@be/domain';
 import Link from 'next/link';

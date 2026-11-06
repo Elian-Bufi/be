@@ -470,10 +470,14 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
       "'mi-evolucion:ultimos-90'",
       // DL-165 D-9 (FR-10): la pregunta por un profesional nuevo, solo cuando hay algo que preguntar.
       "'mis-habitos'",
+      // DL-165, ronda 2.1: los pedidos para ver los hábitos (API-HBT-08), que la tarjeta muestra primero.
+      "'pedidos-de-acceso'",
     ].sort(),
   );
   // «Tus hábitos» en Inicio es la misma lectura que «Mis hábitos» (API-HBT-01): la misma clave.
   assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/mis-habitos.tsx'), 'utf8'), /useLecturaRecordada\(token, 'mis-habitos', pedir, sesionPerdida\)/);
+  // Y los pedidos (API-HBT-08), también la misma lectura en las dos.
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/mis-habitos.tsx'), 'utf8'), /useLecturaRecordada\(token, 'pedidos-de-acceso', pedirPedidos, sesionPerdida\)/);
   // Las cinco tarjetas están en la pantalla, cada una con su lectura.
   const PRINCIPAL = fuente('inicio.tsx');
   for (const tarjeta of ['EntrenamientoDeHoy', 'NutricionDeHoy', 'Pendientes', 'ActividadDeEntrenamiento', 'Mediciones']) assert.match(PRINCIPAL, new RegExp(`<${tarjeta} `));

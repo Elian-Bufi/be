@@ -258,8 +258,14 @@ import {
   HabitosCompartidosEstadoResponseSchema,
   HabitosCompartidosResponseSchema,
   HabitosRegistradosResponseSchema,
+  HabitosParaElProfesionalResponseSchema,
   MisHabitosResponseSchema,
+  PedidoDeAccesoCreadoResponseSchema,
+  PedidoDeAccesoRespondidoResponseSchema,
+  PedidosDeAccesoResponseSchema,
+  PedirAccesoAHabitosRequestSchema,
   RegistrarHabitosRequestSchema,
+  ResponderPedidoDeAccesoRequestSchema,
 } from './contratos-habitos-de-la-persona';
 import {
   AsociarImagenDeEjercicioRequestSchema,
@@ -2668,6 +2674,63 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.3 y §4.4 (FR-10) · RNF-SEC-006 · 08 §11, §14.1, C-11 · 08 §19.7',
   },
+  // ─── Ronda 2.1 (DL-165 D-17 nueva, 2026-11-06): «Pedir acceso a sus hábitos». Operaciones nuevas: las cuatro que lee la
+  // 0.21 no cambian de forma (DL-152). 06 y 07 son del website; 08 y 09, de la APK 0.22. ────────────────────────────────
+  {
+    id: 'API-HBT-06',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/habits/access-requests',
+    resumen:
+      'El profesional le pide a la persona ver sus hábitos, desde un área en la que la acompaña (el PDP la decide: vínculo aceptado, ni en pausa ni terminado, B2 y el A3 de la persona; si no, el 404 de lo inexistente). Le llega como una novedad importante (HABITS_ACCESS_REQUESTED) con el aviso push genérico de siempre: quién pide, desde qué área y para qué le sirve; nunca un hábito. El límite (D-24): una pendiente por vez por profesional y por persona, y volver a pedir recién a los 7 días del último pedido (si no, 422 HABITS_ACCESS_REQUEST_TOO_SOON con `details.availableFrom`); un pedido nuevo reemplaza al pendiente. Si ya los recibe, 422 HABITS_ALREADY_SHARED. No cambia ningún acceso: lo decide la persona.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: PedirAccesoAHabitosRequestSchema,
+    exitos: [{ status: 201, schema: PedidoDeAccesoCreadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['HABITS_ALREADY_SHARED', 'HABITS_ACCESS_REQUEST_TOO_SOON'] },
+    detalleDe422: {
+      codigo: 'HABITS_ACCESS_REQUEST_TOO_SOON',
+      schema: z.object({ availableFrom: z.string() }),
+      descripcion: 'details.availableFrom (ISO 8601): desde cuándo puede volver a pedirlo, a los 7 días de su último pedido.',
+    },
+    fuente: 'DL-165 D-17 (nueva, 2026-11-06), D-23 y D-24 · WP-FORMULARIOS-RONDA-2 §8 (FR-14) · DL-133 (el aviso sin contenido) · 08 §11',
+  },
+  {
+    id: 'API-HBT-07',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/habits/status',
+    resumen:
+      'Lo que este profesional sabe de los hábitos de la persona, sin ver ninguno: si hoy los recibe y desde cuándo, la fecha de lo más nuevo que ve (la última respuesta a una solicitud suya con la parte «Tus hábitos», o lo que la persona le comparte), desde cuándo espera una solicitud suya con la parte, su último pedido de acceso (pendiente o respondido, sin decir qué respondió) y si puede pedirlo hoy o desde cuándo. Sale solo de lo que él ya puede ver: nunca dice si la persona contó sus hábitos a otro profesional. Con eso el website sugiere sumar «Tus hábitos» al pedir un formulario de área (D-22). Pasa por el PDP para el par (algún alcance permitido; si ninguno, el 404 de lo inexistente).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: HabitosParaElProfesionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-165 D-15 y D-17 (nuevas, 2026-11-06), D-22 y D-24 · WP-FORMULARIOS-RONDA-2 §8 (FR-13 y FR-14) · 08 §11, §14.1',
+  },
+  {
+    id: 'API-HBT-08',
+    metodo: 'get',
+    ruta: '/me/habits/access-requests',
+    resumen:
+      'Los pedidos de acceso que esperan la respuesta de la persona: de quién, desde qué área (para decir para qué le sirve) y cuándo. Solo los de profesionales que hoy la acompañan en esa área con el vínculo aceptado: en pausa no se muestran, y con el vínculo terminado ya no se responden. Sin el A3 vigente, 403 (08:406), como «Mis hábitos».',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PedidosDeAccesoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-165 D-17 (nueva, 2026-11-06) y D-25 · WP-FORMULARIOS-RONDA-2 §8 (FR-14)',
+  },
+  {
+    id: 'API-HBT-09',
+    metodo: 'post',
+    ruta: '/me/habits/access-requests/{accessRequestId}/answer',
+    resumen:
+      'La persona responde un pedido de acceso, con la versión del pedido que vio (si ya no espera respuesta, 409 VERSION_CONFLICT). «Sí, que los vea» (SHARE) es compartir, como API-HBT-03: lleva la versión de la autorización que vio y el texto mostrado, que tiene que ser el vigente (409 VERSION_CONFLICT o CONSENT_VERSION_STALE), y pide el A3 (403). Con la autorización activa, suma a quien pidió; sin compartir todavía, la activa solo para él y los demás quedan como que no los ven (D-25). Quien pidió tiene que acompañarla hoy (si no, 422 HABITS_RECIPIENT_NOT_AVAILABLE). «No, por ahora» (NOT_NOW) no cambia la autorización y no pide el A3: decir que no siempre se puede. Ninguna de las dos le avisa al profesional: lo ve en API-HBT-07. Lo ajeno y lo inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResponderPedidoDeAccesoRequestSchema,
+    exitos: [{ status: 200, schema: PedidoDeAccesoRespondidoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['HABITS_RECIPIENT_NOT_AVAILABLE'] },
+    fuente: 'DL-165 D-17 (nueva, 2026-11-06) y D-25 · WP-FORMULARIOS-RONDA-2 §8 (FR-14) · 08 §12.2, C-12 · RNF-PRI-002',
+  },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
     id: 'API-REC-01',
@@ -3593,6 +3656,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-FRI-03',
   'API-HBT-01',
   'API-HBT-05',
+  'API-HBT-07',
+  'API-HBT-08',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',

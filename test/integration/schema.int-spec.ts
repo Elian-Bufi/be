@@ -294,6 +294,8 @@ describe('08 §29 — historia por adición', () => {
     'habitos_de_la_persona',
     'autorizacion_de_habitos',
     'destinatario_de_habitos',
+    // DL-165, ronda 2.1 (2026-11-06, FR-14): los pedidos de acceso a los hábitos (se resuelven con UPDATE; no se borran ni se truncan)
+    'pedido_de_acceso_a_habitos',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

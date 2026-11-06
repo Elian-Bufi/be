@@ -62,12 +62,14 @@ import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { dia, fecha } from '../formato';
 import { borradoresDeFormularios as borradores } from '../formularios-en-el-telefono';
 import {
+  anuncioDeLaParte,
   armarRespuestas,
   BORRADOR_VACIO,
   borradorDeRespuestas,
   camposDeLosErrores,
   camposQueSeVen,
   cuantasCorrigio,
+  cuantoFaltaEnPalabras,
   gruposDeLaBandeja,
   hayAlgoEscrito,
   mismoBorrador,
@@ -531,7 +533,7 @@ export function PantallaDeMiSolicitud({
     setPaso(siguiente);
     subir();
     const nueva = partes[siguiente];
-    AccessibilityInfo.announceForAccessibility(nueva ? V.parteConTitulo(siguiente + 1, partes.length, nueva.titulo) : V.repaso);
+    AccessibilityInfo.announceForAccessibility(nueva ? anuncioDeLaParte(partes.length, siguiente, nueva.titulo) : V.repaso);
   };
 
   /** Un problema al enviar lleva a la primera parte que tiene una pregunta marcada, con el aviso arriba. */
@@ -688,6 +690,7 @@ export function PantallaDeMiSolicitud({
 
   const textoDelBoton = problema?.incierto ? COPY.reintentar : esCorreccion ? COPY_FORMULARIOS.rectificar : desdePropuesta ? APK.confirmar : COPY_FORMULARIOS.enviarRespuesta;
   const alEmpezar = actual === 0 && !enRepaso;
+  const cuantoFalta = cuantoFaltaEnPalabras(partes.length, actual, enRepaso);
   const faltanEnTotal = obligatoriosSinResponder(secciones, request, armadasHoy.respuestas);
 
   return (
@@ -697,7 +700,8 @@ export function PantallaDeMiSolicitud({
         {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName} · {request.purpose}
       </Parrafo>
       {/* DL-165 D-1 y D-3: cuánto falta lo dice la parte, no un tiempo estimado. */}
-      <Parrafo tenue>{enRepaso ? V.repaso : V.parte(actual + 1, partes.length)}</Parrafo>
+      {/* Ronda 2.1: con una sola parte («Tus hábitos» aparte) no se dice «Parte 1 de 1» (`cuantoFaltaEnPalabras`). */}
+      {cuantoFalta ? <Parrafo tenue>{cuantoFalta}</Parrafo> : null}
       {/* El texto va como título del aviso: así se anuncia al lector de pantalla y se lee en negrita, como todos (D-C3). */}
       {estado.aviso ? <Aviso tipo={estado.aviso.tipo} titulo={estado.aviso.texto} /> : recuperado && hayAlgoPropio ? <Aviso tipo="info" titulo={T.recuperamosLoEscrito} /> : null}
       {/* FR-01 · si lo escrito no quedó en el teléfono, se dice: un cierre de la app lo perdería. */}

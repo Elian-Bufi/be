@@ -10,7 +10,10 @@
  *   compartir, se lee el texto entero (no se pliega lo que se acepta) y vienen marcados sus profesionales con el vínculo
  *   aceptado; ampliar la lista pide aceptar de nuevo (08 C-12), sacar a alguien no;
  * - **un profesional nuevo no los recibe solo:** la pantalla pregunta por él, y sin respuesta sigue sin verlos;
- * - **dejar de compartir siempre se puede**, con confirmación en la app, y no borra nada.
+ * - **dejar de compartir siempre se puede**, con confirmación en la app, y no borra nada;
+ * - **un profesional puede pedir verlos** (ronda 2.1, D-17 nueva; API-HBT-08 y 09): el pedido va arriba, con quién pide,
+ *   para qué le sirve y que es su decisión, y dos respuestas del mismo peso. «Sí, que los vea» suma a quien pidió, con el
+ *   texto a la vista (amplía la lista); «No, por ahora» no cambia nada. Siempre puede cambiar de idea en «Quiénes los ven».
  * Las decisiones están en `habitos-en-el-telefono.ts`, con sus pruebas.
  */
 import {
@@ -33,8 +36,15 @@ import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { dia } from '../formato';
 import { armarRespuestas, BORRADOR_VACIO, borradorDeRespuestas, camposQueSeVen, mismoBorrador, problemasAntesDeEnviar, rechazoV2, reducirBorrador, tieneAlgo, valorDe, type Borrador, type EventoDeBorrador } from '../formulario-v2';
 import {
-  aQuienesPreguntar,
+  aQuienesPreguntarSinPedido,
   areasEnPalabras,
+  elSiPideElTexto,
+  exitoDeLaRespuesta,
+  paraQueLeSirven,
+  pedidosEnOrden,
+  rechazoDeLaRespuesta,
+  respuestaAlPedido,
+  seAvisaQueSoloElLosVe,
   estadoEnPalabras,
   exitoDeCompartir,
   habitosEnPalabras,
@@ -48,13 +58,15 @@ import {
   rechazoDeCompartir,
   type ActoDeCompartir,
   type MisHabitos,
+  type PedidoDeAcceso,
+  type RespuestaAUnPedido,
 } from '../habitos-en-el-telefono';
 import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
 import { useLecturaRecordada } from '../lecturas';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { PreguntaV2 } from '../pregunta-v2';
 import { Aviso, Boton, Casilla, Dato, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
-import { faltaElA3 } from './tarjeta-de-inicio';
+import { Accion, Acciones, faltaElA3 } from './tarjeta-de-inicio';
 
 const A = COPY_HABITOS.apk;
 
@@ -85,6 +97,11 @@ export function PantallaDeMisHabitos({ token, salir, ir, subir }: { token: strin
   const pedir = useCallback(() => api.misHabitos(token), [token]);
   // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts); la misma lectura que la tarjeta de Inicio.
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mis-habitos', pedir, sesionPerdida);
+  // Ronda 2.1: los pedidos que esperan su respuesta (API-HBT-08), la misma lectura que la tarjeta de Inicio. Si no se pueden
+  // leer (sin conexión, sin el A3), la pantalla sigue con lo suyo: lo que falla lo dice la lectura de «Mis hábitos».
+  const pedirPedidos = useCallback(() => api.pedidosDeAccesoAMisHabitos(token), [token]);
+  const pedidos = useLecturaRecordada(token, 'pedidos-de-acceso', pedirPedidos, sesionPerdida);
+  const cargarPedidos = pedidos.cargar;
   const [aviso, setAviso] = useState<AvisoDeLaPantalla | null>(null);
   const avisar = useCallback(
     (tipo: 'exito' | 'info', texto: string) => {
@@ -93,7 +110,10 @@ export function PantallaDeMisHabitos({ token, salir, ir, subir }: { token: strin
     },
     [subir],
   );
-  const releer = useCallback(() => void cargar(), [cargar]);
+  const releer = useCallback(() => {
+    void cargar();
+    void cargarPedidos();
+  }, [cargar, cargarPedidos]);
 
   let cuerpo;
   if (r === null) cuerpo = <Cargando />;
@@ -108,10 +128,13 @@ export function PantallaDeMisHabitos({ token, salir, ir, subir }: { token: strin
     );
   } else {
     const comun: Comun = { d: r.datos.data, token, sesionPerdida, avisar, releer };
+    const esperando = pedidos.r?.ok ? pedidosEnOrden(pedidos.r.datos.data) : [];
     cuerpo = (
       <>
         <Parrafo tenue>{A.bajada}</Parrafo>
-        {aQuienesPreguntar(comun.d).map((p) => (
+        <PedidosDeAcceso {...comun} pedidos={esperando} />
+        {/* Quien pidió verlos ya tiene su pregunta en el pedido: no se le pregunta dos veces. */}
+        {aQuienesPreguntarSinPedido(comun.d, esperando).map((p) => (
           <PreguntaPorUnNuevo key={p.professional.identityId} {...comun} p={p} />
         ))}
         <LoQueContaste {...comun} subir={subir} />
@@ -498,6 +521,102 @@ function Compartir(comun: Comun) {
         </>
       )}
     </Seccion>
+  );
+}
+
+// ─── Ronda 2.1 · un profesional pide verlos (D-17 nueva; API-HBT-08 y 09) ─────────────────────────
+
+/** Los pedidos que esperan su respuesta, arriba de todo: sin pedidos, no se dibuja nada. */
+function PedidosDeAcceso({ pedidos, ...comun }: Comun & { readonly pedidos: readonly PedidoDeAcceso[] }) {
+  if (pedidos.length === 0) return null;
+  return (
+    <Seccion titulo={A.pedidosTitulo}>
+      {pedidos.map((p) => (
+        <PedidoDeUnProfesional key={p.accessRequestId} {...comun} pedido={p} />
+      ))}
+    </Seccion>
+  );
+}
+
+/**
+ * Un pedido: quién pide y desde qué área, para qué le sirve, cuándo lo pidió, qué vería y que es su decisión. «Sí, que los
+ * vea» y «No, por ahora» van con el mismo botón, uno al lado del otro: ninguna respuesta se empuja. El «Sí» amplía la
+ * lista, así que primero muestra el texto entero (y, si todavía no compartía, que solo él los va a ver); después se acepta.
+ * Una clave por intento: con un resultado incierto, el reintento manda lo mismo con la misma clave.
+ */
+function PedidoDeUnProfesional({ pedido, ...comun }: Comun & { readonly pedido: PedidoDeAcceso }) {
+  const { d, token, sesionPerdida, avisar, releer } = comun;
+  const id = pedido.professional.identityId;
+  const nombre = pedido.professional.displayName;
+  const [conTexto, setConTexto] = useState(false);
+  const [enviando, setEnviando] = useState<RespuestaAUnPedido | null>(null);
+  const [fallo, setFallo] = useState<{ readonly fallo: Fallo; readonly respuesta: RespuestaAUnPedido } | null>(null);
+  const clave = useClaveDeIntento();
+  const enCurso = useRef(false);
+
+  async function responder(respuesta: RespuestaAUnPedido) {
+    if (enCurso.current) return;
+    // Otra respuesta que la del intento incierto es otro intento: no reusa la clave.
+    if (fallo && fallo.respuesta !== respuesta) clave.descartar();
+    enCurso.current = true;
+    setEnviando(respuesta);
+    setFallo(null);
+    const r = await api.responderPedidoDeAcceso(token, pedido.accessRequestId, respuestaAlPedido(d, pedido, respuesta), clave.actual());
+    enCurso.current = false;
+    clave.registrar(r);
+    setEnviando(null);
+    if (sesionPerdida(r)) return;
+    if (r.ok) {
+      setConTexto(false);
+      avisar('exito', exitoDeLaRespuesta(pedido, respuesta));
+      releer();
+      return;
+    }
+    // El pedido ya no espera, lo que comparte cambió o falta el A3: se vuelve a leer, y la pantalla lo dice.
+    const motivo = rechazoDeLaRespuesta(r, respuesta);
+    if (motivo || faltaElA3(r)) {
+      setConTexto(false);
+      if (motivo) avisar('info', motivo);
+      releer();
+      return;
+    }
+    setFallo({ fallo: falloDe(r), respuesta });
+  }
+
+  const ocupado = enviando !== null;
+  const incierto = fallo?.fallo.tipo === 'incierto';
+  return (
+    <Tarjeta>
+      <Text style={[ui.parrafo, ui.negrita]}>{A.pedidoDe(nombre, pedido.scope.label)}</Text>
+      <Parrafo>{paraQueLeSirven(pedido)}</Parrafo>
+      <Parrafo tenue>{A.pedidoEl(dia(pedido.requestedAt))}</Parrafo>
+      <Parrafo tenue>{A.loQueVeria}</Parrafo>
+      <Parrafo tenue>{A.esTuDecision}</Parrafo>
+      {conTexto ? (
+        <>
+          {seAvisaQueSoloElLosVe(d, id) ? <Aviso tipo="info" titulo={A.soloEl(nombre)} /> : null}
+          <TextoDelActo texto={d.text} />
+        </>
+      ) : null}
+      {fallo ? <Aviso tipo="error" titulo={fallo.fallo.mensaje} /> : null}
+      {incierto && fallo ? (
+        <Boton texto={COPY.reintentar} onPress={() => void responder(fallo.respuesta)} ocupado={ocupado} />
+      ) : conTexto ? (
+        <>
+          <Boton texto={A.aceptoYComparto} onPress={() => void responder('si')} ocupado={enviando === 'si'} deshabilitado={ocupado} />
+          <Boton texto={A.cancelar} tipo="secundario" onPress={() => setConTexto(false)} deshabilitado={ocupado} />
+        </>
+      ) : (
+        <Acciones>
+          <Accion>
+            <Boton texto={A.pedidoSi} tipo="secundario" onPress={() => (elSiPideElTexto(d, id) ? setConTexto(true) : void responder('si'))} ocupado={enviando === 'si'} deshabilitado={ocupado} />
+          </Accion>
+          <Accion>
+            <Boton texto={A.pedidoNo} tipo="secundario" onPress={() => void responder('no')} ocupado={enviando === 'no'} deshabilitado={ocupado} />
+          </Accion>
+        </Acciones>
+      )}
+    </Tarjeta>
   );
 }
 

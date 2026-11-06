@@ -263,6 +263,9 @@ model Identidad {
   habitosDeLaPersona       HabitosDeLaPersona[]    @relation("HabitosDeLaPersona")
   autorizacionesDeHabitos  AutorizacionDeHabitos[] @relation("AutorizacionDeHabitosDeLaPersona")
   destinatarioDeHabitos    DestinatarioDeHabitos[] @relation("DestinatarioDeHabitosDelProfesional")
+  // DL-165, ronda 2.1 (D-17 nueva): los pedidos de acceso a los hábitos, de quien pide y de quien responde.
+  pedidosDeAccesoHechos    PedidoDeAccesoAHabitos[] @relation("PedidoDeAccesoDelProfesional")
+  pedidosDeAccesoRecibidos PedidoDeAccesoAHabitos[] @relation("PedidoDeAccesoALaPersona")
 
   @@map("identidad")
 }
@@ -777,6 +780,8 @@ model AlcanceDeVinculo {
   actosDeEvidenciaVisual ActoRegistrable[]
   /// DL-165 D-9: los renglones de la autorización de hábitos que nombran este componente.
   destinatariosDeHabitos DestinatarioDeHabitos[]
+  /// DL-165, ronda 2.1: los pedidos de acceso a los hábitos hechos desde este componente.
+  pedidosDeAccesoAHabitos PedidoDeAccesoAHabitos[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -1883,6 +1888,11 @@ enum TipoDeEventoDeFormulario {
   AutorizacionDeHabitosActivada
   AutorizacionDeHabitosModificada
   AutorizacionDeHabitosRetirada
+  /// DL-165, ronda 2.1 (D-17 nueva): un profesional pide ver los hábitos, y cómo termina el pedido.
+  PedidoDeAccesoAHabitosHecho
+  PedidoDeAccesoAHabitosReemplazado
+  PedidoDeAccesoAHabitosAceptado
+  PedidoDeAccesoAHabitosNoPorAhora
 }
 
 /// DL-164 D-3: PENDIENTE mientras espera que la persona la confirme; después, cómo terminó. Sin retorno.
@@ -2506,6 +2516,44 @@ model DestinatarioDeHabitos {
   @@index([profesionalId])
   @@index([alcanceDeVinculoId])
   @@map("destinatario_de_habitos")
+}
+
+/// DL-165, ronda 2.1 (D-17 nueva; D-24, D-25): cómo terminó un pedido de acceso a los hábitos. PENDIENTE mientras espera; la
+/// persona dijo «Sí, que los vea» (ACEPTADO, también cuando lo suma desde «Mis hábitos») o «No, por ahora» (NO_POR_AHORA), o
+/// lo reemplazó un pedido nuevo del mismo profesional a los 7 días (REEMPLAZADO). Sin retorno.
+enum EstadoDePedidoDeAccesoAHabitos {
+  PENDIENTE
+  ACEPTADO
+  NO_POR_AHORA
+  REEMPLAZADO
+}
+
+/// DL-165, ronda 2.1 (D-17 nueva: «el profesional puede reenviar la solicitud de acceso y que a la persona le llegue como
+/// importante»): un profesional le pide a la persona ver sus hábitos, desde un componente de vínculo suyo con ella. No cambia
+/// ningún acceso: lo decide la persona. Una pendiente por profesional y persona (índice parcial en la migración
+/// 20261106120200); resuelto, no cambia más. No se borra.
+model PedidoDeAccesoAHabitos {
+  id                 String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId      String                         @map("profesional_id") @db.Uuid
+  asesoradoId        String                         @map("asesorado_id") @db.Uuid
+  alcanceDeVinculoId String                         @map("alcance_de_vinculo_id") @db.Uuid
+  alcance            Alcance
+  estado             EstadoDePedidoDeAccesoAHabitos @default(PENDIENTE)
+  /// Token de concurrencia (`expectedVersion` de API-HBT-09). Un pedido no se edita: nace en 1 y resolverlo no lo cambia.
+  version            Int                            @default(1)
+  pedidoEn           DateTime                       @map("pedido_en") @db.Timestamptz(3)
+  resueltoEn         DateTime?                      @map("resuelto_en") @db.Timestamptz(3)
+  procedencia        Json
+  momentoDeRegistro  DateTime                       @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional      Identidad        @relation("PedidoDeAccesoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado        Identidad        @relation("PedidoDeAccesoALaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([asesoradoId, estado])
+  @@index([profesionalId, asesoradoId])
+  @@index([alcanceDeVinculoId])
+  @@map("pedido_de_acceso_a_habitos")
 }
 
 // ─── WP-08 · Importación controlada (RF-028, RF-038; UC-I07; 09 v0.12 §3-§7) ─────────────────────
@@ -3356,6 +3404,8 @@ enum TipoDeNovedad {
   /// DL-164: al profesional, cuando la persona confirma lo cargado (la Respuesta ya existe) o dice «No es correcto».
   PROPUESTA_DE_FORMULARIO_CONFIRMADA
   PROPUESTA_DE_FORMULARIO_RECHAZADA
+  /// DL-165, ronda 2.1 (D-17 nueva): a la persona, cuando un profesional le pide ver sus hábitos. La referencia es el pedido.
+  PEDIDO_DE_ACCESO_A_HABITOS
 }
 
 enum PlataformaDeAviso {
