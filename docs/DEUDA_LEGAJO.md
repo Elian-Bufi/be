@@ -6054,9 +6054,48 @@ borrador contra `wp-registro-por-niveles`, sin integrar):
   tramos sin motivo. *Alternativa:* suelto, como el día en curso.
 - **I-9 · El motivo de no comparar es «tildada sin escribir»,** aunque el ejercicio sea otro o lo indicado no se haya
   podido leer: va antes que esos motivos. Solo «Adicional: no se compara» va antes.
-- **I-10 · «Carga rápida con cambios» sale solo de la marca de cada serie.** Una sesión con una serie menos, sin nada
-  escrito, sigue siendo «Carga rápida», con «3 de 4 series registradas» a la vista. *Alternativa:* llamarla «con
-  cambios» también; la decide Dirección si la prefiere.
+- **I-10 · «Carga rápida con cambios» ~~sale solo de la marca de cada serie~~ sale también de las series.**
+  **PROGRAMADA** el 2026-11-06 (`5cd4c07`), con el cambio que ratificó Dirección ese día. ~~Una sesión con una serie
+  menos, sin nada escrito, sigue siendo «Carga rápida».~~ Ahora la sesión tildada entera que cambió frente al plan dice
+  «Carga rápida con cambios», aunque nada se haya escrito; qué es un cambio lo precisa I-11. «3 de 4 series
+  registradas» sigue a la vista. Lo demás queda como estaba: una serie escrita hace «con cambios» a la sesión por su
+  marca, y «Carga completa» sigue completa aunque falte una serie, porque cada serie registrada se escribió.
+- **I-11 · Qué es un cambio frente al plan** (a ratificar). Se compara lo que rige con la sesión del plan que rigió ese
+  día, la que trae la ejecución (`compararEjecucion`), sin los objetivos de cada serie (`cambiaFrenteAlPlan`):
+  - **una serie menos:** una serie indicada sin registrar, o un ejercicio entero sin registrar;
+  - **una de más:** una serie registrada que no estaba indicada;
+  - **otro ejercicio:** uno registrado con otra versión del catálogo que la indicada. Cuenta también otra versión del
+    mismo ejercicio, que el contrato informa como sustitución (`substituted`). Así el nivel no depende de las demás
+    sesiones del período, y los Registros y la línea de tiempo dicen lo mismo aunque lean períodos distintos;
+  - **un dato distinto** se reconoce por la marca, sin recalcular: la serie que la persona cambió llega escrita
+    (`TYPED`; la APK le saca la marca, I-4). Los valores de una serie tildada no se comparan con el plan (I-3: un rango,
+    otra unidad). Una serie escrita con los mismos valores del plan cuenta como cambio: la persona la escribió;
+  - **no cuentan:** la condición «Realizada con desvío» sola (ya la dice la condición), un ejercicio que el plan trae
+    sin series, ni nada de una sesión resumida o no realizada.
+  - *Alternativa:* contar solo la serie menos, lo literal del pedido, y dejar como «Carga rápida» la de más y el
+    ejercicio cambiado. La descarté: Dirección dijo que la carga rápida vale «solo si la persona no cambia ni ejercicios
+    ni series».
+
+**I-10 programada** (2026-11-06, `5cd4c07`, rama `wp-carga-rapida-con-cambios`, PR en borrador, sin integrar):
+- **Dónde se decide:** en el dominio, `nivelDeDetalleFrenteAlPlan` (`registro-por-niveles.ts`). Toma el nivel de la
+  marca y, si es «Carga rápida» y la sesión cambió frente al plan, lo pasa a «Carga rápida con cambios». No es un nivel
+  nuevo: es `PARTE_COMO_EL_PLAN`, con su mismo nombre.
+- **Dónde se muestra:** en los Registros del website (la fila y el encabezado del detalle, por `filaDeLaSesion`) y en la
+  línea de tiempo (API-DSH-04 arma «Cómo se cargó»; el renglón del website lo lee de ahí). Los gráficos y «Analizar» no
+  dicen el nivel de la sesión: marcan cada serie tildada («carga rápida»), y eso no cambia.
+- **El contrato no cambia:** el nivel viaja como texto en el detalle de API-DSH-04, que ninguna APK lee; la respuesta
+  tiene la misma forma. `lecturas-de-las-apk` y `docs/api/openapi.json` no se tocan.
+- **La APK no cambia; decirlo ahí pide una versión nueva** (no hecho). Arma el nivel en el teléfono, por la marca:
+  `nivelDeDetalleDelRegistro` en `registro-rapido.ts` y `entrenamiento.tsx`, y `nivelDeDetalle` en `historial.tsx`.
+  Hasta su próxima versión, con una serie menos, el último cuadro de «Ya la hice» dice «Tu profesional ve cómo la
+  cargaste: «Carga rápida»», mientras el profesional ve «Carga rápida con cambios». Para alinearla, esas tres pantallas
+  usan `nivelDeDetalleFrenteAlPlan` con la sesión del plan, que la APK ya tiene.
+- **Pruebas:** `registro-por-niveles.test.ts` (cada cambio por separado, y que los demás niveles no se mueven),
+  `registros-de-entrenamiento.test.ts` (sin cambios, una serie menos y un dato distinto, en la fila y en el detalle; la
+  prueba anterior de la serie menos ahora espera «con cambios») y `registro-por-niveles.int-spec.ts` (los mismos casos
+  en API-DSH-04, con la sesión A entera).
+- **Lo que queda:** verlo en el navegador con una sesión de una serie menos (el website lo construye la CI; en esta PC
+  no alcanza la memoria), la APK nueva, y que Dirección ratifique I-11.
 
 **Pruebas de los gráficos:**
 - **Dominio:** `carga-rapida-en-el-escritorio.test.ts` (nueva: la serie de «Analizar», el resumen, la comparación de
@@ -6070,7 +6109,8 @@ borrador contra `wp-registro-por-niveles`, sin integrar):
 
 **Lo que queda de los gráficos:** verlos en el navegador, en los dos temas, con una sesión en carga rápida.
 
-**Condición de cierre:** Dirección ratifica I-1 a I-10, la CI pasa, y la APK nueva se prueba en el teléfono.
+**Condición de cierre:** Dirección ratifica I-1 a I-9 e I-11 (I-10 lo decidió el 2026-11-06), la CI pasa, y la APK
+nueva se prueba en el teléfono.
 
 ---
 
