@@ -21,6 +21,8 @@
  * - **Una serie tildada sin escribir no se compara** (DL-161; Dirección, 2026-11-02): sus valores son los del plan, que la
  *   persona confirmó con un toque. Cuenta como registrada («2 de 3 series registradas» se dice siempre) y la columna de
  *   la comparación dice «No se compara: tildada sin escribir». Lo que la persona escribió o cambió sí se compara.
+ * - **La carga rápida que cambió frente al plan dice «Carga rápida con cambios»** (DL-161 I-10; Dirección, 2026-11-06):
+ *   una serie menos, una de más u otro ejercicio, aunque nada se haya escrito.
  * Es descriptivo: nada de esto es un puntaje ni dice si la sesión estuvo bien.
  */
 import {
@@ -40,7 +42,7 @@ import { cantidadDeSeries, COPY_REGISTRO_POR_NIVELES, ETIQUETA_DE_GRANULARIDAD, 
 import { COPY_ENTRENAMIENTO_POR_SERIE, ETIQUETA_DE_RELACION, textoDelPlanDeLaSerie, textoDeRepeticiones, textoDeSegundos } from './copy-entrenamiento-por-serie';
 import { cantidad, numero } from './formato-numeros';
 import type { NombreDeIcono } from './iconos';
-import { nivelDeDetalleDelRegistro, seCargoComoElPlan, textoDelNivelDeDetalle, type NivelDeDetalle } from './registro-por-niveles';
+import { nivelDeDetalleDelRegistro, nivelDeDetalleFrenteAlPlan, seCargoComoElPlan, textoDelNivelDeDetalle, type NivelDeDetalle } from './registro-por-niveles';
 import { relacionDeCarga, relacionDeRepeticiones, relacionDeRir, type RelacionConElObjetivo } from './relacion-con-el-objetivo';
 
 // ─── Una serie ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -251,7 +253,10 @@ export interface FilaDeSesion {
   readonly comoSeRegistro: string | null;
   /** Lo que la persona escribió de la sesión entera, si la registró con un resumen. */
   readonly resumenDeLaSesion: string | null;
-  /** DL-161: cómo quedó cargado lo que rige (completa, rápida, rápida con cambios, resumida…); `null` si no se puede decir. */
+  /**
+   * DL-161: cómo quedó cargado lo que rige (completa, rápida, rápida con cambios, resumida…); `null` si no se puede decir.
+   * La carga rápida con una serie menos, una de más u otro ejercicio es «con cambios» (I-10, `nivelDeDetalleFrenteAlPlan`).
+   */
   readonly nivelDeDetalle: NivelDeDetalle | null;
   /** El nivel en palabras: «Carga completa», «Carga rápida», «Carga rápida con cambios»… `null` si no se puede decir. */
   readonly detalle: string | null;
@@ -282,7 +287,8 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
   const rige = fuente.tipo === 'no-resoluble' ? null : registroVigente(x);
   const clase: ClaseDeSesion = !rige ? 'SIN_REGISTRO_VIGENTE' : rige.sessionCondition === 'NOT_COMPLETED' ? 'NO_REALIZADA' : rige.granularity === 'SET' ? 'POR_SERIE' : 'RESUMIDA';
   const seLeyoLoIndicado = objetivos !== null;
-  const nivel = rige ? nivelDeDetalleDelRegistro(rige) : null;
+  // DL-161 I-10: la carga rápida con una serie menos, una de más u otro ejercicio se lee «Carga rápida con cambios».
+  const nivel = rige ? nivelDeDetalleFrenteAlPlan(nivelDeDetalleDelRegistro(rige), comparaciones) : null;
   const base = {
     id: x.executionId,
     fecha: x.date,

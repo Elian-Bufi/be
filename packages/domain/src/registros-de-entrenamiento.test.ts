@@ -480,7 +480,8 @@ test('DL-161 · una serie menos en la carga rápida se cuenta siempre; una tilda
     }),
     OBJETIVOS,
   );
-  assert.deepEqual([unaMenos.nivelDeDetalle, unaMenos.detalle], ['COMO_EL_PLAN', 'Carga rápida']);
+  // Dirección, 2026-11-06 (DL-161 I-10): con una serie menos ya no es «Carga rápida».
+  assert.deepEqual([unaMenos.nivelDeDetalle, unaMenos.detalle], ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
   assert.equal(unaMenos.ejercicios.find((e) => e.prescriptionId === 'rx-banca')!.cuenta, '3 de 4 series registradas');
   assert.deepEqual([unaMenos.series, unaMenos.frente, unaMenos.sinRegistrar], ['11 de 12 registradas', '1 serie sin registrar · 11 series tildadas sin escribir: no se comparan', 1]);
   assert.equal(sesionEnLaVista(unaMenos, 'SIN_REGISTRAR'), true);
@@ -515,6 +516,54 @@ test('DL-161 · una serie menos en la carga rápida se cuenta siempre; una tilda
     assert.deepEqual(terminosProhibidosDeEntrenamientoEn(t), [], t);
     assert.doesNotMatch(t, /%|—/);
   }
+});
+
+test('DL-161 I-10 · «Carga rápida con cambios» con una serie menos o un dato distinto; sin cambios, sigue siendo «Carga rápida»', () => {
+  const plan = (s: SerieEjecutadaApi): SerieEjecutadaApi => ({ ...s, recordedAs: 'AS_PLANNED' });
+  const nivel = (f: FilaDeSesion) => [f.nivelDeDetalle, f.detalle];
+  const conTodo = (cambio: (r: Registrado[]) => Registrado[], o: { condicion?: Condicion; objetivos?: ObjetivosDeLaVersion | null } = {}) =>
+    filaDeLaSesion(
+      ejecucion({ fecha: '2026-11-06', prescripciones: SESION_B, registrado: cambio(TODO_DENTRO.map((e) => ({ ...e, sets: e.sets!.map(plan) }))), condicion: o.condicion }),
+      o.objetivos === undefined ? OBJETIVOS : o.objetivos,
+    );
+  const enBanca = (r: Registrado[], sets: (s: SerieEjecutadaApi[]) => SerieEjecutadaApi[]): Registrado[] => r.map((e) => (e.prescriptionId === 'rx-banca' ? { ...e, sets: sets(e.sets!) } : e));
+
+  // Sin cambios: «Hice lo planificado», las doce series tildadas sin escribir. Sigue siendo «Carga rápida».
+  const sinCambios = conTodo((r) => r);
+  assert.deepEqual(nivel(sinCambios), ['COMO_EL_PLAN', 'Carga rápida']);
+  assert.equal(sinCambios.series, '12 de 12 registradas');
+
+  // Una serie menos, sin nada escrito: «Carga rápida con cambios», y la cuenta dice cuál falta.
+  const unaMenos = conTodo((r) => enBanca(r, (s) => s.slice(0, 3)));
+  assert.deepEqual(nivel(unaMenos), ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
+  assert.deepEqual([unaMenos.series, unaMenos.sinRegistrar], ['11 de 12 registradas', 1]);
+  assert.equal(unaMenos.ejercicios.find((e) => e.prescriptionId === 'rx-banca')!.cuenta, '3 de 4 series registradas');
+
+  // Un dato distinto: en la primera de banca la persona escribió 5 repeticiones en vez de 8. La serie llega escrita
+  // (la APK le saca la marca) y se compara con lo indicado.
+  const unDatoDistinto = conTodo((r) => enBanca(r, (s) => [serie(1, kg(62.5), 5, 2), ...s.slice(1)]));
+  assert.deepEqual(nivel(unDatoDistinto), ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
+  assert.deepEqual([unDatoDistinto.series, unDatoDistinto.conDiferencias], ['12 de 12 registradas', 1]);
+  assert.deepEqual(
+    unDatoDistinto.ejercicios[0]!.series.slice(0, 2).map((s) => [s.comoElPlan ?? false, s.frente]),
+    [
+      [false, 'Rep.: por debajo'],
+      [true, 'No se compara: tildada sin escribir'],
+    ],
+  );
+
+  // También cambian las series una de más y un ejercicio entero sin registrar o registrado en lugar del indicado.
+  assert.deepEqual(nivel(conTodo((r) => enBanca(r, (s) => [...s, plan(serie(5, kg(60), 6, 1))]))), ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
+  assert.deepEqual(nivel(conTodo((r) => r.filter((e) => e.prescriptionId !== 'rx-dominadas'), { condicion: 'COMPLETED_WITH_DEVIATION' })), ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
+  assert.deepEqual(nivel(conTodo((r) => r.map((e) => (e.prescriptionId === 'rx-banca' ? { ...e, realizado: MANCUERNAS } : e)))), ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
+  // No hacen falta los objetivos de cada serie: si no se pudieron leer, la serie menos se ve igual.
+  assert.deepEqual(nivel(conTodo((r) => enBanca(r, (s) => s.slice(0, 3)), { objetivos: null })), ['PARTE_COMO_EL_PLAN', 'Carga rápida con cambios']);
+
+  // No cambian el nivel: la condición «Realizada con desvío» sola (ya la dice la condición), ni la carga completa con
+  // una serie menos, que sigue completa porque cada serie registrada se escribió.
+  assert.deepEqual(nivel(conTodo((r) => r, { condicion: 'COMPLETED_WITH_DEVIATION' })), ['COMO_EL_PLAN', 'Carga rápida']);
+  const completaConUnaMenos = filaDeLaSesion(ejecucion({ fecha: '2026-11-06', prescripciones: SESION_B, registrado: [{ prescriptionId: 'rx-banca', sets: BANCA_DENTRO.slice(0, 3) }, ...TODO_DENTRO.slice(1)] }), OBJETIVOS);
+  assert.deepEqual(nivel(completaConUnaMenos), ['CON_DETALLE', 'Carga completa']);
 });
 
 test('DL-161 · lo registrado antes queda igual: carga completa, y sus series sin marca ni duración', () => {

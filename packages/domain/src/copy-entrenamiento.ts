@@ -57,7 +57,9 @@ export const ETIQUETA_DE_GRANULARIDAD: Readonly<Record<'SET' | 'EXERCISE_OR_SESS
  * DL-161: el nivel de detalle de una sesión registrada, como lo lee el profesional (`registro-por-niveles.ts`). Dice cómo
  * se cargó, no si estuvo bien. «No realizada» no está acá: sale de la condición registrada (`etiquetaDeCondicionRegistrada`).
  * Los nombres son los de Dirección (2026-11-02): «Carga completa» (cada serie escrita), «Carga rápida» (todas tildadas
- * con lo planificado) y «Carga rápida con cambios» (algunas escritas o cambiadas, las demás tildadas).
+ * con lo planificado) y «Carga rápida con cambios» (algunas escritas o cambiadas, las demás tildadas). En el escritorio,
+ * «Carga rápida con cambios» es también la sesión tildada entera con una serie menos, una de más u otro ejercicio
+ * (DL-161 I-10 e I-11, `nivelDeDetalleFrenteAlPlan`).
  */
 export const ETIQUETA_DE_NIVEL_DE_DETALLE: Readonly<Record<'CON_DETALLE' | 'COMO_EL_PLAN' | 'PARTE_COMO_EL_PLAN' | 'RESUMIDA', string>> = {
   CON_DETALLE: 'Carga completa',
