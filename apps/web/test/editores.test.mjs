@@ -271,3 +271,47 @@ test('TB-48 · el microciclo se ofrece también con sesiones sueltas, que pasan 
   assert.match(entrenamiento, /detalle: loQuePasaConLasSesiones\(sesiones\.length\),\s+noSePuede: sesiones\.length > TOPES_DE_ENTRENAMIENTO\.sesionesDelMicrociclo/);
   assert.doesNotMatch(entrenamiento, /Solo mientras el bloque no tiene sesiones/);
 });
+
+// ─── «Revisar el plan» (`advisees/revisar-el-plan.ts`) ──────────────────────────────────────────────────────────────
+const R = await import('../src/app/pro/advisees/revisar-el-plan.ts');
+const leerDelDominio = (archivo) => readFileSync(new URL(`../../../packages/domain/src/${archivo}`, import.meta.url), 'utf8');
+
+test('TB-48 · «Revisar el plan» lista lo que queda sin completar, cada cosa con su lugar', () => {
+  const e = conIds();
+  e.dayTypes[0].meals[1].options.push({ label: 'Tarta', items: [{ catalogItemId: ALIMENTO, quantity: null, preparationState: null }], recipeVersionId: ID(902) });
+  assert.deepEqual(R.loQueQuedaSinCompletarEnNutricion(e.dayTypes), [{ code: R.INCOMPLETO.sinCantidad, path: 'dayTypes[0].meals[1].options[0].items[0].quantity' }], 'solo el ítem sin cantidad; la opción de receta no cuenta');
+  assert.deepEqual(d.lugarDelProblema('dayTypes[0].meals[1].options[0].items[0].quantity'), { dia: 0, comida: 1, opcion: 0, item: 0 }, 'el editor lo ubica y lleva a su campo');
+  const sesion = sesionConIds();
+  sesion.prescriptions.push({ exerciseVersionId: ID(903), sets: [], intensity: null }, { exerciseVersionId: ID(904), sets: [{ repetitions: { value: 5 } }, { repetitions: null }], intensity: null });
+  const bloques = [{ label: 'Bloque 1', microcycles: [{ label: 'Semana 1', sessions: [sesion] }] }];
+  assert.deepEqual(R.loQueQuedaSinCompletarEnEntrenamiento(bloques), [
+    { code: R.INCOMPLETO.sinSeries, path: 'blocks[0].microcycles[0].sessions[0].prescriptions[1]' },
+    { code: R.INCOMPLETO.sinRepeticiones, path: 'blocks[0].microcycles[0].sessions[0].prescriptions[2].sets[1].repetitions' },
+  ]);
+  assert.deepEqual(d.lugarDelProblemaDeEntrenamiento('blocks[0].microcycles[0].sessions[0].prescriptions[2].sets[1].repetitions'), { bloque: 0, microciclo: 0, sesion: 0, ejercicio: 2, serie: 1 });
+  // Lo que queda sin completar no es lo que no deja guardar: un plan así se guarda, se valida y se activa.
+  assert.deepEqual(d.loQueNoDejaGuardarElEntrenamiento(bloques), []);
+  assert.equal(normalizarEntrenamiento({ blocks: bloques }).ok, true);
+  assert.deepEqual(normalizarNutricion(conIds()), []);
+  for (const codigo of Object.values(R.INCOMPLETO)) assert.ok(R.TEXTO_DE_LO_INCOMPLETO[codigo], codigo);
+});
+
+test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar no bloquea nada', () => {
+  assert.match(leerDelDominio('copy-nutricion.ts'), /validarPlan: 'Revisar el plan',/);
+  assert.match(leerDelDominio('copy-entrenamiento.ts'), /validarPlan: 'Revisar el plan',/);
+  assert.match(leerDelDominio('copy-entrenamiento.ts'), /noJuzga: 'Revisar el plan mira su forma, no su calidad/);
+  for (const [archivo, funcion] of [['nutrition/editor.tsx', 'loQueQuedaSinCompletarEnNutricion(estructura)'], ['training/editor.tsx', 'loQueQuedaSinCompletarEnEntrenamiento(bloques)']]) {
+    const editor = leer(archivo);
+    assert.ok(editor.includes(`const falta = ${funcion};`), archivo);
+    assert.match(editor, /setSinCompletar\(falta\);/);
+    assert.match(editor, /<ul className="problemas-del-plan" data-sin-completar>/);
+    // Nada más lee lo sin completar: ni guardar, ni el autoguardado, ni «Activar plan».
+    assert.equal((editor.match(/sinCompletar\b/g) ?? []).length, 5, `${archivo}: el estado, la lista (tres veces) y su texto`);
+    assert.doesNotMatch(editor, /Validar plan/);
+  }
+  for (const t of [...Object.values(R.TEXTO_DE_LO_INCOMPLETO), ...Object.values(R.COPY_REVISAR_EL_PLAN), 'Revisar el plan', 'No hay nada que impida activar.']) {
+    assert.deepEqual(d.terminosProhibidosEn(t), [], t);
+    assert.deepEqual(d.terminosProhibidosDeEntrenamientoEn(t), [], t);
+    assert.doesNotMatch(t, /cumplimiento|adherencia|racha|px|error/i, t);
+  }
+});

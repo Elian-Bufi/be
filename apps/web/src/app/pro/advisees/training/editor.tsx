@@ -76,6 +76,7 @@ import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type Elec
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
+import { COPY_REVISAR_EL_PLAN, loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
 import {
   COPY_DE_LOS_EDITORES as E,
   copiaDeLaSesion,
@@ -232,6 +233,8 @@ export function EditorDePlan({
   const ediciones = useRef(0);
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deValidar?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
+  // TB-48: lo que «Revisar el plan» encontró sin completar. No impide guardar ni activar.
+  const [sinCompletar, setSinCompletar] = useState<readonly ValidationIssue[] | null>(null);
   const [confirmar, setConfirmar] = useState(false);
   // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -287,6 +290,7 @@ export function EditorDePlan({
     setBloques((b) => f(structuredClone(b)));
     setSucio(true);
     setProblemas(null);
+    setSinCompletar(null);
     setMensaje(null);
     setParaEnfocar(null);
   };
@@ -382,9 +386,13 @@ export function EditorDePlan({
     const r = await api.validarPlanDeEntrenamiento(token, planId, v.version);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setMensaje({ tipo: 'error', texto: mensajeDeFallo(r) });
+    // TB-48: además de lo que impide activar, lo que queda sin completar, que no lo impide.
+    const falta = loQueQuedaSinCompletarEnEntrenamiento(bloques);
     setProblemas(r.datos.data.issues);
-    // Validar revisa la forma, no la calidad del programa: se dice junto al resultado (B10-06:563-591).
-    setMensaje(r.datos.data.valid ? { tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.sinProblemas} ${COPY_ENTRENAMIENTO.noJuzga}` } : { tipo: 'error', texto: COPY_ENTRENAMIENTO.hayElementosPorCorregir, deValidar: true });
+    setSinCompletar(falta);
+    // Revisar mira la forma, no la calidad del programa: se dice junto al resultado (B10-06:563-591).
+    if (!r.datos.data.valid) return setMensaje({ tipo: 'error', texto: COPY_ENTRENAMIENTO.hayElementosPorCorregir, deValidar: true });
+    setMensaje(falta.length > 0 ? { tipo: 'info', texto: COPY_ENTRENAMIENTO.sinProblemas, deValidar: true } : { tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.sinProblemas} ${COPY_ENTRENAMIENTO.noJuzga}` });
   }
 
   /** «Activar plan»: con cambios, guarda antes; si no se puede guardar, no pregunta nada (el motivo queda a la vista). */
@@ -745,7 +753,7 @@ export function EditorDePlan({
         </AvisoFlotante>
       ) : null}
       {mensaje && mensaje.tipo !== 'exito' ? (
-        <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info'}>
+        <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info' || !!mensaje.deValidar}>
           <p>{mensaje.texto}</p>
           {problemas && problemas.length > 0 ? (
             <ul className="problemas-del-plan">
@@ -764,6 +772,21 @@ export function EditorDePlan({
                 </li>
               ))}
             </ul>
+          ) : null}
+          {/* TB-48: lo que queda sin completar, que no impide activar; cada cosa lleva a su lugar, como un problema. */}
+          {sinCompletar && sinCompletar.length > 0 ? (
+            <>
+              <p>{COPY_REVISAR_EL_PLAN.sinCompletar}</p>
+              <ul className="problemas-del-plan" data-sin-completar>
+                {sinCompletar.map((p, n) => (
+                  <li key={n}>
+                    <button type="button" className="boton boton--enlace" onClick={() => irAlProblema(p)}>
+                      {ubicacionDelProblemaDeEntrenamiento(p.path, bloques)} → {TEXTO_DE_LO_INCOMPLETO[p.code]}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
           {mensaje.deValidar ? <p className="nota">{COPY_ENTRENAMIENTO.noJuzga}</p> : null}
         </Aviso>

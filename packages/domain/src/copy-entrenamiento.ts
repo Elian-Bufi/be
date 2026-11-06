@@ -162,9 +162,10 @@ export const COPY_ENTRENAMIENTO = {
   cambiosSinGuardar: 'Cambios sin guardar',
   guardado: 'Guardado',
   hayElementosPorCorregir: 'Hay elementos por corregir antes de activar.',
-  validarPlan: 'Validar plan',
+  /** WP-TABLERO-ALTA-GAMA TB-48: «Validar plan» pasa a «Revisar el plan», que lista también lo que queda sin completar. */
+  validarPlan: 'Revisar el plan',
   sinProblemas: 'El borrador no tiene problemas de estructura.',
-  noJuzga: 'Validar revisa la forma del plan, no su calidad: no juzga el programa, la frecuencia ni la selección de ejercicios.',
+  noJuzga: 'Revisar el plan mira su forma, no su calidad: no juzga el programa, la frecuencia ni la selección de ejercicios.',
   activarPlan: 'Activar plan',
   consecuenciaDeActivar: 'Esta versión pasará a ser la planificación vigente del asesorado y la anterior se conservará.',
   planActivado: 'Plan activado',
