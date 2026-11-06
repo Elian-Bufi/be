@@ -15,7 +15,7 @@
 import type { SerieAnalitica } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { diaYMesCivil } from '../../../../lib/formato';
-import { diasSinRegistros, FRANJA_DE_ROTULOS, geometriaDelIndicador, geometriaDelMinigrafico, LETRA_MINIMA, LUGAR_PARA_MARCAR_CADA_DIA } from './geometria';
+import { diasSinRegistros, FRANJA_DE_ROTULOS, geometriaDelIndicador, geometriaDelMinigrafico, LETRA_MINIMA, LUGAR_PARA_MARCAR_CADA_DIA, RANGO_MINIMO_POR_UNIDAD } from './geometria';
 import { ESTILOS, Punto } from './marca';
 
 const ALTO = 60;
@@ -174,7 +174,7 @@ export function MinigraficoDelIndicador({
   const diaria = serie.grain === 'DAY';
   const sinRegistros = useMemo(() => (diaria ? diasSinRegistros(serie.gaps, hoy) : []), [serie, diaria, hoy]);
   const g = useMemo(
-    () => geometriaDelIndicador({ puntos: serie.points, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan }),
+    () => geometriaDelIndicador({ puntos: serie.points, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan, rangoMinimo: RANGO_MINIMO_POR_UNIDAD[serie.unit] }),
     [serie, sinRegistros, desde, hasta, hoy, diaria, ancho, lienzo, inicioDelPlan],
   );
   const color = ESTILOS[0].color;

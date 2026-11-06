@@ -119,6 +119,7 @@ STEPS                1. 90 días en 300 px (3,3 px por día): leer el estado de 
                      5. Un subtotal muy por debajo del resto: buscar su muesca y su punto.
                      6. Tres días con valor en 90: leer el modo, la línea y la media.
                      7. Sesiones de dos tramos: contar los trazos y la tira.
+                     8. Tres tomas de peso con 0,2 kg de diferencia, con y sin la escala mínima del kilo.
 EXPECTED             1 → cada uno de los 90 días tiene en la tira el estado que da estadosDeLosDias (con valor, sin
                      completar o sin registros); hoy lleva su raya debajo.
                      2 → la línea es la media semanal: la primera semana, de lunes a domingo, con 6 días con valor de
@@ -130,11 +131,13 @@ EXPECTED             1 → cada uno de los 90 días tiene en la tira el estado q
                      5 → una muesca en su día, en la base, contada como «debajo de la escala»; ningún punto la ubica.
                      6 → puntos sueltos, sin línea ni media.
                      7 → un trazo por tramo; las sesiones no llevan tira.
+                     8 → con la escala mínima (2 kg, 2 cm, 4 mm), 0,2 kg ocupa menos de un octavo del alto; sin ella,
+                     casi todo: una diferencia chica no parece un precipicio.
 NEGATIVE_ASSERTIONS  La línea no une días con un día sin registros o un subtotal en el medio, ni dos tramos. Lo de
                      fuera de la escala no se dibuja a una altura que no es la suya. Hoy no entra en la media de su
                      semana. Mutaciones verificadas: sin la celda de los días sin registros falla el paso 1; con hoy
                      en la media falla el paso 2.
-AUTOMATION           scripts/geometria-del-minigrafico.test.mjs («TEST-TAG-007 · …», siete casos), en `npm test`
+AUTOMATION           scripts/geometria-del-minigrafico.test.mjs («TEST-TAG-007 · …», ocho casos), en `npm test`
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas del Resumen de la corrida de TB-04, a 1440 y a
                      1920 × 950, comparadas con la línea de base

@@ -328,7 +328,8 @@ test('TEST-TAG-006 · ningún punto del minigráfico queda fuera del lienzo', ()
 
 // ─── TEST-TAG-007 · El minigráfico del indicador no esconde días (WP-TABLERO-ALTA-GAMA, TB-04; DL-163 D-5) ──────────
 
-const { estadosDeLosDias, geometriaDelIndicador, LUGAR_PARA_MARCAR_CADA_DIA, SEMANAL_CON_MAS_DE_DIAS } = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
+const geometria = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
+const { estadosDeLosDias, geometriaDelIndicador, LUGAR_PARA_MARCAR_CADA_DIA, SEMANAL_CON_MAS_DE_DIAS } = geometria;
 
 const fecha = (desde, i) => new Date(mediodia(desde) + i * 86_400_000).toISOString().slice(0, 10);
 /** Un período diario: `forma(i)` da el valor del día i (o null: sin registros) y sus extras. */
@@ -430,4 +431,16 @@ test('TEST-TAG-007 · la línea no cruza lo sin completar ni une sesiones de otr
   assert.equal(g.modo, 'todos');
   assert.equal(g.tramos.length, 2, 'un tramo por segmento');
   assert.equal(g.tira.length, 0, 'las sesiones no llevan tira');
+});
+
+test('TEST-TAG-007 · una diferencia chica no parece un precipicio: la escala mínima de cada unidad', () => {
+  const { RANGO_MINIMO_POR_UNIDAD } = geometria;
+  const tomas = [punto('2026-08-12', 81.2), punto('2026-09-23', 81.0), punto('2026-11-01', 81.0)];
+  const entrada = { puntos: tomas, sinRegistros: [], desde: '2026-08-09', hasta: '2026-11-06', hoy: '2026-11-06', diaria: false, ancho: 290, lienzo: 72, inicioDelPlan: null };
+  const sinMinimo = geometriaDelIndicador(entrada);
+  const conMinimo = geometriaDelIndicador({ ...entrada, rangoMinimo: RANGO_MINIMO_POR_UNIDAD.kg });
+  const salto = (g) => Math.abs(g.puntos[0].y - g.puntos[1].y);
+  assert.ok(salto(sinMinimo) > 50, 'sin la escala mínima, −0,2 kg ocupa casi todo el alto');
+  assert.ok(salto(conMinimo) < 72 / 8, `con 2 kg de escala, −0,2 kg ocupa menos de un octavo del alto (${salto(conMinimo).toFixed(1)})`);
+  assert.deepEqual([RANGO_MINIMO_POR_UNIDAD.kg, RANGO_MINIMO_POR_UNIDAD.cm, RANGO_MINIMO_POR_UNIDAD.mm], [2, 2, 4]);
 });

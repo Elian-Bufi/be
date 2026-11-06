@@ -358,7 +358,15 @@ export interface EntradaDelIndicador {
   readonly inicioDelPlan: string | null;
   /** Lo planificado en la unidad de la métrica (el objetivo), un escalón por versión. Entra en el eje. */
   readonly plan?: readonly { readonly desde: string; readonly hasta: string | null; readonly valor: number }[];
+  /**
+   * El rango vertical más angosto que se dibuja, en la unidad de la métrica (`RANGO_MINIMO_POR_UNIDAD`): así −0,4 kg no
+   * parece un precipicio. Sin él, el rango sale solo de los valores.
+   */
+  readonly rangoMinimo?: number;
 }
+
+/** La escala mínima de cada unidad (la propuesta, A9): 2 kg, 2 cm o 4 mm, centrada en los valores. */
+export const RANGO_MINIMO_POR_UNIDAD: Readonly<Record<string, number>> = { kg: 2, cm: 2, mm: 4 };
 
 export interface PuntoDelIndicador {
   readonly clave: string;
@@ -473,6 +481,11 @@ export function geometriaDelIndicador(e: EntradaDelIndicador): GeometriaDelIndic
   if (base.length === 0) return { ...vacia, modo, tira: e.diaria ? tiraDe(e, dias, porDia) : [], hoy: hoyDe(e, indiceDe, porDia) };
   let lo = Math.min(...base);
   let hi = Math.max(...base);
+  if (e.rangoMinimo !== undefined && hi - lo < e.rangoMinimo) {
+    const centro = (hi + lo) / 2;
+    lo = centro - e.rangoMinimo / 2;
+    hi = centro + e.rangoMinimo / 2;
+  }
   const margen = (hi - lo || Math.abs(hi) * 0.05 || 1) * 0.08;
   lo -= margen;
   hi += margen;
