@@ -669,3 +669,18 @@ export function cuantasCorrigio(secciones: readonly SeccionDePlantillaV2[], prop
 export function rotuloDe(campo: Pick<CampoDePlantillaV2, 'label' | 'fieldCode'>, solicitud: SolicitudAValidar): string {
   return solicitud.requiredFieldCodes.includes(campo.fieldCode) ? campo.label : `${campo.label} (${COPY_FORMULARIOS_V2.opcional})`;
 }
+
+/**
+ * Ronda 2.1 · lo que dice la pantalla sobre cuánto falta (DL-165 D-1 y D-3). Con varias partes, «Parte N de M»; en el
+ * repaso, «Repasá antes de enviar». Con una sola parte («Tus hábitos» aparte, FRM-HABITOS v2) no se dice «Parte 1 de 1»:
+ * no informa nada, y el título de la parte ya dice qué se responde. `null`: no se dibuja la línea.
+ */
+export function cuantoFaltaEnPalabras(partes: number, actual: number, enRepaso: boolean): string | null {
+  if (enRepaso) return COPY_FORMULARIOS_V2.repaso;
+  return partes > 1 ? COPY_FORMULARIOS_V2.parte(actual + 1, partes) : null;
+}
+
+/** Lo que anuncia TalkBack al pasar a una parte: con varias, «Parte N de M: título»; con una sola, el título. */
+export function anuncioDeLaParte(partes: number, indice: number, titulo: string): string {
+  return partes > 1 ? COPY_FORMULARIOS_V2.parteConTitulo(indice + 1, partes, titulo) : titulo;
+}

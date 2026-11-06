@@ -2,6 +2,8 @@
  * La lógica pura de los hábitos en la APK (`habitos-en-el-telefono.ts`; DL-165 D-9, FR-10): a quién se le pregunta, qué
  * cuerpo de API-HBT-03 sale de cada acto, cuándo hay que leer el texto antes de aceptar, cómo se dice todo en palabras y
  * cuándo un formulario abre con «¿Sigue igual?». Cada caso dice primero lo que pide el diseño (§4) y después lo prueba.
+ * Ronda 2.1 (D-17 nueva): un profesional pide verlos (API-HBT-08 y 09): el cuerpo de la respuesta, cuándo el «Sí» pide el
+ * texto, qué rechazo pide releer, a quién no se le pregunta dos veces y la tarjeta de Inicio.
  * Los datos de ejemplo pasan por el esquema de API-HBT-01: son respuestas que la API podría dar.
  *
  * Uso: cd apps/mobile && npx jest src/habitos-en-el-telefono.test.ts --runInBand (después de construir @be/domain).
@@ -10,9 +12,14 @@ import { describe, expect, test } from '@jest/globals';
 import {
   COPY_HABITOS,
   MisHabitosResponseSchema,
+  PedidosDeAccesoResponseSchema,
   PLANTILLA_ENTRENAMIENTO_V3,
+  PLANTILLA_ENTRENAMIENTO_V4,
+  PLANTILLA_HABITOS_V2,
   PLANTILLA_NUTRICION_INICIO,
   PLANTILLA_NUTRICION_INICIO_V2,
+  PLANTILLA_NUTRICION_INICIO_V3,
+  ResponderPedidoDeAccesoRequestSchema,
   SECCION_DE_HABITOS,
   SOLICITUD_DE_MIS_HABITOS,
   terminosProhibidosDeFormulariosEn,
@@ -23,7 +30,16 @@ import {
 import { armarRespuestas, borradorDeRespuestas, problemasAntesDeEnviar } from './formulario-v2';
 import {
   aQuienesPreguntar,
+  aQuienesPreguntarSinPedido,
   areasEnPalabras,
+  elSiPideElTexto,
+  exitoDeLaRespuesta,
+  paraQueLeSirven,
+  pedidosEnOrden,
+  rechazoDeLaRespuesta,
+  respuestaAlPedido,
+  seAvisaQueSoloElLosVe,
+  tarjetaDeHabitosEnInicio,
   estadoEnPalabras,
   exitoDeCompartir,
   habitosEnPalabras,
@@ -39,6 +55,7 @@ import {
   rechazoDeCompartir,
   seOfrecePrecargaDeHabitos,
   type MisHabitos,
+  type PedidoDeAcceso,
 } from './habitos-en-el-telefono';
 
 const A = COPY_HABITOS.apk;
@@ -249,6 +266,15 @@ describe('«¿Sigue igual?» al abrir una solicitud (D-18)', () => {
     expect(seOfrecePrecargaDeHabitos(nueva, PLANTILLA_NUTRICION_INICIO_V2.sections, false)).toBe(true);
     expect(seOfrecePrecargaDeHabitos(nueva, PLANTILLA_ENTRENAMIENTO_V3.sections, false)).toBe(true);
   });
+  test('ronda 2.1: «Tus hábitos» aparte (FRM-HABITOS v2) también abre con lo vigente; las de área sin la parte, no', () => {
+    expect(seOfrecePrecargaDeHabitos(nueva, PLANTILLA_HABITOS_V2.sections, false)).toBe(true);
+    expect(seOfrecePrecargaDeHabitos(nueva, PLANTILLA_NUTRICION_INICIO_V3.sections, false)).toBe(false);
+    expect(seOfrecePrecargaDeHabitos(nueva, PLANTILLA_ENTRENAMIENTO_V4.sections, false)).toBe(false);
+    // Pedido entero, se precarga todo lo vigente, en el orden de la parte.
+    const vigente = { answers: HABITOS.map((r) => ({ ...r, provenance: 'SELF_REPORTED' as const })), recordedAt: '2026-11-05T15:00:00.000Z' };
+    const todo = { requestedFieldCodes: PLANTILLA_HABITOS_V2.sections.flatMap((x) => x.fields.map((c) => c.fieldCode)) };
+    expect(precargaDelFormulario(PLANTILLA_HABITOS_V2.sections, todo, vigente)?.respuestas).toEqual(HABITOS);
+  });
   test('no se ofrece sobre una respuesta (es una corrección), lo cargado por el profesional, lo ya escrito o recuperado, en pausa o sin la parte', () => {
     expect(seOfrecePrecargaDeHabitos({ ...nueva, response: {} }, PLANTILLA_NUTRICION_INICIO_V2.sections, false)).toBe(false);
     expect(seOfrecePrecargaDeHabitos({ ...nueva, proposal: {} }, PLANTILLA_NUTRICION_INICIO_V2.sections, false)).toBe(false);
@@ -277,13 +303,131 @@ describe('«¿Sigue igual?» al abrir una solicitud (D-18)', () => {
   });
 });
 
+// ─── Ronda 2.1 · un profesional pide verlos (D-17 nueva; API-HBT-08 y 09) ──────────────────────────
+
+/** Pedidos de API-HBT-08, validados contra su esquema. */
+function pedidos(...lista: { id: string; quien: ProfesionalParaHabitos; area: typeof NUTRICION | typeof ENTRENAMIENTO; el: string }[]): PedidoDeAcceso[] {
+  return PedidosDeAccesoResponseSchema.parse({
+    data: lista.map((x) => ({ accessRequestId: x.id, version: 'v1', professional: x.quien.professional, scope: x.area, requestedAt: x.el })),
+  }).data;
+}
+const PEDIDO_DE_MARCOS = pedidos({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', quien: MARCOS, area: ENTRENAMIENTO, el: '2026-11-06T13:00:00.000Z' })[0]!;
+const PEDIDO_DE_PAULA = pedidos({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', quien: PAULA, area: NUTRICION, el: '2026-11-06T15:00:00.000Z' })[0]!;
+
+describe('responder un pedido (API-HBT-09): «Sí, que los vea» es compartir; «No, por ahora» no cambia nada', () => {
+  test('«Sí» lleva el pedido que se vio, la versión de la autorización que se vio y el texto mostrado; «No», solo el pedido', () => {
+    const d = datos('ACTIVE', [LUCIA, MARCOS, PAULA]);
+    const si = respuestaAlPedido(d, PEDIDO_DE_MARCOS, 'si');
+    expect(si).toEqual({ expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: 'v2', textVersionId: TEXTO.id } });
+    const no = respuestaAlPedido(d, PEDIDO_DE_MARCOS, 'no');
+    expect(no).toEqual({ expectedVersion: 'v1', answer: 'NOT_NOW', sharing: null });
+    // Las dos pasan el esquema de la API.
+    for (const cuerpo of [si, no]) expect(ResponderPedidoDeAccesoRequestSchema.safeParse(cuerpo).success).toBe(true);
+    // Sin compartir todavía, el «Sí» va con la versión nula de una autorización que nunca se dio.
+    const apagada = datos('NOT_GIVEN', [{ ...MARCOS, sharing: 'DOES_NOT_RECEIVE' }]);
+    expect(respuestaAlPedido(apagada, PEDIDO_DE_MARCOS, 'si').sharing).toEqual({ expectedVersion: null, textVersionId: TEXTO.id });
+  });
+
+  test('el «Sí» amplía la lista: pide leer el texto antes de aceptar, también con la autorización activa y el texto ya aceptado', () => {
+    expect(elSiPideElTexto(datos('ACTIVE', [LUCIA, MARCOS]), MARCOS.professional.identityId)).toBe(true);
+    expect(elSiPideElTexto(datos('NOT_GIVEN', [{ ...MARCOS, sharing: 'DOES_NOT_RECEIVE' }]), MARCOS.professional.identityId)).toBe(true);
+    // Si ya los recibe (lo sumó en otro teléfono), no hay nada nuevo que aceptar.
+    expect(elSiPideElTexto(datos('ACTIVE', [LUCIA, MARCOS]), LUCIA.professional.identityId)).toBe(false);
+  });
+
+  test('sin compartir todavía, el «Sí» avisa que solo él los va a ver, si tiene otros profesionales; con la autorización activa, no', () => {
+    const otros = [MARCOS, PAULA].map((p) => ({ ...p, sharing: 'DOES_NOT_RECEIVE' as const, sharedSince: null }));
+    expect(seAvisaQueSoloElLosVe(datos('NOT_GIVEN', otros), MARCOS.professional.identityId)).toBe(true);
+    expect(seAvisaQueSoloElLosVe(datos('WITHDRAWN', otros), MARCOS.professional.identityId)).toBe(true);
+    expect(seAvisaQueSoloElLosVe(datos('NOT_GIVEN', [otros[0]!]), MARCOS.professional.identityId)).toBe(false);
+    expect(seAvisaQueSoloElLosVe(datos('ACTIVE', [LUCIA, MARCOS]), MARCOS.professional.identityId)).toBe(false);
+  });
+
+  test('lo que se le dice después nombra a quien pidió, y el «No» le recuerda que lo puede cambiar', () => {
+    expect(exitoDeLaRespuesta(PEDIDO_DE_MARCOS, 'si')).toBe(A.pedidoAceptado('Marcos (entrenador)'));
+    expect(exitoDeLaRespuesta(PEDIDO_DE_MARCOS, 'no')).toBe(A.pedidoNoPorAhora('Marcos (entrenador)'));
+    expect(A.pedidoNoPorAhora('Marcos')).toMatch(/cambiar/);
+  });
+
+  test('para qué le sirve, según el área desde la que pidió', () => {
+    expect(paraQueLeSirven(PEDIDO_DE_MARCOS)).toBe(COPY_HABITOS.paraQueLeSirven.ENTRENAMIENTO);
+    expect(paraQueLeSirven(PEDIDO_DE_PAULA)).toBe(COPY_HABITOS.paraQueLeSirven.NUTRICION);
+  });
+
+  test('los rechazos que piden volver a leer, con lo que pasó; lo demás lo decide `falloDe`', () => {
+    const api = (codigo: string, status: number): Resultado<unknown> => ({ ok: false, tipo: 'API', status, codigo, issues: [] });
+    // El pedido ya no espera, o quien pidió ya no la acompaña.
+    expect(rechazoDeLaRespuesta(api('VERSION_CONFLICT', 409), 'no')).toBe(A.pedidoYaNoEsta);
+    expect(rechazoDeLaRespuesta(api('HABITS_RECIPIENT_NOT_AVAILABLE', 422), 'si')).toBe(A.pedidoYaNoEsta);
+    expect(rechazoDeLaRespuesta(api('RESOURCE_NOT_FOUND', 404), 'no')).toBe(A.pedidoYaNoEsta);
+    // Con el «Sí», el conflicto puede ser del pedido o de la autorización.
+    expect(rechazoDeLaRespuesta(api('VERSION_CONFLICT', 409), 'si')).toBe(A.cambioMientrasRespondias);
+    expect(rechazoDeLaRespuesta(api('CONSENT_VERSION_STALE', 409), 'si')).toBe(A.cambioLaAutorizacion);
+    // El A3 lo trata la pantalla como el resto de «Mis hábitos»; la red y un 5xx, `falloDe`.
+    expect(rechazoDeLaRespuesta(api('ACTION_FORBIDDEN', 403), 'si')).toBeNull();
+    expect(rechazoDeLaRespuesta({ ok: false, tipo: 'RED' } as Resultado<unknown>, 'no')).toBeNull();
+    expect(rechazoDeLaRespuesta({ ok: true, datos: {} }, 'si')).toBeNull();
+  });
+});
+
+describe('quien pidió verlos no recibe además la pregunta por un profesional nuevo', () => {
+  test('con un pedido de Marcos, que es nuevo, la pregunta «… empezó a acompañarte» no aparece: el pedido la reemplaza', () => {
+    const d = datos('ACTIVE', [LUCIA, MARCOS, PAULA]);
+    expect(aQuienesPreguntar(d).map((p) => p.professional.identityId)).toEqual([MARCOS.professional.identityId]);
+    expect(aQuienesPreguntarSinPedido(d, [PEDIDO_DE_MARCOS])).toEqual([]);
+    // Un pedido de otro no cambia a quién se le pregunta.
+    expect(aQuienesPreguntarSinPedido(d, [PEDIDO_DE_PAULA]).map((p) => p.professional.identityId)).toEqual([MARCOS.professional.identityId]);
+  });
+
+  test('actualizar los hábitos no vuelve a preguntar por quienes no los ven: no hay repregunta automática (D-17 nueva)', () => {
+    const antes = datos('ACTIVE', [LUCIA, PAULA]);
+    // La misma autorización, con hábitos nuevos y la anterior en la historia: lo que se pregunta no cambia.
+    const vigente = { habitsVersionId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', version: 'v2', answers: HABITOS.map((r) => ({ ...r, provenance: 'SELF_REPORTED' as const })), origin: 'FORM' as const, recordedAt: '2026-11-06T12:00:00.000Z' };
+    const anterior = { ...vigente, habitsVersionId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', version: 'v1', origin: 'MY_HABITS' as const, recordedAt: '2026-11-05T12:00:00.000Z' };
+    const despues = datos('ACTIVE', [LUCIA, PAULA], { current: vigente, history: [anterior] });
+    expect(aQuienesPreguntar(antes)).toEqual([]);
+    expect(aQuienesPreguntar(despues)).toEqual([]);
+    expect(tarjetaDeHabitosEnInicio(despues, [])).toBeNull();
+  });
+});
+
+describe('cambiar de opinión (D-17 nueva): «Cambiar con quiénes» vuelve a sumar a quien dijo que no', () => {
+  test('marcar a Paula, que no los veía, la suma a la lista y pide el texto, porque amplía', () => {
+    const d = datos('ACTIVE', [LUCIA, PAULA]);
+    const marcados = new Set([...marcadosAlCambiar(d), PAULA.professional.identityId]);
+    const pedido = pedidoDeCompartir(d, { tipo: 'cambiar', marcados });
+    expect(pedido.professionalIds).toEqual([LUCIA.professional.identityId, PAULA.professional.identityId]);
+    expect(pedido.declinedProfessionalIds).toEqual([]);
+    expect(pideElTexto(d, pedido)).toBe(true);
+  });
+});
+
+describe('la tarjeta «Tus hábitos» de Inicio', () => {
+  test('un pedido que espera va primero (el más reciente), aunque haya un profesional nuevo por el que preguntar', () => {
+    const d = datos('ACTIVE', [LUCIA, MARCOS, PAULA]);
+    expect(pedidosEnOrden([PEDIDO_DE_MARCOS, PEDIDO_DE_PAULA]).map((p) => p.accessRequestId)).toEqual([PEDIDO_DE_PAULA.accessRequestId, PEDIDO_DE_MARCOS.accessRequestId]);
+    expect(tarjetaDeHabitosEnInicio(d, [PEDIDO_DE_MARCOS, PEDIDO_DE_PAULA])).toEqual({ tipo: 'pedido', pedido: PEDIDO_DE_PAULA });
+  });
+  test('sin pedidos, la pregunta por el profesional nuevo, como en la 0.21; sin nada que preguntar, no hay tarjeta', () => {
+    expect(tarjetaDeHabitosEnInicio(datos('ACTIVE', [LUCIA, MARCOS]), [])).toEqual({ tipo: 'nuevo', profesional: MARCOS });
+    expect(tarjetaDeHabitosEnInicio(datos('ACTIVE', [LUCIA, PAULA]), [])).toBeNull();
+  });
+  test('si una de las dos lecturas no está (una falla, el A3), se decide con la otra', () => {
+    expect(tarjetaDeHabitosEnInicio(null, [PEDIDO_DE_MARCOS])).toEqual({ tipo: 'pedido', pedido: PEDIDO_DE_MARCOS });
+    expect(tarjetaDeHabitosEnInicio(datos('ACTIVE', [LUCIA, MARCOS]), null)).toEqual({ tipo: 'nuevo', profesional: MARCOS });
+    expect(tarjetaDeHabitosEnInicio(null, null)).toBeNull();
+  });
+});
+
 test('los textos de la APK son cortos, para personas y sin términos prohibidos (ni «cumplimiento», ni «px»)', () => {
   const textos: string[] = [];
   for (const v of Object.values(A)) {
     if (typeof v === 'string') textos.push(v);
     else if (typeof v === 'function') textos.push(String((v as (...a: string[]) => string)('Lucía', 'FORM')));
   }
-  expect(textos.length).toBeGreaterThan(40);
+  // Ronda 2.1: para qué le sirven, por área.
+  textos.push(...Object.values(COPY_HABITOS.paraQueLeSirven));
+  expect(textos.length).toBeGreaterThan(50);
   for (const t of textos) {
     expect(terminosProhibidosDeFormulariosEn(t)).toEqual([]);
     expect(t.toLowerCase()).not.toMatch(/cumplimiento|\bpx\b/);
