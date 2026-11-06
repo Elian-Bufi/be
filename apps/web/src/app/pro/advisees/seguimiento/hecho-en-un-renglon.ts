@@ -49,7 +49,7 @@ const contar = (valor: string | null, uno: string, varios: string): string | nul
 };
 const primerDetalle = (e: EntradaDeLineaDeTiempo): string | null => (e.details[0] ? `${e.details[0].label}: ${e.details[0].value}` : null);
 
-export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
+export function renglonDelHecho(e: EntradaDeLineaDeTiempo, autorDe: (a: NonNullable<EntradaDeLineaDeTiempo['author']>) => string): RenglonDelHecho {
   switch (e.eventType) {
     case 'MEAL_RECORDED': {
       // La opción elegida y el modo de las cantidades los dice el dominio (los mismos que en Nutrición · Registros).
@@ -98,7 +98,8 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
     case 'COORDINATION_NOTE_RECORDED': {
       const corte = e.title.indexOf(' · ');
       const finalidad = corte < 0 ? null : e.title.slice(corte + 3);
-      const autor = e.author?.displayName ?? null;
+      // Con «Ocultar nombres» (TB-05), quien la escribió va por su referencia.
+      const autor = e.author ? autorDe(e.author) : null;
       return { icono: 'texto', nombre: corte < 0 ? e.title : e.title.slice(0, corte), dato: [finalidad, autor ? `de ${autor}` : null].filter(Boolean).join(' · ') || null, modo: null };
     }
     // DL-165 D-8: los formularios, con el ícono de Información. El dato es el formulario y, si lo hay, cuánto respondió o
@@ -118,7 +119,8 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
 
 /** El título del detalle: el nombre y lo que lo distingue («Almuerzo · Arroz con pollo y brócoli»). */
 export const tituloDelHecho = (e: EntradaDeLineaDeTiempo): string => {
-  const r = renglonDelHecho(e);
+  // El título nunca nombra a quien escribió (el de una nota es su finalidad): el autor no se usa.
+  const r = renglonDelHecho(e, () => '');
   // El dato de una comida es su opción o su descripción: nombra al registro. El de los demás es una cuenta o un resultado.
   // Una nota de coordinación se titula con su finalidad, como llega de la API («Nota de coordinación · Pedido de coordinación»).
   if (e.eventType === 'COORDINATION_NOTE_RECORDED') return e.title;
@@ -145,10 +147,9 @@ export const frenteALoIndicadoDe = (e: EntradaDeLineaDeTiempo): string | null =>
  * todos los detalles y las relaciones; el renglón muestra solo algunos. Devuelve el primer detalle (o la relación) que
  * tiene una palabra buscada que no está a la vista, o `null` si el renglón ya lo dice todo o coincide por su tipo.
  */
-export function dondeCoincide(e: EntradaDeLineaDeTiempo, buscado: string): string | null {
+export function dondeCoincide(e: EntradaDeLineaDeTiempo, buscado: string, r: RenglonDelHecho = renglonDelHecho(e, () => '')): string | null {
   const palabras = normalizarTexto(buscado).split(' ').filter(Boolean);
   if (palabras.length === 0) return null;
-  const r = renglonDelHecho(e);
   const aLaVista = normalizarTexto([r.nombre, r.dato ?? '', r.modo?.texto ?? '', ...rasgosDeUnHecho(e).map((x) => NOMBRE_DEL_RASGO[x])].join(' '));
   // Solo las palabras que el renglón no dice: sin ninguna, no hay nada que agregar.
   const faltan = palabras.filter((p) => !aLaVista.includes(p));

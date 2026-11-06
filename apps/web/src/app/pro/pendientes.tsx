@@ -42,10 +42,12 @@ import Link from 'next/link';
 import { useId, useState } from 'react';
 import { BloqueDeEstado, EstadoVacio } from '../../components/estados';
 import { Icono } from '../../components/icono';
+import { Retrato } from '../../components/retrato';
 import { BotonDeVista } from '../../components/vista-con-nombre';
 import { ICONO_DE_FALLA, razonDeFalla } from '../../lib/fallas';
 import { diaCivil, diaDelAnioEnCurso, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
+import { useNombres } from '../../lib/nombres-ocultos';
 import { FiltroDePeriodo, type Periodo } from './advisees/periodo';
 import { ICONO_DE_LA_VISTA_DE_PENDIENTES, ICONO_DEL_AREA_DE_CARTERA, ICONO_DEL_PENDIENTE, rutaQueResuelve, textoDePendiente, ultimoRegistroDe } from './pendiente-en-una-fila';
 
@@ -90,6 +92,7 @@ export function Pendientes({
   onVerMas: () => void;
 }) {
   const id = useId();
+  const nombres = useNombres();
   const [filtro, setFiltro] = useState<FiltroDePendientes>(TODO);
   const [masFiltros, setMasFiltros] = useState(false);
   // Al quitar el período desde su etiqueta, el formulario se monta de nuevo: sus dos campos quedan vacíos.
@@ -308,9 +311,16 @@ export function Pendientes({
                 {filas.map((p) => {
                   const texto = textoDePendiente(p, dia);
                   const area = COPY_CARTERA.dominio[p.domain];
+                  // TB-05: el monograma al lado del nombre; con «Ocultar nombres», la referencia y el ícono «persona».
+                  const quien = nombres.delAsesorado(p.advisee);
                   return (
                     <tr key={`${p.kind}|${p.domain}|${p.advisee.identityId}`} className="pendiente" data-tipo={p.kind} data-area={p.domain}>
-                      <th scope="row">{p.advisee.displayName}</th>
+                      <th scope="row">
+                        <span className="con-retrato">
+                          <Retrato nombre={quien} />
+                          <span>{quien}</span>
+                        </span>
+                      </th>
                       <td data-etiqueta={COPY_CARTERA.filtroDominio}>
                         <span className="pendiente__area">
                           <Icono nombre={ICONO_DEL_AREA_DE_CARTERA[p.domain]} tamano={20} />
@@ -327,7 +337,7 @@ export function Pendientes({
                         </span>
                       </td>
                       <td className="pendiente__abrir">
-                        <Link className="pendiente__enlace" href={rutaQueResuelve(p)} aria-label={`${COPY_CARTERA.accion[p.kind]}: ${p.advisee.displayName}, ${area}, ${texto}`}>
+                        <Link className="pendiente__enlace" href={rutaQueResuelve(p)} aria-label={`${COPY_CARTERA.accion[p.kind]}: ${quien}, ${area}, ${texto}`}>
                           {COPY_CARTERA.accion[p.kind]}
                           <Icono nombre="derecha" tamano={18} />
                         </Link>

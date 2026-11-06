@@ -10,7 +10,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { cambiosDelRegistro, dondeCoincide, frenteALoIndicadoDe, numeroDeVersionDe, relacionesEnPalabras, renglonDelHecho, textoDelHueco, tituloDelHecho, ICONO_DEL_RASGO, VERBO_DE_LA_RELACION } = await import('../apps/web/src/app/pro/advisees/seguimiento/hecho-en-un-renglon.ts');
+const { cambiosDelRegistro, dondeCoincide, frenteALoIndicadoDe, numeroDeVersionDe, relacionesEnPalabras, renglonDelHecho: renglonConAutor, textoDelHueco, tituloDelHecho, ICONO_DEL_RASGO, VERBO_DE_LA_RELACION } = await import('../apps/web/src/app/pro/advisees/seguimiento/hecho-en-un-renglon.ts');
+/** El renglón con los nombres a la vista; con «Ocultar nombres» (TB-05), la ficha le pasa la referencia de cada uno. */
+const renglonDelHecho = (e) => renglonConAutor(e, (a) => a.displayName);
 const { ICONOS, RASGOS_DE_UN_HECHO } = await import('../packages/domain/dist/index.js');
 
 const entrada = (eventType, title, details = [], extra = {}) => ({
@@ -138,6 +140,8 @@ test('los hitos: cada uno con su ícono, su nombre y el dato que lo distingue', 
     source: { type: 'COORDINATION_NOTE', id: 'n' },
   });
   assert.deepEqual(renglonDelHecho(nota), { icono: 'texto', nombre: 'Nota de coordinación', dato: 'Pedido de coordinación · de Lic. Sofía Paz', modo: null });
+  // TB-05: con «Ocultar nombres», quien la escribió va con el nombre que le da la ficha.
+  assert.equal(renglonConAutor(nota, () => 'Profesional · 000000').dato, 'Pedido de coordinación · de Profesional · 000000');
   assert.equal(tituloDelHecho(nota), 'Nota de coordinación · Pedido de coordinación');
   // Sin autor ni finalidad en el título, no inventa nada.
   assert.deepEqual(renglonDelHecho(entrada('COORDINATION_NOTE_RECORDED', 'Nota de coordinación')), { icono: 'texto', nombre: 'Nota de coordinación', dato: null, modo: null });

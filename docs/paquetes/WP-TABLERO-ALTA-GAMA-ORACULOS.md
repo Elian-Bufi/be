@@ -13,8 +13,8 @@
 > en el código que cita cada uno. Un oráculo dice qué hay que observar para aceptar la prueba. No inventa la regla: la
 > lee.
 >
-> **Estado.** Escritos: TEST-TAG-005 (con los pares de TB-03 y TB-04; los demás tokens, con su parte), TEST-TAG-006 y
-> TEST-TAG-007. Los demás se escriben con su parte (§10 del paquete).
+> **Estado.** Escritos: TEST-TAG-003 y TEST-TAG-004 (TB-05), TEST-TAG-005 (con los pares de TB-03, TB-04 y TB-05;
+> los demás tokens, con su parte), TEST-TAG-006 y TEST-TAG-007. Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -82,13 +82,17 @@ STEPS                1. Leer los dos temas de tokens.css.
 EXPECTED             1-2 → TB-03: --banda contra --superficie, 1,3:1 o más en los dos temas; las tres métricas y
                      --grafico-hueco sobre --banda, 3:1 o más. Se suman con su parte: --ahora y --pista (TB-04 y
                      TB-10), --retrato-fondo y --retrato-tinta (TB-05), --composicion-libre y --composicion-grasa
-                     (TB-24), con las iniciales y las métricas contra --ahora a ΔE 20 o más.
+                     (TB-24), con las iniciales y las métricas contra --ahora a ΔE 20 o más. TB-05:
+                     --retrato-tinta sobre --retrato-fondo, 4,5:1; la tinta y el círculo, a ΔE 20 o más de
+                     --ahora; la tinta con croma de CIELAB de 12 o menos, y el círculo, de 16 o menos: neutros,
+                     nunca el acento.
                      3 → --grafico-planificado y --grafico-registrado no se definen ni se usan.
 NEGATIVE_ASSERTIONS  Ningún estilo escribe un color fuera de los tokens (la prueba que ya existía). Un gráfico de
                      Entrenamiento no distingue lo planificado de lo registrado por un naranja contra un azul: lo
                      distingue la forma.
-AUTOMATION           scripts/contraste.test.cjs (los pares de PARES_GRAFICO con FONDO_DE_DATO y «los gráficos ya
-                     no usan los colores de planificado y registrado (TB-03)»), en `npm test`
+AUTOMATION           scripts/contraste.test.cjs (los pares de PARES_GRAFICO con FONDO_DE_DATO, «los gráficos ya
+                     no usan los colores de planificado y registrado (TB-03)» y «las iniciales van en tinta neutra
+                     y lejos de la luz de hoy (TB-05)»), en `npm test`
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas de la corrida de TB-03 en los dos temas
 ```
@@ -141,4 +145,91 @@ AUTOMATION           scripts/geometria-del-minigrafico.test.mjs («TEST-TAG-007 
 ENVIRONMENT          CI y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas del Resumen de la corrida de TB-04, a 1440 y a
                      1920 × 950, comparadas con la línea de base
+```
+
+---
+
+## TEST-TAG-003 — Las iniciales salen del nombre visible y nunca se inventan
+
+```text
+TEST_ID              TEST-TAG-003
+TITLE                El monograma lleva las iniciales del nombre que el profesional ya ve, sin títulos ni
+                     partículas, y sin nombre (la referencia neutral) lleva el ícono «persona»
+LEVEL                Unidad (función pura del website, sin React)
+PRIORITY             P1 — un monograma inventado le pone a alguien una cara que no es la suya (D-2)
+SOURCES              DL-163 D-2 («Un monograma de un solo tono neutro con las iniciales del nombre visible, donde ya se
+                     ve el nombre y con la regla de DL-040»; salvaguarda: «inicialesDe, con sus casos») ·
+                     WP-TABLERO-ALTA-GAMA TB-05 y §6 («títulos, partículas, tildes, una sola palabra, emojis y la
+                     referencia neutral, que lleva el ícono "persona"») · DL-040 (la referencia neutral) ·
+                     apps/api/src/vinculo/lectura.ts (`nombreDeProfesional`: «Profesional» sin nombre)
+PRECONDITIONS        Ninguna: inicialesDe, en apps/web/src/lib/retrato.ts.
+SYNTHETIC_FIXTURE    Los nombres de la cohorte («Lic. Sofía Paz», «Prof. Martín Acosta», «Federico Álvarez»…), con
+                     y sin «(sintética)»; nombres con «de los», «del» y «van»; con tildes compuestas y separadas; con
+                     emojis y comillas; una sola palabra; la referencia neutral de una identidad sintética.
+STEPS                1. Pedir las iniciales de nombres de dos, tres y una palabra, en mayúscula y en minúscula.
+                     2. Pedirlas con títulos delante (con y sin punto, varios seguidos) y con un título solo.
+                     3. Pedirlas con partículas y con lo que va entre paréntesis.
+                     4. Pedirlas con tildes, eñes, una tilde escrita aparte y un nombre con guion.
+                     5. Pedirlas con emojis, números, comillas, vacío, null y undefined.
+                     6. Pedirlas de la referencia neutral, de «Asesorado», de «Profesional» y de «Profesional · …».
+EXPECTED             1 → «DS», «CO», «D»; la primera y la última palabra, nunca las del medio.
+                     2 → «SP», «MA», «AG», «PR», «JP»; un título solo da null. «J. Pérez» da «JP».
+                     3 → «MP», «AV», «LB»; «(sintética)» no cuenta.
+                     4 → «FÁ», «ÍÑ», «HF», «ÉD», «MP»: la tilde se conserva y se junta con su letra.
+                     5 → lo que no es letra no cuenta; sin letras, null.
+                     6 → null en los cuatro: el monograma lleva el ícono «persona».
+NEGATIVE_ASSERTIONS  Nunca una inicial de un título, de una partícula, de un emoji ni de la referencia neutral. El
+                     reemplazo de la API para un profesional sin nombre («Profesional») no da «P». Mutaciones
+                     verificadas: sin «profesional» en la regla de la referencia fallan dos casos; sin la lista de
+                     títulos fallan dos.
+AUTOMATION           apps/web/test/retrato.test.mjs («TEST-TAG-003 · …», seis casos), en `npm run test -w @be/web`
+ENVIRONMENT          CI (verificar · unit) y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; las capturas de la corrida de TB-05 (el Espacio y la ficha),
+                     con los monogramas de la cohorte
+```
+
+---
+
+## TEST-TAG-004 — «Ocultar nombres» no deja pasar un nombre
+
+```text
+TEST_ID              TEST-TAG-004
+TITLE                Con «Ocultar nombres», ninguna pantalla de /pro muestra un nombre ni una inicial, tampoco en
+                     el título de la pestaña
+LEVEL                Unidad (funciones puras y una guardia sobre el código) y recorrido en el navegador (CI)
+PRIORITY             P1 — privacidad: mostrar la pantalla no puede mostrar a quién se acompaña
+SOURCES              DL-163 D-2 (salvaguarda: «"Ocultar nombres", con una prueba que falla si aparece un nombre o una
+                     inicial») · WP-TABLERO-ALTA-GAMA TB-05 («rige en todas las rutas /pro/** […] y en el título de
+                     la pestaña, y se recuerda en el navegador. La prueba recorre el Espacio, el Resumen y el cajón,
+                     y falla si aparece un nombre o una inicial») · §5 (se recuerda en el navegador, sin datos de
+                     personas) · 08 §33 (solo datos sintéticos)
+PRECONDITIONS        Unidad: ninguna. Recorrido: la cohorte cargada en el PostgreSQL efímero de
+                     capturas-del-tablero, con la API y el website compilados.
+SYNTHETIC_FIXTURE    Unidad: Diego Sosa y Lic. Sofía Paz con identidades sintéticas. Recorrido: la cohorte entera
+                     (seis personas y tres profesionales), con los nombres sacados de sus archivos.
+STEPS                1. Pedir el nombre que se ve de una persona y de un profesional, con los nombres a la vista y
+                        ocultos (nombreQueSeVe), y el papel de quien escribió (rolDe).
+                     2. Pasar por textoSinNombres «Corregida por Diego Sosa» y un texto con dos nombres.
+                     3. Buscar `.displayName` en todo apps/web/src/app/pro y {n.title} en el centro de novedades.
+                     4. Buscar asignaciones a document.title y leer los títulos fijos de /pro.
+                     5. En el navegador, por cada profesional: prender «Ocultar nombres» en el menú de la cuenta,
+                        abrir el Espacio y el Resumen de Diego, y leer el texto visible, los rótulos accesibles, el
+                        título de la pestaña y los monogramas con iniciales. El cajón se suma con TB-12.
+EXPECTED             1 → a la vista, el nombre; ocultos, «Asesorado · …» o «Profesional · …», sin iniciales.
+                     2 → cada nombre conocido pasa a su referencia, el más largo primero.
+                     3 → ninguna línea: todo nombre de /pro pasa por useNombres.
+                     4 → nadie cambia el título; los títulos de /pro son textos fijos.
+                     5 → ninguna palabra de un nombre de la cohorte y ningún monograma con iniciales; mediciones.json
+                        lo anota en `ocultarNombres`.
+NEGATIVE_ASSERTIONS  Ningún nombre ni inicial con los nombres ocultos, ni en el título de la pestaña. Fuera de /pro
+                     no rige. El monograma no aparece en las solicitudes, las invitaciones, los avisos ni
+                     Administración (D-2). Mutación verificada: con `{p.advisee.displayName}` de vuelta en
+                     «Pendientes», la guardia falla. Lo que alguien escribió a mano (el texto de una nota) no se
+                     toca: no se puede saber qué es un nombre (TA-11).
+AUTOMATION           apps/web/test/retrato.test.mjs («TEST-TAG-004 · …» y «D-2 · …», seis casos), en
+                     `npm run test -w @be/web`; el recorrido, en EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/
+                     capturas.mjs (`recorrerConNombresOcultos`), que hace fallar la corrida
+ENVIRONMENT          Unidad: CI y local. Recorrido: CI (capturas-del-tablero), con Chrome sin cabeza
+EVIDENCE_EXPECTED    La corrida verde de la CI; la corrida de capturas-del-tablero de TB-05, con
+                     `ocultarNombres` vacío de apariciones en mediciones.json
 ```

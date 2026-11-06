@@ -8,6 +8,10 @@
  * - **Con sesión:** el botón dice «Cuenta» y abre «Datos de la cuenta», la apariencia y «Cerrar sesión».
  * - **Sin sesión** (portada, ingreso, registro, legales): el botón dice «Apariencia» y abre solo la apariencia.
  *
+ * WP-TABLERO-ALTA-GAMA TB-05 (DL-163 D-2): en el espacio profesional, el círculo del botón lleva el monograma de la
+ * cuenta, con el nombre con que la ven las personas, y el panel suma «Ocultar nombres», para mostrar la pantalla. Con
+ * los nombres ocultos, el círculo lleva el ícono que lo avisa, en todas las páginas de /pro.
+ *
  * La apariencia es «Azul noche» (predeterminada) o «Claro». La preferencia se guarda en este navegador, no en la cuenta;
  * si no se puede guardar, vale solo por esta visita, y se dice. Elegir un tema no cambia nada más que la apariencia.
  *
@@ -23,8 +27,11 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { aplicarTema, leerTema, NOMBRE_DEL_TEMA, sePuedeGuardar, TEMA_PREDETERMINADO, TEMAS, temaValido, type Tema } from '../lib/apariencia';
 import { COPY } from '../lib/copy';
+import { olvidarNombrePropio, useNombrePropio } from '../lib/nombre-propio';
+import { ponerNombresOcultos, useNombresOcultosElegido } from '../lib/nombres-ocultos';
 import { useSesion } from '../lib/sesion';
 import { Icono } from './icono';
+import { Retrato } from './retrato';
 
 export function MenuDeCuenta() {
   const id = useId();
@@ -39,6 +46,9 @@ export function MenuDeCuenta() {
   const [guardable, setGuardable] = useState(true);
   const [cerrando, setCerrando] = useState(false);
   const [problema, setProblema] = useState<string | null>(null);
+  const nombrePropio = useNombrePropio();
+  const ocultos = useNombresOcultosElegido();
+  const [ocultosGuardados, setOcultosGuardados] = useState(true);
 
   useEffect(() => {
     // Al montar, el atributo de la página, la opción marcada y la apariencia efectiva quedan iguales: la preferencia
@@ -88,6 +98,7 @@ export function MenuDeCuenta() {
     if (r.ok || (r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo))) {
       // DL-147: la API borró la cookie de reanudación; las otras pestañas se enteran y olvidan la sesión.
       cerrada();
+      olvidarNombrePropio();
       window.location.assign('/login?aviso=sesion-cerrada');
       return;
     }
@@ -96,6 +107,7 @@ export function MenuDeCuenta() {
   }
 
   const conSesion = token !== null;
+  const enElEspacio = conSesion && (ruta === '/pro' || ruta.startsWith('/pro/'));
   return (
     <div
       ref={raiz}
@@ -106,11 +118,15 @@ export function MenuDeCuenta() {
       }}
     >
       <button ref={boton} type="button" className="menu-de-cuenta__boton" aria-expanded={abierto} aria-controls={`${id}-panel`} onClick={() => setAbierto(!abierto)}>
-        {/* El lugar del retrato: hoy un dibujo; cuando BE tenga imagen de perfil, va acá. */}
+        {/* El lugar del retrato: en el espacio profesional, el monograma de la cuenta (TB-05) o, con los nombres ocultos, el
+            ícono que lo avisa; fuera de él, un dibujo. La foto del profesional llega en la etapa B (TB-23). */}
         <span className="menu-de-cuenta__retrato">
-          <Icono nombre={conSesion ? 'persona' : tema} />
+          {enElEspacio && ocultos ? <Icono nombre="oculto" /> : enElEspacio && nombrePropio ? <Retrato nombre={nombrePropio} tamano="medio" /> : <Icono nombre={conSesion ? 'persona' : tema} />}
         </span>
-        <span className="menu-de-cuenta__palabra">{conSesion ? 'Cuenta' : 'Apariencia'}</span>
+        <span className="menu-de-cuenta__palabra">
+          {conSesion ? 'Cuenta' : 'Apariencia'}
+          {enElEspacio && ocultos ? <span className="visualmente-oculto">, con los nombres ocultos</span> : null}
+        </span>
         <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={18} />
       </button>
       {abierto ? (
@@ -155,6 +171,19 @@ export function MenuDeCuenta() {
             ))}
             <p className="nota">{guardable ? 'Se guarda en este navegador, no en tu cuenta.' : 'Este navegador no guarda preferencias: vale por esta visita.'}</p>
           </fieldset>
+          {/* TB-05: para mostrar la pantalla. Rige en todo el espacio profesional y cambia en el momento. */}
+          {enElEspacio ? (
+            <div className="menu-de-cuenta__ocultar">
+              <label>
+                <input type="checkbox" checked={ocultos} onChange={(e) => setOcultosGuardados(ponerNombresOcultos(e.target.checked))} aria-describedby={`${id}-ocultar`} />
+                <Icono nombre="oculto" />
+                Ocultar nombres
+              </label>
+              <p id={`${id}-ocultar`} className="nota">
+                Para mostrar la pantalla: cada persona se ve por su referencia, sin iniciales. {guardable && ocultosGuardados ? 'Se guarda en este navegador.' : 'Vale por esta visita.'}
+              </p>
+            </div>
+          ) : null}
           {conSesion ? (
             <button type="button" className="menu-de-cuenta__opcion" onClick={cerrarSesion} disabled={cerrando}>
               <Icono nombre="salir" />

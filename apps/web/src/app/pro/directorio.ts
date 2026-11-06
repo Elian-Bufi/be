@@ -7,6 +7,7 @@
  * - Nada se pierde: cada vínculo, con su finalidad, su estado y desde cuándo, queda en el detalle de la persona.
  * - El asesorado se ve con el nombre de su perfil mientras el vínculo esté vigente (DL-040, decidida por Dirección el
  *   2026-10-15) y, si no, con su referencia neutral. Se busca por los dos: el nombre y la referencia corta.
+ * - Con «Ocultar nombres» (TB-05), el nombre es la referencia neutral: no se ve ni se puede buscar.
  */
 import { ALCANCES, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, normalizarTexto, referenciaCorta, type Alcance, type Vinculo } from '@be/domain';
 
@@ -74,13 +75,14 @@ export const estadoEnUnaFrase = (v: Pick<VinculoDelDirectorio, 'estado' | 'detal
 
 /**
  * Las personas del directorio, en el orden en que llegan de la API (el vínculo más nuevo primero). `profesionalId` es la
- * cuenta que mira: los vínculos donde esa cuenta es la asesorada no son de este directorio.
+ * cuenta que mira: los vínculos donde esa cuenta es la asesorada no son de este directorio. `nombreDe` es cómo se ve
+ * cada persona: con «Ocultar nombres», su referencia (`useNombres`).
  */
-export function armarElDirectorio(vinculos: readonly Vinculo[], profesionalId: string): PersonaDelDirectorio[] {
+export function armarElDirectorio(vinculos: readonly Vinculo[], profesionalId: string, nombreDe: (a: Vinculo['advisee']) => string): PersonaDelDirectorio[] {
   const porPersona = new Map<string, { nombre: string; vinculos: Vinculo[] }>();
   for (const v of vinculos) {
     if (v.professional.identityId !== profesionalId) continue;
-    const persona = porPersona.get(v.advisee.identityId) ?? { nombre: v.advisee.displayName, vinculos: [] };
+    const persona = porPersona.get(v.advisee.identityId) ?? { nombre: nombreDe(v.advisee), vinculos: [] };
     persona.vinculos.push(v);
     porPersona.set(v.advisee.identityId, persona);
   }

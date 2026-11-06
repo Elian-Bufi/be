@@ -29,9 +29,11 @@ import { BloqueDeEstado, Cargando, ErrorConReintento } from '../../../components
 import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { Pestanas } from '../../../components/pestanas';
+import { Retrato } from '../../../components/retrato';
 import { api, type Resultado } from '../../../lib/api';
 import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla } from '../../../lib/fallas';
 import { horaDelDia } from '../../../lib/formato';
+import { useNombres } from '../../../lib/nombres-ocultos';
 import { SinEspacioProfesional, type useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, type LecturaPorArea } from './acceso-por-area';
 import { hoyEn, periodoEnInstantes, restarDias } from './seguimiento/estado';
@@ -266,10 +268,12 @@ export function MarcoDelArea<C extends string>({
     }),
     [leer],
   );
+  const { delAsesorado } = useNombres();
 
   const listo = !!token && yo.tipo === 'listo';
   const vinculos = acceso.tipo === 'listo' ? acceso.vinculos : [];
-  const nombre = vinculos[0]?.advisee.displayName ?? null;
+  // TB-05: con «Ocultar nombres», la referencia neutral, y el monograma con el ícono.
+  const nombre = vinculos[0] ? delAsesorado(vinculos[0].advisee) : null;
   const sePuedeLeer: LecturaPorArea = resumen === null ? null : resumen === 'nada' ? () => false : (dominio) => resumen[CLAVE_DEL_DOMINIO[dominio]].available;
   const delArea = alcance ? vinculos.filter((v) => v.scope.code === alcance) : vinculos;
   const camino = vuelta ?? (retorno.href ? { href: retorno.href, texto: 'Volver a la ficha, donde estabas' } : { href: `/pro/advisees?id=${encodeURIComponent(id)}`, texto: 'Volver a la ficha' });
@@ -286,7 +290,12 @@ export function MarcoDelArea<C extends string>({
               </Link>
             </p>
             <h1 id="titulo-del-area">{titulo}</h1>
-            {listo && nombre ? <p className="marco-del-area__persona">{nombre}</p> : null}
+            {listo && nombre ? (
+              <p className="marco-del-area__persona con-retrato">
+                <Retrato nombre={nombre} />
+                <span>{nombre}</span>
+              </p>
+            ) : null}
             {listo ? (
               <div className="ficha__consulta">
                 <Pista texto={COPY_PISTAS.ficha.actualizar}>

@@ -77,6 +77,8 @@ import { hoyEn, leerCorte, leerFiltrosDeLaLinea, parametrosDeFiltros, restarDias
 import { cambiosDelRegistro, dondeCoincide, frenteALoIndicadoDe, ICONO_DEL_RASGO, numeroDeVersionDe, relacionesEnPalabras, renglonDelHecho, textoDelHueco, tituloDelHecho } from './hecho-en-un-renglon';
 import { ICONO_DE_FALLA } from './iconos-de-metrica';
 import { AccionesDeLaNota } from './notas-del-equipo';
+import { useNombres } from '../../../../lib/nombres-ocultos';
+import { rolDe } from '../../../../lib/retrato';
 
 const PanelDeRegistro = dynamic(() => import('./registro-original').then((m) => m.PanelDeRegistro), { ssr: false });
 const ContenidoDelRegistro = dynamic(() => import('./registro-original').then((m) => m.ContenidoDelRegistro), { ssr: false, loading: () => <Cargando /> });
@@ -664,10 +666,13 @@ function Rasgo({ rasgo, children }: { rasgo: RasgoDeUnHecho; children: ReactNode
 
 /** Un hecho en su renglón. El renglón entero abre el detalle: no hay un «Abrir registro» aparte. */
 function Hecho({ e, zona, enGrupo, buscado = '', elegido, onAbrir }: { e: EntradaDeLineaDeTiempo; zona: string; enGrupo: boolean; buscado?: string; elegido: boolean; onAbrir: (e: EntradaDeLineaDeTiempo) => void }) {
-  const r = renglonDelHecho(e);
+  const { deQuien } = useNombres();
+  const { asesoradoId } = useSeguimiento();
+  const r = renglonDelHecho(e, (a) => deQuien(a, asesoradoId));
   const rasgos = rasgosDeUnHecho(e);
   // La búsqueda mira también los datos que el renglón no muestra: si coincide ahí, se dice dónde.
-  const coincide = buscado ? dondeCoincide(e, buscado) : null;
+  // El renglón que se ve, con los nombres de la pantalla (TB-05): lo que ya dice no se repite como coincidencia.
+  const coincide = buscado ? dondeCoincide(e, buscado, r) : null;
   const hora = <span className="entrada__hora">{e.occurredAt ? horaEnZona(e.occurredAt, zona) : 'sin hora'}</span>;
   return (
     <li className="entrada" data-id={e.timelineEntryId} data-area={e.domain} data-hito={esHito(e) ? 'si' : undefined} data-anulada={e.state === 'ANNULLED' ? 'si' : undefined}>
@@ -757,9 +762,13 @@ const CON_REGISTRO_PROPIO: ReadonlySet<EntradaDeLineaDeTiempo['source']['type']>
  * tiene a un clic, y a la vista queda lo que el registro no dice en una frase: «Frente a lo indicado».
  */
 function DatosDelHecho({ e, zona, hoy }: { e: EntradaDeLineaDeTiempo; zona: string; hoy: string }) {
+  const { deQuien, enElTexto } = useNombres();
+  const { asesoradoId, panel } = useSeguimiento();
   const rasgos = rasgosDeUnHecho(e);
   const cambios = cambiosDelRegistro(e);
-  const relaciones = relacionesEnPalabras(e);
+  // TB-05: «Corregida por …» lo arma la API con un nombre: con «Ocultar nombres», va la referencia.
+  const conocidos = [...(panel.tipo === 'listo' ? [{ actor: panel.datos.advisee, rol: 'asesorado' as const }] : []), ...(e.author ? [{ actor: e.author, rol: rolDe(e.author, asesoradoId) }] : [])];
+  const relaciones = relacionesEnPalabras(e).map((t) => enElTexto(t, conocidos));
   const movido = e.recordedLate || cambios.length > 0;
   const frente = frenteALoIndicadoDe(e);
   const datos = (
@@ -800,7 +809,7 @@ function DatosDelHecho({ e, zona, hoy }: { e: EntradaDeLineaDeTiempo; zona: stri
           </dt>
           <dd>
             {e.recordedAt ? momento(e.recordedAt, zona, hoy) : 'Sin fecha de registro'}
-            {e.author ? ` · ${e.author.displayName}` : ''}
+            {e.author ? ` · ${deQuien(e.author, asesoradoId)}` : ''}
           </dd>
         </div>
         {/* Una vez por clase de cambio: una toma puede traer decenas de mediciones corregidas. */}

@@ -14,6 +14,8 @@
 // la primera pantalla y la página entera del Espacio profesional, el Resumen de la ficha, «Analizar», Nutrición y
 // Antropometría de Diego Sosa vistos por Sofía Paz, y el Espacio, el Resumen y Entrenamiento vistos por Martín Acosta.
 // Cuenta las peticiones a la API al abrir cada página (TEST-TAG-032): la cuenta queda en mediciones.json.
+// Desde TB-05, con «Ocultar nombres» prendido recorre el Espacio y el Resumen de cada profesional (TEST-TAG-004): si
+// aparece el nombre de alguien de la cohorte, una inicial o un nombre en el título de la pestaña, la corrida falla.
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
@@ -139,6 +141,22 @@ const PAGINAS = {
 };
 const NOMBRES = { PRO_N: 'sofia-paz', PRO_T: 'martin-acosta' };
 
+/**
+ * TEST-TAG-004: los nombres de la cohorte, sacados de sus archivos (las seis personas y los tres profesionales), sin
+ * los títulos. Cada palabra es una aparición: un apellido solo también es un nombre.
+ */
+const NOMBRES_DE_LA_COHORTE = (() => {
+  const personas = [...fs.readFileSync(path.join(COHORTE, 'personas.mjs'), 'utf8').matchAll(/^\s+nombre: '([^']+)'/gm)].map((m) => m[1]);
+  const profesionales = [...fs.readFileSync(path.join(COHORTE, 'catalogo.mjs'), 'utf8').matchAll(/^\s+[A-Z]: \{ nombre: '([^']+)'/gm)].map((m) => m[1]);
+  if (personas.length < 6 || profesionales.length < 3) throw new Error('No se encontraron los nombres de la cohorte.');
+  return [...personas, ...profesionales].flatMap((n) => n.split(' ').filter((p) => !/.$/.test(p)));
+})();
+/** Las páginas que recorre «Ocultar nombres»: las de la prueba (el cajón se suma con TB-12). */
+const CON_NOMBRES_OCULTOS = [
+  ['espacio', '/pro'],
+  ['resumen', '/pro/advisees?id={diego}'],
+];
+
 async function capturarTodo() {
   const estado = JSON.parse(fs.readFileSync(path.join(TRABAJO, 'estado.json'), 'utf8'));
   const diego = estado.personas?.diego?.aseId;
@@ -208,6 +226,7 @@ async function capturarTodo() {
         mediciones.paginas.push(fila);
         console.log(`${NOMBRES[prefijo]} · ${nombre}: ${fila.peticionesAlAbrir} peticiones al abrir · ${JSON.stringify(fila.alto)}`);
       }
+      await recorrerConNombresOcultos(page, prefijo, diego, mediciones);
       await contexto.close();
     }
   } finally {
@@ -215,6 +234,49 @@ async function capturarTodo() {
     await navegador.close();
   }
   return mediciones;
+}
+
+/**
+ * TEST-TAG-004 · «Ocultar nombres» no deja pasar un nombre (TB-05): se prende en el menú de la cuenta, como lo haría el
+ * profesional, y en cada página se lee lo que se ve (el texto visible, los rótulos accesibles y el título de la
+ * pestaña). Falla si aparece una palabra de un nombre de la cohorte o un monograma con iniciales. Se apaga al terminar.
+ */
+async function recorrerConNombresOcultos(page, prefijo, diego, mediciones) {
+  mediciones.ocultarNombres ??= [];
+  await alternarNombresOcultos(page, true);
+  for (const [nombre, plantilla] of CON_NOMBRES_OCULTOS) {
+    await page.evaluate(() => window.next.router.push('/account'));
+    await asentar(page);
+    await page.evaluate((u) => window.next.router.push(u), plantilla.replace('{diego}', diego));
+    await asentar(page);
+    const visto = await page.evaluate(() => ({
+      texto: document.body.innerText,
+      rotulos: [...document.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('aria-label')).join('\n'),
+      titulo: document.title,
+      iniciales: document.querySelectorAll('[data-retrato="iniciales"]').length,
+    }));
+    const todo = [visto.texto, visto.rotulos, visto.titulo].join('\n');
+    const apariciones = NOMBRES_DE_LA_COHORTE.filter((palabra) => new RegExp(`(^|[^\\p{L}])${palabra}([^\\p{L}]|$)`, 'u').test(todo));
+    const fila = { profesional: NOMBRES[prefijo], pagina: nombre, apariciones, monogramasConIniciales: visto.iniciales };
+    mediciones.ocultarNombres.push(fila);
+    console.log(`ocultar nombres · ${NOMBRES[prefijo]} · ${nombre}: ${apariciones.length ? `APARECEN ${apariciones.join(', ')}` : 'ningún nombre'} · ${visto.iniciales} monogramas con iniciales`);
+    if (apariciones.length > 0 || visto.iniciales > 0) process.exitCode = 1;
+  }
+  await alternarNombresOcultos(page, false);
+}
+
+/** Prende o apaga «Ocultar nombres» desde el menú de la cuenta, sin teclado (como `ponerTema`). */
+async function alternarNombresOcultos(page, prender) {
+  await page.waitForSelector('.menu-de-cuenta__boton', { timeout: 15_000 });
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForSelector('.menu-de-cuenta__ocultar input[type="checkbox"]', { timeout: 5_000 });
+  await page.evaluate((p) => {
+    const casilla = document.querySelector('.menu-de-cuenta__ocultar input[type="checkbox"]');
+    if (casilla.checked !== p) casilla.click();
+  }, prender);
+  await page.evaluate(() => document.querySelector('.menu-de-cuenta__boton').click());
+  await page.waitForFunction(() => !document.querySelector('.menu-de-cuenta__panel'), { timeout: 3_000 });
+  await pausa(300);
 }
 
 /** Espera a que la página termine de pedir datos y de acomodarse. */
@@ -266,6 +328,7 @@ try {
   await pausa(1500);
   const m = await capturarTodo();
   console.log(`errores de la página: ${m.errores.length ? m.errores.slice(0, 8).join(' | ') : 'ninguno'}`);
+  if (process.exitCode === 1) console.error('TEST-TAG-004: con «Ocultar nombres» apareció un nombre o una inicial (ver mediciones.json).');
 } finally {
   fs.writeFileSync(path.join(salida, 'api.log'), registroDeLaApi.join(''));
   web?.kill();

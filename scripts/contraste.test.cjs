@@ -198,6 +198,8 @@ const PARES_GRAFICO = [
   ['grafico-hueco', 'banda', NO_TEXTO, 'una sesión sin dato sobre la banda'],
   // TB-04: la raya de hoy debajo de la tira del minigráfico.
   ['ahora', 'superficie', NO_TEXTO, 'la raya de hoy debajo de la tira de cobertura'],
+  // TB-05 (DL-163 D-2): las iniciales del monograma sobre su círculo. Son decorativas, pero son letras: 4,5:1.
+  ['retrato-tinta', 'retrato-fondo', TEXTO, 'las iniciales del monograma sobre su círculo'],
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
@@ -425,6 +427,25 @@ test('website · la luz de hoy no se confunde con las métricas (TB-04)', () => 
       const d = deltaE(tema.ahora, tema[m]);
       if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${m} ${tema[m]}: ΔE ${d.toFixed(1)}`);
     }
+  }
+  assert.deepEqual(fallas, []);
+});
+
+/**
+ * TB-05 (DL-163 D-2): el monograma va en tinta neutra, nunca en el acento, y no se confunde con «hoy» (ΔE 20 o más contra
+ * --ahora, en los dos temas). Neutra quiere decir casi sin color: un croma de CIELAB de 12 o menos en la tinta y de 16 o
+ * menos en el círculo, que en Azul noche toma apenas el azul de la superficie.
+ */
+test('website · las iniciales van en tinta neutra y lejos de la luz de hoy (TB-05)', () => {
+  const fallas = [];
+  const croma = (h) => Math.hypot(lab(h)[1], lab(h)[2]);
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const t of ['retrato-tinta', 'retrato-fondo']) {
+      const d = deltaE(tema.ahora, tema[t]);
+      if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${t} ${tema[t]}: ΔE ${d.toFixed(1)}`);
+    }
+    if (croma(tema['retrato-tinta']) > 12) fallas.push(`${nombreDelTema} · la tinta ${tema['retrato-tinta']} tiene croma ${croma(tema['retrato-tinta']).toFixed(1)}`);
+    if (croma(tema['retrato-fondo']) > 16) fallas.push(`${nombreDelTema} · el círculo ${tema['retrato-fondo']} tiene croma ${croma(tema['retrato-fondo']).toFixed(1)}`);
   }
   assert.deepEqual(fallas, []);
 });

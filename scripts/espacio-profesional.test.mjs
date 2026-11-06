@@ -8,7 +8,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { areaUnicaDelProfesional, armarElDirectorio, buscarEnElDirectorio, estadoEnUnaFrase } = await import('../apps/web/src/app/pro/directorio.ts');
+const { areaUnicaDelProfesional, armarElDirectorio: armarConNombres, buscarEnElDirectorio, estadoEnUnaFrase } = await import('../apps/web/src/app/pro/directorio.ts');
+/** El directorio con los nombres a la vista; con «Ocultar nombres» (TB-05), «Tus asesorados» le pasa la referencia. */
+const armarElDirectorio = (vinculos, yo) => armarConNombres(vinculos, yo, (a) => a.displayName);
 const { ICONO_DEL_AREA_DE_CARTERA, ICONO_DEL_PENDIENTE, ICONO_DE_LA_VISTA_DE_PENDIENTES, rutaQueResuelve, textoDePendiente, ultimoRegistroDe } = await import('../apps/web/src/app/pro/pendiente-en-una-fila.ts');
 const { diaConSuSemana, diaDelAnioEnCurso } = await import('../apps/web/src/lib/formato.ts');
 const { COPY_VINCULO, ICONOS, TIPOS_DE_PENDIENTE, VISTAS_DE_PENDIENTES, estadoParaMostrar } = await import('../packages/domain/dist/index.js');
@@ -145,6 +147,10 @@ test('con un nombre visible (DL-040, 2026-10-15) se busca por el nombre o por la
   assert.deepEqual(quienes('Martina G'), ['a9be23'], 'con todas las palabras');
   assert.deepEqual(quienes('c5c7'), ['c5c72c'], 'por la referencia, aunque tenga nombre');
   assert.deepEqual(quienes('asesorado'), ['16de3f'], 'la referencia neutral, solo en quien no tiene un nombre a la vista');
+  // TB-05: con «Ocultar nombres», cada persona es su referencia: el nombre no se ve ni se encuentra.
+  const ocultas = armarConNombres([conNombre('a9be23', 'Martina Gómez', 'NUTRICION')], YO, (a) => `Asesorado · ${a.identityId.slice(-6)}`);
+  assert.deepEqual(ocultas.map((p) => p.nombre), ['Asesorado · a9be23']);
+  assert.deepEqual(buscarEnElDirectorio(ocultas, 'martina'), []);
 });
 
 // ─── Un pendiente en una fila ────────────────────────────────────────────────────────────────────

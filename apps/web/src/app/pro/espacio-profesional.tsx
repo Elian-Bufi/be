@@ -40,6 +40,7 @@ import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
 import { areaUnicaDelProfesional } from './directorio';
 import { EsperandoSesion } from '../../lib/sesion';
+import { anotarNombrePropio, nombrePropioEn } from '../../lib/nombre-propio';
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -129,6 +130,11 @@ export function EspacioProfesional() {
   const [invitar, setInvitar] = useState(false);
   const [solicitudes, setSolicitudes] = useState<{ abiertas: boolean; aviso: string | null }>({ abiertas: false, aviso: null });
   const [aviso, setAviso] = useState<string | null>(null);
+  // TB-05: el nombre con que las personas ven a la cuenta, para su monograma en el menú. Sale de los vínculos ya leídos.
+  const vinculosLeidos = vinculos.estado.tipo === 'listo' ? vinculos.estado.items : null;
+  useEffect(() => {
+    if (vinculosLeidos && id) anotarNombrePropio(nombrePropioEn(vinculosLeidos, id));
+  }, [vinculosLeidos, id]);
 
   if (!token) {
     return (

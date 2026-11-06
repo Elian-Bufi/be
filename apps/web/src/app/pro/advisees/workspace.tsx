@@ -35,6 +35,10 @@
  * acción principal según el momento de la persona (`accionDeLaFicha`: preparar la revisión de la semana, seguir el borrador
  * o empezar el plan; con todo al día, ninguna), y lo de vez en cuando, «Pedir información» y «Nota de coordinación», en el
  * menú «Más». «Actualizar» y la hora de la consulta siguen a la vista (B10-01).
+ *
+ * WP-TABLERO-ALTA-GAMA TB-05 (DL-163 D-2): el monograma de la persona va al lado de su nombre. Con «Ocultar nombres», el
+ * título es la referencia neutral y el monograma lleva el ícono; el nombre que reciben las vistas (la exportación de
+ * «Analizar», el diálogo de la nota) es el mismo que se ve.
  */
 import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
 import Link from 'next/link';
@@ -45,8 +49,11 @@ import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { MenuDeAcciones } from '../../../components/menu-de-acciones';
+import { Retrato } from '../../../components/retrato';
 import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
+import { anotarNombrePropio, nombrePropioEn } from '../../../lib/nombre-propio';
+import { useNombres } from '../../../lib/nombres-ocultos';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
 import { accionDeLaFicha, rutaDeLaAccion } from './accion-de-la-ficha';
@@ -95,6 +102,11 @@ export function Workspace() {
   const cerrarNota = useCallback(() => setNota(null), []);
   // Una nota enviada aparece en la línea de tiempo y en el Resumen: se repiten las lecturas de la vista abierta.
   const notaEnviada = useCallback(() => setVersionDeAcceso((v) => v + 1), []);
+  const { delAsesorado } = useNombres();
+  // TB-05: los vínculos de la ficha son de la cuenta como profesional: traen el nombre con que la ven, para el menú.
+  useEffect(() => {
+    if (encabezado.tipo === 'listo' && yoId) anotarNombrePropio(nombrePropioEn(encabezado.vinculos, yoId));
+  }, [encabezado, yoId]);
 
   const leer = useCallback(
     async (silencioso: boolean) => {
@@ -175,7 +187,8 @@ export function Workspace() {
   if (yo.tipo === 'error') return <div className="ficha__cuerpo"><ErrorConReintento onReintentar={cargarYo} /></div>;
   if (yo.tipo === 'sin-espacio') return <div className="ficha__cuerpo"><SinEspacioProfesional /></div>;
 
-  const nombre = panel.tipo === 'listo' ? panel.datos.advisee.displayName : encabezado.tipo === 'listo' && encabezado.vinculos[0] ? encabezado.vinculos[0].advisee.displayName : null;
+  const asesorado = panel.tipo === 'listo' ? panel.datos.advisee : encabezado.tipo === 'listo' && encabezado.vinculos[0] ? encabezado.vinculos[0].advisee : null;
+  const nombre = asesorado ? delAsesorado(asesorado) : null;
   const disponible = panel.tipo !== 'no-disponible';
   const accion = panel.tipo === 'listo' ? accionDeLaFicha(panel.datos.domains, hoyEn()) : null;
   const retorno = valorDeRetorno(new URLSearchParams(parametros.toString()));
@@ -190,6 +203,7 @@ export function Workspace() {
       <div className="marco-de-la-ficha__ancho">
         <div className="marco-de-la-ficha__persona">
           <div className="marco-de-la-ficha__nombre">
+            <Retrato nombre={nombre} tamano="grande" />
             <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
             {/* Con un nombre visible (DL-040, 2026-10-15), la referencia va al lado, chica, como en la maqueta 01: distingue a
                 dos personas que se llaman igual. Sin nombre, el título ya es la referencia. */}

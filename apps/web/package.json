@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/formulario-de-inicio.test.mjs test/lo-declarado-v2.test.mjs test/comidas-declaradas.test.mjs test/contexto-citable.test.mjs test/sus-habitos.test.mjs"
+    "test": "node --test test/formulario-de-inicio.test.mjs test/lo-declarado-v2.test.mjs test/comidas-declaradas.test.mjs test/contexto-citable.test.mjs test/sus-habitos.test.mjs test/retrato.test.mjs"
   },
   "dependencies": {
     "@be/domain": "0.1.0",

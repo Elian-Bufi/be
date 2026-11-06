@@ -15,9 +15,11 @@ import Link from 'next/link';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { BloqueDeEstado, EstadoVacio } from '../../components/estados';
 import { Icono } from '../../components/icono';
+import { Retrato } from '../../components/retrato';
 import { ICONO_DE_FALLA, razonDeFalla } from '../../lib/fallas';
 import { dia, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
+import { useNombres } from '../../lib/nombres-ocultos';
 import { armarElDirectorio, buscarEnElDirectorio, type PersonaDelDirectorio } from './directorio';
 
 export type EstadoDeLosVinculos = EstadoDeListaCompleta<PaginaDeUnaLista<Vinculo>>;
@@ -41,7 +43,9 @@ export function Asesorados({
   const [buscado, setBuscado] = useState('');
   const [abiertas, setAbiertas] = useState<ReadonlySet<string>>(new Set());
   const listo = vinculos.tipo === 'listo' ? vinculos : null;
-  const personas = useMemo(() => (listo ? armarElDirectorio(listo.items, profesionalId) : []), [listo, profesionalId]);
+  // TB-05: con «Ocultar nombres», cada persona es su referencia, también para buscar.
+  const { delAsesorado } = useNombres();
+  const personas = useMemo(() => (listo ? armarElDirectorio(listo.items, profesionalId, delAsesorado) : []), [listo, profesionalId, delAsesorado]);
   const coinciden = useMemo(() => buscarEnElDirectorio(personas, buscado), [personas, buscado]);
   const buscando = buscado.trim() !== '';
   const mas = listo && !listo.completa ? '+' : '';
@@ -137,6 +141,8 @@ function Persona({ persona, abierta, alAlternar }: { persona: PersonaDelDirector
     <li className="persona" data-persona={persona.identityId}>
       {/* La referencia y las áreas son el resumen de la persona y, a la vez, lo que abre el detalle de sus vínculos. */}
       <button type="button" className="persona__datos" aria-expanded={abierta} aria-controls={`${id}-vinculos`} onClick={alAlternar}>
+        {/* TB-05: el monograma; sin nombre visible (un vínculo que terminó) o con los nombres ocultos, el ícono. */}
+        <Retrato nombre={persona.nombre} tamano="medio" />
         <span className="persona__resumen">
           <span className="persona__quien">
             <span className="persona__nombre">{persona.nombre}</span>

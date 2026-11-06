@@ -57,6 +57,7 @@ import {
   SALIR_DE_LA_REVISION,
   useContextoDeLaRevision,
 } from '../revision-en-preparacion';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;
@@ -427,6 +428,7 @@ function FormularioDeRevision({
 }
 
 function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenamiento; onAplicada: (texto: string, alPlan: boolean) => void }) {
+  const { delProfesional } = useNombres();
   const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
   const [aplicando, setAplicando] = useState(false);
@@ -462,7 +464,7 @@ function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenam
       </p>
       {/* DL-154: el contexto de la revisión, a la vista: qué período se revisó y quién la registró. */}
       <p className="nota">
-        Entrenamiento · período revisado: {rangoCivil(revision.period.start, revision.period.end)} · registró: {revision.author.displayName}
+        Entrenamiento · período revisado: {rangoCivil(revision.period.start, revision.period.end)} · registró: {delProfesional(revision.author)}
       </p>
       <p>{revision.interpretation}</p>
       <p className="nota">
@@ -502,6 +504,7 @@ function ItemDeRevision({ revision, onAplicada }: { revision: RevisionDeEntrenam
  * si la tiene. Si ya no se puede leer, lo dice y avisa a quien la abrió.
  */
 function SesionDeLaEvidencia({ origen, onNoDisponible }: { origen: OrigenDeDato; onNoDisponible: () => void }) {
+  const { deQuien } = useNombres();
   const { token, sesionPerdida } = useEntrenamiento();
   const [r, setR] = useState<Resultado<{ data: EjecucionDeEntrenamiento }> | null>(null);
   const cargar = useCallback(async () => {
@@ -532,7 +535,7 @@ function SesionDeLaEvidencia({ origen, onNoDisponible }: { origen: OrigenDeDato;
       </p>
       {x.corrections.length > 0 ? (
         <p className="nota">
-          {x.effectiveView.kind === 'CORRECTED' ? 'Se muestra la corrección vigente' : 'Tiene correcciones'}: {x.corrections.map((c) => `${c.author.displayName}, ${fecha(c.recordedAt)}`).join(' · ')}
+          {x.effectiveView.kind === 'CORRECTED' ? 'Se muestra la corrección vigente' : 'Tiene correcciones'}: {x.corrections.map((c) => `${deQuien(c.author, x.adviseeId)}, ${fecha(c.recordedAt)}`).join(' · ')}
         </p>
       ) : null}
       {vigente ? <Registro registro={vigente} /> : <p className="nota">La vista vigente de esta sesión no se puede resolver.</p>}

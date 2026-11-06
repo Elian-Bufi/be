@@ -45,6 +45,7 @@ import { diaDelAnioEnCurso } from '../../../lib/formato';
 import { esIncierto, useClaveDeIntento } from '../../../lib/intento';
 import type { PedidoDeNota } from './seguimiento/contexto';
 import { hoyEn, restarDias } from './seguimiento/estado';
+import { useNombres } from '../../../lib/nombres-ocultos';
 
 type Destinatarios = DestinatariosPosiblesResponse['data'];
 type Carga = { tipo: 'cargando' } | { tipo: 'no-disponible' } | { tipo: 'error' } | { tipo: 'listo'; datos: Destinatarios };
@@ -84,6 +85,7 @@ export function DialogoDeNota({
   /** La nota quedó registrada: la ficha vuelve a leer lo que la muestra. */
   onEnviada: () => void;
 }) {
+  const { delProfesional } = useNombres();
   const id = useId();
   const dialogo = useRef<HTMLDialogElement>(null);
   const intento = useClaveDeIntento();
@@ -326,7 +328,7 @@ export function DialogoDeNota({
                   {T.paraTodos(persona)}
                 </label>
                 {destinatarios.length > 0 ? (
-                  <p className="nota nota-coord__quienes">Hoy: {nombresEnUnaFrase(destinatarios.map((d) => `${d.displayName} (${d.scopes.map((s) => s.label).join(' y ')})`))}.</p>
+                  <p className="nota nota-coord__quienes">Hoy: {nombresEnUnaFrase(destinatarios.map((d) => `${delProfesional(d)} (${d.scopes.map((s) => s.label).join(' y ')})`))}.</p>
                 ) : null}
                 <label className="capa">
                   <input
@@ -357,7 +359,7 @@ export function DialogoDeNota({
                       <option value="">{T.elegirUno}</option>
                       {destinatarios.map((d) => (
                         <option key={d.identityId} value={d.identityId}>
-                          {d.displayName} · {d.scopes.map((s) => s.label).join(' y ')}
+                          {delProfesional(d)} · {d.scopes.map((s) => s.label).join(' y ')}
                         </option>
                       ))}
                     </select>

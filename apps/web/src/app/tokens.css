@@ -81,6 +81,10 @@
   /* La luz del tablero (TB-04; DL-163 D-3): dentro de un gráfico marca solo «hoy». Es una marca, no un texto: 3:1 contra
      la superficie, y lejos de las tres métricas (ΔE 20 o más), para que hoy no se lea como un dato. */
   --ahora: #1e6bf2;
+  /* El rostro (TB-05; DL-163 D-2): el monograma, en tinta neutra sobre un círculo de un solo tono, el mismo para todas
+     las personas. La tinta llega a 4,5:1 sobre su fondo, casi no tiene color (no es el acento) y queda lejos de --ahora. */
+  --retrato-fondo: #e4e9f0;
+  --retrato-tinta: #3b4757;
   /* Las tres métricas de «Analizar» (WP-DASHBOARD-PROFESIONAL): azul, violeta y verde azulado. Ni rojo ni verde, que se
      leerían como juicio, ni el ámbar del foco (`scripts/contraste.test.cjs` mide la diferencia perceptual). Todas las
      marcas son puntos (WP-ESCRITORIO-AMABLE, C-16): además del color, cada métrica lleva su nombre en el encabezado de
@@ -148,6 +152,8 @@
   --grafico-hueco: #87a5bd;
   --banda: #163750;
   --ahora: #27d5f9;
+  --retrato-fondo: #22384d;
+  --retrato-tinta: #dde4ec;
   /* Las tres métricas sobre navy: las mismas familias, más claras, lejos del cian de los enlaces, del menta del éxito, del
      salmón del error y del amarillo del foco. */
   --metrica-1: #7cb8ff;

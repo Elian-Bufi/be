@@ -56,6 +56,7 @@ import { DetalleDeRegistroDeComida } from './detalle-de-registro';
 import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 import { VersionSoloLectura } from './plan';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 type Contexto = ContextoDeRevisionResponse['data'];
 type ResultadoApi = keyof typeof ETIQUETA_DE_RESULTADO;
@@ -407,6 +408,7 @@ function FormularioDeRevision({
 }
 
 function ItemDeRevision({ revision, onAplicada }: { revision: Revision; onAplicada: (texto: string, alPlan: boolean) => void }) {
+  const { delProfesional } = useNombres();
   const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [aplicando, setAplicando] = useState(false);
@@ -443,7 +445,7 @@ function ItemDeRevision({ revision, onAplicada }: { revision: Revision; onAplica
       </p>
       {/* DL-154: el contexto de la revisión, a la vista: qué período se revisó y quién la registró. */}
       <p className="nota">
-        Nutrición · período revisado: {rangoCivil(revision.period.start, revision.period.end)} · registró: {revision.author.displayName}
+        Nutrición · período revisado: {rangoCivil(revision.period.start, revision.period.end)} · registró: {delProfesional(revision.author)}
       </p>
       <p>{revision.interpretation}</p>
       <p className="nota">

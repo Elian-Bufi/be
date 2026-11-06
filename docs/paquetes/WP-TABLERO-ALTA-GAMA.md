@@ -650,9 +650,12 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-02 | Hecha. `medidaDeMarca`, `medidaDelRombo`, `medidaDelAro` y `rayaDeCorregido` en `geometria.ts`, con la regla del anexo A7, en el minigráfico, «Analizar», la evolución de Antropometría y los dos gráficos de Entrenamiento. Lo elegido es una guía fina y continua, la fecha en una píldora invertida y un aro del color de la métrica; el foco del teclado lo pasa al color del foco. El piso de la letra, 12,5, rige en los cuatro. TEST-TAG-006 | `seguimiento/geometria.ts`, `seguimiento/marca.tsx`, `scripts/geometria-del-minigrafico.test.mjs` |
 | TB-03 | Hecha. Los trazos del anexo A8: la línea registrada de 1,5 en «Analizar» y el minigráfico (1,25 en alta densidad) y de 1,75 en Entrenamiento; el objetivo y el plan, discontinuos de 1,25; el cambio de versión o de método, una vertical de 1 punteada en `--borde-control`. La grilla, solo horizontal y sin líneas de eje (las barras conservan su base). La vigencia, una franja de `--banda` (token nuevo, 1,3:1) arriba del dibujo con la vertical que la lleva, en lugar de las columnas de todo el alto. Entrenamiento, en el color de la métrica: lo planificado en contorno discontinuo, línea discontinua y rombo hueco; el rango, en `--banda`. `--grafico-planificado` y `--grafico-registrado` salen de los tokens. TEST-TAG-005 | `tokens.css`, `scripts/contraste.test.cjs` |
 | TB-04 | Hecha en el código y en sus pruebas; falta medirla a 1920 × 950 con la captura de su corrida. El indicador del Resumen tiene su minigráfico propio (`MinigraficoDelIndicador`): 72 de lienzo, sin canal de eje (el tope y la base de la grilla, rotulados adentro), la tira de cobertura con el estado de cada día y la raya de hoy en `--ahora` (token nuevo), y el inicio y el fin abajo. Con poco lugar por día, a más de ocho semanas, la línea es la media de cada semana de BE con su denominador y los días van como puntos claros; con menos semanas o en sesiones y tomas, la línea cortada con la última y las aisladas. Lo de fuera de la escala, una muesca y su cuenta, y la escala nunca es más angosta que 2 kg, 2 cm o 4 mm. La descripción accesible no cambia. La comparación de etapas sigue con su minigráfico. TEST-TAG-007 | `seguimiento/geometria.ts` (`geometriaDelIndicador`), `seguimiento/minigrafico.tsx` |
+| TB-05 | Hecha. `inicialesDe` y `Retrato`, de un solo tono neutro (`--retrato-fondo` y `--retrato-tinta`, tokens nuevos), en «Pendientes» (después, «Te toca a vos»), «Tus asesorados», el marco de la ficha y el de cada área, las notas del equipo, las novedades del profesional y el menú de la cuenta (TA-10); en ningún lugar prohibido. «Ocultar nombres», en el menú de la cuenta (TA-09): rige en /pro/**, también en lo que se exporta, en las novedades y en los textos que arma la API con un nombre adentro (TA-11); se recuerda en el navegador y cambia en el momento. Ningún título de pestaña lleva un nombre. «Tu semana» y el cajón lo suman cuando existan. TEST-TAG-003 y TEST-TAG-004; el recorrido del navegador, en las capturas | `lib/retrato.ts`, `lib/nombres-ocultos.ts`, `components/retrato.tsx`, `apps/web/test/retrato.test.mjs` |
 
-**Para seguir.** La próxima parte es TB-05 (el rostro y «Ocultar nombres»), y después TB-09, TB-06 a TB-08, TB-10,
-TB-16, TB-24, TB-25 y TB-49, en el orden de §8.1. De TB-04 falta medir a 1920 × 950 si entran los minigráficos (A13);
+**Para seguir.** La próxima parte es TB-09 (la acción del momento encadenada), y después TB-06 a TB-08, TB-10,
+TB-16, TB-24, TB-25 y TB-49, en el orden de §8.1. Toda pantalla nueva de /pro que muestre a alguien lee su nombre con
+`useNombres` (la guardia de `retrato.test.mjs` falla con un `.displayName` suelto) y, donde ya se ve el nombre, suma
+`Retrato`; el cajón (TB-12) se suma a `CON_NOMBRES_OCULTOS` de las capturas. De TB-04 falta medir a 1920 × 950 si entran los minigráficos (A13);
 el Resumen creció con ellos, y la tarjeta de área se ordena en TB-10. Cada corrida de `capturas-del-tablero` deja su
 artefacto: se compara con `linea-de-base/mediciones.json` (los altos y las peticiones al abrir, que no tienen que
 subir sin aviso). Con poca memoria, un typecheck angosto de los archivos tocados (un `tsconfig` que extiende el del
@@ -701,3 +704,24 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   dice «2 subtotales debajo de la escala», pero lo que queda afuera puede ser también el día en curso o una carga
   rápida (DL-161). Va debajo del minigráfico, solo cuando hay algo afuera. *Otra opción:* nombrar cada clase, que
   alarga el pie.
+- **TA-09 · «Ocultar nombres» está en el menú de la cuenta y oculta a todos, también a la cuenta.** El menú es donde
+  viven las preferencias y está en todas las páginas de /pro, que es donde rige. Con los nombres ocultos, cada persona
+  se ve por su referencia neutral («Asesorado · a9be23», DL-040), cada profesional por «Profesional · 1a2b3c» y nadie
+  lleva iniciales; el círculo del menú pasa al ícono «oculto», para que se sepa en cualquier página. Lo exportado
+  (Analizar, la lámina) dice lo mismo que la pantalla. Ningún título de pestaña lleva un nombre, porque queda en el
+  historial del navegador. *Otra opción:* un botón en el encabezado del Espacio, que no se ve desde la ficha, u ocultar
+  solo a las personas, que deja los nombres de los colegas en las notas.
+- **TA-10 · El monograma del menú sale de los vínculos ya leídos, sin una lectura nueva.** Es el nombre con que las
+  personas ven al profesional (su perfil profesional, DL-040), que viene en los vínculos que leen el Espacio y la
+  ficha; vive en la memoria de la pestaña, como la sesión. En una página que no los lee, recién abierta, el menú sigue
+  con su dibujo. *Otra opción:* leer `/me/profile` en cada página de /pro, que suma una petición al abrir (TEST-TAG-032)
+  y trae el nombre del perfil propio, que puede no ser el profesional. El saludo de TB-06 decide su fuente.
+- **TA-11 · Los textos que arma la API con un nombre adentro se arreglan en el website.** El título y el texto de una
+  novedad y «Corregida por …» en la Línea de tiempo cambian cada nombre conocido por su referencia
+  (`textoSinNombres`); el «Para:» de una nota, que es una lista de nombres, no se muestra con los nombres ocultos. Lo
+  que alguien escribió a mano (el texto de una nota) no se toca: no se puede saber qué es un nombre. *Otra opción:* que
+  la API los arme sin nombres, que cambiaría API-NOV-01, que leen las APK instaladas (DL-152).
+- **TA-12 · En las novedades del profesional, el monograma ocupa el lugar del ícono.** Una novedad con quien la
+  originó lleva su monograma; las que emite BE (un recordatorio) siguen con su ícono. En la cuenta de la persona no
+  cambia nada: el rostro de sus profesionales llega con TB-20 y TB-23. *Otra opción:* el monograma y el ícono juntos,
+  que en un renglón de 1440 suman dos marcas antes del título.
