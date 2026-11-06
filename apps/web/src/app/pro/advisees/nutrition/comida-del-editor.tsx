@@ -11,6 +11,10 @@
  * - **Cada campo de la tabla dice de qué alimento es** en su nombre accesible; el título de la columna lo dice a la vista.
  * - **El nombre se cambia a pedido** («Cambiar el nombre»): el campo aparece en el lugar, con el foco adentro, y Enter o
  *   salir de él lo cierra (`components/campo-de-nombre.tsx`). Lo que se acaba de agregar nace con el campo abierto.
+ * - **La nota de cada ítem** (WP-TABLERO-ALTA-GAMA TB-48): estaba en el contrato y la persona la lee en la app junto al
+ *   ingrediente, pero el editor no la dejaba escribir. Va en un renglón debajo del ítem, a pedido («Agregar una nota
+ *   sobre …», `components/texto-a-pedido.tsx`), hasta 300 caracteres. No cambia lo que lee la app: el campo ya
+ *   existía.
  */
 import {
   cantidad as formatearCantidad,
@@ -32,6 +36,7 @@ import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
+import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
@@ -287,7 +292,9 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
   }, [externo]);
   // Lo que no es un número se señala en el campo, en vez de guardarse como cero en silencio (B10-10:164-165).
   const error = escrito.trim() !== '' && leerNumero(escrito) === null ? motivoDeNumeroIlegible(escrito) : null;
+  const [notaAbierta, setNotaAbierta] = useState(false);
   return (
+    <>
     <tr className="item-del-editor">
       <th scope="row" className="item-del-editor__nombre">
         {nombre}
@@ -348,8 +355,28 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
         </button>
       </td>
     </tr>
+    {/* TB-48: la nota del ítem, que la persona lee en la app junto al ingrediente. */}
+    <tr className="item-del-editor__nota">
+      <td colSpan={5}>
+        <TextoAPedido
+          id={`${id}-nota`}
+          rotulo={COPY_NOTA_DEL_ITEM.rotulo}
+          queEs={COPY_NOTA_DEL_ITEM.queEs(nombre)}
+          valor={item.note ?? null}
+          maximo={COPY_NOTA_DEL_ITEM.maximo}
+          abierto={notaAbierta}
+          alAbrir={() => setNotaAbierta(true)}
+          alCambiar={(v) => onCambiar({ note: v })}
+          alCerrar={() => setNotaAbierta(false)}
+        />
+      </td>
+    </tr>
+    </>
   );
 }
+
+/** TB-48: los textos de la nota de un ítem. La persona la lee en la app tal como se escribe. */
+export const COPY_NOTA_DEL_ITEM = { rotulo: 'Nota para la persona', queEs: (nombre: string): string => `una nota sobre ${nombre}`, maximo: 300 } as const;
 
 /**
  * Una opción que nació de una receta (DL-119): la receta y su versión, y los ítems de una porción que armó la API, en

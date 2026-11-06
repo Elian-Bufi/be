@@ -75,6 +75,7 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeEntrenamiento } from '../topes-del-plan';
 import { hoyEn } from '../seguimiento/estado';
 import { AgendaDelPlan, agendaVigente, resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
@@ -134,7 +135,12 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   [N.parametroIncompleto]: 'a un parámetro le falta el nombre o el valor',
   // La agenda (DL-137): lo que la API rechaza de los días de entrenamiento.
   ...PROBLEMA_DE_AGENDA,
+  // TB-48: los topes del contrato, avisados antes de guardar.
+  ...TEXTO_DE_LOS_TOPES,
 };
+
+/** Lo que no deja guardar: lo que el editor ve solo y, desde TB-48, los topes del contrato que se pasan. */
+const loQueNoDejaGuardar = (bloques: Bloques) => [...loQueNoDejaGuardarElEntrenamiento(bloques), ...topesPasadosDeEntrenamiento(bloques)];
 
 /** Dónde está un problema, en palabras: los de la agenda, en «Días de entrenamiento». */
 const dondeEsta = (p: ValidationIssue, bloques: Bloques): string =>
@@ -278,12 +284,12 @@ export function EditorDePlan({
     if (!version) return null;
     // Un nombre vacío o un dato que no se entiende pueden estar en otro bloque, en otra sesión o en un ejercicio
     // plegado: se listan, y cada uno lleva a su lugar. Nada de eso viaja: un dato mal escrito se guardaría como «nada».
-    const impide = loQueNoDejaGuardarElEntrenamiento(bloques);
+    const impide = loQueNoDejaGuardar(bloques);
     if (impide.length > 0) {
       // El autoguardado espera a que se pueda guardar: no abre avisos mientras se escribe.
       if (automatico) return null;
       setProblemas(impide);
-      setMensaje({ tipo: 'error', texto: avisoDeLoQueNoDejaGuardarElEntrenamiento(impide) });
+      setMensaje({ tipo: 'error', texto: impide.some((p) => esUnTope(p.code)) ? AVISO_DE_LOS_TOPES : avisoDeLoQueNoDejaGuardarElEntrenamiento(impide) });
       return null;
     }
     const edicionesAlEnviar = ediciones.current;
@@ -350,7 +356,7 @@ export function EditorDePlan({
   }
 
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
-  const puedeGuardar = loQueNoDejaGuardarElEntrenamiento(bloques).length === 0;
+  const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
   const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision], [bloques, agenda, proximaRevision]);
   useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla,
@@ -451,7 +457,7 @@ export function EditorDePlan({
   const lasSesiones = (x: Bloques): SesionE[] => (j !== null ? x[i]!.microcycles![j]!.sessions : (x[i]!.sessions ??= []));
   // Lo que el editor ve solo ya lo dice cada ejercicio con sus palabras: al renglón van los problemas de «Validar».
   const rutasConProblemas = (problemas ?? []).filter((p) => !esDelEditor(p.code)).map((p) => p.path);
-  const impideGuardar = loQueNoDejaGuardarElEntrenamiento(bloques);
+  const impideGuardar = loQueNoDejaGuardar(bloques);
   const antesHayQueCorregir = impideGuardar.length > 0 ? 'Antes hay que corregir lo que no deja guardar esta versión.' : null;
 
   const elegirBloque = (n: number) => {

@@ -162,6 +162,13 @@ const DOMINIOS = [
     minimo: 5,
   },
   {
+    // WP-TABLERO-ALTA-GAMA TB-48: los topes de un plan, avisados antes de guardar en los editores de las dos áreas.
+    nombre: 'los topes del plan',
+    archivos: [join(RAIZ, 'apps/web/src/app/pro/advisees/topes-del-plan.ts')],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 1,
+  },
+  {
     // DL-141 D-6 (encargo de Dirección del 2026-10-19, bloque 4): el origen de un ítem en la fila del buscador, en Nutrición
     // y en Entrenamiento. Su texto vive en el dominio y lo muestra un componente común: pasan por las dos listas.
     nombre: 'el origen en la fila del buscador',

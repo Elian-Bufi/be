@@ -14907,3 +14907,13 @@ p.cifra-del-espacio__desglose {
 .cajon__revision .nota {
   margin: 0;
 }
+
+/* TB-48: la nota de un ítem va en un renglón debajo del ítem, sin borde entre los dos: es parte del mismo ítem. */
+.items-del-editor .item-del-editor > th,
+.items-del-editor .item-del-editor > td {
+  border-bottom: 0;
+}
+
+.items-del-editor .item-del-editor__nota > td {
+  padding-top: 0;
+}

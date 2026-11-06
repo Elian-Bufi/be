@@ -68,6 +68,7 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
 import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { AgregarItem } from './agregar-item';
@@ -132,7 +133,12 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   // Lo que el editor ve solo, antes de guardar.
   [PROBLEMA_DEL_EDITOR.faltaElNombre]: 'falta el nombre',
   [PROBLEMA_DEL_EDITOR.cantidadIlegible]: 'la cantidad no se entiende',
+  // TB-48: los topes del contrato, avisados antes de guardar.
+  ...TEXTO_DE_LOS_TOPES,
 };
+
+/** Lo que no deja guardar: lo que el editor ve solo y, desde TB-48, los topes del contrato que se pasan. */
+const loQueNoDejaGuardarElPlan = (e: Estructura) => [...loQueNoDejaGuardar(e), ...topesPasadosDeNutricion(e)];
 
 const esDelEditor = (codigo: string): boolean => codigo === PROBLEMA_DEL_EDITOR.faltaElNombre || codigo === PROBLEMA_DEL_EDITOR.cantidadIlegible;
 
@@ -250,12 +256,12 @@ export function EditorDeBorrador({
     if (!version) return null;
     // Un nombre vacío o una cantidad que no se entiende pueden estar en otro día tipo, en una comida plegada o en otra
     // pestaña: se listan, y cada uno lleva a su lugar.
-    const impide = loQueNoDejaGuardar(estructura);
+    const impide = loQueNoDejaGuardarElPlan(estructura);
     if (impide.length > 0) {
       // El autoguardado espera a que se pueda guardar: no abre avisos mientras se escribe.
       if (automatico) return null;
       setProblemas(impide);
-      setMensaje({ tipo: 'error', texto: avisoDeLoQueNoDejaGuardar(impide) });
+      setMensaje({ tipo: 'error', texto: impide.some((p) => esUnTope(p.code)) ? AVISO_DE_LOS_TOPES : avisoDeLoQueNoDejaGuardar(impide) });
       return null;
     }
     const edicionesAlEnviar = ediciones.current;
@@ -306,7 +312,7 @@ export function EditorDeBorrador({
   }
 
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
-  const puedeGuardar = loQueNoDejaGuardar(estructura).length === 0;
+  const puedeGuardar = loQueNoDejaGuardarElPlan(estructura).length === 0;
   const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision], [estructura, proximaRevision]);
   useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando,
