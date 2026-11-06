@@ -10853,9 +10853,11 @@ button.comida-del-dia__fila > .icono:last-child {
   font-weight: 700;
 }
 
+/* Cada opción entra en un renglón («En 1 semana · viernes 13 nov»): si no entran dos por fila, va una (a 1280 la tarjeta
+ * de la revisión es angosta y la fecha se partía en dos renglones). */
 .cuando-la-revisas__opciones {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
   gap: 0.15rem 1rem;
 }
 
