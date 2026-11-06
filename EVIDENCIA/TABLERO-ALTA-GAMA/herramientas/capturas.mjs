@@ -20,6 +20,7 @@
 // sus minigráficos, y el alto de la tarjeta más alta (A13 de la propuesta).
 // Desde TB-24, la composición corporal de Diego en la pestaña y en la pregunta de «Analizar», el Resumen de Héctor (sin
 // pliegues: la línea de los pesos) y, en `composicion`, cuántas columnas van partidas y qué dice la barra de la tarjeta.
+// Desde TB-15, la revisión nueva de Nutrición de Diego, con «¿Cuándo la revisás?» sin nada elegido.
 // Desde el arreglo de TEST-TAG-032 (TA-30): la cuenta sigue hasta que la API queda quieta (ninguna petición en curso y
 // ninguna nueva en 1,5 s) y se compara con la tabla de `peticiones.mjs`: una cuenta distinta, para arriba o para abajo,
 // hace fallar la corrida. Y la lista de nombres de TEST-TAG-004 ya no sale vacía: quitaba toda palabra, no solo los
@@ -153,6 +154,8 @@ const PAGINAS = {
     ['antropometria-composicion', '/pro/advisees/anthropometry?id={diego}&vista=composicion'],
     ['analizar-composicion', '/pro/advisees?id={diego}&vista=analizar&pregunta=composicion-del-peso'],
     ['resumen-hector', '/pro/advisees?id={hector}'],
+    // TB-15: la revisión nueva de Nutrición de Diego, con «¿Cuándo la revisás?» en «Lo que decidís», sin nada elegido.
+    ['revision-nueva', '/pro/advisees/nutrition?id={diego}&vista=revisiones&preparar=1'],
   ],
   PRO_T: [
     ['espacio', '/pro'],

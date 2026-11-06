@@ -38,6 +38,9 @@ export const PETICIONES_AL_ABRIR = {
   'sofia-paz/antropometria-composicion': 7,
   'sofia-paz/analizar-composicion': 5,
   'sofia-paz/resumen-hector': 18,
+  // TB-15: la revisión nueva de Nutrición: la cuenta, las novedades, lo que lee el marco del área y lo que lee la revisión
+  // (el contexto del período y las evaluaciones). Página nueva: se mide en su primera corrida.
+  'sofia-paz/revision-nueva': 7,
   'martin-acosta/espacio': 6,
   'martin-acosta/cajon': 8,
   'martin-acosta/resumen': 14,
