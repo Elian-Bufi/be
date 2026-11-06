@@ -15,11 +15,15 @@ import { randomUUID } from 'node:crypto';
 import { appDePrueba, conSesion } from './soporte-api';
 import { a3Vigente, finalizar, pausar, prepararAsesorado, prepararProfesional, revocarB2, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
 import { circuitoDeEntrenamiento, cuerpoDeEvaluacionDeEntrenamiento, PROCEDENCIA_SQL, type CircuitoDeEntrenamiento } from './soporte-entrenamiento';
-import { sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
+import { sembrarAntecedentesDeP0, sembrarCopiaDeLaVersion, VERSION_HABITOS_V1 } from './soporte-plantillas-de-inicio';
 
 /** Una copia de P0 de «Antecedentes para entrenamiento» (DL-164 FI-02: la v1 es histórica y la vigente usa tipos nuevos, que FRM-07 y FRM-08 no sirven). */
 let VERSION_ENTRENAMIENTO: string;
-const VERSION_HABITOS = '4879e539-235f-4f91-83fc-2e113c404393';
+/**
+ * FRM-HABITOS v1 (P0, transversal: horas de sueño NUMBER en h, nivel de actividad TEXT, fuma BOOLEAN), en una copia de
+ * prueba: desde la ronda 2.1 (DL-165) la del catálogo es histórica y FRM-03 ya no la deja pedir. El contenido es el mismo.
+ */
+let VERSION_HABITOS: string;
 const SEIS = ['trn_objetivo_declarado', 'trn_experiencia', 'trn_dias_por_semana', 'trn_minutos_por_sesion', 'trn_lugar_y_equipamiento', 'trn_preferencias'];
 
 const prisma = new PrismaClient();
@@ -28,6 +32,7 @@ let contador = 0;
 const fresco = (): Promise<CircuitoDeEntrenamiento> => circuitoDeEntrenamiento(app, `ctx-${++contador}`);
 
 beforeAll(async () => {
+  VERSION_HABITOS = (await sembrarCopiaDeLaVersion(prisma, VERSION_HABITOS_V1, 'ctx-habitos')).versionId;
   app = await appDePrueba();
   ({ versionId: VERSION_ENTRENAMIENTO } = await sembrarAntecedentesDeP0(prisma, 'ctx'));
 }, 120_000);

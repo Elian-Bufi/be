@@ -19,6 +19,7 @@ import type { TransicionDeMaquina } from './maquina';
 import { transicionDe } from './maquina';
 import type { Alcance } from './alcance';
 import { COPY_FORMULARIOS } from './copy-formularios';
+import { COPY_HABITOS } from './copy-habitos-de-la-persona';
 
 // ─── Estado de la Solicitud (REG-06-210) ────────────────────────────────────────────────────────
 
@@ -112,9 +113,14 @@ export const CONTEXTO_DE_NUTRICION = {
  * desde «Más» (FR-02). Es una propuesta: el profesional la cambia, y lo que él escribió no se pisa. Un formulario sin
  * sugerencia deja el campo para que lo escriba él.
  */
+/** DL-165, ronda 2.1 (D-15 nueva): la clave de «Tus hábitos», el formulario aparte que puede pedir cualquier profesional. */
+export const CLAVE_DEL_FORMULARIO_DE_HABITOS = 'FRM-HABITOS';
+
 export function propositoSugerido(clavePlantilla: string): string | null {
   if (clavePlantilla === CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla) return COPY_FORMULARIOS.propositoDeContextoDeEntrenamiento;
   if (clavePlantilla === CONTEXTO_DE_NUTRICION.clavePlantilla) return COPY_FORMULARIOS.propositoDeContextoDeNutricion;
+  // DL-165, ronda 2.1: «Tus hábitos», aparte o sumado a uno de área (D-22).
+  if (clavePlantilla === CLAVE_DEL_FORMULARIO_DE_HABITOS) return COPY_HABITOS.web.propositoDelFormulario;
   return null;
 }
 

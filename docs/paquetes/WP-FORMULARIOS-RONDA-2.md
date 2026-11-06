@@ -4,8 +4,10 @@
 > D-9 Dirección eligió distinto de la recomendación. FR-01 y FR-02 se programaron antes de ratificar, porque corrigen lo
 > que WP-FORMULARIOS-DE-INICIO ya pedía (FI-04 y PF-02). Rama `wp-formularios-ronda-2`, desde
 > `wp-formularios-ronda-2-fallas` (`main` bbfe316 más FR-01 y FR-02). FR-03 a FR-10 programados en la rama (PR #237);
-> las decisiones de la implementación D-10 a D-13 las ratificó Dirección el 2026-11-05, y D-14 a D-19 (las del FR-10,
-> §7) quedan a ratificar.
+> las decisiones de la implementación D-10 a D-13 las ratificó Dirección el 2026-11-05. **Ronda 2.1 (2026-11-06, §8):**
+> Dirección decidió «Tus hábitos» como formulario aparte (D-15 nueva) y «Pedir acceso a sus hábitos» (D-17 nueva), que
+> reemplazan a las anteriores, y ratificó D-14, D-16 y D-18; D-19 sigue a ratificar, y las de la ronda 2.1 (D-20 a D-28),
+> también. Programada en la rama `wp-habitos-formulario-aparte` (FR-12 a FR-15; PR en borrador).
 >
 > **Origen:** la prueba de Dirección del 2026-11-05 en la APK 0.20.0-candidata.1 y en el escritorio
 > (`EVIDENCIA/FORMULARIOS-DE-INICIO/LEEME.md`, «Resultados»). Dirección: «es lo mismo pero cambia la experiencia de la
@@ -133,7 +135,8 @@ Nutrición) y fumar (`fuma`, en Entrenamiento: no está en la lista de Direcció
 una decisión de Dirección.
 
 **Cómo quedaron las plantillas** (en las versiones nuevas de FR-06, FRM-NUTRICION-INICIO v2 y FRM-ENTRENAMIENTO v3, sin
-versiones extra; D-15):
+versiones extra; la D-15 anterior). *(2026-11-06: desde la ronda 2.1, la parte es un formulario aparte, «Tus hábitos»
+(FRM-HABITOS v2), y las vigentes de área ya no la traen: §8.3. Estas dos siguen así, históricas.)*
 
 | Formulario | Partes, en orden | Lo que se movió a «Tus hábitos» |
 |---|---|---|
@@ -243,12 +246,15 @@ entrenar» v3, con 23. El profesional las puede cambiar al pedir, como siempre.
 - La candidata 0.21.0-candidata.1 (FR-11): la construye y la publica Dirección.
 - Cambiar las versiones ya publicadas: una versión no se toca (REG-06-209).
 - Del FR-10: avisarle al profesional (una novedad) cuando la persona empieza a compartirle sus hábitos o deja de hacerlo, y
-  una pantalla de la persona con quién vio sus datos (08 §19.7; el registro ya existe). Son ideas, sin decidir.
+  una pantalla de la persona con quién vio sus datos (08 §19.7; el registro ya existe). Son ideas, sin decidir. Con la ronda
+  2.1, lo mismo para la respuesta a un pedido de acceso: el profesional lo ve en API-HBT-07, sin aviso.
+- La candidata 0.22 (FR-16): la construye y la publica Dirección.
 
 ## 7. Decisiones de la implementación
 
 D-10 a D-13 (FR-06 a FR-09) las **ratificó Dirección el 2026-11-05**; el detalle está en DL-165. D-14 a D-19 son las del
-FR-10 y quedan **a ratificar**:
+FR-10: el 2026-11-06 Dirección **ratificó D-14, D-16 y D-18** y **reemplazó D-15 y D-17** por las nuevas de la ronda 2.1
+(§8.1); **D-19 sigue a ratificar**. Lo que sigue es como quedaron programadas el 2026-11-05:
 
 - **D-14 · La familia se llama API-HBT, no API-HAB.** HAB ya es «Mis habituales» de entrenamiento (DL-109), y la guardia
   de trazabilidad frena un ID repetido (DL-116). Las rutas y lo que hace cada una son las del diseño.
@@ -276,3 +282,136 @@ FR-10 y quedan **a ratificar**:
   exclusivo para escribir). La pregunta por un profesional nuevo va en «Mis hábitos» y, solo cuando hay algo que preguntar,
   en una tarjeta de Inicio. Límite: si nadie recibe los hábitos hoy (todos terminaron su vínculo), «No, por ahora» no se
   ofrece, porque compartir pide al menos un profesional; la persona puede sumarlo o dejar de compartir.
+
+## 8. Ronda 2.1 · «Tus hábitos» aparte y «Pedir acceso a sus hábitos» (2026-11-06)
+
+> **Estado:** decidido por Dirección el 2026-11-06, pregunta por pregunta (DL-165). D-15 y D-17 nuevas, que reemplazan a
+> las anteriores; D-14, D-16 y D-18 ratificadas; D-19 sigue a ratificar. Programado en la rama
+> `wp-habitos-formulario-aparte`, desde `main` (`758b4d8`). Lo que hubo que decidir al programarlo va en §8.6 (D-20 a
+> D-28, **a ratificar**). La APK 0.22 la construye y la publica Dirección (FR-16).
+>
+> **Datos:** como la ronda 2, solo sintéticos, en local y en `test`. Con personas reales, después de la revisión legal y del
+> gate del 08 §42 (§4.6).
+
+### 8.1 Lo que decidió Dirección
+
+1. **D-15 (nueva) · «Tus hábitos», un formulario aparte.** En sus palabras: «Puede estar en un formulario separado que sea
+   de hábitos, que puedan enviar ambos profesionales. Por ejemplo, inicia hoy el nutricionista y le envía el formulario de
+   nutrición y hábitos, y en 3 meses el entrenador comienza y le envía el formulario de entrenamiento y el de hábitos si es
+   que quiere actualizarlo, y si no ya lo tiene disponible. O, por ejemplo, pasan 6 meses más y algún profesional quiere
+   reenviarle el formulario de hábitos para saber si todo sigue igual.»
+   - «Tus hábitos» pasa a ser una plantilla propia, de formato 3, con las seis preguntas de §4.1. FRM-HABITOS ya existía en
+     P0: va como su versión 2. La pide y la vuelve a pedir cualquier profesional con el vínculo vigente, en su área.
+   - Las de área salen en versiones nuevas, sin la parte: «Cómo comés hoy» v3 y «Antes de entrenar» v4, por una migración
+     que solo agrega. Las v2 y v3 de la ronda 2 ya corrieron en `test` y no se tocan: sus Solicitudes siguen andando y
+     siguen sumando hábitos al responderse.
+   - La regla de FRI-04 queda general: cualquier versión con las preguntas de hábitos agrega una versión de los hábitos.
+2. **La sugerencia al pedir** (ratificada). Al pedir un formulario de área, el cajón ofrece «Sumar «Tus hábitos»»:
+   marcada si el profesional no ve hábitos de la persona (ni de una respuesta suya ni compartidos, HBT-05) o si los que ve
+   tienen más de 3 meses; sin marcar, con su fecha, si son recientes. Nunca puede revelar que la persona contó sus hábitos a
+   otro profesional. Con la casilla marcada, se envían las dos solicitudes en un paso, y si una falla se dice cuál.
+3. **D-16 ratificada:** lo respondido reemplaza lo vigente.
+4. **D-18 ratificada:** «¿Sigue igual?» solo en el teléfono de la persona; ahora vale también para «Tus hábitos» aparte.
+5. **D-14 ratificada:** la familia API-HBT.
+6. **D-17 (nueva) · la persona siempre decide, y el profesional puede pedir.** En sus palabras: «Debería tener la opción
+   siempre de poder cambiar su opinión y darle acceso, ya que es parte del beneficio al profesional. Tiene que entender la
+   persona que es importante brindar ese acceso... obvio, siempre que quiera. El profesional puede reenviar la solicitud de
+   acceso y que a la persona le llegue como importante... igualmente, siempre, indiscutiblemente, el acceso de sus datos a
+   terceros es su decisión... nunca una obligación.»
+   - La persona suma o saca a cualquier profesional en cualquier momento, desde «Mis hábitos» («Cambiar con quiénes»).
+   - El profesional tiene «Pedir acceso a sus hábitos». Le llega a la persona como una novedad destacada como importante,
+     con el aviso push genérico de DL-133.
+   - La novedad dice quién pide, para qué le sirve y que es su decisión. «Sí, que los vea» y «No, por ahora» pesan lo mismo:
+     sin presión, sin «recomendado» y sin culpa.
+   - Un límite para que no sea insistente: una pendiente por vez por profesional, y volver a pedir recién a los 7 días del
+     último (D-24, a ratificar).
+   - Ya no va la repregunta automática al actualizar los hábitos.
+7. **Compatibilidad:** las lecturas congeladas de la 0.13.2, la 0.20 y la 0.21 siguen pasando. La novedad nueva no rompe a
+   una APK que no la conoce, y la 0.21 responde «Tus hábitos» aparte (formato 3).
+
+### 8.2 Las partes
+
+| ID | Qué | Toca la API | Decisión | Se acepta cuando |
+|---|---|---|---|---|
+| FR-12 | «Tus hábitos» aparte y las de área sin la parte | Sí | D-15 nueva; D-20, D-21 | FRM-HABITOS v2, FRM-NUTRICION-INICIO v3 y FRM-ENTRENAMIENTO v4 en `20261106120000_formularios_ronda_2_1_plantillas`, generada desde el dominio y sin tocar las dos anteriores; FRM-03 ya no deja pedir FRM-HABITOS v1 ni las de la ronda 2, y sus Solicitudes ya pedidas siguen; responder cualquier versión con la parte agrega una versión de los hábitos |
+| FR-13 | «Sumar «Tus hábitos»» al pedir un formulario de área | Sí | D-22 | API-HBT-07 dice lo que ve este profesional; el cajón marca o no la casilla con `sugerenciaDeSumarHabitos` y su fecha; con la casilla, dos solicitudes en un paso, y si una falla se dice cuál; una prueba de integración fija que lo que la persona respondió a otro profesional no aparece |
+| FR-14 | «Pedir acceso a sus hábitos», la novedad y el límite | Sí | D-17 nueva; D-23 a D-25 | API-HBT-06 a 09; la novedad `HABITS_ACCESS_REQUESTED` con el aviso genérico; una pendiente por vez y 7 días entre pedidos, en el dominio y en la base; «Sí» es compartir (texto y A3) y «No, por ahora» no cambia nada; sumarlo desde «Mis hábitos» da por aceptado su pedido; la tarjeta «Sus hábitos» del website sin acceso ofrece pedirlo |
+| FR-15 | La APK 0.22: la novedad destacada, el pedido, «Tus hábitos» aparte y «Mis hábitos» | Sí (lee 08 y 09) | D-17 nueva, D-18; D-26, D-27 | «Importante» con palabras; el pedido en «Mis hábitos» y en Inicio, con las dos respuestas del mismo peso; quien tiene un pedido no recibe además la pregunta por el profesional nuevo; «Tus hábitos» aparte se responde y trae «¿Sigue igual?»; «Cambiar con quiénes» vuelve a sumar a quien dijo que no |
+| FR-16 | La candidata 0.22, sus lecturas congeladas y la evidencia, con TalkBack | No | — | Fuera de esta rama: la construye y la publica Dirección. La guía de la prueba, en `EVIDENCIA/FORMULARIOS-RONDA-2/LEEME.md`, «La prueba de la 0.22» |
+
+### 8.3 Las plantillas
+
+| Plantilla | Versión | Partes, en orden | Preguntas | Obligatorias (a la vista) |
+|---|---|---|---|---|
+| «Tus hábitos» (FRM-HABITOS) | v2, sin área propia, sucede a la v1 de P0 | Tus hábitos | 6: las de §4.1 | 5 (4) |
+| «Cómo comés hoy» (FRM-NUTRICION-INICIO) | v3, sucede a la v2 | Tu día · Las comidas de tu semana · Alimentos que sí y que no · Lo que tomás · Tu salud y la comida · Lo que buscás | 50 | 19 (18) |
+| «Antes de entrenar» (FRM-ENTRENAMIENTO) | v4, sucede a la v3 | Tu salud antes de entrenar · Dolor y lesiones · Tu experiencia · Lo que buscás · Tu semana para entrenar · Tus preferencias | 37 | 18 (18) |
+
+- La parte de «Tus hábitos» v2 es `SECCION_DE_HABITOS`, campo por campo: la misma que traen «Cómo comés hoy» v2 y «Antes de
+  entrenar» v3. Por eso las tres agregan hábitos igual, y «¿Sigue igual?» funciona igual en las tres.
+- Las de área son las de la ronda 2 sin esa parte; lo demás no cambia, pregunta por pregunta. La única excepción es «¿En qué
+  momento del día solés entrenar?», que en la v2 se abría con el «Sí» de la parte: en la v3 queda a la vista, opcional, y
+  suma «No entreno» (D-21).
+- Las de la ronda 2 quedan históricas. FRM-03 responde 422 `FORM_TEMPLATE_NOT_SELECTABLE` si se las pide, como a toda versión
+  con sucesora (REG-06-209). FRM-HABITOS v1 (P0, contrato V1), lo mismo: sus Solicitudes ya pedidas las sigue respondiendo la
+  APK instalada por FRM-07.
+
+### 8.4 Las operaciones nuevas (familia API-HBT)
+
+Lo que lee la 0.21 (HBT-01 a 04) no cambia de forma (DL-152): todo lo nuevo va en operaciones nuevas (DL-137 D-7).
+
+| ID | Método y ruta | Quién | Qué hace |
+|---|---|---|---|
+| API-HBT-06 | `POST /advisees/{adviseeId}/habits/access-requests` | El profesional | Pide acceso desde un área en la que la acompaña (`scope`). Publica la novedad a la persona. 422 `HABITS_ACCESS_REQUEST_TOO_SOON` (con `availableFrom`) antes de los 7 días; 422 `HABITS_ALREADY_SHARED` si ya los recibe; sin acceso en esa área, el 404 de lo inexistente |
+| API-HBT-07 | `GET /advisees/{adviseeId}/habits/status` | El profesional | Sin ver ningún hábito: sus áreas, si los recibe y desde cuándo, lo más nuevo que ve, desde cuándo espera una solicitud con la parte, su último pedido (pendiente o respondido, sin decir qué) y si puede pedirlo hoy o desde cuándo |
+| API-HBT-08 | `GET /me/habits/access-requests` | La persona | Los pedidos que esperan su respuesta, de profesionales con el vínculo aceptado en esa área. Sin el A3, 403 |
+| API-HBT-09 | `POST /me/habits/access-requests/{accessRequestId}/answer` | La persona | `SHARE` («Sí, que los vea»), con la versión de la autorización y el texto mostrado, o `NOT_NOW` («No, por ahora») |
+
+- **La base:** `pedido_de_acceso_a_habitos` (migraciones `20261106120100` y `20261106120200`, que solo agregan). Una
+  pendiente por profesional y persona (índice parcial); nace PENDIENTE desde un componente de vínculo de ese profesional
+  con esa persona; se resuelve una sola vez (ACEPTADO, NO_POR_AHORA o REEMPLAZADO); no se borra ni se trunca; la novedad
+  nombra el pedido. Cada paso queda en la bitácora de los formularios (`PedidoDeAccesoAHabitos…`).
+- **La novedad:** «Te piden ver tus hábitos». «‹Nombre›, de ‹Área›, te pide ver tus hábitos. ‹Para qué le sirve›. Es tu
+  decisión: lo respondés en «Mis hábitos».» El para qué, por área: «Le ayuda a armar un plan de comidas que entre en tu
+  semana.» (Nutrición), «Le ayuda a armar un plan de entrenamiento que entre en tu semana.» (Entrenamiento) y «Le ayuda a
+  leer tus tomas junto con tu descanso y tu actividad.» (Antropometría). Nunca un hábito. El aviso push dice «Tenés una
+  novedad.», como siempre.
+- **Dónde está cada cosa:** las reglas en `habitos-de-la-persona.ts` (dominio: `sugerenciaDeSumarHabitos`,
+  `tienenMasDeTresMeses`, `puedePedirAcceso`, `compartirAlAceptarUnPedido`); los contratos en
+  `contratos-habitos-de-la-persona.ts`; los textos en `copy-habitos-de-la-persona.ts` y `copy-novedades.ts`; la API en
+  `formularios/habitos.service.ts` y `formularios/habitos-de-la-persona.ts`; el website en `forms/sumar-habitos.ts`,
+  `forms/pedir.tsx`, `forms/sus-habitos.ts` y `forms/tarjeta-de-sus-habitos.tsx`; la APK en `habitos-en-el-telefono.ts`,
+  `novedades-en-el-telefono.ts`, `pantallas/mis-habitos.tsx`, `pantallas/inicio-informacion.tsx` y `pantallas/novedades.tsx`.
+- **Pruebas:** `plantillas-de-inicio.test.ts` y `habitos-de-la-persona.test.ts` (dominio); `habitos-de-la-persona.int-spec.ts`,
+  `plantillas-de-inicio.int-spec.ts`, `contrato.int-spec.ts` y `lecturas-de-las-apk.int-spec.ts` (integración con PostgreSQL);
+  `sumar-habitos.test.mjs` y `sus-habitos.test.mjs` (website); `habitos-en-el-telefono.test.ts` y
+  `novedades-en-el-telefono.test.ts` (APK).
+
+### 8.5 Compatibilidad con las APK instaladas
+
+- **0.13.2 y 0.20:** no ven nada de esto. Las versiones nuevas son de formato 3 (D-10), y no leen API-HBT. Lo que ya tenían
+  pedido sigue igual. Si leen el centro de novedades (la 0.20), la novedad nueva se lee con su esquema: `kind` y
+  `open.view` son texto.
+- **0.21:** las lecturas congeladas siguen pasando, con escenarios nuevos:
+  - responde «Tus hábitos» aparte sola (una parte: «Parte 1 de 1», el repaso y «¿Sigue igual?»), y sigue respondiendo una
+    Solicitud de la ronda 2 pedida antes;
+  - lee la novedad nueva sin destacarla: la muestra con su texto y, al abrirla, se queda en Novedades (no conoce
+    `MY_HABITS`). La persona la puede responder sumándolo en «Mis hábitos»: API-HBT-03 da por aceptado el pedido (D-25);
+  - «Mis hábitos» (HBT-01 a 04) no cambia de forma, con o sin un pedido esperando.
+- **0.22:** suma API-HBT-08 y 09. Sus lecturas se congelan desde su tag, como las de la 0.21 (DL-152): la prueba del dominio
+  ya admite que una APK desde la 0.21 lea las de la persona (01 a 04, 08 y 09) y nunca las del profesional (05 a 07).
+
+### 8.6 Decisiones de la implementación (a ratificar)
+
+Están completas en DL-165. En corto:
+- **D-20 · La regla general de FRI-04:** la reconoce el código de la parte (`tus_habitos`), en cualquier versión.
+- **D-21 · Las tres versiones nuevas:** «Tus hábitos» v2 sucede a la v1 de P0; las de área pierden la parte y nada más,
+  salvo la hora de entrenar de Nutrición.
+- **D-22 · La sugerencia:** sale de API-HBT-07; los tres meses son de calendario; una pendiente no se marca; las dos
+  solicitudes van en un paso, primero la de área.
+- **D-23 · «Pedir acceso»:** la novedad se destaca por su tipo; el profesional no ve qué respondió la persona.
+- **D-24 · El límite:** una pendiente por vez y 7 días desde el último; el nuevo reemplaza al pendiente.
+- **D-25 · La respuesta:** «Sí» es compartir; sin compartir todavía, solo para quien pidió; «No, por ahora» no toca nada.
+- **D-26 · Lo que queda del mecanismo anterior:** la lista por componente; sin repregunta automática.
+- **D-27 · En la APK 0.22:** «Importante» con palabras; dos botones iguales; sin «Parte 1 de 1».
+- **D-28 · La 0.21 y el texto del acto:** la 0.21 recibe la novedad; el texto del acto no cambia.

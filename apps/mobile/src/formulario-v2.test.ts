@@ -9,7 +9,10 @@ import {
   CODIGO_DE_PROBLEMA_V2,
   COPY,
   COPY_FORMULARIOS,
+  COPY_FORMULARIOS_V2,
   MENSAJE_DE_PROBLEMA_V2,
+  PLANTILLA_HABITOS_V2,
+  PLANTILLA_NUTRICION_INICIO_V3,
   obligatoriasSinResponderDeLaParte,
   partesDelFormulario,
   primeraParteCon,
@@ -28,7 +31,9 @@ import {
   codigosDelSubvalor,
   claveDeParte,
   claveDeSubcampo,
+  anuncioDeLaParte,
   cuantasCorrigio,
+  cuantoFaltaEnPalabras,
   erroresDeProblemas,
   gruposDeLaBandeja,
   hayAlgoEscrito,
@@ -549,5 +554,22 @@ describe('la bandeja agrupa por lo que falta hacer', () => {
   test('el rótulo de una pregunta dice «Opcional» solo si no es requerida', () => {
     expect(rotuloDe({ fieldCode: 'notas', label: 'Notas' }, SOLICITUD)).toBe('Notas (Opcional)');
     expect(rotuloDe({ fieldCode: 'comidas', label: 'Comidas' }, SOLICITUD)).toBe('Comidas');
+  });
+});
+
+describe('ronda 2.1 · cuánto falta, con una parte o con varias (DL-165 D-1 y D-3)', () => {
+  const todas = (secciones: readonly SeccionDePlantillaV2[]) => ({ requestedFieldCodes: secciones.flatMap((x) => x.fields.map((c) => c.fieldCode)) });
+  test('«Tus hábitos» aparte es una sola parte: no se dice «Parte 1 de 1», y el repaso sigue', () => {
+    const partes = partesDelFormulario(PLANTILLA_HABITOS_V2.sections, todas(PLANTILLA_HABITOS_V2.sections));
+    expect(partes.map((p) => p.titulo)).toEqual(['Tus hábitos']);
+    expect(cuantoFaltaEnPalabras(partes.length, 0, false)).toBeNull();
+    expect(cuantoFaltaEnPalabras(partes.length, 1, true)).toBe(COPY_FORMULARIOS_V2.repaso);
+    expect(anuncioDeLaParte(partes.length, 0, 'Tus hábitos')).toBe('Tus hábitos');
+  });
+  test('con varias partes, «Parte N de M», como hasta ahora', () => {
+    const partes = partesDelFormulario(PLANTILLA_NUTRICION_INICIO_V3.sections, todas(PLANTILLA_NUTRICION_INICIO_V3.sections));
+    expect(partes).toHaveLength(6);
+    expect(cuantoFaltaEnPalabras(partes.length, 0, false)).toBe('Parte 1 de 6');
+    expect(anuncioDeLaParte(partes.length, 1, partes[1]!.titulo)).toBe(`Parte 2 de 6: ${partes[1]!.titulo}`);
   });
 });

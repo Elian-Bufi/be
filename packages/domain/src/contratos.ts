@@ -179,6 +179,16 @@ export const CodigoDeError = {
    * `details.issues` dice cuál (`HABITS_RECIPIENT_NOT_AVAILABLE`, `HABITS_RECIPIENT_REPEATED`).
    */
   HABITS_RECIPIENT_NOT_AVAILABLE: 'HABITS_RECIPIENT_NOT_AVAILABLE',
+  /**
+   * DL-165, ronda 2.1 (D-24) · API-HBT-06: el profesional ya recibe los hábitos de la persona; no hay nada que pedir. Lo
+   * sabe por API-HBT-05: decirlo no revela nada.
+   */
+  HABITS_ALREADY_SHARED: 'HABITS_ALREADY_SHARED',
+  /**
+   * DL-165, ronda 2.1 (D-24) · API-HBT-06: pasaron menos de 7 días desde su último pedido de acceso a esta persona.
+   * `details.availableFrom` dice desde cuándo puede volver a pedirlo.
+   */
+  HABITS_ACCESS_REQUEST_TOO_SOON: 'HABITS_ACCESS_REQUEST_TOO_SOON',
   // ADM (familia propia de BE; WP-ADMINISTRACION, DL-155). El 09 ya registra MFA_REQUIRED (09v7 §4.3) y RATIONALE_REQUIRED
   // (09v8 PRO-11); los demás son del acceso administrativo con segundo factor (08 §25).
   /** La sesión administrativa no tiene el segundo factor vigente: falta, venció por inactividad o falta configurarlo. */

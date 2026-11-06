@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { HEADER_IDEMPOTENCY_KEY, type HabitosCompartidosResponse, type MisHabitosResponse } from '@be/domain';
+import { HEADER_IDEMPOTENCY_KEY, type HabitosCompartidosResponse, type HabitosParaElProfesionalResponse, type MisHabitosResponse, type PedidosDeAccesoResponse } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { sinParametrosDeQuery } from '../http/validacion';
@@ -16,7 +16,10 @@ type Solicitud = SolicitudAutenticada & SolicitudConContexto;
  * entrenamiento (DL-109), y repetir un ID es lo que DL-116 prohíbe (D-14).
  *
  * Como en FRI, ningún handler autoriza: el servicio decide con el A3 de la persona (lo suyo) y con el PDP (el profesional,
- * API-HBT-05). Las dos lecturas consumen el límite de consultas protegidas del actor.
+ * API-HBT-05 a 07). Las lecturas consumen el límite de consultas protegidas del actor.
+ *
+ * Ronda 2.1 (DL-165 D-17 nueva): «Pedir acceso a sus hábitos». API-HBT-06 y 07 son del profesional (el website); 08 y 09,
+ * de la persona (la APK 0.22). Las cuatro de la persona que lee la 0.21 no cambian de forma (DL-152).
  */
 @Controller()
 @UseGuards(SesionGuard)
@@ -79,6 +82,50 @@ export class HabitosController {
     sinParametrosDeQuery(query);
     this.limitar(req);
     return this.habitos.deLaPersona(actorDe(req), adviseeId, contextoDe(req));
+  }
+
+  /** API-HBT-06. El profesional le pide a la persona ver sus hábitos, desde su área: le llega como novedad importante. */
+  @Post('advisees/:adviseeId/habits/access-requests')
+  async pedirAcceso(
+    @Param('adviseeId') adviseeId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.habitos.pedirAcceso(actorDe(req), adviseeId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-HBT-07. Lo que este profesional sabe de los hábitos de la persona: si los recibe, lo más nuevo que ve y su último pedido. */
+  @Get('advisees/:adviseeId/habits/status')
+  paraElProfesional(@Param('adviseeId') adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<HabitosParaElProfesionalResponse> {
+    sinParametrosDeQuery(query);
+    this.limitar(req);
+    return this.habitos.paraElProfesional(actorDe(req), adviseeId, contextoDe(req));
+  }
+
+  /** API-HBT-08. Los pedidos de acceso que esperan mi respuesta. */
+  @Get('me/habits/access-requests')
+  pedidos(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<PedidosDeAccesoResponse> {
+    sinParametrosDeQuery(query);
+    this.limitar(req);
+    return this.habitos.pedidosQueEsperan(actorDe(req), contextoDe(req));
+  }
+
+  /** API-HBT-09. Responder un pedido de acceso: «Sí, que los vea» o «No, por ahora». */
+  @Post('me/habits/access-requests/:accessRequestId/answer')
+  async responderPedido(
+    @Param('accessRequestId') accessRequestId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.habitos.responderPedido(actorDe(req), accessRequestId, cuerpo, clave, contextoDe(req)));
   }
 
   /** Límite de consultas protegidas por actor, desde cualquier red (como FRI-02 y FRI-03). */

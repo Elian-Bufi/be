@@ -127,6 +127,8 @@ const DOMINIOS = [
       movil('pregunta-v2.tsx'),
       join(RAIZ, 'apps/web/src/app/pro/advisees/forms/sus-habitos.ts'),
       join(RAIZ, 'apps/web/src/app/pro/advisees/forms/tarjeta-de-sus-habitos.tsx'),
+      // Ronda 2.1 (DL-165 D-22): «Sumar «Tus hábitos»» en el cajón de «Pedir información».
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/sumar-habitos.ts'),
       join(RAIZ, 'packages/domain/src/copy-habitos-de-la-persona.ts'),
     ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],

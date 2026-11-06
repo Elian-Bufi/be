@@ -36,13 +36,17 @@ import type request from 'supertest';
 import { appDePrueba, conSesion, cuerpoDeCierre, resumenDeRespuestas, simultaneos } from './soporte-api';
 import { conLaFilaRetenida, esperarQueEsperen } from './soporte-concurrencia';
 import { CAMPOS_V2, circuitoV2, conAgua, fri, pedirV2, RESPUESTAS_V2, type CircuitoV2 } from './soporte-formularios-v2';
+import { sembrarCopiaDeLaVersion, VERSION_HABITOS_V1 } from './soporte-plantillas-de-inicio';
 import { a3Vigente, otorgarA3, pausar, prepararAsesorado, prepararProfesional, revocarB2, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 
 const PLANTILLA_ENTRENAMIENTO = '67e4d0b3-cf4a-41e7-9d84-6864c5dde951';
 /** «Antecedentes para entrenamiento» (P0): histórica desde FI-02 (la v2 es la vigente). FRI-01 sirve cualquier versión. */
 const VERSION_ENTRENAMIENTO = '0fba80db-0a80-47a7-b183-130232ab7a9c';
-/** FRM-HABITOS (P0, transversal): horas de sueño (NUMBER, h), nivel de actividad (TEXT), fuma (BOOLEAN). */
-const VERSION_HABITOS = '4879e539-235f-4f91-83fc-2e113c404393';
+/**
+ * FRM-HABITOS v1 (P0, transversal: horas de sueño NUMBER en h, nivel de actividad TEXT, fuma BOOLEAN), en una copia de
+ * prueba: desde la ronda 2.1 (DL-165) la del catálogo es histórica y FRM-03 ya no la deja pedir. El contenido es el mismo.
+ */
+let VERSION_HABITOS: string;
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -50,6 +54,7 @@ let contador = 0;
 
 beforeAll(async () => {
   app = await appDePrueba();
+  VERSION_HABITOS = (await sembrarCopiaDeLaVersion(prisma, VERSION_HABITOS_V1, 'fi-habitos')).versionId;
 }, 120_000);
 afterAll(async () => {
   await app.close();

@@ -22,7 +22,8 @@ export interface PlantillaDeInicio {
   readonly version: string;
   readonly nombre: string;
   readonly proposito: string;
-  readonly dominio: Alcance;
+  /** El área en la que se pide; `null` en «Tus hábitos» (FRM-HABITOS), que es transversal: se pide en el área de quien la pide. */
+  readonly dominio: Alcance | null;
   /**
    * El formato del contenido: 2 en las de DL-164; 3 en las de la ronda 2 (DL-165), que usan lo que la APK 0.20 no lee
    * (`loQueUsaDelFormato3`) y solo se le entregan a un cliente que declara `forms-format-3`.
@@ -956,9 +957,84 @@ export const PLANTILLA_ENTRENAMIENTO_V3: PlantillaDeInicio = {
   ),
 };
 
-/** Todas las versiones de inicio, en el orden en que se siembran: las de DL-164 (formato 2) y las de DL-165 (formato 3). */
-export const PLANTILLAS_DE_INICIO: readonly PlantillaDeInicio[] = [PLANTILLA_NUTRICION_INICIO, PLANTILLA_ENTRENAMIENTO_V2, PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3];
+// ─── DL-165, ronda 2.1 (D-15 nueva, 2026-11-06) · «Tus hábitos», un formulario aparte ─────────────
+
+/** Las secciones sin la parte «Tus hábitos»: las versiones de área de la ronda 2.1 no la traen. */
+function sinLaParteDeHabitos(secciones: readonly SeccionDePlantillaV2[]): SeccionDePlantillaV2[] {
+  if (!secciones.some((s) => s.sectionCode === SECCION_DE_HABITOS.sectionCode)) throw new Error('plantillas-de-inicio: la versión no trae la parte «Tus hábitos»');
+  return secciones.filter((s) => s.sectionCode !== SECCION_DE_HABITOS.sectionCode);
+}
+
+/**
+ * «Tus hábitos» (FRM-HABITOS v2): la parte común como formulario propio. D-15 nueva de Dirección (2026-11-06): «puede estar
+ * en un formulario separado que sea de hábitos, que puedan enviar ambos profesionales». Sucede a la v1 de P0 («Hábitos y
+ * contexto», migración 20260921220000), que queda histórica: sus Solicitudes siguen en su versión.
+ * - Una sola parte, **la misma** `SECCION_DE_HABITOS` de «Cómo comés hoy» v2 y «Antes de entrenar» v3, campo por campo:
+ *   responderla agrega una versión de los hábitos de la persona, como esas (API-FRI-04, la regla general de D-20).
+ * - Sin área propia, como la v1: la pide cualquier profesional con el vínculo vigente, en su área (FRM-03 la deja pedir en
+ *   las tres), y la puede volver a pedir cuando quiera saber si todo sigue igual.
+ * - Formato 3: el renglón de la otra actividad trae «Qué días», con varias opciones, y el ejemplo de «Cuál». La APK 0.21 lo lee.
+ */
+export const PLANTILLA_HABITOS_V2: PlantillaDeInicio = {
+  clave: 'FRM-HABITOS',
+  version: '2',
+  nombre: 'Tus hábitos',
+  proposito:
+    'Los hábitos de la persona, en un formulario aparte que puede pedir cualquiera de sus profesionales: el sueño y los horarios, la actividad del día, el deporte en la semana y el estrés. Responderlo actualiza «Mis hábitos». Sucede a la v1 de P0 (DL-165, ronda 2.1)',
+  dominio: null,
+  formato: 3,
+  estimatedMinutes: null,
+  sections: [SECCION_DE_HABITOS],
+};
+
+/** «¿En qué momento del día solés entrenar?», sin la condición de la parte común, que «Cómo comés hoy» v3 ya no trae (D-21). */
+function horaDeEntrenamientoSinLaParte(): CampoDePlantillaV2 {
+  const campo = campoDe(PLANTILLA_NUTRICION_INICIO_V2, 'nut_hora_de_entrenamiento');
+  if (campo.dataType !== 'CHOICE') throw new Error('plantillas-de-inicio: nut_hora_de_entrenamiento tiene que ser de una opción');
+  return { ...campo, showIf: null, options: [...campo.options, op('no_entreno', 'No entreno')] };
+}
+
+/**
+ * «Cómo comés hoy» v3 (D-15 nueva): la v2 sin la parte «Tus hábitos», que va en su propio formulario. Lo demás queda como
+ * en la v2 (D-2, D-4, D-7). «¿En qué momento del día solés entrenar?» se abría con el «Sí» de la parte común: sin ella,
+ * queda a la vista, opcional, y suma «No entreno» (D-21).
+ */
+export const PLANTILLA_NUTRICION_INICIO_V3: PlantillaDeInicio = {
+  ...PLANTILLA_NUTRICION_INICIO_V2,
+  version: '3',
+  proposito: `${PLANTILLA_NUTRICION_INICIO.proposito}. Sucede a la v2 (DL-165, ronda 2.1): los hábitos van en «Tus hábitos», un formulario aparte; el embarazo no viene pedido y los ejemplos de las comidas van como texto de muestra`,
+  sections: conCambios(sinLaParteDeHabitos(PLANTILLA_NUTRICION_INICIO_V2.sections), { nut_hora_de_entrenamiento: [horaDeEntrenamientoSinLaParte()] }),
+};
+
+/**
+ * «Antes de entrenar» v4 (D-15 nueva): la v3 sin la parte «Tus hábitos», que va en su propio formulario. Lo demás queda como
+ * en la v3 (D-4, D-5), y conserva los seis códigos de la v1 (DL-100).
+ */
+export const PLANTILLA_ENTRENAMIENTO_V4: PlantillaDeInicio = {
+  ...PLANTILLA_ENTRENAMIENTO_V3,
+  version: '4',
+  proposito:
+    'Lo que la persona cuenta antes de entrenar, para armar el primer plan: su salud, dolor y lesiones, su experiencia, lo que busca, su semana y sus preferencias. Sucede a la v3 (DL-165, ronda 2.1): los hábitos van en «Tus hábitos», un formulario aparte; los días y el momento siguen en una tabla, y el embarazo sin pedir por defecto. Conserva los seis códigos de la v1 (DL-100)',
+  sections: sinLaParteDeHabitos(PLANTILLA_ENTRENAMIENTO_V3.sections),
+};
+
+/**
+ * Todas las versiones de inicio, en el orden en que se siembran: las de DL-164 (formato 2), las de la ronda 2 (DL-165,
+ * formato 3, con la parte «Tus hábitos») y las de la ronda 2.1 (formato 3: «Tus hábitos» aparte y las de área sin la parte).
+ */
+export const PLANTILLAS_DE_INICIO: readonly PlantillaDeInicio[] = [
+  PLANTILLA_NUTRICION_INICIO,
+  PLANTILLA_ENTRENAMIENTO_V2,
+  PLANTILLA_NUTRICION_INICIO_V2,
+  PLANTILLA_ENTRENAMIENTO_V3,
+  PLANTILLA_HABITOS_V2,
+  PLANTILLA_NUTRICION_INICIO_V3,
+  PLANTILLA_ENTRENAMIENTO_V4,
+];
 
 /** Las vigentes: las que se piden hoy (las anteriores quedan históricas, REG-06-209). */
-export const PLANTILLAS_VIGENTES_DE_INICIO: readonly PlantillaDeInicio[] = [PLANTILLA_NUTRICION_INICIO_V2, PLANTILLA_ENTRENAMIENTO_V3];
+export const PLANTILLAS_VIGENTES_DE_INICIO: readonly PlantillaDeInicio[] = [PLANTILLA_NUTRICION_INICIO_V3, PLANTILLA_ENTRENAMIENTO_V4, PLANTILLA_HABITOS_V2];
+
+/** Las de área vigentes: al pedir una, el cajón del website sugiere sumar «Tus hábitos» (D-15 nueva; D-22). */
+export const PLANTILLAS_DE_AREA_VIGENTES: readonly PlantillaDeInicio[] = [PLANTILLA_NUTRICION_INICIO_V3, PLANTILLA_ENTRENAMIENTO_V4];
 

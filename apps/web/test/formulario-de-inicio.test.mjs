@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const m = await import('../src/app/pro/advisees/forms/formulario-de-inicio.ts');
-const { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_PROBLEMA_V2, CONTEXTO_DE_ENTRENAMIENTO, CONTEXTO_DE_NUTRICION, COPY_FORMULARIOS, MENSAJE_DE_PROBLEMA_V2 } = await import('@be/domain');
+const { CODIGO_DE_NUMERO_FUERA_DE_LIMITES, CODIGO_DE_PROBLEMA_V2, CONTEXTO_DE_ENTRENAMIENTO, CONTEXTO_DE_NUTRICION, COPY_FORMULARIOS, COPY_HABITOS, MENSAJE_DE_PROBLEMA_V2 } = await import('@be/domain');
 
 // ─── Una versión con los nueve tipos y una condicional ──────────────────────────────────────────
 
@@ -101,7 +101,11 @@ test('pedir · FR-02: al elegir un formulario se sugiere su «para qué» si el 
   // Cambia de formulario sin tocar el «para qué»: la sugerencia sigue al formulario elegido.
   assert.deepEqual(m.propositoAlElegir(nutricion, nutricion, 'FRM-ENTRENAMIENTO'), { proposito: entrenamiento, sugerido: entrenamiento });
   // Uno sin sugerencia deja vacío lo que era la sugerencia del anterior: no corresponde a este formulario.
-  assert.deepEqual(m.propositoAlElegir(nutricion, nutricion, 'FRM-HABITOS'), { proposito: '', sugerido: null });
+  assert.deepEqual(m.propositoAlElegir(nutricion, nutricion, 'FRM-SALUD'), { proposito: '', sugerido: null });
+  // DL-165, ronda 2.1: «Tus hábitos», aparte, sugiere el suyo, como al sumarlo a uno de área.
+  const habitos = COPY_HABITOS.web.propositoDelFormulario;
+  assert.deepEqual(m.propositoAlElegir(nutricion, nutricion, 'FRM-HABITOS'), { proposito: habitos, sugerido: habitos });
+  assert.deepEqual(m.propositoAlElegir('', null, 'FRM-HABITOS'), { proposito: habitos, sugerido: habitos });
   // Lo que escribió el profesional no se pisa, ni sobre una sugerencia ni sin ella.
   assert.deepEqual(m.propositoAlElegir('Saber cómo come los fines de semana', nutricion, 'FRM-ENTRENAMIENTO'), { proposito: 'Saber cómo come los fines de semana', sugerido: nutricion });
   assert.deepEqual(m.propositoAlElegir('Armar tu plan de alimentación, de a poco', nutricion, 'FRM-NUTRICION-INICIO').proposito, 'Armar tu plan de alimentación, de a poco');

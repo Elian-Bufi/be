@@ -218,3 +218,83 @@ export function desdeCuandoLosRecibe(profesionalId: string, permitidos: readonly
   const ids = new Set(permitidos);
   return primero(renglones.filter((r) => r.profesionalId === profesionalId && r.incluido && ids.has(r.alcanceDeVinculoId)).flatMap((r) => (r.incluidoDesde ? [r.incluidoDesde] : [])));
 }
+
+// ─── Ronda 2.1 (2026-11-06) · la sugerencia al pedir y los pedidos de acceso ─────────────────────
+
+/**
+ * D-15 nueva y D-22 · al pedir un formulario de área, el cajón sugiere sumar «Tus hábitos». Se decide **solo con lo que
+ * este profesional ya puede ver** (API-HBT-07): sus respuestas con la parte y lo que la persona le comparte. Nunca puede
+ * revelar que la persona contó sus hábitos a otro profesional.
+ * - **Marcada** si no ve ningún hábito de la persona (`SIN_HABITOS`) o lo más nuevo que ve tiene más de 3 meses (`VIEJOS`).
+ * - **Sin marcar**, con su fecha, si lo que ve es reciente (`RECIENTES`) o si ya tiene una solicitud con la parte esperando
+ *   la respuesta (`PENDIENTE`): pedirla de nuevo no le suma nada a la persona.
+ */
+export type MotivoDeLaSugerencia = 'SIN_HABITOS' | 'VIEJOS' | 'RECIENTES' | 'PENDIENTE';
+export interface SugerenciaDeHabitos {
+  readonly marcada: boolean;
+  readonly motivo: MotivoDeLaSugerencia;
+  /** La fecha que se dice junto a la casilla (lo más nuevo que ve, o desde cuándo espera); `null` si no ve nada. */
+  readonly desde: string | null;
+}
+
+/** Cuántos meses tiene que tener lo que el profesional ve para volver a sugerirle «Tus hábitos» (Dirección: «más de 3 meses»). */
+export const MESES_PARA_VOLVER_A_SUGERIR = 3;
+
+/**
+ * Si pasaron más de tres meses calendario desde `desde` hasta `ahora` (ISO 8601). Se cuenta por el calendario, no por días:
+ * del 6 de agosto al 6 de noviembre son tres meses justos y todavía no «más»; al día siguiente, sí. Un día que no existe en
+ * el mes de llegada (31 de noviembre) cae en el último del mes.
+ */
+export function tienenMasDeTresMeses(desde: string, ahora: string): boolean {
+  const d = new Date(desde);
+  const limite = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + MESES_PARA_VOLVER_A_SUGERIR, 1, d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds()));
+  const ultimoDia = new Date(Date.UTC(limite.getUTCFullYear(), limite.getUTCMonth() + 1, 0)).getUTCDate();
+  limite.setUTCDate(Math.min(d.getUTCDate(), ultimoDia));
+  return new Date(ahora).getTime() > limite.getTime();
+}
+
+export function sugerenciaDeSumarHabitos(p: { readonly vistosEl: string | null; readonly pendienteDesde: string | null; readonly ahora: string }): SugerenciaDeHabitos {
+  if (p.pendienteDesde !== null) return { marcada: false, motivo: 'PENDIENTE', desde: p.pendienteDesde };
+  if (p.vistosEl === null) return { marcada: true, motivo: 'SIN_HABITOS', desde: null };
+  return tienenMasDeTresMeses(p.vistosEl, p.ahora) ? { marcada: true, motivo: 'VIEJOS', desde: p.vistosEl } : { marcada: false, motivo: 'RECIENTES', desde: p.vistosEl };
+}
+
+/**
+ * D-24 (a ratificar) · el límite para que pedir acceso no sea insistente: **una pendiente por vez** por profesional y por
+ * persona, y **volver a pedir recién a los 7 días** del último pedido, esté pendiente o respondido. Volver a pedir con uno
+ * pendiente lo reemplaza: sigue habiendo uno solo. Quien ya los recibe no tiene nada que pedir.
+ */
+export const DIAS_PARA_VOLVER_A_PEDIR_ACCESO = 7;
+
+/** Desde cuándo se puede volver a pedir, contado desde el último pedido. */
+export const desdeCuandoSePuedeVolverAPedir = (ultimoPedidoEl: string): string => new Date(new Date(ultimoPedidoEl).getTime() + DIAS_PARA_VOLVER_A_PEDIR_ACCESO * 86_400_000).toISOString();
+
+export type PorQueNoPuedePedirAcceso = 'YA_LOS_RECIBE' | 'MUY_PRONTO';
+
+export function puedePedirAcceso(p: { readonly losRecibe: boolean; readonly ultimoPedidoEl: string | null; readonly ahora: string }):
+  | { readonly puede: true }
+  | { readonly puede: false; readonly motivo: PorQueNoPuedePedirAcceso; readonly desde: string | null } {
+  if (p.losRecibe) return { puede: false, motivo: 'YA_LOS_RECIBE', desde: null };
+  if (p.ultimoPedidoEl === null) return { puede: true };
+  const desde = desdeCuandoSePuedeVolverAPedir(p.ultimoPedidoEl);
+  return new Date(p.ahora).getTime() >= new Date(desde).getTime() ? { puede: true } : { puede: false, motivo: 'MUY_PRONTO', desde };
+}
+
+/**
+ * D-25 · a quiénes nombra la versión nueva de la autorización cuando la persona dice «Sí, que los vea» a un pedido:
+ * - con la autorización **activa**, los que hoy los reciben siguen, y se suma quien pidió; nadie más cambia (los que no los
+ *   ven siguen sin verlos, y quien llegó después sigue `NOT_ASKED`);
+ * - **sin compartir todavía** (nunca la dio o la retiró), se activa solo para quien pidió, y los demás profesionales quedan
+ *   nombrados como que no los ven: la persona respondió un pedido, no eligió a nadie más. Los puede sumar cuando quiera.
+ */
+export function compartirAlAceptarUnPedido(p: {
+  readonly profesionales: readonly ProfesionalDeLaPersona[];
+  readonly renglones: readonly RenglonDeLaAutorizacion[] | null;
+  readonly profesionalId: string;
+}): { readonly incluidos: ReadonlySet<string>; readonly declinados: ReadonlySet<string> } {
+  const quien = p.profesionalId.toLowerCase();
+  if (p.renglones === null) {
+    return { incluidos: new Set([quien]), declinados: new Set(p.profesionales.map((x) => x.profesionalId.toLowerCase()).filter((id) => id !== quien)) };
+  }
+  return { incluidos: new Set([...p.renglones.filter((r) => r.incluido).map((r) => r.profesionalId.toLowerCase()), quien]), declinados: new Set() };
+}

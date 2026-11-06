@@ -9,14 +9,22 @@
  *   cargado esperando confirmación y todavía no se tocó nada; y precarga solo lo que la Solicitud pide de esa parte, con
  *   lo que la persona le comparte a él (`precargaDeHabitos`, del dominio). Sin autorización, nada: el profesional de un
  *   área nunca ve por esta vía lo que la persona respondió en el formulario de otra.
+ * - **Ronda 2.1 (DL-165 D-17 nueva): «Pedir acceso a sus hábitos».** Si la persona no se los comparte (API-HBT-05 da el
+ *   404) pero el PDP lo deja acompañarla (API-HBT-07 responde), la tarjeta lo dice sin presión, y ofrece pedirle acceso
+ *   (API-HBT-06): le llega como novedad importante, y lo decide ella. El límite (D-24): uno pendiente por vez, y volver a
+ *   pedir recién a los 7 días del último; la tarjeta dice desde cuándo. No dice qué respondió la persona: si los ve, lo dice
+ *   API-HBT-05. Si API-HBT-07 también da el 404, no hay tarjeta ni rastro.
  * Las fechas llegan ya formateadas (`fecha`): el módulo no depende de cómo las escribe la pantalla.
  */
 import {
   COPY_HABITOS,
+  ETIQUETA_DE_ALCANCE,
   precargaDeHabitos,
   traeLaParteDeHabitos,
+  type Alcance,
   type CampoDePlantillaV2,
   type HabitosCompartidosResponse,
+  type HabitosParaElProfesionalResponse,
   type RespuestaDeCampoV2Entrada,
   type SeccionDePlantillaV2,
   type SolicitudAValidar,
@@ -82,4 +90,56 @@ export function precargaAlCargar(
   if (!datos?.current) return null;
   const respuestas = precargaDeHabitos(secciones, solicitud, datos.current.answers);
   return respuestas.length > 0 ? { respuestas, declaradosEl: datos.current.recordedAt } : null;
+}
+
+// ─── Ronda 2.1 · «Pedir acceso a sus hábitos» (API-HBT-06 y 07) ─────────────────────────────────
+
+/** Lo que devuelve API-HBT-07: lo que este profesional sabe de los hábitos de la persona, sin ver ninguno. */
+export type LoQueSabeDeSusHabitos = HabitosParaElProfesionalResponse['data'];
+
+export interface TarjetaSinAcceso {
+  /** Lo que se dice, en orden: que no se los comparte, su último pedido (si hay) y desde cuándo puede volver a pedir. */
+  readonly lineas: readonly string[];
+  /** El botón: «Pedir acceso a sus hábitos», «Volver a pedir acceso» o ninguno (pedido hace menos de 7 días). */
+  readonly boton: string | null;
+  /** Qué le llega a la persona, junto al botón: solo si se puede pedir. */
+  readonly queLeLlega: string | null;
+}
+
+/**
+ * La tarjeta cuando la persona no le comparte sus hábitos (API-HBT-05 dio el 404) y API-HBT-07 respondió. `null` si
+ * API-HBT-07 dice que los recibe (se cruzó con un cambio de la persona: se vuelve a leer, no se muestra nada a medias).
+ * De su pedido dice cuándo lo hizo y si espera respuesta, nunca qué respondió la persona.
+ */
+export function tarjetaSinAcceso(datos: LoQueSabeDeSusHabitos, fecha: (iso: string) => string): TarjetaSinAcceso | null {
+  if (datos.receives) return null;
+  const lineas: string[] = [H.noLosComparte];
+  const pedido = datos.accessRequest;
+  if (pedido) lineas.push(pedido.status === 'PENDING' ? H.pedidoPendiente(fecha(pedido.requestedAt)) : H.pedidoRespondido(fecha(pedido.requestedAt)));
+  if (!datos.canRequestAccess && datos.canRequestAccessFrom) lineas.push(H.volverAPedirDesde(fecha(datos.canRequestAccessFrom)));
+  const boton = datos.canRequestAccess ? (pedido ? H.volverAPedirAcceso : H.pedirAcceso) : null;
+  return { lineas, boton, queLeLlega: boton ? H.queLeLlega : null };
+}
+
+/**
+ * Desde qué área sale el pedido (API-HBT-06 pide una en la que la acompaña hoy): la del área de donde llegó el profesional,
+ * si es una de las suyas; si no, la primera de `scopes`. Con más de una y sin saber desde cuál llegó, se dice desde cuál
+ * (`aviso`): el «para qué» que lee la persona depende del área.
+ */
+export function areaDelPedidoDeAcceso(scopes: readonly Alcance[], desde: Alcance | null): { readonly area: Alcance; readonly aviso: string | null } {
+  if (desde && scopes.includes(desde)) return { area: desde, aviso: null };
+  const area = scopes[0]!;
+  return { area, aviso: scopes.length > 1 ? H.pedidoDesdeElArea(ETIQUETA_DE_ALCANCE[area]) : null };
+}
+
+/** Qué hacer con la respuesta de API-HBT-06. */
+export type TrasPedirAcceso = 'enviado' | 'ya-los-comparte' | 'muy-pronto' | 'sin-acceso' | 'otro';
+
+export function trasPedirAcceso(r: { readonly ok: true } | { readonly ok: false; readonly tipo: string; readonly codigo?: string }): TrasPedirAcceso {
+  if (r.ok) return 'enviado';
+  if (r.tipo !== 'API') return 'otro';
+  if (r.codigo === 'HABITS_ALREADY_SHARED') return 'ya-los-comparte';
+  if (r.codigo === 'HABITS_ACCESS_REQUEST_TOO_SOON') return 'muy-pronto';
+  if (r.codigo === 'RESOURCE_NOT_FOUND') return 'sin-acceso';
+  return 'otro';
 }
