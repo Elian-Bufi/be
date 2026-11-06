@@ -126,6 +126,8 @@ const PAGINAS = {
     ['espacio', '/pro'],
     ['resumen', '/pro/advisees?id={diego}'],
     ['analizar', '/pro/advisees?id={diego}&vista=analizar'],
+    // El gráfico grande: «Analizar» con Calorías elegida (se elige en pantalla, como lo haría el profesional).
+    ['analizar-calorias', '/pro/advisees?id={diego}&vista=analizar', 'Calorías'],
     ['nutricion', '/pro/advisees/nutrition?id={diego}&vista=resumen'],
     ['antropometria', '/pro/advisees/anthropometry?id={diego}&vista=evolucion'],
   ],
@@ -166,7 +168,7 @@ async function capturarTodo() {
       await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }).catch(() => {}), page.keyboard.press('Enter')]);
       await page.waitForFunction(() => location.pathname.startsWith('/pro'), { timeout: 60_000 });
       await asentar(page);
-      for (const [nombre, plantilla] of paginas) {
+      for (const [nombre, plantilla, metrica] of paginas) {
         const ruta = plantilla.replace('{diego}', diego);
         // Para contar lo que pide una página al abrirse, se llega desde otra: la cuenta, que no comparte lecturas.
         await page.evaluate(() => window.next.router.push('/account'));
@@ -175,6 +177,13 @@ async function capturarTodo() {
         // La sesión vive en memoria: se navega dentro de la aplicación, sin recargar.
         await page.evaluate((u) => window.next.router.push(u), ruta);
         await asentar(page);
+        if (metrica) {
+          await page.evaluate((m) => {
+            const casilla = [...document.querySelectorAll('label')].find((l) => l.textContent.trim() === m)?.querySelector('input[type="checkbox"]');
+            casilla?.click();
+          }, metrica);
+          await asentar(page);
+        }
         const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, alto: {} };
         for (const tema of TEMAS) {
           await ponerTema(page, tema);

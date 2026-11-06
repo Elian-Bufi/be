@@ -13,7 +13,7 @@ cambia el website o el dominio, y también a pedido.
 2. Captura en Claro y en Azul noche, a 1280 × 800, a 1440 × 900 y a 1920 × 950, que es el área útil de un monitor de
    1920 × 1080. De cada página guarda la primera pantalla y la página entera:
    - **Diego Sosa visto por Sofía Paz** (Nutrición y Antropometría): el Espacio profesional, el Resumen de la ficha,
-     «Analizar», Nutrición y Antropometría.
+     «Analizar» (la entrada y, desde TB-04, el gráfico con Calorías elegida), Nutrición y Antropometría.
    - **Diego Sosa visto por Martín Acosta** (Entrenamiento): el Espacio, el Resumen y Entrenamiento.
 3. Cuenta las peticiones a la API al abrir cada página (TEST-TAG-032) y anota el alto de cada página en
    `mediciones.json`.
