@@ -15,6 +15,10 @@
  * del ejercicio, eventos de tiempo, una revisión que cambia el objetivo, una respuesta de formulario rectificada, lo que
  * cargó el profesional confirmado con una corrección y descartado con «No es correcto», las versiones de formato 3 del
  * catálogo y los hábitos de la persona con su historia y con un profesional en pausa y otro que llegó después.
+ *
+ * DL-165, ronda 2.1 (2026-11-06): la 0.21 responde «Tus hábitos» aparte (FRM-HABITOS v2, formato 3, una sola parte) y
+ * sigue respondiendo una Solicitud de la ronda 2 pedida antes; lee la novedad nueva («Te piden ver tus hábitos», un tipo y una
+ * vista que no conoce) con su esquema; y «Mis hábitos» no cambia de forma aunque haya un pedido de acceso esperando.
  */
 import type { INestApplication } from '@nestjs/common';
 import { CAMPOS_DE_HABITOS, CAPACIDAD_FORMULARIOS_FORMATO_3, type RespuestaDeCampoV2Entrada } from '@be/domain';
@@ -42,7 +46,18 @@ import {
 } from './soporte-por-serie';
 import { alimentosUsda, crearReceta, cuerpoDeReceta, estructuraConRecetas, FOTOS, RECETAS, subirImagen } from './soporte-recetas';
 import { CAMPOS_V2, CAMPOS_V3, CON_FORMATO_3, conAgua, conDiasParaReservar, fri, pedirV2, REQUERIDOS_V3, RESPUESTAS_V2, RESPUESTAS_V3, sembrarPlantillaV2, sembrarPlantillaV3 } from './soporte-formularios-v2';
-import { PLANTILLA_NUTRICION_INICIO, sembrarAntecedentesDeP0, VERSION_ENTRENAMIENTO_V3, VERSION_NUTRICION_INICIO_V2 } from './soporte-plantillas-de-inicio';
+import {
+  PLANTILLA_ENTRENAMIENTO,
+  PLANTILLA_HABITOS,
+  PLANTILLA_NUTRICION_INICIO,
+  sembrarAntecedentesDeP0,
+  solicitudDeAntes,
+  VERSION_ENTRENAMIENTO_V3,
+  VERSION_ENTRENAMIENTO_V4,
+  VERSION_HABITOS_V2,
+  VERSION_NUTRICION_INICIO_V2,
+  VERSION_NUTRICION_INICIO_V3,
+} from './soporte-plantillas-de-inicio';
 import { pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -620,13 +635,15 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       const token = ase.token;
       // Tres sobre una versión sintética de formato 3 (la tabla de días con su tope y otra actividad con sus días): una para
       // responder sola, una para confirmar lo cargado y otra para descartarlo. Y una de «Antes de entrenar» v3, la del
-      // catálogo, con la parte «Tus hábitos».
+      // catálogo, con la parte «Tus hábitos», pedida antes de la ronda 2.1 (desde ahí FRM-03 ya no la deja pedir), y una de
+      // «Tus hábitos» aparte (FRM-HABITOS v2, ronda 2.1), que la 0.21 responde sola.
       const v3 = await sembrarPlantillaV3(prisma, e, null);
       const pedirV3 = () => pedirV2(app, pro, ase.id, v3.versionId, 'ENTRENAMIENTO', CAMPOS_V3, REQUERIDOS_V3);
       const sola = await pedirV3();
       const confirmada = await pedirV3();
       const descartada = await pedirV3();
-      const antesDeEntrenar = await pedirV2(app, pro, ase.id, VERSION_ENTRENAMIENTO_V3, 'ENTRENAMIENTO', ['trn_objetivo_declarado', ...CAMPOS_DE_HABITOS], ['trn_objetivo_declarado']);
+      const antesDeEntrenar = await solicitudDeAntes(prisma, { profesionalId: pro.id, asesoradoId: ase.id, versionId: VERSION_ENTRENAMIENTO_V3, alcance: 'ENTRENAMIENTO', pedidos: ['trn_objetivo_declarado', ...CAMPOS_DE_HABITOS], requeridos: ['trn_objetivo_declarado'] });
+      const tusHabitos = await pedirV2(app, pro, ase.id, VERSION_HABITOS_V2, 'ENTRENAMIENTO', CAMPOS_DE_HABITOS, ['habitos_horarios', 'horas_de_sueno', 'nivel_de_actividad', 'habitos_hace_deporte', 'habitos_deportes']);
       // Lo que carga el profesional desde el website, que también declara la capacidad (FRI-06).
       const web = fri(app, pro.token, CON_FORMATO_3);
       const cargada = (await web.cargar(confirmada, { expectedVersion: null, answers: RESPUESTAS_V3 }).expect(201)).body.data as { proposalId: string; version: string };
@@ -635,15 +652,20 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       // La bandeja las trae: Inicio, de a pocas; «Información», todas.
       await apk.pide('API-FRI-02', { token, consulta: { status: 'PENDING', limit: '3' } });
       const bandeja = (await apk.pide('API-FRI-02', { token })).body.data as { formRequestId: string; pendingProposal: { proposalId: string } | null }[];
-      expect(bandeja.map((s) => s.formRequestId)).toEqual(expect.arrayContaining([sola, confirmada, descartada, antesDeEntrenar]));
+      expect(bandeja.map((s) => s.formRequestId)).toEqual(expect.arrayContaining([sola, confirmada, descartada, antesDeEntrenar, tusHabitos]));
       expect(bandeja.find((s) => s.formRequestId === confirmada)?.pendingProposal?.proposalId).toBe(cargada.proposalId);
-      for (const id of [sola, confirmada, antesDeEntrenar]) {
+      for (const id of [sola, confirmada, antesDeEntrenar, tusHabitos]) {
         const vista = (await apk.pide('API-FRI-03', { token, params: { formRequestId: id } })).body.data;
         const definicion = (await apk.pide('API-FRI-01', { token, params: { templateId: vista.request.templateId as string, versionId: vista.request.templateVersionId as string } })).body.data;
         expect(definicion.format).toBe(3);
       }
       // «Cómo comés hoy» v2, la otra versión de formato 3 del catálogo: las comidas, los alimentos y el embarazo sin pedir.
       expect((await apk.pide('API-FRI-01', { token, params: { templateId: PLANTILLA_NUTRICION_INICIO, versionId: VERSION_NUTRICION_INICIO_V2 } })).body.data.format).toBe(3);
+      // Las de la ronda 2.1, con el esquema de esta APK: «Tus hábitos» (una sola parte) y las de área sin la parte.
+      const habitos = (await apk.pide('API-FRI-01', { token, params: { templateId: PLANTILLA_HABITOS, versionId: VERSION_HABITOS_V2 } })).body.data;
+      expect([habitos.format, habitos.sections.length, habitos.sections[0].sectionCode]).toEqual([3, 1, 'tus_habitos']);
+      await apk.pide('API-FRI-01', { token, params: { templateId: PLANTILLA_NUTRICION_INICIO, versionId: VERSION_NUTRICION_INICIO_V3 } });
+      await apk.pide('API-FRI-01', { token, params: { templateId: PLANTILLA_ENTRENAMIENTO, versionId: VERSION_ENTRENAMIENTO_V4 } });
 
       // El tope de días (FR-07): con dos días marcados, tres para reservar es el 422 que la APK reconoce, y no escribe nada.
       await apk.pide('API-FRI-04', { token, params: { formRequestId: sola }, cuerpo: { answers: conDiasParaReservar(3), fromProposal: null }, status: 422 });
@@ -672,8 +694,12 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
         status: 201,
       });
       if (apk.lee('API-HBT-01')) expect((await apk.pide('API-HBT-01', { token })).body.data.current).toMatchObject({ origin: 'FORM' });
-      // Lo que queda a la vista: la rectificada, la confirmada con su transcripción, la descartada (pendiente) y la del catálogo.
-      for (const id of [sola, confirmada, descartada, antesDeEntrenar]) await apk.pide('API-FRI-03', { token, params: { formRequestId: id } });
+      // «Tus hábitos» aparte, respondido solo, con lo de formato 3 del renglón: agrega otra versión de los hábitos (D-20).
+      const otrosHabitos = HABITOS.map((r) => (r.fieldCode === 'horas_de_sueno' ? { fieldCode: r.fieldCode, answer: { type: 'NUMBER' as const, number: 6.5, unit: 'h' } } : r));
+      await apk.pide('API-FRI-04', { token, params: { formRequestId: tusHabitos }, cuerpo: { answers: otrosHabitos, fromProposal: null }, status: 201 });
+      if (apk.lee('API-HBT-01')) expect((await apk.pide('API-HBT-01', { token })).body.data.history).toHaveLength(1);
+      // Lo que queda a la vista: la rectificada, la confirmada con su transcripción, la descartada (pendiente) y las del catálogo.
+      for (const id of [sola, confirmada, descartada, antesDeEntrenar, tusHabitos]) await apk.pide('API-FRI-03', { token, params: { formRequestId: id } });
       await apk.pide('API-FRI-02', { token });
       expect(apk.rechazos()).toEqual([]);
     },
@@ -697,6 +723,9 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const mios = async (): Promise<MisHabitos> => (await apk.pide('API-HBT-01', { token })).body.data as MisHabitos;
     const de = (d: MisHabitos, pro: { id: string }) => d.professionals.find((p) => p.professional.identityId === pro.id);
 
+    // Ronda 2.1: el entrenador le pidió acceso (API-HBT-06, del website). La 0.21 no conoce los pedidos, y lo que lee de
+    // «Mis hábitos» no cambia de forma.
+    await conSesion(app, ent.token).post(`/api/v1/advisees/${ase.id}/habits/access-requests`).send({ scope: 'ENTRENAMIENTO' }).expect(201);
     // Sin nada contado y sin compartir.
     expect(await mios()).toMatchObject({ current: null, history: [], sharing: { status: 'NOT_GIVEN', version: null } });
     // Contarlos en «Mis hábitos», con la vigente que se vio: con una vieja, el 409; lo que no tiene la forma de la parte, el
@@ -727,9 +756,15 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const sumada = (await apk.pide('API-HBT-03', { token, cuerpo: { expectedVersion: conLaNueva.sharing.version, textVersionId: conLaNueva.text.id, professionalIds: [nut.id, ant.id], declinedProfessionalIds: [] } }))
       .body.data as { sharing: { version: string } };
 
+    // Con la 0.21, sumar al entrenador desde «Cambiar con quiénes» responde que sí a su pedido (D-25).
+    const conElEntrenador = await mios();
+    const sumadoElEntrenador = (
+      await apk.pide('API-HBT-03', { token, cuerpo: { expectedVersion: sumada.sharing.version, textVersionId: conElEntrenador.text.id, professionalIds: [nut.id, ant.id, ent.id], declinedProfessionalIds: [] } })
+    ).body.data as { sharing: { version: string } };
+    expect(await prisma.pedidoDeAccesoAHabitos.count({ where: { asesoradoId: ase.id, profesionalId: ent.id, estado: 'ACEPTADO' } })).toBe(1);
     // Dejar de compartir, para todos a la vez; otra vez con la misma versión, el 409.
-    await apk.pide('API-HBT-04', { token, cuerpo: { expectedVersion: sumada.sharing.version } });
-    await apk.pide('API-HBT-04', { token, cuerpo: { expectedVersion: sumada.sharing.version }, status: 409 });
+    await apk.pide('API-HBT-04', { token, cuerpo: { expectedVersion: sumadoElEntrenador.sharing.version } });
+    await apk.pide('API-HBT-04', { token, cuerpo: { expectedVersion: sumadoElEntrenador.sharing.version }, status: 409 });
     expect((await mios()).sharing.status).toBe('WITHDRAWN');
     expect(apk.rechazos()).toEqual([]);
   });
@@ -771,8 +806,15 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       .send({ originScope: 'NUTRICION', purpose: 'CONTEXT_FOR_YOUR_AREA', recipients: { mode: 'ALL' }, text: 'Nota sintética para la APK.', references: [{ type: 'NUTRITION_PLAN_VERSION', id: c.planId }] })
       .expect(201);
 
-    const novedades = (await apk.pide('API-NOV-01', { token, consulta: { limit: '30' } })).body.data as { newsId: string }[];
+    // DL-165, ronda 2.1: el entrenador le pide ver sus hábitos (API-HBT-06). La novedad trae un tipo y una vista que estas APK
+    // no conocen (`HABITS_ACCESS_REQUESTED`, `MY_HABITS`): la leen con su esquema, la muestran con su texto y, al abrirla, se
+    // quedan en Novedades.
+    await conSesion(app, ent.token).post(`/api/v1/advisees/${c.ase.id}/habits/access-requests`).send({ scope: 'ENTRENAMIENTO' }).expect(201);
+    const novedades = (await apk.pide('API-NOV-01', { token, consulta: { limit: '30' } })).body.data as { newsId: string; kind: string; open: { view: string } }[];
     expect(novedades.length).toBeGreaterThan(0);
+    const pedido = novedades.find((n) => n.kind === 'HABITS_ACCESS_REQUESTED');
+    expect(pedido?.open.view).toBe('MY_HABITS');
+    await apk.pide('API-NOV-02', { token, params: { newsId: pedido!.newsId } });
     await apk.pide('API-NOV-02', { token, params: { newsId: novedades[0]!.newsId } });
     await apk.pide('API-NOV-01', { token, consulta: { limit: '30' } });
     const telefono = randomUUID();

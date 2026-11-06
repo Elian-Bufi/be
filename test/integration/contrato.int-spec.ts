@@ -44,7 +44,7 @@ import {
   tokenDe,
   transicionPorServicio,
 } from './soporte-api';
-import { a3Vigente, aceptar, dashboard, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
+import { a3Vigente, aceptar, dashboard, finalizar, pausar, prepararAsesorado, prepararProfesional, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 import { CATALOGO_DEMO, circuitoAntropometrico } from './soporte-antropometria';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { huellaDeSecretoDeInvitacion } from '../../apps/api/src/vinculo/invitaciones.service';
@@ -75,7 +75,7 @@ import {
 } from './soporte-entrenamiento';
 import { levantarProveedorFalso, OFF, WGER, type ProveedorFalso } from './soporte-proveedores';
 import { circuitoV2, conAgua, fri, RESPUESTAS_V2 } from './soporte-formularios-v2';
-import { catalogoDePlantillas, sembrarAntecedentesDeP0 } from './soporte-plantillas-de-inicio';
+import { catalogoDePlantillas, sembrarAntecedentesDeP0, sembrarCopiaDeLaVersion, VERSION_HABITOS_V1 } from './soporte-plantillas-de-inicio';
 import { googleDePrueba, idTokenDeGoogle, levantarGoogleFalso, reclamosDeGoogle, subSintetico, type GoogleFalso } from './soporte-google';
 import { alimentosUsda, cuerpoDeReceta, estructuraConRecetas, FOTOS, leerContenido, RECETAS, subirBytes, subirImagen } from './soporte-recetas';
 import {
@@ -1029,7 +1029,8 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
 it('TEST-CT (WP-07): FRM-01 a 08 — catálogo, Solicitud, Respuesta y rectificación', async () => {
   const PLANTILLA_SALUD = '7aa84959-7702-4749-bf70-7fdc574db6ca';
   const VERSION_SALUD = '349161b3-b831-4df1-896f-484517393a57';
-  const VERSION_HABITOS = '4879e539-235f-4f91-83fc-2e113c404393';
+  // FRM-HABITOS v1 (P0, con un NUMBER), en una copia de prueba: desde la ronda 2.1 la del catálogo es histórica (DL-165).
+  const VERSION_HABITOS = (await sembrarCopiaDeLaVersion(prisma, VERSION_HABITOS_V1, 'ct-frm')).versionId;
 
   const proParte = await prepararProfesional(app, 'frm', ['ENTRENAMIENTO']);
   const pro = conSesion(app, proParte.token);
@@ -1247,6 +1248,72 @@ it('TEST-CT (DL-165, FR-10): HBT-01 a 05 — mis hábitos, una versión nueva, c
   await yo.get('/api/v1/me/habits').expect(403);
   await yo.post('/api/v1/me/habits').send({ expectedVersion: 'v1', answers: habitos }).expect(403);
   await compartir({ expectedVersion: 'v2' }).expect(403);
+});
+
+it('TEST-CT (DL-165, ronda 2.1): HBT-06 a 09 — pedir acceso, lo que sabe el profesional, los pedidos de la persona y su respuesta', async () => {
+  const pro = await prepararProfesional(app, 'ct-hbt21', ['NUTRICION']);
+  const otro = await prepararProfesional(app, 'ct-hbt21-otro', ['NUTRICION']);
+  const ajeno = await prepararProfesional(app, 'ct-hbt21-ajeno', ['NUTRICION']);
+  const ase = await prepararAsesorado(app, 'ct-hbt21', { a3: true });
+  await vinculoCompleto(app, pro, ase, 'NUTRICION');
+  await vinculoCompleto(app, otro, ase, 'NUTRICION');
+  const yo = conSesion(app, ase.token);
+  const delPro = conSesion(app, pro.token);
+  const servidor = app.getHttpServer();
+  const PEDIR = `/api/v1/advisees/${ase.id}/habits/access-requests`;
+
+  // HBT-07 — lo que sabe el profesional
+  await delPro.get(`/api/v1/advisees/${ase.id}/habits/status`).expect(200);
+  await delPro.get(`/api/v1/advisees/${ase.id}/habits/status?x=1`).expect(400); // INVALID_REQUEST
+  await conSesion(app, ajeno.token).get(`/api/v1/advisees/${ase.id}/habits/status`).expect(404);
+  await request(servidor).get(`/api/v1/advisees/${ase.id}/habits/status`).expect(401);
+
+  // HBT-06 — pedir acceso
+  const clave = claveDeIdempotencia();
+  const pedido = (await delPro.post(PEDIR, clave).send({ scope: 'NUTRICION' }).expect(201)).body.data as { accessRequestId: string };
+  await delPro.post(PEDIR, clave).send({ scope: 'NUTRICION' }).expect(201); // replay
+  await delPro.post(PEDIR, clave).send({ scope: 'ANTROPOMETRIA' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await delPro.post(PEDIR).send({ scope: 'NUTRICION' }).expect(422); // HABITS_ACCESS_REQUEST_TOO_SOON
+  await delPro.post(PEDIR).send({ scope: 'OTRA' }).expect(400); // INVALID_REQUEST
+  await delPro.post(PEDIR).send({ scope: 'NUTRICION', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await conSesion(app, ajeno.token).post(PEDIR).send({ scope: 'NUTRICION' }).expect(404);
+  await request(servidor).post(PEDIR).set('Authorization', `Bearer ${pro.token}`).send({ scope: 'NUTRICION' }).expect(400); // sin Idempotency-Key
+  const delOtro = (await conSesion(app, otro.token).post(PEDIR).send({ scope: 'NUTRICION' }).expect(201)).body.data as { accessRequestId: string };
+
+  // HBT-08 — los pedidos que esperan
+  await yo.get('/api/v1/me/habits/access-requests').expect(200);
+  await yo.get('/api/v1/me/habits/access-requests?x=1').expect(400); // INVALID_REQUEST
+  await request(servidor).get('/api/v1/me/habits/access-requests').expect(401);
+
+  // HBT-09 — responder
+  const responder = (id: string, cuerpo: Record<string, unknown>, c?: string) => yo.post(`/api/v1/me/habits/access-requests/${id}/answer`, c).send(cuerpo);
+  const si = { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id } };
+  await responder(pedido.accessRequestId, { ...si, sharing: null }).expect(400); // INVALID_REQUEST: «Sí» sin lo que vio
+  await responder(pedido.accessRequestId, { ...si, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await responder(randomUUID(), si).expect(404);
+  await responder(pedido.accessRequestId, { ...si, sharing: { ...si.sharing, textVersionId: VERSION_VIGENTE.EVIDENCIA_VISUAL.id } }).expect(409); // CONSENT_VERSION_STALE
+  await responder(pedido.accessRequestId, { ...si, expectedVersion: 'v2' }).expect(409); // VERSION_CONFLICT
+  const claveSi = claveDeIdempotencia();
+  await responder(pedido.accessRequestId, si, claveSi).expect(200);
+  await responder(pedido.accessRequestId, si, claveSi).expect(200); // replay
+  await responder(pedido.accessRequestId, { ...si, answer: 'NOT_NOW', sharing: null }, claveSi).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await responder(delOtro.accessRequestId, { expectedVersion: 'v1', answer: 'NOT_NOW', sharing: null }).expect(200);
+  await request(servidor).post(`/api/v1/me/habits/access-requests/${pedido.accessRequestId}/answer`).set('Authorization', `Bearer ${ase.token}`).send(si).expect(400); // sin Idempotency-Key
+  // Ya los recibe: no hay nada que pedir.
+  await delPro.post(PEDIR).send({ scope: 'NUTRICION' }).expect(422); // HABITS_ALREADY_SHARED
+
+  // Un profesional que terminó su vínculo con un pedido esperando: decir que sí es 422.
+  const fin = await prepararProfesional(app, 'ct-hbt21-fin', ['NUTRICION']);
+  const vFin = await vinculoCompleto(app, fin, ase, 'NUTRICION');
+  const deFin = (await conSesion(app, fin.token).post(PEDIR).send({ scope: 'NUTRICION' }).expect(201)).body.data as { accessRequestId: string };
+  await finalizar(app, ase.token, vFin.vinculoId, await versionDeVinculo(app, ase.token, vFin.vinculoId)).expect(200);
+  const version = (await yo.get('/api/v1/me/habits').expect(200)).body.data.sharing.version as string;
+  await responder(deFin.accessRequestId, { ...si, sharing: { ...si.sharing, expectedVersion: version } }).expect(422); // HABITS_RECIPIENT_NOT_AVAILABLE
+
+  // Sin el A3 vigente: 403 en lo propio (decir que no, no lo exige).
+  await conSesion(app, ase.token).post(`/api/v1/me/health-data-consents/${await a3Vigente(app, ase.token)}/revoke`).send({}).expect(200);
+  await yo.get('/api/v1/me/habits/access-requests').expect(403);
+  await responder(deFin.accessRequestId, si).expect(403);
 });
 
 it('TEST-CT (PF-02 · DL-100/101/102): «Antecedentes para entrenamiento» — FRM-02 sin propiedades nuevas, límites NUMBER en el servidor y la cita de una versión vieja es 409', async () => {
