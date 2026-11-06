@@ -315,3 +315,16 @@ test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar n
     assert.doesNotMatch(t, /cumplimiento|adherencia|racha|px|error/i, t);
   }
 });
+
+test('TB-48 · «Guardar como plantilla» va con su texto, a la vista, y si no se puede dice por qué', () => {
+  for (const [archivo, motivo] of [['nutrition/editor.tsx', 'sinPlantilla'], ['training/editor.tsx', 'antesHayQueCorregir']]) {
+    const editor = leer(archivo);
+    assert.doesNotMatch(editor, /Más acciones de esta versión/, `${archivo}: ya no es un menú «⋯» sin texto`);
+    const boton = editor.slice(editor.indexOf('data-guardar-como-plantilla'), editor.indexOf('{COPY_PLANTILLAS.guardarComoPlantilla}') + 40);
+    assert.ok(boton.length > 40 && boton.includes('{COPY_PLANTILLAS.guardarComoPlantilla}'), `${archivo}: el botón lleva el texto`);
+    assert.ok(boton.includes(`aria-disabled={${motivo} ? true : undefined}`), `${archivo}: apagado sin perder el foco`);
+    assert.ok(boton.includes(`aria-describedby={${motivo} ? 'motivo-sin-plantilla' : undefined}`), `${archivo}: el motivo, para el lector`);
+    assert.ok(boton.includes(`onClick={() => (${motivo} ? setMensaje({ tipo: 'info', texto: ${motivo} }) : setGuardarPlantilla(true))}`), `${archivo}: al tocarlo apagado, el motivo`);
+  }
+  assert.equal(d.COPY_PLANTILLAS.guardarComoPlantilla, 'Guardar como plantilla');
+});

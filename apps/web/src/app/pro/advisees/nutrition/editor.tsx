@@ -481,6 +481,8 @@ export function EditorDeBorrador({
       ? `${comidaDondeSeAgrega.label.trim() || `Comida ${agregando.j + 1}`} · opción ${agregando.k + 1}${opcionDondeSeAgrega.label.trim() ? `: ${opcionDondeSeAgrega.label.trim()}` : ''}`
       : null;
   const comidaDeLaReceta = eligiendoReceta ? estructura[eligiendoReceta.i]?.meals[eligiendoReceta.j] : undefined;
+  // Una plantilla no guarda recetas (DL-119): con una opción de receta, «Guardar como plantilla» dice por qué no.
+  const sinPlantilla = estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null;
 
   return (
     <section className="seccion editor-del-plan" aria-labelledby="titulo-borrador">
@@ -494,17 +496,24 @@ export function EditorDeBorrador({
         </h2>
         <div className="editor-del-plan__acciones">
           <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
-          <MenuDeAcciones
-            rotulo="Más acciones de esta versión"
-            acciones={[
-              {
-                clave: 'plantilla',
-                texto: COPY_PLANTILLAS.guardarComoPlantilla,
-                alElegir: () => setGuardarPlantilla(true),
-                noSePuede: estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null,
-              },
-            ]}
-          />
+          {/* TB-48: «Guardar como plantilla», con su texto y a la vista (antes, sola en un menú «⋯» sin texto). Si no se
+              puede, está apagado (con `aria-disabled`, que conserva el foco) y dice por qué, al lector y al tocarlo. */}
+          <button
+            type="button"
+            className="boton boton--quieto"
+            data-guardar-como-plantilla
+            aria-disabled={sinPlantilla ? true : undefined}
+            aria-describedby={sinPlantilla ? 'motivo-sin-plantilla' : undefined}
+            onClick={() => (sinPlantilla ? setMensaje({ tipo: 'info', texto: sinPlantilla }) : setGuardarPlantilla(true))}
+          >
+            <Icono nombre="plantillas" tamano={18} />
+            {COPY_PLANTILLAS.guardarComoPlantilla}
+          </button>
+          {sinPlantilla ? (
+            <span id="motivo-sin-plantilla" className="visualmente-oculto">
+              {sinPlantilla}
+            </span>
+          ) : null}
           {/* Los tres se apagan con `aria-disabled`, no con `disabled`: un botón deshabilitado pierde el foco, y quien
               guarda con el teclado quedaría fuera de lugar (y «Volver», en el diálogo, no tendría a dónde volver). */}
           <button

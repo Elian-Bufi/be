@@ -672,10 +672,24 @@ export function EditorDePlan({
         </h2>
         <div className="editor-del-plan__acciones">
           <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
-          <MenuDeAcciones
-            rotulo="Más acciones de esta versión"
-            acciones={[{ clave: 'plantilla', texto: COPY_PLANTILLAS.guardarComoPlantilla, alElegir: () => setGuardarPlantilla(true), noSePuede: antesHayQueCorregir }]}
-          />
+          {/* TB-48: «Guardar como plantilla», con su texto y a la vista (antes, sola en un menú «⋯» sin texto). Si no se
+              puede, está apagado (con `aria-disabled`, que conserva el foco) y dice por qué, al lector y al tocarlo. */}
+          <button
+            type="button"
+            className="boton boton--quieto"
+            data-guardar-como-plantilla
+            aria-disabled={antesHayQueCorregir ? true : undefined}
+            aria-describedby={antesHayQueCorregir ? 'motivo-sin-plantilla' : undefined}
+            onClick={() => (antesHayQueCorregir ? setMensaje({ tipo: 'info', texto: antesHayQueCorregir }) : setGuardarPlantilla(true))}
+          >
+            <Icono nombre="plantillas" tamano={18} />
+            {COPY_PLANTILLAS.guardarComoPlantilla}
+          </button>
+          {antesHayQueCorregir ? (
+            <span id="motivo-sin-plantilla" className="visualmente-oculto">
+              {antesHayQueCorregir}
+            </span>
+          ) : null}
           {/* Los tres se apagan con `aria-disabled`, no con `disabled`: un botón deshabilitado pierde el foco, y quien
               guarda con el teclado quedaría fuera de lugar (y «Volver», en el diálogo, no tendría a dónde volver). */}
           <button
