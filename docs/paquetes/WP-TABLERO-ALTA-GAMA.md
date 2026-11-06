@@ -629,3 +629,58 @@ Lo de Nutrición (TB-39 a TB-42 y la estimación de TB-38) sirve para el servici
   del 08, no de diseño. TB-16 lo verifica antes de dibujar.
 - **En `test` y en local se trabaja con datos sintéticos** (08 §33): la cohorte y las cuentas de demostración. Ni fotos
   reales ni datos de personas reales.
+
+## 10.2 · Decisiones de la rama de la API
+
+La rama de la API es `wp-tablero-etapa-a-api`, desde `main` 67d7f61, con su PR en borrador y sin integrar (§8.1: «la API
+se toca solo en su rama, con su CI y sin integrar»). La §10 y la §10.1 viven en la rama del website (#240); esta sección
+se une a ellas cuando las dos ramas se junten. Los oráculos de esta rama están en
+`WP-TABLERO-ALTA-GAMA-ORACULOS-API.md`, por la misma razón.
+
+| Parte | Estado | Dónde |
+|---|---|---|
+| TB-13 | Hecha. **Las dos pruebas fallaron contra la cartera de `main`** (la corrida de 4507193, solas): una revisión aplicada como «Mantener» sin fecha nueva seguía como vencida, y un seguimiento finalizado volvía como «Sin plan activo». **El arreglo:** la cartera (API-CAR-01) usa la definición de pendiente del dominio de revisión (REG-06-150): una revisión acordada que resolvió una revisión aplicada después no sigue como vencida, próxima ni sin fecha; y un seguimiento cerrado con «Finalizar» no vuelve como «Sin plan activo» (TA-56). La forma de API-CAR-01 no cambia. TEST-TAG-011 | `packages/domain/src/cola-de-revisiones.ts` (`revisionEnLaCartera`, `sinPlanActivoEnLaCartera`), `apps/api/src/cartera/hechos-de-revision.ts`, `apps/api/src/cartera/lectura-cartera.ts`, `test/integration/cola-de-revisiones.int-spec.ts` |
+| TB-14 | Hecha. **API-DSH-02, `GET /me/review-queue`**, de solo lectura, con la ruta, `domain` y `status` del 09 (v0.11 §14): un ítem por seguimiento abierto, con «Próxima acción pendiente» (`NEXT_ACTION_PENDING`) primero, «Revisión pendiente» (`REVIEW_DUE`, la del dominio) en el medio y «Sin revisión acordada» (`ACTIVE_PLAN_WITHOUT_REVIEW`) al final (TA-57 a TA-60); una revisión acordada a futuro no entra. Abrirla no resuelve nada. API-CAR-01 no cambia y las APK instaladas no la leen. TEST-TAG-012 y TEST-CT-DSH-02 | `cola-de-revisiones.ts`, `contratos-cola-de-revisiones.ts`, `apps/api/src/cartera/lectura-cola-de-revisiones.ts`, `cartera.controller.ts`, `consultarColaDeRevisiones` en `cliente-http.ts` |
+
+**Para unir con la rama del website (#240).** No se programó acá porque son archivos que #240 cambió:
+- **«Te toca a vos» lee la cola** junto con la cartera y suma sus dos estados nuevos: «Próxima acción pendiente», con
+  «Aplicar» (TB-15), y «Sin revisión acordada», con «Revisar», que abre la revisión preparada con «Reprogramar revisión»
+  (D-6). Si la API responde 404 (una API anterior), la mesa se muestra sin esas filas (TB-14). Va en `pro/mesa.ts` y
+  `pro/espacio-profesional.tsx`, con `consultarColaDeRevisiones`.
+- **Los textos de «Sin fecha por ahora» (TA-41) cambian con la cola** (TA-61).
+
+**Las decisiones** (se ratifican antes de integrar; las que cambian la forma de un contrato, también):
+
+- **TA-56 · Un seguimiento cerrado con «Finalizar» no vuelve como «Sin plan activo».** Finalizar es una decisión del
+  profesional, no algo que falta hacer: si volviera como «Empezar el plan», el renglón quedaría para siempre, y con un
+  programa de cinco semanas le pasaría a cada persona al terminar. Cuenta solo el cierre por la revisión: un seguimiento
+  cerrado por el fin del vínculo o de la cuenta sigue como hoy. Si el profesional quiere volver a empezar, lo hace desde
+  la ficha. *Otra opción:* no mostrar «Sin plan activo» a nadie que tuvo un plan activado alguna vez, que también
+  escondería a una persona que vuelve con un vínculo nuevo.
+- **TA-57 · Un motivo por seguimiento.** Si la última revisión espera su aplicación, el ítem es «Próxima acción
+  pendiente», aunque la revisión acordada siga pendiente hasta aplicarla: el trabajo que queda es aplicar, no volver a
+  revisar. *Otra opción:* dos ítems, la revisión pendiente y la próxima acción, que repiten a la misma persona y área.
+- **TA-58 · «Próxima acción pendiente» es la última revisión registrada del seguimiento, sin aplicar.** Es la misma que
+  el website lee en API-DSH-03 (`lastReview.application` en `null`, TA-42), así que la cola y el cajón dicen lo mismo.
+  Una revisión vieja sin aplicar, debajo de otra registrada después, no suma un ítem. *Otra opción:* un ítem por cada
+  revisión sin aplicar, que muestra revisiones que el profesional ya dejó atrás.
+- **TA-59 · «Sin revisión acordada» es un plan activo sin una revisión acordada en pie.** O nunca se acordó una, o la que
+  había la resolvió una revisión aplicada después (REG-06-150): es el caso de «Mantener» sin fecha nueva (TA-13 y
+  TA-41). «Desde» es la aplicación o la activación más reciente. Sin seguimiento abierto o sin un plan activado, no hay
+  ítem: «Empezar el plan» es de la cartera. *Otra opción:* solo los planes que nunca tuvieron una, que deja afuera el
+  caso más común.
+- **TA-60 · La forma de la cola es la del 09, con tres agregados.** `relationshipId` (como API-CAR-01), `agreedReviewDate`
+  (la fecha acordada que sigue en pie, o `null`) y las fuentes con su tipo (`REVIEW` y `PLAN_VERSION`, que ya se pueden
+  abrir). El área va con los tokens del 09 (`NUTRITION` y `TRAINING`), no con los de la cartera; `status` filtra por el
+  motivo. No trae `partialView`: el aviso de la vista parcial ya lo da la cartera, que el website lee junto con esta.
+  *Otra opción:* la forma de API-CAR-01 (`data.items`, `today`), que se aparta del 09.
+- **TA-61 · Los textos de «Sin fecha por ahora», cuando el website lea la cola.** TA-41 dice lo que BE hacía antes de
+  TB-13. Con la cola: en la revisión, «Al aplicar esta revisión sin una fecha nueva, esta área pasa a «Sin revisión
+  acordada» en «Te toca a vos».»; al activar una versión sobre otra, lo mismo con «Al activar»; y al activar el primer
+  plan, «Sin fecha acordada, esta área queda en «Sin revisión acordada» en «Te toca a vos».». Mientras el website no lea
+  la cola, siguen los de TA-41, que son los ciertos. *Otra opción:* cambiarlos ya, que diría algo que la mesa todavía no
+  muestra.
+- **TA-62 · La cola lee como la cartera de hoy.** Persona por persona en una transacción, con el tope de 200 personas;
+  leerla por conjuntos va con TB-18, después de la lectura de la cartera por conjuntos (#222), que no está integrada.
+  Cuando #222 se integre, el arreglo de TB-13 se lleva a su lectura: son dos llamadas, `aplicacionPosteriorA` y
+  `cerradoConFinalizar`. *Otra opción:* armarla ya por conjuntos, que choca con #222.
