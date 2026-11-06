@@ -682,9 +682,13 @@ de TEST-TAG-032. Lo próximo:
   `cargar.mjs`, que hoy no se repite porque su estado la da por hecha). Pide la IP del operador. Hasta entonces, en `test`
   la composición de Diego y Camila se ve como el caso sin método (la línea de los pesos), y solo la CI la muestra partida.
 - **El cajón queda apagado** hasta que Dirección vea su recaptura (las capturas lo prenden con `BE_CAJON_DE_A_UNA=si`).
-  Prenderlo es una variable de la compilación del website en Render, sin código. Con TB-15 aplica, así que conviene
-  verlo con una revisión registrada y sin aplicar: la cohorte ya no la tiene (Federico Álvarez tiene la suya aplicada);
-  para verlo en las capturas, la cohorte necesita una revisión sin aplicar con su fecha relativa a hoy.
+  Prenderlo es una variable de la compilación del website en Render, sin código. Con TB-15 aplica, y las capturas ya
+  muestran su cuadro de aplicar: la cohorte registra la revisión de Entrenamiento de Federico Álvarez el día anterior a
+  cada corrida y no la aplica (`pendienteTrn`, con su fecha relativa a hoy), así que el cajón de Martín Acosta abre en
+  «Pendiente 1 de 3» con «La revisión del 5 nov está registrada y sin aplicar. ¿La aplicás?», el resultado, el
+  fundamento, la próxima acción, lo que pasa al aplicar y «Aplicar próxima acción» (la corrida del 2026-11-06). La que
+  está aplicada es la de Nutrición de Federico, la del 16 oct: en Nutrición la cohorte no tiene ninguna sin aplicar, y
+  el cuadro con «Aplicar continuidad» no se ve en pantalla (lo cubre TEST-TAG-013).
 - **TB-30 y TB-32 piden antes los lugares del cuerpo (no se programaron).** El mapa corporal usa el set de capas de
   Dirección (`public/zonas/`: el cuerpo de frente y de espalda y una máscara por zona muscular). La capa Medidas necesita
   dónde va cada sitio de perímetro y de pliegue sobre ese cuerpo, y la de Molestias declaradas, dónde va cada región de
@@ -793,9 +797,12 @@ que ya tiene las masas):
   900 y los valores de los indicadores terminan en 808; a 1920 × 950, los minigráficos, en 915. Al abrir el Resumen, 22
   peticiones con Sofía Paz y 13 con Martín Acosta: una más que antes en cada uno, la lista de solicitudes respondidas de
   TB-49 (TA-23). La cohorte no tiene solicitudes de formularios, así que la tarjeta de TB-49 no aparece en las capturas.
-- **Federico Álvarez:** en las corridas del 2026-11-06 tiene la revisión del 16 oct aplicada y la próxima el 16 nov: la
-  cohorte ya no reproduce la revisión registrada sin aplicar, y `accionDelMarco` sale vacía. TEST-TAG-010 cubre el caso;
-  para verlo en las capturas, la cohorte necesita esa revisión con una fecha relativa a hoy.
+- **Federico Álvarez, visto por Sofía Paz:** en las corridas del 2026-11-06 su revisión de Nutrición del 16 oct está
+  aplicada y la próxima es el 16 nov: en Nutrición la cohorte ya no reproduce la revisión registrada sin aplicar, y
+  `accionDelMarco` de su Resumen sale vacía. TEST-TAG-010 cubre el caso; para verlo en ese Resumen, la cohorte
+  necesitaría una revisión de Nutrición sin aplicar con su fecha relativa a hoy. La de Entrenamiento sí está sin
+  aplicar (la registra el día anterior a cada corrida) y se ve en el cajón de Martín Acosta, que ofrece aplicarla
+  (TB-15; ver «Para seguir»).
 
 Toda pantalla nueva de /pro que muestre a alguien lee su nombre con `useNombres` (la guardia de `retrato.test.mjs`
 falla con un `.displayName` suelto) y, donde ya se ve el nombre, suma `Retrato`; el cajón (TB-12) se suma a

@@ -14,7 +14,8 @@ cambia el website o el dominio, y también a pedido.
    1920 × 1080. De cada página guarda la primera pantalla y la página entera:
    - **Diego Sosa visto por Sofía Paz** (Nutrición y Antropometría): el Espacio profesional, el Resumen de la ficha,
      «Analizar» (la entrada y, desde TB-04, el gráfico con Calorías elegida), Nutrición y Antropometría. Desde TB-09,
-     también el Resumen de **Federico Álvarez**, con una revisión registrada sin aplicar.
+     también el Resumen de **Federico Álvarez** (su revisión de Nutrición del 16 oct ya está aplicada; la que la cohorte
+     deja sin aplicar es la de Entrenamiento, y se ve en el cajón de Martín Acosta).
    - **Diego Sosa visto por Martín Acosta** (Entrenamiento): el Espacio, el Resumen y Entrenamiento.
 3. Cuenta las peticiones a la API al abrir cada página (TEST-TAG-032) y anota el alto de cada página en
    `mediciones.json`, con la acción que ofrece el marco de la ficha (`accionDelMarco`, TB-09).

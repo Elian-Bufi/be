@@ -774,8 +774,10 @@ AUTOMATION           test/integration/aplicar-desde-el-cajon.int-spec.ts (Nutric
                      apps/web/test/aplicar-y-cuando.test.mjs («TEST-TAG-013 · …», seis casos), en
                      `npm run test -w @be/web`; T13 suma aplicar-la-revision.ts a la revisión de las dos áreas
 ENVIRONMENT          CI (integración, con PostgreSQL 16 de Testcontainers) y local, sin servicios (la unidad)
-EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. En capturas-del-tablero, el cuadro de aplicar aparece solo si
-                     la cohorte tiene una revisión registrada y sin aplicar con su fecha relativa a hoy (§10)
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR. En capturas-del-tablero, el cuadro de aplicar de Entrenamiento:
+                     el cajón de Martín Acosta abre en la revisión de Federico Álvarez que la cohorte registra el día
+                     anterior y no aplica, con «Aplicar próxima acción» (§10). El de Nutrición no se ve: su revisión de
+                     Nutrición está aplicada
 ```
 
 ---
