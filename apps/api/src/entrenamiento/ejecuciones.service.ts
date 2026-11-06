@@ -9,6 +9,8 @@ import {
   VersionEsperadaRequestSchema,
   codificarOcurrencia,
   decodificarOcurrencia,
+  ejerciciosEnSuForma,
+  ejerciciosSinLaMarca,
   evaluarNuevaCorreccion,
   evaluarTransicionDeEjecucion,
   problemasDeCoherencia,
@@ -91,6 +93,9 @@ interface ContenidoDeCorreccion extends ContenidoDeRegistro {
   readonly condicion: CondicionDeSesion;
   readonly motivo: string | null;
 }
+
+/** Un registro para saber si una corrección cambia algo: sin la marca de cómo se cargó cada serie (DL-161). */
+const paraComparar = (c: ContenidoDeCorreccion): ContenidoDeCorreccion => ({ ...c, exercises: c.exercises ? ejerciciosSinLaMarca(c.exercises) : c.exercises });
 
 const CONDICION_DESDE_API = Object.fromEntries(Object.entries(CONDICION_DE_SESION_API).map(([d, a]) => [a, d])) as Record<string, CondicionDeSesion>;
 const GRANULARIDAD_DESDE_API = Object.fromEntries(Object.entries(GRANULARIDAD_API).map(([d, a]) => [a, d])) as Record<string, GranularidadDeRegistro>;
@@ -410,7 +415,8 @@ export class EjecucionesDeEntrenamientoService {
         const granularidad = c.granularity === undefined ? borrador.granularidad : interpretarGranularidad(c.granularity, 'changes.granularity');
         const condicion = c.sessionCondition === undefined ? borrador.condicion : interpretarCondicion(c.sessionCondition, 'changes.sessionCondition');
         const contenido: ContenidoDeRegistro = {
-          exercises: c.exercises ?? previo.exercises,
+          // DL-161: cada serie se guarda en su forma; «TYPED» y una duración nula no se guardan (dicen lo mismo que la ausencia).
+          exercises: c.exercises ? ejerciciosEnSuForma(c.exercises) : previo.exercises,
           sessionSummary: c.sessionSummary === undefined ? previo.sessionSummary : c.sessionSummary,
         };
         const ocurrencia = c.occurredAt === undefined ? borrador.momentoDeOcurrencia : c.occurredAt ? new Date(c.occurredAt) : null;
@@ -614,7 +620,8 @@ export class EjecucionesDeEntrenamientoService {
         const r = pedido.correction;
         const granularidad = interpretarGranularidad(r.granularity, 'correction.granularity');
         const condicion = interpretarCondicion(r.sessionCondition, 'correction.sessionCondition') as CondicionDeSesion;
-        const contenido: ContenidoDeRegistro = { exercises: r.exercises, sessionSummary: r.sessionSummary };
+        // DL-161: cada serie en su forma, como en el borrador.
+        const contenido: ContenidoDeRegistro = { exercises: ejerciciosEnSuForma(r.exercises), sessionSummary: r.sessionSummary };
         const sesion = sesionDeOcurrenciaApi(x.instantanea, x.sesionPlanificadaId);
         await this.verificarRegistro(tx, actor, x.asesoradoId === actor.identidadId ? 'ASESORADO' : 'PROFESIONAL', { granularidad, condicion, contenido }, sesion, 'correction.', x.profesionalId);
         // La corrección es un registro completo: cumple lo mismo que una confirmación.
@@ -633,8 +640,9 @@ export class EjecucionesDeEntrenamientoService {
         if (!ev.valida) throw new ErrorDeApi(422, CodigoDeError.CORRECTION_NOT_ALLOWED, 'La historia de correcciones de este registro no se puede continuar.');
         const guardado: ContenidoDeCorreccion = { granularidad, condicion, motivo: r.reason, ...contenido };
         // Corregir exige un cambio (B10-06:879-884): una corrección igual a lo que hoy rige no rectifica nada, y dejaría
-        // una «Corrección vigente» idéntica al registro que dice corregir.
-        if (serializacionCanonica(guardado) === serializacionCanonica(await this.contenidoVigente(tx, x.id, terminal))) {
+        // una «Corrección vigente» idéntica al registro que dice corregir. La marca «como el plan» no es un dato de lo que
+        // se hizo (DL-161): cambiar solo la marca no corrige nada. La duración, sí.
+        if (serializacionCanonica(paraComparar(guardado)) === serializacionCanonica(paraComparar(await this.contenidoVigente(tx, x.id, terminal)))) {
           throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'La corrección no cambia nada del registro.', { issues: [{ code: 'CORRECTION_WITHOUT_CHANGES', path: 'correction' }] });
         }
         const correccion = await tx.correccionDeEjecucionDeEntrenamiento.create({

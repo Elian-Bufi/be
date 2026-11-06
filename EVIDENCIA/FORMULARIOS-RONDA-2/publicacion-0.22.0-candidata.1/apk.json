@@ -1,0 +1,281 @@
+{
+  "modo": "real (clave de EAS, del respaldo)",
+  "publicable": true,
+  "nota": "Publicable solo si todoBien es true y con la autorización de Dirección.",
+  "aab": {
+    "archivo": "be-0.22.0-candidata.1-1254269.aab",
+    "bytes": 58044413,
+    "sha256": "30cb860ebdab9ad252b0e25a125a0ff1f6358f700d875b782e15e7e631e4e6f7"
+  },
+  "esperado": {
+    "paquete": "com.elianbufi.be",
+    "version": "0.22.0-candidata.1",
+    "versionCode": 35,
+    "commit": "1254269843c2dcd4270df349e48d2a59e1b450df",
+    "appEnv": "test",
+    "apiBaseUrl": "https://be-api-hndp.onrender.com",
+    "webBaseUrl": "https://be-web-1ngj.onrender.com",
+    "firebaseProjectId": "be-app-c4623",
+    "certFirmaAppSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06"
+  },
+  "referencia": {
+    "archivo": "be-0.21.0-candidata.1-b5bc929.apk",
+    "sha256": "5685c8d74dc5c3c63b5e5a8d608702eafaf6bda436a981b9d1f20273ea2d9481",
+    "bytes": 84418981,
+    "versionCode": 34,
+    "versionName": "0.21.0-candidata.1",
+    "permisos": 10,
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ],
+    "firma": {
+      "verifica": true,
+      "esquemas": {
+        "v1": false,
+        "v2": true,
+        "v3": false,
+        "v3.1": false,
+        "v4": false
+      },
+      "firmantes": 1,
+      "sha256": [
+        "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06"
+      ],
+      "sha1": [
+        "b108ec558c0568abb4ccc2d7495d49b4e24836e6"
+      ]
+    }
+  },
+  "artefacto": "C:\\Users\\bufim\\BE-artefactos\\apk\\0.22.0-candidata.1\\be-0.22.0-candidata.1-1254269.apk",
+  "sha256": "8706fd1bf598d6b8d56ac5db24a12bdeb79765c3154ecd8afb2cd2fd4afcea86",
+  "bytes": 84451749,
+  "controles": {
+    "verificacionDelAab": {
+      "archivo": "verificacion.json",
+      "artefactoVerificado": "be-0.22.0-candidata.1-1254269.aab",
+      "verificadoEn": "2026-11-06T04:43:45.953Z",
+      "todoBien": true,
+      "comprobaciones": 21,
+      "fallidos": [],
+      "pendientes": [],
+      "mismaSha256": true,
+      "mismosBytes": true
+    },
+    "esperado": {
+      "archivo": "C:\\Users\\bufim\\BE-artefactos\\aab\\actions-42163070554\\aab-sin-firma-1254269843c2dcd4270df349e48d2a59e1b450df\\0.22.0-candidata.1\\esperado.json",
+      "camposDistintosDeLosVerificados": []
+    },
+    "clave": {
+      "keystore": "keystore.jks",
+      "leida": true,
+      "sha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+      "sha1": "b108ec558c0568abb4ccc2d7495d49b4e24836e6",
+      "esperadoSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+      "esperadoSha1": "b108ec558c0568abb4ccc2d7495d49b4e24836e6",
+      "esLaDeEas": true,
+      "error": null
+    },
+    "universal": {
+      "bytes": 84444165,
+      "entradas": 1266,
+      "conBloqueDeFirmaApk": false,
+      "bloquesDeFirmaJar": 0
+    },
+    "apksignerSign": {
+      "codigo": 0,
+      "salida": "sin mensajes"
+    },
+    "firma": {
+      "codigo": 0,
+      "verifica": true,
+      "esquemas": {
+        "v1": false,
+        "v2": true,
+        "v3": false,
+        "v3.1": false,
+        "v4": false
+      },
+      "firmantes": 1,
+      "sha256": [
+        "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06"
+      ],
+      "sha1": [
+        "b108ec558c0568abb4ccc2d7495d49b4e24836e6"
+      ],
+      "avisos": 0,
+      "conBloqueDeFirmaApk": true,
+      "bloquesDeFirmaJar": 0,
+      "idsig": false,
+      "esperadoSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+      "esperadoSha1": "b108ec558c0568abb4ccc2d7495d49b4e24836e6"
+    },
+    "mismasEntradas": {
+      "comparadas": 1266,
+      "distintas": 0,
+      "ejemplos": [],
+      "agregadas": 0,
+      "agregadasDeContenido": [],
+      "agregadoManifestMf": false
+    },
+    "badging": {
+      "paquete": "com.elianbufi.be",
+      "versionCode": 35,
+      "versionName": "0.22.0-candidata.1",
+      "minSdk": 24,
+      "targetSdk": 36,
+      "permisos": [
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "com.elianbufi.be.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        "com.google.android.c2dm.permission.RECEIVE"
+      ],
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86",
+        "x86_64"
+      ],
+      "permisosDeLaReferencia": 10,
+      "soloEnLaNueva": [],
+      "soloEnLaReferencia": []
+    },
+    "manifiesto": {
+      "filtros": 12,
+      "appLink": {
+        "autoVerify": true,
+        "esquemas": [
+          "https"
+        ],
+        "hosts": [
+          "be-web-1ngj.onrender.com"
+        ],
+        "prefijos": [
+          "/invitacion"
+        ]
+      },
+      "esquemas": [
+        "be",
+        "https"
+      ]
+    },
+    "firebase": {
+      "leido": true,
+      "project_id": "be-app-c4623",
+      "google_app_id": true,
+      "gcm_defaultSenderId": true,
+      "google_api_key": true
+    },
+    "zipalign": {
+      "codigo": 0,
+      "verificado": true,
+      "bibliotecasEnLaApk": 68,
+      "informadas": 68,
+      "sinComprimirYAlineadas": 68
+    },
+    "configuracionEmbebida": {
+      "leida": true,
+      "version": "0.22.0-candidata.1",
+      "appEnv": "test",
+      "apiBaseUrl": "https://be-api-hndp.onrender.com",
+      "commit": "1254269843c2dcd4270df349e48d2a59e1b450df",
+      "construidoEn": "2026-11-06T04:36:37.585Z",
+      "googleWebClientIdPresente": true
+    },
+    "credenciales": {
+      "extraidos": 1266,
+      "nombresQueChocanEnMayusculas": 0,
+      "entradasDelZip": 1266,
+      "archivosRevisados": 1266,
+      "bytes": 100394674,
+      "valoresDelRespaldoBuscados": true,
+      "hallazgos": []
+    }
+  },
+  "veredicto": {
+    "aabVerificado": true,
+    "esperadoEsElVerificado": true,
+    "claveDeFirma": true,
+    "referenciaIntegra": true,
+    "referenciaConElMismoCertificado": true,
+    "firmaSoloV2": true,
+    "unSoloFirmanteConElCertificadoEsperado": true,
+    "certificadoDeLaApp": true,
+    "mismasEntradasQueLaUniversal": true,
+    "paquete": true,
+    "versionYVersionCode": true,
+    "versionCodeMayorQueLaReferencia": true,
+    "mismosPermisosQueLaReferencia": true,
+    "mismasAbiQueLaReferencia": true,
+    "appLinkDeInvitacion": true,
+    "esquemaBe": true,
+    "firebase": true,
+    "zipalign16Kb": true,
+    "versionEmbebida": true,
+    "commitEmbebido": true,
+    "ambienteEmbebido": true,
+    "google": true,
+    "sinCredenciales": true
+  },
+  "informativo": {
+    "universalSinFirmaAntesDeApksigner": true,
+    "sdk": {
+      "nueva": {
+        "min": 24,
+        "target": 36
+      },
+      "referencia": {
+        "min": 24,
+        "target": 36
+      }
+    },
+    "manifiestoContraLaReferencia": {
+      "mismosEsquemas": true,
+      "appLinkEnLaReferencia": true,
+      "metaDatosSoloEnLaNueva": [],
+      "metaDatosSoloEnLaReferencia": []
+    }
+  },
+  "herramientas": {
+    "java": "C:/Program Files/Android/Android Studio/jbr",
+    "bundletool": "bundletool-all-1.18.3.jar",
+    "apksigner": "build-tools 36.0.0 · apksigner.jar",
+    "aapt2": "build-tools 36.0.0",
+    "zipalign": "build-tools 36.0.0",
+    "topes": {
+      "bundletool": "-Xmx768m",
+      "apksigner": "-Xmx512m"
+    }
+  },
+  "tiempos": {
+    "verificación del AAB": 208,
+    "certificado de la clave": 832,
+    "referencia": 1580,
+    "bundletool build-apks": 6721,
+    "apksigner sign": 1393,
+    "apksigner verify": 865,
+    "mismas entradas": 3,
+    "aapt2 badging y manifiesto": 326,
+    "recursos de Firebase": 392,
+    "zipalign": 101,
+    "configuración embebida y credenciales": 5346,
+    "totalMs": 18666
+  },
+  "memoria": {
+    "libreAlEmpezarMb": 756,
+    "libreMinimaEntrePasosMb": 620,
+    "minimaPedidaMb": 650
+  },
+  "hechoEn": "2026-11-06T04:44:48.226Z",
+  "todoBien": true,
+  "pendientes": [],
+  "fallidos": []
+}

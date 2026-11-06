@@ -62,7 +62,7 @@ function clienteDePrueba(respuestas = {}) {
     hoyNutricional: (...a) => responder('hoyNutricional', ...a),
     listarMisIngestas: (...a) => responder('listarMisIngestas', ...a),
     misEjecucionesDeEntrenamiento: (...a) => responder('misEjecucionesDeEntrenamiento', ...a),
-    misSolicitudesDeFormulario: (...a) => responder('misSolicitudesDeFormulario', ...a),
+    miBandejaDeFormularios: (...a) => responder('miBandejaDeFormularios', ...a),
     consultarRequisitoA3: (...a) => responder('consultarRequisitoA3', ...a),
     miEvolucionAntropometrica: (...a) => responder('miEvolucionAntropometrica', ...a),
   };
@@ -144,11 +144,11 @@ test('actividad: si para la API el último día todavía es mañana, se pide una
 
 test('pendientes: pide solo las pendientes, con un tope, y dice si hay más; el A3 se lee y no se supone', async () => {
   const { api, pedidos } = clienteDePrueba({
-    misSolicitudesDeFormulario: ok({ data: [solicitud('s1'), solicitud('s2', { respondable: false }), solicitud('s3')], page: { limit: 3, nextCursor: 'c', hasMore: true } }),
+    miBandejaDeFormularios: ok({ data: [solicitud('s1'), solicitud('s2', { respondable: false }), solicitud('s3')], page: { limit: 3, nextCursor: 'c', hasMore: true } }),
     consultarRequisitoA3: a3('ACTIVE'),
   });
   const r = await inicio.leerPendientes(api, 't');
-  assert.deepEqual(pedidos.find((p) => p.nombre === 'misSolicitudesDeFormulario').args[1], { status: 'PENDING', limit: String(inicio.PENDIENTES_EN_INICIO) });
+  assert.deepEqual(pedidos.find((p) => p.nombre === 'miBandejaDeFormularios').args[1], { status: 'PENDING', limit: String(inicio.PENDIENTES_EN_INICIO) });
   assert.equal(r.datos.pendientes.length, 3);
   assert.equal(r.datos.hayMas, true, 'con más páginas, la cuenta no es el total');
   assert.equal(r.datos.sinA3, false);
@@ -157,11 +157,11 @@ test('pendientes: pide solo las pendientes, con un tope, y dice si hay más; el 
     [a3('REVOKED'), true],
     [a3(null), true],
   ]) {
-    const otro = clienteDePrueba({ misSolicitudesDeFormulario: ok({ data: [solicitud('s1')], page: { limit: 3, nextCursor: null, hasMore: false } }), consultarRequisitoA3: requisito });
+    const otro = clienteDePrueba({ miBandejaDeFormularios: ok({ data: [solicitud('s1')], page: { limit: 3, nextCursor: null, hasMore: false } }), consultarRequisitoA3: requisito });
     assert.equal((await inicio.leerPendientes(otro.api, 't')).datos.sinA3, esperado);
   }
   for (const requisito of [SIN_RED, VENCIDA]) {
-    const otro = clienteDePrueba({ misSolicitudesDeFormulario: ok({ data: [], page: { limit: 3, nextCursor: null, hasMore: false } }), consultarRequisitoA3: requisito });
+    const otro = clienteDePrueba({ miBandejaDeFormularios: ok({ data: [], page: { limit: 3, nextCursor: null, hasMore: false } }), consultarRequisitoA3: requisito });
     assert.deepEqual(await inicio.leerPendientes(otro.api, 't'), requisito);
   }
 });
@@ -417,7 +417,7 @@ const respuestasComunes = (registrosDeHoy, evolucion = conMediciones) => ({
   hoyNutricional: ok(hoyNutricional(registrosDeHoy)),
   listarMisIngestas: ok({ data: [], page: { hasMore: false } }),
   misEjecucionesDeEntrenamiento: (_token, p) => ok({ data: { period: { start: p.periodStart, end: p.periodEnd, timeZone: 'America/Argentina/Buenos_Aires' }, executions: [] } }),
-  misSolicitudesDeFormulario: ok({ data: [], page: { limit: 3, nextCursor: null, hasMore: false } }),
+  miBandejaDeFormularios: ok({ data: [], page: { limit: 3, nextCursor: null, hasMore: false } }),
   consultarRequisitoA3: a3('ACTIVE'),
   miEvolucionAntropometrica: ok(evolucion),
 });
@@ -435,7 +435,7 @@ test('una visita a Inicio hace 6 solicitudes, 7 si hoy no hay registros de comid
   assert.equal(sinRegistros.pedidos.length, 7);
   assert.deepEqual(
     [...new Set(sinRegistros.pedidos.map((p) => p.nombre))].sort(),
-    ['consultarRequisitoA3', 'hoyDeEntrenamiento', 'hoyNutricional', 'listarMisIngestas', 'miEvolucionAntropometrica', 'misEjecucionesDeEntrenamiento', 'misSolicitudesDeFormulario'],
+    ['consultarRequisitoA3', 'hoyDeEntrenamiento', 'hoyNutricional', 'listarMisIngestas', 'miBandejaDeFormularios', 'miEvolucionAntropometrica', 'misEjecucionesDeEntrenamiento'],
   );
   // Ninguna escribe: todas son lecturas.
   assert.ok(sinRegistros.pedidos.every((p) => !/^(abrir|guardar|registrar|confirmar|corregir|otorgar|revocar)/.test(p.nombre)));
@@ -459,8 +459,25 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
   const claves = [...PANTALLA.matchAll(/useLecturaRecordada\(token, (`[^`]+`|'[^']+')/g)].map((m) => m[1]);
   assert.deepEqual(
     claves.sort(),
-    ['`entrenamiento-hoy:${dia}`', '`entrenamiento-agenda:${dia}`', "'entrenamiento-en-curso'", '`hoy-nutricional:${dia}:${diaTipo ?? \'\'}`', "'inicio-ultimo-registro'", '`inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`', "'inicio-pendientes'", "'mi-evolucion:ultimos-90'"].sort(),
+    [
+      '`entrenamiento-hoy:${dia}`',
+      '`entrenamiento-agenda:${dia}`',
+      "'entrenamiento-en-curso'",
+      '`hoy-nutricional:${dia}:${diaTipo ?? \'\'}`',
+      "'inicio-ultimo-registro'",
+      '`inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`',
+      "'inicio-pendientes'",
+      "'mi-evolucion:ultimos-90'",
+      // DL-165 D-9 (FR-10): la pregunta por un profesional nuevo, solo cuando hay algo que preguntar.
+      "'mis-habitos'",
+      // DL-165, ronda 2.1: los pedidos para ver los hábitos (API-HBT-08), que la tarjeta muestra primero.
+      "'pedidos-de-acceso'",
+    ].sort(),
   );
+  // «Tus hábitos» en Inicio es la misma lectura que «Mis hábitos» (API-HBT-01): la misma clave.
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/mis-habitos.tsx'), 'utf8'), /useLecturaRecordada\(token, 'mis-habitos', pedir, sesionPerdida\)/);
+  // Y los pedidos (API-HBT-08), también la misma lectura en las dos.
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/mis-habitos.tsx'), 'utf8'), /useLecturaRecordada\(token, 'pedidos-de-acceso', pedirPedidos, sesionPerdida\)/);
   // Las cinco tarjetas están en la pantalla, cada una con su lectura.
   const PRINCIPAL = fuente('inicio.tsx');
   for (const tarjeta of ['EntrenamientoDeHoy', 'NutricionDeHoy', 'Pendientes', 'ActividadDeEntrenamiento', 'Mediciones']) assert.match(PRINCIPAL, new RegExp(`<${tarjeta} `));

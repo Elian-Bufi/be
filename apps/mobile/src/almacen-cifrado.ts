@@ -22,6 +22,9 @@
  * - **El almacenamiento seguro no responde:** es una lectura (o una escritura) fallida. Nunca se crea una clave nueva por
  *   un error que puede ser pasajero: eso dejaría ilegible lo guardado.
  *
+ * Desde WP-FORMULARIOS-RONDA-2 (FR-01), el borrador de cada formulario usa este mismo almacén, con un valor por cuenta y
+ * por solicitud y la clave de cifrado de su cuenta (`nombreDeLaClave`; `formularios-en-el-telefono.ts`).
+ *
  * Es lógica pura: el cifrador y los almacenamientos se inyectan (`entrenamiento-en-curso.ts` pone expo-crypto,
  * expo-secure-store y AsyncStorage). Las pruebas usan AES-GCM de Node, el mismo algoritmo.
  */
@@ -85,34 +88,51 @@ export function desdeUtf8(bytes: Uint8Array): string {
 
 // ─── El almacén cifrado ─────────────────────────────────────────────────────────────────────────
 
-export function crearAlmacenCifrado(o: { readonly plano: AlmacenPlano; readonly claves: AlmacenDeClaves; readonly aes: CifradorAes }): AlmacenDeLaCuenta {
-  /** La clave de cada valor, ya leída o creada en este proceso: no se pide al almacenamiento seguro en cada escritura. */
+export function crearAlmacenCifrado(o: {
+  readonly plano: AlmacenPlano;
+  readonly claves: AlmacenDeClaves;
+  readonly aes: CifradorAes;
+  /**
+   * Dónde está, en el almacenamiento seguro, la clave de cifrado de cada valor. Por omisión, una por valor
+   * (`claveDeCifrado`). Los borradores de los formularios guardan un valor por solicitud y comparten la clave de su
+   * cuenta (`borrador-de-formulario.ts`). Los datos asociados siguen siendo la clave del valor: lo de una solicitud
+   * copiado a la de otra no descifra.
+   */
+  readonly nombreDeLaClave?: (claveDelValor: string) => string;
+}): AlmacenDeLaCuenta {
+  const nombreDe = o.nombreDeLaClave ?? claveDeCifrado;
+  /** La clave de cada nombre, ya leída o creada en este proceso: no se pide al almacenamiento seguro en cada escritura. */
   const enMemoria = new Map<string, string>();
-  /** Una creación de clave a la vez por valor: dos escrituras seguidas no crean dos claves. */
+  /**
+   * Una creación de clave a la vez por nombre: dos escrituras seguidas no crean dos claves, aunque sean de valores
+   * distintos que la comparten. Si no, la segunda pisaría a la primera y lo cifrado con ella quedaría ilegible.
+   */
   const creando = new Map<string, Promise<string>>();
 
   /** La clave guardada, o `null` si no hay. Lanza si el almacenamiento seguro no respondió. */
   async function claveGuardada(claveDelValor: string): Promise<string | null> {
-    const recordada = enMemoria.get(claveDelValor);
+    const nombre = nombreDe(claveDelValor);
+    const recordada = enMemoria.get(nombre);
     if (recordada) return recordada;
-    const leida = await o.claves.leer(claveDeCifrado(claveDelValor));
-    if (leida) enMemoria.set(claveDelValor, leida);
+    const leida = await o.claves.leer(nombre);
+    if (leida) enMemoria.set(nombre, leida);
     return leida;
   }
 
   /** La clave para escribir: la guardada, o una nueva, guardada antes de usarla. */
   function claveParaEscribir(claveDelValor: string): Promise<string> {
-    const enCurso = creando.get(claveDelValor);
+    const nombre = nombreDe(claveDelValor);
+    const enCurso = creando.get(nombre);
     if (enCurso) return enCurso;
     const pedido = (async () => {
       const guardada = await claveGuardada(claveDelValor);
       if (guardada) return guardada;
       const nueva = await o.aes.nuevaClave();
-      await o.claves.guardar(claveDeCifrado(claveDelValor), nueva);
-      enMemoria.set(claveDelValor, nueva);
+      await o.claves.guardar(nombre, nueva);
+      enMemoria.set(nombre, nueva);
       return nueva;
-    })().finally(() => creando.delete(claveDelValor));
-    creando.set(claveDelValor, pedido);
+    })().finally(() => creando.delete(nombre));
+    creando.set(nombre, pedido);
     return pedido;
   }
 

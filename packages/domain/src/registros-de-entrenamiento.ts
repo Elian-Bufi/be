@@ -18,6 +18,9 @@
  * - **Una serie sin registrar es un hueco:** no es un cero, no es una diferencia y no quiere decir que no se haya hecho.
  * - **Una sesión registrada como no realizada, o resumida, no se cuenta serie por serie:** no dice «0 de 10».
  * - **Si se hizo otro ejercicio,** sus series cuentan como registradas y no se comparan con lo indicado para el original.
+ * - **Una serie tildada sin escribir no se compara** (DL-161; Dirección, 2026-11-02): sus valores son los del plan, que la
+ *   persona confirmó con un toque. Cuenta como registrada («2 de 3 series registradas» se dice siempre) y la columna de
+ *   la comparación dice «No se compara: tildada sin escribir». Lo que la persona escribió o cambió sí se compara.
  * Es descriptivo: nada de esto es un puntaje ni dice si la sesión estuvo bien.
  */
 import {
@@ -33,10 +36,11 @@ import {
 } from './comparacion-de-entrenamiento';
 import type { EjecucionDeEntrenamiento, SerieEjecutadaApi } from './contratos-entrenamiento';
 import type { ObjetivoDeSerie } from './contratos-entrenamiento-por-serie';
-import { cantidadDeSeries, ETIQUETA_DE_GRANULARIDAD, etiquetaDeCondicionRegistrada, registroVigente } from './copy-entrenamiento';
-import { COPY_ENTRENAMIENTO_POR_SERIE, ETIQUETA_DE_RELACION, textoDelPlanDeLaSerie, textoDeRepeticiones } from './copy-entrenamiento-por-serie';
+import { cantidadDeSeries, COPY_REGISTRO_POR_NIVELES, ETIQUETA_DE_GRANULARIDAD, etiquetaDeCondicionRegistrada, registroVigente } from './copy-entrenamiento';
+import { COPY_ENTRENAMIENTO_POR_SERIE, ETIQUETA_DE_RELACION, textoDelPlanDeLaSerie, textoDeRepeticiones, textoDeSegundos } from './copy-entrenamiento-por-serie';
 import { cantidad, numero } from './formato-numeros';
 import type { NombreDeIcono } from './iconos';
+import { nivelDeDetalleDelRegistro, seCargoComoElPlan, textoDelNivelDeDetalle, type NivelDeDetalle } from './registro-por-niveles';
 import { relacionDeCarga, relacionDeRepeticiones, relacionDeRir, type RelacionConElObjetivo } from './relacion-con-el-objetivo';
 
 // ─── Una serie ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -120,6 +124,13 @@ export interface SerieDeSesion {
   readonly comparada: boolean;
   /** La corrección vigente cambió esta serie respecto del registro original. */
   readonly corregida: boolean;
+  /**
+   * DL-161: la persona la registró con un toque, con los valores del plan a la vista. Solo está si es así: una serie
+   * escrita (o registrada antes de DL-161) no trae el campo.
+   */
+  readonly comoElPlan?: true;
+  /** DL-161: «00:45», la duración que midió el cronómetro o escribió la persona. Solo está si se registró. */
+  readonly duracion?: string;
 }
 
 export interface EjercicioDeSesion {
@@ -159,7 +170,16 @@ function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndica
   const serie = f.registrada.tipo === 'registrada' ? f.registrada.serie : null;
   const resumida = f.registrada.tipo === 'sin-dato' && f.registrada.motivo === 'registro-resumido';
   const estado: EstadoDeSerieDeSesion = serie ? (planificada ? 'REGISTRADA' : 'ADICIONAL') : resumida ? 'RESUMIDA' : 'SIN_REGISTRAR';
-  const base = { numero: f.numero, estado, nota: planificada?.nota ?? null, corregida: f.corregida };
+  const duracion = serie && typeof serie.durationSeconds === 'number' ? textoDeSegundos(serie.durationSeconds) : null;
+  const base = {
+    numero: f.numero,
+    estado,
+    nota: planificada?.nota ?? null,
+    corregida: f.corregida,
+    // Lo de DL-161 va solo si está: una serie escrita, sin duración, queda igual que antes.
+    ...(serie && seCargoComoElPlan(serie) ? { comoElPlan: true as const } : {}),
+    ...(duracion ? { duracion } : {}),
+  };
 
   let indicado: string;
   if (!planificada) indicado = 'Adicional: no estaba indicada';
@@ -173,6 +193,8 @@ function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndica
   }
   const registrado = serieRegistradaEnPalabras(serie);
   if (!planificada) return { ...base, indicado, registrado, frente: 'Adicional: no se compara', ...sinComparar };
+  // DL-161: tildada sin escribir, con los valores del plan a la vista. Compararla sería comparar el plan consigo mismo.
+  if (seCargoComoElPlan(serie)) return { ...base, indicado, registrado, frente: COPY_REGISTRO_POR_NIVELES.noSeComparaTildada, ...sinComparar };
   if (!esElMismoEjercicio(c.identidad)) return { ...base, indicado, registrado, frente: NO_SE_COMPARA_POR_IDENTIDAD[c.identidad] ?? 'No se compara', ...sinComparar };
   if (!seLeyoLoIndicado) return { ...base, indicado, registrado, frente: 'No se pudo leer lo indicado', ...sinComparar };
   const r = relacionDeUnaSerie({ repetitions: planificada.repeticiones, rir: objetivo?.rir ?? null, suggestedLoad: objetivo?.carga ?? null }, serie);
@@ -229,6 +251,10 @@ export interface FilaDeSesion {
   readonly comoSeRegistro: string | null;
   /** Lo que la persona escribió de la sesión entera, si la registró con un resumen. */
   readonly resumenDeLaSesion: string | null;
+  /** DL-161: cómo quedó cargado lo que rige (completa, rápida, rápida con cambios, resumida…); `null` si no se puede decir. */
+  readonly nivelDeDetalle: NivelDeDetalle | null;
+  /** El nivel en palabras: «Carga completa», «Carga rápida», «Carga rápida con cambios»… `null` si no se puede decir. */
+  readonly detalle: string | null;
   /** De dónde sale lo que rige: el registro original, una corrección (con quién, cuándo y por qué) o no se puede saber. */
   readonly fuente: FuenteDelRegistro;
   /** Los objetivos de cada serie, en la versión del plan de ese día, se pudieron leer. */
@@ -256,6 +282,7 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
   const rige = fuente.tipo === 'no-resoluble' ? null : registroVigente(x);
   const clase: ClaseDeSesion = !rige ? 'SIN_REGISTRO_VIGENTE' : rige.sessionCondition === 'NOT_COMPLETED' ? 'NO_REALIZADA' : rige.granularity === 'SET' ? 'POR_SERIE' : 'RESUMIDA';
   const seLeyoLoIndicado = objetivos !== null;
+  const nivel = rige ? nivelDeDetalleDelRegistro(rige) : null;
   const base = {
     id: x.executionId,
     fecha: x.date,
@@ -269,6 +296,8 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
     motivo: rige?.reason ?? null,
     comoSeRegistro: rige?.granularity ? ETIQUETA_DE_GRANULARIDAD[rige.granularity] : null,
     resumenDeLaSesion: rige?.sessionSummary?.description ?? null,
+    nivelDeDetalle: nivel,
+    detalle: nivel ? textoDelNivelDeDetalle(nivel) : null,
     fuente,
     seLeyoLoIndicado,
   };
@@ -294,7 +323,10 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
     if (conDatoSinRegistrar > 0) partes.push(`${cantidadDeSeries(conDatoSinRegistrar)} con un dato sin registrar`);
   }
   if (sinComparar > 0) partes.push(sinComparar === 1 ? 'un ejercicio no se compara' : `${numero(sinComparar)} ejercicios no se comparan`);
-  const frente = partes.length > 0 ? mayuscula(partes.join(' · ')) : series.some((s) => s.comparada) ? 'Dentro de lo indicado' : 'Sin objetivos que comparar';
+  // DL-161: las tildadas sin escribir van aparte, al final. No se comparan, y por ellas la sesión no dice «Sin objetivos».
+  const tildadas = series.filter((s) => s.estado === 'REGISTRADA' && s.comoElPlan === true).length;
+  const loComparado = partes.length > 0 ? partes.join(' · ') : series.some((s) => s.comparada) ? 'Dentro de lo indicado' : tildadas > 0 ? null : 'Sin objetivos que comparar';
+  const frente = mayuscula([loComparado, tildadas > 0 ? COPY_REGISTRO_POR_NIVELES.tildadasSinComparar(tildadas) : null].filter((p): p is string => p !== null).join(' · '));
   return {
     ...base,
     registradas,

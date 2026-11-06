@@ -14,7 +14,10 @@
  *  3. una renovación ordenada después de una revocación (otra renovación que cerró su sesión, el restablecimiento o la
  *     retirada del operador, el cierre de la propia sesión) no emite códigos con la autorización de antes;
  *  4. si la renovación se confirma primero, el restablecimiento o la retirada posterior también invalidan ese lote;
- *  5. ningún código ni la contraseña quedan en la auditoría ni en la salida de la API.
+ *  5. ningún código ni la contraseña quedan en la auditoría ni en la salida de la API;
+ *  6. una renovación que encuentra su sesión revocada o cerrada dentro de la transacción responde 401 y ese rechazo queda
+ *     en la auditoría, aunque la transacción se revierta (pendiente 3 del §14, 2026-10-27).
+ * La barrera es la de `soporte-concurrencia.ts`, compartida con las demás pruebas de carrera de Administración.
  * Solo datos sintéticos (`example.invalid`). Los códigos viven en la memoria de la prueba y ninguna aserción los imprime:
  * se comparan estados y cantidades.
  */
@@ -25,6 +28,7 @@ import type request from 'supertest';
 import { restablecerSegundoFactor, retirarAdministrador } from '../../apps/api/src/administracion/incorporacion';
 import { appDePrueba, CREDENCIAL_SINTETICA } from './soporte-api';
 import { adm, administradorListo, otraSesion, primerFactor, type Administrador } from './soporte-administracion';
+import { conLaFilaRetenida as retener, esperarQueEsperen as esperar, type FilaRetenida } from './soporte-concurrencia';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -39,57 +43,18 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-// ─── La coordinación ────────────────────────────────────────────────────────────────────────────
+// ─── La coordinación (la barrera por bloqueos, compartida en soporte-concurrencia.ts) ───────────
 
-/** Cuántas conexiones de esta base esperan un bloqueo (de una fila o de otra transacción), sin contar la que pregunta. */
-async function esperandoUnBloqueo(): Promise<number> {
-  const [fila] = await prisma.$queryRaw<{ n: number }[]>`
-    SELECT count(*)::int AS "n" FROM pg_stat_activity
-     WHERE "datname" = current_database() AND "wait_event_type" = 'Lock' AND "pid" <> pg_backend_pid()`;
-  return fila?.n ?? 0;
-}
+const esperarQueEsperen = (n: number, yaPaso?: () => boolean): Promise<void> => esperar(prisma, n, { yaPaso });
+const conLaFilaRetenida = <T>(fila: FilaRetenida, mientras: () => Promise<T>): Promise<T> => retener(prisma, fila, () => mientras());
 
 /**
- * La barrera: vuelve cuando la base dice que hay `n` esperando un bloqueo, o cuando `yaPaso()` da verdadero. Consulta el
- * estado de la base hasta que se cumple; el orden lo ponen los bloqueos, no el tiempo. El tope solo sirve para que una
- * prueba rota falle con un mensaje claro en vez de colgarse.
+ * Los rechazos que la renovación encontró dentro de su transacción (la sesión ya no valía), auditados después de revertirla
+ * (pendiente 3 del §14): sus motivos, en orden. Y cuántas renovaciones confirmaron.
  */
-async function esperarQueEsperen(n: number, yaPaso: () => boolean = () => false): Promise<void> {
-  const tope = Date.now() + 20_000;
-  while (Date.now() < tope) {
-    if (yaPaso() || (await esperandoUnBloqueo()) >= n) return;
-    await new Promise((r) => setTimeout(r, 20));
-  }
-  throw new Error(`nunca hubo ${n} esperando un bloqueo`);
-}
-
-/**
- * La fila que retiene la prueba:
- * - la identidad, en modo exclusivo (FOR UPDATE): frena también las claves foráneas que la nombran (insertar códigos);
- * - los códigos vigentes de la identidad: frenan solo a quien quiera invalidarlos;
- * - una sesión: frena a quien quiera cerrarla o revocarla.
- */
-type FilaRetenida = { readonly identidad: string } | { readonly codigosDe: string } | { readonly sesion: string };
-
-/**
- * Retiene una fila en una transacción de la prueba mientras `mientras` dispara los pedidos y espera a que queden
- * bloqueados; al volver, confirma y la suelta.
- */
-async function conLaFilaRetenida<T>(fila: FilaRetenida, mientras: () => Promise<T>): Promise<T> {
-  let resultado: T | undefined;
-  await prisma.$transaction(
-    async (tx) => {
-      if ('identidad' in fila) await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${fila.identidad}::uuid FOR UPDATE`;
-      else if ('codigosDe' in fila)
-        await tx.$queryRaw`
-          SELECT 1 FROM "codigo_de_recuperacion"
-           WHERE "identidad_id" = ${fila.codigosDe}::uuid AND "momento_de_uso" IS NULL AND "momento_de_invalidacion" IS NULL FOR UPDATE`;
-      else await tx.$queryRaw`SELECT 1 FROM "sesion" WHERE "id" = ${fila.sesion}::uuid FOR UPDATE`;
-      resultado = await mientras();
-    },
-    { timeout: 40_000, maxWait: 10_000 },
-  );
-  return resultado as T;
+async function renovacionesAuditadas(identidadId: string): Promise<{ exitos: number; rechazos: string[] }> {
+  const filas = await prisma.registroDeAuditoria.findMany({ where: { actorId: identidadId, operacion: 'API-ADM-09' }, orderBy: { momentoDeRegistro: 'asc' }, select: { resultado: true, motivo: true } });
+  return { exitos: filas.filter((f) => f.resultado === 'EXITO').length, rechazos: filas.filter((f) => f.resultado === 'RECHAZO').map((f) => f.motivo ?? '') };
 }
 
 /** Dispara el pedido ya (supertest es perezoso) y devuelve su promesa. */
@@ -145,6 +110,8 @@ describe('Renovar los códigos de recuperación en concurrencia (pasada de cierr
       });
       const [r1, r2] = await Promise.all([p1, p2]);
       expect({ primera: r1.status, segunda: r2.status, error: errorDe(r2), ...(await vigentes(a.id)) }).toEqual({ primera: 200, segunda: 401, error: 'SESSION_REVOKED', lotes: 1, codigos: 10 });
+      // La segunda encontró su sesión revocada dentro de la transacción: el rechazo quedó auditado igual (pendiente 3 del §14).
+      expect(await renovacionesAuditadas(a.id)).toEqual({ exitos: 1, rechazos: ['SESION_REVOCADA'] });
       // Los códigos anteriores ya no sirven; los nuevos, sí.
       expect({ anterior: await sirve(a, a.codigosDeRecuperacion[0]), nuevo: await sirve(a, codigosDe(r1)[0]) }).toEqual({ anterior: false, nuevo: true });
       // Ningún código (con o sin guiones) ni la contraseña quedaron en la auditoría ni en la salida de la API.
@@ -168,6 +135,7 @@ describe('Renovar los códigos de recuperación en concurrencia (pasada de cierr
     });
     const [r1, r2] = await Promise.all([p1, p2]);
     expect({ primera: r1.status, segunda: r2.status, ...(await vigentes(a.id)) }).toEqual({ primera: 200, segunda: 200, lotes: 1, codigos: 10 });
+    expect(await renovacionesAuditadas(a.id)).toEqual({ exitos: 2, rechazos: [] });
     expect({
       anterior: await sirve(a, a.codigosDeRecuperacion[0]),
       deLaPrimera: await sirve(a, codigosDe(r1)[0]),
@@ -193,6 +161,8 @@ describe('Renovar los códigos de recuperación en concurrencia (pasada de cierr
       lotes: 0,
       codigos: 0,
     });
+    // El 401 salió de la transacción, con la sesión ya revocada por el comando: queda en la auditoría, sin un éxito.
+    expect(await renovacionesAuditadas(a.id)).toEqual({ exitos: 0, rechazos: ['SESION_REVOCADA'] });
   });
 
   it.each(comandos)('la renovación primero: %s espera y después invalida también el lote nuevo', async (_nombre, comando) => {
@@ -242,6 +212,7 @@ describe('Renovar los códigos de recuperación en concurrencia (pasada de cierr
       codigos: 10,
     });
     expect(await sirve(a, a.codigosDeRecuperacion[0])).toBe(true);
+    expect(await renovacionesAuditadas(a.id)).toEqual({ exitos: 0, rechazos: ['SESION_FINALIZADA'] });
   });
 
   it('la renovación primero: el cierre de la sesión espera a que confirme, y los códigos nuevos siguen valiendo', async () => {

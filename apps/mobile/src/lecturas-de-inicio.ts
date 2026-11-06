@@ -15,18 +15,19 @@ import {
   numero,
   type HistorialDeEntrenamientoResponse,
   type Ingesta,
-  type ListaDeSolicitudesPropiasResponse,
+  type ListaDeSolicitudesPropiasV2Response,
   type MedidaDeLaToma,
   type RequisitoDeConsentimientoDeSaludResponse,
   type Resultado,
-  type SolicitudPropia,
+  type SolicitudPropiaV2,
   type UltimaToma,
 } from '@be/domain';
 
 export interface ApiDeInicio {
   listarMisIngestas(token: string, filtro?: { cursor?: string; limit?: string }): Promise<Resultado<{ readonly data: readonly Ingesta[]; readonly page: { readonly hasMore: boolean } }>>;
   misEjecucionesDeEntrenamiento(token: string, periodo: { periodStart: string; periodEnd: string }): Promise<Resultado<HistorialDeEntrenamientoResponse>>;
-  misSolicitudesDeFormulario(token: string, filtro?: { status?: string; cursor?: string; limit?: string }): Promise<Resultado<ListaDeSolicitudesPropiasResponse>>;
+  /** API-FRI-02 (DL-164): la bandeja, que lista también las solicitudes de versiones con tipos nuevos. */
+  miBandejaDeFormularios(token: string, filtro?: { status?: string; cursor?: string; limit?: string }): Promise<Resultado<ListaDeSolicitudesPropiasV2Response>>;
   consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>>;
 }
 
@@ -153,19 +154,20 @@ export async function leerActividadDeEntrenamiento(api: ApiDeInicio, token: stri
 export const PENDIENTES_EN_INICIO = 3;
 
 export interface PendientesDeInicio {
-  readonly pendientes: readonly SolicitudPropia[];
+  /** Sin responder, con o sin algo cargado por el profesional que espera confirmación (`pendingProposal`). */
+  readonly pendientes: readonly SolicitudPropiaV2[];
   /** Hay más pendientes que las que se pidieron: la cuenta de la lista no es el total. */
   readonly hayMas: boolean;
   readonly sinA3: boolean;
 }
 
 /**
- * API-FRM-06 filtrada a las pendientes, con `limit` y `page.hasMore`, junto con API-CON-05: responder exige el A3
+ * API-FRI-02 filtrada a las pendientes, con `limit` y `page.hasMore`, junto con API-CON-05: responder exige el A3
  * (DL-115). Las mismas reglas que `leerLista`: solo un A3 leído y no vigente muestra el aviso, y una falla pasajera o de
  * sesión al leer el A3 se devuelve, porque la lista sin el aviso diría que el A3 está bien sin saberlo.
  */
 export async function leerPendientes(api: ApiDeInicio, token: string): Promise<Resultado<PendientesDeInicio>> {
-  const [r, requisito] = await Promise.all([api.misSolicitudesDeFormulario(token, { status: 'PENDING', limit: String(PENDIENTES_EN_INICIO) }), api.consultarRequisitoA3(token)]);
+  const [r, requisito] = await Promise.all([api.miBandejaDeFormularios(token, { status: 'PENDING', limit: String(PENDIENTES_EN_INICIO) }), api.consultarRequisitoA3(token)]);
   if (!requisito.ok) {
     const falla = clasificarFalla(requisito);
     if (falla === 'sesion' || falla === 'pasajera') return requisito;

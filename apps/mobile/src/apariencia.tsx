@@ -7,25 +7,21 @@
  * predeterminada y el cambio vale mientras la app esté abierta: nunca se rompe por eso.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { esTema, fijarTema, TEMA_PREDETERMINADO, TEMAS, temaVigente, type Tema } from './tema';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { esTema, fijarTema, TEMAS, temaVigente, type Tema } from './tema';
 import { Text, View } from 'react-native';
+import { useApariencia, type Apariencia } from './contexto-de-apariencia';
 import { estilos, Segmentos } from './ui';
+
+// El contexto vive aparte (`contexto-de-apariencia.ts`) para que el ícono de la familia lo lea sin un círculo de
+// importaciones con `ui.tsx`; se reexporta acá, donde lo buscan las pantallas.
+export { ProveedorDeApariencia, useApariencia, type Apariencia } from './contexto-de-apariencia';
 
 /** La misma clave que el website (`apps/web/src/lib/apariencia.ts`). */
 export const CLAVE_DE_APARIENCIA = 'be-apariencia';
 export const NOMBRE_DEL_TEMA: Readonly<Record<Tema, string>> = { 'azul-noche': 'Azul noche', claro: 'Claro' };
 /** Cuánto se espera la preferencia guardada antes de dibujar con la predeterminada. */
 const ESPERA_MAXIMA_MS = 1500;
-
-export interface Apariencia {
-  readonly tema: Tema;
-  readonly cambiarTema: (tema: Tema) => void;
-}
-
-const ContextoDeApariencia = createContext<Apariencia>({ tema: TEMA_PREDETERMINADO, cambiarTema: () => undefined });
-export const ProveedorDeApariencia = ContextoDeApariencia.Provider;
-export const useApariencia = (): Apariencia => useContext(ContextoDeApariencia);
 
 /**
  * Para la raíz: lee la preferencia guardada antes del primer dibujo (`lista`), y cambia y guarda el tema. Una

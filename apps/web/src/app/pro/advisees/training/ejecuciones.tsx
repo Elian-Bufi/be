@@ -32,14 +32,19 @@ import {
   COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
+  COPY_REGISTRO_POR_NIVELES,
   ejerciciosComparables,
+  esCargaCompleta,
+  esNivelPorSerie,
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
   identidadDeVersiones,
   numero,
   observacionesDelEjercicio,
   repeticionesPlanificadas,
+  seCargoComoElPlan,
   sesionEnLaVista,
+  textoDeSegundos,
   VISTAS_DE_SESIONES,
   type ClaveDeVistaDeSesiones,
   type ContextoDeRevisionDeEntrenamientoResponse,
@@ -454,6 +459,11 @@ function Fila({ fila, hoy, elegida, onAbrir }: { fila: FilaDeSesion; hoy: string
         </Dato>
         <Dato rotulo="Series" className="sesion-registrada__series">
           <FraseEnPartes texto={fila.series} />
+          {/* DL-161: cómo se cargaron las series, debajo de la cuenta. Resumida y no realizada ya lo dicen. La carga
+              completa se destaca con el acento (Dirección, 2026-11-02); las demás dicen su nivel, tenue. */}
+          {esNivelPorSerie(fila.nivelDeDetalle) ? (
+            <span className="sesion-registrada__nivel">{esCargaCompleta(fila.nivelDeDetalle) ? <span className="etiqueta-de-dato etiqueta-de-dato--acento">{fila.detalle}</span> : fila.detalle}</span>
+          ) : null}
         </Dato>
         <Dato rotulo="Frente a lo indicado" className="sesion-registrada__frente">
           <FraseEnPartes texto={fila.frente} />
@@ -525,6 +535,8 @@ function DetalleDeLaSesion({
       <p className="datos-del-hecho__rasgos">
         <Condicion fila={fila} />
         {fila.comoSeRegistro ? <span className="etiqueta-de-dato">{fila.comoSeRegistro}</span> : null}
+        {/* DL-161: el nivel de detalle, con la carga completa en el acento. «No realizada» ya está en la condición. */}
+        {fila.detalle && fila.nivelDeDetalle !== 'NO_REALIZADA' ? <span className={esCargaCompleta(fila.nivelDeDetalle) ? 'etiqueta-de-dato etiqueta-de-dato--acento' : 'etiqueta-de-dato'}>{fila.detalle}</span> : null}
         {fila.fuente.tipo === 'correccion' ? <Corregida /> : null}
       </p>
       <p className="nota detalle-de-sesion__cuando">
@@ -554,6 +566,11 @@ function DetalleDeLaSesion({
       ) : null}
 
       {fila.ejercicios.length > 0 ? <TablaDeSeries ejercicios={fila.ejercicios} /> : null}
+      {fila.nivelDeDetalle === 'COMO_EL_PLAN' || fila.nivelDeDetalle === 'PARTE_COMO_EL_PLAN' ? (
+        <p className="nota">
+          «{COPY_REGISTRO_POR_NIVELES.comoElPlan}»: {COPY_REGISTRO_POR_NIVELES.queEsComoElPlan} {COPY_REGISTRO_POR_NIVELES.porQueNoSeCompara}
+        </p>
+      ) : null}
 
       <TiemposDeLaSesion tiempos={tiempos} />
 
@@ -671,6 +688,9 @@ function TablaDeSeries({ ejercicios }: { ejercicios: readonly EjercicioDeSesion[
                       <Corregida />
                     </>
                   ) : null}
+                  {/* DL-161: discretas, debajo de lo registrado. Solo están si la serie las trae. */}
+                  {s.comoElPlan ? <span className="tabla-de-series__nota">{COPY_REGISTRO_POR_NIVELES.comoElPlan}</span> : null}
+                  {s.duracion ? <span className="tabla-de-series__nota">{COPY_REGISTRO_POR_NIVELES.duro(s.duracion)}</span> : null}
                 </td>
                 <td>
                   <EnPartes texto={s.frente} />
@@ -745,6 +765,9 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
                     {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}` : ''}
                     {s.perceivedExertion !== null ? ` · esfuerzo percibido ${numero(s.perceivedExertion)}` : ''}
                     {planificadasPara(planificado, e.prescriptionId, s.setIndex)}
+                    {/* DL-161: cómo se cargó y cuánto duró, si la serie lo trae. */}
+                    {seCargoComoElPlan(s) ? ` · ${COPY_REGISTRO_POR_NIVELES.comoElPlan}` : ''}
+                    {typeof s.durationSeconds === 'number' ? ` · ${COPY_REGISTRO_POR_NIVELES.duro(textoDeSegundos(s.durationSeconds) ?? '').toLowerCase()}` : ''}
                   </li>
                 ))}
               </ol>

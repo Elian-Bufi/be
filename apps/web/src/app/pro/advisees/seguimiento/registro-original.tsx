@@ -34,7 +34,8 @@ import { PlanSoloLectura } from '../training/plan';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
 import { conRetorno, valorDeRetorno } from './estado';
 
-const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: string; readonly vista: string; readonly texto: string }>>> = {
+/** `conElOrigen`: el parámetro que abre ese registro en su pestaña (la solicitud, en Información). */
+const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: string; readonly vista: string; readonly texto: string; readonly conElOrigen?: string }>>> = {
   MEAL_RECORD: { ruta: '/pro/advisees/nutrition', vista: 'registros', texto: 'Ver en Nutrición · Registros' },
   NUTRITION_PLAN_VERSION: { ruta: '/pro/advisees/nutrition', vista: 'plan', texto: 'Ver en Nutrición · Plan' },
   NUTRITION_OBJECTIVE_VERSION: { ruta: '/pro/advisees/nutrition', vista: 'resumen', texto: 'Ver en Nutrición' },
@@ -46,6 +47,8 @@ const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: st
   ANTHROPOMETRIC_EVALUATION: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Tomas' },
   ANTHROPOMETRIC_MEASUREMENT: { ruta: '/pro/advisees/anthropometry', vista: 'evaluaciones', texto: 'Ver en Antropometría · Tomas' },
   FOLLOW_UP_PROCESS: { ruta: '/pro/advisees', vista: '', texto: 'Ver el resumen' },
+  // DL-165 D-8: el formulario se lee en su solicitud, abierta en Información.
+  FORM_REQUEST: { ruta: '/pro/advisees/forms', vista: 'solicitudes', texto: 'Ver en Información · Solicitudes', conElOrigen: 'solicitud' },
 };
 
 export function PanelDeRegistro({
@@ -87,9 +90,10 @@ export function EnlaceAlArea({ origen }: { origen: OrigenDeDato }) {
   const destino = DESTINO[origen.type];
   if (!destino) return null;
   const volver = valorDeRetorno(parametros);
+  const delOrigen = destino.conElOrigen ? `&${destino.conElOrigen}=${encodeURIComponent(origen.id)}` : '';
   return (
     <p className="enlace-al-area">
-      <Link href={destino.ruta === '/pro/advisees' ? `${destino.ruta}?id=${encodeURIComponent(asesoradoId)}` : conRetorno(`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}`, volver)}>
+      <Link href={destino.ruta === '/pro/advisees' ? `${destino.ruta}?id=${encodeURIComponent(asesoradoId)}` : conRetorno(`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}${delOrigen}`, volver)}>
         {destino.texto}
       </Link>
     </p>
@@ -102,6 +106,8 @@ export function ContenidoDelRegistro({ origen, onNoDisponible, numeroDeVersion }
   // DL-140: una nota de coordinación no tiene otro registro que abrir: está entera en su detalle (la lectura es la línea de
   // tiempo, 09 §11.6).
   if (origen.type === 'COORDINATION_NOTE') return null;
+  // DL-165 D-8: de un formulario, la línea dice qué pasó y cuándo; las respuestas se leen en la solicitud (el enlace).
+  if (origen.type === 'FORM_REQUEST') return null;
   if (origen.type === 'NUTRITION_PLAN_VERSION') return <VersionDeNutricion planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;
   if (origen.type === 'TRAINING_PLAN_VERSION') return <VersionDeEntrenamiento planId={origen.id} numero={numeroDeVersion} onNoDisponible={onNoDisponible} />;
   if (origen.type === 'MEAL_RECORD') return <DetalleDeRegistroDeComida registroId={origen.id} token={token} sesionPerdida={sesionPerdida} onNoDisponible={onNoDisponible} />;

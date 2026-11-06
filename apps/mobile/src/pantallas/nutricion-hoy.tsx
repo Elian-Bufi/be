@@ -40,6 +40,7 @@ import { comidaQueSeMuestra, comidaRegistrada, etiquetaDeLaComida, fichasPorFila
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fechaLarga } from '../formato';
+import { Icono } from '../icono';
 import { Flecha, IconoDeCamara, IconoDeRegistrado, IconoSinRegistro } from '../iconos-de-nutricion';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { esIncierto, falloDe } from '../intento';
@@ -196,9 +197,12 @@ function DiaDeNutricion({
   const plan = hoy.plan;
   return (
     <View>
-      <Text style={estilos.fecha} accessibilityRole="header">
-        {fechaLarga(hoy.date)}
-      </Text>
+      <View style={estilos.filaDeLaFecha}>
+        <Icono nombre="calendario" tamano={20} tono="acento" />
+        <Text style={estilos.fecha} accessibilityRole="header">
+          {fechaLarga(hoy.date)}
+        </Text>
+      </View>
       {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_NUTRICION.sinPlanAsesorado} /> : null}
       {hoy.planState === 'NOT_AVAILABLE' ? (
         <Aviso tipo="info" titulo={COPY_NUTRICION.planNoDisponible}>
@@ -702,7 +706,7 @@ function ComidaRegistrada({
         <Boton texto={COPY_REGISTRO_DE_COMIDAS.completarCantidades} onPress={() => ir({ nombre: 'opcion-de-comida', id: opcion.optionId, comidaId: comida.mealId, registroId: registro.recordId })} />
       ) : null}
       {registroId ? <FilaQueAbre texto={COPY_REGISTRO_DE_COMIDAS.verOCorregir} onPress={() => ir({ nombre: 'registro-nutricional', id: registroId })} /> : null}
-      {registro ? <Boton texto={COPY_REGISTRO_DE_COMIDAS.deshacer} tipo="enlace" onPress={deshacer.abrir} /> : null}
+      {registro ? <Boton texto={COPY_REGISTRO_DE_COMIDAS.deshacer} tipo="enlace" icono="deshacer" onPress={deshacer.abrir} /> : null}
       <View style={estilos.separador} />
       <FilaQueAbre texto={COPY_REGISTRO_DE_COMIDAS.seguirConMiDia} onPress={() => ir({ nombre: 'inicio' })} />
       {deshacer.dialogo}
@@ -711,7 +715,9 @@ function ComidaRegistrada({
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  fecha: { fontSize: 19, lineHeight: 25, fontWeight: '800', color: COLOR.texto, marginTop: 10, marginBottom: 6 },
+  // La fecha con el calendario al lado (PA-06): el margen va en la fila.
+  filaDeLaFecha: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 6 },
+  fecha: { flexShrink: 1, fontSize: 19, lineHeight: 25, fontWeight: '800', color: COLOR.texto },
   pregunta: { fontSize: 16, fontWeight: '700', color: COLOR.texto, marginTop: 4 },
   diaDelPlan: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12 },
   textoDelDia: { fontSize: 15, lineHeight: 21, color: COLOR.tenue },

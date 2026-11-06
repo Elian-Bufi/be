@@ -20,10 +20,14 @@ import { crearAlmacenCifrado, type CifradorAes } from './almacen-cifrado';
 import { crearAlmacenDeEntrenamiento, type AlmacenDeEntrenamiento } from './almacen-de-entrenamiento';
 import { almacenSeguro } from './almacen-seguro';
 import { api } from './api';
+import { enCursoEnElTelefono } from './sesion-en-curso';
 import { relojDeLaSesion } from './reloj-del-telefono';
 
-/** AES-256-GCM de expo-crypto: vector inicial de 12 bytes y etiqueta de 16, los valores por omisión. */
-const aesDeExpo: CifradorAes = {
+/**
+ * AES-256-GCM de expo-crypto: vector inicial de 12 bytes y etiqueta de 16, los valores por omisión. Lo usa también el
+ * borrador de los formularios (`formularios-en-el-telefono.ts`).
+ */
+export const aesDeExpo: CifradorAes = {
   async nuevaClave() {
     return (await AESEncryptionKey.generate(AESKeySize.AES256)).encoded('base64');
   },
@@ -58,6 +62,14 @@ export function useEntrenamientoLocal(): AlmacenDeEntrenamiento {
   return entrenamientoLocal;
 }
 
+/**
+ * Si hay un entrenamiento en curso en este teléfono: la barra inferior lo marca en Entrenamiento (PA-02). Vuelve a dibujar
+ * solo cuando cambia la respuesta, no con cada cambio del entrenamiento.
+ */
+export function useHayEntrenamientoEnCurso(): boolean {
+  return useSyncExternalStore(entrenamientoLocal.suscribir, () => enCursoEnElTelefono(entrenamientoLocal.sesiones()) !== null);
+}
+
 function sincronizarTodo(): void {
   for (const s of entrenamientoLocal.sesiones()) void entrenamientoLocal.sincronizar(s.draftId);
 }
@@ -78,7 +90,11 @@ export function useCuentaDelEntrenamiento(sesion: { readonly token: string; read
   }, [token, identidadId]);
   useEffect(() => {
     const suscripcion = AppState.addEventListener('change', (momento) => {
-      if (momento !== 'active') return;
+      // Al pasar a segundo plano, lo escrito que esperaba su demora se guarda ya (PA-01): Android puede cerrar la app.
+      if (momento !== 'active') {
+        void entrenamientoLocal.guardarYa();
+        return;
+      }
       // Al volver: lo que no se pudo leer o guardar en el teléfono se reintenta, y lo pendiente se manda.
       void entrenamientoLocal.reintentarLectura();
       void entrenamientoLocal.reintentarGuardado();

@@ -6,6 +6,8 @@
  * - Tocar una la marca leída (la API registra la primera lectura) y lleva a su pantalla: Nutrición, Entrenamiento o
  *   Vínculos. Una que no tiene pantalla queda leída acá.
  * - «Sin leer» se dice con palabras, no solo con el color (B10-10 §43).
+ * - DL-165, ronda 2.1: una novedad importante (hoy, un profesional que pide ver los hábitos) se destaca con «Importante»,
+ *   en palabras y con su ícono, y TalkBack lo lee antes del título. Abre «Mis hábitos», donde se responde.
  * - Si la API no responde, se dice y se puede reintentar: las novedades no se pierden (UC-P30 E03).
  */
 import { COPY_NOVEDADES, type Novedad, type Resultado } from '@be/domain';
@@ -16,26 +18,11 @@ import { EstadoDeCarga, VerMas } from '../estados';
 import { fecha } from '../formato';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { etiquetaDeNovedad, insigniaDeImportancia, rutaDeNovedad } from '../novedades-en-el-telefono';
 import { Aviso, Insignia, Parrafo, Titulo, estilosPorTema } from '../ui';
 
-/** La pantalla de la APK que resuelve una novedad, o `null` si se queda en Novedades. */
-export function rutaDeNovedad(n: Pick<Novedad, 'open'>): Ruta | null {
-  switch (n.open.view) {
-    case 'NUTRITION':
-      return { nombre: 'hoy' };
-    case 'TRAINING':
-      return { nombre: 'entrenamiento' };
-    case 'RELATIONSHIPS':
-      return { nombre: 'vinculos' };
-    // REV-A (DL-134): la novedad de una revisión abre esa revisión, completa.
-    case 'NUTRITION_REVIEW':
-      return n.open.referenceId ? { nombre: 'revision', area: 'NUTRICION', id: n.open.referenceId } : { nombre: 'revisiones', area: 'NUTRICION' };
-    case 'TRAINING_REVIEW':
-      return n.open.referenceId ? { nombre: 'revision', area: 'ENTRENAMIENTO', id: n.open.referenceId } : { nombre: 'revisiones', area: 'ENTRENAMIENTO' };
-    default:
-      return null;
-  }
-}
+/** A qué pantalla lleva cada novedad, y cuál se destaca: lógica pura, probada en `novedades-en-el-telefono.test.ts`. */
+export { rutaDeNovedad } from '../novedades-en-el-telefono';
 
 export function PantallaDeNovedades({
   token,
@@ -94,13 +81,14 @@ export function PantallaDeNovedades({
         <Pressable
           key={n.newsId}
           accessibilityRole="button"
-          accessibilityLabel={`${n.readAt ? '' : `${COPY_NOVEDADES.noLeida}. `}${n.title}. ${n.body} ${fecha(n.occurredAt ?? n.recordedAt)}`}
+          accessibilityLabel={etiquetaDeNovedad(n, fecha(n.occurredAt ?? n.recordedAt))}
           accessibilityState={{ busy: abriendo === n.newsId }}
           onPress={() => void abrir(n)}
-          style={({ pressed }) => [estilos.novedad, !n.readAt && estilos.sinLeer, pressed && estilos.presionada]}
+          style={({ pressed }) => [estilos.novedad, !n.readAt && estilos.sinLeer, insigniaDeImportancia(n) !== null && estilos.importante, pressed && estilos.presionada]}
         >
           <View style={estilos.encabezado}>
             <Text style={estilos.titulo}>{n.title}</Text>
+            {insigniaDeImportancia(n) ? <Insignia texto={insigniaDeImportancia(n)!} icono="aviso" /> : null}
             {n.readAt ? null : <Insignia texto={COPY_NOVEDADES.noLeida} />}
           </View>
           <Text style={estilos.cuerpo}>{n.body}</Text>
@@ -115,6 +103,8 @@ export function PantallaDeNovedades({
 const estilos = estilosPorTema((COLOR) => ({
   novedad: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginBottom: 10, backgroundColor: COLOR.superficie, minHeight: 48 },
   sinLeer: { borderColor: COLOR.acento },
+  // Importante: el borde más grueso acompaña a la palabra «Importante»; no la reemplaza.
+  importante: { borderWidth: 2, borderColor: COLOR.acento },
   presionada: { opacity: 0.7 },
   encabezado: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   titulo: { fontSize: 16, fontWeight: '700', color: COLOR.texto, flexShrink: 1 },

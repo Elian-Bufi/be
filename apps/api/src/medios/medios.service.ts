@@ -354,14 +354,23 @@ export class MediosService {
    * asociaciones (la vigente o una pasada: lo registrado conserva la imagen de entonces), con el acceso de Entrenamiento
    * que decide el PDP. Es el criterio con el que ese asesorado ve el catálogo del profesional (RF-037) y el de la imagen
    * de una receta. Lo demás, el mismo 404 que lo inexistente.
+   *
+   * DL-162: la imagen que BE curó para un ejercicio del catálogo de todos (sembrado o importado) la ve cualquier
+   * profesional de Entrenamiento verificado y habilitado (el website la muestra en el catálogo, que es de todos) y el
+   * asesorado con un plan activado de cualquier profesional que cite ese ejercicio, con el PDP de ese profesional.
    */
   private async decidirImagenDeEjercicio(tx: Tx, actor: ActorAutenticado, medioId: string, propietarioId: string, ctx: ContextoDeSolicitud): Promise<string | null> {
     if (propietarioId === actor.identidadId) return null;
+    const [curada] = await tx.$queryRaw<{ existe: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM "asociacion_de_imagen_de_ejercicio" a JOIN "ejercicio_de_catalogo" e ON e."id" = a."ejercicio_id"
+         WHERE a."medio_id" = ${medioId}::uuid AND e."procedencia" <> 'PROFESSIONAL_MANUAL') AS "existe"`;
+    if (curada?.existe && (await esProfesionalDeEntrenamiento(tx, actor.identidadId))) return null;
     const [plan] = await tx.$queryRaw<{ profesionalId: string }[]>`
-      SELECT e."creado_por_id"::text AS "profesionalId"
+      SELECT p."profesional_id"::text AS "profesionalId"
         FROM "asociacion_de_imagen_de_ejercicio" a
         JOIN "ejercicio_de_catalogo" e ON e."id" = a."ejercicio_id"
-        JOIN "plan_de_entrenamiento" p ON p."profesional_id" = e."creado_por_id" AND p."asesorado_id" = ${actor.identidadId}::uuid
+        JOIN "plan_de_entrenamiento" p ON (p."profesional_id" = e."creado_por_id" OR e."procedencia" <> 'PROFESSIONAL_MANUAL') AND p."asesorado_id" = ${actor.identidadId}::uuid
         JOIN "version_de_plan_de_entrenamiento" v ON v."plan_id" = p."id" AND v."estado" = 'ACTIVADA'
         JOIN "instantanea_de_plan_de_entrenamiento" i ON i."version_de_plan_id" = v."id"
        WHERE a."medio_id" = ${medioId}::uuid

@@ -16,7 +16,9 @@
 import { redondeoDePresentacion } from './calculo-nutricional';
 import type { EscalonDelObjetivoApi, IndicadoDelDiaApi, MetricaNutricional, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
 import { motivoCortoSinIndicadoDelDia, objetivoParaExportar } from './copy-comparacion-nutricional';
+import { COPY_REGISTRO_POR_NIVELES } from './copy-entrenamiento';
 import { VERSION_DEL_DICCIONARIO, type DefinicionDeMetrica } from './metricas-del-analisis';
+import { esPuntoDeCargaRapida } from './series-del-analisis';
 import { calidadEnPalabras, comidasDelPlanEnPalabras, NUTRIENTE_DE_LA_METRICA } from './nutricion-del-analisis';
 import { claseEnPalabras } from './antropometria-del-analisis';
 
@@ -58,9 +60,12 @@ export function textoDeFaltante(motivo: string): string {
   return motivo.toLowerCase().replace(/_/g, ' ');
 }
 
-/** La calidad en el archivo: las palabras de la pantalla (`calidadEnPalabras`), con el subtotal en una palabra. */
+/**
+ * La calidad en el archivo: las palabras de la pantalla (`calidadEnPalabras`), con el subtotal en una palabra. Una serie
+ * de carga rápida (DL-161) lo dice al final, como el punto hueco del gráfico: sin una columna nueva.
+ */
 const calidadDeLaFila = (p: PuntoAnalitico, definicion: DefinicionDeMetrica): string =>
-  p.quality === 'PARTIAL' ? 'subtotal' : calidadEnPalabras(p, definicion.area === 'NUTRICION' && definicion.parametro === 'RECORDS');
+  `${p.quality === 'PARTIAL' ? 'subtotal' : calidadEnPalabras(p, definicion.area === 'NUTRICION' && definicion.parametro === 'RECORDS')}${esPuntoDeCargaRapida(p) ? ` · ${COPY_REGISTRO_POR_NIVELES.cargaRapida}, no se compara` : ''}`;
 
 const METODO: Readonly<Record<SerieAnalitica['aggregation'], string>> = {
   NONE: 'cada observación, sin agregar',

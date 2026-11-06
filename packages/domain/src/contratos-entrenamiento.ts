@@ -614,8 +614,18 @@ export const SerieEjecutadaSchema = z.strictObject({
   completedRepetitions: z.number().int().nonnegative().max(1000).nullable(),
   rir: z.number().nonnegative().max(20).finite().nullable(),
   perceivedExertion: z.number().min(0).max(10).nullable(),
+  /**
+   * Cómo se cargó la serie (DL-161). `TYPED`: la persona escribió algún valor. `AS_PLANNED`: la tildó sin escribir,
+   * con lo planificado a la vista, y los valores son los del plan que confirmó (B10-06 §56: repetir el objetivo con
+   * confirmación visible). El profesional ve la diferencia. Ausente = `TYPED`: así quedó todo lo registrado antes.
+   */
+  recordedAs: z.enum(['TYPED', 'AS_PLANNED']).optional(),
+  /** Cuánto duró la serie, en segundos (DL-161): la midió el cronómetro o la escribió la persona; nunca se infiere. */
+  durationSeconds: z.number().int().nonnegative().max(36000).nullable().optional(),
 });
 export type SerieEjecutadaApi = z.infer<typeof SerieEjecutadaSchema>;
+/** Cómo se cargó una serie; ausente se lee como `TYPED` (DL-161). */
+export type FormaDeCarga = NonNullable<SerieEjecutadaApi['recordedAs']>;
 /** «Ejercicio realizado + resumen» (B10-06:737-738). Solo lo capturado: no se sintetizan series (09v10:1099-1101). */
 export const ResumenDeEjercicioSchema = z.strictObject({ description: Texto(1000) });
 export const ResumenDeSesionSchema = z.strictObject({ description: Texto(2000) });
