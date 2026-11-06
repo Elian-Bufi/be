@@ -720,6 +720,26 @@ de TEST-TAG-032. Lo próximo:
   cuentan el menú «⋯» de la versión y «Quitar la última serie», que con TB-48 pasaron a «Revisar el plan», a «Guardar
   como plantilla» a la vista y a quitar cada serie en su fila.
 
+**Lo medido con las correcciones de la galería de capturas** (TA-71 y TA-72; la corrida 42234954294 de
+`capturas-del-tablero`, sobre 1a0e462, con `main` mergeado):
+- **«Tu semana» (TA-71):** en los tres tamaños, en los dos temas y con los nombres ocultos, ninguna parte de una ficha
+  se pasa de su columna: dos fichas medidas por profesional en cada caso, y `tuSemanaQueSePasa` vacío. A 1280, con el
+  monograma arriba, «Norma Castro» y «Diego Sosa» van en un renglón y «Federico Álvarez» en dos; la referencia, en
+  «Asesorado · / 729369». A 1440, «Norma Castro» y «Federico Álvarez» van en dos renglones al costado del monograma y
+  «Diego Sosa» en uno; con los nombres ocultos, «Asesorado / · 1d4ace». La tarjeta termina en 531 a 1440 (520 antes);
+  a 1920, en 523 con Sofía Paz y en 531 con Martín Acosta; a 1280, en 546 y en 564.
+- **La cola a 1440 × 900:** la segunda persona de «Te toca a vos» termina en 911, y en la corrida de la cabeza anterior
+  (47d86de) terminaba en 916: entra una sola entera, antes y ahora. Lo medido en el quinto tramo (la segunda terminaba
+  en 897, en la corrida de 1e6cfb5) ya no rige; lo que la bajó después no es de este cambio y queda para revisar contra
+  §1, que pide dos o tres personas a 1440 × 900. A 1920 × 950 entran las dos (la segunda termina en 903).
+- **La escala del Resumen de Diego visto por Martín Acosta (TA-72):** «Series registradas · Dominadas», con 4 en las
+  10 sesiones, lleva la grilla en 3, 4 y 5, «5» arriba y los puntos sobre el 4; «RIR · Dominadas · serie 1», con RIR 1
+  en todas, en 0, 1 y 2, con «2» arriba.
+- **El cajón de Martín Acosta** abre en «Pendiente 1 de 3» con «La revisión del 5 nov está registrada y sin aplicar.
+  ¿La aplicás?» y las salidas «Aplicar próxima acción», «Abrir la ficha» y «Saltear por ahora».
+- **Lo demás no cambió:** las diecinueve páginas dieron las peticiones al abrir de la tabla de TA-30, sin errores de la
+  página, y con «Ocultar nombres» no apareció ningún nombre ni inicial.
+
 **Lo medido en el séptimo tramo** (TB-48, la segunda parte; la corrida 42207018963 de `capturas-del-tablero`, sobre
 40882a4):
 - **Las capturas suman tres páginas de Martín Acosta,** porque lo visible de TB-48 está en los editores y en «Mis
@@ -1159,11 +1179,11 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   contenido) el monograma va arriba, el nombre y el área toman todo el ancho y el área va en palabras, sin su ícono:
   «Agustina», «Asesorado ·» o «Entrenamiento» no entran al costado de un monograma en esa columna, y la palabra entera
   dice más que el ícono con la palabra cortada. Lo decide el ancho de la columna (una consulta de contenedor), no el de
-  la ventana. El nombre pasa a 0,94 rem, para que a 1440 «Asesorado ·» entre en un renglón al costado del monograma y
-  «Diego Sosa» siga en uno. Para que a 1440 × 900 sigan entrando las dos primeras personas de la cola (§1), «Tu semana»
-  pierde el margen de abajo, que se sumaba al aire entre secciones y era el único doble del Espacio: medido en un
-  navegador local con el CSS y la letra del website, la tarjeta crece 11 a 1440 cuando un nombre pasa a dos renglones,
-  y el Espacio queda 5 más corto. Las capturas miden en cada tamaño, en los dos temas y con los nombres ocultos que el
+  la ventana. El nombre pasa a 0,94 rem, para que a 1440 «Asesorado» entre entero al costado del monograma (la
+  referencia va en dos renglones: «Asesorado / · 1d4ace») y «Diego Sosa» siga en uno. Para no empujar la cola hacia
+  abajo, «Tu semana» pierde el margen de abajo, que se sumaba al aire entre secciones y era el único doble del Espacio:
+  en la corrida 42234954294, a 1440 × 900, la tarjeta termina en 531 (520 antes) y la segunda persona de «Te toca a
+  vos», en 911 (916 antes). Las capturas miden en cada tamaño, en los dos temas y con los nombres ocultos que el
   monograma, el nombre y el área de cada ficha queden adentro de su columna (`tu-semana.mjs`), y la corrida falla si
   algo se pasa o si no midió ninguna ficha; con los nombres ocultos guardan «Tu semana» sola, para ver la referencia.
   *Otra opción:* un solo renglón con «…», que no cambia ningún alto pero deja la referencia en «Asesorado…», igual para
