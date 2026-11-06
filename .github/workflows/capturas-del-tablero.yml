@@ -1,6 +1,7 @@
 # Capturas de WP-TABLERO-ALTA-GAMA (TB-00 y la recaptura de cada parte, §8.1 del paquete): la cohorte sintética en un
-# PostgreSQL efímero, la API y el website compilados, y las capturas en Claro y Azul noche, a 1440 × 900 y a 1920 × 950,
-# con las peticiones a la API de cada página (TEST-TAG-032). Esta PC no levanta los tres juntos: lo hace la CI.
+# PostgreSQL efímero, la API y el website compilados, y las capturas en Claro y Azul noche, a 1280 × 800, a 1440 × 900
+# y a 1920 × 950, con las peticiones a la API de cada página (TEST-TAG-032). Esta PC no levanta los tres juntos: lo
+# hace la CI.
 # No es un check de la integración: no bloquea nada y no despliega nada. Corre en las ramas del paquete cuando cambia el
 # website o el dominio, y a pedido.
 name: capturas-del-tablero

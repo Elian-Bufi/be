@@ -9,7 +9,8 @@
 // Pasos: migraciones → API → los profesionales de la cohorte → API de nuevo, con su habilitación (DL-036) → sus
 // ejercicios y las seis personas → website con la CSP de render.yaml → capturas → mediciones.json.
 //
-// Qué captura, en Claro y en Azul noche, a 1440 × 900 y a 1920 × 950 (el área útil de un monitor de 1920 × 1080):
+// Qué captura, en Claro y en Azul noche, a 1280 × 800, a 1440 × 900 y a 1920 × 950 (el área útil de un monitor de
+// 1920 × 1080):
 // la primera pantalla y la página entera del Espacio profesional, el Resumen de la ficha, «Analizar», Nutrición y
 // Antropometría de Diego Sosa vistos por Sofía Paz, y el Espacio, el Resumen y Entrenamiento vistos por Martín Acosta.
 // Cuenta las peticiones a la API al abrir cada página (TEST-TAG-032): la cuenta queda en mediciones.json.
@@ -32,6 +33,7 @@ const API = 'http://localhost:3001';
 const WEB = 'http://localhost:3000';
 const CHROME = process.env.CHROME ?? (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : '/usr/bin/google-chrome');
 const TAMANOS = [
+  [1280, 800],
   [1440, 900],
   [1920, 950],
 ];
@@ -149,7 +151,9 @@ async function capturarTodo() {
   });
   try {
     for (const [prefijo, paginas] of Object.entries(PAGINAS)) {
-      const page = await navegador.newPage();
+      // Cada profesional en su propio contexto, sin la sesión del anterior.
+      const contexto = await navegador.createBrowserContext();
+      const page = await contexto.newPage();
       await page.emulateTimezone('America/Argentina/Buenos_Aires');
       page.on('pageerror', (e) => mediciones.errores.push(`${NOMBRES[prefijo]}: ${String(e).slice(0, 300)}`));
       let peticiones = 0;
@@ -164,6 +168,9 @@ async function capturarTodo() {
       await asentar(page);
       for (const [nombre, plantilla] of paginas) {
         const ruta = plantilla.replace('{diego}', diego);
+        // Para contar lo que pide una página al abrirse, se llega desde otra: la cuenta, que no comparte lecturas.
+        await page.evaluate(() => window.next.router.push('/account'));
+        await asentar(page);
         peticiones = 0;
         // La sesión vive en memoria: se navega dentro de la aplicación, sin recargar.
         await page.evaluate((u) => window.next.router.push(u), ruta);
@@ -189,7 +196,7 @@ async function capturarTodo() {
         mediciones.paginas.push(fila);
         console.log(`${NOMBRES[prefijo]} · ${nombre}: ${fila.peticionesAlAbrir} peticiones al abrir · ${JSON.stringify(fila.alto)}`);
       }
-      await page.close();
+      await contexto.close();
     }
   } finally {
     fs.writeFileSync(path.join(salida, 'mediciones.json'), `${JSON.stringify(mediciones, null, 2)}\n`);

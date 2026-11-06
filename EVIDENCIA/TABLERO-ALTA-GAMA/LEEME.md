@@ -10,8 +10,8 @@ Esta PC no levanta la API, el website y PostgreSQL juntos. Las capturas las hace
 cambia el website o el dominio, y también a pedido.
 
 1. Carga la cohorte en un PostgreSQL efímero y levanta la API y el website compilados, con la CSP de `render.yaml`.
-2. Captura en Claro y en Azul noche, a 1440 × 900 y a 1920 × 950, que es el área útil de un monitor de 1920 × 1080. De
-   cada página guarda la primera pantalla y la página entera:
+2. Captura en Claro y en Azul noche, a 1280 × 800, a 1440 × 900 y a 1920 × 950, que es el área útil de un monitor de
+   1920 × 1080. De cada página guarda la primera pantalla y la página entera:
    - **Diego Sosa visto por Sofía Paz** (Nutrición y Antropometría): el Espacio profesional, el Resumen de la ficha,
      «Analizar», Nutrición y Antropometría.
    - **Diego Sosa visto por Martín Acosta** (Entrenamiento): el Espacio, el Resumen y Entrenamiento.
