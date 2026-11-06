@@ -1,5 +1,25 @@
 # Próximas ampliaciones A a F: diseño para decidir
 
+> **Estado al 2026-11-06: se guarda como registro.** Dirección decidió integrar este documento como registro: lo de
+> abajo es el diseño del 2026-10-19, sin cambios, y vale como propuesta solo para B, D, E y F. Lo que se comprobó en
+> `main` (`33dcad9`):
+>
+> | Parte | Qué pasó | Dónde está |
+> |---|---|---|
+> | **A** · Formularios de inicio | **Se hizo** como DL-164 y DL-165, integradas con #234 (`92db513`), #237 (`bdbf490`), #241 (`67d7f61`) y #244 (`33dcad9`) | `docs/DEUDA_LEGAJO.md`, `docs/paquetes/WP-FORMULARIOS-DE-INICIO.md` y `WP-FORMULARIOS-RONDA-2.md` |
+> | **C** · Objetivo, plan y registros | **Se hizo** como DL-158, integrada con #211 (`7079677`). DL-158 cita esta propuesta | `docs/paquetes/WP-NUTRICION-COMPARACION.md` |
+> | **Hallazgos** | El 1 (las candidatas no dejaban sustituir un ejercicio) se resolvió con DL-151, en #195 (`0be86b3`). El 3 y lo que leen las APK fuera de lo congelado («Lo común»), con DL-152, en #198 (`2811991`) | `docs/DEUDA_LEGAJO.md` |
+> | **B** · Objetivos por tipo | **Sigue siendo una propuesta**, no decidida. En el código no hay objetivos por tipo | `PF-04_contexto-y-objetivos-nutricionales.md` |
+> | **D** · Qué cambió y por qué | **Sigue siendo una propuesta**, no decidida. No existe `diferenciasEntreVersiones` | — |
+> | **E** · Alternativas y contexto breve | **Sigue siendo una propuesta**, no decidida. No existe `approvedAlternatives`. Lo que sí volvió es la sustitución (#195) | `PF-03_profundizacion-de-entrenamiento.md` |
+> | **F** · Biblioteca común de comidas | **Sigue siendo una propuesta**, no decidida. Las recetas siguen siendo propias de cada profesional | `BIBLIOTECA-DE-RECETAS-DE-BE_ficha.md` |
+>
+> **A qué prestar atención:**
+> - **Lo que rige para A es DL-164 y DL-165,** no el diseño de A de abajo. Esas DL no citan esta propuesta. DL-144, que
+>   le dio origen, todavía figura como propuesta en el índice de `docs/DEUDA_LEGAJO.md`.
+> - **Los demás hallazgos** (el 2 y del 4 al 9) no se revisaron uno por uno al pasar esto a registro.
+> - **Las rutas y los números de línea** de abajo son los del 2026-10-19. Desde entonces el código cambió.
+
 **Bloque 7 del encargo de consolidación del 2026-10-19.** Es una propuesta: nada de esto está implementado. Corregir una pantalla tampoco lo implementa.
 
 Lo contrasté con dos ramas:
