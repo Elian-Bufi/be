@@ -10352,6 +10352,39 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 8.5rem;
 }
 
+/* TB-48: las zonas de un ejercicio propio: las 17 en una grilla de campos y, al lado, la figura con lo elegido. */
+.zonas-propias {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+  gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+.zonas-propias__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.zonas-propias__lista .campo {
+  margin: 0;
+}
+
+.zonas-propias__lista select {
+  width: 100%;
+}
+
+.zonas-propias .aviso,
+.zonas-propias__acciones {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 52rem) {
+  .zonas-propias {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* TB-48: quitar cada serie, al final de su fila, como un ítem de Nutrición. */
 .series-del-editor thead th.series-del-editor__columna-quitar {
   width: 3.25rem;

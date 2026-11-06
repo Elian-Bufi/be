@@ -351,3 +351,48 @@ test('TB-48 · la receta como opción, con buscador: por su nombre, sin tildes, 
   }
   assert.equal(C.ninguna(' pescado '), 'Ninguna de tus recetas tiene «pescado» en el nombre.');
 });
+
+// ─── Las zonas de un ejercicio propio, desde «Mis ejercicios» (`exercises/zonas-propias.ts`) ──────────────────────
+test('TB-48 · las zonas de un ejercicio propio: las 17 del catálogo, en su orden, con su rol y nada más', async () => {
+  const Z = await import('../src/app/pro/exercises/zonas-propias.ts');
+  const catalogo = d.ZONAS_MUSCULARES.map((z) => z.zoneId);
+  const eleccion = Z.eleccionDe([{ zoneId: 'gluteos', role: 'SECONDARY' }, { zoneId: 'cuadriceps', role: 'PRIMARY' }]);
+  assert.deepEqual(Object.keys(eleccion), catalogo, 'una elección por zona del catálogo, en su orden');
+  assert.equal(eleccion.trapecio, '');
+  // Lo que viaja va en el orden del catálogo, sin las que no nombra, y la API lo acepta.
+  const pedido = Z.pedidoDeZonas({ ...eleccion, isquios: 'SECONDARY' }, { versionId: ID(950), zonesVersion: 3 });
+  assert.deepEqual(pedido, {
+    exerciseVersionId: ID(950),
+    expectedZonesVersion: 3,
+    muscleZones: [
+      { zoneId: 'gluteos', role: 'SECONDARY' },
+      { zoneId: 'cuadriceps', role: 'PRIMARY' },
+      { zoneId: 'isquios', role: 'SECONDARY' },
+    ],
+  });
+  assert.equal(d.CambiarZonasDeEjercicioRequestSchema.safeParse(pedido).success, true);
+  assert.deepEqual(d.problemasDeZonas(pedido.muscleZones), []);
+  assert.deepEqual(Z.pedidoDeZonas(Z.eleccionDe([]), { versionId: ID(950), zonesVersion: 0 }).muscleZones, [], 'sin ninguna elegida, la lista vacía quita todas');
+  assert.equal(Z.cambiaronLasZonas(eleccion, { ...eleccion }), false);
+  assert.equal(Z.cambiaronLasZonas(eleccion, { ...eleccion, gluteos: 'PRIMARY' }), true);
+  assert.equal(Z.cambiaronLasZonas(eleccion, { ...eleccion, gluteos: '' }), true);
+
+  // La pantalla ofrece solo las 17 (las del dominio), con los roles de la figura, y no dibuja nada propio.
+  const pieza = readFileSync(new URL('../src/app/pro/exercises/zonas-del-ejercicio.tsx', import.meta.url), 'utf8');
+  assert.match(pieza, /\{ZONAS_MUSCULARES\.map\(\(z\) => \(/);
+  assert.match(pieza, /<option value="PRIMARY">\{COPY_FIGURA_DE_ZONAS\.principal\}<\/option>\s+<option value="SECONDARY">\{COPY_FIGURA_DE_ZONAS\.secundaria\}<\/option>/);
+  assert.match(pieza, /<FiguraDeZonas zonas=\{zonasElegidas\(eleccion\)\}/);
+  assert.doesNotMatch(pieza, /<svg|<img|be-mask|zoneId: '/, 'ni puntos, ni máscaras, ni zonas escritas a mano');
+  assert.doesNotMatch(pieza, /%/, 'sin porcentajes');
+  assert.match(pieza, /api\.cambiarZonasDeEjercicio\(token, ficha\.exerciseId, pedidoDeZonas\(eleccion, ficha\), intento\.actual\(\)\);\s+intento\.registrar\(r\);/);
+  assert.match(pieza, /r\.codigo === 'VERSION_CONFLICT' \? C\.conflicto/);
+  const pagina = readFileSync(new URL('../src/app/pro/exercises/mis-ejercicios.tsx', import.meta.url), 'utf8');
+  assert.match(pagina, /data-cambiar-zonas/);
+  assert.match(pagina, /setAviso\(COPY_ZONAS_PROPIAS\.guardadas\(e\.name\)\);[\s\S]{0,120}releerFichas\(\);/);
+  const C = Z.COPY_ZONAS_PROPIAS;
+  for (const t of Object.values(C).map((t) => (typeof t === 'function' ? t('Sentadilla búlgara') : t))) {
+    assert.deepEqual(d.terminosProhibidosEn(t), [], t);
+    assert.deepEqual(d.terminosProhibidosDeEntrenamientoEn(t), [], t);
+    assert.doesNotMatch(t, /cumplimiento|adherencia|racha|px|%/i, t);
+  }
+});
