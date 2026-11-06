@@ -521,7 +521,7 @@ export function geometriaDelIndicador(e: EntradaDelIndicador): GeometriaDelIndic
     }
   }
   const enUnTramo = new Set(grupos.filter((gr) => gr.length >= 2).flatMap((gr) => gr.map((p) => p.pointId)));
-  const puntos: PuntoDelIndicador[] = dibujables.flatMap((p) => {
+  const puntos = dibujables.flatMap<PuntoDelIndicador>((p) => {
     const estado = estadoDeMarca(p);
     const x = xDelPunto(p);
     const y = yEn(p.value as number);
