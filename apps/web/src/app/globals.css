@@ -46,10 +46,11 @@ h1 {
   margin: 0.5rem 0 1rem;
 }
 
-/* Los momentos de marca (TB-01; DL-163 D-3): Poppins 600 solo en el título del Espacio profesional y en el nombre de la
-   persona en el marco de la ficha. Con TB-12 se suma la pregunta del cajón «De a una». En el resto, Inter. */
+/* Los momentos de marca (TB-01; DL-163 D-3): Poppins 600 solo en el título del Espacio profesional, en el nombre de la
+   persona en el marco de la ficha y, desde TB-12, en la pregunta del cajón «De a una». En el resto, Inter. */
 .espacio-profesional__encabezado h1,
-.marco-de-la-ficha__nombre h1 {
+.marco-de-la-ficha__nombre h1,
+.cajon__pregunta {
   font-family: var(--letra-marca, Poppins), var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
   font-weight: 600;
 }
@@ -14525,7 +14526,6 @@ a.cifras-desde-la-revision__celda:focus-visible {
 
 .encabezado-del-espacio__saludo {
   margin: 0;
-  font-family: var(--letra-marca, Poppins), var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 1.35rem;
   font-weight: 600;
   line-height: 1.25;
@@ -14798,7 +14798,6 @@ p.cifra-del-espacio__desglose {
 
 .cajon__pregunta {
   margin: 0;
-  font-family: var(--letra-marca, Poppins), var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 1.4rem;
   font-weight: 600;
   line-height: 1.25;

@@ -62,7 +62,7 @@ test('el texto usa Inter y Poppins va solo en los momentos de marca', () => {
   const regla = /([^{}]+)\{[^}]*var\(--letra-marca/.exec(css)[1].replace(/\/\*[\s\S]*?\*\//g, '').trim();
   assert.deepEqual(
     regla.split(',').map((s) => s.trim()),
-    ['.espacio-profesional__encabezado h1', '.marco-de-la-ficha__nombre h1'],
+    ['.espacio-profesional__encabezado h1', '.marco-de-la-ficha__nombre h1', '.cajon__pregunta'],
   );
   const layout = leer('apps/web/src/app/layout.tsx');
   assert.match(layout, /className=\{`\$\{letraDeTexto\.variable\} \$\{letraDeMarca\.variable\}`\}/);
