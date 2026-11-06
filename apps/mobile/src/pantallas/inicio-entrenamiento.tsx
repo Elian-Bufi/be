@@ -23,12 +23,15 @@ import { useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { SinActualizar } from '../estados';
 import { ejerciciosYSeries } from '../series-de-la-sesion';
 import { fechaCivil, ultimosDiasHasta } from '../formato';
+import { iconoDelEstado } from '../iconos-de-entrenamiento';
 import { useLecturaRecordada } from '../lecturas';
 import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useAccesoRetirado, type Ir } from '../navegacion';
+import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { sesionEnCursoParaMostrar } from '../sesion-en-curso';
 import { Aviso, Boton, Cifra, Insignia, Parrafo } from '../ui';
 import { AvisoDeEntrenamientoEnCurso, MOTIVO_ANTES_DE_INICIAR, useAbrirOcurrencia } from './entrenamiento';
+import { AlLado, aRegistroRapido } from './registro-rapido';
 import { estilos, faltaElA3, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
 
 /** API-TRN-14, con la misma clave que Entrenamiento de hoy. Sin el A3, la API responde «no disponible», no un 403. */
@@ -115,7 +118,7 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
     <TarjetaDeInicio zona="entrenamiento" titulo={COPY_ENTRENAMIENTO.entrenamientoDeHoy}>
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-      <Boton texto="Ir a Entrenamiento" tipo="enlace" onPress={() => ir({ nombre: 'entrenamiento' })} />
+      <Boton texto="Ir a Entrenamiento" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'entrenamiento' })} />
     </TarjetaDeInicio>
   );
 }
@@ -145,18 +148,23 @@ function SesionDeHoy({
   // «Continuar» si hay un borrador en curso, si es la sesión en curso o si en este teléfono corre su entrenamiento.
   const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS' || local.sesiones().some((s) => s.occurrenceId === o.occurrenceId && corridaAbierta(s.corrida));
   const executionId = o.execution.state === 'REGISTERED' ? o.execution.executionId : null;
+  // PA-03 (DL-160): «Ya la hice», al lado de «Iniciar entrenamiento», para registrarla por pasos y sin cronómetros.
+  const yaLaHice = !continuar && sePuedeOfrecer(o, enCurso, local.sesiones());
   return (
     <View style={estilos.fila}>
       <Text style={estilos.nombre}>{o.plannedSession.label}</Text>
       <Text style={estilos.detalle}>{[o.plannedSession.blockLabel, o.plannedSession.microcycleLabel, ejerciciosYSeries(o.plannedSession.prescriptions)].filter(Boolean).join(' · ')}</Text>
-      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" />
+      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {/* Otra sesión en curso: continuarla o dejarla incompleta; dejada incompleta, se vuelve a intentar iniciar esta. */}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
       {executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: executionId })} />
       ) : (
-        <Boton texto={continuar ? COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento : COPY_ENTRENAMIENTO_POR_SERIE.iniciarEntrenamiento} onPress={() => void abrir()} ocupado={abriendo} />
+        <AlLado>
+          <Boton texto={continuar ? COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento : COPY_ENTRENAMIENTO_POR_SERIE.iniciarEntrenamiento} onPress={() => void abrir()} ocupado={abriendo} />
+          {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
+        </AlLado>
       )}
     </View>
   );
@@ -207,11 +215,12 @@ export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { to
     <TarjetaDeInicio
       zona="entrenamiento"
       titulo="Tu actividad"
+      icono="linea-de-tiempo"
       detalle={detalleDeActividad(r && r.ok ? r.datos.periodo : null, fechaCivil)}
     >
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-      <Boton texto="Ver tu historial" tipo="enlace" onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
+      <Boton texto="Ver tu historial" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
     </TarjetaDeInicio>
   );
 }

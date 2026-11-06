@@ -15,7 +15,9 @@
  *   Las tres capas van solo en su propio panel y se distinguen por la forma y por su nombre en la leyenda, no solo por
  *   el color.
  * - **Puntos reales:** la línea une solo puntos del mismo tramo; los huecos y los cambios de método la cortan (F-02). Un
- *   subtotal, el día en curso y una semana sin completar son puntos huecos; lo desconocido no es un punto.
+ *   subtotal, el día en curso y una semana sin completar son puntos huecos; lo desconocido no es un punto. Una serie de
+ *   carga rápida (DL-161: tildada sin escribir, con los valores del plan) también: sigue en su línea y lleva la leyenda
+ *   «carga rápida»; lo que la persona escribió va lleno.
  * - **Los días sin registros** de una serie diaria llevan un sombreado gris leve: la línea sigue cortada (un hueco no se
  *   une ni se vuelve cero), pero se ve dónde no hubo carga. El día en curso no se sombrea. Si varias métricas comparten
  *   el gráfico, se sombrean los días sin registros en todas.
@@ -26,7 +28,7 @@
  * - **El valor exacto no depende del puntero:** el panel de lectura y la tabla lo dicen; el teclado mueve la fecha
  *   elegida (flechas, Inicio y Fin) y el arrastre sobre un panel es solo un atajo de los campos de fecha (WCAG 2.5.7).
  */
-import { numero, type PuntoAnalitico, type SerieAnalitica, type VigenciaDePlan } from '@be/domain';
+import { esPuntoDeCargaRapida, numero, type PuntoAnalitico, type SerieAnalitica, type VigenciaDePlan } from '@be/domain';
 import { useEffect, useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { diaYMesCivil } from '../../../../lib/formato';
@@ -299,7 +301,7 @@ function Panel({
   /** El radio de la marca de un punto: una hueca, cortada o con un punto adentro necesita un mínimo para verse como tal. */
   const radioDe = (pt: PuntoAnalitico): number => {
     const conClase = pt.dataClass === 'REPORTED' || pt.dataClass === 'DERIVED';
-    return pt.quality === 'PARTIAL' || pt.partialBucket || conClase ? Math.max(radio + 1.5, conClase ? 5 : 3.5) : radio;
+    return pt.quality === 'PARTIAL' || pt.partialBucket || esPuntoDeCargaRapida(pt) || conClase ? Math.max(radio + 1.5, conClase ? 5 : 3.5) : radio;
   };
   const esElegido = (pt: PuntoAnalitico): boolean => fecha !== null && pt.date <= fecha && fecha <= (pt.dateEnd ?? pt.date);
   // El aro de la fecha elegida, alrededor de cada marca de esa fecha. Va en una capa aparte de las líneas: sus puntos se
@@ -317,10 +319,12 @@ function Panel({
       const info = puntosPorFila.get(`${clave}|${payload.x}`);
       if (!info) return <g />;
       const e = ESTILOS[info.indice] ?? ESTILOS[0];
-      const hueco = info.punto.quality === 'PARTIAL' || info.punto.partialBucket;
+      // DL-161: una serie de carga rápida (tildada sin escribir) también es hueca, con su leyenda «carga rápida».
+      const cargaRapida = esPuntoDeCargaRapida(info.punto);
+      const hueco = info.punto.quality === 'PARTIAL' || info.punto.partialBucket || cargaRapida;
       const clase = info.punto.dataClass === 'REPORTED' || info.punto.dataClass === 'DERIVED' ? info.punto.dataClass : null;
       return (
-        <g className="grafico__elegible" data-clase={clase ?? undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
+        <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
           <Punto cx={cx} cy={cy} r={radioDe(info.punto)} color={e.color} hueco={hueco} trazo={radio < 4.5 ? 1.5 : 2} clase={clase} />
         </g>
       );

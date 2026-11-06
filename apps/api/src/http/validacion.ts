@@ -13,10 +13,12 @@ import { errores } from './errores';
 
 /**
  * El techo, para cualquier esquema y tamaño. Ningún cuerpo válido de 16 KB (el límite de `bootstrap.ts`) llega: la cota de
- * cada esquema de entrada está probada en `validacion.spec.ts`, y la más alta, la de EditarPlanDeEntrenamientoRequestSchema,
- * es de 1.024 (2026-10-24).
+ * cada esquema de entrada está probada en `validacion.spec.ts`. La más alta era la de EditarPlanDeEntrenamientoRequestSchema,
+ * 1.024 (2026-10-24, techo 1.500); desde los formularios V2 (DL-164, 2026-11-04) es la de las respuestas V2
+ * (EnviarRespuestaV2RequestSchema y sus dos hermanas), 5.461: hasta 80 respuestas con hasta 40 códigos de opción o 30
+ * renglones cada una, de 3 bytes el elemento. Para los demás esquemas sigue mandando su propia cota, mucho más baja.
  */
-export const MAXIMO_DE_ELEMENTOS = 1500;
+export const MAXIMO_DE_ELEMENTOS = 6000;
 
 /**
  * El piso: hasta tantos elementos, el cuerpo siempre se valida. Así un cuerpo chico con una lista donde no va (`roles:

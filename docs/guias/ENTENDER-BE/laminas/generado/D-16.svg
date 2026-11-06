@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="326pt" viewBox="0 0 750 326" data-lamina="D-16">
+<title>Medios, auditoría e idempotencia</title>
+<desc>Una foto es un medio privado, con su contenido aparte; la auditoría y la idempotencia son tablas de la plataforma, sin relaciones de negocio. · Fuente: prisma/schema.prisma · secciones Historia y WP-NUTRICION-RECETAS · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="326" fill="#FFFFFF"/>
+<rect x="4" y="296" width="742" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 14 308.5 L 44 308.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 39 314 L 39 303" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 34.5 314 L 34.5 303" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<text x="52" y="312.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">uno y solo uno</text>
+<path d="M 139.09 308.5 L 169.09 308.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 164.09 314 L 164.09 303" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="156.59" cy="308.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="177.09" y="312.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o uno</text>
+<path d="M 245.53 308.5 L 275.53 308.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 275.53 314.5 L 265.53 308.5 L 275.53 302.5 M 275.53 308.5 L 265.53 308.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="260.53" cy="308.5" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<text x="283.53" y="312.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">cero o muchos</text>
+<text x="371.73" y="312.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK FK</text>
+<text x="409.73" y="312.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">claves · * obligatorio · o opcional</text>
+<text x="581.91" y="312.5" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">↗</text>
+<text x="619.91" y="312.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clave hacia otra área</text>
+<path d="M 375 172.5 L 375 113" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 380.5 118 L 369.5 118" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 380.5 122.5 L 369.5 122.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 369.5 167.5 L 380.5 167.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="375" cy="160" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 578 116.25 L 517.5 116.25 Q 512.5 116.25 512.5 111.25 L 512.5 60.75 Q 512.5 55.75 507.5 55.75 L 447 55.75" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 452 50.25 L 452 61.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="459.5" cy="55.75" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 578 122.25 L 568 116.25 L 578 110.25 M 578 116.25 L 568 116.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="563" cy="116.25" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 172 100.75 L 232.5 100.75 Q 237.5 100.75 237.5 95.75 L 237.5 60.75 Q 237.5 55.75 242.5 55.75 L 303 55.75" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 298 61.25 L 298 50.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M 293.5 61.25 L 293.5 50.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+<path d="M 177 95.25 L 177 106.25" stroke="#33475F" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="184.5" cy="100.75" r="3.4" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1"/>
+<rect x="26" y="24" width="146" height="103" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 26.6 60 L 26.6 27 Q 26.6 24.6 29 24.6 L 169 24.6 Q 171.4 24.6 171.4 27 L 171.4 60 Z" fill="#DCE8FC"/>
+<line x1="26" y1="60" x2="172" y2="60" stroke="#1453C9" stroke-width="0.8"/>
+<text x="34" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">EvidenciaVisual</text>
+<text x="34" y="53.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">DeIngesta</text>
+<text x="33" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="69" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="73.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="33" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="69" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="89.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">ingestaId</text>
+<text x="165" y="89.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="33" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK UK</text>
+<text x="69" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="81" y="104.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">medioId</text>
+<text x="81" y="120.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 3 atributos más</text>
+<rect x="26" y="172.5" width="146" height="89" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 26.6 194.5 L 26.6 175.5 Q 26.6 173.1 29 173.1 L 169 173.1 Q 171.4 173.1 171.4 175.5 L 171.4 194.5 Z" fill="#DCE8FC"/>
+<line x1="26" y1="194.5" x2="172" y2="194.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="34" y="187.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">RegistroDeAuditoria</text>
+<text x="33" y="208.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="51" y="208.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="208.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="51" y="223.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="223.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">operacion</text>
+<text x="51" y="239.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="63" y="239.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">resultado</text>
+<text x="63" y="254.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 9 atributos más</text>
+<rect x="303" y="24" width="144" height="89" rx="3" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
+<path d="M 303.6 46 L 303.6 27 Q 303.6 24.6 306 24.6 L 444 24.6 Q 446.4 24.6 446.4 27 L 446.4 46 Z" fill="#DCE8FC"/>
+<line x1="303" y1="46" x2="447" y2="46" stroke="#0A1F44" stroke-width="0.8"/>
+<text x="311" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Medio</text>
+<text x="310" y="59.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="328" y="59.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="340" y="59.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="310" y="75.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="328" y="75.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="340" y="75.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">propietarioId</text>
+<text x="440" y="75.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="328" y="90.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="340" y="90.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<text x="340" y="106.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 20 atributos más</text>
+<rect x="303" y="172.5" width="144" height="73.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 303.6 194.5 L 303.6 175.5 Q 303.6 173.1 306 173.1 L 444 173.1 Q 446.4 173.1 446.4 175.5 L 446.4 194.5 Z" fill="#DCE8FC"/>
+<line x1="303" y1="194.5" x2="447" y2="194.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="311" y="187.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">ContenidoDeMedio</text>
+<text x="310" y="208.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK·FK</text>
+<text x="346" y="208.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="358" y="208.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">medioId</text>
+<text x="346" y="223.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="358" y="223.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">bytes</text>
+<text x="358" y="239.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 1 atributo más</text>
+<rect x="578" y="24" width="146" height="118.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 578.6 60 L 578.6 27 Q 578.6 24.6 581 24.6 L 721 24.6 Q 723.4 24.6 723.4 27 L 723.4 60 Z" fill="#DCE8FC"/>
+<line x1="578" y1="60" x2="724" y2="60" stroke="#1453C9" stroke-width="0.8"/>
+<text x="586" y="39.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">AsociacionDe</text>
+<text x="586" y="53.2" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">ImagenDeReceta</text>
+<text x="585" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="621" y="73.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="633" y="73.6" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="585" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK U1</text>
+<text x="621" y="89.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="633" y="89.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">recetaId</text>
+<text x="717" y="89.1" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">↗</text>
+<text x="585" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="621" y="104.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="633" y="104.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">numero</text>
+<text x="585" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">FK</text>
+<text x="621" y="120.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">o</text>
+<text x="633" y="120.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">medioId</text>
+<text x="633" y="135.6" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 4 atributos más</text>
+<rect x="578" y="172.5" width="146" height="104.5" rx="3" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<path d="M 578.6 194.5 L 578.6 175.5 Q 578.6 173.1 581 173.1 L 721 173.1 Q 723.4 173.1 723.4 175.5 L 723.4 194.5 Z" fill="#DCE8FC"/>
+<line x1="578" y1="194.5" x2="724" y2="194.5" stroke="#1453C9" stroke-width="0.8"/>
+<text x="586" y="187.7" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">RegistroDeIdempotencia</text>
+<text x="585" y="208.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9">PK</text>
+<text x="603" y="208.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="615" y="208.1" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">id</text>
+<text x="585" y="223.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="603" y="223.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="615" y="223.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">operacion</text>
+<text x="585" y="239.1" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="603" y="239.1" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="615" y="239.1" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">ambito</text>
+<text x="585" y="254.6" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#566881">U1</text>
+<text x="603" y="254.6" font-family="JetBrains Mono" font-size="10" font-weight="500" fill="#566881">*</text>
+<text x="615" y="254.6" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clave</text>
+<text x="615" y="270.1" font-family="Inter" font-size="10" font-weight="400" font-style="italic" fill="#566881">+ 5 atributos más</text>
+</svg>

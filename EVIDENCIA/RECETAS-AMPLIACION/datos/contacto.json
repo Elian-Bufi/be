@@ -1,0 +1,534 @@
+{
+ "generado": "EVIDENCIA/RECETAS-AMPLIACION/herramientas/armar-entrega.mjs",
+ "conFoto": 0,
+ "recetas": [
+  {
+   "codigo": "R001",
+   "nombre": "Avena cocida con banana y canela",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R002",
+   "nombre": "Tostadas integrales con palta y huevo",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R003",
+   "nombre": "Yogur natural con granola y frutillas",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R004",
+   "nombre": "Licuado de banana con leche y avena",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R005",
+   "nombre": "Tostadas integrales con queso crema y tomate",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R006",
+   "nombre": "Milanesa de carne al horno con puré de calabaza",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R007",
+   "nombre": "Bife a la plancha con papas al horno y ensalada",
+   "familia": "Platos de horno y sartén",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R008",
+   "nombre": "Merluza al horno con puré de papa y brócoli",
+   "familia": "Platos de horno y sartén",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R009",
+   "nombre": "Fideos con salsa bolognesa",
+   "familia": "Pastas y polenta",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R010",
+   "nombre": "Guiso de lentejas con verduras",
+   "familia": "Ollas, legumbres y arroz",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R011",
+   "nombre": "Tarta de acelga con ensalada de tomate",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R012",
+   "nombre": "Bowl de quinoa con garbanzos, huevo y verduras",
+   "familia": "Ensaladas completas y platos fríos",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R013",
+   "nombre": "Wok de pollo con verduras y arroz",
+   "familia": "Platos de horno y sartén",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R014",
+   "nombre": "Hamburguesa casera al plato con ensalada",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R015",
+   "nombre": "Omelette de espinaca con tostada",
+   "familia": "Platos de horno y sartén",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R016",
+   "nombre": "Manzana con nueces",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "original",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R017",
+   "nombre": "Tarta de pollo y puerro",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R018",
+   "nombre": "Tarta de zapallitos y ricota",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R019",
+   "nombre": "Tarta de atún, tomate y huevo",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R020",
+   "nombre": "Tarta de calabaza, cebolla y queso",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R021",
+   "nombre": "Empanadas de carne magra al horno",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R022",
+   "nombre": "Empanadas de pollo y verduras",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R023",
+   "nombre": "Empanadas de humita",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R024",
+   "nombre": "Empanadas de lentejas y calabaza",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R025",
+   "nombre": "Pizza casera de muzzarella y tomate",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R026",
+   "nombre": "Pizza casera de pollo y verduras asadas",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R027",
+   "nombre": "Fainá de garbanzo y cebolla con ensalada",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R028",
+   "nombre": "Calzone de espinaca y ricota",
+   "familia": "Tartas, empanadas, pizzas y masas saladas",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R029",
+   "nombre": "Tallarines con pollo, brócoli y salsa blanca casera",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R030",
+   "nombre": "Fideos con atún, tomate y aceitunas",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R031",
+   "nombre": "Ravioles de ricota y espinaca con salsa de tomate",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R032",
+   "nombre": "Canelones de ricota y espinaca al horno",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R033",
+   "nombre": "Lasaña de carne y berenjena",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R034",
+   "nombre": "Ñoquis de papa con tuco de carne",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R035",
+   "nombre": "Polenta cremosa con tuco de carne magra",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R036",
+   "nombre": "Fideos con salsa de lentejas y tomate",
+   "familia": "Pastas y polenta",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R037",
+   "nombre": "Hamburguesa casera de pollo en pan con lechuga y tomate",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R038",
+   "nombre": "Hamburguesa de lentejas y avena en pan",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R039",
+   "nombre": "Medallones de garbanzo y zanahoria con ensalada",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R040",
+   "nombre": "Milanesa de pollo napolitana al horno con ensalada",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R041",
+   "nombre": "Sándwich de pollo desmenuzado, huevo y verduras",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R042",
+   "nombre": "Sándwich casero de lomito con verduras",
+   "familia": "Hamburguesas, sándwiches y milanesa",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R043",
+   "nombre": "Pastel de papa con carne magra y arvejas",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R044",
+   "nombre": "Pastel de calabaza y pollo",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R045",
+   "nombre": "Zapallitos rellenos de carne y arroz",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R046",
+   "nombre": "Berenjenas rellenas de lentejas y verduras",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R047",
+   "nombre": "Albóndigas de carne con salsa de tomate y arroz",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R048",
+   "nombre": "Pollo al limón con batatas al horno",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R049",
+   "nombre": "Merluza en papillote con verduras y papa",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R050",
+   "nombre": "Tortilla de papa, cebolla y arvejas al horno",
+   "familia": "Platos de horno y sartén",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R051",
+   "nombre": "Arroz con pollo y arvejas en una olla",
+   "familia": "Ollas, legumbres y arroz",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R052",
+   "nombre": "Guiso de garbanzos, pollo y calabaza",
+   "familia": "Ollas, legumbres y arroz",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R053",
+   "nombre": "Guiso de porotos, arroz y verduras",
+   "familia": "Ollas, legumbres y arroz",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R054",
+   "nombre": "Bifes a la criolla con papas",
+   "familia": "Ollas, legumbres y arroz",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R055",
+   "nombre": "Carbonada de carne magra, zapallo y choclo",
+   "familia": "Ollas, legumbres y arroz",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R056",
+   "nombre": "Arroz cremoso con hongos y arvejas",
+   "familia": "Ollas, legumbres y arroz",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R057",
+   "nombre": "Ensalada de arroz, atún, huevo y tomate",
+   "familia": "Ensaladas completas y platos fríos",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R058",
+   "nombre": "Salpicón de pollo, papa y verduras",
+   "familia": "Ensaladas completas y platos fríos",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R059",
+   "nombre": "Ensalada de garbanzos, huevo, remolacha y zanahoria",
+   "familia": "Ensaladas completas y platos fríos",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R060",
+   "nombre": "Ensalada de fideos, porotos blancos y verduras",
+   "familia": "Ensaladas completas y platos fríos",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R061",
+   "nombre": "Panqueques de avena y ricota con banana",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R062",
+   "nombre": "Budín de banana, avena y yogur",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R063",
+   "nombre": "Scones integrales de queso",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R064",
+   "nombre": "Arroz con leche y canela",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R065",
+   "nombre": "Galletas caseras de avena y maní con yogur natural",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  },
+  {
+   "codigo": "R066",
+   "nombre": "Tarta dulce de ricota y limón",
+   "familia": "Desayunos, meriendas y preparaciones dulces",
+   "origen": "nueva",
+   "imagen": null,
+   "estado": "Falta la foto"
+  }
+ ]
+}

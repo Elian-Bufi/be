@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="304pt" viewBox="0 0 750 304" data-lamina="G-12">
+<title>Las migraciones: la base cambia por pasos que no se reescriben</title>
+<desc>53 migraciones del 16/9 al 25/10. Cada una se aplica una sola vez, en orden, y queda anotada. · Fuente: prisma/migrations · apps/api/scripts/iniciar.sh · .github/workflows/ci.yml · Versión: e4512cb (2026-10-26) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="304" fill="#FFFFFF"/>
+<path d="M 37.5 52 L 65.47 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 72.47 52 L 82.96 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 89.96 52 L 100.45 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 107.45 52 L 117.94 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 124.94 52 L 170.4 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 177.4 52 L 240.35 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 247.35 52 L 275.32 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 282.32 52 L 292.81 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 299.81 52 L 310.29 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 317.29 52 L 327.78 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 334.78 52 L 362.76 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 369.76 52 L 380.24 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 387.24 52 L 415.22 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 422.22 52 L 537.63 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 544.63 52 L 555.12 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 562.12 52 L 572.6 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 579.6 52 L 607.58 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 614.58 52 L 712.5 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 720 52 L 742 52" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 735 55.36 L 742 52 L 735 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 136 162 L 156.5 162" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 149.5 165.36 L 156.5 162 L 149.5 158.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 288.5 162 L 309 162" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 302 165.36 L 309 162 L 302 158.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 441 162 L 461.5 162" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 454.5 165.36 L 461.5 162 L 454.5 158.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 593.5 162 L 614 162" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 607 165.36 L 614 162 L 607 158.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 527.5 200 L 527.5 210 Q 527.5 215 532.5 215 L 592.4 215 Q 597.4 215 597.4 220 L 597.4 230" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 594.04 223 L 597.4 230 L 600.76 223" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="34" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="68.97" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="86.46" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="103.95" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="121.44" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="173.9" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="243.85" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="278.82" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="296.31" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="313.79" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="331.28" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="366.26" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="383.74" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="418.72" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="541.13" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="558.62" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="576.1" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="611.08" cy="52" r="3.5" fill="#0A1F44"/>
+<circle cx="716" cy="52" r="3.5" fill="#0A1F44"/>
+<rect x="4" y="124" width="132" height="76" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="70" y="144.93" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">schema.prisma</text>
+<text x="70" y="158.37" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">cambia</text>
+<text x="70" y="173.33" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">El modelo de datos, en</text>
+<text x="70" y="186.13" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">el código.</text>
+<rect x="156.5" y="124" width="132" height="76" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="222.5" y="145.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">migration.sql nueva</text>
+<text x="222.5" y="160.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Prisma la genera; los</text>
+<text x="222.5" y="173.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">disparadores se</text>
+<text x="222.5" y="185.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">escriben a mano.</text>
+<rect x="309" y="124" width="132" height="76" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="145.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">La CI la prueba</text>
+<text x="375" y="160.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Aplica las 53 sobre</text>
+<text x="375" y="173.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">bases vacías, como el</text>
+<text x="375" y="185.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">despliegue.</text>
+<rect x="461.5" y="124" width="132" height="76" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="527.5" y="144.93" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Render: migrate</text>
+<text x="527.5" y="158.37" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">deploy</text>
+<text x="527.5" y="173.33" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Al arrancar el</text>
+<text x="527.5" y="186.13" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">contenedor nuevo.</text>
+<rect x="614" y="124" width="132" height="76" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="680" y="145.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">_prisma_migrations</text>
+<text x="680" y="160.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Anota cuáles se</text>
+<text x="680" y="173.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">aplicaron: nunca dos</text>
+<text x="680" y="185.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">veces.</text>
+<rect x="391.5" y="230" width="272" height="64" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="527.5" y="251.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Si falla</text>
+<text x="527.5" y="266.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">El proceso termina, la instancia nueva no pasa</text>
+<text x="527.5" y="279.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">/health/ready y Render conserva la anterior.</text>
+<text x="34" y="24.5" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A">16/9 · identidad</text>
+<text x="34" y="38" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A">y sesiones</text>
+<text x="103.95" y="74" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A">19 a 21/9 · vínculos y PDP, nutrición,</text>
+<text x="103.95" y="87.5" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A">antropometría, entrenamiento: once</text>
+<text x="331.28" y="24.5" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">3/10 · el PDP bloquea</text>
+<text x="331.28" y="38" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">lo que corta</text>
+<text x="383.74" y="74" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">5 y 6/10 · recetas y medios,</text>
+<text x="383.74" y="87.5" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">capacidades del cliente</text>
+<text x="558.62" y="24.5" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">16 y 17/10 · novedades,</text>
+<text x="558.62" y="38" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">Google, notas</text>
+<text x="611.08" y="74" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">19/10 · catálogo base</text>
+<text x="611.08" y="87.5" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="middle">y reanudación web</text>
+<text x="716" y="24.5" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="end">25/10 ·</text>
+<text x="716" y="38" font-family="Inter" font-size="10" font-weight="400" fill="#0F172A" text-anchor="end">administración</text>
+</svg>

@@ -74,6 +74,12 @@ test('un hito es todo lo que no se registra todos los días: ni una comida ni un
     'FOLLOW_UP_CLOSED',
     // DL-140: la nota de coordinación también es un hito.
     'COORDINATION_NOTE_RECORDED',
+    // DL-165 D-8: y los hechos de un formulario (no de planificación: no cambian lo que se le indica a nadie).
+    'FORM_REQUESTED',
+    'FORM_RESPONDED',
+    'FORM_LOADED',
+    'FORM_CONFIRMED',
+    'FORM_REJECTED',
   ]);
   // Cada tipo del contrato es un hito o es de todos los días: ninguno queda sin clase si el contrato suma un tipo.
   assert.equal(TIPOS_DE_HITO.length + 2, TIPOS_DE_EVENTO.length);

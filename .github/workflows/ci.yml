@@ -39,9 +39,9 @@ jobs:
       - run: npx prisma generate
       - name: Typecheck (domain, api, web, mobile)
         run: npm run typecheck
-      - name: OpenAPI generado desde @be/domain sin drift (09v7 T21)
-        run: node scripts/generar-openapi.cjs --verificar
-      - name: Pruebas unitarias (domain, api)
+      - name: OpenAPI generado desde @be/domain sin drift (09v7 T21) · semilla de los formularios de inicio sin drift (DL-164)
+        run: node scripts/generar-openapi.cjs --verificar && node scripts/formularios-de-inicio/generar-migracion-de-plantillas.mjs --comprobar
+      - name: Pruebas unitarias (domain, api, web, mobile)
         run: npm test
       - name: Build API
         run: npm run build:api

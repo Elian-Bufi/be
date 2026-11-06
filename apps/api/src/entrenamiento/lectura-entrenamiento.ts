@@ -1,4 +1,4 @@
-import { CONDICION_DE_SESION_API, GRANULARIDAD_API, sesionesDelPlan, type FuenteExterna } from '@be/domain';
+import { CONDICION_DE_SESION_API, GRANULARIDAD_API, serieEnSuForma, sesionesDelPlan, type FuenteExterna } from '@be/domain';
 import type {
   Bloque,
   CondicionDeSesion,
@@ -22,6 +22,7 @@ import type {
 } from '@be/domain';
 import type { EvaluacionDeEntrenamiento as FilaDeEvaluacion, Prisma, VersionDeObjetivoDeEntrenamiento as FilaDeVersionDeObjetivo } from '@prisma/client';
 import { nombreDeProfesional, token } from '../vinculo/lectura';
+import type { VisualDeFila } from './catalogo-visual';
 
 /**
  * Modelos de lectura de TRN (09v10; contratos-entrenamiento.ts). Una versión ACTIVADA se lee de su instantánea,
@@ -85,19 +86,20 @@ export interface FilaDeEjercicio {
 }
 
 /**
- * Las zonas musculares y el material didáctico no están en la entrega (DL-081; docs/paquetes/WP-06.md §9.8): viajan
- * vacíos, porque cero zonas es legítimo (REG-06-139) y nunca se inventa una relación para llenar el campo. Tampoco un
- * ejercicio importado de wger trae zonas: los músculos que declara el proveedor no son zona BE (09v12:397-401).
+ * Las zonas musculares y la imagen vigentes del ejercicio (DL-081, DL-162; `catalogo-visual.ts`), con la forma congelada
+ * que leen las APK instaladas. Sin `visual`, o sin nada cargado, viajan vacías: cero zonas es legítimo (REG-06-139) y
+ * nunca se inventa una relación para llenar el campo. Un ejercicio importado de wger no trae zonas del proveedor: los
+ * músculos que declara wger no son zona BE (09v12:397-401); las suyas las cura BE.
  */
-export function ejercicioApi(f: FilaDeEjercicio): EjercicioDeCatalogo {
+export function ejercicioApi(f: FilaDeEjercicio, visual?: VisualDeFila): EjercicioDeCatalogo {
   return {
     exerciseId: f.ejercicioId,
     versionId: f.versionId,
     name: f.nombre,
     provenance: f.procedencia,
     externalSource: f.fuenteExterna ?? null,
-    muscleZones: [],
-    didacticResources: [],
+    muscleZones: visual?.muscleZones ?? [],
+    didacticResources: visual?.didacticResources ?? [],
     available: f.disponible,
   };
 }
@@ -281,7 +283,8 @@ export function ejerciciosRegistradosApi(
       performedExerciseVersionId: e.performedExerciseVersionId,
       performedExerciseName: nombres.get(e.performedExerciseVersionId) ?? 'Ejercicio no disponible',
       substituted: e.performedExerciseVersionId !== prescribedExerciseVersionId,
-      sets: 'sets' in e ? e.sets.map((s) => ({ ...s })) : null,
+      // Campo por campo (DL-161): lo de la serie que no existe no se devuelve, y lo registrado antes llega idéntico.
+      sets: 'sets' in e ? e.sets.map(serieEnSuForma) : null,
       executionSummary: 'executionSummary' in e ? { description: e.executionSummary.description } : null,
     };
   });

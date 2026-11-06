@@ -104,6 +104,17 @@ export class LaApk {
     return operacion in this.congelado.lecturas;
   }
 
+  /**
+   * Si esta APK declara la capacidad en `X-BE-Capabilities` (DL-122), como la manda en cada pedido: desde la
+   * 0.21.0-candidata.1, `forms-format-3` (DL-165), con la que la API le entrega las versiones de formato 3.
+   */
+  declara(capacidad: string): boolean {
+    return (this.congelado.cabeceras['X-BE-Capabilities'] ?? '')
+      .split(',')
+      .map((c) => c.trim())
+      .includes(capacidad);
+  }
+
   /** Si el pedido de esa operación, en esta APK, tiene el campo (por ejemplo, la declaración de mayoría de edad del alta). */
   mandaElCampo(operacion: string, campo: string): boolean {
     return campo in (this.lectura(operacion).pedido?.properties ?? {});

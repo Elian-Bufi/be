@@ -29,6 +29,7 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService, ejercicioVisible } from './catalogo.service';
 import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
+import { visualDeEjercicios } from './catalogo-visual';
 import { ejercicioApi, type FilaDeEjercicio } from './lectura-entrenamiento';
 
 type Tx = Prisma.TransactionClient;
@@ -82,10 +83,11 @@ export class HabitualesDeEntrenamientoService {
           select: { ejercicioId: true },
         });
         const vigentes = await this.versionesVigentes(tx, actor.identidadId, marcas.map((m) => m.ejercicioId));
+        const visual = await visualDeEjercicios(tx, [...vigentes.values()].map((f) => f.ejercicioId));
         return {
           data: marcas.flatMap((m) => {
             const fila = vigentes.get(m.ejercicioId);
-            return fila && fila.disponible ? [ejercicioApi(fila)] : [];
+            return fila && fila.disponible ? [ejercicioApi(fila, visual(fila.ejercicioId))] : [];
           }),
         };
       },

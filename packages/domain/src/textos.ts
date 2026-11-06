@@ -27,6 +27,12 @@ export const TipoDeTexto = {
    * declara que es adulta: BE no pide la fecha de nacimiento (minimización).
    */
   MAYORIA_DE_EDAD: 'MAYORIA_DE_EDAD',
+  /**
+   * DL-165 D-9 (FR-10): «Compartir mis hábitos con mis profesionales», el acto de la persona que deja que los profesionales
+   * que ella elige vean sus hábitos (API-HBT-03). Es una **propuesta** (`VERSIONES_PROPUESTAS`), pendiente de validación
+   * jurídica, como `EVIDENCIA_VISUAL` (DL-125).
+   */
+  HABITOS_COMPARTIDOS: 'HABITOS_COMPARTIDOS',
 } as const;
 export type TipoDeTexto = (typeof TipoDeTexto)[keyof typeof TipoDeTexto];
 
@@ -170,6 +176,35 @@ Aceptar esta versión no acepta versiones futuras.`;
  */
 const MAYORIA_DE_EDAD = 'Declaro que tengo 18 años o más. BE es solo para personas adultas.';
 
+/**
+ * DL-165 D-9 (WP-FORMULARIOS-RONDA-2 §4.3 a §4.6): «Compartir mis hábitos con mis profesionales». Cada afirmación es lo que
+ * hace la implementación: la categoría son las preguntas de `SECCION_DE_HABITOS` y nada de la salud; la lista es explícita
+ * y la elige la persona (API-HBT-03); un profesional nuevo no la recibe solo (la app pregunta); lo ve solo con su vínculo
+ * aceptado y su acceso autorizado (el PDP de API-HBT-05), sin la historia ni de qué formulario salió; cada lectura queda
+ * registrada; retirarla corta para todos y no borra nada (API-HBT-04); cerrar la cuenta la retira.
+ *
+ * **Es una propuesta**, pendiente de validación jurídica: con personas reales, solo después de esa revisión (VJR-1, VJR-4 y
+ * VJR-5 del 08) y del gate del 08 §42. La versión aprobada entra como sucesora de esta, con otro id, y no hereda sus
+ * aceptaciones (09 §31.2.6).
+ */
+const HABITOS_COMPARTIDOS = `Compartir mis hábitos con mis profesionales — versión propuesta 2026-11
+
+${AVISO}
+
+Texto propuesto, pendiente de validación jurídica.
+
+Esta autorización es sobre una sola categoría de datos: tus hábitos. Son las respuestas de la parte «Tus hábitos»: a qué hora te levantás y te acostás, cuántas horas dormís, cómo es tu día en movimiento, el ejercicio o el deporte de tu semana y cómo viene tu semana en estrés. No incluye tu salud (medicación, condiciones o embarazo) ni el resto de tus formularios.
+
+Qué cambia: sin esta autorización, cada profesional ve solo lo que le respondiste a él, en su formulario. Con ella, los profesionales que elijas ven tus hábitos vigentes, aunque se los hayas contado a otro profesional o en «Mis hábitos». Ven la versión vigente, con su fecha y como declarada por vos. No ven de qué formulario salió ni tus versiones anteriores.
+
+Quiénes los ven: solo los profesionales que elijas en la lista, mientras su vínculo con vos esté vigente y su acceso esté autorizado. Si un vínculo se pausa o termina, ese profesional deja de verlos. Un profesional que empiece a acompañarte después no los ve: BE te pregunta antes, y si no respondés, no los ve.
+
+Cada vez que un profesional los abre, queda registrado.
+
+Podés cambiar la lista o retirar esta autorización cuando quieras, desde «Mis hábitos». Al retirarla, ninguno de tus profesionales los ve desde ese momento. No se borra nada: tus hábitos siguen en tu app, y lo que cada profesional tiene de su propio formulario sigue siendo suyo. Retirarla no deshace lo que un profesional ya vio. Cerrar tu cuenta también la retira.
+
+Aceptar esta versión no acepta versiones futuras.`;
+
 export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
   {
     id: 'terminos-2026-09-demo',
@@ -252,6 +287,16 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
     hash: 'cd090b1e6ae3d68033962ed5b8effd2b6a0b8db7bd3f046e1fadf06b986c60f6',
     reemplazaA: null,
   },
+  {
+    id: 'habitos-compartidos-2026-11-propuesta',
+    tipo: 'HABITOS_COMPARTIDOS',
+    titulo: 'Compartir mis hábitos con mis profesionales',
+    finalidad: 'COMPARTIR_HABITOS_CON_PROFESIONALES',
+    vigenteDesde: '2026-11-05T00:00:00.000Z',
+    texto: HABITOS_COMPARTIDOS,
+    hash: '039e752d5c17f469f640068f246cba10190c5a563ad9b546a05269996b5326ee',
+    reemplazaA: null,
+  },
 ];
 
 /**
@@ -259,7 +304,7 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
  * (`textApproval: 'PENDING_APPROVAL'`) y la APK lo muestra junto al texto. Salen de acá cuando Dirección aprueba un texto,
  * que entra como una versión nueva.
  */
-export const VERSIONES_PROPUESTAS: ReadonlySet<string> = new Set(['evidencia-visual-2026-10-propuesta']);
+export const VERSIONES_PROPUESTAS: ReadonlySet<string> = new Set(['evidencia-visual-2026-10-propuesta', 'habitos-compartidos-2026-11-propuesta']);
 
 /** Versión vigente por tipo. Una versión nueva no hereda aceptación (09 §31.2.6). */
 export const VERSION_VIGENTE: Readonly<Record<TipoDeTexto, VersionDeTexto>> = Object.fromEntries(

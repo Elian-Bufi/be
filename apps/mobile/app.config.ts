@@ -89,6 +89,8 @@ const config: ExpoConfig = {
   backgroundColor: FONDO,
   android: {
     package: 'com.elianbufi.be',
+    // La versión y el versionCode de una candidata se suben solo en su rama (`main` más un commit que toca esto): la
+    // próxima es la 0.20.0-candidata.1 con el 33 (la 0.19.0-candidata.1 publicada lleva el 32; cada candidata sube uno).
     versionCode: 22,
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',

@@ -7,6 +7,7 @@ import { COPY, COPY_ANTROPOMETRIA, type Resultado } from '@be/domain';
 import type { ReactNode } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import { IconoDeZona } from '../barra-de-zonas';
+import { Icono, type NombreDeIcono } from '../icono';
 import type { Ir, Zona } from '../navegacion';
 import { Boton, COLOR, estilosPorTema, Parrafo } from '../ui';
 
@@ -21,13 +22,14 @@ const ESCALA_PARA_APILAR = 1.5;
  * título crece con la letra hasta 1,5 veces: más grande, una palabra larga no entraba en la línea y se partía (render del
  * navegador con letra ×2, en 360 dp). El resto de la tarjeta crece sin tope.
  */
-export function TarjetaDeInicio({ zona, titulo, detalle, children }: { zona: Zona; titulo: string; detalle?: string; children: ReactNode }) {
+export function TarjetaDeInicio({ zona, titulo, detalle, icono, children }: { zona: Zona; titulo: string; detalle?: string; icono?: NombreDeIcono; children: ReactNode }) {
   const { fontScale } = useWindowDimensions();
   return (
     <View style={estilos.tarjeta}>
       <View style={[estilos.cabeza, fontScale >= ESCALA_PARA_APILAR && estilos.cabezaApilada]}>
         <View style={estilos.icono}>
-          <IconoDeZona zona={zona} color={COLOR.acento} grosor={1.8} />
+          {/* El de su módulo, salvo que la tarjeta pida otro de la familia (PA-06): «Tu actividad» no es el módulo entero. */}
+          {icono ? <Icono nombre={icono} tamano={24} tono="acento" /> : <IconoDeZona zona={zona} color={COLOR.acento} />}
         </View>
         <View style={[estilos.textosDeCabeza, fontScale >= ESCALA_PARA_APILAR && estilos.textosApilados]}>
           <Text style={estilos.titulo} accessibilityRole="header" maxFontSizeMultiplier={1.5}>
@@ -86,7 +88,9 @@ export function Accion({ children }: { children: ReactNode }) {
 }
 
 export const estilos = estilosPorTema((COLOR) => ({
-  fechaDeHoy: { fontSize: 16, color: COLOR.tenue, marginTop: -6, marginBottom: 8 },
+  // La fecha de hoy, con el ícono de «hoy» al lado (PA-06).
+  filaDeLaFecha: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -6, marginBottom: 8 },
+  fechaDeHoy: { fontSize: 16, color: COLOR.tenue, flexShrink: 1 },
   // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde.
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },

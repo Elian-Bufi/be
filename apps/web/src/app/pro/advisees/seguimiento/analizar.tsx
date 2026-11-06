@@ -37,6 +37,8 @@
  */
 import {
   CAPAS_DE_LA_COMPARACION,
+  COPY_REGISTRO_POR_NIVELES,
+  esPuntoDeCargaRapida,
   escalonesDelRango,
   indicadoDelDiaEnCelda,
   indicadoDelDiaEnPalabras,
@@ -120,6 +122,7 @@ const AGRUPADA: Readonly<Record<GranoElegido, string>> = { ORIGINAL: 'cada regis
 const MOTIVO_SIN_REFERENCIA: Readonly<Record<string, string>> = {
   ESCALA_NO_ADMITE: 'no admite cambio relativo (no es una escala de razón)',
   SIN_OBSERVACIONES: 'no tiene observaciones en los días de referencia',
+  SOLO_CARGA_RAPIDA: 'solo tiene series de carga rápida en los días de referencia (tildadas sin escribir: no se usan de referencia)',
   NO_POSITIVA: 'tiene una referencia de cero o negativa',
   FUERA_DEL_PERIODO: 'tiene el rango de referencia fuera del período leído',
 };
@@ -432,6 +435,8 @@ export function Analizar() {
   // La leyenda dice solo lo que hay dibujado: un estado que no aparece no ocupa lugar.
   const puntosDibujados = dibujables.flatMap((d) => d.serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta));
   const hayHuecos = puntosDibujados.some((p) => p.quality === 'PARTIAL' || p.partialBucket);
+  // DL-161: las series de carga rápida también van huecas, con su propia leyenda.
+  const hayCargaRapida = puntosDibujados.some(esPuntoDeCargaRapida);
   // Varios cortes en un gráfico llevan un número (el motivo escrito se pisaba): acá, cuál es cada uno. Con uno solo, el
   // gráfico ya lo dice.
   const cortesNumerados =
@@ -640,11 +645,16 @@ export function Analizar() {
                     </ul>
                   ) : null}
                   {/* Cómo se lee una marca: solo lo que está dibujado. La métrica no va acá: la nombran su gráfico y su línea. */}
-                  {hayHuecos || clases.has('REPORTED') || clases.has('DERIVED') || cortesNumerados.length > 0 ? (
+                  {hayHuecos || hayCargaRapida || clases.has('REPORTED') || clases.has('DERIVED') || cortesNumerados.length > 0 ? (
                     <ul className="leyenda" aria-label="Cómo se lee cada marca">
                       {hayHuecos ? (
                         <li>
                           <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), o día o semana sin completar
+                        </li>
+                      ) : null}
+                      {hayCargaRapida ? (
+                        <li data-leyenda="carga-rapida">
+                          <Marca indice={0} hueco /> {COPY_REGISTRO_POR_NIVELES.leyendaCargaRapida}
                         </li>
                       ) : null}
                       {cortesNumerados.map((c) => (
@@ -1152,6 +1162,7 @@ function textoDeReferencia(r: Extract<Referencia, { tipo: 'valida' }>, s: Lista)
     `n = ${numero(r.n)}${r.regla !== 'PRIMERA' && r.n < 3 ? ': pocas observaciones, la referencia es frágil' : ''}`,
     ...(r.parciales ? [`${numero(r.parciales)} ${r.parciales === 1 ? 'subtotal' : 'subtotales'}`] : []),
     ...(r.incompletos ? [`${numero(r.incompletos)} sin completar, fuera de la referencia`] : []),
+    ...(r.deCargaRapida ? [`${numero(r.deCargaRapida)} de ${COPY_REGISTRO_POR_NIVELES.cargaRapida}, fuera de la referencia`] : []),
     ...(r.tramo !== null ? ['solo se compara con su mismo tramo comparable'] : []),
   ];
   return `${REGLA_DE_REFERENCIA[r.regla]} del ${diaCivil(r.desde)} al ${diaCivil(r.hasta)}, ${valorParaMostrar(r.valor, s.definicion, s.estado.serie.unit)} (${extras.join('; ')})`;
@@ -1160,6 +1171,8 @@ function textoDeReferencia(r: Extract<Referencia, { tipo: 'valida' }>, s: Lista)
 /** El cambio relativo de un punto contra su referencia, dicho en palabras; `null` si no corresponde. */
 function relativoDelPunto(p: PuntoAnalitico, r: Referencia | undefined): string | null {
   if (!r || r.tipo !== 'valida' || p.value === null) return null;
+  // DL-161: el valor de una serie tildada sin escribir es el del plan; no se compara con la referencia.
+  if (esPuntoDeCargaRapida(p)) return `sin cambio relativo: ${COPY_REGISTRO_POR_NIVELES.cargaRapida}, tildada sin escribir`;
   if (r.tramo !== null && p.segment !== r.tramo) return 'sin cambio relativo: es de otro tramo comparable que la referencia';
   const v = cambioRelativo(p.value, r.valor);
   return `${v > 0 ? '+' : ''}${numero(Number(v.toFixed(1)))} % contra la referencia`;
@@ -1426,7 +1439,7 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
                             .map((p) =>
                               p.value === null
                                 ? 'Sin valor conocido'
-                                : `${valorParaMostrar(p.value, s.definicion, s.estado.serie.unit)}${p.quality === 'PARTIAL' ? ' (subtotal)' : ''}${p.partialBucket ? (p.dateEnd ? ' (semana sin completar)' : ' (día en curso)') : ''}${
+                                : `${valorParaMostrar(p.value, s.definicion, s.estado.serie.unit)}${p.quality === 'PARTIAL' ? ' (subtotal)' : ''}${esPuntoDeCargaRapida(p) ? ` (${COPY_REGISTRO_POR_NIVELES.cargaRapida})` : ''}${p.partialBucket ? (p.dateEnd ? ' (semana sin completar)' : ' (día en curso)') : ''}${
                                     p.dataClass === 'REPORTED' || p.dataClass === 'DERIVED' ? ` (${claseEnPalabras(p.dataClass, p.method).replace(/^./, (c) => c.toLowerCase())})` : ''
                                   }`,
                             )

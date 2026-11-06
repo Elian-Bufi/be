@@ -295,6 +295,56 @@ export class PdpService {
   }
 
   /**
+   * DL-165 D-9 (FR-10, API-HBT-05): una lectura que **no depende del Alcance** —los hábitos de la persona, que ella le
+   * comparte a un profesional—, pero que sí exige que el profesional la acompañe hoy con su acceso autorizado. Decide los
+   * tres alcances del par (profesional, titular) dentro de la transacción de la lectura, con los mismos bloqueos y la misma
+   * función que cualquier decisión (vínculo aceptado, ni en pausa ni terminado; B2; cuentas; A3 del titular).
+   * - Con alguno permitido: registra las tres decisiones (la denegada también, con su dimensión) y devuelve los
+   *   componentes de vínculo permitidos, que la autorización de la persona tiene que nombrar.
+   * - Sin ninguno: lanza `DenegacionDelPdp` (404) con la decisión del primer alcance que tiene un componente con esa
+   *   persona (o la del primero, si no tiene ninguno): la que apunta a la causa.
+   * No se captura para la idempotencia: es una lectura.
+   */
+  async decidirAlgunAlcanceEnTransaccion(
+    tx: Prisma.TransactionClient,
+    p: { readonly operacion: string; readonly actorDeLaDecision: string; readonly profesionalId: string; readonly titularId: string; readonly recurso: { readonly tipo: string; readonly id: string } | null },
+    ctx: ContextoDeSolicitud,
+  ): Promise<{ readonly alcanceDeVinculoId: string; readonly alcance: Alcance }[]> {
+    const titularId = UUID.test(p.titularId) ? p.titularId.toLowerCase() : null;
+    if (titularId) await this.bloquearLoQueCorta(tx, p.profesionalId, titularId);
+    const evaluadas = (await this.leerFilas(tx, p.profesionalId, titularId)).map((fila) => {
+      const hechos = aHechos(p.profesionalId, fila);
+      return { fila, hechos, decision: evaluarAutorizacion(hechos) };
+    });
+    if (evaluadas.length === 0) throw errorInterno();
+    const registros: Prisma.DecisionDeAccesoCreateManyInput[] = evaluadas.map(({ fila, hechos, decision }) => ({
+      operacion: p.operacion,
+      resultado: decision.permitida ? 'PERMITIDA' : 'DENEGADA',
+      actorId: p.actorDeLaDecision,
+      sujetoId: hechos.titular?.identidadId ?? null,
+      alcance: hechos.operacion.alcance,
+      finalidad: hechos.operacion.finalidad,
+      dimensionesDesfavorables: [...decision.dimensionesDesfavorables],
+      alcanceDeVinculoId: decision.permitida ? decision.alcanceDeVinculoId : (hechos.alcanceDeVinculo?.id ?? null),
+      consentimientoId: decision.permitida ? decision.consentimientoId : (hechos.consentimiento?.id ?? null),
+      versionDeConsentimientoId: decision.permitida ? decision.versionDeConsentimientoId : fila.version_cabeza_id,
+      versionDeMatriz: null,
+      recursoTipo: p.recurso?.tipo ?? null,
+      recursoId: p.recurso?.id ?? null,
+      superficie: ctx.superficie,
+      requestId: ctx.requestId,
+      momentoDeOcurrencia: fila.momento,
+    }));
+    const permitidos = evaluadas.flatMap((e) => (e.decision.permitida ? [{ alcanceDeVinculoId: e.decision.alcanceDeVinculoId, alcance: e.hechos.operacion.alcance }] : []));
+    if (permitidos.length === 0) {
+      const causa = evaluadas.findIndex((e) => e.hechos.alcanceDeVinculo !== null);
+      throw new DenegacionDelPdp(registros[causa >= 0 ? causa : 0]!);
+    }
+    await tx.decisionDeAcceso.createMany({ data: registros });
+    return permitidos;
+  }
+
+  /**
    * Registra una decisión denegada fuera de la transacción revertida (ver `DenegacionDelPdp`). Si el registro falla, la
    * respuesta sigue siendo el 404: denegar no depende de poder auditar (UC-I02 E06 exige lo inverso).
    */

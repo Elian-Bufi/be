@@ -333,7 +333,7 @@ export function PantallaDeComidaDiferente({
           </>
         ) : (
           <>
-            <IconoDeCamara color={COLOR.acento} tamano={44} grosor={1.6} />
+            <IconoDeCamara color={COLOR.acento} tamano={44} />
             <Text style={estilos.agregarFoto}>{COPY_REGISTRO_DE_COMIDAS.agregarFoto}</Text>
             {origenes}
           </>

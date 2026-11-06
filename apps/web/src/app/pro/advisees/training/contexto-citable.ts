@@ -1,18 +1,23 @@
 /**
  * PF-02 · lógica del «Contexto declarado» del formulario de evaluación de entrenamiento, sin React ni Next, para poder
- * probarla sola (`scripts/contexto-citable.test.mjs`). Cubre las tres correcciones de la auditoría del PR 102:
+ * probarla sola (`apps/web/test/contexto-citable.test.mjs`). Cubre las tres correcciones de la auditoría del PR 102:
  * - **versión vista:** cada respuesta citable guarda la versión que el profesional vio (`expectedVersion`, el `version`
- *   de FRM-05), y la cita la envía. Si la persona rectificó en el medio, la API responde 409 y no registra nada (DL-102);
- *   después de actualizar, las elegidas que cambiaron se desmarcan y se señalan para revisarlas;
+ *   de la respuesta), y la cita la envía. Si la persona rectificó en el medio, la API responde 409 y no registra nada
+ *   (DL-102); después de actualizar, las elegidas que cambiaron se desmarcan y se señalan para revisarlas;
  * - **paginación:** el contexto se carga por páginas con el cursor de FRM-04. Una página sin respuestas de entrenamiento
  *   no es un vacío definitivo si quedan páginas;
  * - **tope de 20 citas** (`formResponseReferences` admite hasta 20): no se puede marcar la 21, se puede desmarcar, y se
  *   valida también antes de enviar. Nunca se descarta una selección en silencio.
+ *
+ * WP-FORMULARIOS-DE-INICIO (DL-164): FRM-ENTRENAMIENTO v2 usa tipos nuevos, y FRM-05 y FRM-02 responden 404 para sus
+ * solicitudes (D-5). El detalle y la estructura se leen con las operaciones que sirven cualquier versión —API-FRI-03 y
+ * API-FRI-01— y cada valor se muestra en palabras con `resumenDeValor` (la etiqueta de la opción, el número con su
+ * unidad), sin códigos. La cita sigue siendo por `fieldCode` y versión de la respuesta: eso no cambia.
  */
-import { valorDeclarado, type DetalleDeSolicitudResponse, type ListaDeSolicitudesDeFormularioResponse, type Resultado, type VersionDePlantillaResponse } from '@be/domain';
+import { resumenDeValor, valorDeclarado, type CampoDePlantillaV2, type DetalleDeSolicitudV2, type ListaDeSolicitudesDeFormularioResponse, type Resultado, type VersionDePlantillaV2 } from '@be/domain';
 
-// El valor de una respuesta declarada, con su unidad, es el mismo acá y en Información · Solicitudes: está en el dominio
-// (`solicitudes-de-informacion.ts`), con su prueba. Se vuelve a exportar para quien ya lo tomaba de este archivo.
+// El valor de una respuesta V1 con su unidad sigue en el dominio (`solicitudes-de-informacion.ts`), con su prueba. Se
+// vuelve a exportar para quien lo tomaba de este archivo (las citas que la API devuelve en una evaluación registrada).
 export { valorDeclarado };
 
 /** El máximo de citas por evaluación: el mismo tope que el contrato (`formResponseReferences` hasta 20). */
@@ -36,8 +41,10 @@ export const claveDe = (c: { formResponseId: string; fieldCode: string }): strin
 /** De dónde se lee el contexto. En la pantalla es el cliente de la API; en las pruebas, una fuente falsa. */
 export interface FuenteDeContexto {
   listar(cursor: string | undefined): Promise<Resultado<ListaDeSolicitudesDeFormularioResponse>>;
-  detalle(formRequestId: string): Promise<Resultado<DetalleDeSolicitudResponse>>;
-  version(templateId: string, templateVersionId: string): Promise<Resultado<VersionDePlantillaResponse>>;
+  /** API-FRI-03: el detalle de una solicitud, en formato V2, sea de P0 o de tipos nuevos. */
+  vista(formRequestId: string): Promise<Resultado<{ data: DetalleDeSolicitudV2 }>>;
+  /** API-FRI-01: la estructura de la versión, en formato V2 (las de P0, traducidas). */
+  definicion(templateId: string, templateVersionId: string): Promise<Resultado<{ data: VersionDePlantillaV2 }>>;
 }
 
 export interface PaginaDeCitables {
@@ -46,19 +53,20 @@ export interface PaginaDeCitables {
   readonly siguiente: string | null;
 }
 
-type CamposDePlantilla = Map<string, { label: string; unit: string | null }>;
+type CamposDePlantilla = Map<string, CampoDePlantillaV2>;
 
 /**
  * Una página de FRM-04 (las Solicitudes que este profesional hoy puede leer, respondidas), convertida en respuestas
- * citables: solo las de ENTRENAMIENTO, en su versión vigente, con rótulo y unidad de su plantilla. `plantillas` es una
- * caché compartida entre páginas. El servidor vuelve a validar cada cita, y su versión, al registrar la evaluación.
+ * citables: solo las de ENTRENAMIENTO, en su versión vigente, con el rótulo de su plantilla y el valor en palabras.
+ * `plantillas` es una caché compartida entre páginas. El servidor vuelve a validar cada cita, y su versión, al
+ * registrar la evaluación.
  */
 export async function cargarPaginaDeCitables(fuente: FuenteDeContexto, cursor: string | undefined, plantillas: Map<string, CamposDePlantilla>): Promise<Resultado<PaginaDeCitables>> {
   const lista = await fuente.listar(cursor);
   if (!lista.ok) return lista;
   const citables: Citable[] = [];
   for (const s of lista.datos.data.filter((x) => x.scope === 'ENTRENAMIENTO')) {
-    const detalle = await fuente.detalle(s.formRequestId);
+    const detalle = await fuente.vista(s.formRequestId);
     if (!detalle.ok) return detalle;
     const respuesta = detalle.datos.data.response;
     if (!respuesta || respuesta.effectiveView.kind === 'NOT_RESOLVABLE') continue;
@@ -67,9 +75,9 @@ export async function cargarPaginaDeCitables(fuente: FuenteDeContexto, cursor: s
     const vigentes = rectificacion ? rectificacion.answers : respuesta.original.answers;
     let campos = plantillas.get(s.templateVersionId);
     if (!campos) {
-      const version = await fuente.version(s.templateId, s.templateVersionId);
+      const version = await fuente.definicion(s.templateId, s.templateVersionId);
       if (!version.ok) return version;
-      campos = new Map(version.datos.data.sections.flatMap((sec) => sec.fields.map((c) => [c.fieldCode, { label: c.label, unit: c.unit }] as const)));
+      campos = new Map(version.datos.data.sections.flatMap((sec) => sec.fields.map((c) => [c.fieldCode, c] as const)));
       plantillas.set(s.templateVersionId, campos);
     }
     for (const a of vigentes) {
@@ -79,8 +87,8 @@ export async function cargarPaginaDeCitables(fuente: FuenteDeContexto, cursor: s
         fieldCode: a.fieldCode,
         expectedVersion: respuesta.version,
         etiqueta: campo?.label ?? a.fieldCode,
-        // La misma unidad que la API devuelve al citar (DL-102): la declarada por la persona o, si falta, la de la plantilla.
-        valor: valorDeclarado(a.value, a.unit ?? campo?.unit ?? null),
+        // En palabras, con las etiquetas de la plantilla; un número lleva la unidad declarada (DL-102).
+        valor: resumenDeValor(campo, a.answer),
         fecha: rectificacion ? rectificacion.recordedAt : respuesta.submittedAt,
       });
     }

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   CANTIDAD_DE_CODIGOS_DE_RECUPERACION,
+  CodigoDeError,
   FALLOS_SEGUIDOS_PARA_BLOQUEAR_EL_AUTENTICADOR,
   ConfirmarConfiguracionRequestSchema,
   IniciarConfiguracionRequestSchema,
@@ -69,6 +70,19 @@ type Intento =
   | { readonly tipo: 'plazo' }
   | { readonly tipo: 'paso'; readonly motivo: string };
 
+/**
+ * La sesión dejó de valer mientras el pedido esperaba sus filas: la revocó otro pedido, el comando del operador o su propio
+ * cierre. Es el mismo 401 que daría el guard, con el motivo que usa el guard (`SESION_<estado>`). Se lanza dentro de la
+ * transacción, que se revierte entera, y `enTransaccion` lo audita después, aparte, con la operación que se intentó: como
+ * el PDP con `DenegacionDelPdp` y `registrarDenegacion` (pendiente 3 del §14 de WP-ADMINISTRACION, 2026-10-27). Antes,
+ * ese 401 no dejaba rastro.
+ */
+export class SesionQueDejoDeValer extends ErrorDeApi {
+  constructor(motivo: string) {
+    super(401, CodigoDeError.SESSION_REVOKED, 'La sesión ya no es válida.', undefined, motivo);
+  }
+}
+
 /** El estado del segundo factor en el contrato. */
 export function segundoFactorApi(e: EstadoDelSegundoFactor): EstadoDelSegundoFactorApi {
   switch (e.estado) {
@@ -95,7 +109,9 @@ export function segundoFactorApi(e: EstadoDelSegundoFactor): EstadoDelSegundoFac
  * - **Configurar o reemplazar el autenticador** (API-ADM-07 y 08): la primera vez, con el código de incorporación que emitió
  *   el comando interno; para reemplazarlo, con el segundo factor vigente y la contraseña. Nunca queda la cuenta sin un
  *   autenticador activo: el anterior vale hasta que el nuevo se confirma.
- * - Cada paso se audita en la misma transacción, sin secretos ni códigos. La vigencia la decide el servidor.
+ * - Cada paso se audita en la misma transacción, sin secretos ni códigos. Un rechazo que aparece dentro de la transacción
+ *   (la sesión dejó de valer mientras el pedido esperaba) se audita después, aparte, porque la transacción se revierte
+ *   (`enTransaccion`). La vigencia la decide el servidor.
  */
 @Injectable()
 export class AccesoAdministrativoService {
@@ -249,7 +265,7 @@ export class AccesoAdministrativoService {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(VerificarSegundoFactorRequestSchema, cuerpo);
     await this.consumirIntento(actor, 'API-ADM-05', ctx);
-    const intento = await conReintento(() =>
+    const intento = await this.enTransaccion(actor, 'API-ADM-05', ctx, () =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado === 'PLAZO_VENCIDO') return { tipo: 'plazo' };
@@ -290,7 +306,7 @@ export class AccesoAdministrativoService {
     const claves = this.exigirClaves();
     const pedido = validarCuerpo(UsarCodigoDeRecuperacionRequestSchema, cuerpo);
     await this.consumirIntento(actor, 'API-ADM-06', ctx);
-    const intento = await conReintento(() =>
+    const intento = await this.enTransaccion(actor, 'API-ADM-06', ctx, () =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado === 'PLAZO_VENCIDO') return { tipo: 'plazo' };
@@ -333,9 +349,13 @@ export class AccesoAdministrativoService {
     const correo = await this.correoDe(actor.identidadId);
     const credencialCorrecta = pedido.credential !== undefined ? await this.contrasenaCorrecta(actor.identidadId, pedido.credential) : false;
     const nuevo = totpNuevo(correo);
-    const resultado = await conReintento(() =>
+    const resultado = await this.enTransaccion(actor, 'API-ADM-07', ctx, () =>
       this.prisma.$transaction(async (tx): Promise<Intento | { tipo: 'configurando'; venceEn: Date }> => {
-        await this.tomarLaIdentidad(tx, actor);
+        // La identidad en modo exclusivo (pendiente 2 del §14, 2026-10-27): dos configuraciones empezadas a la vez, desde
+        // dos sesiones, quedan una después de la otra, y la segunda descarta el pendiente de la primera. Con el modo
+        // compartido, las dos descartaban antes de que la otra creara el suyo, y la segunda chocaba con el índice único de
+        // un pendiente por identidad: respondía 500.
+        await this.tomarLaIdentidadEnExclusiva(tx, actor);
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado === 'PLAZO_VENCIDO') return { tipo: 'plazo' };
         const activo = await tx.factorTotp.findFirst({ where: { identidadId: actor.identidadId, estado: 'ACTIVO' }, select: { id: true } });
@@ -392,7 +412,7 @@ export class AccesoAdministrativoService {
     const pedido = validarCuerpo(ConfirmarConfiguracionRequestSchema, cuerpo);
     await this.consumirIntento(actor, 'API-ADM-08', ctx);
     const nuevos = codigosDeRecuperacionNuevos(CANTIDAD_DE_CODIGOS_DE_RECUPERACION);
-    const resultado = await conReintento(() =>
+    const resultado = await this.enTransaccion(actor, 'API-ADM-08', ctx, () =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
         await this.tomarLaIdentidad(tx, actor);
         const estado = await this.estadoBloqueado(tx, actor);
@@ -432,7 +452,7 @@ export class AccesoAdministrativoService {
       }),
     );
     if (resultado.tipo !== 'ok') return this.resolverIntento(resultado, actor, 'API-ADM-08', ctx) as never;
-    const estado = await this.estadoActual(actor);
+    const estado = await this.estadoActual(actor, 'API-ADM-08', ctx);
     return { data: { recoveryCodes: nuevos.map((c) => c.visible), secondFactor: segundoFactorApi(estado) } };
   }
 
@@ -457,10 +477,11 @@ export class AccesoAdministrativoService {
       throw errores.credencialesInvalidas();
     }
     const nuevos = codigosDeRecuperacionNuevos(CANTIDAD_DE_CODIGOS_DE_RECUPERACION);
-    const sinSegundoFactor = await conReintento(() =>
+    const sinSegundoFactor = await this.enTransaccion(actor, 'API-ADM-09', ctx, () =>
       this.prisma.$transaction(async (tx): Promise<string | null> => {
         await this.tomarLaIdentidadEnExclusiva(tx, actor);
-        // Con la identidad tomada: una sesión revocada o cerrada mientras tanto responde 401 acá, sin escribir nada.
+        // Con la identidad tomada: una sesión revocada o cerrada mientras tanto responde 401 acá, sin escribir nada; el
+        // rechazo queda en la auditoría después de revertir (`enTransaccion`).
         const estado = await this.estadoBloqueado(tx, actor);
         if (estado.estado !== 'VERIFICADO') return `SEGUNDO_FACTOR_${estado.estado}`;
         const ahora = new Date();
@@ -493,13 +514,31 @@ export class AccesoAdministrativoService {
         FROM "segundo_factor_de_sesion" WHERE "sesion_id" = ${actor.sesionId}::uuid FOR UPDATE`;
     if (!fila) throw errores.sesionInvalida();
     const [sesion] = await tx.$queryRaw<{ estado: string }[]>`SELECT "estado"::text AS "estado" FROM "sesion" WHERE "id" = ${actor.sesionId}::uuid FOR SHARE`;
-    if (!sesion || sesion.estado !== 'ACTIVA' || fila.intentosFallidos >= INTENTOS_DE_SEGUNDO_FACTOR_POR_SESION) throw errores.sesionRevocada();
+    // El motivo es el del guard (`SESION_<estado>`): el rechazo se audita después de revertir (`enTransaccion`).
+    if (!sesion) throw new SesionQueDejoDeValer('SESION_INEXISTENTE');
+    if (sesion.estado !== 'ACTIVA') throw new SesionQueDejoDeValer(`SESION_${sesion.estado}`);
+    if (fila.intentosFallidos >= INTENTOS_DE_SEGUNDO_FACTOR_POR_SESION) throw new SesionQueDejoDeValer('INTENTOS_DE_SEGUNDO_FACTOR_AGOTADOS');
     const activo = await tx.factorTotp.count({ where: { identidadId: actor.identidadId, estado: 'ACTIVO' } });
     return this.estadoDe(actor.inicioDeLaSesion, fila, activo > 0);
   }
 
   /**
-   * La identidad, en modo compartido, antes de tocar sus autenticadores (API-ADM-07 y 08). El comando del operador la toma en
+   * Una transacción del acceso administrativo, con su reintento ante un conflicto transitorio. Si con las filas tomadas
+   * encuentra que la sesión ya no vale (`SesionQueDejoDeValer`), la transacción se revierte entera y el rechazo se audita
+   * acá, después y aparte, con la operación que se intentó y el motivo del guard. Nunca queda un éxito: lo que se iba a
+   * escribir se revirtió. Y nada del cuerpo (ni un código ni la contraseña) llega a la auditoría.
+   */
+  private async enTransaccion<T>(actor: ActorAdministrativo, operacion: string, ctx: ContextoDeSolicitud, transaccion: () => Promise<T>): Promise<T> {
+    try {
+      return await conReintento(transaccion);
+    } catch (e) {
+      if (e instanceof SesionQueDejoDeValer) await this.auditar(this.prisma, operacion, 'RECHAZO', e.motivoDeAuditoria ?? 'SESION_NO_VIGENTE', actor.identidadId, actor.sesionId, ctx);
+      throw e;
+    }
+  }
+
+  /**
+   * La identidad, en modo compartido, antes de confirmar un autenticador (API-ADM-08). El comando del operador la toma en
    * modo exclusivo para restablecer o retirar: así uno de los dos termina antes de que el otro empiece, y un restablecimiento
    * no deja vivo un autenticador que se confirmó al mismo tiempo (revisión de seguridad del 2026-10-25).
    */
@@ -508,10 +547,11 @@ export class AccesoAdministrativoService {
   }
 
   /**
-   * La identidad en modo exclusivo, antes de renovar los códigos (API-ADM-09): choca con otra renovación, con el comando
-   * del operador (que también la toma así) y con el modo compartido de API-ADM-07 y 08. `FOR NO KEY UPDATE`, como el resto
-   * del proyecto (prisma/concurrencia.ts): no frena las claves foráneas que la nombran. Va primero, antes que las filas
-   * de la sesión: el orden único de bloqueos empieza por la identidad.
+   * La identidad en modo exclusivo, antes de empezar la configuración del autenticador (API-ADM-07, desde el 2026-10-27) o
+   * de renovar los códigos (API-ADM-09): choca con otra configuración o renovación, con el comando del operador (que
+   * también la toma así) y con el modo compartido de API-ADM-08. `FOR NO KEY UPDATE`, como el resto del proyecto
+   * (prisma/concurrencia.ts): no frena las claves foráneas que la nombran. Va primero, antes que las filas de la sesión: el
+   * orden único de bloqueos empieza por la identidad.
    */
   private async tomarLaIdentidadEnExclusiva(tx: Tx, actor: ActorAdministrativo): Promise<void> {
     await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR NO KEY UPDATE`;
@@ -538,8 +578,8 @@ export class AccesoAdministrativoService {
     }
   }
 
-  private async estadoActual(actor: ActorAdministrativo): Promise<EstadoDelSegundoFactor> {
-    return this.prisma.$transaction((tx) => this.estadoBloqueado(tx, actor));
+  private async estadoActual(actor: ActorAdministrativo, operacion: string, ctx: ContextoDeSolicitud): Promise<EstadoDelSegundoFactor> {
+    return this.enTransaccion(actor, operacion, ctx, () => this.prisma.$transaction((tx) => this.estadoBloqueado(tx, actor)));
   }
 
   /** Un intento fallido: suma uno a la sesión y, con cinco, la revoca. Se confirma aunque el pedido termine en error. */
@@ -564,7 +604,7 @@ export class AccesoAdministrativoService {
   private async resolverIntento(intento: Intento, actor: ActorAdministrativo, operacion: string, ctx: ContextoDeSolicitud): Promise<SegundoFactorVerificadoResponse> {
     switch (intento.tipo) {
       case 'ok': {
-        const estado = await this.estadoActual(actor);
+        const estado = await this.estadoActual(actor, operacion, ctx);
         return { data: { secondFactor: segundoFactorApi(estado), recoveryCodesRemaining: await this.codigosRestantes(this.prisma, actor.identidadId) } };
       }
       case 'invalido':
