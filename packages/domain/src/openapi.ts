@@ -97,6 +97,7 @@ import {
   VinculoResponseSchema,
 } from './contratos-vinculo';
 import { CarteraResponseSchema } from './contratos-cartera';
+import { ColaDeRevisionesResponseSchema } from './contratos-cola-de-revisiones';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -854,6 +855,25 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: CarteraResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
     fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · DL-107 · ID propio de BE desde DL-116 (antes API-DSH-04, que en el 09 es la línea temporal)',
+  },
+  // ─── WP-TABLERO-ALTA-GAMA · TB-14: la cola de revisiones (09v11 §14; DL-163 D-6) ────────────────
+  {
+    id: 'API-DSH-02',
+    metodo: 'get',
+    ruta: '/me/review-queue',
+    resumen:
+      'La cola de revisiones del profesional: por cada persona con vínculo vigente y cada área con seguimiento que el PDP permite, un ítem si hay trabajo de revisión, con la definición de pendiente del dominio de revisión (REG-06-150). «Próxima acción pendiente» (NEXT_ACTION_PENDING: la última revisión registrada sin aplicar), primera; «Revisión pendiente» (REVIEW_DUE); y «Sin revisión acordada» (ACTIVE_PLAN_WITHOUT_REVIEW: un plan activo sin una revisión acordada en pie), última. Una revisión acordada a futuro no entra. Abrirla no resuelve nada; no hay valores de salud, puntajes ni actividad de la persona.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'domain', descripcion: 'Filtra por área.', schema: { type: 'string', enum: ['NUTRITION', 'TRAINING'] } },
+      { nombre: 'status', descripcion: 'Filtra por motivo.', schema: { type: 'string', enum: ['NEXT_ACTION_PENDING', 'REVIEW_DUE', 'ACTIVE_PLAN_WITHOUT_REVIEW'] } },
+      LIMIT,
+      CURSOR,
+    ],
+    exitos: [{ status: 200, schema: ColaDeRevisionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09v11:860-890 (API-DSH-02) · REG-06-150 · B10-08 §6 · DEUDA_LEGAJO DL-163 D-6 · WP-TABLERO-ALTA-GAMA TB-14',
   },
   // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 (09v12) ─────────────────────────────────────
   {

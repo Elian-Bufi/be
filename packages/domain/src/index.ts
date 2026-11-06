@@ -76,6 +76,8 @@ export * from './copy-habituales';
 export * from './habituales';
 export * from './cartera';
 export * from './contratos-cartera';
+export * from './cola-de-revisiones';
+export * from './contratos-cola-de-revisiones';
 export * from './fechas-civiles';
 export * from './lecturas-de-la-sesion';
 export * from './evolucion-antropometrica';

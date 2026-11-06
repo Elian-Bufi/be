@@ -66,6 +66,7 @@ import {
   type VinculoResponse,
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
+import { ColaDeRevisionesResponseSchema, type ColaDeRevisionesResponse, type FiltroDeLaCola } from './contratos-cola-de-revisiones';
 import {
   InvitacionCreadaResponseSchema,
   InvitacionResponseSchema,
@@ -790,6 +791,13 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-CAR-01 (PF-07, propuesta; DL-116): los pendientes de toda la cartera del profesional. */
     consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {
       return llamar('GET', `/me/portfolio${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: CarteraResponseSchema });
+    },
+    /**
+     * API-DSH-02 (09 v0.11 §14; DL-163 D-6): la cola de revisiones. Una API anterior a la operación responde 404: el
+     * website muestra la mesa sin esas filas (TB-14).
+     */
+    consultarColaDeRevisiones(token: string, filtro: FiltroDeLaCola = {}): Promise<Resultado<ColaDeRevisionesResponse>> {
+      return llamar('GET', `/me/review-queue${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: ColaDeRevisionesResponseSchema });
     },
 
     // ─── PF-09 bis · «Mis habituales» (DL-109) ────────────────────────────────────────────────

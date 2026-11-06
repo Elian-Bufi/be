@@ -9,13 +9,13 @@
  *   abrirla no resuelve nada; lo ajeno no aparece.
  */
 import type { INestApplication } from '@nestjs/common';
-import { CarteraResponseSchema, type CarteraResponse } from '@be/domain';
+import { CarteraResponseSchema, ColaDeRevisionesResponseSchema, type CarteraResponse, type ColaDeRevisionesResponse } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, conSesion } from './soporte-api';
 import { activarPlanDeEntrenamiento, circuitoListoParaPlanificarEntrenamiento, crearBorradorDeEntrenamiento } from './soporte-entrenamiento';
 import { activar, circuitoListoParaPlanificar, crearBorrador, cuerpoDeRevision, PUNTAJE_PROHIBIDO } from './soporte-nutricion';
-import { prepararProfesional, type Parte } from './soporte-vinculo';
+import { prepararAsesorado, prepararProfesional, revocarB2, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -32,6 +32,8 @@ afterAll(async () => {
 
 const cartera = async (pro: Parte, query = ''): Promise<CarteraResponse> => CarteraResponseSchema.parse((await conSesion(app, pro.token).get(`/api/v1/me/portfolio${query}`).expect(200)).body);
 const deLaCartera = (r: CarteraResponse, adviseeId: string) => r.data.items.filter((i) => i.advisee.identityId === adviseeId).map((i) => i.kind);
+const cola = async (pro: Parte, query = ''): Promise<ColaDeRevisionesResponse> => ColaDeRevisionesResponseSchema.parse((await conSesion(app, pro.token).get(`/api/v1/me/review-queue${query}`).expect(200)).body);
+const deLaCola = (r: ColaDeRevisionesResponse, adviseeId: string) => r.data.filter((i) => i.advisee.identityId === adviseeId);
 const enDias = (n: number): string => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 const hoyCivil = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
 
@@ -100,5 +102,115 @@ describe('TEST-TAG-011 · TB-13: la cartera con la definición de pendiente del 
     const r = await cartera(c.pro);
     expect(deLaCartera(r, c.ase.id)).toEqual([]);
     expect(JSON.stringify(r)).not.toMatch(PUNTAJE_PROHIBIDO);
+  });
+});
+
+describe('TEST-TAG-012 · TB-14: la cola de revisiones (API-DSH-02), con sus dos estados', () => {
+  it('«Próxima acción pendiente» primero, «Revisión pendiente» en el medio y «Sin revisión acordada» al final; lo programado no entra', async () => {
+    const pro = await prepararProfesional(app, etiqueta(), ['NUTRICION']);
+    const conPlan = async (extra: Record<string, unknown> = {}) => {
+      const c = await circuitoListoParaPlanificar(app, etiqueta(), pro);
+      const b = await crearBorrador(app, c, extra);
+      await activar(app, pro, b.planId, b.version).expect(200);
+      return { ...c, versionId: b.planId };
+    };
+    // A: revisión registrada y sin aplicar. B: revisión acordada vencida. C: plan activo sin revisión acordada.
+    // D: «Mantener» aplicado sin fecha nueva sobre una vencida. E: revisión acordada a 30 días. F: solo un borrador.
+    const a = await conPlan({ nextReviewAt: '2026-01-15' });
+    const revisionDeA = await revisarNutricion(pro, a.ase.id, a.versionId, 'MAINTAIN', {}, false);
+    const b = await conPlan({ nextReviewAt: '2026-01-15' });
+    const c = await conPlan();
+    const d = await conPlan({ nextReviewAt: '2026-01-15' });
+    const revisionDeD = await revisarNutricion(pro, d.ase.id, d.versionId, 'MAINTAIN');
+    const e = await conPlan({ nextReviewAt: enDias(30) });
+    const f = await circuitoListoParaPlanificar(app, etiqueta(), pro);
+    await crearBorrador(app, f);
+
+    const revisionesDelProfesional = () => prisma.revisionNutricional.count({ where: { proceso: { profesionalId: pro.id } } });
+    const revisionesAntes = await revisionesDelProfesional();
+    const r = await cola(pro);
+    const hoy = hoyCivil();
+    expect(r.data.map((i) => i.reason.code)).toEqual(['NEXT_ACTION_PENDING', 'REVIEW_DUE', 'ACTIVE_PLAN_WITHOUT_REVIEW', 'ACTIVE_PLAN_WITHOUT_REVIEW']);
+    expect(deLaCola(r, a.ase.id)).toEqual([
+      expect.objectContaining({
+        domain: 'NUTRITION',
+        pendingSince: hoy,
+        agreedReviewDate: '2026-01-15',
+        sourceReferences: [
+          { type: 'REVIEW', id: revisionDeA },
+          { type: 'PLAN_VERSION', id: a.versionId },
+        ],
+      }),
+    ]);
+    expect(deLaCola(r, b.ase.id)).toEqual([expect.objectContaining({ reason: { code: 'REVIEW_DUE' }, pendingSince: '2026-01-15', agreedReviewDate: '2026-01-15', sourceReferences: [{ type: 'PLAN_VERSION', id: b.versionId }] })]);
+    expect(deLaCola(r, c.ase.id)).toEqual([expect.objectContaining({ reason: { code: 'ACTIVE_PLAN_WITHOUT_REVIEW' }, pendingSince: hoy, agreedReviewDate: null, sourceReferences: [{ type: 'PLAN_VERSION', id: c.versionId }] })]);
+    expect(deLaCola(r, d.ase.id)).toEqual([
+      expect.objectContaining({
+        reason: { code: 'ACTIVE_PLAN_WITHOUT_REVIEW' },
+        agreedReviewDate: null,
+        sourceReferences: [
+          { type: 'REVIEW', id: revisionDeD },
+          { type: 'PLAN_VERSION', id: d.versionId },
+        ],
+      }),
+    ]);
+    expect(deLaCola(r, e.ase.id)).toEqual([]);
+    expect(deLaCola(r, f.ase.id)).toEqual([]);
+    expect(JSON.stringify(r)).not.toMatch(PUNTAJE_PROHIBIDO);
+
+    // Abrirla no resuelve nada: ninguna revisión nueva, y la misma lista otra vez.
+    expect(await revisionesDelProfesional()).toBe(revisionesAntes);
+    expect((await cola(pro)).data).toEqual(r.data);
+    // API-CAR-01 no cambia de forma: la cartera sigue diciendo lo suyo, validada con su schema estricto.
+    expect(deLaCartera(await cartera(pro), b.ase.id)).toEqual(['REVIEW_OVERDUE']);
+    expect(deLaCartera(await cartera(pro), c.ase.id)).toEqual([]);
+
+    // Los filtros del 09 (`domain` y `status`) y la paginación recorren la misma lista.
+    expect((await cola(pro, '?status=REVIEW_DUE')).data.map((i) => i.advisee.identityId)).toEqual([b.ase.id]);
+    expect((await cola(pro, '?domain=TRAINING')).data).toEqual([]);
+    const p1 = await cola(pro, '?limit=3');
+    expect(p1.page).toMatchObject({ limit: 3, hasMore: true });
+    const p2 = await cola(pro, `?limit=3&cursor=${encodeURIComponent(p1.page.nextCursor as string)}`);
+    expect([...p1.data, ...p2.data]).toEqual(r.data);
+    expect(p2.page.hasMore).toBe(false);
+  });
+
+  it('Entrenamiento: un plan activo sin revisión acordada entra al final, y al finalizar el seguimiento sale', async () => {
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta());
+    const b = await crearBorradorDeEntrenamiento(app, c);
+    await activarPlanDeEntrenamiento(app, c.pro, b.planId, b.version).expect(200);
+    expect(deLaCola(await cola(c.pro), c.ase.id)).toEqual([expect.objectContaining({ domain: 'TRAINING', reason: { code: 'ACTIVE_PLAN_WITHOUT_REVIEW' }, agreedReviewDate: null })]);
+    const revision = await revisarEntrenamiento(c.pro, c.ase.id, b.planId, 'MAINTAIN', {}, false);
+    expect(deLaCola(await cola(c.pro), c.ase.id)).toEqual([expect.objectContaining({ reason: { code: 'NEXT_ACTION_PENDING' }, sourceReferences: [{ type: 'REVIEW', id: revision }, { type: 'PLAN_VERSION', id: b.planId }] })]);
+    await revisarEntrenamiento(c.pro, c.ase.id, b.planId, 'FINALIZE', { description: 'Cierre del seguimiento.' });
+    expect(deLaCola(await cola(c.pro), c.ase.id)).toEqual([]);
+  });
+
+  it('un área que el PDP deniega no aparece; otro profesional y la persona no ven nada; sin sesión, 401; la query se valida', async () => {
+    const pro = await prepararProfesional(app, etiqueta(), ['NUTRICION']);
+    const a = await circuitoListoParaPlanificar(app, etiqueta(), pro);
+    const bA = await crearBorrador(app, a);
+    await activar(app, pro, bA.planId, bA.version).expect(200);
+    expect(deLaCola(await cola(pro), a.ase.id)).toHaveLength(1);
+
+    const otro = await prepararProfesional(app, etiqueta(), ['NUTRICION']);
+    expect((await cola(otro)).data).toEqual([]);
+    expect((await cola(a.ase)).data).toEqual([]);
+
+    await revocarB2(app, a.ase, a.consentId).expect(200);
+    const r = await cola(pro);
+    expect(JSON.stringify(r)).not.toContain(a.ase.id);
+    // Una persona con vínculo y sin plan no está en la cola: «Empezar el plan» es de la cartera.
+    const sinPlan = await prepararAsesorado(app, etiqueta(), { a3: true });
+    await vinculoCompleto(app, pro, sinPlan, 'NUTRICION');
+    expect(deLaCola(await cola(pro), sinPlan.id)).toEqual([]);
+
+    await conSesion(app, 'token-invalido').get('/api/v1/me/review-queue').expect(401);
+    const s = conSesion(app, pro.token);
+    expect((await s.get('/api/v1/me/review-queue?foo=1').expect(400)).body.error.code).toBe('INVALID_REQUEST');
+    await s.get('/api/v1/me/review-queue?domain=ANTHROPOMETRY').expect(400);
+    await s.get('/api/v1/me/review-queue?status=REVIEW_OVERDUE').expect(400);
+    await s.get('/api/v1/me/review-queue?limit=0').expect(400);
+    expect((await s.get('/api/v1/me/review-queue?cursor=%3F%3F').expect(400)).body.error.code).toBe('INVALID_CURSOR');
   });
 });

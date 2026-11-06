@@ -8256,6 +8256,279 @@
         }
       }
     },
+    "/me/review-queue": {
+      "get": {
+        "operationId": "API-DSH-02",
+        "summary": "La cola de revisiones del profesional: por cada persona con vínculo vigente y cada área con seguimiento que el PDP permite, un ítem si hay trabajo de revisión, con la definición de pendiente del dominio de revisión (REG-06-150). «Próxima acción pendiente» (NEXT_ACTION_PENDING: la última revisión registrada sin aplicar), primera; «Revisión pendiente» (REVIEW_DUE); y «Sin revisión acordada» (ACTIVE_PLAN_WITHOUT_REVIEW: un plan activo sin una revisión acordada en pie), última. Una revisión acordada a futuro no entra. Abrirla no resuelve nada; no hay valores de salud, puntajes ni actividad de la persona.",
+        "description": "Fuente: 09v11:860-890 (API-DSH-02) · REG-06-150 · B10-08 §6 · DEUDA_LEGAJO DL-163 D-6 · WP-TABLERO-ALTA-GAMA TB-14. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por área.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NUTRITION",
+                "TRAINING"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por motivo.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEXT_ACTION_PENDING",
+                "REVIEW_DUE",
+                "ACTIVE_PLAN_WITHOUT_REVIEW"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tamaño de página (1 a 50; 20 por defecto).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Cursor opaco de la página siguiente.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "advisee": {
+                            "type": "object",
+                            "properties": {
+                              "identityId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "displayName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "identityId",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "relationshipId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "domain": {
+                            "type": "string",
+                            "enum": [
+                              "NUTRITION",
+                              "TRAINING"
+                            ]
+                          },
+                          "pendingSince": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "reason": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "NEXT_ACTION_PENDING",
+                                  "REVIEW_DUE",
+                                  "ACTIVE_PLAN_WITHOUT_REVIEW"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "code"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "agreedReviewDate": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sourceReferences": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "REVIEW",
+                                    "PLAN_VERSION"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "advisee",
+                          "relationshipId",
+                          "domain",
+                          "pendingSince",
+                          "reason",
+                          "agreedReviewDate",
+                          "sourceReferences"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/advisees/{adviseeId}/nutrition/evaluations": {
       "post": {
         "operationId": "API-NUT-01",

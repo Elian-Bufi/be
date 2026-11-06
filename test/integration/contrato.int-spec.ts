@@ -15,6 +15,7 @@
  * - WP-ACCESO-GOOGLE: la familia GOO (DL-138) contra un Google falso local, y el 503 en una segunda app sin client IDs.
  * - WP-NOTAS-DE-COORDINACION: API-CRD-01 (09 §11.6) y sus dos variantes, CRD-01-LISTA y CRD-01-PROPIA (DL-140).
  * - WP-ADMINISTRACION: la familia ADM (DL-155), con un administrador incorporado por el comando interno y su autenticador.
+ * - WP-TABLERO-ALTA-GAMA: API-DSH-02, la cola de revisiones (09 v0.11 §14; DL-163 D-6; TB-14).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -307,6 +308,13 @@ it('TEST-CT (WP-03): se ejercitan éxitos y errores de REL, CON y DSH-03', async
   await conSesion(app, pn.token).get('/api/v1/me/portfolio?periodStart=ayer').expect(400);
   await conSesion(app, pn.token).get('/api/v1/me/portfolio?cursor=%3F%3F').expect(400);
   await request(servidor).get('/api/v1/me/portfolio').expect(401);
+
+  // DSH-02 (la cola de revisiones, DL-163 D-6; TB-14): éxito con y sin filtros; query inválida y cursor inválido; sin sesión.
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue').expect(200);
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue?domain=NUTRITION&status=ACTIVE_PLAN_WITHOUT_REVIEW&limit=5').expect(200);
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue?status=SCORE').expect(400); // INVALID_REQUEST
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue?cursor=%3F%3F').expect(400); // INVALID_CURSOR
+  await request(servidor).get('/api/v1/me/review-queue').expect(401);
 
   // REL-07 / REL-08 / REL-09
   const v = await versionDeVinculo(app, a01.token, vinculoId);

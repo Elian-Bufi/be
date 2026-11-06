@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
-import { DominioDeCarteraSchema, esFechaCivil, TipoDePendienteSchema, type CarteraResponse } from '@be/domain';
+import { DominioDeCarteraSchema, DominioDeLaColaSchema, esFechaCivil, MotivoDeLaColaSchema, TipoDePendienteSchema, type CarteraResponse, type ColaDeRevisionesResponse } from '@be/domain';
 import { PdpService } from '../autorizacion/pdp.service';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { errores } from '../http/errores';
@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProcesoService } from '../proceso/proceso.service';
 import { actorDe, SesionGuard, type SolicitudAutenticada } from '../sesion/sesion.guard';
 import { leerCartera, type ConsultaDeCartera } from './lectura-cartera';
+import { leerColaDeRevisiones, type ConsultaDeLaCola } from './lectura-cola-de-revisiones';
 
 /**
  * API-CAR-01 — Cartera del profesional (PF-07, propuesta del 2026-09-30; antes API-DSH-04, DL-116).
@@ -34,6 +35,39 @@ export class CarteraController {
     this.limitador.consumir('consultaProtegida', null, actor.identidadId);
     return leerCartera(this.prisma, this.pdp, this.procesos, actor.identidadId, contextoDe(req), consulta);
   }
+
+  /**
+   * API-DSH-02 — La cola de revisiones (09 v0.11 §14; DL-163 D-6; TB-14). Como la cartera: `SesionGuard` autentica, el
+   * PDP decide por asesorado dentro de la lectura y comparte el límite de las lecturas protegidas. Abrirla no resuelve
+   * nada.
+   */
+  @Get('me/review-queue')
+  @UseGuards(SesionGuard)
+  async consultarCola(@Query() query: Record<string, unknown>, @Req() req: SolicitudAutenticada & SolicitudConContexto): Promise<ColaDeRevisionesResponse> {
+    const consulta = leerConsultaDeLaCola(query);
+    const actor = actorDe(req);
+    this.limitador.consumir('consultaProtegida', null, actor.identidadId);
+    return leerColaDeRevisiones(this.prisma, this.pdp, this.procesos, actor.identidadId, contextoDe(req), consulta);
+  }
+}
+
+/** La query de la cola, validada antes de leer: `domain` y `status` (el motivo) del 09, el límite y el cursor. */
+function leerConsultaDeLaCola(query: Record<string, unknown>): ConsultaDeLaCola {
+  const permitidos = new Set(['domain', 'status', 'limit', 'cursor']);
+  const desconocidos = Object.keys(query ?? {}).filter((k) => !permitidos.has(k));
+  if (desconocidos.length > 0) throw errores.solicitudInvalida(desconocidos.map((c) => ({ code: 'UNKNOWN_QUERY_PARAMETER', path: c })));
+  const domain = query.domain === undefined ? null : DominioDeLaColaSchema.safeParse(query.domain);
+  if (domain && !domain.success) throw errores.solicitudInvalida([{ code: 'INVALID_FILTER', path: 'domain' }]);
+  const status = query.status === undefined ? null : MotivoDeLaColaSchema.safeParse(query.status);
+  if (status && !status.success) throw errores.solicitudInvalida([{ code: 'INVALID_FILTER', path: 'status' }]);
+  let limit = LIMITE_POR_DEFECTO;
+  if (query.limit !== undefined) {
+    const n = typeof query.limit === 'string' && /^\d{1,3}$/.test(query.limit) ? Number(query.limit) : NaN;
+    if (!Number.isInteger(n) || n < 1 || n > LIMITE_MAXIMO) throw errores.solicitudInvalida([{ code: 'INVALID_LIMIT', path: 'limit' }]);
+    limit = n;
+  }
+  if (query.cursor !== undefined && typeof query.cursor !== 'string') throw errores.cursorInvalido();
+  return { domain: domain?.data ?? null, status: status?.data ?? null, limit, cursor: (query.cursor as string | undefined) ?? null };
 }
 
 /** La query, validada antes de cualquier lectura (09 §3): parámetros conocidos, fechas RFC 3339, enumerados y límite. */
