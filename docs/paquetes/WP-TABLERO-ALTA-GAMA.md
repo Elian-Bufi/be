@@ -714,9 +714,14 @@ con sus pruebas, en el orden de §8.1. Las capturas las hace la CI, en el trabaj
 | TB-15 | Hecha, sin tocar la API. **«¿Cuándo la revisás?»**, en el paso 3 de la revisión de Nutrición y de Entrenamiento («Lo que decidís») y en el cuadro de activar de los dos editores, en lugar del campo «Próxima revisión (opcional)»: «En 1 semana · miércoles 11 nov», «En 2 semanas», «En 4 semanas», «Elegir una fecha» y «Sin fecha por ahora», sin nada elegido (TA-40); al elegir, el efecto («Al aplicar esta revisión, la próxima queda para el …», «Al activar, la próxima revisión queda para el …»); «Sin fecha por ahora» dice lo que hace BE hoy (TA-41) y no aparece con «Reprogramar revisión»; con «Finalizar» no se pregunta, y después de aplicar tampoco. Al activar, la fecha que ya tenía la versión viene elegida y se dice (TA-44); en la revisión, lo acordado la última vez va como dato («La última vez acordaste revisar a las 4 semanas.», TA-45). **Aplicar desde el cajón:** si lo leído al abrir el cuadro trae una revisión registrada y sin aplicar, la pregunta es «La revisión del 16 oct está registrada y sin aplicar. ¿La aplicás?», y antes del botón van el resultado, el fundamento, la próxima acción y lo que pasa al aplicar, con la fecha que deja; el botón es el de cada área («Aplicar continuidad» o «Aplicar próxima acción»), con la misma operación, la clave del intento, los conflictos y los textos de la lista de Revisiones (TA-42). La segunda lectura del cuadro es la revisión (API-NUT-19 o API-TRN-23, que el cliente suma), no lo nuevo desde ella: siguen siendo dos. Lo aplicado se dice en su cuadro, con «Seguir el borrador» si se preparó uno, y en el cierre («Lo que aplicaste:»), y al cerrar el cajón /pro vuelve a leer la cartera (TA-43). TEST-TAG-013 (con la integración de las dos áreas) y TEST-TAG-034 | `lib/cuando-la-revisas.ts`, `advisees/cuando-la-revisas.tsx`, `advisees/aplicar-la-revision.ts`, `pro/aplicar-en-el-cajon.tsx`, `pro/cajon-de-a-una.tsx`, `apps/web/test/aplicar-y-cuando.test.mjs`, `test/integration/aplicar-desde-el-cajon.int-spec.ts` |
 | TB-17 | Hecha. **La guía** (`docs/ux/GUIA-UX-UI.md`): I.1.3 suma las barras de la lista cerrada de D-1; I.5, la letra (D-3); I.6, el acento como una sola luz y los tokens de la etapa A (D-3); I.7, la gramática de las marcas (D-3); II.4, que el tramo del ciclo no es una cobertura; II.6, el minigráfico (D-5, que reemplaza a «No se quita ningún punto por falta de lugar: se achica la marca»), las tarjetas del Resumen y el Espacio (D-2 y D-4); la pauta nueva **II.12 «Decisiones guiadas»**; y **V.4**, lo que cambia con la etapa A. **El criterio de auditoría de las maquetas** (`BE-maquetas/CRITERIO-Y-AUDITORIA.md`, fuera del repo): la vara de la §6 con el monograma (D-2) y las barras de la lista cerrada (D-1), y la validación del 2026-10-10 asentada. **DEUDA_LEGAJO:** el estado de DL-163 al día y la nota que confronta los minigráficos de E-53 y E-54, que leen API-PRJ-01, con DEC-10-UX-01. **Las cuatro desalineaciones,** corregidas: DL-161 figuraba «sin integrar» (se integró el 2026-11-02, #229 y #224); el criterio decía validación «Pendiente»; la guía contaba 105 íconos (son 115); y faltaba la nota de DEC-10-UX-01. **Lo que la guía deja dicho que falta:** los enlaces de texto en tinta con un subrayado fino (D-3), que tocan todas las pantallas, y el cajón con un lector de pantalla y en un proyector | `docs/ux/GUIA-UX-UI.md`, `docs/DEUDA_LEGAJO.md` |
 | TB-48 | Hecha (TA-47 a TA-55), sin tocar la API. **La primera parte** (sexto tramo): la nota de cada ítem en el editor de Nutrición, en un renglón debajo del ítem, a pedido («Agregar una nota sobre …»), hasta 300 caracteres: el campo ya estaba en el contrato y la persona ya la lee en la app; **los topes** del contrato, avisados antes de guardar en los dos editores (7 días tipo, 12 comidas, 12 opciones y 40 ítems; 12 bloques, 26 microciclos, 30 sesiones por bloque y 14 por microciclo, 40 ejercicios, 20 series y 12 parámetros), cada uno como un problema más de lo que no deja guardar, con su lugar, y el autoguardado espera; y el cuadro sin plantillas, que prometía que «se escriben en «Plantillas y habituales»» y ahora dice «Se guardan desde una versión de plan, con «Guardar como plantilla». En «Plantillas y habituales» se ven y se cambian.». **La segunda parte** (séptimo tramo): **duplicar** un día tipo («Duplicar este día tipo», en su menú), una comida («Duplicar comida», en «Más»), una opción («Duplicar opción 2», junto a cambiar su nombre), una sesión («Duplicar esta sesión») y un ejercicio («Duplicar ejercicio», en «Más»): la copia va justo después, sin identificadores de nodo, con todo lo escrito y «… (copia)» en el nombre, que nace a la vista (TA-48); **reordenar**: «Bajar» junto a «Subir» en cada comida, «Subir» y «Bajar» en cada ejercicio, y «Mover antes» y «Mover después» en el menú del día tipo y en el de la sesión, con lo abierto siguiendo a su elemento; las opciones no se reordenan (TA-49); **quitar cualquier serie**, en su fila, en lugar de «Quitar la última serie» (TA-50); **el microciclo con sesiones sueltas**: «Organizar por microciclos» se ofrece siempre y las sesiones pasan a la «Semana 1» con sus identificadores («Las 3 sesiones del bloque pasan a «Semana 1».», TA-51); **«Revisar el plan»**, antes «Validar plan», que lista también lo que queda sin completar —cada ítem sin cantidad («… → sin cantidad: en la app dice «Sin dato»»), cada ejercicio sin series y cada serie sin repeticiones fijadas—, con su lugar y sin bloquear («Queda sin completar. No impide activar: si es a propósito, podés activarlo así.»); sin nada, «No hay nada que impida activar.» (TA-52); **«Guardar como plantilla»**, con su texto y a la vista, en lugar de un menú «⋯» sin texto, apagado con su motivo cuando no se puede (TA-53); **la receta como opción, con buscador**: «Buscar en tus recetas», por su nombre y sin tildes, sobre todas las propias, leídas al abrir el cajón (TA-54); y **las zonas de un ejercicio propio**, desde «Mis ejercicios» («Cargar las zonas» o «Cambiar las zonas»): las 17 del catálogo con «No la nombra», «Principal» o «Secundaria», y la figura de siempre al lado, con API-EJE-04, que ya existía (TA-55). Ningún oráculo TEST-TAG la pide; las pruebas, con sus mutaciones, en `editores.test.mjs` | `advisees/topes-del-plan.ts`, `advisees/editar-la-estructura.ts`, `advisees/revisar-el-plan.ts`, `nutrition/recetas-para-elegir.ts`, `exercises/zonas-propias.ts`, `exercises/zonas-del-ejercicio.tsx`, `apps/web/test/editores.test.mjs` |
+| TB-51 | Hecha (TA-79 a TA-84), sin tocar la API. **La barra de la última toma, en kilos con el porcentaje al lado** (D-11, modificada por Dirección el 2026-11-07), en la tarjeta de Antropometría del Resumen y arriba de las columnas de la pestaña Composición corporal («La última toma repartida, el …»), con el mismo componente (`BarraDelReparto`). Cada parte en su renglón, con su muestra, su nombre, sus kilos y su porcentaje («Grasa 13,5 kg 13,7 %»), y debajo «Los porcentajes son del peso de esa toma: 98,6 kg.». **El reparto** (`repartoDe`): con el músculo de Lee, grasa, músculo y resto, «El resto es lo que no es grasa ni músculo esquelético (hueso, órganos, piel y líquidos), por diferencia.», y el método en palabras («La grasa, Durnin y Womersley, con Siri; el músculo, Lee, con perímetros»); con los cuatro componentes de De Rose y Guimarães (en las tomas que ya los tienen, DL-112), grasa de Faulkner, músculo y resto («El resto es la masa ósea (12,9 kg) y la residual (23,8 kg: órganos, vísceras y líquidos).»); sin músculo, grasa y libre de grasa, con «El método no calcula el músculo: la libre de grasa es el músculo, el hueso, los órganos y los líquidos, juntos.». «Desde la toma del …» compara solo dos tomas repartidas igual («peso −0,1 kg · grasa +0,3 kg · músculo −0,7 kg · resto +0,3 kg»). La grasa va primero; el músculo, en el azul de la libre de grasa; el resto, en `--composicion-resto` (token nuevo, con sus pares). Las columnas de la pestaña no cambian. T13 admite el «%» solo en `porcentajeEnPalabras`. **La cohorte:** Federico Álvarez con las masas de Durnin y Womersley y el músculo de Lee (TA-84); no está cargado en `test`. TEST-TAG-017 (seis casos nuevos, cinco mutaciones verificadas) y TEST-TAG-005 | `seguimiento/composicion.ts` (`repartoDe`, `laUltimaToma`, `porcentajeEnPalabras`), `seguimiento/composicion-en-pantalla.tsx` (`BarraDelReparto`), `seguimiento/pieza-del-area.tsx`, `tokens.css`, `scripts/contraste.test.cjs`, `scripts/copy-pantallas.test.cjs`, `apps/web/test/composicion.test.mjs`, `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/` |
+| TB-50 | Hecha (TA-73 a TA-78), sin tocar la API. **«Evolución en las últimas tomas»**, en la tarjeta de Antropometría del Resumen, debajo de la composición: hasta cuatro tomas (tres si no entran sin pisarse), una columna por toma con su fecha arriba, y tres pares: «Cintura y pliegue abdominal», «Suma de 6 pliegues y peso» y «Brazo flexionado y pliegue tricipital». Cada medida, en su fila: el nombre y la unidad, la línea con la marca del dato (TB-02; la suma de 6, calculada), el valor escrito sobre cada punto (el de la última toma en la tinta del texto) y la diferencia al costado («−0,4 cm», «+0,2 mm», «sin cambio»). Kilos con kilos: una vara por unidad en toda la pieza, nunca más angosta que 2 kg, 2 cm o 4 mm. Lo que no se compara se dice: «sin medir» y «Pliegue abdominal: no se midió en estas tomas.»; con un cambio de protocolo, la línea se corta y «Cintura: cambia el protocolo, el método o la unidad el …; la diferencia va desde ahí.»; un hueco no se une. Plegada con dos o más tarjetas en fila, con el primer par en el renglón («Cintura −0,3 cm · pliegue abdominal −1,2 mm»); abierta con una sola. Abajo, «Una columna por toma, con su fecha. Cada medida va en su unidad: los centímetros con los centímetros y los milímetros con los milímetros, a la misma escala.» y «Ver la evolución de todas las medidas». La tabla equivalente, para el lector de pantalla. Sale de la misma lectura de la tarjeta: ninguna petición nueva. TEST-TAG-036 (siete casos, cuatro mutaciones verificadas) | `seguimiento/evolucion-de-las-tomas.ts`, `seguimiento/evolucion-de-las-tomas-en-pantalla.tsx`, `seguimiento/resumen-area.tsx`, `apps/web/test/evolucion-de-las-tomas.test.mjs`, `EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs` |
 
 **Para seguir.** De TB-00 a TB-12, TB-15, TB-16, TB-17, TB-24, TB-25, TB-48 y TB-49 están hechas, con el arreglo de base
-de TEST-TAG-032. Lo próximo:
+de TEST-TAG-032, y también TB-50 y TB-51, lo que sumó Dirección el 2026-11-07 (§3.3). Lo próximo:
+- **TB-50 y TB-51, en `test`:** como TB-24, la cohorte de `test` no tiene las masas de Durnin y Womersley ni el músculo de
+  Lee de Federico (pide la IP del operador y lo decide Dirección). Hasta entonces, en `test` la barra de Diego y de
+  Federico es la línea de los pesos; la evolución de las últimas tomas sí se ve, porque lee medidas que ya están.
 - **Un paso pendiente de TB-24, que decide Dirección:** cargar en la base de `test` las masas de Durnin y Womersley de la
   cohorte: los cálculos de los dos métodos nuevos sobre las tomas de Diego y Camila que ya están (la fase `calculos` de
   `cargar.mjs`, que hoy no se repite porque su estado la da por hecha). Pide la IP del operador. Hasta entonces, en `test`
@@ -823,6 +828,30 @@ sobre ae418e0):
   vencido y «107 comidas registradas» desde la revisión) y «Pendiente 1 de 3» con Martín Acosta; el foco en la pregunta,
   las tres salidas y ningún error de la página. Con «Ocultar nombres», ningún nombre ni inicial en el cajón, el Espacio
   ni el Resumen de los dos profesionales.
+
+**Lo medido en el tramo de TB-50 y TB-51** (corrida 42388223346 de `capturas-del-tablero`, sobre 4f16451, el
+2026-11-07, con `main` mergeado): las diecinueve páginas, con las peticiones de la tabla, sin errores de la página, sin
+ningún nombre con «Ocultar nombres» y sin fichas de «Tu semana» que se pasen. Las capturas suman la tarjeta de
+Antropometría de cada Resumen con sus piezas abiertas (`<página>-antropometria-<ancho>.png`).
+- **Diego Sosa (Sofía Paz), dos compartimentos:** «Grasa 15,2 kg 18,8 %» y «Libre de grasa 65,8 kg 81,2 %», con «El
+  método no calcula el músculo…». La evolución, con tres tomas (9 ago, 21 sept y 4 nov) y los tres pares; plegada,
+  «Cintura −0,3 cm · pliegue abdominal −1,2 mm». **La primera pantalla no cambia:** a 1440 × 900 los valores de los
+  indicadores terminan en 829 (lo mismo que en la corrida de TB-24) y a 1920 × 950 los minigráficos, en 915. Abierta, la
+  tarjeta mide 965 a 1440.
+- **Federico Álvarez (Sofía Paz), el músculo de Lee:** «Grasa 13,5 kg 13,7 %», «Músculo 46,6 kg 47,3 %» y «Resto
+  38,5 kg 39,0 %», con el método de cada parte y «Desde la toma del 3 sept: peso −0,1 kg · grasa +0,3 kg · músculo
+  −0,7 kg · resto +0,3 kg». La evolución, con tres tomas (29 jul, 3 sept y 7 oct). Abierta, la tarjeta mide 1007 a
+  1440.
+- **Héctor Funes (Sofía Paz), sin método:** «Peso en las tomas · 86,1 kg», como antes. La evolución, con cuatro tomas y
+  dos pares: la cintura (−0,8 cm) y el peso (−0,5 kg), con «Pliegue abdominal: no se midió en estas tomas.» y «Suma de 6
+  pliegues: no se midió en estas tomas.». Abierta, la tarjeta mide 759 a 1440.
+- **Las peticiones al abrir:** los tres Resúmenes de Sofía Paz, 18, como antes (TA-73: la evolución no suma
+  lecturas). El de Martín Acosta dio 15 con tres indicadores; el 2026-11-06 dio 14 con dos: la tabla lo cuenta ahora por
+  indicador (TEST-TAG-032).
+- **La primera corrida, sobre 4001d9a, falló al cargar la cohorte** («el catálogo no ofrece
+  be/masa-grasa-faulkner@1»): De Rose y Guimarães, Faulkner y Würch salieron del catálogo para cálculos nuevos con
+  DL-112. Federico pasó al músculo de Lee (TA-84). La segunda, sobre e33fe47, falló solo por el Resumen de Martín Acosta
+  (14 → 15), que no tiene Antropometría: el ejercicio principal de Diego cambió con el día de la corrida.
 
 **Lo medido en el tramo de TB-24 y TB-25** (corrida 42180079803 de `capturas-del-tablero`, sobre c14e1ed, con la cohorte
 que ya tiene las masas):
@@ -1246,3 +1275,71 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   mínimo). *Otra opción:* decidirlo por los decimales de la métrica (`decimales: 0`, como el eje de «Analizar»), que
   mete a las calorías y, con todos los valores iguales, les abriría 1 kcal de cada lado; o, con todos los valores
   iguales, dejar más aire arriba y abajo para que entren los dos rótulos, que es otra regla para un solo caso.
+- **TA-73 · La evolución sale de la misma lectura de la tarjeta.** La tarjeta de Antropometría ya leía API-ANT-06 en la
+  ventana de 92 días que termina en la última toma (TA-26), con el peso y las masas. Ahora la misma lectura pide además
+  las seis medidas de los pares (`metric=`): ninguna petición nueva, y la tabla de TA-30 no cambia. Con tomas cada cuatro
+  a seis semanas, esa ventana trae tres o cuatro, que es lo que pidió Dirección. Como la ventana termina en la última
+  toma y no hoy, la pieza puede mostrar una toma anterior al período de la ficha: Federico dice «2 en el período» y la
+  pieza tiene tres columnas, cada una con su fecha. *Otra opción:* una segunda lectura de
+  184 días para tener siempre cuatro tomas con tomas cada seis semanas o más, que suma una petición al abrir el Resumen.
+- **TA-74 · Una columna por toma, en orden y con su fecha, no en la escala del tiempo.** Las tomas se comparan una con
+  otra, y el valor va escrito sobre cada punto: con la x en el tiempo, dos tomas a pocos días (una toma y la de ayer)
+  pisarían sus cifras. Por eso cada columna dice su día arriba. *Otra opción:* la x en el tiempo, como «Analizar», con
+  los valores solo en la tabla.
+- **TA-75 · Qué tomas entran.** Las últimas con alguna medida de los pares, sin contar una toma con solo el peso (sería una
+  columna de guiones); hasta cuatro, y tres si el dibujo no tiene lugar para cuatro valores sin pisarse (36 por
+  columna). La letra no baja de su piso. *Otra opción:* siempre cuatro, con la letra más chica, que la regla de TB-02 no
+  admite.
+- **TA-76 · Kilos con kilos: una vara por unidad en toda la pieza.** Las filas de centímetros (la cintura y el brazo)
+  comparten el largo de escala, y también las de milímetros (la suma de 6 pliegues, el abdominal y el tricipital); el
+  peso va solo. Nunca más angosta que 2 kg, 2 cm o 4 mm (TB-04). La consecuencia, honesta: al lado de la suma de 6, un
+  pliegue solo se ve más quieto, porque un milímetro mide lo mismo en las dos filas. *Otra opción:* cada fila con su
+  propia vara, que muestra más movimiento pero dibuja igual un milímetro y diez.
+- **TA-77 · Plegada como la composición.** Con dos o más tarjetas en fila, la pieza va plegada (A13), y el renglón que la
+  abre dice el primer par con diferencias («Cintura −3,2 cm · pliegue abdominal −2,5 mm»), para que se lea sin abrir;
+  con una sola área, abierta. Medido: plegadas las dos piezas, la primera pantalla del Resumen de Diego no cambia (a
+  1440 × 900 los valores de los indicadores siguen terminando en 829; a 1920 × 950, los minigráficos en 915); abiertas,
+  la tarjeta de Antropometría mide entre 759 (Héctor, dos pares) y 1007 (Federico) a 1440. *Otra opción:* abierta
+  siempre, que con esos altos empuja los indicadores fuera de la primera pantalla.
+- **TA-78 · Los colores y las cifras.** Las dos filas de cada par en `--metrica-1` y `--metrica-2`, con su nombre y su
+  unidad al lado; la cifra de la última toma en la tinta del texto y las demás en la tenue; la marca, con el estado del
+  dato (la suma de 6, calculada, con su punto adentro). Ningún color por el valor ni por el sentido del cambio. *Otra
+  opción:* las dos filas del mismo color, que obliga a leer el nombre para saber cuál es cuál.
+- **TA-79 · Cómo se reparte el peso, de lo que más dice a lo que menos.** Los cuatro componentes de De Rose y Guimarães
+  primero: la grasa de Faulkner (la que la ecuación resta), la masa muscular y el resto, que es la ósea de Rocha y la
+  residual de Würch, con sus kilos si la toma los tiene. Después, el músculo de Lee: la grasa del método de dos
+  compartimentos de la toma, la masa muscular esquelética de Lee (la de perímetros antes que la de peso y talla) y el
+  resto por diferencia; son dos ecuaciones, y la barra nombra las dos («la grasa, Durnin y Womersley, con Siri; el
+  músculo, Lee, con perímetros»). Si no, grasa y libre de grasa. Un músculo que no entra en la libre de grasa, o unos
+  cuatro componentes sin la grasa de Faulkner, no parten la barra. **Un hallazgo:** De Rose y Guimarães, Faulkner, Würch
+  y Lee con peso y talla salieron del catálogo para cálculos nuevos con DL-112 (2026-10-01). La barra los lee en las
+  tomas que ya los tienen; para una toma nueva, el único método que calcula el músculo es Lee con perímetros, que pide
+  el brazo relajado, el muslo y la pantorrilla con sus pliegues. *Otra opción:* el músculo solo con De Rose y
+  Guimarães, y Lee en su fila como decía D-11; Dirección nombró a Lee, y sin Lee una toma nueva no tendría nunca músculo.
+- **TA-80 · El porcentaje.** Con un decimal, como los kilos: los kilos de cada parte sobre el peso de esa toma. Puede
+  diferir en una décima del % de grasa que calcula el método, porque sale de las masas redondeadas. Va en su propia
+  columna, al lado de los kilos («Grasa 15,4 kg 19,0 %»), en la tinta tenue, y debajo: «Los porcentajes son del peso de
+  esa toma: 80,9 kg.». *Otra opción:* el porcentaje entero, más corto, que esconde medio punto de cambio.
+- **TA-81 · La misma barra en la tarjeta y en la pestaña.** En la pestaña, «La última toma repartida» va arriba de las
+  columnas, con el reparto más rico de esa toma y su método; las columnas siguen con un método de dos compartimentos y
+  sin «%», como manda TEST-TAG-017. Así, en la pestaña de Federico, la barra es grasa, músculo y resto, y las columnas,
+  grasa y libre de grasa de Durnin y Womersley, con Lee en su fila. *Otra opción:* sumar «cuatro componentes» al selector de método de las columnas, que cambia TB-24 y su
+  oráculo.
+- **TA-82 · El orden y el color del resto.** La grasa primero, como lo dijo Dirección («grasa, músculo y el resto»), en
+  la tarjeta y en la pestaña; antes iba primero la libre de grasa. El músculo va en el azul de la libre de grasa, de la
+  que es parte, y el resto en un violeta grisáceo propio (`--composicion-resto`: `#6e5f8f` en Claro y `#b9a3dc` en Azul
+  noche), a ΔE 20 o más de la grasa, del músculo, de «hoy» y del gris de los huecos, con 3:1 sobre la tarjeta y sobre el
+  fondo suave. *Otra opción:* el resto en el gris de los huecos, que se leería como «sin dato».
+- **TA-83 · El «%» en T13, contado.** La lista de porcentajes de la ficha (`copy-pantallas.test.cjs`) suma
+  `composicion.ts · %`, con su motivo: el porcentaje de cada parte del peso, que dice de qué está hecho y no cuánto se
+  cumplió. Se escribe en un solo lugar, `porcentajeEnPalabras`, y una prueba de `composicion.test.mjs` falla si aparece
+  otro. *Otra opción:* escribir «por ciento», que la prueba también prohíbe y se lee peor.
+- **TA-84 · La cohorte: Federico con Lee.** Para que las capturas muestren la barra de tres partes, el profesional de
+  Antropometría de Federico Álvarez calcula en cada toma las masas de Durnin y Womersley y la masa muscular esquelética
+  de Lee con perímetros. Lee pide el brazo relajado, que la cohorte no tenía: sale del flexionado de cada toma menos
+  2,6 cm, sin azar, así que sus demás medidas no cambian. La primera corrida probó con De Rose y Guimarães y falló
+  («el catálogo no ofrece be/masa-grasa-faulkner@1»): es lo que retiró DL-112. Diego sigue con dos compartimentos y
+  Héctor sin método, así que las capturas muestran los tres casos. De paso, el indicador de masa grasa de Federico
+  (TB-25) pasa del peso a la masa grasa de Durnin y Womersley. **No está cargado en la base de `test`:** pide la IP del
+  operador y lo decide Dirección, como TB-24. *Otra opción:* Lee para Diego, que cambia la tarjeta de la cuenta del
+  inversor.

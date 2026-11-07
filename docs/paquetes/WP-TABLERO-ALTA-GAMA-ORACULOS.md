@@ -729,8 +729,12 @@ EXPECTED             1 → sin diferencias con la misma cuenta; «suben de 18 a 
 NEGATIVE_ASSERTIONS  Una cuenta que cambia no pasa por tener margen: la tabla es exacta (TA-30). La espera no se da por
                      cumplida con una lectura en curso. La lista de nombres de TEST-TAG-004 no sale vacía. Mutaciones
                      verificadas: comparando solo para arriba, falla el paso 1; dando la página por quieta sin mirar la
-                     última petición, falla el paso 3.
-AUTOMATION           scripts/guardian-de-peticiones.test.mjs («TEST-TAG-032 · …», cinco casos), en `npm test`; la
+                     última petición, falla el paso 3. Desde el 2026-11-07, una página cuya cuenta depende de los
+                     indicadores que muestra (el Resumen de Martín Acosta: el ejercicio principal de Diego cambia con el
+                     día de la corrida) se declara como fijas más uno por indicador mostrado, y sigue siendo exacta: una
+                     lectura de más da «suben de 15 a 16 sin aviso», y una página sin la cuenta de indicadores, una
+                     diferencia.
+AUTOMATION           scripts/guardian-de-peticiones.test.mjs («TEST-TAG-032 · …», seis casos), en `npm test`; la
                      comparación en la CI, EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs con peticiones.mjs
 ENVIRONMENT          CI y local, sin servicios; el paso 5, en capturas-del-tablero
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR y dos corridas de capturas-del-tablero con el mismo código y las
