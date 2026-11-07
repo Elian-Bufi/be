@@ -697,7 +697,56 @@ async function resumen() {
   }
 }
 
-const FASES = { profesionales, ejercicios, personas, 'nombres-demo': nombresDemo, resumen };
+// ─── La etapa A del tablero, sobre una cohorte que ya estaba cargada (autorizado por Dirección el 2026-11-07) ─────
+
+/** A quiénes se les calculan las masas de Durnin y Womersley sobre las tomas que ya están: lo que pidió Dirección. */
+const MASAS_DE_LA_ETAPA_A = ['diego', 'camila'];
+
+/**
+ * Suma a una cohorte cargada antes de la etapa A lo que la etapa A necesita, solo agregando y por la API:
+ * 1. las masas de Durnin y Womersley (TB-24) sobre las tomas que ya están de Diego Sosa y Camila Ortiz. La fase
+ *    `calculos` no se repite porque su estado la da por hecha; acá cada toma calculada queda anotada en el estado, así una
+ *    corrida cortada sigue donde quedó y nunca calcula dos veces la misma toma;
+ * 2. lo compartido entre áreas (TB-52 a TB-56): Diego comparte y Lic. Sofía Paz le pide a Federico ver su plan
+ *    (`compartirEntreAreas`, que ya no corre si el estado lo da por hecho).
+ * El músculo de Lee de Federico (TB-51) no: pide el perímetro del brazo relajado, que sus tomas registradas no tienen, y
+ * la base no deja agregarle una medición a una toma registrada (`be_contenido_en_preparacion`).
+ * Uso: node cargar.mjs <local|test> etapa-a
+ */
+async function etapaA() {
+  for (const clave of MASAS_DE_LA_ETAPA_A) {
+    const p = PERSONAS.find((x) => x.clave === clave);
+    const estado = leerEstado(d).personas?.[clave];
+    if (!p || !p.masas || p.sinPliegues) throw new Error(`${clave}: no tiene las masas de Durnin y Womersley en personas.mjs`);
+    if (!estado?.aseId || !estado.tomas?.length) throw new Error(`${p.nombre}: el estado no tiene sus tomas; esta fase es para una cohorte ya cargada`);
+    const hechas = new Set(estado.masasDeLaEtapaA ?? []);
+    const pendientes = estado.tomas.filter((t) => !hechas.has(t.evaluacionId));
+    if (pendientes.length === 0) {
+      console.log(`${p.nombre}: las masas ya estaban calculadas en sus ${estado.tomas.length} tomas.`);
+      continue;
+    }
+    const token = await sesionDe(proDe(p, 'ANTROPOMETRIA'));
+    const metodos = await metodosDe(token);
+    let n = 0;
+    for (const toma of pendientes) {
+      for (const regla of METODOS.masas[p.sexo]) {
+        const m = metodos.find((x) => x.ruleId === regla);
+        if (!m) throw new Error(`el catálogo no ofrece ${regla}`);
+        const bindings = m.requiredInputs.map((i) => ({ inputCode: i.inputCode, sourceRef: toma.mediciones[i.metric] }));
+        if (bindings.some((b) => !b.sourceRef)) continue;
+        await api.pedir('POST', `/advisees/${estado.aseId}/calculations`, { token, cuerpo: { purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: m.methodVersionId, inputBindings: bindings } });
+        n++;
+      }
+      // Cada toma, anotada apenas se calcula: una corrida cortada no la repite.
+      const ahora = leerEstado(d).personas;
+      guardarEstado(d, { personas: { ...ahora, [clave]: { ...ahora[clave], masasDeLaEtapaA: [...(ahora[clave].masasDeLaEtapaA ?? []), toma.evaluacionId] } } });
+    }
+    console.log(`${p.nombre}: ${n} cálculos de las masas de Durnin y Womersley en ${pendientes.length} tomas.`);
+  }
+  await compartirEntreAreas();
+}
+
+const FASES = { profesionales, ejercicios, personas, 'etapa-a': etapaA, 'nombres-demo': nombresDemo, resumen };
 if (!FASES[fase]) throw new Error(`Fase desconocida «${fase}». Fases: ${Object.keys(FASES).join(', ')}.`);
 try {
   await FASES[fase]();
