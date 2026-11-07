@@ -803,3 +803,10 @@ rama. Siguen a TA-85 a TA-95 (§10.1, en #240), a ratificar.*
   en esa área y nadie más cambia; sin compartir todavía, solo eso (como D-25). Un permiso de antes que ya no puede darse
   (quien lo recibía ahora lleva esa área) se deja de dar en la versión nueva. *Otra opción:* rechazar la respuesta hasta que
   la persona revise toda la lista, que la traba por algo que no eligió.
+- **TA-108 · La regla de TB-53 reemplaza una función de la base, y Dirección la da por buena.** La migración
+  `20261107120100_resumenes_compartidos` hace `CREATE OR REPLACE FUNCTION be_referencia_de_nota_guardar` para que una nota
+  de coordinación pueda citar el plan de otra área que el autor ve por API-RES-06. No es «solo agregar» en sentido
+  estricto: cambia el cuerpo de una función que ya existía, pero no toca ninguna fila y se revierte volviendo a crear la
+  función anterior. **Decisión técnica de Dirección del 2026-11-07, a ratificar:** «La doy por buena: es reversible y no
+  toca filas». *Otra opción:* una función nueva con otro nombre y un disparador nuevo, sin reemplazar la vieja, que deja
+  dos reglas sobre la misma tabla y obliga a desactivar una.
