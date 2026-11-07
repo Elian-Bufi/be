@@ -48,11 +48,11 @@ export const PETICIONES_AL_ABRIR = {
   'sofia-paz/revision-nueva': 7,
   // TB-52 a TB-56: el Plan de Nutrición de Diego (la cuenta, las novedades, los vínculos del marco, las versiones, el
   // objetivo vigente y la versión activa), API-RES-04 al abrir y, al desplegar «Otras áreas», el plan de Entrenamiento
-  // que le comparte Diego (API-RES-06) y API-RES-07. Abrir el plan completo no lee nada. Estimadas: se fijan en la
-  // primera corrida con la API de RES (#243).
+  // que le comparte Diego (API-RES-06) y API-RES-07. Abrir el plan completo no lee nada. La base, medida en la corrida
+  // 42403575975 sin la API de RES (6 y API-RES-04, que dio 404: 7); las dos del panel se confirman con la del #243.
   'sofia-paz/plan-otras-areas': 9,
   // El Plan de Nutrición de Federico: lo mismo, sin plan que leer al desplegar (el de Entrenamiento espera la respuesta
-  // de Federico), así que solo API-RES-07.
+  // de Federico), así que solo API-RES-07 (sin RES se midieron 7).
   'sofia-paz/plan-federico-pedido': 8,
   'martin-acosta/espacio': 6,
   'martin-acosta/cajon': 8,
@@ -69,9 +69,9 @@ export const PETICIONES_AL_ABRIR = {
   'martin-acosta/mis-ejercicios': 4,
   'martin-acosta/mis-ejercicios-zonas': 4,
   // TB-52 a TB-56: el Plan de Entrenamiento de Diego (la cuenta, las novedades, los vínculos, las versiones, el objetivo,
-  // la versión activa con sus objetivos por serie, las fichas visuales de la sesión y la imagen del ejercicio abierto),
-  // API-RES-04 y, al desplegar, el plan de Nutrición (API-RES-06) y API-RES-07. Estimada: se fija en la primera corrida.
-  'martin-acosta/plan-otras-areas': 11,
+  // la versión activa con sus objetivos por serie y las fichas visuales de la sesión), API-RES-04 y, al desplegar, el plan
+  // de Nutrición (API-RES-06) y API-RES-07. Sin RES se midieron 8 en la corrida 42403575975 (7 y el 404 de API-RES-04).
+  'martin-acosta/plan-otras-areas': 10,
 };
 
 /**
