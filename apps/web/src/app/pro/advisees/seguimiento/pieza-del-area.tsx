@@ -13,8 +13,8 @@ import { COPY_PRIMER_PLAN, numero, type ParteDeObservacion } from '@be/domain';
 import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
-import { DOS_COMPARTIMENTOS, laUltimaToma, pesosDeLasTomas, textoDeLaParticion, textoDeLasDiferencias, unDecimal } from './composicion';
-import { LineaDeLosPesos, type LecturaDeLaComposicion } from './composicion-en-pantalla';
+import { laUltimaToma, pesosDeLasTomas, textoDeLasDiferenciasDelReparto, unDecimal } from './composicion';
+import { BarraDelReparto, LaBarra, LineaDeLosPesos, type LecturaDeLaComposicion } from './composicion-en-pantalla';
 import { losRegistrosDelPeriodo, pasosDelPrimerPlan, sesionesPorEjercicio, textoDeLasComidas, textoDeLosRectificados } from './piezas-del-area';
 import type { Disponibles } from './series';
 
@@ -62,7 +62,7 @@ export function CifrasDesdeLaRevision({ partes, href, texto }: { partes: readonl
  * título y lo que se ve de un vistazo (la barra partida, o cuántos ejercicios); adentro va también lo que se plegaba
  * aparte, la cobertura del período, para que la tarjeta tenga un solo plegado.
  */
-function Pieza({ titulo, plegada, aLaVista, children }: { titulo: string; plegada: boolean; aLaVista: ReactNode; children: ReactNode }) {
+export function Pieza({ titulo, plegada, aLaVista, children }: { titulo: string; plegada: boolean; aLaVista: ReactNode; children: ReactNode }) {
   const id = useId();
   if (plegada) {
     return (
@@ -153,10 +153,12 @@ export function SesionesPorEjercicio({ ejercicios, fecha, plegada = false, child
 }
 
 /**
- * La composición de la última toma (Antropometría; TB-24, D-11 y TA-20): la barra horizontal del peso partido en masa
- * libre de grasa y masa grasa, con su método, y lo que cambió desde la toma anterior del mismo método. Sin una toma
- * partida, la línea de los pesos de las tomas (R-6). Sin «%» (T13). Lee API-ANT-06: la ventana de 92 días que termina en
- * la última toma.
+ * La composición de la última toma (Antropometría; TB-24, D-11 y TA-20): la barra horizontal del peso, con su método, y
+ * lo que cambió desde la toma anterior repartida igual. Sin una toma partida, la línea de los pesos de las tomas (R-6).
+ * Lee API-ANT-06: la ventana de 92 días que termina en la última toma.
+ * TB-51 (D-11, modificada por Dirección el 2026-11-07): la barra va en kilos con el porcentaje al lado de cada parte, y
+ * es grasa, músculo y resto cuando el método calcula el músculo (De Rose y Guimarães, o Lee); si no, grasa y libre de
+ * grasa (`BarraDelReparto`, la misma de la pestaña).
  */
 export function ComposicionDeLaUltimaToma({
   lectura,
@@ -188,27 +190,20 @@ export function ComposicionDeLaUltimaToma({
   }
   const ultima = laUltimaToma(lectura.tomas);
   if (ultima) {
-    const p = ultima.particion;
-    const barra = (
-      <span className="barra-de-la-composicion" aria-hidden="true">
-        <span data-parte="libre" style={{ flexGrow: p.libre }} />
-        <span data-parte="grasa" style={{ flexGrow: p.grasa }} />
-      </span>
-    );
+    const r = ultima.reparto;
     return (
-      <Pieza titulo="Composición de la última toma" plegada={plegada} aLaVista={barra}>
-        <p className="composicion-de-la-toma__cifra">
-          <strong className="cifra">{textoDeLaParticion(p)}</strong>
-        </p>
+      <Pieza titulo="Composición de la última toma" plegada={plegada} aLaVista={<LaBarra reparto={r} />}>
+        {/* La barra va en el renglón (plegada) o debajo del título (abierta): `Pieza` la pone con aLaVista. */}
+        <BarraDelReparto reparto={r} conLaBarra={false} />
         <p className="pieza-del-area__nota">
-          {DOS_COMPARTIMENTOS[p.familia].nombre} · toma del {fecha(ultima.fecha)}
+          {r.metodo.charAt(0).toUpperCase() + r.metodo.slice(1)} · toma del {fecha(ultima.fecha)}
         </p>
         {ultima.anterior ? (
           <p className="composicion-de-la-toma__cambio">
-            Desde la toma del {fecha(ultima.anterior.fecha)}: <span className="cifra">{textoDeLasDiferencias(ultima.anterior.particion, p)}</span>
+            Desde la toma del {fecha(ultima.anterior.fecha)}: <span className="cifra">{textoDeLasDiferenciasDelReparto(ultima.anterior.reparto, r)}</span>
           </p>
         ) : ultima.cambioDeMetodo ? (
-          <p className="pieza-del-area__nota">La toma anterior se partió con otro método o protocolo: no se comparan.</p>
+          <p className="pieza-del-area__nota">La toma anterior se repartió con otro método o protocolo: no se comparan.</p>
         ) : null}
         {ultima.despues ? (
           <p className="pieza-del-area__nota">

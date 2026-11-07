@@ -218,6 +218,13 @@ export const PERSONAS = [
     nacimiento: '2001-08-09',
     talla: 186.0,
     dias: 730,
+    // TB-51 (WP-TABLERO-ALTA-GAMA; D-11, modificada por Dirección el 2026-11-07): su profesional de Antropometría calcula
+    // los cuatro componentes de De Rose y Guimarães (la grasa y la libre de grasa de Faulkner, la masa ósea de Rocha, la
+    // residual de Würch y la muscular), para que la barra de la tarjeta muestre grasa, músculo y resto. Los diámetros de
+    // la muñeca y del fémur no cambian en un adulto: van iguales en cada toma, sin ruido (no consumen el azar de la
+    // historia, así que las demás medidas de Federico quedan como estaban).
+    cuatroComponentes: true,
+    diametros: { 'diametro-biestiloideo': 6.0, 'diametro-femur': 10.2 },
     areas: { NUTRICION: 'N', ENTRENAMIENTO: 'T', ANTROPOMETRIA: 'N' },
     evaluacionNut: {
       contexto: 'Juega de segunda línea en un club de la URBA: entrena con el club martes y jueves a la noche y juega los sábados.',
@@ -524,4 +531,10 @@ export const METODOS = {
     H: ['be/masa-grasa-durnin-womersley-hombres@1', 'be/masa-libre-de-grasa-durnin-womersley-hombres@1'],
     M: ['be/masa-grasa-durnin-womersley-mujeres@1', 'be/masa-libre-de-grasa-durnin-womersley-mujeres@1'],
   },
+  /**
+   * TB-51: los cuatro componentes de De Rose y Guimarães, para quien tiene `cuatroComponentes: true` (solo hombres: la
+   * grasa de Faulkner es de hombres). La masa muscular es el peso menos la grasa de Faulkner, la ósea de Rocha y la
+   * residual de Würch, y las cuatro suman el peso de la toma.
+   */
+  cuatroComponentes: ['be/masa-grasa-faulkner@1', 'be/masa-libre-de-grasa-faulkner@1', 'be/masa-osea-rocha@1', 'be/masa-residual-wurch-hombres@1', 'be/masa-muscular-4c-hombres@1'],
 };

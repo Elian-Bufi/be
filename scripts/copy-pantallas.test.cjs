@@ -239,7 +239,8 @@ for (const dominio of DOMINIOS) {
  * Un solo porcentaje es de la ficha, y está contado: el **cambio relativo** de Analizar, que compara un valor con otro
  * del mismo dato (la referencia que elige el profesional). No es un puntaje ni dice cuánto «se cumplió». Los lugares
  * donde se escribe están en `PORCENTAJES_DE_LA_FICHA`, uno por uno: un «%» en cualquier otro texto hace fallar la
- * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más).
+ * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más). Desde
+ * TB-51 hay un segundo porcentaje, también contado: el de cada parte de la barra de la composición (D-11, modificada).
  */
 const SEGUIMIENTO = join(RAIZ, 'apps/web/src/app/pro/advisees/seguimiento');
 const LA_FICHA = [
@@ -253,9 +254,13 @@ const PORCENTAJES_DE_LA_FICHA = [
   'lienzo.tsx · %',
   // El ancho del gráfico dentro de su caja: no es un texto para la persona.
   'lienzo.tsx · 100%',
+  // TB-51 (DL-163 D-11, modificada por Dirección el 2026-11-07: «kilos con el % al lado»): el porcentaje de cada parte de
+  // la barra de la última toma, junto a sus kilos. El 100 % es el peso de esa toma: dice de qué está hecho, no cuánto se
+  // cumplió. Se escribe en un solo lugar, `porcentajeEnPalabras`.
+  'composicion.ts · %',
 ];
 
-test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; su único porcentaje es el cambio relativo', () => {
+test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; sus porcentajes son el cambio relativo y el de la composición (TB-51)', () => {
   assert.ok(LA_FICHA.length >= 20, `se esperaban las pantallas de la ficha, hay ${LA_FICHA.length}`);
   const prohibidos = (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])];
   const porcentajes = new Set();

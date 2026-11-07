@@ -14,7 +14,12 @@
  * - **Un cambio de método corta las diferencias:** donde cambia el método, el protocolo o la unidad hay una vertical
  *   rotulada, y ninguna diferencia la cruza.
  * - **Una toma con solo peso es una columna en contorno,** sin partir, y no corta la fila del peso.
- * - **Ubica, no califica:** sin «%», sin rangos ni colores de bien o mal. Las diferencias se escriben con su signo.
+ * - **Ubica, no califica:** sin rangos ni colores de bien o mal. Las diferencias se escriben con su signo.
+ *
+ * TB-51 (D-11, modificada por Dirección el 2026-11-07: «kilos con el % al lado»): la barra de la última toma
+ * (`repartoDe`) lleva el porcentaje junto a los kilos de cada parte, y el 100 % es el peso de esa toma. Si la toma trae
+ * músculo, la barra es grasa, músculo y resto; si no, grasa y libre de grasa. El «%» se escribe solo en
+ * `porcentajeEnPalabras`, el único lugar de la ficha que T13 le permite a la composición.
  */
 import { fechaCivil, nombreDeMetrica, numeroConPrecision, type EvolucionResponse } from '@be/domain';
 
@@ -33,8 +38,14 @@ const FAMILIAS = Object.keys(DOS_COMPARTIMENTOS) as Familia[];
 /** Las masas que no suman el peso: cada una en su fila, nunca en la columna (D-11). */
 export const MASAS_QUE_NO_SUMAN: readonly string[] = ['masa-muscular-esqueletica-lee', 'masa-muscular-esqueletica-lee-peso', 'masa-muscular-cuatro-componentes'];
 
+/**
+ * TB-51 (D-11, modificada por Dirección el 2026-11-07): las masas que nombran el resto de los cuatro componentes de De
+ * Rose y Guimarães, que no son una parte de la columna: dicen de qué está hecho el resto de la barra.
+ */
+export const MASAS_DEL_RESTO: readonly string[] = ['masa-osea-rocha', 'masa-residual-wurch'];
+
 /** Las métricas que la pieza le pide a API-ANT-06 (`metric=`, separadas por comas): ninguna más. */
-export const METRICAS_DE_LA_COMPOSICION: readonly string[] = ['peso', ...FAMILIAS.flatMap((f) => [DOS_COMPARTIMENTOS[f].grasa, DOS_COMPARTIMENTOS[f].libre]), ...MASAS_QUE_NO_SUMAN];
+export const METRICAS_DE_LA_COMPOSICION: readonly string[] = ['peso', ...FAMILIAS.flatMap((f) => [DOS_COMPARTIMENTOS[f].grasa, DOS_COMPARTIMENTOS[f].libre]), ...MASAS_QUE_NO_SUMAN, ...MASAS_DEL_RESTO];
 
 /** Cuánto pueden diferir las dos masas del peso de su toma: cada una viene redondeada a 0,1 kg (DL-112). */
 export const TOLERANCIA_DE_LA_SUMA = 0.15;
@@ -304,37 +315,143 @@ export function composicionDe(tomas: readonly TomaDeLaComposicion[], pedida: Fam
   return { familia, familias, columnas, cambios, filas, entre, unaSola: partidas.length > 0 && !dos };
 }
 
+// ─── La barra de la última toma: grasa, músculo y resto, o grasa y libre de grasa (TB-51) ─────────────────────────
+
+export type ClaveDeLaParte = 'grasa' | 'musculo' | 'resto' | 'libre';
+
+/**
+ * Cómo se reparte el peso de una toma, de la que más dice a la que menos:
+ * - **De Rose y Guimarães, cuatro componentes:** la grasa de Faulkner, la masa muscular y el resto, que es la masa ósea
+ *   de Rocha y la residual de Würch. El método suma el peso por construcción.
+ * - **El músculo de Lee:** la grasa de un método de dos compartimentos de la misma toma, la masa muscular esquelética de
+ *   Lee y el resto, por diferencia. Son dos ecuaciones, y la barra lo dice.
+ * - **Dos compartimentos:** la grasa y la libre de grasa del mismo método.
+ */
+export type TipoDeReparto = 'CUATRO_COMPONENTES' | 'MUSCULO_DE_LEE' | 'DOS_COMPARTIMENTOS';
+
+export interface ParteDelPeso {
+  readonly clave: ClaveDeLaParte;
+  readonly nombre: string;
+  readonly kg: number;
+  /** Del peso de esa toma: el 100 % es el peso. Con un decimal, como los kilos. */
+  readonly porcentaje: number;
+}
+
+export interface RepartoDelPeso {
+  readonly tipo: TipoDeReparto;
+  readonly peso: number;
+  /** En el orden de la barra: la grasa primero; después el músculo y el resto, o la libre de grasa. */
+  readonly partes: readonly ParteDelPeso[];
+  /** El método en palabras: uno o, con el músculo de Lee, el de la grasa y el del músculo. */
+  readonly metodo: string;
+  /** Qué es el resto, en palabras; `null` sin resto (dos compartimentos). */
+  readonly resto: string | null;
+  /** Dos repartos se comparan si comparten esta clave: el tipo y el método, el protocolo y la unidad de cada masa. */
+  readonly comparable: string;
+  /** La partición de dos compartimentos de la toma, si la tiene. */
+  readonly particion: Particion | null;
+}
+
+/** La masa muscular de De Rose y Guimarães (cuatro componentes, solo hombres). */
+export const MASA_DE_CUATRO_COMPONENTES = 'masa-muscular-cuatro-componentes';
+/** Las dos masas musculares esqueléticas de Lee, la de perímetros primero. */
+export const MASAS_DE_LEE: readonly string[] = ['masa-muscular-esqueletica-lee', 'masa-muscular-esqueletica-lee-peso'];
+const NOMBRE_DE_LEE: Readonly<Record<string, string>> = { 'masa-muscular-esqueletica-lee': 'Lee, con perímetros', 'masa-muscular-esqueletica-lee-peso': 'Lee, con peso y talla' };
+/** La masa ósea y la residual, cada una redondeada a 0,1 kg, pueden no cerrar exacto con el resto: hasta acá se nombran. */
+export const TOLERANCIA_DEL_RESTO = 0.25;
+
+const parte = (clave: ClaveDeLaParte, nombre: string, kilos: number, peso: number): ParteDelPeso => ({ clave, nombre, kg: redondear(kilos), porcentaje: Math.round((redondear(kilos) / peso) * 1000) / 10 });
+
+/**
+ * El reparto del peso de una toma para la barra (TB-51), o `null` si ningún método lo parte. `preferida`: el método de
+ * dos compartimentos que se mira en la pestaña; la grasa de Lee y la barra de dos compartimentos salen de ese, si la
+ * toma lo tiene.
+ */
+export function repartoDe(toma: TomaDeLaComposicion, preferida: Familia | null = null): RepartoDelPeso | null {
+  const dato = toma.datos.get('peso');
+  if (!enKg(dato) || dato.valor <= 0) return null;
+  const peso = dato.valor;
+  // De Rose y Guimarães: su grasa es la de Faulkner (la que resta la ecuación), y el resto, lo óseo y lo residual.
+  const musculo4c = toma.datos.get(MASA_DE_CUATRO_COMPONENTES);
+  const grasaF = toma.datos.get(DOS_COMPARTIMENTOS.FAULKNER.grasa);
+  if (enKg(musculo4c) && enKg(grasaF) && musculo4c.valor > 0 && grasaF.valor >= 0) {
+    const resto = redondear(peso - grasaF.valor - musculo4c.valor);
+    if (resto > 0) {
+      const osea = toma.datos.get('masa-osea-rocha');
+      const residual = toma.datos.get('masa-residual-wurch');
+      const detalle = enKg(osea) && enKg(residual) && Math.abs(osea.valor + residual.valor - resto) <= TOLERANCIA_DEL_RESTO ? { osea: osea.valor, residual: residual.valor } : null;
+      return {
+        tipo: 'CUATRO_COMPONENTES',
+        peso,
+        partes: [parte('grasa', 'Grasa', grasaF.valor, peso), parte('musculo', 'Músculo', musculo4c.valor, peso), parte('resto', 'Resto', resto, peso)],
+        metodo: 'De Rose y Guimarães, cuatro componentes; la grasa, de Faulkner',
+        resto: detalle
+          ? `El resto es la masa ósea (${kg(detalle.osea)}) y la residual (${kg(detalle.residual)}: órganos, vísceras y líquidos).`
+          : 'El resto es la masa ósea y la residual (órganos, vísceras y líquidos): lo que queda del peso.',
+        comparable: `4C|${grasaF.comparable}|${musculo4c.comparable}`,
+        particion: particionDe(toma, 'FAULKNER'),
+      };
+    }
+  }
+  const particion = particionPreferida(toma, preferida);
+  if (!particion) return null;
+  const grasa = parte('grasa', 'Grasa', particion.grasa, peso);
+  const nombre = DOS_COMPARTIMENTOS[particion.familia].nombre;
+  // El músculo de Lee con la grasa del método de dos compartimentos de la misma toma: el resto, por diferencia.
+  for (const metrica of MASAS_DE_LEE) {
+    const lee = toma.datos.get(metrica);
+    if (!enKg(lee) || lee.valor <= 0) continue;
+    const resto = redondear(particion.libre - lee.valor);
+    if (resto <= 0) continue;
+    return {
+      tipo: 'MUSCULO_DE_LEE',
+      peso,
+      partes: [grasa, parte('musculo', 'Músculo', lee.valor, peso), parte('resto', 'Resto', resto, peso)],
+      metodo: `la grasa, ${nombre}; el músculo, ${NOMBRE_DE_LEE[metrica] ?? 'Lee'}`,
+      resto: 'El resto es lo que no es grasa ni músculo esquelético (hueso, órganos, piel y líquidos), por diferencia.',
+      comparable: `LEE|${particion.comparable}|${lee.comparable}`,
+      particion,
+    };
+  }
+  return { tipo: 'DOS_COMPARTIMENTOS', peso, partes: [grasa, parte('libre', 'Libre de grasa', particion.libre, peso)], metodo: nombre, resto: null, comparable: `2C|${particion.comparable}`, particion };
+}
+
 export interface LaUltimaToma {
-  /** La última toma partida, con su fecha. */
+  /** La última toma repartida, con su fecha. */
   readonly fecha: string;
-  readonly particion: Particion;
-  /** La toma partida anterior, del mismo método y protocolo: las diferencias van desde ahí. */
-  readonly anterior: { readonly fecha: string; readonly particion: Particion } | null;
-  /** La toma partida anterior es de otro método o protocolo: no hay diferencias que escribir. */
+  readonly reparto: RepartoDelPeso;
+  /** Su partición de dos compartimentos, si la tiene. */
+  readonly particion: Particion | null;
+  /** La toma repartida anterior, con el mismo reparto, método y protocolo: las diferencias van desde ahí. */
+  readonly anterior: { readonly fecha: string; readonly reparto: RepartoDelPeso; readonly particion: Particion | null } | null;
+  /** La toma repartida anterior es de otro reparto, método o protocolo: no hay diferencias que escribir. */
   readonly cambioDeMetodo: boolean;
-  /** Una toma posterior a la partida, que tiene solo el peso. */
+  /** Una toma posterior a la repartida, que tiene solo el peso. */
   readonly despues: { readonly fecha: string; readonly peso: number } | null;
 }
 
-/** Lo que muestra la tarjeta de Antropometría del Resumen: la barra de la última toma partida y lo que cambió desde la anterior. */
-export function laUltimaToma(tomas: readonly TomaDeLaComposicion[]): LaUltimaToma | null {
-  const c = composicionDe(tomas);
-  if (c.familia === null) return null;
-  const { porEvaluacion } = tramosDeLasPartidas(tomas, c.familia);
-  const partidas = tomas.flatMap((t) => {
-    const p = particionPreferida(t, c.familia);
-    return p ? [{ t, p }] : [];
+/**
+ * Lo que muestra la barra de la última toma, en la tarjeta de Antropometría del Resumen y en la pestaña: el reparto de
+ * la última toma repartida y lo que cambió desde la anterior, si se reparte igual. `pedida`: el método de dos
+ * compartimentos que se mira en la pestaña.
+ */
+export function laUltimaToma(tomas: readonly TomaDeLaComposicion[], pedida: Familia | null = null): LaUltimaToma | null {
+  const c = composicionDe(tomas, pedida);
+  const repartidas = tomas.flatMap((t) => {
+    const r = repartoDe(t, c.familia);
+    return r ? [{ t, r }] : [];
   });
-  const ultima = partidas[partidas.length - 1];
+  const ultima = repartidas[repartidas.length - 1];
   if (!ultima) return null;
-  const previa = partidas[partidas.length - 2] ?? null;
-  const mismoTramo = previa !== null && porEvaluacion.get(previa.t.evaluacionId) === porEvaluacion.get(ultima.t.evaluacionId);
+  const previa = repartidas[repartidas.length - 2] ?? null;
+  const igual = previa !== null && previa.r.comparable === ultima.r.comparable;
   const ultimaConPeso = [...c.columnas].reverse()[0];
   return {
     fecha: ultima.t.fecha,
-    particion: ultima.p,
-    anterior: previa && mismoTramo ? { fecha: previa.t.fecha, particion: previa.p } : null,
-    cambioDeMetodo: previa !== null && !mismoTramo,
+    reparto: ultima.r,
+    particion: ultima.r.particion,
+    anterior: previa && igual ? { fecha: previa.t.fecha, reparto: previa.r, particion: previa.r.particion } : null,
+    cambioDeMetodo: previa !== null && !igual,
     despues: ultimaConPeso && ultimaConPeso.evaluacionId !== ultima.t.evaluacionId && ultimaConPeso.fecha >= ultima.t.fecha ? { fecha: ultimaConPeso.fecha, peso: ultimaConPeso.peso } : null,
   };
 }
@@ -378,6 +495,24 @@ export const textoDeLaParticion = (p: Particion): string => `${kg(p.peso)} = ${u
 /** «peso −0,4 kg · grasa −0,5 kg · libre de grasa +0,1 kg». */
 export function textoDeLasDiferencias(a: Particion, b: Particion): string {
   return [`peso ${diferenciaEnPalabras(redondear(b.peso - a.peso))}`, `grasa ${diferenciaEnPalabras(redondear(b.grasa - a.grasa))}`, `libre de grasa ${diferenciaEnPalabras(redondear(b.libre - a.libre))}`].join(' · ');
+}
+
+/**
+ * El porcentaje de una parte del peso, con un decimal: «19,0 %». Es el único texto de la composición que lleva «%»
+ * (TB-51; D-11, modificada por Dirección el 2026-11-07), y T13 lo permite solo acá (`copy-pantallas.test.cjs`).
+ */
+export const porcentajeEnPalabras = (x: number): string => `${numeroConPrecision(x, 1)} %`;
+
+/** «grasa 15,4 kg (19,0 %)»: los kilos de una parte con su porcentaje al lado. */
+export const parteEnPalabras = (p: ParteDelPeso): string => `${p.nombre.toLowerCase()} ${kg(p.kg)} (${porcentajeEnPalabras(p.porcentaje)})`;
+
+/** «80,9 kg = grasa 15,4 kg (19,0 %) + libre de grasa 65,5 kg (81,0 %)»: la barra, en palabras. */
+export const textoDelReparto = (r: RepartoDelPeso): string => `${kg(r.peso)} = ${r.partes.map(parteEnPalabras).join(' + ')}`;
+
+/** «peso −0,4 kg · grasa −0,5 kg · músculo +0,2 kg · resto −0,1 kg»: entre dos tomas repartidas igual. */
+export function textoDeLasDiferenciasDelReparto(a: RepartoDelPeso, b: RepartoDelPeso): string {
+  const partes = b.partes.map((p, i) => `${p.nombre.toLowerCase()} ${diferenciaEnPalabras(redondear(p.kg - (a.partes[i]?.kg ?? p.kg)))}`);
+  return [`peso ${diferenciaEnPalabras(redondear(b.peso - a.peso))}`, ...partes].join(' · ');
 }
 
 /** Si las diferencias de las masas no suman la del peso por el redondeo de cada una, se dice. */

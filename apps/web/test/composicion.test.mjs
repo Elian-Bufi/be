@@ -6,16 +6,20 @@
  *  3. un cambio de método o de protocolo es una vertical, y ninguna diferencia la cruza;
  *  4. una toma con solo peso es una columna en contorno y no corta la fila del peso;
  *  5. una prueba de propiedad con tomas al azar (con una semilla fija) sobre las cuatro reglas;
- *  6. la tarjeta del Resumen (`laUltimaToma`), los textos (sin «%»), la lectura en tramos de 92 días y la misma vara.
+ *  6. la tarjeta del Resumen (`laUltimaToma`), los textos (sin «%»), la lectura en tramos de 92 días y la misma vara;
+ *  7. TB-51 (D-11, modificada por Dirección el 2026-11-07): la barra de la última toma en kilos con el porcentaje al lado
+ *     (`repartoDe`): grasa, músculo y resto solo cuando el método calcula el músculo (De Rose y Guimarães, o Lee); si no,
+ *     grasa y libre de grasa; las partes suman el peso, que es el 100 %, y el «%» se escribe en un solo lugar.
  * El dibujo, en las capturas del tablero (`EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs`).
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const C = await import('../src/app/pro/advisees/seguimiento/composicion.ts');
-const { composicionDe, escalaComun, laUltimaToma, particionDe, pesosDeLasTomas, textoDeLaParticion, textoDeLasDiferencias, tomasDeLaEvolucion, tramosDeLectura, DOS_COMPARTIMENTOS, MASAS_QUE_NO_SUMAN, TOLERANCIA_DE_LA_SUMA } = C;
+const { composicionDe, escalaComun, laUltimaToma, particionDe, pesosDeLasTomas, repartoDe, textoDeLaParticion, textoDelReparto, textoDeLasDiferencias, textoDeLasDiferenciasDelReparto, tomasDeLaEvolucion, tramosDeLectura, DOS_COMPARTIMENTOS, MASAS_QUE_NO_SUMAN, TOLERANCIA_DE_LA_SUMA } = C;
 
 const ZONA = 'America/Argentina/Buenos_Aires';
 const ID = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -29,6 +33,9 @@ const METODO = {
   'masa-libre-de-grasa-faulkner': '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1d',
   'masa-muscular-esqueletica-lee': '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f22',
   'masa-muscular-cuatro-componentes': '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f21',
+  'masa-muscular-esqueletica-lee-peso': '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f23',
+  'masa-osea-rocha': '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f24',
+  'masa-residual-wurch': '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f25',
 };
 
 let siguiente = 1;
@@ -269,4 +276,114 @@ test('«Cuánto cambió cada parte» usa la misma vara en todas las filas', () =
   assert.deepEqual(largos, [3.2, 3.2, 3.2], 'un kilo mide lo mismo en cada fila');
   assert.ok(escalas.every((e, i) => e.abajo <= [80.8, 14.2, 66.6][i] + 1e-9 && e.arriba >= [84, 15.3, 66.6][i] - 1e-9), 'cada fila entra en su escala');
   assert.deepEqual(escalaComun([{ puntos: [{ valor: 70 }] }]).map((e) => e.arriba - e.abajo), [2], 'nunca más angosta que 2 kg');
+});
+
+// ─── TB-51 · la barra en kilos con el porcentaje al lado ─────────────────────────────────────────────────────────
+
+/** De Rose y Guimarães, como lo calcula BE: la grasa y la libre de grasa de Faulkner, la ósea, la residual y el músculo. */
+const cuatroC = (peso, grasa, osea, residual) => ({ ...faulkner(peso, grasa), 'masa-osea-rocha': osea, 'masa-residual-wurch': residual, 'masa-muscular-cuatro-componentes': Math.round((peso - grasa - osea - residual) * 10) / 10 });
+
+test('TEST-TAG-017 · TB-51 · sin músculo en el método, la barra es grasa y libre de grasa, con el porcentaje del peso al lado', () => {
+  const [t] = tomasDe([{ fecha: '2026-10-06', valores: dw(80.8, 14.2) }]);
+  const r = repartoDe(t);
+  assert.equal(r.tipo, 'DOS_COMPARTIMENTOS');
+  assert.deepEqual(r.partes.map((p) => [p.clave, p.nombre, p.kg, p.porcentaje]), [['grasa', 'Grasa', 14.2, 17.6], ['libre', 'Libre de grasa', 66.6, 82.4]]);
+  assert.equal(textoDelReparto(r), '80,8 kg = grasa 14,2 kg (17,6 %) + libre de grasa 66,6 kg (82,4 %)');
+  assert.equal(r.resto, null);
+  assert.equal(r.metodo, 'Durnin y Womersley, con Siri');
+  assert.ok(!r.partes.some((p) => p.clave === 'musculo'), '«Músculo» va solo cuando el método lo calcula');
+});
+
+test('TEST-TAG-017 · TB-51 · con De Rose y Guimarães, la barra es grasa, músculo y resto, y el resto es lo óseo y lo residual', () => {
+  const [t] = tomasDe([{ fecha: '2026-10-28', valores: cuatroC(98.8, 12.2, 12.9, 23.8) }]);
+  const r = repartoDe(t);
+  assert.equal(r.tipo, 'CUATRO_COMPONENTES');
+  assert.deepEqual(r.partes.map((p) => [p.clave, p.kg, p.porcentaje]), [['grasa', 12.2, 12.3], ['musculo', 49.9, 50.5], ['resto', 36.7, 37.1]]);
+  assert.equal(Math.round(r.partes.reduce((a, p) => a + p.kg, 0) * 10) / 10, 98.8, 'las tres partes suman el peso de la toma');
+  assert.equal(r.resto, 'El resto es la masa ósea (12,9 kg) y la residual (23,8 kg: órganos, vísceras y líquidos).');
+  assert.match(r.metodo, /De Rose y Guimarães.*Faulkner/);
+  // Sin la ósea en la toma, el resto se dice igual, sin sus cifras.
+  const sinDetalle = { ...cuatroC(98.8, 12.2, 12.9, 23.8) };
+  delete sinDetalle['masa-osea-rocha'];
+  assert.match(repartoDe(tomasDe([{ fecha: '2026-10-28', valores: sinDetalle }])[0]).resto, /^El resto es la masa ósea y la residual/);
+  // Sin la grasa de Faulkner no hay cuatro componentes: la ecuación la resta, y otra grasa no la reemplaza.
+  const sinGrasa = { ...dw(98.8, 15.0), 'masa-muscular-cuatro-componentes': 49.9 };
+  assert.equal(repartoDe(tomasDe([{ fecha: '2026-10-28', valores: sinGrasa }])[0]).tipo, 'DOS_COMPARTIMENTOS');
+});
+
+test('TEST-TAG-017 · TB-51 · con el músculo de Lee, la grasa del método de la toma, el músculo y el resto por diferencia', () => {
+  const [t] = tomasDe([{ fecha: '2026-07-01', valores: { ...dw(83.5, 15.0), 'masa-muscular-esqueletica-lee': 35.2 } }]);
+  const r = repartoDe(t);
+  assert.equal(r.tipo, 'MUSCULO_DE_LEE');
+  assert.deepEqual(r.partes.map((p) => [p.clave, p.kg, p.porcentaje]), [['grasa', 15.0, 18.0], ['musculo', 35.2, 42.2], ['resto', 33.3, 39.9]]);
+  assert.equal(r.metodo, 'la grasa, Durnin y Womersley, con Siri; el músculo, Lee, con perímetros');
+  assert.match(r.resto, /no es grasa ni músculo esquelético.*por diferencia/);
+  // Lee sin una grasa de dos compartimentos en la toma: no hay barra (la grasa no se inventa).
+  assert.equal(repartoDe(tomasDe([{ fecha: '2026-07-01', valores: { peso: 83.5, 'masa-muscular-esqueletica-lee': 35.2 } }])[0]), null);
+  // Un músculo que no entra en la libre de grasa: no se parte con él.
+  assert.equal(repartoDe(tomasDe([{ fecha: '2026-07-01', valores: { ...dw(83.5, 15.0), 'masa-muscular-esqueletica-lee': 70 } }])[0]).tipo, 'DOS_COMPARTIMENTOS');
+});
+
+test('TEST-TAG-017 · TB-51 · la tarjeta compara solo dos tomas repartidas igual, y el cambio de reparto lo dice', () => {
+  const u = laUltimaToma(tomasDe([
+    { fecha: '2026-09-23', valores: cuatroC(99.2, 12.5, 12.9, 23.9) },
+    { fecha: '2026-10-28', valores: cuatroC(98.8, 12.2, 12.9, 23.8) },
+  ]));
+  assert.equal(u.reparto.tipo, 'CUATRO_COMPONENTES');
+  assert.equal(textoDeLasDiferenciasDelReparto(u.anterior.reparto, u.reparto), 'peso −0,4 kg · grasa −0,3 kg · músculo sin cambio · resto −0,1 kg');
+  // De dos compartimentos a cuatro: no se comparan.
+  const cambio = laUltimaToma(tomasDe([{ fecha: '2026-09-23', valores: dw(99.2, 15.3) }, { fecha: '2026-10-28', valores: cuatroC(98.8, 12.2, 12.9, 23.8) }]));
+  assert.equal(cambio.anterior, null);
+  assert.equal(cambio.cambioDeMetodo, true);
+  // Con dos compartimentos, las mismas diferencias que antes de TB-51.
+  const [a, b] = tomasDe([{ fecha: '2026-08-18', valores: dw(81.2, 14.7) }, { fecha: '2026-09-29', valores: dw(80.8, 14.2) }]).map((t) => repartoDe(t));
+  assert.equal(textoDeLasDiferenciasDelReparto(a, b), 'peso −0,4 kg · grasa −0,5 kg · libre de grasa +0,1 kg');
+});
+
+test('TEST-TAG-017 · TB-51 · propiedad: las partes suman el peso, el porcentaje es el de cada parte y «Músculo» sale solo de un método que lo calcula', () => {
+  const r = azar(20261107);
+  for (let caso = 0; caso < 400; caso++) {
+    const peso = Math.round((55 + r() * 50) * 10) / 10;
+    const grasa = Math.round(peso * (0.08 + r() * 0.3) * 10) / 10;
+    const valores = { peso };
+    const forma = r();
+    if (forma < 0.25) Object.assign(valores, dw(peso, grasa));
+    else if (forma < 0.45) Object.assign(valores, faulkner(peso, grasa));
+    else if (forma < 0.7) Object.assign(valores, cuatroC(peso, grasa, Math.round((8 + r() * 6) * 10) / 10, Math.round(peso * 0.241 * 10) / 10));
+    else if (forma < 0.9) Object.assign(valores, dw(peso, grasa), { [r() < 0.5 ? 'masa-muscular-esqueletica-lee' : 'masa-muscular-esqueletica-lee-peso']: Math.round(peso * (0.2 + r() * 0.6) * 10) / 10 });
+    else if (r() < 0.5) valores['masa-muscular-esqueletica-lee'] = 30;
+    const [t] = tomasDe([{ fecha: '2026-10-01', valores }]);
+    const rep = repartoDe(t);
+    if (!rep) {
+      assert.ok(!t.datos.has('masa-grasa-durnin-womersley') && !t.datos.has('masa-grasa-faulkner'), `caso ${caso}: sin barra, solo sin una grasa con que partir`);
+      continue;
+    }
+    const suma = rep.partes.reduce((a, p) => a + p.kg, 0);
+    assert.ok(Math.abs(suma - peso) <= TOLERANCIA_DE_LA_SUMA + 1e-9, `caso ${caso}: las partes suman el peso (${suma} y ${peso})`);
+    for (const p of rep.partes) {
+      assert.ok(p.kg > 0, `caso ${caso}: ${p.clave} positiva`);
+      assert.equal(p.porcentaje, Math.round((p.kg / peso) * 1000) / 10, `caso ${caso}: el porcentaje de ${p.clave} es del peso de esa toma`);
+    }
+    const conMusculo = rep.partes.some((p) => p.clave === 'musculo');
+    const calculaMusculo = t.datos.has('masa-muscular-cuatro-componentes') || t.datos.has('masa-muscular-esqueletica-lee') || t.datos.has('masa-muscular-esqueletica-lee-peso');
+    if (conMusculo) assert.ok(calculaMusculo, `caso ${caso}: «Músculo» sale de un método que lo calcula`);
+    assert.deepEqual(rep.partes.map((p) => p.clave), conMusculo ? ['grasa', 'musculo', 'resto'] : ['grasa', 'libre'], `caso ${caso}: grasa, músculo y resto, o grasa y libre de grasa`);
+    if (rep.tipo === 'CUATRO_COMPONENTES') assert.equal(rep.partes[0].kg, t.datos.get('masa-grasa-faulkner').valor, `caso ${caso}: la grasa de cuatro componentes es la de Faulkner`);
+  }
+});
+
+test('TEST-TAG-017 · TB-51 · el «%» va solo junto a los kilos de cada parte, y los textos no califican', () => {
+  const [t] = tomasDe([{ fecha: '2026-10-28', valores: cuatroC(98.8, 12.2, 12.9, 23.8) }]);
+  const rep = repartoDe(t);
+  assert.equal(C.porcentajeEnPalabras(12.3), '12,3 %');
+  assert.equal(C.parteEnPalabras(rep.partes[1]), 'músculo 49,9 kg (50,5 %)');
+  // Cada «%» del reparto sigue a una cifra, y cada parte tiene sus kilos antes de su porcentaje.
+  assert.deepEqual(textoDelReparto(rep).match(/\d+,\d %/g), ['12,3 %', '50,5 %', '37,1 %']);
+  assert.equal(textoDelReparto(rep), '98,8 kg = grasa 12,2 kg (12,3 %) + músculo 49,9 kg (50,5 %) + resto 36,7 kg (37,1 %)');
+  for (const texto of [rep.resto, rep.metodo, textoDelReparto(rep)]) assert.doesNotMatch(texto, /\bbien\b|\bmal\b|normal|ideal|saludable|exceso/i, texto);
+  // El «%» de la composición se escribe en un solo lugar del código (fuera de los comentarios).
+  const codigo = readFileSync(new URL('../src/app/pro/advisees/seguimiento/composicion.ts', import.meta.url), 'utf8')
+    .split('\n')
+    .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l));
+  assert.deepEqual(codigo.filter((l) => l.includes('%')).map((l) => l.trim().slice(0, 40)), ['export const porcentajeEnPalabras = (x: '], 'un solo literal con «%»: porcentajeEnPalabras');
 });

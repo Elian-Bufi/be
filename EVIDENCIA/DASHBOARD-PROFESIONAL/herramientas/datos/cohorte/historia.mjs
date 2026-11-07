@@ -181,6 +181,8 @@ export function historia(p, hoy, ahora) {
         const suma = curvas.suma6(mes);
         for (const [metrica, parte] of PLIEGUES[p.sexo]) mediciones.push([metrica, unDecimal(Math.max(3, suma * parte * (1 + r.ruido(0.04)))), 'mm']);
       }
+      // TB-51: los diámetros óseos, iguales en cada toma y sin azar (no mueven las demás medidas de la historia).
+      for (const [metrica, valor] of Object.entries(p.diametros ?? {})) mediciones.push([metrica, valor, 'cm']);
       const ocurrio = instante(fecha, hora);
       salida.tomas.push({ fecha, ocurrio, registrado: masMinutos(ocurrio, r.entero(15, 45)), mediciones });
     }

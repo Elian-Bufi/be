@@ -102,6 +102,10 @@
      Ni rojo, ni ámbar, ni el verde de «bien»: un azul y un verde azulado. */
   --composicion-libre: #0b62a4;
   --composicion-grasa: #0f9488;
+  /* TB-51 (D-11, modificada por Dirección el 2026-11-07): el resto de la barra cuando el método calcula el músculo (lo
+     óseo y lo residual, o lo que no es grasa ni músculo). El músculo va en el azul de la libre de grasa, de la que es
+     parte; el resto, en un violeta grisáceo que se distingue de los dos y del gris de los huecos, sin matiz de juicio. */
+  --composicion-resto: #6e5f8f;
   /* Sombras y velo: no son texto ni bordes de control */
   --sombra-suave: 0 1px 2px rgb(10 31 68 / 6%), 0 1px 1px rgb(10 31 68 / 4%);
   --sombra: 0 20px 50px rgb(10 31 68 / 30%);
@@ -171,6 +175,7 @@
   --metrica-3: #2bb3a3;
   --composicion-libre: #4f97ea;
   --composicion-grasa: #16a085;
+  --composicion-resto: #b9a3dc;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --sombra-desplazamiento: rgb(39 213 249 / 40%);

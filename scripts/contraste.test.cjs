@@ -212,6 +212,10 @@ const PARES_GRAFICO = [
   ['composicion-grasa', 'superficie', NO_TEXTO, 'la masa grasa en la columna, la fila y la barra de la última toma'],
   ['composicion-libre', 'fondo-suave', NO_TEXTO, 'la masa libre de grasa al pasar el puntero por el renglón plegado'],
   ['composicion-grasa', 'fondo-suave', NO_TEXTO, 'la masa grasa al pasar el puntero por el renglón plegado'],
+  // TB-51 (D-11, modificada por Dirección el 2026-11-07): el resto de la barra de la última toma, cuando el método calcula
+  // el músculo (el músculo va en --composicion-libre, que ya tiene sus pares).
+  ['composicion-resto', 'superficie', NO_TEXTO, 'el resto de la barra de la última toma (lo óseo y lo residual, o lo que no es grasa ni músculo)'],
+  ['composicion-resto', 'fondo-suave', NO_TEXTO, 'el resto de la barra al pasar el puntero por el renglón plegado'],
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
@@ -449,6 +453,24 @@ test('website · la luz de hoy no se confunde con las métricas (TB-04)', () => 
  * y los 300° (un verde azulado y un azul), lejos del rojo y del ámbar. Los valores son los validados para daltonismo en la
  * propuesta (§18.7).
  */
+/**
+ * TB-51 (D-11, modificada por Dirección el 2026-11-07; TEST-TAG-005): el resto, la tercera parte de la barra cuando el
+ * método calcula el músculo, se distingue de la grasa, del músculo (el azul de la libre de grasa), de «hoy» y del gris de
+ * los huecos (ΔE 20 o más, en los dos temas), y su matiz tampoco califica (entre los 160° y los 300°).
+ */
+test('website · el resto de la barra se distingue de las otras dos partes y del hueco, y no califica (TB-51)', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const otro of ['composicion-libre', 'composicion-grasa', 'ahora', 'grafico-hueco']) {
+      const d = deltaE(tema['composicion-resto'], tema[otro]);
+      if (d < 20) fallas.push(`${nombreDelTema} · composicion-resto ${tema['composicion-resto']} y ${otro} ${tema[otro]}: ΔE ${d.toFixed(1)}`);
+    }
+    const h = matiz(tema['composicion-resto']);
+    if (h === null || h < 160 || h > 300) fallas.push(`${nombreDelTema} · composicion-resto: matiz ${h === null ? 'gris' : h.toFixed(0)}°`);
+  }
+  assert.deepEqual(fallas, []);
+});
+
 test('website · las dos partes de la composición se distinguen y no califican (TB-24)', () => {
   const fallas = [];
   for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {

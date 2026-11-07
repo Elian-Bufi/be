@@ -31,9 +31,12 @@ import {
   tramosDeLectura,
   UNA_SOLA_TOMA,
   diferenciaEnPalabras,
+  laUltimaToma,
+  porcentajeEnPalabras,
   type Composicion,
   type Familia,
   type FilaDelCambio,
+  type RepartoDelPeso,
   type TomaDeLaComposicion,
 } from './composicion';
 import { limitarLectura } from './contexto';
@@ -48,6 +51,7 @@ export type LecturaDeLaComposicion =
 /**
  * Lee la composición de un período con API-ANT-06, en tramos de 92 días (su tope), pidiendo solo el peso y las masas.
  * Si un tramo no está disponible (404, sin acceso), la pieza entera tampoco; si un tramo falla, se dice y se reintenta.
+ * `metricas`: lo que se pide; la tarjeta del Resumen suma, en la misma lectura, las medidas de su evolución (TB-50).
  */
 export function useLecturaDeLaComposicion(
   token: string,
@@ -55,6 +59,7 @@ export function useLecturaDeLaComposicion(
   desde: string | null,
   hasta: string | null,
   sesionPerdida: (r: Resultado<unknown>) => boolean,
+  metricas: readonly string[] = METRICAS_DE_LA_COMPOSICION,
 ): { readonly lectura: LecturaDeLaComposicion; readonly recargar: () => void } {
   const [lectura, setLectura] = useState<LecturaDeLaComposicion>({ tipo: 'cargando' });
   const [vuelta, setVuelta] = useState(0);
@@ -62,7 +67,7 @@ export function useLecturaDeLaComposicion(
     if (!desde || !hasta) return;
     let vigente = true;
     setLectura({ tipo: 'cargando' });
-    const metric = METRICAS_DE_LA_COMPOSICION.join(',');
+    const metric = metricas.join(',');
     void Promise.all(tramosDeLectura(desde, hasta).map((t) => limitarLectura(() => api.evolucionAntropometrica(token, asesoradoId, { periodStart: t.desde, periodEnd: t.hasta, metric })))).then((rs) => {
       if (!vigente || rs.some((r) => sesionPerdida(r))) return;
       if (rs.some((r) => !r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND')) return setLectura({ tipo: 'no-disponible' });
@@ -74,7 +79,7 @@ export function useLecturaDeLaComposicion(
     return () => {
       vigente = false;
     };
-  }, [token, asesoradoId, desde, hasta, sesionPerdida, vuelta]);
+  }, [token, asesoradoId, desde, hasta, sesionPerdida, vuelta, metricas]);
   const recargar = useCallback(() => setVuelta((v) => v + 1), []);
   return { lectura, recargar };
 }
@@ -100,7 +105,7 @@ export function ComposicionCorporal({ tomas, parcial, desde, hasta, hoy }: { tom
   const c = useMemo(() => composicionDe(tomas, pedida), [tomas, pedida]);
   const fecha = (civil: string) => diaDelAnioEnCurso(civil, hoy);
   const metodo = c.familia ? DOS_COMPARTIMENTOS[c.familia].nombre : null;
-  const ultima = [...c.columnas].reverse().find((x) => x.particion !== null) ?? null;
+  const repartida = laUltimaToma(tomas, c.familia);
   if (c.columnas.length === 0 && c.filas.length === 0) {
     return (
       <div className="composicion">
@@ -129,15 +134,17 @@ export function ComposicionCorporal({ tomas, parcial, desde, hasta, hoy }: { tom
         <h3 id={`${id}-peso`} className="composicion__titulo">
           De qué está hecho el peso{metodo ? <span className="tenue"> · {metodo}</span> : null}
         </h3>
-        <p className="composicion__resumen">
-          {ultima && ultima.particion ? (
-            <>
-              La última toma partida, el {fecha(ultima.fecha)}: <strong className="cifra">{textoDeLaParticion(ultima.particion)}</strong>
-            </>
-          ) : (
-            'Ninguna toma del período tiene un método de dos compartimentos (Durnin y Womersley o Faulkner): cada columna es el peso, sin partir.'
-          )}
-        </p>
+        {repartida ? (
+          // TB-51: la barra de la última toma repartida, en kilos y con el porcentaje al lado, como en la tarjeta del Resumen.
+          <div className="composicion__resumen">
+            <p className="composicion__resumen-titulo">
+              La última toma repartida, el {fecha(repartida.fecha)} <span className="tenue">· {repartida.reparto.metodo}</span>
+            </p>
+            <BarraDelReparto reparto={repartida.reparto} />
+          </div>
+        ) : (
+          <p className="composicion__resumen">Ninguna toma del período tiene un método de dos compartimentos (Durnin y Womersley o Faulkner): cada columna es el peso, sin partir.</p>
+        )}
         <Leyenda conPartidas={c.familia !== null} sinPartir={sinPartir} conCambios={c.cambios.length > 0} />
         <ColumnasDeLaComposicion c={c} desde={desde} hasta={hasta} fecha={fecha} descripcion={descripcionDeLasColumnas(c, fecha)} />
       </section>
@@ -170,6 +177,45 @@ export function ComposicionCorporal({ tomas, parcial, desde, hasta, hoy }: { tom
         Las masas son una estimación con una ecuación de predicción, no una medición: la masa libre de grasa no es la masa muscular, y dos ecuaciones dan valores distintos sobre la misma toma.
       </p>
     </div>
+  );
+}
+
+/**
+ * La barra de una toma repartida (TB-51; D-11, modificada por Dirección el 2026-11-07: «kilos con el % al lado»): la grasa
+ * y, si el método lo calcula, el músculo y el resto; si no, la libre de grasa. Debajo, cada parte con sus kilos y su
+ * porcentaje del peso de esa toma, que es el 100 %, y lo que es el resto. La barra es decorativa: lo que dice está
+ * escrito debajo. Sin colores de bien o mal.
+ */
+export function BarraDelReparto({ reparto, conLaBarra = true }: { reparto: RepartoDelPeso; conLaBarra?: boolean }) {
+  return (
+    <div className="reparto-del-peso" data-reparto={reparto.tipo}>
+      {conLaBarra ? <LaBarra reparto={reparto} /> : null}
+      <ul className="reparto-del-peso__partes">
+        {reparto.partes.map((p) => (
+          <li key={p.clave} data-parte={p.clave}>
+            <span className="composicion__muestra" data-parte={p.clave} aria-hidden="true" />
+            <span className="reparto-del-peso__nombre">{p.nombre}</span>
+            <strong className="cifra">{unDecimal(p.kg)} kg</strong>
+            <span className="cifra reparto-del-peso__porcentaje">{porcentajeEnPalabras(p.porcentaje)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="pieza-del-area__nota">
+        Los porcentajes son del peso de esa toma: <span className="cifra">{unDecimal(reparto.peso)} kg</span>.{' '}
+        {reparto.resto ?? 'El método no calcula el músculo: la libre de grasa es el músculo, el hueso, los órganos y los líquidos, juntos.'}
+      </p>
+    </div>
+  );
+}
+
+/** La barra sola, para el renglón de una pieza plegada: cada parte, del largo de sus kilos. */
+export function LaBarra({ reparto }: { reparto: RepartoDelPeso }) {
+  return (
+    <span className="barra-de-la-composicion" aria-hidden="true">
+      {reparto.partes.map((p) => (
+        <span key={p.clave} data-parte={p.clave} style={{ flexGrow: p.kg }} />
+      ))}
+    </span>
   );
 }
 
@@ -212,7 +258,7 @@ function Leyenda({ conPartidas, sinPartir, conCambios }: { conPartidas: boolean;
 }
 
 /** El ancho del contenedor, para dibujar en píxeles reales (como el minigráfico). */
-function useAncho(): [(e: HTMLDivElement | null) => void, number] {
+export function useAncho(): [(e: HTMLDivElement | null) => void, number] {
   const [caja, setCaja] = useState<HTMLDivElement | null>(null);
   const [ancho, setAncho] = useState(0);
   useEffect(() => {

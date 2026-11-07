@@ -14562,6 +14562,15 @@ a.cifras-desde-la-revision__celda:focus-visible {
   background: var(--composicion-grasa);
 }
 
+/* TB-51: el músculo va en el azul de la libre de grasa, de la que es parte; el resto, en su propio tono. */
+.composicion__muestra[data-parte='musculo'] {
+  background: var(--composicion-libre);
+}
+
+.composicion__muestra[data-parte='resto'] {
+  background: var(--composicion-resto);
+}
+
 .composicion__muestra[data-parte='contorno'] {
   box-shadow: inset 0 0 0 1.25px var(--tenue);
 }
@@ -14618,8 +14627,9 @@ a.cifras-desde-la-revision__celda:focus-visible {
   }
 }
 
-/* La barra de la última toma, en la tarjeta de Antropometría del Resumen: 8 de alto, libre de grasa y grasa, con un corte
-   de 2 entre las dos. Lo que dice está escrito debajo, con su método. */
+/* La barra de la última toma, en la tarjeta de Antropometría del Resumen y en la pestaña: 8 de alto, con un corte de 2 entre
+   las partes. Desde TB-51, la grasa primero y después el músculo y el resto, o la libre de grasa; las puntas, redondeadas.
+   Lo que dice está escrito debajo, en kilos y con el porcentaje al lado, con su método. */
 .barra-de-la-composicion {
   display: flex;
   gap: 2px;
@@ -14632,16 +14642,27 @@ a.cifras-desde-la-revision__celda:focus-visible {
   min-width: 3px;
 }
 
-.barra-de-la-composicion > span[data-parte='libre'] {
+.barra-de-la-composicion > span:first-child {
   border-top-left-radius: 4px;
   border-bottom-left-radius: 4px;
+}
+
+.barra-de-la-composicion > span:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.barra-de-la-composicion > span[data-parte='libre'],
+.barra-de-la-composicion > span[data-parte='musculo'] {
   background: var(--composicion-libre);
 }
 
 .barra-de-la-composicion > span[data-parte='grasa'] {
-  border-top-right-radius: 4px;
-  border-bottom-right-radius: 4px;
   background: var(--composicion-grasa);
+}
+
+.barra-de-la-composicion > span[data-parte='resto'] {
+  background: var(--composicion-resto);
 }
 
 .pieza-del-area--plegada > summary > .barra-de-la-composicion {
@@ -14656,6 +14677,41 @@ a.cifras-desde-la-revision__celda:focus-visible {
 .composicion-de-la-toma__cambio {
   margin: 0.2rem 0 0;
   font-size: 0.875rem;
+}
+
+/* TB-51: las partes de la barra, cada una con sus kilos y su porcentaje al lado, en una grilla de tres columnas
+   (nombre, kilos, porcentaje) para que las cifras queden alineadas. */
+.reparto-del-peso > .barra-de-la-composicion {
+  margin: 0.35rem 0 0.45rem;
+}
+
+.reparto-del-peso__partes {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 0.15rem 0.5rem;
+  align-items: center;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  font-size: 0.875rem;
+  list-style: none;
+}
+
+.reparto-del-peso__partes > li {
+  display: contents;
+}
+
+.reparto-del-peso__partes .cifra {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.reparto-del-peso__porcentaje {
+  min-width: 3.4rem;
+  color: var(--tenue);
+}
+
+.composicion__resumen-titulo {
+  margin: 0;
 }
 
 /* ─── WP-TABLERO-ALTA-GAMA TB-06 y TB-11: el saludo, las tres cifras y la mesa en dos carriles ─────────────────── */
