@@ -841,3 +841,9 @@ fundamento del objetivo se muestra al otro profesional (§9, VJR-5). Las decisio
   `20261107140100_textos_por_nivel_de_resumenes`, como TA-108, para que la columna acepte un texto de cualquiera de los dos
   tipos. No toca filas ni las migraciones ya escritas. *Otra opción:* dejar en la columna siempre el de «resumen», que no
   existe cuando la persona da directamente «resumen y plan».
+- **El texto de «resumen» va por su propuesta 3 (2026-11-07).** `resumenes-compartidos-2026-11-propuesta-3` sucede a la 2
+  (migración `20261107160000_texto_de_resumen_propuesta_3`, solo agrega). La 2 decía que la autorización del plan «se acepta
+  aparte», y eso prometía algo que la implementación no hace: la de «resumen y plan» incluye el resumen y alcanza para un
+  permiso de «resumen» (TA-111). Un texto no promete lo que no existe: la 3 cambia solo ese párrafo, «… que incluye también
+  este resumen.». La 2 queda como historia, sin heredar aceptaciones. La frase de que cada apertura queda registrada sigue,
+  como condición de TB-29 (API-RES-05 tiene que registrarlas igual que el plan).
