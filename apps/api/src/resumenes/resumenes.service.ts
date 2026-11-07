@@ -45,6 +45,7 @@ import { nombreVisibleDe, versionDeObjetivoApi as objetivoDeNutricionApi } from 
 import { PlanesService } from '../nutricion/planes.service';
 import { fechaLocalEn, ZONA_POR_DEFECTO } from '../nutricion/zona';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
+import { ProcesoService } from '../proceso/proceso.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { EjecutorDeResumenes, esUuid } from './ejecutor';
 import {
@@ -107,7 +108,20 @@ export class ResumenesService {
     private readonly planesDeEntrenamiento: PlanesDeEntrenamientoService,
     private readonly objetivosDeNutricion: EvaluacionesService,
     private readonly objetivosDeEntrenamiento: EvaluacionesDeEntrenamientoService,
+    private readonly procesos: ProcesoService,
   ) {}
+
+  /**
+   * La próxima revisión acordada del área de origen: la vigente del Proceso abierto de quien la lleva con la persona, la
+   * misma que lee el Resumen (API-DSH-03, `lectura-dashboard.ts`). No la columna de la versión del plan, que solo dice la
+   * fecha que se fijó al activarla y no ve las que acordaron las revisiones después.
+   */
+  private async proximaRevisionDe(tx: Prisma.TransactionClient, profesionalId: string, asesoradoId: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO'): Promise<string | null> {
+    const proceso = await tx.procesoOperativo.findFirst({ where: { profesionalId, asesoradoId, alcance, estado: 'ABIERTO' }, select: { id: true } });
+    if (!proceso) return null;
+    const vigente = await this.procesos.proximaRevisionVigente(tx, proceso.id);
+    return vigente?.fechaObjetivo?.toISOString().slice(0, 10) ?? null;
+  }
 
   // ─── API-RES-01 · lo que comparto ────────────────────────────────────────────────────────────
   mios(actor: ActorAutenticado, ctx: ContextoDeSolicitud): Promise<MisResumenesCompartidosResponse> {
@@ -315,7 +329,7 @@ export class ResumenesService {
             data: {
               area: 'NUTRICION',
               ...base,
-              nextReviewAt: plan.nextReviewAt,
+              nextReviewAt: await this.proximaRevisionDe(tx, compartido.fuenteId, personaId, 'NUTRICION'),
               progress: avance('MEAL_RECORDS', null, compartido.activadoEn, momento, registradas.map((r) => r.fechaLocal)),
               plan,
               objective: efectiva && objetivo ? objetivoDeNutricionApi(efectiva, objetivo, true, base.author.displayName) : null,
@@ -332,7 +346,7 @@ export class ResumenesService {
           data: {
             area: 'ENTRENAMIENTO',
             ...base,
-            nextReviewAt: plan.nextReviewAt,
+            nextReviewAt: await this.proximaRevisionDe(tx, compartido.fuenteId, personaId, 'ENTRENAMIENTO'),
             progress: avance('SESSIONS', sesionesPorSemanaDeLaAgenda(contenidoDeLaVersion(fila, new Map()).contenido.agenda), compartido.activadoEn, momento, registradas.map((r) => r.fechaLocal)),
             plan,
             objective: efectiva && objetivo ? objetivoDeEntrenamientoApi(efectiva, objetivo, true, base.author.displayName) : null,
