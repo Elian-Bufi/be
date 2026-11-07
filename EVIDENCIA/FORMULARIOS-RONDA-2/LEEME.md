@@ -268,8 +268,7 @@ Los oráculos de la ronda 2.1, TEST-FR2-011 a 016, están en `docs/paquetes/WP-F
   «Dejar de compartir» y confirmar. Si los comparte, «Pedir acceso a sus hábitos» no aparece: no hay nada que pedir. Lo
   mismo con Prueba Dos, para la Parte 5.
 - Con estas cuentas, Lic. Prueba Dos Áreas acompaña a Prueba Uno solo en Entrenamiento y a Prueba Dos solo en Nutrición
-  (`EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md`, en la historia de git: `d508eb4`). Por eso cada pedido de acceso sale
-  de esa área.
+  (`EVIDENCIA/PRUEBA-BREVE-2026-10-26/LEEME.md`). Por eso cada pedido de acceso sale de esa área.
 - Para ver el aviso en el teléfono, los avisos tienen que estar activos en Prueba Uno y en Prueba Dos («Cuenta» → «Avisos
   en este teléfono»).
 
