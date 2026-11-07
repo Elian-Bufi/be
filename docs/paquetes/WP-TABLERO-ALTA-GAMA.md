@@ -919,6 +919,27 @@ sobre ae418e0):
   las tres salidas y ningún error de la página. Con «Ocultar nombres», ningún nombre ni inicial en el cajón, el Espacio
   ni el Resumen de los dos profesionales.
 
+**Lo medido en el tramo de TB-52 a TB-56** (corrida 42406665194 de `capturas-del-tablero`, el 2026-11-07, sobre
+`wp-tablero-capturas-res`, d51fbdd: una rama que junta esta con la API del #243 solo para capturar, sin PR y sin
+integrar; esta rama sola no tiene la familia RES). Las veintidós páginas, con las peticiones de la tabla, sin errores,
+sin nombres con «Ocultar nombres» y sin fichas de «Tu semana» que se pasen:
+- **Sofía Paz, en el Plan de Nutrición de Diego** (`plan-otras-areas`, 9 peticiones): «Otras áreas · lo comparte la
+  persona», con «Entrenamiento: resumen y plan»; «Lo lleva Prof. Martín Acosta.», «Te comparte el resumen y el plan desde
+  el 7 nov.», «Rige desde el 9 may · 1 bloque · 4 sesiones», «Sesiones registradas por semana: 3, 3, 4 y 4 (desde la
+  semana del 12 oct 2026)», «Ver el plan completo» y «Dejar una nota a Prof. Martín Acosta»; al pie, «Lo de tu área lo ve
+  también: Prof. Martín Acosta (Nutrición, resumen y plan, desde el 7 nov).». El plan completo abierto: «Solo lectura ·
+  lo comparte la persona», «Lo armó Prof. Martín Acosta», el objetivo, doce semanas de sesiones registradas y los bloques.
+- **Martín Acosta, en el Plan de Entrenamiento de Diego** (`plan-otras-areas`, 10): Nutrición con «resumen y plan» y
+  Antropometría con quién la lleva; el plan de Nutrición abierto, con «Próxima revisión: 10 nov 2026», el objetivo en
+  calorías y macros y las comidas registradas por semana.
+- **Sofía Paz, en Federico Álvarez** (`plan-federico-pedido`, 8): «Entrenamiento: pediste ver su plan», «Le pediste ver
+  su plan el 7 nov: espera la respuesta de la persona.» y «Podés volver a pedirlo desde el 14 nov.».
+- **Las que ya estaban** suman API-RES-04 al abrir: la revisión nueva de Sofía Paz, 7 (6 antes), y el editor de
+  Entrenamiento de Camila Ortiz, 10 (9 antes).
+- **Un arreglo que salió de la primera corrida junta** (42405660277): el plan compartido decía «Sin próxima revisión
+  acordada» aunque el Resumen dice «Próxima revisión: martes 10 nov»; API-RES-06 tomaba la fecha de la versión del plan.
+  Ahora lee la próxima revisión vigente del Proceso, como API-DSH-03 (#243, 11c91df).
+
 **Lo medido en el tramo de TB-50 y TB-51** (corrida 42388223346 de `capturas-del-tablero`, sobre 4f16451, el
 2026-11-07, con `main` mergeado): las diecinueve páginas, con las peticiones de la tabla, sin errores de la página, sin
 ningún nombre con «Ocultar nombres» y sin fichas de «Tu semana» que se pasen. Las capturas suman la tarjeta de
