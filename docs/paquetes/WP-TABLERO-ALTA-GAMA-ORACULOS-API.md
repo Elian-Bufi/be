@@ -221,7 +221,9 @@ EXPECTED             1 → API-RES-04 trae la otra área con quién la lleva y `
                         con un texto viejo, 409 `CONSENT_VERSION_STALE`; sin el texto de «resumen y plan», 422
                         `SHARING_TEXT_REQUIRED` (`acceptedTexts.summaryAndPlan`), y nada cambia; con el vigente, 200,
                         con la versión siguiente y los dos textos aceptados en `acceptedTexts`. API-RES-01 trae los dos
-                        textos, cada uno `PENDING_APPROVAL`.
+                        textos, cada uno `PENDING_APPROVAL`: el de «resumen» es
+                        `resumenes-compartidos-2026-11-propuesta-3`, que sucede a la 2 y no promete lo que no existe
+                        («… que incluye también este resumen»).
                      4 → API-RES-06 trae la versión ACTIVADA vigente (su instantánea, `state: ACTIVATED`), el
                         objetivo vigente, el autor, `level: SUMMARY_AND_PLAN`, desde cuándo y lo avanzado (las semanas
                         de lunes a domingo desde la activación, con los registros sin anular); ningún id del borrador ni
