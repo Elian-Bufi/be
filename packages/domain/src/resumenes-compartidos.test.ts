@@ -39,7 +39,7 @@ import {
   type ComponenteDeLaPersona,
   type RenglonDeResumen,
 } from './resumenes-compartidos';
-import { VERSION_VIGENTE, VERSIONES_PROPUESTAS } from './textos';
+import { CATALOGO_DE_TEXTOS, VERSION_VIGENTE, VERSIONES_PROPUESTAS } from './textos';
 
 const NUT = '11111111-1111-4111-8111-111111111111';
 const ENT = '22222222-2222-4222-8222-222222222222';
@@ -218,9 +218,14 @@ test('TEST-TAG-037 · lo avanzado: semanas de lunes a domingo desde la de la act
 test('TEST-TAG-037 · un texto por nivel, cada uno una propuesta pendiente de validación jurídica, con su hash, y dicen lo que hace la implementación', () => {
   const resumen = VERSION_VIGENTE.RESUMENES_COMPARTIDOS;
   const plan = VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS;
-  assert.equal(resumen.id, 'resumenes-compartidos-2026-11-propuesta-2');
-  // El de «resumen» sucede al texto único de antes, que queda como historia y no hereda nada (09 §31.2.6).
-  assert.equal(resumen.reemplazaA, 'resumenes-compartidos-2026-11-propuesta');
+  assert.equal(resumen.id, 'resumenes-compartidos-2026-11-propuesta-3');
+  // El de «resumen» va por su propuesta 3: sucede a la 2, que sucedía al texto único; las dos quedan como historia y no
+  // heredan nada (09 §31.2.6).
+  assert.equal(resumen.reemplazaA, 'resumenes-compartidos-2026-11-propuesta-2');
+  assert.equal(CATALOGO_DE_TEXTOS.find((t) => t.id === 'resumenes-compartidos-2026-11-propuesta-2')?.reemplazaA, 'resumenes-compartidos-2026-11-propuesta');
+  // La 3 no promete lo que no existe: la otra autorización incluye este resumen; no «se acepta aparte».
+  assert.ok(resumen.texto.includes('Qué no ve: tu plan completo. Para eso hay otra autorización, «Compartir el plan de otras áreas con mis profesionales», que incluye también este resumen.'));
+  assert.ok(!resumen.texto.includes('se acepta aparte'));
   assert.equal(plan.id, 'resumenes-y-plan-compartidos-2026-11-propuesta');
   for (const v of [resumen, plan]) {
     assert.ok(VERSIONES_PROPUESTAS.has(v.id), v.id);

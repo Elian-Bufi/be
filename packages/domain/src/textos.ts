@@ -282,6 +282,31 @@ Podés sacar a alguien o retirar esta autorización cuando quieras, y corta desd
 Aceptar esta versión no acepta versiones futuras.`;
 
 /**
+ * La propuesta 3 del texto de «resumen» (2026-11-07): la 2 decía que la otra autorización «se acepta aparte», y eso
+ * prometía algo que la implementación no hace igual (la de «resumen y plan» incluye este resumen y alcanza para un permiso
+ * de «resumen», TA-111). Cambia solo ese párrafo. La 2 queda como historia, sin heredar aceptaciones (09 §31.2.6).
+ */
+const RESUMEN_COMPARTIDO_3 = `Compartir el resumen de otras áreas con mis profesionales — versión propuesta 2026-11
+
+${AVISO}
+
+Texto propuesto, pendiente de validación jurídica.
+
+Esta autorización es para que un profesional que te acompaña en un área vea el resumen de otra área tuya, la que lleva otro profesional. La das por profesional y por área.
+
+Qué ve: el resumen de esa área que BE arma para el área de quien lo recibe, con una tabla fija. Por ejemplo, de Entrenamiento, los días por semana del plan y las sesiones que registraste; de Antropometría, el peso y la composición en kilos, con su método; de Nutrición, solo desde cuándo rige tu plan y las fechas de tus revisiones, sin números. Nunca incluye las molestias de «Antes de entrenar», lo de salud de tus formularios, las notas internas de tus profesionales ni sus evaluaciones.
+
+Qué no ve: tu plan completo. Para eso hay otra autorización, «Compartir el plan de otras áreas con mis profesionales», que incluye también este resumen.
+
+Quiénes lo ven: solo los profesionales que elijas, mientras su vínculo con vos esté vigente y su acceso esté autorizado. Si un vínculo se pausa o termina, ese profesional deja de verlo. Lo que compartís es lo del profesional que lleva esa área hoy: si empezás con otro profesional en esa área, no se le comparte a nadie hasta que vuelvas a elegir. Un profesional que empiece a acompañarte después no ve nada de otras áreas hasta que lo elijas.
+
+Cada vez que un profesional lo abre, queda registrado, y lo ves vos. Quien lleva esa área sabe con quién lo compartís.
+
+Podés sacar a alguien o retirar esta autorización cuando quieras, y corta desde ese momento. No se borra nada, y retirarla no deshace lo que un profesional ya vio. Cerrar tu cuenta también la retira.
+
+Aceptar esta versión no acepta versiones futuras.`;
+
+/**
  * El texto de «resumen y plan» (Dirección, 2026-11-07): el plan vigente completo, de solo lectura, con su objetivo y su
  * fundamento (que la persona ya ve; ratificado ese día) y lo registrado. Incluye el resumen de esa área: por eso bajar a
  * «resumen» no pide otro texto. Cada afirmación es lo que hace API-RES-06, 07, 08 a 10 y la regla de TB-53. **Es una
@@ -425,6 +450,17 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
     hash: '6153eff056a37b986519dbe406d6378c0d3a8d80c5c75397bf59faa9f8ff7d1f',
     reemplazaA: 'resumenes-compartidos-2026-11-propuesta',
   },
+  // 2026-11-07: la propuesta 3 del texto de «resumen» sucede a la 2 (no promete lo que no existe).
+  {
+    id: 'resumenes-compartidos-2026-11-propuesta-3',
+    tipo: 'RESUMENES_COMPARTIDOS',
+    titulo: 'Compartir el resumen de otras áreas con mis profesionales',
+    finalidad: 'COMPARTIR_RESUMEN_DE_OTRAS_AREAS_CON_PROFESIONALES',
+    vigenteDesde: '2026-11-07T18:00:00.000Z',
+    texto: RESUMEN_COMPARTIDO_3,
+    hash: '95095b6067f74e5fb514fd0177397de394257025364162ce030eac0fe07eb45e',
+    reemplazaA: 'resumenes-compartidos-2026-11-propuesta-2',
+  },
   {
     id: 'resumenes-y-plan-compartidos-2026-11-propuesta',
     tipo: 'RESUMENES_Y_PLAN_COMPARTIDOS',
@@ -442,7 +478,7 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
  * (`textApproval: 'PENDING_APPROVAL'`) y la APK lo muestra junto al texto. Salen de acá cuando Dirección aprueba un texto,
  * que entra como una versión nueva.
  */
-export const VERSIONES_PROPUESTAS: ReadonlySet<string> = new Set(['evidencia-visual-2026-10-propuesta', 'habitos-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta-2', 'resumenes-y-plan-compartidos-2026-11-propuesta']);
+export const VERSIONES_PROPUESTAS: ReadonlySet<string> = new Set(['evidencia-visual-2026-10-propuesta', 'habitos-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta-2', 'resumenes-compartidos-2026-11-propuesta-3', 'resumenes-y-plan-compartidos-2026-11-propuesta']);
 
 /** Versión vigente por tipo. Una versión nueva no hereda aceptación (09 §31.2.6). */
 export const VERSION_VIGENTE: Readonly<Record<TipoDeTexto, VersionDeTexto>> = Object.fromEntries(
