@@ -12,7 +12,7 @@
 //                    registros     comidas, sesiones y tomas por SQL, en lotes (la base de test está lejos);
 //                    calculos      por la API: IMC, sumas de pliegues, % de grasa e índice cintura-talla de cada toma
 //                                  y, para quien tiene `masas` (TB-24), la masa grasa y la libre de grasa de Durnin y Womersley;
-//                                  para quien tiene `cuatroComponentes` (TB-51), los de De Rose y Guimarães;
+//                                  para quien tiene `musculoDeLee` (TB-51), la masa muscular esquelética de Lee;
 //                    hoy           lo de esta semana: revisiones pendientes, aplicadas hoy o con el objetivo cambiado.
 //   nombres-demo   (solo test) los nombres de las cuentas de demostración DEMO-A01 y DEMO-A02, por la API.
 //   resumen        cuenta lo cargado de cada persona.
@@ -521,8 +521,8 @@ async function cargarPersona(p, hoy) {
     const token = await sesionDe(proDe(p, 'ANTROPOMETRIA'));
     const metodos = await metodosDe(token);
     // TB-24: las masas de Durnin y Womersley se suman a quien las tiene; una toma sin sus entradas no las calcula.
-    // TB-51: los cuatro componentes de De Rose y Guimarães, a quien los tiene (solo hombres).
-    const claves = [...(p.sinPliegues ? METODOS.sinPliegues[p.sexo] : METODOS[p.sexo]), ...(p.masas ? METODOS.masas[p.sexo] : []), ...(p.cuatroComponentes && p.sexo === 'H' ? METODOS.cuatroComponentes : [])];
+    // TB-51: la masa muscular de Lee con perímetros, a quien la tiene.
+    const claves = [...(p.sinPliegues ? METODOS.sinPliegues[p.sexo] : METODOS[p.sexo]), ...(p.masas ? METODOS.masas[p.sexo] : []), ...(p.musculoDeLee ? METODOS.musculoDeLee[p.sexo] : [])];
     let n = 0;
     for (const toma of estado.tomas) {
       for (const regla of claves) {

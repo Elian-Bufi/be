@@ -326,6 +326,9 @@ export type ClaveDeLaParte = 'grasa' | 'musculo' | 'resto' | 'libre';
  * - **El músculo de Lee:** la grasa de un método de dos compartimentos de la misma toma, la masa muscular esquelética de
  *   Lee y el resto, por diferencia. Son dos ecuaciones, y la barra lo dice.
  * - **Dos compartimentos:** la grasa y la libre de grasa del mismo método.
+ * De Rose y Guimarães, Faulkner y Würch no se ofrecen para cálculos nuevos desde DL-112 (2026-10-01), y tampoco Lee con
+ * peso y talla: la barra los lee en las tomas que ya los tienen. Para una toma nueva, el músculo sale de Lee con
+ * perímetros.
  */
 export type TipoDeReparto = 'CUATRO_COMPONENTES' | 'MUSCULO_DE_LEE' | 'DOS_COMPARTIMENTOS';
 

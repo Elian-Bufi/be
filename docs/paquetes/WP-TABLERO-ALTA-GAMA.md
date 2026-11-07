@@ -269,7 +269,9 @@ separado en grasa, músculo y el resto. A eso me refiero con que hagamos buenos 
 - **TB-51, la barra.** Dirección eligió, por pregunta, «Kilos con el % al lado»: la barra va en kg, partida en grasa,
   músculo y resto, con el porcentaje escrito junto a cada parte. «Músculo» va solo cuando el método lo calcula; si no,
   «libre de grasa». Sin colores de bueno o malo. Modifica D-11 («sin «%» en el Resumen»): DL-163 lo dice como «D-11,
-  modificada por Dirección el 2026-11-07 (kilos con el % al lado)».
+  modificada por Dirección el 2026-11-07 (kilos con el % al lado)». De los dos métodos que nombró Dirección, De Rose y
+  Guimarães (con Faulkner y Würch) salió del catálogo para cálculos nuevos con DL-112 (2026-10-01): la barra lo lee en
+  las tomas que ya lo tienen, y para una toma nueva el músculo sale de Lee con perímetros (TA-79).
 - **Lo que no hace falta:** el «Lic.» no es obligatorio; alcanza con el nombre. Verificado: el website no antepone un
   título fijo en ningún lado (el saludo y las iniciales ya los saltean, TB-05 y TB-06), y no se agrega. Los nombres de la
   cohorte que lo traen son datos y quedan como están.
@@ -423,8 +425,9 @@ migración propia. Nada se crea antes del sí al alcance.
   guarda solo la miniatura.
 - **La cohorte (TB-24):** a las tomas de Diego, Camila y Héctor se les aplican las masas de Durnin y Womersley. Es un
   cambio de datos sintéticos en la herramienta de la cohorte, no una migración.
-- **La cohorte (TB-51):** a las tomas de Federico se les aplican los cuatro componentes de De Rose y Guimarães, con los
-  diámetros de la muñeca y del fémur, iguales en cada toma (TA-84). También es un cambio de datos sintéticos.
+- **La cohorte (TB-51):** a las tomas de Federico se les aplican las masas de Durnin y Womersley y la masa muscular
+  esquelética de Lee con perímetros, con el perímetro del brazo relajado sacado del flexionado de cada toma, sin azar
+  (TA-84). También es un cambio de datos sintéticos.
 - **Lo que se decide al programar:** si las plantillas (DL-108) guardan los rangos y las semanas, sin cambiar las
   operaciones de plantillas (TB-46, como TA-).
 

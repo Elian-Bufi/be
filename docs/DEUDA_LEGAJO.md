@@ -6299,7 +6299,9 @@ todas las recomendadas»), salvo la D-9 original, que se reabrió:*
     - la barra de la última toma, en la tarjeta del Resumen y en la pestaña, va en kg con el porcentaje escrito junto a
       cada parte, y el 100 % es el peso de esa toma. Reemplaza «sin «%» en el Resumen»;
     - si el método calcula el músculo, la barra es grasa, músculo y resto. Con De Rose y Guimarães (cuatro componentes),
-      la grasa es la de Faulkner y el resto es lo óseo (Rocha) y lo residual (Würch), y lo dice con sus kilos. Con Lee, la
+      la grasa es la de Faulkner y el resto es lo óseo (Rocha) y lo residual (Würch), y lo dice con sus kilos; como
+      DL-112 retiró De Rose y Guimarães, Faulkner y Würch para cálculos nuevos, ese caso se lee en las tomas que ya lo
+      tienen, y para una toma nueva el músculo sale de Lee con perímetros. Con Lee, la
       grasa es la del método de dos compartimentos de la misma toma, el músculo es el esquelético de Lee y el resto, por
       diferencia, es lo que no es grasa ni músculo esquelético (hueso, órganos, piel y líquidos): son dos ecuaciones, y
       la barra nombra las dos;

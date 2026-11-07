@@ -219,12 +219,14 @@ export const PERSONAS = [
     talla: 186.0,
     dias: 730,
     // TB-51 (WP-TABLERO-ALTA-GAMA; D-11, modificada por Dirección el 2026-11-07): su profesional de Antropometría calcula
-    // los cuatro componentes de De Rose y Guimarães (la grasa y la libre de grasa de Faulkner, la masa ósea de Rocha, la
-    // residual de Würch y la muscular), para que la barra de la tarjeta muestre grasa, músculo y resto. Los diámetros de
-    // la muñeca y del fémur no cambian en un adulto: van iguales en cada toma, sin ruido (no consumen el azar de la
-    // historia, así que las demás medidas de Federico quedan como estaban).
-    cuatroComponentes: true,
-    diametros: { 'diametro-biestiloideo': 6.0, 'diametro-femur': 10.2 },
+    // las masas de Durnin y Womersley y la masa muscular esquelética de Lee con perímetros, para que la barra de la
+    // tarjeta muestre grasa, músculo y resto. De Rose y Guimarães, Faulkner y Würch salieron del catálogo para cálculos
+    // nuevos con DL-112: Lee con perímetros es el método de músculo que queda. Lee pide el perímetro del brazo relajado:
+    // sale del flexionado de cada toma menos `brazoRelajado`, sin azar (no consume el azar de la historia, así que las
+    // demás medidas de Federico quedan como estaban).
+    masas: true,
+    musculoDeLee: true,
+    brazoRelajado: 2.6,
     areas: { NUTRICION: 'N', ENTRENAMIENTO: 'T', ANTROPOMETRIA: 'N' },
     evaluacionNut: {
       contexto: 'Juega de segunda línea en un club de la URBA: entrena con el club martes y jueves a la noche y juega los sábados.',
@@ -532,9 +534,12 @@ export const METODOS = {
     M: ['be/masa-grasa-durnin-womersley-mujeres@1', 'be/masa-libre-de-grasa-durnin-womersley-mujeres@1'],
   },
   /**
-   * TB-51: los cuatro componentes de De Rose y Guimarães, para quien tiene `cuatroComponentes: true` (solo hombres: la
-   * grasa de Faulkner es de hombres). La masa muscular es el peso menos la grasa de Faulkner, la ósea de Rocha y la
-   * residual de Würch, y las cuatro suman el peso de la toma.
+   * TB-51: la masa muscular esquelética de Lee con perímetros, para quien tiene `musculoDeLee: true` (con `masas`, la
+   * barra es la grasa de Durnin y Womersley, el músculo de Lee y el resto por diferencia). Pide la talla, la edad y los
+   * perímetros del brazo relajado, del muslo y de la pantorrilla con sus pliegues.
    */
-  cuatroComponentes: ['be/masa-grasa-faulkner@1', 'be/masa-libre-de-grasa-faulkner@1', 'be/masa-osea-rocha@1', 'be/masa-residual-wurch-hombres@1', 'be/masa-muscular-4c-hombres@1'],
+  musculoDeLee: {
+    H: ['be/masa-muscular-esqueletica-lee-hombres@1'],
+    M: ['be/masa-muscular-esqueletica-lee-mujeres@1'],
+  },
 };
