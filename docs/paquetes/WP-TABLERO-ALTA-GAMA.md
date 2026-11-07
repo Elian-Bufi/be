@@ -3,7 +3,9 @@
 > **Estado:** ALCANCE RATIFICADO por Dirección el 2026-11-05 (por pregunta); etapa A en programación. Las decisiones
 > DL-163 D-1 a D-21 están ratificadas, y el alcance son las partes TB-00 a TB-49: TB-49, la tarjeta «Lo que contó al
 > empezar», se sumó con el sí. La etapa A se programa en la rama `wp-tablero-etapa-a`, que sale de `main` b91dc3f con
-> esta declaración.
+> esta declaración. El 2026-11-07, al ver la galería de capturas, Dirección sumó a la etapa A **TB-50** (la evolución de
+> las últimas tomas en el Resumen) y **TB-51** (la barra de la composición en kilos con el porcentaje al lado), que
+> modifica D-11 (§3.3), y pidió no integrar la etapa A hasta sumarlas.
 >
 > **Encargo** (Dirección, del 2026-11-03 al 2026-11-05):
 > - «En la página inicial del profesional en el inicio donde hace el resumen todavía lo veo muy soso»; «los puntos de
@@ -17,6 +19,8 @@
 > - Al cierre del 2026-11-05, ante «¿declaro el paquete?»: «Sí, declaralo».
 > - El 2026-11-05, ante el alcance: «Ratifico, arrancá la etapa A ya», con la tarjeta «Lo que contó al empezar» en la
 >   etapa A (TB-49).
+> - El 2026-11-07, sobre la galería de capturas: «ahora es aceptable»; y sumó la evolución antropométrica y la barra en
+>   kilos con el porcentaje en el Resumen (§3.3), sin integrar hasta tenerlas.
 >
 > **Fuente:** la propuesta de Dirección «Tablero de alta gama» (27 secciones y 16 maquetas), que no está en el repo.
 > Este paquete es autocontenido: lo que hace falta de ella está acá, y las maquetas, descritas con palabras (§1.1).
@@ -221,6 +225,8 @@ que cambian la forma de un contrato se ratifican antes de integrar.
 | TB-47 | Descartar un borrador | A, en la rama de la API | D-21 | Sí | Una operación nueva por área (API-PLN-07 y API-PLE-05): descarta un borrador que nunca se activó, con `Idempotency-Key`, auditoría, evento y confirmación en pantalla. Libera «Empezar desde una plantilla» y la aplicación de una revisión. Una prueba: una versión activada no se descarta nunca |
 | TB-48 | Lo que se arregla en los editores | A | — | No | La nota del ítem en el editor de Nutrición; duplicar un día tipo, una comida, una opción, una sesión y un ejercicio; reordenar; quitar una serie del medio; los topes, avisados antes de guardar; el microciclo ofrecido también con sesiones sueltas; «Validar plan» pasa a «Revisar el plan» y lista también lo incompleto, sin bloquear; «Guardar como plantilla» con su texto; el cuadro sin plantillas deja de prometer que se escriben en «Plantillas y habituales»; la receta como opción, con buscador; y las zonas de un ejercicio propio, desde «Mis ejercicios» |
 | TB-49 | La tarjeta «Lo que contó al empezar» | A | DL-165 D-8 | No | El Resumen de la ficha muestra las respuestas vigentes de los formularios de inicio que ese profesional pidió, en palabras, con su fecha y su procedencia: «Declarado por la persona», o cargado por el profesional y confirmado por ella. Abre la solicitud. Es de solo lectura, sin contar ni calificar, y lee lo que ya existe |
+| TB-50 | La evolución de las últimas tomas en el Resumen | A | Pedido de Dirección del 2026-11-07 (§3.3) | No | En la tarjeta de Antropometría del Resumen, una pieza con las últimas tres o cuatro tomas con medidas, en pares que se leen juntos: cintura y pliegue abdominal; suma de 6 pliegues y peso; brazo flexionado y pliegue tricipital. Una columna por toma, con su fecha; una fila por medida, con su línea, el valor escrito sobre cada punto y la diferencia con su signo y su unidad, con la gramática de TB-02 y TB-03. Kilos con kilos: cada medida en su unidad, nunca dos unidades en un eje, y la misma vara en las filas de una misma unidad. Lo no comparable y lo no medido, dicho con palabras. Sin colores que juzguen y sin lecturas nuevas. Las pruebas de geometría y TEST-TAG-036, con sus mutaciones verificadas; las capturas, con `capturas-del-tablero.yml` |
+| TB-51 | La barra en kilos con el porcentaje al lado | A | D-11, modificada por Dirección el 2026-11-07 | No | La barra de la última toma, en la tarjeta y en la pestaña, en kg y con el % al lado de cada parte; el 100 % es el peso de esa toma. Si el método calcula el músculo (De Rose y Guimarães, o Lee), la barra es grasa, músculo y resto, y el texto dice qué es el resto; si no, grasa y libre de grasa. Sin colores de bueno o malo. Un token nuevo, `--composicion-resto`, con sus pares en `contraste.test.cjs`. TEST-TAG-017 suma los casos, con sus mutaciones; T13 admite ese «%» en un solo lugar |
 
 ### 3.1 La matriz por pertinencia (D-13)
 
@@ -249,6 +255,26 @@ escriba ni entra como evidencia de una revisión propia.
 
 WP-FORMULARIOS-RONDA-2 (DL-165 D-8) dejó para este paquete «la tarjeta de las respuestas en el Resumen («Lo que contó al
 empezar»)». La propuesta no le daba una parte. Con el sí al alcance, Dirección la sumó a la etapa A como TB-49.
+
+### 3.3 Lo que sumó Dirección el 2026-11-07
+
+Al ver la galería de capturas de la etapa A, Dirección dijo que «ahora es aceptable» y pidió no integrarla hasta sumar
+esto, con sus palabras: «Agregaría la evolución o la imagen de la evolución de la antropometría dentro del resumen del
+usuario. Podría ser una combinación de tomas importantes, y hasta se podría sumar una evolución de pliegues y
+circunferencias. Por ejemplo, que se vea al mismo tiempo tomas de cintura y pliegue abdominal, y así en 3 o 4 tomas,
+para rápidamente interpretar cómo avanza el resultado físico. Y serviría también la barra de porcentaje de peso,
+separado en grasa, músculo y el resto. A eso me refiero con que hagamos buenos gráficos que resuman la información.»
+
+- **TB-50, la evolución de las últimas tomas.** Va en la tarjeta de Antropometría del Resumen, de la misma lectura.
+- **TB-51, la barra.** Dirección eligió, por pregunta, «Kilos con el % al lado»: la barra va en kg, partida en grasa,
+  músculo y resto, con el porcentaje escrito junto a cada parte. «Músculo» va solo cuando el método lo calcula; si no,
+  «libre de grasa». Sin colores de bueno o malo. Modifica D-11 («sin «%» en el Resumen»): DL-163 lo dice como «D-11,
+  modificada por Dirección el 2026-11-07 (kilos con el % al lado)».
+- **Lo que no hace falta:** el «Lic.» no es obligatorio; alcanza con el nombre. Verificado: el website no antepone un
+  título fijo en ningún lado (el saludo y las iniciales ya los saltean, TB-05 y TB-06), y no se agrega. Los nombres de la
+  cohorte que lo traen son datos y quedan como están.
+
+Las decisiones de la implementación son TA-73 a TA-84 (§10.1), a ratificar.
 
 ## 4. Las operaciones nuevas
 
@@ -367,8 +393,8 @@ Se confirman al abrir la parte, con su línea en el inventario del 08 (§9).
 Todas las migraciones solo agregan: las tablas de historia, con los triggers `be_solo_agregar`, y cada enum nuevo en su
 migración propia. Nada se crea antes del sí al alcance.
 
-- **Sin datos nuevos:** TB-01 a TB-12, TB-15, TB-16, TB-24, TB-25, TB-30, TB-32, TB-38, TB-45, TB-46 y TB-49 leen lo
-  que ya existe. «Ocultar nombres» y la elección de la vista se recuerdan en el navegador, sin datos de personas. TB-14, TB-18
+- **Sin datos nuevos:** TB-01 a TB-12, TB-15, TB-16, TB-24, TB-25, TB-30, TB-32, TB-38, TB-45, TB-46, TB-49, TB-50 y
+  TB-51 leen lo que ya existe. «Ocultar nombres» y la elección de la vista se recuerdan en el navegador, sin datos de personas. TB-14, TB-18
   y las claves de API-PRJ-01 (TB-31 y TB-34) calculan sobre lo que hay.
 - **La matriz de lo que se comparte (TB-26):** una tabla de configuración (área de origen, área de quien recibe,
   categoría, permitido y detalle), versionada y auditada, que carga Dirección por acta.
@@ -397,6 +423,8 @@ migración propia. Nada se crea antes del sí al alcance.
   guarda solo la miniatura.
 - **La cohorte (TB-24):** a las tomas de Diego, Camila y Héctor se les aplican las masas de Durnin y Womersley. Es un
   cambio de datos sintéticos en la herramienta de la cohorte, no una migración.
+- **La cohorte (TB-51):** a las tomas de Federico se les aplican los cuatro componentes de De Rose y Guimarães, con los
+  diámetros de la muñeca y del fémur, iguales en cada toma (TA-84). También es un cambio de datos sintéticos.
 - **Lo que se decide al programar:** si las plantillas (DL-108) guardan los rangos y las semanas, sin cambiar las
   operaciones de plantillas (TB-46, como TA-).
 
@@ -449,8 +477,10 @@ tiene su mutación, como E-06 y E-16 de WP-ESCRITORIO-AMABLE.
   los de la ficha (`conteosDesde`); con 200 personas, medido en Render, no es más lento que hoy.
 - **TEST-TAG-016 · El anillo, solo con la proporción declarada** (D-10; TB-22). Con los macros en gramos no se dibuja;
   va sin «%» y nunca junto a lo registrado.
-- **TEST-TAG-017 · La composición no mezcla métodos** (D-11; TB-24). Nunca se parte una columna con métodos distintos ni
-  con un método que no suma el peso; un cambio de método corta las diferencias; una toma con solo peso va en contorno.
+- **TEST-TAG-017 · La composición no mezcla métodos** (D-11; TB-24 y TB-51). Nunca se parte una columna con métodos
+  distintos ni con un método que no suma el peso; un cambio de método corta las diferencias; una toma con solo peso va en
+  contorno. Desde TB-51, la barra de la última toma: sus partes suman el peso, el porcentaje es de ese peso, «Músculo»
+  sale solo de un método que lo calcula y dos tomas se comparan solo si se reparten igual.
 - **TEST-TAG-018 · Los indicadores salen de las áreas del profesional** (D-12; TB-25). Sin nada guardado, los cuatro de
   sus áreas; con algo guardado por la cuenta, lo guardado.
 - **TEST-TAG-019 · La semana del programa sale de las fechas** (D-9 nueva; TB-33). Prueba de propiedad: ningún registro
@@ -488,7 +518,8 @@ tiene su mutación, como E-06 y E-16 de WP-ESCRITORIO-AMABLE.
 - **TEST-TAG-031 · Los textos nuevos pasan las listas de términos.** T13 y la prueba de términos de la cartera
   (`cartera.ts`) corren sobre todo texto nuevo, también los que viven en `apps/web` hasta TB-20. En Antropometría se
   dice «toma», y no aparecen diagnóstico (salvo «no es un diagnóstico», que pide RF-048), peso ideal, sobrepeso, normal,
-  puntaje, mejor ni peor. El «%», solo donde lo admite T13.
+  puntaje, mejor ni peor. El «%», solo donde lo admite T13: el cambio relativo de Analizar y, desde TB-51, el de cada
+  parte de la barra de la composición.
 - **TEST-TAG-032 · Los guardianes.** Las herramientas de captura cuentan las peticiones a la API al abrir /pro, el
   Resumen y el cajón, y fallan si suben sin aviso; la primera pantalla se mide a 1280 × 800, a 1440 × 900 y a 1920 × 950
   (el área útil de un monitor de 1920 × 1080).
@@ -503,6 +534,10 @@ tiene su mutación, como E-06 y E-16 de WP-ESCRITORIO-AMABLE.
   lugar guarda identificadores, nunca nombres, y solo un lugar reciente se retoma; al volver, el foco va a lo que se
   abrió o, si ya no está, a lo que seguía; cada ficha, cada verbo y cada salida del cajón llevan el retorno; el lugar se
   lee antes que la cartera.
+- **TEST-TAG-036 · La evolución de las últimas tomas ubica en pares y no mezcla lo que no se compara** (pedido de
+  Dirección del 2026-11-07; TB-50). Se suma con TB-50. Las columnas son las últimas tomas con medidas, alineadas en todas
+  las filas; kilos con kilos (la misma vara por unidad, nunca menos que su mínimo); la línea no cruza un cambio de
+  protocolo ni un hueco, y la diferencia no lo cruza; lo no medido y lo no comparable se dicen; sin «%» ni juicios.
 
 **La evidencia,** en `EVIDENCIA/TABLERO-ALTA-GAMA/`:
 - las capturas de antes y de después, en Claro y Azul noche, a 1440 y a 1920; a 1280 y a 1024 se revisa la composición,
@@ -583,6 +618,8 @@ Desde el sí al alcance hasta que la escuela cierre su evaluación sobre `test`.
     5 semanas de Elián, TB-33 va primero.
 13. **En paralelo, porque son otras pantallas (los editores y la pestaña Plan):** TB-38 a TB-41, TB-43 y TB-45 a TB-48.
     Las partes que tocan la API, en su rama.
+14. **Lo que sumó Dirección el 2026-11-07 (§3.3), antes de integrar:** TB-51 (la barra en kilos con el porcentaje) y
+    TB-50 (la evolución de las últimas tomas), en la tarjeta de Antropometría, que ya está.
 
 **El criterio de corte:** una parte hoja (TB-07, TB-08, TB-12, TB-16, TB-22 y TB-49, y cualquier otra en la que no se apoye
 ninguna) sale de la pila sin frenar a las demás si su recaptura muestra una regresión. Si falla una base (TB-01, TB-02 o

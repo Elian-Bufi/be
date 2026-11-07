@@ -17,7 +17,9 @@
 > TB-10 y TB-24), TEST-TAG-006 y TEST-TAG-007, TEST-TAG-001 y TEST-TAG-002 (TB-10), TEST-TAG-014 (TB-16), TEST-TAG-017
 > (TB-24), TEST-TAG-018 (TB-25), TEST-TAG-033 (TB-49), TEST-TAG-032 (el arreglo de base del quinto tramo), TEST-TAG-008
 > (TB-11), TEST-TAG-009 (TB-12) y, con TB-15, TEST-TAG-013 y TEST-TAG-034 (nuevo: «¿Cuándo la revisás?», que
-> la §6 del paquete suma), y TEST-TAG-035 (nuevo: volver al Espacio, con lo que le faltaba a TB-07). Los demás se escriben con su parte (§10 del paquete).
+> la §6 del paquete suma), y TEST-TAG-035 (nuevo: volver al Espacio, con lo que le faltaba a TB-07). Con lo que sumó
+> Dirección el 2026-11-07, TEST-TAG-017 suma la barra en kilos con el porcentaje (TB-51) y se escribe TEST-TAG-036 (nuevo:
+> la evolución de las últimas tomas, TB-50). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -476,7 +478,8 @@ EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en las capturas, la tar
 TEST_ID              TEST-TAG-017
 TITLE                La columna de la composición se parte solo con las dos masas de un mismo método de dos
                      compartimentos que suman el peso; un cambio de método corta las diferencias; una toma con solo
-                     peso va en contorno
+                     peso va en contorno. Desde TB-51, la barra de la última toma va en kilos con el porcentaje del
+                     peso al lado, y dice «Músculo» solo si el método lo calcula
 LEVEL                Unidad (funciones puras del website, sin navegador ni API)
 PRIORITY             P1 — una columna partida con dos métodos dice algo que nadie midió: dos ecuaciones dan hasta
                      3 kg de diferencia sobre la misma toma
@@ -485,14 +488,19 @@ SOURCES              DL-163 D-11 («La columna se parte solo con un método de d
                      corta las diferencias; sin «%» en el Resumen») · WP-TABLERO-ALTA-GAMA TB-24 («Una prueba
                      confirma que nunca parte una columna con métodos distintos ni con un método que no suma el
                      peso») · la propuesta, §18.2 (reglas 3, 4 y 6) y §18.3 · REG-06-162 · DL-112 (las masas de dos
-                     compartimentos) · TA-24 a TA-27
-PRECONDITIONS        Ninguna: tomasDeLaEvolucion, particionDe, composicionDe, laUltimaToma, escalaComun y
+                     compartimentos) · TA-24 a TA-27 · DL-163 D-11, modificada por Dirección el 2026-11-07 («Kilos con
+                     el % al lado»: la barra en kg, partida en grasa, músculo y resto, con el porcentaje junto a cada
+                     parte; «Músculo» solo cuando el método lo calcula; si no, «libre de grasa») · TB-51 · TA-79 a
+                     TA-83
+PRECONDITIONS        Ninguna: tomasDeLaEvolucion, particionDe, composicionDe, laUltimaToma, repartoDe, escalaComun y
                      tramosDeLectura (apps/web/src/app/pro/advisees/seguimiento/composicion.ts).
 SYNTHETIC_FIXTURE    Respuestas de API-ANT-06 armadas como las arma la API (un bloque por métrica, cada punto con su
                      evaluación y su grupo de comparabilidad), con las versiones de método del catálogo (Durnin y
                      Womersley, Faulkner, Lee y cuatro componentes), de junio a octubre de 2026; y 300 casos al azar
                      con una semilla fija (20261106), de 2 a 10 tomas cada uno, con métodos, masas sueltas, masas que
-                     no suman y cambios de protocolo.
+                     no suman y cambios de protocolo. Para TB-51: tomas con los cuatro componentes de De Rose y
+                     Guimarães (la grasa y la libre de grasa de Faulkner, la ósea, la residual y la muscular), con Lee
+                     junto a Durnin y Womersley, y 400 tomas al azar con otra semilla (20261107).
 STEPS                1. Una toma con el peso y las dos masas de Durnin y Womersley que lo suman.
                      2. Tres tomas: la grasa de un método con la libre de grasa de otro; la grasa con Lee; dos masas
                         de un método que no suman el peso. Y dos tomas partidas con Lee al lado.
@@ -503,6 +511,11 @@ STEPS                1. Una toma con el peso y las dos masas de Durnin y Womersl
                      6. La tarjeta del Resumen: dos tomas del mismo método, dos de métodos distintos, una partida y
                         una posterior con solo peso, y dos tomas sin método.
                      7. Los textos, la lectura en tramos de un año y la escala de las filas.
+                     8. TB-51: una toma de Durnin y Womersley; una de cuatro componentes, con la ósea y la residual y
+                        sin ellas, y una con el músculo de cuatro componentes sin la grasa de Faulkner; una con Lee y
+                        Durnin y Womersley, una con Lee solo y una con un Lee que no entra en la libre de grasa.
+                     9. TB-51: dos tomas de cuatro componentes; una de dos compartimentos y otra de cuatro.
+                     10. TB-51: las 400 tomas al azar, y los textos del reparto.
 EXPECTED             1 → 80,8 kg = 66,6 libre de grasa + 14,2 grasa, con Durnin y Womersley; con Faulkner, sin
                         partir; con una sola toma partida, «el cambio aparece con la segunda».
                      2 → ninguna columna se parte, todas dicen por qué («sus masas no suman el peso»); Lee va en su
@@ -522,16 +535,111 @@ EXPECTED             1 → 80,8 kg = 66,6 libre de grasa + 14,2 grasa, con Durni
                      7 → sin «%», «bien», «mal», «normal» ni «ideal»; un año son cuatro lecturas de 92 días o menos,
                         seguidas y sin solapes; dos respuestas con los grupos nombrados distinto no inventan un cambio
                         de método; las filas usan el mismo largo de escala, nunca menos de 2 kg.
+                     8 → «80,8 kg = grasa 14,2 kg (17,6 %) + libre de grasa 66,6 kg (82,4 %)», sin «Músculo»; con
+                        cuatro componentes, grasa 12,2 kg (12,3 %), músculo 49,9 kg (50,5 %) y resto 36,7 kg (37,1 %),
+                        que suman el peso, y «El resto es la masa ósea (12,9 kg) y la residual (23,8 kg: órganos,
+                        vísceras y líquidos).»; sin la ósea, el resto se dice sin cifras; sin la grasa de Faulkner, dos
+                        compartimentos. Con Lee: grasa 15,0 kg (18,0 %), músculo 35,2 kg (42,2 %) y resto 33,3 kg
+                        (39,9 %), con los dos métodos escritos y el resto «por diferencia»; Lee solo, sin barra; un Lee
+                        que no entra, dos compartimentos.
+                     9 → «peso −0,4 kg · grasa −0,3 kg · músculo sin cambio · resto −0,1 kg»; de dos compartimentos a
+                        cuatro, sin diferencias y «se repartió con otro método»; con dos compartimentos, las mismas
+                        diferencias que antes de TB-51.
+                     10 → las partes suman el peso (±0,15 kg), cada una positiva y con su porcentaje del peso de esa
+                        toma; «Músculo» sale solo de un método que lo calcula, y la barra es grasa, músculo y resto, o
+                        grasa y libre de grasa; la grasa de cuatro componentes es la de Faulkner. Cada «%» sigue a una
+                        cifra, después de sus kilos, y el código de la composición lo escribe en un solo lugar
+                        (`porcentajeEnPalabras`), el que T13 admite (`copy-pantallas.test.cjs`).
 NEGATIVE_ASSERTIONS  Nunca se parte una columna con métodos distintos ni con un método que no suma el peso; ninguna
                      diferencia cruza un cambio de método o de protocolo. Mutaciones verificadas: sin la prueba de la
                      suma, fallan los pasos 2 y 5; sin las verticales, falla el paso 3; con Lee como libre de grasa,
-                     fallan ocho casos; con la libre de grasa de otro método, fallan los pasos 2 y 5.
+                     fallan ocho casos; con la libre de grasa de otro método, fallan los pasos 2 y 5. Desde TB-51, la
+                     barra nunca dice «Músculo» sin un método que lo calcule, ni compara dos repartos distintos.
+                     Mutaciones verificadas el 2026-11-07: la libre de grasa con el nombre «Músculo», fallan tres; los
+                     cuatro componentes con la grasa de otro método, falla el paso 8; comparar repartos distintos,
+                     fallan dos; el músculo de Lee aunque no entre en la libre de grasa, fallan dos; el porcentaje de
+                     otra cosa que el peso, fallan cinco.
 AUTOMATION           apps/web/test/composicion.test.mjs («TEST-TAG-017 · …», cinco casos, y cuatro más de la tarjeta,
-                     los textos, la lectura y la escala), en `npm run test -w @be/web`
+                     los textos, la lectura y la escala; desde TB-51, seis casos «TEST-TAG-017 · TB-51 · …»), en
+                     `npm run test -w @be/web`; el «%» admitido, en scripts/copy-pantallas.test.cjs (T13)
 ENVIRONMENT          CI (verificar · typecheck · unit · build · audit) y local, sin servicios
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, la pestaña Composición corporal y la
                      pregunta de «Analizar» de Diego Sosa vistas por Sofía Paz, con `composicion.partidas` y
-                     `composicion.sinPartir` en mediciones.json, y el Resumen de Héctor Funes con la línea de los pesos
+                     `composicion.sinPartir` en mediciones.json, y el Resumen de Héctor Funes con la línea de los pesos.
+                     Desde TB-51: el Resumen de Diego con grasa y libre de grasa, el de Federico Álvarez con grasa,
+                     músculo y resto (`composicion.reparto` y `composicion.partes`), y la tarjeta abierta
+                     (`<página>-antropometria-<ancho>.png`)
+```
+
+---
+
+## TEST-TAG-036 — La evolución de las últimas tomas ubica en pares y no mezcla lo que no se compara
+
+```text
+TEST_ID              TEST-TAG-036
+TITLE                La evolución de las últimas tomas del Resumen muestra pares de medidas en las mismas columnas,
+                     con la misma vara por unidad; la línea y la diferencia no cruzan un cambio de protocolo ni un
+                     hueco, y lo no medido se dice
+LEVEL                Unidad (funciones puras del website, sin navegador ni API)
+PRIORITY             P1 — una línea que une dos tomas no comparables, o una vara distinta para la misma unidad,
+                     dibuja un cambio que nadie midió
+SOURCES              Pedido de Dirección del 2026-11-07 («que se vea al mismo tiempo tomas de cintura y pliegue
+                     abdominal, y así en 3 o 4 tomas, para rápidamente interpretar cómo avanza el resultado físico»)
+                     · WP-TABLERO-ALTA-GAMA TB-50 y §3.3 · la propuesta, §18 («kilos con kilos») · TB-02 y TB-03 (la
+                     gramática de las marcas) · TB-04 (la escala mínima: 2 kg, 2 cm o 4 mm) · REG-06-162 (la
+                     comparabilidad) · REG-06-166 (sin interpolar ni completar huecos) · TA-73 a TA-78
+PRECONDITIONS        Ninguna: evolucionDeLasTomas, escalasDeLaEvolucion, geometriaDeLaFila, xDeLaColumna y los
+                     textos (apps/web/src/app/pro/advisees/seguimiento/evolucion-de-las-tomas.ts), con la escala
+                     mínima y la medida de las marcas de geometria.ts.
+SYNTHETIC_FIXTURE    Tomas como las deja tomasDeLaEvolucion: cinco de mayo a noviembre de 2026 con las seis medidas
+                     (la suma de 6 pliegues como cálculo), una con solo el peso, dos sin pliegues (como Héctor), una
+                     sin el pliegue abdominal y dos con otro protocolo; y 300 casos al azar con una semilla fija
+                     (20261107), de 1 a 7 tomas, con medidas que faltan y cambios de protocolo.
+STEPS                1. Las cinco tomas y una sexta con solo el peso; y las mismas con lugar para tres.
+                     2. Dos tomas sin pliegues; una sola toma; una toma con solo el peso.
+                     3. La vara de cada fila, con las cinco tomas, y con dos tomas casi iguales.
+                     4. La geometría de cada fila a 200 de ancho.
+                     5. Cuatro tomas con un hueco del pliegue abdominal y un cambio de protocolo en la tercera; tres
+                        con un hueco sin cambio; tres con el cambio en la última.
+                     6. Los 300 casos al azar.
+                     7. Los textos: el renglón plegado, las diferencias, los títulos y las frases.
+EXPECTED             1 → las últimas cuatro (del 29 jun al 1 nov), sin la de solo el peso; los tres pares en su orden
+                        (cintura y pliegue abdominal; suma de 6 pliegues y peso; brazo flexionado y pliegue tricipital);
+                        un valor por columna en cada fila; la cintura, −3,2 cm de la primera columna a la última; con
+                        lugar para tres, tres.
+                     2 → sin brazo ni tricipital, ese par no va; el pliegue abdominal dice «sin medir» y «Pliegue
+                        abdominal: no se midió en estas tomas.»; la cintura, «−0,7 cm»; con una sola toma, ninguna
+                        diferencia y «una toma»; con solo el peso, no hay pieza.
+                     3 → los centímetros (la cintura y el brazo) con 3,2; los milímetros (la suma, el abdominal y el
+                        tricipital) con 11,5; el peso, con 3,0; cada valor entra en su escala; con poca variación, 2 cm,
+                        4 mm y 2 kg.
+                     4 → las mismas x en todas las filas, la primera y la última a 22 de los bordes; la cintura baja y
+                        el brazo sube en el dibujo; el mismo píxel por centímetro en las dos filas de centímetros; todo
+                        adentro de la fila; una línea por tramo; lo medido, lleno, y la suma de 6, calculada; con lugar
+                        de sobra, la marca de 3,5; una sola cifra en la tinta del texto, la última.
+                     5 → la cintura en dos tramos, cortada en el cambio, con la diferencia desde ahí (−1,1) y la nota
+                        «Cintura: cambia el protocolo, el método o la unidad el …; la diferencia va desde ahí.»; el
+                        abdominal, sin unir el hueco, con «—» en esa columna y un trazo de dos puntos; un hueco sin
+                        cambio no corta la diferencia (el tricipital, −1,0); con una sola toma después del cambio,
+                        «sin comparar» y «desde ahí hay una sola toma».
+                     6 → hasta cuatro columnas; cada tramo une columnas seguidas, con valor y comparables; ninguna
+                        diferencia cruza un cambio; una sola vara por unidad, nunca menos que su mínimo; cada columna
+                        es un punto o un hueco.
+                     7 → «Cintura −3,2 cm · pliegue abdominal −2,5 mm»; «+0,4 kg» y «sin cambio»; sin «%», «bien»,
+                        «mal», «normal», «ideal», «mejor» ni «peor», y nada de las listas de Nutrición y Antropometría.
+NEGATIVE_ASSERTIONS  La línea nunca une dos tomas no comparables ni pasa por encima de una toma sin la medida; la
+                     diferencia nunca cruza un cambio; dos filas de la misma unidad nunca tienen varas distintas.
+                     Mutaciones verificadas el 2026-11-07: cada fila con su propia vara, fallan los pasos 3, 4 y 6; la
+                     línea que une columnas no comparables, fallan los pasos 5 y 6; la línea por encima de un hueco,
+                     falla el paso 5; la diferencia que cruza el cambio, fallan los pasos 5 y 6.
+AUTOMATION           apps/web/test/evolucion-de-las-tomas.test.mjs («TEST-TAG-036 · …», siete casos), en
+                     `npm run test -w @be/web`; T13 recorre los textos de la pieza con los de la ficha
+ENVIRONMENT          CI (verificar · typecheck · unit · build · audit) y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, el Resumen de Diego Sosa, Federico
+                     Álvarez y Héctor Funes vistos por Sofía Paz, con la tarjeta de Antropometría abierta
+                     (`<página>-antropometria-<ancho>.png`) y, en mediciones.json, `evolucion` (cuántas tomas, qué
+                     pares y el renglón plegado) y `antropometriaAbierta` (el alto de la tarjeta abierta y las filas
+                     dibujadas); las peticiones al abrir, las de la tabla de TA-30
 ```
 
 ---
