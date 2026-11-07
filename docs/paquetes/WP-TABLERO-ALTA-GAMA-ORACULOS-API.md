@@ -7,12 +7,14 @@
 >
 > **Qué no es esto.** No modifica el 11A, que está protegido por `docs/MANIFEST.sha256`.
 >
-> **De dónde sale cada oráculo.** De DL-163 (`docs/DEUDA_LEGAJO.md`, D-6 y D-21), del paquete (§3, §4 y §6) y del 09
-> (v0.11 §14, la cola de revisiones). Un oráculo dice qué hay que observar para aceptar la prueba. No inventa la regla:
-> la lee.
+> **De dónde sale cada oráculo.** De DL-163 (`docs/DEUDA_LEGAJO.md`, D-6, D-13 ampliada y D-21), del paquete (§3, §4 y
+> §6) y del 09 (v0.11 §14, la cola de revisiones). Un oráculo dice qué hay que observar para aceptar la prueba. No
+> inventa la regla: la lee.
 >
-> **Estado.** Escritos: TEST-TAG-011 (TB-13), TEST-TAG-012 (TB-14) y TEST-TAG-029 (TB-47). Los demás de la rama se
-> escriben con su parte.
+> **Estado.** Escritos: TEST-TAG-011 (TB-13), TEST-TAG-012 (TB-14), TEST-TAG-029 (TB-47) y, con D-13 ampliada por
+> Dirección el 2026-11-07, TEST-TAG-037 (TB-52 y TB-55), TEST-TAG-038 (TB-53), la parte de la API de TEST-TAG-039 (TB-54,
+> que es sobre todo del website) y TEST-TAG-040 (TB-56). Esos cuatro se escribieron antes del código (39f2e46); sus
+> mutaciones del dominio se verificaron después. Los demás de la rama se escriben con su parte.
 
 ---
 
@@ -222,10 +224,12 @@ EXPECTED             1 → API-RES-04 trae la otra área con quién la lleva y `
                         lleva esa área»).
 NEGATIVE_ASSERTIONS  El 404 de cada corte es idéntico al de lo inexistente. Ninguna respuesta trae puntajes, «%» ni
                      términos que califiquen (PUNTAJE_PROHIBIDO). Lo que leen las APK instaladas no cambia
-                     (TEST-TAG-030). Mutaciones a verificar en el dominio: sacar de la matriz la exclusión del área que
-                     el receptor ya lleva, dejar que un renglón de «resumen» cuente como «resumen y plan», no ver como
-                     ampliación una subida de nivel, o contar un registro anulado en lo avanzado, hacen fallar sus
-                     casos. En integración, la mutación es no exigir el nivel en API-RES-06 (el paso 2 da 200).
+                     (TEST-TAG-030). Mutaciones verificadas en el dominio (sobre `dist`, el 2026-11-07): sacar de la
+                     matriz la exclusión del área que el receptor ya lleva (fallan dos casos), dejar que un renglón de
+                     «resumen» cuente como «resumen y plan», no ver como ampliación una subida de nivel y contar lo
+                     registrado antes de la activación hacen fallar sus casos. En integración, la mutación es no
+                     exigir el nivel en API-RES-06 (el paso 2 daría 200): está escrita, no se corrió (la CI corre la
+                     prueba sin mutar).
 AUTOMATION           packages/domain/src/resumenes-compartidos.test.ts («TEST-TAG-037 · …»), en
                      `npm test -w @be/domain`; test/integration/resumenes-compartidos.int-spec.ts («TEST-TAG-037 · …»);
                      test/integration/contrato.int-spec.ts (TEST-CT de la familia RES)
@@ -273,7 +277,8 @@ EXPECTED             1 → 201, con la referencia `NUTRITION_PLAN_VERSION` y su 
                      8 → la base la rechaza.
 NEGATIVE_ASSERTIONS  API-CRD-01 no cambia de forma: el cuerpo que se acepta y la respuesta son los del 09. El texto de
                      la nota no llega a la novedad ni al aviso (CRD-D6). Mutación en integración: aceptar la cita sin
-                     mirar la autorización (el paso 3 da 201).
+                     mirar la autorización (el paso 3 daría 201); escrita, no se corrió (la CI corre la prueba sin
+                     mutar). El paso 8 prueba la guarda de la base por su cuenta.
 AUTOMATION           test/integration/notas-de-coordinacion.int-spec.ts («TEST-TAG-038 · …»);
                      test/integration/lecturas-de-las-apk.int-spec.ts (la nota con la cita, leída por la APK)
 ENVIRONMENT          CI (PostgreSQL 16 en Testcontainers)
@@ -354,9 +359,9 @@ EXPECTED             1 → 201 con `status: PENDING`; la repetición, la misma r
                         422 `SUMMARY_RECIPIENT_NOT_AVAILABLE`.
                      8 → la base rechaza cada una.
 NEGATIVE_ASSERTIONS  La novedad no trae nada del plan (ni ids de versión ni contenido) y el aviso push es el genérico de
-                     siempre (`textoDelAvisoPush`). Mutaciones a verificar en el dominio: contar los 7 días desde la
-                     respuesta y no desde el pedido, dejar pedir a quien ya lo ve, o sacar el tipo de
-                     `TIPOS_DE_NOVEDAD_IMPORTANTES`, hacen fallar sus casos.
+                     siempre (`textoDelAvisoPush`). Mutaciones verificadas en el dominio (sobre `dist`, el 2026-11-07):
+                     contar los 7 días desde ahora y no desde el último pedido, dejar pedir a quien ya lo ve y sacar
+                     el tipo de `TIPOS_DE_NOVEDAD_IMPORTANTES` hacen fallar sus casos.
 AUTOMATION           packages/domain/src/resumenes-compartidos.test.ts («TEST-TAG-040 · …»);
                      test/integration/resumenes-compartidos.int-spec.ts («TEST-TAG-040 · …»);
                      test/integration/contrato.int-spec.ts (TEST-CT de la familia RES)
