@@ -969,6 +969,10 @@ Lo que salió del análisis de los flujos del profesional (`docs/ux/ANALISIS-ESP
 
 Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Inicio y las reglas de Atrás, está en
 [INICIO-Y-NAVEGACION.md](INICIO-Y-NAVEGACION.md).
+
+*(2026-11-07: DL-166 cambia el quinto destino, «Información», por Perfil, y saca de la cabecera el menú y el avatar.
+Durante la sesión, la fila de acciones y la navegación van fijas. Está decidido y sin implementar
+(`docs/paquetes/WP-APP-VUELTA-DE-ROSCA.md`). Hasta que se programe, rige lo de abajo.)*
 - **Barra inferior:** una cápsula flotante con cinco destinos, Inicio, Nutrición, Entrenamiento, Evolución e Información
   (`barra-de-zonas.tsx`).
   - Cada destino lleva texto **e** ícono, mide 56 dp de alto y al menos 48 de ancho, y tiene rol de pestaña con su estado
@@ -1227,6 +1231,28 @@ Además de los de I.4:
   - Un token guardado no es una sesión autorizada, y no se promete recordar una sesión que no se pudo guardar: Cuenta
     dice si quedó guardada.
 
+### III.7 Desplegables de la APK
+
+Vale desde el 2026-11-07, por decisión de Dirección (PV-4; DL-166). Es una regla fija y no se decide pantalla por
+pantalla.
+- **Se pliega lo que explica:** el para qué, qué incluye, la preparación, las cantidades en detalle y cómo funciona
+  algo.
+- **Nunca se pliega lo que hace falta para decidir:** el estado, la fecha, quién y si se puede responder. Si una
+  persona necesita un dato para elegir qué tocar, ese dato está a la vista.
+- **La pantalla lleva a la acción, y la acción tiene el detalle.** Primero va lo que la mayoría necesita para actuar, y
+  el resto queda a un toque, sin esconderlo. Es la revelación progresiva: «Comí esta opción» registra con las porciones
+  del plan, y quien quiere informar gramos los informa.
+- **El desplegable dice qué guarda:** su título nombra el contenido («Para qué lo pide», «Qué incluye», «6 ejercicios ·
+  18 series»), no «Más información».
+- **TalkBack** lo anuncia como botón, con su estado: «contraído» o «expandido». Lo plegado se puede leer entero al
+  abrirlo.
+- **Abrir un desplegable no escribe nada** y no mueve lo que está arriba de él.
+- **Un texto que exige el legajo** no se pliega si se lee antes de actuar (IV.1). Lo que una decisión pide decir una
+  vez (por ejemplo, «Lo que respondas queda como declarado por vos», DL-165 D-2) se sigue diciendo una vez.
+
+Las pantallas de la APK se adaptan a esta regla con WP-APP-VUELTA-DE-ROSCA. Cada pantalla nueva o cambiada la cumple
+desde ahora.
+
 ---
 
 ## Parte IV · Verificación y lista de control
@@ -1272,7 +1298,10 @@ Se copia en la descripción del PR y se marca. Se marcan los puntos generales y 
 
 **APK**
 - [ ] Funciona en 360 dp sin desplazamiento horizontal, y con la letra al máximo.
-- [ ] No agrega accesos fuera de la barra, el menú auxiliar y Cuenta.
+- [ ] No agrega accesos fuera de la barra, el menú auxiliar y Cuenta. (Con DL-166, cuando se programe: fuera de la
+  barra, Perfil y los ajustes contextuales.)
+- [ ] Lo plegado explica, y lo que hace falta para decidir (estado, fecha, quién y si se puede responder) está a la
+  vista (III.7).
 
 **Verificación**
 - [ ] Se miró la pantalla de verdad: captura del website con datos sintéticos, o maqueta y después teléfono, para la APK.

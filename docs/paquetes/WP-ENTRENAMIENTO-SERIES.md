@@ -354,9 +354,20 @@ Las respuestas que lee la APK 0.13.2 no cambian (§8).
   - No se ofrece «Realizada sin detalle»: el dominio exige carga o repeticiones para confirmar (`SET_WITHOUT_DATA`).
   - Nunca se fabrica una serie.
   - Un doble toque es una sola operación.
-- **Guardar una serie no inicia un descanso.**
+- **Guardar una serie no inicia un descanso.** *(Modificado por DL-166; ver la nota de §7.4.)*
 
 ### 7.4 Descanso, serie cronometrada y pausa
+
+> **Modificado por DL-166** (Dirección, 2026-11-07; `WP-APP-VUELTA-DE-ROSCA.md`), decidido y **sin implementar**.
+> - **PV-7:** con el ajuste automático, que viene de fábrica, guardar la serie inicia el descanso. Una barra llega al
+>   100 % en el recomendado y reemplaza al aro.
+> - **PV-8:** con «Arranca sola», al 100 % el descanso se cierra solo y arranca la serie siguiente, marcada como
+>   automática (con un campo nuevo, servidor y base). De fábrica queda «La inicio yo», y entonces llegar al 100 % no
+>   termina nada.
+> - **PV-12:** «Empezar serie N» es la acción compuesta de abajo, en la fila fija de la sesión.
+>
+> El texto de esta sección y la última línea de §7.3 quedan como registro histórico de lo programado. Rigen hasta que
+> se programen AV-10, AV-14 y AV-15 de ese paquete.
 - **Descanso.**
   - Al pie: «Descanso · Recomendado tras la serie N: 01:30» y «Iniciar descanso».
   - Mientras corre: «Descanso · Serie N», el conteo ascendente, «Recomendado: 01:30», «Finalizar descanso» y «Al
