@@ -7,7 +7,8 @@
 > las últimas tomas en el Resumen) y **TB-51** (la barra de la composición en kilos con el porcentaje al lado), que
 > modifica D-11 (§3.3), y pidió no integrar la etapa A hasta sumarlas. El mismo día amplió D-13: el plan del otro
 > profesional, completo y de solo lectura, comentarios entre profesionales y un panel «Otras áreas» al planificar y al
-> revisar (§3.4, TB-52 a TB-55). Por ahora solo están declaradas: no se programaron.
+> revisar (§3.4, TB-52 a TB-56). Ese mismo día respondió las decisiones: la tabla del plan completo es «todos con
+> todos, con permiso» (TA-87) y el profesional puede pedir ver el plan del otro (TA-95, TB-56).
 >
 > **Encargo** (Dirección, del 2026-11-03 al 2026-11-05):
 > - «En la página inicial del profesional en el inicio donde hace el resumen todavía lo veo muy soso»; «los puntos de
@@ -234,6 +235,7 @@ que cambian la forma de un contrato se ratifican antes de integrar.
 | TB-52 | El plan del otro profesional, completo y de solo lectura | A, en la rama de la API (#243) y en el website | D-13, ampliada por Dirección el 2026-11-07 (§3.4) | Sí | Con la autorización de la persona en el nivel «resumen y plan» para ese profesional y esa área, y con la fila de la matriz (§3.1), API-RES-06 devuelve la instantánea de la versión activada vigente del área (UC-I04), con su objetivo vigente, su autor, desde cuándo rige, la próxima revisión acordada (solo la fecha) y lo avanzado en cifras que la matriz admite. Nunca un borrador, una versión anterior, una revisión, una nota interna ni una evaluación. En la ficha, «Ver el plan completo» abre una vista de solo lectura, con «Solo lectura · lo comparte la persona» y el autor. Quien lleva el área ve con quién se comparte y en qué nivel (API-RES-07). Sin autorización, el 404 de lo inexistente. Las lecturas quedan en la auditoría que ve la persona. TEST-TAG-037 |
 | TB-53 | Comentar con las notas de coordinación | A, en la rama de la API (#243) y en el website | D-13, ampliada; DL-140 (CRD-D5, ampliada) | Sí, una regla | Desde el plan compartido y desde el panel, «Dejar una nota a …» abre el redactor de siempre (API-CRD-01) con quien lleva el área como destinatario y la finalidad sin elegir. La nota puede citar la versión del plan compartido que el autor ve por API-RES-06 en ese momento: es el tipo de referencia que ya existe (`TRAINING_PLAN_VERSION` o `NUTRITION_PLAN_VERSION`), con la misma forma, así que lo que leen las APK no cambia (DL-152). La nota no da escritura ni cambia el plan, la lee la persona (CRD-D2) y el redactor lo dice. Sin hilos en esta parte. TEST-TAG-038 |
 | TB-54 | El panel «Otras áreas» al planificar y al revisar | A, en el website | D-13, ampliada | No | En los editores de Nutrición y de Entrenamiento y en el paso 1 de la revisión, un panel plegado «Otras áreas · lo comparte la persona», por área compartida: quién la lleva, el objetivo, el plan vigente en una línea, lo avanzado, «Ver el plan completo» (si el nivel lo permite), las últimas notas del equipo y «Dejar una nota a …». Se lee al abrirlo: abrir el editor o la revisión no suma peticiones (TEST-TAG-032). Sin nada compartido no hay panel, candado ni aviso (§11-bis.7). Nada escribe, salvo la nota. TEST-TAG-039 |
+| TB-56 | Pedir ver el plan del otro | A, en la rama de la API (#243) y en el website; en la APK, B | D-13, ampliada; TA-95, decidida por Dirección el 2026-11-07; el mecanismo de DL-165 D-17 | Sí | Desde el panel «Otras áreas», «Pedir ver su plan» (API-RES-08): a la persona le llega una novedad «Importante» que dice quién pide, desde qué área y para qué, y que es su decisión. La persona responde «Sí, que lo vea» o «No, por ahora» (API-RES-09 y API-RES-10) y puede cambiarlo siempre. Uno por vez y, sin respuesta o con «No, por ahora», se puede volver a pedir a los 7 días, como los hábitos. Compartir desde «Quién ve qué» acepta el pedido que esperaba. El pedido no concede nada. TEST-TAG-040 |
 | TB-55 | El permiso de la persona, por área y por nivel | A, en la rama de la API (#243); en la APK, B | D-13, ampliada; 08 C-12 | Sí | API-RES-02 suma el nivel («resumen» o «resumen y plan») por profesional y por área, cada uno con su versión del texto; pasar de «resumen» a «resumen y plan» pide aceptar de nuevo, y bajar o retirar corta en el momento. «Quién ve qué» (TB-28) muestra el nivel, con «Ahora no» tan visible como compartir y nada elegido. Los textos, marcados como propuesta pendiente de validación jurídica. Con personas reales, después de la revisión legal (§9). Las APK instaladas no cambian lo que leen |
 
 ### 3.1 La matriz por pertinencia (D-13)
@@ -254,12 +256,14 @@ nutricionista es un perfil sanitario y puede recibir más de Entrenamiento; el e
 | Antropometría | Los perímetros | Sí | Brazo y muslo | — |
 | Nutrición | El objetivo, lo registrado por día o por semana y las comidas | — | No | No |
 | Nutrición | Los hitos: plan vigente desde, la última revisión y la próxima | — | Sí, sin números | Sí, sin números |
-| Entrenamiento | **El plan completo, de solo lectura** (D-13, ampliada el 2026-11-07; TB-52): la versión activada vigente, el objetivo y lo avanzado | Sí, con el nivel «resumen y plan» | — | A decidir (TA-87) |
-| Nutrición | **El plan completo, de solo lectura** (D-13, ampliada; TB-52) | — | No, hasta la revisión legal (TA-87) | No |
+| Entrenamiento | **El plan completo, de solo lectura** (D-13, ampliada el 2026-11-07; TB-52): la versión activada vigente, el objetivo y lo avanzado | Sí, con el nivel «resumen y plan» | — | Sí, con el nivel «resumen y plan» |
+| Nutrición | **El plan completo, de solo lectura** (D-13, ampliada; TB-52) | — | Sí, con el nivel «resumen y plan» | Sí, con el nivel «resumen y plan» |
 
 Un caso queda en no hasta que lo valide lo legal: el tipo de objetivo nutricional, sin números, para el entrenador.
-Nunca viajan los borradores, las notas internas ni las versiones anteriores. El plan completo del otro viaja solo con
-la fila de arriba y el nivel «resumen y plan» que la persona elige (D-13, ampliada por Dirección el 2026-11-07). Ni el
+Nunca viajan los borradores, las notas internas ni las versiones anteriores. El plan completo viaja «todos con todos,
+con permiso» (Dirección, 2026-11-07, TA-87): cada área ve el plan de las otras dos, siempre con el nivel «resumen y plan»
+que la persona elige para ese profesional. La revisión legal es una condición antes de datos reales, no antes de
+programar. Ni el
 resumen ni el plan tienen un botón que escriba, salvo «Dejar una nota», ni entran como evidencia de una revisión propia.
 
 ### 3.2 Lo que otro paquete mandó acá y no tiene parte todavía
@@ -319,6 +323,17 @@ plan completo»; ahora entra, siempre con el permiso de la persona.
 
 Las decisiones son TA-85 a TA-95 (§10.1), a ratificar.
 
+**Lo que respondió Dirección el 2026-11-07:**
+- **TA-87: «todos con todos, con permiso».** La tabla del plan completo es simétrica: cada área puede ver el plan de las
+  otras dos, siempre con el permiso de la persona, por profesional y por nivel. La revisión legal (§9) es una condición
+  antes de datos reales, no antes de programar: en `test` hay solo datos sintéticos. Las dos preguntas legales siguen.
+- **TA-95: sí, como en los hábitos.** El profesional puede pedir ver el plan del otro (TB-56): una novedad «Importante»
+  con quién y para qué; la persona elige sí o no, y puede cambiarlo siempre. Reusa el pedido de los hábitos (DL-165 D-17),
+  con su reenvío a los 7 días.
+- **TA-79: ratificada** (la barra con los dos métodos escritos).
+- Las demás (TA-73 a TA-78, TA-80 a TA-86 y TA-88 a TA-94) quedan con la recomendación, a ratificar.
+- Pidió programar TB-52 a TB-56: la API en la rama del #243 y el website en esta.
+
 ## 4. Las operaciones nuevas
 
 Lo nuevo va en operaciones nuevas (DL-137 D-7), y nada de lo que leen las APK instaladas cambia de forma (DL-152).
@@ -370,6 +385,9 @@ con lo que registra la persona.
 | API-RES-05 | `GET /advisees/{adviseeId}/shared-summaries/{area}/series` | El profesional | Las series de un resumen para «Analizar», en las fechas que se piden | TB-29 |
 | API-RES-06 | `GET /advisees/{adviseeId}/shared-summaries/{area}/plan` | El profesional | El plan vigente del área compartida, con el nivel «resumen y plan»: la instantánea de la versión activada (la forma de la lectura del plan de esa área), el objetivo vigente, el autor, desde cuándo rige, la fecha de la próxima revisión y lo avanzado que admite la matriz. Sin plan vigente, `{ data: null }` | TB-52 y TB-54 |
 | API-RES-07 | `GET /advisees/{adviseeId}/shared-summaries/outgoing` | Quien lleva el área | Con quién se comparte lo de su área con esa persona, en qué nivel y desde cuándo. Sin nada, la lista vacía | TB-52 |
+| API-RES-08 | `POST /advisees/{adviseeId}/shared-summaries/access-requests` | El profesional | Pedir ver el plan de un área que no lleva, desde su área, con `Idempotency-Key`. Uno por vez; otro, a los 7 días del último sin respuesta o con «No, por ahora» | TB-56 |
+| API-RES-09 | `GET /me/summary-sharing/access-requests` | La persona | Los pedidos que esperan su respuesta, con quién pide, desde qué área y qué área | TB-56 |
+| API-RES-10 | `POST /me/summary-sharing/access-requests/{accessRequestId}/answer` | La persona | «Sí, que lo vea» (comparte el área en el nivel «resumen y plan», con el texto que acepta) o «No, por ahora» | TB-56 |
 
 El profesional no lo pide desde el escritorio: el 08 no admite autorizaciones que un profesional pida y obtenga dentro
 del producto (§11-bis.2). Las lecturas piden el vínculo vigente (ni en pausa ni terminado) y quedan en la auditoría que
@@ -591,6 +609,9 @@ tiene su mutación, como E-06 y E-16 de WP-ESCRITORIO-AMABLE.
 - **TEST-TAG-039 · El panel «Otras áreas» aparece solo con algo compartido** (D-13, ampliada; TB-54). Sin nada
   compartido, no hay panel, candado ni aviso; abrir el editor o la revisión no suma peticiones (se lee al abrir el panel);
   nada del panel escribe salvo «Dejar una nota»; lo avanzado va en cifras, sin «%» ni juicios (T13).
+- **TEST-TAG-040 · Pedir no concede nada** (TA-95; TB-56; integración). Un pedido no abre el plan hasta que la persona
+  dice que sí; uno por vez y otro recién a los 7 días; «No, por ahora» no comparte; compartir desde «Quién ve qué» acepta
+  el pedido que esperaba; con el vínculo en pausa o terminado, no se pide ni se muestra; la novedad no lleva nada del plan.
 - **TEST-TAG-036 · La evolución de las últimas tomas ubica en pares y no mezcla lo que no se compara** (pedido de
   Dirección del 2026-11-07; TB-50). Se suma con TB-50. Las columnas son las últimas tomas con medidas, alineadas en todas
   las filas; kilos con kilos (la misma vara por unidad, nunca menos que su mínimo); la línea no cruza un cambio de
@@ -677,8 +698,8 @@ Desde el sí al alcance hasta que la escuela cierre su evaluación sobre `test`.
     Las partes que tocan la API, en su rama.
 14. **Lo que sumó Dirección el 2026-11-07 (§3.3), antes de integrar:** TB-51 (la barra en kilos con el porcentaje) y
     TB-50 (la evolución de las últimas tomas), en la tarjeta de Antropometría, que ya está.
-15. **D-13, ampliada el 2026-11-07 (§3.4), solo declarada:** TB-55 y TB-52 en la rama de la API del #243, con TB-27, que
-    ya las pedía; después, TB-53 y TB-54 en el website. Con personas reales, después de la revisión legal.
+15. **D-13, ampliada el 2026-11-07 (§3.4):** TB-55, TB-52, TB-56 y la regla de TB-53 en la rama de la API del #243;
+    después, TB-52 a TB-54 y TB-56 en el website. Con personas reales, después de la revisión legal.
 
 **El criterio de corte:** una parte hoja (TB-07, TB-08, TB-12, TB-16, TB-22 y TB-49, y cualquier otra en la que no se apoye
 ninguna) sale de la pila sin frenar a las demás si su recaptura muestra una regresión. Si falla una base (TB-01, TB-02 o
@@ -728,8 +749,9 @@ Lo de Nutrición (TB-39 a TB-42 y la estimación de TB-38) sirve para el servici
   una persona) y el gate del 08 §42. Si hace falta la conformidad de quien lleva el área, es parte de VJR-5.
 - **D-13, ampliada (TB-52 a TB-55), muestra el plan completo de otra área.** Además de lo de arriba, dos preguntas para
   la revisión legal: si quien lleva el área tiene que dar su conformidad para que su plan se vea (VJR-5), y si el plan de
-  Nutrición puede llegar al entrenador, un perfil no sanitario (VJR-1 y VJR-4; hasta entonces, no, TA-87). El texto de
-  cada nivel va al legajo legal, como el de los hábitos.
+  Nutrición puede llegar al entrenador, un perfil no sanitario (VJR-1 y VJR-4). Dirección eligió «todos con todos, con
+  permiso» (TA-87): la revisión es condición antes de datos reales, no antes de programar. El texto de cada nivel y el del
+  pedido van al legajo legal, como los de los hábitos.
 - **El control semanal de D-16 es salud.** Sus preguntas, mínimas y sin puntaje, las revisan el abogado y la validación
   disciplinar (VD-1 del 08), en LC-41 del plan de datos reales. Espera esa revisión antes de personas reales.
 - **El texto de cada acto** (compartir un resumen; la foto), su base, la revocación y lo que se informa van al legajo
@@ -1368,7 +1390,7 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   unidad al lado; la cifra de la última toma en la tinta del texto y las demás en la tenue; la marca, con el estado del
   dato (la suma de 6, calculada, con su punto adentro). Ningún color por el valor ni por el sentido del cambio. *Otra
   opción:* las dos filas del mismo color, que obliga a leer el nombre para saber cuál es cuál.
-- **TA-79 · Cómo se reparte el peso, de lo que más dice a lo que menos.** Los cuatro componentes de De Rose y Guimarães
+- **TA-79 · Cómo se reparte el peso, de lo que más dice a lo que menos.** **Ratificada por Dirección el 2026-11-07.** Los cuatro componentes de De Rose y Guimarães
   primero: la grasa de Faulkner (la que la ecuación resta), la masa muscular y el resto, que es la ósea de Rocha y la
   residual de Würch, con sus kilos si la toma los tiene. Después, el músculo de Lee: la grasa del método de dos
   compartimentos de la toma, la masa muscular esquelética de Lee (la de perímetros antes que la de peso y talla) y el
@@ -1419,7 +1441,9 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   «cumplimiento». No viajan los borradores, las versiones anteriores, el contenido de las revisiones, las notas internas
   ni las evaluaciones. *Otra opción:* sumar las versiones anteriores, que muestra cómo cambió el plan pero amplía lo que
   se comparte más allá de lo que Dirección pidió.
-- **TA-87 · La matriz del plan completo, asimétrica como la del resumen.** Entrenamiento para Nutrición: sí, con el
+- **TA-87 · La matriz del plan completo.** **Decidida por Dirección el 2026-11-07: «todos con todos, con permiso»**; cada
+  área ve el plan de las otras dos con el nivel «resumen y plan». Lo que sigue era la recomendación, asimétrica como la del
+  resumen, y queda como registro. Entrenamiento para Nutrición: sí, con el
   nivel «resumen y plan». Entrenamiento para Antropometría: a decidir por Dirección (se recomienda no, por pertinencia).
   Nutrición para Entrenamiento: no, hasta la revisión legal; el entrenador es un perfil no sanitario (08 §11-bis.2).
   Nutrición para Antropometría: no. Sin fila, es no. *Otra opción:* simétrica, que Dirección puede elegir después de la
@@ -1453,7 +1477,8 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
 - **TA-94 · Dónde va cada cosa.** La API (RES-02 con el nivel, RES-06, RES-07 y la regla de CRD-D5), en la rama del
   #243, sin tocarla todavía. El website (la vista del plan, el panel y «Dejar una nota»), en la rama de la etapa A. La
   APK («Quién ve qué» con el nivel), en una candidata de la etapa B.
-- **TA-95 · El profesional no pide ver el plan, por ahora.** Los hábitos ya tienen «Pedir acceso a sus hábitos» (DL-165
+- **TA-95 · Pedir ver el plan.** **Decidida por Dirección el 2026-11-07: sí, como en los hábitos** (TB-56). Lo que sigue
+  era la recomendación, que no se tomó, y queda como registro. Los hábitos ya tienen «Pedir acceso a sus hábitos» (DL-165
   D-17, API-HBT-06), un precedente que decidió Dirección. Para el plan se recomienda no sumarlo todavía (08 §11-bis.2):
   lo decide la persona desde su app. *Otra opción:* «Pedir ver su plan», con la misma mecánica que los hábitos, si
   Dirección lo quiere.
