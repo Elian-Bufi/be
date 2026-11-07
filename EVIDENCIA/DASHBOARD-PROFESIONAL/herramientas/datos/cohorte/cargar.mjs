@@ -659,7 +659,8 @@ async function compartirEntreAreas() {
     superficie: 'APK',
     cuerpo: {
       expectedVersion: actual.data.sharing.version,
-      textVersionId: actual.data.text.id,
+      // Un texto por nivel (Dirección, 2026-11-07): con «resumen y plan», el de ese nivel; el de «resumen» también se acepta.
+      acceptedTexts: { summary: actual.data.texts.summary.id, summaryAndPlan: actual.data.texts.summaryAndPlan.id },
       grants: [
         { professionalId: idDe('PRO_N'), area: 'ENTRENAMIENTO', level: 'SUMMARY_AND_PLAN' },
         { professionalId: idDe('PRO_T'), area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' },

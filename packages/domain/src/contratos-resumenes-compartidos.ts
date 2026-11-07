@@ -62,6 +62,18 @@ export const AreaCompartidaSchema = z.strictObject({
 });
 export type AreaCompartida = z.infer<typeof AreaCompartidaSchema>;
 
+/**
+ * Un texto por nivel (Dirección, 2026-11-07): el id de la versión del texto de «resumen» y el de «resumen y plan». En el
+ * estado, los que la versión vigente tiene aceptados; en API-RES-02, los que la pantalla mostró y la persona acepta ahora
+ * (`null` si no acepta ese). Dar un permiso nuevo de «resumen» pide el de «resumen»; dar o subir a «resumen y plan», el de
+ * «resumen y plan»; bajar o retirar no pide ninguno.
+ */
+export const TextosAceptadosSchema = z.strictObject({
+  summary: IdOpaco.nullable(),
+  summaryAndPlan: IdOpaco.nullable(),
+});
+export type TextosAceptados = z.infer<typeof TextosAceptadosSchema>;
+
 /** Lo que la autorización es hoy: como la de los hábitos (API-HBT), sin un booleano. */
 export const EstadoDeCompartirResumenesSchema = z.enum(['NOT_GIVEN', 'ACTIVE', 'WITHDRAWN']);
 export type EstadoDeCompartirResumenes = z.infer<typeof EstadoDeCompartirResumenesSchema>;
@@ -72,7 +84,8 @@ export const CompartirResumenesSchema = z.strictObject({
   version: TokenDeVersionSchema.nullable(),
   activeSince: Instante.nullable(),
   withdrawnAt: Instante.nullable(),
-  acceptedTextVersionId: IdOpaco.nullable(),
+  /** Los textos que la versión vigente tiene aceptados, por nivel; `null` si no está activa. */
+  acceptedTexts: TextosAceptadosSchema.nullable(),
 });
 export type CompartirResumenes = z.infer<typeof CompartirResumenesSchema>;
 
@@ -87,7 +100,7 @@ export const ProfesionalParaResumenesSchema = z.strictObject({
 });
 export type ProfesionalParaResumenes = z.infer<typeof ProfesionalParaResumenesSchema>;
 
-/** El texto del acto «Compartir con mis profesionales lo de otras áreas», con su aprobación (`PENDING_APPROVAL`). */
+/** El texto del acto de un nivel, con su aprobación (`PENDING_APPROVAL`): uno por nivel (Dirección, 2026-11-07). */
 export const TextoDeCompartirResumenesSchema = z.strictObject({
   id: IdOpaco,
   title: z.string(),
@@ -118,8 +131,8 @@ export const MisResumenesCompartidosResponseSchema = z.strictObject({
   data: z.strictObject({
     sharing: CompartirResumenesSchema,
     professionals: z.array(ProfesionalParaResumenesSchema),
-    /** El texto vigente del acto: el que se muestra al compartir. */
-    text: TextoDeCompartirResumenesSchema,
+    /** Los textos vigentes del acto, uno por nivel: los que se muestran al compartir. */
+    texts: z.strictObject({ summary: TextoDeCompartirResumenesSchema, summaryAndPlan: TextoDeCompartirResumenesSchema }),
     /** Las últimas lecturas de lo compartido, de la más nueva a la más vieja (hasta 50). */
     accesses: z.array(AccesoALoCompartidoSchema),
   }),
@@ -138,8 +151,12 @@ export const CompartirResumenesRequestSchema = z
   .strictObject({
     /** El token de la última versión que se vio; `null` si nunca la dio. */
     expectedVersion: TokenDeVersionSchema.nullable(),
-    /** La versión del texto que se mostró: la mostrada es la aceptada (08 §12.2). Subir de nivel la pide de nuevo. */
-    textVersionId: IdOpaco,
+    /**
+     * Los textos que se mostraron y la persona acepta ahora, por nivel (la mostrada es la aceptada, 08 §12.2). Un permiso
+     * nuevo o una subida de nivel pide el vigente de ese nivel (si falta, 422 `SHARING_TEXT_REQUIRED`; si es otro, 409
+     * `CONSENT_VERSION_STALE`); bajar o sacar a alguien no pide ninguno.
+     */
+    acceptedTexts: TextosAceptadosSchema,
     /** La lista completa: lo que no está deja de compartirse. Al menos uno; para no compartir nada, API-RES-03. */
     grants: z.array(PermisoDeResumenSchema).min(1).max(60),
   })
@@ -277,7 +294,8 @@ export type PedidosDePlanResponse = z.infer<typeof PedidosDePlanResponseSchema>;
 // ─── API-RES-10 ─────────────────────────────────────────────────────────────────────────────────
 /**
  * «Sí, que lo vea» (`SHARE`: comparte esa área con ese profesional en el nivel «resumen y plan», con la versión de la
- * autorización que se vio y el texto que se mostró) o «No, por ahora» (`NOT_NOW`, sin `sharing`). Las dos, con el mismo peso.
+ * autorización que se vio y el texto de «resumen y plan» que se mostró) o «No, por ahora» (`NOT_NOW`, sin `sharing`).
+ * Las dos, con el mismo peso.
  */
 export const ResponderPedidoDePlanRequestSchema = z
   .strictObject({
