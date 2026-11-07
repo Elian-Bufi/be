@@ -13,12 +13,14 @@
  * - D-10: una de formato 3 solo se le sirve a quien declara `forms-format-3`; para los demás, el 404 de lo inexistente;
  * - FRM-01 lista las dos con su versión de formato 3 como última; FRM-02 no sirve ninguna versión V2 (D-5); la v1 de
  *   Entrenamiento sigue legible, histórica;
- * - FRM-03: las anteriores ya no se piden (422 FORM_TEMPLATE_NOT_SELECTABLE, sin escribir nada); la vigente sí, con los
- *   seis códigos que precarga el escritorio (CONTEXTO_DE_ENTRENAMIENTO), y su Solicitud no la ven ni FRM-06 ni FRI-02 sin
- *   la capacidad; con la capacidad, FRI-02 la lista.
+ * - FRM-03: las anteriores ya no se piden (422 FORM_TEMPLATE_NOT_SELECTABLE, sin escribir nada); la vigente sí, completa,
+ *   como la pide el escritorio desde Entrenamiento (DL-165 D-29: todas sus preguntas menos el embarazo y, requeridas, las
+ *   que sugiere la plantilla), y su Solicitud no la ven ni FRM-06 ni FRI-02 sin la capacidad; con la capacidad, FRI-02 la
+ *   lista con eso.
  */
 import type { INestApplication } from '@nestjs/common';
 import {
+  camposEnOrden,
   CONTEXTO_DE_ENTRENAMIENTO,
   contenidoDePlantillaDeInicio,
   ListaDeSolicitudesPropiasV2ResponseSchema,
@@ -195,14 +197,21 @@ describe('DL-164 FI-02, DL-165 FR-06 y la ronda 2.1 (FR-12) · las plantillas de
     expect((v1.sections as { fields: { fieldCode: string }[] }[]).flatMap((x) => x.fields.map((f) => f.fieldCode))).toEqual([...CONTEXTO_DE_ENTRENAMIENTO.campos]);
   });
 
-  it('FRM-03: las anteriores ya no se piden (422, sin escribir nada); la v4 sí, con los seis códigos que precarga el escritorio, y su Solicitud la ve solo la app que lee el formato 3', async () => {
+  it('FRM-03: las anteriores ya no se piden (422, sin escribir nada); la v4 sí, completa, como la pide el escritorio desde Entrenamiento (DL-165 D-29), y su Solicitud la ve solo la app que lee el formato 3', async () => {
     const pro = await prepararProfesional(app, 'fi02-pedir', ['ENTRENAMIENTO']);
     const ase = await prepararAsesorado(app, 'fi02-pedir', { a3: true });
     await vinculoCompleto(app, pro, ase, 'ENTRENAMIENTO');
+    // D-29: lo que marca el cajón al llegar desde Entrenamiento, igual que desde «Más»: las preguntas que la plantilla trae
+    // pedidas (todas menos el embarazo, D-4), con la tabla de los días, y requeridas las que sugiere.
+    const enteras = camposEnOrden(ANTES_DE_ENTRENAR_V4.sections).filter((c) => c.requestedByDefault !== false);
+    const pedidas = enteras.map((c) => c.fieldCode);
+    const requeridas = enteras.filter((c) => c.requiredByDefault).map((c) => c.fieldCode);
+    expect(pedidas).toEqual(expect.arrayContaining([...CONTEXTO_DE_ENTRENAMIENTO.campos, 'trn_dias_y_horario']));
+    expect(requeridas).toEqual(expect.arrayContaining(['trn_dias_y_horario', 'trn_dias_por_semana']));
     const pedir = (templateVersionId: string) =>
       conSesion(app, pro.token)
         .post(`/api/v1/advisees/${ase.id}/form-requests`)
-        .send({ templateVersionId, purpose: 'Planificar tu entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: [...CONTEXTO_DE_ENTRENAMIENTO.campos], requiredFieldCodes: [...CONTEXTO_DE_ENTRENAMIENTO.requeridos] });
+        .send({ templateVersionId, purpose: 'Planificar tu entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: pedidas, requiredFieldCodes: requeridas });
     for (const historica of [VERSION_ENTRENAMIENTO_V1, VERSION_ENTRENAMIENTO_V2, VERSION_ENTRENAMIENTO_V3]) {
       const r = await pedir(historica).expect(422);
       expect(r.body.error.code).toBe('FORM_TEMPLATE_NOT_SELECTABLE');
@@ -216,6 +225,6 @@ describe('DL-164 FI-02, DL-165 FR-06 y la ronda 2.1 (FR-12) · las plantillas de
     const deLa020 = ListaDeSolicitudesPropiasV2ResponseSchema.parse((await fri(app, ase.token).bandeja().expect(200)).body).data;
     expect(deLa020.map((x) => x.formRequestId)).not.toContain(formRequestId);
     const bandeja = ListaDeSolicitudesPropiasV2ResponseSchema.parse((await fri(app, ase.token, CON_FORMATO_3).bandeja().expect(200)).body).data;
-    expect(bandeja.find((x) => x.formRequestId === formRequestId)).toMatchObject({ usesNewTypes: true, estimatedMinutes: null, status: 'PENDING', respondable: true, pendingProposal: null });
+    expect(bandeja.find((x) => x.formRequestId === formRequestId)).toMatchObject({ usesNewTypes: true, estimatedMinutes: null, status: 'PENDING', respondable: true, pendingProposal: null, requestedFieldCodes: pedidas, requiredFieldCodes: requeridas });
   });
 });

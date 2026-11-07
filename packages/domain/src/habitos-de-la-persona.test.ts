@@ -351,12 +351,14 @@ test('los contratos son estrictos: lo que ve el profesional no trae la historia 
 /**
  * DL-152 · hasta la 0.20.0-candidata.1 (versionCode 33) ninguna APK conoce API-HBT. La 0.21.0-candidata.1 (34) llama las de
  * la persona de la ronda 2 (01 a 04), con su forma congelada. Desde la ronda 2.1, una APK puede sumar las de la persona que
- * responden los pedidos de acceso (08 y 09), y nunca las del profesional (05 a 07), que son del website.
+ * responden los pedidos de acceso (08 y 09), y nunca las del profesional (05 a 07), que son del website. La
+ * 0.22.0-candidata.1 (35) es la primera que las suma: lee las seis.
  */
 const PRIMER_VERSION_CODE_CON_HBT = 34;
+const PRIMER_VERSION_CODE_CON_LOS_PEDIDOS = 35;
 const DE_LA_PERSONA = new Set(['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04', 'API-HBT-08', 'API-HBT-09']);
 
-test('DL-152 · las APK congeladas hasta la 0.20 no leen API-HBT; la 0.21 lee solo las de la persona (01 a 04), y ninguna lee las del profesional', () => {
+test('DL-152 · las APK congeladas hasta la 0.20 no leen API-HBT; la 0.21 lee solo las de la persona (01 a 04), la 0.22 suma 08 y 09, y ninguna lee las del profesional', () => {
   const carpeta = join(__dirname, '..', 'fixtures', 'lecturas-de-la-apk');
   for (const archivo of readdirSync(carpeta).filter((f) => f.endsWith('.json'))) {
     const congelado = JSON.parse(readFileSync(join(carpeta, archivo), 'utf8')) as { apk: { versionCode: number }; lecturas: Record<string, { ruta?: string }> };
@@ -369,6 +371,7 @@ test('DL-152 · las APK congeladas hasta la 0.20 no leen API-HBT; la 0.21 lee so
       assert.deepEqual(rutas, [], archivo);
     } else {
       if (congelado.apk.versionCode === PRIMER_VERSION_CODE_CON_HBT) assert.deepEqual(ids, ['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04'], archivo);
+      if (congelado.apk.versionCode === PRIMER_VERSION_CODE_CON_LOS_PEDIDOS) assert.deepEqual(ids, [...DE_LA_PERSONA], archivo);
       for (const id of ['API-HBT-01', 'API-HBT-02', 'API-HBT-03', 'API-HBT-04']) assert.ok(ids.includes(id), `${archivo}: ${id}`);
       assert.ok(ids.every((id) => DE_LA_PERSONA.has(id)), archivo);
       assert.ok(rutas.every((ruta) => ruta.startsWith('/me/habits')), archivo);

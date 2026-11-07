@@ -2,8 +2,8 @@
  * La lógica pura de los formularios V2 en el website (WP-FORMULARIOS-DE-INICIO, DL-164), sin React ni Next, para
  * probarla sola (`apps/web/test/formulario-de-inicio.test.mjs`):
  * - **«Pedir información»**: qué viene marcado al elegir una versión (todas pedidas; requeridas las que la plantilla
- *   sugiere), la precarga desde la evaluación de entrenamiento (DL-100), el área de donde se llegó y adónde se vuelve
- *   (FR-02), el «para qué» que sugiere cada formulario y cómo se dice cada tipo con sus opciones.
+ *   sugiere), igual desde «Más» que desde un área (DL-165 D-29); el área de donde se llegó, qué formulario precarga y
+ *   adónde se vuelve (DL-100, FR-02); el «para qué» que sugiere cada formulario y cómo se dice cada tipo con sus opciones.
  * - **«Cargar con la persona»** (FI-05): el estado del formulario es la lista de respuestas, en el orden del formulario y
  *   sin las de los campos que una condición ocultó; qué bloquea el envío (todo problema del dominio salvo un
  *   obligatorio sin responder, que la persona completa al confirmar) y qué se le dice al profesional junto a cada campo.
@@ -48,14 +48,6 @@ export function marcadoPorOmision(secciones: readonly SeccionDePlantillaV2[]): {
 /** DL-165 D-4 · la pregunta que la plantilla no trae pedida: en su fila se dice que se puede sumar. */
 export const noVienePedida = (campo: Pick<CampoDePlantillaV2, 'requestedByDefault'>): boolean => campo.requestedByDefault === false;
 
-/** PF-02 (DL-100): la precarga desde la evaluación de entrenamiento, solo con lo que la versión elegida realmente tiene. */
-export function precargaDeEntrenamiento(codigosDeLaVersion: readonly string[]): { readonly pedidas: readonly string[]; readonly requeridas: readonly string[] } {
-  return {
-    pedidas: CONTEXTO_DE_ENTRENAMIENTO.campos.filter((c) => codigosDeLaVersion.includes(c)),
-    requeridas: CONTEXTO_DE_ENTRENAMIENTO.requeridos.filter((c) => codigosDeLaVersion.includes(c)),
-  };
-}
-
 /**
  * PF-02 · de qué área se llegó a «Pedir información» (`volver=` en la dirección): el Resumen o el Plan de Entrenamiento
  * (DL-100, DL-145) o el Resumen de Nutrición (WP-FORMULARIOS-RONDA-2, FR-02). Otro valor no es un origen.
@@ -66,7 +58,11 @@ export function origenDelPedido(volver: string | null): OrigenDelPedido | null {
   return volver === 'entrenamiento' || volver === 'entrenamiento-plan' || volver === 'nutricion' ? volver : null;
 }
 
-/** El formulario que precarga cada origen, si la dirección lo pide (`plantilla=`), y el área del pedido. */
+/**
+ * El formulario que precarga cada origen, si la dirección lo pide (`plantilla=`), y el área del pedido. Las preguntas no
+ * son parte de la precarga: vienen como al elegir el formulario en «Más» (`marcadoPorOmision`). Desde Entrenamiento
+ * también, desde DL-165 D-29 (2026-11-06); hasta entonces venían solo las seis de DL-100.
+ */
 export const PRECARGA_DEL_ORIGEN: Readonly<Record<OrigenDelPedido, { readonly plantilla: string; readonly area: Alcance }>> = {
   entrenamiento: { plantilla: CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla, area: 'ENTRENAMIENTO' },
   'entrenamiento-plan': { plantilla: CONTEXTO_DE_ENTRENAMIENTO.clavePlantilla, area: 'ENTRENAMIENTO' },
