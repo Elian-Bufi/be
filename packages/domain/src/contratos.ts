@@ -189,6 +189,28 @@ export const CodigoDeError = {
    * `details.availableFrom` dice desde cuándo puede volver a pedirlo.
    */
   HABITS_ACCESS_REQUEST_TOO_SOON: 'HABITS_ACCESS_REQUEST_TOO_SOON',
+  // RES (familia propia de BE; WP-TABLERO-ALTA-GAMA TB-52 a TB-56; DL-163 D-13, ampliada). Los de la persona son sobre sus
+  // propios profesionales; los del profesional, sobre lo que ya sabe por API-RES-04: ninguno revela algo que no se comparte.
+  /**
+   * API-RES-02 y 10: un permiso no se puede dar. `details.issues` dice cuál y por qué: el profesional no la acompaña hoy
+   * (`SUMMARY_RECIPIENT_NOT_AVAILABLE`), esa área no se le puede compartir (`SUMMARY_AREA_NOT_SHAREABLE`: nadie más la
+   * lleva, o la lleva él) o la matriz no deja ver el plan (`SUMMARY_PLAN_NOT_ALLOWED`).
+   */
+  SUMMARY_RECIPIENT_NOT_AVAILABLE: 'SUMMARY_RECIPIENT_NOT_AVAILABLE',
+  /**
+   * API-RES-02 (Dirección, 2026-11-07: un texto por nivel): falta aceptar el texto que pide un nivel. `details.issues` dice
+   * cuál (`acceptedTexts.summary` o `acceptedTexts.summaryAndPlan`). Quien lo recibe es la persona: no revela nada.
+   */
+  SHARING_TEXT_REQUIRED: 'SHARING_TEXT_REQUIRED',
+  /** API-RES-08: el profesional ya ve el plan de esa área; no hay nada que pedir. Lo sabe por API-RES-04. */
+  PLAN_ALREADY_SHARED: 'PLAN_ALREADY_SHARED',
+  /**
+   * API-RES-08: ese plan no se puede pedir: nadie lleva hoy esa área con la persona, o la matriz no deja verlo desde sus
+   * áreas. No dice si hay un plan activado.
+   */
+  PLAN_ACCESS_NOT_REQUESTABLE: 'PLAN_ACCESS_NOT_REQUESTABLE',
+  /** API-RES-08: pasaron menos de 7 días desde su último pedido de ese plan. `details.availableFrom` dice desde cuándo. */
+  PLAN_ACCESS_REQUEST_TOO_SOON: 'PLAN_ACCESS_REQUEST_TOO_SOON',
   // ADM (familia propia de BE; WP-ADMINISTRACION, DL-155). El 09 ya registra MFA_REQUIRED (09v7 §4.3) y RATIONALE_REQUIRED
   // (09v8 PRO-11); los demás son del acceso administrativo con segundo factor (08 §25).
   /** La sesión administrativa no tiene el segundo factor vigente: falta, venció por inactividad o falta configurarlo. */

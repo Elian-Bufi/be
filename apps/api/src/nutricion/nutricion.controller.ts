@@ -122,6 +122,13 @@ export class NutricionController {
     return responder(res, await this.planes.activar(actorDe(req), planId, cuerpo, clave, contextoDe(req)));
   }
 
+  /** API-PLN-07 (DL-163 D-21; TB-47): descartar un borrador que nunca se activó. */
+  @Post('nutrition/plans/:planId/discard')
+  async descartarBorrador(@Param('planId') planId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.planes.descartar(actorDe(req), planId, cuerpo, clave, contextoDe(req)));
+  }
+
   // ─── Catálogo ───────────────────────────────────────────────────────────────────────────────
   /** API-NUT-13. Contrato legado: `q` en la URL. La web busca con API-NUT-13-BUSQUEDA. */
   @Get('nutrition/catalog-items')

@@ -11,6 +11,8 @@
  * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
  * - las de WP-NOTAS-DE-COORDINACION: API-CRD-01 y sus dos variantes (docs/paquetes/WP-NOTAS-DE-COORDINACION.md; DL-140).
  * - las de WP-FORMULARIOS-DE-INICIO: la familia FRI, los formularios V2 y la propuesta que la persona confirma (DL-164).
+ * - las de WP-TABLERO-ALTA-GAMA: API-DSH-02 y las familias PLN y PLE, como descartar un borrador (DL-163 D-6 y D-21), y la
+ *   familia RES, lo que la persona comparte de otras áreas, con el plan del otro y su pedido (D-13, ampliada; TB-52 a TB-56).
  */
 import { z } from 'zod';
 import {
@@ -97,6 +99,8 @@ import {
   VinculoResponseSchema,
 } from './contratos-vinculo';
 import { CarteraResponseSchema } from './contratos-cartera';
+import { ColaDeRevisionesResponseSchema } from './contratos-cola-de-revisiones';
+import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -267,6 +271,20 @@ import {
   RegistrarHabitosRequestSchema,
   ResponderPedidoDeAccesoRequestSchema,
 } from './contratos-habitos-de-la-persona';
+import {
+  CompartirResumenesRequestSchema,
+  DejarDeCompartirResumenesRequestSchema,
+  LoQueSeComparteDeMiAreaResponseSchema,
+  MisResumenesCompartidosResponseSchema,
+  PedidoDePlanCreadoResponseSchema,
+  PedidoDePlanRespondidoResponseSchema,
+  PedidosDePlanResponseSchema,
+  PedirVerElPlanRequestSchema,
+  PlanCompartidoResponseSchema,
+  ResponderPedidoDePlanRequestSchema,
+  ResumenesCompartidosEstadoResponseSchema,
+  ResumenesParaElProfesionalResponseSchema,
+} from './contratos-resumenes-compartidos';
 import {
   AsociarImagenDeEjercicioRequestSchema,
   EjercicioPropioResponseSchema,
@@ -855,6 +873,25 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
     fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · DL-107 · ID propio de BE desde DL-116 (antes API-DSH-04, que en el 09 es la línea temporal)',
   },
+  // ─── WP-TABLERO-ALTA-GAMA · TB-14: la cola de revisiones (09v11 §14; DL-163 D-6) ────────────────
+  {
+    id: 'API-DSH-02',
+    metodo: 'get',
+    ruta: '/me/review-queue',
+    resumen:
+      'La cola de revisiones del profesional: por cada persona con vínculo vigente y cada área con seguimiento que el PDP permite, un ítem si hay trabajo de revisión, con la definición de pendiente del dominio de revisión (REG-06-150). «Próxima acción pendiente» (NEXT_ACTION_PENDING: la última revisión registrada sin aplicar), primera; «Revisión pendiente» (REVIEW_DUE); y «Sin revisión acordada» (ACTIVE_PLAN_WITHOUT_REVIEW: un plan activo sin una revisión acordada en pie), última. Una revisión acordada a futuro no entra. Abrirla no resuelve nada; no hay valores de salud, puntajes ni actividad de la persona.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'domain', descripcion: 'Filtra por área.', schema: { type: 'string', enum: ['NUTRITION', 'TRAINING'] } },
+      { nombre: 'status', descripcion: 'Filtra por motivo.', schema: { type: 'string', enum: ['NEXT_ACTION_PENDING', 'REVIEW_DUE', 'ACTIVE_PLAN_WITHOUT_REVIEW'] } },
+      LIMIT,
+      CURSOR,
+    ],
+    exitos: [{ status: 200, schema: ColaDeRevisionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09v11:860-890 (API-DSH-02) · REG-06-150 · B10-08 §6 · DEUDA_LEGAJO DL-163 D-6 · WP-TABLERO-ALTA-GAMA TB-14',
+  },
   // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 (09v12) ─────────────────────────────────────
   {
     id: 'API-NUT-01',
@@ -1010,6 +1047,24 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['OPERATION_NOT_READY', 'CAPACITY_NOT_AVAILABLE'],
     },
     fuente: '09v9:601-644 · REG-06-104 · REG-06-91 · DEUDA_LEGAJO DL-051, DL-055 (NUTRITION_SCOPE_NOT_OPERATIONAL: 404)',
+  },
+  // ─── WP-TABLERO-ALTA-GAMA · PLN: planificar Nutrición (DL-163 D-17 a D-21). Familia propia de BE ─────────────────────
+  {
+    id: 'API-PLN-07',
+    metodo: 'post',
+    ruta: '/nutrition/plans/{planId}/discard',
+    resumen:
+      'Descartar un borrador de plan nutricional que nunca se activó (DL-163 D-21): la persona nunca lo vio. Queda como versión descartada, que no se lista, no se lee ni se escribe (el mismo 404 que lo inexistente), con su evento y su auditoría; la fila no se borra. Después se puede empezar otro borrador desde una plantilla, desde la versión vigente o desde cero, y aplicar una revisión «Ajustar» o «Sustituir». Una versión activada no se descarta nunca: 422 PLAN_NOT_EDITABLE, antes de mirar la versión esperada. planId es el id de la versión, como en API-NUT-09 a 12.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDeBorradorResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['PLAN_NOT_EDITABLE'],
+    },
+    fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 D-21 · WP-TABLERO-ALTA-GAMA TB-47 y §4.4 · 05 glosario («Borrador de plan») · 06 §4.4',
   },
   {
     id: 'API-NUT-13',
@@ -1664,6 +1719,24 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['OPERATION_NOT_READY', 'CAPACITY_NOT_AVAILABLE', 'PLAN_NOT_EDITABLE'],
     },
     fuente: '09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087 · DL-122 (precierre del 2026-10-06, §2)',
+  },
+  // ─── WP-TABLERO-ALTA-GAMA · PLE: planificar Entrenamiento (DL-163 D-19 y D-21). Familia propia de BE ─────────────────
+  {
+    id: 'API-PLE-05',
+    metodo: 'post',
+    ruta: '/training/plans/{planId}/discard',
+    resumen:
+      'Descartar un borrador de plan de entrenamiento que nunca se activó (DL-163 D-21): la persona nunca lo vio. Queda como versión descartada, que no se lista, no se lee ni se escribe (el mismo 404 que lo inexistente), con su evento y su auditoría; la fila no se borra. Después se puede empezar otro borrador desde una plantilla, desde la versión vigente o desde cero, y aplicar una revisión «Ajustar» o «Sustituir». Una versión activada no se descarta nunca: 422 PLAN_NOT_EDITABLE, antes de mirar la versión esperada. planId es el id de la versión, como en API-TRN-09 a 12.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDeBorradorResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['PLAN_NOT_EDITABLE'],
+    },
+    fuente: 'ID propio de BE (familia PLE) · DEUDA_LEGAJO DL-163 D-21 · WP-TABLERO-ALTA-GAMA TB-47 y §4.5 · 05 glosario («Borrador de plan») · 06 §4.4',
   },
   {
     id: 'API-TRN-13',
@@ -2732,6 +2805,138 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['HABITS_RECIPIENT_NOT_AVAILABLE'] },
     fuente: 'DL-165 D-17 (nueva, 2026-11-06) y D-25 · WP-FORMULARIOS-RONDA-2 §8 (FR-14) · 08 §12.2, C-12 · RNF-PRI-002',
   },
+  // ─── WP-TABLERO-ALTA-GAMA · RES: lo que la persona comparte de otras áreas (DL-163 D-13, ampliada por Dirección el
+  // 2026-11-07; TB-52 a TB-56). Familia propia de BE. Ninguna APK instalada la lee (DL-152). API-RES-05 (las series de un
+  // resumen, TB-29) no está en este tramo. ─────────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-RES-01',
+    metodo: 'get',
+    ruta: '/me/summary-sharing',
+    resumen:
+      'Lo que la persona comparte de otras áreas: el estado de la autorización «Compartir con mis profesionales lo de otras áreas» (sin un booleano: NOT_GIVEN, ACTIVE o WITHDRAWN), sus profesionales con sus áreas, el vínculo, las áreas que se le pueden compartir a cada uno (las que lleva otro profesional y él no) y lo que hoy le comparte, con el nivel (SUMMARY o SUMMARY_AND_PLAN) y desde cuándo; los textos vigentes del acto, uno por nivel (`texts.summary` y `texts.summaryAndPlan`, propuestas, PENDING_APPROVAL), los que la versión vigente tiene aceptados (`sharing.acceptedTexts`), y las últimas 50 lecturas de lo compartido, con quién, qué área y cuándo (08 §19.7). Sin el A3, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MisResumenesCompartidosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27, TB-28 y TB-55) · TA-85 y TA-93 · 08 C-11, C-12, §19.7',
+  },
+  {
+    id: 'API-RES-02',
+    metodo: 'put',
+    ruta: '/me/summary-sharing',
+    resumen:
+      'Compartir lo de otras áreas, o cambiar con quiénes y en qué nivel, con la lista completa de permisos (profesional, área de origen y nivel; lo que no está deja de compartirse) y la última versión que se vio (si no es la última, 409 VERSION_CONFLICT). Lo compartido es lo del profesional que lleva hoy esa área. Un texto por nivel (Dirección, 2026-11-07), en `acceptedTexts`: un permiso nuevo de SUMMARY pide el texto vigente de «resumen», y dar o subir a SUMMARY_AND_PLAN, el de «resumen y plan» (si falta, 422 SHARING_TEXT_REQUIRED con la ruta del que falta; si es otro, 409 CONSENT_VERSION_STALE); ampliar pide también el A3 (403) (08 C-12). Bajar de nivel o sacar a alguien corta en el momento y no pide ningún texto ni el A3; la versión nueva conserva los textos que ya tenía aceptados. Antropometría no tiene plan (400). Acepta los pedidos pendientes de quienes pasan a ver el plan de esa área (TB-56).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CompartirResumenesRequestSchema,
+    exitos: [{ status: 200, schema: ResumenesCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SHARING_TEXT_REQUIRED'] },
+    detalleDe422: {
+      codigo: 'SUMMARY_RECIPIENT_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.enum(['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SUMMARY_AREA_NOT_SHAREABLE', 'SUMMARY_PLAN_NOT_ALLOWED']), path: z.string() })).min(1) }),
+      descripcion:
+        'details.issues trae un issue por permiso que no se puede dar: SUMMARY_RECIPIENT_NOT_AVAILABLE (el profesional no la acompaña hoy: sin vínculo o con el vínculo terminado), SUMMARY_AREA_NOT_SHAREABLE (nadie más lleva hoy esa área, o la lleva él) o SUMMARY_PLAN_NOT_ALLOWED (la matriz del plan completo no tiene la fila), con path (grants[i]; en API-RES-10, accessRequestId). Con SHARING_TEXT_REQUIRED, details.issues trae un issue SHARING_TEXT_REQUIRED por texto que falta, con path acceptedTexts.summary o acceptedTexts.summaryAndPlan.',
+    },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27 y TB-55) · TA-85 (ratificada: un texto por nivel), TA-87, TA-96 a TA-98, TA-109 · 08 §12.2, C-11, C-12 · RNF-PRI-002',
+  },
+  {
+    id: 'API-RES-03',
+    metodo: 'post',
+    ruta: '/me/summary-sharing/withdrawal',
+    resumen:
+      'Dejar de compartir todo lo de otras áreas, para todos a la vez y desde ese momento (RNF-PRI-002): una versión nueva RETIRADA, con la última que se vio (si no es la activa, 409 VERSION_CONFLICT). No pide el A3 ni borra nada.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: DejarDeCompartirResumenesRequestSchema,
+    exitos: [{ status: 200, schema: ResumenesCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27) · RNF-PRI-002 · 08 §13',
+  },
+  {
+    id: 'API-RES-04',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/shared-summaries',
+    resumen:
+      'Para el profesional: las áreas en las que hoy acompaña a la persona y cada una de las otras, con quién la lleva hoy (lo que ya dice API-CRD-01-LISTA), lo que la persona le comparte de ella (nivel y desde cuándo, o null), su último pedido de ver el plan y si hoy lo puede pedir (o desde cuándo). Nada depende de que exista un plan. El PDP decide el par (vínculo aceptado, ni en pausa ni terminado, B2, cuentas y el A3 de la persona); sin ningún alcance permitido, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ResumenesParaElProfesionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27, TB-54 y TB-56) · TA-91, TA-95 y TA-100 · 08 §11-bis.7',
+  },
+  {
+    id: 'API-RES-06',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/shared-summaries/{area}/plan',
+    resumen:
+      'Para el profesional: el plan vigente de otra área de la persona, como lo ve ella (la instantánea de la versión ACTIVADA vigente, con la forma de la lectura del plan de esa área), con el objetivo vigente, el autor, desde cuándo se lo comparten, la fecha de la próxima revisión (sin su contenido) y lo avanzado por semana de lunes a domingo desde la activación (hasta 12 semanas, sin lo anulado). Nunca un borrador, una versión anterior, una revisión, una nota interna ni una evaluación. Autoriza con el PDP del par, la autorización vigente de la persona que lo nombra para esa área con SUMMARY_AND_PLAN y la fila de la matriz: si falta cualquiera, el 404 de lo inexistente. Sin un plan vigente en esa área, { data: null }. Cada lectura queda registrada y la persona la ve en API-RES-01.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PlanCompartidoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §3.1 y §4.3 (TB-52) · TA-86, TA-87, TA-88 y TA-92 · UC-I04 · 08 §11-bis, §19.7',
+  },
+  {
+    id: 'API-RES-07',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/shared-summaries/outgoing',
+    resumen:
+      'Para quien lleva un área: con quién comparte la persona lo de su área, en qué nivel y desde cuándo. Sin nada, la lista vacía. El PDP decide el par; sin ningún alcance permitido, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: LoQueSeComparteDeMiAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-52) · TA-93 · VJR-5 del 08',
+  },
+  {
+    id: 'API-RES-08',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/shared-summaries/access-requests',
+    resumen:
+      'El profesional le pide a la persona ver el plan de otra área, desde un área en la que la acompaña (el PDP la decide; si no, el 404 de lo inexistente). No concede nada: le llega a ella una novedad importante (PLAN_ACCESS_REQUESTED, con el aviso push genérico) que dice quién pide, desde qué área y qué plan. Uno pendiente por profesional, persona y área; otro recién a los 7 días del último (422 PLAN_ACCESS_REQUEST_TOO_SOON), que reemplaza al pendiente. Si ya lo ve, 422 PLAN_ALREADY_SHARED; si nadie lleva hoy esa área o la matriz no lo deja, 422 PLAN_ACCESS_NOT_REQUESTABLE.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: PedirVerElPlanRequestSchema,
+    exitos: [{ status: 201, schema: PedidoDePlanCreadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['PLAN_ALREADY_SHARED', 'PLAN_ACCESS_NOT_REQUESTABLE', 'PLAN_ACCESS_REQUEST_TOO_SOON'] },
+    detalleDe422: {
+      codigo: 'PLAN_ACCESS_REQUEST_TOO_SOON',
+      schema: z.object({ availableFrom: z.string() }),
+      descripcion: 'details.availableFrom (ISO 8601): desde cuándo puede volver a pedirlo, a los 7 días de su último pedido de ese plan.',
+    },
+    fuente: 'DL-163 D-13, ampliada · TA-95 (decidida por Dirección el 2026-11-07) · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-17 y D-24 · DL-133',
+  },
+  {
+    id: 'API-RES-09',
+    metodo: 'get',
+    ruta: '/me/summary-sharing/access-requests',
+    resumen:
+      'Los pedidos de ver un plan que esperan la respuesta de la persona: de quién, desde qué área, qué plan y cuándo. Solo de profesionales que hoy la acompañan en esa área con el vínculo aceptado: en pausa no se muestran, y con el vínculo terminado ya no. Sin el A3, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PedidosDePlanResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-25',
+  },
+  {
+    id: 'API-RES-10',
+    metodo: 'post',
+    ruta: '/me/summary-sharing/access-requests/{accessRequestId}/answer',
+    resumen:
+      'La persona responde un pedido de ver un plan, con la versión del pedido que vio (si ya no espera respuesta, 409 VERSION_CONFLICT). «Sí, que lo vea» (SHARE) es compartir esa área con ese profesional en SUMMARY_AND_PLAN, como API-RES-02: lleva la versión de la autorización que vio y el texto de «resumen y plan» mostrado, que tiene que ser el vigente de ese nivel (409 VERSION_CONFLICT o CONSENT_VERSION_STALE), y pide el A3 (403); los demás permisos y sus textos aceptados siguen como estaban. Quien pidió tiene que acompañarla hoy y el área tiene que tener quién la lleve (si no, 422 SUMMARY_RECIPIENT_NOT_AVAILABLE). «No, por ahora» (NOT_NOW) no cambia la autorización ni pide el A3. Lo ajeno y lo inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResponderPedidoDePlanRequestSchema,
+    exitos: [{ status: 200, schema: PedidoDePlanRespondidoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['SUMMARY_RECIPIENT_NOT_AVAILABLE'] },
+    detalleDe422: {
+      codigo: 'SUMMARY_RECIPIENT_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.enum(['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SUMMARY_AREA_NOT_SHAREABLE', 'SUMMARY_PLAN_NOT_ALLOWED']), path: z.string() })).min(1) }),
+      descripcion:
+        'details.issues trae un issue por permiso que no se puede dar: SUMMARY_RECIPIENT_NOT_AVAILABLE (el profesional no la acompaña hoy: sin vínculo o con el vínculo terminado), SUMMARY_AREA_NOT_SHAREABLE (nadie más lleva hoy esa área, o la lleva él) o SUMMARY_PLAN_NOT_ALLOWED (la matriz del plan completo no tiene la fila), con path (grants[i]; en API-RES-10, accessRequestId).',
+    },
+    fuente: 'DL-163 D-13, ampliada · TA-95 · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-25 · 08 §12.2, C-12 · RNF-PRI-002',
+  },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
     id: 'API-REC-01',
@@ -3659,6 +3864,11 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-HBT-05',
   'API-HBT-07',
   'API-HBT-08',
+  'API-RES-01',
+  'API-RES-04',
+  'API-RES-06',
+  'API-RES-07',
+  'API-RES-09',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',

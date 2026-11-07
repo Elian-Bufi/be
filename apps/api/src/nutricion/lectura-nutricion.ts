@@ -1,4 +1,5 @@
 import {
+  estadoDeVersionDePlanApi,
   RESULTADO_HACIA_API,
   resolverVistaEfectiva,
   type ContenidoDeInstantanea,
@@ -172,7 +173,8 @@ export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, c
     planId: v.id,
     nutritionPlanId: v.planId,
     version: token(v.version),
-    state: v.estado === 'ACTIVADA' ? 'ACTIVATED' : 'DRAFT',
+    // Una versión descartada no se lee nunca: si llegara acá, falla cerrado y no se muestra como borrador (TB-47).
+    state: estadoDeVersionDePlanApi(v.estado),
     adviseeId: v.plan.asesoradoId,
     professional: { identityId: v.plan.profesionalId, displayName: nombreProfesional },
     objectiveVersionId: v.versionDeObjetivoId,

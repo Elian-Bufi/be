@@ -1,4 +1,4 @@
-import { CONDICION_DE_SESION_API, GRANULARIDAD_API, serieEnSuForma, sesionesDelPlan, type FuenteExterna } from '@be/domain';
+import { CONDICION_DE_SESION_API, estadoDeVersionDePlanApi, GRANULARIDAD_API, serieEnSuForma, sesionesDelPlan, type FuenteExterna } from '@be/domain';
 import type {
   Bloque,
   CondicionDeSesion,
@@ -224,7 +224,8 @@ export function versionDePlanApi(
     planId: v.id,
     trainingPlanId: v.planId,
     version: token(v.version),
-    state: v.estado === 'ACTIVADA' ? 'ACTIVATED' : 'DRAFT',
+    // Una versión descartada no se lee nunca: si llegara acá, falla cerrado y no se muestra como borrador (TB-47).
+    state: estadoDeVersionDePlanApi(v.estado),
     adviseeId: v.plan.asesoradoId,
     professional: { identityId: v.plan.profesionalId, displayName: nombreProfesional },
     objectiveVersionId: v.versionDeObjetivoId,
