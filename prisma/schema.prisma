@@ -94,6 +94,9 @@ enum TipoDeTexto {
   MAYORIA_DE_EDAD
   /// DL-165 D-9 (FR-10): «Compartir mis hábitos con mis profesionales». Una propuesta, pendiente de validación jurídica.
   HABITOS_COMPARTIDOS
+  /// DL-163 D-13, ampliada (TB-55): «Compartir con mis profesionales lo de otras áreas». Una propuesta, pendiente de
+  /// validación jurídica.
+  RESUMENES_COMPARTIDOS
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -266,6 +269,11 @@ model Identidad {
   // DL-165, ronda 2.1 (D-17 nueva): los pedidos de acceso a los hábitos, de quien pide y de quien responde.
   pedidosDeAccesoHechos    PedidoDeAccesoAHabitos[] @relation("PedidoDeAccesoDelProfesional")
   pedidosDeAccesoRecibidos PedidoDeAccesoAHabitos[] @relation("PedidoDeAccesoALaPersona")
+  /// DL-163 D-13, ampliada (TB-52 a TB-56): lo que la persona comparte de otras áreas, a quién, y los pedidos de ver un plan.
+  autorizacionesDeResumenes  AutorizacionDeResumenes[] @relation("AutorizacionDeResumenesDeLaPersona")
+  destinatarioDeResumenes    DestinatarioDeResumenes[] @relation("DestinatarioDeResumenesDelProfesional")
+  pedidosDeAccesoAPlanHechos PedidoDeAccesoAPlan[]     @relation("PedidoDeAccesoAPlanDelProfesional")
+  pedidosDeAccesoAPlanRecibidos PedidoDeAccesoAPlan[]  @relation("PedidoDeAccesoAPlanALaPersona")
 
   @@map("identidad")
 }
@@ -429,6 +437,8 @@ model VersionDeTexto {
   versionesDeConsentimiento VersionDeConsentimiento[]
   /// DL-165 D-9: las versiones de la autorización de hábitos que aceptaron este texto.
   autorizacionesDeHabitos   AutorizacionDeHabitos[]
+  /// DL-163 D-13, ampliada: las versiones de la autorización de lo de otras áreas que aceptaron este texto.
+  autorizacionesDeResumenes AutorizacionDeResumenes[]
 
   @@map("version_de_texto")
 }
@@ -782,6 +792,11 @@ model AlcanceDeVinculo {
   destinatariosDeHabitos DestinatarioDeHabitos[]
   /// DL-165, ronda 2.1: los pedidos de acceso a los hábitos hechos desde este componente.
   pedidosDeAccesoAHabitos PedidoDeAccesoAHabitos[]
+  /// DL-163 D-13, ampliada: los renglones de la autorización de lo de otras áreas que nombran este componente, como el de
+  /// quien recibe o como el de quien lleva el área de origen, y los pedidos de ver un plan hechos desde él.
+  destinatariosDeResumenes DestinatarioDeResumenes[] @relation("DestinatarioDeResumenesDelReceptor")
+  origenDeResumenes        DestinatarioDeResumenes[] @relation("DestinatarioDeResumenesDelOrigen")
+  pedidosDeAccesoAPlan     PedidoDeAccesoAPlan[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -1902,6 +1917,15 @@ enum TipoDeEventoDeFormulario {
   PedidoDeAccesoAHabitosReemplazado
   PedidoDeAccesoAHabitosAceptado
   PedidoDeAccesoAHabitosNoPorAhora
+  /// DL-163 D-13, ampliada (TB-55): la autorización de lo de otras áreas, al darla, al cambiarla y al retirarla.
+  AutorizacionDeResumenesActivada
+  AutorizacionDeResumenesModificada
+  AutorizacionDeResumenesRetirada
+  /// DL-163 D-13, ampliada (TB-56): un profesional pide ver el plan de otra área, y cómo termina el pedido.
+  PedidoDeAccesoAPlanHecho
+  PedidoDeAccesoAPlanReemplazado
+  PedidoDeAccesoAPlanAceptado
+  PedidoDeAccesoAPlanNoPorAhora
 }
 
 /// DL-164 D-3: PENDIENTE mientras espera que la persona la confirme; después, cómo terminó. Sin retorno.
@@ -2565,6 +2589,117 @@ model PedidoDeAccesoAHabitos {
   @@index([profesionalId, asesoradoId])
   @@index([alcanceDeVinculoId])
   @@map("pedido_de_acceso_a_habitos")
+}
+
+// ─── WP-TABLERO-ALTA-GAMA · lo que la persona comparte de otras áreas (DL-163 D-13, ampliada; TB-52 a TB-56) ───────
+
+/// DL-163 D-13, ampliada: la autorización «Compartir con mis profesionales lo de otras áreas», activa o retirada. Retirarla
+/// es una versión nueva, nunca un cambio de la anterior.
+enum EstadoDeAutorizacionDeResumenes {
+  ACTIVA
+  RETIRADA
+}
+
+/// DL-163 D-13, ampliada (TA-85): el nivel de lo que se comparte de un área con un profesional. Un enum y no un booleano.
+/// Antropometría no tiene plan: solo RESUMEN (CHECK en la migración 20261107120100).
+enum NivelDeResumenCompartido {
+  RESUMEN
+  RESUMEN_Y_PLAN
+}
+
+/// DL-163 D-13, ampliada (TB-55): la autorización de la persona para que los profesionales que ella elige vean lo de otras
+/// áreas suyas, con un nivel. Un acto distinto de A3, de B2 y de la autorización de los hábitos. Versionada como esa: cada
+/// cambio es una fila nueva que sucede a la anterior; la ACTIVA guarda el texto que la persona aceptó, con su hash (08
+/// §12.2), y la da y la retira siempre ella.
+model AutorizacionDeResumenes {
+  id                  String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String                          @map("asesorado_id") @db.Uuid
+  version             Int
+  predecesoraId       String?                         @unique @map("predecesora_id") @db.Uuid
+  estado              EstadoDeAutorizacionDeResumenes
+  versionDeTextoId    String?                         @map("version_de_texto_id")
+  hashDelTexto        String?                         @map("hash_del_texto")
+  actorId             String                          @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                        @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado      Identidad                 @relation("AutorizacionDeResumenesDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora    AutorizacionDeResumenes?  @relation("SucesionDeAutorizacionDeResumenes", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora       AutorizacionDeResumenes?  @relation("SucesionDeAutorizacionDeResumenes")
+  versionDeTexto VersionDeTexto?           @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  destinatarios  DestinatarioDeResumenes[]
+
+  @@unique([asesoradoId, version])
+  @@index([versionDeTextoId])
+  @@map("autorizacion_de_resumenes")
+}
+
+/// DL-163 D-13, ampliada (TA-96): un renglón de una versión ACTIVA: quien recibe, por uno de sus componentes de vínculo, lo
+/// del área de origen que lleva otro profesional, por el componente de ese profesional, con el nivel y desde cuándo rige
+/// ese nivel. Solo los permisos dados: lo que no está, no se comparte. Si alguno de los dos componentes termina, el renglón
+/// deja de valer (queda en la historia). Solo se agregan.
+model DestinatarioDeResumenes {
+  autorizacionId     String                   @map("autorizacion_id") @db.Uuid
+  alcanceDeVinculoId String                   @map("alcance_de_vinculo_id") @db.Uuid
+  origenId           String                   @map("origen_id") @db.Uuid
+  profesionalId      String                   @map("profesional_id") @db.Uuid
+  area               Alcance
+  nivel              NivelDeResumenCompartido
+  nivelDesde         DateTime                 @map("nivel_desde") @db.Timestamptz(3)
+  momentoDeRegistro  DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  autorizacion     AutorizacionDeResumenes @relation(fields: [autorizacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo        @relation("DestinatarioDeResumenesDelReceptor", fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  origen           AlcanceDeVinculo        @relation("DestinatarioDeResumenesDelOrigen", fields: [origenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional      Identidad               @relation("DestinatarioDeResumenesDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([autorizacionId, alcanceDeVinculoId, origenId])
+  @@index([profesionalId])
+  @@index([alcanceDeVinculoId])
+  @@index([origenId])
+  @@map("destinatario_de_resumenes")
+}
+
+/// DL-163 D-13, ampliada (TB-56; el mecanismo de DL-165 D-24): cómo terminó un pedido de ver un plan. PENDIENTE mientras
+/// espera; la persona dijo «Sí, que lo vea» (ACEPTADO, también cuando lo comparte desde «Quién ve qué») o «No, por ahora»
+/// (NO_POR_AHORA), o lo reemplazó un pedido nuevo del mismo profesional a los 7 días (REEMPLAZADO). Sin retorno.
+enum EstadoDePedidoDeAccesoAPlan {
+  PENDIENTE
+  ACEPTADO
+  NO_POR_AHORA
+  REEMPLAZADO
+}
+
+/// DL-163 D-13, ampliada (TB-56; TA-95, decidida por Dirección el 2026-11-07): un profesional le pide a la persona ver su
+/// plan de otra área, desde un componente de vínculo suyo con ella. No cambia ningún acceso: lo decide la persona. Uno
+/// pendiente por profesional, persona y área (índice parcial en la migración 20261107120100); resuelto, no cambia más. No
+/// se borra.
+model PedidoDeAccesoAPlan {
+  id                 String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId      String                      @map("profesional_id") @db.Uuid
+  asesoradoId        String                      @map("asesorado_id") @db.Uuid
+  alcanceDeVinculoId String                      @map("alcance_de_vinculo_id") @db.Uuid
+  /// El área desde la que lo pide (la del componente).
+  alcance            Alcance
+  /// El área cuyo plan pide ver: otra, con plan (CHECK en la migración).
+  area               Alcance
+  estado             EstadoDePedidoDeAccesoAPlan @default(PENDIENTE)
+  /// Token de concurrencia (`expectedVersion` de API-RES-10). Nace en 1 y resolverlo no lo cambia.
+  version            Int                         @default(1)
+  pedidoEn           DateTime                    @map("pedido_en") @db.Timestamptz(3)
+  resueltoEn         DateTime?                   @map("resuelto_en") @db.Timestamptz(3)
+  procedencia        Json
+  momentoDeRegistro  DateTime                    @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional      Identidad        @relation("PedidoDeAccesoAPlanDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado        Identidad        @relation("PedidoDeAccesoAPlanALaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([asesoradoId, estado])
+  @@index([profesionalId, asesoradoId, area])
+  @@index([alcanceDeVinculoId])
+  @@map("pedido_de_acceso_a_plan")
 }
 
 // ─── WP-08 · Importación controlada (RF-028, RF-038; UC-I07; 09 v0.12 §3-§7) ─────────────────────
@@ -3417,6 +3552,9 @@ enum TipoDeNovedad {
   PROPUESTA_DE_FORMULARIO_RECHAZADA
   /// DL-165, ronda 2.1 (D-17 nueva): a la persona, cuando un profesional le pide ver sus hábitos. La referencia es el pedido.
   PEDIDO_DE_ACCESO_A_HABITOS
+  /// DL-163 D-13, ampliada (TB-56): a la persona, cuando un profesional le pide ver su plan de otra área. La referencia es el
+  /// pedido.
+  PEDIDO_DE_ACCESO_A_PLAN
 }
 
 enum PlataformaDeAviso {

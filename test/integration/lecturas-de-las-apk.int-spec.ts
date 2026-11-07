@@ -20,9 +20,14 @@
  * sigue respondiendo una Solicitud de la ronda 2 pedida antes; lee la novedad nueva («Te piden ver tus hábitos», un tipo y una
  * vista que no conoce) con su esquema; y «Mis hábitos» no cambia de forma aunque haya un pedido de acceso esperando. La
  * 0.22.0-candidata.1 lee además los pedidos (API-HBT-08) y los responde (API-HBT-09), y abre «Mis hábitos» desde la novedad.
+ *
+ * DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-53 y TB-56; TEST-TAG-030 y 038): una nota que cita el plan de otra área (el
+ * de Nutrición, citado por el entrenador con el permiso de la persona) se lee con API-CRD-01-PROPIA con la forma de siempre,
+ * y la novedad del pedido de ver un plan (`PLAN_ACCESS_REQUESTED`, un tipo que ninguna APK instalada conoce) se lee con su
+ * esquema y abre el centro.
  */
 import type { INestApplication } from '@nestjs/common';
-import { CAMPOS_DE_HABITOS, CAPACIDAD_FORMULARIOS_FORMATO_3, type RespuestaDeCampoV2Entrada } from '@be/domain';
+import { CAMPOS_DE_HABITOS, CAPACIDAD_FORMULARIOS_FORMATO_3, VERSION_VIGENTE, type RespuestaDeCampoV2Entrada } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
@@ -899,10 +904,25 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     // la 0.21 no conocen (`HABITS_ACCESS_REQUESTED`, `MY_HABITS`): la leen con su esquema, la muestran con su texto y, al
     // abrirla, se quedan en Novedades. La 0.22 la destaca y la abre en «Mis hábitos» (el bloque de los pedidos de acceso).
     await conSesion(app, ent.token).post(`/api/v1/advisees/${c.ase.id}/habits/access-requests`).send({ scope: 'ENTRENAMIENTO' }).expect(201);
+    // DL-163 D-13, ampliada (TB-53): la persona le comparte al entrenador su plan de Nutrición, y él deja una nota que lo cita
+    // desde Entrenamiento. TB-56: el antropometrista pide ver ese plan; la novedad es de un tipo que la APK no conoce.
+    const compartido = (await conSesion(app, token).get('/api/v1/me/summary-sharing').expect(200)).body.data as { sharing: { version: string | null } };
+    await conSesion(app, token)
+      .put('/api/v1/me/summary-sharing')
+      .send({ expectedVersion: compartido.sharing.version, textVersionId: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }] })
+      .expect(200);
+    await conSesion(app, ent.token)
+      .post(`/api/v1/advisees/${c.ase.id}/coordination-notes`)
+      .send({ originScope: 'ENTRENAMIENTO', purpose: 'COORDINATION_REQUEST', recipients: { mode: 'ONE', identityId: c.pro.id }, text: 'Nota sintética que cita el plan de Nutrición.', references: [{ type: 'NUTRITION_PLAN_VERSION', id: c.planId }] })
+      .expect(201);
+    const ant = await prepararProfesional(app, etiqueta(`${corta}-nov-ant`), ['ANTROPOMETRIA']);
+    await vinculoCompleto(app, ant, c.ase, 'ANTROPOMETRIA');
+    await conSesion(app, ant.token).post(`/api/v1/advisees/${c.ase.id}/shared-summaries/access-requests`).send({ scope: 'ANTROPOMETRIA', area: 'NUTRICION' }).expect(201);
     const novedades = (await apk.pide('API-NOV-01', { token, consulta: { limit: '30' } })).body.data as { newsId: string; kind: string; open: { view: string } }[];
     expect(novedades.length).toBeGreaterThan(0);
     const pedido = novedades.find((n) => n.kind === 'HABITS_ACCESS_REQUESTED');
     expect(pedido?.open.view).toBe('MY_HABITS');
+    expect(novedades.find((n) => n.kind === 'PLAN_ACCESS_REQUESTED')?.open.view).toBe('NEWS');
     await apk.pide('API-NOV-02', { token, params: { newsId: pedido!.newsId } });
     await apk.pide('API-NOV-02', { token, params: { newsId: novedades[0]!.newsId } });
     await apk.pide('API-NOV-01', { token, consulta: { limit: '30' } });
@@ -912,7 +932,9 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     await apk.pide('API-NOV-05', { token });
     await apk.pide('API-NOV-06', { token, cuerpo: { mealLogReminder: true, trainingLogReminder: false } });
     await apk.pide('API-NOV-05', { token });
-    await apk.pide('API-CRD-01-PROPIA', { token });
+    const notas = (await apk.pide('API-CRD-01-PROPIA', { token })).body.data as { originScope: { code: string }; references: { type: string; id: string }[] }[];
+    // Las dos notas citan la misma versión: la de la nutricionista, desde Nutrición, y la del entrenador, desde Entrenamiento.
+    expect(notas.filter((n) => n.references.some((r) => r.type === 'NUTRITION_PLAN_VERSION' && r.id === c.planId)).map((n) => n.originScope.code).sort()).toEqual(['ENTRENAMIENTO', 'NUTRICION']);
     expect(apk.rechazos()).toEqual([]);
   });
 

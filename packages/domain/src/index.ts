@@ -56,6 +56,8 @@ export * from './partes-de-formulario';
 export * from './plantillas-de-inicio';
 export * from './habitos-de-la-persona';
 export * from './contratos-habitos-de-la-persona';
+export * from './contratos-resumenes-compartidos';
+export * from './resumenes-compartidos';
 export * from './copy-habitos-de-la-persona';
 export * from './errores-de-formulario';
 export * from './recuperacion-de-formulario';
