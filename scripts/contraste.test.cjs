@@ -74,6 +74,11 @@ function temaApk(nombre) {
 // ─── Los pares que las pantallas usan ───────────────────────────────────────────────────────────
 const TEXTO = 4.5;
 const NO_TEXTO = 3;
+/**
+ * Un fondo de datos (la banda de la vigencia y del rango, WP-TABLERO-ALTA-GAMA TB-03): no es texto ni un borde, pero
+ * tiene que verse en un proyector, que lava los fondos. 1,3:1 contra la superficie, como mínimo (DL-163 D-3, anexo A4).
+ */
+const FONDO_DE_DATO = 1.3;
 
 /** [primer plano, fondo, mínimo, dónde se usa] — los nombres son los de tokens.css. */
 const PARES_WEB = [
@@ -177,10 +182,6 @@ function verificar(tema, pares, nombreDelTema) {
 
 /** En las dos apariencias: los gráficos de entrenamiento y de antropometría se ven en cualquiera. */
 const PARES_GRAFICO = [
-  ['grafico-planificado', 'superficie', NO_TEXTO, 'barras, franjas y línea de lo planificado'],
-  ['grafico-registrado', 'superficie', NO_TEXTO, 'barras, puntos y línea de lo registrado'],
-  ['grafico-planificado', 'fondo-suave', NO_TEXTO, 'muestra de lo planificado en la leyenda'],
-  ['grafico-registrado', 'fondo-suave', NO_TEXTO, 'muestra de lo registrado en la leyenda'],
   ['grafico-hueco', 'superficie', NO_TEXTO, 'rayado de una sesión sin dato en el gráfico'],
   // «Analizar» (WP-DASHBOARD-PROFESIONAL): línea, punto y muestra de cada métrica, sobre el lienzo y en la leyenda.
   ['metrica-1', 'superficie', NO_TEXTO, 'línea y puntos de la primera métrica'],
@@ -189,6 +190,32 @@ const PARES_GRAFICO = [
   ['metrica-1', 'fondo-suave', NO_TEXTO, 'primera métrica sobre una banda de vigencia o en el panel de lectura'],
   ['metrica-2', 'fondo-suave', NO_TEXTO, 'segunda métrica sobre una banda de vigencia o en el panel de lectura'],
   ['metrica-3', 'fondo-suave', NO_TEXTO, 'tercera métrica sobre una banda de vigencia o en el panel de lectura'],
+  // TB-03 (DL-163 D-3): la vigencia del plan y el rango del profesional, en --banda, con las métricas encima.
+  ['banda', 'superficie', FONDO_DE_DATO, 'la banda de la vigencia y del rango, contra la tarjeta'],
+  ['metrica-1', 'banda', NO_TEXTO, 'primera métrica sobre la banda de la vigencia o del rango'],
+  ['metrica-2', 'banda', NO_TEXTO, 'segunda métrica sobre la banda de la vigencia o del rango'],
+  ['metrica-3', 'banda', NO_TEXTO, 'tercera métrica sobre la banda de la vigencia o del rango'],
+  ['grafico-hueco', 'banda', NO_TEXTO, 'una sesión sin dato sobre la banda'],
+  // TB-04: la raya de hoy debajo de la tira del minigráfico.
+  ['ahora', 'superficie', NO_TEXTO, 'la raya de hoy debajo de la tira de cobertura'],
+  // TB-05 (DL-163 D-2): las iniciales del monograma sobre su círculo. Son decorativas, pero son letras: 4,5:1.
+  ['retrato-tinta', 'retrato-fondo', TEXTO, 'las iniciales del monograma sobre su círculo'],
+  // TB-10 (DL-163 D-1): el tramo del ciclo. Lo que falta del tramo es un fondo de datos; lo transcurrido, hoy y la
+  // fecha acordada son marcas que se leen sobre él. Los pasos de «Empezar el plan» en miniatura usan los mismos tonos.
+  ['pista', 'superficie', FONDO_DE_DATO, 'lo que falta del tramo del ciclo, contra la tarjeta'],
+  ['ahora', 'pista', NO_TEXTO, 'la marca de hoy sobre la pista del tramo'],
+  ['texto', 'pista', NO_TEXTO, 'la marca de la fecha acordada sobre la pista del tramo'],
+  ['borde-control', 'superficie', NO_TEXTO, 'lo transcurrido del tramo y lo vencido, en discontinua, contra la tarjeta'],
+  // TB-24 (DL-163 D-11): las dos partes de la columna de composición y sus filas, sobre la tarjeta y sobre el fondo suave
+  // de la pestaña. Entre las dos partes va un corte que deja ver la superficie: la distinción no depende del color solo.
+  ['composicion-libre', 'superficie', NO_TEXTO, 'la masa libre de grasa en la columna, la fila y la barra de la última toma'],
+  ['composicion-grasa', 'superficie', NO_TEXTO, 'la masa grasa en la columna, la fila y la barra de la última toma'],
+  ['composicion-libre', 'fondo-suave', NO_TEXTO, 'la masa libre de grasa al pasar el puntero por el renglón plegado'],
+  ['composicion-grasa', 'fondo-suave', NO_TEXTO, 'la masa grasa al pasar el puntero por el renglón plegado'],
+  // TB-51 (D-11, modificada por Dirección el 2026-11-07): el resto de la barra de la última toma, cuando el método calcula
+  // el músculo (el músculo va en --composicion-libre, que ya tiene sus pares).
+  ['composicion-resto', 'superficie', NO_TEXTO, 'el resto de la barra de la última toma (lo óseo y lo residual, o lo que no es grasa ni músculo)'],
+  ['composicion-resto', 'fondo-suave', NO_TEXTO, 'el resto de la barra al pasar el puntero por el renglón plegado'],
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
@@ -386,4 +413,95 @@ test('ningún estilo del website ni de la APK escribe un color fuera de los toke
       });
   }
   assert.deepEqual(literales, [], `Colores escritos fuera de los tokens:\n${literales.join('\n')}`);
+});
+
+/**
+ * WP-TABLERO-ALTA-GAMA, TB-03 (DL-163 D-3): lo planificado y lo registrado de Entrenamiento van en el color de la
+ * métrica, como en «Analizar». Los dos colores de antes (un azul contra un naranja) salen de los tokens y de todo el
+ * website: un gráfico que los nombrara quedaría sin color.
+ */
+test('website · los gráficos ya no usan los colores de planificado y registrado (TB-03)', () => {
+  const tokens = readFileSync(TOKENS_WEB, 'utf8');
+  assert.doesNotMatch(tokens, /--grafico-(planificado|registrado)\s*:/);
+  const usos = [];
+  const recorrer = (dir) => {
+    for (const nombre of readdirSync(dir)) {
+      const ruta = join(dir, nombre);
+      if (statSync(ruta).isDirectory()) recorrer(ruta);
+      else if (/\.(css|tsx?)$/.test(nombre) && /var\(--grafico-(planificado|registrado)\)/.test(readFileSync(ruta, 'utf8'))) usos.push(relative(RAIZ, ruta));
+    }
+  };
+  recorrer(join(RAIZ, 'apps/web/src'));
+  assert.deepEqual(usos, []);
+});
+
+/** TB-04 (DL-163 D-3): «hoy», en --ahora, no se confunde con ninguna de las tres métricas (ΔE 20 o más, en los dos temas). */
+test('website · la luz de hoy no se confunde con las métricas (TB-04)', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const m of ['metrica-1', 'metrica-2', 'metrica-3']) {
+      const d = deltaE(tema.ahora, tema[m]);
+      if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${m} ${tema[m]}: ΔE ${d.toFixed(1)}`);
+    }
+  }
+  assert.deepEqual(fallas, []);
+});
+
+/**
+ * TB-24 (DL-163 D-11; TEST-TAG-005): las dos partes de la composición se distinguen entre sí (ΔE 20 o más, en los dos
+ * temas) y de «hoy», y ninguna tiene un matiz de juicio. El verde de «bien» anda por los 120°: las dos van entre los 160°
+ * y los 300° (un verde azulado y un azul), lejos del rojo y del ámbar. Los valores son los validados para daltonismo en la
+ * propuesta (§18.7).
+ */
+/**
+ * TB-51 (D-11, modificada por Dirección el 2026-11-07; TEST-TAG-005): el resto, la tercera parte de la barra cuando el
+ * método calcula el músculo, se distingue de la grasa, del músculo (el azul de la libre de grasa), de «hoy» y del gris de
+ * los huecos (ΔE 20 o más, en los dos temas), y su matiz tampoco califica (entre los 160° y los 300°).
+ */
+test('website · el resto de la barra se distingue de las otras dos partes y del hueco, y no califica (TB-51)', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const otro of ['composicion-libre', 'composicion-grasa', 'ahora', 'grafico-hueco']) {
+      const d = deltaE(tema['composicion-resto'], tema[otro]);
+      if (d < 20) fallas.push(`${nombreDelTema} · composicion-resto ${tema['composicion-resto']} y ${otro} ${tema[otro]}: ΔE ${d.toFixed(1)}`);
+    }
+    const h = matiz(tema['composicion-resto']);
+    if (h === null || h < 160 || h > 300) fallas.push(`${nombreDelTema} · composicion-resto: matiz ${h === null ? 'gris' : h.toFixed(0)}°`);
+  }
+  assert.deepEqual(fallas, []);
+});
+
+test('website · las dos partes de la composición se distinguen y no califican (TB-24)', () => {
+  const fallas = [];
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    const partes = ['composicion-libre', 'composicion-grasa'];
+    const entre = deltaE(tema[partes[0]], tema[partes[1]]);
+    if (entre < 20) fallas.push(`${nombreDelTema} · las dos partes: ΔE ${entre.toFixed(1)}`);
+    for (const p of partes) {
+      const h = matiz(tema[p]);
+      if (h === null || h < 160 || h > 300) fallas.push(`${nombreDelTema} · ${p} ${tema[p]}: matiz ${h === null ? 'gris' : h.toFixed(0)}°`);
+      const d = deltaE(tema.ahora, tema[p]);
+      if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${p} ${tema[p]}: ΔE ${d.toFixed(1)}`);
+    }
+  }
+  assert.deepEqual(fallas, []);
+});
+
+/**
+ * TB-05 (DL-163 D-2): el monograma va en tinta neutra, nunca en el acento, y no se confunde con «hoy» (ΔE 20 o más contra
+ * --ahora, en los dos temas). Neutra quiere decir casi sin color: un croma de CIELAB de 12 o menos en la tinta y de 16 o
+ * menos en el círculo, que en Azul noche toma apenas el azul de la superficie.
+ */
+test('website · las iniciales van en tinta neutra y lejos de la luz de hoy (TB-05)', () => {
+  const fallas = [];
+  const croma = (h) => Math.hypot(lab(h)[1], lab(h)[2]);
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const t of ['retrato-tinta', 'retrato-fondo']) {
+      const d = deltaE(tema.ahora, tema[t]);
+      if (d < 20) fallas.push(`${nombreDelTema} · ahora ${tema.ahora} y ${t} ${tema[t]}: ΔE ${d.toFixed(1)}`);
+    }
+    if (croma(tema['retrato-tinta']) > 12) fallas.push(`${nombreDelTema} · la tinta ${tema['retrato-tinta']} tiene croma ${croma(tema['retrato-tinta']).toFixed(1)}`);
+    if (croma(tema['retrato-fondo']) > 16) fallas.push(`${nombreDelTema} · el círculo ${tema['retrato-fondo']} tiene croma ${croma(tema['retrato-fondo']).toFixed(1)}`);
+  }
+  assert.deepEqual(fallas, []);
 });

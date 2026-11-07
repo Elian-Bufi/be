@@ -67,8 +67,9 @@ export const COPY_NUTRICION = {
   cambiosSinGuardar: 'Cambios sin guardar',
   guardando: 'Guardando…',
   errorAlGuardar: 'Error al guardar',
-  validarPlan: 'Validar plan',
-  planValido: 'Plan válido',
+  /** WP-TABLERO-ALTA-GAMA TB-48: «Validar plan» pasa a «Revisar el plan», que lista también lo que queda sin completar. */
+  validarPlan: 'Revisar el plan',
+  planValido: 'No hay nada que impida activar.',
   hayElementosPorCorregir: 'Hay elementos por corregir',
   activarPlan: 'Activar plan',
   confirmarActivacion:

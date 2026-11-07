@@ -19,6 +19,7 @@ import { conRetorno, valorDeRetorno } from './estado';
 import { enumerar } from './etapas-en-pantalla';
 import { ICONO_DE_FALLA } from './iconos-de-metrica';
 import type { Disponibles } from './series';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 const contar = (n: number, uno: string, varios: string): string => `${numero(n)} ${n === 1 ? uno : varios}`;
 
@@ -34,6 +35,7 @@ function segunLaLectura(lectura: DeLaLectura, dato: () => ReactNode): ReactNode 
 }
 
 export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION' | 'ENTRENAMIENTO' | null; disponibles: Disponibles }) {
+  const { delProfesional } = useNombres();
   const { token, asesoradoId, periodo, panel, parametros, href } = useSeguimiento();
   const id = useId();
   const { lectura, recargar } = useLectura<LineaDeTiempoResponse>(`informacion|${asesoradoId}|${periodo.desde}|${periodo.hasta}`, () =>
@@ -119,7 +121,7 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
                 <dt>Objetivo vigente</dt>
                 <dd>
                   {d.nutrition.summary?.objective
-                    ? `${cantidad(d.nutrition.summary.objective.estimatedEnergyRequirement.value, 'kcal por día')} (requerimiento energético estimado) · rige desde el ${fecha(d.nutrition.summary.objective.effectiveFrom)} · ${d.nutrition.summary.objective.authoredBy.displayName}`
+                    ? `${cantidad(d.nutrition.summary.objective.estimatedEnergyRequirement.value, 'kcal por día')} (requerimiento energético estimado) · rige desde el ${fecha(d.nutrition.summary.objective.effectiveFrom)} · ${delProfesional(d.nutrition.summary.objective.authoredBy)}`
                     : 'Sin objetivo vigente'}
                 </dd>
               </div>
@@ -172,7 +174,7 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
                 <dt>Objetivo vigente</dt>
                 <dd>
                   {d.training.summary?.objective
-                    ? `${d.training.summary.objective.statement || 'Sin enunciado'} · rige desde el ${fecha(d.training.summary.objective.effectiveFrom)} · ${d.training.summary.objective.authoredBy.displayName}`
+                    ? `${d.training.summary.objective.statement || 'Sin enunciado'} · rige desde el ${fecha(d.training.summary.objective.effectiveFrom)} · ${delProfesional(d.training.summary.objective.authoredBy)}`
                     : 'Sin objetivo vigente'}
                 </dd>
               </div>

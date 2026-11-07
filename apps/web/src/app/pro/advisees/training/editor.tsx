@@ -63,7 +63,7 @@ import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Aviso, Campo } from '../../../../components/formulario';
+import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
@@ -72,7 +72,23 @@ import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
+import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
+import { COPY_REVISAR_EL_PLAN, loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
+import {
+  COPY_DE_LOS_EDITORES as E,
+  copiaDeLaSesion,
+  copiaDelEjercicio,
+  duplicarEn,
+  loQuePasaConLasSesiones,
+  mover,
+  organizadoEnMicrociclos,
+  posicionesTrasInsertar,
+  posicionesTrasMover,
+  posicionesTrasQuitar,
+} from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
 import { AgendaDelPlan, agendaVigente, resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
@@ -132,7 +148,12 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   [N.parametroIncompleto]: 'a un parámetro le falta el nombre o el valor',
   // La agenda (DL-137): lo que la API rechaza de los días de entrenamiento.
   ...PROBLEMA_DE_AGENDA,
+  // TB-48: los topes del contrato, avisados antes de guardar.
+  ...TEXTO_DE_LOS_TOPES,
 };
+
+/** Lo que no deja guardar: lo que el editor ve solo y, desde TB-48, los topes del contrato que se pasan. */
+const loQueNoDejaGuardar = (bloques: Bloques) => [...loQueNoDejaGuardarElEntrenamiento(bloques), ...topesPasadosDeEntrenamiento(bloques)];
 
 /** Dónde está un problema, en palabras: los de la agenda, en «Días de entrenamiento». */
 const dondeEsta = (p: ValidationIssue, bloques: Bloques): string =>
@@ -194,6 +215,9 @@ export function EditorDePlan({
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [imagenes, setImagenes] = useState<Record<string, ImagenDeEjercicio | null>>({});
   const [proximaRevision, setProximaRevision] = useState('');
+  // TB-15: «¿Cuándo la revisás?» al activar, con nada elegido (o la fecha que ya tenía la versión); la fecha que resulta
+  // es la que se guarda en la versión antes de activarla.
+  const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
   // La agenda (DL-137): los días de cada sesión. Se ve plegada en un renglón y se abre para cambiarla.
   const [agenda, setAgenda] = useState<AgendaDeEntrenamiento | null>(null);
   const [agendaAbierta, setAgendaAbierta] = useState(false);
@@ -209,6 +233,8 @@ export function EditorDePlan({
   const ediciones = useRef(0);
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deValidar?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
+  // TB-48: lo que «Revisar el plan» encontró sin completar. No impide guardar ni activar.
+  const [sinCompletar, setSinCompletar] = useState<readonly ValidationIssue[] | null>(null);
   const [confirmar, setConfirmar] = useState(false);
   // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -264,6 +290,7 @@ export function EditorDePlan({
     setBloques((b) => f(structuredClone(b)));
     setSucio(true);
     setProblemas(null);
+    setSinCompletar(null);
     setMensaje(null);
     setParaEnfocar(null);
   };
@@ -273,12 +300,12 @@ export function EditorDePlan({
     if (!version) return null;
     // Un nombre vacío o un dato que no se entiende pueden estar en otro bloque, en otra sesión o en un ejercicio
     // plegado: se listan, y cada uno lleva a su lugar. Nada de eso viaja: un dato mal escrito se guardaría como «nada».
-    const impide = loQueNoDejaGuardarElEntrenamiento(bloques);
+    const impide = loQueNoDejaGuardar(bloques);
     if (impide.length > 0) {
       // El autoguardado espera a que se pueda guardar: no abre avisos mientras se escribe.
       if (automatico) return null;
       setProblemas(impide);
-      setMensaje({ tipo: 'error', texto: avisoDeLoQueNoDejaGuardarElEntrenamiento(impide) });
+      setMensaje({ tipo: 'error', texto: impide.some((p) => esUnTope(p.code)) ? AVISO_DE_LOS_TOPES : avisoDeLoQueNoDejaGuardarElEntrenamiento(impide) });
       return null;
     }
     const edicionesAlEnviar = ediciones.current;
@@ -345,7 +372,7 @@ export function EditorDePlan({
   }
 
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
-  const puedeGuardar = loQueNoDejaGuardarElEntrenamiento(bloques).length === 0;
+  const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
   const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision], [bloques, agenda, proximaRevision]);
   useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla,
@@ -359,9 +386,13 @@ export function EditorDePlan({
     const r = await api.validarPlanDeEntrenamiento(token, planId, v.version);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setMensaje({ tipo: 'error', texto: mensajeDeFallo(r) });
+    // TB-48: además de lo que impide activar, lo que queda sin completar, que no lo impide.
+    const falta = loQueQuedaSinCompletarEnEntrenamiento(bloques);
     setProblemas(r.datos.data.issues);
-    // Validar revisa la forma, no la calidad del programa: se dice junto al resultado (B10-06:563-591).
-    setMensaje(r.datos.data.valid ? { tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.sinProblemas} ${COPY_ENTRENAMIENTO.noJuzga}` } : { tipo: 'error', texto: COPY_ENTRENAMIENTO.hayElementosPorCorregir, deValidar: true });
+    setSinCompletar(falta);
+    // Revisar mira la forma, no la calidad del programa: se dice junto al resultado (B10-06:563-591).
+    if (!r.datos.data.valid) return setMensaje({ tipo: 'error', texto: COPY_ENTRENAMIENTO.hayElementosPorCorregir, deValidar: true });
+    setMensaje(falta.length > 0 ? { tipo: 'info', texto: COPY_ENTRENAMIENTO.sinProblemas, deValidar: true } : { tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.sinProblemas} ${COPY_ENTRENAMIENTO.noJuzga}` });
   }
 
   /** «Activar plan»: con cambios, guarda antes; si no se puede guardar, no pregunta nada (el motivo queda a la vista). */
@@ -369,11 +400,13 @@ export function EditorDePlan({
     const v = sucio ? await guardar() : version;
     if (!v) return;
     setFalloDeActivacion(null);
+    setCuando(eleccionAlActivar(v.nextReviewAt));
+    setProximaRevision(v.nextReviewAt ?? '');
     setConfirmar(true);
   }
 
   async function activar() {
-    if (!version) return;
+    if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
     setActivando(true);
     setFalloDeActivacion(null);
     // La próxima revisión se fija en este acto: si cambió, se guarda antes, y se activa la versión que eso deja.
@@ -444,7 +477,7 @@ export function EditorDePlan({
   const lasSesiones = (x: Bloques): SesionE[] => (j !== null ? x[i]!.microcycles![j]!.sessions : (x[i]!.sessions ??= []));
   // Lo que el editor ve solo ya lo dice cada ejercicio con sus palabras: al renglón van los problemas de «Validar».
   const rutasConProblemas = (problemas ?? []).filter((p) => !esDelEditor(p.code)).map((p) => p.path);
-  const impideGuardar = loQueNoDejaGuardarElEntrenamiento(bloques);
+  const impideGuardar = loQueNoDejaGuardar(bloques);
   const antesHayQueCorregir = impideGuardar.length > 0 ? 'Antes hay que corregir lo que no deja guardar esta versión.' : null;
 
   const elegirBloque = (n: number) => {
@@ -483,8 +516,9 @@ export function EditorDePlan({
     cambiar((x) => (x.splice(i, 1), x));
     elegirBloque(Math.max(0, i - 1));
   };
+  /** TB-48: también con sesiones sueltas, que pasan a la «Semana 1» con sus identificadores (la agenda no pierde sus días). */
   const organizarPorMicrociclos = () => {
-    cambiar((x) => ((x[i]!.microcycles = [{ label: 'Semana 1', purpose: null, sessions: [] }]), x));
+    cambiar((x) => ((x[i] = organizadoEnMicrociclos(x[i]!)), x));
     elegirMicrociclo(0);
     setTexto({ de: 'nombre-del-microciclo', i, j: 0, k: null });
   };
@@ -509,6 +543,17 @@ export function EditorDePlan({
     cambiar((x) => (lasSesiones(x).splice(k, 1), x));
     elegirSesion(Math.max(0, k - 1));
   };
+  /** TB-48: la copia de la sesión va justo después, y se la mira con su nombre a la vista para cambiarlo. */
+  const duplicarSesion = () => {
+    cambiar((x) => (duplicarEn(lasSesiones(x), k, copiaDeLaSesion(lasSesiones(x)[k]!, k)), x));
+    elegirSesion(k + 1);
+    setTexto({ de: 'nombre-de-la-sesion', i, j, k: k + 1 });
+  };
+  /** TB-48: mueve la sesión que se mira, con su identificador (la agenda no pierde sus días), y se la sigue mirando. */
+  const moverSesion = (hacia: number) => {
+    cambiar((x) => (mover(lasSesiones(x), k, hacia), x));
+    elegirSesion(hacia);
+  };
   /** Una copia de la sesión habitual (sin identificadores: el servidor los asigna al guardar) al final de las sesiones que se miran. */
   const insertarSesion = (h: SesionHabitual) => {
     const n = sesiones.length;
@@ -529,7 +574,19 @@ export function EditorDePlan({
   const quitarEjercicio = (l: number) => {
     cambiar((x) => (lasSesiones(x)[k]!.prescriptions.splice(l, 1), x));
     // Lo abierto acompaña a su ejercicio: los de más abajo suben un lugar.
-    dejarAbiertos(new Set([...abiertos].filter((p) => p !== l).map((p) => (p > l ? p - 1 : p))));
+    dejarAbiertos(posicionesTrasQuitar(abiertos, l));
+  };
+  /** TB-48: sube o baja un ejercicio; lo abierto lo acompaña. */
+  const moverEjercicio = (l: number, hacia: number) => {
+    cambiar((x) => (mover(lasSesiones(x)[k]!.prescriptions, l, hacia), x));
+    dejarAbiertos(posicionesTrasMover(abiertos, l, hacia));
+  };
+  /** TB-48: la copia del ejercicio, con sus series y lo general, justo después y abierta. */
+  const duplicarEjercicio = (l: number) => {
+    cambiar((x) => (duplicarEn(lasSesiones(x)[k]!.prescriptions, l, copiaDelEjercicio(lasSesiones(x)[k]!.prescriptions[l]!)), x));
+    dejarAbiertos(new Set([...posicionesTrasInsertar(abiertos, l + 1), l + 1]));
+    // La copia no se lleva el foco: se dice dónde quedó (DL-113).
+    setMensaje({ tipo: 'exito', texto: E.duplicado });
   };
 
   /**
@@ -615,10 +672,24 @@ export function EditorDePlan({
         </h2>
         <div className="editor-del-plan__acciones">
           <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
-          <MenuDeAcciones
-            rotulo="Más acciones de esta versión"
-            acciones={[{ clave: 'plantilla', texto: COPY_PLANTILLAS.guardarComoPlantilla, alElegir: () => setGuardarPlantilla(true), noSePuede: antesHayQueCorregir }]}
-          />
+          {/* TB-48: «Guardar como plantilla», con su texto y a la vista (antes, sola en un menú «⋯» sin texto). Si no se
+              puede, está apagado (con `aria-disabled`, que conserva el foco) y dice por qué, al lector y al tocarlo. */}
+          <button
+            type="button"
+            className="boton boton--quieto"
+            data-guardar-como-plantilla
+            aria-disabled={antesHayQueCorregir ? true : undefined}
+            aria-describedby={antesHayQueCorregir ? 'motivo-sin-plantilla' : undefined}
+            onClick={() => (antesHayQueCorregir ? setMensaje({ tipo: 'info', texto: antesHayQueCorregir }) : setGuardarPlantilla(true))}
+          >
+            <Icono nombre="plantillas" tamano={18} />
+            {COPY_PLANTILLAS.guardarComoPlantilla}
+          </button>
+          {antesHayQueCorregir ? (
+            <span id="motivo-sin-plantilla" className="visualmente-oculto">
+              {antesHayQueCorregir}
+            </span>
+          ) : null}
           {/* Los tres se apagan con `aria-disabled`, no con `disabled`: un botón deshabilitado pierde el foco, y quien
               guarda con el teclado quedaría fuera de lugar (y «Volver», en el diálogo, no tendría a dónde volver). */}
           <button
@@ -696,7 +767,7 @@ export function EditorDePlan({
         </AvisoFlotante>
       ) : null}
       {mensaje && mensaje.tipo !== 'exito' ? (
-        <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info'}>
+        <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info' || !!mensaje.deValidar}>
           <p>{mensaje.texto}</p>
           {problemas && problemas.length > 0 ? (
             <ul className="problemas-del-plan">
@@ -715,6 +786,21 @@ export function EditorDePlan({
                 </li>
               ))}
             </ul>
+          ) : null}
+          {/* TB-48: lo que queda sin completar, que no impide activar; cada cosa lleva a su lugar, como un problema. */}
+          {sinCompletar && sinCompletar.length > 0 ? (
+            <>
+              <p>{COPY_REVISAR_EL_PLAN.sinCompletar}</p>
+              <ul className="problemas-del-plan" data-sin-completar>
+                {sinCompletar.map((p, n) => (
+                  <li key={n}>
+                    <button type="button" className="boton boton--enlace" onClick={() => irAlProblema(p)}>
+                      {ubicacionDelProblemaDeEntrenamiento(p.path, bloques)} → {TEXTO_DE_LO_INCOMPLETO[p.code]}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
           {mensaje.deValidar ? <p className="nota">{COPY_ENTRENAMIENTO.noJuzga}</p> : null}
         </Aviso>
@@ -748,7 +834,9 @@ export function EditorDePlan({
                         clave: 'microciclos',
                         texto: 'Organizar por microciclos',
                         alElegir: organizarPorMicrociclos,
-                        noSePuede: sesiones.length > 0 ? 'Solo mientras el bloque no tiene sesiones: con microciclos, las sesiones van dentro de ellos.' : null,
+                        // TB-48: se ofrece siempre; si el bloque ya tiene sesiones, dice adónde van.
+                        detalle: loQuePasaConLasSesiones(sesiones.length),
+                        noSePuede: sesiones.length > TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo ? E.topeDelMicrociclo(TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo, sesiones.length) : null,
                       },
                     ]),
                 { clave: 'quitar', texto: 'Quitar este bloque', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es el único bloque de la versión.' : null },
@@ -846,6 +934,10 @@ export function EditorDePlan({
               alineado="izquierda"
               acciones={[
                 { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-de-la-sesion', ...deLaSesion }) },
+                // TB-48: duplicar y mover la sesión que se mira.
+                { clave: 'duplicar', texto: E.duplicarSesion, alElegir: duplicarSesion },
+                { clave: 'antes', texto: E.moverAntes, alElegir: () => moverSesion(k - 1), noSePuede: k === 0 ? E.yaEsElPrimero : null },
+                { clave: 'despues', texto: E.moverDespues, alElegir: () => moverSesion(k + 1), noSePuede: k === sesiones.length - 1 ? E.yaEsElUltimo : null },
                 { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: () => setSesionHabitual(structuredClone(sesion)), noSePuede: antesHayQueCorregir },
                 { clave: 'quitar', texto: 'Quitar esta sesión', alElegir: quitarSesion },
               ]}
@@ -942,6 +1034,11 @@ export function EditorDePlan({
               }}
               onCambiar={(c) => cambiarEjercicio(l, c)}
               onQuitar={() => quitarEjercicio(l)}
+              esElPrimero={l === 0}
+              esElUltimo={l === sesion.prescriptions.length - 1}
+              onSubir={() => moverEjercicio(l, l - 1)}
+              onBajar={() => moverEjercicio(l, l + 1)}
+              onDuplicar={() => duplicarEjercicio(l)}
             />
           ))}
           <div className="editor-del-plan__al-pie">
@@ -999,11 +1096,13 @@ export function EditorDePlan({
         enviando={activando}
         error={falloDeActivacion}
         focoEnVolver
+        confirmarDeshabilitado={fechaQueResulta(cuando, hoyEn()) === undefined}
         onVolver={() => {
           setConfirmar(false);
           setFalloDeActivacion(null);
           // La fecha es de este acto: si no se activa, vuelve a la que estaba guardada.
           setProximaRevision(version.nextReviewAt ?? '');
+          setCuando(NADA_ELEGIDO);
           intentoDeActivar.descartar();
         }}
         onConfirmar={() => void activar()}
@@ -1022,13 +1121,18 @@ export function EditorDePlan({
             <strong>{COPY_AGENDA_DE_ENTRENAMIENTO.titulo}:</strong> {resumenDeLaAgenda(agendaVisible, sesionesDeLaAgenda)}
           </p>
         ) : null}
-        <Campo
+        <CuandoLaRevisas
           id="trn-proxima-revision"
-          etiqueta={`${COPY_DE_ACTIVAR_EL_PLAN.proximaRevision} (${COPY_DE_ACTIVAR_EL_PLAN.opcional})`}
-          ayuda={COPY_DE_ACTIVAR_EL_PLAN.ayudaDeLaRevision}
-          type="date"
-          value={proximaRevision}
-          onChange={(e) => setProximaRevision(e.target.value)}
+          hoy={hoyEn()}
+          momento="ACTIVAR"
+          conSinFecha
+          primerPlan={!vigente}
+          eleccion={cuando}
+          alElegir={(e) => {
+            setCuando(e);
+            setProximaRevision(fechaQueResulta(e, hoyEn()) ?? '');
+          }}
+          aviso={loQueFalta(cuando, hoyEn())}
         />
       </DialogoDeConfirmacion>
     </section>

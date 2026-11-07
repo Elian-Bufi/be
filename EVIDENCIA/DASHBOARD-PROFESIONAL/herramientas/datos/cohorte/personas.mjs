@@ -21,6 +21,9 @@ export const PERSONAS = [
     nacimiento: '1990-06-03',
     talla: 176.0,
     dias: 1095,
+    // TB-24 (WP-TABLERO-ALTA-GAMA; DL-163 D-11): su profesional de Antropometría calcula también las masas de Durnin y
+    // Womersley en cada toma con pliegues, para que la composición corporal en kg tenga datos.
+    masas: true,
     areas: { NUTRICION: 'N', ENTRENAMIENTO: 'T', ANTROPOMETRIA: 'N' },
     evaluacionNut: {
       contexto: 'Primera consulta. Trabaja en una oficina contable, almuerza afuera y cena tarde. Quiere bajar de peso: en el último control le marcaron el colesterol alto.',
@@ -142,6 +145,7 @@ export const PERSONAS = [
     nacimiento: '1997-03-21',
     talla: 163.5,
     dias: 548,
+    masas: true,
     areas: { ENTRENAMIENTO: 'T', ANTROPOMETRIA: 'A' },
     evaluacionTrn: {
       entradas: [['Experiencia en entrenamiento de fuerza', 'Funcional en un gimnasio de barrio; nunca con barra', null], ['Días disponibles', 'Lunes, miércoles y viernes', null]],
@@ -214,6 +218,13 @@ export const PERSONAS = [
     nacimiento: '2001-08-09',
     talla: 186.0,
     dias: 730,
+    // TB-51 (WP-TABLERO-ALTA-GAMA; D-11, modificada por Dirección el 2026-11-07): su profesional de Antropometría calcula
+    // los cuatro componentes de De Rose y Guimarães (la grasa y la libre de grasa de Faulkner, la masa ósea de Rocha, la
+    // residual de Würch y la muscular), para que la barra de la tarjeta muestre grasa, músculo y resto. Los diámetros de
+    // la muñeca y del fémur no cambian en un adulto: van iguales en cada toma, sin ruido (no consumen el azar de la
+    // historia, así que las demás medidas de Federico quedan como estaban).
+    cuatroComponentes: true,
+    diametros: { 'diametro-biestiloideo': 6.0, 'diametro-femur': 10.2 },
     areas: { NUTRICION: 'N', ENTRENAMIENTO: 'T', ANTROPOMETRIA: 'N' },
     evaluacionNut: {
       contexto: 'Juega de segunda línea en un club de la URBA: entrena con el club martes y jueves a la noche y juega los sábados.',
@@ -399,6 +410,9 @@ export const PERSONAS = [
     nacimiento: '1960-11-02',
     talla: 171.0,
     dias: 365,
+    // TB-24: las masas se piden también para Héctor, pero sus tomas no tienen pliegues (`sinPliegues`): el método no
+    // tiene con qué calcular y la cohorte no lo inventa. Es el caso sin método, el de la línea de los pesos.
+    masas: true,
     areas: { NUTRICION: 'N', ANTROPOMETRIA: 'N' },
     evaluacionNut: {
       contexto: 'Lo derivó su médico clínico: glucemia en ayunas en el límite y sobrepeso. Contador, trabaja desde su casa.',
@@ -509,4 +523,18 @@ export const METODOS = {
   H: ['be/imc@1', 'be/suma-6-pliegues-isak@1', 'be/grasa-durnin-womersley-hombres@1', 'be/indice-cintura-talla@1'],
   M: ['be/imc@1', 'be/suma-6-pliegues-isak@1', 'be/grasa-durnin-womersley-mujeres@1', 'be/indice-cintura-talla@1'],
   sinPliegues: { H: ['be/imc@1', 'be/grasa-rfm-hombres@1', 'be/indice-cintura-talla@1'], M: ['be/imc@1', 'be/grasa-rfm-mujeres@1', 'be/indice-cintura-talla@1'] },
+  /**
+   * TB-24 (DL-163 D-11): las masas de dos compartimentos de Durnin y Womersley con Siri, para quien tiene `masas: true`. Su
+   * masa grasa y su masa libre de grasa suman el peso de la toma. Una toma sin los cuatro pliegues no las tiene.
+   */
+  masas: {
+    H: ['be/masa-grasa-durnin-womersley-hombres@1', 'be/masa-libre-de-grasa-durnin-womersley-hombres@1'],
+    M: ['be/masa-grasa-durnin-womersley-mujeres@1', 'be/masa-libre-de-grasa-durnin-womersley-mujeres@1'],
+  },
+  /**
+   * TB-51: los cuatro componentes de De Rose y Guimarães, para quien tiene `cuatroComponentes: true` (solo hombres: la
+   * grasa de Faulkner es de hombres). La masa muscular es el peso menos la grasa de Faulkner, la ósea de Rocha y la
+   * residual de Würch, y las cuatro suman el peso de la toma.
+   */
+  cuatroComponentes: ['be/masa-grasa-faulkner@1', 'be/masa-libre-de-grasa-faulkner@1', 'be/masa-osea-rocha@1', 'be/masa-residual-wurch-hombres@1', 'be/masa-muscular-4c-hombres@1'],
 };

@@ -14,9 +14,14 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--texto);
-  font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* Inter autoalojada (TB-01; DL-163 D-3): la variable la define next/font en <html> (src/letra/letra.ts), con su
+     respaldo ajustado. Sin la variable, la lista de siempre. */
+  font-family: var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 100%;
   line-height: 1.55;
+  /* El interletrado que el diseño de Inter da para 16 px (sus «dynamic metrics»): Inter es más ancha que el respaldo, y
+     con este ajuste la primera pantalla a 1280 y a 1440 sigue mostrando lo de la línea de base (TB-01; TA-03). */
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -39,6 +44,15 @@ h4 {
 h1 {
   font-size: clamp(1.6rem, 1.1rem + 1.8vw, 2.15rem);
   margin: 0.5rem 0 1rem;
+}
+
+/* Los momentos de marca (TB-01; DL-163 D-3): Poppins 600 solo en el título del Espacio profesional, en el nombre de la
+   persona en el marco de la ficha y, desde TB-12, en la pregunta del cajón «De a una». En el resto, Inter. */
+.espacio-profesional__encabezado h1,
+.marco-de-la-ficha__nombre h1,
+.cajon__pregunta {
+  font-family: var(--letra-marca, Poppins), var(--letra-texto, Inter), 'Segoe UI', Roboto, Arial, sans-serif;
+  font-weight: 600;
 }
 
 h2 {
@@ -1708,14 +1722,15 @@ details summary {
   font-size: 0.8rem;
 }
 
+/* El piso de la letra de un gráfico es 12,5 (TB-02; DL-163 D-3): 0,8rem con la letra de 16 de la página. */
 .grafico__tick--estado {
   fill: var(--tenue);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 
 .grafico__valor {
   fill: var(--texto);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
@@ -1768,27 +1783,29 @@ details summary {
   border-radius: 3px;
 }
 
+/* Lo planificado y lo registrado de Entrenamiento, en el color de la métrica (TB-03): el contorno discontinuo contra el
+   lleno, como en el gráfico. */
 .muestra--planificado {
-  border: 2px solid var(--grafico-planificado);
-  background: repeating-linear-gradient(135deg, var(--grafico-planificado) 0 2px, transparent 2px 6px);
+  border: 1.25px dashed var(--metrica-1);
+  background: var(--superficie);
 }
 
 .muestra--registrado {
-  background: var(--grafico-registrado);
+  background: var(--metrica-1);
 }
 
 /* Evolución antropométrica: punto comparable y rombo no comparable, del mismo color; la forma dice la diferencia. */
 .muestra--punto {
   width: 0.9rem;
   border-radius: 50%;
-  background: var(--grafico-registrado);
+  background: var(--metrica-1);
 }
 
 .muestra--rombo {
   width: 0.8rem;
   height: 0.8rem;
   border-radius: 2px;
-  background: var(--grafico-registrado);
+  background: var(--metrica-1);
   transform: rotate(45deg);
 }
 
@@ -3824,9 +3841,15 @@ html:has(.acciones--fijas) {
   box-shadow: inset 0 0 0 1px var(--texto);
 }
 
-/* El aro de la fecha elegida no recibe el puntero: rodea a la marca, que es la que se toca. */
-.grafico__aro {
+/* El aro de la fecha elegida no recibe el puntero: rodea a la marca, que es la que se toca. Es del color de la métrica;
+   con el foco del teclado en el gráfico, pasa al color del foco (TB-02; A11 de la propuesta). */
+.grafico__aro,
+.grafico__pildora {
   pointer-events: none;
+}
+
+.grafico__lienzo:focus-visible .grafico__aro-trazo {
+  stroke: var(--foco);
 }
 
 /* Los datos de una pregunta que ya tiene gráficos («Cambiar los datos»): sobre el fondo de la página, son una tarjeta. */
@@ -4983,6 +5006,36 @@ a.observacion__fila:focus-visible {
   margin-top: 0.35rem;
 }
 
+/* La muestra de los días sin registros junto a su cuenta, con la forma de la tira del indicador (TB-04): una raya baja. */
+.muestra-de-sin-registros {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.5rem;
+  margin-right: 0.3rem;
+  border-bottom: 1.5px solid var(--grafico-hueco);
+}
+
+/* Los rótulos de la grilla del indicador van adentro del lienzo, con un halo de la superficie para que una línea no los
+   corte. */
+.minigrafico__rotulo {
+  paint-order: stroke;
+  stroke: var(--superficie);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  font-variant-numeric: tabular-nums;
+}
+
+.minigrafico__fecha {
+  font-variant-numeric: tabular-nums;
+}
+
+/* La línea del minigráfico: 1,5 a densidad 1 y 1,25 en una pantalla de alta densidad (TB-03; A8 de la propuesta). */
+@media (min-resolution: 2dppx) {
+  .minigrafico__tramo {
+    stroke-width: 1.25px;
+  }
+}
+
 .minigrafico svg {
   display: block;
 }
@@ -5185,9 +5238,13 @@ a.observacion__fila:focus-visible {
   color: var(--enlace);
 }
 
+/* El texto secundario de cada pregunta, en 13 / 18, como el secundario de la escala de la propuesta (TB-01; TA-03):
+   con Inter, a 0,92rem, una descripción pasaba a tres renglones a 1280 y la lista, que iguala el alto de todas, crecía
+   104 px. */
 .tarjeta-de-pregunta__muestra {
   color: var(--tenue);
-  font-size: 0.92rem;
+  font-size: 0.8125rem;
+  line-height: 1.385;
 }
 
 .preguntas-profesionales__mas {
@@ -7082,16 +7139,8 @@ button.comida-del-dia__fila > .icono:last-child {
   list-style: none;
 }
 
-/* Una persona: a la izquierda, su referencia y sus áreas, que abren el detalle de sus vínculos; a la derecha, «Abrir»,
-   que lleva a su ficha. El detalle se abre debajo, a todo el ancho. */
+/* Una persona (TB-08): el renglón entero abre su ficha, con el monograma, el nombre, las áreas y desde cuándo. */
 .persona {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'datos abrir'
-    'vinculos vinculos';
-  align-items: center;
-  column-gap: 0.6rem;
   padding: 0.2rem 0;
   border-top: 1px solid var(--borde);
 }
@@ -7100,33 +7149,38 @@ button.comida-del-dia__fila > .icono:last-child {
   border-top: 0;
 }
 
-/* El bloque sobresale medio renglón a la izquierda: su fondo, al pasar por encima, no deja el texto pegado al borde,
-   y la referencia queda alineada con el buscador. */
-.persona__datos {
-  grid-area: datos;
+/* El renglón sobresale medio renglón a la izquierda: su fondo, al pasar por encima, no deja el texto pegado al borde,
+   y el monograma queda alineado con el buscador. */
+.persona__abrir {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.75rem;
   width: calc(100% + 0.5rem);
   min-height: 44px;
   margin-left: -0.5rem;
   padding: 0.35rem 0.5rem;
-  border: 0;
   border-radius: 10px;
-  background: none;
   color: var(--texto);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+  text-decoration: none;
 }
 
-.persona__datos:hover {
+.persona__abrir:hover {
   background: var(--fondo-suave);
 }
 
-.persona__datos > .icono {
+.persona__abrir:hover .persona__nombre {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.persona__abrir > .icono {
+  margin-left: auto;
   color: var(--tenue);
+}
+
+.persona__desde {
+  color: var(--tenue);
+  font-size: 0.92rem;
 }
 
 .persona__resumen {
@@ -7156,31 +7210,6 @@ button.comida-del-dia__fila > .icono:last-child {
 
 .persona__sin-acceso .icono {
   margin-top: 0.2rem;
-}
-
-.persona__abrir {
-  grid-area: abrir;
-}
-
-.persona__vinculos:not([hidden]) {
-  grid-area: vinculos;
-  display: grid;
-  gap: 0.55rem;
-  margin: 0.15rem 0 0.45rem;
-  padding: 0.6rem 0.8rem;
-  list-style: none;
-  border-radius: 10px;
-  background: var(--fondo-suave);
-}
-
-.persona__vinculos li {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.persona__vinculo {
-  font-weight: 600;
 }
 
 .directorio__incompleta {
@@ -10319,8 +10348,50 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 6rem;
 }
 
-.series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(:last-child) {
+.series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
   width: 8.5rem;
+}
+
+/* TB-48: las zonas de un ejercicio propio: las 17 en una grilla de campos y, al lado, la figura con lo elegido. */
+.zonas-propias {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+  gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+.zonas-propias__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.zonas-propias__lista .campo {
+  margin: 0;
+}
+
+.zonas-propias__lista select {
+  width: 100%;
+}
+
+.zonas-propias .aviso,
+.zonas-propias__acciones {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 52rem) {
+  .zonas-propias {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* TB-48: quitar cada serie, al final de su fila, como un ítem de Nutrición. */
+.series-del-editor thead th.series-del-editor__columna-quitar {
+  width: 3.25rem;
+}
+
+.series-del-editor .series-del-editor__quitar {
+  text-align: right;
 }
 
 .series-del-editor tbody th[scope="row"] {
@@ -10547,8 +10618,13 @@ button.comida-del-dia__fila > .icono:last-child {
   }
 
   .series-del-editor th[scope="row"],
-  .series-del-editor .series-del-editor__nota {
+  .series-del-editor .series-del-editor__nota,
+  .series-del-editor .series-del-editor__quitar {
     grid-column: 1 / -1;
+  }
+
+  .series-del-editor .series-del-editor__quitar {
+    justify-self: end;
   }
 
   .series-del-editor th,
@@ -10720,18 +10796,6 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
-/* La próxima acción y la próxima revisión, una al lado de la otra; la fecha, con su ancho. */
-.revision-nueva__siguiente {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 13rem);
-  gap: 0 1rem;
-  align-items: start;
-}
-
-.revision-nueva__siguiente .campo {
-  margin: 0;
-}
-
 /* El resultado: «Qué hace cada resultado» a la derecha de su título, las seis opciones en dos columnas (bajan por
  * columna, en el orden del dominio) y el efecto del elegido en un recuadro. */
 .resultado-de-revision {
@@ -10819,6 +10883,63 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
+/* WP-TABLERO-ALTA-GAMA TB-15: «¿Cuándo la revisás?», en la revisión y al activar. Las opciones para tocar, cada una con
+ * la fecha que resulta, en las columnas que entren; el campo de la fecha, con su ancho; y el efecto de lo elegido en un
+ * recuadro, como el del resultado. Nada viene elegido. */
+.cuando-la-revisas {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cuando-la-revisas__pregunta {
+  padding: 0;
+  font-weight: 700;
+}
+
+/* Cada opción entra en un renglón («En 1 semana · viernes 13 nov»): si no entran dos por fila, va una (a 1280 la tarjeta
+ * de la revisión es angosta y la fecha se partía en dos renglones). */
+.cuando-la-revisas__opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 0.15rem 1rem;
+}
+
+.cuando-la-revisas__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.cuando-la-revisas__opcion input {
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+}
+
+.cuando-la-revisas__opcion:has(input:checked) span {
+  font-weight: 700;
+}
+
+.cuando-la-revisas .campo {
+  max-width: 14rem;
+  margin: 0;
+}
+
+.cuando-la-revisas__efecto {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--azul);
+  border-radius: 0 8px 8px 0;
+  background: var(--fondo-suave);
+}
+
 /* La barra: la de los formularios largos (`acciones--fijas`), con lo que pasa al registrar a la izquierda. */
 .barra-de-revision {
   justify-content: space-between;
@@ -10874,20 +10995,12 @@ button.comida-del-dia__fila > .icono:last-child {
   }
 }
 
-/* Una tarjeta angosta: el resultado, en una columna; la fecha, debajo. */
+/* Una tarjeta angosta: el resultado, en una columna. */
 @container tarjeta-de-revision (max-width: 26rem) {
   .resultado-de-revision__opciones {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     grid-auto-flow: row;
-  }
-
-  .revision-nueva__siguiente {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .revision-nueva__siguiente .campo + .campo {
-    margin-top: 1rem;
   }
 
   .resultado-de-revision__lista {
@@ -11590,26 +11703,39 @@ details[open] > summary:not([class])::before {
   font-size: 0.8rem;
 }
 
-/* Los puntos de Evolución van en el azul de los datos, y la leyenda dice las tres formas. */
+/* Los puntos de Evolución van en el azul de los datos, y la leyenda dice las tres formas, del tamaño con que se dibujan
+   (TB-02): el punto lleno de 7 y el cuadrado girado de 9. */
 .leyenda--evolucion .muestra--punto,
 .leyenda--evolucion .muestra--rombo {
+  width: 7px;
+  height: 7px;
+  margin-inline: 2px;
   background: var(--metrica-1);
+}
+
+.leyenda--evolucion .muestra--rombo {
+  width: 9px;
+  height: 9px;
+  margin-inline: 3px;
 }
 
 .muestra--corregida {
   position: relative;
 }
 
+/* Lo corregido, una raya fina encima del punto (TB-02): un centro claro se confundía con el hueco. */
+.muestra--corregida {
+  overflow: visible;
+}
+
 .muestra--corregida::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0.3rem;
-  height: 0.3rem;
-  margin: -0.15rem 0 0 -0.15rem;
-  border-radius: 50%;
-  background: var(--superficie);
+  top: -0.3rem;
+  left: 0;
+  width: 100%;
+  height: 1.25px;
+  background: var(--metrica-1);
 }
 
 /* El marco de la ficha y de las áreas, con renglones de píxeles enteros (53 + 36 + 50, más el borde: 140). Con la píldora
@@ -11721,19 +11847,6 @@ details[open] > summary:not([class])::before {
   left: 0;
   width: 4px;
   border-radius: 0;
-}
-
-/* «Abrir», en «Tus asesorados»: un enlace con su flecha, como en «Pendientes» (`.pendiente__enlace`), con el mismo blanco
-   de 44 px. La flecha de desplegar se queda: abre la finalidad, el estado y desde cuándo de cada vínculo. */
-.persona__abrir {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  min-height: 44px;
-  padding-inline: 0.25rem;
-  color: var(--enlace);
-  font-weight: 600;
-  text-underline-offset: 0.18em;
 }
 
 /* «Plantillas y habituales», «Mis recetas» y «Mis ejercicios», al ancho del Espacio profesional y con su título del
@@ -13579,4 +13692,1446 @@ details[open] > summary:not([class])::before {
   .comidas-declaradas__pasar {
     white-space: normal;
   }
+}
+
+/* ─── WP-TABLERO-ALTA-GAMA, TB-05 (DL-163 D-2): el rostro ──────────────────────────────────────────────────────────── */
+
+/* El monograma: las iniciales en tinta neutra sobre un círculo de un solo tono, el mismo para todas las personas. Sin
+   aro, sin color por persona y sin nada encima: no dice nada de nadie. Es decorativo (el nombre va escrito al lado). */
+.retrato {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--retrato-fondo);
+  color: var(--retrato-tinta);
+  font-weight: 600;
+  font-variant-numeric: normal;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  user-select: none;
+}
+
+.retrato--chico {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.78rem;
+}
+
+.retrato--medio {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.875rem;
+}
+
+.retrato--grande {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.05rem;
+}
+
+/* Donde el nombre va con su monograma: los dos en un renglón, alineados al centro. */
+.con-retrato {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.marco-de-la-ficha__nombre .retrato {
+  align-self: center;
+}
+
+/* El menú de la cuenta: el retrato propio (o, con «Ocultar nombres», el ícono que lo avisa) ocupa el lugar del círculo. */
+.menu-de-cuenta__retrato:has(.retrato) {
+  border: 0;
+}
+
+.menu-de-cuenta__retrato .retrato--medio {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.8rem;
+}
+
+/* «Ocultar nombres» va después de la apariencia, que ya trae la línea de abajo: lleva la suya hacia «Cerrar sesión». */
+.menu-de-cuenta__ocultar {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 0 0.25rem;
+  padding: 0 0.6rem 0.55rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.menu-de-cuenta__ocultar label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.menu-de-cuenta__ocultar .nota {
+  margin: 0;
+}
+
+.novedad__icono .retrato {
+  margin-top: -0.15rem;
+}
+
+/* «Tus asesorados»: el monograma a la izquierda y el resumen ocupa lo que queda, hasta la flecha de la ficha. */
+.persona__abrir > .persona__resumen {
+  flex: 1 1 auto;
+}
+
+/* TB-09: la revisión registrada a la que lleva «Aplicar la revisión» desde la ficha. Se ubica, no se califica: un fondo
+   suave y una línea neutra a la izquierda, sin el acento. */
+.lista__item--pedida {
+  box-shadow: inset 3px 0 0 var(--borde-control);
+  background: var(--fondo-suave);
+}
+
+.lista__item--pedida:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* ─── WP-TABLERO-ALTA-GAMA, TB-07 (DL-163 D-3): «Tu semana» ────────────────────────────────────────────────────────── */
+
+/* Las revisiones que acordó el profesional, una columna por día. Es su calendario: nada se colorea por la persona, y
+   «Vencidas» se distingue por su nombre y su lugar, no por un color de alarma. Hoy lleva la única luz (--ahora).
+   Entre «Tu semana» y la mesa va el mismo aire que entre las demás secciones (--entre-secciones): el margen de abajo que
+   tenía se sumaba a ese y era el único doble del Espacio (TA-71). */
+.tu-semana__rango {
+  margin: 0;
+}
+
+.tu-semana__vista {
+  margin-left: auto;
+  align-self: center;
+}
+
+.tu-semana__dias {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.tu-semana__dia {
+  /* TA-71: cada columna es un contenedor, y su ficha se acomoda al ancho de la columna, no al de la ventana. */
+  container: dia-de-la-semana / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.5rem 0.5rem 0.6rem;
+  border-top: 2px solid var(--borde);
+  border-radius: 0 0 10px 10px;
+}
+
+.tu-semana__dia--hoy {
+  border-top-color: var(--ahora);
+}
+
+.tu-semana__dia--vencidas {
+  background: var(--fondo-suave);
+  border-top-style: dashed;
+  border-top-color: var(--borde-control);
+}
+
+.tu-semana__dia h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.tu-semana__cuenta {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tu-semana__nada {
+  margin: 0;
+  color: var(--tenue);
+}
+
+.tu-semana__fichas,
+.tu-semana__lista {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La columna de las fichas no crece con el nombre: sin `minmax(0, 1fr)`, la columna implícita toma el ancho del nombre
+   entero y la ficha se pasa a la columna de al lado sin llegar a cortarse (TA-71). */
+.tu-semana__fichas {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tu-semana__lista {
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+
+/* La ficha: el monograma, el nombre y el área. En «Ver como lista», el monograma al costado de los dos. */
+.ficha-de-la-semana {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'retrato nombre'
+    'retrato area';
+  align-items: center;
+  column-gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.25rem 0.35rem;
+  border-radius: 10px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.ficha-de-la-semana > .retrato {
+  grid-area: retrato;
+  justify-self: start;
+}
+
+/* En la columna de un día, el nombre al costado del monograma y el área debajo de los dos, a todo el ancho: el nombre
+   tiene así su lugar y el área no compite con él. */
+.tu-semana__fichas .ficha-de-la-semana {
+  grid-template-areas:
+    'retrato nombre'
+    'area area';
+  column-gap: 0.4rem;
+  row-gap: 0.1rem;
+  padding: 0.15rem 0.25rem;
+}
+
+/* En una columna angosta (a 1280, con las vencidas son nueve), el monograma va arriba y el nombre y el área toman todo
+   el ancho; el área va en palabras, sin su ícono, que la repite: mejor la palabra entera que el ícono con la palabra
+   cortada. */
+@container dia-de-la-semana (max-width: 7.5rem) {
+  .tu-semana__fichas .ficha-de-la-semana {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'retrato'
+      'nombre'
+      'area';
+    row-gap: 0.2rem;
+  }
+
+  .tu-semana__fichas .ficha-de-la-semana__area > .icono {
+    display: none;
+  }
+}
+
+.ficha-de-la-semana:hover {
+  background: var(--fondo-suave);
+}
+
+.ficha-de-la-semana:hover .ficha-de-la-semana__nombre {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+/* El nombre (o la referencia, con «Ocultar nombres»): hasta dos renglones, partido entre palabras y, si una sola no
+   entra, dentro de ella; lo que sobra después del segundo renglón se corta con «…». Entero queda en el texto del
+   enlace y en el título (TA-71). */
+.ficha-de-la-semana__nombre {
+  display: -webkit-box;
+  grid-area: nombre;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.ficha-de-la-semana__area {
+  display: flex;
+  grid-area: area;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  color: var(--tenue);
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+/* El área (y, en la lista, el día): en un renglón y, si no entra, cortada con «…». */
+.ficha-de-la-semana__cual {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tu-semana__mas {
+  align-self: flex-start;
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+
+.tu-semana__vacio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* ─── WP-TABLERO-ALTA-GAMA, TB-10 (DL-163 D-1): las tarjetas del Resumen ───────────────────────────────────────────── */
+/* El tramo del ciclo (A10 de la propuesta): una pista de 4 en --pista; lo transcurrido, en --borde-control; hoy, una
+   marca de 2 × 12 en --ahora; la fecha acordada, una de 1,5 × 10 en --texto. Si venció, la pista sigue en discontinua
+   3 2 de 1,5, sin color nuevo, y la cuenta se escribe arriba. Nada cambia de color por lo que registra la persona. */
+.tramo {
+  margin: 0.4rem 0 0.1rem;
+}
+
+.tramo__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.tramo__titulo .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.tramo__pista {
+  position: relative;
+  height: 4px;
+  margin: 0.55rem 0 0.2rem;
+  border-radius: 2px;
+  background: var(--pista);
+}
+
+.tramo__transcurrido {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 2px;
+  background: var(--borde-control);
+}
+
+/* Lo vencido tapa la pista con la tarjeta y dibuja encima la discontinua, centrada en el alto de la pista. */
+.tramo__vencido {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--superficie);
+}
+
+.tramo__vencido::after {
+  content: '';
+  position: absolute;
+  top: 1.25px;
+  right: 0;
+  left: 0;
+  height: 1.5px;
+  background: repeating-linear-gradient(to right, var(--borde-control) 0 3px, transparent 3px 5px);
+}
+
+.tramo__acordada {
+  position: absolute;
+  top: -3px;
+  width: 1.5px;
+  height: 10px;
+  margin-left: -0.75px;
+  background: var(--texto);
+}
+
+.tramo__hoy {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ahora);
+}
+
+.tramo__puntas {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lo nuevo desde la última revisión, en cifras en fila (R-3): la cifra arriba y lo que cuenta debajo, en 13 / 18. */
+.cifras-desde-la-revision {
+  margin: 0.1rem 0 0.15rem;
+}
+
+.cifras-desde-la-revision__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cifras-desde-la-revision__celda {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.15rem 0.35rem;
+  border-radius: 8px;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+a.cifras-desde-la-revision__celda:hover {
+  background: var(--fondo-suave);
+}
+
+a.cifras-desde-la-revision__celda:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.cifras-desde-la-revision .cifra {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifras-desde-la-revision__texto {
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.cifras-desde-la-revision__frase {
+  margin: 0.25rem 0.3rem;
+  color: var(--tenue);
+  font-size: 0.95rem;
+}
+
+/* La pieza propia del área, después de lo nuevo desde la revisión. */
+.pieza-del-area {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--borde);
+}
+
+.pieza-del-area__titulo {
+  margin: 0 0 0.45rem;
+  color: var(--texto);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.pieza-del-area__nota {
+  margin: 0.3rem 0 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+/* Plegada (A13): el renglón que la abre lleva el título y lo que se ve de un vistazo; adentro, las cuentas y la cobertura
+   del período. El triángulo gira al abrir. */
+.pieza-del-area--plegada {
+  padding-top: 0.15rem;
+}
+
+.pieza-del-area--plegada > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0 0.3rem;
+  border-radius: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pieza-del-area--plegada > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pieza-del-area--plegada > summary:hover {
+  background: var(--fondo-suave);
+}
+
+.pieza-del-area--plegada > summary:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.pieza-del-area--plegada > summary > .icono {
+  flex: none;
+  color: var(--tenue);
+  transition: transform 120ms ease;
+}
+
+.pieza-del-area--plegada[open] > summary > .icono {
+  transform: rotate(90deg);
+}
+
+.pieza-del-area--plegada > summary > .pieza-del-area__titulo {
+  flex: none;
+  margin: 0;
+}
+
+.pieza-del-area--plegada > summary > .barra-partida {
+  flex: 1 1 auto;
+  min-width: 4rem;
+}
+
+.pieza-del-area__cuerpo {
+  padding: 0 0.3rem 0.2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pieza-del-area--plegada > summary > .icono {
+    transition: none;
+  }
+}
+
+/* La barra partida de los registros del período (R-4; A9): 8 de alto, radio 4 en las puntas y separadores de 2 que
+   dejan ver la tarjeta. Con cantidades, en la métrica; sin cantidades, en el gris de los huecos; anulados, en la pista
+   con su contorno: están fuera de los totales. Las cuentas, debajo, con su muestra, dicen lo mismo en palabras. */
+.barra-partida {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+}
+
+.barra-partida__tramo {
+  flex-basis: 0;
+  min-width: 3px;
+  border-radius: 1px;
+}
+
+.barra-partida__tramo:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.barra-partida__tramo:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.barra-partida__tramo[data-tramo='CON_CANTIDADES'],
+.barra-partida__muestra[data-tramo='CON_CANTIDADES'] {
+  background: var(--metrica-1);
+}
+
+.barra-partida__tramo[data-tramo='SIN_CANTIDADES'],
+.barra-partida__muestra[data-tramo='SIN_CANTIDADES'] {
+  background: var(--grafico-hueco);
+}
+
+.barra-partida__tramo[data-tramo='ANULADOS'],
+.barra-partida__muestra[data-tramo='ANULADOS'] {
+  background: var(--pista);
+  box-shadow: inset 0 0 0 1px var(--borde-control);
+}
+
+.barra-partida__cuentas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.9rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  list-style: none;
+}
+
+.barra-partida__cuentas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.barra-partida__cuentas .cifra {
+  color: var(--texto);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.barra-partida__muestra {
+  flex: none;
+  width: 10px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* Las sesiones por ejercicio (R-5; A9): barras de 8, sin pista, desde cero, con la cifra al final. */
+.sesiones-por-ejercicio {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sesiones-por-ejercicio li {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.sesiones-por-ejercicio__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sesiones-por-ejercicio__barra {
+  display: block;
+  height: 8px;
+}
+
+.sesiones-por-ejercicio__barra > span {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  background: var(--metrica-1);
+}
+
+.sesiones-por-ejercicio__cifra {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* «Empezar el plan» en miniatura (R-8; A10): círculos de 20 unidos por un conector de 2, con su palabra debajo. Lo
+   listo, lleno en neutro (en --tenue, para que el número llegue a 4,5:1 en los dos temas); lo que toca, lleno en
+   --ahora con un halo de 4; lo que viene, en contorno. */
+.primer-plan-en-miniatura {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin: 0.45rem 0 0.2rem;
+}
+
+.pasos-en-miniatura {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pasos-en-miniatura li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.25rem;
+  text-align: center;
+}
+
+.pasos-en-miniatura li + li::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  right: calc(50% + 16px);
+  left: calc(-50% + 16px);
+  height: 2px;
+  background: var(--borde-control);
+}
+
+.pasos-en-miniatura__circulo {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pasos-en-miniatura li[data-estado='listo'] .pasos-en-miniatura__circulo {
+  background: var(--tenue);
+  color: var(--superficie);
+}
+
+.pasos-en-miniatura li[data-estado='ahora'] .pasos-en-miniatura__circulo {
+  background: var(--ahora);
+  box-shadow: 0 0 0 4px var(--fondo-suave);
+  color: var(--superficie);
+}
+
+.pasos-en-miniatura li[data-estado='despues'] .pasos-en-miniatura__circulo {
+  border: 1.5px solid var(--borde-control);
+  color: var(--tenue);
+}
+
+.pasos-en-miniatura__titulo {
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.pasos-en-miniatura__detalle {
+  color: var(--tenue);
+  font-size: 0.8rem;
+}
+
+/* ─── WP-TABLERO-ALTA-GAMA, TB-49 (DL-165 D-8): «Lo que contó al empezar» ─────────────────────────────────────────── */
+/* Una tarjeta de solo lectura, como las notas del equipo: cada solicitud respondida con su procedencia y sus primeras
+   respuestas, pregunta y respuesta en dos columnas, y el enlace que la abre. Sin cuentas ni colores por respuesta. */
+.lo-que-conto {
+  padding: 0.9rem 1.15rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.lo-que-conto > h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.lo-que-conto > h2 .icono {
+  color: var(--tenue);
+}
+
+.lo-que-conto__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lo-que-conto__solicitud h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.lo-que-conto__procedencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+.lo-que-conto__respuestas {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0 0 0.45rem;
+}
+
+.lo-que-conto__respuestas > div {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 0.75rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.lo-que-conto__respuestas dt {
+  color: var(--tenue);
+  font-size: 0.875rem;
+}
+
+.lo-que-conto__respuestas dd {
+  margin: 0;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.lo-que-conto__abrir,
+.lo-que-conto__otras {
+  font-size: 0.875rem;
+}
+
+.lo-que-conto__otras {
+  margin: 0.6rem 0 0;
+}
+
+/* ─── La composición corporal en kg (WP-TABLERO-ALTA-GAMA TB-24; DL-163 D-11) ──────────────────────────────────────
+   La pieza de la pestaña Antropometría y de la pregunta de «Analizar»: las columnas de cada toma, «Cuánto cambió cada
+   parte» y la tabla. Los dos tramos de una columna nunca se tocan: un corte fino deja ver la superficie. */
+.composicion {
+  display: grid;
+  gap: 1rem;
+}
+
+.composicion__metodos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.composicion__metodos legend {
+  margin-bottom: 0.3rem;
+  color: var(--tenue);
+  font-size: 0.875rem;
+}
+
+.composicion__metodos label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+}
+
+.composicion__parte {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.composicion__titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.composicion__resumen {
+  margin: 0;
+}
+
+.composicion__resumen .cifra,
+.composicion-de-la-toma__cifra .cifra,
+.composicion__cifras .cifra {
+  font-variant-numeric: tabular-nums;
+}
+
+.composicion__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1rem;
+  margin: 0;
+  padding: 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+.composicion__leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.composicion__muestra {
+  flex: none;
+  width: 12px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.composicion__muestra[data-parte='libre'] {
+  background: var(--composicion-libre);
+}
+
+.composicion__muestra[data-parte='grasa'] {
+  background: var(--composicion-grasa);
+}
+
+/* TB-51: el músculo va en el azul de la libre de grasa, de la que es parte; el resto, en su propio tono. */
+.composicion__muestra[data-parte='musculo'] {
+  background: var(--composicion-libre);
+}
+
+.composicion__muestra[data-parte='resto'] {
+  background: var(--composicion-resto);
+}
+
+.composicion__muestra[data-parte='contorno'] {
+  box-shadow: inset 0 0 0 1.25px var(--tenue);
+}
+
+.composicion__muestra[data-parte='cambio'] {
+  width: 2px;
+  height: 12px;
+  border-radius: 0;
+  background: repeating-linear-gradient(to bottom, var(--borde-control) 0 2px, transparent 2px 5px);
+}
+
+.composicion__columnas,
+.composicion__linea {
+  min-width: 0;
+}
+
+.composicion__filas {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada fila: el nombre, su línea con las mismas fechas que las columnas y la primera y la última cifra con la diferencia. */
+.composicion__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) minmax(0, 12.5rem);
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.composicion__cifras {
+  text-align: right;
+}
+
+.composicion__tabla > summary {
+  min-height: 2.75rem;
+}
+
+.composicion__limite {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .composicion__fila {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+
+  .composicion__cifras {
+    text-align: left;
+  }
+}
+
+/* La barra de la última toma, en la tarjeta de Antropometría del Resumen y en la pestaña: 8 de alto, con un corte de 2 entre
+   las partes. Desde TB-51, la grasa primero y después el músculo y el resto, o la libre de grasa; las puntas, redondeadas.
+   Lo que dice está escrito debajo, en kilos y con el porcentaje al lado, con su método. */
+.barra-de-la-composicion {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  min-width: 4rem;
+}
+
+.barra-de-la-composicion > span {
+  flex-basis: 0;
+  min-width: 3px;
+}
+
+.barra-de-la-composicion > span:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.barra-de-la-composicion > span:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.barra-de-la-composicion > span[data-parte='libre'],
+.barra-de-la-composicion > span[data-parte='musculo'] {
+  background: var(--composicion-libre);
+}
+
+.barra-de-la-composicion > span[data-parte='grasa'] {
+  background: var(--composicion-grasa);
+}
+
+.barra-de-la-composicion > span[data-parte='resto'] {
+  background: var(--composicion-resto);
+}
+
+.pieza-del-area--plegada > summary > .barra-de-la-composicion {
+  flex: 1 1 auto;
+}
+
+.pieza-del-area > .barra-de-la-composicion {
+  margin-bottom: 0.4rem;
+}
+
+.composicion-de-la-toma__cifra,
+.composicion-de-la-toma__cambio {
+  margin: 0.2rem 0 0;
+  font-size: 0.875rem;
+}
+
+/* TB-51: las partes de la barra, cada una con sus kilos y su porcentaje al lado, en una grilla de tres columnas
+   (nombre, kilos, porcentaje) para que las cifras queden alineadas. */
+.reparto-del-peso > .barra-de-la-composicion {
+  margin: 0.35rem 0 0.45rem;
+}
+
+.reparto-del-peso__partes {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 0.15rem 0.5rem;
+  align-items: center;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  font-size: 0.875rem;
+  list-style: none;
+}
+
+.reparto-del-peso__partes > li {
+  display: contents;
+}
+
+.reparto-del-peso__partes .cifra {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.reparto-del-peso__porcentaje {
+  min-width: 3.4rem;
+  color: var(--tenue);
+}
+
+.composicion__resumen-titulo {
+  margin: 0;
+}
+
+/* TB-50: la evolución de las últimas tomas, en pares de medidas. Cada fila: el nombre, el dibujo de las tomas (una
+   columna por toma, con su fecha arriba) y la diferencia; los anchos de los costados son los de
+   `evolucion-de-las-tomas-en-pantalla.tsx` (NOMBRE y DIFERENCIA). */
+.evolucion-de-las-tomas__fila {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 4.5rem;
+  gap: 0 0.5rem;
+  align-items: center;
+}
+
+.evolucion-de-las-tomas__fila > svg {
+  display: block;
+  overflow: visible;
+}
+
+.evolucion-de-las-tomas__fechas {
+  margin-bottom: 0.1rem;
+}
+
+.evolucion-de-las-tomas__par {
+  margin-top: 0.35rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--borde);
+}
+
+.evolucion-de-las-tomas__titulo {
+  margin: 0;
+  color: var(--texto);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.evolucion-de-las-tomas__nombre {
+  font-size: 0.8125rem;
+  line-height: 1.05rem;
+}
+
+.evolucion-de-las-tomas__diferencia {
+  font-size: 0.8125rem;
+  text-align: right;
+}
+
+.evolucion-de-las-tomas__diferencia.cifra {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.pieza-del-area--plegada > summary > .evolucion-de-las-tomas__a-la-vista {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── WP-TABLERO-ALTA-GAMA TB-06 y TB-11: el saludo, las tres cifras y la mesa en dos carriles ─────────────────── */
+
+.encabezado-del-espacio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.encabezado-del-espacio__saludo {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* Tres cifras en fila desde 48 rem; debajo, una por renglón. Ningún color dice nada: el elegido va invertido. */
+.cifras-del-espacio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .cifras-del-espacio {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.cifra-del-espacio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.cifra-del-espacio__principal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin: -0.25rem -0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cifra-del-espacio__principal:hover {
+  background: var(--fondo-suave);
+}
+
+.cifra-del-espacio__principal[aria-pressed='true'] {
+  border-color: var(--texto);
+}
+
+.cifra-del-espacio__numero {
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifra-del-espacio__nombre {
+  font-weight: 600;
+}
+
+.cifra-del-espacio__desglose {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+p.cifra-del-espacio__desglose {
+  display: block;
+}
+
+.cifra-del-espacio__parte {
+  min-height: 36px;
+  padding: 0.15rem 0.7rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.cifra-del-espacio__parte:hover {
+  background: var(--fondo-suave);
+}
+
+.cifra-del-espacio__parte[aria-pressed='true'] {
+  border-color: var(--texto);
+  background: var(--texto);
+  color: var(--superficie);
+}
+
+.cifra-del-espacio .cifra {
+  font-variant-numeric: tabular-nums;
+}
+
+.espacio-profesional__costado {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Los dos modos de «Te toca a vos», con la forma de las vistas con nombre. */
+.mesa__modo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mesa-por-persona,
+.mesa-persona__renglones,
+.esperan__lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mesa-persona {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.mesa-persona:first-child {
+  border-top: 0;
+  padding-top: 0.25rem;
+}
+
+.mesa-persona__quien {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.mesa-persona__nombre {
+  font-weight: 600;
+}
+
+/* Un renglón por pendiente: el área, qué está pendiente y su verbo. Angosto, el verbo baja. */
+.mesa-renglon,
+.esperan__renglon {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  min-height: 44px;
+  padding: 0.25rem 0 0.25rem 2.25rem;
+}
+
+.mesa-renglon .pendiente__area {
+  grid-column: 1 / -1;
+  color: var(--tenue);
+}
+
+@media (min-width: 48rem) {
+  .mesa-renglon {
+    grid-template-columns: 10rem minmax(0, 1fr) auto;
+  }
+
+  .mesa-renglon .pendiente__area {
+    grid-column: auto;
+  }
+}
+
+.esperan__renglon {
+  padding-left: 0;
+  border-top: 1px solid var(--borde);
+}
+
+.esperan__renglon:first-child {
+  border-top: 0;
+}
+
+.esperan__quien {
+  grid-column: 1 / -1;
+  font-weight: 600;
+}
+
+.esperan__que {
+  min-width: 0;
+}
+
+.esperan__falla {
+  margin: 0;
+}
+
+/* ─── WP-TABLERO-ALTA-GAMA TB-12: el cajón «De a una», un panel al costado ───────────────────────────────────── */
+
+.te-toca__cabecera .cajon__empezar {
+  margin-left: auto;
+}
+
+.cajon {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(32rem, 100vw);
+  max-width: 100vw;
+  height: 100%;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 0;
+  border-left: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+  overflow-y: auto;
+}
+
+.cajon::backdrop {
+  background: var(--velo);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cajon[open] {
+    animation: cajon-entra 160ms ease-out;
+  }
+
+  @keyframes cajon-entra {
+    from {
+      transform: translateX(1.5rem);
+      opacity: 0.6;
+    }
+  }
+}
+
+.cajon__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cajon__nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--tenue);
+  font-weight: 600;
+}
+
+.cajon__cuadro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+
+.cajon__posicion,
+.cajon__quien,
+.cajon__que {
+  margin: 0;
+}
+
+.cajon__pregunta {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.cajon__quien {
+  font-weight: 600;
+}
+
+.cajon__salidas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.cajon__navegar {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--borde);
+}
+
+.cajon__salteados {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.cajon__atajos {
+  margin: 1rem 0 0;
+}
+
+/* TB-15: aplicar desde el cajón. Lo que registró la revisión (el resultado, el fundamento y la próxima acción) en una
+ * lista de dos columnas, y lo que pasa al aplicar en un recuadro, como el efecto de un resultado en la revisión. Después
+ * de aplicar, lo que se hizo, en el mismo recuadro, sin festejo. */
+.cajon__revision {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cajon__lo-registrado {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.cajon__lo-registrado div {
+  display: contents;
+}
+
+.cajon__lo-registrado dt {
+  color: var(--tenue);
+}
+
+.cajon__lo-registrado dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.cajon__efecto,
+.cajon__hecho {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--azul);
+  border-radius: 0 8px 8px 0;
+  background: var(--fondo-suave);
+}
+
+.cajon__revision .nota {
+  margin: 0;
+}
+
+/* TB-48: la nota de un ítem va en un renglón debajo del ítem, sin borde entre los dos: es parte del mismo ítem. */
+.items-del-editor .item-del-editor > th,
+.items-del-editor .item-del-editor > td {
+  border-bottom: 0;
+}
+
+.items-del-editor .item-del-editor__nota > td {
+  padding-top: 0;
 }

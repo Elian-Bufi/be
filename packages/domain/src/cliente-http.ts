@@ -1285,6 +1285,14 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     registrarRevisionDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof RegistrarRevisionDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/reviews`, { token, claveDeIdempotencia, esquema: RevisionDeEntrenamientoResponseSchema, cuerpo });
     },
+    /**
+     * API-TRN-23: una revisión de Entrenamiento, para su profesional. La operación ya existía en la API; el cliente la suma
+     * para el cajón «De a una» del website (WP-TABLERO-ALTA-GAMA TB-15, TA-42), que escribe el resultado, el fundamento y
+     * el efecto antes de aplicar. Las APK no la leen.
+     */
+    consultarRevisionDeEntrenamiento(token: string, revisionId: string) {
+      return llamar('GET', `/training/reviews/${encodeURIComponent(revisionId)}`, { token, esquema: RevisionDeEntrenamientoResponseSchema });
+    },
     /** API-TRN-23-EVIDENCIA (DL-154): la evidencia que guardó la revisión de entrenamiento, resuelta con el permiso de hoy. Solo la lee el website. */
     evidenciaDeRevisionDeEntrenamiento(token: string, revisionId: string) {
       return llamar('GET', `/training/reviews/${encodeURIComponent(revisionId)}/evidence`, { token, esquema: EvidenciaDeRevisionResponseSchema });
