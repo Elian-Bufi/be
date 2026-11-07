@@ -70,6 +70,16 @@ export interface ContextoDelSeguimiento {
 /** Lo que se le pide al diálogo de la nota: escribir una nueva, o corregir una propia con otra que la cita (CRD-D7). */
 export interface PedidoDeNota {
   readonly corrige?: { readonly noteId: string; readonly fecha: string; readonly origen: DominioDeAnalisis } | null;
+  /**
+   * TB-53 (DL-163 D-13, ampliada): desde el panel «Otras áreas» o desde el plan compartido, quien lleva esa área es el
+   * único destinatario, ya elegido, y la finalidad queda sin elegir (TA-90). `area` es la que lleva: el redactor la nombra.
+   */
+  readonly para?: { readonly identityId: string; readonly nombre: string; readonly area: string } | null;
+  /**
+   * TB-53: la versión del plan compartido que el autor ve por API-RES-06, citada con el tipo de referencia que ya existe
+   * (`NUTRITION_PLAN_VERSION` o `TRAINING_PLAN_VERSION`). Va marcada; se puede desmarcar.
+   */
+  readonly cita?: { readonly type: 'NUTRITION_PLAN_VERSION' | 'TRAINING_PLAN_VERSION'; readonly id: string; readonly texto: string } | null;
 }
 
 const Contexto = createContext<ContextoDelSeguimiento | null>(null);

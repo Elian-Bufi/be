@@ -14,6 +14,9 @@
  * - **Citar algo de tu área** (CRD-D5): planes activados, revisiones o tomas propias de esa área, hasta tres. Quien la recibe
  *   ve que están citados; los abre solo si ya tenía acceso.
  * - **«La persona también la lee»** (CRD-D2), junto al botón de enviar.
+ * - **Desde «Otras áreas» o el plan compartido** (WP-TABLERO-ALTA-GAMA TB-53; DL-163 D-13, ampliada): llega con quien lleva
+ *   esa área como único destinatario, ya elegido, la finalidad sin elegir (TA-90) y la versión del plan compartido citada
+ *   y marcada. Arriba se dice a quién se le escribe y que la persona también la lee, a la vista sin bajar.
  * El mismo patrón de diálogo que «Invitar a una persona»: `<dialog>` modal, el foco adentro, Escape cierra salvo mientras se
  * envía, y una Idempotency-Key por intento (un resultado incierto se reintenta con la misma).
  */
@@ -44,6 +47,7 @@ import { api, type Resultado } from '../../../lib/api';
 import { diaDelAnioEnCurso } from '../../../lib/formato';
 import { esIncierto, useClaveDeIntento } from '../../../lib/intento';
 import type { PedidoDeNota } from './seguimiento/contexto';
+import { COPY_OTRAS_AREAS } from './seguimiento/otras-areas';
 import { hoyEn, restarDias } from './seguimiento/estado';
 import { useNombres } from '../../../lib/nombres-ocultos';
 
@@ -106,6 +110,10 @@ export function DialogoDeNota({
   const enviando = envio.tipo === 'enviando';
   const persona = nombreDelAsesorado ?? 'esta persona';
   const corrige = pedido?.corrige ?? null;
+  // TB-53: el destinatario elegido y la cita del plan compartido, si el pedido llega desde «Otras áreas».
+  const para = pedido?.para ?? null;
+  const cita = pedido?.cita ?? null;
+  const claveDeLaCita = cita ? `${cita.type}|${cita.id}` : null;
 
   const cargar = useCallback(async () => {
     setCarga({ tipo: 'cargando' });
@@ -124,11 +132,11 @@ export function DialogoDeNota({
     const d = dialogo.current;
     if (!d) return;
     if (abierto && !d.open) {
-      setModo('ALL');
-      setElegido('');
+      setModo(para ? 'ONE' : 'ALL');
+      setElegido(para?.identityId ?? '');
       setFinalidad('');
       setTexto('');
-      setCitadas([]);
+      setCitadas(claveDeLaCita ? [claveDeLaCita] : []);
       setErrores({});
       setEnvio({ tipo: 'escribiendo' });
       intento.descartar();
@@ -136,7 +144,7 @@ export function DialogoDeNota({
       void cargar();
     }
     if (!abierto && d.open) d.close();
-  }, [abierto, cargar, intento]);
+  }, [abierto, cargar, intento, para, claveDeLaCita]);
 
   // Lo citable depende del área de origen: los hitos propios de esa área en el último año.
   useEffect(() => {
@@ -144,7 +152,8 @@ export function DialogoDeNota({
     let vigente = true;
     setCitables(null);
     setFalloLoCitable(false);
-    setCitadas([]);
+    // La cita del plan compartido no depende del área de origen: sigue marcada.
+    setCitadas(claveDeLaCita ? [claveDeLaCita] : []);
     const hoy = hoyEn();
     void api
       .lineaDeTiempo(token, asesoradoId, { periodStart: restarDias(hoy, 365), periodEnd: hoy, domain: DOMINIO[origen], type: HITOS_CITABLES[origen].join(','), limit: '50' })
@@ -165,8 +174,10 @@ export function DialogoDeNota({
     return () => {
       vigente = false;
     };
-  }, [abierto, origen, token, asesoradoId, vueltaDeLoCitable]);
+  }, [abierto, origen, token, asesoradoId, vueltaDeLoCitable, claveDeLaCita]);
 
+  // Lo que se puede citar: el plan compartido primero, si el pedido lo trae, y lo de tu área.
+  const todoLoCitable: readonly Citable[] = [...(cita ? [cita] : []), ...(citables ?? [])];
   const destinatarios = carga.tipo === 'listo' ? carga.datos.recipients : [];
   const origenes = carga.tipo === 'listo' ? carga.datos.origins : [];
   const sinDestinatarios = carga.tipo === 'listo' && destinatarios.length === 0;
@@ -186,7 +197,7 @@ export function DialogoDeNota({
     if (!texto.trim()) faltan.texto = 'Escribí la nota.';
     setErrores(faltan);
     if (Object.keys(faltan).length > 0 || !origen || !finalidad) return;
-    const referencias: ReferenciaDeNotaRequest[] = (citables ?? []).filter((c) => citadas.includes(`${c.type}|${c.id}`)).map((c) => ({ type: c.type, id: c.id }));
+    const referencias: ReferenciaDeNotaRequest[] = todoLoCitable.filter((c) => citadas.includes(`${c.type}|${c.id}`)).map((c) => ({ type: c.type, id: c.id }));
     setEnvio({ tipo: 'enviando' });
     const r = await api.crearNotaDeCoordinacion(
       token,
@@ -272,6 +283,12 @@ export function DialogoDeNota({
                 <strong>{T.corrige(corrige.fecha)}.</strong> {T.corregirAyuda}
               </p>
             </Aviso>
+          ) : null}
+          {para ? (
+            <p className="nota-coord__la-lee" data-nota-para>
+              <Icono nombre="ver" tamano={18} />
+              <strong>{COPY_OTRAS_AREAS.notaPara(para.nombre, para.area)}</strong>
+            </p>
           ) : null}
           {carga.tipo === 'cargando' ? <p className="nota">Cargando…</p> : null}
           {carga.tipo === 'error' ? (
@@ -431,7 +448,7 @@ export function DialogoDeNota({
               <fieldset className="capas capas--en-columna nota-coord__citas">
                 <legend>{T.referencias}</legend>
                 <p className="nota">{T.referenciasAyuda}</p>
-                {citables === null ? <p className="nota">Cargando…</p> : null}
+                {citables === null && !cita ? <p className="nota">Cargando…</p> : null}
                 {falloLoCitable ? (
                   <p className="campo__error" role="alert">
                     {T.referenciasNoSeLeyeron}{' '}
@@ -440,10 +457,10 @@ export function DialogoDeNota({
                       <span className="visualmente-oculto"> {T.referenciasDeQue}</span>
                     </button>
                   </p>
-                ) : citables !== null && citables.length === 0 ? (
+                ) : citables !== null && citables.length === 0 && !cita ? (
                   <p className="nota">{T.sinReferencias}</p>
                 ) : null}
-                {(citables ?? []).map((c) => {
+                {todoLoCitable.map((c) => {
                   const clave = `${c.type}|${c.id}`;
                   const marcada = citadas.includes(clave);
                   return (

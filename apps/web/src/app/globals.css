@@ -13581,6 +13581,208 @@ details[open] > summary:not([class])::before {
   margin: 0;
 }
 
+/* WP-TABLERO-ALTA-GAMA TB-54 (DL-163 D-13, ampliada) · «Otras áreas · lo comparte la persona», plegado, al planificar y
+   al revisar. Plegado es un renglón con su título y lo que hay; abierto, una tarjeta por área, lado a lado si entran. Sin
+   colores por lo que comparte: lo dice el texto. */
+.otras-areas {
+  margin: 0 0 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.revision-nueva__tarjeta .otras-areas {
+  margin: 1rem 0 0;
+}
+
+.otras-areas__plegado > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.otras-areas__plegado > summary::-webkit-details-marker {
+  display: none;
+}
+
+.otras-areas__plegado > summary:hover {
+  background: var(--fondo-suave);
+}
+
+.otras-areas__plegado > summary:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.otras-areas__plegado > summary > .icono {
+  flex: none;
+  color: var(--tenue);
+  transition: transform 120ms ease;
+}
+
+.otras-areas__plegado[open] > summary > .icono {
+  transform: rotate(90deg);
+}
+
+.otras-areas__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.otras-areas__renglon {
+  margin: 0;
+  min-width: 0;
+}
+
+.otras-areas__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0 0.9rem 0.9rem;
+}
+
+.otras-areas__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.otras-areas__area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo-suave);
+}
+
+.otras-areas__area .nota,
+.otras-areas__area p {
+  margin: 0;
+}
+
+.otras-areas__area-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.otras-areas__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.otras-areas__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.otras-areas__lo-de-tu-area {
+  margin: 0;
+}
+
+/* TB-52 · «Ver el plan completo», en el panel de siempre: el encabezado, el objetivo, lo registrado y el plan entero. */
+.plan-compartido {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.plan-compartido p {
+  margin: 0;
+}
+
+.plan-compartido__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-compartido__seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.plan-compartido__seccion > h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.plan-compartido__avance {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-compartido__avance th,
+.plan-compartido__avance td {
+  padding: 0.3rem 1rem 0.3rem 0;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  font-weight: 400;
+}
+
+.plan-compartido__avance thead th {
+  color: var(--tenue);
+}
+
+.plan-compartido__avance td {
+  text-align: right;
+}
+
+.plan-compartido__bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.6rem;
+}
+
+.plan-compartido__bloque h4,
+.plan-compartido__microciclo h5 {
+  margin: 0;
+}
+
+.plan-compartido__sesion {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.plan-compartido__sesion > summary {
+  cursor: pointer;
+}
+
+.plan-compartido__ejercicios {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
 /* Una confirmación dentro de la página, en el lugar de la acción: la pregunta, el error si lo hubo y los dos botones. */
 .confirmacion-en-linea {
   display: flex;

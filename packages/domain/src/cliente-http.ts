@@ -327,6 +327,21 @@ import {
   type RegistrarHabitosRequest,
   type ResponderPedidoDeAccesoRequest,
 } from './contratos-habitos-de-la-persona';
+import {
+  LoQueSeComparteDeMiAreaResponseSchema,
+  MisResumenesCompartidosResponseSchema,
+  PedidoDePlanCreadoResponseSchema,
+  PedidoDePlanRespondidoResponseSchema,
+  PedidosDePlanResponseSchema,
+  PlanCompartidoResponseSchema,
+  ResumenesCompartidosEstadoResponseSchema,
+  ResumenesParaElProfesionalResponseSchema,
+  type AreaConPlan,
+  type CompartirResumenesRequest,
+  type DejarDeCompartirResumenesRequest,
+  type PedirVerElPlanRequest,
+  type ResponderPedidoDePlanRequest,
+} from './contratos-resumenes-compartidos';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -1589,6 +1604,46 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-HBT-09: la persona responde un pedido: «Sí, que los vea» o «No, por ahora». */
     responderPedidoDeAcceso(token: string, pedidoId: string, cuerpo: ResponderPedidoDeAccesoRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/me/habits/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoRespondidoResponseSchema, cuerpo });
+    },
+
+    // ─── RES · lo que la persona comparte de otras áreas (DL-163 D-13, ampliada; WP-TABLERO-ALTA-GAMA TB-52 a TB-56) ──
+    // Familia propia de BE. Ninguna APK instalada la llama: lo que leen no cambia (DL-152). 01 a 03, 09 y 10 son de la
+    // persona (una candidata de la APK, etapa B); 04 y 06 a 08, del website.
+    /** API-RES-01: lo que comparto, con quién, en qué nivel, desde cuándo y quién lo miró. */
+    misResumenesCompartidos(token: string) {
+      return llamar('GET', '/me/summary-sharing', { token, esquema: MisResumenesCompartidosResponseSchema });
+    },
+    /** API-RES-02: compartir, o cambiar con quién y en qué nivel, con el texto que se acepta. La lista es completa. */
+    compartirResumenes(token: string, cuerpo: CompartirResumenesRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', '/me/summary-sharing', { token, claveDeIdempotencia, esquema: ResumenesCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-RES-03: dejar de compartir todo, a la vez. */
+    dejarDeCompartirResumenes(token: string, cuerpo: DejarDeCompartirResumenesRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/summary-sharing/withdrawal', { token, claveDeIdempotencia, esquema: ResumenesCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-RES-04: las otras áreas de la persona, quién las lleva, qué le comparte de cada una y su pedido. */
+    resumenesCompartidos(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries`, { token, esquema: ResumenesParaElProfesionalResponseSchema });
+    },
+    /** API-RES-06: el plan vigente de un área compartida con «resumen y plan». Si no, el 404 de lo inexistente. */
+    planCompartido(token: string, asesoradoId: string, area: AreaConPlan) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries/${encodeURIComponent(area)}/plan`, { token, esquema: PlanCompartidoResponseSchema });
+    },
+    /** API-RES-07: con quién se comparte lo de mi área con esta persona. */
+    loQueSeComparteDeMiArea(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries/outgoing`, { token, esquema: LoQueSeComparteDeMiAreaResponseSchema });
+    },
+    /** API-RES-08: pedir ver el plan de otra área, desde la mía. Le llega a la persona como novedad importante. */
+    pedirVerElPlan(token: string, asesoradoId: string, cuerpo: PedirVerElPlanRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries/access-requests`, { token, claveDeIdempotencia, esquema: PedidoDePlanCreadoResponseSchema, cuerpo });
+    },
+    /** API-RES-09: los pedidos de ver un plan que esperan mi respuesta. */
+    pedidosDePlan(token: string) {
+      return llamar('GET', '/me/summary-sharing/access-requests', { token, esquema: PedidosDePlanResponseSchema });
+    },
+    /** API-RES-10: responder un pedido: «Sí, que lo vea» o «No, por ahora». */
+    responderPedidoDePlan(token: string, pedidoId: string, cuerpo: ResponderPedidoDePlanRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/summary-sharing/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDePlanRespondidoResponseSchema, cuerpo });
     },
   };
 }

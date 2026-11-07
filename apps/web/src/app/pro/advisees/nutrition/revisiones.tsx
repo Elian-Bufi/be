@@ -58,6 +58,7 @@ import {
 import { DetalleDeRegistroDeComida } from './detalle-de-registro';
 import { CamposDeObjetivo, aObjetivo, erroresDeObjetivo, objetivoVacio } from './formularios';
 import { EstadoDeLectura, useNutricion } from './nutricion';
+import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 import { VersionSoloLectura } from './plan';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 
@@ -370,6 +371,8 @@ function FormularioDeRevision({
               aviso={avisoDeMarcas}
               error={porCampo['revision-evidencia'] ?? null}
             />
+            {/* TB-54 (DL-163 D-13, ampliada): «Otras áreas», al revisar. Lee API-RES-04 al abrir; sin otra área, nada. */}
+            <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="NUTRICION" />
           </PasoDeLaRevision>
         </div>
         <div className="revision-nueva__tarjeta">

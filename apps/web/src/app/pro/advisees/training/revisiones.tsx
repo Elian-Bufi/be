@@ -40,6 +40,7 @@ import { dia, diaDelAnioEnCurso, fecha, horaEnZona, rangoCivil } from '../../../
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
+import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 import { avisoDeMarcasQuitadas, marcasDelPeriodoNuevo, referenciasMarcadas, versionesDelPlan } from '../evidencia';
 import { SeleccionDeEvidencia, type CandidataDeEvidencia } from '../evidencia-de-revision';
 import { EvidenciaRegistrada } from '../evidencia-registrada';
@@ -381,6 +382,8 @@ function FormularioDeRevision({
               nota={contexto.missingData.length > 0 ? <p className="nota evidencia__nota">Días sin registro en el período: {contexto.missingData.length}. No hay dato de esos días.</p> : null}
               error={porCampo['trn-revision-evidencia'] ?? null}
             />
+            {/* TB-54 (DL-163 D-13, ampliada): «Otras áreas», al revisar. Lee API-RES-04 al abrir; sin otra área, nada. */}
+            <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" />
           </PasoDeLaRevision>
         </div>
         <div className="revision-nueva__tarjeta">

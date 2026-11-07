@@ -19,7 +19,8 @@
 > (TB-11), TEST-TAG-009 (TB-12) y, con TB-15, TEST-TAG-013 y TEST-TAG-034 (nuevo: «¿Cuándo la revisás?», que
 > la §6 del paquete suma), y TEST-TAG-035 (nuevo: volver al Espacio, con lo que le faltaba a TB-07). Con lo que sumó
 > Dirección el 2026-11-07, TEST-TAG-017 suma la barra en kilos con el porcentaje (TB-51) y se escribe TEST-TAG-036 (nuevo:
-> la evolución de las últimas tomas, TB-50). Los demás se escriben con su parte (§10 del paquete).
+> la evolución de las últimas tomas, TB-50). Con D-13 ampliada (TB-52 a TB-56), TEST-TAG-039 (el panel «Otras áreas», lo
+> del website). Los demás se escriben con su parte (§10 del paquete).
 
 ---
 
@@ -640,6 +641,92 @@ EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero
                      (`<página>-antropometria-<ancho>.png`) y, en mediciones.json, `evolucion` (cuántas tomas, qué
                      pares y el renglón plegado) y `antropometriaAbierta` (el alto de la tarjeta abierta y las filas
                      dibujadas); las peticiones al abrir, las de la tabla de TA-30
+```
+
+---
+
+## TEST-TAG-039 — El panel «Otras áreas» aparece solo con algo de otra área
+
+```text
+TEST_ID              TEST-TAG-039
+TITLE                El panel «Otras áreas» del Plan y de la revisión nueva aparece solo si otra área la lleva otro
+                     profesional; dice quién la lleva y qué le comparte la persona sin candado ni juicio; se lee de a
+                     poco; nada escribe, salvo «Dejar una nota» y «Pedir ver su plan»; lo avanzado va en cifras
+LEVEL                Unidad (funciones puras del website, sin navegador ni API) y una lectura de los componentes
+PRIORITY             P1 — un panel vacío, un candado o un «no te compartió» dicen algo de la persona que ella no
+                     dijo (08 §11-bis.7); un botón que escriba en el plan de otro rompe UC-E07; un «%» de lo avanzado
+                     es un puntaje (T13)
+SOURCES              DL-163 D-13, ampliada por Dirección el 2026-11-07 («el nutricionista debería poder ver el resumen y
+                     hasta la planificación, y poder dejarle comentarios al otro profesional»; «Sí, plan completo de
+                     solo lectura») · WP-TABLERO-ALTA-GAMA TB-52, TB-53, TB-54 y TB-56, §3.1, §3.4 y §4.3 · TA-87 y
+                     TA-95 (decididas por Dirección el 2026-11-07) · TA-86, TA-90, TA-91 y TA-92 · 08 §11-bis.7 ·
+                     UC-E07 («no existe chat general») · T13 de WP-04 · TA-120 a TA-128
+PRECONDITIONS        Ninguna: areasDelPanel, hayPanel, estadoDeOtraArea, tarjetaDeOtraArea, renglonPlegado,
+                     conPedidoPendiente, LECTURAS_AL_ABRIR, lecturasAlDesplegar, areaDelPedido, trasPedirVerElPlan,
+                     lineaDeMiArea, lineaDelPlan, lineaDelAvance, tablaDelAvance, encabezadoDelPlan, citaDelPlan y
+                     COPY_OTRAS_AREAS (apps/web/src/app/pro/advisees/seguimiento/otras-areas.ts); el código de
+                     otras-areas-en-pantalla.tsx y plan-compartido.tsx, en la misma carpeta.
+SYNTHETIC_FIXTURE    Respuestas de API-RES-04 como las armaría la API para Lic. Sofía Paz (Nutrición y Antropometría)
+                     y Prof. Martín Acosta (Entrenamiento) con Diego Sosa y Federico Álvarez: un área con «resumen y
+                     plan», una con «resumen», una sin nada, una con un pedido pendiente, una con un pedido respondido
+                     que todavía no se puede repetir, una que no lleva nadie y una que lleva quien mira. Planes de
+                     API-RES-06 de Nutrición (un día tipo con dos comidas) y de Entrenamiento (un bloque con dos
+                     sesiones y un bloque con un microciclo de una), con lo avanzado de 0, 3 y 6 semanas, y una lista
+                     de API-RES-07. Identificadores sintéticos.
+STEPS                1. Pedir las áreas del panel sin respuesta, con la lista vacía, con un área que no lleva nadie, con
+                        el área que lleva quien mira y con un área de otro profesional.
+                     2. Armar la tarjeta de cada caso y el renglón plegado.
+                     3. Pedir qué se lee al abrir y qué al desplegar, con dos áreas que comparten el plan y una que no.
+                     4. Juntar las acciones de todas las tarjetas, y leer las llamadas a la API de los dos componentes
+                        del panel.
+                     5. El plan en una línea, lo avanzado en un renglón y en una tabla, el encabezado del plan y la cita
+                        de una nota.
+                     6. Con «Ocultar nombres»: las tarjetas y la línea de API-RES-07 con un `nombreDe` que devuelve la
+                        referencia.
+                     7. El pedido: desde qué área sale y qué se hace con cada respuesta.
+                     8. Todos los textos que arman las funciones y los de COPY_OTRAS_AREAS, contra las listas de
+                        Nutrición, Entrenamiento y Antropometría.
+EXPECTED             1 → sin respuesta, con la lista vacía o con solo áreas sin nadie o propias, ninguna: no hay panel;
+                        con otra área de otro profesional, esa sola.
+                     2 → «resumen y plan»: «Lo lleva …», «Te comparte el resumen y el plan desde el …», «Ver el plan
+                        completo» y «Dejar una nota a …», sin pedido; «resumen»: «Te comparte el resumen desde el …» y
+                        «Pedir ver su plan» si la API lo deja; sin nada: solo «Lo lleva …» y el pedido si se puede; con
+                        un pedido pendiente: «Le pediste ver su plan el …: espera la respuesta de la persona.»; con uno
+                        respondido y sin poder repetirlo: «Le pediste ver su plan el ….» y «Podés volver a pedirlo
+                        desde el ….», sin botón; Antropometría nunca ofrece pedir un plan; el renglón plegado dice cada
+                        área con lo que comparte, sin nombres.
+                     3 → al abrir, solo API-RES-04; al desplegar, API-RES-06 de cada área con «resumen y plan» y
+                        API-RES-07, nada más.
+                     4 → las acciones son solo «ver el plan», «dejar una nota» y «pedir»; los componentes llaman solo a
+                        resumenesCompartidos, planCompartido, loQueSeComparteDeMiArea y pedirVerElPlan, y nunca a una
+                        operación que guarde, active o cambie un plan, una revisión o un registro.
+                     5 → «Rige desde el … · 1 día tipo · 2 comidas»; «Rige desde el … · 2 bloques · 3 sesiones»;
+                        «Sesiones registradas por semana: 3, 2, 4 y 3 (desde la semana del …) · el plan prevé 3 por
+                        semana», con las últimas cuatro; sin semanas, «Todavía no hay semanas registradas desde que
+                        rige.»; la tabla, una fila por semana; el encabezado con quién lo armó, desde cuándo rige y la
+                        próxima revisión, solo la fecha (o «Sin próxima revisión acordada»); la cita, del tipo que ya
+                        existe (NUTRITION_PLAN_VERSION o TRAINING_PLAN_VERSION) con el planId de la instantánea.
+                     6 → ninguna palabra de los nombres de la cohorte; la referencia en su lugar.
+                     7 → desde el área de la página si es suya, y lo dice si tiene más de una; un 404, un 409 o un 422
+                        se resuelven volviendo a leer; un éxito es «enviado».
+                     8 → ningún «%», «cumplimiento», «adherencia», «bien», «mal», «normal», «volumen» ni otra palabra
+                        de las listas; nunca «no te compartió», «no comparte», «candado» ni «bloqueado».
+NEGATIVE_ASSERTIONS  El panel nunca aparece sin otra área de otro profesional; abrir la página nunca lee un plan; la
+                     tarjeta de un área sin nada compartido nunca dice que no se le compartió; ninguna acción del
+                     panel escribe en el plan, la revisión o los registros de otra área. Mutaciones verificadas el
+                     2026-11-07: el panel con un área que no lleva nadie, falla el paso 1; «resumen» tratado
+                     como plan, falla el paso 2; un plan leído al abrir, falla el paso 3; el pedido ofrecido sin que la
+                     API lo deje, falla el paso 2; lo avanzado con su porcentaje, fallan los pasos 5 y 8; la línea
+                     neutra con «no te compartió», fallan los pasos 2 y 8.
+AUTOMATION           apps/web/test/otras-areas.test.mjs («TEST-TAG-039 · …», ocho casos), en
+                     `npm run test -w @be/web`; T13 recorre los textos del panel con los de la ficha (están en
+                     seguimiento/), y retrato.test.mjs, que ningún nombre se escriba sin «Ocultar nombres»
+ENVIRONMENT          CI (verificar · typecheck · unit · build · audit) y local, sin servicios
+EVIDENCE_EXPECTED    La corrida verde de la CI en el PR; en capturas-del-tablero, con la API de RES (la del #243): el
+                     Plan de Nutrición de Diego Sosa visto por Lic. Sofía Paz con el panel desplegado y el plan de
+                     Entrenamiento abierto, el Plan de Entrenamiento de Diego visto por Prof. Martín Acosta con el de
+                     Nutrición abierto, y el Plan de Nutrición de Federico Álvarez con el pedido pendiente; las
+                     peticiones de cada una en la tabla de TEST-TAG-032
 ```
 
 ---
