@@ -27,6 +27,7 @@ import { CoordinacionModule } from './coordinacion/coordinacion.module';
 import { MediosModule } from './medios/medios.module';
 import { NutricionModule } from './nutricion/nutricion.module';
 import { ProcesoModule } from './proceso/proceso.module';
+import { ResumenesModule } from './resumenes/resumenes.module';
 
 export interface OpcionesApp {
   readonly entorno: Entorno;
@@ -90,6 +91,8 @@ export class AppModule {
         CoordinacionModule,
         // WP-ADMINISTRACION (DL-155): la administración de profesionales por área, con segundo factor.
         AdministracionModule,
+        // DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56): lo que la persona comparte de otras áreas.
+        ResumenesModule,
       ],
       // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
       providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],

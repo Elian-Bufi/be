@@ -79,6 +79,13 @@ export const TIPOS_DE_NOVEDAD = [
    * tipo que no conoce, con su texto, y al abrirla se queda en Novedades. Abre «Mis hábitos» (`MY_HABITS`), con el pedido.
    */
   'HABITS_ACCESS_REQUESTED',
+  /**
+   * DL-163 D-13, ampliada (TB-56; TA-95, decidida por Dirección el 2026-11-07): a la persona, cuando un profesional le pide
+   * ver su plan de otra área («Pedir ver su plan», API-RES-08). Dice quién pide, desde qué área y qué plan, y que es su
+   * decisión; nunca nada del plan. Importante por su tipo, como el de los hábitos. Abre el centro (`NEWS`): la pantalla que
+   * lo responde llega con una candidata de la APK (etapa B), y la 0.22 la lee como cualquier tipo que no conoce.
+   */
+  'PLAN_ACCESS_REQUESTED',
 ] as const;
 export type TipoDeNovedad = (typeof TIPOS_DE_NOVEDAD)[number];
 
@@ -119,7 +126,7 @@ export type Novedad = z.infer<typeof NovedadSchema>;
  * DL-165, ronda 2.1 (D-17 nueva): las novedades que la APK destaca como importantes. Se decide por el tipo, que ya viaja en
  * `kind`: un campo nuevo en `NovedadSchema` dejaría sin leer el centro a las APK instaladas, que lo validan estricto (DL-152).
  */
-export const TIPOS_DE_NOVEDAD_IMPORTANTES: readonly string[] = ['HABITS_ACCESS_REQUESTED'];
+export const TIPOS_DE_NOVEDAD_IMPORTANTES: readonly string[] = ['HABITS_ACCESS_REQUESTED', 'PLAN_ACCESS_REQUESTED'];
 export const esNovedadImportante = (kind: string): boolean => TIPOS_DE_NOVEDAD_IMPORTANTES.includes(kind);
 
 /** API-NOV-01: de la más nueva a la más vieja, con las no leídas contadas sobre todas, no solo sobre la página. */

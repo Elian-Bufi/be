@@ -757,6 +757,10 @@ Lo de Nutrición (TB-39 a TB-42 y la estimación de TB-38) sirve para el servici
   Nutrición puede llegar al entrenador, un perfil no sanitario (VJR-1 y VJR-4). Dirección eligió «todos con todos, con
   permiso» (TA-87): la revisión es condición antes de datos reales, no antes de programar. El texto de cada nivel y el del
   pedido van al legajo legal, como los de los hábitos.
+- **El fundamento del objetivo, para otro profesional (VJR-5).** Con «resumen y plan», el plan compartido lleva el objetivo
+  vigente con su fundamento (`rationale`), que la persona ya ve. Dirección lo ratificó el 2026-11-07 y queda como está; la
+  revisión legal responde, como condición antes de datos reales, si ese fundamento lo puede ver otro profesional de la
+  persona. El texto de «resumen y plan» lo dice.
 - **El control semanal de D-16 es salud.** Sus preguntas, mínimas y sin puntaje, las revisan el abogado y la validación
   disciplinar (VD-1 del 08), en LC-41 del plan de datos reales. Espera esa revisión antes de personas reales.
 - **El texto de cada acto** (compartir un resumen; la foto), su base, la revocación y lo que se informa van al legajo
@@ -1561,3 +1565,217 @@ Se numeran desde TA-01 (§3). Cada una dice qué se eligió y qué otra opción 
   «resumen y plan») y el pedido de Lic. Sofía Paz a Federico Álvarez corren con la fase `personas`; con un 404 lo dicen y
   no quedan anotados como hechos, así que una corrida con la API de RES los hace. *Otra opción:* una fase aparte, que las
   capturas tendrían que llamar.
+
+## 10.2 · Decisiones de la rama de la API
+
+La rama de la API es `wp-tablero-etapa-a-api`, desde `main` 67d7f61, con su PR en borrador (#243) y sin integrar
+(§8.1: «la API se toca solo en su rama, con su CI y sin integrar»). La §10 y la §10.1 viven en la rama del website
+(#240); esta sección se unió a ellas al integrar el #240, después del #243. Los oráculos de esta rama están en
+`WP-TABLERO-ALTA-GAMA-ORACULOS-API.md`, por la misma razón.
+
+| Parte | Estado | Dónde |
+|---|---|---|
+| TB-13 | Hecha. **Las dos pruebas fallaron contra la cartera de `main`** (la corrida de 4507193, solas): una revisión aplicada como «Mantener» sin fecha nueva seguía como vencida, y un seguimiento finalizado volvía como «Sin plan activo». **El arreglo:** la cartera (API-CAR-01) usa la definición de pendiente del dominio de revisión (REG-06-150): una revisión acordada que resolvió una revisión aplicada después no sigue como vencida, próxima ni sin fecha; y un seguimiento cerrado con «Finalizar» no vuelve como «Sin plan activo» (TA-56). La forma de API-CAR-01 no cambia. TEST-TAG-011 | `packages/domain/src/cola-de-revisiones.ts` (`revisionEnLaCartera`, `sinPlanActivoEnLaCartera`), `apps/api/src/cartera/hechos-de-revision.ts`, `apps/api/src/cartera/lectura-cartera.ts`, `test/integration/cola-de-revisiones.int-spec.ts` |
+| TB-14 | Hecha. **API-DSH-02, `GET /me/review-queue`**, de solo lectura, con la ruta, `domain` y `status` del 09 (v0.11 §14): un ítem por seguimiento abierto, con «Próxima acción pendiente» (`NEXT_ACTION_PENDING`) primero, «Revisión pendiente» (`REVIEW_DUE`, la del dominio) en el medio y «Sin revisión acordada» (`ACTIVE_PLAN_WITHOUT_REVIEW`) al final (TA-57 a TA-60); una revisión acordada a futuro no entra. Abrirla no resuelve nada. API-CAR-01 no cambia y las APK instaladas no la leen. TEST-TAG-012 y TEST-CT-DSH-02 | `cola-de-revisiones.ts`, `contratos-cola-de-revisiones.ts`, `apps/api/src/cartera/lectura-cola-de-revisiones.ts`, `cartera.controller.ts`, `consultarColaDeRevisiones` en `cliente-http.ts` |
+| TB-47 | Hecha. **API-PLN-07, `POST /nutrition/plans/{planId}/discard`, y API-PLE-05, `POST /training/plans/{planId}/discard`** (`planId` es el id de la versión, como en las rutas de hoy), con `{ expectedVersion }`, `Idempotency-Key`, PDP, auditoría y un evento por área (`BorradorDePlanDescartado` y `BorradorDePlanDeEntrenamientoDescartado`). Responden `{ data: { planId, discardedAt } }`. La versión pasa a DESCARTADA, terminal, y la fila se guarda (TA-63 y TA-64). Lo descartado no se lista, no se lee ni se escribe: el mismo 404 que lo inexistente (TA-65). Una versión activada, 422 `PLAN_NOT_EDITABLE`, antes de mirar la versión esperada (TA-66). Después de descartar se puede empezar otro borrador (otra vez la raíz, o la sucesora de la vigente) y aplicar «Ajustar» o «Sustituir» (TA-67 y TA-68). Tres migraciones: `20261106140000_tipos_de_descarte_de_borrador` (los valores de enum), `20261106140100_descarte_de_borrador` (las dos guardas y los índices de la cadena) y `20261106140200_descarte_de_borrador_activacion_coherente` (la coherencia entre estado y activación, dicha desde la activada: la de 2026-09 era «BORRADOR si y solo si no tiene activación» y rechazaba todo descarte). Lo que leen las APK instaladas no cambia. TEST-TAG-029, TEST-CT-PLN-07 y TEST-CT-PLE-05 | `packages/domain/src/descarte-de-borrador.ts`, `contratos-descarte-de-borrador.ts`, `descartar` en `apps/api/src/nutricion/planes.service.ts` y `apps/api/src/entrenamiento/planes.service.ts`, los dos controladores, las dos lecturas de la versión, `series.service.ts`, los dos `plantillas.service.ts`, `prisma/schema.prisma`, `test/integration/descartar-borrador.int-spec.ts`, `descartarBorradorDePlanNutricional` y `descartarBorradorDePlanDeEntrenamiento` en `cliente-http.ts` |
+| TB-55 | Hecha (la API; «Quién ve qué» en la APK es de la etapa B). **API-RES-01, `GET /me/summary-sharing`; API-RES-02, `PUT /me/summary-sharing`; API-RES-03, `POST /me/summary-sharing/withdrawal`**, con la forma de `contratos-resumenes-compartidos.ts`. La autorización «Compartir con mis profesionales lo de otras áreas» calca la de los hábitos (DL-165 D-9): versionada y de solo agregar, la da y la retira la persona, la ACTIVA guarda el texto aceptado con su hash, y sus permisos van por profesional, área y nivel (`SUMMARY` o `SUMMARY_AND_PLAN`, un enum; Antropometría, solo `SUMMARY`), atados al componente de quien recibe y al de quien lleva el área (TA-96), con desde cuándo rige su nivel (TA-97). Ampliar pide el A3 y el texto vigente; bajar, sacar a alguien o retirar corta en el momento y no lo pide (TA-98). Un texto por nivel, cada uno una propuesta pendiente de validación jurídica (decisión de Dirección del 2026-11-07, que reemplaza TA-99: TA-109 a TA-112, con `texto_aceptado_de_resumenes` y la migración `20261107140100_textos_por_nivel_de_resumenes`). API-RES-01 trae también las últimas 50 lecturas de lo compartido, de las decisiones del PDP de API-RES-06 (TA-101). Cerrar la cuenta la retira. Dos migraciones: `20261107120000_tipos_de_resumenes_compartidos` (los valores de enum) y `20261107120100_resumenes_compartidos` (el texto, las tres tablas con `be_solo_agregar`, CHECK y disparadores, el CHECK de la novedad, el índice parcial de las lecturas y la regla de TB-53). TEST-TAG-037 y TEST-CT de la familia RES | `packages/domain/src/resumenes-compartidos.ts`, `contratos-resumenes-compartidos.ts`, `textos.ts`, `apps/api/src/resumenes/` (`resumenes-de-la-persona.ts`, `resumenes.service.ts`, `resumenes.controller.ts`, `resumenes.module.ts`, `ejecutor.ts`), `apps/api/src/identidad/cierre.service.ts`, `prisma/schema.prisma`, `test/integration/resumenes-compartidos.int-spec.ts`, `misResumenesCompartidos`, `compartirResumenes` y `dejarDeCompartirResumenes` en `cliente-http.ts` |
+| TB-52 | Hecha (la API; la vista del plan es del website, #240). **API-RES-04, `GET /advisees/{adviseeId}/shared-summaries`; API-RES-06, `GET /advisees/{adviseeId}/shared-summaries/{area}/plan`; API-RES-07, `GET /advisees/{adviseeId}/shared-summaries/outgoing`.** API-RES-06 autoriza con `decidirAlgunAlcanceEnTransaccion` del par, la autorización vigente que nombra al profesional en esa área con `SUMMARY_AND_PLAN` por un componente que el PDP permite y `laMatrizDejaVerElPlan` con sus áreas permitidas (y nunca un área que él mismo lleva); si falta algo, el 404 de lo inexistente. El plan es el que ve la persona: `leerVersion(…, false)` de cada circuito (ya eran públicos: no hizo falta cambiarlos), la versión efectiva del plan de quien lleva el área con el par permitido hoy (TA-102), con el objetivo vigente, el autor, desde cuándo se lo comparten, la fecha de la próxima revisión y lo avanzado por semana de BE (TA-103). Sin plan vigente, `{ data: null }`. API-RES-04 dice quién lleva cada otra área (lo de API-CRD-01-LISTA), lo compartido, su último pedido y si puede pedir, sin depender de que haya un plan (TA-100). API-RES-07, con quién se comparte lo de su área (TA-93). TEST-TAG-037, la parte de la API de TEST-TAG-039 y TEST-CT | los mismos de TB-55, `apps/api/src/nutricion/nutricion.module.ts` y `apps/api/src/entrenamiento/entrenamiento.module.ts` (exportan sus planes y objetivos), `resumenesCompartidos`, `planCompartido` y `loQueSeComparteDeMiArea` en `cliente-http.ts` |
+| TB-53 | Hecha (una regla; el redactor es del website). **CRD-D5, ampliada:** una nota de API-CRD-01 puede citar también la versión ACTIVADA vigente del plan de otra área que el autor ve por API-RES-06 en ese momento, con el tipo de referencia que ya existe. Se mira después de decidir a los destinatarios, con la misma regla que API-RES-06 (TA-104); quien no lo ve recibe lo de antes, `REFERENCE_OUTSIDE_ORIGIN_SCOPE`. La base lo vuelve a exigir: la migración reemplaza `be_referencia_de_nota_guardar` sin tocar ninguna fila. API-CRD-01 y API-CRD-01-PROPIA no cambian de forma; la cita no le abre el plan a nadie. TEST-TAG-038 y el caso nuevo de `lecturas-de-las-apk.int-spec.ts` | `apps/api/src/coordinacion/notas.service.ts` (`citasDelPlanDeOtraArea`), `contratos-notas-de-coordinacion.ts` (el comentario), `test/integration/notas-de-coordinacion.int-spec.ts`, `test/integration/lecturas-de-las-apk.int-spec.ts` |
+| TB-56 | Hecha (la API; «Pedir ver su plan» es del website, y la pantalla que responde, de una candidata de la APK). **API-RES-08, `POST /advisees/{adviseeId}/shared-summaries/access-requests`; API-RES-09, `GET /me/summary-sharing/access-requests`; API-RES-10, `POST /me/summary-sharing/access-requests/{accessRequestId}/answer`**, calcadas de API-HBT-06, 08 y 09: uno pendiente por profesional, persona y área; otro recién a los 7 días del último, que reemplaza al pendiente; compartir con `SUMMARY_AND_PLAN` esa área a ese profesional (por API-RES-02 o por «Sí, que lo vea») acepta el pendiente; con el vínculo en pausa o terminado no se pide ni se lista. La novedad nueva `PLAN_ACCESS_REQUESTED` (`PEDIDO_DE_ACCESO_A_PLAN` en la base), importante por su tipo, dice quién pide, desde qué área y qué plan, y que es su decisión, sin nada del plan; abre el centro (`NEWS`, TA-105); el aviso push es el genérico. Los hechos van a la bitácora de los formularios, como los de los hábitos (TA-106). TEST-TAG-040 y TEST-CT | los mismos de TB-55, `contratos-novedades.ts`, `copy-novedades.ts`, `apps/api/src/novedades/tipos.ts` y `novedades.service.ts`, `pedirVerElPlan`, `pedidosDePlan` y `responderPedidoDePlan` en `cliente-http.ts` |
+
+**Para unir con la rama del website (#240).** No se programó acá porque son archivos que #240 cambió:
+- **«Te toca a vos» lee la cola** junto con la cartera y suma sus dos estados nuevos: «Próxima acción pendiente», con
+  «Aplicar» (TB-15), y «Sin revisión acordada», con «Revisar», que abre la revisión preparada con «Reprogramar revisión»
+  (D-6). Si la API responde 404 (una API anterior), la mesa se muestra sin esas filas (TB-14). Va en `pro/mesa.ts` y
+  `pro/espacio-profesional.tsx`, con `consultarColaDeRevisiones`.
+- **Los textos de «Sin fecha por ahora» (TA-41) cambian con la cola** (TA-61).
+- **«Descartar el borrador» (TB-47)**, con confirmación en pantalla, en el editor de cada área y en el cuadro de «Empezar
+  el plan» (TB-46: «si ya hay un borrador, ofrece seguirlo o descartarlo»). Va en los editores de #240, con
+  `descartarBorradorDePlanNutricional` y `descartarBorradorDePlanDeEntrenamiento` y la versión que la pantalla mostró.
+  Los textos de TA-70: la pregunta «¿Descartás este borrador?»; el efecto, «La persona nunca lo vio. Después podés empezar
+  otro desde una plantilla, desde la versión vigente o desde cero.»; y los botones «Descartar el borrador» y «Seguir con
+  el borrador», con el foco en el segundo. Si el borrador nació de una revisión, se suma «La revisión queda aplicada.».
+  Después de descartar, la ficha vuelve a «Empezar el plan» (o a la versión vigente) con «Descartaste el borrador.». Con
+  422: «Esta versión ya se activó: no se descarta nunca.»; con 409: «El borrador cambió desde que lo abriste. Actualizá y
+  volvé a intentar.»; con 404: «Este borrador ya no está.». Hasta que esta rama se integre, el cuadro ofrece solo seguir
+  el borrador, como hoy.
+- **Una revisión cuyo borrador se descartó** conserva `createdPlanId` (es historia), y abrir esa versión da 404: el enlace
+  al borrador se oculta (TA-68).
+- **D-13, ampliada (TB-52 a TB-54 y TB-56), en el website.** El contrato es `contratos-resumenes-compartidos.ts`, sin
+  cambios, y los métodos de `cliente-http.ts` son `misResumenesCompartidos`, `compartirResumenes`,
+  `dejarDeCompartirResumenes`, `resumenesCompartidos`, `planCompartido`, `loQueSeComparteDeMiArea`, `pedirVerElPlan`,
+  `pedidosDePlan` y `responderPedidoDePlan`. Lo que el website interpreta: API-RES-06 da 404 si no se lo comparten y
+  `{ data: null }` si se lo comparten sin un plan vigente (TA-92); API-RES-08 da 422 `PLAN_ALREADY_SHARED`,
+  `PLAN_ACCESS_NOT_REQUESTABLE` o `PLAN_ACCESS_REQUEST_TOO_SOON` (con `details.availableFrom`); API-CRD-01 acepta la cita
+  del plan de otra área solo si API-RES-06 lo deja ver (TB-53), y si no responde los mismos issues de siempre.
+
+**Las decisiones** (se ratifican antes de integrar; las que cambian la forma de un contrato, también):
+
+- **TA-56 · Un seguimiento cerrado con «Finalizar» no vuelve como «Sin plan activo».** Finalizar es una decisión del
+  profesional, no algo que falta hacer: si volviera como «Empezar el plan», el renglón quedaría para siempre, y con un
+  programa de cinco semanas le pasaría a cada persona al terminar. Cuenta solo el cierre por la revisión: un seguimiento
+  cerrado por el fin del vínculo o de la cuenta sigue como hoy. Si el profesional quiere volver a empezar, lo hace desde
+  la ficha. *Otra opción:* no mostrar «Sin plan activo» a nadie que tuvo un plan activado alguna vez, que también
+  escondería a una persona que vuelve con un vínculo nuevo.
+- **TA-57 · Un motivo por seguimiento.** Si la última revisión espera su aplicación, el ítem es «Próxima acción
+  pendiente», aunque la revisión acordada siga pendiente hasta aplicarla: el trabajo que queda es aplicar, no volver a
+  revisar. *Otra opción:* dos ítems, la revisión pendiente y la próxima acción, que repiten a la misma persona y área.
+- **TA-58 · «Próxima acción pendiente» es la última revisión registrada del seguimiento, sin aplicar.** Es la misma que
+  el website lee en API-DSH-03 (`lastReview.application` en `null`, TA-42), así que la cola y el cajón dicen lo mismo.
+  Una revisión vieja sin aplicar, debajo de otra registrada después, no suma un ítem. *Otra opción:* un ítem por cada
+  revisión sin aplicar, que muestra revisiones que el profesional ya dejó atrás.
+- **TA-59 · «Sin revisión acordada» es un plan activo sin una revisión acordada en pie.** O nunca se acordó una, o la que
+  había la resolvió una revisión aplicada después (REG-06-150): es el caso de «Mantener» sin fecha nueva (TA-13 y
+  TA-41). «Desde» es la aplicación o la activación más reciente. Sin seguimiento abierto o sin un plan activado, no hay
+  ítem: «Empezar el plan» es de la cartera. *Otra opción:* solo los planes que nunca tuvieron una, que deja afuera el
+  caso más común.
+- **TA-60 · La forma de la cola es la del 09, con tres agregados.** `relationshipId` (como API-CAR-01), `agreedReviewDate`
+  (la fecha acordada que sigue en pie, o `null`) y las fuentes con su tipo (`REVIEW` y `PLAN_VERSION`, que ya se pueden
+  abrir). El área va con los tokens del 09 (`NUTRITION` y `TRAINING`), no con los de la cartera; `status` filtra por el
+  motivo. No trae `partialView`: el aviso de la vista parcial ya lo da la cartera, que el website lee junto con esta.
+  *Otra opción:* la forma de API-CAR-01 (`data.items`, `today`), que se aparta del 09.
+- **TA-61 · Los textos de «Sin fecha por ahora», cuando el website lea la cola.** TA-41 dice lo que BE hacía antes de
+  TB-13. Con la cola: en la revisión, «Al aplicar esta revisión sin una fecha nueva, esta área pasa a «Sin revisión
+  acordada» en «Te toca a vos».»; al activar una versión sobre otra, lo mismo con «Al activar»; y al activar el primer
+  plan, «Sin fecha acordada, esta área queda en «Sin revisión acordada» en «Te toca a vos».». Mientras el website no lea
+  la cola, siguen los de TA-41, que son los ciertos. *Otra opción:* cambiarlos ya, que diría algo que la mesa todavía no
+  muestra.
+- **TA-62 · La cola lee como la cartera de hoy.** Persona por persona en una transacción, con el tope de 200 personas;
+  leerla por conjuntos va con TB-18, después de la lectura de la cartera por conjuntos (#222), que no está integrada.
+  Cuando #222 se integre, el arreglo de TB-13 se lleva a su lectura: son dos llamadas, `aplicacionPosteriorA` y
+  `cerradoConFinalizar`. *Otra opción:* armarla ya por conjuntos, que choca con #222.
+- **TA-63 · Descartar guarda la fila y la marca DESCARTADA; quién y cuándo, en el evento y en la auditoría.** Es un
+  estado terminal nuevo de la versión de plan, solo desde BORRADOR, que la guarda de la base admite sin cambiar contenido,
+  objetivo, próxima revisión, origen de plantilla, plan, predecesora ni autoría. La base sigue sin dejar borrar una versión
+  (06 §4.4: la historia es por adición). Quién y cuándo quedan en el evento nuevo de cada área (actor y momento) y en la
+  auditoría de la operación, en la misma transacción: no hacen falta columnas. *Otra opción:* borrar la fila, que la base
+  prohíbe y que dejaría la auditoría apuntando a nada; o columnas de quién y cuándo, que repiten el evento.
+- **TA-64 · La máquina del 06 queda literal; el descarte es una extensión aparte.** `TRANSICIONES_DE_VERSION_DE_PLAN` y
+  su par de Entrenamiento siguen con dos estados, porque sus pruebas son oráculos del 06 («exactamente dos estados»,
+  06:5149-5162). El descarte vive en `descarte-de-borrador.ts` (`evaluarDescarteDeBorrador`, `cadenaSinDescartadas`) y
+  en las dos guardas de la base, con la cita de D-21. *Otra opción:* sumar la transición a la lista blanca del 06, que
+  cambia un oráculo sin que el 06 cambie.
+- **TA-65 · Lo descartado no existe para nadie.** No se lista (API-NUT-08 y API-TRN-08, tampoco sin filtro), no se lee
+  (API-NUT-09, API-TRN-09 y API-SER-01) ni se escribe (editar, validar, activar o descartar otra vez): el mismo 404 no
+  revelable que lo inexistente. Como origen de «Guardar como plantilla», el mismo 422 `TEMPLATE_ORIGIN_NOT_OWN` que un
+  origen inexistente. Si alguna lectura dejara pasar una descartada, la lectura falla cerrado en vez de mostrarla como
+  borrador. *Otra opción:* un estado `DISCARDED` en la API o un 410, que cambian lo que leen las APK instaladas (DL-152).
+- **TA-66 · Una versión activada responde 422 `PLAN_NOT_EDITABLE`, antes de mirar la versión esperada.** Con su texto,
+  «Esta versión ya se activó: no se descarta nunca.». Es el código que el editor ya conoce para una activada (API-NUT-10
+  y 11), y como al editar, la inmutabilidad se informa antes que la versión: con una versión vieja también es 422. *Otra
+  opción:* `INVALID_STATE_TRANSITION`, que es genérico; o mirar la versión primero, que respondería 409 a quien no puede
+  descartar con ninguna versión.
+- **TA-67 · La cadena no cuenta lo descartado.** El índice único de la predecesora pasa a parcial (`…_una_sucesora`, sin
+  las descartadas), y `…_una_raiz` también; en `schema.prisma`, `predecesoraId` deja de ser `@unique` y la relación
+  pasa a uno a muchos (`sucesoras`), porque Prisma no modela índices parciales. La sucesión del dominio se evalúa sin lo
+  descartado. Así, el borrador nuevo vuelve a ser la raíz de un plan que nunca se activó, o la sucesora de la vigente, y
+  activar sigue exigiendo la sucesora directa de la efectiva. *Otra opción:* soltar la predecesora del borrador
+  descartado, que cambia su historia.
+- **TA-68 · Un borrador que nació de una revisión también se descarta, y la revisión queda aplicada.** Es el caso que
+  traba «Ajustar» con un borrador viejo. La revisión conserva `createdPlanId`, porque es historia; abrir esa versión da
+  404. Para ajustar otra vez, se registra otra revisión o se empieza otro borrador. *Otra opción:* no dejar descartar un
+  borrador que nació de una revisión, que lo vuelve a trabar todo.
+- **TA-69 · La respuesta es mínima, y el descarte no aparece en la línea de tiempo.** `{ data: { planId, discardedAt } }`:
+  con una versión descartada no se hace nada más. La línea de tiempo (API-DSH-04) arma sus entradas con las versiones
+  activadas, no con los eventos, así que el descarte no aparece: el borrador nunca se le presentó a la persona. La
+  cartera y el cajón (API-DSH-03) ya leen solo los borradores: no cambian. *Otra opción:* devolver la versión entera con
+  un estado nuevo, que pide sumarlo al esquema del plan (DL-152); o una entrada «Borrador descartado», que cuenta trabajo
+  del profesional y no algo de la persona.
+- **TA-70 · Los textos de «Descartar el borrador», para el website.** La pregunta, el efecto y los dos botones de la lista
+  de arriba, con el foco en «Seguir con el borrador»: lo que no se puede deshacer no queda a un Enter. Se dice
+  «descartar», no «eliminar» ni «borrar»: la fila se guarda. *Otra opción:* «Eliminar el borrador», que dice algo que no
+  pasa.
+
+*Las decisiones de la implementación de TB-52, TB-53, TB-55 y TB-56 (D-13, ampliada por Dirección el 2026-11-07), en esta
+rama. Siguen a TA-85 a TA-95 (§10.1, en #240), a ratificar.*
+
+- **TA-96 · Lo compartido es lo de quien lleva hoy el área.** Cada permiso queda atado al componente de vínculo de quien
+  recibe y al de quien lleva el área de origen. Si la persona empieza con otro profesional en esa área, a ese no se le
+  comparte nada hasta que ella vuelva a elegir; si el vínculo de quien recibe termina y vuelve, tampoco lo hereda (como
+  D-17 de los hábitos). El texto del acto lo dice. *Otra opción:* compartir «el área», sin atarla a quien la lleva, que le
+  abre el plan de un profesional nuevo sin que la persona lo sepa y sin la conformidad que pregunta VJR-5.
+- **TA-97 · El «desde» es el del nivel.** Cada permiso guarda desde cuándo rige su nivel: subir o bajar lo reinicia, y
+  `sharedSince` de API-RES-06 es desde cuándo se ve el plan. *Otra opción:* un «desde» por permiso que no cambie con el
+  nivel, que diría que el plan se ve desde antes de que la persona lo dejara ver.
+- **TA-98 · Ampliar pide el A3 y el texto vigente; bajar, no.** Sumar a alguien o subir a «resumen y plan» es una
+  aceptación nueva (08 C-12): el A3, con el acto tomado, y el texto vigente (si no, 409 `CONSENT_VERSION_STALE`). Bajar,
+  sacar a alguien o dejar igual corta en el momento y acepta también el texto que la persona ya había aceptado; retirar no
+  pide nada (RNF-PRI-002). *Otra opción:* pedir siempre el texto vigente, como API-HBT-03, que con un texto nuevo trabaría
+  bajar de nivel hasta aceptarlo.
+- **TA-99 · Un solo texto para los dos niveles.** **Reemplazada por la decisión de Dirección del 2026-11-07: un texto
+  distinto por nivel**, que ratifica TA-85 (TA-109 a TA-112). Queda como registro: el texto único
+  `resumenes-compartidos-2026-11-propuesta` sigue en el catálogo y en la base como historia, y el de «resumen» lo sucede.
+- **TA-100 · Pedir y API-RES-04 no dicen si hay un plan.** `canRequestPlan` mira que el área tenga plan como tipo
+  (Nutrición o Entrenamiento), que alguien la lleve hoy (lo que ya dice API-CRD-01-LISTA), la matriz, que no lo vea ya y
+  los 7 días; sin nadie en el área, 422 `PLAN_ACCESS_NOT_REQUESTABLE`. Uno pendiente por profesional, persona y área.
+  *Otra opción:* dejar pedir solo con un plan activado, que le revela a quien no lo ve que hay un plan.
+- **TA-101 · Quién miró sale de las decisiones del PDP.** API-RES-06 registra cada lectura con `decidirAlgunAlcanceEnTransaccion`,
+  con el área en el tipo de recurso (`PlanCompartidoDeNutricion`, `PlanCompartidoDeEntrenamiento`); API-RES-01 lee las
+  permitidas, una por request, con un índice parcial nuevo. Una lectura que termina en 404 no queda como lectura (se
+  revierte; su motivo queda en la auditoría). *Otra opción:* una tabla propia de lecturas, que duplica lo que el PDP ya
+  registra (08 §29).
+- **TA-102 · El plan vigente.** La versión efectiva del plan de quien lleva el área, con su par permitido hoy por el PDP
+  (en Entrenamiento, con el seguimiento abierto, como `isEffective`); si hubiera dos profesionales en el área, la de
+  activación más reciente. Con quien la lleva en pausa o con el vínculo terminado, `{ data: null }` (TA-92). *Otra opción:*
+  mostrar el plan de un vínculo en pausa, que la persona tampoco opera en ese momento.
+- **TA-103 · Lo avanzado, en cifras.** En Nutrición, los registros de comida de la versión vigente sin anular; en
+  Entrenamiento, sus ejecuciones salvo las «no realizada» (son un registro, no una sesión hecha, DL-137 D-5); por semana de
+  lunes a domingo desde la de la activación, las últimas 12, con las vacías en cero, en la zona por defecto (el perfil no
+  tiene zona, DL-009). `plannedPerWeek`, la suma de los días de cada sesión de la agenda, o `null`. *Otra opción:* contar
+  también las «no realizada», que mezcla saltear con entrenar.
+- **TA-104 · La cita del plan de otra área (TB-53) se decide como API-RES-06.** Se mira después de decidir a los
+  destinatarios, porque toma el cerrojo de la autorización de la persona, que va al final; con el PDP del par evaluado sin
+  registrar (la decisión de la nota ya quedó). Quien no lo ve recibe lo de antes, `REFERENCE_OUTSIDE_ORIGIN_SCOPE`; quien
+  lo ve y cita otra versión (un borrador, una anterior), `REFERENCE_NOT_AVAILABLE`. La base lo vuelve a exigir.
+  *Otra opción:* un código nuevo para «no te lo comparten», que cambia lo que el website interpreta de API-CRD-01.
+- **TA-105 · La novedad abre el centro.** `PLAN_ACCESS_REQUESTED` va con la vista `NEWS` y sin `referenceId`, hasta que
+  una candidata de la APK tenga la pantalla que responde (etapa B; API-RES-09 trae los pedidos). *Otra opción:* una vista
+  nueva, que hoy ninguna APK conoce y que, como `MY_HABITS`, se suma con su candidata.
+- **TA-106 · Los hechos, en la bitácora de los formularios.** La autorización (activada, modificada, retirada) y el pedido
+  (hecho, reemplazado, aceptado, «No, por ahora») van a `evento_de_formulario`, como los de los hábitos. *Otra opción:* una
+  bitácora propia, que suma una tabla para el mismo patrón.
+- **TA-107 · «Sí, que lo vea» deja lo demás como estaba.** Con la autorización activa, quien pidió pasa a «resumen y plan»
+  en esa área y nadie más cambia; sin compartir todavía, solo eso (como D-25). Un permiso de antes que ya no puede darse
+  (quien lo recibía ahora lleva esa área) se deja de dar en la versión nueva. *Otra opción:* rechazar la respuesta hasta que
+  la persona revise toda la lista, que la traba por algo que no eligió.
+- **TA-108 · La regla de TB-53 reemplaza una función de la base.** La migración
+  `20261107120100_resumenes_compartidos` hace `CREATE OR REPLACE FUNCTION be_referencia_de_nota_guardar` para que una nota
+  de coordinación pueda citar el plan de otra área que el autor ve por API-RES-06. No es «solo agregar» en sentido
+  estricto: cambia el cuerpo de una función que ya existía, pero no toca ninguna fila y se revierte volviendo a crear la
+  función anterior. **Decisión técnica del continuador, del 2026-11-07, a ratificar:** se acepta porque es reversible y
+  no toca filas. *Otra opción:* una función nueva con otro nombre y un disparador nuevo, sin reemplazar la vieja, que deja
+  dos reglas sobre la misma tabla y obliga a desactivar una.
+
+*Dirección decidió el 2026-11-07 un texto distinto por nivel (reemplaza TA-99 y ratifica TA-85) y ratificó que el
+fundamento del objetivo se muestra al otro profesional (§9, VJR-5). Las decisiones de su implementación:*
+
+- **TA-109 · Dos textos, dos tipos, y la persona acepta el de cada nivel.** El de «resumen»
+  (`resumenes-compartidos-2026-11-propuesta-2`, tipo `RESUMENES_COMPARTIDOS`) sucede al texto único y dice solo lo que se
+  ve en ese nivel; el de «resumen y plan» (`resumenes-y-plan-compartidos-2026-11-propuesta`, tipo nuevo
+  `RESUMENES_Y_PLAN_COMPARTIDOS`) dice el plan vigente completo, de solo lectura, con su objetivo, su fundamento y lo
+  registrado, e incluye el resumen de esa área. Los dos, `PENDING_APPROVAL`. API-RES-01 trae `texts: { summary,
+  summaryAndPlan }`; el estado, `acceptedTexts` por nivel; API-RES-02 recibe `acceptedTexts: { summary, summaryAndPlan }`
+  (cada uno un id o `null`); API-RES-10 sigue con un `textVersionId`, el de «resumen y plan». *Otra opción:* una lista
+  `acceptedTextVersionIds`, que obliga al website a saber de qué tipo es cada id.
+- **TA-110 · Qué pide cada cambio.** Un permiso nuevo de «resumen» pide el texto vigente de «resumen»; uno nuevo o una
+  subida a «resumen y plan», el de «resumen y plan»; si falta, 422 `SHARING_TEXT_REQUIRED` con la ruta del que falta
+  (`acceptedTexts.summary` o `acceptedTexts.summaryAndPlan`); si viene otro, 409 `CONSENT_VERSION_STALE`. Ampliar sigue
+  pidiendo el A3. Bajar, sacar a alguien o retirar no pide ningún texto: un id que no se pide puede ser el vigente o el que ya
+  estaba aceptado. *Otra opción:* pedir los dos textos en cada ampliación, que hace aceptar el del plan a quien solo comparte
+  el resumen.
+- **TA-111 · La versión nueva conserva lo aceptado.** Cada versión ACTIVA guarda el texto aceptado de cada nivel en
+  `texto_aceptado_de_resumenes` (de solo agregar): lo que se acepta ahora, sobre lo que ya tenía. El de «resumen y plan»
+  vale también para un renglón de «resumen», así que bajar no pide nada; la base exige, al confirmar, que cada renglón nuevo
+  tenga el texto de su nivel. La columna de la autorización lleva el del nivel más alto. Una versión anterior a este cambio
+  (sin filas) vale como aceptada en «resumen». *Otra opción:* guardar solo lo aceptado en esa escritura, que obliga a volver
+  a aceptar en cada cambio.
+- **TA-112 · Otra función reemplazada.** `be_autorizacion_de_resumenes_guardar` se reemplaza en la migración
+  `20261107140100_textos_por_nivel_de_resumenes`, como TA-108, para que la columna acepte un texto de cualquiera de los dos
+  tipos. No toca filas ni las migraciones ya escritas. *Otra opción:* dejar en la columna siempre el de «resumen», que no
+  existe cuando la persona da directamente «resumen y plan».
+- **El texto de «resumen» va por su propuesta 3 (2026-11-07).** `resumenes-compartidos-2026-11-propuesta-3` sucede a la 2
+  (migración `20261107160000_texto_de_resumen_propuesta_3`, solo agrega). La 2 decía que la autorización del plan «se acepta
+  aparte», y eso prometía algo que la implementación no hace: la de «resumen y plan» incluye el resumen y alcanza para un
+  permiso de «resumen» (TA-111). Un texto no promete lo que no existe: la 3 cambia solo ese párrafo, «… que incluye también
+  este resumen.». La 2 queda como historia, sin heredar aceptaciones. La frase de que cada apertura queda registrada sigue,
+  como condición de TB-29 (API-RES-05 tiene que registrarlas igual que el plan).
