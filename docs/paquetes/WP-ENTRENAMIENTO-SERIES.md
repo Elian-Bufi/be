@@ -359,8 +359,8 @@ Las respuestas que lee la APK 0.13.2 no cambian (§8).
 ### 7.4 Descanso, serie cronometrada y pausa
 
 > **Modificado por DL-166** (Dirección, 2026-11-07; `WP-APP-VUELTA-DE-ROSCA.md`), decidido y **sin implementar**.
-> - **PV-7:** con el ajuste automático, que viene de fábrica, guardar la serie inicia el descanso. Una barra llega al
->   100 % en el recomendado y reemplaza al aro.
+> - **PV-7:** con el ajuste automático, que viene de fábrica, guardar la serie inicia el descanso, solo entre series
+>   del mismo ejercicio (AVD-3). Una barra llega al 100 % en el recomendado y reemplaza al aro.
 > - **PV-8:** con «Arranca sola», al 100 % el descanso se cierra solo y arranca la serie siguiente, marcada como
 >   automática (con un campo nuevo, servidor y base). De fábrica queda «La inicio yo», y entonces llegar al 100 % no
 >   termina nada.

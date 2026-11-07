@@ -4,8 +4,9 @@
 > (DEUDA_LEGAJO DL-166). **No se programa nada todavía:** las partes (§4) esperan el sí de Dirección, y el orden que
 > pidió Dirección es primero cerrar lo mobile que está en curso, después esta vuelta y después iPhone. **PV-13** (la
 > sesión con letra grande) no la decidió Dirección: la eligió el continuador porque es reversible, y está **a ratificar**
-> (§3.1). Las decisiones de la implementación que este documento propone (AVD-1 a AVD-8, §6) también están **a
-> ratificar**.
+> (§3.1). De las decisiones de la implementación (§6), Dirección ratificó el 2026-11-07 AVD-1 y AVD-3 (con la
+> alternativa) y AVD-5 y AVD-8 (como se recomendaba). AVD-2, AVD-4, AVD-6 y AVD-7 siguen **a ratificar**, y también
+> AVD-9, que es nueva y sale de AVD-1.
 >
 > **Encargo** (Dirección, 2026-11-07): «Las pantallas deben llevar a acciones claras, y recién en esas acciones el
 > desarrollo o más texto (…) bien segmentado, con información clara, y si es necesario más información, un
@@ -120,9 +121,11 @@ vacíos de una cuenta nueva (maqueta 09); y la letra grande en Inicio y en la se
 - **El rediseño de otras pestañas.** Nutrición, Entrenamiento (salvo la sesión en curso) y Evolución quedan como están.
   Solo reciben lo que se muda («Tu historial» y los registros nutricionales) y la regla de los desplegables donde el
   paquete las toque.
-- **El website** (del profesional y de la persona). La única excepción es AV-14: si la web del profesional muestra los
-  tiempos de una sesión, dice cuándo una serie arrancó sola.
-- **Escrituras nuevas, salvo PV-8.** «Quién ve qué» solo lee, y para cambiar algo lleva a la pantalla de siempre.
+- **El website** (del profesional y de la persona), con dos excepciones. Por AV-15, si la web del profesional muestra
+  los tiempos de una sesión, dice cuándo una serie arrancó sola. Por AV-19, sus solicitudes muestran «Eligió no
+  responder».
+- **Escrituras nuevas, salvo PV-8 y AVD-1** (AV-15 y AV-19). «Quién ve qué» solo lee, y para cambiar algo lleva a la
+  pantalla de siempre.
 - **Los ajustes del descanso en la cuenta.** Quedan en el teléfono (PV-10).
 - **Lo que no cambia:** los textos legales y su versión; una parte por pantalla en los formularios; ninguna barra de
   completitud; «Nueva versión» y no «Editar»; ningún número califica.
@@ -177,13 +180,16 @@ se puede revertir sin tocar datos. Se le muestra a Dirección con la maqueta 08 
 
 **Qué cambia de lo vigente** (lo registra DL-166):
 - `WP-ENTRENAMIENTO-SERIES.md` §7.3 y §7.4 decían que guardar una serie no inicia un descanso, que el aro no lo termina y
-  que no hay cierre automático. Con PV-7, guardar la serie inicia el descanso. Con PV-8, si la persona lo elige, el
-  descanso se cierra solo al 100 % y arranca la serie siguiente. PV-12 no cambia una regla: la acción compuesta ya
+  que no hay cierre automático. Con PV-7, guardar la serie inicia el descanso, solo entre series del mismo ejercicio
+  (AVD-3). Con PV-8, si la persona lo elige, el descanso se cierra solo al 100 % y arranca la serie siguiente. PV-12 no cambia una regla: la acción compuesta ya
   existía («Finalizar descanso e iniciar la serie N»), y lo que cambia es dónde está y cómo se llama.
 - La barra visual del 100 % reemplaza al aro. Llegar al 100 % no termina nada si la persona eligió «La inicio yo».
 - DL-117 y PA-02 cambian en el quinto destino («Información» pasa a ser Perfil), en la cabecera (sin menú ni avatar) y,
   durante la sesión, en la forma de la barra: fija y no flotante (PV-11). Las cinco raíces, su orden y las reglas de
   Atrás quedan como están.
+- Una solicitud de formulario tenía dos estados, sin responder y respondida. Con AVD-1 suma un tercero, «Eligió no
+  responder», que el profesional ve (AV-19). «No responder es una opción» deja de ser solo un texto: pasa a ser un acto
+  de la persona, que queda registrado.
 
 ## 4. Las partes
 
@@ -214,7 +220,7 @@ esto, en el árbol de accesibilidad y después en el teléfono. Cada ícono va c
 | AV-01 | La regla de los desplegables, con una pieza común | No | PV-4 | Un solo componente de desplegable en la APK, con rol de botón y estado expandido o plegado para TalkBack. Abrirlo no escribe nada ni cambia la altura de lo de arriba. En cada pantalla del paquete, el estado, la fecha, quién y si se puede responder quedan fuera de todo desplegable. La lista de control de la guía (IV.1) lo pide | Prueba de la APK del componente (rol, estado y que no escribe). La tabla «qué se pliega» de cada pantalla, en la evidencia. TEST-AVR-001 |
 | AV-02 | La barra y la cabecera | No | PV-1 | Perfil es el quinto destino, con el ícono de persona. La cabecera tiene la marca y Novedades, sin avatar ni menú, y conserva la franja del ambiente de prueba. Lo que se muda tiene un lugar: Vínculos en Perfil, «Tu historial» en Entrenamiento y los registros nutricionales en Nutrición. Ninguna entrada del menú ni de Cuenta queda sin lugar, y cada una está en uno solo. Atrás vuelve como hoy (B10-10 §9). Con letra ×1,3 la barra pasa a dos filas sin cortar texto. TalkBack dice «Perfil, pestaña, 5 de 5, seleccionada» | Pruebas de `navegacion.ts` y de la disposición de la barra, actualizadas. Una tabla «dónde quedó cada cosa» con cero pérdidas, en la evidencia. TEST-AVR-002 y 003 |
 | AV-03 | Perfil | No | PV-1, PV-4 | Están quién sos (nombre visible, o «Agregá tu nombre», e identificador BE con «Compartir»); las cuatro baldosas; tus profesionales con su área y «Tengo un código»; «Formularios y pedidos», con «Para responder» (formularios y pedidos de hábitos) y «Respondidos»; y los ajustes, con Cerrar mi cuenta al final. «Podés no responder» se dice una vez, adentro. Todo lo que hoy está en «Información» y en Cuenta sigue alcanzable. La vuelta después de reautenticarse, que hoy va a Cuenta, va al ajuste que se estaba usando | Pruebas de la lógica de la pantalla (qué bloques aparecen y con qué cuenta). Que nada se perdió: la misma tabla de AV-02. TEST-AVR-004 |
-| AV-04 | La marca de pendientes en Perfil | No (ver AVD-1) | PV-6 | Es un punto sin número en Perfil, mientras haya algo en «Para responder». «Para responder» cuenta lo mismo en Inicio y en Perfil: los formularios y los pedidos de hábitos (en la versión 2 de las maquetas, Perfil no contaba el pedido de hábitos). El punto se va cuando la persona responde o dice que no, y no por abrir Perfil. Decir que no a un pedido de hábitos ya existe (el «No» de API-HBT). Para un formulario, ver AVD-1. El punto es el mismo en todas las pantallas, también en la sesión. TalkBack dice lo de §4.0, así que el punto no es la única señal | Prueba pura de la cuenta (responder, negarse y abrir sin responder). TEST-AVR-005 y 006 |
+| AV-04 | La marca de pendientes en Perfil | No (decir que no a un formulario llega con AV-19) | PV-6, AVD-1 | Es un punto sin número en Perfil, mientras haya algo en «Para responder». «Para responder» cuenta lo mismo en Inicio y en Perfil: los formularios y los pedidos de hábitos (en la versión 2 de las maquetas, Perfil no contaba el pedido de hábitos). El punto se va cuando la persona responde o dice que no, y no por abrir Perfil. Decir que no a un pedido de hábitos ya existe (el «No» de API-HBT). Decir que no a un formulario llega con AV-19 (AVD-1): hasta entonces, un formulario saca la marca solo al responderse, y la evidencia lo dice. El punto es el mismo en todas las pantallas, también en la sesión. TalkBack dice lo de §4.0, así que el punto no es la única señal | Prueba pura de la cuenta (responder, negarse y abrir sin responder). TEST-AVR-005 y 006 |
 | AV-05 | «Quién ve qué» | No | PV-3, PV-4 | Es una vista nueva dentro de Perfil y solo lee lo que ya existe: vínculos, consentimientos y A3, y hábitos compartidos. Arriba va el tratamiento de los datos de salud, y sin él dice que ninguno ve nada. Hay una tarjeta por profesional: área, lo que autorizaste y desde cuándo, y si ve tus hábitos («Los ve», «Te pidió verlos · No los ve» o «No los ve»), con ícono y sin colores. Un vínculo en pausa o terminado dice que no ve, y por qué. «Qué incluye» va plegado y sale de cada Alcance, no de un texto escrito a mano. «Cambiar» lleva al vínculo, al consentimiento o a Mis hábitos. No suma ninguna escritura. Antes de mostrar, se verifica, como en toda zona (III.1). Los textos se revisan contra 10-B04 | Prueba pura del armado (con A3 y sin A3, en pausa, terminado, hábitos compartidos, retirados y pedidos). Revisión de los textos contra 10-B04, anotada en la evidencia. TEST-AVR-007 a 009 |
 | AV-06 | Inicio | No | PV-2, PV-4, PV-5 | Tiene tres bloques de acción: la sesión, con «Empezar» y «Ya la hice» y su detalle plegado; las comidas como fichas; y «Para responder». Debajo va «Para mirar». «La que sigue» es la primera comida sin registrar en el orden del plan, nunca por la hora. Si el día tipo no está elegido, Inicio lo pide y BE no elige (DL-049). Con varias sesiones posibles, BE tampoco elige (DL-077). «Tu actividad» es un número: sesiones registradas, últimos 30 días, sin porcentaje ni calificación. El aviso de DL-143 va arriba de todo, como hoy. No hay «Ir a…» repetidos. Inicio no escribe nada. Con letra ×1,3 (maqueta 08), «Empezar» y «Ya la hice» se apilan enteros: cambia la composición y la letra no se achica | Pruebas puras de «la que sigue» (orden del plan, con registros fuera de orden y comidas fuera del plan) y de la cuenta de 30 días. El conteo de palabras y botones antes y después, en la evidencia. TEST-AVR-010 a 012 |
 | AV-07 | El desglose de la actividad en «Tu historial» | No | PV-5 | «Tu historial», ya dentro de Entrenamiento, dice de los mismos 30 días cuántas sesiones fueron realizadas, con desvío y no realizadas, y su total coincide con el número de Inicio (AVD-2). La ausencia no es «no realizada» (DL-106) | Prueba de que el número de Inicio y el total del desglose salen de la misma función. TEST-AVR-013 |
@@ -226,18 +232,19 @@ esto, en el árbol de accesibilidad y después en el teléfono. Cada ícono va c
 
 | ID | Qué | Toca el servidor | Decisión | Se acepta cuando | Pruebas y oráculos |
 |---|---|---|---|---|---|
-| AV-10 | El descanso arranca solo al tildar la serie, con su barra | No | PV-7 | Con el ajuste automático, tildar la serie la registra y manda `REST_STARTED`, ligado a esa serie, en la misma acción. Es un acto de la persona, así que no hace falta ningún dato nuevo. El bloque va debajo del ejercicio y arriba de las series. Dice «Descanso · tras la serie N», el conteo, «de M recomendado» y «Al terminar, seguís con…». La barra va de 0 al recomendado de esa serie, que es el que fija la prescripción por serie (DL-122). Pasado el 100 %, queda llena y el conteo sigue, sin cambiar de color y sin cortar nada. Sin descanso recomendado, hay conteo sin barra y no vibra. En pausa, tildar registra la serie y no arranca ningún descanso (nada se mide en pausa, DL-124). Con una serie cronometrada abierta, la cierra primero, en la misma acción. Con el ajuste manual, se ve «Iniciar descanso», como hoy. TalkBack anuncia solo el inicio y el 100 %, como en §4.0. Con movimiento reducido, la barra queda quieta y el número sigue | Pruebas puras de las acciones de la corrida (`corrida-de-entrenamiento.ts`): tildar con el ajuste automático y manual, en pausa, con una medición abierta, y sin recomendado. `aplicarEventos` acepta cada secuencia. TEST-AVR-016 a 019 |
+| AV-10 | El descanso arranca solo al tildar la serie, con su barra | No | PV-7, AVD-3 | Con el ajuste automático, tildar la serie la registra y manda `REST_STARTED`, ligado a esa serie, en la misma acción. Es un acto de la persona, así que no hace falta ningún dato nuevo. **Solo entre series del mismo ejercicio** (AVD-3): tras la última serie de un ejercicio, y tras la última de la sesión, no arranca. Destildar una serie con su descanso corriendo lo termina (`REST_FINISHED`). El bloque va debajo del ejercicio y arriba de las series. Dice «Descanso · tras la serie N», el conteo, «de M recomendado» y «Al terminar, seguís con…». La barra va de 0 al recomendado de esa serie, que es el que fija la prescripción por serie (DL-122). Pasado el 100 %, queda llena y el conteo sigue, sin cambiar de color y sin cortar nada. Sin descanso recomendado, hay conteo sin barra y no vibra. En pausa, tildar registra la serie y no arranca ningún descanso (nada se mide en pausa, DL-124). Con una serie cronometrada abierta, la cierra primero, en la misma acción. Con el ajuste manual, se ve «Iniciar descanso», como hoy. TalkBack anuncia solo el inicio y el 100 %, como en §4.0. Con movimiento reducido, la barra queda quieta y el número sigue | Pruebas puras de las acciones de la corrida (`corrida-de-entrenamiento.ts`): tildar con el ajuste automático y manual, en pausa, con una medición abierta, sin recomendado, la última serie de un ejercicio y de la sesión, y destildar con el descanso corriendo. `aplicarEventos` acepta cada secuencia. TEST-AVR-016 a 019 |
 | AV-11 | El engranaje y sus ajustes, guardados en el teléfono | No | PV-10, el engranaje, los valores de fábrica | El engranaje va al lado del bloque del descanso y no en Perfil. TalkBack lo lee como en §4.0, y cada ajuste, como un grupo de opciones con la elegida marcada. La hoja explica cómo funciona en dos frases y trae los ajustes: «Empezar el descanso» (al guardar la serie, o «Lo inicio yo») y «Vibrar al llegar al 100 %», con «También con el teléfono bloqueado». El ajuste de la serie siguiente aparece recién con AV-15: hasta entonces no se ofrece una opción que todavía no funciona. De fábrica: descanso automático, vibrar encendido y también con el teléfono bloqueado; con AV-15, «La inicio yo». Los ajustes quedan en el teléfono, como la apariencia, y la hoja lo dice. Si el teléfono no deja leer o guardar, se usan los de fábrica y nada se rompe | Prueba del almacén de ajustes (de fábrica, cambio y falla de lectura). TEST-AVR-020 |
-| AV-12 | Vibrar al 100 %, también con el teléfono bloqueado | No | PV-9 | Con la app abierta, vibra al llegar al recomendado. Con el teléfono bloqueado, vibra un aviso local programado para ese instante. El aviso no nombra el ejercicio ni muestra ningún dato. **El permiso se pide en contexto:** al encender «Vibrar» sin el permiso (o la primera vez que hace falta, porque viene encendido de fábrica: AVD-8), BE explica en una frase para qué lo necesita y ofrece «Permitir avisos», y recién entonces aparece el diálogo de Android. Nunca se pide al abrir la app. Si la persona dice que no, vibra solo con la app abierta y una línea en la hoja y en el bloque lo dice. El aviso programado se cancela cuando el descanso termina antes, al pausar, al destildar la serie, al finalizar y al cerrar la sesión. La lista de permisos que fija `scripts/avisos-del-telefono.test.mjs` cambia solo en lo que esto use, y el comentario «BE no programa avisos locales» de `app.config.ts` se corrige (AVD-5) | Prueba pura de cuándo se programa y cuándo se cancela, y de los tres casos del permiso (dado, sin pedir y negado). Prueba de que el texto del aviso no lleva el nombre del ejercicio. Prueba de la lista de permisos actualizada. En el teléfono: bloqueado, en reposo y con la app en segundo plano. TEST-AVR-021 y 022 |
+| AV-12 | Vibrar al 100 %, también con el teléfono bloqueado | No | PV-9, AVD-5, AVD-8 | Con la app abierta, vibra al llegar al recomendado. Con el teléfono bloqueado, vibra un aviso local común, programado para ese instante y sin la alarma exacta (AVD-5); su demora se mide en el teléfono de Dirección. El aviso no nombra el ejercicio ni muestra ningún dato. **El permiso se pide en contexto:** al encender «Vibrar» sin el permiso (o, como viene encendido de fábrica, al empezar el primer descanso: AVD-8), BE explica en una frase para qué lo necesita y ofrece «Permitir avisos», y recién entonces aparece el diálogo de Android. Nunca se pide al abrir la app. Si la persona dice que no, vibra solo con la app abierta y una línea en la hoja y en el bloque lo dice. El aviso programado se cancela cuando el descanso termina antes, al pausar, al destildar la serie, al finalizar y al cerrar la sesión. La lista de permisos que fija `scripts/avisos-del-telefono.test.mjs` cambia solo en lo que esto use, y el comentario «BE no programa avisos locales» de `app.config.ts` se corrige (AVD-5) | Prueba pura de cuándo se programa y cuándo se cancela, y de los tres casos del permiso (dado, sin pedir y negado). Prueba de que el texto del aviso no lleva el nombre del ejercicio. Prueba de la lista de permisos actualizada. En el teléfono: bloqueado, en reposo y con la app en segundo plano. TEST-AVR-021 y 022 |
 | AV-13 | La fila fija de acciones, apilada sobre la navegación fija | No | PV-11 | Durante la sesión, la fila (Pausar o Reanudar, la acción del momento y Siguiente ejercicio) y la navegación van fijas y apiladas, sin la cápsula flotante. La navegación es opaca: nada se ve a través de ella, y lleva el punto de Perfil como en las demás pantallas. Nada tapa el contenido: el final de la pantalla deja el alto de las dos. «Finalizar entrenamiento» queda al final de la pantalla y en «Ver rutina», como hoy. La acción del medio cambia con el estado (AVD-4). Con el teclado abierto, las dos se ocultan, como la barra hoy. Con letra ×1,3 y ×2 no se corta ningún texto | Prueba pura de la acción del momento en cada estado. La medición del alto que queda para el contenido a 360 dp con letra ×1, ×1,3 y ×2, en la evidencia. TEST-AVR-023 |
 | AV-14 | «Empezar serie N» termina el descanso y arranca la serie | No | PV-12 | Con un descanso corriendo, un toque manda `REST_FINISHED` y `SET_TIMING_STARTED` con el mismo instante y el mismo `compoundActionId`. Es la acción compuesta que ya existe, auditada (§7.4), en su lugar nuevo. Sin descanso, «Empezar serie N» arranca la medición de la serie. Un doble toque es una sola acción | Prueba pura: un toque da dos eventos con el mismo instante y la misma acción compuesta; el doble toque no duplica. `calcularTiempos` da descanso y serie medidos sin hueco. TEST-AVR-024 |
 | AV-18 | La sesión con letra grande | No | PV-13 (a ratificar), maqueta 08 | Con letra ×1,3 o más, la fila de acciones sigue en una fila y la navegación pasa a dos filas debajo, las dos fijas: no hay excepción a PV-11. Ningún texto se corta ni se achica. Al abrir se ven el ejercicio y el bloque del descanso entero. Si Dirección elige la alternativa de PV-13, la navegación se esconde durante la sesión con letra ×1,3 o más, y se sale con «Atrás» | La medición de AV-13 con ×1,3 y ×2: el alto de las dos barras y si el ejercicio y el descanso entran al abrir. TEST-AVR-030 |
 
-### 4.3 Etapa 3 · con servidor: la serie siguiente arranca sola
+### 4.3 Etapa 3 · con servidor: la serie siguiente arranca sola y «Eligió no responder»
 
 | ID | Qué | Toca el servidor | Decisión | Se acepta cuando | Pruebas y oráculos |
 |---|---|---|---|---|---|
 | AV-15 | «Arranca sola», guardada como automática | **Sí: dominio, API y base** | PV-8 | El tercer ajuste del engranaje: «La inicio yo» viene de fábrica y «Arranca sola» se elige. Con «Arranca sola», al 100 % se mandan el fin del descanso y el inicio de la serie siguiente, en el instante del recomendado y marcados como automáticos: el campo nuevo de AVD-6. La hoja dice en una línea que queda guardada como automática. La base suma el campo con una migración que solo agrega. La API lo acepta solo de un cliente que declara la capacidad nueva (DL-122) y lo devuelve solo a quien la declara. Las APK instaladas (0.20, 0.21 y 0.22) leen API-TIE-01 a 03 con esquemas estrictos, así que a ellas no les llega el campo (DL-152). `calcularTiempos` distingue un fin automático del de la persona, y el tiempo se informa sin juzgarlo. Si la app no está viva al 100 %, no se cierra nada a la hora de reabrir (DL-124): vale la pregunta de las mediciones abiertas (AVD-7). Si la web del profesional muestra los tiempos, dice «arrancó sola» | Dominio: el contrato con el campo y sin él, y `calcularTiempos` con un fin automático. Integración con PostgreSQL: el campo se guarda y se devuelve con la capacidad, y sin la capacidad se rechaza al escribir y no aparece al leer. `lecturas-de-las-apk.int-spec.ts`: las lecturas congeladas de 0.20, 0.21 y 0.22 siguen pasando. La migración, probada en una base local. TEST-AVR-025 a 028 |
+| AV-19 | «Eligió no responder»: decir que no a un formulario | **Sí: dominio, API, base y website** | AVD-1, PV-6 | La persona puede decir que no a una solicitud de formulario pendiente, desde la solicitud, con una confirmación. Es una operación nueva (DL-137 D-7) y un estado nuevo de la solicitud, «Eligió no responder», que la base suma con una migración que solo agrega. En la APK, la solicitud sale de «Para responder» y de Inicio, pasa a su grupo en Perfil y saca la marca. El profesional la ve con ese texto, como un hecho y no como una falta: sin color de alerta y sin ninguna palabra que la califique. Si su lista de pendientes o la Línea de tiempo (DL-165 D-8) muestran las solicitudes, la tratan igual. **Las APK instaladas no ven el estado nuevo:** las 0.20, 0.21 y 0.22 leen el estado de una solicitud con un esquema estricto (`PENDING` o `RESPONDED`), así que el estado viaja solo para el cliente que declara la capacidad nueva (DL-122). Para los demás, la solicitud sigue como pendiente (DL-152). Qué pasa si la persona después quiere responder lo decide AVD-9 | Dominio: el estado y la transición, desde pendiente y desde ningún otro estado. Integración con PostgreSQL: solo la persona titular puede decir que no; el profesional lo ve con la capacidad y sin ella, y una APK sin la capacidad recibe la solicitud como pendiente. `lecturas-de-las-apk.int-spec.ts`: las lecturas congeladas de 0.20, 0.21 y 0.22 siguen pasando. Website: la solicitud con «Eligió no responder». `copy-pantallas.test.cjs`, sin palabras prohibidas. TEST-AVR-031 a 033 |
 
 ### 4.4 Cierre
 
@@ -255,57 +262,64 @@ esto, en el árbol de accesibilidad y después en el teléfono. Cada ícono va c
 3. **Etapa 2 · solo app, la sesión (AV-10 a AV-14 y AV-18).** Primero AV-13 (la fila fija) y AV-18 (la letra grande),
    que dan el lugar de «Empezar serie N» (AV-14). Después AV-10, AV-11 y AV-12. Puede ir en una candidata propia, si
    Dirección prefiere probar la sesión aparte.
-4. **Etapa 3 · con servidor (AV-15), al final.** Va con su capacidad, su migración y la prueba de las lecturas
-   congeladas. Si la etapa 3 se demora, la APK de las etapas 1 y 2 sale igual: sin AV-15, la hoja tiene dos ajustes.
+4. **Etapa 3 · con servidor (AV-15 y AV-19), al final.** Cada parte va con su capacidad, su migración y la prueba de
+   las lecturas congeladas. Pueden ir en una sola capacidad o en dos: se decide al programar, con la prueba de
+   compatibilidad. Si la etapa 3 se demora, la APK de las etapas 1 y 2 sale igual: sin AV-15, la hoja tiene dos
+   ajustes, y sin AV-19 un formulario saca la marca solo al responderse.
 5. **Cierre (AV-16).**
 
-## 6. Lo que se decide al programar (a ratificar)
+## 6. Lo que se decide al programar
 
-Son propuestas de quien programa, con su recomendación. No se programan sin el sí de Dirección:
+Son propuestas de quien programa. Dirección respondió el 2026-11-07: ratificó AVD-1, AVD-3, AVD-5 y AVD-8. AVD-2, AVD-4,
+AVD-6 y AVD-7 quedan con la recomendación, **a ratificar**. AVD-9 es nueva, sale de AVD-1 y también está **a
+ratificar**. Ninguna se programa sin el sí de Dirección a su parte.
 
-- **AVD-1 · Negarse a un formulario** (PV-6). Un pedido de hábitos ya tiene su «No». Una solicitud de formulario, en
-  cambio, solo puede estar sin responder o respondida: no hay un acto de negarse.
-  - *Recomiendo:* «No voy a responder» en el teléfono, guardado por cuenta. La solicitud pasa a «Elegiste no responder»
-    en Perfil, sale de Inicio y saca la marca. El profesional sigue viendo «Sin responder», que ya es un hecho y no una
-    falta. No toca el servidor.
-  - *Alternativa:* un estado nuevo de la solicitud («La persona eligió no responder»), visible para el profesional. Es
-    una operación y un estado nuevos (servidor y base) y va a la etapa 3.
-- **AVD-2 · Los 30 días en «Tu historial»** (PV-5). «Tu historial» muestra 90 días (DL-096).
+- **AVD-1 · Decir que no a un formulario** (PV-6) · **RATIFICADA por Dirección el 2026-11-07, con la alternativa.** Un
+  pedido de hábitos ya tiene su «No», pero una solicitud de formulario solo puede estar sin responder o respondida.
+  - *Decidido:* un estado nuevo de la solicitud, «Eligió no responder», que el profesional ve. Son una operación y un
+    estado nuevos, con servidor y base. Van en la etapa del servidor, junto a AV-15, como AV-19. Respetan las lecturas
+    congeladas y la capacidad de cliente. Para el profesional se dice sin juicio: es un hecho, no una falta.
+  - *Descartado:* guardar «No voy a responder» solo en el teléfono, sin que el profesional lo sepa.
+- **AVD-2 · Los 30 días en «Tu historial»** (PV-5) · **a ratificar.** «Tu historial» muestra 90 días (DL-096).
   - *Recomiendo:* una línea arriba con el desglose de los últimos 30 días, para que el número de Inicio se encuentre
     igual.
   - *Alternativa:* el desglose de los 90 días, aunque no coincida con el número de Inicio.
-- **AVD-3 · El descanso tras la última serie.**
-  - *Recomiendo:* tras la última serie de un ejercicio, el descanso arranca igual y dice «Al terminar, seguís con
-    <siguiente ejercicio>». Tras la última serie de la sesión, no arranca. Destildar una serie con su descanso corriendo
-    termina ese descanso (`REST_FINISHED`): un evento no se borra.
-  - *Alternativa:* no arrancar el descanso tras la última serie de cada ejercicio.
-- **AVD-4 · La acción del medio de la fila fija**, según el estado:
+- **AVD-3 · El descanso tras la última serie** · **RATIFICADA por Dirección el 2026-11-07, con la alternativa.**
+  - *Decidido:* el descanso automático arranca solo entre series del mismo ejercicio. Tras la última serie de un
+    ejercicio, no arranca, y tampoco tras la última de la sesión. Destildar una serie con su descanso corriendo termina
+    ese descanso (`REST_FINISHED`), como se recomendaba: un evento no se borra.
+  - *Descartado:* que arranque también tras la última serie de cada ejercicio, con «Al terminar, seguís con <siguiente
+    ejercicio>».
+- **AVD-4 · La acción del medio de la fila fija** · **a ratificar.** Según el estado:
   - con un descanso corriendo: «Empezar serie N»;
   - con una serie cronometrada abierta: «Terminar serie N»;
   - sin nada abierto: «Empezar serie N», que mide la serie;
   - en pausa: Reanudar va a la izquierda y la del medio queda deshabilitada, con su motivo.
-- **AVD-5 · La vibración con el teléfono bloqueado.**
-  - *Recomiendo:* un aviso local programado con `expo-notifications` (ya está en la APK), sin la alarma exacta. Android
-    puede demorarlo en reposo profundo, y eso se mide en el teléfono y se dice en la hoja si pasa. Pedir la alarma exacta
-    es un permiso más, y Google Play lo limita a las apps de alarma y calendario.
-  - *Alternativa:* pedir la alarma exacta.
-  - *Sin cambio en ningún caso:* reiniciar el teléfono durante un descanso pierde la vibración (BE sigue sin
-    `RECEIVE_BOOT_COMPLETED`).
-- **AVD-6 · El campo nuevo** (PV-8).
+- **AVD-5 · La vibración con el teléfono bloqueado** · **RATIFICADA por Dirección el 2026-11-07, como se recomendaba.**
+  - *Decidido:* un aviso local común, programado con `expo-notifications` (ya está en la APK), sin la alarma exacta.
+    Android puede demorarlo en reposo profundo: se mide en el teléfono de Dirección y, si pasa, la hoja lo dice.
+  - *Descartado:* pedir la alarma exacta, que es un permiso más y que Google Play limita a las apps de alarma y
+    calendario.
+  - Reiniciar el teléfono durante un descanso pierde la vibración: BE sigue sin `RECEIVE_BOOT_COMPLETED`.
+- **AVD-6 · El campo nuevo** (PV-8) · **a ratificar.**
   - *Recomiendo:* un campo opcional, por ejemplo `trigger: 'AUTOMATIC'`, en `REST_FINISHED` y `SET_TIMING_STARTED`.
     Su ausencia quiere decir «lo marcó la persona».
   - *Alternativa:* un tipo de evento nuevo. Se descarta porque una APK instalada no podría leer la sesión entera (la
     unión de tipos es estricta).
-- **AVD-7 · «Arranca sola» con la app cerrada.**
+- **AVD-7 · «Arranca sola» con la app cerrada** · **a ratificar.**
   - *Recomiendo:* solo arranca si la app está viva al 100 %, adelante o en segundo plano. Si Android la cerró, al
     volver no se cierra nada a la hora de reabrir: vale la pregunta de las mediciones abiertas (§7.5 de
     WP-ENTRENAMIENTO-SERIES).
-- **AVD-8 · Cuándo se pide el permiso, si «Vibrar» viene encendido de fábrica.** El permiso se pide al encender
-  «Vibrar», pero de fábrica ya está encendido.
-  - *Recomiendo:* pedirlo al empezar el primer descanso de la primera sesión, en el bloque del descanso, con la frase de
-    para qué y «Permitir avisos». Si la persona lo cierra sin elegir, no se vuelve a preguntar en esa sesión.
-  - *Alternativa:* no pedirlo hasta que la persona abra el engranaje. Mientras tanto vibra solo con la app abierta, y
-    la hoja lo dice.
+- **AVD-8 · Cuándo se pide el permiso, si «Vibrar» viene encendido de fábrica** · **RATIFICADA por Dirección el
+  2026-11-07, como se recomendaba.**
+  - *Decidido:* se pide al empezar el primer descanso, en el bloque del descanso, con la frase de para qué y «Permitir
+    avisos». Si la persona lo cierra sin elegir, no se vuelve a preguntar en esa sesión.
+  - *Descartado:* no pedirlo hasta que la persona abra el engranaje.
+- **AVD-9 · Responder después de haber dicho que no** (AV-19) · **a ratificar.** Sale de AVD-1.
+  - *Recomiendo:* la persona puede cambiar de idea mientras la solicitud siga abierta. Desde «Eligió no responder» se
+    puede responder, y la respuesta deja la solicitud respondida. Decir que no queda como hecho en la historia de la
+    solicitud y no se borra.
+  - *Alternativa:* decir que no es definitivo, y para responder hace falta que el profesional pida de nuevo.
 
 ## 7. Riesgos
 
@@ -313,11 +327,17 @@ Son propuestas de quien programa, con su recomendación. No se programan sin el 
   teléfono y una persona. Hasta entonces, la evidencia lo escribe como pendiente (AV-16).
 - **Las lecturas congeladas de las APK (DL-152).** Las etapas 1 y 2 no cambian ninguna respuesta. AV-15 sí suma un campo
   a los eventos que devuelven API-TIE-01 a 03, que las APK 0.20, 0.21 y 0.22 validan con esquemas estrictos. Si el campo
-  les llegara, dejarían de abrir sus tiempos. Por eso viaja solo con la capacidad, y la prueba de las lecturas congeladas
-  es condición de la parte.
-- **La capacidad de cliente, si hay campo nuevo (DL-122).** Una capacidad nueva es un compromiso que dura: la API tiene
-  que seguir sirviendo a quien no la declara, y la APK nueva la declara solo cuando sabe mostrar y escribir el campo.
-  Cada capacidad suma un caso a las pruebas de compatibilidad.
+  les llegara, dejarían de abrir sus tiempos. AV-19 suma un valor al estado de una solicitud, que esas mismas APK leen
+  como `PENDING` o `RESPONDED`, sin otro valor posible. Por eso los dos viajan solo con la capacidad, y la prueba de las
+  lecturas congeladas es condición de cada parte.
+- **La capacidad de cliente, si hay campo o estado nuevo (DL-122).** Una capacidad nueva es un compromiso que dura: la
+  API tiene que seguir sirviendo a quien no la declara, y la APK nueva la declara solo cuando sabe mostrar y escribir lo
+  nuevo. Cada capacidad suma un caso a las pruebas de compatibilidad.
+- **Lo que ve el profesional con AV-19.** «Eligió no responder» es un hecho, no una falta. El riesgo está en cómo se
+  dibuja más que en el texto: sin color de alerta y sin contarlo como algo pendiente. Se revisa en la evidencia con
+  `copy-pantallas.test.cjs` y a ojo.
+- **Una persona con una APK vieja y otra nueva.** Si dice que no desde la APK nueva, la vieja le sigue mostrando la
+  solicitud como pendiente. Es el costo de no romper la lectura congelada, y se dice en la evidencia.
 - **El espacio de la sesión (PV-11 y PV-13).** Con letra ×1,3, la fila de acciones y la navegación en dos filas ocupan
   cerca de un cuarto de la pantalla, y con ×2 ocupan más. Se mide en AV-13 y AV-18 antes de darlo por bueno. PV-13 está a
   ratificar: si Dirección elige la alternativa, se esconde la navegación, y esa es una excepción a PV-11 que decide
@@ -355,3 +375,4 @@ Al programar, en `WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`, con el formato de los de 
 | TEST-AVR-025 a 028 | «Arranca sola»: el campo con y sin la capacidad, `calcularTiempos`, las lecturas congeladas y la app cerrada |
 | TEST-AVR-029 | Una cuenta nueva: sin bloques vacíos, el paso que falta primero y Perfil sin punto |
 | TEST-AVR-030 | La sesión con letra grande: las dos barras fijas, nada cortado, y el ejercicio y el descanso a la vista |
+| TEST-AVR-031 a 033 | «Eligió no responder»: la transición, quién puede, lo que ve el profesional y la APK sin la capacidad |
