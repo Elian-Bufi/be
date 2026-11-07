@@ -660,7 +660,7 @@ SOURCES              DL-163 D-13, ampliada por Dirección el 2026-11-07 («el nu
                      hasta la planificación, y poder dejarle comentarios al otro profesional»; «Sí, plan completo de
                      solo lectura») · WP-TABLERO-ALTA-GAMA TB-52, TB-53, TB-54 y TB-56, §3.1, §3.4 y §4.3 · TA-87 y
                      TA-95 (decididas por Dirección el 2026-11-07) · TA-86, TA-90, TA-91 y TA-92 · 08 §11-bis.7 ·
-                     UC-E07 («no existe chat general») · T13 de WP-04 · TA-120 a TA-128
+                     UC-E07 («no existe chat general») · T13 de WP-04 · TA-120 a TA-129
 PRECONDITIONS        Ninguna: areasDelPanel, hayPanel, estadoDeOtraArea, tarjetaDeOtraArea, renglonPlegado,
                      conPedidoPendiente, LECTURAS_AL_ABRIR, lecturasAlDesplegar, areaDelPedido, trasPedirVerElPlan,
                      lineaDeMiArea, lineaDelPlan, lineaDelAvance, tablaDelAvance, encabezadoDelPlan, citaDelPlan y
