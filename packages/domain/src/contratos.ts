@@ -197,6 +197,11 @@ export const CodigoDeError = {
    * lleva, o la lleva él) o la matriz no deja ver el plan (`SUMMARY_PLAN_NOT_ALLOWED`).
    */
   SUMMARY_RECIPIENT_NOT_AVAILABLE: 'SUMMARY_RECIPIENT_NOT_AVAILABLE',
+  /**
+   * API-RES-02 (Dirección, 2026-11-07: un texto por nivel): falta aceptar el texto que pide un nivel. `details.issues` dice
+   * cuál (`acceptedTexts.summary` o `acceptedTexts.summaryAndPlan`). Quien lo recibe es la persona: no revela nada.
+   */
+  SHARING_TEXT_REQUIRED: 'SHARING_TEXT_REQUIRED',
   /** API-RES-08: el profesional ya ve el plan de esa área; no hay nada que pedir. Lo sabe por API-RES-04. */
   PLAN_ALREADY_SHARED: 'PLAN_ALREADY_SHARED',
   /**

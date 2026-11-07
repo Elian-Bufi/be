@@ -15,7 +15,15 @@
 import { ALCANCES, type Alcance } from './alcance';
 import type { ValidationIssue } from './contratos';
 import type { AgendaDeEntrenamiento } from './contratos-entrenamiento';
-import { AREAS_CON_PLAN, laMatrizDejaVerElPlan, type AreaCompartida, type AreaConPlan, type NivelDeResumen, type PermisoDeResumen } from './contratos-resumenes-compartidos';
+import {
+  AREAS_CON_PLAN,
+  laMatrizDejaVerElPlan,
+  type AreaCompartida,
+  type AreaConPlan,
+  type NivelDeResumen,
+  type PermisoDeResumen,
+  type TextosAceptados,
+} from './contratos-resumenes-compartidos';
 import { desdeCuandoSePuedeVolverAPedir } from './habitos-de-la-persona';
 import { lunesDe } from './series-del-analisis';
 
@@ -127,14 +135,45 @@ export function renglonesDeLosPermisos(p: {
 }
 
 /**
- * Si la versión nueva amplía lo compartido (08 C-12): un renglón que antes no valía, o uno que sube de nivel. Ampliar pide
- * el A3 y aceptar el texto vigente; bajar, sacar a alguien o dejar igual, no (TA-98): corta en el momento.
+ * Qué textos pide la versión nueva (Dirección, 2026-11-07: un texto por nivel; 08 C-12): un renglón que antes no valía
+ * pide el texto de su nivel, y uno que sube a «resumen y plan», el de «resumen y plan». Bajar, sacar a alguien o dejar
+ * igual no pide ninguno: corta en el momento (TA-98).
  */
-export function ampliaLoCompartido(anteriores: readonly RenglonDeResumen[], nuevos: readonly RenglonDeResumen[]): boolean {
-  return nuevos.some((n) => {
+export function textosQuePide(anteriores: readonly RenglonDeResumen[], nuevos: readonly RenglonDeResumen[]): { readonly summary: boolean; readonly summaryAndPlan: boolean } {
+  let summary = false;
+  let summaryAndPlan = false;
+  for (const n of nuevos) {
     const antes = anteriores.find((a) => a.alcanceDeVinculoId === n.alcanceDeVinculoId && a.origenId === n.origenId);
-    return !antes || RANGO[n.nivel] > RANGO[antes.nivel];
-  });
+    if (antes && RANGO[n.nivel] <= RANGO[antes.nivel]) continue;
+    if (n.nivel === 'SUMMARY') summary = true;
+    else summaryAndPlan = true;
+  }
+  return { summary, summaryAndPlan };
+}
+
+/** Si la versión nueva amplía lo compartido: pide algún texto. Ampliar pide además el A3. */
+export function ampliaLoCompartido(anteriores: readonly RenglonDeResumen[], nuevos: readonly RenglonDeResumen[]): boolean {
+  const pide = textosQuePide(anteriores, nuevos);
+  return pide.summary || pide.summaryAndPlan;
+}
+
+/** El código del 422 de API-RES-02 cuando falta aceptar el texto que pide un nivel, con la ruta del que falta. */
+export const CODIGO_DE_TEXTO_QUE_FALTA = 'SHARING_TEXT_REQUIRED';
+
+/** Los textos que pide la versión nueva y no vienen aceptados: un issue por nivel, con su ruta en `acceptedTexts`. */
+export function textosQueFaltan(pide: { readonly summary: boolean; readonly summaryAndPlan: boolean }, dados: TextosAceptados): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (pide.summary && dados.summary === null) issues.push({ code: CODIGO_DE_TEXTO_QUE_FALTA, path: 'acceptedTexts.summary' });
+  if (pide.summaryAndPlan && dados.summaryAndPlan === null) issues.push({ code: CODIGO_DE_TEXTO_QUE_FALTA, path: 'acceptedTexts.summaryAndPlan' });
+  return issues;
+}
+
+/**
+ * Los textos aceptados de la versión nueva: los de ahora sobre los que ya tenía la versión activa (`anteriores`; `null` si
+ * no la había). Bajar no pierde nada: el texto de «resumen y plan» incluye el resumen de esa área.
+ */
+export function textosDeLaVersion(anteriores: TextosAceptados | null, dados: TextosAceptados): TextosAceptados {
+  return { summary: dados.summary ?? anteriores?.summary ?? null, summaryAndPlan: dados.summaryAndPlan ?? anteriores?.summaryAndPlan ?? null };
 }
 
 /** Los permisos que dicen hoy los renglones vigentes: uno por profesional y área, con el nivel más alto (para volver a escribirlos). */

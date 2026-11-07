@@ -2166,7 +2166,8 @@ it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-52 a TB-56): RES-01 a 04 y 06 a 10 — lo 
   const yo = conSesion(app, c.ase.token);
   const delEnt = conSesion(app, ent.token);
   const servidor = app.getHttpServer();
-  const TEXTO = VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id;
+  const PLAN = VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS.id;
+  const AMBOS = { summary: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, summaryAndPlan: PLAN };
   const OTRAS = `/api/v1/advisees/${c.ase.id}/shared-summaries`;
   const PEDIR = `${OTRAS}/access-requests`;
   const pedido = { scope: 'ENTRENAMIENTO', area: 'NUTRICION' };
@@ -2201,7 +2202,7 @@ it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-52 a TB-56): RES-01 a 04 y 06 a 10 — lo 
 
   // RES-10 — responder
   const responder = (id: string, cuerpo: Record<string, unknown>, k?: string) => yo.post(`/api/v1/me/summary-sharing/access-requests/${id}/answer`, k).send(cuerpo);
-  const si = { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId: TEXTO } };
+  const si = { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId: PLAN } };
   await responder(creado.accessRequestId, { ...si, sharing: null }).expect(400); // INVALID_REQUEST
   await responder(creado.accessRequestId, { ...si, extra: 1 }).expect(400); // UNKNOWN_FIELD
   await responder(randomUUID(), si).expect(404);
@@ -2228,14 +2229,15 @@ it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-52 a TB-56): RES-01 a 04 y 06 a 10 — lo 
 
   // RES-02 — compartir, o cambiar con quiénes y en qué nivel
   const compartir = (cambios: Record<string, unknown>, k?: string) =>
-    yo.put('/api/v1/me/summary-sharing', k).send({ expectedVersion: 'v1', textVersionId: TEXTO, grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY' }], ...cambios });
+    yo.put('/api/v1/me/summary-sharing', k).send({ expectedVersion: 'v1', acceptedTexts: AMBOS, grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY' }], ...cambios });
   await compartir({ grants: [{ professionalId: ajeno.id, area: 'NUTRICION', level: 'SUMMARY' }] }).expect(422); // SUMMARY_RECIPIENT_NOT_AVAILABLE
   await compartir({ grants: [{ professionalId: ent.id, area: 'ANTROPOMETRIA', level: 'SUMMARY_AND_PLAN' }] }).expect(400); // INVALID_REQUEST
   await compartir({ extra: 1 }).expect(400); // UNKNOWN_FIELD
   await compartir({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
-  await compartir({ textVersionId: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id }).expect(409); // CONSENT_VERSION_STALE
-  await request(servidor).put('/api/v1/me/summary-sharing').set('Authorization', `Bearer ${c.ase.token}`).send({ expectedVersion: 'v1', textVersionId: TEXTO, grants: [] }).expect(400); // sin Idempotency-Key
+  await compartir({ acceptedTexts: { summary: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id, summaryAndPlan: null } }).expect(409); // CONSENT_VERSION_STALE
+  await request(servidor).put('/api/v1/me/summary-sharing').set('Authorization', `Bearer ${c.ase.token}`).send({ expectedVersion: 'v1', acceptedTexts: AMBOS, grants: [] }).expect(400); // sin Idempotency-Key
   await compartir({}).expect(200); // bajar a «resumen»: v2
+  await compartir({ expectedVersion: 'v2', grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }], acceptedTexts: { summary: null, summaryAndPlan: null } }).expect(422); // SHARING_TEXT_REQUIRED
   const claveDos = claveDeIdempotencia();
   await compartir({ expectedVersion: 'v2', grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }] }, claveDos).expect(200); // v3
   await compartir({ expectedVersion: 'v2' }, claveDos).expect(409); // IDEMPOTENCY_KEY_REUSED

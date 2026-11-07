@@ -35,6 +35,7 @@ import {
   type ProfesionalParaResumenes,
   type RenglonDeResumen,
   type TextoDeCompartirResumenes,
+  type TextosAceptados,
 } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import type { AutorizacionDeResumenes as FilaDeAutorizacion, NivelDeResumenCompartido, PedidoDeAccesoAPlan as FilaDePedido } from '@prisma/client';
@@ -65,16 +66,24 @@ export const momentoDeLosResumenes = momentoDeLaBase;
 
 // ─── El texto del acto ──────────────────────────────────────────────────────────────────────────
 
-/** El texto del acto que se muestra para compartir o ampliar: el vigente de su tipo, hoy una propuesta. */
-export function textoDelActo(): TextoDeCompartirResumenes {
-  const v = VERSION_VIGENTE.RESUMENES_COMPARTIDOS;
-  return { id: v.id, title: v.titulo, text: v.texto, textHash: v.hash, effectiveFrom: v.vigenteDesde, approval: VERSIONES_PROPUESTAS.has(v.id) ? 'PENDING_APPROVAL' : 'APPROVED' };
+const textoApi = (v: (typeof VERSION_VIGENTE)[keyof typeof VERSION_VIGENTE]): TextoDeCompartirResumenes => ({
+  id: v.id,
+  title: v.titulo,
+  text: v.texto,
+  textHash: v.hash,
+  effectiveFrom: v.vigenteDesde,
+  approval: VERSIONES_PROPUESTAS.has(v.id) ? 'PENDING_APPROVAL' : 'APPROVED',
+});
+
+/** Los textos del acto que se muestran para compartir o ampliar, uno por nivel (Dirección, 2026-11-07): hoy, propuestas. */
+export function textosDelActo(): { summary: TextoDeCompartirResumenes; summaryAndPlan: TextoDeCompartirResumenes } {
+  return { summary: textoApi(VERSION_VIGENTE.RESUMENES_COMPARTIDOS), summaryAndPlan: textoApi(VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS) };
 }
 
-/** Una versión del texto del acto por su id, con su hash; `null` si no es de este tipo. */
-export function versionDelTexto(id: string): { readonly id: string; readonly hash: string } | null {
-  const v = CATALOGO_DE_TEXTOS.find((t) => t.id === id && t.tipo === 'RESUMENES_COMPARTIDOS');
-  return v ? { id: v.id, hash: v.hash } : null;
+/** El hash de una versión del texto de un nivel; `null` si no es de ese tipo. */
+function hashDelTexto(id: string, nivel: 'summary' | 'summaryAndPlan'): string | null {
+  const tipo = nivel === 'summary' ? 'RESUMENES_COMPARTIDOS' : 'RESUMENES_Y_PLAN_COMPARTIDOS';
+  return CATALOGO_DE_TEXTOS.find((t) => t.id === id && t.tipo === tipo)?.hash ?? null;
 }
 
 // ─── Los componentes de la persona ──────────────────────────────────────────────────────────────
@@ -126,14 +135,16 @@ export interface AutorizacionDeResumenesVigente {
   readonly renglones: readonly RenglonDeResumen[] | null;
   /** Desde cuándo está activa sin un retiro en el medio; `null` si está RETIRADA. */
   readonly activaDesde: Date | null;
+  /** Los textos que tiene aceptados, por nivel; `null` si está RETIRADA. */
+  readonly aceptados: TextosAceptados | null;
 }
 
 /** La última versión de la autorización de la persona, con su lista si está ACTIVA. `null` si nunca la dio. */
 export async function autorizacionDeResumenesVigente(tx: Tx, personaId: string): Promise<AutorizacionDeResumenesVigente | null> {
-  const filas = await tx.autorizacionDeResumenes.findMany({ where: { asesoradoId: personaId }, orderBy: { version: 'desc' }, include: { destinatarios: true } });
+  const filas = await tx.autorizacionDeResumenes.findMany({ where: { asesoradoId: personaId }, orderBy: { version: 'desc' }, include: { destinatarios: true, textosAceptados: true } });
   const ultima = filas[0];
   if (!ultima) return null;
-  if (ultima.estado !== 'ACTIVA') return { fila: ultima, renglones: null, activaDesde: null };
+  if (ultima.estado !== 'ACTIVA') return { fila: ultima, renglones: null, activaDesde: null, aceptados: null };
   let desde = ultima.momentoDeOcurrencia;
   for (const f of filas) {
     if (f.estado !== 'ACTIVA') break;
@@ -150,18 +161,31 @@ export async function autorizacionDeResumenesVigente(tx: Tx, personaId: string):
       desde: d.nivelDesde.toISOString(),
     })),
     activaDesde: desde,
+    aceptados: aceptadosDe(ultima),
+  };
+}
+
+/**
+ * Los textos aceptados de una versión ACTIVA, por nivel. Una versión anterior a los textos por nivel (2026-11-07) no tiene
+ * filas: su texto único vale como el de «resumen», y para «resumen y plan» hace falta aceptar el nuevo.
+ */
+function aceptadosDe(f: FilaDeAutorizacion & { readonly textosAceptados: readonly { readonly nivel: NivelDeResumenCompartido; readonly versionDeTextoId: string }[] }): TextosAceptados {
+  if (f.textosAceptados.length === 0) return { summary: f.versionDeTextoId, summaryAndPlan: null };
+  return {
+    summary: f.textosAceptados.find((t) => t.nivel === 'RESUMEN')?.versionDeTextoId ?? null,
+    summaryAndPlan: f.textosAceptados.find((t) => t.nivel === 'RESUMEN_Y_PLAN')?.versionDeTextoId ?? null,
   };
 }
 
 export function compartirApi(vigente: AutorizacionDeResumenesVigente | null): CompartirResumenes {
-  if (!vigente) return { status: 'NOT_GIVEN', version: null, activeSince: null, withdrawnAt: null, acceptedTextVersionId: null };
+  if (!vigente) return { status: 'NOT_GIVEN', version: null, activeSince: null, withdrawnAt: null, acceptedTexts: null };
   const activa = vigente.fila.estado === 'ACTIVA';
   return {
     status: activa ? 'ACTIVE' : 'WITHDRAWN',
     version: token(vigente.fila.version),
     activeSince: activa ? (vigente.activaDesde ?? vigente.fila.momentoDeOcurrencia).toISOString() : null,
     withdrawnAt: activa ? null : vigente.fila.momentoDeOcurrencia.toISOString(),
-    acceptedTextVersionId: activa ? vigente.fila.versionDeTextoId : null,
+    acceptedTexts: activa ? vigente.aceptados : null,
   };
 }
 
@@ -183,7 +207,8 @@ export function profesionalesApi(componentes: readonly ComponenteDeLaPersona[], 
 
 /**
  * Una versión nueva de la autorización, la que sigue a la última, con su hecho. Con el cerrojo de escribir ya tomado. Si
- * queda ACTIVA, guarda el texto aceptado (con su hash) y sus renglones.
+ * queda ACTIVA, guarda sus renglones y el texto aceptado de cada nivel, con su hash (uno por nivel, Dirección, 2026-11-07);
+ * la columna de la autorización lleva el del nivel más alto.
  */
 export async function agregarVersionDeAutorizacionDeResumenes(
   tx: Tx,
@@ -191,21 +216,30 @@ export async function agregarVersionDeAutorizacionDeResumenes(
     readonly personaId: string;
     readonly anterior: FilaDeAutorizacion | null;
     readonly estado: 'ACTIVA' | 'RETIRADA';
-    readonly texto: { readonly id: string; readonly hash: string } | null;
+    readonly textos: TextosAceptados | null;
     readonly renglones: readonly RenglonDeResumen[];
     readonly procedencia: Procedencia;
     readonly momento: Date;
   },
 ): Promise<FilaDeAutorizacion> {
   const version = (p.anterior?.version ?? 0) + 1;
+  const niveles = p.estado === 'ACTIVA' && p.textos
+    ? ([['RESUMEN', 'summary'], ['RESUMEN_Y_PLAN', 'summaryAndPlan']] as const).flatMap(([nivel, clave]) => {
+        const id = p.textos![clave];
+        const hash = id ? hashDelTexto(id, clave) : null;
+        return id && hash ? [{ nivel, versionDeTextoId: id, hashDelTexto: hash }] : [];
+      })
+    : [];
+  const principal = niveles.find((n) => n.nivel === 'RESUMEN_Y_PLAN') ?? niveles[0] ?? null;
+  if (p.estado === 'ACTIVA' && !principal) throw new Error('una autorización activa sin ningún texto aceptado');
   const fila = await tx.autorizacionDeResumenes.create({
     data: {
       asesoradoId: p.personaId,
       version,
       predecesoraId: p.anterior?.id ?? null,
       estado: p.estado,
-      versionDeTextoId: p.texto?.id ?? null,
-      hashDelTexto: p.texto?.hash ?? null,
+      versionDeTextoId: principal?.versionDeTextoId ?? null,
+      hashDelTexto: principal?.hashDelTexto ?? null,
       actorId: p.personaId,
       procedencia: p.procedencia as unknown as Prisma.InputJsonValue,
       momentoDeOcurrencia: p.momento,
@@ -224,6 +258,7 @@ export async function agregarVersionDeAutorizacionDeResumenes(
       })),
     });
   }
+  if (niveles.length > 0) await tx.textoAceptadoDeResumenes.createMany({ data: niveles.map((n) => ({ autorizacionId: fila.id, ...n })) });
   const tipo = p.estado === 'RETIRADA' ? 'AutorizacionDeResumenesRetirada' : p.anterior?.estado === 'ACTIVA' ? 'AutorizacionDeResumenesModificada' : 'AutorizacionDeResumenesActivada';
   await registrarEventoDeFormulario(tx, {
     tipo,
@@ -247,7 +282,7 @@ export async function retirarAutorizacionDeResumenesPorCierre(tx: Tx, p: { reado
   await tomarLaAutorizacionDeResumenes(tx, p.personaId, 'escribir');
   const vigente = await autorizacionDeResumenesVigente(tx, p.personaId);
   if (!vigente || vigente.fila.estado !== 'ACTIVA') return false;
-  await agregarVersionDeAutorizacionDeResumenes(tx, { personaId: p.personaId, anterior: vigente.fila, estado: 'RETIRADA', texto: null, renglones: [], procedencia: p.procedencia, momento: p.momento });
+  await agregarVersionDeAutorizacionDeResumenes(tx, { personaId: p.personaId, anterior: vigente.fila, estado: 'RETIRADA', textos: null, renglones: [], procedencia: p.procedencia, momento: p.momento });
   return true;
 }
 

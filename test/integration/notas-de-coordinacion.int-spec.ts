@@ -332,7 +332,7 @@ describe('TEST-TAG-038 · Comentar no da escritura (TB-53; CRD-D5, ampliada)', (
       const yo = (await conSesion(app, e.ase.token).get('/api/v1/me/summary-sharing').expect(200)).body.data as { sharing: { version: string | null } };
       await conSesion(app, e.ase.token)
         .put('/api/v1/me/summary-sharing')
-        .send({ expectedVersion: yo.sharing.version, textVersionId: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, grants: [{ professionalId: e.ent.id, area: 'NUTRICION', level: nivel }] })
+        .send({ expectedVersion: yo.sharing.version, acceptedTexts: { summary: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, summaryAndPlan: VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS.id }, grants: [{ professionalId: e.ent.id, area: 'NUTRICION', level: nivel }] })
         .expect(200);
     };
     await compartirPlan('SUMMARY_AND_PLAN');
