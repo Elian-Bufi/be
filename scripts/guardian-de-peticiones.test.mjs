@@ -28,6 +28,15 @@ test('TEST-TAG-032 · con la cuenta de la tabla no hay diferencias; una lectura 
   assert.deepEqual(diferenciasDePeticiones(medidas(17), TABLA), ['sofia-paz/resumen: bajan de 18 a 17 sin aviso']);
 });
 
+test('TEST-TAG-032 · una página que se cuenta por indicador espera sus fijas más los indicadores que mostró', () => {
+  const tabla = { 'martin-acosta/resumen': { fijas: 12, porIndicador: true } };
+  const pagina = (peticiones, indicadores) => [{ profesional: 'martin-acosta', pagina: 'resumen', peticionesAlAbrir: peticiones, asentada: true, indicadores }];
+  assert.deepEqual(diferenciasDePeticiones(pagina(14, 2), tabla), [], 'dos indicadores: 14');
+  assert.deepEqual(diferenciasDePeticiones(pagina(15, 3), tabla), [], 'tres indicadores: 15');
+  assert.deepEqual(diferenciasDePeticiones(pagina(16, 3), tabla), ['martin-acosta/resumen: suben de 15 a 16 sin aviso'], 'una lectura de más se sigue viendo');
+  assert.deepEqual(diferenciasDePeticiones(pagina(15, undefined), tabla), ['martin-acosta/resumen: la tabla la cuenta por indicador, y la página no anotó cuántos mostró']);
+});
+
 test('TEST-TAG-032 · una página fuera de la tabla, una de la tabla sin medir y una que no asentó fallan', () => {
   const sinTabla = [...medidas(18), { profesional: 'sofia-paz', pagina: 'cajon', peticionesAlAbrir: 2, asentada: true }];
   assert.deepEqual(diferenciasDePeticiones(sinTabla, TABLA), ['sofia-paz/cajon: 2 peticiones, y la página no está en la tabla']);

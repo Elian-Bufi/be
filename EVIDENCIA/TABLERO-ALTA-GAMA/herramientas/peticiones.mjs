@@ -16,6 +16,10 @@ export const ESPERA_MAXIMA_MS = 30_000;
 /**
  * Las peticiones a la API al abrir cada página, por profesional y página (`capturas.mjs`, PAGINAS). Cada número dice de
  * dónde sale: el encabezado (la cuenta y las novedades) y lo que lee la página.
+ *
+ * Una página cuya cuenta depende de cuántos indicadores muestra va como `{ fijas, porIndicador: true }`: lo esperado es
+ * `fijas` más los indicadores que la página mostró (`indicadores`, que anotan las capturas), porque cada indicador
+ * mostrado lee su serie y uno sin datos en el período no se pone ni se lee (TB-25). La cuenta sigue siendo exacta.
  */
 export const PETICIONES_AL_ABRIR = {
   // El Espacio: la cuenta, las novedades, los pendientes (API-CAR-01), los vínculos, las solicitudes enviadas y, desde
@@ -43,7 +47,10 @@ export const PETICIONES_AL_ABRIR = {
   'sofia-paz/revision-nueva': 6,
   'martin-acosta/espacio': 6,
   'martin-acosta/cajon': 8,
-  'martin-acosta/resumen': 14,
+  // El Resumen de Martín Acosta: 12 fijas y la serie de cada indicador que se muestra. Cuántos se muestran depende de la
+  // cohorte el día de la corrida: el ejercicio principal de Diego en los 90 días fue Dominadas el 2026-11-06 (sin carga:
+  // dos indicadores, 14 peticiones) y Curl de bíceps el 2026-11-07 (tres, 15).
+  'martin-acosta/resumen': { fijas: 12, porIndicador: true },
   'martin-acosta/entrenamiento': 8,
   // TB-48: el editor de Entrenamiento con el borrador de Camila Ortiz, y «Mis ejercicios» (la cuenta, las novedades,
   // los ejercicios propios y su ficha visual); con las zonas abiertas, lo mismo: la ficha ya estaba leída. Páginas
@@ -67,14 +74,23 @@ export function diferenciasDePeticiones(paginas, esperadas = PETICIONES_AL_ABRIR
       diferencias.push(`${clave}: ${p.peticionesAlAbrir} peticiones, y la página no está en la tabla`);
       continue;
     }
+    const esperada = peticionesEsperadas(esperadas[clave], p);
     if (p.asentada === false) diferencias.push(`${clave}: la API no quedó quieta en ${ESPERA_MAXIMA_MS / 1000} s (se contaron ${p.peticionesAlAbrir})`);
-    else if (p.peticionesAlAbrir !== esperadas[clave]) {
-      const cambio = p.peticionesAlAbrir > esperadas[clave] ? 'suben' : 'bajan';
-      diferencias.push(`${clave}: ${cambio} de ${esperadas[clave]} a ${p.peticionesAlAbrir} sin aviso`);
+    else if (esperada === null) diferencias.push(`${clave}: la tabla la cuenta por indicador, y la página no anotó cuántos mostró`);
+    else if (p.peticionesAlAbrir !== esperada) {
+      const cambio = p.peticionesAlAbrir > esperada ? 'suben' : 'bajan';
+      diferencias.push(`${clave}: ${cambio} de ${esperada} a ${p.peticionesAlAbrir} sin aviso`);
     }
   }
   for (const clave of Object.keys(esperadas)) if (!medidas.has(clave)) diferencias.push(`${clave}: está en la tabla y no se midió`);
   return diferencias;
+}
+
+/** Lo esperado de una página: el número de la tabla o, por indicador, las fijas más los que mostró; `null` sin la cuenta. */
+export function peticionesEsperadas(entrada, pagina) {
+  if (typeof entrada === 'number') return entrada;
+  if (!Number.isInteger(pagina.indicadores)) return null;
+  return entrada.fijas + (entrada.porIndicador ? pagina.indicadores : 0);
 }
 
 /**

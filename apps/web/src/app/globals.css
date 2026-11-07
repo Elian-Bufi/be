@@ -14687,6 +14687,8 @@ a.cifras-desde-la-revision__celda:focus-visible {
 
 .reparto-del-peso__partes {
   display: grid;
+  /* En la pestaña, a todo el ancho, los kilos quedarían lejos de su nombre: la lista no pasa de 26 rem. */
+  max-width: 26rem;
   grid-template-columns: auto 1fr auto auto;
   gap: 0.15rem 0.5rem;
   align-items: center;

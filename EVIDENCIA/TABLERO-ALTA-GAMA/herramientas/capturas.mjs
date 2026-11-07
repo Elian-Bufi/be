@@ -303,7 +303,9 @@ async function capturarTodo() {
           const pieza = document.querySelector('[data-pieza="evolucion"]');
           return pieza ? { tomas: Number(pieza.getAttribute('data-columnas')), pares: [...pieza.querySelectorAll('[data-par]')].map((e) => e.getAttribute('data-par')), aLaVista: document.querySelector('.evolucion-de-las-tomas__a-la-vista')?.textContent?.trim() ?? null } : null;
         });
-        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, accionDelMarco, cajon, composicion, evolucion, alto: {} };
+        // TEST-TAG-032: cuántos indicadores mostró la página (cada uno lee su serie; la tabla puede contar por indicador).
+        const indicadores = await page.evaluate(() => document.querySelectorAll('.indicador__valor').length);
+        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, indicadores, accionDelMarco, cajon, composicion, evolucion, alto: {} };
         for (const tema of TEMAS) {
           // Con el cajón abierto (un diálogo modal) el menú de la cuenta no se toca: se cierra, se cambia el tema y se abre.
           if (metrica === 'cajon' && (await page.evaluate(() => document.documentElement.dataset.tema)) !== tema) {
