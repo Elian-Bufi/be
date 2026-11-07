@@ -8,6 +8,7 @@ import {
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { retirarAutorizacionDeHabitosPorCierre } from '../formularios/habitos-de-la-persona';
+import { retirarAutorizacionDeResumenesPorCierre } from '../resumenes/resumenes-de-la-persona';
 import { retirarPropuestasPendientesDelTitular } from '../formularios/propuestas-del-titular';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
@@ -101,6 +102,8 @@ export class CierreService {
           // DL-165 D-9 (FR-10; §4.5): cerrar la cuenta retira la autorización para compartir sus hábitos. Al final, con el
           // cerrojo de la autorización: una lectura de API-HBT-05 que empieza después ya la ve retirada.
           await retirarAutorizacionDeHabitosPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
+          // DL-163 D-13, ampliada (TB-55): también la de lo de otras áreas, con su cerrojo, después de la de los hábitos.
+          await retirarAutorizacionDeResumenesPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
 
           const registrada = await tx.solicitudDeCierreDeCuenta.create({
             data: {

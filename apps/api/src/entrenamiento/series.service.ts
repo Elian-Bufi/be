@@ -70,7 +70,8 @@ export class ObjetivosPorSerieService {
       recursoIntentado: recurso,
       lectura: async (tx) => {
         const v = esUuid(planId) ? await tx.versionDePlanDeEntrenamiento.findUnique({ where: { id: planId }, include: INCLUIR_PLAN_DE_ENTRENAMIENTO }) : null;
-        if (!v) throw this.ejecutor.noRevelable({ operacion: 'API-SER-01', actorId: actor.identidadId, recurso }, ctx);
+        // Una versión descartada es, para todos, una que no existe (TB-47).
+        if (!v || v.estado === 'DESCARTADA') throw this.ejecutor.noRevelable({ operacion: 'API-SER-01', actorId: actor.identidadId, recurso }, ctx);
         const titular = v.plan.asesoradoId;
         if (titular === actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-SER-01', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
         await this.decidir(tx, 'API-SER-01', actor, actor.identidadId, titular, recurso, ctx);

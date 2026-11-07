@@ -6,6 +6,8 @@
  * - El autor sin acceso recibe el mismo 404 que una persona inexistente (UC-E07, paso 3; UC-I02 E05).
  * - Quien pierde el vínculo (pausa, B2 revocado, fin) deja de leerla; la persona la lee siempre (08 §9.15, §14.3).
  * - CRD-D5: lo citado es del autor y de su área; nombrarlo no lo abre. CRD-D6: la novedad no trae el texto, ni el aviso.
+ * - TB-53 (DL-163 D-13, ampliada; TEST-TAG-038): también el plan vigente de otra área que el autor ve por API-RES-06 al
+ *   escribir; la cita no le abre el plan a nadie y la nota no lo cambia.
  * - CRD-D7: solo se agrega (la base rechaza UPDATE, DELETE y TRUNCATE); para corregir, otra nota que la cita.
  * - Idempotencia: el reintento con la misma clave responde la misma nota, sin otra ni otra novedad.
  */
@@ -16,6 +18,7 @@ import {
   ListaDeNotasPropiasResponseSchema,
   ListaDeNovedadesResponseSchema,
   NotaDeCoordinacionResponseSchema,
+  VERSION_VIGENTE,
   type EntradaDeLineaDeTiempo,
 } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
@@ -308,6 +311,71 @@ describe('CRD-D5 · lo citado', () => {
     expect(nota.references[0]!.label).toMatch(/^Revisión de Nutrición del \d{1,2}\/\d{1,2}\/\d{4}$/);
     // La entrenadora ve que la revisión está citada, pero no la abre: nombrarla no da acceso (UC-E07 E05).
     await conSesion(app, e.ent.token).get(`/api/v1/nutrition/reviews/${rev.body.data.reviewId as string}`).expect(404);
+  });
+});
+
+describe('TEST-TAG-038 · Comentar no da escritura (TB-53; CRD-D5, ampliada)', () => {
+  it('se cita el plan vigente de otra área solo si el autor lo ve por API-RES-06 al escribir; la cita no se lo abre a nadie, la nota no cambia el plan y la persona la lee igual', async () => {
+    const e = await equipo('tag038');
+    const desdeEntrenamiento = (cambios: Record<string, unknown> = {}) => cuerpo({ originScope: 'ENTRENAMIENTO', purpose: 'COORDINATION_REQUEST', recipients: { mode: 'ONE', identityId: e.nut.id }, ...cambios });
+    const citaDelPlan = { type: 'NUTRITION_PLAN_VERSION', id: e.planId };
+    const issueDe = async (autor: Parte, c: Record<string, unknown>) => {
+      const r = await escribir(autor, e.ase.id, c).expect(422);
+      expect(r.body.error.code).toBe('COORDINATION_REFERENCE_INVALID');
+      return (r.body.error.details.issues as { code: string }[]).map((i) => i.code);
+    };
+    // Sin que la persona lo comparta, es lo de antes de TB-53: fuera del área de origen.
+    expect(await issueDe(e.ent, desdeEntrenamiento({ references: [citaDelPlan] }))).toEqual(['REFERENCE_OUTSIDE_ORIGIN_SCOPE']);
+
+    // La persona le comparte al entrenador su plan de Nutrición; al antropometrista, nada.
+    const compartirPlan = async (nivel: 'SUMMARY' | 'SUMMARY_AND_PLAN') => {
+      const yo = (await conSesion(app, e.ase.token).get('/api/v1/me/summary-sharing').expect(200)).body.data as { sharing: { version: string | null } };
+      await conSesion(app, e.ase.token)
+        .put('/api/v1/me/summary-sharing')
+        .send({ expectedVersion: yo.sharing.version, textVersionId: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, grants: [{ professionalId: e.ent.id, area: 'NUTRICION', level: nivel }] })
+        .expect(200);
+    };
+    await compartirPlan('SUMMARY_AND_PLAN');
+
+    // 1. La versión vigente: se cita, con la referencia de siempre.
+    const nota = NotaDeCoordinacionResponseSchema.parse((await escribir(e.ent, e.ase.id, desdeEntrenamiento({ references: [citaDelPlan] })).expect(201)).body).data;
+    expect(nota.references).toEqual([{ type: 'NUTRITION_PLAN_VERSION', id: e.planId, label: expect.any(String) }]);
+    expect(nota.originScope.code).toBe('ENTRENAMIENTO');
+    // 2. Otra versión (un borrador sucesor) o una que no existe: no se cita.
+    const sucesor = (await conSesion(app, e.nut.token).post(`/api/v1/advisees/${e.ase.id}/nutrition/plans`).send({ objectiveVersionId: e.objectiveVersionId, basedOnPlanId: e.planId }).expect(201)).body.data;
+    expect(await issueDe(e.ent, desdeEntrenamiento({ references: [{ type: 'NUTRITION_PLAN_VERSION', id: sucesor.planId }] }))).toEqual(['REFERENCE_NOT_AVAILABLE']);
+    expect(await issueDe(e.ent, desdeEntrenamiento({ references: [{ type: 'NUTRITION_PLAN_VERSION', id: randomUUID() }] }))).toEqual(['REFERENCE_NOT_AVAILABLE']);
+    // Una revisión de otra área sigue sin poder citarse.
+    expect(await issueDe(e.ent, desdeEntrenamiento({ references: [{ type: 'NUTRITION_REVIEW', id: randomUUID() }] }))).toEqual(['REFERENCE_OUTSIDE_ORIGIN_SCOPE']);
+    // 3. Quien no lo ve no lo cita: lo mismo que antes.
+    expect(await issueDe(e.ant, cuerpo({ originScope: 'ANTROPOMETRIA', recipients: { mode: 'ONE', identityId: e.nut.id }, references: [citaDelPlan] }))).toEqual(['REFERENCE_OUTSIDE_ORIGIN_SCOPE']);
+    const planAntes = await prisma.planNutricional.findFirstOrThrow({ where: { asesoradoId: e.ase.id } });
+    const versionAntes = await prisma.versionDePlanNutricional.findUniqueOrThrow({ where: { id: e.planId } });
+    // 4. La cita no le abre el plan a nadie: el antropometrista recibe una nota que lo cita, y no lo lee.
+    await escribir(e.ent, e.ase.id, desdeEntrenamiento({ recipients: { mode: 'ALL' }, references: [citaDelPlan] })).expect(201);
+    await conSesion(app, e.ant.token).get(`/api/v1/advisees/${e.ase.id}/shared-summaries/NUTRICION/plan`).expect(404);
+    await conSesion(app, e.ant.token).get(`/api/v1/nutrition/plans/${e.planId}`).expect(404);
+    // 5. La nota no escribe en el plan.
+    expect(await prisma.versionDePlanNutricional.findUniqueOrThrow({ where: { id: e.planId } })).toEqual(versionAntes);
+    expect((await prisma.planNutricional.findFirstOrThrow({ where: { asesoradoId: e.ase.id } })).versionEfectivaId).toBe(planAntes.versionEfectivaId);
+    // 6. La persona la lee, con la forma de siempre.
+    expect((await notasPropias(e.ase)).find((n) => n.noteId === nota.noteId)).toEqual(nota);
+
+    // 7. Se decide al escribir: con «resumen», ya no.
+    await compartirPlan('SUMMARY');
+    expect(await issueDe(e.ent, desdeEntrenamiento({ references: [citaDelPlan] }))).toEqual(['REFERENCE_OUTSIDE_ORIGIN_SCOPE']);
+    // 8. La base también: sin «resumen y plan», la referencia al plan de otra área no entra.
+    const nueva = randomUUID();
+    await expect(
+      prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(
+          `INSERT INTO nota_de_coordinacion (id, autor_id, asesorado_id, alcance_de_origen, finalidad, modo_de_destinatarios, texto, procedencia, momento_de_ocurrencia)
+           VALUES ('${nueva}', '${e.ent.id}', '${e.ase.id}', 'ENTRENAMIENTO', 'PEDIDO_DE_COORDINACION', 'UNO', 'Texto sintético.', '{}'::jsonb, now())`,
+        );
+        await tx.$executeRawUnsafe(`INSERT INTO destinatario_de_nota (nota_id, destinatario_id) VALUES ('${nueva}', '${e.nut.id}')`);
+        await tx.$executeRawUnsafe(`INSERT INTO referencia_de_nota (nota_id, orden, tipo, recurso_id) VALUES ('${nueva}', 1, 'VERSION_DE_PLAN_NUTRICIONAL', '${e.planId}')`);
+      }),
+    ).rejects.toThrow(/solo si la persona se lo comparte/);
   });
 });
 

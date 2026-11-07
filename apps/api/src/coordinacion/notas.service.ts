@@ -3,7 +3,9 @@ import {
   ALCANCE_DE_LA_REFERENCIA,
   CrearNotaDeCoordinacionRequestSchema,
   evaluarAutorizacion,
+  renglonesVigentes,
   type Alcance,
+  type AreaConPlan,
   type DestinatariosPosiblesResponse,
   type ListaDeNotasPropiasResponse,
   type NotaDeCoordinacionResponse,
@@ -22,6 +24,7 @@ import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { actorDe, type ActorAutenticado } from '../sesion/sesion.guard';
+import { autorizacionDeResumenesVigente, componentesDeLaPersona, planVigenteCompartido, tomarLaAutorizacionDeResumenes } from '../resumenes/resumenes-de-la-persona';
 import { resumenDeAlcance } from '../vinculo/lectura';
 import { EjecutorDeCoordinacion, esUuid } from './ejecutor';
 import { FINALIDAD_EN_LA_BASE, INCLUIR_NOTA, nombresDeProfesionales, notasComoLasLee, REFERENCIA_EN_LA_BASE } from './lectura-notas';
@@ -98,9 +101,11 @@ export class NotasDeCoordinacionService {
           if (!anterior) throw errores.referenciaDeNotaInvalida([{ code: 'CORRECTED_NOTE_NOT_AVAILABLE', path: 'correctsNoteId' }]);
         }
 
-        // CRD-D5: lo citado es del autor con esta persona, de su área de origen, y está registrado.
+        // CRD-D5: lo citado es del autor con esta persona, de su área de origen, y está registrado. Desde TB-53, también el
+        // plan vigente de otra área que el autor ve por API-RES-06: eso se mira después de los destinatarios, porque toma el
+        // cerrojo de la autorización de la persona, que va al final.
         const referencias = pedido.references ?? [];
-        const invalidas = await referenciasInvalidas(tx, autorId, asesoradoId, pedido.originScope, referencias);
+        const { invalidas, deOtraArea } = await referenciasInvalidas(tx, autorId, asesoradoId, pedido.originScope, referencias);
         if (invalidas.length > 0) throw errores.referenciaDeNotaInvalida(invalidas);
 
         // UC-E07, paso 5: la visibilidad que resulta. El autor no se escribe a sí mismo.
@@ -108,6 +113,10 @@ export class NotasDeCoordinacionService {
         const habilitados = await this.pdp.decidirDestinatariosEnTransaccion(tx, { operacion: 'API-CRD-01', autorId, titularId: asesoradoId, candidatos }, ctx);
         if (habilitados.length === 0) {
           throw errores.destinatarioDeNotaNoDisponible([elegido !== null ? { code: 'RECIPIENT_NOT_AVAILABLE', path: 'recipients.identityId' } : { code: 'NO_RECIPIENTS', path: 'recipients' }]);
+        }
+        if (deOtraArea.length > 0) {
+          const otras = await citasDelPlanDeOtraArea(tx, this.pdp, { autorId, personaId: asesoradoId, citas: deOtraArea });
+          if (otras.length > 0) throw errores.referenciaDeNotaInvalida(otras);
         }
 
         const nota = await tx.notaDeCoordinacion.create({
@@ -207,15 +216,31 @@ export class NotasDeCoordinacionService {
   }
 }
 
+/** Una cita del plan de otra área (TB-53), con su lugar en la lista. */
+interface CitaDeOtraArea {
+  readonly indice: number;
+  readonly referencia: ReferenciaDeNotaRequest;
+}
+
 /**
  * CRD-D5: lo que no se puede citar, con su ruta. Del área de origen y del autor con esta persona: una versión activada de
- * su plan, una revisión suya o una toma registrada. Lo que no existe y lo que es de otro responden igual.
+ * su plan, una revisión suya o una toma registrada. Lo que no existe y lo que es de otro responden igual. Desde TB-53, una
+ * versión del plan de otra área no se rechaza acá: va en `deOtraArea`, para `citasDelPlanDeOtraArea`. Una revisión o una
+ * toma de otra área, sí.
  */
-async function referenciasInvalidas(tx: Tx, autorId: string, asesoradoId: string, origen: Alcance, referencias: readonly ReferenciaDeNotaRequest[]): Promise<ValidationIssue[]> {
+async function referenciasInvalidas(
+  tx: Tx,
+  autorId: string,
+  asesoradoId: string,
+  origen: Alcance,
+  referencias: readonly ReferenciaDeNotaRequest[],
+): Promise<{ readonly invalidas: ValidationIssue[]; readonly deOtraArea: CitaDeOtraArea[] }> {
   const issues: ValidationIssue[] = [];
+  const deOtraArea: CitaDeOtraArea[] = [];
   for (const [i, r] of referencias.entries()) {
     if (ALCANCE_DE_LA_REFERENCIA[r.type] !== origen) {
-      issues.push({ code: 'REFERENCE_OUTSIDE_ORIGIN_SCOPE', path: `references.${i}` });
+      if (r.type === 'NUTRITION_PLAN_VERSION' || r.type === 'TRAINING_PLAN_VERSION') deOtraArea.push({ indice: i, referencia: r });
+      else issues.push({ code: 'REFERENCE_OUTSIDE_ORIGIN_SCOPE', path: `references.${i}` });
       continue;
     }
     const id = r.id.toLowerCase();
@@ -231,6 +256,33 @@ async function referenciasInvalidas(tx: Tx, autorId: string, asesoradoId: string
               ? await tx.revisionDeEntrenamiento.count({ where: { id, proceso: par } })
               : await tx.evaluacionAntropometrica.count({ where: { id, estado: 'REGISTRADA', ...par } });
     if (existe === 0) issues.push({ code: 'REFERENCE_NOT_AVAILABLE', path: `references.${i}` });
+  }
+  return { invalidas: issues, deOtraArea };
+}
+
+/**
+ * TB-53 · CRD-D5, ampliada (DL-163 D-13, ampliada; TA-89): una nota puede citar la versión ACTIVADA vigente del plan de otra
+ * área que el autor ve por API-RES-06 en ese momento, con la misma autorización: el PDP del par (evaluado sin registrar: la
+ * decisión de la nota ya quedó, con los mismos bloqueos), la autorización vigente de la persona que lo nombra en esa área
+ * con «resumen y plan» y la fila de la matriz. Quien no lo ve recibe lo mismo que antes de TB-53
+ * (`REFERENCE_OUTSIDE_ORIGIN_SCOPE`); quien lo ve y cita otra versión, `REFERENCE_NOT_AVAILABLE`. Citarlo no le abre el
+ * plan a nadie (UC-E07): cada destinatario lo lee, si puede, por API-RES-06. Va al final, con el cerrojo compartido.
+ */
+async function citasDelPlanDeOtraArea(tx: Tx, pdp: PdpService, p: { readonly autorId: string; readonly personaId: string; readonly citas: readonly CitaDeOtraArea[] }): Promise<ValidationIssue[]> {
+  const permitidos = (await pdp.leerHechos(tx, p.autorId, p.personaId)).flatMap((h) => {
+    const d = evaluarAutorizacion(h);
+    return d.permitida ? [{ alcanceDeVinculoId: d.alcanceDeVinculoId, alcance: h.operacion.alcance }] : [];
+  });
+  const { componentes } = await componentesDeLaPersona(tx, p.personaId);
+  await tomarLaAutorizacionDeResumenes(tx, p.personaId, 'leer');
+  const vigente = await autorizacionDeResumenesVigente(tx, p.personaId);
+  const renglones = renglonesVigentes(vigente?.renglones ?? null, componentes);
+  const issues: ValidationIssue[] = [];
+  for (const { indice, referencia } of p.citas) {
+    const area = ALCANCE_DE_LA_REFERENCIA[referencia.type] as AreaConPlan;
+    const plan = await planVigenteCompartido(tx, pdp, { profesionalId: p.autorId, personaId: p.personaId, area, permitidos, componentes, renglones });
+    if (plan === 'NO_LO_VE') issues.push({ code: 'REFERENCE_OUTSIDE_ORIGIN_SCOPE', path: `references.${indice}` });
+    else if (plan === null || plan.versionId !== referencia.id.toLowerCase()) issues.push({ code: 'REFERENCE_NOT_AVAILABLE', path: `references.${indice}` });
   }
   return issues;
 }

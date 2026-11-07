@@ -39,5 +39,7 @@ import { RevisionesService } from './revisiones.service';
     RecetasService,
     RegistroDeComidasService,
   ],
+  // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.
+  exports: [PlanesService, EvaluacionesService],
 })
 export class NutricionModule {}

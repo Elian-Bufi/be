@@ -33,6 +33,13 @@ export const TipoDeTexto = {
    * jurídica, como `EVIDENCIA_VISUAL` (DL-125).
    */
   HABITOS_COMPARTIDOS: 'HABITOS_COMPARTIDOS',
+  /**
+   * DL-163 D-13, ampliada por Dirección el 2026-11-07 (WP-TABLERO-ALTA-GAMA TB-55): «Compartir con mis profesionales lo de
+   * otras áreas», el acto de la persona que deja que un profesional vea lo de otra área suya, en el nivel que ella elige
+   * (API-RES-02). Un solo texto para los dos niveles (TA-99). Es una **propuesta** (`VERSIONES_PROPUESTAS`), pendiente de
+   * validación jurídica, como `HABITOS_COMPARTIDOS`.
+   */
+  RESUMENES_COMPARTIDOS: 'RESUMENES_COMPARTIDOS',
 } as const;
 export type TipoDeTexto = (typeof TipoDeTexto)[keyof typeof TipoDeTexto];
 
@@ -205,6 +212,42 @@ Podés cambiar la lista o retirar esta autorización cuando quieras, desde «Mis
 
 Aceptar esta versión no acepta versiones futuras.`;
 
+/**
+ * DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56; §3.1 y §3.4): «Compartir con mis profesionales lo de otras
+ * áreas». Cada afirmación es lo que hace la implementación: se da por profesional, por área y por nivel (API-RES-02); el
+ * plan es la versión activada vigente, como la ve la persona, con su objetivo y lo avanzado (API-RES-06), sin borradores,
+ * versiones anteriores, revisiones, notas internas ni evaluaciones; lo compartido es lo del profesional que lleva el área
+ * hoy (TA-96); lo ve solo con su vínculo aceptado y su acceso autorizado (el PDP); quien lo ve no lo cambia y puede dejar
+ * una nota que la persona lee (TB-53, CRD-D2); pedirlo no da acceso (TB-56); cada lectura queda registrada y la persona la
+ * ve (API-RES-01), y quien lleva el área sabe con quién se comparte (API-RES-07); ampliar pide aceptar otra vez, y bajar o
+ * retirar corta en el momento (API-RES-02 y 03); cerrar la cuenta la retira.
+ *
+ * **Es una propuesta**, pendiente de validación jurídica: con personas reales, solo después de esa revisión (VJR-1, VJR-4 y
+ * VJR-5 del 08, y las dos preguntas de WP-TABLERO-ALTA-GAMA §9) y del gate del 08 §42. La versión aprobada entra como
+ * sucesora de esta, con otro id, y no hereda sus aceptaciones (09 §31.2.6).
+ */
+const RESUMENES_COMPARTIDOS = `Compartir con mis profesionales lo de otras áreas — versión propuesta 2026-11
+
+${AVISO}
+
+Texto propuesto, pendiente de validación jurídica.
+
+Esta autorización es para que un profesional que te acompaña en un área vea lo de otra área tuya, la que lleva otro profesional. La das por profesional y por área, en uno de dos niveles:
+- Resumen: lo de esa área que BE arma para el área de quien lo recibe, con una tabla fija. Nunca incluye las molestias de «Antes de entrenar», lo de salud de tus formularios, las notas internas de tus profesionales ni sus evaluaciones.
+- Resumen y plan: además, tu plan vigente de esa área, completo y de solo lectura, como lo ves vos en tu app, con su objetivo, quién lo armó, desde cuándo rige, la fecha de la próxima revisión y cuánto registraste cada semana desde que rige. No incluye los borradores, las versiones anteriores, lo que se habló en una revisión, las notas internas ni las evaluaciones. Antropometría no tiene plan: de esa área, solo el resumen.
+
+Quiénes lo ven: solo los profesionales que elijas, en el nivel que elijas, mientras su vínculo con vos esté vigente y su acceso esté autorizado. Si un vínculo se pausa o termina, ese profesional deja de verlo. Lo que compartís es lo del profesional que lleva esa área hoy: si empezás con otro profesional en esa área, no se le comparte a nadie hasta que vuelvas a elegir. Un profesional que empiece a acompañarte después no ve nada de otras áreas hasta que lo elijas.
+
+Quien ve tu plan no lo puede cambiar. Le puede dejar una nota a quien lleva esa área, y esa nota también la ves vos.
+
+Un profesional te puede pedir ver tu plan de otra área. Pedirlo no le da acceso: lo decidís vos, y podés decir que no.
+
+Cada vez que un profesional abre tu plan de otra área, queda registrado, y lo ves vos. Quien lleva esa área sabe con quién lo compartís.
+
+Para sumar a alguien o pasar de «Resumen» a «Resumen y plan», aceptás este texto otra vez. Podés bajar de nivel, sacar a alguien o retirar esta autorización cuando quieras, y corta desde ese momento. No se borra nada, y retirarla no deshace lo que un profesional ya vio. Cerrar tu cuenta también la retira.
+
+Aceptar esta versión no acepta versiones futuras.`;
+
 export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
   {
     id: 'terminos-2026-09-demo',
@@ -297,6 +340,16 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
     hash: '039e752d5c17f469f640068f246cba10190c5a563ad9b546a05269996b5326ee',
     reemplazaA: null,
   },
+  {
+    id: 'resumenes-compartidos-2026-11-propuesta',
+    tipo: 'RESUMENES_COMPARTIDOS',
+    titulo: 'Compartir con mis profesionales lo de otras áreas',
+    finalidad: 'COMPARTIR_OTRAS_AREAS_CON_PROFESIONALES',
+    vigenteDesde: '2026-11-07T00:00:00.000Z',
+    texto: RESUMENES_COMPARTIDOS,
+    hash: '774d3a27ed2391eda7a10fc74ce1b7aa8fa3fb1939e6ef6feb1d50522e9664d3',
+    reemplazaA: null,
+  },
 ];
 
 /**
@@ -304,7 +357,7 @@ export const CATALOGO_DE_TEXTOS: readonly VersionDeTexto[] = [
  * (`textApproval: 'PENDING_APPROVAL'`) y la APK lo muestra junto al texto. Salen de acá cuando Dirección aprueba un texto,
  * que entra como una versión nueva.
  */
-export const VERSIONES_PROPUESTAS: ReadonlySet<string> = new Set(['evidencia-visual-2026-10-propuesta', 'habitos-compartidos-2026-11-propuesta']);
+export const VERSIONES_PROPUESTAS: ReadonlySet<string> = new Set(['evidencia-visual-2026-10-propuesta', 'habitos-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta']);
 
 /** Versión vigente por tipo. Una versión nueva no hereda aceptación (09 §31.2.6). */
 export const VERSION_VIGENTE: Readonly<Record<TipoDeTexto, VersionDeTexto>> = Object.fromEntries(

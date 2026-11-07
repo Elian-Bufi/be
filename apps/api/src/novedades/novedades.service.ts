@@ -4,6 +4,7 @@ import {
   ReemplazarPreferenciasDeAvisosRequestSchema,
   textoDeNovedad,
   vistaDeNovedad,
+  type Alcance,
   type ListaDeNovedadesResponse,
   type Novedad,
   type NovedadResponse,
@@ -235,6 +236,13 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
     deNotas.length > 0
       ? new Map((await tx.notaDeCoordinacion.findMany({ where: { id: { in: deNotas.map((f) => f.referenciaId as string) } }, select: { id: true, asesoradoId: true } })).map((n) => [n.id, n.asesoradoId]))
       : new Map<string, string>();
+  // DL-163 D-13, ampliada (TB-56): el plan que se pide ver lo dice el pedido (el área desde la que se pide es la de la
+  // novedad). Solo los pedidos a este lector, que es la persona.
+  const dePlanes = filas.filter((f) => f.tipo === 'PEDIDO_DE_ACCESO_A_PLAN' && f.referenciaId !== null);
+  const planesPedidos =
+    dePlanes.length > 0
+      ? new Map((await tx.pedidoDeAccesoAPlan.findMany({ where: { id: { in: dePlanes.map((f) => f.referenciaId as string) }, asesoradoId: lectorId }, select: { id: true, area: true } })).map((p) => [p.id, p.area]))
+      : new Map<string, Alcance>();
   const asesoradosDelLector = new Set<string>();
   const nombresDeProfesionales = new Map<string, string>();
   let nombresDeAsesorados = new Map<string, string>();
@@ -282,7 +290,8 @@ async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[
     const sujetoId = esNota && f.referenciaId ? (notas.get(f.referenciaId) ?? null) : null;
     const sujeto = sujetoId ? nombreDelPar(nombresDeAsesorados, { profesionalId: lectorId, asesoradoId: sujetoId }) : null;
     const fecha = f.fechaLocal ? f.fechaLocal.toISOString().slice(0, 10) : null;
-    const texto = textoDeNovedad(tipo, { alcance: f.alcance, fuente, fecha, sujeto });
+    const planDe = f.tipo === 'PEDIDO_DE_ACCESO_A_PLAN' && f.referenciaId ? (planesPedidos.get(f.referenciaId) ?? null) : null;
+    const texto = textoDeNovedad(tipo, { alcance: f.alcance, fuente, fecha, sujeto, planDe });
     const vista = vistaDeNovedad(tipo, f.alcance, lectorEsProfesional);
     const ficha = esNota ? sujetoId : f.fuenteId;
     return {

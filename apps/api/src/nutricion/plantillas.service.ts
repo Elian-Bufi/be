@@ -256,8 +256,9 @@ export class PlantillasNutricionalesService {
   }
 
   private async exigirVersionDePlanPropia(tx: Tx, profesionalId: string, planVersionId: string): Promise<void> {
-    const v = UUID.test(planVersionId) ? await tx.versionDePlanNutricional.findUnique({ where: { id: planVersionId }, select: { plan: { select: { profesionalId: true } } } }) : null;
-    if (!v || v.plan.profesionalId !== profesionalId) throw errores.validacionFallida([{ code: 'TEMPLATE_ORIGIN_NOT_OWN', path: 'origin.planVersionId' }]);
+    const v = UUID.test(planVersionId) ? await tx.versionDePlanNutricional.findUnique({ where: { id: planVersionId }, select: { estado: true, plan: { select: { profesionalId: true } } } }) : null;
+    // Una versión descartada no existe para nadie: como origen, el mismo rechazo que una inexistente (TB-47).
+    if (!v || v.estado === 'DESCARTADA' || v.plan.profesionalId !== profesionalId) throw errores.validacionFallida([{ code: 'TEMPLATE_ORIGIN_NOT_OWN', path: 'origin.planVersionId' }]);
   }
 
   private async exigirNombreLibre(tx: Tx, profesionalId: string, nombre: string, salvoId: string | null): Promise<void> {

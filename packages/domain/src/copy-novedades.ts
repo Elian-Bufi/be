@@ -30,6 +30,8 @@ export interface DatosDelTexto {
   readonly decision?: { readonly hecho: string; readonly mensaje: string | null; readonly puedeOperar: boolean } | null;
   /** WP-ADMINISTRACION: el profesional del que trata el aviso a una persona vinculada, con el nombre que ella ve. */
   readonly profesional?: string | null;
+  /** DL-163 D-13, ampliada (TB-56): el área del plan que un profesional pide ver; el área desde la que lo pide es `alcance`. */
+  readonly planDe?: Alcance | null;
 }
 
 const area = (alcance: Alcance | null): string => (alcance ? ETIQUETA_DE_ALCANCE[alcance] : 'BE');
@@ -105,6 +107,12 @@ export function textoDeNovedad(tipo: TipoDeNovedad, d: DatosDelTexto): TextoDeNo
       return {
         title: COPY_HABITOS.apk.pedidosTitulo,
         body: `${COPY_HABITOS.apk.pedidoDe(quien(d.fuente, 'Tu profesional'), area(d.alcance))}${d.alcance ? ` ${COPY_HABITOS.paraQueLeSirven[d.alcance]}` : ''} Es tu decisión: lo respondés en «Mis hábitos».`,
+      };
+    // DL-163 D-13, ampliada (TB-56): quién pide, desde qué área y qué plan, y que es su decisión. Nunca nada del plan.
+    case 'PLAN_ACCESS_REQUESTED':
+      return {
+        title: 'Te piden ver tu plan',
+        body: `${quien(d.fuente, 'Tu profesional')}, de ${area(d.alcance)}, te pide ver tu plan ${d.planDe ? `de ${ETIQUETA_DE_ALCANCE[d.planDe]}` : 'de otra área'}, completo y de solo lectura: no lo puede cambiar. Es tu decisión, y la podés cambiar cuando quieras.`,
       };
   }
 }
@@ -199,6 +207,9 @@ export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lec
     // DL-165, ronda 2.1: la persona va a «Mis hábitos», donde responde el pedido.
     case 'HABITS_ACCESS_REQUESTED':
       return 'MY_HABITS';
+    // DL-163 D-13, ampliada (TB-56): el centro, hasta que la APK tenga la pantalla que lo responde (etapa B).
+    case 'PLAN_ACCESS_REQUESTED':
+      return 'NEWS';
     default:
       return 'RELATIONSHIPS';
   }
