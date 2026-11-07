@@ -6443,6 +6443,11 @@ recomendaron:*
       de las otras dos con el nivel «resumen y plan»;
     - el profesional puede pedir ver el plan del otro, como los hábitos (DL-165 D-17): una novedad «Importante», la
       persona dice sí o no y lo cambia cuando quiere, con el reenvío a los 7 días (TA-95, TB-56);
+    - **Un texto por nivel (Dirección, 2026-11-07),** que no promete lo que no existe. El de «resumen» dice que cada
+      apertura queda registrada y la persona la ve. Hoy ese nivel no muestra contenido, así que nada se abre; cuando lo
+      muestre, API-RES-05 tiene que registrar cada apertura como el plan (TB-29, TEST-TAG-041). **El texto de «resumen»
+      no se ofrece con datos reales sin TB-29.** El de «resumen» va en la propuesta 3, que dice que la autorización del
+      plan «incluye también este resumen».
     - *Partes y decisiones:* TB-52 a TB-56, con TA-85 a TA-95; TA-87 y TA-95, decididas por Dirección el 2026-11-07; las
       demás, a ratificar. La API, en la rama del #243. La revisión legal es condición antes de datos reales, no antes de
       programar.
