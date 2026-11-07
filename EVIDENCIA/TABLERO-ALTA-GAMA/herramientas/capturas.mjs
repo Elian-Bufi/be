@@ -33,6 +33,11 @@
 // el monograma, el nombre y el área de cada ficha de «Tu semana» queden adentro de su columna (`tu-semana.mjs`); una
 // parte que se pasa hace fallar la corrida. Con «Ocultar nombres» guarda además «Tu semana» sola, en los dos temas y
 // en los tres tamaños, para ver la referencia en pantalla.
+// Desde TB-52 a TB-56 (DL-163 D-13, ampliada): el Plan de Nutrición de Diego visto por Sofía Paz, con el panel «Otras
+// áreas» desplegado y el plan de Entrenamiento abierto; el Plan de Entrenamiento de Diego visto por Martín Acosta, con el
+// de Nutrición abierto; y el Plan de Nutrición de Federico, con el pedido de Sofía Paz pendiente. En `otrasAreas` anota
+// qué muestra el panel en cada página. Las dos primeras se recorren también con «Ocultar nombres». Sin la familia RES en
+// la API (la rama del website sola), API-RES-04 da 404, no hay panel y las cuentas de esas páginas no coinciden.
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
@@ -165,6 +170,10 @@ const PAGINAS = {
     ['resumen-hector', '/pro/advisees?id={hector}'],
     // TB-15: la revisión nueva de Nutrición de Diego, con «¿Cuándo la revisás?» en «Lo que decidís», sin nada elegido.
     ['revision-nueva', '/pro/advisees/nutrition?id={diego}&vista=revisiones&preparar=1'],
+    // TB-52 a TB-56: el Plan de Nutrición de Diego con «Otras áreas» desplegado y el plan de Entrenamiento que le comparte
+    // Diego, abierto; y el de Federico, con el pedido de ver su plan de Entrenamiento esperando la respuesta.
+    ['plan-otras-areas', '/pro/advisees/nutrition?id={diego}&vista=plan', 'otras-areas:ENTRENAMIENTO'],
+    ['plan-federico-pedido', '/pro/advisees/nutrition?id={federico}&vista=plan', 'otras-areas'],
   ],
   PRO_T: [
     ['espacio', '/pro'],
@@ -177,6 +186,8 @@ const PAGINAS = {
     ['plan-camila', '/pro/advisees/training?id={camila}&vista=plan'],
     ['mis-ejercicios', '/pro/exercises'],
     ['mis-ejercicios-zonas', '/pro/exercises', 'zonas'],
+    // TB-52 a TB-56: el Plan de Entrenamiento de Diego con «Otras áreas» desplegado y el plan de Nutrición abierto.
+    ['plan-otras-areas', '/pro/advisees/training?id={diego}&vista=plan', 'otras-areas:NUTRICION'],
   ],
 };
 const NOMBRES = { PRO_N: 'sofia-paz', PRO_T: 'martin-acosta' };
@@ -201,6 +212,9 @@ const CON_NOMBRES_OCULTOS = [
   ['cajon', '/pro', 'cajon'],
   ['espacio', '/pro'],
   ['resumen', '/pro/advisees?id={diego}'],
+  // TB-52 a TB-56: el panel «Otras áreas» desplegado y el plan del otro abierto, cada uno en su página.
+  ['plan-otras-areas', '/pro/advisees/nutrition?id={diego}&vista=plan', 'otras-areas:ENTRENAMIENTO', 'PRO_N'],
+  ['plan-otras-areas', '/pro/advisees/training?id={diego}&vista=plan', 'otras-areas:NUTRICION', 'PRO_T'],
 ];
 
 async function capturarTodo() {
@@ -272,6 +286,10 @@ async function capturarTodo() {
           // TB-12: «Empezar por el primero» abre el cajón «De a una»; la cuenta suma las lecturas de su primer cuadro.
           await abrirElCajon(page);
           asentada = (await quieta()) && asentada;
+        } else if (metrica?.startsWith('otras-areas')) {
+          // TB-54: desplegar el panel lee los planes que se comparten (API-RES-06) y API-RES-07; abrir el plan completo
+          // (TB-52) no lee nada más.
+          asentada = (await abrirOtrasAreas(page, metrica.split(':')[1] ?? null, quieta)) && asentada;
         } else if (metrica) {
           await page.evaluate((m) => {
             const casilla = [...document.querySelectorAll('label')].find((l) => l.textContent.trim() === m)?.querySelector('input[type="checkbox"]');
@@ -305,13 +323,19 @@ async function capturarTodo() {
         });
         // TEST-TAG-032: cuántos indicadores mostró la página (cada uno lee su serie; la tabla puede contar por indicador).
         const indicadores = await page.evaluate(() => document.querySelectorAll('.indicador__valor').length);
-        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, indicadores, accionDelMarco, cajon, composicion, evolucion, alto: {} };
+        // TB-52 a TB-56: lo que muestra el panel «Otras áreas», si lo hay.
+        const otrasAreas = await loQueMuestranLasOtrasAreas(page);
+        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, indicadores, accionDelMarco, cajon, composicion, evolucion, otrasAreas, alto: {} };
         for (const tema of TEMAS) {
           // Con el cajón abierto (un diálogo modal) el menú de la cuenta no se toca: se cierra, se cambia el tema y se abre.
           if (metrica === 'cajon' && (await page.evaluate(() => document.documentElement.dataset.tema)) !== tema) {
             await page.evaluate(() => document.querySelector('dialog.cajon[open]')?.close());
             await ponerTema(page, tema);
             await abrirElCajon(page);
+          } else if (metrica?.startsWith('otras-areas:') && (await page.evaluate(() => document.documentElement.dataset.tema)) !== tema) {
+            await cerrarElPlanCompleto(page);
+            await ponerTema(page, tema);
+            await abrirOtrasAreas(page, metrica.split(':')[1], quieta);
           } else await ponerTema(page, tema);
           for (const [ancho, alto] of TAMANOS) {
             const carpeta = path.join(salida, NOMBRES[prefijo], tema);
@@ -446,12 +470,14 @@ async function laSemanaEntra(page, mediciones, donde) {
 async function recorrerConNombresOcultos(page, prefijo, diego, mediciones) {
   mediciones.ocultarNombres ??= [];
   await alternarNombresOcultos(page, true);
-  for (const [nombre, plantilla, accion] of CON_NOMBRES_OCULTOS) {
+  for (const [nombre, plantilla, accion, soloDe] of CON_NOMBRES_OCULTOS) {
+    if (soloDe && soloDe !== prefijo) continue;
     await page.evaluate(() => window.next.router.push('/account'));
     await asentar(page);
     await page.evaluate((u) => window.next.router.push(u), plantilla.replace('{diego}', diego));
     await asentar(page);
     if (accion === 'cajon') await abrirElCajon(page);
+    if (accion?.startsWith('otras-areas')) await abrirOtrasAreas(page, accion.split(':')[1] ?? null, () => esperarLaQuietud(() => ({ enCurso: 0, ultima: 0 })));
     const visto = await page.evaluate(() => ({
       texto: document.body.innerText,
       rotulos: [...document.querySelectorAll('[aria-label]')].map((e) => e.getAttribute('aria-label')).join('\n'),
@@ -520,6 +546,49 @@ const loQueMuestraElCajon = (page) =>
       salidas: [...d.querySelectorAll('.cajon__salidas a, .cajon__salidas button')].map((e) => e.textContent.trim()),
       conTramo: Boolean(d.querySelector('.tramo__titulo')),
       focoEnLaPregunta: document.activeElement === d.querySelector('.cajon__pregunta'),
+    };
+  });
+
+/**
+ * TB-54 y TB-52: despliega el panel «Otras áreas» como lo haría el profesional (con su renglón) y, si se pide un área,
+ * abre su plan completo. Sin panel (sin otra área, o sin la familia RES en la API), no hace nada. Devuelve si la API quedó
+ * quieta.
+ */
+async function abrirOtrasAreas(page, area, quieta) {
+  await page.evaluate(() => {
+    const d = document.querySelector('.otras-areas__plegado');
+    if (d && !d.open) d.querySelector('summary')?.click();
+  });
+  await asentar(page);
+  let asentada = await quieta();
+  if (area) {
+    await page.evaluate((a) => document.querySelector(`[data-ver-el-plan="${a}"]`)?.click(), area);
+    await page.waitForSelector('dialog.dialogo--panel[open] [data-plan-compartido]', { timeout: 10_000 }).catch(() => {});
+    await asentar(page);
+    asentada = (await quieta()) && asentada;
+  }
+  return asentada;
+}
+
+/** Cierra el plan completo con su «Cerrar», para que el menú de la cuenta se pueda tocar. */
+async function cerrarElPlanCompleto(page) {
+  await page.evaluate(() => document.querySelector('dialog.dialogo--panel[open] .dialogo__encabezado button')?.click());
+  await page.waitForFunction(() => !document.querySelector('dialog.dialogo--panel[open]'), { timeout: 3_000 }).catch(() => {});
+}
+
+/** Lo que muestra el panel «Otras áreas»: si está, su renglón, cada área con lo que dice, la línea de tu área y el plan abierto. */
+const loQueMuestranLasOtrasAreas = (page) =>
+  page.evaluate(() => {
+    const panel = document.querySelector('[data-otras-areas]');
+    if (!panel) return null;
+    const texto = (e) => e?.textContent?.replace(/\s+/g, ' ').trim() ?? null;
+    const plan = document.querySelector('dialog.dialogo--panel[open] [data-plan-compartido]');
+    return {
+      desplegado: panel.querySelector('.otras-areas__plegado')?.open ?? false,
+      renglon: texto(panel.querySelector('.otras-areas__renglon')),
+      areas: [...panel.querySelectorAll('.otras-areas__area')].map((li) => ({ area: li.getAttribute('data-area'), estado: li.getAttribute('data-estado'), texto: texto(li) })),
+      loDeTuArea: texto(panel.querySelector('[data-lo-de-tu-area]')),
+      planAbierto: plan ? { area: plan.getAttribute('data-plan-compartido'), sesiones: plan.querySelectorAll('.plan-compartido__sesion').length, comidas: plan.querySelectorAll('.comida-del-plan').length, semanas: plan.querySelectorAll('.plan-compartido__avance tbody tr').length } : null,
     };
   });
 

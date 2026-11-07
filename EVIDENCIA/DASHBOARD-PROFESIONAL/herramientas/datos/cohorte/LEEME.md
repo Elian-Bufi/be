@@ -31,7 +31,8 @@ la IP del operador). La historia es reproducible: con el mismo día, la misma en
 node cargar.mjs <local|test> profesionales   # las tres cuentas profesionales y BE_DEMO_PROFESIONALES
 # (reiniciar la API con ese valor: en local, entorno.sh; en test, el PR solo de configuración #160)
 node cargar.mjs <local|test> ejercicios      # los ejercicios propios de Martín Acosta
-node cargar.mjs <local|test> personas        # las seis personas, en pasos que se retoman si algo se corta
+node cargar.mjs <local|test> personas        # las seis personas, en pasos que se retoman si algo se corta, y lo que
+                                             # comparten entre áreas (TB-52 a TB-56; sin la familia RES, lo dice y sigue)
 node cargar.mjs test nombres-demo            # el nombre de DEMO-A01 y DEMO-A02
 node cargar.mjs <local|test> resumen
 ```

@@ -44,7 +44,16 @@ export const PETICIONES_AL_ABRIR = {
   'sofia-paz/resumen-hector': 18,
   // TB-15: la revisión nueva de Nutrición: la cuenta, las novedades, lo que lee el marco del área y lo que lee la revisión
   // nueva (medido en la corrida de 05f398b, su primera).
-  'sofia-paz/revision-nueva': 6,
+  // Desde TB-54, también API-RES-04, que dice si hay otras áreas para el panel «Otras áreas» del paso 1.
+  'sofia-paz/revision-nueva': 7,
+  // TB-52 a TB-56: el Plan de Nutrición de Diego (la cuenta, las novedades, los vínculos del marco, las versiones, el
+  // objetivo vigente y la versión activa), API-RES-04 al abrir y, al desplegar «Otras áreas», el plan de Entrenamiento
+  // que le comparte Diego (API-RES-06) y API-RES-07. Abrir el plan completo no lee nada. Estimadas: se fijan en la
+  // primera corrida con la API de RES (#243).
+  'sofia-paz/plan-otras-areas': 9,
+  // El Plan de Nutrición de Federico: lo mismo, sin plan que leer al desplegar (el de Entrenamiento espera la respuesta
+  // de Federico), así que solo API-RES-07.
+  'sofia-paz/plan-federico-pedido': 8,
   'martin-acosta/espacio': 6,
   'martin-acosta/cajon': 8,
   // El Resumen de Martín Acosta: 12 fijas y la serie de cada indicador que se muestra. Cuántos se muestran depende de la
@@ -55,9 +64,14 @@ export const PETICIONES_AL_ABRIR = {
   // TB-48: el editor de Entrenamiento con el borrador de Camila Ortiz, y «Mis ejercicios» (la cuenta, las novedades,
   // los ejercicios propios y su ficha visual); con las zonas abiertas, lo mismo: la ficha ya estaba leída. Páginas
   // nuevas en las capturas, no lecturas nuevas: se cuentan desde su primera corrida.
-  'martin-acosta/plan-camila': 9,
+  // Desde TB-54, también API-RES-04 (Camila tiene Antropometría con Lucía Benítez: el panel está, plegado).
+  'martin-acosta/plan-camila': 10,
   'martin-acosta/mis-ejercicios': 4,
   'martin-acosta/mis-ejercicios-zonas': 4,
+  // TB-52 a TB-56: el Plan de Entrenamiento de Diego (la cuenta, las novedades, los vínculos, las versiones, el objetivo,
+  // la versión activa con sus objetivos por serie, las fichas visuales de la sesión y la imagen del ejercicio abierto),
+  // API-RES-04 y, al desplegar, el plan de Nutrición (API-RES-06) y API-RES-07. Estimada: se fija en la primera corrida.
+  'martin-acosta/plan-otras-areas': 11,
 };
 
 /**
