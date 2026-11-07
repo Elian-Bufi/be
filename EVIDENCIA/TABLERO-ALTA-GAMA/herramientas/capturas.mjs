@@ -21,6 +21,10 @@
 // Desde TB-24, la composición corporal de Diego en la pestaña y en la pregunta de «Analizar», el Resumen de Héctor (sin
 // pliegues: la línea de los pesos) y, en `composicion`, cuántas columnas van partidas y qué dice la barra de la tarjeta.
 // Desde TB-15, la revisión nueva de Nutrición de Diego, con «¿Cuándo la revisás?» sin nada elegido.
+// Desde TB-50 y TB-51, en cada Resumen con la tarjeta de Antropometría, abre sus piezas plegadas (la composición de la
+// última toma y la evolución de las últimas tomas), guarda la tarjeta sola (`<página>-antropometria-<ancho>.png`) y la
+// vuelve a plegar; en `composicion` anota qué dice la barra (`reparto`) y, en `evolucion`, cuántas tomas y qué pares
+// muestra. Abrir una pieza no lee nada: la cuenta de peticiones no cambia.
 // Desde el arreglo de TEST-TAG-032 (TA-30): la cuenta sigue hasta que la API queda quieta (ninguna petición en curso y
 // ninguna nueva en 1,5 s) y se compara con la tabla de `peticiones.mjs`: una cuenta distinta, para arriba o para abajo,
 // hace fallar la corrida. Y la lista de nombres de TEST-TAG-004 ya no sale vacía: quitaba toda palabra, no solo los
@@ -289,9 +293,17 @@ async function capturarTodo() {
           sinPartir: document.querySelectorAll('.composicion__columna[data-partida="no"]').length,
           cambios: document.querySelectorAll('.composicion__cambio').length,
           barraDeLaUltimaToma: document.querySelectorAll('.barra-de-la-composicion').length > 0,
-          texto: document.querySelector('.composicion-de-la-toma__cifra, .composicion__resumen')?.textContent?.trim() ?? null,
+          texto: document.querySelector('.composicion__resumen')?.textContent?.trim() ?? null,
+          // TB-51: el reparto de la barra (grasa, músculo y resto, o grasa y libre de grasa) y lo que dice cada parte.
+          reparto: document.querySelector('.reparto-del-peso')?.getAttribute('data-reparto') ?? null,
+          partes: [...(document.querySelector('.reparto-del-peso')?.querySelectorAll('.reparto-del-peso__partes > li') ?? [])].map((li) => li.textContent.replace(/\s+/g, ' ').trim()),
         }));
-        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, accionDelMarco, cajon, composicion, alto: {} };
+        // TB-50: la evolución de las últimas tomas en la tarjeta de Antropometría del Resumen.
+        const evolucion = await page.evaluate(() => {
+          const pieza = document.querySelector('[data-pieza="evolucion"]');
+          return pieza ? { tomas: Number(pieza.getAttribute('data-columnas')), pares: [...pieza.querySelectorAll('[data-par]')].map((e) => e.getAttribute('data-par')), aLaVista: document.querySelector('.evolucion-de-las-tomas__a-la-vista')?.textContent?.trim() ?? null } : null;
+        });
+        const fila = { profesional: NOMBRES[prefijo], pagina: nombre, ruta: plantilla, peticionesAlAbrir: peticiones, asentada, accionDelMarco, cajon, composicion, evolucion, alto: {} };
         for (const tema of TEMAS) {
           // Con el cajón abierto (un diálogo modal) el menú de la cuenta no se toca: se cierra, se cambia el tema y se abre.
           if (metrica === 'cajon' && (await page.evaluate(() => document.documentElement.dataset.tema)) !== tema) {
@@ -305,6 +317,8 @@ async function capturarTodo() {
             await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
             await pausa(700);
             await page.screenshot({ path: path.join(carpeta, `${nombre}-${ancho}-pantalla.png`) });
+            // TB-50 y TB-51: la tarjeta de Antropometría con sus piezas abiertas, sola; después se vuelven a plegar.
+            if (nombre.startsWith('resumen')) await tarjetaDeAntropometriaAbierta(page, path.join(carpeta, `${nombre}-antropometria-${ancho}.png`), fila, `${tema}-${ancho}`);
             // TB-10 (A13 de la propuesta): en el Resumen, dónde terminan las tarjetas, el valor de cada indicador y sus
             // minigráficos, y el alto de la tarjeta más alta, para comparar con la primera pantalla de cada tamaño.
             // TB-06 y TB-11 (§1 del paquete): en el Espacio, dónde terminan las cifras, «Tu semana» y las primeras tres
@@ -376,6 +390,36 @@ async function capturarTodo() {
   for (const d of mediciones.tuSemanaQueSePasa ?? []) console.error(`TA-71 · ${d}`);
   if ((mediciones.tuSemanaQueSePasa ?? []).length > 0) process.exitCode = 1;
   return mediciones;
+}
+
+/**
+ * TB-50 y TB-51: abre las piezas plegadas de la tarjeta de Antropometría del Resumen (abrirlas no lee nada), guarda la
+ * tarjeta sola y anota su alto abierta y lo que dibuja la evolución; después las vuelve a plegar, para que la página
+ * entera quede como la ve el profesional al llegar.
+ */
+async function tarjetaDeAntropometriaAbierta(page, archivo, fila, clave) {
+  const tarjeta = await page.$('.area[data-area="ANTROPOMETRIA"]');
+  if (!tarjeta) return;
+  const abiertas = await page.evaluate(() => {
+    const plegadas = [...document.querySelectorAll('.area[data-area="ANTROPOMETRIA"] details.pieza-del-area--plegada:not([open])')];
+    for (const d of plegadas) d.open = true;
+    return plegadas.length;
+  });
+  await pausa(500);
+  const medida = await page.evaluate(() => {
+    const t = document.querySelector('.area[data-area="ANTROPOMETRIA"]');
+    const pieza = t?.querySelector('[data-pieza="evolucion"]');
+    return { alto: t ? Math.round(t.getBoundingClientRect().height) : null, filasDibujadas: pieza ? pieza.querySelectorAll('.evolucion-de-las-tomas__fila[data-metrica] svg').length : 0, tomas: pieza ? Number(pieza.getAttribute('data-columnas')) : 0 };
+  });
+  await tarjeta.screenshot({ path: archivo });
+  fila.antropometriaAbierta ??= {};
+  fila.antropometriaAbierta[clave] = { ...medida, piezasAbiertas: abiertas };
+  await page.evaluate(() => {
+    for (const d of document.querySelectorAll('.area[data-area="ANTROPOMETRIA"] details.pieza-del-area--plegada[open]')) d.open = false;
+    // La captura de la tarjeta desplaza la página: vuelve arriba, para que la primera pantalla se mida como siempre.
+    window.scrollTo(0, 0);
+  });
+  await pausa(200);
 }
 
 /**

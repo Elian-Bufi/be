@@ -171,8 +171,9 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   que falta»).
 - **Los tokens de la etapa A, cada uno con su par en `contraste.test.cjs`:** `--banda` (la vigencia de un plan en un
   gráfico), `--pista` (lo que falta de un tramo), `--ahora` (hoy), `--retrato-fondo` y `--retrato-tinta` (el
-  monograma, de un solo tono neutro para todas las personas) y `--composicion-libre` y `--composicion-grasa` (las dos
-  masas de la composición corporal, validadas para daltonismo en los dos temas).
+  monograma, de un solo tono neutro para todas las personas), `--composicion-libre` y `--composicion-grasa` (las dos
+  masas de la composición corporal, validadas para daltonismo en los dos temas) y, desde TB-51, `--composicion-resto`
+  (el resto de la barra cuando el método calcula el músculo; el músculo va en `--composicion-libre`).
 - **Contraste AA:**
   - 4,5:1 para el texto;
   - 3:1 para los bordes de los controles y los íconos que comunican.
@@ -463,8 +464,10 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   3. lo nuevo desde la revisión, en cifras en fila («Desde la revisión»). Son las observaciones de `sintesisDelResumen`
      (reglas fijas, sin IA, sin calificar), con sus mismas palabras (`partesDeObservacion`). Debajo, la pieza propia del
      área: en Nutrición, la barra partida de los registros del período; en Entrenamiento, las sesiones por ejercicio; en
-     Antropometría, la composición de la última toma (D-11). Con dos o más tarjetas en fila va plegada, con lo principal
-     en el renglón que la abre; un área sin nada registrado muestra «Empezar el plan» en miniatura, con sus pasos;
+     Antropometría, la composición de la última toma (D-11), en kilos con el porcentaje al lado de cada parte (D-11,
+     modificada por Dirección el 2026-11-07; TB-51), y la evolución de las últimas tomas en pares de medidas, una columna
+     por toma y cada medida en su unidad (TB-50). Con dos o más tarjetas en fila va plegada, con lo principal en el
+     renglón que la abre; un área sin nada registrado muestra «Empezar el plan» en miniatura, con sus pasos;
   4. la acción del área. **Un solo botón lleno en todo el Resumen:** el del área con la próxima revisión acordada más
      cercana. La fecha la fijó el profesional: BE no decide qué es urgente.
   Debajo, los **indicadores** (hasta cuatro, por cuenta): el nombre, que abre Analizar; el valor con su regla (media de

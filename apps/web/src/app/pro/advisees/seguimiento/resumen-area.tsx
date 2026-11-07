@@ -22,7 +22,9 @@
  * fila**; y después, **la pieza propia** del área (`pieza-del-area.tsx`): la barra partida de los registros en Nutrición
  * y las sesiones por ejercicio en Entrenamiento. Un área sin nada registrado muestra **«Empezar el plan» en miniatura**.
  * Desde TB-24 (TA-20), la de Antropometría es la composición de la última toma (`ComposicionDeLaUltimaToma`), con la línea
- * de los pesos de las tomas cuando ninguna tiene un método que los parta.
+ * de los pesos de las tomas cuando ninguna tiene un método que los parta. Desde TB-50, debajo, la evolución de las
+ * últimas tomas en pares de medidas (`EvolucionDeLasTomasEnLaTarjeta`), de la misma lectura; desde TB-51, la barra va
+ * en kilos con el porcentaje al lado.
  */
 import {
   COPY_PISTAS,
@@ -58,8 +60,10 @@ import { tramoDelCiclo } from '../../../../lib/reloj';
 import { useLectura, useSeguimiento } from './contexto';
 import { conRetorno, hoyEn, restarDias, valorDeRetorno } from './estado';
 import { ICONO_DEL_AREA } from './iconos-de-metrica';
-import { DIAS_POR_LECTURA } from './composicion';
+import { DIAS_POR_LECTURA, METRICAS_DE_LA_COMPOSICION } from './composicion';
 import { useLecturaDeLaComposicion } from './composicion-en-pantalla';
+import { METRICAS_DE_LA_EVOLUCION } from './evolucion-de-las-tomas';
+import { EvolucionDeLasTomasEnLaTarjeta } from './evolucion-de-las-tomas-en-pantalla';
 import { CifrasDesdeLaRevision, ComposicionDeLaUltimaToma, PrimerPlanEnMiniatura, RegistrosDelPeriodo, SesionesPorEjercicio } from './pieza-del-area';
 import { losRegistrosDelPeriodo, sesionesPorEjercicio } from './piezas-del-area';
 import type { Disponibles } from './series';
@@ -277,7 +281,7 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
             revision={null}
             revisiones={null}
             // TB-24 (TA-20): la composición de la última toma o, sin método, la línea de los pesos.
-            pieza={() => <PiezaDeAntropometria ultimaToma={ultimaToma} plegada={plegada} href={ruta('ANTROPOMETRIA', 'composicion')} />}
+            pieza={() => <PiezaDeAntropometria ultimaToma={ultimaToma} plegada={plegada} href={ruta('ANTROPOMETRIA', 'composicion')} hrefDeLaEvolucion={ruta('ANTROPOMETRIA', 'evolucion')} />}
             detallesDeLaCobertura={[]}
             {...comunes}
           />
@@ -299,17 +303,25 @@ const cuenta = (n: number, uno: string, varios: string): ParteDeObservacion => (
 /**
  * La pieza de Antropometría (TB-24; TA-20 y TA-26): lee API-ANT-06 en la ventana de 92 días que termina en la última
  * toma, con el peso y las masas, para la barra de esa toma y lo que cambió desde la anterior. Una lectura más al abrir el
- * Resumen, solo con Antropometría y alguna toma.
+ * Resumen, solo con Antropometría y alguna toma. TB-50 (TA-73): la misma lectura suma las medidas de los pares, para la
+ * evolución de las últimas tomas: ninguna petición nueva.
  */
-function PiezaDeAntropometria({ ultimaToma, plegada, href }: { ultimaToma: string | null; plegada: boolean; href: string }) {
+function PiezaDeAntropometria({ ultimaToma, plegada, href, hrefDeLaEvolucion }: { ultimaToma: string | null; plegada: boolean; href: string; hrefDeLaEvolucion: string }) {
   const { token, asesoradoId, sesionPerdida } = useSeguimiento();
   const hasta = ultimaToma ? fechaCivil(ultimaToma, ZONA_DE_LA_FICHA) : null;
   const desde = hasta ? restarDias(hasta, DIAS_POR_LECTURA - 1) : null;
-  const { lectura, recargar } = useLecturaDeLaComposicion(token, asesoradoId, desde, hasta, sesionPerdida);
+  const { lectura, recargar } = useLecturaDeLaComposicion(token, asesoradoId, desde, hasta, sesionPerdida, METRICAS_DE_LA_TARJETA);
   if (!desde || !hasta) return null;
   const hoy = hoyEn();
-  return <ComposicionDeLaUltimaToma lectura={lectura} recargar={recargar} desde={desde} hasta={hasta} fecha={(c) => diaDelAnioEnCurso(c, hoy)} href={href} plegada={plegada} />;
+  return (
+    <>
+      <ComposicionDeLaUltimaToma lectura={lectura} recargar={recargar} desde={desde} hasta={hasta} fecha={(c) => diaDelAnioEnCurso(c, hoy)} href={href} plegada={plegada} />
+      {lectura.tipo === 'lista' ? <EvolucionDeLasTomasEnLaTarjeta tomas={lectura.tomas} plegada={plegada} href={hrefDeLaEvolucion} /> : null}
+    </>
+  );
 }
+/** Lo que pide la tarjeta de Antropometría en su única lectura: el peso y las masas, y las medidas de los pares (TB-50). */
+const METRICAS_DE_LA_TARJETA: readonly string[] = [...new Set([...METRICAS_DE_LA_COMPOSICION, ...METRICAS_DE_LA_EVOLUCION])];
 const ZONA_DE_LA_FICHA = 'America/Argentina/Buenos_Aires';
 
 /**
