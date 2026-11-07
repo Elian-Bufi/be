@@ -179,14 +179,17 @@ EVIDENCE_EXPECTED    La corrida verde de la CI en el PR #243, con PLN-07 y PLE-0
 TEST_ID              TEST-TAG-037
 TITLE                API-RES-06 devuelve el plan vigente de otra área solo si la persona se lo comparte a ese
                      profesional con el nivel «resumen y plan», la matriz tiene la fila y el PDP permite el par; si
-                     falta cualquiera, el 404 de lo inexistente. Retirar o bajar corta en el momento, subir pide el
-                     texto vigente, y cada lectura queda a la vista de la persona y de quien lleva el área
+                     falta cualquiera, el 404 de lo inexistente. Retirar o bajar corta en el momento sin pedir ningún
+                     texto; dar un permiso nuevo o subir de nivel pide el texto vigente de ese nivel (uno por nivel,
+                     decisión de Dirección del 2026-11-07); y cada lectura queda a la vista de la persona y de quien
+                     lleva el área
 LEVEL                Unidad (la matriz, los renglones de la autorización, lo avanzado por semana y los schemas) e
                      integración con PostgreSQL (API-RES-01 a 04, 06 y 07 de punta a punta, y las guardas de la base)
 PRIORITY             P1 — muestra el plan completo de un área a otro profesional: un renglón de más es un dato de
                      salud que viaja sin permiso (08 §11-bis; D-13, ampliada)
 SOURCES              DL-163 D-13, ampliada por Dirección el 2026-11-07 («el nutricionista debería poder ver el resumen
-                     y hasta la planificación»; «Sí, plan completo de solo lectura»; «todos con todos, con permiso») ·
+                     y hasta la planificación»; «Sí, plan completo de solo lectura»; «todos con todos, con permiso»;
+                     y, el mismo día, «un texto distinto por nivel», que reemplaza TA-99 y ratifica TA-85) ·
                      WP-TABLERO-ALTA-GAMA TB-52 y TB-55, §3.1, §3.4, §4.3 (API-RES-01 a 04, 06 y 07), §9 · TA-85 a
                      TA-88, TA-92 y TA-93 · 08 C-11, C-12 (ampliar es una aceptación nueva), §11-bis, §12.2, §19.7 ·
                      RNF-PRI-002 · UC-I04 (la instantánea) · el mecanismo de DL-165 D-9 (API-HBT-03 a 05)
@@ -198,36 +201,45 @@ SYNTHETIC_FIXTURE    Personas, vínculos, consentimientos, evaluaciones, objetiv
 STEPS                1. Sin autorización: el entrenador lee API-RES-04 y API-RES-06 de Nutrición; lo mismo con una
                         persona inexistente y como el profesional ajeno.
                      2. La persona comparte Nutrición con el entrenador en «resumen» (API-RES-02); él lee API-RES-06.
-                     3. La persona sube a «resumen y plan» con un texto que no es el vigente, y después con el vigente.
+                     3. La persona sube a «resumen y plan» con un texto de «resumen y plan» que no es el vigente; sin
+                        el texto de «resumen y plan» (solo con el de «resumen»); y con el vigente de «resumen y plan».
+                        Antes, dar el permiso de «resumen» sin su texto.
                      4. El entrenador lee API-RES-04 y API-RES-06; la nutricionista, API-RES-07; la persona, API-RES-01.
-                     5. La persona baja a «resumen» con el texto que ya había aceptado; el entrenador lee. Vuelve a
-                        subir; retira todo (API-RES-03); el entrenador lee.
+                     5. La persona baja a «resumen» sin mandar ningún texto; el entrenador lee. Vuelve a subir, con el
+                        texto de «resumen y plan»; retira todo (API-RES-03); el entrenador lee.
                      6. Con «resumen y plan» vigente: el vínculo del entrenador en pausa; reanudado; terminado.
                      7. Antropometría con «resumen y plan» en el PUT; API-RES-06 de ANTROPOMETRIA y de un área que no
                         existe.
-                     8. Con SQL: modificar, borrar o truncar las tablas de la autorización; un renglón de Antropometría
-                        con el plan; un renglón de un área que el receptor ya lleva.
+                     8. Con SQL: modificar, borrar o truncar las tablas de la autorización (también la de los textos
+                        aceptados); un renglón de Antropometría con el plan; un renglón de un área que el receptor ya
+                        lleva; el texto de un nivel aceptado con el de otro; un renglón de «resumen y plan» sin su
+                        texto aceptado en esa versión.
 EXPECTED             1 → API-RES-04 trae la otra área con quién la lleva y `shared: null`; API-RES-06, 404
                         `RESOURCE_NOT_FOUND` con el mismo cuerpo que la persona inexistente y que el ajeno.
                      2 → 404, el mismo cuerpo: el nivel «resumen» no abre el plan.
-                     3 → 409 `CONSENT_VERSION_STALE` y nada cambia; después 200, con la versión siguiente.
+                     3 → dar «resumen» sin su texto, 422 `SHARING_TEXT_REQUIRED` (`acceptedTexts.summary`); subir
+                        con un texto viejo, 409 `CONSENT_VERSION_STALE`; sin el texto de «resumen y plan», 422
+                        `SHARING_TEXT_REQUIRED` (`acceptedTexts.summaryAndPlan`), y nada cambia; con el vigente, 200,
+                        con la versión siguiente y los dos textos aceptados en `acceptedTexts`. API-RES-01 trae los dos
+                        textos, cada uno `PENDING_APPROVAL`.
                      4 → API-RES-06 trae la versión ACTIVADA vigente (su instantánea, `state: ACTIVATED`), el
                         objetivo vigente, el autor, `level: SUMMARY_AND_PLAN`, desde cuándo y lo avanzado (las semanas
                         de lunes a domingo desde la activación, con los registros sin anular); ningún id del borrador ni
                         de la revisión. API-RES-07 dice con quién, en qué nivel y desde cuándo. API-RES-01 trae la
                         lectura, con el entrenador, el área y la hora.
-                     5 → bajar, 200 sin pedir el texto vigente ni el A3, y el entrenador recibe el 404 en la lectura
-                        siguiente; retirar, lo mismo.
+                     5 → bajar, 200 sin ningún texto ni el A3, y el entrenador recibe el 404 en la lectura siguiente;
+                        retirar, lo mismo.
                      6 → en pausa y terminado, 404; reanudado, 200.
                      7 → 400 `INVALID_REQUEST` (Antropometría no tiene plan) y 404 en las dos lecturas.
                      8 → la base rechaza cada una («solo se agrega», «Antropometría no tiene plan», «el receptor no
-                        lleva esa área»).
+                        lleva esa área», «el texto de su nivel», «sin el texto aceptado de su nivel»).
 NEGATIVE_ASSERTIONS  El 404 de cada corte es idéntico al de lo inexistente. Ninguna respuesta trae puntajes, «%» ni
                      términos que califiquen (PUNTAJE_PROHIBIDO). Lo que leen las APK instaladas no cambia
                      (TEST-TAG-030). Mutaciones verificadas en el dominio (sobre `dist`, el 2026-11-07): sacar de la
                      matriz la exclusión del área que el receptor ya lleva (fallan dos casos), dejar que un renglón de
                      «resumen» cuente como «resumen y plan», no ver como ampliación una subida de nivel y contar lo
-                     registrado antes de la activación hacen fallar sus casos. En integración, la mutación es no
+                     registrado antes de la activación hacen fallar sus casos; y, con los textos por nivel, dejar
+                     subir a «resumen y plan» sin su texto, o pedir un texto para bajar. En integración, la mutación es no
                      exigir el nivel en API-RES-06 (el paso 2 daría 200): está escrita, no se corrió (la CI corre la
                      prueba sin mutar).
 AUTOMATION           packages/domain/src/resumenes-compartidos.test.ts («TEST-TAG-037 · …»), en

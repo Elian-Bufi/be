@@ -909,7 +909,7 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const compartido = (await conSesion(app, token).get('/api/v1/me/summary-sharing').expect(200)).body.data as { sharing: { version: string | null } };
     await conSesion(app, token)
       .put('/api/v1/me/summary-sharing')
-      .send({ expectedVersion: compartido.sharing.version, textVersionId: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }] })
+      .send({ expectedVersion: compartido.sharing.version, acceptedTexts: { summary: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, summaryAndPlan: VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS.id }, grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }] })
       .expect(200);
     await conSesion(app, ent.token)
       .post(`/api/v1/advisees/${c.ase.id}/coordination-notes`)

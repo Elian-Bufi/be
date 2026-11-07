@@ -21,6 +21,11 @@ import {
   renglonesVigentes,
   semanasDeLoAvanzado,
   sesionesPorSemanaDeLaAgenda,
+  textosDeLaVersion,
+  textosQueFaltan,
+  textosQuePide,
+  type RenglonDeResumen,
+  type TextosAceptados,
   type AreaConPlan,
   type AvanceDelPlan,
   type LoQueSeComparteDeMiAreaResponse,
@@ -64,12 +69,11 @@ import {
   quienesLlevanCadaArea,
   RECURSO_DEL_PLAN_COMPARTIDO,
   resolverPedidoDePlan,
-  textoDelActo,
+  textosDelActo,
   token,
   tomarLaAutorizacionDeResumenes,
   tomarLosPedidosDePlan,
   ultimoPedidoDePlan,
-  versionDelTexto,
 } from './resumenes-de-la-persona';
 
 type Tx = Prisma.TransactionClient;
@@ -83,6 +87,37 @@ const noLoComparte = (motivo: string): ErrorDeApi => new ErrorDeApi(404, CodigoD
 
 const noDisponible = (issues: readonly ValidationIssue[]): ErrorDeApi =>
   new ErrorDeApi(422, CodigoDeError.SUMMARY_RECIPIENT_NOT_AVAILABLE, 'Uno de los permisos no se puede dar: el profesional no te acompaña hoy o esa área no se le puede compartir.', { issues });
+
+/** El 422 de API-RES-02 cuando falta aceptar el texto que pide un nivel (Dirección, 2026-11-07). */
+const sinElTexto = (issues: readonly ValidationIssue[]): ErrorDeApi =>
+  new ErrorDeApi(422, CodigoDeError.SHARING_TEXT_REQUIRED, 'Para dar ese permiso, falta aceptar el texto de su nivel.', { issues });
+
+const VIGENTE_DEL_NIVEL = { summary: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, summaryAndPlan: VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS.id } as const;
+
+/**
+ * Los textos que la persona acepta ahora, validados (08 §12.2: la mostrada es la aceptada). El de un nivel que la versión
+ * pide tiene que venir (si no, 422) y ser el vigente de ese nivel (si no, 409); uno que no se pide puede ser el vigente o el
+ * que ya tenía aceptado (si no, 409). Lo que no viene, `null`.
+ */
+function textosAceptadosValidos(pide: { readonly summary: boolean; readonly summaryAndPlan: boolean }, dados: TextosAceptados, ya: TextosAceptados | null): TextosAceptados {
+  const faltan = textosQueFaltan(pide, dados);
+  if (faltan.length > 0) throw sinElTexto(faltan);
+  for (const nivel of ['summary', 'summaryAndPlan'] as const) {
+    const id = dados[nivel];
+    if (id === null) continue;
+    const vale = id === VIGENTE_DEL_NIVEL[nivel] || (!pide[nivel] && id === ya?.[nivel]);
+    if (!vale) throw errores.versionDeConsentimientoVieja();
+  }
+  return dados;
+}
+
+/** Los niveles de la versión nueva sin su texto aceptado: el de «resumen y plan» vale también para un renglón de «resumen». */
+function nivelesSinTexto(renglones: readonly RenglonDeResumen[], textos: TextosAceptados): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (renglones.some((r) => r.nivel === 'SUMMARY_AND_PLAN') && textos.summaryAndPlan === null) issues.push({ code: 'SHARING_TEXT_REQUIRED', path: 'acceptedTexts.summaryAndPlan' });
+  if (renglones.some((r) => r.nivel === 'SUMMARY') && textos.summary === null && textos.summaryAndPlan === null) issues.push({ code: 'SHARING_TEXT_REQUIRED', path: 'acceptedTexts.summary' });
+  return issues;
+}
 
 /**
  * API-RES-01 a 04 y 06 a 10 — lo que la persona les comparte a sus profesionales de otras áreas (DL-163 D-13, ampliada por
@@ -142,7 +177,7 @@ export class ResumenesService {
           data: {
             sharing: compartirApi(vigente),
             professionals: profesionalesApi(componentes, nombres, renglonesVigentes(vigente?.renglones ?? null, componentes)),
-            text: textoDelActo(),
+            texts: textosDelActo(),
             accesses,
           },
         };
@@ -172,16 +207,13 @@ export class ResumenesService {
         const issues = problemasDeLosPermisos(antes.componentes, pedido.grants);
         if (issues.length > 0) throw noDisponible(issues);
         const anteriores = renglonesVigentes(vista?.renglones ?? null, antes.componentes);
-        const amplia = ampliaLoCompartido(anteriores, renglonesDeLosPermisos({ componentes: antes.componentes, anteriores, permisos: pedido.grants, ahora: new Date(0).toISOString() }));
-        const vigenteDelTipo = VERSION_VIGENTE.RESUMENES_COMPARTIDOS;
-        if (amplia) {
-          await exigirA3Vigente(tx, personaId, { bloquear: true });
-          // La versión mostrada es la aceptada (08 §12.2): para ampliar, la vigente del tipo.
-          if (pedido.textVersionId !== vigenteDelTipo.id) throw errores.versionDeConsentimientoVieja();
-        } else if (pedido.textVersionId !== vigenteDelTipo.id && pedido.textVersionId !== vista?.fila.versionDeTextoId) {
-          // Bajar o sacar a alguien no pide aceptar nada nuevo (TA-98): alcanza con el texto que ya había aceptado.
-          throw errores.versionDeConsentimientoVieja();
-        }
+        // Un texto por nivel (Dirección, 2026-11-07): qué pide esta versión, con lo que se vio.
+        const pide = textosQuePide(anteriores, renglonesDeLosPermisos({ componentes: antes.componentes, anteriores, permisos: pedido.grants, ahora: new Date(0).toISOString() }));
+        const amplia = pide.summary || pide.summaryAndPlan;
+        // Ampliar pide el A3, con el acto tomado (DL-115); bajar o sacar a alguien no pide nada (TA-98).
+        if (amplia) await exigirA3Vigente(tx, personaId, { bloquear: true });
+        const yaAceptados = vista?.fila.estado === 'ACTIVA' ? vista.aceptados : null;
+        const dados = textosAceptadosValidos(pide, pedido.acceptedTexts, yaAceptados);
         await tomarLaAutorizacionDeResumenes(tx, personaId, 'escribir');
         const vigente = await autorizacionDeResumenesVigente(tx, personaId);
         if ((vigente ? token(vigente.fila.version) : null) !== pedido.expectedVersion) throw errores.conflictoDeVersion();
@@ -194,9 +226,11 @@ export class ResumenesService {
         const momento = await momentoDeLosResumenes(tx);
         const renglones = renglonesDeLosPermisos({ componentes, anteriores: previos, permisos: pedido.grants, ahora: momento.toISOString() });
         if (!amplia && ampliaLoCompartido(previos, renglones)) throw errores.conflictoConcurrente();
-        const texto = versionDelTexto(pedido.textVersionId);
-        if (!texto) throw errores.versionDeConsentimientoVieja();
-        const fila = await agregarVersionDeAutorizacionDeResumenes(tx, { personaId, anterior: vigente?.fila ?? null, estado: 'ACTIVA', texto, renglones, procedencia, momento });
+        // La versión nueva conserva lo que ya tenía aceptado, y cada nivel que da tiene que tener el suyo.
+        const textos = textosDeLaVersion(vigente?.fila.estado === 'ACTIVA' ? vigente.aceptados : null, dados);
+        const sinTexto = nivelesSinTexto(renglones, textos);
+        if (sinTexto.length > 0) throw sinElTexto(sinTexto);
+        const fila = await agregarVersionDeAutorizacionDeResumenes(tx, { personaId, anterior: vigente?.fila ?? null, estado: 'ACTIVA', textos, renglones, procedencia, momento });
         // TB-56: compartir el plan de un área con quien lo había pedido acepta su pedido.
         await tomarLosPedidosDePlan(tx, personaId);
         await aceptarLosPedidosDeQuienesVenElPlan(tx, { personaId, renglones, procedencia, momento });
@@ -224,7 +258,7 @@ export class ResumenesService {
         const vigente = await autorizacionDeResumenesVigente(tx, personaId);
         if (!vigente || vigente.fila.estado !== 'ACTIVA' || token(vigente.fila.version) !== pedido.expectedVersion) throw errores.conflictoDeVersion();
         const momento = await momentoDeLosResumenes(tx);
-        const fila = await agregarVersionDeAutorizacionDeResumenes(tx, { personaId, anterior: vigente.fila, estado: 'RETIRADA', texto: null, renglones: [], procedencia, momento });
+        const fila = await agregarVersionDeAutorizacionDeResumenes(tx, { personaId, anterior: vigente.fila, estado: 'RETIRADA', textos: null, renglones: [], procedencia, momento });
         return { estadoHttp: 200, cuerpo: await this.estado(tx, personaId), sujetoId: personaId, recurso: { tipo: 'AutorizacionDeResumenes', id: fila.id } };
       },
     });
@@ -501,7 +535,8 @@ export class ResumenesService {
         const personaId = actor.identidadId;
         const comparte = pedido.answer === 'SHARE';
         if (comparte) await exigirA3Vigente(tx, personaId, { bloquear: true });
-        const texto = VERSION_VIGENTE.RESUMENES_COMPARTIDOS;
+        // «Sí, que lo vea» da «resumen y plan»: pide el texto vigente de ese nivel.
+        const texto = VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS;
         if (pedido.sharing && pedido.sharing.textVersionId !== texto.id) throw errores.versionDeConsentimientoVieja();
         if (comparte) await tomarLaAutorizacionDeResumenes(tx, personaId, 'escribir');
         await tomarLosPedidosDePlan(tx, personaId);
@@ -528,7 +563,8 @@ export class ResumenesService {
         if (problemas.some((i) => i.path === `grants[${delQuePidio}]`)) throw noDisponible(problemas.filter((i) => i.path === `grants[${delQuePidio}]`).map((i) => ({ code: i.code, path: 'accessRequestId' })));
         const validos = permisos.filter((_, i) => !problemas.some((x) => x.path === `grants[${i}]`));
         const renglones = renglonesDeLosPermisos({ componentes, anteriores: previos, permisos: validos, ahora: momento.toISOString() });
-        await agregarVersionDeAutorizacionDeResumenes(tx, { personaId, anterior: vigente?.fila ?? null, estado: 'ACTIVA', texto: { id: texto.id, hash: texto.hash }, renglones, procedencia, momento });
+        const textos = textosDeLaVersion(vigente?.fila.estado === 'ACTIVA' ? vigente.aceptados : null, { summary: null, summaryAndPlan: texto.id });
+        await agregarVersionDeAutorizacionDeResumenes(tx, { personaId, anterior: vigente?.fila ?? null, estado: 'ACTIVA', textos, renglones, procedencia, momento });
         // El pedido queda aceptado (y el de cualquier otro que ahora ve ese plan).
         await aceptarLosPedidosDeQuienesVenElPlan(tx, { personaId, renglones, procedencia, momento });
         return { estadoHttp: 200, cuerpo: { data: { accessRequestId: fila.id, answer: 'SHARE', answeredAt: momento.toISOString() } }, sujetoId: personaId, recurso: { tipo: 'PedidoDeAccesoAPlan', id: fila.id } };

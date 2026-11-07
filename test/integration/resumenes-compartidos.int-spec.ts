@@ -40,7 +40,11 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const TEXTO = VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id;
+/** Un texto por nivel (Dirección, 2026-11-07). */
+const RESUMEN = VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id;
+const PLAN = VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS.id;
+const AMBOS = { summary: RESUMEN, summaryAndPlan: PLAN };
+const NINGUNO = { summary: null, summaryAndPlan: null };
 type Area = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
 type Nivel = 'SUMMARY' | 'SUMMARY_AND_PLAN';
 
@@ -64,9 +68,9 @@ const otrasDe = async (pro: Parte, ase: Parte) => ResumenesParaElProfesionalResp
 const pendientesDe = async (ase: Parte) => PedidosDePlanResponseSchema.parse((await res(ase.token).pendientes().expect(200)).body).data;
 const permiso = (pro: Parte, area: Area, level: Nivel) => ({ professionalId: pro.id, area, level });
 /** API-RES-02 con la última versión que la persona ve, y el status que se espera. */
-async function compartir(ase: Parte, grants: unknown[], status: number, textVersionId = TEXTO) {
+async function compartir(ase: Parte, grants: unknown[], status: number, acceptedTexts: { summary: string | null; summaryAndPlan: string | null } = AMBOS) {
   const yo = await mios(ase);
-  return res(ase.token).compartir({ expectedVersion: yo.sharing.version, textVersionId, grants }).expect(status);
+  return res(ase.token).compartir({ expectedVersion: yo.sharing.version, acceptedTexts, grants }).expect(status);
 }
 const novedadesDe = async (ase: Parte) =>
   (await conSesion(app, ase.token).get('/api/v1/me/news?limit=30').expect(200)).body.data as { kind: string; title: string; body: string; source: { identityId: string } | null; open: { view: string; referenceId: string | null } }[];
@@ -98,15 +102,26 @@ describe('TEST-TAG-037 · El plan del otro, solo con el permiso de la persona (T
     expect((await res(ajeno.token).plan(e.ase.id, 'NUTRICION').expect(404)).body).toEqual(inexistente.body);
     await res(ajeno.token).otras(e.ase.id).expect(404);
 
+    // Los dos textos del acto, uno por nivel, cada uno una propuesta.
+    expect((await mios(e.ase)).texts).toMatchObject({ summary: { id: RESUMEN, approval: 'PENDING_APPROVAL' }, summaryAndPlan: { id: PLAN, approval: 'PENDING_APPROVAL' } });
+    // Dar «resumen» sin su texto: 422, con la ruta del que falta; con el de «resumen y plan» solo, tampoco.
+    const sinTexto = await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY')], 422, NINGUNO);
+    expect(sinTexto.body.error).toMatchObject({ code: 'SHARING_TEXT_REQUIRED', details: { issues: [{ code: 'SHARING_TEXT_REQUIRED', path: 'acceptedTexts.summary' }] } });
+    await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY')], 422, { summary: null, summaryAndPlan: PLAN });
     // 2. Con «resumen», el plan no se abre.
-    await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY')], 200);
+    const conResumen = ResumenesCompartidosEstadoResponseSchema.parse((await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY')], 200, { summary: RESUMEN, summaryAndPlan: null })).body).data;
+    expect(conResumen.sharing.acceptedTexts).toEqual({ summary: RESUMEN, summaryAndPlan: null });
     expect((await res(e.ent.token).plan(e.ase.id, 'NUTRICION').expect(404)).body).toEqual(inexistente.body);
     // 3. Subir de nivel pide el texto vigente: con otro, 409 y nada cambia.
-    const viejo = await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 409, VERSION_VIGENTE.HABITOS_COMPARTIDOS.id);
+    const viejo = await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 409, { summary: null, summaryAndPlan: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id });
     expect(viejo.body.error.code).toBe('CONSENT_VERSION_STALE');
+    // Subir sin el texto de «resumen y plan» (con el de «resumen» solo): 422, y nada cambia.
+    const sinElDelPlan = await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 422, { summary: RESUMEN, summaryAndPlan: null });
+    expect(sinElDelPlan.body.error).toMatchObject({ code: 'SHARING_TEXT_REQUIRED', details: { issues: [{ code: 'SHARING_TEXT_REQUIRED', path: 'acceptedTexts.summaryAndPlan' }] } });
     expect((await mios(e.ase)).sharing.version).toBe('v1');
-    const subida = ResumenesCompartidosEstadoResponseSchema.parse((await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 200)).body).data;
-    expect(subida.sharing).toMatchObject({ status: 'ACTIVE', version: 'v2', acceptedTextVersionId: TEXTO });
+    const subida = ResumenesCompartidosEstadoResponseSchema.parse((await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 200, { summary: null, summaryAndPlan: PLAN })).body).data;
+    // La versión nueva conserva el de «resumen» que ya tenía y suma el de «resumen y plan».
+    expect(subida.sharing).toMatchObject({ status: 'ACTIVE', version: 'v2', acceptedTexts: { summary: RESUMEN, summaryAndPlan: PLAN } });
     const delEntrenador = subida.professionals.find((p) => p.professional.identityId === e.ent.id)!;
     expect(delEntrenador).toMatchObject({ link: 'ACTIVE', shareableAreas: ['NUTRICION', 'ANTROPOMETRIA'], shares: [{ area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }] });
 
@@ -143,6 +158,27 @@ describe('TEST-TAG-037 · El plan del otro, solo con el permiso de la persona (T
     await expect(prisma.$executeRawUnsafe(`DELETE FROM destinatario_de_resumenes WHERE autorizacion_id = '${vigente.id}'`)).rejects.toThrow(/append-only/);
     await expect(prisma.$executeRawUnsafe('TRUNCATE destinatario_de_resumenes')).rejects.toThrow(/append-only/);
     const [avEnt, avAnt, avNut] = await Promise.all([componente(e.ent, e.ase, 'ENTRENAMIENTO'), componente(e.ant, e.ase, 'ANTROPOMETRIA'), componente(e.nut, e.ase, 'NUTRICION')]);
+    await expect(prisma.$executeRawUnsafe('TRUNCATE texto_aceptado_de_resumenes')).rejects.toThrow(/append-only/);
+    await expect(prisma.$executeRawUnsafe(`DELETE FROM texto_aceptado_de_resumenes WHERE autorizacion_id = '${vigente.id}'`)).rejects.toThrow(/append-only/);
+    // Un texto de un nivel con el de otro, y un renglón de «resumen y plan» sin su texto aceptado en su versión.
+    const [textoResumen, textoPlan] = await Promise.all([prisma.versionDeTexto.findUniqueOrThrow({ where: { id: RESUMEN } }), prisma.versionDeTexto.findUniqueOrThrow({ where: { id: PLAN } })]);
+    const otra = randomUUID();
+    const versionSinPlan = (renglon: boolean, textoDelPlan: string | null) =>
+      prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(
+          `INSERT INTO autorizacion_de_resumenes (id, asesorado_id, version, predecesora_id, estado, version_de_texto_id, hash_del_texto, actor_id, procedencia, momento_de_ocurrencia) VALUES ('${otra}', '${e.ase.id}', ${vigente.version + 1}, '${vigente.id}', 'ACTIVA', '${RESUMEN}', '${textoResumen.hash}', '${e.ase.id}', '{}'::jsonb, now())`,
+        );
+        await tx.$executeRawUnsafe(`INSERT INTO texto_aceptado_de_resumenes (autorizacion_id, nivel, version_de_texto_id, hash_del_texto) VALUES ('${otra}', 'RESUMEN', '${RESUMEN}', '${textoResumen.hash}')`);
+        if (textoDelPlan) await tx.$executeRawUnsafe(`INSERT INTO texto_aceptado_de_resumenes (autorizacion_id, nivel, version_de_texto_id, hash_del_texto) VALUES ('${otra}', 'RESUMEN_Y_PLAN', '${textoDelPlan}', '${textoResumen.hash}')`);
+        if (renglon) {
+          await tx.$executeRawUnsafe(
+            `INSERT INTO destinatario_de_resumenes (autorizacion_id, alcance_de_vinculo_id, origen_id, profesional_id, area, nivel, nivel_desde) VALUES ('${otra}', '${avEnt.id}', '${avNut.id}', '${e.ent.id}', 'NUTRICION', 'RESUMEN_Y_PLAN', now())`,
+          );
+        }
+      });
+    await expect(versionSinPlan(false, RESUMEN)).rejects.toThrow(/el texto de su nivel/);
+    await expect(versionSinPlan(true, null)).rejects.toThrow(/sin el texto aceptado de su nivel/);
+    expect(textoPlan.tipo).toBe('RESUMENES_Y_PLAN_COMPARTIDOS');
     const renglon = (origen: string, area: Area, nivel: string) =>
       prisma.$executeRawUnsafe(
         `INSERT INTO destinatario_de_resumenes (autorizacion_id, alcance_de_vinculo_id, origen_id, profesional_id, area, nivel, nivel_desde) VALUES ('${vigente.id}', '${avEnt.id}', '${origen}', '${e.ent.id}', '${area}', '${nivel}', now())`,
@@ -150,10 +186,12 @@ describe('TEST-TAG-037 · El plan del otro, solo con el permiso de la persona (T
     await expect(renglon(avAnt.id, 'ANTROPOMETRIA', 'RESUMEN_Y_PLAN')).rejects.toThrow(/antropometria_sin_plan/);
     await expect(renglon(avNut.id, 'ENTRENAMIENTO', 'RESUMEN')).rejects.toThrow(/componente de otro profesional/);
 
-    // 5. Bajar a «resumen» corta en el momento; subir otra vez lo abre; retirar todo corta.
-    await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY')], 200);
+    // 5. Bajar a «resumen» no pide ningún texto y corta en el momento; subir otra vez pide el del plan; retirar todo corta.
+    const bajada = ResumenesCompartidosEstadoResponseSchema.parse((await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY')], 200, NINGUNO)).body).data;
+    expect(bajada.sharing.acceptedTexts).toEqual({ summary: RESUMEN, summaryAndPlan: PLAN });
     expect((await res(e.ent.token).plan(e.ase.id, 'NUTRICION').expect(404)).body).toEqual(inexistente.body);
-    await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 200);
+    await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 422, NINGUNO);
+    await compartir(e.ase, [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN')], 200, { summary: null, summaryAndPlan: PLAN });
     await res(e.ent.token).plan(e.ase.id, 'NUTRICION').expect(200);
 
     // 6. El vínculo del que lee: en pausa corta, reanudado vuelve, terminado corta.
@@ -199,9 +237,9 @@ describe('TEST-TAG-037 · El plan del otro, solo con el permiso de la persona (T
     await revocarA3(e.ase);
     expect((await res(e.ase.token).mios().expect(403)).body.error.code).toBe('ACTION_FORBIDDEN');
     expect((await res(e.ase.token).pendientes().expect(403)).body.error.code).toBe('ACTION_FORBIDDEN');
-    const ampliar = await res(e.ase.token).compartir({ expectedVersion: 'v1', textVersionId: TEXTO, grants: [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN'), permiso(e.ant, 'NUTRICION', 'SUMMARY')] }).expect(403);
+    const ampliar = await res(e.ase.token).compartir({ expectedVersion: 'v1', acceptedTexts: AMBOS, grants: [permiso(e.ent, 'NUTRICION', 'SUMMARY_AND_PLAN'), permiso(e.ant, 'NUTRICION', 'SUMMARY')] }).expect(403);
     expect(ampliar.body.error.code).toBe('ACTION_FORBIDDEN');
-    await res(e.ase.token).compartir({ expectedVersion: 'v1', textVersionId: TEXTO, grants: [permiso(e.ent, 'NUTRICION', 'SUMMARY')] }).expect(200);
+    await res(e.ase.token).compartir({ expectedVersion: 'v1', acceptedTexts: NINGUNO, grants: [permiso(e.ent, 'NUTRICION', 'SUMMARY')] }).expect(200);
     await res(e.ase.token).retirar({ expectedVersion: 'v2' }).expect(200);
     expect(await prisma.autorizacionDeResumenes.findMany({ where: { asesoradoId: e.ase.id }, orderBy: { version: 'asc' }, select: { estado: true } })).toEqual([{ estado: 'ACTIVA' }, { estado: 'ACTIVA' }, { estado: 'RETIRADA' }]);
 
@@ -281,7 +319,7 @@ describe('TEST-TAG-040 · Pedir no concede nada (TB-56)', () => {
     const viejo = await prisma.pedidoDeAccesoAPlan.create({ data: { profesionalId: e.ant.id, asesoradoId: e.ase.id, alcanceDeVinculoId: avAnt.id, alcance: 'ANTROPOMETRIA', area: 'NUTRICION', pedidoEn: new Date(Date.now() - 8 * 86_400_000), procedencia: {} } });
     const nuevo = PedidoDePlanCreadoResponseSchema.parse((await res(e.ant.token).pedir(e.ase.id, { scope: 'ANTROPOMETRIA', area: 'NUTRICION' }).expect(201)).body).data;
     expect((await prisma.pedidoDeAccesoAPlan.findUniqueOrThrow({ where: { id: viejo.id } })).estado).toBe('REEMPLAZADO');
-    const si = (pedidoId: string, textVersionId = TEXTO) => res(e.ase.token).responder(pedidoId, { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId } });
+    const si = (pedidoId: string, textVersionId = PLAN) => res(e.ase.token).responder(pedidoId, { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId } });
     expect((await si(nuevo.accessRequestId, VERSION_VIGENTE.HABITOS_COMPARTIDOS.id).expect(409)).body.error.code).toBe('CONSENT_VERSION_STALE');
     expect(PedidoDePlanRespondidoResponseSchema.parse((await si(nuevo.accessRequestId).expect(200)).body).data.answer).toBe('SHARE');
     await res(e.ant.token).plan(e.ase.id, 'NUTRICION').expect(200);
@@ -327,7 +365,7 @@ describe('TEST-TAG-040 · Pedir no concede nada (TB-56)', () => {
     expect((await pendientesDe(f.ase)).map((p) => p.accessRequestId)).toEqual([creado.accessRequestId]);
     await finalizar(app, f.ase.token, f.vEnt.vinculoId, await versionDeVinculo(app, f.ase.token, f.vEnt.vinculoId)).expect(200);
     expect(await pendientesDe(f.ase)).toEqual([]);
-    const r = await res(f.ase.token).responder(creado.accessRequestId, { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId: TEXTO } }).expect(422);
+    const r = await res(f.ase.token).responder(creado.accessRequestId, { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId: PLAN } }).expect(422);
     expect(r.body.error.code).toBe('SUMMARY_RECIPIENT_NOT_AVAILABLE');
   });
 });

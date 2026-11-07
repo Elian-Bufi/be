@@ -18,8 +18,8 @@ test('el texto de EVIDENCIA_VISUAL es una propuesta, y lo dice en el texto mismo
   assert.match(texto, /Texto propuesto, pendiente de aprobación de Dirección y de validación jurídica\./);
   assert.match(texto, /Texto de demostración/);
   // Las únicas propuestas del catálogo: esta; desde DL-165 (FR-10), «Compartir mis hábitos con mis profesionales»; y, desde
-  // DL-163 D-13 ampliada (TB-55), «Compartir con mis profesionales lo de otras áreas».
-  assert.deepEqual([...VERSIONES_PROPUESTAS].sort(), ['evidencia-visual-2026-10-propuesta', 'habitos-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta']);
+  // DL-163 D-13 ampliada (TB-55), los de lo de otras áreas: el texto único y, desde el 2026-11-07, uno por nivel.
+  assert.deepEqual([...VERSIONES_PROPUESTAS].sort(), ['evidencia-visual-2026-10-propuesta', 'habitos-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta', 'resumenes-compartidos-2026-11-propuesta-2', 'resumenes-y-plan-compartidos-2026-11-propuesta']);
 });
 
 test('dice lo que pide el 08 §21: categoría destacada, opcional, privada, quién la ve, acceso corto, sin metadatos, sin IA, borrado y revocación', () => {

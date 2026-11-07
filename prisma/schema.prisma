@@ -95,8 +95,11 @@ enum TipoDeTexto {
   /// DL-165 D-9 (FR-10): «Compartir mis hábitos con mis profesionales». Una propuesta, pendiente de validación jurídica.
   HABITOS_COMPARTIDOS
   /// DL-163 D-13, ampliada (TB-55): «Compartir con mis profesionales lo de otras áreas». Una propuesta, pendiente de
-  /// validación jurídica.
+  /// validación jurídica. Desde el 2026-11-07 (un texto por nivel), el del nivel «resumen».
   RESUMENES_COMPARTIDOS
+  /// DL-163 D-13, ampliada; Dirección, 2026-11-07: el texto del nivel «resumen y plan». Una propuesta, pendiente de
+  /// validación jurídica.
+  RESUMENES_Y_PLAN_COMPARTIDOS
 }
 
 /// 08 §12.4 — actos registrables tipificados de la Relación A (A1, A2, A3).
@@ -439,6 +442,8 @@ model VersionDeTexto {
   autorizacionesDeHabitos   AutorizacionDeHabitos[]
   /// DL-163 D-13, ampliada: las versiones de la autorización de lo de otras áreas que aceptaron este texto.
   autorizacionesDeResumenes AutorizacionDeResumenes[]
+  /// Dirección, 2026-11-07 (un texto por nivel): los textos aceptados por nivel que nombran esta versión.
+  textosAceptadosDeResumenes TextoAceptadoDeResumenes[]
 
   @@map("version_de_texto")
 }
@@ -2629,6 +2634,8 @@ model AutorizacionDeResumenes {
   sucesora       AutorizacionDeResumenes?  @relation("SucesionDeAutorizacionDeResumenes")
   versionDeTexto VersionDeTexto?           @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   destinatarios  DestinatarioDeResumenes[]
+  /// Dirección, 2026-11-07: el texto que tiene aceptado cada nivel en esta versión (migración 20261107140100).
+  textosAceptados TextoAceptadoDeResumenes[]
 
   @@unique([asesoradoId, version])
   @@index([versionDeTextoId])
@@ -2659,6 +2666,25 @@ model DestinatarioDeResumenes {
   @@index([alcanceDeVinculoId])
   @@index([origenId])
   @@map("destinatario_de_resumenes")
+}
+
+/// DL-163 D-13, ampliada; Dirección, 2026-11-07 (un texto distinto por nivel): el texto que una versión ACTIVA de la
+/// autorización tiene aceptado para un nivel, con su hash (08 §12.2). Uno por nivel y por versión; el de «resumen» es de
+/// tipo RESUMENES_COMPARTIDOS y el de «resumen y plan», de RESUMENES_Y_PLAN_COMPARTIDOS. Cada renglón de la versión tiene
+/// aceptado el texto de su nivel (el de «resumen y plan» incluye el resumen). Solo se agregan.
+model TextoAceptadoDeResumenes {
+  autorizacionId    String                   @map("autorizacion_id") @db.Uuid
+  nivel             NivelDeResumenCompartido
+  versionDeTextoId  String                   @map("version_de_texto_id")
+  hashDelTexto      String                   @map("hash_del_texto")
+  momentoDeRegistro DateTime                 @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  autorizacion   AutorizacionDeResumenes @relation(fields: [autorizacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeTexto VersionDeTexto          @relation(fields: [versionDeTextoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([autorizacionId, nivel])
+  @@index([versionDeTextoId])
+  @@map("texto_aceptado_de_resumenes")
 }
 
 /// DL-163 D-13, ampliada (TB-56; el mecanismo de DL-165 D-24): cómo terminó un pedido de ver un plan. PENDIENTE mientras

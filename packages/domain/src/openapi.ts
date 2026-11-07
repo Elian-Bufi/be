@@ -2813,7 +2813,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/summary-sharing',
     resumen:
-      'Lo que la persona comparte de otras áreas: el estado de la autorización «Compartir con mis profesionales lo de otras áreas» (sin un booleano: NOT_GIVEN, ACTIVE o WITHDRAWN), sus profesionales con sus áreas, el vínculo, las áreas que se le pueden compartir a cada uno (las que lleva otro profesional y él no) y lo que hoy le comparte, con el nivel (SUMMARY o SUMMARY_AND_PLAN) y desde cuándo; el texto vigente del acto (una propuesta, PENDING_APPROVAL), y las últimas 50 lecturas de lo compartido, con quién, qué área y cuándo (08 §19.7). Sin el A3, 403.',
+      'Lo que la persona comparte de otras áreas: el estado de la autorización «Compartir con mis profesionales lo de otras áreas» (sin un booleano: NOT_GIVEN, ACTIVE o WITHDRAWN), sus profesionales con sus áreas, el vínculo, las áreas que se le pueden compartir a cada uno (las que lleva otro profesional y él no) y lo que hoy le comparte, con el nivel (SUMMARY o SUMMARY_AND_PLAN) y desde cuándo; los textos vigentes del acto, uno por nivel (`texts.summary` y `texts.summaryAndPlan`, propuestas, PENDING_APPROVAL), los que la versión vigente tiene aceptados (`sharing.acceptedTexts`), y las últimas 50 lecturas de lo compartido, con quién, qué área y cuándo (08 §19.7). Sin el A3, 403.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: MisResumenesCompartidosResponseSchema }],
@@ -2825,19 +2825,19 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'put',
     ruta: '/me/summary-sharing',
     resumen:
-      'Compartir lo de otras áreas, o cambiar con quiénes y en qué nivel, con la lista completa de permisos (profesional, área de origen y nivel; lo que no está deja de compartirse) y la última versión que se vio (si no es la última, 409 VERSION_CONFLICT). Lo compartido es lo del profesional que lleva hoy esa área. Ampliar (sumar a alguien o pasar a SUMMARY_AND_PLAN) es una aceptación nueva (08 C-12): pide el A3 (403) y el texto vigente (409 CONSENT_VERSION_STALE). Bajar de nivel o sacar a alguien corta en el momento y no los pide: alcanza con el texto ya aceptado. Antropometría no tiene plan (400). Acepta los pedidos pendientes de quienes pasan a ver el plan de esa área (TB-56).',
+      'Compartir lo de otras áreas, o cambiar con quiénes y en qué nivel, con la lista completa de permisos (profesional, área de origen y nivel; lo que no está deja de compartirse) y la última versión que se vio (si no es la última, 409 VERSION_CONFLICT). Lo compartido es lo del profesional que lleva hoy esa área. Un texto por nivel (Dirección, 2026-11-07), en `acceptedTexts`: un permiso nuevo de SUMMARY pide el texto vigente de «resumen», y dar o subir a SUMMARY_AND_PLAN, el de «resumen y plan» (si falta, 422 SHARING_TEXT_REQUIRED con la ruta del que falta; si es otro, 409 CONSENT_VERSION_STALE); ampliar pide también el A3 (403) (08 C-12). Bajar de nivel o sacar a alguien corta en el momento y no pide ningún texto ni el A3; la versión nueva conserva los textos que ya tenía aceptados. Antropometría no tiene plan (400). Acepta los pedidos pendientes de quienes pasan a ver el plan de esa área (TB-56).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CompartirResumenesRequestSchema,
     exitos: [{ status: 200, schema: ResumenesCompartidosEstadoResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['SUMMARY_RECIPIENT_NOT_AVAILABLE'] },
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SHARING_TEXT_REQUIRED'] },
     detalleDe422: {
       codigo: 'SUMMARY_RECIPIENT_NOT_AVAILABLE',
       schema: z.object({ issues: z.array(z.object({ code: z.enum(['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SUMMARY_AREA_NOT_SHAREABLE', 'SUMMARY_PLAN_NOT_ALLOWED']), path: z.string() })).min(1) }),
       descripcion:
-        'details.issues trae un issue por permiso que no se puede dar: SUMMARY_RECIPIENT_NOT_AVAILABLE (el profesional no la acompaña hoy: sin vínculo o con el vínculo terminado), SUMMARY_AREA_NOT_SHAREABLE (nadie más lleva hoy esa área, o la lleva él) o SUMMARY_PLAN_NOT_ALLOWED (la matriz del plan completo no tiene la fila), con path (grants[i]; en API-RES-10, accessRequestId).',
+        'details.issues trae un issue por permiso que no se puede dar: SUMMARY_RECIPIENT_NOT_AVAILABLE (el profesional no la acompaña hoy: sin vínculo o con el vínculo terminado), SUMMARY_AREA_NOT_SHAREABLE (nadie más lleva hoy esa área, o la lleva él) o SUMMARY_PLAN_NOT_ALLOWED (la matriz del plan completo no tiene la fila), con path (grants[i]; en API-RES-10, accessRequestId). Con SHARING_TEXT_REQUIRED, details.issues trae un issue SHARING_TEXT_REQUIRED por texto que falta, con path acceptedTexts.summary o acceptedTexts.summaryAndPlan.',
     },
-    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27 y TB-55) · TA-85, TA-87, TA-96 a TA-98 · 08 §12.2, C-11, C-12 · RNF-PRI-002',
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27 y TB-55) · TA-85 (ratificada: un texto por nivel), TA-87, TA-96 a TA-98, TA-109 · 08 §12.2, C-11, C-12 · RNF-PRI-002',
   },
   {
     id: 'API-RES-03',
@@ -2923,7 +2923,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/me/summary-sharing/access-requests/{accessRequestId}/answer',
     resumen:
-      'La persona responde un pedido de ver un plan, con la versión del pedido que vio (si ya no espera respuesta, 409 VERSION_CONFLICT). «Sí, que lo vea» (SHARE) es compartir esa área con ese profesional en SUMMARY_AND_PLAN, como API-RES-02: lleva la versión de la autorización que vio y el texto mostrado, que tiene que ser el vigente (409 VERSION_CONFLICT o CONSENT_VERSION_STALE), y pide el A3 (403); los demás permisos siguen como estaban. Quien pidió tiene que acompañarla hoy y el área tiene que tener quién la lleve (si no, 422 SUMMARY_RECIPIENT_NOT_AVAILABLE). «No, por ahora» (NOT_NOW) no cambia la autorización ni pide el A3. Lo ajeno y lo inexistente, 404.',
+      'La persona responde un pedido de ver un plan, con la versión del pedido que vio (si ya no espera respuesta, 409 VERSION_CONFLICT). «Sí, que lo vea» (SHARE) es compartir esa área con ese profesional en SUMMARY_AND_PLAN, como API-RES-02: lleva la versión de la autorización que vio y el texto de «resumen y plan» mostrado, que tiene que ser el vigente de ese nivel (409 VERSION_CONFLICT o CONSENT_VERSION_STALE), y pide el A3 (403); los demás permisos y sus textos aceptados siguen como estaban. Quien pidió tiene que acompañarla hoy y el área tiene que tener quién la lleve (si no, 422 SUMMARY_RECIPIENT_NOT_AVAILABLE). «No, por ahora» (NOT_NOW) no cambia la autorización ni pide el A3. Lo ajeno y lo inexistente, 404.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: ResponderPedidoDePlanRequestSchema,

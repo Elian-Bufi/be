@@ -23,6 +23,9 @@ import { textoDeNovedad, textoDelAvisoPush, vistaDeNovedad } from './copy-noveda
 import { terminosProhibidosDeFormulariosEn } from './copy-formularios';
 import {
   ampliaLoCompartido,
+  textosDeLaVersion,
+  textosQueFaltan,
+  textosQuePide,
   areasQueSeLePuedenCompartir,
   loQueRecibe,
   permisosAlAceptarUnPedido,
@@ -67,7 +70,7 @@ test('TEST-TAG-037 · la matriz del plan completo: «todos con todos, con permis
 
 test('TEST-TAG-037 · los schemas: Antropometría solo con «resumen», un par una sola vez, el plan de otra área, y «Sí» con lo que vio', () => {
   const permiso = (area: string, level: string) => ({ professionalId: ENT, area, level });
-  const pedido = (grants: unknown[]) => ({ expectedVersion: null, textVersionId: 'x', grants });
+  const pedido = (grants: unknown[]) => ({ expectedVersion: null, acceptedTexts: { summary: 'x', summaryAndPlan: null }, grants });
   assert.ok(CompartirResumenesRequestSchema.safeParse(pedido([permiso('NUTRICION', 'SUMMARY_AND_PLAN'), permiso('ANTROPOMETRIA', 'SUMMARY')])).success);
   assert.ok(!CompartirResumenesRequestSchema.safeParse(pedido([permiso('ANTROPOMETRIA', 'SUMMARY_AND_PLAN')])).success);
   assert.ok(!CompartirResumenesRequestSchema.safeParse(pedido([permiso('NUTRICION', 'SUMMARY'), permiso('NUTRICION', 'SUMMARY_AND_PLAN')])).success);
@@ -75,6 +78,10 @@ test('TEST-TAG-037 · los schemas: Antropometría solo con «resumen», un par u
   assert.ok(!CompartirResumenesRequestSchema.safeParse(pedido([])).success);
   assert.ok(!CompartirResumenesRequestSchema.safeParse(pedido([permiso('NUTRICION', true as unknown as string)])).success);
   assert.ok(!CompartirResumenesRequestSchema.safeParse({ ...pedido([permiso('NUTRICION', 'SUMMARY')]), extra: 1 }).success);
+  // Un texto por nivel: los dos van, aunque sea en null; el texto único de antes ya no.
+  assert.ok(CompartirResumenesRequestSchema.safeParse({ ...pedido([permiso('NUTRICION', 'SUMMARY')]), acceptedTexts: { summary: null, summaryAndPlan: null } }).success);
+  assert.ok(!CompartirResumenesRequestSchema.safeParse({ ...pedido([permiso('NUTRICION', 'SUMMARY')]), acceptedTexts: { summary: 'x' } }).success);
+  assert.ok(!CompartirResumenesRequestSchema.safeParse({ expectedVersion: null, textVersionId: 'x', grants: [permiso('NUTRICION', 'SUMMARY')] }).success);
   assert.ok(PedirVerElPlanRequestSchema.safeParse({ scope: 'ENTRENAMIENTO', area: 'NUTRICION' }).success);
   assert.ok(!PedirVerElPlanRequestSchema.safeParse({ scope: 'NUTRICION', area: 'NUTRICION' }).success);
   assert.ok(!PedirVerElPlanRequestSchema.safeParse({ scope: 'NUTRICION', area: 'ANTROPOMETRIA' }).success);
@@ -136,6 +143,25 @@ test('TEST-TAG-037 · ampliar (sumar a alguien o subir de nivel) es una aceptaci
   assert.equal(ampliaLoCompartido([resumen], [resumen]), false);
 });
 
+test('TEST-TAG-037 · un texto por nivel (Dirección, 2026-11-07): un permiso nuevo pide el de su nivel, subir pide el de «resumen y plan», bajar no pide ninguno, y la versión conserva lo aceptado', () => {
+  const resumen: RenglonDeResumen = { profesionalId: ENT, alcanceDeVinculoId: AV_ENT, origenId: AV_NUT, area: 'NUTRICION', nivel: 'SUMMARY', desde: AYER };
+  const plan: RenglonDeResumen = { ...resumen, nivel: 'SUMMARY_AND_PLAN', desde: HOY };
+  const delAntropometrista: RenglonDeResumen = { profesionalId: ANT, alcanceDeVinculoId: AV_ANT, origenId: AV_NUT, area: 'NUTRICION', nivel: 'SUMMARY', desde: HOY };
+  assert.deepEqual(textosQuePide([], [resumen]), { summary: true, summaryAndPlan: false });
+  assert.deepEqual(textosQuePide([], [plan]), { summary: false, summaryAndPlan: true });
+  assert.deepEqual(textosQuePide([resumen], [plan]), { summary: false, summaryAndPlan: true });
+  assert.deepEqual(textosQuePide([plan], [plan, delAntropometrista]), { summary: true, summaryAndPlan: false });
+  assert.deepEqual(textosQuePide([plan], [resumen]), { summary: false, summaryAndPlan: false });
+  assert.deepEqual(textosQuePide([plan, delAntropometrista], [plan]), { summary: false, summaryAndPlan: false });
+  const nada = { summary: null, summaryAndPlan: null };
+  assert.deepEqual(textosQueFaltan({ summary: false, summaryAndPlan: true }, { summary: 'r', summaryAndPlan: null }), [{ code: 'SHARING_TEXT_REQUIRED', path: 'acceptedTexts.summaryAndPlan' }]);
+  assert.deepEqual(textosQueFaltan({ summary: true, summaryAndPlan: false }, nada), [{ code: 'SHARING_TEXT_REQUIRED', path: 'acceptedTexts.summary' }]);
+  assert.deepEqual(textosQueFaltan({ summary: false, summaryAndPlan: false }, nada), []);
+  assert.deepEqual(textosDeLaVersion({ summary: 'r1', summaryAndPlan: 'p1' }, nada), { summary: 'r1', summaryAndPlan: 'p1' });
+  assert.deepEqual(textosDeLaVersion({ summary: 'r1', summaryAndPlan: null }, { summary: null, summaryAndPlan: 'p2' }), { summary: 'r1', summaryAndPlan: 'p2' });
+  assert.deepEqual(textosDeLaVersion(null, { summary: 'r2', summaryAndPlan: null }), { summary: 'r2', summaryAndPlan: null });
+});
+
 test('TEST-TAG-037 · qué recibe cada uno: con un componente que el PDP permite hoy, y el «resumen» nunca abre el plan', () => {
   const resumen: RenglonDeResumen = { profesionalId: ENT, alcanceDeVinculoId: AV_ENT, origenId: AV_NUT, area: 'NUTRICION', nivel: 'SUMMARY', desde: AYER };
   assert.deepEqual(loQueRecibe(ENT, [AV_ENT], [resumen]), [{ area: 'NUTRICION', level: 'SUMMARY', since: AYER }]);
@@ -189,29 +215,48 @@ test('TEST-TAG-037 · lo avanzado: semanas de lunes a domingo desde la de la act
   );
 });
 
-test('TEST-TAG-037 · el texto del acto es una propuesta, pendiente de validación jurídica, con su hash, y dice lo que hace la implementación', () => {
-  const v = VERSION_VIGENTE.RESUMENES_COMPARTIDOS;
-  assert.equal(v.id, 'resumenes-compartidos-2026-11-propuesta');
-  assert.ok(VERSIONES_PROPUESTAS.has(v.id));
-  assert.equal(createHash('sha256').update(v.texto, 'utf8').digest('hex'), v.hash);
+test('TEST-TAG-037 · un texto por nivel, cada uno una propuesta pendiente de validación jurídica, con su hash, y dicen lo que hace la implementación', () => {
+  const resumen = VERSION_VIGENTE.RESUMENES_COMPARTIDOS;
+  const plan = VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS;
+  assert.equal(resumen.id, 'resumenes-compartidos-2026-11-propuesta-2');
+  // El de «resumen» sucede al texto único de antes, que queda como historia y no hereda nada (09 §31.2.6).
+  assert.equal(resumen.reemplazaA, 'resumenes-compartidos-2026-11-propuesta');
+  assert.equal(plan.id, 'resumenes-y-plan-compartidos-2026-11-propuesta');
+  for (const v of [resumen, plan]) {
+    assert.ok(VERSIONES_PROPUESTAS.has(v.id), v.id);
+    assert.equal(createHash('sha256').update(v.texto, 'utf8').digest('hex'), v.hash, v.id);
+    for (const frase of [
+      'Texto propuesto, pendiente de validación jurídica.',
+      'La das por profesional y por área.',
+      'Si un vínculo se pausa o termina, ese profesional deja de verlo.',
+      'si empezás con otro profesional en esa área, no se le comparte a nadie hasta que vuelvas a elegir',
+      'Quien lleva esa área sabe con quién lo compartís.',
+      'corta desde ese momento',
+      'Cerrar tu cuenta también la retira.',
+      'Aceptar esta versión no acepta versiones futuras.',
+    ]) {
+      assert.ok(v.texto.includes(frase), `${v.id} no dice: ${frase}`);
+    }
+    assert.deepEqual(terminosProhibidosDeFormulariosEn(v.texto), []);
+    for (const j of ['cumplimiento', 'adherencia', '%', 'puntaje']) assert.ok(!v.texto.includes(j), j);
+  }
+  // El de «resumen» dice solo lo que se ve en ese nivel: el plan, no.
+  for (const frase of ['Qué no ve: tu plan completo.', 'Nunca incluye las molestias de «Antes de entrenar», lo de salud de tus formularios']) assert.ok(resumen.texto.includes(frase), frase);
+  for (const ajeno of ['solo lectura', 'fundamento', 'Pedirlo no le da acceso']) assert.ok(!resumen.texto.includes(ajeno), ajeno);
+  // El de «resumen y plan»: el plan vigente completo, de solo lectura, con su objetivo, su fundamento y lo registrado.
   for (const frase of [
-    'Texto propuesto, pendiente de validación jurídica.',
-    'La das por profesional y por área, en uno de dos niveles',
-    'completo y de solo lectura, como lo ves vos en tu app',
-    'No incluye los borradores, las versiones anteriores, lo que se habló en una revisión, las notas internas ni las evaluaciones.',
-    'Antropometría no tiene plan: de esa área, solo el resumen.',
-    'Si un vínculo se pausa o termina, ese profesional deja de verlo.',
-    'si empezás con otro profesional en esa área, no se le comparte a nadie hasta que vuelvas a elegir',
+    'tu plan vigente de esa área, completo y de solo lectura, como lo ves vos en tu app',
+    'su objetivo, con el fundamento que escribió tu profesional',
+    'cuánto registraste cada semana desde que rige, hasta las últimas 12 semanas',
+    'También ve el resumen de esa área.',
+    'Qué no ve: los borradores, las versiones anteriores, lo que se habló en una revisión, las notas internas de tus profesionales ni sus evaluaciones.',
+    'Antropometría no tiene plan.',
     'Quien ve tu plan no lo puede cambiar.',
     'Pedirlo no le da acceso: lo decidís vos, y podés decir que no.',
     'Cada vez que un profesional abre tu plan de otra área, queda registrado, y lo ves vos.',
-    'Cerrar tu cuenta también la retira.',
-    'Aceptar esta versión no acepta versiones futuras.',
   ]) {
-    assert.ok(v.texto.includes(frase), `el texto no dice: ${frase}`);
+    assert.ok(plan.texto.includes(frase), frase);
   }
-  assert.deepEqual(terminosProhibidosDeFormulariosEn(v.texto), []);
-  for (const j of ['cumplimiento', 'adherencia', '%', 'puntaje']) assert.ok(!v.texto.includes(j), j);
 });
 
 test('TEST-TAG-040 · la novedad del pedido: importante, dice quién, desde qué área y qué plan, que es su decisión, y nada del plan; el aviso, genérico', () => {
@@ -238,7 +283,7 @@ test('el cliente: las nueve operaciones de la familia RES (de la 01 a la 10, sin
     },
   });
   await cliente.misResumenesCompartidos('t');
-  await cliente.compartirResumenes('t', { expectedVersion: null, textVersionId: 'x', grants: [{ professionalId: ENT, area: 'NUTRICION', level: 'SUMMARY' }] }, 'c-1');
+  await cliente.compartirResumenes('t', { expectedVersion: null, acceptedTexts: { summary: 'x', summaryAndPlan: null }, grants: [{ professionalId: ENT, area: 'NUTRICION', level: 'SUMMARY' }] }, 'c-1');
   await cliente.dejarDeCompartirResumenes('t', { expectedVersion: 'v1' }, 'c-2');
   await cliente.resumenesCompartidos('t', NUT);
   await cliente.planCompartido('t', NUT, 'ENTRENAMIENTO');
