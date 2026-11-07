@@ -35,8 +35,12 @@
  * acción principal según el momento de la persona (`accionDeLaFicha`: preparar la revisión de la semana, seguir el borrador
  * o empezar el plan; con todo al día, ninguna), y lo de vez en cuando, «Pedir información» y «Nota de coordinación», en el
  * menú «Más». «Actualizar» y la hora de la consulta siguen a la vista (B10-01).
+ *
+ * WP-TABLERO-ALTA-GAMA TB-05 (DL-163 D-2): el monograma de la persona va al lado de su nombre. Con «Ocultar nombres», el
+ * título es la referencia neutral y el monograma lleva el ícono; el nombre que reciben las vistas (la exportación de
+ * «Analizar», el diálogo de la nota) es el mismo que se ve.
  */
-import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type Vinculo } from '@be/domain';
+import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -45,15 +49,18 @@ import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { MenuDeAcciones } from '../../../components/menu-de-acciones';
+import { Retrato } from '../../../components/retrato';
 import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
+import { anotarNombrePropio, nombrePropioEn } from '../../../lib/nombre-propio';
+import { useNombres } from '../../../lib/nombres-ocultos';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
-import { accionDeLaFicha, rutaDeLaAccion } from './accion-de-la-ficha';
+import { accionDeLaFicha, rutaDeLaAccion, type AccionDeLaFicha } from './accion-de-la-ficha';
 import { DialogoDeNota } from './nota-de-coordinacion';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
-import { conRetorno, hoyEn, leerPeriodo, leerVista, periodoEnInstantes, valorDeRetorno } from './seguimiento/estado';
+import { conRetorno, hoyEn, inicioDelAcompanamiento, leerPeriodo, leerVista, periodoDesdeElVinculo, periodoEnInstantes, sinPeriodoEnLaUrl, valorDeRetorno, type Acompanamiento, type Periodo } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
 import { Pista } from '../../../components/pista';
@@ -61,6 +68,12 @@ import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
 import { EsperandoSesion } from '../../../lib/sesion';
 
 const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.Analizar), { ssr: false, loading: () => <Cargando /> });
+
+/** El ícono de cada eslabón de la acción del momento (TB-09). */
+const ICONO_DE_LA_ACCION: Readonly<Record<AccionDeLaFicha['tipo'], NombreDeIcono>> = { aplicar: 'aplicar', revisar: 'revision', borrador: 'borrador', empezar: 'plan' };
+
+/** TB-16: mientras no se leyeron los vínculos, no se sabe desde cuándo: el período es el por omisión. */
+const SIN_ACOMPANAMIENTO: Acompanamiento = { inicio: null, porArea: {} };
 
 type Encabezado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; vinculos: readonly Vinculo[] };
 
@@ -78,16 +91,39 @@ export function Workspace() {
   const id = parametros.get('id') ?? '';
   const vista = leerVista(parametros.get('vista'));
   const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const periodo = useMemo(() => leerPeriodo(new URLSearchParams(parametros.toString())), [claveDelPeriodo]);
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees?id=${id}`);
   const [panel, setPanel] = useState<PanelDelResumen>({ tipo: 'cargando' });
   const [encabezado, setEncabezado] = useState<Encabezado>({ tipo: 'cargando' });
+  /**
+   * TB-16 (DL-163 D-7): desde cuándo acompaña este profesional a la persona, de los vínculos que ya lee el marco. Con
+   * menos de 90 días y sin un período elegido en la URL, el período por omisión arranca ahí, y lo dice.
+   */
+  // En su propio estado, por persona: cada lectura vuelve a poner el encabezado en «cargando», y el período no oscila.
+  const [acompanamientoLeido, setAcompanamientoLeido] = useState<{ readonly id: string; readonly valor: Acompanamiento } | null>(null);
+  const acompanamiento: Acompanamiento = acompanamientoLeido?.id === id ? acompanamientoLeido.valor : SIN_ACOMPANAMIENTO;
+  const periodoEfectivo = (inicio: string | null): Periodo => {
+    const url = new URLSearchParams(parametros.toString());
+    return periodoDesdeElVinculo(leerPeriodo(url), sinPeriodoEnLaUrl(url), inicio);
+  };
+  const enPalabras = (p: Periodo) => `${p.preset ?? ''}|${p.desde}|${p.hasta}`;
+  const claveDelEfectivo = enPalabras(periodoEfectivo(acompanamiento.inicio));
+  // El período, por su valor: si los vínculos no lo cambian (la cohorte, cualquiera con 90 días o más), nada se relee.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const periodo = useMemo(() => periodoEfectivo(acompanamiento.inicio), [claveDelPeriodo, claveDelEfectivo]);
   const [consultadoEn, setConsultadoEn] = useState<Date | null>(null);
   // Sube cuando cambia lo que se puede leer, y cuando se pide «Actualizar»: las lecturas de la ficha se repiten.
   const [versionDeAcceso, setVersionDeAcceso] = useState(0);
   const generacion = useRef(0);
   const ultimaConsulta = useRef(0);
+  /**
+   * TEST-TAG-032: mientras el marco lee el acceso, un aviso de «no disponible» espera esa respuesta y se mira contra lo
+   * que trae. Antes se miraba contra el encabezado en «cargando», que da todas las áreas por activas: la cobertura del
+   * Resumen, que pregunta por las tres áreas, a veces llegaba antes que el marco, el área que el profesional no ve volvía
+   * a preguntar el acceso, la primera lectura se descartaba y la ficha entera se leía dos veces (seis peticiones más).
+   */
+  const leyendo = useRef(false);
+  const avisosEnEspera = useRef(new Set<DominioDeAnalisis | null>());
+  const revalidar = useRef<() => void>(() => {});
   const yoId = yo.tipo === 'listo' ? yo.id : null;
   // DL-140: el diálogo de la nota de coordinación es uno solo para toda la ficha; `null`, cerrado.
   const [nota, setNota] = useState<PedidoDeNota | null>(null);
@@ -95,11 +131,17 @@ export function Workspace() {
   const cerrarNota = useCallback(() => setNota(null), []);
   // Una nota enviada aparece en la línea de tiempo y en el Resumen: se repiten las lecturas de la vista abierta.
   const notaEnviada = useCallback(() => setVersionDeAcceso((v) => v + 1), []);
+  const { delAsesorado } = useNombres();
+  // TB-05: los vínculos de la ficha son de la cuenta como profesional: traen el nombre con que la ven, para el menú.
+  useEffect(() => {
+    if (encabezado.tipo === 'listo' && yoId) anotarNombrePropio(nombrePropioEn(encabezado.vinculos, yoId));
+  }, [encabezado, yoId]);
 
   const leer = useCallback(
     async (silencioso: boolean) => {
       if (!token || !yoId) return;
       const esta = ++generacion.current;
+      leyendo.current = true;
       if (!silencioso) {
         setPanel({ tipo: 'cargando' });
         setEncabezado({ tipo: 'cargando' });
@@ -111,6 +153,12 @@ export function Workspace() {
       ]);
       if (esta !== generacion.current) return;
       if ((respuesta && sesionPerdida(respuesta)) || sesionPerdida(lista)) return;
+      const vinculos = lista.ok ? lista.datos.data.filter((v) => v.professional.identityId === yoId && v.advisee.identityId === id) : null;
+      // TB-16: si los vínculos acortan el período, este resumen se leyó con otro: no se muestra. Cambia el período y la
+      // ficha vuelve a leer con el correcto (solo con una persona de menos de 90 días; con las demás, nada cambia).
+      const delVinculo = vinculos ? inicioDelAcompanamiento(vinculos) : null;
+      if (delVinculo) setAcompanamientoLeido({ id, valor: delVinculo });
+      if (delVinculo && enPalabras(periodoEfectivo(delVinculo.inicio)) !== enPalabras(periodo)) return;
       ultimaConsulta.current = Date.now();
       setConsultadoEn(new Date());
       const nuevo: PanelDelResumen =
@@ -124,7 +172,16 @@ export function Workspace() {
         if (silencioso && huellaDeAcceso(anterior) !== huellaDeAcceso(nuevo)) setVersionDeAcceso((v) => v + 1);
         return nuevo;
       });
-      setEncabezado(lista.ok ? { tipo: 'listo', vinculos: lista.datos.data.filter((v) => v.professional.identityId === yoId && v.advisee.identityId === id) } : { tipo: 'error' });
+      const elEncabezado: Encabezado = vinculos ? { tipo: 'listo', vinculos } : { tipo: 'error' };
+      setEncabezado(elEncabezado);
+      // Los avisos que llegaron durante la lectura se miran contra lo que trajo: si el área sigue activa, se vuelve a preguntar.
+      leyendo.current = false;
+      const enEspera = [...avisosEnEspera.current];
+      avisosEnEspera.current.clear();
+      if (enEspera.length > 0) {
+        const activasAhora = dominiosActivos(elEncabezado, nuevo);
+        if (enEspera.some((d) => d === null || activasAhora.has(d))) revalidar.current();
+      }
     },
     [token, yoId, id, sesionPerdida, periodo],
   );
@@ -147,24 +204,33 @@ export function Workspace() {
   const activasRef = useRef(activas);
   activasRef.current = activas;
   const programada = useRef<number | null>(null);
+  const programar = useCallback(() => {
+    if (programada.current !== null) return;
+    const espera = Math.max(0, ESPERA_ENTRE_REVALIDACIONES_MS - (Date.now() - ultimaConsulta.current));
+    programada.current = window.setTimeout(() => {
+      programada.current = null;
+      // Si mientras tanto empezó otra lectura, ella trae el acceso de ahora: no se la descarta.
+      if (!leyendo.current) void leer(true);
+    }, espera);
+  }, [leer]);
+  revalidar.current = programar;
   const avisarSinAcceso = useCallback(
     (dominio: DominioDeAnalisis | null) => {
+      if (leyendo.current) {
+        avisosEnEspera.current.add(dominio);
+        return;
+      }
       if (dominio !== null && !activasRef.current.has(dominio)) return;
-      if (programada.current !== null) return;
-      const espera = Math.max(0, ESPERA_ENTRE_REVALIDACIONES_MS - (Date.now() - ultimaConsulta.current));
-      programada.current = window.setTimeout(() => {
-        programada.current = null;
-        void leer(true);
-      }, espera);
+      programar();
     },
-    [leer],
+    [programar],
   );
   useEffect(() => () => {
     if (programada.current !== null) window.clearTimeout(programada.current);
   }, []);
   useEffect(() => {
     const alVolver = () => {
-      if (document.visibilityState === 'visible' && Date.now() - ultimaConsulta.current > VOLVER_A_PREGUNTAR_AL_VOLVER_MS) void leer(true);
+      if (document.visibilityState === 'visible' && !leyendo.current && Date.now() - ultimaConsulta.current > VOLVER_A_PREGUNTAR_AL_VOLVER_MS) void leer(true);
     };
     document.addEventListener('visibilitychange', alVolver);
     return () => document.removeEventListener('visibilitychange', alVolver);
@@ -175,7 +241,8 @@ export function Workspace() {
   if (yo.tipo === 'error') return <div className="ficha__cuerpo"><ErrorConReintento onReintentar={cargarYo} /></div>;
   if (yo.tipo === 'sin-espacio') return <div className="ficha__cuerpo"><SinEspacioProfesional /></div>;
 
-  const nombre = panel.tipo === 'listo' ? panel.datos.advisee.displayName : encabezado.tipo === 'listo' && encabezado.vinculos[0] ? encabezado.vinculos[0].advisee.displayName : null;
+  const asesorado = panel.tipo === 'listo' ? panel.datos.advisee : encabezado.tipo === 'listo' && encabezado.vinculos[0] ? encabezado.vinculos[0].advisee : null;
+  const nombre = asesorado ? delAsesorado(asesorado) : null;
   const disponible = panel.tipo !== 'no-disponible';
   const accion = panel.tipo === 'listo' ? accionDeLaFicha(panel.datos.domains, hoyEn()) : null;
   const retorno = valorDeRetorno(new URLSearchParams(parametros.toString()));
@@ -190,6 +257,7 @@ export function Workspace() {
       <div className="marco-de-la-ficha__ancho">
         <div className="marco-de-la-ficha__persona">
           <div className="marco-de-la-ficha__nombre">
+            <Retrato nombre={nombre} tamano="grande" />
             <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
             {/* Con un nombre visible (DL-040, 2026-10-15), la referencia va al lado, chica, como en la maqueta 01: distingue a
                 dos personas que se llaman igual. Sin nombre, el título ya es la referencia. */}
@@ -198,7 +266,7 @@ export function Workspace() {
           {/* La acción principal, según el momento de la persona (bloque 5). Con todo al día no hay ninguna. */}
           {disponible && accion ? (
               <Link className="boton boton--secundario boton--compacto" href={conRetorno(rutaDeLaAccion(accion, id), retorno)} data-accion-de-la-ficha={accion.tipo}>
-                <Icono nombre={accion.tipo === 'revisar' ? 'revision' : accion.tipo === 'borrador' ? 'borrador' : 'plan'} tamano={18} />
+                <Icono nombre={ICONO_DE_LA_ACCION[accion.tipo]} tamano={18} />
                 {accion.texto}
               </Link>
           ) : null}
@@ -289,6 +357,7 @@ export function Workspace() {
         versionDeAcceso={versionDeAcceso}
         yoId={yo.id}
         abrirNota={abrirNota}
+        acompanamiento={acompanamiento}
       >
         {marco(
           <div className="marco-de-la-ficha__vistas">

@@ -75,6 +75,7 @@ import { ICONO_DEL_RASGO } from '../seguimiento/hecho-en-un-renglon';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { LineasDePrescripcion, numerosDeVersion } from './plan';
 import { DescansosYDuracion, TiemposDeLaSesion, useTiemposDeLaSesion } from './series-y-tiempos';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 
@@ -527,6 +528,7 @@ function DetalleDeLaSesion({
   /** «versión 3», o «activado el 3 ago» si el número no se pudo saber. */
   version: string;
 }) {
+  const { deQuien } = useNombres();
   const tiempos = useTiemposDeLaSesion(x.executionId);
   const vigente = x.effectiveView.kind === 'CORRECTED' ? (x.corrections.find((c) => c.correctionId === (x.effectiveView as { correctionId: string }).correctionId) ?? null) : null;
   const [grafico, setGrafico] = useState(false);
@@ -625,7 +627,7 @@ function DetalleDeLaSesion({
               <ol className="historial">
                 {x.corrections.map((c) => (
                   <li key={c.correctionId}>
-                    {fecha(c.recordedAt)} · {c.author.displayName} · {c.reason}
+                    {fecha(c.recordedAt)} · {deQuien(c.author, x.adviseeId)} · {c.reason}
                   </li>
                 ))}
               </ol>

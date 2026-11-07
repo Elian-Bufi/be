@@ -826,6 +826,34 @@ describe('UC-P18 · revisión y aplicación (RF-046; API-TRN-22 a 24)', () => {
     expect(otra.body.error.code).toBe('REVIEW_ALREADY_APPLIED');
   });
 
+  // WP-TABLERO-ALTA-GAMA TB-15: el cajón «De a una» del website aplica con esta misma operación y la clave del intento.
+  // La parte de Nutrición está en `aplicar-desde-el-cajon.int-spec.ts`.
+  it('TEST-TAG-013 · aplicar desde el cajón es aplicar: lo que se lee antes del botón, la versión vieja y la misma clave', async () => {
+    const c = await conSesionRegistrada('cajon');
+    const pro = conSesion(app, c.pro.token);
+    const rev = await revisar(c, cuerpoDeRevisionDeEntrenamiento(c.fecha, [{ type: 'EXECUTION', id: c.executionId }], 'MAINTAIN', { nextReviewAt: '2030-01-08' })).expect(201);
+    const reviewId = rev.body.data.reviewId as string;
+    // Lo que lee el cajón al abrir el cuadro (API-DSH-03) y antes del botón (API-TRN-23).
+    const antes = (await pro.get(`/api/v1/advisees/${c.ase.id}/dashboard`).expect(200)).body.data.domains.training;
+    expect(antes.summary.lastReview).toMatchObject({ reviewId, application: null });
+    const leida = (await pro.get(`/api/v1/training/reviews/${reviewId}`).expect(200)).body.data;
+    expect(leida).toMatchObject({ result: 'MAINTAIN', rationale: 'Fundamento sintético del profesional.', nextAction: { description: 'Seguir con el bloque actual.', nextReviewAt: '2030-01-08' }, application: null });
+    // Una versión vieja: el conflicto de siempre, sin aplicar.
+    const vieja = await pro.post(`/api/v1/training/reviews/${reviewId}/apply`).send({ expectedVersion: 'v2' }).expect(409);
+    expect(vieja.body.error.code).toBe('VERSION_CONFLICT');
+    expect(await prisma.aplicacionDeRevisionDeEntrenamiento.count({ where: { revisionId: reviewId } })).toBe(0);
+    // El intento y su reintento con la misma clave: la misma respuesta y una sola aplicación.
+    const clave = claveDeIdempotencia();
+    const primera = await aplicar(c.pro.token, reviewId, clave).expect(200);
+    const reintento = await aplicar(c.pro.token, reviewId, clave).expect(200);
+    expect(reintento.body).toEqual(primera.body);
+    expect(await prisma.aplicacionDeRevisionDeEntrenamiento.count({ where: { revisionId: reviewId } })).toBe(1);
+    // Otra clave: ya aplicada.
+    expect((await aplicar(c.pro.token, reviewId).expect(409)).body.error.code).toBe('REVIEW_ALREADY_APPLIED');
+    const despues = (await pro.get(`/api/v1/advisees/${c.ase.id}/dashboard`).expect(200)).body.data.domains.training;
+    expect(despues.summary.lastReview.application).toMatchObject({ appliedAt: expect.any(String) });
+  });
+
   it('REG-06-117 · progresar conservando la estructura es ADJUST: aplicar crea el borrador sucesor desde la instantánea, sin tocar la activa', async () => {
     const c = await conSesionRegistrada('adj');
     const activaAntes = await conSesion(app, c.pro.token).get(`/api/v1/training/plans/${c.planId}`).expect(200);

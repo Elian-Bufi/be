@@ -52,8 +52,16 @@ import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAx
 import { Aviso } from '../../../../components/formulario';
 import { diaCivil, fechaEnZona } from '../../../../lib/formato';
 import { indiceConTeclado, useConPuntero } from '../../../../lib/graficos';
+import { LETRA_MINIMA, medidaDeMarca } from '../seguimiento/geometria';
+import { Aro, Punto } from '../seguimiento/marca';
 
 const ALTO = 300;
+/**
+ * El ancho útil de diseño del dibujo (640 menos el eje y los márgenes): de ahí sale el lugar por toma, que da el tamaño
+ * de la marca con la regla de los cuatro gráficos (TB-02). Con pocas tomas, el lleno llega a su techo, con halo.
+ */
+const ANCHO_UTIL = 556;
+const COLOR = 'var(--metrica-1)';
 
 
 export function EvolucionDeMetrica({
@@ -178,6 +186,7 @@ function Grafico({
 }) {
   const conPuntero = useConPuntero();
   const datos: Dato[] = visibles.map((o) => ({ x: o.instante, y: o.punto.value, sourceId: o.punto.sourceId }));
+  const porToma = ANCHO_UTIL / Math.max(1, visibles.length);
   // El eje vertical con margen arriba y abajo, sin forzar el cero: la regla es la misma que en la APK. Se calcula con el
   // mínimo y el máximo juntos, así los índices (≈ 0,85) se redondean en centésimas y sus rótulos llevan esos decimales.
   const valores = datos.map((d) => d.y);
@@ -218,7 +227,8 @@ function Grafico({
       >
         <ResponsiveContainer height={ALTO} initialDimension={{ width: 640, height: ALTO }}>
           <ScatterChart margin={{ top: 20, right: 24, bottom: 8, left: 4 }} accessibilityLayer={false}>
-            <CartesianGrid stroke="var(--borde)" />
+            {/* La grilla, solo horizontal, y sin línea de eje (TB-03; DL-163 D-3). */}
+            <CartesianGrid stroke="var(--borde)" vertical={false} />
             <XAxis
               dataKey="x"
               type="number"
@@ -234,11 +244,11 @@ function Grafico({
                   </text>
                 </g>
               )}
-              axisLine={{ stroke: 'var(--borde-control)' }}
+              axisLine={false}
               tickLine={false}
               height={36}
             />
-            <YAxis dataKey="y" type="number" domain={[dominio.desde, dominio.hasta]} ticks={marcasVerticales} interval={0} width={56} tickFormatter={(v: number) => numero(v, decimales)} tick={{ fill: 'var(--tenue)', fontSize: 12 }} axisLine={{ stroke: 'var(--borde-control)' }} />
+            <YAxis dataKey="y" type="number" domain={[dominio.desde, dominio.hasta]} ticks={marcasVerticales} interval={0} width={56} tickFormatter={(v: number) => numero(v, decimales)} tick={{ fill: 'var(--tenue)', fontSize: LETRA_MINIMA }} axisLine={false} tickLine={false} />
             {conPuntero ? <Tooltip cursor={false} content={({ active, payload }) => (active && payload?.[0] ? <Recuadro observacion={visibles.find((o) => o.punto.sourceId === (payload[0]!.payload as Dato).sourceId)} zonaHoraria={zonaHoraria} /> : null)} /> : null}
             <Scatter
               data={datos}
@@ -249,15 +259,23 @@ function Grafico({
                 if (props.cx === undefined || props.cy === undefined || !o) return <g />;
                 const esElegido = i === elegido;
                 const noComparable = o.punto.incomparableWithPrevious.length > 0;
+                const corregido = o.punto.correctionState === 'CORRECTED';
+                // TB-02: la marca llena con la regla de los cuatro gráficos; lo no comparable, un cuadrado girado lleno, 2 px
+                // más grande para que a 7 px se distinga del punto (no es el rombo hueco de lo indicado); lo corregido, una
+                // raya fina encima; lo elegido, el aro.
+                const medida = medidaDeMarca('lleno', porToma);
+                const lado = medida.R * 2 + 2;
                 return (
                   <g className="grafico__elegible" onClick={() => onElegir(i)} aria-hidden="true">
-                    {esElegido ? <circle cx={props.cx} cy={props.cy} r={11} fill="none" stroke="var(--foco)" strokeWidth={3} /> : null}
                     {noComparable ? (
-                      <rect x={props.cx - 6} y={props.cy - 6} width={12} height={12} transform={`rotate(45 ${props.cx} ${props.cy})`} fill="var(--metrica-1)" stroke="var(--superficie)" strokeWidth={1.5} />
+                      <g data-estado="no-comparable">
+                        <rect x={props.cx - lado / 2 - 1} y={props.cy - lado / 2 - 1} width={lado + 2} height={lado + 2} transform={`rotate(45 ${props.cx} ${props.cy})`} fill="var(--superficie)" />
+                        <rect x={props.cx - lado / 2} y={props.cy - lado / 2} width={lado} height={lado} transform={`rotate(45 ${props.cx} ${props.cy})`} fill={COLOR} />
+                      </g>
                     ) : (
-                      <circle cx={props.cx} cy={props.cy} r={6} fill="var(--metrica-1)" stroke="var(--superficie)" strokeWidth={1.5} />
+                      <Punto cx={props.cx} cy={props.cy} color={COLOR} medida={medida} corregido={corregido} />
                     )}
-                    {o.punto.correctionState === 'CORRECTED' ? <circle cx={props.cx} cy={props.cy} r={2} fill="var(--superficie)" /> : null}
+                    {esElegido ? <Aro cx={props.cx} cy={props.cy} porDia={porToma} color={COLOR} /> : null}
                   </g>
                 );
               }}
@@ -273,7 +291,7 @@ function Grafico({
           <span className="muestra muestra--rombo" aria-hidden="true" /> {COPY_ANTROPOMETRIA.noComparable} (el motivo, en la tabla)
         </li>
         <li>
-          <span className="muestra muestra--punto muestra--corregida" aria-hidden="true" /> Valor corregido (el centro claro)
+          <span className="muestra muestra--punto muestra--corregida" aria-hidden="true" /> Valor corregido (la raya de arriba)
         </li>
       </ul>
     </figure>

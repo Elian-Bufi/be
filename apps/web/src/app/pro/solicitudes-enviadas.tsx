@@ -13,6 +13,7 @@ import { Aviso } from '../../components/formulario';
 import { ICONO_DE_FALLA, razonDeFalla } from '../../lib/fallas';
 import { fecha, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
+import { useNombres } from '../../lib/nombres-ocultos';
 
 export type EstadoDeLasSolicitudes = EstadoDeListaCompleta<PaginaDeUnaLista<SolicitudDeVinculo>>;
 
@@ -39,6 +40,8 @@ export function SolicitudesEnviadas({
   onVerMas: () => void;
 }) {
   const id = useId();
+  // TB-05: una solicitud no lleva monograma (D-2), pero con «Ocultar nombres» tampoco nombre.
+  const { delAsesorado } = useNombres();
   const dialogo = useRef<HTMLDialogElement>(null);
   const titulo = useRef<HTMLHeadingElement>(null);
 
@@ -98,7 +101,7 @@ export function SolicitudesEnviadas({
             <tbody>
               {propias.map((s) => (
                 <tr key={s.relationshipRequestId} data-estado={s.state}>
-                  <td data-etiqueta="Asesorado">{s.advisee.displayName}</td>
+                  <td data-etiqueta="Asesorado">{delAsesorado(s.advisee)}</td>
                   <td data-etiqueta="Alcance">
                     {s.scope.label} · {ETIQUETA_DE_FINALIDAD[s.purpose]}
                   </td>

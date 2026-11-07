@@ -10,8 +10,13 @@
 //                    planes        objetivos y revisiones por SQL; cada versión del plan, como borrador por la API y
 //                                  activada en el pasado por SQL (la misma instantánea y los mismos hechos que la API);
 //                    registros     comidas, sesiones y tomas por SQL, en lotes (la base de test está lejos);
-//                    calculos      por la API: IMC, sumas de pliegues, % de grasa e índice cintura-talla de cada toma;
+//                    calculos      por la API: IMC, sumas de pliegues, % de grasa e índice cintura-talla de cada toma
+//                                  y, para quien tiene `masas` (TB-24), la masa grasa y la libre de grasa de Durnin y Womersley;
+//                                  para quien tiene `musculoDeLee` (TB-51), la masa muscular esquelética de Lee;
 //                    hoy           lo de esta semana: revisiones pendientes, aplicadas hoy o con el objetivo cambiado.
+//                  y, con las seis cargadas, lo que comparten entre áreas (TB-52 a TB-56): Diego Sosa le comparte su plan
+//                  de Entrenamiento a Lic. Sofía Paz y el de Nutrición a Prof. Martín Acosta, y Lic. Sofía Paz le pide a
+//                  Federico Álvarez ver el suyo de Entrenamiento. Sin la familia RES en la API (404), lo dice y sigue.
 //   nombres-demo   (solo test) los nombres de las cuentas de demostración DEMO-A01 y DEMO-A02, por la API.
 //   resumen        cuenta lo cargado de cada persona.
 // Las inserciones respetan los disparadores (no se desactivan) y escriben los hechos en la misma transacción, como la
@@ -518,7 +523,9 @@ async function cargarPersona(p, hoy) {
     if (!estado.tomas?.length) return {};
     const token = await sesionDe(proDe(p, 'ANTROPOMETRIA'));
     const metodos = await metodosDe(token);
-    const claves = p.sinPliegues ? METODOS.sinPliegues[p.sexo] : METODOS[p.sexo];
+    // TB-24: las masas de Durnin y Womersley se suman a quien las tiene; una toma sin sus entradas no las calcula.
+    // TB-51: la masa muscular de Lee con perímetros, a quien la tiene.
+    const claves = [...(p.sinPliegues ? METODOS.sinPliegues[p.sexo] : METODOS[p.sexo]), ...(p.masas ? METODOS.masas[p.sexo] : []), ...(p.musculoDeLee ? METODOS.musculoDeLee[p.sexo] : [])];
     let n = 0;
     for (const toma of estado.tomas) {
       for (const regla of claves) {
@@ -618,6 +625,56 @@ async function personas() {
     console.log(`${p.nombre}:`);
     await cargarPersona(p, hoy);
   }
+  if (!soloPersona) await compartirEntreAreas();
+}
+
+// ─── Lo que la persona comparte entre áreas (WP-TABLERO-ALTA-GAMA TB-52 a TB-56; DL-163 D-13, ampliada) ─────────
+
+/**
+ * Con su sesión, como desde la APK (API-RES-01 y 02), Diego Sosa le comparte a Lic. Sofía Paz (Nutrición y Antropometría)
+ * Entrenamiento y a Prof. Martín Acosta (Entrenamiento) Nutrición, los dos con «resumen y plan»; y Lic. Sofía Paz le pide
+ * a Federico Álvarez ver su plan de Entrenamiento (API-RES-08), que queda pendiente. Así las capturas muestran el panel
+ * «Otras áreas» con el plan del otro y con un pedido que espera respuesta.
+ * Si la API no tiene la familia RES (un 404: la rama del website sin la de la API, #243), lo dice y sigue sin compartir:
+ * la cohorte no se rompe hasta juntar las dos ramas. No queda anotado como hecho, así que una corrida con la API de RES
+ * lo hace.
+ */
+async function compartirEntreAreas() {
+  const e = leerEstado(d);
+  if (e.compartido) return;
+  const diego = e.personas?.diego?.aseId;
+  const federico = e.personas?.federico?.aseId;
+  if (!diego || !federico) return;
+  const t = await sesionDe('ASE_DIEGO', 'APK');
+  const actual = await api.pedir('GET', '/me/summary-sharing', { token: t, superficie: 'APK', esperado: [200, 404] });
+  if (!actual?.data) {
+    console.log('compartir entre áreas: la API no tiene API-RES (404); la cohorte sigue sin compartir nada entre áreas.');
+    return;
+  }
+  for (const k of ['N', 'T']) {
+    if (!actual.data.professionals.some((p) => p.professional.identityId === idDe(`PRO_${k}`))) throw new Error(`API-RES-01 no trae a ${PROFESIONALES[k].nombre} entre los profesionales de Diego Sosa`);
+  }
+  await api.pedir('PUT', '/me/summary-sharing', {
+    token: t,
+    superficie: 'APK',
+    cuerpo: {
+      expectedVersion: actual.data.sharing.version,
+      // Un texto por nivel (Dirección, 2026-11-07): con «resumen y plan», el de ese nivel; el de «resumen» también se acepta.
+      acceptedTexts: { summary: actual.data.texts.summary.id, summaryAndPlan: actual.data.texts.summaryAndPlan.id },
+      grants: [
+        { professionalId: idDe('PRO_N'), area: 'ENTRENAMIENTO', level: 'SUMMARY_AND_PLAN' },
+        { professionalId: idDe('PRO_T'), area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' },
+      ],
+    },
+  });
+  const n = await sesionDe('PRO_N');
+  const pedido = await api.pedir('POST', `/advisees/${federico}/shared-summaries/access-requests`, { token: n, cuerpo: { scope: 'NUTRICION', area: 'ENTRENAMIENTO' }, esperado: [200, 201, 404] });
+  if (!pedido?.data) {
+    console.log('compartir entre áreas: Diego Sosa comparte, pero la API no tiene API-RES-08 (404); Federico Álvarez queda sin pedido.');
+    return;
+  }
+  guardarEstado(d, { compartido: { diego: { N: 'ENTRENAMIENTO', T: 'NUTRICION' }, pedidoDeFederico: pedido.data.accessRequestId } });
+  console.log('compartir entre áreas: Diego Sosa comparte Entrenamiento con Lic. Sofía Paz y Nutrición con Prof. Martín Acosta («resumen y plan»); Lic. Sofía Paz pidió ver el plan de Entrenamiento de Federico Álvarez.');
 }
 
 async function nombresDemo() {

@@ -16,14 +16,22 @@
  * Los hechos son las observaciones de `sintesisDelResumen` (dominio), con sus mismas palabras: acá solo se reparten por
  * área y se escriben en renglones (`partesDeObservacion`). Cada renglón es un enlace a su evidencia. Un área sin acceso
  * no tiene tarjeta, ni a medias. Una parte que no se pudo leer se dice primero, en su tarjeta.
+ *
+ * WP-TABLERO-ALTA-GAMA TB-10 (DL-163 D-1): en un área con plan, después de lo que no se pudo leer va **el tramo del
+ * ciclo** (`tramo-del-ciclo.tsx`), que lleva la próxima revisión acordada; lo nuevo desde la revisión va **en cifras, en
+ * fila**; y después, **la pieza propia** del área (`pieza-del-area.tsx`): la barra partida de los registros en Nutrición
+ * y las sesiones por ejercicio en Entrenamiento. Un área sin nada registrado muestra **«Empezar el plan» en miniatura**.
+ * Desde TB-24 (TA-20), la de Antropometría es la composición de la última toma (`ComposicionDeLaUltimaToma`), con la línea
+ * de los pesos de las tomas cuando ninguna tiene un método que los parta. Desde TB-50, debajo, la evolución de las
+ * últimas tomas en pares de medidas (`EvolucionDeLasTomasEnLaTarjeta`), de la misma lectura; desde TB-51, la barra va
+ * en kilos con el porcentaje al lado.
  */
 import {
   COPY_PISTAS,
   COPY_PRIMER_PLAN,
   claveDeObservacion,
   COPY_VINCULO,
-  DIAS_DE_ANTICIPACION_DE_LA_REVISION,
-  diasEntreFechas,
+  fechaCivil,
   NOMBRE_DEL_AREA,
   numero,
   partesDeObservacion,
@@ -46,11 +54,21 @@ import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
-import { useSeguimiento } from './contexto';
+import { api } from '../../../../lib/api';
+import { diaDelAnioEnCurso, diaSinElAnioEnCurso } from '../../../../lib/formato';
+import { tramoDelCiclo } from '../../../../lib/reloj';
+import { useLectura, useSeguimiento } from './contexto';
 import { conRetorno, hoyEn, restarDias, valorDeRetorno } from './estado';
 import { ICONO_DEL_AREA } from './iconos-de-metrica';
+import { DIAS_POR_LECTURA, METRICAS_DE_LA_COMPOSICION } from './composicion';
+import { useLecturaDeLaComposicion } from './composicion-en-pantalla';
+import { METRICAS_DE_LA_EVOLUCION } from './evolucion-de-las-tomas';
+import { EvolucionDeLasTomasEnLaTarjeta } from './evolucion-de-las-tomas-en-pantalla';
+import { CifrasDesdeLaRevision, ComposicionDeLaUltimaToma, PrimerPlanEnMiniatura, RegistrosDelPeriodo, SesionesPorEjercicio } from './pieza-del-area';
+import { losRegistrosDelPeriodo, sesionesPorEjercicio } from './piezas-del-area';
 import type { Disponibles } from './series';
 import { TiraDelObjetivo, type MacrosDelObjetivo } from './tira-del-objetivo';
+import { TramoDelCiclo } from './tramo-del-ciclo';
 import { Pista } from '../../../../components/pista';
 
 type AreaConPlan = 'NUTRICION' | 'ENTRENAMIENTO';
@@ -114,18 +132,20 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
   const llena = areaDeLaProximaRevision(d);
   const hoy = hoyEn();
   /**
-   * La próxima revisión acordada, para decirla junto al corte: la fecha, o `null` si no hay ninguna acordada. `undefined`:
-   * no se dice ahí, porque no hay plan vigente o porque ya es un pendiente de la tarjeta (la misma regla del dominio: a
-   * una semana o menos, o ya pasada). Así la fecha está siempre en la tarjeta, una sola vez.
+   * La próxima revisión acordada está siempre en la tarjeta, una sola vez (TB-10): en el tramo del ciclo, que dice la
+   * fecha y cuánto falta o cuánto venció. Con el tramo dibujado, el pendiente «Próxima revisión» del dominio no se repite
+   * debajo. Sin tramo (sin fecha, o con la revisión de esa fecha ya registrada), los pendientes quedan como los arma el
+   * dominio.
    */
-  const proximaDe = (resumen: ResumenDeNutricion | ResumenDeEntrenamiento): string | null | undefined => {
-    if (!resumen.activePlan) return undefined;
-    const fecha = resumen.activePlan.nextReviewAt;
-    return fecha !== null && diasEntreFechas(hoy, fecha) <= DIAS_DE_ANTICIPACION_DE_LA_REVISION ? undefined : fecha;
-  };
+  const conReloj = (resumen: ResumenDeNutricion | ResumenDeEntrenamiento): boolean => tramoDelCiclo(resumen, hoy)?.tipo === 'RELOJ';
+  // A13 de la propuesta: con dos o más tarjetas en fila, la pieza propia va plegada, con lo que se ve de un vistazo en el
+  // renglón que la abre; así la tarjeta no pasa su tope y los indicadores entran en la primera pantalla. Con una sola
+  // área, la tarjeta va al costado de los indicadores y la pieza queda abierta.
+  const plegada = [d.nutrition.available, d.training.available, d.anthropometry.available].filter(Boolean).length >= 2;
   const delArea = (area: AreaDelResumen) => (p.observaciones === null ? null : p.observaciones.filter((o) => o.area === area));
   const comunes = { formato: p.formato, enlaceDe };
   const c = p.disponibles.coberturaNutricional;
+  const ultimaToma = d.anthropometry.available ? (d.anthropometry.summary?.lastEvaluation?.occurredAt ?? null) : null;
   return (
     <>
       {d.nutrition.available ? (
@@ -156,23 +176,21 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
                 observaciones={delArea('NUTRICION')}
                 revision={d.nutrition.summary.lastReview}
                 revisiones={ruta('NUTRICION', 'revisiones')}
-                proxima={proximaDe(d.nutrition.summary)}
-                // Lo que la cobertura del área dice además de su frase: entra y sale de los totales, y cómo se cuenta.
+                tramo={<TramoDelCiclo area="NUTRICION" resumen={d.nutrition.summary} hoy={hoy} fecha={p.formato.fecha} revisiones={ruta('NUTRICION', 'revisiones')} />}
+                sinLaProxima={conReloj(d.nutrition.summary)}
+                pieza={(periodo) => <RegistrosDelPeriodo cobertura={c} plegada={plegada}>{periodo}</RegistrosDelPeriodo>}
+                absorbeElPeriodo={plegada && losRegistrosDelPeriodo(c) !== null}
+                // Lo que la cobertura del área dice además de su frase. Los anulados y los rectificados están en la barra
+                // partida de los registros del período (TB-10), a la vista.
                 detallesDeLaCobertura={
-                  c
-                    ? [
-                        ...(c.differentMealsWithoutQuantities ? [cuenta(c.differentMealsWithoutQuantities, 'comida diferente, entre los registros sin cantidades', 'comidas diferentes, entre los registros sin cantidades')] : []),
-                        ...(c.annulledExcluded ? [cuenta(c.annulledExcluded, 'anulado, fuera de los totales', 'anulados, fuera de los totales')] : []),
-                        ...(c.rectifiedCountedOnce ? [cuenta(c.rectifiedCountedOnce, 'rectificado, contado una vez', 'rectificados, contados una vez')] : []),
-                      ]
-                    : []
+                  c?.differentMealsWithoutQuantities ? [cuenta(c.differentMealsWithoutQuantities, 'comida diferente, entre los registros sin cantidades', 'comidas diferentes, entre los registros sin cantidades')] : []
                 }
                 {...comunes}
               />
               <AccionDeRevisar area="NUTRICION" resumen={d.nutrition.summary} href={ruta('NUTRICION', 'revisiones', '&preparar=1')} llena={llena === 'NUTRICION'} />
             </>
           ) : (
-            <EmpezarElPlan href={ruta('NUTRICION', 'plan')} />
+            <EmpezarElPlan area="NUTRICION" href={ruta('NUTRICION', 'plan')} />
           )}
         </Tarjeta>
       ) : null}
@@ -205,14 +223,21 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
                 observaciones={delArea('ENTRENAMIENTO')}
                 revision={d.training.summary.lastReview}
                 revisiones={ruta('ENTRENAMIENTO', 'revisiones')}
-                proxima={proximaDe(d.training.summary)}
+                tramo={<TramoDelCiclo area="ENTRENAMIENTO" resumen={d.training.summary} hoy={hoy} fecha={p.formato.fecha} revisiones={ruta('ENTRENAMIENTO', 'revisiones')} />}
+                sinLaProxima={conReloj(d.training.summary)}
+                pieza={(periodo) => (
+                  <SesionesPorEjercicio ejercicios={p.disponibles.ejercicios} fecha={p.formato.fecha} plegada={plegada}>
+                    {periodo}
+                  </SesionesPorEjercicio>
+                )}
+                absorbeElPeriodo={plegada && sesionesPorEjercicio(p.disponibles.ejercicios) !== null}
                 detallesDeLaCobertura={[]}
                 {...comunes}
               />
               <AccionDeRevisar area="ENTRENAMIENTO" resumen={d.training.summary} href={ruta('ENTRENAMIENTO', 'revisiones', '&preparar=1')} llena={llena === 'ENTRENAMIENTO'} />
             </>
           ) : (
-            <EmpezarElPlan href={ruta('ENTRENAMIENTO', 'plan')} />
+            <EmpezarElPlan area="ENTRENAMIENTO" href={ruta('ENTRENAMIENTO', 'plan')} />
           )}
         </Tarjeta>
       ) : null}
@@ -250,7 +275,16 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
           ) : (
             <p className="tenue area__sin-datos">{COPY_VINCULO.sinDatosTodavia}</p>
           )}
-          <Hechos area="ANTROPOMETRIA" observaciones={delArea('ANTROPOMETRIA')} revision={null} revisiones={null} detallesDeLaCobertura={[]} {...comunes} />
+          <Hechos
+            area="ANTROPOMETRIA"
+            observaciones={delArea('ANTROPOMETRIA')}
+            revision={null}
+            revisiones={null}
+            // TB-24 (TA-20): la composición de la última toma o, sin método, la línea de los pesos.
+            pieza={() => <PiezaDeAntropometria ultimaToma={ultimaToma} plegada={plegada} href={ruta('ANTROPOMETRIA', 'composicion')} hrefDeLaEvolucion={ruta('ANTROPOMETRIA', 'evolucion')} />}
+            detallesDeLaCobertura={[]}
+            {...comunes}
+          />
           <div className="area__accion">
             {/* Abre la toma en preparación: no guarda ni registra nada hasta que se confirme allá. */}
             <Link className="boton boton--secundario" href={ruta('ANTROPOMETRIA', 'preparacion')}>
@@ -267,19 +301,55 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
 const cuenta = (n: number, uno: string, varios: string): ParteDeObservacion => ({ cifra: numero(n), texto: n === 1 ? uno : varios });
 
 /**
- * Un área todavía sin nada registrado (ni objetivo, ni plan, ni registros): lo que hay que hacer es empezar el plan, y el
- * botón lleva al Plan del área, donde están los tres pasos (DL-145).
+ * La pieza de Antropometría (TB-24; TA-20 y TA-26): lee API-ANT-06 en la ventana de 92 días que termina en la última
+ * toma, con el peso y las masas, para la barra de esa toma y lo que cambió desde la anterior. Una lectura más al abrir el
+ * Resumen, solo con Antropometría y alguna toma. TB-50 (TA-73): la misma lectura suma las medidas de los pares, para la
+ * evolución de las últimas tomas: ninguna petición nueva.
  */
-function EmpezarElPlan({ href }: { href: string }) {
+function PiezaDeAntropometria({ ultimaToma, plegada, href, hrefDeLaEvolucion }: { ultimaToma: string | null; plegada: boolean; href: string; hrefDeLaEvolucion: string }) {
+  const { token, asesoradoId, sesionPerdida } = useSeguimiento();
+  const hasta = ultimaToma ? fechaCivil(ultimaToma, ZONA_DE_LA_FICHA) : null;
+  const desde = hasta ? restarDias(hasta, DIAS_POR_LECTURA - 1) : null;
+  const { lectura, recargar } = useLecturaDeLaComposicion(token, asesoradoId, desde, hasta, sesionPerdida, METRICAS_DE_LA_TARJETA);
+  if (!desde || !hasta) return null;
+  const hoy = hoyEn();
   return (
-    <div className="area__sin-datos">
-      <p className="tenue">{COPY_VINCULO.sinDatosTodavia}</p>
-      <Link className="boton boton--primario" href={href}>
-        <Icono nombre="plan" tamano={18} />
-        {COPY_PRIMER_PLAN.titulo}
-      </Link>
-    </div>
+    <>
+      <ComposicionDeLaUltimaToma lectura={lectura} recargar={recargar} desde={desde} hasta={hasta} fecha={(c) => diaDelAnioEnCurso(c, hoy)} href={href} plegada={plegada} />
+      {lectura.tipo === 'lista' ? <EvolucionDeLasTomasEnLaTarjeta tomas={lectura.tomas} plegada={plegada} href={hrefDeLaEvolucion} /> : null}
+    </>
   );
+}
+/** Lo que pide la tarjeta de Antropometría en su única lectura: el peso y las masas, y las medidas de los pares (TB-50). */
+const METRICAS_DE_LA_TARJETA: readonly string[] = [...new Set([...METRICAS_DE_LA_COMPOSICION, ...METRICAS_DE_LA_EVOLUCION])];
+const ZONA_DE_LA_FICHA = 'America/Argentina/Buenos_Aires';
+
+/**
+ * Un área todavía sin nada registrado (ni objetivo, ni plan, ni registros): lo que hay que hacer es empezar el plan. Desde
+ * TB-10, los tres pasos en miniatura (R-8), con el que toca a la vista; el botón lleva al Plan del área, donde están los
+ * formularios (DL-145). Para saber si ya hay una evaluación, una lectura más por área sin plan (A15 de la propuesta). Si
+ * esa lectura falla, quedan las palabras de antes y el botón.
+ */
+function EmpezarElPlan({ area, href }: { area: 'NUTRICION' | 'ENTRENAMIENTO'; href: string }) {
+  const { token, asesoradoId } = useSeguimiento();
+  const { lectura } = useLectura<{ readonly data: readonly { readonly occurredAt: string }[] }>(
+    `evaluaciones|${area}|${asesoradoId}`,
+    () => (area === 'NUTRICION' ? api.listarEvaluaciones(token, asesoradoId) : api.listarEvaluacionesDeEntrenamiento(token, asesoradoId)),
+    area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING',
+  );
+  if (lectura.tipo === 'error' || lectura.tipo === 'no-disponible') {
+    return (
+      <div className="area__sin-datos">
+        <p className="tenue">{COPY_VINCULO.sinDatosTodavia}</p>
+        <Link className="boton boton--secundario" href={href}>
+          <Icono nombre="plan" tamano={18} />
+          {COPY_PRIMER_PLAN.titulo}
+        </Link>
+      </div>
+    );
+  }
+  const ultima = lectura.tipo === 'listo' ? ([...lectura.datos.data].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0] ?? null) : undefined;
+  return <PrimerPlanEnMiniatura evaluacion={ultima === undefined ? null : ultima ? diaSinElAnioEnCurso(ultima.occurredAt) : false} href={href} />;
 }
 
 function Tarjeta({ area, abrir, children }: { area: AreaDelResumen; abrir: string; children: ReactNode }) {
@@ -360,7 +430,10 @@ function Hechos({
   observaciones,
   revision,
   revisiones,
-  proxima,
+  tramo = null,
+  sinLaProxima = false,
+  pieza = null,
+  absorbeElPeriodo = false,
   detallesDeLaCobertura,
   formato,
   enlaceDe,
@@ -371,8 +444,16 @@ function Hechos({
   revision: ResumenDeNutricion['lastReview'];
   /** A dónde se abren las revisiones del área; `null` si no tiene. */
   revisiones: string | null;
-  /** La próxima revisión acordada, si se dice junto al corte: la fecha, o `null` si no hay ninguna acordada. */
-  proxima?: string | null;
+  /** El tramo del ciclo (TB-10): va primero, después de lo que no se pudo leer. */
+  tramo?: ReactNode;
+  /** Con el tramo dibujado, la próxima revisión ya está en él: el pendiente del dominio no se repite. */
+  sinLaProxima?: boolean;
+  /**
+   * La pieza propia del área (TB-10): después de lo nuevo desde la revisión. Recibe los renglones del período, para
+   * llevarlos adentro cuando va plegada (`absorbeElPeriodo`): la tarjeta tiene un solo plegado.
+   */
+  pieza?: ((periodo: ReactNode) => ReactNode) | null;
+  absorbeElPeriodo?: boolean;
   detallesDeLaCobertura: readonly ParteDeObservacion[];
   formato: FormatoDeLaSintesis;
   enlaceDe: (a: AccionDelResumen) => { href: string; texto: string } | null;
@@ -380,24 +461,19 @@ function Hechos({
   if (observaciones === null) return <Cargando />;
   const fallas = observaciones.filter((o) => o.regla === 'PARTE_NO_DISPONIBLE');
   // La última toma ya está en el contexto de la tarjeta («Tomas»), con el botón que la abre: no se repite como hecho.
-  const hechos = observaciones.filter((o) => o.regla !== 'PARTE_NO_DISPONIBLE' && o.regla !== 'ULTIMA_TOMA');
+  const hechos = observaciones.filter((o) => o.regla !== 'PARTE_NO_DISPONIBLE' && o.regla !== 'ULTIMA_TOMA' && !(sinLaProxima && o.regla === 'PROXIMA_REVISION'));
   const de = (tipo: AlcanceDeObservacion['tipo']) => hechos.filter((o) => o.alcance.tipo === tipo);
   const pendientes = de('HOY');
-  const desdeLaRevision = de('DESDE_LA_REVISION');
+  // Lo nuevo desde el corte va en cifras, en fila (TB-10, R-3); los demás hechos desde la revisión, en renglones.
+  const novedades = de('DESDE_LA_REVISION').find((o) => o.regla === 'NOVEDADES_DESDE_EL_CORTE') ?? null;
+  const desdeLaRevision = de('DESDE_LA_REVISION').filter((o) => o !== novedades);
+  const enlaceDeLasNovedades = novedades?.accion ? enlaceDe(novedades.accion) : null;
   const delPeriodo = de('PERIODO');
   const fila = (o: ObservacionDelResumen) => (
     <Hecho key={claveDeObservacion(o)} o={o} formato={formato} enlace={o.accion ? enlaceDe(o.accion) : null} detalles={o.regla === 'COBERTURA_NUTRICIONAL' || o.regla === 'COBERTURA_DE_ENTRENAMIENTO' ? detallesDeLaCobertura : []} />
   );
   const aplicacion = revision?.application ? (formato.dia(revision.application.appliedAt) === formato.dia(revision.recordedAt) ? 'aplicada' : `aplicada el ${formato.dia(revision.application.appliedAt)}`) : null;
   const elPeriodo = delPeriodo[0] ? textoDelAlcance(delPeriodo[0].alcance, formato) : null;
-  // El ciclo de revisiones en una línea: a la izquierda, el corte (la última revisión, o el período si no tiene); a la
-  // derecha, la próxima acordada cuando no es un pendiente.
-  const deLaProxima =
-    proxima !== undefined ? (
-      <span className="tenue area__proxima">
-        Próxima<span className="visualmente-oculto"> revisión acordada</span>: {proxima ? formato.fecha(proxima) : 'sin fecha acordada'}
-      </span>
-    ) : null;
   return (
     <div className="area__hechos">
       {/* Lo que falta va primero (GUIA II.7): debajo de la lista, la tarjeta parecía completa al leerla de arriba abajo. */}
@@ -412,6 +488,7 @@ function Hechos({
           </BloqueDeEstado>
         </div>
       ) : null}
+      {tramo}
       {pendientes.length > 0 ? <ul className="observaciones observaciones--pendientes">{pendientes.map(fila)}</ul> : null}
       {revision ? (
         <>
@@ -430,11 +507,12 @@ function Hechos({
               </strong>
               {aplicacion ? <span className="tenue"> · {aplicacion}</span> : null}
             </span>
-            {deLaProxima}
           </p>
+          {novedades ? <CifrasDesdeLaRevision partes={partesDeObservacion(novedades, formato)} href={enlaceDeLasNovedades?.href ?? null} texto={enlaceDeLasNovedades?.texto ?? ''} /> : null}
           {desdeLaRevision.length > 0 ? <ul className="observaciones">{desdeLaRevision.map(fila)}</ul> : null}
+          {pieza ? pieza(absorbeElPeriodo && delPeriodo.length > 0 ? <ul className="observaciones">{delPeriodo.map(fila)}</ul> : null) : null}
           {/* Con revisión, lo del período queda a un clic: los indicadores ya dicen la cobertura de cada número. */}
-          {delPeriodo.length > 0 ? (
+          {delPeriodo.length > 0 && !absorbeElPeriodo ? (
             <details className="area__periodo">
               <summary>
                 {elPeriodo}: cobertura del registro ({numero(delPeriodo.length)})
@@ -450,16 +528,20 @@ function Hechos({
               <strong>{elPeriodo}</strong>
               {revisiones ? <span className="tenue"> · sin revisiones registradas</span> : null}
             </span>
-            {deLaProxima}
           </p>
           <ul className="observaciones">{delPeriodo.map(fila)}</ul>
+          {pieza ? pieza(null) : null}
         </>
       ) : revisiones ? (
         // Sin revisión y sin nada del período que decir (su lectura no aplica o falló): igual se dice dónde está parada.
-        <p className="area__corte">
-          <span className="tenue">Sin revisiones registradas</span>
-          {deLaProxima}
-        </p>
+        <>
+          <p className="area__corte">
+            <span className="tenue">Sin revisiones registradas</span>
+          </p>
+          {pieza ? pieza(null) : null}
+        </>
+      ) : pieza ? (
+        pieza(null)
       ) : null}
     </div>
   );

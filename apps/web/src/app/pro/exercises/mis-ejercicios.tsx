@@ -10,6 +10,9 @@
  * - WP-CATALOGO-VISUAL (etapa 2; DL-081): cada tarjeta dice sus zonas musculares en un renglón, y «Ver detalle» la abre a
  *   todo el ancho con la imagen y la figura de las zonas (la ficha visual, API-EJE-05). Uno abierto por vez, como la
  *   imagen que se edita.
+ * - WP-TABLERO-ALTA-GAMA TB-48: «Cargar las zonas» (o «Cambiar las zonas») en cada tarjeta, con la ficha visual ya
+ *   leída: las 17 zonas del catálogo con su rol y la figura de siempre al lado (`zonas-del-ejercicio.tsx`, API-EJE-04).
+ *   Al cerrar, el foco vuelve a ese botón.
  */
 import { COPY_EJERCICIOS_PROPIOS, COPY_FIGURA_DE_ZONAS, zonasEnUnRenglon, type EjercicioPropio } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
@@ -24,6 +27,8 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { DetalleVisualDeEjercicio } from './detalle-visual';
 import { ImagenDeEjercicio, ImagenGuardadaDeEjercicio } from './imagen-de-ejercicio';
+import { ZonasDelEjercicio } from './zonas-del-ejercicio';
+import { COPY_ZONAS_PROPIAS } from './zonas-propias';
 import { EsperandoSesion } from '../../../lib/sesion';
 
 type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-area' } | { tipo: 'listo'; ejercicios: EjercicioPropio[] };
@@ -39,6 +44,9 @@ export function MisEjercicios() {
   const [editando, setEditando] = useState<string | null>(null);
   // El ejercicio cuyo detalle (imagen y zonas) está abierto: uno por vez.
   const [detalle, setDetalle] = useState<string | null>(null);
+  // TB-48: el ejercicio cuyas zonas se están cargando o cambiando: uno por vez, como la imagen.
+  const [zonas, setZonas] = useState<string | null>(null);
+  const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
   const intento = useClaveDeIntento();
   const listo = yo.tipo === 'listo';
 
@@ -57,6 +65,20 @@ export function MisEjercicios() {
 
   // Las zonas y la imagen de cada ejercicio, de la ficha visual: una lectura aparte, que puede fallar sola.
   const { lectura: fichas, releer: releerFichas } = useFichasVisuales(listo ? token : null, estado.tipo === 'listo' ? estado.ejercicios.map((e) => e.exerciseId) : [], sesionPerdida);
+  const fichaDe = (exerciseId: string) => (fichas.tipo === 'lista' ? fichas.fichas.get(exerciseId) : undefined);
+
+  // Al cerrar las zonas, el foco vuelve al botón que las abrió, en cuanto la tarjeta está dibujada.
+  useEffect(() => {
+    if (!paraEnfocar) return;
+    const boton = document.getElementById(paraEnfocar);
+    if (!boton) return;
+    boton.focus();
+    setParaEnfocar(null);
+  });
+  const cerrarZonas = (exerciseId: string) => {
+    setZonas(null);
+    setParaEnfocar(`zonas-de-${exerciseId}`);
+  };
 
   async function crear() {
     if (!token) return;
@@ -124,7 +146,23 @@ export function MisEjercicios() {
           ) : (
             <ul className="grilla-de-ejercicios">
               {estado.ejercicios.map((e) =>
-                editando === e.exerciseId ? (
+                zonas === e.exerciseId && fichaDe(e.exerciseId) ? (
+                  <li key={e.exerciseId} className="ejercicio-propio ejercicio-propio--editando ejercicio-propio--detalle">
+                    <ZonasDelEjercicio
+                      token={token}
+                      nombre={e.name}
+                      ficha={fichaDe(e.exerciseId)!}
+                      sesionPerdida={sesionPerdida}
+                      onCancelar={() => cerrarZonas(e.exerciseId)}
+                      onGuardadas={() => {
+                        cerrarZonas(e.exerciseId);
+                        setAviso(COPY_ZONAS_PROPIAS.guardadas(e.name));
+                        // La ficha nueva es la que muestran la tarjeta y el detalle.
+                        releerFichas();
+                      }}
+                    />
+                  </li>
+                ) : editando === e.exerciseId ? (
                   <li key={e.exerciseId} className="ejercicio-propio ejercicio-propio--editando">
                     <div className="ejercicio-propio__encabezado">
                       <p className="lista__titulo">{e.name}</p>
@@ -159,6 +197,7 @@ export function MisEjercicios() {
                         className="boton boton--quieto boton--compacto"
                         onClick={() => {
                           setEditando(null);
+                          setZonas(null);
                           setDetalle(e.exerciseId);
                         }}
                       >
@@ -170,12 +209,30 @@ export function MisEjercicios() {
                         className="boton boton--quieto boton--compacto"
                         onClick={() => {
                           setDetalle(null);
+                          setZonas(null);
                           setEditando(e.exerciseId);
                         }}
                       >
                         <Icono nombre="imagen" tamano={18} />
                         {e.image ? COPY_EJERCICIOS_PROPIOS.cambiarImagen : COPY_EJERCICIOS_PROPIOS.agregarImagen}
                       </button>
+                      {/* TB-48: con la ficha visual leída (sus zonas de hoy y el número de la última asignación). */}
+                      {fichaDe(e.exerciseId) ? (
+                        <button
+                          type="button"
+                          id={`zonas-de-${e.exerciseId}`}
+                          className="boton boton--quieto boton--compacto"
+                          data-cambiar-zonas
+                          onClick={() => {
+                            setDetalle(null);
+                            setEditando(null);
+                            setZonas(e.exerciseId);
+                          }}
+                        >
+                          <Icono nombre="entrenamiento" tamano={18} />
+                          {fichaDe(e.exerciseId)!.muscleZones.length > 0 ? COPY_ZONAS_PROPIAS.cambiar : COPY_ZONAS_PROPIAS.cargar}
+                        </button>
+                      ) : null}
                     </div>
                   </li>
                 ),

@@ -47,6 +47,7 @@ import { razonDeFalla, useLectura, useSeguimiento, type Lectura, type MotivoDeFa
 import { hoyEn, parametrosDePregunta, restarDias } from './estado';
 import { enumerar } from './etapas-en-pantalla';
 import { ICONO_DE_FALLA } from './iconos-de-metrica';
+import { LoQueContoAlEmpezar } from './lo-que-conto-en-pantalla';
 import { NotasRecientesDelEquipo } from './notas-del-equipo';
 import { TarjetasDeArea } from './resumen-area';
 import { IndicadoresDelResumen } from './resumen-indicadores';
@@ -135,6 +136,8 @@ export function ResumenDelSeguimiento() {
   const tardias = delPeriodo.tipo === 'listo' ? delPeriodo.datos.data.periodCounts.recordedLate : 0;
   // DL-140 (CRD-D8): las notas recientes del equipo van después de los indicadores: lo de la persona primero.
   const notas = <NotasRecientesDelEquipo />;
+  // TB-49 (DL-165 D-8): lo que la persona contó en los formularios que pidió este profesional, después de las notas.
+  const loQueConto = <LoQueContoAlEmpezar />;
   return (
     <>
       {loQueFalto}
@@ -149,6 +152,7 @@ export function ResumenDelSeguimiento() {
           <div className="resumen__costado">
             {indicadores}
             {notas}
+            {loQueConto}
             {preguntas}
           </div>
         </div>
@@ -162,6 +166,7 @@ export function ResumenDelSeguimiento() {
           </div>
           {indicadores}
           {notas}
+          {loQueConto}
         </div>
       ) : null}
       {areas === 3 ? (
@@ -173,6 +178,7 @@ export function ResumenDelSeguimiento() {
           </div>
           {indicadores}
           {notas}
+          {loQueConto}
           {preguntas}
         </div>
       ) : null}

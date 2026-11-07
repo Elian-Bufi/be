@@ -166,7 +166,7 @@
 | DL-160 | Decisión de Dirección · 2026-11-02 (registro rápido y «Ya la hice») | B10-06 §57 · B10-06 §29 · DL-137 · DL-161 | La regla «el día de hoy se entrena con los cronómetros» no está en el legajo: es un comentario de la APK, y B10-06 §57 dice que el temporizador no es requisito P0 | **DECIDIDA** por Dirección el 2026-11-02: el registro rápido y «Ya la hice» valen también el mismo día; los cronómetros quedan como ayuda opcional. La API ya lo admite (confirmar la sesión de hoy no pide eventos de tiempo); la APK lo toma con «Ya la hice» (PA-03), integrada en `main` el 2026-11-02 (#224, `b62ce90`) y en la 0.19.0-candidata.1; falta el teléfono · **RATIFICADA** 2026-11-06, tal cual como la decidió el 2026-11-02 |
 | DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` e **INTEGRADA** en `main` ese día (la API y el website con #229, `91a894c`; la APK y el escritorio con #224, `b62ce90`) y desplegada en `test`: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, integrada con #224 y en la 0.19.0-candidata.1; queda documentado el caso de una ejecución nueva leída por una APK anterior; el mismo día Dirección decidió cómo se lee en el escritorio (lo tildado sin escribir no se compara y va hueco en los gráficos; la carga completa se destaca), hecho en la rama `wp-escritorio-niveles` (#230, integrada con #224) · **RATIFICADA** 2026-11-06: I-1 a I-9, e I-10 con el cambio (una sesión con una serie menos y nada escrito pasa a decir «Carga rápida con cambios»), **a programar** |
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual` (#225), integrada en `main` ese día con #229 (`91a894c`) y desplegada en `test` · **RATIFICADA** 2026-11-06: D-1 a D-5, junto con DL-141 D-1: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
-| DL-163 | Pedido de Dirección · 2026-11-03 (WP-TABLERO-ALTA-GAMA; D-1 a D-21 y el alcance, ratificados el 2026-11-05) | RF-052 a RF-055 · UC-P23 · UC-P24 · 08 §11, §11-bis, C-11 · API-DSH-01 y 02 (09 v0.11 §13 y §14) · B10-08 · B10-10 · GUIA-UX-UI I y I.7 · DL-107 · DL-152 · DL-158 · DL-165 | El inicio del profesional y el Resumen de la ficha se veían sosos y con puntos burdos; Dirección pidió barras de avance, rostro, decisiones guiadas, ver las otras áreas, un mapa corporal, programas propios, más datos y planificar más fácil, y autorizó desafiar el legajo con fundamento | **RATIFICADA** 2026-11-05 · D-1 a D-21, todas como se recomendaron (la D-9 original, reemplazada por la D-9 nueva), y el alcance completo, las partes TB-00 a TB-49 (TB-49, «Lo que contó al empezar», se sumó con el sí) · paquete declarado e integrado en `main` el 2026-11-06 (#239, `758b4d8`) · la etapa A, en programación en dos PR en borrador, sin integrar: #240 (el website) y #243 (la API) · D-13, ampliada por Dirección el 2026-11-07: la API de TB-52, TB-53, TB-55 y TB-56 (la familia RES y la regla de CRD-D5) programada en #243, sin integrar, con TA-96 a TA-107 a ratificar; el mismo día Dirección decidió un texto distinto por nivel (reemplaza TA-99; TA-109 a TA-112) y ratificó que el fundamento del objetivo se muestra (VJR-5 suma esa pregunta) · con personas reales, D-13 y el control semanal de D-16, después de la revisión legal |
+| DL-163 | Pedido de Dirección · 2026-11-03 (WP-TABLERO-ALTA-GAMA; D-1 a D-21 y el alcance, ratificados el 2026-11-05) | RF-052 a RF-055 · UC-P23 · UC-P24 · 08 §11, §11-bis, C-11 · API-DSH-01 y 02 (09 v0.11 §13 y §14) · B10-08 · B10-10 · GUIA-UX-UI I y I.7 · DL-107 · DL-152 · DL-158 · DL-165 | El inicio del profesional y el Resumen de la ficha se veían sosos y con puntos burdos; Dirección pidió barras de avance, rostro, decisiones guiadas, ver las otras áreas, un mapa corporal, programas propios, más datos y planificar más fácil, y autorizó desafiar el legajo con fundamento | **RATIFICADA** 2026-11-05 · D-1 a D-21, todas como se recomendaron (la D-9 original, reemplazada por la D-9 nueva), y el alcance completo, las partes TB-00 a TB-49 (TB-49, «Lo que contó al empezar», se sumó con el sí) · D-11, modificada por Dirección el 2026-11-07 (kilos con el % al lado, TB-51), con TB-50 sumada el mismo día · D-13, ampliada por Dirección el 2026-11-07 (el plan completo de solo lectura, los comentarios y el pedido; TB-52 a TB-56; TA-79, TA-87 y TA-95 decididas el mismo día); el mismo día Dirección decidió un texto distinto por nivel (reemplaza TA-99; TA-109 a TA-112) y ratificó que el fundamento del objetivo se muestra (VJR-5 suma esa pregunta) · paquete declarado e integrado en `main` el 2026-11-06 (#239, `758b4d8`) · la etapa A, integrada en `main` el 2026-11-07 con la autorización de Dirección: primero la API (#243, `1b6fc8b`: la cartera, la cola de revisiones, el descarte de borradores y la familia RES, con TA-56 a TA-70 y TA-96 a TA-112 a ratificar) y después el website (#240, con TA-01 a TA-55, TA-71 a TA-95 y TA-120 a TA-129 a ratificar) · con personas reales, D-13 y el control semanal de D-16, después de la revisión legal; el texto de «resumen», además, después de TB-29 (TEST-TAG-041) |
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
 
@@ -6208,7 +6208,9 @@ DL-152 · DL-158 · DL-165 · **Estado:** RATIFICADA 2026-11-05, de D-1 a D-21, 
 se reemplazó por la D-9 nueva), con el paquete declarado (`docs/paquetes/WP-TABLERO-ALTA-GAMA.md`, #239, ~~en borrador~~
 integrado en `main` el 2026-11-06, `758b4d8`). ~~El alcance espera el sí de Dirección (ACTA-DIR-034), después de la
 prueba de la APK 0.21: nada programado~~ El alcance, las partes TB-00 a TB-49, ratificado por Dirección el 2026-11-05 (al
-final); la etapa A, en programación en #240 y #243, en borrador
+final); la etapa A, en programación en #240 y #243, en borrador; el estado de cada parte y las decisiones de la implementación
+(TA-01 en adelante, a ratificar) están en la §10 del paquete. El 2026-11-07 Dirección modificó D-11 (kilos con el % al
+lado), sumó TB-50 y TB-51 a la etapa A (§3.3 del paquete) y amplió D-13 (TB-52 a TB-56, §3.4)
 
 **Qué pidió Dirección.** El 2026-11-03, sobre el inicio del profesional y el Resumen de la ficha: «todavía lo veo muy
 soso»; «los puntos de los gráficos los veo muy burdos»; «pequeñas barras de avance, o círculos porcentuales»; «poner
@@ -6357,6 +6359,29 @@ todas las recomendadas»), salvo la D-9 original, que se reabrió:*
     de Antropometría del Resumen.
   - *Fundamento:* ninguna pantalla lo muestra de un vistazo, y dos ecuaciones dan hasta 3 kg de diferencia sobre la
     misma toma: por eso, un método por gráfico.
+  - **D-11, modificada por Dirección el 2026-11-07 (kilos con el % al lado).** Al ver la galería de capturas de la etapa
+    A, Dirección pidió: «Agregaría la evolución o la imagen de la evolución de la antropometría dentro del resumen del
+    usuario. […] Y serviría también la barra de porcentaje de peso, separado en grasa, músculo y el resto. A eso me
+    refiero con que hagamos buenos gráficos que resuman la información.» Eligió, por pregunta, «Kilos con el % al lado».
+    Desde entonces:
+    - la barra de la última toma, en la tarjeta del Resumen y en la pestaña, va en kg con el porcentaje escrito junto a
+      cada parte, y el 100 % es el peso de esa toma. Reemplaza «sin «%» en el Resumen»;
+    - si el método calcula el músculo, la barra es grasa, músculo y resto. Con De Rose y Guimarães (cuatro componentes),
+      la grasa es la de Faulkner y el resto es lo óseo (Rocha) y lo residual (Würch), y lo dice con sus kilos; como
+      DL-112 retiró De Rose y Guimarães, Faulkner y Würch para cálculos nuevos, ese caso se lee en las tomas que ya lo
+      tienen, y para una toma nueva el músculo sale de Lee con perímetros. Con Lee, la
+      grasa es la del método de dos compartimentos de la misma toma, el músculo es el esquelético de Lee y el resto, por
+      diferencia, es lo que no es grasa ni músculo esquelético (hueso, órganos, piel y líquidos): son dos ecuaciones, y
+      la barra nombra las dos;
+    - si el método no calcula el músculo, la barra es grasa y libre de grasa, y el texto dice que la libre de grasa no
+      es el músculo;
+    - sin colores de bueno o malo; el resto tiene su color propio (`--composicion-resto`), con sus pares;
+    - lo que no cambia: las columnas de la pestaña siguen partidas con un solo método de dos compartimentos y sin «%»
+      (TEST-TAG-017), y Lee y los cuatro componentes siguen en su fila de «Cuánto cambió cada parte», que no suma con
+      las otras. El «%» se admite en T13 en un solo lugar, el de cada parte de la barra.
+    - *Partes y decisiones:* TB-51, con TA-79 a TA-84, a ratificar. Con el mismo pedido, TB-50, la evolución de las
+      últimas tomas en el Resumen (cintura y pliegue abdominal, suma de 6 pliegues y peso, brazo flexionado y pliegue
+      tricipital, en tres o cuatro tomas), con TA-73 a TA-78.
 - **D-12 · Los indicadores del Resumen salen de las áreas del profesional.** Los cuatro por defecto, por sus áreas; lo
   que cada cuenta ya guardó manda.
   - *Fundamento:* hoy son los mismos para todos, y cada profesional mira primero lo suyo.
@@ -6404,6 +6429,29 @@ recomendaron:*
     del gate del 08 §42; en `test`, con datos sintéticos. No frena el piloto, donde Elián lleva las dos áreas.
   - *Descartado:* un tablero de toda la persona que mezcle las áreas, compartir el plan completo, los borradores o las
     notas, y que los profesionales se compartan cosas sin la persona (para eso sigue la nota de coordinación, DL-140).
+  - **D-13, ampliada por Dirección el 2026-11-07 (el plan completo, de solo lectura).** Con sus palabras: «el
+    nutricionista debería poder ver el resumen y hasta la planificación, y poder dejarle comentarios al otro
+    profesional». Eligió, por pregunta, «Sí, plan completo de solo lectura». Desde entonces:
+    - el plan completo entra, como un segundo nivel de lo que la persona comparte («resumen» o «resumen y plan»), por
+      profesional y por área, con su texto y aceptándolo de nuevo para subir de nivel. Es la versión activada vigente,
+      con su objetivo y lo avanzado; los borradores, las versiones anteriores, las revisiones y las notas siguen sin
+      viajar;
+    - los comentarios son notas de coordinación (DL-140): pueden citar el plan compartido, sin escribir en el área del
+      otro, y la persona las lee;
+    - un panel «Otras áreas», al planificar y al revisar;
+    - la matriz del plan completo es «todos con todos, con permiso» (Dirección, 2026-11-07, TA-87): cada área ve el plan
+      de las otras dos con el nivel «resumen y plan»;
+    - el profesional puede pedir ver el plan del otro, como los hábitos (DL-165 D-17): una novedad «Importante», la
+      persona dice sí o no y lo cambia cuando quiere, con el reenvío a los 7 días (TA-95, TB-56);
+    - **Un texto por nivel (Dirección, 2026-11-07),** que no promete lo que no existe. El de «resumen» dice que cada
+      apertura queda registrada y la persona la ve. Hoy ese nivel no muestra contenido, así que nada se abre; cuando lo
+      muestre, API-RES-05 tiene que registrar cada apertura como el plan (TB-29, TEST-TAG-041). **El texto de «resumen»
+      no se ofrece con datos reales sin TB-29.** El de «resumen» va en la propuesta 3, que dice que la autorización del
+      plan «incluye también este resumen».
+    - *Partes y decisiones:* TB-52 a TB-56, con TA-85 a TA-95; TA-87 y TA-95, decididas por Dirección el 2026-11-07; las
+      demás, a ratificar. La API, en la rama del #243. La revisión legal es condición antes de datos reales, no antes de
+      programar.
+      Con personas reales, después de la revisión legal (VJR-1, VJR-4 y VJR-5) y del gate del 08 §42.
 - **D-14 · El mapa corporal, con tres capas.** En el Resumen de la ficha, a la derecha de las tarjetas: el cuerpo de
   frente y de espalda (el set de capas de Dirección) con una capa por vez, según las áreas que ve el profesional.
   Medidas: los perímetros y los pliegues de la última toma, con el cambio desde la comparable anterior, con signo y sin
@@ -6514,13 +6562,27 @@ RES, PLN, PLE, ESF, PCA y RET) con esta DL.
 **Lo que queda abierto:**
 - ~~El sí de Dirección al alcance, las partes TB-00 a TB-48 (ACTA-DIR-034), después de la prueba de la APK 0.21. Hasta
   entonces no se programa nada.~~ Lo dio el 2026-11-05, con TB-49 (al final).
+- La etapa A, en programación (#240): lo hecho y lo que falta, en la §10 del paquete. Las partes que tocan la API van en
+  su rama, aparte.
 - Lo legal antes de personas reales: D-13 (VJR-1, VJR-4 y VJR-5) y el control semanal de D-16 (LC-41); el alta en el
   inventario del 08 de la foto del profesional, del peso en casa y, después del piloto, de la foto de las personas.
 - Cuándo se integra: cuando la escuela cierre su evaluación sobre `test`. Si no la cerró el 2026-12-04, Dirección decide
   si se integran antes las partes del piloto.
 - ~~La tarjeta «Lo que contó al empezar», que WP-FORMULARIOS-RONDA-2 mandó a este paquete y que la propuesta no tiene como
   parte.~~ Es TB-49, que Dirección sumó a la etapa A con el sí al alcance.
-- Las decisiones de la implementación, desde TA-01, a medida que se programe.
+- Las decisiones de la implementación, desde TA-01, que esperan la ratificación de Dirección.
+
+**Los minigráficos del Resumen y DEC-10-UX-01** (nota de TB-17). DEC-10-UX-01 («Resumen ≠ análisis profundo», B10-08)
+es una decisión candidata, y WP-DASHBOARD-PROFESIONAL la leyó como «ningún gráfico de las proyecciones» en el Resumen.
+Los minigráficos de los indicadores (E-53 y E-54 de WP-ESCRITORIO-AMABLE, y su versión de TB-04) leen API-PRJ-01, una
+proyección, desde octubre: chocan con esa lectura y nadie lo había anotado. Se sostienen porque no analizan: dibujan
+las mismas filas que Analizar, sin comparar, sin tendencia ni ajuste, con su descripción en texto y una lectura por
+indicador, sin la biblioteca de gráficos; el análisis (comparar, agrupar, cambiar la referencia) sigue en Analizar, a
+un clic. Si Dirección consolida DEC-10-UX-01 tal como está escrita, los minigráficos pasan a ser parte del análisis y
+el Resumen queda con el valor y la cobertura de cada indicador.
+**La guía y el criterio, al día con D-1 a D-5** (TB-17): `docs/ux/GUIA-UX-UI.md` (I.1, I.5, I.6, I.7, I.8, II.4, II.6,
+la pauta nueva II.12 «Decisiones guiadas» y V.4) y el criterio de auditoría de las maquetas, fuera del repo, con la
+vara de la §6 cambiada por D-1 y D-2 y la validación del 2026-10-10 asentada.
 
 **Condición de cierre:** Dirección da el sí al alcance; cada parte autorizada pasa la CI en `main`, con sus oráculos;
 las candidatas de la APK quedan publicadas en `test` y probadas en el teléfono, con TalkBack; y en la prueba con
