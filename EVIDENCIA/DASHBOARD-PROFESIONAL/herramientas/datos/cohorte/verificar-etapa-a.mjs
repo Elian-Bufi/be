@@ -41,3 +41,25 @@ console.log(`El plan de Nutrición de Diego para Prof. Martín Acosta: ${planN.d
 console.log(`Federico, otras áreas para Lic. Sofía Paz: ${otras(await api.pedir('GET', `/advisees/${federico}/shared-summaries`, { token: sofia }))}`);
 const ajeno = await api.pedir('GET', `/advisees/${federico}/shared-summaries/ENTRENAMIENTO/plan`, { token: sofia, esperado: [200, 404] });
 console.log(`El plan de Entrenamiento de Federico para Lic. Sofía Paz, sin que él diga que sí: ${ajeno?.data === undefined ? '404, como lo inexistente' : 'LO VE (mal)'}`);
+
+// La toma de hoy de Federico Álvarez (la fase `etapa-a`, `tomaDeLeeDeFederico`): lo que lee la tarjeta de Antropometría de
+// su Resumen (API-ANT-06, la ventana de 92 días que termina en la última toma) y la barra que arma con eso el website
+// (`repartoDe`): con el músculo de Lee, grasa, músculo y resto.
+{
+  const metric = 'peso,masa-grasa-durnin-womersley,masa-libre-de-grasa-durnin-womersley,masa-muscular-esqueletica-lee';
+  const r = await api.pedir('GET', `/advisees/${federico}/anthropometry/progress?periodStart=${diaMenos(91)}&periodEnd=${diaMenos(0)}&metric=${metric}`, { token: sofia });
+  const ultimo = (codigo) => r.data.metrics.find((m) => m.metricCode === codigo)?.series.at(-1) ?? null;
+  const peso = ultimo('peso');
+  const grasa = ultimo('masa-grasa-durnin-womersley');
+  const libre = ultimo('masa-libre-de-grasa-durnin-womersley');
+  const lee = ultimo('masa-muscular-esqueletica-lee');
+  const misma = [grasa, libre, lee].every((x) => x && x.sourceEvaluationId === peso?.sourceEvaluationId);
+  if (!peso || !grasa || !libre || !lee || !misma) {
+    console.log('Federico Álvarez: a la última toma le falta el peso, una masa de Durnin y Womersley o la de Lee.');
+  } else {
+    const resto = Math.round((libre.value - lee.value) * 10) / 10;
+    const pc = (x) => (Math.round((x / peso.value) * 1000) / 10).toFixed(1).replace('.', ',');
+    const kg = (x) => x.toFixed(1).replace('.', ',');
+    console.log(`Federico Álvarez, la barra de la toma del ${peso.occurredAt.slice(0, 10)} (Lic. Sofía Paz): ${kg(peso.value)} kg = grasa ${kg(grasa.value)} kg (${pc(grasa.value)} %) + músculo ${kg(lee.value)} kg (${pc(lee.value)} %) + resto ${kg(resto)} kg (${pc(resto)} %)`);
+  }
+}
