@@ -91,7 +91,8 @@ import { useLecturaRecordada } from '../lecturas';
 import { leerLista } from '../lecturas-de-las-zonas';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { PreguntaV2 } from '../pregunta-v2';
-import { Aviso, Ayuda, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Ayuda, Boton, Campo, Dato, Desplegable, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropiaV2[] } | { tipo: 'error'; sinConexion: boolean };
 
@@ -696,9 +697,14 @@ export function PantallaDeMiSolicitud({
   return (
     <View>
       <Titulo>{request.templateName}</Titulo>
+      {/* Quién lo pide, siempre a la vista; el para qué y «Podés no responder», plegados (PV-4, AV-08; GUIA III.7). */}
       <Parrafo tenue>
-        {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName} · {request.purpose}
+        {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName}
       </Parrafo>
+      <Desplegable titulo={TEXTOS_DE_LA_VUELTA.paraQueLoPide} variante="enlace" icono="pregunta">
+        <Parrafo tenue>{request.purpose}</Parrafo>
+        <Parrafo tenue>{COPY_FORMULARIOS.podesNoResponder}</Parrafo>
+      </Desplegable>
       {/* DL-165 D-1 y D-3: cuánto falta lo dice la parte, no un tiempo estimado. */}
       {/* Ronda 2.1: con una sola parte («Tus hábitos» aparte) no se dice «Parte 1 de 1» (`cuantoFaltaEnPalabras`). */}
       {cuantoFalta ? <Parrafo tenue>{cuantoFalta}</Parrafo> : null}
