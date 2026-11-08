@@ -13,8 +13,9 @@
  *   sin escribir nada, con el rótulo «como el plan»; destildar la deshace. El reloj de la fila mide la serie. La ayuda va plegada junto a la tabla. Con la
  *   letra grande pasa a tarjetas apiladas.
  * - **La banda «Plan de la serie N»**, que sigue a la vista aunque se escriba encima del placeholder.
- * - **El descanso:** «Iniciar descanso» y «Finalizar descanso», con el recomendado de esa serie y el conteo ascendente.
- *   El aro es apoyo visual: no termina el descanso. Sin +15 s ni cierre automático. Con movimiento reducido, quieto.
+ * - **El descanso** (DL-166, PV-7 a PV-12): arranca solo al tildar la serie, con su barra hasta el recomendado y el
+ *   engranaje de sus ajustes al lado; con «Lo inicio yo», «Iniciar descanso». Llegar al recomendado no termina nada.
+ *   La barra reemplazó al aro. Con movimiento reducido, igual: la barra no se anima.
  * - **Lectores de pantalla:** el conteo no se anuncia cada segundo. Lo que cambia cada segundo no se lee; el nombre
  *   accesible del temporizador dice los minutos, y la pantalla anuncia solo el inicio y el fin.
  *
@@ -47,10 +48,11 @@ import {
 } from '@be/domain';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
 import { useMovimientoReducido } from '../estados';
-import { Icono } from '../icono';
+import { BotonDeIcono, Icono } from '../icono';
+import { llenadoDeLaBarra, type AjustesDelDescanso, type PermisoDeAvisos } from '../descanso-automatico';
+import { TEXTOS_DEL_DESCANSO } from '../textos-del-descanso';
 import { IconoDeCronometro, IconoDeEjercicio, IconoDeNube, IconoDePlan, IconoDeRutina } from '../iconos-de-entrenamiento';
 import { Flecha, IconoDeRegistrado } from '../iconos-de-nutricion';
 import { ImagenDeMedio, type RespaldoDeImagen } from '../imagen-de-medio';
@@ -73,7 +75,7 @@ import {
   type Unidad,
 } from '../series-de-la-sesion';
 import { sustitutosPosibles, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado, type SustitucionDelEjercicio } from '../sustitucion-de-ejercicio';
-import { Aviso, Ayuda, Boton, Campo, Casilla, CasillaSola, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo } from '../ui';
+import { Aviso, Ayuda, Boton, Campo, Casilla, CasillaSola, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Segmentos } from '../ui';
 
 /** El lado de la imagen del ejercicio activo, en dp (§7.2: de 100 a 140). */
 export const TAMANO_DE_LA_IMAGEN = 112;
@@ -740,80 +742,189 @@ export function AyudaDeLaTabla() {
   );
 }
 
-// ─── El descanso ────────────────────────────────────────────────────────────────────────────────
+// ─── El descanso (DL-166: AV-10 a AV-12) ───────────────────────────────────────────────────────
 
 export type EstadoDelDescanso =
+  /** Con el ajuste manual («Lo inicio yo»): el descanso de la serie que se hizo, para iniciarlo a mano. */
   | { readonly tipo: 'disponible'; readonly serie: number; readonly recomendado: number | null }
   | { readonly tipo: 'en-curso'; readonly serie: number; readonly ejercicio: string | null; readonly duracion: DuracionApi | null; readonly recomendado: number | null; readonly siguiente: number | null };
 
-/** El aro: apoyo visual del recomendado. No termina el descanso al completarse. Con movimiento reducido, quieto. */
-function Aro({ fraccion, reducido }: { fraccion: number | null; reducido: boolean }) {
-  const lado = 76;
-  const radio = 32;
-  const circunferencia = 2 * Math.PI * radio;
-  const llena = Math.min(1, Math.max(0, fraccion ?? 0));
+/** Lo que el bloque dice del permiso de avisos (AVD-8): la frase de para qué con «Permitir avisos», o que vibra solo con la app abierta. */
+export type AvisoDelPermiso = 'nada' | 'explicar' | 'solo-con-la-app-abierta';
+
+/**
+ * La barra del descanso (PV-7): de 0 al recomendado. Pasado el recomendado queda llena, sin cambiar de color y sin cortar
+ * nada. No se anima: el ancho sale del tiempo transcurrido en cada dibujo, así con movimiento reducido es igual. El lector
+ * la lee solo si la persona la recorre: «72 segundos de 90».
+ */
+function BarraDelDescanso({ llenado, segundos, recomendado }: { llenado: number; segundos: number; recomendado: number }) {
   return (
-    <Svg width={lado} height={lado} accessible={false} importantForAccessibility="no-hide-descendants">
-      <Circle cx={lado / 2} cy={lado / 2} r={radio} stroke={COLOR.borde} strokeWidth={7} fill="none" />
-      {reducido || fraccion === null ? null : (
-        <Circle
-          cx={lado / 2}
-          cy={lado / 2}
-          r={radio}
-          stroke={COLOR.acento}
-          strokeWidth={7}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={`${circunferencia} ${circunferencia}`}
-          strokeDashoffset={circunferencia * (1 - llena)}
-          transform={`rotate(-90 ${lado / 2} ${lado / 2})`}
-        />
-      )}
-    </Svg>
+    <View accessible accessibilityLabel={TEXTOS_DEL_DESCANSO.barraParaLeer(segundos, recomendado)}>
+      {/* Lo lleno y lo que falta reparten la pista: sin porcentajes en el código, que la guardia T13 lee. */}
+      <View style={estilos.pistaDelDescanso}>
+        <View style={[estilos.llenoDelDescanso, { flex: llenado }]} />
+        <View style={{ flex: 1 - llenado }} />
+      </View>
+      <View style={estilos.extremosDelDescanso} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <Text style={estilos.detalle}>0:00</Text>
+        <Text style={estilos.detalle}>{textoDeSegundos(recomendado)}</Text>
+      </View>
+    </View>
   );
 }
 
-export function BloqueDeDescanso({ estado, onIniciar, onFinalizar, deshabilitado }: { estado: EstadoDelDescanso | null; onIniciar: () => void; onFinalizar: () => void; deshabilitado: boolean }) {
-  const reducido = useMovimientoReducido();
+/**
+ * El bloque del descanso, debajo del ejercicio y arriba de las series (PV-7). Corriendo: «Descanso · tras la serie N», el
+ * conteo, «de 1:30 recomendado», la barra y «Al terminar, seguís con la serie N». Al lado, el engranaje de sus ajustes
+ * («las configuraciones así tienen que ser contextuales»). Con «Lo inicio yo», «Iniciar descanso», como antes. Sin
+ * recomendado, conteo sin barra. Terminarlo es «Empezar serie N», en la fila fija; si no queda una serie que empezar, el
+ * bloque ofrece «Finalizar descanso».
+ */
+export function BloqueDeDescanso({
+  estado,
+  onIniciar,
+  onFinalizar,
+  onAjustes,
+  avisoDelPermiso,
+  onPermitir,
+  onAhoraNo,
+  deshabilitado,
+}: {
+  estado: EstadoDelDescanso | null;
+  onIniciar: () => void;
+  onFinalizar: () => void;
+  onAjustes: () => void;
+  avisoDelPermiso: AvisoDelPermiso;
+  onPermitir: () => void;
+  onAhoraNo: () => void;
+  deshabilitado: boolean;
+}) {
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
+  const T = TEXTOS_DEL_DESCANSO;
   if (!estado) return null;
+  const engranaje = <BotonDeIcono nombre="engranaje" etiqueta={T.ajustesDelDescanso} onPress={onAjustes} />;
   if (estado.tipo === 'disponible') {
     const recomendado = estado.recomendado === null ? e.sinDescansoRecomendado : e.recomendadoTrasLaSerie(estado.serie, textoDeSegundos(estado.recomendado) ?? '');
     return (
       <View style={[estilos.tarjeta, estilos.descansoAlPie]}>
-        <View style={estilos.conIcono} accessible accessibilityLabel={`${COPY_ENTRENAMIENTO.descanso}. ${recomendado}`}>
-          <Icono nombre="descanso" tamano={24} tono="acento" />
-          <View style={estilos.textos}>
-            <Text style={estilos.tituloDeBloque}>{COPY_ENTRENAMIENTO.descanso}</Text>
-            <Text style={estilos.detalle}>{recomendado}</Text>
+        <View style={estilos.cabezaDelDescanso}>
+          <View style={[estilos.conIcono, estilos.textos]} accessible accessibilityLabel={`${COPY_ENTRENAMIENTO.descanso}. ${recomendado}`}>
+            <Icono nombre="descanso" tamano={24} tono="acento" />
+            <View style={estilos.textos}>
+              <Text style={estilos.tituloDeBloque}>{COPY_ENTRENAMIENTO.descanso}</Text>
+              <Text style={estilos.detalle}>{recomendado}</Text>
+            </View>
           </View>
+          {engranaje}
         </View>
         <Boton texto={e.iniciarDescanso} tipo="secundario" onPress={onIniciar} deshabilitado={deshabilitado} />
       </View>
     );
   }
-  const fraccion = estado.recomendado && estado.duracion?.ms !== null && estado.duracion?.ms !== undefined ? estado.duracion.ms / (estado.recomendado * 1000) : null;
-  const recomendado = estado.recomendado === null ? e.sinDescansoRecomendado : e.recomendado(textoDeSegundos(estado.recomendado) ?? '');
-  const titulo = e.descansoDeLaSerie(estado.serie);
+  const ms = estado.duracion?.ms ?? null;
+  const llenado = llenadoDeLaBarra(ms, estado.recomendado);
+  const titulo = T.descansoTrasLaSerie(estado.serie);
   return (
     <View style={[estilos.tarjeta, estilos.descansoEnCurso]}>
-      <Text style={estilos.tituloDeBloque} accessibilityRole="header">
-        {titulo}
-      </Text>
-      {estado.ejercicio ? <Text style={estilos.detalle}>{estado.ejercicio}</Text> : null}
-      <View style={estilos.reloj} accessible accessibilityLabel={`${titulo}, en curso. ${recomendado}`}>
-        <Aro fraccion={fraccion} reducido={reducido} />
-        <View style={estilos.textos}>
-          <Text style={estilos.relojGrande} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-            {reloj(estado.duracion)}
+      <View style={estilos.cabezaDelDescanso}>
+        <View style={[estilos.conIcono, estilos.textos]}>
+          <Icono nombre="descanso" tamano={20} tono="acento" />
+          <Text style={[estilos.tituloDeBloque, estilos.textos]} accessibilityRole="header">
+            {titulo}
           </Text>
-          <Text style={estilos.detalle}>{recomendado}</Text>
-          {estado.duracion && estado.duracion.quality !== 'MEASURED' ? <Text style={estilos.calidad}>{ETIQUETA_DE_CALIDAD_DE_TIEMPO[estado.duracion.quality]}</Text> : null}
         </View>
+        {engranaje}
       </View>
-      <Boton texto={e.finalizarDescanso} onPress={onFinalizar} deshabilitado={deshabilitado} />
-      {estado.siguiente !== null ? <Text style={estilos.notaCentrada}>{e.alTerminarSeguisCon(estado.siguiente)}</Text> : null}
+      {estado.ejercicio ? <Text style={estilos.detalle}>{estado.ejercicio}</Text> : null}
+      <View style={estilos.conteoDelDescanso}>
+        {/* El conteo no se anuncia segundo a segundo: TalkBack dice solo el inicio y el recomendado (§4.0). */}
+        <Text style={estilos.relojGrande} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+          {reloj(estado.duracion)}
+        </Text>
+        <Text style={estilos.detalle}>{estado.recomendado === null ? e.sinDescansoRecomendado : T.deRecomendado(textoDeSegundos(estado.recomendado) ?? '')}</Text>
+      </View>
+      {llenado !== null && estado.recomendado !== null ? <BarraDelDescanso llenado={llenado} segundos={Math.floor((ms ?? 0) / 1000)} recomendado={estado.recomendado} /> : null}
+      {estado.duracion && estado.duracion.quality !== 'MEASURED' ? <Text style={estilos.calidad}>{ETIQUETA_DE_CALIDAD_DE_TIEMPO[estado.duracion.quality]}</Text> : null}
+      {estado.siguiente !== null ? (
+        <View style={estilos.conIcono}>
+          <Icono nombre="derecha" tamano={18} tono="tenue" />
+          <Text style={estilos.detalle}>{T.alTerminarSeguisCon(estado.siguiente)}</Text>
+        </View>
+      ) : (
+        <Boton texto={e.finalizarDescanso} tipo="enlace" onPress={onFinalizar} deshabilitado={deshabilitado} />
+      )}
+      {avisoDelPermiso === 'explicar' ? (
+        <View style={estilos.pedidoDelPermiso}>
+          <Text style={estilos.detalle}>{T.paraVibrarBloqueado}</Text>
+          <Boton texto={T.permitirAvisos} onPress={onPermitir} />
+          <Boton texto={T.ahoraNo} tipo="enlace" onPress={onAhoraNo} />
+        </View>
+      ) : null}
+      {avisoDelPermiso === 'solo-con-la-app-abierta' ? <Text style={estilos.detalle}>{T.vibraSoloConLaAppAbierta}</Text> : null}
     </View>
+  );
+}
+
+/**
+ * La hoja del engranaje (AV-11): cómo funciona el descanso en dos frases, y los ajustes, guardados en este teléfono. Cada
+ * ajuste es un grupo de opciones con la elegida marcada. El de la serie siguiente («La inicio yo» o «Arranca sola») no
+ * está: llega con AV-15, y hasta entonces no se ofrece una opción que todavía no funciona.
+ */
+export function HojaDelDescanso({
+  visible,
+  ajustes,
+  permiso,
+  onCambiar,
+  onPermitir,
+  onCerrar,
+}: {
+  visible: boolean;
+  ajustes: AjustesDelDescanso;
+  permiso: PermisoDeAvisos;
+  onCambiar: (cambios: Partial<AjustesDelDescanso>) => void;
+  onPermitir: () => void;
+  onCerrar: () => void;
+}) {
+  const T = TEXTOS_DEL_DESCANSO;
+  const { height } = useWindowDimensions();
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCerrar} statusBarTranslucent>
+      <View style={estilos.fondoDeLaHoja}>
+        <ScrollView style={[estilos.hoja, { maxHeight: Math.round(height * 0.85) }]} contentContainerStyle={estilos.contenidoDeLaHoja} accessibilityViewIsModal>
+          <View style={estilos.cabezaDelDescanso}>
+            <View style={[estilos.conIcono, estilos.textos]}>
+              <Icono nombre="engranaje" tamano={24} tono="acento" />
+              <Text style={[estilos.tituloDeBloque, estilos.textos]} accessibilityRole="header">
+                {T.comoFunciona}
+              </Text>
+            </View>
+            <BotonDeIcono nombre="cerrar" etiqueta={T.cerrarLosAjustes} onPress={onCerrar} />
+          </View>
+          <Text style={estilos.detalle}>{T.comoFuncionaTexto}</Text>
+          <Text style={estilos.detalle}>{T.comoFuncionaManual}</Text>
+          <Text style={estilos.rotuloDeAjuste}>{T.empezarElDescanso}</Text>
+          <Segmentos
+            etiqueta={T.empezarElDescanso}
+            opciones={[
+              { valor: 'automatico', texto: T.alGuardarLaSerie },
+              { valor: 'manual', texto: T.loInicioYo },
+            ]}
+            valor={ajustes.inicio}
+            alElegir={(inicio) => onCambiar({ inicio })}
+          />
+          <CasillaSola marcada={ajustes.vibrar} onCambio={(vibrar) => onCambiar({ vibrar })} etiqueta={T.vibrarAlLlegar} />
+          {ajustes.vibrar ? <CasillaSola marcada={ajustes.tambienBloqueado} onCambio={(tambienBloqueado) => onCambiar({ tambienBloqueado })} etiqueta={T.tambienBloqueado} /> : null}
+          {ajustes.vibrar && ajustes.tambienBloqueado && permiso === 'sin-pedir' ? (
+            <View style={estilos.pedidoDelPermiso}>
+              <Text style={estilos.detalle}>{T.paraVibrarBloqueado}</Text>
+              <Boton texto={T.permitirAvisos} onPress={onPermitir} />
+            </View>
+          ) : null}
+          {ajustes.vibrar && ajustes.tambienBloqueado && permiso === 'negado' ? <Text style={estilos.detalle}>{T.vibraSoloConLaAppAbierta}</Text> : null}
+          <Text style={[estilos.detalle, estilos.pieDeLaHoja]}>{T.ajustesEnEsteTelefono}</Text>
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
@@ -1312,7 +1423,19 @@ const estilos = estilosPorTema((COLOR) => ({
   textoDeBloque: { fontSize: 15, lineHeight: 21, color: COLOR.texto },
   // El descanso
   descansoAlPie: { gap: 4 },
-  descansoEnCurso: { borderColor: COLOR.acento, borderWidth: 2 },
+  descansoEnCurso: { borderColor: COLOR.acento, borderWidth: 2, gap: 6 },
+  cabezaDelDescanso: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  conteoDelDescanso: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 },
+  // La barra: la pista en el borde del tema y lo lleno en el acento. Llena, no cambia de color.
+  pistaDelDescanso: { height: 10, borderRadius: 5, backgroundColor: COLOR.borde, overflow: 'hidden', flexDirection: 'row' },
+  llenoDelDescanso: { height: 10, borderRadius: 5, backgroundColor: COLOR.acento },
+  extremosDelDescanso: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
+  pedidoDelPermiso: { borderWidth: 1, borderColor: COLOR.acento, borderRadius: 12, padding: 12, gap: 4, marginTop: 6 },
+  fondoDeLaHoja: { flex: 1, justifyContent: 'flex-end', backgroundColor: COLOR.velo },
+  hoja: { backgroundColor: COLOR.superficie, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  contenidoDeLaHoja: { padding: 20, gap: 8 },
+  rotuloDeAjuste: { fontSize: 16, fontWeight: '700', color: COLOR.texto, marginTop: 10 },
+  pieDeLaHoja: { marginTop: 12 },
   reloj: { flexDirection: 'row', alignItems: 'center', gap: 14, marginVertical: 8 },
   relojGrande: { fontSize: 40, fontWeight: '800', color: COLOR.texto, fontVariant: ['tabular-nums'] },
   explicacion: { borderColor: COLOR.acento },

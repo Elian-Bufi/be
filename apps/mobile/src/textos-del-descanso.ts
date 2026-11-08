@@ -19,6 +19,7 @@ export const TEXTOS_DEL_DESCANSO = {
   llegasteA: (recomendado: string) => `Llegaste a ${recomendado}`,
   barraParaLeer: (segundos: number, recomendado: number) => `${numero(segundos)} segundos de ${numero(recomendado)}`,
   ajustesDelDescanso: 'Ajustes del descanso',
+  cerrarLosAjustes: 'Cerrar los ajustes del descanso',
   comoFunciona: 'Cómo funciona el descanso',
   comoFuncionaTexto:
     'Al guardar una serie empieza el descanso. La barra se llena hasta el recomendado de tu entrenador; llegar al recomendado no corta nada.',

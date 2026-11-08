@@ -136,10 +136,12 @@ test('la APK pide solo lo que usa: sin insignias, referidor ni arranque del sist
   for (const p of ['android.permission.RECEIVE_BOOT_COMPLETED', 'com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE', 'android.permission.READ_APP_BADGE', 'com.sec.android.provider.badge.permission.WRITE', 'com.huawei.android.launcher.permission.CHANGE_BADGE', 'me.everything.badger.permission.BADGE_COUNT_WRITE']) {
     assert.ok(bloqueados.includes(p), `falta bloquear ${p}`);
   }
-  assert.equal(bloqueados.length, 21);
+  // DL-166 (AVD-5): el aviso del descanso es común: las dos alarmas exactas quedan bloqueadas.
+  for (const p of ['android.permission.SCHEDULE_EXACT_ALARM', 'android.permission.USE_EXACT_ALARM']) assert.ok(bloqueados.includes(p), `falta bloquear ${p}`);
+  assert.equal(bloqueados.length, 23);
   assert.equal(new Set(bloqueados).size, bloqueados.length, 'sin repetidos');
   // Lo que hace falta para recibir avisos, entrar a la API y sacar la foto de una comida no se bloquea.
-  for (const p of ['android.permission.POST_NOTIFICATIONS', 'android.permission.WAKE_LOCK', 'android.permission.ACCESS_NETWORK_STATE', 'com.google.android.c2dm.permission.RECEIVE', 'android.permission.INTERNET', 'android.permission.CAMERA', 'android.permission.READ_EXTERNAL_STORAGE']) {
+  for (const p of ['android.permission.POST_NOTIFICATIONS', 'android.permission.WAKE_LOCK', 'android.permission.ACCESS_NETWORK_STATE', 'com.google.android.c2dm.permission.RECEIVE', 'android.permission.INTERNET', 'android.permission.CAMERA', 'android.permission.READ_EXTERNAL_STORAGE', 'android.permission.VIBRATE']) {
     assert.ok(!bloqueados.includes(p), `${p} hace falta`);
   }
   // Sin insignias: si algún día se usan, hay que sacar sus permisos de la lista.

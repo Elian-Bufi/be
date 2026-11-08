@@ -60,6 +60,8 @@ import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/ent
 import { borraLosBorradores } from './src/borrador-de-formulario';
 import { borradoresDeFormularios } from './src/formularios-en-el-telefono';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
+import { cancelarAvisoDelDescanso } from './src/avisos-del-telefono';
+import { FilaFijaDeLaSesion, useFilaFija } from './src/fila-fija';
 import { marcaEnPerfil, useMarcaEnPerfil } from './src/marca-de-perfil';
 import { paraResponder } from './src/perfil';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
@@ -189,6 +191,8 @@ function Contenido() {
   const [restauracion] = useState(() => crearRestauracionDeAltura());
   // El alto real de la barra inferior, medido: el contenido deja ese espacio libre al final. 0 mientras no se ve.
   const [altoDeLaBarra, setAltoDeLaBarra] = useState(0);
+  // DL-166 (PV-11): el alto de la fila fija de la sesión, que va apilada sobre la barra. 0 mientras no se ve.
+  const [altoDeLaFila, setAltoDeLaFila] = useState(0);
   // DL-133: las novedades sin leer, para la campana; `null` mientras no se sabe. Y si un aviso tocado espera la sesión.
   const [sinLeer, setSinLeer] = useState<number | null>(null);
   const avisoPendiente = useRef(esAvisoDeBe(avisoQueAbrioLaApp()));
@@ -280,6 +284,8 @@ function Contenido() {
       olvidarSesion();
       memoria.olvidarLaSesion();
       marcaEnPerfil.olvidar();
+      // Cerrar la sesión cancela el aviso de un descanso que estuviera corriendo (DL-166, AV-12).
+      void cancelarAvisoDelDescanso();
       setSesion(null);
       setRecordada(null);
       registroDeCambios.olvidar();
@@ -494,8 +500,16 @@ function Contenido() {
   const conBarra = conSesion && !sinBarraInferior(ruta);
   const entrenamientoEnCurso = useHayEntrenamientoEnCurso();
   const conMarcaEnPerfil = useMarcaEnPerfil();
-  // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación.
-  const espacioDeLaBarra = conBarra && altoDeLaBarra > 0 ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
+  // DL-166 (PV-11): durante la sesión en vivo, la fila de acciones y la barra van fijas, apiladas y opacas; nada flota.
+  const filaDeLaSesion = useFilaFija();
+  const enLaSesion = conBarra && filaDeLaSesion !== null;
+  // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación. Fijas, el
+  // contenido deja libre el alto de las dos (la barra fija ya incluye el área segura).
+  const espacioDeLaBarra = enLaSesion
+    ? altoDeLaBarra + altoDeLaFila + 16
+    : conBarra && altoDeLaBarra > 0
+      ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16
+      : 32 + insets.bottom;
   const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
 
   /**
@@ -688,8 +702,9 @@ function Contenido() {
           empezó el camino hasta esta pantalla; en Novedades, ninguna. */}
       {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
           que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
-      {conBarra && altoDeLaBarra > 0 ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
-      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} marcaEnPerfil={conMarcaEnPerfil} /> : null}
+      {conBarra && altoDeLaBarra > 0 && !enLaSesion ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
+      {enLaSesion && filaDeLaSesion ? <FilaFijaDeLaSesion fila={filaDeLaSesion} abajo={altoDeLaBarra} alMedir={setAltoDeLaFila} /> : null}
+      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} marcaEnPerfil={conMarcaEnPerfil} fija={enLaSesion} /> : null}
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>

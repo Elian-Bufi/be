@@ -57,7 +57,7 @@ const VUELTA_DE_ROSCA = [
   ...['textos-de-la-vuelta.ts', 'desplegable.ts', 'perfil.ts', 'quien-ve-que.ts', 'inicio-de-hoy.ts'].map(movil),
   ...['perfil.tsx', 'quien-ve-que.tsx', 'cuenta.tsx'].map(inicio),
 ];
-const SESION_DE_LA_VUELTA = ['textos-del-descanso.ts'].map(movil);
+const SESION_DE_LA_VUELTA = ['textos-del-descanso.ts', 'descanso-automatico.ts', 'fila-fija.tsx'].map(movil);
 
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
 const DOMINIOS = [

@@ -58,6 +58,13 @@ export type AccionDeTiempo =
   | { readonly tipo: 'activar-ejercicio'; readonly prescriptionId: string }
   /** «Iniciar descanso»: queda ligado a la serie que lo originó. */
   | { readonly tipo: 'iniciar-descanso'; readonly prescriptionId: string; readonly setIndex: number }
+  /**
+   * DL-166 (PV-7): tildar la serie con el descanso automático empieza su descanso, ligado a esa serie. Si había algo
+   * midiéndose (la serie cronometrada que se tilda, o el descanso de la serie anterior), la misma acción lo cierra
+   * primero, en el mismo instante y con la misma acción compuesta: una sola medición abierta a la vez. «Iniciar
+   * descanso», a mano, sigue como era.
+   */
+  | { readonly tipo: 'descanso-al-tildar'; readonly prescriptionId: string; readonly setIndex: number }
   | { readonly tipo: 'finalizar-descanso' }
   /** «Cronometrar serie». Con un descanso en curso, es la acción compuesta «finalizar descanso e iniciar la serie». */
   | { readonly tipo: 'cronometrar-serie'; readonly prescriptionId: string; readonly setIndex: number }
@@ -115,6 +122,10 @@ export function pasosDeLaAccion(accion: AccionDeTiempo, estado: EstadoDeLaCorrid
       return [{ type: 'EXERCISE_ACTIVATED', prescriptionId: accion.prescriptionId }];
     case 'iniciar-descanso':
       return [{ type: 'REST_STARTED', restId: nuevoId('descanso'), prescriptionId: accion.prescriptionId, setIndex: accion.setIndex }];
+    case 'descanso-al-tildar': {
+      const iniciar: Paso = { type: 'REST_STARTED', restId: nuevoId('descanso'), prescriptionId: accion.prescriptionId, setIndex: accion.setIndex };
+      return abierta ? [cerrar('medido')!, iniciar] : [iniciar];
+    }
     case 'finalizar-descanso':
       return abierta?.kind === 'REST' ? [cerrar('medido')!] : 'MEASUREMENT_NOT_OPEN';
     case 'cronometrar-serie': {

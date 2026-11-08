@@ -374,3 +374,187 @@ test('TEST-AVR-029 · una cuenta nueva: el paso que falta primero, líneas sin p
   assert.match(leer('pantallas/inicio-nutricion.tsx'), /formaDelArea\(r\.datos\.data\.planState\) === 'linea'/);
   assert.match(leer('pantallas/inicio-entrenamiento.tsx'), /<LineaDeInicio zona="entrenamiento" texto=\{COPY_ENTRENAMIENTO\.sinPlanAsesorado\} \/>/);
 });
+
+// ─── TEST-AVR-016 a 024 y 030 · la sesión en curso (AV-10 a AV-14 y AV-18) ───────────────────────
+
+const corrida = await import('../apps/mobile/src/corrida-de-entrenamiento.ts');
+const descanso = await import('../apps/mobile/src/descanso-automatico.ts');
+const { crearReloj } = await import('../apps/mobile/src/reloj-de-sesion.ts');
+const { calcularTiempos } = await import('../packages/domain/dist/index.js');
+
+/** Una sesión de prueba: Sentadilla (pA) y un segundo ejercicio (pB), con un reloj que avanza cuando la prueba lo dice. */
+function sesionDePrueba() {
+  const t = { mono: 5_000, civil: Date.UTC(2026, 10, 7, 14, 0, 0) };
+  let n = 0;
+  const h = { reloj: crearReloj({ ancla: 'proceso-vuelta', monotonico: () => t.mono, civil: () => t.civil }), nuevoId: (p) => `${p}-${String(++n).padStart(6, '0')}` };
+  const contexto = { prescripciones: new Set(['pA', 'pB']), otraSesionEnCurso: false };
+  let c = corrida.CORRIDA_VACIA;
+  const hacer = (accion) => {
+    const r = corrida.armarAccion(c, accion, contexto, h);
+    if (r.ok) c = r.corrida;
+    return r;
+  };
+  hacer({ tipo: 'iniciar', prescriptionId: 'pA' });
+  return {
+    hacer,
+    estado: () => corrida.estadoLocal(c),
+    eventos: () => corrida.eventosDeLaCorrida(c),
+    avanzar: (s) => {
+      t.mono += s * 1000;
+      t.civil += s * 1000;
+    },
+  };
+}
+const AUTO = descanso.AJUSTES_DE_FABRICA;
+const MANUAL = { ...AUTO, inicio: 'manual' };
+const serie2 = { prescriptionId: 'pA', setIndex: 2, ultimaDelEjercicio: false };
+
+test('TEST-AVR-016 · con el ajuste automático, tildar la serie empieza su descanso, ligado a esa serie; con el manual, nada', () => {
+  const s = sesionDePrueba();
+  const accion = descanso.accionAlTildar(s.estado(), AUTO, serie2);
+  assert.deepEqual(accion, { tipo: 'descanso-al-tildar', prescriptionId: 'pA', setIndex: 2 });
+  const r = s.hacer(accion);
+  assert.equal(r.ok, true, 'aplicarEventos acepta la secuencia');
+  assert.deepEqual(r.eventos.map((e) => [e.type, e.prescriptionId, e.setIndex]), [['REST_STARTED', 'pA', 2]]);
+  assert.equal(descanso.accionAlTildar(s.estado(), MANUAL, serie2), null, 'manual: «Iniciar descanso», como hoy');
+});
+
+test('TEST-AVR-017 · en pausa, tildar no arranca ningún descanso; sin corrida, tampoco', () => {
+  const s = sesionDePrueba();
+  s.hacer({ tipo: 'pausar' });
+  assert.equal(descanso.accionAlTildar(s.estado(), AUTO, serie2), null);
+  assert.equal(descanso.accionAlTildar(null, AUTO, serie2), null, 'otro día o sin empezar');
+});
+
+test('TEST-AVR-018 · con la serie cronometrada abierta, la misma acción la cierra y empieza el descanso, en el mismo instante', () => {
+  const s = sesionDePrueba();
+  s.hacer({ tipo: 'cronometrar-serie', prescriptionId: 'pA', setIndex: 2 });
+  s.avanzar(40);
+  const r = s.hacer(descanso.accionAlTildar(s.estado(), AUTO, serie2));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.eventos.map((e) => e.type), ['SET_TIMING_FINISHED', 'REST_STARTED']);
+  assert.deepEqual(r.eventos[0].at, r.eventos[1].at, 'el mismo instante');
+  assert.ok(r.eventos[0].compoundActionId && r.eventos[0].compoundActionId === r.eventos[1].compoundActionId, 'una sola acción compuesta');
+  // Con el descanso de la serie 2 corriendo, tildar la 3 lo cierra y empieza el de la 3.
+  s.avanzar(30);
+  const r3 = s.hacer(descanso.accionAlTildar(s.estado(), AUTO, { prescriptionId: 'pA', setIndex: 3, ultimaDelEjercicio: false }));
+  assert.deepEqual(r3.eventos.map((e) => [e.type, e.setIndex ?? null]), [['REST_FINISHED', null], ['REST_STARTED', 3]]);
+  // «Iniciar descanso», a mano, sigue como era: con algo abierto, se rechaza.
+  assert.deepEqual(s.hacer({ tipo: 'iniciar-descanso', prescriptionId: 'pA', setIndex: 4 }), { ok: false, motivo: 'MEASUREMENT_OPEN' });
+});
+
+test('TEST-AVR-019 · tras la última serie del ejercicio no arranca; destildar con el descanso corriendo lo termina; sin recomendado, sin barra', () => {
+  const s = sesionDePrueba();
+  assert.equal(descanso.accionAlTildar(s.estado(), AUTO, { prescriptionId: 'pA', setIndex: 4, ultimaDelEjercicio: true }), null, 'AVD-3');
+  s.hacer(descanso.accionAlTildar(s.estado(), AUTO, serie2));
+  assert.deepEqual(descanso.accionAlDestildar(s.estado(), { prescriptionId: 'pA', setIndex: 2 }), { tipo: 'finalizar-descanso' });
+  assert.equal(descanso.accionAlDestildar(s.estado(), { prescriptionId: 'pA', setIndex: 1 }), null, 'otra serie: el descanso sigue');
+  const r = s.hacer(descanso.accionAlDestildar(s.estado(), { prescriptionId: 'pA', setIndex: 2 }));
+  assert.deepEqual(r.eventos.map((e) => e.type), ['REST_FINISHED'], 'un evento no se borra: se cierra');
+  // La barra: de 0 al recomendado; pasado, queda llena y no corta nada. Sin recomendado, no hay barra.
+  assert.equal(descanso.llenadoDeLaBarra(72_000, 90), 0.8);
+  assert.equal(descanso.llenadoDeLaBarra(120_000, 90), 1);
+  assert.equal(descanso.llenadoDeLaBarra(10_000, null), null);
+  assert.equal(descanso.llegoAlRecomendado(89_000, 90_000, 90), true);
+  assert.equal(descanso.llegoAlRecomendado(91_000, 92_000, 90), false, 'se anuncia una sola vez');
+  assert.equal(descanso.llegoAlRecomendado(0, 500_000, null), false, 'sin recomendado no vibra');
+});
+
+test('TEST-AVR-020 · los ajustes del descanso quedan en el teléfono, con los de fábrica si la lectura falla', async () => {
+  assert.deepEqual(descanso.AJUSTES_DE_FABRICA, { inicio: 'automatico', vibrar: true, tambienBloqueado: true });
+  const guardado = new Map();
+  const almacen = { getItem: async (k) => guardado.get(k) ?? null, setItem: async (k, v) => void guardado.set(k, v) };
+  const a = descanso.crearAjustesDelDescanso(almacen);
+  assert.deepEqual(await a.leer(), descanso.AJUSTES_DE_FABRICA);
+  assert.equal(await a.cambiar({ inicio: 'manual' }), true);
+  assert.equal((await descanso.crearAjustesDelDescanso(almacen).leer()).inicio, 'manual', 'en un proceso nuevo, lo guardado');
+  const roto = descanso.crearAjustesDelDescanso({ getItem: async () => { throw new Error('sin almacenamiento'); }, setItem: async () => { throw new Error('no'); } });
+  assert.deepEqual(await roto.leer(), descanso.AJUSTES_DE_FABRICA);
+  assert.equal(await roto.cambiar({ vibrar: false }), false, 'no se pudo guardar: lo dice, y vale en esta sesión');
+  assert.equal(roto.actuales().vibrar, false);
+  assert.deepEqual(descanso.ajustesDe('{"inicio":"otra-cosa","vibrar":"sí"}'), descanso.AJUSTES_DE_FABRICA, 'basura: los de fábrica');
+  // Hasta AV-15 no se ofrece «Arranca sola»: los ajustes no tienen el de la serie siguiente.
+  assert.deepEqual(Object.keys(descanso.AJUSTES_DE_FABRICA).sort(), ['inicio', 'tambienBloqueado', 'vibrar']);
+});
+
+test('TEST-AVR-021 · el aviso del recomendado: cuándo se programa y cuándo no; el permiso en contexto', () => {
+  const base = { descansoCorriendo: true, pausada: false, recomendadoS: 90, transcurridoMs: 12_000, ajustes: AUTO, permiso: 'dado' };
+  assert.deepEqual(descanso.planDelAviso(base), { enSegundos: 78 });
+  for (const [cambio, por] of [
+    [{ descansoCorriendo: false }, 'el descanso terminó antes, se destildó o se finalizó'],
+    [{ pausada: true }, 'en pausa'],
+    [{ recomendadoS: null }, 'sin recomendado'],
+    [{ ajustes: { ...AUTO, vibrar: false } }, 'vibrar apagado'],
+    [{ ajustes: { ...AUTO, tambienBloqueado: false } }, 'solo con la app abierta'],
+    [{ permiso: 'negado' }, 'sin permiso'],
+    [{ transcurridoMs: 95_000 }, 'ya pasó el recomendado'],
+  ]) {
+    assert.equal(descanso.planDelAviso({ ...base, ...cambio }), null, por);
+  }
+  const permiso = (permisoDado, cerrado = false) => descanso.pedidoDelPermiso({ ajustes: AUTO, permiso: permisoDado, descansoCorriendo: true, cerradoEnEstaSesion: cerrado });
+  assert.equal(permiso('dado'), 'nada');
+  assert.equal(permiso('sin-pedir'), 'explicar', 'en el primer descanso, con el para qué');
+  assert.equal(permiso('sin-pedir', true), 'nada', 'cerrado sin elegir: no se vuelve a preguntar en esa sesión');
+  assert.equal(permiso('negado'), 'solo-con-la-app-abierta');
+  assert.equal(descanso.pedidoDelPermiso({ ajustes: AUTO, permiso: 'sin-pedir', descansoCorriendo: false, cerradoEnEstaSesion: false }), 'nada', 'nunca al abrir la app');
+  // El aviso no nombra el ejercicio ni muestra datos.
+  assert.deepEqual(descanso.CONTENIDO_DEL_AVISO, { title: 'Tu descanso llegó al recomendado', body: '', data: { tipo: 'descanso-de-be' } });
+  assert.equal(descanso.esElAvisoDelDescanso(descanso.CONTENIDO_DEL_AVISO.data), true);
+});
+
+test('TEST-AVR-022 · la lista de permisos: sin alarma exacta ni arranque del sistema, y la garantía de los avisos corregida', () => {
+  const CONFIG = readFileSync(join(RAIZ, 'apps/mobile/app.config.ts'), 'utf8');
+  const lista = CONFIG.slice(CONFIG.indexOf('const PERMISOS_QUE_BE_NO_USA = ['), CONFIG.indexOf('];', CONFIG.indexOf('const PERMISOS_QUE_BE_NO_USA')));
+  for (const p of ['android.permission.SCHEDULE_EXACT_ALARM', 'android.permission.USE_EXACT_ALARM', 'android.permission.RECEIVE_BOOT_COMPLETED']) assert.ok(lista.includes(`'${p}'`), `${p} bloqueado (AVD-5)`);
+  assert.doesNotMatch(lista, /'android\.permission\.VIBRATE'/, 'vibrar con la app abierta hace falta');
+  assert.doesNotMatch(CONFIG, /BE no programa avisos\s+locales/, 'la garantía vieja se corrigió (AVD-5)');
+  const TELEFONO = leer('avisos-del-telefono.ts');
+  assert.match(TELEFONO, /scheduleNotificationAsync/);
+  assert.match(TELEFONO, /cancelScheduledNotificationAsync/);
+  assert.doesNotMatch(TELEFONO, /exerciseName|nombreDelEjercicio/, 'el aviso no lleva el ejercicio');
+});
+
+test('TEST-AVR-023 · la fila fija: Pausar o Reanudar, la acción del momento y Siguiente ejercicio', () => {
+  const fila = (d) => descanso.filaDeAcciones({ pausada: false, abierta: null, prescriptionId: 'pA', siguienteSinRegistrar: 3, haySiguienteEjercicio: true, ...d });
+  const descansando = fila({ abierta: { kind: 'REST', measurementId: 'r', prescriptionId: 'pA', setIndex: 2 } });
+  assert.deepEqual([descansando.izquierda.texto, descansando.medio.texto, descansando.siguienteEjercicio.texto], ['Pausar', 'Empezar serie 3', 'Siguiente ejercicio']);
+  assert.equal(fila({ abierta: { kind: 'SET', measurementId: 's', prescriptionId: 'pA', setIndex: 3 } }).medio.texto, 'Terminar serie 3');
+  assert.equal(fila({}).medio.texto, 'Empezar serie 3', 'sin nada abierto, mide la serie');
+  const enPausa = fila({ pausada: true });
+  assert.equal(enPausa.izquierda.texto, 'Reanudar');
+  assert.equal(enPausa.motivo, 'En pausa no se mide nada: reanudá para seguir.');
+  assert.equal(enPausa.siguienteEjercicio.habilitado, false);
+  assert.equal(fila({ haySiguienteEjercicio: false }).siguienteEjercicio, null, 'en el último ejercicio');
+  assert.equal(fila({ siguienteSinRegistrar: null }).medio, null, 'todas registradas');
+  assert.doesNotMatch(JSON.stringify(fila({})), /Finalizar/, '«Finalizar entrenamiento» no está en la fila');
+});
+
+test('TEST-AVR-024 · «Empezar serie N» con un descanso corriendo: dos eventos, el mismo instante y una sola acción compuesta', () => {
+  const s = sesionDePrueba();
+  s.hacer(descanso.accionAlTildar(s.estado(), AUTO, serie2));
+  s.avanzar(72);
+  const r = s.hacer(descanso.accionDeEmpezarSerie('pA', 3));
+  assert.deepEqual(r.eventos.map((e) => e.type), ['REST_FINISHED', 'SET_TIMING_STARTED']);
+  assert.deepEqual(r.eventos[0].at, r.eventos[1].at);
+  assert.ok(r.eventos[0].compoundActionId && r.eventos[0].compoundActionId === r.eventos[1].compoundActionId);
+  // El doble toque: el segundo no agrega eventos.
+  const antes = s.eventos().length;
+  assert.equal(s.hacer(descanso.accionDeEmpezarSerie('pA', 3)).ok, false);
+  assert.equal(s.eventos().length, antes);
+  // Los tiempos: el descanso y la serie medidos, sin hueco entre ellos.
+  s.avanzar(30);
+  s.hacer({ tipo: 'finalizar-serie' });
+  const tiempos = calcularTiempos(s.eventos(), () => 90);
+  const elDescanso = tiempos.rests.find((d) => d.setIndex === 2);
+  const laSerie = tiempos.timedSets.find((x) => x.setIndex === 3);
+  assert.equal(elDescanso.finishedAt, laSerie.startedAt, 'sin hueco');
+  // Sin descanso, «Empezar serie N» arranca solo la medición de la serie.
+  const sin = sesionDePrueba();
+  assert.deepEqual(sin.hacer(descanso.accionDeEmpezarSerie('pA', 1)).eventos.map((e) => e.type), ['SET_TIMING_STARTED']);
+});
+
+test('TEST-AVR-030 · con letra grande, la fila de acciones sigue en una fila y la navegación pasa a dos; nada se esconde', () => {
+  const zonas = nav.ZONAS.map((z) => z.zona);
+  assert.deepEqual(descanso.disposicionDeLaSesion(360, 1, zonas), { filasDeAcciones: 1, filasDeNavegacion: 1, navegacionVisible: true });
+  for (const escala of [1.3, 2]) assert.deepEqual(descanso.disposicionDeLaSesion(360, escala, zonas), { filasDeAcciones: 1, filasDeNavegacion: 2, navegacionVisible: true }, `×${escala}`);
+});

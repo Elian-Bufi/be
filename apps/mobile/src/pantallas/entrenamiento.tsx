@@ -55,7 +55,12 @@ import {
   type SesionDeOcurrencia,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Alert, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
+import { ajustesDelDescanso, useAjustesDelDescanso } from '../ajustes-del-descanso';
+import { cancelarAvisoDelDescanso, pedirPermisoDeAvisos, permisoDeAvisos, programarAvisoDelDescanso } from '../avisos-del-telefono';
+import { accionAlDestildar, accionAlTildar, filaDeAcciones, llegoAlRecomendado, pedidoDelPermiso, planDelAviso, type PermisoDeAvisos } from '../descanso-automatico';
+import { usePublicarFilaFija } from '../fila-fija';
+import { TEXTOS_DEL_DESCANSO } from '../textos-del-descanso';
 import { estadoDeSincronizacion, type SesionLocal } from '../almacen-de-entrenamiento';
 import { api } from '../api';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
@@ -121,6 +126,7 @@ import {
   EstadoDelEnvio,
   ExplicacionDeLosTiempos,
   FranjaDeLaSesion,
+  HojaDelDescanso,
   RutinaDeLaSesion,
   SeriesDelResumen,
   SustituirEjercicio,
@@ -948,6 +954,14 @@ export function PantallaDeSesion({
   const [falloDeSustitucion, setFalloDeSustitucion] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [, setPulso] = useState(0);
+  // DL-166 (AV-11, AV-12): los ajustes del descanso (en el teléfono), su hoja, y el permiso de avisos, pedido en contexto.
+  const ajustes = useAjustesDelDescanso();
+  const [hojaDelDescanso, setHojaDelDescanso] = useState(false);
+  const [permiso, setPermiso] = useState<PermisoDeAvisos>('dado');
+  const [permisoCerrado, setPermisoCerrado] = useState(false);
+  useEffect(() => {
+    void permisoDeAvisos().then(setPermiso);
+  }, []);
   // Un doble toque es una sola operación: el segundo toque llega antes de que la pantalla se vuelva a dibujar.
   const enCurso = useRef(false);
   const intentoDeConfirmar = useClaveDeIntento();
@@ -1151,8 +1165,14 @@ export function PantallaDeSesion({
     try {
       if (f.estado === 'sin-registrar') {
         let escrita: FilaEscrita = escritasDelActivo.get(f.setIndex) ?? FILA_VACIA;
+        // DL-166 (PV-7, AVD-3): con el ajuste automático, el descanso de esta serie empieza al tildarla, salvo tras la
+        // última del ejercicio. Si la serie se estaba cronometrando, la misma acción cierra su medición.
+        const ultimaDelEjercicio = f.setIndex === Math.max(...filas.map((x) => x.setIndex));
+        const descansoAuto = accionAlTildar(estado, ajustesDelDescanso.actuales(), { prescriptionId: p.prescriptionId, setIndex: f.setIndex, ultimaDelEjercicio });
+        let descansoEmpezado = false;
         if (abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId && abierta.setIndex === f.setIndex) {
-          const medidos = pararElReloj(abierta);
+          const medidos = descansoAuto ? pararElReloj(abierta, descansoAuto, anuncioDelDescanso(f.setIndex)) : pararElReloj(abierta);
+          descansoEmpezado = descansoAuto !== null && medidos !== null;
           if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
         }
         const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, escritasDelActivo.get(f.setIndex)?.unidad ?? unidad);
@@ -1167,6 +1187,7 @@ export function PantallaDeSesion({
         if (resultado !== 'registrada') return;
         setEscribiendoTiempo(null);
         AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieRegistradaAnuncio(f.setIndex));
+        if (descansoAuto && !descansoEmpezado) hacer(descansoAuto, anuncioDelDescanso(f.setIndex));
         const tildadas = filas.map((x): FilaDeLaTabla => (x.setIndex === f.setIndex ? { ...x, estado: 'pendiente-de-enviar' } : x));
         const siguiente = focoTrasTildar(tildadas, f.setIndex, filaActiva?.setIndex ?? f.setIndex);
         entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex: siguiente });
@@ -1179,6 +1200,9 @@ export function PantallaDeSesion({
       // Una carga registrada en otra unidad vuelve con su unidad: la columna del ejercicio pasa a esa.
       if (conAlgo && restaurar.carga !== '' && restaurar.unidad !== unidad) entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, restaurar.unidad);
       if (entrenamientoLocal.quitarSerie(draftId, p.prescriptionId, f.setIndex, conAlgo ? restaurar : null) !== 'quitada') return;
+      // Destildar con su descanso corriendo lo termina (AVD-3): el evento no se borra, se cierra.
+      const terminarElDescanso = accionAlDestildar(estado, { prescriptionId: p.prescriptionId, setIndex: f.setIndex });
+      if (terminarElDescanso) hacer(terminarElDescanso);
       setErrores(null);
       AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieDestildada(f.setIndex));
       entrenamientoLocal.enfocar(draftId, { prescriptionId: p.prescriptionId, setIndex: f.setIndex });
@@ -1424,6 +1448,59 @@ export function PantallaDeSesion({
     }
   }
 
+  /** Lo que dice TalkBack al empezar un descanso: «Descanso iniciado, recomendado 1 minuto 30». Nada en el medio. */
+  function anuncioDelDescanso(setIndex: number): string {
+    const rec = p ? recomendadoDe(p.prescriptionId, setIndex) : null;
+    return TEXTOS_DEL_DESCANSO.descansoIniciado(rec === null ? null : duracionParaLeer(rec * 1000));
+  }
+
+  // DL-166 (AV-10, AV-12): al llegar al recomendado, el anuncio y la vibración, una sola vez; con la app abierta.
+  const descansoAbierto = abierta?.kind === 'REST' ? abierta : null;
+  const recomendadoDelDescanso = descansoAbierto ? recomendadoDe(descansoAbierto.prescriptionId, descansoAbierto.setIndex) : null;
+  const msDelDescanso = descansoAbierto ? (vivo?.medicionAbierta?.ms ?? null) : null;
+  const msAnterior = useRef<number | null>(null);
+  useEffect(() => {
+    if (llegoAlRecomendado(msAnterior.current, msDelDescanso, recomendadoDelDescanso) && recomendadoDelDescanso !== null) {
+      AccessibilityInfo.announceForAccessibility(TEXTOS_DEL_DESCANSO.llegasteA(duracionParaLeer(recomendadoDelDescanso * 1000)));
+      if (ajustes.vibrar) Vibration.vibrate([0, 400, 200, 400]);
+    }
+    msAnterior.current = msDelDescanso;
+  });
+  // El aviso con el teléfono bloqueado: se programa al empezar el descanso y se cancela cuando deja de correr (terminó
+  // antes, se pausó, se destildó o se finalizó). Se recalcula solo cuando cambia el descanso, la pausa o los ajustes.
+  const idDelDescanso = descansoAbierto?.measurementId ?? null;
+  const enPausa = !!estado?.pausada;
+  useEffect(() => {
+    const plan = planDelAviso({ descansoCorriendo: idDelDescanso !== null, pausada: enPausa, recomendadoS: recomendadoDelDescanso, transcurridoMs: msDelDescanso ?? 0, ajustes, permiso });
+    if (plan) void programarAvisoDelDescanso(plan.enSegundos);
+    else void cancelarAvisoDelDescanso();
+    // El transcurrido se lee al programar; no hace falta reprogramar cada segundo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idDelDescanso, enPausa, recomendadoDelDescanso, ajustes, permiso]);
+  const avisoDelPermiso = pedidoDelPermiso({ ajustes, permiso, descansoCorriendo: idDelDescanso !== null, cerradoEnEstaSesion: permisoCerrado });
+  async function permitirAvisos() {
+    setPermiso(await pedirPermisoDeAvisos());
+    setPermisoCerrado(true);
+  }
+
+  // DL-166 (PV-11, AV-13 y AV-14): la fila fija de acciones, apilada sobre la navegación. Solo con la corrida en vivo.
+  const indiceDelActivo = p ? prescripciones.findIndex((x) => x.prescriptionId === p.prescriptionId) : -1;
+  const ejercicioSiguiente = indiceDelActivo >= 0 ? (prescripciones[indiceDelActivo + 1] ?? null) : null;
+  const datosDeLaFila =
+    conCorrida && p && !finalizando
+      ? filaDeAcciones({ pausada: estado.pausada, abierta, prescriptionId: p.prescriptionId, siguienteSinRegistrar: primeraSinRegistrar(filas)?.setIndex ?? null, haySiguienteEjercicio: ejercicioSiguiente !== null })
+      : null;
+  usePublicarFilaFija(datosDeLaFila, ocupado, {
+    izquierda: () => (estado?.pausada ? hacer({ tipo: 'reanudar' }, 'Sesión reanudada') : pausar()),
+    // «Empezar serie N» con un descanso corriendo es la acción compuesta de siempre; «Terminar serie N» para su reloj.
+    medio: () => {
+      if (datosDeLaFila?.medio) relojDeLaFila(datosDeLaFila.medio.setIndex);
+    },
+    siguiente: () => {
+      if (ejercicioSiguiente) pasarA(ejercicioSiguiente.prescriptionId);
+    },
+  });
+
   // ─── Lo que se ve ───
   // Escritura denegada: se retira el borrador de la pantalla y queda el estado neutral. Volver está en la cabecera.
   if (retirado) return <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible} />;
@@ -1582,7 +1659,7 @@ export function PantallaDeSesion({
             recomendado: recomendadoDe(abierta.prescriptionId, abierta.setIndex),
             siguiente: trasElDescanso !== null && trasElDescanso !== abierta.setIndex ? trasElDescanso : null,
           }
-        : pausada || abierta?.kind === 'SET'
+        : pausada || abierta?.kind === 'SET' || ajustes.inicio === 'automatico'
           ? null
           : { tipo: 'disponible', serie: serieDelDescanso, recomendado: recomendadoDe(p.prescriptionId, serieDelDescanso) };
   // El reloj de las filas: solo en vivo, con la corrida abierta y sin pausa. Otro día el tiempo se escribe.
@@ -1634,11 +1711,7 @@ export function PantallaDeSesion({
         </Aviso>
       ) : null}
       {modo === 'en-vivo' && estado?.runId && !almacen.explicacionVista() ? <ExplicacionDeLosTiempos onEntendido={() => entrenamientoLocal.marcarExplicacionVista()} /> : null}
-      {pausada ? (
-        <Aviso tipo="info" titulo={e.sesionEnPausa}>
-          <Boton texto={e.reanudarSesion} onPress={() => void hacer({ tipo: 'reanudar' }, 'Sesión reanudada')} />
-        </Aviso>
-      ) : null}
+      {pausada ? <Aviso tipo="info" titulo={e.sesionEnPausa} /> : null}
       <EjercicioActivo
         token={token}
         sesionPerdida={sesionPerdida}
@@ -1657,6 +1730,20 @@ export function PantallaDeSesion({
               }
             : undefined
         }
+      />
+      {/* DL-166 (PV-7): el descanso va debajo del ejercicio y arriba de sus series, con el engranaje de sus ajustes. */}
+      <BloqueDeDescanso
+        estado={descanso}
+        onIniciar={() => {
+          // Con «Lo inicio yo»: el descanso queda ligado a la serie que lo origina, la última hecha.
+          if (serieDelDescanso !== null) hacer({ tipo: 'iniciar-descanso', prescriptionId: p.prescriptionId, setIndex: serieDelDescanso }, anuncioDelDescanso(serieDelDescanso));
+        }}
+        onFinalizar={finalizarDescanso}
+        onAjustes={() => setHojaDelDescanso(true)}
+        avisoDelPermiso={avisoDelPermiso}
+        onPermitir={() => void permitirAvisos()}
+        onAhoraNo={() => setPermisoCerrado(true)}
+        deshabilitado={ocupado}
       />
       {/* La ayuda por defecto, plegada junto al encabezado de la tabla, con el ícono de ayuda (PA-02). */}
       <AyudaDeLaTabla />
@@ -1690,23 +1777,18 @@ export function PantallaDeSesion({
       </View>
       {banda ? <BandaDelPlan banda={banda} /> : null}
       {mostrarEnvio ? estadoDelEnvio : null}
-      <BloqueDeDescanso
-        estado={descanso}
-        onIniciar={() => {
-          // El descanso queda ligado a la serie que lo origina, la última hecha. Tildar una serie no lo inicia.
-          if (serieDelDescanso !== null) hacer({ tipo: 'iniciar-descanso', prescriptionId: p.prescriptionId, setIndex: serieDelDescanso }, 'Descanso iniciado');
-        }}
-        onFinalizar={finalizarDescanso}
-        deshabilitado={ocupado}
-      />
-      {siguiente ? (
-        <>
-          <Boton texto={e.siguienteEjercicio} tipo="secundario" onPress={() => pasarA(siguiente.prescriptionId)} deshabilitado={pausada} />
-          {pausada ? <Text style={estilos.ayudaDelBoton}>Reanudá la sesión para cambiar de ejercicio.</Text> : null}
-        </>
-      ) : null}
-      {conCorrida && !pausada ? <Boton texto={e.pausarSesion} tipo="secundario" onPress={pausar} /> : null}
+      {/* Siguiente ejercicio y Pausar están en la fila fija (PV-11); sin corrida en vivo, Siguiente ejercicio queda acá. */}
+      {siguiente && !conCorrida ? <Boton texto={e.siguienteEjercicio} tipo="secundario" onPress={() => pasarA(siguiente.prescriptionId)} /> : null}
+      {/* «Finalizar entrenamiento» queda al final de la pantalla y en «Ver rutina», como antes: no compite en la fila. */}
       <Boton texto={e.finalizarEntrenamiento} tipo="secundario" onPress={() => setFinalizando(true)} />
+      <HojaDelDescanso
+        visible={hojaDelDescanso}
+        ajustes={ajustes}
+        permiso={permiso}
+        onCambiar={(cambios) => void ajustesDelDescanso.cambiar(cambios)}
+        onPermitir={() => void permitirAvisos()}
+        onCerrar={() => setHojaDelDescanso(false)}
+      />
       <RutinaDeLaSesion
         visible={dialogo?.tipo === 'rutina'}
         sesion={s}

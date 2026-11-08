@@ -44,15 +44,22 @@ if (CLIENT_ID_WEB_DE_GOOGLE && !/^[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com
 /**
  * La APK pide solo lo que usa (08, minimización). Las librerías declaran estos permisos y BE no los necesita:
  * - expo-notifications (0.16.0-candidata.1) trajo el arranque del sistema, que sirve para reprogramar avisos locales,
- *   el referidor de instalación de Google Play y las insignias del ícono de quince lanzadores. BE no programa avisos
- *   locales (los avisos llegan del servidor), no lee el referidor y no pone insignias (`shouldSetBadge: false`).
+ *   el referidor de instalación de Google Play y las insignias del ícono de quince lanzadores. Desde DL-166 (AVD-5) BE
+ *   programa un solo aviso local: el del descanso que llega al recomendado, para vibrar con el teléfono bloqueado. Es un
+ *   aviso común, sin alarma exacta (las dos alarmas exactas quedan bloqueadas: Google Play las limita a las apps de
+ *   alarma y calendario, y Android puede demorar el aviso en reposo profundo). No se reprograma al reiniciar el teléfono:
+ *   el arranque del sistema sigue bloqueado. BE no lee el referidor y no pone insignias (`shouldSetBadge: false`).
  * - La ventana sobre otras apps es de las herramientas de desarrollo de React Native.
  * - La biometría es de expo-secure-store, que BE usa sin pedir la huella (DL-012).
- * Quedan los que hacen falta para recibir avisos: POST_NOTIFICATIONS, WAKE_LOCK, ACCESS_NETWORK_STATE y
- * com.google.android.c2dm.permission.RECEIVE. scripts/avisos-del-telefono.test.mjs fija la lista.
+ * Quedan los que hacen falta para recibir avisos y para el del descanso: POST_NOTIFICATIONS, WAKE_LOCK,
+ * ACCESS_NETWORK_STATE, com.google.android.c2dm.permission.RECEIVE y VIBRATE. scripts/avisos-del-telefono.test.mjs fija
+ * la lista.
  */
 const PERMISOS_QUE_BE_NO_USA = [
   'android.permission.RECEIVE_BOOT_COMPLETED',
+  // DL-166 (AVD-5): el aviso del descanso es común, sin alarma exacta.
+  'android.permission.SCHEDULE_EXACT_ALARM',
+  'android.permission.USE_EXACT_ALARM',
   'android.permission.SYSTEM_ALERT_WINDOW',
   'android.permission.USE_BIOMETRIC',
   'android.permission.USE_FINGERPRINT',
