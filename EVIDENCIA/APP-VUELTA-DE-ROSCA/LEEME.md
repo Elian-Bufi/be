@@ -90,8 +90,8 @@ La lámina a 18, 20 y 24 dp, en los dos temas, está en `iconos/` con su `LEEME.
 | Dato | Valor |
 |---|---|
 | Archivo | `be-0.23.0-candidata.1-6eac0a7.apk` |
-| SHA-256 | `APK_SHA` |
-| Tamaño | APK_BYTES bytes |
+| SHA-256 | `00e03b00e85dabb11929d25e516efeb9d3aa834abd9679e4d77ced3319203799` |
+| Tamaño | 84.533.669 bytes |
 | Versión | `0.23.0-candidata.1`, versionCode 36 (la 0.22.0-candidata.1 tenía 35) |
 | Commit construido | `6eac0a7b18c364e7835a3e2063e207bf8460dc9b`, en la rama `aab/candidata-0.23.0-1`: `main` en `64508a8` (#247) + `6eac0a7` (la versión, que solo cambia `apps/mobile/app.config.ts`). Las herramientas del AAB ya están en `main` desde #223, así que esta vez no hizo falta la unión de esa rama |
 | Entrega | La prerelease `be-apk-0.23.0-candidata.1`, con el APK y su `.sha256`: https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.23.0-candidata.1 |
@@ -111,15 +111,16 @@ sale de esa PC.
    la 0.22. Los permisos son los mismos 10: POST_NOTIFICATIONS y VIBRATE ya estaban; las alarmas exactas y el arranque del
    sistema no aparecen (TEST-AVR-035).
 4. **La APK universal** con `scripts/aab/apk-desde-aab.mjs`, tomando como referencia la 0.22.0-candidata.1: **todo bien,
-   23 de 23.** El mismo certificado y un solo firmante; las APK_ENTRADAS entradas, iguales a las de la universal; un
-   versionCode mayor (36 contra 35); los mismos 10 permisos y las mismas ABI; ninguna credencial entre los archivos
+   23 de 23.** El mismo certificado y un solo firmante; las 1.266 entradas, iguales a las de la universal; un
+   versionCode mayor (36 contra 35); los mismos 10 permisos y las mismas ABI; ninguna credencial entre los 1.266 archivos
    descomprimidos.
 
-   APK_TIEMPO
+   Tardó 19,7 s. Con 1.011 MB libres al empezar (Dirección cerró Chrome: antes había entre 140 y 500 MB y el script se
+   negaba a arrancar) se corrió con `--memoria-minima 650`; la mínima entre pasos fue 940 MB.
 5. **Publicación.** Se comprobó después:
    - el tag `be-apk-0.23.0-candidata.1` apunta a `6eac0a7`;
    - `releases/latest` sigue en `be-apk-0.13.2`;
-   - la descarga pública da el mismo SHA-256.
+   - la descarga pública da el mismo SHA-256, y GitHub informa esa huella para el archivo de la prerelease.
 
 Los registros, sin secretos y con el client ID web de Google tapado, están en `publicacion-0.23.0-candidata.1/`:
 `construccion.json`, `esperado.json`, `firma.json`, `verificacion.json` y `verificacion.md` (el AAB), `apk.json` (la
@@ -323,21 +324,18 @@ Lo que dice cada pieza, según el código. Es la tabla de §4.0 del paquete; lo 
 | «Para responder» en Inicio | «Para responder: N» |
 | Quién ve qué | «Tus hábitos: no los ve» (o «los ve»). El ícono del ojo no se lee |
 | La casilla de una serie | «Registrar la serie N», con su estado; al tildarla, «Serie N registrada» |
-| El descanso, al empezar | «Descanso iniciado, recomendado 1 minuto». **Dice solo los minutos enteros** (ver «Lo que se encontró al escribir la guía») |
+| El descanso, al empezar | «Descanso iniciado, recomendado 1 minuto». **Dice solo los minutos enteros:** es el hallazgo de abajo, que se arregla en la próxima candidata |
 | El descanso, al recomendado | «Llegaste a 1 minuto». Nada en el medio |
 | La barra del descanso | «N segundos de M», solo si se la recorre |
 | El engranaje | «Ajustes del descanso», botón. En la hoja, «Empezar el descanso» como grupo de opciones con la elegida marcada, y las dos casillas |
 | La fila fija | «Pausar», «Empezar serie N» (o «Terminar serie N») y «Siguiente ejercicio», como botones. En pausa, el del medio dice «Empezar serie N. En pausa no se mide nada: reanudá para seguir.», deshabilitado |
 
-**Lo que se encontró al escribir la guía** (contra el código publicado; no se corrigió, porque la candidata ya está
-armada):
-- **TalkBack dice el descanso en minutos enteros.** `duracionParaLeer` redondea para abajo: un recomendado de 1:30 se lee
-  «1 minuto», y uno de 45 segundos, «menos de un minuto» («Llegaste a menos de un minuto»). La tabla de §4.0 pide «1
-  minuto 30». Severidad baja: la pantalla muestra el tiempo exacto. Lo decide Dirección; el arreglo es de una línea y va
-  en la próxima candidata.
-- **El pedido de permiso no se puede volver a ver** en un teléfono que ya respondió el diálogo de Android: después de un
-  «Permitir» o un «No permitir», Android no vuelve a mostrarlo. Por eso la Parte 4 vale solo para un teléfono donde BE
-  todavía no pidió permiso de avisos.
+**Lo que se encontró al escribir la guía** (contra el código publicado; no se corrigió en la 0.23, que ya estaba armada):
+
+| Hallazgo | Severidad | Qué pasa | Decisión |
+|---|---|---|---|
+| TalkBack dice el descanso en minutos enteros | Baja | `duracionParaLeer` (`pantallas/sesion-enfocada.tsx`) redondea para abajo: un recomendado de 1:30 se lee «1 minuto», y uno de 45 segundos, «menos de un minuto» («Llegaste a menos de un minuto»). La tabla de §4.0 pide «1 minuto 30». La pantalla muestra el tiempo exacto | **Dirección, 2026-11-08: va en la próxima candidata.** En la 0.23 se prueba tal como está |
+| El pedido de permiso no se puede volver a ver | Informativo | En un teléfono que ya respondió el diálogo de Android («Permitir» o «No permitir»), Android no lo vuelve a mostrar | Ninguna: la Parte 4 vale solo para un teléfono donde BE todavía no pidió permiso de avisos |
 
 ### Resultados de la 0.23
 
@@ -365,7 +363,7 @@ armada):
 - La medición del alto que queda para el contenido en la sesión, a 360 dp con letra ×1, ×1,3 y ×2 (AV-13, AV-18).
 - En el teléfono, con la 0.23: la guía de arriba, «La prueba de la 0.23» (TEST-AVR-036), con TalkBack en cada pieza de
   §4.0, la letra al máximo, y la vibración con la pantalla bloqueada durante un descanso, con su demora medida (AVD-5).
-- Decidir el hallazgo de TalkBack en minutos enteros («Lo que se encontró al escribir la guía»).
+- El arreglo de TalkBack en minutos enteros, en la próxima candidata (decidido por Dirección el 2026-11-08).
 - Promover a estable sigue la regla de DL-152: no antes de la prueba de punta a punta, y solo con el «pasala a estable» de
   Dirección.
 - La etapa 3 (AV-15 «Arranca sola» y AV-19 «Eligió no responder»), con servidor y base. Hasta entonces, la hoja del
