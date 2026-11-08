@@ -15,7 +15,8 @@
 >
 > **Cómo se escribieron.** Cada oráculo se escribió antes del código de su parte, y su prueba se verificó con una
 > mutación: se rompe a propósito la regla en el código, la prueba se pone en rojo, y se vuelve atrás. La mutación de cada
-> uno está en su campo AUTOMATION.
+> uno está en su campo AUTOMATION, y el resultado de las 26 corridas (todas en rojo), en
+> `EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`.
 >
 > **Lo que solo se ve en el teléfono** (TalkBack, la vibración con la pantalla bloqueada, la letra al máximo) se dice en
 > EVIDENCE_EXPECTED y queda para la candidata (AV-16): ninguna de estas pruebas lo da por aprobado.
@@ -221,8 +222,9 @@ EXPECTED             1 → el desayuno con su marca y su hora; «la que sigue» 
                      días».
 NEGATIVE_ASSERTIONS  La hora del teléfono no cambia «la que sigue». Con el día sin elegir, BE no elige uno. La
                      actividad no lleva porcentaje ni calificación.
-AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AVR-010 · …» a «TEST-AVR-012 · …»). Mutación: elegir
-                     «la que sigue» por la hora del último registro → la prueba falla.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AVR-010 · …» a «TEST-AVR-012 · …»). Mutaciones: dejar
+                     las comidas en el orden en que llegan, sin el del plan (010); armar fichas sin día elegido (011);
+                     restarle uno al número de la actividad (012) → la prueba falla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; el conteo de palabras y botones de Inicio, antes y después (AV-16)
 ```
@@ -270,8 +272,8 @@ EXPECTED             1 → verdes, sin cambiar lo que esperan. 2 → los tres pl
                      empezar, fuera de lo plegado.
 NEGATIVE_ASSERTIONS  Ninguna prueba existente se modificó para esta parte.
 AUTOMATION           scripts/registro-de-comidas.test.mjs, apps/mobile/src/formulario-v2.test.ts (sin cambios) ·
-                     scripts/vuelta-de-rosca.test.mjs («TEST-AVR-014 · …»). Mutación: meter «Comí esta opción»
-                     dentro del desplegable → la prueba falla.
+                     scripts/vuelta-de-rosca.test.mjs («TEST-AVR-014 · …»). Mutación: volver a dejar los
+                     ingredientes en una sección a la vista, sin plegar → la prueba falla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde
 ```
@@ -295,8 +297,8 @@ EXPECTED             1 → trazo de la familia, dentro del lienzo, sin color pro
                      botón con nombre («Ajustes del descanso»).
 NEGATIVE_ASSERTIONS  Ningún ícono nuevo va solo, sin palabra ni nombre para el lector.
 AUTOMATION           packages/domain/src/iconos.test.ts (las reglas de la familia, sin cambios) ·
-                     scripts/vuelta-de-rosca.test.mjs («TEST-AVR-015 · …»). Mutación: borrar el nombre del botón del
-                     engranaje → la prueba falla.
+                     scripts/vuelta-de-rosca.test.mjs («TEST-AVR-015 · …»). Mutación: usar el reloj de siempre en la
+                     baldosa de «Mis hábitos» → la prueba falla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La lámina a 18, 20 y 24 px en los dos temas, en EVIDENCIA/APP-VUELTA-DE-ROSCA/iconos
 ```
@@ -437,8 +439,8 @@ STEPS                1. Tocar «Empezar serie 3».
 EXPECTED             1 → `REST_FINISHED` y `SET_TIMING_STARTED` con el mismo `at` y el mismo `compoundActionId`.
                      2 → la segunda vez no agrega eventos. 3 → el descanso medido y la serie medida, sin hueco.
 NEGATIVE_ASSERTIONS  Sin descanso, «Empezar serie N» arranca solo la medición de la serie.
-AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AVR-024 · …»). Mutación: armar la acción como dos
-                     acciones separadas → la prueba falla.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AVR-024 · …»). Mutación: armar «Empezar serie N» como
+                     «Iniciar descanso» en lugar de la acción compuesta de la serie → la prueba falla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde
 ```

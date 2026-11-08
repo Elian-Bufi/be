@@ -1,8 +1,10 @@
 # WP-APP-VUELTA-DE-ROSCA — la APK de la persona, más simple: acciones claras primero
 
 > **Estado:** DECLARADO el 2026-11-07, con las decisiones PV-1 a PV-12 ratificadas por Dirección ese mismo día
-> (DEUDA_LEGAJO DL-166). **No se programa nada todavía:** las partes (§4) esperan el sí de Dirección, y el orden que
-> pidió Dirección es primero cerrar lo mobile que está en curso, después esta vuelta y después iPhone. **PV-13** (la
+> (DEUDA_LEGAJO DL-166). El 2026-11-07 Dirección autorizó programar primero lo que es solo de app («Sí, primero lo que es
+> solo app»): **las etapas 1 y 2 (AV-01 a AV-14, AV-17 y AV-18) están programadas** en la rama `wp-app-vuelta-de-rosca`
+> (PR #247, en borrador y sin integrar), con sus oráculos (`WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`) y las decisiones
+> técnicas AVT-01 a AVT-16 (§6.1), a ratificar. Faltan la etapa 3, con servidor (AV-15 y AV-19), y el cierre (AV-16). **PV-13** (la
 > sesión con letra grande) no la decidió Dirección: la eligió el continuador porque es reversible, y está **a ratificar**
 > (§3.1). De las decisiones de la implementación (§6), Dirección ratificó el 2026-11-07 AVD-1 y AVD-3 (con la
 > alternativa) y AVD-5 y AVD-8 (como se recomendaba). AVD-2, AVD-4, AVD-6 y AVD-7 siguen **a ratificar**, y también
@@ -320,6 +322,57 @@ ratificar**. Ninguna se programa sin el sí de Dirección a su parte.
     puede responder, y la respuesta deja la solicitud respondida. Decir que no queda como hecho en la historia de la
     solicitud y no se borra.
   - *Alternativa:* decir que no es definitivo, y para responder hace falta que el profesional pida de nuevo.
+
+### 6.1 Las decisiones técnicas de la implementación (AVT, a ratificar)
+
+Las tomó quien programó las etapas 1 y 2 el 2026-11-07. Ninguna cambia una decisión de Dirección: completan lo que el
+paquete no fijaba. Todas están **a ratificar**.
+
+- **AVT-01 · En una fila, la barra no achica la letra.** La tolerancia de una fila pasó de 0,9 a 1
+  (`disposicion-de-la-barra.ts`). Con «Perfil», más corta que «Información», las cinco etiquetas entraban con letra ×1,3
+  en 360 dp achicándose al 97 %. La maqueta 08 pide dos filas («cambia la composición, no se achica la letra»), y así
+  queda. Con ×1 sigue en una fila.
+- **AVT-02 · Sin porcentajes en pantalla.** La guardia de textos de Entrenamiento (T13) toma cualquier «%» que no sea
+  «% RM» como cumplimiento. Por eso dice «Vibrar al llegar al recomendado» y «llegar al recomendado no corta nada», en
+  lugar del «100 %» de las maquetas. La barra sigue llegando al recomendado.
+- **AVT-03 · Perfil muestra el ícono de persona, no las iniciales.** La maqueta 02 dibuja «DS»; se mantiene D-2 de
+  DL-117: no se deriva una imagen del nombre. El nombre visible va al lado.
+- **AVT-04 · Cuenta, por partes, con una sola ruta.** `cuenta` suma `seccion` (Mis datos, Avisos, Sesión y este
+  teléfono, Cerrar mi cuenta). Mis datos reúne el estado de la cuenta, el nombre y el identificador. Cada parte es su
+  pantalla y vuelve a Perfil.
+- **AVT-05 · «Para responder» y «Respondidos» abren la misma bandeja,** «Formularios y pedidos» (la de «Información»),
+  que ya agrupa por lo que falta hacer. La bandeja ya no repite la tarjeta de «Mis hábitos»: está en Perfil.
+- **AVT-06 · La pregunta por un profesional nuevo cuenta en «Para responder»,** solo si no hay pedidos de hábitos, como
+  la tarjeta de Inicio de DL-165 D-17. Es algo para responder, y responderla (sí o no) saca la marca.
+- **AVT-07 · Una acción de tiempo nueva, `descanso-al-tildar`.** Cierra lo que se estuviera midiendo (la serie
+  cronometrada que se tilda, o el descanso de la serie anterior) y empieza el descanso, en el mismo instante y con una
+  acción compuesta. «Iniciar descanso», a mano, sigue como era (con algo abierto, se rechaza): lo nuevo va en una
+  operación nueva (DL-137 D-7) y la prueba vieja de la corrida no cambia.
+- **AVT-08 · El aviso del descanso no se cancela al salir de la pantalla de la sesión.** Se cancela cuando el descanso
+  deja de correr (terminó antes, se pausó, se destildó, se finalizó) y al cerrar la sesión de la app. Así vibra aunque la
+  persona esté mirando otra pantalla.
+- **AVT-09 · Vínculos queda al pie de «Tus profesionales»,** como «Vínculos y solicitudes», junto a «Tengo un código».
+  Perfil lista los vínculos sin terminar; las solicitudes, los pausados y los terminados siguen en Vínculos.
+- **AVT-10 · «Qué incluye» sale del Alcance:** la finalidad (`ETIQUETA_DE_FINALIDAD`), el área y una aclaración
+  («Solo lo de esa área, mientras el vínculo esté vigente y tu autorización siga activa»). Las categorías pertinentes no
+  vienen en la lista de vínculos, y pedirlas para cada vínculo sumaría una lectura por profesional.
+- **AVT-11 · La marca de Perfil se recalcula** al entrar, al volver del segundo plano y al salir de una solicitud o de
+  «Mis hábitos», con tres lecturas livianas (la bandeja pendiente con `limit` 1, los hábitos y los pedidos). Inicio y
+  Perfil también la fijan con sus lecturas. Una falla no la cambia.
+- **AVT-12 · Inicio conserva «Ver el plan» y «Ver tu historial».** No son «Ir a…»: llevan a una vista dentro del
+  módulo. Se fueron «Ir a Entrenamiento», «Ir a Nutrición» e «Ir a Información». Sin registros hoy, el último registro
+  queda como un enlace tenue debajo de las fichas.
+- **AVT-13 · La fila fija la dibuja App.tsx,** fuera del contenido que se desplaza; la sesión publica sus textos y sus
+  acciones (`fila-fija.tsx`). Se ve solo con la corrida en vivo; otro día, sin cronómetros, «Siguiente ejercicio» queda
+  en la pantalla. Un doble toque en la acción del medio es uno solo (700 ms), además de la regla de la corrida.
+- **AVT-14 · Los íconos de la fila:** «espera» para Pausar y «actualizar» para Reanudar. La familia no tiene uno de
+  pausa, y AV-09 no lo suma.
+- **AVT-15 · El ancho de «Perfil» en la barra es estimado** (2,62 em, redondeado hacia arriba). Se mide en el render con
+  la candidata, como se midieron las otras etiquetas.
+- **AVT-16 · Tildar una serie cronometrada con un dato inválido.** Para guardar lo medido en la fila, el reloj se para
+  antes de validar lo escrito; con el descanso automático, la misma acción ya empezó el descanso. Si lo escrito no es
+  válido, la serie no se registra y el descanso queda empezado; al tildarla bien, `descanso-al-tildar` lo cierra y
+  empieza el nuevo. Es un caso raro y no pierde datos.
 
 ## 7. Riesgos
 
