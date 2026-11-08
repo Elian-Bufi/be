@@ -492,3 +492,97 @@ AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AVR-030 · …»).
 ENVIRONMENT          `npm test`; la medición del alto, en el render y en el teléfono
 EVIDENCE_EXPECTED    La medición de AV-13 con ×1,3 y ×2 (AV-16)
 ```
+
+---
+
+## TEST-AVR-034 a TEST-AVR-036 — La candidata 0.23.0-candidata.1 (AV-16)
+
+> Se escribieron con el cierre de la candidata (2026-11-08), en la rama `wp-app-vuelta-de-rosca-cierre-0.23`, después de
+> publicarla. Son los oráculos de AV-16 que el paquete no numeraba en §8: lo que lee la candidata, lo que pide al
+> instalarse y la prueba en el teléfono. Los dos primeros quedan probados por la CI y por las herramientas del AAB; el
+> tercero es manual y queda **pendiente** hasta que Dirección haga la prueba.
+
+## TEST-AVR-034 — Lo que lee la 0.23, congelado y vigente
+
+```text
+TEST_ID              TEST-AVR-034
+TITLE                La 0.23.0-candidata.1 queda congelada desde su tag y en VIGENTES, y la API de hoy le responde
+                     con la forma que espera
+LEVEL                Dominio e integración (PostgreSQL real)
+PRIORITY             P1 — DL-152: una lectura rota deja una pantalla sin abrir en el teléfono
+SOURCES              AV-16 (WP-APP-VUELTA-DE-ROSCA.md:255) · DL-152 (docs/DEUDA_LEGAJO.md:5428) · §7, «Las lecturas
+                     congeladas de las APK» (WP-APP-VUELTA-DE-ROSCA.md:381-385)
+PRECONDITIONS        El tag `be-apk-0.23.0-candidata.1` en `6eac0a7`; `scripts/congelar-lo-que-lee-la-apk.mjs`.
+SYNTHETIC_FIXTURE    `packages/domain/fixtures/lecturas-de-la-apk/0.23.0-candidata.1.json`, generado desde el tag
+                     (no se edita a mano); las cuentas sintéticas de `lecturas-de-las-apk.int-spec.ts`.
+STEPS                1. Congelar la 0.23 desde su tag.
+                     2. Compararla con la 0.22: operaciones, forma de cada lectura, cabeceras, textos y errores.
+                     3. Correr la prueba del dominio y la de integración con las cinco vigentes.
+EXPECTED             1 → el archivo dice versión 0.23.0-candidata.1, versionCode 36 y el commit 6eac0a7. 2 → las
+                     mismas 88 operaciones que la 0.22, cada una con la misma forma; las mismas cabeceras
+                     (`training-set-targets-1,forms-format-3`) y el mismo sobre de error; los textos suman las dos
+                     versiones nuevas del dominio (`RESUMENES_COMPARTIDOS` y `RESUMENES_Y_PLAN_COMPARTIDOS`), que
+                     la APK no manda. 3 → VIGENTES es 0.13.2, 0.20, 0.21, 0.22 y 0.23, y cada lectura de la 0.23
+                     tiene escenario y pasa.
+NEGATIVE_ASSERTIONS  No se saca ninguna versión de VIGENTES (Dirección no actualizó todavía). No se edita lo
+                     congelado de ninguna APK.
+AUTOMATION           packages/domain/src/lecturas-de-la-apk.test.ts («DL-152 · están congeladas…») ·
+                     packages/domain/src/habitos-de-la-persona.test.ts (la 0.23 lee solo las HBT de la persona) ·
+                     test/integration/lecturas-de-las-apk.int-spec.ts. Mutación: sacar la 0.23 de VIGENTES → la
+                     prueba del dominio falla.
+ENVIRONMENT          `npm test` y la integración de la CI
+EVIDENCE_EXPECTED    La CI verde del PR del cierre
+```
+
+---
+
+## TEST-AVR-035 — Lo que pide la APK al instalarse
+
+```text
+TEST_ID              TEST-AVR-035
+TITLE                La APK publicada pide los mismos permisos que la 0.22, sin alarmas exactas ni arranque al
+                     encender, con el certificado de siempre y un versionCode mayor
+LEVEL                Artefacto (AAB firmado y APK universal)
+PRIORITY             P1 — 08, minimización; instalar encima sin desinstalar
+SOURCES              AV-12 (WP-APP-VUELTA-DE-ROSCA.md:239) · AVD-5 (:300-305) · 08, minimización (:33) · §7, «Los
+                     permisos» (:398-400)
+PRECONDITIONS        El AAB sin firma de Actions, firmado en la PC de Dirección; la 0.22.0-candidata.1 como
+                     referencia.
+SYNTHETIC_FIXTURE    No usa datos: lee el artefacto.
+STEPS                1. Verificar el AAB firmado (`verificar-aab.mjs`).
+                     2. Armar y verificar la APK universal (`apk-desde-aab.mjs`, referencia 0.22).
+EXPECTED             1 → todo bien, 21 de 21; 10 permisos, entre ellos POST_NOTIFICATIONS y VIBRATE. 2 → todo bien,
+                     23 de 23: el certificado 61569691…893e06, un solo firmante, versionCode 36 contra 35 y los
+                     mismos 10 permisos que la 0.22.
+NEGATIVE_ASSERTIONS  El manifiesto no tiene SCHEDULE_EXACT_ALARM, USE_EXACT_ALARM ni RECEIVE_BOOT_COMPLETED. Ningún
+                     archivo del bundle ni de la APK lleva credenciales.
+AUTOMATION           scripts/aab/verificar-aab.mjs y scripts/aab/apk-desde-aab.mjs (se niegan a dar «todo bien» si
+                     cambia un permiso) · scripts/avisos-del-telefono.test.mjs (la lista en el código).
+ENVIRONMENT          La PC de Dirección, con las herramientas de `scripts/aab/`
+EVIDENCE_EXPECTED    `verificacion.md` y `apk.json` en `EVIDENCIA/APP-VUELTA-DE-ROSCA/publicacion-0.23.0-candidata.1/`
+```
+
+---
+
+## TEST-AVR-036 — La prueba en el teléfono
+
+```text
+TEST_ID              TEST-AVR-036
+TITLE                En el teléfono de Dirección: Inicio, Perfil y «Quién ve qué»; la sesión con el descanso
+                     automático; el permiso en el primer descanso; la vibración bloqueado; letra grande y TalkBack
+LEVEL                Manual, en un teléfono Android 13 o posterior
+PRIORITY             P1 — AV-16: nada de esto se aprueba sin el teléfono
+SOURCES              AV-16 (WP-APP-VUELTA-DE-ROSCA.md:255) · §4.0, lo que dice TalkBack (:202-216) · AV-10 a AV-14 y
+                     AV-18 (:237-242) · AVD-5 y AVD-8 (:300-318)
+PRECONDITIONS        La 0.23 instalada encima de la anterior; la persona de prueba DEMO-A01 con un plan de
+                     Entrenamiento activo con «Descanso recomendado» en la sesión que se hace.
+SYNTHETIC_FIXTURE    La cohorte sintética de `test` (DEMO-A01 y su entrenador, DEMO-PT).
+STEPS                Las Partes 1 a 7 de «La prueba de la 0.23», en EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md.
+EXPECTED             Lo que dice cada parte de la guía, con los rótulos verificados en el código del tag. La
+                     demora de la vibración bloqueado, medida en tres situaciones y anotada.
+NEGATIVE_ASSERTIONS  El permiso de avisos nunca se pide al abrir la app. El aviso no nombra el ejercicio. Ningún
+                     texto se corta con la letra al máximo. Ningún número califica.
+AUTOMATION           Ninguna: es la prueba de una persona con el teléfono.
+ENVIRONMENT          El teléfono de Dirección, con `test`
+EVIDENCE_EXPECTED    La tabla «Resultados de la 0.23» completa, con hecho o pendiente en cada fila
+```

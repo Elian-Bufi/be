@@ -52,9 +52,10 @@ const APK = readdirSync(CARPETA)
  * se sumó sin sacar la 0.20, que Dirección tiene instalada hasta que actualice: declara `forms-format-3`, lee FRI en el
  * formato 3 y suma API-HBT-01 a 04. La 0.22.0-candidata.1 (2026-11-06, la ronda 2.1 de DL-165) se sumó sin sacar la 0.20
  * ni la 0.21, porque Dirección todavía no actualizó: suma API-HBT-08 y 09, los pedidos de acceso a sus hábitos, y lo demás
- * lo lee con la forma de la 0.21.
+ * lo lee con la forma de la 0.21. La 0.23.0-candidata.1 (2026-11-08, la vuelta de rosca de DL-166, etapas solo de app) se
+ * sumó sin sacar ninguna: lee las mismas 88 operaciones que la 0.22, con la misma forma.
  */
-const VIGENTES = ['0.13.2', '0.20.0-candidata.1', '0.21.0-candidata.1', '0.22.0-candidata.1'];
+const VIGENTES = ['0.13.2', '0.20.0-candidata.1', '0.21.0-candidata.1', '0.22.0-candidata.1', '0.23.0-candidata.1'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en
