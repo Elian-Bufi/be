@@ -4,7 +4,7 @@
 > (DEUDA_LEGAJO DL-166). El 2026-11-07 Dirección autorizó programar primero lo que es solo de app («Sí, primero lo que es
 > solo app»): **las etapas 1 y 2 (AV-01 a AV-14, AV-17 y AV-18) están programadas** e integradas en `main` el 2026-11-07
 > (#247, `64508a8`), y publicadas en la APK 0.23.0-candidata.1 el 2026-11-08, con su cierre (AV-16) en un PR en borrador
-> (#PR_CIERRE): las lecturas congeladas, los oráculos TEST-AVR-034 a 036 y la guía de la prueba en el teléfono. Van
+> (#249): las lecturas congeladas, los oráculos TEST-AVR-034 a 036 y la guía de la prueba en el teléfono. Van
 > con sus oráculos (`WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`) y las decisiones técnicas AVT-01 a AVT-16 (§6.1), a ratificar.
 > Faltan la etapa 3, con servidor (AV-15 y AV-19), y, del cierre (AV-16), la prueba en el teléfono y las capturas.
 > **PV-13** (la sesión con letra grande) no la decidió Dirección: la eligió el continuador porque es reversible, y está **a ratificar**
