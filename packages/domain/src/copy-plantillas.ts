@@ -33,7 +33,11 @@ export const COPY_PLANTILLAS = {
   /** El diálogo de «Empezar desde una plantilla» (WP-ESCRITORIO-AREAS, parte 5). Una lectura que falla no es «no tenés». */
   noCargaron: 'No pudimos leer tus plantillas',
   elegiUna: 'Elegí la plantilla con la que empieza la versión nueva. Nace como borrador: el asesorado no la ve hasta que la actives.',
-  dondeSeArman: 'Se guardan desde una versión de plan, con «Guardar como plantilla», o se escriben en «Plantillas y habituales».',
+  /**
+   * WP-TABLERO-ALTA-GAMA TB-48: el cuadro sin plantillas prometía que «se escriben en «Plantillas y habituales»», y ahí
+   * no se arma una desde cero: se ven, se cambian y se archivan.
+   */
+  dondeSeArman: 'Se guardan desde una versión de plan, con «Guardar como plantilla». En «Plantillas y habituales» se ven y se cambian.',
   plantillasActivas: 'Plantillas activas',
   creandoElBorrador: 'Creando el borrador…',
   queCopia: 'La plantilla copia la estructura (bloques, sesiones, ejercicios, series, intensidad y parámetros), no a la persona: no lleva objetivo ni próxima revisión.',

@@ -21,6 +21,9 @@ import { errores } from '../http/errores';
  * cerrojos de transacción por persona, que se toman **al final**, después del A3 y del PDP: así no invierten el orden con
  * nadie. El de la autorización es compartido para leerla (API-HBT-05) y exclusivo para escribirla (darla, cambiarla,
  * retirarla, cerrar la cuenta): un retiro queda antes o después de cada lectura, nunca en el medio.
+ * Lo que la persona comparte de otras áreas (DL-163 D-13, ampliada; `resumenes/resumenes-de-la-persona.ts`) hace lo mismo
+ * con su autorización y sus pedidos de ver un plan: dos cerrojos de transacción por persona, al final, en ese orden. Una
+ * nota que cita el plan de otra área (TB-53) toma el de la autorización, compartido, después de decidir a sus destinatarios.
  */
 
 /**

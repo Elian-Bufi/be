@@ -27,6 +27,7 @@ import { datosDe, fallo, LecturasParciales, SegunLectura, type Lectura } from '.
 import { useNutricion } from './nutricion';
 import { numerosDeVersion } from './plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 interface Lecturas {
   readonly evaluaciones: Lectura<EvaluacionNutricional[]>;
@@ -140,6 +141,7 @@ function Resumen({
   /** PF-02 (FR-02): la dirección del pedido, con «Cómo comés hoy» elegido y la vuelta a este Resumen. */
   pedirInformacion: string;
 }) {
+  const { delProfesional } = useNombres();
   const { evaluaciones, objetivos, planes, contexto } = lecturas;
   const efectivo = objetivos?.ok ? (objetivos.datos.find((o) => o.isEffective) ?? null) : null;
   const borrador = planes?.ok ? (planes.datos.find((p) => p.state === 'DRAFT') ?? null) : null;
@@ -266,7 +268,7 @@ function Resumen({
                       <span className="historial__evento">
                         V{objetivos.datos.length - i} · {o.isEffective ? 'vigente' : 'anterior'}
                       </span>{' '}
-                      {cantidad(o.estimatedEnergyRequirement.value, 'kcal')} · {dia(o.createdAt)} · {o.authoredBy.displayName}
+                      {cantidad(o.estimatedEnergyRequirement.value, 'kcal')} · {dia(o.createdAt)} · {delProfesional(o.authoredBy)}
                     </li>
                   ))}
                 </ol>

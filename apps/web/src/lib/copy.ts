@@ -47,7 +47,7 @@ const VISTAS_DEL_RETORNO: Readonly<Record<string, ReadonlySet<string>>> = {
   '/pro/advisees': new Set(['resumen', 'linea', 'analizar']),
   '/pro/advisees/nutrition': new Set(['resumen', 'plan', 'registros', 'revisiones']),
   '/pro/advisees/training': new Set(['resumen', 'plan', 'ejecuciones', 'revisiones']),
-  '/pro/advisees/anthropometry': new Set(['evaluaciones', 'evolucion', 'lamina']),
+  '/pro/advisees/anthropometry': new Set(['evaluaciones', 'evolucion', 'composicion', 'lamina']),
   '/pro/advisees/forms': new Set(['solicitudes']),
 };
 const DIAS_DE_UN_ATAJO: ReadonlySet<string> = new Set(['7', '30', '90', '365']);

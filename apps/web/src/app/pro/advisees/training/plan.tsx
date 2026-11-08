@@ -62,6 +62,7 @@ import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
 import { DialogoGuardarPlantilla } from './plantillas';
 import { ZonasDeLaSesion } from './zonas-de-la-sesion';
 import { Pista } from '../../../../components/pista';
+import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 
 /**
  * Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. Lo usa
@@ -214,6 +215,9 @@ export function VistaDePlan() {
   };
 
   return (
+    <>
+      {/* TB-54 (DL-163 D-13, ampliada): «Otras áreas», al planificar. Lee API-RES-04 al abrir; sin otra área, nada. */}
+      <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" />
     <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
       {r?.ok
         ? (() => {
@@ -362,6 +366,7 @@ export function VistaDePlan() {
           })()
         : null}
     </EstadoDeLectura>
+    </>
   );
 }
 

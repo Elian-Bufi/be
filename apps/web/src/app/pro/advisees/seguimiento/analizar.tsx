@@ -99,6 +99,7 @@ import type { BandaDePlan, SerieParaDibujar } from './lienzo';
 import { Marca } from './marca';
 import { ElegirMetricasDeEntrada } from './entrada';
 import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, ParametrosDelEjercicio, useEtapasDelAno } from './preguntas';
+import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
 import { nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerie, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
@@ -150,7 +151,17 @@ const MEDIO_DIA = 43_200_000;
  */
 const HITOS = TIPOS_DE_HITO_DE_PLANIFICACION.join(',');
 
+/**
+ * «Analizar». La pregunta de la composición (TB-24) la responde su propia pieza, sin métricas que elegir ni vistas que
+ * guardar (TA-25); las demás preguntas y la comparación libre, como siempre.
+ */
 export function Analizar() {
+  const { parametros } = useSeguimiento();
+  const id = useId();
+  return parametros.get('pregunta') === PREGUNTA_DE_LA_COMPOSICION ? <ComposicionEnAnalizar tituloId={`${id}-titulo`} /> : <AnalizarConSusPreguntas />;
+}
+
+function AnalizarConSusPreguntas() {
   const { token, asesoradoId, periodo, parametros, ir, panel, recargarPanel } = useSeguimiento();
   const id = useId();
   const estado = useMemo(() => leerAnalisis(parametros), [parametros]);

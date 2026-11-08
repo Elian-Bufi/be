@@ -33,6 +33,7 @@ import { Registro } from '../training/ejecuciones';
 import { PlanSoloLectura } from '../training/plan';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
 import { conRetorno, valorDeRetorno } from './estado';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 /** `conElOrigen`: el parámetro que abre ese registro en su pestaña (la solicitud, en Información). */
 const DESTINO: Readonly<Partial<Record<OrigenDeDato['type'], { readonly ruta: string; readonly vista: string; readonly texto: string; readonly conElOrigen?: string }>>> = {
@@ -126,6 +127,7 @@ function useAvisoDeNoDisponible(tipo: string, onNoDisponible?: () => void) {
 }
 
 function SesionRegistrada({ executionId, onNoDisponible }: { executionId: string; onNoDisponible?: () => void }) {
+  const { deQuien } = useNombres();
   const { token } = useSeguimiento();
   const { lectura, recargar } = useLectura<{ data: EjecucionDeEntrenamiento }>(`sesion|${executionId}`, () => api.consultarEjecucionDeEntrenamiento(token, executionId));
   useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
@@ -143,7 +145,7 @@ function SesionRegistrada({ executionId, onNoDisponible }: { executionId: string
       {x.corrections.length > 0 ? (
         <p className="nota">
           {x.effectiveView.kind === 'CORRECTED' ? 'Se muestra la corrección vigente' : 'Tiene correcciones'}:{' '}
-          {x.corrections.map((c) => `${c.author.displayName}, ${fecha(c.recordedAt)} («${c.reason}»)`).join(' · ')}
+          {x.corrections.map((c) => `${deQuien(c.author, x.adviseeId)}, ${fecha(c.recordedAt)} («${c.reason}»)`).join(' · ')}
         </p>
       ) : null}
       {vigente ? <Registro registro={vigente} planificado={x.plannedSession.prescriptions} /> : <p className="nota">La cadena de correcciones no se puede resolver: no hay un registro vigente.</p>}
@@ -152,6 +154,7 @@ function SesionRegistrada({ executionId, onNoDisponible }: { executionId: string
 }
 
 function TomaRegistrada({ evaluationId, onNoDisponible }: { evaluationId: string; onNoDisponible?: () => void }) {
+  const { delProfesional } = useNombres();
   const { token } = useSeguimiento();
   const { lectura, recargar } = useLectura<{ data: EvaluacionAntropometricaApi }>(`toma|${evaluationId}`, () => api.consultarEvaluacionAntropometrica(token, evaluationId));
   useAvisoDeNoDisponible(lectura.tipo, onNoDisponible);
@@ -162,7 +165,7 @@ function TomaRegistrada({ evaluationId, onNoDisponible }: { evaluationId: string
   return (
     <div className="detalle-de-valores">
       <p>
-        Toma del {fecha(e.occurredAt)} · registrada el {fecha(e.registeredAt ?? e.recordedAt)} · {e.author.displayName}
+        Toma del {fecha(e.occurredAt)} · registrada el {fecha(e.registeredAt ?? e.recordedAt)} · {delProfesional(e.author)}
       </p>
       <div className="desplazable-x">
         <table className="tabla">

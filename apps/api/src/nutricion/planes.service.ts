@@ -4,8 +4,11 @@ import {
   CrearPlanRequestSchema,
   EditarBorradorRequestSchema,
   VersionEsperadaRequestSchema,
+  cadenaSinDescartadas,
   construirInstantanea,
   copiarEstructura,
+  esVersionVisible,
+  evaluarDescarteDeBorrador,
   evaluarSucesion,
   evaluarTransicionDePlan,
   normalizarEstructura,
@@ -14,6 +17,7 @@ import {
   problemasParaActivar,
   serializacionCanonica,
   type ContenidoDePlan,
+  type EstadoDeVersionConDescarte,
   type Procedencia,
   type ValidationIssue,
   type VersionDePlan,
@@ -56,6 +60,8 @@ interface VersionBloqueada {
 
 const noEditable = () =>
   new ErrorDeApi(422, CodigoDeError.PLAN_NOT_EDITABLE, 'Esta versión está activada y no se puede editar. Para cambiarla, creá una nueva versión a partir de esta.');
+/** TB-47 (DL-163 D-21): una versión activada no se descarta nunca. El mismo código que editarla, con su texto. */
+const noDescartable = () => new ErrorDeApi(422, CodigoDeError.PLAN_NOT_EDITABLE, 'Esta versión ya se activó: no se descarta nunca.');
 const noLista = (issues: ValidationIssue[]) =>
   new ErrorDeApi(422, CodigoDeError.OPERATION_NOT_READY, 'Hay elementos por corregir antes de activar.', { issues });
 const objetivoNoAplicable = () =>
@@ -80,6 +86,8 @@ const idsDeCatalogo = (c: ContenidoDePlan): string[] => c.dayTypes.flatMap((d) =
  *
  * - Versión de plan con la máquina literal del §10.7: BORRADOR → ACTIVADA y nada más (06:4307; INV-06-109). La base
  *   rechaza cualquier cambio sobre una ACTIVADA: si este servicio tuviera un error, igual no se podría reabrir.
+ * - Un borrador que nunca se activó se puede descartar (API-PLN-07; DL-163 D-21; TB-47): queda DESCARTADA, terminal, y
+ *   desde ahí no existe para nadie. No se lista, no se lee y no se escribe: el mismo 404 que lo inexistente.
  * - Corregir un plan activado es emitir una sucesora: con API-NUT-07 y `basedOnPlanId` (UC-P10 V07; DL-047) o al
  *   aplicar una revisión AJUSTAR o SUSTITUIR (DL-052). La activada y su instantánea quedan intactas.
  * - La activación es atómica (REG-06-104; 09v9:616-632): PDP, validación, instantánea ANTES de la vigencia, vigencia
@@ -157,7 +165,10 @@ export class PlanesService {
   ): Promise<string> {
     await this.exigirObjetivoEfectivo(tx, p.profesionalId, p.asesoradoId, p.objetivoVersionId);
     const plan = await this.planBloqueado(tx, p.profesionalId, p.asesoradoId);
-    const versiones = await tx.versionDePlanNutricional.findMany({ where: { planId: plan.id }, select: { id: true, planId: true, predecesoraId: true, estado: true, contenido: true } });
+    // Lo descartado no ocupa lugar en la cadena (TB-47): el borrador nuevo vuelve a ser la raíz o la sucesora de la efectiva.
+    const versiones = cadenaSinDescartadas(
+      await tx.versionDePlanNutricional.findMany({ where: { planId: plan.id }, select: { id: true, planId: true, predecesoraId: true, estado: true, contenido: true } }),
+    );
     const borrador = versiones.find((v) => v.estado === 'BORRADOR');
     if (borrador) {
       throw new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Ya hay un borrador de este plan. Seguí trabajando sobre ese borrador.', { draftPlanId: borrador.id });
@@ -238,8 +249,9 @@ export class PlanesService {
       lectura: async (tx) => {
         const asesoradoId = await this.decidir(tx, 'API-NUT-08', actor, actor.identidadId, adviseeId, null, ctx);
         const estado = consulta.filtros.state === 'DRAFT' ? 'BORRADOR' : consulta.filtros.state === 'ACTIVATED' ? 'ACTIVADA' : undefined;
+        // Sin filtro, lo descartado tampoco se lista (TB-47).
         const filas = await tx.versionDePlanNutricional.findMany({
-          where: { plan: { profesionalId: actor.identidadId, asesoradoId }, ...(estado ? { estado } : {}), ...despuesDelCursor(consulta.cursor) },
+          where: { plan: { profesionalId: actor.identidadId, asesoradoId }, estado: estado ?? { not: 'DESCARTADA' }, ...despuesDelCursor(consulta.cursor) },
           include: INCLUIR_PLAN,
           orderBy: ORDEN_DE_LISTA,
           take: consulta.limit + 1,
@@ -273,7 +285,8 @@ export class PlanesService {
       recursoIntentado: recurso,
       lectura: async (tx) => {
         const v = esUuid(planId) ? await tx.versionDePlanNutricional.findUnique({ where: { id: planId }, include: INCLUIR_PLAN }) : null;
-        if (!v) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-09', actorId: actor.identidadId, recurso }, ctx);
+        // Una versión descartada es, para todos, una que no existe (TB-47).
+        if (!v || !esVersionVisible(v.estado)) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-09', actorId: actor.identidadId, recurso }, ctx);
         const titular = v.plan.asesoradoId;
         if (titular === actor.identidadId) {
           // El asesorado: solo versiones activadas y con su Proceso vigente (el PDP evaluado sobre el profesional del plan).
@@ -481,6 +494,53 @@ export class PlanesService {
     });
   }
 
+  // ─── API-PLN-07 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * TB-47 (DL-163 D-21): descarta un borrador que nunca se activó. La persona nunca lo vio: el 05 define el borrador como
+   * una versión que «no se presenta al asesorado como plan vigente». La versión pasa a DESCARTADA, terminal, sin cambiar
+   * nada más; la fila se guarda (06 §4.4), y quién y cuándo quedan en el evento y en la auditoría (TA-63).
+   * - Lo ajeno, lo inexistente y lo ya descartado: el mismo 404 (`versionDelAutor`).
+   * - Una ACTIVADA: 422, antes de mirar la versión esperada, como al editar (TA-66).
+   * - Libera el lugar del borrador: después se puede empezar otro o aplicar una revisión AJUSTAR o SUSTITUIR.
+   */
+  descartar(actor: ActorAutenticado, planId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    const recurso = { tipo: 'VersionDePlanNutricional', id: planId };
+    return this.ejecutor.escribirIdempotente({
+      operacion: 'API-PLN-07',
+      casoDeUso: 'UC-P10',
+      actor,
+      ctx,
+      recursoIntentado: recurso,
+      clave,
+      esquema: VersionEsperadaRequestSchema,
+      cuerpo,
+      huellaExtra: { planId },
+      efecto: async (tx, pedido, procedencia) => {
+        const v = await this.versionDelAutor(tx, 'API-PLN-07', actor, planId, ctx);
+        const evaluacion = evaluarDescarteDeBorrador(v.estado);
+        if (!evaluacion.permitido) {
+          if (evaluacion.motivo === 'YA_ACTIVADA') throw noDescartable();
+          throw this.ejecutor.noRevelable({ operacion: 'API-PLN-07', actorId: actor.identidadId, recurso, sujetoId: v.asesoradoId }, ctx);
+        }
+        if (!esToken(pedido.expectedVersion, v.version)) throw errores.conflictoDeVersion();
+        const momento = await momentoDeLaBase(tx);
+        await tx.versionDePlanNutricional.update({ where: { id: v.id }, data: { estado: 'DESCARTADA', version: v.version + 1 } });
+        await registrarEventoDeNutricion(tx, {
+          tipo: 'BorradorDePlanDescartado',
+          profesionalId: v.profesionalId,
+          asesoradoId: v.asesoradoId,
+          recurso,
+          estadoPrevio: 'BORRADOR',
+          estadoPosterior: 'DESCARTADA',
+          actorId: actor.identidadId,
+          procedencia,
+          momento,
+        });
+        return { estadoHttp: 200, cuerpo: { data: { planId: v.id, discardedAt: momento.toISOString() } }, sujetoId: v.asesoradoId, recurso };
+      },
+    });
+  }
+
   // ─── Auxiliares ─────────────────────────────────────────────────────────────────────────────
 
   async leerVersion(tx: Tx, id: string, profesionalId: string, incluirOrigen = false): Promise<VersionDePlan> {
@@ -504,8 +564,9 @@ export class PlanesService {
   }
 
   /**
-   * Versión del profesional autor, bloqueada, con el PDP decidido. Si no existe o es de otro profesional, 404 idéntico
-   * (DL-057). El orden de bloqueos es PDP → plan → versión (prisma/concurrencia.ts).
+   * Versión del profesional autor, bloqueada, con el PDP decidido. Si no existe, es de otro profesional o se descartó,
+   * 404 idéntico (DL-057; TB-47). El orden de bloqueos es PDP → plan → versión (prisma/concurrencia.ts). El estado se mira
+   * con la fila bloqueada: de dos descartes simultáneos, el segundo ya la encuentra descartada.
    */
   private async versionDelAutor(tx: Tx, operacion: string, actor: ActorAutenticado, planId: string, ctx: ContextoDeSolicitud): Promise<VersionBloqueada> {
     const recurso = { tipo: 'VersionDePlanNutricional', id: planId };
@@ -516,12 +577,13 @@ export class PlanesService {
     await this.decidir(tx, operacion, actor, actor.identidadId, dueño.plan.asesoradoId, recurso, ctx);
     if (dueño.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso, sujetoId: dueño.plan.asesoradoId }, ctx);
     await tx.$queryRaw`SELECT 1 FROM "plan_nutricional" WHERE "id" = ${dueño.plan.id}::uuid FOR NO KEY UPDATE`;
-    const [v] = await tx.$queryRaw<Omit<VersionBloqueada, 'profesionalId' | 'asesoradoId'>[]>`
+    const [v] = await tx.$queryRaw<(Omit<VersionBloqueada, 'profesionalId' | 'asesoradoId' | 'estado'> & { estado: EstadoDeVersionConDescarte })[]>`
       SELECT "id"::text AS "id", "plan_id"::text AS "planId", "predecesora_id"::text AS "predecesoraId", "estado"::text AS "estado",
              "version", "version_de_objetivo_id"::text AS "versionDeObjetivoId", "contenido", "proxima_revision" AS "proximaRevision"
         FROM "version_de_plan_nutricional" WHERE "id" = ${planId}::uuid FOR NO KEY UPDATE`;
     if (!v) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso }, ctx);
-    return { ...v, profesionalId: dueño.plan.profesionalId, asesoradoId: dueño.plan.asesoradoId };
+    if (!esVersionVisible(v.estado)) throw this.ejecutor.noRevelable({ operacion, actorId: actor.identidadId, recurso, sujetoId: dueño.plan.asesoradoId }, ctx);
+    return { ...v, estado: v.estado, profesionalId: dueño.plan.profesionalId, asesoradoId: dueño.plan.asesoradoId };
   }
 
   /** El plan de la terna, creado si no existe, y bloqueado. */

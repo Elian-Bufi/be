@@ -45,6 +45,7 @@ import { TiemposDeSesionService } from './tiempos.service';
     CompatibilidadDeClientesService,
   ],
   // El entorno profesional (AnalisisModule) lee cada sesión con el mismo modelo de API-TRN-19.
-  exports: [EjecucionesDeEntrenamientoService],
+  // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.
+  exports: [EjecucionesDeEntrenamientoService, PlanesDeEntrenamientoService, EvaluacionesDeEntrenamientoService],
 })
 export class EntrenamientoModule {}

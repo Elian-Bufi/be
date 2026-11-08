@@ -11,6 +11,12 @@
  * - **Cada campo de la tabla dice de qué alimento es** en su nombre accesible; el título de la columna lo dice a la vista.
  * - **El nombre se cambia a pedido** («Cambiar el nombre»): el campo aparece en el lugar, con el foco adentro, y Enter o
  *   salir de él lo cierra (`components/campo-de-nombre.tsx`). Lo que se acaba de agregar nace con el campo abierto.
+ * - **La nota de cada ítem** (WP-TABLERO-ALTA-GAMA TB-48): estaba en el contrato y la persona la lee en la app junto al
+ *   ingrediente, pero el editor no la dejaba escribir. Va en un renglón debajo del ítem, a pedido («Agregar una nota
+ *   sobre …», `components/texto-a-pedido.tsx`), hasta 300 caracteres. No cambia lo que lee la app: el campo ya
+ *   existía.
+ * - **Duplicar y reordenar** (TB-48): «Duplicar comida» en «Más», «Subir» y «Bajar» al lado, y «Duplicar opción N» junto
+ *   a cambiar su nombre. La copia va justo después y nace con su nombre a la vista (`advisees/editar-la-estructura.ts`).
  */
 import {
   cantidad as formatearCantidad,
@@ -32,7 +38,9 @@ import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
+import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
+import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
 export type ComidaEnEdicion = Estructura[number]['meals'][number];
@@ -52,6 +60,7 @@ export function ComidaDelEditor({
   abierta,
   problemas,
   esLaPrimera,
+  esLaUltima,
   opcionElegida,
   nombreEnEdicion,
   nombres,
@@ -62,6 +71,9 @@ export function ComidaDelEditor({
   alEditarNombre,
   alCambiar,
   alSubir,
+  alBajar,
+  alDuplicar,
+  alDuplicarOpcion,
   alQuitar,
   alGuardarComoHabitual,
   alAgregarItem,
@@ -75,6 +87,7 @@ export function ComidaDelEditor({
   /** Cuántos problemas de «Validar» hay adentro. */
   problemas: number;
   esLaPrimera: boolean;
+  esLaUltima: boolean;
   opcionElegida: number;
   nombreEnEdicion: NombreEnEdicion;
   nombres: Readonly<Record<string, string>>;
@@ -86,6 +99,11 @@ export function ComidaDelEditor({
   /** Cambia la comida: recibe una copia que se puede modificar. */
   alCambiar: (f: (m: ComidaEnEdicion) => void) => void;
   alSubir: () => void;
+  alBajar: () => void;
+  /** TB-48: la copia de la comida, justo después. */
+  alDuplicar: () => void;
+  /** TB-48: la copia de la opción `k`, justo después. */
+  alDuplicarOpcion: (k: number) => void;
   alQuitar: () => void;
   alGuardarComoHabitual: () => void;
   alAgregarItem: (k: number) => void;
@@ -121,15 +139,22 @@ export function ComidaDelEditor({
         </h3>
         {abierta ? (
           <div className="comida-del-editor__acciones">
-            <button type="button" className="boton boton--quieto boton--compacto" disabled={esLaPrimera} onClick={alSubir}>
+            {/* Se apagan con `aria-disabled`: al llegar a la punta, el botón que se tocó conserva el foco (TB-48). */}
+            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esLaPrimera || undefined} onClick={() => !esLaPrimera && alSubir()}>
               <Icono nombre="ordenar" tamano={18} />
-              Subir
+              {E.subir}
+              <span className="visualmente-oculto"> {plegada.titulo}</span>
+            </button>
+            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esLaUltima || undefined} onClick={() => !esLaUltima && alBajar()} data-bajar>
+              {E.bajar}
+              <span className="visualmente-oculto"> {plegada.titulo}</span>
             </button>
             <MenuDeAcciones
               rotulo={`más acciones de ${plegada.titulo}`}
               texto="Más"
               acciones={[
                 { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => alEditarNombre({ de: 'comida' }) },
+                { clave: 'duplicar', texto: E.duplicarComida, alElegir: alDuplicar },
                 { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: alGuardarComoHabitual, noSePuede: conRecetas ? COPY_RECETAS.recetaEnPlantilla : null },
                 { clave: 'quitar', texto: 'Quitar comida', alElegir: alQuitar },
               ]}
@@ -252,6 +277,9 @@ export function ComidaDelEditor({
                     <button type="button" className="boton boton--enlace" onClick={() => alEditarNombre({ de: 'opcion', opcion: k })}>
                       Cambiar el nombre
                     </button>
+                    <button type="button" className="boton boton--enlace" data-duplicar-opcion onClick={() => alDuplicarOpcion(k)}>
+                      {E.duplicarOpcion(k)}
+                    </button>
                     <button
                       type="button"
                       className="boton boton--enlace"
@@ -287,7 +315,9 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
   }, [externo]);
   // Lo que no es un número se señala en el campo, en vez de guardarse como cero en silencio (B10-10:164-165).
   const error = escrito.trim() !== '' && leerNumero(escrito) === null ? motivoDeNumeroIlegible(escrito) : null;
+  const [notaAbierta, setNotaAbierta] = useState(false);
   return (
+    <>
     <tr className="item-del-editor">
       <th scope="row" className="item-del-editor__nombre">
         {nombre}
@@ -348,8 +378,28 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
         </button>
       </td>
     </tr>
+    {/* TB-48: la nota del ítem, que la persona lee en la app junto al ingrediente. */}
+    <tr className="item-del-editor__nota">
+      <td colSpan={5}>
+        <TextoAPedido
+          id={`${id}-nota`}
+          rotulo={COPY_NOTA_DEL_ITEM.rotulo}
+          queEs={COPY_NOTA_DEL_ITEM.queEs(nombre)}
+          valor={item.note ?? null}
+          maximo={COPY_NOTA_DEL_ITEM.maximo}
+          abierto={notaAbierta}
+          alAbrir={() => setNotaAbierta(true)}
+          alCambiar={(v) => onCambiar({ note: v })}
+          alCerrar={() => setNotaAbierta(false)}
+        />
+      </td>
+    </tr>
+    </>
   );
 }
+
+/** TB-48: los textos de la nota de un ítem. La persona la lee en la app tal como se escribe. */
+export const COPY_NOTA_DEL_ITEM = { rotulo: 'Nota para la persona', queEs: (nombre: string): string => `una nota sobre ${nombre}`, maximo: 300 } as const;
 
 /**
  * Una opción que nació de una receta (DL-119): la receta y su versión, y los ítems de una porción que armó la API, en

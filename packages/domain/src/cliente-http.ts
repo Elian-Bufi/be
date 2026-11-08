@@ -66,6 +66,8 @@ import {
   type VinculoResponse,
 } from './contratos-vinculo';
 import { CarteraResponseSchema, type CarteraResponse, type FiltroDeCartera } from './contratos-cartera';
+import { ColaDeRevisionesResponseSchema, type ColaDeRevisionesResponse, type FiltroDeLaCola } from './contratos-cola-de-revisiones';
+import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
 import {
   InvitacionCreadaResponseSchema,
   InvitacionResponseSchema,
@@ -327,6 +329,21 @@ import {
   type RegistrarHabitosRequest,
   type ResponderPedidoDeAccesoRequest,
 } from './contratos-habitos-de-la-persona';
+import {
+  LoQueSeComparteDeMiAreaResponseSchema,
+  MisResumenesCompartidosResponseSchema,
+  PedidoDePlanCreadoResponseSchema,
+  PedidoDePlanRespondidoResponseSchema,
+  PedidosDePlanResponseSchema,
+  PlanCompartidoResponseSchema,
+  ResumenesCompartidosEstadoResponseSchema,
+  ResumenesParaElProfesionalResponseSchema,
+  type AreaConPlan,
+  type CompartirResumenesRequest,
+  type DejarDeCompartirResumenesRequest,
+  type PedirVerElPlanRequest,
+  type ResponderPedidoDePlanRequest,
+} from './contratos-resumenes-compartidos';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -791,6 +808,13 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     consultarCartera(token: string, filtro: FiltroDeCartera = {}): Promise<Resultado<CarteraResponse>> {
       return llamar('GET', `/me/portfolio${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: CarteraResponseSchema });
     },
+    /**
+     * API-DSH-02 (09 v0.11 §14; DL-163 D-6): la cola de revisiones. Una API anterior a la operación responde 404: el
+     * website muestra la mesa sin esas filas (TB-14).
+     */
+    consultarColaDeRevisiones(token: string, filtro: FiltroDeLaCola = {}): Promise<Resultado<ColaDeRevisionesResponse>> {
+      return llamar('GET', `/me/review-queue${query(filtro as Readonly<Record<string, string | undefined>>)}`, { token, esquema: ColaDeRevisionesResponseSchema });
+    },
 
     // ─── PF-09 bis · «Mis habituales» (DL-109) ────────────────────────────────────────────────
     /** API-HAB-01. */
@@ -881,6 +905,18 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         token,
         claveDeIdempotencia,
         esquema: ActivacionDePlanResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
+    /**
+     * API-PLN-07 (DL-163 D-21; TB-47): descartar un borrador que nunca se activó, con la versión que la pantalla mostró.
+     * Una versión activada responde 422 PLAN_NOT_EDITABLE; una descartada, el mismo 404 que una inexistente.
+     */
+    descartarBorradorDePlanNutricional(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/plans/${encodeURIComponent(planId)}/discard`, {
+        token,
+        claveDeIdempotencia,
+        esquema: DescarteDeBorradorResponseSchema,
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
@@ -1197,6 +1233,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         cuerpo: { expectedVersion: versionMostrada },
       });
     },
+    /** API-PLE-05 (DL-163 D-21; TB-47): el par de API-PLN-07 en Entrenamiento. */
+    descartarBorradorDePlanDeEntrenamiento(token: string, planId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/plans/${encodeURIComponent(planId)}/discard`, {
+        token,
+        claveDeIdempotencia,
+        esquema: DescarteDeBorradorResponseSchema,
+        cuerpo: { expectedVersion: versionMostrada },
+      });
+    },
     /**
      * API-TRN-13-BUSQUEDA (DL-130): buscar ejercicios con el texto en el cuerpo, nunca en una URL. Es una lectura: sin
      * clave de idempotencia. API-TRN-13 (`q` en la URL) queda como contrato legado de la API. Cada ejercicio trae el nombre
@@ -1284,6 +1329,14 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-22. */
     registrarRevisionDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof RegistrarRevisionDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/reviews`, { token, claveDeIdempotencia, esquema: RevisionDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /**
+     * API-TRN-23: una revisión de Entrenamiento, para su profesional. La operación ya existía en la API; el cliente la suma
+     * para el cajón «De a una» del website (WP-TABLERO-ALTA-GAMA TB-15, TA-42), que escribe el resultado, el fundamento y
+     * el efecto antes de aplicar. Las APK no la leen.
+     */
+    consultarRevisionDeEntrenamiento(token: string, revisionId: string) {
+      return llamar('GET', `/training/reviews/${encodeURIComponent(revisionId)}`, { token, esquema: RevisionDeEntrenamientoResponseSchema });
     },
     /** API-TRN-23-EVIDENCIA (DL-154): la evidencia que guardó la revisión de entrenamiento, resuelta con el permiso de hoy. Solo la lee el website. */
     evidenciaDeRevisionDeEntrenamiento(token: string, revisionId: string) {
@@ -1581,6 +1634,45 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-HBT-09: la persona responde un pedido: «Sí, que los vea» o «No, por ahora». */
     responderPedidoDeAcceso(token: string, pedidoId: string, cuerpo: ResponderPedidoDeAccesoRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/me/habits/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDeAccesoRespondidoResponseSchema, cuerpo });
+    },
+    // ─── RES · lo que la persona comparte de otras áreas (DL-163 D-13, ampliada; WP-TABLERO-ALTA-GAMA TB-52 a TB-56) ──
+    // Familia propia de BE. Ninguna APK instalada la llama: lo que leen no cambia (DL-152). 01 a 03, 09 y 10 son de la
+    // persona (una candidata de la APK, etapa B); 04 y 06 a 08, del website.
+    /** API-RES-01: lo que comparto, con quién, en qué nivel, desde cuándo y quién lo miró. */
+    misResumenesCompartidos(token: string) {
+      return llamar('GET', '/me/summary-sharing', { token, esquema: MisResumenesCompartidosResponseSchema });
+    },
+    /** API-RES-02: compartir, o cambiar con quién y en qué nivel, con el texto que se acepta. La lista es completa. */
+    compartirResumenes(token: string, cuerpo: CompartirResumenesRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', '/me/summary-sharing', { token, claveDeIdempotencia, esquema: ResumenesCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-RES-03: dejar de compartir todo, a la vez. */
+    dejarDeCompartirResumenes(token: string, cuerpo: DejarDeCompartirResumenesRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/summary-sharing/withdrawal', { token, claveDeIdempotencia, esquema: ResumenesCompartidosEstadoResponseSchema, cuerpo });
+    },
+    /** API-RES-04: las otras áreas de la persona, quién las lleva, qué le comparte de cada una y su pedido. */
+    resumenesCompartidos(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries`, { token, esquema: ResumenesParaElProfesionalResponseSchema });
+    },
+    /** API-RES-06: el plan vigente de un área compartida con «resumen y plan». Si no, el 404 de lo inexistente. */
+    planCompartido(token: string, asesoradoId: string, area: AreaConPlan) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries/${encodeURIComponent(area)}/plan`, { token, esquema: PlanCompartidoResponseSchema });
+    },
+    /** API-RES-07: con quién se comparte lo de mi área con esta persona. */
+    loQueSeComparteDeMiArea(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries/outgoing`, { token, esquema: LoQueSeComparteDeMiAreaResponseSchema });
+    },
+    /** API-RES-08: pedir ver el plan de otra área, desde la mía. Le llega a la persona como novedad importante. */
+    pedirVerElPlan(token: string, asesoradoId: string, cuerpo: PedirVerElPlanRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/shared-summaries/access-requests`, { token, claveDeIdempotencia, esquema: PedidoDePlanCreadoResponseSchema, cuerpo });
+    },
+    /** API-RES-09: los pedidos de ver un plan que esperan mi respuesta. */
+    pedidosDePlan(token: string) {
+      return llamar('GET', '/me/summary-sharing/access-requests', { token, esquema: PedidosDePlanResponseSchema });
+    },
+    /** API-RES-10: responder un pedido: «Sí, que lo vea» o «No, por ahora». */
+    responderPedidoDePlan(token: string, pedidoId: string, cuerpo: ResponderPedidoDePlanRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/summary-sharing/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDePlanRespondidoResponseSchema, cuerpo });
     },
   };
 }

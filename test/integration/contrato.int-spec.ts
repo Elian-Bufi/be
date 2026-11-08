@@ -15,6 +15,10 @@
  * - WP-ACCESO-GOOGLE: la familia GOO (DL-138) contra un Google falso local, y el 503 en una segunda app sin client IDs.
  * - WP-NOTAS-DE-COORDINACION: API-CRD-01 (09 §11.6) y sus dos variantes, CRD-01-LISTA y CRD-01-PROPIA (DL-140).
  * - WP-ADMINISTRACION: la familia ADM (DL-155), con un administrador incorporado por el comando interno y su autenticador.
+ * - WP-TABLERO-ALTA-GAMA: API-DSH-02, la cola de revisiones (09 v0.11 §14; DL-163 D-6; TB-14), y API-PLN-07 y API-PLE-05,
+ *   descartar un borrador de plan que nunca se activó (DL-163 D-21; TB-47).
+ *   Y la familia RES, lo que la persona comparte de otras áreas, el plan del otro y el pedido (DL-163 D-13, ampliada;
+ *   TB-52 a TB-56).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -307,6 +311,13 @@ it('TEST-CT (WP-03): se ejercitan éxitos y errores de REL, CON y DSH-03', async
   await conSesion(app, pn.token).get('/api/v1/me/portfolio?periodStart=ayer').expect(400);
   await conSesion(app, pn.token).get('/api/v1/me/portfolio?cursor=%3F%3F').expect(400);
   await request(servidor).get('/api/v1/me/portfolio').expect(401);
+
+  // DSH-02 (la cola de revisiones, DL-163 D-6; TB-14): éxito con y sin filtros; query inválida y cursor inválido; sin sesión.
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue').expect(200);
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue?domain=NUTRITION&status=ACTIVE_PLAN_WITHOUT_REVIEW&limit=5').expect(200);
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue?status=SCORE').expect(400); // INVALID_REQUEST
+  await conSesion(app, pn.token).get('/api/v1/me/review-queue?cursor=%3F%3F').expect(400); // INVALID_CURSOR
+  await request(servidor).get('/api/v1/me/review-queue').expect(401);
 
   // REL-07 / REL-08 / REL-09
   const v = await versionDeVinculo(app, a01.token, vinculoId);
@@ -2103,6 +2114,144 @@ it('TEST-CT (WP-ADMINISTRACION): ADM-01 a 13, con éxitos y errores declarados (
   await adm(app, tercera).delete('/admin/auth/sessions/current').expect(204);
   await adm(app, tercera).delete('/admin/auth/sessions/current?x=1').expect(400);
   await adm(app).delete('/admin/auth/sessions/current').expect(401); // AUTHENTICATION_REQUIRED
+});
+
+it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-47): PLN-07 y PLE-05 — descartar un borrador, con éxitos y errores declarados (DL-163 D-21)', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const sinClave = (token: string, ruta: string) => request(servidor).post(ruta).set('Authorization', `Bearer ${token}`);
+
+  // PLN-07
+  const n = await circuitoListoParaPlanificar(app, 'contrato-descarte');
+  const pn = conSesion(app, n.pro.token);
+  const bn = await crearBorrador(app, n);
+  const pln = (id: string) => `/api/v1/nutrition/plans/${id}/discard`;
+  await pn.post(pln(bn.planId)).send({ expectedVersion: bn.version, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await sinClave(n.pro.token, pln(bn.planId)).send({ expectedVersion: bn.version }).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await request(servidor).post(pln(bn.planId)).send({ expectedVersion: bn.version }).expect(401);
+  await pn.post(pln(bn.planId)).send({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await pn.post(pln(ajeno)).send({ expectedVersion: 'v1' }).expect(404);
+  const claveN = claveDeIdempotencia();
+  await pn.post(pln(bn.planId), claveN).send({ expectedVersion: bn.version }).expect(200);
+  await pn.post(pln(bn.planId), claveN).send({ expectedVersion: 'v9' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pn.post(pln(bn.planId)).send({ expectedVersion: 'v2' }).expect(404); // ya descartado
+  const an = await crearBorrador(app, n);
+  const actN = await activar(app, n.pro, an.planId, an.version).expect(200);
+  await pn.post(pln(an.planId)).send({ expectedVersion: actN.body.data.version }).expect(422); // PLAN_NOT_EDITABLE
+
+  // PLE-05
+  const e = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-descarte');
+  const pe = conSesion(app, e.pro.token);
+  const be = await crearBorradorDeEntrenamiento(app, e);
+  const ple = (id: string) => `/api/v1/training/plans/${id}/discard`;
+  await pe.post(ple(be.planId)).send({ expectedVersion: be.version, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await sinClave(e.pro.token, ple(be.planId)).send({ expectedVersion: be.version }).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await request(servidor).post(ple(be.planId)).send({ expectedVersion: be.version }).expect(401);
+  await pe.post(ple(be.planId)).send({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await pe.post(ple(ajeno)).send({ expectedVersion: 'v1' }).expect(404);
+  const claveE = claveDeIdempotencia();
+  await pe.post(ple(be.planId), claveE).send({ expectedVersion: be.version }).expect(200);
+  await pe.post(ple(be.planId), claveE).send({ expectedVersion: 'v9' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pe.post(ple(be.planId)).send({ expectedVersion: 'v2' }).expect(404); // ya descartado
+  const ae = await crearBorradorDeEntrenamiento(app, e);
+  const actE = await activarPlanDeEntrenamiento(app, e.pro, ae.planId, ae.version).expect(200);
+  await pe.post(ple(ae.planId)).send({ expectedVersion: actE.body.data.version }).expect(422); // PLAN_NOT_EDITABLE
+});
+
+it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-52 a TB-56): RES-01 a 04 y 06 a 10 — lo de otras áreas, el plan del otro y el pedido (DL-163 D-13, ampliada)', async () => {
+  const c = await circuitoConPlanActivo(app, 'ct-res');
+  const ent = await prepararProfesional(app, 'ct-res-ent', ['ENTRENAMIENTO']);
+  const ajeno = await prepararProfesional(app, 'ct-res-ajeno', ['ENTRENAMIENTO']);
+  await vinculoCompleto(app, ent, c.ase, 'ENTRENAMIENTO');
+  const yo = conSesion(app, c.ase.token);
+  const delEnt = conSesion(app, ent.token);
+  const servidor = app.getHttpServer();
+  const PLAN = VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS.id;
+  const AMBOS = { summary: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, summaryAndPlan: PLAN };
+  const OTRAS = `/api/v1/advisees/${c.ase.id}/shared-summaries`;
+  const PEDIR = `${OTRAS}/access-requests`;
+  const pedido = { scope: 'ENTRENAMIENTO', area: 'NUTRICION' };
+
+  // RES-01 — lo que comparto
+  await yo.get('/api/v1/me/summary-sharing').expect(200);
+  await yo.get('/api/v1/me/summary-sharing?x=1').expect(400); // INVALID_REQUEST
+  await request(servidor).get('/api/v1/me/summary-sharing').expect(401);
+
+  // RES-04 — las otras áreas, para el profesional
+  await delEnt.get(OTRAS).expect(200);
+  await delEnt.get(`${OTRAS}?x=1`).expect(400); // INVALID_REQUEST
+  await conSesion(app, ajeno.token).get(OTRAS).expect(404);
+
+  // RES-08 — pedir ver el plan
+  const clave = claveDeIdempotencia();
+  const creado = (await delEnt.post(PEDIR, clave).send(pedido).expect(201)).body.data as { accessRequestId: string };
+  await delEnt.post(PEDIR, clave).send(pedido).expect(201); // replay
+  await delEnt.post(PEDIR, clave).send({ scope: 'NUTRICION', area: 'ENTRENAMIENTO' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await delEnt.post(PEDIR).send(pedido).expect(422); // PLAN_ACCESS_REQUEST_TOO_SOON
+  await delEnt.post(PEDIR).send({ scope: 'ENTRENAMIENTO', area: 'ANTROPOMETRIA' }).expect(400); // INVALID_REQUEST
+  await delEnt.post(PEDIR).send({ ...pedido, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await conSesion(app, ajeno.token).post(PEDIR).send(pedido).expect(404);
+  await request(servidor).post(PEDIR).set('Authorization', `Bearer ${ent.token}`).send(pedido).expect(400); // sin Idempotency-Key
+  const solo = await circuitoDeEntrenamiento(app, 'ct-res-solo');
+  await conSesion(app, solo.pro.token).post(`/api/v1/advisees/${solo.ase.id}/shared-summaries/access-requests`).send(pedido).expect(422); // PLAN_ACCESS_NOT_REQUESTABLE
+
+  // RES-09 — los pedidos que esperan
+  await yo.get('/api/v1/me/summary-sharing/access-requests').expect(200);
+  await yo.get('/api/v1/me/summary-sharing/access-requests?x=1').expect(400); // INVALID_REQUEST
+  await request(servidor).get('/api/v1/me/summary-sharing/access-requests').expect(401);
+
+  // RES-10 — responder
+  const responder = (id: string, cuerpo: Record<string, unknown>, k?: string) => yo.post(`/api/v1/me/summary-sharing/access-requests/${id}/answer`, k).send(cuerpo);
+  const si = { expectedVersion: 'v1', answer: 'SHARE', sharing: { expectedVersion: null, textVersionId: PLAN } };
+  await responder(creado.accessRequestId, { ...si, sharing: null }).expect(400); // INVALID_REQUEST
+  await responder(creado.accessRequestId, { ...si, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await responder(randomUUID(), si).expect(404);
+  await responder(creado.accessRequestId, { ...si, sharing: { ...si.sharing, textVersionId: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id } }).expect(409); // CONSENT_VERSION_STALE
+  await responder(creado.accessRequestId, { ...si, expectedVersion: 'v2' }).expect(409); // VERSION_CONFLICT
+  const claveSi = claveDeIdempotencia();
+  await responder(creado.accessRequestId, si, claveSi).expect(200);
+  await responder(creado.accessRequestId, si, claveSi).expect(200); // replay
+  await responder(creado.accessRequestId, { ...si, answer: 'NOT_NOW', sharing: null }, claveSi).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await request(servidor).post(`/api/v1/me/summary-sharing/access-requests/${creado.accessRequestId}/answer`).set('Authorization', `Bearer ${c.ase.token}`).send(si).expect(400); // sin Idempotency-Key
+  await delEnt.post(PEDIR).send(pedido).expect(422); // PLAN_ALREADY_SHARED
+
+  // RES-06 — el plan del otro
+  await delEnt.get(`${OTRAS}/NUTRICION/plan`).expect(200);
+  await delEnt.get(`${OTRAS}/NUTRICION/plan?x=1`).expect(400); // INVALID_REQUEST
+  await delEnt.get(`${OTRAS}/OTRA/plan`).expect(404);
+  await conSesion(app, ajeno.token).get(`${OTRAS}/NUTRICION/plan`).expect(404);
+  await request(servidor).get(`${OTRAS}/NUTRICION/plan`).expect(401);
+
+  // RES-07 — con quién se comparte lo de mi área
+  await conSesion(app, c.pro.token).get(`${OTRAS}/outgoing`).expect(200);
+  await conSesion(app, c.pro.token).get(`${OTRAS}/outgoing?x=1`).expect(400); // INVALID_REQUEST
+  await conSesion(app, ajeno.token).get(`${OTRAS}/outgoing`).expect(404);
+
+  // RES-02 — compartir, o cambiar con quiénes y en qué nivel
+  const compartir = (cambios: Record<string, unknown>, k?: string) =>
+    yo.put('/api/v1/me/summary-sharing', k).send({ expectedVersion: 'v1', acceptedTexts: AMBOS, grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY' }], ...cambios });
+  await compartir({ grants: [{ professionalId: ajeno.id, area: 'NUTRICION', level: 'SUMMARY' }] }).expect(422); // SUMMARY_RECIPIENT_NOT_AVAILABLE
+  await compartir({ grants: [{ professionalId: ent.id, area: 'ANTROPOMETRIA', level: 'SUMMARY_AND_PLAN' }] }).expect(400); // INVALID_REQUEST
+  await compartir({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await compartir({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await compartir({ acceptedTexts: { summary: VERSION_VIGENTE.HABITOS_COMPARTIDOS.id, summaryAndPlan: null } }).expect(409); // CONSENT_VERSION_STALE
+  await request(servidor).put('/api/v1/me/summary-sharing').set('Authorization', `Bearer ${c.ase.token}`).send({ expectedVersion: 'v1', acceptedTexts: AMBOS, grants: [] }).expect(400); // sin Idempotency-Key
+  await compartir({}).expect(200); // bajar a «resumen»: v2
+  await compartir({ expectedVersion: 'v2', grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }], acceptedTexts: { summary: null, summaryAndPlan: null } }).expect(422); // SHARING_TEXT_REQUIRED
+  const claveDos = claveDeIdempotencia();
+  await compartir({ expectedVersion: 'v2', grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }] }, claveDos).expect(200); // v3
+  await compartir({ expectedVersion: 'v2' }, claveDos).expect(409); // IDEMPOTENCY_KEY_REUSED
+
+  // RES-03 — dejar de compartir
+  await yo.post('/api/v1/me/summary-sharing/withdrawal').send({ expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await yo.post('/api/v1/me/summary-sharing/withdrawal').send({ expectedVersion: 'v3', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post('/api/v1/me/summary-sharing/withdrawal').send({ expectedVersion: 'v3' }).expect(200);
+
+  // Sin el A3 vigente: 403 en lo propio (retirar y bajar no lo exigen).
+  await conSesion(app, c.ase.token).post(`/api/v1/me/health-data-consents/${await a3Vigente(app, c.ase.token)}/revoke`).send({}).expect(200);
+  await yo.get('/api/v1/me/summary-sharing').expect(403);
+  await yo.get('/api/v1/me/summary-sharing/access-requests').expect(403);
+  await compartir({ expectedVersion: 'v4' }).expect(403); // ampliar, después de retirar
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

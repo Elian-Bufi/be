@@ -103,7 +103,7 @@ const DOMINIOS = [
     // WP-ESCRITORIO-AMABLE, parte 5: el Espacio profesional (los pendientes de la cartera y el directorio). Una lista de
     // personas no califica a nadie: ni «inactivo», ni «riesgo», ni un porcentaje (TEST-PRJ-009; DL-107).
     nombre: 'el espacio profesional',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts', 'mesa.ts', 'cajon.ts', 'lugar-del-espacio.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
     prohibidos: terminosProhibidosDeCarteraEn,
     minimo: 8,
   },
@@ -153,9 +153,21 @@ const DOMINIOS = [
     // día, la revisión en preparación, el período y su ayuda). Muestran texto de las dos áreas: pasan por las dos listas.
     // Hasta acá la evidencia no la miraba ninguna prueba de palabras.
     nombre: 'la revisión de Nutrición y de Entrenamiento',
-    archivos: ['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+    // WP-TABLERO-ALTA-GAMA TB-15: «¿Cuándo la revisás?» y aplicar una revisión, que comparten las dos áreas y el cajón.
+    archivos: [
+      ...['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts', 'cuando-la-revisas.tsx', 'aplicar-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+      join(RAIZ, 'apps/web/src/lib/cuando-la-revisas.ts'),
+    ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
     minimo: 5,
+  },
+  {
+    // WP-TABLERO-ALTA-GAMA TB-48: los topes de un plan, avisados antes de guardar, y duplicar, reordenar y quitar en los
+    // editores de las dos áreas.
+    nombre: 'los editores de los planes',
+    archivos: [join(RAIZ, 'apps/web/src/app/pro/advisees/topes-del-plan.ts'), join(RAIZ, 'apps/web/src/app/pro/advisees/editar-la-estructura.ts'), join(RAIZ, 'apps/web/src/app/pro/advisees/revisar-el-plan.ts'), join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition/recetas-para-elegir.ts'), join(RAIZ, 'apps/web/src/app/pro/exercises/zonas-propias.ts')],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 1,
   },
   {
     // DL-141 D-6 (encargo de Dirección del 2026-10-19, bloque 4): el origen de un ítem en la fila del buscador, en Nutrición
@@ -227,7 +239,8 @@ for (const dominio of DOMINIOS) {
  * Un solo porcentaje es de la ficha, y está contado: el **cambio relativo** de Analizar, que compara un valor con otro
  * del mismo dato (la referencia que elige el profesional). No es un puntaje ni dice cuánto «se cumplió». Los lugares
  * donde se escribe están en `PORCENTAJES_DE_LA_FICHA`, uno por uno: un «%» en cualquier otro texto hace fallar la
- * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más).
+ * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más). Desde
+ * TB-51 hay un segundo porcentaje, también contado: el de cada parte de la barra de la composición (D-11, modificada).
  */
 const SEGUIMIENTO = join(RAIZ, 'apps/web/src/app/pro/advisees/seguimiento');
 const LA_FICHA = [
@@ -241,9 +254,13 @@ const PORCENTAJES_DE_LA_FICHA = [
   'lienzo.tsx · %',
   // El ancho del gráfico dentro de su caja: no es un texto para la persona.
   'lienzo.tsx · 100%',
+  // TB-51 (DL-163 D-11, modificada por Dirección el 2026-11-07: «kilos con el % al lado»): el porcentaje de cada parte de
+  // la barra de la última toma, junto a sus kilos. El 100 % es el peso de esa toma: dice de qué está hecho, no cuánto se
+  // cumplió. Se escribe en un solo lugar, `porcentajeEnPalabras`.
+  'composicion.ts · %',
 ];
 
-test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; su único porcentaje es el cambio relativo', () => {
+test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; sus porcentajes son el cambio relativo y el de la composición (TB-51)', () => {
   assert.ok(LA_FICHA.length >= 20, `se esperaban las pantallas de la ficha, hay ${LA_FICHA.length}`);
   const prohibidos = (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])];
   const porcentajes = new Set();

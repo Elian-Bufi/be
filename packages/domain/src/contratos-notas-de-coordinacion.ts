@@ -46,7 +46,10 @@ export const TIPOS_DE_REFERENCIA_DE_NOTA = ['NUTRITION_PLAN_VERSION', 'NUTRITION
 export const TipoDeReferenciaDeNotaSchema = z.enum(TIPOS_DE_REFERENCIA_DE_NOTA);
 export type TipoDeReferenciaDeNota = z.infer<typeof TipoDeReferenciaDeNotaSchema>;
 
-/** El área de cada tipo de referencia: solo se cita lo del área desde la que se escribe. */
+/**
+ * El área de cada tipo de referencia: se cita lo del área desde la que se escribe y, desde TB-53 (DL-163 D-13, ampliada),
+ * también la versión vigente del plan de otra área que el autor ve por API-RES-06 al escribir.
+ */
 export const ALCANCE_DE_LA_REFERENCIA: Readonly<Record<TipoDeReferenciaDeNota, Alcance>> = {
   NUTRITION_PLAN_VERSION: 'NUTRICION',
   NUTRITION_REVIEW: 'NUTRICION',

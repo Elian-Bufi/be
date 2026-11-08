@@ -65,6 +65,7 @@ import { ComidasParaDecidir } from './comidas-para-decidir';
 import { lineasDeValor, porSeccion } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
 import { loDeclaradoV2 } from './lo-declarado-v2';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 /** De cuántas solicitudes se lee el detalle para decir en la lista si la persona corrigió, o si lo cargado espera confirmación. */
 const SOLICITUDES_CON_DETALLE = 20;
@@ -403,6 +404,7 @@ function DetalleDeSolicitud({
   onReleerElDetalle: (opciones?: { readonly conLaLista?: boolean }) => void;
   onReintentarElFormulario: () => void;
 }) {
+  const { delProfesional } = useNombres();
   const { token, asesoradoId, sesionPerdida, avisar, ir, yoId } = useFormularios();
   const avisarSinAcceso = useAvisarSinAcceso();
   const intento = useClaveDeIntento();
@@ -667,7 +669,7 @@ function DetalleDeSolicitud({
             </span>
             {declarado.transcripcion ? (
               <p className="nota lo-declarado__transcripcion" data-transcripcion>
-                {V.web.transcripcion(declarado.transcripcion.professional.displayName, diaSinElAnioEnCurso(declarado.transcripcion.loadedAt), diaSinElAnioEnCurso(declarado.transcripcion.confirmedAt))} · {V.web.corregidas(declarado.transcripcion.correctedFieldCodes.length)}
+                {V.web.transcripcion(delProfesional(declarado.transcripcion.professional), diaSinElAnioEnCurso(declarado.transcripcion.loadedAt), diaSinElAnioEnCurso(declarado.transcripcion.confirmedAt))} · {V.web.corregidas(declarado.transcripcion.correctedFieldCodes.length)}
               </p>
             ) : null}
             <p className="nota">{C.noEsMedicionNiDiagnostico}</p>

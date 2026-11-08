@@ -13,7 +13,7 @@
  */
 import { useEffect, useId, useRef, useState } from 'react';
 import { Icono } from '../../../components/icono';
-import { rangoCivil } from '../../../lib/formato';
+import { diaYMesCivil, rangoCivil } from '../../../lib/formato';
 import { diasEntre, hoyEn } from './seguimiento/estado';
 
 export interface PeriodoDelControl<D extends number> {
@@ -21,6 +21,8 @@ export interface PeriodoDelControl<D extends number> {
   readonly preset: D | null;
   readonly desde: string;
   readonly hasta: string;
+  /** TB-16: el período por omisión, acortado al inicio del acompañamiento (`seguimiento/estado.ts`). */
+  readonly desdeElVinculo?: true;
 }
 
 export function ControlDePeriodo<D extends number>({
@@ -96,7 +98,17 @@ export function ControlDePeriodo<D extends number>({
       <button ref={boton} type="button" className="periodo-del-seguimiento__boton" aria-expanded={abierto} aria-controls={`${id}-panel`} onClick={() => setAbierto(!abierto)}>
         <Icono nombre="calendario" />
         <span>
-          Período: <strong>{rangoCivil(periodo.desde, periodo.hasta)}</strong> · {dias === 1 ? '1 día' : `${dias} días`}
+          {/* TB-16 (DL-163 D-7): el período por omisión, acortado al inicio del acompañamiento, lo dice. */}
+          {periodo.desdeElVinculo ? (
+            <>
+              <strong>Desde el {diaYMesCivil(periodo.desde)}</strong>, inicio del acompañamiento
+            </>
+          ) : (
+            <>
+              Período: <strong>{rangoCivil(periodo.desde, periodo.hasta)}</strong>
+            </>
+          )}{' '}
+          · {dias === 1 ? '1 día' : `${dias} días`}
           {incluyeHoy ? ' · incluye hoy' : ''}
         </span>
         <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={18} />

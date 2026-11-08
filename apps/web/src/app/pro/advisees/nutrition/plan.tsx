@@ -49,6 +49,7 @@ import { ComidasDelPlan, SelectorDeDiaTipo } from './estructura-del-plan';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional } from './plantillas';
 import { Pista } from '../../../../components/pista';
+import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 
 type Resumen = Omit<VersionDePlan, 'dayTypes'>;
 
@@ -188,6 +189,9 @@ export function VistaDePlan() {
   };
 
   return (
+    <>
+      {/* TB-54 (DL-163 D-13, ampliada): «Otras áreas», al planificar. Lee API-RES-04 al abrir; sin otra área, nada. */}
+      <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="NUTRICION" />
     <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
       {r?.ok
         ? (() => {
@@ -334,6 +338,7 @@ export function VistaDePlan() {
           })()
         : null}
     </EstadoDeLectura>
+    </>
   );
 }
 

@@ -5,6 +5,8 @@
  * - **«Notas recientes del equipo»** en el Resumen: las tres últimas que este profesional escribió o recibió sobre la
  *   persona, en el último año, con quién la escribió, para qué y cuándo; el texto se abre en el lugar. Sale de la línea de
  *   tiempo (API-DSH-04 con el tipo `COORDINATION_NOTE_RECORDED`), que es donde el 09 pone su lectura (09 §11.6): no hay otra.
+ * - **El rostro** (WP-TABLERO-ALTA-GAMA TB-05): el monograma de quien la escribió, al lado de su nombre. Con «Ocultar
+ *   nombres», su referencia y el ícono, y sin «Para:», que es una lista de nombres armada por la API.
  * - **Lo propio de una nota en su detalle** de la Línea de tiempo: corregirla con otra nota, si es suya (CRD-D7), y que lo
  *   citado se nombra pero no se abre con la nota (CRD-D5).
  */
@@ -12,8 +14,10 @@ import { COPY_NOTAS_DE_COORDINACION as T, type EntradaDeLineaDeTiempo, type Line
 import Link from 'next/link';
 import { useId } from 'react';
 import { Icono } from '../../../../components/icono';
+import { Retrato } from '../../../../components/retrato';
 import { api } from '../../../../lib/api';
 import { diaDelAnioEnCurso } from '../../../../lib/formato';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 import { razonDeFalla, useLectura, useSeguimiento } from './contexto';
 import { hoyEn, restarDias } from './estado';
 
@@ -30,6 +34,7 @@ const finalidadDe = (e: EntradaDeLineaDeTiempo): string => {
 
 export function NotasRecientesDelEquipo() {
   const { token, asesoradoId, href, abrirNota } = useSeguimiento();
+  const { deQuien, ocultos } = useNombres();
   const id = useId();
   const hoy = hoyEn();
   const { lectura, recargar } = useLectura<LineaDeTiempoResponse>(`notas-del-equipo|${asesoradoId}|${hoy}`, () =>
@@ -63,21 +68,27 @@ export function NotasRecientesDelEquipo() {
         {lectura.tipo === 'listo' && notas.length === 0 ? <p className="nota">{T.recientesVacio}</p> : null}
         {notas.length > 0 ? (
           <ul className="notas-del-equipo__lista">
-            {notas.map((e) => (
+            {notas.map((e) => {
+              const quien = e.author ? deQuien(e.author, asesoradoId) : 'Profesional';
+              return (
               <li key={e.timelineEntryId}>
                 <details className="notas-del-equipo__nota">
                   <summary>
-                    <span className="notas-del-equipo__quien">{e.author?.displayName ?? 'Profesional'}</span>
+                    <span className="notas-del-equipo__quien con-retrato">
+                      <Retrato nombre={quien} />
+                      <span>{quien}</span>
+                    </span>
                     <span className="notas-del-equipo__para-que">{finalidadDe(e)}</span>
                     <span className="nota">{diaDelAnioEnCurso(e.occurredDate, hoy)}</span>
                   </summary>
                   <p className="notas-del-equipo__texto">{detalle(e, 'Nota')}</p>
                   <p className="nota">
-                    {[detalle(e, 'Desde') ? `Desde ${detalle(e, 'Desde')}` : null, detalle(e, 'Para') ? `Para: ${detalle(e, 'Para')}` : null].filter(Boolean).join(' · ')}
+                    {[detalle(e, 'Desde') ? `Desde ${detalle(e, 'Desde')}` : null, detalle(e, 'Para') && !ocultos ? `Para: ${detalle(e, 'Para')}` : null].filter(Boolean).join(' · ')}
                   </p>
                 </details>
               </li>
-            ))}
+              );
+            })}
           </ul>
         ) : null}
         {total > 0 ? (
