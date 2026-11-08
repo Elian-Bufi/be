@@ -17,6 +17,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useTecladoAbierto } from './barra-de-zonas';
+import { crearAlmacenDeLaFila } from './almacen-de-la-fila';
 import type { FilaDeAcciones } from './descanso-automatico';
 import { Icono } from './icono';
 import { TEXTOS_DEL_DESCANSO } from './textos-del-descanso';
@@ -34,24 +35,10 @@ export interface FilaPublicada {
   readonly acciones: { readonly current: AccionesDeLaFila };
 }
 
-let publicada: FilaPublicada | null = null;
-let clave = '';
-const oyentes = new Set<() => void>();
-
-function fijar(fila: FilaPublicada | null) {
-  publicada = fila;
-  const nueva = fila ? JSON.stringify([fila.datos, fila.ocupado]) : '';
-  if (nueva === clave) return;
-  clave = nueva;
-  oyentes.forEach((o) => o());
-}
-const suscribir = (alCambiar: () => void) => {
-  oyentes.add(alCambiar);
-  return () => {
-    oyentes.delete(alCambiar);
-  };
-};
-const actual = () => publicada;
+const almacen = crearAlmacenDeLaFila<FilaPublicada>();
+const fijar = almacen.fijar;
+const suscribir = almacen.suscribir;
+const actual = almacen.actual;
 
 /** La sesión publica su fila en cada dibujo y la retira al desmontarse. `null`: sin fila (otro día, sin corrida). */
 export function usePublicarFilaFija(datos: FilaDeAcciones | null, ocupado: boolean, acciones: AccionesDeLaFila): void {
