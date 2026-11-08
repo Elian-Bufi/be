@@ -195,15 +195,20 @@ const RUTAS = [
   { nombre: 'plan-de-entrenamiento', id: 'p1' },
   { nombre: 'mis-solicitudes' },
   { nombre: 'mi-solicitud', id: 's1' },
-  // DL-165 D-9 (FR-10): «Mis hábitos», desde Información.
+  // DL-165 D-9 (FR-10): «Mis hábitos», desde Perfil desde DL-166.
   { nombre: 'mis-habitos' },
+  // DL-166: Perfil, «Quién ve qué» y las partes de lo que era Cuenta.
+  { nombre: 'perfil' },
+  { nombre: 'quien-ve-que' },
+  { nombre: 'cuenta', seccion: 'avisos' },
+  { nombre: 'cuenta', seccion: 'cierre' },
   { nombre: 'sesion-de-entrenamiento', draftId: 'd1', sesion: {}, fecha: '2026-10-01' },
   { nombre: 'ejecucion-de-entrenamiento', id: 'e1' },
   { nombre: 'corregir-ejecucion', id: 'e1' },
   // PA-03: el registro rápido de una sesión del plan.
   { nombre: 'registro-rapido', occurrenceId: 'o1', fecha: '2026-11-02', etiqueta: 'Piernas A', sessionId: 's1', planId: 'p1' },
 ];
-const RAICES = ['inicio', 'hoy', 'entrenamiento', 'mi-evolucion', 'mis-solicitudes'].map((nombre) => ({ nombre }));
+const RAICES = ['inicio', 'hoy', 'entrenamiento', 'mi-evolucion', 'perfil'].map((nombre) => ({ nombre }));
 const conSesion = RUTAS.filter(nav.requiereSesion);
 
 test('la barra tiene los cinco destinos, en orden, con su texto y su raíz', () => {
@@ -214,7 +219,7 @@ test('la barra tiene los cinco destinos, en orden, con su texto y su raíz', () 
       ['Nutrición', 'hoy'],
       ['Entrenamiento', 'entrenamiento'],
       ['Evolución', 'mi-evolucion'],
-      ['Información', 'mis-solicitudes'],
+      ['Perfil', 'perfil'],
     ],
   );
   for (const z of nav.ZONAS) {
@@ -224,25 +229,26 @@ test('la barra tiene los cinco destinos, en orden, con su texto y su raíz', () 
   }
 });
 
-test('módulo, pestaña activa y barra son tres cosas: Cuenta es un módulo que no resalta ningún destino', () => {
+test('módulo, pestaña activa y barra son tres cosas: lo de la persona es de Perfil, y Novedades no resalta ningún destino', () => {
   for (const ruta of RUTAS) {
     const modulo = nav.moduloDe(ruta);
     if (nav.requiereSesion(ruta)) assert.ok(modulo, `«${ruta.nombre}» no tiene módulo`);
     else assert.equal(modulo, null, `«${ruta.nombre}» está fuera de la sesión`);
   }
-  for (const nombre of ['cuenta', 'vinculos', 'privacidad', 'notas-de-coordinacion']) {
-    assert.equal(nav.moduloDe({ nombre }), 'cuenta');
-    assert.equal(nav.pestanaActiva({ nombre }), null, `«${nombre}» no resalta ningún destino`);
+  for (const nombre of ['cuenta', 'vinculos', 'privacidad', 'notas-de-coordinacion', 'quien-ve-que', 'mis-solicitudes', 'mis-habitos']) {
+    assert.equal(nav.moduloDe({ nombre }), 'perfil');
+    assert.equal(nav.pestanaActiva({ nombre }), 'perfil', `«${nombre}», sin origen, resalta Perfil`);
   }
+  assert.equal(nav.pestanaActiva({ nombre: 'novedades' }), null, 'la campana no es un destino');
   // Un detalle sin origen resalta su módulo; abierto desde Inicio, resalta Inicio, donde empezó el camino.
   assert.equal(nav.pestanaActiva({ nombre: 'ejecucion-de-entrenamiento', id: 'e1' }), 'entrenamiento');
   assert.equal(nav.pestanaActiva(nav.navegar({ nombre: 'inicio' }, { nombre: 'ejecucion-de-entrenamiento', id: 'e1' })), 'inicio');
-  assert.equal(nav.pestanaActiva(nav.navegar({ nombre: 'hoy' }, { nombre: 'privacidad' })), null, 'Privacidad es de Cuenta aunque se abra desde Nutrición');
+  assert.equal(nav.pestanaActiva(nav.navegar({ nombre: 'hoy' }, { nombre: 'privacidad' })), 'nutricion', 'abierta desde Nutrición, resalta donde empezó el camino');
 });
 
 test('«atrás» desde una raíz lleva a Inicio, y desde Inicio o Bienvenida deja actuar al sistema', () => {
   assert.deepEqual(nav.INICIO, { nombre: 'inicio' }, 'con sesión, la APK abre en Inicio');
-  for (const nombre of ['hoy', 'entrenamiento', 'mi-evolucion', 'mis-solicitudes']) assert.deepEqual(nav.anterior({ nombre }), { nombre: 'inicio' }, nombre);
+  for (const nombre of ['hoy', 'entrenamiento', 'mi-evolucion', 'perfil']) assert.deepEqual(nav.anterior({ nombre }), { nombre: 'inicio' }, nombre);
   assert.equal(nav.anterior({ nombre: 'inicio' }), null);
   assert.equal(nav.anterior({ nombre: 'bienvenida' }), null);
 });
@@ -276,29 +282,27 @@ test('Privacidad vuelve al aviso de A3 desde el que se abrió; desde Cuenta, a C
   assert.deepEqual(nav.anterior(nav.anterior(privacidad)), { nombre: 'mi-evolucion' });
 });
 
-test('DL-140: «Notas entre tus profesionales» se abre desde Cuenta y desde Vínculos, y vuelve adonde se abrió', () => {
-  const cuenta = nav.navegar({ nombre: 'inicio' }, { nombre: 'cuenta' });
-  const desdeCuenta = nav.navegar(cuenta, { nombre: 'notas-de-coordinacion' });
-  assert.deepEqual(nav.anterior(desdeCuenta), cuenta);
-  const vinculos = nav.navegar(cuenta, { nombre: 'vinculos' });
+test('DL-140: «Notas entre tus profesionales» se abre desde Perfil y desde Vínculos, y vuelve adonde se abrió', () => {
+  const perfil = { nombre: 'perfil' };
+  const desdePerfil = nav.navegar(perfil, { nombre: 'notas-de-coordinacion' });
+  assert.deepEqual(nav.anterior(desdePerfil), perfil);
+  const vinculos = nav.navegar(perfil, { nombre: 'vinculos' });
   assert.deepEqual(nav.anterior(nav.navegar(vinculos, { nombre: 'notas-de-coordinacion' })), vinculos);
-  // Sin origen, vuelve a Cuenta.
-  assert.deepEqual(nav.anterior({ nombre: 'notas-de-coordinacion' }), { nombre: 'cuenta' });
-  const CUENTA = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/cuenta.tsx'), 'utf8');
+  // Sin origen, vuelve a Perfil (DL-166).
+  assert.deepEqual(nav.anterior({ nombre: 'notas-de-coordinacion' }), { nombre: 'perfil' });
+  const PERFIL = readFileSync(resolve(RAIZ, 'apps/mobile/src/perfil.ts'), 'utf8');
   const VINCULOS = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/vinculos.tsx'), 'utf8');
-  for (const fuente of [CUENTA, VINCULOS]) assert.match(fuente, /ir\(\{ nombre: 'notas-de-coordinacion' \}\)/);
+  assert.match(PERFIL, /ruta: \{ nombre: 'notas-de-coordinacion' \}/);
+  assert.match(VINCULOS, /ir\(\{ nombre: 'notas-de-coordinacion' \}\)/);
   assert.equal(nav.textoDeVolverA({ nombre: 'notas-de-coordinacion' }), 'Volver a Notas entre tus profesionales');
 });
 
-test('el menú auxiliar lleva a funciones que ya existen, fuera de la barra, y lo abierto vuelve a la raíz del menú', () => {
-  const MENU = readFileSync(resolve(RAIZ, 'apps/mobile/src/menu-auxiliar.tsx'), 'utf8');
-  const destinos = [...MENU.matchAll(/ruta: \{ nombre: '([a-z-]+)' \}/g)].map((m) => m[1]);
-  assert.deepEqual(destinos, ['vinculos', 'historial-de-entrenamiento', 'registros-nutricionales']);
-  for (const nombre of destinos) {
+test('DL-166: el menú auxiliar ya no existe; lo que abría sigue alcanzable y vuelve adonde se abrió', () => {
+  assert.throws(() => readFileSync(resolve(RAIZ, 'apps/mobile/src/menu-auxiliar.tsx'), 'utf8'), /ENOENT/);
+  for (const nombre of ['vinculos', 'historial-de-entrenamiento', 'registros-nutricionales']) {
     assert.ok(!nav.esRaiz({ nombre }), `«${nombre}» ya está en la barra`);
     for (const raiz of RAICES) assert.deepEqual(nav.anterior(nav.navegar(raiz, { nombre })), raiz, `«${nombre}» desde ${raiz.nombre}`);
   }
-  assert.match(MENU, /<Modal[^>]*onRequestClose=\{cerrar\}/, 'el botón atrás cierra el menú antes de navegar');
 });
 
 test('navegar: una raíz reinicia la cadena, una pantalla ya abierta no se duplica y el origen tiene tope', () => {
@@ -331,11 +335,11 @@ test('lo que era de una sola vez no se recuerda para volver: el pedido de una ra
   assert.ok(nav.traePedido({ nombre: 'hoy', accion: 'registrar' }) && !nav.traePedido({ nombre: 'hoy' }));
 });
 
-test('al iniciar sesión se abre Inicio; si Cuenta pidió volver a entrar para confirmar una acción, se vuelve a Cuenta', () => {
+test('al iniciar sesión se abre Inicio; si Cerrar mi cuenta pidió volver a entrar para confirmar el cierre, se vuelve ahí', () => {
   assert.deepEqual(nav.alIniciarSesion({ nombre: 'login' }), { nombre: 'inicio' });
   assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'La sesión ya no es válida.' }), { nombre: 'inicio' });
-  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'Por seguridad…', alEntrar: 'cuenta' }), { nombre: 'cuenta' });
-  assert.deepEqual(nav.navegar({ nombre: 'login' }, nav.alIniciarSesion({ nombre: 'login', alEntrar: 'cuenta' })), { nombre: 'cuenta' }, 'sin origen: volver lleva a Inicio');
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', aviso: 'Por seguridad…', alEntrar: 'cuenta' }), { nombre: 'cuenta', seccion: 'cierre' });
+  assert.deepEqual(nav.navegar({ nombre: 'login' }, nav.alIniciarSesion({ nombre: 'login', alEntrar: 'cuenta' })), { nombre: 'cuenta', seccion: 'cierre' }, 'sin origen: volver lleva a Perfil');
   assert.match(APP, /motivo === 'reautenticar' \? \{ alEntrar: 'cuenta' as const \}/, 'la reautenticación del cierre de cuenta vuelve a Cuenta');
   assert.match(APP, /ir\(alIniciarSesion\(ruta\)\)/, 'al iniciar sesión se abre la pantalla que decide alIniciarSesion');
 });
@@ -373,15 +377,15 @@ test('la barra: pestañas accesibles de 48 dp, sin los indicadores viejos, sobre
   assert.doesNotMatch(BARRA, /numberOfLines=\{0\}|display: 'none'/, 'ninguna etiqueta se oculta');
 });
 
-test('la cabecera: volver con prioridad sobre el menú, y un avatar neutro que no muestra nombre ni iniciales', () => {
+test('la cabecera (DL-166): la marca y Novedades, sin menú ni avatar, y volver en un detalle', () => {
   const CABECERA = readFileSync(resolve(RAIZ, 'apps/mobile/src/cabecera.tsx'), 'utf8');
-  assert.match(CABECERA, /\{volverA \? \([\s\S]*?\) : conMenu \? \(/, 'volver tiene prioridad sobre el menú');
+  assert.doesNotMatch(CABECERA, /Abrir el menú|accessibilityLabel="Cuenta"|abrirCuenta|abrirMenu/, 'sin menú ni avatar');
   assert.match(CABECERA, /accessibilityLabel=\{textoDeVolverA\(volverA\)\}/, 'el botón dice adónde vuelve');
-  assert.match(CABECERA, /accessibilityLabel="Cuenta"/);
+  assert.match(CABECERA, /Novedades, \$\{sinLeer\} sin leer/);
   const codigo = CABECERA.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(codigo, /profile|displayName|email|correo|iniciales/i, 'el perfil no tiene nombre ni foto (D-2)');
   assert.match(CABECERA, /Ambiente de prueba · solo datos sintéticos/, 'el ambiente siempre a la vista (08 §33)');
-  assert.match(APP, /conMenu=\{conSesion && raiz\}/, 'el menú, solo en una raíz con sesión');
+  assert.doesNotMatch(APP, /MenuAuxiliar|conMenu|conAvatar/, 'App.tsx no dibuja menú ni avatar');
   assert.match(APP, /volverA=\{recuperacion \|\| raiz \? null : anterior\(ruta\)\}/, 'volver en todo lo que no es raíz');
 });
 
@@ -419,18 +423,18 @@ test('sin pérdidas silenciosas: ir a la pantalla en la que ya se está no pregu
   for (const actual of [{ nombre: 'hoy' }, { nombre: 'hoy', accion: 'registrar' }]) {
     assert.ok(nav.mismaPantalla(nav.navegar(actual, { nombre: 'hoy' }), actual), JSON.stringify(actual));
   }
-  const cuenta = nav.navegar({ nombre: 'inicio' }, { nombre: 'cuenta' });
-  assert.ok(nav.mismaPantalla(nav.navegar(cuenta, { nombre: 'cuenta' }), cuenta), 'el avatar estando en Cuenta');
+  const cuenta = nav.navegar({ nombre: 'perfil' }, { nombre: 'cuenta', seccion: 'avisos' });
+  assert.ok(nav.mismaPantalla(nav.navegar(cuenta, { nombre: 'cuenta', seccion: 'avisos' }), cuenta), 'Avisos estando en Avisos');
+  assert.ok(!nav.mismaPantalla({ nombre: 'cuenta', seccion: 'avisos' }, { nombre: 'cuenta', seccion: 'cierre' }), 'cada parte de Cuenta es su pantalla');
   assert.match(APP, /if \(mismaPantalla\(navegar\(rutaActual\.current, r\), rutaActual\.current\)\) return ir\(r\);/);
   // Nutrición no se vuelve a montar al perder el pedido de una sola vez: lo escrito en una comida sigue ahí.
   assert.doesNotMatch(APP, /<PantallaDeHoy key=/);
 });
 
-test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el botón atrás preguntan; los formularios declaran lo escrito', () => {
+test('sin pérdidas silenciosas: la barra, volver y el botón atrás preguntan; los formularios declaran lo escrito', () => {
   assert.match(APP, /<BarraDeZonas actual=\{pestanaActiva\(ruta\)\} ir=\{irConCuidado\}/);
-  assert.match(APP, /abrirCuenta=\{\(\) => irConCuidado\(\{ nombre: 'cuenta' \}\)\}/);
+  assert.match(APP, /abrirNovedades=\{\(\) => irConCuidado\(\{ nombre: 'novedades' \}\)\}/);
   assert.match(APP, /volver=\{volverConCuidado\}/);
-  assert.match(APP, /setMenuAbierto\(false\);\s*irConCuidado\(r\);/, 'el menú se cierra y después pregunta');
   assert.match(APP, /const atras = useCallback\(\(\) => \{\s*if \(!anterior\(rutaActual\.current\)\) return false;\s*volverConCuidado\(\);/);
   // WP-NUTRICION-RECETAS: los formularios de Nutrición pasaron al detalle de una opción («¿Cuánto comiste?») y a «Comí
   // algo diferente», que reemplazó a la comida fuera del plan.
@@ -450,13 +454,13 @@ test('sin pérdidas silenciosas: la barra, el avatar, el menú, volver y el bot�
   assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/correccion-de-la-sesion.ts'), 'utf8'), /loQueEscribiste: 'la corrección del registro'/);
 });
 
-test('«Volver a Información», dentro de una solicitud, va a Información aunque se haya abierto desde Inicio, y pregunta antes', () => {
-  assert.match(APP, /const volverAInformacion = useCallback\(\(\) => irConCuidado\(\{ nombre: 'mis-solicitudes' \}\), \[irConCuidado\]\)/);
-  assert.match(APP, /<PantallaDeMiSolicitud [^>]*volver=\{volverAInformacion\}/);
+test('«Volver a Formularios y pedidos», dentro de una solicitud, va a la bandeja aunque se haya abierto desde Inicio, y pregunta antes', () => {
+  assert.match(APP, /const volverAFormularios = useCallback\(\(\) => irConCuidado\(\{ nombre: 'mis-solicitudes' \}\), \[irConCuidado\]\)/);
+  assert.match(APP, /<PantallaDeMiSolicitud [^>]*volver=\{volverAFormularios\}/);
   // Desde Inicio, el origen de la solicitud es Inicio; el botón del contenido no va al origen sino a Información.
   const solicitud = nav.navegar({ nombre: 'inicio' }, { nombre: 'mi-solicitud', id: 's1' });
   assert.deepEqual(nav.anterior(solicitud), { nombre: 'inicio' }, 'la cabecera vuelve a Inicio');
-  assert.deepEqual(nav.navegar(solicitud, { nombre: 'mis-solicitudes' }), { nombre: 'mis-solicitudes' }, 'el botón «Volver a Información» abre Información');
+  assert.deepEqual(nav.navegar(solicitud, { nombre: 'mis-solicitudes' }), { nombre: 'mis-solicitudes', desde: solicitud }, 'el botón abre la bandeja, que es un detalle de Perfil');
 });
 
 test('Cuenta no abre los módulos: están en la barra y en el menú', () => {

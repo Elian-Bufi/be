@@ -6,8 +6,8 @@
  * 1. **Reparto:** cada destino mide lo que su etiqueta, más una parte igual de lo que sobra («Inicio» cede lugar a
  *    «Entrenamiento»).
  * 2. **Espacio útil:** en un teléfono angosto, la cápsula se acerca a los bordes (márgenes de 12, 8 o 6 dp).
- * 3. **Alto:** si las cinco no entran en una fila con al menos el 90 % del tamaño pedido, la cápsula pasa a **dos filas**:
- *    Inicio, Nutrición y Entrenamiento arriba; Evolución e Información abajo. Es una adaptación excepcional y una
+ * 3. **Alto:** si las cinco no entran en una fila con el tamaño pedido (DL-166), la cápsula pasa a **dos filas**:
+ *    Inicio, Nutrición y Entrenamiento arriba; Evolución y Perfil abajo. Es una adaptación excepcional y una
  *    decisión visual explícita: la cápsula deja de ser una píldora y queda como un rectángulo de esquinas redondeadas,
  *    con el mismo orden de lectura.
  * 4. **Letra:** solo si aun en dos filas no entran, la etiqueta baja lo justo para no cortarse (`escalaEfectiva`).
@@ -27,7 +27,9 @@ export const ANCHO_DE_LAS_ETIQUETAS_EN_EM: Readonly<Record<Zona, number>> = {
   nutricion: 4.1456,
   entrenamiento: 6.5753,
   evolucion: 4.3488,
-  informacion: 5.4538,
+  // DL-166: «Perfil» reemplaza a «Información» (5,4538 em). Estimado con los anchos de Roboto 700 de las letras que
+  // comparte con las etiquetas medidas, y redondeado hacia arriba; se mide en el render con la candidata (AV-16).
+  perfil: 2.62,
 };
 
 /** Lo que se suma a la medida por si la letra del teléfono es un poco más ancha que la del navegador. */
@@ -38,8 +40,13 @@ const RELLENO_DEL_DESTINO = 2;
 /** El relleno y el borde de la cápsula, de cada lado. */
 const RELLENO_DE_LA_CAPSULA = 3;
 const BORDE_DE_LA_CAPSULA = 1;
-/** Con menos de esto del tamaño pedido, una fila no alcanza y la cápsula pasa a dos. */
-export const TOLERANCIA_EN_UNA_FILA = 0.9;
+/**
+ * Con menos de esto del tamaño pedido, una fila no alcanza y la cápsula pasa a dos. Desde DL-166 (AV-02 y maqueta 08) es
+ * 1: en una fila, ninguna etiqueta se achica. Con «Perfil», más corta que «Información», las cinco entraban con letra ×1,3
+ * en 360 dp achicándose al 97 %; ahora pasan a dos filas enteras, como pide la maqueta: cambia la composición y la
+ * letra no se achica (AVT-01).
+ */
+export const TOLERANCIA_EN_UNA_FILA = 1;
 
 /** El margen de la cápsula a cada lado: en un teléfono angosto, la cápsula gana ancho antes que achicar las etiquetas. */
 export function margenDeLaBarra(anchoDePantalla: number): number {

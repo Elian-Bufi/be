@@ -1,6 +1,7 @@
 /**
  * La barra inferior de la APK (DL-117, decisión de Dirección del 2026-10-04): una cápsula flotante con los cinco destinos
- * siempre a la vista, en este orden: Inicio, Nutrición, Entrenamiento, Evolución e Información.
+ * siempre a la vista, en este orden: Inicio, Nutrición, Entrenamiento, Evolución y Perfil (desde DL-166, Perfil reemplaza a
+ * «Información»).
  * - **Forma.** Una sola cápsula, con los extremos redondeados del todo, márgenes a los costados, un borde fino y un vidrio
  *   ahumado moderado y sin desenfoque (`barraVidrio` en tema.ts). La sombra la separa del contenido.
  * - **El destino elegido** se marca con el ícono en cian, la etiqueta en negrita y cian, y una iluminación suave detrás del
@@ -9,8 +10,8 @@
  * - **Las cinco etiquetas, siempre, y con la letra de la persona** (cierre del 2026-10-04: antes crecían hasta 1,15
  *   veces y después se achicaban). Ninguna se oculta ni se corta. Para que entren, primero se reparte el ancho (cada
  *   destino mide su texto más una parte igual del resto), después la cápsula se acerca a los bordes, y si las cinco no
- *   entran en una fila con al menos el 90 % de su tamaño, **la cápsula pasa a dos filas**: Inicio, Nutrición y
- *   Entrenamiento arriba; Evolución e Información abajo. Es una adaptación excepcional y explícita: la píldora queda
+ *   entran en una fila con su tamaño entero (DL-166), **la cápsula pasa a dos filas**: Inicio, Nutrición y
+ *   Entrenamiento arriba; Evolución y Perfil abajo. Es una adaptación excepcional y explícita: la píldora queda
  *   como un rectángulo de esquinas redondeadas. Solo si aun así no entran, la letra baja lo justo
  *   (`disposicion-de-la-barra.ts`; el tamaño efectivo, medido, en EVIDENCIA/INICIO-Y-NAVEGACION).
  * - **La altura sale del contenido**, no de un número fijo. La barra informa la suya (`alMedir`) para que el contenido
@@ -24,6 +25,11 @@
  * - **Una sesión de entrenamiento en curso** (PA-02, 2026-11-02): la barra ya no se oculta en la sesión, y Entrenamiento
  *   lleva una marca chica junto al ícono mientras hay una corrida abierta en el teléfono. El lector de pantalla lo dice
  *   en el nombre del destino: la marca no es la única señal.
+ * - **La marca de Perfil** (PV-6, DL-166): un punto sin número mientras haya algo para responder. El lector dice
+ *   «Perfil, hay algo para responder»; sin nada pendiente, no dice nada de más.
+ * - **Fija durante la sesión** (PV-11, DL-166): en la sesión de entrenamiento la barra deja de flotar. Va pegada abajo,
+ *   opaca y de lado a lado, con la fila fija de acciones de la sesión apilada encima (App.tsx). Nada se ve a través de
+ *   ella. Con letra grande pasa a dos filas igual que la cápsula (PV-13).
  */
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
@@ -34,6 +40,7 @@ import { DibujoDeIcono, type NombreDeIcono } from './icono';
 import { disposicionDeLaBarra } from './disposicion-de-la-barra';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
 import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
+import { TEXTOS_DE_LA_VUELTA } from './textos-de-la-vuelta';
 import { COLOR, estilosPorTema } from './tema';
 
 /** Lo que la cápsula flota por encima del área segura de abajo, en dp. */
@@ -61,6 +68,8 @@ export function BarraDeZonas({
   alMedir,
   oculta = false,
   entrenamientoEnCurso = false,
+  marcaEnPerfil = false,
+  fija = false,
 }: {
   actual: Zona | null;
   ir: (r: Ruta) => void;
@@ -68,6 +77,10 @@ export function BarraDeZonas({
   oculta?: boolean;
   /** Si hay una sesión de entrenamiento en curso en el teléfono: Entrenamiento lo marca. */
   entrenamientoEnCurso?: boolean;
+  /** Si hay algo para responder: Perfil lleva un punto (PV-6). */
+  marcaEnPerfil?: boolean;
+  /** Durante la sesión de entrenamiento: pegada abajo y opaca, sin flotar (PV-11). */
+  fija?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
@@ -85,26 +98,31 @@ export function BarraDeZonas({
     <View
       accessibilityRole="tablist"
       onLayout={(e) => alMedir(Math.ceil(e.nativeEvent.layout.height))}
-      style={[estilos.capsula, filas.length > 1 && estilos.capsulaEnDosFilas, { left: margen, right: margen, bottom: insets.bottom + SEPARACION_DE_LA_BARRA, backgroundColor: COLOR.barraVidrio }]}
+      style={
+        fija
+          ? [estilos.fija, { paddingBottom: insets.bottom + 4, backgroundColor: COLOR.fondo }]
+          : [estilos.capsula, filas.length > 1 && estilos.capsulaEnDosFilas, { left: margen, right: margen, bottom: insets.bottom + SEPARACION_DE_LA_BARRA, backgroundColor: COLOR.barraVidrio }]
+      }
     >
       {filas.map((fila) => (
         <View key={fila.join('-')} style={estilos.fila}>
           {ZONAS.filter((z) => fila.includes(z.zona)).map((z) => {
             const elegida = z.zona === actual;
             const enCurso = entrenamientoEnCurso && z.zona === 'entrenamiento';
+            const conMarca = marcaEnPerfil && z.zona === 'perfil';
             return (
               <Pressable
                 key={z.zona}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: elegida }}
-                accessibilityLabel={enCurso ? `${z.texto}, ${TEXTOS_DE_LA_SESION.conSesionEnCurso}` : z.texto}
+                accessibilityLabel={enCurso ? `${z.texto}, ${TEXTOS_DE_LA_SESION.conSesionEnCurso}` : conMarca ? `${z.texto}, ${TEXTOS_DE_LA_VUELTA.hayAlgoParaResponder}` : z.texto}
                 onPress={() => ir(z.ruta)}
                 style={({ pressed }) => [estilos.destino, pressed && estilos.presionado]}
               >
                 <View style={estilos.lugarDelIcono}>
                   {elegida ? <Brillo zona={z.zona} /> : null}
                   <IconoDeZona zona={z.zona} color={elegida ? COLOR.barraElegido : COLOR.barraTexto} marcado={elegida} />
-                  {enCurso ? <View style={estilos.marcaEnCurso} /> : null}
+                  {enCurso || conMarca ? <View style={estilos.marcaEnCurso} /> : null}
                 </View>
                 {/* Sin tope: crece con la letra. Achicarse es el último recurso, para no cortarse. */}
                 <Text style={[estilos.texto, elegida && estilos.textoElegido]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
@@ -159,13 +177,13 @@ function Brillo({ zona }: { zona: Zona }) {
   );
 }
 
-/** El ícono de la familia de cada destino: la casa, la manzana, la mancuerna, la cinta métrica y el formulario. */
+/** El ícono de la familia de cada destino: la casa, la manzana, la mancuerna, la cinta métrica y la persona (DL-166). */
 const ICONO_DE_LA_ZONA: Readonly<Record<Zona, NombreDeIcono>> = {
   inicio: 'inicio',
   nutricion: 'nutricion',
   entrenamiento: 'entrenamiento',
   evolucion: 'antropometria',
-  informacion: 'informacion',
+  perfil: 'persona',
 };
 
 /**
@@ -191,6 +209,8 @@ const estilos = estilosPorTema((COLOR) => ({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
+  // Fija (la sesión, PV-11): de lado a lado, pegada abajo, opaca y con una línea arriba. Sin sombra: no flota.
+  fija: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 4, paddingHorizontal: 4, borderTopWidth: 1, borderColor: COLOR.borde, rowGap: 2 },
   // Dos filas: la píldora pasa a un rectángulo de esquinas redondeadas, con la misma separación del borde.
   capsulaEnDosFilas: { borderRadius: 28, paddingVertical: 6, rowGap: 2 },
   fila: { flexDirection: 'row' },
@@ -200,7 +220,8 @@ const estilos = estilosPorTema((COLOR) => ({
   presionado: { opacity: 0.7 },
   // El lugar del ícono es más angosto que el destino más chico (48): el brillo lo desborda apenas, ya transparente.
   lugarDelIcono: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center' },
-  // La marca de la sesión en curso: un punto del color de lo elegido, arriba a la derecha del ícono.
+  // La marca de la sesión en curso, y la de Perfil con algo para responder: un punto del color de lo elegido, arriba a la
+  // derecha del ícono, sin número.
   marcaEnCurso: { position: 'absolute', top: 1, right: 4, width: 8, height: 8, borderRadius: 4, backgroundColor: COLOR.barraElegido },
   brillo: { position: 'absolute', left: -8, top: -6 },
   // Medio y negrita (500 y 700): la diferencia se ve, y las cinco etiquetas ocupan menos que con 600 y 800.

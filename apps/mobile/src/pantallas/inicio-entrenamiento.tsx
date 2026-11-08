@@ -29,10 +29,12 @@ import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } f
 import { useAccesoRetirado, type Ir } from '../navegacion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { sesionEnCursoParaMostrar } from '../sesion-en-curso';
-import { Aviso, Boton, Cifra, Insignia, Parrafo } from '../ui';
+import { actividadEnUnNumero, detalleDeLaSesion } from '../inicio-de-hoy';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, Cifra, Desplegable, Insignia, Parrafo } from '../ui';
 import { AvisoDeEntrenamientoEnCurso, MOTIVO_ANTES_DE_INICIAR, useAbrirOcurrencia } from './entrenamiento';
 import { AlLado, aRegistroRapido } from './registro-rapido';
-import { estilos, faltaElA3, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
+import { estilos, faltaElA3, LineaDeInicio, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
 
 /** API-TRN-14, con la misma clave que Entrenamiento de hoy. Sin el A3, la API responde «no disponible», no un 403. */
 export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: string; dia: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
@@ -71,6 +73,8 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
         }}
       />
     ) : null;
+    // AV-17: sin plan, una línea con el texto de siempre, no una tarjeta (salvo que haya una sesión de otro día abierta).
+    if (hoy.planState === 'NO_ACTIVE_PLAN' && !avisoDeOtroDia) return <LineaDeInicio zona="entrenamiento" texto={COPY_ENTRENAMIENTO.sinPlanAsesorado} />;
     if (hoy.planState === 'NO_ACTIVE_PLAN') contenido = <Parrafo>{COPY_ENTRENAMIENTO.sinPlanAsesorado}</Parrafo>;
     else if (hoy.planState === 'NOT_AVAILABLE')
       contenido = (
@@ -118,7 +122,6 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
     <TarjetaDeInicio zona="entrenamiento" titulo={COPY_ENTRENAMIENTO.entrenamientoDeHoy}>
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-      <Boton texto="Ir a Entrenamiento" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'entrenamiento' })} />
     </TarjetaDeInicio>
   );
 }
@@ -150,10 +153,11 @@ function SesionDeHoy({
   const executionId = o.execution.state === 'REGISTERED' ? o.execution.executionId : null;
   // PA-03 (DL-160): «Ya la hice», al lado de «Iniciar entrenamiento», para registrarla por pasos y sin cronómetros.
   const yaLaHice = !continuar && sePuedeOfrecer(o, enCurso, local.sesiones());
+  // DL-166 (AV-06): el nombre y el estado a la vista; el bloque, la semana y los ejercicios, plegados (III.7).
+  const detalle = detalleDeLaSesion(o.plannedSession);
   return (
     <View style={estilos.fila}>
       <Text style={estilos.nombre}>{o.plannedSession.label}</Text>
-      <Text style={estilos.detalle}>{[o.plannedSession.blockLabel, o.plannedSession.microcycleLabel, ejerciciosYSeries(o.plannedSession.prescriptions)].filter(Boolean).join(' · ')}</Text>
       <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {/* Otra sesión en curso: continuarla o dejarla incompleta; dejada incompleta, se vuelve a intentar iniciar esta. */}
@@ -162,10 +166,19 @@ function SesionDeHoy({
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: executionId })} />
       ) : (
         <AlLado>
-          <Boton texto={continuar ? COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento : COPY_ENTRENAMIENTO_POR_SERIE.iniciarEntrenamiento} onPress={() => void abrir()} ocupado={abriendo} />
+          <Boton texto={continuar ? COPY_ENTRENAMIENTO_POR_SERIE.continuarEntrenamiento : TEXTOS_DE_LA_VUELTA.empezar} onPress={() => void abrir()} ocupado={abriendo} />
           {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
         </AlLado>
       )}
+      <Desplegable titulo={ejerciciosYSeries(o.plannedSession.prescriptions)} icono="lista">
+        {detalle.bloque ? <Text style={estilos.detalle}>{detalle.bloque}</Text> : null}
+        {detalle.ejercicios.map((e) => (
+          <Text key={e} style={estilos.renglonDeDato}>
+            {e}
+          </Text>
+        ))}
+        {detalle.yMas ? <Text style={estilos.detalle}>{detalle.yMas}</Text> : null}
+      </Desplegable>
     </View>
   );
 }
@@ -182,33 +195,15 @@ export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { to
   else if (faltaElA3(r)) contenido = <SinA3 texto={COPY_ENTRENAMIENTO.historialNecesitaA3} ir={ir} />;
   else if (!r.ok) contenido = <NoSePudo falla={r} reintentar={() => void cargar()} />;
   else {
-    const a = r.datos;
-    const filas: readonly [string, number][] = [
-      ['Realizadas', a.realizadas],
-      ['Realizadas con desvío', a.conDesvio],
-      ['Registradas como no realizadas', a.noRealizadas],
-    ];
+    // DL-166 (PV-5): un solo número, las sesiones registradas en 30 días. El desglose está en «Tu historial» (AV-07).
+    const a = actividadEnUnNumero(r.datos);
     contenido =
-      a.registradas === 0 ? (
+      a.numero === 0 ? (
         <Parrafo>No registraste sesiones en estos días.</Parrafo>
       ) : (
-        <>
-          <Cifra valor={numero(a.registradas)} unidad={a.registradas === 1 ? 'sesión registrada' : 'sesiones registradas'} tamano={26} />
-          {filas
-            .filter(([, n]) => n > 0)
-            .map(([texto, n]) => (
-              <View key={texto} style={estilos.parDeDato} accessible accessibilityLabel={`${texto}: ${numero(n)}`}>
-                <Text style={estilos.textoDeDato}>{texto}</Text>
-                <Text style={estilos.valorDeDato}>{numero(n)}</Text>
-              </View>
-            ))}
-          {a.corregidas > 0 ? (
-            <Parrafo tenue>{`${numero(a.corregidas)} ${a.corregidas === 1 ? 'sesión tiene una corrección: cuenta como quedó corregida.' : 'sesiones tienen una corrección: cuentan como quedaron corregidas.'}`}</Parrafo>
-          ) : null}
-          {a.sinOrdenar > 0 ? (
-            <Parrafo tenue>{`${numero(a.sinOrdenar)} ${a.sinOrdenar === 1 ? 'sesión tiene correcciones que no se pueden ordenar: cuenta como se registró.' : 'sesiones tienen correcciones que no se pueden ordenar: cuentan como se registraron.'} El detalle está en Tu historial.`}</Parrafo>
-          ) : null}
-        </>
+        <View accessible accessibilityLabel={a.paraLeer}>
+          <Cifra valor={numero(a.numero)} unidad={a.unidad} tamano={26} />
+        </View>
       );
   }
   return (

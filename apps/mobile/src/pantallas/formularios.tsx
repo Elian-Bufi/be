@@ -1,5 +1,5 @@
 /**
- * APK · «Información que me pidieron» (RF-071; UC-P33) por el camino V2 de WP-FORMULARIOS-DE-INICIO (DL-164): la bandeja
+ * APK · «Formularios y pedidos», desde Perfil (antes «Información», el quinto destino de la barra, hasta DL-166) · lo que me pidieron (RF-071; UC-P33) por el camino V2 de WP-FORMULARIOS-DE-INICIO (DL-164): la bandeja
  * (API-FRI-02) y una solicitud con su estructura (API-FRI-01), su detalle (API-FRI-03), la respuesta o su confirmación
  * (API-FRI-04), la corrección (API-FRI-05) y «No es correcto» (API-FRI-08). Sirve para cualquier solicitud, de P0 o con
  * tipos nuevos: las operaciones FRM quedan para las APK instaladas.
@@ -157,7 +157,7 @@ export function PantallaDeFormularios({ token, identidadId, salir, ir }: { token
 
   return (
     <View>
-      <Titulo>{COPY_FORMULARIOS.pestana}</Titulo>
+      <Titulo>{TEXTOS_DE_LA_VUELTA.formulariosYPedidos}</Titulo>
       <SinActualizar visible={sinActualizar} onReintentar={cargar} />
       <Parrafo tenue>{COPY_FORMULARIOS.podesNoResponder}</Parrafo>
       {sinA3 ? (
@@ -165,13 +165,7 @@ export function PantallaDeFormularios({ token, identidadId, salir, ir }: { token
           <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
         </Aviso>
       ) : null}
-      {/* DL-165 D-9 (FR-10): «Mis hábitos», arriba de la bandeja. Es lo que la persona contó de su día y su semana, y la
-          autorización para compartirlo con sus profesionales. */}
-      <Tarjeta>
-        <Subtitulo>{COPY_HABITOS.apk.entradaTitulo}</Subtitulo>
-        <Parrafo tenue>{COPY_HABITOS.apk.entradaBajada}</Parrafo>
-        <Boton texto={COPY_HABITOS.apk.verMisHabitos} tipo="secundario" onPress={() => ir({ nombre: 'mis-habitos' })} />
-      </Tarjeta>
+      {/* «Mis hábitos» pasó a Perfil, con su baldosa (DL-166): cada cosa en un solo lugar. */}
       {carga.tipo === 'cargando' ? <Cargando forma="lista" /> : null}
       {carga.tipo === 'error' ? <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} /> : null}
       {carga.tipo === 'listo' && carga.datos.length === 0 ? <Parrafo>{COPY_FORMULARIOS.sinSolicitudesPropias}</Parrafo> : null}
@@ -454,7 +448,7 @@ export function PantallaDeMiSolicitud({
   if (estado.carga.tipo === 'sin-a3') {
     return (
       <View>
-        <Titulo>{COPY_FORMULARIOS.pestana}</Titulo>
+        <Titulo>{TEXTOS_DE_LA_VUELTA.formulariosYPedidos}</Titulo>
         <Aviso tipo="info" titulo={COPY_FORMULARIOS.necesitaA3}>
           <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
           <Boton texto={COPY_FORMULARIOS.volverAMisSolicitudes} tipo="enlace" onPress={volver} />

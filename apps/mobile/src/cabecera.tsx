@@ -1,9 +1,10 @@
 /**
  * La cabecera única de la APK (DL-117, decisión de Dirección del 2026-10-04), la misma en todas las pantallas:
- * - **a la izquierda**, volver en un detalle, que tiene prioridad; el menú auxiliar en una raíz con sesión; o nada;
+ * - **a la izquierda**, volver en un detalle; en una raíz, nada;
  * - **al centro**, la marca: el isotipo y «BE», con un brillo contenido detrás;
- * - **a la derecha**, la campana de las novedades, con cuántas hay sin leer (DL-133), y el avatar, que abre Cuenta. Es un ícono neutro de persona: el perfil no tiene nombre ni foto
- *   (`MeResponse.profile` es `{}`, DL-009), y no se deriva uno del correo ni de un identificador (D-2);
+ * - **a la derecha**, la campana de las novedades, con cuántas hay sin leer (DL-133).
+ * Desde DL-166 (PV-1, 2026-11-07) la cabecera queda con la marca y Novedades: el menú auxiliar y el avatar se fueron, y lo
+ * que abrían está en Perfil, el quinto destino de la barra;
  * - **debajo**, la franja del ambiente de prueba, siempre a la vista (08 §33), y la línea de actualización.
  *
  * Volver no depende del botón ni de un gesto del sistema (10-B10 §9). El botón dice adónde vuelve al lector de pantalla
@@ -24,23 +25,18 @@ const ISOTIPO = require('../assets/isotipo.png');
 
 export function Cabecera({
   volverA,
-  conMenu,
-  conAvatar,
+  conSesion,
   actualizando,
   volver,
-  abrirMenu,
-  abrirCuenta,
   sinLeer = null,
   abrirNovedades,
 }: {
   /** Adónde vuelve el botón de volver. `null`: la pantalla no lo lleva (una raíz, Bienvenida). */
   volverA: Ruta | null;
-  conMenu: boolean;
-  conAvatar: boolean;
+  /** Con sesión verificada, la campana de Novedades. */
+  conSesion: boolean;
   actualizando: boolean;
   volver: () => void;
-  abrirMenu: () => void;
-  abrirCuenta: () => void;
   /** Las novedades sin leer (DL-133); `null` mientras no se sabe. El número es un dato, no una alerta. */
   sinLeer?: number | null;
   abrirNovedades?: () => void;
@@ -62,15 +58,11 @@ export function Cabecera({
                 Volver
               </Text>
             </Pressable>
-          ) : conMenu ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Abrir el menú" onPress={abrirMenu} style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}>
-              <Icono nombre="menu-de-la-app" tamano={24} tono="texto" />
-            </Pressable>
           ) : null}
         </View>
         <Marca />
         <View style={[estilos.lado, estilos.derecha]}>
-          {conAvatar && abrirNovedades ? (
+          {conSesion && abrirNovedades ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={sinLeer ? `Novedades, ${sinLeer} sin leer` : 'Novedades'}
@@ -85,13 +77,6 @@ export function Cabecera({
                   </Text>
                 </View>
               ) : null}
-            </Pressable>
-          ) : null}
-          {conAvatar ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Cuenta" onPress={abrirCuenta} style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}>
-              <View style={estilos.avatar}>
-                <Icono nombre="persona" tamano={20} tono="texto" />
-              </View>
             </Pressable>
           ) : null}
         </View>
@@ -137,7 +122,6 @@ const estilos = estilosPorTema((COLOR) => ({
   botonRedondo: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   volver: { flexDirection: 'row', alignItems: 'center', minHeight: 48, minWidth: 48, paddingLeft: 6, paddingRight: 10 },
   textoVolver: { fontSize: 15, fontWeight: '700', color: COLOR.acento, marginLeft: 2 },
-  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada, borderWidth: 1, borderColor: COLOR.bordeControl },
   // La marca ocupa todo su brillo: así el brillo no depende de que Android dibuje fuera de una vista.
   marca: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', minWidth: 132, minHeight: 44 },
   brillo: { position: 'absolute', left: 0, top: 0 },

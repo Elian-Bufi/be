@@ -17,16 +17,21 @@
  * - El día es el de la API: a la medianoche cambia, y las tarjetas de hoy vuelven a leer (`useDiaDeLaApi`).
  * - Arriba de todo, solo si hace falta: «Tu profesional todavía no puede ver tus datos» (`AccesoIncompleto`; Dirección,
  *   2026-10-17), con el paso que le falta a cada vínculo.
+ * - Desde DL-166 (PV-2, PV-5 y PV-6; AV-06 y AV-17, 2026-11-07): tres bloques de acción —la sesión con «Empezar» y «Ya la
+ *   hice» y su detalle plegado, las comidas como fichas con «la que sigue», y «Para responder»— y, al bajar, «Para mirar».
+ *   Sin «Ir a…» repetidos: la barra ya lleva a cada módulo. Un área sin plan es una línea, y lo que no tiene nada no se
+ *   dibuja.
  */
 import { Text, View } from 'react-native';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { fechaLarga } from '../formato';
 import { Icono } from '../icono';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
-import { Titulo } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Rotulo, Titulo } from '../ui';
 import { AccesoIncompleto } from './inicio-acceso';
 import { ActividadDeEntrenamiento, EntrenamientoDeHoy } from './inicio-entrenamiento';
-import { Pendientes, PreguntaDeHabitos } from './inicio-informacion';
+import { Pendientes } from './inicio-informacion';
 import { Mediciones } from './inicio-mediciones';
 import { NutricionDeHoy } from './inicio-nutricion';
 import { estilos } from './tarjeta-de-inicio';
@@ -44,11 +49,12 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
       <AccesoIncompleto token={token} sesionPerdida={sesionPerdida} ir={ir} />
       <EntrenamientoDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
       <NutricionDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
+      {/* DL-166 (PV-6): los formularios y los pedidos de hábitos juntos; sin nada para responder, no se dibuja. */}
       <Pendientes token={token} sesionPerdida={sesionPerdida} ir={ir} />
-      {/* DL-165 D-9: solo si un profesional nuevo espera la respuesta de la persona; si no, no se dibuja. */}
-      <PreguntaDeHabitos token={token} sesionPerdida={sesionPerdida} ir={ir} />
-      <ActividadDeEntrenamiento token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
+      {/* Al bajar, lo que se mira (maqueta 01): la última toma y la actividad de 30 días, como dato y sin calificar. */}
+      <Rotulo>{TEXTOS_DE_LA_VUELTA.paraMirar}</Rotulo>
       <Mediciones token={token} sesionPerdida={sesionPerdida} ir={ir} />
+      <ActividadDeEntrenamiento token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
     </View>
   );
 }

@@ -71,7 +71,7 @@ export const TEXTOS_DE_LA_VUELTA = {
   habitosParaLeer: (estado: string) => `Tus hábitos: ${estado.toLowerCase()}`,
   paraQue: (finalidad: string) => `Para: ${finalidad}.`,
   dentroDe: (area: string) => `Dentro del área: ${area}.`,
-  queIncluyeAclaracion: 'Ve lo que registrás en esa área, mientras el vínculo esté vigente y tu autorización siga activa.',
+  queIncluyeAclaracion: 'Solo lo de esa área, mientras el vínculo esté vigente y tu autorización siga activa.',
   cambiar: 'Cambiar',
   cambiarEnElVinculo: 'Ver el vínculo',
   cambiarEnMisHabitos: 'Ir a Mis hábitos',

@@ -94,3 +94,283 @@ test('TEST-AVR-014 · «Comí esta opción» queda a la vista; ingredientes, pre
   assert.match(solicitud, /\{alEmpezar \? <Parrafo tenue>\{COPY_FORMULARIOS\.loQueRespondesEsTuyo\}<\/Parrafo> : null\}/);
   assert.doesNotMatch(cabeza, /loQueRespondesEsTuyo/);
 });
+
+// ─── TEST-AVR-002 y 003 · la barra con Perfil y dónde quedó cada cosa (AV-02, AV-03) ─────────────
+
+const nav = await import('../apps/mobile/src/navegacion.ts');
+const barra = await import('../apps/mobile/src/disposicion-de-la-barra.ts');
+const perfil = await import('../apps/mobile/src/perfil.ts');
+
+test('TEST-AVR-002 · Perfil es el quinto destino; lo de la persona resalta Perfil y Atrás vuelve como antes', () => {
+  assert.deepEqual(nav.ZONAS.map((z) => z.zona), ['inicio', 'nutricion', 'entrenamiento', 'evolucion', 'perfil']);
+  assert.deepEqual(nav.ZONAS[4], { zona: 'perfil', texto: 'Perfil', ruta: { nombre: 'perfil' } });
+  for (const ruta of [{ nombre: 'cuenta', seccion: 'datos' }, { nombre: 'cuenta', seccion: 'avisos' }, { nombre: 'quien-ve-que' }, { nombre: 'vinculos' }, { nombre: 'privacidad' }, { nombre: 'mis-habitos' }, { nombre: 'mis-solicitudes' }]) {
+    const desdePerfil = nav.navegar({ nombre: 'perfil' }, ruta);
+    assert.equal(nav.pestanaActiva(desdePerfil), 'perfil', ruta.nombre);
+    assert.deepEqual(nav.anterior(desdePerfil), { nombre: 'perfil' }, `Atrás desde ${ruta.nombre}`);
+    // Sin origen, también vuelve a Perfil.
+    assert.deepEqual(nav.anterior(ruta), { nombre: 'perfil' }, `${ruta.nombre} sin origen`);
+  }
+  assert.equal(nav.textoDeVolverA({ nombre: 'cuenta', seccion: 'cierre' }), 'Volver a Cerrar mi cuenta');
+  // El ícono de persona, que pasa del avatar a la barra.
+  assert.match(leer('barra-de-zonas.tsx'), /perfil: 'persona'/);
+});
+
+test('TEST-AVR-002 · con letra ×1 la barra va en una fila sin achicar; con ×1,3, en dos filas enteras', () => {
+  const zonas = nav.ZONAS.map((z) => z.zona);
+  const una = barra.disposicionDeLaBarra({ anchoDePantalla: 360, escalaDeLetra: 1, zonas });
+  assert.equal(una.filas.length, 1);
+  assert.equal(una.escalaEfectiva, 1);
+  const dos = barra.disposicionDeLaBarra({ anchoDePantalla: 360, escalaDeLetra: 1.3, zonas });
+  assert.deepEqual(dos.filas, [['inicio', 'nutricion', 'entrenamiento'], ['evolucion', 'perfil']]);
+  assert.equal(dos.escalaEfectiva, 1.3, 'cambia la composición, no la letra');
+});
+
+test('TEST-AVR-002 · la cabecera tiene la marca y Novedades, sin menú ni avatar, con la franja del ambiente', () => {
+  const cabecera = leer('cabecera.tsx');
+  assert.doesNotMatch(cabecera, /Abrir el menú|accessibilityLabel="Cuenta"|menu-de-la-app/);
+  assert.match(cabecera, /Ambiente de prueba · solo datos sintéticos/);
+  assert.match(cabecera, /Novedades, \$\{sinLeer\} sin leer/);
+});
+
+test('TEST-AVR-003 · ninguna entrada del menú, de Cuenta ni de «Información» se pierde ni queda en dos lugares', () => {
+  const tabla = perfil.DONDE_QUEDO_CADA_COSA;
+  const que = tabla.map((m) => m.que);
+  assert.equal(new Set(que).size, que.length, 'cada cosa, una sola vez');
+  for (const esperada of ['Vínculos', 'Tu historial de entrenamiento', 'Registros nutricionales']) assert.ok(que.includes(esperada), `el menú: ${esperada}`);
+  for (const esperada of ['Notas entre tus profesionales', 'Tengo un código', 'Estado de la cuenta', 'Tu nombre', 'Tu identificador BE', 'Privacidad y consentimientos', 'Apariencia', 'Avisos en este teléfono', 'Seguridad (cerrar sesión)', 'Cerrar mi cuenta']) {
+    assert.ok(que.includes(esperada), `Cuenta: ${esperada}`);
+  }
+  for (const esperada of ['Información que me pidieron (la bandeja)', 'Mis hábitos']) assert.ok(que.includes(esperada), `Información: ${esperada}`);
+  for (const m of tabla) assert.ok(leer(m.archivo).includes(m.abre), `«${m.que}»: ${m.archivo} no tiene ${m.abre}`);
+  assert.throws(() => leer('menu-auxiliar.tsx'), /ENOENT/, 'el menú auxiliar ya no existe');
+});
+
+// ─── TEST-AVR-004 a 006 · Perfil y su marca (AV-03, AV-04) ──────────────────────────────────────
+
+const solicitud = (id, status, extra = {}) => ({ formRequestId: id, status, templateName: `Formulario ${id}`, professional: { identityId: 'p1', displayName: 'Lic. Sofía Paz' }, createdAt: '2026-11-01T12:00:00Z', pendingProposal: null, respondable: true, ...extra });
+const pedido = (id, profesional) => ({ accessRequestId: id, version: 'v1', professional: { identityId: profesional, displayName: `Prof. ${profesional}` }, scope: { code: 'ENTRENAMIENTO', label: 'Entrenamiento' }, requestedAt: '2026-11-02T12:00:00Z' });
+const habitosCon = (profesionales) => ({ sharing: { status: 'ACTIVE', version: 'v', activeSince: '2026-10-01T00:00:00Z', withdrawnAt: null, acceptedTextVersionId: 't' }, professionals: profesionales });
+const profesionalDeHabitos = (id, sharing, link = 'ACTIVE') => ({ professional: { identityId: id, displayName: `Prof. ${id}` }, scopes: [{ code: 'ENTRENAMIENTO', label: 'Entrenamiento' }], link, sharing, sharedSince: sharing === 'RECEIVES' ? '2026-10-01T00:00:00Z' : null });
+
+test('TEST-AVR-004 · Perfil: quién sos, tu información, tus profesionales, formularios y ajustes, con Cerrar mi cuenta al final', () => {
+  assert.deepEqual(perfil.BLOQUES_DE_PERFIL, ['quien-sos', 'tu-informacion', 'tus-profesionales', 'formularios-y-pedidos', 'ajustes']);
+  assert.deepEqual(perfil.AJUSTES_DE_PERFIL, ['apariencia', 'avisos', 'privacidad', 'sesion', 'cerrar-mi-cuenta']);
+  assert.deepEqual(perfil.nombreEnPerfil('Diego Sosa'), { texto: 'Diego Sosa', agregar: false });
+  assert.deepEqual(perfil.nombreEnPerfil(null), { texto: 'Agregá tu nombre', agregar: true });
+  assert.equal(perfil.nombreEnPerfil(undefined), null, 'mientras se lee, nada');
+  assert.deepEqual(
+    perfil.baldosasDePerfil({ habitos: { cargados: true, losReciben: 2 } }).map((b) => [b.titulo, b.detalle]),
+    [
+      ['Mis datos', 'Nombre, estado de la cuenta e identificador'],
+      ['Mis hábitos', 'Los ven 2 profesionales'],
+      ['Quién ve qué', 'Por profesional y por área'],
+      ['Notas entre tus profesionales', 'Lo que se escriben sobre vos'],
+    ],
+  );
+  const filas = perfil.paraResponder([solicitud('f1', 'PENDING')], habitosCon([]), [pedido('h1', 'martin')]);
+  assert.deepEqual(perfil.filasDeFormularios({ paraResponder: filas, respondidos: 4 }), [
+    { que: 'para-responder', titulo: 'Para responder', detalle: '1 formulario y 1 pedido de hábitos', cuenta: 2 },
+    { que: 'respondidos', titulo: 'Respondidos', detalle: null, cuenta: 4 },
+  ]);
+  // La vuelta después de reautenticarse va al ajuste que se estaba usando.
+  assert.deepEqual(nav.alIniciarSesion({ nombre: 'login', alEntrar: 'cuenta' }), { nombre: 'cuenta', seccion: 'cierre' });
+  // «Podés no responder» se dice una vez, adentro: no en Perfil.
+  assert.doesNotMatch(leer('pantallas/perfil.tsx') + leer('perfil.ts'), /podesNoResponder|Podés no responder/);
+});
+
+test('TEST-AVR-005 · «Para responder» cuenta formularios pendientes y pedidos de hábitos; la marca es un punto sin número', () => {
+  const propuesta = { professional: { identityId: 'p1', displayName: 'X' }, loadedAt: '2026-11-01T00:00:00Z' };
+  const formularios = [solicitud('f1', 'PENDING'), solicitud('f2', 'PENDING', { pendingProposal: propuesta }), solicitud('f3', 'RESPONDED')];
+  const filas = perfil.paraResponder(formularios, habitosCon([profesionalDeHabitos('nuevo', 'NOT_ASKED')]), [pedido('h1', 'martin')]);
+  assert.deepEqual(
+    filas.map((f) => `${f.tipo}:${f.id}`),
+    ['formulario:f1', 'formulario:f2', 'pedido-de-habitos:h1'],
+    'el respondido no cuenta; con un pedido, no se pregunta por el nuevo',
+  );
+  assert.deepEqual(perfil.marcaDePerfil(filas), { visible: true, paraLeer: 'hay algo para responder' });
+  // Sin pedidos, el profesional nuevo cuenta (como la tarjeta de Inicio de DL-165 D-17).
+  assert.deepEqual(perfil.paraResponder([], habitosCon([profesionalDeHabitos('nuevo', 'NOT_ASKED')]), []).map((f) => f.tipo), ['profesional-nuevo']);
+});
+
+test('TEST-AVR-006 · la marca se va al responder o al negarse, no por abrir Perfil; Inicio y Perfil cuentan igual', () => {
+  const lectura = () => perfil.paraResponder([solicitud('f1', 'PENDING')], habitosCon([]), [pedido('h1', 'martin')]);
+  assert.equal(perfil.marcaDePerfil(lectura()).visible, true);
+  // Abrir Perfil no cambia lo que se lee: la misma lectura da la misma marca.
+  assert.equal(perfil.marcaDePerfil(lectura()).visible, true);
+  // Responder el formulario y decir «No, por ahora» al pedido: la API ya no los lista.
+  const despues = perfil.paraResponder([solicitud('f1', 'RESPONDED')], habitosCon([profesionalDeHabitos('martin', 'DOES_NOT_RECEIVE')]), []);
+  assert.deepEqual(perfil.marcaDePerfil(despues), { visible: false, paraLeer: null });
+  // Inicio y Perfil usan la misma función, y la barra la misma regla.
+  assert.match(leer('pantallas/inicio-informacion.tsx'), /paraResponder\(p\.pendientes, habitos\.r\.datos\.data, pedidos\.r\.datos\.data\)/);
+  assert.match(leer('pantallas/perfil.tsx'), /paraResponder\(/);
+  assert.match(leer('marca-de-perfil.ts'), /marcaDePerfil\(filas\)\.visible/);
+  assert.match(leer('barra-de-zonas.tsx'), /TEXTOS_DE_LA_VUELTA\.hayAlgoParaResponder/);
+});
+
+const marca = await import('../apps/mobile/src/marca-de-perfil.ts');
+test('TEST-AVR-006 · el almacén de la marca avisa solo cuando cambia y se olvida al cerrar la sesión', () => {
+  const m = marca.crearAlmacenDeLaMarca();
+  let avisos = 0;
+  m.suscribir(() => avisos++);
+  assert.equal(m.visible(), false, 'sin lectura, sin marca');
+  m.fijar(perfil.paraResponder([solicitud('f1', 'PENDING')], null, null));
+  m.fijar(perfil.paraResponder([solicitud('f1', 'PENDING')], null, null));
+  assert.deepEqual([m.visible(), avisos], [true, 1]);
+  m.olvidar();
+  assert.deepEqual([m.visible(), avisos], [false, 2]);
+  assert.match(readFileSync(join(RAIZ, 'apps/mobile/App.tsx'), 'utf8'), /marcaEnPerfil\.olvidar\(\);/, 'cerrar la sesión la olvida');
+});
+
+// ─── TEST-AVR-007 a 009 · «Quién ve qué» (AV-05) ────────────────────────────────────────────────
+
+const qvq = await import('../apps/mobile/src/quien-ve-que.ts');
+const AREAS = { NUTRICION: ['Nutrición', 'ACOMPANAMIENTO_NUTRICIONAL'], ENTRENAMIENTO: ['Entrenamiento', 'PLANIFICACION_DEL_ENTRENAMIENTO'], ANTROPOMETRIA: ['Antropometría', 'EVALUACION_ANTROPOMETRICA'] };
+const vinculo = (id, profesional, area, relationshipState, consentState) => ({
+  relationshipId: id,
+  version: 'v',
+  professional: { identityId: profesional, displayName: `Prof. ${profesional}` },
+  advisee: { identityId: 'yo', displayName: 'Diego' },
+  scope: { code: area, label: AREAS[area][0] },
+  purpose: AREAS[area][1],
+  relationshipState,
+  consentState,
+  accessMode: 'FULL',
+  pausedBy: null,
+  acceptedAt: '2024-03-01T12:00:00Z',
+});
+const consentimiento = (relationshipId) => ({ consentId: `c-${relationshipId}`, relationshipId, state: 'ACTIVE', acceptedAt: '2024-03-02T12:00:00Z', revokedAt: null });
+const a3 = (estado) => ({ currentConsent: estado ? { consentId: 'a', state: estado, consentVersionId: 'v', acceptedAt: '2024-01-01T00:00:00Z', revokedAt: null } : null });
+const LECTURAS = {
+  vinculos: [vinculo('v1', 'sofia', 'NUTRICION', 'ACEPTADO', 'ACTIVE'), vinculo('v2', 'martin', 'ENTRENAMIENTO', 'PAUSADO', 'ACTIVE'), vinculo('v3', 'lucia', 'ANTROPOMETRIA', 'FINALIZADO', 'ACTIVE')],
+  consentimientos: [consentimiento('v1'), consentimiento('v2'), consentimiento('v3')],
+  habitos: habitosCon([profesionalDeHabitos('sofia', 'RECEIVES'), profesionalDeHabitos('martin', 'DOES_NOT_RECEIVE', 'PAUSED')]),
+  pedidos: [pedido('h1', 'martin')],
+};
+const diaDePrueba = (iso) => iso.slice(0, 10);
+
+test('TEST-AVR-007 · con A3, una tarjeta por profesional: lo que autorizaste y desde cuándo, y si ve tus hábitos', () => {
+  const v = qvq.quienVeQue({ a3: a3('ACTIVE'), ...LECTURAS }, diaDePrueba);
+  assert.equal(v.a3.otorgado, true);
+  const sofia = v.tarjetas.find((t) => t.nombre === 'Prof. sofia');
+  assert.deepEqual(sofia.areas.map((a) => [a.linea, a.ve]), [['Nutrición · desde el 2024-03-02', true]]);
+  assert.equal(sofia.habitos, 'Los ve');
+  assert.equal(qvq.habitosParaLeer('No los ve'), 'Tus hábitos: no los ve');
+  // «Qué incluye» sale del Alcance: su finalidad y su área.
+  assert.match(sofia.areas[0].queIncluye[0], /^Para: .+\.$/);
+  assert.equal(sofia.areas[0].queIncluye[1], 'Dentro del área: Nutrición.');
+});
+
+test('TEST-AVR-008 · en pausa, terminado o sin A3: dice que no ve, y por qué', () => {
+  const v = qvq.quienVeQue({ a3: a3('ACTIVE'), ...LECTURAS }, diaDePrueba);
+  const martin = v.tarjetas.find((t) => t.nombre === 'Prof. martin');
+  assert.deepEqual(martin.areas.map((a) => a.ve), [false]);
+  assert.match(martin.areas[0].linea, /en pausa: mientras tanto, no ve tus datos/);
+  assert.equal(martin.habitos, 'Te pidió verlos · No los ve');
+  const lucia = v.tarjetas.find((t) => t.nombre === 'Prof. lucia');
+  assert.match(lucia.areas[0].linea, /terminó: ya no ve tus datos/);
+  assert.equal(v.tarjetas[0].nombre, 'Prof. sofia', 'primero quien ve algo');
+  const sinA3 = qvq.quienVeQue({ a3: a3(null), ...LECTURAS }, diaDePrueba);
+  assert.equal(sinA3.a3.otorgado, false);
+  assert.match(sinA3.a3.texto, /ningún profesional ve tus datos de salud/);
+  assert.ok(sinA3.tarjetas.every((t) => t.areas.every((a) => !a.ve)), 'sin A3, nadie ve');
+});
+
+test('TEST-AVR-009 · «Quién ve qué» solo lee, y no dice nada que prohíba 10-B04', () => {
+  const pantalla = leer('pantallas/quien-ve-que.tsx');
+  const llamadas = [...pantalla.matchAll(/api\.([a-zA-Z0-9]+)\(/g)].map((m) => m[1]).sort();
+  assert.deepEqual(llamadas, ['consultarConsentimientos', 'consultarRequisitoA3', 'consultarVinculos', 'misHabitos', 'pedidosDeAccesoAMisHabitos']);
+  // Lo que se muestra, sin los comentarios (que citan la regla de 10-B04).
+  const textos = (leer('textos-de-la-vuelta.ts') + leer('quien-ve-que.ts') + pantalla).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.doesNotMatch(textos, /todos tus datos|toda tu información|puede ver todo/i);
+  for (const v of [qvq.PLIEGUE_DE_QUIEN_VE_QUE, perfil.PLIEGUE_DE_PERFIL]) assert.deepEqual(desplegable.problemasDelPliegue(v), [], v.nombre);
+});
+
+// ─── TEST-AVR-010 a 013 · Inicio y «Tu historial» (AV-06, AV-07) ────────────────────────────────
+
+const inicio = await import('../apps/mobile/src/inicio-de-hoy.ts');
+const DIA = {
+  meals: [
+    { mealId: 'cena', label: 'Cena', order: 4, options: [{}, {}] },
+    { mealId: 'desayuno', label: 'Desayuno', order: 1, options: [{}] },
+    { mealId: 'almuerzo', label: 'Almuerzo', order: 2, options: [{}, {}, {}] },
+    { mealId: 'merienda', label: 'Merienda', order: 3, options: [{}, {}, {}] },
+  ],
+};
+const ingesta = (mealId, occurredAt, origin = 'PRESCRIBED') => ({ origin, mealId, occurredAt, executionId: `e-${mealId ?? 'fuera'}` });
+const horaDePrueba = (iso) => iso.slice(11, 16);
+
+test('TEST-AVR-010 · «la que sigue» es la primera sin registrar en el orden del plan, nunca por la hora', () => {
+  const c = inicio.comidasDeHoy(DIA, [ingesta('desayuno', '2026-11-07T08:40:00Z')], horaDePrueba);
+  assert.deepEqual(c.fichas.map((f) => [f.nombre, f.estado]), [['Desayuno', 'registrada'], ['Almuerzo', 'la-que-sigue'], ['Merienda', 'sin-registrar'], ['Cena', 'sin-registrar']]);
+  assert.equal(c.fichas[0].paraLeer, 'Desayuno, registrado a las 08:40');
+  assert.equal(c.fichas[1].paraLeer, 'Almuerzo, registrar');
+  // La cena registrada antes que el almuerzo, y un registro fuera del plan: sigue el almuerzo.
+  const fueraDeOrden = inicio.comidasDeHoy(DIA, [ingesta('desayuno', '2026-11-07T08:40:00Z'), ingesta('cena', '2026-11-07T21:00:00Z'), ingesta(null, '2026-11-07T22:00:00Z', 'OUTSIDE_PRESCRIPTION')], horaDePrueba);
+  assert.equal(inicio.laQueSigue(fueraDeOrden).nombre, 'Almuerzo');
+  assert.equal(fueraDeOrden.fueraDelPlan, 1);
+  assert.equal(fueraDeOrden.fichas.filter((f) => f.estado === 'registrada').length, 2, 'el registro fuera del plan no es una comida del plan');
+});
+
+test('TEST-AVR-011 · BE no elige el día tipo ni la sesión: sin día elegido, no hay fichas', () => {
+  assert.equal(inicio.comidasDeHoy(null, [ingesta('desayuno', '2026-11-07T08:40:00Z')], horaDePrueba), null);
+  assert.equal(inicio.laQueSigue(null), null);
+  assert.match(leer('pantallas/inicio-nutricion.tsx'), /COPY_NUTRICION\.elegiDiaTipo/);
+  assert.match(leer('pantallas/inicio-entrenamiento.tsx'), /Tu plan tiene varias sesiones\. Elegí la que hiciste o vas a hacer\./);
+});
+
+test('TEST-AVR-012 · «Tu actividad» es un número, las sesiones registradas en 30 días, sin porcentaje ni «Ir a…»', () => {
+  assert.deepEqual(inicio.actividadEnUnNumero({ registradas: 11 }), { numero: 11, unidad: 'sesiones registradas', paraLeer: 'Últimos 30 días: 11 sesiones registradas' });
+  assert.equal(inicio.actividadEnUnNumero({ registradas: 1 }).unidad, 'sesión registrada');
+  const tarjeta = leer('pantallas/inicio-entrenamiento.tsx');
+  assert.match(tarjeta, /actividadEnUnNumero\(r\.datos\)/);
+  assert.doesNotMatch(tarjeta, /Realizadas con desvío/, 'el desglose está en «Tu historial»');
+  for (const archivo of ['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-informacion.tsx']) assert.doesNotMatch(leer(`pantallas/${archivo}`), /texto="Ir a /, archivo);
+  assert.deepEqual(desplegable.problemasDelPliegue(inicio.PLIEGUE_DE_LA_SESION_DE_HOY), []);
+  assert.deepEqual(desplegable.problemasDelPliegue(inicio.PLIEGUE_DE_PARA_RESPONDER), []);
+  assert.deepEqual(inicio.detalleDeLaSesion({ blockLabel: 'Bloque 2', microcycleLabel: 'Semana 3', prescriptions: [1, 2, 3, 4, 5, 6].map((i) => ({ exerciseName: `E${i}`, sets: [1, 2, 3] })) }), {
+    bloque: 'Bloque 2 · Semana 3',
+    ejercicios: ['E1 · 3 series', 'E2 · 3 series', 'E3 · 3 series'],
+    yMas: 'y 3 más',
+  });
+});
+
+test('TEST-AVR-013 · el total del desglose de «Tu historial» es el número de Inicio', () => {
+  const a = { registradas: 11, realizadas: 8, conDesvio: 2, noRealizadas: 1 };
+  const d = inicio.desgloseDeActividad(a);
+  assert.equal(d.total, inicio.actividadEnUnNumero(a).numero);
+  assert.equal(d.texto, 'Últimos 30 días: 8 realizadas, 2 con desvío y 1 no realizada.');
+  const historial = leer('pantallas/historial.tsx');
+  assert.match(historial, /leerActividadDeEntrenamiento\(api, token, periodo\)/);
+  assert.match(historial, /`inicio-actividad:\$\{periodo\.periodStart\}:\$\{periodo\.periodEnd\}`/, 'la misma lectura y la misma clave que Inicio');
+  assert.match(historial, /desgloseDeActividad\(r\.datos\)\.texto/);
+});
+
+// ─── TEST-AVR-015 · los íconos nuevos (AV-09) ───────────────────────────────────────────────────
+
+const { ICONOS } = await import('../packages/domain/dist/index.js');
+test('TEST-AVR-015 · el de «Mis hábitos» y el engranaje son de la familia, y van siempre con su palabra', () => {
+  for (const nombre of ['habitos', 'engranaje']) assert.ok(ICONOS[nombre]?.formas.length > 0, nombre);
+  assert.match(leer('perfil.ts'), /icono: 'habitos'/, 'en Perfil');
+  assert.match(leer('pantallas/inicio-informacion.tsx'), /'habitos'/, 'en Inicio');
+  assert.match(leer('pantallas/quien-ve-que.tsx'), /nombre="habitos"/, 'en «Quién ve qué»');
+});
+
+// ─── TEST-AVR-029 · una cuenta nueva (AV-17) ────────────────────────────────────────────────────
+
+test('TEST-AVR-029 · una cuenta nueva: el paso que falta primero, líneas sin plan, sin «Para responder» y Perfil sin punto', () => {
+  assert.equal(inicio.ORDEN_DE_INICIO[0], 'paso-que-falta');
+  assert.equal(inicio.formaDelArea('NO_ACTIVE_PLAN'), 'linea');
+  assert.equal(inicio.formaDelArea('AVAILABLE'), 'tarjeta');
+  assert.equal(inicio.seDibujaParaResponder([]), false, 'sin filas, no se dibuja');
+  assert.equal(inicio.seDibujaParaResponder(undefined), false, 'sin lectura, no se afirma nada');
+  const nada = perfil.paraResponder([], habitosCon([]), []);
+  assert.deepEqual(perfil.marcaDePerfil(nada), { visible: false, paraLeer: null });
+  assert.equal(perfil.nombreEnPerfil(null).texto, 'Agregá tu nombre');
+  assert.equal(perfil.estadoDeMisHabitos({ cargados: false, losReciben: 0 }), 'Todavía no los contaste');
+  assert.deepEqual(perfil.filasDeFormularios({ paraResponder: nada, respondidos: 0 }), [{ que: 'para-responder', titulo: 'Para responder', detalle: 'Nada para responder', cuenta: null }], 'sin respondidos, sin fila; sin ceros');
+  const pantalla = leer('pantallas/inicio.tsx');
+  assert.ok(pantalla.indexOf('<AccesoIncompleto') < pantalla.indexOf('<EntrenamientoDeHoy'), 'el paso que falta va arriba de todo');
+  assert.match(leer('pantallas/inicio-nutricion.tsx'), /formaDelArea\(r\.datos\.data\.planState\) === 'linea'/);
+  assert.match(leer('pantallas/inicio-entrenamiento.tsx'), /<LineaDeInicio zona="entrenamiento" texto=\{COPY_ENTRENAMIENTO\.sinPlanAsesorado\} \/>/);
+});

@@ -43,6 +43,19 @@ export function TarjetaDeInicio({ zona, titulo, detalle, icono, children }: { zo
   );
 }
 
+/**
+ * Un área sin plan, en una línea y no en una tarjeta (AV-17, DL-166): el ícono del área y el texto de siempre. Lo que no
+ * tiene nada no se dibuja como tarjeta vacía.
+ */
+export function LineaDeInicio({ zona, texto }: { zona: Zona; texto: string }) {
+  return (
+    <View style={estilos.linea} accessible accessibilityLabel={texto}>
+      <IconoDeZona zona={zona} color={COLOR.tenue} />
+      <Text style={estilos.textoDeLinea}>{texto}</Text>
+    </View>
+  );
+}
+
 /** Mientras la API confirma: la estructura de la tarjeta, sin valores (G2). */
 export function Verificando() {
   return (
@@ -91,6 +104,8 @@ export const estilos = estilosPorTema((COLOR) => ({
   // La fecha de hoy, con el ícono de «hoy» al lado (PA-06).
   filaDeLaFecha: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -6, marginBottom: 8 },
   fechaDeHoy: { fontSize: 16, color: COLOR.tenue, flexShrink: 1 },
+  linea: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 4 },
+  textoDeLinea: { fontSize: 15, lineHeight: 21, color: COLOR.tenue, flexShrink: 1 },
   // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde.
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
