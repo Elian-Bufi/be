@@ -21,14 +21,19 @@ import {
   registroVigente,
   textoDelNivelDeDetalle,
   type HistorialDeEntrenamientoResponse,
+  type Resultado,
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDePlanDeEntrenamiento,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
-import { dia, fechaCivil, ultimosDiasEnZona } from '../formato';
+import { useDiaDeLaApi } from '../dia-de-la-api';
+import { dia, fechaCivil, ultimosDiasEnZona, ultimosDiasHasta } from '../formato';
+import { desgloseDeActividad } from '../inicio-de-hoy';
+import { useLecturaRecordada } from '../lecturas';
+import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { textoDePrescripcion } from './entrenamiento';
@@ -70,6 +75,21 @@ export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: 
  * El contenido de «Tu historial», sin título: la pantalla propia (desde Inicio y el menú) y la pestaña Historial de
  * Entrenamiento (WP-ENTRENAMIENTO-SERIES §7.1) muestran lo mismo.
  */
+/**
+ * Los mismos 30 días que «Tu actividad» de Inicio, desglosados: realizadas, con desvío y no realizadas. Es la misma
+ * lectura, con la misma clave (`leerActividadDeEntrenamiento`), así el total coincide con el número de Inicio (AVD-2). Un
+ * día sin registro no cuenta como «no realizada» (DL-106). Mientras se lee o si falla, no se dibuja: la lista de abajo
+ * dice lo suyo.
+ */
+function DesgloseDe30Dias({ token, sesionPerdida }: { token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
+  const hoy = useDiaDeLaApi();
+  const periodo = useMemo(() => ultimosDiasHasta(hoy, DIAS_DE_ACTIVIDAD), [hoy]);
+  const pedir = useCallback(() => leerActividadDeEntrenamiento(api, token, periodo), [token, periodo]);
+  const { r } = useLecturaRecordada(token, `inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`, pedir, sesionPerdida);
+  if (!r?.ok || r.datos.registradas === 0) return null;
+  return <Parrafo>{desgloseDeActividad(r.datos).texto}</Parrafo>;
+}
+
 export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
   const [sesiones, setSesiones] = useState<Carga<Ejecucion[]>>({ tipo: 'cargando' });
@@ -94,6 +114,8 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
   return (
     <View>
       <Parrafo tenue>{COPY_ENTRENAMIENTO.historialIntro}</Parrafo>
+      {/* DL-166 (AV-07, AVD-2): el desglose de los últimos 30 días, con la misma lectura que el número de Inicio. */}
+      {sinA3 ? null : <DesgloseDe30Dias token={token} sesionPerdida={sesionPerdida} />}
 
       {sinA3 ? (
         <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.historialNecesitaA3}>

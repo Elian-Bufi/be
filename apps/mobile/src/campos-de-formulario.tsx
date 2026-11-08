@@ -20,6 +20,7 @@ import { COPY_FORMULARIOS, COPY_FORMULARIOS_V2, LARGO_MAXIMO_DE_ALIMENTO, LARGO_
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { alternarEnElSubvalor, claveDeParte, claveDeSubcampo, codigosDelSubvalor, TEXTOS_DE_FORMULARIO_V2 as T, type AlimentoDeBorrador, type EleccionSiONo, type RenglonDeBorrador } from './formulario-v2';
+import { accesibilidadDelDesplegable } from './desplegable';
 import { Icono } from './icono';
 import { Boton, CajaDeCasilla, Campo, CampoSiONo, Subtitulo, Tarjeta, estilos as ui, estilosPorTema } from './ui';
 
@@ -82,9 +83,7 @@ export function PieDePregunta({ etiqueta, paraQue, quitar }: Pick<CabeceraDePreg
       <View style={estilos.pie}>
         {paraQue ? (
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY_FORMULARIOS_V2.paraQueDe(etiqueta)}
-            accessibilityState={{ expanded: abierto }}
+            {...accesibilidadDelDesplegable(abierto, COPY_FORMULARIOS_V2.paraQueDe(etiqueta))}
             onPress={() => setAbierto((a) => !a)}
             hitSlop={8}
             style={({ pressed }) => [estilos.botonDelPie, pressed && ui.presionado]}

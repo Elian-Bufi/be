@@ -501,7 +501,8 @@ test('las acciones van a destinos tipados, y la única escritura es abrir un bor
     "ir({ nombre: 'plan-actual' })",
     "ir({ nombre: 'mi-evolucion', vista: 'ultima' })",
     "ir({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada.metrica })",
-    "ir({ nombre: 'mi-solicitud', id: s.formRequestId })",
+    // DL-166 (AV-06): «Para responder» arma sus filas con `paraResponder` (perfil.ts); cada formulario abre su solicitud.
+    "ir({ nombre: 'mi-solicitud', id: f.id })",
     "ir({ nombre: 'ejecucion-de-entrenamiento', id: executionId })",
     "ir({ nombre: 'historial-de-entrenamiento' })",
   ]) {

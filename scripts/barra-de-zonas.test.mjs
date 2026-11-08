@@ -11,7 +11,8 @@ import test from 'node:test';
 
 const barra = await import('../apps/mobile/src/disposicion-de-la-barra.ts');
 
-const ZONAS = ['inicio', 'nutricion', 'entrenamiento', 'evolucion', 'informacion'];
+// DL-166 (AV-02): Perfil reemplaza a Información como quinto destino.
+const ZONAS = ['inicio', 'nutricion', 'entrenamiento', 'evolucion', 'perfil'];
 const disponer = (anchoDePantalla, escalaDeLetra) => barra.disposicionDeLaBarra({ anchoDePantalla, escalaDeLetra, zonas: ZONAS });
 const ANCHOS = [320, 360, 390, 412];
 const ESCALAS = [1, 1.15, 1.3, 1.5, 1.8, 2];
@@ -26,7 +27,7 @@ test('los cinco destinos, siempre y en el mismo orden de lectura, en una fila o 
   }
 });
 
-test('una fila mientras las etiquetas entren con al menos el 90 % de su tamaño; si no, dos filas', () => {
+test('una fila mientras las etiquetas entren con su tamaño entero (DL-166: en una fila no se achican); si no, dos filas', () => {
   for (const ancho of ANCHOS) {
     for (const escala of ESCALAS) {
       const d = disponer(ancho, escala);
@@ -37,7 +38,10 @@ test('una fila mientras las etiquetas entren con al menos el 90 % de su tamaño;
   assert.equal(disponer(360, 1).filas.length, 1);
   assert.equal(disponer(360, 1).escalaEfectiva, 1, 'en 360 dp con la letra de siempre, sin achicar');
   assert.equal(disponer(412, 1.3).filas.length, 1);
+  // Maqueta 08 de DL-166: con letra ×1,3 en 360 dp, dos filas enteras, con Evolución y Perfil abajo.
   assert.equal(disponer(360, 1.3).filas.length, 2);
+  assert.deepEqual(disponer(360, 1.3).filas, [['inicio', 'nutricion', 'entrenamiento'], ['evolucion', 'perfil']]);
+  assert.equal(disponer(360, 1.3).escalaEfectiva, 1.3);
   assert.equal(disponer(320, 1.15).filas.length, 2);
   assert.equal(disponer(412, 1.5).filas.length, 2);
 });
@@ -46,7 +50,8 @@ test('las etiquetas crecen con la letra, sin tope: en dos filas llegan al tamañ
   for (const ancho of [360, 390, 412]) {
     for (const escala of ESCALAS) {
       const d = disponer(ancho, escala);
-      assert.ok(d.escalaEfectiva >= escala * barra.TOLERANCIA_EN_UNA_FILA - 1e-9, `${ancho} dp ×${escala}: queda en ${d.escalaEfectiva}`);
+      // DL-166: la tolerancia es de una fila (ahí no se achica nada); en dos filas vale el piso de abajo.
+      if (d.filas.length === 1) assert.ok(d.escalaEfectiva >= escala * barra.TOLERANCIA_EN_UNA_FILA - 1e-9, `${ancho} dp ×${escala}: queda en ${d.escalaEfectiva}`);
       // En dos filas, entera desde 390 dp; en 360 dp, a lo sumo un 5 % menos con la holgura de la estimación.
       if (d.filas.length === 2 && ancho >= 390) assert.equal(d.escalaEfectiva, escala, `${ancho} dp ×${escala}: en dos filas no se achica`);
       if (d.filas.length === 2) assert.ok(d.escalaEfectiva >= escala * 0.95, `${ancho} dp ×${escala}: en dos filas queda en ${d.escalaEfectiva}`);
@@ -54,10 +59,10 @@ test('las etiquetas crecen con la letra, sin tope: en dos filas llegan al tamañ
   }
   // Antes, con el tope de 1,15, en 360 dp la letra ×2 quedaba en 12 × 1,15 × 0,96 ≈ 13,2 sp. Ahora, unos 24 sp.
   assert.ok(disponer(360, 2).escalaEfectiva * barra.LETRA_DE_LA_BARRA > 23);
-  // En 320 dp con la letra al doble, ni dos filas alcanzan: la letra baja lo justo, y sigue muy por encima del tope viejo.
+  // En 320 dp con la letra al doble, dos filas: si no alcanzaran, la letra bajaría lo justo; con «Perfil», alcanzan.
   const justo = disponer(320, 2);
   assert.equal(justo.filas.length, 2);
-  assert.ok(justo.escalaEfectiva < 2 && justo.escalaEfectiva * barra.LETRA_DE_LA_BARRA > 20, `queda en ${justo.escalaEfectiva * barra.LETRA_DE_LA_BARRA} sp`);
+  assert.ok(justo.escalaEfectiva * barra.LETRA_DE_LA_BARRA > 20, `queda en ${justo.escalaEfectiva * barra.LETRA_DE_LA_BARRA} sp`);
 });
 
 test('en un teléfono angosto, la cápsula se acerca a los bordes antes de achicar la letra', () => {

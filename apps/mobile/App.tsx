@@ -10,10 +10,11 @@
  *   los días sin medición vigente a la vista como «Sin dato».
  * - WP-NUTRICION-RECETAS (docs/paquetes/WP-NUTRICION-RECETAS.md §9): Nutrición con pestañas Hoy · Plan · Registros; en
  *   Hoy, el carrusel de opciones de cada comida → el detalle de una opción («¿Cuánto comiste?») y «Comí algo diferente».
- * Desde DL-117 (Dirección, 2026-10-04), con sesión se navega con la barra inferior: Inicio, Nutrición, Entrenamiento,
- * Evolución e Información (src/barra-de-zonas.tsx). Cuenta se abre desde el avatar de la cabecera única
- * (src/cabecera.tsx), y el menú auxiliar lleva a funciones que no tienen lugar en la barra (src/menu-auxiliar.tsx). Al
- * iniciar sesión, la APK abre en Inicio. Cada detalle recuerda de dónde se abrió, y volver lleva ahí (src/navegacion.ts).
+ * Desde DL-117 (Dirección, 2026-10-04), con sesión se navega con la barra inferior (src/barra-de-zonas.tsx). Desde
+ * DL-166 (PV-1, 2026-11-07) sus destinos son Inicio, Nutrición, Entrenamiento, Evolución y Perfil: Perfil reemplaza a
+ * «Información» y absorbe Cuenta y el menú auxiliar, y la cabecera única queda con la marca y Novedades
+ * (src/cabecera.tsx). Perfil lleva un punto mientras haya algo para responder (src/marca-de-perfil.ts). Al iniciar
+ * sesión, la APK abre en Inicio. Cada detalle recuerda de dónde se abrió, y volver lleva ahí (src/navegacion.ts).
  * La sesión (Bearer) y el identificador de la identidad viven en memoria, fuera del árbol de React
  * (src/sesion-en-memoria.ts): un cambio de tamaño de letra hace que Android recree la pantalla, y no pierde la sesión.
  * La credencial se guarda además en el almacenamiento seguro del teléfono hasta que vence (DL-012, decisión de
@@ -59,7 +60,10 @@ import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/ent
 import { borraLosBorradores } from './src/borrador-de-formulario';
 import { borradoresDeFormularios } from './src/formularios-en-el-telefono';
 import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
-import { MenuAuxiliar } from './src/menu-auxiliar';
+import { cancelarAvisoDelDescanso } from './src/avisos-del-telefono';
+import { FilaFijaDeLaSesion, useFilaFija } from './src/fila-fija';
+import { marcaEnPerfil, useMarcaEnPerfil } from './src/marca-de-perfil';
+import { paraResponder } from './src/perfil';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
 import type { AlIniciar } from './src/pantallas/acceso-con-google';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
@@ -76,6 +80,8 @@ import { PantallaDeMisHabitos } from './src/pantallas/mis-habitos';
 import { PantallaDeNovedades } from './src/pantallas/novedades';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
 import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
+import { PantallaDePerfil } from './src/pantallas/perfil';
+import { PantallaDeQuienVeQue } from './src/pantallas/quien-ve-que';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
@@ -183,9 +189,10 @@ function Contenido() {
   const alturaActual = useRef(0);
   const alturas = useRef(new Map<string, number>());
   const [restauracion] = useState(() => crearRestauracionDeAltura());
-  const [menuAbierto, setMenuAbierto] = useState(false);
   // El alto real de la barra inferior, medido: el contenido deja ese espacio libre al final. 0 mientras no se ve.
   const [altoDeLaBarra, setAltoDeLaBarra] = useState(0);
+  // DL-166 (PV-11): el alto de la fila fija de la sesión, que va apilada sobre la barra. 0 mientras no se ve.
+  const [altoDeLaFila, setAltoDeLaFila] = useState(0);
   // DL-133: las novedades sin leer, para la campana; `null` mientras no se sabe. Y si un aviso tocado espera la sesión.
   const [sinLeer, setSinLeer] = useState<number | null>(null);
   const avisoPendiente = useRef(esAvisoDeBe(avisoQueAbrioLaApp()));
@@ -201,7 +208,6 @@ function Contenido() {
       restauracion.pedir(y, performance.now());
       // Dos toques seguidos, antes de que la pantalla se vuelva a dibujar, parten de la pantalla nueva y no de la vieja.
       rutaActual.current = r;
-      setMenuAbierto(false);
       setRuta(r);
       desplazamiento.current?.scrollTo({ y: 0, animated: false });
     },
@@ -219,14 +225,14 @@ function Contenido() {
     return true;
   }, [mostrar]);
 
-  // Sin pérdidas silenciosas: si la pantalla tiene algo escrito sin guardar, salir por la barra, la cabecera, el avatar,
-  // el menú o el botón atrás pregunta antes (src/cambios-sin-guardar.tsx).
+  // Sin pérdidas silenciosas: si la pantalla tiene algo escrito sin guardar, salir por la barra, la cabecera o el botón
+  // atrás pregunta antes (src/cambios-sin-guardar.tsx).
   const [registroDeCambios] = useState(crearRegistroDeCambios);
   const conCuidado = useCallback((salir: () => void) => salirConCuidado(registroDeCambios, salir, preguntarAntesDeSalir), [registroDeCambios]);
   const irConCuidado = useCallback(
     (r: Ruta) => {
-      // Ir a la pantalla en la que ya se está (tocar su destino en la barra, o el avatar en Cuenta) no la desmonta ni
-      // pierde lo escrito: solo sube, sin preguntar.
+      // Ir a la pantalla en la que ya se está (tocar su destino en la barra) no la desmonta ni pierde lo escrito: solo
+      // sube, sin preguntar.
       if (mismaPantalla(navegar(rutaActual.current, r), rutaActual.current)) return ir(r);
       conCuidado(() => ir(r));
     },
@@ -240,10 +246,10 @@ function Contenido() {
     return true;
   }, [volverConCuidado]);
   /**
-   * «Volver a Información», dentro de una solicitud: va a Información aunque la solicitud se haya abierto desde Inicio
-   * (antes llevaba al origen y el texto no coincidía), y pregunta si hay respuestas escritas sin enviar.
+   * «Volver a Formularios y pedidos», dentro de una solicitud: va a la bandeja aunque la solicitud se haya abierto desde
+   * Inicio, y pregunta si hay respuestas escritas sin enviar.
    */
-  const volverAInformacion = useCallback(() => irConCuidado({ nombre: 'mis-solicitudes' }), [irConCuidado]);
+  const volverAFormularios = useCallback(() => irConCuidado({ nombre: 'mis-solicitudes' }), [irConCuidado]);
 
   /**
    * Devuelve la zona a su altura cuando el contenido verificado ya alcanza, aunque la API tarde. Si la persona arrastra
@@ -277,6 +283,9 @@ function Contenido() {
       void guarda.borrar();
       olvidarSesion();
       memoria.olvidarLaSesion();
+      marcaEnPerfil.olvidar();
+      // Cerrar la sesión cancela el aviso de un descanso que estuviera corriendo (DL-166, AV-12).
+      void cancelarAvisoDelDescanso();
       setSesion(null);
       setRecordada(null);
       registroDeCambios.olvidar();
@@ -346,6 +355,29 @@ function Contenido() {
     if (r.ok && sesionActual.current?.token === actual.token) setSinLeer(r.datos.unreadCount);
   }, []);
 
+  /**
+   * DL-166 (PV-6): la marca de Perfil, con las mismas lecturas que «Para responder» en Inicio y en Perfil. Se pide al
+   * entrar, al volver del segundo plano y al salir de una solicitud o de «Mis hábitos», donde se responde. Inicio y Perfil
+   * también la fijan con sus lecturas. Una falla no cambia la marca: no se afirma nada sin saberlo.
+   */
+  const actualizarMarca = useCallback(async () => {
+    const actual = sesionActual.current;
+    if (!actual) return;
+    const [f, h, p] = await Promise.all([
+      api.miBandejaDeFormularios(actual.token, { status: 'PENDING', limit: '1' }),
+      api.misHabitos(actual.token),
+      api.pedidosDeAccesoAMisHabitos(actual.token),
+    ]);
+    if (!f.ok || !h.ok || !p.ok || sesionActual.current?.token !== actual.token) return;
+    marcaEnPerfil.fijar(paraResponder(f.datos.data, h.datos.data, p.datos.data));
+  }, []);
+  const rutaAnterior = useRef(ruta.nombre);
+  useEffect(() => {
+    const antes = rutaAnterior.current;
+    rutaAnterior.current = ruta.nombre;
+    if ((antes === 'mi-solicitud' || antes === 'mis-habitos') && antes !== ruta.nombre) void actualizarMarca();
+  }, [ruta.nombre, actualizarMarca]);
+
   // Con sesión: el número de la campana, el token del teléfono renovado si la cuenta tiene los avisos activos, y un aviso
   // tocado antes de iniciar sesión, que ahora abre Novedades. Al volver del segundo plano o al llegar un aviso, el número
   // se vuelve a pedir.
@@ -357,6 +389,7 @@ function Contenido() {
       return;
     }
     void actualizarSinLeer();
+    void actualizarMarca();
     void renovar(dependenciasDeAvisos, { token: actual.token, identidadId: actual.identidadId }).catch(() => undefined);
     if (avisoPendiente.current) {
       avisoPendiente.current = false;
@@ -368,14 +401,17 @@ function Contenido() {
       ir({ nombre: 'invitacion', secreto });
     }
     const alVolver = AppState.addEventListener('change', (momento) => {
-      if (momento === 'active') void actualizarSinLeer();
+      if (momento === 'active') {
+        void actualizarSinLeer();
+        void actualizarMarca();
+      }
     });
     const alLlegar = escucharAvisosRecibidos(() => void actualizarSinLeer());
     return () => {
       alVolver.remove();
       alLlegar();
     };
-  }, [tokenDeLaSesion, actualizarSinLeer, ir]);
+  }, [tokenDeLaSesion, actualizarSinLeer, actualizarMarca, ir]);
 
   // DL-136: el enlace de una invitación, con la app cerrada (el enlace que la abrió) o abierta. Con sesión, abre la
   // invitación; sin sesión, queda pendiente: no se interrumpe la verificación de una credencial guardada.
@@ -441,7 +477,7 @@ function Contenido() {
 
   const salir = useCallback(
     (motivo: Salida) => {
-      // Si Cuenta pidió volver a entrar para confirmar una acción, al iniciar sesión se vuelve a Cuenta (alIniciarSesion).
+      // Si Cerrar mi cuenta pidió volver a entrar para confirmar el cierre, al iniciar sesión se vuelve ahí (alIniciarSesion).
       // Un SESSION_EXPIRED de la API es un vencimiento comprobado: el aviso dice cuánto duraba esa sesión, si se sabe.
       const aviso = motivo === 'sesion-vencida' ? avisoDeVencimiento(sesionActual.current) : AVISOS[motivo];
       // FR-01 · cerrar la sesión (o pedir el cierre de la cuenta) borra del teléfono lo escrito en los formularios de esa
@@ -457,14 +493,23 @@ function Contenido() {
     [terminar],
   );
 
-  // Con sesión verificada: la barra, el avatar y el menú. Mientras se verifica una sesión guardada, nada de la cuenta.
+  // Con sesión verificada: la barra y la campana. Mientras se verifica una sesión guardada, nada de la cuenta.
   const conSesion = sesion !== null && recuperacion === null && requiereSesion(ruta);
   const raiz = esRaiz(ruta);
   // Desde PA-02, también la sesión de entrenamiento lleva la barra: lo escrito queda guardado en el teléfono.
   const conBarra = conSesion && !sinBarraInferior(ruta);
   const entrenamientoEnCurso = useHayEntrenamientoEnCurso();
-  // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación.
-  const espacioDeLaBarra = conBarra && altoDeLaBarra > 0 ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16 : 32 + insets.bottom;
+  const conMarcaEnPerfil = useMarcaEnPerfil();
+  // DL-166 (PV-11): durante la sesión en vivo, la fila de acciones y la barra van fijas, apiladas y opacas; nada flota.
+  const filaDeLaSesion = useFilaFija();
+  const enLaSesion = conBarra && filaDeLaSesion !== null;
+  // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación. Fijas, el
+  // contenido deja libre el alto de las dos (la barra fija ya incluye el área segura).
+  const espacioDeLaBarra = enLaSesion
+    ? altoDeLaBarra + altoDeLaFila + 16
+    : conBarra && altoDeLaBarra > 0
+      ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16
+      : 32 + insets.bottom;
   const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
 
   /**
@@ -491,12 +536,9 @@ function Contenido() {
     <KeyboardAvoidingView style={estilos.raiz} behavior="padding">
       <Cabecera
         volverA={recuperacion || raiz ? null : anterior(ruta)}
-        conMenu={conSesion && raiz}
-        conAvatar={conSesion}
+        conSesion={conSesion}
         actualizando={hayActualizaciones && sesion !== null}
         volver={volverConCuidado}
-        abrirMenu={() => setMenuAbierto(true)}
-        abrirCuenta={() => irConCuidado({ nombre: 'cuenta' })}
         sinLeer={conSesion ? sinLeer : null}
         abrirNovedades={() => irConCuidado({ nombre: 'novedades' })}
       />
@@ -558,7 +600,11 @@ function Contenido() {
             <>
               {/* Volver, sin depender del botón ni de un gesto del sistema (10-B10 §9), está en la cabecera. */}
               {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} salir={salir} ir={ir} /> : null}
-              {ruta.nombre === 'cuenta' ? <PantallaDeCuenta token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} sesionRecordada={recordada} /> : null}
+              {ruta.nombre === 'perfil' ? <PantallaDePerfil token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'quien-ve-que' ? <PantallaDeQuienVeQue token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'cuenta' ? (
+                <PantallaDeCuenta key={ruta.seccion ?? 'datos'} token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} seccion={ruta.seccion} sesionRecordada={recordada} />
+              ) : null}
               {ruta.nombre === 'novedades' ? <PantallaDeNovedades token={sesion.token} salir={salir} ir={ir} alCambiarSinLeer={setSinLeer} /> : null}
               {ruta.nombre === 'vinculos' ? <PantallaDeVinculos token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} subir={subir} /> : null}
               {ruta.nombre === 'notas-de-coordinacion' ? <PantallaDeNotasDeCoordinacion token={sesion.token} salir={salir} /> : null}
@@ -640,7 +686,7 @@ function Contenido() {
               {ruta.nombre === 'historial-de-entrenamiento' ? <PantallaDeHistorial token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'plan-de-entrenamiento' ? <PantallaDePlanDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} /> : null}
               {ruta.nombre === 'mis-solicitudes' ? <PantallaDeFormularios token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
-              {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} volver={volverAInformacion} ir={ir} subir={subir} /> : null}
+              {ruta.nombre === 'mi-solicitud' ? <PantallaDeMiSolicitud key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} volver={volverAFormularios} ir={ir} subir={subir} /> : null}
               {ruta.nombre === 'mis-habitos' ? <PantallaDeMisHabitos token={sesion.token} salir={salir} ir={ir} subir={subir} /> : null}
               {ruta.nombre === 'privacidad' ? <PantallaDePrivacidad token={sesion.token} salir={salir} ir={ir} volver={volver} /> : null}
             </>
@@ -653,20 +699,12 @@ function Contenido() {
         </ProveedorDeCambios>
       </ScrollView>
       {/* La barra flota sobre el final del contenido, que deja libre su alto (espacioDeLaBarra). Resalta la raíz donde
-          empezó el camino hasta esta pantalla; en Cuenta, ninguna. */}
+          empezó el camino hasta esta pantalla; en Novedades, ninguna. */}
       {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
           que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
-      {conBarra && altoDeLaBarra > 0 ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
-      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} /> : null}
-      <MenuAuxiliar
-        visible={menuAbierto && conSesion && raiz}
-        cerrar={() => setMenuAbierto(false)}
-        elegir={(r) => {
-          // El menú se cierra antes de preguntar: si la persona elige quedarse, queda en la pantalla, sin el menú encima.
-          setMenuAbierto(false);
-          irConCuidado(r);
-        }}
-      />
+      {conBarra && altoDeLaBarra > 0 && !enLaSesion ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
+      {enLaSesion && filaDeLaSesion ? <FilaFijaDeLaSesion fila={filaDeLaSesion} abajo={altoDeLaBarra} alMedir={setAltoDeLaFila} /> : null}
+      {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} marcaEnPerfil={conMarcaEnPerfil} fija={enLaSesion} /> : null}
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>

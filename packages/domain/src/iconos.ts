@@ -36,7 +36,7 @@ export interface DefinicionDeIcono {
   readonly formas: readonly FormaDeIcono[];
 }
 
-/** Los 115 nombres: los 106 del catálogo, en su orden, y los nueve que sumó la APK (PA-06), al final. */
+/** Los 117 nombres: los 106 del catálogo, en su orden, los nueve que sumó la APK (PA-06) y los dos de DL-166, al final. */
 export const NOMBRES_DE_ICONO = [
   // Áreas
   'nutricion', 'entrenamiento', 'antropometria', 'informacion',
@@ -70,6 +70,9 @@ export const NOMBRES_DE_ICONO = [
   'plantillas', 'habitual', 'receta', 'imagen',
   // La APK (PA-06, 2026-11-02): el cambio de una medida, deshacer, «Ya la hice» y los cinco propios que no tenían par
   'sube', 'baja', 'deshacer', 'ya-la-hice', 'inicio', 'camara', 'sin-enviar', 'sin-registro', 'menu-de-la-app',
+  // WP-APP-VUELTA-DE-ROSCA (DL-166, AV-09): «Mis hábitos», un reloj envuelto por una flecha circular, y el engranaje de los
+  // ajustes del descanso. Dibujados en la versión 3 de las maquetas «App más simple» (2026-11-07).
+  'habitos', 'engranaje',
 ] as const;
 export type NombreDeIcono = (typeof NOMBRES_DE_ICONO)[number];
 
@@ -200,4 +203,14 @@ export const ICONOS: Readonly<Record<NombreDeIcono, DefinicionDeIcono>> = {
   'sin-registro': { grupo: 'Estados', formas: [{ forma: 'circulo', cx: 12, cy: 12, r: 9 }] },
   // El menú de la app (la hamburguesa). No es `menu`, que en la familia son tres puntos y quiere decir «Más acciones».
   'menu-de-la-app': { grupo: 'Navegación', formas: [{ forma: 'trazo', d: 'M4 7h16M4 12h16M4 17h16' }] },
+  // DL-166 (AV-09): la flecha da la vuelta al reloj, con la punta al final del arco; las agujas son las de «reloj».
+  habitos: { grupo: 'Personas', formas: [{ forma: 'trazo', d: 'M9.4 4.86A7.6 7.6 0 1 1 4.86 9.4' }, { forma: 'trazo', d: 'M2.38 10.95L4.86 9.4l.9 2.78' }, { forma: 'trazo', d: 'M12 8.2V12l2.6 1.7' }] },
+  // Ocho dientes y el eje: el polígono se cierra solo, y el círculo es hueco, como toda la familia.
+  engranaje: {
+    grupo: 'Sistema',
+    formas: [
+      { forma: 'trazo', d: 'M18.7 9.38l2.42.81v3.62l-2.42.81-.1.27 1.13 2.28-2.56 2.56-2.28-1.13-.27.1-.81 2.42h-3.62l-.81-2.42-.27-.1-2.28 1.13-2.56-2.56 1.13-2.28-.1-.27-2.42-.81v-3.62l2.42-.81.1-.27-1.13-2.28 2.56-2.56 2.28 1.13.27-.1.81-2.42h3.62l.81 2.42.27.1 2.28-1.13 2.56 2.56-1.13 2.28z' },
+      { forma: 'circulo', cx: 12, cy: 12, r: 3 },
+    ],
+  },
 };

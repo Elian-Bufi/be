@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
 import { BotonDeIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
+import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
 import { COLOR, estilosPorTema } from './tema';
 
@@ -571,62 +572,58 @@ export function Dato({ etiqueta, valor, apilado = false }: { etiqueta: string; v
  * pantalla dice si está abierto. No va acá lo que la persona tiene que leer antes de aceptar algo (consentimientos,
  * privacidad, consecuencias de un acto): eso queda siempre a la vista. El ícono es el (?) de la familia (Dirección,
  * 2026-11-02: la ayuda se reconoce por el (?)); `icono="informacion"` deja la «i» para una nota que no es ayuda.
+ * Desde DL-166 (AV-01) es la variante «ayuda» del desplegable común: la APK tiene una sola pieza para plegar.
  */
 export function Ayuda({ titulo = 'Cómo se lee', icono = 'pregunta', children }: { titulo?: string; icono?: 'informacion' | 'pregunta'; children: ReactNode }) {
-  const [abierta, setAbierta] = useState(false);
   return (
-    <View style={estilos.ayuda}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: abierta }}
-        onPress={() => setAbierta((a) => !a)}
-        style={({ pressed }) => [estilos.cabezaDeAyuda, pressed && estilos.presionado]}
-      >
-        {/* La ayuda se reconoce por el (?) (Dirección, 2026-11-02); «informacion» queda para una nota que no es ayuda. */}
-        <Icono nombre={icono === 'informacion' ? 'info' : 'pregunta'} tamano={20} tono="acento" />
-        <Text style={estilos.tituloDeAyuda}>{titulo}</Text>
-        <Chevron abierto={abierta} />
-      </Pressable>
-      {abierta ? <View style={estilos.cuerpoDeAyuda}>{children}</View> : null}
-    </View>
+    <Desplegable titulo={titulo} variante="ayuda" icono={icono === 'informacion' ? 'info' : 'pregunta'}>
+      {children}
+    </Desplegable>
   );
 }
 
 /**
- * Contenido plegado detrás de un encabezado tocable con su título y, si hace falta, un detalle («22 medidas»): para lo
- * que no hace falta ver de entrada y no tiene que empujar hacia abajo lo principal de la pantalla.
+ * El desplegable común de la APK (PV-4 y AV-01, DL-166; GUIA-UX-UI III.7): contenido plegado detrás de un encabezado
+ * tocable con su título y, si hace falta, un detalle («22 medidas»). Se pliega lo que explica, nunca lo que hace falta
+ * para decidir (`desplegable.ts`). El lector de pantalla lo anuncia como botón con su estado, y abrirlo no escribe nada:
+ * solo guarda, en la pantalla, si está abierto. Lo plegado va debajo del encabezado: abrirlo no mueve lo de arriba.
+ * Tres variantes con la misma conducta: `seccion` (con su línea arriba), `ayuda` (el (?) y el texto con su borde) y
+ * `enlace` (una fila en el color del acento, para «Comí otra cantidad» o «Para qué lo pide»).
  */
 export function Desplegable({
   titulo,
   detalle,
   abiertoAlInicio = false,
   icono,
+  variante = 'seccion',
   children,
 }: {
   titulo: string;
   detalle?: string;
   abiertoAlInicio?: boolean;
   icono?: NombreDeIcono;
+  variante?: 'seccion' | 'ayuda' | 'enlace';
   children: ReactNode;
 }) {
   const [abierto, setAbierto] = useState(abiertoAlInicio);
+  const seccion = variante === 'seccion';
+  let plegado: ReactNode = null;
+  if (abierto) plegado = variante === 'ayuda' ? <View style={estilos.cuerpoDeAyuda}>{children}</View> : children;
   return (
-    <View style={estilos.desplegable}>
+    <View style={seccion ? estilos.desplegable : estilos.ayuda}>
       <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: abierto }}
-        accessibilityLabel={detalle ? `${titulo}. ${detalle}` : titulo}
+        {...accesibilidadDelDesplegable(abierto, detalle ? `${titulo}. ${detalle}` : titulo)}
         onPress={() => setAbierto((a) => !a)}
-        style={({ pressed }) => [estilos.cabezaDeDesplegable, pressed && estilos.presionado]}
+        style={({ pressed }) => [seccion ? estilos.cabezaDeDesplegable : estilos.cabezaDeAyuda, pressed && estilos.presionado]}
       >
         {icono ? <Icono nombre={icono} tamano={20} tono="acento" /> : null}
         <View style={estilos.textoDeDesplegable}>
-          <Text style={estilos.tituloDeDesplegable}>{titulo}</Text>
+          <Text style={seccion ? estilos.tituloDeDesplegable : estilos.tituloDeAyuda}>{titulo}</Text>
           {detalle ? <Text style={estilos.tenue}>{detalle}</Text> : null}
         </View>
         <Chevron abierto={abierto} />
       </Pressable>
-      {abierto ? children : null}
+      {plegado}
     </View>
   );
 }
@@ -755,6 +752,6 @@ export const estilos = estilosPorTema((COLOR) => ({
   cuerpoDeAyuda: { borderLeftWidth: 3, borderLeftColor: COLOR.borde, paddingLeft: 10, marginBottom: 6 },
   desplegable: { borderTopWidth: 1, borderTopColor: COLOR.borde, marginTop: 8 },
   cabezaDeDesplegable: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 8 },
-  textoDeDesplegable: { flexShrink: 1 },
+  textoDeDesplegable: { flex: 1 },
   tituloDeDesplegable: { fontSize: 16, fontWeight: '700', color: COLOR.texto },
 }));

@@ -7,6 +7,7 @@ import type { Nutrientes } from '@be/domain';
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { celdaDeMacro, celdasDeLaFranja, columnasDeLaFranja, LETRA_DE_LA_ETIQUETA, LETRA_DEL_VALOR, type CeldaDeMacro } from './franja-de-macros';
+import { accesibilidadDelDesplegable } from './desplegable';
 import { Flecha, IconoDeInformacion } from './iconos-de-nutricion';
 import { COLOR, estilosPorTema } from './tema';
 import { CajaDeCasilla, Cifra } from './ui';
@@ -153,9 +154,7 @@ export function CasillaSimple({
 export function Desplegador({ texto, abierto, onPress }: { texto: string; abierto: boolean; onPress: () => void }) {
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ expanded: abierto }}
-      accessibilityLabel={texto}
+      {...accesibilidadDelDesplegable(abierto, texto)}
       onPress={onPress}
       style={({ pressed }) => [estilos.desplegador, abierto && estilos.desplegadorAbierto, pressed && estilos.presionada]}
     >

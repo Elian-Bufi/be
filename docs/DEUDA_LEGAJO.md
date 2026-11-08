@@ -169,6 +169,7 @@
 | DL-163 | Pedido de Dirección · 2026-11-03 (WP-TABLERO-ALTA-GAMA; D-1 a D-21 y el alcance, ratificados el 2026-11-05) | RF-052 a RF-055 · UC-P23 · UC-P24 · 08 §11, §11-bis, C-11 · API-DSH-01 y 02 (09 v0.11 §13 y §14) · B10-08 · B10-10 · GUIA-UX-UI I y I.7 · DL-107 · DL-152 · DL-158 · DL-165 | El inicio del profesional y el Resumen de la ficha se veían sosos y con puntos burdos; Dirección pidió barras de avance, rostro, decisiones guiadas, ver las otras áreas, un mapa corporal, programas propios, más datos y planificar más fácil, y autorizó desafiar el legajo con fundamento | **RATIFICADA** 2026-11-05 · D-1 a D-21, todas como se recomendaron (la D-9 original, reemplazada por la D-9 nueva), y el alcance completo, las partes TB-00 a TB-49 (TB-49, «Lo que contó al empezar», se sumó con el sí) · D-11, modificada por Dirección el 2026-11-07 (kilos con el % al lado, TB-51), con TB-50 sumada el mismo día · D-13, ampliada por Dirección el 2026-11-07 (el plan completo de solo lectura, los comentarios y el pedido; TB-52 a TB-56; TA-79, TA-87 y TA-95 decididas el mismo día); el mismo día Dirección decidió un texto distinto por nivel (reemplaza TA-99; TA-109 a TA-112) y ratificó que el fundamento del objetivo se muestra (VJR-5 suma esa pregunta) · paquete declarado e integrado en `main` el 2026-11-06 (#239, `758b4d8`) · la etapa A, integrada en `main` el 2026-11-07 con la autorización de Dirección: primero la API (#243, `1b6fc8b`: la cartera, la cola de revisiones, el descarte de borradores y la familia RES, con TA-56 a TA-70 y TA-96 a TA-112 a ratificar) y después el website (#240, con TA-01 a TA-55, TA-71 a TA-95 y TA-120 a TA-129 a ratificar) · con personas reales, D-13 y el control semanal de D-16, después de la revisión legal; el texto de «resumen», además, después de TB-29 (TEST-TAG-041) |
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
+| DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) programadas en el PR #247, sin integrar**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
 
 ---
 
@@ -3134,6 +3135,9 @@ otorgado, la APK las mostraba debajo del aviso.
 **Prioridad:** alta · **Documento:** B10-10 §9 (volver sin depender del sistema) · 08 §33 (el ambiente siempre a la vista)
 · DL-113 (la barra de cinco zonas del 2026-10-01) · DL-049 y DL-077 (BE no elige el día tipo ni la sesión) · DL-115 (A3
 del titular) · **Estado:** DECIDIDA por Dirección el 2026-10-04
+
+*(2026-11-07: con DL-166, decidida por Dirección y sin implementar, el quinto destino, «Información», pasa a ser Perfil,
+y la cabecera pierde el menú y el avatar. Las cinco raíces, su orden y las reglas de Atrás no cambian.)*
 
 **Qué decidió Dirección.**
 - **Barra inferior.** Cinco destinos, en este orden: Inicio, Nutrición, Entrenamiento, Evolución, Información. Cuenta
@@ -7043,3 +7047,124 @@ prueba de la 0.22.
   volver a aceptar el texto del acto ni el A3 (API-HBT-04), porque siempre se puede.
 - **D-20 a D-28,** en bloque.
 - **D-29,** como ya estaba escrita («Que venga completo»), integrada en `main` el 2026-11-06 (#244, `33dcad9`).
+
+## DL-166 — La APK más simple: acciones claras primero, Perfil en lugar de «Información» y el descanso automático
+
+**Prioridad:** alta (la experiencia de la persona en toda la APK) · **Documento:** TEST-PRJ-009 · RNF-ACC-001 y B10-10
+(§9) · 08 §33 · 10-B04 · B10-06 §57 · REG-06-130 y 131 · DL-117 · DL-124 · DL-122 · DL-152 · DL-160 ·
+`WP-ENTRENAMIENTO-SERIES.md` §7.3 y §7.4 · PA-02 · **Estado:** DECIDIDA 2026-11-07 por Dirección · sin implementar
+(`docs/paquetes/WP-APP-VUELTA-DE-ROSCA.md`). PV-1 a PV-12, ratificadas por Dirección el 2026-11-07. PV-13, elegida por
+el continuador el mismo día y a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. De las decisiones de la
+implementación, AVD-1 y AVD-3 (con la alternativa) y AVD-5 y AVD-8 (como se recomendaba) fueron ratificadas por
+Dirección el 2026-11-07. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9 están a ratificar.
+
+**Qué dice lo vigente.**
+- La barra tiene cinco destinos, el quinto es «Información», y la cabecera lleva el menú auxiliar y el avatar, que abre
+  Cuenta (DL-117).
+- Guardar una serie no inicia un descanso (§7.3). El descanso empieza con «Iniciar descanso», el aro es solo apoyo
+  visual y no lo termina, y no hay cierre automático (§7.4). Para empezar la serie siguiente con un descanso corriendo,
+  la persona usa la acción compuesta «Finalizar descanso e iniciar la serie N».
+- Durante la sesión, la barra es la cápsula flotante de siempre (PA-02).
+- Los eventos de tiempo (API-TIE-01 a 03) tienen una forma estricta, y las APK instaladas la validan entera (DL-152).
+
+**Qué pidió Dirección** (2026-11-07, sobre la página de maquetas «App más simple»): «Las pantallas deben llevar a
+acciones claras, y recién en esas acciones el desarrollo o más texto (…) bien segmentado, con información clara, y si es
+necesario más información, un desplegable». Para el descanso: «las configuraciones así tienen que ser contextuales».
+
+**Lo decidido** (ratificado por Dirección el 2026-11-07):
+- **PV-1 · Perfil reemplaza a «Información»** y absorbe Cuenta y el menú. Vínculos pasa a Perfil, «Tu historial» a
+  Entrenamiento y los registros nutricionales a Nutrición. La cabecera queda con la marca y Novedades.
+- **PV-2 · Las comidas del día, como fichas en Inicio.** «La que sigue» es la primera sin registrar en el orden del
+  plan, nunca por la hora.
+- **PV-3 · «Quién ve qué», en esta vuelta:** es solo de lectura, usa operaciones que ya existen y sus textos se revisan
+  contra 10-B04.
+- **PV-4 · La regla de los desplegables:** se pliega lo que explica y nunca lo que hace falta para decidir (estado,
+  fecha, quién y si se puede responder). Está en la GUIA-UX-UI, III.7.
+- **PV-5 · «Tu actividad» en Inicio, un solo número** en 30 días. El desglose va en «Tu historial».
+- **PV-6 · Una marca de pendientes en Perfil** (Dirección eligió distinto de la recomendación). Es un punto sin número
+  que desaparece cuando la persona responde o dice que no: negarse vale igual.
+- **El ícono de «Mis hábitos»:** un reloj envuelto por una flecha circular.
+- **PV-7 · El descanso arranca solo al guardar la serie.** La barra llega al 100 % en el descanso recomendado por el
+  entrenador. El bloque va debajo del ejercicio y arriba de las series.
+  - *Fundamento:* guardar la serie es un acto de la persona, así que el descanso que arranca con ella no pide ningún dato
+    nuevo.
+- **El engranaje, contextual,** junto al bloque del descanso, con tres ajustes:
+  - el descanso, automático o manual;
+  - al 100 %, la serie siguiente: «La inicio yo» (de fábrica) o «Arranca sola» (**PV-8**). «Arranca sola» queda guardada
+    como automática y pide un campo nuevo en los eventos de tiempo, en el servidor y en la base;
+  - vibrar al 100 %, también con el teléfono bloqueado, con un aviso programado y su permiso (**PV-9**; Dirección eligió
+    distinto de la recomendación). El permiso se pide en contexto, y el aviso no nombra el ejercicio.
+
+  Los valores de fábrica son descanso automático, «La inicio yo» y vibrar encendido, también con el teléfono bloqueado.
+- **PV-10 · Los ajustes del descanso se guardan en el teléfono**, como la apariencia.
+- **PV-11 · En la sesión, la fila fija de acciones va apilada sobre la navegación,** también fija y opaca. La fila tiene
+  Pausar o Reanudar, la acción del momento y Siguiente ejercicio. Nada flota.
+- **PV-12 · «Empezar serie N», con un descanso corriendo, lo termina y arranca la serie en un toque.** Los dos tiempos se
+  guardan en el mismo instante. Es la acción compuesta que ya existía, en su lugar nuevo.
+
+**Las decisiones de la implementación ratificadas** (Dirección, 2026-11-07; §6 del paquete):
+- **AVD-1 · «Eligió no responder»** (con la alternativa). Hoy una solicitud de formulario solo puede estar sin
+  responder o respondida, y PV-6 necesita que la persona pueda decir que no. Se decidió un estado nuevo de la
+  solicitud, que el profesional ve. Son una operación y un estado nuevos, con servidor y base, y van en la etapa del
+  servidor junto a AV-15 (AV-19). Respetan las lecturas congeladas y la capacidad de cliente. Para el profesional se dice
+  sin juicio: es un hecho, no una falta.
+  - *Descartado:* guardarlo solo en el teléfono, sin que el profesional lo sepa.
+- **AVD-3 · El descanso automático, solo entre series del mismo ejercicio** (con la alternativa). Tras la última serie
+  de un ejercicio, no arranca. Destildar una serie con su descanso corriendo lo termina.
+- **AVD-5 · La vibración con el teléfono bloqueado, con un aviso común y sin alarma exacta.** La demora se mide en el
+  teléfono de Dirección.
+- **AVD-8 · El permiso de avisos se pide en el primer descanso,** porque «Vibrar» viene encendido de fábrica.
+
+**A ratificar.**
+- **PV-13 · La sesión con letra grande.** La eligió el continuador porque es reversible. Con letra ×1,3 o más, la
+  navegación pasa a dos filas debajo de la fila de acciones, sin excepción a PV-11. La alternativa es esconder la
+  navegación durante la sesión, que es una excepción a PV-11.
+- **AVD-2, AVD-4, AVD-6 y AVD-7,** con la recomendación del paquete: los 30 días en «Tu historial», la acción del medio
+  de la fila fija, el campo opcional de los eventos y «Arranca sola» solo con la app viva.
+- **AVD-9, nueva** (sale de AVD-1): la persona puede responder después de haber dicho que no, mientras la solicitud siga
+  abierta, y decir que no queda en la historia de la solicitud.
+
+**Qué modifica.**
+- **`WP-ENTRENAMIENTO-SERIES.md` §7.3 y §7.4.**
+  - Con el ajuste automático (el de fábrica), guardar una serie inicia el descanso, solo entre series del mismo
+    ejercicio (AVD-3).
+  - Con «Arranca sola», el descanso se cierra solo al 100 %, y queda marcado como automático.
+  - La barra reemplaza al aro, y con «La inicio yo» llegar al 100 % no termina nada.
+  - El texto de §7.4 queda como registro histórico, con una nota que apunta acá.
+- **DL-117 y PA-02:** el quinto destino, la cabecera y, durante la sesión, la forma de la barra. Las cinco raíces, su
+  orden y las reglas de Atrás no cambian.
+- **La guía:** suma III.7, la regla de los desplegables.
+- **Las solicitudes de formulario** (con AVD-1): a sin responder y respondida se suma «Eligió no responder». «No
+  responder es una opción» pasa de texto a acto de la persona, y queda registrado.
+
+**Cómo se respeta el legajo.**
+- Cada dato de Inicio, de Perfil y de «Quién ve qué» se lee con la misma operación y el mismo permiso que en su módulo.
+  Ninguna de esas pantallas escribe.
+- Ningún número califica (TEST-PRJ-009): «Tu actividad» es una cuenta, y el tiempo del descanso se informa sin juzgar
+  la diferencia con el recomendado.
+- Con «Arranca sola», el inicio automático de la serie queda distinguido del que marcó la persona, para que el tiempo no
+  se presente como una decisión suya.
+- Nunca se cierra nada a la hora de reabrir (DL-124): si la app no está viva al 100 %, no arranca nada sola.
+- El campo nuevo de los eventos y el estado nuevo de la solicitud viajan solo con una capacidad declarada (DL-122), así
+  que las APK 0.20, 0.21 y 0.22 leen lo de siempre (DL-152). Para ellas, una solicitud en la que la persona eligió no
+  responder sigue como pendiente.
+- «Eligió no responder» no califica (TEST-PRJ-009): el profesional lo ve como un hecho, sin color de alerta.
+
+**Pruebas** (las suma cada parte, §4 del paquete): en la APK, las pruebas de lógica pura de la navegación, la marca,
+«Quién ve qué», «la que sigue», la corrida y los avisos; en el dominio, el contrato de los eventos y `calcularTiempos`
+con un fin automático, y el estado nuevo de la solicitud con su transición; en la integración con PostgreSQL, el campo
+y el estado con y sin la capacidad, y `lecturas-de-las-apk.int-spec.ts`. Los oráculos son TEST-AVR-001 a 033, en
+`WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`, que se escribe al programar.
+
+**Lo que queda abierto:** el sí de Dirección a las partes; PV-13, AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9; la revisión de los dos íconos nuevos a
+18, 20 y 24 px; TalkBack y la vibración con la pantalla apagada en un teléfono real.
+
+**Avance (2026-11-07):** con el sí de Dirección a lo que es solo de app, las etapas 1 y 2 (AV-01 a AV-14, AV-17 y AV-18)
+quedaron programadas en la rama `wp-app-vuelta-de-rosca` (PR #247, en borrador, sin integrar), con los oráculos
+TEST-AVR de esas partes (`WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`), verificados con mutación. Los dos íconos nuevos se
+revisaron a 18, 20 y 24 dp (`EVIDENCIA/APP-VUELTA-DE-ROSCA/iconos/`). Las decisiones técnicas AVT-01 a AVT-16 están en
+el §6.1 del paquete, a ratificar. Faltan la etapa 3 (AV-15 y AV-19, con servidor), la candidata y AV-16.
+
+**Condición de cierre:** la CI pasa en `main`, la candidata está publicada en `test`, sus lecturas quedan congeladas, y el
+recorrido queda en `EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`: Perfil, Inicio, «Quién ve qué», la cuenta nueva, la letra
+grande y la sesión con su descanso. La prueba en el teléfono queda escrita como hecha o como pendiente.

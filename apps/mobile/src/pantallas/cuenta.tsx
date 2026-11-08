@@ -1,9 +1,13 @@
 /**
  * APK · Cuenta: Vínculos · Notas entre tus profesionales (DL-140) · Estado · Tu identificador BE · Privacidad · Apariencia
  * · Seguridad · Cerrar mi cuenta
- * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5). Desde DL-117 (Dirección, 2026-10-04), Cuenta se abre desde
- * el avatar de la cabecera y vuelve a la pantalla desde la que se abrió. No es un destino de la barra ni el menú de las
- * zonas: reúne lo que es de la cuenta.
+ * (docs/paquetes/WP-02.md §5; docs/paquetes/WP-03.md §5). Desde DL-166 (PV-1, Dirección, 2026-11-07) Cuenta ya no se
+ * abre desde el avatar: sus partes se abren desde los ajustes de Perfil, cada una en su pantalla (`seccion`):
+ * - **Mis datos** (`datos`): el estado de la cuenta, tu nombre y tu identificador BE;
+ * - **Avisos** (`avisos`): los avisos en este teléfono;
+ * - **Sesión y este teléfono** (`sesion`): cerrar la sesión o todas;
+ * - **Cerrar mi cuenta** (`cierre`), al final de los ajustes. Si el cierre pide volver a entrar, al entrar se vuelve acá.
+ * Vínculos, las notas entre tus profesionales, «Tengo un código», la privacidad y la apariencia pasaron a Perfil.
  * - Estado: solo el estado operativo, nunca «habilitado» (TEST-RF-006).
  * - Tu identificador BE: el que el profesional necesita para solicitar un vínculo (DL-035). Por sí solo no da acceso a
  *   nada; se muestra seleccionable y se comparte con el menú del sistema.
@@ -16,15 +20,15 @@
  *   cuenta, este teléfono deja de recibir los avisos de la cuenta, mientras la sesión todavía vale (DL-133).
  * - Cierre (PROTO-10-ACC-06): explicación → modal con consecuencias versionadas → «Confirmar cierre».
  */
-import { COPY, COPY_INVITACION, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type RequisitoDeConsentimientoDeSaludResponse, type Resultado } from '@be/domain';
+import { COPY, COPY_VINCULO, VERSION_VIGENTE, type MeResponse, type Resultado } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, Share, Text, View } from 'react-native';
 import { api, nuevaClaveDeIdempotencia } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { fecha } from '../formato';
-import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Ayuda, Boton, Dato, Insignia, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
-import { SelectorDeApariencia } from '../apariencia';
+import { useSesionPerdida, type Ruta, type Salida, type SeccionDeCuenta } from '../navegacion';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Ayuda, Boton, Dato, Parrafo, Seccion, Titulo, estilos as ui, estilosPorTema } from '../ui';
 import { retirarAlSalir } from '../avisos';
 import { dependenciasDeAvisos } from '../avisos-del-telefono';
 import { SeccionDeAvisos, SeccionDeTuNombre } from './cuenta-avisos-y-nombre';
@@ -45,6 +49,14 @@ const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], st
   CERRADA: 'Cerrada',
 };
 
+/** El título de cada parte, el mismo que tiene su fila en los ajustes de Perfil. */
+const TITULO_DE_LA_SECCION: Readonly<Record<SeccionDeCuenta, string>> = {
+  datos: TEXTOS_DE_LA_VUELTA.misDatos,
+  avisos: TEXTOS_DE_LA_VUELTA.avisos,
+  sesion: TEXTOS_DE_LA_VUELTA.sesionYEsteTelefono,
+  cierre: TEXTOS_DE_LA_VUELTA.cerrarMiCuenta,
+};
+
 /**
  * `sesionRecordada`: si la sesión quedó guardada en el almacenamiento seguro del teléfono (DL-012). Con `false` se dice
  * que no se pudo guardar; con `null` (todavía no se sabe) no se dice nada.
@@ -53,17 +65,17 @@ export function PantallaDeCuenta({
   token,
   identidadId,
   salir,
-  ir,
+  seccion = 'datos',
   sesionRecordada = null,
 }: {
   token: string;
   identidadId: string;
   salir: (motivo: Salida) => void;
   ir: (r: Ruta) => void;
+  seccion?: SeccionDeCuenta;
   sesionRecordada?: boolean | null;
 }) {
   const [cuenta, setCuenta] = useState<Carga<MeResponse['data']>>({ tipo: 'cargando' });
-  const [a3, setA3] = useState<Carga<RequisitoDeConsentimientoDeSaludResponse['data']>>({ tipo: 'cargando' });
   const [accion, setAccion] = useState<'libre' | 'una' | 'todas' | { error: string }>('libre');
 
   const sesionPerdida = useSesionPerdida(salir);
@@ -75,17 +87,9 @@ export function PantallaDeCuenta({
     setCuenta(r.ok ? { tipo: 'listo', datos: r.datos.data } : { tipo: 'error', sinConexion: r.tipo === 'RED' });
   }, [token, sesionPerdida]);
 
-  const cargarA3 = useCallback(async () => {
-    setA3({ tipo: 'cargando' });
-    const r = await api.consultarRequisitoA3(token);
-    if (sesionPerdida(r)) return;
-    setA3(r.ok ? { tipo: 'listo', datos: r.datos.data } : { tipo: 'error', sinConexion: r.tipo === 'RED' });
-  }, [token, sesionPerdida]);
-
   useEffect(() => {
-    void cargarCuenta();
-    void cargarA3();
-  }, [cargarCuenta, cargarA3]);
+    if (seccion === 'datos') void cargarCuenta();
+  }, [seccion, cargarCuenta]);
 
   async function cerrarSesion(que: 'una' | 'todas') {
     if (accion === 'una' || accion === 'todas') return;
@@ -101,14 +105,9 @@ export function PantallaDeCuenta({
 
   return (
     <>
-      <Titulo>Cuenta</Titulo>
-      {/* Los módulos están en la barra de abajo y el menú auxiliar; acá queda lo de la cuenta. Vínculos sigue también acá. */}
-      <Boton texto="Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
-      {/* DL-140: lo que tus profesionales se escriben entre ellos sobre vos (08 §9.15: sin notas secretas). */}
-      <Boton texto={COPY_NOTAS_DE_COORDINACION.entradaPropias} tipo="secundario" onPress={() => ir({ nombre: 'notas-de-coordinacion' })} />
-      {/* DL-136: si el profesional pasó un código en lugar del enlace, se escribe acá. */}
-      <Boton texto={COPY_INVITACION.tengoUnCodigo} tipo="secundario" onPress={() => ir({ nombre: 'invitacion' })} />
-
+      <Titulo>{TITULO_DE_LA_SECCION[seccion]}</Titulo>
+      {seccion === 'datos' ? (
+        <>
       <Seccion titulo="Estado de la cuenta">
         {cuenta.tipo === 'cargando' ? <Cargando /> : null}
         {cuenta.tipo === 'error' ? <ErrorConReintento sinConexion={cuenta.sinConexion} onReintentar={cargarCuenta} /> : null}
@@ -130,21 +129,12 @@ export function PantallaDeCuenta({
         {cuenta.tipo === 'error' ? <ErrorConReintento sinConexion={cuenta.sinConexion} onReintentar={cargarCuenta} /> : null}
         {cuenta.tipo === 'listo' ? <TuIdentificador id={cuenta.datos.identityId} /> : null}
       </Seccion>
+        </>
+      ) : null}
 
-      <Seccion titulo="Privacidad">
-        <Text style={ui.etiqueta}>Tratamiento de datos de salud</Text>
-        {a3.tipo === 'cargando' ? <Cargando /> : null}
-        {a3.tipo === 'error' ? <ErrorConReintento mensaje={COPY.errorA3} sinConexion={a3.sinConexion} onReintentar={cargarA3} /> : null}
-        {a3.tipo === 'listo' ? <EstadoA3 datos={a3.datos} /> : null}
-        <Boton texto="Privacidad y consentimientos" tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
-      </Seccion>
+      {seccion === 'avisos' ? <SeccionDeAvisos token={token} identidadId={identidadId} sesionPerdida={sesionPerdida} /> : null}
 
-      <Seccion titulo="Apariencia">
-        <SelectorDeApariencia />
-      </Seccion>
-
-      <SeccionDeAvisos token={token} identidadId={identidadId} sesionPerdida={sesionPerdida} />
-
+      {seccion === 'sesion' ? (
       <Seccion titulo="Seguridad">
         <Parrafo>Cerrar sesión no cierra tu cuenta.</Parrafo>
         {sesionRecordada === true ? <Parrafo tenue>Tu sesión queda guardada de forma segura en este teléfono hasta que venza, para que no tengas que volver a entrar si cerrás la app. Cerrar sesión la borra.</Parrafo> : null}
@@ -153,8 +143,9 @@ export function PantallaDeCuenta({
         <Boton texto={accion === 'una' ? 'Cerrando sesión…' : COPY.cerrarSesion} tipo="secundario" onPress={() => cerrarSesion('una')} ocupado={accion === 'una'} deshabilitado={ocupado} />
         <Boton texto={accion === 'todas' ? 'Cerrando sesiones…' : COPY.cerrarTodas} tipo="secundario" onPress={() => cerrarSesion('todas')} ocupado={accion === 'todas'} deshabilitado={ocupado} />
       </Seccion>
+      ) : null}
 
-      <CierreDeCuenta token={token} identidadId={identidadId} salir={salir} sesionPerdida={sesionPerdida} />
+      {seccion === 'cierre' ? <CierreDeCuenta token={token} identidadId={identidadId} salir={salir} sesionPerdida={sesionPerdida} /> : null}
     </>
   );
 }
@@ -175,25 +166,6 @@ function TuIdentificador({ id }: { id: string }) {
       </Text>
       <Parrafo tenue>{COPY_VINCULO.ayudaTuIdentificador}</Parrafo>
       <Boton texto="Compartir" tipo="secundario" onPress={() => void compartir()} />
-    </>
-  );
-}
-
-function EstadoA3({ datos }: { datos: RequisitoDeConsentimientoDeSaludResponse['data'] }) {
-  const [verTexto, setVerTexto] = useState(false);
-  const otorgado = datos.currentConsent?.state === 'ACTIVE';
-  return (
-    <>
-      <Insignia texto={otorgado ? 'Otorgado' : 'No otorgado'} positiva={otorgado} etiqueta="Tratamiento de datos de salud" />
-      {!otorgado ? <Parrafo>{COPY.cuentaSinA3}</Parrafo> : null}
-      <Boton texto={verTexto ? 'Ocultar el texto' : `Ver el texto (versión ${datos.consentVersion.id})`} tipo="enlace" onPress={() => setVerTexto(!verTexto)} />
-      {verTexto
-        ? datos.consentVersion.text.split('\n\n').map((p, i) => (
-            <Text key={i} style={ui.parrafo}>
-              {p}
-            </Text>
-          ))
-        : null}
     </>
   );
 }

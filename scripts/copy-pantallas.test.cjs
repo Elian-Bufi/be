@@ -52,6 +52,12 @@ const NOVEDADES = [
   join(RAIZ, 'packages/domain/src/copy-novedades.ts'),
 ];
 const INICIO_Y_NOVEDADES = [...INICIO_COMUN, ...NOVEDADES];
+/** WP-APP-VUELTA-DE-ROSCA (DL-166): los textos nuevos y las piezas que los muestran. */
+const VUELTA_DE_ROSCA = [
+  ...['textos-de-la-vuelta.ts', 'desplegable.ts', 'perfil.ts', 'quien-ve-que.ts', 'inicio-de-hoy.ts'].map(movil),
+  ...['perfil.tsx', 'quien-ve-que.tsx', 'cuenta.tsx'].map(inicio),
+];
+const SESION_DE_LA_VUELTA = ['textos-del-descanso.ts', 'descanso-automatico.ts', 'fila-fija.tsx'].map(movil);
 
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
 const DOMINIOS = [
@@ -94,6 +100,8 @@ const DOMINIOS = [
       // PA-03: el registro rápido («Ya la hice»), su pantalla y sus textos.
       inicio('registro-rapido.tsx'),
       movil('registro-rapido.ts'),
+      // WP-APP-VUELTA-DE-ROSCA (DL-166): la sesión con el descanso automático y el desglose de «Tu historial».
+      ...SESION_DE_LA_VUELTA,
       ...INICIO_Y_NOVEDADES,
     ],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
@@ -133,6 +141,16 @@ const DOMINIOS = [
     ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
     minimo: 6,
+  },
+  {
+    // WP-APP-VUELTA-DE-ROSCA (DL-166): Perfil, «Quién ve qué», Inicio y la sesión con su descanso hablan de todas las áreas
+    // y de los formularios: pasan por todas las listas. Ubican, nunca califican.
+    nombre: 'la vuelta de rosca de la APK',
+    archivos: VUELTA_DE_ROSCA,
+    prohibidos: (texto) => [
+      ...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeCarteraEn(texto)]),
+    ],
+    minimo: 8,
   },
   {
     // WP-NOTAS-DE-COORDINACION (DL-140): el diálogo y el Resumen del website, la pantalla de la APK y su copy. Una nota habla

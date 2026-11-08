@@ -23,6 +23,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { anchoDelValorEstimado, bloquesDeIndicadores, columnasDeIndicadores, RELLENO_DE_INDICADOR, SEPARACION_DE_INDICADORES } from '../disposicion-de-la-toma';
 import { indiceDeLaToma, serieDeLaMedida } from '../serie-de-la-medida';
 import { COLOR, Desplegable, estilosPorTema, Rotulo } from '../ui';
+import { accesibilidadDelDesplegable } from '../desplegable';
 import { sombraDeVidrio } from '../vidrio';
 import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio, ValorYCambio } from './progreso-de-una-medida';
 
@@ -128,7 +129,7 @@ function Indicador({
   const frase = [medida.nombre, valor, cambio, marca, fraseDeLaSerie(serie.observaciones, indice)].filter(Boolean).join('. ');
   return (
     <View style={[estilos.tarjeta, elegida && estilos.tarjetaElegida, { width: ancho }]}>
-      <Pressable onPress={alTocar} accessibilityRole="button" accessibilityState={{ selected: elegida, expanded: elegida }} accessibilityLabel={frase} style={({ pressed }) => [estilos.toque, pressed && estilos.presionado]}>
+      <Pressable onPress={alTocar} {...accesibilidadDelDesplegable(elegida, frase, elegida)} style={({ pressed }) => [estilos.toque, pressed && estilos.presionado]}>
         <Text style={[estilos.nombre, elegida && estilos.nombreElegido]}>{medida.nombre}</Text>
         <ValorYCambio medida={medida} tamano={LETRA_DEL_VALOR} angosta={ancho < ANCHO_DE_LA_CABECERA_AL_COSTADO} />
         {marca ? <Text style={estilos.marca}>{marca}</Text> : null}

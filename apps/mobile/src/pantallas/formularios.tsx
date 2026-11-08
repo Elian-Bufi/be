@@ -1,5 +1,5 @@
 /**
- * APK · «Información que me pidieron» (RF-071; UC-P33) por el camino V2 de WP-FORMULARIOS-DE-INICIO (DL-164): la bandeja
+ * APK · «Formularios y pedidos», desde Perfil (antes «Información», el quinto destino de la barra, hasta DL-166) · lo que me pidieron (RF-071; UC-P33) por el camino V2 de WP-FORMULARIOS-DE-INICIO (DL-164): la bandeja
  * (API-FRI-02) y una solicitud con su estructura (API-FRI-01), su detalle (API-FRI-03), la respuesta o su confirmación
  * (API-FRI-04), la corrección (API-FRI-05) y «No es correcto» (API-FRI-08). Sirve para cualquier solicitud, de P0 o con
  * tipos nuevos: las operaciones FRM quedan para las APK instaladas.
@@ -91,7 +91,8 @@ import { useLecturaRecordada } from '../lecturas';
 import { leerLista } from '../lecturas-de-las-zonas';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { PreguntaV2 } from '../pregunta-v2';
-import { Aviso, Ayuda, Boton, Campo, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Ayuda, Boton, Campo, Dato, Desplegable, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilosPorTema } from '../ui';
 
 type Carga = { tipo: 'cargando' } | { tipo: 'listo'; datos: readonly SolicitudPropiaV2[] } | { tipo: 'error'; sinConexion: boolean };
 
@@ -156,7 +157,7 @@ export function PantallaDeFormularios({ token, identidadId, salir, ir }: { token
 
   return (
     <View>
-      <Titulo>{COPY_FORMULARIOS.pestana}</Titulo>
+      <Titulo>{TEXTOS_DE_LA_VUELTA.formulariosYPedidos}</Titulo>
       <SinActualizar visible={sinActualizar} onReintentar={cargar} />
       <Parrafo tenue>{COPY_FORMULARIOS.podesNoResponder}</Parrafo>
       {sinA3 ? (
@@ -164,13 +165,7 @@ export function PantallaDeFormularios({ token, identidadId, salir, ir }: { token
           <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
         </Aviso>
       ) : null}
-      {/* DL-165 D-9 (FR-10): «Mis hábitos», arriba de la bandeja. Es lo que la persona contó de su día y su semana, y la
-          autorización para compartirlo con sus profesionales. */}
-      <Tarjeta>
-        <Subtitulo>{COPY_HABITOS.apk.entradaTitulo}</Subtitulo>
-        <Parrafo tenue>{COPY_HABITOS.apk.entradaBajada}</Parrafo>
-        <Boton texto={COPY_HABITOS.apk.verMisHabitos} tipo="secundario" onPress={() => ir({ nombre: 'mis-habitos' })} />
-      </Tarjeta>
+      {/* «Mis hábitos» pasó a Perfil, con su baldosa (DL-166): cada cosa en un solo lugar. */}
       {carga.tipo === 'cargando' ? <Cargando forma="lista" /> : null}
       {carga.tipo === 'error' ? <ErrorConReintento sinConexion={carga.sinConexion} onReintentar={cargar} /> : null}
       {carga.tipo === 'listo' && carga.datos.length === 0 ? <Parrafo>{COPY_FORMULARIOS.sinSolicitudesPropias}</Parrafo> : null}
@@ -453,7 +448,7 @@ export function PantallaDeMiSolicitud({
   if (estado.carga.tipo === 'sin-a3') {
     return (
       <View>
-        <Titulo>{COPY_FORMULARIOS.pestana}</Titulo>
+        <Titulo>{TEXTOS_DE_LA_VUELTA.formulariosYPedidos}</Titulo>
         <Aviso tipo="info" titulo={COPY_FORMULARIOS.necesitaA3}>
           <Boton texto={COPY_FORMULARIOS.irAPrivacidad} tipo="secundario" onPress={() => ir({ nombre: 'privacidad' })} />
           <Boton texto={COPY_FORMULARIOS.volverAMisSolicitudes} tipo="enlace" onPress={volver} />
@@ -696,9 +691,14 @@ export function PantallaDeMiSolicitud({
   return (
     <View>
       <Titulo>{request.templateName}</Titulo>
+      {/* Quién lo pide, siempre a la vista; el para qué y «Podés no responder», plegados (PV-4, AV-08; GUIA III.7). */}
       <Parrafo tenue>
-        {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName} · {request.purpose}
+        {COPY_FORMULARIOS.pedidoPor} {request.professional.displayName}
       </Parrafo>
+      <Desplegable titulo={TEXTOS_DE_LA_VUELTA.paraQueLoPide} variante="enlace" icono="pregunta">
+        <Parrafo tenue>{request.purpose}</Parrafo>
+        <Parrafo tenue>{COPY_FORMULARIOS.podesNoResponder}</Parrafo>
+      </Desplegable>
       {/* DL-165 D-1 y D-3: cuánto falta lo dice la parte, no un tiempo estimado. */}
       {/* Ronda 2.1: con una sola parte («Tus hábitos» aparte) no se dice «Parte 1 de 1» (`cuantoFaltaEnPalabras`). */}
       {cuantoFalta ? <Parrafo tenue>{cuantoFalta}</Parrafo> : null}
