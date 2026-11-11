@@ -1,3 +1,5 @@
+import type { Resultado } from './cliente-http';
+
 /**
  * El estado de escritura de un borrador (encargo de consolidación de Dirección del 2026-10-19, bloque 3): cuatro estados
  * inequívocos, iguales en todos los editores con borrador en el servidor.
@@ -22,7 +24,32 @@ export const COPY_GUARDADO = {
     'Este borrador cambió en otra pestaña o en otro equipo. Lo tuyo no se guardó, para no pisar esos cambios: sigue en pantalla, así podés copiar lo que necesites.',
   cargarGuardada: 'Cargar la versión guardada',
   cargarGuardadaAclaracion: 'Reemplaza lo que tenés en pantalla por lo guardado.',
+  // DL-168: por qué no se guardó, dicho claro. Lo escrito sigue en pantalla: el editor no lo toca al fallar, y salir con
+  // cambios sin guardar pide confirmar (`useCambiosSinGuardar`).
+  sinRespuesta: 'No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.',
+  demasiadoGrande:
+    'El plan es demasiado grande para guardarlo de una vez. Tus cambios siguen acá: quitá lo que no haga falta (opciones, semanas o notas largas) y volvé a guardar.',
 } as const;
+
+/**
+ * Por qué no se guardó un borrador (DL-168, arreglo del 2026-11-11). Antes, un plan que no entraba se decía «El servicio
+ * no está disponible en este momento», como si BE estuviera caído.
+ * - `DEMASIADO_GRANDE`: no entró de una vez. La API lo dice con un 400 INVALID_REQUEST y el issue TOO_BIG en `(body)`, por
+ *   el límite del cuerpo de su ruta o por la cota de elementos; un 413 puede venir de un intermediario. Reintentar no lo
+ *   arregla: el editor lo dice también en el autoguardado.
+ * - `SIN_RESPUESTA`: no hubo respuesta, no se entendió o el servidor falló (5xx). Reintentar es seguro: si el intento
+ *   anterior sí se guardó, el editor lo reconoce por la versión.
+ * - `OTRO`: un rechazo del contrato o del estado, que cada editor dice a su manera (un conflicto, un problema con su lugar).
+ */
+export type FalloDeGuardado = 'DEMASIADO_GRANDE' | 'SIN_RESPUESTA' | 'OTRO';
+
+export function falloDeGuardado(r: Resultado<unknown>): FalloDeGuardado {
+  if (r.ok) return 'OTRO';
+  if (r.tipo === 'RED') return 'SIN_RESPUESTA';
+  if (r.status === 413 || (r.codigo === 'INVALID_REQUEST' && r.issues.some((i) => i.code === 'TOO_BIG' && i.path === '(body)'))) return 'DEMASIADO_GRANDE';
+  if (r.codigo === 'RESPUESTA_NO_RECONOCIDA' || r.status >= 500) return 'SIN_RESPUESTA';
+  return 'OTRO';
+}
 
 export type TipoDeGuardado = 'guardando' | 'guardado' | 'pendiente' | 'fallo';
 
