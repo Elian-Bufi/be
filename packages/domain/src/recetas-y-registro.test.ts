@@ -1,18 +1,15 @@
 /**
  * WP-NUTRICION-RECETAS (DL-119 a DL-121): los contratos de recetas, medios y registro v2, su copy, sus declaraciones en
- * el OpenAPI y la compatibilidad con la APK instalada. El cálculo tiene su propia prueba (`calculo-nutricional.test.ts`).
+ * el OpenAPI (la compatibilidad con la APK 0.13.2, D10, salió con UF-00 de WP-USO-FINAL). El cálculo tiene su propia
+ * prueba (`calculo-nutricional.test.ts`).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { z } from 'zod';
 import { terminosProhibidosEn } from './copy-nutricion';
 import { COPY_RECETAS, COPY_REGISTRO_DE_COMIDAS, COPY_REGISTRO_PARA_EL_PROFESIONAL, ETIQUETA_DE_FALTANTE, ETIQUETA_DE_NUTRIENTE, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, nutrienteParaMostrar, textoDeComidaRegistrada } from './copy-recetas';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO } from './contratos-medios';
 import { CalcularRecetaRequestSchema, CrearRecetaRequestSchema, nutrientesDelResultado } from './contratos-recetas';
 import { ConsumoEntradaSchema, ItemInformadoSchema, RegistrarComidaRequestSchema, RegistroDiferenteRequestSchema } from './contratos-registro-de-comidas';
-import { HoyResponseSchema, PlanResponseSchema } from './contratos-nutricion';
 import { calcularNutrientes } from './calculo-nutricional';
 import { documentoOpenApi, OPERACIONES } from './openapi';
 
@@ -183,46 +180,9 @@ test('las 18 operaciones nuevas están declaradas, cada una con su DL', () => {
   assert.deepEqual(doc.paths['/media/{mediaId}/access']!.get!.security, [{ sesion: [] }]);
 });
 
-// ─── Compatibilidad (D10) ───────────────────────────────────────────────────────────────────────
+// ─── Compatibilidad (D10): retirada con UF-00 ─────────────────────────────────────────────────────────
 
-test('D10 · las respuestas de nutrición que lee la APK instalada no cambian de forma (09v7 T19)', () => {
-  const congeladas = JSON.parse(readFileSync(join(__dirname, '..', 'fixtures', 'respuestas-que-lee-la-apk-instalada.json'), 'utf8')) as {
-    operaciones: Record<string, { metodo: string; ruta: string; pedido: unknown; respuestas: Record<string, unknown> }>;
-  };
-  // Las de entrenamiento (WP-ENTRENAMIENTO-SERIES) se prueban en `entrenamiento-por-serie.test.ts`.
-  const nutricion = Object.entries(congeladas.operaciones).filter(([id]) => id.startsWith('API-NUT-'));
-  assert.deepEqual(nutricion.map(([id]) => id).sort(), ['API-NUT-14', 'API-NUT-15', 'API-NUT-16', 'API-NUT-16-LISTA']);
-  for (const [id, congelada] of nutricion) {
-    const op = OPERACIONES.find((o) => o.id === id)!;
-    assert.equal(op.metodo, congelada.metodo, id);
-    assert.equal(op.ruta, congelada.ruta, id);
-    assert.deepEqual(op.request ? z.toJSONSchema(op.request, { target: 'draft-2020-12', io: 'input' }) : null, congelada.pedido, `${id}: el pedido`);
-    for (const exito of op.exitos) {
-      assert.deepEqual(exito.schema ? z.toJSONSchema(exito.schema, { target: 'draft-2020-12', io: 'output' }) : null, congelada.respuestas[exito.status], `${id}: la respuesta ${exito.status}`);
-    }
-  }
-});
-
-test('D10 · «Hoy» de la APK instalada rechaza una opción con receta; la versión de plan del profesional la acepta', () => {
-  const opcion = { optionId: ID, label: 'Bowl', order: 1, items: [] as unknown[] };
-  const receta = { recipeId: ID, recipeVersionId: OTRO_ID, versionNumber: 2, name: 'Bowl', servings: 1 };
-  const comida = (o: object) => ({ mealId: ID, label: 'Almuerzo', order: 1, prescriptionMode: 'DISH_OPTIONS', options: [o] });
-  const dia = (o: object) => ({ dayTypeId: ID, label: 'Día', order: 1, meals: [comida(o)] });
-  const hoy = (o: object) => ({
-    data: {
-      date: '2026-10-05',
-      timeZone: 'America/Argentina/Buenos_Aires',
-      planState: 'AVAILABLE',
-      activePlan: { planId: ID, version: 'v1', activatedAt: AHORA, objective: null, dayTypes: [dia(o)] },
-      selectedDayTypeId: ID,
-      registeredIntake: [],
-      dataState: 'NO_DATA',
-    },
-  });
-  const forma = (r: { success: boolean; error?: { issues: readonly { code: string }[] } }) => (r.success ? [] : (r.error?.issues ?? []).map((i) => i.code));
-  // Sin receta, el día pasa la parte de las opciones; con receta, la clave desconocida la rechaza.
-  assert.ok(!forma(HoyResponseSchema.safeParse(hoy(opcion))).includes('unrecognized_keys'));
-  assert.ok(forma(HoyResponseSchema.safeParse(hoy({ ...opcion, recipe: receta }))).includes('unrecognized_keys'));
-  const plan = PlanResponseSchema.shape.data.shape.dayTypes;
-  assert.equal(plan.safeParse([dia({ ...opcion, recipe: receta })]).success, true);
-});
+// D10 comparaba las respuestas de nutrición con lo que leía la APK 0.13.2 y que su «Hoy» rechazara una opción con
+// receta. Salió el 2026-11-11 con UF-00 de WP-USO-FINAL (UF-D11): la 0.13.2 dejó de estar entre las vigentes (enmienda
+// de DL-152). Lo que lee la última APK, también «Hoy» con un plan de recetas, lo protegen `lecturas-de-la-apk.test.ts` y
+// `lecturas-de-las-apk.int-spec.ts`.

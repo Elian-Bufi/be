@@ -57,6 +57,12 @@ export const VERSIONES: readonly string[] = readdirSync(CARPETA)
   .filter((f) => f.endsWith('.json'))
   .map((f) => f.replace(/\.json$/, ''))
   .sort();
+/**
+ * La última APK distribuida, la que ofrece la descarga del website. Mientras no haya una estable, es la única congelada
+ * (DL-152, enmendada por UF-00 de WP-USO-FINAL); las pruebas que leen «con la APK de hoy» la nombran así, para no
+ * cambiar con cada candidata.
+ */
+export const LA_ULTIMA_APK: string = VERSIONES[VERSIONES.length - 1]!;
 
 export interface Pedido {
   /** El Bearer, cuando la APK lo manda en esa operación. */

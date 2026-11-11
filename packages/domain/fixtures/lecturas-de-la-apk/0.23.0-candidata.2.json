@@ -1,11 +1,11 @@
 {
  "apk": {
-  "version": "0.22.0-candidata.1",
-  "versionCode": 35,
-  "tag": "be-apk-0.22.0-candidata.1",
-  "commit": "1254269843c2dcd4270df349e48d2a59e1b450df"
+  "version": "0.23.0-candidata.2",
+  "versionCode": 37,
+  "tag": "be-apk-0.23.0-candidata.2",
+  "commit": "c9ec44f151bb7d20a438e3286c7cf8e57705bea3"
  },
- "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.22.0-candidata.1» desde las fuentes del commit 1254269 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
+ "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.23.0-candidata.2» desde las fuentes del commit c9ec44f (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
  "cabeceras": {
   "X-BE-Surface": "APK",
   "X-BE-Capabilities": "training-set-targets-1,forms-format-3"
@@ -19,7 +19,9 @@
   "CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO": "acceso-profesional-no-sanitario-2026-09-demo",
   "EVIDENCIA_VISUAL": "evidencia-visual-2026-10-propuesta",
   "MAYORIA_DE_EDAD": "mayoria-de-edad-2026-10",
-  "HABITOS_COMPARTIDOS": "habitos-compartidos-2026-11-propuesta"
+  "HABITOS_COMPARTIDOS": "habitos-compartidos-2026-11-propuesta",
+  "RESUMENES_COMPARTIDOS": "resumenes-compartidos-2026-11-propuesta-3",
+  "RESUMENES_Y_PLAN_COMPARTIDOS": "resumenes-y-plan-compartidos-2026-11-propuesta"
  },
  "errores": {
   "esquema": "ErrorEnvelopeSchema",

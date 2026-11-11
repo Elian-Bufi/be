@@ -56,3 +56,34 @@ EVIDENCE_EXPECTED    La CI verde con «✓ @be/mobile: sin avisos altos ni crít
                      escenarios en verde (DL-114, 2026-11-11). Que la APK construida con la CLI nueva funciona se
                      comprueba con la candidata 0.24.0-candidata.1 en el teléfono: esta prueba no lo da por aprobado.
 ```
+
+---
+
+## TEST-UF-006 — Solo la última APK distribuida está congelada, y su lectura pasa contra la API de hoy
+
+```text
+TEST_ID              TEST-UF-006
+TITLE                VIGENTES es exactamente la última versión distribuida (la 0.23.0-candidata.2), y la prueba de
+                     integración lee todas sus lecturas contra la API de hoy
+LEVEL                Dominio (fixtures y contrato) e integración (API real con PostgreSQL)
+PRIORITY             P0 (habilita UF-01)
+SOURCES              UF-00 (WP-USO-FINAL.md §4.1) · UF-D11 (§7) · DL-169 · DL-152 (y su enmienda del 2026-11-11)
+PRECONDITIONS        La carpeta packages/domain/fixtures/lecturas-de-la-apk/ y el tag be-apk-0.23.0-candidata.2
+                     (c9ec44f).
+SYNTHETIC_FIXTURE    Lo congelado de la .2 con `node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.23.0-candidata.2`;
+                     las cuentas sintéticas de la prueba de integración.
+STEPS                1. Listar las versiones congeladas en la carpeta.
+                     2. Comparar cada lectura congelada con el contrato de hoy (verbo, ruta, sesión, clave).
+                     3. En la integración, pedir cada operación que llama la .2, como la pide, y leer la respuesta real
+                        con su esquema; al final, exigir haberlas leído todas.
+EXPECTED             1 → exactamente ['0.23.0-candidata.2'], con su tag, su commit y su versionCode (37). 2 → ninguna
+                     diferencia. 3 → todas leídas sin rechazo, salvo las que `SOLO_EL_RECHAZO` declara para esa
+                     versión (con UF-01: el alta con correo y la de Google, que la API rechaza sin el nombre).
+NEGATIVE_ASSERTIONS  No queda un congelado de una versión que ya no se distribuye (0.13.2, 0.20 a 0.23.0-candidata.1).
+                     Un cambio de la API que rompe una lectura de la .2 hace fallar la CI.
+AUTOMATION           packages/domain/src/lecturas-de-la-apk.test.ts («TEST-UF-006 · …») y
+                     test/integration/lecturas-de-las-apk.int-spec.ts. Mutaciones: con VIGENTES nuevo y los congelados
+                     viejos todavía en la carpeta → rojo; dejando solo el de la 0.23.0-candidata.1 de más → rojo.
+ENVIRONMENT          `npm test` (dominio) y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde en `verificar` y en `integracion`
+```

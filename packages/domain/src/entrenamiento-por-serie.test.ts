@@ -1,13 +1,13 @@
 /**
- * WP-ENTRENAMIENTO-SERIES (DL-122, DL-123, DL-124): los objetivos por serie, los eventos de tiempo y la compatibilidad
- * con la APK 0.13.2. Los datos de demostración son los del paquete de Dirección del 2026-10-06 (`sesion_demo.json`), que
- * no se cambian para que la prueba pase. El reloj es inyectado: ninguna prueba espera tiempo real.
+ * WP-ENTRENAMIENTO-SERIES (DL-122, DL-123, DL-124): los objetivos por serie y los eventos de tiempo. La compatibilidad
+ * con la APK 0.13.2 (C01) salió con UF-00 de WP-USO-FINAL. Los datos de demostración son los del paquete de Dirección
+ * del 2026-10-06 (`sesion_demo.json`), que no se cambian para que la prueba pase. El reloj es inyectado: ninguna prueba
+ * espera tiempo real.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { z } from 'zod';
 import { EstructuraDePlanDeEntrenamientoEntradaSchema, PrescripcionEntradaSchema } from './contratos-entrenamiento';
 import { EventoDeTiempoSchema, RegistrarEventosDeTiempoRequestSchema, type EventoDeTiempo, type InstanteDeEventoApi } from './contratos-entrenamiento-por-serie';
 import { textoDeDescanso, textoDeDuracion, textoDelPlanDeLaSerie } from './copy-entrenamiento-por-serie';
@@ -18,74 +18,11 @@ import { OPERACIONES } from './openapi';
 import { normalizarEstructuraDeEntrenamiento } from './plan-de-entrenamiento';
 import { aplicarEventos, calcularTiempos, enVivo, type ContextoDeEventos } from './sesion-de-entrenamiento';
 
-// ─── Compatibilidad con la APK 0.13.2 ──────────────────────────────────────────────────────────
+// ─── Compatibilidad con la APK 0.13.2: C01, retirada con UF-00 ────────────────────────────────────
 
-/**
- * DL-161 (decisión de Dirección del 2026-11-02): la serie ejecutada suma dos campos **opcionales**, `recordedAs` y
- * `durationSeconds`. Es la única diferencia declarada con lo congelado, y se quita solo donde está: en el esquema de una
- * serie ejecutada (`setIndex` … `perceivedExertion`), y solo si ninguno de los dos es obligatorio. Lo demás se compara
- * igual que siempre. Lo que esto deja dicho (DL-161 en DEUDA_LEGAJO): la API guarda y devuelve los dos campos solo cuando
- * existen, así que lo registrado sin ellos llega con la forma congelada; una ejecución que los trae (cargada con una APK
- * nueva) no la lee una APK anterior. Esto último lo prueba `registro-por-niveles.int-spec.ts` con la APK congelada.
- */
-const CAMPOS_DE_DL_161 = ['recordedAs', 'durationSeconds'] as const;
-function sinLoQueSumaDl161(esquema: unknown, donde: string[], ruta = '$'): unknown {
-  if (Array.isArray(esquema)) return esquema.map((e, i) => sinLoQueSumaDl161(e, donde, `${ruta}[${i}]`));
-  if (!esquema || typeof esquema !== 'object') return esquema;
-  const o = esquema as Record<string, unknown>;
-  const propiedades = o.properties as Record<string, unknown> | undefined;
-  const esSerieEjecutada = !!propiedades && 'setIndex' in propiedades && 'perceivedExertion' in propiedades && 'completedRepetitions' in propiedades;
-  const salida: Record<string, unknown> = {};
-  for (const [clave, valor] of Object.entries(o)) {
-    if (clave === 'properties' && esSerieEjecutada) {
-      const resto = Object.fromEntries(Object.entries(valor as Record<string, unknown>).filter(([nombre]) => !(CAMPOS_DE_DL_161 as readonly string[]).includes(nombre)));
-      if (Object.keys(resto).length !== Object.keys(valor as object).length) donde.push(ruta);
-      salida[clave] = sinLoQueSumaDl161(resto, donde, `${ruta}.properties`);
-    } else salida[clave] = sinLoQueSumaDl161(valor, donde, `${ruta}.${clave}`);
-  }
-  if (esSerieEjecutada) {
-    const obligatorios = (o.required as string[] | undefined) ?? [];
-    for (const campo of CAMPOS_DE_DL_161) assert.ok(!obligatorios.includes(campo), `${ruta}: «${campo}» tiene que ser opcional (DL-161)`);
-  }
-  return salida;
-}
-
-test('C01 · las respuestas de entrenamiento que lee la APK 0.13.2 no cambian de forma (salvo lo opcional de DL-161)', () => {
-  const congeladas = JSON.parse(readFileSync(join(__dirname, '..', 'fixtures', 'respuestas-que-lee-la-apk-instalada.json'), 'utf8')) as {
-    operaciones: Record<string, { metodo: string; ruta: string; pedido: unknown; respuestas: Record<string, unknown> }>;
-  };
-  const entrenamiento = Object.entries(congeladas.operaciones).filter(([id]) => id.startsWith('API-TRN-'));
-  assert.deepEqual(
-    entrenamiento.map(([id]) => id).sort(),
-    ['API-TRN-08', 'API-TRN-09', 'API-TRN-13', 'API-TRN-14', 'API-TRN-14-PERIODO', 'API-TRN-15', 'API-TRN-16', 'API-TRN-17', 'API-TRN-18', 'API-TRN-19', 'API-TRN-19-LISTA', 'API-TRN-20'],
-  );
-  const conDl161 = new Set<string>();
-  for (const [id, congelada] of entrenamiento) {
-    const op = OPERACIONES.find((o) => o.id === id)!;
-    assert.equal(op.metodo, congelada.metodo, id);
-    assert.equal(op.ruta, congelada.ruta, id);
-    const donde: string[] = [];
-    assert.deepEqual(op.request ? sinLoQueSumaDl161(z.toJSONSchema(op.request, { target: 'draft-2020-12', io: 'input' }), donde) : null, congelada.pedido, `${id}: el pedido`);
-    if (donde.length > 0) conDl161.add(`${id} · pedido`);
-    for (const exito of op.exitos) {
-      const enLaRespuesta: string[] = [];
-      assert.deepEqual(exito.schema ? sinLoQueSumaDl161(z.toJSONSchema(exito.schema, { target: 'draft-2020-12', io: 'output' }), enLaRespuesta) : null, congelada.respuestas[exito.status], `${id}: la respuesta ${exito.status}`);
-      if (enLaRespuesta.length > 0) conDl161.add(`${id} · ${exito.status}`);
-    }
-  }
-  // Dónde aparece lo de DL-161: las operaciones que llevan series ejecutadas, ni una más.
-  assert.deepEqual([...conDl161].sort(), [
-    'API-TRN-15 · 200',
-    'API-TRN-15 · 201',
-    'API-TRN-16 · 200',
-    'API-TRN-17 · 200',
-    'API-TRN-17 · pedido',
-    'API-TRN-19 · 200',
-    'API-TRN-19-LISTA · 200',
-    'API-TRN-20 · 201',
-    'API-TRN-20 · pedido',
-  ]);
-});
+// C01 comparaba las respuestas de entrenamiento con lo que leía la APK 0.13.2 (`fixtures/respuestas-que-lee-la-apk-
+// instalada.json`). Salió el 2026-11-11 con UF-00 de WP-USO-FINAL (UF-D11): la 0.13.2 dejó de estar entre las vigentes
+// (enmienda de DL-152). Lo que lee la última APK lo protegen `lecturas-de-la-apk.test.ts` y su prueba de integración.
 
 test('las operaciones nuevas son de familias propias, con su esquema estricto y su fuente', () => {
   // API-EJE-04 y 05 son de WP-CATALOGO-VISUAL (DL-081, DL-162): se prueban en zonas-musculares.test.ts.

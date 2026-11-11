@@ -3,11 +3,16 @@
  *
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
- * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2, la 0.20.0-candidata.1, la 0.21.0-candidata.1, la 0.22.0-candidata.1 y la 0.23.0-candidata.1; la 0.17.0-candidata.3 y
- * la 0.18.0-candidata.1 salieron el 2026-11-05), como la pide esa APK, con las capacidades que declara, y lee la respuesta real
- * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
- * no pasa hasta que cada lectura suya tenga escenario.
+ * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`,
+ * como la pide esa APK, con las capacidades que declara, y lee la respuesta real con el esquema de esa APK
+ * (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada
+ * lectura suya tenga escenario.
+ *
+ * UF-00 de WP-USO-FINAL (2026-11-11, enmienda de DL-152): mientras Dirección no establezca una estable, la congelada es
+ * solo la última distribuida, hoy la 0.23.0-candidata.2. Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
+ * (antes, el 2026-11-05, la 0.17.0-candidata.3 y la 0.18.0-candidata.1). Los escenarios de lo que solo leían ellas (FRM,
+ * una APK sin `forms-format-3`, el alta sin la casilla de mayoría de edad) quedan: se arman solo si una APK congelada
+ * llama esa operación o no declara esa capacidad.
  *
  * Lo que se arma alrededor (los profesionales, los vínculos, los planes, las revisiones) va por la API de hoy, como en el
  * resto de las pruebas: lo que se prueba es lo que pide y lee la APK. Las respuestas se leen con datos de verdad, también
@@ -102,11 +107,10 @@ const CAMPOS_DE_ANTECEDENTES =['trn_objetivo_declarado', 'trn_experiencia', 'trn
 
 /**
  * Lo que una APK lee pero hoy no puede recibir una respuesta exitosa, por una decisión registrada. De eso se lee el
- * rechazo, con el sobre de error de esa APK.
- * - 0.13.2 · API-ACC-01: desde DL-138 (D-10), una APK sin la casilla de mayoría de edad no crea cuentas. Recibe el 422
- *   TERMS_VERSION_NOT_ACCEPTABLE, que traduce a «Los textos cambiaron. Actualizá la app para continuar.».
+ * rechazo, con el sobre de error de esa APK. Hasta UF-00 estaba la 0.13.2 con API-ACC-01 (DL-138 D-10: sin la casilla de
+ * mayoría de edad no crea cuentas); salió con ella.
  */
-const SOLO_EL_RECHAZO: Readonly<Record<string, readonly string[]>> = { '0.13.2': ['API-ACC-01'] };
+const SOLO_EL_RECHAZO: Readonly<Record<string, readonly string[]>> = {};
 
 /**
  * DL-165 D-9 · respuestas completas de la parte «Tus hábitos», en su forma canónica (las de

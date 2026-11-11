@@ -12,15 +12,14 @@
  * - el análisis del profesional (API-PRJ-01) marca el punto de una serie de carga rápida en su detalle y lo explica en
  *   la nota de la serie: el website lo dibuja hueco y lo deja fuera de los resúmenes y del cambio relativo; la cantidad
  *   de series registradas cuenta también las tildadas;
- * - la APK estable 0.13.2 (lo que congeló DL-152; tampoco conoce los campos nuevos) lee igual lo registrado sin ellos, y
- *   no puede leer una ejecución que los trae: es el caso que queda documentado en DL-161.
+ * La prueba de que una APK anterior a DL-161 lee lo registrado sin los campos nuevos (con la 0.13.2 congelada) salió
+ * con UF-00 de WP-USO-FINAL: la 0.13.2 dejó de estar entre las vigentes (enmienda de DL-152), y la última APK los conoce.
  */
 import type { INestApplication } from '@nestjs/common';
 import { HoyDeEntrenamientoResponseSchema, LineaDeTiempoResponseSchema, ProyeccionResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { appDePrueba, conSesion } from './soporte-api';
 import { CATALOGO_DE_EJERCICIOS, circuitoConPlanDeEntrenamientoActivo } from './soporte-entrenamiento';
-import { LaApk } from './soporte-lecturas-de-la-apk';
 
 let app: INestApplication;
 const prisma = new PrismaClient();
@@ -176,23 +175,5 @@ describe('Registro por niveles (DL-161) · la serie dice cómo se cargó y cuán
     expect(escritaLeida.notes.join(' ')).not.toMatch(/carga rápida/);
     // La cantidad de series registradas se cuenta siempre, también la tildada.
     expect((await serieDe('metric=SETS_RECORDED')).points.map((p) => p.value)).toEqual([2]);
-  });
-
-  it('la APK 0.13.2, anterior a DL-161, lee igual lo registrado sin los campos nuevos; una ejecución que los trae no la puede leer', async () => {
-    // Era la 0.18.0-candidata.1, que salió de las vigentes el 2026-11-05 (DL-152): la estable tampoco conoce los campos.
-    const vieja = new LaApk('0.13.2', () => app);
-    // Cargada con una APK nueva, toda escrita y sin cronómetro: lo que viaja es lo de siempre.
-    const sinNada = await registrada([{ ...escrita(1), recordedAs: 'TYPED', durationSeconds: null }, escrita(2)]);
-    await vieja.pide('API-TRN-19', { token: sinNada.c.ase.token, params: { executionId: sinNada.executionId } });
-    expect(vieja.rechazos()).toEqual([]);
-    // El caso que queda (DL-161): con una serie «como el plan» o con una duración, la APK anterior rechaza la respuesta
-    // por el campo que no conoce. Esa APK nunca los manda; solo pasa si la misma persona vuelve a una versión anterior.
-    for (const sets of [[comoElPlan(1), escrita(2)], [{ ...escrita(1), durationSeconds: 30 }, escrita(2)]]) {
-      const conCampos = await registrada(sets);
-      await vieja.pide('API-TRN-19', { token: conCampos.c.ase.token, params: { executionId: conCampos.executionId } });
-      const rechazos = vieja.rechazos();
-      expect(rechazos.length).toBeGreaterThan(0);
-      expect(rechazos.join(' ')).toMatch(/recordedAs|durationSeconds/);
-    }
   });
 });
