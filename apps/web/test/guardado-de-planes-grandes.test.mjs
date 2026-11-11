@@ -7,7 +7,8 @@
  *  1. la regla (`falloDeGuardado`, en @be/domain) distingue el plan que no entra, la falta de respuesta y el resto;
  *  2. los dos editores de planes la usan: el que no entra se dice siempre, también en el autoguardado y sin mover el foco;
  *     sin respuesta o con un 5xx, «No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.»;
- *  3. al fallar, el editor no toca lo escrito, y salir con cambios sin guardar pide confirmar.
+ *  3. al fallar, el editor no toca lo escrito, y salir con cambios sin guardar pide confirmar;
+ *  4. (ampliación, el mismo día) los dos diálogos «Guardar como plantilla» dicen lo mismo cuando el plan no entra.
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
  */
@@ -73,5 +74,13 @@ test('DL-168 · los dos editores de planes la usan, y al fallar no tocan lo escr
     assert.match(fuente, /enfocar=\{\([^}]*\) && !mensaje\.sinFoco\}/, archivo);
     // Salir con cambios sin guardar pide confirmar.
     assert.match(fuente, /useCambiosSinGuardar\(sucio, /, archivo);
+  }
+});
+
+test('DL-168 · «Guardar como plantilla» dice lo mismo que el editor cuando el plan no entra', () => {
+  for (const archivo of ['nutrition/plantillas.tsx', 'training/plantillas.tsx']) {
+    const fuente = leer(archivo);
+    // El nombre tomado primero; si el plan no entra, el texto del editor; el resto, como antes.
+    assert.match(fuente, /COPY_PLANTILLAS\.nombreTomado : falloDeGuardado\(r\) === 'DEMASIADO_GRANDE' \? COPY_GUARDADO\.demasiadoGrande : mensajeDeFallo\(r\)/, archivo);
   }
 });

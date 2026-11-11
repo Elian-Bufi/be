@@ -9,8 +9,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { esEscrituraDePlanOReceta, LIMITE_DE_PLANES_Y_RECETAS, RUTAS_DE_PLANES_Y_RECETAS } from './limite-de-cuerpo';
 
 /**
- * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las seis escrituras que llevan un plan entero o una
- * receta aceptan hasta 700 KB; el resto de la API, 16 KB, como siempre. Estas pruebas no usan base de datos: la app se
+ * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las diez escrituras que llevan un plan entero (un
+ * borrador o una plantilla) o una receta aceptan hasta 700 KB; el resto de la API, 16 KB, como siempre. Estas pruebas no
+ * usan base de datos: la app se
  * arma con `crearApp`, como en producción, y un pedido sin sesión que pasa el parser llega al guard (401). Lo que guarda
  * cada ruta con PostgreSQL lo prueba `test/integration/guardado-de-planes-grandes.int-spec.ts`.
  */
@@ -26,13 +27,17 @@ function cuerpoDe(bytes: number): string {
   return JSON.stringify({ relleno: 'x'.repeat(bytes - vacio) });
 }
 
-/** La ruta de una de las seis, con un identificador en cada parámetro. */
+/** La ruta de una de las diez, con un identificador en cada parámetro. */
 const rutaDe = (operacion: string): string => {
   const ejemplos: Readonly<Record<string, string>> = {
     'API-NUT-07': `/api/v1/advisees/${ID}/nutrition/plans`,
     'API-NUT-10': `/api/v1/nutrition/plans/${ID}`,
     'API-TRN-07': `/api/v1/advisees/${ID}/training/plans`,
     'API-TRN-10': `/api/v1/training/plans/${ID}`,
+    'API-TPN-01': '/api/v1/nutrition/plan-templates',
+    'API-TPN-04': `/api/v1/nutrition/plan-templates/${ID}/versions`,
+    'API-TPL-01': '/api/v1/training/plan-templates',
+    'API-TPL-04': `/api/v1/training/plan-templates/${ID}/versions`,
     'API-REC-01': '/api/v1/nutrition/recipes',
     'API-REC-04': `/api/v1/nutrition/recipes/${ID}`,
   };
@@ -46,9 +51,11 @@ const VECINAS: readonly (readonly [string, string])[] = [
   ['POST', `/api/v1/nutrition/plans/${ID}/discard`],
   ['POST', `/api/v1/training/plans/${ID}/validate`],
   ['POST', `/api/v1/training/plans/${ID}/activate`],
-  ['POST', '/api/v1/nutrition/plan-templates'],
-  ['POST', `/api/v1/nutrition/plan-templates/${ID}/versions`],
-  ['POST', '/api/v1/training/plan-templates'],
+  // Cambiar el nombre, la descripción o el estado de una plantilla (API-TPN-05 y API-TPL-05): no lleva la estructura.
+  ['PATCH', `/api/v1/nutrition/plan-templates/${ID}`],
+  ['PATCH', `/api/v1/training/plan-templates/${ID}`],
+  ['POST', `/api/v1/nutrition/plan-templates/${ID}`],
+  ['POST', `/api/v1/training/plan-templates/${ID}/versions/${ID}`],
   ['POST', '/api/v1/nutrition/recipe-calculations'],
   ['PUT', `/api/v1/nutrition/recipes/${ID}/image`],
   ['PUT', `/api/v1/nutrition/plans/${ID}`],
@@ -58,13 +65,17 @@ const VECINAS: readonly (readonly [string, string])[] = [
   ['PATCH', `/api/v2/nutrition/plans/${ID}`],
 ];
 
-describe('DL-168 · las seis escrituras con el límite de planes y recetas', () => {
+describe('DL-168 · las diez escrituras con el límite de planes y recetas', () => {
   it('son las de los controladores, con su método y su ruta', () => {
     const decoradores: Readonly<Record<string, readonly [string, string]>> = {
       'API-NUT-07': ['nutricion/nutricion.controller.ts', "@Post('advisees/:adviseeId/nutrition/plans')"],
       'API-NUT-10': ['nutricion/nutricion.controller.ts', "@Patch('nutrition/plans/:planId')"],
       'API-TRN-07': ['entrenamiento/entrenamiento.controller.ts', "@Post('advisees/:adviseeId/training/plans')"],
       'API-TRN-10': ['entrenamiento/entrenamiento.controller.ts', "@Patch('training/plans/:planId')"],
+      'API-TPN-01': ['nutricion/nutricion.controller.ts', "@Post('nutrition/plan-templates')"],
+      'API-TPN-04': ['nutricion/nutricion.controller.ts', "@Post('nutrition/plan-templates/:templateId/versions')"],
+      'API-TPL-01': ['entrenamiento/entrenamiento.controller.ts', "@Post('training/plan-templates')"],
+      'API-TPL-04': ['entrenamiento/entrenamiento.controller.ts', "@Post('training/plan-templates/:templateId/versions')"],
       'API-REC-01': ['nutricion/recetas.controller.ts', "@Post('nutrition/recipes')"],
       'API-REC-04': ['nutricion/recetas.controller.ts', "@Patch('nutrition/recipes/:recipeId')"],
     };
@@ -80,7 +91,7 @@ describe('DL-168 · las seis escrituras con el límite de planes y recetas', () 
     }
   });
 
-  it('las vecinas no: validar, activar, descartar, las plantillas, el cálculo y la imagen de una receta, y otros métodos', () => {
+  it('las vecinas no: validar, activar, descartar, cambiar una plantilla, el cálculo y la imagen de una receta, y otros métodos', () => {
     for (const [method, url] of VECINAS) expect([method, url, esEscrituraDePlanOReceta({ method, url })]).toEqual([method, url, false]);
   });
 
