@@ -4,8 +4,9 @@
  */
 import { COPY } from '@be/domain';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
+import { Animated, Easing, View } from 'react-native';
 import type { EstadoDeLista } from './lista';
+import { useMovimientoReducido } from './movimiento-reducido';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './ui';
 
 /**
@@ -71,32 +72,16 @@ export function VerMas<T>({ estado, onVerMas }: { estado: EstadoDeLista<T>; onVe
 export function SinActualizar({ visible, onReintentar }: { visible: boolean; onReintentar: () => void }) {
   if (!visible) return null;
   return (
-    <Aviso tipo="info" titulo="No pudimos actualizar">
+    <Aviso tipo="info" titulo="No pudimos actualizar" icono="actualizar">
       <Parrafo tenue>Ves lo último que leímos en esta sesión.</Parrafo>
       <Boton texto={COPY.reintentar} tipo="secundario" onPress={onReintentar} />
     </Aviso>
   );
 }
 
-/**
- * Si la persona pidió reducir el movimiento en Android: la línea del encabezado, el aro del descanso y el indicador de la
- * recuperación quedan quietos.
- */
-export function useMovimientoReducido(): boolean {
-  const [reducido, setReducido] = useState(false);
-  useEffect(() => {
-    let vigente = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((r) => {
-      if (vigente) setReducido(r);
-    });
-    const suscripcion = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducido);
-    return () => {
-      vigente = false;
-      suscripcion.remove();
-    };
-  }, []);
-  return reducido;
-}
+// «Reducir movimiento» vive en su módulo, para que la casilla de ui.tsx lo use sin que ui.tsx y este archivo se importen
+// entre sí; se reexporta acá para las pantallas que ya lo traían de estados.
+export { useMovimientoReducido };
 
 /**
  * Navegación (2026-10-03). Una línea fina que corre sobre el borde inferior del encabezado mientras una pantalla vuelve a

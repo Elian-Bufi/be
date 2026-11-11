@@ -1,5 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { AsociarImagenDeEjercicioRequestSchema, CodigoDeError, CuerpoVacioSchema, type EjercicioPropio } from '@be/domain';
+import {
+  AsociarImagenDeEjercicioRequestSchema,
+  CambiarZonasDeEjercicioRequestSchema,
+  CodigoDeError,
+  CuerpoVacioSchema,
+  problemasDeZonas,
+  type EjercicioPropio,
+  type FichaVisualDeEjercicio,
+} from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
@@ -8,6 +16,7 @@ import { MediosService } from '../medios/medios.service';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
+import { asignarZonas, fichasVisuales, ultimaAsignacionDeZonas } from './catalogo-visual';
 import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
 import { ejercicioPropioApi, imagenesDeEjercicios, REVISION_TECNICA_DESDE_API, type FilaDeEjercicioPropio } from './lectura-por-serie';
 import { exigirProfesionalDeEntrenamiento } from './profesional-de-entrenamiento';
@@ -157,6 +166,46 @@ export class ImagenesDeEjercicioService {
     });
   }
 
+  // ─── API-EJE-04 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * DL-081: reemplazar las zonas de un ejercicio propio, para una versión suya. La lista es la completa (vacía quita
+   * todas), sin repetidas, cada zona con su rol y sin porcentajes (REG-06-139). `expectedZonesVersion` es la que se vio:
+   * 0 si nunca tuvo. Cada cambio es una asignación nueva de una historia de solo agregar, como la imagen.
+   */
+  cambiarZonas(actor: ActorAutenticado, exerciseId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    const recurso = { tipo: RECURSO, id: exerciseId };
+    return this.ejecutor.escribirIdempotente({
+      operacion: 'API-EJE-04',
+      casoDeUso: CASO_DE_USO,
+      actor,
+      ctx,
+      recursoIntentado: recurso,
+      clave,
+      esquema: CambiarZonasDeEjercicioRequestSchema,
+      cuerpo,
+      huellaExtra: { exerciseId },
+      efecto: async (tx, pedido, procedencia) => {
+        await exigirProfesionalDeEntrenamiento(tx, actor.identidadId);
+        const ejercicioId = await this.propioBloqueado(tx, 'API-EJE-04', actor, exerciseId, ctx);
+        const ultima = await ultimaAsignacionDeZonas(tx, ejercicioId);
+        if (pedido.expectedZonesVersion !== ultima) throw errores.conflictoDeVersion();
+        const version = esUuid(pedido.exerciseVersionId)
+          ? await tx.versionDeEjercicio.findFirst({ where: { id: pedido.exerciseVersionId, ejercicioId }, select: { id: true } })
+          : null;
+        if (!version) {
+          throw new ErrorDeApi(422, CodigoDeError.EXERCISE_REFERENCE_INVALID, 'Esa versión no es de este ejercicio.', { issues: [{ code: 'EXERCISE_REFERENCE_INVALID', path: 'exerciseVersionId' }] });
+        }
+        const problemas = problemasDeZonas(pedido.muscleZones);
+        if (problemas.length > 0) throw errores.validacionFallida(problemas);
+        await sinDuplicar(
+          asignarZonas(tx, { ejercicioId, versionDeEjercicioId: version.id, numero: ultima + 1, autorId: actor.identidadId, procedencia, zonas: pedido.muscleZones }),
+          errores.conflictoDeVersion,
+        );
+        return { estadoHttp: 200, cuerpo: { data: await this.ficha(tx, actor.identidadId, ejercicioId) }, sujetoId: null, recurso };
+      },
+    });
+  }
+
   // ─── Apoyo ─────────────────────────────────────────────────────────────────────────────────
 
   /**
@@ -198,5 +247,13 @@ export class ImagenesDeEjercicioService {
     const [fila] = await this.propios(tx, profesionalId, ejercicioId);
     if (!fila) throw errores.recursoNoEncontrado();
     return ejercicioPropioApi(fila, (await imagenesDeEjercicios(tx, [ejercicioId], null)).get(ejercicioId));
+  }
+
+  /** La ficha visual del ejercicio propio, después de cambiar sus zonas (API-EJE-04). */
+  private async ficha(tx: Tx, profesionalId: string, ejercicioId: string): Promise<FichaVisualDeEjercicio> {
+    const [fila] = await this.propios(tx, profesionalId, ejercicioId);
+    if (!fila) throw errores.recursoNoEncontrado();
+    const [ficha] = await fichasVisuales(tx, [{ ...fila, procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: profesionalId, fuenteExterna: null }]);
+    return ficha!;
   }
 }

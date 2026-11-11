@@ -1,5 +1,5 @@
 import { Prisma, type Alcance } from '@prisma/client';
-import { ALCANCES, CLAVE_DE_DOMINIO, clasificarRevision, diaSiguiente, fechaCivil, inicioDelDia, ordenarPendientes, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
+import { ALCANCES, CLAVE_DE_DOMINIO, diaSiguiente, fechaCivil, inicioDelDia, ordenarPendientes, revisionEnLaCartera, sinPlanActivoEnLaCartera, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
 import type { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { errores } from '../http/errores';
@@ -7,6 +7,7 @@ import { ZONA_POR_DEFECTO } from '../nutricion/zona';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ProcesoService } from '../proceso/proceso.service';
 import { nombreDelPar, nombresDeAsesoradosPorPar } from '../vinculo/lectura';
+import { asesoradosCerradosConFinalizar, procesosConAplicacionPosterior } from './hechos-de-revision';
 
 type Tx = Prisma.TransactionClient;
 
@@ -19,13 +20,17 @@ type Tx = Prisma.TransactionClient;
  * - Todos los hechos se leen en **una** transacción: la cartera es una foto, no cincuenta fotos.
  * - Los pendientes salen de datos existentes: la expectativa de revisión vigente del Proceso abierto (terminal de la
  *   cadena, REG-06-146), la versión BORRADOR posterior a la activada, la ausencia de Proceso abierto, la solicitud de
- *   formulario sin respuesta y la evaluación antropométrica en preparación. La actividad registrada en el período es
+ *   formulario sin respuesta y la evaluación antropométrica en preparación.
+ * - La revisión, con la definición de pendiente del dominio (REG-06-150; TB-13): una expectativa que resolvió una
+ *   revisión aplicada después no sigue como vencida, próxima ni sin fecha. Y un seguimiento cerrado con «Finalizar» no
+ *   vuelve como «Sin plan activo» (TA-56). La forma de la respuesta no cambia. La actividad registrada en el período es
  *   un dato del ítem, nunca un ítem (D-3 de la ficha).
  * - «Hoy» es la fecha civil en la zona por defecto de BE (la misma que usan las lecturas nutricionales); se informa.
  * - Los hechos se leen **por conjuntos** (WP-CARTERA-LECTURA-POR-CONJUNTOS, 2026-10-28): una consulta por tipo de hecho
  *   para toda la cartera, cada una acotada a los pares (profesional, asesorado) que el PDP permitió en ese alcance, en
- *   lugar de cinco a siete consultas por persona y área. El resultado por par es el mismo; lo fija
- *   `test/integration/cartera-por-conjuntos.int-spec.ts` contra la copia congelada de la lectura anterior.
+ *   lugar de varias consultas por persona y área. Los dos hechos de TB-13 se leen igual (TA-62). El resultado por par es
+ *   el mismo; lo fija `test/integration/cartera-por-conjuntos.int-spec.ts` contra la copia congelada de la lectura
+ *   persona por persona de `main`, con TB-13.
  */
 /** Período de actividad en fechas civiles (inclusive), `null` = sin cota de ese lado. Se recorta en la zona por defecto. */
 export interface PeriodoCivil {
@@ -169,6 +174,10 @@ interface GrupoDeActividad {
  *   planificación, con `DISTINCT ON`: una fila por par, cualquiera sea la cantidad de borradores;
  * - el Proceso abierto de cada par (único por el índice parcial `proceso_operativo_uno_abierto`) y, en otra sentencia, la
  *   expectativa vigente de cada uno (`ProcesoService.proximasRevisionesVigentes`, la misma regla de la cadena);
+ * - TB-13: las expectativas que resolvió una revisión aplicada después, una sentencia por alcance de planificación con
+ *   expectativas (`procesosConAplicacionPosterior`), y, de los pares sin seguimiento abierto ni borrador, si el último
+ *   seguimiento se cerró con «Finalizar», en una sentencia (`asesoradosCerradosConFinalizar`). Son las mismas reglas que
+ *   `aplicacionPosteriorA` y `cerradoConFinalizar`, que lee la cola;
  * - la solicitud de formulario sin respuesta más antigua de cada par y alcance (`DISTINCT ON`, una fila por par);
  * - la evaluación antropométrica en preparación más antigua de cada par (`DISTINCT ON`, una fila por par);
  * - la actividad del período agrupada por asesorado, una por alcance (comidas sin anular, sesiones, tomas registradas).
@@ -211,6 +220,28 @@ async function leerHechosPorConjuntos(tx: Tx, procesos: ProcesoService, profesio
         });
   const procesoDe = new Map(abiertos.map((p) => [clavePar(p.asesoradoId, p.alcance), p.id]));
   const expectativas = await procesos.proximasRevisionesVigentes(tx, abiertos.map((p) => p.id));
+
+  // b') TB-13 (REG-06-150): la expectativa que resolvió una revisión aplicada después no sigue como pendiente. Una
+  //     sentencia por alcance de planificación con expectativas, con la regla de `aplicacionPosteriorA`.
+  const resueltas = new Set<string>();
+  for (const alcance of planificacion) {
+    const expectativasDelAlcance = abiertos.flatMap((p) => {
+      const e = p.alcance === alcance ? expectativas.get(p.id) : undefined;
+      return e ? [e.id] : [];
+    });
+    for (const procesoId of await procesosConAplicacionPosterior(tx, alcance, expectativasDelAlcance)) resueltas.add(procesoId);
+  }
+
+  // b'') TB-13 (TA-56): sin seguimiento abierto ni borrador, «Sin plan activo», salvo que el último seguimiento se haya
+  //      cerrado con «Finalizar». Se pregunta solo por esos pares, en una sentencia, con la regla de `cerradoConFinalizar`.
+  const sinSeguimiento: Record<Planificacion, string[]> = { NUTRICION: [], ENTRENAMIENTO: [] };
+  for (const alcance of planificacion) {
+    for (const asesoradoId of ids[alcance]) {
+      const k = clavePar(asesoradoId, alcance);
+      if (!procesoDe.has(k) && !borradores.has(k)) sinSeguimiento[alcance].push(asesoradoId);
+    }
+  }
+  const cerradosConFinalizar = await asesoradosCerradosConFinalizar(tx, profesionalId, sinSeguimiento);
 
   // c) La solicitud de formulario sin respuesta más antigua de cada par, en los tres alcances: la base elige la más
   //    antigua (DISTINCT ON), una fila por par; cada rama del OR es un alcance con sus asesorados permitidos.
@@ -284,22 +315,25 @@ async function leerHechosPorConjuntos(tx: Tx, procesos: ProcesoService, profesio
   return (par) => {
     const k = clavePar(par.asesoradoId, par.alcance);
     const hechos: Hecho[] = [];
-    if (par.alcance === 'ANTROPOMETRIA') {
+    const alcance = par.alcance;
+    if (alcance === 'ANTROPOMETRIA') {
       const preparacion = enPreparacion.get(par.asesoradoId);
       if (preparacion) hechos.push({ kind: 'ANTHRO_DRAFT_PENDING', since: civil(preparacion), daysOverdue: null, daysUntil: null });
     } else {
       const procesoId = procesoDe.get(k);
       const expectativa = procesoId ? expectativas.get(procesoId) : undefined;
-      if (expectativa) {
+      if (procesoId && expectativa) {
         const fechaObjetivo = expectativa.fechaObjetivo ? expectativa.fechaObjetivo.toISOString().slice(0, 10) : null;
-        const c = clasificarRevision(fechaObjetivo, hoy);
+        const c = revisionEnLaCartera(fechaObjetivo, resueltas.has(procesoId), hoy);
         if (c.kind === 'REVIEW_OVERDUE') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: c.dias, daysUntil: null });
         else if (c.kind === 'REVIEW_DUE_SOON') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: null, daysUntil: c.dias });
         else if (c.kind === 'REVIEW_UNDATED') hechos.push({ kind: c.kind, since: civil(expectativa.momentoDeRegistro), daysOverdue: null, daysUntil: null });
       }
       const borrador = borradores.get(k);
       if (borrador) hechos.push({ kind: 'PLAN_DRAFT_PENDING', since: civil(borrador), daysOverdue: null, daysUntil: null });
-      else if (!procesoId) hechos.push({ kind: 'NO_ACTIVE_PLAN', since: null, daysOverdue: null, daysUntil: null });
+      else if (sinPlanActivoEnLaCartera({ procesoAbierto: procesoId !== undefined, borrador: false, cerradoConFinalizar: !procesoId && cerradosConFinalizar[alcance].has(par.asesoradoId) })) {
+        hechos.push({ kind: 'NO_ACTIVE_PLAN', since: null, daysOverdue: null, daysUntil: null });
+      }
     }
     const solicitud = primeraSolicitud.get(k);
     if (solicitud) hechos.push({ kind: 'FORM_REQUEST_OPEN', since: civil(solicitud), daysOverdue: null, daysUntil: null });

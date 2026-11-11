@@ -17,6 +17,8 @@
  * - Una versión en preparación se edita con la misma composición (parte 8; `editor.tsx`): una sesión por vez, con los
  *   ejercicios plegados. Lo que se mira usa los mismos nombres en la dirección, por posición: al pasar de una versión a
  *   la otra se sigue en el mismo lugar.
+ * - **Las zonas musculares de la sesión** (WP-CATALOGO-VISUAL, etapa 2; `zonas-de-la-sesion.tsx`): al costado de los
+ *   ejercicios, arriba del historial; en la ficha, debajo de los ejercicios.
  */
 import {
   COPY_PISTAS,
@@ -58,7 +60,9 @@ import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
 import { DialogoGuardarPlantilla } from './plantillas';
+import { ZonasDeLaSesion } from './zonas-de-la-sesion';
 import { Pista } from '../../../../components/pista';
+import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 
 /**
  * Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. Lo usa
@@ -211,6 +215,9 @@ export function VistaDePlan() {
   };
 
   return (
+    <>
+      {/* TB-54 (DL-163 D-13, ampliada): «Otras áreas», al planificar. Lee API-RES-04 al abrir; sin otra área, nada. */}
+      <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" />
     <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
       {r?.ok
         ? (() => {
@@ -359,6 +366,7 @@ export function VistaDePlan() {
           })()
         : null}
     </EstadoDeLectura>
+    </>
   );
 }
 
@@ -456,7 +464,11 @@ function SesionQueSeMira({
       </div>
       <div className="plan__cuerpo">
         {mira.sesion ? <EjerciciosDeLaSesion sesion={mira.sesion} pedido={pedido.ejercicios} onPedir={(ejercicios) => alPedir({ ejercicios })} acceso={acceso} nivel={nivel} /> : <div />}
-        {alCostado}
+        {/* WP-CATALOGO-VISUAL (etapa 2): las zonas de la sesión, y en la sección «Plan» el historial debajo. */}
+        <div className="plan__al-costado">
+          {mira.sesion ? <ZonasDeLaSesion sesion={mira.sesion} acceso={acceso} nivel={nivel} /> : null}
+          {alCostado}
+        </div>
       </div>
     </>
   );

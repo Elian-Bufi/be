@@ -65,11 +65,29 @@
   --figura-posterior: #64748b;
   --figura-guia: #3f78cc;
   --figura-punto-relleno: #ffffff;
-  /* Planificado y registrado (gráficos del espacio profesional): además del color, lo planificado va rayado o con
-     línea discontinua y cuadrados, y lo registrado lleno o con línea continua y círculos (B10-10 §11). */
-  --grafico-planificado: #1f5bc4;
-  --grafico-registrado: #c2410c;
+  /* Las zonas musculares (WP-CATALOGO-VISUAL, etapa 2): van sobre el maniquí de la figura, el mismo en los dos temas, y su
+     muestra en la lista de zonas va sobre la superficie: llegan a 3:1 contra los dos. La principal va llena y la
+     secundaria rayada: además del color, las distingue la forma. Un azul, ni rojo, ni verde, ni ámbar: el color no es
+     un juicio ni un peso (B10-06 §21). */
+  --zona-principal: #1e6bf2;
+  --zona-secundaria: #1453c9;
+  /* Los días o las sesiones sin dato en un gráfico. Desde WP-TABLERO-ALTA-GAMA (TB-03; DL-163 D-3), lo planificado y
+     lo registrado de Entrenamiento van en el color de la métrica, como en «Analizar»: lo distingue la forma (contorno
+     discontinuo o rombo hueco contra lleno), no un naranja contra un azul. */
   --grafico-hueco: #6b7a90;
+  /* La vigencia de un plan y el rango que fija el profesional (TB-03): un fondo de datos, no un texto ni un borde. Llega
+     a 1,3:1 contra la superficie, para que un proyector no lo borre, y las métricas se leen encima (3:1 o más). */
+  --banda: #d9e2f0;
+  /* La luz del tablero (TB-04; DL-163 D-3): dentro de un gráfico marca solo «hoy». Es una marca, no un texto: 3:1 contra
+     la superficie, y lejos de las tres métricas (ΔE 20 o más), para que hoy no se lea como un dato. */
+  --ahora: #1e6bf2;
+  /* Lo que falta de un tramo del reloj (TB-10; DL-163 D-1): un fondo de datos, como --banda, a 1,3:1 contra la superficie
+     para que un proyector no lo borre. La información la llevan las marcas y el texto, nunca este fondo. */
+  --pista: #dbe2ed;
+  /* El rostro (TB-05; DL-163 D-2): el monograma, en tinta neutra sobre un círculo de un solo tono, el mismo para todas
+     las personas. La tinta llega a 4,5:1 sobre su fondo, casi no tiene color (no es el acento) y queda lejos de --ahora. */
+  --retrato-fondo: #e4e9f0;
+  --retrato-tinta: #3b4757;
   /* Las tres métricas de «Analizar» (WP-DASHBOARD-PROFESIONAL): azul, violeta y verde azulado. Ni rojo ni verde, que se
      leerían como juicio, ni el ámbar del foco (`scripts/contraste.test.cjs` mide la diferencia perceptual). Todas las
      marcas son puntos (WP-ESCRITORIO-AMABLE, C-16): además del color, cada métrica lleva su nombre en el encabezado de
@@ -78,6 +96,16 @@
   --metrica-1: #0b62a4;
   --metrica-2: #7b3fb5;
   --metrica-3: #00708a;
+  /* La composición corporal en kg (TB-24; DL-163 D-11): la masa libre de grasa y la masa grasa, dos tramos que se tocan en
+     una columna. Las tres métricas sirven para gráficos separados pero no para tramos contiguos (la propuesta, §18.7: el
+     par 1 + 3 no pasa la prueba de daltonismo), así que la composición lleva su propio par, validado en los dos temas.
+     Ni rojo, ni ámbar, ni el verde de «bien»: un azul y un verde azulado. */
+  --composicion-libre: #0b62a4;
+  --composicion-grasa: #0f9488;
+  /* TB-51 (D-11, modificada por Dirección el 2026-11-07): el resto de la barra cuando el método calcula el músculo (lo
+     óseo y lo residual, o lo que no es grasa ni músculo). El músculo va en el azul de la libre de grasa, de la que es
+     parte; el resto, en un violeta grisáceo que se distingue de los dos y del gris de los huecos, sin matiz de juicio. */
+  --composicion-resto: #6e5f8f;
   /* Sombras y velo: no son texto ni bordes de control */
   --sombra-suave: 0 1px 2px rgb(10 31 68 / 6%), 0 1px 1px rgb(10 31 68 / 4%);
   --sombra: 0 20px 50px rgb(10 31 68 / 30%);
@@ -130,15 +158,24 @@
   --escena: #0a2c47;
   --figura-sitio: #2a74ee;
   --figura-guia: #3b7ddd;
-  /* Gráficos: planificado en cian, registrado en naranja claro, hueco en gris azulado; rayado y forma siguen igual. */
-  --grafico-planificado: #27d5f9;
-  --grafico-registrado: #ff9b5c;
+  /* Las zonas sobre el maniquí claro y su muestra sobre la superficie navy: azules que llegan a 3:1 contra los dos. */
+  --zona-principal: #2a74ee;
+  --zona-secundaria: #3b7ddd;
+  /* Gráficos: el hueco en gris azulado y la banda de la vigencia y del rango, un escalón sobre la superficie. */
   --grafico-hueco: #87a5bd;
+  --banda: #163750;
+  --ahora: #27d5f9;
+  --pista: #113754;
+  --retrato-fondo: #22384d;
+  --retrato-tinta: #dde4ec;
   /* Las tres métricas sobre navy: las mismas familias, más claras, lejos del cian de los enlaces, del menta del éxito, del
      salmón del error y del amarillo del foco. */
   --metrica-1: #7cb8ff;
   --metrica-2: #c9a7ff;
   --metrica-3: #2bb3a3;
+  --composicion-libre: #4f97ea;
+  --composicion-grasa: #16a085;
+  --composicion-resto: #b9a3dc;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --sombra-desplazamiento: rgb(39 213 249 / 40%);

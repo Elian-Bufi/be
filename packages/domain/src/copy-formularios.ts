@@ -26,10 +26,11 @@ export const COPY_FORMULARIOS = {
   plantillaDemostracion: 'Catálogo de demostración: no es un catálogo clínico.',
   campos: 'Preguntas',
   elegirCampos: 'Elegí qué preguntas pedir',
-  marcarRequerido: 'Requerida',
+  // DL-165 D-7: en el escritorio, la misma palabra que en la app y en «Cargar con la persona».
+  marcarRequerido: 'Obligatoria',
   // La API rechaza una respuesta a la que le falta una requerida (FRM-07), y la APK lo avisa antes de enviar: lo que la
   // persona puede dejar sin responder es la solicitud entera. El texto de antes decía lo contrario.
-  ayudaRequerido: 'Si responde, las requeridas no pueden quedar vacías. La solicitud entera sí puede quedar sin responder.',
+  ayudaRequerido: 'Si responde, las obligatorias no pueden quedar vacías. La solicitud entera sí puede quedar sin responder.',
   sinCamposElegidos: 'Elegí al menos una pregunta para pedir.',
 
   // ─── Crear la solicitud ───────────────────────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ export const COPY_FORMULARIOS = {
   alcanceDeLaPlantilla: 'Este formulario es de una sola área: la solicitud va con esa.',
   plantillaNoSeleccionable: 'Este formulario no se puede pedir así: es de otra área o hay una versión más nueva. Volvé a elegirlo y revisá el área.',
   campoNoPertinente: 'Alguna de las preguntas pedidas no es pertinente para esta área. Revisá las preguntas o el área.',
-  solicitudInvalida: 'Revisá las preguntas pedidas: las requeridas tienen que estar entre las pedidas.',
+  solicitudInvalida: 'Revisá las preguntas pedidas: las obligatorias tienen que estar entre las pedidas.',
   enviarSolicitud: 'Enviar solicitud',
   solicitudEnviada: 'Solicitud enviada.',
   solicitarNoEsAcceder: 'Pedir información no amplía tu acceso ni el consentimiento: hasta que el asesorado responda, no hay dato nuevo.',
@@ -72,6 +73,8 @@ export const COPY_FORMULARIOS = {
   loQueRespondesEsTuyo: 'Lo que respondas queda registrado como declarado por vos.',
   podesNoResponder: 'Podés no responder. No pasa nada si dejás esta solicitud sin completar.',
   faltaRequerido: 'Falta responder un campo marcado como requerido por el profesional.',
+  // Enviar sin ninguna respuesta no es lo mismo que dejar un requerido sin responder: cada caso dice lo suyo (D-C3).
+  sinNingunaRespuesta: 'Para enviar, respondé al menos una pregunta. Las demás podés dejarlas en blanco.',
   // DL-104: un rechazo por los datos no es una falla del servicio. Se dice que un dato no se aceptó y lo escrito queda.
   respuestaNoAceptada: 'No pudimos guardar: hay un dato que no se puede aceptar. Revisá lo que completaste y volvé a enviarlo.',
   numeroIlegible: 'Hay un número que no se entiende. Revisá el campo marcado.',
@@ -112,8 +115,14 @@ export const COPY_FORMULARIOS = {
 
   // ─── PF-02 · pedido desde la evaluación de entrenamiento ─────────────────────────────────────
   propositoDeContextoDeEntrenamiento: 'Planificar tu entrenamiento',
-  pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario, las preguntas y el área ya están elegidos. Podés cambiarlos antes de enviar.',
+  /** DL-165 D-29: las preguntas ya no son una precarga aparte; vienen todas, como en «Más», y lo dice el paso 2. */
+  pedidoDesdeEntrenamiento: 'Viniste desde Entrenamiento: el formulario y el «para qué» ya están elegidos. Podés cambiarlos antes de enviar.',
   volverAEntrenamiento: 'Volver a Entrenamiento',
+
+  // ─── PF-02 · pedido desde el Resumen de Nutrición (WP-FORMULARIOS-RONDA-2, FR-02) ──────────────
+  propositoDeContextoDeNutricion: 'Armar tu plan de alimentación',
+  pedidoDesdeNutricion: 'Viniste desde Nutrición: el formulario y el «para qué» ya están elegidos. Podés cambiarlos antes de enviar.',
+  volverANutricion: 'Volver a Nutrición',
 } as const;
 
 /**

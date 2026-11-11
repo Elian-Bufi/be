@@ -44,7 +44,8 @@ import { useLecturaRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CasillaSimple, Desplegador, FranjaDeMacros, LineaDeFibra } from '../piezas-de-nutricion';
 import { ahoraEnElServidor, rectificarCantidades, registrarComida } from '../registro-de-comidas';
-import { Aviso, Boton, Campo, estilosPorTema, Parrafo, Seccion, Titulo } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, Campo, Desplegable, estilosPorTema, Parrafo, Seccion, Titulo } from '../ui';
 import { useHoyConOpciones } from './nutricion-hoy';
 
 type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
@@ -220,15 +221,16 @@ function DetalleDeLaOpcion({ token, opcion, contexto, sesionPerdida, children }:
       <LineaDeFibra nutrientes={opcion.planned} />
       {faltan ? <Parrafo tenue>{COPY_RECETAS.faltanDatos}</Parrafo> : null}
 
-      <Seccion titulo={COPY_REGISTRO_DE_COMIDAS.ingredientes}>
+      {/* Los ingredientes y la preparación explican: van plegados (PV-4, AV-08). «Comí esta opción» queda a la vista. */}
+      <Desplegable titulo={COPY_REGISTRO_DE_COMIDAS.ingredientes} detalle={TEXTOS_DE_LA_VUELTA.cuantos(opcion.items.length, 'ingrediente', 'ingredientes')}>
         <Text style={estilos.subrotulo}>{COPY_REGISTRO_DE_COMIDAS.porcionesDelPlan}</Text>
         {opcion.items.map((i, k) => (
           <FilaDeIngrediente key={i.itemId} item={i} primera={k === 0} />
         ))}
-      </Seccion>
+      </Desplegable>
 
       {pasos.length > 0 ? (
-        <Seccion titulo={COPY_REGISTRO_DE_COMIDAS.preparacion}>
+        <Desplegable titulo={COPY_REGISTRO_DE_COMIDAS.preparacion} detalle={TEXTOS_DE_LA_VUELTA.cuantos(pasos.length, 'paso', 'pasos')}>
           {pasos.map((paso, k) => (
             <View key={k} style={estilos.paso} accessible accessibilityLabel={`${COPY_REGISTRO_DE_COMIDAS.paso(k + 1)}. ${paso}`}>
               <View style={estilos.numeroDePaso}>
@@ -237,7 +239,7 @@ function DetalleDeLaOpcion({ token, opcion, contexto, sesionPerdida, children }:
               <Text style={estilos.textoDelPaso}>{paso}</Text>
             </View>
           ))}
-        </Seccion>
+        </Desplegable>
       ) : null}
 
       {children}

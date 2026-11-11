@@ -75,6 +75,7 @@ import { hoyEn } from '../seguimiento/estado';
 import { ICONO_DEL_RASGO } from '../seguimiento/hecho-en-un-renglon';
 import { DetalleDeRegistroDeComida } from './detalle-de-registro';
 import { EstadoDeLectura, useNutricion } from './nutricion';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 type Contexto = ContextoDeRevisionResponse['data'];
 
@@ -573,6 +574,7 @@ function DetalleDelRegistro({
  * se agrega, y cada una queda en la historia.
  */
 function EstimacionDelProfesional({ ingesta, onCambio }: { ingesta: Ingesta; onCambio: () => void }) {
+  const { delProfesional } = useNombres();
   const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [abierto, setAbierto] = useState(false);
@@ -637,7 +639,7 @@ function EstimacionDelProfesional({ ingesta, onCambio }: { ingesta: Ingesta; onC
         <p>
           {efectiva.structuredEstimate.items.map((i) => `${i.description}${i.quantity ? ` · ${cantidad(i.quantity.value, ETIQUETA_DE_UNIDAD[i.quantity.unit])}` : ''}`).join('; ')}{' '}
           <span className="nota">
-            ({efectiva.author.displayName}, {fecha(efectiva.recordedAt)}
+            ({delProfesional(efectiva.author)}, {fecha(efectiva.recordedAt)}
             {ingesta.corrections.length > 1 ? `; ${ingesta.corrections.length} estimaciones en la historia` : ''})
           </span>
         </p>

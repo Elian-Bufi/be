@@ -202,9 +202,13 @@ volver a empezar.
   nunca queda la cuenta sin segundo factor. Al confirmar, salen diez códigos de recuperación nuevos y los anteriores dejan
   de valer, y **las otras sesiones administrativas de la identidad terminan** (`CREDENCIALES_ADMINISTRATIVAS_RENOVADAS`).
 - **Regenerar los códigos de recuperación**: segundo factor vigente y contraseña; también terminan las otras sesiones.
-- **El operador y una confirmación al mismo tiempo:** configurar y confirmar toman la identidad en modo compartido y el
-  comando, en modo exclusivo; el comando además toma los autenticadores antes de revocarlos y falla entero si quedara
-  uno activo. Un restablecimiento nunca dice «Listo» con un autenticador vivo.
+- **Dos configuraciones a la vez:** hay una sola pendiente por identidad (lo sostiene la base) y empezar otra descarta
+  la anterior. Empezar toma la identidad en modo exclusivo (desde el 2026-10-27, pendiente 2 del §14): dos empezadas al
+  mismo tiempo, desde dos sesiones, quedan una después de la otra, y la que empezó después es la que se puede confirmar.
+  Antes, la segunda chocaba con el índice único y respondía 500.
+- **El operador y una confirmación al mismo tiempo:** confirmar toma la identidad en modo compartido; empezar la
+  configuración, renovar los códigos y el comando, en modo exclusivo. El comando además toma los autenticadores antes de
+  revocarlos y falla entero si quedara uno activo. Un restablecimiento nunca dice «Listo» con un autenticador vivo.
 
 ### 6.4 Vigencia, reanudación y reautenticación (en el servidor)
 
@@ -225,8 +229,11 @@ que no corresponde, un plazo vencido y el cupo de 429), la configuración y el r
 código de recuperación, la regeneración de códigos, cada lectura administrativa y cada decisión. **Los rechazos de los
 guards también:** una sesión común en una ruta de Administración (`SESION_NO_ADMINISTRATIVA`), una sesión administrativa
 que ya no vale (revocada, vencida, sin rol) y una lectura o decisión sin el segundo factor (`MFA_REQUERIDO:…`), con la
-operación que se intentó. Nunca un secreto, un código, un token ni el QR: ni en la auditoría, ni en los logs, ni en las
-capturas.
+operación que se intentó. **Y los que aparecen dentro de la transacción** (2026-10-27, pendiente 3 del §14): un pedido que
+pasó el guard con la sesión activa y, con sus filas tomadas, la encuentra revocada o cerrada responde el mismo 401. Su
+transacción se revierte entera, y el rechazo se registra después, aparte, con la operación y el motivo del guard
+(`SESION_<estado>`), como el PDP registra sus denegaciones. Nunca un secreto, un código, un token ni el QR: ni en la
+auditoría, ni en los logs, ni en las capturas.
 
 ### 6.6 Si el administrador pierde el autenticador
 
@@ -272,8 +279,9 @@ de estas decisiones: no hay visor global de auditoría.
   en modo compartido: una decisión y una operación profesional en curso quedan siempre una antes de la otra.
 - **Las credenciales del administrador, también en ese orden:** renovar los códigos de recuperación (API-ADM-09) toma la
   identidad del administrador en modo exclusivo, como el comando del operador, y con ella tomada vuelve a leer la sesión y
-  su segundo factor. Configurar y confirmar el autenticador la toman en modo compartido. Queda como máximo un lote de
-  códigos vigente, y una renovación que quedó ordenada después de una revocación no emite códigos (pasada de cierre, §14).
+  su segundo factor. Empezar la configuración del autenticador también la toma en modo exclusivo (desde el 2026-10-27);
+  confirmarla, en modo compartido. Queda como máximo un lote de códigos vigente, y una renovación que quedó ordenada
+  después de una revocación no emite códigos (pasada de cierre, §14).
 - **Efecto inmediato:** el PDP y esas comprobaciones leen el estado en cada pedido, sin caché. Una sesión abierta del
   profesional no sirve para operar el área suspendida desde el pedido siguiente; las otras áreas siguen. No se revocan
   las sesiones del profesional (DL-157).
@@ -391,7 +399,7 @@ Sigue `docs/ux/GUIA-UX-UI.md` (escritorio primero: 1440, 1280 y 1024; Claro y Az
 | 7. Autor y fundamento; reintentos y conflictos | integración `administracion-decisiones` |
 | 8. Avisos una vez y solo de decisiones confirmadas | integración `administracion-avisos`; DL-152 con los tipos nuevos |
 | 9. Reiniciar y volver a preparar no deshace decisiones | integración `administracion-siembra` |
-| 10. Configuración y recuperación de MFA sin vía sin protección | integración `administracion-acceso` (reutilización, intentos, vencimientos, reemplazo, restablecimiento); `administracion-renovacion-de-codigos` (renovaciones simultáneas y frente al operador o al cierre de la sesión) |
+| 10. Configuración y recuperación de MFA sin vía sin protección | integración `administracion-acceso` (reutilización, intentos, vencimientos, reemplazo, restablecimiento); `administracion-renovacion-de-codigos` (renovaciones simultáneas y frente al operador o al cierre de la sesión); `administracion-reemplazo-del-autenticador` (dos reemplazos al mismo tiempo desde dos sesiones) |
 
 Pruebas del 11A que este paquete ejercita: TEST-RF-007, TEST-RF-011, TEST-RF-012, TEST-RF-014 y TEST-AUTH-010 (la
 identidad administrativa no obtiene actoría profesional). Las lecturas congeladas de DL-152 no se tocan. La automatización
@@ -407,7 +415,7 @@ clases; los cinco y uno menor quedaron corregidos, cada uno con su prueba (bloqu
 |---|---|---|
 | F1 | El cupo de cinco era por sesión y cada entrada abría otra: unos 960 intentos por día | Diez fallidos seguidos bloquean el autenticador, en la base, hasta un código de recuperación o el operador |
 | F2 | Un pedido que esperaba detrás del quinto fallido se evaluaba sobre la sesión ya revocada | Con la fila tomada, se vuelve a leer la sesión y sus intentos |
-| F3 | Un restablecimiento simultáneo a una confirmación podía dejar vivo el autenticador nuevo | El comando toma los autenticadores y la identidad; configurar y confirmar la toman en modo compartido; si quedara uno activo, el comando falla entero |
+| F3 | Un restablecimiento simultáneo a una confirmación podía dejar vivo el autenticador nuevo | El comando toma los autenticadores y la identidad; configurar y confirmar la toman en modo compartido (desde el 2026-10-27, configurar la toma en modo exclusivo: pendiente 2); si quedara uno activo, el comando falla entero |
 | F4 | Reemplazar el autenticador o generar códigos dejaba vivas las otras sesiones | Terminan, con su motivo; la propia sigue |
 | F5 | Los rechazos de los guards no dejaban rastro | Se auditan con la operación intentada |
 | menor | El código de incorporación se miraba al empezar la configuración, no al confirmarla | Tiene que seguir vigente al confirmar |
@@ -420,16 +428,27 @@ restablecimiento, una retirada o el cierre de su sesión. La corrección toma la
 la sesión dentro de la transacción. Las 8 pruebas fallan sin ella, y cada parte tiene una mutación que la detecta. Detalle:
 `EVIDENCIA/ADMINISTRACION/CONCURRENCIA-DE-LA-RENOVACION.md`.
 
-**Pendientes registrados** (las propuestas de la pasada de cierre; Dirección las dejó como pendientes al autorizar la
-integración, sin implementarlas):
-1. **Las dos pruebas que todavía esperan con una pausa,** F2 (`pausa(500)`) y F3 (`pausa(400)`) del bloque «Revisión de
-   seguridad» de `administracion.int-spec.ts`, pasan a la barrera por bloqueos de la renovación: soltar cuando
-   `pg_stat_activity` muestra al pedido esperando. Con el mismo criterio conviene mirar el cruce de la decisión, que da la
-   espera por buena con un plazo de 800 ms.
-2. **Una prueba de carrera para dos reemplazos del autenticador al mismo tiempo,** desde dos sesiones. Hoy está revisado
-   leyendo el código: en el peor cruce, la base corta uno por interbloqueo y, al repetirse, encuentra su sesión cerrada.
-3. **Auditar también los rechazos que ocurren dentro de la transacción,** como ya se auditan los de los guards. Por
-   ejemplo, la renovación que encuentra su sesión revocada responde 401 sin dejar rastro.
+**Los pendientes de la pasada de cierre** (Dirección los dejó pendientes al autorizar la integración; encargo nocturno del
+2026-10-27, en un PR aparte, sin integrar). Detalle y comprobación: `EVIDENCIA/ADMINISTRACION/PENDIENTES-DEL-14.md`.
+1. **Hecho: sin pausas.** F2, F3 y el cruce de la decisión ya no esperan un tiempo.
+   - Usan la barrera por bloqueos de la renovación, que pasó a `test/integration/soporte-concurrencia.ts`.
+   - Ahora cuenta solo a quien espera a la transacción de la prueba (`pg_blocking_pids`).
+   - Cada prueba falla si el pedido terminó sin llegar a esperar, y la barrera que no se cumple muestra qué hacía cada
+     conexión.
+2. **Hecho, con un defecto encontrado y corregido: dos reemplazos al mismo tiempo**
+   (`administracion-reemplazo-del-autenticador.int-spec.ts`).
+   - Dos configuraciones empezadas a la vez, desde dos sesiones, chocaban con el índice único de un pendiente por
+     identidad y una respondía **500**.
+   - Empezar la configuración toma ahora la identidad en modo exclusivo: la segunda espera y descarta el pendiente de la
+     primera, como dice el contrato.
+   - Las confirmaciones cruzadas y el cruce de una confirmación con otra configuración (el que estaba revisado leyendo el
+     código) quedan probados en los dos órdenes.
+3. **Hecho: los rechazos dentro de la transacción quedan auditados.**
+   - Un pedido que encuentra su sesión revocada o cerrada con sus filas tomadas responde el mismo 401
+     (`SesionQueDejoDeValer`).
+   - El rechazo se registra después de revertir, con la operación y el motivo del guard (`SESION_<estado>`), en las cinco
+     operaciones del segundo factor (API-ADM-05 a 09).
+   - Sin un tipo de evento nuevo: el motivo de la auditoría es el que ya usa el guard.
 
 ## 15. Fuera del paquete
 
@@ -474,3 +493,9 @@ con un solo operador), un visor global de auditoría y la recuperación de contr
 
   Las tres propuestas de la pasada de cierre quedan como pendientes (§14). Todavía no hay ningún administrador:
   incorporar al primero es el paso siguiente, y lo autoriza Dirección.
+- **2026-10-27, encargo nocturno:** los tres pendientes del §14, en un PR en borrador sin integrar.
+  - Las pruebas de carrera, sin pausas.
+  - Dos reemplazos del autenticador al mismo tiempo: un 500 encontrado y corregido.
+  - Los rechazos que aparecen dentro de la transacción, auditados.
+
+  Cambian §6.3, §6.5, §8 y §14. El 2026-10-27, Dirección ya había incorporado su cuenta administrativa en test.

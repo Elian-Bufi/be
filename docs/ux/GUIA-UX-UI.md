@@ -3,7 +3,8 @@
 **Estado:** vigente desde el 2026-10-01 (DL-113), ampliada el 2026-10-03 con la candidata 0.13.2 y reorganizada el
 2026-10-09 con WP-DASHBOARD-COMPRENSION (en borrador, en la rama de ese paquete). Desde el 2026-10-10 la amplía
 WP-ESCRITORIO-AMABLE, también en borrador (V.3). El 2026-10-18 la cambia DL-145 (el espacio profesional sin vueltas: II.11).
-A ratificar por Dirección.
+Desde el 2026-11-06 la cambia la etapa A de WP-TABLERO-ALTA-GAMA (DL-163 D-1 a D-5, en borrador: V.4), con la pauta
+nueva «Decisiones guiadas» (II.12). A ratificar por Dirección.
 **Alcance:** el website del profesional y del asesorado (`apps/web`) y la APK del asesorado (`apps/mobile`).
 **Cuándo se usa:** en cada pantalla nueva y en cada cambio de una pantalla existente. Antes de abrir el PR se recorre la
 [lista de control](#parte-iv--verificación-y-lista-de-control).
@@ -16,7 +17,8 @@ A ratificar por Dirección.
   se aplican al website profesional.
 - [Parte IV · Verificación y lista de control](#parte-iv--verificación-y-lista-de-control).
 - [Parte V · Qué cambió el 2026-10-09](#parte-v--qué-cambió-el-2026-10-09): lo que se amplió, lo que se sustituyó y dónde
-  quedó cada sección de la versión anterior. En V.3, lo que cambia con WP-ESCRITORIO-AMABLE.
+  quedó cada sección de la versión anterior. En V.3, lo que cambia con WP-ESCRITORIO-AMABLE; en V.4, con
+  WP-TABLERO-ALTA-GAMA.
 - [Lo que se sabe que falta](#lo-que-se-sabe-que-falta).
 
 Las reglas del legajo están por encima de esta guía. Las más citadas son:
@@ -55,6 +57,15 @@ Cuando una regla de acá choca con el legajo, gana el legajo y se anota en `docs
      del cambio relativo. Va con su n y su cobertura, y no se interpreta.
    Lo que separa las dos cosas es de dónde sale el rango: si lo fijó el profesional o lo describe el dato, se muestra;
    si clasifica a la persona contra una norma, no.
+
+   **Las barras que se llenan solo con fechas y actos del profesional** (DL-163 D-1, desde la etapa A de
+   WP-TABLERO-ALTA-GAMA). Son una lista cerrada: el tramo del ciclo de revisión, en la tarjeta de cada área; la franja
+   «Pendiente n de m» del cajón «De a una»; los pasos de un flujo (Listo · Ahora · Después), como «Empezar el plan»; y
+   la semana de un programa, cuando llegue (D-9 nueva). Son lineales, nunca un aro; no llevan «%» ni «te faltan»;
+   vencidas, siguen en discontinua neutra y lo dicen, sin un color nuevo; sin fecha acordada no hay barra, queda el
+   hecho en palabras; y para el lector de pantalla, una frase (`aria-valuetext`). Con las mismas fechas la barra es la
+   misma, registre lo que registre la persona (`avanceDelReloj`, con una prueba de propiedad). No van en las filas de
+   /pro. Una barra que se llene con lo que registra la persona es calificar, y no se dibuja.
 4. **Un solo lugar para cada texto.** El copy vive en el dominio (`packages/domain/src/copy-*.ts` y los módulos que
    arman texto, como `sintesis-del-resumen.ts`) y lo comparten website y APK. Se escribe en español rioplatense, con
    voseo y sin anglicismos innecesarios. Los textos que una sola pantalla usa pueden quedar en ella.
@@ -141,6 +152,9 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   al máximo (III.2).
 - **No se achica la letra para que entre una composición.** Si no entra, cambia la composición. Que no se corte no
   alcanza: un texto achicado al 60 % no se corta y se lee mal.
+- **La letra del website** (DL-163 D-3; TB-01): Inter, autoalojada, con cifras tabulares, en todo el texto; Poppins 600
+  solo en tres momentos de marca: el título del Espacio profesional, el nombre de la persona en el marco de la ficha y
+  la pregunta del cajón «De a una». Ninguna se baja de un servicio externo (`font-src 'self'`). La APK sigue con la suya.
 
 ### I.6 Color y temas
 
@@ -149,8 +163,17 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   - APK: `tema.ts`;
   - lámina: `COLORES_DE_LA_LAMINA`.
   La prueba `scripts/contraste.test.cjs` falla con un color literal en una pantalla y mide los pares declarados.
-- **El acento orienta, no decora.** Marca lo que se elige o se toca: enlaces, lo elegido, las casillas, los títulos de
-  las ayudas, los puntos de un gráfico. No va en superficies, títulos ni bordes de tarjetas.
+- **El acento orienta, no decora, y es una sola luz** (DL-163 D-3, desde la etapa A). Marca lo que se toca: los
+  enlaces, las casillas y los títulos de las ayudas. Dentro de un gráfico, los puntos y lo elegido van en el color de
+  su métrica, y el acento (`--ahora`) marca solo «hoy»: la raya de hoy en el minigráfico y en el tramo del ciclo. Lo
+  elegido en una vista que filtra va en tinta (`--texto`). No va en superficies, títulos ni bordes de tarjetas. Que los
+  enlaces de texto pasen a `--texto` con un subrayado fino, como pide D-3, todavía no está hecho (ver «Lo que se sabe
+  que falta»).
+- **Los tokens de la etapa A, cada uno con su par en `contraste.test.cjs`:** `--banda` (la vigencia de un plan en un
+  gráfico), `--pista` (lo que falta de un tramo), `--ahora` (hoy), `--retrato-fondo` y `--retrato-tinta` (el
+  monograma, de un solo tono neutro para todas las personas), `--composicion-libre` y `--composicion-grasa` (las dos
+  masas de la composición corporal, validadas para daltonismo en los dos temas) y, desde TB-51, `--composicion-resto`
+  (el resto de la barra cuando el método calcula el músculo; el músculo va en `--composicion-libre`).
 - **Contraste AA:**
   - 4,5:1 para el texto;
   - 3:1 para los bordes de los controles y los íconos que comunican.
@@ -186,9 +209,18 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   color), en la lectura, en la tabla y en la exportación.
 - **Todas las marcas de un gráfico son puntos.** La métrica se reconoce por su color **y por su nombre:** en el
   encabezado de su gráfico o, cuando varias comparten uno, al final de su línea. La forma del punto dice el estado del
-  dato (lleno, hueco, de contorno cortado, con un punto adentro), no la métrica.
+  dato (lleno, hueco, de contorno cortado, con un punto adentro), no la métrica. Lo indicado en el plan es un rombo
+  hueco, proporcional al punto.
+- **Una sola gramática en los cuatro gráficos** (Analizar, el minigráfico, la evolución de Antropometría y los de
+  Entrenamiento; DL-163 D-3, TB-02 y TB-03). El tamaño de una marca sale de una sola regla, según el lugar de cada día y
+  el estado del dato, con un mínimo por estado (`medidaDeMarca`, en `geometria.ts`): lleno y hueco se distinguen también
+  en una pantalla de densidad 1. Lo elegido tiene una sola forma (una guía fina y continua, la fecha en una píldora
+  invertida y un aro del color de la métrica) y el foco del teclado, la suya. La grilla es solo horizontal; la vigencia
+  de un plan, una franja de `--banda` arriba del dibujo con la vertical que la lleva; un cambio de versión o de método,
+  una vertical punteada y rotulada. La letra de un gráfico no baja de 12,5. Entrenamiento usa el color de su métrica,
+  como Analizar.
 - **Lo planificado y lo registrado van en el mismo gráfico cuando están en la misma unidad.** Lo registrado, con línea
-  continua y puntos; lo planificado, con línea discontinua del mismo color, sin puntos. Sin porcentajes, sin un área
+  continua y puntos; lo planificado, con línea discontinua del mismo color y, donde se marca cada valor, el rombo hueco. Sin porcentajes, sin un área
   entre las dos y sin una diferencia calculada. Lo que el gráfico dibuja está también en la lectura, en la tabla y en
   el resumen en texto.
 - **Un día sin registros lleva un gris leve** en un gráfico diario, y la línea se corta ahí. No es un cero. El día en
@@ -201,7 +233,7 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
 
 ### I.8 Íconos
 
-Desde WP-ESCRITORIO-AMABLE hay una sola familia: 105 dibujos de un solo trazo, datos del dominio
+Desde WP-ESCRITORIO-AMABLE hay una sola familia: 115 dibujos de un solo trazo (eran 105 al empezar), datos del dominio
 (`packages/domain/src/iconos.ts`). El website los dibuja con `Icono` (`apps/web/src/components/icono.tsx`); la APK
 todavía usa los suyos. Qué simboliza cada uno y dónde va está en
 `EVIDENCIA/ESCRITORIO-AMABLE/diseno/iconos/CATALOGO.md`.
@@ -371,6 +403,10 @@ Es el principio I.1.6 en el espacio profesional. En la ficha:
   cuándo («El plan rige desde el 9 oct…»): sin eso, «1 de 90 días» se lee como 89 días sin registrar.
 - **Lo vigente hoy y lo que rigió** se distinguen: «Objetivo vigente hoy · rige desde…» no es «Plan que rigió en el
   período».
+- **El tramo del ciclo no es una cobertura** (DL-163 D-1; TB-10): dice cuánto pasó del ciclo que acordó el
+  profesional, con sus fechas («desde la revisión del 16 oct» o «desde que rige el plan, el 17 oct»), y lo nuevo desde
+  la revisión va al lado en cifras, con las palabras del dominio («Desde la revisión»). Las cifras cuentan lo que hay,
+  nunca contra lo que se esperaba.
 - **Lo que no se compara dice por qué**, en palabras: otra unidad, otro método o protocolo, totales de duraciones
   distintas, un período sin completar.
 - **El día en curso** se dice («día en curso: el valor todavía puede cambiar») y no se une a la línea del gráfico: un
@@ -422,23 +458,34 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   información. Una tarjeta por área disponible, en el orden de BE, y en cada una, de arriba abajo:
   1. con qué se trabaja: el objetivo (en Nutrición, con la tira de calorías y macros, `TiraDelObjetivo`) y el plan
      vigente con lo que rigió antes en el período; en Antropometría, las tomas;
-  2. lo pendiente, con su ícono y en negrita (una revisión sin aplicar, la próxima revisión acordada a una semana o
-     menos, un borrador sin activar);
-  3. la línea del corte («Desde la revisión del 20 sept · aplicada» y, a la derecha, la próxima acordada si no es un
-     pendiente) y lo nuevo desde entonces, cada cuenta en su renglón con la cifra adelante. Son las observaciones de
-     `sintesisDelResumen` (reglas fijas, sin IA, sin calificar), con sus mismas palabras (`partesDeObservacion`);
+  2. el tramo del ciclo (TB-10; I.1.3): de la última revisión, o de la activación del plan vigente, a la fecha
+     acordada, con hoy en `--ahora`; vencido, en discontinua y dicho; sin fecha, «Sin revisión acordada». Lo pendiente
+     que el tramo no dice (una revisión sin aplicar, un borrador sin activar) va con su ícono y en negrita;
+  3. lo nuevo desde la revisión, en cifras en fila («Desde la revisión»). Son las observaciones de `sintesisDelResumen`
+     (reglas fijas, sin IA, sin calificar), con sus mismas palabras (`partesDeObservacion`). Debajo, la pieza propia del
+     área: en Nutrición, la barra partida de los registros del período; en Entrenamiento, las sesiones por ejercicio; en
+     Antropometría, la composición de la última toma (D-11), en kilos con el porcentaje al lado de cada parte (D-11,
+     modificada por Dirección el 2026-11-07; TB-51), y la evolución de las últimas tomas en pares de medidas, una columna
+     por toma y cada medida en su unidad (TB-50). Con dos o más tarjetas en fila va plegada, con lo principal en el
+     renglón que la abre; un área sin nada registrado muestra «Empezar el plan» en miniatura, con sus pasos;
   4. la acción del área. **Un solo botón lleno en todo el Resumen:** el del área con la próxima revisión acordada más
      cercana. La fecha la fijó el profesional: BE no decide qué es urgente.
   Debajo, los **indicadores** (hasta cuatro, por cuenta): el nombre, que abre Analizar; el valor con su regla (media de
   los días con valor, mediana de las sesiones, última toma); el minigráfico; y la cobertura. Las **preguntas** van
   donde no les quitan lugar a los indicadores: al final con tres áreas, en la columna libre con dos y, con una sola,
   debajo de los indicadores, al costado de la tarjeta. «Lo último que pasó» es la pestaña «Línea de tiempo».
-- **El minigráfico** (`minigrafico.tsx`, con la geometría en `geometria.ts`) dibuja lo mismo que el gráfico de Analizar,
-  en chico: un punto por día, sesión o toma con valor; la línea solo dentro de un tramo comparable; huecos, los
-  subtotales y el día en curso; gris, los días sin registros; y una línea punteada donde empieza a regir el primer plan
-  del período. No se quita ningún punto por falta de lugar: se achica la marca. No recibe el foco ni tiene nada para
-  tocar: es una imagen con su descripción. Es un dibujo propio: lo que se carga con la ficha no trae la biblioteca de
-  gráficos.
+- **El minigráfico del indicador** (`MinigraficoDelIndicador`, en `minigrafico.tsx`, con la geometría en
+  `geometria.ts`; DL-163 D-5 y TB-04) dibuja las mismas filas que Analizar, en chico, con la tira de cobertura debajo:
+  cada día tiene su celda con su estado, y ningún día queda sin dibujar. Con poco lugar por día, la línea une los días
+  completos y se corta en los días sin registros y en los huecos, y llevan marca solo el último, el elegido y los
+  aislados; con más lugar, todos. En una serie diaria de más de ocho semanas, la línea es la media de cada semana de BE,
+  con su denominador, y los días van como puntos claros detrás; las sesiones y las tomas no se promedian. Lo que cae
+  fuera de la escala va con una muesca en la base y su cuenta, sin ubicarlo. Hoy lleva la raya de `--ahora`, y lo
+  anterior al vínculo de cada área no se dibuja (D-7). Con uno a tres días con valor no hay línea ni media. No recibe
+  el foco ni tiene nada para tocar: es una imagen con su descripción, que no cambió. Es un dibujo propio: lo que se
+  carga con la ficha no trae la biblioteca de gráficos. Esta regla reemplaza a «No se quita ningún punto por falta de
+  lugar: se achica la marca»; Analizar y los gráficos de cada área conservan todos los puntos, y la comparación de
+  etapas, su minigráfico de siempre.
 - **La primera pantalla se mide, no se supone,** y se mide con datos recién generados. A 1440 × 900 entran las tres
   tarjetas y el nombre y el valor de cada indicador; en 1920 × 950, también los minigráficos, justos. Se promete lo que
   tiene margen: el alto de una tarjeta depende de cuántos hechos tenga el área. Lo que no entra se decide a propósito
@@ -546,30 +593,43 @@ El recorrido es: **resumen o pregunta → análisis → origen → acción → r
   selecciones de un asesorado, lo avisan al guardar y las piden de nuevo en otro. En un análisis están en «Más
   acciones», que se abre solo cuando se acaba de retomar una, para que su aviso se vea. Se retoman también desde el
   comienzo de Analizar, debajo de las preguntas, sin el formulario de guardar (no hay nada que guardar todavía).
-- **Espacio profesional** (`pro/espacio-profesional.tsx`; las vistas de «Pendientes», en `cartera.ts` del dominio):
-  **primero lo que hay que hacer y, al lado, a quién abrir.** Dos tarjetas; el formulario para pedir un vínculo y la
-  lista de solicitudes enviadas se abren cuando hacen falta.
-  - **El encabezado** dice el título, «Hoy» (la fecha con que la API clasificó las revisiones, con su día de la semana
-    y su año) y «Solicitar vínculo».
-  - **«Pendientes»** tiene vistas con nombre, como la línea de tiempo: «Todo», «Revisiones», «Planes», «Formularios» y
-    «Tomas», cada una con la cantidad que trae. La cartera se lee entera al entrar y se cuenta en el navegador:
-    elegir una vista no le pide nada a la API. Una vista en cero se muestra con su cero. «Más filtros» guarda la
-    combinación libre: un área, un tipo exacto y el período.
-  - **Cada pendiente es una fila:** la persona, el área, lo pendiente con la frase de BE y, debajo, el último registro
-    como dato; «Abrir» lleva a la vista que lo resuelve. El orden es el de la urgencia, que fija la API: ningún color
-    por tipo, ningún «urgente», y el último registro nunca ordena ni resalta.
+- **Espacio profesional** (`pro/espacio-profesional.tsx`; WP-TABLERO-ALTA-GAMA TB-05 a TB-12, DL-163 D-2 a D-4):
+  **primero lo que te toca y, al lado, lo que espera a la persona y a quién abrir.** El formulario para pedir un vínculo
+  y la lista de solicitudes enviadas se abren cuando hacen falta.
+  - **El encabezado** dice el título, el saludo («Buen día, Sofía», con el nombre con que la ven las personas; a secas
+    sin nombre o con «Ocultar nombres»), «Hoy» (la fecha con que la API clasificó las revisiones) y los botones, con
+    uno solo lleno: «Invitar a una persona» o, con el cajón prendido y algo en la cola, «Empezar por el primero».
+  - **Tres cifras:** «Te toca a vos», con Revisiones, Planes y Tomas, que filtran (`aria-pressed`); «Esperan respuesta»
+    y «Personas», que llevan a su sección. Dicen «al menos» si faltan páginas. La cartera se lee entera al entrar y se
+    cuenta en el navegador: elegir no le pide nada a la API.
+  - **«Tu semana»:** las revisiones acordadas de hoy a hoy + 7, una columna por día, y las vencidas aparte, en fichas
+    con el monograma, el nombre y el área; hasta tres por día y «y N más», y «Ver como lista». Sin tomas, horas ni
+    «hecho»; el vacío dice de dónde salen las fechas.
+  - **La mesa, en dos carriles:** «Te toca a vos» (revisiones, planes y tomas) por persona, con las personas por su
+    pendiente más urgente (`compararPendientes`, el orden de DL-107) y agrupadas por `identityId`, nunca por nombre; o
+    «Por pendiente», la tabla de DL-107 tal cual, a un clic, y la elección se recuerda en el navegador. Al lado,
+    «Esperan respuesta» (formularios, solicitudes de vínculo e invitaciones sin usar), lo más antiguo primero. Cada
+    renglón lleva el verbo que lo resuelve; el orden nunca sale de la actividad de la persona: ningún color por tipo,
+    ningún «urgente», y el último registro acompaña, no ordena ni resalta.
+  - **El rostro es un monograma** de un solo tono neutro (`Retrato`), donde ya se ve el nombre, y nunca en las
+    solicitudes ni en las invitaciones a quien no tiene un vínculo vigente, en los avisos ni en Administración. Sin fotos
+    de personas (D-2). «Ocultar nombres», en el menú de la cuenta, rige en todo /pro, también en el cajón, en lo que se
+    exporta y en las novedades; ningún título de pestaña lleva un nombre.
+  - **Volver donde estabas:** cada ficha de «Tu semana», cada verbo y cada salida del cajón guardan el lugar (el
+    filtro, el modo, el período y lo que se abrió, solo identificadores), y el destino ofrece «Volver al Espacio
+    profesional, donde estabas». Al volver, el foco va a lo que se abrió o a lo que seguía.
   - **El período acota solo el último registro,** y lo dice. Sin período se mira toda la historia: sin ningún registro,
     «Sin registros todavía»; con período, «Sin registros en el período».
   - **El aviso de vista parcial** va debajo de las vistas: dice cómo leer sus cantidades. Al pie, la hora de la
     consulta y «Actualizar», que vuelve a leer las tres listas de la página.
-  - **«Tus asesorados» es un directorio:** una persona por renglón, con su referencia y sus áreas en el orden de BE. Un
-    área sin acceso lleva el candado y las palabras de BE para ese estado, no un «no disponible» para todo. Tocar a la
-    persona abre el detalle de cada vínculo (finalidad, estado y desde cuándo); «Abrir» lleva a su ficha. Se busca por
-    la referencia, mientras se escribe.
+  - **«Tus asesorados» es un directorio:** una persona por renglón, con el monograma, el nombre, la referencia, las
+    áreas con acceso, las sin acceso con su estado en palabras y «Con vos desde», en orden alfabético y sin datos de
+    seguimiento. El renglón entero abre la ficha, donde está el detalle de cada vínculo. Se busca mientras se escribe.
   - **Un diálogo con un formulario** (pedir un vínculo): el foco entra por el primer campo; Escape cierra, salvo
     mientras se envía; al enviarse se cierra y la página dice qué pasó. Un aviso que queda adentro de un diálogo
     cerrado no lo lee nadie.
-  - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita.
+  - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita; el lugar para volver
+    vive en la pestaña.
 - **Los registros de un área, por día** (`nutrition/registros.tsx`; las reglas, en `registros-de-nutricion.ts` del
   dominio; WP-ESCRITORIO-AREAS): es la línea de tiempo llevada al registro completo de un área. **El día es la unidad**
   y, adentro, **cada comida del plan es una fila.**
@@ -963,12 +1023,45 @@ Lo que salió del análisis de los flujos del profesional (`docs/ux/ANALISIS-ESP
 - **Lo mismo se llama igual.** «Pedir información» (no «Solicitar contexto»), «Área» (no «Alcance») en lo que ve el
   profesional.
 
+### II.12 Decisiones guiadas (DL-163, 2026-11-06)
+
+Un flujo de pequeñas decisiones, de a una, como «Ya la hice» en la APK: el cajón «De a una» del Espacio
+(`pro/cajon-de-a-una.tsx`), «¿Cuándo la revisás?» en la revisión y al activar (`advisees/cuando-la-revisas.tsx`) y
+«Empezar el plan» con sus pasos. Guiar no es decidir por el profesional:
+- **Una pregunta por cuadro, que sale de lo que se lee al abrirlo.** «¿Preparás la revisión de Nutrición?»; si la
+  revisión ya está registrada y sin aplicar, «La revisión del 16 oct está registrada y sin aplicar. ¿La aplicás?». La
+  pregunta es el título y toma el foco; nunca lo toma un botón que escribe.
+- **Nada viene elegido.** Ni un resultado, ni una evidencia, ni una fecha. Si una opción de no hacer nada tiene efecto,
+  es una opción más, con su efecto escrito («Sin fecha por ahora»). Una fecha que el profesional ya eligió no se le
+  vuelve a pedir: viene elegida y se dice de dónde sale.
+- **El efecto, antes del botón.** Lo que va a pasar se escribe con las palabras del dominio («El plan sigue igual. Se
+  registra la próxima acción.» y la fecha que deja) antes del botón que lo hace, y el botón tiene el verbo del acto.
+- **Registrar, aplicar y activar son tres actos, con tres botones.** Se encadenan con una pregunta y nunca se juntan.
+  Abrir un pendiente no lo resuelve (ADV-10-DSH-03), saltear no escribe y ver no es revisar.
+- **Desde el cajón se aplica, nada más.** Una revisión ya registrada, con la misma operación, los mismos conflictos y
+  los mismos textos que la lista de Revisiones. Registrar una revisión, activar un plan o cargar una toma se hacen en
+  su pantalla, a la que lleva la salida del cuadro.
+- **El teclado, solo con el foco adentro.** J, K y S en el cajón, y Escape cierra; Enter no es un atajo de nada que
+  escriba. Al cerrar, el foco vuelve adonde estaba.
+- **Volver es seguir.** Se guarda el lugar, nunca los datos: solo identificadores, en la pestaña. Al volver, se sigue
+  con el siguiente que todavía esté; lo resuelto ya no está.
+- **El cierre es un comprobante.** «Llegaste al final de esta vista.», con lo salteado y lo aplicado nombrados, sin
+  cuentas, festejos ni tachados: «Revisaste 3 de 5» invita a preguntar cuántas a tiempo.
+- **Las barras de un flujo** (Listo · Ahora · Después, «Pendiente 1 de 3») se llenan con actos del profesional, nunca
+  con registros de la persona (I.1.3).
+- **Detrás de un interruptor hasta su recaptura.** Un flujo nuevo que cambia cómo se trabaja se prende después de verlo
+  en pantalla con Dirección; apagado, cada verbo lleva a su destino exacto, con el camino de vuelta.
+
 ## Parte III · APK del asesorado
 
 ### III.1 Navegación
 
 Desde DL-117 (Dirección, 2026-10-04). El diseño completo, con la matriz de Inicio y las reglas de Atrás, está en
 [INICIO-Y-NAVEGACION.md](INICIO-Y-NAVEGACION.md).
+
+*(2026-11-07: DL-166 cambia el quinto destino, «Información», por Perfil, y saca de la cabecera el menú y el avatar.
+Durante la sesión, la fila de acciones y la navegación van fijas. Está decidido y sin implementar
+(`docs/paquetes/WP-APP-VUELTA-DE-ROSCA.md`). Hasta que se programe, rige lo de abajo.)*
 - **Barra inferior:** una cápsula flotante con cinco destinos, Inicio, Nutrición, Entrenamiento, Evolución e Información
   (`barra-de-zonas.tsx`).
   - Cada destino lleva texto **e** ícono, mide 56 dp de alto y al menos 48 de ancho, y tiene rol de pestaña con su estado
@@ -1227,6 +1320,28 @@ Además de los de I.4:
   - Un token guardado no es una sesión autorizada, y no se promete recordar una sesión que no se pudo guardar: Cuenta
     dice si quedó guardada.
 
+### III.7 Desplegables de la APK
+
+Vale desde el 2026-11-07, por decisión de Dirección (PV-4; DL-166). Es una regla fija y no se decide pantalla por
+pantalla.
+- **Se pliega lo que explica:** el para qué, qué incluye, la preparación, las cantidades en detalle y cómo funciona
+  algo.
+- **Nunca se pliega lo que hace falta para decidir:** el estado, la fecha, quién y si se puede responder. Si una
+  persona necesita un dato para elegir qué tocar, ese dato está a la vista.
+- **La pantalla lleva a la acción, y la acción tiene el detalle.** Primero va lo que la mayoría necesita para actuar, y
+  el resto queda a un toque, sin esconderlo. Es la revelación progresiva: «Comí esta opción» registra con las porciones
+  del plan, y quien quiere informar gramos los informa.
+- **El desplegable dice qué guarda:** su título nombra el contenido («Para qué lo pide», «Qué incluye», «6 ejercicios ·
+  18 series»), no «Más información».
+- **TalkBack** lo anuncia como botón, con su estado: «contraído» o «expandido». Lo plegado se puede leer entero al
+  abrirlo.
+- **Abrir un desplegable no escribe nada** y no mueve lo que está arriba de él.
+- **Un texto que exige el legajo** no se pliega si se lee antes de actuar (IV.1). Lo que una decisión pide decir una
+  vez (por ejemplo, «Lo que respondas queda como declarado por vos», DL-165 D-2) se sigue diciendo una vez.
+
+Las pantallas de la APK se adaptan a esta regla con WP-APP-VUELTA-DE-ROSCA. Cada pantalla nueva o cambiada la cumple
+desde ahora.
+
 ---
 
 ## Parte IV · Verificación y lista de control
@@ -1272,7 +1387,10 @@ Se copia en la descripción del PR y se marca. Se marcan los puntos generales y 
 
 **APK**
 - [ ] Funciona en 360 dp sin desplazamiento horizontal, y con la letra al máximo.
-- [ ] No agrega accesos fuera de la barra, el menú auxiliar y Cuenta.
+- [ ] No agrega accesos fuera de la barra, el menú auxiliar y Cuenta. (Con DL-166, cuando se programe: fuera de la
+  barra, Perfil y los ajustes contextuales.)
+- [ ] Lo plegado explica, y lo que hace falta para decidir (estado, fecha, quién y si se puede responder) está a la
+  vista (III.7).
 
 **Verificación**
 - [ ] Se miró la pantalla de verdad: captura del website con datos sintéticos, o maqueta y después teléfono, para la APK.
@@ -1514,6 +1632,27 @@ garantía de accesibilidad, permisos, integridad de datos o manejo de errores se
 | Los cuadros de texto | Con la marca para agrandarlos. | Crecen con lo escrito, sin la marca, donde el navegador sabe hacerlo (F-156). | Sustituida | Áreas, refinamiento |
 | La persona, para el profesional | «Asesorado · c36743», una referencia derivada del identificador (DL-040, provisorio). | Su nombre visible mientras el vínculo esté vigente, con la referencia chica al lado en la ficha; si no, la referencia (F-157; DL-009 y DL-040). | Sustituida | Áreas, refinamiento |
 
+### V.4 Lo que cambia con WP-TABLERO-ALTA-GAMA (etapa A, desde el 2026-11-06)
+
+Se anota con las partes de la etapa A (`docs/paquetes/WP-TABLERO-ALTA-GAMA.md`, §10), en borrador y sin integrar.
+Ninguna garantía de accesibilidad, permisos, integridad de datos o manejo de errores se quita; nada de esto califica a
+la persona.
+
+| Pauta | Antes | Ahora | Tipo | Parte |
+|---|---|---|---|---|
+| Barras | Ninguna barra de avance: la vara de las maquetas mandaba rehacer «un porcentaje, una barra de progreso o un medidor». | Una lista cerrada de barras que se llenan solo con fechas y actos del profesional, con su frase y sin «%» (I.1.3). | Ampliada (D-1) | TB-10, TB-12 |
+| El rostro | Sin avatares ni fotos. | Un monograma de un solo tono neutro donde ya se ve el nombre, y «Ocultar nombres» (II.6). Las fotos, después (D-2). | Sustituida | TB-05 |
+| La letra | La del sistema. | Inter autoalojada con cifras tabulares, y Poppins 600 en tres momentos de marca (I.5). | Nueva (D-3) | TB-01 |
+| El acento | Marcaba los enlaces, lo elegido, las casillas y los puntos de un gráfico. | Una sola luz: en un gráfico, los puntos van en el color de su métrica y el acento marca solo «hoy»; lo elegido de una vista, en tinta (I.6). | Sustituida (D-3) | TB-02 a TB-04 |
+| Las marcas de los gráficos | Cada gráfico, su lenguaje y su tamaño de punto. | Una sola gramática en los cuatro gráficos, con un mínimo por estado, una sola forma de lo elegido y la grilla solo horizontal (I.7). | Sustituida (D-3) | TB-02, TB-03 |
+| El minigráfico | «No se quita ningún punto por falta de lugar: se achica la marca.» | La tira con el estado de cada día; la línea cortada con las marcas del último, el elegido y los aislados, y la media de cada semana con más de ocho semanas (II.6). | Sustituida (D-5) | TB-04 |
+| Las tarjetas del Resumen | Los hechos en renglones de texto. | El tramo del ciclo, lo nuevo desde la revisión en cifras y la pieza propia de cada área (II.4, II.6). | Ampliada | TB-10, TB-24 |
+| «Pendientes» | Una fila por persona, área y tipo, con vistas con nombre. | «Te toca a vos» por persona y «Esperan respuesta» aparte, con las cifras arriba y «Tu semana» (II.6). «Por pendiente» conserva DL-107. | Sustituida (D-4) | TB-06, TB-07, TB-11 |
+| De a una | Ir, resolver, recargar y volver a filtrar. | El cajón «De a una», detrás de su interruptor, y el lugar para volver (II.12). | Nueva (D-4) | TB-12, TB-07 |
+| La próxima revisión | «Próxima revisión (opcional)», un campo de fecha. | «¿Cuándo la revisás?», con opciones para tocar y nada elegido, en la revisión y al activar (II.12). | Sustituida (D-6) | TB-15 |
+| Aplicar | Solo desde la lista de Revisiones. | También desde el cajón, con la misma operación y el efecto escrito antes del botón (II.12). | Ampliada (D-6) | TB-15 |
+| Los íconos | 105. | 115 (I.8). | Corregida | TB-17 |
+
 ---
 
 ## Lo que se sabe que falta
@@ -1547,5 +1686,9 @@ Son las mejoras de UX detectadas que todavía no entraron. Cada una entra en un 
 - **Un 503 intermitente de la API** (`P2028`: la transacción no pudo empezar a tiempo) con lecturas concurrentes y poca
   memoria. La pantalla lo muestra con su reintento. Es de la API, no de la interfaz. La mejora medida y el límite que
   queda están en `EVIDENCIA/P2028`; la ficha profesional lee de a cuatro (II.7).
+- **Los enlaces de texto en tinta, con un subrayado fino** (DL-163 D-3): siguen en el color de los enlaces. Cambiarlos
+  toca todas las pantallas del website y sus capturas: va en su propia parte, con su recaptura.
+- **El cajón «De a una» con un lector de pantalla y con un teclado real** (J, K, S y Escape), y la pasada a densidad 1
+  en un proyector, donde se comprueba que `--banda` y `--pista` se siguen viendo: los pide la etapa A y no se hicieron.
 - **Las demás pantallas del website.** Siguen esta guía desde DL-113. Las que se toquen después se revisan con la lista
   de control.

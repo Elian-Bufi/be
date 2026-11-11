@@ -11,6 +11,10 @@
  * - **RIR nulo es «sin informar»; RIR 0 es una respuesta.** Una sesión registrada como «no realizada» es la única
  *   omisión declarada: aporta 0 series registradas y lo dice.
  * - Los borradores no llegan: el profesional ve lo registrado (09v10:980).
+ * - **Una serie de carga rápida** (DL-161; Dirección, 2026-11-02), tildada sin escribir con los valores del plan, es un
+ *   punto como los demás, con el detalle «Cómo se cargó: Carga rápida…» (`DETALLE_DE_CARGA_RAPIDA`): el gráfico la
+ *   dibuja hueca, y los resúmenes, la referencia y el cambio relativo la dejan fuera (`series-del-analisis.ts`). Las
+ *   series registradas se cuentan siempre, también las tildadas: la cantidad sí se compara.
  */
 import type { EjercicioDelPeriodo, MetricaDeEntrenamiento, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
 import type { EjecucionDeEntrenamiento } from './contratos-entrenamiento';
@@ -28,7 +32,7 @@ import {
   type ValorPlanificado,
 } from './comparacion-de-entrenamiento';
 import type { DefinicionDeMetrica } from './metricas-del-analisis';
-import { lunesDe, semanasDelPeriodo } from './series-del-analisis';
+import { DETALLE_DE_CARGA_RAPIDA, lunesDe, semanasDelPeriodo } from './series-del-analisis';
 import { numero } from './formato-numeros';
 
 /**
@@ -213,6 +217,7 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
     const medida = MEDIDA[o.metrica](o.unidad);
     let otraUnidad = 0;
     let sinDato = 0;
+    let deCargaRapida = 0;
     for (const p of evolucion(observaciones, medida, o.serie)) {
       const c = p.observacion.comparacion;
       if (p.registrado.tipo === 'otra-unidad') {
@@ -225,6 +230,7 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
       }
       const serie = p.fila?.registrada.tipo === 'registrada' ? p.fila.registrada.serie : null;
       const planificado = planificadoEnPalabras(p.planificado, unidad);
+      if (p.cargaRapida) deCargaRapida++;
       puntos.push({
         pointId: `x:${c.executionId}:${c.prescriptionId}:${o.serie}`,
         date: c.fecha,
@@ -243,6 +249,8 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
         missing: [],
         detail: [
           { label: DETALLE_DE_SERIE.SESION, value: c.sesion },
+          // DL-161: la marca del punto hueco. Va antes del objetivo: dice por qué este valor no se compara con él.
+          ...(p.cargaRapida ? [{ label: DETALLE_DE_CARGA_RAPIDA.label, value: DETALLE_DE_CARGA_RAPIDA.value }] : []),
           ...(planificado ? [{ label: DETALLE_DE_SERIE.OBJETIVO, value: planificado }] : []),
           ...(o.metrica !== 'LOAD' && serie?.load ? [{ label: DETALLE_DE_SERIE.CARGA, value: `${numero(serie.load.value)} ${serie.load.unit}` }] : []),
           ...(o.metrica !== 'REPETITIONS' && serie?.completedRepetitions != null ? [{ label: DETALLE_DE_SERIE.REPETICIONES, value: numero(serie.completedRepetitions) }] : []),
@@ -255,6 +263,14 @@ export function serieDeEntrenamiento(ejecuciones: readonly EjecucionDeEntrenamie
     }
     if (otraUnidad > 0) notas.push(`${numero(otraUnidad)} ${otraUnidad === 1 ? 'sesión registró' : 'sesiones registraron'} la carga en ${o.unidad === 'kg' ? 'lb' : 'kg'}: están en su propia escala, no en esta.`);
     if (sinDato > 0) notas.push(`${numero(sinDato)} ${sinDato === 1 ? 'sesión no tiene' : 'sesiones no tienen'} dato de esta serie: no son cero.`);
+    if (deCargaRapida > 0)
+      notas.push(
+        `${numero(deCargaRapida)} ${
+          deCargaRapida === 1
+            ? 'sesión tiene esta serie con carga rápida (tildada sin escribir, con los valores del plan): es un punto hueco, que no se compara con el objetivo ni entra'
+            : 'sesiones tienen esta serie con carga rápida (tildada sin escribir, con los valores del plan): son puntos huecos, que no se comparan con el objetivo ni entran'
+        } en los resúmenes ni en el cambio relativo.`,
+      );
   }
 
   const tramos = [...new Set(puntos.map((p) => p.segment))];

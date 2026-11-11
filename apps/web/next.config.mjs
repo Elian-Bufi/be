@@ -50,6 +50,8 @@ const nextConfig = {
     BE_CONSTRUIDO_EN: new Date().toISOString(),
     BE_API_BASE_URL: apiBaseUrl,
     BE_GOOGLE_WEB_CLIENT_ID: googleWebClientId,
+    // WP-TABLERO-ALTA-GAMA TB-12: el interruptor del cajón «De a una». Solo «si» lo prende; Render no lo define.
+    BE_CAJON_DE_A_UNA: process.env.BE_CAJON_DE_A_UNA === 'si' ? 'si' : '',
   },
 };
 

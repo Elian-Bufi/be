@@ -8,7 +8,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { areaUnicaDelProfesional, armarElDirectorio, buscarEnElDirectorio, estadoEnUnaFrase } = await import('../apps/web/src/app/pro/directorio.ts');
+const { areaUnicaDelProfesional, armarElDirectorio: armarConNombres, buscarEnElDirectorio, estadoEnUnaFrase } = await import('../apps/web/src/app/pro/directorio.ts');
+/** El directorio con los nombres a la vista; con «Ocultar nombres» (TB-05), «Tus asesorados» le pasa la referencia. */
+const armarElDirectorio = (vinculos, yo) => armarConNombres(vinculos, yo, (a) => a.displayName);
 const { ICONO_DEL_AREA_DE_CARTERA, ICONO_DEL_PENDIENTE, ICONO_DE_LA_VISTA_DE_PENDIENTES, rutaQueResuelve, textoDePendiente, ultimoRegistroDe } = await import('../apps/web/src/app/pro/pendiente-en-una-fila.ts');
 const { diaConSuSemana, diaDelAnioEnCurso } = await import('../apps/web/src/lib/formato.ts');
 const { COPY_VINCULO, ICONOS, TIPOS_DE_PENDIENTE, VISTAS_DE_PENDIENTES, estadoParaMostrar } = await import('../packages/domain/dist/index.js');
@@ -145,6 +147,10 @@ test('con un nombre visible (DL-040, 2026-10-15) se busca por el nombre o por la
   assert.deepEqual(quienes('Martina G'), ['a9be23'], 'con todas las palabras');
   assert.deepEqual(quienes('c5c7'), ['c5c72c'], 'por la referencia, aunque tenga nombre');
   assert.deepEqual(quienes('asesorado'), ['16de3f'], 'la referencia neutral, solo en quien no tiene un nombre a la vista');
+  // TB-05: con «Ocultar nombres», cada persona es su referencia: el nombre no se ve ni se encuentra.
+  const ocultas = armarConNombres([conNombre('a9be23', 'Martina Gómez', 'NUTRICION')], YO, (a) => `Asesorado · ${a.identityId.slice(-6)}`);
+  assert.deepEqual(ocultas.map((p) => p.nombre), ['Asesorado · a9be23']);
+  assert.deepEqual(buscarEnElDirectorio(ocultas, 'martina'), []);
 });
 
 // ─── Un pendiente en una fila ────────────────────────────────────────────────────────────────────
@@ -254,4 +260,217 @@ test('el objetivo propone la evaluación más reciente; sin evaluaciones, ningun
   ];
   assert.equal(evaluacionMasReciente(evs), 'nueva');
   assert.equal(evaluacionMasReciente([]), '');
+});
+
+// ─── TEST-TAG-010 · La acción del momento sigue la cadena (WP-TABLERO-ALTA-GAMA TB-09) ─────────────────────────────
+
+{
+  const HOY = '2026-10-19';
+  const plan = (nextReviewAt = null) => ({ planVersionId: 'p', activatedAt: '2026-09-01T12:00:00.000Z', nextReviewAt });
+  const resumen = (cambios = {}) => ({ activePlan: null, objective: null, lastReview: null, draftPlan: null, registeredExecutions: 0, lastExecutionAt: null, registeredIntakes: 0, lastIntakeAt: null, ...cambios });
+  const legible = (summary) => ({ available: true, relationshipId: 'r', summary });
+  const ajeno = { available: false, reason: 'NOT_AVAILABLE_TO_VIEW' };
+  const dominios = (nutrition, training) => ({ nutrition, training, anthropometry: ajeno });
+  const autor = { identityId: 'pro-1', displayName: 'Lic. Sintética' };
+  const sinAplicar = (reviewId, recordedAt = '2026-10-10T12:00:00.000Z') => ({ reviewId, recordedAt, author: autor, application: null });
+  const aplicada = (reviewId) => ({ reviewId, recordedAt: '2026-10-01T12:00:00.000Z', author: autor, application: { appliedAt: '2026-10-01T13:00:00.000Z', createdPlanId: null, createdObjectiveVersionId: null } });
+  const borrador = { planVersionId: 'b', recordedAt: '2026-10-18T12:00:00.000Z', fromReviewId: null };
+
+  test('TEST-TAG-010 · 1. aplicar: una revisión registrada y sin aplicar va antes que todo, y lleva a esa revisión', () => {
+    // El caso de Federico Álvarez en la cohorte: la revisión acordada ya venció y la última revisión está sin aplicar.
+    // Antes ofrecía «Preparar la revisión»: preparar otra encima de una que todavía no rige.
+    const federico = dominios(legible(resumen({ activePlan: plan('2026-10-12'), lastReview: sinAplicar('rev-1') })), ajeno);
+    assert.deepEqual(accionDeLaFicha(federico, HOY), { tipo: 'aplicar', area: 'NUTRICION', texto: 'Aplicar la revisión de Nutrición', vista: 'revisiones', extra: '&revision=rev-1' });
+    assert.equal(rutaDeLaAccion(accionDeLaFicha(federico, HOY), 'ase 1'), '/pro/advisees/nutrition?id=ase%201&vista=revisiones&revision=rev-1');
+    // Gana también al borrador y a empezar en la otra área; con dos sin aplicar, la que espera hace más tiempo.
+    const dos = dominios(legible(resumen({ lastReview: sinAplicar('rev-n', '2026-10-15T12:00:00.000Z'), draftPlan: borrador })), legible(resumen({ activePlan: plan('2026-10-20'), lastReview: sinAplicar('rev-t', '2026-10-05T12:00:00.000Z') })));
+    assert.deepEqual(accionDeLaFicha(dos, HOY), { tipo: 'aplicar', area: 'ENTRENAMIENTO', texto: 'Aplicar la revisión de Entrenamiento', vista: 'revisiones', extra: '&revision=rev-t' });
+    // Una revisión aplicada no es un pendiente: sigue la cadena.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-11-30'), lastReview: aplicada('rev-a') })), ajeno), HOY), null);
+    // El identificador va codificado en la dirección.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ lastReview: sinAplicar('a&b') })), ajeno), HOY).extra, '&revision=a%26b');
+  });
+
+  test('TEST-TAG-010 · 2. la revisión acordada: vencida o de la semana, y abre la revisión ya preparada', () => {
+    // La última revisión es del 1 oct, de un ciclo anterior: la del 12 oct todavía no se hizo.
+    const vencida = dominios(legible(resumen({ activePlan: plan('2026-10-12'), lastReview: aplicada('rev-a'), draftPlan: borrador })), ajeno);
+    assert.deepEqual(accionDeLaFicha(vencida, HOY), { tipo: 'revisar', area: 'NUTRICION', texto: 'Preparar la revisión de Nutrición', vista: 'revisiones', extra: '&preparar=1' });
+    // «Preparar la revisión» abre la pantalla de la revisión nueva con el período preparado (`preparar=1`).
+    assert.equal(rutaDeLaAccion(accionDeLaFicha(vencida, HOY), 'x'), '/pro/advisees/nutrition?id=x&vista=revisiones&preparar=1');
+    // A más de siete días, no es la acción del momento.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-27') })), ajeno), HOY), null);
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-26') })), ajeno), HOY).tipo, 'revisar');
+  });
+
+  test('TEST-TAG-010 · una revisión hecha para la fecha acordada no vuelve a pedirse (TA-13)', () => {
+    const hecha = (recordedAt) => ({ ...aplicada('rev-h'), recordedAt });
+    // Registrada el 15 oct para la fecha del 12, y aplicada: la fecha del plan vigente es de un ciclo ya revisado (D-6).
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-12'), lastReview: hecha('2026-10-15T12:00:00.000Z') })), ajeno), HOY), null);
+    // Registrada una semana antes de la fecha, también es la de esa fecha.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-20'), lastReview: hecha('2026-10-13T12:00:00.000Z') })), ajeno), HOY), null);
+    // Registrada el 1 oct, cuando se reprogramó para el 20: la del 20 todavía no se hizo.
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-10-20'), lastReview: hecha('2026-10-01T12:00:00.000Z') })), ajeno), HOY).tipo, 'revisar');
+  });
+
+  test('TEST-TAG-010 · 3. el borrador, después de las revisiones; 4. empezar, al final', () => {
+    assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-11-30'), draftPlan: borrador })), ajeno), HOY).tipo, 'borrador');
+    assert.equal(accionDeLaFicha(dominios(legible(resumen()), legible(resumen({ activePlan: plan('2026-11-30'), draftPlan: borrador }))), HOY).texto, 'Seguir el borrador de Entrenamiento', 'el borrador gana a empezar en la otra área');
+    assert.deepEqual(accionDeLaFicha(dominios(legible(resumen()), legible(resumen({ activePlan: plan('2026-11-30') }))), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan de Nutrición', vista: 'plan', extra: '' });
+  });
+
+  test('TEST-TAG-010 · la cadena entera, de un eslabón al siguiente, como se cierra un ciclo', () => {
+    // Registrada → aplicada (con un borrador nuevo) → activado con fecha → al día.
+    const revisada = { ...aplicada('rev-1'), recordedAt: '2026-10-13T12:00:00.000Z' };
+    const pasos = [
+      resumen({ activePlan: plan('2026-10-12'), lastReview: { ...sinAplicar('rev-1'), recordedAt: '2026-10-13T12:00:00.000Z' } }),
+      resumen({ activePlan: plan('2026-10-12'), lastReview: revisada, draftPlan: { ...borrador, fromReviewId: 'rev-1' } }),
+      resumen({ activePlan: plan('2026-11-16'), lastReview: revisada }),
+    ];
+    assert.deepEqual(
+      pasos.map((r) => accionDeLaFicha(dominios(legible(r), ajeno), HOY)?.tipo ?? null),
+      // Aplicada la revisión, lo que sigue es su borrador: la fecha vieja del plan vigente ya se revisó.
+      ['aplicar', 'borrador', null],
+    );
+    // Lo que el profesional no puede leer no entra en la cadena.
+    assert.equal(accionDeLaFicha(dominios(ajeno, ajeno), HOY), null);
+  });
+}
+
+// ─── TB-08 · «Tus asesorados» con rostro y antigüedad (WP-TABLERO-ALTA-GAMA; DL-163 D-2) ───────────────────────────
+
+const { enOrdenAlfabetico } = await import('../apps/web/src/app/pro/directorio.ts');
+
+test('TB-08 · «Con vos desde» es el vínculo vigente más antiguo, y un vínculo que terminó no cuenta', () => {
+  const [dos] = armarElDirectorio(
+    [vinculo('a9be23', 'NUTRICION', { acceptedAt: '2026-05-10T12:00:00.000Z' }), vinculo('a9be23', 'ANTROPOMETRIA', { acceptedAt: '2025-11-03T12:00:00.000Z', relationshipState: 'PAUSADO', pausedBy: 'ADVISEE' })],
+    YO,
+  );
+  assert.equal(dos.conVosDesde, '2025-11-03T12:00:00.000Z', 'el más antiguo, aunque esté en pausa');
+  const [conUnoTerminado] = armarElDirectorio([vinculo('a9be23', 'NUTRICION', { relationshipState: 'FINALIZADO', acceptedAt: '2024-01-01T12:00:00.000Z' }), vinculo('a9be23', 'ENTRENAMIENTO', { acceptedAt: '2026-02-01T12:00:00.000Z' })], YO);
+  assert.equal(conUnoTerminado.conVosDesde, '2026-02-01T12:00:00.000Z', 'lo que terminó no alarga la antigüedad');
+  const [terminado] = armarElDirectorio([vinculo('a9be23', 'NUTRICION', { relationshipState: 'FINALIZADO' })], YO);
+  assert.equal(terminado.conVosDesde, null, 'sin un vínculo vigente, no es «con vos»');
+});
+
+test('TB-08 · en orden alfabético, como en español, y a igual nombre por la referencia', () => {
+  const conNombre = (asesorado, nombre) => vinculo(asesorado, 'NUTRICION', { advisee: { identityId: `ase-${asesorado}`, displayName: nombre } });
+  const personas = armarElDirectorio([conNombre('000003', 'diego sosa'), conNombre('000001', 'Ángela Ruiz'), conNombre('000004', 'Agustina Ledesma'), conNombre('000002', 'Diego Sosa'), conNombre('000005', 'Benítez Lucía')], YO);
+  assert.deepEqual(
+    enOrdenAlfabetico(personas).map((p) => `${p.nombre} ${p.referencia}`),
+    ['Agustina Ledesma 000004', 'Ángela Ruiz 000001', 'Benítez Lucía 000005', 'Diego Sosa 000002', 'diego sosa 000003'],
+  );
+  // No cambia la lista que recibe: el orden de la API sigue disponible.
+  assert.equal(personas[0].nombre, 'diego sosa');
+});
+
+// ─── TB-07 · «Tu semana» (WP-TABLERO-ALTA-GAMA; DL-163 D-3) ─────────────────────────────────────────────────────────
+
+const { DIAS_DE_LA_SEMANA, FICHAS_POR_DIA, semanaDeRevisiones } = await import('../apps/web/src/app/pro/tu-semana.ts');
+
+{
+  const HOY_DE_LA_SEMANA = '2026-11-06';
+  let n = 0;
+  const fila = (kind, since, extra = {}) => ({
+    advisee: { identityId: `ase-${++n}`, displayName: `Persona ${n}` },
+    relationshipId: `rel-${n}`,
+    domain: 'nutrition',
+    kind,
+    since,
+    open: { view: 'revisiones' },
+    ...extra,
+  });
+
+  test('TB-07 · ocho días de hoy a hoy + 7, también los vacíos, y las vencidas aparte', () => {
+    const items = [fila('REVIEW_OVERDUE', '2026-10-30'), fila('REVIEW_DUE_SOON', '2026-11-06'), fila('REVIEW_DUE_SOON', '2026-11-13'), fila('REVIEW_OVERDUE', '2026-11-02')];
+    const s = semanaDeRevisiones(items, HOY_DE_LA_SEMANA);
+    assert.equal(DIAS_DE_LA_SEMANA, 8);
+    assert.deepEqual(
+      s.dias.map((d) => d.clave),
+      ['2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13'],
+    );
+    assert.deepEqual(s.dias.map((d) => d.fichas.length), [1, 0, 0, 0, 0, 0, 0, 1], 'un día vacío es un día, no un hueco');
+    assert.deepEqual(s.vencidas.fichas.map((f) => f.since), ['2026-10-30', '2026-11-02'], 'en el orden de la cartera');
+    assert.equal(s.total, 4);
+  });
+
+  test('TB-07 · solo revisiones con fecha: sin tomas, sin planes, sin formularios y sin las que no tienen fecha', () => {
+    const items = [fila('REVIEW_UNDATED', null), fila('ANTHRO_DRAFT_PENDING', '2026-11-06'), fila('PLAN_DRAFT_PENDING', '2026-11-06'), fila('NO_ACTIVE_PLAN', null), fila('FORM_REQUEST_OPEN', '2026-11-06')];
+    const s = semanaDeRevisiones(items, HOY_DE_LA_SEMANA);
+    assert.equal(s.total, 0);
+    assert.equal(s.vencidas.fichas.length, 0);
+    assert.ok(s.dias.every((d) => d.fichas.length === 0));
+  });
+
+  test('TB-07 · hasta tres por día y después «y N más», con el orden de la cartera', () => {
+    const items = [1, 2, 3, 4, 5].map(() => fila('REVIEW_DUE_SOON', '2026-11-08'));
+    const s = semanaDeRevisiones(items, HOY_DE_LA_SEMANA);
+    const dia = s.dias[2];
+    assert.equal(FICHAS_POR_DIA, 3);
+    assert.deepEqual(dia.fichas.map((f) => f.advisee.identityId), items.slice(0, 3).map((f) => f.advisee.identityId));
+    assert.equal(dia.mas, 2);
+    // Sin tope («Ver como lista» y «y N más» abierto), todas.
+    assert.equal(semanaDeRevisiones(items, HOY_DE_LA_SEMANA, Infinity).dias[2].fichas.length, 5);
+    assert.equal(semanaDeRevisiones(items, HOY_DE_LA_SEMANA, Infinity).dias[2].mas, 0);
+  });
+
+  test('TB-07 · lo que registra la persona no mueve nada: el día sale de la fecha acordada', () => {
+    const base = fila('REVIEW_DUE_SOON', '2026-11-10');
+    const conRegistros = { ...base, lastActivityAt: '2026-11-05T12:00:00.000Z', activityCount: 40 };
+    const sinRegistros = { ...base, lastActivityAt: null, activityCount: 0 };
+    assert.deepEqual(semanaDeRevisiones([conRegistros], HOY_DE_LA_SEMANA).dias.map((d) => d.fichas.length), semanaDeRevisiones([sinRegistros], HOY_DE_LA_SEMANA).dias.map((d) => d.fichas.length));
+  });
+}
+
+// ─── TA-71 · «Tu semana» no pisa la columna de al lado (TB-07) ──────────────────────────────────────────────────────
+// En la galería de capturas del PR #240, a 1280 y a 1440, «Norma Castro» pisaba la raya de «Hoy» y «Diego Sosa» la de
+// «mar 10»: la columna implícita de las fichas crecía con el nombre en un renglón y la elipsis nunca cortaba. La medida
+// en el navegador la hacen las capturas (`EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/tu-semana.mjs`); acá, lo que decide
+// y lo que la sostiene en el código.
+
+const { fichasMedidas, partesQueSePasan, TOLERANCIA_PX } = await import('../EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/tu-semana.mjs');
+const { readFileSync } = await import('node:fs');
+const leer = (ruta) => readFileSync(new URL(`../${ruta}`, import.meta.url), 'utf8');
+
+test('TA-71 · una parte que se pasa de su columna se dice, por la derecha o por la izquierda; dentro de medio punto, no', () => {
+  const columna = { izquierda: 100, derecha: 207 };
+  const parte = (nombre, izquierda, derecha) => ({ parte: nombre, izquierda, derecha });
+  const vencidas = (...partes) => [{ dia: 'Vencidas', columna, fichas: [partes] }];
+  assert.equal(TOLERANCIA_PX, 0.5);
+  assert.deepEqual(partesQueSePasan(vencidas(parte('monograma', 104, 132), parte('nombre', 138, 207.5), parte('área', 104, 190))), []);
+  // Lo de la galería, a 1280: el nombre en un renglón, 39 más allá de la columna.
+  assert.deepEqual(partesQueSePasan(vencidas(parte('nombre', 138, 246))), ['Vencidas · nombre: sobresale 39 a la derecha']);
+  assert.deepEqual(partesQueSePasan(vencidas(parte('área', 98, 150))), ['Vencidas · área: sobresale 2 a la izquierda']);
+  // Con varias fichas en un día se dice cuál.
+  const dos = [{ dia: 'lun 9', columna, fichas: [[parte('nombre', 138, 200)], [parte('nombre', 138, 210)]] }];
+  assert.deepEqual(partesQueSePasan(dos), ['lun 9 (ficha 2) · nombre: sobresale 3 a la derecha']);
+  assert.equal(fichasMedidas([...dos, { dia: 'mar 10', columna, fichas: [] }]), 2);
+});
+
+test('TA-71 · el nombre no estira su columna: hasta dos renglones y «…», y entero en el título y en el texto del enlace', () => {
+  const css = leer('apps/web/src/app/globals.css');
+  const regla = (selector) => {
+    const i = css.indexOf(`\n${selector} {`);
+    assert.ok(i >= 0, `falta la regla ${selector}`);
+    return css.slice(i, css.indexOf('\n}', i));
+  };
+  assert.match(regla('.tu-semana__fichas'), /grid-template-columns: minmax\(0, 1fr\);/, 'la columna de las fichas no crece con el nombre');
+  const nombre = regla('.ficha-de-la-semana__nombre');
+  for (const declaracion of ['overflow: hidden;', '-webkit-line-clamp: 2;', 'overflow-wrap: anywhere;']) assert.ok(nombre.includes(declaracion), `el nombre lleva ${declaracion}`);
+  assert.doesNotMatch(nombre, /white-space: nowrap/, 'en un solo renglón, un nombre largo no entra en la columna de 1280');
+  assert.match(regla('.ficha-de-la-semana__cual'), /text-overflow: ellipsis;/);
+  // En una columna angosta, el monograma arriba y el área en palabras: lo decide el ancho de la columna, no la ventana.
+  assert.match(regla('.tu-semana__dia'), /container: dia-de-la-semana \/ inline-size;/);
+  assert.match(css, /@container dia-de-la-semana \(max-width: 7\.5rem\) \{/);
+  // Entero para el lector de pantalla (el texto del enlace no se recorta) y en el título, con «Ocultar nombres» también.
+  const ficha = leer('apps/web/src/app/pro/tu-semana-en-pantalla.tsx');
+  assert.match(ficha, /<span className="ficha-de-la-semana__nombre" title=\{quien\}>\s*\{quien\}\s*<\/span>/);
+  assert.match(ficha, /const quien = delAsesorado\(f\.advisee\);/);
+});
+
+test('TA-71 · las capturas miden «Tu semana» en cada tamaño y tema, también con los nombres ocultos, y fallan si algo se pasa', () => {
+  const capturas = leer('EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs');
+  assert.match(capturas, /fila\.tuSemana\[`\$\{tema\}-\$\{ancho\}`\] = await laSemanaEntra\(page, mediciones, `\$\{NOMBRES\[prefijo\]\} · \$\{tema\} · \$\{ancho\}`\);/);
+  assert.match(capturas, /await laSemanaEntra\(page, mediciones, `\$\{NOMBRES\[prefijo\]\} · nombres ocultos · \$\{tema\} · \$\{ancho\}`\);/);
+  assert.match(capturas, /if \(\(mediciones\.tuSemanaQueSePasa \?\? \[\]\)\.length > 0\) process\.exitCode = 1;/);
+  assert.match(capturas, /fichasMedidas\(columnas\) === 0 \? \['no se midió ninguna ficha de «Tu semana»'\]/);
 });

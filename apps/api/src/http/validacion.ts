@@ -13,10 +13,20 @@ import { errores } from './errores';
 
 /**
  * El techo, para cualquier esquema y tamaño. Ningún cuerpo válido de 16 KB (el límite de `bootstrap.ts`) llega: la cota de
- * cada esquema de entrada está probada en `validacion.spec.ts`, y la más alta, la de EditarPlanDeEntrenamientoRequestSchema,
- * es de 1.024 (2026-10-24).
+ * cada esquema de entrada está probada en `validacion.spec.ts`. La más alta era la de EditarPlanDeEntrenamientoRequestSchema,
+ * 1.024 (2026-10-24, techo 1.500); desde los formularios V2 (DL-164, 2026-11-04) es la de las respuestas V2
+ * (EnviarRespuestaV2RequestSchema y sus dos hermanas), 5.461: hasta 80 respuestas con hasta 40 códigos de opción o 30
+ * renglones cada una, de 3 bytes el elemento. Para los demás esquemas sigue mandando su propia cota, mucho más baja.
+ *
+ * DL-168 (2026-11-11): las seis escrituras de planes y recetas aceptan cuerpos de hasta 700 KB (`limite-de-cuerpo.ts`), y
+ * el techo sigue siendo el mismo para todas las rutas. Es a propósito: el trabajo de zod con un cuerpo inválido crece con
+ * sus elementos (medido en la PC de desarrollo: de 30 a 70 ms con 6.000 series inválidas de Entrenamiento, y cinco veces
+ * más si se lo dejaba llegar a la cota de 700 KB, 33.000 series), y así no crece con el límite. A cambio, en esas seis
+ * rutas un cuerpo válido de más de 6.000 elementos de listas se rechaza con TOO_BIG, que el website dice como «demasiado
+ * grande para guardarlo de una vez». Un plan real queda muy lejos: el de Nutrición más grande tiene 288 elementos; uno de
+ * Entrenamiento de 12 semanas, unos 2.900.
  */
-export const MAXIMO_DE_ELEMENTOS = 1500;
+export const MAXIMO_DE_ELEMENTOS = 6000;
 
 /**
  * El piso: hasta tantos elementos, el cuerpo siempre se valida. Así un cuerpo chico con una lista donde no va (`roles:
@@ -71,7 +81,8 @@ const ruta = (path: readonly PropertyKey[]): string => path.map(String).join('.'
  * MAXIMO_DE_ERRORES_INFORMADOS issues.
  *
  * Precedencia de los rechazos de forma, todos 400:
- *   1. el body parser: JSON mal formado o más de 16 KB → INVALID_REQUEST (filtro-de-errores.ts);
+ *   1. el body parser: JSON mal formado, o más que el límite de la ruta (16 KB; 700 KB en las seis de planes y recetas,
+ *      DL-168) → INVALID_REQUEST, el segundo con TOO_BIG (filtro-de-errores.ts);
  *   2. la cota de elementos → INVALID_REQUEST con TOO_BIG;
  *   3. la validación estricta: UNKNOWN_FIELD antes que las demás fallas de forma.
  * Un campo no declarado nunca se acepta. Si llega junto con más elementos de los que admite un cuerpo válido, el cuerpo

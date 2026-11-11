@@ -35,6 +35,7 @@ import {
   avisoDeLoQueNoDejaGuardar,
   comidasAbiertasEnElEditor,
   estructuraNutricionalComoEntrada,
+  falloDeGuardado,
   loQueEntraAlActivar,
   loQueNoDejaGuardar,
   lugarDelProblema,
@@ -65,12 +66,19 @@ import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
+import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { useCambiosSinGuardar } from '../marco-del-area';
+import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
+import { COPY_REVISAR_EL_PLAN, loQueQuedaSinCompletarEnNutricion, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
+import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
+import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { AgregarItem } from './agregar-item';
 import { ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
 import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 import { NoDisponible, useNutricion } from './nutricion';
+import { COPY_ELEGIR_RECETA, PAGINAS_DE_RECETAS, RECETAS_POR_PAGINA, recetasQueCoinciden } from './recetas-para-elegir';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
 
 /** El contrato admite hasta siete días tipo en un plan. */
@@ -129,7 +137,12 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   // Lo que el editor ve solo, antes de guardar.
   [PROBLEMA_DEL_EDITOR.faltaElNombre]: 'falta el nombre',
   [PROBLEMA_DEL_EDITOR.cantidadIlegible]: 'la cantidad no se entiende',
+  // TB-48: los topes del contrato, avisados antes de guardar.
+  ...TEXTO_DE_LOS_TOPES,
 };
+
+/** Lo que no deja guardar: lo que el editor ve solo y, desde TB-48, los topes del contrato que se pasan. */
+const loQueNoDejaGuardarElPlan = (e: Estructura) => [...loQueNoDejaGuardar(e), ...topesPasadosDeNutricion(e)];
 
 const esDelEditor = (codigo: string): boolean => codigo === PROBLEMA_DEL_EDITOR.faltaElNombre || codigo === PROBLEMA_DEL_EDITOR.cantidadIlegible;
 
@@ -158,6 +171,9 @@ export function EditorDeBorrador({
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [estructura, setEstructura] = useState<Estructura>([]);
   const [proximaRevision, setProximaRevision] = useState('');
+  // TB-15: «¿Cuándo la revisás?» al activar, con nada elegido (o la fecha que ya tenía la versión); la fecha que resulta
+  // es la que se guarda en la versión antes de activarla.
+  const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
   const [nombres, setNombres] = useState<Record<string, string>>({});
   // DL-119: la receta de cada opción de receta, por la versión que cita.
   const [recetas, setRecetas] = useState<Record<string, RecetaDeOpcion>>({});
@@ -172,8 +188,11 @@ export function EditorDeBorrador({
   const [guardadoA, setGuardadoA] = useState<string | null>(null);
   // Cuántas ediciones hubo: lo que se escribe mientras viaja un guardado no se pisa con la respuesta.
   const ediciones = useRef(0);
-  const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string } | null>(null);
+  // `sinFoco`: un aviso del autoguardado (DL-168) se anuncia sin sacarle el foco a lo que se está editando.
+  const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deRevisar?: boolean; sinFoco?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
+  // TB-48: lo que «Revisar el plan» encontró sin completar. No impide guardar ni activar.
+  const [sinCompletar, setSinCompletar] = useState<readonly ValidationIssue[] | null>(null);
   const [confirmar, setConfirmar] = useState(false);
   // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -233,6 +252,7 @@ export function EditorDeBorrador({
     setEstructura((e) => f(structuredClone(e)));
     setSucio(true);
     setProblemas(null);
+    setSinCompletar(null);
     setMensaje(null);
     setParaEnfocar(null);
   };
@@ -244,12 +264,12 @@ export function EditorDeBorrador({
     if (!version) return null;
     // Un nombre vacío o una cantidad que no se entiende pueden estar en otro día tipo, en una comida plegada o en otra
     // pestaña: se listan, y cada uno lleva a su lugar.
-    const impide = loQueNoDejaGuardar(estructura);
+    const impide = loQueNoDejaGuardarElPlan(estructura);
     if (impide.length > 0) {
       // El autoguardado espera a que se pueda guardar: no abre avisos mientras se escribe.
       if (automatico) return null;
       setProblemas(impide);
-      setMensaje({ tipo: 'error', texto: avisoDeLoQueNoDejaGuardar(impide) });
+      setMensaje({ tipo: 'error', texto: impide.some((p) => esUnTope(p.code)) ? AVISO_DE_LOS_TOPES : avisoDeLoQueNoDejaGuardar(impide) });
       return null;
     }
     const edicionesAlEnviar = ediciones.current;
@@ -280,8 +300,20 @@ export function EditorDeBorrador({
         setConflicto(true);
         return null;
       }
+      // Lo escrito queda como está: ni la estructura ni «sucio» cambian, y el próximo guardado lo vuelve a mandar.
       setFallo(true);
+      const motivo = falloDeGuardado(r);
+      // DL-168: si el plan no entra, reintentar no lo arregla: se dice también en el autoguardado, sin mover el foco.
+      if (motivo === 'DEMASIADO_GRANDE') {
+        setProblemas(null);
+        setMensaje({ tipo: 'error', texto: COPY_GUARDADO.demasiadoGrande, sinFoco: automatico });
+        return null;
+      }
       if (automatico) return null;
+      if (motivo === 'SIN_RESPUESTA') {
+        setMensaje({ tipo: 'error', texto: COPY_GUARDADO.sinRespuesta });
+        return null;
+      }
       if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
       return null;
@@ -300,7 +332,7 @@ export function EditorDeBorrador({
   }
 
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
-  const puedeGuardar = loQueNoDejaGuardar(estructura).length === 0;
+  const puedeGuardar = loQueNoDejaGuardarElPlan(estructura).length === 0;
   const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision], [estructura, proximaRevision]);
   useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando,
@@ -314,8 +346,12 @@ export function EditorDeBorrador({
     const r = await api.validarPlan(token, planId, v.version);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
     if (!r.ok) return setMensaje({ tipo: 'error', texto: mensajeDeFallo(r) });
+    // TB-48: además de lo que impide activar, lo que queda sin completar, que no lo impide.
+    const falta = loQueQuedaSinCompletarEnNutricion(estructura);
     setProblemas(r.datos.data.issues);
-    setMensaje(r.datos.data.valid ? { tipo: 'exito', texto: COPY_NUTRICION.planValido } : { tipo: 'error', texto: COPY_NUTRICION.hayElementosPorCorregir });
+    setSinCompletar(falta);
+    if (!r.datos.data.valid) return setMensaje({ tipo: 'error', texto: COPY_NUTRICION.hayElementosPorCorregir });
+    setMensaje(falta.length > 0 ? { tipo: 'info', texto: COPY_NUTRICION.planValido, deRevisar: true } : { tipo: 'exito', texto: COPY_NUTRICION.planValido });
   }
 
   /** «Activar plan»: con cambios, guarda antes; si no se puede guardar, no pregunta nada (el motivo queda a la vista). */
@@ -323,11 +359,13 @@ export function EditorDeBorrador({
     const v = sucio ? await guardar() : version;
     if (!v) return;
     setFalloDeActivacion(null);
+    setCuando(eleccionAlActivar(v.nextReviewAt));
+    setProximaRevision(v.nextReviewAt ?? '');
     setConfirmar(true);
   }
 
   async function activar() {
-    if (!version) return;
+    if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
     setActivando(true);
     setFalloDeActivacion(null);
     // La próxima revisión se fija en este acto: si cambió, se guarda antes, y se activa la versión que eso deja.
@@ -398,15 +436,39 @@ export function EditorDeBorrador({
     // Una comida sin nombre no se puede guardar: nace con el campo abierto.
     setNombreQueSeCambia({ de: 'comida', i, j });
   };
-  const subirComida = (j: number) => {
-    cambiar((x) => ([x[i]!.meals[j - 1], x[i]!.meals[j]] = [x[i]!.meals[j]!, x[i]!.meals[j - 1]!], x));
-    // Lo abierto y la opción elegida acompañan a su comida.
-    dejarAbiertas(new Set([...abiertas].map((p) => (p === j ? j - 1 : p === j - 1 ? j : p))));
-    setPestanas((p) => ({ ...p, [`${i}-${j - 1}`]: p[`${i}-${j}`] ?? 0, [`${i}-${j}`]: p[`${i}-${j - 1}`] ?? 0 }));
+  /** TB-48: mueve el día tipo que se mira, y se lo sigue mirando en su lugar nuevo, con sus comidas abiertas. */
+  const moverDia = (hacia: number) => {
+    cambiar((x) => mover(x, i, hacia));
+    setPestanas({});
+    setParaEnfocar(null);
+    ir({ dia: pedidoDeLaPosicion(hacia) });
+  };
+  /** TB-48: la copia del día tipo va justo después, y se la mira con su nombre a la vista para cambiarlo. */
+  const duplicarDia = () => {
+    cambiar((x) => duplicarEn(x, i, copiaDelDiaTipo(x[i]!, i)));
+    setPestanas({});
+    elegirDia(i + 1);
+    setNombreQueSeCambia({ de: 'dia', i: i + 1 });
+  };
+  /** Sube o baja una comida (TB-48 suma «Bajar»): lo abierto y la opción elegida acompañan a su comida. */
+  const moverComida = (j: number, hacia: number) => {
+    cambiar((x) => (mover(x[i]!.meals, j, hacia), x));
+    dejarAbiertas(posicionesTrasMover(abiertas, j, hacia));
+    setPestanas((p) => ({ ...p, [`${i}-${hacia}`]: p[`${i}-${j}`] ?? 0, [`${i}-${j}`]: p[`${i}-${hacia}`] ?? 0 }));
+  };
+  /** TB-48: la copia de la comida va justo después, abierta y con su nombre a la vista para cambiarlo. */
+  const duplicarComida = (j: number) => {
+    cambiar((x) => (duplicarEn(x[i]!.meals, j, copiaDeLaComida(x[i]!.meals[j]!, j)), x));
+    dejarAbiertas(new Set([...posicionesTrasInsertar(abiertas, j + 1), j + 1]));
+    setPestanas((p) => Object.fromEntries(Object.entries(p).map(([clave, k]) => {
+      const [d, m] = clave.split('-').map(Number);
+      return [d === i && m! > j ? `${d}-${m! + 1}` : clave, k];
+    })));
+    setNombreQueSeCambia({ de: 'comida', i, j: j + 1 });
   };
   const quitarComida = (j: number) => {
     cambiar((x) => (x[i]!.meals.splice(j, 1), x));
-    dejarAbiertas(new Set([...abiertas].filter((p) => p !== j).map((p) => (p > j ? p - 1 : p))));
+    dejarAbiertas(posicionesTrasQuitar(abiertas, j));
     setPestanas({});
   };
   /**
@@ -434,6 +496,8 @@ export function EditorDeBorrador({
       ? `${comidaDondeSeAgrega.label.trim() || `Comida ${agregando.j + 1}`} · opción ${agregando.k + 1}${opcionDondeSeAgrega.label.trim() ? `: ${opcionDondeSeAgrega.label.trim()}` : ''}`
       : null;
   const comidaDeLaReceta = eligiendoReceta ? estructura[eligiendoReceta.i]?.meals[eligiendoReceta.j] : undefined;
+  // Una plantilla no guarda recetas (DL-119): con una opción de receta, «Guardar como plantilla» dice por qué no.
+  const sinPlantilla = estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null;
 
   return (
     <section className="seccion editor-del-plan" aria-labelledby="titulo-borrador">
@@ -447,17 +511,24 @@ export function EditorDeBorrador({
         </h2>
         <div className="editor-del-plan__acciones">
           <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
-          <MenuDeAcciones
-            rotulo="Más acciones de esta versión"
-            acciones={[
-              {
-                clave: 'plantilla',
-                texto: COPY_PLANTILLAS.guardarComoPlantilla,
-                alElegir: () => setGuardarPlantilla(true),
-                noSePuede: estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null,
-              },
-            ]}
-          />
+          {/* TB-48: «Guardar como plantilla», con su texto y a la vista (antes, sola en un menú «⋯» sin texto). Si no se
+              puede, está apagado (con `aria-disabled`, que conserva el foco) y dice por qué, al lector y al tocarlo. */}
+          <button
+            type="button"
+            className="boton boton--quieto"
+            data-guardar-como-plantilla
+            aria-disabled={sinPlantilla ? true : undefined}
+            aria-describedby={sinPlantilla ? 'motivo-sin-plantilla' : undefined}
+            onClick={() => (sinPlantilla ? setMensaje({ tipo: 'info', texto: sinPlantilla }) : setGuardarPlantilla(true))}
+          >
+            <Icono nombre="plantillas" tamano={18} />
+            {COPY_PLANTILLAS.guardarComoPlantilla}
+          </button>
+          {sinPlantilla ? (
+            <span id="motivo-sin-plantilla" className="visualmente-oculto">
+              {sinPlantilla}
+            </span>
+          ) : null}
           {/* Los tres se apagan con `aria-disabled`, no con `disabled`: un botón deshabilitado pierde el foco, y quien
               guarda con el teclado quedaría fuera de lugar (y «Volver», en el diálogo, no tendría a dónde volver). */}
           <button
@@ -519,7 +590,7 @@ export function EditorDeBorrador({
         </AvisoFlotante>
       ) : null}
       {mensaje && mensaje.tipo !== 'exito' ? (
-        <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info'}>
+        <Aviso tipo={mensaje.tipo} enfocar={(mensaje.tipo !== 'info' || !!mensaje.deRevisar) && !mensaje.sinFoco}>
           <p>{mensaje.texto}</p>
           {problemas && problemas.length > 0 ? (
             <ul className="problemas-del-plan">
@@ -538,6 +609,21 @@ export function EditorDeBorrador({
                 </li>
               ))}
             </ul>
+          ) : null}
+          {/* TB-48: lo que queda sin completar, que no impide activar; cada cosa lleva a su lugar, como un problema. */}
+          {sinCompletar && sinCompletar.length > 0 ? (
+            <>
+              <p>{COPY_REVISAR_EL_PLAN.sinCompletar}</p>
+              <ul className="problemas-del-plan" data-sin-completar>
+                {sinCompletar.map((p, n) => (
+                  <li key={n}>
+                    <button type="button" className="boton boton--enlace" onClick={() => irAlProblema(p)}>
+                      {ubicacionDelProblema(p.path, estructura)} → {TEXTO_DE_LO_INCOMPLETO[p.code]}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
         </Aviso>
       ) : null}
@@ -568,6 +654,10 @@ export function EditorDeBorrador({
             rotulo={`más acciones del día tipo ${nombreDelDia}`}
             acciones={[
               { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setNombreQueSeCambia({ de: 'dia', i }) },
+              // TB-48: duplicar y mover el día tipo que se mira.
+              { clave: 'duplicar', texto: E.duplicarDiaTipo, alElegir: duplicarDia, noSePuede: estructura.length >= MAXIMO_DE_DIAS_TIPO ? E.topeDeDiasTipo(MAXIMO_DE_DIAS_TIPO) : null },
+              { clave: 'antes', texto: E.moverAntes, alElegir: () => moverDia(i - 1), noSePuede: i === 0 ? E.yaEsElPrimero : null },
+              { clave: 'despues', texto: E.moverDespues, alElegir: () => moverDia(i + 1), noSePuede: i === estructura.length - 1 ? E.yaEsElUltimo : null },
               { clave: 'quitar', texto: 'Quitar este día tipo', alElegir: quitarDia, noSePuede: estructura.length <= 1 ? 'Es el único día tipo de la versión.' : null },
             ]}
           />
@@ -609,6 +699,7 @@ export function EditorDeBorrador({
               abierta={abiertas.has(j)}
               problemas={problemasDeLaComida(rutasConProblemas, i, j)}
               esLaPrimera={j === 0}
+              esLaUltima={j === dia.meals.length - 1}
               opcionElegida={pestana(j)}
               nombreEnEdicion={
                 nombreQueSeCambia?.de === 'comida' && nombreQueSeCambia.i === i && nombreQueSeCambia.j === j
@@ -628,7 +719,14 @@ export function EditorDeBorrador({
               alElegirOpcion={(k) => elegirPestana(j, k)}
               alEditarNombre={(que) => setNombreQueSeCambia(que === null ? null : que.de === 'comida' ? { de: 'comida', i, j } : { de: 'opcion', i, j, k: que.opcion })}
               alCambiar={(f) => cambiar((x) => (f(x[i]!.meals[j]!), x))}
-              alSubir={() => subirComida(j)}
+              alSubir={() => moverComida(j, j - 1)}
+              alBajar={() => moverComida(j, j + 1)}
+              alDuplicar={() => duplicarComida(j)}
+              alDuplicarOpcion={(k) => {
+                cambiar((x) => (duplicarEn(x[i]!.meals[j]!.options, k, copiaDeLaOpcion(x[i]!.meals[j]!.options[k]!, k)), x));
+                elegirPestana(j, k + 1);
+                setNombreQueSeCambia({ de: 'opcion', i, j, k: k + 1 });
+              }}
               alQuitar={() => quitarComida(j)}
               alGuardarComoHabitual={() => setGuardarHabitual({ i, j })}
               alAgregarItem={(k) => setAgregando({ i, j, k })}
@@ -768,11 +866,13 @@ export function EditorDeBorrador({
         enviando={activando}
         error={falloDeActivacion}
         focoEnVolver
+        confirmarDeshabilitado={fechaQueResulta(cuando, hoyEn()) === undefined}
         onVolver={() => {
           setConfirmar(false);
           setFalloDeActivacion(null);
           // La fecha es de este acto: si no se activa, vuelve a la que estaba guardada.
           setProximaRevision(version.nextReviewAt ?? '');
+          setCuando(NADA_ELEGIDO);
           intentoDeActivar.descartar();
         }}
         onConfirmar={() => void activar()}
@@ -786,34 +886,48 @@ export function EditorDeBorrador({
             </p>
           ))}
         </div>
-        <Campo
+        <CuandoLaRevisas
           id="proxima-revision"
-          etiqueta={`${COPY_DE_ACTIVAR_EL_PLAN.proximaRevision} (${COPY_DE_ACTIVAR_EL_PLAN.opcional})`}
-          ayuda={COPY_DE_ACTIVAR_EL_PLAN.ayudaDeLaRevision}
-          type="date"
-          value={proximaRevision}
-          onChange={(e) => setProximaRevision(e.target.value)}
+          hoy={hoyEn()}
+          momento="ACTIVAR"
+          conSinFecha
+          primerPlan={!vigente}
+          eleccion={cuando}
+          alElegir={(e) => {
+            setCuando(e);
+            setProximaRevision(fechaQueResulta(e, hoyEn()) ?? '');
+          }}
+          aviso={loQueFalta(cuando, hoyEn())}
         />
       </DialogoDeConfirmacion>
     </section>
   );
 }
 
-/** La lista de recetas propias, para sumar una como opción de una comida (DL-119). Va dentro de un cajón. */
+/**
+ * La lista de recetas propias, para sumar una como opción de una comida (DL-119). Va dentro de un cajón. Desde TB-48,
+ * con un buscador: lee todas las propias de a 50 al abrir el cajón y las filtra por su nombre mientras se escribe
+ * (`recetas-para-elegir.ts`). API-REC-02 no busca por texto, así que no le pide nada nuevo.
+ */
 function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
   const { token, sesionPerdida } = useNutricion();
   const [estado, setEstado] = useState<{ tipo: 'cargando' } | { tipo: 'error'; texto: string } | { tipo: 'lista'; recetas: readonly Receta[]; mas: string | null }>({ tipo: 'cargando' });
+  const [texto, setTexto] = useState('');
 
+  /** Lee desde el cursor hasta el final, o hasta `PAGINAS_DE_RECETAS` páginas: lo que queda se ofrece con «Ver más». */
   const cargar = useCallback(
     async (cursor?: string) => {
-      const r = await api.listarRecetas(token, cursor ? { cursor } : {});
-      if (sesionPerdida(r)) return;
-      if (!r.ok) return setEstado({ tipo: 'error', texto: r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN' ? COPY_RECETAS.soloNutricion : mensajeDeFallo(r) });
-      setEstado((e) => ({
-        tipo: 'lista',
-        recetas: cursor && e.tipo === 'lista' ? [...e.recetas, ...r.datos.data] : r.datos.data,
-        mas: r.datos.page.hasMore ? r.datos.page.nextCursor : null,
-      }));
+      const leidas: Receta[] = [];
+      let siguiente = cursor;
+      for (let pagina = 0; pagina < PAGINAS_DE_RECETAS; pagina++) {
+        const r = await api.listarRecetas(token, { limit: String(RECETAS_POR_PAGINA), ...(siguiente ? { cursor: siguiente } : {}) });
+        if (sesionPerdida(r)) return;
+        if (!r.ok) return setEstado({ tipo: 'error', texto: r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN' ? COPY_RECETAS.soloNutricion : mensajeDeFallo(r) });
+        leidas.push(...r.datos.data);
+        siguiente = r.datos.page.hasMore ? (r.datos.page.nextCursor ?? undefined) : undefined;
+        if (!siguiente) break;
+      }
+      setEstado((e) => ({ tipo: 'lista', recetas: cursor && e.tipo === 'lista' ? [...e.recetas, ...leidas] : leidas, mas: siguiente ?? null }));
     },
     [token, sesionPerdida],
   );
@@ -821,6 +935,7 @@ function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
     void cargar();
   }, [cargar]);
 
+  const visibles = estado.tipo === 'lista' ? recetasQueCoinciden(estado.recetas, texto) : [];
   return (
     <div className="recetas-para-elegir">
       {estado.tipo === 'cargando' ? <Cargando /> : null}
@@ -835,24 +950,39 @@ function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
         </p>
       ) : null}
       {estado.tipo === 'lista' && estado.recetas.length > 0 ? (
-        <ul className="lista">
-          {estado.recetas.map((r) => (
-            <li key={r.recipeId} className="lista__item">
-              <p className="lista__titulo">{r.name}</p>
-              <p className="nota">
-                {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
-              </p>
-              <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
-                {COPY_RECETAS.agregarComoOpcion}: {r.name}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <Campo id="buscar-receta" type="search" autoComplete="off" etiqueta={COPY_ELEGIR_RECETA.buscar} ayuda={COPY_ELEGIR_RECETA.ayuda} value={texto} onChange={(e) => setTexto(e.target.value)} data-buscar-receta />
+          {/* Cuántas quedan se dice al escribir, sin mover el foco del buscador. */}
+          <p className="nota" role="status" data-cuantas-recetas>
+            {visibles.length === 0 ? COPY_ELEGIR_RECETA.ninguna(texto) : COPY_ELEGIR_RECETA.cuantas(visibles.length, estado.recetas.length)}
+          </p>
+          {visibles.length === 0 ? (
+            <button type="button" className="boton boton--enlace" onClick={() => setTexto('')}>
+              {COPY_ELEGIR_RECETA.borrar}
+            </button>
+          ) : null}
+          <ul className="lista">
+            {visibles.map((r) => (
+              <li key={r.recipeId} className="lista__item">
+                <p className="lista__titulo">{r.name}</p>
+                <p className="nota">
+                  {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
+                </p>
+                <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
+                  {COPY_RECETAS.agregarComoOpcion}: {r.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : null}
       {estado.tipo === 'lista' && estado.mas ? (
-        <button type="button" className="boton boton--secundario" onClick={() => void cargar(estado.mas ?? undefined)}>
-          Ver más
-        </button>
+        <>
+          {texto.trim() ? <p className="nota">{COPY_ELEGIR_RECETA.hayMas}</p> : null}
+          <button type="button" className="boton boton--secundario" onClick={() => void cargar(estado.mas ?? undefined)}>
+            Ver más
+          </button>
+        </>
       ) : null}
     </div>
   );

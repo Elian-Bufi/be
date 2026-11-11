@@ -9,6 +9,9 @@
  * - **la cobertura,** con las partes y las palabras del dominio (`partesDeLaCobertura`): cuántos días, sesiones o tomas
  *   lo sostienen y cuántos no. Antes había que bajar a «Qué se registró en el período» para leerla.
  *
+ * Los de por defecto salen de las áreas del profesional (WP-TABLERO-ALTA-GAMA TB-25; DL-163 D-12), en
+ * `indicadores-por-area.ts`; lo guardado por la cuenta manda.
+ *
  * Describen lo registrado, sin calificar: no hay verde ni rojo, flechas de tendencia ni distancia a un objetivo. Un
  * indicador que no se pudo leer, que no tiene datos o que no está disponible lo dice en su lugar, con su motivo: una
  * falla nunca es «sin datos», y «sin datos» nunca es un cero. Los que fallaron se reintentan juntos, con un solo botón en
@@ -39,36 +42,18 @@ import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
 import { razonDeFalla, textoDeFalla, useSeguimiento } from './contexto';
 import { claveDeLaReferencia, codificarReferencia, hoyEn } from './estado';
 import { ICONO_DE_CLASE, ICONO_DE_FALLA, iconoDeLaReferencia } from './iconos-de-metrica';
-import { Minigrafico } from './minigrafico';
+import { MinigraficoDelIndicador } from './minigrafico';
 import { nombreDeLaReferencia } from './selector';
+import { indicadorDelEjercicio, indicadoresPorDefecto, MAXIMO_DE_INDICADORES } from './indicadores-por-area';
 import { useSeriesDelAnalisis, type Disponibles, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
 import { Pista } from '../../../../components/pista';
 
-const MAXIMO_DE_INDICADORES = 4;
 type Guardada = Extract<VistaDeAnalisis, { usage: 'SUMMARY_INDICATORS' }>;
 const SIN_EJERCICIO = { exerciseKey: null, setIndex: null, unit: null } as const;
 
-/** La carga de la primera serie de un ejercicio, en su unidad; si no registra cargas, sus series registradas. */
-function indicadorDelEjercicio(e: NonNullable<Disponibles['ejercicios']>[number]): ReferenciaDeMetrica {
-  const unidad = e.loadUnits[0];
-  return unidad ? { metricId: 'entrenamiento.carga', exerciseKey: e.exerciseKey, setIndex: e.setNumbers[0] ?? 1, unit: unidad } : { metricId: 'entrenamiento.series-registradas', exerciseKey: e.exerciseKey, setIndex: null, unit: null };
-}
-
-/**
- * Los indicadores por defecto, con lo que hay y en el orden de las áreas: calorías y proteínas registradas, la carga
- * de la primera serie del ejercicio más registrado y el peso. Es la misma elección con la que abre la entrada de
- * «Analizar». Un área sin datos o sin acceso no aporta el suyo.
- */
-export function indicadoresPorDefecto(d: Disponibles): ReferenciaDeMetrica[] {
-  const lista: ReferenciaDeMetrica[] = [];
-  if (d.nutricion) lista.push({ metricId: 'nutricion.energia', ...SIN_EJERCICIO }, { metricId: 'nutricion.proteinas', ...SIN_EJERCICIO });
-  const ejercicio = d.ejercicios?.[0];
-  if (ejercicio) lista.push(indicadorDelEjercicio(ejercicio));
-  const peso = d.antropometria?.find((m) => m.metricCode === 'peso') ?? d.antropometria?.[0];
-  if (peso) lista.push({ metricId: `antropometria.${peso.metricCode}`, ...SIN_EJERCICIO });
-  return lista.slice(0, MAXIMO_DE_INDICADORES);
-}
+// Los de por defecto salen de las áreas del profesional (TB-25; DL-163 D-12): `indicadores-por-area.ts`, sin React.
+export { indicadoresPorDefecto };
 
 export function IndicadoresDelResumen({ disponibles, formato }: { disponibles: Disponibles; formato: FormatoDeLaSintesis }) {
   const { token, sesionPerdida } = useSeguimiento();
@@ -266,6 +251,7 @@ function ValorDelIndicador({
   inicioDelPlan: string | null;
   formato: FormatoDeLaSintesis;
 }) {
+  const { acompanamiento } = useSeguimiento();
   const r = resumirPeriodo(serie, definicion, desde, hasta, hoy);
   if (r.valor === null) {
     return (
@@ -310,13 +296,14 @@ function ValorDelIndicador({
       <p className="indicador__regla">
         {deTomas ? `${REGLA[definicion.resumenDePeriodo]}: ${ultimo ? formato.fecha(ultimo.date) : '—'}` : REGLA[definicion.resumenDePeriodo]}
       </p>
-      <Minigrafico serie={serie} desde={desde} hasta={hasta} hoy={hoy} inicioDelPlan={inicioDelPlan} descripcion={`Gráfico de ${nombre}. ${resumenTextual(serie, definicion, desde, hasta)}`} />
+      {/* TB-04 (DL-163 D-5): más alto, con la tira que lleva el estado de cada día; la descripción no cambia. */}
+      <MinigraficoDelIndicador serie={serie} desde={desde} hasta={hasta} hoy={hoy} inicioDelPlan={inicioDelPlan} desdeElVinculo={acompanamiento.porArea[definicion.area] ?? null} descripcion={`Gráfico de ${nombre}. ${resumenTextual(serie, definicion, desde, hasta)}`} />
       <p className="indicador__cobertura">
         {cobertura.map((parte, i) => (
           <span key={parte}>
             {i > 0 ? ' · ' : ''}
-            {/* La muestra gris acompaña a la cuenta solo si el minigráfico sombrea esos días. */}
-            {/sin registros$/.test(parte) && sombrea ? <span className="muestra-de-hueco" aria-hidden="true" /> : null}
+            {/* La muestra acompaña a la cuenta con la forma que tienen esos días en la tira: una raya baja (TB-04). */}
+            {/sin registros$/.test(parte) && sombrea ? <span className="muestra-de-sin-registros" aria-hidden="true" /> : null}
             {parte}
           </span>
         ))}

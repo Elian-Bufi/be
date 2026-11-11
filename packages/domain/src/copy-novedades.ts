@@ -5,6 +5,7 @@
  */
 import { ETIQUETA_DE_ALCANCE, type Alcance } from './alcance';
 import type { TipoDeNovedad, VistaDeNovedad } from './contratos-novedades';
+import { COPY_HABITOS } from './copy-habitos-de-la-persona';
 
 export interface TextoDeNovedad {
   readonly title: string;
@@ -29,6 +30,8 @@ export interface DatosDelTexto {
   readonly decision?: { readonly hecho: string; readonly mensaje: string | null; readonly puedeOperar: boolean } | null;
   /** WP-ADMINISTRACION: el profesional del que trata el aviso a una persona vinculada, con el nombre que ella ve. */
   readonly profesional?: string | null;
+  /** DL-163 D-13, ampliada (TB-56): el área del plan que un profesional pide ver; el área desde la que lo pide es `alcance`. */
+  readonly planDe?: Alcance | null;
 }
 
 const area = (alcance: Alcance | null): string => (alcance ? ETIQUETA_DE_ALCANCE[alcance] : 'BE');
@@ -85,6 +88,31 @@ export function textoDeNovedad(tipo: TipoDeNovedad, d: DatosDelTexto): TextoDeNo
       return {
         title: `Acceso de tu profesional a ${area(d.alcance)}`,
         body: `${quien(d.profesional ?? null, 'Tu profesional')} volvió a tener acceso a ${area(d.alcance)} en BE. Puede ver tu información de ${area(d.alcance)} solo si su vínculo con vos y tu autorización siguen vigentes.`,
+      };
+    // DL-164: qué pasó con lo cargado, nunca las respuestas (se leen en el formulario, con la sesión de cada uno).
+    case 'FORM_PROPOSAL_LOADED':
+      return {
+        title: 'Un formulario para confirmar',
+        body: `${quien(d.fuente, 'Tu profesional')} cargó con vos las respuestas de un formulario de ${area(d.alcance)}. Revisalas en tus formularios: si algo no es así, corregilo antes de confirmar.`,
+      };
+    case 'FORM_PROPOSAL_CONFIRMED':
+      return { title: 'Formulario confirmado', body: `${quien(d.fuente, 'La persona')} confirmó las respuestas que cargaste en un formulario de ${area(d.alcance)}.` };
+    case 'FORM_PROPOSAL_REJECTED':
+      return {
+        title: 'Formulario sin confirmar',
+        body: `${quien(d.fuente, 'La persona')} no confirmó las respuestas que cargaste en un formulario de ${area(d.alcance)}. Se borraron, y el formulario sigue pendiente.`,
+      };
+    // DL-165, ronda 2.1 (D-17 nueva): quién pide, desde qué área y para qué le sirve, y que es su decisión. Nunca un hábito.
+    case 'HABITS_ACCESS_REQUESTED':
+      return {
+        title: COPY_HABITOS.apk.pedidosTitulo,
+        body: `${COPY_HABITOS.apk.pedidoDe(quien(d.fuente, 'Tu profesional'), area(d.alcance))}${d.alcance ? ` ${COPY_HABITOS.paraQueLeSirven[d.alcance]}` : ''} Es tu decisión: lo respondés en «Mis hábitos».`,
+      };
+    // DL-163 D-13, ampliada (TB-56): quién pide, desde qué área y qué plan, y que es su decisión. Nunca nada del plan.
+    case 'PLAN_ACCESS_REQUESTED':
+      return {
+        title: 'Te piden ver tu plan',
+        body: `${quien(d.fuente, 'Tu profesional')}, de ${area(d.alcance)}, te pide ver tu plan ${d.planDe ? `de ${ETIQUETA_DE_ALCANCE[d.planDe]}` : 'de otra área'}, completo y de solo lectura: no lo puede cambiar. Es tu decisión, y la podés cambiar cuando quieras.`,
       };
   }
 }
@@ -170,6 +198,18 @@ export function vistaDeNovedad(tipo: TipoDeNovedad, alcance: Alcance | null, lec
     case 'PROFESSIONAL_ACCESS_SUSPENDED':
     case 'PROFESSIONAL_ACCESS_RESTORED':
       return 'RELATIONSHIPS';
+    // DL-164: la persona va a la Solicitud que tiene que confirmar; el profesional, a la ficha de la persona.
+    case 'FORM_PROPOSAL_LOADED':
+      return 'FORMS';
+    case 'FORM_PROPOSAL_CONFIRMED':
+    case 'FORM_PROPOSAL_REJECTED':
+      return 'ADVISEE';
+    // DL-165, ronda 2.1: la persona va a «Mis hábitos», donde responde el pedido.
+    case 'HABITS_ACCESS_REQUESTED':
+      return 'MY_HABITS';
+    // DL-163 D-13, ampliada (TB-56): el centro, hasta que la APK tenga la pantalla que lo responde (etapa B).
+    case 'PLAN_ACCESS_REQUESTED':
+      return 'NEWS';
     default:
       return 'RELATIONSHIPS';
   }
@@ -198,6 +238,8 @@ export const COPY_NOVEDADES = {
   vacio: 'Todavía no tenés novedades. Cuando tu profesional active un plan o registre una revisión, aparece acá.',
   vacioProfesional: 'Todavía no tenés novedades. Cuando una persona acepte una solicitud o cambie un vínculo, aparece acá.',
   noLeida: 'Sin leer',
+  /** DL-165, ronda 2.1: lo que la APK dice de una novedad importante (`esNovedadImportante`), con palabras y no solo con el color. */
+  importante: 'Importante',
   deBe: 'BE',
   abrir: 'Ver',
   errorAlCargar: 'No pudimos cargar tus novedades. Las novedades no se pierden: probá de nuevo en un momento.',

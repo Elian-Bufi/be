@@ -1,9 +1,10 @@
 /**
  * La cabecera única de la APK (DL-117, decisión de Dirección del 2026-10-04), la misma en todas las pantallas:
- * - **a la izquierda**, volver en un detalle, que tiene prioridad; el menú auxiliar en una raíz con sesión; o nada;
+ * - **a la izquierda**, volver en un detalle; en una raíz, nada;
  * - **al centro**, la marca: el isotipo y «BE», con un brillo contenido detrás;
- * - **a la derecha**, la campana de las novedades, con cuántas hay sin leer (DL-133), y el avatar, que abre Cuenta. Es un ícono neutro de persona: el perfil no tiene nombre ni foto
- *   (`MeResponse.profile` es `{}`, DL-009), y no se deriva uno del correo ni de un identificador (D-2);
+ * - **a la derecha**, la campana de las novedades, con cuántas hay sin leer (DL-133).
+ * Desde DL-166 (PV-1, 2026-11-07) la cabecera queda con la marca y Novedades: el menú auxiliar y el avatar se fueron, y lo
+ * que abrían está en Perfil, el quinto destino de la barra;
  * - **debajo**, la franja del ambiente de prueba, siempre a la vista (08 §33), y la línea de actualización.
  *
  * Volver no depende del botón ni de un gesto del sistema (10-B10 §9). El botón dice adónde vuelve al lector de pantalla
@@ -13,8 +14,9 @@
  */
 import Constants from 'expo-constants';
 import { Image, Pressable, Text, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
+import { Icono } from './icono';
 import { LineaDeActualizacion } from './estados';
 import { textoDeVolverA, type Ruta } from './navegacion';
 import { COLOR, estilosPorTema } from './tema';
@@ -23,23 +25,18 @@ const ISOTIPO = require('../assets/isotipo.png');
 
 export function Cabecera({
   volverA,
-  conMenu,
-  conAvatar,
+  conSesion,
   actualizando,
   volver,
-  abrirMenu,
-  abrirCuenta,
   sinLeer = null,
   abrirNovedades,
 }: {
   /** Adónde vuelve el botón de volver. `null`: la pantalla no lo lleva (una raíz, Bienvenida). */
   volverA: Ruta | null;
-  conMenu: boolean;
-  conAvatar: boolean;
+  /** Con sesión verificada, la campana de Novedades. */
+  conSesion: boolean;
   actualizando: boolean;
   volver: () => void;
-  abrirMenu: () => void;
-  abrirCuenta: () => void;
   /** Las novedades sin leer (DL-133); `null` mientras no se sabe. El número es un dato, no una alerta. */
   sinLeer?: number | null;
   abrirNovedades?: () => void;
@@ -56,34 +53,23 @@ export function Cabecera({
               hitSlop={4}
               style={({ pressed }) => [estilos.volver, pressed && estilos.presionado]}
             >
-              <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M15 5l-7 7 7 7" stroke={COLOR.acento} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </Svg>
+              <Icono nombre="izquierda" tamano={24} tono="acento" />
               <Text style={estilos.textoVolver} numberOfLines={1} maxFontSizeMultiplier={1.15}>
                 Volver
               </Text>
-            </Pressable>
-          ) : conMenu ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Abrir el menú" onPress={abrirMenu} style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}>
-              <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M4 7h16M4 12h16M4 17h16" stroke={COLOR.texto} strokeWidth={2} strokeLinecap="round" fill="none" />
-              </Svg>
             </Pressable>
           ) : null}
         </View>
         <Marca />
         <View style={[estilos.lado, estilos.derecha]}>
-          {conAvatar && abrirNovedades ? (
+          {conSesion && abrirNovedades ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={sinLeer ? `Novedades, ${sinLeer} sin leer` : 'Novedades'}
               onPress={abrirNovedades}
               style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}
             >
-              <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                <Path d="M6.5 16.5v-5a5.5 5.5 0 0 1 11 0v5l1.5 2h-14z" stroke={COLOR.texto} strokeWidth={1.8} strokeLinejoin="round" fill="none" />
-                <Path d="M10 20.5a2 2 0 0 0 4 0M12 3.5V6" stroke={COLOR.texto} strokeWidth={1.8} strokeLinecap="round" fill="none" />
-              </Svg>
+              <Icono nombre="novedades" tamano={24} tono="texto" />
               {sinLeer ? (
                 <View style={estilos.cuenta} accessible={false} importantForAccessibility="no-hide-descendants">
                   <Text style={estilos.textoCuenta} maxFontSizeMultiplier={1.15}>
@@ -91,16 +77,6 @@ export function Cabecera({
                   </Text>
                 </View>
               ) : null}
-            </Pressable>
-          ) : null}
-          {conAvatar ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Cuenta" onPress={abrirCuenta} style={({ pressed }) => [estilos.botonRedondo, pressed && estilos.presionado]}>
-              <View style={estilos.avatar}>
-                <Svg width={22} height={22} viewBox="0 0 24 24" accessible={false} importantForAccessibility="no-hide-descendants">
-                  <Circle cx={12} cy={8.5} r={3.8} stroke={COLOR.texto} strokeWidth={1.8} fill="none" />
-                  <Path d="M4.8 20c0-3.9 3.2-6.6 7.2-6.6s7.2 2.7 7.2 6.6" stroke={COLOR.texto} strokeWidth={1.8} strokeLinecap="round" fill="none" />
-                </Svg>
-              </View>
             </Pressable>
           ) : null}
         </View>
@@ -146,7 +122,6 @@ const estilos = estilosPorTema((COLOR) => ({
   botonRedondo: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   volver: { flexDirection: 'row', alignItems: 'center', minHeight: 48, minWidth: 48, paddingLeft: 6, paddingRight: 10 },
   textoVolver: { fontSize: 15, fontWeight: '700', color: COLOR.acento, marginLeft: 2 },
-  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada, borderWidth: 1, borderColor: COLOR.bordeControl },
   // La marca ocupa todo su brillo: así el brillo no depende de que Android dibuje fuera de una vista.
   marca: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', minWidth: 132, minHeight: 44 },
   brillo: { position: 'absolute', left: 0, top: 0 },

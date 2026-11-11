@@ -63,6 +63,8 @@ import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha as fechaYHora } from '../../../../lib/formato';
+import { useNombres } from '../../../../lib/nombres-ocultos';
+import type { Actor } from '../../../../lib/retrato';
 import { EstadoDeLectura, NoDisponible, useAntropometria } from './antropometria';
 import { descargarLamina } from './lamina-descarga';
 import { HojaConNota, HojaDeConclusiones, HojaDeEvolucion, HojaDeMedicion, HojaDeSerie, LaminaSvg, type DatosDelEncabezado, type SeccionDeLaLamina } from './lamina-dibujo';
@@ -96,7 +98,9 @@ type EstadoDeCalculos = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'list
 export function VistaDeLamina() {
   const { token, asesoradoId, sesionPerdida } = useAntropometria();
   const pedida = useSearchParams().get('evaluacion');
-  const [lista, setLista] = useState<Resultado<{ evaluaciones: ResumenDeEvaluacionApi[]; nombre: string | null }> | null>(null);
+  const [lista, setLista] = useState<Resultado<{ evaluaciones: ResumenDeEvaluacionApi[]; asesorado: Actor | null }> | null>(null);
+  // TB-05: la lámina dice el nombre que se ve; con «Ocultar nombres», la referencia neutral.
+  const { delAsesorado } = useNombres();
 
   const cargar = useCallback(async () => {
     setLista(null);
@@ -108,8 +112,8 @@ export function VistaDeLamina() {
     if (sesionPerdida(evaluaciones) || sesionPerdida(vinculos)) return;
     if (!evaluaciones.ok) return setLista(evaluaciones as Resultado<never>);
     // El nombre va en el encabezado de la lámina, como en el compositor; si no se puede leer, la lámina va sin nombre.
-    const nombre = vinculos.ok ? (vinculos.datos.data.find((v) => v.advisee.identityId === asesoradoId)?.advisee.displayName ?? null) : null;
-    setLista({ ok: true, datos: { evaluaciones: evaluaciones.datos.data.filter((e) => e.state === 'REGISTERED'), nombre } });
+    const asesorado = vinculos.ok ? (vinculos.datos.data.find((v) => v.advisee.identityId === asesoradoId)?.advisee ?? null) : null;
+    setLista({ ok: true, datos: { evaluaciones: evaluaciones.datos.data.filter((e) => e.state === 'REGISTERED'), asesorado } });
   }, [token, asesoradoId, sesionPerdida]);
 
   useEffect(() => {
@@ -125,7 +129,7 @@ export function VistaDeLamina() {
             <p>{C.sinEvaluaciones}</p>
           </section>
         ) : (
-          <Lamina evaluaciones={lista.datos.evaluaciones} nombre={lista.datos.nombre} pedida={pedida} />
+          <Lamina evaluaciones={lista.datos.evaluaciones} nombre={lista.datos.asesorado ? delAsesorado(lista.datos.asesorado) : null} pedida={pedida} />
         )
       ) : null}
     </EstadoDeLectura>

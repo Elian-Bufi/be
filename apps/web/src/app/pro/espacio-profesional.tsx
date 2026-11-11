@@ -20,10 +20,24 @@
  *   se dice.
  * - **`/pro` no lleva parámetros:** la vista elegida, los filtros y la búsqueda son de la visita (el retorno del inicio
  *   de sesión admite `/pro` a secas).
+ *
+ * WP-TABLERO-ALTA-GAMA TB-06 y TB-11 (DL-163 D-3 y D-4; TA-16):
+ * - **El encabezado:** el saludo («Buen día, Sofía»), con el nombre con que la ven las personas, de los vínculos ya
+ *   leídos (TA-10), o a secas; y las tres cifras (`cifras-del-espacio.tsx`). El filtro de «Te toca a vos» vive acá: lo
+ *   eligen las cifras y «Más filtros».
+ * - **La mesa:** «Te toca a vos» por persona (`te-toca-a-vos.tsx`), y al lado «Esperan respuesta»
+ *   (`esperan-respuesta.tsx`) encima de «Tus asesorados». La única lectura nueva es la de las invitaciones sin usar
+ *   (API-INV-02), para «Esperan respuesta»; las solicitudes ya se leían.
+ * - **Por persona o por pendiente** se recuerda en el navegador (§5 del paquete), sin datos de personas.
+ *
+ * WP-TABLERO-ALTA-GAMA TB-07 (con el cajón apagado o prendido; TA-46): al abrir una ficha de «Tu semana», un verbo de
+ * «Te toca a vos» o una salida del cajón, se guarda el lugar (el filtro, el modo, el período y lo que se abrió, solo
+ * identificadores, `lugar-del-espacio.ts`). Al volver, se lee antes que la cartera, y el foco vuelve a lo que se abrió
+ * o, si ya no está, a lo que seguía. Si se salió por el cajón, se abre el cajón.
  */
-import { COPY_INVITACION, COPY_VINCULO, numero } from '@be/domain';
+import { COPY_INVITACION, COPY_VINCULO, numero, type FiltroDePendientes, type PendienteDeCartera } from '@be/domain';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../components/estados';
 import { Aviso } from '../../components/formulario';
@@ -35,11 +49,50 @@ import { useSesionRequerida } from '../../lib/sesion-requerida';
 import type { Periodo } from './advisees/periodo';
 import { Asesorados } from './asesorados';
 import { InvitarPersona } from './invitar-persona';
-import { Pendientes, type PaginaDeCartera } from './pendientes';
+import { TeTocaAVos, TODO, type PaginaDeCartera } from './te-toca-a-vos';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
-import { areaUnicaDelProfesional } from './directorio';
+import { TuSemana } from './tu-semana-en-pantalla';
+import { areaUnicaDelProfesional, armarElDirectorio } from './directorio';
 import { EsperandoSesion } from '../../lib/sesion';
+import { anotarNombrePropio, nombrePropioEn, useNombrePropio } from '../../lib/nombre-propio';
+import { useNombres } from '../../lib/nombres-ocultos';
+import { CifrasDelEspacio, type Cuenta } from './cifras-del-espacio';
+import { EsperanRespuesta, type ListaQueEspera } from './esperan-respuesta';
+import { CAJON_DE_A_UNA, COPY_CAJON, dondeSigue, guardarLugar, leerLugar } from './cajon';
+import { CajonDeAUna } from './cajon-de-a-una';
+import { COPY_LUGAR, dondeVolver, guardarLugarDelEspacio, leerLugarDelEspacio, lugarDelEspacioParaGuardar, siguientesDe, type LugarDelEspacio, type OrigenEnElEspacio } from './lugar-del-espacio';
+import { filtrarPendientes } from '@be/domain';
+import { claveDelPendiente, colaDeLaVista, delCarril, personasPorArea, saludo as saludoDelEspacio, TIPOS_QUE_ESPERAN, TIPOS_QUE_TE_TOCAN, type ModoDeLaMesa } from './mesa';
+
+/** Por persona o por pendiente: una preferencia del navegador, sin datos de personas. Puede no haber dónde guardarla. */
+const CLAVE_DEL_MODO = 'be-mesa-modo';
+function useModoDeLaMesa(): [ModoDeLaMesa, (m: ModoDeLaMesa) => void] {
+  const [modo, setModo] = useState<ModoDeLaMesa>('persona');
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(CLAVE_DEL_MODO) === 'pendiente') setModo('pendiente');
+    } catch {
+      // Sin almacenamiento, por persona.
+    }
+  }, []);
+  const elegir = useCallback((m: ModoDeLaMesa) => {
+    setModo(m);
+    try {
+      window.localStorage.setItem(CLAVE_DEL_MODO, m);
+    } catch {
+      // Vale por la visita.
+    }
+  }, []);
+  return [modo, elegir];
+}
+
+/** Una lista completa, como la espera «Esperan respuesta». */
+function comoLista<T>(estado: { tipo: string; items?: readonly T[]; completa?: boolean }, filtrar: (items: readonly T[]) => readonly T[] = (x) => x): ListaQueEspera<T> {
+  if (estado.tipo === 'listo' && estado.items) return { tipo: 'listo', items: filtrar(estado.items), completa: estado.completa ?? true };
+  return estado.tipo === 'error' ? { tipo: 'error' } : { tipo: 'cargando' };
+}
+const cuentaDe = (l: ListaQueEspera<unknown>, n?: number): Cuenta => (l.tipo === 'listo' ? { n: n ?? l.items.length, completa: l.completa } : null);
 
 type Yo = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-espacio' } | { tipo: 'listo'; id: string };
 
@@ -95,12 +148,16 @@ export function EspacioProfesional() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional('/pro');
   const id = yo.tipo === 'listo' ? yo.id : null;
   const [periodo, setPeriodo] = useState<Periodo>({});
+  // TB-07: el lugar del Espacio, si se vuelve de algo que se abrió desde acá. Se lee una vez, al entrar y antes de leer la
+  // cartera, porque el período del último registro va a la API: así no hay una lectura de más.
+  const [lugarLeido, setLugarLeido] = useState(false);
+  const vueltaAlEspacio = useRef<LugarDelEspacio | null>(null);
 
   // Los pendientes: la cartera entera, de a 50. A la API va solo el período; la vista y los filtros se resuelven acá.
   const cartera = useListaCompleta(
     useMemo(
       () =>
-        token && id
+        token && id && lugarLeido
           ? (filtro: { cursor?: string; limit: string }): Promise<Resultado<PaginaDeCartera>> =>
               api.consultarCartera(token, { ...periodo, ...filtro }).then((r) => {
                 if (!r.ok) return r;
@@ -108,7 +165,7 @@ export function EspacioProfesional() {
                 return { ...r, datos: { data: items, page: r.datos.page, meta } };
               })
           : null,
-      [token, id, periodo],
+      [token, id, periodo, lugarLeido],
     ),
     sesionPerdida,
     DE_LA_CARTERA,
@@ -123,12 +180,77 @@ export function EspacioProfesional() {
     sesionPerdida,
     DE_UNA_LISTA,
   );
+  // TB-06: las invitaciones sin usar, para «Esperan respuesta». Es la única lectura nueva del Espacio.
+  const invitaciones = useListaCompleta(
+    useMemo(() => (token && id ? (filtro: { cursor?: string }) => api.consultarInvitaciones(token, { state: 'PENDING', limit: '20', cursor: filtro.cursor }) : null), [token, id]),
+    sesionPerdida,
+    DE_UNA_LISTA,
+  );
+  const [filtro, setFiltro] = useState<FiltroDePendientes>(TODO);
+  const [modo, setModo] = useModoDeLaMesa();
+  useEffect(() => {
+    const lugar = leerLugarDelEspacio(Date.now());
+    guardarLugarDelEspacio(null);
+    if (lugar) {
+      vueltaAlEspacio.current = lugar;
+      setFiltro(lugar.filtro);
+      setModo(lugar.modo);
+      setPeriodo(lugar.periodo);
+    }
+    setLugarLeido(true);
+    // Solo al entrar: el lugar se usa una vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const nombres = useNombres();
+  const nombrePropio = useNombrePropio();
+  // TB-12: la cola del cajón es la vista elegida de «Te toca a vos», en su orden. Detrás de su interruptor.
+  const carteraLeida = cartera.estado.tipo === 'listo' ? cartera.estado.items : null;
+  const cola = useMemo(() => (carteraLeida ? colaDeLaVista(filtrarPendientes(delCarril(carteraLeida, TIPOS_QUE_TE_TOCAN), filtro), modo) : []), [carteraLeida, filtro, modo]);
+  const [cajon, setCajon] = useState<{ abierto: boolean; inicio: number | null }>({ abierto: false, inicio: 0 });
+  const retomado = useRef(false);
+  // TB-15: si desde el cajón se aplicó una revisión, la cartera cambió: se vuelve a leer al cerrarlo, no con él abierto
+  // (la cola del cajón no se mueve mientras se recorre).
+  const releerAlCerrar = useRef(false);
+  const seAbrioElCajon = useRef(false);
+  useEffect(() => {
+    // Al volver de una salida del cajón, sigue con el siguiente que todavía esté en la cola; el lugar se usa una vez.
+    if (!CAJON_DE_A_UNA || retomado.current || !carteraLeida) return;
+    retomado.current = true;
+    const lugar = leerLugar(Date.now());
+    guardarLugar(null);
+    if (lugar) setCajon({ abierto: true, inicio: dondeSigue(lugar, cola.map(claveDelPendiente)) });
+    seAbrioElCajon.current = Boolean(lugar);
+  }, [carteraLeida, cola]);
+  // TB-07: con la cartera leída, el foco vuelve a lo que se abrió o a lo que seguía. Si se abrió el cajón, manda el cajón.
+  const devuelto = useRef(false);
+  useEffect(() => {
+    const lugar = vueltaAlEspacio.current;
+    if (devuelto.current || !carteraLeida || !lugar) return;
+    devuelto.current = true;
+    vueltaAlEspacio.current = null;
+    if (seAbrioElCajon.current) return;
+    window.requestAnimationFrame(() => {
+      const buscar = (clave: string): HTMLElement | null =>
+        (lugar.origen === 'semana' ? document.querySelector<HTMLElement>(`[data-ficha="${clave}"]`) : null) ?? document.querySelector<HTMLElement>(`[data-pendiente="${clave}"]`);
+      const donde = dondeVolver(lugar, (c) => buscar(c) !== null);
+      const destino = donde ? buscar(donde.clave) : document.getElementById('te-toca-a-vos');
+      destino?.scrollIntoView({ block: 'center' });
+      destino?.focus({ preventScroll: true });
+      if (!donde?.laMisma) setAviso(donde ? COPY_LUGAR.yaNoEsta : COPY_LUGAR.yaNoEstaNada);
+    });
+  }, [carteraLeida]);
+  const conCajon = CAJON_DE_A_UNA && cola.length > 0;
 
   const [formulario, setFormulario] = useState(false);
   // WP-INVITACION (DL-136): invitar por enlace, QR o código es el camino principal; el identificador queda como alternativa.
   const [invitar, setInvitar] = useState(false);
   const [solicitudes, setSolicitudes] = useState<{ abiertas: boolean; aviso: string | null }>({ abiertas: false, aviso: null });
   const [aviso, setAviso] = useState<string | null>(null);
+  // TB-05: el nombre con que las personas ven a la cuenta, para su monograma en el menú. Sale de los vínculos ya leídos.
+  const vinculosLeidos = vinculos.estado.tipo === 'listo' ? vinculos.estado.items : null;
+  useEffect(() => {
+    if (vinculosLeidos && id) anotarNombrePropio(nombrePropioEn(vinculosLeidos, id));
+  }, [vinculosLeidos, id]);
 
   if (!token) {
     return (
@@ -151,19 +273,40 @@ export function EspacioProfesional() {
     void cartera.recargar();
     void vinculos.recargar();
     void enviadas.recargar();
+    void invitaciones.recargar();
   };
   const propias = enviadas.estado.tipo === 'listo' ? solicitudesEnviadasPor(enviadas.estado.items, yo.id) : null;
   // DL-146: si trabajás en una sola área, invitar y solicitar la traen elegida.
   const areaSugerida = vinculos.estado.tipo === 'listo' ? areaUnicaDelProfesional(vinculos.estado.items, yo.id) : null;
   const sinResponder = propias ? propias.filter((s) => s.state === 'PENDIENTE').length : 0;
   const hoy = cartera.estado.tipo === 'listo' ? cartera.estado.primera.meta.today : null;
+  const zona = cartera.estado.tipo === 'listo' ? cartera.estado.primera.meta.timeZone : 'America/Argentina/Buenos_Aires';
+  const leida = cartera.estado.tipo === 'listo' ? cartera.estado : null;
+  // TB-06: las cifras. Cada una sale de su lista leída; sin lectura, no hay número.
+  const formularios = leida ? delCarril(leida.items, TIPOS_QUE_ESPERAN) : null;
+  const solicitudesQueEsperan = comoLista(enviadas.estado, (items) => solicitudesEnviadasPor(items, yo.id).filter((s) => s.state === 'PENDIENTE'));
+  const invitacionesQueEsperan = comoLista(invitaciones.estado, (items) => items.filter((i) => i.state === 'PENDING'));
+  const cuentaDeFormularios: Cuenta = formularios && leida ? { n: formularios.length, completa: leida.completa } : null;
+  const cuentaDeSolicitudes = cuentaDe(solicitudesQueEsperan);
+  const cuentaDeInvitaciones = cuentaDe(invitacionesQueEsperan);
+  const totalQueEspera: Cuenta =
+    cuentaDeFormularios && cuentaDeSolicitudes && cuentaDeInvitaciones
+      ? { n: cuentaDeFormularios.n + cuentaDeSolicitudes.n + cuentaDeInvitaciones.n, completa: cuentaDeFormularios.completa && cuentaDeSolicitudes.completa && cuentaDeInvitaciones.completa }
+      : null;
+  const directorio = vinculos.estado.tipo === 'listo' ? armarElDirectorio(vinculos.estado.items, yo.id, nombres.delAsesorado) : null;
+  const elSaludo = saludoDelEspacio(new Date().getHours(), nombrePropio, nombres.ocultos);
+  /** TB-07: al abrir algo desde el Espacio, el lugar para volver, con lo que seguía en la vista: solo identificadores. */
+  const guardarDondeEstabas = (origen: OrigenEnElEspacio, p: Pick<PendienteDeCartera, 'kind' | 'domain' | 'advisee'>) => {
+    const fila = claveDelPendiente(p);
+    guardarLugarDelEspacio(lugarDelEspacioParaGuardar({ origen, fila, siguientes: siguientesDe(cola.map(claveDelPendiente), fila), filtro, modo, periodo }, Date.now()));
+  };
 
   return (
     <Pagina
       alLado={
         <>
           {hoy ? <p className="espacio-profesional__hoy">Hoy, {diaConSuSemana(hoy)}</p> : null}
-          <button type="button" className="boton boton--primario espacio-profesional__invitar" aria-haspopup="dialog" onClick={() => setInvitar(true)}>
+          <button type="button" className={`boton ${conCajon ? 'boton--secundario' : 'boton--primario'} espacio-profesional__invitar`} aria-haspopup="dialog" onClick={() => setInvitar(true)}>
             <Icono nombre="persona" tamano={20} />
             {COPY_INVITACION.invitar}
           </button>
@@ -174,10 +317,52 @@ export function EspacioProfesional() {
         </>
       }
     >
-      {/* Primero lo que hay que hacer (API-CAR-01, DL-107); al lado, a quién abrir. */}
+      {/* TB-06: el saludo y las tres cifras, que filtran «Te toca a vos» o llevan a su sección. */}
+      <CifrasDelEspacio
+        saludo={elSaludo}
+        teTocan={leida ? delCarril(leida.items, TIPOS_QUE_TE_TOCAN) : null}
+        completa={leida?.completa ?? true}
+        filtro={filtro}
+        onFiltro={setFiltro}
+        esperan={{ total: totalQueEspera, formularios: cuentaDeFormularios, solicitudes: cuentaDeSolicitudes, invitaciones: cuentaDeInvitaciones }}
+        personas={{ total: directorio && vinculos.estado.tipo === 'listo' ? { n: directorio.length, completa: vinculos.estado.completa } : null, porArea: directorio ? personasPorArea(directorio) : [] }}
+      />
+      {/* TB-07: las revisiones que acordaste, de hoy a siete días. Sale de la cartera ya leída: ninguna lectura nueva. */}
+      <TuSemana cartera={cartera.estado} alAbrir={(f) => guardarDondeEstabas('semana', f)} />
+      {/* TB-11: lo que te toca, por persona; al lado, lo que espera a la persona y a quién abrir. */}
       <div className="espacio-profesional__cuerpo">
-        {/* Cada lista con su «Reintentar», que vuelve a leer solo esa; «Actualizar» lee las tres. */}
-        <Pendientes cartera={cartera.estado} periodo={periodo} onPeriodo={setPeriodo} onActualizar={actualizar} onReintentar={() => void cartera.recargar()} onVerMas={() => void cartera.verMas()} />
+        {/* Cada lista con su «Reintentar», que vuelve a leer solo esa; «Actualizar» lee todas. */}
+        <TeTocaAVos
+          cartera={cartera.estado}
+          periodo={periodo}
+          onPeriodo={setPeriodo}
+          filtro={filtro}
+          onFiltro={setFiltro}
+          modo={modo}
+          onModo={setModo}
+          onActualizar={actualizar}
+          onReintentar={() => void cartera.recargar()}
+          onVerMas={() => void cartera.verMas()}
+          alAbrir={(p) => guardarDondeEstabas('mesa', p)}
+          alComienzo={
+            conCajon ? (
+              <button type="button" className="boton boton--primario cajon__empezar" aria-haspopup="dialog" onClick={() => setCajon({ abierto: true, inicio: 0 })}>
+                <Icono nombre="derecha" tamano={20} />
+                {COPY_CAJON.empezar}
+              </button>
+            ) : null
+          }
+        />
+        <div className="espacio-profesional__costado">
+        <EsperanRespuesta
+          cartera={cartera.estado}
+          solicitudes={solicitudesQueEsperan}
+          invitaciones={invitacionesQueEsperan}
+          hoy={hoy ?? ''}
+          zona={zona}
+          onVerSolicitudes={() => setSolicitudes({ abiertas: true, aviso: null })}
+          onVerInvitaciones={() => setInvitar(true)}
+        />
         <Asesorados vinculos={vinculos.estado} profesionalId={yo.id} onReintentar={() => void vinculos.recargar()} onVerMas={() => void vinculos.verMas()}>
           <button type="button" className="boton boton--enlace directorio__solicitudes" aria-haspopup="dialog" onClick={() => setSolicitudes({ abiertas: true, aviso: null })}>
             <Icono nombre="solicitar" tamano={18} />
@@ -190,14 +375,41 @@ export function EspacioProfesional() {
             </span>
           ) : null}
         </Asesorados>
+        </div>
       </div>
 
+      {CAJON_DE_A_UNA ? (
+        <CajonDeAUna
+          abierto={cajon.abierto}
+          cola={cola}
+          inicio={cajon.inicio}
+          token={token}
+          sesionPerdida={sesionPerdida}
+          hoy={hoy ?? ''}
+          zona={zona}
+          onCerrar={() => {
+            setCajon((c) => ({ ...c, abierto: false }));
+            if (releerAlCerrar.current) {
+              releerAlCerrar.current = false;
+              void cartera.recargar();
+            }
+          }}
+          onAplicada={() => {
+            releerAlCerrar.current = true;
+          }}
+          onSalir={(p) => guardarDondeEstabas('cajon', p)}
+        />
+      ) : null}
       <InvitarPersona
         abierto={invitar}
         areaSugerida={areaSugerida}
         token={token}
         sesionPerdida={sesionPerdida}
-        onCerrar={() => setInvitar(false)}
+        onCerrar={() => {
+          setInvitar(false);
+          // Lo creado o anulado en el cuadro cambia «Esperan respuesta».
+          void invitaciones.recargar();
+        }}
         onConElIdentificador={() => {
           setInvitar(false);
           setFormulario(true);

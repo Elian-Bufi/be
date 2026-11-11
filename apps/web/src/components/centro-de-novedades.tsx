@@ -9,15 +9,21 @@
  *   (un plan o un recordatorio, que viven en la app), queda leída y se dice dónde verla.
  * - Una novedad sin leer se distingue por el texto «Sin leer», no solo por el color (B10-10 §43).
  * - Cargando, error con «Reintentar» y vacío, como el resto (10-B10:343-378).
+ * - En el espacio profesional (WP-TABLERO-ALTA-GAMA TB-05; DL-163 D-2), una novedad con quien la originó lleva su
+ *   monograma en el lugar del ícono. Con «Ocultar nombres», su nombre pasa a la referencia también en el título y en el
+ *   texto, que arma la API con él adentro. En la cuenta de la persona, nada cambia.
  */
 import { COPY_NOVEDADES, type Novedad } from '@be/domain';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { fecha } from '../lib/formato';
+import { useNombres } from '../lib/nombres-ocultos';
+import type { RolDeQuien } from '../lib/retrato';
 import { useSesionRequerida } from '../lib/sesion-requerida';
 import { Cargando, ErrorConReintento } from './estados';
 import { Icono } from './icono';
+import { Retrato } from './retrato';
 
 export type EspacioDeNovedades = 'pro' | 'cuenta';
 
@@ -45,6 +51,7 @@ export function CentroDeNovedades({ espacio }: { espacio: EspacioDeNovedades }) 
   const [masCargando, setMasCargando] = useState(false);
   const [abriendo, setAbriendo] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const nombres = useNombres();
 
   const cargar = useCallback(async () => {
     if (!token) return;
@@ -105,17 +112,19 @@ export function CentroDeNovedades({ espacio }: { espacio: EspacioDeNovedades }) 
       <ul className="novedades__lista">
         {estado.items.map((n) => {
           const destino = destinoDeNovedad(n);
+          // La persona de la ficha a la que lleva, o uno de sus profesionales (una nota de coordinación, por ejemplo).
+          const rol: RolDeQuien = n.source && n.open.referenceId === n.source.identityId ? 'asesorado' : 'profesional';
+          const conocidos = n.source ? [{ actor: n.source, rol }] : [];
+          const quien = n.source ? (rol === 'asesorado' ? nombres.delAsesorado(n.source) : nombres.delProfesional(n.source)) : null;
           return (
             <li key={n.newsId} className={`novedad${n.readAt ? '' : ' novedad--sin-leer'}`}>
-              <span className="novedad__icono">
-                <Icono nombre={iconoDe(n)} />
-              </span>
+              <span className="novedad__icono">{espacio === 'pro' && quien ? <Retrato nombre={quien} tamano="medio" /> : <Icono nombre={iconoDe(n)} />}</span>
               <div className="novedad__texto">
                 <p className="novedad__titulo">
-                  {n.title}
+                  {nombres.enElTexto(n.title, conocidos)}
                   {n.readAt ? null : <span className="novedad__marca">{COPY_NOVEDADES.noLeida}</span>}
                 </p>
-                <p>{n.body}</p>
+                <p>{nombres.enElTexto(n.body, conocidos)}</p>
                 <p className="nota">
                   {fecha(n.occurredAt ?? n.recordedAt)}
                   {destino === null && n.open.view !== 'NEWS' ? ' · Se ve en la app de BE.' : ''}

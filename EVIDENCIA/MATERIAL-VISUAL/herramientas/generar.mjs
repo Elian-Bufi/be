@@ -1,13 +1,18 @@
 // Genera las fichas (RECETAS.md, ALIMENTOS.md, EJERCICIOS.md) y el inventario (inventario.json) del material visual desde
-// fuentes que no se copian a mano: el manifiesto congelado de las recetas, la selección (seleccion.mjs), los prompts
-// originales del paquete de Entrenamiento y las tres imágenes reales del repositorio (medidas leídas de sus bytes).
+// fuentes que no se copian a mano:
+// - el manifiesto congelado de las 16 recetas originales y el de la ampliación del 2026-10-28 (las 50 nuevas);
+// - la selección (seleccion.mjs) y los prompts originales del paquete de Entrenamiento;
+// - las imágenes reales, medidas de sus bytes: las tres de ejercicios del repositorio y, si las hay, las fotos de recetas
+//   registradas en EVIDENCIA/RECETAS-AMPLIACION/fotos.json por la herramienta de fotos.
 // Sin red, sin API y sin dependencias: solo Node 22. Uso, desde la raíz del repositorio:
 //   node EVIDENCIA/MATERIAL-VISUAL/herramientas/generar.mjs
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { archivoEsperado, leerManifiesto, medidasDeImagen, sinTildes } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.mjs';
+import { archivoEsperado, calculoIndependiente, leerManifiesto, medidasDeImagen, NUTRIENTES, sinTildes } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.mjs';
+import { leerAmpliacion, leerVistaCombinada } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/recetas/ampliacion-2026-10-28/ampliacion.mjs';
+import { alimentoPorFdc } from '../../DASHBOARD-PROFESIONAL/herramientas/datos/recetas/ampliacion-2026-10-28/catalogo.mjs';
 import { ALIMENTOS, ALIMENTOS_AFUERA, COMO_SE_MUESTRA, EJERCICIOS, ESTILO_DE_ALIMENTOS, ESTILO_DE_EJERCICIOS, ESTILO_DE_RECETAS, EXTERNAS_DESCARTADAS, RECETAS } from './seleccion.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
@@ -22,9 +27,21 @@ const PROMPT_POR_CLAVE = { sentadilla_goblet: 'goblet', peso_muerto_rumano_mancu
 const ESTADO_EN_PALABRAS = { RAW: 'crudo', COOKED: 'cocido', AS_PURCHASED: 'listo para consumir' };
 const PENDIENTE = 'PENDIENTE_DE_GENERACION';
 const REAL = 'ARCHIVO_REAL_PENDIENTE_DE_REVISION_HUMANA';
-const recipiente = { plato: 'plato playo blanco liso de 26 cm', cuenco: 'cuenco blanco liso de 15 cm', vaso: 'vaso de vidrio liso de 300 ml' };
+const recipiente = {
+  plato: 'plato playo blanco liso de 26 cm',
+  hondo: 'plato hondo blanco liso de 23 cm',
+  platito: 'plato de postre blanco liso de 20 cm',
+  cuenco: 'cuenco blanco liso de 15 cm',
+  vaso: 'vaso de vidrio liso de 300 ml',
+};
 
 const manifiesto = leerManifiesto();
+const ampliacion = leerAmpliacion();
+const vista = leerVistaCombinada();
+const deLaVista = new Map(vista.recetas.map((r) => [r.codigo, r]));
+/** Las fotos de recetas que ya existen, registradas por la herramienta de fotos (si no hay ninguna, el archivo no existe). */
+const RUTA_DE_LAS_FOTOS = join(RAIZ, 'EVIDENCIA', 'RECETAS-AMPLIACION', 'fotos.json');
+const FOTOS = fs.existsSync(RUTA_DE_LAS_FOTOS) ? JSON.parse(fs.readFileSync(RUTA_DE_LAS_FOTOS, 'utf8')).fotos : {};
 
 /** Las medidas de un archivo real del repositorio, leídas de sus bytes (sin decodificarlo). */
 function archivoReal(ruta) {
@@ -33,6 +50,20 @@ function archivoReal(ruta) {
   const m = medidasDeImagen(bytes);
   return { ruta, tipo: m?.tipo ?? null, ancho: m?.ancho ?? null, alto: m?.alto ?? null, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };
 }
+
+/**
+ * La foto real de una receta, si la herramienta de fotos la registró y el archivo sigue ahí con los mismos bytes. El
+ * archivo de entrega es el que se sube a BE; el original se conserva al lado, con su tamaño nativo.
+ */
+function fotoReal(codigo) {
+  const f = FOTOS[codigo];
+  if (!f) return null;
+  const entrega = archivoReal(f.entrega.ruta);
+  if (entrega.sha256 !== f.entrega.sha256) throw new Error(`${codigo}: el archivo de entrega cambió desde que se registró (${f.entrega.ruta})`);
+  return { entrega, original: f.original, transformaciones: f.transformaciones, herramienta: f.herramienta, revision: f.revision };
+}
+
+const redondear = (x) => (x === null ? null : Math.round(x * 10) / 10);
 
 // ─── Recetas ──────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -49,31 +80,114 @@ function promptDeReceta(r, s) {
   ].join('\n');
 }
 
-const recetas = manifiesto.recetas.map((r) => {
+/** Lo que no se ve en una foto (y que solo confundiría a la herramienta si se lo nombrara). */
+const NO_SE_VE = new Set(['agua potable de red', 'sal fina', 'levadura seca', 'polvo de hornear', 'almidón de maíz', 'caldo de pollo', 'caldo de carne', 'vinagre', 'vinagre de manzana', 'jugo de limón', 'nuez moscada', 'pimienta negra molida', 'comino', 'ají molido', 'azúcar', 'azúcar negra', 'aceite de girasol', 'aceite de oliva']);
+
+/**
+ * El prompt de una receta nueva: la foto muestra UNA porción de una receta que rinde varias, así que no lleva las
+ * cantidades de la receta entera (que harían pensar en una fuente) sino lo que se ve en la porción y lo que la receta
+ * lleva, sin cantidades.
+ */
+function promptDeRecetaNueva(r) {
+  const lleva = [...new Set(r.ingredientes.map((i) => i.buscado))].filter((b) => !NO_SE_VE.has(b));
+  return [
+    ...ESTILO_DE_RECETAS,
+    `Recipiente: ${recipiente[r.foto.recipiente]}.`,
+    `Receta: «${r.nombre}». Rinde ${r.porciones} porciones; la foto muestra una sola: ${r.porcion.charAt(0).toLowerCase()}${r.porcion.slice(1)}`,
+    `Lo que lleva la receta (en la foto, solo lo que se ve en esa porción): ${lleva.join(', ')}.`,
+    `Presentación: ${r.foto.presentacion}`,
+    `No debe aparecer: ${r.foto.noDebe.join(', ')}.`,
+  ].join('\n');
+}
+
+/** La composición de una receta original por porción, rehecha con el catálogo (su manifiesto congelado no la guarda). */
+function composicionDeLaOriginal(r) {
+  const c = calculoIndependiente(r, (i) => alimentoPorFdc(i.fdcId)?.composicion ?? null);
+  return Object.fromEntries(NUTRIENTES.map((n) => [n, redondear(c.porPorcion[n])]));
+}
+
+function estadoDeLaFoto(foto) {
+  if (!foto) return PENDIENTE;
+  return REAL;
+}
+
+const recetasOriginales = manifiesto.recetas.map((r) => {
   const s = RECETAS[r.numero];
   if (!s) throw new Error(`falta la presentación de la receta ${r.numero}`);
   if (r.imagen !== archivoEsperado(r)) throw new Error(`receta ${r.numero}: el manifiesto espera «${r.imagen}» y el nombre da «${archivoEsperado(r)}»`);
+  const codigo = `R${String(r.numero).padStart(3, '0')}`;
+  const foto = s.archivoReal ? { entrega: archivoReal(s.archivoReal) } : fotoReal(codigo);
+  const v = deLaVista.get(codigo);
   return {
     id: `receta-${String(r.numero).padStart(2, '0')}`,
     tipo: 'receta',
+    codigo,
+    origen: 'ORIGINAL',
+    familia: v.familia,
+    familiaNombre: vista.familias[v.familia],
     identificador: { manifiesto: 'EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/manifiesto.json', numero: r.numero },
     nombre: r.nombre,
+    momento: r.descripcion?.replace(/\.$/, '') ?? null,
+    porciones: r.porciones,
+    rendimiento: null,
+    porcion: r.porciones === 1 ? 'La receta entera es una porción.' : null,
     archivo: r.imagen,
-    archivoReal: s.archivoReal ? archivoReal(s.archivoReal) : null,
+    archivoReal: foto?.entrega ?? null,
+    fotoOriginal: foto?.original ?? null,
+    transformaciones: foto?.transformaciones ?? [],
     dondeSeMuestra: `Website: ${COMO_SE_MUESTRA.receta.web}. APK: ${COMO_SE_MUESTRA.receta.apk}.`,
     formato: 'Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10',
     procedencia: 'A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto.json, «imagenes»)',
     prompt: promptDeReceta(r, s),
-    herramienta: null,
+    herramienta: foto?.herramienta ?? null,
     fuenteYAtribucion: null,
-    estadoDeRevision: s.archivoReal ? REAL : PENDIENTE,
-    observaciones: [s.archivoReal ? 'Imagen cargada en la selección: falta la revisión humana.' : 'Sin herramienta de generación de imágenes en esta sesión: la ficha y el prompt están listos; no hay imagen.'],
-    ingredientes: r.ingredientes.map((i) => ({ nombre: i.nombre, cantidad: `${i.cantidad.valor} ${i.cantidad.unidad}`, estado: i.estado, catalogItemId: i.catalogItemId })),
+    estadoDeRevision: estadoDeLaFoto(foto),
+    revisionDeLaFoto: foto?.revision ?? null,
+    observaciones: [foto ? 'Foto registrada: falta la revisión humana.' : 'Sin herramienta de generación de imágenes en las sesiones que prepararon el material: la ficha y el prompt están listos; no hay imagen.'],
+    ingredientes: r.ingredientes.map((i) => ({ parte: null, nombre: i.nombre, cantidad: `${i.cantidad.valor} ${i.cantidad.unidad}`, estado: i.estado, catalogItemId: i.catalogItemId })),
     pasos: r.pasos,
+    composicionPorPorcion: composicionDeLaOriginal(r),
     presentacion: s.presentacion,
     noDebe: s.noDebe,
   };
 });
+
+const recetasNuevas = ampliacion.recetas.map((r) => {
+  const foto = fotoReal(r.codigo);
+  return {
+    id: `receta-${r.codigo}`,
+    tipo: 'receta',
+    codigo: r.codigo,
+    origen: 'NUEVA',
+    familia: r.familia,
+    familiaNombre: r.familiaNombre,
+    identificador: { manifiesto: 'EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/ampliacion-2026-10-28/manifiesto.json', codigo: r.codigo, huellaDeLaFormulacion: r.huella },
+    nombre: r.nombre,
+    momento: r.momento,
+    porciones: r.porciones,
+    rendimiento: r.rendimiento,
+    porcion: r.porcion,
+    archivo: r.foto.archivo,
+    archivoReal: foto?.entrega ?? null,
+    fotoOriginal: foto?.original ?? null,
+    transformaciones: foto?.transformaciones ?? [],
+    dondeSeMuestra: `Website: ${COMO_SE_MUESTRA.receta.web}. APK: ${COMO_SE_MUESTRA.receta.apk}.`,
+    formato: 'Horizontal 4:3, al menos 1600 × 1200 px, hasta 10 MB; el plato dentro de la franja central de 16:10',
+    procedencia: 'A generar con IA para BE: se sube con la procedencia AI_GENERATED y la autoría «Generada por IA para BE» (manifiesto de la ampliación, «imagenes»)',
+    prompt: promptDeRecetaNueva(r),
+    herramienta: foto?.herramienta ?? null,
+    fuenteYAtribucion: null,
+    estadoDeRevision: estadoDeLaFoto(foto),
+    revisionDeLaFoto: foto?.revision ?? null,
+    observaciones: [foto ? 'Foto registrada: falta la revisión humana.' : 'Sin herramienta de generación de imágenes en la sesión del 2026-10-28: la ficha y el prompt están listos; no hay imagen.'],
+    ingredientes: r.ingredientes.map((i) => ({ parte: i.parte, nombre: i.nombre, cantidad: `${i.cantidad.valor} ${i.cantidad.unidad}`, estado: i.estado, catalogItemId: i.catalogItemId })),
+    pasos: r.pasos,
+    composicionPorPorcion: Object.fromEntries(NUTRIENTES.map((n) => [n, redondear(r.composicion.porPorcion[n])])),
+    presentacion: r.foto.presentacion,
+    noDebe: r.foto.noDebe,
+  };
+});
+const recetas = [...recetasOriginales, ...recetasNuevas];
 
 // ─── Alimentos ────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -146,13 +260,17 @@ const ejercicios = EJERCICIOS.map((e) => {
 
 const todos = [...recetas, ...alimentos, ...ejercicios];
 const inventario = {
-  inventario: 'Material visual de BE: 16 recetas, 16 alimentos y 15 ejercicios (encargo nocturno de Dirección del 2026-10-27, §2 a §4)',
+  inventario: `Material visual de BE: ${recetas.length} recetas (${recetasOriginales.length} originales y ${recetasNuevas.length} nuevas), ${alimentos.length} alimentos y ${ejercicios.length} ejercicios (encargos nocturnos de Dirección del 2026-10-27, §2 a §4, y del 2026-10-28, §11 y §12)`,
   commitDeReferencia: COMMIT_DE_REFERENCIA,
   generadoPor: 'EVIDENCIA/MATERIAL-VISUAL/herramientas/generar.mjs',
-  generacionDeImagenes: 'No disponible en la sesión que preparó el material: no se generó ninguna imagen ni se contrató ningún servicio. Lo que no tiene archivoReal es una ficha con su prompt, no una imagen.',
+  generacionDeImagenes:
+    'No disponible en las sesiones que prepararon el material (2026-10-27 y 2026-10-28): no se generó ninguna imagen ni se contrató ningún servicio. Lo que no tiene archivoReal es una ficha con su prompt, no una imagen. Las fotos de recetas se generan afuera con el paquete de EVIDENCIA/RECETAS-AMPLIACION y se registran con su herramienta de fotos.',
   estados: { [PENDIENTE]: 'Ficha y prompt listos; sin imagen', [REAL]: 'Hay un archivo real; falta la revisión humana' },
   resumen: {
     recetas: recetas.length,
+    recetasOriginales: recetasOriginales.length,
+    recetasNuevas: recetasNuevas.length,
+    recetasConFoto: recetas.filter((x) => x.archivoReal).length,
     alimentos: alimentos.length,
     ejercicios: ejercicios.length,
     conArchivoReal: todos.filter((x) => x.archivoReal).length,
@@ -165,15 +283,20 @@ fs.writeFileSync(join(CARPETA, 'inventario.json'), JSON.stringify(inventario, nu
 // ─── Fichas en Markdown ───────────────────────────────────────────────────────────────────────────────────────
 
 const bloque = (texto) => ['```text', texto, '```'].join('\n');
-const pie = `\n---\nGenerado por \`herramientas/generar.mjs\` desde el manifiesto congelado y \`herramientas/seleccion.mjs\` (commit de referencia \`${COMMIT_DE_REFERENCIA}\`). No editar a mano: cambiar la selección y volver a generar.\n`;
+const pie = `\n---\nGenerado por \`herramientas/generar.mjs\` desde el manifiesto congelado, el de la ampliación del 2026-10-28 y \`herramientas/seleccion.mjs\` (commit de referencia \`${COMMIT_DE_REFERENCIA}\`). No editar a mano: cambiar la selección y volver a generar.\n`;
 
 const md = {};
+const conFoto = recetas.filter((r) => r.archivoReal).length;
 md.RECETAS = [
-  '# Recetas · fichas y prompts (16)',
+  `# Recetas · fichas y prompts (${recetas.length})`,
   '',
-  'Las dieciséis recetas de ejemplo del manifiesto congelado, con su archivo esperado, lo que lleva cada una y el prompt para',
-  'generar su foto. **Ninguna tiene imagen todavía:** esta sesión no tenía una herramienta que genere imágenes, y un prompt',
-  'no es una imagen. La foto es una referencia visual: no mide la porción ni cambia ningún cálculo.',
+  `Las ${recetas.length} recetas de ejemplo: las ${recetasOriginales.length} originales del manifiesto congelado y las ${recetasNuevas.length} nuevas de la`,
+  'ampliación del 2026-10-28. Cada una tiene su archivo esperado, lo que lleva y el prompt para generar su foto.',
+  conFoto === 0
+    ? '**Ninguna tiene imagen todavía:** las sesiones que prepararon el material no tenían una herramienta que genere imágenes, y un prompt no es una imagen.'
+    : `**${conFoto} de ${recetas.length} tienen imagen**, registrada con la herramienta de fotos y pendiente de revisión humana; las demás son fichas con su prompt.`,
+  'La foto es una referencia visual: no mide la porción ni cambia ningún cálculo. Las recetas completas de las nuevas (ingredientes',
+  'por parte, pasos y composición) están en `EVIDENCIA/RECETAS-AMPLIACION/RECETARIO.md`.',
   '',
   '## Cómo se va a ver',
   '',
@@ -194,16 +317,38 @@ md.RECETAS = [
   '',
   ...ESTILO_DE_RECETAS.map((l) => `- ${l}`),
   '',
-  ...recetas.flatMap((r) => [
-    `## ${String(r.identificador.numero).padStart(2, '0')} · ${r.nombre}`,
+  '## Las 16 originales',
+  '',
+  ...recetasOriginales.flatMap((r) => [
+    `### ${r.codigo} · ${r.nombre}`,
     '',
-    `- **Archivo esperado:** \`${r.archivo}\` (el del manifiesto; \`fotoDe\` lo busca por el número). **Estado:** ficha lista, sin imagen.`,
+    `- **Archivo esperado:** \`${r.archivo}\` (el del manifiesto congelado; su herramienta lo busca por el número). **Estado:** ${r.archivoReal ? 'foto registrada, pendiente de revisión humana' : 'ficha lista, sin imagen'}.`,
     '',
     '| Ingrediente | Cantidad | Estado |',
     '|---|---|---|',
     ...r.ingredientes.map((i) => `| ${i.nombre} | ${i.cantidad} | ${ESTADO_EN_PALABRAS[i.estado]} |`),
     '',
     `- **Preparación:** ${r.pasos.join(' ')}`,
+    `- **Presentación:** ${r.presentacion}`,
+    `- **No debe aparecer:** ${r.noDebe.join(', ')}.`,
+    '',
+    '<details><summary>Prompt</summary>',
+    '',
+    bloque(r.prompt),
+    '',
+    '</details>',
+    '',
+  ]),
+  '## Las 50 nuevas',
+  '',
+  'La foto muestra **una porción** de una receta que rinde varias: el prompt dice qué porción y lo que lleva la receta, sin',
+  'las cantidades de la receta entera (que harían pensar en una fuente). Las cantidades están en el recetario.',
+  '',
+  ...recetasNuevas.flatMap((r) => [
+    `### ${r.codigo} · ${r.nombre}`,
+    '',
+    `- **Archivo esperado:** \`${r.archivo}\` (la herramienta de la ampliación lo busca por el código). **Estado:** ${r.archivoReal ? 'foto registrada, pendiente de revisión humana' : 'ficha lista, sin imagen'}.`,
+    `- **Familia:** ${r.familiaNombre}. **Rinde:** ${r.porciones} porciones; la foto muestra ${r.porcion.charAt(0).toLowerCase()}${r.porcion.slice(1)}`,
     `- **Presentación:** ${r.presentacion}`,
     `- **No debe aparecer:** ${r.noDebe.join(', ')}.`,
     '',

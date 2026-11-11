@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { BusquedaDeEjerciciosRequestSchema, HEADER_IDEMPOTENCY_KEY } from '@be/domain';
+import { BusquedaDeEjerciciosRequestSchema, FichasVisualesRequestSchema, HEADER_IDEMPOTENCY_KEY, zonasMuscularesApi, type ZonaMuscular } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { comoConsultaDeLista } from '../http/paginacion';
@@ -122,6 +122,13 @@ export class EntrenamientoController {
     return responder(res, await this.planes.activar(actorDe(req), planId, cuerpo, clave, contextoDe(req)));
   }
 
+  /** API-PLE-05 (DL-163 D-21; TB-47): descartar un borrador que nunca se activó. */
+  @Post('training/plans/:planId/discard')
+  async descartarBorrador(@Param('planId') planId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.planes.descartar(actorDe(req), planId, cuerpo, clave, contextoDe(req)));
+  }
+
   // ─── Catálogo (RF-037) ──────────────────────────────────────────────────────────────────────
   /** API-TRN-13. Contrato legado: `q` en la URL. La web busca con API-TRN-13-BUSQUEDA. */
   @Get('training/exercises')
@@ -147,6 +154,24 @@ export class EntrenamientoController {
   async crearEjercicio(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
     sinParametrosDeQuery(query);
     return responder(res, await this.catalogo.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /**
+   * API-EJE-05 (DL-081, DL-162): la ficha visual de varios ejercicios, para el website. Es una lectura: 200, sin
+   * Idempotency-Key; el cuerpo lleva identificadores, nunca un texto.
+   */
+  @Post('training/exercises/visual-sheets')
+  @HttpCode(200)
+  fichasVisuales(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.catalogo.fichas(actorDe(req), validarCuerpo(FichasVisualesRequestSchema, cuerpo));
+  }
+
+  /** API-ZON-01 (DL-081): el catálogo de las 17 zonas. Es del dominio: no lee la base ni datos de nadie. */
+  @Get('training/muscle-zones')
+  zonasMusculares(@Query() query: Record<string, unknown>): { data: ZonaMuscular[] } {
+    sinParametrosDeQuery(query);
+    return { data: zonasMuscularesApi() };
   }
 
   // ─── Plantillas de plan del profesional (PF-09; DL-108) ─────────────────────────────────────────

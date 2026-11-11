@@ -27,7 +27,15 @@ export const HEADER_DE_CAPACIDADES = 'X-BE-Capabilities';
 /** El cliente muestra el objetivo de cada serie (API-SER-02) y nunca los generales como si fueran los de la serie. */
 export const CAPACIDAD_OBJETIVOS_POR_SERIE = 'training-set-targets-1';
 
-export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE] as const;
+/**
+ * DL-165 (WP-FORMULARIOS-RONDA-2, FR-08) · el cliente lee y dibuja las versiones de formulario de formato 3: el subcampo
+ * de varias opciones en un renglón y lo demás que suma la ronda 2 (`loQueUsaDelFormato3`). Sin la capacidad (la APK 0.20
+ * y las anteriores), una versión de formato 3 y sus solicitudes son, para ese pedido, el 404 de lo inexistente, y FRI-02
+ * no las lista. La declaran la APK nueva y el website, que se despliega con la API.
+ */
+export const CAPACIDAD_FORMULARIOS_FORMATO_3 = 'forms-format-3';
+
+export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 
 /** Un valor de cabecera más largo que esto no se lee: ninguna lista válida lo necesita. */

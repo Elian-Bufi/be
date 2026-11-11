@@ -49,6 +49,7 @@ import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { DetalleDeResultado, NuevoCalculo, ResultadosDeLaToma, useCalculosDelAsesorado, type Calculos } from './calculos';
 import { Marca } from './marca';
 import { DetalleDeMedicion } from './medicion';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 
 /** De cuántas tomas se lee el detalle para decir su protocolo y sus correcciones en la lista: las más recientes. */
 const TOMAS_CON_DETALLE = 20;
@@ -362,6 +363,7 @@ function TomaAbierta({
   onReintentarLosCalculos: () => void;
   volverALeer: (id: string) => Promise<void>;
 }) {
+  const { delProfesional } = useNombres();
   const { irA } = useAntropometria();
   const [panel, setPanel] = useState<PanelAbierto>(null);
   /** Lo que se acaba de hacer en el panel, dicho adentro: un aviso de la página quedaría detrás del diálogo. */
@@ -386,7 +388,7 @@ function TomaAbierta({
   const metadatos = [
     resumen.protocolo,
     cuentasDeLaTomaEnPalabras(resumen.cuentas),
-    toma.registeredAt ? `${C.registradaEl} ${fecha(toma.registeredAt)} ${C.registradaPor} ${toma.author.displayName}` : null,
+    toma.registeredAt ? `${C.registradaEl} ${fecha(toma.registeredAt)} ${C.registradaPor} ${delProfesional(toma.author)}` : null,
     toma.context ? `${C.contextoDeLaToma}: «${toma.context}»` : null,
   ].filter((p): p is string => p !== null);
 

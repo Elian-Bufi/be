@@ -8,17 +8,20 @@
  *   después y no demora la tarjeta. Antes la tarjeta lo esperaba, aunque el documento decía que solo demoraba el renglón.
  *   Su renglón y su botón van **debajo de las acciones**: así, cuando llegan, no corren «Registrar» bajo el dedo.
  */
-import { COPY_NUTRICION, type HoyResponse, type Ingesta, type Resultado } from '@be/domain';
+import { COPY_NUTRICION, type HoyResponse, type Resultado } from '@be/domain';
 import { useCallback, type ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
 import { SinActualizar } from '../estados';
-import { fechaCivil } from '../formato';
+import { fechaCivil, hora } from '../formato';
+import { Icono } from '../icono';
+import { comidasDeHoy, formaDelArea } from '../inicio-de-hoy';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
-import { leerUltimoRegistro, pideElUltimoRegistro, sinRegistrosDeHoy, textoDeRegistrosDeHoy } from '../lecturas-de-inicio';
+import { leerUltimoRegistro, pideElUltimoRegistro, sinRegistrosDeHoy } from '../lecturas-de-inicio';
 import type { Ir } from '../navegacion';
-import { Boton, Parrafo } from '../ui';
-import { Accion, Acciones, estilos, faltaElA3, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
+import { Boton, estilosPorTema, Parrafo } from '../ui';
+import { Accion, Acciones, estilos, faltaElA3, LineaDeInicio, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
 
 /** API-NUT-14 con el día del plan elegido, que es la misma elección y la misma clave de Nutrición. */
 export function NutricionDeHoy({ token, dia, sesionPerdida, ir }: { token: string; dia: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
@@ -29,12 +32,14 @@ export function NutricionDeHoy({ token, dia, sesionPerdida, ir }: { token: strin
   if (!r) contenido = <Verificando />;
   else if (faltaElA3(r)) contenido = <SinA3 texto={COPY_NUTRICION.hoyNecesitaA3} ir={ir} />;
   else if (!r.ok) contenido = <NoSePudo falla={r} reintentar={() => void cargar()} />;
+  else if (formaDelArea(r.datos.data.planState) === 'linea') return <LineaDeInicio zona="nutricion" texto={COPY_NUTRICION.sinPlanAsesorado} />;
   else contenido = <ContenidoDeNutricion hoy={r.datos.data} token={token} sesionPerdida={sesionPerdida} elegirDia={setDiaTipo} ir={ir} />;
+  // DL-166 (AV-06): «Comidas», con el día del plan, y las comidas como fichas. Sin «Ir a Nutrición»: la barra lleva ahí.
+  const diaElegido = r?.ok ? (r.datos.data.activePlan?.dayTypes.find((d) => d.dayTypeId === r.datos.data.selectedDayTypeId)?.label ?? undefined) : undefined;
   return (
-    <TarjetaDeInicio zona="nutricion" titulo="Nutrición de hoy">
+    <TarjetaDeInicio zona="nutricion" titulo={TEXTOS_DE_LA_VUELTA.comidas} detalle={diaElegido}>
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-      <Boton texto="Ir a Nutrición" tipo="enlace" onPress={() => ir({ nombre: 'hoy' })} />
     </TarjetaDeInicio>
   );
 }
@@ -55,18 +60,13 @@ function ContenidoDeNutricion({
   const plan = hoy.activePlan;
   const diaDelPlan = plan?.dayTypes.find((d) => d.dayTypeId === hoy.selectedDayTypeId) ?? null;
   const registros = hoy.registeredIntake;
-  // El último de hoy por momento de registro, para abrirlo.
-  const ultimoDeHoy = registros.reduce<Ingesta | null>((a, b) => (a === null || b.recordedAt > a.recordedAt ? b : a), null);
-  const acciones = plan ? (
-    <Acciones>
-      <Accion>
-        <Boton texto="Registrar" onPress={() => ir({ nombre: 'hoy', accion: 'registrar' })} />
-      </Accion>
-      <Accion>
-        <Boton texto="Ver el plan" tipo="secundario" onPress={() => ir({ nombre: 'plan-actual' })} />
-      </Accion>
-    </Acciones>
-  ) : null;
+  // DL-166 (PV-2): las comidas como fichas, en el orden del plan, con «la que sigue» marcada. Sin día elegido, no hay.
+  const comidas = comidasDeHoy(diaDelPlan, registros, hora);
+  const { width, fontScale } = useWindowDimensions();
+  // Dos fichas por fila; con letra grande, una (no se achica la letra: cambia la composición). El ancho útil es la pantalla
+  // menos el relleno del contenido (20 de cada lado) y el de la tarjeta (16 de cada lado); entre fichas, 8.
+  const util = width - 72;
+  const anchoDeFicha = fontScale >= 1.3 || width < 340 ? util : Math.floor((util - 8) / 2);
   return (
     <>
       {hoy.planState === 'NO_ACTIVE_PLAN' ? <Parrafo>{COPY_NUTRICION.sinPlanAsesorado}</Parrafo> : null}
@@ -92,25 +92,33 @@ function ContenidoDeNutricion({
           </Acciones>
         </View>
       ) : null}
-      {plan && diaDelPlan ? (
-        <Text style={estilos.renglonDeDato}>
-          {'Día del plan: '}
-          <Text style={estilos.negrita}>{diaDelPlan.label}</Text>
-        </Text>
+      {comidas ? (
+        <View style={estilosDeFichas.fichas}>
+          {comidas.fichas.map((f) => (
+            <Pressable
+              key={f.mealId}
+              accessibilityRole="button"
+              accessibilityLabel={f.paraLeer}
+              onPress={() => (f.executionId ? ir({ nombre: 'registro-nutricional', id: f.executionId }) : ir({ nombre: 'hoy', accion: 'registrar' }))}
+              style={({ pressed }) => [estilosDeFichas.ficha, { width: anchoDeFicha }, f.estado === 'la-que-sigue' && estilosDeFichas.laQueSigue, pressed && estilosDeFichas.presionada]}
+            >
+              <View style={estilosDeFichas.cabezaDeFicha}>
+                <Text style={estilosDeFichas.nombre}>{f.nombre}</Text>
+                {f.estado === 'registrada' ? <Icono nombre="tilde" tamano={20} tono="acento" /> : f.estado === 'la-que-sigue' ? <Icono nombre="mas" tamano={20} tono="acento" /> : null}
+              </View>
+              <Text style={f.estado === 'la-que-sigue' ? estilosDeFichas.registrar : estilos.detalle}>
+                {f.estado === 'registrada' ? TEXTOS_DE_LA_VUELTA.registrada(f.hora ?? '') : f.estado === 'la-que-sigue' ? TEXTOS_DE_LA_VUELTA.registrar : TEXTOS_DE_LA_VUELTA.opciones(f.opciones)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       ) : null}
+      {comidas && comidas.fueraDelPlan > 0 ? <Parrafo tenue>{TEXTOS_DE_LA_VUELTA.fueraDelPlan(comidas.fueraDelPlan)}</Parrafo> : null}
+      {plan && diaDelPlan ? <Boton texto="Ver el plan" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'plan-actual' })} /> : null}
       {plan && diaDelPlan && plan.dayTypes.length > 1 ? <Boton texto="Cambiar el día del plan" tipo="enlace" onPress={() => elegirDia(undefined)} /> : null}
 
-      {/* Lo registrado hoy, aparte del plan: son registros, no comidas del plan. Sin registros hoy, el último registro
-          se lee aparte y completa la tarjeta debajo de las acciones. */}
-      {pideElUltimoRegistro(hoy) ? (
-        <SinRegistrosHoy token={token} sesionPerdida={sesionPerdida} ir={ir} acciones={acciones} />
-      ) : (
-        <>
-          <Parrafo>{textoDeRegistrosDeHoy(registros)}</Parrafo>
-          {acciones}
-          {ultimoDeHoy ? <Boton texto="Ver el último registro" tipo="secundario" onPress={() => ir({ nombre: 'registro-nutricional', id: ultimoDeHoy.executionId })} /> : null}
-        </>
-      )}
+      {/* Sin registros hoy, el último registro se lee aparte y queda en una línea tenue, para abrirlo. */}
+      {pideElUltimoRegistro(hoy) && plan ? <SinRegistrosHoy token={token} sesionPerdida={sesionPerdida} ir={ir} /> : null}
     </>
   );
 }
@@ -119,20 +127,20 @@ function ContenidoDeNutricion({
  * Sin registros hoy: lo dice enseguida, arriba de las acciones, y cuando llega el último registro agrega su fecha y el
  * botón para abrirlo, debajo de ellas (`sinRegistrosDeHoy`). Si nunca hubo uno, el texto de arriba lo dice en su lugar.
  */
-function SinRegistrosHoy({ token, sesionPerdida, ir, acciones }: { token: string; sesionPerdida: AlPerderLaSesion; ir: Ir; acciones: ReactNode }) {
+function SinRegistrosHoy({ token, sesionPerdida, ir }: { token: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
   const pedir = useCallback(() => leerUltimoRegistro(api, token), [token]);
   const { r } = useLecturaRecordada(token, 'inicio-ultimo-registro', pedir, sesionPerdida);
-  const { texto, ultimo } = sinRegistrosDeHoy(r, fechaCivil);
-  return (
-    <>
-      <Parrafo>{texto}</Parrafo>
-      {acciones}
-      {ultimo ? (
-        <>
-          <Parrafo tenue>{ultimo.texto}</Parrafo>
-          <Boton texto="Ver ese registro" tipo="secundario" onPress={() => ir({ nombre: 'registro-nutricional', id: ultimo.executionId })} />
-        </>
-      ) : null}
-    </>
-  );
+  const { ultimo } = sinRegistrosDeHoy(r, fechaCivil);
+  return ultimo ? <Boton texto={ultimo.texto} tipo="enlace" icono="lista" onPress={() => ir({ nombre: 'registro-nutricional', id: ultimo.executionId })} /> : null;
 }
+
+const estilosDeFichas = estilosPorTema((COLOR) => ({
+  fichas: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, marginTop: 6 },
+  ficha: { minHeight: 64, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficieElevada },
+  // «La que sigue»: el borde del acento, más grueso. El texto «Registrar» dice lo mismo: el borde no es la única señal.
+  laQueSigue: { borderWidth: 2, borderColor: COLOR.acento },
+  presionada: { opacity: 0.6 },
+  cabezaDeFicha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  nombre: { fontSize: 16, fontWeight: '800', color: COLOR.texto, flexShrink: 1 },
+  registrar: { fontSize: 14, fontWeight: '700', color: COLOR.acento },
+}));

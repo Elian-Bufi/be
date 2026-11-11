@@ -26,6 +26,7 @@ import { leerBusquedaDeLineaDeTiempo, leerConsultaDeLineaDeTiempo, leerConsultaD
 import { ejecucionesDelPeriodo, hayRegistrosDeOtros, registrosDeComidaDelPeriodo, versionesActivadas, versionesDeObjetivo, ZONA } from './fuentes';
 import {
   entradasDeComidas,
+  entradasDeFormularios,
   entradasDeNotas,
   entradasDeObjetivos,
   entradasDeRevisiones,
@@ -123,6 +124,8 @@ export class AnalisisController {
         todas.push(...(await entradasDeSeguimientos(tx, permitidos, profesionalId, titularId, desde, hasta, nombres)));
         // DL-140: las notas de coordinación que este profesional escribió o recibió, con algún alcance permitido (el guard).
         todas.push(...(await entradasDeNotas(tx, profesionalId, titularId, desde, hasta)));
+        // DL-165 D-8: los formularios que este profesional le pidió a la persona, en los alcances permitidos.
+        todas.push(...(await entradasDeFormularios(tx, permitidos, profesionalId, titularId, desde, hasta, nombres, nombreDelTitular)));
         return { entradas: todas, generatedAt: (await momentoDeLaBase(tx)).toISOString() };
       }),
     );

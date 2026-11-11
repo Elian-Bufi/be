@@ -7,7 +7,19 @@
  * API («Opción», «Series con datos»…) y los rasgos. Nada se calcula ni se completa. Si la API cambia un título o el
  * rótulo de un detalle, el renglón no inventa: cae en el título entero y en el primer detalle.
  */
-import { MODO_EN_UN_RENGLON, modoDeUnaComida, NOMBRE_DEL_RASGO, normalizarTexto, opcionDeUnaComida, rasgosDeUnHecho, type EntradaDeLineaDeTiempo, type NombreDeIcono, type RasgoDeUnHecho } from '@be/domain';
+import {
+  COPY_REGISTRO_POR_NIVELES,
+  ETIQUETA_DE_NIVEL_DE_DETALLE,
+  MODO_EN_UN_RENGLON,
+  modoDeUnaComida,
+  NOMBRE_DEL_RASGO,
+  normalizarTexto,
+  opcionDeUnaComida,
+  rasgosDeUnHecho,
+  type EntradaDeLineaDeTiempo,
+  type NombreDeIcono,
+  type RasgoDeUnHecho,
+} from '@be/domain';
 
 export interface RenglonDelHecho {
   readonly icono: NombreDeIcono;
@@ -17,6 +29,11 @@ export interface RenglonDelHecho {
   readonly dato: string | null;
   /** El modo de registro de las cantidades, si es de los de siempre (los otros son rasgos y van como etiqueta). */
   readonly modo: { readonly icono: NombreDeIcono; readonly texto: string } | null;
+  /**
+   * DL-161 (Dirección, 2026-11-02): «Carga completa», que el renglón muestra como una etiqueta del acento, al lado del
+   * dato. Solo está en una sesión cargada completa; las demás dicen su nivel dentro del dato.
+   */
+  readonly destacado?: string;
 }
 
 const detalle = (e: EntradaDeLineaDeTiempo, rotulo: string): string | null => e.details.find((d) => d.label === rotulo)?.value ?? null;
@@ -32,7 +49,7 @@ const contar = (valor: string | null, uno: string, varios: string): string | nul
 };
 const primerDetalle = (e: EntradaDeLineaDeTiempo): string | null => (e.details[0] ? `${e.details[0].label}: ${e.details[0].value}` : null);
 
-export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
+export function renglonDelHecho(e: EntradaDeLineaDeTiempo, autorDe: (a: NonNullable<EntradaDeLineaDeTiempo['author']>) => string): RenglonDelHecho {
   switch (e.eventType) {
     case 'MEAL_RECORDED': {
       // La opción elegida y el modo de las cantidades los dice el dominio (los mismos que en Nutrición · Registros).
@@ -48,7 +65,13 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
       const etiqueta = corte < 0 ? null : e.title.slice(corte + 3);
       const nombre = etiqueta === null ? e.title : /^sesi[oó]n\b/i.test(etiqueta) ? etiqueta : `Sesión ${etiqueta}`;
       // Son las series que tienen algún dato (carga, repeticiones o esfuerzo), no todas las de la sesión.
-      return { icono: 'entrenamiento', nombre, dato: contar(detalle(e, 'Series con datos'), 'serie con datos', 'series con datos'), modo: null };
+      const series = contar(detalle(e, 'Series con datos'), 'serie con datos', 'series con datos');
+      // DL-161: cómo se cargaron («Carga rápida», «Carga rápida con cambios»…), tal como lo dice la API. Después de la
+      // cuenta, en minúscula. «Carga completa» no va en el dato: es la etiqueta destacada del renglón.
+      const comoSeCargo = detalle(e, COPY_REGISTRO_POR_NIVELES.comoSeCargo);
+      if (comoSeCargo === ETIQUETA_DE_NIVEL_DE_DETALLE.CON_DETALLE) return { icono: 'entrenamiento', nombre, dato: series, modo: null, destacado: comoSeCargo };
+      const dato = series && comoSeCargo ? `${series} · ${comoSeCargo.charAt(0).toLowerCase()}${comoSeCargo.slice(1)}` : (series ?? comoSeCargo);
+      return { icono: 'entrenamiento', nombre, dato, modo: null };
     }
     case 'ANTHROPOMETRIC_EVALUATION_RECORDED':
       return { icono: 'antropometria', nombre: sinRegistrada(e.title), dato: contar(detalle(e, 'Mediciones vigentes'), 'medición', 'mediciones') ?? primerDetalle(e), modo: null };
@@ -75,18 +98,34 @@ export function renglonDelHecho(e: EntradaDeLineaDeTiempo): RenglonDelHecho {
     case 'COORDINATION_NOTE_RECORDED': {
       const corte = e.title.indexOf(' · ');
       const finalidad = corte < 0 ? null : e.title.slice(corte + 3);
-      const autor = e.author?.displayName ?? null;
+      // Con «Ocultar nombres» (TB-05), quien la escribió va por su referencia.
+      const autor = e.author ? autorDe(e.author) : null;
       return { icono: 'texto', nombre: corte < 0 ? e.title : e.title.slice(0, corte), dato: [finalidad, autor ? `de ${autor}` : null].filter(Boolean).join(' · ') || null, modo: null };
+    }
+    // DL-165 D-8: los formularios, con el ícono de Información. El dato es el formulario y, si lo hay, cuánto respondió o
+    // cómo terminó lo cargado. Las respuestas no viajan en la línea: se leen en la solicitud.
+    case 'FORM_REQUESTED':
+    case 'FORM_RESPONDED':
+    case 'FORM_LOADED':
+    case 'FORM_CONFIRMED':
+    case 'FORM_REJECTED': {
+      const corte = e.title.indexOf(' · ');
+      const formulario = corte < 0 ? null : e.title.slice(corte + 3);
+      const como = e.eventType === 'FORM_LOADED' ? detalle(e, 'Estado') : e.eventType === 'FORM_RESPONDED' || e.eventType === 'FORM_CONFIRMED' ? detalle(e, 'Respondió') : null;
+      return { icono: 'informacion', nombre: corte < 0 ? e.title : e.title.slice(0, corte), dato: [formulario, como].filter(Boolean).join(' · ') || null, modo: null };
     }
   }
 }
 
 /** El título del detalle: el nombre y lo que lo distingue («Almuerzo · Arroz con pollo y brócoli»). */
 export const tituloDelHecho = (e: EntradaDeLineaDeTiempo): string => {
-  const r = renglonDelHecho(e);
+  // El título nunca nombra a quien escribió (el de una nota es su finalidad): el autor no se usa.
+  const r = renglonDelHecho(e, () => '');
   // El dato de una comida es su opción o su descripción: nombra al registro. El de los demás es una cuenta o un resultado.
   // Una nota de coordinación se titula con su finalidad, como llega de la API («Nota de coordinación · Pedido de coordinación»).
   if (e.eventType === 'COORDINATION_NOTE_RECORDED') return e.title;
+  // Un formulario se titula como llega de la API («Formulario respondido · Cómo comés hoy»).
+  if (e.source.type === 'FORM_REQUEST') return e.title;
   return e.eventType === 'MEAL_RECORDED' && r.dato ? `${r.nombre} · ${r.dato}` : r.nombre;
 };
 
@@ -108,10 +147,9 @@ export const frenteALoIndicadoDe = (e: EntradaDeLineaDeTiempo): string | null =>
  * todos los detalles y las relaciones; el renglón muestra solo algunos. Devuelve el primer detalle (o la relación) que
  * tiene una palabra buscada que no está a la vista, o `null` si el renglón ya lo dice todo o coincide por su tipo.
  */
-export function dondeCoincide(e: EntradaDeLineaDeTiempo, buscado: string): string | null {
+export function dondeCoincide(e: EntradaDeLineaDeTiempo, buscado: string, r: RenglonDelHecho = renglonDelHecho(e, () => '')): string | null {
   const palabras = normalizarTexto(buscado).split(' ').filter(Boolean);
   if (palabras.length === 0) return null;
-  const r = renglonDelHecho(e);
   const aLaVista = normalizarTexto([r.nombre, r.dato ?? '', r.modo?.texto ?? '', ...rasgosDeUnHecho(e).map((x) => NOMBRE_DEL_RASGO[x])].join(' '));
   // Solo las palabras que el renglón no dice: sin ninguna, no hay nada que agregar.
   const faltan = palabras.filter((p) => !aLaVista.includes(p));

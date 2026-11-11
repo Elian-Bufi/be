@@ -53,6 +53,44 @@ export const ETIQUETA_DE_GRANULARIDAD: Readonly<Record<'SET' | 'EXERCISE_OR_SESS
   EXERCISE_OR_SESSION: 'Por ejercicio o sesión',
 };
 
+/**
+ * DL-161: el nivel de detalle de una sesión registrada, como lo lee el profesional (`registro-por-niveles.ts`). Dice cómo
+ * se cargó, no si estuvo bien. «No realizada» no está acá: sale de la condición registrada (`etiquetaDeCondicionRegistrada`).
+ * Los nombres son los de Dirección (2026-11-02): «Carga completa» (cada serie escrita), «Carga rápida» (todas tildadas
+ * con lo planificado) y «Carga rápida con cambios» (algunas escritas o cambiadas, las demás tildadas).
+ */
+export const ETIQUETA_DE_NIVEL_DE_DETALLE: Readonly<Record<'CON_DETALLE' | 'COMO_EL_PLAN' | 'PARTE_COMO_EL_PLAN' | 'RESUMIDA', string>> = {
+  CON_DETALLE: 'Carga completa',
+  COMO_EL_PLAN: 'Carga rápida',
+  PARTE_COMO_EL_PLAN: 'Carga rápida con cambios',
+  RESUMIDA: 'Resumida, sin series',
+};
+
+/** DL-161: la marca de una serie y su duración, en el website del profesional. Discretas: describen, no califican. */
+export const COPY_REGISTRO_POR_NIVELES = {
+  /** El rótulo del nivel en la línea de tiempo y en el detalle de la sesión. */
+  comoSeCargo: 'Cómo se cargó',
+  /** La marca de una serie `AS_PLANNED`, al lado de lo registrado. */
+  comoElPlan: 'como el plan',
+  /** Qué quiere decir la marca, para quien la lee por primera vez (y para el lector de pantalla). */
+  queEsComoElPlan: 'La persona registró esta serie con un toque, sin escribir: los valores son los del plan, que tenía a la vista.',
+  /** «Duró 00:45»: la duración que midió el cronómetro o que escribió la persona. */
+  duro: (tiempo: string) => `Duró ${tiempo}`,
+  /**
+   * Dirección, 2026-11-02: una serie tildada sin escribir no se compara con lo indicado, porque sus valores son los del
+   * plan. Va en la columna de la comparación, donde iría «Dentro de lo indicado» o la diferencia.
+   */
+  noSeComparaTildada: 'No se compara: tildada sin escribir',
+  /** Al pie del detalle de la sesión, después de `queEsComoElPlan`: por qué la columna de la comparación dice eso. */
+  porQueNoSeCompara: 'Por eso esas series no se comparan con lo indicado; lo que la persona escribió o cambió, sí. La cantidad de series se cuenta siempre.',
+  /** La cuenta de una sesión: «4 series tildadas sin escribir: no se comparan». */
+  tildadasSinComparar: (n: number) => `${cantidadDeSeries(n)} ${n === 1 ? 'tildada' : 'tildadas'} sin escribir: no se ${n === 1 ? 'compara' : 'comparan'}`,
+  /** El rótulo corto de un punto o una barra de carga rápida: debajo del eje de un gráfico y en su leyenda. */
+  cargaRapida: 'carga rápida',
+  /** La leyenda de los gráficos: qué es una marca hueca de carga rápida. */
+  leyendaCargaRapida: 'Hueco: carga rápida, tildada sin escribir con los valores del plan. No se compara con lo indicado ni entra en los resúmenes ni en el cambio relativo.',
+} as const;
+
 /** Qué pasa al aplicar cada resultado, en lenguaje llano, para un plan de entrenamiento (REG-06-117, 147). */
 export const EFECTO_VISIBLE_DE_RESULTADO_DE_ENTRENAMIENTO: Readonly<Record<'MAINTAIN' | 'ADJUST' | 'REPLACE' | 'RESCHEDULE_REVIEW' | 'CHANGE_OBJECTIVE' | 'FINALIZE', string>> = {
   MAINTAIN: 'El plan sigue igual. Se registra la próxima acción.',
@@ -124,9 +162,10 @@ export const COPY_ENTRENAMIENTO = {
   cambiosSinGuardar: 'Cambios sin guardar',
   guardado: 'Guardado',
   hayElementosPorCorregir: 'Hay elementos por corregir antes de activar.',
-  validarPlan: 'Validar plan',
+  /** WP-TABLERO-ALTA-GAMA TB-48: «Validar plan» pasa a «Revisar el plan», que lista también lo que queda sin completar. */
+  validarPlan: 'Revisar el plan',
   sinProblemas: 'El borrador no tiene problemas de estructura.',
-  noJuzga: 'Validar revisa la forma del plan, no su calidad: no juzga el programa, la frecuencia ni la selección de ejercicios.',
+  noJuzga: 'Revisar el plan mira su forma, no su calidad: no juzga el programa, la frecuencia ni la selección de ejercicios.',
   activarPlan: 'Activar plan',
   consecuenciaDeActivar: 'Esta versión pasará a ser la planificación vigente del asesorado y la anterior se conservará.',
   planActivado: 'Plan activado',
@@ -202,8 +241,9 @@ export const COPY_ENTRENAMIENTO = {
   // PF-02 · contexto declarado conectado con la evaluación (DL-100, DL-102)
   /** Antes «Solicitar contexto»: lo mismo se llama igual en todos lados (DL-145). */
   solicitarContexto: 'Pedir información',
+  /** DL-165 D-29: llega «Antes de entrenar» completo, no las seis preguntas de «Antecedentes para entrenamiento» (DL-100). */
   ayudaSolicitarContexto:
-    'Le pide a la persona «Antecedentes para entrenamiento»: qué busca, su experiencia, cuánto tiempo tiene, dónde entrena y qué prefiere. Pedir no da acceso a nada nuevo hasta que responda.',
+    'Le pide a la persona «Antes de entrenar»: su salud, dolor y lesiones, su experiencia, lo que busca, su semana y sus preferencias. Pedir no da acceso a nada nuevo hasta que responda.',
   contextoDeclarado: 'Contexto declarado por la persona',
   ayudaContextoDeclarado:
     'Marcá las respuestas que usás para fundar esta evaluación. Quedan citadas tal como están ahora, con su fecha; no se copian como datos observados por vos.',

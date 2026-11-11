@@ -35,6 +35,7 @@ import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
+import { LA_PREGUNTA_DE_LA_COMPOSICION, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
 import { hoyEn, parametrosDePregunta, restarDias } from './estado';
 import type { Disponibles } from './series';
 
@@ -118,9 +119,23 @@ const ICONO_DE_PREGUNTA: Readonly<Record<IdDePregunta, NombreDeIcono>> = {
  * Las filas de una lista miden lo mismo (E-18).
  */
 export function ListaDePreguntas() {
-  const { ir } = useSeguimiento();
+  const { ir, panel } = useSeguimiento();
   const id = useId();
   const elegir = (p: IdDePregunta) => ir(parametrosDePregunta({ id: p, params: {} }), { agregarAlHistorial: true });
+  // TB-24: la pregunta de la composición, entre las principales, solo si el profesional ve Antropometría (TA-25).
+  const conAntropometria = panel.tipo === 'listo' && panel.datos.domains.anthropometry.available;
+  const composicion = conAntropometria ? (
+    <li key={PREGUNTA_DE_LA_COMPOSICION}>
+      <button type="button" className="tarjeta-de-pregunta" onClick={() => ir({ ...parametrosDePregunta(null), pregunta: PREGUNTA_DE_LA_COMPOSICION, m: null, f: null }, { agregarAlHistorial: true })}>
+        <Icono nombre="peso" tamano={20} />
+        <span className="tarjeta-de-pregunta__textos">
+          <span className="tarjeta-de-pregunta__pregunta">{LA_PREGUNTA_DE_LA_COMPOSICION.pregunta}</span>
+          <span className="tarjeta-de-pregunta__muestra">{LA_PREGUNTA_DE_LA_COMPOSICION.muestra}</span>
+        </span>
+        <Icono nombre="derecha" tamano={18} />
+      </button>
+    </li>
+  ) : null;
   const principales = PREGUNTAS_PROFESIONALES.filter((p) => p.principal);
   const otras = PREGUNTAS_PROFESIONALES.filter((p) => !p.principal);
   const fila = (p: (typeof PREGUNTAS_PROFESIONALES)[number]) => (
@@ -140,7 +155,10 @@ export function ListaDePreguntas() {
       <h3 id={`${id}-titulo`}>
         <Icono nombre="pregunta" tamano={20} /> Empezar por una pregunta
       </h3>
-      <ul className="preguntas-profesionales__lista">{principales.map(fila)}</ul>
+      <ul className="preguntas-profesionales__lista">
+        {principales.map(fila)}
+        {composicion}
+      </ul>
       <details className="preguntas-profesionales__mas">
         <summary>Más preguntas ({otras.length})</summary>
         <ul className="preguntas-profesionales__lista">{otras.map(fila)}</ul>

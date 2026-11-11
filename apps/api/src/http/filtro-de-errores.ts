@@ -22,7 +22,8 @@ const PRISMA_SIN_BASE = new Set(['P1001', 'P1002', 'P1008', 'P1017', 'P2024']);
 /**
  * Filtro global: toda respuesta de error es un ErrorEnvelope (09 §3.2).
  * - ruta inexistente → 404 RESOURCE_NOT_FOUND sin eco de la ruta (09v7 T16);
- * - JSON mal formado o body demasiado grande → 400 INVALID_REQUEST;
+ * - JSON mal formado o body demasiado grande → 400 INVALID_REQUEST; el demasiado grande, con el issue TOO_BIG en `(body)`
+ *   (DL-168), el mismo de la cota de elementos (validacion.ts), para que el cliente diga que no entró y no que falló BE;
  * - base caída o transacción que no se pudo abrir a tiempo → 503 DB_UNAVAILABLE;
  * - deadlock o falla de serialización → 409 RESOURCE_CONFLICT, «conflicto concurrente» (09 §3);
  * - cualquier otra cosa → 500 INTERNAL_ERROR sin detalles (DL-005).
@@ -55,6 +56,9 @@ export class FiltroDeErrores implements ExceptionFilter {
     // Errores de body-parser (JSON inválido, payload grande) llegan con `status`/`type`.
     const conStatus = excepcion as { status?: number; type?: string };
     if (typeof conStatus.status === 'number' && conStatus.status >= 400 && conStatus.status < 500) {
+      // El parser corta un cuerpo mayor que el límite de su ruta con un 413 (`entity.too.large`). El catálogo del 09 no
+      // tiene 413: sale como 400 INVALID_REQUEST, como siempre, y el issue dice que no entró (DL-168).
+      if (conStatus.type === 'entity.too.large') return errores.solicitudInvalida([{ code: 'TOO_BIG', path: '(body)' }]);
       return errores.solicitudInvalida();
     }
     if (

@@ -1,9 +1,10 @@
-import { validarCitas } from './citas-de-respuestas';
+import { citasResueltas, validarCitas } from './citas-de-respuestas';
 
 /**
  * PF-02 · DL-102 · reglas de `validarCitas` que la integración no puede forzar: la lectura única por respuesta (dos citas
  * de la misma respuesta quedan en la misma versión aunque una rectificación se confirme en el medio) y el orden de los
  * controles. Sin base: una transacción falsa que cuenta las lecturas y cambia la cadena entre llamadas.
+ * DL-164: una respuesta guardada en V2 (FRM-ENTRENAMIENTO v2) se cita igual que una de P0, y se lee en palabras.
  */
 const PRO = '11111111-1111-4111-8111-111111111111';
 const ASE = '22222222-2222-4222-8222-222222222222';
@@ -73,5 +74,56 @@ describe('DL-102 · validarCitas', () => {
     ).catch((e: unknown) => e);
     expect(JSON.stringify(malformado)).toEqual(JSON.stringify(inexistente));
     expect(JSON.stringify(ajena)).toEqual(JSON.stringify(inexistente));
+  });
+});
+
+describe('DL-164 · una respuesta V2 se cita igual que una de P0', () => {
+  const EVALUACION = '66666666-6666-4666-8666-666666666666';
+  const SOLICITUD = '77777777-7777-4777-8777-777777777777';
+  const op = (code: string, label: string) => ({ code, label });
+  const base = { category: 'HABITOS_Y_CONTEXTO', helpText: null, purpose: null, showIf: null, requiredByDefault: false };
+  const VERSION_V2 = {
+    format: 2,
+    estimatedMinutes: 8,
+    sections: [{ sectionCode: 'antes', title: 'Antes de entrenar', intro: null, fields: [
+      { ...base, fieldCode: 'trn_dias_por_semana', label: 'Días por semana', dataType: 'NUMBER', unit: 'días por semana', limits: { minimum: 1, maximum: 7, integer: true } },
+      { ...base, fieldCode: 'trn_experiencia', label: 'Experiencia', dataType: 'CHOICE', options: [op('nada', 'Nunca entrené'), op('algo', 'Entrené alguna vez')], otherOptionCode: null },
+      { ...base, fieldCode: 'trn_otro_deporte', label: 'Otro deporte', dataType: 'LIST', itemLabel: 'deporte', minItems: 0, maxItems: 3,
+        itemFields: [{ code: 'cual', label: 'Cuál', required: true, dataType: 'TEXT', maxLength: 60 }, { code: 'veces', label: 'Veces por semana', required: false, dataType: 'NUMBER', unit: null, limits: null }] },
+    ] }],
+  };
+  const respuestaV2 = {
+    id: R,
+    solicitudId: SOLICITUD,
+    asesoradoId: ASE,
+    version: 1,
+    momentoDeRegistro: new Date('2026-11-04T12:00:00Z'),
+    contenido: { format: 2, answers: [
+      { fieldCode: 'trn_dias_por_semana', answer: { type: 'NUMBER', number: 3, unit: null }, provenance: 'SELF_REPORTED' },
+      { fieldCode: 'trn_experiencia', answer: { type: 'CHOICE', option: 'algo', otherText: null }, provenance: 'SELF_REPORTED' },
+      { fieldCode: 'trn_otro_deporte', answer: { type: 'LIST', items: [{ cual: 'Fútbol', veces: 2 }] }, provenance: 'SELF_REPORTED' },
+    ] },
+    solicitud: { profesionalId: PRO, alcance: 'ENTRENAMIENTO' },
+    templateVersion: { contenido: VERSION_V2 },
+    rectificaciones: [],
+  };
+  const cita = (orden: number, codigoDeCampo: string) => ({ id: `cita-${orden}`, evaluacionId: EVALUACION, respuestaId: R, rectificacionId: null, codigoDeCampo, orden, respuesta: respuestaV2, rectificacion: null });
+
+  it('validarCitas acepta el campo de una respuesta V2 por su fieldCode, en su versión', async () => {
+    const tx = { respuestaDeFormulario: { findUnique: async () => respuestaV2 } } as never;
+    const citas = await validarCitas(tx, [{ formResponseId: R, fieldCode: 'trn_experiencia', expectedVersion: 'v1' }], { profesionalId: PRO, asesoradoId: ASE });
+    expect(citas).toEqual([{ respuestaId: R, rectificacionId: null, codigoDeCampo: 'trn_experiencia' }]);
+    await expect(validarCitas(tx, [{ formResponseId: R, fieldCode: 'trn_no_existe' }], { profesionalId: PRO, asesoradoId: ASE })).rejects.toMatchObject({ status: 422 });
+  });
+
+  it('citasResueltas lee el número con la unidad de la plantilla, y una opción o una lista en palabras, con las etiquetas', async () => {
+    const tx = { citaDeRespuestaEnEvaluacionDeEntrenamiento: { findMany: async () => [cita(1, 'trn_dias_por_semana'), cita(2, 'trn_experiencia'), cita(3, 'trn_otro_deporte')] } } as never;
+    const resueltas = (await citasResueltas(tx, [EVALUACION])).get(EVALUACION)!;
+    expect(resueltas.map((c) => [c.label, c.value, c.unit, c.citedVersion, c.laterVersionExists])).toEqual([
+      ['Días por semana', 3, 'días por semana', 'v1', false],
+      ['Experiencia', 'Entrené alguna vez', null, 'v1', false],
+      ['Otro deporte', 'Fútbol · 2', null, 'v1', false],
+    ]);
+    expect(resueltas.every((c) => c.provenance === 'SELF_REPORTED' && c.formRequestId === SOLICITUD)).toBe(true);
   });
 });

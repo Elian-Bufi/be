@@ -1,0 +1,171 @@
+{
+  "artefacto": "C:\\Users\\bufim\\BE-artefactos\\aab\\actions-40872124576\\0.18.0-candidata.2\\be-0.18.0-candidata.2-527474f.aab",
+  "bytes": 57879156,
+  "sha256": "d2ba02d55eade8d0aa50a1858b1ca515ff8a9a4382d901f72e681d2b7020f76d",
+  "verificadoEn": "2026-10-29T12:40:06.066Z",
+  "esperado": {
+    "paquete": "com.elianbufi.be",
+    "version": "0.18.0-candidata.2",
+    "versionCode": 31,
+    "commit": "527474ffba9cf75c782da5cd6f0e9319c103a8c9",
+    "arbolLimpio": true,
+    "appEnv": "test",
+    "apiBaseUrl": "https://be-api-hndp.onrender.com",
+    "webBaseUrl": "https://be-web-1ngj.onrender.com",
+    "googleWebClientId": "(tapado en esta copia: el client ID web está en client-ids.env de Dirección)",
+    "sinGoogleAProposito": false,
+    "firebaseProjectId": "be-app-c4623",
+    "sinFirebaseAProposito": false,
+    "certSubidaSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+    "certFirmaAppSha256": "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06",
+    "firmadoAlConstruir": false
+  },
+  "controles": {
+    "bundletoolValidate": {
+      "ok": true,
+      "resumen": "App Bundle information\n------------\nFeature modules:\n\tFeature module: base\n\t\tFile: assets/app.config\n\t\tFile: assets/index.android.bundle\n\t\tFile: dex/classes.dex\n\t\tFile: dex/classes2.dex\n\t\tFile: dex/classes3.dex\n\t\tFile: root/DebugProbesKt.bin\n\t\tFile: root/META-INF/androidx.activity_activity-ktx.version\n\t\tFile: root/META-INF/androidx.activity_activity.version"
+    },
+    "manifiesto": {
+      "package": "com.elianbufi.be",
+      "versionCode": 31,
+      "versionName": "0.18.0-candidata.2",
+      "minSdk": "24",
+      "targetSdk": 36,
+      "extractNativeLibs": "false",
+      "permisos": [
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "com.elianbufi.be.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        "com.google.android.c2dm.permission.RECEIVE"
+      ],
+      "appLink": {
+        "autoVerify": true,
+        "host": "be-web-1ngj.onrender.com",
+        "pathPrefix": "/invitacion"
+      },
+      "esquemas": [
+        "be",
+        "https"
+      ]
+    },
+    "firmaDelAab": {
+      "firmado": true,
+      "firmantes": 1,
+      "sha256": [
+        "61569691bd47300fc18f32c37a8480ffa51ec54e9647b6125af440535c893e06"
+      ],
+      "sha1": "b108ec558c0568abb4ccc2d7495d49b4e24836e6",
+      "algoritmo": "SHA256withRSA",
+      "autofirmado": true,
+      "jarsigner": {
+        "ok": true,
+        "codigo": 4,
+        "lectura": "verificado; el único aviso es la cadena de un certificado autofirmado, lo normal en Android",
+        "resumen": "jar verified, with signer errors.\r\nError: \r\nThis jar contains entries whose certificate chain is invalid. Reason: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target\r\nThis jar contains entries whose signer certificate is self-signed.\r\nWarning: \r\nThis jar contains signatures that do not include a timestamp. Without a timestamp, users may not be able to validate this jar after any of the signer certificates expire (as early as 2054-02-02).\r"
+      }
+    },
+    "bundleConfig": {
+      "ok": true,
+      "versionDeBundletool": "1.18.1",
+      "bibliotecasNativasSinComprimir": true,
+      "alineacionPedida": "PAGE_ALIGNMENT_16K",
+      "extractNativeLibsEnManifiesto": "false"
+    },
+    "firebase": {
+      "comprobado": true,
+      "project_id": "be-app-c4623",
+      "google_app_id": true,
+      "gcm_defaultSenderId": true,
+      "google_api_key": true
+    },
+    "configuracionEmbebida": {
+      "appEnv": "test",
+      "apiBaseUrl": "https://be-api-hndp.onrender.com",
+      "commit": "527474ffba9cf75c782da5cd6f0e9319c103a8c9",
+      "construidoEn": "2026-10-29T12:23:22.447Z",
+      "version": "0.18.0-candidata.2",
+      "slug": "be",
+      "googleWebClientIdPresente": true
+    },
+    "assetlinks": {
+      "comprobado": true,
+      "url": "https://be-web-1ngj.onrender.com/.well-known/assetlinks.json",
+      "http": "200",
+      "contentType": "application/json",
+      "declaracionesDelPaquete": 1,
+      "huellasDelPaquete": 1,
+      "incluyeLaClaveDeFirmaDeLaApp": true
+    },
+    "paginasDe16Kb": {
+      "extractNativeLibs": "false",
+      "bibliotecasNativasSinComprimir": true,
+      "alineacionPedidaPorElBundle": "PAGE_ALIGNMENT_16K",
+      "bibliotecas": 68,
+      "de64Bits": 34,
+      "de64BitsNoAlineadas": [],
+      "de32Bits": 34,
+      "zipalignUniversal": {
+        "ok": true,
+        "bibliotecasEnLaApk": 68,
+        "informadas": 68,
+        "sinComprimirYAlineadas": 68,
+        "comprimidasOMal": 0
+      },
+      "pagina": 16384
+    },
+    "apkUniversal": {
+      "bytes": 84074917,
+      "arquitecturas": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86",
+        "x86_64"
+      ],
+      "package": "com.elianbufi.be"
+    },
+    "credenciales": {
+      "extraido": true,
+      "entradasDelZip": 1306,
+      "archivosRevisados": 1306,
+      "bytes": 171388201,
+      "valoresDelRespaldoBuscados": true,
+      "hallazgos": []
+    }
+  },
+  "veredicto": {
+    "bundleValido": true,
+    "paquete": true,
+    "versionName": true,
+    "versionCode": true,
+    "targetSdkApi36": true,
+    "appLinkDeInvitacion": true,
+    "esquemaBe": true,
+    "certificadoDeSubida": true,
+    "nativasSinComprimir": true,
+    "alineacionDelBundle16Kb": true,
+    "firebase": true,
+    "ambiente": true,
+    "commit": true,
+    "arbolLimpio": true,
+    "versionEmbebida": true,
+    "google": true,
+    "assetlinksPublicado": true,
+    "elfDe64BitsAlineadosA16Kb": true,
+    "zipalign16KbUniversal": true,
+    "sesentaYCuatroBits": true,
+    "sinCredenciales": true
+  },
+  "informativo": {
+    "claveDeSubidaSeparada": false
+  },
+  "pendienteEnDispositivo": [
+    "Que la app arranque y funcione en un dispositivo o emulador con páginas de 16 KB (Android 15 o posterior con esa configuración): la alineación comprobada acá es la del artefacto, no la ejecución."
+  ],
+  "todoBien": true,
+  "pendientes": [],
+  "fallidos": []
+}

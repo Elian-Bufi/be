@@ -2,8 +2,9 @@
  * Navegación del APK por estado, sin librería de rutas: cada pantalla es un valor de `Ruta` (App.tsx la dibuja).
  * «Atrás» (botón de Android o el de la cabecera) nunca cierra la sesión.
  *
- * **Barra y cabecera (DL-117, decisión de Dirección del 2026-10-04).** La barra inferior lleva a cinco raíces: Inicio,
- * Nutrición, Entrenamiento, Evolución e Información. Cuenta se abre desde el avatar de la cabecera.
+ * **Barra y cabecera (DL-117, decisión de Dirección del 2026-10-04; DL-166, 2026-11-07).** La barra inferior lleva a cinco
+ * raíces: Inicio, Nutrición, Entrenamiento, Evolución y Perfil. Desde DL-166 (PV-1), Perfil reemplaza a «Información» y
+ * absorbe Cuenta (antes detrás del avatar) y el menú de la cabecera: lo de la persona queda en un solo lugar.
  *
  * **El origen.** Un detalle recuerda de dónde se abrió (`desde`: la ruta anterior entera), y «Atrás» vuelve ahí. Así, el
  * mismo detalle abierto desde Inicio vuelve a Inicio, y abierto desde su módulo vuelve al módulo. Lo decide `navegar()`,
@@ -15,7 +16,7 @@
  * - la cadena tiene un tope (`TOPE_DEL_ORIGEN`).
  *
  * **Módulo, pestaña y barra son tres cosas.** `moduloDe` dice a qué módulo pertenece una pantalla; `pestanaActiva`, qué
- * destino de la barra se resalta (Cuenta no resalta ninguno: no es un sexto destino); la barra se ve con sesión.
+ * destino de la barra se resalta (Novedades, que se abre desde la campana, no resalta ninguno); la barra se ve con sesión.
  */
 import { CODIGOS_DE_SESION_NO_VALIDA, type Resultado, type SecretoDeInvitacionRequest, type SesionDeOcurrencia } from '@be/domain';
 import { useCallback, useState } from 'react';
@@ -26,7 +27,7 @@ export type VistaDeEvolucion = 'ultima' | 'comparar' | 'evolucion';
 export type Ruta =
   | { readonly nombre: 'bienvenida'; readonly aviso?: string }
   | { readonly nombre: 'registro' }
-  // `alEntrar`: adónde lleva iniciar sesión cuando no es Inicio (por ahora, solo de vuelta a Cuenta).
+  // `alEntrar`: adónde lleva iniciar sesión cuando no es Inicio (por ahora, solo de vuelta a Cerrar mi cuenta).
   | { readonly nombre: 'login'; readonly aviso?: string; readonly alEntrar?: 'cuenta' }
   // Las cinco raíces de la barra. Algunas aceptan un pedido de una sola vez: abrir la acción de registrar, o una vista y
   // una medida de «Mi evolución».
@@ -34,9 +35,16 @@ export type Ruta =
   | { readonly nombre: 'hoy'; readonly accion?: 'registrar' }
   | { readonly nombre: 'entrenamiento' }
   | { readonly nombre: 'mi-evolucion'; readonly vista?: VistaDeEvolucion; readonly metrica?: string }
-  | { readonly nombre: 'mis-solicitudes' }
+  // DL-166 (PV-1): Perfil, el quinto destino.
+  | { readonly nombre: 'perfil' }
   // Los detalles: recuerdan de dónde se abrieron.
-  | { readonly nombre: 'cuenta'; readonly desde?: Ruta }
+  // «Formularios y pedidos» (la bandeja de antes, «Información»), desde Perfil y desde Inicio.
+  | { readonly nombre: 'mis-solicitudes'; readonly desde?: Ruta }
+  // Lo que era Cuenta, por partes, desde los ajustes de Perfil: Mis datos, Avisos, Sesión y este teléfono, y Cerrar mi
+  // cuenta. Sin `seccion`, Mis datos.
+  | { readonly nombre: 'cuenta'; readonly seccion?: SeccionDeCuenta; readonly desde?: Ruta }
+  // DL-166 (PV-3): «Quién ve qué», de solo lectura, desde Perfil.
+  | { readonly nombre: 'quien-ve-que'; readonly desde?: Ruta }
   // WP-NOVEDADES-Y-AVISOS (DL-133): el centro de novedades, desde la campana de la cabecera o al tocar un aviso.
   | { readonly nombre: 'novedades'; readonly desde?: Ruta }
   // REV-A (DL-134): las revisiones propias de un área, y una revisión.
@@ -70,6 +78,8 @@ export type Ruta =
   | { readonly nombre: 'historial-de-entrenamiento'; readonly desde?: Ruta }
   | { readonly nombre: 'plan-de-entrenamiento'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'mi-solicitud'; readonly id: string; readonly desde?: Ruta }
+  // WP-FORMULARIOS-RONDA-2 (FR-10; DL-165 D-9): «Mis hábitos», desde Información y desde la tarjeta de Inicio.
+  | { readonly nombre: 'mis-habitos'; readonly desde?: Ruta }
   // WP-ENTRENAMIENTO-SERIES: la sesión enfocada. `sesion` es la de «Hoy» (API-TRN-14), que se muestra mientras llega
   // API-SER-02; `modo` dice si lleva cronómetros (hoy) o no (otro día: el pasado no se cronometra).
   | {
@@ -82,7 +92,23 @@ export type Ruta =
       readonly etiqueta?: string;
       readonly desde?: Ruta;
     }
-  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta };
+  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta }
+  // PA-04: la corrección de una sesión registrada, en su pantalla. Se abre desde el detalle y vuelve a él.
+  | { readonly nombre: 'corregir-ejecucion'; readonly id: string; readonly desde?: Ruta }
+  // PA-03 (DL-160, DL-161): «Ya la hice», el registro rápido de una sesión del plan, por pasos y sin cronómetros. Con la
+  // barra inferior a la vista: no es la sesión enfocada.
+  | {
+      readonly nombre: 'registro-rapido';
+      readonly occurrenceId: string;
+      readonly fecha: string;
+      readonly etiqueta: string;
+      readonly sessionId: string;
+      readonly planId: string;
+      readonly desde?: Ruta;
+    };
+
+/** Las partes de lo que era Cuenta, cada una con su pantalla desde los ajustes de Perfil (DL-166). */
+export type SeccionDeCuenta = 'datos' | 'avisos' | 'sesion' | 'cierre';
 
 /** Por qué termina la sesión en el APK; cada motivo tiene su aviso en App.tsx. */
 export type Salida = 'sesion-cerrada' | 'sesiones-cerradas' | 'sesion-no-valida' | 'sesion-vencida' | 'reautenticar' | 'cierre-registrado';
@@ -98,13 +124,13 @@ export function requiereSesion(ruta: Ruta): boolean {
   return ruta.nombre !== 'bienvenida' && ruta.nombre !== 'registro' && ruta.nombre !== 'login';
 }
 
-// ─── La barra inferior: cinco raíces (DL-117) ───────────────────────────────────────────────────
+// ─── La barra inferior: cinco raíces (DL-117; DL-166) ───────────────────────────────────────────
 
 /** Los destinos de la barra. */
-export type Zona = 'inicio' | 'nutricion' | 'entrenamiento' | 'evolucion' | 'informacion';
+export type Zona = 'inicio' | 'nutricion' | 'entrenamiento' | 'evolucion' | 'perfil';
 
-/** El módulo de una pantalla: un destino de la barra, o Cuenta, que se abre desde el avatar. */
-export type Modulo = Zona | 'cuenta';
+/** El módulo de una pantalla: un destino de la barra, o la campana de la cabecera (Novedades), que no es un destino. */
+export type Modulo = Zona | 'novedades';
 
 /** Los cinco destinos, en el orden de la barra, con su texto y la raíz que abre cada uno. */
 export const ZONAS: readonly { readonly zona: Zona; readonly texto: string; readonly ruta: Ruta }[] = [
@@ -112,32 +138,32 @@ export const ZONAS: readonly { readonly zona: Zona; readonly texto: string; read
   { zona: 'nutricion', texto: 'Nutrición', ruta: { nombre: 'hoy' } },
   { zona: 'entrenamiento', texto: 'Entrenamiento', ruta: { nombre: 'entrenamiento' } },
   { zona: 'evolucion', texto: 'Evolución', ruta: { nombre: 'mi-evolucion' } },
-  { zona: 'informacion', texto: 'Información', ruta: { nombre: 'mis-solicitudes' } },
+  { zona: 'perfil', texto: 'Perfil', ruta: { nombre: 'perfil' } },
 ];
 
 /** Donde abre la APK al iniciar sesión o al recuperar una sesión guardada válida, y adonde vuelven las otras raíces. */
 export const INICIO: Ruta = { nombre: 'inicio' };
 
 /**
- * La pantalla que abre al iniciar sesión desde `login`: Inicio, salvo que Cuenta haya pedido volver a entrar para
- * confirmar una acción (el cierre de cuenta con reautenticación): entonces vuelve a Cuenta, donde quedó esa acción.
+ * La pantalla que abre al iniciar sesión desde `login`: Inicio, salvo que Cerrar mi cuenta haya pedido volver a entrar
+ * para confirmar el cierre (reautenticación): entonces vuelve a Cerrar mi cuenta, el ajuste que se estaba usando (AV-03).
  */
 export function alIniciarSesion(login: Ruta): Ruta {
-  return login.nombre === 'login' && login.alEntrar === 'cuenta' ? { nombre: 'cuenta' } : INICIO;
+  return login.nombre === 'login' && login.alEntrar === 'cuenta' ? { nombre: 'cuenta', seccion: 'cierre' } : INICIO;
 }
 
-/** Si la pantalla es una raíz: la abre la barra, no tiene origen y no lleva volver en la cabecera, sino el menú. */
+/** Si la pantalla es una raíz: la abre la barra, no tiene origen y no lleva volver en la cabecera. */
 export function esRaiz(ruta: Ruta): boolean {
   return ZONAS.some((z) => z.ruta.nombre === ruta.nombre);
 }
 
 /**
- * Las pantallas que no muestran la barra inferior (WP-ENTRENAMIENTO-SERIES §7.2): la sesión enfocada, para que la tabla,
- * el descanso y sus acciones tengan la pantalla entera. Se sale con «Volver» de la cabecera o con el botón atrás, que
- * conservan el estado: el entrenamiento sigue guardado en el teléfono.
+ * Las pantallas que no muestran la barra inferior. Ninguna desde PA-02 (Dirección del 2026-11-02): la sesión de
+ * entrenamiento ya no la oculta (WP-ENTRENAMIENTO-SERIES §7.2 decía «sin barra inferior»). Salir es seguro: lo escrito y
+ * lo registrado quedan guardados en el teléfono (PA-01), y la pestaña Entrenamiento marca la sesión en curso.
  */
-export function sinBarraInferior(ruta: Ruta): boolean {
-  return ruta.nombre === 'sesion-de-entrenamiento';
+export function sinBarraInferior(_ruta: Ruta): boolean {
+  return false;
 }
 
 /** Si una raíz trae un pedido de una sola vez (una acción, una vista, una medida): abre arriba, no donde se la dejó. */
@@ -162,24 +188,29 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'plan-de-entrenamiento':
     case 'sesion-de-entrenamiento':
     case 'ejecucion-de-entrenamiento':
+    case 'corregir-ejecucion':
+    case 'registro-rapido':
       return 'entrenamiento';
     case 'mi-evolucion':
       return 'evolucion';
     case 'revisiones':
     case 'revision':
       return ruta.area === 'NUTRICION' ? 'nutricion' : 'entrenamiento';
+    case 'perfil':
     case 'mis-solicitudes':
     case 'mi-solicitud':
-      return 'informacion';
+    case 'mis-habitos':
     case 'cuenta':
-    case 'novedades':
+    case 'quien-ve-que':
     case 'vinculos':
     case 'notas-de-coordinacion':
     case 'vinculo':
     case 'invitacion':
     case 'consentimiento':
     case 'privacidad':
-      return 'cuenta';
+      return 'perfil';
+    case 'novedades':
+      return 'novedades';
     case 'bienvenida':
     case 'registro':
     case 'login':
@@ -211,11 +242,11 @@ const ZONA_DE_LA_RAIZ: Readonly<Record<string, Zona>> = Object.fromEntries(ZONAS
 
 /**
  * El destino que la barra resalta: la raíz donde empezó el camino hasta esta pantalla, o su módulo si no lo recuerda.
- * Cuenta no resalta ninguno: se abre desde el avatar y no es una especialidad.
+ * Novedades no resalta ninguno: se abre desde la campana y no es un destino.
  */
 export function pestanaActiva(ruta: Ruta): Zona | null {
   const modulo = moduloDe(ruta);
-  if (modulo === null || modulo === 'cuenta') return null;
+  if (modulo === null || modulo === 'novedades') return null;
   const raiz = raizDelOrigen(ruta);
   return raiz ? (ZONA_DE_LA_RAIZ[raiz.nombre] ?? modulo) : modulo;
 }
@@ -229,18 +260,22 @@ function madre(ruta: Ruta): Ruta | null {
     case 'bienvenida':
     case 'inicio':
       return null;
-    // Desde las otras raíces, y desde Cuenta sin origen, «atrás» vuelve a Inicio.
+    // Desde las otras raíces, y desde Novedades sin origen, «atrás» vuelve a Inicio.
     case 'hoy':
     case 'entrenamiento':
     case 'mi-evolucion':
-    case 'mis-solicitudes':
-    case 'cuenta':
+    case 'perfil':
     case 'novedades':
       return INICIO;
+    // Lo de la persona vuelve a Perfil (DL-166).
+    case 'mis-solicitudes':
+    case 'cuenta':
+    case 'quien-ve-que':
     case 'vinculos':
     case 'notas-de-coordinacion':
     case 'privacidad':
-      return { nombre: 'cuenta' };
+    case 'mis-habitos':
+      return { nombre: 'perfil' };
     case 'historial-de-entrenamiento':
       return { nombre: 'entrenamiento' };
     case 'plan-de-entrenamiento':
@@ -249,7 +284,10 @@ function madre(ruta: Ruta): Ruta | null {
       return { nombre: 'mis-solicitudes' };
     case 'sesion-de-entrenamiento':
     case 'ejecucion-de-entrenamiento':
+    case 'registro-rapido':
       return { nombre: 'entrenamiento' };
+    case 'corregir-ejecucion':
+      return { nombre: 'ejecucion-de-entrenamiento', id: ruta.id };
     case 'plan-actual':
     case 'registros-nutricionales':
     case 'opcion-de-comida':
@@ -290,8 +328,11 @@ function identificador(ruta: Ruta): string | null {
   if ('vinculoId' in ruta) return ruta.vinculoId;
   if ('draftId' in ruta) return ruta.draftId;
   if (ruta.nombre === 'comida-diferente') return ruta.comidaId;
+  if (ruta.nombre === 'registro-rapido') return ruta.occurrenceId;
   // REV-A: las revisiones de Nutrición y las de Entrenamiento son dos pantallas distintas.
   if (ruta.nombre === 'revisiones') return ruta.area;
+  // DL-166: cada parte de lo que era Cuenta es su propia pantalla.
+  if (ruta.nombre === 'cuenta') return ruta.seccion ?? 'datos';
   return null;
 }
 
@@ -317,6 +358,16 @@ function paraVolver(ruta: Ruta): Ruta {
   return ruta;
 }
 
+/**
+ * La pantalla de la cadena a la que se vuelve, con lo de una sola vez que trae el destino: el aviso de lo que se acaba de
+ * registrar. Al registrar una corrección se vuelve al detalle de la ejecución, que ya estaba en la cadena, y el aviso
+ * «Corrección registrada» tiene que llegar igual (PA-04).
+ */
+function conLoDeUnaVez(r: Ruta, destino: Ruta): Ruta {
+  if (r.nombre === 'ejecucion-de-entrenamiento' && destino.nombre === 'ejecucion-de-entrenamiento' && destino.aviso !== undefined) return { ...r, aviso: destino.aviso };
+  return r;
+}
+
 /** La ruta con su cadena de origen recortada al tope. */
 function recortar(ruta: Ruta, nivel = 0): Ruta {
   const desde = desdeDe(ruta);
@@ -339,7 +390,7 @@ export function navegar(actual: Ruta, destino: Ruta, modo: ModoDeNavegacion = 'i
   if (!requiereSesion(destino) || esRaiz(destino)) return sinOrigen(destino);
   // Si la pantalla ya está en la cadena (o es la actual), se vuelve a ella, con su propio origen, sin duplicarla.
   const base = modo === 'reemplazar' ? desdeDe(actual) : actual;
-  for (let r = base, i = 0; r && i <= TOPE_DEL_ORIGEN + 1; r = desdeDe(r), i++) if (mismaPantalla(r, destino)) return r;
+  for (let r = base, i = 0; r && i <= TOPE_DEL_ORIGEN + 1; r = desdeDe(r), i++) if (mismaPantalla(r, destino)) return conLoDeUnaVez(r, destino);
   // Un origen pedido explícitamente se respeta. Si no: reemplazar hereda el de la actual, e ir recuerda la actual.
   const explicito = desdeDe(destino);
   if (explicito !== undefined) return conOrigen(destino, explicito);
@@ -347,13 +398,26 @@ export function navegar(actual: Ruta, destino: Ruta, modo: ModoDeNavegacion = 'i
   return conOrigen(destino, requiereSesion(actual) ? paraVolver(actual) : undefined);
 }
 
+/** El nombre de cada parte de lo que era Cuenta, para volver a ella. */
+const VOLVER_A_LA_SECCION: Readonly<Record<SeccionDeCuenta, string>> = {
+  datos: 'Volver a Mis datos',
+  avisos: 'Volver a Avisos',
+  sesion: 'Volver a Sesión y este teléfono',
+  cierre: 'Volver a Cerrar mi cuenta',
+};
+const volverALaSeccion = (seccion: SeccionDeCuenta | undefined): string => VOLVER_A_LA_SECCION[seccion ?? 'datos'];
+
 /** Texto para volver a un destino, para el botón de la cabecera y el lector de pantalla (10-B10 §9). */
 export function textoDeVolverA(destino: Ruta): string {
   switch (destino.nombre) {
     case 'inicio':
       return 'Volver a Inicio';
+    case 'perfil':
+      return 'Volver a Perfil';
     case 'cuenta':
-      return 'Volver a Cuenta';
+      return volverALaSeccion(destino.seccion);
+    case 'quien-ve-que':
+      return 'Volver a Quién ve qué';
     case 'novedades':
       return 'Volver a Novedades';
     case 'revisiones':
@@ -377,9 +441,13 @@ export function textoDeVolverA(destino: Ruta): string {
     case 'mi-evolucion':
       return 'Volver a Mi evolución';
     case 'mis-solicitudes':
-      return 'Volver a Información';
+      return 'Volver a Formularios y pedidos';
+    case 'mis-habitos':
+      return 'Volver a Mis hábitos';
     case 'historial-de-entrenamiento':
       return 'Volver a Tu historial';
+    case 'ejecucion-de-entrenamiento':
+      return 'Volver a la sesión registrada';
     default:
       return 'Volver';
   }

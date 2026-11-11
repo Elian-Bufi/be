@@ -10,6 +10,9 @@
  * - las de WP-07: la familia FRM, transversal a los tres dominios (docs/paquetes/WP-07.md §4).
  * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
  * - las de WP-NOTAS-DE-COORDINACION: API-CRD-01 y sus dos variantes (docs/paquetes/WP-NOTAS-DE-COORDINACION.md; DL-140).
+ * - las de WP-FORMULARIOS-DE-INICIO: la familia FRI, los formularios V2 y la propuesta que la persona confirma (DL-164).
+ * - las de WP-TABLERO-ALTA-GAMA: API-DSH-02 y las familias PLN y PLE, como descartar un borrador (DL-163 D-6 y D-21), y la
+ *   familia RES, lo que la persona comparte de otras áreas, con el plan del otro y su pedido (D-13, ampliada; TB-52 a TB-56).
  */
 import { z } from 'zod';
 import {
@@ -96,6 +99,8 @@ import {
   VinculoResponseSchema,
 } from './contratos-vinculo';
 import { CarteraResponseSchema } from './contratos-cartera';
+import { ColaDeRevisionesResponseSchema } from './contratos-cola-de-revisiones';
+import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -241,6 +246,46 @@ import {
   DetalleDeRespuestaFueraDeLimitesSchema,
 } from './contratos-formularios';
 import {
+  CargarPropuestaRequestSchema,
+  DetalleDeSolicitudV2ResponseSchema,
+  EnviarRespuestaV2RequestSchema,
+  ListaDeSolicitudesPropiasV2ResponseSchema,
+  PropuestaCargadaResponseSchema,
+  PropuestaResueltaResponseSchema,
+  RectificarRespuestaV2RequestSchema,
+  ResolverPropuestaRequestSchema,
+  VersionDePlantillaV2ResponseSchema,
+} from './contratos-formularios-v2';
+import {
+  CompartirHabitosRequestSchema,
+  DejarDeCompartirHabitosRequestSchema,
+  HabitosCompartidosEstadoResponseSchema,
+  HabitosCompartidosResponseSchema,
+  HabitosRegistradosResponseSchema,
+  HabitosParaElProfesionalResponseSchema,
+  MisHabitosResponseSchema,
+  PedidoDeAccesoCreadoResponseSchema,
+  PedidoDeAccesoRespondidoResponseSchema,
+  PedidosDeAccesoResponseSchema,
+  PedirAccesoAHabitosRequestSchema,
+  RegistrarHabitosRequestSchema,
+  ResponderPedidoDeAccesoRequestSchema,
+} from './contratos-habitos-de-la-persona';
+import {
+  CompartirResumenesRequestSchema,
+  DejarDeCompartirResumenesRequestSchema,
+  LoQueSeComparteDeMiAreaResponseSchema,
+  MisResumenesCompartidosResponseSchema,
+  PedidoDePlanCreadoResponseSchema,
+  PedidoDePlanRespondidoResponseSchema,
+  PedidosDePlanResponseSchema,
+  PedirVerElPlanRequestSchema,
+  PlanCompartidoResponseSchema,
+  ResponderPedidoDePlanRequestSchema,
+  ResumenesCompartidosEstadoResponseSchema,
+  ResumenesParaElProfesionalResponseSchema,
+} from './contratos-resumenes-compartidos';
+import {
   AsociarImagenDeEjercicioRequestSchema,
   EjercicioPropioResponseSchema,
   ListaDeEjerciciosPropiosResponseSchema,
@@ -251,6 +296,8 @@ import {
   SesionParaRegistrarResponseSchema,
   TiemposDeSesionResponseSchema,
 } from './contratos-entrenamiento-por-serie';
+import { CambiarZonasDeEjercicioRequestSchema, FichaVisualDeEjercicioResponseSchema, FichasVisualesRequestSchema, FichasVisualesResponseSchema } from './contratos-catalogo-visual';
+import { ListaDeZonasMuscularesResponseSchema } from './zonas-musculares';
 import { HEADER_DE_CAPACIDADES } from './compatibilidad-de-clientes';
 import {
   BusquedaEnLineaDeTiempoRequestSchema,
@@ -350,6 +397,18 @@ const DETALLE_DE_NUMEROS_FUERA_DE_LIMITES: NonNullable<Operacion['detalleDe422']
   schema: DetalleDeRespuestaFueraDeLimitesSchema,
   descripcion:
     'cuando el rechazo es por números fuera de los límites de la plantilla o por textos más largos que el tope, details.issues trae un issue por campo: FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM o FORM_ANSWER_ABOVE_MAXIMUM con fieldCode y los límites del campo (DL-104), o FORM_ANSWER_TOO_LONG con fieldCode y maxLength (WP-07 §9.3). Los otros rechazos de este código no traen details.',
+};
+
+/**
+ * FRI-04, 05 y 06 (DL-164): el 422 FORM_RESPONSE_INVALID de los formularios V2 trae un issue por problema, con el campo,
+ * como DL-104; los códigos son los de `validarRespuestasV2` de @be/domain. La forma se declara acá y no en el contrato:
+ * ningún cliente la valida estricta (`error.details` es libre para las APK instaladas).
+ */
+const DETALLE_DE_RESPUESTAS_V2: NonNullable<Operacion['detalleDe422']> = {
+  codigo: 'FORM_RESPONSE_INVALID',
+  schema: z.object({ issues: z.array(z.object({ code: z.string(), path: z.string(), fieldCode: z.string() })).min(1) }),
+  descripcion:
+    'details.issues trae un issue por problema, todos a la vez: code (FORM_ANSWER_NOT_REQUESTED, FORM_ANSWER_UNKNOWN_FIELD, FORM_ANSWER_DUPLICATED, FORM_ANSWER_TYPE_MISMATCH, FORM_ANSWER_NOT_VISIBLE, FORM_ANSWER_REQUIRED, FORM_ANSWER_EMPTY, FORM_ANSWER_UNKNOWN_OPTION, FORM_ANSWER_TOO_MANY, FORM_ANSWER_TOO_FEW, FORM_ANSWER_EXCLUSIVE_OPTION, FORM_ANSWER_OTHER_TEXT_NOT_ALLOWED, FORM_ANSWER_REPEATED_ITEM, FORM_ANSWER_ITEM_FIELD_REQUIRED, FORM_ANSWER_ITEM_FIELD_UNKNOWN, FORM_ANSWER_ITEM_FIELD_INVALID, FORM_ANSWER_NOT_INTEGER, FORM_ANSWER_BELOW_MINIMUM, FORM_ANSWER_ABOVE_MAXIMUM, FORM_ANSWER_TOO_LONG o, en el formato 3, FORM_ANSWER_MORE_THAN_MARKED: el número pasa de lo marcado en la tabla de la que toma su tope, DL-165 D-5), path (la entrada: answers[3].answer, con el renglón, el alimento o el «otro» si corresponde; answers cuando falta un obligatorio) y fieldCode. Nunca repite el valor enviado (DL-164 D-1, D-2).',
 };
 
 const LIMIT: ParametroDeQuery = { nombre: 'limit', descripcion: 'Tamaño de página (1 a 50; 20 por defecto).', schema: { type: 'integer', minimum: 1, maximum: 50 } };
@@ -814,6 +873,25 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
     fuente: 'docs/propuestas/PF-07_vista-de-cartera.md (propuesta) · REG-06-145/150 · B10-08 §8.4 · 10-B04:1171-1176 · DL-107 · ID propio de BE desde DL-116 (antes API-DSH-04, que en el 09 es la línea temporal)',
   },
+  // ─── WP-TABLERO-ALTA-GAMA · TB-14: la cola de revisiones (09v11 §14; DL-163 D-6) ────────────────
+  {
+    id: 'API-DSH-02',
+    metodo: 'get',
+    ruta: '/me/review-queue',
+    resumen:
+      'La cola de revisiones del profesional: por cada persona con vínculo vigente y cada área con seguimiento que el PDP permite, un ítem si hay trabajo de revisión, con la definición de pendiente del dominio de revisión (REG-06-150). «Próxima acción pendiente» (NEXT_ACTION_PENDING: la última revisión registrada sin aplicar), primera; «Revisión pendiente» (REVIEW_DUE); y «Sin revisión acordada» (ACTIVE_PLAN_WITHOUT_REVIEW: un plan activo sin una revisión acordada en pie), última. Una revisión acordada a futuro no entra. Abrirla no resuelve nada; no hay valores de salud, puntajes ni actividad de la persona.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'domain', descripcion: 'Filtra por área.', schema: { type: 'string', enum: ['NUTRITION', 'TRAINING'] } },
+      { nombre: 'status', descripcion: 'Filtra por motivo.', schema: { type: 'string', enum: ['NEXT_ACTION_PENDING', 'REVIEW_DUE', 'ACTIVE_PLAN_WITHOUT_REVIEW'] } },
+      LIMIT,
+      CURSOR,
+    ],
+    exitos: [{ status: 200, schema: ColaDeRevisionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09v11:860-890 (API-DSH-02) · REG-06-150 · B10-08 §6 · DEUDA_LEGAJO DL-163 D-6 · WP-TABLERO-ALTA-GAMA TB-14',
+  },
   // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 (09v12) ─────────────────────────────────────
   {
     id: 'API-NUT-01',
@@ -969,6 +1047,24 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['OPERATION_NOT_READY', 'CAPACITY_NOT_AVAILABLE'],
     },
     fuente: '09v9:601-644 · REG-06-104 · REG-06-91 · DEUDA_LEGAJO DL-051, DL-055 (NUTRITION_SCOPE_NOT_OPERATIONAL: 404)',
+  },
+  // ─── WP-TABLERO-ALTA-GAMA · PLN: planificar Nutrición (DL-163 D-17 a D-21). Familia propia de BE ─────────────────────
+  {
+    id: 'API-PLN-07',
+    metodo: 'post',
+    ruta: '/nutrition/plans/{planId}/discard',
+    resumen:
+      'Descartar un borrador de plan nutricional que nunca se activó (DL-163 D-21): la persona nunca lo vio. Queda como versión descartada, que no se lista, no se lee ni se escribe (el mismo 404 que lo inexistente), con su evento y su auditoría; la fila no se borra. Después se puede empezar otro borrador desde una plantilla, desde la versión vigente o desde cero, y aplicar una revisión «Ajustar» o «Sustituir». Una versión activada no se descarta nunca: 422 PLAN_NOT_EDITABLE, antes de mirar la versión esperada. planId es el id de la versión, como en API-NUT-09 a 12.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDeBorradorResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['PLAN_NOT_EDITABLE'],
+    },
+    fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 D-21 · WP-TABLERO-ALTA-GAMA TB-47 y §4.4 · 05 glosario («Borrador de plan») · 06 §4.4',
   },
   {
     id: 'API-NUT-13',
@@ -1624,12 +1720,30 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: '09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087 · DL-122 (precierre del 2026-10-06, §2)',
   },
+  // ─── WP-TABLERO-ALTA-GAMA · PLE: planificar Entrenamiento (DL-163 D-19 y D-21). Familia propia de BE ─────────────────
+  {
+    id: 'API-PLE-05',
+    metodo: 'post',
+    ruta: '/training/plans/{planId}/discard',
+    resumen:
+      'Descartar un borrador de plan de entrenamiento que nunca se activó (DL-163 D-21): la persona nunca lo vio. Queda como versión descartada, que no se lista, no se lee ni se escribe (el mismo 404 que lo inexistente), con su evento y su auditoría; la fila no se borra. Después se puede empezar otro borrador desde una plantilla, desde la versión vigente o desde cero, y aplicar una revisión «Ajustar» o «Sustituir». Una versión activada no se descarta nunca: 422 PLAN_NOT_EDITABLE, antes de mirar la versión esperada. planId es el id de la versión, como en API-TRN-09 a 12.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionEsperadaRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDeBorradorResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
+      422: ['PLAN_NOT_EDITABLE'],
+    },
+    fuente: 'ID propio de BE (familia PLE) · DEUDA_LEGAJO DL-163 D-21 · WP-TABLERO-ALTA-GAMA TB-47 y §4.5 · 05 glosario («Borrador de plan») · 06 §4.4',
+  },
   {
     id: 'API-TRN-13',
     metodo: 'get',
     ruta: '/training/exercises',
     resumen:
-      'Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. Las zonas y el material didáctico llegan en WP-07.',
+      'Catálogo propio de ejercicios, con procedencia: el sembrado y lo importado de wger, que son de todos (lo importado, uno por ejercicio de wger; DL-141), y lo cargado a mano por los profesionales que corresponden a quien consulta. Sin porcentajes de músculo trabajado ni cálculos de volumen. muscleZones trae las zonas vigentes del ejercicio (por identificador, con su rol; DL-081) y didacticResources su imagen vigente, si tiene (resourceId es el mediaId que se pide con API-MED-03; DL-162). Ninguna zona sale de wger ni del nombre.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -1662,7 +1776,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-INT-TRN-01',
     metodo: 'post',
     ruta: '/training/exercises',
-    resumen: 'Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; no altera instantáneas activas.',
+    resumen:
+      'Cargar un ejercicio manualmente en el catálogo propio. Cero zonas es legítimo; cada zona es una de las 17 de API-ZON-01, sin repetirse, con su rol (una desconocida o repetida es 422). El material didáctico se asocia después (API-EJE-02). No altera instantáneas activas.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearEjercicioRequestSchema,
@@ -2280,6 +2395,52 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
     fuente: 'DEUDA_LEGAJO DL-123',
   },
+  // ─── WP-CATALOGO-VISUAL · zonas musculares e imagen del catálogo (DL-081, DL-162) ─────────────
+  {
+    id: 'API-ZON-01',
+    metodo: 'get',
+    ruta: '/training/muscle-zones',
+    resumen:
+      'El catálogo de las 17 zonas musculares (9 de frente, 10 de espalda, antebrazo y deltoides en las dos), con su identificador estable, su nombre visible, sus vistas y la versión del catálogo. La zona es dominio, no un archivo gráfico: cada máscara cita su identificador. No hay un catálogo por sexo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeZonasMuscularesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '09v10 §8 · REG-06-137, 138 · DEUDA_LEGAJO DL-081',
+  },
+  {
+    id: 'API-EJE-04',
+    metodo: 'put',
+    ruta: '/training/exercises/{exerciseId}/muscle-zones',
+    resumen:
+      'Reemplazar las zonas de un ejercicio propio (carga manual) para una versión suya: la lista completa, sin repetidas, cada zona con su rol PRIMARY o SECONDARY y sin porcentajes. Vacía quita todas. Exige expectedZonesVersion (0 si nunca tuvo). Cada cambio es una asignación nueva: la historia queda. Las zonas del catálogo de todos las cura BE, no esta operación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CambiarZonasDeEjercicioRequestSchema,
+    exitos: [{ status: 200, schema: FichaVisualDeEjercicioResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['VALIDATION_FAILED', 'EXERCISE_REFERENCE_INVALID'],
+    },
+    fuente: 'REG-06-139 · 09v10 §7.1 · B10-06 §20 a 22 · DEUDA_LEGAJO DL-081',
+  },
+  {
+    id: 'API-EJE-05',
+    metodo: 'post',
+    ruta: '/training/exercises/visual-sheets',
+    resumen:
+      'La ficha visual de 1 a 50 ejercicios, por identidad: las zonas vigentes y la imagen vigente, con su procedencia (AI_GENERATED o PERSON_PROVIDED), autoría, licencia, texto alternativo y revisión técnica. Es una lectura: responde 200 y no exige Idempotency-Key. Responde los que quien consulta ve en el catálogo, en el orden pedido; los demás no existen para él.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: FichasVisualesRequestSchema,
+    exitos: [{ status: 200, schema: FichasVisualesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'REG-06-134, 135, 139 · 09v10 §7 y §9 · B10-06 §20, 21 y 59 · DEUDA_LEGAJO DL-081, DL-162',
+  },
   // ─── WP-07 · FRM (09v16.1 §22). Información profesional pertinente (RF-071) ─────────────────────
   {
     id: 'API-FRM-01',
@@ -2355,7 +2516,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-06',
     metodo: 'get',
     ruta: '/me/form-requests',
-    resumen: 'Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud.',
+    resumen:
+      'Las Solicitudes propias del actor autenticado, con `respondable` calculado por el PDP en esta misma lectura — no es un tercer estado de la Solicitud. Con una propuesta del profesional esperando confirmación (DL-164 D-3), la Solicitud sale `respondable: false`: se resuelve desde la app actualizada (API-FRI-04 y API-FRI-08). Las Solicitudes de versiones con tipos nuevos no se listan (D-5).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
@@ -2367,7 +2529,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-FRM-07',
     metodo: 'post',
     ruta: '/me/form-requests/{formRequestId}/responses',
-    resumen: 'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115).',
+    resumen:
+      'Enviar la respuesta propia. Cada respuesta queda SELF_REPORTED; un campo opcional que no se responde se omite, nunca cero/default; no crea consentimiento ni reabre vínculo. Sobre una solicitud propia, sin el A3 vigente, 403 ACTION_FORBIDDEN antes que cualquier otra regla; lo ajeno y lo inexistente, 404 (09v16.1 §36; DL-115). Con una propuesta del profesional esperando confirmación (DL-164 D-3), 422 FORM_REQUEST_NOT_RESPONDABLE: la persona la confirma, corrige o rechaza por API-FRI-04 y API-FRI-08 desde la app actualizada. Una Solicitud de una versión con tipos nuevos no existe para esta operación (404, D-5).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: EnviarRespuestaRequestSchema,
@@ -2396,6 +2559,383 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     detalleDe422: DETALLE_DE_NUMEROS_FUERA_DE_LIMITES,
     fuente: '09v16.1 §22.8 · §36 · REG-06-211 · TEST-FRM-006 · DL-104 · DL-115',
+  },
+  // ─── WP-FORMULARIOS-DE-INICIO · FRI (DL-164 D-5). Lo nuevo va en operaciones nuevas (DL-137 D-7): las de FRM quedan
+  // como están para las APK instaladas, y estas sirven para cualquier Solicitud, de P0 o con tipos nuevos. ──────────
+  {
+    id: 'API-FRI-01',
+    metodo: 'get',
+    ruta: '/form-templates/{templateId}/versions/{versionId}/definition',
+    resumen:
+      'La estructura de cualquier versión de plantilla en formato V2: los nueve tipos, las preguntas condicionales, para qué se usa cada dato y cuántos minutos lleva responderla. Las de P0 se traducen (TEXT de varias líneas, NUMBER con sus límites, BOOLEAN); `usesNewTypes` dice si la versión necesita la app nueva (FRM-02 no la sirve y FRM-06 no la lista). Metadatos, sin PDP: no devuelve datos personales. DL-165: una versión de formato 3 (el renglón con varias opciones y lo demás de la ronda 2) solo se le entrega a un pedido que declara la capacidad forms-format-3 (X-BE-Capabilities); a los demás, 404 como lo inexistente. Lo mismo hacen FRI-03 a 08 con sus Solicitudes y respuestas, y FRI-02 no las lista.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: VersionDePlantillaV2ResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-164 · DL-165 (FR-08) · WP-FORMULARIOS-DE-INICIO (FI-01, FI-03) · 09v16.1 §22.2 · REG-06-209',
+  },
+  {
+    id: 'API-FRI-02',
+    metodo: 'get',
+    ruta: '/me/form-inbox',
+    resumen:
+      'La bandeja de la persona: todas sus Solicitudes, también las de versiones con tipos nuevos (que FRM-06 no lista), con `respondable` proyectado por el PDP en esta misma lectura, el formato de la versión, los minutos estimados y la propuesta que espera su confirmación (`pendingProposal`), si hay una. Las de una versión de formato 3 se listan solo a un pedido con la capacidad forms-format-3 (DL-165).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'status', descripcion: 'Filtra por estado.', schema: { type: 'string', enum: ['PENDING', 'RESPONDED'] } }],
+    exitos: [{ status: 200, schema: ListaDeSolicitudesPropiasV2ResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: 'DL-164 · WP-FORMULARIOS-DE-INICIO (FI-04, FI-06) · 09v16.1 §22.6 · REG-06-213',
+  },
+  {
+    id: 'API-FRI-03',
+    metodo: 'get',
+    ruta: '/form-requests/{formRequestId}/view',
+    resumen:
+      'El detalle en formato V2, para los dos actores con la misma forma: la Solicitud, si se puede responder, la Respuesta (con su transcripción si nació de una propuesta), la propuesta que espera confirmación (solo para quien la cargó y para la persona) y el desenlace de la última no confirmada (solo para quien la cargó). Mismas negaciones que FRM-05: el profesional, solo si el PDP lo sigue permitiendo (si no, el mismo 404 que una inexistente); la persona, con su A3 vigente (si no, 403 ACTION_FORBIDDEN).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: DetalleDeSolicitudV2ResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-164 D-3 y D-4 · WP-FORMULARIOS-DE-INICIO (FI-05, FI-06; TEST-FRI-003) · 09v16.1 §22.5 · REG-06-213 · 08:406 · DL-115',
+  },
+  {
+    id: 'API-FRI-04',
+    metodo: 'post',
+    ruta: '/me/form-requests/{formRequestId}/answers',
+    resumen:
+      'Responder la Solicitud propia con respuestas V2, sola o confirmando la propuesta del profesional (`fromProposal`, con la versión que se vio). Valida contra la versión fijada en la Solicitud: lo que no se pidió, lo oculto por una condición, lo repetido o lo que no tiene la forma del campo es 422 FORM_RESPONSE_INVALID con un issue por problema; un obligatorio visible sin responder también. Guarda en el formato de la versión. Cada respuesta queda SELF_REPORTED; al confirmar, la transcripción dice quién cargó, cuándo, cuándo confirmó y qué corrigió la persona (D-4), y la propuesta queda confirmada sin sus respuestas. Si la propuesta cambió, se retiró, o hay una pendiente que no se vio, 409 VERSION_CONFLICT. Sin el A3 vigente, 403; lo ajeno y lo inexistente, 404; ya respondida o que el PDP ya no la considere respondable, 422 FORM_REQUEST_NOT_RESPONDABLE.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: EnviarRespuestaV2RequestSchema,
+    exitos: [{ status: 201, schema: RespuestaCreadaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-164 D-2 y D-4 · WP-FORMULARIOS-DE-INICIO (FI-04, FI-06; TEST-FRI-002, TEST-FRI-004) · 09v16.1 §22.7 · §36 · REG-06-211 · DL-115',
+  },
+  {
+    id: 'API-FRI-05',
+    metodo: 'post',
+    ruta: '/me/form-responses/{formResponseId}/corrections',
+    resumen:
+      'Rectificar una respuesta propia con respuestas V2: crea una sucesora con la versión que se vio (`expectedVersion`; si no es la vigente, 409 VERSION_CONFLICT) y un motivo; la original no se toca y sigue SELF_REPORTED. Misma validación que responder; se guarda en el formato de la versión. Sin el A3 vigente, 403; lo ajeno y lo inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RectificarRespuestaV2RequestSchema,
+    exitos: [{ status: 201, schema: RectificacionCreadaResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      403: ['ACTION_FORBIDDEN'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['FORM_RESPONSE_RECTIFICATION_NOT_ALLOWED', 'FORM_RESPONSE_INVALID'],
+    },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-164 · WP-FORMULARIOS-DE-INICIO (FI-04) · 09v16.1 §22.8 · §36 · REG-06-211 · DL-115',
+  },
+  {
+    id: 'API-FRI-06',
+    metodo: 'put',
+    ruta: '/form-requests/{formRequestId}/proposal',
+    resumen:
+      'El profesional de la Solicitud carga (`expectedVersion: null`; 201) o reemplaza (con la versión que vio; 200) lo que la persona le contó, para que ella lo confirme desde su app. Mismo PDP que FRM-03 para el Alcance de la Solicitud: sin autorización actual, o sobre una Solicitud ajena o inexistente, el mismo 404. La Solicitud tiene que estar pendiente (si no, 422 FORM_REQUEST_NOT_RESPONDABLE). Se valida como una respuesta, sin exigir los obligatorios: los completa la persona al confirmar. Una sola propuesta pendiente por Solicitud: crear habiendo una, o reemplazar con otra versión, es 409 VERSION_CONFLICT. Publica la novedad a la persona. No queda en su perfil ni lo ve nadie más hasta que ella lo confirma (D-3).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CargarPropuestaRequestSchema,
+    exitos: [
+      { status: 201, schema: PropuestaCargadaResponseSchema },
+      { status: 200, schema: PropuestaCargadaResponseSchema },
+    ],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['FORM_REQUEST_NOT_RESPONDABLE', 'FORM_RESPONSE_INVALID'] },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-164 D-3 · WP-FORMULARIOS-DE-INICIO (FI-05; TEST-FRI-003, TEST-FRI-006) · 09v16.1 §22.3 · REG-06-210',
+  },
+  {
+    id: 'API-FRI-07',
+    metodo: 'post',
+    ruta: '/form-requests/{formRequestId}/proposal/withdrawal',
+    resumen:
+      'El profesional que la cargó retira la propuesta pendiente, con la versión que vio: sus respuestas se borran y queda solo cuándo terminó (D-6). La Solicitud sigue pendiente. Sin una pendiente suya con esa versión, 409 VERSION_CONFLICT; sobre una Solicitud ajena o inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResolverPropuestaRequestSchema,
+    exitos: [{ status: 200, schema: PropuestaResueltaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-05; TEST-FRI-005)',
+  },
+  {
+    id: 'API-FRI-08',
+    metodo: 'post',
+    ruta: '/me/form-requests/{formRequestId}/proposal/rejection',
+    resumen:
+      'La persona dice «No es correcto» a la propuesta pendiente de su Solicitud, con la versión que vio: sus respuestas se borran y la Solicitud sigue pendiente (D-6). Descarta un dato que ella no confirmó, no lo lee ni lo escribe: por eso no exige el A3 vigente ni pasa por el PDP, y con el A3 revocado se puede descartar igual (al revocarlo, además, las pendientes se retiran solas). Publica la novedad al profesional que la cargó solo si hoy sigue autorizado sobre el Alcance de la Solicitud; el rechazo y el borrado no dependen de eso. Lo ajeno y lo inexistente, 404; sin una pendiente con esa versión, 409 VERSION_CONFLICT.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResolverPropuestaRequestSchema,
+    exitos: [{ status: 200, schema: PropuestaResueltaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-164 D-6 · WP-FORMULARIOS-DE-INICIO (FI-06; TEST-FRI-005)',
+  },
+  // ─── WP-FORMULARIOS-RONDA-2 · HBT: los hábitos de la persona (DL-165 D-9, FR-10). Familia propia de BE: API-HAB ya es
+  // «Mis habituales» (DL-109; D-14). La APK 0.21.0-candidata.1 lee 01 a 04, con la forma congelada (DL-152). ──────────
+  {
+    id: 'API-HBT-01',
+    metodo: 'get',
+    ruta: '/me/habits',
+    resumen:
+      'Los hábitos de la persona: la parte «Tus hábitos» (para dibujarla y validarla), la versión vigente, sus versiones anteriores (de la más nueva a la más vieja), el estado de la autorización «Compartir mis hábitos con mis profesionales», sus profesionales con un vínculo sin terminar y lo que la autorización dice de cada uno (RECEIVES, DOES_NOT_RECEIVE o NOT_ASKED: empezó a acompañarla después y la app le pregunta), y el texto del acto con su aprobación (PENDING_APPROVAL: una propuesta). Sin el A3 vigente, 403 (08:406).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MisHabitosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.2 y §4.3 (FR-10) · 08 C-11, C-12 · RNF-PRI-002 · 08:406',
+  },
+  {
+    id: 'API-HBT-02',
+    metodo: 'post',
+    ruta: '/me/habits',
+    resumen:
+      'Una versión nueva de los hábitos desde «Mis hábitos», con la vigente que se vio (`expectedVersion`; si entró otra en el medio, 409 VERSION_CONFLICT). Se valida como un formulario que pide toda la parte y no exige ninguna pregunta (422 FORM_RESPONSE_INVALID, un issue por problema); se guarda SELF_REPORTED en su forma canónica y la anterior queda en la historia. Sin el A3 vigente, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarHabitosRequestSchema,
+    exitos: [{ status: 201, schema: HabitosRegistradosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['FORM_RESPONSE_INVALID'] },
+    detalleDe422: DETALLE_DE_RESPUESTAS_V2,
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.2 (FR-10) · 09v16.1 §22.7 · REG-06-209',
+  },
+  {
+    id: 'API-HBT-03',
+    metodo: 'put',
+    ruta: '/me/habits/sharing',
+    resumen:
+      'Compartir los hábitos con una lista explícita de profesionales, o cambiar con quiénes (08 C-12: ampliar es una aceptación nueva). Cada cambio es una versión nueva de la autorización, con la última que se vio (`expectedVersion`; si no es la última, 409 VERSION_CONFLICT) y la versión del texto mostrada, que tiene que ser la vigente (si no, 409 CONSENT_VERSION_STALE, como CON-02). `professionalIds` es la lista completa de quiénes los reciben; `declinedProfessionalIds`, a quiénes se les preguntó en este acto y la persona dijo que no. Un profesional que nadie nombró y empezó a acompañarla después sigue sin recibirlos (NOT_ASKED). Cada nombrado tiene que acompañarla hoy, una vez y en una sola lista (si no, 422 HABITS_RECIPIENT_NOT_AVAILABLE con un issue por cada uno). Sin el A3 vigente, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CompartirHabitosRequestSchema,
+    exitos: [{ status: 200, schema: HabitosCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['HABITS_RECIPIENT_NOT_AVAILABLE'] },
+    detalleDe422: {
+      codigo: 'HABITS_RECIPIENT_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.enum(['HABITS_RECIPIENT_NOT_AVAILABLE', 'HABITS_RECIPIENT_REPEATED']), path: z.string() })).min(1) }),
+      descripcion:
+        'details.issues trae un issue por profesional que no se puede nombrar: HABITS_RECIPIENT_NOT_AVAILABLE (no la acompaña hoy: sin vínculo o con el vínculo terminado) o HABITS_RECIPIENT_REPEATED (repetido o en las dos listas), con path (professionalIds[i] o declinedProfessionalIds[i]).',
+    },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.3 (FR-10) · 08 §12.2, C-11, C-12 · RNF-SEC-006',
+  },
+  {
+    id: 'API-HBT-04',
+    metodo: 'post',
+    ruta: '/me/habits/sharing/withdrawal',
+    resumen:
+      'Dejar de compartir los hábitos, para todos a la vez y desde ese momento (RNF-PRI-002): una versión nueva RETIRADA, con la última que se vio (si no es la activa, 409 VERSION_CONFLICT). No borra nada: los hábitos siguen siendo de la persona, y lo que cada profesional tiene de su formulario sigue siendo suyo. No exige el A3: retirar siempre se puede. Cerrar la cuenta también la retira.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: DejarDeCompartirHabitosRequestSchema,
+    exitos: [{ status: 200, schema: HabitosCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.5 (FR-10) · RNF-PRI-002 · 08 §13',
+  },
+  {
+    id: 'API-HBT-05',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/habits',
+    resumen:
+      'Los hábitos vigentes de la persona, para el profesional que los recibe: la autorización tiene que estar activa y nombrarlo con un componente de vínculo que el PDP permite hoy (aceptado, ni en pausa ni terminado, con su B2, la cuenta y el A3 de la persona). Si no, el 404 de lo inexistente: no se entera de que hay hábitos. Devuelve la parte, desde cuándo los recibe y la versión vigente, «Declarado por la persona», con su fecha y de dónde salió dicho como «en un formulario» o «en Mis hábitos»: sin de qué formulario ni el área de otro profesional, y sin la historia. No depende del Alcance: cada decisión del PDP queda registrada.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: HabitosCompartidosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-165 D-9 · WP-FORMULARIOS-RONDA-2 §4.3 y §4.4 (FR-10) · RNF-SEC-006 · 08 §11, §14.1, C-11 · 08 §19.7',
+  },
+  // ─── Ronda 2.1 (DL-165 D-17 nueva, 2026-11-06): «Pedir acceso a sus hábitos». Operaciones nuevas: las cuatro que lee la
+  // 0.21 no cambian de forma (DL-152). 06 y 07 son del website; 08 y 09, de la APK 0.22.0-candidata.1, con la forma
+  // congelada (DL-152). ──────────────────────────────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-HBT-06',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/habits/access-requests',
+    resumen:
+      'El profesional le pide a la persona ver sus hábitos, desde un área en la que la acompaña (el PDP la decide: vínculo aceptado, ni en pausa ni terminado, B2 y el A3 de la persona; si no, el 404 de lo inexistente). Le llega como una novedad importante (HABITS_ACCESS_REQUESTED) con el aviso push genérico de siempre: quién pide, desde qué área y para qué le sirve; nunca un hábito. El límite (D-24): una pendiente por vez por profesional y por persona, y volver a pedir recién a los 7 días del último pedido (si no, 422 HABITS_ACCESS_REQUEST_TOO_SOON con `details.availableFrom`); un pedido nuevo reemplaza al pendiente. Si ya los recibe, 422 HABITS_ALREADY_SHARED. No cambia ningún acceso: lo decide la persona.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: PedirAccesoAHabitosRequestSchema,
+    exitos: [{ status: 201, schema: PedidoDeAccesoCreadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['HABITS_ALREADY_SHARED', 'HABITS_ACCESS_REQUEST_TOO_SOON'] },
+    detalleDe422: {
+      codigo: 'HABITS_ACCESS_REQUEST_TOO_SOON',
+      schema: z.object({ availableFrom: z.string() }),
+      descripcion: 'details.availableFrom (ISO 8601): desde cuándo puede volver a pedirlo, a los 7 días de su último pedido.',
+    },
+    fuente: 'DL-165 D-17 (nueva, 2026-11-06), D-23 y D-24 · WP-FORMULARIOS-RONDA-2 §8 (FR-14) · DL-133 (el aviso sin contenido) · 08 §11',
+  },
+  {
+    id: 'API-HBT-07',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/habits/status',
+    resumen:
+      'Lo que este profesional sabe de los hábitos de la persona, sin ver ninguno: si hoy los recibe y desde cuándo, la fecha de lo más nuevo que ve (la última respuesta a una solicitud suya con la parte «Tus hábitos», o lo que la persona le comparte), desde cuándo espera una solicitud suya con la parte, su último pedido de acceso (pendiente o respondido, sin decir qué respondió) y si puede pedirlo hoy o desde cuándo. Sale solo de lo que él ya puede ver: nunca dice si la persona contó sus hábitos a otro profesional. Con eso el website sugiere sumar «Tus hábitos» al pedir un formulario de área (D-22). Pasa por el PDP para el par (algún alcance permitido; si ninguno, el 404 de lo inexistente).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: HabitosParaElProfesionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-165 D-15 y D-17 (nuevas, 2026-11-06), D-22 y D-24 · WP-FORMULARIOS-RONDA-2 §8 (FR-13 y FR-14) · 08 §11, §14.1',
+  },
+  {
+    id: 'API-HBT-08',
+    metodo: 'get',
+    ruta: '/me/habits/access-requests',
+    resumen:
+      'Los pedidos de acceso que esperan la respuesta de la persona: de quién, desde qué área (para decir para qué le sirve) y cuándo. Solo los de profesionales que hoy la acompañan en esa área con el vínculo aceptado: en pausa no se muestran, y con el vínculo terminado ya no se responden. Sin el A3 vigente, 403 (08:406), como «Mis hábitos».',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PedidosDeAccesoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-165 D-17 (nueva, 2026-11-06) y D-25 · WP-FORMULARIOS-RONDA-2 §8 (FR-14)',
+  },
+  {
+    id: 'API-HBT-09',
+    metodo: 'post',
+    ruta: '/me/habits/access-requests/{accessRequestId}/answer',
+    resumen:
+      'La persona responde un pedido de acceso, con la versión del pedido que vio (si ya no espera respuesta, 409 VERSION_CONFLICT). «Sí, que los vea» (SHARE) es compartir, como API-HBT-03: lleva la versión de la autorización que vio y el texto mostrado, que tiene que ser el vigente (409 VERSION_CONFLICT o CONSENT_VERSION_STALE), y pide el A3 (403). Con la autorización activa, suma a quien pidió; sin compartir todavía, la activa solo para él y los demás quedan como que no los ven (D-25). Quien pidió tiene que acompañarla hoy (si no, 422 HABITS_RECIPIENT_NOT_AVAILABLE). «No, por ahora» (NOT_NOW) no cambia la autorización y no pide el A3: decir que no siempre se puede. Ninguna de las dos le avisa al profesional: lo ve en API-HBT-07. Lo ajeno y lo inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResponderPedidoDeAccesoRequestSchema,
+    exitos: [{ status: 200, schema: PedidoDeAccesoRespondidoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['HABITS_RECIPIENT_NOT_AVAILABLE'] },
+    fuente: 'DL-165 D-17 (nueva, 2026-11-06) y D-25 · WP-FORMULARIOS-RONDA-2 §8 (FR-14) · 08 §12.2, C-12 · RNF-PRI-002',
+  },
+  // ─── WP-TABLERO-ALTA-GAMA · RES: lo que la persona comparte de otras áreas (DL-163 D-13, ampliada por Dirección el
+  // 2026-11-07; TB-52 a TB-56). Familia propia de BE. Ninguna APK instalada la lee (DL-152). API-RES-05 (las series de un
+  // resumen, TB-29) no está en este tramo. ─────────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-RES-01',
+    metodo: 'get',
+    ruta: '/me/summary-sharing',
+    resumen:
+      'Lo que la persona comparte de otras áreas: el estado de la autorización «Compartir con mis profesionales lo de otras áreas» (sin un booleano: NOT_GIVEN, ACTIVE o WITHDRAWN), sus profesionales con sus áreas, el vínculo, las áreas que se le pueden compartir a cada uno (las que lleva otro profesional y él no) y lo que hoy le comparte, con el nivel (SUMMARY o SUMMARY_AND_PLAN) y desde cuándo; los textos vigentes del acto, uno por nivel (`texts.summary` y `texts.summaryAndPlan`, propuestas, PENDING_APPROVAL), los que la versión vigente tiene aceptados (`sharing.acceptedTexts`), y las últimas 50 lecturas de lo compartido, con quién, qué área y cuándo (08 §19.7). Sin el A3, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MisResumenesCompartidosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27, TB-28 y TB-55) · TA-85 y TA-93 · 08 C-11, C-12, §19.7',
+  },
+  {
+    id: 'API-RES-02',
+    metodo: 'put',
+    ruta: '/me/summary-sharing',
+    resumen:
+      'Compartir lo de otras áreas, o cambiar con quiénes y en qué nivel, con la lista completa de permisos (profesional, área de origen y nivel; lo que no está deja de compartirse) y la última versión que se vio (si no es la última, 409 VERSION_CONFLICT). Lo compartido es lo del profesional que lleva hoy esa área. Un texto por nivel (Dirección, 2026-11-07), en `acceptedTexts`: un permiso nuevo de SUMMARY pide el texto vigente de «resumen», y dar o subir a SUMMARY_AND_PLAN, el de «resumen y plan» (si falta, 422 SHARING_TEXT_REQUIRED con la ruta del que falta; si es otro, 409 CONSENT_VERSION_STALE); ampliar pide también el A3 (403) (08 C-12). Bajar de nivel o sacar a alguien corta en el momento y no pide ningún texto ni el A3; la versión nueva conserva los textos que ya tenía aceptados. Antropometría no tiene plan (400). Acepta los pedidos pendientes de quienes pasan a ver el plan de esa área (TB-56).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CompartirResumenesRequestSchema,
+    exitos: [{ status: 200, schema: ResumenesCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SHARING_TEXT_REQUIRED'] },
+    detalleDe422: {
+      codigo: 'SUMMARY_RECIPIENT_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.enum(['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SUMMARY_AREA_NOT_SHAREABLE', 'SUMMARY_PLAN_NOT_ALLOWED']), path: z.string() })).min(1) }),
+      descripcion:
+        'details.issues trae un issue por permiso que no se puede dar: SUMMARY_RECIPIENT_NOT_AVAILABLE (el profesional no la acompaña hoy: sin vínculo o con el vínculo terminado), SUMMARY_AREA_NOT_SHAREABLE (nadie más lleva hoy esa área, o la lleva él) o SUMMARY_PLAN_NOT_ALLOWED (la matriz del plan completo no tiene la fila), con path (grants[i]; en API-RES-10, accessRequestId). Con SHARING_TEXT_REQUIRED, details.issues trae un issue SHARING_TEXT_REQUIRED por texto que falta, con path acceptedTexts.summary o acceptedTexts.summaryAndPlan.',
+    },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27 y TB-55) · TA-85 (ratificada: un texto por nivel), TA-87, TA-96 a TA-98, TA-109 · 08 §12.2, C-11, C-12 · RNF-PRI-002',
+  },
+  {
+    id: 'API-RES-03',
+    metodo: 'post',
+    ruta: '/me/summary-sharing/withdrawal',
+    resumen:
+      'Dejar de compartir todo lo de otras áreas, para todos a la vez y desde ese momento (RNF-PRI-002): una versión nueva RETIRADA, con la última que se vio (si no es la activa, 409 VERSION_CONFLICT). No pide el A3 ni borra nada.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: DejarDeCompartirResumenesRequestSchema,
+    exitos: [{ status: 200, schema: ResumenesCompartidosEstadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27) · RNF-PRI-002 · 08 §13',
+  },
+  {
+    id: 'API-RES-04',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/shared-summaries',
+    resumen:
+      'Para el profesional: las áreas en las que hoy acompaña a la persona y cada una de las otras, con quién la lleva hoy (lo que ya dice API-CRD-01-LISTA), lo que la persona le comparte de ella (nivel y desde cuándo, o null), su último pedido de ver el plan y si hoy lo puede pedir (o desde cuándo). Nada depende de que exista un plan. El PDP decide el par (vínculo aceptado, ni en pausa ni terminado, B2, cuentas y el A3 de la persona); sin ningún alcance permitido, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ResumenesParaElProfesionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-27, TB-54 y TB-56) · TA-91, TA-95 y TA-100 · 08 §11-bis.7',
+  },
+  {
+    id: 'API-RES-06',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/shared-summaries/{area}/plan',
+    resumen:
+      'Para el profesional: el plan vigente de otra área de la persona, como lo ve ella (la instantánea de la versión ACTIVADA vigente, con la forma de la lectura del plan de esa área), con el objetivo vigente, el autor, desde cuándo se lo comparten, la fecha de la próxima revisión (sin su contenido) y lo avanzado por semana de lunes a domingo desde la activación (hasta 12 semanas, sin lo anulado). Nunca un borrador, una versión anterior, una revisión, una nota interna ni una evaluación. Autoriza con el PDP del par, la autorización vigente de la persona que lo nombra para esa área con SUMMARY_AND_PLAN y la fila de la matriz: si falta cualquiera, el 404 de lo inexistente. Sin un plan vigente en esa área, { data: null }. Cada lectura queda registrada y la persona la ve en API-RES-01.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PlanCompartidoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §3.1 y §4.3 (TB-52) · TA-86, TA-87, TA-88 y TA-92 · UC-I04 · 08 §11-bis, §19.7',
+  },
+  {
+    id: 'API-RES-07',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/shared-summaries/outgoing',
+    resumen:
+      'Para quien lleva un área: con quién comparte la persona lo de su área, en qué nivel y desde cuándo. Sin nada, la lista vacía. El PDP decide el par; sin ningún alcance permitido, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: LoQueSeComparteDeMiAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-52) · TA-93 · VJR-5 del 08',
+  },
+  {
+    id: 'API-RES-08',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/shared-summaries/access-requests',
+    resumen:
+      'El profesional le pide a la persona ver el plan de otra área, desde un área en la que la acompaña (el PDP la decide; si no, el 404 de lo inexistente). No concede nada: le llega a ella una novedad importante (PLAN_ACCESS_REQUESTED, con el aviso push genérico) que dice quién pide, desde qué área y qué plan. Uno pendiente por profesional, persona y área; otro recién a los 7 días del último (422 PLAN_ACCESS_REQUEST_TOO_SOON), que reemplaza al pendiente. Si ya lo ve, 422 PLAN_ALREADY_SHARED; si nadie lleva hoy esa área o la matriz no lo deja, 422 PLAN_ACCESS_NOT_REQUESTABLE.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: PedirVerElPlanRequestSchema,
+    exitos: [{ status: 201, schema: PedidoDePlanCreadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['PLAN_ALREADY_SHARED', 'PLAN_ACCESS_NOT_REQUESTABLE', 'PLAN_ACCESS_REQUEST_TOO_SOON'] },
+    detalleDe422: {
+      codigo: 'PLAN_ACCESS_REQUEST_TOO_SOON',
+      schema: z.object({ availableFrom: z.string() }),
+      descripcion: 'details.availableFrom (ISO 8601): desde cuándo puede volver a pedirlo, a los 7 días de su último pedido de ese plan.',
+    },
+    fuente: 'DL-163 D-13, ampliada · TA-95 (decidida por Dirección el 2026-11-07) · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-17 y D-24 · DL-133',
+  },
+  {
+    id: 'API-RES-09',
+    metodo: 'get',
+    ruta: '/me/summary-sharing/access-requests',
+    resumen:
+      'Los pedidos de ver un plan que esperan la respuesta de la persona: de quién, desde qué área, qué plan y cuándo. Solo de profesionales que hoy la acompañan en esa área con el vínculo aceptado: en pausa no se muestran, y con el vínculo terminado ya no. Sin el A3, 403.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PedidosDePlanResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DL-163 D-13, ampliada · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-25',
+  },
+  {
+    id: 'API-RES-10',
+    metodo: 'post',
+    ruta: '/me/summary-sharing/access-requests/{accessRequestId}/answer',
+    resumen:
+      'La persona responde un pedido de ver un plan, con la versión del pedido que vio (si ya no espera respuesta, 409 VERSION_CONFLICT). «Sí, que lo vea» (SHARE) es compartir esa área con ese profesional en SUMMARY_AND_PLAN, como API-RES-02: lleva la versión de la autorización que vio y el texto de «resumen y plan» mostrado, que tiene que ser el vigente de ese nivel (409 VERSION_CONFLICT o CONSENT_VERSION_STALE), y pide el A3 (403); los demás permisos y sus textos aceptados siguen como estaban. Quien pidió tiene que acompañarla hoy y el área tiene que tener quién la lleve (si no, 422 SUMMARY_RECIPIENT_NOT_AVAILABLE). «No, por ahora» (NOT_NOW) no cambia la autorización ni pide el A3. Lo ajeno y lo inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ResponderPedidoDePlanRequestSchema,
+    exitos: [{ status: 200, schema: PedidoDePlanRespondidoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'], 422: ['SUMMARY_RECIPIENT_NOT_AVAILABLE'] },
+    detalleDe422: {
+      codigo: 'SUMMARY_RECIPIENT_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.enum(['SUMMARY_RECIPIENT_NOT_AVAILABLE', 'SUMMARY_AREA_NOT_SHAREABLE', 'SUMMARY_PLAN_NOT_ALLOWED']), path: z.string() })).min(1) }),
+      descripcion:
+        'details.issues trae un issue por permiso que no se puede dar: SUMMARY_RECIPIENT_NOT_AVAILABLE (el profesional no la acompaña hoy: sin vínculo o con el vínculo terminado), SUMMARY_AREA_NOT_SHAREABLE (nadie más lleva hoy esa área, o la lleva él) o SUMMARY_PLAN_NOT_ALLOWED (la matriz del plan completo no tiene la fila), con path (grants[i]; en API-RES-10, accessRequestId).',
+    },
+    fuente: 'DL-163 D-13, ampliada · TA-95 · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-25 · 08 §12.2, C-12 · RNF-PRI-002',
   },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
@@ -3318,6 +3858,17 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-FRM-04',
   'API-FRM-05',
   'API-FRM-06',
+  'API-FRI-02',
+  'API-FRI-03',
+  'API-HBT-01',
+  'API-HBT-05',
+  'API-HBT-07',
+  'API-HBT-08',
+  'API-RES-01',
+  'API-RES-04',
+  'API-RES-06',
+  'API-RES-07',
+  'API-RES-09',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',

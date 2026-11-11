@@ -8,9 +8,10 @@
  * - dos marcas en el eje vertical, en números redondos, que encierran todo lo dibujado.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const { diasSinRegistros, extremosDelEje, geometriaDelMinigrafico, mediodia, xDe } = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
+const { diasSinRegistros, estadoDeMarca, extremosDelEje, geometriaDelMinigrafico, LETRA_MINIMA, medidaDeMarca, medidaDelAro, medidaDelRombo, mediodia, rayaDeCorregido, xDe } = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
 
 const punto = (date, value, extra = {}) => ({
   pointId: `p-${date}-${extra.segment ?? 't0'}`,
@@ -97,7 +98,7 @@ test('la línea une solo puntos del mismo tramo, y lo que está sin completar va
   assert.equal(g.tramos[0], `M${a.x} ${a.y} L${b.x} ${b.y}`);
 });
 
-test('con muchos días en poco ancho no se quita ningún punto: se achica la marca', () => {
+test('con muchos días en poco ancho no se quita ningún punto: se achica la marca hasta su mínimo', () => {
   const de = (dias) => {
     const hasta = '2026-10-10';
     const desde = new Date(mediodia(hasta) - (dias - 1) * 86_400_000).toISOString().slice(0, 10);
@@ -106,8 +107,10 @@ test('con muchos días en poco ancho no se quita ningún punto: se achica la mar
   };
   const [semana, trimestre, anio] = [de(7), de(90), de(365)];
   assert.deepEqual([semana.puntos.length, trimestre.puntos.length, anio.puntos.length], [7, 90, 365]);
-  assert.ok(semana.puntos[0].r > trimestre.puntos[0].r && trimestre.puntos[0].r > anio.puntos[0].r, `${semana.puntos[0].r} · ${trimestre.puntos[0].r} · ${anio.puntos[0].r}`);
-  assert.ok(anio.puntos[0].r >= 1.5, 'la marca más chica todavía se ve');
+  // TB-02 (DL-163 D-3): la regla de los cuatro gráficos tiene un piso, 1,25 para el lleno; a 90 y a 365 días los dos
+  // llegan al piso (antes, 1,5 y una escala propia del minigráfico). Con TB-04, el minigráfico deja de marcar cada día.
+  assert.ok(semana.puntos[0].r > trimestre.puntos[0].r && trimestre.puntos[0].r >= anio.puntos[0].r, `${semana.puntos[0].r} · ${trimestre.puntos[0].r} · ${anio.puntos[0].r}`);
+  assert.equal(anio.puntos[0].r, 1.25, 'la marca más chica todavía se ve');
 });
 
 test('el día en curso no se sombrea, y el inicio del plan se marca solo si cae adentro del período', () => {
@@ -223,4 +226,272 @@ test('el objetivo se dibuja por escalones que no se pisan, y entra en el eje aun
   for (const s of g.plan) assert.ok(s.y >= g.caja.arriba - 0.001 && s.y <= g.caja.abajo + 0.001, 'la línea del objetivo queda adentro del dibujo');
   // Un escalón que terminó antes de lo leído no se dibuja.
   assert.equal(geometriaDelMinigrafico({ ...BASE, puntos, plan: [{ desde: '2026-07-01', hasta: '2026-07-31', valor: 2000 }] }).plan.length, 0);
+});
+
+test('DL-161: una serie de carga rápida (tildada sin escribir) es un punto hueco, y sigue en su línea', () => {
+  const rapida = { detail: [{ label: 'Cómo se cargó', value: 'Carga rápida, tildada sin escribir' }] };
+  const puntos = [punto(dia(2), 60), punto(dia(9), 60, rapida), punto(dia(16), 62.5)];
+  const g = geometriaDelMinigrafico({ ...BASE, puntos });
+  assert.deepEqual(g.puntos.map((p) => p.hueco), [false, true, false]);
+  // Hueca no es más chica: se tiene que ver hueca.
+  assert.ok(g.puntos[1].r >= g.puntos[0].r);
+  // No es un dato sin completar: la línea la une con las otras dos.
+  assert.equal(g.tramos.length, 1);
+  assert.equal((g.tramos[0].match(/L/g) ?? []).length, 2);
+  // Otro detalle con el mismo rótulo no la vuelve hueca: se reconoce por el rótulo y el valor.
+  const otra = geometriaDelMinigrafico({ ...BASE, puntos: [punto(dia(2), 60, { detail: [{ label: 'Cómo se cargó', value: 'Carga completa' }] })] });
+  assert.deepEqual(otra.puntos.map((p) => p.hueco), [false]);
+});
+
+// ─── TEST-TAG-006 · La gramática de las marcas (WP-TABLERO-ALTA-GAMA, TB-02; DL-163 D-3) ─────────────────────────
+
+const LUGARES = [0.4, 1, 2.7, 4, 6, 10, 24, 80];
+const ESTADOS = ['lleno', 'hueco', 'reportado', 'calculado'];
+
+test('TEST-TAG-006 · cada marca con estado tiene su mínimo, a cualquier densidad', () => {
+  for (const d of LUGARES) {
+    const lleno = medidaDeMarca('lleno', d);
+    assert.ok(lleno.R >= 1.25 && lleno.R <= 3.5, `lleno a ${d}: ${lleno.R}`);
+    assert.equal(lleno.trazo, 0);
+    assert.equal(lleno.halo, d >= 6, 'el halo, solo con lugar de sobra');
+    for (const estado of ['hueco', 'reportado', 'calculado']) {
+      const m = medidaDeMarca(estado, d);
+      assert.ok(m.R >= (estado === 'hueco' ? 2.75 : 3.25), `${estado} a ${d}: ${m.R}`);
+      assert.ok(m.R >= lleno.R + 1, 'una marca con estado es más grande que el lleno');
+      assert.equal(m.trazo, m.R >= 4 ? 1.5 : 1.25);
+      assert.equal(Number((m.r + m.trazo / 2).toFixed(6)), m.R, 'en el SVG va R menos medio trazo');
+    }
+  }
+});
+
+test('TEST-TAG-006 · el lleno se distingue del hueco: el agujero se ve a densidad 1', () => {
+  for (const d of LUGARES) {
+    const lleno = medidaDeMarca('lleno', d);
+    const hueco = medidaDeMarca('hueco', d);
+    // El agujero del hueco (su radio menos el trazo) mide por lo menos lo que el punto lleno más chico.
+    assert.ok(hueco.R - hueco.trazo >= 1.25, `agujero a ${d}: ${hueco.R - hueco.trazo}`);
+    assert.ok(hueco.R - lleno.R >= 1, 'el borde del hueco queda afuera del lleno');
+    const reportado = medidaDeMarca('reportado', d);
+    assert.ok(reportado.corte, 'lo reportado va cortado');
+    assert.ok(Math.abs(reportado.corte[0] * 8 - 2 * Math.PI * reportado.r) < 1e-4, 'cuatro trazos y cuatro cortes iguales');
+    const calculado = medidaDeMarca('calculado', d);
+    assert.ok(calculado.puntoAdentro !== null && calculado.puntoAdentro >= 0.75 && calculado.puntoAdentro < calculado.r - calculado.trazo / 2);
+    assert.equal(hueco.corte, null);
+    assert.equal(hueco.puntoAdentro, null);
+  }
+});
+
+test('TEST-TAG-006 · lo elegido rodea la marca sin taparla; el rombo es del tamaño del hueco', () => {
+  for (const d of LUGARES) {
+    const hueco = medidaDeMarca('hueco', d);
+    for (const estado of ESTADOS) {
+      const m = medidaDeMarca(estado, d);
+      const aro = medidaDelAro(d);
+      assert.ok(aro.r - aro.trazo / 2 - aro.separacion >= m.R, `el aro no pisa la marca ${estado} a ${d}`);
+    }
+    const rombo = medidaDelRombo(d);
+    assert.equal(rombo.mediaDiagonal, Number((hueco.R + 1).toFixed(6)));
+    assert.ok(rombo.mediaDiagonal < 2 * hueco.R, 'no es el doble');
+    const lleno = medidaDeMarca('lleno', d);
+    const raya = rayaDeCorregido(lleno);
+    assert.ok(raya.arriba - raya.grueso / 2 > lleno.R, 'la raya de lo corregido va encima, sin tocar la marca');
+  }
+});
+
+test('TEST-TAG-006 · el estado sale del punto: la clase manda sobre el subtotal', () => {
+  assert.equal(estadoDeMarca(punto(dia(1), 10)), 'lleno');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { quality: 'PARTIAL' })), 'hueco');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { partialBucket: true })), 'hueco');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { dataClass: 'REPORTED', quality: 'PARTIAL' })), 'reportado');
+  assert.equal(estadoDeMarca(punto(dia(1), 10, { dataClass: 'DERIVED' })), 'calculado');
+  assert.equal(LETRA_MINIMA, 12.5);
+});
+
+test('TEST-TAG-006 · ningún punto del minigráfico queda fuera del lienzo', () => {
+  for (const [dias, ancho] of [
+    [7, 120],
+    [30, 300],
+    [90, 300],
+    [365, 260],
+  ]) {
+    const hasta = '2026-10-10';
+    const desde = new Date(mediodia(hasta) - (dias - 1) * 86_400_000).toISOString().slice(0, 10);
+    const puntos = Array.from({ length: dias }, (_, i) =>
+      punto(new Date(mediodia(desde) + i * 86_400_000).toISOString().slice(0, 10), i % 5 === 0 ? 10 : 2000 + i, i % 3 === 0 ? { quality: 'PARTIAL' } : i % 7 === 0 ? { dataClass: 'REPORTED' } : {}),
+    );
+    const g = geometriaDelMinigrafico({ ...BASE, desde, hasta, puntos, ancho, alto: 72 });
+    for (const p of g.puntos) {
+      assert.ok(p.x - p.r >= 0 && p.x + p.r <= ancho && p.y - p.r >= 0 && p.y + p.r <= 72, `${dias} días: ${p.x},${p.y} r ${p.r}`);
+      assert.equal(p.r, p.medida.R);
+    }
+  }
+});
+
+// ─── TEST-TAG-007 · El minigráfico del indicador no esconde días (WP-TABLERO-ALTA-GAMA, TB-04; DL-163 D-5) ──────────
+
+const geometria = await import('../apps/web/src/app/pro/advisees/seguimiento/geometria.ts');
+const { estadosDeLosDias, geometriaDelIndicador, LUGAR_PARA_MARCAR_CADA_DIA, SEMANAL_CON_MAS_DE_DIAS } = geometria;
+
+const fecha = (desde, i) => new Date(mediodia(desde) + i * 86_400_000).toISOString().slice(0, 10);
+/** Un período diario: `forma(i)` da el valor del día i (o null: sin registros) y sus extras. */
+function periodo(dias, forma, { hoy = null, ancho = 300 } = {}) {
+  const desde = '2026-08-10'; // un lunes
+  const hasta = fecha(desde, dias - 1);
+  const puntos = [];
+  const sinRegistros = [];
+  for (let i = 0; i < dias; i++) {
+    const f = forma(i);
+    if (f === null) sinRegistros.push({ desde: fecha(desde, i), hasta: fecha(desde, i) });
+    else puntos.push(punto(fecha(desde, i), f.valor, f.extra ?? {}));
+  }
+  const entrada = { puntos, sinRegistros, desde, hasta, hoy: hoy ?? hasta, diaria: true, ancho, lienzo: 72, inicioDelPlan: null };
+  return { entrada, g: geometriaDelIndicador(entrada), desde, hasta };
+}
+/** El estado que la tira dibuja en el día i: la celda que cubre su centro. */
+function estadoEnLaTira(g, i) {
+  const x = g.porDia * (i + 0.5);
+  const celda = g.tira.find((c) => x >= c.x - 0.5 && x <= c.x + c.ancho + 0.5);
+  return celda?.estado ?? 'nada';
+}
+
+test('TEST-TAG-007 · con poco lugar, cada día tiene su celda en la tira con su estado', () => {
+  // 90 días en 300 px: 3,3 por día. Días con valor, subtotales y días sin registros mezclados.
+  const forma = (i) => (i % 9 === 4 ? null : i % 11 === 6 ? { valor: 900, extra: { quality: 'PARTIAL' } } : { valor: 2000 + (i % 5) * 40 });
+  const { entrada, g } = periodo(90, forma);
+  assert.ok(g.porDia < LUGAR_PARA_MARCAR_CADA_DIA);
+  const esperados = estadosDeLosDias(entrada);
+  assert.equal(esperados.length, 90);
+  for (let i = 0; i < 90; i++) assert.equal(estadoEnLaTira(g, i), esperados[i].estado, `día ${i}`);
+  // Hoy (el último) va marcado debajo.
+  assert.ok(g.hoy && g.hoy.x <= g.porDia * 89.5 && g.hoy.x + g.hoy.ancho >= g.porDia * 89.5);
+});
+
+test('TEST-TAG-007 · a 90 días la línea es la media de cada semana de BE, con su denominador, y los días van claros', () => {
+  const forma = (i) => (i === 3 ? null : { valor: 1000 + i });
+  const { g, desde } = periodo(90, forma);
+  assert.ok(90 > SEMANAL_CON_MAS_DE_DIAS);
+  assert.equal(g.modo, 'semanal');
+  // La primera semana (lunes 10 a domingo 16 de agosto): seis días con valor (el jueves no tiene registros).
+  const primera = g.semanas[0];
+  assert.equal(primera.lunes, desde);
+  assert.deepEqual([primera.conValor, primera.dias], [6, 7]);
+  assert.equal(primera.valor, Number(((1000 + 1000 + 1 + 1002 + 1004 + 1005 + 1006) / 6).toFixed(6)));
+  assert.equal(primera.medida.estado, 'lleno');
+  // La semana de hoy va hueca, y hoy queda fuera de su media.
+  const ultima = g.semanas.at(-1);
+  assert.equal(ultima.medida.estado, 'hueco');
+  // Del lunes 2 al sábado 7 de noviembre: seis días en el período, cinco en la media (hoy, el 7, sigue en curso).
+  assert.deepEqual([ultima.lunes, ultima.dias, ultima.conValor], ['2026-11-02', 6, 5]);
+  assert.ok(g.semanas.every((s) => s.conValor <= s.dias));
+  // Cada día con valor, un punto claro detrás; ningún día queda sin dibujar.
+  assert.equal(g.puntos.length, 89);
+  assert.ok(g.puntos.every((p) => p.claro));
+});
+
+test('TEST-TAG-007 · con poco lugar y menos semanas, la línea se corta y llevan marca la última y las aisladas', () => {
+  // 30 días en 100 px: 3,3 por día. El día 10 queda solo entre dos días sin registros.
+  const forma = (i) => (i === 9 || i === 11 ? null : i === 20 ? { valor: 2050, extra: { quality: 'PARTIAL' } } : { valor: 2000 + i });
+  const { g } = periodo(30, forma, { ancho: 100 });
+  assert.equal(g.modo, 'pocos');
+  // Tres tramos: días 0-8, 12-19 y 21-29 (el 10 está aislado y el 20 está sin completar).
+  assert.equal(g.tramos.length, 3);
+  const marcados = g.puntos.map((p) => p.clave);
+  assert.ok(marcados.includes('p-2026-08-20-t0'), 'la aislada lleva marca');
+  assert.ok(marcados.includes('p-2026-09-08-t0'), 'la última lleva marca');
+  assert.equal(g.puntos.length, 2, 'las demás van en la línea, sin marca');
+});
+
+test('TEST-TAG-007 · con más lugar, todo día con valor tiene su marca', () => {
+  const forma = (i) => (i % 6 === 2 ? null : { valor: 2000 + i * 3 });
+  const { g, entrada } = periodo(30, forma, { ancho: 300 });
+  assert.equal(g.modo, 'todos');
+  assert.equal(g.puntos.length, entrada.puntos.length);
+});
+
+test('TEST-TAG-007 · lo que cae fuera de la escala es una muesca en su día, contada, y no un punto', () => {
+  const forma = (i) => (i === 15 ? { valor: 120, extra: { quality: 'PARTIAL' } } : { valor: 2000 + (i % 4) * 30 });
+  const { g } = periodo(30, forma, { ancho: 300 });
+  assert.deepEqual(g.fuera, { abajo: 1, arriba: 0 });
+  assert.equal(g.muescas.length, 1);
+  assert.ok(Math.abs(g.muescas[0].x - g.porDia * 15.5) < 1e-6, 'la muesca va en su día');
+  assert.ok(g.muescas[0].abajo);
+  assert.ok(!g.puntos.some((p) => p.clave === 'p-2026-08-25-t0'), 'no se ubica en una altura que no es la suya');
+});
+
+test('TEST-TAG-007 · con uno a tres días con valor no hay línea ni media', () => {
+  const forma = (i) => (i === 2 || i === 5 || i === 6 ? { valor: 1800 + i } : null);
+  const { g } = periodo(90, forma);
+  assert.equal(g.modo, 'sueltos');
+  assert.deepEqual([g.tramos.length, g.semanas.length], [0, 0]);
+  assert.equal(g.puntos.length, 3);
+});
+
+test('TEST-TAG-007 · la línea no cruza lo sin completar ni une sesiones de otro tramo', () => {
+  const sesiones = [punto('2026-09-01', 60), punto('2026-09-03', 62.5), punto('2026-09-05', 65, { segment: 't1' }), punto('2026-09-08', 65, { segment: 't1' })];
+  const g = geometriaDelIndicador({ puntos: sesiones, sinRegistros: [], desde: '2026-08-10', hasta: '2026-11-07', hoy: '2026-11-07', diaria: false, ancho: 300, lienzo: 72, inicioDelPlan: null });
+  assert.equal(g.modo, 'todos');
+  assert.equal(g.tramos.length, 2, 'un tramo por segmento');
+  assert.equal(g.tira.length, 0, 'las sesiones no llevan tira');
+});
+
+test('TEST-TAG-007 · una diferencia chica no parece un precipicio: la escala mínima de cada unidad', () => {
+  const { RANGO_MINIMO_POR_UNIDAD } = geometria;
+  const tomas = [punto('2026-08-12', 81.2), punto('2026-09-23', 81.0), punto('2026-11-01', 81.0)];
+  const entrada = { puntos: tomas, sinRegistros: [], desde: '2026-08-09', hasta: '2026-11-06', hoy: '2026-11-06', diaria: false, ancho: 290, lienzo: 72, inicioDelPlan: null };
+  const sinMinimo = geometriaDelIndicador(entrada);
+  const conMinimo = geometriaDelIndicador({ ...entrada, rangoMinimo: RANGO_MINIMO_POR_UNIDAD.kg });
+  const salto = (g) => Math.abs(g.puntos[0].y - g.puntos[1].y);
+  assert.ok(salto(sinMinimo) > 50, 'sin la escala mínima, −0,2 kg ocupa casi todo el alto');
+  assert.ok(salto(conMinimo) < 72 / 8, `con 2 kg de escala, −0,2 kg ocupa menos de un octavo del alto (${salto(conMinimo).toFixed(1)})`);
+  assert.deepEqual([RANGO_MINIMO_POR_UNIDAD.kg, RANGO_MINIMO_POR_UNIDAD.cm, RANGO_MINIMO_POR_UNIDAD.mm], [2, 2, 4]);
+});
+
+// ─── TA-72 · Lo que se cuenta va en enteros ───────────────────────────────────────────────────────────────────────
+// En la galería del PR #240, el Resumen de Diego visto por Martín Acosta tenía 4 series en cada una de sus 10 sesiones
+// y RIR 1 en todas: la escala decía 3,99 y 4,01, y 1,00. Las series, las repeticiones, el RIR, los registros y las
+// sesiones se cuentan enteros: su grilla va en enteros y, con todos los valores iguales, se abre uno de cada lado.
+
+const { escalaDeLaUnidad, UNIDADES_QUE_SE_CUENTAN } = geometria;
+/** Diez sesiones (series registradas o RIR de la serie 1), del 12 ago al 2 nov, como las de Diego con Martín Acosta. */
+const sesiones = (valores) => valores.map((v, i) => punto(fecha('2026-08-12', i * 9), v));
+const indicador = (puntos, unidad) =>
+  geometriaDelIndicador({ puntos, sinRegistros: [], desde: '2026-08-09', hasta: '2026-11-06', hoy: '2026-11-06', diaria: false, ancho: 400, lienzo: 72, inicioDelPlan: null, ...escalaDeLaUnidad(unidad) });
+const valoresDeLaGrilla = (g) => g.grilla.map((l) => l.valor);
+
+test('TEST-TAG-007 · TA-72 · lo que se cuenta va en enteros y, con todos los valores iguales, se abre uno de cada lado', () => {
+  // 4 series en las diez sesiones: la grilla, 3, 4 y 5; los rótulos, enteros. Antes, 3,99 y 4,01.
+  const series = indicador(sesiones(Array(10).fill(4)), 'series');
+  assert.deepEqual(valoresDeLaGrilla(series), [3, 4, 5]);
+  assert.ok(series.rotulos.length > 0 && series.rotulos.every((r) => /^\d+$/.test(r.texto)), `rótulos enteros: ${series.rotulos.map((r) => r.texto)}`);
+  assert.equal(series.rotulos[0].texto, '5');
+  // Los puntos van sobre la línea del 4, en el medio.
+  const linea4 = series.grilla.find((l) => l.valor === 4);
+  assert.ok(series.puntos.every((p) => Math.abs(p.y - linea4.y) < 1));
+  // Sin la regla (una medida, no una cuenta), lo de antes: 3,99 y 4,01.
+  const comoMedida = indicador(sesiones(Array(10).fill(4)), 'kcal');
+  assert.deepEqual(comoMedida.rotulos.map((r) => r.texto), ['4,01', '3,99']);
+  // RIR 1 en todas: 0, 1 y 2, sin marcas negativas; RIR 0 en todas: 0 y 1.
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones(Array(10).fill(1)), 'RIR')), [0, 1, 2]);
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones(Array(10).fill(0)), 'RIR')), [0, 1]);
+  // Con valores distintos, el paso también es entero: de 4 a 5 series, 4 y 5 (no 4,5); de 1 a 9, de a 2 (no de a 2,5).
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones([4, 5, 4, 5, 4, 5, 4, 5, 4, 5]), 'series')), [4, 5]);
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones([1, 3, 5, 7, 9, 8, 6, 4, 2, 1]), 'rep')), [2, 4, 6, 8]);
+  assert.deepEqual(valoresDeLaGrilla(indicador(sesiones([1, 3, 5, 7, 9, 8, 6, 4, 2, 1]), 'kcal')), [2.5, 5, 7.5], 'una medida conserva el 2,5');
+});
+
+test('TEST-TAG-007 · TA-72 · la unidad decide la escala en un solo lugar, para los dos minigráficos', () => {
+  for (const unidad of ['series', 'rep', 'RIR', 'registros', 'sesiones']) assert.equal(escalaDeLaUnidad(unidad).enteros, true, unidad);
+  for (const unidad of ['kg', 'cm', 'mm', 'kcal', 'g', '%']) assert.equal(escalaDeLaUnidad(unidad).enteros, false, unidad);
+  assert.deepEqual(escalaDeLaUnidad('kg'), { rangoMinimo: 2, enteros: false });
+  assert.deepEqual(escalaDeLaUnidad('series'), { rangoMinimo: undefined, enteros: true });
+  assert.equal(UNIDADES_QUE_SE_CUENTAN.size, 5);
+  // El minigráfico de la comparación de etapas: 4 series iguales, entre 3 y 5 (antes, 3,8 y 4,2).
+  assert.deepEqual(extremosDelEje(4, 4, 2, true), { abajo: 3, arriba: 5, decimales: 0 });
+  assert.deepEqual(extremosDelEje(1, 1, 2, true), { abajo: 0, arriba: 2, decimales: 0 });
+  assert.deepEqual(extremosDelEje(4, 4), { abajo: 3.8, arriba: 4.2, decimales: 1 });
+  assert.equal(extremosDelEje(4, 5, 4, true).decimales, 0);
+  // Los dos minigráficos toman la escala de la unidad de su serie.
+  const fuente = readFileSync(new URL('../apps/web/src/app/pro/advisees/seguimiento/minigrafico.tsx', import.meta.url), 'utf8');
+  assert.match(fuente, /geometriaDelIndicador\(\{[^}]*\.\.\.escalaDeLaUnidad\(serie\.unit\)/);
+  assert.match(fuente, /geometriaDelMinigrafico\(\{[^}]*enteros: escalaDeLaUnidad\(serie\.unit\)\.enteros/);
 });

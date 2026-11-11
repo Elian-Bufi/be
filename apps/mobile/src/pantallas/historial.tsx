@@ -15,21 +15,39 @@
  */
 import {
   COPY_ENTRENAMIENTO,
+  COPY_REGISTRO_POR_NIVELES,
   etiquetaDeCondicionRegistrada,
+  nivelDeDetalle,
+  registroVigente,
+  textoDelNivelDeDetalle,
   type HistorialDeEntrenamientoResponse,
+  type Resultado,
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDePlanDeEntrenamiento,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
-import { dia, fechaCivil, ultimosDiasEnZona } from '../formato';
+import { useDiaDeLaApi } from '../dia-de-la-api';
+import { dia, fechaCivil, ultimosDiasEnZona, ultimosDiasHasta } from '../formato';
+import { desgloseDeActividad } from '../inicio-de-hoy';
+import { useLecturaRecordada } from '../lecturas';
+import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { textoDePrescripcion } from './entrenamiento';
 
 type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
+
+/**
+ * El nivel de detalle de lo que rige de una sesión, en las palabras del dominio (DL-161). Nada para una no realizada,
+ * que ya lo dice su condición, ni si no se puede saber qué rige.
+ */
+function nivelDe(e: Ejecucion): string | null {
+  const nivel = nivelDeDetalle(e);
+  return nivel === null || nivel === 'NO_REALIZADA' ? null : textoDelNivelDeDetalle(nivel);
+}
 
 /** Estado de una lectura: cargando, permitida con datos, sin A3 (403), o error de red/servidor. */
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'sinA3' } | { tipo: 'error'; sinConexion: boolean };
@@ -57,6 +75,21 @@ export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: 
  * El contenido de «Tu historial», sin título: la pantalla propia (desde Inicio y el menú) y la pestaña Historial de
  * Entrenamiento (WP-ENTRENAMIENTO-SERIES §7.1) muestran lo mismo.
  */
+/**
+ * Los mismos 30 días que «Tu actividad» de Inicio, desglosados: realizadas, con desvío y no realizadas. Es la misma
+ * lectura, con la misma clave (`leerActividadDeEntrenamiento`), así el total coincide con el número de Inicio (AVD-2). Un
+ * día sin registro no cuenta como «no realizada» (DL-106). Mientras se lee o si falla, no se dibuja: la lista de abajo
+ * dice lo suyo.
+ */
+function DesgloseDe30Dias({ token, sesionPerdida }: { token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
+  const hoy = useDiaDeLaApi();
+  const periodo = useMemo(() => ultimosDiasHasta(hoy, DIAS_DE_ACTIVIDAD), [hoy]);
+  const pedir = useCallback(() => leerActividadDeEntrenamiento(api, token, periodo), [token, periodo]);
+  const { r } = useLecturaRecordada(token, `inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`, pedir, sesionPerdida);
+  if (!r?.ok || r.datos.registradas === 0) return null;
+  return <Parrafo>{desgloseDeActividad(r.datos).texto}</Parrafo>;
+}
+
 export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   const sesionPerdida = useSesionPerdida(salir);
   const [sesiones, setSesiones] = useState<Carga<Ejecucion[]>>({ tipo: 'cargando' });
@@ -81,6 +114,8 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
   return (
     <View>
       <Parrafo tenue>{COPY_ENTRENAMIENTO.historialIntro}</Parrafo>
+      {/* DL-166 (AV-07, AVD-2): el desglose de los últimos 30 días, con la misma lectura que el número de Inicio. */}
+      {sinA3 ? null : <DesgloseDe30Dias token={token} sesionPerdida={sesionPerdida} />}
 
       {sinA3 ? (
         <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.historialNecesitaA3}>
@@ -98,7 +133,10 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
                     <Parrafo>{e.plannedSession.label}</Parrafo>
                     {/* La fecha civil de la sesión, sin desplazarla por la zona del dispositivo (misma función que el detalle). */}
                     <Parrafo tenue>{fechaCivil(e.date)}</Parrafo>
-                    <Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />
+                    {/* Lo que hoy rige: una sesión corregida dice la condición corregida, no la que se corrigió (REG-06-16). */}
+                    <Insignia texto={etiquetaDeCondicionRegistrada(registroVigente(e))} />
+                    {/* Cómo se cargó lo que rige, con el rótulo que lee el profesional (DL-161): «Cargada como el plan»… */}
+                    {nivelDe(e) ? <Insignia texto={nivelDe(e)!} etiqueta={COPY_REGISTRO_POR_NIVELES.comoSeCargo} /> : null}
                     {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
                     <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
                   </Tarjeta>
@@ -167,7 +205,7 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
           {s.instructions ? <Parrafo tenue>{s.instructions}</Parrafo> : null}
           {s.prescriptions.length === 0 ? <Parrafo tenue>{COPY_ENTRENAMIENTO.sinPrescripciones}</Parrafo> : null}
           {s.prescriptions.map((p) => (
-            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} />
+            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} apilado />
           ))}
         </Seccion>
       ))}

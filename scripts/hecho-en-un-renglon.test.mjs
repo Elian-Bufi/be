@@ -10,7 +10,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { cambiosDelRegistro, dondeCoincide, frenteALoIndicadoDe, numeroDeVersionDe, relacionesEnPalabras, renglonDelHecho, textoDelHueco, tituloDelHecho, ICONO_DEL_RASGO, VERBO_DE_LA_RELACION } = await import('../apps/web/src/app/pro/advisees/seguimiento/hecho-en-un-renglon.ts');
+const { cambiosDelRegistro, dondeCoincide, frenteALoIndicadoDe, numeroDeVersionDe, relacionesEnPalabras, renglonDelHecho: renglonConAutor, textoDelHueco, tituloDelHecho, ICONO_DEL_RASGO, VERBO_DE_LA_RELACION } = await import('../apps/web/src/app/pro/advisees/seguimiento/hecho-en-un-renglon.ts');
+/** El renglón con los nombres a la vista; con «Ocultar nombres» (TB-05), la ficha le pasa la referencia de cada uno. */
+const renglonDelHecho = (e) => renglonConAutor(e, (a) => a.displayName);
 const { ICONOS, RASGOS_DE_UN_HECHO } = await import('../packages/domain/dist/index.js');
 
 const entrada = (eventType, title, details = [], extra = {}) => ({
@@ -87,6 +89,14 @@ test('una sesión: su nombre en el plan (que puede traer un punto medio) y cuán
   assert.deepEqual(renglonDelHecho(e), { icono: 'entrenamiento', nombre: 'Sesión A · Tren inferior', dato: '7 series con datos', modo: null });
   assert.equal(tituloDelHecho(e), 'Sesión A · Tren inferior', 'la cuenta de series no es parte del nombre');
   assert.equal(renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · B', [['Series con datos', '1']])).dato, '1 serie con datos');
+  // DL-161: cómo se cargaron las series, como lo dice la API, después de la cuenta. «Carga completa» no va en el dato: es
+  // la etiqueta destacada del renglón (Dirección, 2026-11-02); las demás no tienen etiqueta destacada.
+  const conComoSeCargo = (valor) => renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · B', [['Series con datos', '6'], ['Cómo se cargó', valor]]));
+  assert.deepEqual(conComoSeCargo('Carga rápida'), { icono: 'entrenamiento', nombre: 'Sesión B', dato: '6 series con datos · carga rápida', modo: null });
+  assert.deepEqual(conComoSeCargo('Carga rápida con cambios'), { icono: 'entrenamiento', nombre: 'Sesión B', dato: '6 series con datos · carga rápida con cambios', modo: null });
+  assert.deepEqual(conComoSeCargo('Carga completa'), { icono: 'entrenamiento', nombre: 'Sesión B', dato: '6 series con datos', modo: null, destacado: 'Carga completa' });
+  // Sin la cuenta de series, la carga completa sigue destacada y el dato queda vacío: no se inventa una cuenta.
+  assert.deepEqual(renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · B', [['Cómo se cargó', 'Carga completa']])), { icono: 'entrenamiento', nombre: 'Sesión B', dato: null, modo: null, destacado: 'Carga completa' });
   // El nombre lo escribe el profesional: si ya empieza con «Sesión», no se le antepone otra.
   assert.equal(renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · Sesión de fuerza')).nombre, 'Sesión de fuerza');
   assert.equal(renglonDelHecho(entrada('TRAINING_SESSION_RECORDED', 'Sesión registrada · sesion 3')).nombre, 'sesion 3');
@@ -130,9 +140,30 @@ test('los hitos: cada uno con su ícono, su nombre y el dato que lo distingue', 
     source: { type: 'COORDINATION_NOTE', id: 'n' },
   });
   assert.deepEqual(renglonDelHecho(nota), { icono: 'texto', nombre: 'Nota de coordinación', dato: 'Pedido de coordinación · de Lic. Sofía Paz', modo: null });
+  // TB-05: con «Ocultar nombres», quien la escribió va con el nombre que le da la ficha.
+  assert.equal(renglonConAutor(nota, () => 'Profesional · 000000').dato, 'Pedido de coordinación · de Profesional · 000000');
   assert.equal(tituloDelHecho(nota), 'Nota de coordinación · Pedido de coordinación');
   // Sin autor ni finalidad en el título, no inventa nada.
   assert.deepEqual(renglonDelHecho(entrada('COORDINATION_NOTE_RECORDED', 'Nota de coordinación')), { icono: 'texto', nombre: 'Nota de coordinación', dato: null, modo: null });
+});
+
+test('DL-165 D-8: un formulario dice qué pasó, cuál es y, si lo hay, cuánto respondió o cómo terminó lo cargado', () => {
+  const formulario = (eventType, title, details = []) => entrada(eventType, title, details, { domain: 'NUTRITION', source: { type: 'FORM_REQUEST', id: 's' } });
+  assert.deepEqual(renglonDelHecho(formulario('FORM_REQUESTED', 'Formulario pedido · Cómo comés hoy', [['Para qué', 'Conocer tus comidas'], ['Preguntas', '24 (22 obligatorias)']])), {
+    icono: 'informacion',
+    nombre: 'Formulario pedido',
+    dato: 'Cómo comés hoy',
+    modo: null,
+  });
+  assert.equal(renglonDelHecho(formulario('FORM_RESPONDED', 'Formulario respondido · Cómo comés hoy', [['Respondió', '20 de 24 preguntas']])).dato, 'Cómo comés hoy · 20 de 24 preguntas');
+  assert.equal(renglonDelHecho(formulario('FORM_CONFIRMED', 'Formulario confirmado · Cómo comés hoy', [['Respondió', '22 de 24 preguntas'], ['Cargado por', 'Lic. Sofía Paz el 5/11/2026']])).dato, 'Cómo comés hoy · 22 de 24 preguntas');
+  assert.equal(renglonDelHecho(formulario('FORM_LOADED', 'Formulario cargado con la persona · Antes de entrenar', [['Estado', 'esperando que lo confirme']])).dato, 'Antes de entrenar · esperando que lo confirme');
+  const rechazado = formulario('FORM_REJECTED', 'Formulario rechazado · Antes de entrenar', [['Lo cargado', 'se borró; el formulario sigue pendiente']]);
+  assert.deepEqual(renglonDelHecho(rechazado), { icono: 'informacion', nombre: 'Formulario rechazado', dato: 'Antes de entrenar', modo: null });
+  // El título del detalle es el de la API, entero.
+  assert.equal(tituloDelHecho(rechazado), 'Formulario rechazado · Antes de entrenar');
+  // Sin el nombre del formulario en el título, no inventa nada.
+  assert.deepEqual(renglonDelHecho(formulario('FORM_REQUESTED', 'Formulario pedido')), { icono: 'informacion', nombre: 'Formulario pedido', dato: null, modo: null });
 });
 
 test('si la API cambia un título o un rótulo, el renglón no inventa: muestra el título entero y lo que haya', () => {

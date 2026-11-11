@@ -29,6 +29,8 @@ const tipoDeArchivo = (archivo) => (archivo.endsWith('.ts') ? ts.ScriptKind.TS :
 /** Las frases de Inicio y de los gráficos chicos que se arman fuera de las pantallas, en módulos puros. */
 const movil = (archivo) => join(RAIZ, 'apps/mobile/src', archivo);
 const tsx = (dir) => readdirSync(dir).filter((f) => f.endsWith('.tsx')).map((f) => join(dir, f));
+/** La corrección de una sesión registrada en la APK (PA-04): su pantalla y su lógica. */
+const CORRECCION_EN_LA_APK = [join(RAIZ, 'apps/mobile/src/pantallas/correccion-de-entrenamiento.tsx'), movil('correccion-de-la-sesion.ts')];
 
 /**
  * Inicio (DL-117): cada tarjeta vive en el archivo de su módulo y se revisa con la lista de su dominio. Las piezas comunes
@@ -50,6 +52,12 @@ const NOVEDADES = [
   join(RAIZ, 'packages/domain/src/copy-novedades.ts'),
 ];
 const INICIO_Y_NOVEDADES = [...INICIO_COMUN, ...NOVEDADES];
+/** WP-APP-VUELTA-DE-ROSCA (DL-166): los textos nuevos y las piezas que los muestran. */
+const VUELTA_DE_ROSCA = [
+  ...['textos-de-la-vuelta.ts', 'desplegable.ts', 'perfil.ts', 'quien-ve-que.ts', 'inicio-de-hoy.ts'].map(movil),
+  ...['perfil.tsx', 'quien-ve-que.tsx', 'cuenta.tsx'].map(inicio),
+];
+const SESION_DE_LA_VUELTA = ['textos-del-descanso.ts', 'descanso-automatico.ts', 'fila-fija.tsx'].map(movil);
 
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
 const DOMINIOS = [
@@ -82,7 +90,20 @@ const DOMINIOS = [
   },
   {
     nombre: 'entrenamiento',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), inicio('inicio-entrenamiento.tsx'), movil('lecturas-de-inicio.ts'), ...INICIO_Y_NOVEDADES],
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')),
+      join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'),
+      // PA-04: la corrección dejó entrenamiento.tsx y vive en su pantalla y su módulo; siguen bajo la misma guardia.
+      ...CORRECCION_EN_LA_APK,
+      inicio('inicio-entrenamiento.tsx'),
+      movil('lecturas-de-inicio.ts'),
+      // PA-03: el registro rápido («Ya la hice»), su pantalla y sus textos.
+      inicio('registro-rapido.tsx'),
+      movil('registro-rapido.ts'),
+      // WP-APP-VUELTA-DE-ROSCA (DL-166): la sesión con el descanso automático y el desglose de «Tu historial».
+      ...SESION_DE_LA_VUELTA,
+      ...INICIO_Y_NOVEDADES,
+    ],
     prohibidos: terminosProhibidosDeEntrenamientoEn,
     minimo: 7,
   },
@@ -90,7 +111,7 @@ const DOMINIOS = [
     // WP-ESCRITORIO-AMABLE, parte 5: el Espacio profesional (los pendientes de la cartera y el directorio). Una lista de
     // personas no califica a nadie: ni «inactivo», ni «riesgo», ni un porcentaje (TEST-PRJ-009; DL-107).
     nombre: 'el espacio profesional',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro')), ...['directorio.ts', 'pendiente-en-una-fila.ts', 'mesa.ts', 'cajon.ts', 'lugar-del-espacio.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro', archivo))],
     prohibidos: terminosProhibidosDeCarteraEn,
     minimo: 8,
   },
@@ -102,6 +123,34 @@ const DOMINIOS = [
     archivos: tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/forms')),
     prohibidos: terminosProhibidosDeFormulariosEn,
     minimo: 4,
+  },
+  {
+    // WP-FORMULARIOS-RONDA-2, FR-10 (DL-165 D-9): los hábitos de la persona, en la APK («Mis hábitos», compartirlos, la
+    // pregunta por un profesional nuevo y «¿Sigue igual?») y en el website («Sus hábitos»), con su copy. Hablan de las dos
+    // áreas: pasan por la lista de los formularios, la de nutrición y la de entrenamiento.
+    nombre: 'los hábitos de la persona',
+    archivos: [
+      inicio('mis-habitos.tsx'),
+      movil('habitos-en-el-telefono.ts'),
+      movil('pregunta-v2.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/sus-habitos.ts'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/tarjeta-de-sus-habitos.tsx'),
+      // Ronda 2.1 (DL-165 D-22): «Sumar «Tus hábitos»» en el cajón de «Pedir información».
+      join(RAIZ, 'apps/web/src/app/pro/advisees/forms/sumar-habitos.ts'),
+      join(RAIZ, 'packages/domain/src/copy-habitos-de-la-persona.ts'),
+    ],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 6,
+  },
+  {
+    // WP-APP-VUELTA-DE-ROSCA (DL-166): Perfil, «Quién ve qué», Inicio y la sesión con su descanso hablan de todas las áreas
+    // y de los formularios: pasan por todas las listas. Ubican, nunca califican.
+    nombre: 'la vuelta de rosca de la APK',
+    archivos: VUELTA_DE_ROSCA,
+    prohibidos: (texto) => [
+      ...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeCarteraEn(texto)]),
+    ],
+    minimo: 8,
   },
   {
     // WP-NOTAS-DE-COORDINACION (DL-140): el diálogo y el Resumen del website, la pantalla de la APK y su copy. Una nota habla
@@ -122,9 +171,21 @@ const DOMINIOS = [
     // día, la revisión en preparación, el período y su ayuda). Muestran texto de las dos áreas: pasan por las dos listas.
     // Hasta acá la evidencia no la miraba ninguna prueba de palabras.
     nombre: 'la revisión de Nutrición y de Entrenamiento',
-    archivos: ['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+    // WP-TABLERO-ALTA-GAMA TB-15: «¿Cuándo la revisás?» y aplicar una revisión, que comparten las dos áreas y el cajón.
+    archivos: [
+      ...['evidencia-de-revision.tsx', 'revision-en-preparacion.tsx', 'ayuda-de-revisiones.tsx', 'evidencia.ts', 'periodo-de-la-revision.ts', 'cuando-la-revisas.tsx', 'aplicar-la-revision.ts'].map((archivo) => join(RAIZ, 'apps/web/src/app/pro/advisees', archivo)),
+      join(RAIZ, 'apps/web/src/lib/cuando-la-revisas.ts'),
+    ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
     minimo: 5,
+  },
+  {
+    // WP-TABLERO-ALTA-GAMA TB-48: los topes de un plan, avisados antes de guardar, y duplicar, reordenar y quitar en los
+    // editores de las dos áreas.
+    nombre: 'los editores de los planes',
+    archivos: [join(RAIZ, 'apps/web/src/app/pro/advisees/topes-del-plan.ts'), join(RAIZ, 'apps/web/src/app/pro/advisees/editar-la-estructura.ts'), join(RAIZ, 'apps/web/src/app/pro/advisees/revisar-el-plan.ts'), join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition/recetas-para-elegir.ts'), join(RAIZ, 'apps/web/src/app/pro/exercises/zonas-propias.ts')],
+    prohibidos: (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])],
+    minimo: 1,
   },
   {
     // DL-141 D-6 (encargo de Dirección del 2026-10-19, bloque 4): el origen de un ítem en la fila del buscador, en Nutrición
@@ -196,7 +257,8 @@ for (const dominio of DOMINIOS) {
  * Un solo porcentaje es de la ficha, y está contado: el **cambio relativo** de Analizar, que compara un valor con otro
  * del mismo dato (la referencia que elige el profesional). No es un puntaje ni dice cuánto «se cumplió». Los lugares
  * donde se escribe están en `PORCENTAJES_DE_LA_FICHA`, uno por uno: un «%» en cualquier otro texto hace fallar la
- * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más).
+ * prueba, y si alguno de esos lugares deja de existir, también (la lista no puede quedar con permisos de más). Desde
+ * TB-51 hay un segundo porcentaje, también contado: el de cada parte de la barra de la composición (D-11, modificada).
  */
 const SEGUIMIENTO = join(RAIZ, 'apps/web/src/app/pro/advisees/seguimiento');
 const LA_FICHA = [
@@ -210,9 +272,13 @@ const PORCENTAJES_DE_LA_FICHA = [
   'lienzo.tsx · %',
   // El ancho del gráfico dentro de su caja: no es un texto para la persona.
   'lienzo.tsx · 100%',
+  // TB-51 (DL-163 D-11, modificada por Dirección el 2026-11-07: «kilos con el % al lado»): el porcentaje de cada parte de
+  // la barra de la última toma, junto a sus kilos. El 100 % es el peso de esa toma: dice de qué está hecho, no cuánto se
+  // cumplió. Se escribe en un solo lugar, `porcentajeEnPalabras`.
+  'composicion.ts · %',
 ];
 
-test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; su único porcentaje es el cambio relativo', () => {
+test('T13 · el copy de la ficha del asesorado no tiene puntajes, juicios ni huecos completados; sus porcentajes son el cambio relativo y el de la composición (TB-51)', () => {
   assert.ok(LA_FICHA.length >= 20, `se esperaban las pantallas de la ficha, hay ${LA_FICHA.length}`);
   const prohibidos = (texto) => [...new Set([...terminosProhibidosEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto)])];
   const porcentajes = new Set();
@@ -304,7 +370,7 @@ test('T13 · el titular de la medición muestra el valor vigente, no el original
  * - ninguna pantalla lee `execution.sessionCondition` directamente, que es la puerta para saltearse esa función.
  */
 test('WP-06 §9.2 · ninguna pantalla de entrenamiento deriva «No realizada» de la ausencia de registro', () => {
-  const archivos = [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx')];
+  const archivos = [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training')), join(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), ...CORRECCION_EN_LA_APK];
   assert.ok(archivos.length >= 7, `se esperaban las pantallas de entrenamiento, hay ${archivos.length}`);
   const hallazgos = [];
   for (const a of archivos) {
@@ -322,4 +388,59 @@ test('WP-06 §9.2 · la guardia detecta una pantalla que escribe «No realizada�
   const textos = textosDe('fixture.tsx', contenido).map((t) => t.texto);
   assert.ok(textos.some((t) => /no realizad/i.test(t)));
   assert.match(contenido, /execution\.sessionCondition/);
+});
+
+/**
+ * D-C2 (prueba breve del 2026-10-29): la lista de «Tu historial» mostraba la condición del registro original aunque la
+ * sesión estuviera corregida. Lo que rige sale de `registroVigente` (REG-06-16): ninguna pantalla de la APK ni del
+ * entrenamiento del website escribe la condición leyendo `.original` directo. El original se muestra solo donde se
+ * rotula como tal («Registro original»), y ahí no pasa por esta función.
+ */
+const CONDICION_DEL_ORIGINAL = /etiquetaDeCondicionRegistrada\(\s*[\w.]*\.original\s*\)/;
+
+test('D-C2 · ninguna pantalla muestra la condición del original como si fuera la que rige', () => {
+  const archivos = [...tsx(join(RAIZ, 'apps/mobile/src/pantallas')), ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/training'))];
+  assert.ok(archivos.length >= 30, `se esperaban las pantallas de la APK y del entrenamiento del website, hay ${archivos.length}`);
+  const hallazgos = archivos.filter((a) => CONDICION_DEL_ORIGINAL.test(readFileSync(a, 'utf8'))).map((a) => a.slice(RAIZ.length + 1));
+  assert.deepEqual(hallazgos, []);
+  // El historial de la APK, que es donde estaba el defecto, lee lo vigente.
+  assert.match(readFileSync(join(RAIZ, 'apps/mobile/src/pantallas/historial.tsx'), 'utf8'), /etiquetaDeCondicionRegistrada\(registroVigente\(e\)\)/);
+});
+
+test('D-C2 · la guardia detecta la condición leída del original', () => {
+  assert.match('<Insignia texto={etiquetaDeCondicionRegistrada(e.original)} />', CONDICION_DEL_ORIGINAL);
+  assert.match('etiquetaDeCondicionRegistrada( x.ejecucion.original )', CONDICION_DEL_ORIGINAL);
+  assert.doesNotMatch('etiquetaDeCondicionRegistrada(registroVigente(e))', CONDICION_DEL_ORIGINAL);
+});
+
+/**
+ * PA-06 (2026-11-02): los íconos de la APK son los de la familia de BE (`apps/mobile/src/icono.tsx`), dibujados con
+ * elementos y no con `SvgXml`, y ningún texto hace de ícono. La tilde, el aviso y las flechas escritos como letras se
+ * leían en voz alta («marca de verificación»), no cambiaban con el tema como el resto, y la tilde suelta se leía como
+ * «aprobado». La tilde de la familia va solo dentro de una casilla.
+ */
+const GLIFOS = /[✓✔⚠↑↓‹›]/;
+
+test('PA-06 · la APK no escribe glifos como íconos ni dibuja íconos con SvgXml', () => {
+  const archivos = [];
+  const recorrer = (dir) => {
+    for (const nombre of readdirSync(dir, { withFileTypes: true })) {
+      const ruta = join(dir, nombre.name);
+      if (nombre.isDirectory()) recorrer(ruta);
+      else if (/\.tsx?$/.test(nombre.name)) archivos.push(ruta);
+    }
+  };
+  recorrer(join(RAIZ, 'apps/mobile/src'));
+  archivos.push(join(RAIZ, 'apps/mobile/App.tsx'));
+  assert.ok(archivos.length >= 60, `se esperaban los archivos de la APK, hay ${archivos.length}`);
+  const hallazgos = [];
+  for (const a of archivos) {
+    const contenido = readFileSync(a, 'utf8');
+    for (const { texto, linea } of textosDe(a, contenido)) if (GLIFOS.test(texto)) hallazgos.push(`${a.slice(RAIZ.length + 1)}:${linea} escribe ${JSON.stringify(texto)}`);
+    // Los comentarios no cuentan: el de icono.tsx explica por qué no se usa.
+    const codigo = contenido.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    if (/\bSvgXml\b/.test(codigo)) hallazgos.push(`${a.slice(RAIZ.length + 1)} usa SvgXml`);
+  }
+  assert.deepEqual(hallazgos, []);
+  assert.ok(GLIFOS.test('✓ Guardado') && GLIFOS.test('‹ Anterior') && !GLIFOS.test('Anterior'), 'la guardia reconoce los glifos');
 });

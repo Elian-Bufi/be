@@ -20,7 +20,10 @@ Cada una tiene sus etapas (planes activados en el pasado, con la revisión que l
 comidas con lo que pasa de verdad (porciones del plan, cantidades informadas, sin confirmar, comidas diferentes los
 fines de semana, cargas del día siguiente), sesiones por serie con la carga de cada una, faltas y desvíos, y tomas
 antropométricas con el perfil completo y sus cálculos (IMC, suma de seis pliegues, % de grasa de Durnin-Womersley,
-índice cintura-talla; RFM para Héctor). La historia es reproducible: con el mismo día, la misma en local y en test.
+índice cintura-talla; RFM para Héctor). Desde TB-24 (WP-TABLERO-ALTA-GAMA), Diego y Camila tienen también la masa grasa y
+la masa libre de grasa de Durnin y Womersley en cada toma, para la composición corporal en kg; Héctor, sin pliegues, queda
+como el caso sin método. **Ese cambio no está cargado en la base de `test`:** se carga ahí cuando Dirección lo decida (pide
+la IP del operador). La historia es reproducible: con el mismo día, la misma en local y en test.
 
 ## Cómo se carga
 
@@ -28,7 +31,8 @@ antropométricas con el perfil completo y sus cálculos (IMC, suma de seis plieg
 node cargar.mjs <local|test> profesionales   # las tres cuentas profesionales y BE_DEMO_PROFESIONALES
 # (reiniciar la API con ese valor: en local, entorno.sh; en test, el PR solo de configuración #160)
 node cargar.mjs <local|test> ejercicios      # los ejercicios propios de Martín Acosta
-node cargar.mjs <local|test> personas        # las seis personas, en pasos que se retoman si algo se corta
+node cargar.mjs <local|test> personas        # las seis personas, en pasos que se retoman si algo se corta, y lo que
+                                             # comparten entre áreas (TB-52 a TB-56; sin la familia RES, lo dice y sigue)
 node cargar.mjs test nombres-demo            # el nombre de DEMO-A01 y DEMO-A02
 node cargar.mjs <local|test> resumen
 ```

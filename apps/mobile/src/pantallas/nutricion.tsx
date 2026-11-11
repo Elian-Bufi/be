@@ -333,7 +333,7 @@ function DetalleDeRegistro({
       {registro.meal ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.comida} valor={registro.meal.label} /> : null}
       <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.cuando} valor={fecha(registro.occurredAt)} />
       <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.registrado} valor={fecha(registro.recordedAt)} />
-      {registro.observation ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.observacion} valor={registro.observation} /> : null}
+      {registro.observation ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.observacion} valor={registro.observation} apilado /> : null}
       {deUnaOpcion ? (
         <OpcionRegistrada token={token} registro={registro} sesionPerdida={sesionPerdida} />
       ) : (
@@ -410,7 +410,7 @@ function ComidaDiferenteRegistrada({
     <View>
       <Seccion titulo={COPY_REGISTRO_DE_COMIDAS.comisteAlgoDiferente}>
         {registro.description ? <Parrafo>{registro.description}</Parrafo> : null}
-        {registro.approximateQuantity ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.cantidadAproximadaInformada} valor={registro.approximateQuantity} /> : null}
+        {registro.approximateQuantity ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.cantidadAproximadaInformada} valor={registro.approximateQuantity} apilado /> : null}
         {registro.evidence.map((foto) => (
           <View key={foto.mediaId} style={s.foto}>
             <ImagenDeMedio token={token} mediaId={foto.mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.tuFoto} proporcion={4 / 3} />
