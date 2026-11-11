@@ -47,51 +47,18 @@ const CODIGO = { APRUEBA: 0, VULNERABILIDADES: 1, NO_SE_PUDO_AUDITAR: 2 };
  *
  * Retirada el 2026-10-24, por decisión de Dirección (DL-114): la de braces (GHSA-vfj7-8cjw-p6xm). GitHub retiró ese aviso
  * el 2026-10-23 a las 12:53 UTC y npm dejó de informarlo; si volviera, bloquea como cualquier otro.
+ *
+ * Retiradas el 2026-11-11, con UF-12 de WP-USO-FINAL (UF-D13, ratificada por Dirección ese día): las dos que quedaban,
+ * renovadas hasta el 2026-11-30. Desde entonces no hay ninguna, y la auditoría no depende de una fecha.
+ *   - node-forge (GHSA-86w9-cpqp-85rv): el aviso abarca hasta la 1.4.0, y el lockfile tiene la 1.4.2 desde el 2026-11-02
+ *     (35ce031). Con UF-12 pasa a la 1.4.3, que corrige también los cuatro avisos medios y bajos del 2026-11-10.
+ *   - zod (GHSA-mrhx-c7xc-m3w5): la CLI de Expo 57.0.33 (2026-11-05, del mismo SDK 57: «Remove the Zod production
+ *     dependency») ya no lo pide. El zod 3 que queda en el lockfile lo usa solo chromium-bidi, de Puppeteer, que es de
+ *     desarrollo. La APK sigue validando con el zod 4.6.6 de @be/domain.
+ * El mecanismo de la procedencia queda para una excepción futura: se prueba con aquellas dos declaraciones, copiadas en
+ * `auditoria-de-dependencias.test.cjs`. Declarar o renovar una excepción sigue siendo una decisión de Dirección.
  */
-const EXCEPCIONES = [
-  {
-    aviso: 'GHSA-86w9-cpqp-85rv',
-    paquete: 'node-forge',
-    // Solo en la APK, y solo en la cadena de construcción: en la API y el website el aviso tiene que seguir bloqueando.
-    espacios: ['@be/mobile'],
-    // Renovada por Dirección el 2026-10-24 hasta el 2026-11-30 (DL-114), acotada a lo que se comprobó: si algo de esto
-    // cambia (otra copia u otra versión, un paquete más que lo use en producción, el bundle), deja de valer.
-    procedencia: {
-      copia: { ubicacion: 'node_modules/node-forge', version: '1.4.0' },
-      // La CLI de Expo lo usa directo y también por su paquete de firma, que usa solo ella.
-      tambienPor: [{ ubicacion: 'node_modules/@expo/code-signing-certificates', version: '0.0.6' }],
-      // De la copia hacia la APK: @be/mobile → expo → @expo/cli → node-forge.
-      cadena: [
-        { ubicacion: 'node_modules/@expo/cli', version: '57.0.25' },
-        { ubicacion: 'node_modules/expo', version: '57.0.23' },
-      ],
-      fueraDelBundle: 'android',
-    },
-    motivo:
-      'Sin versión corregida: el aviso (la verificación de firmas RSA PKCS#1 v1.5 acepta elementos de más; actualizado el 2026-10-01) abarca hasta la 1.4.0, la última publicada, y @expo/code-signing-certificates 0.0.7 y las CLI de Expo 57.0.32 y 58.1.15 siguen dependiendo de ella (comprobado el 2026-10-24). node-forge entra por la CLI de Expo, que lo usa para firmar manifiestos de expo-updates y para la firma de iOS: BE no configura ninguna de las dos. Por eso la excepción exige, en cada corrida, que en producción lo usen solo la CLI y su paquete de firma, y que el bundle de Android no tenga ningún módulo suyo; en la API y el website bloquea. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
-    vence: '2026-11-30',
-  },
-  {
-    aviso: 'GHSA-mrhx-c7xc-m3w5',
-    paquete: 'zod',
-    // Solo en la APK: en la API y el website, zod se corrige (4.6.6) y el aviso tiene que seguir bloqueando.
-    espacios: ['@be/mobile'],
-    // Ratificada por Dirección el 2026-10-24 con estas condiciones (DL-114), y renovada el mismo día hasta el 2026-11-30
-    // con las mismas: es lo que se comprobó, y lo único que cubre. Si algo de esto cambia, deja de valer.
-    procedencia: {
-      copia: { ubicacion: 'node_modules/zod', version: '3.25.76' },
-      // De la copia hacia la APK: @be/mobile → expo → @expo/cli → zod.
-      cadena: [
-        { ubicacion: 'node_modules/@expo/cli', version: '57.0.25' },
-        { ubicacion: 'node_modules/expo', version: '57.0.23' },
-      ],
-      fueraDelBundle: 'android',
-    },
-    motivo:
-      'Sin versión 3.x corregida: el aviso (agotamiento de memoria al validar listas muy grandes; actualizado el 2026-10-23) abarca todo zod anterior a la 4.6.6, y la CLI de Expo (@expo/cli 57.0.25) exige zod ^3.25.76. Ese zod 3 está en la raíz (node_modules/zod): lo recibiría cualquier import de zod fuera de @be/domain. Por eso la excepción exige, en cada corrida, que en producción lo use solo la CLI de Expo y que el bundle de Android no tenga ningún módulo suyo. La CLI lo carga también al construir el bundle (export:embed, el paso de Gradle), para validar la definición de los complementos de DevTools que declaran los paquetes instalados, no datos de las personas. La APK valida con el zod 4.6.6 de @be/domain, corregido en el mismo cambio. El riesgo es bajo y acotado a la cadena de construcción (la CI y la máquina que construye la APK), no nulo.',
-    vence: '2026-11-30',
-  },
-];
+const EXCEPCIONES = [];
 
 /** El identificador del aviso: `GHSA-…`, tomado de su URL. */
 const idDelAviso = (via) => (typeof via.url === 'string' ? via.url.split('/').pop() : String(via.source));

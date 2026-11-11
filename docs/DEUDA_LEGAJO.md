@@ -118,7 +118,7 @@
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
-| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vence el 2026-12-01 00:00 UTC (21:00 ART del 30/11), sin renovación automática |
+| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vencían el 2026-12-01 00:00 UTC (21:00 ART del 30/11) · **RETIRADAS LAS DOS** el 2026-11-11 con UF-12 de WP-USO-FINAL (UF-D13, ratificada por Dirección ese día), en el PR #253 sin integrar: node-forge pasa a la 1.4.3, fuera del aviso, y la CLI de Expo 57.0.33 (SDK 57) ya no pide zod; sin excepciones, la auditoría no vence |
 | DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios` (#133), integrada en `main` el 2026-10-03 con la candidata 0.13.2 (#140, `2f0c140`) y publicada en la APK 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección · la solución preparada (opción A, API-CAR-01) está en `main` desde el 2026-10-03 (#135, con la candidata 0.13.2, `2f0c140`) |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación integrada en `main` el 2026-10-06 (#146, `d727226`) |
@@ -3009,6 +3009,36 @@ CI de todas las ramas.
   2026-11-30, con Dirección, como dice esta entrada.
 - **Decisión:** Dirección autorizó el 2026-11-02 seguir las recomendaciones salvo una decisión crítica; esto corrige y no
   amplía nada.
+
+**Retiradas las dos el 2026-11-11 (UF-12 de WP-USO-FINAL, PR #253, sin integrar).** Dirección ratificó ese día UF-D13:
+retirar la de node-forge y, para la de zod, ver si un parche del mismo SDK la resuelve antes de pensar en renovarla.
+Las fuentes, revisadas el 2026-11-11 con `gh api advisories/<GHSA>` y `npm view`:
+- **node-forge:** GHSA-86w9-cpqp-85rv sigue abarcando hasta la 1.4.0 y el lockfile tiene la 1.4.2 desde el 2026-11-02.
+  El 2026-11-10 GitHub publicó cuatro avisos más (GHSA-6889-vf6x-f3g5, bajo; GHSA-w4xr-hqv8-ch44, GHSA-6cv4-p8m7-4r25 y
+  GHSA-j8rw-jp99-435v, medios), hasta la 1.4.2 y corregidos en la 1.4.3. No frenan la auditoría, que falla con altos y
+  críticos, pero el lockfile pasa a la 1.4.3, que cumple el `^1.3.3` de la CLI y de su paquete de firma.
+- **zod:** la CLI de Expo 57.0.33, publicada el 2026-11-05 y del mismo SDK 57, dice en su registro de cambios «Remove the
+  Zod production dependency by using schema-utils for DevTools validation». `expo` 57.0.23, el que usa la APK, pide
+  `^57.0.25`: la 57.0.33 entra en ese rango sin tocar `apps/mobile/package.json`. El lockfile se regeneró solo para la
+  CLI (`npm update @expo/cli --package-lock-only`, en una carpeta aislada):
+  - suben, en parches del SDK 57, la CLI y los paquetes de construcción que pide (`@expo/config`, `@expo/config-plugins`,
+    `@expo/metro-config`, `@expo/prebuild-config`, `expo-modules-autolinking` 57.0.17 y otros); ningún módulo nativo
+    que declara la APK cambia de versión;
+  - el zod 3.25.76 de la raíz queda solo para chromium-bidi, de Puppeteer, que es de desarrollo, y `npm audit
+    --omit=dev` no lo cuenta;
+  - el router de servidor de la CLI pide `expo-constants` ^57.0.23 como dependencia par, así que npm anida una copia
+    57.0.23 bajo `expo`. Es el mismo arreglo que ya tenía `expo-notifications` con su copia 57.0.22: el módulo nativo
+    que se enlaza sigue siendo el 57.0.18 que fija la APK.
+- **Sin excepciones,** `EXCEPCIONES` queda vacía y la auditoría no depende de una fecha: no falla el 2026-12-01. El
+  mecanismo de la procedencia queda para una excepción futura; sus pruebas lo ejercitan con las dos declaraciones
+  retiradas, copiadas tal cual. Los escenarios con npm de verdad (`npm run audit:escenarios`) pasaron a ser nueve:
+  sin cambios, el 2026-12-01, aprueban la APK, la API y el website; y la CLI 57.0.25 de vuelta, zod 3 en la APK, en una
+  biblioteca de la APK o en la API, y node-forge 1.4.0 en la APK o en la API, bloquean. Los nueve dieron lo esperado el
+  2026-11-11.
+- **Lo que falta y a qué prestar atención:** la CLI nueva construye el bundle y prepara el proyecto nativo de la APK.
+  Que la app no se rompió se comprueba al construir la próxima candidata (0.24.0-candidata.1) y probarla en el
+  teléfono. Si esa construcción fallara por la CLI, la salida es volver este cambio del lockfile y que Dirección decida
+  si renueva la de zod hasta el SDK siguiente: la excepción no vuelve sola.
 
 ---
 

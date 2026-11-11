@@ -116,13 +116,48 @@ test('una excepción acotada a un espacio no vale en otro: el zod de la CLI de E
   // De punta a punta, por la salida de npm: en la API bloquea; en la APK, se informa exceptuado.
   assert.equal(evaluarSalida('@be/api', salida(aviso('zod', 'GHSA-mrhx-c7xc-m3w5', 'high')), [zod], HOY).codigo, CODIGO.VULNERABILIDADES);
   assert.equal(evaluarSalida('@be/mobile', salida(aviso('zod', 'GHSA-mrhx-c7xc-m3w5', 'high')), [zod], HOY).codigo, CODIGO.APRUEBA);
-  // Y la declarada en el repositorio es la de la APK, no la de la API ni la del website.
-  assert.deepEqual(EXCEPCIONES.find((e) => e.paquete === 'zod')?.espacios, ['@be/mobile']);
 });
 
 // ─── Procedencia: la excepción de zod vale solo para la cadena que se comprobó (propuesta del 2026-10-24) ───────
 
-const ZOD = EXCEPCIONES.find((e) => e.paquete === 'zod');
+/**
+ * Las dos excepciones como estaban declaradas hasta el 2026-11-11, copiadas tal cual. UF-12 (WP-USO-FINAL, UF-D13) las
+ * retiró: node-forge salió del aviso con la 1.4.2 y la CLI de Expo 57.0.33 dejó de pedir zod (DL-114). El mecanismo de la
+ * procedencia queda en el script, sin excepciones declaradas, para la próxima que decida Dirección: estas pruebas lo
+ * siguen ejercitando con aquellas dos declaraciones.
+ */
+const ZOD = {
+  aviso: 'GHSA-mrhx-c7xc-m3w5',
+  paquete: 'zod',
+  espacios: ['@be/mobile'],
+  procedencia: {
+    copia: { ubicacion: 'node_modules/zod', version: '3.25.76' },
+    cadena: [
+      { ubicacion: 'node_modules/@expo/cli', version: '57.0.25' },
+      { ubicacion: 'node_modules/expo', version: '57.0.23' },
+    ],
+    fueraDelBundle: 'android',
+  },
+  motivo: 'Copia de la declaración retirada el 2026-11-11: el zod 3 de la CLI de Expo 57.0.25, solo en la cadena de construcción de la APK.',
+  vence: '2026-11-30',
+};
+const FORGE = {
+  aviso: 'GHSA-86w9-cpqp-85rv',
+  paquete: 'node-forge',
+  espacios: ['@be/mobile'],
+  procedencia: {
+    copia: { ubicacion: 'node_modules/node-forge', version: '1.4.0' },
+    tambienPor: [{ ubicacion: 'node_modules/@expo/code-signing-certificates', version: '0.0.6' }],
+    cadena: [
+      { ubicacion: 'node_modules/@expo/cli', version: '57.0.25' },
+      { ubicacion: 'node_modules/expo', version: '57.0.23' },
+    ],
+    fueraDelBundle: 'android',
+  },
+  motivo: 'Copia de la declaración retirada el 2026-11-11: node-forge 1.4.0 de la CLI de Expo y de su paquete de firma, solo en la cadena de construcción de la APK.',
+  vence: '2026-11-30',
+};
+const RETIRADAS = [FORGE, ZOD];
 const AVISO_ZOD = { source: 1, name: 'zod', dependency: 'zod', title: 'Zod can exhaust memory while validating oversized constrained collections', url: 'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5', severity: 'high', range: '<4.6.6' };
 
 /** La salida de npm para la APK con la forma real del 2026-10-24: el zod de la raíz, con la CLI y expo de intermedios. */
@@ -191,7 +226,7 @@ const texto = (r) => r.lineas.join('\n');
 
 test('zod con la procedencia demostrada: se exceptúa, y la salida dice de dónde viene y qué zod viaja en la APK', () => {
   const ctx = contexto();
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, ctx);
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, ctx);
   assert.equal(r.codigo, CODIGO.APRUEBA, texto(r));
   assert.match(texto(r), /exceptuado hasta el 2026-11-30 · zod · GHSA-mrhx-c7xc-m3w5 \(DL-114\)/);
   assert.match(texto(r), /procedencia comprobada en package-lock\.json: node_modules\/zod 3\.25\.76 ← @expo\/cli 57\.0\.25 ← expo 57\.0\.23 ← @be\/mobile/);
@@ -202,7 +237,7 @@ test('zod con la procedencia demostrada: se exceptúa, y la salida dice de dónd
 
 test('la APK declara zod 3: la excepción no lo tapa, y bloquea sin necesidad de construir el bundle', () => {
   const ctx = contexto({ lock: lockfile({ 'apps/mobile': dependenciasDeLaApk({ zod: '3.25.76' }) }) });
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, ctx);
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, ctx);
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /✗ @be\/mobile: high · zod · GHSA-mrhx-c7xc-m3w5 · la excepción no cubre esta ruta: apps\/mobile \(@be\/mobile\) también usa node_modules\/zod en producción/);
   assert.doesNotMatch(texto(r), /exceptuado/);
@@ -214,7 +249,7 @@ test('una biblioteca que viaja en la APK trae zod 3: bloquea', () => {
     'apps/mobile': dependenciasDeLaApk({ 'graficos-de-ejecucion': '1.0.0' }),
     'node_modules/graficos-de-ejecucion': { version: '1.0.0', dependencies: { zod: '^3.22.0' } },
   });
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, contexto({ lock }));
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, contexto({ lock }));
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /node_modules\/graficos-de-ejecucion \(graficos-de-ejecucion 1\.0\.0\) también usa node_modules\/zod en producción/);
 });
@@ -222,7 +257,7 @@ test('una biblioteca que viaja en la APK trae zod 3: bloquea', () => {
 test('la APK importa zod sin declararlo: el lockfile no lo ve, el bundle sí, y bloquea', () => {
   const bundle = { ...BUNDLE, fuentes: [...BUNDLE.fuentes, '/apps/mobile/src/validar.ts', '/node_modules/zod/index.cjs', '/node_modules/zod/v3/types.cjs'] };
   const ctx = contexto({ bundle });
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, ctx);
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, ctx);
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /la excepción no cubre esta ruta: el bundle de Android incluye 2 módulos de node_modules\/zod \(3\.25\.76\): la APK la usaría al ejecutarse/);
   assert.equal(ctx.bundlesPedidos, 1);
@@ -230,10 +265,10 @@ test('la APK importa zod sin declararlo: el lockfile no lo ve, el bundle sí, y 
 
 test('npm encuentra otra copia vulnerable, por ejemplo anidada en la APK o con otro nombre (un alias): bloquea', () => {
   const lock = lockfile({ 'apps/mobile': dependenciasDeLaApk({ zod: '3.22.4' }), 'apps/mobile/node_modules/zod': { version: '3.22.4' } });
-  const anidada = evaluarSalida('@be/mobile', salidaDeLaApk({ nodos: ['node_modules/zod', 'apps/mobile/node_modules/zod'] }), EXCEPCIONES, HOY, contexto({ lock }));
+  const anidada = evaluarSalida('@be/mobile', salidaDeLaApk({ nodos: ['node_modules/zod', 'apps/mobile/node_modules/zod'] }), RETIRADAS, HOY, contexto({ lock }));
   assert.equal(anidada.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(anidada), /npm encontró otra copia vulnerable: apps\/mobile\/node_modules\/zod/);
-  const alias = evaluarSalida('@be/mobile', salidaDeLaApk({ nodos: ['node_modules/zod', 'node_modules/zod3'] }), EXCEPCIONES, HOY, contexto());
+  const alias = evaluarSalida('@be/mobile', salidaDeLaApk({ nodos: ['node_modules/zod', 'node_modules/zod3'] }), RETIRADAS, HOY, contexto());
   assert.equal(alias.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(alias), /npm encontró otra copia vulnerable: node_modules\/zod3/);
 });
@@ -241,25 +276,25 @@ test('npm encuentra otra copia vulnerable, por ejemplo anidada en la APK o con o
 test('una copia vulnerable que npm no cuenta (de desarrollo) pero que entra al bundle: bloquea', () => {
   const lock = lockfile({ 'node_modules/chromium-bidi/node_modules/zod': { version: '3.24.1', dev: true } });
   const bundle = { ...BUNDLE, fuentes: [...BUNDLE.fuentes, '/node_modules/chromium-bidi/node_modules/zod/index.cjs'] };
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, contexto({ lock, bundle }));
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, contexto({ lock, bundle }));
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /el bundle de Android incluye node_modules\/chromium-bidi\/node_modules\/zod \(3\.24\.1\), que el aviso abarca/);
 });
 
 test('si cambia la versión de la copia o de un eslabón, la excepción deja de valer hasta repetir la comprobación', () => {
   for (const [ubicacion, version] of [['node_modules/zod', '3.25.77'], ['node_modules/@expo/cli', '57.0.26'], ['node_modules/expo', '57.0.24']]) {
-    const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, contexto({ lock: lockfile({ [ubicacion]: { version } }) }));
+    const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, contexto({ lock: lockfile({ [ubicacion]: { version } }) }));
     assert.equal(r.codigo, CODIGO.VULNERABILIDADES, ubicacion);
     assert.ok(texto(r).includes(`${ubicacion} es la ${version}, no la`), texto(r));
   }
 });
 
 test('si la propia APK u otro paquete pide la CLI de Expo, la cadena deja de ser exclusiva: bloquea', () => {
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, contexto({ lock: lockfile({ 'apps/mobile': dependenciasDeLaApk({ '@expo/cli': '57.0.25' }) }) }));
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, contexto({ lock: lockfile({ 'apps/mobile': dependenciasDeLaApk({ '@expo/cli': '57.0.25' }) }) }));
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /apps\/mobile \(@be\/mobile\) también usa node_modules\/@expo\/cli en producción/);
   // Y si la APK deja de pedir expo, la cadena declarada no es la que hay.
-  const sinExpo = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, contexto({ lock: lockfile({ 'apps/mobile': { dependencies: { '@be/domain': '0.1.0' } } }) }));
+  const sinExpo = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, contexto({ lock: lockfile({ 'apps/mobile': { dependencies: { '@be/domain': '0.1.0' } } }) }));
   assert.equal(sinExpo.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(sinExpo), /@be\/mobile no pide node_modules\/expo: la cadena no es la declarada/);
 });
@@ -270,7 +305,7 @@ test('la ruta de desarrollo (Puppeteer) no cuenta, pero si pasa a producción es
     'node_modules/puppeteer-core': { dev: undefined },
     'node_modules/chromium-bidi': { dev: undefined },
   });
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, contexto({ lock }));
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, contexto({ lock }));
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /node_modules\/chromium-bidi \(chromium-bidi 17\.0\.2\) también usa node_modules\/zod en producción/);
 });
@@ -289,7 +324,7 @@ test('sin la lista de copias de npm, sin lockfile o sin una entrada del lockfile
   assert.equal(r.codigo, CODIGO.NO_SE_PUDO_AUDITAR, texto(r));
   assert.match(texto(r), /la excepción no declara la copia, su versión y la cadena que la usa/);
   for (const [s, ctx, motivo] of casos) {
-    const r = evaluarSalida('@be/mobile', s, EXCEPCIONES, HOY, ctx);
+    const r = evaluarSalida('@be/mobile', s, RETIRADAS, HOY, ctx);
     assert.equal(r.codigo, CODIGO.NO_SE_PUDO_AUDITAR, texto(r));
     assert.match(texto(r), /no se pudo comprobar la procedencia/);
     assert.match(texto(r), motivo);
@@ -305,25 +340,25 @@ test('si el bundle no se puede construir, no es el de la APK o node_modules no e
     [{ instaladas: { 'packages/domain/node_modules/zod': '4.6.5' } }, /instalada es la 4\.6\.5 y package-lock\.json dice 4\.6\.6: node_modules no corresponde al lockfile/],
   ];
   for (const [opciones, motivo] of casos) {
-    const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, HOY, contexto(opciones));
+    const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, HOY, contexto(opciones));
     assert.equal(r.codigo, CODIGO.NO_SE_PUDO_AUDITAR, texto(r));
     assert.match(texto(r), motivo);
   }
 });
 
 test('si el aviso cambia: un rango que abarca la 4.6.6 hace bloquear al zod del dominio en el bundle; un rango de otra forma no se puede comprobar', () => {
-  const masAmplio = evaluarSalida('@be/mobile', salidaDeLaApk({ rango: '<4.6.7' }), EXCEPCIONES, HOY, contexto());
+  const masAmplio = evaluarSalida('@be/mobile', salidaDeLaApk({ rango: '<4.6.7' }), RETIRADAS, HOY, contexto());
   assert.equal(masAmplio.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(masAmplio), /el bundle de Android incluye packages\/domain\/node_modules\/zod \(4\.6\.6\), que el aviso abarca/);
-  const otraForma = evaluarSalida('@be/mobile', salidaDeLaApk({ rango: '>=3.0.0 <4.6.6' }), EXCEPCIONES, HOY, contexto());
+  const otraForma = evaluarSalida('@be/mobile', salidaDeLaApk({ rango: '>=3.0.0 <4.6.6' }), RETIRADAS, HOY, contexto());
   assert.equal(otraForma.codigo, CODIGO.NO_SE_PUDO_AUDITAR);
   assert.match(texto(otraForma), /no tiene la forma «<X\.Y\.Z»/);
 });
 
 test('vencimiento (renovada el 2026-10-24): el 2026-11-30 todavía vale; desde el 2026-12-01 bloquea aunque la procedencia esté demostrada, y no construye el bundle', () => {
-  assert.equal(evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, '2026-11-30', contexto()).codigo, CODIGO.APRUEBA);
+  assert.equal(evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, '2026-11-30', contexto()).codigo, CODIGO.APRUEBA);
   const ctx = contexto();
-  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, '2026-12-01', ctx);
+  const r = evaluarSalida('@be/mobile', salidaDeLaApk(), RETIRADAS, '2026-12-01', ctx);
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /excepción vencida el 2026-11-30 · zod · GHSA-mrhx-c7xc-m3w5: revisarla en DL-114/);
   assert.equal(ctx.bundlesPedidos, 0);
@@ -332,7 +367,7 @@ test('vencimiento (renovada el 2026-10-24): el 2026-11-30 todavía vale; desde e
 test('en los otros espacios no vale ni con la procedencia demostrada, y no construye el bundle', () => {
   for (const espacio of ['@be/api', '@be/web', '@be/domain', null]) {
     const ctx = contexto();
-    const r = evaluarSalida(espacio, salidaDeLaApk(), EXCEPCIONES, HOY, ctx);
+    const r = evaluarSalida(espacio, salidaDeLaApk(), RETIRADAS, HOY, ctx);
     assert.equal(r.codigo, CODIGO.VULNERABILIDADES, String(espacio));
     assert.match(texto(r), /high · zod · GHSA-mrhx-c7xc-m3w5 · Zod can exhaust memory/);
     assert.equal(ctx.bundlesPedidos, 0, String(espacio));
@@ -346,33 +381,57 @@ test('las copias del bundle se reconocen por su carpeta, con rutas de Windows o 
   assert.deepEqual([...linux], [['node_modules/foo/node_modules/zod', 1]]);
 });
 
-test('las excepciones declaradas exigen procedencia y bundle, y son solo las dos que Dirección renovó el 2026-10-24, hasta el 2026-11-30', () => {
-  assert.deepEqual(ZOD.espacios, ['@be/mobile']);
-  assert.deepEqual(ZOD.procedencia.copia, { ubicacion: 'node_modules/zod', version: '3.25.76' });
-  assert.deepEqual(ZOD.procedencia.cadena, [
-    { ubicacion: 'node_modules/@expo/cli', version: '57.0.25' },
-    { ubicacion: 'node_modules/expo', version: '57.0.23' },
-  ]);
-  assert.equal(ZOD.procedencia.tambienPor, undefined, 'la del zod tiene las mismas condiciones que se ratificaron: un solo camino');
-  assert.equal(ZOD.procedencia.fueraDelBundle, 'android');
-  // braces se retiró (GitHub retiró el aviso el 2026-10-23); ninguna vale más allá del 2026-11-30.
-  assert.deepEqual(EXCEPCIONES.map((e) => `${e.aviso} · ${e.paquete} · ${e.vence}`), ['GHSA-86w9-cpqp-85rv · node-forge · 2026-11-30', 'GHSA-mrhx-c7xc-m3w5 · zod · 2026-11-30']);
+// ─── UF-12 (WP-USO-FINAL, UF-D13): DL-114 sin excepciones desde el 2026-11-11 ────────────────────────────────────
+
+/** `a` < `b`, con versiones X.Y.Z (una versión previa, como «-rc.1», cuenta como anterior a su X.Y.Z). */
+function anterior(a, b) {
+  const [va, pa] = String(a).split('-');
+  const x = va.split('.').map(Number);
+  const y = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
+  return pa !== undefined;
+}
+const copiasEnElLock = (lock, paquete) => Object.keys(lock.packages).filter((u) => u === `node_modules/${paquete}` || u.endsWith(`/node_modules/${paquete}`));
+
+test('TEST-UF-016 · no queda ninguna excepción: zod 3 o node-forge abarcado en la APK bloquean cualquier día, antes y después del 2026-11-30', () => {
+  assert.deepEqual(EXCEPCIONES, [], 'declarar o renovar una excepción es una decisión de Dirección (DL-114), no una prórroga de la CI');
+  for (const hoy of ['2026-11-11', '2026-11-30', '2026-12-01']) {
+    const zod = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, hoy, contexto());
+    assert.equal(zod.codigo, CODIGO.VULNERABILIDADES, `${hoy}: ${texto(zod)}`);
+    assert.match(texto(zod), /✗ @be\/mobile: high · zod · GHSA-mrhx-c7xc-m3w5 · Zod can exhaust memory/);
+    const forge = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, hoy, contexto());
+    assert.equal(forge.codigo, CODIGO.VULNERABILIDADES, `${hoy}: ${texto(forge)}`);
+    assert.doesNotMatch(`${texto(zod)}\n${texto(forge)}`, /exceptuado/);
+  }
 });
 
-test('con el package-lock.json del repositorio, la procedencia declarada es la que hay', () => {
+test('TEST-UF-016 · con el package-lock.json del repositorio, ningún zod ni node-forge que un aviso abarque se usa en producción', () => {
   const lock = require('../package-lock.json');
-  const r = procedenciaEnElLockfile({ paquete: 'zod', rango: '<4.6.6', nodos: ['node_modules/zod'] }, ZOD, '@be/mobile', lock);
-  assert.equal(r.estado, 'demostrada', JSON.stringify(r.detalle));
-  assert.match(r.detalle[0], /node_modules\/zod 3\.25\.76 ← @expo\/cli 57\.0\.25 ← expo 57\.0\.23 ← @be\/mobile/);
-  // En producción, la usa solo la CLI de Expo; el dominio tiene su propio zod corregido.
-  assert.deepEqual(usuariosDe(lock.packages, 'node_modules/zod').produccion, ['node_modules/@expo/cli']);
-  assert.deepEqual(usuariosDe(lock.packages, 'packages/domain/node_modules/zod').produccion, ['packages/domain']);
-  assert.equal(lock.packages['packages/domain/node_modules/zod'].version, '4.6.6');
+  // zod: GHSA-mrhx-c7xc-m3w5 abarca todo lo anterior a la 4.6.6. Una copia más vieja puede quedar, solo para desarrollo
+  // (hoy, la de chromium-bidi, de Puppeteer): `npm audit --omit=dev` no la cuenta y nada de producción la usa.
+  const viejas = copiasEnElLock(lock, 'zod').filter((u) => anterior(lock.packages[u].version, '4.6.6'));
+  for (const u of viejas) {
+    assert.equal(lock.packages[u].dev, true, `${u} ${lock.packages[u].version} no está marcada de desarrollo`);
+    assert.deepEqual(usuariosDe(lock.packages, u).produccion, [], `${u} ${lock.packages[u].version} se usa en producción`);
+  }
+  // La CLI de Expo que construye la APK ya no pide zod (57.0.33, «Remove the Zod production dependency»).
+  const clis = copiasEnElLock(lock, '@expo/cli');
+  assert.ok(clis.length > 0, 'la CLI de Expo no está en el lockfile');
+  for (const u of clis) assert.equal(lock.packages[u].dependencies?.zod, undefined, `${u} ${lock.packages[u].version} pide zod`);
+  // El dominio valida con el zod corregido.
+  assert.equal(lock.packages['packages/domain/node_modules/zod']?.version ?? lock.packages['node_modules/zod'].version, '4.6.6');
+  // node-forge: GHSA-86w9-cpqp-85rv abarca hasta la 1.4.0 (alto); los cuatro avisos del 2026-11-10 (medios y bajos),
+  // hasta la 1.4.2. Ninguna copia queda adentro.
+  const forges = copiasEnElLock(lock, 'node-forge');
+  assert.ok(forges.length > 0);
+  for (const u of forges) assert.ok(!anterior(lock.packages[u].version, '1.4.3'), `${u} ${lock.packages[u].version} está dentro de <=1.4.2`);
+  // Con la 1.4.0 declarada, la excepción retirada tampoco se demostraría hoy: si volviera, no tapa la copia nueva.
+  const r = procedenciaEnElLockfile({ paquete: 'node-forge', rango: '<=1.4.0', nodos: ['node_modules/node-forge'] }, FORGE, '@be/mobile', lock);
+  assert.notEqual(r.estado, 'demostrada', JSON.stringify(r.detalle));
 });
 
 // ─── node-forge: renovada el 2026-10-24 hasta el 2026-11-30, solo en la cadena de construcción de la APK ──────────
 
-const FORGE = EXCEPCIONES.find((e) => e.paquete === 'node-forge');
 const AVISO_FORGE = {
   source: 1,
   name: 'node-forge',
@@ -396,7 +455,7 @@ function salidaConForge({ nodos = ['node_modules/node-forge'], rango = '<=1.4.0'
 
 test('node-forge con la procedencia demostrada: se exceptúa en la APK, por sus dos caminos dentro de la CLI, y el bundle no lo tiene', () => {
   const ctx = contexto();
-  const r = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, ctx);
+  const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, ctx);
   assert.equal(r.codigo, CODIGO.APRUEBA, texto(r));
   assert.match(texto(r), /exceptuado hasta el 2026-11-30 · node-forge · GHSA-86w9-cpqp-85rv \(DL-114\)/);
   assert.match(texto(r), /procedencia comprobada en package-lock\.json: node_modules\/node-forge 1\.4\.0 ← @expo\/cli 57\.0\.25 ← expo 57\.0\.23 ← @be\/mobile; también node_modules\/node-forge ← @expo\/code-signing-certificates 0\.0\.6 ← @expo\/cli/);
@@ -407,7 +466,7 @@ test('node-forge con la procedencia demostrada: se exceptúa en la APK, por sus 
 test('node-forge en la API o el website bloquea aunque la procedencia esté demostrada, y no construye el bundle', () => {
   for (const espacio of ['@be/api', '@be/web', null]) {
     const ctx = contexto();
-    const r = evaluarSalida(espacio, salidaConForge(), EXCEPCIONES, HOY, ctx);
+    const r = evaluarSalida(espacio, salidaConForge(), RETIRADAS, HOY, ctx);
     assert.equal(r.codigo, CODIGO.VULNERABILIDADES, String(espacio));
     assert.match(texto(r), /high · node-forge · GHSA-86w9-cpqp-85rv/);
     assert.equal(ctx.bundlesPedidos, 0, String(espacio));
@@ -420,12 +479,12 @@ test('una dependencia de la APK que trae node-forge para ejecutarse no queda exc
     'node_modules/firmas-en-el-telefono': { version: '1.0.0', dependencies: { 'node-forge': '^1.3.0' } },
   });
   const ctx = contexto({ lock });
-  const r = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, ctx);
+  const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, ctx);
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /la excepción no cubre esta ruta: node_modules\/firmas-en-el-telefono \(firmas-en-el-telefono 1\.0\.0\) también usa node_modules\/node-forge en producción/);
   assert.equal(ctx.bundlesPedidos, 0);
   // La propia APK que lo declara, igual.
-  const directa = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ lock: lockfile({ 'apps/mobile': dependenciasDeLaApk({ 'node-forge': '1.4.0' }) }) }));
+  const directa = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ lock: lockfile({ 'apps/mobile': dependenciasDeLaApk({ 'node-forge': '1.4.0' }) }) }));
   assert.equal(directa.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(directa), /apps\/mobile \(@be\/mobile\) también usa node_modules\/node-forge en producción/);
 });
@@ -435,26 +494,26 @@ test('si otro paquete usa el de firma de Expo (por ejemplo expo-updates en la AP
     'apps/mobile': dependenciasDeLaApk({ 'expo-updates': '57.0.4' }),
     'node_modules/expo-updates': { version: '57.0.4', dependencies: { '@expo/code-signing-certificates': '0.0.6' } },
   });
-  const r = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ lock }));
+  const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ lock }));
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /node_modules\/expo-updates \(expo-updates 57\.0\.4\) también usa node_modules\/@expo\/code-signing-certificates en producción/);
 });
 
 test('si un camino declarado ya no existe, la declaración quedó vieja: no vale hasta revisarla', () => {
   const sinForge = lockfile({ 'node_modules/@expo/code-signing-certificates': { dependencies: {} } });
-  const r1 = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ lock: sinForge }));
+  const r1 = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ lock: sinForge }));
   assert.equal(r1.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r1), /node_modules\/@expo\/code-signing-certificates ya no usa node_modules\/node-forge/);
   const cli = lockfile().packages['node_modules/@expo/cli'];
   const sinFirma = lockfile({ 'node_modules/@expo/cli': { dependencies: { zod: cli.dependencies.zod, 'node-forge': cli.dependencies['node-forge'] } } });
-  const r2 = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ lock: sinFirma }));
+  const r2 = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ lock: sinFirma }));
   assert.equal(r2.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r2), /node_modules\/@expo\/cli ya no usa node_modules\/@expo\/code-signing-certificates/);
 });
 
 test('si cambia la versión de node-forge, del paquete de firma o de la CLI, deja de valer hasta repetir la comprobación', () => {
   for (const [ubicacion, version] of [['node_modules/node-forge', '1.3.3'], ['node_modules/@expo/code-signing-certificates', '0.0.7'], ['node_modules/@expo/cli', '57.0.26']]) {
-    const r = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ lock: lockfile({ [ubicacion]: { version } }) }));
+    const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ lock: lockfile({ [ubicacion]: { version } }) }));
     assert.equal(r.codigo, CODIGO.VULNERABILIDADES, ubicacion);
     assert.ok(texto(r).includes(`${ubicacion} es la ${version}, no la`), texto(r));
   }
@@ -462,13 +521,13 @@ test('si cambia la versión de node-forge, del paquete de firma o de la CLI, dej
 
 test('node-forge en el bundle de Android: la copia declarada u otra que el aviso abarque (<=1.4.0) bloquean; una fuera del rango, no', () => {
   const conLaDeclarada = { ...BUNDLE, fuentes: [...BUNDLE.fuentes, '/node_modules/node-forge/lib/forge.js'] };
-  const r1 = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ bundle: conLaDeclarada }));
+  const r1 = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ bundle: conLaDeclarada }));
   assert.equal(r1.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r1), /el bundle de Android incluye 1 módulos de node_modules\/node-forge \(1\.4\.0\): la APK la usaría al ejecutarse/);
   const otra = { ...BUNDLE, fuentes: [...BUNDLE.fuentes, '/node_modules/firmas/node_modules/node-forge/lib/rsa.js'] };
   for (const [version, codigo] of [['1.4.0', CODIGO.VULNERABILIDADES], ['1.3.1', CODIGO.VULNERABILIDADES], ['1.4.0-rc.1', CODIGO.VULNERABILIDADES], ['1.4.1', CODIGO.APRUEBA]]) {
     const lock = lockfile({ 'node_modules/firmas/node_modules/node-forge': { version, dev: true } });
-    const r = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ lock, bundle: otra }));
+    const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ lock, bundle: otra }));
     assert.equal(r.codigo, codigo, `${version}: ${texto(r)}`);
     if (codigo === CODIGO.VULNERABILIDADES) assert.match(texto(r), /node_modules\/firmas\/node_modules\/node-forge .*que el aviso abarca/);
     else assert.match(texto(r), /node-forge en el bundle: node_modules\/firmas\/node_modules\/node-forge 1\.4\.1 \(1 módulos\)/);
@@ -476,7 +535,7 @@ test('node-forge en el bundle de Android: la copia declarada u otra que el aviso
 });
 
 test('sin el paquete de firma en el lockfile, o con un camino declarado sin versión, no se puede comprobar: no aprueba (2)', () => {
-  const r = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, HOY, contexto({ lock: lockfile({ 'node_modules/@expo/code-signing-certificates': null }) }));
+  const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, HOY, contexto({ lock: lockfile({ 'node_modules/@expo/code-signing-certificates': null }) }));
   assert.equal(r.codigo, CODIGO.NO_SE_PUDO_AUDITAR, texto(r));
   assert.match(texto(r), /node_modules\/@expo\/code-signing-certificates no está en package-lock\.json/);
   const sinVersion = { ...FORGE, procedencia: { ...FORGE.procedencia, tambienPor: [{ ubicacion: 'node_modules/@expo/code-signing-certificates' }] } };
@@ -486,27 +545,16 @@ test('sin el paquete de firma en el lockfile, o con un camino declarado sin vers
 });
 
 test('vencimiento de node-forge: el 2026-11-30 vale; desde el 2026-12-01 bloquea, y no se renueva sola', () => {
-  assert.equal(evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, '2026-11-30', contexto()).codigo, CODIGO.APRUEBA);
-  const r = evaluarSalida('@be/mobile', salidaConForge(), EXCEPCIONES, '2026-12-01', contexto());
+  assert.equal(evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, '2026-11-30', contexto()).codigo, CODIGO.APRUEBA);
+  const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, '2026-12-01', contexto());
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /excepción vencida el 2026-11-30 · node-forge · GHSA-86w9-cpqp-85rv: revisarla en DL-114/);
 });
 
 test('braces ya no está exceptuado: si GitHub volviera a publicar el aviso, bloquea como cualquier otro', () => {
-  const r = evaluarSalida('@be/mobile', salida(aviso('braces', 'GHSA-vfj7-8cjw-p6xm', 'high')), EXCEPCIONES, HOY, contexto());
-  assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
-  assert.match(texto(r), /✗ @be\/mobile: high · braces · GHSA-vfj7-8cjw-p6xm/);
-});
-
-test('con el package-lock.json del repositorio, node-forge ya está corregido y la excepción de la 1.4.0 no lo cubre (DL-114, 2026-11-02)', () => {
-  const lock = require('../package-lock.json');
-  // El aviso exceptuado y los cinco del 2026-10-30 abarcan hasta la 1.4.0: la copia del lockfile tiene que quedar afuera.
-  const instalada = lock.packages['node_modules/node-forge'].version;
-  const [mayor, menor, parche] = instalada.split('.').map(Number);
-  assert.ok(mayor > 1 || (mayor === 1 && (menor > 4 || (menor === 4 && parche > 0))), `node-forge ${instalada} sigue dentro de <=1.4.0`);
-  // La excepción declara la 1.4.0. Con otra versión instalada no se demuestra: si el aviso volviera, bloquea.
-  const r = procedenciaEnElLockfile({ paquete: 'node-forge', rango: '<=1.4.0', nodos: ['node_modules/node-forge'] }, FORGE, '@be/mobile', lock);
-  assert.notEqual(r.estado, 'demostrada', JSON.stringify(r.detalle));
-  assert.deepEqual(usuariosDe(lock.packages, 'node_modules/node-forge').produccion.sort(), ['node_modules/@expo/cli', 'node_modules/@expo/code-signing-certificates']);
-  assert.deepEqual(usuariosDe(lock.packages, 'node_modules/@expo/code-signing-certificates').produccion, ['node_modules/@expo/cli']);
+  for (const excepciones of [EXCEPCIONES, RETIRADAS]) {
+    const r = evaluarSalida('@be/mobile', salida(aviso('braces', 'GHSA-vfj7-8cjw-p6xm', 'high')), excepciones, HOY, contexto());
+    assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
+    assert.match(texto(r), /✗ @be\/mobile: high · braces · GHSA-vfj7-8cjw-p6xm/);
+  }
 });
