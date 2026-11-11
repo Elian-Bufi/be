@@ -501,6 +501,10 @@ EVIDENCE_EXPECTED    La medición de AV-13 con ×1,3 y ×2 (AV-16)
 > publicarla. Son los oráculos de AV-16 que el paquete no numeraba en §8: lo que lee la candidata, lo que pide al
 > instalarse y la prueba en el teléfono. Los dos primeros quedan probados por la CI y por las herramientas del AAB; el
 > tercero es manual y queda **pendiente** hasta que Dirección haga la prueba.
+>
+> La 0.23.0-candidata.2 (2026-11-11, con el arreglo #250, solo de la app) lee lo mismo que la .1: se comparó tag contra
+> tag (`EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`, «La 0.23.0-candidata.2»). TEST-AVR-034 la cubre con lo congelado de la
+> .1; TEST-AVR-035 quedó registrado con los artefactos de la .1; TEST-AVR-036 se hace con la .2.
 
 ## TEST-AVR-034 — Lo que lee la 0.23, congelado y vigente
 

@@ -7,6 +7,10 @@
 > el antes y el después de Inicio, la medición del alto de la sesión y la prueba en el teléfono (TalkBack, letra al máximo
 > y la pantalla bloqueada durante un descanso) son de AV-16 y quedan **pendientes**: ninguna de estas pruebas las da por
 > aprobadas.
+>
+> **La 0.23.0-candidata.2 (2026-11-11):** se publicó con el arreglo del cierre al empezar o continuar un entrenamiento
+> (#250) y es la «latest» que ofrece el website. Lee las mismas operaciones que la .1, porque el arreglo es solo de la app
+> (abajo, «La 0.23.0-candidata.2»). La prueba en el teléfono se hace con ella.
 
 ## Las pruebas y sus mutaciones
 
@@ -142,6 +146,38 @@ APK) y los tres `.sha256`. Salvo el client ID, son copias exactas de los de la P
 
 Los oráculos del cierre, TEST-AVR-034 a 036, están en `docs/paquetes/WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`.
 
+## La 0.23.0-candidata.2
+
+| Dato | Valor |
+|---|---|
+| Archivo | `be-0.23.0-candidata.2-c9ec44f.apk` |
+| SHA-256 | `fa919554ed1f4b2e4fc158473bf52c59aa9c53994844fdfb05bf4bf44f7fbcb5`: la del `.sha256` publicado y la que informa GitHub |
+| Versión | `0.23.0-candidata.2`, versionCode 37 |
+| Commit construido | `c9ec44f151bb7d20a438e3286c7cf8e57705bea3`, en la rama `aab/candidata-0.23.0-2`: `main` con el arreglo (#250, `bb757d9`) más la versión, que solo cambia `apps/mobile/app.config.ts` |
+| Entrega | El release `be-apk-0.23.0-candidata.2`, publicado el 2026-11-11 como «latest»: https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.23.0-candidata.2 |
+
+- **Qué arregla.** En la .1, «Empezar entrenamiento» y «Continuar» cerraban la app. La fila fija de la sesión publicaba
+  un objeto nuevo en cada dibujo, App.tsx la lee con `useSyncExternalStore` y el ciclo no terminaba («Maximum update
+  depth exceeded»). Con #250, integrado en `main` el 2026-11-08, la fila cambia solo cuando cambian sus datos
+  (`apps/mobile/src/almacen-de-la-fila.ts`, con su prueba).
+- **Es la que ofrece el website.** «Descargar la APK de prueba», en la portada, y la descarga de la invitación llevan a
+  `releases/latest`, que desde el 2026-11-11 abre la .2. La .1 quedó como prerelease.
+- **Lee las mismas operaciones que la .1, porque el arreglo es solo de la app.** Se comparó tag contra tag:
+  - entre `be-apk-0.23.0-candidata.1` y `be-apk-0.23.0-candidata.2` cambian cuatro archivos, todos de `apps/mobile`: la
+    versión y el versionCode en `app.config.ts`, el almacén nuevo de la fila (`almacen-de-la-fila.ts` y su prueba) y
+    `fila-fija.tsx`, que pasa a usarlo. `packages/domain` no cambia, ni ningún rótulo;
+  - la versión no viaja a la API: la app la muestra en la bienvenida y no la manda en ninguna cabecera;
+  - `scripts/congelar-lo-que-lee-la-apk.mjs`, corrido sobre el tag de la .2, da lo mismo que lo congelado de la .1 salvo
+    el bloque `apk`: las mismas 88 lecturas, las mismas cabeceras, los mismos textos y el mismo sobre de error.
+
+  Por eso no se sumó un archivo congelado aparte ni cambió `VIGENTES`: el de la .1 cubre lo que lee la .2. La enmienda de
+  DL-152 sobre `VIGENTES` va aparte (WP-USO-FINAL, UF-00).
+- **Cómo se construyó**, según las notas del release: el AAB sin firma salió de la corrida 42526633152 de
+  `aab-sin-firma.yml` (push a `aab/candidata-0.23.0-2`, 2026-11-08). Se firmó y verificó en la PC de Dirección (AAB: todo
+  bien; APK: todo bien, con la .1 de referencia), con el mismo certificado (61569691…893e06). Ese día se probó en un
+  teléfono de Dirección: empezar y continuar un entrenamiento ya no cierra la app. Los registros de esa firma y esa
+  verificación no están en esta carpeta.
+
 ## La prueba de la 0.23
 
 Es la prueba de AV-16 en el teléfono de Dirección. Nada de lo que sigue está aprobado hasta que se haga y se anote en
@@ -160,8 +196,8 @@ Es la prueba de AV-16 en el teléfono de Dirección. Nada de lo que sigue está 
   Android puede demorarlo: eso es lo que se mide en la Parte 5.
 
 **Antes de empezar:**
-- La 0.23 está publicada como prerelease (arriba, «La publicación de la 0.23.0-candidata.1»). Con la sesión cerrada, la
-  bienvenida dice «app 0.23.0-candidata.1 · test · commit 6eac0a7».
+- **Se prueba la 0.23.0-candidata.2** (arriba, «La 0.23.0-candidata.2»): la .1 se cierra al empezar un entrenamiento.
+  Con la sesión cerrada, la bienvenida dice «app 0.23.0-candidata.2 · test · commit c9ec44f».
 - La 0.23 no toca el servidor: el website y la API de `test` siguen como están.
 - **Las cuentas** son las de la cohorte de prueba: la persona **DEMO-A01** en el teléfono y su entrenador, **DEMO-PT**, en
   la computadora. Si DEMO-A01 no tuviera un plan de Entrenamiento activo, sirve la persona de la cohorte con más historia
@@ -190,13 +226,14 @@ Cada rótulo de esta guía se verificó en el código publicado, la APK en `6eac
 `packages/domain/src/copy-entrenamiento-por-serie.ts`; las pantallas en `apps/mobile/src/pantallas/inicio*.tsx`,
 `perfil.tsx`, `quien-ve-que.tsx`, `entrenamiento.tsx` y `sesion-enfocada.tsx`; la fila en `fila-fija.tsx`; el aviso en
 `avisos-del-telefono.ts` y `descanso-automatico.ts`. Del website se usan solo los rótulos del plan de Entrenamiento
-(`packages/domain/src/copy-entrenamiento.ts`).
+(`packages/domain/src/copy-entrenamiento.ts`). La .2 (`c9ec44f`) no cambia ningún rótulo: de esos archivos solo toca
+`fila-fija.tsx`, y ahí solo cambia cómo se guarda la fila.
 
 **Parte 1 · Instalar** (teléfono)
-1. Abrir https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.23.0-candidata.1 y bajar
-   `be-0.23.0-candidata.1-6eac0a7.apk`.
-2. Instalarla encima de lo que haya (la 0.22, la 0.21 o la 0.20), sin desinstalar.
-3. Cerrar la sesión no hace falta: si se quiere ver la bienvenida, dice «app 0.23.0-candidata.1 · test · commit 6eac0a7».
+1. Abrir https://github.com/Elian-Bufi/be/releases/tag/be-apk-0.23.0-candidata.2 (o tocar «Descargar la APK de prueba»
+   en el website) y bajar `be-0.23.0-candidata.2-c9ec44f.apk`.
+2. Instalarla encima de lo que haya (la .1, la 0.22, la 0.21 o la 0.20), sin desinstalar.
+3. Cerrar la sesión no hace falta: si se quiere ver la bienvenida, dice «app 0.23.0-candidata.2 · test · commit c9ec44f».
 
 **Parte 2 · Inicio, Perfil y su punto, y «Quién ve qué»** (DEMO-A01)
 1. **Inicio.** Arriba, «Hola» y la fecha. Después:
@@ -361,8 +398,9 @@ Lo que dice cada pieza, según el código. Es la tabla de §4.0 del paquete; lo 
 
 - Las capturas de cada pantalla en Claro y Azul noche, y el antes y el después de Inicio (palabras y botones).
 - La medición del alto que queda para el contenido en la sesión, a 360 dp con letra ×1, ×1,3 y ×2 (AV-13, AV-18).
-- En el teléfono, con la 0.23: la guía de arriba, «La prueba de la 0.23» (TEST-AVR-036), con TalkBack en cada pieza de
-  §4.0, la letra al máximo, y la vibración con la pantalla bloqueada durante un descanso, con su demora medida (AVD-5).
+- En el teléfono, con la 0.23.0-candidata.2: la guía de arriba, «La prueba de la 0.23» (TEST-AVR-036), con TalkBack en
+  cada pieza de §4.0, la letra al máximo, y la vibración con la pantalla bloqueada durante un descanso, con su demora
+  medida (AVD-5).
 - El arreglo de TalkBack en minutos enteros, en la próxima candidata (decidido por Dirección el 2026-11-08).
 - Promover a estable sigue la regla de DL-152: no antes de la prueba de punta a punta, y solo con el «pasala a estable» de
   Dirección.
