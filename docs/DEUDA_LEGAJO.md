@@ -170,6 +170,7 @@
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
 | DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) INTEGRADAS en `main` el 2026-11-07 (#247, `64508a8`) y publicadas en la APK 0.23.0-candidata.1 el 2026-11-08, con su cierre (#249), y en la 0.23.0-candidata.2 el 2026-11-11, con el arreglo del cierre al empezar un entrenamiento (#250): la «latest» que ofrece el website, que lee lo mismo que la .1**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
+| DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA en código, en un PR en borrador (rama `arreglo/guardado-de-planes-grandes`), sin integrar**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. Abierto, a decidir: las plantillas, que siguen en 16 KB |
 
 ---
 
@@ -7203,3 +7204,106 @@ sesión se volvía a dibujar sin fin. El arreglo, solo de la app, se integró co
 **Condición de cierre:** la CI pasa en `main`, la candidata está publicada en `test`, sus lecturas quedan congeladas, y el
 recorrido queda en `EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`: Perfil, Inicio, «Quién ve qué», la cuenta nueva, la letra
 grande y la sesión con su descanso. La prueba en el teléfono queda escrita como hecha o como pendiente.
+
+## DL-168 — Un plan grande no se guardaba: el límite de 16 KB por pedido
+
+**Prioridad:** alta (Dirección carga casos reales en `test`) · **Documento:** 09v7 §4.1 (`400 INVALID_REQUEST`, «JSON/shape/parámetros
+inválidos»; el catálogo no tiene 413) · el límite de 16 KB que fijó WP-02 para toda la API (`apps/api/src/bootstrap.ts`:
+«los contratos de WP-02 son JSON chicos»; el legajo no fija un tamaño) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01
+y 04 · DL-148 (el autoguardado) · DL-152 · GHSA-mrhx-c7xc-m3w5 · **Estado:** ARREGLADA en código, en un PR en borrador
+(rama `arreglo/guardado-de-planes-grandes`); la integra Dirección
+
+**Qué pasó.** En las capturas de los flujos de planificación (rama `wp-tablero-flujos-capturas`, B28 en el análisis), el
+plan de Diego Sosa, con su «Día habitual» duplicado y una colación con un alimento, dejó de guardarse: cada guardado del
+borrador se rechazaba antes de llegar a una ruta, en un milisegundo. La web decía «El servicio no está disponible en este
+momento. Probá de nuevo más tarde.»; el autoguardado, «No se pudo guardar: se reintenta al seguir editando o con «Guardar
+cambios»», y «Activar plan», «No pudimos guardar los cambios, y sin guardarlos no se puede activar.».
+
+**La causa, con evidencia.**
+- El registro de la API de la primera corrida (corrida 42943855087 de `capturas-del-tablero`, artefacto
+  `flujos-de-planificacion`, `api.log`): el borrador se crea (201) y se guarda dos veces (200, en 24 y 21 ms). Desde que
+  se agrega la banana, seis PATCH seguidos salen con 400, `ruta: SIN_RUTA` y 0 o 1 ms: los cortó el parser, antes del
+  router.
+- El mismo recorrido, reconstruido como lo arma la web (`estructuraNutricionalComoEntrada`, con el plan de Diego de la
+  cohorte): el primer guardado (la copia sin identificadores) pesa 13.612 bytes; el segundo (la copia ya con los
+  identificadores que le dio la API, más la colación y su opción vacía), 16.180; el tercero (más la banana de 120 g),
+  16.406. El límite es de 16.384: el tercero lo pasa por 22 bytes, y desde ahí ninguno entra.
+- El camino del rechazo: el parser corta con 413 (`entity.too.large`); el filtro de errores lo pasa a `400
+  INVALID_REQUEST`, sin issues; la web no tenía ese caso y caía en el mensaje genérico, que hace pensar que BE está caído.
+- Las rutas que llevan el plan entero: el borrador nace con API-NUT-07 (`POST /api/v1/advisees/{adviseeId}/nutrition/plans`)
+  y se guarda con API-NUT-10 (`PATCH /api/v1/nutrition/plans/{planId}`), que reemplaza la estructura completa;
+  Entrenamiento, igual, con API-TRN-07 y 10; las recetas, con API-REC-01 y 04. Validar, activar y descartar llevan solo la
+  versión.
+
+**Los tamaños** (bytes de UTF-8, con los identificadores de cada nodo, como los manda la web):
+
+| Caso | Bytes |
+|---|---|
+| El plan de Diego solo: 1 día tipo, 4 comidas, 36 alimentos | 8.081 |
+| El guardado que ya no entró en las capturas: la copia del día, la colación y la banana | 16.406 |
+| Realista chico: 2 días tipo × 5 comidas × 3 opciones × 4 alimentos, una nota en cada alimento | 37.187 (36 KB) |
+| Realista grande: 3 × 5 × 3 × 5, una nota de 92 caracteres en cada alimento | 67.933 (66 KB) |
+| Entrenamiento de 4 semanas × 4 sesiones × 7 ejercicios × 4 series, con notas | 108.760 (106 KB) |
+| Entrenamiento de 12 semanas × 5 sesiones × 8 ejercicios × 4 series, con notas | 462.847 (452 KB) |
+| La receta más grande que admite el contrato: 40 ingredientes y 20 pasos de 500 caracteres | 18.330 (18 KB) |
+
+**El arreglo.**
+- **El límite.** Las seis escrituras que llevan un plan entero o una receta (API-NUT-07 y 10, API-TRN-07 y 10, API-REC-01
+  y 04) aceptan hasta **700 KB** (`apps/api/src/http/limite-de-cuerpo.ts`). Su parser va antes que el general y lee solo
+  el JSON de esas seis rutas; el general no vuelve a leer un cuerpo ya leído. El resto de la API sigue en 16 KB, también
+  las vecinas: validar, activar, descartar, las plantillas, el cálculo y la imagen de una receta.
+- **Por qué 700 KB.** Es diez veces el plan realista más grande (66 KB), redondeado hacia arriba. Entra también el
+  Entrenamiento de 12 semanas (452 KB, el 65 % del límite), y la receta más grande queda muy por debajo.
+- **Lo que no cambia.** La validación del contrato, con sus topes por lista. La cota de elementos
+  (`apps/api/src/http/validacion.ts`), con el mismo techo de 6.000 para todas las rutas: el peor cuerpo inválido cuesta lo
+  mismo que antes, porque el trabajo de zod crece con los elementos y no con los bytes (si el techo crecía con el límite,
+  el peor de 700 KB costaba cinco veces más). A cambio, en esas seis rutas un cuerpo válido de más de 6.000 elementos de
+  listas se rechaza con TOO_BIG. Un plan real queda muy lejos: el de Nutrición más grande tiene 288 elementos; el de
+  Entrenamiento de 12 semanas, unos 2.900.
+- **El rechazo dice qué pasó.** Sigue siendo `400 INVALID_REQUEST`, porque el catálogo del 09 no tiene 413, y ahora trae
+  el issue `TOO_BIG` en `(body)`, el mismo que ya usaba la cota de elementos. Es aditivo: el sobre de error ya llevaba
+  `issues`.
+- **El website.** Los dos editores de planes distinguen tres casos (`falloDeGuardado`, en `@be/domain`). Si el plan no
+  entra (el 400 con TOO_BIG, o un 413 de un intermediario), dicen «El plan es demasiado grande para guardarlo de una vez.
+  Tus cambios siguen acá: quitá lo que no haga falta (opciones, semanas o notas largas) y volvé a guardar.», también en el
+  autoguardado, porque reintentar no lo arregla, y sin sacar el foco de lo que se edita. Si no hubo respuesta, no se
+  entendió o el servidor falló (5xx), dicen «No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.». El resto
+  (un conflicto, un problema con su lugar en el plan) sigue como antes.
+- **Lo escrito no se pierde.** Al fallar, el editor no toca la estructura ni la marca de «sin guardar»: el próximo
+  guardado lo vuelve a mandar, y recargar o salir con cambios sin guardar pide confirmar (`useCambiosSinGuardar`). Como
+  dice DL-148, lo que nunca llegó al servidor no se guarda en el navegador.
+- **La APK.** No lee nada nuevo (DL-152): las rutas que usa siguen con 16 KB y la forma del error es la misma. Solo si una
+  APK mandara más de 16 KB, cosa que no pasa en el uso normal, vería el mismo 400 con el issue nuevo: en el borrador de
+  una sesión diría «Hay un dato que no se puede guardar» en lugar del mensaje genérico.
+
+**Lo que se descartó.**
+- Responder 413: es el estado HTTP justo, pero el catálogo del 09 no lo tiene y cambiaba el contrato de error de toda la
+  API. El website igual lo entiende si lo manda un intermediario.
+- Subir el límite general: abría 700 KB a todas las rutas sin necesidad.
+- Hacer crecer el techo de la cota con el límite: el peor cuerpo inválido de 700 KB costaba cinco veces más por pedido.
+- Guardar el plan por partes: es otro contrato y otra forma de editar; con este límite no hace falta.
+
+**Pruebas.**
+- `apps/api/src/http/limite-de-cuerpo.spec.ts`, sin base: las seis rutas son las de los controladores y las vecinas no;
+  con la app armada como en producción (`crearApp`), 100 KB llegan al guard en las seis, 700 KB justos pasan y un byte
+  más da TOO_BIG, y las vecinas y una ruta sin sesión aceptan 16 KB y rechazan un byte más.
+- `apps/api/src/http/filtro-de-errores.spec.ts`: el 413 del parser sale como 400 con TOO_BIG; otro rechazo del parser,
+  sin issues.
+- `test/integration/guardado-de-planes-grandes.int-spec.ts`, con PostgreSQL: se guardan el borrador de Nutrición realista
+  (creado con la estructura y guardado de nuevo con sus identificadores, como el editor), el de Entrenamiento de 12
+  semanas y la receta más grande (creada y editada); una ruta cualquiera y las vecinas siguen rechazando más de 16 KB,
+  también «Guardar como plantilla» con el plan realista; más de 700 KB da el mismo 400, y el borrador no cambia. Con el
+  límite de planes y recetas en 16 KB, fallan las tres que guardan (mutación verificada en la CI).
+- `test/integration/cors.int-spec.ts`: el 400 de un cuerpo grande lleva TOO_BIG, con CORS y `X-Request-Id`.
+- `apps/web/test/guardado-de-planes-grandes.test.mjs`: la regla y los textos, y que los dos editores la usan sin tocar
+  lo escrito. Con el autoguardado cortando antes, o con el mensaje de antes para la falta de respuesta, la prueba falla
+  (mutaciones verificadas).
+
+**Lo que queda abierto, a decidir por Dirección.**
+- **Las plantillas** (crear y versión nueva, de Nutrición y de Entrenamiento) llevan la misma estructura y siguen en 16 KB:
+  «Guardar como plantilla» con el plan realista no entra, y el diálogo dice el mensaje genérico. Severidad media. La
+  propuesta es sumarlas a las seis, con el mismo límite y el mismo mensaje.
+- El 413 en el catálogo del 09, si Dirección lo prefiere al 400 con TOO_BIG.
+
+**Condición de cierre:** el PR integrado en `main` con la CI en verde y desplegado en `test`, y un plan real de Dirección
+de dos o más días tipo guardado en `test`.

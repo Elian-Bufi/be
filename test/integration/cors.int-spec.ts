@@ -65,9 +65,10 @@ it('una respuesta real al website expone X-Request-Id', async () => {
 });
 
 it.each([
-  ['JSON inválido', '{no es json'],
-  ['cuerpo mayor a 16 kB', JSON.stringify({ relleno: 'x'.repeat(20_000) })],
-])('error del body parser (%s): ErrorEnvelope con CORS y X-Request-Id, no un error de red', async (_caso, cuerpo) => {
+  ['JSON inválido', '{no es json', []],
+  // DL-168: el que no entra lo dice, para que el website no lo confunda con BE caído.
+  ['cuerpo mayor a 16 kB', JSON.stringify({ relleno: 'x'.repeat(20_000) }), [{ code: 'TOO_BIG', path: '(body)' }]],
+])('error del body parser (%s): ErrorEnvelope con CORS y X-Request-Id, no un error de red', async (_caso, cuerpo, issues) => {
   const res = await request(app.getHttpServer())
     .post('/api/v1/auth/sessions')
     .set('Origin', WEBSITE)
@@ -75,6 +76,7 @@ it.each([
     .send(cuerpo);
   expect(res.status).toBe(400);
   expect(res.body.error.code).toBe('INVALID_REQUEST');
+  expect(res.body.error.details.issues).toEqual(issues);
   expect(res.headers['access-control-allow-origin']).toBe(WEBSITE);
   expect(res.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
 });

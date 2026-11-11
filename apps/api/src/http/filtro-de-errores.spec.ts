@@ -59,3 +59,20 @@ describe('P2028 · el log técnico dice la fase', () => {
     expect(JSON.parse(lineas[0]!)).not.toHaveProperty('fase');
   });
 });
+
+describe('DL-168 · un cuerpo mayor que el límite de su ruta', () => {
+  // Lo que lanza body-parser (http-errors) cuando el cuerpo pasa el límite: un 413 con `type: 'entity.too.large'`.
+  const demasiadoGrande = Object.assign(new Error('request entity too large'), { status: 413, statusCode: 413, expose: true, type: 'entity.too.large', length: 20_000, limit: 16_384 });
+
+  it('sale como 400 INVALID_REQUEST, con un solo issue TOO_BIG en (body): el catálogo del 09 no tiene 413', () => {
+    expect(responder(new FiltroDeErrores(), demasiadoGrande)).toEqual({
+      status: 400,
+      cuerpo: { error: { code: 'INVALID_REQUEST', message: 'La solicitud no es válida.', details: { issues: [{ code: 'TOO_BIG', path: '(body)' }] } } },
+    });
+  });
+
+  it('los demás rechazos del parser siguen sin issues: no son una cuestión de tamaño', () => {
+    const otroDelParser = Object.assign(new Error('unsupported charset "UTF-16"'), { status: 415, statusCode: 415, expose: true, type: 'charset.unsupported' });
+    expect(responder(new FiltroDeErrores(), otroDelParser)).toEqual({ status: 400, cuerpo: { error: { code: 'INVALID_REQUEST', message: 'La solicitud no es válida.', details: { issues: [] } } } });
+  });
+});
