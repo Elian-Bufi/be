@@ -4,6 +4,10 @@
 # hace la CI.
 # No es un check de la integración: no bloquea nada y no despliega nada. Corre en las ramas del paquete cuando cambia el
 # website o el dominio, y a pedido.
+# El segundo trabajo, `flujos`, recorre paso a paso cómo un profesional crea y ajusta sus planes (Entrenamiento,
+# Nutrición y vincular a una persona) y saca cada paso a 1440 × 900, para la crítica de UX de Dirección: corre en las
+# ramas del tablero que llevan «flujos» en el nombre y a pedido. Usa su propia base efímera: crea, activa y ajusta
+# planes sin tocar las capturas del tablero.
 name: capturas-del-tablero
 
 on:
@@ -16,6 +20,12 @@ on:
       - "EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/**"
       - ".github/workflows/capturas-del-tablero.yml"
   workflow_dispatch:
+    inputs:
+      capturas:
+        description: Qué capturas sacar
+        type: choice
+        options: ["las dos", "tablero", "flujos de planificación"]
+        default: "las dos"
 
 permissions:
   contents: read
@@ -27,6 +37,7 @@ concurrency:
 jobs:
   capturas:
     name: capturas · cohorte sintética (website + API + PostgreSQL)
+    if: github.event_name != 'workflow_dispatch' || inputs.capturas != 'flujos de planificación'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     services:
@@ -68,5 +79,51 @@ jobs:
         with:
           name: capturas-del-tablero
           path: capturas-del-tablero
+          if-no-files-found: warn
+          retention-days: 90
+
+  flujos:
+    name: flujos de planificación · paso a paso (website + API + PostgreSQL)
+    if: (github.event_name == 'workflow_dispatch' && inputs.capturas != 'tablero') || (github.event_name == 'push' && contains(github.ref_name, 'flujos'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: be_test
+          POSTGRES_PASSWORD: be_test
+          POSTGRES_DB: be_test_cohorte
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U be_test -d be_test_cohorte"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Build de la API
+        run: npm run build:api
+      # Sin interruptores: el website como lo ve el profesional.
+      - name: Build del website contra la API local
+        run: npm run build:web
+        env:
+          BE_API_BASE_URL: http://localhost:3001
+      - name: La cohorte y los flujos de planificación
+        run: node EVIDENCIA/TABLERO-ALTA-GAMA/herramientas/capturas.mjs flujos-de-planificacion flujos-de-planificacion
+        env:
+          BE_E2E_DATABASE_URL: postgresql://be_test:be_test@localhost:5432/be_test_cohorte
+          CHROME: /usr/bin/google-chrome
+          TZ: America/Argentina/Buenos_Aires
+      - name: Capturas paso a paso y mediciones (datos sintéticos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flujos-de-planificacion
+          path: flujos-de-planificacion
           if-no-files-found: warn
           retention-days: 90

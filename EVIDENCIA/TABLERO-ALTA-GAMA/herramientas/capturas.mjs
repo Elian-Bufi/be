@@ -2,7 +2,9 @@
 // el website y PostgreSQL juntos. Corre en el trabajo `capturas-del-tablero` (.github/workflows/capturas-del-tablero.yml)
 // y deja las imágenes y las mediciones como artefacto. Solo datos sintéticos: la cohorte (08 §33).
 //
-// Uso:  BE_E2E_DATABASE_URL=postgresql://be_test:be_test@localhost:5432/be_test_cohorte node capturas.mjs <salida>
+// Uso:  BE_E2E_DATABASE_URL=postgresql://be_test:be_test@localhost:5432/be_test_cohorte node capturas.mjs <salida> [modo]
+//   El modo es `tablero` (lo que sigue) o `flujos-de-planificacion`: la misma preparación y, en lugar de estas capturas,
+//   el recorrido de flujos-de-planificacion.mjs (cómo un profesional crea y ajusta sus planes, paso a paso).
 //   Requiere compilados la API (`npm run build:api`) y el website contra la API local
 //   (`BE_API_BASE_URL=http://localhost:3001 npm run build:web`). CHROME apunta al navegador.
 //
@@ -55,6 +57,10 @@ const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 
 const salida = path.resolve(process.argv[2] ?? 'capturas-del-tablero');
+// El recorrido: el del tablero (sin segundo argumento) o `flujos-de-planificacion` (flujos-de-planificacion.mjs), que usa
+// la misma cohorte, la misma API y el mismo website, y recorre cómo un profesional crea y ajusta sus planes.
+const MODO = process.argv[3] ?? 'tablero';
+if (!['tablero', 'flujos-de-planificacion'].includes(MODO)) throw new Error(`Modo desconocido: ${MODO}.`);
 const API = 'http://localhost:3001';
 const WEB = 'http://localhost:3000';
 const CHROME = process.env.CHROME ?? (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : '/usr/bin/google-chrome');
@@ -639,9 +645,15 @@ try {
     stdio: 'inherit',
   });
   await pausa(1500);
-  const m = await capturarTodo();
-  console.log(`errores de la página: ${m.errores.length ? m.errores.slice(0, 8).join(' | ') : 'ninguno'}`);
-  if (process.exitCode === 1) console.error('Falló un guardián: TEST-TAG-004 (un nombre o una inicial con «Ocultar nombres»), TEST-TAG-032 (las peticiones al abrir) o TA-71 (una ficha de «Tu semana» que se pasa de su columna). Ver mediciones.json.');
+  if (MODO === 'flujos-de-planificacion') {
+    const { recorrerLosFlujos } = await import('./flujos-de-planificacion.mjs');
+    const estado = JSON.parse(fs.readFileSync(path.join(TRABAJO, 'estado.json'), 'utf8'));
+    await recorrerLosFlujos({ puppeteer, CHROME, WEB, salida, cuentas: cuentas(), estado, asentar, pausa });
+  } else {
+    const m = await capturarTodo();
+    console.log(`errores de la página: ${m.errores.length ? m.errores.slice(0, 8).join(' | ') : 'ninguno'}`);
+    if (process.exitCode === 1) console.error('Falló un guardián: TEST-TAG-004 (un nombre o una inicial con «Ocultar nombres»), TEST-TAG-032 (las peticiones al abrir) o TA-71 (una ficha de «Tu semana» que se pasa de su columna). Ver mediciones.json.');
+  }
 } finally {
   fs.writeFileSync(path.join(salida, 'api.log'), registroDeLaApi.join(''));
   web?.kill();
