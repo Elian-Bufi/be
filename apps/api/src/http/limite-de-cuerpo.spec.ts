@@ -9,8 +9,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { esEscrituraDePlanOReceta, LIMITE_DE_PLANES_Y_RECETAS, RUTAS_DE_PLANES_Y_RECETAS } from './limite-de-cuerpo';
 
 /**
- * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las seis escrituras que llevan un plan entero o una
- * receta aceptan hasta 700 KB; el resto de la API, 16 KB, como siempre. Estas pruebas no usan base de datos: la app se
+ * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las diez escrituras que llevan un plan entero (un
+ * borrador o una plantilla) o una receta aceptan hasta 700 KB; el resto de la API, 16 KB, como siempre. Estas pruebas no
+ * usan base de datos: la app se
  * arma con `crearApp`, como en producción, y un pedido sin sesión que pasa el parser llega al guard (401). Lo que guarda
  * cada ruta con PostgreSQL lo prueba `test/integration/guardado-de-planes-grandes.int-spec.ts`.
  */
@@ -26,18 +27,30 @@ function cuerpoDe(bytes: number): string {
   return JSON.stringify({ relleno: 'x'.repeat(bytes - vacio) });
 }
 
-/** La ruta de una de las seis, con un identificador en cada parámetro. */
-const rutaDe = (operacion: string): string => {
-  const ejemplos: Readonly<Record<string, string>> = {
-    'API-NUT-07': `/api/v1/advisees/${ID}/nutrition/plans`,
-    'API-NUT-10': `/api/v1/nutrition/plans/${ID}`,
-    'API-TRN-07': `/api/v1/advisees/${ID}/training/plans`,
-    'API-TRN-10': `/api/v1/training/plans/${ID}`,
-    'API-REC-01': '/api/v1/nutrition/recipes',
-    'API-REC-04': `/api/v1/nutrition/recipes/${ID}`,
-  };
-  return ejemplos[operacion] as string;
+/**
+ * Las diez, fijas y como las declaran los controladores: el archivo, el decorador y, de ahí, el método y una ruta de
+ * ejemplo. Las pruebas de abajo recorren esta lista y no la de `limite-de-cuerpo.ts`, que es lo que se prueba: si una ruta
+ * se cae de aquella, su pedido grande deja de entrar y la prueba lo dice.
+ */
+const ESPERADAS: Readonly<Record<string, readonly [archivo: string, decorador: string]>> = {
+  'API-NUT-07': ['nutricion/nutricion.controller.ts', "@Post('advisees/:adviseeId/nutrition/plans')"],
+  'API-NUT-10': ['nutricion/nutricion.controller.ts', "@Patch('nutrition/plans/:planId')"],
+  'API-TRN-07': ['entrenamiento/entrenamiento.controller.ts', "@Post('advisees/:adviseeId/training/plans')"],
+  'API-TRN-10': ['entrenamiento/entrenamiento.controller.ts', "@Patch('training/plans/:planId')"],
+  'API-TPN-01': ['nutricion/nutricion.controller.ts', "@Post('nutrition/plan-templates')"],
+  'API-TPN-04': ['nutricion/nutricion.controller.ts', "@Post('nutrition/plan-templates/:templateId/versions')"],
+  'API-TPL-01': ['entrenamiento/entrenamiento.controller.ts', "@Post('training/plan-templates')"],
+  'API-TPL-04': ['entrenamiento/entrenamiento.controller.ts', "@Post('training/plan-templates/:templateId/versions')"],
+  'API-REC-01': ['nutricion/recetas.controller.ts', "@Post('nutrition/recipes')"],
+  'API-REC-04': ['nutricion/recetas.controller.ts', "@Patch('nutrition/recipes/:recipeId')"],
 };
+
+/** El método y una ruta de ejemplo de una de las diez, con un identificador en cada parámetro. */
+function pedidoDe(operacion: string): { readonly metodo: string; readonly ruta: string } {
+  const [, metodo, ruta] = /^@(\w+)\('([^']+)'\)$/.exec((ESPERADAS[operacion] as readonly [string, string])[1]) as RegExpExecArray;
+  return { metodo: metodo!.toUpperCase(), ruta: `/api/v1/${ruta!.replace(/:\w+/g, ID)}` };
+}
+const rutaDe = (operacion: string): string => pedidoDe(operacion).ruta;
 
 /** Las vecinas: rutas de las mismas familias, o con el mismo camino y otro método, que siguen con 16 KB. */
 const VECINAS: readonly (readonly [string, string])[] = [
@@ -46,9 +59,11 @@ const VECINAS: readonly (readonly [string, string])[] = [
   ['POST', `/api/v1/nutrition/plans/${ID}/discard`],
   ['POST', `/api/v1/training/plans/${ID}/validate`],
   ['POST', `/api/v1/training/plans/${ID}/activate`],
-  ['POST', '/api/v1/nutrition/plan-templates'],
-  ['POST', `/api/v1/nutrition/plan-templates/${ID}/versions`],
-  ['POST', '/api/v1/training/plan-templates'],
+  // Cambiar el nombre, la descripción o el estado de una plantilla (API-TPN-05 y API-TPL-05): no lleva la estructura.
+  ['PATCH', `/api/v1/nutrition/plan-templates/${ID}`],
+  ['PATCH', `/api/v1/training/plan-templates/${ID}`],
+  ['POST', `/api/v1/nutrition/plan-templates/${ID}`],
+  ['POST', `/api/v1/training/plan-templates/${ID}/versions/${ID}`],
   ['POST', '/api/v1/nutrition/recipe-calculations'],
   ['PUT', `/api/v1/nutrition/recipes/${ID}/image`],
   ['PUT', `/api/v1/nutrition/plans/${ID}`],
@@ -58,29 +73,20 @@ const VECINAS: readonly (readonly [string, string])[] = [
   ['PATCH', `/api/v2/nutrition/plans/${ID}`],
 ];
 
-describe('DL-168 · las seis escrituras con el límite de planes y recetas', () => {
+describe('DL-168 · las diez escrituras con el límite de planes y recetas', () => {
   it('son las de los controladores, con su método y su ruta', () => {
-    const decoradores: Readonly<Record<string, readonly [string, string]>> = {
-      'API-NUT-07': ['nutricion/nutricion.controller.ts', "@Post('advisees/:adviseeId/nutrition/plans')"],
-      'API-NUT-10': ['nutricion/nutricion.controller.ts', "@Patch('nutrition/plans/:planId')"],
-      'API-TRN-07': ['entrenamiento/entrenamiento.controller.ts', "@Post('advisees/:adviseeId/training/plans')"],
-      'API-TRN-10': ['entrenamiento/entrenamiento.controller.ts', "@Patch('training/plans/:planId')"],
-      'API-REC-01': ['nutricion/recetas.controller.ts', "@Post('nutrition/recipes')"],
-      'API-REC-04': ['nutricion/recetas.controller.ts', "@Patch('nutrition/recipes/:recipeId')"],
-    };
-    expect(RUTAS_DE_PLANES_Y_RECETAS.map((r) => r.operacion).sort()).toEqual(Object.keys(decoradores).sort());
-    for (const r of RUTAS_DE_PLANES_Y_RECETAS) {
-      const [archivo, decorador] = decoradores[r.operacion] as readonly [string, string];
+    expect(RUTAS_DE_PLANES_Y_RECETAS.map((r) => r.operacion).sort()).toEqual(Object.keys(ESPERADAS).sort());
+    for (const [operacion, [archivo, decorador]] of Object.entries(ESPERADAS)) {
       const fuente = fs.readFileSync(path.resolve(__dirname, '..', archivo), 'utf8');
       // El decorador existe, y lo precede el comentario con la operación: la ruta es la de esa operación.
-      expect([r.operacion, new RegExp(`/\\*\\* ${r.operacion}[.:][^\\n]*\\n\\s*${decorador.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(fuente)]).toEqual([r.operacion, true]);
-      const [, metodo, ruta] = /^@(\w+)\('([^']+)'\)$/.exec(decorador) as RegExpExecArray;
-      expect([r.operacion, r.metodo]).toEqual([r.operacion, metodo!.toUpperCase()]);
-      expect([r.operacion, esEscrituraDePlanOReceta({ method: r.metodo, url: `/api/v1/${ruta!.replace(/:\w+/g, ID)}` })]).toEqual([r.operacion, true]);
+      expect([operacion, new RegExp(`/\\*\\* ${operacion}[.:][^\\n]*\\n\\s*${decorador.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(fuente)]).toEqual([operacion, true]);
+      const { metodo, ruta } = pedidoDe(operacion);
+      expect([operacion, RUTAS_DE_PLANES_Y_RECETAS.find((r) => r.operacion === operacion)?.metodo]).toEqual([operacion, metodo]);
+      expect([operacion, esEscrituraDePlanOReceta({ method: metodo, url: ruta })]).toEqual([operacion, true]);
     }
   });
 
-  it('las vecinas no: validar, activar, descartar, las plantillas, el cálculo y la imagen de una receta, y otros métodos', () => {
+  it('las vecinas no: validar, activar, descartar, cambiar una plantilla, el cálculo y la imagen de una receta, y otros métodos', () => {
     for (const [method, url] of VECINAS) expect([method, url, esEscrituraDePlanOReceta({ method, url })]).toEqual([method, url, false]);
   });
 
@@ -144,7 +150,7 @@ describe('DL-168 · el parser de cada ruta, en la app armada como en producción
       .set('Content-Type', 'application/json')
       .send(cuerpo);
 
-  it.each(RUTAS_DE_PLANES_Y_RECETAS.map((r) => [r.operacion, r.metodo] as const))('%s (%s) acepta un plan de 100 KB: el cuerpo pasa el parser y llega al guard de la sesión', async (operacion, metodo) => {
+  it.each(Object.keys(ESPERADAS).map((operacion) => [operacion, pedidoDe(operacion).metodo] as const))('%s (%s) acepta un plan de 100 KB: el cuerpo pasa el parser y llega al guard de la sesión', async (operacion, metodo) => {
     const res = await pedir(metodo, rutaDe(operacion), cuerpoDe(100 * 1024));
     expect([res.status, res.body.error.code]).toEqual([401, 'AUTHENTICATION_REQUIRED']);
   });

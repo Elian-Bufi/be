@@ -170,7 +170,7 @@
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
 | DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) INTEGRADAS en `main` el 2026-11-07 (#247, `64508a8`) y publicadas en la APK 0.23.0-candidata.1 el 2026-11-08, con su cierre (#249), y en la 0.23.0-candidata.2 el 2026-11-11, con el arreglo del cierre al empezar un entrenamiento (#250): la «latest» que ofrece el website, que lee lo mismo que la .1**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
-| DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA en código, en un PR en borrador (rama `arreglo/guardado-de-planes-grandes`), sin integrar**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. Abierto, a decidir: las plantillas, que siguen en 16 KB |
+| DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA e integrada en `main` (#252, 6a05fee)**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. **Ampliación a las plantillas** (API-TPN-01 y 04, API-TPL-01 y 04, con el mismo límite y el mismo mensaje en «Guardar como plantilla») integrada en `main` con #254 |
 | DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) programada en el PR #253, **sin integrar**; las demás partes, declaradas (`docs/paquetes/WP-USO-FINAL.md`) |
 
 ---
@@ -7277,8 +7277,9 @@ grande y la sesión con su descanso. La prueba en el teléfono queda escrita com
 **Prioridad:** alta (Dirección carga casos reales en `test`) · **Documento:** 09v7 §4.1 (`400 INVALID_REQUEST`, «JSON/shape/parámetros
 inválidos»; el catálogo no tiene 413) · el límite de 16 KB que fijó WP-02 para toda la API (`apps/api/src/bootstrap.ts`:
 «los contratos de WP-02 son JSON chicos»; el legajo no fija un tamaño) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01
-y 04 · DL-148 (el autoguardado) · DL-152 · GHSA-mrhx-c7xc-m3w5 · **Estado:** ARREGLADA en código, en un PR en borrador
-(rama `arreglo/guardado-de-planes-grandes`); la integra Dirección
+y 04 · API-TPN-01 y 04 · API-TPL-01 y 04 · DL-148 (el autoguardado) · DL-152 · GHSA-mrhx-c7xc-m3w5 · **Estado:** ARREGLADA
+e integrada en `main` (#252, 6a05fee). La ampliación a las plantillas,
+integrada en `main` con #254 (autorizada por Dirección el 2026-11-11)
 
 **Qué pasó.** En las capturas de los flujos de planificación (rama `wp-tablero-flujos-capturas`, B28 en el análisis), el
 plan de Diego Sosa, con su «Día habitual» duplicado y una colación con un alimento, dejó de guardarse: cada guardado del
@@ -7317,8 +7318,9 @@ cambios»», y «Activar plan», «No pudimos guardar los cambios, y sin guardar
 **El arreglo.**
 - **El límite.** Las seis escrituras que llevan un plan entero o una receta (API-NUT-07 y 10, API-TRN-07 y 10, API-REC-01
   y 04) aceptan hasta **700 KB** (`apps/api/src/http/limite-de-cuerpo.ts`). Su parser va antes que el general y lee solo
-  el JSON de esas seis rutas; el general no vuelve a leer un cuerpo ya leído. El resto de la API sigue en 16 KB, también
-  las vecinas: validar, activar, descartar, las plantillas, el cálculo y la imagen de una receta.
+  el JSON de esas seis rutas; el general no vuelve a leer un cuerpo ya leído. Con la ampliación (abajo) se suman las
+  cuatro de las plantillas: diez rutas. El resto de la API sigue en 16 KB, también las vecinas: validar, activar,
+  descartar, cambiar el nombre o el estado de una plantilla, el cálculo y la imagen de una receta.
 - **Por qué 700 KB.** Es diez veces el plan realista más grande (66 KB), redondeado hacia arriba. Entra también el
   Entrenamiento de 12 semanas (452 KB, el 65 % del límite), y la receta más grande queda muy por debajo.
 - **Lo que no cambia.** La validación del contrato, con sus topes por lista. La cota de elementos
@@ -7358,22 +7360,43 @@ cambios»», y «Activar plan», «No pudimos guardar los cambios, y sin guardar
   sin issues.
 - `test/integration/guardado-de-planes-grandes.int-spec.ts`, con PostgreSQL: se guardan el borrador de Nutrición realista
   (creado con la estructura y guardado de nuevo con sus identificadores, como el editor), el de Entrenamiento de 12
-  semanas y la receta más grande (creada y editada); una ruta cualquiera y las vecinas siguen rechazando más de 16 KB,
-  también «Guardar como plantilla» con el plan realista; más de 700 KB da el mismo 400, y el borrador no cambia. Con el
-  límite de planes y recetas en 16 KB, fallan las tres que guardan (mutación verificada en la CI).
+  semanas y la receta más grande (creada y editada); una ruta cualquiera y las vecinas siguen rechazando más de 16 KB;
+  más de 700 KB da el mismo 400, y el borrador no cambia. Con el límite de planes y recetas en 16 KB, fallan las tres
+  que guardan (mutación verificada en la CI, corrida 43057610161). La ampliación suma las plantillas (abajo).
 - `test/integration/cors.int-spec.ts`: el 400 de un cuerpo grande lleva TOO_BIG, con CORS y `X-Request-Id`.
 - `apps/web/test/guardado-de-planes-grandes.test.mjs`: la regla y los textos, y que los dos editores la usan sin tocar
   lo escrito. Con el autoguardado cortando antes, o con el mensaje de antes para la falta de respuesta, la prueba falla
   (mutaciones verificadas).
 
 **Lo que queda abierto, a decidir por Dirección.**
-- **Las plantillas** (crear y versión nueva, de Nutrición y de Entrenamiento) llevan la misma estructura y siguen en 16 KB:
-  «Guardar como plantilla» con el plan realista no entra, y el diálogo dice el mensaje genérico. Severidad media. La
-  propuesta es sumarlas a las seis, con el mismo límite y el mismo mensaje.
+- ~~Las plantillas siguen en 16 KB~~: Dirección pidió sumarlas al integrar #252 («lo de 16 KB, ¿no lo íbamos a mover de
+  límite porque no entraban?»). Es la ampliación de abajo.
 - El 413 en el catálogo del 09, si Dirección lo prefiere al 400 con TOO_BIG.
 
+**Ampliación (2026-11-11, pedido de Dirección al integrar #252): las plantillas.**
+- **Por qué.** «Guardar como plantilla» manda la estructura que está en el editor, con el identificador de cada nodo, así
+  que pesa lo mismo que el guardado del plan. Con 16 KB, la plantilla del plan realista no entraba, y el diálogo decía el
+  mensaje genérico.
+- **Las rutas que se suman** al límite de 700 KB (`apps/api/src/http/limite-de-cuerpo.ts`): crear una plantilla y crear
+  una versión nueva, en Nutrición (API-TPN-01, `POST /api/v1/nutrition/plan-templates`, y API-TPN-04,
+  `POST /api/v1/nutrition/plan-templates/{templateId}/versions`) y en Entrenamiento (API-TPL-01 y API-TPL-04, las mismas
+  rutas bajo `training`). Cambiar el nombre, la descripción o el estado (API-TPN-05 y API-TPL-05) no lleva la estructura y
+  sigue en 16 KB. El website hoy solo crea plantillas; la versión nueva existe en la API y queda cubierta igual.
+- **Los tamaños**, como los manda el diálogo: la plantilla del plan de Nutrición realista, 67.957 bytes (diez veces entra
+  en el límite); la del Entrenamiento de 12 semanas, 461.952.
+- **El diálogo.** Los dos «Guardar como plantilla» usan `falloDeGuardado`: si el plan no entra, dicen lo mismo que el
+  editor, «El plan es demasiado grande para guardarlo de una vez. Tus cambios siguen acá: quitá lo que no haga falta
+  (opciones, semanas o notas largas) y volvé a guardar.». El nombre tomado y los demás rechazos siguen como antes, y el
+  diálogo queda abierto con lo escrito.
+- **Lo que no cambia:** la validación del contrato y la cota de elementos, con el mismo techo de 6.000.
+- **Pruebas.** `limite-de-cuerpo.spec.ts` suma las cuatro rutas, contra sus controladores, y con la app armada por
+  `crearApp` aceptan 100 KB; cambiarle el nombre a una plantilla sigue en 16 KB. `guardado-de-planes-grandes.int-spec.ts`
+  crea y versiona las dos plantillas grandes con PostgreSQL. `guardado-de-planes-grandes.test.mjs` prueba los dos
+  diálogos (si uno vuelve al mensaje genérico, falla: mutación verificada). Sin las cuatro rutas en el límite, las
+  pruebas de las plantillas fallan con 400 (mutación verificada en la CI).
+
 **Condición de cierre:** el PR integrado en `main` con la CI en verde y desplegado en `test`, y un plan real de Dirección
-de dos o más días tipo guardado en `test`.
+de dos o más días tipo guardado en `test`. La ampliación, igual: integrada, y una plantilla de un plan real guardada.
 
 ---
 
