@@ -170,6 +170,7 @@
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
 | DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) programadas en el PR #247, sin integrar**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
+| DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11 · sin implementar**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). Las partes UF-00 a UF-24 esperan el sí de Dirección a los IDs, y UF-D1 a UF-D13, su ratificación (`docs/paquetes/WP-USO-FINAL.md`) |
 
 ---
 
@@ -7168,3 +7169,75 @@ el §6.1 del paquete, a ratificar. Faltan la etapa 3 (AV-15 y AV-19, con servido
 **Condición de cierre:** la CI pasa en `main`, la candidata está publicada en `test`, sus lecturas quedan congeladas, y el
 recorrido queda en `EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`: Perfil, Inicio, «Quién ve qué», la cuenta nueva, la letra
 grande y la sesión con su descanso. La prueba en el teléfono queda escrita como hecha o como pendiente.
+
+---
+
+## DL-169 — El uso final: el nombre obligatorio, las APK anteriores en suspenso y lo que la demostración no necesitaba
+
+**Prioridad:** alta (la línea entre la demostración y el uso real) · **Documento:** 08 §42 (Ready-for-Real-Data) · 08 §33
+· 08 §12 · 08 §18 y §19 · 04 RF-005 · 09 v0.12 (API-ACC-P1-01 y 02, API-RGT-01 a 03, API-EXP-01 y 02) · 09 v0.8
+(API-PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 · **Estado:** DECIDIDA por
+Dirección el 2026-11-11 · sin implementar (`docs/paquetes/WP-USO-FINAL.md`). Las partes UF-00 a UF-24 esperan el sí de
+Dirección a los IDs, y las decisiones UF-D1 a UF-D13, su ratificación.
+
+**Qué dice lo vigente.**
+- **El nombre visible es optativo** (DL-009, opción B, y DL-040):
+  - el alta con correo no lo pide: API-ACC-01 lleva `profile: {}`, porque no había «campos mínimos» aprobados;
+  - el alta con Google no tiene perfil;
+  - la persona lo agrega, lo cambia o lo quita en su perfil;
+  - sin nombre, el profesional ve la referencia neutral.
+- **DL-152:** lo que leen y hacen las APK instaladas no cambia. `VIGENTES` tiene la estable 0.13.2 y las candidatas 0.20
+  a 0.22.
+- **El 08 §42 pide 24 condiciones antes del primer dato real sensible** y dice que «hoy NO se cumple». Varias partes del
+  sistema se resolvieron para datos de prueba:
+  - no hay recuperación de contraseña ni correo de BE;
+  - no hay entrada para profesionales reales;
+  - los textos legales son de demostración;
+  - los avisos de prueba están escritos fijos y el catálogo de demostración está en las migraciones;
+  - no hay producción ni segundo factor para el profesional.
+
+**Qué pidió Dirección** (2026-11-11): «En la creación de la cuenta ya tiene que ponerle el nombre. Empecemos a completar
+esas secciones que por ser datos de prueba no tuvimos en cuenta, pero ya lo tenemos que armar como para el uso final:
+poner el nombre de la persona no puede ser una opción. Si se te ocurren otras cosas que ya tenemos que estar puliendo,
+decime.» El mismo día, sobre las apps anteriores: «no te preocupes de las apps viejas: hasta que te diga, solo mi celular
+tiene las apps, o 2 o 3 personas de mi familia que instale para probar».
+
+**Lo decidido** (Dirección, 2026-11-11):
+- **El nombre es obligatorio:**
+  - en el alta con correo y en la de Google, que propone el nombre de la cuenta de Google para que la persona lo
+    confirme o lo corrija;
+  - las cuentas que ya existen sin nombre lo completan al entrar, en la web y en la app nueva;
+  - el profesional también tiene un nombre visible.
+- **Las APK anteriores quedan en suspenso** (enmienda de DL-152):
+  - mientras Dirección no establezca una estable, `VIGENTES` conserva solo la última versión distribuida, hoy la
+    0.23.0-candidata.2;
+  - las pruebas de lecturas congeladas se achican en consecuencia, sin borrar la historia ni las herramientas;
+  - la API puede exigir lo nuevo a las versiones anteriores, con el código que esas versiones ya traducen a «Actualizá
+    la app para continuar» (DL-138 D-10).
+- **La descarga del website sirve siempre la última versión.**
+- **En el website, a la persona se la nombra por su nombre** y, si no hay uno posible, «persona». Lo programa
+  WP-EDITORES-PROFESIONAL (ED-06 y ED-D9).
+
+**Lo que queda a decidir:** UF-D1 a UF-D13, con su recomendación, están en el §7 del paquete. Entre ellas:
+- qué responde un alta sin nombre;
+- de dónde sale el nombre de Google;
+- si el nombre se puede quitar;
+- el paso «Antes de seguir»;
+- cómo entra un profesional real;
+- el correo de BE;
+- el catálogo de demostración en producción;
+- el segundo factor del profesional;
+- DL-114 antes del 30/11.
+
+**Lo que no es código y también bloquea el uso real** (§9 del paquete):
+- la validación jurídica de los textos (condición 1 del 08 §42, que un acta no dispensa);
+- los DPA con los proveedores;
+- la transferencia internacional;
+- el registro de las bases;
+- el runbook de incidentes;
+- el procedimiento de menor descubierto;
+- el acceso del operador.
+
+**Condición de cierre:**
+- UF-00 a UF-12 integradas, con su evidencia;
+- el documento del gate (UF-02), con cada condición del 08 §42 cumplida con evidencia o con su dueño y su fecha.
