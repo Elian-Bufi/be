@@ -41,7 +41,9 @@ function buscarEnLaPagina({ css, texto, dentro, exacto, n, campo }) {
     return copia.textContent || e.getAttribute('aria-label') || e.getAttribute('placeholder') || e.value;
   };
   const porDefecto = campo ? 'input:not([type="hidden"]), select, textarea' : 'button, a[href], summary, [role="button"], [role="tab"], [role="option"], label';
-  let candidatos = raices.flatMap((r) => [...r.querySelectorAll(css ?? porDefecto)]);
+  // La raíz también cuenta: con un diálogo abierto, buscar ese mismo diálogo tiene que encontrarlo.
+  const sel = css ?? porDefecto;
+  let candidatos = raices.flatMap((r) => [...(r !== document && r.matches(sel) ? [r] : []), ...r.querySelectorAll(sel)]);
   // Un campo de opción (radio o casilla) suele ir oculto detrás de su rótulo: cuenta como visible si el rótulo lo es.
   candidatos = candidatos.filter((e) => visible(e) || (e.matches('input[type="radio"], input[type="checkbox"]') && e.closest('label') && visible(e.closest('label'))));
   if (texto != null) {
@@ -216,7 +218,14 @@ class Recorrido {
   async escribir(objetivo, texto, { borrar = true, camino = true, enter = false } = {}) {
     const el = await this.buscar(typeof objetivo === 'string' ? { css: objetivo } : objetivo, { campo: true });
     await el.evaluate((e) => e.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }));
-    await el.click();
+    // Si algo lo tapa (una barra fija, un aviso), el clic iría a otro lado: el foco va directo al campo.
+    const tapado = await el.evaluate((e) => {
+      const r = e.getBoundingClientRect();
+      const arriba = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !(arriba && (arriba === e || e.contains(arriba) || arriba.contains(e)));
+    });
+    if (tapado) await el.focus();
+    else await el.click();
     if (borrar) {
       await this.page.keyboard.down('Control');
       await this.page.keyboard.press('KeyA');
@@ -351,8 +360,11 @@ class Recorrido {
     } catch (e) {
       error = `${error ?? ''} · la captura falló: ${String(e?.message ?? e).slice(0, 200)}`;
     }
+    // `pantalla` es lo que dice el paso; en la fila va como `queEs`, porque `pantalla` es el nombre de la imagen.
+    const { pantalla: queEs, ...resto } = def;
     const fila = {
-      ...def,
+      ...resto,
+      queEs,
       estado,
       error,
       diagnostico,
@@ -372,7 +384,8 @@ class Recorrido {
 
   /** Un paso pedido que el website no tiene: queda anotado, sin captura. */
   noExiste(def, motivo) {
-    this.pasos.push({ ...def, estado: 'no existe', motivo });
+    const { pantalla: queEs, ...resto } = def;
+    this.pasos.push({ ...resto, queEs, estado: 'no existe', motivo });
     console.log(`– ${def.codigo} ${def.nombre}: no existe · ${motivo}`);
   }
 
@@ -792,19 +805,19 @@ async function flujoDeNutricion(r, { personas }) {
     },
   );
   await r.paso(
-    { codigo: 'B07', nombre: 'tipos-de-dia', pedido: 'B3', pantalla: 'El editor con dos tipos de día: «Día habitual» y su copia renombrada «Día de entrenamiento», que queda elegida.', hace: 'Abre el menú «⋯» del día tipo, elige «Duplicar este día tipo» y le escribe el nombre.', espera: 'Tener un día con más energía para los días que entrena, sin armarlo de cero.' },
+    { codigo: 'B07', nombre: 'tipos-de-dia', pedido: 'B3', pantalla: 'El editor con un segundo tipo de día, «Día de descanso», recién creado y elegido: todavía no tiene comidas.', hace: 'Hace clic en «Agregar» junto a «Día tipo» y le escribe el nombre al día nuevo.', espera: 'Tener un día más liviano para los días que no entrena.' },
     async (r) => {
-      await r.clic('.editor-del-plan__dia .menu-de-acciones__boton');
-      await r.clic({ css: '.menu-de-acciones__accion', texto: 'Duplicar este día tipo', dentro: '.menu-de-acciones[data-abierto]' });
+      // Un día tipo nuevo y no una copia del habitual: con la copia, el plan de Diego pasa los 16 KB que la API acepta
+      // por pedido y ya no se guarda (eso se muestra aparte, en B27).
+      await r.clic('[data-agregar-dia]');
       await r.esperarQue(() => document.activeElement?.matches?.('input[id^="dia-"]:not([id^="dia-tipo-"])'), null, 8000);
       const id = await r.page.evaluate(() => document.activeElement.id);
-      await r.escribir(`#${id}`, 'Día de entrenamiento', { enter: true });
+      await r.escribir(`#${id}`, 'Día de descanso', { enter: true });
       d.dia = await diaElegido();
-      await r.guardarSiHaceFalta(EDITOR_NUT);
     },
   );
   await r.paso(
-    { codigo: 'B08', nombre: 'comida-y-opcion-nuevas', pedido: 'B3', pantalla: 'El día de entrenamiento con una comida nueva, «Colación», abierta, y su primera opción, «Fruta», todavía sin alimentos.', hace: 'Abre «Agregar comida», elige «Una comida vacía» y la nombra; después abre «Agregar opción», elige «Una opción nueva» y la nombra.', espera: 'Sumar una colación antes de entrenar.' },
+    { codigo: 'B08', nombre: 'comida-y-opcion-nuevas', pedido: 'B3', pantalla: 'El «Día de descanso» con una comida nueva, «Colación», abierta, y su primera opción, «Fruta», todavía sin alimentos.', hace: 'Abre «Agregar comida», elige «Una comida vacía» y la nombra; después abre «Agregar opción», elige «Una opción nueva» y la nombra.', espera: 'Armar la colación del día de descanso.' },
     async (r) => {
       await r.clic('#agregar-comida');
       await r.clic({ css: '.menu-de-acciones__accion', texto: 'Una comida vacía', dentro: '.menu-de-acciones[data-abierto]' });
@@ -901,20 +914,19 @@ async function flujoDeNutricion(r, { personas }) {
     },
   );
   await r.paso(
-    { codigo: 'B16', nombre: 'volver-al-borrador', pedido: 'B4', pantalla: 'De nuevo en el editor del borrador de Diego, en el día de entrenamiento, después de volver desde «Mis recetas».', hace: 'Vuelve al Espacio profesional, abre la ficha de Diego, «Abrir Nutrición», la sección «Plan» y elige otra vez «Día de entrenamiento».', espera: 'Seguir armando el plan donde lo había dejado.' },
+    { codigo: 'B16', nombre: 'volver-al-borrador', pedido: 'B4', pantalla: 'De nuevo en el editor del borrador de Diego después de volver desde «Mis recetas»: arranca otra vez en el primer día tipo, con las comidas plegadas.', hace: 'Vuelve al Espacio profesional, abre la ficha de Diego, «Abrir Nutrición» y la sección «Plan».', espera: 'Seguir armando el plan donde lo había dejado.' },
     async (r) => {
       await alEspacio(r);
       await abrirLaFicha(r, diego);
       await r.clic('section.area[data-area="NUTRICION"] a.area__abrir');
       await seccion(r, 'Nutrición', 'plan');
       await r.esperar('#titulo-borrador', 30_000);
-      await r.clic(`#dia-tipo-${d.dia}`);
     },
   );
   await r.paso(
-    { codigo: 'B17', nombre: 'receta-como-opcion', pedido: 'B4', pantalla: 'El panel lateral «Agregar receta como opción» abierto desde la merienda: el buscador de sus recetas y la receta recién creada, con sus calorías por porción.', hace: 'Abre la merienda, abre «Agregar opción» y elige «Agregar receta como opción».', espera: 'Ofrecer la receta como otra opción de merienda.' },
+    { codigo: 'B17', nombre: 'receta-como-opcion', pedido: 'B4', pantalla: 'El panel lateral «Agregar receta como opción» abierto desde la merienda del «Día habitual»: el buscador de sus recetas y la receta recién creada, con sus calorías por porción.', hace: 'Abre la merienda, abre «Agregar opción» y elige «Agregar receta como opción».', espera: 'Ofrecer la receta como otra opción de merienda.' },
     async (r) => {
-      await r.clic(`#abrir-comida-${d.dia}-2`);
+      await r.clic('#abrir-comida-0-2');
       await r.clic('section.comida-del-editor[data-comida="3"] .comida-del-editor__opciones .menu-de-acciones__boton');
       await r.clic({ css: '.menu-de-acciones__accion', texto: 'Agregar receta como opción', dentro: '.menu-de-acciones[data-abierto]' });
       await r.esperar('dialog.cajon[open] .recetas-para-elegir li.lista__item', 20_000);
@@ -992,6 +1004,26 @@ async function flujoDeNutricion(r, { personas }) {
   r.noExiste(
     { codigo: 'B26', nombre: 'descartar-un-borrador', pedido: 'B8', pantalla: 'Descartar un borrador.', hace: 'Buscaría cómo descartar el borrador que no va a usar.', espera: 'Volver al plan vigente sin una versión en preparación colgada.' },
     'El website no ofrece descartar un borrador de Nutrición: el editor solo permite guardar, revisar, activar y guardar como plantilla, y mientras exista el borrador no aparece «Nueva versión del plan». (La API ya tiene la operación; la pantalla no.)',
+  );
+  await r.paso(
+    { codigo: 'B27', nombre: 'duplicar-un-dia-tipo', pedido: 'B3', pantalla: 'Una versión nueva con el «Día habitual» duplicado como «Día de entrenamiento», después de «Guardar cambios»: el estado del guardado y el aviso que queda en el editor.', hace: 'Vuelve a «Plan», hace clic en «Nueva versión del plan», abre el menú «⋯» del día tipo, elige «Duplicar este día tipo», le pone nombre y hace clic en «Guardar cambios».', espera: 'Armar el día de entrenamiento a partir del día habitual, sin cargarlo de cero.' },
+    async (r) => {
+      // Con el plan de Diego, la copia del día pasa los 16 KB por pedido que acepta la API (apps/api/src/bootstrap.ts):
+      // el paso muestra lo que ve el profesional cuando pasa eso.
+      await r.cerrarDialogos();
+      await seccion(r, 'Nutrición', 'plan', { camino: false });
+      await r.clic('[data-crear-version]', { camino: false });
+      await r.esperar('#titulo-borrador', 30_000);
+      await r.clic('.editor-del-plan__dia .menu-de-acciones__boton', { camino: false });
+      await r.clic({ css: '.menu-de-acciones__accion', texto: 'Duplicar este día tipo', dentro: '.menu-de-acciones[data-abierto]' }, { camino: false });
+      await r.esperarQue(() => document.activeElement?.matches?.('input[id^="dia-"]:not([id^="dia-tipo-"])'), null, 8000);
+      const id = await r.page.evaluate(() => document.activeElement.id);
+      await r.escribir(`#${id}`, 'Día de entrenamiento', { enter: true, camino: false });
+      await r.clic({ css: BARRA_NUT, texto: 'Guardar cambios' }, { camino: false });
+      await r.page.waitForFunction(() => ['guardado', 'fallo'].includes(document.querySelector('section.editor-del-plan p.estado-de-guardado')?.getAttribute('data-estado')), { timeout: 30_000, polling: 250 });
+      await r.asentar(r.page);
+    },
+    { enfocar: '#titulo-borrador' },
   );
   return { hastaActivar: d.hastaActivar ?? null };
 }
@@ -1121,7 +1153,9 @@ export async function recorrerLosFlujos({ puppeteer, CHROME, WEB, salida, cuenta
   const navegador = await puppeteer.launch({
     executablePath: CHROME,
     headless: true,
-    args: ['--no-sandbox', '--lang=es-AR', '--force-color-profile=srgb'],
+    // El idioma también por el entorno: con `--lang` solo, los campos de fecha salían como mes/día/año.
+    env: { ...process.env, LANG: 'es_AR.UTF-8', LANGUAGE: 'es_AR:es' },
+    args: ['--no-sandbox', '--lang=es-AR', '--accept-lang=es-AR,es', '--force-color-profile=srgb'],
     defaultViewport: { width: ANCHO, height: ALTO, deviceScaleFactor: 1 },
   });
   try {
