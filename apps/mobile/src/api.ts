@@ -12,6 +12,8 @@ interface ExtraDeBuild {
   appEnv?: string;
   apiBaseUrl?: string | null;
   commit?: string | null;
+  /** UF-08 (DL-169): `BE_AVISOS_DE_PRUEBA` del build; «no» apaga los avisos de prueba fuera de producción (`ambiente.ts`). */
+  avisosDePrueba?: string | null;
 }
 
 export const extra = (Constants.expoConfig?.extra ?? {}) as ExtraDeBuild;
@@ -56,8 +58,25 @@ export const api = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`,
  * con la señal en cada `fetch`.
  */
 export function consultarCuentaConSenal(token: string, senal: AbortSignal) {
-  const conSenal = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: CAPACIDADES, fetch: (entrada, init) => fetchQueOlvidaAlEscribir(entrada, { ...init, signal: senal }) });
+  const conSenal = clienteConSenal(senal);
   return conSenal.consultarCuenta(token);
+}
+
+/**
+ * API-ACC-07 con tope (UF-01, «Antes de seguir»; DL-169): la raíz espera esta respuesta antes de mostrar la cuenta, y un
+ * pedido que no responde no la deja esperando. Cumplido el tope, el pedido se corta y vale como uno sin red
+ * (`nombre-obligatorio.ts`).
+ */
+export function loQueFaltaParaSeguirConTope(token: string, topeMs: number) {
+  const controlador = new AbortController();
+  const tope = setTimeout(() => controlador.abort(), topeMs);
+  const conSenal = clienteConSenal(controlador.signal);
+  return conSenal.loQueFaltaParaSeguir(token).finally(() => clearTimeout(tope));
+}
+
+/** El mismo cliente, con la señal en cada `fetch`: la misma base, la misma superficie y las mismas capacidades. */
+function clienteConSenal(senal: AbortSignal) {
+  return crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: CAPACIDADES, fetch: (entrada, init) => fetchQueOlvidaAlEscribir(entrada, { ...init, signal: senal }) });
 }
 
 /** Una key por intento lógico; los reintentos del mismo intento la reusan (10-B10:430-438). */
