@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="320pt" viewBox="0 0 750 320" data-lamina="CA-03">
+<title>Después: una consulta por tipo de hecho, acotada a lo permitido</title>
+<desc>El paso 3 pasa de «una por par y por hecho» a «una por hecho»: unas once sentencias, cualquiera sea la cantidad de personas. · Fuente: apps/api/src/cartera/lectura-cartera.ts · apps/api/src/proceso/proceso.service.ts · Versión: x · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="320" fill="#FFFFFF"/>
+<rect x="4" y="4" width="742" height="312" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="14" y="20" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">La misma transacción de lectura</text>
+<text x="184.09" y="20" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[por conjuntos]</text>
+<path d="M 192 96 L 207 96 Q 212 96 212 91 L 212 60 Q 212 55 217 55 L 232 55" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 225 58.36 L 232 55 L 225 51.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 192 96 L 207 96 Q 212 96 212 101 L 212 106 Q 212 111 217 111 L 232 111" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 225 114.36 L 232 111 L 225 107.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 192 96 L 207 96 Q 212 96 212 101 L 212 162 Q 212 167 217 167 L 232 167" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 225 170.36 L 232 167 L 225 163.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 192 96 L 207 96 Q 212 96 212 101 L 212 218 Q 212 223 217 223 L 232 223" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 225 226.36 L 232 223 L 225 219.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 192 96 L 207 96 Q 212 96 212 101 L 212 274 Q 212 279 217 279 L 232 279" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 225 282.36 L 232 279 L 225 275.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 462 55 L 477 55 Q 482 55 486.92 54.1 L 502 51.35" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 495.72 55.91 L 502 51.35 L 494.51 49.3" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 469 51.64 L 462 55 L 469 58.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 462 111 L 477 111 Q 482 111 483.97 106.4 L 502 64.22" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 502.34 71.97 L 502 64.22 L 496.16 69.33" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 469 107.64 L 462 111 L 469 114.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 462 167 L 477 167 Q 482 167 483.09 162.12 L 502 77.08" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 503.76 84.65 L 502 77.08 L 497.2 83.19" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 469 163.64 L 462 167 L 469 170.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 462 223 L 477 223 Q 482 223 482.74 218.06 L 502 89.95" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 504.28 97.37 L 502 89.95 L 497.64 96.37" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 469 219.64 L 462 223 L 469 226.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 462 279 L 477 279 Q 482 279 482.56 274.03 L 502 102.81" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 504.55 110.15 L 502 102.81 L 497.87 109.39" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 469 275.64 L 462 279 L 469 282.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 558 115.68 L 558 132.68 Q 558 132.84 557.84 132.84 L 557.84 132.84 Q 557.68 132.84 557.68 133 L 557.68 150" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 554.32 143 L 557.68 150 L 561.04 143" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 618 222 L 618 238" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 614.64 231 L 618 238 L 621.36 231" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="16" y="32" width="176" height="128" rx="6" fill="#DCE8FC" stroke="#0A1F44" stroke-width="2"/>
+<text x="104" y="59.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Lo que el PDP permitió, por</text>
+<text x="104" y="73.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">alcance</text>
+<text x="104" y="88.13" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Nutrición: Ana, Bruno, … ·</text>
+<text x="104" y="100.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Entrenamiento: Ana, … ·</text>
+<text x="104" y="113.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Antropometría: Carla, … Cada</text>
+<text x="104" y="126.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">consulta recibe solo la lista de su</text>
+<text x="104" y="139.33" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">alcance.</text>
+<rect x="232" y="32" width="230" height="46" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="347" y="44.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Borradores pendientes</text>
+<text x="347" y="59.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">una por alcance de plan; DISTINCT ON: una</text>
+<text x="347" y="72.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">fila por par</text>
+<rect x="232" y="88" width="230" height="46" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="347" y="107.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Procesos abiertos</text>
+<text x="347" y="122.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">y sus expectativas vigentes (otra sentencia)</text>
+<rect x="232" y="144" width="230" height="46" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="347" y="163.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Solicitudes sin respuesta</text>
+<text x="347" y="178.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la más antigua por par y alcance</text>
+<rect x="232" y="200" width="230" height="46" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="347" y="219.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Evaluaciones en preparación</text>
+<text x="347" y="234.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la más antigua por par</text>
+<rect x="232" y="256" width="230" height="46" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="347" y="268.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Actividad del período</text>
+<text x="347" y="283.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">GROUP BY asesorado: comidas, sesiones,</text>
+<text x="347" y="296.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">tomas</text>
+<path d="M 502 47 L 502 108.68 A 56 7 0 0 0 614 108.68 L 614 47" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<ellipse cx="558" cy="47" rx="56" ry="7" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="558" y="73.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">PostgreSQL</text>
+<text x="558" y="90.77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Una ida y vuelta</text>
+<text x="558" y="103.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">por consulta.</text>
+<rect x="502" y="150" width="232" height="72" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="618" y="169.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Armar los hechos de cada par</text>
+<text x="618" y="184.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">En memoria, en el mismo orden de siempre:</text>
+<text x="618" y="197.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">revisión, borrador o sin plan, solicitud.</text>
+<text x="618" y="209.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Mapas por (alcance, persona).</text>
+<rect x="502" y="238" width="232" height="64" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="618" y="253.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">La misma lista</text>
+<text x="618" y="268.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Mismos ítems, mismo orden, mismo cursor.</text>
+<text x="618" y="281.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">Lo comprueba la prueba de equivalencia</text>
+<text x="618" y="293.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">contra la copia congelada.</text>
+</svg>

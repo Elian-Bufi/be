@@ -162,7 +162,7 @@
 | DL-156 | WP-ADMINISTRACION · 2026-10-25 | 05 UC-P02 §4.6.10 · REG-06-38 · INV-06-43 | Toda resolución identifica la versión revisada de una presentación, y en esta versión no hay presentaciones | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la versión revisada es la de la trayectoria del área al decidir (`version_previa` del hecho), con el control de conflictos previsto (`expectedVersion`) |
 | DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la suspensión opera por área y no cierra las sesiones globales del profesional; el servidor rechaza las operaciones del área suspendida desde el pedido siguiente (la sesión autentica, no autoriza) |
 | DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **RATIFICADA** por Dirección el 2026-10-25 e **INTEGRADA** (#211, `7079677`), desplegada en test (C-D1 opción A y C-D2): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; con alternativas no se inventa un total diario, y la comparación no se presenta como adherencia; falta la prueba con profesionales y con un lector de pantalla |
-| DL-159 | Hallazgo de implementación · 2026-10-28 (#222, la cartera por conjuntos) | 12 §22 · REG-06-196 · REG-06-198 · DL-135 D-9 | La huella de una corrida de la TVCC-30 no se puede recalcular desde la fila conservada cuando el resultado trae un cociente de 17 dígitos | **DECIDIDA** por Dirección el 2026-11-06: opción A (la forma canónica sin los cocientes derivados), después del tablero · a programar; el diagnóstico completo está en #222, en borrador y sin integrar |
+| DL-159 | Hallazgo de implementación · 2026-10-28 (#222, la cartera por conjuntos) | 12 §22 · REG-06-196 · REG-06-198 · DL-135 D-9 | La huella de una corrida de la TVCC-30 no se puede recalcular desde la fila conservada cuando el resultado trae un cociente de 17 dígitos | **DECIDIDA** por Dirección el 2026-11-06: opción A (la forma canónica sin los cocientes derivados), después del tablero · **RATIFICADA** por Dirección el 2026-11-11 con la integración de #222, que trae a `main` el diagnóstico y la reproducción · la opción A, a programar |
 | DL-160 | Decisión de Dirección · 2026-11-02 (registro rápido y «Ya la hice») | B10-06 §57 · B10-06 §29 · DL-137 · DL-161 | La regla «el día de hoy se entrena con los cronómetros» no está en el legajo: es un comentario de la APK, y B10-06 §57 dice que el temporizador no es requisito P0 | **DECIDIDA** por Dirección el 2026-11-02: el registro rápido y «Ya la hice» valen también el mismo día; los cronómetros quedan como ayuda opcional. La API ya lo admite (confirmar la sesión de hoy no pide eventos de tiempo); la APK lo toma con «Ya la hice» (PA-03), integrada en `main` el 2026-11-02 (#224, `b62ce90`) y en la 0.19.0-candidata.1; falta el teléfono · **RATIFICADA** 2026-11-06, tal cual como la decidió el 2026-11-02 |
 | DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` e **INTEGRADA** en `main` ese día (la API y el website con #229, `91a894c`; la APK y el escritorio con #224, `b62ce90`) y desplegada en `test`: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, integrada con #224 y en la 0.19.0-candidata.1; queda documentado el caso de una ejecución nueva leída por una APK anterior; el mismo día Dirección decidió cómo se lee en el escritorio (lo tildado sin escribir no se compara y va hueco en los gráficos; la carga completa se destaca), hecho en la rama `wp-escritorio-niveles` (#230, integrada con #224) · **RATIFICADA** 2026-11-06: I-1 a I-9, e I-10 con el cambio (una sesión con una serie menos y nada escrito pasa a decir «Carga rápida con cambios»), **a programar** |
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual` (#225), integrada en `main` ese día con #229 (`91a894c`) y desplegada en `test` · **RATIFICADA** 2026-11-06: D-1 a D-5, junto con DL-141 D-1: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
@@ -5913,14 +5913,19 @@ la CI están (2026-10-25); falta la prueba con profesionales.
 
 **Prioridad:** media · **Documento:** 12 §22 (el resultado conservado se verifica con su huella) · REG-06-196
 (conservación del resultado) · REG-06-198 (cadena de corridas) · DL-135 D-9 · **Estado:** DECIDIDA por Dirección el
-2026-11-06: opción A, después del tablero; a programar. El diagnóstico completo, la reproducción y las opciones están en
-la rama de #222 (`wp-cartera-lectura-por-conjuntos`), en borrador y sin integrar: en `main` no cambió nada.
+2026-11-06: opción A, después del tablero · **RATIFICADA** por Dirección el 2026-11-11 con la integración de #222 · la
+opción A, a programar. El diagnóstico completo, la reproducción y las opciones están en `main` desde esa integración:
+`EVIDENCIA/RENDIMIENTO-CARTERA/LECTURA-POR-CONJUNTOS.md` §8 y `test/integration/tvcc30.int-spec.ts`.
 
 **El defecto, en corto** (diagnóstico confirmado el 2026-10-28 en #222). Cada corrida de la TVCC-30 se conserva con la
 huella SHA-256 de su forma canónica (DL-135 D-9). Esa forma (`canonicoTvcc30`) incluye los cocientes derivados (`tasa` y
 `porcentaje`) como doubles. Un cociente de 17 dígitos significativos (2/11, 1/6) se guarda con 16 al escribir a través de
 Prisma, y la huella recalculada desde la fila recuperada no coincide con la guardada. La huella guardada sigue sirviendo
 para encadenar corridas y comparar dos cálculos (REG-06-198); no sirve para verificar la fila conservada (12 §22).
+Reproducido en la CI de #222 (corrida 40712848030): huella guardada `9d6bb495…`, recalculada desde la fila `a4574858…`;
+la tasa calculada 0,16666666666666666 quedó guardada como 0,1666666666666667. PostgreSQL conserva el texto del `jsonb` y
+la lectura es exacta: el dígito se pierde al escribir. Es un problema previo a la cartera por conjuntos, que no toca la
+TVCC-30; lo destapó su suite, que deja más Procesos en la ventana.
 
 **Opciones** (las de #222):
 - **A.** Que la forma canónica no incluya los cocientes derivados: `n` y `d`, enteros, los determinan.
@@ -5928,13 +5933,20 @@ para encadenar corridas y comparar dos cálculos (REG-06-198); no sirve para ver
 - **C.** Conservar también el texto canónico junto con la fila, y verificar sobre ese texto.
 
 **Mientras tanto** no se cambia la canonicalización ni se recalcula ninguna huella: las corridas conservadas valen con la
-huella que tienen.
+huella que tienen. Desde la integración de #222, `tvcc30.int-spec.ts` compara el resultado conservado con 15 dígitos
+significativos (`876bff1`) y deja en su salida la reproducción: la huella guardada contra la recalculada desde la fila.
+Esa comparación deja pasar a propósito el dígito perdido. El defecto queda registrado acá y en la salida de la prueba, y
+la condición de cierre pide la prueba exacta de la huella.
 
 **Condición de cierre:** se implementa A con una prueba que recalcula la huella desde la fila recuperada y la compara con
 la guardada, y se declara qué pasa con las huellas anteriores.
 
 **Decisión de Dirección del 2026-11-06.** Por pregunta, eligió «Sí, después del tablero», con la opción A: la forma
 canónica deja afuera los cocientes derivados. Se programa después de WP-TABLERO-ALTA-GAMA, aunque #222 no esté integrado.
+
+**Ratificación de Dirección del 2026-11-11.** Con la autorización de integrar #222 («ok para integrar las dos cosas que
+esperan»), DL-159 queda ratificada tal como estaba decidida: la opción A, a programar. #222 se integró ese día, después
+de la etapa A del tablero, como había decidido Dirección.
 
 ---
 
