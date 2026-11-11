@@ -4,7 +4,7 @@
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
  * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2, la 0.20.0-candidata.1, la 0.21.0-candidata.1 y la 0.22.0-candidata.1; la 0.17.0-candidata.3 y
+ * (hoy la estable 0.13.2, la 0.20.0-candidata.1, la 0.21.0-candidata.1, la 0.22.0-candidata.1 y la 0.23.0-candidata.1; la 0.17.0-candidata.3 y
  * la 0.18.0-candidata.1 salieron el 2026-11-05), como la pide esa APK, con las capacidades que declara, y lee la respuesta real
  * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
  * no pasa hasta que cada lectura suya tenga escenario.
@@ -20,6 +20,11 @@
  * sigue respondiendo una Solicitud de la ronda 2 pedida antes; lee la novedad nueva («Te piden ver tus hábitos», un tipo y una
  * vista que no conoce) con su esquema; y «Mis hábitos» no cambia de forma aunque haya un pedido de acceso esperando. La
  * 0.22.0-candidata.1 lee además los pedidos (API-HBT-08) y los responde (API-HBT-09), y abre «Mis hábitos» desde la novedad.
+ *
+ * DL-166, etapas solo de app (2026-11-08): la 0.23.0-candidata.1 lee las mismas 88 operaciones que la 0.22, con la misma
+ * forma, así que corre los mismos escenarios. Perfil, «Quién ve qué» y el descanso automático usan lecturas y eventos de
+ * tiempo que ya existían: `descanso-al-tildar` manda por API-TIE-01 los eventos de siempre (cierra lo que estaba abierto,
+ * SET_TIMING_FINISHED o REST_FINISHED, y abre REST_STARTED).
  *
  * DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-53 y TB-56; TEST-TAG-030 y 038): una nota que cita el plan de otra área (el
  * de Nutrición, citado por el entrenador con el permiso de la persona) se lee con API-CRD-01-PROPIA con la forma de siempre,

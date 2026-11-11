@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/formulario-de-inicio.test.mjs test/lo-declarado-v2.test.mjs test/comidas-declaradas.test.mjs test/contexto-citable.test.mjs test/sus-habitos.test.mjs test/sumar-habitos.test.mjs test/retrato.test.mjs test/tarjetas-del-resumen.test.mjs test/persona-nueva.test.mjs test/lo-que-conto.test.mjs test/composicion.test.mjs test/evolucion-de-las-tomas.test.mjs test/indicadores-por-area.test.mjs test/mesa.test.mjs test/cajon.test.mjs test/aplicar-y-cuando.test.mjs test/lugar-del-espacio.test.mjs test/editores.test.mjs test/otras-areas.test.mjs"
+    "test": "node --test test/formulario-de-inicio.test.mjs test/lo-declarado-v2.test.mjs test/comidas-declaradas.test.mjs test/contexto-citable.test.mjs test/sus-habitos.test.mjs test/sumar-habitos.test.mjs test/retrato.test.mjs test/tarjetas-del-resumen.test.mjs test/persona-nueva.test.mjs test/lo-que-conto.test.mjs test/composicion.test.mjs test/evolucion-de-las-tomas.test.mjs test/indicadores-por-area.test.mjs test/mesa.test.mjs test/cajon.test.mjs test/aplicar-y-cuando.test.mjs test/lugar-del-espacio.test.mjs test/editores.test.mjs test/otras-areas.test.mjs test/guardado-de-planes-grandes.test.mjs"
   },
   "dependencies": {
     "@be/domain": "0.1.0",

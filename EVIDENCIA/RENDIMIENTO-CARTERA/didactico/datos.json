@@ -1,0 +1,632 @@
+{
+  "estado": "medido",
+  "corrida": "40692787787",
+  "commit": "038555a3b63f7384095d87677aad872920a983de",
+  "maquina": "4 CPU (AMD EPYC 7763 64-Core Processor), 15.61 GB, Node v22.23.2, PostgreSQL 16.15",
+  "minutos": 85,
+  "versionesOk": true,
+  "erroresTotales": 0,
+  "coinciden": true,
+  "carteras": 8,
+  "filas": [
+    {
+      "escenario": "S-B50",
+      "que": "50 personas",
+      "pedidos": {
+        "base": 100,
+        "propuesta": 100
+      },
+      "errores": {
+        "base": 0,
+        "propuesta": 0
+      },
+      "p50": {
+        "base": 528,
+        "propuesta": 241,
+        "delta": -54.4,
+        "r1": -55.5,
+        "r2": -52.6
+      },
+      "p95": {
+        "base": 562,
+        "propuesta": 257,
+        "delta": -54.3
+      },
+      "variacionDeLaBase": -6.5,
+      "paginasPorSegundo": {
+        "base": null,
+        "propuesta": null,
+        "r2": {
+          "base": null,
+          "propuesta": null
+        }
+      },
+      "sentencias": {
+        "base": 1563,
+        "propuesta": 1240
+      },
+      "sqlMs": {
+        "base": 88,
+        "propuesta": 77
+      },
+      "lectura": {
+        "base": [
+          300,
+          283
+        ],
+        "propuesta": [
+          11,
+          12
+        ]
+      },
+      "pdp": {
+        "base": [
+          234,
+          216
+        ],
+        "propuesta": [
+          222,
+          221
+        ]
+      },
+      "filasDeDecision": {
+        "base": {
+          "min": 150,
+          "max": 150,
+          "pedidosContados": 50
+        },
+        "propuesta": {
+          "min": 150,
+          "max": 150,
+          "pedidosContados": 50
+        }
+      },
+      "commits": {
+        "base": 51,
+        "propuesta": 51
+      }
+    },
+    {
+      "escenario": "S-B100",
+      "que": "100 personas",
+      "pedidos": {
+        "base": 100,
+        "propuesta": 100
+      },
+      "errores": {
+        "base": 0,
+        "propuesta": 0
+      },
+      "p50": {
+        "base": 1035,
+        "propuesta": 473,
+        "delta": -54.3,
+        "r1": -55.1,
+        "r2": -53.6
+      },
+      "p95": {
+        "base": 1073,
+        "propuesta": 503,
+        "delta": -53.1
+      },
+      "variacionDeLaBase": -0.2,
+      "paginasPorSegundo": {
+        "base": null,
+        "propuesta": null,
+        "r2": {
+          "base": null,
+          "propuesta": null
+        }
+      },
+      "sentencias": {
+        "base": 3118,
+        "propuesta": 2465
+      },
+      "sqlMs": {
+        "base": 179,
+        "propuesta": 150
+      },
+      "lectura": {
+        "base": [
+          579,
+          576
+        ],
+        "propuesta": [
+          15,
+          15
+        ]
+      },
+      "pdp": {
+        "base": [
+          448,
+          450
+        ],
+        "propuesta": [
+          442,
+          457
+        ]
+      },
+      "filasDeDecision": {
+        "base": {
+          "min": 300,
+          "max": 300,
+          "pedidosContados": 50
+        },
+        "propuesta": {
+          "min": 300,
+          "max": 300,
+          "pedidosContados": 50
+        }
+      },
+      "commits": {
+        "base": 101,
+        "propuesta": 101
+      }
+    },
+    {
+      "escenario": "S-B200",
+      "que": "200 personas",
+      "pedidos": {
+        "base": 100,
+        "propuesta": 100
+      },
+      "errores": {
+        "base": 0,
+        "propuesta": 0
+      },
+      "p50": {
+        "base": 2032,
+        "propuesta": 938,
+        "delta": -53.8,
+        "r1": -53.1,
+        "r2": -50.1
+      },
+      "p95": {
+        "base": 2216,
+        "propuesta": 1040,
+        "delta": -53.1
+      },
+      "variacionDeLaBase": -9.5,
+      "paginasPorSegundo": {
+        "base": null,
+        "propuesta": null,
+        "r2": {
+          "base": null,
+          "propuesta": null
+        }
+      },
+      "sentencias": {
+        "base": 6228,
+        "propuesta": 4915
+      },
+      "sqlMs": {
+        "base": 329,
+        "propuesta": 318
+      },
+      "lectura": {
+        "base": [
+          1137,
+          940
+        ],
+        "propuesta": [
+          23,
+          22
+        ]
+      },
+      "pdp": {
+        "base": [
+          898,
+          896
+        ],
+        "propuesta": [
+          924,
+          893
+        ]
+      },
+      "filasDeDecision": {
+        "base": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 50
+        },
+        "propuesta": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 50
+        }
+      },
+      "commits": {
+        "base": 201,
+        "propuesta": 201
+      }
+    },
+    {
+      "escenario": "S-H200",
+      "que": "200 con historia",
+      "pedidos": {
+        "base": 100,
+        "propuesta": 100
+      },
+      "errores": {
+        "base": 0,
+        "propuesta": 0
+      },
+      "p50": {
+        "base": 2350,
+        "propuesta": 968,
+        "delta": -58.8,
+        "r1": -58.2,
+        "r2": -59
+      },
+      "p95": {
+        "base": 2644,
+        "propuesta": 1036,
+        "delta": -60.8
+      },
+      "variacionDeLaBase": 1.4,
+      "paginasPorSegundo": {
+        "base": null,
+        "propuesta": null,
+        "r2": {
+          "base": null,
+          "propuesta": null
+        }
+      },
+      "sentencias": {
+        "base": 7048,
+        "propuesta": 5067
+      },
+      "sqlMs": {
+        "base": 414,
+        "propuesta": 343
+      },
+      "lectura": {
+        "base": [
+          1383,
+          1418
+        ],
+        "propuesta": [
+          48,
+          48
+        ]
+      },
+      "pdp": {
+        "base": [
+          904,
+          936
+        ],
+        "propuesta": [
+          913,
+          909
+        ]
+      },
+      "filasDeDecision": {
+        "base": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 50
+        },
+        "propuesta": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 50
+        }
+      },
+      "commits": {
+        "base": 201,
+        "propuesta": 201
+      }
+    },
+    {
+      "escenario": "C1",
+      "que": "1 a la vez, sin pausa",
+      "pedidos": {
+        "base": 100,
+        "propuesta": 100
+      },
+      "errores": {
+        "base": 0,
+        "propuesta": 0
+      },
+      "p50": {
+        "base": 2019,
+        "propuesta": 917,
+        "delta": -54.6,
+        "r1": -54.3,
+        "r2": -54.5
+      },
+      "p95": {
+        "base": 2102,
+        "propuesta": 969,
+        "delta": -53.9
+      },
+      "variacionDeLaBase": 2.2,
+      "paginasPorSegundo": {
+        "base": 0.5,
+        "propuesta": 1.08,
+        "r2": {
+          "base": 0.49,
+          "propuesta": 1.06
+        }
+      },
+      "sentencias": {
+        "base": null,
+        "propuesta": null
+      },
+      "sqlMs": {
+        "base": null,
+        "propuesta": null
+      },
+      "lectura": {
+        "base": [
+          1112,
+          1129
+        ],
+        "propuesta": [
+          22,
+          22
+        ]
+      },
+      "pdp": {
+        "base": [
+          871,
+          893
+        ],
+        "propuesta": [
+          879,
+          899
+        ]
+      },
+      "filasDeDecision": {
+        "base": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 50
+        },
+        "propuesta": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 50
+        }
+      },
+      "commits": {
+        "base": null,
+        "propuesta": null
+      }
+    },
+    {
+      "escenario": "C3",
+      "que": "3 a la vez, sin pausa",
+      "pedidos": {
+        "base": 300,
+        "propuesta": 300
+      },
+      "errores": {
+        "base": 0,
+        "propuesta": 0
+      },
+      "p50": {
+        "base": 3174,
+        "propuesta": 1461,
+        "delta": -54,
+        "r1": -54.1,
+        "r2": -53.8
+      },
+      "p95": {
+        "base": 3578,
+        "propuesta": 1836,
+        "delta": -48.7
+      },
+      "variacionDeLaBase": 0,
+      "paginasPorSegundo": {
+        "base": 0.93,
+        "propuesta": 2.01,
+        "r2": {
+          "base": 0.93,
+          "propuesta": 2
+        }
+      },
+      "sentencias": {
+        "base": null,
+        "propuesta": null
+      },
+      "sqlMs": {
+        "base": null,
+        "propuesta": null
+      },
+      "lectura": {
+        "base": [
+          1747,
+          1744
+        ],
+        "propuesta": [
+          33,
+          33
+        ]
+      },
+      "pdp": {
+        "base": [
+          1408,
+          1405
+        ],
+        "propuesta": [
+          1409,
+          1421
+        ]
+      },
+      "filasDeDecision": {
+        "base": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 150
+        },
+        "propuesta": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 150
+        }
+      },
+      "commits": {
+        "base": null,
+        "propuesta": null
+      }
+    },
+    {
+      "escenario": "C5",
+      "que": "5 a la vez, sin pausa",
+      "pedidos": {
+        "base": 500,
+        "propuesta": 500
+      },
+      "errores": {
+        "base": 0,
+        "propuesta": 0
+      },
+      "p50": {
+        "base": 4801,
+        "propuesta": 2175,
+        "delta": -54.7,
+        "r1": -53.9,
+        "r2": -55.7
+      },
+      "p95": {
+        "base": 5608,
+        "propuesta": 2712,
+        "delta": -51.6
+      },
+      "variacionDeLaBase": 10.5,
+      "paginasPorSegundo": {
+        "base": 1.06,
+        "propuesta": 2.28,
+        "r2": {
+          "base": 0.97,
+          "propuesta": 2.11
+        }
+      },
+      "sentencias": {
+        "base": null,
+        "propuesta": null
+      },
+      "sqlMs": {
+        "base": null,
+        "propuesta": null
+      },
+      "lectura": {
+        "base": [
+          2541,
+          2768
+        ],
+        "propuesta": [
+          43,
+          46
+        ]
+      },
+      "pdp": {
+        "base": [
+          2056,
+          2267
+        ],
+        "propuesta": [
+          2071,
+          2199
+        ]
+      },
+      "filasDeDecision": {
+        "base": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 250
+        },
+        "propuesta": {
+          "min": 600,
+          "max": 600,
+          "pedidosContados": 250
+        }
+      },
+      "commits": {
+        "base": null,
+        "propuesta": null
+      }
+    }
+  ],
+  "aperturas": [
+    {
+      "escenario": "A-B200",
+      "base": {
+        "aperturas": 30,
+        "paginasPorApertura": 6,
+        "porPagina": {
+          "1": 2049,
+          "2": 2046,
+          "3": 2045,
+          "4": 2044,
+          "5": 2024,
+          "6": 2043
+        },
+        "todaLaListaP50": 12345,
+        "todaLaListaP95": 13068,
+        "primerasCuatroP50": 8227,
+        "primerasCuatroP95": 8725,
+        "filasPorApertura": 3600
+      },
+      "propuesta": {
+        "aperturas": 30,
+        "paginasPorApertura": 6,
+        "porPagina": {
+          "1": 932,
+          "2": 957,
+          "3": 971,
+          "4": 944,
+          "5": 944,
+          "6": 954
+        },
+        "todaLaListaP50": 5791,
+        "todaLaListaP95": 6186,
+        "primerasCuatroP50": 3854,
+        "primerasCuatroP95": 4114,
+        "filasPorApertura": 3600
+      },
+      "deltaPrimerasCuatro": -53.2,
+      "deltaTodaLaLista": -53.1
+    },
+    {
+      "escenario": "A-H200",
+      "base": {
+        "aperturas": 30,
+        "paginasPorApertura": 6,
+        "porPagina": {
+          "1": 2413,
+          "2": 2427,
+          "3": 2401,
+          "4": 2419,
+          "5": 2418,
+          "6": 2368
+        },
+        "todaLaListaP50": 14408,
+        "todaLaListaP95": 16112,
+        "primerasCuatroP50": 9622,
+        "primerasCuatroP95": 10668,
+        "filasPorApertura": 3600
+      },
+      "propuesta": {
+        "aperturas": 30,
+        "paginasPorApertura": 6,
+        "porPagina": {
+          "1": 955,
+          "2": 948,
+          "3": 968,
+          "4": 951,
+          "5": 944,
+          "6": 955
+        },
+        "todaLaListaP50": 5744,
+        "todaLaListaP95": 6135,
+        "primerasCuatroP50": 3816,
+        "primerasCuatroP95": 4202,
+        "filasPorApertura": 3600
+      },
+      "deltaPrimerasCuatro": -60.3,
+      "deltaTodaLaLista": -60.1
+    }
+  ]
+}
