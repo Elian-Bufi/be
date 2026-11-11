@@ -170,6 +170,7 @@
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
 | DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) programadas en el PR #247, sin integrar**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
+| DL-167 | Pedido de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL) | RF-030 · RF-039 a RF-041 · UC-P10 · UC-P11 · UC-P15 · UC-P16 · UC-I04 · UC-P32 · REG-06-119 y 120 · INV-06-133 · REG-06-145 · B10-05 · B10-06 · B10-10 · DL-108 · DL-109 · DL-119 · DL-148 · DL-152 · DL-163 (D-17 a D-21) | Los editores del profesional piden mucho desplazamiento, no muestran totales, no dejan descartar un borrador, avisan tarde lo que impide activar y obligan a salir del plan para crear una receta; Dirección pide crear con un asistente de cuadros y presets, y editar en una estación de trabajo, antes de congelar el 25/11 | **DECIDIDA por Dirección el 2026-11-11 · sin implementar**: «todo el rediseño antes de congelar la app el 25/11», con la dirección de diseño del mismo día (crear con un asistente por pasos, los cuadros enfocados y los presets de primera clase; la estación de tres zonas para editar). Paquete declarado en `docs/paquetes/WP-EDITORES-PROFESIONAL.md` (ED-00 a ED-58), en borrador. ED-D1 a ED-D16, a ratificar |
 
 ---
 
@@ -7168,3 +7169,87 @@ el §6.1 del paquete, a ratificar. Faltan la etapa 3 (AV-15 y AV-19, con servido
 **Condición de cierre:** la CI pasa en `main`, la candidata está publicada en `test`, sus lecturas quedan congeladas, y el
 recorrido queda en `EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`: Perfil, Inicio, «Quién ve qué», la cuenta nueva, la letra
 grande y la sesión con su descanso. La prueba en el teléfono queda escrita como hecha o como pendiente.
+
+## DL-167 — Los editores del profesional: crear con un asistente de cuadros y presets, editar en una estación de trabajo
+
+**Prioridad:** alta (cómo planifica cada profesional en el website) · **Documento:** RF-030 y RF-039 a RF-041 ·
+UC-P10, UC-P11, UC-P15 y UC-P16, con UC-I04 · UC-P32 · REG-06-119 y REG-06-120 · REG-06-123 e INV-06-133 · REG-06-126
+e INV-06-143 · REG-06-145 · B10-05 · B10-06 · B10-10 · DL-091 · DL-108 · DL-109 · DL-119 · DL-122 · DL-131 · DL-137 D-7 ·
+DL-145 · DL-148 · DL-152 · DL-163 (D-17 a D-21; TB-38, TB-39, TB-43, TB-46 y TB-47) · **Estado:** DECIDIDA por Dirección
+el 2026-11-11 · sin implementar (`docs/paquetes/WP-EDITORES-PROFESIONAL.md`, ED-00 a ED-58). ED-D1 a ED-D16, a
+ratificar. Las partes esperan el sí de Dirección al alcance y a las maquetas.
+
+**Qué dice lo vigente.**
+- Los editores de Entrenamiento y de Nutrición son una página larga: el marco del área, la barra de la versión, la
+  estructura y lo elegido, uno debajo del otro.
+  - La agenda mide 2,7 pantallas, la prescripción de un ejercicio 2,2 y la receta 2,9.
+  - Pedir información, con un formulario elegido, 10,2.
+- Un borrador no se descarta desde el website, aunque la API ya lo hace (TB-47).
+- Lo que impide activar aparece después de abrir la confirmación, y la limitación de la app de la persona aparece al
+  final.
+- Crear una receta obliga a salir del plan y volver con cuatro clics.
+- El editor de Nutrición no muestra cuánto aporta cada opción (D-20 está ratificada, sin programar).
+- Los avisos de un formulario se calculan solo al enviar.
+- Un enlace interno no avisa de los cambios sin guardar.
+- El website dice «asesorado» donde la app dice «persona», y una descripción de plantilla muestra códigos internos
+  («DL-165, ronda 2.1»).
+
+**Qué pidió Dirección** (2026-11-11):
+- Sobre la auditoría de UX de los editores, «todo el rediseño antes de congelar la app el 25/11».
+- Que los editores sean «aptos para cualquiera, con las funciones de un profesional de alto nivel», con «menos scroll»,
+  y que «cada pantalla lleva a acciones claras».
+- Como dirección de diseño: «hacé intuitiva la creación de planes, que sean pequeñas pantallas o cuadros cuando aparece
+  mucha información, que sea un flujo de pantallas y cuadros para tomar decisiones, y que la carga de presets sea fácil
+  de usar e intuitiva».
+
+**Lo decidido** (Dirección, 2026-11-11):
+- **Crear es un asistente por pasos:** una decisión por paso, en cuadros, con «Paso N de 7». Se puede volver sin perder
+  nada, y el borrador se guarda entre pasos.
+  - En Entrenamiento: punto de partida, estructura, ejercicios, prescripción con un preset, días, revisar y activar.
+  - En Nutrición: punto de partida, objetivo con un reparto, tipos de día, comidas, opciones y alimentos con totales al
+    instante, revisar y activar.
+- **Editar es una estación de tres zonas:** la estructura, lo elegido y el contexto, con la barra de comandos fija y
+  cada zona con su desplazamiento. Es la Alternativa B de la auditoría.
+- **Mucha información va en un cuadro enfocado,** con un solo botón principal: el detalle de una serie, una receta, los
+  buscadores y «Antes de activar».
+- **Los presets son de primera clase:** una galería con vista previa, «De BE» y «Tuyos», que se aplican con un clic y
+  se ajustan después; y «Guardar como preset».
+- **Simple por defecto, potente cuando hace falta.**
+
+**Lo que desafía o modifica.**
+- **D-17 y la prueba de TB-39,** si Dirección aprueba ED-D5. Hoy, «las opciones nunca se suman como un total del día»;
+  pasaría a «las alternativas nunca se suman entre sí»: «Un día posible», con una opción por comida, solo para el
+  profesional.
+- **Los presets de BE son contenido nuevo de BE** (ED-D2): esquemas sin datos de la persona (estructuras, prescripciones
+  sin cargas, repartos en % y estructuras del día). Ningún ejercicio ni alimento elegido por BE, porque la periodización
+  y la elección son del profesional (INV-06-143).
+- **Las familias HAB y HAN suman operaciones** (API-HAB-06 a 08 y API-HAN-06 a 08) para la prescripción habitual y el
+  reparto habitual: DL-109 se extiende acá.
+- **`leerNumero` no cambia** (DL-091). Si se aprueba ED-D8, una función nueva lee «2.400» como 2400 solo en los campos
+  enteros.
+
+**Cómo se respeta el legajo.**
+- Versión privada → revisar → activar con confirmación, e historial (UC-I04). «Revisar» no juzga la calidad.
+- «¿Cuándo la revisás?», con «Sin fecha por ahora», no cambia (REG-06-145, TB-15).
+- BE no calcula el requerimiento (INV-06-133) ni escribe por su cuenta: un preset, la progresión o el escalado escriben
+  solo cuando el profesional los toca, con vista previa y sin una regla guardada.
+- Un hueco no es un cero. Nada califica (TEST-PRJ-009): ni «cumplimiento», ni «adherencia», ni «racha», ni colores que
+  juzguen.
+- Lo que leen las APK instaladas no cambia (DL-152): lo nuevo va en operaciones nuevas (DL-137 D-7), y las que suma este
+  paquete son solo del profesional.
+- La regla de B10-06 queda: el plan nace de un objetivo vigente, y el objetivo, de una evaluación.
+
+**Pruebas:** TEST-EDP-001 a 046, en `WP-EDITORES-PROFESIONAL-ORACULOS.md`, que se escribe al programar. Cada negativa,
+con su mutación. Las 73 tareas de `flujos-de-planificacion.mjs` se miden antes y después con el mismo script (§7 del
+paquete).
+
+**Lo que queda abierto:** el sí de Dirección a las partes y a las maquetas; ED-D1 a ED-D16; la validación de los presets
+de BE; el arreglo del límite de 16 KB por pedido (B28), en otro carril; y la ventana de redespliegue de la API para
+ED-13 y API-PLN-01 a 03.
+
+**Condición de cierre:**
+- la CI pasa en `main` con las partes integradas;
+- la corrida de los flujos queda en `EVIDENCIA/EDITORES-PROFESIONAL/` antes y después, con las metas de §7 medidas,
+  cumplidas o no;
+- la galería de capturas está en Claro y Azul noche, a 1280, 1440 y 1920;
+- Dirección probó el asistente y la estación.
