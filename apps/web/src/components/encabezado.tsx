@@ -10,11 +10,13 @@ import isotipo from '../marca/isotipo-96.png';
  * adentro. Con sesión, antes del menú va la campana de las novedades (`CampanaDeNovedades`, DL-133). «Saltar al
  * contenido» es el primer foco de cada página (B10-10 §7): lleva al `<main id="contenido">`.
  *
- * WP-ESCRITORIO-AMABLE (E-19; decisión de Dirección del 2026-10-10): el aviso «Ambiente de prueba · solo datos
- * sintéticos» ya no va en la barra. Que en `test` solo haya datos sintéticos (08 §33) se sigue diciendo donde alguien
- * puede cargar datos por primera vez: en el pie de la cara pública (`Pie`) y en el formulario de registro.
+ * WP-ESCRITORIO-AMABLE (E-19; decisión de Dirección del 2026-10-10): el aviso de prueba ya no va en la barra. Que en
+ * `test` solo haya datos sintéticos (08 §33) se sigue diciendo donde alguien puede cargar datos por primera vez: en el pie
+ * de la cara pública (`Pie`) y en el alta. Desde WP-USO-FINAL UF-08, esos avisos salen del ambiente (`lib/ambiente.ts`).
+ *
+ * `campana={false}` la saca: «Antes de seguir» (UF-01) no lleva a otra pantalla hasta completar lo que falta.
  */
-export function Encabezado({ navegacion }: { navegacion?: ReactNode }) {
+export function Encabezado({ navegacion, campana = true }: { navegacion?: ReactNode; campana?: boolean }) {
   return (
     <header className="encabezado">
       <a className="saltar" href="#contenido">
@@ -27,7 +29,7 @@ export function Encabezado({ navegacion }: { navegacion?: ReactNode }) {
         <span aria-hidden="true">BE</span>
       </Link>
       {navegacion}
-      <CampanaDeNovedades />
+      {campana ? <CampanaDeNovedades /> : null}
       <MenuDeCuenta />
     </header>
   );
