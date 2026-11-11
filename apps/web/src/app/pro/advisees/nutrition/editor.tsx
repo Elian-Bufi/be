@@ -35,6 +35,7 @@ import {
   avisoDeLoQueNoDejaGuardar,
   comidasAbiertasEnElEditor,
   estructuraNutricionalComoEntrada,
+  falloDeGuardado,
   loQueEntraAlActivar,
   loQueNoDejaGuardar,
   lugarDelProblema,
@@ -187,7 +188,8 @@ export function EditorDeBorrador({
   const [guardadoA, setGuardadoA] = useState<string | null>(null);
   // Cuántas ediciones hubo: lo que se escribe mientras viaja un guardado no se pisa con la respuesta.
   const ediciones = useRef(0);
-  const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deRevisar?: boolean } | null>(null);
+  // `sinFoco`: un aviso del autoguardado (DL-168) se anuncia sin sacarle el foco a lo que se está editando.
+  const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deRevisar?: boolean; sinFoco?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
   // TB-48: lo que «Revisar el plan» encontró sin completar. No impide guardar ni activar.
   const [sinCompletar, setSinCompletar] = useState<readonly ValidationIssue[] | null>(null);
@@ -298,8 +300,20 @@ export function EditorDeBorrador({
         setConflicto(true);
         return null;
       }
+      // Lo escrito queda como está: ni la estructura ni «sucio» cambian, y el próximo guardado lo vuelve a mandar.
       setFallo(true);
+      const motivo = falloDeGuardado(r);
+      // DL-168: si el plan no entra, reintentar no lo arregla: se dice también en el autoguardado, sin mover el foco.
+      if (motivo === 'DEMASIADO_GRANDE') {
+        setProblemas(null);
+        setMensaje({ tipo: 'error', texto: COPY_GUARDADO.demasiadoGrande, sinFoco: automatico });
+        return null;
+      }
       if (automatico) return null;
+      if (motivo === 'SIN_RESPUESTA') {
+        setMensaje({ tipo: 'error', texto: COPY_GUARDADO.sinRespuesta });
+        return null;
+      }
       if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
       return null;
@@ -576,7 +590,7 @@ export function EditorDeBorrador({
         </AvisoFlotante>
       ) : null}
       {mensaje && mensaje.tipo !== 'exito' ? (
-        <Aviso tipo={mensaje.tipo} enfocar={mensaje.tipo !== 'info' || !!mensaje.deRevisar}>
+        <Aviso tipo={mensaje.tipo} enfocar={(mensaje.tipo !== 'info' || !!mensaje.deRevisar) && !mensaje.sinFoco}>
           <p>{mensaje.texto}</p>
           {problemas && problemas.length > 0 ? (
             <ul className="problemas-del-plan">
