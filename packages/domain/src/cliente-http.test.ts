@@ -28,7 +28,7 @@ const ALTA = {
 test('cliente: el registro envía A1 y A2 con la versión vigente, superficie e Idempotency-Key; nunca A3', async () => {
   const llamadas: Llamada[] = [];
   const cliente = crearClienteBe({ baseUrl: 'https://api.example.invalid/api/v1', superficie: 'APK', fetch: fetchFalso(201, ALTA, llamadas) });
-  const r = await cliente.registrar({ correo: 'persona@example.invalid', contrasena: 'clave-sintetica-01' }, 'clave-de-prueba-01');
+  const r = await cliente.registrar({ correo: 'persona@example.invalid', contrasena: 'clave-sintetica-01', nombre: 'Persona Sintética' }, 'clave-de-prueba-01');
   assert.equal(r.ok, true);
   const [{ url, init }] = llamadas;
   assert.equal(url, 'https://api.example.invalid/api/v1/registrations');
@@ -41,6 +41,8 @@ test('cliente: el registro envía A1 y A2 con la versión vigente, superficie e 
   assert.deepEqual(cuerpo.privacyAcknowledgement, { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id });
   assert.equal(JSON.stringify(cuerpo).includes(VERSION_VIGENTE.DATOS_SALUD_BE.id), false);
   assert.equal(cuerpo.registrationIntent, 'ADVISEE');
+  // DL-169 (UF-01): la cuenta nace con su nombre.
+  assert.deepEqual(cuerpo.profile, { displayName: 'Persona Sintética' });
 });
 
 const LINEA_VACIA = {
@@ -77,7 +79,7 @@ test('cliente: el texto buscado en la línea de tiempo viaja en el cuerpo de un 
 
 test('cliente: una respuesta 2xx con otra forma no se interpreta (validación de contrato)', async () => {
   const cliente = crearClienteBe({ baseUrl: '/api/v1', superficie: 'WEB', fetch: fetchFalso(201, { data: { identityId: 'x', rol: 'ADMIN' } }) });
-  const r = await cliente.registrar({ correo: 'a@example.invalid', contrasena: 'clave-sintetica-01' }, 'clave-de-prueba-01');
+  const r = await cliente.registrar({ correo: 'a@example.invalid', contrasena: 'clave-sintetica-01', nombre: 'Ana Sintética' }, 'clave-de-prueba-01');
   assert.deepEqual(r, { ok: false, tipo: 'API', status: 201, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] });
 });
 
@@ -87,7 +89,7 @@ test('cliente: un ErrorEnvelope se traduce a su código e issues, sin exponer el
     superficie: 'WEB',
     fetch: fetchFalso(400, { error: { code: 'INVALID_REQUEST', message: 'x', details: { issues: [{ code: 'CREDENCIAL_DEMASIADO_CORTA', path: 'identity.localCredential' }] } } }),
   });
-  const r = await cliente.registrar({ correo: 'a@example.invalid', contrasena: 'corta' }, 'clave-de-prueba-01');
+  const r = await cliente.registrar({ correo: 'a@example.invalid', contrasena: 'corta', nombre: 'Ana Sintética' }, 'clave-de-prueba-01');
   assert.deepEqual(r, { ok: false, tipo: 'API', status: 400, codigo: 'INVALID_REQUEST', issues: [{ code: 'CREDENCIAL_DEMASIADO_CORTA', path: 'identity.localCredential' }] });
 });
 

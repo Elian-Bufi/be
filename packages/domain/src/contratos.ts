@@ -270,8 +270,12 @@ export const RegistrarIdentidadRequestSchema = z.strictObject({
     localIdentifier: z.string(),
     localCredential: z.string(),
   }),
-  /** «campos mínimos definidos por 04/05»: ninguno aprobado todavía (DEUDA_LEGAJO DL-009). */
-  profile: z.strictObject({}).optional(),
+  /**
+   * «campos mínimos definidos por 04/05»: el nombre visible (DL-009 y DL-040), obligatorio desde DL-169 (UF-01). En el
+   * schema es optativo para que la API responda un 422 preciso: un cuerpo sin él es el de un cliente anterior, que recibe
+   * TERMS_VERSION_NOT_ACCEPTABLE con el issue DISPLAY_NAME_REQUIRED y pide actualizar la app (UF-D1).
+   */
+  profile: z.strictObject({ displayName: z.string().max(400).optional() }).optional(),
   termsAcceptance: z.strictObject({ versionId: IdOpaco }),
   privacyAcknowledgement: z.strictObject({ versionId: IdOpaco }),
   /** Obligatoria desde DL-138 (2026-10-16); ver `DeclaracionDeMayoriaDeEdadSchema`. */

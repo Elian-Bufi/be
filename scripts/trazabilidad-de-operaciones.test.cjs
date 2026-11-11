@@ -6,8 +6,8 @@
  * Esta guardia lee el 09 (solo lectura: el legajo está en el manifiesto y no se toca) y exige:
  * 1. una operación con un ID del inventario P0 del 09 tiene el método y la ruta que el 09 le da;
  * 2. una operación con un ID que no está en el inventario es una extensión declarada de BE, con una familia propia
- *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO) o con un ID P1 que el 09
- *    nombra, y cita su fuente;
+ *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
+ *    nombra o con un ID nuevo de una familia del 09 que el 09 no usa, declarado con su DL (API-ACC-07), y cita su fuente;
  * 3. ningún ID se repite.
  * Requiere `npm run build:domain` antes.
  */
@@ -45,6 +45,12 @@ const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-1
  * de una revisión, DL-154).
  */
 const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO', 'BUSQUEDA', 'REANUDACION', 'EVIDENCIA'];
+/**
+ * Los IDs nuevos dentro de una familia del 09 que el 09 no usa, cada uno con la DL que lo declara. El 09 tiene API-ACC-01
+ * a 06 y las P1; DL-169 (WP-USO-FINAL, UF-D4, ratificada por Dirección el 2026-11-11) suma API-ACC-07, «Lo que falta para
+ * seguir». La guardia exige además que el 09 no tenga ese ID: si lo usara, serían dos operaciones con el mismo nombre.
+ */
+const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169' };
 
 const normalizar = (ruta) => ruta.replace(/^\/api\/v1/, '').replace(/\?.*$/, '').replace(/\{[^}]+\}/g, '{}').replace(/\/$/, '');
 
@@ -109,7 +115,8 @@ test('un ID fuera del inventario es una extensión declarada de BE y cita su fue
     const familia = op.id.match(/^API-([A-Z]+)-\d{2}$/);
     const sufijo = op.id.match(/^(API-[A-Z]+-\d{2})-([A-Z]+)$/);
     const p1 = /^API-[A-Z]+-P1-\d{2}$/.test(op.id) && del09.has(op.id);
-    const declarada = (familia && familia[1] in FAMILIAS_DE_BE) || (sufijo && inventario.has(sufijo[1]) && SUFIJOS_DE_BE.includes(sufijo[2])) || p1;
+    const nuevoEnFamiliaDel09 = op.id in IDS_NUEVOS_EN_FAMILIAS_DEL_09 && !del09.has(op.id);
+    const declarada = (familia && familia[1] in FAMILIAS_DE_BE) || (sufijo && inventario.has(sufijo[1]) && SUFIJOS_DE_BE.includes(sufijo[2])) || p1 || nuevoEnFamiliaDel09;
     if (!declarada || !op.fuente || !op.fuente.trim()) sinDeclarar.push(op.id);
   }
   assert.deepEqual(sinDeclarar, [], `extensiones sin declarar: ${sinDeclarar.join(', ')}`);
@@ -119,4 +126,12 @@ test('ningún ID de operación se repite', () => {
   const vistos = new Set();
   const repetidos = OPERACIONES.map((o) => o.id).filter((id) => (vistos.has(id) ? true : (vistos.add(id), false)));
   assert.deepEqual(repetidos, []);
+});
+
+test('un ID nuevo en una familia del 09 es uno que el 09 no usa, y está en el contrato (DL-169)', () => {
+  for (const [id, dl] of Object.entries(IDS_NUEVOS_EN_FAMILIAS_DEL_09)) {
+    assert.equal(del09.has(id), false, `${id} (${dl}) ya es una operación del 09`);
+    assert.equal(inventario.has(id), false, `${id} (${dl}) está en el inventario P0 del 09`);
+    assert.ok(OPERACIONES.some((o) => o.id === id && o.fuente.includes(dl)), `${id} no está en el contrato o no cita ${dl}`);
+  }
 });
