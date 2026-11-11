@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 type Tx = Prisma.TransactionClient;
 type AreaConSeguimiento = 'NUTRICION' | 'ENTRENAMIENTO';
@@ -37,4 +37,55 @@ export async function cerradoConFinalizar(tx: Tx, profesionalId: string, asesora
     select: { estado: true, motivoDeCierre: true },
   });
   return ultimo?.estado === 'CERRADO' && ultimo.motivoDeCierre === 'REVISION_FINALIZAR';
+}
+
+// ─── Los mismos hechos, por conjuntos (la cartera; TA-62) ───────────────────────────────────────
+
+/** Las tablas de la revisión y de su aplicación, por área: identificadores fijos, nunca datos del pedido. */
+const TABLAS_DE_REVISION: Readonly<Record<AreaConSeguimiento, { readonly revision: Prisma.Sql; readonly aplicacion: Prisma.Sql }>> = {
+  NUTRICION: { revision: Prisma.raw('"revision_nutricional"'), aplicacion: Prisma.raw('"aplicacion_de_revision"') },
+  ENTRENAMIENTO: { revision: Prisma.raw('"revision_de_entrenamiento"'), aplicacion: Prisma.raw('"aplicacion_de_revision_de_entrenamiento"') },
+};
+
+/**
+ * `aplicacionPosteriorA` para varias expectativas de un área, en una sentencia: los Procesos cuya expectativa quedó
+ * resuelta por una revisión del mismo Proceso registrada después de ella y aplicada (REG-06-150). Es la misma
+ * comparación, hecha en la base con los momentos tal como están guardados. Recibe los identificadores de las
+ * expectativas (`proxima_revision`); sin ninguna, no consulta.
+ */
+export async function procesosConAplicacionPosterior(tx: Tx, area: AreaConSeguimiento, expectativaIds: readonly string[]): Promise<Set<string>> {
+  if (expectativaIds.length === 0) return new Set();
+  const t = TABLAS_DE_REVISION[area];
+  const filas = await tx.$queryRaw<{ procesoId: string }[]>`
+    SELECT e."proceso_id"::text AS "procesoId"
+      FROM "proxima_revision" e
+     WHERE e."id" = ANY(${[...expectativaIds]}::uuid[])
+       AND EXISTS (SELECT 1
+                     FROM ${t.revision} r
+                     JOIN ${t.aplicacion} a ON a."revision_id" = r."id"
+                    WHERE r."proceso_id" = e."proceso_id"
+                      AND r."momento_de_registro" > e."momento_de_registro")`;
+  return new Set(filas.map((f) => f.procesoId));
+}
+
+/**
+ * `cerradoConFinalizar` para varios asesorados de un profesional, en una sentencia: de cada asesorado y área, el último
+ * seguimiento, con el mismo orden (el registro más reciente y, a igual momento, el identificador mayor), y si se cerró
+ * con una revisión «Finalizar» (REG-06-73). La base elige el último de cada terna (`DISTINCT ON`). Devuelve, por área,
+ * los asesorados cuyo último seguimiento se cerró así; sin asesorados, no consulta.
+ */
+export async function asesoradosCerradosConFinalizar(tx: Tx, profesionalId: string, asesorados: Readonly<Record<AreaConSeguimiento, readonly string[]>>): Promise<Record<AreaConSeguimiento, Set<string>>> {
+  const cerrados: Record<AreaConSeguimiento, Set<string>> = { NUTRICION: new Set(), ENTRENAMIENTO: new Set() };
+  const ramas = (['NUTRICION', 'ENTRENAMIENTO'] as const)
+    .filter((area) => asesorados[area].length > 0)
+    .map((area) => Prisma.sql`(p."alcance" = ${area}::"Alcance" AND p."asesorado_id" = ANY(${[...asesorados[area]]}::uuid[]))`);
+  if (ramas.length === 0) return cerrados;
+  const filas = await tx.$queryRaw<{ alcance: AreaConSeguimiento; asesoradoId: string; estado: string; motivoDeCierre: string | null }[]>`
+    SELECT DISTINCT ON (p."alcance", p."asesorado_id") p."alcance"::text AS "alcance", p."asesorado_id"::text AS "asesoradoId", p."estado"::text AS "estado", p."motivo_de_cierre"::text AS "motivoDeCierre"
+      FROM "proceso_operativo" p
+     WHERE p."profesional_id" = ${profesionalId}::uuid
+       AND (${Prisma.join(ramas, ' OR ')})
+     ORDER BY p."alcance", p."asesorado_id", p."momento_de_registro" DESC, p."id" DESC`;
+  for (const f of filas) if (f.estado === 'CERRADO' && f.motivoDeCierre === 'REVISION_FINALIZAR') cerrados[f.alcance].add(f.asesoradoId);
+  return cerrados;
 }

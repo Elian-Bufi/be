@@ -9,7 +9,9 @@
  * - La nota de origen en un borrador que salió de una plantilla.
  */
 import {
+  COPY_GUARDADO,
   COPY_PLANTILLAS,
+  falloDeGuardado,
   notasDeLaEstructuraNutricional,
   vaciarNota,
   type EstructuraDePlanEntrada,
@@ -63,7 +65,11 @@ export function DialogoGuardarPlantillaNutricional({
     );
     intento.registrar(r);
     setEnviando(false);
-    if (!r.ok) return setError(!r.ok && r.tipo === 'API' && r.codigo === 'TEMPLATE_NAME_TAKEN' ? COPY_PLANTILLAS.nombreTomado : mensajeDeFallo(r));
+    // DL-168: si el plan no entra, el diálogo dice lo mismo que el editor, y no «El servicio no está disponible».
+    if (!r.ok)
+      return setError(
+        !r.ok && r.tipo === 'API' && r.codigo === 'TEMPLATE_NAME_TAKEN' ? COPY_PLANTILLAS.nombreTomado : falloDeGuardado(r) === 'DEMASIADO_GRANDE' ? COPY_GUARDADO.demasiadoGrande : mensajeDeFallo(r),
+      );
     onGuardada(r.datos.data.name);
     setNombre('');
     setDescripcion('');

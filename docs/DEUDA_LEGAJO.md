@@ -162,15 +162,16 @@
 | DL-156 | WP-ADMINISTRACION · 2026-10-25 | 05 UC-P02 §4.6.10 · REG-06-38 · INV-06-43 | Toda resolución identifica la versión revisada de una presentación, y en esta versión no hay presentaciones | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la versión revisada es la de la trayectoria del área al decidir (`version_previa` del hecho), con el control de conflictos previsto (`expectedVersion`) |
 | DL-157 | WP-ADMINISTRACION · 2026-10-25 | 08 §26.3 · 09v8 PRO-12 («sesiones vigentes del profesional se revocan conforme a 08») · 08 §26.4 | Suspender una verificación revoca las sesiones del profesional, pero revocarlas corta también sus otras áreas, contra el criterio de Dirección del 2026-10-25 | **RATIFICADO** por Dirección el 2026-10-25 e **INTEGRADO** (#210): la suspensión opera por área y no cierra las sesiones globales del profesional; el servidor rechaza las operaciones del área suspendida desde el pedido siguiente (la sesión autentica, no autoriza) |
 | DL-158 | Encargo de Dirección · 2026-10-25 (ampliación, etapa C; propuesta C de AMPLIACIONES_2026-10-19, #193) | REG-06-105 · REG-06-125 · INV-06-135 · NOTA_DE_LO_PREVISTO · DL-126 · DL-153 · GUIA-UX-UI II.4 | «Analizar» mostraba lo registrado y solo el objetivo de calorías; los macros del objetivo y lo que indicaba el plan no se veían al lado | **RATIFICADA** por Dirección el 2026-10-25 e **INTEGRADA** (#211, `7079677`), desplegada en test (C-D1 opción A y C-D2): tres capas con su nombre y su forma —registrado, objetivo del profesional (también los macros en gramos) e indicado en el plan (por día solo si el plan no deja elegir; por comida, la opción registrada)—; con alternativas no se inventa un total diario, y la comparación no se presenta como adherencia; falta la prueba con profesionales y con un lector de pantalla |
-| DL-159 | Hallazgo de implementación · 2026-10-28 (#222, la cartera por conjuntos) | 12 §22 · REG-06-196 · REG-06-198 · DL-135 D-9 | La huella de una corrida de la TVCC-30 no se puede recalcular desde la fila conservada cuando el resultado trae un cociente de 17 dígitos | **DECIDIDA** por Dirección el 2026-11-06: opción A (la forma canónica sin los cocientes derivados), después del tablero · a programar; el diagnóstico completo está en #222, en borrador y sin integrar |
+| DL-159 | Hallazgo de implementación · 2026-10-28 (#222, la cartera por conjuntos) | 12 §22 · REG-06-196 · REG-06-198 · DL-135 D-9 | La huella de una corrida de la TVCC-30 no se puede recalcular desde la fila conservada cuando el resultado trae un cociente de 17 dígitos | **DECIDIDA** por Dirección el 2026-11-06: opción A (la forma canónica sin los cocientes derivados), después del tablero · **RATIFICADA** por Dirección el 2026-11-11 con la integración de #222, que trae a `main` el diagnóstico y la reproducción · la opción A, a programar |
 | DL-160 | Decisión de Dirección · 2026-11-02 (registro rápido y «Ya la hice») | B10-06 §57 · B10-06 §29 · DL-137 · DL-161 | La regla «el día de hoy se entrena con los cronómetros» no está en el legajo: es un comentario de la APK, y B10-06 §57 dice que el temporizador no es requisito P0 | **DECIDIDA** por Dirección el 2026-11-02: el registro rápido y «Ya la hice» valen también el mismo día; los cronómetros quedan como ayuda opcional. La API ya lo admite (confirmar la sesión de hoy no pide eventos de tiempo); la APK lo toma con «Ya la hice» (PA-03), integrada en `main` el 2026-11-02 (#224, `b62ce90`) y en la 0.19.0-candidata.1; falta el teléfono · **RATIFICADA** 2026-11-06, tal cual como la decidió el 2026-11-02 |
 | DL-161 | Decisión de Dirección · 2026-11-02 (registro por niveles) | B10-06 §56 · 09v10:1099-1101 · INV-06-152 · DL-152 · C01 | La persona carga desde un toque hasta todo el detalle, y el profesional tiene que ver cómo cargó cada serie; el contrato no lo decía | **IMPLEMENTADA** el 2026-11-02 en la rama `wp-registro-por-niveles` e **INTEGRADA** en `main` ese día (la API y el website con #229, `91a894c`; la APK y el escritorio con #224, `b62ce90`) y desplegada en `test`: `recordedAs` y `durationSeconds`, opcionales, en la serie ejecutada; la API los guarda y los devuelve solo si existen; el website del profesional muestra la marca, la duración y el nivel de detalle; la APK, integrada con #224 y en la 0.19.0-candidata.1; queda documentado el caso de una ejecución nueva leída por una APK anterior; el mismo día Dirección decidió cómo se lee en el escritorio (lo tildado sin escribir no se compara y va hueco en los gráficos; la carga completa se destaca), hecho en la rama `wp-escritorio-niveles` (#230, integrada con #224) · **RATIFICADA** 2026-11-06: I-1 a I-9, e I-10 con el cambio (una sesión con una serie menos y nada escrito pasa a decir «Carga rápida con cambios»), **a programar** |
 | DL-162 | Encargo de Dirección · 2026-11-02 (WP-CATALOGO-VISUAL, frente C) | REG-06-134 · REG-06-135 inciso 1 · 09v10 §9 · DL-123 · DL-141 D-1 · DL-152 | Un ejercicio del catálogo de todos (sembrado o importado) no podía tener imagen: solo los propios de un profesional | **IMPLEMENTADA** 2026-11-02 en la rama `wp-catalogo-visual` (#225), integrada en `main` ese día con #229 (`91a894c`) y desplegada en `test` · **RATIFICADA** 2026-11-06: D-1 a D-5, junto con DL-141 D-1: la cura BE con un comando del operador, la ve cualquier profesional de Entrenamiento y el asesorado con un plan que la cita, y la APK instalada ya la muestra |
 | DL-163 | Pedido de Dirección · 2026-11-03 (WP-TABLERO-ALTA-GAMA; D-1 a D-21 y el alcance, ratificados el 2026-11-05) | RF-052 a RF-055 · UC-P23 · UC-P24 · 08 §11, §11-bis, C-11 · API-DSH-01 y 02 (09 v0.11 §13 y §14) · B10-08 · B10-10 · GUIA-UX-UI I y I.7 · DL-107 · DL-152 · DL-158 · DL-165 | El inicio del profesional y el Resumen de la ficha se veían sosos y con puntos burdos; Dirección pidió barras de avance, rostro, decisiones guiadas, ver las otras áreas, un mapa corporal, programas propios, más datos y planificar más fácil, y autorizó desafiar el legajo con fundamento | **RATIFICADA** 2026-11-05 · D-1 a D-21, todas como se recomendaron (la D-9 original, reemplazada por la D-9 nueva), y el alcance completo, las partes TB-00 a TB-49 (TB-49, «Lo que contó al empezar», se sumó con el sí) · D-11, modificada por Dirección el 2026-11-07 (kilos con el % al lado, TB-51), con TB-50 sumada el mismo día · D-13, ampliada por Dirección el 2026-11-07 (el plan completo de solo lectura, los comentarios y el pedido; TB-52 a TB-56; TA-79, TA-87 y TA-95 decididas el mismo día); el mismo día Dirección decidió un texto distinto por nivel (reemplaza TA-99; TA-109 a TA-112) y ratificó que el fundamento del objetivo se muestra (VJR-5 suma esa pregunta) · paquete declarado e integrado en `main` el 2026-11-06 (#239, `758b4d8`) · la etapa A, integrada en `main` el 2026-11-07 con la autorización de Dirección: primero la API (#243, `1b6fc8b`: la cartera, la cola de revisiones, el descarte de borradores y la familia RES, con TA-56 a TA-70 y TA-96 a TA-112 a ratificar) y después el website (#240, con TA-01 a TA-55, TA-71 a TA-95 y TA-120 a TA-129 a ratificar) · con personas reales, D-13 y el control semanal de D-16, después de la revisión legal; el texto de «resumen», además, después de TB-29 (TEST-TAG-041) |
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
-| DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) programadas en el PR #247, sin integrar**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
+| DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) INTEGRADAS en `main` el 2026-11-07 (#247, `64508a8`) y publicadas en la APK 0.23.0-candidata.1 el 2026-11-08, con su cierre (#249), y en la 0.23.0-candidata.2 el 2026-11-11, con el arreglo del cierre al empezar un entrenamiento (#250): la «latest» que ofrece el website, que lee lo mismo que la .1**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
 | DL-167 | Pedido de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL) | RF-030 · RF-039 a RF-041 · UC-P10 · UC-P11 · UC-P15 · UC-P16 · UC-I04 · UC-P32 · REG-06-119 y 120 · INV-06-133 · REG-06-145 · B10-05 · B10-06 · B10-10 · DL-108 · DL-109 · DL-119 · DL-148 · DL-152 · DL-163 (D-17 a D-21) | Los editores del profesional piden mucho desplazamiento, no muestran totales, no dejan descartar un borrador, avisan tarde lo que impide activar y obligan a salir del plan para crear una receta; Dirección pide crear con un asistente de cuadros y presets, y editar en una estación de trabajo, antes de congelar el 25/11 | **DECIDIDA por Dirección el 2026-11-11 · sin implementar**: «todo el rediseño antes de congelar la app el 25/11», con la dirección de diseño del mismo día (crear con un asistente por pasos, los cuadros enfocados y los presets de primera clase; la estación de tres zonas para editar). Paquete declarado en `docs/paquetes/WP-EDITORES-PROFESIONAL.md` (ED-00 a ED-58), en borrador. ED-D1 a ED-D16, a ratificar |
+| DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA e integrada en `main` (#252, 6a05fee)**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. **Ampliación a las plantillas** (API-TPN-01 y 04, API-TPL-01 y 04, con el mismo límite y el mismo mensaje en «Guardar como plantilla») integrada en `main` con #254 |
 
 ---
 
@@ -5568,6 +5569,31 @@ todavía no actualizó.
 - La prueba del dominio fija lo que lee cada una: la 0.21, HBT-01 a 04; la 0.22, además 08 y 09; ninguna, 05 a 07. Los
   comentarios del contrato, del cliente y de `openapi.ts` dicen que la forma de 08 y 09 también quedó congelada.
 
+**2026-11-08 · la 0.23.0-candidata.1** (`6eac0a7`, las etapas solo de app de la vuelta de rosca, DL-166), congelada con
+estos pasos en su cierre (#249). Se sumó a `VIGENTES` sin sacar ninguna, porque Dirección todavía no
+actualizó.
+- Lee las mismas 88 operaciones que la 0.22, todas con la misma forma. Perfil, «Quién ve qué», Inicio y el descanso
+  automático usan lecturas que la APK ya hacía, y el descanso que arranca al tildar manda por API-TIE-01 los eventos de
+  siempre.
+- Las cabeceras (`X-BE-Capabilities: training-set-targets-1,forms-format-3`), el sobre de error y los detalles de rechazo
+  son los de la 0.22. No suma reglas que JSON Schema no represente.
+- Los textos suman dos versiones, `RESUMENES_COMPARTIDOS` y `RESUMENES_Y_PLAN_COMPARTIDOS`, del tablero del profesional
+  (DL-163): el script congela todas las de `VERSION_VIGENTE` del commit, y la APK no manda ninguna de las dos.
+- No hizo falta un escenario nuevo en la prueba de integración: la 0.23 corre los de la 0.22. La prueba del dominio de los
+  hábitos ya la cubre (lee solo las HBT de la persona).
+
+**2026-11-11 · la 0.23.0-candidata.2** (`c9ec44f`: `main` con el arreglo del cierre al empezar un entrenamiento, #250,
+más la versión), publicada ese día. Es la «latest» que ofrece el website. Lee las mismas operaciones que la .1, porque el
+arreglo es solo de la app:
+- entre los dos tags cambian cuatro archivos, todos de `apps/mobile`: la versión y el versionCode (37) en
+  `app.config.ts`, y el almacén de la fila fija de la sesión (`almacen-de-la-fila.ts`, su prueba y `fila-fija.tsx`).
+  `packages/domain` no cambia, y la versión no viaja a la API: la app solo la muestra en la bienvenida;
+- el script, corrido sobre `be-apk-0.23.0-candidata.2`, da lo mismo que lo congelado de la .1 salvo el bloque `apk`: las
+  mismas 88 lecturas, las mismas cabeceras, los mismos textos y el mismo sobre de error.
+
+Por eso no se congeló un archivo aparte ni cambió `VIGENTES`: el de la .1 cubre lo que lee la .2. La enmienda de esta
+regla sobre `VIGENTES` va aparte (WP-USO-FINAL, UF-00).
+
 Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocando lo congelado (la APK ya está instalada): va en una operación nueva (C01) o lo decide Dirección.
 
 **La regla para promover.** Una candidata no pasa a estable mientras:
@@ -5888,14 +5914,19 @@ la CI están (2026-10-25); falta la prueba con profesionales.
 
 **Prioridad:** media · **Documento:** 12 §22 (el resultado conservado se verifica con su huella) · REG-06-196
 (conservación del resultado) · REG-06-198 (cadena de corridas) · DL-135 D-9 · **Estado:** DECIDIDA por Dirección el
-2026-11-06: opción A, después del tablero; a programar. El diagnóstico completo, la reproducción y las opciones están en
-la rama de #222 (`wp-cartera-lectura-por-conjuntos`), en borrador y sin integrar: en `main` no cambió nada.
+2026-11-06: opción A, después del tablero · **RATIFICADA** por Dirección el 2026-11-11 con la integración de #222 · la
+opción A, a programar. El diagnóstico completo, la reproducción y las opciones están en `main` desde esa integración:
+`EVIDENCIA/RENDIMIENTO-CARTERA/LECTURA-POR-CONJUNTOS.md` §8 y `test/integration/tvcc30.int-spec.ts`.
 
 **El defecto, en corto** (diagnóstico confirmado el 2026-10-28 en #222). Cada corrida de la TVCC-30 se conserva con la
 huella SHA-256 de su forma canónica (DL-135 D-9). Esa forma (`canonicoTvcc30`) incluye los cocientes derivados (`tasa` y
 `porcentaje`) como doubles. Un cociente de 17 dígitos significativos (2/11, 1/6) se guarda con 16 al escribir a través de
 Prisma, y la huella recalculada desde la fila recuperada no coincide con la guardada. La huella guardada sigue sirviendo
 para encadenar corridas y comparar dos cálculos (REG-06-198); no sirve para verificar la fila conservada (12 §22).
+Reproducido en la CI de #222 (corrida 40712848030): huella guardada `9d6bb495…`, recalculada desde la fila `a4574858…`;
+la tasa calculada 0,16666666666666666 quedó guardada como 0,1666666666666667. PostgreSQL conserva el texto del `jsonb` y
+la lectura es exacta: el dígito se pierde al escribir. Es un problema previo a la cartera por conjuntos, que no toca la
+TVCC-30; lo destapó su suite, que deja más Procesos en la ventana.
 
 **Opciones** (las de #222):
 - **A.** Que la forma canónica no incluya los cocientes derivados: `n` y `d`, enteros, los determinan.
@@ -5903,13 +5934,20 @@ para encadenar corridas y comparar dos cálculos (REG-06-198); no sirve para ver
 - **C.** Conservar también el texto canónico junto con la fila, y verificar sobre ese texto.
 
 **Mientras tanto** no se cambia la canonicalización ni se recalcula ninguna huella: las corridas conservadas valen con la
-huella que tienen.
+huella que tienen. Desde la integración de #222, `tvcc30.int-spec.ts` compara el resultado conservado con 15 dígitos
+significativos (`876bff1`) y deja en su salida la reproducción: la huella guardada contra la recalculada desde la fila.
+Esa comparación deja pasar a propósito el dígito perdido. El defecto queda registrado acá y en la salida de la prueba, y
+la condición de cierre pide la prueba exacta de la huella.
 
 **Condición de cierre:** se implementa A con una prueba que recalcula la huella desde la fila recuperada y la compara con
 la guardada, y se declara qué pasa con las huellas anteriores.
 
 **Decisión de Dirección del 2026-11-06.** Por pregunta, eligió «Sí, después del tablero», con la opción A: la forma
 canónica deja afuera los cocientes derivados. Se programa después de WP-TABLERO-ALTA-GAMA, aunque #222 no esté integrado.
+
+**Ratificación de Dirección del 2026-11-11.** Con la autorización de integrar #222 («ok para integrar las dos cosas que
+esperan»), DL-159 queda ratificada tal como estaba decidida: la opción A, a programar. #222 se integró ese día, después
+de la etapa A del tablero, como había decidido Dirección.
 
 ---
 
@@ -7053,7 +7091,11 @@ prueba de la 0.22.
 
 **Prioridad:** alta (la experiencia de la persona en toda la APK) · **Documento:** TEST-PRJ-009 · RNF-ACC-001 y B10-10
 (§9) · 08 §33 · 10-B04 · B10-06 §57 · REG-06-130 y 131 · DL-117 · DL-124 · DL-122 · DL-152 · DL-160 ·
-`WP-ENTRENAMIENTO-SERIES.md` §7.3 y §7.4 · PA-02 · **Estado:** DECIDIDA 2026-11-07 por Dirección · sin implementar
+`WP-ENTRENAMIENTO-SERIES.md` §7.3 y §7.4 · PA-02 · **Estado:** DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2
+(solo app, AV-01 a AV-14, AV-17 y AV-18) integradas en `main` el 2026-11-07 (#247, `64508a8`) y publicadas en la APK
+0.23.0-candidata.1 el 2026-11-08 y, con el arreglo del cierre al empezar un entrenamiento (#250), en la
+0.23.0-candidata.2 el 2026-11-11, la «latest» que ofrece el website; la etapa 3 (AV-15 y AV-19) y la prueba en el
+teléfono (AV-16), pendientes
 (`docs/paquetes/WP-APP-VUELTA-DE-ROSCA.md`). PV-1 a PV-12, ratificadas por Dirección el 2026-11-07. PV-13, elegida por
 el continuador el mismo día y a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. De las decisiones de la
 implementación, AVD-1 y AVD-3 (con la alternativa) y AVD-5 y AVD-8 (como se recomendaba) fueron ratificadas por
@@ -7166,6 +7208,12 @@ TEST-AVR de esas partes (`WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`), verificados con 
 revisaron a 18, 20 y 24 dp (`EVIDENCIA/APP-VUELTA-DE-ROSCA/iconos/`). Las decisiones técnicas AVT-01 a AVT-16 están en
 el §6.1 del paquete, a ratificar. Faltan la etapa 3 (AV-15 y AV-19, con servidor), la candidata y AV-16.
 
+**Avance (2026-11-11):** el cierre de la 0.23.0-candidata.1 (#249) congeló lo que lee, escribió TEST-AVR-034 a 036 y la
+guía de la prueba en el teléfono. La .1 se cerraba al empezar o continuar un entrenamiento, porque la fila fija de la
+sesión se volvía a dibujar sin fin. El arreglo, solo de la app, se integró con #250 el 2026-11-08, y la
+0.23.0-candidata.2 se publicó el 2026-11-11 como la «latest» que ofrece el website. Lee las mismas operaciones que la .1
+(DL-152). La prueba en el teléfono (AV-16, TEST-AVR-036) se hace con la .2.
+
 **Condición de cierre:** la CI pasa en `main`, la candidata está publicada en `test`, sus lecturas quedan congeladas, y el
 recorrido queda en `EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`: Perfil, Inicio, «Quién ve qué», la cuenta nueva, la letra
 grande y la sesión con su descanso. La prueba en el teléfono queda escrita como hecha o como pendiente.
@@ -7253,3 +7301,129 @@ ED-13 y API-PLN-01 a 03.
   cumplidas o no;
 - la galería de capturas está en Claro y Azul noche, a 1280, 1440 y 1920;
 - Dirección probó el asistente y la estación.
+
+## DL-168 — Un plan grande no se guardaba: el límite de 16 KB por pedido
+
+**Prioridad:** alta (Dirección carga casos reales en `test`) · **Documento:** 09v7 §4.1 (`400 INVALID_REQUEST`, «JSON/shape/parámetros
+inválidos»; el catálogo no tiene 413) · el límite de 16 KB que fijó WP-02 para toda la API (`apps/api/src/bootstrap.ts`:
+«los contratos de WP-02 son JSON chicos»; el legajo no fija un tamaño) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01
+y 04 · API-TPN-01 y 04 · API-TPL-01 y 04 · DL-148 (el autoguardado) · DL-152 · GHSA-mrhx-c7xc-m3w5 · **Estado:** ARREGLADA
+e integrada en `main` (#252, 6a05fee). La ampliación a las plantillas,
+integrada en `main` con #254 (autorizada por Dirección el 2026-11-11)
+
+**Qué pasó.** En las capturas de los flujos de planificación (rama `wp-tablero-flujos-capturas`, B28 en el análisis), el
+plan de Diego Sosa, con su «Día habitual» duplicado y una colación con un alimento, dejó de guardarse: cada guardado del
+borrador se rechazaba antes de llegar a una ruta, en un milisegundo. La web decía «El servicio no está disponible en este
+momento. Probá de nuevo más tarde.»; el autoguardado, «No se pudo guardar: se reintenta al seguir editando o con «Guardar
+cambios»», y «Activar plan», «No pudimos guardar los cambios, y sin guardarlos no se puede activar.».
+
+**La causa, con evidencia.**
+- El registro de la API de la primera corrida (corrida 42943855087 de `capturas-del-tablero`, artefacto
+  `flujos-de-planificacion`, `api.log`): el borrador se crea (201) y se guarda dos veces (200, en 24 y 21 ms). Desde que
+  se agrega la banana, seis PATCH seguidos salen con 400, `ruta: SIN_RUTA` y 0 o 1 ms: los cortó el parser, antes del
+  router.
+- El mismo recorrido, reconstruido como lo arma la web (`estructuraNutricionalComoEntrada`, con el plan de Diego de la
+  cohorte): el primer guardado (la copia sin identificadores) pesa 13.612 bytes; el segundo (la copia ya con los
+  identificadores que le dio la API, más la colación y su opción vacía), 16.180; el tercero (más la banana de 120 g),
+  16.406. El límite es de 16.384: el tercero lo pasa por 22 bytes, y desde ahí ninguno entra.
+- El camino del rechazo: el parser corta con 413 (`entity.too.large`); el filtro de errores lo pasa a `400
+  INVALID_REQUEST`, sin issues; la web no tenía ese caso y caía en el mensaje genérico, que hace pensar que BE está caído.
+- Las rutas que llevan el plan entero: el borrador nace con API-NUT-07 (`POST /api/v1/advisees/{adviseeId}/nutrition/plans`)
+  y se guarda con API-NUT-10 (`PATCH /api/v1/nutrition/plans/{planId}`), que reemplaza la estructura completa;
+  Entrenamiento, igual, con API-TRN-07 y 10; las recetas, con API-REC-01 y 04. Validar, activar y descartar llevan solo la
+  versión.
+
+**Los tamaños** (bytes de UTF-8, con los identificadores de cada nodo, como los manda la web):
+
+| Caso | Bytes |
+|---|---|
+| El plan de Diego solo: 1 día tipo, 4 comidas, 36 alimentos | 8.081 |
+| El guardado que ya no entró en las capturas: la copia del día, la colación y la banana | 16.406 |
+| Realista chico: 2 días tipo × 5 comidas × 3 opciones × 4 alimentos, una nota en cada alimento | 37.187 (36 KB) |
+| Realista grande: 3 × 5 × 3 × 5, una nota de 92 caracteres en cada alimento | 67.933 (66 KB) |
+| Entrenamiento de 4 semanas × 4 sesiones × 7 ejercicios × 4 series, con notas | 108.760 (106 KB) |
+| Entrenamiento de 12 semanas × 5 sesiones × 8 ejercicios × 4 series, con notas | 462.847 (452 KB) |
+| La receta más grande que admite el contrato: 40 ingredientes y 20 pasos de 500 caracteres | 18.330 (18 KB) |
+
+**El arreglo.**
+- **El límite.** Las seis escrituras que llevan un plan entero o una receta (API-NUT-07 y 10, API-TRN-07 y 10, API-REC-01
+  y 04) aceptan hasta **700 KB** (`apps/api/src/http/limite-de-cuerpo.ts`). Su parser va antes que el general y lee solo
+  el JSON de esas seis rutas; el general no vuelve a leer un cuerpo ya leído. Con la ampliación (abajo) se suman las
+  cuatro de las plantillas: diez rutas. El resto de la API sigue en 16 KB, también las vecinas: validar, activar,
+  descartar, cambiar el nombre o el estado de una plantilla, el cálculo y la imagen de una receta.
+- **Por qué 700 KB.** Es diez veces el plan realista más grande (66 KB), redondeado hacia arriba. Entra también el
+  Entrenamiento de 12 semanas (452 KB, el 65 % del límite), y la receta más grande queda muy por debajo.
+- **Lo que no cambia.** La validación del contrato, con sus topes por lista. La cota de elementos
+  (`apps/api/src/http/validacion.ts`), con el mismo techo de 6.000 para todas las rutas: el peor cuerpo inválido cuesta lo
+  mismo que antes, porque el trabajo de zod crece con los elementos y no con los bytes (si el techo crecía con el límite,
+  el peor de 700 KB costaba cinco veces más). A cambio, en esas seis rutas un cuerpo válido de más de 6.000 elementos de
+  listas se rechaza con TOO_BIG. Un plan real queda muy lejos: el de Nutrición más grande tiene 288 elementos; el de
+  Entrenamiento de 12 semanas, unos 2.900.
+- **El rechazo dice qué pasó.** Sigue siendo `400 INVALID_REQUEST`, porque el catálogo del 09 no tiene 413, y ahora trae
+  el issue `TOO_BIG` en `(body)`, el mismo que ya usaba la cota de elementos. Es aditivo: el sobre de error ya llevaba
+  `issues`.
+- **El website.** Los dos editores de planes distinguen tres casos (`falloDeGuardado`, en `@be/domain`). Si el plan no
+  entra (el 400 con TOO_BIG, o un 413 de un intermediario), dicen «El plan es demasiado grande para guardarlo de una vez.
+  Tus cambios siguen acá: quitá lo que no haga falta (opciones, semanas o notas largas) y volvé a guardar.», también en el
+  autoguardado, porque reintentar no lo arregla, y sin sacar el foco de lo que se edita. Si no hubo respuesta, no se
+  entendió o el servidor falló (5xx), dicen «No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.». El resto
+  (un conflicto, un problema con su lugar en el plan) sigue como antes.
+- **Lo escrito no se pierde.** Al fallar, el editor no toca la estructura ni la marca de «sin guardar»: el próximo
+  guardado lo vuelve a mandar, y recargar o salir con cambios sin guardar pide confirmar (`useCambiosSinGuardar`). Como
+  dice DL-148, lo que nunca llegó al servidor no se guarda en el navegador.
+- **La APK.** No lee nada nuevo (DL-152): las rutas que usa siguen con 16 KB y la forma del error es la misma. Solo si una
+  APK mandara más de 16 KB, cosa que no pasa en el uso normal, vería el mismo 400 con el issue nuevo: en el borrador de
+  una sesión diría «Hay un dato que no se puede guardar» en lugar del mensaje genérico.
+
+**Lo que se descartó.**
+- Responder 413: es el estado HTTP justo, pero el catálogo del 09 no lo tiene y cambiaba el contrato de error de toda la
+  API. El website igual lo entiende si lo manda un intermediario.
+- Subir el límite general: abría 700 KB a todas las rutas sin necesidad.
+- Hacer crecer el techo de la cota con el límite: el peor cuerpo inválido de 700 KB costaba cinco veces más por pedido.
+- Guardar el plan por partes: es otro contrato y otra forma de editar; con este límite no hace falta.
+
+**Pruebas.**
+- `apps/api/src/http/limite-de-cuerpo.spec.ts`, sin base: las seis rutas son las de los controladores y las vecinas no;
+  con la app armada como en producción (`crearApp`), 100 KB llegan al guard en las seis, 700 KB justos pasan y un byte
+  más da TOO_BIG, y las vecinas y una ruta sin sesión aceptan 16 KB y rechazan un byte más.
+- `apps/api/src/http/filtro-de-errores.spec.ts`: el 413 del parser sale como 400 con TOO_BIG; otro rechazo del parser,
+  sin issues.
+- `test/integration/guardado-de-planes-grandes.int-spec.ts`, con PostgreSQL: se guardan el borrador de Nutrición realista
+  (creado con la estructura y guardado de nuevo con sus identificadores, como el editor), el de Entrenamiento de 12
+  semanas y la receta más grande (creada y editada); una ruta cualquiera y las vecinas siguen rechazando más de 16 KB;
+  más de 700 KB da el mismo 400, y el borrador no cambia. Con el límite de planes y recetas en 16 KB, fallan las tres
+  que guardan (mutación verificada en la CI, corrida 43057610161). La ampliación suma las plantillas (abajo).
+- `test/integration/cors.int-spec.ts`: el 400 de un cuerpo grande lleva TOO_BIG, con CORS y `X-Request-Id`.
+- `apps/web/test/guardado-de-planes-grandes.test.mjs`: la regla y los textos, y que los dos editores la usan sin tocar
+  lo escrito. Con el autoguardado cortando antes, o con el mensaje de antes para la falta de respuesta, la prueba falla
+  (mutaciones verificadas).
+
+**Lo que queda abierto, a decidir por Dirección.**
+- ~~Las plantillas siguen en 16 KB~~: Dirección pidió sumarlas al integrar #252 («lo de 16 KB, ¿no lo íbamos a mover de
+  límite porque no entraban?»). Es la ampliación de abajo.
+- El 413 en el catálogo del 09, si Dirección lo prefiere al 400 con TOO_BIG.
+
+**Ampliación (2026-11-11, pedido de Dirección al integrar #252): las plantillas.**
+- **Por qué.** «Guardar como plantilla» manda la estructura que está en el editor, con el identificador de cada nodo, así
+  que pesa lo mismo que el guardado del plan. Con 16 KB, la plantilla del plan realista no entraba, y el diálogo decía el
+  mensaje genérico.
+- **Las rutas que se suman** al límite de 700 KB (`apps/api/src/http/limite-de-cuerpo.ts`): crear una plantilla y crear
+  una versión nueva, en Nutrición (API-TPN-01, `POST /api/v1/nutrition/plan-templates`, y API-TPN-04,
+  `POST /api/v1/nutrition/plan-templates/{templateId}/versions`) y en Entrenamiento (API-TPL-01 y API-TPL-04, las mismas
+  rutas bajo `training`). Cambiar el nombre, la descripción o el estado (API-TPN-05 y API-TPL-05) no lleva la estructura y
+  sigue en 16 KB. El website hoy solo crea plantillas; la versión nueva existe en la API y queda cubierta igual.
+- **Los tamaños**, como los manda el diálogo: la plantilla del plan de Nutrición realista, 67.957 bytes (diez veces entra
+  en el límite); la del Entrenamiento de 12 semanas, 461.952.
+- **El diálogo.** Los dos «Guardar como plantilla» usan `falloDeGuardado`: si el plan no entra, dicen lo mismo que el
+  editor, «El plan es demasiado grande para guardarlo de una vez. Tus cambios siguen acá: quitá lo que no haga falta
+  (opciones, semanas o notas largas) y volvé a guardar.». El nombre tomado y los demás rechazos siguen como antes, y el
+  diálogo queda abierto con lo escrito.
+- **Lo que no cambia:** la validación del contrato y la cota de elementos, con el mismo techo de 6.000.
+- **Pruebas.** `limite-de-cuerpo.spec.ts` suma las cuatro rutas, contra sus controladores, y con la app armada por
+  `crearApp` aceptan 100 KB; cambiarle el nombre a una plantilla sigue en 16 KB. `guardado-de-planes-grandes.int-spec.ts`
+  crea y versiona las dos plantillas grandes con PostgreSQL. `guardado-de-planes-grandes.test.mjs` prueba los dos
+  diálogos (si uno vuelve al mensaje genérico, falla: mutación verificada). Sin las cuatro rutas en el límite, las
+  pruebas de las plantillas fallan con 400 (mutación verificada en la CI).
+
+**Condición de cierre:** el PR integrado en `main` con la CI en verde y desplegado en `test`, y un plan real de Dirección
+de dos o más días tipo guardado en `test`. La ampliación, igual: integrada, y una plantilla de un plan real guardada.

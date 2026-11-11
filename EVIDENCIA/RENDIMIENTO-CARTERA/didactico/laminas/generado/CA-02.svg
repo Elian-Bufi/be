@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="322pt" viewBox="0 0 750 322" data-lamina="CA-02">
+<title>Antes: el paso 3 iba persona por persona</title>
+<desc>Con tres personas ya son veintiuna idas y vueltas; con 200, unas 1.320. Cada ida y vuelta espera a la anterior. · Fuente: test/integration/soporte-cartera-anterior.ts (= apps/api/src/cartera/lectura-cartera.ts en e4512cb) · Versión: x · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="322" fill="#FFFFFF"/>
+<rect x="4" y="4" width="492" height="314" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="14" y="20" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Una transacción de lectura</text>
+<text x="156.21" y="20" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[persona por persona, área por área, consulta por consulta]</text>
+<path d="M 306 58 L 321 58 Q 326 58 326 63 L 326 111.26 Q 326 116.26 331 116.26 L 346 116.26" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 339 119.62 L 346 116.26 L 339 112.9" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 313 54.64 L 306 58 L 313 61.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 306 122 L 321 122 Q 326 122 326 127 L 326 131.51 Q 326 136.51 331 136.51 L 346 136.51" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 339 139.87 L 346 136.51 L 339 133.15" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 313 118.64 L 306 122 L 313 125.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 306 186 L 321 186 Q 326 186 326 181 L 326 161.77 Q 326 156.77 331 156.77 L 346 156.77" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 339 160.13 L 346 156.77 L 339 153.41" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 313 182.64 L 306 186 L 313 189.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 306 250 L 321 250 Q 326 250 326 245 L 326 182.02 Q 326 177.02 331 177.02 L 346 177.02" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 339 180.38 L 346 177.02 L 339 173.66" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 313 246.64 L 306 250 L 313 253.36" fill="none" stroke="#9AA8BC" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="16" y="30" width="290" height="56" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="161" y="41.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Ana · Nutrición</text>
+<text x="161" y="56.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">plan y versión efectiva · borrador · Proceso abierto ·</text>
+<text x="161" y="69.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">revisión vigente · solicitud sin respuesta · comidas del</text>
+<text x="161" y="81.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">período</text>
+<rect x="16" y="94" width="290" height="56" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="161" y="105.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Ana · Entrenamiento</text>
+<text x="161" y="120.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">plan y versión efectiva · borrador · Proceso abierto ·</text>
+<text x="161" y="133.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">revisión vigente · solicitud sin respuesta · sesiones del</text>
+<text x="161" y="145.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">período</text>
+<rect x="16" y="158" width="290" height="56" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="161" y="169.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Bruno · Nutrición</text>
+<text x="161" y="184.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">plan y versión efectiva · borrador · Proceso abierto ·</text>
+<text x="161" y="197.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">revisión vigente · solicitud sin respuesta · comidas del</text>
+<text x="161" y="209.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">período</text>
+<rect x="16" y="222" width="290" height="56" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="161" y="239.65" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Carla · Antropometría</text>
+<text x="161" y="254.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">evaluación en preparación · solicitud sin respuesta ·</text>
+<text x="161" y="267.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">tomas registradas del período</text>
+<path d="M 346 103 L 346 190.28 A 68 7 0 0 0 482 190.28 L 482 103" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<ellipse cx="414" cy="103" rx="68" ry="7" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="414" y="129.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">PostgreSQL</text>
+<text x="414" y="146.77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Responde cada consulta</text>
+<text x="414" y="159.57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">en microsegundos; el</text>
+<text x="414" y="172.37" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">viaje tarda más que la</text>
+<text x="414" y="185.17" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">consulta.</text>
+<rect x="516" y="4" width="230" height="112" rx="6" fill="#FFF7ED" stroke="#B45309" stroke-width="1.2" stroke-dasharray="1.4 2.4"/>
+<text x="631" y="36.85" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Cada consulta espera a la anterior</text>
+<text x="631" y="51.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">La conexión queda tomada con la</text>
+<text x="631" y="64.61" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">transacción abierta mientras la API prepara</text>
+<text x="631" y="77.41" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la siguiente: con 200 personas, 1.320</text>
+<text x="631" y="90.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">esperas chicas que suman 880 ms.</text>
+<path d="M 516 132 L 737 132 L 746 141 L 746 210 L 516 210 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 737 132 L 737 141 L 746 141" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="525" y="148.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Por qué se llama N+1</text>
+<text x="525" y="161.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Una consulta para la lista (los vínculos) y</text>
+<text x="525" y="174.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">después N consultas más, una por</text>
+<text x="525" y="187.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">elemento. El costo crece con N aunque cada</text>
+<text x="525" y="199.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">consulta sea trivial.</text>
+<path d="M 516 232 L 737 232 L 746 241 L 746 297.2 L 516 297.2 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 737 232 L 737 241 L 746 241" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="525" y="248.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Medido (CONCURRENCIA.md, S-B200)</text>
+<text x="525" y="261.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">1.320 sentencias, 21 ms ejecutándose en la</text>
+<text x="525" y="274.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">base, 880 ms de bloque: el 43 % de la</text>
+<text x="525" y="287.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">página.</text>
+<text x="16" y="300" font-family="Inter" font-size="10" font-weight="500" fill="#566881">… y así con cada par (persona, área) permitido: hasta 200 personas por 3 áreas.</text>
+<rect x="331" y="86.13" width="-Infinity" height="2" fill="#FFFFFF" opacity="0.94"/>
+</svg>
