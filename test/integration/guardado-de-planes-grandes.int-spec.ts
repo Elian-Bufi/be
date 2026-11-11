@@ -14,10 +14,13 @@
  *   serie: API-TRN-10);
  * - la receta más grande que admite el contrato (40 ingredientes y 20 pasos de 500 caracteres: API-REC-01 y API-REC-04).
  * Con el límite anterior fallan las tres (mutación verificada con LIMITE_DE_PLANES_Y_RECETAS = 16 * 1024).
+ * - (ampliación, el mismo día) las plantillas de esos dos planes, con la estructura como la manda el editor, con sus
+ *   identificadores: se crean (API-TPN-01 y API-TPL-01) y se versionan (API-TPN-04 y API-TPL-04). Sin las cuatro rutas en
+ *   el límite de planes y recetas, fallan las dos (mutación verificada).
  *
- * Y lo que no cambia: cualquier otra ruta, también las vecinas (validar el plan, guardarlo como plantilla), sigue
- * rechazando más de 16 KB, y las seis de planes y recetas rechazan más de 700 KB. Siempre con 400 INVALID_REQUEST y el
- * issue TOO_BIG en `(body)`, que el website dice como «El plan es demasiado grande para guardarlo de una vez».
+ * Y lo que no cambia: cualquier otra ruta, también las vecinas (validar el plan, cambiarle el nombre a una plantilla),
+ * sigue rechazando más de 16 KB, y las diez de planes y recetas rechazan más de 700 KB. Siempre con 400 INVALID_REQUEST y
+ * el issue TOO_BIG en `(body)`, que el website dice como «El plan es demasiado grande para guardarlo de una vez».
  */
 import type { INestApplication } from '@nestjs/common';
 import { estructuraNutricionalComoEntrada, type VersionDePlan } from '@be/domain';
@@ -63,6 +66,22 @@ function planDeNutricionRealista(alimentos: readonly string[]): Record<string, u
           items: Array.from({ length: 5 }, () => ({ catalogItemId: alimentos[n++ % alimentos.length], quantity: { value: 150, unit: 'g' }, preparationState: 'COOKED', note: NOTA })),
         })),
       })),
+    })),
+  };
+}
+
+type Nodo = Record<string, unknown>;
+/**
+ * La estructura de comidas como la tiene el editor después de guardar, con el identificador de cada nodo: así la manda
+ * «Guardar como plantilla» (el diálogo recibe la estructura del editor).
+ */
+function conIdentificadores(estructura: Record<string, unknown>): Record<string, unknown> {
+  const dias = estructura.dayTypes as (Nodo & { meals: (Nodo & { options: (Nodo & { items: Nodo[] })[] })[] })[];
+  return {
+    dayTypes: dias.map((d) => ({
+      dayTypeId: randomUUID(),
+      ...d,
+      meals: d.meals.map((m) => ({ mealId: randomUUID(), ...m, options: m.options.map((o) => ({ optionId: randomUUID(), ...o, items: o.items.map((i) => ({ itemId: randomUUID(), ...i })) })) })),
     })),
   };
 }
@@ -186,6 +205,29 @@ describe('DL-168 · lo que antes no entraba se guarda', () => {
     ).body.data as { versionNumber: number; servings: number; ingredients: unknown[]; steps: string[] };
     expect([v2.versionNumber, v2.servings, v2.ingredients.length, v2.steps.length]).toEqual([2, 10, 40, 20]);
   });
+
+  it('las plantillas de esos planes, como las manda «Guardar como plantilla»: se crean (API-TPN-01 y API-TPL-01) y se versionan (API-TPN-04 y API-TPL-04)', async () => {
+    // Nutrición: el plan realista con el identificador de cada nodo, como lo tiene el editor después de guardar.
+    const estructura = conIdentificadores(planDeNutricionRealista(alimentosDelPlan()));
+    const deNutricion = { name: `Plan realista ${randomUUID().slice(0, 8)}`, description: null, structure: estructura, copyQuantities: false };
+    expect(tamano(deNutricion)).toBeGreaterThan(LIMITE_GENERAL);
+    expect(10 * tamano(deNutricion)).toBeLessThanOrEqual(LIMITE_DE_PLANES_Y_RECETAS);
+    const n1 = (await conSesion(app, nut.pro.token).post('/api/v1/nutrition/plan-templates').send(deNutricion).expect(201)).body.data as { templateId: string; version: string; versionNumber: number; mealCount: number };
+    const n2 = (
+      await conSesion(app, nut.pro.token).post(`/api/v1/nutrition/plan-templates/${n1.templateId}/versions`).send({ expectedVersion: n1.version, structure: estructura, copyQuantities: true }).expect(201)
+    ).body.data as { versionNumber: number; mealCount: number };
+    expect([n1.versionNumber, n1.mealCount, n2.versionNumber, n2.mealCount]).toEqual([1, 15, 2, 15]);
+
+    // Entrenamiento: el mesociclo de 12 semanas.
+    const deEntrenamiento = { name: `Mesociclo de 12 semanas ${randomUUID().slice(0, 8)}`, structure: planDeEntrenamientoGrande(), copySuggestedLoads: true };
+    expect(tamano(deEntrenamiento)).toBeGreaterThan(20 * LIMITE_GENERAL);
+    expect(tamano(deEntrenamiento)).toBeLessThanOrEqual(LIMITE_DE_PLANES_Y_RECETAS);
+    const e1 = (await conSesion(app, trn.pro.token).post('/api/v1/training/plan-templates').send(deEntrenamiento).expect(201)).body.data as { templateId: string; version: string; versionNumber: number; sessionCount: number };
+    const e2 = (
+      await conSesion(app, trn.pro.token).post(`/api/v1/training/plan-templates/${e1.templateId}/versions`).send({ expectedVersion: e1.version, structure: planDeEntrenamientoGrande() }).expect(201)
+    ).body.data as { versionNumber: number; sessionCount: number };
+    expect([e1.versionNumber, e1.sessionCount, e2.versionNumber, e2.sessionCount]).toEqual([1, 60, 2, 60]);
+  });
 });
 
 describe('DL-168 · el resto sigue igual', () => {
@@ -198,17 +240,15 @@ describe('DL-168 · el resto sigue igual', () => {
       .data as VersionDePlan;
   });
 
-  it('una ruta cualquiera y las vecinas de los planes (validar, guardarlo como plantilla) siguen rechazando más de 16 KB', async () => {
+  it('una ruta cualquiera y las vecinas de los planes (validar, cambiarle el nombre a una plantilla) siguen rechazando más de 16 KB', async () => {
     const pro = conSesion(app, nut.pro.token);
     const relleno = 'x'.repeat(LIMITE_GENERAL);
     // Una ruta cualquiera: una evaluación.
     expect((await pro.post(`/api/v1/advisees/${otra.ase.id}/nutrition/evaluations`).send({ relleno }).expect(400)).body).toEqual(NO_ENTRO);
     // Validar un borrador lleva solo la versión: sigue con 16 KB.
     expect((await pro.post(`/api/v1/nutrition/plans/${borrador.planId}/validate`).send({ expectedVersion: borrador.version, relleno }).expect(400)).body).toEqual(NO_ENTRO);
-    // Guardar como plantilla el plan realista tampoco entra: las plantillas no son parte de este arreglo (DL-168).
-    const plantilla = { name: 'Plan realista', structure: planDeNutricionRealista(alimentosDelPlan()) };
-    expect(tamano(plantilla)).toBeGreaterThan(LIMITE_GENERAL);
-    expect((await pro.post('/api/v1/nutrition/plan-templates').send(plantilla).expect(400)).body).toEqual(NO_ENTRO);
+    // Cambiarle el nombre, la descripción o el estado a una plantilla (API-TPN-05) no lleva la estructura: sigue con 16 KB.
+    expect((await pro.patch(`/api/v1/nutrition/plan-templates/${randomUUID()}`).send({ expectedVersion: 'v1', name: 'Otro nombre', relleno }).expect(400)).body).toEqual(NO_ENTRO);
   });
 
   it('las de planes y recetas rechazan más de 700 KB, con el mismo 400, y el borrador no cambia', async () => {
@@ -218,5 +258,6 @@ describe('DL-168 · el resto sigue igual', () => {
     expect((await pro.patch(`/api/v1/nutrition/plans/${borrador.planId}`).send(enorme).expect(400)).body).toEqual(NO_ENTRO);
     expect((await pro.get(`/api/v1/nutrition/plans/${borrador.planId}`).expect(200)).body.data.version).toBe(borrador.version);
     expect((await pro.post('/api/v1/nutrition/recipes').send({ relleno: 'x'.repeat(LIMITE_DE_PLANES_Y_RECETAS) }).expect(400)).body).toEqual(NO_ENTRO);
+    expect((await pro.post('/api/v1/nutrition/plan-templates').send({ relleno: 'x'.repeat(LIMITE_DE_PLANES_Y_RECETAS) }).expect(400)).body).toEqual(NO_ENTRO);
   });
 });

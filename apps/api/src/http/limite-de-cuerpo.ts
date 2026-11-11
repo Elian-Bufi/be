@@ -1,7 +1,8 @@
 import type { IncomingMessage } from 'node:http';
 
 /*
- * El límite del cuerpo JSON de las escrituras que llevan un plan entero o una receta (DL-168, arreglo del 2026-11-11).
+ * El límite del cuerpo JSON de las escrituras que llevan un plan entero (un borrador o una plantilla) o una receta (DL-168,
+ * arreglo del 2026-11-11).
  *
  * El resto de la API sigue con los 16 KB de `LIMITE_DE_CUERPO` (bootstrap.ts): sus contratos son chicos. Un borrador de
  * plan no lo es: el editor del website manda el plan completo en cada guardado, con el identificador de cada nodo, porque
@@ -14,6 +15,10 @@ import type { IncomingMessage } from 'node:http';
  * alimentos, cada alimento con una nota: 66 KB), redondeado hacia arriba. Entran también un plan de Entrenamiento de 12
  * semanas (5 sesiones por semana, 8 ejercicios y 4 series, con notas: 452 KB) y la receta más grande que admite el
  * contrato (18 KB). Esos tres se guardan, con su medida, en `test/integration/guardado-de-planes-grandes.int-spec.ts`.
+ *
+ * Las plantillas (ampliación de DL-168, el mismo día): «Guardar como plantilla» manda la estructura que está en el editor,
+ * con sus identificadores, así que pesa lo mismo que el guardado del plan. Crear una plantilla y crear una versión nueva,
+ * en Nutrición (API-TPN-01 y 04) y en Entrenamiento (API-TPL-01 y 04), tienen el mismo límite.
  *
  * Lo que no cambia:
  * - la validación del contrato, con sus topes por lista (7 días tipo, 12 comidas, 40 ítems…);
@@ -34,19 +39,24 @@ export interface RutaConLimiteMayor {
 }
 
 /**
- * Las seis escrituras con el límite de planes y recetas. Las demás de esas familias (validar, activar, descartar, las
- * plantillas, el cálculo de una receta, su imagen) siguen con 16 KB: sus cuerpos son chicos.
+ * Las diez escrituras con el límite de planes y recetas: los borradores de planes, las plantillas y las recetas. Las
+ * demás de esas familias (validar, activar, descartar, cambiar el nombre o el estado de una plantilla, el cálculo de una
+ * receta, su imagen) siguen con 16 KB: sus cuerpos son chicos.
  */
 export const RUTAS_DE_PLANES_Y_RECETAS: readonly RutaConLimiteMayor[] = [
   { operacion: 'API-NUT-07', metodo: 'POST', patron: /^\/api\/v1\/advisees\/[^/]+\/nutrition\/plans\/?$/i },
   { operacion: 'API-NUT-10', metodo: 'PATCH', patron: /^\/api\/v1\/nutrition\/plans\/[^/]+\/?$/i },
   { operacion: 'API-TRN-07', metodo: 'POST', patron: /^\/api\/v1\/advisees\/[^/]+\/training\/plans\/?$/i },
   { operacion: 'API-TRN-10', metodo: 'PATCH', patron: /^\/api\/v1\/training\/plans\/[^/]+\/?$/i },
+  { operacion: 'API-TPN-01', metodo: 'POST', patron: /^\/api\/v1\/nutrition\/plan-templates\/?$/i },
+  { operacion: 'API-TPN-04', metodo: 'POST', patron: /^\/api\/v1\/nutrition\/plan-templates\/[^/]+\/versions\/?$/i },
+  { operacion: 'API-TPL-01', metodo: 'POST', patron: /^\/api\/v1\/training\/plan-templates\/?$/i },
+  { operacion: 'API-TPL-04', metodo: 'POST', patron: /^\/api\/v1\/training\/plan-templates\/[^/]+\/versions\/?$/i },
   { operacion: 'API-REC-01', metodo: 'POST', patron: /^\/api\/v1\/nutrition\/recipes\/?$/i },
   { operacion: 'API-REC-04', metodo: 'PATCH', patron: /^\/api\/v1\/nutrition\/recipes\/[^/]+\/?$/i },
 ];
 
-/** Si el pedido es una de esas seis escrituras, por su método y su ruta (sin la consulta). */
+/** Si el pedido es una de esas diez escrituras, por su método y su ruta (sin la consulta). */
 export function esEscrituraDePlanOReceta(req: Pick<IncomingMessage, 'method' | 'url'>): boolean {
   const ruta = (req.url ?? '').split('?')[0] ?? '';
   return RUTAS_DE_PLANES_Y_RECETAS.some((r) => r.metodo === req.method && r.patron.test(ruta));
@@ -54,7 +64,7 @@ export function esEscrituraDePlanOReceta(req: Pick<IncomingMessage, 'method' | '
 
 /**
  * El `type` del parser de planes y recetas (bootstrap.ts): un cuerpo JSON, como el que lee el parser general, en una de
- * las seis rutas. Lo que no cumple las dos cosas lo lee el general, con sus 16 KB.
+ * las diez rutas. Lo que no cumple las dos cosas lo lee el general, con sus 16 KB.
  */
 export function esJsonDePlanOReceta(req: IncomingMessage): boolean {
   const tipo = String(req.headers['content-type'] ?? '')
