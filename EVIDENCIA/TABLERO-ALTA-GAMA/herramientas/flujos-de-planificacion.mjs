@@ -722,7 +722,7 @@ async function flujoDeEntrenamiento(r, { personas }) {
   );
   r.noExiste(
     { codigo: 'A30', nombre: 'descartar-un-borrador', pedido: 'A11', pantalla: 'Descartar un borrador.', hace: 'Buscaría cómo descartar el borrador que no va a usar.', espera: 'Volver al plan vigente sin una versión en preparación colgada.' },
-    'El website no ofrece descartar un borrador: el editor solo permite guardar, revisar, activar y guardar como plantilla. Mientras exista el borrador no se puede crear otra versión ni empezar desde una plantilla. (La API ya tiene la operación; la pantalla no.)',
+    'El website no ofrece descartar un borrador: el editor solo permite guardar, revisar, activar y guardar como plantilla. Mientras exista el borrador no se puede crear otra versión ni empezar desde una plantilla: la única salida es activarlo. (El sistema ya puede hacerlo por dentro; la pantalla no lo ofrece.)',
   );
   await r.paso(
     { codigo: 'A31', nombre: 'mis-ejercicios', pedido: 'A4', pantalla: 'La página «Mis ejercicios»: los ejercicios propios de Martín, con el que creó en el paso A13.', hace: 'Hace clic en «Mis ejercicios» en la barra de navegación.', espera: 'Ver y ordenar sus ejercicios propios.' },
@@ -807,8 +807,9 @@ async function flujoDeNutricion(r, { personas }) {
   await r.paso(
     { codigo: 'B07', nombre: 'tipos-de-dia', pedido: 'B3', pantalla: 'El editor con un segundo tipo de día, «Día de descanso», recién creado y elegido: todavía no tiene comidas.', hace: 'Hace clic en «Agregar» junto a «Día tipo» y le escribe el nombre al día nuevo.', espera: 'Tener un día más liviano para los días que no entrena.' },
     async (r) => {
-      // Un día tipo nuevo y no una copia del habitual: con la copia, el plan de Diego pasa los 16 KB que la API acepta
-      // por pedido y ya no se guarda (eso se muestra aparte, en B27).
+      // Un día tipo nuevo y no una copia del habitual: en la primera corrida, con la copia del habitual más una colación con
+      // un alimento, el borrador de Diego dejó de guardarse (la API rechazó cada PATCH en el parser, 400 sin ruta; su límite
+      // es de 16 KB por pedido, bootstrap.ts) y el recorrido no pudo seguir. La copia sola se muestra en B27.
       await r.clic('[data-agregar-dia]');
       await r.esperarQue(() => document.activeElement?.matches?.('input[id^="dia-"]:not([id^="dia-tipo-"])'), null, 8000);
       const id = await r.page.evaluate(() => document.activeElement.id);
@@ -1003,13 +1004,13 @@ async function flujoDeNutricion(r, { personas }) {
   );
   r.noExiste(
     { codigo: 'B26', nombre: 'descartar-un-borrador', pedido: 'B8', pantalla: 'Descartar un borrador.', hace: 'Buscaría cómo descartar el borrador que no va a usar.', espera: 'Volver al plan vigente sin una versión en preparación colgada.' },
-    'El website no ofrece descartar un borrador de Nutrición: el editor solo permite guardar, revisar, activar y guardar como plantilla, y mientras exista el borrador no aparece «Nueva versión del plan». (La API ya tiene la operación; la pantalla no.)',
+    'El website no ofrece descartar un borrador de Nutrición: el editor solo permite guardar, revisar, activar y guardar como plantilla, y mientras exista el borrador no aparece «Nueva versión del plan». (El sistema ya puede hacerlo por dentro; la pantalla no lo ofrece.)',
   );
   await r.paso(
-    { codigo: 'B27', nombre: 'duplicar-un-dia-tipo', pedido: 'B3', pantalla: 'Una versión nueva con el «Día habitual» duplicado como «Día de entrenamiento», después de «Guardar cambios»: el estado del guardado y el aviso que queda en el editor.', hace: 'Vuelve a «Plan», hace clic en «Nueva versión del plan», abre el menú «⋯» del día tipo, elige «Duplicar este día tipo», le pone nombre y hace clic en «Guardar cambios».', espera: 'Armar el día de entrenamiento a partir del día habitual, sin cargarlo de cero.' },
+    { codigo: 'B27', nombre: 'duplicar-un-dia-tipo', pedido: 'B3', pantalla: 'Una versión nueva con el «Día habitual» duplicado como «Día de entrenamiento», después de «Guardar cambios»: los tipos de día, la copia elegida con las mismas comidas, el estado del guardado y la tira de objetivo del día.', hace: 'Vuelve a «Plan», hace clic en «Nueva versión del plan», abre el menú «⋯» del día tipo, elige «Duplicar este día tipo», le pone nombre y hace clic en «Guardar cambios».', espera: 'Armar el día de entrenamiento a partir del día habitual, sin cargarlo de cero.' },
     async (r) => {
-      // Con el plan de Diego, la copia del día pasa los 16 KB por pedido que acepta la API (apps/api/src/bootstrap.ts):
-      // el paso muestra lo que ve el profesional cuando pasa eso.
+      // La copia del día habitual, sola, al final: se guarda. Sumándole una comida con un alimento, en la primera corrida
+      // el borrador dejó de guardarse (ver B07).
       await r.cerrarDialogos();
       await seccion(r, 'Nutrición', 'plan', { camino: false });
       await r.clic('[data-crear-version]', { camino: false });
