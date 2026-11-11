@@ -3,10 +3,12 @@
  *
  * Lo que estas pruebas fijan:
  * - la lectura por conjuntos devuelve EXACTAMENTE la misma respuesta que la lectura persona por persona (la copia congelada
- *   de `main` e4512cb en soporte-cartera-anterior.ts es el oráculo): carteras vacías, chicas, una mixta (tres áreas,
- *   personas con varios pendientes, todos los estados de plan, historia) y una grande; con cada filtro, el período, límites y
- *   páginas consecutivas (sin omisiones ni repetidos); con empates totales del orden; ante cortes (consentimiento revocado,
- *   vínculo pausado, reanudado y finalizado); entre profesionales; y con un asesorado como actor;
+ *   de la de `main` en soporte-cartera-anterior.ts, `1b6fc8b`, con TB-13, es el oráculo): carteras vacías, chicas, una
+ *   mixta (tres áreas, personas con varios pendientes, todos los estados de plan, historia) y una grande; con cada filtro,
+ *   el período, límites y páginas consecutivas (sin omisiones ni repetidos); con empates totales del orden; ante cortes
+ *   (consentimiento revocado, vínculo pausado, reanudado y finalizado); entre profesionales; con un asesorado como actor;
+ *   y con los dos hechos de TB-13 en las dos áreas (la revisión que resolvió una aplicada después y el seguimiento
+ *   cerrado con «Finalizar»);
  * - por HTTP, la respuesta pasa el contrato y coincide con el oráculo;
  * - cada pedido deja las mismas filas en decision_de_acceso: 3 por persona con vínculo aceptado (una por alcance), como antes;
  * - lo que crece con las personas es solo el PDP: la lectura no agrega sentencias por persona. Se cuenta con
@@ -26,7 +28,7 @@ import { borradorSembrado, medicionSembrada, registrarBorrador, sembrarEspecific
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { leerCarteraAnterior } from './soporte-cartera-anterior';
 import { activarPlanDeEntrenamiento, borradorDeEjecucion, crearBorradorDeEntrenamiento, cuerpoDeEvaluacionDeEntrenamiento, cuerpoDeObjetivoDeEntrenamiento, ejecucion, type CircuitoParaPlanificar } from './soporte-entrenamiento';
-import { activar, circuitoListoParaPlanificar, crearBorrador, registrarComida } from './soporte-nutricion';
+import { activar, circuitoListoParaPlanificar, crearBorrador, cuerpoDeRevision, registrarComida } from './soporte-nutricion';
 import { finalizar, pausar, prepararAsesorado, prepararProfesional, reanudar, revocarB2, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -165,6 +167,8 @@ interface PersonaDeNutricion {
   readonly ase: Parte;
   readonly vinculoId: string;
   readonly consentId: string;
+  /** El plan, si se creó (con solo un borrador o activado); para revisarlo. */
+  readonly planId: string | null;
 }
 
 /**
@@ -175,7 +179,7 @@ async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 
   if (opciones.plan === 'ninguno') {
     const ase = await prepararAsesorado(app, etiqueta(), { a3: true });
     const v = await vinculoCompleto(app, pro, ase, 'NUTRICION');
-    return { ase, vinculoId: v.vinculoId, consentId: v.consentId as string };
+    return { ase, vinculoId: v.vinculoId, consentId: v.consentId as string, planId: null };
   }
   const c = await circuitoListoParaPlanificar(app, etiqueta(), pro);
   const b = await crearBorrador(app, c, opciones.nextReviewAt ? { nextReviewAt: opciones.nextReviewAt } : {});
@@ -199,17 +203,22 @@ async function nutricion(pro: Parte, opciones: { plan: 'ninguno' | 'borrador' | 
     }
     if (opciones.borradorPosterior) await conSesion(app, pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: b.planId }).expect(201);
   }
-  return { ase: c.ase, vinculoId: c.vinculoId, consentId: c.consentId };
+  return { ase: c.ase, vinculoId: c.vinculoId, consentId: c.consentId, planId: b.planId };
 }
 
-/** Entrenamiento para una persona ya vinculada: vínculo y, si se pide, plan (borrador o activado con sesiones) y solicitud. */
-async function entrenamiento(pro: Parte, ase: Parte, opciones: { plan: 'ninguno' | 'borrador' | 'activado'; nextReviewAt?: string; sesiones?: number; solicitud?: boolean }): Promise<void> {
+/**
+ * Entrenamiento para una persona ya vinculada: vínculo y, si se pide, plan (borrador o activado con sesiones) y solicitud.
+ * Devuelve el plan, si se creó, para revisarlo.
+ */
+async function entrenamiento(pro: Parte, ase: Parte, opciones: { plan: 'ninguno' | 'borrador' | 'activado'; nextReviewAt?: string; sesiones?: number; solicitud?: boolean }): Promise<string | null> {
   const v = await vinculoCompleto(app, pro, ase, 'ENTRENAMIENTO');
+  let planId: string | null = null;
   if (opciones.plan !== 'ninguno') {
     const ev = await conSesion(app, pro.token).post(`/api/v1/advisees/${ase.id}/training/evaluations`).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(201);
     const ob = await conSesion(app, pro.token).post(`/api/v1/advisees/${ase.id}/training/objectives`).send(cuerpoDeObjetivoDeEntrenamiento(ev.body.data.evaluationId as string)).expect(201);
     const c: CircuitoParaPlanificar = { pro, ase, vinculoId: v.vinculoId, consentId: v.consentId as string, evaluationId: ev.body.data.evaluationId as string, objectiveVersionId: ob.body.data.versionId as string };
     const b = await crearBorradorDeEntrenamiento(app, c, opciones.nextReviewAt ? { nextReviewAt: opciones.nextReviewAt } : {});
+    planId = b.planId;
     if (opciones.plan === 'activado') {
       await activarPlanDeEntrenamiento(app, pro, b.planId, b.version).expect(200);
       if (opciones.sesiones) {
@@ -233,6 +242,28 @@ async function entrenamiento(pro: Parte, ase: Parte, opciones: { plan: 'ninguno'
       .send({ templateVersionId: '349161b3-b831-4df1-896f-484517393a57', purpose: 'Seguridad del entrenamiento', scope: 'ENTRENAMIENTO', requestedFieldCodes: ['condiciones_declaradas'], requiredFieldCodes: [] })
       .expect(201);
   }
+  return planId;
+}
+
+/**
+ * Una revisión sobre el plan, registrada y, si se pide, aplicada: Nutrición con el cuerpo de soporte-nutricion y
+ * Entrenamiento con el mismo cuerpo que cola-de-revisiones.int-spec.ts (TEST-TAG-011). `extra` va en la próxima acción.
+ */
+async function revisar(pro: Parte, adviseeId: string, area: 'nutrition' | 'training', planId: string, resultado: string, extra: Record<string, unknown> = {}, aplicar = true): Promise<void> {
+  const evidencia = [{ type: 'PLAN_VERSION', id: planId }];
+  const cuerpo =
+    area === 'nutrition'
+      ? cuerpoDeRevision(evidencia, resultado, extra)
+      : {
+          period: { start: hoyCivil(), end: hoyCivil(), timeZone: ZONA },
+          evidenceReferences: evidencia,
+          interpretation: 'Registró las sesiones del bloque. Interpretación sintética.',
+          result: resultado,
+          rationale: 'Fundamento sintético del profesional.',
+          nextAction: { description: 'Próxima acción sintética.', ...extra },
+        };
+  const r = await conSesion(app, pro.token).post(`/api/v1/advisees/${adviseeId}/${area}/reviews`).send(cuerpo).expect(201);
+  if (aplicar) await conSesion(app, pro.token).post(`/api/v1/${area}/reviews/${r.body.data.reviewId as string}/apply`).send({ expectedVersion: 'v1' }).expect(200);
 }
 
 /** Antropometría para una persona: vínculo y, si se pide, una evaluación en preparación y otras registradas. */
@@ -353,6 +384,55 @@ describe('API-CAR-01 por conjuntos · equivalencia con la lectura persona por pe
     expect((await igualQueAntes(m.a.ase.id)).data.items).toEqual([]);
   }, 300_000);
 
+  it('TB-13 en las dos áreas: la revisión que resolvió una aplicada y el seguimiento cerrado con «Finalizar», como la lectura persona por persona', async () => {
+    const pro = await prepararProfesional(app, etiqueta(), ['NUTRICION', 'ENTRENAMIENTO']);
+    const conPlanDeNutricion = async (nextReviewAt: string) => {
+      const p = await nutricion(pro, { plan: 'activado', nextReviewAt });
+      return { ase: p.ase, planId: p.planId as string };
+    };
+    const conPlanDeEntrenamiento = async (nextReviewAt: string) => {
+      const ase = await prepararAsesorado(app, etiqueta(), { a3: true });
+      return { ase, planId: (await entrenamiento(pro, ase, { plan: 'activado', nextReviewAt })) as string };
+    };
+    // Nutrición, sobre una revisión vencida. N1: «Mantener» aplicado sin fecha nueva (la resuelve). N2: la revisión,
+    // registrada y sin aplicar (no resuelve nada). N3: «Mantener» con una fecha nueva cercana (manda la nueva).
+    // N4: «Finalizar» aplicado. N5: sin plan.
+    const n1 = await conPlanDeNutricion('2026-01-15');
+    await revisar(pro, n1.ase.id, 'nutrition', n1.planId, 'MAINTAIN');
+    const n2 = await conPlanDeNutricion('2026-01-15');
+    await revisar(pro, n2.ase.id, 'nutrition', n2.planId, 'MAINTAIN', {}, false);
+    const n3 = await conPlanDeNutricion('2026-01-15');
+    await revisar(pro, n3.ase.id, 'nutrition', n3.planId, 'MAINTAIN', { nextReviewAt: enDias(3) });
+    const n4 = await conPlanDeNutricion(enDias(20));
+    await revisar(pro, n4.ase.id, 'nutrition', n4.planId, 'FINALIZE', { description: 'Cierre del seguimiento.' });
+    const n5 = await nutricion(pro, { plan: 'ninguno' });
+    // Entrenamiento, sobre una revisión próxima. T1: «Mantener» aplicado sin fecha nueva. T2: registrada y sin aplicar.
+    // T3: «Finalizar» aplicado. T4: vínculo sin plan.
+    const t1 = await conPlanDeEntrenamiento(enDias(3));
+    await revisar(pro, t1.ase.id, 'training', t1.planId, 'MAINTAIN');
+    const t2 = await conPlanDeEntrenamiento(enDias(3));
+    await revisar(pro, t2.ase.id, 'training', t2.planId, 'MAINTAIN', {}, false);
+    const t3 = await conPlanDeEntrenamiento(enDias(20));
+    await revisar(pro, t3.ase.id, 'training', t3.planId, 'FINALIZE', { description: 'Cierre del seguimiento.' });
+    const t4 = await prepararAsesorado(app, etiqueta(), { a3: true });
+    await entrenamiento(pro, t4, { plan: 'ninguno' });
+
+    const r = await igualEnTodasLasConsultas(pro.id);
+    // Lo que tiene que haber, para que la equivalencia no sea entre dos listas pobres.
+    const de = (ase: Parte, domain: string) => r.data.items.filter((i) => i.advisee.identityId === ase.id && i.domain === domain).map((i) => i.kind);
+    expect(de(n1.ase, 'nutrition')).toEqual([]);
+    expect(de(n2.ase, 'nutrition')).toEqual(['REVIEW_OVERDUE']);
+    expect(de(n3.ase, 'nutrition')).toEqual(['REVIEW_DUE_SOON']);
+    expect(de(n4.ase, 'nutrition')).toEqual([]);
+    expect(de(n5.ase, 'nutrition')).toEqual(['NO_ACTIVE_PLAN']);
+    expect(de(t1.ase, 'training')).toEqual([]);
+    expect(de(t2.ase, 'training')).toEqual(['REVIEW_DUE_SOON']);
+    expect(de(t3.ase, 'training')).toEqual([]);
+    expect(de(t4, 'training')).toEqual(['NO_ACTIVE_PLAN']);
+    await recorrer(pro.id, 2);
+    await auditoriaDelPedido(pro.id, await httpIgualQueAntes(pro));
+  }, 300_000);
+
   it('cartera grande (40 personas, perfil de la medición): lo mismo, también de a 7', async () => {
     const pro = await prepararProfesional(app, etiqueta(), ['NUTRICION', 'ENTRENAMIENTO']);
     for (let k = 0; k < 40; k++) {
@@ -410,7 +490,10 @@ describe('API-CAR-01 por conjuntos · lo que crece con las personas es solo el P
    * el registro de las decisiones y COMMIT. Es lo único que la cartera hace por persona.
    */
   const SENTENCIAS_DEL_PDP_POR_PERSONA = 5;
-  /** Lo que no depende de las personas: la sesión, los vínculos y la lectura por conjuntos (una consulta por tipo de hecho). */
+  /**
+   * Lo que no depende de las personas: la sesión, los vínculos y la lectura por conjuntos (una consulta por tipo de hecho,
+   * con los dos de TB-13).
+   */
   const SENTENCIAS_FIJAS_COMO_MUCHO = 30;
 
   it('seis personas y doce: la diferencia es exactamente el PDP, y lo fijo cabe en una treintena de sentencias', async () => {

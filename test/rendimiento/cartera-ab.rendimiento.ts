@@ -1,8 +1,9 @@
 /**
- * Medición ANTES/DESPUÉS de la cartera del profesional (API-CAR-01): la lectura persona por persona de `main` e4512cb
- * («base», la copia congelada de test/integration/soporte-cartera-anterior.ts) contra la lectura por conjuntos
- * («propuesta», apps/api/src/cartera/lectura-cartera.ts). WP-CARTERA-LECTURA-POR-CONJUNTOS, 2026-10-28. Ver
- * EVIDENCIA/RENDIMIENTO-CARTERA/LECTURA-POR-CONJUNTOS.md.
+ * Medición ANTES/DESPUÉS de la cartera del profesional (API-CAR-01): la lectura persona por persona de `main` («base»,
+ * la copia congelada de test/integration/soporte-cartera-anterior.ts) contra la lectura por conjuntos («propuesta»,
+ * apps/api/src/cartera/lectura-cartera.ts). WP-CARTERA-LECTURA-POR-CONJUNTOS, 2026-10-28. Ver
+ * EVIDENCIA/RENDIMIENTO-CARTERA/LECTURA-POR-CONJUNTOS.md. La medición del 2026-10-28 corrió con la copia de `e4512cb`;
+ * desde la integración (2026-11-11), la copia es la de `1b6fc8b`, con TB-13, y las dos versiones leen lo mismo.
  *
  * Es el arnés de la segunda medición (cartera-concurrencia.rendimiento.ts, corrida 40660575008) con una diferencia: cada
  * lote corre con una de las dos versiones, y los lotes de las dos versiones se alternan (base, propuesta, base, …; la

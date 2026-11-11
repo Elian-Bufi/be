@@ -4,7 +4,27 @@ Encargo de Dirección del 2026-10-28 (el segundo del día): reducir el tiempo de
 (API-CAR-01) conservando el comportamiento del producto, sus permisos y su trazabilidad; una mejora acotada en un PR en
 borrador, con comparación antes/después reproducible y una explicación visual.
 
-## Dónde quedó
+## Integración (2026-11-11)
+
+Dirección autorizó integrar #222 el 2026-11-11, después de la etapa A del tablero, como había decidido con DL-159. Se
+integró trayendo `main` por merge. Lo que cambió al combinarlo:
+
+- **TB-13, por conjuntos.** `main` ya leía la cartera con la definición de pendiente del dominio de revisión (#243,
+  `1b6fc8b`). Una expectativa que resolvió una revisión aplicada después no sigue pendiente, y un seguimiento cerrado
+  con «Finalizar» no vuelve como «Sin plan activo». La lectura por conjuntos lo conserva con consultas para toda la
+  cartera, no por persona (TA-62), que están en `apps/api/src/cartera/hechos-de-revision.ts`, al lado de las reglas de a
+  una que usa la cola:
+  - `procesosConAplicacionPosterior`, una por área de planificación con expectativas;
+  - `asesoradosCerradosConFinalizar`, una sola, y solo para los pares sin seguimiento abierto ni borrador.
+- **El oráculo.** `soporte-cartera-anterior.ts` pasó a ser la copia congelada de la lectura de `main` en `1b6fc8b`, con
+  TB-13. La medición del 2026-10-28 se hizo con la de `e4512cb`, y sus resultados siguen atados a esos dos commits.
+- **Las pruebas.** La de equivalencia suma TB-13 en las dos áreas: la revisión resuelta por una aplicada, la registrada
+  sin aplicar, la que trae una fecha nueva, «Finalizar» y el vínculo sin plan. El conteo sigue exigiendo 5 sentencias
+  por persona, todas del PDP. Lo fijo suma hasta tres sentencias (la aplicación posterior por área y el cierre con
+  «Finalizar»), y el tope sigue en 30.
+- **DL-159:** ratificada por Dirección el 2026-11-11 con la integración. La opción A sigue a programar.
+
+## Dónde quedó (2026-10-28)
 
 - **PR #222, en borrador**, rama `wp-cartera-lectura-por-conjuntos` sobre #221 (`wp-cartera-concurrencia-2026-10-28`,
   cuyo arnés reutiliza). Código de producto medido: `main` `e4512cb`. Nada se integró, desplegó ni cargó en test; las
@@ -81,9 +101,9 @@ borrador, con comparación antes/después reproducible y una explicación visual
 
 ## Próximos pasos
 
-1. Dirección decide si integra #222 (después de #219 y #221, su base). Comprobación mínima posterior: abrir el espacio
-   profesional en test con la cuenta de la cohorte y comparar la lista con la de antes (mismos ítems, mismo orden) y el
-   tiempo de las cuatro páginas en la pestaña de red del navegador.
+1. ~~Dirección decide si integra #222~~: integrado el 2026-11-11 (arriba, «Integración»). Queda la comprobación mínima
+   posterior: abrir el espacio profesional en test con la cuenta de la cohorte y comparar la lista con la de antes
+   (mismos ítems, mismo orden) y el tiempo de las cuatro páginas en la pestaña de red del navegador.
 2. Si se quiere seguir con el rendimiento: la alternativa 2 (una transacción para las decisiones) necesita una decisión
    sobre la pieza de autorización y una prueba de carrera con PostgreSQL real antes de escribirla.
 3. Borrar la rama `medicion/cartera-ab-2026-10-28` cuando Dirección lo decida.

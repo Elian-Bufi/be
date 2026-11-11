@@ -1,17 +1,23 @@
 /**
- * COPIA CONGELADA de `apps/api/src/cartera/lectura-cartera.ts` tal como está en `main` (`e4512cb`), antes de la lectura
- * por conjuntos (WP-CARTERA-LECTURA-POR-CONJUNTOS, 2026-10-28). Es el oráculo de las pruebas de equivalencia y la
- * versión «base» de la medición antes/después: NO es código de producto y no se usa fuera de `test/`.
+ * COPIA CONGELADA de `apps/api/src/cartera/lectura-cartera.ts` tal como está en `main` (`1b6fc8b`, #243: la cartera con
+ * la definición de pendiente del dominio de revisión, TB-13), antes de la lectura por conjuntos
+ * (WP-CARTERA-LECTURA-POR-CONJUNTOS). Es el oráculo de las pruebas de equivalencia y la versión «base» de la medición
+ * antes/después: NO es código de producto y no se usa fuera de `test/`.
+ *
+ * Hasta la integración de la lectura por conjuntos (2026-11-11) fue la copia de `e4512cb`, sin TB-13: la medición del
+ * 2026-10-28 (EVIDENCIA/RENDIMIENTO-CARTERA/resultados/ab-2026-10-28/) comparó esa versión con `bf50122`. Como la lectura
+ * por conjuntos se integró después de la etapa A del tablero, el oráculo pasó a ser la lectura persona por persona de
+ * `main` con TB-13: es la semántica que la lectura por conjuntos tiene que conservar.
  *
  * Solo cambian respecto del original: este encabezado, las rutas de los `import` (que apuntan a `apps/api/src`) y el
  * alias exportado al final (`leerCarteraAnterior`). Se comprueba con:
  *
- *   diff <(git show e4512cb:apps/api/src/cartera/lectura-cartera.ts) test/integration/soporte-cartera-anterior.ts
+ *   diff <(git show 1b6fc8b:apps/api/src/cartera/lectura-cartera.ts) test/integration/soporte-cartera-anterior.ts
  *
  * y debe mostrar únicamente esas líneas.
  */
 import type { Alcance, Prisma } from '@prisma/client';
-import { CLAVE_DE_DOMINIO, clasificarRevision, diaSiguiente, fechaCivil, inicioDelDia, ordenarPendientes, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
+import { CLAVE_DE_DOMINIO, diaSiguiente, fechaCivil, inicioDelDia, ordenarPendientes, revisionEnLaCartera, sinPlanActivoEnLaCartera, type CarteraResponse, type DominioDeCartera, type PendienteDeCartera, type TipoDePendiente, type VistaDeApertura } from '@be/domain';
 import type { PdpService } from '../../apps/api/src/autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../../apps/api/src/http/contexto';
 import { errores } from '../../apps/api/src/http/errores';
@@ -19,6 +25,7 @@ import { ZONA_POR_DEFECTO } from '../../apps/api/src/nutricion/zona';
 import type { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import type { ProcesoService } from '../../apps/api/src/proceso/proceso.service';
 import { nombreDelPar, nombresDeAsesoradosPorPar } from '../../apps/api/src/vinculo/lectura';
+import { aplicacionPosteriorA, cerradoConFinalizar } from '../../apps/api/src/cartera/hechos-de-revision';
 
 type Tx = Prisma.TransactionClient;
 
@@ -31,7 +38,10 @@ type Tx = Prisma.TransactionClient;
  * - Todos los hechos se leen en **una** transacción: la cartera es una foto, no cincuenta fotos.
  * - Los pendientes salen de datos existentes: la expectativa de revisión vigente del Proceso abierto (terminal de la
  *   cadena, REG-06-146), la versión BORRADOR posterior a la activada, la ausencia de Proceso abierto, la solicitud de
- *   formulario sin respuesta y la evaluación antropométrica en preparación. La actividad registrada en el período es
+ *   formulario sin respuesta y la evaluación antropométrica en preparación.
+ * - La revisión, con la definición de pendiente del dominio (REG-06-150; TB-13): una expectativa que resolvió una
+ *   revisión aplicada después no sigue como vencida, próxima ni sin fecha. Y un seguimiento cerrado con «Finalizar» no
+ *   vuelve como «Sin plan activo» (TA-56). La forma de la respuesta no cambia. La actividad registrada en el período es
  *   un dato del ítem, nunca un ítem (D-3 de la ficha).
  * - «Hoy» es la fecha civil en la zona por defecto de BE (la misma que usan las lecturas nutricionales); se informa.
  */
@@ -160,14 +170,17 @@ async function dePlanificacion(tx: Tx, procesos: ProcesoService, profesionalId: 
     const expectativa = await procesos.proximaRevisionVigente(tx, proceso.id);
     if (expectativa) {
       const fechaObjetivo = expectativa.fechaObjetivo ? expectativa.fechaObjetivo.toISOString().slice(0, 10) : null;
-      const c = clasificarRevision(fechaObjetivo, hoy);
+      const resuelta = (await aplicacionPosteriorA(tx, alcance, proceso.id, expectativa.momentoDeRegistro)) !== null;
+      const c = revisionEnLaCartera(fechaObjetivo, resuelta, hoy);
       if (c.kind === 'REVIEW_OVERDUE') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: c.dias, daysUntil: null });
       else if (c.kind === 'REVIEW_DUE_SOON') hechos.push({ kind: c.kind, since: fechaObjetivo, daysOverdue: null, daysUntil: c.dias });
       else if (c.kind === 'REVIEW_UNDATED') hechos.push({ kind: c.kind, since: civil(expectativa.momentoDeRegistro), daysOverdue: null, daysUntil: null });
     }
   }
   if (borrador) hechos.push({ kind: 'PLAN_DRAFT_PENDING', since: civil(borrador.momentoDeRegistro), daysOverdue: null, daysUntil: null });
-  else if (!proceso) hechos.push({ kind: 'NO_ACTIVE_PLAN', since: null, daysOverdue: null, daysUntil: null });
+  else if (sinPlanActivoEnLaCartera({ procesoAbierto: proceso !== null, borrador: false, cerradoConFinalizar: !proceso && (await cerradoConFinalizar(tx, profesionalId, asesoradoId, alcance)) })) {
+    hechos.push({ kind: 'NO_ACTIVE_PLAN', since: null, daysOverdue: null, daysUntil: null });
+  }
   const solicitud = await solicitudAbierta(tx, profesionalId, asesoradoId, alcance);
   if (solicitud) hechos.push(solicitud);
 
