@@ -1,7 +1,8 @@
 # WP-USO-FINAL — lo que la demostración no necesitaba y el uso real sí
 
-> **Estado:** DECLARADO el 2026-11-11, sin implementar. Las partes UF-00 a UF-24 esperan el sí de Dirección a los IDs
-> (ACTA-DIR-034), y las decisiones UF-D1 a UF-D13, su ratificación (§7). No se programa nada antes del sí.
+> **Estado:** DECLARADO el 2026-11-11. Ese mismo día Dirección **ratificó UF-D1 a UF-D13** y pidió la **etapa 1**: lo que
+> bloquea y tiene que entrar antes de congelar la app el 25/11. La etapa 1 (UF-12, UF-00, UF-01 y UF-08) está
+> **programada en el PR #253, sin integrar** (§12). Las demás partes siguen declaradas, sin programar.
 >
 > **Encargo** (Dirección, 2026-11-11):
 > - «En la creación de la cuenta ya tiene que ponerle el nombre. Empecemos a completar esas secciones que por ser datos
@@ -563,3 +564,74 @@ UF-02 las sigue:
 - **El nombre de la persona en los textos del website:** está en #251.
 - **Lo comercial de producción.**
 - **Cambiar el legajo.**
+
+## 12. La etapa 1, programada (2026-11-11, PR #253, sin integrar)
+
+Dirección ratificó UF-D1 a UF-D13 el 2026-11-11 y pidió que lo que bloquea entre antes de congelar la app el 25/11. La
+etapa 1 son las cuatro partes que no esperan una decisión de afuera (un proveedor de correo, los textos jurídicos, el
+plan de producción): UF-12, UF-00, UF-01 y UF-08. Los oráculos, escritos antes del código y verificados con mutación,
+están en `WP-USO-FINAL-ORACULOS.md` (TEST-UF-001 a 006, 012 y 016, que es nuevo: UF-12 no tenía).
+
+### 12.1 Lo que quedó
+
+| Parte | Qué quedó | Oráculos |
+|---|---|---|
+| UF-12 | `EXCEPCIONES` vacía. node-forge 1.4.3 (fuera del aviso, y corrige los cuatro medios y bajos del 2026-11-10) y la CLI de Expo 57.0.33 (SDK 57, «Remove the Zod production dependency»), solo en el lockfile. La auditoría no depende de una fecha: no falla el 2026-12-01. | TEST-UF-016 |
+| UF-00 | `VIGENTES = ['0.23.0-candidata.2']`, congelada desde `c9ec44f`; salen los congelados de la 0.13.2 a la 0.23.0-candidata.1, C01 y D10, y las pruebas que nombraban esas versiones. | TEST-UF-006 |
+| UF-01 | La API exige el nombre en el alta con correo y con Google, lo propone desde Google, no deja quitarlo, la base no acepta una versión nueva sin nombre y API-ACC-07 dice qué falta. La web y la APK piden «Nombre y apellido» al crear la cuenta y muestran «Antes de seguir» a una cuenta anterior sin nombre. | TEST-UF-001 a 005 |
+| UF-08 | Los avisos de prueba salen del ambiente y de `BE_AVISOS_DE_PRUEBA`; ninguna pantalla los escribe por su cuenta. | TEST-UF-012 |
+
+**El profesional (UF-01, punto 6).** Su nombre personal sigue la misma regla: lo pide el alta y, si es una cuenta
+anterior sin nombre, «Antes de seguir» en `/pro` le propone su nombre profesional. El nombre profesional, el que ven las
+personas, ya es obligatorio en la base; incorporarlo con su matrícula y cambiarlo es UF-04 (API-ADM-14 y 15), que no
+entra en esta etapa.
+
+### 12.2 Decisiones de la implementación (UF-T, a ratificar las que cambian un contrato)
+
+| ID | Decisión | Alternativa descartada |
+|---|---|---|
+| UF-T01 | API-ACC-07 es un ID nuevo de la familia ACC, que el 09 no usa. La guardia de trazabilidad lo admite por una lista explícita con su DL y exige que el 09 no lo tenga. | Una familia propia (otra sigla): contradecía el nombre que ratificó Dirección en UF-D4. |
+| UF-T02 | API-ACC-07 es `GET /me/pending-steps` y responde `steps: [{ step, suggestion }]`. El paso viaja como texto, como el `kind` de la novedad: un paso nuevo (UF-05, UF-13) no deja sin leer la respuesta a una APK instalada, que pide actualizar. | Un enum estricto: la APK de ese momento dejaría de entrar cuando se sume el paso de los textos. |
+| UF-T03 | Sin `profile.displayName`, el alta responde 422 TERMS_VERSION_NOT_ACCEPTABLE (UF-D1); con el nombre en blanco, 422 VALIDATION_FAILED con DISPLAY_NAME_REQUIRED; largo o con invisibles, INVALID_DISPLAY_NAME. Es el mismo criterio que la mayoría de edad de DL-138: lo que manda un cliente anterior se traduce a «actualizá»; lo que se corrige en la pantalla, al campo. | VALIDATION_FAILED también sin el nombre: la 0.23 mostraría un error general en vez de pedir actualizar. |
+| UF-T04 | API-GOO-03 valida el nombre antes de verificar el token, también cuando la cuenta de Google ya tiene identidad (el reintento que responde 200). | Saltear el nombre en el reintento: abría una forma de entrar sin nombre por el alta. |
+| UF-T05 | La base lo sostiene con un disparador sobre lo que se inserta, no con un CHECK: las versiones viejas guardadas sin nombre quedan en la historia, que es de solo agregar. | Un CHECK `NOT VALID`: hace lo mismo, pero una validación posterior de la restricción fallaría por la historia. |
+| UF-T06 | En las pruebas, las cuentas nacen con «Persona Sintética»; una cuenta anterior, sin nombre, se arma como la armaba el alta (`soporte-nombre.ts`). Las pruebas que dependían de la falta de nombre pasan a la regla nueva, y las de los avisos del teléfono exigen además que no viaje el nombre. | Mantener cuentas sin nombre en las pruebas: probarían un estado que la API ya no crea. |
+| UF-T07 | Lo que solo recibe el rechazo, en la prueba de las lecturas de la APK, se decide por lo que manda la APK (`soloElRechazo`) y no por su número; la del soporte, `LA_ULTIMA_APK`, por la carpeta. Así la próxima candidata no obliga a tocar estas pruebas. | Una lista por versión: había que cambiarla con cada candidata. |
+| UF-T08 | UF-08 se decide al construir cada cliente: el website con `BE_AMBIENTE` (sin ella, `test`, el único ambiente que existe) y `BE_AVISOS_DE_PRUEBA`; la APK con `APP_ENV` y `BE_AVISOS_DE_PRUEBA`. Un ambiente que no se reconoce muestra los avisos. | Preguntarle el ambiente a la API al abrir: un parpadeo en cada carga y un pedido más, para algo que se sabe al construir. |
+| UF-T09 | UF-12 por el camino angosto: solo la CLI de Expo dentro del rango que ya pide `expo` 57.0.23, sin tocar ningún package.json ni módulo nativo de la app. | `expo` 57.0.32 con `expo install --fix`: suben también los módulos nativos (expo-modules-core, expo-notifications, expo-image-picker…), más cambio en una APK que se congela el 25/11. |
+| UF-T10 | De C01 queda, con su nombre propio, la prueba de que los datos de un plan sin objetivos por serie no se reinterpretan: no dependía de ninguna APK. El «D10» de `nutricion.int-spec.ts` es otro (un reintento no duplica) y no se toca. | Retirar C01 entero: se perdía una garantía de la historia. |
+
+### 12.3 Lo que decidieron la web y la APK (UF-T11 a UF-T14)
+
+| ID | Decisión | Alternativa descartada |
+|---|---|---|
+| UF-T11 | **Website:** «Antes de seguir» va en los layouts de `/account` y `/pro` (la consola `/admin` queda afuera) y se pregunta una vez por sesión y por pestaña. Sin respuesta (red, 5xx, 429, 404 o una respuesta que no reconoce) no deja pasar: «Reintentar», y reintenta solo al volver la conexión. Mientras pregunta, la página no se monta: ninguna lee datos antes de tiempo ni se monta dos veces. | Dejar pasar sin respuesta: el website depende de la API para todo, y una página montada a ciegas se volvería a montar. |
+| UF-T12 | **APK:** pregunta con cada sesión (login, Google o la recuperada), con un tope de 10 s. Sin respuesta (sin red, el tope, 5xx, 429 o 404) deja seguir y vuelve a preguntar al volver al primer plano y al cambiar de pantalla. Lo que la API contesta no se saltea: el nombre se pide, y un paso desconocido o una respuesta que no reconoce piden actualizar. | Bloquear sin respuesta, como el website: la app trabaja sin conexión con lo guardado, y trabarla castigaría a todas las cuentas por una anterior sin nombre, que es rara. |
+| UF-T13 | **En el paso**, sin navegación ni campana (llevarían a otra pantalla) y con «Cerrar sesión» siempre; en la APK, Atrás deja la app en segundo plano, como en Inicio, y nunca muestra lo de abajo. El campo deja escribir hasta 80 caracteres, para que un nombre largo muestre su error en vez de cortarse sin aviso. | — |
+| UF-T14 | **Perfil de la APK** ya no ofrece «Agregá tu nombre» (AV-03 y AV-17): sin nombre muestra la referencia, que con #251 dirá «Persona · …». Se cambia y no se quita en Mis datos y en Cuenta del website. | Dejar «Agregá tu nombre» como atajo: el paso ya lo pide antes de llegar, y sería una segunda puerta para lo mismo. |
+
+### 12.4 Lo que tiene que hacer o decidir Dirección
+
+- **Nada en Render para integrar.** El PR no toca `render.yaml` ni pide variables nuevas para funcionar: sin ellas, `test`
+  sigue mostrando los avisos de prueba, como hoy.
+- **Para apagar los avisos de prueba en `test` (UF-08):**
+  - **el website:** en Render, be-web → Environment → agregar `BE_AVISOS_DE_PRUEBA` con el valor `no` → «Save, rebuild,
+    and deploy»;
+  - **la APK:** el perfil `test` de `apps/mobile/eas.json` con `"BE_AVISOS_DE_PRUEBA": "no"`, en la rama de la candidata
+    o en `main`. Sin eso, la APK de `test` los muestra.
+- **Para producción (UF-10, cuando exista):** be-web con `BE_AMBIENTE=production` (sin ella mostraría los avisos) y la
+  API con `APP_ENV=production`, como ya está previsto.
+- **zod de Expo (DL-114):** no hay nada que renovar. La CLI de Expo 57.0.33 ya no lo pide. Si la candidata 0.24 no se
+  pudiera construir por la CLI nueva, la salida es volver ese cambio del lockfile y que Dirección decida si renueva la
+  excepción hasta el SDK siguiente: no vuelve sola.
+
+### 12.5 Lo que falta para cerrar la etapa
+
+- La CI en verde del PR y la integración, con el sí de Dirección.
+- **La APK 0.24.0-candidata.1,** que pide el nombre: se construye después de integrar y desplegar, porque llama a
+  API-ACC-07 al entrar (con la API de antes, no podría seguir). Desde ese despliegue, la 0.23 ya no crea cuentas (pide
+  actualizar) y su paso de Google muestra un error general; lo que ya existe sigue andando. Se publica como «latest» y
+  se congela lo que lee (UF-00: reemplaza a la 0.23.0-candidata.2 en `VIGENTES`).
+- **En el teléfono:** crear una cuenta con correo y con Google (el nombre propuesto), entrar con una cuenta anterior sin
+  nombre («Antes de seguir»), cambiar el nombre y comprobar que no se puede vaciar, y ver la app con y sin los avisos de
+  prueba. Que la APK se haya construido con la CLI nueva de Expo es, además, la prueba de UF-12 en la app.

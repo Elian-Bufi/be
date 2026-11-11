@@ -220,8 +220,10 @@ EXPECTED             1 → `steps: [{ step: 'DISPLAY_NAME', suggestion: null }]`
 NEGATIVE_ASSERTIONS  Una cuenta con nombre no ve el paso. Un paso que el cliente no conoce no se saltea: pide
                      actualizar (APK) o recargar (web).
 AUTOMATION           test/integration/nombre-obligatorio.int-spec.ts («TEST-UF-005 · …»); dominio:
-                     contratos-perfil-propio.test.ts; website y APK, las pruebas de su compuerta. Mutación: la API que
-                     no lista el paso → rojo.
+                     contratos-perfil-propio.test.ts; website: apps/web/test/nombre-y-ambiente.test.mjs; APK:
+                     apps/mobile/src/nombre-obligatorio.test.ts. Mutaciones: la API que no lista el paso; sin
+                     `conocePasos`; el website que deja pasar sin respuesta; la APK que abre sin respuesta como
+                     «abierta»; el 409 que no se vuelve a leer y el `expectedVersion` fijo → cada una en rojo.
 ENVIRONMENT          `npm test` y el job de integración de la CI
 EVIDENCE_EXPECTED    La CI verde; en el teléfono, con una cuenta sin nombre (la candidata)
 ```
@@ -245,8 +247,10 @@ EXPECTED             1 → production, nunca; test y development, sí, salvo con
                      viven solo en `AVISOS_DE_PRUEBA` del dominio, y cada pantalla que los usa pasa por la regla.
 NEGATIVE_ASSERTIONS  Ninguna pantalla escribe «Ambiente de prueba», «correo inventado», «cuenta de Google de prueba» ni
                      «APK de prueba» por su cuenta.
-AUTOMATION           packages/domain/src/ambiente-de-prueba.test.ts y scripts/avisos-de-prueba.test.mjs. Mutación:
-                     producción que los muestra → rojo; un texto escrito en una pantalla → rojo.
+AUTOMATION           packages/domain/src/ambiente-de-prueba.test.ts, scripts/avisos-de-prueba.test.mjs y, del website,
+                     apps/web/test/nombre-y-ambiente.test.mjs. Mutaciones: producción que los muestra; un texto escrito
+                     en una pantalla; el pie sin la regla; la APK sin el interruptor; next.config con producción por
+                     omisión → cada una en rojo.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; las capturas con y sin el interruptor quedan para la candidata
 ```

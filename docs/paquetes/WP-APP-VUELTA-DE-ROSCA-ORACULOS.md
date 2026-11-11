@@ -20,6 +20,14 @@
 >
 > **Lo que solo se ve en el teléfono** (TalkBack, la vibración con la pantalla bloqueada, la letra al máximo) se dice en
 > EVIDENCE_EXPECTED y queda para la candidata (AV-16): ninguna de estas pruebas lo da por aprobado.
+>
+> **Enmienda del 2026-11-11 (WP-USO-FINAL, DL-169; UF-01 y UF-08).** Dirección cambió dos cosas que estos oráculos
+> fijaban, y sus pruebas (`scripts/vuelta-de-rosca.test.mjs` y `scripts/historial-navegacion.test.mjs`) piden lo nuevo:
+> - **TEST-AVR-002:** la franja del ambiente de prueba ya no va siempre. Su texto sale del dominio
+>   (`AVISOS_DE_PRUEBA.franja`) y se muestra solo si `AVISOS_DE_PRUEBA_VISIBLES` (TEST-UF-012).
+> - **TEST-AVR-004 y TEST-AVR-029:** «Agregá tu nombre» ya no se ofrece. El nombre es obligatorio: la cuenta nace con él,
+>   y una anterior sin nombre lo completa en «Antes de seguir» antes de llegar a Perfil (TEST-UF-005). Si igual faltara,
+>   Perfil muestra la referencia, sin ofrecer agregarlo.
 
 ---
 
