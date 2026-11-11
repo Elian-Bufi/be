@@ -1,7 +1,9 @@
 /**
  * DEUDA_LEGAJO DL-009 (opción B) y DL-040, decididas por Dirección el 2026-10-15, contra PostgreSQL real: el nombre
  * visible del perfil propio (API-ACC-06 y su lectura, API-ACC-06-PROPIA) y quién lo ve.
- * - La persona lo declara, lo cambia o lo quita; cada cambio es una versión que la base solo deja agregar (REG-06-20).
+ * - La persona lo declara al crear la cuenta y lo cambia; desde DL-169 (UF-D3) no lo quita. Cada cambio es una versión
+ *   que la base solo deja agregar (REG-06-20). Las cuentas nacen con la versión 1 (DL-169, UF-01); una anterior, sin
+ *   nombre, se arma con `cuentaAnteriorSinNombre`.
  * - `/me` no cambia: su respuesta estricta es la que valida la APK instalada.
  * - El profesional lo ve mientras el vínculo esté vigente (aceptado o en pausa); con la solicitud pendiente, o cuando
  *   el vínculo terminó, ve la referencia neutral. El correo, nunca.
@@ -9,7 +11,8 @@
 import type { INestApplication } from '@nestjs/common';
 import { ListaDeVinculosResponseSchema, MeResponseSchema, PerfilPropioResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
-import { appDePrueba, conSesion } from './soporte-api';
+import { appDePrueba, conSesion, NOMBRE_SINTETICO } from './soporte-api';
+import { cuentaAnteriorSinNombre } from './soporte-nombre';
 import { dashboard, finalizar, pausar, prepararAsesorado, prepararProfesional, reanudar, solicitar, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -28,8 +31,8 @@ const leerPerfil = async (token: string) => PerfilPropioResponseSchema.parse((aw
 const editar = (token: string, cuerpo: object) => conSesion(app, token).patch('/api/v1/me/profile').send(cuerpo);
 
 describe('API-ACC-06 — el nombre visible del perfil propio', () => {
-  it('sin versiones es «v0» y sin nombre; guardarlo deja la versión 1, normalizada, una fila nueva y la auditoría; /me no cambia', async () => {
-    const ase = await prepararAsesorado(app, 'perfil-alta');
+  it('una cuenta anterior, sin versiones, es «v0» y sin nombre; guardarlo deja la versión 1, normalizada, una fila nueva y la auditoría; /me no cambia', async () => {
+    const ase = await cuentaAnteriorSinNombre(app, 'perfil-alta');
     expect(await leerPerfil(ase.token)).toEqual({ displayName: null, version: 'v0', updatedAt: null });
 
     const r = await editar(ase.token, { expectedVersion: 'v0', changes: { displayName: '  Martina    Gómez ' } }).expect(200);
@@ -45,29 +48,31 @@ describe('API-ACC-06 — el nombre visible del perfil propio', () => {
     expect(MeResponseSchema.parse((await conSesion(app, ase.token).get('/api/v1/me').expect(200)).body).data.profile).toEqual({});
   });
 
-  it('una versión vieja responde 409 VERSION_CONFLICT y no deja nada; quitar el nombre también es una versión', async () => {
+  it('la cuenta nace con su nombre (v1); una versión vieja responde 409 VERSION_CONFLICT y no deja nada; quitar el nombre responde 422 y tampoco (DL-169)', async () => {
     const ase = await prepararAsesorado(app, 'perfil-conflicto');
-    await editar(ase.token, { expectedVersion: 'v0', changes: { displayName: 'Lucas Fernández' } }).expect(200);
-    const conflicto = await editar(ase.token, { expectedVersion: 'v0', changes: { displayName: 'Otro nombre' } }).expect(409);
+    expect(await leerPerfil(ase.token)).toMatchObject({ displayName: NOMBRE_SINTETICO, version: 'v1' });
+    await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: 'Lucas Fernández' } }).expect(200);
+    const conflicto = await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: 'Otro nombre' } }).expect(409);
     expect(conflicto.body.error.code).toBe('VERSION_CONFLICT');
-    expect(await prisma.versionDePerfilPropio.count({ where: { perfilPropio: { identidadId: ase.id } } })).toBe(1);
+    expect(await prisma.versionDePerfilPropio.count({ where: { perfilPropio: { identidadId: ase.id } } })).toBe(2);
 
-    const quitado = PerfilPropioResponseSchema.parse((await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: null } }).expect(200)).body).data;
-    expect(quitado).toMatchObject({ displayName: null, version: 'v2' });
+    const quitar = await editar(ase.token, { expectedVersion: 'v2', changes: { displayName: null } }).expect(422);
+    expect(quitar.body.error).toMatchObject({ code: 'INVALID_PROFILE_DATA', details: { issues: [{ code: 'DISPLAY_NAME_REQUIRED', path: 'changes.displayName' }] } });
+    expect(await leerPerfil(ase.token)).toMatchObject({ displayName: 'Lucas Fernández', version: 'v2' });
     expect(await prisma.versionDePerfilPropio.count({ where: { perfilPropio: { identidadId: ase.id } } })).toBe(2);
   });
 
   it('un nombre vacío, largo o con caracteres de control: 422 INVALID_PROFILE_DATA; un campo que no es del perfil: 400 UNKNOWN_FIELD', async () => {
     const ase = await prepararAsesorado(app, 'perfil-invalido');
     for (const nombre of ['   ', 'x'.repeat(61), 'Ana\u0007Paz', 'Ana​Paz']) {
-      const r = await editar(ase.token, { expectedVersion: 'v0', changes: { displayName: nombre } }).expect(422);
+      const r = await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: nombre } }).expect(422);
       expect(r.body.error.code).toBe('INVALID_PROFILE_DATA');
     }
     // Sesenta caracteres entran: el límite es el de la base.
-    await editar(ase.token, { expectedVersion: 'v0', changes: { displayName: 'ñ'.repeat(60) } }).expect(200);
+    await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: 'ñ'.repeat(60) } }).expect(200);
     for (const cuerpo of [
-      { expectedVersion: 'v1', changes: { displayName: 'Ana', email: 'ana@example.invalid' } },
-      { expectedVersion: 'v1', changes: { displayName: 'Ana' }, registrationIntent: 'PROFESSIONAL' },
+      { expectedVersion: 'v2', changes: { displayName: 'Ana', email: 'ana@example.invalid' } },
+      { expectedVersion: 'v2', changes: { displayName: 'Ana' }, registrationIntent: 'PROFESSIONAL' },
     ]) {
       const r = await editar(ase.token, cuerpo).expect(400);
       expect(r.body.error.code).toBe('UNKNOWN_FIELD');
@@ -77,8 +82,8 @@ describe('API-ACC-06 — el nombre visible del perfil propio', () => {
 
   it('la historia del perfil solo se agrega: la base rechaza cambiar o borrar una versión, y apuntar a una que no es la última', async () => {
     const ase = await prepararAsesorado(app, 'perfil-historia');
-    await editar(ase.token, { expectedVersion: 'v0', changes: { displayName: 'Valentina Ruiz' } }).expect(200);
-    await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: 'Valentina Ruiz Paz' } }).expect(200);
+    await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: 'Valentina Ruiz' } }).expect(200);
+    await editar(ase.token, { expectedVersion: 'v2', changes: { displayName: 'Valentina Ruiz Paz' } }).expect(200);
     const [primera] = await prisma.versionDePerfilPropio.findMany({ where: { perfilPropio: { identidadId: ase.id }, numero: 1 } });
     await expect(prisma.$executeRaw`UPDATE "version_de_perfil_propio" SET "nombre_visible" = 'Otra' WHERE "id" = ${primera!.id}::uuid`).rejects.toThrow(/append-only/);
     await expect(prisma.$executeRaw`DELETE FROM "version_de_perfil_propio" WHERE "id" = ${primera!.id}::uuid`).rejects.toThrow(/append-only/);
@@ -90,13 +95,13 @@ describe('DL-040 — el profesional ve el nombre mientras el vínculo está vige
   it('pendiente: la referencia; aceptado y en pausa: el nombre; terminado: otra vez la referencia', async () => {
     const pn = await prepararProfesional(app, 'nombre-visible', ['NUTRICION']);
     const ase = await prepararAsesorado(app, 'nombre-visible', { a3: true });
-    await editar(ase.token, { expectedVersion: 'v0', changes: { displayName: 'Lucía Fernández' } }).expect(200);
+    await editar(ase.token, { expectedVersion: 'v1', changes: { displayName: 'Lucía Fernández' } }).expect(200);
     const nombreEnLaLista = async () =>
       ListaDeVinculosResponseSchema.parse((await conSesion(app, pn.token).get('/api/v1/me/relationships').expect(200)).body).data.find((v) => v.advisee.identityId === ase.id)?.advisee.displayName;
 
     // Con la solicitud pendiente, la persona todavía no aceptó: ninguna parte de su perfil.
     const otro = await prepararAsesorado(app, 'nombre-pendiente', { a3: true });
-    await editar(otro.token, { expectedVersion: 'v0', changes: { displayName: 'Tomás Herrera' } }).expect(200);
+    await editar(otro.token, { expectedVersion: 'v1', changes: { displayName: 'Tomás Herrera' } }).expect(200);
     const pendiente = await solicitar(app, pn, otro.id, 'NUTRICION').expect(201);
     expect(pendiente.body.data.advisee.displayName).toMatch(REFERENCIA);
 

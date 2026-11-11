@@ -10,7 +10,10 @@ import { CuentaPropiaService } from './cuenta-propia.service';
 import { PerfilPropioService } from './perfil-propio.service';
 import { RegistroService } from './registro.service';
 
-/** API-ACC-01, ACC-05, ACC-06 (con su lectura, ACC-06-PROPIA) y ACC-P1-03 (09v8 §4; 09v12). Prefijo global /api/v1. */
+/**
+ * API-ACC-01, ACC-05, ACC-06 (con su lectura, ACC-06-PROPIA), ACC-07 (DL-169) y ACC-P1-03 (09v8 §4; 09v12). Prefijo
+ * global /api/v1.
+ */
 @Controller()
 export class IdentidadController {
   constructor(
@@ -47,6 +50,14 @@ export class IdentidadController {
   consultarPerfil(@Query() query: Record<string, unknown>, @Req() req: SolicitudAutenticada & SolicitudConContexto): Promise<unknown> {
     sinParametrosDeQuery(query);
     return this.perfilPropio.consultar(actorDe(req), contextoDe(req));
+  }
+
+  /** API-ACC-07 — SESSION. Lo que falta para seguir (DL-169, UF-D4): hoy, el nombre de una cuenta anterior. */
+  @Get('me/pending-steps')
+  @UseGuards(SesionGuard)
+  loQueFalta(@Query() query: Record<string, unknown>, @Req() req: SolicitudAutenticada & SolicitudConContexto): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.perfilPropio.loQueFaltaParaSeguir(actorDe(req), contextoDe(req));
   }
 
   /** API-ACC-06 — SESSION. Sin Idempotency-Key: concurrencia por `expectedVersion` (09v8:509-554). */

@@ -244,8 +244,9 @@ export async function escenarioE(c) {
   const aseEId = await registrarCuenta(correo, 'APK');
   const pro = await sesion(e.proCorreo);
   const aseE = await sesion(correo, 'APK');
-  // Su nombre visible (DL-009 y DL-040), como lo declararía desde «Mi cuenta».
-  await pedir('PATCH', '/me/profile', { token: aseE, superficie: 'APK', cuerpo: { expectedVersion: 'v0', changes: { displayName: 'Joaquín Medina' } } });
+  // Su nombre visible (DL-009 y DL-040), como lo cambiaría desde «Mi cuenta»: desde DL-169 la cuenta nace con uno.
+  const perfilDeE = (await pedir('GET', '/me/profile', { token: aseE, superficie: 'APK' })).data;
+  await pedir('PATCH', '/me/profile', { token: aseE, superficie: 'APK', cuerpo: { expectedVersion: perfilDeE.version, changes: { displayName: 'Joaquín Medina' } } });
   await pedir('POST', '/me/health-data-consents', { token: aseE, superficie: 'APK', cuerpo: { consentVersionId: dominio.VERSION_VIGENTE.DATOS_SALUD_BE.id } });
   await vincular(pro, aseE, aseEId, 'NUTRICION');
   const ev = (await pedir('POST', `/advisees/${aseEId}/nutrition/evaluations`, { token: pro, cuerpo: cuerpoDeEvaluacionNutricional(new Date(Date.now() - 3 * 3600_000)) })).data.evaluationId;

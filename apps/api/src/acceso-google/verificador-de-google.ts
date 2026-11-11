@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { identificadorLocalValido, normalizarIdentificadorLocal } from '@be/domain';
+import { identificadorLocalValido, nombreVisibleValido, normalizarIdentificadorLocal } from '@be/domain';
 import { createPublicKey, verify as verificarFirma, type KeyObject } from 'node:crypto';
 import { ENTORNO } from '../config/tokens';
 import type { Entorno } from '../config/entorno';
@@ -13,6 +13,11 @@ import { AGENTE_DE_BE } from '../integraciones/proveedor-http';
 export interface CuentaDeGoogle {
   readonly sub: string;
   readonly correo: string;
+  /**
+   * El nombre de la cuenta de Google (`name`), ya normalizado como el nombre visible, o `null` si el token no lo trae o
+   * no se puede guardar (DL-169, UF-D2). Solo se propone: lo que se guarda es lo que la persona confirma en el alta.
+   */
+  readonly nombre: string | null;
 }
 
 export type MotivoDeTokenInvalido =
@@ -130,7 +135,8 @@ export class VerificadorDeGoogle {
     if (!identificadorLocalValido(correo)) throw new TokenDeGoogleInvalido('CORREO');
     // Solo `true`: un valor ausente, `false` o el texto "true" no alcanzan (DL-138).
     if (reclamos.email_verified !== true) throw new CorreoDeGoogleNoVerificado();
-    return { sub: reclamos.sub, correo };
+    const nombre = typeof reclamos.name === 'string' ? nombreVisibleValido(reclamos.name) : null;
+    return { sub: reclamos.sub, correo, nombre };
   }
 
   private async claveDe(kid: string): Promise<KeyObject> {
