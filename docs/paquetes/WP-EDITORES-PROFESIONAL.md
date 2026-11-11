@@ -48,7 +48,7 @@
   - B10-05 (Nutrición);
   - B10-06 (Entrenamiento: el plan nace de un objetivo vigente, y el objetivo, de una evaluación);
   - B10-10 (accesibilidad, textos y diseño adaptable).
-- **11A:** TEST-PRJ-009 (nada califica). Los oráculos nuevos son TEST-EDP-001 a 046 (§5.6).
+- **11A:** TEST-PRJ-009 (nada califica). Los oráculos nuevos son TEST-EDP-001 a 046 (§5.8).
 - **DL:**
   - DL-091 (los números en rioplatense) y DL-108, DL-109 y DL-119 (plantillas, habituales y recetas);
   - DL-122 (las capacidades del cliente), DL-131 (las preguntas vienen marcadas) y DL-137 D-7 (lo nuevo va en
