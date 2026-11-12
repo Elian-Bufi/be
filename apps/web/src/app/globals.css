@@ -15445,3 +15445,28 @@ p.cifra-del-espacio__desglose {
 .items-del-editor .item-del-editor__nota > td {
   padding-top: 0;
 }
+
+/* ED-02 (WP-EDITORES-PROFESIONAL): «Guardando antes de salir…», a la vista mientras se guarda y anunciado al lector. La
+   región está siempre (un aviso en una región que aparece no siempre se anuncia); vacía, no se ve. */
+.salida-segura__guardando {
+  position: fixed;
+  inset-inline-start: 1rem;
+  inset-block-end: 1rem;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.salida-segura__guardando:empty {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}

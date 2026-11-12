@@ -33,6 +33,8 @@ export const RECORRIDOS = {
   conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   // ED-01 (WP-EDITORES-PROFESIONAL): descartar la versión en preparación.
   descartar: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-02 (WP-EDITORES-PROFESIONAL): salir con cambios sin guardar.
+  salidaSegura: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   retorno: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
   grafico: { habilitado: ['ANTROPOMETRIA'], datos: ['tomas'] },
   // El área sugerida al invitar (bloque 5): sin vínculos, ninguna; con vínculos en una sola de dos áreas, esa.

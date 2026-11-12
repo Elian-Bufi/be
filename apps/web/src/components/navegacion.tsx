@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRef } from 'react';
 import { useActualALaVista } from './pestanas';
+import { useAlNavegar } from './salida-segura';
 
 const DE_CUENTA = [
   { href: '/account', texto: 'Cuenta' },
@@ -43,12 +44,14 @@ function Navegacion({ etiqueta, enlaces }: { etiqueta: string; enlaces: readonly
   // DL-113: en el teléfono la línea se desplaza de costado; la sección actual queda siempre a la vista.
   const lista = useRef<HTMLUListElement>(null);
   useActualALaVista(lista, actual);
+  // ED-02: con cambios sin guardar, un enlace de la barra guarda antes o pregunta (en /pro; en /account no hay editores).
+  const alNavegar = useAlNavegar();
   return (
     <nav className="navegacion" aria-label={etiqueta}>
       <ul ref={lista} className="desplazable-x">
         {enlaces.map((e) => (
           <li key={e.href}>
-            <Link href={e.href} aria-current={e.href === actual ? (ruta === e.href ? 'page' : 'location') : undefined}>
+            <Link href={e.href} aria-current={e.href === actual ? (ruta === e.href ? 'page' : 'location') : undefined} onNavigate={alNavegar(e.href)}>
               {e.texto}
             </Link>
           </li>

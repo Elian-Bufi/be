@@ -29,6 +29,7 @@ import { Ayuda } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso, Campo, ResumenDeErrores, erroresPorCampo } from '../../../components/formulario';
 import { OrigenEnElCatalogo } from '../../../components/origen-en-el-catalogo';
+import { useAntesDeSalir, useCambiosParaSalir } from '../../../components/salida-segura';
 import { api, type Resultado } from '../../../lib/api';
 import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
@@ -118,6 +119,10 @@ export function EditorDeReceta({
   const [ingredientes, setIngredientes] = useState<IngredienteEnEdicion[]>([]);
   const [pasos, setPasos] = useState<string[]>([]);
   const [sucio, setSucio] = useState(false);
+  // ED-65: con cambios, un enlace interno, recargar o volver a la lista preguntan. La receta nunca se guarda sola: guardarla
+  // crea una versión (DL-119).
+  useCambiosParaSalir(sucio, 'la receta');
+  const antesDeSalir = useAntesDeSalir();
   const [calculo, setCalculo] = useState<EstadoDelCalculo>({ tipo: 'incompleto' });
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<readonly { id: string; texto: string }[]>([]);
@@ -246,7 +251,7 @@ export function EditorDeReceta({
   return (
     <div className="secciones">
       <p>
-        <button type="button" className="boton boton--enlace" onClick={onVolver}>
+        <button type="button" className="boton boton--enlace" onClick={() => antesDeSalir(onVolver)}>
           ← {COPY_RECETAS.volverALaLista}
         </button>
       </p>

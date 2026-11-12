@@ -8,6 +8,7 @@
 import { cantidad, COPY_PLANTILLAS, ETIQUETA_DE_PREPARACION, type EstructuraDePlanEntrada, type PlantillaNutricional, type ResumenDePlantillaNutricional } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { useCambiosParaSalir } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, EstadoVacio, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -125,6 +126,8 @@ function DetalleNutricional({ token, resumen, sesionPerdida, onCambio }: { token
   const [descripcion, setDescripcion] = useState(resumen.description ?? '');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ED-65: con el nombre o la descripción cambiados y sin guardar, salir pregunta.
+  useCambiosParaSalir(!!r?.ok && (nombre.trim() !== r.datos.data.name || (descripcion.trim() || null) !== r.datos.data.description), 'el nombre o la descripción de la plantilla');
   const cargar = useCallback(async () => {
     setR(null);
     const res = await api.consultarPlantillaNutricional(token, resumen.templateId);

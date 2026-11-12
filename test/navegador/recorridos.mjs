@@ -366,6 +366,49 @@ async function conflicto({ contexto, p, d }) {
 }
 
 /**
+ * ED-02 (WP-EDITORES-PROFESIONAL; TEST-EDP-003): un enlace interno con cambios sin guardar guarda antes de salir o
+ * pregunta. Con un cambio que se puede guardar, se sale con la respuesta del servidor y el cambio está al volver; con
+ * algo que no se puede guardar, el cuadro «Tenés cambios sin guardar», con «Seguir editando» enfocado.
+ */
+async function salidaSegura({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  // Un cambio y, antes de la pausa del autoguardado, un enlace de la barra: se guarda antes de salir.
+  const NUEVO = 'Desayuno antes de salir';
+  await renombrarComida(p, 1, NUEVO);
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await esperarCamino(p, '/pro/recipes');
+  // Al volver, el cambio está: se guardó con la respuesta del servidor antes de salir.
+  await p.goBack({ waitUntil: 'networkidle2' });
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]', NUEVO);
+  // Algo que no se puede guardar (una comida sin nombre): el cuadro, con «Seguir editando» enfocado; no se sale.
+  const segunda = '.comida-del-editor[data-comida="2"]';
+  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
+  await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
+  await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await elemento(p, 'dialog[open][data-salida-segura]');
+  assert.equal(await p.evaluate(() => document.activeElement?.hasAttribute('data-seguir-editando')), true, '«Seguir editando» tiene el foco');
+  await captura(p, salida, 'salida-segura-cuadro-1440');
+  await clic(p, 'dialog[open] [data-seguir-editando]');
+  await p.waitForFunction(() => !document.querySelector('dialog[open][data-salida-segura]'), { timeout: ESPERA });
+  assert.equal(ruta(p).camino, '/pro/advisees/nutrition', '«Seguir editando» no sale');
+  // «Salir sin guardar» sale.
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await clic(p, 'dialog[open] [data-salir-sin-guardar]');
+  await esperarCamino(p, '/pro/recipes');
+}
+
+/**
  * ED-01 (WP-EDITORES-PROFESIONAL; TEST-EDP-002): descartar la versión en preparación. El cuadro abre con «Cancelar»
  * enfocado; Escape no toca nada; confirmar la descarta, y la sección vuelve a ofrecer crear el plan y empezar desde una
  * plantilla.
@@ -1248,7 +1291,7 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

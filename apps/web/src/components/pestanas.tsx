@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useEffect, useRef, type RefObject } from 'react';
 import { Icono } from './icono';
 import { Pista } from './pista';
+import { useAlNavegar } from './salida-segura';
 
 export function Pestanas<C extends string>({
   etiqueta,
@@ -33,12 +34,14 @@ export function Pestanas<C extends string>({
 }) {
   const lista = useRef<HTMLUListElement>(null);
   useActualALaVista(lista, actual);
+  // ED-02: con cambios sin guardar, cambiar de pestaña guarda antes o pregunta.
+  const alNavegar = useAlNavegar();
   return (
     <nav className="pestanas" aria-label={etiqueta}>
       <ul ref={lista} className="desplazable-x">
         {vistas.map((v) => {
           const enlace = (
-            <Link href={href(v.clave)} aria-current={v.clave === actual ? 'page' : undefined} replace>
+            <Link href={href(v.clave)} aria-current={v.clave === actual ? 'page' : undefined} replace onNavigate={alNavegar(href(v.clave), true)}>
               {v.icono ? <Icono nombre={v.icono} tamano={18} /> : null}
               {v.texto}
             </Link>

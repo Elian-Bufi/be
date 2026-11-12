@@ -32,6 +32,7 @@ import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { Pestanas } from '../../../components/pestanas';
 import { Retrato } from '../../../components/retrato';
+import { useAlNavegar, useCambiosParaSalir, type GuardarAntesDeSalir } from '../../../components/salida-segura';
 import { api, type Resultado } from '../../../lib/api';
 import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla } from '../../../lib/fallas';
 import { horaDelDia } from '../../../lib/formato';
@@ -69,7 +70,7 @@ const ContextoDeLaPersona = createContext<string | null>(null);
  * Avisa al marco que hay algo escrito sin guardar, con el nombre de lo que es («el plan en preparación»). Mientras lo
  * haya, «Actualizar» pregunta antes de volver a leer. Fuera de un área no hace nada.
  */
-export function useCambiosSinGuardar(hay: boolean, que: string): void {
+export function useCambiosSinGuardar(hay: boolean, que: string, guardarAntes: GuardarAntesDeSalir | null = null): void {
   const marco = useContext(Contexto);
   const clave = useId();
   useEffect(() => {
@@ -77,17 +78,10 @@ export function useCambiosSinGuardar(hay: boolean, que: string): void {
     marco.anotarCambios(clave, que);
     return () => marco.anotarCambios(clave, null);
   }, [marco, hay, que, clave]);
-  // Bloque 3 del encargo de consolidación: recargar o cerrar la pestaña con algo sin guardar pide confirmar (el navegador
-  // muestra su propio aviso). Lo que nunca llegó al servidor no se guarda en el navegador.
-  useEffect(() => {
-    if (!hay) return;
-    const alSalir = (evento: BeforeUnloadEvent) => {
-      evento.preventDefault();
-      evento.returnValue = '';
-    };
-    window.addEventListener('beforeunload', alSalir);
-    return () => window.removeEventListener('beforeunload', alSalir);
-  }, [hay]);
+  // ED-02 (WP-EDITORES-PROFESIONAL): un enlace interno también pasa por la guardia (guarda antes de salir o pregunta), y
+  // recargar o cerrar la pestaña con algo sin guardar pide confirmar (el navegador muestra su propio aviso; bloque 3 del
+  // encargo de consolidación). Lo que nunca llegó al servidor no se guarda en el navegador.
+  useCambiosParaSalir(hay, que, guardarAntes);
 }
 
 /**
@@ -272,6 +266,8 @@ export function MarcoDelArea<C extends string>({
     [leer],
   );
   const { delAsesorado } = useNombres();
+  // ED-02: «Volver a la ficha» pasa por la guardia de la salida.
+  const alNavegar = useAlNavegar();
   // TB-07: se llegó desde el Espacio (una ficha de «Tu semana», un verbo de «Te toca a vos» o el cajón).
   const desdeElEspacio = useSearchParams().get('origen') === 'espacio';
 
@@ -295,7 +291,7 @@ export function MarcoDelArea<C extends string>({
         <div className="marco-de-la-ficha__ancho">
           <div className="marco-de-la-ficha__persona">
             <p className="retorno-a-la-ficha">
-              <Link href={camino.href}>
+              <Link href={camino.href} onNavigate={alNavegar(camino.href)}>
                 <Icono nombre="volver" tamano={18} />
                 {camino.texto}
               </Link>

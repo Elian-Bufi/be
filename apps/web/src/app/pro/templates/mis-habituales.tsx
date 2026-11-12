@@ -12,6 +12,7 @@
 import { COPY_HABITUALES, type EjercicioDeCatalogo, type SesionHabitual } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { useCambiosParaSalir } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -119,6 +120,8 @@ function DetalleDeSesionHabitual({ token, habitual: h, sesionPerdida, onCambio }
   const [nombre, setNombre] = useState(h.name);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ED-65: con el nombre cambiado y sin guardar, salir pregunta.
+  useCambiosParaSalir(nombre.trim() !== h.name, 'el nombre de la sesión habitual');
   const s = h.structure;
 
   async function renombrar() {

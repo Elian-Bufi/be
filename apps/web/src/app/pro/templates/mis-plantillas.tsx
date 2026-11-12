@@ -12,6 +12,7 @@
 import { COPY_PLANTILLAS, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { useCambiosParaSalir } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, EstadoVacio, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -151,6 +152,8 @@ function DetalleDePlantilla({ token, resumen, sesionPerdida, onCambio }: { token
   const [descripcion, setDescripcion] = useState(resumen.description ?? '');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ED-65: con el nombre o la descripción cambiados y sin guardar, salir pregunta.
+  useCambiosParaSalir(!!r?.ok && (nombre.trim() !== r.datos.data.name || (descripcion.trim() || null) !== r.datos.data.description), 'el nombre o la descripción de la plantilla');
   // La carga va en un efecto: un estado que se cambia durante el render vuelve a renderizar sin fin.
   const cargar = useCallback(async () => {
     setR(null);

@@ -11,6 +11,7 @@
 import { cantidad, COPY_HABITUALES, ETIQUETA_DE_PREPARACION, type ComidaHabitual, type ElementoDeCatalogo } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { useCambiosParaSalir } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -141,6 +142,8 @@ function DetalleDeComida({ token, comida: c, sesionPerdida, onCambio }: { token:
   const [nombre, setNombre] = useState(c.name);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ED-65: con el nombre cambiado y sin guardar, salir pregunta.
+  useCambiosParaSalir(nombre.trim() !== c.name, 'el nombre de la comida habitual');
 
   async function editar(cambios: { name?: string; state?: 'REMOVED' }, texto: string) {
     setEnviando(true);

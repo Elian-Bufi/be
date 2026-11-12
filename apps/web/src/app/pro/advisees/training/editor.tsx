@@ -250,7 +250,6 @@ export function EditorDePlan({
   const [agenda, setAgenda] = useState<AgendaDeEntrenamiento | null>(null);
   const [agendaAbierta, setAgendaAbierta] = useState(false);
   const [sucio, setSucio] = useState(false);
-  useCambiosSinGuardar(sucio, 'el plan en preparación');
   const [guardando, setGuardando] = useState(false);
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
   // el autoguardado. «Guardado» solo con la respuesta del servidor; un 409 por versión no pisa nada.
@@ -472,6 +471,9 @@ export function EditorDePlan({
     cambios: cambiosParaGuardar,
     guardar: () => void guardar(true),
   });
+  // ED-02: un enlace interno con cambios guarda antes de salir (si se puede: nada a medio escribir ni un conflicto) o
+  // pregunta; recargar o cerrar la pestaña, también pregunta.
+  useCambiosSinGuardar(sucio, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
 
   /**
    * ED-07: la revisión de la API de la versión guardada (API-TRN-11). Lo que dice entra en «Lo que impide activar»; la
