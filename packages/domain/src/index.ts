@@ -111,6 +111,7 @@ export * from './registros-de-nutricion';
 export * from './registros-de-entrenamiento';
 export * from './registro-por-niveles';
 export * from './contratos-fuerza';
+export * from './contratos-totales-del-plan';
 export * from './fuerza-del-analisis';
 export * from './tomas-de-antropometria';
 export * from './solicitudes-de-informacion';

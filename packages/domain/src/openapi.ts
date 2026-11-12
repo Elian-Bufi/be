@@ -115,6 +115,7 @@ import {
 import { CarteraResponseSchema } from './contratos-cartera';
 import { ColaDeRevisionesResponseSchema } from './contratos-cola-de-revisiones';
 import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
+import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
 import { ListaDeSeriesObservadasResponseSchema, RegistrarSerieObservadaRequestSchema, SerieObservadaResponseSchema, SucederSerieObservadaRequestSchema, SucesionDeSerieObservadaResponseSchema } from './contratos-fuerza';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
@@ -1137,6 +1138,18 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: '09v9:601-644 · REG-06-104 · REG-06-91 · DEUDA_LEGAJO DL-051, DL-055 (NUTRITION_SCOPE_NOT_OPERATIONAL: 404)',
   },
   // ─── WP-TABLERO-ALTA-GAMA · PLN: planificar Nutrición (DL-163 D-17 a D-21). Familia propia de BE ─────────────────────
+  {
+    id: 'API-PLN-01',
+    metodo: 'get',
+    ruta: '/nutrition/plans/{planId}/option-estimates',
+    resumen:
+      'Los totales del plan calculados por el servidor (TB-38; ED-31 y ED-D6 de WP-EDITORES-PROFESIONAL): la estimación de cada opción para las porciones del plan, con la misma cuenta que ve la app (SUM_SOURCE_PER_100G_V1, las kcal de la fuente) y, por ítem, la versión del catálogo y la composición que usó. En una versión activada, la de su instantánea; en un borrador, la que usaría la instantánea si se activara hoy. Lo que falta es «sin dato» con el ítem que lo impide, nunca un cero. Sin total del día: las opciones de una comida son alternativas. Solo el profesional del plan; la persona, otro profesional, lo descartado o lo inexistente: el mismo 404. planId es el id de la versión, como en API-NUT-09.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EstimacionDeLasOpcionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-20, TB-38) y DL-167 (ED-31, ED-D6) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL §8.3',
+  },
   {
     id: 'API-PLN-07',
     metodo: 'post',
@@ -4296,6 +4309,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-NUT-06',
   'API-NUT-08',
   'API-NUT-09',
+  'API-PLN-01',
   'API-NUT-16',
   'API-NUT-17',
   'API-NUT-19',

@@ -14032,6 +14032,606 @@
         }
       }
     },
+    "/nutrition/plans/{planId}/option-estimates": {
+      "get": {
+        "operationId": "API-PLN-01",
+        "summary": "Los totales del plan calculados por el servidor (TB-38; ED-31 y ED-D6 de WP-EDITORES-PROFESIONAL): la estimación de cada opción para las porciones del plan, con la misma cuenta que ve la app (SUM_SOURCE_PER_100G_V1, las kcal de la fuente) y, por ítem, la versión del catálogo y la composición que usó. En una versión activada, la de su instantánea; en un borrador, la que usaría la instantánea si se activara hoy. Lo que falta es «sin dato» con el ítem que lo impide, nunca un cero. Sin total del día: las opciones de una comida son alternativas. Solo el profesional del plan; la persona, otro profesional, lo descartado o lo inexistente: el mismo 404. planId es el id de la versión, como en API-NUT-09.",
+        "description": "Fuente: ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-20, TB-38) y DL-167 (ED-31, ED-D6) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL §8.3. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "planId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "DRAFT",
+                            "ACTIVATED"
+                          ]
+                        },
+                        "method": {
+                          "type": "string",
+                          "const": "SUM_SOURCE_PER_100G_V1"
+                        },
+                        "dayTypes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "dayTypeId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "meals": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "mealId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "options": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "optionId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "label": {
+                                            "type": "string"
+                                          },
+                                          "recipeVersionId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "planned": {
+                                            "type": "object",
+                                            "properties": {
+                                              "energyKcal": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "value": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "pattern": "^\\d+(\\.\\d+)?$"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "missing": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "key": {
+                                                          "type": "string"
+                                                        },
+                                                        "reason": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "SIN_CANTIDAD",
+                                                            "SIN_COMPOSICION",
+                                                            "SIN_DATO_DEL_NUTRIENTE",
+                                                            "UNIDAD_SIN_EQUIVALENCIA"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "key",
+                                                        "reason"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "value",
+                                                  "missing"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              "carbohydrateG": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "value": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "pattern": "^\\d+(\\.\\d+)?$"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "missing": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "key": {
+                                                          "type": "string"
+                                                        },
+                                                        "reason": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "SIN_CANTIDAD",
+                                                            "SIN_COMPOSICION",
+                                                            "SIN_DATO_DEL_NUTRIENTE",
+                                                            "UNIDAD_SIN_EQUIVALENCIA"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "key",
+                                                        "reason"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "value",
+                                                  "missing"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              "fatG": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "value": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "pattern": "^\\d+(\\.\\d+)?$"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "missing": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "key": {
+                                                          "type": "string"
+                                                        },
+                                                        "reason": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "SIN_CANTIDAD",
+                                                            "SIN_COMPOSICION",
+                                                            "SIN_DATO_DEL_NUTRIENTE",
+                                                            "UNIDAD_SIN_EQUIVALENCIA"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "key",
+                                                        "reason"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "value",
+                                                  "missing"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              "proteinG": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "value": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "pattern": "^\\d+(\\.\\d+)?$"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "missing": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "key": {
+                                                          "type": "string"
+                                                        },
+                                                        "reason": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "SIN_CANTIDAD",
+                                                            "SIN_COMPOSICION",
+                                                            "SIN_DATO_DEL_NUTRIENTE",
+                                                            "UNIDAD_SIN_EQUIVALENCIA"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "key",
+                                                        "reason"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "value",
+                                                  "missing"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              "fiberG": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "value": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "pattern": "^\\d+(\\.\\d+)?$"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "missing": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "key": {
+                                                          "type": "string"
+                                                        },
+                                                        "reason": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "SIN_CANTIDAD",
+                                                            "SIN_COMPOSICION",
+                                                            "SIN_DATO_DEL_NUTRIENTE",
+                                                            "UNIDAD_SIN_EQUIVALENCIA"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "key",
+                                                        "reason"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "value",
+                                                  "missing"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            },
+                                            "required": [
+                                              "energyKcal",
+                                              "carbohydrateG",
+                                              "fatG",
+                                              "proteinG",
+                                              "fiberG"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "itemId": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "catalogItemId": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "catalogItemVersionId": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "name": {
+                                                  "type": [
+                                                    "string",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "quantity": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "value": {
+                                                          "type": "number",
+                                                          "exclusiveMinimum": 0
+                                                        },
+                                                        "unit": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "g",
+                                                            "ml",
+                                                            "unit"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "value",
+                                                        "unit"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "composition": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "referenceAmount": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "100g",
+                                                            "100ml"
+                                                          ]
+                                                        },
+                                                        "energyKcal": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "proteinG": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "carbohydrateG": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "fatG": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "fiberG": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "number",
+                                                              "minimum": 0
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "referenceAmount",
+                                                        "energyKcal",
+                                                        "proteinG",
+                                                        "carbohydrateG",
+                                                        "fatG"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "itemId",
+                                                "catalogItemId",
+                                                "catalogItemVersionId",
+                                                "name",
+                                                "quantity",
+                                                "composition"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "optionId",
+                                          "label",
+                                          "recipeVersionId",
+                                          "planned",
+                                          "items"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "mealId",
+                                    "label",
+                                    "options"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "dayTypeId",
+                              "label",
+                              "meals"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "planId",
+                        "version",
+                        "state",
+                        "method",
+                        "dayTypes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/nutrition/plans/{planId}/discard": {
       "post": {
         "operationId": "API-PLN-07",
