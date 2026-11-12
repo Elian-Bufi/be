@@ -22,7 +22,7 @@ import { COPY_ANTROPOMETRIA, numero, textoDeDiferenciaAntropometrica, type HoyCo
 import { anchoDeLaPalabraMasLarga, estadosDeLasComidas, fichasPorFila, registroDeLaComida, type EstadoDeLaComida, type MedidasDeLaFicha } from './comidas-de-hoy';
 import type { VistaConPliegue } from './desplegable';
 import { esLetraGrande } from './escala-de-letra';
-import { diaDeLaSemana, diaYMes, fechaCivil } from './formato';
+import { diaDeLaSemana, diaYMes, fechaCivil, valorConUnDecimal } from './formato';
 import type { ActividadDeEntrenamiento, ActividadDelDia } from './lecturas-de-inicio';
 import { sesionRealizada } from './sesion-en-curso';
 import { enumerar } from './textos-por-toma';
@@ -398,8 +398,9 @@ export interface MedidaDeInicio {
  * dato. La tarjeta se toca entera y abre la evolución de esa medida. Se van «16 medidas · 6 resultados de fórmulas» y el
  * «Ver su evolución» que no decía de qué.
  */
-export function medidaDeInicio(m: Pick<MedidaDeLaToma, 'nombre' | 'actual' | 'anterior' | 'diferencia' | 'motivoSinAnterior'>): MedidaDeInicio {
-  const valor = numero(m.actual.punto.value);
+export function medidaDeInicio(m: Pick<MedidaDeLaToma, 'nombre' | 'actual' | 'anterior' | 'diferencia' | 'motivoSinAnterior'>, medida = true): MedidaDeInicio {
+  // Una medida medida va con un decimal (AV2-25); un resultado de fórmula, con su precisión.
+  const valor = medida ? valorConUnDecimal(m.actual.punto.value) : numero(m.actual.punto.value);
   const unidad = m.actual.punto.unit;
   let cambio: string;
   let cambioParaLeer: string;

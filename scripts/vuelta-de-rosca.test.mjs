@@ -1529,3 +1529,24 @@ test('TEST-AV2-016 · la hora de 24 h y el instante «9 nov · 13:10», con la z
     assert.doesNotMatch(formato.fecha(iso, ZONA), /m\.|AM|PM/i, iso);
   }
 });
+
+// ─── TEST-AV2-023 · las medidas medidas, con un decimal y sin redondear (AV2-25) ────────────────
+
+test('TEST-AV2-023 · «39» se lee «39,0 cm», y «58,8» y «58,75» quedan igual: completa con cero y nunca redondea', () => {
+  assert.equal(formato.valorConUnDecimal(39), '39,0');
+  assert.equal(formato.valorConUnDecimal(58.8), '58,8');
+  assert.equal(formato.valorConUnDecimal(58.75), '58,75', 'nunca redondea a un decimal');
+  assert.equal(formato.valorConUnDecimal(1203), '1.203,0');
+  assert.equal(formato.valorConUnDecimal(Number.NaN), '—');
+  assert.deepEqual([formato.medidaConUnDecimal(39, 'cm'), formato.medidaConUnDecimal(58.8, 'cm'), formato.medidaConUnDecimal(12, 'mm')], ['39,0 cm', '58,8 cm', '12,0 mm']);
+  assert.equal(formato.medidaConUnDecimal(0.85, 'adimensional'), '0,85', 'sin dimensión, el número como viene');
+  // Inicio: la medida medida, con un decimal; un resultado de fórmula, con su precisión.
+  const cintura = { nombre: 'Cintura', actual: { punto: { value: 82, unit: 'cm' } }, anterior: null, diferencia: null, motivoSinAnterior: 'SIN_PREVIA' };
+  assert.equal(inicio.medidaDeInicio(cintura).valor, '82,0');
+  assert.equal(inicio.medidaDeInicio(cintura, false).valor, '82');
+  assert.match(sinComentarios(leer('pantallas/inicio-mediciones.tsx')), /medidaDeInicio\(destacada, toma!\.medidas\.includes\(destacada\)\)/);
+  // La figura, la lista de la toma y el detalle del sitio escriben la medida con el mismo formateador.
+  assert.match(sinComentarios(leer('composicion-de-la-figura.ts')), /valor: medidaConUnDecimal\(medida\.actual\.punto\.value, medida\.actual\.punto\.unit\)/);
+  assert.match(sinComentarios(leer('pantallas/antropometria.tsx')), /const valor = medidaConUnDecimal\(medida\.actual\.punto\.value, medida\.actual\.punto\.unit\);/);
+  assert.match(sinComentarios(leer('pantallas/figura-de-la-toma.tsx')), /\$\{rotulo\}: \$\{medidaConUnDecimal\(medida\.actual\.punto\.value, medida\.actual\.punto\.unit\)\}/);
+});

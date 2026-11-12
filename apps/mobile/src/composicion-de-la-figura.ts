@@ -38,7 +38,6 @@ import {
   ACHATAMIENTO_DEL_ANILLO,
   anilloEnLaLamina,
   apilarTarjetas,
-  cantidad,
   esPliegueDeLaCaraPosterior,
   FIGURAS_DE_LA_LAMINA,
   numero,
@@ -51,6 +50,7 @@ import {
   type RectanguloEnLaLamina,
   type SexoDeLaLamina,
 } from '@be/domain';
+import { medidaConUnDecimal } from './formato';
 
 export type FamiliaDeLaFigura = 'PERIMETROS' | 'PLIEGUES';
 export type ModoDeLaFigura = 'TARJETAS' | 'NUMEROS';
@@ -278,7 +278,7 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
       claves.map((grupo) =>
         grupo.map((clave): SitioDeLaFigura => {
           const medida = porClave.get(clave)!;
-          const base = { medida, clave, numero: 0, rotulo: rotuloDelSitio(clave), valor: cantidad(medida.actual.punto.value, medida.actual.punto.unit), diferencia: entrada.diferencias === false ? null : diferenciaDe(medida) };
+          const base = { medida, clave, numero: 0, rotulo: rotuloDelSitio(clave), valor: medidaConUnDecimal(medida.actual.punto.value, medida.actual.punto.unit), diferencia: entrada.diferencias === false ? null : diferenciaDe(medida) };
           if (familia === 'PERIMETROS') {
             const a = anilloEnLaLamina(imagen, figura.perimetros[clave as keyof typeof figura.perimetros]!);
             return { ...base, cx: a.cx, cy: a.cy, izquierda: a.cx - a.rx, anillo: { rx: a.rx, ry: Math.max(a.ry, 3) }, posterior: false };

@@ -30,7 +30,6 @@
  * Cada valor se escribe con `cantidad`/`numero` de `@be/domain`, con la coma decimal del país.
  */
 import {
-  cantidad,
   COPY_ANTROPOMETRIA,
   ETIQUETA_DE_FAMILIA,
   FAMILIA_DE_METRICA,
@@ -59,7 +58,7 @@ import {
   type VistaVisible,
 } from '../disposicion-de-la-toma';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
-import { dia, fechaCivil, fechaCorta } from '../formato';
+import { dia, fechaCivil, fechaCorta, medidaConUnDecimal } from '../formato';
 import { memoria, useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { leerMiEvolucion } from '../lecturas-de-las-zonas';
 import { useSesionPerdida, type Ruta, type Salida, type VistaDeEvolucion } from '../navegacion';
@@ -353,7 +352,8 @@ function ListaPorFamilia({ medidas }: { medidas: readonly MedidaDeLaToma[] }) {
 
 /** Una medida de la lista: nombre y valor, el cambio respecto de la anterior comparable y la clase del dato. */
 function FilaDeLaToma({ medida }: { medida: MedidaDeLaToma }) {
-  const valor = cantidad(medida.actual.punto.value, medida.actual.punto.unit);
+  // Una medida medida, con un decimal (AV2-25).
+  const valor = medidaConUnDecimal(medida.actual.punto.value, medida.actual.punto.unit);
   const cambio = textoDelCambio(medida);
   const clase = textoDeLaClase(medida);
   return (

@@ -41,7 +41,7 @@ export function Mediciones({ token, sesionPerdida, ir, ancho, iconoArriba }: { t
   const destacada = toma ? medidaDestacada(toma) : null;
   // Con una medida destacada, la tarjeta es suya y se toca entera: abre su evolución.
   if (destacada) {
-    const m = medidaDeInicio(destacada);
+    const m = medidaDeInicio(destacada, toma!.medidas.includes(destacada));
     return (
       <TarjetaDeInicio zona="evolucion" titulo={m.titulo} ancho={ancho} iconoArriba={iconoArriba} paraLeer={m.paraLeer} alTocar={() => ir({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada.metrica })}>
         <Cifra valor={m.valor} unidad={m.unidad} tamano={26} />

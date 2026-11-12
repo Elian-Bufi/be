@@ -16,8 +16,21 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { createRequire, register } from 'node:module';
 import { test } from 'node:test';
+
+
+// Los módulos de la APK se importan entre sí sin extensión, como los resuelve Metro: Node necesita que se la agreguen
+// (desde AV2-25, la composición importa `formato`).
+const gancho = `export async function resolve(especificador, contexto, siguiente) {
+  try {
+    return await siguiente(especificador, contexto);
+  } catch (error) {
+    if (/^\\.\\.?\\//.test(especificador) && !/\\.[cm]?[jt]sx?$/.test(especificador)) return siguiente(especificador + '.ts', contexto);
+    throw error;
+  }
+}`;
+register('data:text/javascript,' + encodeURIComponent(gancho), import.meta.url);
 
 const require = createRequire(import.meta.url);
 const d = require('../packages/domain/dist/index.js');

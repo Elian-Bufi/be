@@ -36,7 +36,6 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  cantidad,
   colorDeLaCapa,
   COLORES_DE_LA_FIGURA,
   COPY_ANTROPOMETRIA,
@@ -48,6 +47,7 @@ import {
   type MedidaDeLaToma,
   type SexoDeLaLamina,
 } from '@be/domain';
+import { medidaConUnDecimal } from '../formato';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop, Text as TextoSvg } from 'react-native-svg';
@@ -256,7 +256,7 @@ function DetalleDelSitio({ medida, rotulo, lamina, verSuProgreso }: { medida: Me
   return (
     <View style={{ borderRadius: 14, borderWidth: 1, borderColor: lamina.valor, backgroundColor: lamina.tarjeta, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 8 }}>
       <View accessible accessibilityLiveRegion="polite">
-        <Text style={{ fontSize: 16, lineHeight: 22, fontWeight: '800', color: lamina.nombre }}>{`${rotulo}: ${cantidad(medida.actual.punto.value, medida.actual.punto.unit)}`}</Text>
+        <Text style={{ fontSize: 16, lineHeight: 22, fontWeight: '800', color: lamina.nombre }}>{`${rotulo}: ${medidaConUnDecimal(medida.actual.punto.value, medida.actual.punto.unit)}`}</Text>
         <Text style={{ fontSize: 14, lineHeight: 20, color: lamina.detalle, marginTop: 2 }}>{textoDelCambio(medida)}</Text>
         {clase ? <Text style={{ fontSize: 14, lineHeight: 20, color: lamina.detalle, marginTop: 2 }}>{clase}</Text> : null}
       </View>

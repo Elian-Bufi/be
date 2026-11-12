@@ -12,6 +12,25 @@
  * solo para saber el día y la hora en una zona dada, con el formateador que ya usa «hoy» (`formateadorDeZona`).
  */
 
+import { numero, UNIDAD_ADIMENSIONAL } from '@be/domain';
+
+// ─── Las medidas medidas, con un decimal (AV2-25, AV2-D9) ───────────────────────────────────────
+// Una medida tomada con cinta, plicómetro o balanza (cm, mm, kg) se escribe con un decimal, como mide ISAK (0,1) y como
+// pide REG-06-158: «39» se lee «39,0», y «58,8» y «58,75» quedan como están. Completa con cero y **nunca redondea**: un
+// valor con más decimales los conserva. Los resultados de fórmulas no pasan por acá: siguen con su precisión
+// (`numeroConPrecision`). Va en la APK y no en el dominio (AV2-T13): pasa al dominio cuando el website lo use.
+
+/** «39,0», «58,8», «58,75»: el número de una medida medida, con al menos un decimal y sin redondear. */
+export function valorConUnDecimal(valor: number): string {
+  const texto = numero(valor);
+  return texto === '—' || texto.includes(',') ? texto : `${texto},0`;
+}
+
+/** «39,0 cm»: la medida medida con su unidad. Sin dimensión, el número como viene. */
+export function medidaConUnDecimal(valor: number, unidad: string): string {
+  return unidad === UNIDAD_ADIMENSIONAL ? numero(valor) : `${valorConUnDecimal(valor)} ${unidad}`;
+}
+
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'] as const;
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'] as const;
 /** Las abreviaturas de es-AR, sin punto: «sept», no «sep». */
