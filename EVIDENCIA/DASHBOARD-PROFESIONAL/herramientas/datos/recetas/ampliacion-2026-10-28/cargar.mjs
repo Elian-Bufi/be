@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerCuentas } from '../../cohorte/destino.mjs';
+import { verificarSegundoFactor } from '../../segundo-factor.mjs';
 import { calculoIndependiente, coinciden, leerManifiesto, medidasDeImagen, NUTRIENTES, pedidoDeCalculo, pedidoDeCreacion, problemasDeLaFoto } from '../manifiesto.mjs';
 import { exigirOrigen, mismosIngredientes } from '../recetas.mjs';
 import { claveDeIdempotencia, fotoDe, ID_DEL_PAQUETE, leerAmpliacion, problemasDeLaAmpliacion } from './ampliacion.mjs';
@@ -127,7 +128,10 @@ async function iniciarSesion(api, opciones) {
   const clave = c[`${opciones.cuenta}_CLAVE`];
   if (!correo || !clave) throw new Error(`El archivo de cuentas no tiene la cuenta ${opciones.cuenta} (${opciones.cuenta}_CORREO y ${opciones.cuenta}_CLAVE).`);
   const r = await api.pedir('POST', '/auth/sessions', { cuerpo: { method: 'LOCAL', identifier: correo, credential: clave } });
-  return r.data.session.accessToken;
+  const token = r.data.session.accessToken;
+  // UF-11 (DL-169): la cuenta es profesional; su sesión opera como tal con el segundo factor verificado.
+  await verificarSegundoFactor({ base: `${exigirOrigen(opciones.origen)}/api/v1`, token, valores: c, archivo: opciones.cuentas, cuenta: opciones.cuenta });
+  return token;
 }
 
 async function recetasDeLaCuenta(api, token) {

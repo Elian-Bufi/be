@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { codigoParaEntrar, CREDENCIAL, dominio, pedir, sesion as sesionPorApi } from './api.mjs';
+import { codigoParaEntrar, CREDENCIAL, dominio, pedir, sesion as sesionPorApi, verificarSegundoFactor } from './api.mjs';
 import { API, WEB } from './entorno.mjs';
 import { NOMBRE_DEL_ADMINISTRADOR, NOMBRE_DEL_OTRO_ADMINISTRADOR, NOMBRE_DEL_PENDIENTE, SECRETOS, codigoTotp, nombreDelProfesional, sesionAdministrativa } from './preparar.mjs';
 
@@ -845,6 +845,8 @@ async function administracion({ contexto, p, d, salida }) {
   await clic(p, 'form button[type="submit"]', 'Continuar');
   await esperarTexto(p, 'No pudimos verificar los datos de acceso');
   const tokenDelProfesional = await sesionPorApi(d.pro.correo);
+  // UF-11 (DL-169): la sesión del profesional opera como tal con su segundo factor verificado.
+  await verificarSegundoFactor(d.pro.correo, tokenDelProfesional);
   await pedir('GET', `/admin/professionals/${d.pendiente.id}`, { token: tokenDelProfesional, esperado: 403 });
   await pedir('POST', '/admin/professionals/query', { token: tokenDelProfesional, cuerpo: {}, clave: false, esperado: 403 });
 
