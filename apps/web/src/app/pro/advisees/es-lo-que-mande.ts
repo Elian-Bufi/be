@@ -76,27 +76,74 @@ function identificadoresEn(x: unknown, en: Set<string>): Set<string> {
   return en;
 }
 
+/** El identificador propio de una parte (cada una tiene uno solo de la lista), o `undefined` si todavía no lo tiene. */
+const claveDe = (x: Record<string, unknown>): string | undefined => IDENTIFICADORES_DEL_SERVIDOR.find((k) => typeof x[k] === 'string');
+
 /**
- * Lo que está en pantalla, con los identificadores que creó el guardado perdido. Solo se ponen los que el servidor
- * asignó en ese guardado (no estaban en lo mandado), en la misma posición, y en una parte que en pantalla todavía no
- * tiene el suyo: lo escrito después no cambia, y ningún identificador queda repetido. Una parte que se movió después
- * puede quedar sin el suyo: el guardado siguiente la crea de nuevo, con el mismo contenido.
+ * Lo que está en pantalla, con los identificadores que creó el guardado perdido (EDT-03). Lo mandado y lo guardado tienen
+ * el mismo contenido (`cualMande`), así que van parte por parte en el mismo orden; lo de pantalla, no: después del envío
+ * se pudo agregar, quitar, mover o cambiar algo. Por eso:
+ * - una parte que ya tenía identificador se busca por él en lo mandado, y sus partes nuevas, adentro de ella;
+ * - una parte nueva recibe los identificadores de la parte nueva que se mandó con **el mismo contenido** (primero la de
+ *   su lugar), y sus partes, los de las suyas. Una parte que cambió después del envío no recibe ninguno: el guardado
+ *   siguiente la crea de nuevo, con lo que está en pantalla.
+ * Así nunca se asigna un identificador a otra parte, ninguno queda repetido y lo escrito después no cambia.
  */
 export function conLosIdentificadoresNuevos<T>(enPantalla: T, mandado: unknown, guardado: unknown): T {
   const usados = identificadoresEn(mandado, identificadoresEn(enPantalla, new Set()));
-  const injertar = (p: unknown, m: unknown, g: unknown): unknown => {
-    if (Array.isArray(p)) return Array.isArray(m) && Array.isArray(g) ? p.map((x, i) => injertar(x, m[i], g[i])) : p;
-    if (!esObjeto(p) || !esObjeto(m) || !esObjeto(g)) return p;
+  const huella = (x: unknown): string => JSON.stringify(contenido(x, true));
+
+  /** Los identificadores de `g` en `p`, que tiene su mismo contenido: van en el mismo lugar, en cada parte. */
+  const copiar = (p: unknown, g: unknown): unknown => {
+    if (Array.isArray(p)) return Array.isArray(g) ? p.map((x, i) => copiar(x, g[i])) : p;
+    if (!esObjeto(p) || !esObjeto(g)) return p;
     const salida: Record<string, unknown> = { ...p };
     for (const k of IDENTIFICADORES_DEL_SERVIDOR) {
       const id = g[k];
-      if (typeof id === 'string' && salida[k] === undefined && m[k] === undefined && !usados.has(id)) {
+      if (typeof id === 'string' && salida[k] === undefined && !usados.has(id)) {
         salida[k] = id;
         usados.add(id);
       }
     }
-    for (const [k, v] of Object.entries(salida)) if (v !== null && typeof v === 'object') salida[k] = injertar(v, m[k], g[k]);
+    for (const [k, v] of Object.entries(salida)) if (v !== null && typeof v === 'object') salida[k] = copiar(v, g[k]);
     return salida;
   };
-  return injertar(enPantalla, mandado, guardado) as T;
+
+  /** Una lista de partes de pantalla, cada una con su par en lo mandado (y en lo guardado, en el mismo lugar). */
+  const lista = (ps: readonly unknown[], ms: unknown, gs: unknown): unknown[] => {
+    if (!Array.isArray(ms) || !Array.isArray(gs)) return [...ps];
+    const tomadas = new Set<number>();
+    const nuevaIgual = (p: unknown, j: number): boolean => {
+      const m: unknown = ms[j];
+      return !tomadas.has(j) && esObjeto(m) && claveDe(m) === undefined && huella(m) === huella(p);
+    };
+    return ps.map((p, i) => {
+      if (!esObjeto(p)) return p;
+      const clave = claveDe(p);
+      if (clave) {
+        const j = ms.findIndex((m: unknown) => esObjeto(m) && m[clave] === p[clave]);
+        if (j < 0) return p;
+        tomadas.add(j);
+        return parte(p, ms[j], gs[j]);
+      }
+      const j = nuevaIgual(p, i) ? i : ms.findIndex((_: unknown, k: number) => nuevaIgual(p, k));
+      if (j < 0) return p;
+      tomadas.add(j);
+      return copiar(p, gs[j]);
+    });
+  };
+
+  /** Las listas de partes que tiene una parte que ya existía (las sesiones de un bloque, los ítems de una opción). */
+  const parte = (p: Record<string, unknown>, m: unknown, g: unknown): unknown => {
+    if (!esObjeto(m) || !esObjeto(g)) return p;
+    const salida: Record<string, unknown> = { ...p };
+    for (const [k, v] of Object.entries(salida)) {
+      if (Array.isArray(v)) salida[k] = lista(v, m[k], g[k]);
+      else if (esObjeto(v)) salida[k] = parte(v, m[k], g[k]);
+    }
+    return salida;
+  };
+
+  if (Array.isArray(enPantalla)) return lista(enPantalla, mandado, guardado) as T;
+  return (esObjeto(enPantalla) ? parte(enPantalla, mandado, guardado) : enPantalla) as T;
 }

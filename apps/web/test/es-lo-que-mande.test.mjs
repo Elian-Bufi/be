@@ -86,13 +86,11 @@ test('TEST-EDP-048 · otra pestaña cambió el borrador: no coincide y es un con
 });
 
 test('TEST-EDP-048 · adoptar: los identificadores nuevos van a lo que ya existía, y lo escrito después se conserva', () => {
-  // Después del envío perdido, el profesional cambió el nombre de la sesión nueva y agregó otra.
+  // Después del envío perdido, el profesional agregó otra sesión al final.
   const enPantalla = structuredClone(mandadoEntrenamiento.estructura);
-  enPantalla[0].sessions[1].label = 'Tren superior liviano · cambiado después';
   enPantalla[0].sessions.push({ label: 'Movilidad', instructions: null, prescriptions: [] });
   const resultado = conLosIdentificadoresNuevos(enPantalla, mandadoEntrenamiento.estructura, guardadoEntrenamiento.estructura);
   // Lo escrito después sigue.
-  assert.equal(resultado[0].sessions[1].label, 'Tren superior liviano · cambiado después');
   assert.equal(resultado[0].sessions[2].label, 'Movilidad');
   // Lo que ya existía tiene los identificadores del servidor; lo nuevo, ninguno (lo crea el guardado siguiente).
   assert.equal(resultado[0].sessions[1].sessionId, 's2-nueva');
@@ -101,6 +99,51 @@ test('TEST-EDP-048 · adoptar: los identificadores nuevos van a lo que ya exist�
   // Lo que ya tenía identificador no cambia, y lo de pantalla no se toca (se devuelve una copia).
   assert.equal(resultado[0].sessions[0].sessionId, 's1');
   assert.equal(enPantalla[0].sessions[1].sessionId, undefined);
+});
+
+test('TEST-EDP-048 · EDT-03: una parte que cambió después del envío no recibe el identificador; el guardado siguiente la crea de nuevo', () => {
+  // El profesional cambió el nombre de la sesión nueva después del envío perdido: ya no es lo que se mandó.
+  const enPantalla = structuredClone(mandadoEntrenamiento.estructura);
+  enPantalla[0].sessions[1].label = 'Tren superior liviano · cambiado después';
+  const resultado = conLosIdentificadoresNuevos(enPantalla, mandadoEntrenamiento.estructura, guardadoEntrenamiento.estructura);
+  // Lo escrito después sigue, sin identificador (ni ella ni sus partes): se guarda como nueva, con lo que está en pantalla.
+  assert.equal(resultado[0].sessions[1].label, 'Tren superior liviano · cambiado después');
+  assert.equal(resultado[0].sessions[1].sessionId, undefined);
+  assert.equal(resultado[0].sessions[1].prescriptions[0].prescriptionId, undefined);
+  assert.equal(resultado[0].sessions[0].sessionId, 's1');
+});
+
+test('TEST-EDP-048 · EDT-03: nunca se asigna un identificador a otra parte (una nueva arriba, o una que se borró)', () => {
+  // Revisión adversaria de la etapa 1: con el injerto por posición, N2 se quedaba con el identificador de N1.
+  const sesion = (label, sessionId) => ({ ...(sessionId ? { sessionId } : {}), label, instructions: null, prescriptions: [] });
+  const bloque = (sessions) => [{ blockId: 'b1', label: 'Fuerza', purpose: null, sessions }];
+  const cuales = (r) => r[0].sessions.map((s) => [s.label, s.sessionId ?? null]);
+  // Lo mandado era [S1, N1 nueva] y lo guardado [S1, N1 (x)]. Después del envío, el profesional sube una N2 nueva arriba de N1.
+  const arriba = conLosIdentificadoresNuevos(bloque([sesion('S1', 's1'), sesion('N2'), sesion('N1')]), bloque([sesion('S1', 's1'), sesion('N1')]), bloque([sesion('S1', 's1'), sesion('N1', 'x')]));
+  assert.deepEqual(cuales(arriba), [
+    ['S1', 's1'],
+    ['N2', null],
+    ['N1', 'x'],
+  ]);
+  // Lo mandado era [N1, N2], las dos nuevas, y lo guardado [N1 (x), N2 (y)]. Después, borra N1: N2 se queda con el suyo.
+  const borrada = conLosIdentificadoresNuevos(bloque([sesion('N2')]), bloque([sesion('N1'), sesion('N2')]), bloque([sesion('N1', 'x'), sesion('N2', 'y')]));
+  assert.deepEqual(cuales(borrada), [['N2', 'y']]);
+  // Y si las mueve, cada una sigue con el suyo.
+  const movidas = conLosIdentificadoresNuevos(bloque([sesion('N2'), sesion('N1')]), bloque([sesion('N1'), sesion('N2')]), bloque([sesion('N1', 'x'), sesion('N2', 'y')]));
+  assert.deepEqual(cuales(movidas), [
+    ['N2', 'y'],
+    ['N1', 'x'],
+  ]);
+  // Una sesión que ya existía se busca por su identificador: si se movió, su ejercicio nuevo igual recibe el suyo.
+  const ejercicio = (prescriptionId) => ({ ...(prescriptionId ? { prescriptionId } : {}), exerciseVersionId: 'ev-press', sets: [{ repetitions: null }], intensity: null });
+  const conEjercicio = (label, sessionId, prescriptionId) => ({ ...sesion(label, sessionId), prescriptions: [ejercicio(prescriptionId)] });
+  const movida = conLosIdentificadoresNuevos(
+    bloque([sesion('S2', 's2'), conEjercicio('S1', 's1')]),
+    bloque([conEjercicio('S1', 's1'), sesion('S2', 's2')]),
+    bloque([conEjercicio('S1', 's1', 'p9'), sesion('S2', 's2')]),
+  );
+  assert.equal(movida[0].sessions[1].prescriptions[0].prescriptionId, 'p9');
+  assert.deepEqual(movida[0].sessions[0].prescriptions, []);
 });
 
 test('TEST-EDP-048 · adoptar nunca repite un identificador ni pisa uno que ya estaba', () => {
