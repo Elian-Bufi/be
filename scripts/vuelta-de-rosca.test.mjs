@@ -1687,3 +1687,131 @@ test('TEST-AV2-028 · con la serie ya registrada, «Terminar serie N» solo para
   assert.match(PANTALLA, /queHaceElMedio\(/);
   assert.match(PANTALLA, /toque\.tipo === 'tildar'[\s\S]{0,200}tildar\(/);
 });
+
+const cierre = await import('../apps/mobile/src/cierre-de-la-sesion.ts');
+const franja = await import('../apps/mobile/src/franja-de-la-sesion.ts');
+const explicacionDeLosTiempos = await import('../apps/mobile/src/explicacion-de-los-tiempos.ts');
+const ejercicioDelResumen = (planificadas, sinRegistrar = [], extra = {}) => ({ prescriptionId: 'pA', nombre: 'Sentadilla', ejecutado: null, registradas: planificadas - sinRegistrar.length, planificadas, sinRegistrar, escritas: [], ...extra });
+const ZONA_DE_PRUEBA = 'America/Argentina/Buenos_Aires';
+
+test('TEST-AV2-029 · el motivo para no finalizar se dice junto al botón, en el orden en que se resuelve; sin motivo, se puede', () => {
+  const base = { condicion: 'COMPLETED', medicionAbierta: false, escritasSinRegistrar: false, faltaLaHora: false };
+  assert.equal(cierre.motivoParaNoFinalizar(base), null);
+  assert.equal(cierre.motivoParaNoFinalizar({ ...base, condicion: null }), 'Para finalizar, elegí cómo resultó la sesión.');
+  assert.equal(cierre.motivoParaNoFinalizar({ ...base, condicion: null, escritasSinRegistrar: true }), 'Para finalizar, registrá o descartá lo escrito sin registrar.');
+  assert.equal(cierre.motivoParaNoFinalizar({ ...base, condicion: null, escritasSinRegistrar: true, medicionAbierta: true }), 'Para finalizar, resolvé la medición abierta.');
+  assert.equal(cierre.motivoParaNoFinalizar({ ...base, faltaLaHora: true }), 'Para finalizar, indicá a qué hora la hiciste.');
+  // En la pantalla: el aviso va después del estado del envío y antes del botón, y el botón se deshabilita con el motivo.
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  const hoja = PANTALLA.slice(PANTALLA.indexOf('if (finalizando) {'), PANTALLA.indexOf('const bases = basesDeLaPrescripcion(p);'));
+  assert.ok(hoja.indexOf('{aviso ?') > hoja.indexOf('{estadoDelEnvio}') && hoja.indexOf('{aviso ?') < hoja.indexOf('texto={e.finalizarEntrenamiento}'), 'el aviso, junto al botón');
+  assert.match(hoja, /texto=\{e\.finalizarEntrenamiento\}.*deshabilitado=\{motivoParaNo !== null\}/);
+  assert.equal((hoja.match(/\{aviso \?/g) ?? []).length, 1, 'un solo lugar para el aviso en el cierre');
+});
+
+test('TEST-AV2-029 · «Realizada» viene elegida solo cuando los datos lo dicen: todo el plan registrado, nada escrito ni sustituido', () => {
+  assert.equal(cierre.condicionQueCorresponde([ejercicioDelResumen(4), { ...ejercicioDelResumen(3), prescriptionId: 'pB' }]), 'COMPLETED');
+  assert.equal(cierre.condicionQueCorresponde([ejercicioDelResumen(4, [4])]), null, 'quedó una serie sin registrar');
+  assert.equal(cierre.condicionQueCorresponde([ejercicioDelResumen(4, [], { escritas: [5] })]), null, 'algo escrito sin registrar');
+  assert.equal(cierre.condicionQueCorresponde([ejercicioDelResumen(4, [], { ejecutado: 'Prensa' })]), null, 'un ejercicio sustituido: lo decide la persona');
+  assert.equal(cierre.condicionQueCorresponde([]), null);
+  assert.equal(cierre.lineaDelResultado([ejercicioDelResumen(4), ejercicioDelResumen(4, [3, 4])]), '6 de 8 series del plan registradas');
+});
+
+test('TEST-AV2-030 · la hora de la sesión se toma sola al empezar, si cae en el día de la sesión; si no, se pide', () => {
+  const inicio = '2026-11-08T13:15:00.000Z';
+  assert.equal(cierre.horaTomadaAlEmpezar({ fechaDeLaSesion: '2026-11-08', zona: ZONA_DE_PRUEBA, inicio }), inicio);
+  assert.equal(cierre.horaTomadaAlEmpezar({ fechaDeLaSesion: '2026-11-07', zona: ZONA_DE_PRUEBA, inicio }), null, 'empezada otro día');
+  assert.equal(cierre.horaTomadaAlEmpezar({ fechaDeLaSesion: '2026-11-08', zona: ZONA_DE_PRUEBA, inicio: '2026-11-09T01:30:00.000Z' }), '2026-11-09T01:30:00.000Z', 'las 22:30 del 8 en Buenos Aires son del 8');
+  assert.equal(cierre.horaTomadaAlEmpezar({ fechaDeLaSesion: '2026-11-08', zona: ZONA_DE_PRUEBA, inicio: null }), null, 'sin corrida (otro día, cargada después)');
+  const s = sesionDePrueba();
+  assert.equal(cierre.inicioDeLaCorrida(s.eventos()), new Date(Date.UTC(2026, 10, 7, 14, 0, 0)).toISOString());
+  assert.equal(cierre.inicioDeLaCorrida([]), null);
+  // En la pantalla: la hora tomada va antes que la escrita, y el campo se pide solo sin ella.
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  assert.match(PANTALLA, /if \(tomada\) \{\s*if \(!\(await guardarEnElBorrador\(\{ occurredAt: tomada \}\)\)\) return;\s*\} else if/);
+  assert.match(PANTALLA, /const pideLaHora = [^;]*horaTomada === null;/);
+});
+
+test('TEST-AV2-031 · una sesión abierta hace seis horas o más dice desde cuándo, con su fecha; antes, el conteo', () => {
+  const inicio = '2026-11-08T13:15:00.000Z';
+  assert.deepEqual(cierre.tiempoDeLaSesionAbierta(89 * 3600_000, inicio, ZONA_DE_PRUEBA), { tipo: 'desde', texto: 'Sesión abierta desde el 8 nov · 10:15' });
+  assert.deepEqual(cierre.tiempoDeLaSesionAbierta(cierre.CONTEO_HASTA_MS - 1, inicio, ZONA_DE_PRUEBA), { tipo: 'conteo' });
+  assert.equal(cierre.tiempoDeLaSesionAbierta(cierre.CONTEO_HASTA_MS, inicio, ZONA_DE_PRUEBA).tipo, 'desde');
+  assert.deepEqual(cierre.tiempoDeLaSesionAbierta(null, inicio, ZONA_DE_PRUEBA), { tipo: 'conteo' });
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  assert.match(PANTALLA, /abiertaDesde\.tipo === 'desde'/);
+  assert.match(PANTALLA, /enElEjercicio\.ms !== null && abiertaDesde\.tipo === 'conteo'/, 'el tiempo del ejercicio no cuenta días');
+});
+
+test('TEST-AV2-032 · los tiempos de la sesión, resumidos: un renglón por ejercicio y el recomendado una vez, sin «sin recomendado»', () => {
+  const d = (prescriptionId, setIndex, ms, recommendedSeconds, quality = 'MEASURED') => ({ restId: `${prescriptionId}${setIndex}`, prescriptionId, setIndex, duration: { ms, quality }, recommendedSeconds });
+  const x = (prescriptionId, setIndex, ms) => ({ timingId: `t${prescriptionId}${setIndex}`, prescriptionId, setIndex, duration: { ms, quality: 'MEASURED' } });
+  const orden = [
+    { prescriptionId: 'pA', nombre: 'Sentadilla' },
+    { prescriptionId: 'pB', nombre: 'Prensa' },
+    { prescriptionId: 'pC', nombre: 'Estocadas' },
+  ];
+  const renglones = cierre.tiemposResumidos({ rests: [d('pA', 1, 92_000, 90), d('pA', 2, 105_000, 90, 'ESTIMATED'), d('pB', 1, 60_000, null), d('pB', 2, null, null, 'INCOMPLETE')], timedSets: [x('pA', 3, 40_000)] }, orden);
+  assert.deepEqual(renglones, [
+    { prescriptionId: 'pA', nombre: 'Sentadilla', descansos: 'Descansos: 01:32 · 01:45 estimado · 01:30 recomendado', series: 'Series medidas: 00:40' },
+    { prescriptionId: 'pB', nombre: 'Prensa', descansos: 'Descansos: 01:00 · incompleto', series: null },
+  ]);
+  assert.doesNotMatch(JSON.stringify(renglones), /sin recomendado/);
+  // Recomendados distintos en un mismo ejercicio: no se elige uno.
+  assert.equal(cierre.tiemposResumidos({ rests: [d('pC', 1, 90_000, 120), d('pC', 2, 95_000, 90)], timedSets: [] }, orden)[0].descansos, 'Descansos: 01:30 · 01:35');
+  assert.deepEqual(cierre.tiemposResumidos(null, orden), []);
+});
+
+test('TEST-AV2-033 · la explicación de los tiempos, una sola vez por cuenta: la marca vive aparte y se pone al mostrarla', async () => {
+  const guardado = new Map();
+  const almacen = { getItem: async (k) => guardado.get(k) ?? null, setItem: async (k, v) => void guardado.set(k, v) };
+  const marca = explicacionDeLosTiempos.crearMarcaDeLaExplicacion(almacen);
+  assert.equal(marca.vista('diego'), null, 'sin leer todavía');
+  assert.equal(await marca.leer('diego'), false);
+  const decide = (vistaEnLasSesiones, vistaEnElTelefono) => explicacionDeLosTiempos.seMuestraLaExplicacion({ enVivo: true, vistaEnLasSesiones, vistaEnElTelefono });
+  assert.equal(decide(false, false), true, 'la primera vez');
+  await marca.marcar('diego');
+  // Un proceso nuevo: la app se volvió a abrir y las sesiones guardadas no se pudieron leer (vuelven del servicio).
+  const otraVez = explicacionDeLosTiempos.crearMarcaDeLaExplicacion(almacen);
+  assert.equal(await otraVez.leer('diego'), true);
+  assert.equal(decide(false, otraVez.vista('diego')), false, 'no vuelve aunque lo de las sesiones se haya perdido');
+  assert.equal(decide(true, false), false, 'alcanza con una de las dos marcas');
+  assert.equal(decide(false, null), null, 'no se decide sin leer');
+  assert.equal(await otraVez.leer('elian'), false, 'otra cuenta, otra marca');
+  const falla = async () => {
+    throw new Error('sin almacenamiento');
+  };
+  const rota = explicacionDeLosTiempos.crearMarcaDeLaExplicacion({ getItem: falla, setItem: falla });
+  assert.equal(await rota.leer('diego'), false);
+  assert.equal(await rota.marcar('diego'), false);
+  assert.equal(rota.vista('diego'), true, 'vale mientras la app siga abierta');
+  // En la pantalla: se marca al decidir mostrarla, y «Entendido» solo la cierra.
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  assert.match(PANTALLA, /if \(decision\) \{\s*void marcaDeLaExplicacion\.marcar\(cuentaAbierta\);\s*entrenamientoLocal\.marcarExplicacionVista\(\);/);
+  assert.match(PANTALLA, /<ExplicacionDeLosTiempos onEntendido=\{\(\) => setExplicacion\('no'\)\} \/>/);
+});
+
+test('TEST-AV2-034 · los ajustes del descanso: las dos casillas con su texto a la vista', () => {
+  const SESION = sinComentarios(leer('pantallas/sesion-enfocada.tsx'));
+  const hoja = SESION.slice(SESION.indexOf('export function HojaDelDescanso'), SESION.indexOf('export function ExplicacionDeLosTiempos'));
+  assert.match(hoja, /<CasillaSimple marcada=\{ajustes\.vibrar\}.*texto=\{T\.vibrarAlLlegar\}/);
+  assert.match(hoja, /<CasillaSimple marcada=\{ajustes\.tambienBloqueado\}.*texto=\{T\.tambienBloqueado\}/);
+  assert.doesNotMatch(hoja, /CasillaSola/, 'la casilla sola no tiene texto: es la de cada serie');
+});
+
+test('TEST-AV2-035 · cada tramo de la franja se llena con las series registradas de su ejercicio; lo que falta queda neutro', () => {
+  const resumen = [ejercicioDelResumen(4), { ...ejercicioDelResumen(4, [3, 4]), prescriptionId: 'pB' }, { ...ejercicioDelResumen(3, [1, 2, 3]), prescriptionId: 'pC' }];
+  assert.deepEqual(
+    franja.tramosDelRecorrido(resumen, 'pB').map((t) => [t.prescriptionId, t.fraccion, t.actual]),
+    [
+      ['pA', 1, false],
+      ['pB', 0.5, true],
+      ['pC', 0, false],
+    ],
+    'Sentadilla 4 de 4, llena',
+  );
+  // Una serie de más no pasa del tramo lleno.
+  assert.equal(franja.tramosDelRecorrido([{ ...ejercicioDelResumen(4), registradas: 5 }], null)[0].fraccion, 1);
+  assert.deepEqual(franja.cuentaDelRecorrido(resumen), { registradas: 6, planificadas: 11 });
+});
