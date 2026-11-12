@@ -312,7 +312,7 @@ export function ComidaDelEditor({
                 <div className="opcion-del-editor__pie">
                   {opcion.recipeVersionId ? null : (
                     <>
-                      <button type="button" className="boton boton--secundario" data-agregar-item onClick={() => alAgregarItem(k)}>
+                      <button type="button" className="boton boton--secundario" data-agregar-item aria-haspopup="dialog" onClick={() => alAgregarItem(k)}>
                         <Icono nombre="mas" tamano={18} />
                         Agregar ítem
                       </button>

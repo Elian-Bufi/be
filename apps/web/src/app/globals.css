@@ -16485,3 +16485,145 @@ p.cifra-del-espacio__desglose {
 .eleccion-de-otra-comida__opcion:has(input:checked) {
   background: var(--fondo-suave);
 }
+
+/* ═══ ED-31 · La opción en un cuadro (maqueta 06): la opción y el buscador a la izquierda; los totales, al costado ═══ */
+.cuadro-de-la-opcion__cuerpo {
+  display: grid;
+  gap: 1rem 1.5rem;
+}
+
+@media (min-width: 62rem) {
+  .cuadro-de-la-opcion__cuerpo {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    align-items: start;
+  }
+}
+
+.cuadro-de-la-opcion__nombre input {
+  width: 100%;
+}
+
+.cuadro-de-la-opcion__costado {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.cuadro-de-la-opcion__tarjeta {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.cuadro-de-la-opcion__tarjeta h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.cuadro-de-la-opcion__tarjeta p {
+  margin: 0.3rem 0 0;
+}
+
+.cuadro-de-la-opcion__totales {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.cuadro-de-la-opcion__totales div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cuadro-de-la-opcion__totales dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cuadro-de-la-opcion__otro {
+  margin: 0.25rem 0 0;
+}
+
+.buscador-de-la-opcion {
+  margin-top: 0.75rem;
+}
+
+.buscador-de-la-opcion__campo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 0.75rem;
+  border: 2px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.buscador-de-la-opcion__campo:focus-within {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.buscador-de-la-opcion__campo input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  outline: none;
+}
+
+.buscador-de-la-opcion__pista {
+  white-space: nowrap;
+}
+
+.buscador-de-la-opcion__estado {
+  min-height: 1.4em;
+  margin: 0.25rem 0;
+}
+
+.buscador-de-la-opcion__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.buscador-de-la-opcion__resultado {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--borde);
+  cursor: pointer;
+}
+
+.buscador-de-la-opcion__resultado:first-child {
+  border-top: 0;
+}
+
+.buscador-de-la-opcion__resultado[data-marcado] {
+  background: var(--fondo-suave);
+  box-shadow: inset 4px 0 0 var(--foco);
+}
+
+.buscador-de-la-opcion__nombre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.buscador-de-la-opcion__valores {
+  font-variant-numeric: tabular-nums;
+}
+
+.buscador-de-la-opcion__demostracion {
+  margin-right: 0.4rem;
+}

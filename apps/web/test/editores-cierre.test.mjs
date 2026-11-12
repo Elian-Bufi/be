@@ -76,3 +76,56 @@ test('ED-33 · las dos entradas van en el «⋯» de la comida, con su motivo si
   // Cambian el borrador (el autoguardado lo lleva): ninguna escritura propia.
   assert.match(editor, /cambiar\(\(x\) => \(x\[di\]!\.meals\[j\]!\.options\.push\(\.\.\.opciones\), x\)\);/);
 });
+
+// ─── ED-31 · La opción en un cuadro, con el buscador adentro ───────────────────────────────────────────────────────
+
+const Q = await import('../src/app/pro/advisees/nutrition/opcion-en-un-cuadro.ts');
+const alimento = (catalogItemId, provenance = 'PROFESSIONAL_MANUAL', composition = { energyKcal: 100, carbohydrateG: 1, proteinG: 2, fatG: 3, fiberG: 4 }) => ({ catalogItemId, name: catalogItemId, provenance, composition });
+
+test('ED-31 · los habituales que coinciden van primero, sin repetir un alimento del catálogo', () => {
+  const r = Q.resultadosDelBuscador([alimento('palta')], [alimento('palta-hass'), alimento('palta')]);
+  assert.deepEqual(r.map((x) => [x.alimento.catalogItemId, x.habitual]), [['palta', true], ['palta-hass', false]]);
+  assert.equal(Q.hayQueBuscar(' p '), false);
+  assert.equal(Q.hayQueBuscar('pa'), true);
+});
+
+test('ED-31 · las flechas mueven el marcado y dan la vuelta; sin resultados no hay marcado', () => {
+  assert.equal(Q.marcadoTrasTecla(0, 3, 'ArrowDown'), 1);
+  assert.equal(Q.marcadoTrasTecla(2, 3, 'ArrowDown'), 0);
+  assert.equal(Q.marcadoTrasTecla(0, 3, 'ArrowUp'), 2);
+  assert.equal(Q.marcadoTrasTecla(7, 3, 'Enter'), 2);
+  assert.equal(Q.marcadoTrasTecla(0, 0, 'ArrowDown'), -1);
+});
+
+test('ED-31 · cada resultado dice qué le falta y si es de demostración; lo que falta nunca es cero', () => {
+  assert.equal(Q.completitudEnPalabras({ energyKcal: 1, carbohydrateG: 1, proteinG: 1, fatG: 1, fiberG: 0 }), 'composición completa');
+  assert.equal(Q.completitudEnPalabras({ energyKcal: 1, carbohydrateG: 1, proteinG: 1, fatG: 1, fiberG: null }), 'Sin dato de fibra');
+  assert.equal(Q.completitudEnPalabras({ energyKcal: 1, carbohydrateG: 1, proteinG: 1 }), 'Sin dato de grasas y fibra');
+  assert.equal(Q.esDeDemostracion(alimento('x', 'BE_SYNTHETIC_SEED')), true);
+  assert.equal(Q.esDeDemostracion(alimento('x')), false);
+  // Ningún texto de Nutrición dice «%» (DJ-7).
+  assert.doesNotMatch(JSON.stringify(Q.COPY_OPCION_EN_UN_CUADRO, (_, v) => (typeof v === 'function' ? v('x', 1) : v)), /%/);
+});
+
+test('ED-31 · «Guardar la opción» conserva la identidad que un guardado le dio con el cuadro abierto', () => {
+  const copia = { label: 'Arroz', items: [Q.itemNuevo('arroz')] };
+  assert.deepEqual(Q.opcionAlGuardar({ optionId: 'o9', label: 'Opción 1', items: [] }, copia), { ...copia, optionId: 'o9' });
+  assert.equal(Q.opcionAlGuardar({ label: 'x', items: [] }, copia), copia);
+  assert.deepEqual(Q.opcionAlGuardar({ optionId: 'o9', label: 'x', items: [] }, { ...copia, optionId: 'o1' }).optionId, 'o1');
+  assert.deepEqual(Q.itemNuevo('arroz'), { catalogItemId: 'arroz', quantity: null, preparationState: null, note: null });
+  assert.equal(Q.cambioLaOpcion({ label: 'a', items: [] }, { label: 'a', items: [] }), false);
+  assert.equal(Q.cambioLaOpcion({ label: 'a', items: [] }, { label: 'b', items: [] }), true);
+  assert.equal(Q.tituloDelCuadro('Almuerzo', 0), 'Almuerzo · opción 1');
+  assert.equal(Q.subtituloDelCuadro('Día habitual', 3), 'Día habitual · se elige una de 3 opciones');
+});
+
+test('ED-31 · Enter suma el marcado y el cuadro sigue abierto; el borrador cambia solo con «Guardar la opción»', () => {
+  const cuadro = leer('nutrition/cuadro-de-la-opcion.tsx');
+  assert.match(cuadro, /role="combobox"/);
+  assert.match(cuadro, /else if \(e\.key === 'Enter'\) \{\n\s+e\.preventDefault\(\);\n\s+if \(actual >= 0\) elegir\(actual\);/);
+  // Elegir vacía el campo y deja el foco adentro: no cierra nada.
+  assert.match(cuadro, /setTexto\(''\);\n\s+setMarcado\(0\);\n\s+campo\.current\?\.focus\(\);/);
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /m\.options\[k\] = opcionAlGuardar\(m\.options\[k\], copia\);/);
+  assert.doesNotMatch(editor, /<AgregarItem/);
+});

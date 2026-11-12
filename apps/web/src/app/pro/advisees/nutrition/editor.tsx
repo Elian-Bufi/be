@@ -89,7 +89,7 @@ import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_ESTACION as CE } from '../estacion/estacion';
-import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
+import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, nombreDelDiaTipo, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
 import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
@@ -102,7 +102,8 @@ import { loQueQuedaSinCompletarEnNutricion, TEXTO_DE_LO_INCOMPLETO } from '../re
 import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
-import { AgregarItem } from './agregar-item';
+import { CuadroDeLaOpcion } from './cuadro-de-la-opcion';
+import { opcionAlGuardar, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
 import { CuadroCopiarDesdeOtraComida, CuadroUsarComidaHabitual } from './copiar-desde-otra-comida';
 import { COPY_DE_OTRA_COMIDA, copiaDesdeOtraComida, MAXIMO_DE_OPCIONES, opcionesDeLaHabitual, origenesDeLaCopia } from './opcion-de-otra-comida';
 import { ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
@@ -259,7 +260,7 @@ export function EditorDeBorrador({
   const comidasHabituales = useComidasHabituales(token);
   // Los alimentos habituales se cargan una vez para todo el borrador.
   const alimentosHabituales = useAlimentosHabituales(token);
-  // «Agregar ítem» (maqueta 21): la opción a la que se le suma, o nada si el cajón está cerrado.
+  // ED-31: «Agregar ítem» abre la opción en un cuadro, con el buscador adentro (maqueta 06); la opción que se edita.
   const [agregando, setAgregando] = useState<{ readonly i: number; readonly j: number; readonly k: number } | null>(null);
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
@@ -763,13 +764,9 @@ export function EditorDeBorrador({
     setParaEnfocar(`item-${l.dia}-${l.comida}-${l.opcion}-${l.item}-${p.path.endsWith('.preparationState') ? 'preparacion' : 'cantidad'}`);
   };
 
-  // «Almuerzo · opción 1: Pollo, arroz y verduras»: el cajón tapa la opción, y lo dice arriba.
+  // ED-31: la opción del cuadro, su comida y su día tipo.
   const comidaDondeSeAgrega = agregando ? estructura[agregando.i]?.meals[agregando.j] : undefined;
   const opcionDondeSeAgrega = agregando ? comidaDondeSeAgrega?.options[agregando.k] : undefined;
-  const dondeSeAgrega =
-    agregando && comidaDondeSeAgrega && opcionDondeSeAgrega
-      ? `${comidaDondeSeAgrega.label.trim() || `Comida ${agregando.j + 1}`} · opción ${agregando.k + 1}${opcionDondeSeAgrega.label.trim() ? `: ${opcionDondeSeAgrega.label.trim()}` : ''}`
-      : null;
   const comidaDeLaReceta = eligiendoReceta ? estructura[eligiendoReceta.i]?.meals[eligiendoReceta.j] : undefined;
   // ── ED-07: lo que dice «Antes de activar» ─────────────────────────────────────────────────────────────────────
   /** Cerrar el cuadro y llevar a una cosa por corregir: a su lugar, con el foco ahí. */
@@ -1288,18 +1285,30 @@ export function EditorDeBorrador({
         onCerrar={() => setOtraComida(null)}
       />
 
-      <AgregarItem
-        abierto={agregando !== null}
-        deDonde={dondeSeAgrega}
+      <CuadroDeLaOpcion
+        abierto={agregando !== null && opcionDondeSeAgrega !== undefined}
+        titulo={agregando && comidaDondeSeAgrega ? tituloDelCuadro(nombreDeLaComida(comidaDondeSeAgrega, agregando.j), agregando.k) : ''}
+        subtitulo={agregando && comidaDondeSeAgrega ? subtituloDelCuadro(nombreDelDiaTipo(estructura[agregando.i]!, agregando.i), comidaDondeSeAgrega.options.length) : ''}
+        opcion={opcionDondeSeAgrega ?? null}
+        comida={agregando && comidaDondeSeAgrega ? nombreDeLaComida(comidaDondeSeAgrega, agregando.j) : ''}
+        otrasOpciones={agregando && agregando.i === i ? (rangos?.comidas[agregando.j]?.opciones.filter((_, k) => k !== agregando.k) ?? []) : []}
+        nombres={nombres}
+        composiciones={composiciones}
+        objetivo={objetivo}
         habituales={alimentosHabituales}
-        onElegir={(el) => {
+        alGuardar={(copia, nuevos) => {
           if (!agregando) return;
           const { i: di, j, k } = agregando;
-          setNombres((n) => ({ ...n, [el.catalogItemId]: el.name }));
-          // ED-31: el buscador ya trajo su composición; el total de la opción se ve al instante.
-          setComposiciones((m) => new Map(m).set(el.catalogItemId, el.composition));
-          // El ítem nace sin cantidad ni estado: se completan en la opción (REG-06-122).
-          cambiar((x) => (x[di]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
+          setNombres((n) => ({ ...n, ...nuevos.nombres }));
+          // El buscador ya trajo su composición: los totales de la estación siguen al instante.
+          setComposiciones((m) => new Map([...m, ...nuevos.composiciones]));
+          // Sobre la estructura de ahora: si un guardado le dio identidad a la opción con el cuadro abierto, la conserva.
+          cambiar((x) => {
+            const m = x[di]?.meals[j];
+            if (m && m.options[k]) m.options[k] = opcionAlGuardar(m.options[k], copia);
+            return x;
+          });
+          setAgregando(null);
         }}
         onCerrar={() => setAgregando(null)}
       />
