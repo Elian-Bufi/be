@@ -42,6 +42,7 @@ const ENTORNO = {
   // WP-ADMINISTRACION: sin la clave, la administración responde «no configurada».
   claveDelSegundoFactor: null,
   correo: null,
+  contacto: { soporte: null, privacidad: null },
 };
 
 function directorioCon(migraciones: string[]): string {

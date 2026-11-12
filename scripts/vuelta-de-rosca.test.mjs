@@ -164,7 +164,9 @@ test('TEST-AVR-004 · Perfil: quién sos, tu información, tus profesionales, fo
   assert.deepEqual(perfil.BLOQUES_DE_PERFIL, ['quien-sos', 'tu-informacion', 'tus-profesionales', 'formularios-y-pedidos', 'ajustes']);
   // Cambió con UF-06 de WP-USO-FINAL (DL-169, etapa 2, 2026-11-12): «Tus datos» (descargar lo propio y pedir el acceso,
   // la rectificación o la supresión) va entre los ajustes, después de Privacidad. «Cerrar mi cuenta» sigue al final.
-  assert.deepEqual(perfil.AJUSTES_DE_PERFIL, ['apariencia', 'avisos', 'privacidad', 'tus-datos', 'sesion', 'cerrar-mi-cuenta']);
+  // Y con UF-07 (DL-169, etapa 2, 2026-11-12): «Ayuda y contacto» (el canal de ayuda, leído de la API) va después de «Tus
+  // datos». «Cerrar mi cuenta» sigue al final.
+  assert.deepEqual(perfil.AJUSTES_DE_PERFIL, ['apariencia', 'avisos', 'privacidad', 'tus-datos', 'ayuda-y-contacto', 'sesion', 'cerrar-mi-cuenta']);
   assert.equal(perfil.nombreEnPerfil('Diego Sosa', IDENTIDAD), 'Diego Sosa');
   // Cambió con UF-01 de WP-USO-FINAL (DL-169, Dirección, 2026-11-11): el nombre es obligatorio y lo pide «Antes de
   // seguir», así que Perfil ya no ofrece «Agregá tu nombre». Sin nombre (la app entró sin poder preguntar), la referencia.

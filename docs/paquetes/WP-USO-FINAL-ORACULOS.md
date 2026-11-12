@@ -8,7 +8,8 @@
 >
 > **La etapa 2** (§13 del paquete, declarada el 2026-11-12) suma los oráculos de su primera mitad, al final de este
 > archivo: TEST-UF-013 (UF-09), TEST-UF-014 (UF-11), TEST-UF-009 (UF-04) y TEST-UF-011 (UF-06), cada uno escrito antes del
-> código de su parte. Después, los de la segunda mitad, en el orden en que se programó: TEST-UF-007 y 008 (UF-03).
+> código de su parte. Después, los de la segunda mitad, en el orden en que se programó: TEST-UF-007 y 008 (UF-03) y
+> TEST-UF-017 (UF-07, que no tenía oráculo en el §6).
 >
 > **Qué no es esto.** No modifica el 11A, protegido por `docs/MANIFEST.sha256`. Los oráculos de las partes que faltan se
 > escriben con su tanda; TEST-UF-015 (la restauración repite las supresiones) espera a UF-10, que es de Dirección.
@@ -531,4 +532,47 @@ AUTOMATION           packages/domain/src/recuperacion-de-acceso.test.ts («TEST-
 ENVIRONMENT          `npm test` y el job de integración de la CI
 EVIDENCE_EXPECTED    La CI verde; en el teléfono y en el website, «¿Olvidaste tu contraseña?» de punta a punta (pendiente
                      de prueba manual: la candidata del 25/11)
+```
+
+---
+
+## TEST-UF-017 — El canal de ayuda y contacto sale de la configuración y está a un toque en la web y en la app
+
+```text
+TEST_ID              TEST-UF-017
+TITLE                API-SOP-01 publica, sin sesión, las direcciones de soporte y de privacidad que tiene la configuración
+                     de la API (`BE_CONTACTO_SOPORTE` y `BE_CONTACTO_PRIVACIDAD`), o `null` si no están; el website las
+                     muestra en «Ayuda y contacto» (enlace del pie y /account) y la APK en Perfil → «Ayuda y contacto»,
+                     siempre leídas de la API; ninguna dirección real queda escrita en el código
+LEVEL                Dominio (la forma y los textos), unidad de la API (la configuración), integración (API real), website,
+                     APK y una guardia sobre el código fuente
+PRIORITY             P0
+SOURCES              UF-07 (WP-USO-FINAL.md §4.1) · §13.2 («las direcciones de soporte y de privacidad, por configuración.
+                     Ninguna dirección personal queda en el repositorio») · DL-169 · 08 §19 (el canal de los derechos) ·
+                     textos.ts:87 («el canal que se publique antes de operar con datos reales»)
+PRECONDITIONS        La API con las dos direcciones configuradas, y otra sin ninguna.
+SYNTHETIC_FIXTURE    Direcciones `@example.invalid`; ninguna real.
+STEPS                1. Leer la configuración con las dos direcciones, con una sola, sin ninguna, con una que no es un
+                        correo y, en producción, con una sintética.
+                     2. Pedir API-SOP-01 sin sesión a las dos apps.
+                     3. Recorrer el pie y /account del website, y los ajustes de Perfil de la APK.
+                     4. Buscar direcciones de correo escritas en el código fuente del dominio, la API, el website y la APK
+                        (sin contar las pruebas).
+EXPECTED             1 → las dos, una o ninguna se leen tal cual (en minúsculas); una que no es un correo, o una sintética
+                     en producción, no deja arrancar la API y el mensaje nombra la variable, no el valor. 2 → 200
+                     `{ data: { supportEmail, privacyEmail } }` con las configuradas o con `null`, con caché pública
+                     corta; nunca pide sesión. 3 → el pie enlaza «Ayuda y contacto» (/help), /account lo muestra, y
+                     Perfil tiene el ajuste «Ayuda y contacto» después de «Tus datos». 4 → solo dominios reservados
+                     (`.invalid`, `.example`, `.test`, `example.com`).
+NEGATIVE_ASSERTIONS  Ninguna pantalla escribe una dirección fija: si la configuración cambia, la APK instalada muestra la
+                     nueva sin reconstruirse. Sin configuración, ni la web ni la app inventan una: dicen que el canal
+                     todavía no está publicado. API-SOP-01 no lee la base ni datos de nadie.
+AUTOMATION           packages/domain/src/ayuda-y-contacto.test.ts («TEST-UF-017 · …»), apps/api/src/config/entorno.spec.ts,
+                     test/integration/ayuda-y-contacto.int-spec.ts, la prueba de contrato, scripts/sin-correos-en-el-codigo.test.cjs
+                     y TEST-AVR-004 (vuelta-de-rosca), que cambia con la fila nueva de Perfil. Mutaciones: una dirección real
+                     escrita en una pantalla → rojo en la guardia; la configuración que acepta una dirección sintética en
+                     producción → rojo en la unidad de la API.
+ENVIRONMENT          `npm test` y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde; con las direcciones cargadas en Render, «Ayuda y contacto» en el website y en la app
+                     (pendiente: las direcciones las define Dirección)
 ```

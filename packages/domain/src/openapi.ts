@@ -32,6 +32,7 @@ import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesio
 import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSchema } from './incorporacion-de-profesionales';
 import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
 import { CompletarRecuperacionRequestSchema, EmitirRecuperacionAsistidaRequestSchema, PedirRecuperacionRequestSchema, RecuperacionAsistidaResponseSchema, RecuperacionPedidaResponseSchema } from './recuperacion-de-acceso';
+import { CanalDeContactoResponseSchema } from './ayuda-y-contacto';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -4077,6 +4078,19 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 201, schema: RecuperacionAsistidaResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
     fuente: 'UF-03 y UF-D9 de WP-USO-FINAL («una recuperación asistida por Administración, con fundamento: revoca las sesiones y emite un código de un solo uso») · 04 RF-005 · 08 §24.4 («contingencia asistida documentada») · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-07 de WP-USO-FINAL (DL-169): el canal de ayuda y contacto ─────────────────────────────────────────────────────
+  {
+    id: 'API-SOP-01',
+    metodo: 'get',
+    ruta: '/support/contact',
+    resumen:
+      'El canal de ayuda y contacto de BE: la dirección de soporte (la app, la cuenta, recuperar el acceso, entrar como profesional) y la de privacidad (los datos y los derechos de la persona, 08 §19), tal como las cargó Dirección en la configuración de la API (BE_CONTACTO_SOPORTE y BE_CONTACTO_PRIVACIDAD). Cada una es null si todavía no se publicó: la pantalla lo dice y no inventa otra. Pública, para que la lea también quien no puede entrar; no lee la base ni datos de nadie. Se puede guardar cinco minutos (Cache-Control público), así un cambio de configuración se ve sin reconstruir la APK.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: CanalDeContactoResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST'] },
+    fuente: 'UF-07 de WP-USO-FINAL (§4.1 y §13.2: las direcciones por configuración, ninguna en el repositorio) · 08 §19 · ID propio de BE (familia SOP) · DEUDA_LEGAJO DL-169',
   },
 ];
 

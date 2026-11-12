@@ -151,3 +151,4 @@ export * from './copy-segundo-factor-del-profesional';
 export * from './incorporacion-de-profesionales';
 export * from './derechos-del-titular';
 export * from './recuperacion-de-acceso';
+export * from './ayuda-y-contacto';

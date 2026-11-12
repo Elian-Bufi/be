@@ -5,6 +5,7 @@ import { AccesoGoogleModule } from './acceso-google/acceso-google.module';
 import { AdministracionModule } from './administracion/administracion.module';
 import { DerechosModule } from './derechos/derechos.module';
 import { RecuperacionModule } from './recuperacion/recuperacion.module';
+import { ContactoModule } from './contacto/contacto.module';
 import { ENTORNO, VERSION } from './config/tokens';
 import type { VersionDesplegada } from './config/version';
 import { AutorizacionModule } from './autorizacion/autorizacion.module';
@@ -97,6 +98,8 @@ export class AppModule {
         DerechosModule,
         // UF-03 de WP-USO-FINAL (DL-169): recuperar el acceso local.
         RecuperacionModule,
+        // UF-07 de WP-USO-FINAL (DL-169): el canal de ayuda y contacto.
+        ContactoModule,
         // DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56): lo que la persona comparte de otras áreas.
         ResumenesModule,
       ],

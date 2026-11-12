@@ -4,7 +4,7 @@
  * falla y la plataforma conserva la versión anterior (07 §36).
  * Nunca se imprimen valores: solo nombres de variables (08 §32).
  */
-import { esAlcance, PRESUPUESTO_DEL_PROVEEDOR_MS, TipoDePerfilProfesional, type Alcance } from '@be/domain';
+import { direccionDeContacto, esAlcance, PRESUPUESTO_DEL_PROVEEDOR_MS, TipoDePerfilProfesional, type Alcance } from '@be/domain';
 
 export const AMBIENTES = ['development', 'test', 'production'] as const;
 export type Ambiente = (typeof AMBIENTES)[number];
@@ -122,6 +122,13 @@ export interface Entorno {
    *   para que las pruebas usen un proveedor falso local y la CI nunca dependa de un tercero (como WP-08 D-H).
    */
   readonly correo: CorreoConfigurado | null;
+  /**
+   * UF-07 de WP-USO-FINAL (DL-169) · el canal de ayuda y contacto que publica API-SOP-01. Las direcciones las define
+   * Dirección y nunca se escriben en el código: `BE_CONTACTO_SOPORTE` (la app, la cuenta, recuperar el acceso, entrar como
+   * profesional) y `BE_CONTACTO_PRIVACIDAD` (los datos y los derechos, 08 §19). Cada una es optativa: sin ella, `null`, y
+   * las pantallas dicen que el canal todavía no está publicado. En producción no pueden ser de un dominio reservado.
+   */
+  readonly contacto: { readonly soporte: string | null; readonly privacidad: string | null };
 }
 
 export const PROVEEDORES_DE_CORREO = ['brevo', 'postmark'] as const;
@@ -311,6 +318,8 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
 
   // UF-03: el correo de BE. Las tres variables juntas o ninguna; el mensaje nombra la variable, nunca el valor.
   const correo = leerCorreo(env, appEnv, errores, origenDeProveedor);
+  // UF-07: el canal de ayuda y contacto. Cada dirección, optativa; el mensaje nombra la variable, nunca el valor.
+  const contacto = { soporte: leerContacto(env.BE_CONTACTO_SOPORTE, 'BE_CONTACTO_SOPORTE', appEnv, errores), privacidad: leerContacto(env.BE_CONTACTO_PRIVACIDAD, 'BE_CONTACTO_PRIVACIDAD', appEnv, errores) };
 
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
@@ -335,7 +344,27 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     google: { clientIds: [...new Set(clientIds)], jwksUrl, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS },
     claveDelSegundoFactor,
     correo,
+    contacto,
   };
+}
+
+/** Los dominios reservados para ejemplos (RFC 2606 y RFC 6761): en producción, una dirección de ellos no es un canal. */
+const DOMINIO_RESERVADO = /@(?:[a-z0-9-]+\.)*(?:invalid|example|test|localhost)$|@(?:[a-z0-9-]+\.)*example\.(?:com|net|org)$/;
+
+/** Una dirección del canal de contacto (UF-07): optativa; si está, un correo, y en producción no de un dominio reservado. */
+function leerContacto(valor: string | undefined, nombre: string, appEnv: string | undefined, errores: string[]): string | null {
+  const texto = (valor ?? '').trim();
+  if (texto === '') return null;
+  const direccion = direccionDeContacto(texto);
+  if (!direccion) {
+    errores.push(`${nombre} debe ser una dirección de correo (UF-07)`);
+    return null;
+  }
+  if (appEnv === 'production' && DOMINIO_RESERVADO.test(direccion)) {
+    errores.push(`${nombre} no puede ser una dirección de ejemplo en producción (UF-07)`);
+    return null;
+  }
+  return direccion;
 }
 
 /** El correo de BE (UF-03): sin proveedor, `null` (no se mandan correos); con proveedor, la clave y el remitente también. */

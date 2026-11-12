@@ -100,6 +100,7 @@ import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePerfil } from './src/pantallas/perfil';
 import { PantallaDeQuienVeQue } from './src/pantallas/quien-ve-que';
 import { PantallaDeTusDatos } from './src/pantallas/tus-datos';
+import { PantallaDeAyudaYContacto } from './src/pantallas/ayuda-y-contacto';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
@@ -705,6 +706,7 @@ function Contenido() {
               {ruta.nombre === 'perfil' ? <PantallaDePerfil token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'quien-ve-que' ? <PantallaDeQuienVeQue token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'tus-datos' ? <PantallaDeTusDatos token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'ayuda-y-contacto' ? <PantallaDeAyudaYContacto /> : null}
               {ruta.nombre === 'cuenta' ? (
                 <PantallaDeCuenta key={ruta.seccion ?? 'datos'} token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} seccion={ruta.seccion} sesionRecordada={recordada} />
               ) : null}

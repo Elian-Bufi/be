@@ -130,6 +130,7 @@ const ENTORNO: Entorno = {
   google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 1000 },
   claveDelSegundoFactor: null,
   correo: null,
+  contacto: { soporte: null, privacidad: null },
 };
 
 describe('DL-168 · el parser de cada ruta, en la app armada como en producción', () => {

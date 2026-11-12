@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { api } from '../api';
 import { Aviso, Boton, Campo, Parrafo, Titulo } from '../ui';
 import type { AlIniciar } from './acceso-con-google';
+import { CanalDeContacto } from './ayuda-y-contacto';
 
 const R = COPY_RECUPERACION;
 type Paso = { readonly tipo: 'pedir' } | { readonly tipo: 'completar'; readonly recoveryId: string; readonly entrega: EntregaDelCodigo } | { readonly tipo: 'listo' };
@@ -113,6 +114,8 @@ export function PantallaDeRecuperarElAcceso({ irALogin, alIniciar, subir }: { ir
       ) : (
         <>
           <Aviso tipo="info" titulo={paso.entrega === 'EMAIL' ? R.pedidoPorCorreo : R.pedidoAsistido} />
+          {/* UF-07: sin correo de BE, la dirección de soporte a la que hay que escribir, leída de la API. */}
+          {paso.entrega === 'ASSISTED' ? <CanalDeContacto soloSoporte /> : null}
           {falla?.pedirOtro ? <Boton texto={R.pedirOtro} tipo="secundario" onPress={() => void pedir()} deshabilitado={enviando} /> : null}
           <Campo
             etiqueta={R.codigo}

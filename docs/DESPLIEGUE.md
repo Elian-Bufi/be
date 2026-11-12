@@ -154,6 +154,18 @@ La API manda un solo tipo de correo: el código para recuperar el acceso. **Sin 
 - **Para prenderlo:** crear la cuenta del proveedor con el correo de Dirección, verificar el dominio del remitente (los registros SPF y DKIM que pide el proveedor) y cargar las tres variables en be-api → Environment → «Save, rebuild, and deploy». Comprobar con una cuenta sintética: «¿Olvidaste tu contraseña?» dice «te mandamos un código» y el correo llega.
 - **Las huellas de los códigos** se firman con una clave derivada de `JWT_SECRET`: reemplazarlo deja sin valor los códigos pendientes (vencen a los 30 minutos, o a las 24 horas los asistidos), además de las sesiones.
 
+### Ayuda y contacto (DL-169, UF-07 de WP-USO-FINAL)
+
+Las direcciones del canal de ayuda las define Dirección y **nunca se escriben en el repositorio** (es público). La API las publica con API-SOP-01 (`GET /api/v1/support/contact`, sin sesión), y el website (pie → «Ayuda y contacto» y `/account`) y la APK (Perfil → «Ayuda y contacto») las leen de ahí cada vez: cambiarlas no pide otro build ni otra APK.
+
+| Variable | Origen | Nota |
+|---|---|---|
+| `BE_CONTACTO_SOPORTE` | a mano, en be-api | La dirección de soporte: la app, la cuenta, recuperar el acceso (la recuperación asistida llega por acá) y entrar como profesional |
+| `BE_CONTACTO_PRIVACIDAD` | a mano, en be-api | La dirección de privacidad: los datos y los derechos de la persona (08 §19) |
+
+- **Cada una es optativa:** sin ella, la API responde `null` y las pantallas dicen «El canal de contacto todavía no está publicado». Una que no es un correo no deja arrancar la API; en producción tampoco una de un dominio de ejemplo (`.invalid`, `.example`, `example.com`).
+- **Para cargarlas:** be-api → Environment → las dos variables → «Save, rebuild, and deploy». Comprobar: `/help` en el website muestra las dos.
+
 ### APK
 
 `apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:

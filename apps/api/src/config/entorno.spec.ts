@@ -41,6 +41,7 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       google: { clientIds: [], jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs', presupuestoMs: 5000 },
       claveDelSegundoFactor: null,
       correo: null,
+      contacto: { soporte: null, privacidad: null },
     });
   });
 
@@ -74,6 +75,35 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       }
       expect(mensaje).toMatch(/BE_CORREO_/);
       expect(mensaje).not.toContain(clave);
+    }
+  });
+
+  it('TEST-UF-017 · el canal de contacto: cada dirección optativa y en minúsculas; una que no es un correo, o una de ejemplo en producción, no arranca y el mensaje no la repite', () => {
+    expect(leerEntorno(BASE).contacto).toEqual({ soporte: null, privacidad: null });
+    expect(leerEntorno({ ...BASE, BE_CONTACTO_SOPORTE: ' Soporte@Example.Invalid ' }).contacto).toEqual({ soporte: 'soporte@example.invalid', privacidad: null });
+    expect(leerEntorno({ ...BASE, BE_CONTACTO_SOPORTE: 'soporte@example.invalid', BE_CONTACTO_PRIVACIDAD: 'privacidad@example.invalid' }).contacto).toEqual({
+      soporte: 'soporte@example.invalid',
+      privacidad: 'privacidad@example.invalid',
+    });
+    // En producción vale una dirección de un dominio propio (acá, uno inventado que no existe), y una de ejemplo no.
+    const produccion = { APP_ENV: 'production' };
+    expect(leerEntorno({ ...BASE, ...produccion, BE_CONTACTO_SOPORTE: 'soporte@be.dominio-propio' }).contacto.soporte).toBe('soporte@be.dominio-propio');
+    const malos = [
+      { BE_CONTACTO_SOPORTE: 'sin-arroba' },
+      { BE_CONTACTO_PRIVACIDAD: 'dos @espacios.invalid' },
+      { ...produccion, BE_CONTACTO_SOPORTE: 'soporte@example.invalid' },
+      { ...produccion, BE_CONTACTO_PRIVACIDAD: 'privacidad@algo.example' },
+      { ...produccion, BE_CONTACTO_SOPORTE: 'ayuda@example.com' },
+    ];
+    for (const malo of malos) {
+      let mensaje = '';
+      try {
+        leerEntorno({ ...BASE, ...malo });
+      } catch (e) {
+        mensaje = (e as Error).message;
+      }
+      expect(mensaje).toMatch(/BE_CONTACTO_(SOPORTE|PRIVACIDAD)/);
+      expect(mensaje).not.toMatch(/sin-arroba|espacios|soporte@|privacidad@|ayuda@/);
     }
   });
 

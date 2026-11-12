@@ -131636,6 +131636,124 @@
           }
         }
       }
+    },
+    "/support/contact": {
+      "get": {
+        "operationId": "API-SOP-01",
+        "summary": "El canal de ayuda y contacto de BE: la dirección de soporte (la app, la cuenta, recuperar el acceso, entrar como profesional) y la de privacidad (los datos y los derechos de la persona, 08 §19), tal como las cargó Dirección en la configuración de la API (BE_CONTACTO_SOPORTE y BE_CONTACTO_PRIVACIDAD). Cada una es null si todavía no se publicó: la pantalla lo dice y no inventa otra. Pública, para que la lea también quien no puede entrar; no lee la base ni datos de nadie. Se puede guardar cinco minutos (Cache-Control público), así un cambio de configuración se ve sin reconstruir la APK.",
+        "description": "Fuente: UF-07 de WP-USO-FINAL (§4.1 y §13.2: las direcciones por configuración, ninguna en el repositorio) · 08 §19 · ID propio de BE (familia SOP) · DEUDA_LEGAJO DL-169. AuthN: PUBLIC.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "supportEmail": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 3,
+                              "maxLength": 254,
+                              "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "privacyEmail": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 3,
+                              "maxLength": 254,
+                              "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "supportEmail",
+                        "privacyEmail"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

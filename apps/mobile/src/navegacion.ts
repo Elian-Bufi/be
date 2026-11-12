@@ -63,6 +63,8 @@ export type Ruta =
   | { readonly nombre: 'privacidad'; readonly desde?: Ruta }
   // UF-06 de WP-USO-FINAL (DL-169): «Tus datos», descargar lo propio y pedir el acceso, la rectificación o la supresión.
   | { readonly nombre: 'tus-datos'; readonly desde?: Ruta }
+  // UF-07 (DL-169): «Ayuda y contacto», el canal de ayuda leído de la API.
+  | { readonly nombre: 'ayuda-y-contacto'; readonly desde?: Ruta }
   | { readonly nombre: 'plan-actual'; readonly desde?: Ruta }
   | { readonly nombre: 'registros-nutricionales'; readonly desde?: Ruta }
   | { readonly nombre: 'registro-nutricional'; readonly id: string; readonly desde?: Ruta }
@@ -213,6 +215,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'consentimiento':
     case 'privacidad':
     case 'tus-datos':
+    case 'ayuda-y-contacto':
       return 'perfil';
     case 'novedades':
       return 'novedades';
@@ -283,6 +286,7 @@ function madre(ruta: Ruta): Ruta | null {
     case 'notas-de-coordinacion':
     case 'privacidad':
     case 'tus-datos':
+    case 'ayuda-y-contacto':
     case 'mis-habitos':
       return { nombre: 'perfil' };
     case 'historial-de-entrenamiento':
@@ -441,6 +445,8 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver a Privacidad';
     case 'tus-datos':
       return 'Volver a Tus datos';
+    case 'ayuda-y-contacto':
+      return 'Volver a Ayuda y contacto';
     case 'hoy':
       return 'Volver a Nutrición';
     case 'entrenamiento':

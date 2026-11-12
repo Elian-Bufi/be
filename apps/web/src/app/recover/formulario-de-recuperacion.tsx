@@ -13,6 +13,7 @@ import { COPY, COPY_RECUPERACION, LARGO_MINIMO_DE_CREDENCIAL, MENSAJE_DE_CAMPO, 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { CanalDeContacto } from '../../components/canal-de-contacto';
 import { Aviso, Campo, ResumenDeErrores } from '../../components/formulario';
 import { api } from '../../lib/api';
 import { buscarInicioPropio } from '../../lib/inicio';
@@ -149,6 +150,8 @@ export function FormularioDeRecuperacion() {
     <form className="formulario" onSubmit={completar} noValidate>
       <Aviso tipo="info">
         <p>{paso.entrega === 'EMAIL' ? R.pedidoPorCorreo : R.pedidoAsistido}</p>
+        {/* UF-07: sin correo de BE, la dirección de soporte a la que hay que escribir, leída de la API. */}
+        {paso.entrega === 'ASSISTED' ? <CanalDeContacto soloSoporte /> : null}
       </Aviso>
       <ResumenDeErrores titulo={COPY.resumenDeErrores(lista.length)} errores={lista} intento={intento} />
       {falla ? (

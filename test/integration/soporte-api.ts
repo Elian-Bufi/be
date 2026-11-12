@@ -62,6 +62,8 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     // UF-03 (DL-169): sin proveedor de correo, como hoy en test: rige la recuperación asistida. La prueba de la recuperación
     // levanta su app con un proveedor falso local; ninguna prueba manda un correo de verdad.
     correo: null,
+    // UF-07 (DL-169): sin el canal de contacto, como hoy en test; la prueba del canal levanta su app con direcciones sintéticas.
+    contacto: { soporte: null, privacidad: null },
     ...cambios,
   };
 }

@@ -359,6 +359,7 @@ import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } fr
 import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
 import { RecuperacionPedidaResponseSchema, type RecuperacionPedidaResponse } from './recuperacion-de-acceso';
+import { CanalDeContactoResponseSchema, type CanalDeContactoResponse } from './ayuda-y-contacto';
 
 export type Resultado<T> =
   | {
@@ -596,6 +597,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      */
     pedirRecuperacion(correo: string): Promise<Resultado<RecuperacionPedidaResponse>> {
       return llamar('POST', '/auth/recovery-requests', { esquema: RecuperacionPedidaResponseSchema, cuerpo: { identifier: correo } });
+    },
+    /**
+     * API-SOP-01 (UF-07, DL-169): el canal de ayuda y contacto, sin sesión. Cada dirección es null si todavía no se publicó.
+     */
+    consultarCanalDeContacto(): Promise<Resultado<CanalDeContactoResponse>> {
+      return llamar('GET', '/support/contact', { esquema: CanalDeContactoResponseSchema });
     },
     /**
      * API-ACC-P1-02 (UF-03): completar con el código y la contraseña nueva. Sin cuerpo en la respuesta (204): después se

@@ -7532,3 +7532,6 @@ ratificar (§13.5 y §13.6 del paquete):
   es la misma exista o no la cuenta, la identidad no cambia y sus sesiones terminan. El correo de BE es un adaptador para
   Brevo o Postmark que Dirección prende con `BE_CORREO_*`; sin él, Administración da el código con la recuperación
   asistida (API-ADM-18). Pide una APK nueva (Iniciar sesión → «¿Olvidaste tu contraseña?»).
+- **UF-07:** el canal de ayuda y contacto sale de la configuración de la API (`BE_CONTACTO_SOPORTE` y
+  `BE_CONTACTO_PRIVACIDAD`, que define Dirección) y lo publica API-SOP-01, sin sesión. Está en el pie y en la cuenta del
+  website y en Perfil de la app (APK nueva); ninguna dirección real queda escrita en el código.
