@@ -84,7 +84,7 @@ test('TEST-EDP-002 · los dos editores: el «⋯», el cuadro, la misma clave en
   for (const ruta of ['app/pro/advisees/training/plan.tsx', 'app/pro/advisees/nutrition/plan.tsx']) {
     const fuente = leer(ruta);
     assert.match(fuente, /numero=\{numeroDelBorrador\(historial\)\}/, ruta);
-    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n\s*setFocoTrasDescartar\(true\);\n\s*setAviso\(porOtraPestana \? \{ tipo: 'error', texto: porOtraPestana \} : \{ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION\.descartada\(/, ruta);
+    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n(?:\s*\/\/[^\n]*\n)?\s*focoTrasDescartar\.current = !porOtraPestana;\n\s*setAviso\(porOtraPestana \? \{ tipo: 'error', texto: porOtraPestana \} : \{ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION\.descartada\(/, ruta);
   }
   // La vigente (`PlanActivo`) nunca ofrece descartar.
   const plan = leer('app/pro/advisees/training/plan.tsx');
@@ -141,9 +141,17 @@ test('TEST-EDP-002 · el cuadro dice la fecha en prosa: «vigente desde el marte
 test('TEST-EDP-002 · después de descartar, el foco va a «Crear una nueva versión»: el «⋯» que abrió el cuadro ya no está', () => {
   // Revisión adversaria de la etapa 1: el cuadro devolvía el foco al «⋯», pero volver a leer el plan desmontaba el editor
   // con ese botón adentro, y el foco caía al principio de la página.
+  // El primer arreglo enfocaba cuando volvía la lectura del plan. Sin una versión activa, «Crear el plan» va dentro de
+  // «Empezar el plan», que en ese momento todavía leía las evaluaciones: el botón no estaba y el foco no llegaba (lo mostró
+  // el recorrido `descartar` en la CI). Ahora lo toma el botón mismo, cuando aparece.
   for (const ruta of ['app/pro/advisees/training/plan.tsx', 'app/pro/advisees/nutrition/plan.tsx']) {
     const fuente = leer(ruta);
-    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n\s*setFocoTrasDescartar\(true\);/, ruta);
-    assert.match(fuente, /if \(!focoTrasDescartar \|\| !r\) return;\n\s*\(document\.querySelector<HTMLElement>\('\[data-crear-version\]'\) \?\? document\.querySelector<HTMLElement>\('\[data-empezar-desde-plantilla\]'\)\)\?\.focus\(\);/, ruta);
+    // Descartada, el foco espera al botón; si el descarte no se hizo, se queda en el aviso del error, que lo toma.
+    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n(?:\s*\/\/[^\n]*\n)?\s*focoTrasDescartar\.current = !porOtraPestana;/, ruta);
+    // El botón lo toma al aparecer, una sola vez.
+    assert.match(fuente, /const enfocarSiSeDescarto = useCallback\(\(boton: HTMLButtonElement \| null\) => \{\n\s*if \(!boton \|\| !focoTrasDescartar\.current\) return;\n\s*focoTrasDescartar\.current = false;\n\s*boton\.focus\(\);/, ruta);
+    assert.match(fuente, /data-crear-version ref=\{enfocarSiSeDescarto\}>/, ruta);
+    // Nada que mire solo la lectura del plan: ahí el botón puede no estar todavía.
+    assert.doesNotMatch(fuente, /if \(!focoTrasDescartar \|\| !r\) return;/, ruta);
   }
 });

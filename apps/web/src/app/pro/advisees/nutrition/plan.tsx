@@ -81,14 +81,15 @@ export function VistaDePlan() {
   const [queFallo, setQueFallo] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   // ED-01: después de descartar, el «⋯» que abrió el cuadro ya no existe (volver a leer desmonta el editor). El foco va a
-  // «Crear una nueva versión» (o a «Empezar desde una plantilla») apenas se vuelve a leer, para no perderse al principio
-  // de la página.
-  const [focoTrasDescartar, setFocoTrasDescartar] = useState(false);
-  useEffect(() => {
-    if (!focoTrasDescartar || !r) return;
-    (document.querySelector<HTMLElement>('[data-crear-version]') ?? document.querySelector<HTMLElement>('[data-empezar-desde-plantilla]'))?.focus();
-    setFocoTrasDescartar(false);
-  }, [focoTrasDescartar, r]);
+  // «Crear una nueva versión» apenas el botón aparece, para no perderse al principio de la página. Aparece cuando termina
+  // de leerse lo que haga falta: sin una versión activa, va dentro de «Empezar el plan», que antes lee las evaluaciones
+  // (por eso no alcanza con mirar cuando vuelve la lectura del plan: el botón todavía no está).
+  const focoTrasDescartar = useRef(false);
+  const enfocarSiSeDescarto = useCallback((boton: HTMLButtonElement | null) => {
+    if (!boton || !focoTrasDescartar.current) return;
+    focoTrasDescartar.current = false;
+    boton.focus();
+  }, []);
   const [creando, setCreando] = useState(false);
   // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108).
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -222,7 +223,7 @@ export function VistaDePlan() {
               </button>
             );
             const botonDeLaVersion = (
-              <button type="button" className="boton boton--primario" onClick={() => void crear(activa ? activa.planId : null)} disabled={creando} data-crear-version>
+              <button type="button" className="boton boton--primario" onClick={() => void crear(activa ? activa.planId : null)} disabled={creando} data-crear-version ref={enfocarSiSeDescarto}>
                 <Icono nombre={activa ? 'duplicar' : 'plan'} tamano={18} />
                 {activa ? COPY_NUTRICION.crearNuevaVersion : COPY_NUTRICION.crearNuevoPlan}
               </button>
@@ -286,7 +287,8 @@ export function VistaDePlan() {
                       }}
                       // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
                       onDescartado={(porOtraPestana) => {
-                        setFocoTrasDescartar(true);
+                        // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
+                        focoTrasDescartar.current = !porOtraPestana;
                         setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
                         ir({ version: null, dia: null, comidas: null });
                         void cargar();
