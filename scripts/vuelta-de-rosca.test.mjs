@@ -727,13 +727,23 @@ test('TEST-AV2-005 · el botón principal: degradé y radio 14 con el vidrio, y 
     const habilitado = receta.botonPrincipal(paleta, { ...PRENDIDO, habilitado: true });
     assert.equal(habilitado.experimental_backgroundImage, `linear-gradient(to bottom, ${paleta.botonFondo}, ${paleta.botonFondoFin})`);
     assert.equal(habilitado.borderRadius, 14);
-    assert.equal(habilitado.borderColor, `${paleta.botonFondo.slice(0, 7)}00`, 'el borde de 2 dp, sin color: el alto no cambia');
+    // Sin borde: con uno sin color, React Native ubica el degradé en la caja de relleno, lo pinta en la del borde y lo
+    // repite, y arriba y abajo quedaba una franja invertida de 2 dp. Los 2 dp pasan a relleno: el alto no cambia.
+    for (const estado of [habilitado, receta.botonPrincipal(paleta, { ...PRENDIDO, habilitado: false })]) {
+      assert.equal(estado.borderWidth, 0, 'sin borde: el degradé ocupa el botón entero');
+      assert.equal(estado.paddingVertical, receta.BORDE_DEL_BOTON, 'el borde pasa a relleno arriba y abajo');
+      assert.equal(estado.paddingHorizontal, receta.RELLENO_DEL_BOTON + receta.BORDE_DEL_BOTON, 'y a los costados');
+      assert.equal('borderColor' in estado, false);
+    }
     assert.deepEqual(habilitado.boxShadow, [{ offsetX: 0, offsetY: 6, blurRadius: 18, color: paleta.resplandorPrimario }]);
     const deshabilitado = receta.botonPrincipal(paleta, { ...PRENDIDO, habilitado: false });
     assert.equal(deshabilitado.boxShadow, undefined, 'deshabilitado, sin resplandor');
     assert.equal(deshabilitado.experimental_backgroundImage, habilitado.experimental_backgroundImage);
   }
   const ui = sinComentarios(leer('ui.tsx'));
+  // El botón de siempre (sin el vidrio) conserva su borde de 2 dp y su relleno de 18: los mismos números de la receta.
+  assert.deepEqual([receta.BORDE_DEL_BOTON, receta.RELLENO_DEL_BOTON], [2, 18]);
+  assert.match(ui, /\n  boton: \{ minHeight: 48, paddingHorizontal: RELLENO_DEL_BOTON, borderRadius: 8, borderWidth: BORDE_DEL_BOTON,/);
   assert.match(ui, /const habilitado = !\(deshabilitado \|\| ocupado\);\s*\n[\s\S]*?const principal = useBotonPrincipal\(habilitado\);/);
   assert.match(ui, /tipo === 'primario' \? principal : null/);
   assert.doesNotMatch(ui, /Animated\.(loop|timing)\([^)]*resplandor/i, 'el resplandor no pulsa');

@@ -1189,6 +1189,11 @@ con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
     igual no entraran, y no en cualquier letra;
   - la tira de la semana tomaba su séptimo de media tarjeta, el ancho de una ficha: a 360 dp, el círculo del día medía
     17 dp y el número no entraba. Ahora sale de la tarjeta entera (34 dp).
+- **AV2-T19 · El botón principal con vidrio, sin borde.** Conservaba el borde de 2 dp sin color (AV2-04) y pintaba el
+  degradé con `experimental_backgroundImage`. React Native 0.86.3 ubica esa imagen en la caja de relleno, la pinta en la
+  del borde y la repite (`BackgroundImageDrawable.updatePath`): arriba se veía el final del degradé y abajo el principio,
+  una franja invertida de 2 dp (1,37:1 en Azul noche y 1,43:1 en Claro contra el degradé vecino). Ahora el borde es 0 y
+  sus 2 dp pasan a relleno: el alto y el lugar del texto no cambian. Lo fija TEST-AV2-005.
 
 ### 10.5 Hallazgos fuera del paquete
 

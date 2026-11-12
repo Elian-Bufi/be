@@ -129,23 +129,36 @@ export function sombrasDeLaBarra(color: Paleta): readonly SombraDeLaReceta[] {
   return sombras;
 }
 
-/** Lo que el botón principal suma con el vidrio: el degradé, el radio, el borde sin color y, si está habilitado, el resplandor. */
+/** El borde de un botón (`ui.tsx`) y su relleno a cada costado, en dp. Con el vidrio, el principal pasa el borde a relleno. */
+export const BORDE_DEL_BOTON = 2;
+export const RELLENO_DEL_BOTON = 18;
+
+/** Lo que el botón principal suma con el vidrio: el degradé, el radio, el borde pasado a relleno y, si está habilitado, el resplandor. */
 export interface EstiloDelBotonPrincipal {
-  readonly borderColor: string;
+  readonly borderWidth: 0;
+  readonly paddingVertical: number;
+  readonly paddingHorizontal: number;
   readonly borderRadius: number;
   readonly experimental_backgroundImage: string;
   readonly boxShadow?: readonly SombraDeLaReceta[];
 }
 
 /**
- * El botón principal con la receta (AV2-04): el degradé de `botonFondo` arriba a `botonFondoFin` abajo, radio 14 y el
- * borde de 2 dp sin color, para que el alto no cambie. El resplandor va solo si está habilitado, y es quieto. Con el
- * vidrio apagado, `null`: el botón de siempre (el fondo liso de `botonFondo` queda debajo del degradé, por si no se dibuja).
+ * El botón principal con la receta (AV2-04): el degradé de `botonFondo` arriba a `botonFondoFin` abajo y radio 14. El
+ * resplandor va solo si está habilitado, y es quieto. Con el vidrio apagado, `null`: el botón de siempre (el fondo liso de
+ * `botonFondo` queda debajo del degradé, por si no se dibuja).
+ *
+ * **Sin borde** (revisión de la etapa A): React Native 0.86.3 ubica la imagen de fondo en la caja de relleno, la pinta en
+ * la del borde y la repite (`BackgroundImageDrawable.updatePath`). Con el borde de 2 dp sin color de antes, arriba se veía
+ * el final del degradé y abajo el principio: una franja invertida. Los 2 dp pasan a relleno, y el alto y el lugar del
+ * texto no cambian.
  */
 export function botonPrincipal(color: Paleta, opciones: OpcionesDelVidrio & { readonly habilitado: boolean }): EstiloDelBotonPrincipal | null {
   if (!vidrioPrendido(opciones)) return null;
   return {
-    borderColor: sinAlfa(color.botonFondo),
+    borderWidth: 0,
+    paddingVertical: BORDE_DEL_BOTON,
+    paddingHorizontal: RELLENO_DEL_BOTON + BORDE_DEL_BOTON,
     borderRadius: RADIO_DE_LA_FICHA,
     experimental_backgroundImage: `linear-gradient(to bottom, ${color.botonFondo}, ${color.botonFondoFin})`,
     ...(opciones.habilitado ? { boxShadow: [{ ...RESPLANDOR, color: color.resplandorPrimario }] } : {}),

@@ -58,6 +58,7 @@ quedar igual.
 | Una palabra larga no entraba en media ficha (AV2-T18) | TEST-AV2-008 | Las fichas sin mirar los nombres (siempre dos columnas) | Rojo |
 | «Mediciones» se partía al lado del ícono a 360 dp (AV2-T18) | TEST-AV2-008 | El ícono siempre al lado | Rojo |
 | El círculo del día medía 17 dp a 360 dp (AV2-T18) | TEST-AV2-008 | La columna de la tira, de media tarjeta | Rojo |
+| El botón principal con una franja invertida de 2 dp arriba y abajo (AV2-T19) | TEST-AV2-005 | El borde de 2 dp sin color, de vuelta | Rojo |
 
 ## El contraste, medido en el peor punto (TEST-AV2-001)
 

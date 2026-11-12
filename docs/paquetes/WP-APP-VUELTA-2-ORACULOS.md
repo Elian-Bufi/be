@@ -158,18 +158,26 @@ STEPS                1. Pedir el botón principal habilitado y deshabilitado, co
                      2. Pedir el estilo de un enlace con flecha y de uno sin flecha; leer el enlace en `ui.tsx`.
                      3. Pedir la etiqueta de estado sobre una tarjeta de nivel 1 y dentro de un nivel 2; leer la
                         `Insignia` de `ui.tsx`.
-EXPECTED             1 → con el vidrio y habilitado: el degradé de `botonFondo` a `botonFondoFin`, radio 14, el borde
-                     de 2 dp sin color y el resplandor en `resplandorPrimario` {0, 6, 18}; deshabilitado, sin
-                     resplandor; sin el vidrio, el botón de siempre. 2 → con flecha, sin subrayado y con el chevron
+EXPECTED             1 → con el vidrio y habilitado: el degradé de `botonFondo` a `botonFondoFin`, radio 14, sin borde
+                     y con sus 2 dp pasados a relleno (2 arriba y abajo, 18 + 2 a los costados), así que el alto y el
+                     lugar del texto no cambian y el degradé ocupa el botón entero; y el resplandor en
+                     `resplandorPrimario` {0, 6, 18}; deshabilitado, sin resplandor; sin el vidrio, el botón de
+                     siempre, con su borde de 2 dp. Con un borde sin color, React Native 0.86.3 ubica la imagen en la
+                     caja de relleno, la pinta en la del borde y la repite (`BackgroundImageDrawable.updatePath`): arriba
+                     se veía el final del degradé y abajo el principio, una franja invertida de 2 dp (1,37:1 en Azul
+                     noche y 1,43:1 en Claro contra el degradé vecino). 2 → con flecha, sin subrayado y con el chevron
                      (`derecha`, 18 dp) pegado al texto; sin flecha, subrayado; el rol sigue siendo «link». 3 → sin
                      borde, rellena con `etiquetaFondo` sobre un nivel 1 y sin relleno dentro de un nivel 2; el texto en
                      `tenue`; lo hecho lleva la tilde en `exito`.
 NEGATIVE_ASSERTIONS  Nada pulsa ni se anima: el resplandor es quieto. La etiqueta no tiene borde de 2 dp ni el texto en
                      cian.
-AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-005 · …»). Mutación: el resplandor también con el
-                     botón deshabilitado → la prueba falla.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-005 · …»). Mutaciones: el resplandor también con el
+                     botón deshabilitado → la prueba falla; el borde de 2 dp sin color de vuelta en el botón con el
+                     vidrio → la prueba falla.
 ENVIRONMENT          `npm test`
-EVIDENCE_EXPECTED    La CI verde; en el teléfono, «Continuar» con degradé y brillo, y TalkBack leyendo «enlace» (AV2-18)
+EVIDENCE_EXPECTED    La CI verde; en el teléfono, «Continuar» con degradé y brillo, sin una línea más oscura arriba ni una
+                     más clara abajo (una captura ampliada del borde, en los dos temas), y TalkBack leyendo «enlace»
+                     (AV2-18)
 ```
 
 ---

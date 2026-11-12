@@ -19,7 +19,7 @@ import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, us
 import { BotonDeIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
 import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
-import { estiloDeLaEtiqueta, subrayadoDelEnlace } from './receta-de-vidrio';
+import { BORDE_DEL_BOTON, estiloDeLaEtiqueta, RELLENO_DEL_BOTON, subrayadoDelEnlace } from './receta-de-vidrio';
 import { COLOR, estilosPorTema, PALETAS } from './tema';
 import { DentroDelNivel, useBotonPrincipal, useSuperficie, useSuperficieDeControl, useVidrio } from './vidrio';
 
@@ -713,7 +713,8 @@ export const estilos = estilosPorTema((COLOR) => ({
   iconoDelParrafo: { paddingTop: 2 },
   textoConIconoAlLado: { flex: 1, marginVertical: 0 },
   negrita: { fontWeight: '700', color: COLOR.texto },
-  boton: { minHeight: 48, paddingHorizontal: 18, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
+  // El borde y el relleno de la receta: con el vidrio, el principal pasa el borde a relleno (`botonPrincipal`).
+  boton: { minHeight: 48, paddingHorizontal: RELLENO_DEL_BOTON, borderRadius: 8, borderWidth: BORDE_DEL_BOTON, alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
   boton_primario: { backgroundColor: COLOR.botonFondo, borderColor: COLOR.botonFondo },
   // Secundario tonal: relleno apenas más claro y borde fino. El cian queda en el texto: orienta sin competir.
   boton_secundario: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.borde, borderWidth: 1 },
