@@ -49,6 +49,7 @@ import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as EDICION, sinLaSerie } from '../editar-la-estructura';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEntrenamiento } from './entrenamiento';
+import { LineaDePrescripcion } from './linea-de-prescripcion';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 export type BloqueE = Bloques[number];
@@ -169,6 +170,8 @@ export function EjercicioDelEditor({
   onSubir,
   onBajar,
   onDuplicar,
+  onAplicarLinea,
+  revisar = null,
 }: {
   /** El prefijo de los identificadores de sus campos: `b0-s1-p2`, las posiciones del bloque, la sesión y el ejercicio. */
   id: string;
@@ -188,6 +191,10 @@ export function EjercicioDelEditor({
   onBajar: () => void;
   /** TB-48: la copia del ejercicio, justo después. */
   onDuplicar: () => void;
+  /** ED-22: la prescripción que dejó la línea, y la marca de la carga a revisar si cambiaron las repeticiones. */
+  onAplicarLinea: (p: PrescripcionE, revisar: string | null) => void;
+  /** DJ-8: la carga quedó escrita para otras repeticiones («escrita para 6-8: revisala»). */
+  revisar?: string | null;
 }) {
   const { token, sesionPerdida } = useEntrenamiento();
   const propio = useId();
@@ -204,6 +211,12 @@ export function EjercicioDelEditor({
               <span className="comida-del-plan__cuenta" data-resumen>
                 <EnPartes texto={abierto ? cantidadDeSeries(p.sets.length) : plegado.resumen} />
               </span>
+              {revisar ? (
+                <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
+                  <Icono nombre="aviso" tamano={15} />
+                  {revisar}
+                </span>
+              ) : null}
               {plegado.avisos.length > 0 ? (
                 <span className="comida-del-editor__avisos" data-avisos>
                   <Icono nombre="aviso" tamano={18} />
@@ -240,6 +253,8 @@ export function EjercicioDelEditor({
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo ejercicio-del-editor__cuerpo" hidden={!abierto}>
         {abierto ? (
           <>
+            {/* ED-22: la prescripción en una línea, arriba de las series que escribe. */}
+            <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
             <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} />
             <div className="ejercicio-del-editor__general">
               <p className="ejercicio-del-plan__subtitulo">

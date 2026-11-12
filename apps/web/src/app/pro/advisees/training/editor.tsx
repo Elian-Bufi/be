@@ -292,6 +292,9 @@ export function EditorDePlan({
   // El texto que se está cambiando, y el campo que hay que enfocar después de ir a un problema.
   const [texto, setTexto] = useState<TextoQueSeCambia>(null);
   const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
+  // DJ-8 (ED-11 y ED-22): las cargas que quedaron escritas para otras repeticiones, por ejercicio. Es una marca de la
+  // pantalla, no un dato: no viaja ni se guarda (EDT-12).
+  const [cargasARevisar, setCargasARevisar] = useState<Readonly<Record<string, string>>>({});
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -1246,6 +1249,11 @@ export function EditorDePlan({
               onSubir={() => moverEjercicio(l, l - 1)}
               onBajar={() => moverEjercicio(l, l + 1)}
               onDuplicar={() => duplicarEjercicio(l)}
+              revisar={cargasARevisar[`${prefijo}-s${k}-p${l}`] || null}
+              onAplicarLinea={(nueva, revisar) => {
+                cambiar((x) => ((lasSesiones(x)[k]!.prescriptions[l] = nueva), x));
+                setCargasARevisar((m) => ({ ...m, [`${prefijo}-s${k}-p${l}`]: revisar ?? '' }));
+              }}
             />
           ))}
           <div className="editor-del-plan__al-pie">

@@ -15502,3 +15502,33 @@ p.cifra-del-espacio__desglose {
 .cuadro-enfocado__pregunta p {
   margin: 0;
 }
+
+/* ═══ ED-22 · La prescripción en una línea (`training/linea-de-prescripcion.tsx`) ═════════════════════════════════════ */
+.linea-de-prescripcion {
+  display: grid;
+  grid-template-columns: minmax(12rem, 26rem) auto;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.linea-de-prescripcion__campo {
+  font-variant-numeric: tabular-nums;
+}
+
+.linea-de-prescripcion__tecla {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--tenue);
+}
+
+.linea-de-prescripcion__lectura {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.ejercicio-del-editor__revisar {
+  border-style: dashed;
+}

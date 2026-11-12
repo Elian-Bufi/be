@@ -148,3 +148,5 @@ export * from './contratos-descarte-de-borrador';
 export * from './ambiente-de-prueba';
 export * from './estimacion-de-fuerza';
 export * from './descripciones-de-plantillas';
+export * from './prescripcion-rapida';
+export * from './presets-de-be';
