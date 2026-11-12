@@ -354,7 +354,7 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
         <p className="nota">{C.sinSeries}</p>
       ) : (
         <table className="tabla series-del-editor">
-          <caption className="visualmente-oculto">Las series de {nombre}, con el objetivo que recibe tu asesorado en cada una</caption>
+          <caption className="visualmente-oculto">Las series de {nombre}, con el objetivo que recibe la persona en cada una</caption>
           <thead>
             <tr>
               <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</th>
@@ -463,7 +463,7 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
           <Icono nombre="mas" tamano={18} />
           Agregar serie
         </button>
-        {p.sets.length > 0 ? <p className="nota">En gris, lo que la serie toma de lo general. Escribí un valor para que tenga el suyo, o elegí «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» con la flecha de la celda. Es lo que recibe tu asesorado.</p> : null}
+        {p.sets.length > 0 ? <p className="nota">En gris, lo que la serie toma de lo general. Escribí un valor para que tenga el suyo, o elegí «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» con la flecha de la celda. Es lo que recibe la persona.</p> : null}
       </div>
     </div>
   );

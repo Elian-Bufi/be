@@ -70,7 +70,7 @@ export function SolicitarVinculo({
   /** Lo que falta para solicitar, ahora (ED-04: se recalcula al enviar y al salir de cada campo). */
   function loQueFaltaParaSolicitar(): { id: string; texto: string }[] {
     return [
-      ...(!asesorado.trim() ? [{ id: `${id}-asesorado`, texto: 'Ingresá el identificador BE del asesorado.' }] : []),
+      ...(!asesorado.trim() ? [{ id: `${id}-asesorado`, texto: 'Ingresá el identificador BE de la persona.' }] : []),
       ...(!alcance ? [{ id: `${id}-alcance`, texto: 'Elegí un área.' }] : []),
     ];
   }
@@ -164,7 +164,7 @@ export function SolicitarVinculo({
             <strong>{COPY_VINCULO.finalidad}:</strong> {finalidad}
           </p>
         ) : null}
-        <p className="nota">El asesorado decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
+        <p className="nota">La persona decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
         <div className="acciones">
           <button type="button" className="boton boton--secundario" onClick={onCerrar} disabled={enviando}>
             Volver

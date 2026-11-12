@@ -196,7 +196,7 @@ function Resumen({
             <div>
               <dt>{COPY_NUTRICION.borrador}</dt>
               <dd>
-                Hay un borrador en preparación. No es visible para el asesorado.{' '}
+                Hay un borrador en preparación. La persona no lo ve.{' '}
                 <button type="button" className="boton boton--enlace" onClick={onIrAlPlan}>
                   Abrir borrador
                 </button>

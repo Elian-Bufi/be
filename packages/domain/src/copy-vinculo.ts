@@ -72,7 +72,7 @@ export const COPY_VINCULO = {
   /** 10-B04:683-688. */
   pausarVinculo: 'Pausar vínculo',
   explicacionDePausa:
-    'Mientras el vínculo esté pausado, el profesional no tendrá acceso al contenido del asesorado mediante este vínculo. La historia se conserva.',
+    'Mientras el vínculo esté pausado, el profesional no tendrá acceso a lo que se comparte mediante este vínculo. La historia se conserva.',
   /** 10-B04:705-714. */
   vinculoPausado: 'Vínculo pausado',
   accesoProfesionalBloqueado: 'Acceso profesional bloqueado',
@@ -139,7 +139,7 @@ export const COPY_VINCULO = {
   accesoNoSeLeyo: 'No pudimos leer el acceso actual: «Actualizar» lo vuelve a pedir.',
   pausadoSinAcceso: 'Pausado · sin acceso',
   vinculoActivoAccesoPendiente: 'Vínculo activo',
-  accesoPendienteDelAsesorado: 'Acceso pendiente de autorización del asesorado',
+  accesoPendienteDelAsesorado: 'Acceso pendiente de autorización de la persona',
 
   // ─── El paso que falta para el acceso (pedido de Dirección del 2026-10-17) ─────────────────────
   /**
@@ -179,20 +179,20 @@ export const COPY_VINCULO = {
   /** 10-B10:424. */
   contenidoCambio: 'Este contenido cambió desde que lo abriste. Actualizá la vista antes de volver a intentar.',
   /** 10-B08:337 (lista mínima del profesional, sin Cartera: DL-041). */
-  sinAsesorados: 'Todavía no tenés asesorados activos en este contexto.',
+  sinAsesorados: 'Todavía no tenés personas con un vínculo activo en este contexto.',
   sinSolicitudes: 'Todavía no hay solicitudes.',
   sinVinculos: 'Todavía no tenés vínculos.',
   sinConsentimientos: 'Todavía no otorgaste consentimientos a profesionales.',
 
   // ─── Solicitud desde el profesional (10-B04 §5; DL-035, DL-041) ─────────────────────────────
   solicitarVinculo: 'Solicitar vínculo',
-  identificadorDelAsesorado: 'Identificador BE del asesorado',
+  identificadorDelAsesorado: 'Identificador BE de la persona',
   ayudaIdentificador: 'Pedíselo a la persona: lo ve en su cuenta, en «Tu identificador BE».',
   tuIdentificador: 'Tu identificador BE',
   ayudaTuIdentificador: 'Compartilo solo con el profesional con quien quieras iniciar un vínculo. Por sí solo no le da acceso a nada.',
   alcance: 'Alcance',
   finalidad: 'Finalidad',
-  solicitudEnviada: 'Solicitud enviada. El asesorado decide si la acepta.',
+  solicitudEnviada: 'Solicitud enviada. La persona decide si la acepta.',
   solicitudYaPendiente: 'Ya hay una solicitud pendiente igual. Te mostramos esa.',
   /** 422 de REL-01 sin copy en el 10: neutral (DL-024). */
   solicitudNoDisponible: 'No pudimos enviar la solicitud con esos datos. Revisá el identificador y el alcance.',
@@ -233,7 +233,7 @@ export type ParteQueMira = 'PROFESSIONAL' | 'ADVISEE';
 export function etiquetaDeActor(actor: 'PROFESSIONAL' | 'ADVISEE' | 'SYSTEM', quienMira: ParteQueMira): string {
   if (actor === 'SYSTEM') return 'BE';
   if (actor === quienMira) return 'Vos';
-  return actor === 'PROFESSIONAL' ? 'El profesional' : 'El asesorado';
+  return actor === 'PROFESSIONAL' ? 'El profesional' : 'La persona';
 }
 
 // ─── Estado de acceso para mostrar (10-B04 §28-§29, §15; H10-04-04) ─────────────────────────

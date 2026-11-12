@@ -145,7 +145,7 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   EXCHANGE_MODE_NOT_AVAILABLE: 'la modalidad por intercambios no está habilitada',
   DUPLICATE_NODE_ID: 'hay un elemento repetido',
   OBJECTIVE_NOT_EFFECTIVE: 'el borrador usa un objetivo que ya no es el vigente',
-  SNAPSHOT_NOT_PRESERVABLE: 'no se pudo preservar la versión para el asesorado',
+  SNAPSHOT_NOT_PRESERVABLE: 'no se pudo preservar la versión para la persona',
   // Lo que el editor ve solo, antes de guardar.
   [PROBLEMA_DEL_EDITOR.faltaElNombre]: 'falta el nombre',
   [PROBLEMA_DEL_EDITOR.cantidadIlegible]: 'la cantidad no se entiende',
@@ -744,7 +744,7 @@ export function EditorDeBorrador({
         </div>
       </div>
       <p className="nota editor-del-plan__que-es">
-        El asesorado no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
+        La persona no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
       </p>
       {conflicto ? (
         <Aviso tipo="error" enfocar>

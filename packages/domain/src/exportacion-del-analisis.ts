@@ -143,7 +143,7 @@ const objetivoDeLaFila = (s: SerieParaExportar, desde: string, hasta: string): s
 export function csvDelAnalisis(p: PedidoDeExportacion): string {
   const lineas = [
     fila(['BE · Analizar', 'exportación de datos']),
-    fila(['Asesorado', celdaDeTexto(p.asesorado)]),
+    fila(['Persona', celdaDeTexto(p.asesorado)]),
     fila(['Período', `${p.desde} a ${p.hasta} (fechas civiles)`]),
     fila(['Zona horaria', p.zona]),
     fila(['Generado', p.generadoEl]),

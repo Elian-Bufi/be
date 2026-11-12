@@ -176,7 +176,7 @@ export function VistaDePlan() {
     // Una escritura denegada retira el contenido de la pestaña entera.
     if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
-    setAviso({ tipo: 'exito', texto: 'Borrador creado. No es visible para el asesorado hasta que lo actives.' });
+    setAviso({ tipo: 'exito', texto: 'Borrador creado. La persona no lo ve hasta que lo actives.' });
     ir(TODO_LO_ELEGIDO);
     await cargar();
   }
@@ -283,7 +283,7 @@ export function VistaDePlan() {
                       objetivoVigente={objetivo}
                       vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
                       onActivado={(texto) => {
-                        setAviso({ tipo: 'exito', texto: texto ?? `${COPY_ENTRENAMIENTO.planActivado}. El asesorado ya ve esta planificación como vigente.` });
+                        setAviso({ tipo: 'exito', texto: texto ?? `${COPY_ENTRENAMIENTO.planActivado}. La persona ya ve esta planificación como vigente.` });
                         ir(TODO_LO_ELEGIDO);
                         void cargar();
                       }}

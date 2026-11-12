@@ -61,7 +61,7 @@ test('un área sin acceso se dice con las palabras de BE, las mismas de `estadoP
   const casos = [
     [{ relationshipState: 'FINALIZADO' }, 'Finalizado'],
     [{ relationshipState: 'PAUSADO', pausedBy: 'ADVISEE' }, 'Pausado · sin acceso'],
-    [{ consentState: 'REQUIRED', accessMode: 'BLOCKED' }, 'Vínculo activo · Acceso pendiente de autorización del asesorado'],
+    [{ consentState: 'REQUIRED', accessMode: 'BLOCKED' }, 'Vínculo activo · Acceso pendiente de autorización de la persona'],
     [{ consentState: 'REVOKED', accessMode: 'BLOCKED' }, 'Consentimiento revocado · Acceso no disponible'],
     [{ consentState: 'ACTIVE', accessMode: 'BLOCKED' }, 'Vínculo activo · Acceso no disponible'],
   ];

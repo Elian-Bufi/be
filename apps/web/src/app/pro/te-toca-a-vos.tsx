@@ -338,7 +338,7 @@ export function TeTocaAVos({
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Asesorado</th>
+                  <th scope="col">Persona</th>
                   <th scope="col">{COPY_CARTERA.filtroDominio}</th>
                   <th scope="col">Pendiente</th>
                   <th scope="col">
@@ -393,7 +393,7 @@ export function TeTocaAVos({
             <button type="button" className="boton boton--quieto boton--compacto pendientes__actualizar" onClick={onActualizar} disabled={listo.actualizando} aria-busy={listo.actualizando}>
               <Icono nombre="actualizar" tamano={18} />
               Actualizar
-              <span className="visualmente-oculto">: vuelve a leer los pendientes, lo que espera respuesta y tus asesorados</span>
+              <span className="visualmente-oculto">: vuelve a leer los pendientes, lo que espera respuesta y las personas que acompañás</span>
             </button>
           </div>
         </>

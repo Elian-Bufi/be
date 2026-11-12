@@ -14,10 +14,10 @@ import { Icono } from '../../../../components/icono';
 export function AyudaDelPlanDeEntrenamiento() {
   return (
     <AyudaDeVista titulo="Cómo se lee el Plan" deQue="entrenamiento-plan">
-      <p className="nota">La planificación de entrenamiento, tal como la recibe el asesorado. Dice lo indicado: no lo que hizo, ni cómo le fue.</p>
+      <p className="nota">La planificación de entrenamiento, tal como la recibe la persona. Dice lo indicado: no lo que hizo, ni cómo le fue.</p>
       <ul className="como-se-lee__lista">
         <Renglon esencial muestra={<Icono nombre="candado" tamano={20} />}>
-          <strong>El plan activo es de solo lectura.</strong> Se muestra desde su instantánea: lo que se guardó al activarlo, que es lo que ve el asesorado. No se edita: para cambiarlo se crea una versión nueva, y la activa
+          <strong>El plan activo es de solo lectura.</strong> Se muestra desde su instantánea: lo que se guardó al activarlo, que es lo que ve la persona. No se edita: para cambiarlo se crea una versión nueva, y la activa
           sigue igual hasta que actives la otra.
         </Renglon>
         <Renglon muestra={<Icono nombre="plan" tamano={20} />}>
@@ -51,11 +51,11 @@ export function AyudaDelPlanDeEntrenamiento() {
           en dos lecturas es la misma, el contenido es exactamente el mismo.
         </Renglon>
         <Renglon muestra={<Icono nombre="borrador" tamano={20} />}>
-          <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. El asesorado no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
+          <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. La persona no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
         </Renglon>
         <Renglon esencial muestra={<Icono nombre="series" tamano={20} />}>
           <strong>En la versión en preparación, cada serie se escribe en una fila.</strong> En gris, lo que la serie toma de lo general del ejercicio; un valor escrito es el suyo; «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}», que se elige con la flecha de la celda, quiere decir que esa
-          serie no tiene ese objetivo aunque lo general lo tenga. Lo que ves en la tabla es lo que recibe tu asesorado.
+          serie no tiene ese objetivo aunque lo general lo tenga. Lo que ves en la tabla es lo que recibe la persona.
         </Renglon>
         <Renglon muestra={<Icono nombre="descanso" tamano={20} />}>
           <strong>El descanso se lee «02:30»,</strong> minutos y segundos; se escribe así o en segundos («150»), y 0 es sin pausa. <strong>RIR</strong> quiere decir repeticiones en reserva: cada serie puede tener el suyo, si el criterio

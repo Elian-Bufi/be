@@ -388,7 +388,7 @@ function EditorDeIndicadores({
   return (
     <fieldset className="capas editor-de-indicadores">
       <legend>
-        Hasta {MAXIMO_DE_INDICADORES} indicadores (se guardan en tu cuenta y valen para todos tus asesorados). {guardada ? 'Los elegiste vos.' : 'Hoy se ven los de por defecto.'}
+        Hasta {MAXIMO_DE_INDICADORES} indicadores (se guardan en tu cuenta y valen para todas las personas que acompañás). {guardada ? 'Los elegiste vos.' : 'Hoy se ven los de por defecto.'}
       </legend>
       {[...candidatas, ...fueraDeLaLista].map((r) => {
         const clave = claveDeLaReferencia(r);

@@ -537,7 +537,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
       <Campo id="trn-evaluacion-ocurrencia" etiqueta="Fecha y hora de la evaluación" type="datetime-local" value={ocurrencia} onChange={(e) => setOcurrencia(e.target.value)} required />
       <fieldset className="grupo">
         <legend>Datos de la evaluación</legend>
-        <p className="campo__ayuda">Cada dato indica de dónde sale: lo informado por el asesorado no es un diagnóstico.</p>
+        <p className="campo__ayuda">Cada dato indica de dónde sale: lo que informa la persona no es un diagnóstico.</p>
         <ConceptosFrecuentes conceptos={CONCEPTOS_FRECUENTES_DE_ENTRENAMIENTO} usados={datos.map((d) => d.concepto)} etiqueta={COPY_DE_LA_EVALUACION.paraEmpezar} onElegir={elegirConcepto} />
         {datos.map((d, i) => (
           <div key={i} className="fila-de-dato">

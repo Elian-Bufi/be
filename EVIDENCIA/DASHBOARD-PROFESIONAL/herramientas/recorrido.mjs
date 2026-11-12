@@ -1277,7 +1277,7 @@ async function funcional() {
             sinNadie.filas.length === 0 &&
             sinNadie.falla === null &&
             sinNadie.sinCoincidencias === null &&
-            sinNadie.directorioVacio === 'Todavía no tenés asesorados activos en este contexto.' &&
+            sinNadie.directorioVacio === 'Todavía no tenés personas con un vínculo activo en este contexto.' &&
             sinNadie.personas.length === 0 &&
             sinNadie.fallaDelDirectorio === null &&
             sinNadie.solicitudes === `Solicitudes enviadas (${susEnvios.length})`,

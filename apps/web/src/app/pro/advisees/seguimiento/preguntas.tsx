@@ -223,7 +223,7 @@ export function ElegirParametros({
       <p className="metadatos">{p.muestra}</p>
       {resolucion && resolucion.noAplican.length > 0 ? (
         <p className="nota" role="status">
-          Lo elegido antes no aplica a este asesorado ({resolucion.noAplican.map((x) => TEXTO_DE_REQUISITO[x]).join(', ')}): elegilo de nuevo.
+          Lo elegido antes no aplica a esta persona ({resolucion.noAplican.map((x) => TEXTO_DE_REQUISITO[x]).join(', ')}): elegilo de nuevo.
         </p>
       ) : null}
       {cargando ? <Cargando /> : null}

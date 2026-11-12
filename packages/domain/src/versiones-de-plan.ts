@@ -91,10 +91,10 @@ export const COPY_DE_VERSIONES = {
   enPreparacion: 'En preparación',
   /** En el selector de versión: «2 · activa». La activada sí tiene número. */
   activaConNumero: (n: number): string => `${numero(n)} · activa`,
-  elAsesoradoNoLaVe: 'El asesorado no la ve.',
+  elAsesoradoNoLaVe: 'La persona no la ve.',
   /** «Versión 2 · activada el 7 oct». */
   versionActivada: (n: number, cuando: string): string => `Versión ${numero(n)} · activada el ${cuando}`,
-  esLoQueVe: 'es lo que ve el asesorado',
+  esLoQueVe: 'es lo que ve la persona',
   vigente: 'vigente',
   anterior: 'anterior, conservada',
   historial: 'Historial',
@@ -102,7 +102,7 @@ export const COPY_DE_VERSIONES = {
   huella: 'Huella de la instantánea',
   primeroElObjetivo: 'Para planificar, primero definí el objetivo: el plan se relaciona con el objetivo vigente.',
   irAResumen: 'Ir a Resumen',
-  versionActivadaAviso: 'Versión activada. El asesorado ya ve esta planificación como vigente.',
+  versionActivadaAviso: 'Versión activada. La persona ya ve esta planificación como vigente.',
   /** Con una versión en preparación a la vista, la activa no ofrece crear otra: hay una sola a la vez. */
   yaHayUnaEnPreparacion: 'Ya hay una versión en preparación: se sigue sobre esa.',
 } as const;

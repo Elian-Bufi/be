@@ -166,7 +166,7 @@ export const COPY_ENTRENAMIENTO = {
   sinProblemas: 'El borrador no tiene problemas de estructura.',
   noJuzga: 'Revisar el plan mira su forma, no su calidad: no juzga el programa, la frecuencia ni la selección de ejercicios.',
   activarPlan: 'Activar plan',
-  consecuenciaDeActivar: 'Esta versión pasará a ser la planificación vigente del asesorado y la anterior se conservará.',
+  consecuenciaDeActivar: 'Esta versión pasará a ser la planificación vigente de la persona y la anterior se conservará.',
   planActivado: 'Plan activado',
   sinEjecuciones: 'Todavía no hay sesiones registradas en este período.',
   diasSinRegistro: 'Días sin registro',

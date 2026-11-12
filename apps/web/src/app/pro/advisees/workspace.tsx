@@ -40,7 +40,7 @@
  * título es la referencia neutral y el monograma lleva el ícono; el nombre que reciben las vistas (la exportación de
  * «Analizar», el diálogo de la nota) es el mismo que se ve.
  */
-import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
+import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -50,6 +50,7 @@ import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { MenuDeAcciones } from '../../../components/menu-de-acciones';
 import { Retrato } from '../../../components/retrato';
+import { referenciaDePersona } from '../../../lib/retrato';
 import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
 import { anotarNombrePropio, nombrePropioEn } from '../../../lib/nombre-propio';
@@ -258,10 +259,10 @@ export function Workspace() {
         <div className="marco-de-la-ficha__persona">
           <div className="marco-de-la-ficha__nombre">
             <Retrato nombre={nombre} tamano="grande" />
-            <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
+            <h1 id="titulo-asesorado">{nombre ?? 'Persona'}</h1>
             {/* Con un nombre visible (DL-040, 2026-10-15), la referencia va al lado, chica, como en la maqueta 01: distingue a
                 dos personas que se llaman igual. Sin nombre, el título ya es la referencia. */}
-            {nombre && !nombre.endsWith(referenciaCorta(id)) ? <span className="marco-de-la-ficha__referencia">{referenciaNeutral(id)}</span> : null}
+            {nombre && !nombre.endsWith(referenciaCorta(id)) ? <span className="marco-de-la-ficha__referencia">{referenciaDePersona(id)}</span> : null}
           </div>
           {/* La acción principal, según el momento de la persona (bloque 5). Con todo al día no hay ninguna. */}
           {disponible && accion ? (

@@ -92,7 +92,7 @@ export function SolicitudesEnviadas({
             <caption className="visualmente-oculto">Solicitudes de vínculo que enviaste</caption>
             <thead>
               <tr>
-                <th scope="col">Asesorado</th>
+                <th scope="col">Persona</th>
                 <th scope="col">Alcance</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Enviada</th>
@@ -101,7 +101,7 @@ export function SolicitudesEnviadas({
             <tbody>
               {propias.map((s) => (
                 <tr key={s.relationshipRequestId} data-estado={s.state}>
-                  <td data-etiqueta="Asesorado">{delAsesorado(s.advisee)}</td>
+                  <td data-etiqueta="Persona">{delAsesorado(s.advisee)}</td>
                   <td data-etiqueta="Alcance">
                     {s.scope.label} · {ETIQUETA_DE_FINALIDAD[s.purpose]}
                   </td>

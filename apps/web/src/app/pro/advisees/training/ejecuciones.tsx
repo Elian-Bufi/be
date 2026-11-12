@@ -556,7 +556,7 @@ function DetalleDeLaSesion({
       ) : null}
       {fila.fuente.tipo === 'correccion' ? (
         <p className="nota">
-          Rige una corrección: {fila.fuente.rolDelAutor === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} ({fila.fuente.autor}), el {fecha(fila.fuente.registradaEl)}. Motivo: {fila.fuente.motivo}
+          Rige una corrección: {fila.fuente.rolDelAutor === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por la persona'} ({fila.fuente.autor}), el {fecha(fila.fuente.registradaEl)}. Motivo: {fila.fuente.motivo}
         </p>
       ) : null}
       {fila.fuente.tipo === 'no-resoluble' ? <p>{COPY_COMPARACION.vistaNoResoluble}</p> : null}
@@ -613,7 +613,7 @@ function DetalleDeLaSesion({
             <>
               <h4>{COPY_ENTRENAMIENTO.correccionVigente}</h4>
               <p className="nota">
-                {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} · {fecha(vigente.recordedAt)} · Motivo: {vigente.reason}
+                {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por la persona'} · {fecha(vigente.recordedAt)} · Motivo: {vigente.reason}
               </p>
               <Registro registro={vigente.correction} planificado={x.plannedSession.prescriptions} />
             </>

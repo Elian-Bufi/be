@@ -491,3 +491,56 @@ test('ED-05 · la guardia de códigos encuentra «(DL-1)» en un texto y no en u
   const textos = textosDe('prueba.tsx', ['// DL-1 en un comentario', 'export const P = () => <p>Sucede a la v1 (DL-1)</p>;'].join(String.fromCharCode(10)));
   assert.deepEqual(textos.filter(({ texto }) => CODIGO_INTERNO.test(texto)).map(({ texto }) => texto), ['Sucede a la v1 (DL-1)']);
 });
+
+/**
+ * ED-06 (WP-EDITORES-PROFESIONAL; TEST-EDP-007; ED-D9, decidida): el website profesional dice «persona» (o el nombre, o
+ * la referencia neutral) y nunca «asesorado»; el legajo no cambia. Se revisan las pantallas de /pro, los componentes y
+ * las piezas del website, y los textos del dominio que muestran.
+ *
+ * No son texto a la vista las claves, las rutas, los `id` y los nombres de íconos («tus-asesorados», «ASESORADO»). Y
+ * quedan, contados uno por uno, los que cambian en otro momento:
+ * - los textos legales con versión, que cambian en su versión siguiente;
+ * - lo que también devuelve la API (el mensaje del 409 de la app de la persona y la referencia neutral de quien no tiene
+ *   nombre), que cambia en la ventana de la API (ED-08, etapa 2; R1).
+ */
+const ES_IDENTIFICADOR = /^[a-z0-9#./_-]+$|^[A-Z0-9_]+$/;
+const ASESORADO_FUERA_DE_ESTA_ETAPA = [
+  'textos.ts · 1. BE es una plataforma que ayuda a asesorados',
+  'textos.ts · Esta información es sobre una sola categoría',
+  'compatibilidad-de-clientes.ts · Este plan tiene objetivos distintos',
+  'contratos-perfil-propio.ts · Asesorado ·',
+];
+const DEL_DOMINIO = (archivo) => join(RAIZ, 'packages/domain/src', archivo);
+const CON_PERSONA = [
+  ...archivosDe(join(RAIZ, 'apps/web/src/app/pro')),
+  ...archivosDe(join(RAIZ, 'apps/web/src/components')),
+  ...archivosDe(join(RAIZ, 'apps/web/src/lib')),
+  ...readdirSync(join(RAIZ, 'packages/domain/src'))
+    .filter((f) => /^copy.*\.ts$/.test(f) && !f.includes('.test.'))
+    .map(DEL_DOMINIO),
+  ...['versiones-de-plan.ts', 'lectura-del-plan-de-entrenamiento.ts', 'cartera.ts', 'compatibilidad-de-clientes.ts', 'exportacion-del-analisis.ts', 'contratos-perfil-propio.ts', 'textos.ts'].map(DEL_DOMINIO),
+];
+
+test('ED-06 · el website profesional dice «persona», nunca «asesorado» (salvo lo contado, que cambia en otro momento)', () => {
+  assert.ok(CON_PERSONA.length >= 200, `se esperaban las pantallas, las piezas y los textos del dominio, hay ${CON_PERSONA.length}`);
+  const contados = new Set();
+  const hallazgos = CON_PERSONA.flatMap((a) =>
+    textosDe(a)
+      .filter(({ texto }) => /asesorad/i.test(texto) && !ES_IDENTIFICADOR.test(texto))
+      .flatMap(({ texto, linea }) => {
+        const contado = ASESORADO_FUERA_DE_ESTA_ETAPA.find((x) => x === `${basename(a)} · ${texto.slice(0, x.length - basename(a).length - 3)}`);
+        if (contado) {
+          contados.add(contado);
+          return [];
+        }
+        return [`${a.slice(RAIZ.length + 1)}:${linea} ${JSON.stringify(texto.slice(0, 120))}`];
+      }),
+  );
+  assert.deepEqual(hallazgos, []);
+  assert.deepEqual([...contados].sort(), [...ASESORADO_FUERA_DE_ESTA_ETAPA].sort(), 'cada excepción sigue existiendo: si se fue, se saca de la lista');
+});
+
+test('ED-06 · la guardia encuentra «Tus asesorados» y deja pasar una clave (prueba de la prueba)', () => {
+  const textos = textosDe('prueba.tsx', 'export const P = () => <section id="tus-asesorados"><h2>Tus asesorados</h2><Icono nombre="asesorados" /></section>;');
+  assert.deepEqual(textos.filter(({ texto }) => /asesorad/i.test(texto) && !ES_IDENTIFICADOR.test(texto)).map(({ texto }) => texto), ['Tus asesorados']);
+});

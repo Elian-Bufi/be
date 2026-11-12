@@ -146,7 +146,7 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   EXERCISE_REFERENCE_INVALID: 'el ejercicio no está en el catálogo',
   EXERCISE_NOT_AVAILABLE: 'el ejercicio ya no está disponible',
   OBJECTIVE_NOT_EFFECTIVE: 'el borrador usa un objetivo que ya no es el vigente',
-  SNAPSHOT_NOT_PRESERVABLE: 'no se pudo preservar la versión para el asesorado',
+  SNAPSHOT_NOT_PRESERVABLE: 'no se pudo preservar la versión para la persona',
   // Fallas de forma del pedido (400): un número que falta o que no se entiende.
   INVALID_TYPE: 'falta un número o no se entiende lo escrito',
   INVALID_UNION: 'falta un número o no se entiende lo escrito',
@@ -938,7 +938,7 @@ export function EditorDePlan({
         </div>
       </div>
       <p className="nota editor-del-plan__que-es">
-        El asesorado no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
+        La persona no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
       </p>
       {conflicto ? (
         <Aviso tipo="error" enfocar>

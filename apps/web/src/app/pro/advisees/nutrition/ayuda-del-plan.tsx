@@ -12,10 +12,10 @@ import { Icono } from '../../../../components/icono';
 export function AyudaDelPlan() {
   return (
     <AyudaDeVista titulo="Cómo se lee el Plan" deQue="nutricion-plan">
-      <p className="nota">La planificación de comidas, tal como la ve el asesorado. Dice lo indicado: no lo que comió, ni si alcanza.</p>
+      <p className="nota">La planificación de comidas, tal como la ve la persona. Dice lo indicado: no lo que comió, ni si alcanza.</p>
       <ul className="como-se-lee__lista">
         <Renglon esencial muestra={<Icono nombre="candado" tamano={20} />}>
-          <strong>El plan activo es de solo lectura.</strong> Se muestra desde su instantánea: lo que se guardó al activarlo, que es lo que ve el asesorado. No se edita: para cambiarlo se crea una versión nueva, y la activa
+          <strong>El plan activo es de solo lectura.</strong> Se muestra desde su instantánea: lo que se guardó al activarlo, que es lo que ve la persona. No se edita: para cambiarlo se crea una versión nueva, y la activa
           sigue igual hasta que actives la otra.
         </Renglon>
         <Renglon muestra={<Icono nombre="plan" tamano={20} />}>
@@ -45,7 +45,7 @@ export function AyudaDelPlan() {
           en dos lecturas es la misma, el contenido es exactamente el mismo.
         </Renglon>
         <Renglon muestra={<Icono nombre="borrador" tamano={20} />}>
-          <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. El asesorado no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
+          <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. La persona no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
         </Renglon>
         <Renglon muestra={<Icono nombre="actualizar" tamano={20} />}>
           <strong>Lo que elegís queda en la dirección de la página</strong> (la versión, el día tipo y las comidas abiertas): «Actualizar» y volver atrás lo conservan.
