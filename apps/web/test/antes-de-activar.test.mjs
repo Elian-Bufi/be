@@ -190,3 +190,17 @@ test('TEST-EDP-008 · con el borrador cambiado en otra pestaña, el principal qu
   assert.match(cuadro, /aria-disabled=\{guardando \|\| conflicto \|\| undefined\}/);
   for (const ruta of EDITORES) assert.match(leer(ruta), /<AntesDeActivar\n[^<]*?\n\s+conflicto=\{conflicto\}\n/, ruta);
 });
+
+test('TEST-EDP-008 · el motivo del principal apagado va pegado a él, entre «Volver al plan» y el principal (maqueta 10)', () => {
+  // Revisión adversaria de la etapa 1: el motivo iba primero y quedaba a la izquierda de «Volver al plan», leído como
+  // causa de ese botón.
+  const dialogo = leer('components/dialogo.tsx');
+  const acciones = dialogo.slice(dialogo.indexOf('<div className="acciones">'), dialogo.indexOf('</dialog>'));
+  const volver = acciones.indexOf('<button ref={volver}');
+  const motivo = acciones.indexOf('id={`${id}-motivo`}');
+  const principal = acciones.indexOf('aria-describedby={motivo ?');
+  assert.ok(volver > 0 && motivo > volver && principal > motivo, 'el orden: «Volver», el motivo y el principal');
+  // El motivo y el principal van juntos, a la derecha.
+  const estilos = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
+  assert.match(estilos, /\.dialogo__motivo \{\n\s*margin: 0 0 0 auto;/);
+});

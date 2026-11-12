@@ -84,14 +84,16 @@ export function DialogoDeConfirmacion({
         </Aviso>
       ) : null}
       <div className="acciones">
+        <button ref={volver} type="button" className="boton boton--secundario" onClick={onVolver} disabled={enviando}>
+          {textoVolver}
+        </button>
+        {/* El motivo va pegado al botón que explica, del lado del principal (maqueta 10): antes de «Volver» se leía como
+            su causa. */}
         {motivo ? (
           <p id={`${id}-motivo`} className="nota dialogo__motivo">
             {motivo}
           </p>
         ) : null}
-        <button ref={volver} type="button" className="boton boton--secundario" onClick={onVolver} disabled={enviando}>
-          {textoVolver}
-        </button>
         <button
           type="button"
           className={`boton ${peligro ? 'boton--peligro' : 'boton--primario'}`}

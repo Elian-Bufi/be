@@ -1050,10 +1050,11 @@ details summary {
   width: 100%;
 }
 
-/* ED-07: por qué el botón de efecto está apagado, a su lado. */
+/* ED-07: por qué el botón de efecto está apagado, pegado a él: los dos van a la derecha, y «Volver» queda a la izquierda. */
 .dialogo__motivo {
-  margin: 0;
+  margin: 0 0 0 auto;
   align-self: center;
+  text-align: end;
 }
 
 .antes-de-activar__bajada {
