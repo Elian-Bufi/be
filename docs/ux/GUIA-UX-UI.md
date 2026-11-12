@@ -1228,8 +1228,10 @@ Durante la sesión, la fila de acciones y la navegación van fijas. Está decidi
 - **En el teléfono, la figura es liviana.** Halos y aros chicos, guías finas, y una calle entre las tarjetas y el cuerpo
   para que las guías doblen afuera.
 - **El encuadre de la figura en el teléfono** (`ENCUADRE`, pulido del 2026-10-04).
-  - El cuerpo es grande, empieza arriba, va a la derecha y lo recorta el borde derecho, donde no hay sitios: ISAK mide
-    del lado derecho de la persona, que de frente queda a la izquierda.
+  - El cuerpo es grande, empieza arriba, va a la derecha y se ve entero (DL-170, AV2-19, con AV2-D6 a ratificar): el
+    borde derecho de su caja queda a un margen del de la lámina, y ningún sitio se mueve. Hasta la 0.25 el borde lo
+    recortaba, porque de ese lado no hay sitios (ISAK mide del lado derecho de la persona, que de frente queda a la
+    izquierda), y se leía como un error.
   - Su tamaño sale del ancho de la lámina y de los sitios posibles de la familia, no de cuántas medidas hay. Sumar
     medidas alarga la lista hacia abajo: no achica el cuerpo ni deja un hueco encima.
   - Figura, marcadores, anillos, guías y zonas de toque usan la misma transformación. Ningún centro de sitio queda fuera
