@@ -68,6 +68,12 @@ quedar igual.
 | Nadie medía el borde de un campo directo sobre el fondo con luz (3,17:1 y 3,03:1) | TEST-AV2-001 | `bordeControl` de Azul noche en #5E91B7 (pasa todo lo de antes; directo, 2,93:1) | Rojo, y la falla nombra el borde del campo |
 | El mismo | TEST-AV2-001 | `bordeControl` de Claro en #7C8FA9 (pasa todo lo de antes; directo, 2,99:1) | Rojo, y la falla nombra el borde del campo |
 | El acento como borde de una casilla, sobre el fondo | TEST-AV2-001 | El acento de Claro en un azul claro (#8CB2F8) | Rojo, y la falla nombra el borde de la casilla |
+| El brillo, que se ve en 12 dp, se pintaba sobre toda la tarjeta (AV2-T22) | TEST-AV2-002 | El brillo sin su tamaño ni `no-repeat` | Rojo |
+
+El criterio de §5.3 «nada en rojo debajo del texto» no se podía cumplir con el fondo en capas (cada punto del fondo se
+pinta cinco veces): el paso de «Depurar superposición de GPU» pasa a ser una comparación con la 0.23 en la misma
+pantalla, y el criterio sigue siendo el tiempo de los cuadros (`rendimiento/LEEME.md`, con el orden en que se baja el
+costo si no pasa).
 
 ## El contraste, medido en el peor punto (TEST-AV2-001)
 

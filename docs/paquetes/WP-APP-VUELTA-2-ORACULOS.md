@@ -89,10 +89,13 @@ EXPECTED             1 → nivel 1: `vidrio`, borde de 1 dp en `vidrioFilo`, rad
                      `vidrioLuz` se ve; nivel 2: `vidrioInterior`, radio 14, sin sombra. 2 → `superficie`, el borde de
                      siempre y nada más. 3 → afuera, nivel 1; dentro de un nivel 1, nivel 2; dentro de un nivel 2, sin
                      relleno (vidrio dentro de vidrio se ensucia). 4 → en Azul noche, un degradé que termina en el mismo
-                     color con alfa 00 a 12 dp o menos, que es el relleno más chico de un nivel 1; en Claro, ninguno.
+                     color con alfa 00 a 12 dp o menos, que es el relleno más chico de un nivel 1, y que pinta solo esa
+                     franja: `experimental_backgroundSize` de 100 % por 12 dp y sin repetirse (sin eso, React Native
+                     dibuja el rectángulo del brillo del alto de toda la tarjeta, una pasada de más sobre todo el
+                     vidrio); en Claro, ninguno.
 NEGATIVE_ASSERTIONS  El nivel 2 nunca lleva sombra. Ninguna superficie translúcida usa «transparent» en un degradé.
-AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-002 · …»). Mutación: devolver la sombra también en el
-                     nivel 2 → la prueba falla.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-002 · …»). Mutaciones: devolver la sombra también en
+                     el nivel 2 → la prueba falla; el brillo sin su tamaño ni `no-repeat` → la prueba falla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; en el teléfono (AV2-18), Inicio con el vidrio y las demás pantallas como hoy
 ```

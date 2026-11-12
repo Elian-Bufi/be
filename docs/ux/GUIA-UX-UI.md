@@ -1174,7 +1174,7 @@ Durante la sesión, la fila de acciones y la navegación van fijas. Está decidi
   - **nivel 1**, una tarjeta o una sección suelta: `vidrio`, el borde de luz de 1 dp (`vidrioFilo`), radio 20, la sombra
     por fuera (`sombraVidrio`, con `boxShadow`) y la línea de luz por dentro (`vidrioLuz`); en Azul noche, además, un
     brillo arriba (`vidrioBrillo`) que se apaga a 12 dp, dentro del relleno, para que no quede debajo de ningún
-    contenido: con el brillo debajo, la etiqueta de estado bajaba a 4,00:1;
+    contenido: con el brillo debajo, la etiqueta de estado bajaba a 4,00:1. Pinta solo esa franja, sin repetirse (AV2-T22);
   - **nivel 2**, lo que va adentro (una tarjeta dentro de una sección, las fichas, los Segmentos, el aviso informativo y
     el botón secundario): `vidrioInterior`, radio 14 y sin sombra. Más adentro, sin relleno: vidrio dentro de vidrio se
     ensucia. Un control suelto sobre el fondo conserva su superficie opaca.

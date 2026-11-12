@@ -16,7 +16,7 @@
  *   antes no se dibujan y nada se rompe.
  * - **El brillo se apaga dentro del relleno** (AV2-T14, a ratificar): con el brillo debajo, la etiqueta de estado de Azul
  *   noche bajaba a 4,00:1 y el texto del nivel 2 a 4,24 (`scripts/contraste.test.cjs`). Termina a 12 dp, el relleno más
- *   chico de un nivel 1, y no queda debajo de ningún contenido.
+ *   chico de un nivel 1, y no queda debajo de ningún contenido. Pinta solo esa franja, sin repetirse (AV2-T22).
  * - **Apagado o con alto contraste**, la superficie es la opaca de hoy (`superficie` con su borde): el vidrio ya resuelto
  *   sobre el fondo liso (AV2-T2).
  * - **Los degradés terminan en el mismo color con alfa 00**, nunca en un transparente genérico, que en Android tiñe de gris.
@@ -87,6 +87,8 @@ export interface EstiloDeSuperficie {
   readonly borderRadius?: number;
   readonly boxShadow?: readonly SombraDeLaReceta[];
   readonly experimental_backgroundImage?: string;
+  readonly experimental_backgroundSize?: string;
+  readonly experimental_backgroundRepeat?: 'no-repeat';
 }
 
 /** El brillo de arriba de un nivel 1, o `null` si el tema no lo dibuja (en Claro, sobre blanco, no se vería). */
@@ -94,6 +96,13 @@ export function brilloDeArriba(color: Paleta): string | null {
   if (!seVe(color.vidrioBrillo)) return null;
   return `linear-gradient(to bottom, ${color.vidrioBrillo} 0px, ${sinAlfa(color.vidrioBrillo)} ${ALTO_DEL_BRILLO}px)`;
 }
+
+/**
+ * El brillo pinta solo su franja (AV2-T22): a todo el ancho, `ALTO_DEL_BRILLO` de alto y sin repetirse. Sin tamaño,
+ * React Native dibuja cada capa de fondo del tamaño de toda la vista (`BackgroundImageDrawable`, un `drawRect` por
+ * mosaico) y la repite: el brillo, que se ve en 12 dp, se pintaba sobre toda la tarjeta, una pasada de más por cuadro.
+ */
+const FRANJA_DEL_BRILLO = { experimental_backgroundSize: `100% ${ALTO_DEL_BRILLO}px`, experimental_backgroundRepeat: 'no-repeat' } as const;
 
 /**
  * La superficie de una tarjeta, una sección, una ficha o un aviso, según su nivel. Con el vidrio apagado o con alto
@@ -112,7 +121,7 @@ export function superficieDeVidrio(color: Paleta, tema: Tema, nivel: NivelDeLaSu
       borderWidth: 1,
       borderRadius: RADIO_DE_LA_TARJETA,
       boxShadow: sombras,
-      ...(brillo ? { experimental_backgroundImage: brillo } : {}),
+      ...(brillo ? { experimental_backgroundImage: brillo, ...FRANJA_DEL_BRILLO } : {}),
     };
   }
   // El nivel 2 y lo que va adentro: sin sombra. Más adentro todavía, sin relleno.

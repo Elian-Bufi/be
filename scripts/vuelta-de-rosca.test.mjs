@@ -646,9 +646,15 @@ test('TEST-AV2-002 · el brillo de arriba se apaga dentro del relleno, en el mis
   assert.equal(brillo, `linear-gradient(to bottom, ${AZUL.vidrioBrillo} 0px, ${AZUL.vidrioBrillo.slice(0, 7)}00 ${receta.ALTO_DEL_BRILLO}px)`);
   assert.ok(receta.ALTO_DEL_BRILLO <= receta.RELLENO_MINIMO_DEL_NIVEL_1, 'el brillo no llega al contenido de ningún nivel 1');
   assert.ok(receta.RELLENO_MINIMO_DEL_NIVEL_1 <= receta.RELLENO_DE_LA_TARJETA);
-  assert.equal(receta.superficieDeVidrio(AZUL, 'azul-noche', 1, PRENDIDO).experimental_backgroundImage, brillo);
+  const nivel1 = receta.superficieDeVidrio(AZUL, 'azul-noche', 1, PRENDIDO);
+  assert.equal(nivel1.experimental_backgroundImage, brillo);
+  // El brillo pinta solo su franja: sin tamaño, React Native dibuja el rectángulo del alto de toda la tarjeta (y lo
+  // repite), una pasada de más sobre todo el vidrio aunque se vea en 12 dp.
+  assert.equal(nivel1.experimental_backgroundSize, `100% ${receta.ALTO_DEL_BRILLO}px`);
+  assert.equal(nivel1.experimental_backgroundRepeat, 'no-repeat');
   assert.equal(receta.brilloDeArriba(CLARO), null);
-  assert.equal(receta.superficieDeVidrio(CLARO, 'claro', 1, PRENDIDO).experimental_backgroundImage, undefined);
+  const claro = receta.superficieDeVidrio(CLARO, 'claro', 1, PRENDIDO);
+  assert.deepEqual([claro.experimental_backgroundImage, claro.experimental_backgroundSize, claro.experimental_backgroundRepeat], [undefined, undefined, undefined]);
 });
 
 // ─── TEST-AV2-003 · sin vistas hijas y sin «elevation» (AV2-02) ─────────────────────────────────

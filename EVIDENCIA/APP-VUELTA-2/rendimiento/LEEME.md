@@ -20,8 +20,14 @@
    (`adb shell dumpsys gfxinfo com.elianbufi.be reset`), hace diez deslizamientos iguales con `adb shell input swipe`
    (las mismas coordenadas, del 75 % al 30 % del alto, en 300 ms) y guarda `dumpsys gfxinfo` crudo.
 2. Instalar la 0.24.0-candidata.1 encima (el mismo certificado y un `versionCode` mayor) y repetir: `bash medir.sh despues`.
-3. En las opciones de desarrollador, «Depurar superposición de GPU»: una captura de Inicio
-   (`adb exec-out screencap -p > despues/superposicion-inicio.png`). Nada en rojo debajo del texto.
+3. En las opciones de desarrollador, «Depurar superposición de GPU»: una captura de Inicio con la 0.23 y otra con la
+   candidata, en la misma pantalla, el mismo lugar y el mismo tema (`adb exec-out screencap -p >
+   antes/superposicion-inicio.png` y `> despues/superposicion-inicio.png`). Se comparan; **no es un criterio de
+   aceptación**. Con el fondo en capas, el rojo es esperable y no dice que el vidrio ande mal: cada punto del fondo se
+   pinta cinco veces (la ventana, el `fondo` liso de respaldo de `FondoDeLaApp` y las tres capas del degradé, porque
+   Android dibuja cada capa como un rectángulo del tamaño de la pantalla), y una tarjeta suma su color y su borde. Lo
+   que la comparación muestra es dónde creció la superposición, para saber qué bajar primero si el tiempo de los cuadros
+   no pasa (abajo).
 4. `node resumir.mjs`: arma `RESUMEN.md` con la mediana de las tres corridas de cada pantalla, los percentiles 50, 90 y
    95, los cuadros lentos y la memoria de gráficos (`dumpsys meminfo`, la línea Graphics), antes y después.
 
@@ -31,9 +37,17 @@
 
 - El percentil 90 en **16,7 ms o menos a 60 Hz** (11,1 ms a 90 Hz y 8,3 ms a 120 Hz: el guion lee la frecuencia de la
   pantalla), y **no más de 2 puntos de cuadros lentos** que la 0.23 en las mismas condiciones.
-- Si no se cumple, primero se baja el costo (sin el brillo, un solo destello) y después se apaga el interruptor del
-  vidrio en la pantalla que no pasa (`App.tsx`). Todo el contenido vive en un solo desplazamiento, sin listas
-  virtualizadas: los costos nuevos son la mezcla de cada tarjeta translúcida con el fondo y el desenfoque de cada sombra.
+- Todo el contenido vive en un solo desplazamiento, sin listas virtualizadas: los costos nuevos son la mezcla de cada
+  tarjeta translúcida con el fondo, el desenfoque de cada sombra y, al desplazar, las tres pasadas de pantalla completa
+  del degradé en cada cuadro. Es el costo a vigilar en un teléfono de gama baja.
+- Si no se cumple, se baja el costo en este orden, midiendo después de cada paso:
+  1. lo que sale gratis, ya hecho: el brillo de arriba pinta solo sus 12 dp (AV2-T22), no la tarjeta entera;
+  2. el `fondo` liso de debajo del degradé, que el degradé opaco tapa entero: en Azul noche la ventana ya es `fondo`, así
+     que se puede sacar; en Claro hace falta si el degradé no se dibuja (la ventana es oscura), así que se saca solo si
+     el teléfono confirma que el degradé se dibuja;
+  3. cada destello, del tamaño de su elipse y no de la pantalla (`experimental_backgroundSize` y su posición);
+  4. un solo destello, y después sin el brillo;
+  5. el interruptor del vidrio apagado en la pantalla que no pasa (`App.tsx`).
 
 ## Qué queda en esta carpeta
 

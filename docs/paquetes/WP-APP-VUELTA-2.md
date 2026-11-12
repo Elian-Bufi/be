@@ -906,7 +906,7 @@ Antes (la 0.23) y después (la candidata), en el teléfono de Dirección y, si h
 2. Diez deslizamientos iguales con `adb shell input swipe`, con las mismas coordenadas, en Inicio, Nutrición Hoy,
    Entrenamiento y Tu historial. Tres corridas.
 3. `adb shell dumpsys gfxinfo com.elianbufi.be`: los cuadros lentos (%) y los percentiles 50, 90 y 95.
-4. En las opciones de desarrollador, «Depurar superposición de GPU»: nada en rojo debajo del texto.
+4. En las opciones de desarrollador, «Depurar superposición de GPU»: una captura de la misma pantalla con la 0.23 y con la candidata, para compararlas. No es un criterio de aceptación: con el fondo en capas, cada punto del fondo se pinta cinco veces y el rojo es esperable; dice qué bajar primero si los cuadros no pasan (revisión de la etapa A, §10.4).
 5. `adb shell dumpsys meminfo com.elianbufi.be` (la línea Graphics), antes y después.
 
 **El criterio:** el percentil 90 en 16,7 ms o menos a 60 Hz (11,1 ms a 90 Hz y 8,3 ms a 120 Hz), y no más de 2 puntos
@@ -1215,6 +1215,16 @@ con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
   Claro (abajo): pasaba por 0,03 sin nada que lo cuidara. TEST-AV2-001 lo mide ahora, y también el acento como borde de
   una casilla (5,66:1 y 4,57:1). Un `bordeControl` de #5E91B7 en Azul noche o de #7C8FA9 en Claro pasaba todo lo de
   antes y ahora pone la prueba en rojo.
+- **AV2-T22 · El brillo pinta solo su franja, y la superposición se compara con la 0.23.** React Native dibuja cada capa
+  de `experimental_backgroundImage` como un rectángulo del tamaño de toda la vista (`BackgroundImageDrawable`, un
+  `drawRect` por mosaico) y la repite: el brillo, que se ve en 12 dp, se pintaba sobre toda la tarjeta. Ahora va con
+  `experimental_backgroundSize` de 100 % por 12 dp y `no-repeat` (TEST-AV2-002). El criterio de §5.3 «nada en rojo debajo
+  del texto» no se podía cumplir tal como está construido: cada punto del fondo se pinta cinco veces (la ventana, el
+  `fondo` liso de respaldo y las tres capas del degradé), y el rojo de «Depurar superposición de GPU» marca cuatro
+  superposiciones o más. El paso pasa a ser una comparación con la 0.23 en la misma pantalla, y el criterio sigue siendo
+  el tiempo de los cuadros. Si no pasa, lo que se baja y en qué orden está en `EVIDENCIA/APP-VUELTA-2/rendimiento/LEEME.md`:
+  el `fondo` liso de respaldo se saca solo si el teléfono confirma que el degradé se dibuja, porque en Claro la ventana es
+  oscura (#011325) y sin él quedaría a la vista.
 
 ### 10.5 Hallazgos fuera del paquete
 
