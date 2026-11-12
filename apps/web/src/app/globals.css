@@ -9536,7 +9536,7 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 /* Un botón que ahora no se puede usar pero conserva el foco (`aria-disabled`): se ve apagado y no responde al mouse. Es
-   para el que se apaga solo después de usarlo («Guardar cambios», sin nada que guardar): con `disabled` perdería el foco. */
+   para el que se apaga solo después de usarlo («Guardar ahora», sin nada que guardar): con `disabled` perdería el foco. */
 .boton[aria-disabled='true'] {
   opacity: 0.6;
   pointer-events: none;
@@ -9612,6 +9612,21 @@ button.comida-del-dia__fila > .icono:last-child {
 .estado-de-guardado[data-estado="fallo"],
 .carga-de-la-toma__estado--fallo {
   color: var(--error);
+}
+
+/* ED-03: el detalle técnico de un fallo, plegado, en su propio renglón al final de la barra (nunca entre los botones). */
+.estado-de-guardado__detalle {
+  order: 99;
+  flex-basis: 100%;
+}
+
+.estado-de-guardado__detalle summary {
+  width: fit-content;
+  font-size: 0.92rem;
+}
+
+.estado-de-guardado__detalle p {
+  margin: 0.25rem 0 0;
 }
 
 .editor-del-plan__que-es {

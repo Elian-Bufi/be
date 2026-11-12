@@ -18,7 +18,8 @@ export const COPY_GUARDADO = {
   pendiente: 'Pendiente de guardar',
   pendienteIncompleto: 'Pendiente de guardar: falta completar algo',
   noSePudo: 'No se pudo guardar',
-  noSePudoReintento: 'No se pudo guardar: se reintenta al seguir editando o con «Guardar cambios»',
+  // ED-03 (DJ-6): «Guardar cambios» dejó de existir; el botón fijo de la barra es «Guardar ahora».
+  noSePudoReintento: 'No se pudo guardar: se reintenta al seguir editando o con «Guardar ahora»',
   conflictoCorto: 'No se pudo guardar: el borrador cambió en otra pestaña',
   conflicto:
     'Este borrador cambió en otra pestaña o en otro equipo. Lo tuyo no se guardó, para no pisar esos cambios: sigue en pantalla, así podés copiar lo que necesites.',
@@ -29,6 +30,19 @@ export const COPY_GUARDADO = {
   sinRespuesta: 'No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.',
   demasiadoGrande:
     'El plan es demasiado grande para guardarlo de una vez. Tus cambios siguen acá: quitá lo que no haga falta (opciones, semanas o notas largas) y volvé a guardar.',
+  // ED-03 (DJ-6): la barra de los editores. «Guardar ahora» es fijo y secundario: guarda sin esperar la pausa, y está
+  // apagado, con su motivo, cuando no hay nada que guardar.
+  guardarAhora: 'Guardar ahora',
+  nadaQueGuardar: 'No hay cambios sin guardar.',
+  yaSeEstaGuardando: 'Se está guardando.',
+  primeroLaVersionGuardada: 'Este borrador cambió en otra pestaña: primero cargá la versión guardada.',
+  // ED-03: un fallo ofrece «Reintentar», con el detalle técnico plegado: la operación, el motivo, el código y la hora,
+  // sin datos de la persona.
+  reintentar: 'Reintentar',
+  detalleTecnico: 'Detalle técnico',
+  guardarElBorrador: 'guardar el borrador',
+  sinDatosDeLaPersona: 'sin datos de la persona',
+  motivoDelFallo: { SIN_RESPUESTA: 'sin respuesta', DEMASIADO_GRANDE: 'demasiado grande', OTRO: 'rechazado' },
 } as const;
 
 /**
@@ -49,6 +63,38 @@ export function falloDeGuardado(r: Resultado<unknown>): FalloDeGuardado {
   if (r.status === 413 || (r.codigo === 'INVALID_REQUEST' && r.issues.some((i) => i.code === 'TOO_BIG' && i.path === '(body)'))) return 'DEMASIADO_GRANDE';
   if (r.codigo === 'RESPUESTA_NO_RECONOCIDA' || r.status >= 500) return 'SIN_RESPUESTA';
   return 'OTRO';
+}
+
+/**
+ * ED-03 · El detalle técnico de un guardado que falló: por qué (en palabras), el código de la respuesta, si la hubo, y la
+ * hora. Nunca lleva lo que se mandó ni nada de la persona: es para contarle a soporte qué pasó.
+ */
+export interface DetalleDelFallo {
+  readonly motivo: FalloDeGuardado;
+  /** «503 DB_UNAVAILABLE»; `null` sin respuesta. */
+  readonly codigo: string | null;
+  /** La hora del intento, ya formateada. */
+  readonly hora: string;
+}
+
+export function detalleDelFallo(r: Resultado<unknown>, hora: string): DetalleDelFallo {
+  return { motivo: falloDeGuardado(r), codigo: r.ok || r.tipo === 'RED' ? null : `${r.status} ${r.codigo}`, hora };
+}
+
+/** «guardar el borrador · sin respuesta · 10:44 · sin datos de la persona». */
+export function textoDelDetalleDelFallo(d: DetalleDelFallo, operacion: string = COPY_GUARDADO.guardarElBorrador): string {
+  return [operacion, COPY_GUARDADO.motivoDelFallo[d.motivo], ...(d.codigo ? [d.codigo] : []), d.hora, COPY_GUARDADO.sinDatosDeLaPersona].join(' · ');
+}
+
+/**
+ * ED-03 · Por qué «Guardar ahora» está apagado, o `null` si se puede tocar. Con algo a medio escribir sigue encendido:
+ * tocarlo lista lo que falta, cada cosa con su lugar.
+ */
+export function motivoSinGuardarAhora(e: Pick<EntradaDeGuardado, 'guardando' | 'sucio' | 'conflicto'>): string | null {
+  if (e.guardando) return COPY_GUARDADO.yaSeEstaGuardando;
+  if (e.conflicto) return COPY_GUARDADO.primeroLaVersionGuardada;
+  if (!e.sucio) return COPY_GUARDADO.nadaQueGuardar;
+  return null;
 }
 
 export type TipoDeGuardado = 'guardando' | 'guardado' | 'pendiente' | 'fallo';

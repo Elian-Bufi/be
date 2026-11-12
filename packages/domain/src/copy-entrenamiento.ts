@@ -157,7 +157,6 @@ export const COPY_ENTRENAMIENTO = {
   crearManualmente: 'Crear manualmente',
   catalogoSintetico: 'Catálogo de demostración: no es una recomendación.',
   // El estado del guardado y sus acciones, con las palabras del plan de comidas (C-78): son la misma operación.
-  guardarCambios: 'Guardar cambios',
   guardando: 'Guardando…',
   cambiosSinGuardar: 'Cambios sin guardar',
   guardado: 'Guardado',

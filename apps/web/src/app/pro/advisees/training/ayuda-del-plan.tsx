@@ -62,7 +62,7 @@ export function AyudaDelPlanDeEntrenamiento() {
           de intensidad del ejercicio es RIR.
         </Renglon>
         <Renglon muestra={<Icono nombre="aviso" tamano={20} />}>
-          <strong>Lo que no se entiende no se guarda.</strong> Un dato mal escrito se marca en su lugar, el ejercicio lo dice en su renglón y «Guardar cambios» lista dónde está cada cosa: cada renglón te lleva hasta ahí.
+          <strong>Lo que no se entiende no se guarda.</strong> Un dato mal escrito se marca en su lugar, el ejercicio lo dice en su renglón y «Guardar ahora» lista dónde está cada cosa: cada renglón te lleva hasta ahí.
           {COPY_ENTRENAMIENTO.noJuzga}
         </Renglon>
         <Renglon muestra={<Icono nombre="actualizar" tamano={20} />}>

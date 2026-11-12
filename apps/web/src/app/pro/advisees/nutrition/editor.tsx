@@ -6,7 +6,7 @@
  * - El día tipo no es una fecha (B05:435-443). Las comidas son rótulos libres: se agregan, se renombran, se ordenan y se
  *   quitan, sin fijar cuatro (B05:447-467).
  * - Cada ítem lleva cantidad, unidad y estado de preparación; con cantidad, el estado es obligatorio (REG-06-122).
- * - «Guardar cambios» no activa (B05:607-624). Validar informa cada problema en su lugar; activar pide confirmación
+ * - «Guardar ahora» no activa (B05:607-624; ED-03). Validar informa cada problema en su lugar; activar pide confirmación
  *   con el texto literal de B05:685-695 y la API revalida todo en la misma transacción.
  * - La modalidad B no se ofrece, ni como «Próximamente» (B05:503-518).
  * - DL-119: «Agregar receta como opción» suma una opción `{label, recipeVersionId}`. Sus ítems los arma la API con los
@@ -34,17 +34,20 @@ import {
   PROBLEMA_DEL_EDITOR,
   avisoDeLoQueNoDejaGuardar,
   comidasAbiertasEnElEditor,
+  detalleDelFallo,
   estructuraNutricionalComoEntrada,
   falloDeGuardado,
   loQueEntraAlActivar,
   loQueNoDejaGuardar,
   lugarDelProblema,
+  motivoSinGuardarAhora,
   nutrienteParaMostrar,
   pedidoDeComidasDelEditor,
   pedidoDeLaPosicion,
   posicionPedida,
   problemasDeLaComida,
   ubicacionDelProblema,
+  type DetalleDelFallo,
   type Receta,
   type RecetaDeOpcion,
   type ValidationIssue,
@@ -188,6 +191,8 @@ export function EditorDeBorrador({
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
   // el autoguardado. «Guardado» solo con la respuesta del servidor; un 409 por versión no pisa nada.
   const [fallo, setFallo] = useState(false);
+  // ED-03: el detalle técnico del último fallo (se ve plegado mientras dura el fallo).
+  const [detalle, setDetalle] = useState<DetalleDelFallo | null>(null);
   const [conflicto, setConflicto] = useState(false);
   const [guardadoA, setGuardadoA] = useState<string | null>(null);
   // Cuántas ediciones hubo: lo que se escribe mientras viaja un guardado no se pisa con la respuesta.
@@ -343,6 +348,7 @@ export function EditorDeBorrador({
       setGuardando(false);
       // Lo escrito queda como está: ni la estructura ni «sucio» cambian, y el próximo guardado lo vuelve a mandar.
       setFallo(true);
+      setDetalle(detalleDelFallo(r, horaDelDia(new Date())));
       const motivo = falloDeGuardado(r);
       // ED-61: sin respuesta, el guardado pudo haber llegado. Se recuerda lo que se mandó, para reconocerlo ante un 409.
       if (motivo === 'SIN_RESPUESTA') sinRespuesta.current = [...sinRespuesta.current, cuerpo];
@@ -382,6 +388,8 @@ export function EditorDeBorrador({
 
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
   const puedeGuardar = loQueNoDejaGuardarElPlan(estructura).length === 0;
+  // ED-03: por qué «Guardar ahora» está apagado, o `null`.
+  const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
   const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision], [estructura, proximaRevision]);
   const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando,
@@ -559,7 +567,37 @@ export function EditorDeBorrador({
           </span>
         </h2>
         <div className="editor-del-plan__acciones">
-          <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
+          <EstadoDeGuardado
+            className="editor-del-plan__estado"
+            guardando={guardando}
+            sucio={sucio}
+            puedeGuardar={puedeGuardar}
+            fallo={fallo}
+            conflicto={conflicto}
+            guardadoA={guardadoA}
+            detalle={detalle}
+            onReintentar={() => void guardar()}
+          />
+          {/* ED-03 (DJ-6): «Guardar ahora», fijo y secundario junto al estado: guarda sin esperar la pausa. Apagado (con
+              `aria-disabled`, que conserva el foco), dice por qué. */}
+          <button
+            type="button"
+            className="boton boton--secundario"
+            data-guardar-ahora
+            aria-disabled={sinGuardarAhora ? true : undefined}
+            aria-describedby={sinGuardarAhora ? 'motivo-sin-guardar-ahora' : undefined}
+            onClick={() => {
+              if (!sinGuardarAhora) void guardar();
+            }}
+          >
+            <Icono nombre="guardar" tamano={18} />
+            {COPY_GUARDADO.guardarAhora}
+          </button>
+          {sinGuardarAhora ? (
+            <span id="motivo-sin-guardar-ahora" className="visualmente-oculto">
+              {sinGuardarAhora}
+            </span>
+          ) : null}
           {/* TB-48: «Guardar como plantilla», con su texto y a la vista (antes, sola en un menú «⋯» sin texto). Si no se
               puede, está apagado (con `aria-disabled`, que conserva el foco) y dice por qué, al lector y al tocarlo. */}
           <button
@@ -590,10 +628,11 @@ export function EditorDeBorrador({
           >
             {COPY_NUTRICION.validarPlan}
           </button>
-          {/* Un solo botón lleno (crítica de diseño del 2026-10-15): «Guardar cambios» si hay algo sin guardar; si no, «Activar plan». */}
+          {/* Un solo botón lleno (crítica de diseño del 2026-10-15), y siempre el mismo (DJ-6): activar no cambia de lugar ni
+              de forma mientras se escribe. */}
           <button
             type="button"
-            className={`boton ${sucio ? 'boton--secundario' : 'boton--primario'}`}
+            className="boton boton--primario"
             aria-disabled={guardando || undefined}
             onClick={() => {
               if (!guardando) void abrirLaActivacion();
@@ -601,16 +640,6 @@ export function EditorDeBorrador({
           >
             <Icono nombre="activar" tamano={18} />
             {COPY_NUTRICION.activarPlan}
-          </button>
-          <button
-            type="button"
-            className={`boton ${sucio ? 'boton--primario' : 'boton--secundario'}`}
-            aria-disabled={guardando || !sucio || undefined}
-            onClick={() => {
-              if (!guardando && sucio) void guardar();
-            }}
-          >
-            {COPY_NUTRICION.guardarCambios}
           </button>
         </div>
       </div>

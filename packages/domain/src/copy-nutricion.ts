@@ -62,7 +62,6 @@ export const COPY_NUTRICION = {
   borrador: 'Borrador',
   crearNuevoPlan: 'Crear nuevo plan',
   borradorCreado: 'Borrador creado',
-  guardarCambios: 'Guardar cambios',
   guardado: 'Guardado',
   cambiosSinGuardar: 'Cambios sin guardar',
   guardando: 'Guardando…',

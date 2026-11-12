@@ -7,7 +7,7 @@
  * - El propósito del bloque o del microciclo es texto libre: sin «Acumulación / Intensificación / Descarga» como
  *   únicos tipos (B10-06:332-342).
  * - Validar informa los problemas vinculados a bloque → sesión → ejercicio, sin «Programa óptimo» (B10-06:563-591).
- * - «Guardar cambios» no activa. Activar pide confirmación con la consecuencia literal de B10-06:607.
+ * - «Guardar ahora» no activa (ED-03). Activar pide confirmación con la consecuencia literal de B10-06:607.
  * - El borrador se lee con API-SER-01, que trae los tres estados de cada objetivo por serie (DL-122); API-TRN-09 no los
  *   trae porque lo lee también la APK instalada.
  *
@@ -39,6 +39,7 @@ import {
   PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO as N,
   avisoDeLoQueNoDejaGuardarElEntrenamiento,
   cuentaDeLaSesion,
+  detalleDelFallo,
   ejerciciosAbiertosEnElEditor,
   estructuraConObjetivosComoEntrada,
   falloDeGuardado,
@@ -46,6 +47,7 @@ import {
   loQueNoDejaGuardarElEntrenamiento,
   loQueSeMiraEnElEditor,
   lugarDelProblemaDeEntrenamiento,
+  motivoSinGuardarAhora,
   pedidoDeEjerciciosDelEditor,
   pedidoDeLaPosicion,
   planExigeObjetivosPorSerie,
@@ -53,6 +55,7 @@ import {
   sesionesDelBloque,
   ubicacionDelProblemaDeEntrenamiento,
   type AgendaDeEntrenamiento,
+  type DetalleDelFallo,
   type ImagenDeEjercicio,
   type PlanConObjetivos,
   type SesionHabitual,
@@ -232,6 +235,8 @@ export function EditorDePlan({
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
   // el autoguardado. «Guardado» solo con la respuesta del servidor; un 409 por versión no pisa nada.
   const [fallo, setFallo] = useState(false);
+  // ED-03: el detalle técnico del último fallo (se ve plegado mientras dura el fallo).
+  const [detalle, setDetalle] = useState<DetalleDelFallo | null>(null);
   const [conflicto, setConflicto] = useState(false);
   const [guardadoA, setGuardadoA] = useState<string | null>(null);
   // Cuántas ediciones hubo: lo que se escribe mientras viaja un guardado no se pisa con la respuesta.
@@ -385,6 +390,7 @@ export function EditorDePlan({
       setGuardando(false);
       // Lo escrito queda como está: ni los bloques ni «sucio» cambian, y el próximo guardado lo vuelve a mandar.
       setFallo(true);
+      setDetalle(detalleDelFallo(r, horaDelDia(new Date())));
       const motivo = falloDeGuardado(r);
       // ED-61: sin respuesta, el guardado pudo haber llegado. Se recuerda lo que se mandó, para reconocerlo ante un 409.
       if (motivo === 'SIN_RESPUESTA') sinRespuesta.current = [...sinRespuesta.current, cuerpo];
@@ -434,6 +440,8 @@ export function EditorDePlan({
 
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
   const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
+  // ED-03: por qué «Guardar ahora» está apagado, o `null`.
+  const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
   const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision], [bloques, agenda, proximaRevision]);
   const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla,
@@ -732,7 +740,37 @@ export function EditorDePlan({
           </span>
         </h2>
         <div className="editor-del-plan__acciones">
-          <EstadoDeGuardado className="editor-del-plan__estado" guardando={guardando} sucio={sucio} puedeGuardar={puedeGuardar} fallo={fallo} conflicto={conflicto} guardadoA={guardadoA} />
+          <EstadoDeGuardado
+            className="editor-del-plan__estado"
+            guardando={guardando}
+            sucio={sucio}
+            puedeGuardar={puedeGuardar}
+            fallo={fallo}
+            conflicto={conflicto}
+            guardadoA={guardadoA}
+            detalle={detalle}
+            onReintentar={() => void guardar()}
+          />
+          {/* ED-03 (DJ-6): «Guardar ahora», fijo y secundario junto al estado: guarda sin esperar la pausa. Apagado (con
+              `aria-disabled`, que conserva el foco), dice por qué. */}
+          <button
+            type="button"
+            className="boton boton--secundario"
+            data-guardar-ahora
+            aria-disabled={sinGuardarAhora ? true : undefined}
+            aria-describedby={sinGuardarAhora ? 'motivo-sin-guardar-ahora' : undefined}
+            onClick={() => {
+              if (!sinGuardarAhora) void guardar();
+            }}
+          >
+            <Icono nombre="guardar" tamano={18} />
+            {COPY_GUARDADO.guardarAhora}
+          </button>
+          {sinGuardarAhora ? (
+            <span id="motivo-sin-guardar-ahora" className="visualmente-oculto">
+              {sinGuardarAhora}
+            </span>
+          ) : null}
           {/* TB-48: «Guardar como plantilla», con su texto y a la vista (antes, sola en un menú «⋯» sin texto). Si no se
               puede, está apagado (con `aria-disabled`, que conserva el foco) y dice por qué, al lector y al tocarlo. */}
           <button
@@ -763,10 +801,11 @@ export function EditorDePlan({
           >
             {COPY_ENTRENAMIENTO.validarPlan}
           </button>
-          {/* Un solo botón lleno (crítica de diseño del 2026-10-15): «Guardar cambios» si hay algo sin guardar; si no, «Activar plan». */}
+          {/* Un solo botón lleno (crítica de diseño del 2026-10-15), y siempre el mismo (DJ-6): activar no cambia de lugar ni
+              de forma mientras se escribe. */}
           <button
             type="button"
-            className={`boton ${sucio ? 'boton--secundario' : 'boton--primario'}`}
+            className="boton boton--primario"
             aria-disabled={guardando || bloqueadoPorLaApp || undefined}
             aria-describedby={bloqueadoPorLaApp ? 'motivo-sin-activar' : undefined}
             onClick={() => {
@@ -775,16 +814,6 @@ export function EditorDePlan({
           >
             <Icono nombre="activar" tamano={18} />
             {COPY_ENTRENAMIENTO.activarPlan}
-          </button>
-          <button
-            type="button"
-            className={`boton ${sucio ? 'boton--primario' : 'boton--secundario'}`}
-            aria-disabled={guardando || !sucio || undefined}
-            onClick={() => {
-              if (!guardando && sucio) void guardar();
-            }}
-          >
-            {COPY_ENTRENAMIENTO.guardarCambios}
           </button>
         </div>
       </div>
