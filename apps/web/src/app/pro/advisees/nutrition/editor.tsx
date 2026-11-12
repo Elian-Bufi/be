@@ -25,6 +25,7 @@
 import {
   COPY,
   COPY_DE_ACTIVAR_EL_PLAN,
+  COPY_DESCARTAR_LA_VERSION,
   COPY_GUARDADO,
   COPY_DEL_PLAN,
   COPY_HABITUALES,
@@ -71,6 +72,8 @@ import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { CuadroDelDescarte } from '../cuadro-del-descarte';
+import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
@@ -158,11 +161,15 @@ type NombreQueSeCambia = { readonly de: 'dia'; readonly i: number } | { readonly
 
 export function EditorDeBorrador({
   planId,
+  numero,
   objetivo,
   vigente = null,
   onActivado,
+  onDescartado,
 }: {
   planId: string;
+  /** El número de esta versión en preparación: el de las activadas más uno (DJ-6). */
+  numero: number;
   /**
    * El objetivo vigente, que ya leyó la sección: lo que la versión usa, o va a usar al guardar si hay uno más nuevo.
    * El editor no lo vuelve a pedir: sin esa lectura, la sección no llega a mostrarlo.
@@ -171,6 +178,8 @@ export function EditorDeBorrador({
   /** La versión que rige hoy, que al activar esta queda en el historial; `null` si es la primera. */
   vigente?: { readonly numero: number; readonly desde: string } | null;
   onActivado: () => void;
+  /** ED-01: la versión en preparación se descartó (o ya no estaba): la sección vuelve a leer el plan. */
+  onDescartado: () => void;
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
   const propio = useId();
@@ -220,6 +229,11 @@ export function EditorDeBorrador({
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const intentoDeActivar = useClaveDeIntento();
+  // ED-01: «Descartar la versión en preparación», con su cuadro y su intento (la misma clave en un reintento).
+  const [descartar, setDescartar] = useState(false);
+  const [descartando, setDescartando] = useState(false);
+  const [falloDelDescarte, setFalloDelDescarte] = useState<string | null>(null);
+  const intentoDeDescartar = useClaveDeIntento();
   // La opción que se edita en cada comida (por «día-comida»); el nombre que se está cambiando; y el campo que hay que
   // enfocar después de ir a un problema.
   const [pestanas, setPestanas] = useState<Readonly<Record<string, number>>>({});
@@ -392,7 +406,7 @@ export function EditorDeBorrador({
   const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
   const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision], [estructura, proximaRevision]);
   const autoguardado = useAutoguardado({
-    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando,
+    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !descartar,
     cambios: cambiosParaGuardar,
     guardar: () => void guardar(true),
   });
@@ -450,6 +464,26 @@ export function EditorDeBorrador({
     }
     setConfirmar(false);
     onActivado();
+  }
+
+  /**
+   * ED-01: descarta la versión en preparación con la versión que muestra la pantalla. Descartada, o si ya no estaba (se
+   * descartó o se activó en otra pestaña), la sección vuelve a leer el plan; si no, el cuadro dice por qué.
+   */
+  async function descartarLaVersion() {
+    if (!version || descartando) return;
+    setDescartando(true);
+    setFalloDelDescarte(null);
+    const r = await api.descartarBorradorDePlanNutricional(token, planId, version.version, intentoDeDescartar.actual());
+    intentoDeDescartar.registrar(r);
+    setDescartando(false);
+    if (sesionPerdida(r)) return;
+    const queNoSeHizo = textoDelDescarteQueNoSeHizo(resultadoDelDescarte(r));
+    if (queNoSeHizo) return setFalloDelDescarte(queNoSeHizo);
+    // Lo que no se guardó se fue con la versión: salir ya no pregunta.
+    setSucio(false);
+    setDescartar(false);
+    onDescartado();
   }
 
   if (error === 'no-disponible') return <NoDisponible />;
@@ -641,6 +675,23 @@ export function EditorDeBorrador({
             <Icono nombre="activar" tamano={18} />
             {COPY_NUTRICION.activarPlan}
           </button>
+          {/* ED-01: el «⋯» de la versión, con «Descartar la versión en preparación». La vigente nunca lo ofrece. */}
+          {ofreceDescartar(version) ? (
+            <MenuDeAcciones
+              id="mas-de-la-version"
+              rotulo={COPY_DESCARTAR_LA_VERSION.menu}
+              acciones={[
+                {
+                  clave: 'descartar',
+                  texto: COPY_DESCARTAR_LA_VERSION.accion,
+                  alElegir: () => {
+                    setFalloDelDescarte(null);
+                    setDescartar(true);
+                  },
+                },
+              ]}
+            />
+          ) : null}
         </div>
       </div>
       <p className="nota editor-del-plan__que-es">
@@ -978,6 +1029,22 @@ export function EditorDeBorrador({
           aviso={loQueFalta(cuando, hoyEn())}
         />
       </DialogoDeConfirmacion>
+
+      <CuadroDelDescarte
+        abierto={descartar}
+        numero={numero}
+        vigente={vigente ? { numero: vigente.numero, desde: diaSinElAnioEnCurso(vigente.desde) } : null}
+        sinGuardar={sucio}
+        enviando={descartando}
+        error={falloDelDescarte}
+        onCancelar={() => {
+          // La clave no se descarta: si el último intento quedó incierto, el próximo la reusa (`registrar` la libera
+          // después de una respuesta definitiva).
+          setDescartar(false);
+          setFalloDelDescarte(null);
+        }}
+        onDescartar={() => void descartarLaVersion()}
+      />
     </section>
   );
 }

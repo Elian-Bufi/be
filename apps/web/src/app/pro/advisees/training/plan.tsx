@@ -25,6 +25,7 @@ import {
   COPY_AGENDA_DE_ENTRENAMIENTO,
   COPY_PRIMER_PLAN,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
+  COPY_DESCARTAR_LA_VERSION,
   COPY_ENTRENAMIENTO,
   COPY_PLANTILLAS,
   estructuraConObjetivosComoEntrada,
@@ -50,6 +51,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { numeroDelBorrador } from '../descartar-el-borrador';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
 import { PrimerPlan } from '../primer-plan';
@@ -277,10 +279,17 @@ export function VistaDePlan() {
                     <EditorDePlan
                       key={borrador.planId}
                       planId={borrador.planId}
+                      numero={numeroDelBorrador(historial)}
                       objetivoVigente={objetivo}
                       vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt } : null}
                       onActivado={() => {
                         setAviso({ tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.planActivado}. El asesorado ya ve esta planificación como vigente.` });
+                        ir(TODO_LO_ELEGIDO);
+                        void cargar();
+                      }}
+                      // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
+                      onDescartado={() => {
+                        setAviso({ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
                         ir(TODO_LO_ELEGIDO);
                         void cargar();
                       }}

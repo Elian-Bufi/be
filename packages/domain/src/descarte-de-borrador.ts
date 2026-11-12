@@ -51,3 +51,30 @@ export function estadoDeVersionDePlanApi(estado: EstadoDeVersionConDescarte): 'D
   if (estado === 'DESCARTADA') throw new Error('BE: una versión de plan descartada no se lee (DL-163 D-21)');
   return estado === 'ACTIVADA' ? 'ACTIVATED' : 'DRAFT';
 }
+
+/**
+ * ED-01 · «Descartar la versión en preparación» en el website del profesional (WP-EDITORES-PROFESIONAL; DL-167). Los dos
+ * editores dicen lo mismo, con el número de la versión (DJ-6: el borrador es el de las activadas más uno):
+ * - el cuadro dice de qué versión salió, que lo armado se borra, que la vigente no cambia y que no se deshace, con
+ *   «Cancelar» como opción enfocada; con cambios sin guardar, que también se pierden;
+ * - cada rechazo se dice con sus palabras, sin códigos.
+ */
+export const COPY_DESCARTAR_LA_VERSION = {
+  accion: 'Descartar la versión en preparación',
+  menu: 'Más acciones de la versión en preparación',
+  titulo: (numero: number): string => `¿Descartar la versión ${numero} en preparación?`,
+  saleDe: (numero: number, desde: string): string => `Salió de la versión ${numero}, vigente desde el ${desde}. Se borra lo que armaste en esta versión.`,
+  primera: 'Es la primera versión del plan: todavía no hay una vigente. Se borra lo que armaste en esta versión.',
+  vigenteNoCambia: (numero: number): string => `La versión ${numero} no cambia, y la persona no ve nada distinto.`,
+  laPersonaNoLaVio: 'La persona no ve nada distinto: nunca vio esta versión.',
+  sinGuardar: 'También se pierden los cambios que todavía no se guardaron.',
+  noSeDeshace: 'No se puede deshacer.',
+  paraConservar: 'Si querés conservar algo, antes guardalo como plantilla.',
+  cancelar: 'Cancelar',
+  confirmar: (numero: number): string => `Descartar la versión ${numero}`,
+  descartando: 'Descartando…',
+  descartada: (vigente: number | null): string =>
+    vigente === null ? 'Se descartó la versión en preparación.' : `Se descartó la versión en preparación. La versión ${vigente} sigue vigente.`,
+  cambioEnOtraPestana: 'Esta versión cambió en otra pestaña: volvé a cargarla antes de descartarla.',
+  yaActivada: 'Esta versión ya se activó, así que no se descarta. Para cambiarla, armá una versión nueva.',
+} as const;

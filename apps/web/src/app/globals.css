@@ -9629,6 +9629,22 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0.25rem 0 0;
 }
 
+/* ED-01: el cuadro de descartar la versión en preparación. Lo que no se deshace va con su ícono y en negrita: nunca
+   solo con color. */
+.cuadro-del-descarte p {
+  margin: 0 0 0.6rem;
+}
+
+.cuadro-del-descarte__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: var(--fondo-suave);
+}
+
 .editor-del-plan__que-es {
   margin: 0;
 }

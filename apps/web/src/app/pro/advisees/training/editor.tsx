@@ -31,6 +31,7 @@ import {
   COPY_GUARDADO,
   COPY_COMPATIBILIDAD_DE_CLIENTES,
   COPY_DE_ACTIVAR_EL_PLAN,
+  COPY_DESCARTAR_LA_VERSION,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
   COPY_ENTRENAMIENTO,
   COPY_HABITUALES,
@@ -78,6 +79,8 @@ import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { CuadroDelDescarte } from '../cuadro-del-descarte';
+import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
@@ -205,16 +208,22 @@ function campoDelProblema(p: ValidationIssue, ejercicio: string, serie: number |
 
 export function EditorDePlan({
   planId,
+  numero,
   objetivoVigente,
   vigente = null,
   onActivado,
+  onDescartado,
 }: {
   planId: string;
+  /** El número de esta versión en preparación: el de las activadas más uno (DJ-6). */
+  numero: number;
   /** El objetivo vigente hoy, que ya leyó la sección: si es más nuevo que el de la versión, al guardar pasa a usarlo. */
   objetivoVigente: string | null;
   /** La versión que rige hoy, que al activar esta queda en el historial; `null` si es la primera. */
   vigente?: { readonly numero: number; readonly desde: string } | null;
   onActivado: () => void;
+  /** ED-01: la versión en preparación se descartó (o ya no estaba): la sección vuelve a leer el plan. */
+  onDescartado: () => void;
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
   const [version, setVersion] = useState<PlanConObjetivos | null>(null);
@@ -254,6 +263,11 @@ export function EditorDePlan({
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const intentoDeActivar = useClaveDeIntento();
+  // ED-01: «Descartar la versión en preparación», con su cuadro y su intento (la misma clave en un reintento).
+  const [descartar, setDescartar] = useState(false);
+  const [descartando, setDescartando] = useState(false);
+  const [falloDelDescarte, setFalloDelDescarte] = useState<string | null>(null);
+  const intentoDeDescartar = useClaveDeIntento();
   // «Mis habituales» (PF-09 bis; DL-109): ejercicios a mano en el buscador; sesiones para guardar e insertar.
   const ejerciciosHabituales = useEjerciciosHabituales(token);
   const sesionesHabituales = useSesionesHabituales(token);
@@ -444,7 +458,7 @@ export function EditorDePlan({
   const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
   const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision], [bloques, agenda, proximaRevision]);
   const autoguardado = useAutoguardado({
-    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla,
+    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla && !descartar,
     cambios: cambiosParaGuardar,
     guardar: () => void guardar(true),
   });
@@ -507,6 +521,26 @@ export function EditorDePlan({
     }
     setConfirmar(false);
     onActivado();
+  }
+
+  /**
+   * ED-01: descarta la versión en preparación con la versión que muestra la pantalla. Descartada, o si ya no estaba (se
+   * descartó o se activó en otra pestaña), la sección vuelve a leer el plan; si no, el cuadro dice por qué.
+   */
+  async function descartarLaVersion() {
+    if (!version || descartando) return;
+    setDescartando(true);
+    setFalloDelDescarte(null);
+    const r = await api.descartarBorradorDePlanDeEntrenamiento(token, planId, version.version, intentoDeDescartar.actual());
+    intentoDeDescartar.registrar(r);
+    setDescartando(false);
+    if (sesionPerdida(r)) return;
+    const queNoSeHizo = textoDelDescarteQueNoSeHizo(resultadoDelDescarte(r));
+    if (queNoSeHizo) return setFalloDelDescarte(queNoSeHizo);
+    // Lo que no se guardó se fue con la versión: salir ya no pregunta.
+    setSucio(false);
+    setDescartar(false);
+    onDescartado();
   }
 
   if (error === 'no-disponible') return <NoDisponible />;
@@ -815,6 +849,23 @@ export function EditorDePlan({
             <Icono nombre="activar" tamano={18} />
             {COPY_ENTRENAMIENTO.activarPlan}
           </button>
+          {/* ED-01: el «⋯» de la versión, con «Descartar la versión en preparación». La vigente nunca lo ofrece. */}
+          {ofreceDescartar(version) ? (
+            <MenuDeAcciones
+              id="mas-de-la-version"
+              rotulo={COPY_DESCARTAR_LA_VERSION.menu}
+              acciones={[
+                {
+                  clave: 'descartar',
+                  texto: COPY_DESCARTAR_LA_VERSION.accion,
+                  alElegir: () => {
+                    setFalloDelDescarte(null);
+                    setDescartar(true);
+                  },
+                },
+              ]}
+            />
+          ) : null}
         </div>
       </div>
       <p className="nota editor-del-plan__que-es">
@@ -1225,6 +1276,22 @@ export function EditorDePlan({
           aviso={loQueFalta(cuando, hoyEn())}
         />
       </DialogoDeConfirmacion>
+
+      <CuadroDelDescarte
+        abierto={descartar}
+        numero={numero}
+        vigente={vigente ? { numero: vigente.numero, desde: diaSinElAnioEnCurso(vigente.desde) } : null}
+        sinGuardar={sucio}
+        enviando={descartando}
+        error={falloDelDescarte}
+        onCancelar={() => {
+          // La clave no se descarta: si el último intento quedó incierto, el próximo la reusa (`registrar` la libera
+          // después de una respuesta definitiva).
+          setDescartar(false);
+          setFalloDelDescarte(null);
+        }}
+        onDescartar={() => void descartarLaVersion()}
+      />
     </section>
   );
 }

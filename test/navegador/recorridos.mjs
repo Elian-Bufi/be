@@ -365,6 +365,44 @@ async function conflicto({ contexto, p, d }) {
   await otra.waitForFunction(() => document.querySelector('.editor-del-plan__estado')?.dataset.estado === 'guardado', { timeout: ESPERA });
 }
 
+/**
+ * ED-01 (WP-EDITORES-PROFESIONAL; TEST-EDP-002): descartar la versión en preparación. El cuadro abre con «Cancelar»
+ * enfocado; Escape no toca nada; confirmar la descarta, y la sección vuelve a ofrecer crear el plan y empezar desde una
+ * plantilla.
+ */
+async function descartar({ p, d, salida }) {
+  const D = dominio.COPY_DESCARTAR_LA_VERSION;
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  const abrirElCuadro = async () => {
+    await clic(p, '#mas-de-la-version');
+    await clic(p, '.menu-de-acciones[data-abierto] .menu-de-acciones__accion', D.accion);
+    await elemento(p, 'dialog[open] [data-cuadro-del-descarte]');
+  };
+  await abrirElCuadro();
+  // Es la primera versión del plan: la número 1, sin una vigente.
+  await esperarTexto(p, D.titulo(1));
+  await esperarTexto(p, D.primera);
+  // La acción de efecto nunca es la opción por defecto: el foco está en «Cancelar».
+  assert.equal(await p.evaluate(() => document.activeElement?.textContent?.trim()), D.cancelar);
+  await captura(p, salida, 'descartar-cuadro-1440');
+  // Escape es «Cancelar»: el cuadro se cierra y la versión sigue.
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [data-cuadro-del-descarte]'), { timeout: ESPERA });
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  // Confirmar la descarta: sin versión en preparación, vuelven «Crear» y «Empezar desde una plantilla».
+  await abrirElCuadro();
+  await clic(p, 'dialog[open] .boton--peligro', D.confirmar(1));
+  await esperarTexto(p, D.descartada(null));
+  await elemento(p, '[data-crear-version]');
+  await elemento(p, '[data-empezar-desde-plantilla]');
+  assert.equal(await p.$('.editor-del-plan'), null, 'ya no hay versión en preparación');
+  await captura(p, salida, 'descartar-hecho-1440');
+}
+
 /** Bloque 5: una ficha nueva lleva a empezar el plan; evaluación, objetivo y plan en la misma pantalla, en orden. */
 async function primerPlan({ p, d }) {
   await entrar(p, d.pro.correo);
@@ -1210,7 +1248,7 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
