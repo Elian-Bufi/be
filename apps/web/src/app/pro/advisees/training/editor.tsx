@@ -85,6 +85,8 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { conLasDeLaPosicion, type AlcanceDelPreset } from '../alcance-del-preset';
+import { copiarElEjercicio, copiarLaSesion, copiarSobre, COPY_COPIAR, destinosDeLaSesion, loQueSeReemplaza, sesionesDelPlan, vistaPreviaDeLaSesion } from './copiar-a';
+import { CuadroDeCopiar } from './cuadro-de-copiar';
 import { alternarDia, COPY_ESTACION as CE, DIA_CORTO, DIA_LARGO, diasCompartidos, nombreDelChip, PRIMER_USO_DE_LA_ESTACION, ponerDias, sinDias, tiraDeLaSemana } from '../estacion/estacion';
 import { GaleriaDePresets } from '../galeria-de-presets';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
@@ -312,6 +314,8 @@ export function EditorDePlan({
   const [cargasARevisar, setCargasARevisar] = useState<Readonly<Record<string, readonly { readonly texto: string; readonly firma: string }[]>>>({});
   // ED-15: el panel a 1280 × 800 (se abre con «Panel» y se superpone al centro) y su pestaña (ED-25).
   const [panelAbierto, setPanelAbierto] = useState(false);
+  // ED-23 y ED-24: el cuadro de copiar abierto (la sesión que se mira, o uno de sus ejercicios), o nada.
+  const [copiando, setCopiando] = useState<{ readonly que: 'sesion' | 'semana' } | { readonly que: 'ejercicio' | 'prescripcion' | 'series'; readonly l: number } | null>(null);
   // ED-20: los días que trajo un preset de estructura, por nombre de sesión, para confirmarlos (son «del preset»).
   const [diasDelPreset, setDiasDelPreset] = useState<Readonly<Record<string, readonly DiaDeLaSemana[]>>>({});
   const [pestana, setPestana] = useState<'antes' | 'semana' | 'otras'>('antes');
@@ -838,6 +842,88 @@ export function EditorDePlan({
     // La copia no se lleva el foco: se dice dónde quedó (DL-113).
     setMensaje({ tipo: 'exito', texto: E.duplicado });
   };
+
+  // ── ED-23 y ED-24: copiar la sesión a otro lugar, y el ejercicio, su prescripción o sus series ─────────────────
+  const claveDelGrupo = (g: { readonly i: number; readonly j: number | null }) => `${g.i}:${g.j ?? ''}`;
+  const delCuadroDeCopiar = (() => {
+    if (!copiando || !sesion) return null;
+    const nombreDeEstaSesion = nombreDeLaSesion(sesion, k);
+    if (!('l' in copiando)) {
+      const destinos = destinosDeLaSesion(bloques, { i, j }, copiando.que === 'semana');
+      const grupo = (clave: string | undefined) => destinos.find((g) => claveDelGrupo(g) === clave);
+      return {
+        titulo: COPY_COPIAR.tituloDeLaSesion(nombreDeEstaSesion),
+        leyenda: COPY_COPIAR.destino,
+        varios: false,
+        vacio: copiando.que === 'semana' ? COPY_COPIAR.sinOtraSemana : COPY_COPIAR.sinOtroLugar,
+        opciones: destinos.map((g) => ({ clave: claveDelGrupo(g), nombre: g.nombre })),
+        queSeCopia: null,
+        vistaPrevia: (el: readonly string[]) => {
+          const g = grupo(el[0]);
+          return g ? vistaPreviaDeLaSesion(bloques, { i, j, k }, g) : null;
+        },
+        textoDelPrincipal: (el: readonly string[]) => (grupo(el[0]) ? COPY_COPIAR.copiarA(grupo(el[0])!.nombre) : COPY_COPIAR.copiar),
+        onCopiar: (el: readonly string[]) => {
+          const g = grupo(el[0]);
+          if (!g) return COPY_COPIAR.elegiUnDestino;
+          const r = copiarLaSesion(bloques, { i, j, k }, g);
+          if (r.tipo === 'no-se-puede') return vistaPreviaDeLaSesion(bloques, { i, j, k }, g);
+          cambiar(() => r.bloques);
+          setCopiando(null);
+          setMensaje({ tipo: 'exito', texto: COPY_COPIAR.copiada(g.nombre) });
+          return null;
+        },
+      };
+    }
+    const l = copiando.l;
+    const p = sesion.prescriptions[l];
+    if (!p) return null;
+    const nombreDelEjercicio = nombres[p.exerciseVersionId] ?? 'Ejercicio';
+    if (copiando.que === 'ejercicio') {
+      const destinos = sesionesDelPlan(bloques).filter((s) => !(s.i === i && s.j === j && s.k === k));
+      const destino = (clave: string | undefined) => destinos.find((s) => `${claveDelGrupo(s)}:${s.k}` === clave);
+      return {
+        titulo: COPY_COPIAR.tituloDelEjercicio(nombreDelEjercicio, 'ejercicio'),
+        leyenda: COPY_COPIAR.destino,
+        varios: false,
+        vacio: COPY_COPIAR.sinOtraSesion,
+        opciones: destinos.map((s) => ({ clave: `${claveDelGrupo(s)}:${s.k}`, nombre: s.nombre })),
+        queSeCopia: null,
+        vistaPrevia: (el: readonly string[]) => (destino(el[0]) ? `Se suma «${nombreDelEjercicio}», con sus series y lo general, al final de ${destino(el[0])!.nombre}.` : null),
+        textoDelPrincipal: (el: readonly string[]) => (destino(el[0]) ? COPY_COPIAR.copiarA(destino(el[0])!.nombre) : COPY_COPIAR.copiar),
+        onCopiar: (el: readonly string[]) => {
+          const s = destino(el[0]);
+          if (!s) return COPY_COPIAR.elegiUnDestino;
+          const r = copiarElEjercicio(bloques, { i, j, k, l }, s);
+          if (r.tipo === 'no-se-puede') return r.motivo === 'TOPE' ? COPY_COPIAR.topeDeEjercicios : COPY_COPIAR.elegiUnDestino;
+          cambiar(() => r.bloques);
+          setCopiando(null);
+          setMensaje({ tipo: 'exito', texto: COPY_COPIAR.copiada(s.nombre) });
+          return null;
+        },
+      };
+    }
+    const que: 'prescripcion' | 'series' = copiando.que === 'series' ? 'series' : 'prescripcion';
+    const otros = sesion.prescriptions.flatMap((x, m) => (m === l ? [] : [{ clave: String(m), nombre: `${m + 1}. ${nombres[x.exerciseVersionId] ?? 'Ejercicio'}` }]));
+    const nombreDe = (x: PrescripcionE) => nombres[x.exerciseVersionId] ?? 'Ejercicio';
+    return {
+      titulo: COPY_COPIAR.tituloDelEjercicio(nombreDelEjercicio, que),
+      leyenda: COPY_COPIAR.elegidos,
+      varios: true,
+      vacio: COPY_COPIAR.sinOtrosEjercicios,
+      opciones: otros,
+      queSeCopia: que === 'prescripcion' ? COPY_COPIAR.queSeCopiaDeLaPrescripcion : COPY_COPIAR.queSeCopiaDeLasSeries,
+      vistaPrevia: (el: readonly string[]) => loQueSeReemplaza(bloques, { i, j, k, l }, el.map(Number), que, nombreDe),
+      textoDelPrincipal: (el: readonly string[]) => COPY_COPIAR.copiarAEstos(el.length),
+      onCopiar: (el: readonly string[]) => {
+        if (el.length === 0) return COPY_COPIAR.elegiAlMenosUno;
+        cambiar(() => copiarSobre(bloques, { i, j, k, l }, el.map(Number), que));
+        setCopiando(null);
+        setMensaje({ tipo: 'exito', texto: COPY_COPIAR.copiada(el.length === 1 ? '1 ejercicio' : `${el.length} ejercicios`) });
+        return null;
+      },
+    };
+  })();
 
   /**
    * Lleva a donde está un problema: elige su bloque, su microciclo y su sesión, abre su ejercicio y deja el foco ahí
@@ -1643,6 +1729,9 @@ export function EditorDePlan({
                     { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-de-la-sesion', ...deLaSesion }) },
                     // TB-48: duplicar y mover la sesión que se mira.
                     { clave: 'duplicar', texto: E.duplicarSesion, alElegir: duplicarSesion },
+                    // ED-24 (V3 E-01): copiar a otro lugar, con destino y vista previa.
+                    { clave: 'copiar', texto: COPY_COPIAR.copiarLaSesion, alElegir: () => setCopiando({ que: 'sesion' }), noSePuede: destinosDeLaSesion(bloques, { i, j }).length === 0 ? COPY_COPIAR.sinOtroLugar : null },
+                    ...(j !== null ? [{ clave: 'semana', texto: COPY_COPIAR.copiarAOtraSemana, alElegir: () => setCopiando({ que: 'semana' }), noSePuede: destinosDeLaSesion(bloques, { i, j }, true).length === 0 ? COPY_COPIAR.sinOtraSemana : null }] : []),
                     { clave: 'antes', texto: E.moverAntes, alElegir: () => moverSesion(k - 1), noSePuede: k === 0 ? E.yaEsElPrimero : null },
                     { clave: 'despues', texto: E.moverDespues, alElegir: () => moverSesion(k + 1), noSePuede: k === sesiones.length - 1 ? E.yaEsElUltimo : null },
                     { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: () => setSesionHabitual(structuredClone(sesion)), noSePuede: antesHayQueCorregir },
@@ -1754,6 +1843,7 @@ export function EditorDePlan({
                   onSubir={() => moverEjercicio(l, l - 1)}
                   onBajar={() => moverEjercicio(l, l + 1)}
                   onDuplicar={() => duplicarEjercicio(l)}
+                  onCopiar={(que) => setCopiando({ que, l })}
                   revisar={cargaARevisar(`${prefijo}-s${k}`, p)}
                   onAplicarLinea={(nueva, revisar) => {
                     cambiar((x) => ((lasSesiones(x)[k]!.prescriptions[l] = nueva), x));
@@ -1862,6 +1952,22 @@ export function EditorDePlan({
         </aside>
       </div>
       )}
+
+      {/* ED-23 y ED-24: el cuadro de copiar, con destino, vista previa y un solo principal. */}
+      <CuadroDeCopiar
+        abierto={delCuadroDeCopiar !== null}
+        titulo={delCuadroDeCopiar?.titulo ?? ''}
+        sobretitulo={persona}
+        leyenda={delCuadroDeCopiar?.leyenda ?? ''}
+        opciones={delCuadroDeCopiar?.opciones ?? []}
+        varios={delCuadroDeCopiar?.varios ?? false}
+        vacio={delCuadroDeCopiar?.vacio ?? ''}
+        queSeCopia={delCuadroDeCopiar?.queSeCopia ?? null}
+        vistaPrevia={delCuadroDeCopiar?.vistaPrevia ?? (() => null)}
+        textoDelPrincipal={delCuadroDeCopiar?.textoDelPrincipal ?? (() => '')}
+        onCopiar={delCuadroDeCopiar?.onCopiar ?? (() => null)}
+        onCerrar={() => setCopiando(null)}
+      />
 
       {deshacer ? (
         <AvisoFlotante onCerrar={() => setDeshacer(null)} seQueda>

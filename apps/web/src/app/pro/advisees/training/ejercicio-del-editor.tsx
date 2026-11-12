@@ -51,6 +51,7 @@ import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
+import { COPY_COPIAR } from './copiar-a';
 import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
@@ -172,6 +173,7 @@ export function EjercicioDelEditor({
   onSubir,
   onBajar,
   onDuplicar,
+  onCopiar,
   onAplicarLinea,
   revisar = null,
 }: {
@@ -193,6 +195,8 @@ export function EjercicioDelEditor({
   onBajar: () => void;
   /** TB-48: la copia del ejercicio, justo después. */
   onDuplicar: () => void;
+  /** ED-23: abre el cuadro de copiar el ejercicio, su prescripción o sus series. */
+  onCopiar?: (que: 'ejercicio' | 'prescripcion' | 'series') => void;
   /** ED-22: la prescripción que dejó la línea, y la marca de la carga a revisar si cambiaron las repeticiones. */
   onAplicarLinea: (p: PrescripcionE, revisar: string | null) => void;
   /** DJ-8: la carga quedó escrita para otras repeticiones («escrita para 6-8: revisala»). */
@@ -246,6 +250,14 @@ export function EjercicioDelEditor({
               texto="Más"
               acciones={[
                 { clave: 'duplicar', texto: EDICION.duplicarEjercicio, alElegir: onDuplicar },
+                // ED-23 (V3 E-02): un verbo para cada copia.
+                ...(onCopiar
+                  ? [
+                      { clave: 'copiar-ejercicio', texto: COPY_COPIAR.copiarElEjercicio, alElegir: () => onCopiar('ejercicio') },
+                      { clave: 'copiar-prescripcion', texto: COPY_COPIAR.copiarLaPrescripcion, alElegir: () => onCopiar('prescripcion') },
+                      { clave: 'copiar-series', texto: COPY_COPIAR.copiarLasSeries, alElegir: () => onCopiar('series'), noSePuede: p.sets.length === 0 ? 'Este ejercicio todavía no tiene series.' : null },
+                    ]
+                  : []),
                 { clave: 'quitar', texto: `Quitar ${nombre}`, alElegir: onQuitar },
               ]}
             />

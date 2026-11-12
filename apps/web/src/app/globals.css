@@ -16294,3 +16294,28 @@ p.cifra-del-espacio__desglose {
   font-size: 0.8em;
   font-weight: 400;
 }
+
+/* ═══ ED-23 y ED-24 · El cuadro de copiar ═══════════════════════════════════════════════════════════════════════ */
+.cuadro-de-copiar {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cuadro-de-copiar legend {
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+}
+
+.cuadro-de-copiar__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cuadro-de-copiar__previa {
+  margin-top: 0.75rem;
+  font-weight: 600;
+}
