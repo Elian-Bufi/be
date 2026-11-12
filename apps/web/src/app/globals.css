@@ -16407,3 +16407,403 @@ p.cifra-del-espacio__desglose {
   outline: 3px solid var(--foco);
   outline-offset: 2px;
 }
+
+/* ═══ §5.8 · La fuerza estimada (ED-72 a ED-76; maquetas 14 a 18) ═════════════════════════════════════════════════════
+   En la estación, el detalle del ejercicio es un cuadro enfocado al costado (de vidrio, ED-18); sus cajas de adentro van
+   con el fondo «de adentro», sin sombra ni desenfoque propio. En «Analizar», la evolución con su lectura al costado. */
+.ejercicio-del-editor__fuerza {
+  margin: 0 0 0.75rem;
+}
+
+.detalle-del-ejercicio {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.detalle-del-ejercicio__aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.detalle-del-ejercicio__indica {
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo-suave);
+}
+
+.detalle-del-ejercicio__calcular {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.75rem 0 0;
+}
+
+.tarjeta-de-fuerza {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.tarjeta-de-fuerza__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+.tarjeta-de-fuerza__caja,
+.serie-observada__en-vivo,
+.carga-desde-la-estimacion__cuenta,
+.como-se-calculo__cuenta,
+.como-se-calculo__caja,
+.fuerza-en-analizar__lectura {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo-suave);
+}
+
+.tarjeta-de-fuerza__caja > p,
+.serie-observada__en-vivo > p,
+.carga-desde-la-estimacion__cuenta > p,
+.como-se-calculo__cuenta > p,
+.como-se-calculo__caja > p {
+  margin: 0.35rem 0 0;
+}
+
+.tarjeta-de-fuerza__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.tarjeta-de-fuerza__valor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.tarjeta-de-fuerza__numero {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.tarjeta-de-fuerza__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.serie-observada,
+.carga-desde-la-estimacion,
+.como-se-calculo {
+  display: grid;
+  gap: 1rem;
+}
+
+.serie-observada > p,
+.como-se-calculo > p {
+  margin: 0;
+}
+
+.serie-observada__campos {
+  display: grid;
+  grid-template-columns: minmax(7rem, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.serie-observada__rotulo,
+.serie-observada__campos > label,
+.carga-desde-la-estimacion__rotulo {
+  font-weight: 600;
+}
+
+.serie-observada__par {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.serie-observada__numero {
+  width: 7rem;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.serie-observada__rir {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.serie-observada__regla {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.serie-observada__reglas {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.serie-observada__reglas li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.carga-desde-la-estimacion__estimaciones {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.carga-desde-la-estimacion__estimaciones > legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.opcion-de-estimacion {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.opcion-de-estimacion[data-elegida] {
+  border-color: var(--borde-control);
+  background: var(--fondo-suave);
+}
+
+.opcion-de-estimacion input {
+  margin-top: 0.2rem;
+}
+
+.carga-desde-la-estimacion__par {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+}
+
+.carga-desde-la-estimacion__escribe > p {
+  margin: 0.3rem 0 0;
+}
+
+.como-se-calculo__datos th[scope="row"] {
+  font-weight: 600;
+}
+
+.como-se-calculo__par {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+
+.como-se-calculo__caja h3,
+.como-se-calculo__sesion h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.como-se-calculo__fuera {
+  margin: 0.35rem 0 0;
+  padding-inline-start: 1.1rem;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .estacion .tarjeta-de-fuerza__caja,
+  .estacion .serie-observada__en-vivo,
+  .estacion .carga-desde-la-estimacion__cuenta,
+  .estacion .como-se-calculo__cuenta,
+  .estacion .como-se-calculo__caja,
+  .estacion .detalle-del-ejercicio__indica,
+  .estacion .opcion-de-estimacion[data-elegida] {
+    background: var(--vidrio-adentro);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  .estacion .tarjeta-de-fuerza__caja,
+  .estacion .serie-observada__en-vivo,
+  .estacion .carga-desde-la-estimacion__cuenta,
+  .estacion .como-se-calculo__cuenta,
+  .estacion .como-se-calculo__caja,
+  .estacion .detalle-del-ejercicio__indica,
+  .estacion .opcion-de-estimacion[data-elegida] {
+    background: var(--fondo-suave);
+  }
+}
+
+.cuadro-enfocado__atras {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+/* ED-74 · la evolución en «Analizar» */
+.fuerza-en-analizar__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.25rem;
+  margin: 0.75rem 0;
+}
+
+.fuerza-en-analizar__zonas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 64rem) {
+  .fuerza-en-analizar__zonas {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+  }
+}
+
+.fuerza-en-analizar__grafico {
+  margin: 0 0 1rem;
+}
+
+.fuerza-en-analizar__grafico figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.fuerza-en-analizar__grafico svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.fuerza-en-analizar__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  color: var(--tenue);
+  font-size: 0.9rem;
+}
+
+.fuerza-en-analizar__leyenda span::before {
+  content: "";
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-inline-end: 0.35rem;
+  border: 2px solid var(--metrica-1);
+  border-radius: 50%;
+  background: var(--metrica-1);
+  vertical-align: -0.05rem;
+}
+
+.fuerza-en-analizar__leyenda [data-forma="hueco"]::before {
+  background: var(--superficie);
+}
+
+.fuerza-en-analizar__leyenda [data-forma="rombo"]::before {
+  border-radius: 1px;
+  transform: rotate(45deg) scale(0.85);
+}
+
+.fuerza-en-analizar__guia {
+  stroke: var(--borde);
+  stroke-width: 1;
+}
+
+.fuerza-en-analizar__eje,
+.fuerza-en-analizar__valor {
+  fill: var(--tenue);
+  font-size: 12px;
+}
+
+.fuerza-en-analizar__valor {
+  fill: var(--texto);
+  font-weight: 600;
+}
+
+.fuerza-en-analizar__linea {
+  stroke: var(--metrica-1);
+  stroke-width: 2;
+}
+
+.fuerza-en-analizar__punto {
+  cursor: pointer;
+}
+
+.fuerza-en-analizar__punto circle,
+.fuerza-en-analizar__punto rect {
+  fill: var(--metrica-1);
+  stroke: var(--metrica-1);
+  stroke-width: 2.5;
+}
+
+.fuerza-en-analizar__punto[data-forma="hueco"] circle {
+  fill: var(--superficie);
+}
+
+.fuerza-en-analizar__punto .fuerza-en-analizar__aro {
+  fill: none;
+  stroke: var(--texto);
+  stroke-width: 2;
+}
+
+.fuerza-en-analizar__lectura h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.fuerza-en-analizar__lectura h4 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.fuerza-en-analizar__diferencia {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.lista-de-ejercicios-con-fuerza {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 40rem) {
+  .serie-observada__campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

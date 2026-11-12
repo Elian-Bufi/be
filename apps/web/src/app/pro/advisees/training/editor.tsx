@@ -144,6 +144,11 @@ function nombresDe(v: PlanConObjetivos): Record<string, string> {
   return Object.fromEntries(prescripcionesDe(v).map((p) => [p.exerciseVersionId, p.exerciseName]));
 }
 
+/** §5.8: el ejercicio del catálogo de cada versión de ejercicio, para la fuerza estimada (la lista de la v1 es por ejercicio). */
+function ejerciciosDe(v: PlanConObjetivos): Record<string, string> {
+  return Object.fromEntries(prescripcionesDe(v).map((p) => [p.exerciseVersionId, p.exerciseId]));
+}
+
 function imagenesDe(v: PlanConObjetivos): Record<string, ImagenDeEjercicio | null> {
   return Object.fromEntries(prescripcionesDe(v).map((p) => [p.exerciseVersionId, p.image]));
 }
@@ -262,6 +267,7 @@ export function EditorDePlan({
   const [bloques, setBloques] = useState<Bloques>([]);
   const [nombres, setNombres] = useState<Record<string, string>>({});
   const [imagenes, setImagenes] = useState<Record<string, ImagenDeEjercicio | null>>({});
+  const [ejercicios, setEjercicios] = useState<Record<string, string>>({});
   const [proximaRevision, setProximaRevision] = useState('');
   // TB-15: «¿Cuándo la revisás?» al activar, con nada elegido (o la fecha que ya tenía la versión); la fecha que resulta
   // es la que se guarda en la versión antes de activarla.
@@ -353,6 +359,7 @@ export function EditorDePlan({
     setBloques(aEntrada(r.datos.data));
     setNombres(nombresDe(r.datos.data));
     setImagenes(imagenesDe(r.datos.data));
+    setEjercicios(ejerciciosDe(r.datos.data));
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
     setAgenda(r.datos.data.agenda);
     setSucio(false);
@@ -457,6 +464,7 @@ export function EditorDePlan({
           setFallo(false);
           setNombres((n) => ({ ...n, ...nombresDe(guardada) }));
           setImagenes((x) => ({ ...x, ...imagenesDe(guardada) }));
+          setEjercicios((x) => ({ ...x, ...ejerciciosDe(guardada) }));
           if (huellaDelGuardado(cuerpo) !== huellaDelGuardado(mandado)) {
             return guardar(automatico, { base: guardada, bloques: conLosIdentificadoresNuevos(bloquesEnviados, mandado.estructura, aEntrada(guardada)), ediciones: edicionesAlEnviar });
           }
@@ -519,6 +527,7 @@ export function EditorDePlan({
       }
       setNombres((n) => ({ ...n, ...nombresDe(detalle.datos.data) }));
       setImagenes((x) => ({ ...x, ...imagenesDe(detalle.datos.data) }));
+      setEjercicios((x) => ({ ...x, ...ejerciciosDe(detalle.datos.data) }));
     }
     if (sinCambiosDespues) setSucio(false);
     return guardada;
@@ -1830,6 +1839,7 @@ export function EditorDePlan({
                   prescripcion={p}
                   nombre={nombres[p.exerciseVersionId] ?? 'Ejercicio'}
                   imagen={imagenes[p.exerciseVersionId] ?? null}
+                  exerciseId={ejercicios[p.exerciseVersionId] ?? null}
                   abierto={abiertos.has(l)}
                   problemas={problemasDelEjercicio(rutasConProblemas, { bloque: i, microciclo: j, sesion: k, ejercicio: l })}
                   alAlternar={() => {

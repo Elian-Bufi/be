@@ -100,6 +100,7 @@ import { Marca } from './marca';
 import { ElegirMetricasDeEntrada } from './entrada';
 import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, ParametrosDelEjercicio, useEtapasDelAno } from './preguntas';
 import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
+import { FuerzaEnAnalizar, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
 import { nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerie, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
@@ -158,6 +159,8 @@ const HITOS = TIPOS_DE_HITO_DE_PLANIFICACION.join(',');
 export function Analizar() {
   const { parametros } = useSeguimiento();
   const id = useId();
+  // ED-74: la fuerza estimada, como la composición, con su propia pieza (TA-25: no se guarda como vista).
+  if (parametros.get('pregunta') === PREGUNTA_DE_LA_FUERZA) return <FuerzaEnAnalizar tituloId={`${id}-titulo`} />;
   return parametros.get('pregunta') === PREGUNTA_DE_LA_COMPOSICION ? <ComposicionEnAnalizar tituloId={`${id}-titulo`} /> : <AnalizarConSusPreguntas />;
 }
 
