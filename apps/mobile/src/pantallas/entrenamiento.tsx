@@ -58,7 +58,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
 import { ajustesDelDescanso, useAjustesDelDescanso } from '../ajustes-del-descanso';
 import { cancelarAvisoDelDescanso, pedirPermisoDeAvisos, permisoDeAvisos, programarAvisoDelDescanso } from '../avisos-del-telefono';
-import { accionAlDestildar, accionAlTildar, filaDeAcciones, llegoAlRecomendado, pedidoDelPermiso, planDelAviso, type PermisoDeAvisos } from '../descanso-automatico';
+import { accionAlDestildar, accionAlTildar, filaDeAcciones, llegoAlRecomendado, pedidoDelPermiso, planDelAviso, queHaceElMedio, type PermisoDeAvisos } from '../descanso-automatico';
 import { usePublicarFilaFija } from '../fila-fija';
 import { TEXTOS_DEL_DESCANSO } from '../textos-del-descanso';
 import { estadoDeSincronizacion, type SesionLocal } from '../almacen-de-entrenamiento';
@@ -1527,9 +1527,14 @@ export function PantallaDeSesion({
       : null;
   usePublicarFilaFija(datosDeLaFila, ocupado, {
     izquierda: () => (estado?.pausada ? hacer({ tipo: 'reanudar' }, 'Sesión reanudada') : pausar()),
-    // «Empezar serie N» con un descanso corriendo es la acción compuesta de siempre; «Terminar serie N» para su reloj.
+    // «Empezar serie N» con un descanso corriendo es la acción compuesta de siempre. «Terminar serie N» tilda la serie,
+    // como su casilla: la registra, cierra su reloj, empieza el descanso y pasa a la siguiente (AV2-30).
     medio: () => {
-      if (datosDeLaFila?.medio) relojDeLaFila(datosDeLaFila.medio.setIndex);
+      if (!datosDeLaFila?.medio) return;
+      const toque = queHaceElMedio(datosDeLaFila.medio, filas);
+      const fila = filas.find((f) => f.setIndex === toque.setIndex);
+      if (toque.tipo === 'tildar' && fila) tildar(fila);
+      else relojDeLaFila(toque.setIndex);
     },
     siguiente: () => {
       if (ejercicioSiguiente) pasarA(ejercicioSiguiente.prescriptionId);

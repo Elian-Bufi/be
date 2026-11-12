@@ -1633,3 +1633,57 @@ test('TEST-AV2-018 · «Figura: Hombre | Mujer» arriba, en la fila de controles
   assert.match(fila, /<ElegirLaFigura sexo=\{sexo\} alElegir=\{setSexo\} \/>/);
   assert.equal((progreso.match(/<ElegirLaFigura /g) ?? []).length, 1);
 });
+
+// ═══ WP-APP-VUELTA-2, etapa B: la sesión de entrenamiento, con lo que encontró Dirección en la 0.25 (AV2-30 a AV2-38) ═══
+
+/**
+ * La sesión de Piernas A con la fila fija, como la usó Dirección en la 0.25: cuatro series de Sentadilla, las dos
+ * primeras registradas. `tocarElMedio` hace lo que hace la pantalla con el toque (`queHaceElMedio`): cronometrar, tildar
+ * (registrar, cerrar el reloj y, con el ajuste automático, empezar el descanso) o solo parar el reloj.
+ */
+function sesionConLaFila(registradas = [1, 2]) {
+  const s = sesionDePrueba();
+  const hechas = new Set(registradas);
+  const filas = () => [1, 2, 3, 4].map((setIndex) => ({ setIndex, estado: hechas.has(setIndex) ? 'pendiente-de-enviar' : 'sin-registrar' }));
+  const fila = () => descanso.filaDeAcciones({ pausada: false, abierta: s.estado().medicionAbierta, prescriptionId: 'pA', siguienteSinRegistrar: filas().find((f) => f.estado === 'sin-registrar')?.setIndex ?? null, haySiguienteEjercicio: true });
+  const tocarElMedio = () => {
+    const toque = descanso.queHaceElMedio(fila().medio, filas());
+    if (toque.tipo === 'cronometrar') return s.hacer(descanso.accionDeEmpezarSerie('pA', toque.setIndex));
+    if (toque.tipo === 'parar-el-reloj') return s.hacer({ tipo: 'finalizar-serie' });
+    const auto = descanso.accionAlTildar(s.estado(), AUTO, { prescriptionId: 'pA', setIndex: toque.setIndex, ultimaDelEjercicio: toque.setIndex === 4 });
+    hechas.add(toque.setIndex);
+    return auto ? s.hacer(auto) : s.hacer({ tipo: 'finalizar-serie' });
+  };
+  return { ...s, fila, filas, tocarElMedio, hechas };
+}
+
+test('TEST-AV2-028 · «Terminar serie 3» tilda la serie 3, empieza su descanso y la fila pasa a «Empezar serie 4» (el hallazgo de la 0.25)', () => {
+  const s = sesionConLaFila();
+  assert.equal(s.fila().medio.texto, 'Empezar serie 3');
+  s.tocarElMedio();
+  assert.equal(s.fila().medio.texto, 'Terminar serie 3');
+  s.avanzar(40);
+  const r = s.tocarElMedio();
+  assert.ok(s.hechas.has(3), 'la serie 3 quedó tildada');
+  assert.deepEqual(r.eventos.map((e) => [e.type, e.setIndex ?? null]), [['SET_TIMING_FINISHED', null], ['REST_STARTED', 3]], 'una sola acción: cierra el reloj y empieza el descanso');
+  assert.equal(s.fila().medio.texto, 'Empezar serie 4', 'pasa a la siguiente, no vuelve a «Empezar serie 3»');
+  // La última del ejercicio: se tilda, no arranca descanso (AVD-3) y no queda nada que empezar.
+  s.avanzar(90);
+  s.tocarElMedio();
+  s.avanzar(35);
+  const ultima = s.tocarElMedio();
+  assert.deepEqual(ultima.eventos.map((e) => e.type), ['SET_TIMING_FINISHED']);
+  assert.deepEqual([...s.hechas].sort(), [1, 2, 3, 4]);
+  assert.equal(s.fila().medio, null, 'todas registradas');
+  const tiempos = calcularTiempos(s.eventos(), () => 90);
+  assert.deepEqual(tiempos.timedSets.map((x) => [x.setIndex, x.duration.ms]), [[3, 40_000], [4, 35_000]], 'cada serie con su tiempo medido, sin volver a cero');
+});
+
+test('TEST-AV2-028 · con la serie ya registrada, «Terminar serie N» solo para el reloj: no la destilda', () => {
+  assert.deepEqual(descanso.queHaceElMedio({ tipo: 'terminar-serie', setIndex: 2, texto: '' }, [{ setIndex: 2, estado: 'sincronizada' }]), { tipo: 'parar-el-reloj', setIndex: 2 });
+  assert.deepEqual(descanso.queHaceElMedio({ tipo: 'empezar-serie', setIndex: 3, texto: '' }, []), { tipo: 'cronometrar', setIndex: 3 });
+  // La pantalla manda «tildar» a la casilla de la fila, la misma que se toca a mano.
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  assert.match(PANTALLA, /queHaceElMedio\(/);
+  assert.match(PANTALLA, /toque\.tipo === 'tildar'[\s\S]{0,200}tildar\(/);
+});

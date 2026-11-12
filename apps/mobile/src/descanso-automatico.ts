@@ -219,6 +219,25 @@ export function filaDeAcciones(d: {
   };
 }
 
+/** Lo que hace el toque en la acción del medio, según la fila de esa serie. */
+export type ToqueDelMedio = { readonly tipo: 'cronometrar'; readonly setIndex: number } | { readonly tipo: 'tildar'; readonly setIndex: number } | { readonly tipo: 'parar-el-reloj'; readonly setIndex: number };
+
+/**
+ * El toque en la acción del medio de la fila fija (AV2-30, el hallazgo de Dirección en la 0.25):
+ * - «Empezar serie N» arranca el reloj de esa serie (con un descanso corriendo, la acción compuesta lo cierra antes);
+ * - «Terminar serie N», con la serie sin registrar, es **tildarla**: se registra con lo escrito y, en lo vacío, lo
+ *   planificado; su reloj se cierra y, con el ajuste automático, empieza el descanso en la misma acción, y el foco pasa a
+ *   la serie siguiente. Es lo que hacen Strong y Hevy con el tilde de la serie;
+ * - con la serie ya registrada (se cronometró de nuevo una fila tildada), solo para el reloj: tildar la destildaría.
+ * Desde la 0.23 (DL-166, AV-13), «Terminar serie N» solo paraba el reloj: la serie quedaba sin registrar, la fila volvía
+ * a «Empezar serie N» y el conteo, a cero.
+ */
+export function queHaceElMedio(medio: AccionDelMedio, filas: readonly { readonly setIndex: number; readonly estado: string }[]): ToqueDelMedio {
+  if (medio.tipo === 'empezar-serie') return { tipo: 'cronometrar', setIndex: medio.setIndex };
+  const fila = filas.find((f) => f.setIndex === medio.setIndex);
+  return fila?.estado === 'sin-registrar' ? { tipo: 'tildar', setIndex: medio.setIndex } : { tipo: 'parar-el-reloj', setIndex: medio.setIndex };
+}
+
 /** La acción de tiempo de «Empezar serie N»: la de siempre, que con un descanso corriendo lo termina en el mismo instante. */
 export const accionDeEmpezarSerie = (prescriptionId: string, setIndex: number): AccionDeTiempo => ({ tipo: 'cronometrar-serie', prescriptionId, setIndex });
 
