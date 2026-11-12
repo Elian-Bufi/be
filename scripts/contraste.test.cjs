@@ -404,7 +404,8 @@ function medicionesDeLaReceta(nombre) {
   const sobre = (fondos, encima) => Object.fromEntries(Object.entries(fondos).map(([k, v]) => [k, capa(encima, v)]));
   const nivel1 = sobre(fondo, t.vidrio);
   const nivel1ConBrillo = Object.fromEntries(Object.entries(sobre(nivel1, t.vidrioBrillo)).map(([k, v]) => [`${k}, con el brillo`, v]));
-  const nivel2 = sobre(nivel1, t.vidrioInterior);
+  // Con su propio nombre: al juntarlo con el nivel 1 (el borde de un campo), las claves iguales se pisarían.
+  const nivel2 = Object.fromEntries(Object.entries(sobre(nivel1, t.vidrioInterior)).map(([k, v]) => [`${k}, en el nivel 2`, v]));
   const opacas = { superficie: t.superficie };
   const etiqueta = { ...sobre(nivel1, t.etiquetaFondo), ...sobre(opacas, t.etiquetaFondo) };
   const destacada = { ...sobre(nivel1, t.destacadaFondo), ...sobre(opacas, t.destacadaFondo) };
