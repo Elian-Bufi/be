@@ -334,8 +334,18 @@ export function EditorDeBorrador({
         // se compara con cada cuerpo sin respuesta, sin los identificadores que puso el servidor.
         const mandados = sinRespuesta.current;
         const actual = mandados.length > 0 && !reenvio ? await api.consultarPlan(token, planId) : null;
-        if (actual && sesionPerdida(actual)) {
+        if (actual && (sesionPerdida(actual) || accesoRetirado(actual))) {
           setGuardando(false);
+          return null;
+        }
+        // Si la relectura tampoco respondió (sin red o un 5xx), no se sabe qué quedó guardado: no es un conflicto. Queda
+        // como un guardado sin respuesta. Lo mandado sigue en la lista, y el intento siguiente vuelve a dar 409 y a releer.
+        if (actual && !actual.ok) {
+          setGuardando(false);
+          setFallo(true);
+          setDetalle({ ...detalleDelFallo(actual, horaDelDia(new Date())), motivo: 'SIN_RESPUESTA' });
+          autoguardado.informar('SIN_RESPUESTA');
+          if (!automatico) setMensaje({ tipo: 'error', texto: COPY_GUARDADO.sinRespuesta });
           return null;
         }
         const cual = actual?.ok ? cualMande(cuerpoGuardado(actual.datos.data), mandados) : -1;

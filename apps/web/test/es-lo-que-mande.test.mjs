@@ -152,3 +152,27 @@ test('TEST-EDP-048 · los dos editores guardan lo mandado sin respuesta y lo com
     assert.doesNotMatch(fuente, /JSON\.stringify\(aEntrada\(actual\.datos\.data\)\) === JSON\.stringify/, archivo);
   }
 });
+
+test('TEST-EDP-048 · si la relectura que sigue al 409 tampoco responde, no es un conflicto: es un guardado sin respuesta', () => {
+  // Revisión adversaria de la etapa 1: sin red o con un 5xx en la relectura, `cual` daba -1 y aparecía «cambió en otra
+  // pestaña», con el autoguardado y «Guardar ahora» apagados. La única salida era «Cargar la versión guardada», que
+  // pisaba lo escrito después del envío perdido.
+  for (const archivo of ['training/editor.tsx', 'nutrition/editor.tsx']) {
+    const fuente = leer(archivo);
+    const desde = fuente.indexOf("if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {");
+    const conflicto = fuente.indexOf('setConflicto(true);', desde);
+    assert.ok(desde > 0 && conflicto > desde, `${archivo}: el caso del 409`);
+    const caso = fuente.slice(desde, conflicto);
+    // La sesión perdida y el acceso retirado se dicen como en cualquier guardado.
+    assert.match(caso, /if \(actual && \(sesionPerdida\(actual\) \|\| accesoRetirado\(actual\)\)\) \{/, archivo);
+    // Una relectura que no respondió va antes que el conflicto: queda el fallo sin respuesta, con su detalle, y la lista
+    // de lo mandado no se vacía (el intento siguiente vuelve a dar 409 y a releer).
+    const sinRelectura = caso.indexOf('if (actual && !actual.ok) {');
+    assert.ok(sinRelectura > 0, `${archivo}: la relectura que no respondió tiene su camino, antes del conflicto`);
+    const bloque = caso.slice(sinRelectura, caso.indexOf('return null;', sinRelectura));
+    assert.match(bloque, /setFallo\(true\);/, archivo);
+    assert.match(bloque, /setDetalle\(\{ \.\.\.detalleDelFallo\(actual, horaDelDia\(new Date\(\)\)\), motivo: 'SIN_RESPUESTA' \}\);/, archivo);
+    assert.match(bloque, /autoguardado\.informar\('SIN_RESPUESTA'\);/, archivo);
+    assert.doesNotMatch(bloque, /setConflicto|sinRespuesta\.current = \[\]/, archivo);
+  }
+});

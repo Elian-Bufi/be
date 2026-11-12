@@ -365,11 +365,15 @@ STEPS                1. Comparar la versión releída con el cuerpo que se mand�
                      3. Adoptar la versión del servidor: el token y los identificadores, conservando lo escrito
                         después.
                      4. Mutación: comparar con los identificadores incluidos.
+                     5. La relectura que sigue al 409 tampoco responde (sin red o un 5xx).
 EXPECTED             1 → coincide: el editor adopta la versión, vuelve a mandar lo escrito después y no muestra el
                      conflicto. 2 → no coincide: conflicto real, y «Cargar la versión guardada» avisa que
                      reemplaza lo que está en pantalla. 3 → lo escrito después sigue en pantalla, con los
                      identificadores del servidor en lo que ya existía. 4 → el caso 1 da conflicto: la prueba falla.
-NEGATIVE_ASSERTIONS  Un conflicto real nunca se toma por propio. Lo escrito después nunca se pierde al adoptar.
+                     5 → no hay conflicto: queda el fallo sin respuesta, con su detalle; lo mandado sigue en la
+                     lista, y el intento siguiente vuelve a dar 409 y a releer (revisión adversaria de la etapa 1).
+NEGATIVE_ASSERTIONS  Un conflicto real nunca se toma por propio. Lo escrito después nunca se pierde al adoptar. Una
+                     relectura que no respondió nunca se toma por un conflicto.
 AUTOMATION           apps/web/test/es-lo-que-mande.test.mjs («TEST-EDP-048 · …») sobre
                      `advisees/es-lo-que-mande.ts` · el recorrido «respuesta perdida» (si entra en la etapa; si
                      no, declarado)
