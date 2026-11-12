@@ -666,3 +666,15 @@ AUTOMATION           scripts/gate-08-42.test.cjs (en `npm test`). Mutaciones: un
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; las decisiones de Dirección sobre cada condición sin cumplir (lo que no es código, §9)
 ```
+
+## Casos sumados por las revisiones adversarias de la etapa 2 (2026-11-12)
+
+Cada uno, en rojo antes del arreglo y en verde después (§13.8 del paquete):
+
+| Oráculo | Caso nuevo | Automatización |
+|---|---|---|
+| TEST-UF-007 | Una cuenta administrativa no se recupera por correo: el mismo 202, nada guardado ni enviado, CUENTA_ADMINISTRATIVA en la auditoría | `recuperacion-de-acceso.test.ts` y `recuperacion-de-acceso.int-spec.ts` |
+| TEST-UF-008 | El orden real de la asistida: el pedido sin correo espera 24 horas y acepta el código que Administración emite después | `recuperacion-de-acceso.test.ts` y `recuperacion-de-acceso.int-spec.ts` |
+| TEST-UF-010 | Una versión que la APK no trae se lee de API-ACC-09 (no pide actualizar); el alta de un cliente capaz acepta la versión que la vigente reemplaza | `textos-de-uso-real.test.ts`, `nombre-obligatorio.test.ts` (APK) y `textos-de-uso-real.int-spec.ts` |
+| TEST-UF-011 | El archivo con el estado vigente (una comida anulada sale anulada); una ruta no sobrevive a una revocación ni a una cuenta suspendida; el cupo de pedidos y exportaciones | `ruta-de-exportacion.spec.ts` y `derechos-del-titular.int-spec.ts` |
+| TEST-UF-014 | Administración restablece el segundo factor (API-ADM-19): quien configuró uno ajeno queda afuera y el profesional lo configura de nuevo; `SesionGuard` sin contexto no deja pasar | `sesion-de-la-solicitud.spec.ts` y `segundo-factor-del-profesional.int-spec.ts` |

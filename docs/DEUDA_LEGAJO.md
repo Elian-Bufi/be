@@ -7547,3 +7547,11 @@ ratificar (§13.5 y §13.6 del paquete):
   y la asesoría jurídica (los textos validados, los DPA, la transferencia, el plan de la base con sus copias y los
   ensayos). Cada una tiene su evidencia o su dueño y una fecha propuesta, y una guardia (TEST-UF-018) lo sostiene en cada
   PR. Hallazgo: suspender la cuenta de una persona (el menor descubierto, §24.7 c) no tiene operación de Administración.
+
+**Las revisiones adversarias de la etapa 2 (2026-11-12, mismo PR).** Dos revisiones, «aprobado con arreglos»; todos los
+hallazgos se comprobaron contra el código y se arreglaron (§13.8 del paquete), con las decisiones UF-T56 a UF-T60, a
+ratificar. Suma dos operaciones con DL-169: **API-ADM-19** (familia ADM, propia de BE: Administración restablece el
+segundo factor de un profesional, con fundamento) y **API-ACC-09** (ID nuevo de la familia ACC, que el 09 no usa: el texto
+de una versión publicada, sin sesión, para que la APK del 25/11 lea los textos que se publiquen después). Corrige el plan
+para publicar los textos (§13.7): no hace falta otra APK para los términos y la privacidad; A3, B2 y los que se aceptan
+al usarlos quedan pendientes para el PR de publicación.
