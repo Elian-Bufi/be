@@ -29,6 +29,8 @@
  */
 import {
   COPY_AGENDA_DE_ENTRENAMIENTO,
+  COPY_PRESETS,
+  DIAS_DE_LA_SEMANA,
   COPY_DE_VERSIONES,
   COPY_GUARDADO,
   COPY_COMPATIBILIDAD_DE_CLIENTES,
@@ -58,6 +60,8 @@ import {
   sesionesDelBloque,
   ubicacionDelProblemaDeEntrenamiento,
   type AgendaDeEntrenamiento,
+  type DiaDeLaSemana,
+  type PresetDeEstructura,
   type DetalleDelFallo,
   type ImagenDeEjercicio,
   type PlanConObjetivos,
@@ -80,6 +84,11 @@ import { diaEnUnaFrase, horaDelDia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { conLasDeLaPosicion, type AlcanceDelPreset } from '../alcance-del-preset';
+import { alternarDia, COPY_ESTACION as CE, DIA_CORTO, DIA_LARGO, diasCompartidos, PRIMER_USO_DE_LA_ESTACION, ponerDias, sinDias, tiraDeLaSemana } from '../estacion/estacion';
+import { GaleriaDePresets } from '../galeria-de-presets';
+import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
+import { PrimerUso } from '../../../../components/primer-uso';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
 import { compararEntrenamiento } from '../comparar-versiones';
 import { AntesDeActivar } from '../cuadro-antes-de-activar';
@@ -238,7 +247,7 @@ export function EditorDePlan({
    */
   onDescartado: (porOtraPestana?: string) => void;
 }) {
-  const { token, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
   const persona = usePersonaDelArea();
   const [version, setVersion] = useState<PlanConObjetivos | null>(null);
@@ -295,6 +304,16 @@ export function EditorDePlan({
   // DJ-8 (ED-11 y ED-22): las cargas que quedaron escritas para otras repeticiones, por ejercicio. Es una marca de la
   // pantalla, no un dato: no viaja ni se guarda (EDT-12).
   const [cargasARevisar, setCargasARevisar] = useState<Readonly<Record<string, string>>>({});
+  // ED-15: el panel a 1280 × 800 (se abre con «Panel» y se superpone al centro) y su pestaña (ED-25).
+  const [panelAbierto, setPanelAbierto] = useState(false);
+  // ED-20: los días que trajo un preset de estructura, por nombre de sesión, para confirmarlos (son «del preset»).
+  const [diasDelPreset, setDiasDelPreset] = useState<Readonly<Record<string, readonly DiaDeLaSemana[]>>>({});
+  const [pestana, setPestana] = useState<'antes' | 'semana' | 'otras'>('antes');
+  // ED-11: la galería de presets, abierta desde la sesión (prescripción) o desde la estructura.
+  const [galeria, setGaleria] = useState<{ readonly tarea: 'prescripcion' | 'estructura'; readonly ejercicio: number | null } | null>(null);
+  // ED-11 (DJ-8): «Deshacer» de la última aplicación, con las prescripciones de antes por posición. Es la operación
+  // inversa, que se autoguarda como cualquier cambio; otro cambio cualquiera la retira, para que devuelva exacto.
+  const [deshacer, setDeshacer] = useState<{ readonly texto: string; readonly lugar: Lugar & { readonly k: number }; readonly antes: ReadonlyMap<number, PrescripcionE> } | null>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -333,6 +352,7 @@ export function EditorDePlan({
 
   const cambiar = (f: (b: Bloques) => Bloques) => {
     setBloques((b) => f(structuredClone(b)));
+    setDeshacer(null);
     setSucio(true);
     setProblemas(null);
     setMensaje(null);
@@ -865,9 +885,63 @@ export function EditorDePlan({
   const dondeSeAgrega =
     bloque && sesion ? [nombreDelBloque(bloque, i), ...(microciclo && j !== null ? [nombreDelMicrociclo(microciclo, j)] : []), nombreDeLaSesion(sesion, k)].join(' · ') : null;
 
+  // ── ED-25: «Antes de activar», en vivo en el panel ─────────────────────────────────────────────────────────
+  // Lo mismo que dice el cuadro (lo que el editor ve solo, lo que dijo la API de lo guardado y, hasta ED-08, la app de la
+  // persona), cada cosa con su lugar; desde el panel, «Ir a corregir» va directo, sin cuadro que cerrar.
+  const enElPanel = (p: ValidationIssue, texto: string) => ({ texto: `${dondeEsta(p, bloques)}: ${texto}`, ir: lugarDelProblemaDeEntrenamiento(p.path).bloque === null ? null : () => irAlProblema(p) });
+  const impidenEnVivo = [
+    ...impideGuardar.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
+    ...(revision?.estado === 'lista' && !sucio ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+    ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
+  ];
+  const sinCompletarEnVivo = loQueQuedaSinCompletarEnEntrenamiento(bloques).map((p) => enElPanel(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento'));
+  /** El nombre de una sesión por su identificador, como lo dice la agenda. */
+  const nombreDeLaSesionPorId = (id: string): string => sesionesDeLaAgenda.find((x) => x.sessionId === id)?.nombre ?? C.sesion;
+
+  // ── ED-11: aplicar un preset y deshacerlo ────────────────────────────────────────────────────────────────────
+  /** DJ-8: escribe las prescripciones nuevas en la sesión que se mira; «Deshacer» guarda las de antes. */
+  const aplicarElPreset = (a: AlcanceDelPreset, nombre: string) => {
+    const lugar = { i, j, k };
+    cambiar((x) => {
+      const s = lasSesiones(x)[k]!;
+      s.prescriptions = conLasDeLaPosicion(s.prescriptions, a.nuevas);
+      return x;
+    });
+    setCargasARevisar((m) => {
+      const c = { ...m };
+      for (const f of a.filas) c[`${prefijo}-s${k}-p${f.posicion}`] = f.cambio.carga.revisar ?? '';
+      return c;
+    });
+    setDeshacer({ texto: `«${nombre}»: ${COPY_PRESETS.aplicado(a.filas.length)}`, lugar, antes: a.antes });
+  };
+  /** La operación inversa: vuelve a escribir las prescripciones de antes, que se guardan como cualquier cambio. */
+  const deshacerLaAplicacion = () => {
+    if (!deshacer) return;
+    const { lugar, antes } = deshacer;
+    cambiar((x) => {
+      const s = (lugar.j !== null ? x[lugar.i]!.microcycles![lugar.j]!.sessions : x[lugar.i]!.sessions!)[lugar.k]!;
+      s.prescriptions = conLasDeLaPosicion(s.prescriptions, antes);
+      return x;
+    });
+    setMensaje({ tipo: 'exito', texto: COPY_PRESETS.deshecho });
+  };
+  /** ED-11: un preset de estructura reemplaza las sesiones vacías del bloque (o de la semana) que se mira; las que tienen ejercicios quedan. */
+  const aplicarLaEstructura = (p: PresetDeEstructura) => {
+    cambiar((x) => {
+      const lista = lasSesiones(x);
+      const conEjercicios = lista.filter((s) => s.prescriptions.length > 0);
+      lista.splice(0, lista.length, ...conEjercicios, ...p.sesiones.map((s) => ({ label: s.nombre, instructions: null, prescriptions: [] })));
+      return x;
+    });
+    setDiasDelPreset(Object.fromEntries(p.sesiones.map((s) => [s.nombre, s.dias])));
+    setMensaje({ tipo: 'exito', texto: COPY_PRESETS.estructuraEscribe(p.sesiones.length) });
+  };
+
   return (
-    <section className="seccion editor-del-plan editor-de-entrenamiento" aria-labelledby="titulo-borrador">
-      <div className="editor-del-plan__cabecera">
+    <section className="seccion editor-del-plan editor-de-entrenamiento estacion" aria-labelledby="titulo-borrador" data-estacion data-panel-abierto={panelAbierto ? '' : undefined}>
+      {/* ED-15 (DJ-6): la barra de comandos, fija, con cada acción siempre en el mismo lugar. El único botón lleno es
+          «Revisar y activar…». «Guardar como preset» y lo demás van en el «⋯» (ED-12). */}
+      <div className="editor-del-plan__cabecera estacion__barra" data-barra-de-comandos>
         {/* DJ-6: la versión en preparación lleva número (el de las activadas más uno) y dice que la persona no la ve. */}
         <h2 id="titulo-borrador">
           {COPY_DE_VERSIONES.versionEnPreparacion(numero)}{' '}
@@ -908,24 +982,6 @@ export function EditorDePlan({
               {sinGuardarAhora}
             </span>
           ) : null}
-          {/* TB-48: «Guardar como plantilla», con su texto y a la vista (antes, sola en un menú «⋯» sin texto). Si no se
-              puede, está apagado (con `aria-disabled`, que conserva el foco) y dice por qué, al lector y al tocarlo. */}
-          <button
-            type="button"
-            className="boton boton--quieto"
-            data-guardar-como-plantilla
-            aria-disabled={antesHayQueCorregir ? true : undefined}
-            aria-describedby={antesHayQueCorregir ? 'motivo-sin-plantilla' : undefined}
-            onClick={() => (antesHayQueCorregir ? setMensaje({ tipo: 'info', texto: antesHayQueCorregir }) : setGuardarPlantilla(true))}
-          >
-            <Icono nombre="plantillas" tamano={18} />
-            {COPY_PLANTILLAS.guardarComoPlantilla}
-          </button>
-          {antesHayQueCorregir ? (
-            <span id="motivo-sin-plantilla" className="visualmente-oculto">
-              {antesHayQueCorregir}
-            </span>
-          ) : null}
           {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
               barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
               ni de lugar mientras se escribe. */}
@@ -933,12 +989,23 @@ export function EditorDePlan({
             <Icono nombre="activar" tamano={18} />
             {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
           </button>
-          {/* ED-01: el «⋯» de la versión, con «Descartar la versión en preparación». La vigente nunca lo ofrece. */}
           {ofreceDescartar(version) ? (
             <MenuDeAcciones
               id="mas-de-la-version"
-              rotulo={COPY_DESCARTAR_LA_VERSION.menu}
+              rotulo={CE.masDeLaVersion}
               acciones={[
+                { clave: 'estructura', texto: CE.galeriaDeEstructura, alElegir: () => setGaleria({ tarea: 'estructura', ejercicio: null }) },
+                { clave: 'plantilla', texto: `${CE.guardarComoPreset}: ${CE.elPlanComoPlantilla}`, alElegir: () => setGuardarPlantilla(true), noSePuede: antesHayQueCorregir },
+                {
+                  clave: 'sesion-habitual',
+                  texto: `${CE.guardarComoPreset}: ${CE.laSesionComoHabitual}`,
+                  alElegir: () => {
+                    if (sesion) setSesionHabitual(structuredClone(sesion));
+                  },
+                  noSePuede: antesHayQueCorregir ?? (sesion ? null : C.sinSesiones),
+                },
+                { clave: 'prescripcion-habitual', texto: `${CE.guardarComoPreset}: ${CE.lasSeriesComoPrescripcion}`, alElegir: () => undefined, noSePuede: CE.prescripcionHabitualMasAdelante },
+                { clave: 'asistente', texto: CE.rehacerConElAsistente, alElegir: () => ir({ asistente: '1' }) },
                 {
                   clave: 'descartar',
                   texto: COPY_DESCARTAR_LA_VERSION.accion,
@@ -950,11 +1017,37 @@ export function EditorDePlan({
               ]}
             />
           ) : null}
+          {/* ED-15: a 1280 × 800, el panel se abre con «Panel» y se superpone al centro, sin achicar las celdas. */}
+          <button type="button" className="boton boton--quieto estacion__abrir-panel" aria-expanded={panelAbierto} aria-controls="zona-panel" onClick={() => setPanelAbierto((x) => !x)} data-abrir-panel>
+            <Icono nombre="menu" tamano={18} />
+            {panelAbierto ? CE.cerrarPanel : CE.abrirPanel}
+          </button>
         </div>
       </div>
-      <p className="nota editor-del-plan__que-es">
-        La persona no ve esta versión, y guardar no la activa{version.predecessorPlanId ? ': la versión activa no cambia hasta que actives esta' : ''}.
-      </p>
+      {/* TEST-EDP-018: los saltos entre las zonas, para el teclado. Se ven al recibir el foco. */}
+      <nav className="estacion__saltos" aria-label={CE.saltos}>
+        {(
+          [
+            ['zona-estructura', CE.irALaEstructura],
+            ['zona-editor', CE.irAlEditor],
+            ['zona-panel', CE.irAlPanel],
+          ] as const
+        ).map(([zona, texto]) => (
+          <button
+            key={zona}
+            type="button"
+            className="boton boton--enlace"
+            onClick={() => {
+              if (zona === 'zona-panel') setPanelAbierto(true);
+              document.getElementById(zona)?.focus();
+            }}
+          >
+            {texto}
+          </button>
+        ))}
+      </nav>
+      {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. */}
+      <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
       {conflicto ? (
         <Aviso tipo="error" enfocar>
           <p>{COPY_GUARDADO.conflicto}</p>
@@ -1016,255 +1109,438 @@ export function EditorDePlan({
         </Aviso>
       ) : null}
 
-      <AgendaDelPlan
-        agenda={agendaVisible}
-        sesiones={sesionesDeLaAgenda}
-        hoy={hoyEn()}
-        abierta={agendaAbierta}
-        onAbrir={() => setAgendaAbierta(true)}
-        onCerrar={() => setAgendaAbierta(false)}
-        onCambiar={cambiarAgenda}
-      />
-
-      <div className="plan__niveles niveles-del-editor">
-        {bloque ? (
-          <SelectorDeNivel nivel="bloque" rotulo={C.bloque} opciones={paraElegir(bloques.map(nombreDelBloque))} elegido={{ order: i + 1, label: nombreDelBloque(bloque, i) }} onElegir={(o) => elegirBloque(o - 1)}>
-            {agregarUnBloque}
-            <MenuDeAcciones
-              id="menu-del-bloque"
-              rotulo={`más acciones del bloque ${nombreDelBloque(bloque, i)}`}
-              alineado="izquierda"
-              acciones={[
-                { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-del-bloque', ...delBloque }) },
-                // Un bloque organiza sus sesiones bajo microciclos o directamente, nunca las dos cosas (09v10:281-283).
-                ...(mira.conMicrociclos
-                  ? []
-                  : [
-                      {
-                        clave: 'microciclos',
-                        texto: 'Organizar por microciclos',
-                        alElegir: organizarPorMicrociclos,
-                        // TB-48: se ofrece siempre; si el bloque ya tiene sesiones, dice adónde van.
-                        detalle: loQuePasaConLasSesiones(sesiones.length),
-                        noSePuede: sesiones.length > TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo ? E.topeDelMicrociclo(TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo, sesiones.length) : null,
-                      },
-                    ]),
-                { clave: 'quitar', texto: 'Quitar este bloque', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es el único bloque de la versión.' : null },
-              ]}
-            />
-            <span className="nota nivel-del-plan__detalle" data-sesiones-del-bloque>
-              <EnPartes texto={sesionesDelBloque(bloque)} />
-            </span>
-            <TextoAPedido
-              id={`b${i}-proposito`}
-              rotulo={C.proposito}
-              queEs="un propósito"
-              valor={bloque.purpose ?? null}
-              maximo={1000}
-              abierto={seCambia('proposito-del-bloque', delBloque)}
-              alAbrir={() => setTexto({ de: 'proposito-del-bloque', ...delBloque })}
-              alCambiar={(v) => cambiar((x) => ((x[i]!.purpose = v), x))}
-              alCerrar={dejarDeCambiar}
-            />
-          </SelectorDeNivel>
-        ) : (
-          <div className="nivel-del-plan" data-nivel="bloque" data-forma="ninguno">
-            <p className="nota">{C.sinBloques}</p>
-            {agregarUnBloque}
-          </div>
-        )}
-        {bloque && (seCambia('nombre-del-bloque', delBloque) || bloque.label.trim() === '') ? (
-          <CampoDeNombre
-            id={`b${i}-nombre`}
-            etiqueta="Nombre del bloque"
-            valor={bloque.label}
-            maximo={120}
-            enfocar={seCambia('nombre-del-bloque', delBloque)}
-            despues="menu-del-bloque"
-            alEmpezar={() => setTexto({ de: 'nombre-del-bloque', ...delBloque })}
-            alCambiar={(v) => cambiar((x) => ((x[i]!.label = v), x))}
-            alTerminar={dejarDeCambiar}
-          />
-        ) : null}
-
-        {bloque && microciclo && j !== null ? (
-          <SelectorDeNivel
-            nivel="microciclo"
-            rotulo={C.microciclo}
-            opciones={paraElegir((bloque.microcycles ?? []).map(nombreDelMicrociclo))}
-            elegido={{ order: j + 1, label: nombreDelMicrociclo(microciclo, j) }}
-            onElegir={(o) => elegirMicrociclo(o - 1)}
-          >
-            <button type="button" className="boton boton--quieto boton--compacto" data-agregar-microciclo onClick={agregarMicrociclo}>
-              <Icono nombre="mas" tamano={18} />
-              Agregar<span className="visualmente-oculto"> un microciclo</span>
-            </button>
-            <MenuDeAcciones
-              id="menu-del-microciclo"
-              rotulo={`más acciones del microciclo ${nombreDelMicrociclo(microciclo, j)}`}
-              alineado="izquierda"
-              acciones={[
-                { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-del-microciclo', ...delMicrociclo }) },
-                { clave: 'quitar', texto: 'Quitar este microciclo', alElegir: quitarMicrociclo },
-              ]}
-            />
-            <TextoAPedido
-              id={`${prefijo}-proposito`}
-              rotulo={C.proposito}
-              queEs="un propósito"
-              valor={microciclo.purpose ?? null}
-              maximo={1000}
-              abierto={seCambia('proposito-del-microciclo', delMicrociclo)}
-              alAbrir={() => setTexto({ de: 'proposito-del-microciclo', ...delMicrociclo })}
-              alCambiar={(v) => cambiar((x) => ((x[i]!.microcycles![j]!.purpose = v), x))}
-              alCerrar={dejarDeCambiar}
-            />
-          </SelectorDeNivel>
-        ) : null}
-        {microciclo && j !== null && (seCambia('nombre-del-microciclo', delMicrociclo) || microciclo.label.trim() === '') ? (
-          <CampoDeNombre
-            id={`${prefijo}-nombre`}
-            etiqueta="Nombre del microciclo"
-            valor={microciclo.label}
-            maximo={120}
-            enfocar={seCambia('nombre-del-microciclo', delMicrociclo)}
-            despues="menu-del-microciclo"
-            alEmpezar={() => setTexto({ de: 'nombre-del-microciclo', ...delMicrociclo })}
-            alCambiar={(v) => cambiar((x) => ((x[i]!.microcycles![j]!.label = v), x))}
-            alTerminar={dejarDeCambiar}
-          />
-        ) : null}
-
-        {bloque && sesion ? (
-          <SelectorDeNivel nivel="sesion" rotulo={C.sesion} opciones={paraElegir(sesiones.map(nombreDeLaSesion))} elegido={{ order: k + 1, label: nombreDeLaSesion(sesion, k) }} onElegir={(o) => elegirSesion(o - 1)}>
-            {agregarUnaSesion}
-            <MenuDeAcciones
-              id="menu-de-la-sesion"
-              rotulo={`más acciones de la sesión ${nombreDeLaSesion(sesion, k)}`}
-              alineado="izquierda"
-              acciones={[
-                { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-de-la-sesion', ...deLaSesion }) },
-                // TB-48: duplicar y mover la sesión que se mira.
-                { clave: 'duplicar', texto: E.duplicarSesion, alElegir: duplicarSesion },
-                { clave: 'antes', texto: E.moverAntes, alElegir: () => moverSesion(k - 1), noSePuede: k === 0 ? E.yaEsElPrimero : null },
-                { clave: 'despues', texto: E.moverDespues, alElegir: () => moverSesion(k + 1), noSePuede: k === sesiones.length - 1 ? E.yaEsElUltimo : null },
-                { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: () => setSesionHabitual(structuredClone(sesion)), noSePuede: antesHayQueCorregir },
-                { clave: 'quitar', texto: 'Quitar esta sesión', alElegir: quitarSesion },
-              ]}
-            />
-            {/* Con agenda, los días de esta sesión (DL-137); sin agenda, con más de una sesión, la persona elige cuál hace. */}
-            {agendaVisible ? (
-              <span className="nota nivel-del-plan__detalle" data-dias-de-la-sesion>
-                {diasDeEstaSesion.length > 0 ? COPY_AGENDA_DE_ENTRENAMIENTO.diasDeLaSesion(diasDeEstaSesion) : COPY_AGENDA_DE_ENTRENAMIENTO.sinDias}
-              </span>
-            ) : sesiones.length > 1 ? (
-              <span className="nota nivel-del-plan__detalle">{C.sinDiaAsignado}</span>
+      <div className="estacion__zonas">
+        <div id="zona-estructura" className="estacion__zona estacion__estructura" data-zona="estructura" role="region" aria-label={CE.estructura} tabIndex={-1}>
+          <div className="plan__niveles niveles-del-editor">
+            {bloque ? (
+              <SelectorDeNivel nivel="bloque" rotulo={C.bloque} opciones={paraElegir(bloques.map(nombreDelBloque))} elegido={{ order: i + 1, label: nombreDelBloque(bloque, i) }} onElegir={(o) => elegirBloque(o - 1)}>
+                {agregarUnBloque}
+                <MenuDeAcciones
+                  id="menu-del-bloque"
+                  rotulo={`más acciones del bloque ${nombreDelBloque(bloque, i)}`}
+                  alineado="izquierda"
+                  acciones={[
+                    { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-del-bloque', ...delBloque }) },
+                    // Un bloque organiza sus sesiones bajo microciclos o directamente, nunca las dos cosas (09v10:281-283).
+                    ...(mira.conMicrociclos
+                      ? []
+                      : [
+                          {
+                            clave: 'microciclos',
+                            texto: 'Organizar por microciclos',
+                            alElegir: organizarPorMicrociclos,
+                            // TB-48: se ofrece siempre; si el bloque ya tiene sesiones, dice adónde van.
+                            detalle: loQuePasaConLasSesiones(sesiones.length),
+                            noSePuede: sesiones.length > TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo ? E.topeDelMicrociclo(TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo, sesiones.length) : null,
+                          },
+                        ]),
+                    { clave: 'quitar', texto: 'Quitar este bloque', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es el único bloque de la versión.' : null },
+                  ]}
+                />
+                <span className="nota nivel-del-plan__detalle" data-sesiones-del-bloque>
+                  <EnPartes texto={sesionesDelBloque(bloque)} />
+                </span>
+                <TextoAPedido
+                  id={`b${i}-proposito`}
+                  rotulo={C.proposito}
+                  queEs="un propósito"
+                  valor={bloque.purpose ?? null}
+                  maximo={1000}
+                  abierto={seCambia('proposito-del-bloque', delBloque)}
+                  alAbrir={() => setTexto({ de: 'proposito-del-bloque', ...delBloque })}
+                  alCambiar={(v) => cambiar((x) => ((x[i]!.purpose = v), x))}
+                  alCerrar={dejarDeCambiar}
+                />
+              </SelectorDeNivel>
+            ) : (
+              <div className="nivel-del-plan" data-nivel="bloque" data-forma="ninguno">
+                <p className="nota">{C.sinBloques}</p>
+                {agregarUnBloque}
+              </div>
+            )}
+            {bloque && (seCambia('nombre-del-bloque', delBloque) || bloque.label.trim() === '') ? (
+              <CampoDeNombre
+                id={`b${i}-nombre`}
+                etiqueta="Nombre del bloque"
+                valor={bloque.label}
+                maximo={120}
+                enfocar={seCambia('nombre-del-bloque', delBloque)}
+                despues="menu-del-bloque"
+                alEmpezar={() => setTexto({ de: 'nombre-del-bloque', ...delBloque })}
+                alCambiar={(v) => cambiar((x) => ((x[i]!.label = v), x))}
+                alTerminar={dejarDeCambiar}
+              />
             ) : null}
-            <span className="nota nivel-del-plan__cuenta" data-cuenta-de-la-sesion>
-              <EnPartes texto={cuentaDeLaSesion(sesion)} />
-            </span>
-          </SelectorDeNivel>
-        ) : bloque ? (
-          <div className="nivel-del-plan" data-nivel="sesion" data-forma="ninguna">
-            <span className="nivel-del-plan__rotulo">{C.sesion}</span>
-            <span className="nota">{C.sinSesiones}</span>
-            {agregarUnaSesion}
+
+            {bloque && microciclo && j !== null ? (
+              <SelectorDeNivel
+                nivel="microciclo"
+                rotulo={C.microciclo}
+                opciones={paraElegir((bloque.microcycles ?? []).map(nombreDelMicrociclo))}
+                elegido={{ order: j + 1, label: nombreDelMicrociclo(microciclo, j) }}
+                onElegir={(o) => elegirMicrociclo(o - 1)}
+              >
+                <button type="button" className="boton boton--quieto boton--compacto" data-agregar-microciclo onClick={agregarMicrociclo}>
+                  <Icono nombre="mas" tamano={18} />
+                  Agregar<span className="visualmente-oculto"> un microciclo</span>
+                </button>
+                <MenuDeAcciones
+                  id="menu-del-microciclo"
+                  rotulo={`más acciones del microciclo ${nombreDelMicrociclo(microciclo, j)}`}
+                  alineado="izquierda"
+                  acciones={[
+                    { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-del-microciclo', ...delMicrociclo }) },
+                    { clave: 'quitar', texto: 'Quitar este microciclo', alElegir: quitarMicrociclo },
+                  ]}
+                />
+                <TextoAPedido
+                  id={`${prefijo}-proposito`}
+                  rotulo={C.proposito}
+                  queEs="un propósito"
+                  valor={microciclo.purpose ?? null}
+                  maximo={1000}
+                  abierto={seCambia('proposito-del-microciclo', delMicrociclo)}
+                  alAbrir={() => setTexto({ de: 'proposito-del-microciclo', ...delMicrociclo })}
+                  alCambiar={(v) => cambiar((x) => ((x[i]!.microcycles![j]!.purpose = v), x))}
+                  alCerrar={dejarDeCambiar}
+                />
+              </SelectorDeNivel>
+            ) : null}
+            {microciclo && j !== null && (seCambia('nombre-del-microciclo', delMicrociclo) || microciclo.label.trim() === '') ? (
+              <CampoDeNombre
+                id={`${prefijo}-nombre`}
+                etiqueta="Nombre del microciclo"
+                valor={microciclo.label}
+                maximo={120}
+                enfocar={seCambia('nombre-del-microciclo', delMicrociclo)}
+                despues="menu-del-microciclo"
+                alEmpezar={() => setTexto({ de: 'nombre-del-microciclo', ...delMicrociclo })}
+                alCambiar={(v) => cambiar((x) => ((x[i]!.microcycles![j]!.label = v), x))}
+                alTerminar={dejarDeCambiar}
+              />
+            ) : null}
+
           </div>
-        ) : null}
-        {sesion && (seCambia('nombre-de-la-sesion', deLaSesion) || sesion.label.trim() === '') ? (
-          <CampoDeNombre
-            id={`${prefijo}-s${k}-nombre`}
-            etiqueta="Nombre de la sesión"
-            valor={sesion.label}
-            maximo={120}
-            enfocar={seCambia('nombre-de-la-sesion', deLaSesion)}
-            despues="menu-de-la-sesion"
-            alEmpezar={() => setTexto({ de: 'nombre-de-la-sesion', ...deLaSesion })}
-            alCambiar={(v) => cambiar((x) => ((lasSesiones(x)[k]!.label = v), x))}
-            alTerminar={dejarDeCambiar}
+          {bloque ? (
+            <section className="estacion__sesiones" aria-labelledby="titulo-sesiones">
+              <div className="estacion__sesiones-cabecera">
+                <h3 id="titulo-sesiones">{CE.sesiones}</h3>
+                {/* ED-24: «+ Sesión», con el nombre en el lugar y Enter. */}
+                <button type="button" className="boton boton--enlace" data-mas-sesion onClick={agregarSesion}>
+                  <Icono nombre="mas" tamano={15} />
+                  {CE.masSesion}
+                </button>
+              </div>
+              <ol className="estacion__lista-de-sesiones">
+                {sesiones.map((s, n) => {
+                  const id = s.sessionId;
+                  const dias = id ? (agendaVisible?.sessions.find((x) => x.sessionId === id)?.weekdays ?? []) : [];
+                  const compartidos = id ? diasCompartidos(agendaVisible, id, nombreDeLaSesionPorId) : [];
+                  return (
+                    <li key={id ?? `nueva-${n}`} className="estacion__sesion" data-sesion-de-la-lista={n + 1}>
+                      <button type="button" className="estacion__sesion-boton" aria-current={n === k ? 'true' : undefined} onClick={() => elegirSesion(n)}>
+                        <span className="estacion__sesion-nombre">{nombreDeLaSesion(s, n)}</span>
+                        <span className="nota">
+                          {dias.length > 0 ? dias.map((d) => DIA_LARGO[d]).join(', ') : CE.sinDia} · <EnPartes texto={cuentaDeLaSesion(s)} />
+                        </span>
+                      </button>
+                      {/* ED-24: los días en siete chips, que escriben la agenda de DL-137 sin abrir un diálogo. */}
+                      {id ? (
+                        <div className="estacion__chips" role="group" aria-label={CE.diasDe(nombreDeLaSesion(s, n))}>
+                          {DIAS_DE_LA_SEMANA.map((d) => (
+                            <button key={d} type="button" className="estacion__chip" aria-pressed={dias.includes(d)} aria-label={DIA_LARGO[d]} data-dia={d} onClick={() => cambiarAgenda(alternarDia(agendaVisible, id, d, hoyEn()))}>
+                              {DIA_CORTO[d]}
+                            </button>
+                          ))}
+                          <button type="button" className="estacion__chip estacion__chip--sin-dia" aria-pressed={dias.length === 0} onClick={() => agendaVisible && cambiarAgenda(sinDias(agendaVisible, id))}>
+                            {CE.sinDia}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="nota">{CE.primeroGuardar}</p>
+                      )}
+                      {/* ED-20: los días que trajo un preset, marcados «del preset», para confirmar. */}
+                      {id && dias.length === 0 && (diasDelPreset[s.label]?.length ?? 0) > 0 ? (
+                        <button type="button" className="boton boton--enlace" data-dias-del-preset onClick={() => cambiarAgenda(ponerDias(agendaVisible, id, diasDelPreset[s.label]!, hoyEn()))}>
+                          {CE.confirmarDelPreset(diasDelPreset[s.label]!.map((d) => DIA_LARGO[d]).join(', '))}
+                        </button>
+                      ) : null}
+                      {compartidos.length > 0 ? (
+                        <p className="nota" data-dia-compartido>
+                          {CE.compartido(compartidos)}
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ) : null}
+        </div>
+        <div id="zona-editor" className="estacion__zona estacion__centro" data-zona="editor" role="region" aria-label={CE.editor} tabIndex={-1}>
+          {/* ED-24: la agenda entera, en una tira de la semana arriba. */}
+          {agendaVisible ? (
+            <ol className="estacion__tira" aria-label={CE.semana}>
+              {tiraDeLaSemana(agendaVisible, nombreDeLaSesionPorId).map((d) => (
+                <li key={d.dia} data-con-sesion={d.sesiones.length > 0 ? '' : undefined}>
+                  <span className="nota">{DIA_LARGO[d.dia]}</span>
+                  <span>{d.sesiones.length > 0 ? d.sesiones.join(' · ') : CE.sinSesionEseDia}</span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          <AgendaDelPlan
+            agenda={agendaVisible}
+            sesiones={sesionesDeLaAgenda}
+            hoy={hoyEn()}
+            abierta={agendaAbierta}
+            onAbrir={() => setAgendaAbierta(true)}
+            onCerrar={() => setAgendaAbierta(false)}
+            onCambiar={cambiarAgenda}
           />
-        ) : null}
-        {insertandoHabitual ? (
-          <div
-            className="sesion-habitual-a-pedido"
-            data-habituales="sesiones"
-            onKeyDown={(e) => {
-              if (e.key !== 'Escape') return;
-              e.stopPropagation();
-              setInsertandoHabitual(false);
-              document.getElementById('agregar-sesion')?.focus();
-            }}
-          >
-            <InsertarSesionHabitual id={prefijo} sesiones={sesionesHabituales.sesiones} onInsertar={insertarSesion} />
-            <button
-              type="button"
-              className="boton boton--enlace"
-              onClick={() => {
-                setInsertandoHabitual(false);
-                document.getElementById('agregar-sesion')?.focus();
-              }}
-            >
-              {COPY_HABITUALES.cancelar}
-            </button>
+
+          <div className="plan__niveles niveles-del-editor">
+            {bloque && sesion ? (
+              <SelectorDeNivel nivel="sesion" rotulo={C.sesion} opciones={paraElegir(sesiones.map(nombreDeLaSesion))} elegido={{ order: k + 1, label: nombreDeLaSesion(sesion, k) }} onElegir={(o) => elegirSesion(o - 1)}>
+                {agregarUnaSesion}
+                <MenuDeAcciones
+                  id="menu-de-la-sesion"
+                  rotulo={`más acciones de la sesión ${nombreDeLaSesion(sesion, k)}`}
+                  alineado="izquierda"
+                  acciones={[
+                    { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-de-la-sesion', ...deLaSesion }) },
+                    // TB-48: duplicar y mover la sesión que se mira.
+                    { clave: 'duplicar', texto: E.duplicarSesion, alElegir: duplicarSesion },
+                    { clave: 'antes', texto: E.moverAntes, alElegir: () => moverSesion(k - 1), noSePuede: k === 0 ? E.yaEsElPrimero : null },
+                    { clave: 'despues', texto: E.moverDespues, alElegir: () => moverSesion(k + 1), noSePuede: k === sesiones.length - 1 ? E.yaEsElUltimo : null },
+                    { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: () => setSesionHabitual(structuredClone(sesion)), noSePuede: antesHayQueCorregir },
+                    { clave: 'quitar', texto: 'Quitar esta sesión', alElegir: quitarSesion },
+                  ]}
+                />
+                {/* Con agenda, los días de esta sesión (DL-137); sin agenda, con más de una sesión, la persona elige cuál hace. */}
+                {agendaVisible ? (
+                  <span className="nota nivel-del-plan__detalle" data-dias-de-la-sesion>
+                    {diasDeEstaSesion.length > 0 ? COPY_AGENDA_DE_ENTRENAMIENTO.diasDeLaSesion(diasDeEstaSesion) : COPY_AGENDA_DE_ENTRENAMIENTO.sinDias}
+                  </span>
+                ) : sesiones.length > 1 ? (
+                  <span className="nota nivel-del-plan__detalle">{C.sinDiaAsignado}</span>
+                ) : null}
+                <span className="nota nivel-del-plan__cuenta" data-cuenta-de-la-sesion>
+                  <EnPartes texto={cuentaDeLaSesion(sesion)} />
+                </span>
+              </SelectorDeNivel>
+            ) : bloque ? (
+              <div className="nivel-del-plan" data-nivel="sesion" data-forma="ninguna">
+                <span className="nivel-del-plan__rotulo">{C.sesion}</span>
+                <span className="nota">{C.sinSesiones}</span>
+                {agregarUnaSesion}
+              </div>
+            ) : null}
+            {sesion && (seCambia('nombre-de-la-sesion', deLaSesion) || sesion.label.trim() === '') ? (
+              <CampoDeNombre
+                id={`${prefijo}-s${k}-nombre`}
+                etiqueta="Nombre de la sesión"
+                valor={sesion.label}
+                maximo={120}
+                enfocar={seCambia('nombre-de-la-sesion', deLaSesion)}
+                despues="menu-de-la-sesion"
+                alEmpezar={() => setTexto({ de: 'nombre-de-la-sesion', ...deLaSesion })}
+                alCambiar={(v) => cambiar((x) => ((lasSesiones(x)[k]!.label = v), x))}
+                alTerminar={dejarDeCambiar}
+              />
+            ) : null}
+            {insertandoHabitual ? (
+              <div
+                className="sesion-habitual-a-pedido"
+                data-habituales="sesiones"
+                onKeyDown={(e) => {
+                  if (e.key !== 'Escape') return;
+                  e.stopPropagation();
+                  setInsertandoHabitual(false);
+                  document.getElementById('agregar-sesion')?.focus();
+                }}
+              >
+                <InsertarSesionHabitual id={prefijo} sesiones={sesionesHabituales.sesiones} onInsertar={insertarSesion} />
+                <button
+                  type="button"
+                  className="boton boton--enlace"
+                  onClick={() => {
+                    setInsertandoHabitual(false);
+                    document.getElementById('agregar-sesion')?.focus();
+                  }}
+                >
+                  {COPY_HABITUALES.cancelar}
+                </button>
+              </div>
+            ) : null}
+            {sesion ? (
+              <TextoAPedido
+                id={`${prefijo}-s${k}-indicaciones`}
+                rotulo={COPY_ENTRENAMIENTO.indicacionesDeLaSesion}
+                queEs="indicaciones de la sesión"
+                valor={sesion.instructions ?? null}
+                maximo={2000}
+                renglones={2}
+                abierto={seCambia('indicaciones', deLaSesion)}
+                alAbrir={() => setTexto({ de: 'indicaciones', ...deLaSesion })}
+                alCambiar={(v) => cambiar((x) => ((lasSesiones(x)[k]!.instructions = v), x))}
+                alCerrar={dejarDeCambiar}
+              />
+            ) : null}
           </div>
-        ) : null}
-        {sesion ? (
-          <TextoAPedido
-            id={`${prefijo}-s${k}-indicaciones`}
-            rotulo={COPY_ENTRENAMIENTO.indicacionesDeLaSesion}
-            queEs="indicaciones de la sesión"
-            valor={sesion.instructions ?? null}
-            maximo={2000}
-            renglones={2}
-            abierto={seCambia('indicaciones', deLaSesion)}
-            alAbrir={() => setTexto({ de: 'indicaciones', ...deLaSesion })}
-            alCambiar={(v) => cambiar((x) => ((lasSesiones(x)[k]!.instructions = v), x))}
-            alCerrar={dejarDeCambiar}
-          />
-        ) : null}
+          {sesion ? (
+            <div className="estacion__acciones-de-la-sesion">
+              {/* ED-11: la galería de presets de prescripción, para la sesión que se mira. */}
+              <button type="button" className="boton boton--quieto" data-galeria-de-prescripcion onClick={() => setGaleria({ tarea: 'prescripcion', ejercicio: null })}>
+                <Icono nombre="plantillas" tamano={18} />
+                {CE.presets}
+              </button>
+            </div>
+          ) : null}
+          {sesion ? (
+            <div className="comidas-del-plan ejercicios-del-editor" data-sesion={k + 1}>
+              {sesion.prescriptions.length === 0 ? <p className="nota">{C.sinEjercicios}</p> : null}
+              {sesion.prescriptions.map((p, l) => (
+                <EjercicioDelEditor
+                  key={p.prescriptionId ?? `nuevo-${l}`}
+                  id={`${prefijo}-s${k}-p${l}`}
+                  posicion={l}
+                  prescripcion={p}
+                  nombre={nombres[p.exerciseVersionId] ?? 'Ejercicio'}
+                  imagen={imagenes[p.exerciseVersionId] ?? null}
+                  abierto={abiertos.has(l)}
+                  problemas={problemasDelEjercicio(rutasConProblemas, { bloque: i, microciclo: j, sesion: k, ejercicio: l })}
+                  alAlternar={() => {
+                    const s = new Set(abiertos);
+                    if (!s.delete(l)) s.add(l);
+                    dejarAbiertos(s);
+                  }}
+                  onCambiar={(c) => cambiarEjercicio(l, c)}
+                  onQuitar={() => quitarEjercicio(l)}
+                  esElPrimero={l === 0}
+                  esElUltimo={l === sesion.prescriptions.length - 1}
+                  onSubir={() => moverEjercicio(l, l - 1)}
+                  onBajar={() => moverEjercicio(l, l + 1)}
+                  onDuplicar={() => duplicarEjercicio(l)}
+                  revisar={cargasARevisar[`${prefijo}-s${k}-p${l}`] || null}
+                  onAplicarLinea={(nueva, revisar) => {
+                    cambiar((x) => ((lasSesiones(x)[k]!.prescriptions[l] = nueva), x));
+                    setCargasARevisar((m) => ({ ...m, [`${prefijo}-s${k}-p${l}`]: revisar ?? '' }));
+                  }}
+                />
+              ))}
+              <div className="editor-del-plan__al-pie">
+                <button type="button" className="boton boton--quieto" data-agregar-ejercicio onClick={() => setAgregando(true)}>
+                  <Icono nombre="mas" tamano={18} />
+                  {COPY_ENTRENAMIENTO.agregarEjercicio}
+                </button>
+                <span className="nota">Del catálogo BE, de tus habituales o creado a mano.</span>
+              </div>
+            </div>
+          ) : null}
+
+        </div>
+        <aside id="zona-panel" className="estacion__zona estacion__panel" data-zona="panel" aria-label={CE.panel} tabIndex={-1}>
+          {/* ED-25: el contexto, en pestañas. «Antes de activar», en vivo; la validación final sigue siendo de la API. */}
+          <div className="estacion__pestanas" role="tablist" aria-label={CE.panel}>
+            {(
+              [
+                ['antes', CE.pestanaAntes],
+                ['semana', CE.pestanaSemana],
+                ['otras', CE.pestanaOtras],
+              ] as const
+            ).map(([clave, texto]) => (
+              <button key={clave} type="button" role="tab" id={`pestana-${clave}`} aria-selected={pestana === clave} aria-controls={`panel-${clave}`} onClick={() => setPestana(clave)}>
+                {texto}
+                {clave === 'antes' && impidenEnVivo.length > 0 ? <span className="estacion__cuenta"> {impidenEnVivo.length}</span> : null}
+              </button>
+            ))}
+          </div>
+          {pestana === 'antes' ? (
+            <div role="tabpanel" id="panel-antes" aria-labelledby="pestana-antes" data-panel-en-vivo>
+              <h3>
+                <Icono nombre="aviso" tamano={15} />
+                {CE.impide}
+              </h3>
+              {impidenEnVivo.length === 0 ? (
+                <p className="nota">{CE.nadaImpide}</p>
+              ) : (
+                <ul className="estacion__lista-del-panel">
+                  {impidenEnVivo.map((x, n) => (
+                    <li key={n}>
+                      {x.texto}{' '}
+                      {x.ir ? (
+                        <button type="button" className="boton boton--enlace" onClick={x.ir}>
+                          {CE.irACorregir}
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <h3>
+                {CE.quedaSinCompletar} <span className="nota">· {CE.noImpide}</span>
+              </h3>
+              {sinCompletarEnVivo.length === 0 ? (
+                <p className="nota">{CE.nadaSinCompletar}</p>
+              ) : (
+                <ul className="estacion__lista-del-panel">
+                  {sinCompletarEnVivo.map((x, n) => (
+                    <li key={n}>
+                      {x.texto}{' '}
+                      {x.ir ? (
+                        <button type="button" className="boton boton--enlace" onClick={x.ir}>
+                          {CE.irACorregir}
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="nota">{CE.enVivo(persona)}</p>
+            </div>
+          ) : null}
+          {pestana === 'semana' ? (
+            <div role="tabpanel" id="panel-semana" aria-labelledby="pestana-semana">
+              <p className="nota">{CE.semanaComoSeCuenta}</p>
+              <p className="nota">{CE.semanaMasAdelante}</p>
+            </div>
+          ) : null}
+          {pestana === 'otras' ? (
+            <div role="tabpanel" id="panel-otras" aria-labelledby="pestana-otras">
+              {/* TB-54: lee API-RES-04 al abrir; sin otra área, nada. */}
+              <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" />
+            </div>
+          ) : null}
+        </aside>
       </div>
 
-      {sesion ? (
-        <div className="comidas-del-plan ejercicios-del-editor" data-sesion={k + 1}>
-          {sesion.prescriptions.length === 0 ? <p className="nota">{C.sinEjercicios}</p> : null}
-          {sesion.prescriptions.map((p, l) => (
-            <EjercicioDelEditor
-              key={p.prescriptionId ?? `nuevo-${l}`}
-              id={`${prefijo}-s${k}-p${l}`}
-              posicion={l}
-              prescripcion={p}
-              nombre={nombres[p.exerciseVersionId] ?? 'Ejercicio'}
-              imagen={imagenes[p.exerciseVersionId] ?? null}
-              abierto={abiertos.has(l)}
-              problemas={problemasDelEjercicio(rutasConProblemas, { bloque: i, microciclo: j, sesion: k, ejercicio: l })}
-              alAlternar={() => {
-                const s = new Set(abiertos);
-                if (!s.delete(l)) s.add(l);
-                dejarAbiertos(s);
-              }}
-              onCambiar={(c) => cambiarEjercicio(l, c)}
-              onQuitar={() => quitarEjercicio(l)}
-              esElPrimero={l === 0}
-              esElUltimo={l === sesion.prescriptions.length - 1}
-              onSubir={() => moverEjercicio(l, l - 1)}
-              onBajar={() => moverEjercicio(l, l + 1)}
-              onDuplicar={() => duplicarEjercicio(l)}
-              revisar={cargasARevisar[`${prefijo}-s${k}-p${l}`] || null}
-              onAplicarLinea={(nueva, revisar) => {
-                cambiar((x) => ((lasSesiones(x)[k]!.prescriptions[l] = nueva), x));
-                setCargasARevisar((m) => ({ ...m, [`${prefijo}-s${k}-p${l}`]: revisar ?? '' }));
-              }}
-            />
-          ))}
-          <div className="editor-del-plan__al-pie">
-            <button type="button" className="boton boton--quieto" data-agregar-ejercicio onClick={() => setAgregando(true)}>
-              <Icono nombre="mas" tamano={18} />
-              {COPY_ENTRENAMIENTO.agregarEjercicio}
+      {deshacer ? (
+        <AvisoFlotante onCerrar={() => setDeshacer(null)} seQueda>
+          <p>
+            {deshacer.texto}{' '}
+            <button type="button" className="boton boton--enlace" data-deshacer onClick={deshacerLaAplicacion}>
+              <Icono nombre="deshacer" tamano={15} />
+              {COPY_PRESETS.deshacer}
             </button>
-            <span className="nota">Del catálogo BE, de tus habituales o creado a mano.</span>
-          </div>
-        </div>
+          </p>
+        </AvisoFlotante>
       ) : null}
+
+      <GaleriaDePresets
+        abierto={galeria !== null}
+        tarea={galeria?.tarea ?? 'prescripcion'}
+        persona={persona}
+        sesion={sesion ?? null}
+        nombreDeLaSesion={sesion ? nombreDeLaSesion(sesion, k) : ''}
+        ejercicio={galeria?.ejercicio ?? null}
+        nombreDe={(p) => nombres[p.exerciseVersionId] ?? 'Ejercicio'}
+        habituales={sesionesHabituales.sesiones}
+        onAplicarPrescripcion={aplicarElPreset}
+        onAplicarEstructura={aplicarLaEstructura}
+        onInsertarHabitual={insertarSesion}
+        onCerrar={() => setGaleria(null)}
+      />
 
       <DialogoGuardarPlantilla
         token={token}

@@ -15532,3 +15532,332 @@ p.cifra-del-espacio__desglose {
 .ejercicio-del-editor__revisar {
   border-style: dashed;
 }
+
+/* ═══ ED-15, ED-24 y ED-25 · La estación de tres zonas (`training/editor.tsx`, `estacion/estacion.ts`) ═══════════════
+   A 1440 × 900: la barra de comandos y tres zonas que entran en la pantalla; cada zona se desplaza sola (la página no).
+   A 1280 × 800: la izquierda baja a 200 px y el panel se abre con «Panel», superpuesto al centro, sin achicar las celdas.
+   A 1920 × 1080: el centro gana el ancho, hasta 1840 px. Por debajo de 64 rem las zonas se apilan y la página se desplaza. */
+.estacion {
+  --estacion-izquierda: 15rem;
+  --estacion-derecha: 20rem;
+  max-width: 115rem;
+}
+
+.estacion__barra {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.estacion__saltos {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.estacion__saltos .boton:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.estacion__zonas {
+  display: grid;
+  grid-template-columns: var(--estacion-izquierda) minmax(0, 1fr) var(--estacion-derecha);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 64.0625rem) {
+  .estacion__zonas {
+    height: calc(100dvh - 14rem);
+    min-height: 30rem;
+  }
+
+  .estacion__zona {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.estacion__zona {
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.estacion__zona:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.estacion__abrir-panel {
+  display: none;
+}
+
+@media (max-width: 90rem) and (min-width: 64.0625rem) {
+  .estacion {
+    --estacion-izquierda: 12.5rem;
+  }
+
+  .estacion__zonas {
+    grid-template-columns: var(--estacion-izquierda) minmax(0, 1fr);
+  }
+
+  .estacion__abrir-panel {
+    display: inline-flex;
+  }
+
+  .estacion__panel {
+    position: fixed;
+    inset-block: 6rem 1rem;
+    inset-inline-end: 1rem;
+    z-index: 20;
+    width: var(--estacion-derecha);
+    box-shadow: var(--sombra);
+  }
+
+  .estacion:not([data-panel-abierto]) .estacion__panel {
+    display: none;
+  }
+}
+
+@media (max-width: 64rem) {
+  .estacion__zonas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.estacion__sesiones-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.estacion__sesiones-cabecera h3,
+.estacion__panel h3 {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.estacion__lista-de-sesiones {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.estacion__sesion-boton {
+  display: grid;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.estacion__sesion-boton[aria-current='true'] {
+  border-color: var(--borde-control);
+  border-width: 2px;
+}
+
+.estacion__sesion-nombre {
+  font-weight: 600;
+}
+
+.estacion__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.estacion__chip {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Prendido: lleno y en negrita, además del color (B10-10 §1). */
+.estacion__chip[aria-pressed='true'] {
+  background: var(--boton-fondo);
+  border-color: var(--boton-fondo);
+  color: var(--boton-texto);
+  font-weight: 700;
+}
+
+.estacion__tira {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.estacion__tira li {
+  display: grid;
+  padding: 0.4rem 0.5rem;
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.estacion__tira li[data-con-sesion] {
+  border-style: solid;
+  font-weight: 600;
+}
+
+.estacion__acciones-de-la-sesion {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.estacion__pestanas {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.estacion__pestanas [role='tab'] {
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--tenue);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.estacion__pestanas [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--texto);
+  color: var(--texto);
+  font-weight: 700;
+}
+
+.estacion__lista-del-panel {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+}
+
+.estacion__lista-del-panel li + li {
+  margin-top: 0.35rem;
+}
+
+/* ═══ ED-17 · La ayuda de primer uso (`components/primer-uso.tsx`) ═════════════════════════════════════════════════ */
+.primer-uso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.primer-uso ul {
+  margin: 0.2rem 0;
+  padding-inline-start: 1.1rem;
+}
+
+.primer-uso__titulo {
+  margin: 0;
+  font-weight: 700;
+}
+
+.primer-uso > div {
+  flex: 1 1 auto;
+}
+
+/* ═══ ED-11 · La galería de presets (`advisees/galeria-de-presets.tsx`) ═════════════════════════════════════════════ */
+.galeria {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+  gap: 1rem;
+}
+
+@media (max-width: 48rem) {
+  .galeria {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.galeria h3 {
+  margin: 0.4rem 0;
+  font-size: 1rem;
+}
+
+.galeria__tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galeria__tarjeta {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.galeria__tarjeta[aria-pressed='true'] {
+  border-width: 3px;
+  padding: calc(0.6rem - 2px) calc(0.7rem - 2px);
+}
+
+.galeria__nombre {
+  font-weight: 700;
+}
+
+.galeria__vista-previa {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.galeria__alcance {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.5rem 0;
+  border: 0;
+  padding: 0;
+}
+
+.galeria__pie {
+  margin: 0;
+}

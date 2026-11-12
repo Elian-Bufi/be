@@ -324,7 +324,11 @@ test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar n
 });
 
 test('TB-48 · «Guardar como plantilla» va con su texto, a la vista, y si no se puede dice por qué', () => {
-  for (const [archivo, motivo] of [['nutrition/editor.tsx', 'sinPlantilla'], ['training/editor.tsx', 'antesHayQueCorregir']]) {
+  // ED-12 (WP-EDITORES-PROFESIONAL): en la estación de Entrenamiento, el plan se guarda «como preset» desde el «⋯» de la
+  // barra, con su tipo a elegir y el mismo motivo si no se puede; Nutrición conserva el botón hasta su estación (etapa 3).
+  const estacion = leer('training/editor.tsx');
+  assert.match(estacion, /\{ clave: 'plantilla', texto: `\$\{CE\.guardarComoPreset\}: \$\{CE\.elPlanComoPlantilla\}`, alElegir: \(\) => setGuardarPlantilla\(true\), noSePuede: antesHayQueCorregir \}/);
+  for (const [archivo, motivo] of [['nutrition/editor.tsx', 'sinPlantilla']]) {
     const editor = leer(archivo);
     assert.doesNotMatch(editor, /Más acciones de esta versión/, `${archivo}: ya no es un menú «⋯» sin texto`);
     const boton = editor.slice(editor.indexOf('data-guardar-como-plantilla'), editor.indexOf('{COPY_PLANTILLAS.guardarComoPlantilla}') + 40);
