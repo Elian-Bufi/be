@@ -1,24 +1,111 @@
-/** Fechas en el idioma y la zona de la persona (es-AR), nunca en ISO crudo. */
-const conHora = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
-const soloDia = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' });
-/** Formateador de fecha civil: fija la zona en UTC para que el día no se corra según la del dispositivo. */
-const soloDiaCivil = new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeZone: 'UTC' });
+/**
+ * Fechas y horas en el idioma de la persona (es-AR), nunca en ISO crudo. Desde DL-170 (WP-APP-VUELTA-2 AV2-15) hay tres
+ * formas, todas desde acá:
+ * - **el título del día:** «Lunes 9 de noviembre», sin coma (`fechaLarga`);
+ * - **la fecha dentro de un texto:** «9 nov», con el año solo si no es el del día de la API: «2 sept 2025» (`fechaCivil`
+ *   para una fecha civil, `dia` para el día de un instante);
+ * - **la hora, de 24 h:** «13:10», nunca «1:10 p. m.» (`hora`); un instante se escribe «9 nov · 13:10» (`fecha`).
+ * La agenda conserva sus frases relativas («el lunes», «mañana»), que arma el dominio.
+ *
+ * Los nombres de los días y de los meses van escritos acá, y la hora se arma con números: el `Intl` de Hermes no es el
+ * del navegador (puede abreviar «sep» o escribir «p. m.»), y la app no depende de él para lo que muestra. `Intl` queda
+ * solo para saber el día y la hora en una zona dada, con el formateador que ya usa «hoy» (`formateadorDeZona`).
+ */
 
-/** Un instante real (recordedAt, activatedAt, occurredAt): se muestra con hora, en la zona de la persona. */
-export const fecha = (iso: string) => conHora.format(new Date(iso));
-/** El día de un instante real, en la zona de la persona. No usar para fechas civiles `YYYY-MM-DD` (ver `fechaCivil`). */
-export const dia = (iso: string) => soloDia.format(new Date(iso));
-/** La hora de un instante real, en la zona de la persona: para una lista que ya está agrupada por día. */
-const soloHora = new Intl.DateTimeFormat('es-AR', { timeStyle: 'short' });
-export const hora = (iso: string) => soloHora.format(new Date(iso));
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'] as const;
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'] as const;
+/** Las abreviaturas de es-AR, sin punto: «sept», no «sep». */
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'] as const;
+
+const dosCifras = (n: number): string => String(n).padStart(2, '0');
+
+/** El año, el mes y el día de una fecha civil `AAAA-MM-DD`, tal cual: sin pasar por la zona del teléfono. */
+function partesCiviles(fechaLocal: string): { readonly anio: number; readonly mes: number; readonly dia: number } {
+  const [anio, mes, dia] = fechaLocal.slice(0, 10).split('-').map(Number);
+  return { anio, mes, dia };
+}
+
+// ─── El día de referencia: el de la API ─────────────────────────────────────────────────────────
+// El año se escribe solo si no es el del día de la API. `useDiaDeLaApi` lo fija con el día que estima con la hora del
+// servidor; antes de eso vale el día de la API con la hora del teléfono.
+let diaDeReferencia: string | null = null;
+export function fijarDiaDeReferencia(dia: string): void {
+  diaDeReferencia = dia.slice(0, 10);
+}
+/** El año contra el que se compara: el de `referencia` si se pasa una fecha (las pruebas), o el del día de la API. */
+const anioDeReferencia = (referencia?: unknown): number => Number((typeof referencia === 'string' ? referencia : (diaDeReferencia ?? hoyEnZona(ZONA_DE_LA_API))).slice(0, 4));
 
 /**
- * Una **fecha civil** (`YYYY-MM-DD`: la fecha de una sesión, una ocurrencia, un tramo), tal cual, sin desplazarla por la
- * zona del dispositivo. Se ancla y se formatea en UTC, así el día/mes/año se conservan en cualquier zona —al oeste de
- * UTC `dia("2026-09-25")` retrocedía a 24; en zonas muy al este, anclar a mediodía UTC avanzaba a 26—. Los timestamps
- * reales (recordedAt, activatedAt) **no** van por acá: su presentación sí depende de la zona (`fecha`/`dia`).
+ * Una **fecha civil** (`YYYY-MM-DD`: la fecha de una sesión, una ocurrencia, una toma) dentro de un texto: «9 nov», o
+ * «2 sept 2025» si es de otro año que el día de la API. Tal cual, sin desplazarla por la zona del dispositivo (al oeste
+ * de UTC, anclarla a la medianoche UTC y formatearla en la zona local retrocedía un día). Los instantes reales
+ * (recordedAt, occurredAt) **no** van por acá: su día depende de la zona (`dia`, `fecha`).
  */
-export const fechaCivil = (fechaLocal: string) => soloDiaCivil.format(new Date(`${fechaLocal.slice(0, 10)}T00:00:00Z`));
+export function fechaCivil(fechaLocal: string, referencia?: string): string {
+  const { anio, mes, dia } = partesCiviles(fechaLocal);
+  const base = `${dia} ${MESES_CORTOS[mes - 1]}`;
+  return anio === anioDeReferencia(referencia) ? base : `${base} ${anio}`;
+}
+
+/** Una fecha civil corta, siempre sin año: «25 jul». Para el selector de tomas, donde el año ya está en el período. */
+export function fechaCorta(fechaLocal: string): string {
+  const { mes, dia } = partesCiviles(fechaLocal);
+  return `${dia} ${MESES_CORTOS[mes - 1]}`;
+}
+
+/** El título del día: «Lunes 9 de noviembre», con el día de la semana y sin coma. Sin desplazar el día. */
+export function fechaLarga(fechaLocal: string): string {
+  const { anio, mes, dia } = partesCiviles(fechaLocal);
+  const semana = DIAS[new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay()];
+  return `${semana.charAt(0).toLocaleUpperCase('es-AR')}${semana.slice(1)} ${dia} de ${MESES[mes - 1]}`;
+}
+
+/** El día de la semana de una fecha civil, en minúscula: «lunes». */
+export function diaDeLaSemana(fechaLocal: string): string {
+  const { anio, mes, dia } = partesCiviles(fechaLocal);
+  return DIAS[new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay()];
+}
+
+/** El día y el mes de una fecha civil, para leer: «9 de noviembre». */
+export function diaYMes(fechaLocal: string): string {
+  const { mes, dia } = partesCiviles(fechaLocal);
+  return `${dia} de ${MESES[mes - 1]}`;
+}
+
+/**
+ * La fecha civil y la hora de un instante: en `zona` si se pasa (las pruebas, con la zona fija), o en la del teléfono.
+ * La de la persona es la que importa: a qué hora comió, según su reloj.
+ */
+function partesDelInstante(iso: string, zona?: string): { readonly fecha: string; readonly horas: number; readonly minutos: number } {
+  const instante = new Date(iso);
+  // Una zona tiene que ser un texto: usada en un `map`, la función recibe el índice como segundo argumento.
+  if (typeof zona === 'string' && zona !== '') {
+    const m = /(\d{1,2})\D(\d{2})/.exec(formateadorDeZona(zona, 'hora').format(instante));
+    return { fecha: formateadorDeZona(zona, 'dia').format(instante), horas: Number(m?.[1] ?? 0) % 24, minutos: Number(m?.[2] ?? 0) };
+  }
+  return {
+    fecha: `${instante.getFullYear()}-${dosCifras(instante.getMonth() + 1)}-${dosCifras(instante.getDate())}`,
+    horas: instante.getHours(),
+    minutos: instante.getMinutes(),
+  };
+}
+
+/** La hora de un instante real, de 24 h: «13:10», «00:05». Para una lista que ya dice el día. */
+export function hora(iso: string, zona?: string): string {
+  const p = partesDelInstante(iso, zona);
+  return `${dosCifras(p.horas)}:${dosCifras(p.minutos)}`;
+}
+
+/** El día de un instante real, dentro de un texto: «9 nov». No usar para fechas civiles `YYYY-MM-DD` (ver `fechaCivil`). */
+export function dia(iso: string, zona?: string): string {
+  return fechaCivil(partesDelInstante(iso, zona).fecha);
+}
+
+/** Un instante real (recordedAt, activatedAt, occurredAt), con su hora: «9 nov · 13:10». */
+export function fecha(iso: string, zona?: string): string {
+  const p = partesDelInstante(iso, zona);
+  return `${fechaCivil(p.fecha)} · ${dosCifras(p.horas)}:${dosCifras(p.minutos)}`;
+}
 
 /**
  * La fecha civil de hoy (`YYYY-MM-DD`) **en una zona dada**, no en UTC ni en la del dispositivo. `toISOString()` da la
@@ -65,19 +152,6 @@ export const diaDeLaApi = (horaDelServidor: number): string => hoyEnZona(ZONA_DE
 
 /** Cuánto falta, desde una hora del servidor, para la medianoche de la API: cuándo cambia `diaDeLaApi`. */
 export const msHastaLaMedianocheDeLaApi = (horaDelServidor: number): number => msHastaElProximoDia(ZONA_DE_LA_API, new Date(horaDelServidor));
-
-const diaCortoCivil = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-
-/** Una fecha civil corta, sin año ni punto: «25 jul». Para el selector de tomas, donde el año ya está en el período. */
-export const fechaCorta = (fechaLocal: string): string => diaCortoCivil.format(new Date(`${fechaLocal.slice(0, 10)}T00:00:00Z`)).replace(/\./g, '');
-
-const diaLargoCivil = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-
-/** Una fecha civil con el día de la semana, para el saludo de Inicio: «Domingo, 4 de octubre». Sin desplazar el día. */
-export function fechaLarga(fechaLocal: string): string {
-  const texto = diaLargoCivil.format(new Date(`${fechaLocal.slice(0, 10)}T00:00:00Z`));
-  return texto.charAt(0).toLocaleUpperCase('es-AR') + texto.slice(1);
-}
 
 /** Los `dias` días civiles que terminan en `fin` (`AAAA-MM-DD`), inclusive: `{ periodStart, periodEnd }` para la API. */
 export function ultimosDiasHasta(fin: string, dias: number): { periodStart: string; periodEnd: string } {

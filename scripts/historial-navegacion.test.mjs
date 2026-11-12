@@ -75,9 +75,13 @@ test('el botón de volver nombra adónde vuelve', () => {
 /** Zonas donde el anclaje ingenuo fallaba: al oeste retrocedía (UTC−3), al este muy positivo avanzaba (UTC+13/+14). */
 const ZONAS = ['America/Argentina/Buenos_Aires', 'UTC', 'Pacific/Auckland', 'Pacific/Kiritimati', 'Asia/Kathmandu'];
 
-/** Corre la función de producción `fechaCivil` sobre varias fechas, bajo una zona dada. Devuelve un arreglo alineado. */
+/**
+ * Corre la función de producción `fechaCivil` sobre varias fechas, bajo una zona dada. Devuelve un arreglo alineado.
+ * Desde DL-170 (AV2-15) el año se escribe solo si no es el del día de la API: acá se compara con un día de 1999, para que
+ * el año salga siempre y se pueda ver que tampoco se corre.
+ */
 function fechaCivilEnZona(tz, fechas) {
-  const codigo = `const {fechaCivil}=await import('./apps/mobile/src/formato.ts');process.stdout.write(${JSON.stringify(fechas)}.map(fechaCivil).join('\\n'));`;
+  const codigo = `const {fechaCivil}=await import('./apps/mobile/src/formato.ts');process.stdout.write(${JSON.stringify(fechas)}.map((f)=>fechaCivil(f,'1999-01-01')).join('\\n'));`;
   return execFileSync(process.execPath, ['--input-type=module', '-e', codigo], { cwd: RAIZ, env: { ...process.env, TZ: tz }, encoding: 'utf8' }).split('\n');
 }
 

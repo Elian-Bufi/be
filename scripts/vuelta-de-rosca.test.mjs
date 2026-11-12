@@ -776,3 +776,40 @@ test('TEST-AV2-006 · la cabecera: transparente, una fila de 48 dp, el logo con 
   const app = sinComentarios(readFileSync(join(RAIZ, 'apps/mobile/App.tsx'), 'utf8'));
   assert.match(app, /conLogo=\{raiz\}/, 'el logo, solo en las cinco raíces');
 });
+
+// ─── TEST-AV2-016 · las fechas en tres formas y la hora en 24 h (AV2-15) ────────────────────────
+
+const formato = await import('../apps/mobile/src/formato.ts');
+const ZONA = 'America/Argentina/Buenos_Aires';
+
+test('TEST-AV2-016 · el título del día, sin coma; la fecha en un texto, con el año solo si es otro', () => {
+  assert.equal(formato.fechaLarga('2026-11-09'), 'Lunes 9 de noviembre');
+  assert.equal(formato.fechaLarga('2026-10-04'), 'Domingo 4 de octubre');
+  assert.equal(formato.fechaLarga('2026-11-11'), 'Miércoles 11 de noviembre');
+  assert.equal(formato.fechaCivil('2026-11-09', '2026-11-11'), '9 nov');
+  assert.equal(formato.fechaCivil('2025-09-02', '2026-11-11'), '2 sept 2025');
+  assert.equal(formato.fechaCivil('2027-01-01', '2026-12-31'), '1 ene 2027');
+  assert.equal(formato.fechaCorta('2025-09-02'), '2 sept', 'la corta, siempre sin año');
+  // Sin referencia explícita, el año del día de la API que fijó `useDiaDeLaApi`.
+  formato.fijarDiaDeReferencia('2026-11-11');
+  assert.equal(formato.fechaCivil('2026-09-02'), '2 sept');
+  assert.equal(formato.fechaCivil('2025-09-02'), '2 sept 2025');
+  assert.deepEqual(['2026-09-02', '2025-09-02'].map(formato.fechaCivil), ['2 sept', '2 sept 2025'], 'usada en un map, el índice no es la referencia');
+});
+
+test('TEST-AV2-016 · la hora de 24 h y el instante «9 nov · 13:10», con la zona fija; nunca «p. m.»', () => {
+  formato.fijarDiaDeReferencia('2026-11-11');
+  assert.equal(formato.hora('2026-11-09T16:10:00.000Z', ZONA), '13:10');
+  assert.equal(formato.hora('2026-11-10T03:05:00.000Z', ZONA), '00:05', 'la medianoche');
+  assert.equal(formato.hora('2026-11-09T11:40:00.000Z', ZONA), '08:40');
+  assert.equal(formato.fecha('2026-11-09T16:10:00.000Z', ZONA), '9 nov · 13:10');
+  assert.equal(formato.dia('2026-11-09T16:10:00.000Z', ZONA), '9 nov');
+  assert.equal(formato.dia('2025-09-02T16:10:00.000Z', ZONA), '2 sept 2025');
+  // A las 22:30 de Buenos Aires ya es el día siguiente en UTC: el día es el de la persona.
+  assert.equal(formato.fecha('2026-11-10T01:30:00.000Z', ZONA), '9 nov · 22:30');
+  for (let h = 0; h < 24; h++) {
+    const iso = `2026-11-09T${String(h).padStart(2, '0')}:15:00.000Z`;
+    assert.match(formato.hora(iso, ZONA), /^([01]\d|2[0-3]):15$/, iso);
+    assert.doesNotMatch(formato.fecha(iso, ZONA), /m\.|AM|PM/i, iso);
+  }
+});
