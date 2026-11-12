@@ -55,6 +55,7 @@ import { llenadoDeLaBarra, type AjustesDelDescanso, type PermisoDeAvisos } from 
 import { TEXTOS_DEL_DESCANSO } from '../textos-del-descanso';
 import { IconoDeCronometro, IconoDeEjercicio, IconoDeNube, IconoDePlan, IconoDeRutina } from '../iconos-de-entrenamiento';
 import { Flecha, IconoDeRegistrado } from '../iconos-de-nutricion';
+import { CasillaSimple } from '../piezas-de-nutricion';
 import { ImagenDeMedio, type RespaldoDeImagen } from '../imagen-de-medio';
 import type { TramoDelRecorrido } from '../franja-de-la-sesion';
 import { TEXTOS_DE_LA_SESION } from '../textos-de-la-sesion';
@@ -912,8 +913,8 @@ export function HojaDelDescanso({
             valor={ajustes.inicio}
             alElegir={(inicio) => onCambiar({ inicio })}
           />
-          <CasillaSola marcada={ajustes.vibrar} onCambio={(vibrar) => onCambiar({ vibrar })} etiqueta={T.vibrarAlLlegar} />
-          {ajustes.vibrar ? <CasillaSola marcada={ajustes.tambienBloqueado} onCambio={(tambienBloqueado) => onCambiar({ tambienBloqueado })} etiqueta={T.tambienBloqueado} /> : null}
+          <CasillaSimple marcada={ajustes.vibrar} onCambio={(vibrar) => onCambiar({ vibrar })} texto={T.vibrarAlLlegar} />
+          {ajustes.vibrar ? <CasillaSimple marcada={ajustes.tambienBloqueado} onCambio={(tambienBloqueado) => onCambiar({ tambienBloqueado })} texto={T.tambienBloqueado} /> : null}
           {ajustes.vibrar && ajustes.tambienBloqueado && permiso === 'sin-pedir' ? (
             <View style={estilos.pedidoDelPermiso}>
               <Text style={estilos.detalle}>{T.paraVibrarBloqueado}</Text>
