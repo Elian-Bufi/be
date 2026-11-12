@@ -4,6 +4,7 @@ import type { Entorno } from './config/entorno';
 import { AccesoGoogleModule } from './acceso-google/acceso-google.module';
 import { AdministracionModule } from './administracion/administracion.module';
 import { DerechosModule } from './derechos/derechos.module';
+import { RecuperacionModule } from './recuperacion/recuperacion.module';
 import { ENTORNO, VERSION } from './config/tokens';
 import type { VersionDesplegada } from './config/version';
 import { AutorizacionModule } from './autorizacion/autorizacion.module';
@@ -94,6 +95,8 @@ export class AppModule {
         AdministracionModule,
         // UF-06 de WP-USO-FINAL (DL-169): los derechos de la persona.
         DerechosModule,
+        // UF-03 de WP-USO-FINAL (DL-169): recuperar el acceso local.
+        RecuperacionModule,
         // DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56): lo que la persona comparte de otras áreas.
         ResumenesModule,
       ],

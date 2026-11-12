@@ -9,6 +9,7 @@ import {
   type HistorialAdministrativoResponse,
   type ListaAdministrativaDePedidosDeDerechoResponse,
   type ListaDeProfesionalesResponse,
+  type RecuperacionAsistidaResponse,
   type SegundoFactorVerificadoResponse,
   type SesionAdministrativaResponse,
 } from '@be/domain';
@@ -17,6 +18,7 @@ import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { sinParametrosDeQuery } from '../http/validacion';
 import { borrarCookieDeReanudacion, PERFIL_ADMINISTRATIVO } from '../sesion/reanudacion.service';
 import { DerechosService } from '../derechos/derechos.service';
+import { RecuperacionService } from '../recuperacion/recuperacion.service';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
 import { AdministracionService } from './administracion.service';
 import { actorAdministrativoDe, OperacionAdministrativa, SegundoFactorGuard, SesionAdministrativaGuard, type SolicitudAdministrativa } from './sesion-administrativa.guard';
@@ -25,7 +27,8 @@ type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
 
 /**
  * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13; desde UF-04 de WP-USO-FINAL (DL-169), también API-ADM-14
- * (incorporar un profesional) y 15 (cambiar su nombre profesional). Prefijo global /api/v1.
+ * (incorporar un profesional) y 15 (cambiar su nombre profesional); desde UF-06, 16 y 17 (los pedidos de derechos), y desde
+ * UF-03, 18 (la recuperación asistida). Prefijo global /api/v1.
  * - Sin guard: abrir y reanudar la sesión (el primer factor y la cookie) y cerrarla (idempotente).
  * - `SesionAdministrativaGuard`: una sesión administrativa válida, con el rol vigente. Alcanza solo para el segundo factor
  *   y para el estado de la propia sesión.
@@ -38,6 +41,7 @@ export class AdministracionController {
     private readonly acceso: AccesoAdministrativoService,
     private readonly administracion: AdministracionService,
     private readonly derechos: DerechosService,
+    private readonly recuperacion: RecuperacionService,
   ) {}
 
   /** API-ADM-01 — PUBLIC. */
@@ -231,5 +235,18 @@ export class AdministracionController {
     const r = await this.derechos.resolver(actorAdministrativoDe(req), pedidoId, cuerpo, clave, contextoDe(req));
     res.status(r.estadoHttp);
     return r.cuerpo;
+  }
+
+  /**
+   * API-ADM-18 — SESSION_MFA, sin Idempotency-Key: la recuperación asistida (UF-03 de WP-USO-FINAL, UF-D9). Cada pedido
+   * emite un código nuevo y anula el anterior; el código no se guarda en ningún lado en claro.
+   */
+  @Post('access-recoveries')
+  @HttpCode(201)
+  @OperacionAdministrativa('API-ADM-18')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  recuperacionAsistida(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<RecuperacionAsistidaResponse> {
+    sinParametrosDeQuery(query);
+    return this.recuperacion.emitirAsistida(actorAdministrativoDe(req), cuerpo, contextoDe(req));
   }
 }

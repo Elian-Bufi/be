@@ -8,10 +8,10 @@
 >
 > **La etapa 2** (§13 del paquete, declarada el 2026-11-12) suma los oráculos de su primera mitad, al final de este
 > archivo: TEST-UF-013 (UF-09), TEST-UF-014 (UF-11), TEST-UF-009 (UF-04) y TEST-UF-011 (UF-06), cada uno escrito antes del
-> código de su parte.
+> código de su parte. Después, los de la segunda mitad, en el orden en que se programó: TEST-UF-007 y 008 (UF-03).
 >
-> **Qué no es esto.** No modifica el 11A, protegido por `docs/MANIFEST.sha256`. Los oráculos de las partes que faltan
-> (TEST-UF-007, 008, 010 y 015) se escriben con su tanda.
+> **Qué no es esto.** No modifica el 11A, protegido por `docs/MANIFEST.sha256`. Los oráculos de las partes que faltan se
+> escriben con su tanda; TEST-UF-015 (la restauración repite las supresiones) espera a UF-10, que es de Dirección.
 >
 > **De dónde sale cada oráculo.** De DL-169 y del paquete (con referencia a su sección), de las decisiones UF-D1 a UF-D13
 > (ratificadas por Dirección el 2026-11-11) y, para UF-12, de DL-114. Un oráculo dice qué hay que observar para aceptar
@@ -437,4 +437,98 @@ AUTOMATION           packages/domain/src/derechos-del-titular.test.ts («TEST-UF
                      de la API.
 ENVIRONMENT          `npm test` y el job de integración de la CI
 EVIDENCE_EXPECTED    La CI verde; la descarga desde /account y desde la app (pendiente de prueba manual)
+```
+
+---
+
+# La segunda mitad de la etapa 2 (2026-11-12)
+
+## TEST-UF-007 — Pedir la recuperación responde igual exista o no la cuenta
+
+```text
+TEST_ID              TEST-UF-007
+TITLE                API-ACC-P1-01 responde el mismo 202, con la misma forma y el mismo vencimiento, para un correo sin
+                     cuenta, una cuenta con contraseña, una que solo entra con Google y una que no opera; solo cambia lo
+                     que llega por correo; el cupo de 3 por hora por correo vale igual exista o no la cuenta
+LEVEL                Dominio (qué hace el pedido según la cuenta, y la respuesta), unidad de la API (el adaptador del
+                     correo) e integración (API real con PostgreSQL y un proveedor de correo falso local)
+PRIORITY             P0
+SOURCES              UF-03 (WP-USO-FINAL.md §4.1) · UF-D9 (§7) · DL-169 · 04 RF-005 (UC-E09) · 08 §24.4 y §24.5 · 08 §38
+                     (recuperación: 3 por hora) · 09 v0.12 §10 (API-ACC-P1-01: «202, mismo shape exista o no exista la
+                     cuenta»)
+PRECONDITIONS        La API con el proveedor de correo configurado contra un servidor falso local; otra app sin proveedor.
+SYNTHETIC_FIXTURE    Correos `@example.invalid`: uno sin cuenta, una cuenta con contraseña, una cuenta creada con Google
+                     (verificador con claves sintéticas), una cerrada y una suspendida.
+STEPS                1. Decidir el pedido con cada situación de la cuenta, con y sin proveedor de correo.
+                     2. Pedir la recuperación (API-ACC-P1-01) con cada correo; comparar status, claves, `delivery` y el
+                        vencimiento (`expiresAt` menos el momento del pedido).
+                     3. Leer lo que recibió el proveedor falso y la auditoría de cada pedido.
+                     4. Pedir 4 veces en una hora con el mismo correo, con cuenta y sin cuenta.
+                     5. Sin proveedor: el mismo pedido.
+EXPECTED             1 → con contraseña y operativa: pedido con código (por correo, si hay proveedor); solo con Google:
+                     sin pedido, y el aviso «Continuar con Google» si hay proveedor; sin cuenta, cerrada o suspendida:
+                     nada. 2 → siempre 202 `{ data: { recoveryId, expiresAt, delivery } }`, `expiresAt` a los 30 minutos
+                     y `delivery` EMAIL, sin otra diferencia. 3 → un correo con el código a la cuenta con contraseña, uno
+                     que nombra «Continuar con Google» a la de Google y ninguno a las demás; la auditoría registra cada
+                     pedido sin el correo ni el código (sin cuenta: RECHAZO sin sujeto). 4 → el cuarto, 429 en los dos
+                     casos. 5 → 202 con `delivery` ASSISTED y ningún correo.
+NEGATIVE_ASSERTIONS  La respuesta nunca dice si la cuenta existe, si entra con Google ni si opera. El código no está en la
+                     respuesta, en la auditoría ni en el registro de la API: la base guarda solo su huella (HMAC). Un
+                     pedido no cambia la contraseña ni cierra sesiones.
+AUTOMATION           packages/domain/src/recuperacion-de-acceso.test.ts («TEST-UF-007 · …»),
+                     apps/api/src/plataforma/correo.spec.ts y test/integration/recuperacion-de-acceso.int-spec.ts.
+                     Mutaciones: el pedido que le da un código a una cuenta cerrada → rojo en el dominio; el adaptador
+                     que manda sin la clave del proveedor → rojo en la unidad de la API.
+ENVIRONMENT          `npm test` y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde; con el proveedor real, un correo de recuperación recibido (pendiente: lo elige Dirección)
+```
+
+---
+
+## TEST-UF-008 — Un código vencido, usado o ajeno no cambia nada; el vigente cambia la contraseña y cierra las sesiones
+
+```text
+TEST_ID              TEST-UF-008
+TITLE                API-ACC-P1-02 con un código que no vale responde el mismo 422 y no cambia nada; con el vigente, la
+                     identidad es la misma, la contraseña nueva entra y la vieja no, todas las sesiones terminan y los
+                     vínculos siguen; cinco códigos que no valen anulan el pedido; la recuperación asistida (API-ADM-18)
+                     da un código de un solo uso con fundamento y cierra las sesiones
+LEVEL                Dominio (el estado de un código y su forma), integración (API real con PostgreSQL) y la base (la
+                     credencial cambia solo con su cambio registrado)
+PRIORITY             P0
+SOURCES              UF-03 (§4.1) · UF-D9 (§7) · DL-169 · 04 RF-005 («solicitudes inválidas o vencidas no modifican el
+                     acceso») · 08 §24.4, §24.6 y §26.3 (el cambio de credencial revoca las sesiones) · 09 v0.12 §10
+                     (API-ACC-P1-02)
+PRECONDITIONS        Una persona con contraseña, un vínculo de Nutrición y dos sesiones abiertas (web y APK); un
+                     administrador incorporado por el comando interno, con su autenticador.
+SYNTHETIC_FIXTURE    Correos `@example.invalid`; contraseñas sintéticas; el autenticador con otpauth.
+STEPS                1. Evaluar el estado de un código: vigente, vencido, usado, anulado; y la forma (diez caracteres de
+                        Crockford, con guion o sin él, en minúsculas).
+                     2. Completar (API-ACC-P1-02) con un código que no es, con uno de otra cuenta, con un `recoveryId`
+                        inventado y con una contraseña nueva corta.
+                     3. Completar con el código vigente; entrar con la vieja y con la nueva; usar los tokens de antes;
+                        leer la identidad y el vínculo; volver a usar el mismo código.
+                     4. Un código vencido (escrito en la base con su vencimiento ya pasado): completar.
+                     5. Cinco códigos que no valen sobre el mismo pedido, y después el correcto.
+                     6. API-ADM-18 sin segundo factor, sin fundamento, a una cuenta administrativa, a una que solo entra
+                        con Google, a un correo sin cuenta y a la persona; la persona pide y completa con ese código.
+                     7. En la base: cambiar el hash de una credencial sin su cambio registrado.
+EXPECTED             1 → solo el vigente vale; la forma se normaliza (`abcde-fghjk` = `ABCDEFGHJK`) y otra longitud es
+                     `null`. 2 → 422 RECOVERY_CODE_INVALID en los tres primeros, sin cambios; la contraseña corta, 422
+                     VALIDATION_FAILED sin gastar un intento. 3 → 204; la vieja, 401; la nueva, 201; los tokens de antes,
+                     401 SESSION_REVOKED; la misma identidad y el mismo vínculo; el mismo código otra vez, 422. 4 → 422 y
+                     la contraseña de antes sigue. 5 → el sexto intento, aun con el código correcto, 422. 6 → 403
+                     MFA_REQUIRED; 422 VALIDATION_FAILED con RATIONALE_REQUIRED, ACCOUNT_IS_ADMINISTRATIVE y
+                     ACCOUNT_WITHOUT_PASSWORD; 404; 201 con el código (una sola vez) y las sesiones de la persona
+                     revocadas; con ese código, 204. 7 → la base lo rechaza.
+NEGATIVE_ASSERTIONS  Nunca se crea otra identidad ni se toca el método de Google. Un rechazo no cambia la credencial ni
+                     cierra sesiones. El código no queda en la base en claro (solo su huella), ni en la auditoría, ni
+                     en la idempotencia (API-ADM-18 no la usa: cada pedido emite uno nuevo y anula el anterior). La
+                     auditoría registra el cambio, la revocación y la emisión asistida sin el fundamento.
+AUTOMATION           packages/domain/src/recuperacion-de-acceso.test.ts («TEST-UF-008 · …») y
+                     test/integration/recuperacion-de-acceso.int-spec.ts, más la prueba de contrato. Mutación: el estado
+                     que deja pasar un código vencido → rojo en el dominio.
+ENVIRONMENT          `npm test` y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde; en el teléfono y en el website, «¿Olvidaste tu contraseña?» de punta a punta (pendiente
+                     de prueba manual: la candidata del 25/11)
 ```

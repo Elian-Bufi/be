@@ -40,6 +40,10 @@ export const MotivoDeRevocacionDeSesion = {
    * de recuperación nuevos; sus otras sesiones administrativas dejan de valer.
    */
   CREDENCIALES_ADMINISTRATIVAS_RENOVADAS: 'CREDENCIALES_ADMINISTRATIVAS_RENOVADAS',
+  /** UF-03 de WP-USO-FINAL (DL-169): la persona definió una contraseña nueva con un código de recuperación (08 §26.3). */
+  RECUPERACION_DE_ACCESO: 'RECUPERACION_DE_ACCESO',
+  /** UF-03 (UF-D9): Administración emitió un código de recuperación asistida; las sesiones de la cuenta terminan. */
+  RECUPERACION_ASISTIDA: 'RECUPERACION_ASISTIDA',
 } as const;
 export type MotivoDeRevocacionDeSesion = (typeof MotivoDeRevocacionDeSesion)[keyof typeof MotivoDeRevocacionDeSesion];
 

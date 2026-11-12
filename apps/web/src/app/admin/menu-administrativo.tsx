@@ -3,8 +3,8 @@
 /**
  * El menú de la cuenta administrativa, en la esquina de la barra: el mismo patrón que `MenuDeCuenta` (un botón que abre
  * un panel; Escape, tocar fuera o salir con el teclado lo cierran), con lo de Administración:
- * - **Con sesión:** quién está en la consola, «Seguridad de tu acceso» (con el segundo factor vigente), la apariencia y
- *   «Cerrar sesión».
+ * - **Con sesión:** quién está en la consola, «Seguridad de tu acceso», «Pedidos de derechos» (UF-06) y «Recuperar el
+ *   acceso» (UF-03), los tres con el segundo factor vigente, la apariencia y «Cerrar sesión».
  * - **Sin sesión:** solo la apariencia.
  * La apariencia es la del website: se guarda en este navegador y no cambia nada más que los colores.
  */
@@ -120,6 +120,16 @@ export function MenuAdministrativo() {
               <span>
                 Pedidos de derechos
                 <span className="nota">Acceso, rectificación y supresión</span>
+              </span>
+            </Link>
+          ) : null}
+          {/* UF-03 (DL-169; UF-D9): la recuperación asistida del acceso de una persona. */}
+          {vigente && ruta !== '/admin/access' ? (
+            <Link href="/admin/access" className="menu-de-cuenta__opcion">
+              <Icono nombre="candado" />
+              <span>
+                Recuperar el acceso
+                <span className="nota">Un código de un solo uso para una persona</span>
               </span>
             </Link>
           ) : null}

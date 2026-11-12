@@ -29,6 +29,8 @@ export type Ruta =
   | { readonly nombre: 'registro' }
   // `alEntrar`: adónde lleva iniciar sesión cuando no es Inicio (por ahora, solo de vuelta a Cerrar mi cuenta).
   | { readonly nombre: 'login'; readonly aviso?: string; readonly alEntrar?: 'cuenta' }
+  // UF-03 (DL-169): recuperar el acceso con un código, desde Iniciar sesión. Pública, como el login.
+  | { readonly nombre: 'recuperar-el-acceso' }
   // Las cinco raíces de la barra. Algunas aceptan un pedido de una sola vez: abrir la acción de registrar, o una vista y
   // una medida de «Mi evolución».
   | { readonly nombre: 'inicio' }
@@ -123,7 +125,7 @@ export type Ir = (destino: Ruta, modo?: ModoDeNavegacion) => void;
 
 /** Pantallas que necesitan una sesión en memoria. */
 export function requiereSesion(ruta: Ruta): boolean {
-  return ruta.nombre !== 'bienvenida' && ruta.nombre !== 'registro' && ruta.nombre !== 'login';
+  return ruta.nombre !== 'bienvenida' && ruta.nombre !== 'registro' && ruta.nombre !== 'login' && ruta.nombre !== 'recuperar-el-acceso';
 }
 
 // ─── La barra inferior: cinco raíces (DL-117; DL-166) ───────────────────────────────────────────
@@ -217,6 +219,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'bienvenida':
     case 'registro':
     case 'login':
+    case 'recuperar-el-acceso':
       return null;
     default: {
       // Una pantalla nueva sin módulo no compila: la barra tiene que saber qué resaltar.
@@ -260,6 +263,8 @@ function madre(ruta: Ruta): Ruta | null {
     case 'registro':
     case 'login':
       return { nombre: 'bienvenida' };
+    case 'recuperar-el-acceso':
+      return { nombre: 'login' };
     case 'bienvenida':
     case 'inicio':
       return null;

@@ -358,6 +358,7 @@ import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
 import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
+import { RecuperacionPedidaResponseSchema, type RecuperacionPedidaResponse } from './recuperacion-de-acceso';
 
 export type Resultado<T> =
   | {
@@ -588,6 +589,20 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         cuerpo: { method: 'LOCAL', identifier: correo, credential: contrasena },
         conCookies: true,
       });
+    },
+    /**
+     * API-ACC-P1-01 (UF-03, DL-169): pedir la recuperación del acceso con el correo de la cuenta. La respuesta es la misma
+     * exista o no la cuenta: el pedido, su vencimiento y cómo llega el código (por correo o por Administración).
+     */
+    pedirRecuperacion(correo: string): Promise<Resultado<RecuperacionPedidaResponse>> {
+      return llamar('POST', '/auth/recovery-requests', { esquema: RecuperacionPedidaResponseSchema, cuerpo: { identifier: correo } });
+    },
+    /**
+     * API-ACC-P1-02 (UF-03): completar con el código y la contraseña nueva. Sin cuerpo en la respuesta (204): después se
+     * entra con la contraseña nueva. Un código que no vale, siempre RECOVERY_CODE_INVALID.
+     */
+    completarRecuperacion(recoveryId: string, codigo: string, contrasenaNueva: string): Promise<Resultado<null>> {
+      return llamar('POST', `/auth/recovery-requests/${encodeURIComponent(recoveryId)}/complete`, { esquema: null, cuerpo: { proof: codigo, newCredential: contrasenaNueva } });
     },
     /**
      * API-ACC-02-REANUDACION (DL-147): después de recargar, el website pide un token nuevo de la misma sesión con la cookie

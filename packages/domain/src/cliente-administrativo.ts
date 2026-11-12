@@ -26,6 +26,7 @@ import {
   type DecidirSobreAreaRequest,
 } from './contratos-administracion';
 import { ErrorEnvelopeSchema, type EsquemaDeContrato, type SalidaDe, type ValidationIssue } from './contratos';
+import { RecuperacionAsistidaResponseSchema, type EmitirRecuperacionAsistidaRequest } from './recuperacion-de-acceso';
 import type { Alcance } from './alcance';
 
 export type ResultadoAdministrativo<T> =
@@ -170,6 +171,13 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
     /** API-ADM-17 — resolver un pedido, con su clave de idempotencia. */
     resolverPedidoDeDerecho(token: string, pedidoId: string, pedido: ResolverPedidoDeDerechoRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/admin/data-rights-requests/${encodeURIComponent(pedidoId)}/resolution`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: PedidoDeDerechoAdministrativoResponseSchema });
+    },
+    /**
+     * API-ADM-18 — la recuperación asistida (UF-03, UF-D9): el código de un solo uso para la persona, con el fundamento.
+     * Sin clave de idempotencia: cada pedido emite un código nuevo y anula el anterior.
+     */
+    emitirRecuperacionAsistida(token: string, pedido: EmitirRecuperacionAsistidaRequest) {
+      return llamar('POST', '/admin/access-recoveries', { token, cuerpo: pedido, esquema: RecuperacionAsistidaResponseSchema });
     },
   };
 }

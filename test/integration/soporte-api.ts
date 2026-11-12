@@ -37,6 +37,9 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
       reanudacion: { maximo: 10_000, ventanaMs: 60_000 },
       loginAdministrativo: { maximo: 10_000, ventanaMs: 60_000 },
       segundoFactor: { maximo: 10_000, ventanaMs: 60_000 },
+      recuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+      recuperacionPorIp: { maximo: 10_000, ventanaMs: 60_000 },
+      completarRecuperacion: { maximo: 10_000, ventanaMs: 60_000 },
     },
     saltosDeProxy: 0,
     caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
@@ -56,6 +59,9 @@ export function entornoDePrueba(cambios: Partial<Entorno> = {}): Entorno {
     google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 2000 },
     // WP-ADMINISTRACION (DL-155): una clave sintética del segundo factor; la prueba de «no configurada» levanta su app sin ella.
     claveDelSegundoFactor: Buffer.alloc(32, 9),
+    // UF-03 (DL-169): sin proveedor de correo, como hoy en test: rige la recuperación asistida. La prueba de la recuperación
+    // levanta su app con un proveedor falso local; ninguna prueba manda un correo de verdad.
+    correo: null,
     ...cambios,
   };
 }

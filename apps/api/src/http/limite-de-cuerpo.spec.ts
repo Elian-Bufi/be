@@ -115,6 +115,9 @@ const ENTORNO: Entorno = {
     reanudacion: { maximo: 300, ventanaMs: 900000 },
     loginAdministrativo: { maximo: 5, ventanaMs: 900000 },
     segundoFactor: { maximo: 10, ventanaMs: 900000 },
+    recuperacion: { maximo: 3, ventanaMs: 3600000 },
+    recuperacionPorIp: { maximo: 30, ventanaMs: 3600000 },
+    completarRecuperacion: { maximo: 10, ventanaMs: 900000 },
   },
   saltosDeProxy: 1,
   caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
@@ -126,6 +129,7 @@ const ENTORNO: Entorno = {
   secretoDeTareas: null,
   google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 1000 },
   claveDelSegundoFactor: null,
+  correo: null,
 };
 
 describe('DL-168 · el parser de cada ruta, en la app armada como en producción', () => {

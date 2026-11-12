@@ -7524,3 +7524,11 @@ TEST-UF-009 y TEST-UF-011), y con sus decisiones técnicas UF-T15 a UF-T33, a ra
 - **UF-06:** la persona descarga lo suyo por una ruta firmada de 15 minutos y pide el acceso, la rectificación o la
   supresión, que Administración resuelve con fundamento (API-RGT-01 a 03, API-EXP-01 y 02, API-ADM-16 y 17). Pide una
   APK nueva («Tus datos», en Perfil).
+
+**La segunda mitad, programada (2026-11-12, PR #257 en borrador).** Siguió en la misma rama, en el orden UF-03, UF-07,
+UF-05 y UF-02, con los oráculos escritos antes del código y probados en rojo, y las decisiones técnicas desde UF-T34, a
+ratificar (§13.5 y §13.6 del paquete):
+- **UF-03:** la persona recupera el acceso con un código de un solo uso (API-ACC-P1-01 y 02, del 09 v0.12): la respuesta
+  es la misma exista o no la cuenta, la identidad no cambia y sus sesiones terminan. El correo de BE es un adaptador para
+  Brevo o Postmark que Dirección prende con `BE_CORREO_*`; sin él, Administración da el código con la recuperación
+  asistida (API-ADM-18). Pide una APK nueva (Iniciar sesión → «¿Olvidaste tu contraseña?»).

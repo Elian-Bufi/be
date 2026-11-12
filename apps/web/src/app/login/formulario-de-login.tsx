@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * PROTO-10-ACC-05 — login neutral, sin recuperación (fuera de alcance). Un único mensaje para todo fallo de
+ * PROTO-10-ACC-05 — login neutral. Desde UF-03 de WP-USO-FINAL (DL-169), con «¿Olvidaste tu contraseña?», que lleva a
+ * `/recover`. Un único mensaje para todo fallo de
  * credenciales o de estado de cuenta (10-B02:198-225). Después del login, el profesional aterriza en su espacio y el resto
  * en Cuenta (DL-025; pedido de Dirección del 2026-10-17), salvo que haya un retorno pedido.
  * DL-138: «Continuar con Google» arriba del formulario, si el build tiene el client ID. La sesión que abre Google se guarda
@@ -9,7 +10,7 @@
  * DL-147: si al abrir la entrada se reanuda una sesión (una recarga, otra pestaña), sigue directo al destino pedido o al
  * inicio, sin pedir la contraseña. Mientras se pregunta, el formulario dice «Recuperando tu sesión…».
  */
-import type { IniciarSesionResponse } from '@be/domain';
+import { COPY_RECUPERACION, type IniciarSesionResponse } from '@be/domain';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -135,6 +136,10 @@ export function FormularioDeLogin() {
         <button className="boton boton--primario" type="submit" disabled={enviando} aria-busy={enviando}>
           {enviando ? 'Iniciando sesión…' : COPY.iniciarSesion}
         </button>
+        {/* UF-03 (DL-169): recuperar el acceso con un código, sin perder la cuenta. */}
+        <p>
+          <Link href="/recover">{COPY_RECUPERACION.enlace}</Link>
+        </p>
         <p>
           ¿No tenés cuenta? <Link href="/register">Crear cuenta</Link>
         </p>

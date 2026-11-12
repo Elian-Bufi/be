@@ -50,6 +50,12 @@ export const errores = {
   validacionFallida: (issues: ValidationIssue[]) =>
     new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Falta información necesaria para continuar.', { issues }),
   limiteDeIntentos: () => new ErrorDeApi(429, CodigoDeError.RATE_LIMITED, 'Demasiados intentos. Probá de nuevo más tarde.'),
+  /**
+   * UF-03 (DL-169): el código de recuperación no vale. El mismo mensaje para toda causa (09 v0.12 §10: no revela nada); la
+   * causa real queda en la auditoría con `motivoDeAuditoria`.
+   */
+  codigoDeRecuperacionInvalido: (motivo: string) =>
+    new ErrorDeApi(422, CodigoDeError.RECOVERY_CODE_INVALID, 'El código no es válido o ya no está vigente.', undefined, motivo),
   baseNoDisponible: () => new ErrorDeApi(503, CodigoDeError.DB_UNAVAILABLE, 'El servicio no está disponible. Probá de nuevo más tarde.'),
 
   // ─── WP-03 (09v7 §4; 09v8:1807-1826; 09:2513-2516) ─────────────────────────────────────────────

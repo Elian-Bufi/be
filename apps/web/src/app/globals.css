@@ -15339,3 +15339,14 @@ p.cifra-del-espacio__desglose {
 .items-del-editor .item-del-editor__nota > td {
   padding-top: 0;
 }
+
+/* UF-03 (DL-169): el código de la recuperación asistida, que se muestra una sola vez en /admin/access. */
+.codigo-emitido code {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  font-size: 1.3rem;
+  letter-spacing: 0.12em;
+}

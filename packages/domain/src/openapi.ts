@@ -31,6 +31,7 @@ import { EditarPerfilPropioRequestSchema, LoQueFaltaParaSeguirResponseSchema, Pe
 import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema, SinCuerpoDelSegundoFactorSchema } from './segundo-factor-del-profesional';
 import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSchema } from './incorporacion-de-profesionales';
 import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
+import { CompletarRecuperacionRequestSchema, EmitirRecuperacionAsistidaRequestSchema, PedirRecuperacionRequestSchema, RecuperacionAsistidaResponseSchema, RecuperacionPedidaResponseSchema } from './recuperacion-de-acceso';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -370,7 +371,7 @@ export interface Operacion {
   readonly requestBinario?: readonly string[];
   readonly query?: readonly ParametroDeQuery[];
   /** El primero es el éxito principal. REL-01 y CON-02 también responden 200 (deduplicado o replay). */
-  readonly exitos: readonly { readonly status: 200 | 201 | 204; readonly schema?: z.ZodType; readonly binario?: string }[];
+  readonly exitos: readonly { readonly status: 200 | 201 | 202 | 204; readonly schema?: z.ZodType; readonly binario?: string }[];
   readonly errores: Errores;
   /**
    * La forma de `error.details` de un código 422 que la trae (DL-104). Se declara sobre el ErrorEnvelope común, sin
@@ -561,6 +562,33 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'],
     },
     fuente: '09v12:578-603 · DEUDA_LEGAJO DL-016/DL-017/DL-018',
+  },
+  // ─── UF-03 de WP-USO-FINAL (DL-169; UF-D9): recuperar el acceso local (04 RF-005, UC-E09; 09 v0.12 §10) ──────────────
+  {
+    id: 'API-ACC-P1-01',
+    metodo: 'post',
+    ruta: '/auth/recovery-requests',
+    resumen:
+      'Pedir la recuperación del acceso local con el correo de la cuenta. Responde siempre 202 con la misma forma, exista o no la cuenta: un recoveryId nuevo, el vencimiento de un código por correo (30 minutos) y delivery, que dice si BE manda el código por correo (EMAIL) o si lo da Administración (ASSISTED, sin proveedor de correo; UF-D9). Lo único que cambia es lo que llega por correo: a una cuenta operativa con contraseña, el código (diez caracteres, un solo uso); a una que solo entra con Google, el aviso de que no tiene contraseña; a un correo sin cuenta o a una cuenta que no opera, nada. No cambia la contraseña ni cierra sesiones. Cupos: 3 pedidos por hora por correo, desde cualquier red, y 30 por hora por red (08 §38), iguales exista o no la cuenta (429). Auditado sin el correo ni el código.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: PedirRecuperacionRequestSchema,
+    exitos: [{ status: 202, schema: RecuperacionPedidaResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['VALIDATION_FAILED'], 429: ['RATE_LIMITED'] },
+    fuente: '09 v0.12 §10 (API-ACC-P1-01: «202, mismo shape exista o no exista la cuenta») · 04 RF-005 (UC-E09) · 08 §24.4, §24.5 y §38 · UF-03 y UF-D9 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ACC-P1-02',
+    metodo: 'post',
+    ruta: '/auth/recovery-requests/{recoveryId}/complete',
+    resumen:
+      'Completar la recuperación: con un código vigente de la cuenta del pedido (el que llegó por correo o el que dio Administración con API-ADM-18), define la contraseña nueva, con la política del alta. En una transacción: la credencial cambia con su cambio registrado (la base no la deja cambiar sin él), el código se usa, los demás códigos de la cuenta se anulan, todas sus sesiones se revocan y queda auditado. La identidad es la misma, con su historia y sus vínculos; el método de Google no se toca. Un código que no vale —mal escrito, vencido, usado, de otra cuenta, o un pedido que no existe o se anuló— responde siempre el mismo 422 RECOVERY_CODE_INVALID y nada cambia; cinco sobre el mismo pedido lo anulan. Una contraseña nueva que no cumple la política, 422 VALIDATION_FAILED, sin gastar un intento. Cupo: 10 intentos cada 15 minutos por red (429).',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: CompletarRecuperacionRequestSchema,
+    exitos: [{ status: 204 }],
+    errores: { 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['RECOVERY_CODE_INVALID', 'VALIDATION_FAILED'], 429: ['RATE_LIMITED'] },
+    fuente: '09 v0.12 §10 (API-ACC-P1-02) · 04 RF-005 · 08 §24.4, §24.6 y §26.3 (el cambio de credencial revoca las sesiones) · UF-03 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
   },
   {
     id: 'API-CON-05',
@@ -4035,6 +4063,20 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PedidoDeDerechoAdministrativoResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
     fuente: 'UF-06 de WP-USO-FINAL · 08 §18 y §19 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-03 de WP-USO-FINAL (DL-169; UF-D9): la recuperación asistida ──────────────────────────────────────────────────
+  {
+    id: 'API-ADM-18',
+    metodo: 'post',
+    ruta: '/admin/access-recoveries',
+    resumen:
+      'La recuperación asistida (UF-D9): Administración verificó a la persona por el canal de ayuda y, para la cuenta de ese correo de acceso, emite un código de recuperación de un solo uso que vale 24 horas, con el fundamento (cómo la verificó). En una transacción: se revocan todas las sesiones de la cuenta, se anulan sus códigos anteriores y queda auditado sin el fundamento ni el código. El código se devuelve una sola vez (la base guarda su huella) y la persona lo usa con API-ACC-P1-01 y 02, como el del correo. Sin idempotencia, para que el código no quede guardado: cada pedido emite uno nuevo y anula el anterior. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no opera o sin contraseña (entra con Google), 422 VALIDATION_FAILED.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: EmitirRecuperacionAsistidaRequestSchema,
+    exitos: [{ status: 201, schema: RecuperacionAsistidaResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-03 y UF-D9 de WP-USO-FINAL («una recuperación asistida por Administración, con fundamento: revoca las sesiones y emite un código de un solo uso») · 04 RF-005 · 08 §24.4 («contingencia asistida documentada») · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
   },
 ];
 

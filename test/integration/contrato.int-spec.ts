@@ -21,6 +21,7 @@
  *   TB-52 a TB-56).
  * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169).
  * - WP-USO-FINAL (UF-04): API-ADM-14 y 15, la entrada de los profesionales reales y su nombre profesional (DL-169).
+ * - WP-USO-FINAL (UF-03): API-ACC-P1-01 y 02 y API-ADM-18, recuperar el acceso y la recuperación asistida (DL-169).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -2239,6 +2240,34 @@ it('TEST-CT (WP-USO-FINAL, UF-06): RGT-01 a 03, EXP-01, EXP-02 y su descarga, y 
   await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.', extra: 1 }).expect(400); // UNKNOWN_FIELD
   await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.' }).expect(200);
   await resolver(pedido, { outcome: 'REJECTED', response: 'Otra vez.', rationale: 'Otra vez.' }).expect(422); // INVALID_STATE_TRANSITION
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-03): ACC-P1-01 y 02 y ADM-18 — recuperar el acceso, con éxitos y errores declarados (DL-169)', async () => {
+  const servidor = app.getHttpServer();
+  const persona = correoSintetico('ct-uf03');
+  await registrarOk(app, persona, 'WEB');
+  const pedir = (cuerpo: Record<string, unknown>) => request(servidor).post('/api/v1/auth/recovery-requests').send(cuerpo);
+  const completar = (id: string, cuerpo: Record<string, unknown>) => request(servidor).post(`/api/v1/auth/recovery-requests/${id}/complete`).send(cuerpo);
+  // ACC-P1-01: sin proveedor de correo (como en test), 202 con la entrega asistida.
+  const pedido = (await pedir({ identifier: persona }).expect(202)).body.data.recoveryId as string;
+  await pedir({ identifier: persona, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await pedir({ identifier: 'sin-arroba' }).expect(422); // VALIDATION_FAILED
+  await request(servidor).post('/api/v1/auth/recovery-requests?x=1').send({ identifier: persona }).expect(400); // INVALID_REQUEST
+  // ADM-18: el código de la recuperación asistida.
+  const a = await administradorListo(app, prisma, `ct-uf03-${randomUUID().slice(0, 6)}`);
+  const asistida = (cuerpo: Record<string, unknown>) => adm(app, a.token).post('/admin/access-recoveries').send(cuerpo);
+  await asistida({ email: persona, rationale: '' }).expect(422); // VALIDATION_FAILED
+  await asistida({ email: correoSintetico('ct-uf03-nadie'), rationale: 'Pedido por el canal.' }).expect(404); // RESOURCE_NOT_FOUND
+  await asistida({ email: persona, rationale: 'Pedido por el canal.', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app).post('/admin/access-recoveries').send({ email: persona, rationale: 'Pedido por el canal.' }).expect(401); // AUTHENTICATION_REQUIRED
+  const sinSegundo = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+  await adm(app, sinSegundo).post('/admin/access-recoveries').send({ email: persona, rationale: 'Pedido por el canal.' }).expect(403); // MFA_REQUIRED
+  const codigo = (await asistida({ email: persona, rationale: 'Escribió desde el correo de la cuenta.' }).expect(201)).body.data.code as string;
+  // ACC-P1-02.
+  await completar(pedido, { proof: codigo, newCredential: 'corta' }).expect(422); // VALIDATION_FAILED
+  await completar(pedido, { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await completar(randomUUID(), { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }).expect(422); // RECOVERY_CODE_INVALID
+  await completar(pedido, { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }).expect(204);
 });
 
 it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-47): PLN-07 y PLE-05 — descartar un borrador, con éxitos y errores declarados (DL-163 D-21)', async () => {

@@ -5,7 +5,20 @@ import { ENTORNO } from '../config/tokens';
 import type { Entorno } from '../config/entorno';
 import { errores } from '../http/errores';
 
-export type LimiteNombrado = 'login' | 'loginPorIp' | 'loginPorIdentificador' | 'registro' | 'consultaProtegida' | 'invitacion' | 'reanudacion' | 'loginAdministrativo' | 'segundoFactor';
+export type LimiteNombrado =
+  | 'login'
+  | 'loginPorIp'
+  | 'loginPorIdentificador'
+  | 'registro'
+  | 'consultaProtegida'
+  | 'invitacion'
+  | 'reanudacion'
+  | 'loginAdministrativo'
+  | 'segundoFactor'
+  // UF-03 (DL-169): la recuperación del acceso.
+  | 'recuperacion'
+  | 'recuperacionPorIp'
+  | 'completarRecuperacion';
 
 /**
  * Rate limiting (08 §24.5; 09v12: «429 RATE_LIMITED con respuestas neutras»).

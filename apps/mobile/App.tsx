@@ -92,6 +92,7 @@ import { PantallaDeFormularios, PantallaDeMiSolicitud } from './src/pantallas/fo
 import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantallas/historial';
 import { PantallaDeInicio } from './src/pantallas/inicio';
 import { PantallaDeLogin } from './src/pantallas/login';
+import { PantallaDeRecuperarElAcceso } from './src/pantallas/recuperar-el-acceso';
 import { PantallaDeMisHabitos } from './src/pantallas/mis-habitos';
 import { PantallaDeNovedades } from './src/pantallas/novedades';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
@@ -685,7 +686,12 @@ function Contenido() {
 
           {ruta.nombre === 'registro' ? <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} mostrarAviso={subir} alIniciar={entrar} /> : null}
 
-          {ruta.nombre === 'login' ? <PantallaDeLogin aviso={ruta.aviso} irARegistro={() => ir({ nombre: 'registro' })} alIniciar={entrar} subir={subir} /> : null}
+          {ruta.nombre === 'login' ? (
+            <PantallaDeLogin aviso={ruta.aviso} irARegistro={() => ir({ nombre: 'registro' })} irARecuperar={() => ir({ nombre: 'recuperar-el-acceso' })} alIniciar={entrar} subir={subir} />
+          ) : null}
+
+          {/* UF-03 (DL-169): recuperar el acceso; al cambiar la contraseña entra como el login. */}
+          {ruta.nombre === 'recuperar-el-acceso' ? <PantallaDeRecuperarElAcceso irALogin={() => ir({ nombre: 'login' })} alIniciar={entrar} subir={subir} /> : null}
 
           {/* UF-01 (DL-169): mientras falte algo para seguir, o mientras se pregunta, «Antes de seguir» en lugar de la app. */}
           {enAntesDeSeguir && sesion ? (

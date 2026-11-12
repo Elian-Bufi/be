@@ -139,6 +139,21 @@ La API verifica el ID token de Google con las claves públicas de Google: no hay
 - El procedimiento del operador, el primer administrador y cómo comprobar que no lee datos de salud están en `EVIDENCIA/ADMINISTRACION/OPERACION.md` (llega con #210).
 - Como todo push a `main` que toca `render.yaml`, vuelve a aplicar `ipAllowList: []` de la base: una IP del operador habilitada a mano queda cerrada.
 
+### El correo de BE: la recuperación del acceso (DL-169, UF-03 de WP-USO-FINAL)
+
+La API manda un solo tipo de correo: el código para recuperar el acceso. **Sin estas variables no manda nada:** «¿Olvidaste tu contraseña?» responde igual y dice que el código lo da Administración por el canal de ayuda (la recuperación asistida, `/admin/access`). Las tres van juntas; con una sola, la API no arranca y el mensaje nombra la variable, nunca el valor.
+
+| Variable | Origen | Nota |
+|---|---|---|
+| `BE_CORREO_PROVEEDOR` | a mano, en be-api | `brevo` o `postmark`: el proveedor transaccional que elige Dirección, con su DPA (08 §34, condición 15 del gate) |
+| `BE_CORREO_CLAVE` | a mano, en be-api, como secreto | La clave de la API del proveedor. **Nunca se versiona ni se muestra**; la API no la registra |
+| `BE_CORREO_REMITENTE` | a mano, en be-api | La dirección que manda, de un dominio propio verificado en el proveedor (por ejemplo, `no-responder@<dominio>`). En producción no puede ser `@example.invalid` |
+| `BE_CORREO_URL` | opcional | El origen de la API del proveedor. Por defecto, el suyo; solo las pruebas lo cambian (un proveedor falso local). En producción tiene que ser https |
+| `RATE_LIMIT_RECUPERACION_*`, `RATE_LIMIT_RECUPERACION_IP_*`, `RATE_LIMIT_COMPLETAR_RECUPERACION_*` | opcionales | `_MAX` y `_WINDOW_MS`. Por defecto: pedir, 3 por hora por correo desde cualquier red (08 §38) y 30 por hora por red; completar, 10 cada 15 minutos por red |
+
+- **Para prenderlo:** crear la cuenta del proveedor con el correo de Dirección, verificar el dominio del remitente (los registros SPF y DKIM que pide el proveedor) y cargar las tres variables en be-api → Environment → «Save, rebuild, and deploy». Comprobar con una cuenta sintética: «¿Olvidaste tu contraseña?» dice «te mandamos un código» y el correo llega.
+- **Las huellas de los códigos** se firman con una clave derivada de `JWT_SECRET`: reemplazarlo deja sin valor los códigos pendientes (vencen a los 30 minutos, o a las 24 horas los asistidos), además de las sesiones.
+
 ### APK
 
 `apk.yml` necesita el secreto `EXPO_TOKEN` en GitHub (alta inicial, paso 3). Sin él, el build falla al autenticarse; pasó el 2026-09-19. Mientras tanto, el APK se construye con la CLI de EAS desde la máquina de Dirección, con su sesión:
