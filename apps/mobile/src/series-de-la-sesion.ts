@@ -315,6 +315,41 @@ export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, 
   return { ok: true, serie };
 }
 
+/** Lo que pasa al tocar «Terminar serie N» con la serie cronometrándose, decidido antes de cerrar nada. */
+export type AlTerminarLaSerie =
+  | { readonly tipo: 'registrar' }
+  | { readonly tipo: 'falta-un-dato'; readonly errores: ErroresDeFila; readonly anuncio: string }
+  | { readonly tipo: 'medicion-larga'; readonly anuncio: string };
+
+/**
+ * «Terminar serie N» (AV2-30, revisión de la etapa B): se valida **antes** de cerrar el reloj y de empezar el descanso,
+ * con lo escrito y el tiempo que se lleva medido, como lo validaría la casilla. Así nunca queda un descanso corriendo
+ * con la serie sin registrar.
+ * - Si la serie se puede registrar: `registrar` (la pantalla la tilda: cierra el reloj, registra y empieza el descanso).
+ * - Si falta un dato (un rango de repeticiones sin carga sugerida y nada escrito, un número ilegible): `falta-un-dato`,
+ *   con los errores de la fila y lo que se anuncia. La pantalla para solo el reloj, sin descanso, y la fila fija pasa a
+ *   «Registrar serie N» con el motivo a la vista.
+ * - Si la medición lleva más que el máximo de una serie (diez horas: la sesión quedó abierta de otro día), no se escribe
+ *   en la fila: `medicion-larga`, y se resuelve con el diálogo de la medición («Terminó ahora» o «Dejarla incompleta»).
+ */
+export function alTerminarLaSerie(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, msMedidos: number | null): AlTerminarLaSerie {
+  const n = numero(setIndex, 0);
+  if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(n) };
+  const conTiempo = msMedidos === null ? f : { ...f, tiempo: textoDeTiempo(Math.max(0, Math.round(msMedidos / 1000))) };
+  const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad);
+  if (lectura.ok) return { tipo: 'registrar' };
+  return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores) };
+}
+
+/** Lo que falta para registrar la serie N, dicho para el lector de pantalla y para la fila fija. */
+export function anuncioParaRegistrar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, errores: ErroresDeFila): string {
+  const n = numero(setIndex, 0);
+  const rango = f.repeticiones.trim() === '' && objetivo?.repetitions && 'min' in objetivo.repetitions ? objetivo.repetitions : null;
+  if (errores.fila && rango) return TEXTOS_DE_LA_SESION.paraRegistrarEnRango(n, `${numero(rango.min, 0)}–${numero(rango.max, 0)}`);
+  const motivo = errores.fila ?? errores.repeticiones ?? errores.carga ?? errores.rir ?? errores.tiempo ?? COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato;
+  return TEXTOS_DE_LA_SESION.paraRegistrar(n, motivo.charAt(0).toLowerCase() + motivo.slice(1));
+}
+
 /**
  * Lo que vuelve a la fila al destildar una serie: lo que se había escrito. Una tildada con lo planificado vuelve vacía,
  * con el plan en gris otra vez; el tiempo vuelve en las dos.

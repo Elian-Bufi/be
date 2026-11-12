@@ -437,6 +437,7 @@ function sesionDePrueba() {
     hacer,
     estado: () => corrida.estadoLocal(c),
     eventos: () => corrida.eventosDeLaCorrida(c),
+    vivo: () => corrida.enVivoDeLaCorrida(c, h.reloj),
     avanzar: (s) => {
       t.mono += s * 1000;
       t.civil += s * 1000;
@@ -1636,26 +1637,68 @@ test('TEST-AV2-018 · «Figura: Hombre | Mujer» arriba, en la fila de controles
 
 // ═══ WP-APP-VUELTA-2, etapa B: la sesión de entrenamiento, con lo que encontró Dirección en la 0.25 (AV2-30 a AV2-38) ═══
 
+const seriesDeLaSesion = await import('../apps/mobile/src/series-de-la-sesion.ts');
+/** Sentadilla con el plan entero: 8 repeticiones con 60 kg. */
+const CON_CARGA = { repetitions: { value: 8 }, suggestedLoad: { value: 60, unit: 'kg' }, rir: 2, restSeconds: 90 };
+/** Un rango sin carga sugerida: tildar sin escribir no elige un número (el caso de la revisión de la etapa B). */
+const RANGO_SIN_CARGA = { repetitions: { min: 10, max: 12 }, suggestedLoad: null, rir: null, restSeconds: 90 };
+
 /**
  * La sesión de Piernas A con la fila fija, como la usó Dirección en la 0.25: cuatro series de Sentadilla, las dos
- * primeras registradas. `tocarElMedio` hace lo que hace la pantalla con el toque (`queHaceElMedio`): cronometrar, tildar
- * (registrar, cerrar el reloj y, con el ajuste automático, empezar el descanso) o solo parar el reloj.
+ * primeras registradas. `tocarElMedio` hace lo que hace la pantalla con el toque (`queHaceElMedio` y `tildar`), con el
+ * `serieAlTildar` real, los estados reales de la fila (`EstadoDeFila`) y lo escrito: con la serie cronometrándose,
+ * primero decide `alTerminarLaSerie` (antes de cerrar nada); si falta un dato, para solo el reloj y la fila pasa a
+ * «Registrar serie N»; si se puede, cierra el reloj, empieza el descanso y la registra.
  */
-function sesionConLaFila(registradas = [1, 2]) {
+function sesionConLaFila(registradas = [1, 2], objetivo = CON_CARGA) {
   const s = sesionDePrueba();
-  const hechas = new Set(registradas);
-  const filas = () => [1, 2, 3, 4].map((setIndex) => ({ setIndex, estado: hechas.has(setIndex) ? 'pendiente-de-enviar' : 'sin-registrar' }));
-  const fila = () => descanso.filaDeAcciones({ pausada: false, abierta: s.estado().medicionAbierta, prescriptionId: 'pA', siguienteSinRegistrar: filas().find((f) => f.estado === 'sin-registrar')?.setIndex ?? null, haySiguienteEjercicio: true });
+  const estados = new Map([1, 2, 3, 4].map((i) => [i, registradas.includes(i) ? 'pendiente-de-enviar' : 'sin-registrar']));
+  const escritas = new Map();
+  let porRegistrar = null;
+  const filas = () => [1, 2, 3, 4].map((setIndex) => ({ setIndex, estado: estados.get(setIndex) }));
+  const fila = () =>
+    descanso.filaDeAcciones({
+      pausada: false,
+      abierta: s.estado().medicionAbierta,
+      prescriptionId: 'pA',
+      siguienteSinRegistrar: filas().find((f) => f.estado === 'sin-registrar')?.setIndex ?? null,
+      haySiguienteEjercicio: true,
+      porRegistrar: porRegistrar && estados.get(porRegistrar.setIndex) === 'sin-registrar' ? porRegistrar : null,
+    });
+  const tildar = (i) => {
+    const abierta = s.estado().medicionAbierta;
+    const auto = descanso.accionAlTildar(s.estado(), AUTO, { prescriptionId: 'pA', setIndex: i, ultimaDelEjercicio: i === 4 });
+    let escrita = escritas.get(i) ?? seriesDeLaSesion.FILA_VACIA;
+    let r = null;
+    if (abierta?.kind === 'SET' && abierta.setIndex === i) {
+      const plan = seriesDeLaSesion.alTerminarLaSerie(escrita, objetivo, i, 'kg', s.vivo().medicionAbierta?.ms ?? null);
+      if (plan.tipo === 'medicion-larga') return { plan, r: null };
+      if (plan.tipo === 'falta-un-dato') {
+        r = s.hacer({ tipo: 'finalizar-serie' });
+        porRegistrar = { setIndex: i, nota: plan.anuncio };
+        return { plan, r };
+      }
+      r = auto ? s.hacer(auto) : s.hacer({ tipo: 'finalizar-serie' });
+      const medida = calcularTiempos(s.eventos(), () => 90).timedSets.filter((x) => x.setIndex === i && x.finishedAt !== null).pop();
+      escrita = { ...escrita, tiempo: seriesDeLaSesion.textoDeTiempo(Math.round(medida.duration.ms / 1000)) };
+    }
+    const lectura = seriesDeLaSesion.serieAlTildar(escrita, objetivo, i, 'kg');
+    if (!lectura.ok) return { plan: { tipo: 'falta-un-dato', errores: lectura.errores }, r };
+    estados.set(i, 'pendiente-de-enviar');
+    porRegistrar = null;
+    if (r === null && auto) r = s.hacer(auto);
+    return { plan: { tipo: 'registrar' }, r, serie: lectura.serie };
+  };
   const tocarElMedio = () => {
     const toque = descanso.queHaceElMedio(fila().medio, filas());
-    if (toque.tipo === 'cronometrar') return s.hacer(descanso.accionDeEmpezarSerie('pA', toque.setIndex));
-    if (toque.tipo === 'parar-el-reloj') return s.hacer({ tipo: 'finalizar-serie' });
-    const auto = descanso.accionAlTildar(s.estado(), AUTO, { prescriptionId: 'pA', setIndex: toque.setIndex, ultimaDelEjercicio: toque.setIndex === 4 });
-    hechas.add(toque.setIndex);
-    return auto ? s.hacer(auto) : s.hacer({ tipo: 'finalizar-serie' });
+    if (toque.tipo === 'cronometrar') return { plan: null, r: s.hacer(descanso.accionDeEmpezarSerie('pA', toque.setIndex)) };
+    if (toque.tipo === 'parar-el-reloj') return { plan: null, r: s.hacer({ tipo: 'finalizar-serie' }) };
+    return tildar(toque.setIndex);
   };
-  return { ...s, fila, filas, tocarElMedio, hechas };
+  const escribir = (i, campo, texto) => escritas.set(i, { ...(escritas.get(i) ?? seriesDeLaSesion.FILA_VACIA), [campo]: texto });
+  return { ...s, fila, filas, tocarElMedio, escribir };
 }
+const registradasDe = (s) => s.filas().filter((f) => f.estado !== 'sin-registrar').map((f) => f.setIndex);
 
 test('TEST-AV2-028 · «Terminar serie 3» tilda la serie 3, empieza su descanso y la fila pasa a «Empezar serie 4» (el hallazgo de la 0.25)', () => {
   const s = sesionConLaFila();
@@ -1663,8 +1706,9 @@ test('TEST-AV2-028 · «Terminar serie 3» tilda la serie 3, empieza su descanso
   s.tocarElMedio();
   assert.equal(s.fila().medio.texto, 'Terminar serie 3');
   s.avanzar(40);
-  const r = s.tocarElMedio();
-  assert.ok(s.hechas.has(3), 'la serie 3 quedó tildada');
+  const { r, serie } = s.tocarElMedio();
+  assert.deepEqual(registradasDe(s), [1, 2, 3], 'la serie 3 quedó registrada');
+  assert.deepEqual(serie, { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null, recordedAs: 'AS_PLANNED', durationSeconds: 40 }, 'con lo planificado y el tiempo medido');
   assert.deepEqual(r.eventos.map((e) => [e.type, e.setIndex ?? null]), [['SET_TIMING_FINISHED', null], ['REST_STARTED', 3]], 'una sola acción: cierra el reloj y empieza el descanso');
   assert.equal(s.fila().medio.texto, 'Empezar serie 4', 'pasa a la siguiente, no vuelve a «Empezar serie 3»');
   // La última del ejercicio: se tilda, no arranca descanso (AVD-3) y no queda nada que empezar.
@@ -1672,20 +1716,71 @@ test('TEST-AV2-028 · «Terminar serie 3» tilda la serie 3, empieza su descanso
   s.tocarElMedio();
   s.avanzar(35);
   const ultima = s.tocarElMedio();
-  assert.deepEqual(ultima.eventos.map((e) => e.type), ['SET_TIMING_FINISHED']);
-  assert.deepEqual([...s.hechas].sort(), [1, 2, 3, 4]);
+  assert.deepEqual(ultima.r.eventos.map((e) => e.type), ['SET_TIMING_FINISHED']);
+  assert.deepEqual(registradasDe(s), [1, 2, 3, 4]);
   assert.equal(s.fila().medio, null, 'todas registradas');
   const tiempos = calcularTiempos(s.eventos(), () => 90);
   assert.deepEqual(tiempos.timedSets.map((x) => [x.setIndex, x.duration.ms]), [[3, 40_000], [4, 35_000]], 'cada serie con su tiempo medido, sin volver a cero');
 });
 
+test('TEST-AV2-028 · un rango sin carga y sin nada escrito: «Terminar» para solo el reloj, sin descanso, y la fila dice «Registrar serie 3» con lo que falta', () => {
+  const s = sesionConLaFila([1, 2], RANGO_SIN_CARGA);
+  s.tocarElMedio();
+  s.avanzar(40);
+  const { plan, r } = s.tocarElMedio();
+  assert.equal(plan.tipo, 'falta-un-dato');
+  assert.deepEqual(r.eventos.map((e) => e.type), ['SET_TIMING_FINISHED'], 'solo el reloj: ningún descanso corre con la serie sin registrar');
+  assert.equal(s.estado().medicionAbierta, null);
+  assert.deepEqual(registradasDe(s), [1, 2], 'la serie 3 sigue sin registrar');
+  const f = s.fila();
+  assert.deepEqual(f.medio, { tipo: 'registrar-serie', setIndex: 3, texto: 'Registrar serie 3' }, 'no vuelve a «Empezar serie 3»');
+  assert.equal(f.nota, 'Para registrar la serie 3, escribí cuántas repeticiones hiciste (10–12) o la carga.', 'el motivo, junto al botón');
+  assert.equal(plan.anuncio, f.nota, 'lo mismo que se anuncia');
+  // Sin escribir, «Registrar serie 3» sigue sin poder: no cambia nada.
+  assert.equal(s.tocarElMedio().plan.tipo, 'falta-un-dato');
+  assert.deepEqual(registradasDe(s), [1, 2]);
+  // Con las repeticiones escritas, se registra con el tiempo medido y empieza el descanso de la serie 3.
+  s.escribir(3, 'repeticiones', '11');
+  s.escribir(3, 'tiempo', '00:40');
+  const listo = s.tocarElMedio();
+  assert.equal(listo.serie.completedRepetitions, 11);
+  assert.equal(listo.serie.durationSeconds, 40);
+  assert.deepEqual(listo.r.eventos.map((e) => [e.type, e.setIndex ?? null]), [['REST_STARTED', 3]]);
+  assert.equal(s.fila().medio.texto, 'Empezar serie 4');
+  assert.equal(s.fila().nota, null);
+});
+
+test('TEST-AV2-028 · una medición de más de diez horas (la sesión del 8 nov): no se escribe en la fila; se resuelve con su diálogo', () => {
+  const s = sesionConLaFila();
+  s.tocarElMedio();
+  s.avanzar(87 * 3600);
+  const { plan, r } = s.tocarElMedio();
+  assert.deepEqual(plan, { tipo: 'medicion-larga', anuncio: 'La serie 3 se está midiendo desde hace más de 10 horas: decidí si terminó ahora o si queda incompleta.' });
+  assert.equal(r, null, 'no se cerró nada ni empezó un descanso');
+  assert.equal(s.estado().medicionAbierta.kind, 'SET');
+  assert.deepEqual(registradasDe(s), [1, 2]);
+  // Justo en el máximo, todavía es una serie medida.
+  assert.equal(seriesDeLaSesion.alTerminarLaSerie(seriesDeLaSesion.FILA_VACIA, CON_CARGA, 3, 'kg', seriesDeLaSesion.MAXIMO_DE_SEGUNDOS * 1000).tipo, 'registrar');
+  // En la pantalla: se valida antes de cerrar; la larga se pregunta con el diálogo de la medición.
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  const tildar = PANTALLA.slice(PANTALLA.indexOf('function tildar('), PANTALLA.indexOf('function pasarA('));
+  assert.ok(tildar.indexOf('alTerminarLaSerie(') < tildar.indexOf('pararElReloj(abierta, descansoAuto'), 'se valida antes de cerrar el reloj y empezar el descanso');
+  assert.match(tildar, /plan\.tipo === 'medicion-larga'[\s\S]{0,400}preguntarPorLaMedicionLarga\(/);
+  assert.match(tildar, /plan\.tipo === 'falta-un-dato'[\s\S]{0,300}pararElReloj\(abierta\);[\s\S]{0,400}announceForAccessibility\(plan\.anuncio\)/);
+});
+
 test('TEST-AV2-028 · con la serie ya registrada, «Terminar serie N» solo para el reloj: no la destilda', () => {
-  assert.deepEqual(descanso.queHaceElMedio({ tipo: 'terminar-serie', setIndex: 2, texto: '' }, [{ setIndex: 2, estado: 'sincronizada' }]), { tipo: 'parar-el-reloj', setIndex: 2 });
+  assert.deepEqual(descanso.queHaceElMedio({ tipo: 'terminar-serie', setIndex: 2, texto: '' }, [{ setIndex: 2, estado: 'guardada' }]), { tipo: 'parar-el-reloj', setIndex: 2 });
   assert.deepEqual(descanso.queHaceElMedio({ tipo: 'empezar-serie', setIndex: 3, texto: '' }, []), { tipo: 'cronometrar', setIndex: 3 });
+  assert.deepEqual(descanso.queHaceElMedio({ tipo: 'registrar-serie', setIndex: 3, texto: '' }, [{ setIndex: 3, estado: 'sin-registrar' }]), { tipo: 'tildar', setIndex: 3 });
   // La pantalla manda «tildar» a la casilla de la fila, la misma que se toca a mano.
   const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
   assert.match(PANTALLA, /queHaceElMedio\(/);
   assert.match(PANTALLA, /toque\.tipo === 'tildar'[\s\S]{0,200}tildar\(/);
+  // La nota va junto al botón, en la fila fija, y el lector de pantalla la lee con el botón.
+  const FILA = sinComentarios(leer('fila-fija.tsx'));
+  assert.match(FILA, /\{datos\.nota \? \(\s*<Text style=\{estilos\.nota\} accessibilityLiveRegion="polite">/);
+  assert.match(FILA, /accessibilityLabel=\{\[datos\.medio\.texto, datos\.motivo \?\? datos\.nota\]/);
 });
 
 const cierre = await import('../apps/mobile/src/cierre-de-la-sesion.ts');

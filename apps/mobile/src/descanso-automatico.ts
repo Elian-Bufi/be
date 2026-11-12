@@ -182,7 +182,7 @@ export const esElAvisoDelDescanso = (datos: unknown): boolean => typeof datos ==
 
 // ─── La fila fija de acciones (AV-13, AV-14; AVD-4) ─────────────────────────────────────────────
 
-export type AccionDelMedio = { readonly tipo: 'empezar-serie'; readonly setIndex: number; readonly texto: string } | { readonly tipo: 'terminar-serie'; readonly setIndex: number; readonly texto: string };
+export type AccionDelMedio = { readonly tipo: 'empezar-serie' | 'terminar-serie' | 'registrar-serie'; readonly setIndex: number; readonly texto: string };
 
 export interface FilaDeAcciones {
   readonly izquierda: { readonly tipo: 'pausar' | 'reanudar'; readonly texto: string };
@@ -190,6 +190,8 @@ export interface FilaDeAcciones {
   readonly medio: AccionDelMedio | null;
   /** Por qué la del medio no se puede tocar (en pausa), o `null`. */
   readonly motivo: string | null;
+  /** Lo que falta para registrar la serie de «Registrar serie N», a la vista junto al botón, o `null`. */
+  readonly nota: string | null;
   readonly siguienteEjercicio: { readonly texto: string; readonly habilitado: boolean } | null;
 }
 
@@ -197,6 +199,7 @@ export interface FilaDeAcciones {
  * La fila del momento, según la corrida (AVD-4):
  * - con un descanso corriendo, o sin nada abierto: «Empezar serie N» (la primera sin registrar del ejercicio);
  * - con una serie cronometrada abierta del ejercicio: «Terminar serie N»;
+ * - si «Terminar serie N» no pudo registrarla porque falta un dato (AV2-30): «Registrar serie N», con lo que falta;
  * - en pausa: «Reanudar» a la izquierda, y la del medio deshabilitada, con su motivo.
  * «Finalizar entrenamiento» no está en la fila: queda al final de la pantalla y en «Ver rutina».
  */
@@ -206,15 +209,19 @@ export function filaDeAcciones(d: {
   readonly prescriptionId: string;
   readonly siguienteSinRegistrar: number | null;
   readonly haySiguienteEjercicio: boolean;
+  /** La serie que «Terminar» no pudo registrar, con lo que falta; sigue sin registrar. */
+  readonly porRegistrar?: { readonly setIndex: number; readonly nota: string } | null;
 }): FilaDeAcciones {
   const izquierda = d.pausada ? { tipo: 'reanudar' as const, texto: T.reanudar } : { tipo: 'pausar' as const, texto: T.pausar };
   let medio: AccionDelMedio | null = null;
   if (d.abierta?.kind === 'SET' && d.abierta.prescriptionId === d.prescriptionId) medio = { tipo: 'terminar-serie', setIndex: d.abierta.setIndex, texto: T.terminarSerie(d.abierta.setIndex) };
+  else if (d.porRegistrar) medio = { tipo: 'registrar-serie', setIndex: d.porRegistrar.setIndex, texto: T.registrarSerie(d.porRegistrar.setIndex) };
   else if (d.siguienteSinRegistrar !== null) medio = { tipo: 'empezar-serie', setIndex: d.siguienteSinRegistrar, texto: T.empezarSerie(d.siguienteSinRegistrar) };
   return {
     izquierda,
     medio,
     motivo: d.pausada && medio ? T.enPausaNoSeMide : null,
+    nota: medio?.tipo === 'registrar-serie' && d.porRegistrar ? d.porRegistrar.nota : null,
     siguienteEjercicio: d.haySiguienteEjercicio ? { texto: T.siguienteEjercicio, habilitado: !d.pausada } : null,
   };
 }
@@ -228,13 +235,15 @@ export type ToqueDelMedio = { readonly tipo: 'cronometrar'; readonly setIndex: n
  * - «Terminar serie N», con la serie sin registrar, es **tildarla**: se registra con lo escrito y, en lo vacío, lo
  *   planificado; su reloj se cierra y, con el ajuste automático, empieza el descanso en la misma acción, y el foco pasa a
  *   la serie siguiente. Es lo que hacen Strong y Hevy con el tilde de la serie;
- * - con la serie ya registrada (se cronometró de nuevo una fila tildada), solo para el reloj: tildar la destildaría.
+ * - con la serie ya registrada (se cronometró de nuevo una fila tildada), solo para el reloj: tildar la destildaría;
+ * - «Registrar serie N» es tildarla, sin reloj abierto. La pantalla la ofrece solo mientras esa serie sigue sin registrar.
  * Desde la 0.23 (DL-166, AV-13), «Terminar serie N» solo paraba el reloj: la serie quedaba sin registrar, la fila volvía
  * a «Empezar serie N» y el conteo, a cero.
  */
 export function queHaceElMedio(medio: AccionDelMedio, filas: readonly { readonly setIndex: number; readonly estado: string }[]): ToqueDelMedio {
   if (medio.tipo === 'empezar-serie') return { tipo: 'cronometrar', setIndex: medio.setIndex };
   const fila = filas.find((f) => f.setIndex === medio.setIndex);
+  if (medio.tipo === 'registrar-serie') return fila?.estado === 'sin-registrar' ? { tipo: 'tildar', setIndex: medio.setIndex } : { tipo: 'cronometrar', setIndex: medio.setIndex };
   return fila?.estado === 'sin-registrar' ? { tipo: 'tildar', setIndex: medio.setIndex } : { tipo: 'parar-el-reloj', setIndex: medio.setIndex };
 }
 

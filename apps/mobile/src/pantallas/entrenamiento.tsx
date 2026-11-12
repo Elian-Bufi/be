@@ -99,6 +99,8 @@ import {
   primeraSinRegistrar,
   problemaParaConfirmar,
   resumenDelRegistro,
+  alTerminarLaSerie,
+  anuncioParaRegistrar,
   serieAlTildar,
   serieQueOriginaElDescanso,
   sesionDesdeLaOcurrencia,
@@ -176,6 +178,22 @@ function preguntar(titulo: string, detalle: string, accion: string, estilo: 'des
 }
 
 /** DL-137: al empezar una sesión con otra pendiente, qué hace la persona con la pendiente. */
+/** «Terminar serie N» con una medición de más de diez horas (AV2-30): qué pasó con ella, como en su diálogo. */
+function preguntarPorLaMedicionLarga(detalle: string): Promise<'termino-ahora' | 'incompleta' | 'cancelar'> {
+  return new Promise((resolver) =>
+    Alert.alert(
+      COPY_ENTRENAMIENTO_POR_SERIE.medicionAbierta,
+      detalle,
+      [
+        { text: 'Cancelar', style: 'cancel', onPress: () => resolver('cancelar') },
+        { text: COPY_ENTRENAMIENTO_POR_SERIE.dejarIncompleta, onPress: () => resolver('incompleta') },
+        { text: COPY_ENTRENAMIENTO_POR_SERIE.terminoAhora, onPress: () => resolver('termino-ahora') },
+      ],
+      { cancelable: true, onDismiss: () => resolver('cancelar') },
+    ),
+  );
+}
+
 function preguntarPorLaPendiente(p: { readonly etiqueta: string; readonly fecha: string }): Promise<'saltear' | 'dejar' | 'cancelar'> {
   return new Promise((resolver) =>
     Alert.alert(
@@ -978,6 +996,11 @@ export function PantallaDeSesion({
   const [carga, setCarga] = useState<'leyendo' | 'lista' | 'error'>('leyendo');
   // Lo escrito vive en el almacén del teléfono (PA-01): acá quedan solo los errores de la última fila que se quiso tildar.
   const [errores, setErrores] = useState<{ readonly setIndex: number; readonly errores: ErroresDeFila } | null>(null);
+  /**
+   * AV2-30: la serie que «Terminar serie N» no pudo registrar porque falta un dato, con lo que falta. La fila fija pasa a
+   * «Registrar serie N» con ese motivo junto al botón; se olvida al registrarla, al cronometrar otra o al cambiar de ejercicio.
+   */
+  const [porRegistrar, setPorRegistrar] = useState<{ readonly prescriptionId: string; readonly setIndex: number; readonly nota: string } | null>(null);
   /** La fila en la que se escribe el tiempo sin medirlo (se mantuvo apretado su reloj). */
   const [escribiendoTiempo, setEscribiendoTiempo] = useState<number | null>(null);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
@@ -1181,6 +1204,7 @@ export function PantallaDeSesion({
     }
     // Con un descanso en curso, la acción compuesta lo finaliza y arranca la serie en el mismo instante.
     if (!hacer({ tipo: 'cronometrar-serie', prescriptionId: p.prescriptionId, setIndex }, COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(setIndex))) return;
+    setPorRegistrar(null);
     enfocar(setIndex);
   }
 
@@ -1200,6 +1224,34 @@ export function PantallaDeSesion({
     try {
       if (f.estado === 'sin-registrar') {
         let escrita: FilaEscrita = escritasDelActivo.get(f.setIndex) ?? FILA_VACIA;
+        const unidadDeLaFila = escritasDelActivo.get(f.setIndex)?.unidad ?? unidad;
+        const cronometrandose = abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId && abierta.setIndex === f.setIndex;
+        // AV2-30 (revisión): se valida antes de cerrar el reloj y de empezar el descanso, con lo que se lleva medido.
+        if (cronometrandose) {
+          const ahora = entrenamientoLocal.sesion(draftId);
+          const ms = ahora ? (enVivoDeLaCorrida(ahora.corrida, almacen.reloj)?.medicionAbierta?.ms ?? null) : null;
+          const plan = alTerminarLaSerie(escrita, f.objetivo, f.setIndex, unidadDeLaFila, ms);
+          if (plan.tipo === 'medicion-larga') {
+            // No se escribe en la fila: se resuelve como la medición que quedó abierta, y después se registra.
+            const serie = { prescriptionId: p.prescriptionId, setIndex: f.setIndex };
+            enfocar(f.setIndex);
+            void preguntarPorLaMedicionLarga(plan.anuncio).then((resolucion) => {
+              if (resolucion === 'cancelar') return;
+              if (!hacer({ tipo: 'resolver-medicion', resolucion }, resolucion === 'termino-ahora' ? 'Medición finalizada' : 'Medición incompleta')) return;
+              setPorRegistrar({ ...serie, nota: TEXTOS_DE_LA_SESION.medicionResuelta(f.setIndex) });
+            });
+            return;
+          }
+          if (plan.tipo === 'falta-un-dato') {
+            // Solo se para el reloj: sin descanso, la serie sigue sin registrar y la fila fija dice qué falta.
+            pararElReloj(abierta);
+            enfocar(f.setIndex);
+            setErrores({ setIndex: f.setIndex, errores: plan.errores });
+            setPorRegistrar({ prescriptionId: p.prescriptionId, setIndex: f.setIndex, nota: plan.anuncio });
+            AccessibilityInfo.announceForAccessibility(plan.anuncio);
+            return;
+          }
+        }
         // DL-166 (PV-7, AVD-3): con el ajuste automático, el descanso de esta serie empieza al tildarla, salvo tras la
         // última del ejercicio. Si la serie se estaba cronometrando, la misma acción cierra su medición.
         const ultimaDelEjercicio = f.setIndex === Math.max(...filas.map((x) => x.setIndex));
@@ -1210,13 +1262,17 @@ export function PantallaDeSesion({
           descansoEmpezado = descansoAuto !== null && medidos !== null;
           if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
         }
-        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, escritasDelActivo.get(f.setIndex)?.unidad ?? unidad);
+        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila);
         if (!lectura.ok) {
+          const anuncio = anuncioParaRegistrar(escrita, f.objetivo, f.setIndex, lectura.errores);
           enfocar(f.setIndex);
           setErrores({ setIndex: f.setIndex, errores: lectura.errores });
+          if (porRegistrar?.prescriptionId === p.prescriptionId && porRegistrar.setIndex === f.setIndex) setPorRegistrar({ ...porRegistrar, nota: anuncio });
+          AccessibilityInfo.announceForAccessibility(anuncio);
           return;
         }
         setErrores(null);
+        setPorRegistrar(null);
         // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
         const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie }, { olvidarFilasDeMas: !f.planificada });
         if (resultado !== 'registrada') return;
@@ -1255,6 +1311,7 @@ export function PantallaDeSesion({
     const filasDestino = filasDe(destino);
     entrenamientoLocal.enfocar(draftId, { prescriptionId, setIndex: (primeraSinRegistrar(filasDestino) ?? filasDestino[0])?.setIndex ?? 1 });
     setErrores(null);
+    setPorRegistrar(null);
     setEscribiendoTiempo(null);
     setDialogo(null);
   }
@@ -1533,7 +1590,14 @@ export function PantallaDeSesion({
   const ejercicioSiguiente = indiceDelActivo >= 0 ? (prescripciones[indiceDelActivo + 1] ?? null) : null;
   const datosDeLaFila =
     conCorrida && p && !finalizando
-      ? filaDeAcciones({ pausada: estado.pausada, abierta, prescriptionId: p.prescriptionId, siguienteSinRegistrar: primeraSinRegistrar(filas)?.setIndex ?? null, haySiguienteEjercicio: ejercicioSiguiente !== null })
+      ? filaDeAcciones({
+          pausada: estado.pausada,
+          abierta,
+          prescriptionId: p.prescriptionId,
+          siguienteSinRegistrar: primeraSinRegistrar(filas)?.setIndex ?? null,
+          haySiguienteEjercicio: ejercicioSiguiente !== null,
+          porRegistrar: porRegistrar?.prescriptionId === p.prescriptionId && filas.some((f) => f.setIndex === porRegistrar.setIndex && f.estado === 'sin-registrar') ? porRegistrar : null,
+        })
       : null;
   usePublicarFilaFija(datosDeLaFila, ocupado, {
     izquierda: () => (estado?.pausada ? hacer({ tipo: 'reanudar' }, 'Sesión reanudada') : pausar()),

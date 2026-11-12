@@ -51,6 +51,7 @@ export const TEXTOS_DEL_DESCANSO = {
   reanudar: 'Reanudar',
   empezarSerie: (n: number) => `Empezar serie ${numero(n)}`,
   terminarSerie: (n: number) => `Terminar serie ${numero(n)}`,
+  registrarSerie: (n: number) => `Registrar serie ${numero(n)}`,
   siguienteEjercicio: 'Siguiente ejercicio',
   enPausaNoSeMide: 'En pausa no se mide nada: reanudá para seguir.',
   accionesDeLaSesion: 'Acciones de la sesión',
