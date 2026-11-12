@@ -1,4 +1,4 @@
-# WP-USO-FINAL — los oráculos TEST-UF de la etapa 1
+# WP-USO-FINAL — los oráculos TEST-UF de las etapas 1 y 2
 
 > **Qué es esto.** El paquete (`WP-USO-FINAL.md` §6) declaró los oráculos TEST-UF-001 a 015 en una línea cada uno. Acá
 > van escritos con los trece campos que la §6 del 11A declara obligatorios (11A:150-169), como los TEST-AVR de
@@ -6,8 +6,12 @@
 > ratificar UF-D1 a UF-D13: UF-12 (DL-114), UF-00 (las APK anteriores en suspenso), UF-01 (el nombre obligatorio) y
 > UF-08 (lo que dice el ambiente). UF-12 no tenía oráculo en el §6: se suma TEST-UF-016.
 >
-> **Qué no es esto.** No modifica el 11A, protegido por `docs/MANIFEST.sha256`. Los oráculos de las otras partes
-> (TEST-UF-007 a 011 y 013 a 015) se escriben con su tanda.
+> **La etapa 2** (§13 del paquete, declarada el 2026-11-12) suma los oráculos de su primera mitad, al final de este
+> archivo: TEST-UF-013 (UF-09), TEST-UF-014 (UF-11), TEST-UF-009 (UF-04) y TEST-UF-011 (UF-06), cada uno escrito antes del
+> código de su parte.
+>
+> **Qué no es esto.** No modifica el 11A, protegido por `docs/MANIFEST.sha256`. Los oráculos de las partes que faltan
+> (TEST-UF-007, 008, 010 y 015) se escriben con su tanda.
 >
 > **De dónde sale cada oráculo.** De DL-169 y del paquete (con referencia a su sección), de las decisiones UF-D1 a UF-D13
 > (ratificadas por Dirección el 2026-11-11) y, para UF-12, de DL-114. Un oráculo dice qué hay que observar para aceptar
@@ -253,4 +257,46 @@ AUTOMATION           packages/domain/src/ambiente-de-prueba.test.ts, scripts/avi
                      omisión → cada una en rojo.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; las capturas con y sin el interruptor quedan para la candidata
+```
+
+---
+
+# La etapa 2 (2026-11-12)
+
+## TEST-UF-013 — En producción el catálogo de demostración no se ofrece ni se acepta; en test, sí
+
+```text
+TEST_ID              TEST-UF-013
+TITLE                Con APP_ENV production la API no ofrece los ítems BE_SYNTHETIC_SEED en los buscadores ni los
+                     acepta en un plan nuevo; en test sí, con su origen; las filas sembradas quedan
+LEVEL                Dominio (la regla), unidad de la API (el filtro de cada catálogo) e integración (API real con
+                     PostgreSQL, una app con APP_ENV production y otra con test sobre la misma base)
+PRIORITY             P0
+SOURCES              UF-09 (WP-USO-FINAL.md §4.1) · UF-D10 (§7) · DL-169 · REG-06-135 · 08 §33
+PRECONDITIONS        El catálogo que siembran las migraciones de WP-04 y WP-05 (Arroz blanco, Pechuga de pollo,
+                     Sentadilla, Press de banca…), con procedencia BE_SYNTHETIC_SEED.
+SYNTHETIC_FIXTURE    Un profesional de Nutrición y uno de Entrenamiento sintéticos, cada uno con una persona vinculada y
+                     su objetivo, preparados en la app de test.
+STEPS                1. Evaluar la regla con production, test, development, un ambiente desconocido y uno que falta.
+                     2. Armar el filtro de cada catálogo con la regla de cada ambiente.
+                     3. En test: buscar «Arroz blanco» (API-NUT-13 y API-NUT-13-BUSQUEDA) y «Sentadilla»
+                        (API-TRN-13-BUSQUEDA).
+                     4. En producción: las mismas búsquedas, y cada catálogo entero, sin texto.
+                     5. En producción: crear un plan nutricional con el arroz sembrado y uno de entrenamiento con la
+                        sentadilla sembrada. En test, los mismos pedidos.
+                     6. Contar las filas sembradas antes y después.
+EXPECTED             1 → test y development, sí; production, un ambiente desconocido y uno que falta, no. 2 → fuera de
+                     test y development, el filtro excluye BE_SYNTHETIC_SEED en los dos catálogos; en test, no excluye
+                     nada. 3 → aparecen, con provenance BE_SYNTHETIC_SEED. 4 → ninguna fila con provenance
+                     BE_SYNTHETIC_SEED. 5 → en producción, 422 con el issue CATALOG_REFERENCE_INVALID (Nutrición) y 422
+                     EXERCISE_REFERENCE_INVALID (Entrenamiento), sin plan creado; en test, 201. 6 → las mismas filas.
+NEGATIVE_ASSERTIONS  En producción ningún buscador ofrece un ítem de demostración y ninguna validación de algo nuevo
+                     (plan, plantilla, receta, habitual o registro) lo acepta. En test no cambia nada. Lo decide el
+                     APP_ENV de la API, nunca el cliente. No se borra ni se marca ninguna fila.
+AUTOMATION           packages/domain/src/ambiente-de-prueba.test.ts («TEST-UF-013 · …»),
+                     apps/api/src/plataforma/catalogo-de-demostracion.spec.ts y
+                     test/integration/catalogo-de-demostracion.int-spec.ts. Mutaciones: la regla que ofrece el catálogo
+                     en producción → rojo en el dominio; el filtro que no excluye nada → rojo en la unidad de la API.
+ENVIRONMENT          `npm test` (dominio y API) y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde
 ```

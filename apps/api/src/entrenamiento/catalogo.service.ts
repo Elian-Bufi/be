@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   CrearEjercicioRequestSchema,
   ordenarZonasDeEjercicio,
@@ -11,11 +11,14 @@ import {
 } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
+import type { Entorno } from '../config/entorno';
+import { ENTORNO } from '../config/tokens';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { buscarEnCatalogo, CORRESPONDENCIA, leerBusqueda, leerCursorDeBusqueda, origenEnElBuscador, type ConNombreAlternativo, type ConOrigenEnLaBase } from '../http/busqueda';
 import { errores } from '../http/errores';
 import { leerConsultaDeLista } from '../http/paginacion';
 import { EJERCICIO_DE_UN_ITEM_EXTERNO } from '../integraciones/item-externo';
+import { ofreceDemostracion, sinLoDeDemostracion } from '../plataforma/catalogo-de-demostracion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -36,9 +39,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * Los ejercicios `e` que ve quien tiene estos creadores visibles: lo sembrado y lo importado de wger, que son de todos
  * (DL-141 D-1), y lo cargado a mano por ellos. La consulta tiene que llamar `e` al ejercicio.
+ * UF-09 (DL-169): fuera de `test` y de desarrollo, sin lo sembrado como demostración (`ofrece` en falso).
  */
-export function ejercicioVisible(creadores: readonly string[]): Prisma.Sql {
-  return Prisma.sql`(e."procedencia" = 'BE_SYNTHETIC_SEED' OR ${EJERCICIO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ANY(${[...creadores]}::uuid[]))`;
+export function ejercicioVisible(creadores: readonly string[], ofrece: boolean): Prisma.Sql {
+  return Prisma.sql`(e."procedencia" = 'BE_SYNTHETIC_SEED' OR ${EJERCICIO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ANY(${[...creadores]}::uuid[])) AND ${sinLoDeDemostracion(ofrece)}`;
 }
 
 /** DL-141 D-2: los nombres alternativos vigentes (sin retiro) del ejercicio `e`, para el buscador. */
@@ -65,10 +69,26 @@ const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, ${CORRESPONDENCIA}`;
  *   **activados** con los que el acceso sigue vigente: un borrador no le existe (09v10:683) y, revocado el
  *   consentimiento, lo de ese profesional deja de verse (08:979).
  * - El catálogo **no calcula**: sin porcentaje de músculo trabajado ni volumen (09v10:854).
+ * - UF-09 (DL-169): en producción no ofrece ni acepta lo sembrado como demostración, tampoco al asesorado; en `test`, sí.
  */
 @Injectable()
 export class CatalogoDeEjerciciosService {
-  constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorDeEntrenamiento, private readonly pdp: PdpService) {}
+  /** UF-09: si este ambiente ofrece el catálogo de demostración (solo `test` y desarrollo). */
+  private readonly ofrece: boolean;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ejecutor: EjecutorDeEntrenamiento,
+    private readonly pdp: PdpService,
+    @Inject(ENTORNO) entorno: Entorno,
+  ) {
+    this.ofrece = ofreceDemostracion(entorno);
+  }
+
+  /** Lo que ven estos creadores, con la regla del ambiente (UF-09). Lo usan también los habituales de entrenamiento. */
+  visibles(creadores: readonly string[]): Prisma.Sql {
+    return ejercicioVisible(creadores, this.ofrece);
+  }
 
   // ─── API-TRN-13 y su búsqueda ──────────────────────────────────────────────────────────────
   /**
@@ -110,7 +130,7 @@ export class CatalogoDeEjerciciosService {
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE e."id" = ANY(${ids}::uuid[])
          AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
-         AND ${ejercicioVisible(creadores)}`;
+         AND ${this.visibles(creadores)}`;
     const porId = new Map(filas.map((f) => [f.ejercicioId, f]));
     return { data: await fichasVisuales(this.lector(), ids.flatMap((id) => porId.get(id) ?? [])) };
   }
@@ -129,7 +149,7 @@ export class CatalogoDeEjerciciosService {
         tablas: Prisma.sql`"version_de_ejercicio" v JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'
-           AND ${ejercicioVisible(creadores)}`,
+           AND ${this.visibles(creadores)}`,
         nombresAlternativos: NOMBRES_ALTERNATIVOS,
       },
       leerBusqueda(q),
@@ -218,7 +238,7 @@ export class CatalogoDeEjerciciosService {
         FROM "version_de_ejercicio" v
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE v."id" = ANY(${validos}::uuid[])
-         AND ${ejercicioVisible(creadores)}`;
+         AND ${this.visibles(creadores)}`;
     return new Map(filas.map((f) => [f.versionId, f]));
   }
 

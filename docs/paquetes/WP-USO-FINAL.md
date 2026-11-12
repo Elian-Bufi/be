@@ -712,3 +712,16 @@ en el mismo PR.
   - las migraciones solo agregan;
   - los contratos, en `packages/domain`, con OPERACIONES y el OpenAPI al día;
   - la API, con permisos, auditoría, idempotencia donde corresponde y límites de intento.
+
+### 13.4 La primera mitad, programada (PR #257, sin integrar)
+
+| Parte | Qué quedó | Oráculos |
+|---|---|---|
+| UF-09 | Con `APP_ENV=production` la API no ofrece lo sembrado como demostración (`BE_SYNTHETIC_SEED`) en los buscadores, las fichas visuales ni los habituales, y nada nuevo lo acepta (un plan, una plantilla, una receta, una comida o una sesión habitual, un registro). En `test` y en desarrollo, todo igual. Las filas quedan. | TEST-UF-013 |
+
+### 13.5 Decisiones de la implementación (UF-T15 en adelante, a ratificar por Dirección)
+
+| ID | Decisión | Alternativa descartada |
+|---|---|---|
+| UF-T15 | **UF-09 · quién decide.** La regla vive en el dominio (`ofreceElCatalogoDeDemostracion`) y la decide el `APP_ENV` de la API, nunca el cliente. Solo `test` y `development` ofrecen el catálogo de demostración; producción y un ambiente que no se reconoce, no. Es al revés que los avisos de UF-08: un alimento con valores inventados en una base real lleva a una estimación equivocada, y en un ambiente mal configurado solo se pierde un ejemplo. | «Todo lo que no sea producción lo ofrece», como los avisos: un ambiente mal configurado ofrecería valores inventados. |
+| UF-T16 | **UF-09 · dónde se filtra.** En un solo lugar de cada catálogo, el criterio de lo que un actor ve (`alimentoVisible` y `ejercicioVisible`). Alcanza a los buscadores (API-NUT-13, API-TRN-13 y sus búsquedas, que lee la 0.24 con la misma forma), las fichas visuales (API-EJE-05), los habituales y cada validación de lo que algo nuevo cita. Lo ya citado se lee sin filtro (las instantáneas y `versionesPorId`): la historia no se borra. | Filtrar solo los buscadores y validar aparte en cada escritura: más lugares donde olvidarse uno. |
