@@ -21,7 +21,8 @@ import {
   type EvaluacionNutricional,
 } from '@be/domain';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Aviso, Campo, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
+import { AnuncioDeLosAvisos, Aviso, Campo, erroresPorCampo, ResumenDeErrores, useAvisosVivos } from '../../../../components/formulario';
+import { COPY_AVISOS_VIVOS } from '../../../../components/validacion-viva';
 import { api } from '../../../../lib/api';
 import { dia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
@@ -55,8 +56,9 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   const [contexto, setContexto] = useState('');
   const [notas, setNotas] = useState('');
   const [ocurrencia, setOcurrencia] = useState(ahoraLocal());
-  const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
-  const [envios, setEnvios] = useState(0);
+  // ED-04: los avisos se muestran al enviar y se actualizan al salir de cada campo.
+  const avisos = useAvisosVivos(loQueFaltaEnLaEvaluacion);
+  const errores = avisos.errores;
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
@@ -67,16 +69,20 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     window.setTimeout(() => document.getElementById(`dato-${i}-valor`)?.focus(), 0);
   }
 
-  async function enviar(e: FormEvent) {
-    e.preventDefault();
+  /** Lo que falta en la evaluación, ahora (ED-04: se recalcula al enviar y al salir de cada campo). */
+  function loQueFaltaEnLaEvaluacion(): { id: string; texto: string }[] {
     const problemas: { id: string; texto: string }[] = [];
     datos.forEach((d, i) => {
       if (!d.concepto.trim()) problemas.push({ id: `dato-${i}-concepto`, texto: `Dato ${i + 1}: falta el concepto.` });
       if (!d.valor.trim()) problemas.push({ id: `dato-${i}-valor`, texto: `Dato ${i + 1}: falta el valor.` });
       if (d.fuente === 'CALCULATED' && !d.metodo.trim()) problemas.push({ id: `dato-${i}-metodo`, texto: `Dato ${i + 1}: un dato calculado declara su método.` });
     });
-    setErrores(problemas);
-    setEnvios((n) => n + 1);
+    return problemas;
+  }
+
+  async function enviar(e: FormEvent) {
+    e.preventDefault();
+    const problemas = avisos.alEnviar();
     if (problemas.length > 0) return;
     const cuerpo: CrearEvaluacionRequest = {
       occurredAt: new Date(ocurrencia).toISOString(),
@@ -108,9 +114,10 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   // El mismo error va al resumen y al campo (B10-10:164-165).
   const porCampo = erroresPorCampo(errores);
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} noValidate>
       {conTitulo ? <h3>{COPY_NUTRICION.nuevaEvaluacion}</h3> : null}
-      <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={envios} />
+      <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={avisos.envios} />
+      <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
       <Campo id="evaluacion-ocurrencia" etiqueta="Fecha y hora de la evaluación" type="datetime-local" value={ocurrencia} onChange={(e) => setOcurrencia(e.target.value)} required />
       <fieldset className="grupo">
         <legend>Datos de la evaluación</legend>
@@ -343,16 +350,15 @@ export function FormularioDeObjetivo({
   useEffect(() => {
     if (evaluaciones.length > 0) setValores((v) => (v.evaluacionId ? v : { ...v, evaluacionId: evaluacionMasReciente(evaluaciones) }));
   }, [evaluaciones]);
-  const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
-  const [envios, setEnvios] = useState(0);
+  // ED-04: los avisos se muestran al enviar y se actualizan al salir de cada campo.
+  const avisos = useAvisosVivos(() => erroresDeObjetivo(valores, 'objetivo'));
+  const errores = avisos.errores;
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
-    const problemas = erroresDeObjetivo(valores, 'objetivo');
-    setErrores(problemas);
-    setEnvios((n) => n + 1);
+    const problemas = avisos.alEnviar();
     if (problemas.length > 0) return;
     setEnviando(true);
     setFallo(null);
@@ -373,9 +379,10 @@ export function FormularioDeObjetivo({
     );
   }
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} noValidate>
       <h3>{COPY_NUTRICION.nuevaVersionDeObjetivo}</h3>
-      <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={envios} />
+      <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={avisos.envios} />
+      <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
       <CamposDeObjetivo valores={valores} onCambiar={setValores} evaluaciones={evaluaciones} prefijo="objetivo" errores={erroresPorCampo(errores)} />
       {fallo ? (
         <Aviso tipo="error" enfocar>

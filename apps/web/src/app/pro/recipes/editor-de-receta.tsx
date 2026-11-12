@@ -27,7 +27,8 @@ import {
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Ayuda } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
-import { Aviso, Campo, ResumenDeErrores, erroresPorCampo } from '../../../components/formulario';
+import { AnuncioDeLosAvisos, Aviso, Campo, ResumenDeErrores, erroresPorCampo, useAvisosVivos } from '../../../components/formulario';
+import { COPY_AVISOS_VIVOS } from '../../../components/validacion-viva';
 import { OrigenEnElCatalogo } from '../../../components/origen-en-el-catalogo';
 import { useAntesDeSalir, useCambiosParaSalir } from '../../../components/salida-segura';
 import { api, type Resultado } from '../../../lib/api';
@@ -125,8 +126,9 @@ export function EditorDeReceta({
   const antesDeSalir = useAntesDeSalir();
   const [calculo, setCalculo] = useState<EstadoDelCalculo>({ tipo: 'incompleto' });
   const [enviando, setEnviando] = useState(false);
-  const [errores, setErrores] = useState<readonly { id: string; texto: string }[]>([]);
-  const [envios, setEnvios] = useState(0);
+  // ED-04: los avisos se muestran al guardar y se actualizan al salir de cada campo.
+  const avisos = useAvisosVivos(validar);
+  const errores = avisos.errores;
   const [fallo, setFallo] = useState<string | null>(null);
   const [avisoDeImagen, setAvisoDeImagen] = useState<string | null>(null);
   const intento = useClaveDeIntento();
@@ -210,9 +212,7 @@ export function EditorDeReceta({
 
   async function guardar(e: FormEvent) {
     e.preventDefault();
-    const problemas = validar();
-    setErrores(problemas);
-    setEnvios((n) => n + 1);
+    const problemas = avisos.alEnviar();
     const calculable = pedidoDeCalculo(porciones, ingredientes);
     if (problemas.length > 0 || !calculable) return;
     setEnviando(true);
@@ -256,8 +256,9 @@ export function EditorDeReceta({
         </button>
       </p>
       <h2>{cargada ? `${COPY_RECETAS.editarReceta} · ${COPY_RECETAS.version(cargada.versionNumber)}` : COPY_RECETAS.nuevaReceta}</h2>
-      <form onSubmit={(e) => void guardar(e)} noValidate className="secciones">
-        <ResumenDeErrores titulo="Revisá estos datos antes de guardar" errores={errores} intento={envios} />
+      <form onSubmit={(e) => void guardar(e)} onBlur={avisos.alSalir} noValidate className="secciones">
+        <ResumenDeErrores titulo="Revisá estos datos antes de guardar" errores={errores} intento={avisos.envios} />
+        <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
         <section className="seccion" aria-labelledby="receta-datos">
           <h3 id="receta-datos">Datos</h3>
           <Campo id="receta-nombre" etiqueta={COPY_RECETAS.nombre} value={nombre} maxLength={120} error={porCampo['receta-nombre'] ?? null} onChange={(e) => (setNombre(e.target.value), cambiar())} />

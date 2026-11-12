@@ -31,7 +31,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
-import { Aviso, erroresPorCampo, ResumenDeErrores } from '../../../../components/formulario';
+import { AnuncioDeLosAvisos, Aviso, erroresPorCampo, ResumenDeErrores, useAvisosVivos } from '../../../../components/formulario';
+import { COPY_AVISOS_VIVOS } from '../../../../components/validacion-viva';
 import { api, type Resultado } from '../../../../lib/api';
 import { motivoDeFalla, textoDeFalla } from '../../../../lib/fallas';
 import { dia, diaDelAnioEnCurso, fecha, horaEnZona, rangoCivil } from '../../../../lib/formato';
@@ -247,8 +248,9 @@ function FormularioDeRevision({
   const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
   const proxima = fechaQueResulta(cuando, hoy);
   const [objetivo, setObjetivo] = useState(objetivoVacio(evaluaciones[0]?.evaluationId ?? ''));
-  const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
-  const [envios, setEnvios] = useState(0);
+  // ED-04: los avisos se muestran al enviar y se actualizan al salir de cada campo.
+  const avisos = useAvisosVivos(loQueFaltaParaRegistrar);
+  const errores = avisos.errores;
   useCambiosSinGuardar(evidencia.size > 0 || resultado !== '' || cuando.tipo !== 'NADA' || [interpretacion, fundamento, accion].some((t) => t.trim() !== ''), 'la revisión');
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
@@ -295,10 +297,8 @@ function FormularioDeRevision({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodoLeido]);
 
-  async function enviar(e: FormEvent) {
-    e.preventDefault();
-    // Lo que se ve todavía no es del período elegido: la barra dice por qué.
-    if (lectura.bloqueo) return;
+  /** Lo que falta para registrar, ahora (ED-04: se recalcula al enviar y al salir de cada campo). */
+  function loQueFaltaParaRegistrar(): { id: string; texto: string }[] {
     const problemas: { id: string; texto: string }[] = [];
     if (evidencia.size === 0) problemas.push({ id: 'revision-evidencia', texto: 'Elegí la evidencia que examinaste.' });
     if (!interpretacion.trim()) problemas.push({ id: 'revision-interpretacion', texto: 'Falta la interpretación.' });
@@ -309,8 +309,14 @@ function FormularioDeRevision({
     const faltaLaFecha = sePregunta(resultado) ? loQueFalta(cuando, hoy, resultado || null) : null;
     if (faltaLaFecha) problemas.push({ id: 'revision-proxima', texto: faltaLaFecha });
     if (resultado === 'CHANGE_OBJECTIVE') problemas.push(...erroresDeObjetivo(objetivo, 'revision-objetivo'));
-    setErrores(problemas);
-    setEnvios((n) => n + 1);
+    return problemas;
+  }
+
+  async function enviar(e: FormEvent) {
+    e.preventDefault();
+    // Lo que se ve todavía no es del período elegido: la barra dice por qué.
+    if (lectura.bloqueo) return;
+    const problemas = avisos.alEnviar();
     if (problemas.length > 0 || !resultado) return;
     setEnviando(true);
     setFallo(null);
@@ -344,8 +350,9 @@ function FormularioDeRevision({
   const porCampo = erroresPorCampo(errores);
 
   return (
-    <form className="revision-nueva__formulario" onSubmit={enviar} noValidate data-periodo={periodoLeido}>
-      <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={envios} />
+    <form className="revision-nueva__formulario" onSubmit={enviar} onBlur={avisos.alSalir} noValidate data-periodo={periodoLeido}>
+      <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={avisos.envios} />
+      <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaRegistrar)} />
       <div className="revision-nueva__columnas">
         <div className="revision-nueva__tarjeta">
           <PasoDeLaRevision

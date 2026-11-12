@@ -227,6 +227,8 @@ export function InvitarPersona({
               aria-describedby={[errorDeArea ? `${id}-area-error` : null, areaSugerida && alcance === areaSugerida ? `${id}-area-sugerida` : null].filter(Boolean).join(' ') || undefined}
               onChange={(e) => {
                 setAlcance(e.target.value as Alcance | '');
+                // ED-04: elegir un área corrige el aviso de «elegí un área» (el de un área no habilitada espera al envío).
+                if (e.target.value && errorDeArea === COPY_INVITACION.elegirArea) setErrorDeArea(undefined);
                 intento.descartar();
                 if (!creando) setEstado({ tipo: 'eligiendo' });
               }}
