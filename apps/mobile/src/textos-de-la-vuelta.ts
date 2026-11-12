@@ -80,6 +80,13 @@ export const TEXTOS_DE_LA_VUELTA = {
 
   // ─── Inicio (AV-06, AV-07, AV-17) ──────────────────────────────────────────────────────────
   entrenamientoDeHoy: 'Entrenamiento de hoy',
+  // La sesión en curso (WP-APP-VUELTA-2 AV2-09): en Inicio se ve sola; en Entrenamiento, ninguna otra ofrece empezar.
+  entrenamiento: 'Entrenamiento',
+  enPausa: 'En pausa',
+  continuar: 'Continuar',
+  ejercicioYSerie: (ejercicio: string, serie: number) => `${ejercicio} · serie ${numero(serie)}`,
+  verLasSesiones: (n: number) => `Ver las ${numero(n)} sesiones`,
+  hayUnEntrenamientoEnCurso: (sesion: string) => `Hay un entrenamiento en curso: ${sesion}. Para iniciar otra, primero continualo o dejalo incompleto.`,
   empezar: 'Empezar',
   seguir: 'Seguir',
   sinRegistrar: 'Sin registrar',

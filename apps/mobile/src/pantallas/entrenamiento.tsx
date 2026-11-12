@@ -70,11 +70,12 @@ import { entrenamientoLocal, useEntrenamientoLocal } from '../entrenamiento-en-c
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha, fechaCivil, fechaLarga, hora as horaDe } from '../formato';
 import { Icono } from '../icono';
-import { IconoDeEjercicio, iconoDelEstado } from '../iconos-de-entrenamiento';
+import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
-import { enCursoDeLaApi, enCursoEnElTelefono, otraSesionEnCurso, sesionEnCursoParaMostrar, sesionRealizada, type EnCurso } from '../sesion-en-curso';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { enCursoDeLaApi, enCursoEnElTelefono, marchaDeLaSesionEnCurso, otraSesionEnCurso, sePuedeIniciar, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
 import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
   bandaDeLaSerie,
@@ -325,6 +326,8 @@ function HoyDeEntrenamiento({
   const remota = enCurso.r?.ok ? enCurso.r.datos.data.inProgress : null;
   // Primero la que informa la API, que es la que impide iniciar otra; después la del teléfono (`sesion-en-curso.ts`).
   const ahora: EnCurso | null = sesionEnCursoParaMostrar(remota, local.sesiones());
+  // DL-170 (AV2-09): si la que corre está en pausa, la etiqueta lo dice; y con una en curso, ninguna otra ofrece empezar.
+  const marcha = ahora ? marchaDeLaSesionEnCurso(remota, local.sesiones().find((s) => s.draftId === ahora.draftId)) : null;
   // Una sesión en curso de otro día (pasó la medianoche): se retoma desde acá, aunque no esté en la lista de hoy.
   const deOtroDia = ahora && !hoy.occurrences.some((o) => o.occurrenceId === ahora.occurrenceId) ? ahora : null;
   const tarjeta = (o: Ocurrencia, pendiente: PendienteParaPreguntar | null = null) => (
@@ -337,6 +340,8 @@ function HoyDeEntrenamiento({
       accesoRetirado={accesoRetirado}
       ir={ir}
       enCurso={ahora?.occurrenceId === o.occurrenceId}
+      marcha={ahora?.occurrenceId === o.occurrenceId ? marcha : null}
+      bloqueadaPor={sePuedeIniciar(o.occurrenceId, ahora) ? null : ahora}
       pendiente={pendiente}
       alSaltear={recargarTodo}
     />
@@ -363,7 +368,7 @@ function HoyDeEntrenamiento({
         />
       ) : null}
       {agenda ? (
-        <AgendaDelDia agenda={agenda} hoy={hoy} tarjeta={tarjeta} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} alSaltear={recargarTodo} />
+        <AgendaDelDia agenda={agenda} hoy={hoy} tarjeta={tarjeta} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} alSaltear={recargarTodo} enCurso={ahora} />
       ) : (
         <>
           {hoy.occurrences.length > 1 ? <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo> : null}
@@ -444,6 +449,7 @@ function AgendaDelDia({
   accesoRetirado,
   ir,
   alSaltear,
+  enCurso,
 }: {
   agenda: AgendaDelDiaApi;
   hoy: HoyDeEntrenamientoResponse['data'];
@@ -453,6 +459,8 @@ function AgendaDelDia({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: Ir;
   alSaltear: () => void;
+  /** La sesión en curso, si hay una: con ella, «Hacerla hoy» no se ofrece (AV2-09). */
+  enCurso: EnCurso | null;
 }) {
   const deLaSesion = (sessionId: string): Ocurrencia | undefined => hoy.occurrences.find((o) => o.plannedSession.sessionId === sessionId);
   const deHoy = agenda.today.flatMap((f) => deLaSesion(f.sessionId) ?? []);
@@ -487,6 +495,7 @@ function AgendaDelDia({
               accesoRetirado={accesoRetirado}
               ir={ir}
               alSaltear={alSaltear}
+              bloqueadaPor={sePuedeIniciar(p.ocurrenciaDeHoy.occurrenceId, enCurso) ? null : enCurso}
             />
           ))}
         </>
@@ -522,6 +531,7 @@ function TarjetaDePendiente({
   accesoRetirado,
   ir,
   alSaltear,
+  bloqueadaPor,
 }: {
   etiqueta: string;
   fecha: string;
@@ -532,6 +542,8 @@ function TarjetaDePendiente({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: Ir;
   alSaltear: () => void;
+  /** Otra sesión en curso: mientras tanto, «Hacerla hoy» no se ofrece (AV2-09). «La hice ese día» sí (AV2-D4). */
+  bloqueadaPor: EnCurso | null;
 }) {
   const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: ocurrenciaDeHoy, token, sesionPerdida, accesoRetirado, ir });
   const intento = useClaveDeIntento();
@@ -560,8 +572,9 @@ function TarjetaDePendiente({
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
+      {bloqueadaPor ? <Parrafo tenue>{TEXTOS_DE_LA_VUELTA.hayUnEntrenamientoEnCurso(bloqueadaPor.etiqueta)}</Parrafo> : null}
       <AlLado>
-        <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />
+        {bloqueadaPor ? null : <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />}
         {laHiceEseDia ? (
           <Boton
             texto={TEXTOS_DEL_REGISTRO_RAPIDO.laHiceEseDia}
@@ -578,24 +591,11 @@ function TarjetaDePendiente({
 }
 
 /**
- * «Tenés un entrenamiento sin finalizar»: continuarlo, o dejarlo incompleto sin afirmar cuándo terminó. Lo usan
- * Entrenamiento, Inicio y la sesión enfocada; `motivo` dice por qué aparece (por ejemplo, antes de iniciar otra sesión).
+ * Dejar incompleta una sesión en curso, sin afirmar cuándo terminó: pregunta antes, cierra la corrida con los eventos
+ * del teléfono (o con los de la API, si corre en otro dispositivo) y los manda. Lo usan el aviso de abajo y la tarjeta de
+ * la sesión en curso de Inicio (DL-170, AV2-09). Solo escribe cuando la persona lo confirma.
  */
-export function AvisoDeEntrenamientoEnCurso({
-  enCurso: e,
-  token,
-  sesionPerdida,
-  ir,
-  alTerminar,
-  motivo,
-}: {
-  enCurso: EnCurso;
-  token: string;
-  sesionPerdida: AlPerderLaSesion;
-  ir: Ir;
-  alTerminar: () => void;
-  motivo?: string;
-}) {
+export function useDejarIncompleto({ enCurso: e, token, sesionPerdida, alTerminar }: { enCurso: EnCurso; token: string; sesionPerdida: AlPerderLaSesion; alTerminar: () => void }) {
   const [dejando, setDejando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
@@ -632,6 +632,29 @@ export function AvisoDeEntrenamientoEnCurso({
     alTerminar();
   }
 
+  return { dejando, fallo, dejarIncompleto } as const;
+}
+
+/**
+ * «Tenés un entrenamiento sin finalizar»: continuarlo, o dejarlo incompleto sin afirmar cuándo terminó. Lo usan
+ * Entrenamiento y la sesión enfocada; `motivo` dice por qué aparece (por ejemplo, antes de iniciar otra sesión).
+ */
+export function AvisoDeEntrenamientoEnCurso({
+  enCurso: e,
+  token,
+  sesionPerdida,
+  ir,
+  alTerminar,
+  motivo,
+}: {
+  enCurso: EnCurso;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  ir: Ir;
+  alTerminar: () => void;
+  motivo?: string;
+}) {
+  const { dejando, fallo, dejarIncompleto } = useDejarIncompleto({ enCurso: e, token, sesionPerdida, alTerminar });
   return (
     <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO_POR_SERIE.sesionSinFinalizar}>
       <Parrafo>{`${e.etiqueta} · ${fechaCivil(e.fecha)}`}</Parrafo>
@@ -811,6 +834,8 @@ function TarjetaDeOcurrencia({
   accesoRetirado,
   ir,
   enCurso,
+  marcha = null,
+  bloqueadaPor = null,
   pendiente = null,
   alSaltear,
 }: {
@@ -821,6 +846,10 @@ function TarjetaDeOcurrencia({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: (r: Ruta) => void;
   enCurso: boolean;
+  /** Si esta es la sesión en curso: en curso o en pausa. La etiqueta sale de acá, no de cualquier borrador (AV2-09). */
+  marcha?: MarchaDeLaCorrida | null;
+  /** Otra sesión en curso, si la hay: mientras tanto esta no ofrece empezar (AV2-09). «Ya la hice» sí (AV2-D4). */
+  bloqueadaPor?: EnCurso | null;
   /** DL-137: una sesión pendiente de otro día, para preguntar por ella antes de empezar esta. */
   pendiente?: PendienteParaPreguntar | null;
   alSaltear?: () => void;
@@ -828,8 +857,11 @@ function TarjetaDeOcurrencia({
   const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
   const intentoDeSaltear = useClaveDeIntento();
   const [problema, setProblema] = useState<string | null>(null);
-  const vista = vistaDeOcurrencia(o, hoy);
+  // La etiqueta: «En curso» o «En pausa» solo para la corrida abierta (AV2-09); el resto, desde `vistaDeOcurrencia`.
+  const vista = vistaDeLaSesion(vistaDeOcurrencia(o, hoy), o.execution, marcha);
   const deHoy = o.date === hoy;
+  // Con otra sesión en curso, esta no se empieza hoy: primero se continúa o se deja incompleta la otra.
+  const sinEmpezar = deHoy && bloqueadaPor !== null;
   const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS';
   // PA-03 (DL-160): «Ya la hice» registra la sesión por pasos, sin cronómetros, también hoy. Solo sin borrador.
   const local = useEntrenamientoLocal();
@@ -874,7 +906,7 @@ function TarjetaDeOcurrencia({
           <Parrafo tenue>{`${ejerciciosYSeries(o.plannedSession.prescriptions)}${deHoy ? '' : ` · ${fechaCivil(o.date)}`}`}</Parrafo>
         </View>
       </View>
-      <Insignia texto={vista.texto} hecha={sesionRealizada(o.execution)} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
+      <Insignia texto={vista.texto} hecha={vista.hecha} etiqueta="Estado" icono={vista.icono} />
       {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
@@ -883,10 +915,13 @@ function TarjetaDeOcurrencia({
       {o.execution.state === 'REGISTERED' && o.execution.executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: o.execution.executionId! })} />
       ) : (
-        <AlLado>
-          <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
-          {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
-        </AlLado>
+        <>
+          {sinEmpezar && bloqueadaPor ? <Parrafo tenue>{TEXTOS_DE_LA_VUELTA.hayUnEntrenamientoEnCurso(bloqueadaPor.etiqueta)}</Parrafo> : null}
+          <AlLado>
+            {sinEmpezar ? null : <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />}
+            {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
+          </AlLado>
+        </>
       )}
       {o.plannedSession.prescriptions.map((p) => (
         <Text key={p.prescriptionId} style={estilos.ejercicioDeLaSesion}>

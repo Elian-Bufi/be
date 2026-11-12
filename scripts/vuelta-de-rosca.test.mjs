@@ -863,6 +863,62 @@ test('TEST-AV2-013 · Inicio y «Tu historial» salen de la misma lectura y la m
   assert.match(deInicio, /leerActividadDeEntrenamiento\(api, token, periodo\)/);
 });
 
+// ─── TEST-AV2-010 · con una sesión en curso, ninguna otra ofrece empezar (AV2-09) ───────────────
+
+const enCursoMod = await import('../apps/mobile/src/sesion-en-curso.ts');
+const { TEXTOS_DE_LA_VUELTA: T_VUELTA } = await import('../apps/mobile/src/textos-de-la-vuelta.ts');
+const PIERNAS = { draftId: 'd-piernas', occurrenceId: 'o-piernas', fecha: '2026-11-09', etiqueta: 'Piernas A' };
+
+test('TEST-AV2-010 · con «Piernas A» en curso, «Torso B» no se puede iniciar; sin ninguna, las dos; la misma se retoma', () => {
+  assert.equal(enCursoMod.sePuedeIniciar('o-torso', null), true);
+  assert.equal(enCursoMod.sePuedeIniciar('o-piernas', null), true);
+  assert.equal(enCursoMod.sePuedeIniciar('o-torso', PIERNAS), false);
+  assert.equal(enCursoMod.sePuedeIniciar('o-piernas', PIERNAS), true);
+});
+
+test('TEST-AV2-010 · «En curso» sale de la corrida abierta: un borrador a medias, sin corrida, no está en curso', () => {
+  const borrador = { state: 'DRAFT_IN_PROGRESS', sessionCondition: null };
+  assert.deepEqual(enCursoMod.vistaDeLaSesion({ texto: 'En curso' }, borrador, null), { texto: 'Sin registrar', hecha: false, icono: 'sin-registro' });
+  assert.deepEqual(enCursoMod.vistaDeLaSesion({ texto: 'En curso' }, borrador, 'en-curso'), { texto: 'En curso', hecha: false, icono: 'reloj' });
+  assert.equal(enCursoMod.vistaDeLaSesion({ texto: 'En curso' }, borrador, 'en-pausa').texto, 'En pausa');
+  // Lo registrado, como lo dice el dominio; la tilde solo con lo hecho.
+  assert.deepEqual(enCursoMod.vistaDeLaSesion({ texto: 'Registrada · Realizada' }, { state: 'REGISTERED', sessionCondition: 'COMPLETED' }, null), { texto: 'Registrada · Realizada', hecha: true, icono: 'guardar' });
+  assert.equal(enCursoMod.vistaDeLaSesion({ texto: 'Registrada · No realizada' }, { state: 'REGISTERED', sessionCondition: 'NOT_COMPLETED' }, null).hecha, false);
+  // La marcha: la de la API (API-TIE-04); sin ella, la de la corrida del teléfono.
+  assert.equal(enCursoMod.marchaDeLaSesionEnCurso({ state: 'PAUSED' }, null), 'en-pausa');
+  assert.equal(enCursoMod.marchaDeLaSesionEnCurso({ state: 'IN_PROGRESS' }, null), 'en-curso');
+  assert.equal(enCursoMod.marchaDeLaSesionEnCurso(null, { corrida: corrida.CORRIDA_VACIA }), 'en-curso');
+});
+
+test('TEST-AV2-010 · el ejercicio y la serie, solo si la corrida es de este teléfono', () => {
+  const sesion = { prescriptions: [{ prescriptionId: 'p1', exerciseName: 'Sentadilla goblet' }, { prescriptionId: 'p2', exerciseName: 'Remo' }] };
+  assert.equal(enCursoMod.lineaDeLaSerie({ foco: { prescriptionId: 'p1', setIndex: 3 }, sesion }), 'Sentadilla goblet · serie 3');
+  assert.equal(enCursoMod.lineaDeLaSerie(null), null, 'de otro teléfono, la línea no va');
+  assert.equal(enCursoMod.lineaDeLaSerie({ foco: null, sesion }), null);
+});
+
+test('TEST-AV2-010 · Inicio muestra solo la sesión en curso; Entrenamiento no ofrece empezar otra y dice por qué', () => {
+  const inicioE = sinComentarios(leer('pantallas/inicio-entrenamiento.tsx'));
+  const desde = inicioE.indexOf('else if (ahora) {');
+  const rama = inicioE.slice(desde, inicioE.indexOf('} else {', desde));
+  assert.ok(desde > 0);
+  assert.match(rama, /<SesionEnCursoDeInicio/);
+  assert.doesNotMatch(rama, /<SesionDeHoy|yaLaHice|aRegistroRapido/, 'con una en curso, solo esa: ni las otras ni «Ya la hice» (AV2-D4)');
+  const tarjeta = inicioE.slice(inicioE.indexOf('function SesionEnCursoDeInicio('), inicioE.indexOf('function SesionDeHoy('));
+  assert.match(tarjeta, /<Insignia texto=\{marcha === 'en-pausa' \? T\.enPausa : COPY_ENTRENAMIENTO\.enCurso\} icono="reloj" etiqueta="Estado" \/>/);
+  assert.match(tarjeta, /texto=\{T\.continuar\}/);
+  assert.match(tarjeta, /\{sesiones > 1 \? <Boton texto=\{T\.verLasSesiones\(sesiones\)\} tipo="enlace" icono="derecha" iconoAlFinal/);
+  assert.doesNotMatch(tarjeta, /empezar|iniciarEntrenamiento|hacerlaHoy/i);
+  const entrenamiento = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  assert.match(entrenamiento, /bloqueadaPor=\{sePuedeIniciar\(o\.occurrenceId, ahora\) \? null : ahora\}/);
+  assert.match(entrenamiento, /bloqueadaPor=\{sePuedeIniciar\(p\.ocurrenciaDeHoy\.occurrenceId, enCurso\) \? null : enCurso\}/);
+  assert.match(entrenamiento, /\{sinEmpezar \? null : <Boton texto=\{accion\}/, 'ni «Iniciar entrenamiento»');
+  assert.match(entrenamiento, /\{bloqueadaPor \? null : <Boton texto=\{AG\.hacerlaHoy\}/, 'ni «Hacerla hoy»');
+  assert.match(entrenamiento, /\{yaLaHice \? <Boton texto=\{TEXTOS_DEL_REGISTRO_RAPIDO\.yaLaHice\}/, '«Ya la hice» sigue en Entrenamiento (AV2-D4)');
+  assert.match(entrenamiento, /const otra = otraSesionEnCurso\(o\.occurrenceId/, 'el freno de useAbrirOcurrencia queda como red de seguridad');
+  assert.equal(T_VUELTA.hayUnEntrenamientoEnCurso('Piernas A'), 'Hay un entrenamiento en curso: Piernas A. Para iniciar otra, primero continualo o dejalo incompleto.');
+});
+
 // ─── TEST-AV2-011 · «la que sigue», anclada en la última registrada hoy (AV2-10) ────────────────
 
 const comidasDeNutricion = await import('../apps/mobile/src/comidas-de-hoy.ts');

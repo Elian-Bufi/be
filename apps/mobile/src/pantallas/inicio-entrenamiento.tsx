@@ -1,9 +1,13 @@
 /**
- * Inicio · las tarjetas de Entrenamiento (DL-117): las sesiones de hoy con su estado real, y la actividad de los últimos
- * 30 días. Abrir un borrador usa el mismo circuito de Entrenamiento (`useAbrirOcurrencia`) y va solo al tocar: «Iniciar
- * entrenamiento» empieza la sesión enfocada, y «Continuar entrenamiento» retoma la que corre en este teléfono
- * (WP-ENTRENAMIENTO-SERIES §7.1). Una sesión en curso de otro día o de otro dispositivo (API-TIE-04) se muestra arriba,
- * para continuarla o dejarla incompleta, como en Entrenamiento: con ella abierta no se inicia otra (`sesion-en-curso.ts`).
+ * Inicio · las tarjetas de Entrenamiento (DL-117, DL-166 y DL-170): las sesiones de hoy con su estado real, y la actividad
+ * de los últimos 30 días. Abrir un borrador usa el mismo circuito de Entrenamiento (`useAbrirOcurrencia`) y va solo al
+ * tocar: «Empezar» empieza la sesión enfocada (WP-ENTRENAMIENTO-SERIES §7.1).
+ *
+ * **Con una sesión en curso** (API-TIE-04, o la corrida del teléfono si la API no responde), Inicio muestra solo esa
+ * (DL-170, AV2-09; error 1 de la crítica de la 0.23, cuando las otras seguían ofreciendo «Empezar»): su nombre, «En
+ * curso» o «En pausa» como etiqueta neutra con el reloj, «2 ejercicios · 7 series» y, si la corrida es de este teléfono,
+ * el ejercicio y la serie («Sentadilla goblet · serie 3»); «Continuar», ancho, y «Ver las N sesiones ›». Si es de otro
+ * día, también «Dejarlo incompleto». «Ya la hice» de otras sesiones no se ofrece acá (AV2-D4): queda en Entrenamiento.
  */
 import {
   COPY_AGENDA_DE_ENTRENAMIENTO as AG,
@@ -23,16 +27,15 @@ import { useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { SinActualizar } from '../estados';
 import { ejerciciosYSeries } from '../series-de-la-sesion';
 import { fechaCivil, ultimosDiasHasta } from '../formato';
-import { iconoDelEstado } from '../iconos-de-entrenamiento';
 import { useLecturaRecordada } from '../lecturas';
 import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useAccesoRetirado, type Ir } from '../navegacion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
-import { sesionEnCursoParaMostrar, sesionRealizada } from '../sesion-en-curso';
+import { lineaDeLaSerie, marchaDeLaSesionEnCurso, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
 import { actividadDeInicio, detalleDeLaSesion } from '../inicio-de-hoy';
-import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { TEXTOS_DE_LA_VUELTA, TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
 import { Aviso, Boton, Cifra, Desplegable, Insignia, Parrafo } from '../ui';
-import { AvisoDeEntrenamientoEnCurso, MOTIVO_ANTES_DE_INICIAR, useAbrirOcurrencia } from './entrenamiento';
+import { AvisoDeEntrenamientoEnCurso, MOTIVO_ANTES_DE_INICIAR, useAbrirOcurrencia, useDejarIncompleto } from './entrenamiento';
 import { AlLado, aRegistroRapido } from './registro-rapido';
 import { estilos, faltaElA3, LineaDeInicio, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
 
@@ -51,19 +54,25 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
   const local = useEntrenamientoLocal();
   const remota = enCurso.r?.ok ? enCurso.r.datos.data.inProgress : null;
   const ahora = sesionEnCursoParaMostrar(remota, local.sesiones());
+  // La corrida de este teléfono, si la sesión en curso corre acá: de ella salen la pausa (si la API no respondió) y la serie.
+  const delTelefono = ahora ? (local.sesiones().find((s) => s.draftId === ahora.draftId) ?? null) : null;
   // Abrir un borrador es una escritura: con el 404 no revelador, la tarjeta retira lo que mostraba (B10-06:1145-1148).
   const { retirado, accesoRetirado } = useAccesoRetirado();
   let contenido: ReactNode;
   if (retirado) contenido = <Parrafo>{COPY_ENTRENAMIENTO.planNoDisponible}</Parrafo>;
   else if (!r) contenido = <Verificando />;
   else if (!r.ok) contenido = <NoSePudo falla={r} reintentar={() => void cargar()} />;
-  else {
-    const hoy = r.datos.data;
-    // Una sesión en curso que no es de las de hoy (de otro día): se ofrece continuarla o dejarla incompleta.
-    const deOtroDia = ahora && !hoy.occurrences.some((o) => o.occurrenceId === ahora.occurrenceId) ? ahora : null;
-    const avisoDeOtroDia = deOtroDia ? (
-      <AvisoDeEntrenamientoEnCurso
-        enCurso={deOtroDia}
+  else if (ahora) {
+    // AV2-09: con una sesión en curso se ve solo esa. Ninguna otra ofrece empezar.
+    const deHoy = r.datos.data.occurrences.find((o) => o.occurrenceId === ahora.occurrenceId) ?? null;
+    contenido = (
+      <SesionEnCursoDeInicio
+        enCurso={ahora}
+        marcha={marchaDeLaSesionEnCurso(remota, delTelefono)}
+        prescripciones={deHoy?.plannedSession.prescriptions ?? delTelefono?.sesion?.prescriptions ?? null}
+        serie={lineaDeLaSerie(delTelefono)}
+        sesiones={r.datos.data.occurrences.length}
+        deOtroDia={deHoy === null}
         token={token}
         sesionPerdida={sesionPerdida}
         ir={ir}
@@ -72,34 +81,28 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
           void cargar();
         }}
       />
-    ) : null;
-    // AV-17: sin plan, una línea con el texto de siempre, no una tarjeta (salvo que haya una sesión de otro día abierta).
-    if (hoy.planState === 'NO_ACTIVE_PLAN' && !avisoDeOtroDia) return <LineaDeInicio zona="entrenamiento" texto={COPY_ENTRENAMIENTO.sinPlanAsesorado} />;
-    if (hoy.planState === 'NO_ACTIVE_PLAN') contenido = <Parrafo>{COPY_ENTRENAMIENTO.sinPlanAsesorado}</Parrafo>;
-    else if (hoy.planState === 'NOT_AVAILABLE')
+    );
+  } else {
+    const hoy = r.datos.data;
+    // AV-17: sin plan, una línea con el texto de siempre, no una tarjeta.
+    if (hoy.planState === 'NO_ACTIVE_PLAN') return <LineaDeInicio zona="entrenamiento" texto={COPY_ENTRENAMIENTO.sinPlanAsesorado} />;
+    if (hoy.planState === 'NOT_AVAILABLE')
       contenido = (
         <>
           <Parrafo>{COPY_ENTRENAMIENTO.planNoDisponible}</Parrafo>
           <Boton texto="Ver tus vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
         </>
       );
-    else if (hoy.occurrences.length === 0)
-      contenido = (
-        <>
-          {avisoDeOtroDia}
-          <Parrafo>Tu plan no tiene sesiones para hoy.</Parrafo>
-        </>
-      );
+    else if (hoy.occurrences.length === 0) contenido = <Parrafo>Tu plan no tiene sesiones para hoy.</Parrafo>;
     else if (agenda) {
       // Con agenda: solo la sesión de hoy, y lo pendiente en un renglón (se resuelve en Entrenamiento).
       const etiqueta = (sessionId: string): string => hoy.occurrences.find((o) => o.plannedSession.sessionId === sessionId)?.plannedSession.label ?? AG.sesion;
       const deHoy = hoy.occurrences.filter((o) => agenda.today.some((f) => f.sessionId === o.plannedSession.sessionId));
       contenido = (
         <>
-          {avisoDeOtroDia}
           {deHoy.length === 0 ? <Parrafo>{AG.hoyNoHaySesion}</Parrafo> : null}
           {deHoy.map((o) => (
-            <SesionDeHoy key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} enCurso={ahora?.occurrenceId === o.occurrenceId} />
+            <SesionDeHoy key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />
           ))}
           {agenda.pending.map((p) => (
             <Parrafo key={p.occurrenceId}>{`${AG.tePendiente}: ${AG.pendiente(etiqueta(p.sessionId), p.plannedDate)}`}</Parrafo>
@@ -110,23 +113,74 @@ export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: s
     } else
       contenido = (
         <>
-          {avisoDeOtroDia}
           {hoy.occurrences.length > 1 ? <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo> : null}
           {hoy.occurrences.map((o) => (
-            <SesionDeHoy key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} enCurso={ahora?.occurrenceId === o.occurrenceId} />
+            <SesionDeHoy key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />
           ))}
         </>
       );
   }
   return (
-    <TarjetaDeInicio zona="entrenamiento" titulo={COPY_ENTRENAMIENTO.entrenamientoDeHoy}>
+    <TarjetaDeInicio zona="entrenamiento" titulo={T.entrenamiento}>
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
     </TarjetaDeInicio>
   );
 }
 
-/** Una sesión de hoy con su estado real. «Registrada · No realizada» no se presenta como hecha. */
+/**
+ * La sesión en curso, sola (AV2-09): la etiqueta neutra con el reloj, el nombre, lo que tiene y, si corre en este
+ * teléfono, el ejercicio y la serie; «Continuar», ancho, y «Ver las N sesiones ›». Si es de otro día, también «Dejarlo
+ * incompleto», que pregunta antes de escribir.
+ */
+function SesionEnCursoDeInicio({
+  enCurso: e,
+  marcha,
+  prescripciones,
+  serie,
+  sesiones,
+  deOtroDia,
+  token,
+  sesionPerdida,
+  ir,
+  alTerminar,
+}: {
+  enCurso: EnCurso;
+  marcha: MarchaDeLaCorrida;
+  /** Las de la sesión de hoy o las de la corrida del teléfono: solo se cuentan. */
+  prescripciones: readonly { readonly sets: readonly unknown[] }[] | null;
+  serie: string | null;
+  sesiones: number;
+  deOtroDia: boolean;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  ir: Ir;
+  alTerminar: () => void;
+}) {
+  const { dejando, fallo, dejarIncompleto } = useDejarIncompleto({ enCurso: e, token, sesionPerdida, alTerminar });
+  const lo = [prescripciones ? ejerciciosYSeries(prescripciones) : null, deOtroDia ? fechaCivil(e.fecha) : null].filter((p): p is string => p !== null).join(' · ');
+  return (
+    <View>
+      <Insignia texto={marcha === 'en-pausa' ? T.enPausa : COPY_ENTRENAMIENTO.enCurso} icono="reloj" etiqueta="Estado" />
+      <Text style={estilos.nombre}>{e.etiqueta}</Text>
+      {lo ? <Text style={estilos.detalle}>{lo}</Text> : null}
+      {serie ? <Text style={estilos.detalle}>{serie}</Text> : null}
+      {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
+      <Boton
+        texto={T.continuar}
+        etiqueta={`${T.continuar} ${e.etiqueta}`}
+        onPress={() => ir({ nombre: 'sesion-de-entrenamiento', draftId: e.draftId, occurrenceId: e.occurrenceId, fecha: e.fecha, modo: 'en-vivo', etiqueta: e.etiqueta })}
+      />
+      {deOtroDia ? <Boton texto={COPY_ENTRENAMIENTO_POR_SERIE.dejarSesionIncompleta} tipo="secundario" onPress={() => void dejarIncompleto()} ocupado={dejando} /> : null}
+      {sesiones > 1 ? <Boton texto={T.verLasSesiones(sesiones)} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'entrenamiento' })} /> : null}
+    </View>
+  );
+}
+
+/**
+ * Una sesión de hoy con su estado real, sin otra en curso. «Registrada · No realizada» no se presenta como hecha, y un
+ * borrador sin corrida no dice «En curso» (AV2-09).
+ */
 function SesionDeHoy({
   ocurrencia: o,
   hoy,
@@ -134,7 +188,6 @@ function SesionDeHoy({
   sesionPerdida,
   accesoRetirado,
   ir,
-  enCurso,
 }: {
   ocurrencia: Ocurrencia;
   hoy: string;
@@ -142,25 +195,23 @@ function SesionDeHoy({
   sesionPerdida: AlPerderLaSesion;
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: Ir;
-  /** Si esta es la sesión en curso, en este teléfono o según la API. */
-  enCurso: boolean;
 }) {
   const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
-  const vista = vistaDeOcurrencia(o, hoy);
+  const vista = vistaDeLaSesion(vistaDeOcurrencia(o, hoy), o.execution, null);
   const local = useEntrenamientoLocal();
-  // «Continuar» si hay un borrador en curso, si es la sesión en curso o si en este teléfono corre su entrenamiento.
-  const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS' || local.sesiones().some((s) => s.occurrenceId === o.occurrenceId && corridaAbierta(s.corrida));
+  // «Continuar» si hay un borrador en curso o si en este teléfono corre su entrenamiento.
+  const continuar = o.execution.state === 'DRAFT_IN_PROGRESS' || local.sesiones().some((s) => s.occurrenceId === o.occurrenceId && corridaAbierta(s.corrida));
   const executionId = o.execution.state === 'REGISTERED' ? o.execution.executionId : null;
-  // PA-03 (DL-160): «Ya la hice», al lado de «Iniciar entrenamiento», para registrarla por pasos y sin cronómetros.
-  const yaLaHice = !continuar && sePuedeOfrecer(o, enCurso, local.sesiones());
+  // PA-03 (DL-160): «Ya la hice», al lado de «Empezar», para registrarla por pasos y sin cronómetros.
+  const yaLaHice = !continuar && sePuedeOfrecer(o, false, local.sesiones());
   // DL-166 (AV-06): el nombre y el estado a la vista; el bloque, la semana y los ejercicios, plegados (III.7).
   const detalle = detalleDeLaSesion(o.plannedSession);
   return (
     <View style={estilos.fila}>
       <Text style={estilos.nombre}>{o.plannedSession.label}</Text>
-      <Insignia texto={vista.texto} hecha={sesionRealizada(o.execution)} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
+      <Insignia texto={vista.texto} hecha={vista.hecha} etiqueta="Estado" icono={vista.icono} />
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
-      {/* Otra sesión en curso: continuarla o dejarla incompleta; dejada incompleta, se vuelve a intentar iniciar esta. */}
+      {/* La red de seguridad: si la lectura estaba vieja y había otra en curso, se ofrece continuarla o dejarla incompleta. */}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
       {executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: executionId })} />
