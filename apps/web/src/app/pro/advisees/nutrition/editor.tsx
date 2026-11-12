@@ -30,6 +30,9 @@
  *   la composición de cada alimento sale del catálogo (la que trae el buscador al elegirlo, la de los habituales o, para
  *   lo que ya estaba en el plan, una lectura del buscador por su nombre que se queda solo con el mismo alimento).
  * - «+ Comida» nace con su opción 1 lista; las opciones de alimentos y de receta se agregan por separado.
+ * - ED-32: «Opción de receta» ofrece «Receta nueva»: la receta se crea en un cuadro, sin salir del plan, con dos salidas
+ *   («Guardar la receta y agregarla a Merienda» y «Guardar solo en Mis recetas»); si el agregado no se puede, el cuadro
+ *   lo dice y lo reintenta con la misma versión (`receta-en-el-plan.ts`).
  * - Quitar un día tipo, una comida o una opción con contenido pregunta, con lo que se va (`quitar-con-contenido.ts`);
  *   «Cancelar» no toca nada. Sin contenido, se quita en el acto, como antes.
  */
@@ -86,8 +89,10 @@ import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_ESTACION as CE } from '../estacion/estacion';
-import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
+import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
+import { agregarLaReceta, COPY_RECETA_NUEVA, type LugarDeLaReceta } from './receta-en-el-plan';
+import { EditorDeReceta } from '../../recipes/editor-de-receta';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
@@ -270,6 +275,11 @@ export function EditorDeBorrador({
   const [porQuitar, setPorQuitar] = useState<{ readonly texto: string; readonly hacer: () => void } | null>(null);
   // ED-34: la pestaña del panel.
   const [pestanaDelPanel, setPestanaDelPanel] = useState<'antes' | 'rangos'>('rangos');
+  // ED-32: la receta nueva que se crea desde una comida (en un cuadro), si tiene algo escrito, y lo que quedó por
+  // recuperar si se guardó pero no se pudo agregar.
+  const [recetaNueva, setRecetaNueva] = useState<LugarDeLaReceta | null>(null);
+  const [recetaSucia, setRecetaSucia] = useState(false);
+  const [recuperar, setRecuperar] = useState<{ readonly receta: Receta; readonly motivo: 'YA_NO_ESTA' | 'TOPE' } | null>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -645,6 +655,32 @@ export function EditorDeBorrador({
   };
   /** ED-33: con contenido, primero se confirma, con lo que se va; sin contenido, se hace en el acto. */
   const pedirQuitar = (texto: string | null, hacer: () => void) => (texto ? setPorQuitar({ texto, hacer }) : hacer());
+  /** ED-32: cierra el cuadro de la receta nueva (y lo que quedaba por recuperar). */
+  const cerrarLaRecetaNueva = () => {
+    setRecetaNueva(null);
+    setRecuperar(null);
+    setRecetaSucia(false);
+  };
+  /**
+   * ED-32: la receta ya está en Mis recetas; se suma como opción de su comida y se la deja elegida, en el mismo día. Si no
+   * se puede, el cuadro lo dice y ofrece reintentarlo con la misma versión, sin crear otra receta.
+   */
+  const agregarLaRecetaNueva = (r: Receta) => {
+    if (!recetaNueva) return;
+    const res = agregarLaReceta(estructura, recetaNueva, r);
+    if (res.tipo === 'no-se-pudo') return setRecuperar({ receta: r, motivo: res.motivo });
+    if (res.tipo === 'agregada') cambiar(() => res.estructura);
+    ir({ dia: pedidoDeLaPosicion(res.i), comidas: pedidoDeComidasDelEditor(new Set([...(res.i === i ? abiertas : []), res.j])) });
+    setPestanas((p) => ({ ...p, [`${res.i}-${res.j}`]: res.k }));
+    cerrarLaRecetaNueva();
+    setMensaje({ tipo: 'exito', texto: COPY_RECETA_NUEVA.agregada(r.name, res.k, recetaNueva.nombre) });
+  };
+  const alGuardarLaRecetaNueva = (r: Receta, agregar: boolean) => {
+    setRecetas((x) => ({ ...x, [r.recipeVersionId]: { recipeId: r.recipeId, recipeVersionId: r.recipeVersionId, versionNumber: r.versionNumber, name: r.name, servings: r.servings } }));
+    if (agregar) return agregarLaRecetaNueva(r);
+    cerrarLaRecetaNueva();
+    setMensaje({ tipo: 'exito', texto: COPY_RECETA_NUEVA.soloGuardada(r.name) });
+  };
   const agregarComida = () => {
     const j = dia?.meals.length ?? 0;
     // ED-33: la comida nace con su opción 1 lista, para empezar a sumarle alimentos.
@@ -1206,6 +1242,15 @@ export function EditorDeBorrador({
       {/* Las recetas, en el mismo cajón que los alimentos: no hay un diálogo encima de otro. */}
       <Cajon abierto={eligiendoReceta !== null} titulo={COPY_RECETAS.agregarComoOpcion} sobretitulo={comidaDeLaReceta ? comidaDeLaReceta.label.trim() || `Comida ${(eligiendoReceta?.j ?? 0) + 1}` : null} onCerrar={() => setEligiendoReceta(null)}>
         <ElegirReceta
+          alCrearNueva={() => {
+            if (!eligiendoReceta) return;
+            const { i: di, j } = eligiendoReceta;
+            const m = estructura[di]?.meals[j];
+            if (!m) return;
+            // El cajón se cierra y se abre el cuadro de la receta: nunca uno encima del otro (§2.3).
+            setEligiendoReceta(null);
+            setRecetaNueva({ i: di, j, mealId: m.mealId ?? null, label: m.label, nombre: nombreDeLaComida(m, j) });
+          }}
           onElegir={(receta) => {
             if (!eligiendoReceta) return;
             const { i: di, j } = eligiendoReceta;
@@ -1220,6 +1265,45 @@ export function EditorDeBorrador({
           }}
         />
       </Cajon>
+
+      {/* ED-32: la receta nueva, en un cuadro grande, sin salir del plan; dos salidas y, si el agregado no se pudo, el
+          reintento con la misma versión. */}
+      <CuadroEnfocado
+        abierto={recetaNueva !== null}
+        forma="dialogo"
+        ancho
+        titulo={COPY_RECETA_NUEVA.titulo(recetaNueva?.nombre ?? '')}
+        sobretitulo={persona}
+        conCambios={recetaSucia && !recuperar}
+        onCerrar={cerrarLaRecetaNueva}
+      >
+        {recuperar && recetaNueva ? (
+          <div data-recuperar-la-receta>
+            <Aviso tipo="error" enfocar>
+              <p>{COPY_RECETA_NUEVA.quedoGuardada(recuperar.receta.name, recuperar.receta.versionNumber)}</p>
+              <p>{COPY_RECETA_NUEVA.noSeAgrego(recetaNueva.nombre, recuperar.motivo)}</p>
+            </Aviso>
+            <div className="acciones">
+              <button type="button" className="boton boton--primario" onClick={() => agregarLaRecetaNueva(recuperar.receta)}>
+                {COPY_RECETA_NUEVA.agregarla(recetaNueva.nombre)}
+              </button>
+              <button type="button" className="boton boton--secundario" onClick={cerrarLaRecetaNueva}>
+                {COPY_RECETA_NUEVA.cerrar}
+              </button>
+            </div>
+          </div>
+        ) : recetaNueva ? (
+          <EditorDeReceta
+            token={token}
+            sesionPerdida={sesionPerdida}
+            recetaId={null}
+            enElPlan={{ destino: recetaNueva.nombre }}
+            alCambiarLoEscrito={setRecetaSucia}
+            onGuardada={(r, _aviso, agregar) => alGuardarLaRecetaNueva(r, agregar)}
+            onVolver={cerrarLaRecetaNueva}
+          />
+        ) : null}
+      </CuadroEnfocado>
 
       <AntesDeActivar
         abierto={confirmar}
@@ -1370,7 +1454,7 @@ type ParaCorregir = { readonly texto: string; readonly ir: (() => void) | null }
  * con un buscador: lee todas las propias de a 50 al abrir el cajón y las filtra por su nombre mientras se escribe
  * (`recetas-para-elegir.ts`). API-REC-02 no busca por texto, así que no le pide nada nuevo.
  */
-function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
+function ElegirReceta({ onElegir, alCrearNueva }: { onElegir: (r: Receta) => void; alCrearNueva: () => void }) {
   const { token, sesionPerdida } = useNutricion();
   const [estado, setEstado] = useState<{ tipo: 'cargando' } | { tipo: 'error'; texto: string } | { tipo: 'lista'; recetas: readonly Receta[]; mas: string | null }>({ tipo: 'cargando' });
   const [texto, setTexto] = useState('');
@@ -1399,6 +1483,14 @@ function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
   const visibles = estado.tipo === 'lista' ? recetasQueCoinciden(estado.recetas, texto) : [];
   return (
     <div className="recetas-para-elegir">
+      {/* ED-32: crear una receta sin salir del plan; entra como opción de esta comida. */}
+      <p>
+        <button type="button" className="boton boton--secundario" onClick={alCrearNueva} data-receta-nueva>
+          <Icono nombre="mas" tamano={18} />
+          {COPY_RECETA_NUEVA.recetaNueva}
+        </button>{' '}
+        <span className="nota">{COPY_RECETA_NUEVA.queEs}</span>
+      </p>
       {estado.tipo === 'cargando' ? <Cargando /> : null}
       {estado.tipo === 'error' ? (
         <Aviso tipo="error">

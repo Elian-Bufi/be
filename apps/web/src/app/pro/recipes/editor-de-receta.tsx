@@ -99,18 +99,35 @@ function pedidoDeCalculo(porciones: string, ingredientes: readonly IngredienteEn
 
 const comoTexto = (n: number) => String(n).replace('.', ',');
 
+/** ED-32: los textos de las dos salidas, cuando la receta nueva se crea desde una comida del plan. */
+export const COPY_RECETA_EN_EL_PLAN = {
+  guardarYAgregar: (comida: string) => `Guardar la receta y agregarla a ${comida}`,
+  guardarSolo: 'Guardar solo en Mis recetas',
+  queHace: (comida: string) => `Las dos guardan la versión 1 en Mis recetas. La primera, además, la suma como opción de ${comida}, sin salir del plan.`,
+} as const;
+
 export function EditorDeReceta({
   token,
   sesionPerdida,
   recetaId,
   onGuardada,
   onVolver,
+  enElPlan = null,
+  alCambiarLoEscrito,
 }: {
   token: string;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
   recetaId: string | null;
-  onGuardada: (r: Receta, aviso: string) => void;
+  /** `agregar` (ED-32): se eligió «Guardar la receta y agregarla a …». Fuera del plan, siempre `false`. */
+  onGuardada: (r: Receta, aviso: string, agregar: boolean) => void;
   onVolver: () => void;
+  /**
+   * ED-32: la receta nueva se crea en un cuadro, desde una comida del plan (`destino`: «Merienda»). Sin «Volver a la
+   * lista» ni título propio (los pone el cuadro), y con dos salidas: guardarla y agregarla a la comida, o solo guardarla.
+   */
+  enElPlan?: { readonly destino: string } | null;
+  /** ED-32: si hay algo escrito sin guardar, para que el cuadro pregunte al cerrarse. */
+  alCambiarLoEscrito?: (hay: boolean) => void;
 }) {
   const [cargada, setCargada] = useState<Detalle | null>(null);
   const [lectura, setLectura] = useState<'cargando' | 'lista' | 'no-disponible' | 'sin-area' | 'error'>(recetaId ? 'cargando' : 'lista');
@@ -168,6 +185,10 @@ export function EditorDeReceta({
     // Se carga al montar: la página vuelve a montar el editor al cambiar de receta.
   }, []);
 
+  useEffect(() => {
+    alCambiarLoEscrito?.(sucio);
+  }, [sucio, alCambiarLoEscrito]);
+
   // El cálculo de la API mientras se edita, con una espera corta para no pedirlo en cada tecla.
   const pedido = useMemo(() => pedidoDeCalculo(porciones, ingredientes), [porciones, ingredientes]);
   const clavePedido = pedido ? JSON.stringify(pedido) : null;
@@ -210,8 +231,9 @@ export function EditorDeReceta({
     return problemas;
   }
 
-  async function guardar(e: FormEvent) {
-    e.preventDefault();
+  async function guardar(e: FormEvent | null, agregar = enElPlan !== null) {
+    e?.preventDefault();
+    if (enviando) return;
     const problemas = avisos.alEnviar();
     const calculable = pedidoDeCalculo(porciones, ingredientes);
     if (problemas.length > 0 || !calculable) return;
@@ -228,7 +250,7 @@ export function EditorDeReceta({
       return setFallo(mensajeDeFallo(r));
     }
     setSucio(false);
-    onGuardada(r.datos.data, cargada ? COPY_RECETAS.versionNueva(r.datos.data.versionNumber) : COPY_RECETAS.guardada);
+    onGuardada(r.datos.data, cargada ? COPY_RECETAS.versionNueva(r.datos.data.versionNumber) : COPY_RECETAS.guardada, enElPlan !== null && agregar);
   }
 
   if (lectura === 'cargando') return <Cargando />;
@@ -250,12 +272,16 @@ export function EditorDeReceta({
   const nombres = Object.fromEntries(ingredientes.map((i, n) => [String(n + 1), i.nombre]));
   return (
     <div className="secciones">
-      <p>
-        <button type="button" className="boton boton--enlace" onClick={() => antesDeSalir(onVolver)}>
-          ← {COPY_RECETAS.volverALaLista}
-        </button>
-      </p>
-      <h2>{cargada ? `${COPY_RECETAS.editarReceta} · ${COPY_RECETAS.version(cargada.versionNumber)}` : COPY_RECETAS.nuevaReceta}</h2>
+      {enElPlan ? null : (
+        <>
+          <p>
+            <button type="button" className="boton boton--enlace" onClick={() => antesDeSalir(onVolver)}>
+              ← {COPY_RECETAS.volverALaLista}
+            </button>
+          </p>
+          <h2>{cargada ? `${COPY_RECETAS.editarReceta} · ${COPY_RECETAS.version(cargada.versionNumber)}` : COPY_RECETAS.nuevaReceta}</h2>
+        </>
+      )}
       <form onSubmit={(e) => void guardar(e)} onBlur={avisos.alSalir} noValidate className="secciones">
         <ResumenDeErrores titulo="Revisá estos datos antes de guardar" errores={errores} intento={avisos.envios} />
         <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
@@ -413,11 +439,24 @@ export function EditorDeReceta({
             <p>{fallo}</p>
           </Aviso>
         ) : null}
-        <div className="acciones">
-          <button type="submit" className="boton boton--primario" disabled={enviando || (cargada !== null && !sucio)}>
-            {enviando ? COPY_RECETAS.guardando : COPY_RECETAS.guardar}
-          </button>
-        </div>
+        {enElPlan && !cargada ? (
+          // ED-32: dos salidas; un solo principal, que guarda y agrega a la comida (Enter en el formulario hace lo mismo).
+          <div className="acciones" data-dos-salidas>
+            <button type="submit" className="boton boton--primario" disabled={enviando} data-guardar-y-agregar>
+              {enviando ? COPY_RECETAS.guardando : COPY_RECETA_EN_EL_PLAN.guardarYAgregar(enElPlan.destino)}
+            </button>
+            <button type="button" className="boton boton--secundario" disabled={enviando} onClick={() => void guardar(null, false)} data-guardar-solo>
+              {COPY_RECETA_EN_EL_PLAN.guardarSolo}
+            </button>
+            <p className="nota">{COPY_RECETA_EN_EL_PLAN.queHace(enElPlan.destino)}</p>
+          </div>
+        ) : (
+          <div className="acciones">
+            <button type="submit" className="boton boton--primario" disabled={enviando || (cargada !== null && !sucio)}>
+              {enviando ? COPY_RECETAS.guardando : COPY_RECETAS.guardar}
+            </button>
+          </div>
+        )}
         {cargada && sucio ? <p className="nota">Al guardar se crea la versión {cargada.versionNumber + 1}. Los planes ya activados conservan la que tenían.</p> : null}
       </form>
 
