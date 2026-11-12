@@ -16093,3 +16093,72 @@ p.cifra-del-espacio__desglose {
   border-radius: 50%;
   background: var(--texto);
 }
+
+/* ═══ ED-18 · El vidrio del website (WP-EDITORES-PROFESIONAL, §2.7; DL-170) ════════════════════════════════════════════
+   Solo en la estación y el asistente de Entrenamiento: el fondo con dos destellos, y de vidrio la barra de comandos, el
+   panel, la tarjeta del paso y los cuadros que se abren desde ahí. La planilla y las zonas de edición siguen opacas, para
+   leer bien y para que el desplazamiento no se trabe. Nada se anima. Sin soporte de `backdrop-filter`, con la
+   transparencia reducida o con colores forzados, todo vuelve a ser opaco (TEST-EDP-053). Los tokens y su contraste en el
+   peor punto, en `tokens.css` y `scripts/contraste.test.cjs`. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  body:has(.estacion) {
+    background:
+      radial-gradient(60rem 40rem at 8% -12%, var(--destello-1), transparent 70%),
+      radial-gradient(50rem 36rem at 96% 8%, var(--destello-2), transparent 70%),
+      var(--fondo);
+    background-attachment: fixed;
+  }
+
+  .estacion__barra,
+  .estacion__panel,
+  .asistente__cuadro,
+  .estacion .cuadro-enfocado,
+  .estacion .dialogo {
+    border-color: var(--vidrio-luz);
+    background: linear-gradient(to bottom, var(--vidrio-brillo), transparent 50%), var(--vidrio);
+    box-shadow: inset 0 1px 0 var(--vidrio-luz), var(--sombra-suave);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  .estacion__panel,
+  .estacion .cuadro-enfocado,
+  .estacion .dialogo {
+    box-shadow: inset 0 1px 0 var(--vidrio-luz), var(--sombra);
+  }
+
+  /* El de adentro: sin sombra ni desenfoque propio. */
+  .asistente__sesion,
+  .asistente__tarjeta {
+    background: var(--vidrio-adentro);
+  }
+
+  /* El resplandor, solo en el principal de la vista: «Revisar y activar…» en la estación o el del paso en el asistente. */
+  .estacion [data-barra-de-comandos] .boton--primario,
+  .asistente__siguiente {
+    box-shadow: 0 0 1.25rem var(--resplandor);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  body:has(.estacion) {
+    background: var(--fondo);
+  }
+
+  .estacion__barra,
+  .estacion__panel,
+  .asistente__cuadro,
+  .estacion .cuadro-enfocado,
+  .estacion .dialogo,
+  .asistente__sesion,
+  .asistente__tarjeta {
+    background: var(--superficie);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .estacion [data-barra-de-comandos] .boton--primario,
+  .asistente__siguiente {
+    box-shadow: none;
+  }
+}
