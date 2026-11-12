@@ -105,6 +105,9 @@ import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDi
 import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { CuadroDeLaOpcion } from './cuadro-de-la-opcion';
+import { PasosDeNutricion } from './pasos-del-asistente';
+import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
+import { pasoPedido } from '../asistente/paso-que-sigue';
 import { opcionAlGuardar, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
 import { CuadroCopiarDesdeOtraComida, CuadroUsarComidaHabitual } from './copiar-desde-otra-comida';
 import { COPY_DE_OTRA_COMIDA, copiaDesdeOtraComida, MAXIMO_DE_OPCIONES, opcionesDeLaHabitual, origenesDeLaCopia } from './opcion-de-otra-comida';
@@ -192,6 +195,7 @@ export function EditorDeBorrador({
   vigente = null,
   onActivado,
   onDescartado,
+  onObjetivoNuevo = () => undefined,
 }: {
   planId: string;
   /** El número de esta versión en preparación: el de las activadas más uno (DJ-6). */
@@ -214,6 +218,8 @@ export function EditorDeBorrador({
    * lo que se dice si la descartó otra pestaña (ED-62).
    */
   onDescartado: (porOtraPestana?: string) => void;
+  /** ED-30: el asistente escribió una versión nueva del objetivo: la sección vuelve a leer el vigente. */
+  onObjetivoNuevo?: () => void;
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
@@ -398,6 +404,10 @@ export function EditorDeBorrador({
     campo.focus();
     setParaEnfocar(null);
   });
+
+  // ED-30: el paso del asistente que pide la dirección (`asistente=N`); el 1 es de la vista del plan, sin borrador.
+  const pasoDelAsistente = pasoPedido(parametros.get('asistente'));
+  const enElAsistente = pasoDelAsistente !== null && pasoDelAsistente >= 2;
 
   const cambiar = (f: (e: Estructura) => Estructura) => {
     setEstructura((e) => f(structuredClone(e)));
@@ -794,7 +804,8 @@ export function EditorDeBorrador({
   const irAlProblema = (p: ValidationIssue) => {
     const l = lugarDelProblema(p.path);
     if (l.dia === null) return;
-    ir({ dia: pedidoDeLaPosicion(l.dia), comidas: l.comida === null ? null : pedidoDeComidasDelEditor(new Set([l.comida])) });
+    // Desde el paso «Revisar» del asistente (ED-30), corregir es ir a la estación: el borrador es el mismo.
+    ir({ asistente: null, dia: pedidoDeLaPosicion(l.dia), comidas: l.comida === null ? null : pedidoDeComidasDelEditor(new Set([l.comida])) });
     if (l.comida !== null && l.opcion !== null) setPestanas((x) => ({ ...x, [`${l.dia}-${l.comida}`]: l.opcion! }));
     if (p.code === PROBLEMA_DEL_EDITOR.faltaElNombre) {
       return setNombreQueSeCambia(l.comida === null ? { de: 'dia', i: l.dia } : l.opcion === null ? { de: 'comida', i: l.dia, j: l.comida } : { de: 'opcion', i: l.dia, j: l.comida, k: l.opcion });
@@ -913,16 +924,22 @@ export function EditorDeBorrador({
           {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
               barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
               ni de lugar mientras se escribe. */}
-          <button type="button" className="boton boton--primario" data-revisar-y-activar onClick={abrirAntesDeActivar}>
-            <Icono nombre="activar" tamano={18} />
-            {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
-          </button>
+          {/* ED-30: en el asistente, la acción principal es la del paso (un solo principal por vista). */}
+          {enElAsistente ? null : (
+            <button type="button" className="boton boton--primario" data-revisar-y-activar onClick={abrirAntesDeActivar}>
+              <Icono nombre="activar" tamano={18} />
+              {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
+            </button>
+          )}
           {/* ED-01: el «⋯» de la versión, con «Descartar la versión en preparación». La vigente nunca lo ofrece. */}
-          {ofreceDescartar(version) ? (
+          {/* ED-30: en el asistente, la barra no lo muestra (como en Entrenamiento, ED-14); afuera, suma «Seguir con el
+              asistente», en el paso que se sugiere. */}
+          {!pasoDelAsistente && ofreceDescartar(version) ? (
             <MenuDeAcciones
               id="mas-de-la-version"
               rotulo={COPY_DESCARTAR_LA_VERSION.menu}
               acciones={[
+                { clave: 'seguir-asistente', texto: `Seguir con el asistente · paso ${pasoQueSigueEnNutricion(estructura)} de 7`, alElegir: () => ir({ asistente: String(pasoQueSigueEnNutricion(estructura)) }) },
                 {
                   clave: 'descartar',
                   texto: COPY_DESCARTAR_LA_VERSION.accion,
@@ -984,7 +1001,46 @@ export function EditorDeBorrador({
         </Aviso>
       ) : null}
 
-      <div className="editor-de-nutricion__zonas">
+      {/* ED-30: el asistente, sobre el mismo borrador y las mismas operaciones que la estación, que queda montada detrás. */}
+      {enElAsistente && pasoDelAsistente ? (
+        <PasosDeNutricion
+          paso={pasoDelAsistente as 2 | 3 | 4 | 5 | 6 | 7}
+          estructura={estructura}
+          cambiar={cambiar}
+          nombres={nombres}
+          rangosDe={(n) => (estructura[n] ? rangosDelDia(estructura[n]!, n, composiciones, nombres, (id) => itemsGuardados(version, id), (rv) => recetas[rv]?.name ?? null) : null)}
+          objetivo={objetivo}
+          persona={persona ?? 'la persona'}
+          sucio={sucio}
+          guardando={guardando}
+          guardar={() => guardar()}
+          impiden={impidenEnVivo}
+          sinCompletar={sinCompletarEnVivo}
+          comidasHabituales={comidasHabituales.lista}
+          onIrAPaso={(n) => ir({ asistente: n === null ? null : String(n) })}
+          onAbrirOpcion={(di, j, k) => setAgregando({ i: di, j, k })}
+          onQuitarDia={(n) => {
+            const d = estructura[n];
+            if (!d || estructura.length <= 1) return;
+            pedirQuitar(alQuitarElDia(d, n), () => {
+              cambiar((x) => (x.splice(n, 1), x));
+              setPestanas({});
+            });
+          }}
+          onInsertarHabitual={(n, comida, nombresNuevos) => {
+            setNombres((x) => ({ ...x, ...nombresNuevos }));
+            cambiar((x) => (x[n]!.meals.push(comida), x));
+            setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaComida });
+          }}
+          onObjetivoNuevo={() => {
+            // La versión en preparación pasa a usar el objetivo nuevo con el próximo guardado.
+            setSucio(true);
+            onObjetivoNuevo();
+          }}
+          onRevisarYActivar={abrirAntesDeActivar}
+        />
+      ) : null}
+      <div className="editor-de-nutricion__zonas" hidden={enElAsistente}>
       <div className="editor-de-nutricion__principal">
       <div className="editor-del-plan__dia">
         {estructura.length > 0 ? (

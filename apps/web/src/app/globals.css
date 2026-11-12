@@ -16688,3 +16688,43 @@ p.cifra-del-espacio__desglose {
 .parecidos-del-catalogo__lista li:first-child {
   border-top: 0;
 }
+
+/* ═══ ED-30 · El asistente de Nutrición: la estación queda montada detrás, oculta ═══════════════════════════════════ */
+.editor-de-nutricion__zonas[hidden] {
+  display: none;
+}
+
+.asistente__comida {
+  margin: 0.75rem 0;
+}
+
+.asistente__opciones {
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.asistente__opciones li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.asistente__objetivo {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.asistente__objetivo h4,
+.asistente__revisar h4 {
+  margin: 0 0 0.4rem;
+}

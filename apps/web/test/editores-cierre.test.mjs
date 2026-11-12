@@ -220,3 +220,63 @@ test('ED-21 · uno que se llama igual se dice aparte y crear otro pide «Crear i
   // Elegir un parecido lo marca (como lo creado): entra con «Agregar», nunca solo (EDT-17).
   assert.match(agregar, /onClick=\{\(\) => onCreado\(p\)\}/);
 });
+
+// ─── ED-30 · El asistente de Nutrición ─────────────────────────────────────────────────────────────────────────────
+
+const N = await import('../src/app/pro/advisees/nutrition/asistente-de-nutricion.ts');
+const opcion = (items, recipeVersionId) => ({ label: 'Opción 1', items, ...(recipeVersionId ? { recipeVersionId } : {}) });
+const comida = (label, opciones) => ({ label, options: opciones });
+
+test('ED-30 · el paso sugerido sale del borrador: nunca el 1, el 2 ni el 7', () => {
+  assert.equal(N.pasoQueSigueEnNutricion([]), 3);
+  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'Día habitual', meals: [] }]), 4);
+  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'D', meals: [comida('Almuerzo', [opcion([])])] }]), 5);
+  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'D', meals: [comida('Almuerzo', [])] }]), 5);
+  // Una opción de receta trae sus alimentos al guardar: no cuenta como vacía.
+  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'D', meals: [comida('Almuerzo', [opcion([], 'rv1')]), comida('Cena', [opcion([{}])])] }]), 6);
+  assert.deepEqual([...N.PASOS_DE_NUTRICION], ['Punto de partida', 'Objetivo', 'Días tipo', 'Comidas', 'Opciones', 'Revisar', 'Activar']);
+});
+
+test('ED-30 · «Lo que llevás armado», en pocas líneas', () => {
+  assert.deepEqual(N.loQueLlevasArmadoEnNutricion([]), ['0 días tipo · 0 comidas', 'Todavía sin días tipo.']);
+  assert.deepEqual(
+    N.loQueLlevasArmadoEnNutricion([
+      { label: 'Día habitual', meals: [comida('Desayuno', [opcion([{}]), opcion([])]), comida('Almuerzo', [opcion([])])] },
+      { label: '', meals: [] },
+    ]),
+    ['2 días tipo · 2 comidas', 'Día habitual · 2 comidas · 3 opciones · 2 sin alimentos', 'Día tipo 2 · sin comidas'],
+  );
+});
+
+test('TEST-EDP-027 · el objetivo general con su versión; sin «%» en el asistente; sin objetivo no hay paso 2', () => {
+  const versiones = [
+    { objectiveId: 'o1', versionId: 'v2', createdAt: '2026-11-10T10:00:00Z' },
+    { objectiveId: 'o1', versionId: 'v1', createdAt: '2026-10-01T10:00:00Z' },
+    { objectiveId: 'o2', versionId: 'w1', createdAt: '2026-09-01T10:00:00Z' },
+    { objectiveId: 'o1', versionId: 'v3', createdAt: '2026-11-11T10:00:00Z' },
+  ];
+  assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'v2'), 2);
+  assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'v3'), 3);
+  assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'nada'), null);
+  assert.equal(N.COPY_ASISTENTE_DE_NUTRICION.versionYFecha(3, 'martes 10 de noviembre'), 'Versión 3, vigente desde el martes 10 de noviembre.');
+  const textos = JSON.stringify(N.COPY_ASISTENTE_DE_NUTRICION, (_, v) => (typeof v === 'function' ? v(1, 'x') : v));
+  assert.doesNotMatch(textos, /%/);
+  assert.doesNotMatch(leer('nutrition/pasos-del-asistente.tsx'), /%/);
+  // El paso 1 solo se ofrece con un objetivo del que nacer; sin él, empieza por la evaluación.
+  const plan = leer('nutrition/plan.tsx');
+  assert.match(plan, /const conElAsistente = sePuedeCrear && pasoPedido\(parametros\.get\('asistente'\)\) !== null;/);
+  assert.match(plan, /parametros\.get\('asistente'\) && !objetivo && !borrador && !faltan\.objetivo \? \(\n\s+<Aviso tipo="info">\n\s+<p>\{CAN\.sinObjetivo\}<\/p>/);
+});
+
+test('ED-30 · los pasos 2 a 7 van sobre el mismo borrador; «Siguiente» guarda y espera (TEST-EDP-017)', () => {
+  const pasos = leer('nutrition/pasos-del-asistente.tsx');
+  assert.match(pasos, /const r = await sePuedeAvanzar\(\{ sucio, guardando, guardar \}\);/);
+  assert.match(pasos, /if \(r === 'no-avanza'\) return setNoAvanzo\(true\);/);
+  // El paso 5 arma cada opción en su cuadro (ED-31).
+  assert.match(pasos, /onClick=\{\(\) => onAbrirOpcion\(i, j, k\)\}/);
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /onAbrirOpcion=\{\(di, j, k\) => setAgregando\(\{ i: di, j, k \}\)\}/);
+  assert.match(editor, /<div className="editor-de-nutricion__zonas" hidden=\{enElAsistente\}>/);
+  // Corregir desde «Revisar» sale del asistente a la estación.
+  assert.match(editor, /ir\(\{ asistente: null, dia: pedidoDeLaPosicion\(l\.dia\)/);
+});
