@@ -1,8 +1,8 @@
 /**
  * La vertical de fuerza de WP-EDITORES-PROFESIONAL (DL-171), por la API real y contra PostgreSQL:
  * - TEST-EDP-061 · la serie observada (API-FZA-01 a 03): registrar con su estimación, lo que no se estima no se guarda,
- *   suceder (corregir y anular) con la versión esperada, lo ajeno es 404, la base impide cambiarla o borrarla y la
- *   persona no la recibe (RM-36, RM-37, RM-41 y RM-42);
+ *   suceder (corregir y anular) con la versión esperada, lo ajeno es 404, la base impide cambiarla o borrarla, no guarda
+ *   valores nulos donde la guardia los da por presentes (EDT-39) y la persona no la recibe (RM-36, RM-37, RM-41 y RM-42);
  * - TEST-EDP-064 · la clave TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE de API-PRJ-01 suma las observaciones vigentes, con la
  *   especificación BE-E1RM v1; la clave de las marcas no cambia, y la persona no la recibe.
  * La regla por sesión sobre las ejecuciones la prueban los oráculos del dominio (`fuerza-del-analisis.test.ts`).
@@ -89,6 +89,25 @@ describe('ED-72 · la serie observada por el profesional (API-FZA-01 a 03)', () 
     const r = (await x.registrar(serie()).expect(201)).body.data;
     await expect(prisma.$executeRaw`UPDATE "serie_observada" SET "rir" = 0 WHERE "id" = ${r.observationId}::uuid`).rejects.toThrow(/append-only/);
     await expect(prisma.$executeRaw`DELETE FROM "serie_observada" WHERE "id" = ${r.observationId}::uuid`).rejects.toThrow(/append-only/);
+  });
+
+  it('EDT-39 · la base no guarda una observación con un valor nulo ni una sucesora sin motivo, aunque llegue por fuera de la API', async () => {
+    const x = await circuito();
+    const r = (await x.registrar(serie()).expect(201)).body.data;
+    const estimacion = JSON.stringify(r.estimate);
+    const insertar = (carga: number | null, repeticiones: number | null, rir: number | null, conEstimacion: boolean) =>
+      prisma.$executeRaw`INSERT INTO "serie_observada" ("profesional_id", "asesorado_id", "ejercicio_id", "fecha_local", "zona_horaria", "carga", "unidad", "repeticiones", "rir", "estimacion", "procedencia")
+        VALUES (${x.c.pro.id}::uuid, ${x.c.ase.id}::uuid, ${PRESS}::uuid, ${hoy()}::date, ${ZONA}, ${carga}, 'kg', ${repeticiones}, ${rir}, ${conEstimacion ? estimacion : null}::jsonb, '{}'::jsonb)`;
+    // «Sin RIR», sin carga, sin repeticiones o sin estimación: la guardia de lo estimable no deja pasar el NULL.
+    for (const [carga, repeticiones, rir, conEstimacion] of [[85, 5, null, true], [null, 5, 1, true], [85, null, 1, true], [85, 5, 1, false]] as const) {
+      await expect(insertar(carga, repeticiones, rir, conEstimacion)).rejects.toThrow(/serie_observada_sin_nulos/);
+    }
+    // Una sucesora sin motivo.
+    await expect(
+      prisma.$executeRaw`INSERT INTO "serie_observada" ("profesional_id", "asesorado_id", "ejercicio_id", "fecha_local", "zona_horaria", "carga", "unidad", "repeticiones", "rir", "estimacion", "predecesora_id", "posicion", "procedencia")
+        VALUES (${x.c.pro.id}::uuid, ${x.c.ase.id}::uuid, ${PRESS}::uuid, ${hoy()}::date, ${ZONA}, 85, 'kg', 5, 1, ${estimacion}::jsonb, ${r.observationId}::uuid, 2, '{}'::jsonb)`,
+    ).rejects.toThrow(/serie_observada_sin_nulos/);
+    expect(await prisma.serieObservada.count({ where: { asesoradoId: x.c.ase.id } })).toBe(1);
   });
 
   it('RM-41 y RM-42 · lo ajeno es 404, y la persona no recibe ni las observaciones ni la estimación', async () => {
