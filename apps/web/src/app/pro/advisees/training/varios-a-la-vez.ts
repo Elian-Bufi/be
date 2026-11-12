@@ -33,3 +33,18 @@ export const COPY_VARIOS_A_LA_VEZ = {
   prescripcionAyuda: 'Por ejemplo «4×8-12 RIR 2 · 90 s». Vacía, cada uno entra con una serie para completar.',
   creadoYMarcado: (nombre: string) => `${nombre}: creado y marcado.`,
 } as const;
+
+/**
+ * ED-21 · Los filtros por zona, en chips, sobre lo que trajo la búsqueda: las zonas que nombra algún resultado (como
+ * principal o secundaria), en el orden del catálogo de zonas, y los resultados que nombran alguna de las elegidas. Filtra
+ * lo encontrado, no el catálogo entero: la búsqueda sigue siendo por nombre (API-TRN-13-BUSQUEDA no filtra por zona).
+ * Elegir o quitar un chip no desmarca nada.
+ */
+export function zonasDeLosResultados(resultados: readonly { readonly muscleZones: readonly { readonly zoneId: string }[] }[], orden: (zoneId: string) => number): readonly string[] {
+  return [...new Set(resultados.flatMap((r) => r.muscleZones.map((z) => z.zoneId)))].sort((a, b) => orden(a) - orden(b));
+}
+
+export function conLasZonas<R extends { readonly muscleZones: readonly { readonly zoneId: string }[] }>(resultados: readonly R[], elegidas: readonly string[]): readonly R[] {
+  if (elegidas.length === 0) return resultados;
+  return resultados.filter((r) => r.muscleZones.some((z) => elegidas.includes(z.zoneId)));
+}

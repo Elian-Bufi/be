@@ -16345,3 +16345,36 @@ p.cifra-del-espacio__desglose {
   margin: 0 0 0.4rem;
   font-size: 0.95rem;
 }
+
+/* ═══ ED-21 · Los chips por zona del buscador de ejercicios ══════════════════════════════════════════════════════ */
+.chips-de-zona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.chip-de-zona {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--borde-fuerte, var(--borde));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.chip-de-zona[aria-pressed='true'] {
+  border-color: var(--texto);
+  background: var(--texto);
+  color: var(--fondo);
+  font-weight: 700;
+}
+
+.chip-de-zona:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}

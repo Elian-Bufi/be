@@ -26,6 +26,8 @@ import {
   COPY_INTEGRACIONES,
   habitualesQueCoinciden,
   leerPrescripcion,
+  nombreDeZona,
+  ordenDeZona,
   vistaPreviaDePrescripcion,
   type PrescripcionLeida,
   nombreAlternativoComoAclaracion,
@@ -46,7 +48,7 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
 import { ImportacionDeWger } from './importacion';
-import { alternarMarcado, COPY_VARIOS_A_LA_VEZ as V, sesionDeDonde } from './varios-a-la-vez';
+import { alternarMarcado, conLasZonas, COPY_VARIOS_A_LA_VEZ as V, sesionDeDonde, zonasDeLosResultados } from './varios-a-la-vez';
 
 type Modo = 'buscar' | 'manual' | 'importar';
 
@@ -55,6 +57,13 @@ type Busqueda =
   | { readonly tipo: 'buscando'; readonly texto: string }
   | { readonly tipo: 'lista'; readonly texto: string; readonly ejercicios: readonly EjercicioEncontrado[] }
   | { readonly tipo: 'falla'; readonly texto: string; readonly motivo: string };
+
+/** ED-21: los textos de los chips por zona. */
+const COPY_ZONAS_DEL_BUSCADOR = {
+  rotulo: 'Filtrar lo encontrado por zona',
+  todas: 'Todas las zonas',
+  queFiltra: 'Filtra lo encontrado; la búsqueda es por nombre.',
+} as const;
 
 export function AgregarEjercicio({
   abierto,
@@ -173,6 +182,8 @@ function ContenidoDeAgregarEjercicio({
   const estaMarcado = (versionId: string) => marcados.some((m) => m.versionId === versionId);
   // El ejercicio cuyo detalle (imagen y zonas) está abierto debajo de su fila: uno por vez.
   const [detalle, setDetalle] = useState<string | null>(null);
+  // ED-21: las zonas elegidas en los chips (sobre lo encontrado).
+  const [zonasElegidas, setZonasElegidas] = useState<readonly string[]>([]);
   const pedido = useRef(0);
 
   // Al volver de crear o de importar, el foco vuelve al campo. Al abrirse, lo pone el cajón (`focoInicial`).
@@ -238,7 +249,11 @@ function ContenidoDeAgregarEjercicio({
     );
   }
 
-  const ejercicios = busqueda.tipo === 'lista' ? busqueda.ejercicios : [];
+  const encontrados = busqueda.tipo === 'lista' ? busqueda.ejercicios : [];
+  // ED-21: los chips por zona filtran lo encontrado (la búsqueda sigue siendo por nombre).
+  const zonasEncontradas = zonasDeLosResultados(encontrados, ordenDeZona);
+  const zonasVigentes = zonasElegidas.filter((z) => zonasEncontradas.includes(z));
+  const ejercicios = conLasZonas(encontrados, zonasVigentes);
   // Los habituales se filtran mientras se escribe; el catálogo, al enviar (bloque 5).
   const filtro = texto.trim();
   const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
@@ -316,6 +331,22 @@ function ContenidoDeAgregarEjercicio({
           ) : null}
         </h3>
         {busqueda.tipo === 'sin-buscar' ? <p className="nota">Escribí el nombre de un ejercicio y buscalo con Enter.</p> : null}
+        {/* ED-21: los chips por zona, sobre lo encontrado. Elegir uno no desmarca nada. */}
+        {busqueda.tipo === 'lista' && zonasEncontradas.length > 1 ? (
+          <div className="chips-de-zona" role="group" aria-label={COPY_ZONAS_DEL_BUSCADOR.rotulo} data-chips-de-zona>
+            {zonasEncontradas.map((z) => (
+              <button key={z} type="button" className="chip-de-zona" aria-pressed={zonasVigentes.includes(z)} onClick={() => setZonasElegidas((x) => (x.includes(z) ? x.filter((y) => y !== z) : [...x, z]))}>
+                {nombreDeZona(z) ?? z}
+              </button>
+            ))}
+            {zonasVigentes.length > 0 ? (
+              <button type="button" className="boton boton--enlace" onClick={() => setZonasElegidas([])}>
+                {COPY_ZONAS_DEL_BUSCADOR.todas}
+              </button>
+            ) : null}
+            <span className="nota">{COPY_ZONAS_DEL_BUSCADOR.queFiltra}</span>
+          </div>
+        ) : null}
         {busqueda.tipo === 'buscando' ? <Cargando /> : null}
         {busqueda.tipo === 'falla' ? (
           <Aviso tipo="error">

@@ -45,3 +45,15 @@ test('TEST-EDP-022 · el orden marcado se respeta y nada entra sin «Agregar»',
   // Una prescripción que no se entiende no se aplica.
   assert.match(BUSCADOR, /if \(lectura && !lectura\.ok\) return;/);
 });
+
+test('ED-21 · los chips por zona salen de lo encontrado y filtran sin perder ninguno que nombre una elegida', async () => {
+  const Z = await import('../src/app/pro/advisees/training/varios-a-la-vez.ts');
+  const orden = (z) => ['pectoral', 'dorsal', 'cuadriceps'].indexOf(z);
+  const r = (id, zonas) => ({ id, muscleZones: zonas.map((zoneId, n) => ({ zoneId, role: n === 0 ? 'PRIMARY' : 'SECONDARY' })) });
+  const encontrados = [r('a', ['cuadriceps']), r('b', ['dorsal', 'pectoral']), r('c', []), r('d', ['pectoral'])];
+  assert.deepEqual(Z.zonasDeLosResultados(encontrados, orden), ['pectoral', 'dorsal', 'cuadriceps']);
+  assert.deepEqual(Z.conLasZonas(encontrados, []).map((x) => x.id), ['a', 'b', 'c', 'd']);
+  // Una zona secundaria también cuenta; los elegidos se suman (o), no se cruzan (y).
+  assert.deepEqual(Z.conLasZonas(encontrados, ['pectoral']).map((x) => x.id), ['b', 'd']);
+  assert.deepEqual(Z.conLasZonas(encontrados, ['pectoral', 'cuadriceps']).map((x) => x.id), ['a', 'b', 'd']);
+});
