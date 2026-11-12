@@ -16045,3 +16045,51 @@ p.cifra-del-espacio__desglose {
   flex-basis: 100%;
   gap: 0.25rem;
 }
+
+/* ED-23 · La planilla de series: la casilla de cada serie, la barra de las elegidas y el valor propio con su punto. */
+.series-del-editor__columna-elegir,
+.series-del-editor__elegir {
+  width: 2.75rem;
+  text-align: center;
+}
+
+.series-del-editor__elegir input {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.series-del-editor tr[data-elegida] {
+  background: var(--fondo-suave);
+}
+
+.series-del-editor__elegidas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+}
+
+.series-del-editor__elegidas .campo__error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Lo propio de la serie lleva un punto, además del tono: lo heredado va tenue (con «toma … de lo general» para el lector). */
+.celda-de-objetivo[data-estado='propio'] {
+  position: relative;
+}
+
+.celda-de-objetivo[data-estado='propio']::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0.35rem;
+  inset-inline-start: 0.3rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--texto);
+}

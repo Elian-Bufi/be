@@ -21,7 +21,8 @@ test('TEST-EDP-011 · un solo botón principal por cuadro, y el cajón es su for
 
 test('TEST-EDP-011 · el foco entra al título (o a lo pedido) y el diálogo nativo modal lo devuelve al cerrar', () => {
   assert.match(CUADRO, /d\.showModal\(\);/);
-  assert.match(CUADRO, /\(focoInicial\?\.current \?\? tituloRef\.current\)\?\.focus\(/);
+  // ED-23: una confirmación que hace perder algo entra por «Cancelar».
+  assert.match(CUADRO, /\(\(focoEnCancelar \? cancelarRef\.current : null\) \?\? focoInicial\?\.current \?\? tituloRef\.current\)\?\.focus\(/);
   assert.match(CUADRO, /<h2 id=\{`\$\{id\}-titulo`\} ref=\{tituloRef\} tabIndex=\{-1\}>/);
 });
 

@@ -40,7 +40,7 @@ import {
   type ImagenDeEjercicio,
   type OpcionDeLaCelda,
 } from '@be/domain';
-import { useEffect, useId, useState, type ComponentProps } from 'react';
+import { useEffect, useId, useState, type ComponentProps, type KeyboardEvent } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
 import { Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
@@ -50,6 +50,8 @@ import { COPY_DE_LOS_EDITORES as EDICION, sinLaSerie } from '../editar-la-estruc
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
+import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
+import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 export type BloqueE = Bloques[number];
@@ -355,6 +357,42 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
   const descansoGeneral = valido(p.restSeconds) ? textoDeSegundos(p.restSeconds) : null;
   const S = COPY_ENTRENAMIENTO.serie;
   const cambiarLaSerie = (n: number, f: (s: Serie) => Serie) => onCambiar({ sets: p.sets.map((x, m) => (m === n ? f(x) : x)) });
+  // ED-23: las series elegidas, para escribirles un valor o devolverlas a lo general; y la serie que se va a quitar.
+  const [elegidas, setElegidas] = useState<ReadonlySet<number>>(new Set());
+  const [campo, setCampo] = useState<ObjetivoDeLaSerie>('restSeconds');
+  const [valor, setValor] = useState('');
+  const [noSeEntiende, setNoSeEntiende] = useState(false);
+  const [quitando, setQuitando] = useState<number | null>(null);
+  const elegir = (n: number) =>
+    setElegidas((e) => {
+      const x = new Set(e);
+      if (!x.delete(n)) x.add(n);
+      return x;
+    });
+  const escribirEnLasElegidas = () => {
+    const leido = campo === 'restSeconds' ? leerDescanso(valor) : leerNumero(valor);
+    if (leido === null) return setNoSeEntiende(true);
+    setNoSeEntiende(false);
+    onCambiar({ sets: escribirEnLasSeries(p.sets, elegidas, campo, campo === 'suggestedLoad' ? { value: leido, unit: unidad } : leido) });
+  };
+  /** TEST-EDP-056: con valores propios, quitar los nombra antes y pide confirmar; sin ellos, quita. */
+  const pedirQuitar = (n: number) => {
+    if (loQueSePierdeAlQuitarLaSerie(p.sets, n)) return setQuitando(n);
+    quitar(n);
+  };
+  const quitar = (n: number) => {
+    setElegidas(new Set());
+    setQuitando(null);
+    onCambiar({ sets: sinLaSerie(p.sets, n) });
+  };
+  /** Ctrl+D (o Cmd+D): la celda toma el valor de la serie de arriba. */
+  const alTeclear = (e: KeyboardEvent) => {
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'd') return;
+    const celda = celdaDeLaPlanilla((e.target as HTMLElement).id, id);
+    if (!celda || celda.serie === 0) return;
+    e.preventDefault();
+    onCambiar({ sets: copiarHaciaAbajo(p.sets, celda.serie, celda.campo) });
+  };
   /** Cambia un objetivo de una serie con sus tres estados: `undefined` quita la clave (la serie toma de lo general). */
   const cambiarElObjetivo = (n: number, campo: 'rir' | 'suggestedLoad' | 'restSeconds', valor: unknown) =>
     cambiarLaSerie(n, (x) => {
@@ -368,10 +406,57 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
       {p.sets.length === 0 ? (
         <p className="nota">{C.sinSeries}</p>
       ) : (
-        <table className="tabla series-del-editor">
+        <>
+        {elegidas.size > 0 ? (
+          <div className="series-del-editor__elegidas" role="group" aria-label={PL.elegidas(elegidas.size)} data-series-elegidas={elegidas.size}>
+            <strong>{PL.elegidas(elegidas.size)}</strong>
+            <label>
+              <span className="visualmente-oculto">{PL.campo}</span>
+              <select value={campo} onChange={(e) => setCampo(e.target.value as ObjetivoDeLaSerie)}>
+                <option value="restSeconds">{COPY_ENTRENAMIENTO.descanso}</option>
+                <option value="suggestedLoad">{C.cargaSugerida}</option>
+                {conRir ? <option value="rir">{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</option> : null}
+              </select>
+            </label>
+            <label>
+              <span className="visualmente-oculto">{PL.valor}</span>
+              <input
+                className="celda-de-serie"
+                value={valor}
+                placeholder={campo === 'restSeconds' ? '02:00' : ''}
+                aria-invalid={noSeEntiende || undefined}
+                onChange={(e) => setValor(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    escribirEnLasElegidas();
+                  }
+                }}
+              />
+            </label>
+            <button type="button" className="boton boton--secundario boton--compacto" onClick={escribirEnLasElegidas} data-escribir-en-las-elegidas>
+              {PL.escribir}
+            </button>
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => onCambiar({ sets: volverALoGeneral(p.sets, elegidas) })} data-volver-a-lo-general>
+              {PL.volverALoGeneral}
+            </button>
+            <button type="button" className="boton boton--enlace" onClick={() => setElegidas(new Set())}>
+              {PL.soltar}
+            </button>
+            {noSeEntiende ? (
+              <p className="campo__error" role="alert">
+                {PL.noSeEntiende}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        <table className="tabla series-del-editor" onKeyDown={alTeclear}>
           <caption className="visualmente-oculto">Las series de {nombre}, con el objetivo que recibe la persona en cada una</caption>
           <thead>
             <tr>
+              <th scope="col" className="series-del-editor__columna-elegir">
+                <span className="visualmente-oculto">Elegir</span>
+              </th>
               <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</th>
               <th scope="col">
                 Repeticiones <span className="nota">8 u 8-12</span>
@@ -397,7 +482,10 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
           </thead>
           <tbody>
             {p.sets.map((s, n) => (
-              <tr key={n} data-serie={n + 1}>
+              <tr key={n} data-serie={n + 1} data-elegida={elegidas.has(n) ? '' : undefined}>
+                <td className="series-del-editor__elegir">
+                  <input type="checkbox" checked={elegidas.has(n)} onChange={() => elegir(n)} aria-label={PL.elegir(n + 1)} />
+                </td>
                 <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
                   {n + 1}
                 </th>
@@ -462,7 +550,7 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
                     aria-label={`${EDICION.quitarLaSerie(n)} de ${nombre}`}
                     title={EDICION.quitarLaSerie(n)}
                     data-quitar-serie={n + 1}
-                    onClick={() => onCambiar({ sets: sinLaSerie(p.sets, n) })}
+                    onClick={() => pedirQuitar(n)}
                   >
                     <Icono nombre="cerrar" tamano={18} />
                   </button>
@@ -471,13 +559,27 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
             ))}
           </tbody>
         </table>
+        </>
       )}
+      {/* TEST-EDP-056: lo que se pierde se dice antes, con «Cancelar» enfocado; cancelar no toca nada. */}
+      <CuadroEnfocado
+        abierto={quitando !== null}
+        forma="dialogo"
+        titulo={PL.quitarTitulo((quitando ?? 0) + 1)}
+        sobretitulo={nombre}
+        focoEnCancelar
+        principal={{ texto: PL.quitar((quitando ?? 0) + 1), alTocar: () => quitando !== null && quitar(quitando) }}
+        onCerrar={() => setQuitando(null)}
+      >
+        <p data-lo-que-se-pierde>{quitando !== null ? loQueSePierdeAlQuitarLaSerie(p.sets, quitando) : null}</p>
+      </CuadroEnfocado>
       <div className="ejercicio-del-editor__pie-de-series">
         {/* Una serie nueva copia las repeticiones de la anterior; sus objetivos propios no se copian: toma de lo general. */}
         <button type="button" className="boton boton--secundario" data-agregar-serie onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
           <Icono nombre="mas" tamano={18} />
           Agregar serie
         </button>
+        {p.sets.length > 0 ? <p className="nota">{PL.atajo}</p> : null}
         {p.sets.length > 0 ? <p className="nota">En gris, lo que la serie toma de lo general. Escribí un valor para que tenga el suyo, o elegí «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» con la flecha de la celda. Es lo que recibe la persona.</p> : null}
       </div>
     </div>

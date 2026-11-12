@@ -49,6 +49,7 @@ export function CuadroEnfocado({
   principal = null,
   pie = null,
   ancho = false,
+  focoEnCancelar = false,
   className = '',
   onCerrar,
   children,
@@ -69,6 +70,8 @@ export function CuadroEnfocado({
   pie?: ReactNode;
   /** Un diálogo con más para leer: más ancho. */
   ancho?: boolean;
+  /** Una confirmación que hace perder algo (ED-23): el foco entra en «Cancelar». */
+  focoEnCancelar?: boolean;
   className?: string;
   onCerrar: () => void;
   children?: ReactNode;
@@ -76,6 +79,7 @@ export function CuadroEnfocado({
   const ref = useRef<HTMLDialogElement>(null);
   const tituloRef = useRef<HTMLHeadingElement>(null);
   const seguirRef = useRef<HTMLButtonElement>(null);
+  const cancelarRef = useRef<HTMLButtonElement>(null);
   const [preguntando, setPreguntando] = useState(false);
   const id = useId();
 
@@ -85,7 +89,7 @@ export function CuadroEnfocado({
     if (abierto && !d.open) {
       d.showModal();
       setPreguntando(false);
-      (focoInicial?.current ?? tituloRef.current)?.focus({ preventScroll: true });
+      ((focoEnCancelar ? cancelarRef.current : null) ?? focoInicial?.current ?? tituloRef.current)?.focus({ preventScroll: true });
     }
     if (!abierto && d.open) d.close();
     // `focoInicial` es una referencia: no cambia entre un dibujo y otro.
@@ -155,7 +159,7 @@ export function CuadroEnfocado({
           {pie}
           {principal ? (
             <div className="acciones">
-              <button type="button" className="boton boton--enlace" onClick={pedirCerrar} disabled={ocupado}>
+              <button ref={cancelarRef} type="button" className="boton boton--enlace" onClick={pedirCerrar} disabled={ocupado} data-cancelar-del-cuadro>
                 {COPY_CUADRO_ENFOCADO.cancelar}
               </button>
               {principal.apagado ? (

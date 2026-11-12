@@ -251,7 +251,9 @@ test('TB-48 · se quita cualquier serie, también una del medio, y las demás co
   assert.deepEqual(X.sinLaSerie(series, 0), [series[1], series[2]]);
   assert.equal(series.length, 3, 'no cambia la lista que recibe');
   const ejercicio = leer('training/ejercicio-del-editor.tsx');
-  assert.match(ejercicio, /data-quitar-serie=\{n \+ 1\}\s+onClick=\{\(\) => onCambiar\(\{ sets: sinLaSerie\(p\.sets, n\) \}\)\}/);
+  // ED-23: con valores propios, pide confirmar antes (TEST-EDP-056); después quita con la misma operación.
+  assert.match(ejercicio, /data-quitar-serie=\{n \+ 1\}\s+onClick=\{\(\) => pedirQuitar\(n\)\}/);
+  assert.match(ejercicio, /onCambiar\(\{ sets: sinLaSerie\(p\.sets, n\) \}\);/);
   assert.match(ejercicio, /aria-label=\{`\$\{EDICION\.quitarLaSerie\(n\)\} de \$\{nombre\}`\}/);
   assert.doesNotMatch(ejercicio, /Quitar la última serie|slice\(0, -1\)/);
 });
