@@ -741,3 +741,38 @@ test('TEST-AV2-005 · la etiqueta de estado no tiene borde ni parece un botón; 
   const vivo = archivosDeLaApk().map((a) => readFileSync(a, 'utf8'));
   assert.ok(vivo.every((c) => !/<Insignia[^>]*\bpositiva\b/.test(c)), 'nadie pide la etiqueta verde');
 });
+
+// ─── TEST-AV2-006 · la cabecera (AV2-05) ────────────────────────────────────────────────────────
+
+test('TEST-AV2-006 · la campana: un punto sin número, y el número en el nombre para el lector', () => {
+  const cabecera = sinComentarios(leer('cabecera.tsx'));
+  // El nombre accesible: «Novedades, 47 sin leer» con 47, «Novedades» sin ninguna (el lector agrega «botón»).
+  const nombre = /accessibilityLabel=\{(sinLeer \? `Novedades, \$\{sinLeer\} sin leer` : 'Novedades')\}/.exec(cabecera);
+  assert.ok(nombre, 'el número en el nombre de la campana');
+  const nombreCon = (sinLeer) => (sinLeer ? `Novedades, ${sinLeer} sin leer` : 'Novedades');
+  assert.equal(nombreCon(47), 'Novedades, 47 sin leer');
+  assert.equal(nombreCon(0), 'Novedades');
+  assert.equal(nombreCon(null), 'Novedades');
+  // El punto: 8 dp en el acento, solo con algo sin leer, y el lector no lo recorre aparte.
+  assert.match(cabecera, /\{sinLeer \? <View style=\{estilos\.punto\} accessible=\{false\} importantForAccessibility="no-hide-descendants" \/> : null\}/);
+  assert.match(cabecera, /punto: \{[^}]*width: 8, height: 8, borderRadius: 4, backgroundColor: COLOR\.acento \}/);
+  // Dentro de la campana no hay texto: ni el número ni «99+».
+  // Lo que hay adentro de la campana: desde el final de su etiqueta de apertura hasta su cierre.
+  const apertura = cabecera.indexOf('accessibilityLabel={sinLeer');
+  const campana = cabecera.slice(cabecera.indexOf('presionado]}>', apertura), cabecera.indexOf('</Pressable>', apertura));
+  assert.doesNotMatch(campana, /<Text|99\+|\{sinLeer\}/, 'la campana no dibuja el número');
+});
+
+test('TEST-AV2-006 · la cabecera: transparente, una fila de 48 dp, el logo con nombre en las raíces, «Volver» en un detalle y el ambiente', () => {
+  const cabecera = sinComentarios(leer('cabecera.tsx'));
+  assert.match(cabecera, /cabecera: \{ paddingTop: Constants\.statusBarHeight \+ 2 \},/, 'sin fondo ni línea abajo');
+  assert.match(cabecera, /fila: \{[^}]*minHeight: 48/);
+  assert.match(cabecera, /\{volverA \? \([\s\S]*?\) : conLogo \? \(\s*<Logo \/>\s*\) : null\}/, 'a la izquierda: «Volver» en un detalle o el logo en una raíz');
+  assert.match(cabecera, /<View style=\{estilos\.logo\} accessible accessibilityLabel="BE">/, 'el logo es accesible y se llama «BE»');
+  assert.doesNotMatch(cabecera, />\s*BE\s*</, 'sin el texto «BE» a la vista');
+  assert.match(cabecera, /<Svg [^>]*accessible=\{false\} importantForAccessibility="no-hide-descendants"/, 'el brillo no se lee');
+  assert.match(cabecera, /Ambiente de prueba · solo datos sintéticos/, 'el ambiente sigue a la vista (08 §33)');
+  assert.match(cabecera, /ambiente: \{[^}]*color: COLOR\.tenue/);
+  const app = sinComentarios(readFileSync(join(RAIZ, 'apps/mobile/App.tsx'), 'utf8'));
+  assert.match(app, /conLogo=\{raiz\}/, 'el logo, solo en las cinco raíces');
+});

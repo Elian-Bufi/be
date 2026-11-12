@@ -545,6 +545,7 @@ function Contenido() {
       <FondoDeLaApp />
       <Cabecera
         volverA={recuperacion || raiz ? null : anterior(ruta)}
+        conLogo={raiz}
         conSesion={conSesion}
         actualizando={hayActualizaciones && sesion !== null}
         volver={volverConCuidado}
