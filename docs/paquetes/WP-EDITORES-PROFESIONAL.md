@@ -1914,6 +1914,16 @@ EDT-21 a EDT-34 (§6.3), a ratificar.
 | ED-14 | f60a8520 | «Lo que llevás armado», al costado de cada paso del asistente |
 | ED-21 | c53087e5 | Los chips por zona sobre lo encontrado |
 
+**Lo que corrigió la revisión de la etapa 3 (2026-11-12):**
+
+| Parte | Commit | Lo que se corrigió |
+|---|---|---|
+| ED-32 y ED-33 | af4382cc | La receta nueva llega a una comida recién creada aunque el autoguardado le haya dado identidad con el cuadro abierto; la receta (nueva o elegida) ocupa la «Opción 1» sin tocar de una comida nueva, en vez de dejar una opción vacía que impedía activar; se suma sobre la estructura de ahora, sin perder los identificadores de un guardado que llegó en el medio |
+| ED-40 | d2fcac1f | La falta en las preguntas abre las partes como estado: al marcar una casilla, la tabla ya no se pliega con el foco adentro (2.4.3). Plegada, una parte deja a la vista la pregunta que no viene pedida y su aviso (maqueta 13) |
+| ED-30 y ED-21 | dcee974f | AA de contraste: la nota del día tipo elegido (11,9:1 en Claro y 10,3:1 en Azul noche) y el borde del chip de zona (3,4:1 y 6,3:1) |
+| ED-23 | 1c1f64f6 | La vista previa de la copia no dice «las 0 series», cuenta la base de la carga y de las repeticiones, y dice en singular una sola cosa |
+| ED-31 | ac9f8075 | El total de la opción se lee con los nombres completos (maqueta 08); las iniciales quedan a la vista |
+
 **Lo que queda, declarado:**
 - **De la API (la ventana del vie 20):** ED-13 (los presets propios de prescripción), ED-64, API-PLN-01 (con ella, los
   totales dejan de ser una estimación del editor y la composición de lo ya guardado llega con el plan), API-PLN-02 y 03
