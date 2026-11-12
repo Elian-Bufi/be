@@ -1139,7 +1139,7 @@ export function RutinaDeLaSesion({
             <Text style={estilos.tituloDeBloque}>{`${numero(i + 1, 0)}. ${p.exerciseName}`}</Text>
             {r?.ejecutado ? <LineaDeLaSustitucion ejecutado={r.ejecutado} /> : null}
             {r ? <Text style={estilos.detalle}>{seriesYEscritas(r)}</Text> : null}
-            {esActivo ? <Insignia texto={e.ejercicioActivo} positiva /> : null}
+            {esActivo ? <Insignia texto={e.ejercicioActivo} /> : null}
             <Boton texto={e.verTecnica} tipo="enlace" onPress={() => onVerTecnica(p.prescriptionId)} />
             {esActivo ? null : <Boton texto={e.pasarAEsteEjercicio} tipo="secundario" onPress={() => onPasarA(p.prescriptionId)} deshabilitado={!puedeCambiar} />}
           </View>

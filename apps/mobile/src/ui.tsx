@@ -5,13 +5,23 @@
  * Desde PA-06 (2026-11-02) las piezas aceptan un ícono de la familia (`icono`, de `icono.tsx`): acompaña al texto, que
  * sigue diciendo todo, y el lector de pantalla no lo recorre. Los glifos de texto (la tilde, el aviso, las flechas)
  * pasaron a ser íconos.
+ *
+ * Desde DL-170 (WP-APP-VUELTA-2, AV2-04):
+ * - Seccion, Tarjeta y el aviso informativo son de vidrio por nivel (`vidrio.tsx`), y proveen su nivel a lo de adentro;
+ *   el botón secundario y los Segmentos, dentro de una tarjeta, son de nivel 2. Con el vidrio apagado, como siempre.
+ * - El botón principal, con el vidrio, va en degradé con un resplandor quieto, solo si está habilitado.
+ * - El cian, solo para lo que se toca: los íconos decorativos de Parrafo, Seccion, Desplegable y Aviso van en `tenue`;
+ *   la etiqueta de estado es neutra, rellena y sin borde (no parece un botón), y la tilde en `exito` va solo con lo que
+ *   la persona hizo (`hecha`); el enlace con flecha no lleva subrayado.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
 import { BotonDeIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
 import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
-import { COLOR, estilosPorTema } from './tema';
+import { estiloDeLaEtiqueta, subrayadoDelEnlace } from './receta-de-vidrio';
+import { COLOR, estilosPorTema, PALETAS } from './tema';
+import { DentroDelNivel, useBotonPrincipal, useSuperficie, useSuperficieDeControl, useVidrio } from './vidrio';
 
 // Los colores viven en tema.ts, donde los verifica la prueba de contraste; se reexportan para las pantallas.
 export { COLOR, estilosPorTema } from './tema';
@@ -50,8 +60,9 @@ export function Cifra({ valor, unidad, tamano = 18 }: { valor: string; unidad?: 
 }
 
 /**
- * Un párrafo. Con `icono`, el ícono de la familia va antes del texto, en su mismo tono, y solo acompaña: la fecha con
- * el calendario, un aviso de ambiente con la «i». El lector lee el texto, no el ícono.
+ * Un párrafo. Con `icono`, el ícono de la familia va antes del texto y solo acompaña: la fecha con el calendario, un
+ * aviso de ambiente con la «i». Es decorativo: va en `tenue` (DL-170: el cian, solo para lo que se toca). El lector lee
+ * el texto, no el ícono.
  */
 export function Parrafo({ children, tenue = false, icono }: { children: ReactNode; tenue?: boolean; icono?: NombreDeIcono }) {
   const texto = <Text style={[estilos.parrafo, tenue && estilos.tenue, icono ? estilos.textoConIconoAlLado : null]}>{children}</Text>;
@@ -59,7 +70,7 @@ export function Parrafo({ children, tenue = false, icono }: { children: ReactNod
   return (
     <View style={estilos.parrafoConIcono}>
       <View style={estilos.iconoDelParrafo}>
-        <Icono nombre={icono} tamano={18} tono={tenue ? 'tenue' : 'acento'} />
+        <Icono nombre={icono} tamano={18} tono="tenue" />
       </View>
       {texto}
     </View>
@@ -80,6 +91,10 @@ const TONO_DEL_BOTON: Readonly<Record<TipoDeBoton, TonoDeIcono>> = {
 /**
  * Un botón con su texto y, si hace falta, un ícono de la familia antes del texto (o después, con `iconoAlFinal`: la
  * flecha de «Siguiente»). Nunca una tilde de aprobado: un botón hace algo, no califica.
+ * - Con el vidrio (DL-170), el principal va en degradé, con radio 14 y un resplandor quieto solo si está habilitado; el
+ *   secundario, dentro de una tarjeta, es de nivel 2.
+ * - Un enlace con flecha (`icono="derecha"` al final) no lleva subrayado: el chevron de 18 dp va pegado al texto y ya
+ *   dice «enlace». Sin flecha, dentro de un texto, sí. El lector lo lee como enlace en los dos casos.
  */
 export function Boton({
   texto,
@@ -104,8 +119,14 @@ export function Boton({
   /** El nombre para el lector cuando el texto solo no alcanza: «Cambiar» se lee «Cambiar Sentadilla goblet». */
   etiqueta?: string;
 }) {
-  const textoDelBoton = <Text style={[estilos.textoBoton, estilos[`textoBoton_${tipo}`], icono ? estilos.textoConIcono : null]}>{texto}</Text>;
-  const dibujo = icono ? <Icono nombre={icono} tamano={20} tono={TONO_DEL_BOTON[tipo]} /> : null;
+  const conFlecha = tipo === 'enlace' && icono === 'derecha' && iconoAlFinal;
+  const subrayado = tipo === 'enlace' && subrayadoDelEnlace(conFlecha) === 'underline';
+  const habilitado = !(deshabilitado || ocupado);
+  // Con el vidrio apagado, los dos son `null` y el botón es el de siempre.
+  const principal = useBotonPrincipal(habilitado);
+  const control = useSuperficieDeControl();
+  const textoDelBoton = <Text style={[estilos.textoBoton, estilos[`textoBoton_${tipo}`], subrayado && estilos.subrayado, icono ? estilos.textoConIcono : null]}>{texto}</Text>;
+  const dibujo = icono ? <Icono nombre={icono} tamano={conFlecha ? 18 : 20} tono={TONO_DEL_BOTON[tipo]} /> : null;
   return (
     <Pressable
       accessibilityRole={tipo === 'enlace' ? 'link' : 'button'}
@@ -113,10 +134,17 @@ export function Boton({
       accessibilityState={{ disabled: deshabilitado || ocupado, busy: ocupado, ...(seleccionado === undefined ? {} : { selected: seleccionado }) }}
       disabled={deshabilitado || ocupado}
       onPress={onPress}
-      style={({ pressed }) => [estilos.boton, estilos[`boton_${tipo}`], (deshabilitado || ocupado) && estilos.deshabilitado, pressed && estilos.presionado]}
+      style={({ pressed }) => [
+        estilos.boton,
+        estilos[`boton_${tipo}`],
+        tipo === 'primario' ? principal : null,
+        tipo === 'secundario' ? control : null,
+        (deshabilitado || ocupado) && estilos.deshabilitado,
+        pressed && estilos.presionado,
+      ]}
     >
       {dibujo ? (
-        <View style={estilos.contenidoDeBoton}>
+        <View style={[estilos.contenidoDeBoton, conFlecha && estilos.contenidoDeEnlace]}>
           {iconoAlFinal ? null : dibujo}
           {textoDelBoton}
           {iconoAlFinal ? dibujo : null}
@@ -259,8 +287,10 @@ export function Segmentos<T extends string>({
   alElegir: (valor: T) => void;
   compactos?: boolean;
 }) {
+  // DL-170: dentro de una tarjeta con el vidrio, el contenedor es de nivel 2; la cápsula conserva su radio.
+  const control = useSuperficieDeControl();
   return (
-    <View style={[estilos.segmentos, compactos && estilos.segmentosCompactos]} accessibilityRole="radiogroup" accessibilityLabel={etiqueta}>
+    <View style={[estilos.segmentos, compactos && estilos.segmentosCompactos, control, control && (compactos ? estilos.radioCompacto : estilos.radioDeSegmentos)]} accessibilityRole="radiogroup" accessibilityLabel={etiqueta}>
       {opciones.map((o) => {
         const elegida = o.valor === valor;
         return (
@@ -497,39 +527,47 @@ export function Aviso({ tipo, titulo, icono, children }: { tipo: TipoDeAviso; ti
   useEffect(() => {
     if (titulo) AccessibilityInfo.announceForAccessibility(titulo);
   }, [titulo]);
+  // DL-170: el aviso informativo es de vidrio (nivel 1 suelto, nivel 2 dentro de una tarjeta); el de error y el de éxito
+  // conservan su fondo, que dice qué son.
+  const { estilo: superficie, nivel, prendido } = useSuperficie();
   const dibujo = icono === undefined ? ICONO_DEL_AVISO[tipo] : icono;
+  const cuerpo = (
+    <>
+      {titulo ? <Text style={estilos.negrita}>{titulo}</Text> : null}
+      {children}
+    </>
+  );
   return (
-    <View accessibilityRole={tipo === 'error' ? 'alert' : 'summary'} style={[estilos.aviso, estilos[`aviso_${tipo}`], dibujo ? estilos.avisoConIcono : null]}>
+    <View accessibilityRole={tipo === 'error' ? 'alert' : 'summary'} style={[estilos.aviso, estilos[`aviso_${tipo}`], tipo === 'info' && prendido ? superficie : null, dibujo ? estilos.avisoConIcono : null]}>
       {dibujo ? (
         <View style={estilos.iconoDeAviso}>
-          <Icono nombre={dibujo} tamano={20} tono={tipo === 'error' ? 'error' : tipo === 'exito' ? 'exito' : 'acento'} />
+          <Icono nombre={dibujo} tamano={20} tono={tipo === 'error' ? 'error' : tipo === 'exito' ? 'exito' : 'tenue'} />
         </View>
       ) : null}
-      <View style={dibujo ? estilos.cuerpoDeAviso : null}>
-        {titulo ? <Text style={estilos.negrita}>{titulo}</Text> : null}
-        {children}
-      </View>
+      <View style={dibujo ? estilos.cuerpoDeAviso : null}>{tipo === 'info' ? <DentroDelNivel nivel={nivel}>{cuerpo}</DentroDelNivel> : cuerpo}</View>
     </View>
   );
 }
 
 export function Seccion({ titulo, children, peligro = false, icono }: { titulo: string; children: ReactNode; peligro?: boolean; icono?: NombreDeIcono }) {
+  // DL-170: de vidrio, del nivel que le toca; lo de adentro baja un nivel. Con el vidrio apagado, la superficie de siempre.
+  const { estilo, nivel } = useSuperficie();
   const encabezado = (
     <Text style={[estilos.tituloDeSeccion, icono ? estilos.tituloConIcono : null]} accessibilityRole="header">
       {titulo}
     </Text>
   );
   return (
-    <View style={[estilos.seccion, peligro && estilos.seccionPeligro]}>
+    <View style={[estilos.seccion, estilo, peligro && estilos.seccionPeligro]}>
       {icono ? (
         <View style={estilos.cabezaConIcono}>
-          <Icono nombre={icono} tamano={20} tono={peligro ? 'error' : 'acento'} />
+          <Icono nombre={icono} tamano={20} tono={peligro ? 'error' : 'tenue'} />
           {encabezado}
         </View>
       ) : (
         encabezado
       )}
-      {children}
+      <DentroDelNivel nivel={nivel}>{children}</DentroDelNivel>
     </View>
   );
 }
@@ -543,9 +581,17 @@ export function Subtitulo({ children }: { children: ReactNode }) {
   );
 }
 
-/** Un ítem de lista o un bloque autocontenido dentro de una sección. */
+/**
+ * Un ítem de lista o un bloque autocontenido. Suelta es de nivel 1; dentro de una sección, de nivel 2, sin sombra
+ * (DL-170). Con el vidrio apagado, la superficie de siempre.
+ */
 export function Tarjeta({ children }: { children: ReactNode }) {
-  return <View style={estilos.tarjeta}>{children}</View>;
+  const { estilo, nivel } = useSuperficie();
+  return (
+    <View style={[estilos.tarjeta, estilo]}>
+      <DentroDelNivel nivel={nivel}>{children}</DentroDelNivel>
+    </View>
+  );
 }
 
 /**
@@ -606,17 +652,19 @@ export function Desplegable({
   children: ReactNode;
 }) {
   const [abierto, setAbierto] = useState(abiertoAlInicio);
+  // DL-170: con el vidrio, el separador es el borde de luz; los íconos, en `tenue`.
+  const { prendido } = useVidrio();
   const seccion = variante === 'seccion';
   let plegado: ReactNode = null;
   if (abierto) plegado = variante === 'ayuda' ? <View style={estilos.cuerpoDeAyuda}>{children}</View> : children;
   return (
-    <View style={seccion ? estilos.desplegable : estilos.ayuda}>
+    <View style={seccion ? [estilos.desplegable, prendido && estilos.desplegableConVidrio] : estilos.ayuda}>
       <Pressable
         {...accesibilidadDelDesplegable(abierto, detalle ? `${titulo}. ${detalle}` : titulo)}
         onPress={() => setAbierto((a) => !a)}
         style={({ pressed }) => [seccion ? estilos.cabezaDeDesplegable : estilos.cabezaDeAyuda, pressed && estilos.presionado]}
       >
-        {icono ? <Icono nombre={icono} tamano={20} tono="acento" /> : null}
+        {icono ? <Icono nombre={icono} tamano={20} tono="tenue" /> : null}
         <View style={estilos.textoDeDesplegable}>
           <Text style={seccion ? estilos.tituloDeDesplegable : estilos.tituloDeAyuda}>{titulo}</Text>
           {detalle ? <Text style={estilos.tenue}>{detalle}</Text> : null}
@@ -630,15 +678,23 @@ export function Desplegable({
 
 /** La flecha de lo que se pliega: hacia abajo cerrado, hacia arriba abierto. Solo acompaña al estado que dice el lector. */
 function Chevron({ abierto }: { abierto: boolean }) {
-  return <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={24} tono="acento" />;
+  return <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={24} tono="tenue" />;
 }
 
-/** Estado en forma de insignia: el texto dice el estado; el color y el ícono solo acompañan (10-B10 §7). */
-export function Insignia({ texto, positiva = false, etiqueta, icono }: { texto: string; positiva?: boolean; etiqueta?: string; icono?: NombreDeIcono }) {
+/**
+ * La etiqueta de un estado (10-B10 §7; DL-170): el texto dice el estado, en `tenue`, y el ícono de 15 dp solo acompaña.
+ * Es neutra, rellena y sin borde, para que no se confunda con un botón: el relleno va sobre una tarjeta de nivel 1, y sin
+ * relleno directo sobre el fondo o dentro de un nivel 2 (`estiloDeLaEtiqueta`). Lo que la persona hizo («Realizada»,
+ * «Registrado», «Respondida») lleva la tilde en `exito` (`hecha`): se celebra lo hecho, y lo no hecho queda neutro, nunca
+ * en rojo. La tilde nunca va con un número ni con una medida del cuerpo (GUIA I.8).
+ */
+export function Insignia({ texto, hecha = false, etiqueta, icono }: { texto: string; hecha?: boolean; etiqueta?: string; icono?: NombreDeIcono }) {
+  const { tema, nivel } = useVidrio();
+  const dibujo: NombreDeIcono | undefined = hecha ? 'tilde' : icono;
   return (
-    <View style={[estilos.insignia, positiva && estilos.insigniaPositiva, icono ? estilos.insigniaConIcono : null]} accessible accessibilityLabel={etiqueta ? `${etiqueta}: ${texto}` : texto}>
-      {icono ? <Icono nombre={icono} tamano={15} tono={positiva ? 'exito' : 'tenue'} /> : null}
-      <Text style={[estilos.textoInsignia, positiva && estilos.textoInsigniaPositiva]}>{texto}</Text>
+    <View style={[estilos.insignia, estiloDeLaEtiqueta(PALETAS[tema], nivel), dibujo ? estilos.insigniaConIcono : null]} accessible accessibilityLabel={etiqueta ? `${etiqueta}: ${texto}` : texto}>
+      {dibujo ? <Icono nombre={dibujo} tamano={15} tono={hecha ? 'exito' : 'tenue'} /> : null}
+      <Text style={estilos.textoInsignia}>{texto}</Text>
     </View>
   );
 }
@@ -670,9 +726,13 @@ export const estilos = estilosPorTema((COLOR) => ({
   textoBoton_secundario: { color: COLOR.acento },
   textoBoton_peligro: { color: COLOR.peligroTexto },
   textoBoton_peligroSecundario: { color: COLOR.error },
-  textoBoton_enlace: { color: COLOR.acento, textDecorationLine: 'underline' },
+  textoBoton_enlace: { color: COLOR.acento },
+  // El subrayado, solo en un enlace sin flecha (DL-170): con la flecha, dos señales sobran.
+  subrayado: { textDecorationLine: 'underline' },
   // Con ícono: el ícono y el texto en una línea, centrados; el texto se parte si no entra.
   contenidoDeBoton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, maxWidth: '100%' },
+  // El chevron del enlace, pegado al texto.
+  contenidoDeEnlace: { gap: 2, justifyContent: 'flex-start' },
   textoConIcono: { flexShrink: 1 },
   contenidoDeOpcion: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, maxWidth: '100%' },
   deshabilitado: { opacity: 0.6 },
@@ -689,6 +749,9 @@ export const estilos = estilosPorTema((COLOR) => ({
   textoDeSegmentoElegido: { fontWeight: '800', color: COLOR.botonTexto },
   // Compactas: del ancho de sus opciones, más chicas y sin margen propio; el área de toque llega a 48 con `hitSlop`.
   segmentosCompactos: { alignSelf: 'flex-start', gap: 2, marginVertical: 0, borderRadius: 23 },
+  // Con el vidrio, el contenedor toma la superficie de nivel 2 y conserva su forma de cápsula.
+  radioDeSegmentos: { borderRadius: 27 },
+  radioCompacto: { borderRadius: 23 },
   segmentoCompacto: { flexGrow: 0, minHeight: 40, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
   textoDeSegmentoCompacto: { fontSize: 14 },
   // De borde a borde: la pantalla tiene 20 dp de relleno a cada lado (App.tsx), y la fila lo ocupa.
@@ -741,16 +804,16 @@ export const estilos = estilosPorTema((COLOR) => ({
   etiquetaEnFila: { flex: 1 },
   valorDeDato: { fontSize: 16, lineHeight: 22, color: COLOR.texto },
   valorEnFila: { flexShrink: 0, maxWidth: '55%', textAlign: 'right' },
-  insignia: { alignSelf: 'flex-start', borderWidth: 2, borderColor: COLOR.tenue, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
-  insigniaPositiva: { borderColor: COLOR.exito },
+  // La etiqueta de estado (DL-170): sin borde; el relleno lo pone `estiloDeLaEtiqueta`, según dónde está.
+  insignia: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
   textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
-  textoInsigniaPositiva: { color: COLOR.exito },
   insigniaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ayuda: { marginTop: 4 },
   cabezaDeAyuda: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8 },
   tituloDeAyuda: { flex: 1, fontSize: 15, fontWeight: '700', color: COLOR.acento },
   cuerpoDeAyuda: { borderLeftWidth: 3, borderLeftColor: COLOR.borde, paddingLeft: 10, marginBottom: 6 },
   desplegable: { borderTopWidth: 1, borderTopColor: COLOR.borde, marginTop: 8 },
+  desplegableConVidrio: { borderTopColor: COLOR.vidrioFilo },
   cabezaDeDesplegable: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 8 },
   textoDeDesplegable: { flex: 1 },
   tituloDeDesplegable: { fontSize: 16, fontWeight: '700', color: COLOR.texto },

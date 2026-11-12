@@ -694,3 +694,50 @@ test('TEST-AV2-004 · el fondo es el primer hijo de la raíz, fuera del desplaza
   assert.match(leer('barra-de-zonas.tsx'), /stopColor=\{COLOR\.fondoAbajo\.slice\(0, 7\)\}/);
   assert.doesNotMatch(leer('barra-de-zonas.tsx'), /COLOR\.fondo\.slice/);
 });
+
+// ─── TEST-AV2-005 · las piezas base (AV2-04) ────────────────────────────────────────────────────
+
+test('TEST-AV2-005 · el botón principal: degradé y radio 14 con el vidrio, y el resplandor quieto solo si está habilitado', () => {
+  for (const paleta of [AZUL, CLARO]) {
+    const habilitado = receta.botonPrincipal(paleta, { ...PRENDIDO, habilitado: true });
+    assert.equal(habilitado.experimental_backgroundImage, `linear-gradient(to bottom, ${paleta.botonFondo}, ${paleta.botonFondoFin})`);
+    assert.equal(habilitado.borderRadius, 14);
+    assert.equal(habilitado.borderColor, `${paleta.botonFondo.slice(0, 7)}00`, 'el borde de 2 dp, sin color: el alto no cambia');
+    assert.deepEqual(habilitado.boxShadow, [{ offsetX: 0, offsetY: 6, blurRadius: 18, color: paleta.resplandorPrimario }]);
+    const deshabilitado = receta.botonPrincipal(paleta, { ...PRENDIDO, habilitado: false });
+    assert.equal(deshabilitado.boxShadow, undefined, 'deshabilitado, sin resplandor');
+    assert.equal(deshabilitado.experimental_backgroundImage, habilitado.experimental_backgroundImage);
+  }
+  const ui = sinComentarios(leer('ui.tsx'));
+  assert.match(ui, /const habilitado = !\(deshabilitado \|\| ocupado\);\s*\n[\s\S]*?const principal = useBotonPrincipal\(habilitado\);/);
+  assert.match(ui, /tipo === 'primario' \? principal : null/);
+  assert.doesNotMatch(ui, /Animated\.(loop|timing)\([^)]*resplandor/i, 'el resplandor no pulsa');
+});
+
+test('TEST-AV2-005 · el enlace con flecha no lleva subrayado y sigue siendo un enlace; sin flecha, sí', () => {
+  assert.equal(receta.subrayadoDelEnlace(true), 'none');
+  assert.equal(receta.subrayadoDelEnlace(false), 'underline');
+  const ui = sinComentarios(leer('ui.tsx'));
+  assert.match(ui, /const conFlecha = tipo === 'enlace' && icono === 'derecha' && iconoAlFinal;/);
+  assert.match(ui, /const subrayado = tipo === 'enlace' && subrayadoDelEnlace\(conFlecha\) === 'underline';/);
+  assert.match(ui, /textoBoton_enlace: \{ color: COLOR\.acento \},/, 'el subrayado ya no viene con el estilo del enlace');
+  assert.match(ui, /tamano=\{conFlecha \? 18 : 20\}/, 'el chevron de 18 dp');
+  assert.match(ui, /accessibilityRole=\{tipo === 'enlace' \? 'link' : 'button'\}/, 'TalkBack lo lee como enlace');
+});
+
+test('TEST-AV2-005 · la etiqueta de estado no tiene borde ni parece un botón; la tilde en éxito, solo con lo hecho', () => {
+  for (const paleta of [AZUL, CLARO]) {
+    assert.deepEqual(receta.estiloDeLaEtiqueta(paleta, 1), { backgroundColor: paleta.etiquetaFondo, borderWidth: 0 });
+    for (const lugar of [0, 2, 3]) assert.match(receta.estiloDeLaEtiqueta(paleta, lugar).backgroundColor, /00$/i, `sin relleno en el lugar ${lugar}`);
+  }
+  const ui = sinComentarios(leer('ui.tsx'));
+  const estilo = /\n  insignia: \{([^}]*)\}/.exec(ui)[1];
+  assert.doesNotMatch(estilo, /border(Width|Color)/, 'sin borde');
+  assert.match(ui, /textoInsignia: \{ fontWeight: '700', color: COLOR\.tenue, fontSize: 15 \},/);
+  assert.match(ui, /const dibujo: NombreDeIcono \| undefined = hecha \? 'tilde' : icono;/);
+  assert.match(ui, /tono=\{hecha \? 'exito' : 'tenue'\}/);
+  assert.doesNotMatch(ui, /positiva/, 'la etiqueta ya no se pinta de verde');
+  // Las piezas que dicen lo hecho: la sesión realizada, la comida registrada y el formulario respondido.
+  const vivo = archivosDeLaApk().map((a) => readFileSync(a, 'utf8'));
+  assert.ok(vivo.every((c) => !/<Insignia[^>]*\bpositiva\b/.test(c)), 'nadie pide la etiqueta verde');
+});

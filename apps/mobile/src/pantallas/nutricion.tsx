@@ -248,7 +248,7 @@ function FilaDeRegistro({ registro, onAbrir }: { registro: RegistroDeComida; onA
     <Pressable accessibilityRole="button" accessibilityLabel={paraLeer} onPress={onAbrir} style={({ pressed }) => [s.fila, pressed && s.presionada]}>
       <View style={s.textosDeFila}>
         <View style={s.insignias}>
-          <Insignia texto={tipo} positiva={registro.kind === 'PLAN_OPTION'} />
+          <Insignia texto={tipo} />
           {deshecho ? <Insignia texto={COPY_REGISTRO_DE_COMIDAS.deshechoInsignia} /> : null}
         </View>
         <Text style={[s.item, deshecho && s.deshecho]}>{titulo}</Text>
@@ -326,7 +326,7 @@ function DetalleDeRegistro({
       <Titulo>{COPY_REGISTRO_DE_COMIDAS.detalleDeRegistro}</Titulo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
       <View style={s.insignias}>
-        <Insignia texto={deUnaOpcion ? COPY_NUTRICION.delPlan : COPY_REGISTRO_DE_COMIDAS.algoDiferente} positiva={deUnaOpcion} />
+        <Insignia texto={deUnaOpcion ? COPY_NUTRICION.delPlan : COPY_REGISTRO_DE_COMIDAS.algoDiferente} />
         {vigente ? null : <Insignia texto={COPY_REGISTRO_DE_COMIDAS.deshechoInsignia} />}
       </View>
       {registro.annulment ? <Aviso tipo="info" titulo={COPY_REGISTRO_DE_COMIDAS.deshechoEl(fecha(registro.annulment.annulledAt))} /> : null}

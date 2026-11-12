@@ -153,7 +153,7 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
                   <Tarjeta key={v.planId}>
                     <Parrafo>{v.professional.displayName}</Parrafo>
                     {v.activatedAt ? <Parrafo tenue>{dia(v.activatedAt)}</Parrafo> : null}
-                    {v.isEffective ? <Insignia texto={COPY_ENTRENAMIENTO.vigente} positiva /> : null}
+                    {v.isEffective ? <Insignia texto={COPY_ENTRENAMIENTO.vigente} /> : null}
                     <Boton texto={COPY_ENTRENAMIENTO.verElPlan} tipo="secundario" onPress={() => ir({ nombre: 'plan-de-entrenamiento', id: v.planId })} />
                   </Tarjeta>
                 ))
@@ -198,7 +198,7 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
       <Titulo>{COPY_ENTRENAMIENTO.planHistoricoTitulo}</Titulo>
       <Parrafo tenue>{plan.professional.displayName}</Parrafo>
       {plan.activatedAt ? <Parrafo tenue>{dia(plan.activatedAt)}</Parrafo> : null}
-      {plan.isEffective ? <Insignia texto={COPY_ENTRENAMIENTO.vigente} positiva /> : null}
+      {plan.isEffective ? <Insignia texto={COPY_ENTRENAMIENTO.vigente} /> : null}
       {/* La versión histórica se muestra tal como se aceptó: los nombres son los de su instantánea, no los del catálogo actual (REG-06-112). */}
       {sesiones.map((s) => (
         <Seccion key={s.sessionId} titulo={s.label}>

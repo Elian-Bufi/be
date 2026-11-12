@@ -683,7 +683,7 @@ function ComidaRegistrada({
             {!deUnaOpcion && registro.approximateQuantity ? (
               <Text style={estilos.posicion}>{`${COPY_REGISTRO_DE_COMIDAS.cantidadAproximadaInformada}: ${registro.approximateQuantity}`}</Text>
             ) : null}
-            <Insignia texto={COPY_REGISTRO_DE_COMIDAS.registrado} positiva etiqueta={comida.label} />
+            <Insignia texto={COPY_REGISTRO_DE_COMIDAS.registrado} hecha etiqueta={comida.label} />
           </View>
           {conImagen ? (
             <View style={apilada ? estilos.imagenApilada : estilos.imagenAlLado}>

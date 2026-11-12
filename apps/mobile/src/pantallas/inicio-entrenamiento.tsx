@@ -28,7 +28,7 @@ import { useLecturaRecordada } from '../lecturas';
 import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useAccesoRetirado, type Ir } from '../navegacion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
-import { sesionEnCursoParaMostrar } from '../sesion-en-curso';
+import { sesionEnCursoParaMostrar, sesionRealizada } from '../sesion-en-curso';
 import { actividadEnUnNumero, detalleDeLaSesion } from '../inicio-de-hoy';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { Aviso, Boton, Cifra, Desplegable, Insignia, Parrafo } from '../ui';
@@ -158,7 +158,7 @@ function SesionDeHoy({
   return (
     <View style={estilos.fila}>
       <Text style={estilos.nombre}>{o.plannedSession.label}</Text>
-      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
+      <Insignia texto={vista.texto} hecha={sesionRealizada(o.execution)} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {/* Otra sesión en curso: continuarla o dejarla incompleta; dejada incompleta, se vuelve a intentar iniciar esta. */}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}

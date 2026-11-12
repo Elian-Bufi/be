@@ -18,7 +18,7 @@
  */
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useApariencia } from './contexto-de-apariencia';
-import { botonPrincipal, nivelQueSigue, superficieDeVidrio, vidrioPrendido, type EstiloDelBotonPrincipal, type EstiloDeSuperficie, type NivelDeLaSuperficie, type NivelDelContexto } from './receta-de-vidrio';
+import { botonPrincipal, nivelDelControl, nivelQueSigue, superficieDeVidrio, vidrioPrendido, type EstiloDelBotonPrincipal, type EstiloDeSuperficie, type NivelDeLaSuperficie, type NivelDelContexto } from './receta-de-vidrio';
 import { PALETAS, type Tema } from './tema';
 
 export { RELLENO_DE_LA_TARJETA, RADIO_DE_LA_FICHA, RADIO_DE_LA_TARJETA } from './receta-de-vidrio';
@@ -72,6 +72,23 @@ export function useSuperficie(): { readonly estilo: EstiloDeSuperficie; readonly
     superficies.set(clave, estilo);
   }
   return { estilo, nivel, prendido };
+}
+
+/**
+ * La superficie de un control (el botón secundario, los Segmentos) con el vidrio prendido y dentro de una tarjeta, o
+ * `null`: fuera de toda tarjeta o con el vidrio apagado, el control se queda con su superficie opaca de siempre.
+ */
+export function useSuperficieDeControl(): EstiloDeSuperficie | null {
+  const { tema, prendido, activo, altoContraste, nivel: lugar } = useVidrio();
+  const nivel = nivelDelControl(lugar);
+  if (!prendido || nivel === null) return null;
+  const clave = `${tema}|${nivel}|${prendido}`;
+  let estilo = superficies.get(clave);
+  if (!estilo) {
+    estilo = superficieDeVidrio(PALETAS[tema], tema, nivel, { activo, altoContraste });
+    superficies.set(clave, estilo);
+  }
+  return estilo;
 }
 
 const botones = new Map<string, EstiloDelBotonPrincipal | null>();

@@ -74,7 +74,7 @@ import { IconoDeEjercicio, iconoDelEstado } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
-import { enCursoDeLaApi, enCursoEnElTelefono, otraSesionEnCurso, sesionEnCursoParaMostrar, type EnCurso } from '../sesion-en-curso';
+import { enCursoDeLaApi, enCursoEnElTelefono, otraSesionEnCurso, sesionEnCursoParaMostrar, sesionRealizada, type EnCurso } from '../sesion-en-curso';
 import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
   bandaDeLaSerie,
@@ -874,7 +874,7 @@ function TarjetaDeOcurrencia({
           <Parrafo tenue>{`${ejerciciosYSeries(o.plannedSession.prescriptions)}${deHoy ? '' : ` · ${fechaCivil(o.date)}`}`}</Parrafo>
         </View>
       </View>
-      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
+      <Insignia texto={vista.texto} hecha={sesionRealizada(o.execution)} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
       {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}

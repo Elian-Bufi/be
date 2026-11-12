@@ -238,7 +238,7 @@ function TarjetaDeVinculo({ v, onVer }: { v: Vinculo; onVer: () => void }) {
         <Text style={estilos.nombre}>{v.professional.displayName}</Text>
         <Dato etiqueta={COPY_VINCULO.alcance} valor={v.scope.label} />
         <Dato etiqueta={COPY_VINCULO.finalidad} valor={finalidad} />
-        <Insignia texto={e.estado} positiva={v.relationshipState === 'ACEPTADO'} etiqueta="Estado del vínculo" />
+        <Insignia texto={e.estado} etiqueta="Estado del vínculo" />
         {e.detalle ? <Parrafo>{e.detalle}</Parrafo> : null}
         <Dato etiqueta="Desde" valor={desde} />
         <Text style={estilos.enlace}>{COPY_VINCULO.verVinculo}</Text>

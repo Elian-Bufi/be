@@ -150,6 +150,13 @@ export function estiloDeLaEtiqueta(color: Paleta, contexto: NivelDelContexto): {
   return { backgroundColor: contexto === 1 ? color.etiquetaFondo : sinAlfa(color.etiquetaFondo), borderWidth: 0 };
 }
 
+/**
+ * El nivel de un control con superficie (el botón secundario, los Segmentos): dentro de una tarjeta, el que sigue; fuera
+ * de toda tarjeta, ninguno (`null`): un control suelto sobre el fondo no se vuelve una tarjeta con sombra, y se queda
+ * con su superficie opaca de siempre.
+ */
+export const nivelDelControl = (contexto: NivelDelContexto): NivelDeLaSuperficie | null => (contexto === 0 ? null : nivelQueSigue(contexto));
+
 /** El enlace con flecha no lleva subrayado (la flecha ya dice «enlace»: dos señales sobran); sin flecha, dentro de un texto, sí. */
 export const subrayadoDelEnlace = (conFlecha: boolean): 'none' | 'underline' => (conFlecha ? 'none' : 'underline');
 

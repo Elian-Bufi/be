@@ -120,7 +120,7 @@ export function PantallaDePrivacidad({
           {historial.estado.tipo === 'listo'
             ? historial.estado.items.map((acto) => (
                 <Tarjeta key={acto.consentId}>
-                  <Insignia texto={COPY_VINCULO.estadoDeConsentimiento[acto.state]} positiva={acto.state === 'ACTIVE'} etiqueta="Estado" />
+                  <Insignia texto={COPY_VINCULO.estadoDeConsentimiento[acto.state]} etiqueta="Estado" />
                   <Dato etiqueta="Otorgado" valor={fecha(acto.acceptedAt)} />
                   {acto.revokedAt ? <Dato etiqueta="Revocado" valor={fecha(acto.revokedAt)} /> : null}
                   <Dato etiqueta="Versión" valor={acto.consentVersionId} apilado />
@@ -211,7 +211,7 @@ export function TratamientoDeDatosDeSalud({
   if (actual?.state === 'ACTIVE') {
     return (
       <>
-        <Insignia texto="Otorgado" positiva etiqueta="Tratamiento de datos de salud" />
+        <Insignia texto="Otorgado" etiqueta="Tratamiento de datos de salud" />
         <Dato etiqueta="Desde" valor={fecha(actual.acceptedAt)} />
         <Dato etiqueta="Versión" valor={actual.consentVersionId} apilado />
         <Boton texto={COPY_VINCULO.revocarA3} tipo="peligroSecundario" onPress={revocar.abrir} />
@@ -286,7 +286,7 @@ function ConsentimientoAProfesional({
       <Text style={estilos.nombre}>{c.professional.displayName}</Text>
       <Dato etiqueta={COPY_VINCULO.alcance} valor={c.scope.label} />
       <Dato etiqueta={COPY_VINCULO.finalidad} valor={ETIQUETA_DE_FINALIDAD[c.purpose]} />
-      <Insignia texto={etiquetaDeConsentimiento(c.state, c.accessMode)} positiva={c.state === 'ACTIVE' && c.accessMode === 'CONTEXTUAL'} etiqueta="Consentimiento" />
+      <Insignia texto={etiquetaDeConsentimiento(c.state, c.accessMode)} etiqueta="Consentimiento" />
       <Dato etiqueta="Autorizado" valor={fecha(c.acceptedAt)} />
       {c.revokedAt ? <Dato etiqueta="Revocado" valor={fecha(c.revokedAt)} /> : null}
       <Dato etiqueta="Vínculo" valor={COPY_VINCULO.estadoDeVinculo[c.relationshipState]} />

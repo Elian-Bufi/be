@@ -12,8 +12,15 @@
  *
  * Es lógica pura: la lectura de la API y las sesiones del teléfono se pasan.
  */
-import type { SesionEnCurso } from '@be/domain';
+import type { Ocurrencia, SesionEnCurso } from '@be/domain';
 import { corridaAbierta, type Corrida } from './corrida-de-entrenamiento';
+
+/**
+ * Si la sesión quedó registrada como hecha: «Realizada» o «Realizada con desvío», con la condición que rige. Es lo que
+ * lleva la tilde en `exito` (DL-170): se celebra lo hecho; una «No realizada» queda neutra, nunca en rojo.
+ */
+export const sesionRealizada = (e: Pick<Ocurrencia['execution'], 'state' | 'sessionCondition'>): boolean =>
+  e.state === 'REGISTERED' && (e.sessionCondition === 'COMPLETED' || e.sessionCondition === 'COMPLETED_WITH_DEVIATION');
 
 /** La sesión en curso que se ofrece continuar o dejar incompleta. */
 export interface EnCurso {
