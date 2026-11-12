@@ -4,7 +4,8 @@
  * ED-22 (WP-EDITORES-PROFESIONAL) · La prescripción en una línea, en cada ejercicio de la estación: se escribe
  * «4×8-12 RIR 2 · 60 kg · 90 s», se ve la vista previa («Se lee: 4 series · 8 a 12 · RIR 2 · 60 kg · 1:30») y Enter la
  * aplica. Nunca adivina: lo que no entiende queda dicho y no se aplica nada. Lo que se pierde (series con valores propios,
- * un valor propio reemplazado) se dice en la vista previa, antes de Enter. La gramática está en «Atajos».
+ * un valor propio reemplazado, un criterio % RM que pasa a RIR) se dice en la vista previa, antes de Enter. La gramática
+ * está en «Cómo se lee el Plan».
  */
 import { aplicarPrescripcion, COPY_PRESCRIPCION_RAPIDA as C, leerPrescripcion, vistaPreviaDePrescripcion } from '@be/domain';
 import { useId, useState } from 'react';

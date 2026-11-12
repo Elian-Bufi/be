@@ -145,7 +145,8 @@ export function vistaPreviaDePrescripcion(p: PrescripcionLeida): string {
 export interface CambioDelEjercicio {
   readonly series: { readonly antes: number; readonly despues: number };
   readonly repeticiones: { readonly antes: string | null; readonly despues: string };
-  readonly rir: { readonly antes: number | null; readonly despues: number | null };
+  /** El criterio de intensidad en palabras («RIR 2», «75 % RM»): un % RM que pasa a RIR también va en `sePierde`. */
+  readonly intensidad: { readonly antes: string | null; readonly despues: string | null };
   readonly descanso: { readonly antes: number | null; readonly despues: number | null };
   /** La carga general, que se conserva; `revisar`: cambiaron las repeticiones y queda marcada. */
   readonly carga: { readonly texto: string | null; readonly revisar: string | null };
@@ -157,7 +158,8 @@ const repsDelEjercicio = (p: PrescripcionEntrada): string | null => {
   const distintas = [...new Set(p.sets.map((s) => (s.repetitions ? textoDeReps(s.repetitions) : '')))];
   return distintas.length === 1 && distintas[0] !== '' ? distintas[0]! : distintas.filter(Boolean).join(', ') || null;
 };
-const rirDe = (p: PrescripcionEntrada): number | null => (p.intensity?.criterion === 'RIR' ? p.intensity.target.value : null);
+const intensidadDe = (i: PrescripcionEntrada['intensity']): string | null =>
+  !i ? null : i.criterion === 'RIR' ? `RIR ${numero(i.target.value)}` : i.criterion === 'PERCENT_RM' ? `${numero(i.target.value)} % RM` : null;
 
 /** Los valores propios de una serie, en palabras: «su RIR (1) y su carga (82,5 kg)». */
 export function valoresPropiosDeLaSerie(s: SerieEntrada): string | null {
@@ -187,6 +189,11 @@ export function loQueSePierdeAlQuitarSeries(sets: readonly SerieEntrada[], desde
  */
 export function aplicarPrescripcion(p: PrescripcionEntrada, l: PrescripcionLeida): { readonly prescripcion: PrescripcionEntrada; readonly cambio: CambioDelEjercicio } {
   const sePierde: string[] = [...loQueSePierdeAlQuitarSeries(p.sets, l.series)];
+  // DJ-8: un criterio % RM que la prescripción cambia por RIR se nombra antes, con su referencia.
+  if (l.rir !== null && p.intensity?.criterion === 'PERCENT_RM') {
+    const ref = p.intensity.target.reference?.description;
+    sePierde.unshift(`Su criterio % RM (${numero(p.intensity.target.value)} %${ref ? `, referencia «${ref}»` : ''}) pasa a ser RIR ${numero(l.rir)}`);
+  }
   const sets: SerieEntrada[] = Array.from({ length: l.series }, (_, n) => {
     const antes = p.sets[n];
     const nueva: SerieEntrada = { repetitions: l.repeticiones };
@@ -207,10 +214,11 @@ export function aplicarPrescripcion(p: PrescripcionEntrada, l: PrescripcionLeida
   const carga = l.carga ?? p.suggestedLoad ?? null;
   const conCargas = !!carga || p.sets.some((s) => !!s.suggestedLoad);
   const revisar = !l.carga && conCargas && repsAntes !== null && repsAntes !== repsDespues ? COPY_PRESCRIPCION_RAPIDA.escritaPara(repsAntes) : null;
+  const intensity: PrescripcionEntrada['intensity'] = l.rir !== null ? { criterion: 'RIR', target: { value: l.rir, reference: null } } : p.intensity;
   const prescripcion: PrescripcionEntrada = {
     ...p,
     sets,
-    intensity: l.rir !== null ? { criterion: 'RIR', target: { value: l.rir, reference: null } } : p.intensity,
+    intensity,
     ...(l.carga ? { suggestedLoad: l.carga } : {}),
     ...(l.descanso !== null ? { restSeconds: l.descanso } : {}),
   };
@@ -219,7 +227,7 @@ export function aplicarPrescripcion(p: PrescripcionEntrada, l: PrescripcionLeida
     cambio: {
       series: { antes: p.sets.length, despues: l.series },
       repeticiones: { antes: repsAntes, despues: repsDespues },
-      rir: { antes: rirDe(p), despues: l.rir ?? rirDe(p) },
+      intensidad: { antes: intensidadDe(p.intensity), despues: intensidadDe(intensity) },
       descanso: { antes: p.restSeconds ?? null, despues: l.descanso ?? p.restSeconds ?? null },
       carga: { texto: carga ? `${numero(carga.value)} ${carga.unit}` : null, revisar },
       sePierde,

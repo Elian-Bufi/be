@@ -22,7 +22,7 @@ import {
   type PresetDePrescripcion,
   type SesionHabitual,
 } from '@be/domain';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CuadroEnfocado } from '../../../components/cuadro-enfocado';
 import { alcanceDelPreset, type AlcanceDelPreset } from './alcance-del-preset';
 
@@ -38,6 +38,7 @@ export function GaleriaDePresets({
   sesion,
   nombreDeLaSesion,
   ejercicio = null,
+  seReemplazan = [],
   nombreDe,
   habituales,
   onAplicarPrescripcion,
@@ -54,6 +55,8 @@ export function GaleriaDePresets({
   nombreDeLaSesion: string;
   /** La posición del ejercicio desde donde se abrió, si se abrió desde uno. */
   ejercicio?: number | null;
+  /** ED-11 (DJ-8): las sesiones que un preset de estructura reemplaza, por nombre: solo las que no tienen nada propio. */
+  seReemplazan?: readonly string[];
   nombreDe: (p: PrescripcionE) => string;
   habituales: readonly SesionHabitual[];
   onAplicarPrescripcion: (a: AlcanceDelPreset, nombre: string) => void;
@@ -64,6 +67,10 @@ export function GaleriaDePresets({
   const [elegido, setElegido] = useState<Elegido>(null);
   const [paso, setPaso] = useState<'elegir' | 'alcance'>('elegir');
   const [soloElEjercicio, setSoloElEjercicio] = useState(ejercicio !== null);
+  // El cuadro queda montado: el alcance se vuelve a elegir cada vez que se abre.
+  useEffect(() => {
+    if (abierto) setSoloElEjercicio(ejercicio !== null);
+  }, [abierto, ejercicio]);
   const cerrar = () => {
     setElegido(null);
     setPaso('elegir');
@@ -169,7 +176,11 @@ export function GaleriaDePresets({
                     <li key={s.nombre}>{s.nombre}</li>
                   ))}
                 </ul>
-                <p className="nota">{C.estructuraReemplaza}</p>
+                <p className="nota" data-se-reemplazan={seReemplazan.length}>
+                  {seReemplazan.length === 0
+                    ? 'No se quita ninguna sesión: las del preset se suman al final.'
+                    : `Se reemplazan ${seReemplazan.length === 1 ? 'la sesión' : 'las sesiones'} sin nada escrito (sin ejercicios, indicaciones ni días): ${seReemplazan.join(', ')}. Las demás quedan como están.`}
+                </p>
               </>
             ) : (
               <>
@@ -201,7 +212,7 @@ export function GaleriaDePresets({
                 <th scope="col">Ejercicio</th>
                 <th scope="col">Series</th>
                 <th scope="col">Repeticiones</th>
-                <th scope="col">RIR</th>
+                <th scope="col">Intensidad</th>
                 <th scope="col">Descanso</th>
                 <th scope="col">Carga</th>
               </tr>
@@ -212,7 +223,7 @@ export function GaleriaDePresets({
                   <th scope="row">{f.nombre}</th>
                   <td>{antesYDespues(String(f.cambio.series.antes), String(f.cambio.series.despues))}</td>
                   <td>{antesYDespues(f.cambio.repeticiones.antes ?? 'Sin dato', f.cambio.repeticiones.despues)}</td>
-                  <td>{antesYDespues(f.cambio.rir.antes === null ? 'Sin dato' : String(f.cambio.rir.antes), f.cambio.rir.despues === null ? 'Sin dato' : String(f.cambio.rir.despues))}</td>
+                  <td>{antesYDespues(f.cambio.intensidad.antes ?? 'Sin dato', f.cambio.intensidad.despues ?? 'Sin dato')}</td>
                   <td>{antesYDespues(segundos(f.cambio.descanso.antes), segundos(f.cambio.descanso.despues))}</td>
                   <td>
                     {f.cambio.carga.texto ? `${f.cambio.carga.texto} · se conserva` : 'Sin carga'}

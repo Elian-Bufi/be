@@ -106,7 +106,7 @@ export const COPY_PRESETS = {
   deshecho: 'Volvió como estaba.',
   sinEjercicios: 'Esta sesión todavía no tiene ejercicios: agregalos y después aplicá la prescripción.',
   estructuraEscribe: (n: number) => `Escribe ${n} sesiones con sus nombres y sus días sugeridos, sin ejercicios.`,
-  estructuraReemplaza: 'Las sesiones vacías de este bloque se reemplazan. Las que tienen ejercicios quedan.',
+  estructuraReemplaza: 'Se reemplazan solo las sesiones sin nada escrito (sin ejercicios, indicaciones ni días). Las demás quedan.',
   tuyosPlantillas: 'Tus plantillas',
   tuyosSesiones: 'Tus sesiones habituales',
   sinTuyos: 'Todavía no guardaste ninguno. Con «Guardar como preset», en el «⋯» de la barra, quedan acá.',

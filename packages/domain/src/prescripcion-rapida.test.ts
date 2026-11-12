@@ -110,3 +110,15 @@ test('TEST-EDP-056 · lo que se pierde se nombra antes: series con valores propi
     'Serie 2: su descanso propio (2:30) pasa a ser el de la prescripción',
   ]);
 });
+
+test('TEST-EDP-056 · un criterio % RM que pasa a RIR se nombra antes, con su referencia; sin RIR en la línea, queda', () => {
+  const p = { exerciseVersionId: 'e', sets: [{ repetitions: { value: 5 } }], intensity: { criterion: 'PERCENT_RM' as const, target: { value: 75, reference: { description: '1RM estimado por el profesional' } } } };
+  const { prescripcion, cambio } = aplicarPrescripcion(p, hipertrofia);
+  assert.deepEqual(cambio.intensidad, { antes: '75 % RM', despues: `RIR ${hipertrofia.rir}` });
+  assert.equal(cambio.sePierde[0], `Su criterio % RM (75 %, referencia «1RM estimado por el profesional») pasa a ser RIR ${hipertrofia.rir}`);
+  assert.equal(prescripcion.intensity?.criterion, 'RIR');
+  const sinRir = aplicarPrescripcion(p, leida('3×5'));
+  assert.deepEqual(sinRir.prescripcion.intensity, p.intensity);
+  assert.deepEqual(sinRir.cambio.intensidad, { antes: '75 % RM', despues: '75 % RM' });
+  assert.deepEqual(sinRir.cambio.sePierde, []);
+});
