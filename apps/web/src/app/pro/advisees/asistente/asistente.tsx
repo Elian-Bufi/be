@@ -21,6 +21,7 @@ export function ArmazonDelAsistente({
   onElegirPaso,
   onAtras,
   onEstacion,
+  onSalir = null,
   principal,
   noAvanzo,
   onReintentar,
@@ -34,6 +35,8 @@ export function ArmazonDelAsistente({
   onElegirPaso: ((n: PasoDelAsistente) => void) | null;
   onAtras: (() => void) | null;
   onEstacion: (() => void) | null;
+  /** Sin borrador (paso 1): salir del asistente sin crear nada, de vuelta a la vista del plan. */
+  onSalir?: (() => void) | null;
   /** La única acción principal del paso («Siguiente: …» o «Revisar y activar…»). */
   principal: { readonly texto: string; readonly onClick: () => void; readonly ocupado?: string | null };
   /** «Siguiente» no pudo guardar: el paso queda abierto, con lo escrito y «Reintentar». */
@@ -87,6 +90,11 @@ export function ArmazonDelAsistente({
           {onEstacion ? (
             <button type="button" className="boton boton--enlace" onClick={onEstacion} data-seguir-en-la-estacion>
               {C.seguirEnLaEstacion}
+            </button>
+          ) : null}
+          {onSalir ? (
+            <button type="button" className="boton boton--enlace" onClick={onSalir} data-salir-del-asistente>
+              {C.salirDelAsistente}
             </button>
           ) : null}
           {/* Un solo botón principal por cuadro (§2.3). Mientras viaja un guardado, dice por qué espera. */}

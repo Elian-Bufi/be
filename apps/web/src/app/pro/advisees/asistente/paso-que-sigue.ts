@@ -59,11 +59,15 @@ export const COPY_ASISTENTE = {
   desdeUnPresetDetalle: 'Una estructura de BE: nombres de sesiones y días sugeridos, sin ejercicios.',
   enBlanco: 'En blanco',
   enBlancoDetalle: 'Un bloque vacío: vos armás todo.',
-  yaHayBorrador: 'Este borrador ya tiene su punto de partida. Para empezar de otro, descartá la versión en preparación desde el «⋯»: lo armado se borra, y la versión activa no cambia.',
+  yaHayBorrador: 'Este borrador ya tiene su punto de partida. Para empezar de otro, descartá la versión en preparación con el botón de abajo: lo armado se borra, y la versión activa no cambia.',
+  salirDelAsistente: 'Salir del asistente',
   // Pasos 2 a 7
   estructura: '¿Cuántas sesiones tiene la semana, y cómo se llaman?',
   presetDeEstructura: 'Usar un preset de estructura',
+  presetDeEstructuraEn: (grupo: string) => `Usar un preset de estructura en ${grupo}`,
   agregarSesion: 'Agregar una sesión',
+  agregarSesionEn: (grupo: string) => `Agregar una sesión a ${grupo}`,
+  ahora: 'ahora',
   nombreDeLaSesion: (n: number) => `Nombre de la sesión ${n}`,
   ejercicios: '¿Qué ejercicios lleva cada sesión?',
   agregarEjercicios: (sesion: string) => `Agregar ejercicios a ${sesion}`,
@@ -84,8 +88,9 @@ export const COPY_ASISTENTE = {
  * guardado falla (o no se pudo intentar), no avanza y lo escrito sigue en pantalla. Mientras viaja otro guardado, espera
  * a que termine. Sin cambios, avanza sin escribir nada (pasar por un paso no toca el borrador: TEST-EDP-055).
  */
-export async function sePuedeAvanzar(p: { readonly sucio: boolean; readonly guardando: boolean; readonly guardar: () => Promise<unknown> }): Promise<boolean> {
-  if (p.guardando) return false;
-  if (!p.sucio) return true;
-  return (await p.guardar()) != null;
+export async function sePuedeAvanzar(p: { readonly sucio: boolean; readonly guardando: boolean; readonly guardar: () => Promise<unknown> }): Promise<'avanza' | 'no-avanza' | 'espera'> {
+  // Con un guardado en viaje no se decide nada: quien pregunta vuelve a preguntar cuando termina (no es una falla).
+  if (p.guardando) return 'espera';
+  if (!p.sucio) return 'avanza';
+  return (await p.guardar()) != null ? 'avanza' : 'no-avanza';
 }

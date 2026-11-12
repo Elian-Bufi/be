@@ -16,6 +16,8 @@ export function Cajon(props: {
   titulo: string;
   /** De quién es lo que se va a hacer: el cajón tapa el marco de la página, que lo decía. */
   sobretitulo?: string | null;
+  /** Hay algo elegido o escrito sin aplicar: cerrar (Escape o «Cerrar») pregunta antes de perderlo. */
+  conCambios?: boolean;
   /** Hay un envío en curso: no se cierra hasta que termine. */
   ocupado?: boolean;
   /** Dónde va el foco al abrirse, si no es el título: algo de adentro del cajón. */

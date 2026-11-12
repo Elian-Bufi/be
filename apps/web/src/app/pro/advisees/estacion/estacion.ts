@@ -9,6 +9,8 @@ import { DIAS_DE_LA_SEMANA, type AgendaDeEntrenamiento, type DiaDeLaSemana } fro
 
 export const DIA_CORTO: Readonly<Record<DiaDeLaSemana, string>> = { MONDAY: 'L', TUESDAY: 'M', WEDNESDAY: 'X', THURSDAY: 'J', FRIDAY: 'V', SATURDAY: 'S', SUNDAY: 'D' };
 export const DIA_LARGO: Readonly<Record<DiaDeLaSemana, string>> = { MONDAY: 'lunes', TUESDAY: 'martes', WEDNESDAY: 'miércoles', THURSDAY: 'jueves', FRIDAY: 'viernes', SATURDAY: 'sábado', SUNDAY: 'domingo' };
+/** El nombre accesible de un chip: el día entero, con la letra visible adelante si no la contiene («X · miércoles», WCAG 2.5.3). */
+export const nombreDelChip = (d: DiaDeLaSemana): string => (DIA_LARGO[d].startsWith(DIA_CORTO[d].toLowerCase()) ? DIA_LARGO[d] : `${DIA_CORTO[d]} · ${DIA_LARGO[d]}`);
 
 /** Prende o apaga un día de una sesión. Sin agenda, nace una que empieza hoy (como «Armar la agenda» de DL-137). */
 export function alternarDia(agenda: AgendaDeEntrenamiento | null, sessionId: string, dia: DiaDeLaSemana, hoy: string): AgendaDeEntrenamiento {

@@ -85,12 +85,13 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { conLasDeLaPosicion, type AlcanceDelPreset } from '../alcance-del-preset';
-import { alternarDia, COPY_ESTACION as CE, DIA_CORTO, DIA_LARGO, diasCompartidos, PRIMER_USO_DE_LA_ESTACION, ponerDias, sinDias, tiraDeLaSemana } from '../estacion/estacion';
+import { alternarDia, COPY_ESTACION as CE, DIA_CORTO, DIA_LARGO, diasCompartidos, nombreDelChip, PRIMER_USO_DE_LA_ESTACION, ponerDias, sinDias, tiraDeLaSemana } from '../estacion/estacion';
 import { GaleriaDePresets } from '../galeria-de-presets';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 import { PrimerUso } from '../../../../components/primer-uso';
 import { ArmazonDelAsistente } from '../asistente/asistente';
 import { COPY_ASISTENTE as CA, pasoPedido, pasoQueSigue, sePuedeAvanzar, type PasoDelAsistente } from '../asistente/paso-que-sigue';
+import { claveDeLaSesion, conLaEstructura, firmaDeLaCarga, gruposDelAsistente, loQueReemplazaLaEstructura, sesionesDelGrupo, type GrupoDelAsistente } from '../asistente/operaciones-del-asistente';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { prescripcionesDeLosMarcados } from './varios-a-la-vez';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
@@ -305,9 +306,10 @@ export function EditorDePlan({
   // El texto que se está cambiando, y el campo que hay que enfocar después de ir a un problema.
   const [texto, setTexto] = useState<TextoQueSeCambia>(null);
   const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
-  // DJ-8 (ED-11 y ED-22): las cargas que quedaron escritas para otras repeticiones, por ejercicio. Es una marca de la
-  // pantalla, no un dato: no viaja ni se guarda (EDT-12).
-  const [cargasARevisar, setCargasARevisar] = useState<Readonly<Record<string, string>>>({});
+  // DJ-8 (ED-11 y ED-22): las cargas que quedaron escritas para otras repeticiones, por sesión, con la firma del ejercicio
+  // tal como quedó (`firmaDeLaCarga`): si se edita su carga o sus repeticiones, o se deshace, la marca deja de verse; si se
+  // mueve, va con él. Es una marca de la pantalla, no un dato: no viaja ni se guarda (EDT-12).
+  const [cargasARevisar, setCargasARevisar] = useState<Readonly<Record<string, readonly { readonly texto: string; readonly firma: string }[]>>>({});
   // ED-15: el panel a 1280 × 800 (se abre con «Panel» y se superpone al centro) y su pestaña (ED-25).
   const [panelAbierto, setPanelAbierto] = useState(false);
   // ED-20: los días que trajo un preset de estructura, por nombre de sesión, para confirmarlos (son «del preset»).
@@ -317,11 +319,20 @@ export function EditorDePlan({
   const [galeria, setGaleria] = useState<{ readonly tarea: 'prescripcion' | 'estructura'; readonly ejercicio: number | null } | null>(null);
   // ED-11 (DJ-8): «Deshacer» de la última aplicación, con las prescripciones de antes por posición. Es la operación
   // inversa, que se autoguarda como cualquier cambio; otro cambio cualquiera la retira, para que devuelva exacto.
-  const [deshacer, setDeshacer] = useState<{ readonly texto: string; readonly lugar: Lugar & { readonly k: number }; readonly antes: ReadonlyMap<number, PrescripcionE> } | null>(null);
-  // ED-14: «Siguiente» del asistente guarda y espera; si no pudo, el paso queda abierto con «Reintentar».
+  const [deshacer, setDeshacer] = useState<{ readonly texto: string; readonly lugar: Lugar & { readonly k: number }; readonly antes: ReadonlyMap<number, PrescripcionE>; readonly firmas: ReadonlySet<string> } | null>(null);
+  // ED-14: «Siguiente» del asistente guarda y espera; si no pudo, el paso queda abierto con «Reintentar». Si viaja un
+  // autoguardado, espera a que termine (`avanzarA`) y entonces decide.
   const [avanzando, setAvanzando] = useState(false);
   const [noAvanzo, setNoAvanzo] = useState(false);
+  const [avanzarA, setAvanzarA] = useState<PasoDelAsistente | null>(null);
+  const siguienteRef = useRef<((n: PasoDelAsistente) => Promise<void>) | null>(null);
   // ED-20: «Desde un preset» (paso 1) llega al paso 2 con la galería de estructuras abierta, una vez.
+  // TEST-EDP-017: «Siguiente» pedido mientras viajaba un autoguardado decide cuando ese guardado termina.
+  useEffect(() => {
+    if (avanzarA === null || guardando) return;
+    setAvanzarA(null);
+    void siguienteRef.current?.(avanzarA);
+  }, [avanzarA, guardando]);
   const presetPedido = parametros.get('preset');
   useEffect(() => {
     if (!version || presetPedido !== 'estructura') return;
@@ -914,6 +925,18 @@ export function EditorDePlan({
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
   const nombreDeLaSesionPorId = (id: string): string => sesionesDeLaAgenda.find((x) => x.sessionId === id)?.nombre ?? C.sesion;
 
+  // ── DJ-8: la marca «escrita para 6-8: revisala», por sesión y con la firma del ejercicio como quedó ───────────────
+  const marcarCargas = (clave: string, filas: readonly { readonly p: PrescripcionE; readonly texto: string | null }[]) =>
+    setCargasARevisar((m) => {
+      const firmas = new Set(filas.map((f) => firmaDeLaCarga(f.p)));
+      const nuevas = filas.flatMap((f) => (f.texto ? [{ texto: f.texto, firma: firmaDeLaCarga(f.p) }] : []));
+      return { ...m, [clave]: [...(m[clave] ?? []).filter((x) => !firmas.has(x.firma)), ...nuevas] };
+    });
+  const cargaARevisar = (clave: string, p: PrescripcionE): string | null => {
+    const firma = firmaDeLaCarga(p);
+    return (cargasARevisar[clave] ?? []).find((x) => x.firma === firma)?.texto ?? null;
+  };
+
   // ── ED-11: aplicar un preset y deshacerlo ────────────────────────────────────────────────────────────────────
   /** DJ-8: escribe las prescripciones nuevas en la sesión que se mira; «Deshacer» guarda las de antes. */
   const aplicarElPreset = (a: AlcanceDelPreset, nombre: string) => {
@@ -923,30 +946,29 @@ export function EditorDePlan({
       s.prescriptions = conLasDeLaPosicion(s.prescriptions, a.nuevas);
       return x;
     });
-    setCargasARevisar((m) => {
-      const c = { ...m };
-      for (const f of a.filas) c[`${prefijo}-s${k}-p${f.posicion}`] = f.cambio.carga.revisar ?? '';
-      return c;
-    });
-    setDeshacer({ texto: `«${nombre}»: ${COPY_PRESETS.aplicado(a.filas.length)}`, lugar, antes: a.antes });
+    const filas = a.filas.map((f) => ({ p: a.nuevas.get(f.posicion)!, texto: f.cambio.carga.revisar }));
+    marcarCargas(claveDeLaSesion(lugar, k), filas);
+    setDeshacer({ texto: `«${nombre}»: ${COPY_PRESETS.aplicado(a.filas.length)}`, lugar, antes: a.antes, firmas: new Set(filas.map((f) => firmaDeLaCarga(f.p))) });
   };
   /** La operación inversa: vuelve a escribir las prescripciones de antes, que se guardan como cualquier cambio. */
   const deshacerLaAplicacion = () => {
     if (!deshacer) return;
-    const { lugar, antes } = deshacer;
+    const { lugar, antes, firmas } = deshacer;
     cambiar((x) => {
-      const s = (lugar.j !== null ? x[lugar.i]!.microcycles![lugar.j]!.sessions : x[lugar.i]!.sessions!)[lugar.k]!;
+      const s = sesionesDelGrupo(x, lugar)[lugar.k]!;
       s.prescriptions = conLasDeLaPosicion(s.prescriptions, antes);
       return x;
     });
+    // Las marcas de lo que se deshace se van con ello.
+    const clave = claveDeLaSesion(lugar, lugar.k);
+    setCargasARevisar((m) => ({ ...m, [clave]: (m[clave] ?? []).filter((x) => !firmas.has(x.firma)) }));
     setMensaje({ tipo: 'exito', texto: COPY_PRESETS.deshecho });
   };
-  /** ED-11: un preset de estructura reemplaza las sesiones vacías del bloque (o de la semana) que se mira; las que tienen ejercicios quedan. */
+  /** ED-11: un preset de estructura se suma a las sesiones que se miran y reemplaza solo las que no tienen nada propio. */
+  const tieneDias = (s: SesionE) => !!s.sessionId && (agendaVisible?.sessions.find((x) => x.sessionId === s.sessionId)?.weekdays.length ?? 0) > 0;
   const aplicarLaEstructura = (p: PresetDeEstructura) => {
     cambiar((x) => {
-      const lista = lasSesiones(x);
-      const conEjercicios = lista.filter((s) => s.prescriptions.length > 0);
-      lista.splice(0, lista.length, ...conEjercicios, ...p.sesiones.map((s) => ({ label: s.nombre, instructions: null, prescriptions: [] })));
+      conLaEstructura(lasSesiones(x), p.sesiones.map((s) => s.nombre), tieneDias);
       return x;
     });
     setDiasDelPreset(Object.fromEntries(p.sesiones.map((s) => [s.nombre, s.dias])));
@@ -961,7 +983,7 @@ export function EditorDePlan({
     return (
       <div className="estacion__chips" role="group" aria-label={CE.diasDe(nombreDeLaSesion(s, n))}>
         {DIAS_DE_LA_SEMANA.map((d) => (
-          <button key={d} type="button" className="estacion__chip" aria-pressed={dias.includes(d)} aria-label={DIA_LARGO[d]} data-dia={d} onClick={() => cambiarAgenda(alternarDia(agendaVisible, id, d, hoyEn()))}>
+          <button key={d} type="button" className="estacion__chip" aria-pressed={dias.includes(d)} aria-label={nombreDelChip(d)} data-dia={d} onClick={() => cambiarAgenda(alternarDia(agendaVisible, id, d, hoyEn()))}>
             {DIA_CORTO[d]}
           </button>
         ))}
@@ -992,25 +1014,47 @@ export function EditorDePlan({
     setNoAvanzo(false);
     ir({ asistente: n === null ? null : String(n) });
   };
-  /** TEST-EDP-017: «Siguiente» guarda y espera la respuesta; si falla, no avanza. */
+  /** TEST-EDP-017: «Siguiente» guarda y espera la respuesta; si falla, no avanza. Con un autoguardado en viaje, espera. */
   const siguiente = async (n: PasoDelAsistente) => {
+    setNoAvanzo(false);
     setAvanzando(true);
-    const puede = await sePuedeAvanzar({ sucio, guardando, guardar: () => guardar() });
+    const decision = await sePuedeAvanzar({ sucio, guardando, guardar: () => guardar() });
     setAvanzando(false);
-    if (!puede) return setNoAvanzo(true);
+    if (decision === 'espera') return setAvanzarA(n);
+    if (decision === 'no-avanza') return setNoAvanzo(true);
     irAlPaso(n);
   };
-  const conCadaSesion = (f: (s: SesionE, n: number) => ReactNode) =>
-    sesiones.length === 0 ? (
+  siguienteRef.current = siguiente;
+  // Los pasos 2 a 5 recorren todas las sesiones del plan, por bloque y por semana (como `pasoQueSigue`).
+  const grupos = gruposDelAsistente(bloques);
+  const conVariosGrupos = grupos.length > 1;
+  const TituloDeSesion = conVariosGrupos ? 'h5' : 'h4';
+  /** Llevar la estación a una sesión de otro grupo: el cajón de ejercicios y la galería escriben en la que se mira. */
+  const mirarLaSesion = (g: GrupoDelAsistente, n: number) => {
+    setParaEnfocar(null);
+    ir({ bloque: pedidoDeLaPosicion(g.i), micro: g.j !== null ? pedidoDeLaPosicion(g.j) : null, sesion: pedidoDeLaPosicion(n), ejercicios: null });
+  };
+  const conCadaSesion = (f: (s: SesionE, n: number, g: GrupoDelAsistente) => ReactNode, alPie?: (g: GrupoDelAsistente) => ReactNode) =>
+    grupos.length === 0 ? (
       <p className="nota">{C.sinSesiones}</p>
     ) : (
-      <ol className="asistente__sesiones">
-        {sesiones.map((s, n) => (
-          <li key={s.sessionId ?? `nueva-${n}`} className="asistente__sesion" data-sesion-del-asistente={n + 1}>
-            {f(s, n)}
-          </li>
-        ))}
-      </ol>
+      grupos.map((g) => (
+        <div key={`${g.i}-${g.j ?? ''}`} className="asistente__grupo" data-grupo-del-asistente={claveDeLaSesion(g, 0).replace(/-s0$/, '')}>
+          {conVariosGrupos ? <h4 className="asistente__grupo-titulo">{g.titulo}</h4> : null}
+          {g.sesiones.length === 0 ? (
+            <p className="nota">{C.sinSesiones}</p>
+          ) : (
+            <ol className="asistente__sesiones">
+              {g.sesiones.map((s, n) => (
+                <li key={s.sessionId ?? `nueva-${n}`} className="asistente__sesion" data-sesion-del-asistente={n + 1}>
+                  {f(s, n, g)}
+                </li>
+              ))}
+            </ol>
+          )}
+          {alPie?.(g)}
+        </div>
+      ))
     );
   const contenidoDelPaso = (p: PasoDelAsistente): { titulo: string; cuerpo: ReactNode } => {
     switch (p) {
@@ -1038,37 +1082,49 @@ export function EditorDePlan({
           titulo: CA.estructura,
           cuerpo: (
             <>
-              {conCadaSesion((s, n) => (
-                <label className="asistente__campo">
-                  <span>{CA.nombreDeLaSesion(n + 1)}</span>
-                  <input type="text" maxLength={120} value={s.label} onChange={(e) => cambiar((x) => ((lasSesiones(x)[n]!.label = e.target.value), x))} />
-                </label>
-              ))}
-              <div className="asistente__acciones">
-                <button type="button" className="boton boton--quieto" data-asistente-agregar-sesion onClick={() => cambiar((x) => (lasSesiones(x).push(sesionVacia(sesiones.length + 1)), x))}>
-                  <Icono nombre="mas" tamano={18} />
-                  {CA.agregarSesion}
-                </button>
-                <button type="button" className="boton boton--quieto" data-asistente-preset-de-estructura onClick={() => setGaleria({ tarea: 'estructura', ejercicio: null })}>
-                  <Icono nombre="plantillas" tamano={18} />
-                  {CA.presetDeEstructura}
-                </button>
-              </div>
+              {conCadaSesion(
+                (s, n, g) => (
+                  <label className="asistente__campo">
+                    <span>{CA.nombreDeLaSesion(n + 1)}</span>
+                    <input type="text" maxLength={120} value={s.label} onChange={(e) => cambiar((x) => ((sesionesDelGrupo(x, g)[n]!.label = e.target.value), x))} />
+                  </label>
+                ),
+                (g) => (
+                  <div className="asistente__acciones">
+                    <button type="button" className="boton boton--quieto" data-asistente-agregar-sesion onClick={() => cambiar((x) => (sesionesDelGrupo(x, g).push(sesionVacia(g.sesiones.length + 1)), x))}>
+                      <Icono nombre="mas" tamano={18} />
+                      {conVariosGrupos ? CA.agregarSesionEn(g.titulo) : CA.agregarSesion}
+                    </button>
+                    <button
+                      type="button"
+                      className="boton boton--quieto"
+                      data-asistente-preset-de-estructura
+                      onClick={() => {
+                        if (conVariosGrupos) mirarLaSesion(g, 0);
+                        setGaleria({ tarea: 'estructura', ejercicio: null });
+                      }}
+                    >
+                      <Icono nombre="plantillas" tamano={18} />
+                      {conVariosGrupos ? CA.presetDeEstructuraEn(g.titulo) : CA.presetDeEstructura}
+                    </button>
+                  </div>
+                ),
+              )}
             </>
           ),
         };
       case 3:
         return {
           titulo: CA.ejercicios,
-          cuerpo: conCadaSesion((s, n) => (
+          cuerpo: conCadaSesion((s, n, g) => (
             <>
-              <h4>{nombreDeLaSesion(s, n)}</h4>
+              <TituloDeSesion>{nombreDeLaSesion(s, n)}</TituloDeSesion>
               {s.prescriptions.length === 0 ? <p className="nota">{CA.sinEjercicios}</p> : <p>{s.prescriptions.map((x) => nombres[x.exerciseVersionId] ?? 'Ejercicio').join(' · ')}</p>}
               <button
                 type="button"
                 className="boton boton--quieto"
                 onClick={() => {
-                  elegirSesion(n);
+                  mirarLaSesion(g, n);
                   setAgregando(true);
                 }}
               >
@@ -1081,29 +1137,43 @@ export function EditorDePlan({
       case 4:
         return {
           titulo: CA.prescripcion,
-          cuerpo: conCadaSesion((s, n) => (
+          cuerpo: conCadaSesion((s, n, g) => (
             <>
-              <h4>{nombreDeLaSesion(s, n)}</h4>
+              <TituloDeSesion>{nombreDeLaSesion(s, n)}</TituloDeSesion>
               {s.prescriptions.length === 0 ? <p className="nota">{CA.sinEjercicios}</p> : null}
-              {s.prescriptions.map((x, l) => (
-                <div key={x.prescriptionId ?? `nuevo-${l}`} className="asistente__ejercicio">
-                  <LineaDePrescripcion
-                    id={`asistente-${prefijo}-s${n}-p${l}`}
-                    nombre={nombres[x.exerciseVersionId] ?? 'Ejercicio'}
-                    prescripcion={x}
-                    onAplicar={(nueva, revisar) => {
-                      cambiar((b) => ((lasSesiones(b)[n]!.prescriptions[l] = nueva), b));
-                      setCargasARevisar((m) => ({ ...m, [`${prefijo}-s${n}-p${l}`]: revisar ?? '' }));
-                    }}
-                  />
-                </div>
-              ))}
+              {s.prescriptions.map((x, l) => {
+                // Como en la maqueta 03: el nombre a la vista, lo que tiene ahora y la marca de la carga, y al lado la línea.
+                const clave = claveDeLaSesion(g, n);
+                const nombre = nombres[x.exerciseVersionId] ?? 'Ejercicio';
+                const revisar = cargaARevisar(clave, x);
+                return (
+                  <div key={x.prescriptionId ?? `nuevo-${l}`} className="asistente__ejercicio" data-ejercicio-del-asistente={l + 1}>
+                    <p className="asistente__ejercicio-actual">
+                      <strong>{nombre}</strong> <span className="nota">· {CA.ahora}: {ejercicioPlegadoDelEditor(x, 0).resumen}</span>
+                      {revisar ? (
+                        <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
+                          {revisar}
+                        </span>
+                      ) : null}
+                    </p>
+                    <LineaDePrescripcion
+                      id={`asistente-${clave}-p${l}`}
+                      nombre={nombre}
+                      prescripcion={x}
+                      onAplicar={(nueva, texto) => {
+                        cambiar((b) => ((sesionesDelGrupo(b, g)[n]!.prescriptions[l] = nueva), b));
+                        marcarCargas(clave, [{ p: nueva, texto }]);
+                      }}
+                    />
+                  </div>
+                );
+              })}
               {s.prescriptions.length > 0 ? (
                 <button
                   type="button"
                   className="boton boton--quieto"
                   onClick={() => {
-                    elegirSesion(n);
+                    mirarLaSesion(g, n);
                     setGaleria({ tarea: 'prescripcion', ejercicio: null });
                   }}
                 >
@@ -1122,7 +1192,7 @@ export function EditorDePlan({
               <p className="nota">{CA.diasAyuda}</p>
               {conCadaSesion((s, n) => (
                 <>
-                  <h4>{nombreDeLaSesion(s, n)}</h4>
+                  <TituloDeSesion>{nombreDeLaSesion(s, n)}</TituloDeSesion>
                   {chipsDeDias(s, n)}
                   {diasDelPresetDe(s)}
                 </>
@@ -1193,7 +1263,7 @@ export function EditorDePlan({
             onEstacion={() => irAlPaso(null)}
             principal={
               proximo
-                ? { texto: CA.siguiente(proximo), onClick: () => void siguiente(proximo), ocupado: avanzando || guardando ? CA.guardando : null }
+                ? { texto: CA.siguiente(proximo), onClick: () => void siguiente(proximo), ocupado: avanzando || avanzarA !== null ? CA.guardando : null }
                 : { texto: COPY_ANTES_DE_ACTIVAR.revisarYActivar, onClick: abrirAntesDeActivar }
             }
             noAvanzo={noAvanzo}
@@ -1506,7 +1576,7 @@ export function EditorDePlan({
               <div className="estacion__sesiones-cabecera">
                 <h3 id="titulo-sesiones">{CE.sesiones}</h3>
                 {/* ED-24: «+ Sesión», con el nombre en el lugar y Enter. */}
-                <button type="button" className="boton boton--enlace" data-mas-sesion onClick={agregarSesion}>
+                <button type="button" className="boton boton--enlace" data-mas-sesion aria-label={CA.agregarSesion} onClick={agregarSesion}>
                   <Icono nombre="mas" tamano={15} />
                   {CE.masSesion}
                 </button>
@@ -1684,10 +1754,10 @@ export function EditorDePlan({
                   onSubir={() => moverEjercicio(l, l - 1)}
                   onBajar={() => moverEjercicio(l, l + 1)}
                   onDuplicar={() => duplicarEjercicio(l)}
-                  revisar={cargasARevisar[`${prefijo}-s${k}-p${l}`] || null}
+                  revisar={cargaARevisar(`${prefijo}-s${k}`, p)}
                   onAplicarLinea={(nueva, revisar) => {
                     cambiar((x) => ((lasSesiones(x)[k]!.prescriptions[l] = nueva), x));
-                    setCargasARevisar((m) => ({ ...m, [`${prefijo}-s${k}-p${l}`]: revisar ?? '' }));
+                    marcarCargas(`${prefijo}-s${k}`, [{ p: nueva, texto: revisar }]);
                   }}
                 />
               ))}
@@ -1704,7 +1774,22 @@ export function EditorDePlan({
         </div>
         <aside id="zona-panel" className="estacion__zona estacion__panel" data-zona="panel" aria-label={CE.panel} tabIndex={-1}>
           {/* ED-25: el contexto, en pestañas. «Antes de activar», en vivo; la validación final sigue siendo de la API. */}
-          <div className="estacion__pestanas" role="tablist" aria-label={CE.panel}>
+          {/* Las pestañas se recorren con las flechas, Inicio y Fin (el patrón de pestañas de ARIA); Tab entra a la elegida. */}
+          <div
+            className="estacion__pestanas"
+            role="tablist"
+            aria-label={CE.panel}
+            onKeyDown={(e) => {
+              const orden = ['antes', 'semana', 'otras'] as const;
+              const n = orden.indexOf(pestana);
+              const teclas: Readonly<Record<string, (typeof orden)[number] | undefined>> = { ArrowRight: orden[(n + 1) % 3], ArrowLeft: orden[(n + 2) % 3], Home: orden[0], End: orden[2] };
+              const destino = teclas[e.key];
+              if (!destino) return;
+              e.preventDefault();
+              setPestana(destino);
+              document.getElementById(`pestana-${destino}`)?.focus();
+            }}
+          >
             {(
               [
                 ['antes', CE.pestanaAntes],
@@ -1712,7 +1797,7 @@ export function EditorDePlan({
                 ['otras', CE.pestanaOtras],
               ] as const
             ).map(([clave, texto]) => (
-              <button key={clave} type="button" role="tab" id={`pestana-${clave}`} aria-selected={pestana === clave} aria-controls={`panel-${clave}`} onClick={() => setPestana(clave)}>
+              <button key={clave} type="button" role="tab" id={`pestana-${clave}`} aria-selected={pestana === clave} aria-controls={`panel-${clave}`} tabIndex={pestana === clave ? 0 : -1} onClick={() => setPestana(clave)}>
                 {texto}
                 {clave === 'antes' && impidenEnVivo.length > 0 ? <span className="estacion__cuenta"> {impidenEnVivo.length}</span> : null}
               </button>
@@ -1797,6 +1882,7 @@ export function EditorDePlan({
         sesion={sesion ?? null}
         nombreDeLaSesion={sesion ? nombreDeLaSesion(sesion, k) : ''}
         ejercicio={galeria?.ejercicio ?? null}
+        seReemplazan={loQueReemplazaLaEstructura(sesiones, tieneDias).map((n) => nombreDeLaSesion(sesiones[n]!, n))}
         nombreDe={(p) => nombres[p.exerciseVersionId] ?? 'Ejercicio'}
         habituales={sesionesHabituales.sesiones}
         onAplicarPrescripcion={aplicarElPreset}

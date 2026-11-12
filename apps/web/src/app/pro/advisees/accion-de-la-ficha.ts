@@ -82,7 +82,7 @@ export function accionDeLaFicha(dominios: Dominios, hoy: string): AccionDeLaFich
 /**
  * ED-16 (WP-EDITORES-PROFESIONAL) · La acción del plan en la tarjeta de Entrenamiento, según el estado del área
  * (TEST-EDP-019):
- * - sin plan vigente ni borrador, «Crear el plan» abre el asistente;
+ * - sin plan vigente ni borrador, «Empezar el plan» abre el asistente (el mismo verbo que la acción de la ficha);
  * - con plan vigente, «Ajustar el plan» crea la versión nueva desde la vigente y abre la estación, en un clic;
  * - con borrador, «Seguir el borrador» lo abre donde quedó.
  * Usa la cadena de TB-09; no la reemplaza: la acción principal de la ficha sigue siendo una. Nutrición se suma con su
@@ -98,5 +98,5 @@ export interface AccionDelPlan {
 export function accionDelPlan(resumen: { readonly activePlan: unknown; readonly draftPlan: unknown } | null): AccionDelPlan {
   if (resumen?.draftPlan) return { tipo: 'seguir', texto: 'Seguir el borrador', extra: '' };
   if (resumen?.activePlan) return { tipo: 'ajustar', texto: 'Ajustar el plan', extra: '&crear=vigente' };
-  return { tipo: 'crear', texto: 'Crear el plan', extra: '&asistente=1' };
+  return { tipo: 'crear', texto: 'Empezar el plan', extra: '&asistente=1' };
 }

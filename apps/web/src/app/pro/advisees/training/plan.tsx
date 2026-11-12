@@ -350,6 +350,7 @@ export function VistaDePlan() {
                   <PuntoDePartida
                     hayVigente={!!activa}
                     creando={creando}
+                    onSalir={() => ir({ asistente: null, preset: null })}
                     onElegir={(p) => {
                       if (p === 'plantilla') return abrirDesdePlantilla();
                       void crear(p === 'vigente' && activa ? activa.planId : null, { asistente: '2', preset: p === 'preset' ? 'estructura' : null });

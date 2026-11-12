@@ -6,7 +6,8 @@
  * editor de la versión en preparación: lo que antes era una ayuda fija junto a cada campo (DEC-28). El botón y el diálogo son los de la ficha
  * (`AyudaDeVista`); va en el marco del área.
  */
-import { COPY_DEL_PLAN_DE_ENTRENAMIENTO as C, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE } from '@be/domain';
+import { COPY_DEL_PLAN_DE_ENTRENAMIENTO as C, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, COPY_PRESCRIPCION_RAPIDA } from '@be/domain';
+import { PRIMER_USO_DE_LA_ESTACION } from '../estacion/estacion';
 import { AyudaDeVista, RenglonDeAyuda as Renglon } from '../../../../components/ayuda-de-vista';
 import { EnPartes } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
@@ -64,6 +65,21 @@ export function AyudaDelPlanDeEntrenamiento() {
         <Renglon muestra={<Icono nombre="aviso" tamano={20} />}>
           <strong>Lo que no se entiende no se guarda.</strong> Un dato mal escrito se marca en su lugar, el ejercicio lo dice en su renglón y «Guardar ahora» lista dónde está cada cosa: cada renglón te lleva hasta ahí.
           {COPY_ENTRENAMIENTO.noJuzga}
+        </Renglon>
+        {/* ED-17: lo que dice la ayuda de primer uso de la estación, para encontrarlo después de cerrarla. */}
+        <Renglon esencial muestra={<Icono nombre="plan" tamano={20} />}>
+          <strong>La estación tiene tres zonas.</strong> {PRIMER_USO_DE_LA_ESTACION.renglones.join(' ')} En una pantalla más angosta, la de la derecha se abre con «Panel».
+        </Renglon>
+        <Renglon muestra={<Icono nombre="texto" tamano={20} />}>
+          <strong>La prescripción en una línea</strong> se escribe arriba de cada ejercicio, y Enter la aplica. Antes de aplicarla dice cómo la lee y lo que se pierde.
+          <ul>
+            {COPY_PRESCRIPCION_RAPIDA.gramatica.map((g) => (
+              <li key={g}>{g}</li>
+            ))}
+          </ul>
+        </Renglon>
+        <Renglon muestra={<Icono nombre="series" tamano={20} />}>
+          <strong>Varias series a la vez:</strong> marcá las series, elegí el campo y escribí el valor una vez. <strong>Ctrl+D</strong> (o Cmd+D) copia en la celda el valor de la serie de arriba.
         </Renglon>
         <Renglon muestra={<Icono nombre="actualizar" tamano={20} />}>
           <strong>Lo que elegís queda en la dirección de la página</strong> (la versión, el bloque, la sesión y los ejercicios abiertos): «Actualizar» y volver atrás lo conservan.

@@ -99,6 +99,8 @@ export function AgregarEjercicio({
       titulo={COPY_ENTRENAMIENTO.agregarEjercicio}
       sobretitulo={deDonde}
       focoInicial={campo}
+      // ED-10 (§2.3): con ejercicios marcados o una prescripción escrita, cerrar pregunta antes de perderlos.
+      conCambios={marcados.length > 0 || linea.trim() !== ''}
       onCerrar={onCerrar}
       pie={
         modo === 'buscar' ? (

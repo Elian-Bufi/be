@@ -275,12 +275,14 @@ export function Workspace() {
           ) : null}
           {/* Lo de vez en cuando, junto: pedir información (vuelve a esta vista al enviar o al salir) y escribir una nota de
               coordinación para los otros profesionales de la persona (DL-140; UC-E07). */}
-          {/* ED-16 (C11): «Pedir información», a la vista y no en «Más». */}
+          {/* ED-16 (C11): «Pedir información», a la vista y no en «Más», con su pista de DL-146. */}
           {disponible ? (
-            <button type="button" className="boton boton--quieto boton--compacto" data-pedir-informacion onClick={() => antesDeSalir(() => router.push(conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, retorno)))}>
-              <Icono nombre="solicitar" tamano={18} />
-              Pedir información
-            </button>
+            <Pista texto={COPY_PISTAS.ficha.pedirInformacion}>
+              <button type="button" className="boton boton--quieto boton--compacto" data-pedir-informacion onClick={() => antesDeSalir(() => router.push(conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, retorno)))}>
+                <Icono nombre="solicitar" tamano={18} />
+                Pedir información
+              </button>
+            </Pista>
           ) : null}
           {disponible ? (
             <MenuDeAcciones

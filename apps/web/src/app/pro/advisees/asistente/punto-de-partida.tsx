@@ -12,7 +12,7 @@ import { COPY_ASISTENTE as C } from './paso-que-sigue';
 
 export type PuntoDePartidaElegido = 'vigente' | 'plantilla' | 'preset' | 'blanco';
 
-export function PuntoDePartida({ hayVigente, creando, onElegir }: { hayVigente: boolean; creando: boolean; onElegir: (p: PuntoDePartidaElegido) => void }) {
+export function PuntoDePartida({ hayVigente, creando, onElegir, onSalir }: { hayVigente: boolean; creando: boolean; onElegir: (p: PuntoDePartidaElegido) => void; onSalir: () => void }) {
   const [elegido, setElegido] = useState<PuntoDePartidaElegido | null>(null);
   const [falta, setFalta] = useState(false);
   const opciones: readonly { readonly clave: PuntoDePartidaElegido; readonly titulo: string; readonly detalle: string }[] = [
@@ -29,6 +29,7 @@ export function PuntoDePartida({ hayVigente, creando, onElegir }: { hayVigente: 
       onElegirPaso={null}
       onAtras={null}
       onEstacion={null}
+      onSalir={creando ? null : onSalir}
       principal={{
         texto: C.siguiente(2),
         ocupado: creando ? C.guardando : null,
