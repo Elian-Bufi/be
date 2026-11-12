@@ -319,12 +319,16 @@ test('TEST-AVR-011 · BE no elige el día tipo ni la sesión: sin día elegido, 
   assert.match(leer('pantallas/inicio-entrenamiento.tsx'), /Tu plan tiene varias sesiones\. Elegí la que hiciste o vas a hacer\./);
 });
 
-test('TEST-AVR-012 · «Tu actividad» es un número, las sesiones registradas en 30 días, sin porcentaje ni «Ir a…»', () => {
-  assert.deepEqual(inicio.actividadEnUnNumero({ registradas: 11 }), { numero: 11, unidad: 'sesiones registradas', paraLeer: 'Últimos 30 días: 11 sesiones registradas' });
-  assert.equal(inicio.actividadEnUnNumero({ registradas: 1 }).unidad, 'sesión registrada');
-  const tarjeta = leer('pantallas/inicio-entrenamiento.tsx');
-  assert.match(tarjeta, /actividadEnUnNumero\(r\.datos\)/);
-  assert.doesNotMatch(tarjeta, /Realizadas con desvío/, 'el desglose está en «Tu historial»');
+// TEST-AVR-012 y 013 cambian con AV2-D2, ratificada por Dirección el 2026-11-11 (WP-APP-VUELTA-2 AV2-12): la actividad
+// de Inicio deja de ser un solo número (PV-5) y va con su desglose; nunca un total que mezcle lo hecho con lo no hecho.
+test('TEST-AVR-012 · la actividad de Inicio: realizadas y no realizadas por separado, sin porcentaje ni «Ir a…» (AV2-D2)', () => {
+  const a = inicio.actividadDeInicio({ registradas: 11, realizadas: 8, conDesvio: 2, noRealizadas: 1 });
+  assert.equal(a.texto, '10 realizadas · 1 no realizada · 30 días');
+  assert.equal(a.paraLeer, 'Actividad de los últimos 30 días: 10 realizadas y 1 no realizada');
+  assert.equal(inicio.actividadDeInicio({ realizadas: 1, conDesvio: 0, noRealizadas: 0 }).unidad, 'realizada');
+  const tarjeta = [leer('pantallas/inicio.tsx'), leer('pantallas/inicio-entrenamiento.tsx')].join('\n');
+  assert.match(tarjeta, /actividadDeInicio\(/);
+  assert.doesNotMatch(tarjeta, /actividadEnUnNumero|sesiones registradas/, 'ya no es un solo número');
   for (const archivo of ['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-informacion.tsx']) assert.doesNotMatch(leer(`pantallas/${archivo}`), /texto="Ir a /, archivo);
   assert.deepEqual(desplegable.problemasDelPliegue(inicio.PLIEGUE_DE_LA_SESION_DE_HOY), []);
   assert.deepEqual(desplegable.problemasDelPliegue(inicio.PLIEGUE_DE_PARA_RESPONDER), []);
@@ -335,11 +339,14 @@ test('TEST-AVR-012 · «Tu actividad» es un número, las sesiones registradas e
   });
 });
 
-test('TEST-AVR-013 · el total del desglose de «Tu historial» es el número de Inicio', () => {
+test('TEST-AVR-013 · las realizadas de Inicio son las realizadas más las con desvío de «Tu historial», y las no realizadas, las mismas (AV2-D2)', () => {
   const a = { registradas: 11, realizadas: 8, conDesvio: 2, noRealizadas: 1 };
   const d = inicio.desgloseDeActividad(a);
-  assert.equal(d.total, inicio.actividadEnUnNumero(a).numero);
-  assert.equal(d.texto, 'Últimos 30 días: 8 realizadas, 2 con desvío y 1 no realizada.');
+  const i = inicio.actividadDeInicio(a);
+  assert.equal(d.realizadas, a.realizadas + a.conDesvio);
+  assert.equal(i.realizadas, d.realizadas);
+  assert.equal(d.noRealizadas, a.noRealizadas);
+  assert.equal(d.texto, 'Últimos 30 días: 10 realizadas (2 con desvío) y 1 no realizada.');
   const historial = leer('pantallas/historial.tsx');
   assert.match(historial, /leerActividadDeEntrenamiento\(api, token, periodo\)/);
   assert.match(historial, /`inicio-actividad:\$\{periodo\.periodStart\}:\$\{periodo\.periodEnd\}`/, 'la misma lectura y la misma clave que Inicio');
@@ -788,6 +795,54 @@ test('TEST-AV2-012 · el título de la ayuda no lleva «flex»: el ancho lo toma
   assert.doesNotMatch(/\n  tituloDeDesplegable: \{([^}]*)\}/.exec(ui)[1], /\bflex(Grow)?\s*:/);
   assert.match(ui, /\n  textoDeDesplegable: \{ flex: 1 \},/);
   assert.match(ui, /\n  cabezaDeAyuda: \{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8 \},/, 'la fila centra el título y el (?)');
+});
+
+// ─── TEST-AV2-013 · la actividad, contada de una sola manera y sin ceros (AV2-12) ───────────────
+
+test('TEST-AV2-013 · Inicio y «Tu historial» con los ejemplos del paquete; sin ninguna, sin ceros', () => {
+  const dos = { realizadas: 1, conDesvio: 1, noRealizadas: 1 };
+  assert.equal(inicio.actividadDeInicio(dos).texto, '2 realizadas · 1 no realizada · 30 días');
+  assert.equal(inicio.actividadDeInicio(dos).realizadas, 2);
+  assert.equal(inicio.actividadDeInicio(dos).detalle, '1 no realizada · 30 días');
+  assert.equal(inicio.actividadDeInicio(dos).paraLeer, 'Actividad de los últimos 30 días: 2 realizadas y 1 no realizada');
+  assert.equal(inicio.desgloseDeActividad(dos).texto, 'Últimos 30 días: 2 realizadas (1 con desvío) y 1 no realizada.');
+  assert.equal(inicio.desgloseDeActividad({ realizadas: 2, conDesvio: 0, noRealizadas: 1 }).texto, 'Últimos 30 días: 2 realizadas y 1 no realizada.');
+  assert.equal(inicio.desgloseDeActividad({ realizadas: 2, conDesvio: 0, noRealizadas: 0 }).texto, 'Últimos 30 días: 2 realizadas.');
+  // Solo lo no hecho: neutro, sin cifra grande y sin «0 realizadas».
+  const soloNo = inicio.actividadDeInicio({ realizadas: 0, conDesvio: 0, noRealizadas: 1 });
+  assert.deepEqual([soloNo.realizadas, soloNo.texto, soloNo.detalle], [null, '1 no realizada · 30 días', '1 no realizada · 30 días']);
+  assert.equal(inicio.desgloseDeActividad({ realizadas: 0, conDesvio: 0, noRealizadas: 1 }).texto, 'Últimos 30 días: 1 no realizada.');
+  // Nada: una línea, sin ceros.
+  assert.equal(inicio.actividadDeInicio({ realizadas: 0, conDesvio: 0, noRealizadas: 0 }).vacia, true);
+  assert.equal(inicio.desgloseDeActividad({ realizadas: 0, conDesvio: 0, noRealizadas: 0 }).texto, 'Últimos 30 días: sin sesiones registradas.');
+});
+
+test('TEST-AV2-013 · ninguna frase muestra un cero ni suma lo hecho con lo no hecho', () => {
+  for (let r = 0; r <= 3; r++) {
+    for (let d = 0; d <= 2; d++) {
+      for (let n = 0; n <= 2; n++) {
+        const a = { realizadas: r, conDesvio: d, noRealizadas: n };
+        const i = inicio.actividadDeInicio(a);
+        const h = inicio.desgloseDeActividad(a);
+        for (const texto of [i.texto, i.detalle, i.paraLeer, h.texto]) {
+          assert.doesNotMatch(texto, /(^|\D)0(\D|$)/, `${JSON.stringify(a)}: «${texto}» muestra un cero`);
+          // Un total de «registradas» sumaba lo hecho con lo no hecho (el error 6 de la crítica).
+          assert.doesNotMatch(texto, /\d+ (sesi(ón|ones) )?registradas?/, `${JSON.stringify(a)}: «${texto}» suma lo hecho con lo no hecho`);
+        }
+        if (r + d > 0 && n > 0) assert.match(i.texto, new RegExp(`^${r + d} realizadas? · ${n} no realizadas? · 30 días$`));
+      }
+    }
+  }
+});
+
+test('TEST-AV2-013 · Inicio y «Tu historial» salen de la misma lectura y la misma clave', () => {
+  const clave = /useLecturaRecordada\(token, `inicio-actividad:\$\{periodo\.periodStart\}:\$\{periodo\.periodEnd\}`/;
+  const historial = leer('pantallas/historial.tsx');
+  assert.match(historial, clave);
+  assert.match(historial, /leerActividadDeEntrenamiento\(api, token, periodo\)/);
+  const deInicio = ['inicio.tsx', 'inicio-entrenamiento.tsx'].map((a) => leer(`pantallas/${a}`)).join('\n');
+  assert.match(deInicio, clave);
+  assert.match(deInicio, /leerActividadDeEntrenamiento\(api, token, periodo\)/);
 });
 
 // ─── TEST-AV2-016 · las fechas en tres formas y la hora en 24 h (AV2-15) ────────────────────────

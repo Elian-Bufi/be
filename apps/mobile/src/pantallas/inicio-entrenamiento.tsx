@@ -29,7 +29,7 @@ import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } f
 import { useAccesoRetirado, type Ir } from '../navegacion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { sesionEnCursoParaMostrar, sesionRealizada } from '../sesion-en-curso';
-import { actividadEnUnNumero, detalleDeLaSesion } from '../inicio-de-hoy';
+import { actividadDeInicio, detalleDeLaSesion } from '../inicio-de-hoy';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { Aviso, Boton, Cifra, Desplegable, Insignia, Parrafo } from '../ui';
 import { AvisoDeEntrenamientoEnCurso, MOTIVO_ANTES_DE_INICIAR, useAbrirOcurrencia } from './entrenamiento';
@@ -195,16 +195,16 @@ export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { to
   else if (faltaElA3(r)) contenido = <SinA3 texto={COPY_ENTRENAMIENTO.historialNecesitaA3} ir={ir} />;
   else if (!r.ok) contenido = <NoSePudo falla={r} reintentar={() => void cargar()} />;
   else {
-    // DL-166 (PV-5): un solo número, las sesiones registradas en 30 días. El desglose está en «Tu historial» (AV-07).
-    const a = actividadEnUnNumero(r.datos);
-    contenido =
-      a.numero === 0 ? (
-        <Parrafo>No registraste sesiones en estos días.</Parrafo>
-      ) : (
-        <View accessible accessibilityLabel={a.paraLeer}>
-          <Cifra valor={numero(a.numero)} unidad={a.unidad} tamano={26} />
-        </View>
-      );
+    // DL-170 (AV2-12, con AV2-D2): lo hecho y lo no hecho por separado, de la misma lectura que «Tu historial».
+    const a = actividadDeInicio(r.datos);
+    contenido = a.vacia ? (
+      <Parrafo>{a.texto}</Parrafo>
+    ) : (
+      <View accessible accessibilityLabel={a.paraLeer}>
+        {a.realizadas !== null ? <Cifra valor={numero(a.realizadas)} unidad={a.unidad} tamano={26} /> : null}
+        <Text style={estilos.detalle}>{a.detalle}</Text>
+      </View>
+    );
   }
   return (
     <TarjetaDeInicio

@@ -6,8 +6,9 @@
  * - **«La que sigue»** es la primera comida sin registrar en el orden del plan, nunca por la hora (PV-2). Un registro
  *   fuera del plan no es una comida del plan.
  * - **BE no elige** el día tipo (DL-049) ni la sesión (DL-077): sin día elegido, no hay fichas y se pide elegir.
- * - **«Tu actividad» es un número:** las sesiones registradas en los últimos 30 días, sin porcentaje ni calificación
- *   (PV-5). El desglose sale de la misma lectura y la misma función, así su total es el número de Inicio (AV-07, AVD-2).
+ * - **La actividad, con su desglose** (AV2-12, con AV2-D2, que reemplaza a PV-5): «2 realizadas · 1 no realizada · 30
+ *   días», nunca un total que mezcle lo hecho con lo no hecho. Inicio, «Tu historial» y la tira de la semana salen de la
+ *   misma lectura y la misma clave: las realizadas de Inicio son las realizadas más las con desvío del historial.
  * - **Una cuenta nueva** (AV-17): un área sin plan es una línea, no una tarjeta; «Para responder» sin filas no se dibuja.
  */
 import type { DiaTipo, Ingesta } from '@be/domain';
@@ -71,20 +72,53 @@ export function comidasDeHoy(dia: Pick<DiaTipo, 'meals'> | null, registros: read
 /** «La que sigue»: la primera sin registrar en el orden del plan, o `null` si están todas registradas. */
 export const laQueSigue = (c: ComidasDeHoy | null): FichaDeComida | null => c?.fichas.find((f) => f.estado === 'la-que-sigue') ?? null;
 
-// ─── Tu actividad, un número, y su desglose (AV-06, AV-07) ──────────────────────────────────────
+// ─── La actividad de 30 días, con su desglose (AV2-12, con AV2-D2) ──────────────────────────────
 
-/** El número de Inicio: las sesiones registradas en los últimos 30 días. */
-export function actividadEnUnNumero(a: Pick<ActividadDeEntrenamiento, 'registradas'>): { readonly numero: number; readonly unidad: string; readonly paraLeer: string } {
-  return { numero: a.registradas, unidad: T.sesionesRegistradas(a.registradas), paraLeer: T.actividadParaLeer(a.registradas) };
+/** Lo que dice la tarjeta «Actividad» de Inicio. */
+export interface ActividadDeInicio {
+  /** Sin nada registrado: una línea, sin ceros. */
+  readonly vacia: boolean;
+  /** Las realizadas (también con desvío), para la cifra grande; `null` si no hay ninguna: no se escribe un cero. */
+  readonly realizadas: number | null;
+  /** «realizadas» o «realizada», junto a la cifra. */
+  readonly unidad: string;
+  /** Debajo de la cifra: «1 no realizada · 30 días», o «30 días». */
+  readonly detalle: string;
+  /** En una línea: «2 realizadas · 1 no realizada · 30 días». */
+  readonly texto: string;
+  /** Lo que dice el lector: «Actividad de los últimos 30 días: 2 realizadas y 1 no realizada». */
+  readonly paraLeer: string;
 }
 
 /**
- * El desglose de los mismos 30 días, para «Tu historial» (AV-07): realizadas, con desvío y no realizadas. Sale de la misma
- * lectura que el número de Inicio, así su total coincide. Un día sin registro no es «no realizada» (DL-106): solo cuenta
- * lo que se registró.
+ * La actividad de Inicio: «2 realizadas · 1 no realizada · 30 días». Las realizadas son Realizada y Realizada con desvío,
+ * con la condición que rige después de las correcciones; la no realizada va en neutro y solo si hay. Un día sin registro
+ * no es «no realizada» (DL-106): solo cuenta lo que se registró.
  */
-export function desgloseDeActividad(a: Pick<ActividadDeEntrenamiento, 'registradas' | 'realizadas' | 'conDesvio' | 'noRealizadas'>): { readonly total: number; readonly texto: string } {
-  return { total: a.realizadas + a.conDesvio + a.noRealizadas, texto: TEXTOS_DEL_DESCANSO.desglose30Dias(a.realizadas, a.conDesvio, a.noRealizadas) };
+export function actividadDeInicio(a: Pick<ActividadDeEntrenamiento, 'realizadas' | 'conDesvio' | 'noRealizadas'>): ActividadDeInicio {
+  const realizadas = a.realizadas + a.conDesvio;
+  const hechas = realizadas > 0 ? T.cuantos(realizadas, 'realizada', 'realizadas') : null;
+  const noHechas = a.noRealizadas > 0 ? T.noRealizadas(a.noRealizadas) : null;
+  const partes = [hechas, noHechas].filter((p): p is string => p !== null);
+  if (partes.length === 0) return { vacia: true, realizadas: null, unidad: '', detalle: T.treintaDias, texto: T.sinActividad, paraLeer: T.sinActividad };
+  return {
+    vacia: false,
+    realizadas: realizadas > 0 ? realizadas : null,
+    unidad: T.realizadas(realizadas),
+    // Con la cifra arriba, debajo va lo que no se hizo, si hay, y el período; sin realizadas, todo en la línea.
+    detalle: [hechas ? noHechas : null, hechas ? null : noHechas, T.treintaDias].filter((p): p is string => p !== null).join(' · '),
+    texto: [...partes, T.treintaDias].join(' · '),
+    paraLeer: T.actividadParaLeer(partes),
+  };
+}
+
+/**
+ * El desglose de los mismos 30 días, para «Tu historial» (AV2-12): «Últimos 30 días: 2 realizadas (1 con desvío) y 1 no
+ * realizada.». Sale de la misma lectura que Inicio: sus realizadas son las de Inicio, y sus no realizadas, las mismas.
+ */
+export function desgloseDeActividad(a: Pick<ActividadDeEntrenamiento, 'realizadas' | 'conDesvio' | 'noRealizadas'>): { readonly realizadas: number; readonly noRealizadas: number; readonly texto: string } {
+  const realizadas = a.realizadas + a.conDesvio;
+  return { realizadas, noRealizadas: a.noRealizadas, texto: TEXTOS_DEL_DESCANSO.desglose30Dias(realizadas, a.conDesvio, a.noRealizadas) };
 }
 
 // ─── La sesión de hoy, con su detalle plegado (AV-06) ───────────────────────────────────────────

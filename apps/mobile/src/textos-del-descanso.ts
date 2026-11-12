@@ -5,12 +5,23 @@
  * entrenador (PV-7): ubica dónde va el descanso, no califica a la persona.
  */
 import { numero } from '@be/domain';
+import { enumerar } from './textos-por-toma';
 
 const cuantos = (n: number, uno: string, varios: string): string => `${numero(n)} ${n === 1 ? uno : varios}`;
 
 export const TEXTOS_DEL_DESCANSO = {
-  desglose30Dias: (realizadas: number, conDesvio: number, noRealizadas: number) =>
-    `Últimos 30 días: ${cuantos(realizadas, 'realizada', 'realizadas')}, ${cuantos(conDesvio, 'con desvío', 'con desvío')} y ${cuantos(noRealizadas, 'no realizada', 'no realizadas')}.`,
+  /**
+   * El desglose de «Tu historial» (AV2-12, con AV2-D2): «Últimos 30 días: 2 realizadas (1 con desvío) y 1 no realizada.».
+   * `realizadas` cuenta también las con desvío; las partes que valen cero no se escriben, y lo hecho no se suma con lo
+   * no hecho.
+   */
+  desglose30Dias: (realizadas: number, conDesvio: number, noRealizadas: number) => {
+    const partes = [
+      realizadas > 0 ? `${cuantos(realizadas, 'realizada', 'realizadas')}${conDesvio > 0 ? ` (${numero(conDesvio)} con desvío)` : ''}` : null,
+      noRealizadas > 0 ? cuantos(noRealizadas, 'no realizada', 'no realizadas') : null,
+    ].filter((p): p is string => p !== null);
+    return partes.length === 0 ? 'Últimos 30 días: sin sesiones registradas.' : `Últimos 30 días: ${enumerar(partes)}.`;
+  },
   // ─── La sesión: el descanso, el engranaje y la fila fija (AV-10 a AV-14) ───────────────────
   descansoTrasLaSerie: (n: number) => `Descanso · tras la serie ${numero(n)}`,
   deRecomendado: (recomendado: string) => `de ${recomendado} recomendado`,

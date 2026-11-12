@@ -95,8 +95,13 @@ export const TEXTOS_DE_LA_VUELTA = {
   fueraDelPlan: (n: number) => (n === 1 ? 'Y 1 registro fuera del plan.' : `Y ${numero(n)} registros fuera del plan.`),
   paraMirar: 'Para mirar',
   ultimos30Dias: 'Últimos 30 días',
-  sesionesRegistradas: (n: number) => (n === 1 ? 'sesión registrada' : 'sesiones registradas'),
-  actividadParaLeer: (n: number) => `Últimos 30 días: ${cuantos(n, 'sesión registrada', 'sesiones registradas')}`,
+  // ─── La actividad (WP-APP-VUELTA-2 AV2-12, con AV2-D2): nunca un total que mezcle lo hecho con lo no hecho ──
+  actividad: 'Actividad',
+  realizadas: (n: number) => (n === 1 ? 'realizada' : 'realizadas'),
+  noRealizadas: (n: number) => cuantos(n, 'no realizada', 'no realizadas'),
+  treintaDias: '30 días',
+  actividadParaLeer: (partes: readonly string[]) => `Actividad de los últimos 30 días: ${partes.length === 1 ? partes[0] : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`}`,
+  sinActividad: 'No registraste sesiones en estos días.',
   masDe: (n: number) => `Más de ${numero(n)}`,
   sinPlanDe: (area: string) => `${area}: todavía sin plan.`,
 
