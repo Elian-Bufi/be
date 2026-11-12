@@ -15471,3 +15471,34 @@ p.cifra-del-espacio__desglose {
   border: 0;
   box-shadow: none;
 }
+
+/* ═══ ED-10 (WP-EDITORES-PROFESIONAL) · El cuadro enfocado (`components/cuadro-enfocado.tsx`) ═══════════════════════
+   Une el cajón y el diálogo. La forma «panel» es el cajón de siempre; la forma «dialogo» va al centro, con la misma
+   cabecera y el mismo pie fijos y el cuerpo que se desplaza adentro. Nunca pasa de la pantalla: lo largo se desplaza. */
+.cuadro-enfocado--dialogo {
+  width: min(44rem, calc(100vw - 2rem));
+  max-height: min(52rem, calc(100dvh - 2rem));
+  padding: 0;
+}
+
+.cuadro-enfocado--dialogo.dialogo--ancho {
+  width: min(72rem, calc(100vw - 2rem));
+  max-width: none;
+}
+
+.cuadro-enfocado--dialogo[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.cuadro-enfocado .cajon__pie .acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0 auto;
+}
+
+.cuadro-enfocado__pregunta p {
+  margin: 0;
+}
