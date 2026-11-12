@@ -2,14 +2,20 @@
  * Las piezas comunes de las tarjetas de Inicio (DL-117): la tarjeta con el ícono de su módulo, la estructura sin valores
  * mientras se verifica (G2), la falla con «Reintentar», el aviso del A3 y las acciones lado a lado. Cada tarjeta vive en
  * el archivo de su módulo (inicio-*.tsx), así la prueba de textos la revisa con la lista de su dominio.
+ *
+ * Desde DL-170 (AV2-07) la tarjeta deja su hoja propia y usa la receta de vidrio (`useSuperficie`, nivel 1, que provee
+ * el nivel a lo de adentro); el ícono pasa a 20 dp, en `tenue`, en línea con el título y sin círculo: no es algo que se
+ * toque. Una tarjeta chica (la medida y la actividad) puede ir con su ancho y tocarse entera.
  */
 import { COPY, COPY_ANTROPOMETRIA, type Resultado } from '@be/domain';
 import type { ReactNode } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { IconoDeZona } from '../barra-de-zonas';
 import { Icono, type NombreDeIcono } from '../icono';
 import type { Ir, Zona } from '../navegacion';
+import { RELLENO_DE_LA_TARJETA } from '../receta-de-vidrio';
 import { Boton, COLOR, estilosPorTema, Parrafo } from '../ui';
+import { DentroDelNivel, useSuperficie } from '../vidrio';
 
 export type Falla = Exclude<Resultado<unknown>, { ok: true }>;
 export type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
@@ -21,16 +27,35 @@ const ESCALA_PARA_APILAR = 1.5;
  * Una tarjeta de Inicio: el ícono del módulo, como en la barra, el título y, si hace falta, de qué período habla. El
  * título crece con la letra hasta 1,5 veces: más grande, una palabra larga no entraba en la línea y se partía (render del
  * navegador con letra ×2, en 360 dp). El resto de la tarjeta crece sin tope.
+ * - `ancho`: una tarjeta chica, lado a lado con otra (AV2-07). Sin porcentajes: el ancho sale de la ventana.
+ * - `alTocar` y `paraLeer`: la tarjeta entera es un botón (la medida abre su evolución), con lo que dice el lector.
  */
-export function TarjetaDeInicio({ zona, titulo, detalle, icono, children }: { zona: Zona; titulo: string; detalle?: string; icono?: NombreDeIcono; children: ReactNode }) {
+export function TarjetaDeInicio({
+  zona,
+  titulo,
+  detalle,
+  icono,
+  ancho,
+  alTocar,
+  paraLeer,
+  children,
+}: {
+  zona: Zona;
+  titulo: string;
+  detalle?: string;
+  icono?: NombreDeIcono;
+  ancho?: number;
+  alTocar?: () => void;
+  paraLeer?: string;
+  children: ReactNode;
+}) {
   const { fontScale } = useWindowDimensions();
-  return (
-    <View style={estilos.tarjeta}>
+  const { estilo, nivel } = useSuperficie();
+  const contenido = (
+    <DentroDelNivel nivel={nivel}>
       <View style={[estilos.cabeza, fontScale >= ESCALA_PARA_APILAR && estilos.cabezaApilada]}>
-        <View style={estilos.icono}>
-          {/* El de su módulo, salvo que la tarjeta pida otro de la familia (PA-06): «Tu actividad» no es el módulo entero. */}
-          {icono ? <Icono nombre={icono} tamano={24} tono="acento" /> : <IconoDeZona zona={zona} color={COLOR.acento} />}
-        </View>
+        {/* El de su módulo, salvo que la tarjeta pida otro de la familia (PA-06). Decorativo: en `tenue`, sin círculo. */}
+        {icono ? <Icono nombre={icono} tamano={20} tono="tenue" /> : <IconoDeZona zona={zona} color={COLOR.tenue} tamano={20} />}
         <View style={[estilos.textosDeCabeza, fontScale >= ESCALA_PARA_APILAR && estilos.textosApilados]}>
           <Text style={estilos.titulo} accessibilityRole="header" maxFontSizeMultiplier={1.5}>
             {titulo}
@@ -39,7 +64,14 @@ export function TarjetaDeInicio({ zona, titulo, detalle, icono, children }: { zo
         </View>
       </View>
       {children}
-    </View>
+    </DentroDelNivel>
+  );
+  const forma = [estilos.tarjeta, estilo, ancho === undefined ? null : { width: ancho }];
+  if (!alTocar) return <View style={forma}>{contenido}</View>;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={paraLeer} onPress={alTocar} style={({ pressed }) => [...forma, pressed && estilos.presionada]}>
+      {contenido}
+    </Pressable>
   );
 }
 
@@ -101,16 +133,13 @@ export function Accion({ children }: { children: ReactNode }) {
 }
 
 export const estilos = estilosPorTema((COLOR) => ({
-  // La fecha de hoy, con el ícono de «hoy» al lado (PA-06).
-  filaDeLaFecha: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -6, marginBottom: 8 },
-  fechaDeHoy: { fontSize: 16, color: COLOR.tenue, flexShrink: 1 },
   linea: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 4 },
   textoDeLinea: { fontSize: 15, lineHeight: 21, color: COLOR.tenue, flexShrink: 1 },
-  // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde.
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
-  cabeza: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde; con el vidrio, la receta (DL-170).
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: RELLENO_DE_LA_TARJETA, marginVertical: 8, backgroundColor: COLOR.superficie },
+  presionada: { opacity: 0.7 },
+  cabeza: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   cabezaApilada: { flexDirection: 'column', alignItems: 'flex-start' },
-  icono: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada },
   textosDeCabeza: { flex: 1 },
   // Apilados, los textos ocupan su alto: con flex 1 en una columna sin alto fijo, podían quedar sin lugar.
   textosApilados: { flex: 0, alignSelf: 'stretch' },
@@ -131,5 +160,4 @@ export const estilos = estilosPorTema((COLOR) => ({
   parDeDato: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderTopWidth: 1, borderTopColor: COLOR.borde, paddingVertical: 8 },
   textoDeDato: { fontSize: 16, color: COLOR.texto, flexShrink: 1 },
   valorDeDato: { fontSize: 16, fontWeight: '800', color: COLOR.texto },
-  destacada: { marginTop: 8, padding: 12, borderRadius: 12, backgroundColor: COLOR.fondo, borderWidth: 1, borderColor: COLOR.borde },
 }));

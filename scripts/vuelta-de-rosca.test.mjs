@@ -863,6 +863,158 @@ test('TEST-AV2-013 · Inicio y «Tu historial» salen de la misma lectura y la m
   assert.match(deInicio, /leerActividadDeEntrenamiento\(api, token, periodo\)/);
 });
 
+// ─── TEST-AV2-008 · Inicio según la maqueta (AV2-07) ────────────────────────────────────────────
+
+const formatoDeInicio = await import('../apps/mobile/src/formato.ts');
+const lecturasDeInicio = await import('../apps/mobile/src/lecturas-de-inicio.ts');
+const ARCHIVOS_DE_INICIO = ['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-mediciones.tsx', 'inicio-informacion.tsx', 'inicio-acceso.tsx', 'tarjeta-de-inicio.tsx', 'tira-de-la-semana.tsx'];
+
+test('TEST-AV2-008 · el título es la fecha y, de arriba abajo: el paso que falta, la tira, Entrenamiento, Comidas, «Para responder», la medida y la actividad', () => {
+  const pantalla = sinComentarios(leer('pantallas/inicio.tsx'));
+  assert.match(pantalla, /<Titulo>\{fechaLarga\(hoy\)\}<\/Titulo>/);
+  const orden = ['<Titulo>', '<AccesoIncompleto', '<TiraDeLaSemana', '<EntrenamientoDeHoy', '<NutricionDeHoy', '<Pendientes', '<Mediciones', '<ActividadDeEntrenamiento'].map((t) => pantalla.indexOf(t));
+  assert.ok(orden.every((p, i) => p > 0 && (i === 0 || p > orden[i - 1])), `el orden en inicio.tsx: ${orden.join(', ')}`);
+  assert.deepEqual([...inicio.ORDEN_DE_INICIO], ['paso-que-falta', 'semana', 'sesion', 'comidas', 'para-responder', 'medida', 'actividad']);
+  assert.doesNotMatch(pantalla, /Rotulo|paraMirar|Hola/, 'sin «Para mirar» ni «Hola»');
+  assert.match(pantalla, /<View style=\{estilos\.parDeTarjetas\}>\s*<Mediciones [^>]*ancho=\{anchoChico\}[^>]*\/>\s*<ActividadDeEntrenamiento [^>]*ancho=\{anchoChico\}/, 'la medida y la actividad, lado a lado');
+  // Las tarjetas usan las piezas base: el ícono de 20 dp en `tenue`, sin círculo, y la receta de vidrio.
+  const tarjeta = sinComentarios(leer('pantallas/tarjeta-de-inicio.tsx'));
+  assert.match(tarjeta, /<IconoDeZona zona=\{zona\} color=\{COLOR\.tenue\} tamano=\{20\} \/>/);
+  assert.match(tarjeta, /const \{ estilo, nivel \} = useSuperficie\(\);/);
+  assert.doesNotMatch(tarjeta, /borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor/, 'sin el círculo del ícono');
+});
+
+test('TEST-AV2-008 · dos columnas con letra ×1 y una con ×1,3: no se achica la letra, cambia la composición', () => {
+  assert.equal(inicio.columnasDeInicio(360, 1), 2);
+  assert.equal(inicio.columnasDeInicio(412, 1.15), 2);
+  assert.equal(inicio.columnasDeInicio(360, 1.3), 1);
+  assert.equal(inicio.columnasDeInicio(320, 1), 1, 'en un teléfono angosto, también una');
+  // Las fichas dentro de la tarjeta: dos entran justas, con el relleno y el borde de la tarjeta descontados.
+  const lugar = 360 - 2 * inicio.RELLENO_DE_LA_PANTALLA - 2 * (receta.RELLENO_DE_LA_TARJETA + 1);
+  assert.ok(2 * inicio.anchoDeLaColumna(360, 1, true) + inicio.SEPARACION_EN_INICIO <= lugar, 'dos fichas por fila sin pasarse');
+  assert.equal(inicio.anchoDeLaColumna(360, 1.3, true), lugar, 'con ×1,3, una a todo el ancho');
+  assert.equal(2 * inicio.anchoDeLaColumna(360, 1, false) + inicio.SEPARACION_EN_INICIO, 360 - 2 * inicio.RELLENO_DE_LA_PANTALLA, 'las dos tarjetas chicas llenan la fila');
+  assert.match(leer('pantallas/inicio.tsx'), /anchoDeLaColumna\(width, fontScale, false\)/);
+  assert.match(leer('pantallas/inicio-nutricion.tsx'), /anchoDeLaColumna\(width, fontScale, true\)/);
+});
+
+test('TEST-AV2-008 · el nombre del día del plan bajo «Comidas», solo con más de un tipo de día', () => {
+  const uno = [{ dayTypeId: 'h', label: 'Día habitual' }];
+  const dos = [...uno, { dayTypeId: 'e', label: 'Día de entrenamiento' }];
+  assert.equal(inicio.nombreDelDiaEnInicio(uno, 'h'), undefined, 'con un solo tipo, no dice «Día habitual»');
+  assert.equal(inicio.nombreDelDiaEnInicio(dos, 'e'), 'Día de entrenamiento');
+  assert.equal(inicio.nombreDelDiaEnInicio(dos, null), undefined);
+  assert.match(leer('pantallas/inicio-nutricion.tsx'), /nombreDelDiaEnInicio\(r\.datos\.data\.dayTypes, r\.datos\.data\.selectedDayTypeId\)/);
+});
+
+test('TEST-AV2-008 · la medida de la última toma: el cambio como un dato, sin color ni flecha, y la tarjeta abre su evolución', () => {
+  formatoDeInicio.fijarDiaDeReferencia('2026-11-11');
+  const medida = (delta, extra = {}) => ({
+    nombre: 'Peso',
+    actual: { punto: { value: 80.9, unit: 'kg' } },
+    anterior: { fecha: '2026-09-02' },
+    diferencia: delta === null ? null : { delta, unidad: 'kg', dias: 68 },
+    motivoSinAnterior: null,
+    ...extra,
+  });
+  const sinCambio = inicio.medidaDeInicio(medida(0));
+  assert.deepEqual([sinCambio.titulo, sinCambio.valor, sinCambio.unidad, sinCambio.cambio], ['Peso', '80,9', 'kg', 'Sin cambio desde el 2 sept']);
+  assert.equal(sinCambio.paraLeer, 'Peso, 80,9 kilos, sin cambio desde el 2 de septiembre. Ver la evolución');
+  assert.equal(inicio.medidaDeInicio(medida(0.4)).cambio, '+0,4 kg desde el 2 sept');
+  assert.equal(inicio.medidaDeInicio(medida(-0.4)).cambio, '−0,4 kg desde el 2 sept');
+  assert.equal(inicio.medidaDeInicio(medida(null, { anterior: null, motivoSinAnterior: 'SIN_PREVIA' })).cambio, 'Sin una toma anterior comparable en el período');
+  assert.equal(inicio.medidaDeInicio({ ...medida(0), nombre: 'Cintura', actual: { punto: { value: 82, unit: 'cm' } } }).titulo, 'Cintura', 'sin peso, el título es la medida que trae');
+  const tarjeta = sinComentarios(leer('pantallas/inicio-mediciones.tsx'));
+  assert.doesNotMatch(tarjeta, /16 medidas|resultados? de fórmulas|Ver su evolución|Ver la toma|nombre="(sube|baja)"|tono="(exito|error)"/);
+  assert.match(tarjeta, /alTocar=\{\(\) => ir\(\{ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada\.metrica \}\)\}/);
+});
+
+test('TEST-AV2-008 · Inicio no escribe nada y no tiene porcentajes', () => {
+  const todo = ARCHIVOS_DE_INICIO.map((a) => sinComentarios(leer(`pantallas/${a}`))).join('\n');
+  assert.doesNotMatch(todo, /api\.(abrir|guardar|registrar|confirmar|corregir|otorgar|revocar|responder|saltear|anular|deshacer)/);
+  assert.doesNotMatch(todo, /%/);
+});
+
+// ─── TEST-AV2-009 · la tira de la semana (AV2-08) ───────────────────────────────────────────────
+
+/** La lectura de 30 días hasta `hasta`, con lo registrado por día. */
+const actividadHasta = (hasta, porDia) => ({ periodo: { desde: '2026-10-13', hasta }, porDia });
+const tildes = (t) => t.dias.map((d) => (d.realizada ? '✓' : d.numero)).join(' ');
+
+test('TEST-AV2-009 · de lunes a domingo: la tilde solo con una realizada; una «No realizada», un día sin sesión y uno por venir, neutros', () => {
+  // Miércoles 11: el lunes, una realizada; el martes, solo una «No realizada»; hoy, una con desvío (cuenta como realizada).
+  const t = inicio.tiraDeLaSemana('2026-11-11', actividadHasta('2026-11-11', { '2026-11-08': { realizadas: 2, noRealizadas: 0 }, '2026-11-09': { realizadas: 1, noRealizadas: 0 }, '2026-11-10': { realizadas: 0, noRealizadas: 1 }, '2026-11-11': { realizadas: 1, noRealizadas: 0 } }), null);
+  assert.deepEqual(t.dias.map((d) => d.letra), ['L', 'M', 'M', 'J', 'V', 'S', 'D']);
+  assert.deepEqual(t.dias.map((d) => d.fecha), ['2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15']);
+  assert.equal(tildes(t), '✓ 10 ✓ 12 13 14 15', 'el domingo anterior no pasa a esta semana');
+  assert.deepEqual(t.dias.map((d) => d.hoy), [false, false, true, false, false, false, false], 'hoy, con el aro');
+  assert.equal(t.realizadas, 2);
+  assert.equal(t.linea, '2 sesiones realizadas esta semana');
+  assert.equal(t.paraLeer, 'Esta semana: lunes y miércoles con sesión realizada. Hoy, miércoles 11');
+  assert.deepEqual(Object.keys(t).sort(), ['dias', 'linea', 'paraLeer', 'realizadas'], 'ninguna cuenta de días seguidos');
+});
+
+test('TEST-AV2-009 · mientras carga, sin tildes ni ceros; sin ninguna, sin línea; el lunes arranca vacía', () => {
+  const cargando = inicio.tiraDeLaSemana('2026-11-11', null, null);
+  assert.equal(tildes(cargando), '9 10 11 12 13 14 15');
+  assert.deepEqual([cargando.realizadas, cargando.linea], [null, null]);
+  assert.equal(cargando.paraLeer, 'Esta semana, de lunes a domingo. Hoy, miércoles 11');
+  const nada = inicio.tiraDeLaSemana('2026-11-11', actividadHasta('2026-11-11', { '2026-11-10': { realizadas: 0, noRealizadas: 2 } }), null);
+  assert.deepEqual([nada.realizadas, nada.linea], [0, null]);
+  assert.doesNotMatch(`${nada.paraLeer} ${nada.linea ?? ''}`, /\b0\b/);
+  // El lunes siguiente: lo de la semana pasada no pasa.
+  const lunes = inicio.tiraDeLaSemana('2026-11-16', actividadHasta('2026-11-16', { '2026-11-09': { realizadas: 1, noRealizadas: 0 }, '2026-11-15': { realizadas: 1, noRealizadas: 0 } }), null);
+  assert.equal(tildes(lunes), '16 17 18 19 20 21 22');
+  assert.equal(lunes.linea, null);
+  assert.equal(inicio.lunesDeLaSemana('2026-11-15'), '2026-11-09', 'el domingo es de la semana que empezó el lunes');
+  assert.equal(inicio.tiraDeLaSemana('2026-11-09', null, null).linea, null);
+  assert.equal(inicio.tiraDeLaSemana('2026-11-11', actividadHasta('2026-11-11', { '2026-11-09': { realizadas: 1, noRealizadas: 0 } }), null).linea, '1 sesión realizada esta semana');
+});
+
+test('TEST-AV2-009 · hoy se toma de API-TRN-14 solo si la lectura de 30 días quedó un día atrás, sin contarlo dos veces', () => {
+  const hoyEnElPlan = inicio.registradasHoySegunElPlan('2026-11-11', [
+    { date: '2026-11-11', execution: { state: 'REGISTERED', sessionCondition: 'COMPLETED' } },
+    { date: '2026-11-11', execution: { state: 'REGISTERED', sessionCondition: 'NOT_COMPLETED' } },
+    { date: '2026-11-11', execution: { state: 'DRAFT_IN_PROGRESS', sessionCondition: null } },
+    { date: '2026-11-10', execution: { state: 'REGISTERED', sessionCondition: 'COMPLETED' } },
+  ]);
+  assert.deepEqual(hoyEnElPlan, { realizadas: 1, noRealizadas: 1 });
+  // La lectura terminó ayer: hoy sale de API-TRN-14.
+  assert.equal(tildes(inicio.tiraDeLaSemana('2026-11-11', actividadHasta('2026-11-10', {}), hoyEnElPlan)), '9 10 ✓ 12 13 14 15');
+  // La lectura ya incluye hoy: manda ella, y no se suma lo de API-TRN-14.
+  const incluida = inicio.tiraDeLaSemana('2026-11-11', actividadHasta('2026-11-11', { '2026-11-11': { realizadas: 1, noRealizadas: 0 } }), hoyEnElPlan);
+  assert.equal(incluida.realizadas, 1);
+});
+
+test('TEST-AV2-009 · la condición que rige después de las correcciones, desde la misma lectura de 30 días', async () => {
+  const ejecucion = (id, date, condicion, correcciones = []) => ({
+    executionId: id,
+    date,
+    original: { sessionCondition: condicion },
+    corrections: correcciones.map((c, i) => ({ correctionId: `${id}-c${i}`, correction: { sessionCondition: c } })),
+    effectiveView: correcciones.length ? { kind: 'CORRECTED', correctionId: `${id}-c${correcciones.length - 1}` } : { kind: 'ORIGINAL' },
+  });
+  const api = {
+    misEjecucionesDeEntrenamiento: async () => ({
+      ok: true,
+      datos: { data: { period: { start: '2026-10-13', end: '2026-11-11' }, executions: [ejecucion('a', '2026-11-10', 'NOT_COMPLETED', ['COMPLETED']), ejecucion('b', '2026-11-09', 'COMPLETED', ['NOT_COMPLETED'])] } },
+    }),
+  };
+  const r = await lecturasDeInicio.leerActividadDeEntrenamiento(api, 't', { periodStart: '2026-10-13', periodEnd: '2026-11-11' });
+  assert.deepEqual(r.datos.porDia, { '2026-11-10': { realizadas: 1, noRealizadas: 0 }, '2026-11-09': { realizadas: 0, noRealizadas: 1 } });
+  assert.equal(tildes(inicio.tiraDeLaSemana('2026-11-11', r.datos, null)), '9 ✓ 11 12 13 14 15', 'corregida a realizada, con tilde; corregida a no realizada, neutra');
+});
+
+test('TEST-AV2-009 · el dibujo: una sola etiqueta para el lector, la tilde en «botonTexto» sobre «exito», hoy con el aro, nunca rojo', () => {
+  const tira = sinComentarios(leer('pantallas/tira-de-la-semana.tsx'));
+  assert.match(tira, /<View style=\{\[estilos\.tarjeta, estilo\]\} accessible accessibilityLabel=\{tira\.paraLeer\}>/);
+  assert.match(tira, /importantForAccessibility="no-hide-descendants" accessibilityElementsHidden/);
+  assert.match(tira, /<Icono nombre="tilde" tamano=\{18\} tono="botonTexto" \/>/);
+  assert.match(tira, /realizado: \{ backgroundColor: COLOR\.exito, borderColor: COLOR\.exito \}/);
+  assert.match(tira, /hoy: \{ borderColor: COLOR\.acento \}/);
+  assert.doesNotMatch(tira, /COLOR\.(error|peligro)|nombre="(cerrar|aviso|salteada)"/, 'lo no hecho, neutro');
+});
+
 // ─── TEST-AV2-010 · con una sesión en curso, ninguna otra ofrece empezar (AV2-09) ───────────────
 
 const enCursoMod = await import('../apps/mobile/src/sesion-en-curso.ts');

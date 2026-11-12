@@ -16,10 +16,13 @@
  *   misma lectura y la misma clave: las realizadas de Inicio son las realizadas más las con desvío del historial.
  * - **Una cuenta nueva** (AV-17): un área sin plan es una línea, no una tarjeta; «Para responder» sin filas no se dibuja.
  */
-import type { HoyConOpcionesResponse, RegistroDeComida } from '@be/domain';
+import { COPY_ANTROPOMETRIA, numero, textoDeDiferenciaAntropometrica, type HoyConOpcionesResponse, type MedidaDeLaToma, type Ocurrencia, type RegistroDeComida } from '@be/domain';
 import { estadosDeLasComidas, registroDeLaComida, type EstadoDeLaComida } from './comidas-de-hoy';
 import type { VistaConPliegue } from './desplegable';
-import type { ActividadDeEntrenamiento } from './lecturas-de-inicio';
+import { diaDeLaSemana, diaYMes, fechaCivil } from './formato';
+import type { ActividadDeEntrenamiento, ActividadDelDia } from './lecturas-de-inicio';
+import { sesionRealizada } from './sesion-en-curso';
+import { enumerar } from './textos-por-toma';
 import type { NombreDeIcono } from './icono';
 import type { Ruta } from './navegacion';
 import { RELLENO_DE_LA_TARJETA } from './receta-de-vidrio';
@@ -201,5 +204,127 @@ export function formaDelArea(planState: 'AVAILABLE' | 'NO_ACTIVE_PLAN' | 'NOT_AV
 /** «Para responder» se dibuja solo con algo para responder: sin filas, no hay tarjeta ni «0». */
 export const seDibujaParaResponder = (filas: readonly unknown[] | undefined): boolean => filas !== undefined && filas.length > 0;
 
-/** El orden de Inicio (maqueta 01 y 09): el paso que falta para el acceso arriba de todo, los tres bloques de acción y lo que se mira. */
-export const ORDEN_DE_INICIO = ['paso-que-falta', 'sesion', 'comidas', 'para-responder', 'para-mirar'] as const;
+/**
+ * El orden de Inicio, de arriba abajo (DL-170, AV2-07; maqueta de §1.1): debajo del título, que es la fecha, el paso que
+ * falta para el acceso arriba de todo, la tira de la semana, Entrenamiento, Comidas, «Para responder» si hay algo, y al
+ * final, lado a lado, la medida de la última toma y la actividad. Sin el rótulo «Para mirar».
+ */
+export const ORDEN_DE_INICIO = ['paso-que-falta', 'semana', 'sesion', 'comidas', 'para-responder', 'medida', 'actividad'] as const;
+
+// ─── La tira de la semana (AV2-08, con AV2-D5) ──────────────────────────────────────────────────
+
+const LETRAS_DE_LA_SEMANA = ['L', 'M', 'M', 'J', 'V', 'S', 'D'] as const;
+
+/** Una fecha civil corrida `n` días. */
+const sumarDias = (fecha: string, n: number): string => {
+  const d = new Date(`${fecha.slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+/** El lunes de la semana calendario de una fecha civil (AV2-D5: de lunes a domingo). */
+export const lunesDeLaSemana = (fecha: string): string => sumarDias(fecha, -((new Date(`${fecha.slice(0, 10)}T00:00:00Z`).getUTCDay() + 6) % 7));
+
+export interface DiaDeLaTira {
+  readonly fecha: string;
+  readonly letra: string;
+  readonly numero: number;
+  /** Con al menos una sesión realizada (también con desvío): el círculo en `exito` con la tilde. */
+  readonly realizada: boolean;
+  /** Hoy: el aro. */
+  readonly hoy: boolean;
+}
+
+export interface TiraDeLaSemana {
+  readonly dias: readonly DiaDeLaTira[];
+  /** Las sesiones realizadas en la semana; `null` mientras carga: no se dice nada, ni un cero. */
+  readonly realizadas: number | null;
+  /** «2 sesiones realizadas esta semana», o `null`: sin ninguna, la línea no se dibuja. */
+  readonly linea: string | null;
+  /** Una sola etiqueta para el lector: «Esta semana: lunes y miércoles con sesión realizada. Hoy, lunes 9» (§3.4). */
+  readonly paraLeer: string;
+}
+
+/**
+ * Lo registrado hoy según API-TRN-14 (una ejecución registrada por ocurrencia de hoy), para la tira: por si la lectura de
+ * 30 días quedó un día atrás. Solo cuentas, con la condición registrada.
+ */
+export function registradasHoySegunElPlan(hoy: string, ocurrencias: readonly Pick<Ocurrencia, 'date' | 'execution'>[]): ActividadDelDia {
+  const deHoy = ocurrencias.filter((o) => o.date === hoy && o.execution.state === 'REGISTERED');
+  const realizadas = deHoy.filter((o) => sesionRealizada(o.execution)).length;
+  return { realizadas, noRealizadas: deHoy.length - realizadas };
+}
+
+/**
+ * La tira de la semana (AV2-08): la semana calendario de hoy, de lunes a domingo (AV2-D5), según el día de la API. Un día
+ * con alguna sesión realizada lleva la tilde; los demás, el número neutro: un día con solo una «No realizada», uno sin
+ * sesión y uno que todavía no llegó se ven igual. Nunca rojo ni cruz, ninguna cuenta de días seguidos, y el lunes arranca
+ * vacía: nada pasa a la semana siguiente.
+ * - `actividad` es la lectura de 30 días, que siempre contiene la semana (`null` mientras carga: sin tildes y sin línea).
+ * - `registradasHoy` es lo de hoy en API-TRN-14: vale solo si esa lectura terminó antes de hoy (quedó un día atrás).
+ */
+export function tiraDeLaSemana(hoy: string, actividad: Pick<ActividadDeEntrenamiento, 'periodo' | 'porDia'> | null, registradasHoy: ActividadDelDia | null): TiraDeLaSemana {
+  const lunes = lunesDeLaSemana(hoy);
+  const cuentas = LETRAS_DE_LA_SEMANA.map((letra, i) => {
+    const fecha = sumarDias(lunes, i);
+    const delDia = fecha === hoy && actividad && actividad.periodo.hasta < hoy && registradasHoy ? registradasHoy : (actividad?.porDia[fecha] ?? null);
+    return { fecha, letra, numero: Number(fecha.slice(8, 10)), realizadas: delDia?.realizadas ?? 0, hoy: fecha === hoy };
+  });
+  const dias = cuentas.map((c): DiaDeLaTira => ({ fecha: c.fecha, letra: c.letra, numero: c.numero, realizada: c.realizadas > 0, hoy: c.hoy }));
+  const realizadas = actividad ? cuentas.reduce((suma, c) => suma + c.realizadas, 0) : null;
+  const hoyParaLeer = `${diaDeLaSemana(hoy)} ${Number(hoy.slice(8, 10))}`;
+  const conSesion = dias.filter((d) => d.realizada).map((d) => diaDeLaSemana(d.fecha));
+  return {
+    dias,
+    realizadas,
+    linea: realizadas ? T.sesionesRealizadasEstaSemana(realizadas) : null,
+    paraLeer: conSesion.length > 0 ? T.semanaParaLeer(enumerar(conSesion), hoyParaLeer) : T.semanaSinSesionesParaLeer(hoyParaLeer),
+  };
+}
+
+// ─── La medida de la última toma, en una tarjeta chica (AV2-07) ─────────────────────────────────
+
+/** Cómo dice el lector las unidades de una medida: «80,9 kilos», no «80,9 ka ge». */
+const UNIDADES_EN_PALABRAS: Readonly<Record<string, readonly [string, string]>> = {
+  kg: ['kilo', 'kilos'],
+  cm: ['centímetro', 'centímetros'],
+  mm: ['milímetro', 'milímetros'],
+  m: ['metro', 'metros'],
+};
+export const unidadEnPalabras = (unidad: string, valor: number): string => {
+  const palabras = UNIDADES_EN_PALABRAS[unidad];
+  return palabras ? palabras[valor === 1 ? 0 : 1] : unidad;
+};
+
+/** Lo que dice la tarjeta de la medida destacada: el título, el valor, el cambio y lo que lee el lector. */
+export interface MedidaDeInicio {
+  /** El nombre de la medida destacada: «Peso»; si la toma no trae peso, la medida que trae. */
+  readonly titulo: string;
+  readonly valor: string;
+  readonly unidad: string;
+  /** «Sin cambio desde el 2 sept», «+0,4 kg desde el 2 sept»: sin color ni flecha que juzgue. */
+  readonly cambio: string;
+  readonly paraLeer: string;
+}
+
+/**
+ * La medida de Inicio (AV2-07): la destacada de la última toma, con el cambio desde la anterior comparable dicho como un
+ * dato. La tarjeta se toca entera y abre la evolución de esa medida. Se van «16 medidas · 6 resultados de fórmulas» y el
+ * «Ver su evolución» que no decía de qué.
+ */
+export function medidaDeInicio(m: Pick<MedidaDeLaToma, 'nombre' | 'actual' | 'anterior' | 'diferencia' | 'motivoSinAnterior'>): MedidaDeInicio {
+  const valor = numero(m.actual.punto.value);
+  const unidad = m.actual.punto.unit;
+  let cambio: string;
+  let cambioParaLeer: string;
+  if (m.diferencia && m.anterior) {
+    const diferencia = textoDeDiferenciaAntropometrica(m.diferencia);
+    cambio = m.diferencia.delta === 0 ? T.sinCambioDesde(fechaCivil(m.anterior.fecha)) : T.cambioDesde(diferencia, fechaCivil(m.anterior.fecha));
+    cambioParaLeer = m.diferencia.delta === 0 ? T.sinCambioDesde(diaYMes(m.anterior.fecha)) : T.cambioDesde(diferencia, diaYMes(m.anterior.fecha));
+  } else {
+    cambio = m.motivoSinAnterior === 'OTRO_GRUPO' ? T.sinAnteriorComparableOtroGrupo : COPY_ANTROPOMETRIA.sinAnteriorComparable;
+    cambioParaLeer = cambio;
+  }
+  const enMinuscula = cambioParaLeer.charAt(0).toLocaleLowerCase('es-AR') + cambioParaLeer.slice(1);
+  return { titulo: m.nombre, valor, unidad, cambio, paraLeer: `${m.nombre}, ${valor} ${unidadEnPalabras(unidad, m.actual.punto.value)}, ${enMinuscula}. ${T.verLaEvolucion}` };
+}

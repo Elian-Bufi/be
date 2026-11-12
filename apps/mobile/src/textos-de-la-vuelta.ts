@@ -115,6 +115,16 @@ export const TEXTOS_DE_LA_VUELTA = {
   treintaDias: '30 días',
   actividadParaLeer: (partes: readonly string[]) => `Actividad de los últimos 30 días: ${partes.length === 1 ? partes[0] : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`}`,
   sinActividad: 'No registraste sesiones en estos días.',
+  // ─── La tira de la semana (WP-APP-VUELTA-2 AV2-08): celebra lo hecho, sin rachas ni ceros ──────
+  sesionesRealizadasEstaSemana: (n: number) => (n === 1 ? '1 sesión realizada esta semana' : `${numero(n)} sesiones realizadas esta semana`),
+  semanaParaLeer: (dias: string, hoy: string) => `Esta semana: ${dias} con sesión realizada. Hoy, ${hoy}`,
+  semanaSinSesionesParaLeer: (hoy: string) => `Esta semana, de lunes a domingo. Hoy, ${hoy}`,
+  // ─── La medida de la última toma (AV2-07): el cambio, dicho como un dato ─────────────────────
+  mediciones: 'Mediciones',
+  sinCambioDesde: (fecha: string) => `Sin cambio desde el ${fecha}`,
+  cambioDesde: (diferencia: string, fecha: string) => `${diferencia} desde el ${fecha}`,
+  sinAnteriorComparableOtroGrupo: 'Sin anterior comparable: la toma anterior usó otro protocolo, método o unidad.',
+  verLaEvolucion: 'Ver la evolución',
   masDe: (n: number) => `Más de ${numero(n)}`,
   sinPlanDe: (area: string) => `${area}: todavía sin plan.`,
 

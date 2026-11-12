@@ -95,6 +95,17 @@ export interface ActividadDeEntrenamiento {
   readonly corregidas: number;
   /** Cuántas tienen correcciones que no se pueden ordenar (`NOT_RESOLVABLE`): cuentan como se registraron. */
   readonly sinOrdenar: number;
+  /**
+   * DL-170 (AV2-08): por fecha civil de la sesión, cuántas quedaron realizadas (también con desvío) y cuántas no, con la
+   * condición que rige. Lo usa la tira de la semana: los 30 días siempre contienen la semana. Son cuentas, no sesiones.
+   */
+  readonly porDia: Readonly<Record<string, ActividadDelDia>>;
+}
+
+/** Lo registrado en un día: cuántas sesiones realizadas y cuántas no realizadas. */
+export interface ActividadDelDia {
+  readonly realizadas: number;
+  readonly noRealizadas: number;
 }
 
 /**
@@ -138,6 +149,7 @@ export async function leerActividadDeEntrenamiento(api: ApiDeInicio, token: stri
   if (esPeriodoFuturo(r)) r = await api.misEjecucionesDeEntrenamiento(token, unDiaAntes(periodo));
   if (!r.ok) return r;
   const cuenta = { registradas: 0, realizadas: 0, conDesvio: 0, noRealizadas: 0, corregidas: 0, sinOrdenar: 0 };
+  const porDia: Record<string, { realizadas: number; noRealizadas: number }> = {};
   for (const x of r.datos.data.executions) {
     cuenta.registradas++;
     const condicion = registroVigente(x).sessionCondition;
@@ -146,9 +158,12 @@ export async function leerActividadDeEntrenamiento(api: ApiDeInicio, token: stri
     else cuenta.noRealizadas++;
     if (x.effectiveView.kind === 'CORRECTED') cuenta.corregidas++;
     else if (x.effectiveView.kind === 'NOT_RESOLVABLE') cuenta.sinOrdenar++;
+    const delDia = porDia[x.date] ?? (porDia[x.date] = { realizadas: 0, noRealizadas: 0 });
+    if (condicion === 'COMPLETED' || condicion === 'COMPLETED_WITH_DEVIATION') delDia.realizadas++;
+    else delDia.noRealizadas++;
   }
   const { start, end } = r.datos.data.period;
-  return { ok: true, datos: { periodo: { desde: start, hasta: end }, ...cuenta } };
+  return { ok: true, datos: { periodo: { desde: start, hasta: end }, ...cuenta, porDia } };
 }
 
 // ─── Información: lo pendiente de responder ─────────────────────────────────────────────────────

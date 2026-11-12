@@ -37,7 +37,7 @@ import { Keyboard, Platform, Pressable, Text, useWindowDimensions, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
-import { DibujoDeIcono, type NombreDeIcono } from './icono';
+import { DibujoDeIcono, type NombreDeIcono, type TamanoDeIcono } from './icono';
 import { disposicionDeLaBarra, tokenDelFondoDeLaBarra } from './disposicion-de-la-barra';
 import { sombrasDeLaBarra } from './receta-de-vidrio';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
@@ -196,8 +196,8 @@ const ICONO_DE_LA_ZONA: Readonly<Record<Zona, NombreDeIcono>> = {
  * Inicio lo usa también en el encabezado de cada tarjeta, para que el módulo se reconozca igual que en la barra.
  * `marcado` engrosa el trazo del destino elegido: es la señal que no depende del color.
  */
-export function IconoDeZona({ zona, color, marcado = false }: { zona: Zona; color: string; marcado?: boolean }) {
-  return <DibujoDeIcono nombre={ICONO_DE_LA_ZONA[zona]} color={color} tamano={24} marcado={marcado} />;
+export function IconoDeZona({ zona, color, marcado = false, tamano = 24 }: { zona: Zona; color: string; marcado?: boolean; tamano?: TamanoDeIcono }) {
+  return <DibujoDeIcono nombre={ICONO_DE_LA_ZONA[zona]} color={color} tamano={tamano} marcado={marcado} />;
 }
 
 const estilos = estilosPorTema((COLOR) => ({

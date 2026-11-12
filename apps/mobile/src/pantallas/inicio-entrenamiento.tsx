@@ -19,16 +19,16 @@ import {
   type Ocurrencia,
   type Resultado,
 } from '@be/domain';
-import { useCallback, useMemo, type ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
 import { corridaAbierta } from '../corrida-de-entrenamiento';
 import { useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { SinActualizar } from '../estados';
 import { ejerciciosYSeries } from '../series-de-la-sesion';
-import { fechaCivil, ultimosDiasHasta } from '../formato';
-import { useLecturaRecordada } from '../lecturas';
-import { detalleDeActividad, DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
+import { fechaCivil } from '../formato';
+import { useLecturaRecordada, type LecturaRecordada } from '../lecturas';
+import type { ActividadDeEntrenamiento as ActividadLeida } from '../lecturas-de-inicio';
 import { useAccesoRetirado, type Ir } from '../navegacion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { lineaDeLaSerie, marchaDeLaSesionEnCurso, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
@@ -39,10 +39,24 @@ import { AvisoDeEntrenamientoEnCurso, MOTIVO_ANTES_DE_INICIAR, useAbrirOcurrenci
 import { AlLado, aRegistroRapido } from './registro-rapido';
 import { estilos, faltaElA3, LineaDeInicio, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
 
-/** API-TRN-14, con la misma clave que Entrenamiento de hoy. Sin el A3, la API responde «no disponible», no un 403. */
-export function EntrenamientoDeHoy({ token, dia, sesionPerdida, ir }: { token: string; dia: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
-  const pedir = useCallback((): Promise<Resultado<HoyDeEntrenamientoResponse>> => api.hoyDeEntrenamiento(token), [token]);
-  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `entrenamiento-hoy:${dia}`, pedir, sesionPerdida);
+/**
+ * API-TRN-14, con la misma clave que Entrenamiento de hoy. Sin el A3, la API responde «no disponible», no un 403. La
+ * lectura la hace Inicio y la comparte con la tira de la semana (AV2-08), así no se pide dos veces.
+ */
+export function EntrenamientoDeHoy({
+  token,
+  dia,
+  lectura,
+  sesionPerdida,
+  ir,
+}: {
+  token: string;
+  dia: string;
+  lectura: LecturaRecordada<HoyDeEntrenamientoResponse>;
+  sesionPerdida: AlPerderLaSesion;
+  ir: Ir;
+}) {
+  const { r, cargar, sinActualizar } = lectura;
   // La sesión en curso de cualquier día y dispositivo (API-TIE-04), con la misma clave que Entrenamiento; si la API no la
   // da, vale la del teléfono.
   const pedirEnCurso = useCallback(() => api.sesionEnCurso(token), [token]);
@@ -234,13 +248,16 @@ function SesionDeHoy({
   );
 }
 
-// ─── Actividad de entrenamiento ─────────────────────────────────────────────────────────────────
+// ─── La actividad de 30 días, en una tarjeta chica (AV2-07, AV2-12) ─────────────────────────────
 
-/** API-TRN-19-LISTA, la lista de «Tu historial», de los últimos 30 días: solo se cuenta. */
-export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { token: string; dia: string; sesionPerdida: AlPerderLaSesion; ir: Ir }) {
-  const periodo = useMemo(() => ultimosDiasHasta(dia, DIAS_DE_ACTIVIDAD), [dia]);
-  const pedir = useCallback(() => leerActividadDeEntrenamiento(api, token, periodo), [token, periodo]);
-  const { r, cargar, sinActualizar } = useLecturaRecordada(token, `inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`, pedir, sesionPerdida);
+/**
+ * API-TRN-19-LISTA, la lista de «Tu historial», de los últimos 30 días: solo se cuenta. La lectura la hace Inicio y la
+ * comparte con la tira de la semana; es la misma clave que «Tu historial». Una tarjeta chica, al lado de la medida, como
+ * en la maqueta: «2 realizadas · 1 no realizada · 30 días», y el lector, «Actividad de los últimos 30 días: 2 realizadas
+ * y 1 no realizada» (§3.4).
+ */
+export function ActividadDeEntrenamiento({ lectura, ir, ancho }: { lectura: LecturaRecordada<ActividadLeida>; ir: Ir; ancho: number }) {
+  const { r, cargar, sinActualizar } = lectura;
   let contenido: ReactNode;
   if (!r) contenido = <Verificando />;
   else if (faltaElA3(r)) contenido = <SinA3 texto={COPY_ENTRENAMIENTO.historialNecesitaA3} ir={ir} />;
@@ -249,7 +266,7 @@ export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { to
     // DL-170 (AV2-12, con AV2-D2): lo hecho y lo no hecho por separado, de la misma lectura que «Tu historial».
     const a = actividadDeInicio(r.datos);
     contenido = a.vacia ? (
-      <Parrafo>{a.texto}</Parrafo>
+      <Parrafo tenue>{a.texto}</Parrafo>
     ) : (
       <View accessible accessibilityLabel={a.paraLeer}>
         {a.realizadas !== null ? <Cifra valor={numero(a.realizadas)} unidad={a.unidad} tamano={26} /> : null}
@@ -258,15 +275,9 @@ export function ActividadDeEntrenamiento({ token, dia, sesionPerdida, ir }: { to
     );
   }
   return (
-    <TarjetaDeInicio
-      zona="entrenamiento"
-      titulo="Tu actividad"
-      icono="linea-de-tiempo"
-      detalle={detalleDeActividad(r && r.ok ? r.datos.periodo : null, fechaCivil)}
-    >
+    <TarjetaDeInicio zona="entrenamiento" titulo={T.actividad} icono="linea-de-tiempo" ancho={ancho}>
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-      <Boton texto="Ver tu historial" tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'historial-de-entrenamiento' })} />
     </TarjetaDeInicio>
   );
 }
