@@ -295,14 +295,18 @@ export function EditorDeBorrador({
           setFallo(false);
           setGuardadoA(horaDelDia(new Date()));
           if (ediciones.current === edicionesAlEnviar) setSucio(false);
+          autoguardado.informar('GUARDADO');
           return actual.datos.data;
         }
         setConflicto(true);
+        autoguardado.informar('OTRO');
         return null;
       }
       // Lo escrito queda como está: ni la estructura ni «sucio» cambian, y el próximo guardado lo vuelve a mandar.
       setFallo(true);
       const motivo = falloDeGuardado(r);
+      // ED-60: un rechazo que no se arregla solo no se reintenta sin un cambio; sin respuesta, la espera crece.
+      autoguardado.informar(motivo, ediciones.current !== edicionesAlEnviar);
       // DL-168: si el plan no entra, reintentar no lo arregla: se dice también en el autoguardado, sin mover el foco.
       if (motivo === 'DEMASIADO_GRANDE') {
         setProblemas(null);
@@ -322,6 +326,7 @@ export function EditorDeBorrador({
     setFallo(false);
     setConflicto(false);
     setGuardadoA(horaDelDia(new Date()));
+    autoguardado.informar('GUARDADO');
     // Lo escrito mientras viajaba el guardado se conserva: sigue pendiente y viaja en el próximo, con la versión nueva.
     const sinCambiosDespues = ediciones.current === edicionesAlEnviar;
     if (sinCambiosDespues) setEstructura(aEntrada(r.datos.data));
@@ -334,7 +339,7 @@ export function EditorDeBorrador({
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
   const puedeGuardar = loQueNoDejaGuardarElPlan(estructura).length === 0;
   const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision], [estructura, proximaRevision]);
-  useAutoguardado({
+  const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando,
     cambios: cambiosParaGuardar,
     guardar: () => void guardar(true),
