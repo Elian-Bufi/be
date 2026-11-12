@@ -1306,6 +1306,7 @@ export function EditorDePlan({
         onVolverARevisar={() => void revisar(version)}
         sinGuardar={sucio}
         guardando={guardando}
+        conflicto={conflicto}
         onGuardarAhora={() => void guardar()}
         cambios={cambiosFrenteALaVigente}
         loQueVe={loQueVeLaPersona}

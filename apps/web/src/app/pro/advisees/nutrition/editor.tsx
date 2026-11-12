@@ -1043,6 +1043,7 @@ export function EditorDeBorrador({
         onVolverARevisar={() => void revisar(version)}
         sinGuardar={sucio}
         guardando={guardando}
+        conflicto={conflicto}
         onGuardarAhora={() => void guardar()}
         cambios={confirmar && (vigente?.plan || !version.predecessorPlanId) ? compararNutricion(vigente?.plan ? aEntrada(vigente.plan) : [], estructura) : null}
         loQueVe={loQueVeLaPersona}

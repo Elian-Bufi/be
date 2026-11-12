@@ -61,10 +61,10 @@ test('TEST-EDP-008 · los editores: una sola entrada fija, la revisión de la AP
     assert.match(fuente, /cuando=\{\n\s*<CuandoLaRevisas\n[\s\S]*?conSinFecha\n/, ruta);
     assert.match(fuente, /eligioCuando=\{fechaQueResulta\(cuando, hoyEn\(\)\) !== undefined\}/, ruta);
     // Con cambios sin guardar, el cuadro ofrece «Guardar ahora».
-    assert.match(fuente, /sinGuardar=\{sucio\}\n\s*guardando=\{guardando\}\n\s*onGuardarAhora=\{\(\) => void guardar\(\)\}/, ruta);
+    assert.match(fuente, /sinGuardar=\{sucio\}\n\s*guardando=\{guardando\}\n\s*conflicto=\{conflicto\}\n\s*onGuardarAhora=\{\(\) => void guardar\(\)\}/, ruta);
   }
   const cuadro = leer('app/pro/advisees/cuadro-antes-de-activar.tsx');
-  assert.match(cuadro, /const motivo = motivoDelPrincipal\(\{ impiden: impiden\.length, revisando, sinRevisar, sinGuardar, eligioCuando \}\);/);
+  assert.match(cuadro, /const motivo = motivoDelPrincipal\(\{ impiden: impiden\.length, revisando, sinRevisar, sinGuardar, eligioCuando, conflicto \}\);/);
   assert.match(cuadro, /confirmarDeshabilitado=\{motivo !== null\}\n\s*motivo=\{motivo\}/);
   // Al abrirse, el foco va a «Volver al plan»; lo que pasa mientras se revisa se anuncia.
   assert.match(cuadro, /\n\s*focoEnVolver\n/);
@@ -175,4 +175,18 @@ test('TEST-EDP-008 · «Ir a corregir» deja el foco en su lugar: el cuadro se c
   for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
     assert.match(leer(ruta), /const irDesdeElCuadro = \(p: ValidationIssue\) => \(\) => \{\n\s*cerrarAntesDeActivar\(\);\n\s*irAlProblema\(p\);/, ruta);
   }
+});
+
+test('TEST-EDP-008 · con el borrador cambiado en otra pestaña, el principal queda apagado: falta cargar la versión guardada', () => {
+  // Revisión adversaria de la etapa 1: después de un 409 con la versión cambiada en otra pestaña, el editor marcaba el
+  // conflicto, pero el principal seguía encendido, y tocarlo repetía el mismo 409.
+  assert.equal(A.motivoDelPrincipal({ ...listo, conflicto: true }), 'Falta cargar la versión guardada');
+  // Con el conflicto, guardar no es posible: el motivo no pide guardar, pide cargar lo guardado.
+  assert.equal(A.motivoDelPrincipal({ ...listo, conflicto: true, sinGuardar: true, impiden: 1 }), 'Falta cargar la versión guardada');
+  assert.equal(A.motivoDelPrincipal({ ...listo, conflicto: false }), null);
+  const cuadro = leer('app/pro/advisees/cuadro-antes-de-activar.tsx');
+  assert.match(cuadro, /motivoDelPrincipal\(\{ impiden: impiden\.length, revisando, sinRevisar, sinGuardar, eligioCuando, conflicto \}\)/);
+  // «Guardar ahora» del cuadro, apagado con el conflicto (como el de la barra).
+  assert.match(cuadro, /aria-disabled=\{guardando \|\| conflicto \|\| undefined\}/);
+  for (const ruta of EDITORES) assert.match(leer(ruta), /<AntesDeActivar\n[^<]*?\n\s+conflicto=\{conflicto\}\n/, ruta);
 });

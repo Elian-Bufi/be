@@ -39,6 +39,7 @@ export function AntesDeActivar({
   onVolverARevisar,
   sinGuardar,
   guardando,
+  conflicto = false,
   onGuardarAhora,
   cambios,
   loQueVe,
@@ -65,6 +66,8 @@ export function AntesDeActivar({
   onVolverARevisar: () => void;
   sinGuardar: boolean;
   guardando: boolean;
+  /** El borrador cambió en otra pestaña (409): el principal y «Guardar ahora» quedan apagados hasta cargar lo guardado. */
+  conflicto?: boolean;
   onGuardarAhora: () => void;
   /** Frente a la vigente; en la primera versión, frente a nada (todo es «agregado»). `null` si la vigente no se pudo leer. */
   cambios: CambiosFrenteALaVigente | null;
@@ -77,7 +80,7 @@ export function AntesDeActivar({
   onActivar: () => void;
   onVolver: () => void;
 }) {
-  const motivo = motivoDelPrincipal({ impiden: impiden.length, revisando, sinRevisar, sinGuardar, eligioCuando });
+  const motivo = motivoDelPrincipal({ impiden: impiden.length, revisando, sinRevisar, sinGuardar, eligioCuando, conflicto });
   const aLaVista = cambios ? cambios.lista.slice(0, CAMBIOS_A_LA_VISTA) : [];
   return (
     <DialogoDeConfirmacion
@@ -104,7 +107,7 @@ export function AntesDeActivar({
                 <Icono nombre="borrador" tamano={18} />
                 <span>{A.cambiosSinGuardar}</span>
               </p>
-              <button type="button" className="boton boton--secundario" data-guardar-ahora aria-disabled={guardando || undefined} onClick={() => !guardando && onGuardarAhora()}>
+              <button type="button" className="boton boton--secundario" data-guardar-ahora aria-disabled={guardando || conflicto || undefined} onClick={() => !guardando && !conflicto && onGuardarAhora()}>
                 <Icono nombre="guardar" tamano={18} />
                 {guardando ? COPY_GUARDADO.guardando : COPY_GUARDADO.guardarAhora}
               </button>

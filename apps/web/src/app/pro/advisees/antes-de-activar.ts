@@ -49,6 +49,8 @@ export const COPY_ANTES_DE_ACTIVAR = {
   volverAlPlan: 'Volver al plan',
   falta: (partes: readonly string[]): string => `Falta ${partes.length <= 1 ? (partes[0] ?? '') : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`}`,
   guardarLosCambios: 'guardar los cambios',
+  // Con el borrador cambiado en otra pestaña (409), no se puede guardar ni activar: primero se carga lo guardado.
+  cargarLaGuardada: 'cargar la versión guardada',
   corregir: (n: number): string => `corregir ${cosas(n)}`,
   elegirCuando: 'elegir cuándo la revisás',
   revisarDeNuevo: 'volver a revisar el plan',
@@ -68,6 +70,11 @@ export interface EstadoDelCuadro {
   readonly sinGuardar: boolean;
   /** «¿Cuándo la revisás?» tiene una elección (una fecha o «Sin fecha por ahora»). */
   readonly eligioCuando: boolean;
+  /**
+   * El borrador cambió en otra pestaña o en otro equipo (un 409, DL-148): activar repetiría el mismo 409. Gana a todo lo
+   * demás, porque guardar tampoco se puede.
+   */
+  readonly conflicto?: boolean;
 }
 
 /**
@@ -75,6 +82,7 @@ export interface EstadoDelCuadro {
  * con cambios sin guardar, sin la revisión de la API ni sin una elección de fecha.
  */
 export function motivoDelPrincipal(e: EstadoDelCuadro): string | null {
+  if (e.conflicto) return A.falta([A.cargarLaGuardada]);
   if (e.revisando) return A.revisando;
   const partes = [
     ...(e.sinGuardar ? [A.guardarLosCambios] : []),
