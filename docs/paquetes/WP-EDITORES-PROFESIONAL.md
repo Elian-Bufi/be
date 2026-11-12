@@ -1764,15 +1764,16 @@ cambia un contrato ni lo que la API acepta o devuelve.
 | EDC-02 | ED-40 | El buscador mira la pregunta, su aclaración y el título de su parte, con todas las palabras. Buscando, «Pedir todas» y «Ninguna» de cada parte se reemplazan por «Pedir las n» y «Ninguna de las n», sobre lo que coincide | Dejar los de cada parte, que tocan preguntas que no se ven |
 | EDC-03 | ED-33 | «Copiar desde otra comida» ofrece las opciones de todas las comidas del plan, de todos los días tipo, salvo la misma comida (para eso está «Duplicar opción») y las vacías. La copia conserva su nombre | Copiar comidas enteras; o el sufijo «(copia)» |
 | EDC-04 | ED-33 | «Usar una comida habitual» suma sus opciones como opciones de la comida: con una sola, toma el nombre de la habitual; con varias, «Cena · Pescado». Nunca pasa de doce y dice cuántas no entraron | Solo su primera opción; o reemplazar las de la comida |
-| EDC-05 | ED-31 | «Agregar ítem» abre la opción en un cuadro (maqueta 06), que trabaja sobre una copia: el borrador cambia con «Guardar la opción». El cajón que buscaba al enviar se retira; «Crear a mano» e «Importar» van adentro del cuadro | Sumar el cuadro y dejar el cajón (dos caminos para lo mismo); o un cuadro que escribe en vivo |
-| EDC-06 | ED-31 | El buscador busca mientras se escribe (desde dos letras, con una pausa de 250 ms), con los habituales primero; las flechas eligen y Enter suma el marcado | Buscar al enviar, como antes: Enter no podía elegir |
+| EDC-05 | ED-31 | «Agregar ítem» abre la opción en un cuadro (maqueta 06), que trabaja sobre una copia: el borrador cambia con «Guardar la opción». El cajón que buscaba al enviar se retira; «Crear a mano» e «Importar» van adentro del cuadro | Sumar el cuadro y dejar el cajón (dos caminos para lo mismo); o un cuadro que escribe en vivo; o el buscador en línea debajo de la tabla de la estación, como dibuja la maqueta 08, que agrega sin abrir nada pero deja sin lugar el total al instante y el rango de la comida |
+| EDC-06 | ED-31 | El buscador busca mientras se escribe (desde dos letras, con una pausa de 250 ms), con los habituales primero; las flechas eligen y Enter suma el marcado. La lista es una grilla (combobox con grilla, ARIA 1.2): cada resultado lleva su estrella de habitual (DL-109) en su propia celda, a la que se llega con la flecha a la derecha; Enter la alterna | Buscar al enviar, como antes: Enter no podía elegir |
 | EDC-07 | ED-31 | En la lista, el origen va como texto breve, sin enlace (una opción de una lista no lleva un enlace adentro), con «Dato de demostración» y la completitud («Sin dato de fibra»). Un habitual que trajo también el catálogo usa lo del catálogo | El enlace con su pista, como en la tabla del cajón |
 | EDC-08 | ED-32 | La foto es un paso del mismo cuadro después de guardar (con las dos salidas y tras el reintento del agregado), con «Volver al plan» como único principal; lo que pasó se dice al volver | Un aviso con un enlace a Mis recetas |
 | EDC-09 | ED-32 | Se leen las recetas de las opciones del día tipo que se mira (API-REC-03, una vez cada una). La vista previa compara una porción de la versión nueva (sus ingredientes divididos por las porciones) con la porción que la API armó para el plan. Usarla cambia la versión que cita la opción y su nombre, si era el de la receta | Leer todas las recetas del plan al entrar; o comparar con la versión anterior entera, que no tiene lectura propia |
 | EDC-10 | ED-21 | Los parecidos se buscan por el nombre entero y, con menos de tres, por su palabra más larga; se ordenan por las palabras que comparten y se muestran hasta cinco. Uno que se llama igual pide «Crear igual»; elegir un parecido lo marca, como lo creado | Impedir crear uno igual; o buscar solo por el nombre entero |
 | EDC-11 | ED-30 | Los pasos de Nutrición son Punto de partida, Objetivo, Días tipo, Comidas, Opciones, Revisar y Activar. El 1 vive en la vista del plan; del 2 al 7, en el editor, con la estación montada detrás. No hay «Desde un preset»: los repartos propios son ED-13 | Un paso propio para el reparto, que necesita ED-13 |
-| EDC-12 | ED-30 | El número de la versión del objetivo es su lugar, por fecha de creación, entre las versiones de su mismo objetivo (la API no lo devuelve). Una versión nueva escrita en el paso 2 usa el formulario de siempre y deja el borrador como cambiado, así el autoguardado lo pasa a usarla | Esperar a que la API devuelva el número |
+| EDC-12 | ED-30 | El número de la versión del objetivo es su lugar, por fecha de creación, entre las versiones de su mismo objetivo (la API no lo devuelve). Se cuentan todas las páginas; si la lista no se lee entera, se dice solo la fecha. Una versión nueva escrita en el paso 2 usa el formulario de siempre; el borrador cuenta como cambiado recién cuando llega la relectura del objetivo (antes, un guardado saldría sin él), y «Siguiente» espera esa relectura | Esperar a que la API devuelva el número |
 | EDC-13 | ED-16 | «Empezar el plan» de la ficha abre el asistente también en Nutrición (enmienda EDT-16). Fuera del asistente, el «⋯» de la versión ofrece «Seguir con el asistente · paso N de 7» | Nutrición sin entrada al asistente desde la ficha |
+| EDC-14 | ED-31 | Hasta API-PLN-02/03, la tarjeta del cuadro se llama «Lo que cubren las opciones de Almuerzo»: es lo que cubren las opciones, de la menor a la mayor, y no el rango indicado por el profesional de las maquetas 06 y 08 («dentro», «por encima»), que todavía no existe. Lo que no se leyó todavía dice «leyendo», nunca «no se pudo leer» | Llamarla «Rango del almuerzo», como la maqueta, con el riesgo de que se lea como una meta |
 
 ## 7. Medición: antes y después
 
@@ -1982,7 +1983,7 @@ EDT-21 a EDT-34 (§6.3), a ratificar.
 
 Programado en la rama `wp-editores-cierre` (PR #259, en borrador), en paralelo con `wp-editores-api` (la fuerza, ED-11,
 ED-13, ED-24 y la API): no toca ED-11, ED-13, ED-14, ED-23 ni ED-24, ni `training/editor.tsx`. Las decisiones nuevas
-son EDC-01 a EDC-13 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editores-cierre.test.mjs`.
+son EDC-01 a EDC-14 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editores-cierre.test.mjs`.
 
 | Parte | Commit | Lo que quedó |
 |---|---|---|
@@ -1993,6 +1994,7 @@ son EDC-01 a EDC-13 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editore
 | ED-32 | 978ab8bc | La foto como paso después de guardar y «Hay una versión 3 de esta receta · Usar la versión 3», con lo que cambia en una porción (TEST-EDP-030) |
 | ED-21 | 87bd51d2 | «Crear un ejercicio propio», con los parecidos del catálogo antes de crear |
 | ED-30 | 5f6598fd | El asistente de Nutrición: siete pasos, el objetivo general con su versión y el reparto en gramos (TEST-EDP-027 y 017) |
+| Revisión | (esta tanda) | Lo que encontró la revisión del cierre: la estrella de habitual vuelve al cuadro, activar desde el paso 7 lleva al plan activo, el objetivo nuevo del paso 2 sin carrera, las composiciones de todos los días tipo, «Guardar la opción» con la regla del plan, «Agregar una opción» sin opciones vacías y la accesibilidad de ED-21 y ED-40 |
 
 **Lo que queda, declarado:**
 - **De la API:** un reparto propio guardado en el paso 2 (ED-13, el «Dado» de «Mi base · 300 / 120 / 80 g»);
@@ -2002,6 +2004,14 @@ son EDC-01 a EDC-13 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editore
 - **ED-41:** los filtros y sus cuentas son de las solicitudes ya leídas (hasta 200), y lo dicen.
 - **Las capturas y la medición** de esta tanda (Claro y Azul noche a 1280, 1440 y 1920, y el zoom al 200 %), en la
   corrida con la API local.
+- **ED-30, los presets de BE de los pasos 3 y 4** (§2.1 y §2.4): «Un solo día tipo» y «Entrenamiento y descanso»; «4
+  comidas», «5 comidas con colación» y «6 comidas». Esperan `presets-de-be` y ED-11, de la otra rama; EDC-11 solo
+  retira «Desde un preset» del paso 1.
+- **ED-30, las pruebas de §5.5:** TEST-EDP-021 para Nutrición (el borrador que deja el asistente es el mismo que deja la
+  estación con los mismos datos) y el recorrido desde un preset, que espera a los presets.
+- **La herramienta de capturas** (`EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/recorrido.mjs`): su tramo «Agregar ítem»
+  todavía comprueba el cajón que se retiró (`.agregar-item__buscador`, buscar al enviar, «Limpiar búsqueda»). Se
+  reescribe para el cuadro de ED-31 antes de la corrida con la API local, que es donde se puede comprobar.
 
 ## 9. Riesgos
 
