@@ -1704,8 +1704,8 @@ estimación, fuera de la APK de la persona (D-V3-02, por DJ-1). El 1RM medido co
 
 ### 6.3 Las de la implementación (EDT), a ratificar por Dirección
 
-Las tomó Claude al programar la etapa 1 (2026-11-12). Ninguna cambia la forma de un contrato ni lo que la API acepta o
-devuelve. Cada una dice qué se eligió y qué otra opción había, y su commit la explica.
+Las tomó Claude al programar la etapa 1 (EDT-01 a EDT-10) y la etapa 2 del website (EDT-11 en adelante), el
+2026-11-12. Ninguna cambia la forma de un contrato ni lo que la API acepta o devuelve. Cada una dice qué se eligió y qué otra opción había, y su commit la explica.
 
 | ID | Parte | Lo elegido | La alternativa |
 |---|---|---|---|
@@ -1719,6 +1719,16 @@ devuelve. Cada una dice qué se eligió y qué otra opción había, y su commit 
 | EDT-08 | ED-02 | La guardia de la salida es un contexto en `app/pro/layout.tsx`, alrededor de la compuerta de UF-01, y los enlaces la consultan en el `onNavigate` de `<Link>`. Desde el 2026-11-12, todos por `Enlace` (`components/enlace.tsx`): en `app/pro/**` y `components/**` nadie importa `next/link` directo, y cada `router.push` pasa por `antesDeSalir`, salvo tres con su motivo (la revisión adversaria encontró la marca, la campana, el menú de la cuenta y «Ir a Mis recetas» sin la guardia) | Interceptar todos los clics del documento, que también toma enlaces que no navegan; o poner la guardia enlace por enlace, que dejaba afuera los que nadie se acordaba |
 | EDT-09 | ED-04 | La salida de un campo se escucha una vez, en el `onBlur` del `<form>`, y el campo se reconoce por su `id` y los de sus grupos | Un `onBlur` en cada campo, cerca de cuarenta controles |
 | EDT-10 | ED-06 | Lo que también devuelve la API y dice «asesorado» (el mensaje del 409 CLIENT_CAPABILITY_REQUIRED y la referencia neutral de quien no tiene nombre) cambia con ED-08, en la ventana del vie 20. Hasta entonces, T13 los cuenta uno por uno | Cambiarlo ya y redesplegar la API fuera de la ventana |
+| EDT-11 | ED-14 | El asistente es una vista de la página, una tarjeta por paso, y no un `<dialog>`: el buscador de ejercicios y la galería se abren como cuadros enfocados sin apilar uno sobre otro | Un diálogo por paso, que obligaba a abrir el buscador encima de otro cuadro (§2.3 lo prohíbe) |
+| EDT-12 | ED-11 y ED-22 | La marca «escrita para 6-8: revisala» es de la pantalla: no viaja ni se guarda, y no sobrevive a recargar | Guardarla en la prescripción, que cambiaba el contrato (ventana del vie 20) |
+| EDT-13 | ED-14 | El paso pedido vive en la dirección (`asistente=N`); el sugerido se deduce del borrador. «Siguiente» usa el mismo guardado que la estación y espera su respuesta; si viaja un autoguardado, espera a que termine en vez de mandar otro | Un guardado propio del asistente, con su estado aparte |
+| EDT-14 | ED-20 | «Desde un preset» crea el borrador en blanco y abre la galería de estructuras en el paso 2 (`preset=estructura`, una vez) | Un preset como origen del borrador en la API, que no existe |
+| EDT-15 | ED-16 | «Ajustar el plan» llega con `crear=vigente`: la vista del plan crea la versión desde la vigente una vez por llegada y, con un borrador, lo abre sin crear otro. La ficha ofrece «Seguir el borrador»; «Seguir con el asistente · paso N de 7» está en el «⋯» de la estación, porque la ficha no lee la estructura del borrador | Leer cada borrador desde la ficha para deducir el paso: una lectura más por persona y área |
+| EDT-16 | ED-16 | La acción del plan va, por ahora, en la tarjeta de Entrenamiento; Nutrición la suma con su asistente y su estación (ED-30 y ED-33, etapa 3) | Las dos tarjetas ya, con Nutrición sin asistente |
+| EDT-17 | ED-21 | Lo creado a mano o importado queda marcado y entra con «Agregar», como lo demás; marcar no escribe nada | Que lo creado entre solo, como antes |
+| EDT-18 | ED-23 | «Volver a lo general» quita la clave del objetivo, también la de «Sin objetivo»: no deja `null` | Dejar `null`, que es «Sin objetivo en esta serie» (DL-122) |
+| EDT-19 | ED-18 | El vidrio, solo en la estación y el asistente (`body:has(.estacion)`), y casi opaco en Claro (95 %; en Azul noche, 90 %): con menos, el borde de un campo no llega a 3:1 cuando pasa texto por detrás. «Lo que puede pasar detrás» es una lista de trece tokens más el fondo con sus destellos, sin el QR ni la figura | Todo el website de vidrio; o medir contra todos los tokens, que dejaba Claro opaco del todo |
+| EDT-20 | ED-23 | `CuadroEnfocado` suma `focoEnCancelar`, para las confirmaciones que hacen perder algo (quitar una serie con valores propios) | Un `DialogoDeConfirmacion` aparte dentro de la planilla |
 
 ## 7. Medición: antes y después
 
@@ -1838,6 +1848,35 @@ Es el precio de guiar, y se mide aparte.
 **Lo que no se toca en ninguna etapa:**
 - `docs/legajo/**`, `docs/MANIFEST.sha256` y `render.yaml`;
 - lo que lee la APK vigente, salvo la procedencia por campo (ED-70).
+
+### 8.3 La etapa 2 en el website: lo hecho y lo que queda (2026-11-12)
+
+Programada en la rama `wp-editores-profesional` (PR #251, en borrador), sin la API ni la APK:
+
+| Parte | Commit | Lo que quedó |
+|---|---|---|
+| ED-10 | 29a83bf5 | El cuadro enfocado, con las reglas de §2.3 (TEST-EDP-011) |
+| ED-22 y ED-11 (dominio) | 2e27cf69 | La prescripción en una línea y los siete presets de BE (TEST-EDP-012, 013, 023 y 056) |
+| ED-15, ED-24, ED-25, ED-17, ED-11 y ED-12 | 491a773f | La estación de tres zonas, los chips de los días, el panel en vivo, la ayuda de primer uso, la galería y «Guardar como preset» (TEST-EDP-013 a 015, 018, 020, 025, 026 y 054) |
+| ED-14, ED-20 y ED-16 | 400d8d32 | El asistente de siete pasos y las entradas desde la ficha (TEST-EDP-017, 019, 021 y 055) |
+| ED-21 | 958a4e0b | Elegir varios ejercicios, con un solo «Agregar» (TEST-EDP-022) |
+| ED-23 | c8a37280 | La planilla de series: varias a la vez, Ctrl+D y lo que se pierde dicho antes (TEST-EDP-024 y 056) |
+| ED-18 | 82f0f9f6 | El vidrio, medido en su peor punto (TEST-EDP-053) |
+
+**Lo que queda, declarado:**
+- **ED-13** es de la API (la ventana del vie 20): hasta entonces, «Estas series, como prescripción habitual» está
+  apagado con su motivo, y la galería trae los presets de BE y los propios que ya existen (§8.2).
+- **ED-11:** `empezar-desde-plantilla.tsx` todavía no es una pestaña de la galería (sigue su diálogo, desde la vista
+  del plan y desde el paso 1 del asistente).
+- **ED-21:** los filtros por zona en chips y «Crear un ejercicio propio» con los parecidos: el catálogo busca por nombre
+  al enviar, y filtrar por zona pide una lectura nueva.
+- **ED-23:** la fila «General» dentro de la tabla (lo general sigue debajo), «Detalle» de la serie en un cuadro, los
+  tres verbos de copia y elegir varios ejercicios (P2, lo primero que cae).
+- **ED-24:** «Copiar la sesión a…» con destino y vista previa, «Copiar a otra semana» y «Duplicar el día».
+- **ED-25:** la cuenta por zona de «Lo que trabaja la semana» necesita las zonas de cada ejercicio en el borrador.
+- **ED-15 y ED-18:** las capturas en Claro y Azul noche a 1280, 1440 y 1920 y el zoom al 200 %, en la corrida de la
+  etapa 2 con la API local; la medición de §7 (A y AC), también.
+- **ED-16:** «Armar la versión del plan con este objetivo» (B04) es de Nutrición: etapa 3.
 
 ## 9. Riesgos
 
