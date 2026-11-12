@@ -4,9 +4,14 @@
  * Confirmación contextual con CTA explícito (10-B04 §26: sin «Escribí FINALIZAR»). `<dialog>` nativo en modo modal:
  * retiene el foco y lo devuelve al disparador al cerrar; Esc equivale a «Volver» salvo mientras se envía. El foco
  * inicial cae en el primer control (el motivo, si hay, o «Volver»): la acción de efecto nunca es la opción por defecto.
+ *
+ * Se abre y se cierra en un efecto de diseño (`useLayoutEffect`), antes de los efectos comunes de la página. Cerrar un
+ * diálogo modal devuelve el foco a quien lo abrió: si eso pasara después, le sacaría el foco a lo que la página enfoca al
+ * cerrarlo. Pasaba con «Ir a corregir» de «Antes de activar» y un nombre vacío: el campo tomaba el foco y el cierre se lo
+ * devolvía a «Revisar y activar…» (revisión adversaria de la etapa 1 de WP-EDITORES-PROFESIONAL).
  */
 import { COPY_VINCULO } from '@be/domain';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Aviso } from './formulario';
 
 interface PropsDeDialogo {
@@ -22,6 +27,10 @@ interface PropsDeDialogo {
   readonly confirmarDeshabilitado?: boolean;
   /** Al abrirse, el foco va a «Volver»: para un diálogo con un campo adentro, que si no se llevaría el foco. */
   readonly focoEnVolver?: boolean;
+  /** ED-07: por qué el botón de efecto está apagado, dicho a su lado (y al lector, como su descripción). */
+  readonly motivo?: string | null;
+  /** ED-07: un cuadro con más para leer («Antes de activar»): más ancho, en dos columnas si entran. */
+  readonly ancho?: boolean;
   readonly onVolver: () => void;
   readonly onConfirmar: () => void;
 }
@@ -38,6 +47,8 @@ export function DialogoDeConfirmacion({
   error = null,
   confirmarDeshabilitado = false,
   focoEnVolver = false,
+  motivo = null,
+  ancho = false,
   onVolver,
   onConfirmar,
 }: PropsDeDialogo) {
@@ -45,7 +56,7 @@ export function DialogoDeConfirmacion({
   const volver = useRef<HTMLButtonElement>(null);
   const id = useId();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialogo = ref.current;
     if (!dialogo) return;
     if (abierto && !dialogo.open) {
@@ -58,7 +69,7 @@ export function DialogoDeConfirmacion({
   return (
     <dialog
       ref={ref}
-      className="dialogo"
+      className={ancho ? 'dialogo dialogo--ancho' : 'dialogo'}
       aria-labelledby={`${id}-titulo`}
       onCancel={(e) => {
         e.preventDefault();
@@ -76,12 +87,20 @@ export function DialogoDeConfirmacion({
         <button ref={volver} type="button" className="boton boton--secundario" onClick={onVolver} disabled={enviando}>
           {textoVolver}
         </button>
+        {/* El motivo va pegado al botón que explica, del lado del principal (maqueta 10): antes de «Volver» se leía como
+            su causa. */}
+        {motivo ? (
+          <p id={`${id}-motivo`} className="nota dialogo__motivo">
+            {motivo}
+          </p>
+        ) : null}
         <button
           type="button"
           className={`boton ${peligro ? 'boton--peligro' : 'boton--primario'}`}
           onClick={onConfirmar}
           disabled={enviando || confirmarDeshabilitado}
           aria-busy={enviando}
+          aria-describedby={motivo ? `${id}-motivo` : undefined}
         >
           {enviando ? textoEnviando : textoConfirmar}
         </button>

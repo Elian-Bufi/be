@@ -5,7 +5,7 @@ import { NavegacionProfesional } from '../../../components/navegacion';
 import { Workspace } from './workspace';
 import { PorAsesorado } from './por-asesorado';
 
-export const metadata: Metadata = { title: 'Ficha del asesorado · BE' };
+export const metadata: Metadata = { title: 'Ficha de la persona · BE' };
 
 /**
  * Website `/pro/advisees?id=…` — el export estático no prerenderiza `/pro/advisees/:adviseeId` (DL-041). El título de la

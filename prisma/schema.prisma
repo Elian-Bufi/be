@@ -64,6 +64,10 @@ enum MotivoDeRevocacionDeSesion {
   ROL_ADMINISTRATIVO_RETIRADO
   /// WP-ADMINISTRACION: el administrador reemplazó su autenticador o generó códigos nuevos; sus otras sesiones terminan.
   CREDENCIALES_ADMINISTRATIVAS_RENOVADAS
+  /// UF-03 de WP-USO-FINAL (DL-169): la persona definió una contraseña nueva con un código de recuperación (08 §26.3).
+  RECUPERACION_DE_ACCESO
+  /// UF-03 (UF-D9): Administración emitió un código de recuperación asistida; las sesiones de la cuenta terminan.
+  RECUPERACION_ASISTIDA
 }
 
 /// WP-ADMINISTRACION (DL-155): de qué clase es una sesión. Una ADMINISTRATIVA solo sirve en la consola de Administración
@@ -278,6 +282,21 @@ model Identidad {
   pedidosDeAccesoAPlanHechos PedidoDeAccesoAPlan[]     @relation("PedidoDeAccesoAPlanDelProfesional")
   pedidosDeAccesoAPlanRecibidos PedidoDeAccesoAPlan[]  @relation("PedidoDeAccesoAPlanALaPersona")
 
+  // WP-USO-FINAL, UF-04 (DL-169; UF-D7): los cambios del nombre profesional, del profesional y del administrador que los hizo.
+  cambiosDeNombreProfesional CambioDeNombreProfesional[] @relation("CambioDeNombreDelProfesional")
+  cambiosDeNombreDecididos   CambioDeNombreProfesional[] @relation("CambioDeNombreDelAdministrador")
+  // WP-USO-FINAL, UF-03 (DL-169): la recuperación del acceso, los cambios de su credencial y las asistidas que emitió como administradora.
+  recuperacionesDeAcceso         RecuperacionDeAcceso[] @relation("RecuperacionDeAccesoDeLaIdentidad")
+  recuperacionesAsistidasEmitidas RecuperacionDeAcceso[] @relation("RecuperacionDeAccesoDelAdministrador")
+  cambiosDeCredencial            CambioDeCredencial[]   @relation("CambioDeCredencialDeLaIdentidad")
+  // WP-USO-FINAL, UF-06 (DL-169): los derechos de la persona, sus pedidos y sus exportaciones, y los que resolvió como administradora.
+  pedidosDeDerecho        PedidoDeDerecho[]   @relation("PedidoDeDerechoDelTitular")
+  pedidosDeDerechoResueltos PedidoDeDerecho[] @relation("PedidoDeDerechoDelAdministrador")
+  exportacionesPropias    ExportacionPropia[] @relation("ExportacionPropiaDelTitular")
+  // WP-USO-FINAL, UF-11 (DL-169; UF-T56): los restablecimientos del segundo factor, del profesional y del administrador que los hizo.
+  restablecimientosDeSegundoFactor   RestablecimientoDeSegundoFactor[] @relation("RestablecimientoDelProfesional")
+  restablecimientosDecididos         RestablecimientoDeSegundoFactor[] @relation("RestablecimientoDelAdministrador")
+
   @@map("identidad")
 }
 
@@ -337,6 +356,8 @@ model MetodoDeAcceso {
 
   identidad       Identidad        @relation(fields: [identidadId], references: [id], onDelete: Restrict)
   credencialLocal CredencialLocal?
+  /// UF-03 de WP-USO-FINAL (DL-169): los cambios de la credencial de este método, por recuperación del acceso.
+  cambiosDeCredencial CambioDeCredencial[]
 
   /// D3 de WP-02: dos registros concurrentes con el mismo correo no crean dos identidades.
   @@unique([tipo, referencia])
@@ -346,7 +367,8 @@ model MetodoDeAcceso {
 }
 
 /// Credencial del método LOCAL (08 §24.2: hash adaptativo, nunca en claro). Dato C5.
-/// Se suprime al cierre (08 R-02), con registro en RegistroDeSupresion (DEUDA_LEGAJO DL-019).
+/// Se suprime al cierre (08 R-02), con registro en RegistroDeSupresion (DEUDA_LEGAJO DL-019). Desde UF-03 de WP-USO-FINAL
+/// (DL-169) cambia solo con su cambio registrado en la misma transacción (`CambioDeCredencial`, trigger).
 model CredencialLocal {
   metodoDeAccesoId  String   @id @map("metodo_de_acceso_id") @db.Uuid
   hash              String
@@ -629,10 +651,14 @@ model PerfilProfesional {
   id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   identidadId         String                  @unique @map("identidad_id") @db.Uuid
   tipo                TipoDePerfilProfesional
+  /// Desde UF-04 (DL-169; UF-D7) cambia, y solo con su `CambioDeNombreProfesional` en la misma transacción (trigger).
   nombreVisible       String                  @map("nombre_visible")
   procedencia         Json
   momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  /// UF-04 (DL-169; UF-D8): la matrícula verificada de un sanitario incorporado por Administración. Las dos o ninguna (CHECK).
+  matriculaNumero       String? @map("matricula_numero")
+  matriculaJurisdiccion String? @map("matricula_jurisdiccion")
 
   identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
 
@@ -709,6 +735,48 @@ model EventoDeVerificacion {
   @@index([identidadId, alcance])
   @@index([administradorId])
   @@map("evento_de_verificacion")
+}
+
+/// UF-04 de WP-USO-FINAL (DL-169; UF-D7): cada cambio del nombre profesional, con el anterior, el nuevo, el fundamento y el
+/// administrador (rol vigente; nadie cambia el propio, trigger). Solo se agrega. `transaccion` lo ata al UPDATE del perfil.
+model CambioDeNombreProfesional {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String    @map("identidad_id") @db.Uuid
+  nombreAnterior      String    @map("nombre_anterior")
+  nombreNuevo         String    @map("nombre_nuevo")
+  fundamento          String
+  administradorId     String    @map("administrador_id") @db.Uuid
+  transaccion         BigInt    @default(dbgenerated("txid_current()"))
+  procedencia         Json
+  momentoDeOcurrencia DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional   Identidad @relation("CambioDeNombreDelProfesional", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad @relation("CambioDeNombreDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@index([administradorId])
+  @@map("cambio_de_nombre_profesional")
+}
+
+/// UF-11 de WP-USO-FINAL (DL-169; UF-T56, revisión adversarial de la etapa 2): cada restablecimiento del segundo factor de
+/// un profesional (API-ADM-19), con el fundamento y el administrador (rol vigente; nadie restablece el propio, trigger).
+/// Su autenticador y sus códigos dejan de valer y sus sesiones terminan en la misma transacción. Solo se agrega.
+model RestablecimientoDeSegundoFactor {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId          String    @map("identidad_id") @db.Uuid
+  administradorId      String    @map("administrador_id") @db.Uuid
+  fundamento           String
+  procedencia          Json
+  momentoDeOcurrencia  DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro    DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional   Identidad @relation("RestablecimientoDelProfesional", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad @relation("RestablecimientoDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@index([administradorId])
+  @@map("restablecimiento_de_segundo_factor")
 }
 
 // ─── WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7) ─────────────────────
@@ -4058,4 +4126,122 @@ model SegundoFactorDeSesion {
 
   @@index([identidadId])
   @@map("segundo_factor_de_sesion")
+}
+
+// ─── WP-USO-FINAL, UF-06 (DL-169; 08 §18 y §19; 09 v0.12 §14 y §15): los derechos de la persona ─────────────────
+
+/// Acceso (art. 14), rectificación y supresión (art. 16) de la Ley 25.326.
+enum TipoDePedidoDeDerecho {
+  ACCESO
+  RECTIFICACION
+  SUPRESION
+}
+
+/// Nace RECIBIDO; Administración lo resuelve una sola vez (trigger).
+enum EstadoDePedidoDeDerecho {
+  RECIBIDO
+  RESUELTO
+  RECHAZADO
+}
+
+/// UF-06: un pedido de derechos de la persona, con su plazo. Administración lo resuelve con la respuesta a la persona y su
+/// fundamento interno (CHECK de coherencia; un administrador con el rol vigente, trigger). No se borra ni se reescribe.
+model PedidoDeDerecho {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titularId           String                  @map("titular_id") @db.Uuid
+  tipo                TipoDePedidoDeDerecho
+  nota                String?
+  estado              EstadoDePedidoDeDerecho @default(RECIBIDO)
+  /// El último día del plazo, fecha civil de Buenos Aires.
+  plazo               DateTime                @db.Date
+  respuesta           String?
+  fundamento          String?
+  administradorId     String?                 @map("administrador_id") @db.Uuid
+  momentoDeResolucion DateTime?               @map("momento_de_resolucion") @db.Timestamptz(3)
+  procedencia         Json
+  momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  titular       Identidad  @relation("PedidoDeDerechoDelTitular", fields: [titularId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad? @relation("PedidoDeDerechoDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([titularId])
+  @@index([estado, plazo])
+  @@map("pedido_de_derecho")
+}
+
+/// UF-06: una exportación propia pedida, con sus dominios y su vencimiento. El archivo no se guarda: se arma al descargarlo
+/// por una ruta firmada. Solo se agrega.
+model ExportacionPropia {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titularId         String   @map("titular_id") @db.Uuid
+  dominios          String[]
+  venceEn           DateTime @map("vence_en") @db.Timestamptz(3)
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  titular Identidad @relation("ExportacionPropiaDelTitular", fields: [titularId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([titularId])
+  @@map("exportacion_propia")
+}
+
+// ─── WP-USO-FINAL, UF-03 (DL-169; UF-D9; 04 RF-005; 08 §24.4 a §24.6 y §26.3): recuperar el acceso local ─────────
+
+/// De dónde sale un código de recuperación del acceso. PEDIDO: lo pidió la persona (API-ACC-P1-01), con el código por
+/// correo si BE tiene proveedor; sin proveedor, el pedido no tiene código. ASISTIDA: lo emitió Administración (API-ADM-18).
+enum OrigenDeRecuperacionDeAcceso {
+  PEDIDO
+  ASISTIDA
+}
+
+/// Un pedido de recuperación del acceso o un código de la recuperación asistida (UF-D9). La base guarda la huella del
+/// código (HMAC con una clave del servidor), nunca el código. Al completar, vale cualquier código vigente de la cuenta del
+/// pedido. De una fila solo cambian los intentos que no valieron (de a uno, hasta 5), el uso y la anulación, una vez
+/// (trigger); la asistida la emite un administrador con el rol vigente, con fundamento. No se borra.
+model RecuperacionDeAcceso {
+  id                 String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId        String                       @map("identidad_id") @db.Uuid
+  origen             OrigenDeRecuperacionDeAcceso
+  /// HMAC-SHA-256 del código, en hexadecimal; NULL en un pedido sin código (sin proveedor de correo).
+  huella             String?                      @unique
+  venceEn            DateTime                     @map("vence_en") @db.Timestamptz(3)
+  /// Códigos que no valieron sobre este pedido: con 5, queda anulado.
+  intentosFallidos   Int                          @default(0) @map("intentos_fallidos")
+  /// ASISTIDA: el administrador que lo emitió y cómo verificó a la persona.
+  administradorId    String?                      @map("administrador_id") @db.Uuid
+  fundamento         String?
+  momentoDeUso       DateTime?                    @map("momento_de_uso") @db.Timestamptz(3)
+  momentoDeAnulacion DateTime?                    @map("momento_de_anulacion") @db.Timestamptz(3)
+  procedencia        Json
+  momentoDeRegistro  DateTime                     @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad     Identidad            @relation("RecuperacionDeAccesoDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad?           @relation("RecuperacionDeAccesoDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  cambios       CambioDeCredencial[]
+
+  @@index([identidadId])
+  @@index([administradorId])
+  @@map("recuperacion_de_acceso")
+}
+
+/// El cambio de la credencial local, como hecho: de qué método, con qué recuperación y en qué transacción. La credencial
+/// cambia solo con su cambio registrado en la misma transacción (trigger de `credencial_local`). Solo se agrega.
+model CambioDeCredencial {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId       String   @map("identidad_id") @db.Uuid
+  metodoDeAccesoId  String   @map("metodo_de_acceso_id") @db.Uuid
+  recuperacionId    String   @map("recuperacion_id") @db.Uuid
+  transaccion       BigInt   @default(dbgenerated("txid_current()"))
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  identidad      Identidad            @relation("CambioDeCredencialDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  metodoDeAcceso MetodoDeAcceso       @relation(fields: [metodoDeAccesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  recuperacion   RecuperacionDeAcceso @relation(fields: [recuperacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@index([metodoDeAccesoId])
+  @@index([recuperacionId])
+  @@map("cambio_de_credencial")
 }

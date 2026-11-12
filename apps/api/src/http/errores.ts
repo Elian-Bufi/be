@@ -50,6 +50,12 @@ export const errores = {
   validacionFallida: (issues: ValidationIssue[]) =>
     new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Falta información necesaria para continuar.', { issues }),
   limiteDeIntentos: () => new ErrorDeApi(429, CodigoDeError.RATE_LIMITED, 'Demasiados intentos. Probá de nuevo más tarde.'),
+  /**
+   * UF-03 (DL-169): el código de recuperación no vale. El mismo mensaje para toda causa (09 v0.12 §10: no revela nada); la
+   * causa real queda en la auditoría con `motivoDeAuditoria`.
+   */
+  codigoDeRecuperacionInvalido: (motivo: string) =>
+    new ErrorDeApi(422, CodigoDeError.RECOVERY_CODE_INVALID, 'El código no es válido o ya no está vigente.', undefined, motivo),
   baseNoDisponible: () => new ErrorDeApi(503, CodigoDeError.DB_UNAVAILABLE, 'El servicio no está disponible. Probá de nuevo más tarde.'),
 
   // ─── WP-03 (09v7 §4; 09v8:1807-1826; 09:2513-2516) ─────────────────────────────────────────────
@@ -216,6 +222,8 @@ export const errores = {
     new ErrorDeApi(422, CodigoDeError.INCORPORATION_CODE_INVALID, 'El código de incorporación no es válido, venció o ya se usó.', { attemptsRemaining: restantes }, motivo),
   /** Falta `BE_CLAVE_DEL_SEGUNDO_FACTOR`: sin ella no se protege ningún secreto, y la administración no abre. */
   administracionNoDisponible: () => new ErrorDeApi(503, CodigoDeError.ADMINISTRATION_NOT_AVAILABLE, 'La administración no está configurada en este ambiente.'),
+  /** UF-11 (DL-169): falta `BE_CLAVE_DEL_SEGUNDO_FACTOR`; sin ella, el segundo factor del profesional no se configura. */
+  segundoFactorNoDisponible: () => new ErrorDeApi(503, CodigoDeError.SECOND_FACTOR_NOT_AVAILABLE, 'El segundo factor no está configurado en este ambiente.'),
   /** 09v8 PRO-11: una decisión administrativa sin fundamento. */
   fundamentoRequerido: () => new ErrorDeApi(422, CodigoDeError.RATIONALE_REQUIRED, 'Falta el fundamento de la decisión.'),
   /** La decisión exige el texto para el profesional (observación, rechazo, suspensión, retiro). */

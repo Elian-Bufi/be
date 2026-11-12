@@ -26,7 +26,7 @@
  * hábitos»; si el PDP no lo deja, la tarjeta no existe.
  */
 import { COPY_PISTAS, COPY_FORMULARIOS } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { cambiarLaDireccion } from '../../../../lib/direccion';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
@@ -135,7 +135,7 @@ export function Formularios() {
               {retorno.href && !vuelta ? (
                 <p>
                   {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
-                  <Link href={retorno.href}>Volver a la ficha, donde estabas</Link>
+                  <Enlace href={retorno.href}>Volver a la ficha, donde estabas</Enlace>
                 </p>
               ) : null}
             </AvisoFlotante>

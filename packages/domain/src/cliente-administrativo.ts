@@ -1,5 +1,6 @@
 /**
- * WP-ADMINISTRACION (DL-155): el cliente HTTP de la consola de Administración del website (API-ADM-01 a 13). Va aparte del
+ * WP-ADMINISTRACION (DL-155): el cliente HTTP de la consola de Administración del website (API-ADM-01 a 13; desde UF-04 de
+ * WP-USO-FINAL, DL-169, también 14 y 15). Va aparte del
  * cliente común (`cliente-http.ts`) a propósito: la sesión administrativa es otra, con otro token y otra cookie, y ninguna
  * pantalla de la consola llama a una operación de profesionales o de personas (ni viceversa).
  * - El Bearer lo guarda quien llama, en memoria. La cookie de reanudación de Administración (HttpOnly, de la API) viaja
@@ -7,6 +8,8 @@
  * - Toda respuesta exitosa se valida contra su schema; un `SECOND_FACTOR_INVALID` trae cuántos intentos le quedan a la
  *   sesión.
  */
+import type { CambiarNombreProfesionalRequest, IncorporarProfesionalRequest } from './incorporacion-de-profesionales';
+import { ListaAdministrativaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, type ConsultarPedidosDeDerechoRequest, type ResolverPedidoDeDerechoRequest } from './derechos-del-titular';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -23,6 +26,8 @@ import {
   type DecidirSobreAreaRequest,
 } from './contratos-administracion';
 import { ErrorEnvelopeSchema, type EsquemaDeContrato, type SalidaDe, type ValidationIssue } from './contratos';
+import { RecuperacionAsistidaResponseSchema, type EmitirRecuperacionAsistidaRequest } from './recuperacion-de-acceso';
+import { SegundoFactorRestablecidoResponseSchema, type RestablecerSegundoFactorRequest } from './segundo-factor-del-profesional';
 import type { Alcance } from './alcance';
 
 export type ResultadoAdministrativo<T> =
@@ -151,6 +156,33 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
         claveDeIdempotencia,
         esquema: DecisionRegistradaResponseSchema,
       });
+    },
+    /** API-ADM-14 — incorporar a un profesional real (UF-04, DL-169), con su clave de idempotencia. */
+    incorporarProfesional(token: string, pedido: IncorporarProfesionalRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/admin/professionals', { token, cuerpo: pedido, claveDeIdempotencia, esquema: FichaDeProfesionalResponseSchema });
+    },
+    /** API-ADM-15 — cambiar el nombre profesional (UF-D7), contra el que se vio, con su clave de idempotencia. */
+    cambiarNombreProfesional(token: string, profesionalId: string, pedido: CambiarNombreProfesionalRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/professionals/${encodeURIComponent(profesionalId)}/name`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: FichaDeProfesionalResponseSchema });
+    },
+    /** API-ADM-16 — los pedidos de derechos de las personas (UF-06, DL-169). */
+    pedidosDeDerechos(token: string, consulta: ConsultarPedidosDeDerechoRequest) {
+      return llamar('POST', '/admin/data-rights-requests/query', { token, cuerpo: consulta, esquema: ListaAdministrativaDePedidosDeDerechoResponseSchema });
+    },
+    /** API-ADM-17 — resolver un pedido, con su clave de idempotencia. */
+    resolverPedidoDeDerecho(token: string, pedidoId: string, pedido: ResolverPedidoDeDerechoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/data-rights-requests/${encodeURIComponent(pedidoId)}/resolution`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: PedidoDeDerechoAdministrativoResponseSchema });
+    },
+    /**
+     * API-ADM-18 — la recuperación asistida (UF-03, UF-D9): el código de un solo uso para la persona, con el fundamento.
+     * Sin clave de idempotencia: cada pedido emite un código nuevo y anula el anterior.
+     */
+    emitirRecuperacionAsistida(token: string, pedido: EmitirRecuperacionAsistidaRequest) {
+      return llamar('POST', '/admin/access-recoveries', { token, cuerpo: pedido, esquema: RecuperacionAsistidaResponseSchema });
+    },
+    /** API-ADM-19 — restablecer el segundo factor de un profesional (UF-T56), con el fundamento. */
+    restablecerSegundoFactor(token: string, pedido: RestablecerSegundoFactorRequest) {
+      return llamar('POST', '/admin/professional-second-factor-resets', { token, cuerpo: pedido, esquema: SegundoFactorRestablecidoResponseSchema });
     },
   };
 }

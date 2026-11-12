@@ -137,7 +137,7 @@ function DeResumen() {
           <strong>Línea punteada:</strong> desde cuándo rige el primer plan del período. Antes de ese día no había un plan de este seguimiento en el que registrar.
         </Renglon>
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
-          <strong>Las fechas sin año</strong> son de este año; el período, con su año, está arriba. «Elegir indicadores» cambia los cuatro: se guardan en tu cuenta y valen para todos tus asesorados.
+          <strong>Las fechas sin año</strong> son de este año; el período, con su año, está arriba. «Elegir indicadores» cambia los cuatro: se guardan en tu cuenta y valen para todas las personas que acompañás.
         </Renglon>
       </ul>
       {/* Antes iba en cada renglón de la lista («Sale de…»): ahora se dice una vez por regla, y se abre si hace falta. */}

@@ -15,7 +15,7 @@
  *   ni tarjetas vacías. Desde DL-169 (UF-01) el nombre es obligatorio y lo pide «Antes de seguir»: Perfil ya no ofrece
  *   «Agregá tu nombre» (`nombreEnPerfil`).
  */
-import { COPY_INVITACION, ETIQUETA_DE_ALCANCE, type Alcance } from '@be/domain';
+import { COPY_AYUDA, COPY_DERECHOS, COPY_INVITACION, ETIQUETA_DE_ALCANCE, type Alcance } from '@be/domain';
 import { useCallback, useEffect, type ReactNode } from 'react';
 import { Platform, Pressable, Share, Text, View } from 'react-native';
 import { api } from '../api';
@@ -174,6 +174,8 @@ const ICONO_DEL_AJUSTE: Readonly<Record<Ajuste, NombreDeIcono>> = {
   apariencia: 'claro',
   avisos: 'novedades',
   privacidad: 'candado',
+  'tus-datos': 'persona',
+  'ayuda-y-contacto': 'ayuda',
   sesion: 'acceso',
   'cerrar-mi-cuenta': 'salir',
 };
@@ -196,6 +198,10 @@ function FilaDeAjuste({ ajuste, ir, ultima }: { ajuste: Ajuste; ir: Ir; ultima: 
       return <Fila icono={icono} titulo={T.avisos} detalle={T.avisosDetalle} onPress={() => ir({ nombre: 'cuenta', seccion: 'avisos' })} />;
     case 'privacidad':
       return <Fila icono={icono} titulo={T.privacidad} onPress={() => ir({ nombre: 'privacidad' })} />;
+    case 'tus-datos':
+      return <Fila icono={icono} titulo={COPY_DERECHOS.titulo} detalle={COPY_DERECHOS.descargar.boton} onPress={() => ir({ nombre: 'tus-datos' })} />;
+    case 'ayuda-y-contacto':
+      return <Fila icono={icono} titulo={COPY_AYUDA.titulo} detalle={COPY_AYUDA.soporte.queEs} onPress={() => ir({ nombre: 'ayuda-y-contacto' })} />;
     case 'sesion':
       return <Fila icono={icono} titulo={T.sesionYEsteTelefono} detalle={T.sesionYEsteTelefonoDetalle} onPress={() => ir({ nombre: 'cuenta', seccion: 'sesion' })} />;
     case 'cerrar-mi-cuenta':

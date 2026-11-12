@@ -1044,6 +1044,82 @@ details summary {
   margin-top: 0;
 }
 
+/* ED-07: un cuadro con más para leer («Antes de activar»): más ancho y, si entra, en dos columnas. */
+.dialogo--ancho {
+  max-width: min(64rem, calc(100vw - 2rem));
+  width: 100%;
+}
+
+/* ED-07: por qué el botón de efecto está apagado, pegado a él: los dos van a la derecha, y «Volver» queda a la izquierda. */
+.dialogo__motivo {
+  margin: 0 0 0 auto;
+  align-self: center;
+  text-align: end;
+}
+
+.antes-de-activar__bajada {
+  margin: -0.5rem 0 0.75rem;
+}
+
+.antes-de-activar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem 1.5rem;
+}
+
+@media (min-width: 56rem) {
+  .antes-de-activar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.antes-de-activar__columna {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.antes-de-activar__parte h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.antes-de-activar__parte p {
+  margin: 0 0 0.4rem;
+}
+
+.antes-de-activar__lista {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.4rem;
+  padding-left: 1.1rem;
+}
+
+.antes-de-activar__lista li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+/* Con cambios sin guardar: lo que hay que hacer primero, con su ícono (nunca solo color). */
+.antes-de-activar__sin-guardar {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: var(--fondo-suave);
+}
+
+.antes-de-activar__sin-guardar p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
 @media (max-width: 30rem) {
   .acciones .boton {
     width: 100%;
@@ -9536,7 +9612,7 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 /* Un botón que ahora no se puede usar pero conserva el foco (`aria-disabled`): se ve apagado y no responde al mouse. Es
-   para el que se apaga solo después de usarlo («Guardar cambios», sin nada que guardar): con `disabled` perdería el foco. */
+   para el que se apaga solo después de usarlo («Guardar ahora», sin nada que guardar): con `disabled` perdería el foco. */
 .boton[aria-disabled='true'] {
   opacity: 0.6;
   pointer-events: none;
@@ -9612,6 +9688,37 @@ button.comida-del-dia__fila > .icono:last-child {
 .estado-de-guardado[data-estado="fallo"],
 .carga-de-la-toma__estado--fallo {
   color: var(--error);
+}
+
+/* ED-03: el detalle técnico de un fallo, plegado, en su propio renglón al final de la barra (nunca entre los botones). */
+.estado-de-guardado__detalle {
+  order: 99;
+  flex-basis: 100%;
+}
+
+.estado-de-guardado__detalle summary {
+  width: fit-content;
+  font-size: 0.92rem;
+}
+
+.estado-de-guardado__detalle p {
+  margin: 0.25rem 0 0;
+}
+
+/* ED-01: el cuadro de descartar la versión en preparación. Lo que no se deshace va con su ícono y en negrita: nunca
+   solo con color. */
+.cuadro-del-descarte p {
+  margin: 0 0 0.6rem;
+}
+
+.cuadro-del-descarte__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: var(--fondo-suave);
 }
 
 .editor-del-plan__que-es {
@@ -15338,4 +15445,965 @@ p.cifra-del-espacio__desglose {
 
 .items-del-editor .item-del-editor__nota > td {
   padding-top: 0;
+}
+
+/* UF-03 (DL-169): el código de la recuperación asistida, que se muestra una sola vez en /admin/access. */
+.codigo-emitido code {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  font-size: 1.3rem;
+  letter-spacing: 0.12em;
+}
+
+/* UF-05 (DL-169): el texto completo de la versión nueva de los términos o de la privacidad, en «Antes de seguir». */
+.texto-vigente__cuerpo {
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+/* ED-02 (WP-EDITORES-PROFESIONAL): «Guardando antes de salir…», a la vista mientras se guarda y anunciado al lector. La
+   región está siempre (un aviso en una región que aparece no siempre se anuncia); vacía, no se ve. */
+.salida-segura__guardando {
+  position: fixed;
+  inset-inline-start: 1rem;
+  inset-block-end: 1rem;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.salida-segura__guardando:empty {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* ═══ ED-10 (WP-EDITORES-PROFESIONAL) · El cuadro enfocado (`components/cuadro-enfocado.tsx`) ═══════════════════════
+   Une el cajón y el diálogo. La forma «panel» es el cajón de siempre; la forma «dialogo» va al centro, con la misma
+   cabecera y el mismo pie fijos y el cuerpo que se desplaza adentro. Nunca pasa de la pantalla: lo largo se desplaza. */
+.cuadro-enfocado--dialogo {
+  width: min(44rem, calc(100vw - 2rem));
+  max-height: min(52rem, calc(100dvh - 2rem));
+  padding: 0;
+}
+
+.cuadro-enfocado--dialogo.dialogo--ancho {
+  width: min(72rem, calc(100vw - 2rem));
+  max-width: none;
+}
+
+.cuadro-enfocado--dialogo[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.cuadro-enfocado .cajon__pie .acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0 auto;
+}
+
+.cuadro-enfocado__pregunta p {
+  margin: 0;
+}
+
+/* ═══ ED-22 · La prescripción en una línea (`training/linea-de-prescripcion.tsx`) ═════════════════════════════════════ */
+.linea-de-prescripcion {
+  display: grid;
+  grid-template-columns: minmax(12rem, 26rem) auto;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.linea-de-prescripcion__campo {
+  font-variant-numeric: tabular-nums;
+}
+
+.linea-de-prescripcion__tecla {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--tenue);
+}
+
+.linea-de-prescripcion__lectura {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.ejercicio-del-editor__revisar {
+  border-style: dashed;
+}
+
+/* ═══ ED-15, ED-24 y ED-25 · La estación de tres zonas (`training/editor.tsx`, `estacion/estacion.ts`) ═══════════════
+   A 1440 × 900: la barra de comandos y tres zonas que entran en la pantalla; cada zona se desplaza sola (la página no).
+   A 1280 × 800: la izquierda baja a 200 px y el panel se abre con «Panel», superpuesto al centro, sin achicar las celdas.
+   A 1920 × 1080: el centro gana el ancho, hasta 1840 px. Por debajo de 64 rem las zonas se apilan y la página se desplaza. */
+.estacion {
+  --estacion-izquierda: 15rem;
+  --estacion-derecha: 20rem;
+  max-width: 115rem;
+}
+
+/* ED-15: la ficha topa en 100 rem (1600 px); con la estación adentro, su cuerpo llega a 115 rem (1840 px) a 1920. */
+.ficha__cuerpo:has(.estacion) {
+  max-width: 115rem;
+}
+
+.estacion__barra {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.estacion__saltos {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.estacion__saltos .boton:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.estacion__zonas {
+  display: grid;
+  grid-template-columns: var(--estacion-izquierda) minmax(0, 1fr) var(--estacion-derecha);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 64.0625rem) {
+  .estacion__zonas {
+    height: calc(100dvh - 14rem);
+    min-height: 30rem;
+  }
+
+  .estacion__zona {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.estacion__zona {
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.estacion__zona:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.estacion__abrir-panel {
+  display: none;
+}
+
+/* Por debajo de 1440 (90 rem, que es de las tres zonas): «90rem» con max-width incluía 1440 y le escondía el panel. */
+@media (min-width: 64.0625rem) and (width < 90rem) {
+  .estacion {
+    --estacion-izquierda: 12.5rem;
+  }
+
+  .estacion__zonas {
+    grid-template-columns: var(--estacion-izquierda) minmax(0, 1fr);
+  }
+
+  .estacion__abrir-panel {
+    display: inline-flex;
+  }
+
+  .estacion__panel {
+    position: fixed;
+    inset-block: 6rem 1rem;
+    inset-inline-end: 1rem;
+    z-index: 20;
+    width: var(--estacion-derecha);
+    box-shadow: var(--sombra);
+  }
+
+  .estacion:not([data-panel-abierto]) .estacion__panel {
+    display: none;
+  }
+}
+
+@media (max-width: 64rem) {
+  .estacion__zonas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.estacion__sesiones-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.estacion__sesiones-cabecera h3,
+.estacion__panel h3 {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.estacion__lista-de-sesiones {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.estacion__sesion-boton {
+  display: grid;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.estacion__sesion-boton[aria-current='true'] {
+  border-color: var(--borde-control);
+  border-width: 2px;
+}
+
+.estacion__sesion-nombre {
+  font-weight: 600;
+}
+
+.estacion__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.estacion__chip {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Prendido: lleno y en negrita, además del color (B10-10 §1). */
+.estacion__chip[aria-pressed='true'] {
+  background: var(--boton-fondo);
+  border-color: var(--boton-fondo);
+  color: var(--boton-texto);
+  font-weight: 700;
+}
+
+.estacion__tira {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.estacion__tira li {
+  display: grid;
+  padding: 0.4rem 0.5rem;
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.estacion__tira li[data-con-sesion] {
+  border-style: solid;
+  font-weight: 600;
+}
+
+.estacion__acciones-de-la-sesion {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.estacion__pestanas {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.estacion__pestanas [role='tab'] {
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--tenue);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.estacion__pestanas [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--texto);
+  color: var(--texto);
+  font-weight: 700;
+}
+
+.estacion__lista-del-panel {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+}
+
+.estacion__lista-del-panel li + li {
+  margin-top: 0.35rem;
+}
+
+/* ═══ ED-17 · La ayuda de primer uso (`components/primer-uso.tsx`) ═════════════════════════════════════════════════ */
+.primer-uso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.primer-uso ul {
+  margin: 0.2rem 0;
+  padding-inline-start: 1.1rem;
+}
+
+.primer-uso__titulo {
+  margin: 0;
+  font-weight: 700;
+}
+
+.primer-uso > div {
+  flex: 1 1 auto;
+}
+
+/* ═══ ED-11 · La galería de presets (`advisees/galeria-de-presets.tsx`) ═════════════════════════════════════════════ */
+.galeria {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+  gap: 1rem;
+}
+
+@media (max-width: 48rem) {
+  .galeria {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.galeria h3 {
+  margin: 0.4rem 0;
+  font-size: 1rem;
+}
+
+.galeria__tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galeria__tarjeta {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.galeria__tarjeta[aria-pressed='true'] {
+  border-width: 3px;
+  padding: calc(0.6rem - 2px) calc(0.7rem - 2px);
+}
+
+.galeria__nombre {
+  font-weight: 700;
+}
+
+.galeria__vista-previa {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.galeria__alcance {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.5rem 0;
+  border: 0;
+  padding: 0;
+}
+
+.galeria__pie {
+  margin: 0;
+}
+
+/* ═══ ED-14 y ED-20 · El asistente (`asistente/asistente.tsx`): los siete pasos a la vista, una decisión por paso y una
+   sola acción principal abajo. Es una vista de la página (EDT-11): la página se desplaza, no las zonas. */
+.estacion[data-en-el-asistente] {
+  max-width: 64rem;
+}
+
+.asistente {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.asistente__pasos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.asistente__paso {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.asistente__paso[aria-current='step'] {
+  border-color: var(--texto);
+  font-weight: 600;
+}
+
+.asistente__paso:disabled {
+  cursor: default;
+  color: var(--tenue);
+}
+
+.asistente__numero {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.8rem;
+}
+
+.asistente li[data-hecho] .asistente__numero {
+  background: var(--fondo-suave);
+}
+
+.asistente__cuadro {
+  padding: 1.25rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.asistente__cuadro > h3 {
+  margin: 0.25rem 0 1rem;
+  font-size: 1.3rem;
+}
+
+.asistente__cuenta {
+  margin: 0;
+}
+
+.asistente__sesiones {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.asistente__sesion {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.asistente__sesion h4,
+.asistente__sesion h5 {
+  margin: 0;
+}
+
+/* ED-14: con varias semanas o bloques, cada grupo con su encabezado; en el paso 4, cada ejercicio dice qué tiene ahora. */
+.asistente__grupo + .asistente__grupo {
+  margin-top: 1.25rem;
+}
+
+.asistente__grupo-titulo {
+  margin: 0 0 0.5rem;
+}
+
+.asistente__ejercicio {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.asistente__ejercicio-actual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+}
+
+.asistente__campo {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.asistente__acciones,
+.asistente__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.asistente__pie {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--borde);
+}
+
+.asistente__siguiente {
+  margin-inline-start: auto;
+}
+
+.asistente__tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.asistente__tarjeta {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 7rem;
+  padding: 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.asistente__tarjeta:has(input:checked) {
+  border-color: var(--texto);
+  box-shadow: inset 0 0 0 1px var(--texto);
+}
+
+.asistente__tarjeta:has(input:focus-visible) {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.asistente__tarjeta input {
+  position: absolute;
+  inset-block-start: 1rem;
+  inset-inline-end: 1rem;
+}
+
+.asistente__tarjeta-titulo {
+  padding-inline-end: 1.5rem;
+  font-weight: 600;
+}
+
+.area__accion-del-plan {
+  margin: 0.5rem 0 0;
+}
+
+/* ED-21 · Elegir varios ejercicios a la vez: la casilla de cada fila y la prescripción para todos, en el pie del cajón. */
+.agregar-ejercicio__marca {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.agregar-ejercicio__marca input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.agregar-ejercicio__para-todos {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.25rem;
+}
+
+/* ED-23 · La planilla de series: la casilla de cada serie, la barra de las elegidas y el valor propio con su punto. */
+.series-del-editor__columna-elegir,
+.series-del-editor__elegir {
+  width: 2.75rem;
+  text-align: center;
+}
+
+.series-del-editor__elegir input {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.series-del-editor tr[data-elegida] {
+  background: var(--fondo-suave);
+}
+
+.series-del-editor__elegidas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+}
+
+.series-del-editor__elegidas .campo__error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Lo propio de la serie lleva un punto, además del tono: lo heredado va tenue (con «toma … de lo general» para el lector). */
+.celda-de-objetivo[data-estado='propio'] {
+  position: relative;
+}
+
+.celda-de-objetivo[data-estado='propio']::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0.35rem;
+  inset-inline-start: 0.3rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--texto);
+}
+
+/* ═══ ED-18 · El vidrio del website (WP-EDITORES-PROFESIONAL, §2.7; DL-170) ════════════════════════════════════════════
+   Solo en la estación y el asistente de Entrenamiento: el fondo con dos destellos, y de vidrio la barra de comandos, el
+   panel, la tarjeta del paso y los cuadros que se abren desde ahí. La planilla y las zonas de edición siguen opacas, para
+   leer bien y para que el desplazamiento no se trabe. Nada se anima. Sin soporte de `backdrop-filter`, con la
+   transparencia reducida o con colores forzados, todo vuelve a ser opaco (TEST-EDP-053). Los tokens y su contraste en el
+   peor punto, en `tokens.css` y `scripts/contraste.test.cjs`. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  body:has(.estacion) {
+    background:
+      radial-gradient(60rem 40rem at 8% -12%, var(--destello-1), transparent 70%),
+      radial-gradient(50rem 36rem at 96% 8%, var(--destello-2), transparent 70%),
+      var(--fondo);
+    background-attachment: fixed;
+  }
+
+  .estacion__barra,
+  .estacion__panel,
+  .asistente__cuadro,
+  .estacion .cuadro-enfocado,
+  .estacion .dialogo {
+    border-color: var(--vidrio-luz);
+    background: linear-gradient(to bottom, var(--vidrio-brillo), transparent 50%), var(--vidrio);
+    box-shadow: inset 0 1px 0 var(--vidrio-luz), var(--sombra-suave);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  .estacion__panel,
+  .estacion .cuadro-enfocado,
+  .estacion .dialogo {
+    box-shadow: inset 0 1px 0 var(--vidrio-luz), var(--sombra);
+  }
+
+  /* El de adentro: sin sombra ni desenfoque propio. */
+  .asistente__sesion,
+  .asistente__tarjeta {
+    background: var(--vidrio-adentro);
+  }
+
+  /* El resplandor, solo en el principal de la vista: «Revisar y activar…» en la estación o el del paso en el asistente. */
+  .estacion [data-barra-de-comandos] .boton--primario,
+  .asistente__siguiente {
+    box-shadow: 0 0 1.25rem var(--resplandor);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  body:has(.estacion) {
+    background: var(--fondo);
+  }
+
+  .estacion__barra,
+  .estacion__panel,
+  .asistente__cuadro,
+  .estacion .cuadro-enfocado,
+  .estacion .dialogo,
+  .asistente__sesion,
+  .asistente__tarjeta {
+    background: var(--superficie);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .estacion [data-barra-de-comandos] .boton--primario,
+  .asistente__siguiente {
+    box-shadow: none;
+  }
+}
+
+/* ═══ ED-31, ED-33 y ED-34 · Nutrición en el editor: el panel con los rangos, las opciones por clase y el total ════ */
+.editor-de-nutricion__zonas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 80rem) {
+  .editor-de-nutricion__zonas {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    align-items: start;
+  }
+
+  .panel-de-nutricion {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.panel-de-nutricion {
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.panel-de-nutricion h3 {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.panel-de-nutricion__del-dia {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.panel-de-nutricion__tabla {
+  font-size: 0.85rem;
+}
+
+.panel-de-nutricion__tabla td {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-de-nutricion__fila-del-dia {
+  border-top: 2px solid var(--borde);
+  font-weight: 700;
+}
+
+.segmento__nota {
+  color: var(--tenue);
+  font-size: 0.85em;
+}
+
+/* En el día tipo elegido el fondo es el del texto: la nota hereda el color, como la cuenta (AA en los dos temas). */
+.segmento:has(input:checked) .segmento__nota {
+  color: inherit;
+  opacity: 0.85;
+}
+
+.comida-del-editor__agregar-opcion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Dos renglones reservados: el total y lo que falta. Cuando llega la composición y «leyendo» se va, lo de abajo no salta. */
+.opcion-del-editor__total {
+  min-height: 3.2em;
+  margin: 0.5rem 0;
+}
+
+.opcion-del-editor__total p {
+  margin: 0.15rem 0;
+}
+
+/* ═══ ED-40 · Pedir información, compacto: las partes plegadas y el resumen junto al botón ════════════════════════ */
+.preguntas-del-pedido__parte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.preguntas-del-pedido__parte .nota {
+  font-weight: 400;
+}
+
+.pedido__resumen {
+  margin: 0.5rem 0 0;
+}
+
+/* ═══ ED-41 · Las dos entradas del vínculo, con su subtítulo ════════════════════════════════════════════════════════ */
+.boton__con-subtitulo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.boton__subtitulo {
+  font-size: 0.8em;
+  font-weight: 400;
+}
+
+/* ═══ ED-23 y ED-24 · El cuadro de copiar ═══════════════════════════════════════════════════════════════════════ */
+.cuadro-de-copiar {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cuadro-de-copiar legend {
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+}
+
+.cuadro-de-copiar__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cuadro-de-copiar__previa {
+  margin-top: 0.75rem;
+  font-weight: 600;
+}
+
+/* ═══ ED-14 · «Lo que llevás armado», al costado del paso del asistente ═══════════════════════════════════════════ */
+.asistente__con-lo-armado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 80rem) {
+  .asistente__con-lo-armado {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+  }
+}
+
+.asistente__armado {
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.asistente__armado h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+/* ═══ ED-21 · Los chips por zona del buscador de ejercicios ══════════════════════════════════════════════════════ */
+.chips-de-zona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.chip-de-zona {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.chip-de-zona[aria-pressed='true'] {
+  border-color: var(--texto);
+  background: var(--texto);
+  color: var(--fondo);
+  font-weight: 700;
+}
+
+.chip-de-zona:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
 }

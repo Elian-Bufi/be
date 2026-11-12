@@ -16,7 +16,11 @@ import {
   MENSAJE_DE_CAMPO,
   normalizarNombreVisible,
   problemaDelNombre,
+  textoDelPaso,
+  versionPublicada,
   type LoQueFaltaParaSeguirResponse,
+  type TextoAAceptar,
+  type VersionDeTexto,
   type PerfilPropio,
   type PerfilPropioResponse,
   type Resultado,
@@ -41,7 +45,10 @@ export function mensajeDelNombreEn(issues: readonly ValidationIssue[]): string |
  * Lo que muestra «Antes de seguir» con la respuesta de API-ACC-07:
  * - `seguir`: no falta nada, va la página;
  * - `nombre`: el paso del nombre, con lo que propone la API (el nombre profesional) o `null`;
- * - `desconocido`: la API pide un paso que este website no sabe resolver: hay que recargar (`pasoDesconocidoWeb`);
+ * - `textos` (UF-05): la versión vigente de los términos y de la privacidad, cada una con el texto que este website tiene
+ *   para esa versión. Van después del nombre;
+ * - `desconocido`: la API pide un paso que este website no sabe resolver, o una versión de un texto que no tiene: hay que
+ *   recargar (`pasoDesconocidoWeb`);
  * - `sin-respuesta`: sin conexión, la API no pudo responder o respondió algo que no se reconoce. No se deja pasar: se
  *   reintenta;
  * - `sesion`: la sesión ya no sirve; se vuelve a Iniciar sesión.
@@ -49,6 +56,7 @@ export function mensajeDelNombreEn(issues: readonly ValidationIssue[]): string |
 export type PasoQueSigue =
   | { readonly tipo: 'seguir' }
   | { readonly tipo: 'nombre'; readonly sugerencia: string | null }
+  | { readonly tipo: 'textos'; readonly pendientes: readonly { readonly texto: TextoAAceptar; readonly version: VersionDeTexto }[] }
   | { readonly tipo: 'desconocido' }
   | { readonly tipo: 'sin-respuesta' }
   | { readonly tipo: 'sesion' };
@@ -61,6 +69,9 @@ export function pasoQueSigue(r: Resultado<LoQueFaltaParaSeguirResponse>): PasoQu
   if (!conocePasos(pasos)) return { tipo: 'desconocido' };
   const primero = pasos[0];
   if (primero?.step === 'DISPLAY_NAME') return { tipo: 'nombre', sugerencia: primero.suggestion?.trim() ? primero.suggestion : null };
+  // UF-05: los textos, con la versión que pide la API; si este website no la tiene, recargar trae la nueva.
+  const pendientes = pasos.map((p) => ({ texto: textoDelPaso(p.step), version: versionPublicada(p.suggestion) }));
+  if (pendientes.every((p): p is { texto: TextoAAceptar; version: VersionDeTexto } => p.texto !== null && p.version !== null)) return { tipo: 'textos', pendientes };
   return { tipo: 'desconocido' };
 }
 

@@ -17,7 +17,7 @@ export const ETIQUETA_DE_PREPARACION: Readonly<Record<EstadoDePreparacion, strin
 export const ETIQUETA_DE_UNIDAD: Readonly<Record<'g' | 'ml' | 'unit', string>> = { g: 'g', ml: 'ml', unit: 'unidad' };
 
 export const ETIQUETA_DE_FUENTE: Readonly<Record<'REPORTED' | 'OBSERVED' | 'CALCULATED', string>> = {
-  REPORTED: 'Informado por el asesorado',
+  REPORTED: 'Informado por la persona',
   OBSERVED: 'Observado por el profesional',
   CALCULATED: 'Calculado (con método declarado)',
 };
@@ -62,7 +62,6 @@ export const COPY_NUTRICION = {
   borrador: 'Borrador',
   crearNuevoPlan: 'Crear nuevo plan',
   borradorCreado: 'Borrador creado',
-  guardarCambios: 'Guardar cambios',
   guardado: 'Guardado',
   cambiosSinGuardar: 'Cambios sin guardar',
   guardando: 'Guardando…',
@@ -73,7 +72,7 @@ export const COPY_NUTRICION = {
   hayElementosPorCorregir: 'Hay elementos por corregir',
   activarPlan: 'Activar plan',
   confirmarActivacion:
-    'Estás por activar esta versión. El asesorado pasará a consultar esta planificación como vigente. La versión anterior se conservará en el historial.',
+    'Estás por activar esta versión. La persona pasará a consultar esta planificación como vigente. La versión anterior se conservará en el historial.',
   noPudimosActivar: 'No pudimos activar esta versión. Revisá el estado actual antes de volver a intentarlo.',
   soloLectura: 'Solo lectura',
   /** DL-047 (B10-05 CAND-NUT-D: «Crear nueva versión a partir de esta»), dicho corto por DL-146; la pista explica el porqué. */

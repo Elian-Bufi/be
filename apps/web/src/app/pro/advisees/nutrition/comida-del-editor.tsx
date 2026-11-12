@@ -15,6 +15,10 @@
  *   ingrediente, pero el editor no la dejaba escribir. Va en un renglón debajo del ítem, a pedido («Agregar una nota
  *   sobre …», `components/texto-a-pedido.tsx`), hasta 300 caracteres. No cambia lo que lee la app: el campo ya
  *   existía.
+ * - **ED-31 y ED-33 (WP-EDITORES-PROFESIONAL):** la opción elegida dice su total al instante («703 kcal · P 45 g · …»),
+ *   como estimación del editor, y lo que falta dice «Sin dato» y qué lo impide; «+ Opción de alimentos» y «+ Opción de
+ *   receta» van por separado (una opción es de alimentos o de receta, nunca las dos); quitar una opción con contenido
+ *   lo decide el editor, que pregunta con lo que se va.
  * - **Duplicar y reordenar** (TB-48): «Duplicar comida» en «Más», «Subir» y «Bajar» al lado, y «Duplicar opción N» junto
  *   a cambiar su nombre. La copia va justo después y nace con su nombre a la vista (`advisees/editar-la-estructura.ts`).
  */
@@ -41,6 +45,7 @@ import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
+import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type TotalDeLaOpcion } from './rangos';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
 export type ComidaEnEdicion = Estructura[number]['meals'][number];
@@ -78,6 +83,8 @@ export function ComidaDelEditor({
   alGuardarComoHabitual,
   alAgregarItem,
   alAgregarReceta,
+  alQuitarOpcion,
+  totalDeLaOpcion,
 }: {
   /** El prefijo de los identificadores de sus campos: `I-J`, las posiciones del día tipo y de la comida. */
   id: string;
@@ -108,6 +115,10 @@ export function ComidaDelEditor({
   alGuardarComoHabitual: () => void;
   alAgregarItem: (k: number) => void;
   alAgregarReceta: () => void;
+  /** ED-33: quitar la opción `k`; con contenido, el editor pregunta antes. */
+  alQuitarOpcion: (k: number) => void;
+  /** ED-31: el total de la opción `k`, estimado en el editor. */
+  totalDeLaOpcion: (k: number) => TotalDeLaOpcion | null;
 }) {
   const propio = useId();
   const plegada = comidaPlegadaDelEditor(comida, posicion, problemas);
@@ -116,6 +127,8 @@ export function ComidaDelEditor({
   const conRecetas = comida.options.some((o) => o.recipeVersionId);
   const cambiandoElNombre = nombreEnEdicion?.de === 'comida';
   const cambiandoElDeLaOpcion = nombreEnEdicion?.de === 'opcion' && nombreEnEdicion.opcion === k;
+  const total = opcion ? totalDeLaOpcion(k) : null;
+  const faltan = total ? faltantesDeLaOpcion(total) : [];
   return (
     <section className="comida-del-plan comida-del-editor" data-comida={posicion + 1} data-abierta={abierta ? '' : undefined}>
       <div className="comida-del-editor__cabecera">
@@ -193,25 +206,31 @@ export function ComidaDelEditor({
               ) : (
                 <p className="nota">Esta comida todavía no tiene opciones.</p>
               )}
-              <MenuDeAcciones
-                rotulo={`agregar una opción a ${plegada.titulo}`}
-                texto="Agregar opción"
-                icono="mas"
-                conFlecha
-                acciones={[
-                  {
-                    clave: 'vacia',
-                    texto: 'Una opción nueva',
-                    alElegir: () => {
-                      const nueva = comida.options.length;
-                      alCambiar((m) => void m.options.push({ label: `Opción ${nueva + 1}`, items: [] }));
-                      alElegirOpcion(nueva);
-                      alEditarNombre({ de: 'opcion', opcion: nueva });
-                    },
-                  },
-                  { clave: 'receta', texto: COPY_RECETAS.agregarComoOpcion, alElegir: alAgregarReceta },
-                ]}
-              />
+              {/* ED-33: las dos clases de opción, por separado y a la vista. Una opción es de alimentos o de receta. */}
+              <span className="comida-del-editor__agregar-opcion">
+                <button
+                  type="button"
+                  className="boton boton--quieto boton--compacto"
+                  data-opcion-de-alimentos
+                  disabled={comida.options.length >= MAXIMO_DE_OPCIONES}
+                  onClick={() => {
+                    const nueva = comida.options.length;
+                    alCambiar((m) => void m.options.push({ label: `Opción ${nueva + 1}`, items: [] }));
+                    alElegirOpcion(nueva);
+                    alEditarNombre({ de: 'opcion', opcion: nueva });
+                  }}
+                >
+                  <Icono nombre="mas" tamano={18} />
+                  {COPY_OPCIONES.deAlimentos}
+                  <span className="visualmente-oculto"> {COPY_OPCIONES.en(plegada.titulo)}</span>
+                </button>
+                <button type="button" className="boton boton--quieto boton--compacto" data-opcion-de-receta disabled={comida.options.length >= MAXIMO_DE_OPCIONES} onClick={alAgregarReceta}>
+                  <Icono nombre="receta" tamano={18} />
+                  {COPY_OPCIONES.deReceta}
+                  <span className="visualmente-oculto"> {COPY_OPCIONES.en(plegada.titulo)}</span>
+                </button>
+                {comida.options.length >= MAXIMO_DE_OPCIONES ? <span className="nota">{COPY_OPCIONES.tope(MAXIMO_DE_OPCIONES)}</span> : null}
+              </span>
             </div>
             {conRecetas ? <p className="nota">{COPY_RECETAS.avisoDeOpciones}</p> : null}
             {opcion ? (
@@ -263,6 +282,20 @@ export function ComidaDelEditor({
                     </table>
                   </div>
                 )}
+                {/* ED-31: el total de la opción, al instante; lo que falta, «Sin dato» y por qué. */}
+                {total ? (
+                  <div className="opcion-del-editor__total" data-total-de-la-opcion>
+                    <p>
+                      <strong>
+                        {/* Las iniciales a la vista; el lector de pantalla lee los nombres completos. */}
+                        <span aria-hidden="true">{totalEnUnaLinea(total)}</span>
+                        <span className="visualmente-oculto">{totalEnPalabras(total)}</span>
+                      </strong>{' '}
+                      <span className="nota">· {COPY_OPCIONES.estimacion}</span>
+                    </p>
+                    {faltan.length > 0 ? <p className="nota">{faltan.slice(0, 3).map(queFaltaEnPalabras).join('; ')}{faltan.length > 3 ? `; y ${faltan.length - 3} más` : ''}</p> : null}
+                  </div>
+                ) : null}
                 <div className="opcion-del-editor__pie">
                   {opcion.recipeVersionId ? null : (
                     <>
@@ -283,10 +316,7 @@ export function ComidaDelEditor({
                     <button
                       type="button"
                       className="boton boton--enlace"
-                      onClick={() => {
-                        alCambiar((m) => void m.options.splice(k, 1));
-                        alElegirOpcion(Math.max(0, k - 1));
-                      }}
+                      onClick={() => alQuitarOpcion(k)}
                     >
                       Quitar opción {k + 1}
                     </button>
@@ -397,6 +427,18 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
     </>
   );
 }
+
+/** El contrato admite hasta doce opciones por comida. */
+const MAXIMO_DE_OPCIONES = 12;
+
+/** ED-33: las dos clases de opción. */
+export const COPY_OPCIONES = {
+  deAlimentos: 'Opción de alimentos',
+  deReceta: 'Opción de receta',
+  en: (comida: string) => `en ${comida}`,
+  tope: (n: number) => `Una comida lleva hasta ${n} opciones.`,
+  estimacion: 'estimación del editor',
+} as const;
 
 /** TB-48: los textos de la nota de un ítem. La persona la lee en la app tal como se escribe. */
 export const COPY_NOTA_DEL_ITEM = { rotulo: 'Nota para la persona', queEs: (nombre: string): string => `una nota sobre ${nombre}`, maximo: 300 } as const;

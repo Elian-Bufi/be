@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { CREDENCIAL, dominio, pedir, sesion as sesionPorApi } from './api.mjs';
+import { codigoParaEntrar, CREDENCIAL, dominio, pedir, sesion as sesionPorApi, verificarSegundoFactor } from './api.mjs';
 import { API, WEB } from './entorno.mjs';
 import { NOMBRE_DEL_ADMINISTRADOR, NOMBRE_DEL_OTRO_ADMINISTRADOR, NOMBRE_DEL_PENDIENTE, SECRETOS, codigoTotp, nombreDelProfesional, sesionAdministrativa } from './preparar.mjs';
 
@@ -61,6 +61,23 @@ async function entrar(p, correo) {
   await clic(p, 'form button[type="submit"]', 'Iniciar sesión');
   // DL-025: el profesional entra directo a su espacio.
   await esperarCamino(p, '/pro');
+  await pasarElSegundoFactor(p, correo);
+}
+
+/**
+ * UF-11 (DL-169): la compuerta de `/pro` pide el segundo factor una vez por sesión. La preparación ya lo configuró por la
+ * API: acá se escribe el código del autenticador o, si el paso de 30 s no avanzó, uno de recuperación.
+ */
+async function pasarElSegundoFactor(p, correo) {
+  await p.waitForSelector('#mfa-codigo', { timeout: ESPERA });
+  const { tipo, codigo } = codigoParaEntrar(correo);
+  const campo = tipo === 'autenticador' ? '#mfa-codigo' : '#mfa-recuperacion';
+  if (tipo === 'recuperacion') await clic(p, 'button.mfa-cambiar-modo');
+  await p.waitForSelector(campo, { timeout: ESPERA });
+  await hidratado(p, campo);
+  await p.type(campo, codigo);
+  await clic(p, 'form button[type="submit"]', 'Confirmar');
+  await p.waitForFunction(() => !document.querySelector('#mfa-codigo') && !document.querySelector('#mfa-recuperacion'), { timeout: ESPERA, polling: 100 });
 }
 
 /** Abre la ficha de la persona desde «Tus asesorados». */
@@ -159,6 +176,7 @@ async function sesion({ contexto, p, d }) {
   await p.type('#contrasena', CREDENCIAL);
   await clic(p, 'form button[type="submit"]', 'Iniciar sesión');
   await esperarCamino(p, '/pro/advisees');
+  await pasarElSegundoFactor(p, d.pro.correo);
   const vuelta = ruta(p).parametros;
   assert.equal(vuelta.get('id'), d.ase.id, 'vuelve a la misma persona');
   assert.equal(vuelta.get('vista'), 'linea', 'con la misma vista');
@@ -241,7 +259,9 @@ async function pistas({ contexto, p, d, salida }) {
   assert.ok(Math.abs(barra.marca - barra.cuenta) < 12, `la barra superior entra en un renglón a 1.024 px (${barra.marca} y ${barra.cuenta})`);
   await p.focus('.marco-de-la-ficha .menu-de-acciones__boton');
   await p.keyboard.press('Enter');
-  await elemento(p, '.marco-de-la-ficha .menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Pedir información');
+  // ED-16 (C11): «Pedir información» está a la vista; en «Más» queda la nota de coordinación.
+  await elemento(p, '.marco-de-la-ficha [data-pedir-informacion]', 'Pedir información');
+  await elemento(p, '.marco-de-la-ficha .menu-de-acciones[data-abierto] .menu-de-acciones__accion');
   await p.keyboard.press('Tab');
   assert.ok(await p.evaluate(() => document.activeElement?.closest('.menu-de-acciones__lista') !== null), 'Tab entra a las acciones del menú');
   await captura(p, salida, 'ficha-menu-mas-abierto-1024');
@@ -365,6 +385,277 @@ async function conflicto({ contexto, p, d }) {
   await otra.waitForFunction(() => document.querySelector('.editor-del-plan__estado')?.dataset.estado === 'guardado', { timeout: ESPERA });
 }
 
+/**
+ * ED-02 (WP-EDITORES-PROFESIONAL; TEST-EDP-003): un enlace interno con cambios sin guardar guarda antes de salir o
+ * pregunta. Con un cambio que se puede guardar, se sale con la respuesta del servidor y el cambio está al volver; con
+ * algo que no se puede guardar, el cuadro «Tenés cambios sin guardar», con «Seguir editando» enfocado.
+ */
+async function salidaSegura({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  // Un cambio y, antes de la pausa del autoguardado, un enlace de la barra: se guarda antes de salir.
+  const NUEVO = 'Desayuno antes de salir';
+  await renombrarComida(p, 1, NUEVO);
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await esperarCamino(p, '/pro/recipes');
+  // Al volver, el cambio está: se guardó con la respuesta del servidor antes de salir.
+  await p.goBack({ waitUntil: 'networkidle2' });
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]', NUEVO);
+  // Algo que no se puede guardar (una comida sin nombre): el cuadro, con «Seguir editando» enfocado; no se sale.
+  const segunda = '.comida-del-editor[data-comida="2"]';
+  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
+  await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
+  await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await elemento(p, 'dialog[open][data-salida-segura]');
+  assert.equal(await p.evaluate(() => document.activeElement?.hasAttribute('data-seguir-editando')), true, '«Seguir editando» tiene el foco');
+  await captura(p, salida, 'salida-segura-cuadro-1440');
+  await clic(p, 'dialog[open] [data-seguir-editando]');
+  await p.waitForFunction(() => !document.querySelector('dialog[open][data-salida-segura]'), { timeout: ESPERA });
+  assert.equal(ruta(p).camino, '/pro/advisees/nutrition', '«Seguir editando» no sale');
+  // «Salir sin guardar» sale.
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await clic(p, 'dialog[open] [data-salir-sin-guardar]');
+  await esperarCamino(p, '/pro/recipes');
+}
+
+/**
+ * ED-01 (WP-EDITORES-PROFESIONAL; TEST-EDP-002): descartar la versión en preparación. El cuadro abre con «Cancelar»
+ * enfocado; Escape no toca nada; confirmar la descarta, y la sección vuelve a ofrecer crear el plan y empezar desde una
+ * plantilla.
+ */
+async function descartar({ p, d, salida }) {
+  const D = dominio.COPY_DESCARTAR_LA_VERSION;
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  const abrirElCuadro = async () => {
+    await clic(p, '#mas-de-la-version');
+    await clic(p, '.menu-de-acciones[data-abierto] .menu-de-acciones__accion', D.accion);
+    await elemento(p, 'dialog[open] [data-cuadro-del-descarte]');
+  };
+  await abrirElCuadro();
+  // Es la primera versión del plan: la número 1, sin una vigente.
+  await esperarTexto(p, D.titulo(1));
+  await esperarTexto(p, D.primera);
+  // La acción de efecto nunca es la opción por defecto: el foco está en «Cancelar».
+  assert.equal(await p.evaluate(() => document.activeElement?.textContent?.trim()), D.cancelar);
+  await captura(p, salida, 'descartar-cuadro-1440');
+  // Escape es «Cancelar»: el cuadro se cierra y la versión sigue.
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [data-cuadro-del-descarte]'), { timeout: ESPERA });
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  // Confirmar la descarta: sin versión en preparación, vuelven «Crear» y «Empezar desde una plantilla».
+  await abrirElCuadro();
+  await clic(p, 'dialog[open] .boton--peligro', D.confirmar(1));
+  await esperarTexto(p, D.descartada(null));
+  await elemento(p, '[data-crear-version]');
+  // El foco va a «Crear una nueva versión»: el «⋯» que abrió el cuadro ya no está (revisión adversaria de la etapa 1).
+  await p.waitForFunction(() => document.activeElement?.hasAttribute('data-crear-version'), { timeout: ESPERA, polling: 100 });
+  await elemento(p, '[data-empezar-desde-plantilla]');
+  assert.equal(await p.$('.editor-del-plan'), null, 'ya no hay versión en preparación');
+  await captura(p, salida, 'descartar-hecho-1440');
+}
+
+/**
+ * ED-07 (WP-EDITORES-PROFESIONAL; TEST-EDP-008): «Ir a corregir» lleva a su lugar, con el foco ahí. Con una comida sin
+ * nombre, «Antes de activar» lo lista; «Ir a corregir» cierra el cuadro y deja el foco en el campo del nombre (la revisión
+ * adversaria de la etapa 1 encontró que el cierre del cuadro se lo devolvía a «Revisar y activar…»).
+ */
+async function irACorregir({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  const segunda = '.comida-del-editor[data-comida="2"]';
+  await elemento(p, segunda);
+  // La comida 2, sin nombre: el campo queda a la vista (sin nombre no se puede guardar).
+  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
+  await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
+  await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
+  const campo = await p.evaluate(() => document.activeElement.id);
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  // «Revisar y activar…» abre el cuadro, que lista el nombre que falta con «Ir a corregir».
+  await clic(p, '[data-revisar-y-activar]');
+  await elemento(p, 'dialog[open] [data-antes-de-activar]');
+  await clic(p, 'dialog[open] [data-impiden] button', 'Ir a corregir');
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [data-antes-de-activar]'), { timeout: ESPERA });
+  // El foco queda en el campo del nombre, no en «Revisar y activar…».
+  await p
+    .waitForFunction((id) => document.activeElement?.id === id, { timeout: ESPERA, polling: 100 }, campo)
+    .catch(async () => assert.fail(`el foco quedó en «${await p.evaluate(() => document.activeElement?.textContent?.trim() || document.activeElement?.id)}», no en el campo del nombre`));
+  await captura(p, salida, 'ir-a-corregir-1440');
+}
+
+/**
+ * Dentro de la página, sin tocar la API ni la red del navegador (como `simularFallas`): cada guardado del borrador de
+ * Nutrición (PATCH, API-NUT-10) se anota con lo que respondió, y al primero se le hace `que`:
+ * - 'perder': llega al servidor, que lo guarda, pero la página recibe un error de red: la respuesta se perdió;
+ * - '503': no sale, y la página recibe un 503, como si la API no hubiera podido.
+ * Dura lo que el documento abierto: recargar lo saca.
+ */
+async function intervenirElGuardado(p, que) {
+  await p.evaluate(
+    (api, que) => {
+      const original = window.fetch.bind(window);
+      window.__beGuardados = [];
+      let pendiente = true;
+      window.fetch = async (entrada, init) => {
+        const url = new URL(typeof entrada === 'string' ? entrada : entrada instanceof URL ? entrada.href : entrada.url, location.href);
+        const metodo = String(init?.method ?? (entrada instanceof Request ? entrada.method : 'GET')).toUpperCase();
+        if (metodo !== 'PATCH' || url.origin !== api || !/^\/api\/v1\/nutrition\/plans\/[^/]+$/.test(url.pathname)) return original(entrada, init);
+        if (pendiente && que === '503') {
+          pendiente = false;
+          window.__beGuardados.push(503);
+          const cuerpo = JSON.stringify({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Falla simulada por el recorrido.' } });
+          return new Response(cuerpo, { status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+        }
+        const respuesta = await original(entrada, init);
+        window.__beGuardados.push(respuesta.status);
+        if (pendiente && que === 'perder') {
+          pendiente = false;
+          // El servidor ya contestó: se lee entera y la página nunca la ve.
+          await respuesta.text();
+          throw new TypeError('Failed to fetch');
+        }
+        return respuesta;
+      };
+    },
+    API,
+    que,
+  );
+}
+
+/** Desde la ficha, el borrador de Nutrición, con su primera comida a la vista. */
+async function abrirElBorrador(p, d) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+}
+
+/**
+ * ED-61 (WP-EDITORES-PROFESIONAL; TEST-EDP-048): se pierde la respuesta de un guardado que el servidor sí guardó, el
+ * profesional sigue escribiendo y el guardado siguiente da 409. El editor relee la versión, reconoce lo que mandó y
+ * termina guardado, sin el aviso de conflicto y sin perder nada. Con la versión real del servidor: lo releído, sin los
+ * identificadores que puso el servidor, tiene que coincidir con el cuerpo que mandó el editor (la revisión adversaria de
+ * la etapa 1 notó que eso solo estaba probado con estructuras sintéticas).
+ */
+async function respuestaPerdida({ p, d, salida }) {
+  await abrirElBorrador(p, d);
+  await intervenirElGuardado(p, 'perder');
+  // El aviso del conflicto no aparece nunca, ni por un instante.
+  await p.evaluate((texto) => {
+    window.__beVioElConflicto = false;
+    new MutationObserver(() => {
+      if (document.body.innerText.includes(texto)) window.__beVioElConflicto = true;
+    }).observe(document.body, { subtree: true, childList: true, characterData: true });
+  }, dominio.COPY_GUARDADO.conflictoCorto);
+  const ANTES = 'Desayuno de la respuesta perdida';
+  const DESPUES = 'Almuerzo escrito después';
+  await renombrarComida(p, 1, ANTES);
+  // El guardado llegó, pero la pantalla no lo sabe: la barra dice que no hubo respuesta.
+  await p.waitForFunction(() => window.__beGuardados.length >= 1 && document.querySelector('.editor-del-plan__estado')?.dataset.estado === 'fallo', { timeout: ESPERA, polling: 100 });
+  await esperarTexto(p, dominio.COPY_GUARDADO.falloEnLaBarra.SIN_RESPUESTA);
+  await renombrarComida(p, 2, DESPUES);
+  // El guardado siguiente usa la versión de antes del perdido: 409. El editor relee, reconoce lo suyo y manda lo de después.
+  await p
+    .waitForFunction(
+      () => {
+        const g = window.__beGuardados;
+        const i = g.indexOf(409);
+        const e = document.querySelector('.editor-del-plan__estado');
+        return i > 0 && g.slice(i + 1).includes(200) && e?.dataset.estado === 'guardado' && e.textContent.includes('a las');
+      },
+      { timeout: 60_000, polling: 200 },
+    )
+    .catch(async () => assert.fail(`no terminó guardado: respuestas ${await p.evaluate(() => window.__beGuardados.join(', '))}; la barra dice «${await p.evaluate(() => document.querySelector('.editor-del-plan__estado')?.textContent)}»`));
+  assert.equal(await p.evaluate(() => window.__beVioElConflicto), false, 'apareció el aviso de conflicto: tomó por ajeno lo que mandó esta pantalla');
+  await captura(p, salida, 'respuesta-perdida-guardado-1440');
+  // Lo escrito antes y después del guardado perdido quedó en el servidor.
+  await p.reload({ waitUntil: 'networkidle2' });
+  await elemento(p, '.comida-del-editor[data-comida="1"]', ANTES);
+  await elemento(p, '.comida-del-editor[data-comida="2"]', DESPUES);
+}
+
+/**
+ * ED-03 (WP-EDITORES-PROFESIONAL; TEST-EDP-004): un guardado que recibe un 503 lo dice en la barra con el texto de
+ * DL-168 y «Reintentar» al lado; «Guardado» no aparece. «Reintentar» guarda con lo que está en pantalla.
+ */
+async function reintentar({ p, d, salida }) {
+  await abrirElBorrador(p, d);
+  await intervenirElGuardado(p, '503');
+  const NUEVO = 'Desayuno después de un 503';
+  await renombrarComida(p, 1, NUEVO);
+  await esperarTexto(p, dominio.COPY_GUARDADO.falloEnLaBarra.SIN_RESPUESTA);
+  assert.equal(await p.evaluate(() => document.querySelector('.editor-del-plan__estado')?.dataset.estado), 'fallo', 'con el 503, la barra no dice «Guardado»');
+  await captura(p, salida, 'reintentar-fallo-1440');
+  await clic(p, '[data-reintentar]', dominio.COPY_GUARDADO.reintentar);
+  await esperarGuardado(p);
+  assert.deepEqual(await p.evaluate(() => window.__beGuardados), [503, 200], 'un 503 y después el guardado de «Reintentar»');
+  await p.reload({ waitUntil: 'networkidle2' });
+  await elemento(p, '.comida-del-editor[data-comida="1"]', NUEVO);
+}
+
+/**
+ * ED-02 (WP-EDITORES-PROFESIONAL; TEST-EDP-003, pasos 5 y 6): un enlace interno con un cambio que se puede guardar, pero
+ * el guardado de la salida falla. Con la red cortada y con un 409 (otra pestaña guardó antes), no se sale: el cuadro
+ * «Tenés cambios sin guardar», y lo escrito sigue en pantalla.
+ */
+async function salidaConFallas({ contexto, p, d, salida }) {
+  await abrirElBorrador(p, d);
+  // Con la red cortada.
+  const SIN_RED = 'Desayuno sin red';
+  await renombrarComida(p, 1, SIN_RED);
+  await p.setOfflineMode(true);
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await elemento(p, 'dialog[open][data-salida-segura]');
+  assert.equal(ruta(p).camino, '/pro/advisees/nutrition', 'sin red, no se sale');
+  await captura(p, salida, 'salida-sin-red-1440');
+  await clic(p, 'dialog[open] [data-seguir-editando]');
+  await p.waitForFunction(() => !document.querySelector('dialog[open][data-salida-segura]'), { timeout: ESPERA });
+  await elemento(p, '.comida-del-editor[data-comida="1"]', SIN_RED);
+  // Vuelve la red: el autoguardado lo guarda solo.
+  await p.setOfflineMode(false);
+  await esperarGuardado(p);
+
+  // Con un 409: otra pestaña guarda antes, y el guardado de la salida queda en conflicto.
+  const otra = await contexto.newPage();
+  await otra.setViewport({ width: 1440, height: 900 });
+  await otra.goto(p.url(), { waitUntil: 'networkidle2' });
+  await elemento(otra, '.comida-del-editor[data-comida="1"]', SIN_RED);
+  await renombrarComida(otra, 2, 'Almuerzo de la otra pestaña');
+  await esperarGuardado(otra);
+  await p.bringToFront();
+  const CON_409 = 'Desayuno con un 409';
+  await renombrarComida(p, 1, CON_409);
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await elemento(p, 'dialog[open][data-salida-segura]');
+  assert.equal(ruta(p).camino, '/pro/advisees/nutrition', 'con un 409, no se sale');
+  await clic(p, 'dialog[open] [data-seguir-editando]');
+  await p.waitForFunction(() => !document.querySelector('dialog[open][data-salida-segura]'), { timeout: ESPERA });
+  // Lo escrito sigue en pantalla, y la barra dice el conflicto.
+  await elemento(p, '.comida-del-editor[data-comida="1"]', CON_409);
+  await esperarTexto(p, dominio.COPY_GUARDADO.conflictoCorto);
+  await captura(p, salida, 'salida-con-409-1440');
+}
+
 /** Bloque 5: una ficha nueva lleva a empezar el plan; evaluación, objetivo y plan en la misma pantalla, en orden. */
 async function primerPlan({ p, d }) {
   await entrar(p, d.pro.correo);
@@ -393,7 +684,8 @@ async function primerPlan({ p, d }) {
   // 3. El plan.
   await clic(p, '[data-crear-version]');
   await elemento(p, '.editor-del-plan');
-  await esperarTexto(p, 'Versión en preparación');
+  // DJ-6: la primera versión en preparación lleva el número 1.
+  await esperarTexto(p, 'Versión 1 · en preparación');
 
   // De vuelta en la ficha, la acción del momento cambió: ahora es seguir el borrador.
   await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}`, { waitUntil: 'networkidle2' });
@@ -462,7 +754,7 @@ async function grafico({ p, d }) {
 
 /** Abre «Invitar a una persona» y devuelve el selector del área de ese diálogo. */
 async function abrirInvitar(p) {
-  await clic(p, '.espacio-profesional__invitar', dominio.COPY_INVITACION.invitar);
+  await clic(p, '.espacio-profesional__invitar', 'Invitar a alguien nuevo'); // ED-41: el botón dice el camino («Invitar a alguien nuevo · enlace, QR o código»).
   const area = await elemento(p, 'dialog[open] select');
   return area;
 }
@@ -827,6 +1119,8 @@ async function administracion({ contexto, p, d, salida }) {
   await clic(p, 'form button[type="submit"]', 'Continuar');
   await esperarTexto(p, 'No pudimos verificar los datos de acceso');
   const tokenDelProfesional = await sesionPorApi(d.pro.correo);
+  // UF-11 (DL-169): la sesión del profesional opera como tal con su segundo factor verificado.
+  await verificarSegundoFactor(d.pro.correo, tokenDelProfesional);
   await pedir('GET', `/admin/professionals/${d.pendiente.id}`, { token: tokenDelProfesional, esperado: 403 });
   await pedir('POST', '/admin/professionals/query', { token: tokenDelProfesional, cuerpo: {}, clave: false, esperado: 403 });
 
@@ -1210,7 +1504,7 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

@@ -1524,7 +1524,7 @@ function ExportarCsv({
       return;
     }
     const csv = csvDelAnalisis({
-      asesorado: nombreDelAsesorado ?? 'Asesorado',
+      asesorado: nombreDelAsesorado ?? 'Persona',
       desde,
       hasta,
       zona: incluidas[0]?.zona ?? 'America/Argentina/Buenos_Aires',

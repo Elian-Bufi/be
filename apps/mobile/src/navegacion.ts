@@ -29,6 +29,8 @@ export type Ruta =
   | { readonly nombre: 'registro' }
   // `alEntrar`: adónde lleva iniciar sesión cuando no es Inicio (por ahora, solo de vuelta a Cerrar mi cuenta).
   | { readonly nombre: 'login'; readonly aviso?: string; readonly alEntrar?: 'cuenta' }
+  // UF-03 (DL-169): recuperar el acceso con un código, desde Iniciar sesión. Pública, como el login.
+  | { readonly nombre: 'recuperar-el-acceso' }
   // Las cinco raíces de la barra. Algunas aceptan un pedido de una sola vez: abrir la acción de registrar, o una vista y
   // una medida de «Mi evolución».
   | { readonly nombre: 'inicio' }
@@ -60,6 +62,10 @@ export type Ruta =
   | { readonly nombre: 'vinculo'; readonly id: string; readonly desde?: Ruta }
   | { readonly nombre: 'consentimiento'; readonly vinculoId: string; readonly desde?: Ruta }
   | { readonly nombre: 'privacidad'; readonly desde?: Ruta }
+  // UF-06 de WP-USO-FINAL (DL-169): «Tus datos», descargar lo propio y pedir el acceso, la rectificación o la supresión.
+  | { readonly nombre: 'tus-datos'; readonly desde?: Ruta }
+  // UF-07 (DL-169): «Ayuda y contacto», el canal de ayuda leído de la API.
+  | { readonly nombre: 'ayuda-y-contacto'; readonly desde?: Ruta }
   | { readonly nombre: 'plan-actual'; readonly desde?: Ruta }
   | { readonly nombre: 'registros-nutricionales'; readonly desde?: Ruta }
   | { readonly nombre: 'registro-nutricional'; readonly id: string; readonly desde?: Ruta }
@@ -122,7 +128,7 @@ export type Ir = (destino: Ruta, modo?: ModoDeNavegacion) => void;
 
 /** Pantallas que necesitan una sesión en memoria. */
 export function requiereSesion(ruta: Ruta): boolean {
-  return ruta.nombre !== 'bienvenida' && ruta.nombre !== 'registro' && ruta.nombre !== 'login';
+  return ruta.nombre !== 'bienvenida' && ruta.nombre !== 'registro' && ruta.nombre !== 'login' && ruta.nombre !== 'recuperar-el-acceso';
 }
 
 // ─── La barra inferior: cinco raíces (DL-117; DL-166) ───────────────────────────────────────────
@@ -209,12 +215,15 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'invitacion':
     case 'consentimiento':
     case 'privacidad':
+    case 'tus-datos':
+    case 'ayuda-y-contacto':
       return 'perfil';
     case 'novedades':
       return 'novedades';
     case 'bienvenida':
     case 'registro':
     case 'login':
+    case 'recuperar-el-acceso':
       return null;
     default: {
       // Una pantalla nueva sin módulo no compila: la barra tiene que saber qué resaltar.
@@ -258,6 +267,8 @@ function madre(ruta: Ruta): Ruta | null {
     case 'registro':
     case 'login':
       return { nombre: 'bienvenida' };
+    case 'recuperar-el-acceso':
+      return { nombre: 'login' };
     case 'bienvenida':
     case 'inicio':
       return null;
@@ -275,6 +286,8 @@ function madre(ruta: Ruta): Ruta | null {
     case 'vinculos':
     case 'notas-de-coordinacion':
     case 'privacidad':
+    case 'tus-datos':
+    case 'ayuda-y-contacto':
     case 'mis-habitos':
       return { nombre: 'perfil' };
     case 'historial-de-entrenamiento':
@@ -431,6 +444,10 @@ export function textoDeVolverA(destino: Ruta): string {
       return 'Volver al vínculo';
     case 'privacidad':
       return 'Volver a Privacidad';
+    case 'tus-datos':
+      return 'Volver a Tus datos';
+    case 'ayuda-y-contacto':
+      return 'Volver a Ayuda y contacto';
     case 'hoy':
       return 'Volver a Nutrición';
     case 'entrenamiento':

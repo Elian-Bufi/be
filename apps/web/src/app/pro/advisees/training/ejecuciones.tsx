@@ -58,7 +58,7 @@ import {
   type RegistroDeEjecucion,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { EnPartes, FraseEnPartes } from '../../../../components/en-partes';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
@@ -402,7 +402,7 @@ function Sesiones({
       <DiasSinSesion dias={contexto.missingData} />
       <p className="sesiones__a-analizar">
         <Icono nombre="analizar" tamano={18} />
-        <Link href={haciaAnalizar}>¿Cómo viene progresando un ejercicio? Verlo en Analizar</Link>
+        <Enlace href={haciaAnalizar}>¿Cómo viene progresando un ejercicio? Verlo en Analizar</Enlace>
       </p>
 
       {/* En una ventana angosta el detalle no entra al costado: se abre encima, en un panel que retiene el foco. */}
@@ -556,7 +556,7 @@ function DetalleDeLaSesion({
       ) : null}
       {fila.fuente.tipo === 'correccion' ? (
         <p className="nota">
-          Rige una corrección: {fila.fuente.rolDelAutor === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} ({fila.fuente.autor}), el {fecha(fila.fuente.registradaEl)}. Motivo: {fila.fuente.motivo}
+          Rige una corrección: {fila.fuente.rolDelAutor === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por la persona'} ({fila.fuente.autor}), el {fecha(fila.fuente.registradaEl)}. Motivo: {fila.fuente.motivo}
         </p>
       ) : null}
       {fila.fuente.tipo === 'no-resoluble' ? <p>{COPY_COMPARACION.vistaNoResoluble}</p> : null}
@@ -613,7 +613,7 @@ function DetalleDeLaSesion({
             <>
               <h4>{COPY_ENTRENAMIENTO.correccionVigente}</h4>
               <p className="nota">
-                {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado'} · {fecha(vigente.recordedAt)} · Motivo: {vigente.reason}
+                {vigente.authorRole === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por la persona'} · {fecha(vigente.recordedAt)} · Motivo: {vigente.reason}
               </p>
               <Registro registro={vigente.correction} planificado={x.plannedSession.prescriptions} />
             </>

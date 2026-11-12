@@ -21,7 +21,7 @@ import {
   type VersionDePlan,
   type RegistroDeEjecucion,
 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Panel } from '../../../../components/panel';
@@ -94,9 +94,9 @@ export function EnlaceAlArea({ origen }: { origen: OrigenDeDato }) {
   const delOrigen = destino.conElOrigen ? `&${destino.conElOrigen}=${encodeURIComponent(origen.id)}` : '';
   return (
     <p className="enlace-al-area">
-      <Link href={destino.ruta === '/pro/advisees' ? `${destino.ruta}?id=${encodeURIComponent(asesoradoId)}` : conRetorno(`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}${delOrigen}`, volver)}>
+      <Enlace href={destino.ruta === '/pro/advisees' ? `${destino.ruta}?id=${encodeURIComponent(asesoradoId)}` : conRetorno(`${destino.ruta}?id=${encodeURIComponent(asesoradoId)}${destino.vista ? `&vista=${destino.vista}` : ''}${delOrigen}`, volver)}>
         {destino.texto}
-      </Link>
+      </Enlace>
     </p>
   );
 }

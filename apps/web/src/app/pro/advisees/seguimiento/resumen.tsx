@@ -37,7 +37,7 @@ import {
   type TipoDeEvento,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useId, useMemo, useState } from 'react';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -188,7 +188,7 @@ export function ResumenDelSeguimiento() {
           <Icono nombre="cargado-otro-dia" tamano={18} />
           <span>
             Cargado otro día: {tardias === 1 ? 'un hecho del período se registró un día posterior al que ocurrió' : `${numero(tardias)} hechos del período se registraron un día posterior al que ocurrieron`} (carga tardía).{' '}
-            <Link href={href({ vista: 'linea', tardias: '1', areas: null, novedades: null, tipos: null, estados: null, calidad: null, plan: null, ej: null })}>Verlos en la línea de tiempo</Link>
+            <Enlace href={href({ vista: 'linea', tardias: '1', areas: null, novedades: null, tipos: null, estados: null, calidad: null, plan: null, ej: null })}>Verlos en la línea de tiempo</Enlace>
           </span>
         </p>
       ) : null}
@@ -338,13 +338,13 @@ function PreguntasDelResumen() {
         <ul className="preguntas-del-resumen__lista">
           {preguntas.map((p) => (
             <li key={p.id}>
-              <Link href={aLaPregunta(p.id)}>{p.pregunta}</Link>
+              <Enlace href={aLaPregunta(p.id)}>{p.pregunta}</Enlace>
             </li>
           ))}
         </ul>
-        <Link className="preguntas-del-resumen__mas" href={href({ vista: 'analizar', m: null, f: null, ...parametrosDePregunta(null) })}>
+        <Enlace className="preguntas-del-resumen__mas" href={href({ vista: 'analizar', m: null, f: null, ...parametrosDePregunta(null) })}>
           Más preguntas
-        </Link>
+        </Enlace>
       </div>
     </nav>
   );

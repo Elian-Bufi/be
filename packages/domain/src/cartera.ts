@@ -140,7 +140,7 @@ const dias = (n: number): string => `${numero(n)} ${n === 1 ? 'día' : 'días'}`
 export const COPY_CARTERA = {
   titulo: 'Pendientes',
   vacio: 'Nada pendiente con lo registrado.',
-  vistaParcial: 'Hay datos de algún asesorado que no podés ver desde tu alcance: no se cuentan acá.',
+  vistaParcial: 'Hay datos de alguna persona que no podés ver desde tu alcance: no se cuentan acá.',
   dominio: { nutrition: 'Nutrición', training: 'Entrenamiento', anthropometry: 'Antropometría' } as const,
   pendiente: {
     REVIEW_OVERDUE: (diasDeAtraso: number): string => `Revisión vencida hace ${dias(diasDeAtraso)}`,

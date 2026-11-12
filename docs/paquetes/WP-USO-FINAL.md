@@ -1,8 +1,9 @@
 # WP-USO-FINAL — lo que la demostración no necesitaba y el uso real sí
 
 > **Estado:** DECLARADO el 2026-11-11. Ese mismo día Dirección **ratificó UF-D1 a UF-D13** y pidió la **etapa 1**: lo que
-> bloquea y tiene que entrar antes de congelar la app el 25/11. La etapa 1 (UF-12, UF-00, UF-01 y UF-08) está
-> **programada en el PR #253, sin integrar** (§12). Las demás partes siguen declaradas, sin programar.
+> bloquea y tiene que entrar antes de congelar la app el 25/11. La etapa 1 (UF-12, UF-00, UF-01 y UF-08) quedó
+> **integrada** el 2026-11-12 con #253 (§12). La **etapa 2**, el resto del P0 salvo UF-10, quedó declarada ese mismo día
+> (§13) y se programa en un PR en borrador, sin integrar.
 >
 > **Encargo** (Dirección, 2026-11-11):
 > - «En la creación de la cuenta ya tiene que ponerle el nombre. Empecemos a completar esas secciones que por ser datos
@@ -643,3 +644,190 @@ entra en esta etapa.
   nombre («Antes de seguir»), cambiar el nombre y comprobar que no se puede vaciar, y ver que la app sale sin los avisos
   de prueba (la regla, con y sin el interruptor, la cubre TEST-UF-012). Que la APK se haya construido con la CLI nueva
   de Expo es, además, la prueba de UF-12 en la app.
+
+## 13. La etapa 2 (declarada el 2026-11-12)
+
+Dirección pidió todo el P0 antes del 25/11, cuando se congela la app. El 2026-11-12 delegó las decisiones técnicas:
+«Okey a tus recomendaciones, cualquier cosa lo revisamos, pero no podemos frenar». Por eso las decisiones de la
+implementación nuevas (UF-T15 en adelante) se toman con la recomendación y quedan **a ratificar por Dirección**, cada
+una con su alternativa. Integrar a `main` sigue siendo de Dirección: la etapa va en un PR en borrador.
+
+### 13.1 Las partes y el orden
+
+La etapa 2 son las ocho partes P0 que quedan, sin UF-10, que es de Dirección:
+
+| Orden | Parte | Toca | APK nueva | Lo que espera de Dirección |
+|---|---|---|---|---|
+| 1 | UF-09 · El catálogo sin demostración en producción | API | no | nada |
+| 2 | UF-11 · El segundo factor del profesional | API, base, web | no | nada |
+| 3 | UF-04 · La entrada de los profesionales reales (API-ADM-14 y 15) | API, base, web (`/admin`) | no | nada |
+| 4 | UF-06 · Los derechos de la persona | API, base, web, app | sí | los plazos, con la asesoría |
+| 5 | UF-07 · Ayuda y contacto | web, app, textos | sí | las direcciones |
+| 6 | UF-03 · Recuperar el acceso | API, web, app | sí | el proveedor de correo |
+| 7 | UF-05 · Los textos legales de verdad | dominio, API, web, app | sí | el texto validado |
+| 8 | UF-02 · El gate del 08 §42, condición por condición | documento | no | lo que no es código (§9) |
+
+Por qué este orden:
+- **Primero, lo que no espera a nadie y no pide una APK nueva** (UF-09, UF-11 y UF-04).
+- **UF-11 antes que UF-04:** un profesional real que entra por Administración llega a `/pro` con el segundo factor desde
+  el primer día.
+- **UF-06 es la parte más grande de la app:** va primero entre las que piden una APK nueva, para llegar a la candidata
+  del 25/11.
+- **UF-07 antes que UF-03 y que UF-05:** la recuperación asistida y los pedidos de UF-04 llegan por el canal de UF-07, y
+  los textos nuevos de UF-05 nombran ese canal y el de los derechos.
+- **UF-02 al final,** porque cita la evidencia de todas.
+
+La **primera mitad** (UF-09, UF-11, UF-04 y UF-06) se programa primero. La segunda (UF-07, UF-03, UF-05 y UF-02) sigue
+en el mismo PR.
+
+### 13.2 Lo que depende de Dirección
+
+- **UF-03:** la cuenta del proveedor de correo, con su DPA, y el dominio propio del remitente. Mientras tanto:
+  - la recuperación asistida de UF-D9: Administración revoca las sesiones y emite un código de un solo uso, con
+    fundamento;
+  - el adaptador del proveedor, listo para cuando Dirección cargue la clave en Render. Sin clave, la API no manda
+    correos y lo dice.
+- **UF-05:** el contenido de los textos lo redacta y lo valida la asesoría jurídica (condición 1 del gate). Se programa
+  el mecanismo: la versión, su hash, su sucesión (`reemplazaA`), «Antes de seguir» y API-ACC-08. La versión nueva queda
+  **sin publicar** hasta esa validación.
+- **UF-07:** las direcciones de soporte y de privacidad, por configuración. Ninguna dirección personal queda en el
+  repositorio.
+- **UF-10:** lo decide y lo aplica Dirección: el plan de Render, su costo y el cambio de `render.yaml`.
+- **UF-06:** los plazos de la Ley 25.326 (art. 14, diez días corridos para el acceso; art. 16, cinco días hábiles para
+  rectificar o suprimir) quedan «a confirmar con la asesoría».
+
+### 13.3 Las reglas de la etapa
+
+- **La 0.24.0-candidata.1 es la última APK distribuida** (`VIGENTES`). Toda respuesta de la API sigue validando contra
+  lo que esa APK lee (`lecturas-de-la-apk.test.ts` y `lecturas-de-las-apk.int-spec.ts`): un cambio de la API nunca
+  rompe lo que la 0.24 ya hace.
+- **API-ACC-07 no emite un paso nuevo hasta que haya una APK que lo entienda.** La 0.24 pide actualizar ante un paso que
+  no conoce (UF-T12). El segundo factor del profesional (UF-11) no pasa por API-ACC-07: lo pide `/pro` en el website, y
+  la app de la persona no lo pide.
+- **Las partes con APK nueva** entran en la candidata que se congela el 25/11 o esperan la siguiente.
+- **El método, el de la etapa 1:**
+  - los oráculos primero (TEST-UF-007 en adelante, en `WP-USO-FINAL-ORACULOS.md`), cada uno probado en rojo con una
+    mutación;
+  - un commit por parte, con su TRACE;
+  - las migraciones solo agregan;
+  - los contratos, en `packages/domain`, con OPERACIONES y el OpenAPI al día;
+  - la API, con permisos, auditoría, idempotencia donde corresponde y límites de intento.
+
+### 13.4 La primera mitad, programada (PR #257, sin integrar)
+
+| Parte | Qué quedó | Oráculos |
+|---|---|---|
+| UF-09 | Con `APP_ENV=production` la API no ofrece lo sembrado como demostración (`BE_SYNTHETIC_SEED`) en los buscadores, las fichas visuales ni los habituales, y nada nuevo lo acepta (un plan, una plantilla, una receta, una comida o una sesión habitual, un registro). En `test` y en desarrollo, todo igual. Las filas quedan. | TEST-UF-013 |
+| UF-11 | Una sesión de una identidad con perfil profesional actúa como profesional solo con el segundo factor verificado en esa sesión: sin él, el PDP deniega, ningún área opera y las listas donde es el profesional (vínculos, solicitudes, invitaciones, novedades) no traen lo suyo. Como persona, todo igual. La familia MFA (API-MFA-01 a 06) lo configura, lo verifica con el autenticador o un código de recuperación, lo reemplaza y renueva los códigos. `/pro` lo pide antes de montar la página, y «Seguridad» (`/pro/security`) lo administra. | TEST-UF-014 |
+| UF-04 | API-ADM-14 incorpora una cuenta que ya existe (por su correo) como profesional: el perfil con su nombre profesional, su tipo y la matrícula de un sanitario (dos columnas nuevas), y por área la presentación, la verificación y la habilitación, con los hechos del administrador y el fundamento. API-ADM-15 cambia el nombre profesional con su hecho (`cambio_de_nombre_profesional`), y la base no deja cambiarlo sin él. La consola `/admin` incorpora desde la lista y cambia el nombre desde la ficha, que muestra la matrícula. | TEST-UF-009 |
+| UF-06 | La persona descarga lo suyo: API-EXP-01 registra la exportación (24 h) y API-EXP-02 da una ruta firmada de 15 minutos (API-EXP-02-DESCARGA), que arma el archivo en ese momento con lo del titular y, de sus profesionales, solo el identificador y el nombre profesional. Pide el acceso, la rectificación o la supresión con API-RGT-01 a 03, cada pedido con su plazo, y Administración los resuelve una sola vez con API-ADM-16 y 17, con la respuesta para la persona y el fundamento interno. Dos tablas nuevas (`pedido_de_derecho` y `exportacion_propia`). «Tus datos» está en la cuenta del website, en Perfil de la app (APK nueva) y en `/admin/rights`. | TEST-UF-011 |
+
+### 13.5 Decisiones de la implementación (UF-T15 en adelante, a ratificar por Dirección)
+
+| ID | Decisión | Alternativa descartada |
+|---|---|---|
+| UF-T15 | **UF-09 · quién decide.** La regla vive en el dominio (`ofreceElCatalogoDeDemostracion`) y la decide el `APP_ENV` de la API, nunca el cliente. Solo `test` y `development` ofrecen el catálogo de demostración; producción y un ambiente que no se reconoce, no. Es al revés que los avisos de UF-08: un alimento con valores inventados en una base real lleva a una estimación equivocada, y en un ambiente mal configurado solo se pierde un ejemplo. | «Todo lo que no sea producción lo ofrece», como los avisos: un ambiente mal configurado ofrecería valores inventados. |
+| UF-T16 | **UF-09 · dónde se filtra.** En un solo lugar de cada catálogo, el criterio de lo que un actor ve (`alimentoVisible` y `ejercicioVisible`). Alcanza a los buscadores (API-NUT-13, API-TRN-13 y sus búsquedas, que lee la 0.24 con la misma forma), las fichas visuales (API-EJE-05), los habituales y cada validación de lo que algo nuevo cita. Lo ya citado se lee sin filtro (las instantáneas y `versionesPorId`): la historia no se borra. | Filtrar solo los buscadores y validar aparte en cada escritura: más lugares donde olvidarse uno. |
+| UF-T17 | **UF-11 · dónde se exige.** En el servidor, en cada pedido: `SesionGuard` lee de la base el estado del segundo factor de la sesión (perfil profesional, autenticador activo y verificación de esa sesión) y lo anota en el contexto del pedido. Lo preguntan el PDP (la situación del actor, `conSegundoFactor`), el criterio de las áreas (`puedeOperarArea`) y las listas donde la identidad es el profesional. Sin él responde lo que ya responde a quien no puede: el 404 de lo ajeno, el 403 o el 422 de quien no opera el área, y listas sin lo profesional. Ninguna operación que ya existe suma un código de error. | Un 403 MFA_REQUIRED en cada operación profesional: sumarlo al contrato de unas cien operaciones y clasificar cada una (de la persona, del profesional o de los dos). |
+| UF-T18 | **UF-11 · sobre la sesión común.** El segundo factor va sobre la sesión de siempre, en la misma tabla del de Administración (una migración amplía su disparador a la sesión común de un profesional). La app de la persona no cambia: sus sesiones actúan como persona, también la de un profesional. | Una clase de sesión PROFESIONAL con su propia entrada, como Administración: otro inicio de sesión para `/pro`. |
+| UF-T19 | **UF-11 · la primera vez se configura solo,** dentro de los 10 minutos de entrar (con la contraseña o con Google), sin un código de incorporación: un token robado no alcanza. Pasado el plazo, se vuelve a entrar. Quien tenga la contraseña sí puede configurarlo antes que el profesional: desde la revisión adversarial, Administración lo restablece (UF-T56). | Un código que emite Administración, como para los administradores: un paso más para cada profesional que ya existe. |
+| UF-T20 | **UF-11 · cuánto vale.** Lo que dura la sesión (12 h como máximo), sin vencer por inactividad. Reemplazar el autenticador o renovar los códigos pide además una entrada reciente (10 minutos), igual con contraseña que con Google; las otras sesiones de la identidad vuelven a pedir el código, sin cerrarse (pueden ser las de la app). Cinco códigos que no valen revocan la sesión, como en Administración. | Los 15 minutos de inactividad de Administración, que en un consultorio piden el código a cada rato; o la contraseña para reemplazar, que una cuenta de Google no tiene. |
+| UF-T21 | **UF-11 · la familia MFA** (API-MFA-01 a 06, `/me/second-factor`), propia de BE y declarada en la guardia de trazabilidad con DL-169. No pasa por API-ACC-07. | Un paso más de API-ACC-07: la 0.24 de un profesional que usa la app como persona pediría actualizar. |
+| UF-T22 | **UF-11 · el contexto del pedido.** El estado viaja en un AsyncLocalStorage, como la captura de decisiones del PDP, que abre un middleware después de los parsers del cuerpo. Fuera de un pedido (una tarea interna) o para otra identidad (la persona que mira el modo de acceso de su profesional) no hay condición: no es una acción de esa sesión. | Pasar la sesión como parámetro a las cerca de cincuenta llamadas al criterio de las áreas. |
+| UF-T23 | **UF-04 · la cuenta, por su correo.** API-ADM-14 la encuentra por el correo de acceso o el de Google, que Administración conoce por el canal, y la toma en modo exclusivo: dos incorporaciones de la misma cuenta quedan una después de la otra. Sin cuenta, 404; administrativa, no operativa o ya profesional, 422 en el campo del correo. | Por el identificador de la identidad, que Administración no conoce. |
+| UF-T24 | **UF-04 · los hechos de siempre.** La incorporación registra, del administrador y con el mismo fundamento, el perfil creado y, por área, la presentación, la verificación y la habilitación: la trayectoria de M-02 de cualquier área. No avisa por Novedades: el profesional lo sabe por el canal, y al entrar configura su segundo factor. | Un hecho nuevo «incorporado» que saltee la trayectoria: la historia de esas áreas quedaría distinta de la de las demás. |
+| UF-T25 | **UF-04 · el nombre cambia en el perfil, con su hecho.** El perfil profesional era de solo agregar; la migración reemplaza esa guardia por una que solo deja cambiar el nombre, y solo con su `cambio_de_nombre_profesional` en la misma transacción (el nombre anterior, el nuevo, el fundamento y el administrador). Todo lo demás del perfil sigue inmutable, con el mismo mensaje de antes, y los cerca de treinta lugares que leen el nombre no cambian. API-ADM-15 va contra el nombre que vio el administrador (409 si cambió). | Una tabla de versiones del nombre que lean todos: tocar los cerca de treinta lectores. |
+| UF-T26 | **UF-04 · en `test`, solo cuentas sintéticas** (`@example.invalid`), como el comando del primer administrador (08 §33); en producción, cualquiera. La siembra de la demostración sigue como está. | Cualquier cuenta también en `test`: abriría la puerta a datos reales antes del gate. |
+| UF-T27 | **UF-04 · la matrícula,** un número (hasta 40 caracteres) y una jurisdicción (hasta 80), solo de un sanitario y en dos columnas nuevas y nulas del perfil (CHECK: las dos o ninguna, y solo de un sanitario). La ve Administración en la ficha; mostrarla a la persona es UF-17 (P1). | Guardarla en la procedencia del perfil: no se podría exigir ni consultar. |
+| UF-T28 | **UF-06 · los IDs del 09.** API-RGT-01 a 03 y API-EXP-01 y 02 son los del 09 v0.12 (§14 y §15), que no estaban en el inventario de BE: la guardia de trazabilidad los declara aparte (`IDS_DEL_09_FUERA_DEL_INVENTARIO`), con DL-169. La descarga es API-EXP-02-DESCARGA, una variante propia con su sufijo. Administración resuelve con API-ADM-16 y 17, de su familia. | Una familia propia (por ejemplo, API-DER): se perdería el hilo con el 09, que ya los nombra. |
+| UF-T29 | **UF-06 · el archivo no se guarda.** La exportación guarda solo sus dominios y su vencimiento (24 horas); el archivo se arma al descargarlo, con lo del titular en ese momento, y cada entrega se audita sin el contenido. | Generarlo y guardarlo: otra copia de datos de salud para proteger y borrar, y una tarea que la arme. |
+| UF-T30 | **UF-06 · la descarga, por una ruta firmada** de 15 minutos (08 §21): la misma construcción que la de los medios, con otra clave derivada (HKDF) del secreto del servidor, así una ruta de un medio no abre una exportación. Cada lectura de API-EXP-02 da una ruta nueva. Una ruta alterada, vencida o de una exportación vencida, el mismo 404. Como no lleva sesión, el cupo es por red (el de las lecturas protegidas, 429), antes de verificarla. | Que API-EXP-02 devuelva el archivo con la sesión en el encabezado: el navegador del teléfono y la pestaña nueva del website no llevan ese encabezado. |
+| UF-T31 | **UF-06 · los plazos.** Diez días corridos para el acceso (Ley 25.326, art. 14) y cinco días hábiles para rectificar o suprimir (art. 16), en la fecha civil de Buenos Aires. Los hábiles son de lunes a viernes, sin contar feriados: el plazo queda igual o antes que el legal, nunca después. A confirmar con la asesoría. | Descontar los feriados nacionales: un plazo algo más largo, con una tabla para mantener cada año (los feriados puente los fija el Gobierno). |
+| UF-T32 | **UF-06 · quién resuelve.** Administración, una sola vez: hecho o no se pudo, con la respuesta que ve la persona y el fundamento, que ve solo Administración. La supresión se hace con el cierre de la cuenta y la política de 08 §18, no con un borrado nuevo; la respuesta dice lo hecho y lo que se conserva. La base no deja resolver sin un administrador con su rol vigente, ni cambiar nada más del pedido. | Que la supresión borre al pedirla: contradice lo que la ley obliga a conservar y la historia de solo agregar. |
+| UF-T33 | **UF-06 · en la app.** «Tus datos» es un ajuste de Perfil, después de Privacidad (TEST-AVR-004 cambia con esa fila, con su nota). La descarga la hace el navegador del teléfono: el archivo no pasa por la app. | Un enlace dentro de Privacidad, sin tocar TEST-AVR-004: menos a la vista. O guardar el archivo desde la app: más código nativo y una copia en el teléfono. |
+| UF-T34 | **UF-03 · un código, no un enlace.** La prueba temporal (08 §24.4) es un código de diez caracteres del alfabeto de los códigos (Crockford, 50 bits), que la persona escribe en la pantalla donde lo pidió, con guion o sin él. El correo es texto plano y no lleva enlaces. La base guarda solo su huella: un HMAC con una clave derivada (HKDF) del secreto del servidor, propia de la recuperación (08 §31.4). | Un enlace con un token: pide abrir la app desde el correo (enlaces profundos en la APK) y enseña a tocar enlaces que llegan por correo, que es la forma del phishing. |
+| UF-T35 | **UF-03 · la respuesta neutra.** API-ACC-P1-01 responde siempre 202 con un `recoveryId` nuevo, el vencimiento de un código por correo (30 minutos) y `delivery`, que depende del ambiente (EMAIL con proveedor, ASSISTED sin él) y nunca de la cuenta. El trabajo es el mismo en todas las ramas, y el correo sale después de confirmar, sin esperarlo. Al completar, vale cualquier código vigente de la cuenta del pedido. | Un 202 sin cuerpo, como lo bosqueja el 09, y completar con el correo y el código: el correo viajaría dos veces y el pedido no tendría dónde contar sus intentos. |
+| UF-T36 | **UF-03 · vigencias e intentos.** El código del correo vale 30 minutos y el asistido, 24 horas; los dos sirven una vez. Cinco códigos que no valen sobre un pedido lo anulan. Pedir: 3 por hora por correo, desde cualquier red (08 §38), y 30 por hora por red. Completar: 10 cada 15 minutos por red. Una contraseña nueva que no cumple la política no gasta un intento. | Sin tope por pedido, solo el cupo por red: quien cambia de red seguiría probando códigos del mismo pedido. |
+| UF-T37 | **UF-03 · la cuenta con Google.** No tiene contraseña que recuperar (02:302): el pedido no crea nada y, si BE manda correos, le llega uno que dice que entra con «Continuar con Google». La pantalla lo recuerda siempre, sin decir si la cuenta existe. Una cuenta con los dos métodos recupera su contraseña. | Crearle una contraseña a la cuenta de Google: un segundo método que nadie pidió. |
+| UF-T38 | **UF-03 · el proveedor de correo.** Un adaptador para Brevo o Postmark, los dos con DPA y una API por HTTPS, con `BE_CORREO_PROVEEDOR`, `BE_CORREO_CLAVE` y `BE_CORREO_REMITENTE` (las tres juntas o ninguna; en producción, un remitente que no sea sintético). Sin configuración, la API no manda correos y la respuesta dice ASSISTED. El correo se manda sin reintentos, con presupuesto de tiempo y sin registrar el destinatario ni el texto. | SMTP con una biblioteca: otra dependencia y otro puerto. O un solo proveedor fijo: Dirección elige con la cuenta y el DPA. |
+| UF-T39 | **UF-03 · la recuperación asistida** (UF-D9), API-ADM-18 de la familia ADM, con segundo factor y fundamento: Administración verifica a la persona por el canal de ayuda y emite un código de un solo uso. Cierra las sesiones de la cuenta y anula sus códigos anteriores. No tiene idempotencia, para que el código no quede guardado: cada envío emite uno nuevo y anula el anterior. No sirve para cuentas administrativas (las restablece el operador con el comando interno) ni para las que entran con Google. La persona usa el código en la misma pantalla que el del correo. | Que Administración defina la contraseña: la conocería. O un código emitido sin cerrar las sesiones: quien tomó la cuenta seguiría adentro. |
+| UF-T40 | **UF-03 · la credencial cambia solo con su hecho.** El cambio se registra en `cambio_de_credencial` (el método, la recuperación usada y la transacción). La guardia de la base, que desde WP-02 no dejaba modificar la credencial, ahora deja hacerlo solo con ese hecho en la misma transacción; la supresión al cierre sigue igual. | Aflojar la guardia sin un hecho: cualquier código podría cambiar una contraseña sin dejar rastro en la base. |
+| UF-T41 | **UF-03 · al terminar, entra.** El website (`/recover`) y la APK (Iniciar sesión → «¿Olvidaste tu contraseña?») inician sesión con la contraseña nueva y siguen como el login. Si eso no responde, ofrecen «Iniciar sesión». La consola tiene «Recuperar el acceso» (`/admin/access`), que muestra el código una sola vez. | Volver a Iniciar sesión y escribirla otra vez: un paso más, justo después de elegirla. |
+| UF-T42 | **UF-07 · el canal sale de la API.** API-SOP-01 (`GET /support/contact`, familia SOP, propia de BE) es pública y devuelve lo que tiene la configuración (`BE_CONTACTO_SOPORTE` y `BE_CONTACTO_PRIVACIDAD`), o `null`; no lee la base y se puede guardar cinco minutos. El website (estático) y la APK la leen cada vez que muestran el canal, así que cambiar una dirección no pide otro build ni otra APK. Sin configuración, las pantallas dicen que el canal todavía no está publicado. | Las direcciones en el build de cada cliente: cambiarlas pediría una APK nueva. |
+| UF-T43 | **UF-07 · dos direcciones.** Soporte (la app, la cuenta, recuperar el acceso, entrar como profesional) y privacidad (los datos y los derechos, 08 §19), cada una optativa. En producción, una dirección de un dominio reservado para ejemplos (`.invalid`, `.example`, `example.com`…) no deja arrancar la API. | Una sola dirección: los pedidos de derechos, que tienen plazo legal, se mezclarían con las consultas de soporte. |
+| UF-T44 | **UF-07 · dónde está.** En el website, «Ayuda y contacto» en el pie de cada página pública (la página `/help`, con los casos más comunes) y una sección en `/account`; en la APK, Perfil → «Ayuda y contacto», después de «Tus datos» (TEST-AVR-004 cambia con esa fila, con su nota). En la recuperación asistida (web y APK), la dirección de soporte a la que hay que escribir. Cada dirección abre el correo con un asunto. | Las direcciones en el pie de todas las páginas: un pedido a la API en cada página pública. |
+| UF-T45 | **UF-07 · ninguna dirección en el código.** Una guardia (`scripts/sin-correos-en-el-codigo.test.cjs`) recorre lo que se publica (el dominio, la API, el website y la APK, sin las pruebas) y exige que toda dirección sea de un dominio reservado para ejemplos. | Revisarlo a mano en cada PR: el repositorio es público y una dirección escrita se publica con el primer push. |
+| UF-T46 | **UF-05 · sin publicar, en el código y fuera del catálogo.** Las versiones nuevas viven en `packages/domain/src/textos-sin-publicar.ts`, que no exporta el índice (no viaja en el website ni en la APK). No están en `CATALOGO_DE_TEXTOS` ni en la base, y API-ACC-08 no las acepta. `faltaParaPublicar` dice lo que falta: la validación jurídica (quién y cuándo), que no se dispensa, y ningún dato «[A COMPLETAR …]». | Sembrarlas en la base con una fecha de vigencia futura: se publicarían solas en esa fecha, con o sin la validación. |
+| UF-T47 | **UF-05 · el borrador.** Cuatro textos se reescriben para el uso real (términos, privacidad, datos de salud y cierre), con el responsable, el canal de UF-07, «Tus datos» de UF-06, Render en Frankfurt y los plazos de la Ley 25.326. Los otros seis son los vigentes sin el aviso de demostración ni la marca de propuesta, porque ya dicen lo que hace la implementación. Lo que solo pueden decir Dirección y la asesoría (el responsable, la jurisdicción, el mecanismo de la transferencia y los plazos de conservación) queda marcado «[A COMPLETAR …]». La privacidad cierra con la leyenda de la Agencia de Acceso a la Información Pública. | Dejar los textos en blanco para que la asesoría los redacte desde cero: más trabajo para ella y nada que revisar contra lo que BE hace. |
+| UF-T48 | **UF-05 · qué se vuelve a aceptar al entrar.** Solo los términos (A1) y la información de privacidad (A2): son de la cuenta y sin ellos no se usa BE. El tratamiento de datos de salud (A3) y los consentimientos por vínculo (B2) tienen su propio acto y su aviso de versión nueva (`versionNuevaDeConsentimiento`, verificado: lo muestra el consentimiento de la APK y del website), y la evidencia visual y lo que se comparte entre áreas se aceptan al usarlos. Una versión nueva no hereda la aceptación de la anterior (09 §31.2.6). | Pedir los diez textos al entrar: un consentimiento por vínculo es de una relación, no de la cuenta, y pedirlo en bloque lo vuelve un trámite. |
+| UF-T49 | **UF-05 · solo a un cliente que lo sabe mostrar.** API-ACC-07 suma `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY` solo si el cliente declara la capacidad `pending-steps-texts-1` (X-BE-Capabilities, como las de WP-ENTRENAMIENTO-SERIES y DL-165). La declaran el website, que se despliega con la API, y la APK nueva. La 0.24 no la declara y su lectura congelada sigue igual: **si los textos se publican mientras la 0.24 está en uso, quien entra con ella sigue sin que se le pidan**, hasta actualizar; en el website se le piden. *Corregida por la revisión adversarial:* la APK nueva (la del 25/11) tampoco trae las versiones que se publiquen después; sin UF-T57 les pediría actualizar a todas sus cuentas. | Pedírselos a todos los clientes: el día de la publicación, la 0.24 pediría actualizar a todas las cuentas (UF-T12), y la regla del §13.3 lo prohíbe. |
+| UF-T50 | **UF-05 · el paso lleva el id, no el texto.** `suggestion` es el id de la versión vigente; el cliente muestra el texto de su propio catálogo (`@be/domain`). Si no tiene esa versión, el website pide recargar (se despliega con la API) y la APK la lee de API-ACC-09 (UF-T57); solo si la API no la tiene, la APK pide actualizar. Así la forma de API-ACC-07 no cambia. | Devolver el texto en API-ACC-07: cambiaría la forma que la 0.24 valida con un esquema estricto. |
+| UF-T51 | **UF-05 · API-ACC-08** (`POST /me/legal-acceptances`, ID nuevo de la familia ACC, declarado con DL-169): acepta solo la versión vigente que la pantalla mostró, con los 422 que ya tiene el alta (`TERMS_VERSION_NOT_ACCEPTABLE` y `PRIVACY_VERSION_NOT_ACCEPTABLE`). Es idempotente por naturaleza: si la última aceptación de ese texto ya es esa versión, 200 con ese acto; si no, 201 con el nuevo, tomando la identidad en modo exclusivo. Queda auditado como toda escritura. | Una Idempotency-Key: no agrega nada, porque el acto ya es único por versión, y es un dato más que el cliente tendría que guardar. |
+| UF-T52 | **UF-05 · sin aceptar, no sigue.** «Antes de seguir» muestra el texto completo de cada versión, con su id y su fecha, y un botón que acepta las dos de una vez (de a una, en orden). Quien no quiere aceptarlas tiene ahí «Cerrar sesión» y el cierre de la cuenta, el mismo de Cuenta. | Dejar seguir con un aviso: la versión nueva no estaría aceptada y seguiría rigiendo la anterior sin plazo. |
+| UF-T53 | **UF-02 · cuatro estados.** CON EVIDENCIA (en `main`, con lo que lo prueba), EN EL PR (programado y probado en la CI del PR, a integrar por Dirección), PARCIAL (lo hecho, con su evidencia, y lo que falta, con dueño y fecha) y PENDIENTE (sin evidencia, con dueño y fecha). Las cuatro del §56.9 (25 a 28) entran porque esas capacidades están activas. | Dos estados (cumplida o no): esconderían cuánto falta de cada una y lo que depende solo de integrar. |
+| UF-T54 | **UF-02 · una guardia sostiene el documento** (`scripts/gate-08-42.test.cjs`, TEST-UF-018, en `npm test`): las 28 condiciones una sola vez, toda ruta citada existe, lo que no está cumplido tiene dueño y fecha, el resumen coincide y, con algo sin cumplir, dice que el gate está cerrado. Verifica además la condición 18 (ningún SDK de IA externa en los `package.json`). | Un documento revisado a mano: una ruta que se mueve o una condición que se marca cumplida sin evidencia pasarían sin que nadie lo note. |
+| UF-T55 | **UF-02 · las fechas son propuestas,** a confirmar por Dirección: lo del código, con el congelamiento de la app (2026-11-25); lo operativo de Dirección, una semana después (2026-12-04); lo que espera a la asesoría jurídica, dos semanas después (2026-12-11); lo que verifica el equipo, 2026-11-20. Ninguna fecha cumple una condición. | Dejar la fecha en blanco hasta que Dirección la fije: el paquete pide dueño y fecha para cada una. |
+| UF-T56 | **UF-11 · Administración restablece el segundo factor de un profesional** (API-ADM-19, `/admin/access`, de la revisión adversarial): con su segundo factor y un fundamento, revoca el autenticador, descarta uno pendiente, invalida los códigos y cierra todas las sesiones de la cuenta, en una transacción. Queda el hecho (`restablecimiento_de_segundo_factor`, solo se agrega; un administrador vigente, sobre un profesional, nunca el propio) y la auditoría sin el fundamento. Sin idempotencia: repetirlo no cambia más. El profesional, al volver a entrar, lo configura él. | Un código de configuración de un solo uso emitido por API-ADM-14 (como API-ADM-07) o un aviso cada vez que se configura un autenticador: cierran la puerta antes, pero piden otra APK o el correo; quedan para P1. Sin ninguna: un profesional sin su autenticador queda sin poder actuar como profesional. |
+| UF-T57 | **UF-05 · publicar los textos no pide otra APK** (de la revisión adversarial). API-ACC-09 (`GET /legal-texts/{versionId}`, pública, ID nuevo de la familia ACC con DL-169) da el texto de una versión publicada desde el catálogo del servidor, con su SHA-256; la APK que no la trae la lee ahí, y la muestra solo si es la pedida y del tipo del paso. El alta, en la transición, acepta de un cliente con la capacidad la versión que la vigente reemplaza (la de su catálogo), deja el acto con esa versión y «Antes de seguir» le pide la vigente. La 0.24, sin la capacidad, no: se le pide actualizar. | (a) El texto dentro del paso de API-ACC-07 para los clientes capaces: cambia el contrato que congela la lectura de la 0.24. (c) Una APK construida desde el PR de publicación: obliga a actualizar a todas las cuentas ese día y la API vieja rechazaría su alta. |
+| UF-T58 | **UF-03 · el pedido sin correo espera 24 horas,** lo que vale el código de Administración (de la revisión adversarial): a los 30 minutos, el código que llegaba horas después caía en un pedido vencido. La respuesta dice esa vigencia (depende del ambiente, nunca de la cuenta), y la asistida no habla de 30 minutos. **Una cuenta administrativa no se recupera por correo:** el mismo 202, nada guardado ni enviado, auditado con CUENTA_ADMINISTRATIVA. | Que completar mire solo la vigencia del código: el pedido quedaría abierto sin plazo. |
+| UF-T59 | **UF-06 · el archivo con el estado vigente de cada dato** (de la revisión adversarial): cada comida, sesión, medida o respuesta con sus correcciones, rectificaciones y su anulación, más las revisiones recibidas, las notas de coordinación sobre la persona y los metadatos de sus fotos. **La ruta firmada lleva la versión del control de sesión** del titular: una revocación de las sesiones o una cuenta que no opera la cortan (el mismo 404). **Pedir un derecho y crear una exportación tienen cupo**: 10 por hora por persona cada uno (`RATE_LIMIT_DERECHOS_*`), con el 429 auditado. | Marcar solo `anulada` sin las correcciones: el valor que ve la persona seguiría sin estar. Sin la versión de sesión: la ruta valdría 15 minutos después de una recuperación del acceso. |
+| UF-T60 | **UF-11 · la sesión del pedido falla cerrada** (de la revisión adversarial): `SesionGuard` sin el contexto del pedido no deja pasar (un 500), en vez de dejar lo profesional sin condición. `/pro` vuelve a preguntar API-MFA-01 al cambiar de pantalla y al volver a la pestaña, y «Generar códigos nuevos» pide confirmación. | Distinguir «sin almacén» de «almacén sin sesión» en `puedeActuarComoProfesional`: dos estados más para el mismo caso que nunca debería pasar. |
+
+### 13.6 La segunda mitad, programada (PR #257, sin integrar)
+
+Las decisiones de esta mitad siguen en la tabla del §13.5, desde UF-T34, y quedan a ratificar como las demás.
+
+| Parte | Qué quedó | Oráculos |
+|---|---|---|
+| UF-03 | La persona pide la recuperación con su correo (API-ACC-P1-01) y la respuesta es la misma exista o no la cuenta: un 202 con el pedido, su vencimiento y cómo llega el código. Con el código y una contraseña nueva (API-ACC-P1-02) la cambia: la identidad es la misma, todas sus sesiones terminan y queda auditado; un código que no vale, siempre el mismo 422, y cinco anulan el pedido. El correo de BE es un adaptador para Brevo o Postmark que se prende con `BE_CORREO_*`; sin él, rige la recuperación asistida: Administración emite el código desde `/admin/access` (API-ADM-18), con fundamento, y cierra las sesiones. Dos tablas nuevas (`recuperacion_de_acceso` y `cambio_de_credencial`), y la base deja cambiar una credencial solo con su cambio registrado. En el website, `/recover` desde Iniciar sesión; en la APK (nueva), «¿Olvidaste tu contraseña?» en Iniciar sesión. | TEST-UF-007 y TEST-UF-008 |
+| UF-07 | El canal de ayuda y contacto sale de la configuración de la API y se lee con API-SOP-01, pública: la dirección de soporte y la de privacidad, o `null` si Dirección todavía no las cargó (`BE_CONTACTO_SOPORTE` y `BE_CONTACTO_PRIVACIDAD`). En el website, «Ayuda y contacto» en el pie (`/help`) y en `/account`; en la APK (nueva), Perfil → «Ayuda y contacto». La recuperación asistida muestra la dirección de soporte. Una guardia exige que ninguna dirección real quede escrita en el código. | TEST-UF-017 |
+| UF-05 | El mecanismo de los textos de uso real, con las diez versiones nuevas **sin publicar** (`textos-sin-publicar.ts`): no dicen «demostración», suceden a la vigente de su tipo (`reemplazaA`) con el SHA-256 de su texto y no se pueden publicar sin la validación jurídica ni con datos «[A COMPLETAR …]». Publicadas, API-ACC-07 pide `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY` con el id de la vigente a quien aceptó la anterior (solo a un cliente con la capacidad `pending-steps-texts-1`), y API-ACC-08 registra el acto con la versión que la pantalla mostró. «Antes de seguir» muestra el texto completo en el website y en la APK (nueva), con «Cerrar sesión» y el cierre de la cuenta. Hoy, con los textos de demostración vigentes, nada cambia para nadie. | TEST-UF-010 |
+| UF-02 | `EVIDENCIA/USO-FINAL/GATE-08-42.md`: las 24 condiciones del 08 §42 y las cuatro del §56.9, cada una con su estado y su evidencia o su dueño y su fecha. **El gate está cerrado:** 10 con evidencia, 1 en el PR (el segundo factor del profesional), 10 parciales y 7 pendientes, casi todas de Dirección y la asesoría jurídica (§9). Hallazgo: suspender la cuenta de una persona (el menor descubierto, condición 22) no tiene operación de Administración. Una guardia lo sostiene en cada PR. | TEST-UF-018 |
+
+### 13.7 Cómo se publican los textos de UF-05
+
+Lo hace un PR aparte, cuando la asesoría jurídica valide los textos (condición 1 del gate). Hasta entonces, nada de esto
+se hace:
+1. **Completar y validar.** Se reemplazan los «[A COMPLETAR …]» de `textos-sin-publicar.ts` con lo que diga la asesoría,
+   se aplican sus cambios y se anota la validación (`validacionJuridica`: quién y cuándo). `faltaParaPublicar` tiene que
+   quedar vacío para cada versión.
+2. **Pasarlas al catálogo.** Cada versión pasa a `CATALOGO_DE_TEXTOS` (`textos.ts`) con su `vigenteDesde` y su
+   `reemplazaA`, después de la que reemplaza, y sale de `VERSIONES_SIN_PUBLICAR`. `VERSION_VIGENTE` toma la última
+   de cada tipo.
+3. **La migración que las siembra:** `npm run build:domain && node scripts/generar-sql-catalogo-de-textos.cjs --ids …`,
+   solo con los ids nuevos. La prueba del esquema exige que la base y `@be/domain` digan lo mismo.
+4. **Antes de desplegar,** la última APK distribuida tiene que tener la capacidad `pending-steps-texts-1` y leer
+   API-ACC-09 (UF-T57; la del 25/11 lo hace): no hace falta construir otra. Con la 0.24 en uso, quien entra con ella no
+   ve el paso hasta actualizar, y no puede crear una cuenta (se le pide actualizar).
+5. **Al desplegar,** el website pide los términos y la privacidad nuevos en «Antes de seguir» con el texto de su
+   catálogo, y la APK con el que lee de API-ACC-09. Una cuenta nueva desde la APK acepta la versión que trae (la anterior)
+   y enseguida se le pide la vigente. Los consentimientos (A3 y B2) muestran su aviso de versión nueva cuando la persona
+   los abre. **Pendiente antes de publicar:** A3, B2 y los textos que se aceptan al usarlos no pasan por API-ACC-07; la APK
+   los muestra y los acepta con la versión de su catálogo, así que una versión nueva de esos textos la APK del 25/11 la
+   ofrecería con la anterior y la API la rechazaría. O esas pantallas leen API-ACC-09 (como «Antes de seguir»), o esos
+   textos se publican con una APK nueva; lo decide el PR de publicación, con Dirección.
+
+### 13.8 Las revisiones adversarias de la etapa 2 (2026-11-12)
+
+Dos revisiones adversarias sobre el PR #257, con veredicto «aprobado con arreglos». Cada hallazgo se comprobó contra el
+código antes de arreglarlo; todos se sostuvieron. Las decisiones nuevas son UF-T56 a UF-T60, a ratificar.
+
+| Severidad | Hallazgo | Estado |
+|---|---|---|
+| Alta | La recuperación asistida en el orden real: el pedido vencía a los 30 minutos y el código de Administración caía en un pedido vencido | Arreglado (UF-T58) |
+| Alta | El plan para publicar los textos: la APK del 25/11 no trae las versiones nuevas y bloqueaba a todas las cuentas | Arreglado (UF-T57 y el §13.7) |
+| Media | La recuperación por correo no excluía las cuentas administrativas | Arreglado (UF-T58) |
+| Media | Sin operación para restablecer el segundo factor de un profesional | Arreglado (UF-T56, API-ADM-19) |
+| Media | El texto «Si perdiste el autenticador…» prometía algo que no existía | Arreglado (dice lo que hace API-ADM-19) |
+| Media | El archivo de «Tus datos» sin correcciones ni anulaciones | Arreglado (UF-T59) |
+| Media | Los textos de derechos prometían más de lo que había, con «a confirmar con la asesoría» a la vista | Arreglado (la asesoría queda en el gate, condición 1) |
+| Media | Los avisos de «Tus datos» en la APK, sin anunciar y lejos del botón | Arreglado |
+| Media | «Tus pedidos» en el website: una falla se mostraba como lista vacía | Arreglado |
+| Baja | La descarga firmada no miraba la cuenta ni la revocación de las sesiones | Arreglado (UF-T59) |
+| Baja | Pedir derechos y exportaciones sin cupo | Arreglado (UF-T59) |
+| Baja | El contexto del segundo factor abierto si falla | Arreglado (UF-T60) |
+| Baja | `/pro` no se enteraba de un cambio del segundo factor en otra sesión | Arreglado (UF-T60) |
+| Baja | El foco y el anuncio al pasar a «completar» y al pedir otro código | Arreglado |
+| Baja | El botón con los dos textos | Arreglado |
+| Baja | El caso «Soy profesional» pedía matrícula a todos | Arreglado; el enlace a «Ayuda y contacto» desde Iniciar sesión en la APK queda pendiente (P1) |
+| Baja | «Generar códigos nuevos» sin confirmación | Arreglado (UF-T60) |

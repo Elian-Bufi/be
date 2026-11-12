@@ -206,6 +206,8 @@ export class CierreService {
         sesionId: reclamos.sid,
         momentoDeAutenticacion: sesion.momentoDeOcurrencia,
         expiraEn: sesion.expiraEn,
+        // UF-11: el cierre es de la persona sobre su propia cuenta; con este actor no se hace nada como profesional.
+        segundoFactor: { estado: 'NO_REQUERIDO' },
       },
     };
   }

@@ -20,7 +20,7 @@
  */
 import { COPY_PISTAS, COPY_ANTROPOMETRIA } from '@be/domain';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { cambiarLaDireccion } from '../../../../lib/direccion';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
@@ -158,10 +158,10 @@ export function Antropometria() {
           {vista === 'preparacion' ? (
             <VistaDePreparacion
               vuelta={
-                <Link href={hrefDe('evaluaciones')}>
+                <Enlace href={hrefDe('evaluaciones')}>
                   <Icono nombre="izquierda" tamano={18} />
                   {COPY_ANTROPOMETRIA.volverATomas}
-                </Link>
+                </Enlace>
               }
             />
           ) : null}

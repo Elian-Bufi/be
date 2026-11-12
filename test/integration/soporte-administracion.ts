@@ -11,15 +11,21 @@ import { incorporarAdministrador } from '../../apps/api/src/administracion/incor
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
 import { CREDENCIAL_SINTETICA, claveDeIdempotencia, correoSintetico, registrarOk, tokenDe } from './soporte-api';
+import { verificarSegundoFactor } from './soporte-segundo-factor';
 import type { Parte } from './soporte-vinculo';
 
-/** Un profesional con un área presentada y pendiente de revisión (el quinto campo PENDIENTE de la siembra). */
+/**
+ * Un profesional con un área presentada y pendiente de revisión (el quinto campo PENDIENTE de la siembra). Su sesión
+ * configura el segundo factor del profesional (UF-11), para que cuando Administración lo habilite pueda operar.
+ */
 export async function profesionalPendiente(app: INestApplication, e: string, alcance: 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA' = 'NUTRICION'): Promise<Parte> {
   const correo = correoSintetico(`pend-${e}`);
   const id = await registrarOk(app, correo, 'WEB');
   const verificacion = app.get(VerificacionService);
   await app.get(PrismaService).$transaction((tx) => verificacion.prepararProfesional(tx, id, { alcance, tipo: 'SANITARIO', nombreVisible: `Lic. Pendiente ${e}`, estadoInicial: 'PENDIENTE' }, new Date()));
-  return { correo, id, token: await tokenDe(app, correo, 'WEB') };
+  const token = await tokenDe(app, correo, 'WEB');
+  await verificarSegundoFactor(app, id, token);
+  return { correo, id, token };
 }
 
 /** Un código de seis dígitos que no vale ahora (ni en el paso anterior ni en el siguiente). */

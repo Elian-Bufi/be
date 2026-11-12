@@ -23,6 +23,7 @@ import type { RolDeQuien } from '../lib/retrato';
 import { useSesionRequerida } from '../lib/sesion-requerida';
 import { Cargando, ErrorConReintento } from './estados';
 import { Icono } from './icono';
+import { useAntesDeSalir } from './salida-segura';
 import { Retrato } from './retrato';
 
 export type EspacioDeNovedades = 'pro' | 'cuenta';
@@ -45,6 +46,7 @@ type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'listo'; items:
 
 export function CentroDeNovedades({ espacio }: { espacio: EspacioDeNovedades }) {
   const router = useRouter();
+  const antesDeSalir = useAntesDeSalir();
   const volver = espacio === 'pro' ? '/pro/news' : '/account/news';
   const { token, sesionPerdida } = useSesionRequerida(volver);
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
@@ -88,7 +90,7 @@ export function CentroDeNovedades({ espacio }: { espacio: EspacioDeNovedades }) 
     }
     const destino = destinoDeNovedad(r.datos.data);
     if (destino) {
-      router.push(destino);
+      antesDeSalir(() => router.push(destino));
       return;
     }
     // Sin pantalla en el website: queda leída acá mismo.

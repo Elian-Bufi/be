@@ -16,7 +16,7 @@
  *   no se muestra: «Pendientes», debajo, ya lo dice.
  */
 import { COPY_CARTERA, numero } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useId, useMemo, useState } from 'react';
 import { Icono } from '../../components/icono';
 import { Retrato } from '../../components/retrato';
@@ -53,7 +53,7 @@ export function TuSemana({ cartera, alAbrir }: { cartera: EstadoDeLaCartera; /**
     const area = COPY_CARTERA.dominio[f.domain];
     return (
       <li key={claveDeLaFicha(f)}>
-        <Link className="ficha-de-la-semana" href={conOrigenEnElEspacio(rutaQueResuelve(f))} data-ficha={claveDelPendiente(f)} onClick={() => alAbrir?.(f)}>
+        <Enlace className="ficha-de-la-semana" href={conOrigenEnElEspacio(rutaQueResuelve(f))} data-ficha={claveDelPendiente(f)} onClick={() => alAbrir?.(f)}>
           <Retrato nombre={quien} />
           {/* TA-71: si no entra, el nombre pasa a dos renglones y después se corta con «…»; entero queda en el texto del
               enlace, que es lo que lee el lector de pantalla, y en el título. */}
@@ -68,7 +68,7 @@ export function TuSemana({ cartera, alAbrir }: { cartera: EstadoDeLaCartera; /**
             </span>
           </span>
           <span className="visualmente-oculto">. Revisión de {area}: abrir</span>
-        </Link>
+        </Enlace>
       </li>
     );
   };

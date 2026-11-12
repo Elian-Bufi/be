@@ -170,9 +170,11 @@
 | DL-164 | Encargo de Dirección · 2026-11-04 (WP-FORMULARIOS-DE-INICIO, ratificado el mismo día) | RF-071 · UC-P32 · UC-P33 · REG-06-210 · REG-06-212 · 09v16.1 §22 · DL-152 · DL-137 D-7 | Los formularios de inicio piden seis tipos de respuesta que P0 no tiene, preguntas condicionales y que el profesional cargue lo que la persona le cuenta para que ella lo confirme; el 09 no tiene esas operaciones | **RATIFICADA** 2026-11-04 · **INTEGRADA** en `main` el 2026-11-05 (#234, `92db513`), con su cierre (#235, `bbfe316`), y publicada en la APK 0.20.0-candidata.1 · D-10 a D-15, de la implementación, **RATIFICADAS** 2026-11-05 («Ratifico las seis») |
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
 | DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) INTEGRADAS en `main` el 2026-11-07 (#247, `64508a8`) y publicadas en la APK 0.23.0-candidata.1 el 2026-11-08, con su cierre (#249), y en la 0.23.0-candidata.2 el 2026-11-11, con el arreglo del cierre al empezar un entrenamiento (#250): la «latest» que ofrece el website, que lee lo mismo que la .1**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
+| DL-167 | Pedido de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; actualizado el mismo día con el paquete V3 y sus decisiones) | RF-030 · RF-039 a RF-041 · UC-P10 · UC-P11 · UC-P15 · UC-P16 · UC-I04 · UC-P32 · REG-06-119 y 120 · INV-06-133 · REG-06-145 · B10-05 · B10-06 · B10-10 · DL-108 · DL-109 · DL-119 · DL-148 · DL-152 · DL-161 · DL-163 (D-17 a D-21) · DL-168 · DL-169 · DL-170 · DL-171 | Los editores del profesional piden mucho desplazamiento, no muestran totales, no dejan descartar un borrador, avisan tarde lo que impide activar y obligan a salir del plan para crear una receta; Dirección pide crear con un asistente de cuadros y presets, y editar en una estación de trabajo, antes de congelar el 25/11 | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · la etapa 1, en programación**: «todo el rediseño antes de congelar la app el 25/11», con la dirección de diseño del mismo día (crear con un asistente por pasos, los cuadros enfocados y los presets de primera clase; la estación de tres zonas para editar). Paquete declarado en `docs/paquetes/WP-EDITORES-PROFESIONAL.md` (ED-00 a ED-76, con lo que suma V3, seis defectos P0, el vidrio del website y la vertical de fuerza), en borrador. Ratificadas el 11/11: DJ-1, DJ-2, DJ-4 a DJ-11 y DJ-13 a DJ-16, ED-D5, ED-D7, ED-D9, ED-D10 y ED-D12. El 2026-11-12, Dirección aprobó la página de maquetas v3 entera: el alcance de las 53 partes, las maquetas, el resto de las ED-D como se recomendaban y las recomendaciones de Claude del 11/11 (R1 a R13) |
 | DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA e integrada en `main` (#252, 6a05fee)**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. **Ampliación a las plantillas** (API-TPN-01 y 04, API-TPL-01 y 04, con el mismo límite y el mismo mensaje en «Guardar como plantilla») integrada en `main` con #254 |
-| DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) programada en el PR #253, **sin integrar**; las demás partes, declaradas (`docs/paquetes/WP-USO-FINAL.md`) |
+| DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) **integrada** el 2026-11-12 (#253, main `549f41e3`); la **etapa 2** (UF-09, UF-11, UF-04, UF-06, UF-07, UF-03, UF-05 y UF-02) declarada ese día, en un PR en borrador y **sin integrar**, con las decisiones técnicas nuevas (UF-T15 en adelante) a ratificar (`docs/paquetes/WP-USO-FINAL.md` §13); la **primera mitad** (UF-09, UF-11, UF-04 y UF-06) programada ese día en el PR #257 |
 | DL-170 | Decisión de Dirección · 2026-11-11 (WP-APP-VUELTA-2) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · DL-166 (PV-2, PV-5, PV-11 y AVD-2) · DL-117 · DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · WP-ENTRENAMIENTO-SERIES §7.7 · GUIA-UX-UI I.6, I.8, III.3 y III.4 · F-143 | La APK se siente plana: el fondo es liso, las tarjetas son mates y opacas y el botón principal es casi blanco. Además, el Inicio de la 0.23 tiene seis errores de lógica: «Empezar» con una sesión en curso, «la que sigue» sin mirar lo hecho hoy, la figura cortada en Evolución, «Cómo se lee» desalineado, ceros en Tu historial y una actividad que se lee de dos maneras | **DECIDIDA por Dirección el 2026-11-11 · etapa A programada, sin integrar (#255)**: «Sí, Inicio + glassy en toda la app», en la misma APK que UF-01 y antes del congelamiento del 25/11; primero, el Inicio real en el teléfono de Dirección. Aprobadas la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; la etapa B espera el visto bueno a la muestra (`docs/paquetes/WP-APP-VUELTA-2.md` §10) |
+| DL-171 | Decisión de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; DJ-1 y DJ-2 del juicio del paquete V3) | 09v10:356 · 06:5431 · REG-06-182 · INV-06-192 · REG-06-202 a 207 · B10-06:426-431 · B10-08 · INV-06-152 · DL-126 · DL-161 · DL-167 | El legajo dice que BE no fija una fórmula de repetición máxima, y un RIR registrado puede ser el del plan sin marca; Dirección pide seguir la fuerza desde lo que se hizo, no desde lo indicado | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · el método, en programación (etapa 1)**: Epley v1 (n/30, bandas sobre las repeticiones equivalentes, RIR de 0 a 2), solo para el profesional y en el website, desde una serie que observa el profesional o que escribió la persona, con la procedencia por campo en la APK de esta actualización; el profesional elige un % y BE sugiere los kilos, que él confirma. Enmienda 09v10:356 sin tocar el legajo. ED-70 a ED-76; ED-D17 a ED-D21, decididas el 2026-11-12 como se recomendaban; el website le explica al profesional la regla del RIR de 0 a 2 (R3) |
 
 ---
 
@@ -7273,6 +7275,199 @@ sesión se volvía a dibujar sin fin. El arreglo, solo de la app, se integró co
 recorrido queda en `EVIDENCIA/APP-VUELTA-DE-ROSCA/LEEME.md`: Perfil, Inicio, «Quién ve qué», la cuenta nueva, la letra
 grande y la sesión con su descanso. La prueba en el teléfono queda escrita como hecha o como pendiente.
 
+## DL-167 — Los editores del profesional: crear con un asistente de cuadros y presets, editar en una estación de trabajo
+
+**Prioridad:** alta (cómo planifica cada profesional en el website) · **Documento:** RF-030 y RF-039 a RF-041 ·
+UC-P10, UC-P11, UC-P15 y UC-P16, con UC-I04 · UC-P32 · REG-06-119 y REG-06-120 · REG-06-123 e INV-06-133 · REG-06-126
+e INV-06-143 · REG-06-145 · B10-05 · B10-06 · B10-10 · DL-091 · DL-108 · DL-109 · DL-119 · DL-122 · DL-131 · DL-137 D-7 ·
+DL-145 · DL-148 · DL-152 · DL-161 · DL-163 (D-17 a D-21; TB-38, TB-39, TB-43, TB-46 y TB-47) · DL-168 · DL-169 (UF-00) ·
+DL-170 · DL-171 · **Estado:** DECIDIDA por Dirección el 2026-11-11 y **APROBADA el 2026-11-12** (00:30, Buenos Aires),
+con la página de maquetas v3 entera · la etapa 1 se programa desde el 2026-11-12
+(`docs/paquetes/WP-EDITORES-PROFESIONAL.md`, ED-00 a ED-76). **Ratificadas el 2026-11-11**, sobre el juicio del paquete
+V3: DJ-1, DJ-2, DJ-4 a DJ-11 y DJ-13 a DJ-16 (DJ-12, reemplazada), ED-D5 (por DJ-4), ED-D7 (por DJ-5), ED-D9, ED-D10 y
+ED-D12. **Decididas el 2026-11-12, como se recomendaban:** ED-D1 a ED-D4, ED-D6, ED-D8, ED-D11 y ED-D13 a ED-D16 y, de
+la fuerza, ED-D17 a ED-D21. **Ratificadas el 2026-11-12:** DJ-3 y las demás recomendaciones de Claude del 2026-11-11
+(R1 a R13 de la página de maquetas).
+
+**Qué dice lo vigente.**
+- Los editores de Entrenamiento y de Nutrición son una página larga: el marco del área, la barra de la versión, la
+  estructura y lo elegido, uno debajo del otro.
+  - La agenda mide 2,7 pantallas, la prescripción de un ejercicio 2,2 y la receta 2,9.
+  - Pedir información, con un formulario elegido, 10,2.
+- Un borrador no se descarta desde el website, aunque la API ya lo hace (TB-47).
+- Lo que impide activar aparece después de abrir la confirmación, y la limitación de la app de la persona aparece al
+  final.
+- Crear una receta obliga a salir del plan y volver con cuatro clics.
+- El editor de Nutrición no muestra cuánto aporta cada opción (D-20 está ratificada, sin programar).
+- Los avisos de un formulario se calculan solo al enviar.
+- Un enlace interno no avisa de los cambios sin guardar.
+- El website dice «asesorado» donde la app dice «persona», y una descripción de plantilla muestra códigos internos
+  («DL-165, ronda 2.1»).
+- Lo que destapó la revisión del paquete V3, confirmado en el código: el autoguardado vuelve a intentar cada 4 s ante
+  un error que no se arregla solo; una respuesta perdida puede terminar en un conflicto falso; activar con un 409 da un
+  error genérico; «Analizar» llama «declarado» a un RIR que pudo venir del plan; los habituales siguen con 16 KB; y el
+  editor de recetas y las plantillas no avisan al salir con cambios.
+- El website es mate (GUIA II.2), y BE no estima la repetición máxima (09v10:356; ver DL-171).
+
+**Qué pidió Dirección** (2026-11-11):
+- Sobre la auditoría de UX de los editores, «todo el rediseño antes de congelar la app el 25/11».
+- Que los editores sean «aptos para cualquiera, con las funciones de un profesional de alto nivel», con «menos scroll»,
+  y que «cada pantalla lleva a acciones claras».
+- Como dirección de diseño: «hacé intuitiva la creación de planes, que sean pequeñas pantallas o cuadros cuando aparece
+  mucha información, que sea un flujo de pantallas y cuadros para tomar decisiones, y que la carga de presets sea fácil
+  de usar e intuitiva».
+- El mismo día, el paquete V3 de ChatGPT (los editores y una vertical de fuerza) y, sobre el juicio de Claude a ese
+  paquete, las decisiones DJ-1 a DJ-16.
+- El vidrio del website, en este paquete (DL-170: «El vidrio del website va en WP-EDITORES-PROFESIONAL»).
+
+**Lo decidido** (Dirección, 2026-11-11):
+- **Crear es un asistente por pasos:** una decisión por paso, en cuadros, con «Paso N de 7». Se puede volver sin perder
+  nada, y el borrador se guarda entre pasos.
+  - En Entrenamiento: punto de partida, estructura, ejercicios, prescripción con un preset, días, revisar y activar.
+  - En Nutrición: punto de partida, objetivo con un reparto, tipos de día, comidas, opciones y alimentos con totales al
+    instante, revisar y activar.
+- **Editar es una estación de tres zonas:** la estructura, lo elegido y el contexto, con la barra de comandos fija y
+  cada zona con su desplazamiento. Es la Alternativa B de la auditoría.
+- **Mucha información va en un cuadro enfocado,** con un solo botón principal: el detalle de una serie, una receta, los
+  buscadores y «Antes de activar».
+- **Los presets son de primera clase:** una galería con vista previa, «De BE» y «Tuyos», que se aplican con un clic y
+  se ajustan después; y «Guardar como preset».
+- **Simple por defecto, potente cuando hace falta.**
+
+**Las ratificaciones del 2026-11-11, sobre el juicio del paquete V3** (§6.2 del paquete):
+- **DJ-1:** Epley v1 como el método de BE para estimar la repetición máxima, en esta actualización (DL-171).
+- **Las fuentes de la estimación:** la serie que observa el profesional; las series que escribió la persona; y su uso
+  para planificar: el profesional elige un % y BE sugiere los kilos, con el redondeo a la vista, que él confirma. Nunca
+  hay carga automática. Reemplaza la recomendación DJ-12 del juicio.
+- **DJ-2:** la app nueva guarda qué escribió la persona y qué vino del plan, en la APK de esta actualización (ED-70).
+  Las series de antes quedan fuera del cálculo.
+- **DJ-4:** el rango del día en Nutrición, «el día va de X a Y kcal según lo que elija», con «Sin dato» si falta, sin
+  una opción elegida y solo para el profesional (ED-34; reemplaza ED-D5).
+- **DJ-5:** la app de la persona deja de bloquear la activación: es un aviso (ED-08; reemplaza ED-D7).
+- **DJ-6:** una sola entrada fija, «Revisar y activar…», que abre «Antes de activar»: valida al abrirse, lleva a cada
+  cosa por corregir y deja «Activar la versión de [área]» apagado, con su motivo, hasta resolverlas. «Guardar ahora»,
+  fijo y secundario junto al estado. El borrador se numera («Versión 9 · en preparación») (ED-07 y ED-15).
+- **DJ-7:** sin % de macros antes del 25/11; los repartos, en gramos (ED-30 y ED-D2).
+- **DJ-8:** al aplicar un preset, las cargas se conservan y se marcan para revisar, con vista previa cuando el preset
+  pisa valores o cambia la cantidad de series (ED-11).
+- **DJ-9 a DJ-16, con la recomendación del juicio:** antes del 25/11, solo el arreglo del conflicto falso (ED-61);
+  «Guardado» sin hora después de recargar; «Guardar como preset» dice antes qué receta no entra; el tipo de serie,
+  después; la historia empieza con el profesional actual (RF-025); registrar fuera del plan u otro deporte, fuera; y de
+  los pedidos, solo el aviso de pendiente.
+- **ED-D10 y ED-D12,** reescritas como recomendó el juicio (§6.1 del paquete). **ED-D9** («persona»), aprobada antes.
+- **El vidrio,** también en el website del profesional, con la línea de la APK (ED-18).
+- **Se suman como P0** los seis defectos que destapó V3 (ED-60 a ED-65).
+
+**La aprobación del 2026-11-12** (Dirección, 00:30, Buenos Aires): la página de maquetas v3 entera.
+- El alcance de las 53 partes y las maquetas v3: se programa por etapas (§8 del paquete), desde la etapa 1.
+- Las ED-D, como se recomendaban, incluidas las de la fuerza (ED-D17 a ED-D21).
+- Las recomendaciones de Claude del 2026-11-11 (R1 a R13 de la página), ratificadas. Sobre R3, el RIR obligatorio de
+  0 a 2 en la serie observada: «de acuerdo con lo del RIR, aclarémoselo a los profesionales nomás». El website del
+  profesional explica la regla en tres lugares y la persona no ve nada de esto en la v1 (DL-171).
+
+**Lo que desafía o modifica.**
+- **TB-38 y TEST-TAG-025** (ratificadas el 2026-11-05), por DJ-4: el profesional ve el rango del día. La prueba de TB-39
+  pasa de «las opciones nunca se suman como un total del día» a «las alternativas de una comida nunca se suman entre sí;
+  el rango del día suma el mínimo y el máximo de cada comida». «Analizar» y DL-158 no cambian.
+- **La regla «un borrador no tiene número»** (`packages/domain/src/versiones-de-plan.ts`), por DJ-6: el borrador es
+  «Versión N · en preparación», con N = las activadas más uno.
+- **El 409 CLIENT_CAPABILITY_REQUIRED al activar** (DL-122), por DJ-5: activar deja de esperar que la persona haya
+  abierto una app con la capacidad. La entrega a un cliente sin ella sigue retenida.
+- **DL-161,** por DJ-2: la serie ejecutada suma un campo opcional, la procedencia por campo (ED-70). La
+  0.23.0-candidata.2 no lee una ejecución registrada con él: es el caso que DL-161 ya declaró.
+- **El límite de los habituales** (API-HAB-04 y 05, API-HAN-04 y 05) pasa de 16 KB a 700 KB, como en DL-168 (ED-64).
+- **La métrica del RIR de «Analizar»** cambia de nombre y de explicación (ED-63).
+- **El texto `noSePudoReintento` de `COPY_GUARDADO`** («… o con «Guardar cambios»») pasa a nombrar «Reintentar», la
+  acción que tiene al lado, por DJ-6 (ED-03). La etapa 1 lo había pasado a «Guardar ahora», que hace lo mismo; lo
+  corrigió la revisión adversaria del 2026-11-12. **La barra dice cada fallo de DL-168 con su texto**
+  (`falloEnLaBarra`), también el del autoguardado: sin respuesta, «No pudimos guardar los cambios. Tus cambios siguen
+  acá. Reintentá.»; demasiado grande, «No se pudo guardar: es demasiado grande. Tus cambios siguen acá.»; el rechazo,
+  «No se pudo guardar: no se aceptó el cambio. Tus cambios siguen acá.». Sin respuesta, ya no hay un segundo aviso igual
+  debajo de la barra.
+- **GUIA II.2, «Superficies mates»,** por el vidrio del website (ED-18).
+- **Los presets de BE son contenido nuevo de BE** (ED-D2): esquemas sin datos de la persona (estructuras, prescripciones
+  sin cargas y estructuras del día), sin repartos en % (DJ-7). Ningún ejercicio ni alimento elegido por BE, porque la
+  periodización y la elección son del profesional (INV-06-143).
+- **Las familias HAB y HAN suman operaciones** (API-HAB-06 a 08 y API-HAN-06 a 08) para la prescripción habitual y el
+  reparto habitual, en gramos: DL-109 se extiende acá.
+- **`leerNumero` no cambia** (DL-091). Si se aprueba ED-D8, una función nueva lee «2.400» como 2400 solo en los campos
+  enteros.
+- **La estimación de fuerza** y lo que enmienda del legajo (09v10:356, 06:5431, REG-06-182 y DL-126): DL-171.
+
+**Cómo se respeta el legajo.**
+- Versión privada → revisar → activar con confirmación, e historial (UC-I04). «Revisar» no juzga la calidad.
+- «¿Cuándo la revisás?», con «Sin fecha por ahora», no cambia (REG-06-145, TB-15).
+- BE no calcula el requerimiento (INV-06-133) ni escribe por su cuenta: un preset, la progresión o el escalado escriben
+  solo cuando el profesional los toca, con vista previa y sin una regla guardada.
+- Un hueco no es un cero. Nada califica (TEST-PRJ-009): ni «cumplimiento», ni «adherencia», ni «racha», ni colores que
+  juzguen.
+- Lo que lee la APK no cambia sin una decisión (DL-152, con la enmienda de DL-169: cuenta solo la última distribuida).
+  La única excepción es la procedencia por campo (ED-70), que decidió Dirección. Lo nuevo va en operaciones nuevas
+  (DL-137 D-7), y las que suma este paquete son solo del profesional.
+- La regla de B10-06 queda: el plan nace de un objetivo vigente, y el objetivo, de una evaluación.
+- La estimación de fuerza sigue DL-171: nunca desde la prescripción, nunca como marca y nunca para la persona.
+
+**Pruebas:** TEST-EDP-001 a 067 y, del método, RM-01 a RM-43, en `WP-EDITORES-PROFESIONAL-ORACULOS.md`, que se escribe
+al programar y empieza con la definición de terminado de diez puntos. Cada negativa, con su mutación. Las 73 tareas de
+`flujos-de-planificacion.mjs` se miden antes y después con el mismo script (§7 del paquete), y las nuevas (AC, BC y AF),
+aparte.
+
+**Recomendaciones de Claude del 2026-11-11, ratificadas por Dirección el 2026-11-12** (con el criterio que Dirección
+delegó: «salvo una decisión crítica, hacé lo que recomiendes»):
+- **DJ-3:** se aplica la regla de Dirección del 8/11, registrada en DL-170: «se celebra un acto, nunca un número». En la
+  v1 la estimación es solo del profesional (ED-D21), así que la app no celebra nada de fuerza, y el ejemplo del juicio
+  («Primera vez con 82,5 kg × 5») queda descartado. Si una etapa posterior muestra algo a la persona, se celebra el acto
+  (por ejemplo, «Registraste las 4 series»), nunca la carga ni la estimación.
+- **Los redespliegues:** `render.yaml` reconstruye la API con cualquier cambio en `packages/domain/**`. Lo que no
+  altera lo que la API acepta o devuelve (funciones que solo usa el website: textos, estados de guardado, cálculos de
+  pantalla) no necesita ventana; lo que cambia su conducta (rutas, migraciones, validaciones, el contrato de ED-70) va
+  en la ventana del vie 20. La IP del operador solo importa cuando hay una carga directa en la base de `test`, y se pide
+  después del último merge del día: no hacen falta ventanas fijas por ella (§8 del paquete).
+- **El orden de integración:** WP-USO-FINAL (DL-169), después WP-APP-VUELTA-2 (DL-170) y después este paquete (DL-167 y
+  DL-171), para que el índice de este documento no choque. UF-06 y UF-11, de WP-USO-FINAL, entran antes que la API de
+  fuerza (ED-72 y ED-74), o en la misma ventana.
+- **El vidrio del website (ED-18)** es una hoja: si no da el contraste medido en el peor punto, el website queda mate.
+- **Los presets de BE de Entrenamiento son siete:** tres estructuras («Cuerpo entero · 3 días», «Torso / Piernas ·
+  4 días» y «Empuje / Tirón / Piernas · 6 días») y cuatro prescripciones («Hipertrofia 4×8-12 · RIR 2 · 90 s», «Fuerza
+  5×5 · RIR 2 · 3 min», «Resistencia 3×15 · RIR 3 · 45 s» y «Técnica 3×8 · RIR 4»). Sigue valiendo ED-D2.
+- **La historia de una persona** empieza «desde el inicio del acompañamiento» (RF-025, DJ-14).
+- Las de la fuerza (el RIR de la serie observada, el rótulo, el interruptor de la evolución y lo que viaja con el plan),
+  en DL-171.
+
+**La etapa 1, programada el 2026-11-12** (rama `wp-editores-profesional`, PR #251, en borrador; §8 del paquete):
+- en el website, ED-01 a ED-07, ED-60 a ED-63 y ED-65; en el dominio, ED-71 (Epley v1, DL-171). Cada parte va en su
+  commit, con sus oráculos (TEST-EDP-002 a 009, 047 a 050 y 052; RM-01 a RM-35 y RM-43) y sus mutaciones;
+- nada de lo que la API acepta o devuelve cambia: se integra sin ventana (R1);
+- las decisiones que tomó Claude al programarla, EDT-01 a EDT-10, están en §6.3 del paquete, a ratificar por Dirección.
+  Entre ellas, EDT-04: el detalle técnico de un guardado que falla muestra el código del error, plegado
+  (10-B01:1146-1189 dice que no se muestra). Y EDT-10: lo que también devuelve la API y dice «asesorado» cambia con
+  ED-08.
+
+**Lo que queda abierto:**
+- ~~el sí de Dirección a las partes (ED-00 a ED-76) y a las maquetas corregidas~~: dado el 2026-11-12 (arriba);
+- EDT-01 a EDT-10 (§6.3 del paquete), a ratificar por Dirección;
+- ~~DJ-3, las recomendaciones de Claude del 2026-11-11 y las ED-D que faltaban~~: decididas y ratificadas el
+  2026-11-12;
+- la validación de los presets de BE (ED-D2), antes de publicarlos;
+- la ventana de redespliegue de la API, el vie 20, para lo que cambia su conducta: ED-08, ED-13, ED-64, ED-70, ED-72,
+  ED-74 y API-PLN-01 a 03;
+- la candidata del 25/11 con ED-70, armada junto con UF-01 (WP-USO-FINAL) y el vidrio de la APK (WP-APP-VUELTA-2);
+- ~~DL-169 todavía no está en `main`~~: integrada con #253 (`549f41e3`) y traída a esta rama. DL-170 sigue en #255:
+  este paquete la cita, así que se integra antes que él;
+- **ED-50** (P2): el texto de la declaración, «−10 % de carga», choca con la guardia de Entrenamiento, que solo admite
+  «% RM». Recomendación de Claude del 2026-11-11, ratificada por Dirección el 2026-11-12: cuando se programe, el texto
+  es «Bajar las cargas un 10 %», y la guardia admite «% de la carga» además de «% RM» (bajar una carga es una
+  indicación, no una calificación). Queda abierto solo hasta que se programe ED-50.
+- ~~El arreglo del límite de 16 KB por pedido (B28), en otro carril~~: resuelto por DL-168 (#252 y #254).
+
+**Condición de cierre:**
+- la CI pasa en `main` con las partes integradas;
+- la corrida de los flujos queda en `EVIDENCIA/EDITORES-PROFESIONAL/` antes y después, con las metas de §7 medidas,
+  cumplidas o no;
+- la galería de capturas está en Claro y Azul noche, a 1280, 1440 y 1920, con el vidrio;
+- la candidata del 25/11 trae ED-70 y se probó en el teléfono de Dirección;
+- Dirección probó el asistente, la estación y la estimación de fuerza.
+
 ## DL-168 — Un plan grande no se guardaba: el límite de 16 KB por pedido
 
 **Prioridad:** alta (Dirección carga casos reales en `test`) · **Documento:** 09v7 §4.1 (`400 INVALID_REQUEST`, «JSON/shape/parámetros
@@ -7495,6 +7690,68 @@ en `test`. La 0.24.0-candidata.1 salió ese día como «latest» (tag en `1cb3cd
 que lee: `VIGENTES = ['0.24.0-candidata.1']`, 89 operaciones (las 88 de la 0.23 y API-ACC-07). El congelado de la
 0.23.0-candidata.2 sale y se regenera desde su tag. Falta la prueba en el teléfono (§12.5 del paquete).
 
+**La etapa 2 (2026-11-12).** Dirección pidió todo el P0 antes del 25/11, cuando se congela la app, y ese día delegó las
+decisiones técnicas: «Okey a tus recomendaciones, cualquier cosa lo revisamos, pero no podemos frenar». La etapa 2 son
+las ocho partes P0 que quedan, sin UF-10 (§13 del paquete):
+- **el orden:** UF-09 (el catálogo sin demostración en producción), UF-11 (el segundo factor del profesional), UF-04 (la
+  entrada de los profesionales reales, API-ADM-14 y 15), UF-06 (los derechos de la persona), UF-07 (ayuda y contacto),
+  UF-03 (recuperar el acceso), UF-05 (los textos legales de verdad) y UF-02 (el gate del 08 §42), al final porque cita
+  la evidencia de todas;
+- **lo que depende de Dirección:**
+  - UF-03, la cuenta del proveedor de correo y el dominio propio. Mientras tanto, la recuperación asistida de UF-D9 y el
+    adaptador del proveedor, listo para cuando Dirección cargue la clave en Render; sin clave, la API no manda correos y
+    lo dice;
+  - UF-05, el texto, que redacta y valida la asesoría jurídica (condición 1 del gate). Se programa el mecanismo, y la
+    versión nueva queda sin publicar hasta esa validación;
+  - UF-07, las direcciones de soporte y de privacidad, por configuración;
+  - UF-10, que decide y aplica Dirección;
+  - UF-06, los plazos de la Ley 25.326, a confirmar con la asesoría;
+- **las decisiones técnicas nuevas** (UF-T15 en adelante) se toman con la recomendación y quedan a ratificar por
+  Dirección. Nada se integra sin su sí: la etapa va en un PR en borrador.
+
+**La primera mitad, programada (2026-11-12, PR #257 en borrador).** UF-09, UF-11, UF-04 y UF-06 quedaron en la rama
+`wp-uso-final-2`, cada una con su oráculo escrito antes del código y probado en rojo (TEST-UF-013, TEST-UF-014,
+TEST-UF-009 y TEST-UF-011), y con sus decisiones técnicas UF-T15 a UF-T33, a ratificar (§13.4 y §13.5 del paquete):
+- **UF-09:** con `APP_ENV=production`, la API no ofrece lo sembrado como demostración y nada nuevo lo acepta;
+- **UF-11:** una sesión actúa como profesional solo con el segundo factor verificado en ella (familia MFA, API-MFA-01 a
+  06); `/pro` lo pide y «Seguridad» lo administra. La app de la persona no cambia;
+- **UF-04:** Administración incorpora a un profesional real y le cambia el nombre profesional, con sus hechos
+  (API-ADM-14 y 15);
+- **UF-06:** la persona descarga lo suyo por una ruta firmada de 15 minutos y pide el acceso, la rectificación o la
+  supresión, que Administración resuelve con fundamento (API-RGT-01 a 03, API-EXP-01 y 02, API-ADM-16 y 17). Pide una
+  APK nueva («Tus datos», en Perfil).
+
+**La segunda mitad, programada (2026-11-12, PR #257 en borrador).** Siguió en la misma rama, en el orden UF-03, UF-07,
+UF-05 y UF-02, con los oráculos escritos antes del código y probados en rojo, y las decisiones técnicas desde UF-T34, a
+ratificar (§13.5 y §13.6 del paquete):
+- **UF-03:** la persona recupera el acceso con un código de un solo uso (API-ACC-P1-01 y 02, del 09 v0.12): la respuesta
+  es la misma exista o no la cuenta, la identidad no cambia y sus sesiones terminan. El correo de BE es un adaptador para
+  Brevo o Postmark que Dirección prende con `BE_CORREO_*`; sin él, Administración da el código con la recuperación
+  asistida (API-ADM-18). Pide una APK nueva (Iniciar sesión → «¿Olvidaste tu contraseña?»).
+- **UF-07:** el canal de ayuda y contacto sale de la configuración de la API (`BE_CONTACTO_SOPORTE` y
+  `BE_CONTACTO_PRIVACIDAD`, que define Dirección) y lo publica API-SOP-01, sin sesión. Está en el pie y en la cuenta del
+  website y en Perfil de la app (APK nueva); ninguna dirección real queda escrita en el código.
+- **UF-05:** el mecanismo de los textos de uso real. Las diez versiones nuevas (términos, privacidad, datos de salud,
+  cierre, B2 sanitario y no sanitario, evidencia visual y lo que se comparte entre áreas) están escritas **sin publicar**
+  (`packages/domain/src/textos-sin-publicar.ts`): no dicen «demostración», suceden a la vigente de su tipo con su hash y no
+  se pueden publicar sin la validación jurídica (condición 1 del gate) ni con datos «[A COMPLETAR …]». Publicadas,
+  «Antes de seguir» pide los términos y la privacidad nuevos a quien aceptó los anteriores (API-ACC-07, solo a un cliente
+  que declara la capacidad `pending-steps-texts-1`, así la 0.24 no los recibe) y API-ACC-08 registra el acto con la versión
+  que la pantalla mostró. Pide una APK nueva.
+- **UF-02:** el gate del 08 §42, condición por condición, en `EVIDENCIA/USO-FINAL/GATE-08-42.md`, con las cuatro del
+  §56.9. **Está cerrado:** 10 condiciones con evidencia, 1 en el PR, 10 parciales y 7 pendientes, la mayoría de Dirección
+  y la asesoría jurídica (los textos validados, los DPA, la transferencia, el plan de la base con sus copias y los
+  ensayos). Cada una tiene su evidencia o su dueño y una fecha propuesta, y una guardia (TEST-UF-018) lo sostiene en cada
+  PR. Hallazgo: suspender la cuenta de una persona (el menor descubierto, §24.7 c) no tiene operación de Administración.
+
+**Las revisiones adversarias de la etapa 2 (2026-11-12, mismo PR).** Dos revisiones, «aprobado con arreglos»; todos los
+hallazgos se comprobaron contra el código y se arreglaron (§13.8 del paquete), con las decisiones UF-T56 a UF-T60, a
+ratificar. Suma dos operaciones con DL-169: **API-ADM-19** (familia ADM, propia de BE: Administración restablece el
+segundo factor de un profesional, con fundamento) y **API-ACC-09** (ID nuevo de la familia ACC, que el 09 no usa: el texto
+de una versión publicada, sin sesión, para que la APK del 25/11 lea los textos que se publiquen después). Corrige el plan
+para publicar los textos (§13.7): no hace falta otra APK para los términos y la privacidad; A3, B2 y los que se aceptan
+al usarlos quedan pendientes para el PR de publicación.
+
 ## DL-170 — La APK con profundidad: vidrio en toda la app, primero en Inicio, y los errores de lógica de Inicio
 
 **Prioridad:** alta (la primera impresión de la APK, y datos equivocados a la vista en Inicio) · **Documento:**
@@ -7602,3 +7859,213 @@ una, con su mutación. El rendimiento se mide con `dumpsys gfxinfo`, antes y des
 - la prueba de contraste en verde, y el rendimiento medido antes y después;
 - en `EVIDENCIA/APP-VUELTA-2/LEEME.md`: las capturas de cada pantalla en los dos temas y con letra ×1,3, el visto bueno
   de Dirección a la muestra, y TalkBack escrito como hecho o como pendiente.
+
+## DL-171 — Epley v1: BE estima la repetición máxima, solo para el profesional, desde una serie escrita u observada
+
+**Prioridad:** alta (enmienda una regla del legajo, es una pregunta segura del tribunal, y la APK que se congela el
+25/11 tiene que traer la procedencia) · **Documento:** 09v10:356 · 06:5431 · REG-06-182 e INV-06-192 · REG-06-202 a 207
+(T-06-N12) · REG-06-158 · INV-06-152 · TEST-PRJ-004 · B10-06:426-431 · B10-08 (l. 87 y 122) · RF-025 · 08 §11 y §29 ·
+DL-126 · DL-152 y DL-169 (UF-00) · DL-161 · DL-163 D-13 · DL-167 (DJ-1, DJ-2 y DJ-12) · **Estado:** DECIDIDA por
+Dirección el 2026-11-11 y **APROBADA el 2026-11-12** con la página de maquetas v3 entera: ED-D17 a ED-D21, decididas
+como se recomendaban, y las recomendaciones de Claude del 2026-11-11, ratificadas, con la regla del RIR explicada al
+profesional (abajo) · el método (ED-71) se programa en la etapa 1, desde el 2026-11-12
+(`docs/paquetes/WP-EDITORES-PROFESIONAL.md`, ED-70 a ED-76).
+
+**Qué dice lo vigente.**
+- **09v10:356:** «No se fija fórmula propia de estimación de RM.» El contrato de la intensidad lo repite: la referencia
+  del % RM es un texto, «1RM estimado por método X» (B10-06:426-431), y «BE no fija fórmula»
+  (`contratos-entrenamiento.ts`, `IntensidadEntradaSchema`).
+- **06:5431:** «B-08 no fija fórmula de repetición máxima ni conversión automática entre criterios.»
+- **REG-06-182:** una marca personal deriva de ejecuciones registradas, bajo un criterio explícito; «B-11 no estima una
+  repetición máxima, no proyecta una marca futura y no introduce fórmulas de rendimiento no aprobadas». **INV-06-192:**
+  no se presenta «una estimación no declarada o un 1RM inferido como marca medida».
+- **B10-08** excluye el «1RM estimado como PR» y dice «marca observada ≠ 1RM estimado» (l. 87 y 122).
+- **DL-126:** ninguna carga se llama 1RM; la métrica de carga de «Analizar» dice «No es 1RM ni fuerza máxima, y no es una
+  marca personal».
+- **El dominio:** «B-08 no calcula», y el único canal para un valor derivado es el patrón T-06-N12 (REG-06-202), que hoy
+  tiene dos finalidades, la antropométrica y la del objetivo nutricional (`entrenamiento.ts`; `calculo.ts`).
+- **El dato:** al tildar una serie, la APK completa lo vacío con el plan y la marca `TYPED` en cuanto se escribe un campo
+  (`apps/mobile/src/series-de-la-sesion.ts`, `serieAlTildar`). Un RIR registrado puede ser el del plan sin ninguna
+  marca, aunque el contrato diga que «nunca se infiere» (INV-06-152; TEST-PRJ-004).
+
+**Qué pidió Dirección.** Trajo el paquete V3 de ChatGPT (2026-11-11), que propone seguir la fuerza por ejercicio, con la
+repetición máxima medida y la estimada, «especialmente útil cuando el peso corporal o cambios estéticos no reflejan una
+adaptación temprana» (V3, 03). Sobre el juicio de Claude a ese paquete, decidió el mismo día.
+
+**Lo decidido** (Dirección, 2026-11-11):
+- **DJ-1: sí a Epley v1 como el método de BE para estimar la repetición máxima, y se implementa en esta
+  actualización,** antes de congelar el 25/11, con las reglas de abajo: Epley con n/30; las bandas sobre las repeticiones
+  equivalentes; el RIR de 0 a 2 escrito por la persona; sin carga rápida, sin valores heredados del plan, sin ejercicios
+  sustituidos y sin 0 kg; kg y lb por separado; la carga por implemento o por lado, fuera de la v1; una lista cerrada de
+  ejercicios; por sesión, la serie elegible de mayor carga; el rótulo «estimación orientativa»; solo para el profesional
+  y en el website; nunca como marca; nunca invitar a un test máximo.
+- **Las fuentes:**
+  - **(a) la evaluación del profesional:** en el ejercicio, el profesional escribe una serie observada (kg ×
+    repeticiones, y el RIR si aplica) y BE calcula y guarda la estimación de esa persona para ese ejercicio, con la
+    fecha, el autor y el método;
+  - **(b) las series que hizo la persona:** solo las que escribió ella. Para eso, **la app nueva guarda la procedencia
+    por campo** (qué escribió la persona y qué vino del plan): **DJ-2 = sí, en la APK de esta actualización.** Las series
+    de antes, sin procedencia, quedan fuera del cálculo;
+  - **(c) planificar con ella:** el profesional elige un % y BE sugiere los kilos, con el redondeo a la vista, que el
+    profesional confirma. Nunca hay carga automática. Reemplaza la recomendación DJ-12 del juicio, que decía no calcular
+    cargas.
+
+**La especificación: `BE-E1RM`, versión 1, método `EPLEY_V1`** (ED-71).
+- **La cuenta.** n_eq = repeticiones + RIR. Si n_eq es 1, la estimación es la carga: una repetición con RIR 0 da la
+  carga, nunca 103,3 sobre 100. Si no, carga × (1 + n_eq/30), con n/30 exacto: con la constante 0,0333, 70 × 12 con RIR
+  2 daría 102,6 en lugar de 102,7.
+- **Las bandas, sobre n_eq:** núcleo, hasta 10; orientativa, de más de 10 a 12; fuera, más de 12, sin valor. Sobre n_eq y
+  no sobre las repeticiones: 70 × 10 con RIR 2 y 70 × 12 con RIR 0 dan lo mismo (98,0) y caen en la misma banda.
+  Dirección dijo «de 2 a 10» para el núcleo; lo que va de 1 a 2 entra también ahí, y con n_eq 1 la estimación es la
+  carga, como recomendó el juicio.
+- **Las entradas admisibles** (REG-06-204), todas juntas:
+  - el ejercicio, de la lista cerrada de la v1 (ED-D18) y sin sustituir en esa sesión;
+  - la fuente: una serie que escribió la persona (`TYPED`, con la carga, las repeticiones y el RIR de procedencia
+    `PERSON`) o una serie que observó el profesional (ED-72);
+  - la carga, mayor que 0, en kg o en lb, sin convertir;
+  - las repeticiones, enteras, desde 1;
+  - el RIR, de 0 a 2, con decimales;
+  - la base de la carga, ausente o TOTAL_EXTERNAL, y la de las repeticiones, ausente o PER_SET.
+- **Lo que queda fuera, con su motivo a la vista:** la carga rápida (`AS_PLANNED`); un valor que vino del plan; una serie
+  sin procedencia (registrada antes); sin RIR o con un RIR mayor que 2; más de 12 repeticiones equivalentes; un
+  ejercicio sustituido; sin carga o con 0 kg; la carga por implemento o las repeticiones por lado; un ejercicio fuera de
+  la lista.
+- **La regla por sesión:** de las series que entran de un ejercicio en una ejecución (el registro vigente: la corrección
+  vigente o el original), la de mayor carga, por unidad; a igual carga, la primera. No «la mayor estimación»: el máximo
+  de varias estimaciones con ruido sube solo cuando hay más series, y las series pesadas y cortas estiman mejor. Con el
+  interruptor «Incluir las de 11 a 12» de la evolución apagado, elige entre las de hasta 10 repeticiones equivalentes;
+  encendido, entre todas las de hasta 12 (abajo, en las recomendaciones de Claude).
+- **Cómo se muestra:** «≈ 98 kg», al medio kilo o a la libra entera, con «estimación · Epley v1» (de 11 a 12,
+  «estimación orientativa · Epley v1»: abajo, en las recomendaciones de Claude); la décima, solo en «Cómo se
+  calculó» (REG-06-158: mostrar no redondea en silencio). Con 8 repeticiones equivalentes, un RIR de diferencia mueve
+  cerca de un 2,6 %: la décima no es una precisión del método. Sin intervalo ni «±».
+- **La lista cerrada** es parte de la especificación: sumar un ejercicio es una versión nueva, y cada valor dice con qué
+  versión salió.
+- **Dónde vive.** Un método con identidad y versión inmutable (REG-06-203), especialización de T-06-N12 para
+  Entrenamiento (REG-06-202). Las estimaciones de la fuente (b) se calculan al leer, porque las ejecuciones no cambian;
+  las de la fuente (a) se guardan con la observación, como hecho histórico (REG-06-205). Una versión futura no reescribe
+  las anteriores.
+
+**Lo que enmienda** (el legajo no se edita; esta DL lo deja escrito):
+- **09v10:356.** BE fija un método propio, Epley v1, versionado, para que el profesional lo use. No reemplaza la
+  referencia del % RM de B10-06: el profesional puede seguir nombrando otro método en su referencia.
+- **06:5431.** B-08 sigue sin fijar una fórmula: el método vive en el canal de cálculo (REG-06-202), no en la captura.
+  Tampoco hay conversión automática entre criterios: ED-76 calcula una carga desde un % RM que escribe el profesional y
+  la escribe solo con su confirmación; nunca convierte un RIR en un % RM, ni al revés.
+- **REG-06-182.** Epley v1 queda aprobada por Dirección. La estimación no es una marca: es una métrica aparte, de la
+  familia «estimación», y nunca va en TRAINING_PERSONAL_RECORDS. Las marcas observadas, si llegan, siguen siendo un dato.
+- **DL-126.** Se aclara: ninguna carga se llama 1RM, y la métrica de carga sigue diciendo «No es 1RM ni fuerza máxima».
+  La estimación se llama «1RM estimado (Epley v1)» y siempre lleva su rótulo.
+- **La recomendación DJ-12** del juicio («la referencia nombra el método y la fecha, y no se calculan cargas») queda
+  reemplazada por la fuente (c). De ella se conserva que la referencia nunca lleva el valor.
+
+**Lo que se conserva tal cual.**
+- **INV-06-192 y B10-08:** la estimación nunca se presenta como una marca medida ni como un PR, y nunca se celebra.
+- **INV-06-143 e INV-06-133:** la decisión es del profesional. BE hace una cuenta cuando él la pide, la muestra y escribe
+  solo con su clic; una estimación nueva no cambia ninguna carga ya escrita.
+- **INV-06-152 y TEST-PRJ-004:** nada se infiere; con la procedencia por campo, por fin se puede comprobar.
+- **REG-06-207:** usarla para planificar no es adoptar una referencia (T-06-74): no se guarda una relación, y la
+  prescripción nombra el método y la fecha en su referencia del % RM.
+- **Lo indicado no es fuerza:** una prescripción nunca produce una estimación.
+
+**Quién la ve.**
+- Solo el profesional, en el website, con los permisos de Entrenamiento: para la serie observada, los de la evaluación
+  de entrenamiento (API-TRN-01 a 03); para la evolución, los de «Analizar» (el PDP y ser el profesional del plan). Lo
+  ajeno recibe el 404 de lo inexistente, y cada lectura queda auditada (08 §29).
+- La historia empieza con el profesional actual (RF-025): «desde el inicio del acompañamiento».
+- La persona no la ve: nada nuevo llega a la APK. Su serie observada entra en lo que puede pedir de sus datos cuando
+  exista UF-06 (ED-D21).
+- No viaja a otra área: no tiene fila en la matriz §3.1 (DL-163 D-13). La referencia del % RM, que sí viaja con el plan
+  (RES-06), nombra el método y la fecha, nunca el valor.
+
+**Los textos.** Ninguno dice «1RM real», «máximo real», «récord», «marca personal», «nuevo máximo», «test de 1RM» ni
+«probá tu máximo», tampoco en negación, y ninguno invita a hacer un máximo. La guardia de Entrenamiento suma esos
+términos para los textos de fuerza, con su mutación. Ninguna estimación dispara un aviso, una novedad ni «Te toca a
+vos».
+
+**La regla del RIR, explicada al profesional** (Dirección, 2026-11-12, sobre la recomendación R3: «de acuerdo con lo del
+RIR, aclarémoselo a los profesionales nomás»). El website del profesional dice por qué solo entran las series con RIR
+de 0 a 2, con un texto corto que sale del dominio (`COPY_FUERZA.reglaDelRir`, ED-71) y es el mismo en los tres lugares:
+«BE estima solo con series de RIR 0 a 2: más lejos del fallo, el RIR que se escribe es menos confiable.» La persona no
+ve nada de esto en la v1 (ni la regla, ni la serie observada, ni la estimación).
+- **El cuadro «Registrar una serie observada»** (ED-72), debajo del campo del RIR. *Dado* el cuadro recién abierto,
+  *cuando* el profesional llega al campo del RIR, *entonces* el campo dice «De 0 a 2» y, debajo, la regla; con 80 kg × 5
+  y RIR 3, el cuadro dice «Con un RIR mayor que 2 no se estima» y no guarda nada.
+- **«Cómo se calculó»** (ED-73), junto a la banda. *Dado* una sesión con 80 × 8 con RIR 2 y otra serie con RIR 3,
+  *cuando* el profesional abre «Cómo se calculó» de su valor, *entonces* lee la regla y, entre las series que no
+  entraron, «Serie 2: el RIR es mayor que 2».
+- **El estado vacío de la tarjeta** (ED-75), cuando falta una serie que entre. *Dado* un ejercicio de la lista cuyas
+  series escritas por la persona tienen RIR 3, o ningún RIR, *cuando* se abre su «Detalle», *entonces* la tarjeta dice
+  «Todavía no hay series que permitan estimar» y la regla, con «Registrar una serie observada», sin ningún valor.
+
+**La API, la base y la APK.**
+- **La procedencia** (ED-70): un campo opcional de la serie ejecutada, `fieldOrigins`, con `PERSON` o `PLAN` para la
+  carga, las repeticiones y el RIR que tengan valor, en API-TRN-15 a 20 y 19-LISTA. Sin migración: las series viven en
+  el JSON del borrador, la ejecución y la corrección. Como DL-161 I-1, lo que no existe no se guarda.
+- **La serie observada** (ED-72): la familia nueva **API-FZA-01 a 03** (registrar, listar, y corregir o anular por
+  sucesión) y una tabla nueva, de solo agregar; la migración solo agrega. La guardia de trazabilidad suma FZA con esta
+  DL.
+- **La evolución** (ED-74): una clave nueva de API-PRJ-01, con su derivación (`BE-E1RM`, versión 1, `EPLEY_V1`).
+- **La APK de esta actualización** manda la procedencia y no muestra nada nuevo. La API la acepta antes (la ventana de
+  redespliegue del vie 20), y la 0.23.0-candidata.2 no lee una ejecución registrada con ella: es el caso de DL-161,
+  aceptado por UF-00.
+- **Si la candidata del 25/11 no llega con ED-70,** rige la regla conservadora hasta la próxima APK: solo cuenta la
+  fuente (a).
+
+**Las fuentes.** La fórmula y su forma n/30: Epley, B. (1985), *Poundage chart*, Boyd Epley Workout. Las bandas y sus
+límites: Brzycki (1993), sobre la predicción desde las repeticiones hasta la fatiga; Reynolds, Gordon y Robergs (2006,
+*Journal of Strength and Conditioning Research*), sobre la precisión según las repeticiones; Nuzzo y colaboradores
+(2024, *Sports Medicine*), sobre cuántas repeticiones se hacen a cada porcentaje del máximo. El RIR como medida: Zourdos
+y colaboradores (2016, *Journal of Strength and Conditioning Research*); y su precisión: Halperin y colaboradores (2022,
+*Sports Medicine*). Ninguna valida que repeticiones + RIR tenga el mismo error en todas las personas, ejercicios y
+equipos: por eso es una estimación, y la banda de 11 a 12, «orientativa». **No se citan:** Hughes y colaboradores
+(2020), que está retractada (PMID 33337690; la retractación, PMID 33470601), ni Macarilla (2022), que trata la
+predicción por velocidad y no Epley. Las fichas completas se verifican al citarlas en la tesis.
+
+**Pruebas:** RM-01 a RM-43 (§5.8 del paquete): las del método (RM-01 a RM-35 y RM-43), en
+`estimacion-de-fuerza.test.ts`; las de la observación, el cálculo de la carga y los permisos (RM-36 a RM-42), en las
+de ED-72, ED-76 y ED-74. Y los oráculos TEST-EDP-059 a 067, cada negativa con su mutación.
+
+**Recomendaciones de Claude del 2026-11-11, ratificadas por Dirección el 2026-11-12** (con el criterio que Dirección
+delegó: «salvo una decisión crítica, hacé lo que recomiendes»):
+- **El RIR de la serie observada** («y el RIR si aplica», de la fuente (a)): obligatorio, de 0 a 2. Si la serie fue al
+  fallo, el RIR es 0 y se escribe igual; con un RIR mayor que 2, Epley no estima, y una observación que no se puede
+  estimar no se guarda (ED-D19). Sin RIR, el cuadro dice el motivo en palabras: «Sin RIR no se puede estimar» (ED-72).
+- **El rótulo:** «orientativa» pasa a ser solo el nombre de la banda de 11 a 12. Cualquier estimación se rotula
+  «estimación» («≈ 86,5 kg · 11 nov · estimación · Epley v1»), y la de 11 a 12, «estimación orientativa». Precisa el
+  rótulo de lo decidido (ED-71 y ED-73 a ED-75).
+- **El interruptor «Incluir las de 11 a 12» y la regla por sesión** (ED-74): viene apagado. Apagado, la regla elige la
+  serie que entra de mayor carga entre las de hasta 10 repeticiones equivalentes, y una sesión que solo tiene series de
+  11 a 12 queda sin punto; encendido, entre todas las de hasta 12. La tarjeta (ED-75) usa la regla apagada; si la
+  última sesión con series que entran solo tiene de 11 a 12, muestra la de mayor carga de ellas como «estimación
+  orientativa». Una sesión con 70 × 12 con RIR 0 y 65 × 8 con RIR 2 da, apagado, 65 × (1 + 10/30) = 86,67 kg, núcleo,
+  «≈ 86,5 kg» al medio kilo; encendido, 70 × (1 + 12/30) = 98,0 kg, hueco (RM-43).
+- **«Cómo se calculó»** (ED-73) dice «No es una indicación de carga: la carga la elegís vos con un % RM», como ED-76.
+- **Lo que viaja con el plan:** con el criterio % RM, el plan lleva el % y la carga (RES-06), y con los dos se deduce la
+  estimación (72,5 ÷ 0,75 ≈ 96,7 kg). Se acepta: es un dato de la propia persona y no expone nada a terceros. RES-06 no
+  cambia.
+
+**Precisiones de la etapa 1 (2026-11-12), a ratificar por Dirección** (las destapó la revisión adversaria; no cambian el
+método):
+- **La banda orientativa se nombra «de más de 10 a 12».** El RIR admite decimales: 10 con RIR 0,5 son 10,5 repeticiones
+  equivalentes, y ya es orientativa. «De 11 a 12» la dejaba afuera en palabras, al lado de su propia cuenta en «Cómo se
+  calculó». El texto de la banda dice «de más de 10 a 12 repeticiones equivalentes», y el interruptor de ED-74, «Incluir
+  las de más de 10 a 12» (la maqueta decía «las de 11 a 12»). «Las de 11 a 12», en esta DL y en el paquete, nombra esa
+  misma banda.
+- **Lo que se muestra se redondea sobre la cuenta exacta.** El valor se calcula con una sola división, y el medio kilo,
+  la libra y la décima salen de la cuenta hecha con enteros, mitad hacia arriba: 41,25 × 12 con RIR 0 es 57,75 justo, y
+  se muestra «≈ 58 kg» y 57,8 kg, como en la cuenta a mano. En binario quedaba 57,749999… y se mostraba 57,5 y 57,7.
+
+**Lo que queda abierto:**
+- ~~ED-D17 a ED-D21~~: decididas el 2026-11-12 como se recomendaban (el redondeo hacia abajo, de a 2,5 kg de entrada;
+  los seis ejercicios con barra de la lista de la v1; la observación que no se estima no se guarda; la estimación la
+  elige el profesional; la persona no ve su observación en la v1). ~~DJ-3 y las recomendaciones de Claude del
+  2026-11-11~~: ratificadas el 2026-11-12;
+- el 1RM medido con protocolo (D-V3-03), para después.
+
+**Condición de cierre:**
+- ED-70 integrada, con la API desplegada en `test` y la candidata del 25/11 publicada y probada en el teléfono de
+  Dirección;
+- ED-71 y ED-72 integradas, con RM-01 a RM-43 en verde;
+- en `test`, una serie observada y una sesión escrita con la app nueva, con su estimación y «Cómo se calculó», vistas por
+  Dirección.

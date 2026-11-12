@@ -114,6 +114,24 @@ test('TEST-UF-005 · un paso que el website no conoce no se saltea, aunque venga
   assert.deepEqual(N.pasoQueSigue(pasos({ step: 'EMAIL_VERIFICATION', suggestion: null }, { step: 'DISPLAY_NAME', suggestion: null })), { tipo: 'desconocido' });
 });
 
+test('TEST-UF-010 · la versión nueva de los textos: el paso trae el texto que el website tiene para esa versión; una que no tiene pide recargar', async () => {
+  const { VERSION_VIGENTE } = await import('@be/domain');
+  const terminos = VERSION_VIGENTE.TERMINOS;
+  const privacidad = VERSION_VIGENTE.PRIVACIDAD_INFO;
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'ACCEPT_TERMS', suggestion: terminos.id }, { step: 'ACKNOWLEDGE_PRIVACY', suggestion: privacidad.id })), {
+    tipo: 'textos',
+    pendientes: [
+      { texto: 'TERMS', version: terminos },
+      { texto: 'PRIVACY', version: privacidad },
+    ],
+  });
+  // Una versión que este website no tiene (publicada después de construirlo): recargar trae la nueva.
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'ACCEPT_TERMS', suggestion: 'terminos-2099-01' })), { tipo: 'desconocido' });
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'ACCEPT_TERMS', suggestion: null })), { tipo: 'desconocido' });
+  // El nombre va primero.
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'DISPLAY_NAME', suggestion: null }, { step: 'ACCEPT_TERMS', suggestion: terminos.id })), { tipo: 'nombre', sugerencia: null });
+});
+
 test('TEST-UF-005 · sin respuesta no se deja pasar: se reintenta; una sesión que ya no sirve vuelve a Iniciar sesión', () => {
   for (const sin of [RED, api(503, 'SERVICE_UNAVAILABLE'), api(500, 'INTERNAL_ERROR'), api(429, 'RATE_LIMITED'), api(200, 'RESPUESTA_NO_RECONOCIDA'), api(404, 'NOT_FOUND')]) {
     assert.deepEqual(N.pasoQueSigue(sin), { tipo: 'sin-respuesta' }, JSON.stringify(sin));
@@ -144,7 +162,9 @@ test('TEST-UF-005 · después de un 409, si lo leído es lo que se quería guard
 
 test('TEST-UF-005 · la compuerta envuelve a /account y a /pro, pregunta API-ACC-07 y no está en /admin', () => {
   for (const layout of ['src/app/account/layout.tsx', 'src/app/pro/layout.tsx']) {
-    assert.match(leer(layout), /<AntesDeSeguir espacio="(cuenta|pro)">\{children\}<\/AntesDeSeguir>/, layout);
+    // UF-11 (DL-169): en /pro la página va, además, adentro del segundo factor del profesional; «Antes de seguir» sigue
+    // envolviendo todo.
+    assert.match(leer(layout), /<AntesDeSeguir espacio="(cuenta|pro)">\s*(\{children\}|<SegundoFactorDelProfesional>\{children\}<\/SegundoFactorDelProfesional>)\s*<\/AntesDeSeguir>/, layout);
   }
   const compuerta = leer('src/components/antes-de-seguir.tsx');
   assert.match(compuerta, /api\.loQueFaltaParaSeguir\(token\)/);

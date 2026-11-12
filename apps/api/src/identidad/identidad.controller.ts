@@ -11,7 +11,7 @@ import { PerfilPropioService } from './perfil-propio.service';
 import { RegistroService } from './registro.service';
 
 /**
- * API-ACC-01, ACC-05, ACC-06 (con su lectura, ACC-06-PROPIA), ACC-07 (DL-169) y ACC-P1-03 (09v8 §4; 09v12). Prefijo
+ * API-ACC-01, ACC-05, ACC-06 (con su lectura, ACC-06-PROPIA), ACC-07 y ACC-08 (DL-169) y ACC-P1-03 (09v8 §4; 09v12). Prefijo
  * global /api/v1.
  */
 @Controller()
@@ -58,6 +58,22 @@ export class IdentidadController {
   loQueFalta(@Query() query: Record<string, unknown>, @Req() req: SolicitudAutenticada & SolicitudConContexto): Promise<unknown> {
     sinParametrosDeQuery(query);
     return this.perfilPropio.loQueFaltaParaSeguir(actorDe(req), contextoDe(req));
+  }
+
+  /**
+   * API-ACC-08 — SESSION. Aceptar la versión vigente de los términos o de la privacidad (UF-05, DL-169). Sin
+   * Idempotency-Key: idempotente por naturaleza (201 con el acto nuevo, 200 si ya estaba aceptada).
+   */
+  @Post('me/legal-acceptances')
+  @UseGuards(SesionGuard)
+  async aceptarVersionVigente(
+    @Body() cuerpo: unknown,
+    @Query() query: Record<string, unknown>,
+    @Req() req: SolicitudAutenticada & SolicitudConContexto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.perfilPropio.aceptarVersionVigente(actorDe(req), cuerpo, contextoDe(req)));
   }
 
   /** API-ACC-06 — SESSION. Sin Idempotency-Key: concurrencia por `expectedVersion` (09v8:509-554). */

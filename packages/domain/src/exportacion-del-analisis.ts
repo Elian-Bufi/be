@@ -17,7 +17,7 @@ import { redondeoDePresentacion } from './calculo-nutricional';
 import type { EscalonDelObjetivoApi, IndicadoDelDiaApi, MetricaNutricional, PuntoAnalitico, SerieAnalitica } from './contratos-analisis';
 import { motivoCortoSinIndicadoDelDia, objetivoParaExportar } from './copy-comparacion-nutricional';
 import { COPY_REGISTRO_POR_NIVELES } from './copy-entrenamiento';
-import { VERSION_DEL_DICCIONARIO, type DefinicionDeMetrica } from './metricas-del-analisis';
+import { VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO, VERSION_DEL_DICCIONARIO, type DefinicionDeMetrica } from './metricas-del-analisis';
 import { esPuntoDeCargaRapida } from './series-del-analisis';
 import { calidadEnPalabras, comidasDelPlanEnPalabras, NUTRIENTE_DE_LA_METRICA } from './nutricion-del-analisis';
 import { claseEnPalabras } from './antropometria-del-analisis';
@@ -143,11 +143,11 @@ const objetivoDeLaFila = (s: SerieParaExportar, desde: string, hasta: string): s
 export function csvDelAnalisis(p: PedidoDeExportacion): string {
   const lineas = [
     fila(['BE · Analizar', 'exportación de datos']),
-    fila(['Asesorado', celdaDeTexto(p.asesorado)]),
+    fila(['Persona', celdaDeTexto(p.asesorado)]),
     fila(['Período', `${p.desde} a ${p.hasta} (fechas civiles)`]),
     fila(['Zona horaria', p.zona]),
     fila(['Generado', p.generadoEl]),
-    fila(['Diccionario de métricas', VERSION_DEL_DICCIONARIO]),
+    fila(['Diccionario de métricas', `${VERSION_DEL_DICCIONARIO} · textos ${VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO}`]),
     fila(['Métricas', celdaDeTexto(p.series.map((s) => `${s.nombre} (${s.serie.unit})`).join(' · '))]),
     fila([
       'Cómo leer',

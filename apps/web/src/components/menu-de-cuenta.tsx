@@ -20,7 +20,7 @@
  * fuera también lo cierra, y también salir de él con el teclado: abierto, tapa lo que tiene debajo, y el foco no puede
  * quedar detrás de un panel (WCAG 2.2, 2.4.11).
  */
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { aplicarTema, leerTema, NOMBRE_DEL_TEMA, sePuedeGuardar, TEMA_PREDETERMINADO, TEMAS, temaValido, type Tema } from '../lib/apariencia';
@@ -110,23 +110,33 @@ export function MenuDeCuenta() {
       {abierto ? (
         <div id={`${id}-panel`} className="menu-de-cuenta__panel">
           {conSesion && !ruta.startsWith('/account') ? (
-            <Link href="/account" className="menu-de-cuenta__opcion">
+            <Enlace href="/account" className="menu-de-cuenta__opcion">
               <Icono nombre="persona" />
               <span>
                 Datos de la cuenta
                 <span className="nota">Estado, privacidad y seguridad</span>
               </span>
-            </Link>
+            </Enlace>
           ) : null}
           {/* La guía (DL-145): las ayudas de las pantallas, juntas. Solo en el espacio profesional, que es de lo que habla. */}
           {conSesion && ruta.startsWith('/pro') && ruta !== '/pro/guia' ? (
-            <Link href="/pro/guia" className="menu-de-cuenta__opcion">
+            <Enlace href="/pro/guia" className="menu-de-cuenta__opcion">
               <Icono nombre="ayuda" />
               <span>
                 Guía del espacio profesional
                 <span className="nota">Cómo se lee cada pantalla</span>
               </span>
-            </Link>
+            </Enlace>
+          ) : null}
+          {/* UF-11 (DL-169): el segundo factor del profesional, en el espacio profesional. */}
+          {conSesion && ruta.startsWith('/pro') && ruta !== '/pro/security' ? (
+            <Enlace href="/pro/security" className="menu-de-cuenta__opcion">
+              <Icono nombre="persona" />
+              <span>
+                Seguridad de tu acceso
+                <span className="nota">Tu segundo factor y sus códigos</span>
+              </span>
+            </Enlace>
           ) : null}
           <fieldset className="menu-de-cuenta__apariencia">
             <legend>Apariencia</legend>

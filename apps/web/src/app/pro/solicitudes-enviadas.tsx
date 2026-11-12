@@ -14,6 +14,7 @@ import { ICONO_DE_FALLA, razonDeFalla } from '../../lib/fallas';
 import { fecha, horaDelDia } from '../../lib/formato';
 import type { EstadoDeListaCompleta } from '../../lib/lista-completa';
 import { useNombres } from '../../lib/nombres-ocultos';
+import { estadoDeLaSolicitud } from './vinculo-en-palabras';
 
 export type EstadoDeLasSolicitudes = EstadoDeListaCompleta<PaginaDeUnaLista<SolicitudDeVinculo>>;
 
@@ -92,7 +93,7 @@ export function SolicitudesEnviadas({
             <caption className="visualmente-oculto">Solicitudes de vínculo que enviaste</caption>
             <thead>
               <tr>
-                <th scope="col">Asesorado</th>
+                <th scope="col">Persona</th>
                 <th scope="col">Alcance</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Enviada</th>
@@ -101,11 +102,11 @@ export function SolicitudesEnviadas({
             <tbody>
               {propias.map((s) => (
                 <tr key={s.relationshipRequestId} data-estado={s.state}>
-                  <td data-etiqueta="Asesorado">{delAsesorado(s.advisee)}</td>
+                  <td data-etiqueta="Persona">{delAsesorado(s.advisee)}</td>
                   <td data-etiqueta="Alcance">
                     {s.scope.label} · {ETIQUETA_DE_FINALIDAD[s.purpose]}
                   </td>
-                  <td data-etiqueta="Estado">{COPY_VINCULO.estadoDeSolicitud[s.state]}</td>
+                  <td data-etiqueta="Estado">{estadoDeLaSolicitud(s.state, s.state === 'PENDIENTE' ? delAsesorado(s.advisee) : null)}</td>
                   <td data-etiqueta="Enviada">{fecha(s.createdAt)}</td>
                 </tr>
               ))}

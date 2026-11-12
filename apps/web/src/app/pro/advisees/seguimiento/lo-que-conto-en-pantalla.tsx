@@ -12,7 +12,7 @@
  * De solo lectura: cada solicitud abre su detalle en la pestaña Información, con el retorno a la ficha.
  */
 import { COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, type DetalleDeSolicitudV2, type SolicitudDeFormulario, type VersionDePlantillaV2 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useId } from 'react';
 import { BloqueDeEstado } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -62,7 +62,7 @@ export function LoQueContoAlEmpezar() {
       </ul>
       {otras > 0 ? (
         <p className="lo-que-conto__otras">
-          <Link href={aLaPestana()}>{otras === 1 ? 'Ver la otra solicitud respondida' : 'Ver las otras solicitudes respondidas'}</Link>
+          <Enlace href={aLaPestana()}>{otras === 1 ? 'Ver la otra solicitud respondida' : 'Ver las otras solicitudes respondidas'}</Enlace>
         </p>
       ) : null}
     </section>
@@ -87,7 +87,7 @@ function SolicitudRespondida({ solicitud, href }: { solicitud: SolicitudDeFormul
     return (
       <li className="lo-que-conto__solicitud">
         <h3>{solicitud.templateName}</h3>
-        <Link href={href}>Ver la solicitud</Link>
+        <Enlace href={href}>Ver la solicitud</Enlace>
       </li>
     );
   }
@@ -112,10 +112,10 @@ function SolicitudRespondida({ solicitud, href }: { solicitud: SolicitudDeFormul
           </div>
         ))}
       </dl>
-      <Link className="lo-que-conto__abrir" href={href}>
+      <Enlace className="lo-que-conto__abrir" href={href}>
         {q.hayMas ? 'Ver todas sus respuestas' : 'Ver la solicitud'}
         <span className="visualmente-oculto"> · {q.titulo}</span>
-      </Link>
+      </Enlace>
     </li>
   );
 }

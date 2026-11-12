@@ -11,6 +11,9 @@ import type { Resultado } from './cliente-http';
  *   sigue en pantalla durante la sesión, pero no se promete recuperarlo si se cierra la página.
  * Un autoguardado guarda la preparación: no activa planes, no registra revisiones ni confirma actos profesionales.
  */
+/** DL-168: sin respuesta, con una que no se entiende o con un 5xx. Lo dice la barra, también en el autoguardado (ED-03). */
+const SIN_RESPUESTA = 'No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.';
+
 export const COPY_GUARDADO = {
   guardando: 'Guardando…',
   guardadoA: (hora: string): string => `Guardado a las ${hora}`,
@@ -18,7 +21,15 @@ export const COPY_GUARDADO = {
   pendiente: 'Pendiente de guardar',
   pendienteIncompleto: 'Pendiente de guardar: falta completar algo',
   noSePudo: 'No se pudo guardar',
-  noSePudoReintento: 'No se pudo guardar: se reintenta al seguir editando o con «Guardar cambios»',
+  // ED-03 (DJ-6): «Guardar cambios» dejó de existir. El fallo nombra «Reintentar», la acción que tiene al lado (la
+  // revisión adversaria de la etapa 1: nombraba «Guardar ahora», que hace lo mismo). Sin el motivo, el texto genérico.
+  noSePudoReintento: 'No se pudo guardar: se reintenta al seguir editando o con «Reintentar»',
+  /** ED-03 · El fallo en la barra, por su motivo (DL-168), con «Reintentar» al lado y el detalle técnico plegado. */
+  falloEnLaBarra: {
+    SIN_RESPUESTA,
+    DEMASIADO_GRANDE: 'No se pudo guardar: es demasiado grande. Tus cambios siguen acá.',
+    OTRO: 'No se pudo guardar: no se aceptó el cambio. Tus cambios siguen acá.',
+  },
   conflictoCorto: 'No se pudo guardar: el borrador cambió en otra pestaña',
   conflicto:
     'Este borrador cambió en otra pestaña o en otro equipo. Lo tuyo no se guardó, para no pisar esos cambios: sigue en pantalla, así podés copiar lo que necesites.',
@@ -26,9 +37,22 @@ export const COPY_GUARDADO = {
   cargarGuardadaAclaracion: 'Reemplaza lo que tenés en pantalla por lo guardado.',
   // DL-168: por qué no se guardó, dicho claro. Lo escrito sigue en pantalla: el editor no lo toca al fallar, y salir con
   // cambios sin guardar pide confirmar (`useCambiosSinGuardar`).
-  sinRespuesta: 'No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.',
+  sinRespuesta: SIN_RESPUESTA,
   demasiadoGrande:
     'El plan es demasiado grande para guardarlo de una vez. Tus cambios siguen acá: quitá lo que no haga falta (opciones, semanas o notas largas) y volvé a guardar.',
+  // ED-03 (DJ-6): la barra de los editores. «Guardar ahora» es fijo y secundario: guarda sin esperar la pausa, y está
+  // apagado, con su motivo, cuando no hay nada que guardar.
+  guardarAhora: 'Guardar ahora',
+  nadaQueGuardar: 'No hay cambios sin guardar.',
+  yaSeEstaGuardando: 'Se está guardando.',
+  primeroLaVersionGuardada: 'Este borrador cambió en otra pestaña: primero cargá la versión guardada.',
+  // ED-03: un fallo ofrece «Reintentar», con el detalle técnico plegado: la operación, el motivo, el código y la hora,
+  // sin datos de la persona.
+  reintentar: 'Reintentar',
+  detalleTecnico: 'Detalle técnico',
+  guardarElBorrador: 'guardar el borrador',
+  sinDatosDeLaPersona: 'sin datos de la persona',
+  motivoDelFallo: { SIN_RESPUESTA: 'sin respuesta', DEMASIADO_GRANDE: 'demasiado grande', OTRO: 'rechazado' },
 } as const;
 
 /**
@@ -51,6 +75,38 @@ export function falloDeGuardado(r: Resultado<unknown>): FalloDeGuardado {
   return 'OTRO';
 }
 
+/**
+ * ED-03 · El detalle técnico de un guardado que falló: por qué (en palabras), el código de la respuesta, si la hubo, y la
+ * hora. Nunca lleva lo que se mandó ni nada de la persona: es para contarle a soporte qué pasó.
+ */
+export interface DetalleDelFallo {
+  readonly motivo: FalloDeGuardado;
+  /** «503 DB_UNAVAILABLE»; `null` sin respuesta. */
+  readonly codigo: string | null;
+  /** La hora del intento, ya formateada. */
+  readonly hora: string;
+}
+
+export function detalleDelFallo(r: Resultado<unknown>, hora: string): DetalleDelFallo {
+  return { motivo: falloDeGuardado(r), codigo: r.ok || r.tipo === 'RED' ? null : `${r.status} ${r.codigo}`, hora };
+}
+
+/** «guardar el borrador · sin respuesta · 10:44 · sin datos de la persona». */
+export function textoDelDetalleDelFallo(d: DetalleDelFallo, operacion: string = COPY_GUARDADO.guardarElBorrador): string {
+  return [operacion, COPY_GUARDADO.motivoDelFallo[d.motivo], ...(d.codigo ? [d.codigo] : []), d.hora, COPY_GUARDADO.sinDatosDeLaPersona].join(' · ');
+}
+
+/**
+ * ED-03 · Por qué «Guardar ahora» está apagado, o `null` si se puede tocar. Con algo a medio escribir sigue encendido:
+ * tocarlo lista lo que falta, cada cosa con su lugar.
+ */
+export function motivoSinGuardarAhora(e: Pick<EntradaDeGuardado, 'guardando' | 'sucio' | 'conflicto'>): string | null {
+  if (e.guardando) return COPY_GUARDADO.yaSeEstaGuardando;
+  if (e.conflicto) return COPY_GUARDADO.primeroLaVersionGuardada;
+  if (!e.sucio) return COPY_GUARDADO.nadaQueGuardar;
+  return null;
+}
+
 export type TipoDeGuardado = 'guardando' | 'guardado' | 'pendiente' | 'fallo';
 
 export interface EntradaDeGuardado {
@@ -61,6 +117,8 @@ export interface EntradaDeGuardado {
   readonly puedeGuardar: boolean;
   /** El último intento falló (red, servidor o rechazo). */
   readonly fallo: boolean;
+  /** Por qué falló (DL-168): la barra lo dice con su texto. Sin él, el texto genérico. */
+  readonly motivoDelFallo?: FalloDeGuardado | null;
   /** El borrador cambió en otra pestaña o en otro equipo (409 por versión). */
   readonly conflicto: boolean;
   /** La hora del último guardado confirmado por el servidor en esta pantalla, ya formateada; `null` si no hubo. */
@@ -71,7 +129,7 @@ export interface EntradaDeGuardado {
 export function estadoDeGuardado(e: EntradaDeGuardado): { readonly tipo: TipoDeGuardado; readonly texto: string } {
   if (e.guardando) return { tipo: 'guardando', texto: COPY_GUARDADO.guardando };
   if (e.conflicto) return { tipo: 'fallo', texto: COPY_GUARDADO.conflictoCorto };
-  if (e.fallo) return { tipo: 'fallo', texto: e.sucio ? COPY_GUARDADO.noSePudoReintento : COPY_GUARDADO.noSePudo };
+  if (e.fallo) return { tipo: 'fallo', texto: e.motivoDelFallo ? COPY_GUARDADO.falloEnLaBarra[e.motivoDelFallo] : e.sucio ? COPY_GUARDADO.noSePudoReintento : COPY_GUARDADO.noSePudo };
   if (e.sucio) return { tipo: 'pendiente', texto: e.puedeGuardar ? COPY_GUARDADO.pendiente : COPY_GUARDADO.pendienteIncompleto };
   return { tipo: 'guardado', texto: e.guardadoA ? COPY_GUARDADO.guardadoA(e.guardadoA) : COPY_GUARDADO.guardado };
 }

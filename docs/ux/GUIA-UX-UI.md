@@ -295,14 +295,24 @@ Información).
   una versión, una toma con todas sus mediciones), se desplaza adentro. Sin eso, al tocar un hecho de abajo el detalle
   quedaba fuera de la vista. Es lo que ya hacía el panel que se abría encima.
 
-### II.2 Superficies mates
+### II.2 Superficies de vidrio en el website
 
-- Las superficies de trabajo son **mates**: color plano de superficie (`.seccion`, `--superficie`), un borde fino
-  (`--borde`) y, en Claro, una sombra mínima (`--sombra-suave`; en Azul noche, ninguna). Dentro de una sección, un
-  bloque es un separador (`.subseccion`) o una superficie suave (`.panel`, `--fondo-suave`), nunca otra tarjeta con
-  sombra.
-- No hay vidrio, brillo, degradé ni transparencia en las superficies de trabajo. El degradé es de la cara pública
-  (`.cara-publica`) y de la barra de marca. El vidrio es de la APK (III.3).
+- Las superficies de trabajo son **mates** fuera de la estación: color plano de superficie (`.seccion`, `--superficie`),
+  un borde fino (`--borde`) y, en Claro, una sombra mínima (`--sombra-suave`; en Azul noche, ninguna). Dentro de una
+  sección, un bloque es un separador (`.subseccion`) o una superficie suave (`.panel`, `--fondo-suave`), nunca otra
+  tarjeta con sombra.
+- **En la estación y el asistente (ED-18; DL-170), vidrio,** con la misma línea que la APK:
+  - el fondo, un degradé con dos destellos suaves (`--destello-1` y `--destello-2`);
+  - de vidrio, la barra de comandos, el panel, la tarjeta del paso y los cuadros que se abren desde ahí: `--vidrio`, un
+    borde fino de luz (`--vidrio-luz`), un brillo arriba que se apaga a la mitad (`--vidrio-brillo`) y la sombra; lo
+    de adentro, `--vidrio-adentro`, sin sombra;
+  - `backdrop-filter` solo en esas superficies; la planilla, las tablas y las zonas de edición siguen opacas;
+  - el resplandor (`--resplandor`), solo en el botón principal, que es uno por vista;
+  - el cian, solo para lo que se toca; el foco sigue ámbar; nada se anima;
+  - con la transparencia reducida, con colores forzados o sin soporte, todo vuelve a ser opaco;
+  - el contraste se mide en el peor punto (`scripts/contraste.test.cjs`, TEST-EDP-053). Por eso en Claro el vidrio
+    es casi opaco (95 %).
+- El degradé de fondo es de la cara pública (`.cara-publica`), de la barra de marca y de la estación.
 - La jerarquía la dan el tamaño, el peso y el espacio, no el color de fondo.
 
 ### II.3 Navegación transversal
@@ -1063,6 +1073,34 @@ Un flujo de pequeñas decisiones, de a una, como «Ya la hice» en la APK: el ca
 - **Detrás de un interruptor hasta su recaptura.** Un flujo nuevo que cambia cómo se trabaja se prende después de verlo
   en pantalla con Dirección; apagado, cada verbo lleva a su destino exacto, con el camino de vuelta.
 
+### II.13 El asistente, la estación y los cuadros enfocados (DL-167, 2026-11-12)
+
+Dos caminos sobre el mismo borrador y las mismas operaciones: **el asistente** para crear y para quien empieza, y
+**la estación** para ajustar, revisar y para el experto. Ningún camino escribe algo que el otro no pueda abrir.
+- **El asistente:** los siete pasos a la vista, el sugerido marcado y cualquiera elegible; «Paso N de 7», una decisión
+  por paso con el título que la dice, y abajo «Atrás», «Seguir en la estación» y una sola acción principal.
+  «Siguiente» guarda y espera la respuesta: si falla, no avanza y lo escrito sigue ahí, con «Reintentar». El paso que
+  sigue se deduce del borrador; nada se guarda aparte. El paso 1, en tarjetas sin nada elegido.
+- **La estación:** la barra de comandos fija, con cada acción siempre en el mismo lugar y «Revisar y activar…» como el
+  único botón lleno; tres zonas que se desplazan solas; el panel en vivo.
+- **El cuadro enfocado:** lo que trae mucha información va en un cuadro (un panel al costado o un diálogo al centro),
+  con un solo principal, el foco al título y de vuelta al que lo abrió, Escape y «Cancelar» que no escriben, y la
+  pregunta si hay cambios. Un cuadro no abre otro. Si confirmar hace perder algo, se dice qué antes y el foco entra en
+  «Cancelar».
+- **Varios a la vez:** se marcan (ejercicios o series) y se aplica con un solo botón que dice cuántos y a qué; nada se
+  escribe al marcar.
+- **Copiar dice adónde y qué pisa** (ED-23 y ED-24): un verbo por cada copia («Copiar la sesión a…», «Copiar el ejercicio
+  a…», «Copiar la prescripción a…», «Copiar estas series a…»), en un cuadro con el destino, la vista previa y lo que se
+  reemplaza antes de tocar el principal. La copia va sin identificadores y se guarda sola.
+- **Quitar con contenido pregunta** (ED-33): el cuadro nombra lo que se va («Quitar Merienda: 2 opciones y 7
+  alimentos») y el foco entra en «Cancelar». Sin nada escrito, se quita en el acto.
+- **Los totales de Nutrición en el editor** (ED-31 y ED-34): son una estimación del editor y lo dicen; lo que falta es
+  «Sin dato» con qué lo impide, nunca cero; dos opciones de una misma comida nunca se suman, y el día va «de X a Y kcal
+  según lo que elija». Sin «%» y sin semáforo. La persona no ve nada de esto.
+- **Dos salidas, un principal** (ED-32): cuando un cuadro crea algo que puede quedar suelto o entrar donde se lo pidió,
+  el principal es lo que se vino a hacer («Guardar la receta y agregarla a Merienda») y la otra salida es secundaria. Si
+  la segunda escritura no se puede, el cuadro dice que la primera ya quedó y ofrece reintentar sin repetirla.
+
 ## Parte III · APK del asesorado
 
 ### III.1 Navegación
@@ -1189,7 +1227,7 @@ Durante la sesión, la fila de acciones y la navegación van fijas. Está decidi
   - Las tarjetas de la lámina de la toma conservan lo suyo: su filo (`laminaFilo`) y su sombra (`sombraDeVidrio`).
   - La prueba de contraste mide el texto en el peor punto: los tres puntos del degradé, con cada destello solo y con los
     dos juntos, el vidrio encima y el nivel 2.
-  El vidrio es de la APK: el website profesional es mate (II.2) hasta WP-EDITORES-PROFESIONAL.
+  El website lleva el mismo vidrio en la estación y el asistente, y es mate en lo demás (II.2).
 - **La barra** tiene sus propios tokens (`barraVidrio`, al 88 %; `barraTexto` y `barraElegido`), con el borde y la línea
   de luz de la receta y una sombra con `boxShadow`. Durante la sesión, fija y opaca (PV-11).
 - **El botón principal** es el cian (`botonFondo`) en Azul noche y el azul en Claro; con el vidrio, un degradé hasta
@@ -1413,7 +1451,8 @@ Se copia en la descripción del PR y se marca. Se marcan los puntos generales y 
 
 **Website profesional**
 - [ ] Se ve bien a 1440, 1280 y 1024 px; a 768 y 390 no se rompe ni desplaza la página de costado.
-- [ ] Superficies mates: sin vidrio, brillo ni degradé en el área de trabajo.
+- [ ] Superficies mates fuera de la estación; en la estación y el asistente, el vidrio de II.2, con la planilla opaca y
+  un solo resplandor.
 - [ ] La URL guarda el estado solo con identificadores; atrás y «Volver a la ficha» recuperan la configuración.
 - [ ] Del resumen se llega al análisis, al origen y a la acción, y de vuelta, sin perder lo elegido.
 - [ ] Sin doble desplazamiento.

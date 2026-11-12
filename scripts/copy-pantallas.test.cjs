@@ -10,7 +10,7 @@
  * Uso: node --test scripts/copy-pantallas.test.cjs (después de construir @be/domain).
  */
 const assert = require('node:assert/strict');
-const { readdirSync, readFileSync } = require('node:fs');
+const { readdirSync, readFileSync, statSync } = require('node:fs');
 const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
@@ -21,6 +21,7 @@ const {
   terminosProhibidosDeCarteraEn,
   terminosProhibidosDeEntrenamientoEn,
   terminosProhibidosDeFormulariosEn,
+  CODIGO_INTERNO,
 } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
@@ -487,4 +488,124 @@ test('PA-06 · la APK no escribe glifos como íconos ni dibuja íconos con SvgXm
   }
   assert.deepEqual(hallazgos, []);
   assert.ok(GLIFOS.test('✓ Guardado') && GLIFOS.test('‹ Anterior') && !GLIFOS.test('Anterior'), 'la guardia reconoce los glifos');
+});
+
+/**
+ * ED-05 (WP-EDITORES-PROFESIONAL; TEST-EDP-006): ningún texto del website profesional ni de los diccionarios de textos del
+ * dominio dice un código interno del equipo (DL-…, TB-…, RF-…, UC-…, API-…, REG-…, INV-…, «ronda»). «Pedir información»
+ * mostraba el propósito guardado de una plantilla, con «Sucede a la v2 (DL-165, ronda 2.1)» (la captura C13).
+ *
+ * Los nombres de las lecturas de «Otras áreas» son identificadores que usan sus pruebas, no texto a la vista: están
+ * contados uno por uno, y si alguno deja de existir, la prueba también falla.
+ */
+const CODIGOS_QUE_NO_SE_MUESTRAN = ['otras-areas.ts · API-RES-04', 'otras-areas.ts · API-RES-06', 'otras-areas.ts · API-RES-07'];
+const archivosDe = (dir) =>
+  readdirSync(dir).flatMap((f) => {
+    const ruta = join(dir, f);
+    return statSync(ruta).isDirectory() ? archivosDe(ruta) : /\.tsx?$/.test(f) && !/\.test\./.test(f) ? [ruta] : [];
+  });
+const SIN_CODIGOS = [
+  ...archivosDe(join(RAIZ, 'apps/web/src/app/pro')),
+  ...readdirSync(join(RAIZ, 'packages/domain/src'))
+    .filter((f) => /^copy.*\.ts$/.test(f) && !f.includes('.test.'))
+    .map((f) => join(RAIZ, 'packages/domain/src', f)),
+  join(RAIZ, 'packages/domain/src/descripciones-de-plantillas.ts'),
+];
+
+test('ED-05 · ningún texto del website profesional ni de los diccionarios del dominio dice un código interno', () => {
+  assert.ok(SIN_CODIGOS.length >= 150, `se esperaban las pantallas de /pro y los diccionarios, hay ${SIN_CODIGOS.length}`);
+  const permitidos = new Set();
+  const hallazgos = SIN_CODIGOS.flatMap((a) =>
+    textosDe(a)
+      .filter(({ texto }) => CODIGO_INTERNO.test(texto))
+      .flatMap(({ texto, linea }) => {
+        const lugar = `${basename(a)} · ${texto}`;
+        if (CODIGOS_QUE_NO_SE_MUESTRAN.includes(lugar)) {
+          permitidos.add(lugar);
+          return [];
+        }
+        return [`${a.slice(RAIZ.length + 1)}:${linea} ${JSON.stringify(texto)}`];
+      }),
+  );
+  assert.deepEqual(hallazgos, []);
+  assert.deepEqual([...permitidos].sort(), [...CODIGOS_QUE_NO_SE_MUESTRAN].sort(), 'cada identificador permitido sigue existiendo: si se fue, se saca de la lista');
+});
+
+test('ED-05 · la guardia de códigos encuentra «(DL-1)» en un texto y no en un comentario (prueba de la prueba)', () => {
+  const textos = textosDe('prueba.tsx', ['// DL-1 en un comentario', 'export const P = () => <p>Sucede a la v1 (DL-1)</p>;'].join(String.fromCharCode(10)));
+  assert.deepEqual(textos.filter(({ texto }) => CODIGO_INTERNO.test(texto)).map(({ texto }) => texto), ['Sucede a la v1 (DL-1)']);
+});
+
+/**
+ * ED-06 (WP-EDITORES-PROFESIONAL; TEST-EDP-007; ED-D9, decidida): el website profesional dice «persona» (o el nombre, o
+ * la referencia neutral) y nunca «asesorado»; el legajo no cambia. Se revisan las pantallas de /pro, los componentes y
+ * las piezas del website, y los textos del dominio que muestran.
+ *
+ * No son texto a la vista las claves, las rutas, los `id` y los nombres de íconos («tus-asesorados», «ASESORADO»). Y
+ * quedan, contados uno por uno, los que cambian en otro momento:
+ * - los textos legales con versión, que cambian en su versión siguiente;
+ * - lo que también devuelve la API (el mensaje del 409 de la app de la persona y la referencia neutral de quien no tiene
+ *   nombre), que cambia en la ventana de la API (ED-08, etapa 2; R1).
+ */
+const ES_IDENTIFICADOR = /^[a-z0-9#./_-]+$|^[A-Z0-9_]+$/;
+const ASESORADO_FUERA_DE_ESTA_ETAPA = [
+  'textos.ts · 1. BE es una plataforma que ayuda a asesorados',
+  'textos.ts · Esta información es sobre una sola categoría',
+  'compatibilidad-de-clientes.ts · Este plan tiene objetivos distintos',
+  'contratos-perfil-propio.ts · Asesorado ·',
+];
+const DEL_DOMINIO = (archivo) => join(RAIZ, 'packages/domain/src', archivo);
+const CON_PERSONA = [
+  ...archivosDe(join(RAIZ, 'apps/web/src/app/pro')),
+  ...archivosDe(join(RAIZ, 'apps/web/src/components')),
+  ...archivosDe(join(RAIZ, 'apps/web/src/lib')),
+  ...readdirSync(join(RAIZ, 'packages/domain/src'))
+    .filter((f) => /^copy.*\.ts$/.test(f) && !f.includes('.test.'))
+    .map(DEL_DOMINIO),
+  ...['versiones-de-plan.ts', 'lectura-del-plan-de-entrenamiento.ts', 'cartera.ts', 'compatibilidad-de-clientes.ts', 'exportacion-del-analisis.ts', 'contratos-perfil-propio.ts', 'textos.ts'].map(DEL_DOMINIO),
+];
+
+test('ED-06 · el website profesional dice «persona», nunca «asesorado» (salvo lo contado, que cambia en otro momento)', () => {
+  assert.ok(CON_PERSONA.length >= 200, `se esperaban las pantallas, las piezas y los textos del dominio, hay ${CON_PERSONA.length}`);
+  const contados = new Set();
+  const hallazgos = CON_PERSONA.flatMap((a) =>
+    textosDe(a)
+      .filter(({ texto }) => /asesorad/i.test(texto) && !ES_IDENTIFICADOR.test(texto))
+      .flatMap(({ texto, linea }) => {
+        const contado = ASESORADO_FUERA_DE_ESTA_ETAPA.find((x) => x === `${basename(a)} · ${texto.slice(0, x.length - basename(a).length - 3)}`);
+        if (contado) {
+          contados.add(contado);
+          return [];
+        }
+        return [`${a.slice(RAIZ.length + 1)}:${linea} ${JSON.stringify(texto.slice(0, 120))}`];
+      }),
+  );
+  assert.deepEqual(hallazgos, []);
+  assert.deepEqual([...contados].sort(), [...ASESORADO_FUERA_DE_ESTA_ETAPA].sort(), 'cada excepción sigue existiendo: si se fue, se saca de la lista');
+});
+
+test('ED-06 · la guardia encuentra «Tus asesorados» y deja pasar una clave (prueba de la prueba)', () => {
+  const textos = textosDe('prueba.tsx', 'export const P = () => <section id="tus-asesorados"><h2>Tus asesorados</h2><Icono nombre="asesorados" /></section>;');
+  assert.deepEqual(textos.filter(({ texto }) => /asesorad/i.test(texto) && !ES_IDENTIFICADOR.test(texto)).map(({ texto }) => texto), ['Tus asesorados']);
+});
+
+/**
+ * DJ-6 (WP-EDITORES-PROFESIONAL; ED-15): la versión en preparación lleva número, el de las activadas más uno (hay una
+ * sola por plan). Ningún texto del website profesional dice que no lo tiene: «Cómo se lee el Plan» lo decía en las dos
+ * áreas, mientras «Antes de activar» nombraba «la versión 9» (revisión adversaria de la etapa 1).
+ */
+const SIN_NUMERO = /(en preparación|borrador)[^.]*no (tiene|lleva) número/i;
+
+test('DJ-6 · ningún texto del website profesional dice que la versión en preparación no tiene número', () => {
+  const hallazgos = CON_PERSONA.flatMap((a) =>
+    textosDe(a)
+      .filter(({ texto }) => SIN_NUMERO.test(texto))
+      .map(({ texto, linea }) => `${a.slice(RAIZ.length + 1)}:${linea} ${JSON.stringify(texto.slice(0, 120))}`),
+  );
+  assert.deepEqual(hallazgos, []);
+});
+
+test('DJ-6 · la guardia encuentra la frase vieja en un texto y no en un comentario (prueba de la prueba)', () => {
+  const textos = textosDe('prueba.tsx', '// Un borrador no lleva número.\nexport const P = () => <p>Es la 1. Una versión en preparación todavía no tiene número.</p>;');
+  assert.deepEqual(textos.filter(({ texto }) => SIN_NUMERO.test(texto)).map(({ texto }) => texto), ['Es la 1. Una versión en preparación todavía no tiene número.']);
 });

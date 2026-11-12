@@ -372,7 +372,7 @@ test('DL-038 — CON-02 elige la transición según la situación actual', () =>
 
 const base: HechosDeAutorizacion = {
   operacion: { alcance: 'NUTRICION', finalidad: 'ACOMPANAMIENTO_NUTRICIONAL' },
-  actor: { identidadId: 'pn', cuentaOperativa: true, tienePerfilProfesional: true },
+  actor: { identidadId: 'pn', cuentaOperativa: true, tienePerfilProfesional: true, conSegundoFactor: true },
   titular: { identidadId: 'a01', cuentaOperativa: true, a3Vigente: true },
   verificacion: 'VERIFICADO',
   habilitacion: 'CONCEDIDA',
@@ -431,7 +431,7 @@ test('PDP — titular inexistente o no revelable: deniega igual (UC-I02 E05), si
 test('REG-06-53 — ninguna dimensión aislada autoriza: con todo lo demás ausente, cada hecho favorable solo no alcanza', () => {
   const vacio: HechosDeAutorizacion = {
     operacion: base.operacion,
-    actor: { identidadId: 'pn', cuentaOperativa: false, tienePerfilProfesional: false },
+    actor: { identidadId: 'pn', cuentaOperativa: false, tienePerfilProfesional: false, conSegundoFactor: false },
     titular: null,
     verificacion: null,
     habilitacion: null,
@@ -523,7 +523,8 @@ test('10-B04:627-638 — cada evento de las tres máquinas tiene etiqueta humana
   assert.equal(etiquetaDeEvento('toString'), 'Cambio registrado');
   assert.equal(etiquetaDeActor('SYSTEM', 'ADVISEE'), 'BE');
   assert.equal(etiquetaDeActor('ADVISEE', 'ADVISEE'), 'Vos');
-  assert.equal(etiquetaDeActor('ADVISEE', 'PROFESSIONAL'), 'El asesorado');
+  // ED-06 (ED-D9, decidida; DL-167): el website profesional dice «persona»; el legajo no cambia.
+  assert.equal(etiquetaDeActor('ADVISEE', 'PROFESSIONAL'), 'La persona');
   assert.equal(etiquetaDeActor('PROFESSIONAL', 'ADVISEE'), 'El profesional');
 });
 
@@ -532,7 +533,7 @@ test('10-B04 §28-§29 y H10-04-04 — el profesional ve el estado mínimo, nunc
     estadoParaMostrar({ relationshipState, consentState, accessMode }, 'PROFESSIONAL');
   // DL-146: el formato de 10-B04 §28 («estado del vínculo · estado mínimo de autorización»), con palabras del oficio.
   assert.deepEqual(pro('ACEPTADO', 'ACTIVE', 'CONTEXTUAL'), { estado: 'Activo · con acceso', detalle: null });
-  assert.deepEqual(pro('ACEPTADO', 'REQUIRED', 'BLOCKED'), { estado: 'Vínculo activo', detalle: 'Acceso pendiente de autorización del asesorado' });
+  assert.deepEqual(pro('ACEPTADO', 'REQUIRED', 'BLOCKED'), { estado: 'Vínculo activo', detalle: 'Acceso pendiente de autorización de la persona' }); // ED-06 (ED-D9)
   assert.deepEqual(pro('ACEPTADO', 'REVOKED', 'BLOCKED'), { estado: 'Consentimiento revocado', detalle: 'Acceso no disponible' });
   // A3 revocada, cuenta suspendida o habilitación retirada: lo mismo, sin distinguir la causa (UC-I02 E05).
   assert.deepEqual(pro('ACEPTADO', 'ACTIVE', 'BLOCKED'), { estado: 'Vínculo activo', detalle: 'Acceso no disponible' });

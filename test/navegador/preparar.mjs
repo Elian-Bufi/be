@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import * as OTPAuth from 'otpauth';
-import { CREDENCIAL, dominio, pedir, ponerNombre, registrar, sesion, vincular } from './api.mjs';
+import { CREDENCIAL, dominio, pedir, ponerNombre, registrar, sesion, verificarSegundoFactor, vincular } from './api.mjs';
 import { baseDeclarada, REPO } from './entorno.mjs';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -31,6 +31,17 @@ export const RECORRIDOS = {
   primerPlan: { habilitado: ['NUTRICION'], datos: [] },
   borrador: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-01 (WP-EDITORES-PROFESIONAL): descartar la versión en preparación.
+  descartar: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-02 (WP-EDITORES-PROFESIONAL): salir con cambios sin guardar.
+  salidaSegura: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-07 (WP-EDITORES-PROFESIONAL): «Ir a corregir» deja el foco en su lugar.
+  irACorregir: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-61, ED-03 y ED-02 (WP-EDITORES-PROFESIONAL): la respuesta perdida, «Reintentar» después de un 503 y la salida
+  // cuando el guardado falla (sin red y con un 409).
+  respuestaPerdida: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  reintentar: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  salidaConFallas: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   retorno: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
   grafico: { habilitado: ['ANTROPOMETRIA'], datos: ['tomas'] },
   // El área sugerida al invitar (bloque 5): sin vínculos, ninguna; con vínculos en una sola de dos áreas, esa.
@@ -211,6 +222,8 @@ export async function datos(estado) {
   for (const [recorrido, r] of Object.entries(RECORRIDOS)) {
     const e = estado[recorrido];
     const pro = await sesion(e.pro.correo);
+    // UF-11 (DL-169): la primera sesión del profesional configura su segundo factor, como al entrar a /pro.
+    await verificarSegundoFactor(e.pro.correo, pro);
     const ase = await sesion(e.ase.correo, 'APK');
     e.ase.nombre = nombreDeLaPersona(recorrido);
     await ponerNombre(ase, e.ase.nombre);

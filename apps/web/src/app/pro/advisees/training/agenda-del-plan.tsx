@@ -8,7 +8,8 @@
  *   a su día; mover otra vez una fecha ya movida cambia su destino.
  * - **Lo que no se puede guardar no entra:** un movimiento que choca o que cae antes del inicio se explica acá, con las
  *   palabras de la agenda, y no se aplica. Al sacar un día, los movimientos que dejan de tener sentido se van con él.
- * La agenda viaja con «Guardar cambios», como el resto del borrador (API-TRN-10), y se lee en API-SER-01.
+ * La agenda viaja con el guardado del borrador («Guardar ahora» o el autoguardado), como el resto (API-TRN-10), y se
+ * lee en API-SER-01.
  */
 import {
   COPY_AGENDA_DE_ENTRENAMIENTO as A,

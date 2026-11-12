@@ -11,11 +11,21 @@
  *
  * Los identificadores (`nutricion.energia`, `antropometria.peso`) son opacos y estables: viajan en la URL y en las vistas
  * guardadas, y nunca llevan texto clínico. Un cambio de semántica cambia `VERSION_DEL_DICCIONARIO`.
+ *
+ * **Dos versiones (EDT-01, WP-EDITORES-PROFESIONAL ED-63):** `VERSION_DEL_DICCIONARIO` es la de las derivaciones, la que
+ * API-PRJ-01 devuelve en cada especificación; `VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO` es la de los nombres, las
+ * explicaciones y los límites que muestra el website. Un texto que cambia sin cambiar la cuenta sube solo la segunda, y
+ * así no cambia lo que devuelve la API fuera de la ventana de redespliegue (R1).
  */
 import type { Agregacion, ClaveDeProyeccion, Escala, Grano, MetricaDeEntrenamiento, MetricaNutricional, ReferenciaDeMetrica } from './contratos-analisis';
 import { FAMILIA_DE_METRICA, nombreDeMetrica } from './nombres-de-metricas';
 
 export const VERSION_DEL_DICCIONARIO = 'BE-METRICAS-2026-10-v1';
+/**
+ * La versión de los textos del diccionario. v2 (2026-11-12, ED-63): el RIR de «Analizar» deja de llamarse «declarado»,
+ * porque la app completa el campo vacío con el RIR del plan.
+ */
+export const VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO = 'BE-METRICAS-TEXTOS-2026-11-v2';
 
 export type AreaDeMetrica = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
 
@@ -215,7 +225,7 @@ const DE_ENTRENAMIENTO: readonly DefinicionDeMetrica[] = [
   {
     id: 'entrenamiento.rir',
     area: 'ENTRENAMIENTO',
-    nombre: 'RIR declarado en la serie',
+    nombre: 'RIR registrado en la serie',
     nombreCorto: 'RIR',
     unidad: 'RIR',
     escala: 'ORDINAL',
@@ -231,10 +241,17 @@ const DE_ENTRENAMIENTO: readonly DefinicionDeMetrica[] = [
     cambioRelativo: false,
     decimales: 0,
     resumenDePeriodo: 'MEDIANA',
-    explicacion: 'Las repeticiones en reserva que declaró la persona al terminar la serie elegida.',
+    // ED-63: la APK completa el RIR vacío con el del plan al tildar la serie (`serieAlTildar`), así que el registrado
+    // no siempre lo escribió la persona. Con la procedencia por campo (ED-70), lo que vino del plan se dibuja aparte.
+    explicacion:
+      'Las repeticiones en reserva registradas en la serie elegida. Lo escribió la persona o, si dejó el campo vacío, quedó el del plan. Hasta que la app guarde quién escribió cada dato, no se distinguen.',
     comoSeCalcula: 'Del registro vigente de cada sesión. Es una estimación subjetiva y ordinal: se resume con la mediana, nunca con un promedio ni un porcentaje.',
     ausencias: 'Sin informar es «sin dato»; RIR 0 es una respuesta válida (a fallo o casi).',
-    limites: [...LIMITES_DE_LA_SERIE, 'El RIR no es una escala de razones: no admite cambio relativo.'],
+    limites: [
+      ...LIMITES_DE_LA_SERIE,
+      'El RIR no es una escala de razones: no admite cambio relativo.',
+      'Un RIR igual al del plan puede ser el que escribió la persona o el que quedó del plan.',
+    ],
   },
   {
     id: 'entrenamiento.series-registradas',

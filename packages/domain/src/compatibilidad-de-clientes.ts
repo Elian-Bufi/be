@@ -35,7 +35,15 @@ export const CAPACIDAD_OBJETIVOS_POR_SERIE = 'training-set-targets-1';
  */
 export const CAPACIDAD_FORMULARIOS_FORMATO_3 = 'forms-format-3';
 
-export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3] as const;
+/**
+ * UF-05 de WP-USO-FINAL (DL-169; UF-D4) · el cliente sabe mostrar, en «Antes de seguir», la versión nueva de los términos y
+ * de la información de privacidad (los pasos ACCEPT_TERMS y ACKNOWLEDGE_PRIVACY de API-ACC-07) y aceptarla con
+ * API-ACC-08. API-ACC-07 no le pide esos pasos a un cliente que no la declara: la APK 0.24 pediría actualizar ante un paso
+ * que no conoce (UF-T12). La declaran el website, que se despliega con la API, y la APK nueva.
+ */
+export const CAPACIDAD_TEXTOS_VIGENTES = 'pending-steps-texts-1';
+
+export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 
 /** Un valor de cabecera más largo que esto no se lee: ninguna lista válida lo necesita. */
@@ -92,6 +100,6 @@ export const COPY_COMPATIBILIDAD_DE_CLIENTES = {
   activacionBloqueada:
     'Este plan tiene objetivos distintos en algunas series, y tu asesorado todavía no usó una versión de BE que los muestre. Con la versión que tiene vería los valores generales de cada ejercicio, que no son los de esas series.',
   queHacer:
-    'Podés activarlo cuando tu asesorado abra Entrenamiento con BE actualizada, o dejar los mismos objetivos en todas las series de cada ejercicio para activarlo ahora.',
-  listoParaActivar: 'Tu asesorado ya usa una versión de BE que muestra los objetivos de cada serie.',
+    'Podés activarlo cuando la persona abra Entrenamiento con BE actualizada, o dejar los mismos objetivos en todas las series de cada ejercicio para activarlo ahora.',
+  listoParaActivar: 'La persona ya usa una versión de BE que muestra los objetivos de cada serie.',
 } as const;

@@ -8,7 +8,7 @@
  * WP-ESCRITORIO-AMABLE: en el espacio profesional quedan los cuatro lugares de trabajo; «Cuenta» está en el menú de la
  * esquina del encabezado (`MenuDeCuenta`).
  */
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { usePathname } from 'next/navigation';
 import { useRef } from 'react';
 import { useActualALaVista } from './pestanas';
@@ -43,14 +43,15 @@ function Navegacion({ etiqueta, enlaces }: { etiqueta: string; enlaces: readonly
   // DL-113: en el teléfono la línea se desplaza de costado; la sección actual queda siempre a la vista.
   const lista = useRef<HTMLUListElement>(null);
   useActualALaVista(lista, actual);
+  // ED-02: con cambios sin guardar, un enlace de la barra guarda antes o pregunta (en /pro; en /account no hay editores).
   return (
     <nav className="navegacion" aria-label={etiqueta}>
       <ul ref={lista} className="desplazable-x">
         {enlaces.map((e) => (
           <li key={e.href}>
-            <Link href={e.href} aria-current={e.href === actual ? (ruta === e.href ? 'page' : 'location') : undefined}>
+            <Enlace href={e.href} aria-current={e.href === actual ? (ruta === e.href ? 'page' : 'location') : undefined}>
               {e.texto}
-            </Link>
+            </Enlace>
           </li>
         ))}
       </ul>

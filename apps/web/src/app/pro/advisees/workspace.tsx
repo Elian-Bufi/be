@@ -40,8 +40,8 @@
  * título es la referencia neutral y el monograma lleva el ícono; el nombre que reciben las vistas (la exportación de
  * «Analizar», el diálogo de la nota) es el mismo que se ve.
  */
-import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, referenciaNeutral, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
-import Link from 'next/link';
+import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
+import { Enlace } from '../../../components/enlace';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -50,6 +50,8 @@ import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { MenuDeAcciones } from '../../../components/menu-de-acciones';
 import { Retrato } from '../../../components/retrato';
+import { useAntesDeSalir } from '../../../components/salida-segura';
+import { referenciaDePersona } from '../../../lib/retrato';
 import { api } from '../../../lib/api';
 import { horaDelDia } from '../../../lib/formato';
 import { anotarNombrePropio, nombrePropioEn } from '../../../lib/nombre-propio';
@@ -88,6 +90,7 @@ const VOLVER_A_PREGUNTAR_AL_VOLVER_MS = 60_000;
 export function Workspace() {
   const parametros = useSearchParams();
   const router = useRouter();
+  const antesDeSalir = useAntesDeSalir();
   const id = parametros.get('id') ?? '';
   const vista = leerVista(parametros.get('vista'));
   const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
@@ -258,20 +261,29 @@ export function Workspace() {
         <div className="marco-de-la-ficha__persona">
           <div className="marco-de-la-ficha__nombre">
             <Retrato nombre={nombre} tamano="grande" />
-            <h1 id="titulo-asesorado">{nombre ?? 'Asesorado'}</h1>
+            <h1 id="titulo-asesorado">{nombre ?? 'Persona'}</h1>
             {/* Con un nombre visible (DL-040, 2026-10-15), la referencia va al lado, chica, como en la maqueta 01: distingue a
                 dos personas que se llaman igual. Sin nombre, el título ya es la referencia. */}
-            {nombre && !nombre.endsWith(referenciaCorta(id)) ? <span className="marco-de-la-ficha__referencia">{referenciaNeutral(id)}</span> : null}
+            {nombre && !nombre.endsWith(referenciaCorta(id)) ? <span className="marco-de-la-ficha__referencia">{referenciaDePersona(id)}</span> : null}
           </div>
           {/* La acción principal, según el momento de la persona (bloque 5). Con todo al día no hay ninguna. */}
           {disponible && accion ? (
-              <Link className="boton boton--secundario boton--compacto" href={conRetorno(rutaDeLaAccion(accion, id), retorno)} data-accion-de-la-ficha={accion.tipo}>
+              <Enlace className="boton boton--secundario boton--compacto" href={conRetorno(rutaDeLaAccion(accion, id), retorno)} data-accion-de-la-ficha={accion.tipo}>
                 <Icono nombre={ICONO_DE_LA_ACCION[accion.tipo]} tamano={18} />
                 {accion.texto}
-              </Link>
+              </Enlace>
           ) : null}
           {/* Lo de vez en cuando, junto: pedir información (vuelve a esta vista al enviar o al salir) y escribir una nota de
               coordinación para los otros profesionales de la persona (DL-140; UC-E07). */}
+          {/* ED-16 (C11): «Pedir información», a la vista y no en «Más», con su pista de DL-146. */}
+          {disponible ? (
+            <Pista texto={COPY_PISTAS.ficha.pedirInformacion}>
+              <button type="button" className="boton boton--quieto boton--compacto" data-pedir-informacion onClick={() => antesDeSalir(() => router.push(conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, retorno)))}>
+                <Icono nombre="solicitar" tamano={18} />
+                Pedir información
+              </button>
+            </Pista>
+          ) : null}
           {disponible ? (
             <MenuDeAcciones
               rotulo="Más acciones de la ficha"
@@ -279,7 +291,6 @@ export function Workspace() {
               conFlecha
               alineado="izquierda"
               acciones={[
-                { clave: 'pedir', texto: 'Pedir información', detalle: COPY_PISTAS.ficha.pedirInformacion, icono: <Icono nombre="solicitar" tamano={18} />, alElegir: () => router.push(conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, retorno)) },
                 { clave: 'nota', texto: COPY_NOTAS_DE_COORDINACION.escribirCorto, detalle: COPY_PISTAS.ficha.notaDeCoordinacion, icono: <Icono nombre="texto" tamano={18} />, alElegir: () => abrirNota({}) },
               ]}
             />
@@ -336,7 +347,7 @@ export function Workspace() {
           <Aviso tipo="info">
             <p>{conVinculoVigente ? COPY_VINCULO.sinAccesoPorAhora : COPY_VINCULO.recursoNoDisponible}</p>
             <p>
-              <Link href="/pro">{COPY_VINCULO.volver}</Link>
+              <Enlace href="/pro">{COPY_VINCULO.volver}</Enlace>
             </p>
           </Aviso>
         </div>

@@ -18,6 +18,7 @@ import { Icono } from '../../components/icono';
 import { apiAdministrativa } from '../../lib/api-administrativa';
 import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla, type MotivoDeFalla } from '../../lib/fallas';
 import { LISTA_INICIAL, useAdministracion } from '../../lib/sesion-administrativa';
+import { IncorporarProfesional } from './incorporar';
 import { Situacion } from './situacion';
 
 const L = COPY_ADMINISTRACION.lista;
@@ -97,6 +98,8 @@ export function ListaDeProfesionales() {
     <div className="lista-administrativa">
       <div className="encabezado-de-bloque">
         <h1>{L.titulo}</h1>
+        {/* UF-04 (DL-169): la entrada de un profesional real, sobre una cuenta que ya existe. */}
+        <IncorporarProfesional />
       </div>
       <p className="bajada">{L.queEs}</p>
       <p className="nota nota--con-icono">

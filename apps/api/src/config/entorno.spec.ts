@@ -26,6 +26,10 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
         reanudacion: { maximo: 300, ventanaMs: 900000 },
         loginAdministrativo: { maximo: 5, ventanaMs: 900000 },
         segundoFactor: { maximo: 10, ventanaMs: 900000 },
+        recuperacion: { maximo: 3, ventanaMs: 3600000 },
+        recuperacionPorIp: { maximo: 30, ventanaMs: 3600000 },
+        completarRecuperacion: { maximo: 10, ventanaMs: 900000 },
+        derechos: { maximo: 10, ventanaMs: 3600000 },
       },
       saltosDeProxy: 1,
       caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
@@ -37,7 +41,71 @@ describe('leerEntorno — TEST-RUN-004 validación de configuración', () => {
       secretoDeTareas: null,
       google: { clientIds: [], jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs', presupuestoMs: 5000 },
       claveDelSegundoFactor: null,
+      correo: null,
+      contacto: { soporte: null, privacidad: null },
     });
+  });
+
+  it('UF-03 · el correo de BE: sin proveedor, apagado; con proveedor, la clave y el remitente también; https en producción; el mensaje no repite la clave', () => {
+    const clave = 'clave-sintetica-del-proveedor-de-correo';
+    expect(leerEntorno(BASE).correo).toBeNull();
+    expect(leerEntorno({ ...BASE, BE_CORREO_PROVEEDOR: 'brevo', BE_CORREO_CLAVE: clave, BE_CORREO_REMITENTE: ' No-Responder@Example.invalid ' }).correo).toEqual({
+      proveedor: 'brevo',
+      clave,
+      remitente: 'no-responder@example.invalid',
+      url: 'https://api.brevo.com',
+      presupuestoMs: 5000,
+    });
+    expect(leerEntorno({ ...BASE, BE_CORREO_PROVEEDOR: 'postmark', BE_CORREO_CLAVE: clave, BE_CORREO_REMITENTE: 'no-responder@example.invalid' }).correo?.url).toBe('https://api.postmarkapp.com');
+    // Un proveedor falso local, para las pruebas; en producción, no.
+    expect(leerEntorno({ ...BASE, BE_CORREO_PROVEEDOR: 'postmark', BE_CORREO_CLAVE: clave, BE_CORREO_REMITENTE: 'no-responder@example.invalid', BE_CORREO_URL: 'http://127.0.0.1:4011' }).correo?.url).toBe('http://127.0.0.1:4011');
+    const malos = [
+      { BE_CORREO_PROVEEDOR: 'sendgrid', BE_CORREO_CLAVE: clave, BE_CORREO_REMITENTE: 'a@example.invalid' },
+      { BE_CORREO_PROVEEDOR: 'brevo', BE_CORREO_REMITENTE: 'a@example.invalid' },
+      { BE_CORREO_PROVEEDOR: 'brevo', BE_CORREO_CLAVE: clave, BE_CORREO_REMITENTE: 'sin-arroba' },
+      { BE_CORREO_CLAVE: clave },
+      { APP_ENV: 'production', BE_CORREO_PROVEEDOR: 'brevo', BE_CORREO_CLAVE: clave, BE_CORREO_REMITENTE: 'a@be.example', BE_CORREO_URL: 'http://127.0.0.1:4011' },
+      { APP_ENV: 'production', BE_CORREO_PROVEEDOR: 'brevo', BE_CORREO_CLAVE: clave, BE_CORREO_REMITENTE: 'a@example.invalid' },
+    ];
+    for (const malo of malos) {
+      let mensaje = '';
+      try {
+        leerEntorno({ ...BASE, ...malo });
+      } catch (e) {
+        mensaje = (e as Error).message;
+      }
+      expect(mensaje).toMatch(/BE_CORREO_/);
+      expect(mensaje).not.toContain(clave);
+    }
+  });
+
+  it('TEST-UF-017 · el canal de contacto: cada dirección optativa y en minúsculas; una que no es un correo, o una de ejemplo en producción, no arranca y el mensaje no la repite', () => {
+    expect(leerEntorno(BASE).contacto).toEqual({ soporte: null, privacidad: null });
+    expect(leerEntorno({ ...BASE, BE_CONTACTO_SOPORTE: ' Soporte@Example.Invalid ' }).contacto).toEqual({ soporte: 'soporte@example.invalid', privacidad: null });
+    expect(leerEntorno({ ...BASE, BE_CONTACTO_SOPORTE: 'soporte@example.invalid', BE_CONTACTO_PRIVACIDAD: 'privacidad@example.invalid' }).contacto).toEqual({
+      soporte: 'soporte@example.invalid',
+      privacidad: 'privacidad@example.invalid',
+    });
+    // En producción vale una dirección de un dominio propio (acá, uno inventado que no existe), y una de ejemplo no.
+    const produccion = { APP_ENV: 'production' };
+    expect(leerEntorno({ ...BASE, ...produccion, BE_CONTACTO_SOPORTE: 'soporte@be.dominio-propio' }).contacto.soporte).toBe('soporte@be.dominio-propio');
+    const malos = [
+      { BE_CONTACTO_SOPORTE: 'sin-arroba' },
+      { BE_CONTACTO_PRIVACIDAD: 'dos @espacios.invalid' },
+      { ...produccion, BE_CONTACTO_SOPORTE: 'soporte@example.invalid' },
+      { ...produccion, BE_CONTACTO_PRIVACIDAD: 'privacidad@algo.example' },
+      { ...produccion, BE_CONTACTO_SOPORTE: 'ayuda@example.com' },
+    ];
+    for (const malo of malos) {
+      let mensaje = '';
+      try {
+        leerEntorno({ ...BASE, ...malo });
+      } catch (e) {
+        mensaje = (e as Error).message;
+      }
+      expect(mensaje).toMatch(/BE_CONTACTO_(SOPORTE|PRIVACIDAD)/);
+      expect(mensaje).not.toMatch(/sin-arroba|espacios|soporte@|privacidad@|ayuda@/);
+    }
   });
 
   it('DL-138 · Google: sin client IDs, apagado; los client IDs se leen separados por coma; un valor que no es un client ID o una URL de claves sin https no arranca, y el mensaje no repite el valor', () => {

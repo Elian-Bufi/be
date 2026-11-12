@@ -43,3 +43,22 @@ export const AVISOS_DE_PRUEBA = {
 
 /** El mismo botón sin los avisos de prueba (producción, o `test` con el interruptor apagado). */
 export const DESCARGAR_LA_APP = 'Descargar la app para Android';
+
+/**
+ * UF-09 de WP-USO-FINAL (DL-169; UF-D10): el catálogo de demostración, según el ambiente. Las migraciones de WP-04 y de
+ * WP-05 siembran alimentos con valores sintéticos y ejercicios de ejemplo (procedencia `BE_SYNTHETIC_SEED`), y una base de
+ * producción también los tendría. En producción la API no los ofrece en los buscadores ni los acepta en nada nuevo (un
+ * plan, una plantilla, una receta, un habitual o un registro); en `test` y en desarrollo, todo sigue igual. Las filas
+ * quedan: las crean las migraciones y la historia no se borra.
+ *
+ * Lo decide el `APP_ENV` de la API, nunca el cliente. Al revés que los avisos, un ambiente que no se reconoce no lo
+ * ofrece: un alimento con valores inventados en una base real llevaría a una estimación equivocada, y lo único que se
+ * pierde en un ambiente mal configurado es un ejemplo.
+ */
+export const PROCEDENCIA_DE_DEMOSTRACION = 'BE_SYNTHETIC_SEED';
+
+/** Si la API ofrece el catálogo de demostración en este ambiente: solo en `test` y en desarrollo. */
+export function ofreceElCatalogoDeDemostracion(ambiente: string | null | undefined): boolean {
+  const valor = (ambiente ?? '').trim().toLowerCase();
+  return valor === 'test' || valor === 'development';
+}

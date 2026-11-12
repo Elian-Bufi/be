@@ -113,7 +113,7 @@ export function TablaDeObjetivos({
   filas,
   conRir,
   bases,
-  titulo = 'Así lo ve tu asesorado',
+  titulo = 'Así lo ve la persona',
 }: {
   filas: readonly ObjetivoEfectivoDeSerie[];
   /** Si se muestra la columna del RIR: con criterio RIR, o si alguna serie tiene uno. */

@@ -4,7 +4,7 @@
  * falla y la plataforma conserva la versión anterior (07 §36).
  * Nunca se imprimen valores: solo nombres de variables (08 §32).
  */
-import { esAlcance, PRESUPUESTO_DEL_PROVEEDOR_MS, TipoDePerfilProfesional, type Alcance } from '@be/domain';
+import { direccionDeContacto, esAlcance, PRESUPUESTO_DEL_PROVEEDOR_MS, TipoDePerfilProfesional, type Alcance } from '@be/domain';
 
 export const AMBIENTES = ['development', 'test', 'production'] as const;
 export type Ambiente = (typeof AMBIENTES)[number];
@@ -47,6 +47,20 @@ export interface Entorno {
     readonly loginAdministrativo: Limite;
     /** WP-ADMINISTRACION: los códigos del segundo factor, 10 / 15 min por identidad, desde cualquier red. */
     readonly segundoFactor: Limite;
+    /**
+     * UF-03 (DL-169): pedir la recuperación del acceso, 3 / h por correo desde cualquier red (08 §38: «recuperación: 3/hora»),
+     * exista o no la cuenta; y 30 / h por red, para que nadie barra correos ajenos.
+     */
+    readonly recuperacion: Limite;
+    readonly recuperacionPorIp: Limite;
+    /** UF-03: completar la recuperación, 10 / 15 min por red. Además, cinco códigos que no valen anulan el pedido (en la base). */
+    readonly completarRecuperacion: Limite;
+    /**
+     * UF-06 (DL-169; revisión adversarial de la etapa 2): pedir un derecho (API-RGT-01) y crear una exportación (API-EXP-01),
+     * 10 / h por identidad y por operación, desde cualquier red. Sin cupo, una sesión llenaba la cola de Administración de
+     * pedidos con plazo legal y habilitaba rutas para armar archivos pesados sin límite.
+     */
+    readonly derechos: Limite;
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
@@ -104,7 +118,42 @@ export interface Entorno {
    * administración responde «no configurada» (503) y el resto de BE sigue igual.
    */
   readonly claveDelSegundoFactor: Buffer | null;
+  /**
+   * UF-03 de WP-USO-FINAL (DL-169; UF-D9) · el correo de BE, para los códigos de recuperación del acceso. Lo elige Dirección:
+   * un proveedor transaccional con DPA y un remitente de un dominio propio. Las tres juntas o ninguna:
+   * - `BE_CORREO_PROVEEDOR`: `brevo` o `postmark`. Sin valor, BE no manda correos y rige la recuperación asistida.
+   * - `BE_CORREO_CLAVE`: la clave de la API del proveedor. Es un secreto: nunca se imprime.
+   * - `BE_CORREO_REMITENTE`: la dirección que manda (del dominio propio, verificado en el proveedor).
+   * - `BE_CORREO_URL`: opcional; el origen de la API del proveedor (por defecto, el suyo; https en producción). Configurable
+   *   para que las pruebas usen un proveedor falso local y la CI nunca dependa de un tercero (como WP-08 D-H).
+   */
+  readonly correo: CorreoConfigurado | null;
+  /**
+   * UF-07 de WP-USO-FINAL (DL-169) · el canal de ayuda y contacto que publica API-SOP-01. Las direcciones las define
+   * Dirección y nunca se escriben en el código: `BE_CONTACTO_SOPORTE` (la app, la cuenta, recuperar el acceso, entrar como
+   * profesional) y `BE_CONTACTO_PRIVACIDAD` (los datos y los derechos, 08 §19). Cada una es optativa: sin ella, `null`, y
+   * las pantallas dicen que el canal todavía no está publicado. En producción no pueden ser de un dominio reservado.
+   */
+  readonly contacto: { readonly soporte: string | null; readonly privacidad: string | null };
 }
+
+export const PROVEEDORES_DE_CORREO = ['brevo', 'postmark'] as const;
+export type ProveedorDeCorreo = (typeof PROVEEDORES_DE_CORREO)[number];
+
+export interface CorreoConfigurado {
+  readonly proveedor: ProveedorDeCorreo;
+  readonly clave: string;
+  readonly remitente: string;
+  /** El origen de la API del proveedor, sin ruta. */
+  readonly url: string;
+  readonly presupuestoMs: number;
+}
+
+/** Dónde atiende la API de cada proveedor (su origen público). */
+export const ORIGEN_DEL_PROVEEDOR_DE_CORREO: Readonly<Record<ProveedorDeCorreo, string>> = {
+  brevo: 'https://api.brevo.com',
+  postmark: 'https://api.postmarkapp.com',
+};
 
 /** Dónde publica Google las claves con que firma los ID tokens (OpenID Connect, `jwks_uri` de accounts.google.com). */
 export const JWKS_DE_GOOGLE = 'https://www.googleapis.com/oauth2/v3/certs';
@@ -195,6 +244,17 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     reanudacion: limite(env.RATE_LIMIT_REANUDACION_MAX, env.RATE_LIMIT_REANUDACION_WINDOW_MS, 300, 15 * 60 * 1000, 'RATE_LIMIT_REANUDACION', errores),
     loginAdministrativo: limite(env.RATE_LIMIT_LOGIN_ADMIN_MAX, env.RATE_LIMIT_LOGIN_ADMIN_WINDOW_MS, 5, 15 * 60 * 1000, 'RATE_LIMIT_LOGIN_ADMIN', errores),
     segundoFactor: limite(env.RATE_LIMIT_SEGUNDO_FACTOR_MAX, env.RATE_LIMIT_SEGUNDO_FACTOR_WINDOW_MS, 10, 15 * 60 * 1000, 'RATE_LIMIT_SEGUNDO_FACTOR', errores),
+    recuperacion: limite(env.RATE_LIMIT_RECUPERACION_MAX, env.RATE_LIMIT_RECUPERACION_WINDOW_MS, 3, 60 * 60 * 1000, 'RATE_LIMIT_RECUPERACION', errores),
+    recuperacionPorIp: limite(env.RATE_LIMIT_RECUPERACION_IP_MAX, env.RATE_LIMIT_RECUPERACION_IP_WINDOW_MS, 30, 60 * 60 * 1000, 'RATE_LIMIT_RECUPERACION_IP', errores),
+    completarRecuperacion: limite(
+      env.RATE_LIMIT_COMPLETAR_RECUPERACION_MAX,
+      env.RATE_LIMIT_COMPLETAR_RECUPERACION_WINDOW_MS,
+      10,
+      15 * 60 * 1000,
+      'RATE_LIMIT_COMPLETAR_RECUPERACION',
+      errores,
+    ),
+    derechos: limite(env.RATE_LIMIT_DERECHOS_MAX, env.RATE_LIMIT_DERECHOS_WINDOW_MS, 10, 60 * 60 * 1000, 'RATE_LIMIT_DERECHOS', errores),
   };
 
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);
@@ -263,6 +323,11 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     else claveDelSegundoFactor = decodificada;
   }
 
+  // UF-03: el correo de BE. Las tres variables juntas o ninguna; el mensaje nombra la variable, nunca el valor.
+  const correo = leerCorreo(env, appEnv, errores, origenDeProveedor);
+  // UF-07: el canal de ayuda y contacto. Cada dirección, optativa; el mensaje nombra la variable, nunca el valor.
+  const contacto = { soporte: leerContacto(env.BE_CONTACTO_SOPORTE, 'BE_CONTACTO_SOPORTE', appEnv, errores), privacidad: leerContacto(env.BE_CONTACTO_PRIVACIDAD, 'BE_CONTACTO_PRIVACIDAD', appEnv, errores) };
+
   if (errores.length > 0) {
     throw new Error(`Configuración inválida: ${errores.join('; ')}`);
   }
@@ -285,7 +350,49 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
     secretoDeTareas,
     google: { clientIds: [...new Set(clientIds)], jwksUrl, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS },
     claveDelSegundoFactor,
+    correo,
+    contacto,
   };
+}
+
+/** Los dominios reservados para ejemplos (RFC 2606 y RFC 6761): en producción, una dirección de ellos no es un canal. */
+const DOMINIO_RESERVADO = /@(?:[a-z0-9-]+\.)*(?:invalid|example|test|localhost)$|@(?:[a-z0-9-]+\.)*example\.(?:com|net|org)$/;
+
+/** Una dirección del canal de contacto (UF-07): optativa; si está, un correo, y en producción no de un dominio reservado. */
+function leerContacto(valor: string | undefined, nombre: string, appEnv: string | undefined, errores: string[]): string | null {
+  const texto = (valor ?? '').trim();
+  if (texto === '') return null;
+  const direccion = direccionDeContacto(texto);
+  if (!direccion) {
+    errores.push(`${nombre} debe ser una dirección de correo (UF-07)`);
+    return null;
+  }
+  if (appEnv === 'production' && DOMINIO_RESERVADO.test(direccion)) {
+    errores.push(`${nombre} no puede ser una dirección de ejemplo en producción (UF-07)`);
+    return null;
+  }
+  return direccion;
+}
+
+/** El correo de BE (UF-03): sin proveedor, `null` (no se mandan correos); con proveedor, la clave y el remitente también. */
+function leerCorreo(env: NodeJS.ProcessEnv, appEnv: string | undefined, errores: string[], origen: (valor: string | undefined, porDefecto: string, nombre: string) => string): CorreoConfigurado | null {
+  const proveedor = (env.BE_CORREO_PROVEEDOR ?? '').trim();
+  const clave = (env.BE_CORREO_CLAVE ?? '').trim();
+  const remitente = (env.BE_CORREO_REMITENTE ?? '').trim().toLowerCase();
+  if (proveedor === '') {
+    if (clave !== '' || remitente !== '') errores.push('BE_CORREO_CLAVE y BE_CORREO_REMITENTE van con BE_CORREO_PROVEEDOR (UF-03)');
+    return null;
+  }
+  if (!(PROVEEDORES_DE_CORREO as readonly string[]).includes(proveedor)) {
+    errores.push(`BE_CORREO_PROVEEDOR solo admite ${PROVEEDORES_DE_CORREO.map((p) => `«${p}»`).join(' o ')} (UF-03)`);
+    return null;
+  }
+  if (clave === '' || clave.length > 300 || /\s/.test(clave)) errores.push('BE_CORREO_CLAVE es obligatoria con BE_CORREO_PROVEEDOR, sin espacios');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(remitente) || remitente.length > 254) errores.push('BE_CORREO_REMITENTE debe ser una dirección de correo (la del dominio propio)');
+  if (appEnv === 'production' && remitente.endsWith('@example.invalid')) errores.push('BE_CORREO_REMITENTE no puede ser una dirección sintética en producción');
+  const p = proveedor as ProveedorDeCorreo;
+  const url = origen(env.BE_CORREO_URL, ORIGEN_DEL_PROVEEDOR_DE_CORREO[p], 'BE_CORREO_URL');
+  return { proveedor: p, clave, remitente, url, presupuestoMs: PRESUPUESTO_DEL_PROVEEDOR_MS };
 }
 
 /**

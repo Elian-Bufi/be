@@ -18,7 +18,7 @@ export const COPY_FORMULARIOS = {
   pestana: 'Información',
   solicitudes: 'Solicitudes',
   pedirInformacion: 'Pedir información',
-  volverAlWorkspace: 'Volver al workspace del asesorado',
+  volverAlWorkspace: 'Volver a la ficha de la persona',
 
   // ─── Catálogo de plantillas ───────────────────────────────────────────────────────────────────
   catalogo: 'Formularios disponibles',
@@ -35,7 +35,7 @@ export const COPY_FORMULARIOS = {
 
   // ─── Crear la solicitud ───────────────────────────────────────────────────────────────────────
   proposito: 'Para qué lo necesitás',
-  ayudaProposito: 'Queda registrado y el asesorado lo ve. Explicá para qué vas a usar esta información.',
+  ayudaProposito: 'Queda registrado y la persona lo ve. Explicá para qué vas a usar esta información.',
   alcance: 'Área',
   // FRM-03 exige que una plantilla con dominio se pida en su Alcance (UC-P32, precondición 7): la pantalla lo fija.
   alcanceDeLaPlantilla: 'Este formulario es de una sola área: la solicitud va con esa.',
@@ -44,7 +44,7 @@ export const COPY_FORMULARIOS = {
   solicitudInvalida: 'Revisá las preguntas pedidas: las obligatorias tienen que estar entre las pedidas.',
   enviarSolicitud: 'Enviar solicitud',
   solicitudEnviada: 'Solicitud enviada.',
-  solicitarNoEsAcceder: 'Pedir información no amplía tu acceso ni el consentimiento: hasta que el asesorado responda, no hay dato nuevo.',
+  solicitarNoEsAcceder: 'Pedir información no amplía tu acceso ni el consentimiento: hasta que la persona responda, no hay dato nuevo.',
 
   // ─── Lista y estados ──────────────────────────────────────────────────────────────────────────
   sinSolicitudes: 'Todavía no le pediste información a esta persona.',
@@ -111,7 +111,7 @@ export const COPY_FORMULARIOS = {
 
   // ─── Procedencia ──────────────────────────────────────────────────────────────────────────────
   declaradoPorLaPersona: 'Declarado por la persona',
-  noEsMedicion: 'Esta información la declaró el asesorado. No es una medición ni un diagnóstico.',
+  noEsMedicion: 'Esta información la declaró la persona. No es una medición ni un diagnóstico.',
 
   // ─── PF-02 · pedido desde la evaluación de entrenamiento ─────────────────────────────────────
   propositoDeContextoDeEntrenamiento: 'Planificar tu entrenamiento',

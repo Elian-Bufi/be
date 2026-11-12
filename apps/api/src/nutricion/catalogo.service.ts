@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CrearElementoDeCatalogoRequestSchema, type ElementoDeCatalogo, type ElementoEncontrado, type ElementoResuelto, type FuenteExternaDeAlimento } from '@be/domain';
 import { Prisma } from '@prisma/client';
+import type { Entorno } from '../config/entorno';
+import { ENTORNO } from '../config/tokens';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { buscarEnCatalogo, CORRESPONDENCIA, leerBusqueda, leerCursorDeBusqueda, origenEnElBuscador, type ConNombreAlternativo, type ConOrigenEnLaBase } from '../http/busqueda';
 import { leerConsultaDeLista } from '../http/paginacion';
 import { ALIMENTO_DE_UN_ITEM_EXTERNO } from '../integraciones/item-externo';
+import { ofreceDemostracion, sinLoDeDemostracion } from '../plataforma/catalogo-de-demostracion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,9 +36,10 @@ interface FilaDeCatalogo {
 /**
  * Los alimentos `e` que ve un profesional: lo sembrado por una migración (sin profesional que lo cargue), lo importado de
  * Open Food Facts, que es de todos (DL-141 D-1), y lo propio. La consulta tiene que llamar `e` al elemento.
+ * UF-09 (DL-169): fuera de `test` y de desarrollo, sin lo sembrado como demostración (`ofrece` en falso).
  */
-function alimentoVisible(profesionalId: string): Prisma.Sql {
-  return Prisma.sql`(e."creado_por_id" IS NULL OR ${ALIMENTO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ${profesionalId}::uuid)`;
+export function alimentoVisible(profesionalId: string, ofrece: boolean): Prisma.Sql {
+  return Prisma.sql`(e."creado_por_id" IS NULL OR ${ALIMENTO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ${profesionalId}::uuid) AND ${sinLoDeDemostracion(ofrece)}`;
 }
 
 /** DL-141 D-2: los nombres alternativos vigentes (sin retiro) del alimento `e`, para el buscador. */
@@ -58,10 +62,20 @@ const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, e."creado_por_id"::text AS
  *   uno por producto, con su fuente (DL-141 D-1); lo que carga un profesional es de su ámbito.
  * - Un cambio del catálogo no toca planes activados: la instantánea guarda su propia copia (REG-06-101).
  * - No es dato de salud (08:168), pero solo lo usa un profesional con Nutrición verificada y habilitada.
+ * - UF-09 (DL-169): en producción no ofrece ni acepta lo sembrado como demostración; en `test`, sí.
  */
 @Injectable()
 export class CatalogoService {
-  constructor(private readonly prisma: PrismaService, private readonly ejecutor: EjecutorNutricional) {}
+  /** UF-09: si este ambiente ofrece el catálogo de demostración (solo `test` y desarrollo). */
+  private readonly ofrece: boolean;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ejecutor: EjecutorNutricional,
+    @Inject(ENTORNO) entorno: Entorno,
+  ) {
+    this.ofrece = ofreceDemostracion(entorno);
+  }
 
   // ─── API-NUT-13 y su búsqueda ──────────────────────────────────────────────────────────────
   /**
@@ -96,7 +110,7 @@ export class CatalogoService {
         tablas: Prisma.sql`"version_de_elemento_nutricional" v JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'
-           AND ${alimentoVisible(actor.identidadId)}`,
+           AND ${alimentoVisible(actor.identidadId, this.ofrece)}`,
         nombresAlternativos: NOMBRES_ALTERNATIVOS,
       },
       leerBusqueda(q),
@@ -177,7 +191,7 @@ export class CatalogoService {
        WHERE e."id" = ANY(${validos}::uuid[])
          AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
          AND v."disponibilidad" = 'DISPONIBLE'
-         AND ${alimentoVisible(profesionalId)}`;
+         AND ${alimentoVisible(profesionalId, this.ofrece)}`;
   }
 
   /**
@@ -214,7 +228,7 @@ export class CatalogoService {
         JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
        WHERE v."id" = ANY(${validos}::uuid[])
          AND v."disponibilidad" = 'DISPONIBLE'
-         AND ${alimentoVisible(profesionalId)}`;
+         AND ${alimentoVisible(profesionalId, this.ofrece)}`;
     return new Map(filas.map((f) => [f.versionId, f]));
   }
 

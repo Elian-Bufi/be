@@ -121,6 +121,19 @@
   /* WP-INVITACION (DL-136): el QR de una invitación va negro sobre blanco en los dos temas, como lo leen las cámaras. */
   --qr-fondo: #ffffff;
   --qr-modulo: #000000;
+  /* ED-18 (WP-EDITORES-PROFESIONAL; DL-170): el vidrio del website, solo en la estación, el asistente, sus cuadros y su
+     panel. `#rrggbbaa`: el vidrio de afuera (la barra, los cuadros, el panel), el de adentro (lo que va dentro de un
+     cuadro, sin sombra), la línea de luz del borde, el brillo de arriba, los dos destellos del fondo y el resplandor del
+     único principal. `scripts/contraste.test.cjs` (TEST-EDP-053) mide el texto y los bordes de los controles en el peor
+     punto: el vidrio con lo más oscuro (o lo más claro) que puede pasar detrás, y el brillo encima. En Claro el vidrio
+     es casi opaco: con menos, el borde de un campo no llega a 3:1 cuando pasa texto por detrás. */
+  --vidrio: #fffffff2;
+  --vidrio-adentro: #fffffffa;
+  --vidrio-luz: #ffffffcc;
+  --vidrio-brillo: #ffffff0d;
+  --destello-1: #1e6bf21a;
+  --destello-2: #27d5f914;
+  --resplandor: #1e6bf259;
   color-scheme: light;
 }
 
@@ -180,5 +193,12 @@
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --sombra-desplazamiento: rgb(39 213 249 / 40%);
   --velo: rgb(0 0 0 / 60%);
+  --vidrio: #052238e6;
+  --vidrio-adentro: #0a2c47f0;
+  --vidrio-luz: #ffffff29;
+  --vidrio-brillo: #ffffff0a;
+  --destello-1: #1d98de2e;
+  --destello-2: #27d5f91f;
+  --resplandor: #27d5f966;
   color-scheme: dark;
 }

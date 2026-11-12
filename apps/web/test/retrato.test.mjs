@@ -17,7 +17,7 @@ import { dirname, join, relative } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const { inicialesDe, nombreQueSeVe, referenciaDeProfesional, rolDe, textoSinNombres } = await import('../src/lib/retrato.ts');
+const { inicialesDe, nombreQueSeVe, referenciaDePersona, referenciaDeProfesional, rolDe, textoSinNombres } = await import('../src/lib/retrato.ts');
 const { referenciaNeutral } = await import('@be/domain');
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -86,7 +86,10 @@ const SOFIA = { identityId: '11111111-2222-4333-8444-5555aa66bb77', displayName:
 
 test('TEST-TAG-004 · con los nombres ocultos, cada persona es su referencia, sin iniciales', () => {
   assert.equal(nombreQueSeVe(DIEGO, false, 'asesorado'), 'Diego Sosa');
-  assert.equal(nombreQueSeVe(DIEGO, true, 'asesorado'), referenciaNeutral(ID));
+  // ED-06: con los nombres ocultos, la persona es «Persona · …» (la de la API, «Asesorado · …», cambia en su ventana).
+  assert.equal(nombreQueSeVe(DIEGO, true, 'asesorado'), referenciaDePersona(ID));
+  assert.match(referenciaDePersona(ID), /^Persona · [0-9a-f]{6}$/);
+  assert.equal(inicialesDe(referenciaDePersona(ID)), null);
   assert.equal(nombreQueSeVe(SOFIA, true, 'profesional'), 'Profesional · 66bb77');
   for (const [actor, rol] of [
     [DIEGO, 'asesorado'],
@@ -110,10 +113,10 @@ test('TEST-TAG-004 · los textos que arma la API pierden los nombres conocidos',
     { actor: SOFIA, rol: 'profesional' },
   ];
   assert.equal(textoSinNombres('Corregida por Diego Sosa', conocidos, false), 'Corregida por Diego Sosa');
-  assert.equal(textoSinNombres('Corregida por Diego Sosa', conocidos, true), `Corregida por ${referenciaNeutral(ID)}`);
-  assert.equal(textoSinNombres('Lic. Sofía Paz te escribió sobre Diego Sosa', conocidos, true), `Profesional · 66bb77 te escribió sobre ${referenciaNeutral(ID)}`);
+  assert.equal(textoSinNombres('Corregida por Diego Sosa', conocidos, true), `Corregida por ${referenciaDePersona(ID)}`);
+  assert.equal(textoSinNombres('Lic. Sofía Paz te escribió sobre Diego Sosa', conocidos, true), `Profesional · 66bb77 te escribió sobre ${referenciaDePersona(ID)}`);
   // El más largo primero: «Diego Sosa» no deja «Diego» suelto si también se conoce a un «Diego».
-  assert.equal(textoSinNombres('Diego Sosa', [{ actor: { identityId: 'x', displayName: 'Diego' }, rol: 'asesorado' }, ...conocidos], true), referenciaNeutral(ID));
+  assert.equal(textoSinNombres('Diego Sosa', [{ actor: { identityId: 'x', displayName: 'Diego' }, rol: 'asesorado' }, ...conocidos], true), referenciaDePersona(ID));
 });
 
 /** Los archivos de un directorio, recursivo. */

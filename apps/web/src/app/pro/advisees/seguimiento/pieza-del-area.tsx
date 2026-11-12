@@ -10,7 +10,7 @@
  * Las barras son decorativas: lo que dicen está escrito al lado (WCAG 1.1.1). Ninguna cambia de color por su valor.
  */
 import { COPY_PRIMER_PLAN, numero, type ParteDeObservacion } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useId, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
 import { laUltimaToma, pesosDeLasTomas, textoDeLasDiferenciasDelReparto, unDecimal } from './composicion';
@@ -32,11 +32,11 @@ export function CifrasDesdeLaRevision({ partes, href, texto }: { partes: readonl
           {cifras.map((p) => (
             <li key={p.texto}>
               {href ? (
-                <Link className="cifras-desde-la-revision__celda" href={href}>
+                <Enlace className="cifras-desde-la-revision__celda" href={href}>
                   <strong className="cifra">{p.cifra}</strong>
                   <span className="cifras-desde-la-revision__texto">{p.texto}</span>
                   <span className="visualmente-oculto"> · {texto}</span>
-                </Link>
+                </Enlace>
               ) : (
                 <span className="cifras-desde-la-revision__celda">
                   <strong className="cifra">{p.cifra}</strong>
@@ -211,7 +211,7 @@ export function ComposicionDeLaUltimaToma({
           </p>
         ) : null}
         <p className="pieza-del-area__nota">
-          <Link href={href}>Ver la composición corporal</Link>
+          <Enlace href={href}>Ver la composición corporal</Enlace>
         </p>
       </Pieza>
     );
@@ -251,11 +251,11 @@ export function PrimerPlanEnMiniatura({ evaluacion, href }: { evaluacion: string
           </li>
         ))}
       </ol>
-      <Link className="boton boton--secundario" href={href}>
+      <Enlace className="boton boton--secundario" href={href}>
         <Icono nombre="plan" tamano={18} />
         {COPY_PRIMER_PLAN.titulo}
         {ahora ? <span className="visualmente-oculto">: sigue {ahora.titulo}</span> : null}
-      </Link>
+      </Enlace>
     </div>
   );
 }

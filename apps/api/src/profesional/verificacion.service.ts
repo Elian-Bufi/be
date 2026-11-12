@@ -70,6 +70,33 @@ export class VerificacionService {
     await this.registrarHecho(tx, 'PerfilProfesionalCreado', identidadId, null, null, null, 'perfil profesional mínimo (DL-036)', procedencia, momento, SERVICIO, null);
   }
 
+  /**
+   * UF-04 (DL-169; UF-D6 y UF-D8): el perfil que crea Administración al incorporar a un profesional real (API-ADM-14), con
+   * su matrícula, y su hecho con el administrador como actor y el fundamento. Quien llama ya comprobó, con la identidad
+   * tomada, que no tiene perfil. Devuelve el hecho.
+   */
+  async crearPerfilIncorporado(
+    tx: Prisma.TransactionClient,
+    identidadId: string,
+    datos: { tipo: TipoDePerfilProfesional; nombreVisible: string; matricula: { numero: string; jurisdiccion: string } | null },
+    fundamento: string,
+    momento: Date,
+    actor: Extract<ActorDeHecho, { tipo: 'ADMINISTRADOR' }>,
+  ): Promise<string> {
+    await tx.perfilProfesional.create({
+      data: {
+        identidadId,
+        tipo: datos.tipo,
+        nombreVisible: datos.nombreVisible,
+        matriculaNumero: datos.matricula?.numero ?? null,
+        matriculaJurisdiccion: datos.matricula?.jurisdiccion ?? null,
+        procedencia: actor.procedencia as unknown as Prisma.InputJsonValue,
+        momentoDeOcurrencia: momento,
+      },
+    });
+    return this.registrarHecho(tx, 'PerfilProfesionalCreado', identidadId, null, null, null, fundamento, actor.procedencia, momento, actor, null);
+  }
+
   /** Aplica una transición de la verificación por alcance (06 §6.8.2). */
   async transicionarVerificacion(
     tx: Prisma.TransactionClient,

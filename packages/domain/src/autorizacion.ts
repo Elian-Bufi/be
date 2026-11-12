@@ -55,7 +55,17 @@ export const DIMENSIONES_DE_AUTORIZACION: readonly DimensionDeAutorizacion[] = [
 /** Hechos que el PDP evalúa. Todos salen de la base; ninguno del cliente. */
 export interface HechosDeAutorizacion {
   readonly operacion: { readonly alcance: Alcance; readonly finalidad: Finalidad };
-  readonly actor: { readonly identidadId: string; readonly cuentaOperativa: boolean; readonly tienePerfilProfesional: boolean };
+  readonly actor: {
+    readonly identidadId: string;
+    readonly cuentaOperativa: boolean;
+    readonly tienePerfilProfesional: boolean;
+    /**
+     * UF-11 (DL-169; UF-D12): si la sesión que pide puede actuar como profesional, con su segundo factor verificado. Es
+     * `true` cuando la decisión no es de la sesión de este actor (una tarea interna, o la persona que mira el modo de
+     * acceso de su profesional). Sin él, la situación del actor no es favorable.
+     */
+    readonly conSegundoFactor: boolean;
+  };
   /** `null`: el titular no existe o no es revelable. La respuesta no lo distingue (UC-I02 E05). */
   readonly titular: { readonly identidadId: string; readonly cuentaOperativa: boolean; readonly a3Vigente: boolean } | null;
   readonly verificacion: EstadoDeVerificacionProfesional | null;
@@ -102,6 +112,7 @@ export function evaluarAutorizacion(h: HechosDeAutorizacion): DecisionDeAutoriza
 
   const situacionFavorable =
     h.actor.cuentaOperativa &&
+    h.actor.conSegundoFactor &&
     titular !== null &&
     titular.cuentaOperativa &&
     titular.a3Vigente &&

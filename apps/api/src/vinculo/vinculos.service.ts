@@ -31,6 +31,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProcesoService } from '../proceso/proceso.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { INCLUIR_PARTES_DE_COMPONENTE, esToken, itemDeVinculo, registrarEventoDeVinculo, resumenDeCadena } from './lectura';
+import { puedeActuarComoProfesional } from '../sesion/sesion-de-la-solicitud';
+import { participaciones } from './participacion';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ESTADOS: readonly EstadoDeAlcanceDeVinculo[] = ['ACEPTADO', 'PAUSADO', 'FINALIZADO'];
@@ -78,7 +80,8 @@ export class VinculosService {
     const filas = await this.prisma.alcanceDeVinculo.findMany({
       where: {
         AND: [
-          { vinculo: { OR: [{ profesionalId: actor.identidadId }, { asesoradoId: actor.identidadId }] } },
+          // UF-11: como profesional, solo con el segundo factor de la sesión.
+          { vinculo: { OR: participaciones(actor.identidadId) } },
           consulta.filtros.state ? { estado: consulta.filtros.state as EstadoDeAlcanceDeVinculo } : {},
           consulta.filtros.scope ? { alcance: consulta.filtros.scope as (typeof ALCANCES)[number] } : {},
           despuesDelCursor(consulta.cursor),
@@ -99,7 +102,7 @@ export class VinculosService {
     this.limitador.consumir('consultaProtegida', null, actor.identidadId);
     const c = UUID.test(vinculoId)
       ? await this.prisma.alcanceDeVinculo.findFirst({
-          where: { id: vinculoId, vinculo: { OR: [{ profesionalId: actor.identidadId }, { asesoradoId: actor.identidadId }] } },
+          where: { id: vinculoId, vinculo: { OR: participaciones(actor.identidadId) } },
           include: INCLUIR_PARTES_DE_COMPONENTE,
         })
       : null;
@@ -336,14 +339,18 @@ export class VinculosService {
     }
   }
 
-  /** El componente, bloqueado, solo si el actor es parte. Si no, 404 idéntico (09v8:1385; 09:226). */
+  /**
+   * El componente, bloqueado, solo si el actor es parte. Si no, 404 idéntico (09v8:1385; 09:226). UF-11: como profesional,
+   * solo con el segundo factor de la sesión.
+   */
   private async bloquearDeParticipante(tx: Prisma.TransactionClient, actorId: string, vinculoId: string): Promise<ComponenteBloqueado> {
     if (!UUID.test(vinculoId)) throw errores.recursoNoEncontrado();
     const [c] = await tx.$queryRaw<ComponenteBloqueado[]>`
       SELECT av."id"::text AS "id", av."version", av."estado"::text AS "estado", av."pausado_por"::text AS "pausadoPor", av."alcance"::text AS "alcance",
              vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
         FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
-       WHERE av."id" = ${vinculoId}::uuid AND (vi."profesional_id" = ${actorId}::uuid OR vi."asesorado_id" = ${actorId}::uuid)
+       WHERE av."id" = ${vinculoId}::uuid
+         AND ((vi."profesional_id" = ${actorId}::uuid AND ${puedeActuarComoProfesional(actorId)}) OR vi."asesorado_id" = ${actorId}::uuid)
          FOR NO KEY UPDATE OF av`;
     if (!c) throw errores.recursoNoEncontrado();
     return c;

@@ -107,6 +107,14 @@ personas no cambian. **No se rota sin un plan:** apenas cambia, `restablecer-seg
 Recuperar no desactiva el segundo factor: un código de recuperación solo completa el paso de esa sesión (y desbloquea el
 autenticador si estaba bloqueado).
 
+**Recuperar el acceso de una persona** (UF-03 de WP-USO-FINAL, DL-169; UF-D9). Cuando una persona escribe por el canal
+de ayuda porque no puede entrar y BE no le puede mandar el código por correo, Administración la verifica fuera de BE (que
+escriba desde el correo de la cuenta y confirme algo que solo ella sabe, como la fecha del alta) y, en `/admin/access`,
+emite un código de un solo uso con el fundamento. El código se muestra una sola vez y vale 24 horas; al emitirlo se
+cierran todas las sesiones de la cuenta. Se lo da por el mismo canal, y la persona lo escribe en «¿Olvidaste tu
+contraseña?», con su contraseña nueva. Emitir otro anula el anterior. No sirve para una cuenta administrativa (sección 4)
+ni para una que entra con Google, que no tiene contraseña.
+
 ## 4. Lo que necesita al operador
 
 1. **Perdió el autenticador y los códigos** (o el autenticador quedó bloqueado y no le quedan códigos). Antes de hacer
@@ -119,7 +127,10 @@ autenticador si estaba bloqueado).
 
    Deja sin valor el autenticador, los códigos de recuperación y las sesiones de Administración de esa cuenta, y muestra
    un código de incorporación nuevo. La persona vuelve al paso 4 de la sección 2.
-2. **Olvidó la contraseña.** BE no tiene recuperación de contraseña (fuera de alcance). Hoy la salida es crear otra cuenta,
+2. **Olvidó la contraseña.** Desde UF-03 de WP-USO-FINAL (DL-169), si BE tiene el proveedor de correo (`BE_CORREO_*`,
+   `docs/DESPLIEGUE.md`), la recupera sola con «¿Olvidaste tu contraseña?» y el correo de la cuenta; el segundo factor
+   se le sigue pidiendo y todas sus sesiones terminan. Sin proveedor, la recuperación asistida de la consola
+   (`/admin/access`) no sirve para cuentas administrativas, a propósito: la salida sigue siendo crear otra cuenta,
    incorporarla y retirar la anterior.
 3. **La cuenta se comprometió, o la persona deja la tarea.** Retirar el rol:
 

@@ -509,6 +509,82 @@ test('APK · los degradés de la receta terminan en el mismo color con alfa 00, 
   }
 });
 
+/** Los colores translúcidos del website (`#rrggbbaa` en tokens.css), por tema: el vidrio de ED-18. */
+function translucidosWeb() {
+  const css = readFileSync(TOKENS_WEB, 'utf8');
+  const leer = (selector) => {
+    const inicio = css.indexOf(`${selector} {`);
+    const tokens = {};
+    for (const [, nombre, valor] of css.slice(inicio, css.indexOf('}', inicio)).matchAll(/--([a-z0-9-]+):\s*(#[0-9a-f]{8})\s*;/gi)) tokens[nombre] = valor.toLowerCase();
+    return tokens;
+  };
+  const claro = leer(':root');
+  return { claro, oscuro: { ...claro, ...leer("[data-tema='azul-noche']") } };
+}
+
+/**
+ * TEST-EDP-053 (ED-18; DL-170): el vidrio del website. El texto y los bordes de los controles se miden en el peor punto
+ * de cada superficie translúcida, en los dos temas: el vidrio sobre cada color opaco que puede pasar detrás (el fondo con
+ * sus destellos, las superficies, el texto, los enlaces, los bordes y los botones), con el brillo de arriba encima; y el
+ * vidrio de adentro sobre ese resultado. Con la transparencia reducida, con colores forzados o sin `backdrop-filter`,
+ * todo es opaco; y hay un solo resplandor por vista.
+ */
+test('TEST-EDP-053 · el vidrio se lee en su peor punto, y vuelve a ser opaco cuando hace falta', () => {
+  const opacos = temasWeb();
+  const vidrios = translucidosWeb();
+  const DETRAS = ['fondo', 'fondo-suave', 'superficie', 'texto', 'tenue', 'enlace', 'borde', 'borde-control', 'boton-fondo', 'banda', 'error', 'exito', 'azul'];
+  const FRENTES = [
+    ['texto', TEXTO],
+    ['tenue', TEXTO],
+    ['enlace', TEXTO],
+    ['boton-secundario-texto', TEXTO],
+    ['error', TEXTO],
+    ['borde-control', NO_TEXTO],
+    ['foco', NO_TEXTO],
+  ];
+  const fallas = [];
+  for (const nombre of ['claro', 'oscuro']) {
+    const t = opacos[nombre];
+    const v = vidrios[nombre];
+    for (const token of ['vidrio', 'vidrio-adentro', 'vidrio-luz', 'vidrio-brillo', 'destello-1', 'destello-2', 'resplandor']) assert.ok(v[token], `${nombre}: falta el token «${token}»`);
+    // Lo que puede pasar detrás, incluido el fondo con cada destello.
+    const detras = [...DETRAS.map((k) => [k, t[k]]), ['fondo con el destello 1', capa(v['destello-1'], t.fondo)], ['fondo con el destello 2', capa(v['destello-2'], t.fondo)]];
+    for (const [clave, color] of detras) {
+      const afuera = capa(v['vidrio-brillo'], capa(v.vidrio, color));
+      const adentro = capa(v['vidrio-adentro'], afuera);
+      for (const [superficie, fondo] of [
+        ['el vidrio', afuera],
+        ['el vidrio de adentro', adentro],
+      ]) {
+        for (const [frente, minimo] of FRENTES) {
+          const relacion = contraste(t[frente], fondo);
+          if (relacion < minimo) fallas.push(`${nombre} · ${frente} sobre ${superficie} con ${clave} detrás = ${relacion.toFixed(2)}:1 (mínimo ${minimo}:1)`);
+        }
+      }
+    }
+    // El texto de la página, sobre el fondo con los destellos.
+    for (const frente of ['texto', 'tenue', 'enlace']) {
+      for (const d of ['destello-1', 'destello-2']) {
+        const relacion = contraste(t[frente], capa(v[d], t.fondo));
+        if (relacion < TEXTO) fallas.push(`${nombre} · ${frente} sobre el fondo con el ${d} = ${relacion.toFixed(2)}:1`);
+      }
+    }
+  }
+  assert.deepEqual(fallas, [], `El vidrio no llega al contraste en su peor punto:\n${fallas.join('\n')}`);
+
+  const css = readFileSync(join(RAIZ, 'apps/web/src/app/globals.css'), 'utf8');
+  const bloque = css.slice(css.indexOf('/* ═══ ED-18'));
+  // El vidrio, solo donde hay soporte; opaco con la transparencia reducida y con colores forzados.
+  assert.match(bloque, /@supports \(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\) \{/);
+  assert.match(bloque, /@media \(prefers-reduced-transparency: reduce\), \(forced-colors: active\) \{[\s\S]*background: var\(--superficie\);\n\s*-webkit-backdrop-filter: none;\n\s*backdrop-filter: none;/);
+  // Ni la planilla ni las zonas de edición: el vidrio no las toca.
+  assert.doesNotMatch(bloque, /\.estacion__zona\b|series-del-editor|\.tabla\b/);
+  // Nada se anima: ni transiciones ni animaciones en el vidrio.
+  assert.doesNotMatch(bloque, /transition|animation/);
+  // Un solo resplandor por vista: una regla, para el principal de la barra o el del paso (nunca los dos a la vez).
+  assert.equal((css.match(/var\(--resplandor\)/g) ?? []).length, 1);
+});
+
 /** Todo color literal en estilos vive en los tokens: si no, la prueba no lo ve. */
 test('ningún estilo del website ni de la APK escribe un color fuera de los tokens', () => {
   const archivos = [];

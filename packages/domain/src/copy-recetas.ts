@@ -141,14 +141,14 @@ export const COPY_REGISTRO_PARA_EL_PROFESIONAL = {
   comidaDeContexto: (comida: string) => `Lo registró en «${comida}». En el contraste figura fuera del plan: no reemplaza la comida prescripta.`,
   cantidadAproximada: 'Cantidad aproximada',
   fotos: 'Fotos del registro',
-  fotoDelAsesorado: (n: number) => `Foto ${n} del asesorado`,
+  fotoDelAsesorado: (n: number) => `Foto ${n} de la persona`,
   fotoNoDisponible: 'La foto no se pudo mostrar.',
-  fotoPrivada: 'Las fotos son privadas: las ven el asesorado y el profesional que lo acompaña en Nutrición.',
+  fotoPrivada: 'Las fotos son privadas: las ven la persona y el profesional que la acompaña en Nutrición.',
   estimacionDeLoConsumido: 'Estimación de lo consumido',
   sinDescripcion: 'Sin descripción',
   noLoComio: 'no lo comió',
   sinCantidad: 'sin cantidad',
-  deshecho: (fecha: string) => `El asesorado deshizo este registro el ${fecha}.`,
+  deshecho: (fecha: string) => `La persona deshizo este registro el ${fecha}.`,
 } as const;
 
 /** El participio que concuerda con el nombre de la comida, que viene del plan: «Almuerzo registrado», «Merienda registrada». */

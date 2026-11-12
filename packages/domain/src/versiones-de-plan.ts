@@ -4,7 +4,9 @@
  * la página pide algo por su número de orden, y los textos de las versiones.
  *
  * - **El número de una versión es su orden de activación** (1, 2, 3…). El campo `version` del contrato es el token de
- *   concurrencia del recurso y avanza con cada guardado: no sirve para mostrar. Un borrador no tiene número.
+ *   concurrencia del recurso y avanza con cada guardado: no sirve para mostrar. El historial numera solo las
+ *   activadas; la versión en preparación lleva el número que va a tener al activarse, el de las activadas más uno
+ *   (DJ-6, WP-EDITORES-PROFESIONAL).
  * - **Lo que se elige vive en la dirección de la página, por su número de orden:** «Actualizar» y volver atrás lo
  *   conservan. Un número que la versión no tiene no es un error: se ignora.
  */
@@ -87,14 +89,23 @@ export function pedidoDeAbiertos(cosas: readonly ConOrden[], abiertos: ReadonlyS
 /** Los textos de las versiones de un plan, iguales en Nutrición y en Entrenamiento. Describen, no califican. */
 export const COPY_DE_VERSIONES = {
   version: 'Versión',
-  /** El borrador no lleva número hasta activarse: se nombra por lo que es. */
+  /** Sin número: lo que había antes de DJ-6. Queda para lo que no conoce el número; el editor y el selector lo dicen. */
   enPreparacion: 'En preparación',
+  /**
+   * DJ-6: la versión en preparación lleva número, el de las activadas más uno (hay una sola por plan). El título del
+   * editor: «Versión 9 · en preparación».
+   */
+  versionEnPreparacion: (n: number): string => `Versión ${numero(n)} · en preparación`,
+  /** En el selector de versión, al lado de «8 · activa»: «9 · en preparación». */
+  enPreparacionConNumero: (n: number): string => `${numero(n)} · en preparación`,
+  /** La etiqueta del título: «Diego no la ve» (DL-169: el nombre, o la referencia neutral); sin ninguno, «La persona…». */
+  noLaVe: (quien: string | null): string => `${(typeof quien === 'string' && quien.trim()) || 'La persona'} no la ve`,
   /** En el selector de versión: «2 · activa». La activada sí tiene número. */
   activaConNumero: (n: number): string => `${numero(n)} · activa`,
-  elAsesoradoNoLaVe: 'El asesorado no la ve.',
+  elAsesoradoNoLaVe: 'La persona no la ve.',
   /** «Versión 2 · activada el 7 oct». */
   versionActivada: (n: number, cuando: string): string => `Versión ${numero(n)} · activada el ${cuando}`,
-  esLoQueVe: 'es lo que ve el asesorado',
+  esLoQueVe: 'es lo que ve la persona',
   vigente: 'vigente',
   anterior: 'anterior, conservada',
   historial: 'Historial',
@@ -102,7 +113,6 @@ export const COPY_DE_VERSIONES = {
   huella: 'Huella de la instantánea',
   primeroElObjetivo: 'Para planificar, primero definí el objetivo: el plan se relaciona con el objetivo vigente.',
   irAResumen: 'Ir a Resumen',
-  versionActivadaAviso: 'Versión activada. El asesorado ya ve esta planificación como vigente.',
   /** Con una versión en preparación a la vista, la activa no ofrece crear otra: hay una sola a la vez. */
   yaHayUnaEnPreparacion: 'Ya hay una versión en preparación: se sigue sobre esa.',
 } as const;

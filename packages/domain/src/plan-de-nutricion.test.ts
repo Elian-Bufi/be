@@ -16,7 +16,7 @@ const version = (planId: string, activatedAt: string | null, isEffective = false
 
 // ─── Las versiones ──────────────────────────────────────────────────────────────────────────────
 
-test('el número de una versión es su orden de activación, llegue la lista como llegue; un borrador no tiene número', () => {
+test('el número de una versión es su orden de activación, llegue la lista como llegue; un borrador no entra en esa cuenta', () => {
   // La lista llega con la más nueva primero y el borrador adelante, como la entrega la API.
   const lista = [version('borrador', null), version('tercera', '2026-10-05T12:00:00.000Z', true), version('primera', '2026-08-17T12:00:00.000Z'), version('segunda', '2026-09-07T12:00:00.000Z')];
   const numeros = numerosDeVersionDePlan(lista);
@@ -133,7 +133,10 @@ test('los textos del plan: ninguno usa un término prohibido de Nutrición, tamp
   assert.ok(textos.length > 25);
   assert.deepEqual(textos.flatMap((t) => terminosProhibidosEn(t).map((p) => `${p} en «${t}»`)), []);
   assert.equal(COPY_DEL_PLAN.versionActivada(2, '7 oct'), 'Versión 2 · activada el 7 oct');
-  // En el selector de versión, la activa dice su número; la que está en preparación, no tiene.
+  // En el selector de versión, la activa dice su número, y la que está en preparación, el que va a tener al activarse
+  // (DJ-6: el de las activadas más uno).
   assert.equal(COPY_DEL_PLAN.activaConNumero(2), '2 · activa');
+  assert.equal(COPY_DEL_PLAN.enPreparacionConNumero(3), '3 · en preparación');
+  assert.equal(COPY_DEL_PLAN.versionEnPreparacion(3), 'Versión 3 · en preparación');
   assert.equal(/[0-9]/.test(COPY_DEL_PLAN.enPreparacion), false);
 });

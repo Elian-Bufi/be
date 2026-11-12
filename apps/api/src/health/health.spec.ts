@@ -24,6 +24,10 @@ const ENTORNO = {
     reanudacion: { maximo: 300, ventanaMs: 900000 },
     loginAdministrativo: { maximo: 5, ventanaMs: 900000 },
     segundoFactor: { maximo: 10, ventanaMs: 900000 },
+    recuperacion: { maximo: 3, ventanaMs: 3600000 },
+    recuperacionPorIp: { maximo: 30, ventanaMs: 3600000 },
+    completarRecuperacion: { maximo: 10, ventanaMs: 900000 },
+    derechos: { maximo: 10, ventanaMs: 3600000 },
   },
   saltosDeProxy: 1,
   caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,
@@ -38,6 +42,8 @@ const ENTORNO = {
   google: { clientIds: [], jwksUrl: 'http://127.0.0.1:9/certs', presupuestoMs: 1000 },
   // WP-ADMINISTRACION: sin la clave, la administración responde «no configurada».
   claveDelSegundoFactor: null,
+  correo: null,
+  contacto: { soporte: null, privacidad: null },
 };
 
 function directorioCon(migraciones: string[]): string {
