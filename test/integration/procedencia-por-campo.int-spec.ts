@@ -5,7 +5,9 @@
  *   (API-TRN-20) guardan y devuelven `fieldOrigins` en su forma; un objeto vacío no se guarda;
  * - una clave sin valor, o `PERSON` en una serie tildada con lo planificado, es 422 con su código;
  * - cambiar solo la procedencia no es una corrección;
- * - en una corrección del profesional, un valor que cambió no puede decir `PERSON` (422); lo que no cambió, sí.
+ * - en una corrección del profesional, un valor que cambió no puede decir `PERSON` (422); lo que no cambió conserva su
+ *   clave, aunque la carga vigente salga de JSONB con las claves en otro orden; y no se cambia ni se agrega procedencia
+ *   (de una serie tildada, o de PLAN, a PERSON: FIELD_ORIGIN_NOT_PRESERVED).
  * Sin migración: las series viven en el JSON del borrador, de la ejecución y de la corrección.
  */
 import type { INestApplication } from '@nestjs/common';
@@ -103,5 +105,30 @@ describe('ED-70 · la procedencia por campo de la serie registrada', () => {
     // La persona sí puede corregir lo suyo y decir que lo escribió ella.
     const propia = await corregir(x.apk, x.executionId, [todoEscrito(1, 75)]).expect(201);
     expect(propia.body.data.corrections[1].correction.exercises[0].sets[0].fieldOrigins).toEqual({ load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PERSON' });
+  });
+
+  it('TEST-EDP-060 · el profesional corrige solo las repeticiones y conserva PERSON en la carga que no cambió: 201', async () => {
+    const x = await registrada([todoEscrito(1)]);
+    const r = await corregir(x.pro, x.executionId, [{ ...todoEscrito(1), completedRepetitions: 9, fieldOrigins: { load: 'PERSON', rir: 'PERSON' } }]).expect(201);
+    expect(r.body.data.corrections[0].correction.exercises[0].sets[0].fieldOrigins).toEqual({ load: 'PERSON', rir: 'PERSON' });
+  });
+
+  it('TEST-EDP-060 · el profesional no pasa a PERSON una serie tildada con lo planificado ni un valor del plan: 422', async () => {
+    const tildada: Serie = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null, recordedAs: 'AS_PLANNED' };
+    const x = await registrada([tildada, soloLasRepeticiones(2)]);
+    const todoPersona = { load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PERSON' };
+    const r = await corregir(x.pro, x.executionId, [
+      { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: 7, fieldOrigins: todoPersona },
+      { ...soloLasRepeticiones(2), fieldOrigins: todoPersona },
+    ]).expect(422);
+    expect(r.body.error.details.issues).toEqual([
+      ...['load', 'completedRepetitions', 'rir'].map((c) => ({ code: 'FIELD_ORIGIN_NOT_PRESERVED', path: `correction.exercises[0].sets[0].fieldOrigins.${c}` })),
+      ...['load', 'rir'].map((c) => ({ code: 'FIELD_ORIGIN_NOT_PRESERVED', path: `correction.exercises[0].sets[1].fieldOrigins.${c}` })),
+    ]);
+    // Sin las claves que no tenía, y con las que tenía, se guarda.
+    await corregir(x.pro, x.executionId, [
+      { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: 7 },
+      soloLasRepeticiones(2),
+    ]).expect(201);
   });
 });

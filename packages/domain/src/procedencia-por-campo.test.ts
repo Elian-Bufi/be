@@ -78,3 +78,32 @@ test('TEST-EDP-060 · el profesional corrige la carga: ese valor no puede decir 
   const nueva = [ejercicio([serie({ fieldOrigins: { completedRepetitions: 'PERSON', rir: 'PERSON' } }), serie({ setIndex: 2, fieldOrigins: { rir: 'PERSON' } })])];
   assert.deepEqual(origenesQueAtribuyenALaPersona(nueva, vigente), [{ code: 'FIELD_ORIGIN_PERSON_ON_CHANGED_VALUE', path: 'exercises[0].sets[1].fieldOrigins.rir' }]);
 });
+
+test('TEST-EDP-060 · el profesional corrige las repeticiones y conserva PERSON en la carga que no cambió: aunque la vigente salga de JSONB con las claves en otro orden', () => {
+  // JSONB guarda las claves de la carga por largo: { unit, value }. El pedido llega en el orden del esquema: { value, unit }.
+  const vigente = [ejercicio([serie({ load: { unit: 'kg', value: 70 } as never, completedRepetitions: 8, fieldOrigins: { load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PERSON' } })])];
+  const corregida = [ejercicio([serie({ load: kg(70), completedRepetitions: 9, fieldOrigins: { load: 'PERSON', rir: 'PERSON' } })])];
+  assert.deepEqual(origenesQueAtribuyenALaPersona(corregida, vigente), []);
+});
+
+test('TEST-EDP-060 · el profesional no cambia ni agrega procedencia: de AS_PLANNED, de una serie de antes o de PLAN a PERSON es 422', () => {
+  const todoPersona = { load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PERSON' } as const;
+  const camino = (c: string) => `exercises[0].sets[0].fieldOrigins.${c}`;
+  const noConservada = (cs: string[]) => cs.map((c) => ({ code: 'FIELD_ORIGIN_NOT_PRESERVED', path: camino(c) }));
+  // «Ya la hice»: 60 × 8 con RIR 2, tildada y sin procedencia. El profesional corrige el esfuerzo percibido.
+  const tildada = [ejercicio([serie({ completedRepetitions: 8, recordedAs: 'AS_PLANNED' })])];
+  const aPersona = [ejercicio([serie({ completedRepetitions: 8, perceivedExertion: 7, fieldOrigins: todoPersona })])];
+  assert.deepEqual(origenesQueAtribuyenALaPersona(aPersona, tildada), noConservada(['load', 'completedRepetitions', 'rir']));
+  // Una serie de antes de la procedencia (la registró la APK 0.24): no se le agregan claves, ni PERSON ni PLAN.
+  const deAntes = [ejercicio([serie()])];
+  assert.deepEqual(origenesQueAtribuyenALaPersona([ejercicio([serie({ perceivedExertion: 7, fieldOrigins: { rir: 'PERSON' } })])], deAntes), noConservada(['rir']));
+  assert.deepEqual(origenesQueAtribuyenALaPersona([ejercicio([serie({ perceivedExertion: 7, fieldOrigins: { load: 'PLAN' } })])], deAntes), noConservada(['load']));
+  // De PLAN a PERSON con el mismo valor.
+  const delPlan = [ejercicio([serie({ fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } })])];
+  assert.deepEqual(origenesQueAtribuyenALaPersona([ejercicio([serie({ perceivedExertion: 7, fieldOrigins: todoPersona })])], delPlan), noConservada(['load', 'rir']));
+  // Un valor que cambió no puede decir PLAN tampoco.
+  assert.deepEqual(origenesQueAtribuyenALaPersona([ejercicio([serie({ load: kg(65), fieldOrigins: { load: 'PLAN' } })])], delPlan), noConservada(['load']));
+  // Conservar la misma clave, o sacarla, sí.
+  assert.deepEqual(origenesQueAtribuyenALaPersona([ejercicio([serie({ perceivedExertion: 7, fieldOrigins: { load: 'PLAN', rir: 'PLAN' } })])], delPlan), []);
+  assert.deepEqual(origenesQueAtribuyenALaPersona([ejercicio([serie({ perceivedExertion: 7 })])], tildada), []);
+});

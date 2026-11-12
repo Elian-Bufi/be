@@ -647,11 +647,12 @@ export class EjecucionesDeEntrenamientoService {
         if (serializacionCanonica(paraComparar(guardado)) === serializacionCanonica(paraComparar(vigente))) {
           throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'La corrección no cambia nada del registro.', { issues: [{ code: 'CORRECTION_WITHOUT_CHANGES', path: 'correction' }] });
         }
-        // ED-70 (TEST-EDP-060): el dato corregido por el profesional no se le atribuye a la persona (05:9209-9224).
+        // ED-70 (TEST-EDP-060): el dato corregido por el profesional no se le atribuye a la persona (05:9209-9224), y la
+        // procedencia de lo que no cambió se conserva o se saca: no se cambia ni se agrega.
         if (x.asesoradoId !== actor.identidadId) {
           const atribuidos = origenesQueAtribuyenALaPersona(contenido.exercises, vigente.exercises);
           if (atribuidos.length > 0) {
-            throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'Un valor que corrige el profesional no lo escribió la persona.', { issues: atribuidos.map((i) => ({ code: i.code, path: `correction.${i.path}` })) });
+            throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'El profesional no puede cambiar ni agregar la procedencia de un valor.', { issues: atribuidos.map((i) => ({ code: i.code, path: `correction.${i.path}` })) });
           }
         }
         const correccion = await tx.correccionDeEjecucionDeEntrenamiento.create({
