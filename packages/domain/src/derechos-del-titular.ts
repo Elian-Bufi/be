@@ -135,10 +135,11 @@ export type PedidoDeDerechoAdministrativoResponse = z.infer<typeof PedidoDeDerec
 
 export const COPY_DERECHOS = {
   titulo: 'Tus datos',
-  queEs: 'Podés descargar lo que BE guarda de vos y pedir que se corrija o se suprima. Respondemos dentro de los plazos de la ley.',
+  queEs: 'Podés descargar tus datos en BE y pedir saber qué datos tenemos, que se corrija alguno o que se supriman.',
   descargar: {
     titulo: 'Descargar tus datos',
-    texto: 'Un archivo con tu perfil, tus vínculos y consentimientos, tus registros, los planes que recibiste, tus medidas y tus formularios. De tus profesionales va solo su nombre profesional.',
+    texto:
+      'Un archivo con tu perfil, tus accesos, los textos que aceptaste, tus vínculos y consentimientos, tus registros (con sus correcciones y lo que anulaste), los planes y las revisiones que recibiste, las notas de tus profesionales sobre vos, tus medidas, tus formularios y los datos de tus fotos. De tus profesionales va solo su nombre profesional.',
     boton: 'Descargar mis datos',
     preparando: 'Preparando el archivo…',
     listo: 'Listo: el archivo se descargó. El enlace vence a los 15 minutos.',
@@ -158,15 +159,23 @@ export const COPY_DERECHOS = {
     enviar: 'Enviar el pedido',
     enviando: 'Enviando…',
     enviado: (plazo: string): string => `Recibimos tu pedido. Te respondemos a más tardar el ${plazo}.`,
-    supresionAyuda: 'Para suprimir todo, también podés cerrar tu cuenta. Lo que la ley obliga a conservar se conserva, y te lo decimos.',
+    notaLarga: 'La nota puede tener hasta 1000 caracteres.',
+    supresionAyuda: 'Para suprimir todo, también podés cerrar tu cuenta. Si algo se tiene que conservar por ley, te lo decimos en la respuesta.',
     irAlCierre: 'Ver cómo cerrar mi cuenta',
   },
   pedidos: {
     titulo: 'Tus pedidos',
     vacio: 'Todavía no hiciste pedidos.',
+    /** La lectura falló (sin red, un 5xx): no es lo mismo que no tener pedidos. */
+    sinLeer: 'No pudimos traer tus pedidos.',
     estado: { RECEIVED: 'Recibido', RESOLVED: 'Resuelto', REJECTED: 'No se pudo hacer' } as Readonly<Record<(typeof ESTADOS_DEL_PEDIDO_DE_DERECHO)[number], string>>,
     plazo: (fecha: string): string => `Plazo: ${fecha}`,
     respuesta: 'Respuesta',
   },
-  plazosAConfirmar: 'Los plazos son los de la Ley 25.326 (diez días corridos para el acceso y cinco días hábiles para corregir o suprimir), a confirmar con la asesoría jurídica.',
+  /**
+   * Lo que ve la persona: los plazos de la ley, sin la nota interna «a confirmar con la asesoría» (revisión adversarial de
+   * la etapa 2), que queda en el paquete y en el gate (condición 1). Los plazos que calcula BE (UF-T31) son iguales o más
+   * cortos que estos.
+   */
+  plazos: 'Los plazos son los de la Ley 25.326: diez días corridos para el acceso y cinco días hábiles para corregir o suprimir.',
 } as const;

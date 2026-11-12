@@ -12,7 +12,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { RutaDeExportacion } from '../../apps/api/src/derechos/ruta-de-exportacion';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, entornoDePrueba, tokenDe, transicionPorServicio } from './soporte-api';
 import { adm, administradorListo } from './soporte-administracion';
 import { circuitoConPlanActivo, circuitoListoParaPlanificar } from './soporte-nutricion';
 
@@ -71,6 +71,67 @@ describe('TEST-UF-011 · la exportación propia, por una ruta firmada y temporal
     expect(JSON.stringify(entregas)).not.toContain('be-exportacion-propia');
     // El archivo no se guarda: la exportación es una fila con sus dominios y su vencimiento.
     expect(Object.keys(await prisma.exportacionPropia.findUniqueOrThrow({ where: { id } })).sort()).toEqual(['dominios', 'id', 'momentoDeRegistro', 'procedencia', 'titularId', 'venceEn']);
+  });
+
+  it('cada registro va con su estado vigente: una comida anulada sale anulada, y las notas sobre la persona y sus fotos están', async () => {
+    // Revisión adversarial de la etapa 2: el archivo leía las filas originales, sin correcciones ni anulaciones (Ley
+    // 25.326, art. 4: la calidad del dato).
+    const c = await circuitoConPlanActivo(app, 'uf06-estado');
+    const registrada = await conSesion(app, c.ase.token)
+      .post('/api/v1/me/nutrition/meal-records')
+      .send({ kind: 'DIFFERENT', activePlanId: c.planId, dayTypeId: null, mealId: null, occurredAt: new Date().toISOString(), description: 'Un sándwich sintético', approximateQuantity: null, mediaIds: [] })
+      .expect(201);
+    const { recordId, version } = registrada.body.data as { recordId: string; version: string };
+    await conSesion(app, c.ase.token).post(`/api/v1/nutrition/meal-records/${recordId}/annulment`).send({ reason: 'Me equivoqué (sintético)', expectedVersion: version }).expect(201);
+    const id = (await conSesion(app, c.ase.token).post('/api/v1/me/exports').send(TODOS).expect(201)).body.data.exportId as string;
+    const ruta = (await conSesion(app, c.ase.token).get(`/api/v1/me/exports/${id}`).expect(200)).body.data.download.path as string;
+    const archivo = JSON.parse((await request(app.getHttpServer()).get(`/api/v1${ruta}`).expect(200)).text);
+    const registros = archivo.nutricion.registros as { registro: { id: string }; anulado: boolean; anulacion: unknown; correcciones: unknown[]; rectificacionesDeCantidades: unknown[] }[];
+    expect(registros).toHaveLength(1);
+    expect(registros[0]).toMatchObject({ anulado: true, correcciones: [], rectificacionesDeCantidades: [] });
+    expect(registros[0]!.anulacion).not.toBeNull();
+    expect(JSON.stringify(registros[0])).toContain(recordId);
+    // Las medidas, con su estado; los formularios, con sus rectificaciones; las notas y los medios, aunque estén vacíos.
+    expect(Array.isArray(archivo.notasDeCoordinacion) && Array.isArray(archivo.medios)).toBe(true);
+    expect(Array.isArray(archivo.nutricion.revisiones) && Array.isArray(archivo.entrenamiento.revisiones)).toBe(true);
+    for (const toma of archivo.antropometria.medidas as { mediciones: { medicion: unknown; anulada: boolean; correcciones: unknown[] }[] }[]) {
+      for (const m of toma.mediciones) expect(Object.keys(m).sort()).toEqual(['anulacion', 'anulada', 'correcciones', 'medicion']);
+    }
+    for (const f of archivo.formularios as Record<string, unknown>[]) expect(Object.keys(f).sort()).toEqual(['rectificaciones', 'respuesta']);
+  });
+
+  it('una ruta emitida no sobrevive a una revocación de las sesiones ni a una cuenta suspendida: el mismo 404', async () => {
+    // Revisión adversarial de la etapa 2: con una sesión robada se pedía una ruta, y la persona recuperaba el acceso (o
+    // cerraba todas sus sesiones): durante 15 minutos más, la ruta seguía entregando el archivo.
+    const c = await circuitoConPlanActivo(app, 'uf06-revocada');
+    const id = (await conSesion(app, c.ase.token).post('/api/v1/me/exports').send(TODOS).expect(201)).body.data.exportId as string;
+    const ruta = (await conSesion(app, c.ase.token).get(`/api/v1/me/exports/${id}`).expect(200)).body.data.download.path as string;
+    await request(app.getHttpServer()).get(`/api/v1${ruta}`).expect(200);
+    await request(app.getHttpServer()).delete('/api/v1/auth/sessions').set('Authorization', `Bearer ${c.ase.token}`).expect(204);
+    await request(app.getHttpServer()).get(`/api/v1${ruta}`).expect(404);
+    const rechazo = await prisma.registroDeAuditoria.findFirstOrThrow({ where: { operacion: 'API-EXP-02-DESCARGA', resultado: 'RECHAZO', motivo: 'SESIONES_REVOCADAS' }, orderBy: { momentoDeRegistro: 'desc' } });
+    expect(rechazo.sujetoId).toBeNull();
+    // Con una sesión nueva, una ruta nueva vale; con la cuenta suspendida, tampoco.
+    const nueva = await tokenDe(app, c.ase.correo, 'WEB');
+    const otra = (await conSesion(app, nueva).get(`/api/v1/me/exports/${id}`).expect(200)).body.data.download.path as string;
+    await request(app.getHttpServer()).get(`/api/v1${otra}`).expect(200);
+    await transicionPorServicio(app, c.ase.id, 'SuspenderCuenta');
+    await request(app.getHttpServer()).get(`/api/v1${otra}`).expect(404);
+  });
+
+  it('pedir derechos y crear exportaciones tiene cupo por persona: el 429 queda auditado', async () => {
+    const limites = { ...entornoDePrueba().limites, derechos: { maximo: 2, ventanaMs: 60 * 60 * 1000 } };
+    const conCupo = await appDePrueba({ limites });
+    try {
+      const c = await circuitoConPlanActivo(conCupo, 'uf06-cupo');
+      for (let i = 0; i < 2; i++) await conSesion(conCupo, c.ase.token).post('/api/v1/me/data-rights-requests').send({ type: 'ACCESS', scope: {} }).expect(201);
+      expect((await conSesion(conCupo, c.ase.token).post('/api/v1/me/data-rights-requests').send({ type: 'ACCESS', scope: {} }).expect(429)).body.error.code).toBe('RATE_LIMITED');
+      for (let i = 0; i < 2; i++) await conSesion(conCupo, c.ase.token).post('/api/v1/me/exports').send(TODOS).expect(201);
+      await conSesion(conCupo, c.ase.token).post('/api/v1/me/exports').send(TODOS).expect(429);
+      expect(await prisma.registroDeAuditoria.count({ where: { sujetoId: c.ase.id, resultado: 'RECHAZO', motivo: 'CUPO_AGOTADO', operacion: { in: ['API-RGT-01', 'API-EXP-01'] } } })).toBe(2);
+    } finally {
+      await conCupo.close();
+    }
   });
 
   it('una ruta alterada o vencida es el mismo 404, y una exportación sin dominios no se pide', async () => {

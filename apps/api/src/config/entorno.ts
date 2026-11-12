@@ -55,6 +55,12 @@ export interface Entorno {
     readonly recuperacionPorIp: Limite;
     /** UF-03: completar la recuperación, 10 / 15 min por red. Además, cinco códigos que no valen anulan el pedido (en la base). */
     readonly completarRecuperacion: Limite;
+    /**
+     * UF-06 (DL-169; revisión adversarial de la etapa 2): pedir un derecho (API-RGT-01) y crear una exportación (API-EXP-01),
+     * 10 / h por identidad y por operación, desde cualquier red. Sin cupo, una sesión llenaba la cola de Administración de
+     * pedidos con plazo legal y habilitaba rutas para armar archivos pesados sin límite.
+     */
+    readonly derechos: Limite;
   };
   /** Saltos de proxy confiables para `req.ip` (Express `trust proxy`). Render: 1. */
   readonly saltosDeProxy: number;
@@ -248,6 +254,7 @@ export function leerEntorno(env: NodeJS.ProcessEnv = process.env): Entorno {
       'RATE_LIMIT_COMPLETAR_RECUPERACION',
       errores,
     ),
+    derechos: limite(env.RATE_LIMIT_DERECHOS_MAX, env.RATE_LIMIT_DERECHOS_WINDOW_MS, 10, 60 * 60 * 1000, 'RATE_LIMIT_DERECHOS', errores),
   };
 
   const saltosDeProxy = entero(env.TRUST_PROXY_HOPS, 1);

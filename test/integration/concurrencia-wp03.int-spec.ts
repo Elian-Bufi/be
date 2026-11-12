@@ -269,6 +269,7 @@ describe('DSH-03 — query antes del PDP, límite por actor y sin caché', () =>
         recuperacion: { maximo: 10_000, ventanaMs: 60_000 },
         recuperacionPorIp: { maximo: 10_000, ventanaMs: 60_000 },
         completarRecuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+        derechos: { maximo: 10_000, ventanaMs: 60_000 },
       },
     });
     try {

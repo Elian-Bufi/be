@@ -104,6 +104,7 @@ export class DerechosService {
     this.exigirClave(clave);
     const nota = limpio(pedido.scope.note);
     if (nota && [...nota].length > LARGO_MAXIMO_DE_LA_NOTA_DEL_PEDIDO) throw errores.validacionFallida([{ code: 'NOTE_TOO_LONG', path: 'scope.note' }]);
+    await this.consumirCupo('API-RGT-01', actor, ctx);
     const procedencia = procedenciaDe(ctx, CASO_DE_USO, 'API-RGT-01');
     return this.idempotencia.ejecutar({ operacion: 'API-RGT-01', ambito: actor.identidadId, clave: clave as string, huella: IdempotenciaService.huella(pedido) }, async (tx) => {
       const momento = await momentoDeLaBase(tx);
@@ -155,6 +156,7 @@ export class DerechosService {
     if (pedido.scope.domains.length === 0) issues.push({ code: 'DOMAINS_REQUIRED', path: 'scope.domains' });
     if (new Set(pedido.scope.domains).size !== pedido.scope.domains.length) issues.push({ code: 'DOMAIN_REPEATED', path: 'scope.domains' });
     if (issues.length > 0) throw errores.validacionFallida(issues);
+    await this.consumirCupo('API-EXP-01', actor, ctx);
     const procedencia = procedenciaDe(ctx, CASO_DE_USO, 'API-EXP-01');
     return this.idempotencia.ejecutar({ operacion: 'API-EXP-01', ambito: actor.identidadId, clave: clave as string, huella: IdempotenciaService.huella(pedido) }, async (tx) => {
       const momento = await momentoDeLaBase(tx);
@@ -162,7 +164,7 @@ export class DerechosService {
         data: { titularId: actor.identidadId, dominios: [...pedido.scope.domains], venceEn: new Date(momento.getTime() + VIGENCIA_DE_LA_EXPORTACION_MS), procedencia: procedencia as unknown as Prisma.InputJsonValue },
       });
       await this.auditar(tx, 'API-EXP-01', 'EXITO', fila.dominios.join(','), actor.identidadId, actor.identidadId, 'ExportacionPropia', fila.id, ctx);
-      const respuesta: ExportacionResponse = { data: this.exportacionApi(fila, momento, false) };
+      const respuesta: ExportacionResponse = { data: this.exportacionApi(fila, momento, null) };
       return { estadoHttp: 201, cuerpo: respuesta as unknown as Prisma.InputJsonValue };
     });
   }
@@ -171,7 +173,9 @@ export class DerechosService {
   async exportacionPropia(actor: ActorAutenticado, exportacionId: string): Promise<ExportacionResponse> {
     const fila = esUuid(exportacionId) ? await this.prisma.exportacionPropia.findFirst({ where: { id: exportacionId.toLowerCase(), titularId: actor.identidadId } }) : null;
     if (!fila) throw errores.recursoNoEncontrado();
-    return { data: this.exportacionApi(fila, new Date(), true) };
+    // La ruta lleva firmada la versión del control de sesión de este momento: una revocación posterior la corta.
+    const control = await this.prisma.controlDeSesion.findUnique({ where: { identidadId: actor.identidadId }, select: { version: true } });
+    return { data: this.exportacionApi(fila, new Date(), control?.version ?? 0) };
   }
 
   // ─── API-EXP-02-DESCARGA ─────────────────────────────────────────────────────────────────────
@@ -184,8 +188,21 @@ export class DerechosService {
     this.limitador.consumir('consultaProtegida', ctx.direccionIp, 'API-EXP-02-DESCARGA');
     const ruta = this.rutas.verificar(token);
     const fila = ruta ? await this.prisma.exportacionPropia.findUnique({ where: { id: ruta.exportacionId } }) : null;
-    if (!ruta || !fila || fila.venceEn.getTime() <= Date.now()) {
-      await this.auditoria.registrar({ operacion: 'API-EXP-02-DESCARGA', resultado: 'RECHAZO', motivo: 'RUTA_NO_VALIDA', superficie: ctx.superficie, requestId: ctx.requestId, momentoDeOcurrencia: ctx.momentoDeRecepcion });
+    // Revisión adversarial de la etapa 2: la ruta no lleva sesión, pero tampoco sobrevive a lo que la cortaría. Con la
+    // cuenta suspendida o cerrada, o con las sesiones revocadas después de emitirla (una recuperación del acceso, la
+    // asistida, cerrar todas las sesiones), la versión del control de sesión ya no es la firmada: el mismo 404.
+    const titular = fila
+      ? await this.prisma.identidad.findUnique({ where: { id: fila.titularId }, select: { estadoOperativoDeCuenta: true, controlDeSesion: { select: { version: true } } } })
+      : null;
+    const motivo = !ruta || !fila || fila.venceEn.getTime() <= Date.now()
+      ? 'RUTA_NO_VALIDA'
+      : titular?.estadoOperativoDeCuenta !== 'OPERATIVA'
+        ? 'CUENTA_NO_OPERATIVA'
+        : (titular.controlDeSesion?.version ?? 0) !== ruta.versionDeSesion
+          ? 'SESIONES_REVOCADAS'
+          : null;
+    if (motivo || !fila) {
+      await this.auditoria.registrar({ operacion: 'API-EXP-02-DESCARGA', resultado: 'RECHAZO', motivo: motivo ?? 'RUTA_NO_VALIDA', superficie: ctx.superficie, requestId: ctx.requestId, momentoDeOcurrencia: ctx.momentoDeRecepcion });
       throw errores.recursoNoEncontrado();
     }
     return this.prisma.$transaction(async (tx) => {
@@ -262,7 +279,8 @@ export class DerechosService {
 
   // ─── Piezas comunes ──────────────────────────────────────────────────────────────────────────
 
-  private exportacionApi(fila: { id: string; dominios: string[]; venceEn: Date; momentoDeRegistro: Date }, ahora: Date, conDescarga: boolean): Exportacion {
+  /** `versionDeSesion`: con ella, la ruta de descarga (firmada con esa versión); `null`, sin ruta (lo que guarda EXP-01). */
+  private exportacionApi(fila: { id: string; dominios: string[]; venceEn: Date; momentoDeRegistro: Date }, ahora: Date, versionDeSesion: number | null): Exportacion {
     const vigente = fila.venceEn.getTime() > ahora.getTime();
     const vence = this.rutas.vencimiento();
     return {
@@ -271,8 +289,30 @@ export class DerechosService {
       domains: fila.dominios as DominioDeLaExportacion[],
       createdAt: fila.momentoDeRegistro.toISOString(),
       expiresAt: fila.venceEn.toISOString(),
-      download: vigente && conDescarga ? { path: `/exports/content/${this.rutas.firmar(fila.id, vence)}`, expiresAt: vence.toISOString() } : null,
+      download: vigente && versionDeSesion !== null ? { path: `/exports/content/${this.rutas.firmar(fila.id, vence, versionDeSesion)}`, expiresAt: vence.toISOString() } : null,
     };
+  }
+
+  /**
+   * El cupo de RGT-01 y EXP-01 (revisión adversarial de la etapa 2): por identidad y por operación, desde cualquier red. El
+   * 429 queda auditado, sin nada del cuerpo.
+   */
+  private async consumirCupo(operacion: 'API-RGT-01' | 'API-EXP-01', actor: ActorAutenticado, ctx: ContextoDeSolicitud): Promise<void> {
+    try {
+      this.limitador.consumir('derechos', null, operacion, actor.identidadId);
+    } catch (e) {
+      await this.auditoria.registrar({
+        operacion,
+        resultado: 'RECHAZO',
+        motivo: 'CUPO_AGOTADO',
+        actorId: actor.identidadId,
+        sujetoId: actor.identidadId,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      });
+      throw e;
+    }
   }
 
   private exigirClave(clave: string | undefined): void {

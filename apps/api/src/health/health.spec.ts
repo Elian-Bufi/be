@@ -27,6 +27,7 @@ const ENTORNO = {
     recuperacion: { maximo: 3, ventanaMs: 3600000 },
     recuperacionPorIp: { maximo: 30, ventanaMs: 3600000 },
     completarRecuperacion: { maximo: 10, ventanaMs: 900000 },
+    derechos: { maximo: 10, ventanaMs: 3600000 },
   },
   saltosDeProxy: 1,
   caducidadDeSolicitudMs: 30 * 24 * 60 * 60 * 1000,

@@ -6,7 +6,10 @@
  *   de un resultado incierto la reusa (`useClaveDeIntento`), y cambiar el pedido es otro intento. La supresión recuerda
  *   que también se puede cerrar la cuenta, y lleva ahí.
  * - **Tus pedidos** (API-RGT-03): el estado, el plazo y la respuesta de Administración; nunca su fundamento interno.
- * Los plazos son los de la Ley 25.326, a confirmar con la asesoría jurídica, y la pantalla lo dice.
+ * Los plazos son los de la Ley 25.326, y la pantalla lo dice (la confirmación de la asesoría queda en el paquete y en el
+ * gate, no en la pantalla).
+ * Cada aviso aparece junto al botón que lo generó, con el texto como título: TalkBack lo anuncia (WCAG 4.1.3, revisión
+ * adversarial de la etapa 2).
  */
 import {
   COPY,
@@ -31,7 +34,7 @@ const enPalabras = (civil: string): string => dia(`${civil}T12:00:00.000Z`);
 
 const OPCIONES_DE_PEDIDO = TIPOS_DE_PEDIDO_DE_DERECHO.map((t) => ({ valor: t, texto: D.pedir.tipos[t] }));
 
-type AvisoDeLaPantalla = { readonly tipo: 'error' | 'exito'; readonly texto: string };
+type AvisoDeLaPantalla = { readonly tipo: 'error' | 'exito'; readonly texto: string; readonly de: 'descargar' | 'pedir' };
 
 export function PantallaDeTusDatos({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: Ir }) {
   const sesionPerdida = useSesionPerdida(salir);
@@ -64,15 +67,15 @@ export function PantallaDeTusDatos({ token, salir, ir }: { token: string; salir:
       const pedida = await api.exportarMisDatos(token, { scope: { domains: [...DOMINIOS_DE_LA_EXPORTACION], period: null } }, intentoDeDescargar.actual());
       intentoDeDescargar.registrar(pedida);
       if (sesionPerdida(pedida)) return;
-      if (!pedida.ok) return setAviso({ tipo: 'error', texto: falloDe(pedida).mensaje });
+      if (!pedida.ok) return setAviso({ tipo: 'error', texto: falloDe(pedida).mensaje, de: 'descargar' });
       const estado = await api.exportacionPropia(token, pedida.datos.data.exportId);
       if (sesionPerdida(estado)) return;
       const ruta = estado.ok ? estado.datos.data.download?.path : undefined;
-      if (!ruta) return setAviso({ tipo: 'error', texto: estado.ok ? COPY.noDisponible : falloDe(estado).mensaje });
+      if (!ruta) return setAviso({ tipo: 'error', texto: estado.ok ? COPY.noDisponible : falloDe(estado).mensaje, de: 'descargar' });
       await Linking.openURL(api.direccionDeDescarga(ruta));
-      setAviso({ tipo: 'exito', texto: D.descargar.enElNavegador });
+      setAviso({ tipo: 'exito', texto: D.descargar.enElNavegador, de: 'descargar' });
     } catch {
-      setAviso({ tipo: 'error', texto: COPY.noDisponible });
+      setAviso({ tipo: 'error', texto: COPY.noDisponible, de: 'descargar' });
     } finally {
       setDescargando(false);
     }
@@ -87,9 +90,9 @@ export function PantallaDeTusDatos({ token, salir, ir }: { token: string; salir:
     intentoDePedir.registrar(r);
     setEnviando(false);
     if (sesionPerdida(r)) return;
-    if (!r.ok) return setAviso({ tipo: 'error', texto: falloDe(r).mensaje });
+    if (!r.ok) return setAviso({ tipo: 'error', texto: falloDe(r).mensaje, de: 'pedir' });
     setNota('');
-    setAviso({ tipo: 'exito', texto: D.pedir.enviado(enPalabras(r.datos.data.deadline)) });
+    setAviso({ tipo: 'exito', texto: D.pedir.enviado(enPalabras(r.datos.data.deadline)), de: 'pedir' });
     void leer();
   }
 
@@ -97,14 +100,10 @@ export function PantallaDeTusDatos({ token, salir, ir }: { token: string; salir:
     <View>
       <Titulo>{D.titulo}</Titulo>
       <Parrafo>{D.queEs}</Parrafo>
-      {aviso ? (
-        <Aviso tipo={aviso.tipo}>
-          <Parrafo>{aviso.texto}</Parrafo>
-        </Aviso>
-      ) : null}
       <Seccion titulo={D.descargar.titulo} icono="descargar">
         <Parrafo>{D.descargar.texto}</Parrafo>
         <Boton texto={descargando ? D.descargar.preparando : D.descargar.boton} tipo="secundario" icono="descargar" ocupado={descargando} onPress={() => void descargar()} />
+        {aviso?.de === 'descargar' ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
       </Seccion>
       <Seccion titulo={D.pedir.titulo} icono="solicitar">
         <Segmentos
@@ -134,7 +133,8 @@ export function PantallaDeTusDatos({ token, salir, ir }: { token: string; salir:
           }}
         />
         <Boton texto={enviando ? D.pedir.enviando : D.pedir.enviar} ocupado={enviando} onPress={() => void pedir()} />
-        <Parrafo tenue>{D.plazosAConfirmar}</Parrafo>
+        {aviso?.de === 'pedir' ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
+        <Parrafo tenue>{D.plazos}</Parrafo>
       </Seccion>
       <Seccion titulo={D.pedidos.titulo} icono="lista">
         {lecturaFallida ? <ErrorConReintento sinConexion={lecturaFallida.sinConexion} onReintentar={() => void leer()} /> : null}

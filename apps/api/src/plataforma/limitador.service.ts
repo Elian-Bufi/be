@@ -18,7 +18,9 @@ export type LimiteNombrado =
   // UF-03 (DL-169): la recuperación del acceso.
   | 'recuperacion'
   | 'recuperacionPorIp'
-  | 'completarRecuperacion';
+  | 'completarRecuperacion'
+  // UF-06 (DL-169): pedir un derecho (API-RGT-01) y crear una exportación (API-EXP-01), por identidad.
+  | 'derechos';
 
 /**
  * Rate limiting (08 §24.5; 09v12: «429 RATE_LIMITED con respuestas neutras»).

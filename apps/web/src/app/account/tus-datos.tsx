@@ -6,20 +6,30 @@
  * la respuesta de Administración.
  * - **Descargar:** pide la exportación de los tres dominios y abre la ruta firmada (vence a los 15 minutos); el archivo no
  *   pasa por el almacenamiento del navegador.
- * - **Pedir:** un intento, una clave de idempotencia (el reintento de un resultado incierto la reusa).
+ * - **Pedir:** un intento, una clave de idempotencia (el reintento de un resultado incierto la reusa). Un 422 se muestra
+ *   en su campo.
+ * - **Una lectura que falla no es una lista vacía** (revisión adversarial de la etapa 2): sin red o con un 5xx, «Tus
+ *   pedidos» lo dice y ofrece reintentar, en vez de «Todavía no hiciste pedidos». La sesión vencida o revocada, en
+ *   cualquiera de las tres acciones, lleva a Iniciar sesión y vuelve acá.
  */
 import { COPY, COPY_DERECHOS, TIPOS_DE_PEDIDO_DE_DERECHO, type PedidoDeDerecho, type TipoDePedidoDeDerecho } from '@be/domain';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { ErrorConReintento } from '../../components/estados';
 import { Aviso } from '../../components/formulario';
 import { api, nuevaClaveDeIdempotencia } from '../../lib/api';
 import { dia } from '../../lib/formato';
+import { useSesionPerdida } from '../../lib/sesion-requerida';
 
 const D = COPY_DERECHOS;
 const fechaCivilEnPalabras = (civil: string): string => dia(`${civil}T12:00:00.000Z`);
 
 export function TusDatos({ token }: { token: string }) {
   const id = useId();
-  const [pedidos, setPedidos] = useState<readonly PedidoDeDerecho[] | null>(null);
+  const { sesionPerdida } = useSesionPerdida(usePathname() ?? '/account');
+  /** `null`: leyendo; 'falla': no se pudo leer (no es «sin pedidos»). */
+  const [pedidos, setPedidos] = useState<readonly PedidoDeDerecho[] | 'falla' | null>(null);
+  const [errorDeNota, setErrorDeNota] = useState<string | null>(null);
   const [tipo, setTipo] = useState<TipoDePedidoDeDerecho>('ACCESS');
   const [nota, setNota] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -28,9 +38,11 @@ export function TusDatos({ token }: { token: string }) {
   const clave = useRef<string | null>(null);
 
   const leer = useCallback(async () => {
+    setPedidos(null);
     const r = await api.pedidosDeDerechos(token);
-    setPedidos(r.ok ? r.datos.data : []);
-  }, [token]);
+    if (!r.ok && sesionPerdida(r)) return;
+    setPedidos(r.ok ? r.datos.data : 'falla');
+  }, [token, sesionPerdida]);
   useEffect(() => {
     void leer();
   }, [leer]);
@@ -41,7 +53,10 @@ export function TusDatos({ token }: { token: string }) {
     setDescargando(true);
     try {
       const pedida = await api.exportarMisDatos(token, { scope: { domains: ['NUTRITION', 'TRAINING', 'ANTHROPOMETRY'], period: null } }, nuevaClaveDeIdempotencia());
+      if (!pedida.ok && sesionPerdida(pedida)) return;
       const estado = pedida.ok ? await api.exportacionPropia(token, pedida.datos.data.exportId) : null;
+      if (estado && !estado.ok && sesionPerdida(estado)) return;
+      if (!pedida.ok && pedida.tipo === 'RED') return setAviso({ tipo: 'error', texto: COPY.resultadoIncierto });
       if (!estado?.ok || !estado.datos.data.download) return setAviso({ tipo: 'error', texto: COPY.noDisponible });
       // La ruta firmada abre la descarga (Content-Disposition: attachment); la página no cambia.
       window.location.assign(api.direccionDeDescarga(estado.datos.data.download.path));
@@ -55,6 +70,7 @@ export function TusDatos({ token }: { token: string }) {
     e.preventDefault();
     if (enviando) return;
     setAviso(null);
+    setErrorDeNota(null);
     setEnviando(true);
     clave.current ??= nuevaClaveDeIdempotencia();
     const r = await api.pedirUnDerecho(token, { type: tipo, scope: nota.trim() ? { note: nota.trim() } : {} }, clave.current);
@@ -67,6 +83,9 @@ export function TusDatos({ token }: { token: string }) {
     }
     if (r.tipo === 'RED') return setAviso({ tipo: 'error', texto: COPY.resultadoIncierto });
     clave.current = null;
+    if (sesionPerdida(r)) return;
+    if (r.codigo === 'RATE_LIMITED') return setAviso({ tipo: 'error', texto: COPY.demasiadosIntentos });
+    if (r.codigo === 'VALIDATION_FAILED' && r.issues.some((i) => i.path === 'scope.note')) return setErrorDeNota(D.pedir.notaLarga);
     setAviso({ tipo: 'error', texto: COPY.noDisponible });
   }
 
@@ -106,7 +125,7 @@ export function TusDatos({ token }: { token: string }) {
           ))}
         </fieldset>
         {tipo === 'SUPPRESSION' ? <p className="nota">{D.pedir.supresionAyuda}</p> : null}
-        <div className="campo">
+        <div className={`campo${errorDeNota ? ' campo--error' : ''}`}>
           <label htmlFor={`${id}-nota`}>{D.pedir.nota}</label>
           <p id={`${id}-nota-ayuda`} className="campo__ayuda">
             {D.pedir.notaAyuda}
@@ -116,12 +135,19 @@ export function TusDatos({ token }: { token: string }) {
             rows={3}
             maxLength={1000}
             value={nota}
-            aria-describedby={`${id}-nota-ayuda`}
+            aria-invalid={errorDeNota ? true : undefined}
+            aria-describedby={errorDeNota ? `${id}-nota-ayuda ${id}-nota-error` : `${id}-nota-ayuda`}
             onChange={(ev) => {
               clave.current = null;
+              setErrorDeNota(null);
               setNota(ev.target.value);
             }}
           />
+          {errorDeNota ? (
+            <p id={`${id}-nota-error`} className="campo__error">
+              {errorDeNota}
+            </p>
+          ) : null}
         </div>
         <div className="acciones">
           <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando}>
@@ -129,13 +155,14 @@ export function TusDatos({ token }: { token: string }) {
           </button>
         </div>
       </form>
-      <p className="nota">{D.plazosAConfirmar}</p>
+      <p className="nota">{D.plazos}</p>
       <h3>{D.pedidos.titulo}</h3>
       {pedidos === null ? <p aria-busy="true">Cargando…</p> : null}
-      {pedidos && pedidos.length === 0 ? <p>{D.pedidos.vacio}</p> : null}
-      {pedidos && pedidos.length > 0 ? (
+      {pedidos === 'falla' ? <ErrorConReintento mensaje={D.pedidos.sinLeer} onReintentar={() => void leer()} /> : null}
+      {Array.isArray(pedidos) && pedidos.length === 0 ? <p>{D.pedidos.vacio}</p> : null}
+      {Array.isArray(pedidos) && pedidos.length > 0 ? (
         <ul className="lista-simple">
-          {pedidos.map((p) => (
+          {(pedidos as readonly PedidoDeDerecho[]).map((p) => (
             <li key={p.requestId}>
               <strong>{D.pedir.tipos[p.type]}</strong> · {D.pedidos.estado[p.state]} · {D.pedidos.plazo(fechaCivilEnPalabras(p.deadline))}
               {p.response ? (
