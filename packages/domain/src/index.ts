@@ -110,6 +110,8 @@ export * from './contraste-de-comida';
 export * from './registros-de-nutricion';
 export * from './registros-de-entrenamiento';
 export * from './registro-por-niveles';
+export * from './contratos-fuerza';
+export * from './fuerza-del-analisis';
 export * from './tomas-de-antropometria';
 export * from './solicitudes-de-informacion';
 export * from './versiones-de-plan';

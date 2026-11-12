@@ -7,6 +7,8 @@ import {
   ordenarEntradas,
   paginarEntradas,
   PROYECCIONES_DERIVADAS,
+  estimacionDeFuerzaDelPeriodo,
+  type EstimacionDeFuerzaApi,
   type Alcance,
   type DominioDeAnalisis,
   type EntradaDeLineaDeTiempo,
@@ -23,7 +25,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { actorDe, SesionGuard } from '../sesion/sesion.guard';
 import { nombreDeAsesoradoPara } from '../vinculo/lectura';
 import { leerBusquedaDeLineaDeTiempo, leerConsultaDeLineaDeTiempo, leerConsultaDeProyeccion, type ConsultaDeLineaDeTiempo, type ConsultaDeProyeccion } from './consultas';
-import { ejecucionesDelPeriodo, hayRegistrosDeOtros, registrosDeComidaDelPeriodo, versionesActivadas, versionesDeObjetivo, ZONA } from './fuentes';
+import { ejecucionesDelPeriodo, hayRegistrosDeOtros, registrosDeComidaDelPeriodo, versionesActivadas, versionesDeObjetivo, vigenciasEnElPeriodo, ZONA } from './fuentes';
 import {
   entradasDeComidas,
   entradasDeFormularios,
@@ -36,7 +38,9 @@ import {
   entradasDeVersiones,
   NombresDeAutores,
 } from './lectura-linea-de-tiempo';
-import { DERIVACION, objetivosDeLasVersiones, proyeccionAntropometrica, proyeccionDeEntrenamiento, proyeccionNutricional, versionesParaLasComidas } from './lectura-proyecciones';
+import { basesDeLasVersiones, DERIVACION, objetivosDeLasVersiones, proyeccionAntropometrica, proyeccionDeEntrenamiento, proyeccionNutricional, versionesParaLasComidas } from './lectura-proyecciones';
+import { vigentesDe } from '../entrenamiento/series-observadas.service';
+import { nombreVisibleDe } from '../entrenamiento/lectura-entrenamiento';
 
 /** El dominio de cada clave de proyección, para decidir con el PDP (las cinco sin especificación son de Entrenamiento). */
 const ALCANCE_DE_LA_CLAVE: Readonly<Record<ConsultaDeProyeccion['clave'], Alcance>> = {
@@ -48,6 +52,7 @@ const ALCANCE_DE_LA_CLAVE: Readonly<Record<ConsultaDeProyeccion['clave'], Alcanc
   TRAINING_EFFECTIVE_VS_TOTAL_VOLUME: 'ENTRENAMIENTO',
   TRAINING_PERSONAL_RECORDS: 'ENTRENAMIENTO',
   TRAINING_WORK_DISTRIBUTION_BY_MUSCLE_ZONE: 'ENTRENAMIENTO',
+  TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE: 'ENTRENAMIENTO',
 };
 
 const DOMINIO: Readonly<Record<Alcance, DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
@@ -183,7 +188,7 @@ export class AnalisisController {
       return { data: { ...base, partialView: true, generatedAt: new Date().toISOString(), dataState: 'NOT_AVAILABLE_TO_VIEW', reason: null, derivation: null, sourceDomains: [], result: null } };
     }
     // Las cinco claves sin especificación: el 09 exige una que BE no tiene. No se inventan datos ni una pantalla operativa.
-    if (!(PROYECCIONES_DERIVADAS as readonly string[]).includes(consulta.clave)) {
+    if (!(PROYECCIONES_DERIVADAS as readonly string[]).includes(consulta.clave) && consulta.clave !== 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE') {
       return {
         data: { ...base, partialView: false, generatedAt: new Date().toISOString(), dataState: 'INSUFFICIENT_INFORMATION', reason: 'SPECIFICATION_PENDING', derivation: null, sourceDomains: [DOMINIO[alcance]], result: null },
       };
@@ -239,6 +244,43 @@ export class AnalisisController {
         });
         const resultado = proyeccionDeEntrenamiento(consulta, d);
         return respuesta(d.ahora.toISOString(), resultado.progression ? resultado.progression.series.points.length > 0 : resultado.exercises.length > 0, resultado, d.deOtros);
+      }
+      case 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE': {
+        // ED-74 (DL-171): se calcula al leer, desde el registro vigente de cada sesión y las observaciones del profesional
+        // (ED-72). Nunca la clave de las marcas, nunca desde la prescripción y nunca para la persona (el PdpGuard).
+        const d = await leer(async (tx) => {
+          const ejecuciones = await ejecucionesDelPeriodo(tx, this.ejecuciones, profesionalId, titularId, desde, hasta);
+          const observaciones = await vigentesDe(tx, profesionalId, titularId, null, 1000, { desde, hasta });
+          return {
+            ahora: await momentoDeLaBase(tx),
+            ejecuciones,
+            observaciones,
+            bases: await basesDeLasVersiones(tx, ejecuciones),
+            versiones: await versionesActivadas(tx, 'ENTRENAMIENTO', profesionalId, titularId),
+            nombreDelTitular: await nombreDeAsesoradoPara(tx, profesionalId, titularId),
+            nombreDelProfesional: await nombreVisibleDe(tx, profesionalId),
+            deOtros: await hayRegistrosDeOtros(tx, 'ENTRENAMIENTO', profesionalId, titularId, desde, hasta),
+          };
+        });
+        const resultado = estimacionDeFuerzaDelPeriodo({
+          ejecuciones: d.ejecuciones,
+          bases: d.bases,
+          observaciones: d.observaciones.map((o) => ({
+            observationId: o.id,
+            exerciseId: o.ejercicioId,
+            localDate: o.fechaLocal.toISOString().slice(0, 10),
+            estimate: o.estimacion as unknown as EstimacionDeFuerzaApi,
+            observedBy: { identityId: o.profesionalId, displayName: d.nombreDelProfesional },
+          })),
+          persona: { identityId: titularId, displayName: d.nombreDelTitular },
+          exerciseId: consulta.exerciseId,
+          unidad: consulta.unidad,
+          incluirOrientativas: consulta.incluirOrientativas,
+          otrosProfesionales: d.deOtros,
+          vigencias: vigenciasEnElPeriodo(d.versiones, 'TRAINING', desde, hasta),
+        });
+        const hay = resultado.estimate ? resultado.estimate.points.length > 0 : resultado.exercises.length > 0;
+        return respuesta(d.ahora.toISOString(), hay, resultado, d.deOtros);
       }
       case 'ANTHROPOMETRY_LONGITUDINAL': {
         const d = await leer(async (tx) => ({ ahora: await momentoDeLaBase(tx), filas: await leerFilas(tx, titularId, profesionalId, desde, hasta) }));

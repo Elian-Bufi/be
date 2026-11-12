@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { Instante, IdOpaco } from './contratos';
 import { FechaLocalSchema, ZonaHorariaSchema } from './contratos-nutricion';
 import { TokenDeVersionSchema } from './contratos-vinculo';
+import { ResultadoDeEstimacionDeFuerzaBaseSchema } from './contratos-fuerza';
 
 // ─── Comunes ────────────────────────────────────────────────────────────────────────────────────
 
@@ -32,7 +33,13 @@ export const CLAVES_DE_PROYECCION = [
   'ANTHROPOMETRY_LONGITUDINAL',
   'NUTRITION_PRESCRIBED_VS_RECORDED',
 ] as const;
-export const ClaveDeProyeccionSchema = z.enum(CLAVES_DE_PROYECCION);
+/**
+ * Las claves que BE suma a la taxonomía del 09, cada una con su DL: la estimación de fuerza por ejercicio con Epley v1
+ * (ED-74 de WP-EDITORES-PROFESIONAL; DL-171). Es otra clave, y no TRAINING_PERSONAL_RECORDS: una estimación no es una
+ * marca observada (B10-08). Solo la lee el profesional, como las demás.
+ */
+export const CLAVES_DE_PROYECCION_DE_BE = ['TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE'] as const;
+export const ClaveDeProyeccionSchema = z.enum([...CLAVES_DE_PROYECCION, ...CLAVES_DE_PROYECCION_DE_BE]);
 export type ClaveDeProyeccion = z.infer<typeof ClaveDeProyeccionSchema>;
 
 /** Las tres claves con una derivación definida en BE (DL-126). Las otras cinco responden `INSUFFICIENT_INFORMATION`. */
@@ -402,7 +409,16 @@ export const ResultadoDeProyeccionAntropometricaSchema = z.strictObject({
 });
 export type ResultadoDeProyeccionAntropometrica = z.infer<typeof ResultadoDeProyeccionAntropometricaSchema>;
 
-export const ResultadoDeProyeccionSchema = z.discriminatedUnion('kind', [ResultadoDeProyeccionNutricionalSchema, ResultadoDeProyeccionDeEntrenamientoSchema, ResultadoDeProyeccionAntropometricaSchema]);
+/** ED-74 (DL-171): la estimación de fuerza por ejercicio, con las versiones del plan del período como contexto. */
+export const ResultadoDeEstimacionDeFuerzaSchema = ResultadoDeEstimacionDeFuerzaBaseSchema.extend({ planVersions: z.array(VigenciaDePlanSchema) });
+export type ResultadoDeEstimacionDeFuerza = z.infer<typeof ResultadoDeEstimacionDeFuerzaSchema>;
+
+export const ResultadoDeProyeccionSchema = z.discriminatedUnion('kind', [
+  ResultadoDeProyeccionNutricionalSchema,
+  ResultadoDeProyeccionDeEntrenamientoSchema,
+  ResultadoDeProyeccionAntropometricaSchema,
+  ResultadoDeEstimacionDeFuerzaSchema,
+]);
 export type ResultadoDeProyeccion = z.infer<typeof ResultadoDeProyeccionSchema>;
 
 /** Por qué una proyección no tiene resultado. `SPECIFICATION_PENDING`: el 09 exige una especificación que BE no tiene. */

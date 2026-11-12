@@ -9,6 +9,8 @@ import { EjecutorDeEntrenamiento } from './ejecutor';
 import { EntrenamientoPorSerieController } from './entrenamiento-por-serie.controller';
 import { EntrenamientoController } from './entrenamiento.controller';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
+import { FuerzaController } from './fuerza.controller';
+import { SeriesObservadasService } from './series-observadas.service';
 import { HabitualesDeEntrenamientoController } from './habituales.controller';
 import { HabitualesDeEntrenamientoService } from './habituales.service';
 import { ImagenesDeEjercicioService } from './imagenes.service';
@@ -28,7 +30,7 @@ import { TiemposDeSesionService } from './tiempos.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule, MediosModule],
-  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController],
+  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController, FuerzaController],
   providers: [
     EjecutorDeEntrenamiento,
     CatalogoDeEjerciciosService,
@@ -43,6 +45,8 @@ import { TiemposDeSesionService } from './tiempos.service';
     TiemposDeSesionService,
     ImagenesDeEjercicioService,
     CompatibilidadDeClientesService,
+    // ED-72 (DL-171): la serie observada por el profesional (API-FZA-01 a 03).
+    SeriesObservadasService,
   ],
   // El entorno profesional (AnalisisModule) lee cada sesión con el mismo modelo de API-TRN-19.
   // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.
