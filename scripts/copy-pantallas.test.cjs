@@ -232,11 +232,15 @@ const DOMINIOS = [
   },
 ];
 
-/** Estilos de React Native: valores como '100%' no son texto para la persona. */
+/**
+ * Estilos de React Native: valores como '100%' no son texto para la persona. Tampoco los atributos técnicos, que aceptan
+ * solo unas palabras clave: el guionado de un texto (`android_hyphenationFrequency="normal"`, DL-170) no es «normal» como
+ * juicio.
+ */
 function dentroDeEstilos(nodo) {
   for (let n = nodo.parent; n; n = n.parent) {
     if (ts.isCallExpression(n) && n.expression.getText() === 'StyleSheet.create') return true;
-    if (ts.isJsxAttribute(n) && ['className', 'style', 'id', 'htmlFor', 'key', 'href', 'accessibilityRole', 'keyboardType'].includes(n.name.getText())) return true;
+    if (ts.isJsxAttribute(n) && ['className', 'style', 'id', 'htmlFor', 'key', 'href', 'accessibilityRole', 'keyboardType', 'android_hyphenationFrequency'].includes(n.name.getText())) return true;
     if (ts.isImportDeclaration(n)) return true;
   }
   return false;
