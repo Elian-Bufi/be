@@ -45,6 +45,7 @@ import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
+import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type TotalDeLaOpcion } from './rangos';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
@@ -81,6 +82,10 @@ export function ComidaDelEditor({
   alDuplicarOpcion,
   alQuitar,
   alGuardarComoHabitual,
+  noSePuedeCopiar,
+  noSePuedeUsarHabitual,
+  alCopiarDesdeOtra,
+  alUsarHabitual,
   alAgregarItem,
   alAgregarReceta,
   alQuitarOpcion,
@@ -113,6 +118,11 @@ export function ComidaDelEditor({
   alDuplicarOpcion: (k: number) => void;
   alQuitar: () => void;
   alGuardarComoHabitual: () => void;
+  /** ED-33: por qué no se puede copiar desde otra comida o usar una habitual (`null`: se puede). */
+  noSePuedeCopiar: string | null;
+  noSePuedeUsarHabitual: string | null;
+  alCopiarDesdeOtra: () => void;
+  alUsarHabitual: () => void;
   alAgregarItem: (k: number) => void;
   alAgregarReceta: () => void;
   /** ED-33: quitar la opción `k`; con contenido, el editor pregunta antes. */
@@ -168,6 +178,9 @@ export function ComidaDelEditor({
               acciones={[
                 { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => alEditarNombre({ de: 'comida' }) },
                 { clave: 'duplicar', texto: E.duplicarComida, alElegir: alDuplicar },
+                // ED-33: una opción más, desde otra comida del plan o desde una comida habitual.
+                { clave: 'copiar-desde-otra', texto: COPY_DE_OTRA_COMIDA.copiar, alElegir: alCopiarDesdeOtra, noSePuede: noSePuedeCopiar },
+                { clave: 'usar-habitual', texto: COPY_DE_OTRA_COMIDA.usarHabitual, alElegir: alUsarHabitual, noSePuede: noSePuedeUsarHabitual },
                 { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: alGuardarComoHabitual, noSePuede: conRecetas ? COPY_RECETAS.recetaEnPlantilla : null },
                 { clave: 'quitar', texto: 'Quitar comida', alElegir: alQuitar },
               ]}
@@ -428,8 +441,6 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
   );
 }
 
-/** El contrato admite hasta doce opciones por comida. */
-const MAXIMO_DE_OPCIONES = 12;
 
 /** ED-33: las dos clases de opción. */
 export const COPY_OPCIONES = {

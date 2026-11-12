@@ -103,6 +103,8 @@ import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDi
 import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { AgregarItem } from './agregar-item';
+import { CuadroCopiarDesdeOtraComida, CuadroUsarComidaHabitual } from './copiar-desde-otra-comida';
+import { COPY_DE_OTRA_COMIDA, copiaDesdeOtraComida, MAXIMO_DE_OPCIONES, opcionesDeLaHabitual, origenesDeLaCopia } from './opcion-de-otra-comida';
 import { ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
 import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 import { NoDisponible, useNutricion } from './nutricion';
@@ -276,6 +278,8 @@ export function EditorDeBorrador({
   const [composiciones, setComposiciones] = useState<ReadonlyMap<string, ComposicionConocida>>(() => new Map());
   // ED-33: lo que se quita con contenido espera la confirmación, con lo que se va.
   const [porQuitar, setPorQuitar] = useState<{ readonly texto: string; readonly hacer: () => void } | null>(null);
+  // ED-33: el cuadro del «⋯» de la comida que está abierto («Copiar desde otra comida» o «Usar una comida habitual»).
+  const [otraComida, setOtraComida] = useState<{ readonly que: 'copiar' | 'habitual'; readonly i: number; readonly j: number } | null>(null);
   // ED-34: la pestaña del panel.
   const [pestanaDelPanel, setPestanaDelPanel] = useState<'antes' | 'rangos'>('rangos');
   // ED-32: la receta nueva que se crea desde una comida (en un cuadro), si tiene algo escrito, y lo que quedó por
@@ -691,6 +695,14 @@ export function EditorDeBorrador({
     cerrarLaRecetaNueva();
     setMensaje({ tipo: 'exito', texto: COPY_RECETA_NUEVA.soloGuardada(r.name) });
   };
+  /** ED-33: suma opciones a la comida `j` del día que se mira, elige la primera nueva y lo dice. */
+  const sumarOpciones = (di: number, j: number, opciones: ComidaEnEdicion['options'], texto: string) => {
+    const k = estructura[di]?.meals[j]?.options.length ?? 0;
+    cambiar((x) => (x[di]!.meals[j]!.options.push(...opciones), x));
+    setPestanas((p) => ({ ...p, [`${di}-${j}`]: k }));
+    setOtraComida(null);
+    setMensaje({ tipo: 'exito', texto });
+  };
   const agregarComida = () => {
     const j = dia?.meals.length ?? 0;
     // ED-33: la comida nace con su opción 1 lista, para empezar a sumarle alimentos.
@@ -1047,6 +1059,20 @@ export function EditorDeBorrador({
               }
               totalDeLaOpcion={(k) => rangos?.comidas[j]?.opciones[k]?.total ?? null}
               alGuardarComoHabitual={() => setGuardarHabitual({ i, j })}
+              noSePuedeCopiar={m.options.length >= MAXIMO_DE_OPCIONES ? COPY_DE_OTRA_COMIDA.tope(MAXIMO_DE_OPCIONES) : origenesDeLaCopia(estructura, i, j).length === 0 ? COPY_DE_OTRA_COMIDA.sinOtras : null}
+              noSePuedeUsarHabitual={
+                m.options.length >= MAXIMO_DE_OPCIONES
+                  ? COPY_DE_OTRA_COMIDA.tope(MAXIMO_DE_OPCIONES)
+                  : comidasHabituales.lista === null
+                    ? 'Leyendo tus comidas habituales…'
+                    : comidasHabituales.falla
+                      ? COPY_HABITUALES.comidasNoSeLeyeron
+                      : comidasHabituales.lista.length === 0
+                        ? COPY_HABITUALES.sinComidas
+                        : null
+              }
+              alCopiarDesdeOtra={() => setOtraComida({ que: 'copiar', i, j })}
+              alUsarHabitual={() => setOtraComida({ que: 'habitual', i, j })}
               alAgregarItem={(k) => setAgregando({ i, j, k })}
               alAgregarReceta={() => setEligiendoReceta({ i, j })}
             />
@@ -1231,6 +1257,35 @@ export function EditorDeBorrador({
           setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.guardadaComida });
           void comidasHabituales.recargar();
         }}
+      />
+
+      {/* ED-33: los dos cuadros del «⋯» de la comida. Cambian el borrador; el autoguardado lo lleva. */}
+      <CuadroCopiarDesdeOtraComida
+        abierto={otraComida?.que === 'copiar'}
+        comida={otraComida ? nombreDeLaComida(estructura[otraComida.i]?.meals[otraComida.j] ?? { label: '' }, otraComida.j) : ''}
+        numeroDeLaNueva={(otraComida ? (estructura[otraComida.i]?.meals[otraComida.j]?.options.length ?? 0) : 0) + 1}
+        origenes={otraComida?.que === 'copiar' ? origenesDeLaCopia(estructura, otraComida.i, otraComida.j) : []}
+        alCopiar={(o) => {
+          const fuente = estructura[o.i]?.meals[o.j]?.options[o.k];
+          if (!otraComida || !fuente) return;
+          const comida = nombreDeLaComida(estructura[otraComida.i]?.meals[otraComida.j] ?? { label: '' }, otraComida.j);
+          sumarOpciones(otraComida.i, otraComida.j, [copiaDesdeOtraComida(fuente, o.k)], COPY_DE_OTRA_COMIDA.copiada(o.opcion, comida));
+        }}
+        onCerrar={() => setOtraComida(null)}
+      />
+      <CuadroUsarComidaHabitual
+        abierto={otraComida?.que === 'habitual'}
+        comida={otraComida ? nombreDeLaComida(estructura[otraComida.i]?.meals[otraComida.j] ?? { label: '' }, otraComida.j) : ''}
+        habituales={comidasHabituales.lista ?? []}
+        alUsar={(h) => {
+          const m = otraComida ? estructura[otraComida.i]?.meals[otraComida.j] : undefined;
+          if (!otraComida || !m) return;
+          const comida = nombreDeLaComida(m, otraComida.j);
+          const { opciones, quedanAfuera } = opcionesDeLaHabitual(h, MAXIMO_DE_OPCIONES - m.options.length);
+          setNombres((n) => ({ ...n, ...Object.fromEntries(Object.entries(h.items).map(([id, it]) => [id, it.name])) }));
+          sumarOpciones(otraComida.i, otraComida.j, opciones, `${COPY_DE_OTRA_COMIDA.usada(h.name, comida, opciones.length)}${quedanAfuera > 0 ? ` ${COPY_DE_OTRA_COMIDA.quedanAfuera(quedanAfuera)}` : ''}`);
+        }}
+        onCerrar={() => setOtraComida(null)}
       />
 
       <AgregarItem

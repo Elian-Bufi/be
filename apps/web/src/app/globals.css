@@ -16452,3 +16452,36 @@ p.cifra-del-espacio__desglose {
   outline: 3px solid var(--foco);
   outline-offset: 2px;
 }
+
+/* ═══ ED-33 · «Copiar desde otra comida» y «Usar una comida habitual»: una lista para elegir una sola cosa ══════════ */
+.eleccion-de-otra-comida {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.eleccion-de-otra-comida__grupo {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.eleccion-de-otra-comida__grupo legend {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.eleccion-de-otra-comida__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.eleccion-de-otra-comida__opcion:has(input:checked) {
+  background: var(--fondo-suave);
+}
