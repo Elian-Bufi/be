@@ -122,3 +122,18 @@ test('DJ-6 · la versión en preparación lleva su número en el título, en el 
   }
   assert.match(leer('app/pro/advisees/versiones-del-plan.tsx'), /\{COPY_DE_VERSIONES\.enPreparacionConNumero\(numeroDelBorrador\)\}/);
 });
+
+test('TEST-EDP-002 · el cuadro dice la fecha en prosa: «vigente desde el martes 10 de noviembre» (maqueta 11)', async () => {
+  // Revisión adversaria de la etapa 1: con `diaSinElAnioEnCurso` la frase quedaba «vigente desde el 10 nov.».
+  const F = await import('../src/lib/formato.ts');
+  // Al mediodía de Buenos Aires: el mismo día en la zona de la CI y en la de la máquina.
+  const ahora = new Date('2026-11-12T15:00:00Z');
+  assert.equal(F.diaEnUnaFrase('2026-11-10T15:00:00Z', ahora), 'martes 10 de noviembre');
+  // De otro año, con el año.
+  assert.equal(F.diaEnUnaFrase('2025-12-09T15:00:00Z', ahora), 'martes 9 de diciembre de 2025');
+  const vigente = { numero: 5, desde: F.diaEnUnaFrase('2026-11-10T15:00:00Z', ahora) };
+  assert.equal(D.cuadroDelDescarte({ numero: 6, vigente, sinGuardar: false }).parrafos[0], 'Salió de la versión 5, vigente desde el martes 10 de noviembre. Se borra lo que armaste en esta versión.');
+  for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
+    assert.match(leer(ruta), /vigente=\{vigente \? \{ numero: vigente\.numero, desde: diaEnUnaFrase\(vigente\.desde\) \} : null\}/, ruta);
+  }
+});

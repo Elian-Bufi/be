@@ -76,7 +76,7 @@ import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { api } from '../../../../lib/api';
 import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
-import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
+import { diaEnUnaFrase, horaDelDia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
@@ -1335,7 +1335,7 @@ export function EditorDePlan({
       <CuadroDelDescarte
         abierto={descartar}
         numero={numero}
-        vigente={vigente ? { numero: vigente.numero, desde: diaSinElAnioEnCurso(vigente.desde) } : null}
+        vigente={vigente ? { numero: vigente.numero, desde: diaEnUnaFrase(vigente.desde) } : null}
         sinGuardar={sucio}
         enviando={descartando}
         error={falloDelDescarte}
