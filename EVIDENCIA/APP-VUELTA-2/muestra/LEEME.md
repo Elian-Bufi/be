@@ -25,6 +25,8 @@
   tarjetas siguen opacas hasta el visto bueno (AV2-26).
 - **Inicio ya no lleva «Ver tu historial»** (la tarjeta «Actividad» no se toca, como en la maqueta) ni el «Cómo se lee»
   de la medida destacada, que pasa a Evolución con AV2-20.
+- **En un teléfono de 360 dp, las dos tarjetas chicas llevan el ícono arriba del título**, no al lado como en la maqueta:
+  al lado, «Mediciones» (el título mientras carga) no entra y se partía. En uno de 412 dp va al lado (AV2-T18).
 
 ## Qué mirar, y cómo
 
@@ -34,8 +36,11 @@ o con una cuenta sintética de la cohorte:
 1. **Inicio en Azul noche y en Claro** (Perfil → Apariencia): el fondo con luz, las tarjetas de vidrio con el borde y la
    sombra, el botón «Continuar» con degradé y brillo, la cabecera con el logo a la izquierda y la campana con el punto, y
    la barra más fina.
-2. **Con letra ×1,3** (Ajustes de Android → Tamaño de fuente): las fichas de las comidas y las dos tarjetas chicas en una
-   columna; nada cortado ni achicado; la barra en dos filas.
+2. **Con letra ×1,3** (Ajustes de Android → Tamaño de fuente; es la de los ajustes la que importa, porque Android la
+   manda como 1,2999999523…, AV2-T17): las fichas de las comidas y las dos tarjetas chicas en una columna; nada cortado
+   ni achicado; la barra en dos filas. **Y también con ×1 y con ×1,15, en 360 dp** (o con «Tamaño de la pantalla»
+   aumentado, que achica los dp): ninguna palabra partida en las fichas ni en los títulos, mientras carga («Mediciones»)
+   y con una cuenta sin tomas.
 3. **Con TalkBack**, lo que tiene que decir (§3.4): «BE» una vez; «Novedades, N sin leer, botón»; el título como
    encabezado; la tira en una sola etiqueta («Esta semana: … con sesión realizada. Hoy, …»); «Estado: en curso»; cada
    ficha («Almuerzo, registrado a las 13:10, botón»); la medida («Peso, 80,9 kilos, sin cambio desde el 2 de septiembre.

@@ -256,7 +256,7 @@ function SesionDeHoy({
  * en la maqueta: «2 realizadas · 1 no realizada · 30 días», y el lector, «Actividad de los últimos 30 días: 2 realizadas
  * y 1 no realizada» (§3.4).
  */
-export function ActividadDeEntrenamiento({ lectura, ir, ancho }: { lectura: LecturaRecordada<ActividadLeida>; ir: Ir; ancho: number }) {
+export function ActividadDeEntrenamiento({ lectura, ir, ancho, iconoArriba }: { lectura: LecturaRecordada<ActividadLeida>; ir: Ir; ancho: number; iconoArriba: boolean }) {
   const { r, cargar, sinActualizar } = lectura;
   let contenido: ReactNode;
   if (!r) contenido = <Verificando />;
@@ -275,7 +275,7 @@ export function ActividadDeEntrenamiento({ lectura, ir, ancho }: { lectura: Lect
     );
   }
   return (
-    <TarjetaDeInicio zona="entrenamiento" titulo={T.actividad} icono="linea-de-tiempo" ancho={ancho}>
+    <TarjetaDeInicio zona="entrenamiento" titulo={T.actividad} icono="linea-de-tiempo" ancho={ancho} iconoArriba={iconoArriba}>
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
     </TarjetaDeInicio>

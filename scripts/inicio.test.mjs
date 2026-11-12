@@ -525,7 +525,10 @@ test('con letra grande, el título de una tarjeta no parte una palabra y dos acc
   const TARJETA = fuente('tarjeta-de-inicio.tsx');
   // Render del navegador con letra ×2 en 360 dp: el título partía «Entrenamient / o». Crece hasta 1,5 y el ícono va arriba.
   assert.match(TARJETA, /accessibilityRole="header" maxFontSizeMultiplier=\{1\.5\}/);
-  assert.match(TARJETA, /fontScale >= ESCALA_PARA_APILAR && estilos\.cabezaApilada/);
+  // DL-170: también va arriba en una tarjeta chica cuyo título no entra al lado (TEST-AV2-008), con la escala comparada
+  // como la manda Android (`escala-de-letra.ts`).
+  assert.match(TARJETA, /\|\| alcanzaLaEscala\(fontScale, ESCALA_PARA_APILAR\);/);
+  assert.match(TARJETA, /apilar && estilos\.cabezaApilada/);
   // Cada acción pide un ancho que crece con la letra: con letra grande baja a su línea entera.
   assert.match(TARJETA, /flexBasis: 140 \* Math\.min\(Math\.max\(fontScale, 1\), 2\.2\)/);
 });

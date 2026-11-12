@@ -16,19 +16,15 @@
  */
 import { Text, useWindowDimensions, View } from 'react-native';
 import { Icono } from '../icono';
-import { anchoDeLaColumna, type TiraDeLaSemana as Tira } from '../inicio-de-hoy';
+import { ladoDelDiaDeLaTira, type TiraDeLaSemana as Tira } from '../inicio-de-hoy';
 import { estilosPorTema } from '../ui';
 import { useSuperficie } from '../vidrio';
-
-/** El círculo de cada día, en dp: crece con la letra hasta lo que entra en su séptimo de la tarjeta. */
-const CIRCULO = 34;
 
 export function TiraDeLaSemana({ tira }: { tira: Tira }) {
   const { estilo } = useSuperficie();
   const { width, fontScale } = useWindowDimensions();
-  // Siete columnas dentro de la tarjeta, a todo el ancho: el círculo no pasa su columna.
-  const columna = Math.floor(anchoDeLaColumna(width, 1, true) / 7);
-  const lado = Math.min(columna - 2, Math.round(CIRCULO * Math.min(Math.max(fontScale, 1), 1.3)));
+  // Siete columnas dentro de la tarjeta, a todo el ancho: el círculo crece con la letra y no pasa su columna.
+  const lado = ladoDelDiaDeLaTira(width, fontScale);
   return (
     <View style={[estilos.tarjeta, estilo]} accessible accessibilityLabel={tira.paraLeer}>
       <View style={estilos.dias} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>

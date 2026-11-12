@@ -241,20 +241,35 @@ PRECONDITIONS        `pantallas/inicio.tsx` y sus tarjetas; `inicio-de-hoy.ts`.
 SYNTHETIC_FIXTURE    Una persona con planes de Entrenamiento y de Nutrición; un plan con un solo tipo de día y otro con
                      dos; una toma con peso y otra sin peso.
 STEPS                1. Leer el título y el orden de los bloques de `inicio.tsx`.
-                     2. Pedir las columnas a 360 dp con letra ×1 y ×1,3.
+                     2. Pedir las columnas a 360 y a 412 dp con letra ×1, ×1,15 y ×1,3, también con la escala como la
+                        manda Android: un `float` pasado a `double` (`DeviceInfoModule.kt`, `fontScale.toDouble()`),
+                        así que «×1,3» llega como 1,2999999523… (`Math.fround(1.3)`) y «×1,15» como 1,1499999761…; con
+                        nombres de comidas de una palabra larga («Preentrenamiento») y con los títulos de las tarjetas
+                        chicas («Mediciones», que se ve cada vez que Inicio carga, y «Actividad»). Pedir el círculo de
+                        cada día de la tira a 360 dp.
                      3. Pedir el nombre del día bajo «Comidas» con uno y con dos tipos de día.
                      4. Pedir el texto de la tarjeta de la medida con diferencia cero, con diferencia y sin anterior.
 EXPECTED             1 → el título es la fecha («Lunes 9 de noviembre»), sin «Hola»; de arriba abajo: el paso que falta,
                      la tira, Entrenamiento, Comidas, «Para responder» y, al final, la medida y la actividad. Sin el
-                     rótulo «Para mirar». 2 → ×1: dos columnas; ×1,3: una. 3 → con uno, nada; con dos, su nombre.
+                     rótulo «Para mirar». 2 → ×1 y ×1,15: dos columnas; ×1,3, también 1,2999999523…: una. Las fichas
+                     pasan a una columna si la palabra más larga de algún nombre no entra en media tarjeta. En las
+                     tarjetas chicas, el ícono va arriba del título si al lado no entra («Mediciones» a 360 dp), y pasan
+                     a una columna si tampoco entra arriba. Con dos columnas, ninguna palabra se parte (con la
+                     estimación de Nutrición, 0,56 em por carácter en negrita). El círculo del día mide 34 dp a 360 dp:
+                     la tira ocupa la tarjeta entera, no media. 3 → con uno, nada; con dos, su nombre.
                      4 → «Sin cambio desde el 2 sept», «+0,4 kg desde el 2 sept» (sin color ni flecha), y el texto de
                      siempre sin anterior; el título es el nombre de la medida destacada.
 NEGATIVE_ASSERTIONS  Inicio no escribe nada. No hay «%» ni «2/4» en Inicio. No dice «16 medidas · 6 resultados de
-                     fórmulas» ni «Ver su evolución».
-AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-008 · …») y scripts/inicio.test.mjs. Mutación: mostrar
-                     el nombre del día con un solo tipo → la prueba falla.
+                     fórmulas» ni «Ver su evolución». Ninguna escala se compara con un literal: el umbral de la letra
+                     grande vive en `escala-de-letra.ts`.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-008 · …») y scripts/inicio.test.mjs. Mutaciones:
+                     mostrar el nombre del día con un solo tipo → la prueba falla; comparar la escala con el literal
+                     (`>= 1.3`) → 1,2999999523… da dos columnas y la prueba falla; las fichas sin mirar los nombres →
+                     «Preentrenamiento» queda en dos columnas y la prueba falla; el ícono siempre al lado → la prueba
+                     falla; la tira con media tarjeta → el círculo mide 17 dp y la prueba falla.
 ENVIRONMENT          `npm test`
-EVIDENCE_EXPECTED    La CI verde; en el teléfono, Inicio a 360 dp con letra ×1 y ×1,3, en los dos temas (AV2-18)
+EVIDENCE_EXPECTED    La CI verde; en el teléfono, Inicio a 360 dp con letra ×1, ×1,15 y ×1,3 (la de los ajustes de
+                     Android, no un valor exacto), en los dos temas, mientras carga y con una cuenta sin tomas (AV2-18)
 ```
 
 ---

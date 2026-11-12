@@ -19,18 +19,19 @@
  * - Desde DL-170 (WP-APP-VUELTA-2 AV2-07, la maqueta de §1.1): el título es la fecha («Lunes 9 de noviembre»), sin
  *   «Hola»; de arriba abajo, el paso que falta para el acceso (si hace falta), la tira de la semana, Entrenamiento,
  *   Comidas, «Para responder» (si hay algo) y, lado a lado, la medida de la última toma y la actividad (en una columna
- *   con letra ×1,3). Sin el rótulo «Para mirar». Es la única pantalla con el vidrio prendido hasta el visto bueno de
- *   Dirección (App.tsx).
+ *   con letra ×1,3 o si su título no entra). Sin el rótulo «Para mirar». Es la única pantalla con el vidrio prendido
+ *   hasta el visto bueno de Dirección (App.tsx).
  */
 import { useCallback, useMemo } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { fechaLarga, ultimosDiasHasta } from '../formato';
-import { anchoDeLaColumna, registradasHoySegunElPlan, tiraDeLaSemana } from '../inicio-de-hoy';
+import { disposicionDeLasTarjetasChicas, registradasHoySegunElPlan, tiraDeLaSemana } from '../inicio-de-hoy';
 import { useLecturaRecordada } from '../lecturas';
 import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
+import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
 import { estilosPorTema, Titulo } from '../ui';
 import { AccesoIncompleto } from './inicio-acceso';
 import { ActividadDeEntrenamiento, EntrenamientoDeHoy } from './inicio-entrenamiento';
@@ -53,9 +54,11 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
   const tira = tiraDeLaSemana(hoy, actividad.r?.ok ? actividad.r.datos : null, ocurrencias ? registradasHoySegunElPlan(hoy, ocurrencias.occurrences) : null);
   // Sin plan de entrenamiento y sin nada hecho esta semana, la tira no dice nada: no se dibuja.
   const conTira = !(ocurrencias?.planState === 'NO_ACTIVE_PLAN' && !tira.realizadas);
-  // Lado a lado con letra ×1; en una columna con ×1,3 o en un teléfono angosto (AV2-07).
+  // Lado a lado con letra ×1; en una columna con ×1,3, en un teléfono angosto o si el título no entra ni con el ícono
+  // arriba (AV2-07). El par decide junto dónde va el ícono, con los títulos que se ven siempre: «Mediciones» mientras
+  // carga y «Actividad».
   const { width, fontScale } = useWindowDimensions();
-  const anchoChico = anchoDeLaColumna(width, fontScale, false);
+  const chicas = disposicionDeLasTarjetasChicas(width, fontScale, [T.mediciones, T.actividad]);
   return (
     <View>
       <Titulo>{fechaLarga(hoy)}</Titulo>
@@ -67,8 +70,8 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
       <Pendientes token={token} sesionPerdida={sesionPerdida} ir={ir} />
       {/* Al final, lado a lado, lo que se mira: la medida de la última toma y la actividad, como dato y sin calificar. */}
       <View style={estilos.parDeTarjetas}>
-        <Mediciones token={token} sesionPerdida={sesionPerdida} ir={ir} ancho={anchoChico} />
-        <ActividadDeEntrenamiento lectura={actividad} ir={ir} ancho={anchoChico} />
+        <Mediciones token={token} sesionPerdida={sesionPerdida} ir={ir} ancho={chicas.ancho} iconoArriba={chicas.iconoArriba} />
+        <ActividadDeEntrenamiento lectura={actividad} ir={ir} ancho={chicas.ancho} iconoArriba={chicas.iconoArriba} />
       </View>
     </View>
   );

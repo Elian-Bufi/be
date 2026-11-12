@@ -46,6 +46,19 @@ TEST-AVR-010 (AV2-D1), TEST-AVR-012 y 013 (AV2-D2), y las de Inicio que fijaban 
 de la lectura de hoy y «Ver tu historial» (AV2-07 y AV2-13). La de la fecha civil compara con un día de 1999 para que el
 año salga y se vea que el día no se corre (AV2-15).
 
+### La revisión de la etapa A (2026-11-12)
+
+Una revisión adversarial encontró defectos que las pruebas de arriba no veían (`WP-APP-VUELTA-2.md` §10.4). Cada
+arreglo tiene su prueba, y cada prueba, su mutación, con el mismo ayudante: todas dieron rojo, y el archivo volvió a
+quedar igual.
+
+| Hallazgo | Oráculo | Mutación | Resultado |
+|---|---|---|---|
+| Con la letra ×1,3 de Android (1,2999999523…), Inicio seguía en dos columnas (AV2-T17) | TEST-AV2-008 | Volver a comparar la escala con el literal (`>= 1.3`) | Rojo |
+| Una palabra larga no entraba en media ficha (AV2-T18) | TEST-AV2-008 | Las fichas sin mirar los nombres (siempre dos columnas) | Rojo |
+| «Mediciones» se partía al lado del ícono a 360 dp (AV2-T18) | TEST-AV2-008 | El ícono siempre al lado | Rojo |
+| El círculo del día medía 17 dp a 360 dp (AV2-T18) | TEST-AV2-008 | La columna de la tira, de media tarjeta | Rojo |
+
 ## El contraste, medido en el peor punto (TEST-AV2-001)
 
 Con la fórmula de `scripts/contraste.test.cjs` (WCAG 2.2). El peor punto es el mínimo sobre los tres puntos del degradé,

@@ -15,10 +15,13 @@
  *   días», nunca un total que mezcle lo hecho con lo no hecho. Inicio, «Tu historial» y la tira de la semana salen de la
  *   misma lectura y la misma clave: las realizadas de Inicio son las realizadas más las con desvío del historial.
  * - **Una cuenta nueva** (AV-17): un área sin plan es una línea, no una tarjeta; «Para responder» sin filas no se dibuja.
+ * - **La composición** (AV2-07): dos columnas con la letra de siempre y una con ×1,3, con la escala como la manda Android
+ *   (`escala-de-letra.ts`), y además según lo que entra: ninguna palabra se parte a la mitad.
  */
 import { COPY_ANTROPOMETRIA, numero, textoDeDiferenciaAntropometrica, type HoyConOpcionesResponse, type MedidaDeLaToma, type Ocurrencia, type RegistroDeComida } from '@be/domain';
-import { estadosDeLasComidas, registroDeLaComida, type EstadoDeLaComida } from './comidas-de-hoy';
+import { anchoDeLaPalabraMasLarga, estadosDeLasComidas, fichasPorFila, registroDeLaComida, type EstadoDeLaComida, type MedidasDeLaFicha } from './comidas-de-hoy';
 import type { VistaConPliegue } from './desplegable';
+import { esLetraGrande } from './escala-de-letra';
 import { diaDeLaSemana, diaYMes, fechaCivil } from './formato';
 import type { ActividadDeEntrenamiento, ActividadDelDia } from './lecturas-de-inicio';
 import { sesionRealizada } from './sesion-en-curso';
@@ -98,25 +101,101 @@ export function rutaDeLaFicha(f: Pick<FichaDeComida, 'mealId' | 'estado' | 'reco
   return { nombre: 'hoy', accion: 'registrar', comida: f.mealId };
 }
 
-// ─── La composición: dos columnas con letra ×1, una con ×1,3 (AV2-07) ───────────────────────────
+// ─── La composición: dos columnas con letra ×1, una con ×1,3 o si no entra (AV2-07) ─────────────
 
 /** El relleno del contenido de cada pantalla, a cada lado (App.tsx), y la separación entre fichas o tarjetas, en dp. */
 export const RELLENO_DE_LA_PANTALLA = 20;
 export const SEPARACION_EN_INICIO = 8;
 
 /**
- * Cuántas columnas van las fichas de las comidas y las dos tarjetas chicas: dos con la letra de siempre; una con letra
- * ×1,3 o más, o en un teléfono angosto. No se achica la letra: cambia la composición.
+ * La regla de base de las columnas de Inicio: dos con la letra de siempre; una con letra ×1,3 o más, o en un teléfono
+ * angosto. La escala se compara como la manda Android (`escala-de-letra.ts`): «×1,3» llega como 1,2999999523…, y con el
+ * literal quedaban dos columnas. No se achica la letra: cambia la composición. Las fichas y las tarjetas chicas, además,
+ * pasan a una columna si su texto no entra (`columnasDeLasFichas`, `disposicionDeLasTarjetasChicas`).
  */
-export const columnasDeInicio = (ancho: number, escalaDeLetra: number): 1 | 2 => (escalaDeLetra >= 1.3 || ancho < 340 ? 1 : 2);
+export const columnasDeInicio = (ancho: number, escalaDeLetra: number): 1 | 2 => (esLetraGrande(escalaDeLetra) || ancho < 340 ? 1 : 2);
 
 /**
- * El ancho de una columna: el de la pantalla menos su relleno y, dentro de una tarjeta, el relleno y el borde de 1 dp de
- * la tarjeta (`RELLENO_DE_LA_TARJETA`, de la receta). Sin porcentajes: el ancho sale de la ventana.
+ * El ancho útil: el de la pantalla menos su relleno y, dentro de una tarjeta, el relleno y el borde de 1 dp de la tarjeta
+ * (`RELLENO_DE_LA_TARJETA`, de la receta). Sin porcentajes: el ancho sale de la ventana.
  */
-export function anchoDeLaColumna(ancho: number, escalaDeLetra: number, dentroDeUnaTarjeta: boolean): number {
-  const util = ancho - 2 * RELLENO_DE_LA_PANTALLA - (dentroDeUnaTarjeta ? 2 * (RELLENO_DE_LA_TARJETA + 1) : 0);
-  return columnasDeInicio(ancho, escalaDeLetra) === 1 ? util : Math.floor((util - SEPARACION_EN_INICIO) / 2);
+export const anchoUtilDeInicio = (ancho: number, dentroDeUnaTarjeta: boolean): number => ancho - 2 * RELLENO_DE_LA_PANTALLA - (dentroDeUnaTarjeta ? 2 * (RELLENO_DE_LA_TARJETA + 1) : 0);
+
+/** El ancho de cada columna, para una o dos columnas, con la separación de Inicio entre las dos. */
+export function anchoDeCadaColumna(ancho: number, columnas: 1 | 2, dentroDeUnaTarjeta: boolean): number {
+  const util = anchoUtilDeInicio(ancho, dentroDeUnaTarjeta);
+  return columnas === 1 ? util : Math.floor((util - SEPARACION_EN_INICIO) / 2);
+}
+
+/**
+ * Lo que ocupa una ficha de comida además de su nombre (`inicio-nutricion.tsx`): el relleno (12 dp de cada lado), el borde
+ * de «la que sigue» (2 de cada lado, el más grueso), el ícono (20) y su separación (8). El nombre va en 16 sp.
+ */
+export const FICHA_DE_INICIO: MedidasDeLaFicha = { letra: 16, alrededor: 2 * 12 + 2 * 2 + 20 + 8, separacion: SEPARACION_EN_INICIO };
+
+/**
+ * Cuántas columnas van las fichas de las comidas (AV2-07): las de la regla de base y, si en media tarjeta no entra la
+ * palabra más larga de algún nombre, una. Los nombres los escribe el profesional («Preentrenamiento» no entra a 360 dp) y
+ * una palabra no se parte. La cuenta es la de Nutrición (`fichasPorFila`, con las medidas de la ficha de Inicio); una sola
+ * comida va a todo el ancho.
+ */
+export function columnasDeLasFichas(ancho: number, escalaDeLetra: number, nombres: readonly string[]): 1 | 2 {
+  if (columnasDeInicio(ancho, escalaDeLetra) === 1) return 1;
+  return fichasPorFila(anchoUtilDeInicio(ancho, true), nombres, escalaDeLetra, FICHA_DE_INICIO) >= 2 ? 2 : 1;
+}
+
+/** El título de una tarjeta de Inicio, en sp (`tarjeta-de-inicio.tsx`), y hasta dónde crece con la letra de la persona. */
+export const LETRA_DEL_TITULO = 19;
+export const TOPE_DEL_TITULO = 1.5;
+/** Lo que ocupa el ícono al lado del título: 20 dp y su separación de 8. */
+const ICONO_DEL_TITULO = 20 + 8;
+
+/** Dónde va el ícono de una tarjeta para que la palabra más larga del título no se parta: al lado, arriba, o no entra. */
+export type LugarDelIcono = 'al-lado' | 'arriba' | 'no-entra';
+
+/** El lugar del ícono en una tarjeta de `anchoDeLaTarjeta` dp, con el título en negrita y la letra de la persona. */
+export function lugarDelIcono(titulos: readonly string[], anchoDeLaTarjeta: number, escalaDeLetra: number): LugarDelIcono {
+  const interior = anchoDeLaTarjeta - 2 * (RELLENO_DE_LA_TARJETA + 1);
+  const palabra = anchoDeLaPalabraMasLarga(titulos, LETRA_DEL_TITULO, Math.min(escalaDeLetra, TOPE_DEL_TITULO));
+  if (palabra <= interior - ICONO_DEL_TITULO) return 'al-lado';
+  return palabra <= interior ? 'arriba' : 'no-entra';
+}
+
+/** Cómo van las dos tarjetas chicas (la medida y la actividad): cuántas columnas, su ancho y si el ícono va arriba. */
+export interface DisposicionDeLasTarjetasChicas {
+  readonly columnas: 1 | 2;
+  readonly ancho: number;
+  readonly iconoArriba: boolean;
+}
+
+/**
+ * Las tarjetas chicas (AV2-07), decididas juntas para que el par quede parejo: lado a lado con la regla de base, con el
+ * ícono al lado del título si entra, arriba si al lado no entra y en una columna si tampoco entra arriba. Los títulos son
+ * los que se ven siempre: «Mediciones», mientras carga o sin tomas, y «Actividad». A 360 dp, «Mediciones» no entra al lado
+ * del ícono y se partía («Medicione / s»): el ícono va arriba. Una medida de nombre largo que no entre al lado lo sube
+ * solo en su tarjeta (`tarjeta-de-inicio.tsx`).
+ */
+export function disposicionDeLasTarjetasChicas(ancho: number, escalaDeLetra: number, titulos: readonly string[]): DisposicionDeLasTarjetasChicas {
+  if (columnasDeInicio(ancho, escalaDeLetra) === 2) {
+    const deDos = anchoDeCadaColumna(ancho, 2, false);
+    const lugar = lugarDelIcono(titulos, deDos, escalaDeLetra);
+    if (lugar !== 'no-entra') return { columnas: 2, ancho: deDos, iconoArriba: lugar === 'arriba' };
+  }
+  const deUna = anchoDeCadaColumna(ancho, 1, false);
+  return { columnas: 1, ancho: deUna, iconoArriba: lugarDelIcono(titulos, deUna, escalaDeLetra) !== 'al-lado' };
+}
+
+/** El círculo de cada día de la tira, en dp, con la letra de siempre. */
+const CIRCULO_DEL_DIA = 34;
+
+/**
+ * El círculo de cada día de la tira (AV2-08): crece con la letra hasta ×1,3 y no pasa su columna, un séptimo del ancho
+ * de la tarjeta entera. Antes la columna salía de media tarjeta (el ancho de una ficha), y a 360 dp el círculo medía
+ * 17 dp: el número no entraba.
+ */
+export function ladoDelDiaDeLaTira(ancho: number, escalaDeLetra: number): number {
+  const columna = Math.floor(anchoUtilDeInicio(ancho, true) / 7);
+  return Math.min(columna - 2, Math.round(CIRCULO_DEL_DIA * Math.min(Math.max(escalaDeLetra, 1), 1.3)));
 }
 
 /** El nombre del día del plan bajo «Comidas»: solo si el plan tiene más de un tipo de día (AV2-07). */

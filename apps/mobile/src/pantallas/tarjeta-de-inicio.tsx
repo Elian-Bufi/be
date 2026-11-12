@@ -5,13 +5,16 @@
  *
  * Desde DL-170 (AV2-07) la tarjeta deja su hoja propia y usa la receta de vidrio (`useSuperficie`, nivel 1, que provee
  * el nivel a lo de adentro); el ícono pasa a 20 dp, en `tenue`, en línea con el título y sin círculo: no es algo que se
- * toque. Una tarjeta chica (la medida y la actividad) puede ir con su ancho y tocarse entera.
+ * toque. Una tarjeta chica (la medida y la actividad) puede ir con su ancho y tocarse entera. Si su título no entra al
+ * lado del ícono, el ícono va arriba (revisión de la etapa A: a 360 dp, «Mediciones» se partía en «Medicione / s»).
  */
 import { COPY, COPY_ANTROPOMETRIA, type Resultado } from '@be/domain';
 import type { ReactNode } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { IconoDeZona } from '../barra-de-zonas';
+import { alcanzaLaEscala } from '../escala-de-letra';
 import { Icono, type NombreDeIcono } from '../icono';
+import { lugarDelIcono } from '../inicio-de-hoy';
 import type { Ir, Zona } from '../navegacion';
 import { RELLENO_DE_LA_TARJETA } from '../receta-de-vidrio';
 import { Boton, COLOR, estilosPorTema, Parrafo } from '../ui';
@@ -28,6 +31,8 @@ const ESCALA_PARA_APILAR = 1.5;
  * título crece con la letra hasta 1,5 veces: más grande, una palabra larga no entraba en la línea y se partía (render del
  * navegador con letra ×2, en 360 dp). El resto de la tarjeta crece sin tope.
  * - `ancho`: una tarjeta chica, lado a lado con otra (AV2-07). Sin porcentajes: el ancho sale de la ventana.
+ * - `iconoArriba`: el par de tarjetas chicas decide junto dónde va el ícono (`disposicionDeLasTarjetasChicas`), para que
+ *   las dos queden parejas. Si el título de esta no entra al lado (una medida de nombre largo), lo sube igual.
  * - `alTocar` y `paraLeer`: la tarjeta entera es un botón (la medida abre su evolución), con lo que dice el lector.
  */
 export function TarjetaDeInicio({
@@ -36,6 +41,7 @@ export function TarjetaDeInicio({
   detalle,
   icono,
   ancho,
+  iconoArriba = false,
   alTocar,
   paraLeer,
   children,
@@ -45,19 +51,24 @@ export function TarjetaDeInicio({
   detalle?: string;
   icono?: NombreDeIcono;
   ancho?: number;
+  iconoArriba?: boolean;
   alTocar?: () => void;
   paraLeer?: string;
   children: ReactNode;
 }) {
   const { fontScale } = useWindowDimensions();
   const { estilo, nivel } = useSuperficie();
+  // El ícono va arriba del título si el par lo pide, si en esta tarjeta chica el título no entra al lado, o con letra
+  // ×1,5 o más (la escala, comparada como la manda Android: `escala-de-letra.ts`).
+  const apilar = iconoArriba || (ancho !== undefined && lugarDelIcono([titulo], ancho, fontScale) !== 'al-lado') || alcanzaLaEscala(fontScale, ESCALA_PARA_APILAR);
   const contenido = (
     <DentroDelNivel nivel={nivel}>
-      <View style={[estilos.cabeza, fontScale >= ESCALA_PARA_APILAR && estilos.cabezaApilada]}>
+      <View style={[estilos.cabeza, apilar && estilos.cabezaApilada]}>
         {/* El de su módulo, salvo que la tarjeta pida otro de la familia (PA-06). Decorativo: en `tenue`, sin círculo. */}
         {icono ? <Icono nombre={icono} tamano={20} tono="tenue" /> : <IconoDeZona zona={zona} color={COLOR.tenue} tamano={20} />}
-        <View style={[estilos.textosDeCabeza, fontScale >= ESCALA_PARA_APILAR && estilos.textosApilados]}>
-          <Text style={estilos.titulo} accessibilityRole="header" maxFontSizeMultiplier={1.5}>
+        <View style={[estilos.textosDeCabeza, apilar && estilos.textosApilados]}>
+          {/* La red: si una palabra igual no entrara, se parte por sílabas y con guion, no en cualquier letra. */}
+          <Text style={estilos.titulo} accessibilityRole="header" maxFontSizeMultiplier={1.5} android_hyphenationFrequency="normal">
             {titulo}
           </Text>
           {detalle ? <Text style={estilos.detalle}>{detalle}</Text> : null}

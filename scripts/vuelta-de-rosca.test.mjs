@@ -876,7 +876,7 @@ test('TEST-AV2-008 · el título es la fecha y, de arriba abajo: el paso que fal
   assert.ok(orden.every((p, i) => p > 0 && (i === 0 || p > orden[i - 1])), `el orden en inicio.tsx: ${orden.join(', ')}`);
   assert.deepEqual([...inicio.ORDEN_DE_INICIO], ['paso-que-falta', 'semana', 'sesion', 'comidas', 'para-responder', 'medida', 'actividad']);
   assert.doesNotMatch(pantalla, /Rotulo|paraMirar|Hola/, 'sin «Para mirar» ni «Hola»');
-  assert.match(pantalla, /<View style=\{estilos\.parDeTarjetas\}>\s*<Mediciones [^>]*ancho=\{anchoChico\}[^>]*\/>\s*<ActividadDeEntrenamiento [^>]*ancho=\{anchoChico\}/, 'la medida y la actividad, lado a lado');
+  assert.match(pantalla, /<View style=\{estilos\.parDeTarjetas\}>\s*<Mediciones [^>]*ancho=\{chicas\.ancho\}[^>]*\/>\s*<ActividadDeEntrenamiento [^>]*ancho=\{chicas\.ancho\}/, 'la medida y la actividad, lado a lado');
   // Las tarjetas usan las piezas base: el ícono de 20 dp en `tenue`, sin círculo, y la receta de vidrio.
   const tarjeta = sinComentarios(leer('pantallas/tarjeta-de-inicio.tsx'));
   assert.match(tarjeta, /<IconoDeZona zona=\{zona\} color=\{COLOR\.tenue\} tamano=\{20\} \/>/);
@@ -884,18 +884,132 @@ test('TEST-AV2-008 · el título es la fecha y, de arriba abajo: el paso que fal
   assert.doesNotMatch(tarjeta, /borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor/, 'sin el círculo del ícono');
 });
 
-test('TEST-AV2-008 · dos columnas con letra ×1 y una con ×1,3: no se achica la letra, cambia la composición', () => {
+// La escala de letra como la manda Android: `Configuration.fontScale` es un `float`, y React Native 0.86 lo pasa a JS con
+// `fontScale.toDouble()` (DeviceInfoModule.kt). «×1,3» llega como 1,2999999523…, menor que 1,3, y «×1,15» como
+// 1,1499999761…. Las pruebas usan esos valores, no los literales.
+const escalaDeLetra = await import('../apps/mobile/src/escala-de-letra.ts');
+const comidasDeHoy = await import('../apps/mobile/src/comidas-de-hoy.ts');
+const { TEXTOS_DE_LA_VUELTA: T_DE_INICIO } = await import('../apps/mobile/src/textos-de-la-vuelta.ts');
+const ANDROID_13 = Math.fround(1.3);
+const ANDROID_115 = Math.fround(1.15);
+const CUATRO_COMIDAS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'];
+const TITULOS_CHICOS = [T_DE_INICIO.mediciones, T_DE_INICIO.actividad];
+
+test('TEST-AV2-008 · dos columnas con letra ×1 y una con ×1,3, también con la escala como la manda Android', () => {
+  assert.ok(ANDROID_13 < 1.3, 'Android manda «×1,3» como 1,2999999523…, menor que 1,3');
   assert.equal(inicio.columnasDeInicio(360, 1), 2);
   assert.equal(inicio.columnasDeInicio(412, 1.15), 2);
+  assert.equal(inicio.columnasDeInicio(412, ANDROID_115), 2);
   assert.equal(inicio.columnasDeInicio(360, 1.3), 1);
+  assert.equal(inicio.columnasDeInicio(360, ANDROID_13), 1, '«×1,3» de Android: una columna');
+  assert.equal(inicio.columnasDeInicio(360, 1.29), 2, 'por debajo de ×1,3, dos');
   assert.equal(inicio.columnasDeInicio(320, 1), 1, 'en un teléfono angosto, también una');
+  assert.equal(escalaDeLetra.esLetraGrande(ANDROID_13), true);
+  assert.equal(escalaDeLetra.esLetraGrande(ANDROID_115), false);
+  assert.equal(escalaDeLetra.alcanzaLaEscala(Math.fround(1.5), 1.5), true);
+  assert.equal(escalaDeLetra.alcanzaLaEscala(Number.NaN, 1.3), false, 'sin escala, la letra de siempre');
   // Las fichas dentro de la tarjeta: dos entran justas, con el relleno y el borde de la tarjeta descontados.
   const lugar = 360 - 2 * inicio.RELLENO_DE_LA_PANTALLA - 2 * (receta.RELLENO_DE_LA_TARJETA + 1);
-  assert.ok(2 * inicio.anchoDeLaColumna(360, 1, true) + inicio.SEPARACION_EN_INICIO <= lugar, 'dos fichas por fila sin pasarse');
-  assert.equal(inicio.anchoDeLaColumna(360, 1.3, true), lugar, 'con ×1,3, una a todo el ancho');
-  assert.equal(2 * inicio.anchoDeLaColumna(360, 1, false) + inicio.SEPARACION_EN_INICIO, 360 - 2 * inicio.RELLENO_DE_LA_PANTALLA, 'las dos tarjetas chicas llenan la fila');
-  assert.match(leer('pantallas/inicio.tsx'), /anchoDeLaColumna\(width, fontScale, false\)/);
-  assert.match(leer('pantallas/inicio-nutricion.tsx'), /anchoDeLaColumna\(width, fontScale, true\)/);
+  assert.equal(inicio.anchoUtilDeInicio(360, true), lugar);
+  assert.ok(2 * inicio.anchoDeCadaColumna(360, 2, true) + inicio.SEPARACION_EN_INICIO <= lugar, 'dos fichas por fila sin pasarse');
+  assert.equal(inicio.anchoDeCadaColumna(360, 1, true), lugar, 'en una columna, a todo el ancho');
+  assert.equal(2 * inicio.anchoDeCadaColumna(360, 2, false) + inicio.SEPARACION_EN_INICIO, 360 - 2 * inicio.RELLENO_DE_LA_PANTALLA, 'las dos tarjetas chicas llenan la fila');
+  // Nadie compara la escala con un literal: el umbral vive en escala-de-letra.ts, con la tolerancia del float.
+  for (const archivo of ['inicio-de-hoy.ts', 'pantallas/inicio.tsx', 'pantallas/inicio-nutricion.tsx', 'pantallas/tarjeta-de-inicio.tsx', 'pantallas/tira-de-la-semana.tsx']) {
+    assert.doesNotMatch(sinComentarios(leer(archivo)), /\b(fontScale|escalaDeLetra|escala)\s*>=?\s*[\d.]+/, `${archivo} compara la escala con un literal`);
+  }
+  assert.match(sinComentarios(leer('inicio-de-hoy.ts')), /esLetraGrande\(escalaDeLetra\) \|\| ancho < 340 \? 1 : 2/);
+});
+
+test('TEST-AV2-008 · las fichas pasan a una columna si un nombre no entra en media tarjeta; con dos, ninguna palabra se parte', () => {
+  assert.equal(inicio.columnasDeLasFichas(360, 1, CUATRO_COMIDAS), 2);
+  assert.equal(inicio.columnasDeLasFichas(360, ANDROID_115, CUATRO_COMIDAS), 2, '«Desayuno» con ×1,15 todavía entra');
+  assert.equal(inicio.columnasDeLasFichas(360, ANDROID_13, CUATRO_COMIDAS), 1);
+  assert.equal(inicio.columnasDeLasFichas(360, 1, ['Desayuno', 'Almuerzo', 'Merienda', 'Preentrenamiento']), 1, 'una palabra larga del profesional: una columna');
+  assert.equal(inicio.columnasDeLasFichas(360, 1, ['Desayuno', 'Postentreno']), 1, 'en 360 dp no entra');
+  assert.equal(inicio.columnasDeLasFichas(412, 1, ['Desayuno', 'Postentreno']), 2, 'en 412 dp, sí');
+  assert.equal(inicio.columnasDeLasFichas(360, 1, ['Media mañana', 'Merienda']), 2, 'dos palabras cortas se parten por el espacio');
+  // La cuenta es la de Nutrición (`fichasPorFila`), con las medidas de la ficha de Inicio.
+  assert.match(sinComentarios(leer('inicio-de-hoy.ts')), /fichasPorFila\(anchoUtilDeInicio\(ancho, true\), nombres, escalaDeLetra, FICHA_DE_INICIO\) >= 2 \? 2 : 1/);
+  assert.deepEqual(inicio.FICHA_DE_INICIO, { letra: 16, alrededor: 2 * 12 + 2 * 2 + 20 + 8, separacion: inicio.SEPARACION_EN_INICIO });
+  const nutricion = sinComentarios(leer('pantallas/inicio-nutricion.tsx'));
+  assert.match(nutricion, /nombre: \{ fontSize: 16, fontWeight: '800'/, 'el nombre en 16 sp, como la cuenta');
+  assert.match(nutricion, /ficha: \{ minHeight: 64, padding: 12,/, 'el relleno de 12 de la cuenta');
+  assert.match(nutricion, /laQueSigue: \{ borderWidth: 2,/, 'el borde más grueso de la cuenta');
+  assert.match(nutricion, /<Icono nombre=\{ICONO_DE_LA_FICHA\[f\.estado\]\} tamano=\{20\}/);
+  assert.match(nutricion, /cabezaDeFicha: \{ flexDirection: 'row', alignItems: 'center', gap: 8 \}/);
+  // La propiedad: con dos columnas, la palabra más larga entra en la ficha, del ancho que sea y con la letra que sea.
+  for (let ancho = 340; ancho <= 480; ancho += 4) {
+    for (const escala of [0.85, 1, ANDROID_115, 1.2, ANDROID_13]) {
+      for (const nombres of [CUATRO_COMIDAS, ['Colación', 'Postentreno'], ['Preentrenamiento', 'Cena'], ['Media mañana', 'Merienda']]) {
+        if (inicio.columnasDeLasFichas(ancho, escala, nombres) !== 2) continue;
+        const pide = comidasDeHoy.anchoDeLaPalabraMasLarga(nombres, inicio.FICHA_DE_INICIO.letra, escala) + inicio.FICHA_DE_INICIO.alrededor;
+        assert.ok(pide <= inicio.anchoDeCadaColumna(ancho, 2, true), `${ancho} dp ×${escala}: ${nombres.join(', ')} pide ${pide.toFixed(1)} dp`);
+      }
+    }
+  }
+  assert.match(nutricion, /const columnas = columnasDeLasFichas\(width, fontScale, comidas \? comidas\.fichas\.map\(\(f\) => f\.nombre\) : \[\]\);/);
+  assert.match(nutricion, /const anchoDeFicha = anchoDeCadaColumna\(width, columnas, true\);/);
+  // La red: si una palabra igual no entrara, se parte por sílabas y con guion, no en cualquier letra.
+  assert.match(nutricion, /<Text style=\{estilosDeFichas\.nombre\} android_hyphenationFrequency="normal">/);
+});
+
+test('TEST-AV2-008 · las tarjetas chicas: el ícono arriba si el título no entra al lado, y una columna si tampoco entra arriba', () => {
+  // 360 dp con letra ×1: «Mediciones», el título mientras carga, no entra al lado del ícono; arriba, sí.
+  assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(360, 1, TITULOS_CHICOS), { columnas: 2, ancho: 156, iconoArriba: true });
+  // 412 dp: entra al lado, como en la maqueta; con ×1,15, arriba.
+  assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(412, 1, TITULOS_CHICOS), { columnas: 2, ancho: 182, iconoArriba: false });
+  assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(412, ANDROID_115, TITULOS_CHICOS), { columnas: 2, ancho: 182, iconoArriba: true });
+  // 360 dp con ×1,15: tampoco entra arriba, y van en una columna, con el ícono al lado.
+  assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(360, ANDROID_115, TITULOS_CHICOS), { columnas: 1, ancho: 320, iconoArriba: false });
+  assert.equal(inicio.disposicionDeLasTarjetasChicas(360, ANDROID_13, TITULOS_CHICOS).columnas, 1);
+  // La propiedad: el título nunca se parte.
+  for (let ancho = 340; ancho <= 480; ancho += 4) {
+    for (const escala of [1, ANDROID_115, 1.2, ANDROID_13, 1.5, 2]) {
+      const d = inicio.disposicionDeLasTarjetasChicas(ancho, escala, TITULOS_CHICOS);
+      const interior = d.ancho - 2 * (receta.RELLENO_DE_LA_TARJETA + 1);
+      const palabra = comidasDeHoy.anchoDeLaPalabraMasLarga(TITULOS_CHICOS, inicio.LETRA_DEL_TITULO, Math.min(escala, inicio.TOPE_DEL_TITULO));
+      assert.ok(palabra <= interior - (d.iconoArriba ? 0 : 20 + 8), `${ancho} dp ×${escala}: ${palabra.toFixed(1)} dp en ${interior} dp`);
+      assert.equal(d.ancho, inicio.anchoDeCadaColumna(ancho, d.columnas, false));
+    }
+  }
+  // Una medida de nombre largo que no entra al lado lleva su ícono arriba, aunque el par no lo pida.
+  assert.equal(inicio.lugarDelIcono(['Peso'], 156, 1), 'al-lado');
+  assert.equal(inicio.lugarDelIcono(['Envergadura'], 182, 1.2), 'arriba');
+  assert.equal(inicio.lugarDelIcono(['Preentrenamiento'], 156, 1.2), 'no-entra');
+  const pantalla = sinComentarios(leer('pantallas/inicio.tsx'));
+  assert.match(pantalla, /const chicas = disposicionDeLasTarjetasChicas\(width, fontScale, \[T\.mediciones, T\.actividad\]\);/);
+  assert.match(pantalla, /<Mediciones [^>]*ancho=\{chicas\.ancho\} iconoArriba=\{chicas\.iconoArriba\}/);
+  assert.match(pantalla, /<ActividadDeEntrenamiento [^>]*ancho=\{chicas\.ancho\} iconoArriba=\{chicas\.iconoArriba\}/);
+  for (const archivo of ['pantallas/inicio-mediciones.tsx', 'pantallas/inicio-entrenamiento.tsx']) {
+    const codigo = sinComentarios(leer(archivo));
+    const chicas = codigo.match(/<TarjetaDeInicio [^>]*ancho=\{ancho\}[^>]*>/g) ?? [];
+    assert.ok(chicas.length > 0 && chicas.every((t) => t.includes('iconoArriba={iconoArriba}')), `${archivo}: cada tarjeta chica lleva el ícono donde lo decide el par`);
+  }
+  // La tarjeta: el título de 19 sp, que crece hasta ×1,5, y el ícono de 20 dp con su separación de 8, como la cuenta.
+  const tarjeta = sinComentarios(leer('pantallas/tarjeta-de-inicio.tsx'));
+  assert.equal(inicio.LETRA_DEL_TITULO, 19);
+  assert.equal(inicio.TOPE_DEL_TITULO, 1.5);
+  assert.match(tarjeta, /titulo: \{ fontSize: 19, fontWeight: '800'/);
+  assert.match(tarjeta, /accessibilityRole="header" maxFontSizeMultiplier=\{1\.5\}/);
+  assert.match(tarjeta, /cabeza: \{ flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  assert.match(tarjeta, /const apilar = iconoArriba \|\| \(ancho !== undefined && lugarDelIcono\(\[titulo\], ancho, fontScale\) !== 'al-lado'\) \|\| alcanzaLaEscala\(fontScale, ESCALA_PARA_APILAR\);/);
+  assert.match(tarjeta, /<View style=\{\[estilos\.cabeza, apilar && estilos\.cabezaApilada\]\}>/);
+  // La red: si igual no entrara, se parte por sílabas y con guion.
+  assert.match(tarjeta, /maxFontSizeMultiplier=\{1\.5\} android_hyphenationFrequency="normal">/);
+});
+
+test('TEST-AV2-008 · la tira ocupa la tarjeta entera: el círculo del día mide 34 dp a 360 dp, no la mitad', () => {
+  assert.equal(inicio.ladoDelDiaDeLaTira(360, 1), 34);
+  assert.equal(inicio.ladoDelDiaDeLaTira(412, 1), 34);
+  assert.equal(inicio.ladoDelDiaDeLaTira(320, 1), 33, 'en un teléfono angosto, lo que entra en su séptimo');
+  assert.equal(inicio.ladoDelDiaDeLaTira(360, ANDROID_13), 38, 'crece con la letra hasta lo que entra');
+  for (let ancho = 300; ancho <= 480; ancho += 4) {
+    for (const escala of [1, ANDROID_115, ANDROID_13, 2]) {
+      assert.ok(inicio.ladoDelDiaDeLaTira(ancho, escala) <= Math.floor(inicio.anchoUtilDeInicio(ancho, true) / 7) - 2, `${ancho} dp ×${escala}: el círculo no pasa su columna`);
+    }
+  }
+  assert.match(sinComentarios(leer('pantallas/tira-de-la-semana.tsx')), /const lado = ladoDelDiaDeLaTira\(width, fontScale\);/);
 });
 
 test('TEST-AV2-008 · el nombre del día del plan bajo «Comidas», solo con más de un tipo de día', () => {

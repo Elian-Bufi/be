@@ -11,7 +11,7 @@
  * - Si hoy no hay registros (`pideElUltimoRegistro`), el último registro (API-NUT-16-LISTA con `limit` 1). Llega después y
  *   no demora la tarjeta; su renglón va **debajo de las acciones**, para que al llegar no corra nada bajo el dedo.
  *
- * Las fichas (AV2-10, AV2-14; maqueta de §1.1), dos por fila y una con letra ×1,3:
+ * Las fichas (AV2-10, AV2-14; maqueta de §1.1), dos por fila y una con letra ×1,3 o si un nombre no entra:
  * - la registrada, con la tilde en `exito` y su hora («13:10»); «la que sigue», con el borde del acento, su tinte, el + y
  *   «Registrar»; las anteriores sin registrar, neutras («Sin registrar»); las que vienen, sus opciones;
  * - el ícono dice el estado, no la comida (AV2-T10): los nombres los escribe el profesional;
@@ -26,7 +26,7 @@ import { api } from '../api';
 import { SinActualizar } from '../estados';
 import { fechaCivil, hora } from '../formato';
 import { Icono } from '../icono';
-import { anchoDeLaColumna, comidasDeHoy, formaDelArea, ICONO_DE_LA_FICHA, nombreDelDiaEnInicio, rutaDeLaFicha, SEPARACION_EN_INICIO, type FichaDeComida } from '../inicio-de-hoy';
+import { anchoDeCadaColumna, columnasDeLasFichas, comidasDeHoy, formaDelArea, ICONO_DE_LA_FICHA, nombreDelDiaEnInicio, rutaDeLaFicha, SEPARACION_EN_INICIO, type FichaDeComida } from '../inicio-de-hoy';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
 import { useLecturaRecordada } from '../lecturas';
 import { leerUltimoRegistro, pideElUltimoRegistro, sinRegistrosDeHoy } from '../lecturas-de-inicio';
@@ -73,8 +73,10 @@ function ContenidoDeNutricion({
   // Sin día elegido no hay fichas: se pide elegir (DL-049).
   const comidas = plan && elegido ? comidasDeHoy({ meals: hoy.meals }, hoy.records, hora) : null;
   const { width, fontScale } = useWindowDimensions();
-  // Dos fichas por fila; con letra ×1,3, una: no se achica la letra, cambia la composición.
-  const anchoDeFicha = anchoDeLaColumna(width, fontScale, true);
+  // Dos fichas por fila; una con letra ×1,3 o si la palabra más larga de un nombre no entra en media tarjeta: no se
+  // achica la letra, cambia la composición (AV2-07).
+  const columnas = columnasDeLasFichas(width, fontScale, comidas ? comidas.fichas.map((f) => f.nombre) : []);
+  const anchoDeFicha = anchoDeCadaColumna(width, columnas, true);
   return (
     <>
       {hoy.planState === 'NOT_AVAILABLE' ? (
@@ -132,7 +134,10 @@ function FichaDeInicio({ ficha: f, ancho, abrir }: { ficha: FichaDeComida; ancho
     >
       <View style={estilosDeFichas.cabezaDeFicha}>
         <Icono nombre={ICONO_DE_LA_FICHA[f.estado]} tamano={20} tono={f.estado === 'registrada' ? 'exito' : sigue ? 'acento' : 'tenue'} />
-        <Text style={estilosDeFichas.nombre}>{f.nombre}</Text>
+        {/* La red: si una palabra igual no entrara, se parte por sílabas y con guion, no en cualquier letra. */}
+        <Text style={estilosDeFichas.nombre} android_hyphenationFrequency="normal">
+          {f.nombre}
+        </Text>
       </View>
       <Text style={sigue ? estilosDeFichas.registrar : estilos.detalle}>{f.texto}</Text>
     </Pressable>

@@ -34,7 +34,7 @@ function resumenDe(datos: EvolucionResponse['data']): UltimaToma | null {
 }
 
 /** API-ANT-06-PROPIA con la misma lectura y la misma clave que «Mi evolución» (`leerMiEvolucion`). */
-export function Mediciones({ token, sesionPerdida, ir, ancho }: { token: string; sesionPerdida: AlPerderLaSesion; ir: Ir; ancho: number }) {
+export function Mediciones({ token, sesionPerdida, ir, ancho, iconoArriba }: { token: string; sesionPerdida: AlPerderLaSesion; ir: Ir; ancho: number; iconoArriba: boolean }) {
   const pedir = useCallback(() => leerMiEvolucion(api, token), [token]);
   const { r, cargar, sinActualizar } = useLecturaRecordada(token, 'mi-evolucion:ultimos-90', pedir, sesionPerdida);
   const toma = r?.ok ? resumenDe(r.datos) : null;
@@ -43,7 +43,7 @@ export function Mediciones({ token, sesionPerdida, ir, ancho }: { token: string;
   if (destacada) {
     const m = medidaDeInicio(destacada);
     return (
-      <TarjetaDeInicio zona="evolucion" titulo={m.titulo} ancho={ancho} paraLeer={m.paraLeer} alTocar={() => ir({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada.metrica })}>
+      <TarjetaDeInicio zona="evolucion" titulo={m.titulo} ancho={ancho} iconoArriba={iconoArriba} paraLeer={m.paraLeer} alTocar={() => ir({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada.metrica })}>
         <Cifra valor={m.valor} unidad={m.unidad} tamano={26} />
         <Text style={estilos.detalle}>{m.cambio}</Text>
         <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
@@ -54,7 +54,7 @@ export function Mediciones({ token, sesionPerdida, ir, ancho }: { token: string;
   if (toma) {
     const texto = `${COPY_ANTROPOMETRIA.tuUltimaToma}: ${fechaCivil(toma.fecha)}`;
     return (
-      <TarjetaDeInicio zona="evolucion" titulo={T.mediciones} ancho={ancho} paraLeer={texto} alTocar={() => ir({ nombre: 'mi-evolucion', vista: 'ultima' })}>
+      <TarjetaDeInicio zona="evolucion" titulo={T.mediciones} ancho={ancho} iconoArriba={iconoArriba} paraLeer={texto} alTocar={() => ir({ nombre: 'mi-evolucion', vista: 'ultima' })}>
         <Text style={estilos.detalle}>{texto}</Text>
       </TarjetaDeInicio>
     );
@@ -65,7 +65,7 @@ export function Mediciones({ token, sesionPerdida, ir, ancho }: { token: string;
   else if (!r.ok) contenido = <NoSePudo falla={r} reintentar={() => void cargar()} />;
   else contenido = <Parrafo tenue>{COPY_ANTROPOMETRIA.sinMediciones}</Parrafo>;
   return (
-    <TarjetaDeInicio zona="evolucion" titulo={T.mediciones} ancho={ancho}>
+    <TarjetaDeInicio zona="evolucion" titulo={T.mediciones} ancho={ancho} iconoArriba={iconoArriba}>
       {contenido}
       <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
     </TarjetaDeInicio>

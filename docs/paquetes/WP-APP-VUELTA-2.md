@@ -2,7 +2,7 @@
 
 > **Estado:** etapa A programada en #255 (en borrador, sin integrar; DL-170). El 2026-11-11 Dirección aprobó la etapa A
 > (AV2-01 a AV2-18), AV2-D1 (el paso 1), AV2-D2 y AV2-D11; para D3, D4, D5, D7 y D8 rigen las recomendaciones (§6). La
-> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, y T14 a T16 de la programación, a ratificar. Los
+> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, T14 a T16 de la programación y T17 en adelante de la revisión (§10.4), a ratificar. Los
 > oráculos están en `WP-APP-VUELTA-2-ORACULOS.md`; lo programado y lo que cambió al programar, en §10.
 >
 > **Encargo** (Dirección, 2026-11-11): pasó una referencia del tema de vidrio («glassy») para la apariencia de la app,
@@ -1164,3 +1164,45 @@ verificada con su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`). Solo la APK: no
 - TalkBack, la letra ×1,3, el alto contraste y el dibujo de Android, en el teléfono: ninguna prueba los da por
   aprobados.
 - La etapa B, con el visto bueno de Dirección a la muestra.
+
+### 10.4 Lo que cambió con la revisión de la etapa A (2026-11-12; AV2-T17 en adelante, a ratificar)
+
+Una revisión adversarial de la etapa A, antes de la muestra, encontró defectos que las pruebas no veían. Cada arreglo va
+con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
+
+- **AV2-T17 · La escala de letra se compara como la manda Android, en un solo lugar** (`escala-de-letra.ts`). Android
+  guarda la escala como `float`, y React Native 0.86.3 la pasa a JS con `fontScale.toDouble()` (`DeviceInfoModule.kt`):
+  «×1,3» llega como 1,2999999523…, y `escala >= 1.3` daba falso. Con la letra ×1,3 de los ajustes, Inicio seguía en dos
+  columnas: fichas de 139 dp, donde «Desayuno» pide unos 147, y el nombre se partía. TEST-AV2-008 pasaba porque usaba el
+  1,3 exacto; ahora usa `Math.fround(1.3)`. La escala se compara en centésimos (`alcanzaLaEscala`).
+- **AV2-T18 · Las columnas de Inicio, según lo que entra.** Aun con la escala corregida, dos columnas no alcanzaban para
+  una palabra larga a 360 dp:
+  - las fichas de las comidas pasan a una columna si la palabra más larga de algún nombre no entra en media tarjeta
+    (los nombres los escribe el profesional: «Preentrenamiento»). La cuenta es la de Nutrición (`fichasPorFila`, con las
+    medidas de la ficha de Inicio), y una sola comida va a todo el ancho;
+  - en las tarjetas chicas, el ícono va arriba del título si al lado no entra, y pasan a una columna si tampoco entra
+    arriba. El par lo decide junto, con «Mediciones» (lo que se ve cada vez que Inicio carga) y «Actividad», para que las
+    dos queden parejas. A 360 dp con letra ×1 el ícono va arriba: al lado del ícono quedan 94 dp, y «Mediciones» en 19
+    sp y negrita pide unos 98 con las métricas de Roboto (106 con la estimación holgada del repo, 0,56 em por carácter,
+    que es la que se usa). A 412 dp va al lado, como la maqueta; a 360 dp con ×1,15, una columna;
+  - como red, los nombres y los títulos se parten por sílabas y con guion (`android_hyphenationFrequency="normal"`) si
+    igual no entraran, y no en cualquier letra;
+  - la tira de la semana tomaba su séptimo de media tarjeta, el ancho de una ficha: a 360 dp, el círculo del día medía
+    17 dp y el número no entraba. Ahora sale de la tarjeta entera (34 dp).
+
+### 10.5 Hallazgos fuera del paquete
+
+- **Severidad media · otros umbrales de la escala de letra, con el mismo defecto que AV2-T17** (en `main` desde antes de
+  esta vuelta). Con la letra ×1,3 de los ajustes de Android (1,2999999523…), estas comparaciones con el literal dan lo
+  pensado para la letra de siempre:
+  - `pantallas/nutricion-hoy.tsx:688` (`fontScale >= 1.3`): la imagen del registro no baja debajo del texto, salvo en un
+    teléfono de menos de 380 dp;
+  - `franja-de-macros.ts:49` y `:68` (`ESCALA_PARA_DOS_POR_DOS`): la franja de los macros puede ir de a cuatro columnas
+    en vez de dos por dos, si la cuenta de anchos dice que entran;
+  - `composicion-de-la-figura.ts:103` y `:239`, y `pantallas/progreso-de-una-medida.tsx:94`
+    (`ESCALA_DESDE_LA_QUE_VAN_NUMEROS`): la figura prueba primero las tarjetas laterales en vez de pasar a números, y el
+    valor de una medida no se apila.
+
+  El arreglo es el mismo: comparar con `alcanzaLaEscala` (`escala-de-letra.ts`) y probar con `Math.fround(1.3)`. No entra
+  acá porque cambia Nutrición y Evolución, fuera de la etapa A; va en la etapa B (AV2-21 y AV2-19 tocan esos archivos) o
+  en un arreglo aparte, con el sí de Dirección.
