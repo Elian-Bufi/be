@@ -203,8 +203,10 @@ test('ED-30 · activar desde el paso 7 sale del asistente y muestra el plan acti
 
 test('EDC-12 · un objetivo nuevo cuenta como algo por guardar recién cuando llega su relectura, y «Siguiente» la espera', () => {
   const editor = leer('nutrition/editor.tsx');
-  assert.match(editor, /const objetivoPorGuardar = objetivoPedido && !!version && !!objetivoVigente && objetivoVigente !== version\.objectiveVersionId;/);
-  assert.match(editor, /habilitado: !!version && porGuardar && puedeGuardar/);
+  assert.match(editor, /const objetivoPorGuardar = objetivoPedido && !!version && !!objetivo && objetivo\.versionId !== version\.objectiveVersionId;/);
+  // «Sucio» suma lo escrito y el objetivo por guardar: el autoguardado, «Guardar ahora», la salida y el asistente lo ven.
+  assert.match(editor, /const sucio = escritoSinGuardar \|\| objetivoPorGuardar;/);
+  assert.match(editor, /const cambiosParaGuardar = useMemo\(\(\) => \[estructura, proximaRevision, objetivoPorGuardar\]/);
   assert.match(editor, /setObjetivoPedido\(true\);\n\s+return onObjetivoNuevo\(\);/);
   // Ya no se marca «sucio» antes de que llegue el objetivo nuevo: ese guardado saldría sin él.
   assert.doesNotMatch(editor, /setSucio\(true\);\n\s+onObjetivoNuevo\(\);/);

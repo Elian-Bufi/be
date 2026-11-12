@@ -697,7 +697,7 @@ async function primerPlan({ p, d }) {
 
 /**
  * ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito. Del paso
- * 1 al 7 sobre el mismo borrador: un día tipo, una comida con un alimento del catálogo base, y activar. Activada desde el
+ * 1 al 7 sobre el mismo borrador: el día tipo de «En blanco», una comida con un alimento del catálogo base, y activar. Activada desde el
  * paso 7, se sale del asistente y se ve el plan activo (no el paso 1 de otra versión). En el paso 5, «Agregar una opción»
  * cancelado no deja una opción vacía en el borrador.
  */
@@ -713,8 +713,9 @@ async function asistenteDeNutricion({ p, d }) {
   await elemento(p, '[data-objetivo-general]');
   await clic(p, '[data-asistente-principal]', 'Siguiente: Días tipo');
 
-  // 3. Un día tipo.
-  await clic(p, '[data-asistente-agregar-dia]');
+  // 3. «En blanco» ya trae un día tipo, «Día habitual»: se sigue con él.
+  await elemento(p, '[data-asistente-agregar-dia]');
+  assert.equal(await p.evaluate(() => document.querySelectorAll('li[data-dia-del-asistente]').length), 1, 'en blanco, un día tipo');
   await clic(p, '[data-asistente-principal]', 'Siguiente: Comidas');
 
   // 4. Una comida, con su nombre (sin nombre no se puede guardar).

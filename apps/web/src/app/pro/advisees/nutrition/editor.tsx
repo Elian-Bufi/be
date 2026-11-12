@@ -245,9 +245,14 @@ export function EditorDeBorrador({
   // DL-119: la receta de cada opción de receta, por la versión que cita.
   const [recetas, setRecetas] = useState<Record<string, RecetaDeOpcion>>({});
   const [eligiendoReceta, setEligiendoReceta] = useState<{ readonly i: number; readonly j: number } | null>(null);
-  const [sucio, setSucio] = useState(false);
+  const [escritoSinGuardar, setSucio] = useState(false);
   // ED-30 (EDC-12): el asistente escribió una versión nueva del objetivo; hasta que el borrador la cite, hay algo por guardar.
   const [objetivoPedido, setObjetivoPedido] = useState(false);
+  // EDC-12: con el objetivo nuevo ya leído, el borrador que cita el anterior tiene algo por guardar aunque no se haya
+  // tocado nada más. Se cuenta recién cuando llega la relectura: un guardado anterior no lo mandaría (la carrera del paso 2).
+  const objetivoPorGuardar = objetivoPedido && !!version && !!objetivo && objetivo.versionId !== version.objectiveVersionId;
+  // «Sucio»: lo escrito sin guardar, o el objetivo nuevo que el borrador todavía no cita.
+  const sucio = escritoSinGuardar || objetivoPorGuardar;
   const [guardando, setGuardando] = useState(false);
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
   // el autoguardado. «Guardado» solo con la respuesta del servidor; un 409 por versión no pisa nada.
@@ -433,10 +438,6 @@ export function EditorDeBorrador({
   };
 
   const objetivoVigente = objetivo?.versionId ?? null;
-  // EDC-12: con el objetivo nuevo ya leído, el borrador que cita el anterior tiene algo por guardar aunque no se haya
-  // tocado nada más. Se cuenta recién cuando llega la relectura: un guardado anterior no lo mandaría (la carrera del paso 2).
-  const objetivoPorGuardar = objetivoPedido && !!version && !!objetivoVigente && objetivoVigente !== version.objectiveVersionId;
-  const porGuardar = sucio || objetivoPorGuardar;
 
   /**
    * Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. `reenvio` (ED-61): lo escrito después de un guardado
@@ -563,17 +564,17 @@ export function EditorDeBorrador({
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
   const puedeGuardar = loQueNoDejaGuardarElPlan(estructura).length === 0;
   // ED-03: por qué «Guardar ahora» está apagado, o `null`.
-  const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio: porGuardar, conflicto });
+  const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
   // El objetivo nuevo, recién leído, también cuenta como un cambio: el autoguardado lo manda en la primera pausa.
   const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision, objetivoPorGuardar], [estructura, proximaRevision, objetivoPorGuardar]);
   const autoguardado = useAutoguardado({
-    habilitado: !!version && porGuardar && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !descartar,
+    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !descartar,
     cambios: cambiosParaGuardar,
     guardar: () => void guardar(true),
   });
   // ED-02: un enlace interno con cambios guarda antes de salir (si se puede: nada a medio escribir ni un conflicto) o
   // pregunta; recargar o cerrar la pestaña, también pregunta.
-  useCambiosSinGuardar(porGuardar, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
+  useCambiosSinGuardar(sucio, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
 
   /**
    * ED-07: la revisión de la API de la versión guardada (API-NUT-11). Lo que dice entra en «Lo que impide activar»; la
@@ -610,10 +611,10 @@ export function EditorDeBorrador({
   // ED-07: con el cuadro abierto y todo guardado, la API revisa lo guardado (al abrirlo, o apenas llega la respuesta de
   // un guardado). Con cambios sin guardar, el cuadro ofrece primero «Guardar ahora».
   useEffect(() => {
-    if (confirmar && version && !porGuardar && !guardando && revision === null) void revisar(version);
+    if (confirmar && version && !sucio && !guardando && revision === null) void revisar(version);
     // `revisar` es de este render y lee lo mismo que estas dependencias.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmar, version, porGuardar, guardando, revision]);
+  }, [confirmar, version, sucio, guardando, revision]);
 
   async function activar() {
     if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
@@ -866,7 +867,7 @@ export function EditorDeBorrador({
   const enElPanel = (p: ValidationIssue, texto: string) => ({ texto: `${ubicacionDelProblema(p.path, estructura)}: ${texto}`, ir: lugarDelProblema(p.path).dia === null ? null : () => irAlProblema(p) });
   const impidenEnVivo = [
     ...loQueNoDejaGuardarElPlan(estructura).map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
-    ...(revision?.estado === 'lista' && !porGuardar ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+    ...(revision?.estado === 'lista' && !sucio ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
   ];
   const sinCompletarEnVivo = loQueQuedaSinCompletarEnNutricion(estructura).map((p) => enElPanel(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento'));
   // ── ED-31 y ED-34: los totales de cada opción y los rangos del día tipo que se mira ─────────────────────────
@@ -901,7 +902,7 @@ export function EditorDeBorrador({
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
-            sucio={porGuardar}
+            sucio={sucio}
             puedeGuardar={puedeGuardar}
             fallo={fallo}
             conflicto={conflicto}
@@ -1037,7 +1038,7 @@ export function EditorDeBorrador({
           rangosDe={(n) => (estructura[n] ? rangosDelDia(estructura[n]!, n, composiciones, nombres, (id, rv) => itemsGuardados(version, id, rv), (rv) => recetas[rv]?.name ?? null) : null)}
           objetivo={objetivo}
           persona={persona ?? 'la persona'}
-          sucio={porGuardar}
+          sucio={sucio}
           guardando={guardando}
           guardar={() => guardar()}
           impiden={impidenEnVivo}
@@ -1557,7 +1558,7 @@ export function EditorDeBorrador({
         revisando={revision?.estado === 'revisando'}
         sinRevisar={revision?.estado === 'fallo'}
         onVolverARevisar={() => void revisar(version)}
-        sinGuardar={porGuardar}
+        sinGuardar={sucio}
         guardando={guardando}
         conflicto={conflicto}
         onGuardarAhora={() => void guardar()}
