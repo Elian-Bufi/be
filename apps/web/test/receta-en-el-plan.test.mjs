@@ -55,3 +55,34 @@ test('ED-32 · con doce opciones, no se agrega y se dice por qué; el texto ofre
   assert.equal(R.COPY_RECETA_NUEVA.agregarla('Merienda'), 'Agregarla a Merienda');
   assert.equal(R.COPY_RECETA_NUEVA.agregada('Budín', 1, 'Merienda'), '«Budín» quedó en Mis recetas (versión 1) y es la opción 2 de Merienda.');
 });
+
+test('ED-32 · una comida nueva que gana su identidad con el autoguardado mientras el cuadro está abierto sigue siendo la misma', () => {
+  const e = plan();
+  // El cuadro se abrió con la colación sin identidad; el autoguardado le dio una.
+  e[1].meals[0].mealId = 'm9';
+  const r = R.agregarLaReceta(e, { i: 1, j: 0, mealId: null, label: 'Colación', nombre: 'Colación' }, budin);
+  assert.deepEqual([r.tipo, r.i, r.j], ['agregada', 1, 0]);
+  assert.equal(r.estructura[1].meals[0].mealId, 'm9');
+  // Si en ese lugar ahora hay otra comida, con identidad o sin ella, no se agrega ahí.
+  e[1].meals[0].label = 'Cena';
+  assert.deepEqual(R.agregarLaReceta(e, { i: 1, j: 0, mealId: null, label: 'Colación', nombre: 'Colación' }, budin), { tipo: 'no-se-pudo', motivo: 'YA_NO_ESTA' });
+});
+
+test('ED-33 · la receta reemplaza la «Opción 1» sin tocar de una comida nueva; si ya tiene algo, va al final', () => {
+  // Sin tocar: la receta queda como opción 1 y no sobra una opción vacía que impida activar.
+  const r = R.agregarLaReceta(plan(), { i: 1, j: 0, mealId: null, label: 'Colación', nombre: 'Colación' }, budin);
+  assert.equal(r.k, 0);
+  assert.deepEqual(r.estructura[1].meals[0].options, [{ label: 'Budín', items: [], recipeVersionId: 'rv1' }]);
+  assert.equal(R.COPY_RECETA_NUEVA.agregada('Budín', r.k, 'Colación'), '«Budín» quedó en Mis recetas (versión 1) y es la opción 1 de Colación.');
+  // Lo mismo al elegir una receta que ya existe.
+  assert.deepEqual(R.opcionesConLaReceta([opcion('Opción 1')], budin), { opciones: [{ label: 'Budín', items: [], recipeVersionId: 'rv1' }], k: 0 });
+  // Tocada (con un ítem, con otro nombre, con una receta o con otra opción al lado): la receta se suma al final.
+  const item = { catalogItemId: 'c1', quantity: null, preparationState: null, note: null };
+  assert.equal(R.opcionesConLaReceta([{ label: 'Opción 1', items: [item] }], budin).k, 1);
+  assert.equal(R.opcionesConLaReceta([opcion('Avena')], budin).k, 1);
+  assert.equal(R.opcionesConLaReceta([{ label: 'Opción 1', items: [], recipeVersionId: 'rv0' }], budin).k, 1);
+  assert.equal(R.opcionesConLaReceta([opcion('Opción 1'), opcion('Opción 2')], budin).k, 2);
+  const lista = [opcion('Opción 1')];
+  R.opcionesConLaReceta(lista, budin);
+  assert.deepEqual(lista, [opcion('Opción 1')]);
+});

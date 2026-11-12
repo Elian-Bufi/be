@@ -91,7 +91,7 @@ import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_ESTACION as CE } from '../estacion/estacion';
 import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
-import { agregarLaReceta, COPY_RECETA_NUEVA, type LugarDeLaReceta } from './receta-en-el-plan';
+import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
@@ -217,6 +217,9 @@ export function EditorDeBorrador({
   const [version, setVersion] = useState<VersionDePlan | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [estructura, setEstructura] = useState<Estructura>([]);
+  // ED-32: la receta nueva vuelve después de un `await`; con esto lee la estructura de ahora y no la del clic.
+  const estructuraDeAhora = useRef(estructura);
+  estructuraDeAhora.current = estructura;
   const [proximaRevision, setProximaRevision] = useState('');
   // TB-15: «¿Cuándo la revisás?» al activar, con nada elegido (o la fecha que ya tenía la versión); la fecha que resulta
   // es la que se guarda en la versión antes de activarla.
@@ -667,9 +670,16 @@ export function EditorDeBorrador({
    */
   const agregarLaRecetaNueva = (r: Receta) => {
     if (!recetaNueva) return;
-    const res = agregarLaReceta(estructura, recetaNueva, r);
+    const lugar = recetaNueva;
+    const res = agregarLaReceta(estructuraDeAhora.current, lugar, r);
     if (res.tipo === 'no-se-pudo') return setRecuperar({ receta: r, motivo: res.motivo });
-    if (res.tipo === 'agregada') cambiar(() => res.estructura);
+    // Se aplica sobre la estructura vigente: si mientras tanto llegó un guardado, sus identificadores no se pierden.
+    if (res.tipo === 'agregada') {
+      cambiar((e) => {
+        const x = agregarLaReceta(e, lugar, r);
+        return x.tipo === 'agregada' ? x.estructura : e;
+      });
+    }
     ir({ dia: pedidoDeLaPosicion(res.i), comidas: pedidoDeComidasDelEditor(new Set([...(res.i === i ? abiertas : []), res.j])) });
     setPestanas((p) => ({ ...p, [`${res.i}-${res.j}`]: res.k }));
     cerrarLaRecetaNueva();
@@ -684,7 +694,7 @@ export function EditorDeBorrador({
   const agregarComida = () => {
     const j = dia?.meals.length ?? 0;
     // ED-33: la comida nace con su opción 1 lista, para empezar a sumarle alimentos.
-    cambiar((x) => (x[i]!.meals.push({ label: '', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Opción 1', items: [] }] }), x));
+    cambiar((x) => (x[i]!.meals.push({ label: '', prescriptionMode: 'DISH_OPTIONS', options: [{ label: OPCION_INICIAL, items: [] }] }), x));
     dejarAbiertas(new Set([...abiertas, j]));
     // Una comida sin nombre no se puede guardar: nace con el campo abierto.
     setNombreQueSeCambia({ de: 'comida', i, j });
@@ -1254,12 +1264,15 @@ export function EditorDeBorrador({
           onElegir={(receta) => {
             if (!eligiendoReceta) return;
             const { i: di, j } = eligiendoReceta;
-            const nueva = estructura[di]?.meals[j]?.options.length ?? 0;
+            const opciones = estructura[di]?.meals[j]?.options;
+            if (!opciones) return;
+            // ED-33: la opción inicial sin tocar de una comida nueva se reemplaza; si no, la receta va al final.
+            const { k: nueva } = opcionesConLaReceta(opciones, receta);
             setRecetas((x) => ({
               ...x,
               [receta.recipeVersionId]: { recipeId: receta.recipeId, recipeVersionId: receta.recipeVersionId, versionNumber: receta.versionNumber, name: receta.name, servings: receta.servings },
             }));
-            cambiar((x) => (x[di]!.meals[j]!.options.push({ label: receta.name, items: [], recipeVersionId: receta.recipeVersionId }), x));
+            cambiar((x) => ((x[di]!.meals[j]!.options = opcionesConLaReceta(x[di]!.meals[j]!.options, receta).opciones), x));
             setPestanas((p) => ({ ...p, [`${di}-${j}`]: nueva }));
             setEligiendoReceta(null);
           }}

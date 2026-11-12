@@ -6,8 +6,10 @@
  * suma al borrador (y viaja con el autoguardado). Si la segunda no se puede, la primera ya quedó: el cuadro lo dice y
  * ofrece «Agregarla a Merienda» con la versión que devolvió la API, sin crear otra receta.
  *
- * - La comida se busca por su identidad (`mealId`) si la tiene; si es nueva, por su lugar y su nombre. Si ya no está, no
- *   se agrega en otra.
+ * - La comida se busca por su identidad (`mealId`) si la tiene; si es nueva, por su lugar y su nombre, aunque mientras
+ *   tanto el autoguardado le haya dado identidad. Si ya no está, no se agrega en otra.
+ * - Una comida recién creada nace con «Opción 1» vacía (ED-33): la receta ocupa ese lugar en vez de dejar una opción sin
+ *   ítems, que después impediría activar (OPTION_ITEM_REQUIRED). Vale para la receta nueva y para la elegida.
  * - Agregar dos veces la misma versión a la misma comida no la duplica: el reintento encuentra la que ya está.
  * - La opción guarda `recipeVersionId`: editar la receta después crea otra versión y no cambia la del plan (TEST-EDP-030).
  */
@@ -43,8 +45,29 @@ export function dondeEstaLaComida(e: Estructura, lugar: LugarDeLaReceta): { read
     }
     return null;
   }
+  // Una comida nueva no tiene identidad cuando se abre el cuadro, pero el autoguardado se la puede dar mientras tanto.
   const m = e[lugar.i]?.meals[lugar.j];
-  return m && !m.mealId && m.label === lugar.label ? { i: lugar.i, j: lugar.j } : null;
+  return m && m.label === lugar.label ? { i: lugar.i, j: lugar.j } : null;
+}
+
+type Opcion = Estructura[number]['meals'][number]['options'][number];
+
+/** El rótulo con el que nace la opción de una comida nueva (ED-33). */
+export const OPCION_INICIAL = 'Opción 1';
+
+/** La opción con la que nace una comida y que nadie tocó todavía: sin ítems, sin receta y con su rótulo. */
+export function esLaOpcionSinTocar(o: Opcion): boolean {
+  return o.items.length === 0 && !o.recipeVersionId && o.label === OPCION_INICIAL;
+}
+
+/**
+ * Las opciones con la receta sumada, y en qué lugar quedó. Si la comida solo tiene su opción inicial sin tocar, la receta
+ * la reemplaza; si no, va al final. No toca `opciones`.
+ */
+export function opcionesConLaReceta(opciones: readonly Opcion[], receta: { readonly recipeVersionId: string; readonly name: string }): { readonly opciones: Opcion[]; readonly k: number } {
+  const nueva: Opcion = { label: receta.name, items: [], recipeVersionId: receta.recipeVersionId };
+  if (opciones.length === 1 && esLaOpcionSinTocar(opciones[0]!)) return { opciones: [nueva], k: 0 };
+  return { opciones: [...opciones, nueva], k: opciones.length };
 }
 
 /** Suma la receta como opción de la comida del lugar; no toca `e`, devuelve la estructura nueva. */
@@ -56,8 +79,9 @@ export function agregarLaReceta(e: Estructura, lugar: LugarDeLaReceta, receta: {
   if (ya >= 0) return { tipo: 'ya-estaba', ...donde, k: ya };
   if (comida.options.length >= MAXIMO_DE_OPCIONES) return { tipo: 'no-se-pudo', motivo: 'TOPE' };
   const nueva = structuredClone(e) as Estructura;
-  nueva[donde.i]!.meals[donde.j]!.options.push({ label: receta.name, items: [], recipeVersionId: receta.recipeVersionId });
-  return { tipo: 'agregada', estructura: nueva, ...donde, k: comida.options.length };
+  const { opciones, k } = opcionesConLaReceta(comida.options, receta);
+  nueva[donde.i]!.meals[donde.j]!.options = opciones;
+  return { tipo: 'agregada', estructura: nueva, ...donde, k };
 }
 
 export const COPY_RECETA_NUEVA = {
