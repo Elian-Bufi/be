@@ -9,6 +9,7 @@
  *   sesión.
  */
 import type { CambiarNombreProfesionalRequest, IncorporarProfesionalRequest } from './incorporacion-de-profesionales';
+import { ListaAdministrativaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, type ConsultarPedidosDeDerechoRequest, type ResolverPedidoDeDerechoRequest } from './derechos-del-titular';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -161,6 +162,14 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
     /** API-ADM-15 — cambiar el nombre profesional (UF-D7), contra el que se vio, con su clave de idempotencia. */
     cambiarNombreProfesional(token: string, profesionalId: string, pedido: CambiarNombreProfesionalRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/admin/professionals/${encodeURIComponent(profesionalId)}/name`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: FichaDeProfesionalResponseSchema });
+    },
+    /** API-ADM-16 — los pedidos de derechos de las personas (UF-06, DL-169). */
+    pedidosDeDerechos(token: string, consulta: ConsultarPedidosDeDerechoRequest) {
+      return llamar('POST', '/admin/data-rights-requests/query', { token, cuerpo: consulta, esquema: ListaAdministrativaDePedidosDeDerechoResponseSchema });
+    },
+    /** API-ADM-17 — resolver un pedido, con su clave de idempotencia. */
+    resolverPedidoDeDerecho(token: string, pedidoId: string, pedido: ResolverPedidoDeDerechoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/data-rights-requests/${encodeURIComponent(pedidoId)}/resolution`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: PedidoDeDerechoAdministrativoResponseSchema });
     },
   };
 }

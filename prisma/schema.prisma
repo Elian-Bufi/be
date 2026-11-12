@@ -281,6 +281,10 @@ model Identidad {
   // WP-USO-FINAL, UF-04 (DL-169; UF-D7): los cambios del nombre profesional, del profesional y del administrador que los hizo.
   cambiosDeNombreProfesional CambioDeNombreProfesional[] @relation("CambioDeNombreDelProfesional")
   cambiosDeNombreDecididos   CambioDeNombreProfesional[] @relation("CambioDeNombreDelAdministrador")
+  // WP-USO-FINAL, UF-06 (DL-169): los derechos de la persona, sus pedidos y sus exportaciones, y los que resolvió como administradora.
+  pedidosDeDerecho        PedidoDeDerecho[]   @relation("PedidoDeDerechoDelTitular")
+  pedidosDeDerechoResueltos PedidoDeDerecho[] @relation("PedidoDeDerechoDelAdministrador")
+  exportacionesPropias    ExportacionPropia[] @relation("ExportacionPropiaDelTitular")
 
   @@map("identidad")
 }
@@ -4088,4 +4092,62 @@ model SegundoFactorDeSesion {
 
   @@index([identidadId])
   @@map("segundo_factor_de_sesion")
+}
+
+// ─── WP-USO-FINAL, UF-06 (DL-169; 08 §18 y §19; 09 v0.12 §14 y §15): los derechos de la persona ─────────────────
+
+/// Acceso (art. 14), rectificación y supresión (art. 16) de la Ley 25.326.
+enum TipoDePedidoDeDerecho {
+  ACCESO
+  RECTIFICACION
+  SUPRESION
+}
+
+/// Nace RECIBIDO; Administración lo resuelve una sola vez (trigger).
+enum EstadoDePedidoDeDerecho {
+  RECIBIDO
+  RESUELTO
+  RECHAZADO
+}
+
+/// UF-06: un pedido de derechos de la persona, con su plazo. Administración lo resuelve con la respuesta a la persona y su
+/// fundamento interno (CHECK de coherencia; un administrador con el rol vigente, trigger). No se borra ni se reescribe.
+model PedidoDeDerecho {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titularId           String                  @map("titular_id") @db.Uuid
+  tipo                TipoDePedidoDeDerecho
+  nota                String?
+  estado              EstadoDePedidoDeDerecho @default(RECIBIDO)
+  /// El último día del plazo, fecha civil de Buenos Aires.
+  plazo               DateTime                @db.Date
+  respuesta           String?
+  fundamento          String?
+  administradorId     String?                 @map("administrador_id") @db.Uuid
+  momentoDeResolucion DateTime?               @map("momento_de_resolucion") @db.Timestamptz(3)
+  procedencia         Json
+  momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  titular       Identidad  @relation("PedidoDeDerechoDelTitular", fields: [titularId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad? @relation("PedidoDeDerechoDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([titularId])
+  @@index([estado, plazo])
+  @@map("pedido_de_derecho")
+}
+
+/// UF-06: una exportación propia pedida, con sus dominios y su vencimiento. El archivo no se guarda: se arma al descargarlo
+/// por una ruta firmada. Solo se agrega.
+model ExportacionPropia {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titularId         String   @map("titular_id") @db.Uuid
+  dominios          String[]
+  venceEn           DateTime @map("vence_en") @db.Timestamptz(3)
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  titular Identidad @relation("ExportacionPropiaDelTitular", fields: [titularId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([titularId])
+  @@map("exportacion_propia")
 }

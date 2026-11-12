@@ -2202,6 +2202,45 @@ it('TEST-CT (WP-USO-FINAL, UF-04): ADM-14 y ADM-15 — incorporar a un profesion
   await cambiar({ professionalName: 'Lic. Contrato Renombrada', expectedName: 'Lic. Contrato Incorporada', rationale: 'Pedido por el canal.' }).expect(200);
 });
 
+it('TEST-CT (WP-USO-FINAL, UF-06): RGT-01 a 03, EXP-01, EXP-02 y su descarga, y ADM-16 y 17 — los derechos de la persona, con éxitos y errores declarados (DL-169)', async () => {
+  const persona = await prepararAsesorado(app, 'ct-uf06');
+  const otra = await prepararAsesorado(app, 'ct-uf06-otra');
+  const yo = conSesion(app, persona.token);
+  // RGT-01 a 03.
+  await request(app.getHttpServer()).post('/api/v1/me/data-rights-requests').set('Authorization', `Bearer ${persona.token}`).send({ type: 'ACCESS', scope: {} }).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await yo.post('/api/v1/me/data-rights-requests').send({ type: 'ACCESS', scope: {}, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post('/api/v1/me/data-rights-requests').send({ type: 'ACCESS', scope: { note: 'x'.repeat(1001) } }).expect(422); // VALIDATION_FAILED
+  const pedido = (await yo.post('/api/v1/me/data-rights-requests').send({ type: 'RECTIFICATION', scope: { note: 'Mi fecha está mal.' } }).expect(201)).body.data.requestId as string;
+  await request(app.getHttpServer()).post('/api/v1/me/data-rights-requests').set('Idempotency-Key', claveDeIdempotencia()).send({ type: 'ACCESS', scope: {} }).expect(401); // AUTHENTICATION_REQUIRED
+  await yo.get(`/api/v1/me/data-rights-requests/${pedido}`).expect(200);
+  await conSesion(app, otra.token).get(`/api/v1/me/data-rights-requests/${pedido}`).expect(404); // RESOURCE_NOT_FOUND
+  await yo.get(`/api/v1/me/data-rights-requests/${pedido}?x=1`).expect(400); // INVALID_REQUEST
+  await yo.get('/api/v1/me/data-rights-requests?limit=5').expect(200);
+  await yo.get('/api/v1/me/data-rights-requests?cursor=no-es-un-cursor').expect(400); // INVALID_CURSOR
+  // EXP-01, EXP-02 y la descarga.
+  await yo.post('/api/v1/me/exports').send({ scope: { domains: [], period: null } }).expect(422); // VALIDATION_FAILED
+  await yo.post('/api/v1/me/exports').send({ scope: { domains: ['NUTRITION'], period: null }, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const exportacion = (await yo.post('/api/v1/me/exports').send({ scope: { domains: ['NUTRITION', 'TRAINING'], period: null } }).expect(201)).body.data.exportId as string;
+  const ruta = (await yo.get(`/api/v1/me/exports/${exportacion}`).expect(200)).body.data.download.path as string;
+  await conSesion(app, otra.token).get(`/api/v1/me/exports/${exportacion}`).expect(404); // RESOURCE_NOT_FOUND
+  await yo.get(`/api/v1/me/exports/${exportacion}?x=1`).expect(400); // INVALID_REQUEST
+  await request(app.getHttpServer()).get(`/api/v1${ruta}`).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/exports/content/no.vale').expect(404); // RESOURCE_NOT_FOUND
+  await request(app.getHttpServer()).get(`/api/v1${ruta}?x=1`).expect(400); // INVALID_REQUEST
+  // ADM-16 y ADM-17.
+  const a = await administradorListo(app, prisma, `ct-uf06-${randomUUID().slice(0, 6)}`);
+  await adm(app, a.token).post('/admin/data-rights-requests/query').send({ state: 'RECEIVED' }).expect(200);
+  await adm(app, a.token).post('/admin/data-rights-requests/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/data-rights-requests/query').send({ cursor: '###' }).expect(400); // INVALID_CURSOR
+  await adm(app, persona.token).post('/admin/data-rights-requests/query').send({}).expect(403); // ACTION_FORBIDDEN
+  const resolver = (id: string, cuerpo: Record<string, unknown>) => adm(app, a.token).post(`/admin/data-rights-requests/${id}/resolution`).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo);
+  await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: '' }).expect(422); // VALIDATION_FAILED
+  await resolver(randomUUID(), { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.' }).expect(404); // RESOURCE_NOT_FOUND
+  await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.' }).expect(200);
+  await resolver(pedido, { outcome: 'REJECTED', response: 'Otra vez.', rationale: 'Otra vez.' }).expect(422); // INVALID_STATE_TRANSITION
+});
+
 it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-47): PLN-07 y PLE-05 — descartar un borrador, con éxitos y errores declarados (DL-163 D-21)', async () => {
   const servidor = app.getHttpServer();
   const ajeno = randomUUID();

@@ -113,6 +113,16 @@ export function MenuAdministrativo() {
               </span>
             </Link>
           ) : null}
+          {/* UF-06 (DL-169): los pedidos de derechos de las personas. */}
+          {vigente && ruta !== '/admin/rights' ? (
+            <Link href="/admin/rights" className="menu-de-cuenta__opcion">
+              <Icono nombre="persona" />
+              <span>
+                Pedidos de derechos
+                <span className="nota">Acceso, rectificación y supresión</span>
+              </span>
+            </Link>
+          ) : null}
           <fieldset className="menu-de-cuenta__apariencia">
             <legend>Apariencia</legend>
             {TEMAS.map((t) => (

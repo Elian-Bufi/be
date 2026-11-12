@@ -3,6 +3,7 @@ import { APP_FILTER } from '@nestjs/core';
 import type { Entorno } from './config/entorno';
 import { AccesoGoogleModule } from './acceso-google/acceso-google.module';
 import { AdministracionModule } from './administracion/administracion.module';
+import { DerechosModule } from './derechos/derechos.module';
 import { ENTORNO, VERSION } from './config/tokens';
 import type { VersionDesplegada } from './config/version';
 import { AutorizacionModule } from './autorizacion/autorizacion.module';
@@ -91,6 +92,8 @@ export class AppModule {
         CoordinacionModule,
         // WP-ADMINISTRACION (DL-155): la administración de profesionales por área, con segundo factor.
         AdministracionModule,
+        // UF-06 de WP-USO-FINAL (DL-169): los derechos de la persona.
+        DerechosModule,
         // DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56): lo que la persona comparte de otras áreas.
         ResumenesModule,
       ],

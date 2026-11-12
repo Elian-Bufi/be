@@ -37,6 +37,7 @@ import { COPY } from '../../lib/copy';
 import { errorDelNombre, mensajeDelNombreEn } from '../../lib/nombre-y-apellido';
 import { useSesion, EsperandoSesion } from '../../lib/sesion';
 import { fecha } from '../../lib/formato';
+import { TusDatos } from './tus-datos';
 
 const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], string> = {
   OPERATIVA: 'Operativa',
@@ -165,6 +166,9 @@ export function Cuenta() {
           <Link href="/account/privacy">Gestionar privacidad y consentimientos</Link>
         </p>
       </section>
+
+      {/* UF-06 (DL-169): descargar lo propio y pedir el acceso, la rectificación o la supresión. */}
+      {token ? <TusDatos token={token} /> : null}
 
       <section className="seccion" aria-labelledby="titulo-seguridad">
         <h2 id="titulo-seguridad">Seguridad</h2>

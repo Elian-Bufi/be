@@ -46,7 +46,13 @@ const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-1
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
  * de una revisión, DL-154).
  */
-const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO', 'BUSQUEDA', 'REANUDACION', 'EVIDENCIA'];
+const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO', 'BUSQUEDA', 'REANUDACION', 'EVIDENCIA', 'DESCARGA'];
+/**
+ * Las operaciones que el 09 define fuera del inventario P0, con su ruta, y que BE implementa tal cual, cada una con la DL
+ * que la trae: los derechos del titular y la exportación propia (09 v0.12 §14 y §15; UF-06 de WP-USO-FINAL, DL-169). La
+ * guardia exige que tengan el método y la ruta que el 09 les da. DESCARGA (DL-169) es la descarga firmada de API-EXP-02.
+ */
+const IDS_DEL_09_FUERA_DEL_INVENTARIO = { 'API-RGT-01': 'DL-169', 'API-RGT-02': 'DL-169', 'API-RGT-03': 'DL-169', 'API-EXP-01': 'DL-169', 'API-EXP-02': 'DL-169' };
 /**
  * Los IDs nuevos dentro de una familia del 09 que el 09 no usa, cada uno con la DL que lo declara. El 09 tiene API-ACC-01
  * a 06 y las P1; DL-169 (WP-USO-FINAL, UF-D4, ratificada por Dirección el 2026-11-11) suma API-ACC-07, «Lo que falta para
@@ -118,7 +124,9 @@ test('un ID fuera del inventario es una extensión declarada de BE y cita su fue
     const sufijo = op.id.match(/^(API-[A-Z]+-\d{2})-([A-Z]+)$/);
     const p1 = /^API-[A-Z]+-P1-\d{2}$/.test(op.id) && del09.has(op.id);
     const nuevoEnFamiliaDel09 = op.id in IDS_NUEVOS_EN_FAMILIAS_DEL_09 && !del09.has(op.id);
-    const declarada = (familia && familia[1] in FAMILIAS_DE_BE) || (sufijo && inventario.has(sufijo[1]) && SUFIJOS_DE_BE.includes(sufijo[2])) || p1 || nuevoEnFamiliaDel09;
+    const del09FueraDelInventario = op.id in IDS_DEL_09_FUERA_DEL_INVENTARIO && del09.has(op.id);
+    const baseDelSufijo = sufijo && (inventario.has(sufijo[1]) || sufijo[1] in IDS_DEL_09_FUERA_DEL_INVENTARIO);
+    const declarada = (familia && familia[1] in FAMILIAS_DE_BE) || (baseDelSufijo && SUFIJOS_DE_BE.includes(sufijo[2])) || p1 || nuevoEnFamiliaDel09 || del09FueraDelInventario;
     if (!declarada || !op.fuente || !op.fuente.trim()) sinDeclarar.push(op.id);
   }
   assert.deepEqual(sinDeclarar, [], `extensiones sin declarar: ${sinDeclarar.join(', ')}`);
@@ -136,4 +144,21 @@ test('un ID nuevo en una familia del 09 es uno que el 09 no usa, y está en el c
     assert.equal(inventario.has(id), false, `${id} (${dl}) está en el inventario P0 del 09`);
     assert.ok(OPERACIONES.some((o) => o.id === id && o.fuente.includes(dl)), `${id} no está en el contrato o no cita ${dl}`);
   }
+});
+
+test('una operación del 09 fuera del inventario tiene el método y la ruta que el 09 le da, y cita su DL (DL-169)', () => {
+  const choques = [];
+  for (const [id, dl] of Object.entries(IDS_DEL_09_FUERA_DEL_INVENTARIO)) {
+    const op = OPERACIONES.find((o) => o.id === id);
+    const rutas = del09.get(id);
+    if (!op || !rutas) {
+      choques.push(`${id}: ${!op ? 'no está en el contrato' : 'el 09 no la define'}`);
+      continue;
+    }
+    if (!op.fuente.includes(dl)) choques.push(`${id}: no cita ${dl}`);
+    if (!rutas.some((r) => r.metodo === op.metodo && r.ruta === normalizar(op.ruta))) {
+      choques.push(`${id}: el contrato dice ${op.metodo.toUpperCase()} ${normalizar(op.ruta)}; el 09, ${rutas.map((r) => `${r.metodo.toUpperCase()} ${r.ruta}`).join(' o ')}`);
+    }
+  }
+  assert.deepEqual(choques, [], choques.join('\n'));
 });

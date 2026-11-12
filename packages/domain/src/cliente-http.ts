@@ -33,6 +33,7 @@ import { DetalleDeCuentaDeGoogleInexistenteSchema, DetalleDeCuentaDeGoogleSchema
 import { declaracionDeMayoriaDeEdad } from './mayoria-de-edad';
 import { CodigosDeRecuperacionResponseSchema, ConfiguracionDelAutenticadorResponseSchema, DetalleDeCodigoInvalidoSchema } from './contratos-administracion';
 import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema } from './segundo-factor-del-profesional';
+import { ExportacionResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoResponseSchema, type CrearExportacionRequest, type CrearPedidoDeDerechoRequest } from './derechos-del-titular';
 import {
   CandidatoDeAlimentoResponseSchema,
   CandidatoDeEjercicioResponseSchema,
@@ -649,6 +650,27 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-MFA-06: diez códigos de recuperación nuevos. */
     codigosDeRecuperacionNuevosDeLaSesion(token: string) {
       return llamar('POST', '/me/second-factor/recovery-codes', { token, cuerpo: {}, esquema: CodigosDeRecuperacionResponseSchema });
+    },
+    // ─── UF-06 (DL-169): los derechos de la persona ───────────────────────────────────────────────────
+    /** API-RGT-01: pedir el acceso, la rectificación o la supresión, con su clave de idempotencia. */
+    pedirUnDerecho(token: string, pedido: CrearPedidoDeDerechoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/data-rights-requests', { token, cuerpo: pedido, claveDeIdempotencia, esquema: PedidoDeDerechoResponseSchema });
+    },
+    /** API-RGT-03: los pedidos propios. */
+    pedidosDeDerechos(token: string, cursor?: string) {
+      return llamar('GET', `/me/data-rights-requests?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { token, esquema: ListaDePedidosDeDerechoResponseSchema });
+    },
+    /** API-EXP-01: pedir la exportación propia. */
+    exportarMisDatos(token: string, pedido: CrearExportacionRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/exports', { token, cuerpo: pedido, claveDeIdempotencia, esquema: ExportacionResponseSchema });
+    },
+    /** API-EXP-02: el estado de la exportación, con una ruta de descarga firmada nueva (relativa a la base de la API). */
+    exportacionPropia(token: string, exportacionId: string) {
+      return llamar('GET', `/me/exports/${encodeURIComponent(exportacionId)}`, { token, esquema: ExportacionResponseSchema });
+    },
+    /** La dirección completa de una ruta firmada de descarga (API-EXP-02-DESCARGA), para abrirla en el navegador. */
+    direccionDeDescarga(ruta: string): string {
+      return `${opciones.baseUrl}${ruta}`;
     },
     /** API-CON-05 (solo lectura). */
     consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>> {

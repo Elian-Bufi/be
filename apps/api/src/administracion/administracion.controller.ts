@@ -7,6 +7,7 @@ import {
   type EstadoDeSesionAdministrativaResponse,
   type FichaDeProfesionalResponse,
   type HistorialAdministrativoResponse,
+  type ListaAdministrativaDePedidosDeDerechoResponse,
   type ListaDeProfesionalesResponse,
   type SegundoFactorVerificadoResponse,
   type SesionAdministrativaResponse,
@@ -15,6 +16,7 @@ import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { sinParametrosDeQuery } from '../http/validacion';
 import { borrarCookieDeReanudacion, PERFIL_ADMINISTRATIVO } from '../sesion/reanudacion.service';
+import { DerechosService } from '../derechos/derechos.service';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
 import { AdministracionService } from './administracion.service';
 import { actorAdministrativoDe, OperacionAdministrativa, SegundoFactorGuard, SesionAdministrativaGuard, type SolicitudAdministrativa } from './sesion-administrativa.guard';
@@ -35,6 +37,7 @@ export class AdministracionController {
   constructor(
     private readonly acceso: AccesoAdministrativoService,
     private readonly administracion: AdministracionService,
+    private readonly derechos: DerechosService,
   ) {}
 
   /** API-ADM-01 — PUBLIC. */
@@ -198,6 +201,34 @@ export class AdministracionController {
   ): Promise<unknown> {
     sinParametrosDeQuery(query);
     const r = await this.administracion.cambiarNombre(actorAdministrativoDe(req), profesionalId, cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  /** API-ADM-16 — SESSION_MFA. Los pedidos de derechos de las personas (UF-06 de WP-USO-FINAL, DL-169). */
+  @Post('data-rights-requests/query')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-16')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  pedidosDeDerecho(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ListaAdministrativaDePedidosDeDerechoResponse> {
+    sinParametrosDeQuery(query);
+    return this.derechos.consultarParaAdministracion(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /** API-ADM-17 — SESSION_MFA, Idempotency-Key requerida. Resolver un pedido de derechos (UF-06). */
+  @Post('data-rights-requests/:requestId/resolution')
+  @OperacionAdministrativa('API-ADM-17')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async resolverPedidoDeDerecho(
+    @Param('requestId') pedidoId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.derechos.resolver(actorAdministrativoDe(req), pedidoId, cuerpo, clave, contextoDe(req));
     res.status(r.estadoHttp);
     return r.cuerpo;
   }

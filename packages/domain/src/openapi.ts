@@ -30,6 +30,7 @@ import {
 import { EditarPerfilPropioRequestSchema, LoQueFaltaParaSeguirResponseSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema, SinCuerpoDelSegundoFactorSchema } from './segundo-factor-del-profesional';
 import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSchema } from './incorporacion-de-profesionales';
+import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -3934,6 +3935,106 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: FichaDeProfesionalResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
     fuente: 'UF-04 y UF-D7 de WP-USO-FINAL · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-06 de WP-USO-FINAL (DL-169; 08 §18 y §19): los derechos de la persona (09 v0.12 §14 y §15) ──────────────────
+  {
+    id: 'API-RGT-01',
+    metodo: 'post',
+    ruta: '/me/data-rights-requests',
+    resumen:
+      'Pedir el acceso, la rectificación o la supresión de los datos propios (09 v0.12 §14). El sujeto es siempre la persona autenticada: no se pide por otra. Queda con su plazo (deadline, fecha civil de Buenos Aires): diez días corridos para el acceso (Ley 25.326, art. 14) y cinco hábiles para rectificar o suprimir (art. 16), a confirmar con la asesoría. Lo resuelve Administración (API-ADM-17); la supresión no promete borrar lo que la ley obliga a conservar (08 §18). La nota es opcional, de hasta 1000 caracteres.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPedidoDeDerechoRequestSchema,
+    exitos: [{ status: 201, schema: PedidoDeDerechoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: '09 v0.12 §14 (API-RGT-01) · 08 §19 · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-RGT-02',
+    metodo: 'get',
+    ruta: '/me/data-rights-requests/{requestId}',
+    resumen: 'Un pedido propio, con su estado, su plazo y la respuesta de Administración (nunca su fundamento interno). El de otra persona, o uno que no existe: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PedidoDeDerechoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09 v0.12 §14 (API-RGT-02) · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-RGT-03',
+    metodo: 'get',
+    ruta: '/me/data-rights-requests',
+    resumen: 'Los pedidos propios, del más nuevo al más viejo, de a páginas (limit y cursor).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDePedidosDeDerechoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09 v0.12 §14 (API-RGT-03) · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-EXP-01',
+    metodo: 'post',
+    ruta: '/me/exports',
+    resumen:
+      'Pedir la exportación propia (09 v0.12 §15): de los dominios pedidos (al menos uno; period, todavía null) y siempre el perfil, los vínculos con sus consentimientos, los actos aceptados y los formularios. Exporta solo lo del titular; de sus profesionales, la referencia mínima (identificador y nombre profesional). Queda registrada con su vencimiento (24 horas) y auditada; el archivo no se guarda: se arma al descargarlo (API-EXP-02-DESCARGA).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearExportacionRequestSchema,
+    exitos: [{ status: 201, schema: ExportacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: '09 v0.12 §15 (API-EXP-01) · 08 §19 · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-EXP-02',
+    metodo: 'get',
+    ruta: '/me/exports/{exportId}',
+    resumen:
+      'El estado de una exportación propia y, mientras está vigente, una ruta de descarga firmada nueva que vence a los 15 minutos (08 §21). La de otra persona, o una que no existe: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ExportacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09 v0.12 §15 (API-EXP-02) · 08 §21 · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-EXP-02-DESCARGA',
+    metodo: 'get',
+    ruta: '/exports/content/{token}',
+    resumen:
+      'La descarga de la exportación propia por su ruta firmada: el archivo JSON (be-exportacion-propia/1), como adjunto y sin caché, armado en ese momento con lo del titular. Cada entrega se audita, sin el contenido. Una ruta vencida, alterada o de una exportación vencida: 404. La ruta no lleva sesión: el cupo es por red, el de las lecturas protegidas (429).',
+    autenticacion: 'SIGNED_URL',
+    idempotencia: false,
+    exitos: [{ status: 200, binario: 'application/json' }],
+    errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'], 429: ['RATE_LIMITED'] },
+    fuente: '09 v0.12 §15 («una URL de descarga, si existe, es temporal y autenticada/firmada») · 08 §21 · ID propio de BE (variante DESCARGA de API-EXP-02) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ADM-16',
+    metodo: 'post',
+    ruta: '/admin/data-rights-requests/query',
+    resumen:
+      'Los pedidos de derechos de las personas, para resolverlos dentro de su plazo: los pendientes primero, por plazo, y después los resueltos. De cada persona, su identificador y su correo de acceso (para responderle por el canal); nada de salud. Filtra por estado; la consulta va en el cuerpo.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarPedidosDeDerechoRequestSchema,
+    exitos: [{ status: 200, schema: ListaAdministrativaDePedidosDeDerechoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD', 'INVALID_CURSOR'] },
+    fuente: 'UF-06 de WP-USO-FINAL · 08 §19 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  {
+    id: 'API-ADM-17',
+    metodo: 'post',
+    ruta: '/admin/data-rights-requests/{requestId}/resolution',
+    resumen:
+      'Resolver un pedido de derechos: hecho (RESOLVED) o no se pudo (REJECTED), con la respuesta para la persona y el fundamento interno (de 1 a 1000 caracteres, lo ve solo Administración). Un pedido se resuelve una sola vez (422 INVALID_STATE_TRANSITION). La supresión se hace con el cierre de la cuenta y la política de 08 §18; esta respuesta dice lo hecho y lo que se conserva.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: ResolverPedidoDeDerechoRequestSchema,
+    exitos: [{ status: 200, schema: PedidoDeDerechoAdministrativoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
+    fuente: 'UF-06 de WP-USO-FINAL · 08 §18 y §19 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
   },
 ];
 

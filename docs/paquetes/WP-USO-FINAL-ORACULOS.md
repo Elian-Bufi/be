@@ -396,3 +396,45 @@ AUTOMATION           packages/domain/src/incorporacion-de-profesionales.test.ts 
 ENVIRONMENT          `npm test` y el job de integración de la CI
 EVIDENCE_EXPECTED    La CI verde; en /admin, la incorporación de una cuenta sintética (pendiente de prueba manual)
 ```
+
+---
+
+## TEST-UF-011 — La persona descarga lo suyo, sin datos de terceros, y pide sus derechos por un canal que Administración resuelve
+
+```text
+TEST_ID              TEST-UF-011
+TITLE                API-EXP-01 y 02 generan la exportación propia y la entregan por una ruta firmada y temporal, con lo
+                     del titular y sin datos de terceros salvo la referencia mínima de sus profesionales; API-RGT-01 a 03
+                     registran y listan los pedidos de acceso, rectificación y supresión con su plazo, y Administración
+                     los resuelve con fundamento (API-ADM-16 y 17)
+LEVEL                Dominio (los plazos y el contrato), integración (API real con PostgreSQL), website y APK
+PRIORITY             P0
+SOURCES              UF-06 (WP-USO-FINAL.md §4.1) · DL-169 · 08 §18 y §19 · 08 §21 (rutas de 15 minutos) · 09 v0.12 §14
+                     (API-RGT-01 a 03) y §15 (API-EXP-01 y 02) · Ley 25.326, art. 14 y 16 (plazos a confirmar con la
+                     asesoría)
+PRECONDITIONS        Una persona con un vínculo de Nutrición, un plan activado, registros y una medida; otra persona con
+                     sus propios registros, vinculada al mismo profesional.
+SYNTHETIC_FIXTURE    Personas y profesional sintéticos (`@example.invalid`); un administrador con su autenticador.
+STEPS                1. Calcular el plazo de cada tipo de pedido desde un viernes y desde un lunes.
+                     2. API-EXP-01 con los tres dominios y sin dominios; API-EXP-02 de la propia y de una ajena.
+                     3. Descargar por la ruta firmada; con la firma alterada; vencida.
+                     4. Buscar en el archivo los identificadores y el nombre de la otra persona.
+                     5. API-RGT-01 de cada tipo, API-RGT-02 de uno propio y de uno ajeno, API-RGT-03.
+                     6. API-ADM-16 y API-ADM-17 (resolver con respuesta y fundamento; otra vez; sin fundamento).
+EXPECTED             1 → acceso: diez días corridos; rectificación y supresión: cinco días hábiles (de lunes a viernes).
+                     2 → 201 con el estado READY y su vencimiento; sin dominios, 422; la propia, 200 con una ruta de
+                     descarga que vence a los 15 minutos; la ajena, 404. 3 → 200 con el archivo (JSON, como adjunto),
+                     con el perfil, los vínculos y sus consentimientos, los registros, los planes activados, las medidas
+                     y los formularios; alterada o vencida, 404. 4 → ninguno de los dos aparece. 5 → 201 con el plazo;
+                     el propio, 200; el ajeno, 404; la lista solo con los propios. 6 → la lista con el pendiente; 200
+                     resuelto; otra vez, 422; sin fundamento, 422; la persona ve la respuesta, no el fundamento.
+NEGATIVE_ASSERTIONS  El archivo no se guarda en la base: se arma al descargarlo. Ningún dato de otra persona ni el correo
+                     de un profesional. La auditoría registra el pedido y cada entrega, sin el contenido. Un pedido no se
+                     borra ni se reescribe.
+AUTOMATION           packages/domain/src/derechos-del-titular.test.ts («TEST-UF-011 · …»),
+                     test/integration/derechos-del-titular.int-spec.ts y la prueba de contrato. Mutaciones: el plazo de
+                     la supresión en días corridos → rojo en el dominio; la ruta firmada que no vence → rojo en la unidad
+                     de la API.
+ENVIRONMENT          `npm test` y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde; la descarga desde /account y desde la app (pendiente de prueba manual)
+```

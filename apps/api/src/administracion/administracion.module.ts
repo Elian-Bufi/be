@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DerechosModule } from '../derechos/derechos.module';
 import { ProfesionalModule } from '../profesional/profesional.module';
 import { SesionModule } from '../sesion/sesion.module';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
@@ -12,7 +13,7 @@ import { SegundoFactorGuard, SesionAdministrativaGuard } from './sesion-administ
  * (`administracion/comando.ts`, D-3): nada de este módulo concede ni retira el rol.
  */
 @Module({
-  imports: [SesionModule, ProfesionalModule],
+  imports: [SesionModule, ProfesionalModule, DerechosModule],
   controllers: [AdministracionController],
   providers: [AccesoAdministrativoService, AdministracionService, SesionAdministrativaGuard, SegundoFactorGuard],
 })
