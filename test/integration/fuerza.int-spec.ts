@@ -111,7 +111,7 @@ describe('ED-72 · la serie observada por el profesional (API-FZA-01 a 03)', () 
     expect(await prisma.serieObservada.count({ where: { asesoradoId: x.c.ase.id } })).toBe(1);
   });
 
-  it('TEST-EDP-061 · cada operación FZA deja su fila de auditoría: el éxito y el rechazo', async () => {
+  it('TEST-EDP-061 · cada operación FZA deja su rastro: la auditoría de las escrituras y de los rechazos, y la decisión del PDP de la lectura', async () => {
     const x = await circuito();
     const r = (await x.registrar(serie()).expect(201)).body.data;
     await x.listar().expect(200);
@@ -124,7 +124,10 @@ describe('ED-72 · la serie observada por el profesional (API-FZA-01 a 03)', () 
       (await prisma.registroDeAuditoria.findMany({ where: { actorId, operacion: { startsWith: 'API-FZA-' } }, select: { operacion: true, resultado: true } }))
         .map((f) => `${f.operacion} ${f.resultado}`)
         .sort();
-    expect(await filas(x.c.pro.id)).toEqual(['API-FZA-01 EXITO', 'API-FZA-02 EXITO', 'API-FZA-03 EXITO']);
+    // Las escrituras quedan en la auditoría; una lectura permitida, en la decisión del PDP (08:634), como toda lectura del ejecutor.
+    expect(await filas(x.c.pro.id)).toEqual(['API-FZA-01 EXITO', 'API-FZA-03 EXITO']);
+    const decisiones = await prisma.decisionDeAcceso.findMany({ where: { actorId: x.c.pro.id, operacion: 'API-FZA-02' }, select: { actorId: true, resultado: true } });
+    expect(decisiones.map((d) => d.resultado)).toEqual(['PERMITIDA']);
     expect(await filas(otro.c.pro.id)).toEqual(['API-FZA-01 RECHAZO', 'API-FZA-02 RECHAZO', 'API-FZA-03 RECHAZO']);
   });
 
