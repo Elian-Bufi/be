@@ -289,31 +289,49 @@ test('TEST-AVR-009 · «Quién ve qué» solo lee, y no dice nada que prohíba 1
 // ─── TEST-AVR-010 a 013 · Inicio y «Tu historial» (AV-06, AV-07) ────────────────────────────────
 
 const inicio = await import('../apps/mobile/src/inicio-de-hoy.ts');
-const DIA = {
-  meals: [
-    { mealId: 'cena', label: 'Cena', order: 4, options: [{}, {}] },
-    { mealId: 'desayuno', label: 'Desayuno', order: 1, options: [{}] },
-    { mealId: 'almuerzo', label: 'Almuerzo', order: 2, options: [{}, {}, {}] },
-    { mealId: 'merienda', label: 'Merienda', order: 3, options: [{}, {}, {}] },
-  ],
-};
-const ingesta = (mealId, occurredAt, origin = 'PRESCRIBED') => ({ origin, mealId, occurredAt, executionId: `e-${mealId ?? 'fuera'}` });
+// Desde DL-170 (AV2-13), Inicio lee API-ING-01, como Nutrición: las comidas traen el registro que las ocupa (`recordId`)
+// y los registros son de las dos clases, con la comida de contexto.
+const COMIDAS_DEL_DIA = [
+  { mealId: 'cena', label: 'Cena', order: 4, options: [{}, {}, {}] },
+  { mealId: 'desayuno', label: 'Desayuno', order: 1, options: [{}] },
+  { mealId: 'almuerzo', label: 'Almuerzo', order: 2, options: [{}, {}, {}] },
+  { mealId: 'merienda', label: 'Merienda', order: 3, options: [{}, {}, {}] },
+];
+/** Un registro de API-ING-01: de una opción del plan, o algo diferente (con su comida, o sin ninguna: fuera del plan). */
+const registroDeHoy = (mealId, occurredAt, kind = 'PLAN_OPTION', extra = {}) => ({
+  recordId: `r-${mealId ?? 'fuera'}${extra.sufijo ?? ''}`,
+  kind,
+  meal: mealId ? { mealId, label: mealId } : null,
+  occurredAt,
+  recordedAt: occurredAt,
+  annulment: extra.anulado ? { annulledAt: occurredAt, reason: null } : null,
+});
+/** El día como lo arma la API: cada comida con el registro vigente que la ocupa. */
+const diaCon = (registros) => ({
+  meals: COMIDAS_DEL_DIA.map((m) => ({ ...m, recordId: registros.find((r) => r.annulment === null && r.meal?.mealId === m.mealId)?.recordId ?? null })),
+});
 const horaDePrueba = (iso) => iso.slice(11, 16);
 
-test('TEST-AVR-010 · «la que sigue» es la primera sin registrar en el orden del plan, nunca por la hora', () => {
-  const c = inicio.comidasDeHoy(DIA, [ingesta('desayuno', '2026-11-07T08:40:00Z')], horaDePrueba);
-  assert.deepEqual(c.fichas.map((f) => [f.nombre, f.estado]), [['Desayuno', 'registrada'], ['Almuerzo', 'la-que-sigue'], ['Merienda', 'sin-registrar'], ['Cena', 'sin-registrar']]);
+// TEST-AVR-010 cambia con AV2-D1 (paso 1), ratificada por Dirección el 2026-11-11 (WP-APP-VUELTA-2 AV2-10): «la que
+// sigue» se ancla en la última registrada hoy en el orden del plan, y ya no es la primera sin registrar (PV-2).
+test('TEST-AVR-010 · «la que sigue» es la siguiente a la última registrada hoy en el orden del plan, nunca por la hora (AV2-D1)', () => {
+  const desayuno = [registroDeHoy('desayuno', '2026-11-07T08:40:00Z')];
+  const c = inicio.comidasDeHoy(diaCon(desayuno), desayuno, horaDePrueba);
+  assert.deepEqual(c.fichas.map((f) => [f.nombre, f.estado]), [['Desayuno', 'registrada'], ['Almuerzo', 'la-que-sigue'], ['Merienda', 'por-venir'], ['Cena', 'por-venir']]);
   assert.equal(c.fichas[0].paraLeer, 'Desayuno, registrado a las 08:40');
   assert.equal(c.fichas[1].paraLeer, 'Almuerzo, registrar');
-  // La cena registrada antes que el almuerzo, y un registro fuera del plan: sigue el almuerzo.
-  const fueraDeOrden = inicio.comidasDeHoy(DIA, [ingesta('desayuno', '2026-11-07T08:40:00Z'), ingesta('cena', '2026-11-07T21:00:00Z'), ingesta(null, '2026-11-07T22:00:00Z', 'OUTSIDE_PRESCRIPTION')], horaDePrueba);
-  assert.equal(inicio.laQueSigue(fueraDeOrden).nombre, 'Almuerzo');
+  // La cena registrada, y un registro fuera del plan: la cena es la última del plan, así que no se destaca ninguna, y el
+  // almuerzo y la merienda quedan neutros.
+  const conCena = [registroDeHoy('desayuno', '2026-11-07T08:40:00Z'), registroDeHoy('cena', '2026-11-07T21:00:00Z'), registroDeHoy(null, '2026-11-07T22:00:00Z', 'DIFFERENT')];
+  const fueraDeOrden = inicio.comidasDeHoy(diaCon(conCena), conCena, horaDePrueba);
+  assert.equal(inicio.laQueSigue(fueraDeOrden), null);
+  assert.deepEqual(fueraDeOrden.fichas.map((f) => f.estado), ['registrada', 'sin-registrar', 'sin-registrar', 'registrada']);
   assert.equal(fueraDeOrden.fueraDelPlan, 1);
   assert.equal(fueraDeOrden.fichas.filter((f) => f.estado === 'registrada').length, 2, 'el registro fuera del plan no es una comida del plan');
 });
 
 test('TEST-AVR-011 · BE no elige el día tipo ni la sesión: sin día elegido, no hay fichas', () => {
-  assert.equal(inicio.comidasDeHoy(null, [ingesta('desayuno', '2026-11-07T08:40:00Z')], horaDePrueba), null);
+  assert.equal(inicio.comidasDeHoy(null, [registroDeHoy('desayuno', '2026-11-07T08:40:00Z')], horaDePrueba), null);
   assert.equal(inicio.laQueSigue(null), null);
   assert.match(leer('pantallas/inicio-nutricion.tsx'), /COPY_NUTRICION\.elegiDiaTipo/);
   assert.match(leer('pantallas/inicio-entrenamiento.tsx'), /Tu plan tiene varias sesiones\. Elegí la que hiciste o vas a hacer\./);
@@ -843,6 +861,95 @@ test('TEST-AV2-013 · Inicio y «Tu historial» salen de la misma lectura y la m
   const deInicio = ['inicio.tsx', 'inicio-entrenamiento.tsx'].map((a) => leer(`pantallas/${a}`)).join('\n');
   assert.match(deInicio, clave);
   assert.match(deInicio, /leerActividadDeEntrenamiento\(api, token, periodo\)/);
+});
+
+// ─── TEST-AV2-011 · «la que sigue», anclada en la última registrada hoy (AV2-10) ────────────────
+
+const comidasDeNutricion = await import('../apps/mobile/src/comidas-de-hoy.ts');
+const estados = (c) => c.fichas.map((f) => [f.nombre, f.estado, f.texto]);
+
+test('TEST-AV2-011 · con el almuerzo registrado a las 13:10, sigue la merienda; el desayuno queda «Sin registrar» y la cena dice sus opciones', () => {
+  const almuerzo = [registroDeHoy('almuerzo', '2026-11-09T13:10:00Z')];
+  const c = inicio.comidasDeHoy(diaCon(almuerzo), almuerzo, horaDePrueba);
+  assert.deepEqual(estados(c), [
+    ['Desayuno', 'sin-registrar', 'Sin registrar'],
+    ['Almuerzo', 'registrada', '13:10'],
+    ['Merienda', 'la-que-sigue', 'Registrar'],
+    ['Cena', 'por-venir', '3 opciones'],
+  ]);
+  assert.deepEqual(c.fichas.map((f) => f.paraLeer), ['Desayuno, sin registrar', 'Almuerzo, registrado a las 13:10', 'Merienda, registrar', 'Cena, 3 opciones']);
+  assert.deepEqual(c.fichas.map((f) => inicio.ICONO_DE_LA_FICHA[f.estado]), ['sin-registro', 'tilde', 'mas', 'opciones'], 'el ícono dice el estado, no la comida');
+  // Nutrición abre en la misma: «la que sigue» es una sola función.
+  assert.equal(comidasDeNutricion.comidaQueSeMuestra(diaCon(almuerzo).meals, almuerzo, null), 'merienda');
+  assert.equal(comidasDeNutricion.laQueSigueEnElPlan(diaCon(almuerzo).meals, almuerzo), 'merienda');
+});
+
+test('TEST-AV2-011 · manda el orden del plan, no la hora; con la última del plan registrada, ninguna destacada; sin nada, la primera', () => {
+  // La merienda registrada a las 10 y el desayuno a las 15: la que va más adelante en el plan es la merienda.
+  const fueraDeOrden = [registroDeHoy('merienda', '2026-11-09T10:00:00Z'), registroDeHoy('desayuno', '2026-11-09T15:00:00Z')];
+  assert.equal(inicio.laQueSigue(inicio.comidasDeHoy(diaCon(fueraDeOrden), fueraDeOrden, horaDePrueba)).nombre, 'Cena');
+  const cena = [registroDeHoy('cena', '2026-11-09T21:00:00Z')];
+  const conCena = inicio.comidasDeHoy(diaCon(cena), cena, horaDePrueba);
+  assert.equal(inicio.laQueSigue(conCena), null);
+  assert.deepEqual(conCena.fichas.map((f) => f.estado), ['sin-registrar', 'sin-registrar', 'sin-registrar', 'registrada']);
+  const nada = inicio.comidasDeHoy(diaCon([]), [], horaDePrueba);
+  assert.deepEqual(nada.fichas.map((f) => f.estado), ['la-que-sigue', 'por-venir', 'por-venir', 'por-venir']);
+  // Ningún texto juzga lo que falta.
+  for (const caso of [fueraDeOrden, cena, []]) {
+    for (const f of inicio.comidasDeHoy(diaCon(caso), caso, horaDePrueba).fichas) assert.doesNotMatch(`${f.texto} ${f.paraLeer}`, /salteaste|pendiente|te falt|atrasad/i);
+  }
+});
+
+// ─── TEST-AV2-014 · la comida diferente cuenta en Inicio, como en Nutrición (AV2-13) ────────────
+
+test('TEST-AV2-014 · una comida diferente ocupa su comida y no es «fuera del plan»; lo anulado no cuenta', () => {
+  const registros = [
+    registroDeHoy('almuerzo', '2026-11-09T13:10:00Z', 'DIFFERENT'),
+    registroDeHoy(null, '2026-11-09T17:00:00Z', 'DIFFERENT'),
+    registroDeHoy('merienda', '2026-11-09T18:00:00Z', 'PLAN_OPTION', { anulado: true }),
+  ];
+  const c = inicio.comidasDeHoy(diaCon(registros), registros, horaDePrueba);
+  assert.deepEqual(estados(c)[1], ['Almuerzo', 'registrada', '13:10'], 'la comida diferente, registrada con su hora');
+  assert.equal(c.fichas[1].recordId, 'r-almuerzo');
+  assert.equal(c.fueraDelPlan, 1, 'fuera del plan, solo lo que no ocupa ninguna comida');
+  assert.equal(c.fichas[2].estado, 'la-que-sigue', 'la merienda anulada queda libre');
+});
+
+test('TEST-AV2-014 · Inicio lee API-ING-01 con la misma lectura y la misma clave que Nutrición, y ya no API-NUT-14', () => {
+  const tarjeta = sinComentarios(leer('pantallas/inicio-nutricion.tsx'));
+  assert.match(tarjeta, /useLecturaDeHoyConOpciones\(token, sesionPerdida\)/);
+  assert.doesNotMatch(tarjeta, /hoyNutricional|registeredIntake|HoyResponse\b/, 'sin API-NUT-14');
+  assert.match(tarjeta, /comidasDeHoy\(\{ meals: hoy\.meals \}, hoy\.records, hora\)/);
+  const nutricion = leer('pantallas/nutricion-hoy.tsx');
+  assert.match(nutricion, /export function useHoyConOpciones\(token: string, salir: \(m: Salida\) => void\) \{\s*const sesionPerdida = useSesionPerdida\(salir\);\s*return \{ \.\.\.useLecturaDeHoyConOpciones\(token, sesionPerdida\), sesionPerdida \};/);
+  assert.match(nutricion, /useLecturaRecordada\(token, `hoy-con-opciones:\$\{hoyDeLaApi\}:\$\{diaTipo \?\? ''\}`, pedir, sesionPerdida\)/);
+});
+
+// ─── TEST-AV2-015 · tocar una ficha abre esa comida (AV2-14) ────────────────────────────────────
+
+test('TEST-AV2-015 · la ruta de una ficha lleva su comida; una registrada abre su registro', () => {
+  for (const estado of ['la-que-sigue', 'sin-registrar', 'por-venir']) {
+    assert.deepEqual(inicio.rutaDeLaFicha({ mealId: 'merienda', estado, recordId: null }), { nombre: 'hoy', accion: 'registrar', comida: 'merienda' }, estado);
+  }
+  assert.deepEqual(inicio.rutaDeLaFicha({ mealId: 'almuerzo', estado: 'registrada', recordId: 'r-almuerzo' }), { nombre: 'registro-nutricional', id: 'r-almuerzo' });
+  // Navegar desde Inicio conserva la comida; volver desde un detalle de Nutrición no repite el pedido.
+  const ruta = inicio.rutaDeLaFicha({ mealId: 'merienda', estado: 'la-que-sigue', recordId: null });
+  const enHoy = nav.navegar({ nombre: 'inicio' }, ruta);
+  assert.deepEqual(enHoy, ruta);
+  assert.deepEqual(nav.anterior(nav.navegar(enHoy, { nombre: 'plan-actual' })), { nombre: 'hoy' });
+});
+
+test('TEST-AV2-015 · Nutrición toma la comida pedida como la elegida, si está en el plan', () => {
+  const meals = diaCon([]).meals;
+  assert.equal(comidasDeNutricion.comidaPedidaOElegida('merienda', 'desayuno', meals), 'merienda', 'la pedida gana a la recordada');
+  assert.equal(comidasDeNutricion.comidaPedidaOElegida('de-otro-plan', 'desayuno', meals), 'desayuno');
+  assert.equal(comidasDeNutricion.comidaPedidaOElegida(null, 'desayuno', meals), 'desayuno');
+  assert.match(sinComentarios(readFileSync(join(RAIZ, 'apps/mobile/App.tsx'), 'utf8')), /accion=\{ruta\.accion\} comida=\{ruta\.comida\}/);
+  assert.match(leer('pantallas/nutricion.tsx'), /accion=\{pedido\.current\} comida=\{comidaPedida\.current\}/);
+  const nutricion = leer('pantallas/nutricion-hoy.tsx');
+  assert.match(nutricion, /const elegidaAhora = comidaPedidaOElegida\(pedida\.current, elegida, hoy\.meals\);/);
+  assert.match(nutricion, /comidaQueSeMuestra\(hoy\.meals, registros, elegidaAhora\)/);
+  assert.match(leer('pantallas/inicio-nutricion.tsx'), /abrir=\{\(\) => ir\(rutaDeLaFicha\(f\)\)\}/);
 });
 
 // ─── TEST-AV2-016 · las fechas en tres formas y la hora en 24 h (AV2-15) ────────────────────────

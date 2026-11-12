@@ -627,7 +627,7 @@ function Contenido() {
               {ruta.nombre === 'consentimiento' ? (
                 <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
-              {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} llevarA={llevarA} /> : null}
+              {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} comida={ruta.comida} llevarA={llevarA} /> : null}
               {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'revisiones' ? <PantallaDeRevisiones key={ruta.area} token={sesion.token} area={ruta.area} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'revision' ? <PantallaDeRevision key={ruta.id} token={sesion.token} area={ruta.area} id={ruta.id} salir={salir} /> : null}

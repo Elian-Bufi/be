@@ -1,76 +1,126 @@
 /**
- * Inicio (PV-2 y PV-5, decisiones de Dirección del 2026-11-07; AV-06, AV-07 y AV-17 de WP-APP-VUELTA-DE-ROSCA, DL-166),
- * como lógica pura: las comidas del día como fichas con «la que sigue», la actividad de 30 días como un solo número y su
- * desglose en «Tu historial», el detalle plegado de la sesión de hoy, y qué se dibuja con una cuenta nueva.
+ * Inicio (DL-166 y DL-170), como lógica pura: las comidas del día como fichas con «la que sigue», la actividad de 30 días
+ * con su desglose, la tira de la semana, el detalle plegado de la sesión de hoy, la composición y qué se dibuja con una
+ * cuenta nueva.
  *
- * - **«La que sigue»** es la primera comida sin registrar en el orden del plan, nunca por la hora (PV-2). Un registro
- *   fuera del plan no es una comida del plan.
+ * - **Las comidas leen lo mismo que Nutrición** (AV2-13): API-ING-01, con la misma clave. Una comida está registrada con
+ *   el registro de su opción o con una «comida diferente» comida en ella; la hora sale de `occurredAt`. «Fuera del plan»
+ *   cuenta solo los registros que no ocupan ninguna comida.
+ * - **«La que sigue»** (AV2-10, con el paso 1 de AV2-D1): la primera sin registrar después de la registrada hoy que va más
+ *   adelante en el plan (`comidas-de-hoy.ts`). Las anteriores sin registrar quedan neutras, «Sin registrar»; las que
+ *   vienen dicen sus opciones. Nunca por la hora, y nada en rojo.
+ * - **Tocar una ficha abre esa comida** (AV2-14): la ruta lleva la comida.
  * - **BE no elige** el día tipo (DL-049) ni la sesión (DL-077): sin día elegido, no hay fichas y se pide elegir.
  * - **La actividad, con su desglose** (AV2-12, con AV2-D2, que reemplaza a PV-5): «2 realizadas · 1 no realizada · 30
  *   días», nunca un total que mezcle lo hecho con lo no hecho. Inicio, «Tu historial» y la tira de la semana salen de la
  *   misma lectura y la misma clave: las realizadas de Inicio son las realizadas más las con desvío del historial.
  * - **Una cuenta nueva** (AV-17): un área sin plan es una línea, no una tarjeta; «Para responder» sin filas no se dibuja.
  */
-import type { DiaTipo, Ingesta } from '@be/domain';
+import type { HoyConOpcionesResponse, RegistroDeComida } from '@be/domain';
+import { estadosDeLasComidas, registroDeLaComida, type EstadoDeLaComida } from './comidas-de-hoy';
 import type { VistaConPliegue } from './desplegable';
 import type { ActividadDeEntrenamiento } from './lecturas-de-inicio';
+import type { NombreDeIcono } from './icono';
+import type { Ruta } from './navegacion';
+import { RELLENO_DE_LA_TARJETA } from './receta-de-vidrio';
 import { TEXTOS_DEL_DESCANSO } from './textos-del-descanso';
 import { TEXTOS_DE_LA_VUELTA as T } from './textos-de-la-vuelta';
 
-// ─── Las comidas como fichas (AV-06) ─────────────────────────────────────────────────────────────
+// ─── Las comidas como fichas (AV2-10, AV2-13, AV2-14) ────────────────────────────────────────────
+
+type ComidaDelDia = Pick<HoyConOpcionesResponse['data']['meals'][number], 'mealId' | 'label' | 'order' | 'options' | 'recordId'>;
 
 export interface FichaDeComida {
   readonly mealId: string;
   readonly nombre: string;
-  readonly estado: 'registrada' | 'la-que-sigue' | 'sin-registrar';
-  /** La hora del registro, si está registrada. */
+  readonly estado: EstadoDeLaComida;
+  /** La hora del registro («13:10»), si está registrada y se sabe. */
   readonly hora: string | null;
   readonly opciones: number;
   /** El registro, para abrirlo. */
-  readonly executionId: string | null;
-  /** Lo que dice el lector: «Desayuno, registrado a las 8:40» · «Almuerzo, registrar» (§4.0). */
+  readonly recordId: string | null;
+  /** Lo que dice el lector: «Almuerzo, registrado a las 13:10» · «Merienda, registrar» (§3.4). */
   readonly paraLeer: string;
+  /** Lo que dice la ficha debajo del nombre: «13:10», «Registrar», «Sin registrar» o «3 opciones». */
+  readonly texto: string;
 }
 
 export interface ComidasDeHoy {
   readonly fichas: readonly FichaDeComida[];
-  /** Los registros de hoy que no son de una comida del plan: se cuentan aparte. */
+  /** Los registros de hoy que no ocupan ninguna comida: se cuentan aparte. Una comida diferente ocupa la suya. */
   readonly fueraDelPlan: number;
 }
 
 /**
- * Las fichas del día tipo elegido, en el orden del plan. `null` si no hay día elegido: Inicio pide elegirlo y BE no elige
- * uno. `hora` formatea el momento en que ocurrió la comida («8:40»).
+ * Las fichas del día tipo elegido, en el orden del plan, desde API-ING-01 (AV2-13). `null` si no hay día elegido: Inicio
+ * pide elegirlo y BE no elige uno. `hora` formatea el momento en que ocurrió la comida («13:10»).
  */
-export function comidasDeHoy(dia: Pick<DiaTipo, 'meals'> | null, registros: readonly Pick<Ingesta, 'origin' | 'mealId' | 'occurredAt' | 'executionId'>[], hora: (iso: string) => string): ComidasDeHoy | null {
+export function comidasDeHoy(dia: { readonly meals: readonly ComidaDelDia[] } | null, registros: readonly RegistroDeComida[], hora: (iso: string) => string): ComidasDeHoy | null {
   if (!dia) return null;
-  const delPlan = registros.filter((r) => r.origin === 'PRESCRIBED' && r.mealId !== null);
-  let seguida = false;
+  const estados = estadosDeLasComidas(dia.meals, registros);
   const fichas = [...dia.meals]
     .sort((a, b) => a.order - b.order)
     .map((m): FichaDeComida => {
-      const registro = delPlan.find((r) => r.mealId === m.mealId) ?? null;
-      if (registro) {
-        const h = hora(registro.occurredAt);
-        return { mealId: m.mealId, nombre: m.label, estado: 'registrada', hora: h, opciones: m.options.length, executionId: registro.executionId, paraLeer: T.fichaRegistrada(m.label, h) };
+      const estado = estados.get(m.mealId) ?? 'por-venir';
+      const base = { mealId: m.mealId, nombre: m.label, estado, opciones: m.options.length };
+      if (estado === 'registrada') {
+        const registro = registroDeLaComida(m, registros);
+        const h = registro ? hora(registro.occurredAt) : null;
+        return { ...base, hora: h, recordId: registro?.recordId ?? m.recordId, paraLeer: h ? T.fichaRegistrada(m.label, h) : T.fichaRegistradaSinHora(m.label), texto: h ?? T.registradaSinHora };
       }
-      const esLaQueSigue = !seguida;
-      seguida = true;
-      return {
-        mealId: m.mealId,
-        nombre: m.label,
-        estado: esLaQueSigue ? 'la-que-sigue' : 'sin-registrar',
-        hora: null,
-        opciones: m.options.length,
-        executionId: null,
-        paraLeer: esLaQueSigue ? T.fichaQueSigue(m.label) : T.fichaSinRegistrar(m.label, m.options.length),
-      };
+      if (estado === 'la-que-sigue') return { ...base, hora: null, recordId: null, paraLeer: T.fichaQueSigue(m.label), texto: T.registrar };
+      if (estado === 'sin-registrar') return { ...base, hora: null, recordId: null, paraLeer: T.fichaSinRegistrar(m.label), texto: T.sinRegistrar };
+      return { ...base, hora: null, recordId: null, paraLeer: T.fichaPorVenir(m.label, m.options.length), texto: T.opciones(m.options.length) };
     });
-  return { fichas, fueraDelPlan: registros.length - delPlan.length };
+  return { fichas, fueraDelPlan: registros.filter((r) => r.annulment === null && r.meal === null).length };
 }
 
-/** «La que sigue»: la primera sin registrar en el orden del plan, o `null` si están todas registradas. */
+/** «La que sigue», o `null` si no se destaca ninguna. */
 export const laQueSigue = (c: ComidasDeHoy | null): FichaDeComida | null => c?.fichas.find((f) => f.estado === 'la-que-sigue') ?? null;
+
+/** El ícono de cada ficha dice su estado, no la comida (AV2-T10): los nombres los escribe el profesional. */
+export const ICONO_DE_LA_FICHA: Readonly<Record<EstadoDeLaComida, NombreDeIcono>> = {
+  registrada: 'tilde',
+  'la-que-sigue': 'mas',
+  'sin-registrar': 'sin-registro',
+  'por-venir': 'opciones',
+};
+
+/**
+ * Adónde lleva tocar una ficha (AV2-14): una registrada abre su registro; las demás abren Nutrición en esa comida (la ruta
+ * lleva la comida, y Nutrición la toma como la elegida).
+ */
+export function rutaDeLaFicha(f: Pick<FichaDeComida, 'mealId' | 'estado' | 'recordId'>): Ruta {
+  if (f.estado === 'registrada' && f.recordId) return { nombre: 'registro-nutricional', id: f.recordId };
+  return { nombre: 'hoy', accion: 'registrar', comida: f.mealId };
+}
+
+// ─── La composición: dos columnas con letra ×1, una con ×1,3 (AV2-07) ───────────────────────────
+
+/** El relleno del contenido de cada pantalla, a cada lado (App.tsx), y la separación entre fichas o tarjetas, en dp. */
+export const RELLENO_DE_LA_PANTALLA = 20;
+export const SEPARACION_EN_INICIO = 8;
+
+/**
+ * Cuántas columnas van las fichas de las comidas y las dos tarjetas chicas: dos con la letra de siempre; una con letra
+ * ×1,3 o más, o en un teléfono angosto. No se achica la letra: cambia la composición.
+ */
+export const columnasDeInicio = (ancho: number, escalaDeLetra: number): 1 | 2 => (escalaDeLetra >= 1.3 || ancho < 340 ? 1 : 2);
+
+/**
+ * El ancho de una columna: el de la pantalla menos su relleno y, dentro de una tarjeta, el relleno y el borde de 1 dp de
+ * la tarjeta (`RELLENO_DE_LA_TARJETA`, de la receta). Sin porcentajes: el ancho sale de la ventana.
+ */
+export function anchoDeLaColumna(ancho: number, escalaDeLetra: number, dentroDeUnaTarjeta: boolean): number {
+  const util = ancho - 2 * RELLENO_DE_LA_PANTALLA - (dentroDeUnaTarjeta ? 2 * (RELLENO_DE_LA_TARJETA + 1) : 0);
+  return columnasDeInicio(ancho, escalaDeLetra) === 1 ? util : Math.floor((util - SEPARACION_EN_INICIO) / 2);
+}
+
+/** El nombre del día del plan bajo «Comidas»: solo si el plan tiene más de un tipo de día (AV2-07). */
+export function nombreDelDiaEnInicio(dias: readonly { readonly dayTypeId: string; readonly label: string }[], elegido: string | null): string | undefined {
+  if (dias.length <= 1) return undefined;
+  return dias.find((d) => d.dayTypeId === elegido)?.label ?? undefined;
+}
 
 // ─── La actividad de 30 días, con su desglose (AV2-12, con AV2-D2) ──────────────────────────────
 

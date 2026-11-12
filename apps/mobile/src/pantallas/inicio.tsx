@@ -48,7 +48,7 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
       </View>
       <AccesoIncompleto token={token} sesionPerdida={sesionPerdida} ir={ir} />
       <EntrenamientoDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
-      <NutricionDeHoy token={token} dia={hoy} sesionPerdida={sesionPerdida} ir={ir} />
+      <NutricionDeHoy token={token} sesionPerdida={sesionPerdida} ir={ir} />
       {/* DL-166 (PV-6): los formularios y los pedidos de hábitos juntos; sin nada para responder, no se dibuja. */}
       <Pendientes token={token} sesionPerdida={sesionPerdida} ir={ir} />
       {/* Al bajar, lo que se mira (maqueta 01): la última toma y la actividad de 30 días, como dato y sin calificar. */}

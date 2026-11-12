@@ -586,7 +586,7 @@ test('6 · el registro efectivo de una comida: el de su opción, o algo diferent
   assert.equal(comidas.registroDeLaComida({ mealId: 'almuerzo', recordId: null }, [registros[1]]), null);
 });
 
-test('6 · se muestra la comida elegida si sigue en el plan; si no, la primera sin registro; si todas tienen, la primera', () => {
+test('6 · se muestra la comida elegida si sigue en el plan; si no, la que sigue (AV2-10); si no queda ninguna, la primera', () => {
   const registros = [registro({ recordId: 'r-desayuno', mealId: 'desayuno' })];
   assert.equal(comidas.comidaQueSeMuestra(COMIDAS, registros, 'cena'), 'cena');
   assert.equal(comidas.comidaQueSeMuestra(COMIDAS, registros, null), 'almuerzo', 'la primera sin registro');

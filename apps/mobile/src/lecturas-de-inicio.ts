@@ -54,9 +54,12 @@ export async function leerUltimoRegistro(api: Pick<ApiDeInicio, 'listarMisIngest
   return { ok: true, datos: i ? { executionId: i.executionId, localDate: i.localDate, origin: i.origin } : null };
 }
 
-/** Si la tarjeta pide el último registro: solo si hoy no hay ninguno. Es la regla que usan la tarjeta y la prueba. */
-export function pideElUltimoRegistro(hoy: { readonly registeredIntake: readonly unknown[] }): boolean {
-  return hoy.registeredIntake.length === 0;
+/**
+ * Si la tarjeta pide el último registro: solo si hoy no hay ninguno. Es la regla que usan la tarjeta y la prueba. Desde
+ * DL-170 (AV2-13), «hoy» es API-ING-01, con sus registros de las dos clases.
+ */
+export function pideElUltimoRegistro(hoy: { readonly records: readonly unknown[] }): boolean {
+  return hoy.records.length === 0;
 }
 
 /** Lo que dice la tarjeta si hoy no hay registros: la frase, la fecha del último y el registro que se puede abrir. */

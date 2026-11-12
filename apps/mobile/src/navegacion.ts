@@ -32,7 +32,8 @@ export type Ruta =
   // Las cinco raíces de la barra. Algunas aceptan un pedido de una sola vez: abrir la acción de registrar, o una vista y
   // una medida de «Mi evolución».
   | { readonly nombre: 'inicio' }
-  | { readonly nombre: 'hoy'; readonly accion?: 'registrar' }
+  // Desde Inicio, «registrar» lleva la comida de la ficha que se tocó (DL-170, AV2-14): Nutrición abre en esa comida.
+  | { readonly nombre: 'hoy'; readonly accion?: 'registrar'; readonly comida?: string }
   | { readonly nombre: 'entrenamiento' }
   | { readonly nombre: 'mi-evolucion'; readonly vista?: VistaDeEvolucion; readonly metrica?: string }
   // DL-166 (PV-1): Perfil, el quinto destino.

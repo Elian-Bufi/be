@@ -68,6 +68,7 @@ export function PantallaDeHoy({
   ir,
   subir,
   accion,
+  comida,
   llevarA,
 }: {
   token: string;
@@ -76,12 +77,15 @@ export function PantallaDeHoy({
   subir: () => void;
   /** Desde Inicio, «Registrar» abre Hoy en las comidas, o en la elección del día si hace falta (DL-117). */
   accion?: 'registrar';
+  /** La comida de la ficha que se tocó en Inicio (DL-170, AV2-14): Hoy abre en esa comida. */
+  comida?: string;
   /** Lleva la pantalla a una altura, medida desde el principio del contenido. */
   llevarA?: (y: number) => void;
 }) {
   const [vista, setVista] = useSeleccionRecordada<VistaDeNutricion>(token, 'nutricion:vista', 'HOY');
-  // El pedido de Inicio abre Hoy una vez; después, las pestañas mandan.
+  // El pedido de Inicio abre Hoy una vez, en la comida que se tocó; después, las pestañas mandan.
   const pedido = useRef(accion);
+  const comidaPedida = useRef(comida);
   useEffect(() => {
     if (pedido.current === 'registrar') setVista('HOY');
   }, [setVista]);
@@ -97,12 +101,13 @@ export function PantallaDeHoy({
         valor={visible}
         alElegir={(v) => {
           pedido.current = undefined;
+          comidaPedida.current = undefined;
           setVista(v);
         }}
       />
       <View onLayout={(e) => (yDeLaVista.current = e.nativeEvent.layout.y)}>
         {visible === 'HOY' ? (
-          <HoyDeNutricion token={token} salir={salir} ir={ir} subir={subir} accion={pedido.current} llevarA={(y) => llevarA?.(yDeLaPantalla.current + yDeLaVista.current + y)} />
+          <HoyDeNutricion token={token} salir={salir} ir={ir} subir={subir} accion={pedido.current} comida={comidaPedida.current} llevarA={(y) => llevarA?.(yDeLaPantalla.current + yDeLaVista.current + y)} />
         ) : null}
         {visible === 'PLAN' ? <ContenidoDelPlan token={token} salir={salir} /> : null}
         {visible === 'REGISTROS' ? <ListaDeRegistros token={token} salir={salir} ir={ir} /> : null}

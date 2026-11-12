@@ -36,7 +36,7 @@ import { AccessibilityInfo, Pressable, ScrollView, Text, useWindowDimensions, Vi
 import { api } from '../api';
 import { controlesDelCarrusel, desplazamientoDe, indiceDeLaOpcion, indiceDesdeDesplazamiento, indiceValido, medidasDelCarrusel, SEPARACION_ENTRE_TARJETAS } from '../carrusel-de-opciones';
 import { intentoDeLaComida } from '../comando-de-registro';
-import { comidaQueSeMuestra, comidaRegistrada, etiquetaDeLaComida, fichasPorFila, LETRA_DE_LA_FICHA, registroDeLaComida, RELLENO_DE_LA_FICHA, SEPARACION_DE_LAS_FICHAS } from '../comidas-de-hoy';
+import { comidaPedidaOElegida, comidaQueSeMuestra, comidaRegistrada, etiquetaDeLaComida, fichasPorFila, LETRA_DE_LA_FICHA, registroDeLaComida, RELLENO_DE_LA_FICHA, SEPARACION_DE_LAS_FICHAS } from '../comidas-de-hoy';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fechaLarga } from '../formato';
@@ -57,16 +57,22 @@ type AvisoDeHoy = { readonly tipo: 'exito' | 'error' | 'info'; readonly texto: s
 
 /**
  * «Hoy» con opciones (API-ING-01), con el día del plan elegido. La clave nombra el día civil de la API y el día del plan:
- * a la medianoche cambia y se vuelve a leer. La usan esta pestaña y el detalle de una opción.
+ * a la medianoche cambia y se vuelve a leer. La usan esta pestaña, el detalle de una opción y, desde DL-170 (AV2-13), las
+ * comidas de Inicio: la misma lectura y la misma clave, así Inicio ve lo que se registró acá sin recargar.
  */
-export function useHoyConOpciones(token: string, salir: (m: Salida) => void) {
-  const sesionPerdida = useSesionPerdida(salir);
+export function useLecturaDeHoyConOpciones(token: string, sesionPerdida: AlPerderLaSesion) {
   // El día del plan es la misma elección de Inicio y de «Plan» (API-NUT-14): se recuerda mientras dure la sesión.
   const [diaTipo, setDiaTipo] = useSeleccionRecordada<string | undefined>(token, 'hoy-nutricional:dia', undefined);
   const pedir = useCallback((): Promise<Resultado<HoyConOpcionesResponse>> => api.hoyConOpciones(token, diaTipo), [token, diaTipo]);
   const hoyDeLaApi = useDiaDeLaApi();
   const lectura = useLecturaRecordada(token, `hoy-con-opciones:${hoyDeLaApi}:${diaTipo ?? ''}`, pedir, sesionPerdida);
-  return { ...lectura, setDiaTipo, sesionPerdida };
+  return { ...lectura, setDiaTipo };
+}
+
+/** La lectura de «Hoy» para las pantallas de Nutrición, que reciben cómo salir si la sesión ya no sirve. */
+export function useHoyConOpciones(token: string, salir: (m: Salida) => void) {
+  const sesionPerdida = useSesionPerdida(salir);
+  return { ...useLecturaDeHoyConOpciones(token, sesionPerdida), sesionPerdida };
 }
 
 export function HoyDeNutricion({
@@ -75,6 +81,7 @@ export function HoyDeNutricion({
   ir,
   subir,
   accion,
+  comida,
   llevarA,
 }: {
   token: string;
@@ -84,6 +91,8 @@ export function HoyDeNutricion({
   subir: () => void;
   /** Desde Inicio, «Registrar» abre Hoy en las comidas, o en la elección del día si hace falta (DL-117). */
   accion?: 'registrar';
+  /** La comida de la ficha que se tocó en Inicio (AV2-14). */
+  comida?: string;
   /** Lleva la pantalla a una altura medida desde el principio de esta pestaña. */
   llevarA?: (y: number) => void;
 }) {
@@ -133,6 +142,7 @@ export function HoyDeNutricion({
         avisar={avisar}
         actualizar={(desdeCero) => void cargar(desdeCero ? { desdeCero: true } : undefined)}
         accion={accion}
+        comidaPedida={comida}
         llevarA={llevarA}
       />
     </>
@@ -149,6 +159,7 @@ function DiaDeNutricion({
   avisar,
   actualizar,
   accion,
+  comidaPedida,
   llevarA,
 }: {
   hoy: HoyConOpciones;
@@ -160,9 +171,19 @@ function DiaDeNutricion({
   avisar: (aviso: AvisoDeHoy | null) => void;
   actualizar: (desdeCero: boolean) => void;
   accion?: 'registrar';
+  comidaPedida?: string;
   llevarA?: (y: number) => void;
 }) {
   const [elegida, setElegida] = useSeleccionRecordada<string | null>(token, `nutricion:comida:${hoy.date}`, null);
+  // AV2-14: la comida que se tocó en Inicio, una vez. Si está en el plan de hoy, pasa a ser la elegida (y queda recordada).
+  const pedida = useRef(comidaPedida ?? null);
+  const elegidaAhora = comidaPedidaOElegida(pedida.current, elegida, hoy.meals);
+  useEffect(() => {
+    if (pedida.current && elegidaAhora === pedida.current && elegida !== pedida.current) setElegida(pedida.current);
+    pedida.current = null;
+    // Solo al abrir: después, la persona elige.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Lo registrado en esta pantalla se muestra enseguida, con lo que respondió la API, mientras «Hoy» se vuelve a leer.
   // Cuando llega la lectura nueva, manda la API: lo de acá se olvida (si se deshizo en otro lado, no queda a la vista).
   const [recientes, setRecientes] = useState<Readonly<Record<string, RegistroDeComida>>>({});
@@ -170,7 +191,7 @@ function DiaDeNutricion({
     setRecientes({});
   }, [hoy]);
   const registros = [...Object.values(recientes), ...hoy.records];
-  const comidaId = comidaQueSeMuestra(hoy.meals, registros, elegida);
+  const comidaId = comidaQueSeMuestra(hoy.meals, registros, elegidaAhora);
   const comida = hoy.meals.find((m) => m.mealId === comidaId) ?? null;
 
   // El pedido de Inicio se atiende una vez, cuando aparece dónde se registra.
