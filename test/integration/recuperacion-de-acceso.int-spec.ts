@@ -238,6 +238,8 @@ describe('TEST-UF-008 · un código que no vale no cambia nada; el vigente cambi
     const { vinculoId } = await vinculoCompleto(app, pro, ase, 'NUTRICION');
     const web = await tokenDe(app, ase.correo, 'WEB');
     const metodosAntes = await prisma.metodoDeAcceso.findMany({ where: { identidadId: ase.id } });
+    // El vínculo de Nutrición (el `relationshipId` es el del alcance del vínculo), tal como estaba.
+    const vinculoAntes = await prisma.alcanceDeVinculo.findUniqueOrThrow({ where: { id: vinculoId } });
 
     const pedido = (await pedir(app, ase.correo).expect(202)).body.data.recoveryId as string;
     const codigo = codigoDelCorreo((await correo.esperar(ase.correo)).texto);
@@ -276,7 +278,7 @@ describe('TEST-UF-008 · un código que no vale no cambia nada; el vigente cambi
     expect(revocadas.length).toBeGreaterThanOrEqual(2);
     // La misma identidad, los mismos métodos y el mismo vínculo.
     expect(await prisma.metodoDeAcceso.findMany({ where: { identidadId: ase.id } })).toEqual(metodosAntes);
-    expect(await prisma.vinculo.findUnique({ where: { id: vinculoId } })).toMatchObject({ asesoradoId: ase.id, profesionalId: pro.id });
+    expect(await prisma.alcanceDeVinculo.findUniqueOrThrow({ where: { id: vinculoId } })).toEqual(vinculoAntes);
     const conNueva = nueva.body.data.session.accessToken as string;
     const vinculos = await conSesion(app, conNueva).get('/api/v1/me/relationships').expect(200);
     expect(JSON.stringify(vinculos.body)).toContain(vinculoId);
