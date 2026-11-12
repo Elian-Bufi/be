@@ -1862,8 +1862,16 @@ Programada en la rama `wp-editores-profesional` (PR #251, en borrador), sin la A
 | ED-21 | 958a4e0b | Elegir varios ejercicios, con un solo «Agregar» (TEST-EDP-022) |
 | ED-23 | c8a37280 | La planilla de series: varias a la vez, Ctrl+D y lo que se pierde dicho antes (TEST-EDP-024 y 056) |
 | ED-18 | 82f0f9f6 | El vidrio, medido en su peor punto (TEST-EDP-053) |
+| Revisión: ED-11 y ED-22 | 7a464289 | Un criterio % RM que pasa a RIR se nombra antes; la vista previa dice la intensidad (TEST-EDP-056) |
+| Revisión: ED-14 y la estación | b7351642 | El asistente recorre todas las semanas; el paso 4 dice qué pisa; el preset de estructura no borra nada propio; la marca de la carga sigue al ejercicio; el cajón pregunta al cerrar con marcados; «Siguiente» espera al autoguardado; textos y nombres accesibles (TEST-EDP-017, 019, 021 y 055, este con datos) |
+| Revisión: ED-15 | f1e52d79 | A 1440 entran las tres zonas; con la estación, la ficha llega a 1840 px |
 
 **Lo que queda, declarado:**
+- **ED-15:** el marco del área en una fila (sigue en tres renglones), y el alto de las zonas medido en un navegador.
+- **ED-11:** el alcance «Este ejercicio» o «Los elegidos» desde el «⋯» de cada ejercicio: la galería se abre desde la
+  sesión y se aplica a sus ejercicios.
+- **ED-14, frente a las maquetas 01 y 03:** el panel «Lo que llevás armado», y en el paso 4 las pestañas por sesión y
+  las tarjetas de presets en línea (hoy, cada sesión en una lista con su botón de presets).
 - **ED-13** es de la API (la ventana del vie 20): hasta entonces, «Estas series, como prescripción habitual» está
   apagado con su motivo, y la galería trae los presets de BE y los propios que ya existen (§8.2).
 - **ED-11:** `empezar-desde-plantilla.tsx` todavía no es una pestaña de la galería (sigue su diálogo, desde la vista
