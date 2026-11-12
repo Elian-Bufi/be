@@ -248,7 +248,7 @@ export function PasosDeNutricion({
                               </span>
                             </span>
                             {o.recipeVersionId ? null : (
-                              <button type="button" className="boton boton--secundario boton--compacto" aria-haspopup="dialog" onClick={() => onAbrirOpcion(i, j, k)}>
+                              <button type="button" className="boton boton--secundario boton--compacto" aria-haspopup="dialog" data-armar-la-opcion onClick={() => onAbrirOpcion(i, j, k)}>
                                 {C.editarLaOpcion(nombre)}
                               </button>
                             )}
@@ -260,6 +260,7 @@ export function PasosDeNutricion({
                       type="button"
                       className="boton boton--enlace"
                       aria-haspopup="dialog"
+                      data-asistente-agregar-opcion
                       disabled={m.options.length >= MAXIMO_DE_OPCIONES}
                       onClick={() => onAgregarOpcion(i, j)}
                     >
@@ -407,6 +408,7 @@ function PasoDeLasComidas({
         <button
           type="button"
           className="boton boton--quieto"
+          data-asistente-agregar-comida
           onClick={() => cambiar((x) => (x[i]!.meals.push({ label: '', prescriptionMode: 'DISH_OPTIONS', options: [{ label: OPCION_INICIAL, items: [] }] }), x))}
         >
           <Icono nombre="mas" tamano={18} />

@@ -1994,7 +1994,7 @@ son EDC-01 a EDC-14 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editore
 | ED-32 | 978ab8bc | La foto como paso después de guardar y «Hay una versión 3 de esta receta · Usar la versión 3», con lo que cambia en una porción (TEST-EDP-030) |
 | ED-21 | 87bd51d2 | «Crear un ejercicio propio», con los parecidos del catálogo antes de crear |
 | ED-30 | 5f6598fd | El asistente de Nutrición: siete pasos, el objetivo general con su versión y el reparto en gramos (TEST-EDP-027 y 017) |
-| Revisión | (esta tanda) | Lo que encontró la revisión del cierre: la estrella de habitual vuelve al cuadro, activar desde el paso 7 lleva al plan activo, el objetivo nuevo del paso 2 sin carrera, las composiciones de todos los días tipo, «Guardar la opción» con la regla del plan, «Agregar una opción» sin opciones vacías y la accesibilidad de ED-21 y ED-40 |
+| Revisión | (esta tanda) | Lo que encontró la revisión del cierre: la estrella de habitual vuelve al cuadro, activar desde el paso 7 lleva al plan activo, el objetivo nuevo del paso 2 sin carrera, las composiciones de todos los días tipo, «Guardar la opción» con la regla del plan, «Agregar una opción» sin opciones vacías y la accesibilidad de ED-21 y ED-40. El recorrido de navegador «asistenteDeNutricion» recorre del paso 1 al 7, activa y ve el plan activo |
 
 **Lo que queda, declarado:**
 - **De la API:** un reparto propio guardado en el paso 2 (ED-13, el «Dado» de «Mi base · 300 / 120 / 80 g»);

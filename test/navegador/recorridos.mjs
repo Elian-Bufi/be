@@ -695,6 +695,70 @@ async function primerPlan({ p, d }) {
   await elemento(p, '[data-accion-de-la-ficha="borrador"]', 'Seguir el borrador');
 }
 
+/**
+ * ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito. Del paso
+ * 1 al 7 sobre el mismo borrador: un día tipo, una comida con un alimento del catálogo base, y activar. Activada desde el
+ * paso 7, se sale del asistente y se ve el plan activo (no el paso 1 de otra versión). En el paso 5, «Agregar una opción»
+ * cancelado no deja una opción vacía en el borrador.
+ */
+async function asistenteDeNutricion({ p, d }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="empezar"]', 'Empezar el plan');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+
+  // 1 y 2. En blanco; el paso 2 muestra el objetivo general.
+  await clic(p, '[data-punto-de-partida="blanco"]');
+  await clic(p, '[data-asistente-principal]');
+  await elemento(p, '[data-objetivo-general]');
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Días tipo');
+
+  // 3. Un día tipo.
+  await clic(p, '[data-asistente-agregar-dia]');
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Comidas');
+
+  // 4. Una comida, con su nombre (sin nombre no se puede guardar).
+  await clic(p, '[data-asistente-agregar-comida]');
+  const comida = await elemento(p, '[data-dia-del-asistente="1"] .asistente__sesiones input');
+  await comida.type('Almuerzo');
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Opciones');
+
+  // 5. «Agregar una opción» y cancelar: el borrador sigue con una sola opción.
+  await elemento(p, '[data-opcion-del-asistente="1"]');
+  await clic(p, '[data-asistente-agregar-opcion]');
+  await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
+  assert.equal(await p.evaluate(() => document.querySelectorAll('[data-opcion-del-asistente]').length), 1, 'cancelar «Agregar una opción» no deja una opción vacía');
+
+  // La opción 1, en su cuadro: buscar, Enter suma el marcado, la cantidad y el estado, y «Guardar la opción».
+  await clic(p, '[data-armar-la-opcion]');
+  const buscador = await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
+  await buscador.type('arroz');
+  await elemento(p, '.cuadro-de-la-opcion [role="gridcell"][aria-selected="true"]');
+  await p.keyboard.press('Enter');
+  const cantidad = await elemento(p, '#cuadro-item-0-cantidad');
+  await cantidad.type('150');
+  await p.select('#cuadro-item-0-preparacion', 'COOKED');
+  await clic(p, '.cuadro-de-la-opcion [data-principal-del-cuadro]', 'Guardar la opción');
+  await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Revisar');
+
+  // 6 y 7. Revisar y activar, sin fecha de revisión.
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Activar');
+  await clic(p, '[data-asistente-principal]', 'Revisar y activar');
+  await elemento(p, 'dialog[open] [data-antes-de-activar]');
+  await clic(p, 'dialog[open] .cuando-la-revisas input[value="sin-fecha"]');
+  // El principal se enciende cuando la API terminó de revisar lo guardado y hay una fecha elegida.
+  await p.waitForFunction(() => [...document.querySelectorAll('dialog[open] button.boton--primario')].some((b) => b.textContent.includes('Activar la versión 1') && !b.disabled), { timeout: ESPERA });
+  await clic(p, 'dialog[open] button.boton--primario', 'Activar la versión 1');
+
+  // Activada: sin el asistente en la dirección y con el plan activo a la vista.
+  await elemento(p, '.plan__activo');
+  assert.equal(ruta(p).parametros.get('asistente'), null, 'activar desde el paso 7 sale del asistente');
+  assert.equal(await p.$('[data-punto-de-partida]'), null, 'no aparece el paso 1 de otra versión');
+}
+
 /** Bloque 5: preparar la revisión desde la ficha y volver «donde estabas», con la vista y el período. */
 async function retorno({ p, d }) {
   await entrar(p, d.pro.correo);
@@ -1507,7 +1571,7 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
