@@ -7337,21 +7337,47 @@ partes esperan el sí de Dirección al alcance y a las maquetas corregidas.
 - La regla de B10-06 queda: el plan nace de un objetivo vigente, y el objetivo, de una evaluación.
 - La estimación de fuerza sigue DL-171: nunca desde la prescripción, nunca como marca y nunca para la persona.
 
-**Pruebas:** TEST-EDP-001 a 067 y, del método, RM-01 a RM-42, en `WP-EDITORES-PROFESIONAL-ORACULOS.md`, que se escribe
+**Pruebas:** TEST-EDP-001 a 067 y, del método, RM-01 a RM-43, en `WP-EDITORES-PROFESIONAL-ORACULOS.md`, que se escribe
 al programar y empieza con la definición de terminado de diez puntos. Cada negativa, con su mutación. Las 73 tareas de
 `flujos-de-planificacion.mjs` se miden antes y después con el mismo script (§7 del paquete), y las nuevas (AC, BC y AF),
 aparte.
 
+**Recomendaciones de Claude aplicadas el 2026-11-11, a ratificar por Dirección** (con el criterio que Dirección
+delegó: «salvo una decisión crítica, hacé lo que recomiendes»):
+- **DJ-3:** se aplica la regla de Dirección del 8/11, registrada en DL-170: «se celebra un acto, nunca un número». En la
+  v1 la estimación es solo del profesional (ED-D21), así que la app no celebra nada de fuerza, y el ejemplo del juicio
+  («Primera vez con 82,5 kg × 5») queda descartado. Si una etapa posterior muestra algo a la persona, se celebra el acto
+  (por ejemplo, «Registraste las 4 series»), nunca la carga ni la estimación.
+- **Los redespliegues:** `render.yaml` reconstruye la API con cualquier cambio en `packages/domain/**`. Lo que no
+  altera lo que la API acepta o devuelve (funciones que solo usa el website: textos, estados de guardado, cálculos de
+  pantalla) no necesita ventana; lo que cambia su conducta (rutas, migraciones, validaciones, el contrato de ED-70) va
+  en la ventana del vie 20. La IP del operador solo importa cuando hay una carga directa en la base de `test`, y se pide
+  después del último merge del día: no hacen falta ventanas fijas por ella (§8 del paquete).
+- **El orden de integración:** WP-USO-FINAL (DL-169), después WP-APP-VUELTA-2 (DL-170) y después este paquete (DL-167 y
+  DL-171), para que el índice de este documento no choque. UF-06 y UF-11, de WP-USO-FINAL, entran antes que la API de
+  fuerza (ED-72 y ED-74), o en la misma ventana.
+- **El vidrio del website (ED-18)** es una hoja: si no da el contraste medido en el peor punto, el website queda mate.
+- **Los presets de BE de Entrenamiento son siete:** tres estructuras («Cuerpo entero · 3 días», «Torso / Piernas ·
+  4 días» y «Empuje / Tirón / Piernas · 6 días») y cuatro prescripciones («Hipertrofia 4×8-12 · RIR 2 · 90 s», «Fuerza
+  5×5 · RIR 2 · 3 min», «Resistencia 3×15 · RIR 3 · 45 s» y «Técnica 3×8 · RIR 4»). Sigue valiendo ED-D2.
+- **La historia de una persona** empieza «desde el inicio del acompañamiento» (RF-025, DJ-14).
+- Las de la fuerza (el RIR de la serie observada, el rótulo, el interruptor de la evolución y lo que viaja con el plan),
+  en DL-171.
+
 **Lo que queda abierto:**
 - el sí de Dirección a las partes (ED-00 a ED-76) y a las maquetas corregidas (§13.4 del paquete);
-- DJ-3; ED-D1 a ED-D4, ED-D6, ED-D8, ED-D11 y ED-D13 a ED-D16; y, de la fuerza, ED-D17 a ED-D21;
-- la validación de los presets de BE;
-- la ventana de redespliegue de la API, el vie 20, para ED-08, ED-13, ED-64, ED-70, ED-72, ED-74 y API-PLN-01 a 03;
+- DJ-3 y las demás recomendaciones de Claude del 2026-11-11 (arriba), a ratificar; ED-D1 a ED-D4, ED-D6, ED-D8,
+  ED-D11 y ED-D13 a ED-D16; y, de la fuerza, ED-D17 a ED-D21;
+- la validación de los presets de BE (ED-D2);
+- la ventana de redespliegue de la API, el vie 20, para lo que cambia su conducta: ED-08, ED-13, ED-64, ED-70, ED-72,
+  ED-74 y API-PLN-01 a 03;
 - la candidata del 25/11 con ED-70, armada junto con UF-01 (WP-USO-FINAL) y el vidrio de la APK (WP-APP-VUELTA-2);
 - DL-169 y DL-170 todavía no están en `main`: viven en #253 y #255, en borrador. Este paquete las cita, así que se
-  integran antes que él o junto con él;
-- los cambios en `packages/domain/**` de las etapas 1 y 2 (§8 del paquete) redespliegan la API, porque `render.yaml`
-  la reconstruye con cualquier cambio ahí: agruparlos hasta la ventana del vie 20 o aceptar más redespliegues.
+  integran antes que él, en el orden de arriba;
+- **ED-50** (P2): el texto de la declaración, «−10 % de carga», choca con la guardia de Entrenamiento, que solo admite
+  «% RM». Recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección: cuando se programe, el texto es
+  «Bajar las cargas un 10 %», y la guardia admite «% de la carga» además de «% RM» (bajar una carga es una indicación,
+  no una calificación). Sin código ahora.
 - ~~El arreglo del límite de 16 KB por pedido (B28), en otro carril~~: resuelto por DL-168 (#252 y #254).
 
 **Condición de cierre:**
@@ -7558,10 +7584,13 @@ adaptación temprana» (V3, 03). Sobre el juicio de Claude a ese paquete, decidi
   la lista.
 - **La regla por sesión:** de las series que entran de un ejercicio en una ejecución (el registro vigente: la corrección
   vigente o el original), la de mayor carga, por unidad; a igual carga, la primera. No «la mayor estimación»: el máximo
-  de varias estimaciones con ruido sube solo cuando hay más series, y las series pesadas y cortas estiman mejor.
-- **Cómo se muestra:** «≈ 98 kg», al medio kilo o a la libra entera, con «estimación orientativa · Epley v1»; la décima,
-  solo en «Cómo se calculó» (REG-06-158: mostrar no redondea en silencio). Con 8 repeticiones equivalentes, un RIR de
-  diferencia mueve cerca de un 2,6 %: la décima no es una precisión del método. Sin intervalo ni «±».
+  de varias estimaciones con ruido sube solo cuando hay más series, y las series pesadas y cortas estiman mejor. Con el
+  interruptor «Incluir las de 11 a 12» de la evolución apagado, elige entre las de hasta 10 repeticiones equivalentes;
+  encendido, entre todas las de hasta 12 (abajo, en las recomendaciones de Claude).
+- **Cómo se muestra:** «≈ 98 kg», al medio kilo o a la libra entera, con «estimación · Epley v1» (de 11 a 12,
+  «estimación orientativa · Epley v1»: abajo, en las recomendaciones de Claude); la décima, solo en «Cómo se
+  calculó» (REG-06-158: mostrar no redondea en silencio). Con 8 repeticiones equivalentes, un RIR de diferencia mueve
+  cerca de un 2,6 %: la décima no es una precisión del método. Sin intervalo ni «±».
 - **La lista cerrada** es parte de la especificación: sumar un ejercicio es una versión nueva, y cada valor dice con qué
   versión salió.
 - **Dónde vive.** Un método con identidad y versión inmutable (REG-06-203), especialización de T-06-N12 para
@@ -7595,7 +7624,7 @@ adaptación temprana» (V3, 03). Sobre el juicio de Claude a ese paquete, decidi
 - Solo el profesional, en el website, con los permisos de Entrenamiento: para la serie observada, los de la evaluación
   de entrenamiento (API-TRN-01 a 03); para la evolución, los de «Analizar» (el PDP y ser el profesional del plan). Lo
   ajeno recibe el 404 de lo inexistente, y cada lectura queda auditada (08 §29).
-- La historia empieza con el profesional actual (RF-025): «desde que la acompañás».
+- La historia empieza con el profesional actual (RF-025): «desde el inicio del acompañamiento».
 - La persona no la ve: nada nuevo llega a la APK. Su serie observada entra en lo que puede pedir de sus datos cuando
   exista UF-06 (ED-D21).
 - No viaja a otra área: no tiene fila en la matriz §3.1 (DL-163 D-13). La referencia del % RM, que sí viaja con el plan
@@ -7626,29 +7655,42 @@ límites: Brzycki (1993), sobre la predicción desde las repeticiones hasta la f
 (2024, *Sports Medicine*), sobre cuántas repeticiones se hacen a cada porcentaje del máximo. El RIR como medida: Zourdos
 y colaboradores (2016, *Journal of Strength and Conditioning Research*); y su precisión: Halperin y colaboradores (2022,
 *Sports Medicine*). Ninguna valida que repeticiones + RIR tenga el mismo error en todas las personas, ejercicios y
-equipos: por eso es una «estimación orientativa». **No se citan:** Hughes y colaboradores (2020), que está retractada
-(PMID 33337690; la retractación, PMID 33470601), ni Macarilla (2022), que trata la predicción por velocidad y no Epley.
-Las fichas completas se verifican al citarlas en la tesis.
+equipos: por eso es una estimación, y la banda de 11 a 12, «orientativa». **No se citan:** Hughes y colaboradores
+(2020), que está retractada (PMID 33337690; la retractación, PMID 33470601), ni Macarilla (2022), que trata la
+predicción por velocidad y no Epley. Las fichas completas se verifican al citarlas en la tesis.
 
-**Pruebas:** RM-01 a RM-42 (§5.8 del paquete): las del método (RM-01 a RM-35), en `estimacion-de-fuerza.test.ts`; las de
-la observación, el cálculo de la carga y los permisos (RM-36 a RM-42), en las de ED-72, ED-76 y ED-74. Y los oráculos
-TEST-EDP-059 a 067, cada negativa con su mutación.
+**Pruebas:** RM-01 a RM-43 (§5.8 del paquete): las del método (RM-01 a RM-35 y RM-43), en
+`estimacion-de-fuerza.test.ts`; las de la observación, el cálculo de la carga y los permisos (RM-36 a RM-42), en las
+de ED-72, ED-76 y ED-74. Y los oráculos TEST-EDP-059 a 067, cada negativa con su mutación.
+
+**Recomendaciones de Claude aplicadas el 2026-11-11, a ratificar por Dirección** (con el criterio que Dirección
+delegó: «salvo una decisión crítica, hacé lo que recomiendes»):
+- **El RIR de la serie observada** («y el RIR si aplica», de la fuente (a)): obligatorio, de 0 a 2. Si la serie fue al
+  fallo, el RIR es 0 y se escribe igual; con un RIR mayor que 2, Epley no estima, y una observación que no se puede
+  estimar no se guarda (ED-D19). Sin RIR, el cuadro dice el motivo en palabras: «Sin RIR no se puede estimar» (ED-72).
+- **El rótulo:** «orientativa» pasa a ser solo el nombre de la banda de 11 a 12. Cualquier estimación se rotula
+  «estimación» («≈ 86,5 kg · 11 nov · estimación · Epley v1»), y la de 11 a 12, «estimación orientativa». Precisa el
+  rótulo de lo decidido (ED-71 y ED-73 a ED-75).
+- **El interruptor «Incluir las de 11 a 12» y la regla por sesión** (ED-74): viene apagado. Apagado, la regla elige la
+  serie que entra de mayor carga entre las de hasta 10 repeticiones equivalentes, y una sesión que solo tiene series de
+  11 a 12 queda sin punto; encendido, entre todas las de hasta 12. La tarjeta (ED-75) usa la regla apagada; si la
+  última sesión con series que entran solo tiene de 11 a 12, muestra la de mayor carga de ellas como «estimación
+  orientativa». Una sesión con 70 × 12 con RIR 0 y 65 × 8 con RIR 2 da, apagado, 65 × (1 + 10/30) = 86,67 kg, núcleo,
+  «≈ 86,5 kg» al medio kilo; encendido, 70 × (1 + 12/30) = 98,0 kg, hueco (RM-43).
+- **«Cómo se calculó»** (ED-73) dice «No es una indicación de carga: la carga la elegís vos con un % RM», como ED-76.
+- **Lo que viaja con el plan:** con el criterio % RM, el plan lleva el % y la carga (RES-06), y con los dos se deduce la
+  estimación (72,5 ÷ 0,75 ≈ 96,7 kg). Se acepta: es un dato de la propia persona y no expone nada a terceros. RES-06 no
+  cambia.
 
 **Lo que queda abierto:**
 - ED-D17 a ED-D21 (el sentido del redondeo, la lista de la v1, la observación que no se estima, qué estimación usa el
-  cálculo de la carga y si la persona ve su observación); DJ-3 (qué se celebra); el 1RM medido con protocolo
-  (D-V3-03), para después;
-- **el RIR de la serie observada, «si aplica»:** ED-72 lo pide de 0 a 2, y sin él no se estima ni se guarda (ED-D19).
-  Falta decir si una observación sin RIR se puede guardar, o si «si aplica» quiere decir otra cosa;
-- **el interruptor «Incluir las de 11 a 12» de la evolución (ED-74) y la regla por sesión:** si, apagado, la regla elige
-  entre las de hasta 10, o si la sesión cuya serie elegida es de 11 a 12 queda sin punto;
-- **lo que viaja con el plan:** con el criterio % RM, el plan ya lleva el %, y ED-76 le suma la carga. Los dos viajan
-  con el plan (RES-06), y con los dos se deduce una estimación aproximada (72,5 ÷ 0,75 ≈ 96,7 kg). Declararlo aceptado
-  (es la prescripción que escribió el profesional), o que esa carga no viaje por RES-06, que es un cambio de RES-06.
+  cálculo de la carga y si la persona ve su observación); DJ-3, con la recomendación de Claude aplicada (DL-167); el
+  1RM medido con protocolo (D-V3-03), para después;
+- la ratificación de las recomendaciones de Claude del 2026-11-11 (arriba).
 
 **Condición de cierre:**
 - ED-70 integrada, con la API desplegada en `test` y la candidata del 25/11 publicada y probada en el teléfono de
   Dirección;
-- ED-71 y ED-72 integradas, con RM-01 a RM-42 en verde;
+- ED-71 y ED-72 integradas, con RM-01 a RM-43 en verde;
 - en `test`, una serie observada y una sesión escrita con la app nueva, con su estimación y «Cómo se calculó», vistas por
   Dirección.

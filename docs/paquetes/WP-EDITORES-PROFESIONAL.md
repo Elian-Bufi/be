@@ -68,7 +68,7 @@
   - B10-08 («1RM estimado como PR», excluido; «marca observada ≠ 1RM estimado», l. 87 y 122);
   - B10-10 (accesibilidad, textos y diseño adaptable).
 - **11A:** TEST-PRJ-009 (nada califica) y TEST-PRJ-004 (nada se infiere). Los oráculos nuevos son TEST-EDP-001 a 067 y
-  los del método, RM-01 a RM-42 (§5.8 y §5.9).
+  los del método, RM-01 a RM-43 (§5.8 y §5.9).
 - **DL:**
   - DL-091 (los números en rioplatense) y DL-108, DL-109 y DL-119 (plantillas, habituales y recetas);
   - DL-122 (las capacidades del cliente), DL-131 (las preguntas vienen marcadas) y DL-137 D-7 (lo nuevo va en
@@ -197,7 +197,7 @@ y «Tuyos».
 | Tipo de preset | De BE (nuevo, contenido estático versionado en el dominio) | Tuyos | ¿Modelo nuevo? |
 |---|---|---|---|
 | Plan entero (Entrenamiento) | — | **Plantillas de plan** (TPL, DL-108): ya existen | No: se reusa |
-| Estructura (sesiones o días) | «Cuerpo entero · 3 días», «Torso / Piernas · 4 días», «Empuje / Tirón / Piernas» (solo nombres y días sugeridos) | Una plantilla de plan sin ejercicios (TPL) | No: la plantilla usa la misma estructura de entrada que el borrador (`contratos-plantillas.ts`), que admite sesiones vacías; una prueba lo confirma al programar, con su EDT |
+| Estructura (sesiones o días) | «Cuerpo entero · 3 días», «Torso / Piernas · 4 días», «Empuje / Tirón / Piernas · 6 días» (solo nombres y días sugeridos) | Una plantilla de plan sin ejercicios (TPL) | No: la plantilla usa la misma estructura de entrada que el borrador (`contratos-plantillas.ts`), que admite sesiones vacías; una prueba lo confirma al programar, con su EDT |
 | Sesión con ejercicios | — (BE no elige ejercicios: ED-D2) | **Sesiones habituales** (HAB, DL-109): ya existen | No |
 | Ejercicio | — | **Ejercicios habituales** (HAB): ya existen | No |
 | Prescripción (series × repeticiones, RIR, descanso) | «Hipertrofia 4×8-12 · RIR 2 · 90 s», «Fuerza 5×5 · RIR 2 · 3 min», «Resistencia 3×15 · RIR 3 · 45 s», «Técnica 3×8 · RIR 4» (sin cargas) | **Prescripciones habituales** | **Sí:** ED-13 (API-HAB-06 a 08, una tabla) |
@@ -207,6 +207,12 @@ y «Tuyos».
 | Estructura del día («comida tipo») | «4 comidas», «5 comidas con colación», «6 comidas» (nombres, con la opción 1 vacía) | **Comidas habituales** (HAN, DL-109): ya existen, con sus alimentos | No |
 | Alimento | — | **Alimentos habituales** (HAN): ya existen | No |
 | Preparación | — | **Mis recetas** (REC, DL-119): ya existen, con sus versiones | No |
+
+**Los presets de BE de Entrenamiento son siete:** tres estructuras, cada una con sus días sugeridos («Cuerpo entero ·
+3 días», «Torso / Piernas · 4 días» y «Empuje / Tirón / Piernas · 6 días»), y cuatro prescripciones («Hipertrofia
+4×8-12 · RIR 2 · 90 s», «Fuerza 5×5 · RIR 2 · 3 min», «Resistencia 3×15 · RIR 3 · 45 s» y «Técnica 3×8 · RIR 4»).
+Recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección. Sigue valiendo ED-D2: Dirección los valida
+antes de publicarlos.
 
 **Lo que no se duplica:**
 - «Guardar como preset» guarda en lo que ya existe (una plantilla, una sesión habitual, una comida habitual o una
@@ -264,7 +270,7 @@ Lo programa ED-18, y cambia la pauta II.2 de la guía («Superficies mates»).
   paquete es la que decidió Dirección: la procedencia por campo (ED-70, DJ-2), que la API acepta primero y la candidata
   del 25/11 manda. La 0.23.0-candidata.2 no lee una ejecución registrada con ella: es el caso que ya declaró DL-161.
 - **Lo indicado no es fuerza** (DL-171). Una estimación sale solo de una serie que escribió la persona o que observó el
-  profesional, nunca de una prescripción ni de un valor que vino del plan. Es una estimación orientativa: nunca una
+  profesional, nunca de una prescripción ni de un valor que vino del plan. Es una estimación: nunca una
   marca, nunca se celebra, nunca dispara un aviso, nunca la ve la persona y nunca invita a hacer un máximo.
 - **BE sugiere, el profesional decide:** los kilos que salen de un % (ED-76) se escriben solo con su confirmación, y
   ninguna estimación nueva cambia una carga ya escrita.
@@ -603,8 +609,8 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
 - *Dado* Diego, que todavía no abrió BE, *cuando* Martín activa un plan con objetivos por serie, *entonces* el plan se
   activa, y «Antes de activar» dijo en una línea: «Diego todavía no abrió BE: cuando instale la app, va a ver las series
   así.»
-- *Va en* la única ventana de redespliegue de la API (§8). Hasta entonces, si el 409 aparece, ED-62 lo dice con su
-  texto.
+- *Va en* la ventana del vie 20, la de lo que cambia la conducta de la API (§8). Hasta entonces, si el 409 aparece,
+  ED-62 lo dice con su texto.
 - *Pruebas:* TEST-EDP-010 (activar no espera la capacidad; la entrega a un cliente sin ella sigue retenida; el aviso
   aparece una vez y no bloquea).
 
@@ -682,7 +688,7 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
   `falloDeGuardado`.
 - *Dado* una sesión habitual de 8 ejercicios × 6 series con notas, *cuando* el profesional la guarda, *entonces* se
   guarda; y si algo no entra, el diálogo dice «demasiado grande» sin perder lo escrito.
-- *Va en* la ventana de redespliegue de la API (§8).
+- *Va en* la ventana del vie 20, la de lo que cambia la conducta de la API (§8).
 - *Pruebas:* TEST-EDP-051 (las rutas, contra sus controladores; sin ellas en la lista, la prueba falla).
 
 **ED-65 · Recetas y plantillas avisan al salir con cambios**
@@ -891,7 +897,8 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
     resplandor por vista.
 - *Dado* la estación en Azul noche a 1440 × 900, *cuando* se abre un cuadro, *entonces* el cuadro y la barra son de
   vidrio, la planilla sigue opaca y todo el texto pasa 4,5:1 sobre su fondo real.
-- *Corte:* es una hoja. Si el contraste o el rendimiento no dan, el website queda mate y no frena a las demás.
+- *Corte:* es una hoja. Si el contraste medido en el peor punto no da, o el rendimiento no da, el website queda mate y
+  no frena a las demás (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección).
 - *Pruebas:* TEST-EDP-053 (los pares de contraste de los tokens nuevos; el modo opaco con `forced-colors` y con la
   transparencia reducida; un solo resplandor por vista) y capturas en los dos temas a 1280, 1440 y 1920.
 
@@ -1189,13 +1196,17 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
 - *Toca:* `training/estructura-del-plan.tsx`, un `training/progresion.ts` nuevo (sin React) y la grilla «Semana por
   semana».
 - *Cómo funciona:* «Progresión» escribe en los microciclos que ya existen (S1…S4) lo que dice el profesional. Por
-  ejemplo, «+2,5 kg por semana en S2 y S3; S4, descarga: −10 % de carga y una serie menos, redondeo a 2,5 kg». Hay
-  vista previa con «+2,5 · igual · −1» y se escribe con «Escribir en el borrador». No queda una regla guardada. La app,
-  hasta TB-44, muestra las semanas juntas y en orden (ED-D11).
+  ejemplo, «+2,5 kg por semana en S2 y S3; S4, descarga: bajar las cargas un 10 % y una serie menos, redondeo a
+  2,5 kg». Hay vista previa con «+2,5 · igual · −1» y se escribe con «Escribir en el borrador». No queda una regla
+  guardada. La app, hasta TB-44, muestra las semanas juntas y en orden (ED-D11).
 - *Dado* Piernas A en S1, *cuando* Martín genera S2 a S4, *entonces* cada celda tiene su valor escrito y se puede
   cambiar antes de guardar.
 - *Pruebas:* de propiedad de `progresion` (deshacer devuelve S1 exacta; el redondeo es el elegido; ningún registro de la
   persona cambia nada) y TEST-EDP-036.
+- *Abierto, con recomendación:* el texto de la declaración, «−10 % de carga», choca con la guardia de Entrenamiento,
+  que solo admite «% RM». Recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección: cuando se programe,
+  el texto es «Bajar las cargas un 10 %», y la guardia admite «% de la carga» además de «% RM» (bajar una carga es una
+  indicación, no una calificación). Sin código ahora.
 
 **ED-51 · Escalar una opción**
 - *Evidencia:* idea de producto.
@@ -1367,12 +1378,13 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
   - la base de la carga, ausente o TOTAL_EXTERNAL, y la de las repeticiones, ausente o PER_SET: por implemento o por
     lado, fuera en la v1.
 - *La regla por sesión:* de las series que entran de un ejercicio en una ejecución, la de mayor carga, por unidad; a
-  igual carga, la primera. Nunca «la mayor estimación», que sube sola cuando hay más series.
-- *Cómo se muestra:* «≈ 98 kg», al medio kilo o a la libra entera, con el rótulo «estimación orientativa · Epley v1»;
-  la décima, solo en «Cómo se calculó» (REG-06-158). Sin intervalo ni «±».
+  igual carga, la primera. Nunca «la mayor estimación», que sube sola cuando hay más series. Con «Incluir las de 11 a
+  12» apagado, elige entre las de hasta 10 repeticiones equivalentes; encendido, entre todas las de hasta 12 (ED-74).
+- *Cómo se muestra:* «≈ 98 kg», al medio kilo o a la libra entera, con el rótulo «estimación · Epley v1»; de 11 a 12,
+  «estimación orientativa · Epley v1». La décima, solo en «Cómo se calculó» (REG-06-158). Sin intervalo ni «±».
 - *Lo que nunca hace:* calcular desde la prescripción, avisar, celebrar, entrar en las marcas, llegar a la persona o
   invitar a un máximo.
-- *Pruebas:* RM-01 a RM-35 (abajo), en `estimacion-de-fuerza.test.ts`, cada negativa con su mutación.
+- *Pruebas:* RM-01 a RM-35 y RM-43 (abajo), en `estimacion-de-fuerza.test.ts`, cada negativa con su mutación.
 
 **ED-72 · La serie observada por el profesional**
 - *Resuelve:* la fuente (a) de Dirección; V3 F-03, en lo que toca al profesional.
@@ -1386,14 +1398,21 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
     Entrenamiento, decidido en la transacción; lo ajeno, el 404 de lo inexistente; cada lectura y cada escritura,
     auditadas (08 §29). La guardia de trazabilidad suma la familia FZA con DL-171;
   - el website: «Registrar una serie observada», un cuadro enfocado que se abre desde la tarjeta del ejercicio (ED-75),
-    con la carga y su unidad, las repeticiones, el RIR observado (0 a 2), la fecha y una nota opcional. La estimación se
-    ve en vivo, con «Cómo se calculó», y hay un solo principal: «Guardar la serie observada».
+    con la carga y su unidad, las repeticiones, el RIR observado (obligatorio, de 0 a 2), la fecha y una nota
+    opcional. La estimación se ve en vivo, con «Cómo se calculó», y hay un solo principal: «Guardar la serie
+    observada».
+- *El RIR* (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección, sobre «y el RIR si aplica»): si
+  la serie fue al fallo, el RIR es 0 y se escribe igual; con un RIR mayor que 2, Epley no estima, y una observación que
+  no se puede estimar no se guarda (ED-D19). Sin RIR, el cuadro dice el motivo en palabras: «Sin RIR no se puede
+  estimar».
 - *Lo que no hace:* no la lee la APK; no es un «1RM medido» ni un test (D-V3-03, después); no pregunta «¿fue un
   máximo?».
 - *Dado* Martín en el Press de banca plano con barra de Diego, *cuando* registra 85 kg × 5 con RIR 1, *entonces* se
   guarda la observación con su estimación (102,0 kg, núcleo, Epley v1, Martín y la fecha) y la tarjeta la muestra.
 - *Dado* 60 kg × 15 con RIR 0, *cuando* intenta guardarla, *entonces* el cuadro dice «Con más de 12 repeticiones
   equivalentes no se estima» y no guarda nada (ED-D19).
+- *Dado* 80 kg × 5 sin RIR, *cuando* intenta guardarla, *entonces* el cuadro dice «Sin RIR no se puede estimar» y no
+  guarda nada.
 - *Pruebas:* TEST-EDP-061 (integración con PostgreSQL: crear, suceder, anular, lo ajeno, la auditoría, que la base
   impida cambiarla o borrarla y que la persona no la reciba), TEST-EDP-062 (la familia FZA en la guardia de
   trazabilidad y en `openapi.json`), y RM-36 y RM-37.
@@ -1402,13 +1421,14 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
 - *Toca:* un `fuerza/como-se-calculo.tsx` nuevo, que se abre desde cualquier valor: la tarjeta, un punto de la
   evolución o el cuadro de ED-76. Dentro de otro cuadro se abre en el mismo, con «Atrás» (ED-10).
 - *El cuadro dice:*
-  - qué es: «Una estimación orientativa de la carga para una repetición, hecha con una serie. No es una repetición
-    máxima medida.»;
+  - qué es: «Una estimación de la carga para una repetición, hecha con una serie. No es una repetición máxima
+    medida.»;
   - los datos: el ejercicio, la fecha civil, la carga, las repeticiones, el RIR y quién los escribió («la escribió Diego
     en la app» o «la observó Martín»), con el enlace a la serie de origen;
   - la cuenta con sus números: «8 + 2 = 10 repeticiones equivalentes · 80 × (1 + 10/30) = 106,7 kg»;
-  - la banda y el método: «hasta 10 repeticiones equivalentes · Epley v1»;
-  - qué no significa: «No se levantaron 106,7 kg. No es una marca y no indica qué carga usar.»;
+  - la banda y el método: «hasta 10 repeticiones equivalentes · Epley v1» (de 11 a 12, «estimación orientativa»);
+  - qué no significa: «No se levantaron 106,7 kg. No es una marca. No es una indicación de carga: la carga la elegís
+    vos con un % RM.» (como ED-76);
   - en esa sesión, qué series no entraron y por qué («Serie 3: el RIR es el del plan»).
 - *Dado* cualquier valor a la vista, *cuando* se abre «Cómo se calculó», *entonces* la cuenta reproduce el valor con los
   datos de origen, también después de que exista una versión nueva del método.
@@ -1423,37 +1443,49 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
     ejercicio y por unidad, que se abre ya filtrada desde la tarjeta (ED-75).
 - *Cómo se ve:*
   - el punto lleno, hasta 10 repeticiones equivalentes; hueco, de 11 a 12, con «Incluir las de 11 a 12» apagado de
-    entrada; la observación del profesional, con otra forma y su leyenda. Cómo se combina ese interruptor con la regla
-    por sesión (si, apagado, la regla elige entre las de hasta 10) queda abierto en DL-171;
+    entrada; la observación del profesional, con otra forma y su leyenda;
+  - la regla por sesión sigue al interruptor (recomendación de Claude aplicada el 2026-11-11, a ratificar por
+    Dirección; DL-171): apagado, elige la serie que entra de mayor carga entre las de hasta 10 repeticiones
+    equivalentes, y una sesión que solo tiene series de 11 a 12 queda sin punto; encendido, entre todas las de hasta 12;
   - sin línea a través de un hueco; kg y lb, aparte;
   - la diferencia entre dos estimaciones, en kg («estimación: 90 → 98 kg»), nunca un % ni «fuerza real»; con un solo
     punto, ninguna;
   - la tabla de origen: la fecha, la carga, las repeticiones, el RIR, quién lo escribió, la banda, el valor y «Cómo se
     calculó»;
-  - el período empieza «desde que la acompañás» (RF-025, DJ-14) y, si hay más, dice «Hay registros con otro
+  - el período empieza «desde el inicio del acompañamiento» (RF-025, DJ-14) y, si hay más, dice «Hay registros con otro
     profesional que no ves».
 - *Permisos:* los de una clave de Entrenamiento en «Analizar» (el PDP y ser el profesional del plan). Sin fila en la
   matriz §3.1, no viaja a otra área ni a RES-06.
 - *Dado* Diego con tres sesiones de press de banca escritas con la app nueva, *cuando* Martín abre la evolución,
   *entonces* ve los dos puntos de hasta 10 repeticiones equivalentes, con su fecha civil, y al encender «Incluir las de
   11 a 12» aparece el de 70 × 12 con RIR 0, hueco.
+- *Dado* una sesión con 70 kg × 12 con RIR 0 y 65 kg × 8 con RIR 2, *cuando* Martín abre la evolución, *entonces*, con
+  el interruptor apagado, el punto de esa sesión es el de 65 × 8: 65 × (1 + 10/30) = 86,7 kg, lleno, «≈ 86,5 kg»; al
+  encenderlo, pasa a ser el de 70 × 12: 70 × (1 + 12/30) = 98,0 kg, hueco.
 - *Pruebas:* TEST-EDP-064 (nunca un punto desde la prescripción; la clave de marcas no cambia; la persona y otra área
-  no la reciben), y RM-41 y RM-42.
+  no la reciben), y RM-41, RM-42 y RM-43.
 
 **ED-75 · La tarjeta de fuerza en el detalle del ejercicio (V3 E-03)**
 - *Toca:* el cuadro «Detalle» del ejercicio (ED-23) y un `fuerza/tarjeta.tsx` nuevo.
 - *Cómo se ve,* aparte de «Series del plan», bajo «Lo registrado», y nunca mezclada con la prescripción:
   - «Fuerza estimada · Press de banca plano con barra» (el nombre del catálogo);
-  - «≈ 98 kg · 11 nov · estimación orientativa · Epley v1»;
+  - «≈ 98 kg · 11 nov · estimación orientativa · Epley v1» (de 11 a 12; de hasta 10, por ejemplo, «≈ 86,5 kg · 11 nov ·
+    estimación · Epley v1»);
   - «70 kg × 10 · RIR 2 · la escribió Diego en la app» (o «la observó Martín»);
   - «Cómo se calculó», «Ver evolución» y «Registrar una serie observada».
+- *Qué serie muestra* (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección): la regla por sesión
+  de ED-74 con el interruptor apagado, sobre la última sesión con series que entran. Si esa sesión solo tiene series de
+  11 a 12, muestra la de mayor carga de ellas como «estimación orientativa».
 - *Sin estimación:* «Todavía no hay series que permitan estimar», con lo que hace falta en palabras y «Registrar una
   serie observada».
 - *Solo en los ejercicios de la lista* de la v1; en los demás no aparece. Si ED-74 no llegó (§8), la tarjeta muestra
   solo las observaciones.
 - *Dado* Diego con una sesión escrita en la app nueva (70 kg × 10 con RIR 2 en el Press de banca plano con barra),
   *cuando* Martín abre el «Detalle» de ese ejercicio en la estación, *entonces* la tarjeta dice «≈ 98 kg» con su fecha,
-  su rótulo y quién la escribió, aparte de lo que indica el plan, y abrirla no cambia nada de la prescripción.
+  «estimación orientativa» (son 12 repeticiones equivalentes) y quién la escribió, aparte de lo que indica el plan, y
+  abrirla no cambia nada de la prescripción.
+- *Dado* que la última sesión tiene 70 kg × 12 con RIR 0 y 65 kg × 8 con RIR 2, *cuando* Martín abre el «Detalle»,
+  *entonces* la tarjeta dice «≈ 86,5 kg · 11 nov · estimación · Epley v1», con «65 kg × 8 · RIR 2».
 - *Dado* un ejercicio de la lista sin series que entren, *cuando* se abre su «Detalle», *entonces* la tarjeta dice qué
   hace falta y ofrece «Registrar una serie observada», sin ningún valor.
 - *Pruebas:* TEST-EDP-065 (la tarjeta lee lo registrado, nunca la prescripción; el estado vacío; fuera de la lista no
@@ -1486,8 +1518,9 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
   valor; RES-06 no lleva ninguna estimación), y RM-38 a RM-40.
 
 **Los oráculos del método.** Los de V3 03 §12, adaptados y sin la fuente retractada (RM-01 a RM-22), más los del juicio
-y los de las decisiones del 11/11. Los del método (RM-01 a RM-35) viven en `estimacion-de-fuerza.test.ts`; los de la
-observación, el cálculo de la carga y los permisos (RM-36 a RM-42), en las pruebas de ED-72, ED-76 y ED-74; todos, en el
+y los de las decisiones del 11/11. Los del método (RM-01 a RM-35 y RM-43, la regla por sesión con el interruptor de
+ED-74) viven en `estimacion-de-fuerza.test.ts`; los de la observación, el cálculo de la carga y los permisos (RM-36 a
+RM-42), en las pruebas de ED-72, ED-76 y ED-74; todos, en el
 archivo de oráculos. La cuenta usa el valor con todos sus decimales, y la vista, «≈» al medio kilo.
 
 | ID | Caso | Resultado |
@@ -1498,7 +1531,7 @@ archivo de oráculos. La cuenta usa el valor con todos sus decimales, y la vista
 | RM-04 | 70 × 12 con RIR 2 | Fuera (n_eq 14), con su motivo; ni 102,6 ni 102,7 a la vista |
 | RM-05 | 90 × 5 con RIR 0 | 105,0 kg, núcleo |
 | RM-06 | 100 × 1 con RIR 0 | 100,0 kg (n_eq 1: la carga), nunca 103,3, y nunca «1RM real» |
-| RM-07 | 100 × 1 con RIR 2 | 110,0 kg (n_eq 3), estimación orientativa |
+| RM-07 | 100 × 1 con RIR 2 | 110,0 kg (n_eq 3), núcleo: «estimación», nunca «orientativa» |
 | RM-08 | Sin RIR | Fuera («sin RIR»); nunca se supone 0 |
 | RM-09 | 15 repeticiones | Fuera (más de 12 equivalentes) |
 | RM-10 | Press de banca con barra y press en máquina | Nunca en la misma línea: la identidad es el `exerciseId` |
@@ -1528,12 +1561,13 @@ archivo de oráculos. La cuenta usa el valor con todos sus decimales, y la vista
 | RM-34 | En una sesión, 80 × 10 con RIR 1 (109,3) y 95 × 3 con RIR 1 (107,7) | Se toma 95 × 3: 107,7 kg; nunca la mayor estimación |
 | RM-35 | Dos series que entran, con la misma carga | La primera de la sesión |
 | RM-36 | El profesional observa 85 × 5 con RIR 1 | 102,0 kg (n_eq 6), guardada con la fecha, el autor, el método y la versión; no se edita: se sucede |
-| RM-37 | El profesional observa 60 × 15 con RIR 0, o 80 × 5 con RIR 3 | No se estima, lo dice y no se guarda (ED-D19) |
+| RM-37 | Observa 60 × 15 con RIR 0, 80 × 5 con RIR 3 o 80 × 5 sin RIR | No se estima, lo dice y no se guarda (ED-D19) |
 | RM-38 | 75 % RM de 98,0 kg, con paso de 2,5 kg | «73,5 → 72,5 kg», a la vista; se escribe solo al confirmar |
 | RM-39 | 75 % RM de 220 lb, con paso de 5 lb | 165 lb; nunca se pasa a kg |
 | RM-40 | La referencia del % RM que escribe ED-76 | El método y la fecha, nunca el valor |
 | RM-41 | La persona (la API y la APK) | Nunca recibe una estimación ni una serie observada |
 | RM-42 | Un profesional sin el PDP de Entrenamiento, u otra área | El 404 de lo inexistente; nada viaja por la matriz §3.1 ni por RES-06 |
+| RM-43 | Una sesión: 70 × 12 RIR 0 y 65 × 8 RIR 2 | Apagado, 65 × 8: 86,67, «≈ 86,5 kg»; encendido, 70 × 12: 98,0 |
 
 ### 5.9 Los oráculos
 
@@ -1544,7 +1578,7 @@ Cada comprobación negativa («la pantalla no dice X», «nunca suma cero») tie
   decisiones del 11/11;
 - TEST-EDP-047 a 058, de las partes que suma V3 (ED-60 a ED-65, ED-18 y los criterios nuevos de ED-14, ED-15, ED-23,
   ED-33 y ED-40);
-- TEST-EDP-059 a 066, de la vertical de fuerza (ED-70 a ED-76), y RM-01 a RM-42, del método;
+- TEST-EDP-059 a 066, de la vertical de fuerza (ED-70 a ED-76), y RM-01 a RM-43, del método;
 - cuatro transversales:
   - TEST-EDP-044: ningún texto nuevo dice «cumplimiento», «adherencia» ni «racha», tampoco en negación;
   - TEST-EDP-045: ningún color nuevo dice bien o mal; los tokens nuevos tienen su par en `contraste.test.cjs`;
@@ -1590,13 +1624,18 @@ implementación, EDT-. El estado, al 2026-11-11.
 | ED-D20 | ¿Qué estimación usa el cálculo de la carga? (ED-76) | La que elige el profesional, con su fecha, su origen y su antigüedad a la vista; ninguna elegida de entrada | La más reciente, elegida de entrada |
 | ED-D21 | ¿La persona ve su serie observada? | No en la v1 (DJ-1: solo el profesional). Entra en lo que la persona puede pedir de sus datos cuando exista UF-06 | Mostrarla en la próxima APK |
 
+**ED-D19 y el RIR de la serie observada** (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección,
+sobre «y el RIR si aplica» de la fuente (a)): el RIR es obligatorio, de 0 a 2. Si la serie fue al fallo, es 0 y se
+escribe igual; con un RIR mayor que 2, Epley no estima, y una observación que no se puede estimar no se guarda. Sin RIR,
+el cuadro dice «Sin RIR no se puede estimar» (ED-72).
+
 ### 6.2 Las del juicio de V3 (DJ), decididas por Dirección el 2026-11-11
 
 | ID | Pregunta | Lo decidido | Dónde |
 |---|---|---|---|
 | DJ-1 | ¿BE adopta un método propio de estimación de la repetición máxima? | **Sí:** Epley v1, en esta actualización, con las reglas de DL-171; solo para el profesional y en el website; nunca como marca; nunca invitar a un máximo | DL-171; ED-71 a ED-76 |
 | DJ-2 | ¿La serie registrada guarda qué campos vinieron del plan? | **Sí, en la APK de esta actualización.** Las series de antes, sin procedencia, quedan fuera del cálculo | ED-70 |
-| DJ-3 | ¿Qué se celebra de lo que hace la persona? | **Abierta.** Lo único fijado: una estimación nunca se celebra (DJ-1). La recomendación del juicio (celebrar solo hechos escritos por la persona, en la APK, después del 25/11) espera su decisión. Ojo: DL-170 (WP-APP-VUELTA-2) ya registra la decisión del 8/11, «se celebra un acto, nunca un número ni una medida del cuerpo», y el ejemplo del juicio («Primera vez con 82,5 kg × 5») celebra un número: hay que decidir DJ-3 sobre esa regla | — |
+| DJ-3 | ¿Qué se celebra de lo que hace la persona? | **Un acto, nunca un número** (recomendación de Claude) | DL-170 |
 | DJ-4 | ¿Un total del día en el editor de Nutrición? | **El rango del día,** con «Sin dato» si falta, sin una opción elegida, solo para el profesional; enmienda TB-38 y TEST-TAG-025 | ED-34 |
 | DJ-5 | ¿Se sigue bloqueando la activación si la persona nunca abrió una app que muestre objetivos por serie? | **No: un aviso** | ED-08 |
 | DJ-6 | ¿Cómo se revisa y se activa? | **Una entrada fija, «Revisar y activar…»,** que abre «Antes de activar»: valida al abrirse, lleva a cada cosa por corregir y deja «Activar la versión de [área]» apagado, con su motivo, hasta resolverlas. «Guardar ahora», fijo y secundario junto al estado. El borrador, numerado | ED-07, ED-15 |
@@ -1607,9 +1646,15 @@ implementación, EDT-. El estado, al 2026-11-11.
 | DJ-11 | ¿Recetas dentro de plantillas y comidas habituales? | Antes del 25/11, «Guardar como preset» dice qué no entra; después, `recipeVersionId` | ED-12 |
 | DJ-12 | ¿«Usar como referencia»? | **Reemplazada** por la fuente (c): el profesional elige un % y BE sugiere los kilos, que él confirma; la referencia del % RM nombra el método y la fecha, nunca el valor | ED-76; DL-171 |
 | DJ-13 | ¿Tipo de serie (aproximación o efectiva)? | Con una APK nueva, después; en la v1, las bandas y el RIR dejan afuera las de aproximación | ED-23 |
-| DJ-14 | ¿El profesional nuevo ve la historia del anterior? | No: RF-025, «desde que la acompañás» | ED-74 |
+| DJ-14 | ¿El profesional nuevo ve la historia del anterior? | No: RF-025, desde el inicio del acompañamiento | ED-74 |
 | DJ-15 | ¿Registrar fuera del plan, u otro deporte? | Fuera de alcance | §10 |
 | DJ-16 | ¿Cancelar o hacer vencer pedidos de información? | Después (cambia REG-06-210); antes del 25/11, solo el aviso de pendiente | ED-40 |
+
+**DJ-3, con la recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección:** se aplica la regla de
+Dirección del 8/11, registrada en DL-170: «se celebra un acto, nunca un número». En la v1 la estimación es solo del
+profesional (ED-D21), así que la app no celebra nada de fuerza, y el ejemplo del juicio («Primera vez con 82,5 kg × 5»)
+queda descartado. Si una etapa posterior muestra algo a la persona, se celebra el acto (por ejemplo, «Registraste las
+4 series»), nunca la carga ni la estimación.
 
 **De V3, lo que se conserva como está:** el acceso transversal a otras áreas («Otras áreas», TB-54; D-V3-01); los
 gráficos por fecha real y por ejercicio (D-V3-06); ninguna activación conjunta de las áreas (D-V3-08); y la
@@ -1684,12 +1729,29 @@ Es el precio de guiar, y se mide aparte.
 | Etapa | Fechas | Partes | Se integra | Se mide |
 |---|---|---|---|---|
 | 0 · Aprobación | mié 11 y jue 12 | Esta actualización (V3, DJ-1 a DJ-16 y DL-171); las maquetas corregidas; ED-00 | Esta declaración, si Dirección la aprueba | La línea de base en `main` y la de accesibilidad |
-| 1 · P0 y el método | jue 12 a sáb 14 | En el website: ED-01 a ED-07, ED-60 a ED-63 y ED-65. En el dominio: ED-71 y el contrato de ED-70 | El website. **Ojo:** `render.yaml` reconstruye la API con cualquier cambio en `packages/domain/**`, y varias de estas partes lo tocan (los textos de ED-01, ED-03, ED-05, ED-06 y ED-63, ED-71 y el contrato de ED-70; en la etapa 2, ED-11, ED-15 y ED-22): integrarlas redespliega la API y cierra la IP del operador. Agruparlas hasta la ventana del vie 20 o aceptar más redespliegues lo decide Dirección (DL-167) | A, B y C con el script |
+| 1 · P0 y el método | jue 12 a sáb 14 | En el website: ED-01 a ED-07, ED-60 a ED-63 y ED-65. En el dominio: ED-71 (el contrato de ED-70 va en la rama de la API: etapa 2) | El website, y lo del dominio según «Los redespliegues» (abajo) | A, B y C con el script |
 | 2 · Lo común, Entrenamiento y la API | dom 15 a mié 18 | ED-10 a ED-18 y ED-20 a ED-25. En la rama de la API, todo lo que va en la ventana: ED-70, ED-72, ED-74, ED-08, ED-13, ED-64 y API-PLN-01 a 03 (la ventana se adelanta al vie 20 para darle tres días a la APK). En la rama de la APK: ED-70, sobre la candidata de UF-01 (WP-USO-FINAL) y del vidrio (WP-APP-VUELTA-2) | El website, con su CI y sus capturas | A y AC |
 | **Corte** | **mié 18, 20 h** | Lo que sigue depende de §8.1 | | |
-| 3 · Nutrición, pedir información y la fuerza en el website | jue 19 a dom 22 | ED-30 a ED-34, ED-40 y ED-41; ED-72 (el cuadro), ED-73, ED-75, ED-76 y ED-74 (la métrica). **La API, en la única ventana de redespliegue: el vie 20**, con todo lo de la API de este paquete y API-PLN-01 a 03, antes que la APK | La API el vie 20; después, el website | B, BC, C y AF |
+| 3 · Nutrición, pedir información y la fuerza en el website | jue 19 a dom 22 | ED-30 a ED-34, ED-40 y ED-41; ED-72 (el cuadro), ED-73, ED-75, ED-76 y ED-74 (la métrica). **Lo que cambia la conducta de la API, en su ventana: el vie 20**, con todo lo de la API de este paquete y API-PLN-01 a 03, antes que la APK | La API el vie 20; después, el website | B, BC, C y AF |
 | 4 · La APK, P2 y cierre | lun 23 y mar 24 | La candidata con ED-70 (y UF-01 y el vidrio de la APK), construida en Actions después de la ventana, publicada y probada en el teléfono de Dirección. P2 por hojas: ED-50, ED-51, ED-55, ED-56 y el resto. La evidencia y la galería de capturas | Lo que esté verde | Todo, con la corrida final |
 | Congelamiento | mié 25 | — | Nada más | — |
+
+**Los redespliegues** (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección; DL-167):
+- `render.yaml` reconstruye la API con cualquier cambio en `packages/domain/**`, y varias partes lo tocan (los textos
+  de ED-01, ED-03, ED-05, ED-06 y ED-63, y ED-71; en la etapa 2, ED-11, ED-15 y ED-22). Si el cambio no altera lo que la
+  API acepta o devuelve (funciones que solo usa el website: textos, estados de guardado, cálculos de pantalla), se
+  integra cuando está verde, sin ventana. Cada parte se clasifica con este criterio al integrarla.
+- Lo que cambia la conducta de la API (rutas, migraciones, validaciones, el contrato de ED-70) va en la ventana del
+  vie 20.
+- La IP del operador (la regla de entrada que Dirección abre en la base de `test` para cargar datos directo) solo
+  importa cuando hay una carga directa en la base, y se pide después del último merge del día. No hacen falta ventanas
+  fijas por ella.
+
+**El orden con los otros paquetes** (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección):
+- WP-USO-FINAL (DL-169) y WP-APP-VUELTA-2 (DL-170) se integran antes que este paquete (DL-167 y DL-171), en ese orden,
+  para que el índice de DEUDA_LEGAJO no choque;
+- UF-06 (lo que la persona puede pedir de sus datos) y UF-11 (el segundo factor), de WP-USO-FINAL, se integran antes que
+  la API de fuerza (ED-72 y ED-74), o en la misma ventana.
 
 ### 8.1 El punto de corte: el mié 18 a las 20 h
 
@@ -1701,8 +1763,9 @@ Es el precio de guiar, y se mide aparte.
 3. **Dentro de la fuerza, el orden de caída:** primero ED-74 (la curva, que hasta que la app nueva junte series tiene
    pocos puntos), después ED-75, después ED-76 y por último ED-73. ED-70 y ED-71 quedan; ED-72 queda si su API entra en
    la ventana (punto 4). Si caen ED-72 y también ED-70, no queda ninguna fuente hasta la próxima APK.
-4. **La ventana del vie 20:** lo que no esté verde en la rama de la API el jue 19 a las 20 h no entra. El orden de
-   caída: API-PLN-02 y 03, ED-74, ED-13, API-PLN-01, ED-72, ED-64, ED-08 y, último, ED-70.
+4. **La ventana del vie 20** (la de lo que cambia la conducta de la API): lo que no esté verde en la rama de la API el
+   jue 19 a las 20 h no entra. El orden de caída: API-PLN-02 y 03, ED-74, ED-13, API-PLN-01, ED-72, ED-64, ED-08 y,
+   último, ED-70.
 5. **La APK:** la candidata se construye solo con la API ya desplegada en `test`. Si el lun 23 la API con ED-70 no está
    en `test`, la candidata sale sin ED-70 y DL-171 deja escrita la regla conservadora: hasta la próxima APK, solo
    cuenta la fuente (a).
@@ -1734,7 +1797,7 @@ Es el precio de guiar, y se mide aparte.
 | **Dos caminos (asistente y estación)** | Doble superficie, comportamientos distintos | Comparten piezas; TEST-EDP-021 compara el borrador que deja cada uno |
 | **Los presets de BE se leen como recomendación** | Pregunta del tribunal; choca con INV-06-143 | Sin ejercicios, alimentos ni cargas; rótulo; validación de Dirección (ED-D2) |
 | **El bucle del autoguardado y el conflicto falso** | Subidas repetidas de hasta 700 KB y rechazos auditados; un profesional que toca «Cargar la versión guardada» y pierde lo escrito | ED-60 y ED-61, en la etapa 1, con el recorrido de la respuesta perdida. El límite de 16 KB ya no es un riesgo (DL-168) |
-| **El redespliegue de la API** | Cada redespliegue cierra la IP del operador en Render | Una sola ventana, el vie 20, acordada con Dirección; la APK, después |
+| **El redespliegue de la API** | Cada cambio en `packages/domain/**` la reconstruye | Lo que cambia su conducta, en la ventana del vie 20, y la APK después; lo demás, sin ventana; la IP del operador, después del último merge del día (§8) |
 | **La memoria de la máquina (5,9 GB)** | No se puede levantar el website ni la API locales | La CI hace las capturas y los recorridos; acá, renders de a uno |
 | **La APK congelada el 25/11** | Las semanas se ven todas juntas hasta TB-44 | ED-D11 lo dice en pantalla; la app de la persona ya no bloquea la activación (DJ-5) |
 | **La densidad de la estación** | Contraste, foco y zoom al 200 % se rompen | Contraste, T13 y recorridos por teclado en cada parte; capturas a 1280, 1440 y 1920 |
@@ -1743,9 +1806,9 @@ Es el precio de guiar, y se mide aparte.
 | **«Persona» en textos que comparte la APK** | La próxima candidata cambia textos | Se listan antes; T13 en las dos superficies; los textos legales con versión, aparte |
 | **Una pregunta del tribunal: «¿BE no prohibía estimar el 1RM?»** | Una contradicción aparente con el legajo | DL-171 registra la decisión de Dirección, qué enmienda y por qué; el legajo no se edita |
 | **Citar una fuente retractada o los números de V3** | Un error en la tesis | Hughes y colaboradores (2020) no se cita: está retractada. La cita de los 330 kg de V3 se corrige antes de usarla (§13.2) |
-| **Una estimación que viaja** | La estimación sale del área por la referencia del % RM del plan (RES-06) | ED-76 escribe el método y la fecha, nunca el valor (TEST-EDP-066); sin fila en la matriz §3.1, no viaja |
+| **Una estimación que viaja** | La estimación sale del área por la referencia del % RM del plan (RES-06) | ED-76 escribe el método y la fecha, nunca el valor (TEST-EDP-066); sin fila en la matriz §3.1, no viaja. Con el % y la carga del plan se deduce la estimación (72,5 ÷ 0,75 ≈ 96,7): se acepta, porque es un dato de la propia persona y no expone nada a terceros (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección; DL-171) |
 | **Pocos datos para la curva** | Con «Hipertrofia 8-12 · RIR 2», casi todo queda orientativo o fuera, y las series de antes no cuentan | La serie observada (a) cubre el arranque; la tarjeta dice qué hace falta; la curva es lo primero que cae |
-| **El profesional entra sin segundo factor (UF-11) y la persona no puede pedir sus datos (UF-06)** | Pantallas nuevas con datos de salud | Solo en `test`, con la cohorte sintética y «Ocultar nombres»; antes de datos reales, UF-11 y UF-06 (el gate de WP-USO-FINAL); la observación entra en lo que la persona puede pedir (ED-D21) |
+| **El profesional entra sin segundo factor (UF-11) y la persona no puede pedir sus datos (UF-06)** | Pantallas nuevas con datos de salud | Las pruebas y la evidencia de este paquete, solo en `test`, con la cohorte sintética y «Ocultar nombres»; UF-06 y UF-11 (WP-USO-FINAL) se integran antes que la API de fuerza (ED-72 y ED-74), o en la misma ventana (§8); la observación entra en lo que la persona puede pedir (ED-D21) |
 | **El asistente borra lo que no muestra** | Se pierden valores por serie al pasar por él | El oráculo de ida y vuelta (TEST-EDP-055) |
 | **Presets que pisan datos** | Se pierden cargas propias | DJ-8: se conservan, con vista previa (TEST-EDP-013) |
 | **El vidrio del website** | Contraste, foco o rendimiento que se rompen con la transparencia | ED-18 es una hoja: mide en el peor punto, vuelve a opaco con `forced-colors` y con la transparencia reducida y, si no da, el website queda mate |
