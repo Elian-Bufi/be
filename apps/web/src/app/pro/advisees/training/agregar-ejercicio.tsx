@@ -8,8 +8,9 @@
  * - **Busca al enviar** (Enter o «Buscar»). Una búsqueda que falla dice su motivo y se reintenta: no es «No encontramos
  *   ejercicios con ese nombre» (B10-10:41). Una sin resultados dice qué se buscó y ofrece «Limpiar búsqueda», que vacía
  *   el campo (y el filtro de los habituales) y devuelve el foco al campo (bloque 5 del encargo de consolidación).
- * - **Elegir no cierra el cajón:** el ejercicio se suma a la sesión, con una serie y sin criterio, y el cajón lo
- *   anuncia. Se pueden sumar varios seguidos; se cierra con «Cerrar» o con Escape.
+ * - **ED-21: se marcan varios y entran juntos.** Una casilla por fila (y los habituales, con un toque); lo creado a mano
+ *   o importado queda marcado. Abajo, «Agregar 3 a Piernas A», con una prescripción opcional para todos (ED-22): entran
+ *   en el orden marcado, y nada entra antes de «Agregar» (`varios-a-la-vez.ts`).
  * - «Crear manualmente» e «Importar desde wger» se abren adentro, con «Volver a la búsqueda».
  * - Al abrirse, el foco va al campo de búsqueda; cada vez que se abre, empieza vacío.
  * - Si los ejercicios habituales no se pueden leer, se dice: no es «todavía no marcaste ninguno».
@@ -24,6 +25,9 @@ import {
   COPY_HABITUALES,
   COPY_INTEGRACIONES,
   habitualesQueCoinciden,
+  leerPrescripcion,
+  vistaPreviaDePrescripcion,
+  type PrescripcionLeida,
   nombreAlternativoComoAclaracion,
   zonasEnUnRenglon,
   type EjercicioDeCatalogo,
@@ -42,6 +46,7 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
 import { ImportacionDeWger } from './importacion';
+import { alternarMarcado, COPY_VARIOS_A_LA_VEZ as V, sesionDeDonde } from './varios-a-la-vez';
 
 type Modo = 'buscar' | 'manual' | 'importar';
 
@@ -55,23 +60,39 @@ export function AgregarEjercicio({
   abierto,
   deDonde,
   habituales,
-  onElegir,
+  onAgregar,
   onCerrar,
 }: {
   abierto: boolean;
   /** A qué sesión se le suma: «Fuerza: progresión · A · Tren inferior». */
   deDonde: string | null;
   habituales: EjerciciosHabituales;
-  onElegir: (e: EjercicioDeCatalogo) => void;
+  /** ED-21: los marcados, en el orden en que se marcaron, y la prescripción para todos (o `null`). */
+  onAgregar: (marcados: readonly EjercicioDeCatalogo[], prescripcion: PrescripcionLeida | null) => void;
   onCerrar: () => void;
 }) {
   const [modo, setModo] = useState<Modo>('buscar');
+  const [marcados, setMarcados] = useState<readonly EjercicioDeCatalogo[]>([]);
+  const [linea, setLinea] = useState('');
+  const [falta, setFalta] = useState(false);
   // El campo de búsqueda: al abrirse el cajón, el foco va ahí.
   const campo = useRef<HTMLInputElement>(null);
-  // Cada vez que se abre, empieza por la búsqueda.
+  // Cada vez que se abre, empieza por la búsqueda, sin nada marcado.
   useEffect(() => {
-    if (abierto) setModo('buscar');
+    if (!abierto) return;
+    setModo('buscar');
+    setMarcados([]);
+    setLinea('');
+    setFalta(false);
   }, [abierto]);
+  const lectura = linea.trim() === '' ? null : leerPrescripcion(linea);
+  const agregar = () => {
+    if (marcados.length === 0) return setFalta(true);
+    // Lo que no se entiende no se aplica: se corrige o se borra antes (ED-22, nunca adivina).
+    if (lectura && !lectura.ok) return;
+    onAgregar(marcados, lectura?.ok ? lectura.leida : null);
+    onCerrar();
+  };
   return (
     <Cajon
       abierto={abierto}
@@ -82,7 +103,22 @@ export function AgregarEjercicio({
       pie={
         modo === 'buscar' ? (
           <>
-            <p className="nota agregar-item__antes">El ejercicio se agrega con una serie, sin repeticiones ni criterio: los completás en la sesión. {COPY_ENTRENAMIENTO.catalogoSintetico}</p>
+            <label className="agregar-ejercicio__para-todos">
+              <span>{V.prescripcionParaTodos}</span>
+              <input type="text" value={linea} maxLength={80} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
+              <span id="prescripcion-para-todos" className={lectura && !lectura.ok ? 'campo__error' : 'nota'}>
+                {!lectura ? V.prescripcionAyuda : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
+              </span>
+            </label>
+            <p className="nota agregar-item__antes">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>
+            {falta && marcados.length === 0 ? (
+              <p className="campo__error" role="alert">
+                {V.sinMarcados}
+              </p>
+            ) : null}
+            <button type="button" className="boton boton--primario" data-agregar-marcados onClick={agregar}>
+              {V.agregar(marcados.length, sesionDeDonde(deDonde))}
+            </button>
             <button type="button" className="boton boton--quieto" onClick={() => setModo('manual')}>
               <Icono nombre="mas" tamano={18} />
               {COPY_ENTRENAMIENTO.crearManualmente}
@@ -95,7 +131,15 @@ export function AgregarEjercicio({
         ) : null
       }
     >
-      <ContenidoDeAgregarEjercicio modo={modo} alCambiarDeModo={setModo} campo={campo} habituales={habituales} onElegir={onElegir} />
+      <ContenidoDeAgregarEjercicio
+        modo={modo}
+        alCambiarDeModo={setModo}
+        campo={campo}
+        habituales={habituales}
+        marcados={marcados}
+        onMarcar={(e) => setMarcados((m) => alternarMarcado(m, e))}
+        onCreado={(e) => setMarcados((m) => (m.some((x) => x.versionId === e.versionId) ? m : [...m, e]))}
+      />
     </Cajon>
   );
 }
@@ -106,19 +150,25 @@ function ContenidoDeAgregarEjercicio({
   alCambiarDeModo,
   campo,
   habituales,
-  onElegir,
+  marcados,
+  onMarcar,
+  onCreado,
 }: {
   modo: Modo;
   alCambiarDeModo: (m: Modo) => void;
   campo: RefObject<HTMLInputElement | null>;
   habituales: EjerciciosHabituales;
-  onElegir: (e: EjercicioDeCatalogo) => void;
+  marcados: readonly EjercicioDeCatalogo[];
+  onMarcar: (e: EjercicioDeCatalogo) => void;
+  /** Lo creado a mano o importado queda marcado. */
+  onCreado: (e: EjercicioDeCatalogo) => void;
 }) {
   const { token, sesionPerdida } = useEntrenamiento();
   const id = useId();
   const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState<Busqueda>({ tipo: 'sin-buscar' });
-  const [agregado, setAgregado] = useState<{ readonly nombre: string; readonly veces: number } | null>(null);
+  const [creado, setCreado] = useState<string | null>(null);
+  const estaMarcado = (versionId: string) => marcados.some((m) => m.versionId === versionId);
   // El ejercicio cuyo detalle (imagen y zonas) está abierto debajo de su fila: uno por vez.
   const [detalle, setDetalle] = useState<string | null>(null);
   const pedido = useRef(0);
@@ -150,8 +200,8 @@ function ContenidoDeAgregarEjercicio({
     campo.current?.focus();
   };
   const elegir = (e: EjercicioDeCatalogo) => {
-    onElegir(e);
-    setAgregado((a) => ({ nombre: e.name, veces: (a?.veces ?? 0) + 1 }));
+    onCreado(e);
+    setCreado(e.name);
   };
 
   if (modo === 'manual') {
@@ -209,7 +259,8 @@ function ContenidoDeAgregarEjercicio({
 
       {/* Lo que se acaba de sumar, dicho donde la persona está mirando: el editor quedó detrás del velo. */}
       <p className="agregar-item__agregado" role="status" aria-live="polite" data-agregado>
-        {agregado ? `Agregado: ${agregado.nombre}${agregado.veces > 1 ? ` (van ${agregado.veces})` : ''}. Podés sumar otro o cerrar.` : null}
+        {creado ? `${V.creadoYMarcado(creado)} ` : ''}
+        {marcados.length > 0 ? `${V.marcados(marcados.length)}: ${marcados.map((m) => m.name).join(', ')}.` : null}
       </p>
 
       <section className="agregar-item__habituales" aria-labelledby={`${id}-habituales`} data-habituales="ejercicios">
@@ -218,7 +269,7 @@ function ContenidoDeAgregarEjercicio({
           {COPY_HABITUALES.misHabituales}
           {habituales.habituales.length > 0 ? (
             <span className="nota" data-habituales-coinciden={filtro ? alaVista.length : undefined}>
-              {filtro ? COPY_HABITUALES.coinciden(alaVista.length, habituales.habituales.length, filtro) : 'Los que marcaste: se agregan con un clic.'}
+              {filtro ? COPY_HABITUALES.coinciden(alaVista.length, habituales.habituales.length, filtro) : 'Tocá uno para marcarlo; entran con «Agregar».'}
             </span>
           ) : null}
         </h3>
@@ -241,8 +292,8 @@ function ContenidoDeAgregarEjercicio({
           <ul className="agregar-item__fichas">
             {alaVista.map((h) => (
               <li key={h.exerciseId}>
-                <button type="button" className="boton boton--quieto boton--compacto" aria-label={`Agregar ${h.name}`} onClick={() => elegir(h)}>
-                  <Icono nombre="mas" tamano={18} />
+                <button type="button" className="boton boton--quieto boton--compacto" aria-pressed={estaMarcado(h.versionId)} aria-label={V.marcar(h.name)} onClick={() => onMarcar(h)}>
+                  <Icono nombre={estaMarcado(h.versionId) ? 'tilde' : 'mas'} tamano={18} />
                   {h.name}
                 </button>
               </li>
@@ -342,9 +393,9 @@ function ContenidoDeAgregarEjercicio({
                           >
                             <Icono nombre="habitual" tamano={18} />
                           </button>
-                          <button type="button" className="boton boton--secundario boton--compacto" aria-label={`Elegir ${ej.name}`} onClick={() => elegir(ej)}>
-                            Elegir
-                          </button>
+                          <label className="agregar-ejercicio__marca">
+                            <input type="checkbox" checked={estaMarcado(ej.versionId)} onChange={() => onMarcar(ej)} aria-label={V.marcar(ej.name)} data-marcar-ejercicio />
+                          </label>
                         </td>
                       </tr>
                       {abierto ? (

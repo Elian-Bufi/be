@@ -92,6 +92,7 @@ import { PrimerUso } from '../../../../components/primer-uso';
 import { ArmazonDelAsistente } from '../asistente/asistente';
 import { COPY_ASISTENTE as CA, pasoPedido, pasoQueSigue, sePuedeAvanzar, type PasoDelAsistente } from '../asistente/paso-que-sigue';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
+import { prescripcionesDeLosMarcados } from './varios-a-la-vez';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
 import { compararEntrenamiento } from '../comparar-versiones';
 import { AntesDeActivar } from '../cuadro-antes-de-activar';
@@ -1832,10 +1833,10 @@ export function EditorDePlan({
         abierto={agregando && !!sesion}
         deDonde={dondeSeAgrega}
         habituales={ejerciciosHabituales}
-        onElegir={(e) => {
-          setNombres((n) => ({ ...n, [e.versionId]: e.name }));
-          // El ejercicio nace con una serie, sin repeticiones ni criterio: se completan en la sesión.
-          cambiar((x) => (lasSesiones(x)[k]!.prescriptions.push({ exerciseVersionId: e.versionId, sets: [{ repetitions: null }], intensity: null }), x));
+        onAgregar={(marcados, prescripcion) => {
+          setNombres((n) => ({ ...n, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.name])) }));
+          // ED-21: entran juntos, en el orden marcado; sin prescripción para todos, cada uno con una serie para completar.
+          cambiar((x) => (lasSesiones(x)[k]!.prescriptions.push(...prescripcionesDeLosMarcados(marcados, prescripcion)), x));
         }}
         onCerrar={() => setAgregando(false)}
       />

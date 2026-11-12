@@ -16025,3 +16025,23 @@ p.cifra-del-espacio__desglose {
 .area__accion-del-plan {
   margin: 0.5rem 0 0;
 }
+
+/* ED-21 · Elegir varios ejercicios a la vez: la casilla de cada fila y la prescripción para todos, en el pie del cajón. */
+.agregar-ejercicio__marca {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.agregar-ejercicio__marca input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.agregar-ejercicio__para-todos {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.25rem;
+}
