@@ -16251,6 +16251,12 @@ p.cifra-del-espacio__desglose {
   font-size: 0.85em;
 }
 
+/* En el día tipo elegido el fondo es el del texto: la nota hereda el color, como la cuenta (AA en los dos temas). */
+.segmento:has(input:checked) .segmento__nota {
+  color: inherit;
+  opacity: 0.85;
+}
+
 .comida-del-editor__agregar-opcion {
   display: flex;
   flex-wrap: wrap;
@@ -16360,7 +16366,7 @@ p.cifra-del-espacio__desglose {
 .chip-de-zona {
   min-height: 2.25rem;
   padding: 0.25rem 0.75rem;
-  border: 1px solid var(--borde-fuerte, var(--borde));
+  border: 1px solid var(--borde-control);
   border-radius: 999px;
   background: transparent;
   color: var(--texto);
