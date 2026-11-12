@@ -1744,6 +1744,15 @@ website (EDT-21 en adelante), el 2026-11-12. Ninguna cambia la forma de un contr
 | EDT-33 | ED-23 | No se suma «Detalle» de la serie en un cuadro: una serie tiene cinco campos en el contrato (repeticiones, RIR, carga, descanso y nota) y los cinco ya están en su fila; el tempo y los parámetros por serie no existen (DJ-13) | Un cuadro que repite la fila |
 | EDT-34 | ED-14 | «Lo que llevás armado» se ve desde el paso 2 y se deduce del borrador (no se guarda): la estructura y, por sesión, sus ejercicios, lo que falta prescribir y sus días, hasta ocho sesiones | Guardarlo como un resumen aparte del asistente |
 
+**Ratificación (2026-11-12).** Dirección escribió «Ratifico todo como recomendaste y ok para integrar»:
+- EDT-01 a EDT-20 quedan ratificadas. En EDT-04, el código del error plegado va solo en el website del profesional y
+  sin datos de la persona.
+- EDT-21 a EDT-34 se aplican con la delegación del mismo día («Okey a tus recomendaciones») y quedan ratificadas como se
+  recomendaron.
+- ED-24, «Duplicar el día»: copia las sesiones de ese día a otro día.
+- ED-11: las plantillas van como una pestaña más de la galería, y el borrador anota de qué plantilla salió.
+- Las dos quedan para la próxima tanda, porque no son parte del website integrado hoy.
+
 ## 7. Medición: antes y después
 
 **El mismo script:** `flujos-de-planificacion.mjs`, con sus 73 tareas (A01-A32, B01-B27 y C01-C14, sin B28, que es un
