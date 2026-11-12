@@ -62,6 +62,9 @@ quedar igual.
 | La etiqueta de estado, sin fondo y corrida 12 dp fuera de Inicio (AV2-T20) | TEST-AV2-005 | Rellena solo sobre un nivel 1, como antes | Rojo |
 | La misma, sin relleno pero con la sangría (AV2-T20) | TEST-AV2-005 | La sangría de 12 dp sin el relleno | Rojo |
 | La misma, rellena donde no se lee (AV2-T20) | TEST-AV2-005 | Rellena también en el nivel 2 translúcido de Azul noche (3,89:1) | Rojo |
+| El aro de hoy, en el acento y sobre el verde el día que se entrenó (AV2-T21) | TEST-AV2-009 | El aro en el acento | Rojo |
+| El mismo, pegado al círculo (AV2-T21) | TEST-AV2-009 | El aro sin la separación del color de la tarjeta | Rojo |
+| El mismo, sin lugar en su columna (AV2-T21) | TEST-AV2-008 | El círculo sin dejar lugar al aro | Rojo |
 
 ## El contraste, medido en el peor punto (TEST-AV2-001)
 
@@ -77,7 +80,7 @@ arriba debajo (sin el brillo: 12,64 · 5,79 · 7,21 · 8,29 · 6,22 en Azul noch
 | Sobre el nivel 2 | 10,66 · 4,89 · 6,08 · 6,99 · 5,25 | 16,25 · 5,43 · 5,05 · 5,07 · 5,01 |
 | `botonTexto` sobre el botón principal, arriba y abajo | 10,68 · 7,78 | 4,73 · 6,75 |
 | `bordeControl` sobre el vidrio y el nivel 2 (mínimo 3) | 3,40 | 3,29 |
-| La tilde sobre `exito` · el círculo · el aro de hoy (mínimo 3) | 12,29 · 8,29 · 7,21 | 5,07 · 4,98 · 4,96 |
+| La tilde sobre `exito` · el círculo · el aro de hoy, en `texto` y por fuera del círculo, contra la tarjeta de los dos lados (mínimo 3) | 12,29 · 8,29 · 12,64 | 5,07 · 4,98 · 15,96 |
 | `tenue` sobre la etiqueta de estado (y la tilde de lo hecho) | 4,60 (6,58) | 4,75 (4,44) |
 | «La que sigue»: acento · tenue · texto | 6,11 · 4,91 · 10,72 | 4,60 · 4,95 · 14,81 |
 | La barra al 88 %: `barraTexto` · `barraElegido`, con cualquier color del tema detrás | 4,58 · 5,70 | 5,51 · 5,29 |

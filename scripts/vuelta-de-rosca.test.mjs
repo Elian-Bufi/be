@@ -1034,14 +1034,17 @@ test('TEST-AV2-008 · las tarjetas chicas: el ícono arriba si el título no ent
   assert.match(tarjeta, /maxFontSizeMultiplier=\{1\.5\} android_hyphenationFrequency="normal">/);
 });
 
-test('TEST-AV2-008 · la tira ocupa la tarjeta entera: el círculo del día mide 34 dp a 360 dp, no la mitad', () => {
-  assert.equal(inicio.ladoDelDiaDeLaTira(360, 1), 34);
+test('TEST-AV2-008 · la tira ocupa la tarjeta entera: el círculo del día y su aro entran en su séptimo, no en el de media tarjeta', () => {
+  // El aro de hoy va por fuera del círculo: 2 dp de separación y 2 de aro, de cada lado (TEST-AV2-009).
+  assert.deepEqual(inicio.ARO_DE_HOY, { grosor: 2, separacion: 2 });
+  const conAro = (lado) => lado + 2 * (inicio.ARO_DE_HOY.grosor + inicio.ARO_DE_HOY.separacion);
+  assert.equal(inicio.ladoDelDiaDeLaTira(360, 1), 32, 'a 360 dp, 32 dp y el aro (con media tarjeta eran 17)');
   assert.equal(inicio.ladoDelDiaDeLaTira(412, 1), 34);
-  assert.equal(inicio.ladoDelDiaDeLaTira(320, 1), 33, 'en un teléfono angosto, lo que entra en su séptimo');
-  assert.equal(inicio.ladoDelDiaDeLaTira(360, ANDROID_13), 38, 'crece con la letra hasta lo que entra');
+  assert.equal(inicio.ladoDelDiaDeLaTira(320, 1), 27, 'en un teléfono angosto, lo que entra en su séptimo');
+  assert.equal(inicio.ladoDelDiaDeLaTira(412, ANDROID_13), 40, 'crece con la letra hasta lo que entra');
   for (let ancho = 300; ancho <= 480; ancho += 4) {
     for (const escala of [1, ANDROID_115, ANDROID_13, 2]) {
-      assert.ok(inicio.ladoDelDiaDeLaTira(ancho, escala) <= Math.floor(inicio.anchoUtilDeInicio(ancho, true) / 7) - 2, `${ancho} dp ×${escala}: el círculo no pasa su columna`);
+      assert.ok(conAro(inicio.ladoDelDiaDeLaTira(ancho, escala)) <= Math.floor(inicio.anchoUtilDeInicio(ancho, true) / 7), `${ancho} dp ×${escala}: el círculo y su aro no pasan su columna`);
     }
   }
   assert.match(sinComentarios(leer('pantallas/tira-de-la-semana.tsx')), /const lado = ladoDelDiaDeLaTira\(width, fontScale\);/);
@@ -1154,13 +1157,28 @@ test('TEST-AV2-009 · la condición que rige después de las correcciones, desde
   assert.equal(tildes(inicio.tiraDeLaSemana('2026-11-11', r.datos, null)), '9 ✓ 11 12 13 14 15', 'corregida a realizada, con tilde; corregida a no realizada, neutra');
 });
 
-test('TEST-AV2-009 · el dibujo: una sola etiqueta para el lector, la tilde en «botonTexto» sobre «exito», hoy con el aro, nunca rojo', () => {
+test('TEST-AV2-009 · hoy, también con una sesión realizada: el día lleva la tilde y el aro', () => {
+  const t = inicio.tiraDeLaSemana('2026-11-11', actividadHasta('2026-11-11', { '2026-11-11': { realizadas: 1, noRealizadas: 0 } }), null);
+  const hoy = t.dias.find((d) => d.hoy);
+  assert.deepEqual([hoy.fecha, hoy.realizada, hoy.hoy], ['2026-11-11', true, true]);
+  assert.equal(t.paraLeer, 'Esta semana: miércoles con sesión realizada. Hoy, miércoles 11');
+});
+
+test('TEST-AV2-009 · el dibujo: una sola etiqueta para el lector, la tilde en «botonTexto» sobre «exito», hoy con un aro neutro por fuera del círculo, nunca rojo', () => {
   const tira = sinComentarios(leer('pantallas/tira-de-la-semana.tsx'));
   assert.match(tira, /<View style=\{\[estilos\.tarjeta, estilo\]\} accessible accessibilityLabel=\{tira\.paraLeer\}>/);
   assert.match(tira, /importantForAccessibility="no-hide-descendants" accessibilityElementsHidden/);
   assert.match(tira, /<Icono nombre="tilde" tamano=\{18\} tono="botonTexto" \/>/);
-  assert.match(tira, /realizado: \{ backgroundColor: COLOR\.exito, borderColor: COLOR\.exito \}/);
-  assert.match(tira, /hoy: \{ borderColor: COLOR\.acento \}/);
+  assert.match(tira, /realizado: \{ backgroundColor: COLOR\.exito \}/);
+  // El aro de hoy envuelve al círculo: su propia vista, con 2 dp de aro y 2 dp de separación del color de la tarjeta, así
+  // que se ve también sobre un día con la tilde. No es el borde del círculo, que sobre el verde no se distinguía.
+  assert.match(tira, /const aro = lado \+ 2 \* \(ARO_DE_HOY\.grosor \+ ARO_DE_HOY\.separacion\);/);
+  assert.match(tira, /<View style=\{\[estilos\.aro, \{ width: aro, height: aro, borderRadius: aro \/ 2 \}, d\.hoy && estilos\.aroDeHoy\]\}>\s*<View style=\{\[estilos\.circulo, \{ width: lado, height: lado, borderRadius: lado \/ 2 \}, d\.realizada && estilos\.realizado\]\}>/);
+  assert.match(tira, /aro: \{ alignItems: 'center', justifyContent: 'center', borderWidth: ARO_DE_HOY\.grosor, padding: ARO_DE_HOY\.separacion, borderColor: 'transparent' \}/);
+  assert.match(tira, /circulo: \{ alignItems: 'center', justifyContent: 'center' \}/, 'el círculo no tiene borde');
+  // Neutro: la tira no se toca, y en la APK el cian es solo para lo que se toca (GUIA I.6).
+  assert.match(tira, /aroDeHoy: \{ borderColor: COLOR\.texto \}/);
+  assert.doesNotMatch(tira, /COLOR\.acento/, 'nada en la tira va en el acento');
   assert.doesNotMatch(tira, /COLOR\.(error|peligro)|nombre="(cerrar|aviso|salteada)"/, 'lo no hecho, neutro');
 });
 

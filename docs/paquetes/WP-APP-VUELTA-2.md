@@ -884,7 +884,7 @@ tres puntos del degradé, con cada destello solo y con los dos juntos; el vidrio
 | Sobre el nivel 2 | 10,66 · 4,89 · 6,08 · 6,99 · 5,25 | 16,25 · 5,43 · 5,05 · 5,07 · 5,01 |
 | `botonTexto` sobre el botón principal, arriba y abajo | 10,68 · 7,78 | 4,73 · 6,75 |
 | `bordeControl` sobre el vidrio y el nivel 2 (mínimo 3) | 3,40 (hoy, 2,49) | 3,29 |
-| La tilde del día sobre `exito` · el círculo · el aro de hoy, contra la tarjeta (mínimo 3) | 12,29 · 8,29 · 7,21 | 5,07 · 4,98 · 4,96 |
+| La tilde del día sobre `exito` · el círculo · el aro de hoy, contra la tarjeta (mínimo 3; el aro, en `texto` y por fuera del círculo desde AV2-T21) | 12,29 · 8,29 · 12,64 (en el acento era 7,21) | 5,07 · 4,98 · 15,96 (era 4,96) |
 | `tenue` sobre la etiqueta de estado | 4,60 | 4,75 |
 | «La que sigue»: acento · tenue · texto | 6,11 · 4,91 · 10,72 | 4,60 · 4,95 · 14,81 |
 | La barra al 88 %: `barraTexto` · `barraElegido`, con cualquier color del tema detrás | 4,58 · 5,70 | 5,51 · 5,29 |
@@ -1202,6 +1202,13 @@ con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
   4,84:1 en Claro; con el vidrio, el nivel 2 de Claro, que es blanco opaco) y sobre el vidrio de nivel 1. Sin relleno y
   sin sangría, alineada con el texto de al lado, donde no pasa: directo sobre el fondo con los destellos (3,69:1 y
   4,37:1) y dentro del nivel 2 translúcido de Azul noche (3,89:1). Lo fijan TEST-AV2-005 y la medición de TEST-AV2-001.
+- **AV2-T21 · El aro de hoy, neutro y por fuera del círculo.** Era el borde de 2 dp del propio círculo, en el acento:
+  contra la regla de GUIA I.6 (en la APK, el cian solo para lo que se toca; la tira no se toca, y parecía un día
+  elegido), y el día en que la persona entrenaba se pintaba sobre el verde de `exito`, donde no se distinguía (1,15:1 en
+  Azul noche y 1,00:1 en Claro): quedaba solo el matiz. Ahora es una vista que envuelve al círculo, con 2 dp de aro en
+  `texto` y 2 dp del color de la tarjeta en el medio, y se mide contra la tarjeta de los dos lados (12,64:1 y 15,96:1).
+  El círculo deja lugar al aro dentro de su séptimo: a 360 dp mide 32 dp. Lo fijan TEST-AV2-009, TEST-AV2-008 y la
+  medición de TEST-AV2-001.
 
 ### 10.5 Hallazgos fuera del paquete
 

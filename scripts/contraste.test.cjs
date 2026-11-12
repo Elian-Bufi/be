@@ -430,8 +430,10 @@ function medicionesDeLaReceta(nombre) {
     medir('el botón principal, abajo', 'botonTexto', { botonFondoFin: t.botonFondoFin }, TEXTO),
     medir('el borde de un campo sobre el vidrio y el nivel 2', 'bordeControl', { ...nivel1, ...nivel2 }, NO_TEXTO),
     medir('la tilde del día sobre el círculo', 'botonTexto', { exito: t.exito }, NO_TEXTO),
-    medir('el círculo del día contra la tarjeta', 'exito', nivel1, NO_TEXTO),
-    medir('el aro de hoy contra la tarjeta', 'acento', nivel1, NO_TEXTO),
+    medir('el círculo del día contra la tarjeta', 'exito', { ...nivel1, ...opacas }, NO_TEXTO),
+    // El aro de hoy va por fuera del círculo, con 2 dp de la tarjeta en el medio: tiene la tarjeta de los dos lados, también
+    // el día en que la persona entrenó (antes era el borde del círculo, en el acento sobre el verde: 1,15:1 y 1,00:1).
+    medir('el aro de hoy, contra la tarjeta de los dos lados', 'texto', { ...nivel1, ...opacas }, NO_TEXTO),
     medir('el texto de la etiqueta de estado', 'tenue', etiqueta, TEXTO),
     medir('la tilde de lo hecho en la etiqueta de estado', 'exito', etiqueta, NO_TEXTO),
     medir('«la que sigue»: el acento', 'acento', destacada, TEXTO),

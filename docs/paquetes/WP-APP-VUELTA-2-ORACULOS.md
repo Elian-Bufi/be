@@ -38,7 +38,9 @@ STEPS                1. Armar los puntos del fondo: `fondoArriba`, `fondo` y `fo
                      2. Medir texto, tenue, acento, éxito y error directo sobre cada punto, sobre `vidrio` encima de
                         cada uno (con y sin el brillo de arriba) y sobre `vidrioInterior` encima del vidrio.
                      3. Medir `botonTexto` sobre `botonFondo` y `botonFondoFin`; `bordeControl` sobre el vidrio y el
-                        nivel 2; la tilde del día sobre `exito`, el círculo y el aro de hoy contra la tarjeta.
+                        nivel 2; la tilde del día sobre `exito`, el círculo contra la tarjeta y el aro de hoy (`texto`,
+                        por fuera del círculo) contra lo que tiene a cada lado: la tarjeta por fuera y, por dentro, los
+                        2 dp de la tarjeta que lo separan del círculo; la tarjeta, de vidrio o `superficie`.
                      4. Medir el tenue y la tilde sobre la etiqueta de estado donde va rellena: sobre el vidrio de nivel
                         1, sobre `superficie` (interruptor apagado o alto contraste, en cualquier nivel) y sobre el
                         nivel 2 cuando es opaco (Claro); y acento, tenue y texto sobre «la que sigue», sobre el vidrio
@@ -300,24 +302,32 @@ TITLE                La tira de la semana, de lunes a domingo, celebra lo hecho 
 LEVEL                APK (lógica pura)
 PRIORITY             P1 — TEST-PRJ-009 y la decisión del 2026-11-08: celebrar sin rachas, lo no hecho neutro
 SOURCES              AV2-08 (WP-APP-VUELTA-2.md:519-539) · AV2-D5 (:976-978) · §3.4 (:315) · DL-106 · DL-170
-PRECONDITIONS        `inicio-de-hoy.ts` (`semanaDeEntrenamiento`) y `lecturas-de-inicio.ts` (el detalle por día).
+PRECONDITIONS        `inicio-de-hoy.ts` (`tiraDeLaSemana`), `lecturas-de-inicio.ts` (el detalle por día) y
+                     `pantallas/tira-de-la-semana.tsx` (el dibujo).
 SYNTHETIC_FIXTURE    Una semana con una realizada el lunes, una realizada con desvío el miércoles, una «No realizada»
-                     el martes, una corregida de «No realizada» a «Realizada», un día por venir y hoy; el domingo y el
-                     lunes siguientes para el cambio de semana.
+                     el martes, una corregida de «No realizada» a «Realizada», un día por venir y hoy; hoy, también con
+                     una sesión realizada; el domingo y el lunes siguientes para el cambio de semana.
 STEPS                1. Armar la semana con el detalle por día de la lectura de 30 días y lo registrado hoy en API-TRN-14.
                      2. Armarla mientras la lectura todavía no llegó.
                      3. Pedir la etiqueta para el lector y la línea de abajo.
+                     4. Leer el dibujo del día de hoy, con y sin una sesión realizada.
 EXPECTED             1 → lunes a domingo de la semana de hoy; el lunes y el miércoles, con la tilde; el martes, neutro
                      como un día sin sesión y como uno por venir; la corregida cuenta como quedó; hoy, con el aro;
                      lo de hoy en API-TRN-14 se suma sin contarlo dos veces. 2 → los siete días sin tildes y sin línea.
                      3 → «Esta semana: lunes y miércoles con sesión realizada. Hoy, lunes 9»; «2 sesiones realizadas esta
-                     semana»; sin ninguna, sin línea.
+                     semana»; sin ninguna, sin línea. 4 → el aro de hoy es neutro (`texto`) y va por fuera del círculo,
+                     con 2 dp del color de la tarjeta en el medio: se ve igual el día en que la persona entrenó. No es el
+                     borde del propio círculo ni va en el acento: la tira no se toca (en la APK, el cian es solo para lo
+                     que se toca, GUIA I.6), y el acento sobre el verde no se distinguía (1,15:1 en Azul noche, 1,00:1
+                     en Claro). El círculo y su aro entran en su séptimo de la tarjeta.
 NEGATIVE_ASSERTIONS  Nunca rojo ni cruz; ninguna cuenta de días seguidos; nada pasa a la semana siguiente (el lunes
-                     arranca vacía); ningún «0».
-AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-009 · …»). Mutación: la tilde también en un día con
-                     solo una «No realizada» → la prueba falla.
+                     arranca vacía); ningún «0». Nada en la tira va en el acento.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-009 · …» y «TEST-AV2-008 · la tira…»). Mutaciones: la
+                     tilde también en un día con solo una «No realizada» → la prueba falla; el aro de hoy en el acento →
+                     la prueba falla; el aro como borde del círculo, sin la separación → la prueba falla.
 ENVIRONMENT          `npm test`
-EVIDENCE_EXPECTED    La CI verde; en el teléfono, la tira con la cuenta sintética y TalkBack con una sola etiqueta (AV2-18)
+EVIDENCE_EXPECTED    La CI verde; en el teléfono, la tira con la cuenta sintética, con una sesión registrada hoy, en los
+                     dos temas, y TalkBack con una sola etiqueta (AV2-18)
 ```
 
 ---

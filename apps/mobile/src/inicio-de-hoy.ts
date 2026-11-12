@@ -189,13 +189,20 @@ export function disposicionDeLasTarjetasChicas(ancho: number, escalaDeLetra: num
 const CIRCULO_DEL_DIA = 34;
 
 /**
- * El círculo de cada día de la tira (AV2-08): crece con la letra hasta ×1,3 y no pasa su columna, un séptimo del ancho
- * de la tarjeta entera. Antes la columna salía de media tarjeta (el ancho de una ficha), y a 360 dp el círculo medía
- * 17 dp: el número no entraba.
+ * El aro de hoy (AV2-T21): va por fuera del círculo, con su grosor y una separación del color de la tarjeta, en dp. Así
+ * se ve también el día en que la persona entrenó: como borde del propio círculo, sobre el verde, no se distinguía.
+ */
+export const ARO_DE_HOY = { grosor: 2, separacion: 2 } as const;
+
+/**
+ * El círculo de cada día de la tira (AV2-08): crece con la letra hasta ×1,3 y, con el aro de hoy alrededor, no pasa su
+ * columna, un séptimo del ancho de la tarjeta entera. Antes la columna salía de media tarjeta (el ancho de una ficha), y
+ * a 360 dp el círculo medía 17 dp: el número no entraba.
  */
 export function ladoDelDiaDeLaTira(ancho: number, escalaDeLetra: number): number {
   const columna = Math.floor(anchoUtilDeInicio(ancho, true) / 7);
-  return Math.min(columna - 2, Math.round(CIRCULO_DEL_DIA * Math.min(Math.max(escalaDeLetra, 1), 1.3)));
+  const aro = 2 * (ARO_DE_HOY.grosor + ARO_DE_HOY.separacion);
+  return Math.min(columna - aro, Math.round(CIRCULO_DEL_DIA * Math.min(Math.max(escalaDeLetra, 1), 1.3)));
 }
 
 /** El nombre del día del plan bajo «Comidas»: solo si el plan tiene más de un tipo de día (AV2-07). */
