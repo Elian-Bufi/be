@@ -361,25 +361,86 @@ test('APK · las etiquetas de la barra se leen sobre el vidrio, pase lo que pase
   assert.deepEqual(fallas, []);
 });
 
+// ─── WP-APP-VUELTA-2 (DL-170): la receta de vidrio, en el peor punto (TEST-AV2-001) ──────────────
+
+/** Lo que se ve con un color translúcido `#rrggbbaa` encima de uno opaco. */
+const capa = (translucido, abajo) => mezcla(translucido.slice(0, 7), abajo, parseInt(translucido.slice(7), 16) / 255);
+
 /**
- * El vidrio de las tarjetas (pulido del 2026-10-04): un brillo translúcido arriba. El texto se mide sobre la mezcla del
- * brillo con la tarjeta, que es donde más se aclara, además de sobre la tarjeta sola.
+ * Los puntos del fondo de la app (`fondo-de-la-app.tsx`): los tres del degradé, cada uno solo, con cada destello solo y
+ * con los dos juntos, en los dos órdenes en que se pueden apilar. Es donde puede caer cualquier cosa que se dibuje
+ * directo sobre el fondo, o una tarjeta de vidrio.
  */
-test('APK · el brillo del vidrio no baja el contraste del texto de las tarjetas', () => {
+function puntosDelFondo(t) {
+  const puntos = {};
+  for (const base of ['fondoArriba', 'fondo', 'fondoAbajo']) {
+    const b = t[base];
+    puntos[base] = b;
+    puntos[`${base} con el destello`] = capa(t.destello, b);
+    puntos[`${base} con el destello azul`] = capa(t.destelloAzul, b);
+    puntos[`${base} con los dos destellos`] = capa(t.destelloAzul, capa(t.destello, b));
+    puntos[`${base} con los dos destellos, al revés`] = capa(t.destello, capa(t.destelloAzul, b));
+  }
+  return puntos;
+}
+
+/**
+ * Las mediciones de la receta (WP-APP-VUELTA-2 §5.2): cada par, en el peor de sus fondos. Devuelve `[qué, frente, mínimo,
+ * relación, fondo]` para que la prueba lo diga y el informe lo copie.
+ * - **El nivel 1** es `vidrio` encima de cada punto del fondo; **el nivel 2**, `vidrioInterior` encima del nivel 1.
+ * - **El brillo de arriba** (`vidrioBrillo`) entra en el nivel 1 para el texto de nivel 1, aunque se apague dentro del
+ *   relleno (AV2-T14, `receta-de-vidrio.ts`). Lo que va adentro (el nivel 2, la etiqueta, «la que sigue» y los campos)
+ *   no queda nunca sobre el brillo: con el brillo debajo, la etiqueta bajaría a 4,00:1, y por eso no llega al contenido.
+ * - **Con el interruptor apagado o con alto contraste** las tarjetas son `superficie`, opaca: la etiqueta de estado y
+ *   «la que sigue», que cambian en toda la app, se miden también sobre ella. Dentro del nivel 2 la etiqueta va sin
+ *   relleno (`ui.tsx`): ahí vale la medición del nivel 2.
+ */
+function medicionesDeLaReceta(nombre) {
+  const t = { ...temaApk(nombre), ...translucidosApk(nombre) };
+  for (const clave of ['fondoArriba', 'fondo', 'fondoAbajo', 'destello', 'destelloAzul', 'vidrio', 'vidrioInterior', 'vidrioBrillo', 'botonFondo', 'botonFondoFin', 'etiquetaFondo', 'destacadaFondo']) {
+    assert.ok(t[clave], `${nombre}: falta el token «${clave}»`);
+  }
+  const fondo = puntosDelFondo(t);
+  const sobre = (fondos, encima) => Object.fromEntries(Object.entries(fondos).map(([k, v]) => [k, capa(encima, v)]));
+  const nivel1 = sobre(fondo, t.vidrio);
+  const nivel1ConBrillo = Object.fromEntries(Object.entries(sobre(nivel1, t.vidrioBrillo)).map(([k, v]) => [`${k}, con el brillo`, v]));
+  const nivel2 = sobre(nivel1, t.vidrioInterior);
+  const opacas = { superficie: t.superficie };
+  const etiqueta = { ...sobre(nivel1, t.etiquetaFondo), ...sobre(opacas, t.etiquetaFondo) };
+  const destacada = { ...sobre(nivel1, t.destacadaFondo), ...sobre(opacas, t.destacadaFondo) };
+  const peor = (frente, fondos) =>
+    Object.entries(fondos)
+      .map(([k, v]) => [contraste(t[frente], v), k])
+      .sort((a, b) => a[0] - b[0])[0];
+  const medir = (que, frente, fondos, minimo) => {
+    const [relacion, donde] = peor(frente, fondos);
+    return [que, frente, minimo, relacion, donde];
+  };
+  const TEXTOS = ['texto', 'tenue', 'acento', 'exito', 'error'];
+  return [
+    ...TEXTOS.map((f) => medir('directo sobre el fondo', f, fondo, TEXTO)),
+    ...TEXTOS.map((f) => medir('sobre el vidrio (nivel 1)', f, { ...nivel1, ...nivel1ConBrillo }, TEXTO)),
+    ...TEXTOS.map((f) => medir('sobre el nivel 2', f, nivel2, TEXTO)),
+    medir('el botón principal, arriba', 'botonTexto', { botonFondo: t.botonFondo }, TEXTO),
+    medir('el botón principal, abajo', 'botonTexto', { botonFondoFin: t.botonFondoFin }, TEXTO),
+    medir('el borde de un campo sobre el vidrio y el nivel 2', 'bordeControl', { ...nivel1, ...nivel2 }, NO_TEXTO),
+    medir('la tilde del día sobre el círculo', 'botonTexto', { exito: t.exito }, NO_TEXTO),
+    medir('el círculo del día contra la tarjeta', 'exito', nivel1, NO_TEXTO),
+    medir('el aro de hoy contra la tarjeta', 'acento', nivel1, NO_TEXTO),
+    medir('el texto de la etiqueta de estado', 'tenue', etiqueta, TEXTO),
+    medir('la tilde de lo hecho en la etiqueta de estado', 'exito', etiqueta, NO_TEXTO),
+    medir('«la que sigue»: el acento', 'acento', destacada, TEXTO),
+    medir('«la que sigue»: el tenue', 'tenue', destacada, TEXTO),
+    medir('«la que sigue»: el texto', 'texto', destacada, TEXTO),
+  ];
+}
+
+test('APK · la receta de vidrio pasa AA en el peor punto, en los dos temas (TEST-AV2-001)', (t) => {
   const fallas = [];
-  for (const nombre of ['AZUL_NOCHE', 'CLARO']) {
-    const opacos = temaApk(nombre);
-    const translucidos = translucidosApk(nombre);
-    for (const [brillo, fondo, frentes] of [
-      ['laminaBrillo', 'laminaTarjeta', ['laminaNombre', 'laminaValor', 'laminaDetalle']],
-      ['vidrioBrillo', 'superficie', ['texto', 'tenue', 'acento']],
-    ]) {
-      assert.ok(translucidos[brillo], `${nombre}: falta el token «${brillo}»`);
-      const [base, alfa] = [translucidos[brillo].slice(0, 7), parseInt(translucidos[brillo].slice(7), 16) / 255];
-      for (const frente of frentes) {
-        const relacion = contraste(opacos[frente], mezcla(base, opacos[fondo], alfa));
-        if (relacion < TEXTO) fallas.push(`${nombre} · ${frente} sobre ${fondo} con ${brillo} = ${relacion.toFixed(2)}:1`);
-      }
+  for (const [nombre, legible] of [['AZUL_NOCHE', 'Azul noche'], ['CLARO', 'Claro']]) {
+    for (const [que, frente, minimo, relacion, donde] of medicionesDeLaReceta(nombre)) {
+      t.diagnostic(`${legible} · ${que} · ${frente}: ${relacion.toFixed(2)}:1 (peor punto: ${donde})`);
+      if (relacion < minimo) fallas.push(`${legible} · ${que} · ${frente} = ${relacion.toFixed(2)}:1 (mínimo ${minimo}:1) en ${donde}`);
     }
   }
   assert.deepEqual(fallas, []);
