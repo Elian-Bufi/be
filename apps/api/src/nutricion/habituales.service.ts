@@ -70,7 +70,7 @@ export class HabitualesNutricionalesService {
    * grasas en gramos por día, como los escribe el profesional en el objetivo (DJ-7: sin «%»). El contrato ya valida los
    * gramos; no hay nada del catálogo que verificar.
    */
-  readonly repartos = new PresetsPropios({
+  readonly repartos: PresetsPropios<typeof GuardarRepartoHabitualRequestSchema> = new PresetsPropios({
     operaciones: { listar: 'API-HAN-06', guardar: 'API-HAN-07', editar: 'API-HAN-08' },
     casoDeUso: 'UC-P15',
     recurso: 'RepartoHabitual',

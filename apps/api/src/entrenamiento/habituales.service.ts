@@ -75,7 +75,7 @@ export class HabitualesDeEntrenamientoService {
    * ED-13 (WP-EDITORES-PROFESIONAL; DL-167) · Las prescripciones habituales (API-HAB-06 a 08): series, intensidad,
    * descanso y bases de una prescripción, sin el ejercicio y sin cargas, validadas como en un plan.
    */
-  readonly prescripciones = new PresetsPropios({
+  readonly prescripciones: PresetsPropios<typeof GuardarPrescripcionHabitualRequestSchema> = new PresetsPropios({
     operaciones: { listar: 'API-HAB-06', guardar: 'API-HAB-07', editar: 'API-HAB-08' },
     casoDeUso: CASO_DE_USO,
     recurso: 'PrescripcionHabitual',

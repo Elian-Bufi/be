@@ -1989,10 +1989,10 @@ EDT-45 (§6.3), a ratificar.
 | API-PLN-01 | Los totales de cada opción, calculados por el servidor (TEST-EDP-028 del lado de la API) |
 
 **Lo que queda, declarado:**
-- **API-PLN-02 y 03** (los rangos por día tipo y por comida): son lo primero que cae (§8.1). En g por kg piden el peso de
-  la última toma, que es de Antropometría, y guardarlos en la versión y en su instantánea toca la activación: van en la
-  próxima tanda, con su decisión. El editor sigue armando el rango del día con los totales (EDT-21 y EDT-22), que ahora
-  puede confirmar con API-PLN-01.
+- **API-PLN-02 y 03** (los rangos por día tipo y por comida): son lo primero que cae (§8.1). En g por kg piden
+  el peso de la última toma, que es de Antropometría, y guardarlos en la versión y en su instantánea toca la
+  activación: van en la próxima tanda, con su decisión. El editor sigue armando el rango del día con los totales
+  (EDT-21 y EDT-22), que ahora puede confirmar con API-PLN-01.
 - **El website** de ED-72 a ED-76, ED-13 y API-PLN-01 es la tarea 2; **la APK** de ED-70, su rama.
 
 ## 9. Riesgos
