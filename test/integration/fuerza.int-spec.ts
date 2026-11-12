@@ -34,7 +34,7 @@ const serie = (extra: Record<string, unknown> = {}) => ({ exerciseId: PRESS, loc
 async function circuito() {
   const c = await circuitoDeEntrenamiento(app, `fuerza-${++contador}`);
   const pro = conSesion(app, c.pro.token);
-  return { c, pro, registrar: (cuerpo: unknown) => pro.post(`/api/v1/advisees/${c.ase.id}/training/observed-sets`).send(cuerpo), listar: () => pro.get(`/api/v1/advisees/${c.ase.id}/training/observed-sets`) };
+  return { c, pro, registrar: (cuerpo: object) => pro.post(`/api/v1/advisees/${c.ase.id}/training/observed-sets`).send(cuerpo), listar: () => pro.get(`/api/v1/advisees/${c.ase.id}/training/observed-sets`) };
 }
 
 describe('ED-72 · la serie observada por el profesional (API-FZA-01 a 03)', () => {
@@ -69,7 +69,7 @@ describe('ED-72 · la serie observada por el profesional (API-FZA-01 a 03)', () 
   it('corregir y anular suceden a la vigente con su motivo y su versión; la anterior queda; dos veces es un conflicto', async () => {
     const x = await circuito();
     const original = (await x.registrar(serie()).expect(201)).body.data;
-    const suceder = (id: string, cuerpo: unknown) => x.pro.post(`/api/v1/training/observed-sets/${id}/successors`).send(cuerpo);
+    const suceder = (id: string, cuerpo: object) => x.pro.post(`/api/v1/training/observed-sets/${id}/successors`).send(cuerpo);
     const corregida = (await suceder(original.observationId, { action: 'CORRECT', expectedVersion: 'v1', reason: 'Eran 4 repeticiones.', observation: { ...serie({ completedRepetitions: 4 }), exerciseId: undefined } }).expect(201)).body.data;
     expect(corregida.action).toBe('CORRECTED');
     expect([corregida.observation.version, corregida.observation.supersedes, corregida.observation.estimate.equivalentRepetitions]).toEqual(['v2', { observationId: original.observationId, reason: 'Eran 4 repeticiones.' }, 5]);
