@@ -35,6 +35,8 @@ export function FormularioDeRecuperacion() {
   const [enviando, setEnviando] = useState(false);
   const [listo, setListo] = useState(false);
   const [intento, setIntento] = useState(0);
+  /** «Pedir otro código» lo confirma con un aviso que toma el foco (y se vuelve a montar en cada pedido). */
+  const [otro, setOtro] = useState<{ readonly texto: string; readonly vez: number } | null>(null);
 
   function mostrar(encontrados: Record<string, string>): boolean {
     setErrores(encontrados);
@@ -52,6 +54,8 @@ export function FormularioDeRecuperacion() {
     setEnviando(false);
     if (r.ok) {
       setCodigo('');
+      // Si ya estaba en «completar», el aviso del paso no cambia: lo dice uno propio, que toma el foco.
+      setOtro(paso.tipo === 'completar' ? { texto: R.otroPedido[r.datos.data.delivery], vez: (otro?.vez ?? 0) + 1 } : null);
       setPaso({ tipo: 'completar', recoveryId: r.datos.data.recoveryId, entrega: r.datos.data.delivery });
       return;
     }
@@ -67,7 +71,7 @@ export function FormularioDeRecuperacion() {
     setFalla(null);
     const encontrados: Record<string, string> = {};
     if (!codigo.trim()) encontrados['rec-codigo'] = R.codigoFalta;
-    else if (!normalizarCodigoDeRecuperacionDeAcceso(codigo)) encontrados['rec-codigo'] = R.codigoInvalido;
+    else if (!normalizarCodigoDeRecuperacionDeAcceso(codigo)) encontrados['rec-codigo'] = R.codigoMalEscrito;
     const problema = problemaDeCredencialLocal(contrasena);
     if (problema) encontrados['rec-contrasena'] = MENSAJE_DE_CAMPO[problema] ?? R.contrasenaAyuda;
     else if (contrasena !== repetida) encontrados['rec-repetida'] = R.noCoinciden;
@@ -77,7 +81,7 @@ export function FormularioDeRecuperacion() {
     if (!r.ok) {
       setEnviando(false);
       if (r.tipo === 'RED') return setFalla({ texto: COPY.resultadoIncierto });
-      if (r.codigo === 'RECOVERY_CODE_INVALID') return setFalla({ texto: R.codigoInvalido, pedirOtro: true });
+      if (r.codigo === 'RECOVERY_CODE_INVALID') return setFalla({ texto: R.codigoInvalido[paso.entrega], pedirOtro: true });
       if (r.codigo === 'RATE_LIMITED') return setFalla({ texto: COPY.demasiadosIntentos });
       if (r.codigo === 'VALIDATION_FAILED') return void mostrar({ 'rec-contrasena': MENSAJE_DE_CAMPO[r.issues[0]?.code ?? ''] ?? MENSAJE_DE_CAMPO.CREDENCIAL_DEMASIADO_CORTA! });
       return setFalla({ texto: COPY.noDisponible });
@@ -148,11 +152,17 @@ export function FormularioDeRecuperacion() {
 
   return (
     <form className="formulario" onSubmit={completar} noValidate>
-      <Aviso tipo="info">
+      {/* Al pasar de «pedir» a «completar», el botón que tenía el foco desaparece: el aviso lo toma, y el lector lo lee. */}
+      <Aviso tipo="info" enfocar={!otro}>
         <p>{paso.entrega === 'EMAIL' ? R.pedidoPorCorreo : R.pedidoAsistido}</p>
         {/* UF-07: sin correo de BE, la dirección de soporte a la que hay que escribir, leída de la API. */}
         {paso.entrega === 'ASSISTED' ? <CanalDeContacto soloSoporte /> : null}
       </Aviso>
+      {otro && !falla ? (
+        <Aviso key={otro.vez} tipo="exito" enfocar>
+          <p>{otro.texto}</p>
+        </Aviso>
+      ) : null}
       <ResumenDeErrores titulo={COPY.resumenDeErrores(lista.length)} errores={lista} intento={intento} />
       {falla ? (
         <Aviso tipo="error" enfocar>

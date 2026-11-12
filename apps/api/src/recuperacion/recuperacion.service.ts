@@ -16,7 +16,7 @@ import {
   problemaDeCredencialLocal,
   respuestaDelPedidoDeRecuperacion,
   VIGENCIA_DEL_CODIGO_ASISTIDO_MS,
-  VIGENCIA_DEL_CODIGO_POR_CORREO_MS,
+  vigenciaDelPedidoDeRecuperacion,
   type RecuperacionAsistidaResponse,
   type RecuperacionPedidaResponse,
   type ValidationIssue,
@@ -97,16 +97,22 @@ export class RecuperacionService {
       const momento = await momentoDeLaBase(tx);
       // El método del correo: el local (con su credencial, si no se suprimió) o, si no hay, la cuenta de Google con ese correo.
       // Un código va solo al correo con que se entra con contraseña.
-      const [cuenta] = await tx.$queryRaw<{ identidadId: string; estado: string; conContrasena: boolean; conGoogle: boolean }[]>`
+      // Una cuenta administrativa no se recupera por acá (la restablece el operador, como en API-ADM-18): su contraseña es
+      // la de la consola, y un código por correo la cambiaría y cerraría sus sesiones con solo controlar el buzón.
+      const [cuenta] = await tx.$queryRaw<{ identidadId: string; estado: string; conContrasena: boolean; conGoogle: boolean; administrativa: boolean }[]>`
         SELECT m."identidad_id"::text AS "identidadId", i."estado_operativo_de_cuenta"::text AS "estado",
                (m."tipo" = 'LOCAL' AND c."metodo_de_acceso_id" IS NOT NULL) AS "conContrasena",
-               (m."tipo" = 'GOOGLE') AS "conGoogle"
+               (m."tipo" = 'GOOGLE') AS "conGoogle",
+               EXISTS (SELECT 1 FROM "rol_administrativo" r WHERE r."identidad_id" = i."id" AND r."estado" = 'VIGENTE') AS "administrativa"
           FROM "metodo_de_acceso" m
           JOIN "identidad" i ON i."id" = m."identidad_id"
           LEFT JOIN "credencial_local" c ON c."metodo_de_acceso_id" = m."id"
          WHERE (m."tipo" = 'LOCAL' AND m."referencia" = ${correo}) OR (m."tipo" = 'GOOGLE' AND m."correo" = ${correo})
          ORDER BY m."tipo" LIMIT 1`;
-      const plan = planDelPedidoDeRecuperacion(cuenta ? { operativa: cuenta.estado === 'OPERATIVA', conContrasena: cuenta.conContrasena, conGoogle: cuenta.conGoogle } : null, correoActivo);
+      const plan = planDelPedidoDeRecuperacion(
+        cuenta ? { operativa: cuenta.estado === 'OPERATIVA', conContrasena: cuenta.conContrasena, conGoogle: cuenta.conGoogle, administrativa: cuenta.administrativa } : null,
+        correoActivo,
+      );
       let recoveryId: string = randomUUID();
       if (plan.guardar && cuenta) {
         const fila = await tx.recuperacionDeAcceso.create({
@@ -115,7 +121,9 @@ export class RecuperacionService {
             origen: 'PEDIDO',
             // Sin proveedor no hay código: el pedido acepta el que dé Administración (UF-D9).
             huella: plan.correo === 'CODIGO' ? huella : null,
-            venceEn: new Date(momento.getTime() + VIGENCIA_DEL_CODIGO_POR_CORREO_MS),
+            // Con correo, lo que vale su código (30 minutos); sin correo, lo que vale el de Administración (24 horas): el
+            // código llega cuando Administración responde, y el pedido lo tiene que esperar.
+            venceEn: new Date(momento.getTime() + vigenciaDelPedidoDeRecuperacion(correoActivo)),
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
           },
           select: { id: true },
@@ -164,8 +172,9 @@ export class RecuperacionService {
       if (!pedidoGuardado) return { ok: false, motivo: 'PEDIDO_INEXISTENTE', sujetoId: null };
       const identidadId = pedidoGuardado.identidadId;
       // La identidad en modo exclusivo (como el cierre y la asistida), y después las filas de la recuperación.
-      const [cuenta] = await tx.$queryRaw<{ estado: string; metodoId: string | null }[]>`
+      const [cuenta] = await tx.$queryRaw<{ estado: string; metodoId: string | null; administrativa: boolean }[]>`
         SELECT i."estado_operativo_de_cuenta"::text AS "estado",
+               EXISTS (SELECT 1 FROM "rol_administrativo" r WHERE r."identidad_id" = i."id" AND r."estado" = 'VIGENTE') AS "administrativa",
                (SELECT m."id"::text FROM "metodo_de_acceso" m JOIN "credencial_local" c ON c."metodo_de_acceso_id" = m."id"
                  WHERE m."identidad_id" = i."id" AND m."tipo" = 'LOCAL' LIMIT 1) AS "metodoId"
           FROM "identidad" i WHERE i."id" = ${identidadId}::uuid FOR NO KEY UPDATE`;
@@ -190,7 +199,8 @@ export class RecuperacionService {
         await tx.recuperacionDeAcceso.update({ where: { id: id as string }, data: { intentosFallidos: intentos, ...(agotado ? { momentoDeAnulacion: ahora } : {}) } });
         return { ok: false, motivo: agotado ? 'PEDIDO_ANULADO_POR_INTENTOS' : 'CODIGO_QUE_NO_VALE', sujetoId: identidadId };
       }
-      if (!cuenta || cuenta.estado !== 'OPERATIVA' || !cuenta.metodoId) return { ok: false, motivo: 'CUENTA_NO_RECUPERABLE', sujetoId: identidadId };
+      // Una cuenta que se volvió administrativa después de pedir tampoco se recupera con un código (API-ADM-18 lo mismo).
+      if (!cuenta || cuenta.estado !== 'OPERATIVA' || !cuenta.metodoId || cuenta.administrativa) return { ok: false, motivo: 'CUENTA_NO_RECUPERABLE', sujetoId: identidadId };
       // El cambio, en una transacción: el código se usa, los demás se anulan, la credencial cambia con su hecho y las
       // sesiones terminan (08 §26.3).
       await tx.recuperacionDeAcceso.update({ where: { id: valido.id }, data: { momentoDeUso: ahora } });

@@ -22,6 +22,13 @@ import { IdOpaco, Instante } from './contratos';
 export const VIGENCIA_DEL_CODIGO_POR_CORREO_MS = 30 * 60 * 1000;
 /** El código de la recuperación asistida vale 24 horas, como el de incorporación de Administración. */
 export const VIGENCIA_DEL_CODIGO_ASISTIDO_MS = 24 * 60 * 60 * 1000;
+/**
+ * Hasta cuándo acepta códigos un pedido (revisión adversarial de la etapa 2): con proveedor de correo, lo que vale su
+ * código (30 minutos); sin proveedor, lo que vale el de Administración (24 horas). Sin esto, quien pedía a las 10 y
+ * recibía el código de Administración a las 14 lo escribía en un pedido vencido, y la pantalla le decía «pedí otro», que
+ * lo volvía a mandar a Administración. Depende del ambiente, nunca de la cuenta.
+ */
+export const vigenciaDelPedidoDeRecuperacion = (correoActivo: boolean): number => (correoActivo ? VIGENCIA_DEL_CODIGO_POR_CORREO_MS : VIGENCIA_DEL_CODIGO_ASISTIDO_MS);
 /** Cinco códigos que no valen sobre un mismo pedido lo anulan: hay que pedir otro. */
 export const INTENTOS_POR_PEDIDO_DE_RECUPERACION = 5;
 /** Diez caracteres de 5 bits cada uno: 50 bits. */
@@ -68,6 +75,11 @@ export interface CuentaParaRecuperar {
   readonly conContrasena: boolean;
   /** Tiene la cuenta de Google asociada. */
   readonly conGoogle: boolean;
+  /**
+   * Tiene un rol administrativo vigente. Su acceso lo restablece el operador con el comando interno, como en API-ADM-18:
+   * el login de Administración usa la misma contraseña, y un código por correo la cambiaría con solo controlar el buzón.
+   */
+  readonly administrativa: boolean;
 }
 
 export interface PlanDelPedidoDeRecuperacion {
@@ -76,17 +88,19 @@ export interface PlanDelPedidoDeRecuperacion {
   /** Qué se manda por correo, si hay proveedor: el código, el aviso de que entra con Google, o nada. */
   readonly correo: 'CODIGO' | 'ENTRA_CON_GOOGLE' | null;
   /** El motivo que queda en la auditoría (nunca en la respuesta). */
-  readonly motivo: 'CUENTA_INEXISTENTE' | 'CUENTA_NO_OPERATIVA' | 'SIN_CONTRASENA' | 'CODIGO_POR_CORREO' | 'PEDIDO_SIN_CORREO';
+  readonly motivo: 'CUENTA_INEXISTENTE' | 'CUENTA_ADMINISTRATIVA' | 'CUENTA_NO_OPERATIVA' | 'SIN_CONTRASENA' | 'CODIGO_POR_CORREO' | 'PEDIDO_SIN_CORREO';
 }
 
 /**
- * Lo que hace el servidor con un pedido. Solo una cuenta operativa con contraseña guarda el pedido; el correo sale si hay
+ * Lo que hace el servidor con un pedido. Una cuenta administrativa no se recupera así: nada se guarda ni se manda. Solo
+ * una cuenta operativa con contraseña guarda el pedido; el correo sale si hay
  * proveedor. A una cuenta sin contraseña (creada con Google) le llega, si hay proveedor, el aviso de que entra con Google
  * (02:302: no tiene contraseña que recuperar). Sin cuenta, o con una que no opera, no pasa nada. La respuesta no depende
  * de esto: la arma `respuestaDelPedidoDeRecuperacion`, que no recibe la cuenta.
  */
 export function planDelPedidoDeRecuperacion(cuenta: CuentaParaRecuperar | null, correoActivo: boolean): PlanDelPedidoDeRecuperacion {
   if (!cuenta) return { guardar: false, correo: null, motivo: 'CUENTA_INEXISTENTE' };
+  if (cuenta.administrativa) return { guardar: false, correo: null, motivo: 'CUENTA_ADMINISTRATIVA' };
   if (!cuenta.operativa) return { guardar: false, correo: null, motivo: 'CUENTA_NO_OPERATIVA' };
   if (!cuenta.conContrasena) return { guardar: false, correo: correoActivo && cuenta.conGoogle ? 'ENTRA_CON_GOOGLE' : null, motivo: 'SIN_CONTRASENA' };
   return correoActivo ? { guardar: true, correo: 'CODIGO', motivo: 'CODIGO_POR_CORREO' } : { guardar: true, correo: null, motivo: 'PEDIDO_SIN_CORREO' };
@@ -108,7 +122,10 @@ export const RecuperacionPedidaResponseSchema = z.strictObject({
   data: z.strictObject({
     /** El pedido, para completarlo. Siempre uno nuevo, exista o no la cuenta. */
     recoveryId: IdOpaco,
-    /** Hasta cuándo vale un código que llegue por correo: 30 minutos. Igual para todos los pedidos. */
+    /**
+     * Hasta cuándo acepta códigos el pedido: 30 minutos con correo (lo que vale su código) y 24 horas sin él (lo que vale
+     * el de Administración). Depende del ambiente, igual para todos los pedidos.
+     */
     expiresAt: Instante,
     /** Cómo llega el código: depende de que BE tenga proveedor de correo, nunca de la cuenta. */
     delivery: z.enum(ENTREGAS_DEL_CODIGO),
@@ -124,7 +141,7 @@ export function respuestaDelPedidoDeRecuperacion(p: { readonly recoveryId: strin
   return {
     data: {
       recoveryId: p.recoveryId,
-      expiresAt: new Date(p.momento.getTime() + VIGENCIA_DEL_CODIGO_POR_CORREO_MS).toISOString(),
+      expiresAt: new Date(p.momento.getTime() + vigenciaDelPedidoDeRecuperacion(p.correoActivo)).toISOString(),
       delivery: p.correoActivo ? 'EMAIL' : 'ASSISTED',
     },
   };
@@ -174,6 +191,7 @@ export const ISSUE_DE_RECUPERACION_ASISTIDA = {
 // ─── Los textos (website, APK, correo y /admin) ─────────────────────────────────────────────────
 
 const MINUTOS_DEL_CODIGO = VIGENCIA_DEL_CODIGO_POR_CORREO_MS / 60000;
+const HORAS_DEL_CODIGO_ASISTIDO = VIGENCIA_DEL_CODIGO_ASISTIDO_MS / 3600000;
 
 export const COPY_RECUPERACION = {
   enlace: '¿Olvidaste tu contraseña?',
@@ -186,8 +204,7 @@ export const COPY_RECUPERACION = {
   pidiendo: 'Pidiendo…',
   /** El mismo texto exista o no la cuenta: no dice si hay una. */
   pedidoPorCorreo: `Si hay una cuenta con contraseña con ese correo, te mandamos un código. Vence a los ${MINUTOS_DEL_CODIGO} minutos: revisá también el correo no deseado.`,
-  pedidoAsistido:
-    'Todavía no mandamos códigos por correo. Escribile a Administración por el canal de ayuda, desde el correo de tu cuenta: te va a dar un código. Cuando lo tengas, escribilo acá.',
+  pedidoAsistido: `Todavía no mandamos códigos por correo. Escribile a Administración por el canal de ayuda, desde el correo de tu cuenta: te va a dar un código, que vale ${HORAS_DEL_CODIGO_ASISTIDO} horas. Cuando lo tengas, escribilo acá. Si cerraste esta pantalla, volvé a «¿Olvidaste tu contraseña?», escribí tu correo y después el mismo código.`,
   conGoogle: '¿Tu cuenta entra con Google? No tiene contraseña: volvé y tocá «Continuar con Google».',
   codigo: 'Código',
   codigoAyuda: 'Diez letras y números. Da igual si lo escribís con guion o en minúsculas.',
@@ -198,9 +215,19 @@ export const COPY_RECUPERACION = {
   noCoinciden: 'Las dos contraseñas no coinciden.',
   cambiar: 'Cambiar la contraseña',
   cambiando: 'Cambiando la contraseña…',
-  /** RECOVERY_CODE_INVALID: el mismo mensaje sea cual sea la causa. */
-  codigoInvalido: `Ese código no vale: puede estar mal escrito, haber vencido (vale ${MINUTOS_DEL_CODIGO} minutos) o ya haberse usado. Revisalo o pedí otro.`,
+  /** Antes de enviar: el código no tiene la forma (diez letras y números). */
+  codigoMalEscrito: 'Revisá el código: son diez letras y números.',
+  /** RECOVERY_CODE_INVALID, según cómo llega el código: el mismo mensaje sea cual sea la causa. */
+  codigoInvalido: {
+    EMAIL: `Ese código no vale: puede estar mal escrito, haber vencido (vale ${MINUTOS_DEL_CODIGO} minutos) o ya haberse usado. Revisalo o pedí otro.`,
+    ASSISTED: `Ese código no vale: puede estar mal escrito, haber vencido (el de Administración vale ${HORAS_DEL_CODIGO_ASISTIDO} horas) o ya haberse usado. Revisalo; si no, pedile otro a Administración por el canal de ayuda.`,
+  } as Readonly<Record<EntregaDelCodigo, string>>,
   pedirOtro: 'Pedir otro código',
+  /** Lo que confirma «Pedir otro código», para que se note que pasó algo (también con un lector de pantalla). */
+  otroPedido: {
+    EMAIL: 'Pedimos otro código. Si hay una cuenta con contraseña con ese correo, te llega en unos minutos.',
+    ASSISTED: 'Empezamos de nuevo: escribí el código que te dio Administración.',
+  } as Readonly<Record<EntregaDelCodigo, string>>,
   listo: 'Listo: cambiaste tu contraseña. Cerramos tus sesiones abiertas en otros dispositivos.',
   entrando: 'Entrando con tu contraseña nueva…',
   irAEntrar: 'Iniciar sesión',

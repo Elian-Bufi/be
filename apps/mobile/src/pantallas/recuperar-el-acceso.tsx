@@ -26,6 +26,8 @@ export function PantallaDeRecuperarElAcceso({ irALogin, alIniciar, subir }: { ir
   const [errores, setErrores] = useState<{ correo?: string; codigo?: string; contrasena?: string; repetida?: string }>({});
   const [falla, setFalla] = useState<{ readonly texto: string; readonly pedirOtro?: boolean } | null>(null);
   const [enviando, setEnviando] = useState(false);
+  /** «Pedir otro código» lo confirma con un aviso propio, que se vuelve a anunciar en cada pedido. */
+  const [otro, setOtro] = useState<{ readonly texto: string; readonly vez: number } | null>(null);
 
   async function pedir() {
     if (enviando) return;
@@ -38,6 +40,7 @@ export function PantallaDeRecuperarElAcceso({ irALogin, alIniciar, subir }: { ir
     subir();
     if (r.ok) {
       setCodigo('');
+      setOtro(paso.tipo === 'completar' ? { texto: R.otroPedido[r.datos.data.delivery], vez: (otro?.vez ?? 0) + 1 } : null);
       return setPaso({ tipo: 'completar', recoveryId: r.datos.data.recoveryId, entrega: r.datos.data.delivery });
     }
     if (r.tipo === 'RED') return setFalla({ texto: COPY.resultadoIncierto });
@@ -51,7 +54,7 @@ export function PantallaDeRecuperarElAcceso({ irALogin, alIniciar, subir }: { ir
     setFalla(null);
     const encontrados: typeof errores = {};
     if (!codigo.trim()) encontrados.codigo = R.codigoFalta;
-    else if (!normalizarCodigoDeRecuperacionDeAcceso(codigo)) encontrados.codigo = R.codigoInvalido;
+    else if (!normalizarCodigoDeRecuperacionDeAcceso(codigo)) encontrados.codigo = R.codigoMalEscrito;
     const problema = problemaDeCredencialLocal(contrasena);
     if (problema) encontrados.contrasena = MENSAJE_DE_CAMPO[problema] ?? R.contrasenaAyuda;
     else if (contrasena !== repetida) encontrados.repetida = R.noCoinciden;
@@ -63,7 +66,7 @@ export function PantallaDeRecuperarElAcceso({ irALogin, alIniciar, subir }: { ir
       setEnviando(false);
       subir();
       if (r.tipo === 'RED') return setFalla({ texto: COPY.resultadoIncierto });
-      if (r.codigo === 'RECOVERY_CODE_INVALID') return setFalla({ texto: R.codigoInvalido, pedirOtro: true });
+      if (r.codigo === 'RECOVERY_CODE_INVALID') return setFalla({ texto: R.codigoInvalido[paso.entrega], pedirOtro: true });
       if (r.codigo === 'RATE_LIMITED') return setFalla({ texto: COPY.demasiadosIntentos });
       if (r.codigo === 'VALIDATION_FAILED') return setErrores({ contrasena: MENSAJE_DE_CAMPO[r.issues[0]?.code ?? ''] ?? R.contrasenaAyuda });
       return setFalla({ texto: COPY.noDisponible });
@@ -114,6 +117,7 @@ export function PantallaDeRecuperarElAcceso({ irALogin, alIniciar, subir }: { ir
       ) : (
         <>
           <Aviso tipo="info" titulo={paso.entrega === 'EMAIL' ? R.pedidoPorCorreo : R.pedidoAsistido} />
+          {otro && !falla ? <Aviso key={otro.vez} tipo="exito" titulo={otro.texto} /> : null}
           {/* UF-07: sin correo de BE, la dirección de soporte a la que hay que escribir, leída de la API. */}
           {paso.entrega === 'ASSISTED' ? <CanalDeContacto soloSoporte /> : null}
           {falla?.pedirOtro ? <Boton texto={R.pedirOtro} tipo="secundario" onPress={() => void pedir()} deshabilitado={enviando} /> : null}

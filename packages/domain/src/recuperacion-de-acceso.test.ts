@@ -18,14 +18,17 @@ import {
   RecuperacionAsistidaResponseSchema,
   RecuperacionPedidaResponseSchema,
   respuestaDelPedidoDeRecuperacion,
+  VIGENCIA_DEL_CODIGO_ASISTIDO_MS,
   VIGENCIA_DEL_CODIGO_POR_CORREO_MS,
+  vigenciaDelPedidoDeRecuperacion,
   type CuentaParaRecuperar,
 } from './recuperacion-de-acceso';
 
-const CON_CONTRASENA: CuentaParaRecuperar = { operativa: true, conContrasena: true, conGoogle: false };
-const SOLO_GOOGLE: CuentaParaRecuperar = { operativa: true, conContrasena: false, conGoogle: true };
-const CERRADA: CuentaParaRecuperar = { operativa: false, conContrasena: false, conGoogle: false };
-const SUSPENDIDA: CuentaParaRecuperar = { operativa: false, conContrasena: true, conGoogle: false };
+const CON_CONTRASENA: CuentaParaRecuperar = { operativa: true, conContrasena: true, conGoogle: false, administrativa: false };
+const SOLO_GOOGLE: CuentaParaRecuperar = { operativa: true, conContrasena: false, conGoogle: true, administrativa: false };
+const CERRADA: CuentaParaRecuperar = { operativa: false, conContrasena: false, conGoogle: false, administrativa: false };
+const SUSPENDIDA: CuentaParaRecuperar = { operativa: false, conContrasena: true, conGoogle: false, administrativa: false };
+const ADMINISTRATIVA: CuentaParaRecuperar = { operativa: true, conContrasena: true, conGoogle: false, administrativa: true };
 
 test('TEST-UF-007 · el pedido guarda un código solo para una cuenta operativa con contraseña; el correo sale solo con proveedor', () => {
   assert.deepEqual(planDelPedidoDeRecuperacion(CON_CONTRASENA, true), { guardar: true, correo: 'CODIGO', motivo: 'CODIGO_POR_CORREO' });
@@ -37,7 +40,25 @@ test('TEST-UF-007 · el pedido guarda un código solo para una cuenta operativa 
     assert.deepEqual(planDelPedidoDeRecuperacion(null, correoActivo), { guardar: false, correo: null, motivo: 'CUENTA_INEXISTENTE' });
     assert.deepEqual(planDelPedidoDeRecuperacion(CERRADA, correoActivo), { guardar: false, correo: null, motivo: 'CUENTA_NO_OPERATIVA' }, 'una cuenta cerrada no recibe nada');
     assert.deepEqual(planDelPedidoDeRecuperacion(SUSPENDIDA, correoActivo), { guardar: false, correo: null, motivo: 'CUENTA_NO_OPERATIVA' }, 'una suspendida tampoco');
+    // Revisión adversarial de la etapa 2: la contraseña de una cuenta administrativa es la de la consola; no se cambia
+    // con un código por correo (la restablece el operador, como dice API-ADM-18).
+    assert.deepEqual(planDelPedidoDeRecuperacion(ADMINISTRATIVA, correoActivo), { guardar: false, correo: null, motivo: 'CUENTA_ADMINISTRATIVA' }, 'una administrativa no guarda ni recibe nada');
   }
+});
+
+test('TEST-UF-008 · sin proveedor de correo, el pedido espera el código de Administración lo que vale ese código (24 horas)', () => {
+  // Revisión adversarial de la etapa 2: la persona pide a las 10 y Administración le da el código a las 14. Con un pedido de
+  // 30 minutos, el código válido caía en un pedido vencido y la pantalla la mandaba a pedir otro, en círculo.
+  assert.equal(vigenciaDelPedidoDeRecuperacion(true), VIGENCIA_DEL_CODIGO_POR_CORREO_MS);
+  assert.equal(vigenciaDelPedidoDeRecuperacion(false), VIGENCIA_DEL_CODIGO_ASISTIDO_MS);
+  const momento = new Date('2026-11-12T13:00:00.000Z');
+  const asistida = respuestaDelPedidoDeRecuperacion({ recoveryId: 'x', momento, correoActivo: false });
+  assert.equal(new Date(asistida.data.expiresAt).getTime() - momento.getTime(), VIGENCIA_DEL_CODIGO_ASISTIDO_MS);
+  // Los textos de la asistida no hablan de los 30 minutos del correo.
+  assert.doesNotMatch(COPY_RECUPERACION.codigoInvalido.ASSISTED, /30 minutos/);
+  assert.match(COPY_RECUPERACION.codigoInvalido.ASSISTED, /24 horas/);
+  assert.match(COPY_RECUPERACION.pedidoAsistido, /24 horas/);
+  assert.match(COPY_RECUPERACION.codigoInvalido.EMAIL, /30 minutos/);
 });
 
 test('TEST-UF-007 · la respuesta no depende de la cuenta: el pedido, 30 minutos y la entrega, que es la del ambiente', () => {

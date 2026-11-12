@@ -9,7 +9,7 @@
  * verdad ni depende de un tercero. Google también es el falso local de DL-138.
  */
 import type { INestApplication } from '@nestjs/common';
-import { VERSION_VIGENTE, VIGENCIA_DEL_CODIGO_POR_CORREO_MS } from '@be/domain';
+import { VERSION_VIGENTE, VIGENCIA_DEL_CODIGO_ASISTIDO_MS, VIGENCIA_DEL_CODIGO_POR_CORREO_MS } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
@@ -224,6 +224,31 @@ describe('TEST-UF-007 · pedir la recuperación responde igual exista o no la cu
     expect(await prisma.recuperacionDeAcceso.findUniqueOrThrow({ where: { id: r.body.data.recoveryId } })).toMatchObject({ origen: 'PEDIDO', huella: null });
   });
 
+  it('una cuenta administrativa no se recupera por correo: el mismo 202, nada guardado ni enviado, y completar no le cambia la contraseña', async () => {
+    // Revisión adversarial de la etapa 2: la contraseña de la consola es la `credencial_local` de la identidad. Con solo
+    // controlar el buzón del administrador, un código por correo la cambiaba y cerraba todas sus sesiones.
+    const a = await administradorListo(app, prisma, `uf03-adm-${randomUUID().slice(0, 6)}`);
+    const antes = correo.recibidos.length;
+    const r = await pedir(app, a.correo).expect(202);
+    expect(Object.keys(r.body.data).sort()).toEqual(['delivery', 'expiresAt', 'recoveryId']);
+    expect(r.body.data.delivery).toBe('EMAIL');
+    expect(await prisma.recuperacionDeAcceso.count({ where: { identidadId: a.id } })).toBe(0);
+    const auditado = await prisma.registroDeAuditoria.findFirstOrThrow({ where: { operacion: 'API-ACC-P1-01', requestId: r.headers['x-request-id'] as string } });
+    expect(auditado).toMatchObject({ resultado: 'RECHAZO', motivo: 'CUENTA_ADMINISTRATIVA', sujetoId: a.id });
+    // Un pedido que quedó de antes del rol (escrito en la base, con un código conocido) tampoco la cambia.
+    const conocido = codigoAlAzar(10);
+    const fila = await prisma.recuperacionDeAcceso.create({
+      data: { identidadId: a.id, origen: 'PEDIDO', huella: huellaDeRecuperacionDeAcceso(entornoDePrueba().jwtSecret, conocido), venceEn: new Date(Date.now() + 10 * 60 * 1000), procedencia: { fuente: 'PRUEBA' } },
+    });
+    await completar(app, fila.id, conocido).expect(422);
+    const rechazo = await prisma.registroDeAuditoria.findFirstOrThrow({ where: { operacion: 'API-ACC-P1-02', resultado: 'RECHAZO', sujetoId: a.id } });
+    expect(rechazo.motivo).toBe('CUENTA_NO_RECUPERABLE');
+    // Ningún correo para el administrador, y la consola sigue entrando con su contraseña de siempre.
+    expect(correo.recibidos.slice(antes).some((m) => m.para === a.correo)).toBe(false);
+    await primerFactor(app, a.correo).expect(201);
+    expect(await prisma.cambioDeCredencial.count({ where: { identidadId: a.id } })).toBe(0);
+  });
+
   it('un correo mal escrito es 422 en su campo; un campo de más, 400', async () => {
     const r = await pedir(app, 'sin-arroba').expect(422);
     expect(r.body.error.details.issues).toEqual([{ code: 'INVALID_LOCAL_IDENTIFIER', path: 'identifier' }]);
@@ -358,6 +383,34 @@ describe('TEST-UF-008 · un código que no vale no cambia nada; el vigente cambi
     await completar(sinCorreo, pedido.recoveryId, ultima).expect(204);
     await login(sinCorreo, persona.correo, NUEVA).expect(201);
     await completar(sinCorreo, pedido.recoveryId, ultima, 'otra-clave-sintetica-uf03').expect(422);
+  });
+
+  it('el orden real de la asistida: la persona pide primero y Administración le da el código horas después; el pedido lo espera 24 horas', async () => {
+    // Revisión adversarial de la etapa 2: sin proveedor, el pedido vencía a los 30 minutos (los del correo) y el código de
+    // Administración, que vale 24 horas, caía en un pedido vencido. La prueba anterior hacía el orden inverso.
+    const a = await administradorListo(app, prisma, `uf03-orden-${randomUUID().slice(0, 6)}`);
+    const persona = await prepararAsesorado(sinCorreo, 'uf03-orden');
+    const pedida = (await pedir(sinCorreo, persona.correo).expect(202)).body.data;
+    expect(pedida.delivery).toBe('ASSISTED');
+    const fila = await prisma.recuperacionDeAcceso.findUniqueOrThrow({ where: { id: pedida.recoveryId } });
+    // El pedido acepta códigos lo que vale el de Administración, y la respuesta lo dice (igual para todos los pedidos).
+    expect(fila.venceEn.getTime() - fila.momentoDeRegistro.getTime()).toBeGreaterThanOrEqual(VIGENCIA_DEL_CODIGO_ASISTIDO_MS - 2000);
+    expect(new Date(pedida.expiresAt).getTime() - fila.momentoDeRegistro.getTime()).toBeGreaterThanOrEqual(VIGENCIA_DEL_CODIGO_ASISTIDO_MS - 2000);
+    // «Horas después»: un pedido igual, registrado hace 31 minutos con la vigencia que escribe la API, sigue aceptando el
+    // código que Administración emite ahora.
+    const tarde = await prisma.recuperacionDeAcceso.create({
+      data: {
+        identidadId: persona.id,
+        origen: 'PEDIDO',
+        huella: null,
+        momentoDeRegistro: new Date(Date.now() - 31 * 60 * 1000),
+        venceEn: new Date(Date.now() - 31 * 60 * 1000 + (fila.venceEn.getTime() - fila.momentoDeRegistro.getTime())),
+        procedencia: { fuente: 'PRUEBA' },
+      },
+    });
+    const codigo = (await adm(app, a.token).post('/admin/access-recoveries').send({ email: persona.correo, rationale: 'Escribió desde el correo de la cuenta.' }).expect(201)).body.data.code as string;
+    await completar(sinCorreo, tarde.id, codigo).expect(204);
+    await login(sinCorreo, persona.correo, NUEVA).expect(201);
   });
 
   it('la base no deja cambiar una credencial sin su cambio registrado, ni tocar un pedido más que en sus intentos, su uso y su anulación', async () => {
