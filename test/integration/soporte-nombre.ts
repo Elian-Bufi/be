@@ -2,8 +2,10 @@
  * WP-USO-FINAL · UF-01 (DL-169): una cuenta anterior, sin nombre. Desde el 2026-11-11 la API no crea cuentas así (el
  * alta exige el nombre), pero existen: son las que se crearon antes, como las de `test`. Para probar «Antes de seguir»
  * (API-ACC-07) y la referencia neutral, se arman como las armaba el alta hasta ese día (UC-P25): la identidad, su perfil
- * propio sin versiones, el control de sesión, el método LOCAL con su credencial y los tres actos del alta. Sin los
- * eventos ni la auditoría del alta, que ninguna de estas pruebas lee. Solo datos sintéticos.
+ * propio sin versiones, el control de sesión, el método LOCAL con su credencial, los tres actos del alta y el hecho
+ * IdentidadCreada con su `registrationIntent`, que lee `/me` (API-ACC-05, `cuenta-propia.service.ts`): todas las altas
+ * lo escribieron siempre (`registro.service.ts`, con correo y con Google). Sin los demás eventos ni la auditoría del
+ * alta, que ninguna de estas pruebas lee. Solo datos sintéticos.
  */
 import type { INestApplication } from '@nestjs/common';
 import { ACTOS_DEL_REGISTRO, VERSION_VIGENTE } from '@be/domain';
@@ -27,6 +29,19 @@ export async function cuentaAnteriorSinNombre(app: INestApplication, etiqueta: s
     await tx.controlDeSesion.create({ data: { identidadId: id } });
     const metodo = await tx.metodoDeAcceso.create({ data: { identidadId: id, tipo: 'LOCAL', referencia: correo, procedencia, momentoDeOcurrencia: ahora } });
     await tx.credencialLocal.create({ data: { metodoDeAccesoId: metodo.id, hash } });
+    // El hecho del alta, como lo escribe `registro.service.ts`: sin él, `/me` no tiene `registrationIntent` y responde 500.
+    await tx.eventoDeDominio.create({
+      data: {
+        tipo: 'IdentidadCreada',
+        identidadId: id,
+        actorId: id,
+        autoriaId: id,
+        procedencia,
+        estadoResultante: 'OPERATIVA',
+        momentoDeOcurrencia: ahora,
+        datos: { registrationIntent: 'ADVISEE' },
+      },
+    });
     const versiones = await tx.versionDeTexto.findMany({ where: { id: { in: ACTOS_DEL_REGISTRO.map((tipo) => VERSION_VIGENTE[tipo].id) } } });
     for (const version of versiones) {
       await tx.actoRegistrable.create({
