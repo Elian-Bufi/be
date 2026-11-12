@@ -173,7 +173,7 @@ export function FiguraDeLaToma({
   return (
     <View>
       {/* La lámina: la familia arriba, compacta (una elección del mapa, distinta de las vistas de la pantalla), y debajo
-          la figura. La figura se recorta en el borde derecho de esta caja (ENCUADRE, en composicion-de-la-figura.ts). */}
+          la figura, entera dentro de esta caja desde AV2-19 (ENCUADRE, en composicion-de-la-figura.ts). */}
       <View style={{ backgroundColor: lamina.fondo, borderRadius: 18, overflow: 'hidden', marginTop: 6, marginBottom: 8 }}>
         {hayPerimetros && hayPliegues ? (
           <View style={{ paddingHorizontal: 8, paddingTop: 8 }}>
