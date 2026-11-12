@@ -1907,7 +1907,7 @@ EDT-21 a EDT-34 (§6.3), a ratificar.
 
 | Parte | Commit | Lo que quedó |
 |---|---|---|
-| ED-31, ED-33 y ED-34 | f10538a9 | En el editor de Nutrición: el total de cada opción al instante, el panel con «Rangos y totales» (el rango del día, DJ-4, y una fila por comida, sin «%») y «Antes de activar» en vivo; «Opción de alimentos» y «Opción de receta» por separado; «+ Comida» con su opción 1; quitar con contenido pregunta (TEST-EDP-029, 032 y 057; ED-30: ningún texto de Nutrición dice «%») |
+| ED-31, ED-33 y ED-34 | 4094e956 | En el editor de Nutrición: el total de cada opción al instante, el panel con «Rangos y totales» (el rango del día, DJ-4, y una fila por comida, sin «%») y «Antes de activar» en vivo; «Opción de alimentos» y «Opción de receta» por separado; «+ Comida» con su opción 1; quitar con contenido pregunta (TEST-EDP-029, 032 y 057; ED-30: ningún texto de Nutrición dice «%») |
 | ED-32 | 574d381b | «Receta nueva» desde la comida, en un cuadro, con «Guardar la receta y agregarla a Merienda» y «Guardar solo en Mis recetas», y la recuperación si el agregado no se puede (TEST-EDP-030 en su parte del website) |
 | ED-40 y ED-41 | 3f5b340e | Las partes plegadas con su cuenta, «Pedir todas» y «Ninguna», el resumen fijo junto al botón, lo que le llega a la persona y el aviso de un pedido pendiente; las dos entradas del vínculo con su subtítulo, los estados en palabras y el vencimiento con hora (TEST-EDP-033, 034, 035 y 058) |
 | ED-23 y ED-24 | 6bbec3c1 | «Copiar la sesión a…» y «Copiar a otra semana», con destino y vista previa; «Copiar el ejercicio a…», «Copiar la prescripción a…» y «Copiar estas series a…» |
