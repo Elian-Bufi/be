@@ -137,15 +137,17 @@ PRECONDITIONS        Un editor de plan con cambios.
 SYNTHETIC_FIXTURE    Respuestas simuladas de la API (sin red): 503, sin respuesta, 400 TOO_BIG, 409, 200.
 STEPS                1. Recorrer los estados con `estadoDeGuardado` (dominio): guardando, sucio, sin poder guardar,
                         fallo, conflicto y guardado con hora y sin hora.
-                     2. Leer `COPY_GUARDADO.noSePudoReintento`.
+                     2. Leer `COPY_GUARDADO.noSePudoReintento` y la barra de cada fallo (`falloEnLaBarra`), también
+                        la de un autoguardado sin respuesta.
                      3. Mirar el componente del estado: el texto, el ícono, «Reintentar» y el detalle técnico.
                      4. Mirar la barra de los dos editores: «Guardar ahora» y su motivo cuando no hay nada que guardar.
 EXPECTED             1 → cada estado es el texto del dominio; «Guardado a las HH:MM» solo después de una respuesta
-                     2xx; después de recargar, «Guardado» sin hora. 2 → nombra «Guardar ahora», no «Guardar
-                     cambios». 3 → un fallo muestra su texto, «Reintentar» y, plegado, la operación y el código
-                     (sin datos de la persona); el texto lleva ícono, no solo color. 4 → «Guardar ahora» existe en
-                     los dos editores, es secundario y, sin nada que guardar, está apagado con `aria-disabled` y su
-                     motivo.
+                     2xx; después de recargar, «Guardado» sin hora. 2 → nombra «Reintentar», la acción que tiene al
+                     lado, nunca «Guardar cambios»; cada fallo dice su motivo (sin respuesta, el texto de DL-168,
+                     también en el autoguardado). 3 → un fallo muestra su texto, «Reintentar» y, plegado, la
+                     operación y el código (sin datos de la persona); el texto lleva ícono, no solo color. 4 →
+                     «Guardar ahora» existe en los dos editores, es secundario y, sin nada que guardar, está apagado
+                     con `aria-disabled` y su motivo.
 NEGATIVE_ASSERTIONS  «Guardado» nunca aparece con un fallo, un conflicto o sin respuesta. Ningún texto de la barra
                      dice «Guardar cambios». El detalle técnico no lleva nombres ni identificadores de la persona.
 AUTOMATION           apps/web/test/estado-de-guardado.test.mjs («TEST-EDP-004 · …») ·

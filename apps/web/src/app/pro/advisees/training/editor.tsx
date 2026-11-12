@@ -388,7 +388,6 @@ export function EditorDePlan({
           setFallo(true);
           setDetalle({ ...detalleDelFallo(actual, horaDelDia(new Date())), motivo: 'SIN_RESPUESTA' });
           autoguardado.informar('SIN_RESPUESTA');
-          if (!automatico) setMensaje({ tipo: 'error', texto: COPY_GUARDADO.sinRespuesta });
           return null;
         }
         const cual = actual?.ok ? cualMande(cuerpoGuardado(actual.datos.data), mandados) : -1;
@@ -435,11 +434,9 @@ export function EditorDePlan({
         setMensaje({ tipo: 'error', texto: COPY_GUARDADO.demasiadoGrande, sinFoco: automatico });
         return null;
       }
-      if (automatico) return null;
-      if (motivo === 'SIN_RESPUESTA') {
-        setMensaje({ tipo: 'error', texto: COPY_GUARDADO.sinRespuesta });
-        return null;
-      }
+      // Sin respuesta, lo dice la barra, con «Reintentar» al lado (ED-03): también en el autoguardado, y sin un segundo
+      // aviso igual que se lleve el foco.
+      if (automatico || motivo === 'SIN_RESPUESTA') return null;
       if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
       setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos del plan que no se pueden guardar.' : mensajeDeFallo(r) });
       return null;

@@ -27,7 +27,8 @@ export function EstadoDeGuardado({
   /** El detalle técnico del último fallo (ED-03). */
   detalle?: DetalleDelFallo | null;
 }) {
-  const { tipo, texto } = estadoDeGuardado(entrada);
+  // El motivo del último fallo viene en su detalle: la barra lo dice con su texto (DL-168), también en el autoguardado.
+  const { tipo, texto } = estadoDeGuardado({ ...entrada, motivoDelFallo: entrada.motivoDelFallo ?? detalle?.motivo ?? null });
   const conFallo = tipo === 'fallo' && !entrada.conflicto;
   return (
     <>

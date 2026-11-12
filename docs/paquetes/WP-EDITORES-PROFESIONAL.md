@@ -514,7 +514,12 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
     «Reintentar»: sin respuesta («No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.»), demasiado grande
     y el rechazo propio de cada caso;
   - «No se pudo guardar: se reintenta al seguir editando o con «Guardar cambios»» (`noSePudoReintento`) pasa a nombrar
-    «Guardar ahora»: con DJ-6, «Guardar cambios» deja de existir. Es un cambio de `COPY_GUARDADO`, declarado en DL-167;
+    «Reintentar», la acción que tiene al lado: con DJ-6, «Guardar cambios» deja de existir. Es un cambio de
+    `COPY_GUARDADO`, declarado en DL-167 (la declaración decía «Guardar ahora», que hace lo mismo que «Reintentar»: lo
+    corrigió la revisión adversaria de la etapa 1);
+  - la barra dice cada fallo con su texto, por su motivo (`COPY_GUARDADO.falloEnLaBarra`), también el del autoguardado:
+    sin respuesta, el de DL-168; demasiado grande, «No se pudo guardar: es demasiado grande. Tus cambios siguen acá.»,
+    con el aviso que dice qué hacer; el rechazo, «No se pudo guardar: no se aceptó el cambio. Tus cambios siguen acá.»;
   - el conflicto de DL-148, con «Cargar la versión guardada», solo si es real (ED-61).
 - *Dado* un guardado que falla sin respuesta, *cuando* el profesional toca «Reintentar», *entonces* se reintenta con lo
   que está en pantalla, y «Activar la versión…» sigue apagado, con su motivo, hasta guardar.

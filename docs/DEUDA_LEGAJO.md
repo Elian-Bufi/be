@@ -7376,8 +7376,13 @@ la fuerza, ED-D17 a ED-D21. **Ratificadas el 2026-11-12:** DJ-3 y las demás rec
   0.23.0-candidata.2 no lee una ejecución registrada con él: es el caso que DL-161 ya declaró.
 - **El límite de los habituales** (API-HAB-04 y 05, API-HAN-04 y 05) pasa de 16 KB a 700 KB, como en DL-168 (ED-64).
 - **La métrica del RIR de «Analizar»** cambia de nombre y de explicación (ED-63).
-- **El texto `noSePudoReintento` de `COPY_GUARDADO`** («… o con «Guardar cambios»») pasa a nombrar «Guardar ahora», por
-  DJ-6 (ED-03).
+- **El texto `noSePudoReintento` de `COPY_GUARDADO`** («… o con «Guardar cambios»») pasa a nombrar «Reintentar», la
+  acción que tiene al lado, por DJ-6 (ED-03). La etapa 1 lo había pasado a «Guardar ahora», que hace lo mismo; lo
+  corrigió la revisión adversaria del 2026-11-12. **La barra dice cada fallo de DL-168 con su texto**
+  (`falloEnLaBarra`), también el del autoguardado: sin respuesta, «No pudimos guardar los cambios. Tus cambios siguen
+  acá. Reintentá.»; demasiado grande, «No se pudo guardar: es demasiado grande. Tus cambios siguen acá.»; el rechazo,
+  «No se pudo guardar: no se aceptó el cambio. Tus cambios siguen acá.». Sin respuesta, ya no hay un segundo aviso igual
+  debajo de la barra.
 - **GUIA II.2, «Superficies mates»,** por el vidrio del website (ED-18).
 - **Los presets de BE son contenido nuevo de BE** (ED-D2): esquemas sin datos de la persona (estructuras, prescripciones
   sin cargas y estructuras del día), sin repartos en % (DJ-7). Ningún ejercicio ni alimento elegido por BE, porque la
