@@ -35,8 +35,20 @@ test('TEST-EDP-033 · «Pedir todas» y «Ninguna» tocan solo su parte, sin rep
   // Plegar no cambia lo que se envía: lo enviado sale de lo pedido, no de lo que se ve.
   assert.match(PEDIR, /requestedFieldCodes: elegidas,/);
   assert.match(PEDIR, /const elegidas = preguntas\.map\(\(c\) => c\.fieldCode\)\.filter\(\(c\) => pedidas\.includes\(c\)\);/);
-  // Con algo por completar en las preguntas, todas se abren: el foco tiene que llegar a lo que falta.
-  assert.match(PEDIR, /partesAbiertas\.has\(codigo\) \|\| !!faltas\.preguntas/);
+  // Con algo por completar en las preguntas, todas se abren y quedan abiertas (es estado, no se deduce de la falta): el
+  // foco llega a lo que falta y, al marcar una casilla, la falta se resuelve sin que la tabla se pliegue bajo el foco.
+  assert.match(PEDIR, /if \(encontradas\.preguntas && version\) setPartesAbiertas\(new Set\(version\.sections\.map\(\(s\) => s\.sectionCode\)\)\);/);
+  assert.match(PEDIR, /const parteAbierta = \(codigo: string\) => !variasPartes \|\| partesAbiertas\.has\(codigo\);/);
+  assert.doesNotMatch(PEDIR, /!!faltas\.preguntas/);
+});
+
+test('ED-40 · plegada, la parte deja a la vista la pregunta que no viene pedida, también después de marcarla', () => {
+  const embarazo = { fieldCode: 'emb', showIf: null, requestedByDefault: false };
+  const campos = [campo('a'), { ...campo('b'), requestedByDefault: true }, embarazo];
+  assert.deepEqual(P.filasALaVista(campos, true), campos);
+  assert.deepEqual(P.filasALaVista(campos, false), [embarazo]);
+  assert.deepEqual(P.filasALaVista([campo('a')], false), []);
+  assert.match(PEDIR, /filasALaVista\(s\.fields, parteAbierta\(s\.sectionCode\)\)\.map/);
 });
 
 test('ED-40 · el resumen junto al botón y lo que le llega a la persona', () => {

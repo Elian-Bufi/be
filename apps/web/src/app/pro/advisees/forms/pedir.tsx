@@ -71,7 +71,7 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
-import { avisoDelPendiente, COPY_PARTES, cuentaDeLaParte, cuentaEnPalabras, loQueLeLlega, ninguna, pedidoPendiente, pedirTodas, resumenDelPedido } from './partes-del-pedido';
+import { avisoDelPendiente, COPY_PARTES, cuentaDeLaParte, cuentaEnPalabras, filasALaVista, loQueLeLlega, ninguna, pedidoPendiente, pedirTodas, resumenDelPedido } from './partes-del-pedido';
 import { habitosParaSumar, marcadaPorOmision, mensajeDelEnvio, motivoDeLaSugerencia, pedidoDeHabitos, sugerenciaDelCajon, type DesenlaceDeEnvio, type LecturaDeLoQueSabe } from './sumar-habitos';
 
 const H = COPY_HABITOS.web;
@@ -303,6 +303,9 @@ export function PedidoDeInformacion({
     if (proposito.trim().length === 0) encontradas.proposito = C.faltaElParaQue;
     if (version && !areaDelPedido) encontradas.area = C.faltaElArea;
     setFaltas(encontradas);
+    // Con algo por completar en las preguntas, todas abiertas, y así quedan: el foco tiene que poder llegar, y la tabla no
+    // se pliega bajo la casilla que se acaba de marcar cuando la falta se resuelve.
+    if (encontradas.preguntas && version) setPartesAbiertas(new Set(version.sections.map((s) => s.sectionCode)));
     if (Object.keys(encontradas).length > 0 || !version || !areaDelPedido) return setIntentosConFaltas((n) => n + 1);
 
     // Lo que estaba elegido al tocar «Enviar»: la casilla de «Tus hábitos» no cambia en el medio del envío.
@@ -371,8 +374,7 @@ export function PedidoDeInformacion({
   const leLlega = version ? loQueLeLlega(persona, version.name, elegidas.length, version.sections.filter((s) => s.fields.some((c) => pedidas.includes(c.fieldCode))).length) : null;
   const pendiente = elegido && enviadas ? pedidoPendiente(enviadas, elegido.templateId) : null;
   const variasPartes = (version?.sections.length ?? 0) > 1;
-  // Con algo por completar en las preguntas, todas abiertas: el foco tiene que poder llegar.
-  const parteAbierta = (codigo: string) => !variasPartes || partesAbiertas.has(codigo) || !!faltas.preguntas;
+  const parteAbierta = (codigo: string) => !variasPartes || partesAbiertas.has(codigo);
   const alternarParte = (codigo: string) =>
     setPartesAbiertas((s) => {
       const n = new Set(s);
@@ -599,7 +601,7 @@ export function PedidoDeInformacion({
                         </th>
                       </tr>
                     ) : null}
-                    {(parteAbierta(s.sectionCode) ? s.fields : []).map((c) => {
+                    {filasALaVista(s.fields, parteAbierta(s.sectionCode)).map((c) => {
                       const pedida = pedidas.includes(c.fieldCode);
                       const obligatoria = pedida && requeridas.includes(c.fieldCode);
                       // DL-164 D-2: una pregunta condicional aparece solo cuando se cumple su condición; se dice con palabras.

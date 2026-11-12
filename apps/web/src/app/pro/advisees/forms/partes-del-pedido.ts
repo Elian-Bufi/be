@@ -55,6 +55,15 @@ export function ninguna(pedidas: readonly string[], campos: readonly PreguntaDeL
   return pedidas.filter((c) => !deLaParte.has(c));
 }
 
+/**
+ * Las filas de una parte a la vista. Abierta, todas. Plegada, solo las que la plantilla no trae pedidas (el embarazo,
+ * DL-165 D-4), para que su aviso se lea igual; quedan a la vista también después de marcarlas, así la casilla recién
+ * tocada no sale de la pantalla con el foco adentro.
+ */
+export function filasALaVista<T extends { readonly requestedByDefault?: boolean | undefined }>(campos: readonly T[], abierta: boolean): readonly T[] {
+  return abierta ? campos : campos.filter((c) => c.requestedByDefault === false);
+}
+
 /** El resumen fijo junto a «Enviar solicitud»: «Vas a pedir 49 preguntas (19 obligatorias) para Nutrición. Pedir no amplía tu acceso.» */
 export function resumenDelPedido(preguntas: number, obligatorias: number, area: string | null): string {
   const cuantas = preguntas === 1 ? '1 pregunta' : `${preguntas} preguntas`;
