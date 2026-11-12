@@ -97,15 +97,21 @@ STEPS                1. Escribir un cambio y, antes de la pausa, tocar un enlace
                      4. En el cuadro, «Seguir editando»; después, de nuevo, «Salir sin guardar».
                      5. Con la red cortada, escribir y tocar el enlace.
                      6. Con un 409 de versión al guardar, escribir y tocar el enlace.
+                     7. Escribir otra cosa mientras dice «Guardando antes de salir…» (revisión adversaria de la
+                        etapa 1).
 EXPECTED             1 → aparece «Guardando antes de salir…» y se sale con la respuesta del servidor. 2 → el cambio
                      está. 3 → no se sale: el cuadro «Tenés cambios sin guardar», con «Seguir editando» (principal)
                      y «Salir sin guardar». 4 → «Seguir editando» deja todo como estaba y el foco vuelve al enlace;
-                     «Salir sin guardar» sale. 5 y 6 → el mismo cuadro, sin salir.
-NEGATIVE_ASSERTIONS  Nunca se sale con un cambio sin guardar sin el cuadro o sin la respuesta del servidor. Nada se
-                     escribe en localStorage ni en sessionStorage. Sin cambios, el enlace navega sin preguntar.
+                     «Salir sin guardar» sale. 5 y 6 → el mismo cuadro, sin salir. 7 → lo escrito durante el
+                     guardado también se guarda antes de salir (hasta tres rondas); si se sigue escribiendo, el
+                     cuadro. Nunca se guarda con lo que el editor dibujó antes de la respuesta (daría un 409).
+NEGATIVE_ASSERTIONS  Nunca se sale con un cambio sin guardar sin el cuadro o sin la respuesta del servidor, tampoco
+                     con uno escrito mientras viajaba el guardado de la salida. Nada se escribe en localStorage ni
+                     en sessionStorage. Sin cambios, el enlace navega sin preguntar.
 AUTOMATION           apps/web/test/salida-segura.test.mjs («TEST-EDP-003 · …») sobre `lib/salida-segura.ts`
-                     (`queHacerAlSalir`) y la lectura de la barra y del marco del área (cada enlace interno pasa por
-                     la guardia) · recorrido `salidaSegura` (si entra en la etapa; si no, declarado)
+                     (`queHacerAlSalir` y `guardarAntesDeSalir`, con editores de mentira que dibujan después de la
+                     respuesta) y la lectura de la barra y del marco del área (cada enlace interno pasa por la
+                     guardia) · recorrido `salidaSegura` (si entra en la etapa; si no, declarado)
 ENVIRONMENT          Local (node --test) y CI
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR
 ```

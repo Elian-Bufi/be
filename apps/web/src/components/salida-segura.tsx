@@ -15,7 +15,7 @@
  */
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { COPY_SALIDA_SEGURA as S, ESPERA_DE_UN_GUARDADO_EN_VIAJE_MS, queHacerAlSalir } from '../lib/salida-segura';
+import { COPY_SALIDA_SEGURA as S, guardarAntesDeSalir, queHacerAlSalir, type FotoDelEditor } from '../lib/salida-segura';
 import { Icono } from './icono';
 
 /** Cómo se guarda un borrador antes de salir. Sin esto, salir con cambios pregunta. */
@@ -28,11 +28,8 @@ export interface GuardarAntesDeSalir {
   readonly guardar: () => Promise<boolean>;
 }
 
-interface Entrada {
-  readonly hay: boolean;
-  readonly que: string;
-  readonly guardarAntes: GuardarAntesDeSalir | null;
-}
+/** Lo último que dibujó un editor con cambios (`lib/salida-segura.ts`). */
+type Entrada = FotoDelEditor;
 
 type AlNavegar = (evento: { preventDefault: () => void }) => void;
 
@@ -75,22 +72,16 @@ export function SalidaSegura({ children }: { children: ReactNode }) {
         setPreguntar({ destino, que: que.que, noSeGuardo: false });
         return false;
       }
-      // Todo se puede guardar: se guarda ya y se sale con la respuesta del servidor.
+      // Todo se puede guardar: se guarda ya y se sale con la respuesta del servidor, solo si no quedó nada pendiente (lo
+      // escrito mientras viajaba el guardado también se guarda: `guardarAntesDeSalir`).
       ocupada.current = true;
       setGuardando(true);
       void (async () => {
-        let todo = true;
-        for (const { leer } of pendientes) {
-          // Si un guardado ya estaba viajando, se espera su respuesta: dos pedidos con la misma versión darían un conflicto.
-          for (let espera = 0; leer().guardarAntes?.ocupado && espera < ESPERA_DE_UN_GUARDADO_EN_VIAJE_MS; espera += 100) await esperar(100);
-          const ahora = leer();
-          if (!ahora.hay) continue;
-          todo = (ahora.guardarAntes && ahora.guardarAntes.sePuede && !ahora.guardarAntes.ocupado ? await ahora.guardarAntes.guardar() : false) && todo;
-        }
+        const fin = await guardarAntesDeSalir(() => [...entradas.current.values()], esperar);
         ocupada.current = false;
         setGuardando(false);
-        if (todo) return ir(destino);
-        setPreguntar({ destino, que: [...new Set(conCambios().map((x) => x.ahora.que))], noSeGuardo: true });
+        if (fin.tipo === 'SALIR') return ir(destino);
+        setPreguntar({ destino, que: fin.que, noSeGuardo: true });
       })();
       return false;
     };

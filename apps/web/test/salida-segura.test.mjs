@@ -29,17 +29,98 @@ test('TEST-EDP-003 · la regla: sin cambios se sale; si todo se puede guardar, s
   assert.equal(S.COPY_SALIDA_SEGURA.queSePierde(['el plan en preparación', 'la receta']), 'Si salís ahora, se pierde lo que escribiste en el plan en preparación y la receta y todavía no se guardó.');
 });
 
+/**
+ * Un editor de mentira, como uno de React: cada dibujo deja una foto nueva (otro objeto), con el `guardar` de ese dibujo
+ * y la versión que conocía. Guardar viaja (un turno), y la respuesta se dibuja después, como en React: hasta el dibujo
+ * siguiente, la foto es la de antes de la respuesta. Guardar con una foto vieja es un 409 (un conflicto).
+ * - `alViajar`: lo que hace el profesional mientras viaja el guardado (escribir otra cosa);
+ * - `dibujaAlEmpezar`: si el editor llega a dibujar «Guardando…» antes de la respuesta.
+ */
+function editorDeMentira({ alViajar = () => {}, sePuede = true, falla = false, dibujaAlEmpezar = true } = {}) {
+  const e = { cambios: 1, version: 1, guardados: 0, conflictos: 0, ocupado: false, foto: null };
+  const dibujar = () => {
+    const version = e.version;
+    e.foto = { hay: e.cambios > 0, que: 'el plan en preparación', guardarAntes: { sePuede, ocupado: e.ocupado, guardar: () => guardar(version) } };
+  };
+  async function guardar(version) {
+    if (version !== e.version) {
+      e.conflictos++;
+      return false;
+    }
+    e.guardados++;
+    const viajan = e.cambios;
+    e.ocupado = true;
+    if (dibujaAlEmpezar) dibujar();
+    await new Promise((listo) => setTimeout(listo, 0));
+    alViajar(e);
+    e.ocupado = false;
+    if (!falla) {
+      e.version++;
+      e.cambios -= viajan;
+    }
+    setTimeout(dibujar, 0);
+    return !falla;
+  }
+  dibujar();
+  return { e, leer: () => e.foto };
+}
+const unTurno = () => new Promise((listo) => setTimeout(listo, 0));
+
+test('TEST-EDP-003 · guardar antes de salir: lo escrito mientras viaja el guardado también se guarda antes de salir', async () => {
+  // Revisión adversaria de la etapa 1: `guardar()` devolvía la versión aunque se hubiera escrito algo mientras viajaba, y
+  // se salía igual. El editor quedaba con cambios y se desmontaba: se perdían sin aviso.
+  const { e, leer } = editorDeMentira({ alViajar: (x) => x.guardados === 1 && x.cambios++ });
+  const fin = await S.guardarAntesDeSalir(() => [leer], unTurno);
+  assert.deepEqual(fin, { tipo: 'SALIR' });
+  assert.equal(e.cambios, 0, 'se sale sin nada pendiente');
+  assert.equal(e.guardados, 2);
+  assert.equal(e.conflictos, 0);
+});
+
+test('TEST-EDP-003 · guardar antes de salir: nunca guarda con la foto de antes de la respuesta (daría un conflicto)', async () => {
+  // La respuesta llega antes de que el editor dibuje «Guardando…»: la foto vieja sigue diciendo que hay cambios, con la
+  // versión vieja. Se espera el dibujo siguiente.
+  const { e, leer } = editorDeMentira({ dibujaAlEmpezar: false });
+  assert.deepEqual(await S.guardarAntesDeSalir(() => [leer], unTurno), { tipo: 'SALIR' });
+  assert.equal(e.guardados, 1);
+  assert.equal(e.conflictos, 0);
+});
+
+test('TEST-EDP-003 · guardar antes de salir: si se sigue escribiendo, o algo falla o no se puede guardar, pregunta', async () => {
+  // Escribe algo en cada guardado: después de las rondas, pregunta (nunca sale con algo pendiente).
+  const siempre = editorDeMentira({ alViajar: (x) => x.cambios++ });
+  assert.deepEqual(await S.guardarAntesDeSalir(() => [siempre.leer], unTurno), { tipo: 'PREGUNTAR', que: ['el plan en preparación'] });
+  assert.equal(siempre.e.guardados, S.RONDAS_ANTES_DE_SALIR);
+  assert.equal(siempre.e.conflictos, 0);
+  // Un guardado que falla.
+  const falla = editorDeMentira({ falla: true });
+  assert.deepEqual(await S.guardarAntesDeSalir(() => [falla.leer], unTurno), { tipo: 'PREGUNTAR', que: ['el plan en preparación'] });
+  // Algo que no se puede guardar: no se intenta.
+  const noSePuede = editorDeMentira({ sePuede: false });
+  assert.deepEqual(await S.guardarAntesDeSalir(() => [noSePuede.leer], unTurno), { tipo: 'PREGUNTAR', que: ['el plan en preparación'] });
+  assert.equal(noSePuede.e.guardados, 0);
+  // Sin cambios, se sale sin guardar nada.
+  const limpio = editorDeMentira();
+  limpio.e.cambios = 0;
+  limpio.e.foto = { ...limpio.e.foto, hay: false };
+  assert.deepEqual(await S.guardarAntesDeSalir(() => [limpio.leer], unTurno), { tipo: 'SALIR' });
+  assert.equal(limpio.e.guardados, 0);
+});
+
 test('TEST-EDP-003 · el cuadro: «Seguir editando» es el principal y tiene el foco; Escape nunca sale', () => {
   const c = leer('components/salida-segura.tsx');
   assert.match(c, /<button ref=\{seguir\} type="button" className="boton boton--primario" data-seguir-editando onClick=\{onSeguirEditando\}>/);
   assert.match(c, /dialogo\.showModal\(\);\n\s*seguir\.current\?\.focus\(\);/);
   assert.match(c, /onCancel=\{\(e\) => \{\n\s*e\.preventDefault\(\);\n\s*onSeguirEditando\(\);/);
   assert.match(c, /data-salir-sin-guardar/);
-  // «Guardando antes de salir…» se anuncia, y se sale solo con la respuesta del servidor.
+  // «Guardando antes de salir…» se anuncia, y se sale solo con la respuesta del servidor y sin nada pendiente: el lazo
+  // es el de `lib/salida-segura.ts`, que se prueba arriba con editores de mentira.
   assert.match(c, /role="status" aria-live="polite" data-guardando-antes-de-salir/);
-  assert.match(c, /if \(todo\) return ir\(destino\);/);
+  assert.match(c, /const fin = await guardarAntesDeSalir\(\(\) => \[\.\.\.entradas\.current\.values\(\)\], esperar\);/);
+  assert.match(c, /if \(fin\.tipo === 'SALIR'\) return ir\(destino\);/);
+  assert.doesNotMatch(c, /if \(todo\) return ir\(destino\);/);
   // Un guardado que ya viajaba se espera: dos pedidos con la misma versión darían un conflicto.
-  assert.match(c, /leer\(\)\.guardarAntes\?\.ocupado && espera < ESPERA_DE_UN_GUARDADO_EN_VIAJE_MS/);
+  assert.match(leer('lib/salida-segura.ts'), /leer\(\)\.guardarAntes\?\.ocupado && espera < ESPERA_DE_UN_GUARDADO_EN_VIAJE_MS/);
   // Nada se guarda en el navegador (DL-148 D-5).
   for (const ruta of ['components/salida-segura.tsx', 'lib/salida-segura.ts']) assert.doesNotMatch(leer(ruta), /localStorage|sessionStorage|indexedDB/, ruta);
 });
