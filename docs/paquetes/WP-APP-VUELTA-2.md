@@ -1,9 +1,9 @@
 # WP-APP-VUELTA-2 — la APK con profundidad: vidrio en toda la app, primero en Inicio
 
-> **Estado:** DECLARADO el 2026-11-11, sin implementar (DEUDA_LEGAJO DL-170). Las partes AV2-01 a AV2-29 esperan el sí
-> de Dirección a los IDs (ACTA-DIR-034), y las decisiones AV2-D1 a AV2-D12, su ratificación (§6). Las decisiones
-> técnicas AV2-T1 a AV2-T13 las tomó el continuador en esta declaración y están a ratificar (§6.1). No se programa nada
-> antes del sí.
+> **Estado:** etapa A programada en #255 (en borrador, sin integrar; DL-170). El 2026-11-11 Dirección aprobó la etapa A
+> (AV2-01 a AV2-18), AV2-D1 (el paso 1), AV2-D2 y AV2-D11; para D3, D4, D5, D7 y D8 rigen las recomendaciones (§6). La
+> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, y T14 a T16 de la programación, a ratificar. Los
+> oráculos están en `WP-APP-VUELTA-2-ORACULOS.md`; lo programado y lo que cambió al programar, en §10.
 >
 > **Encargo** (Dirección, 2026-11-11): pasó una referencia del tema de vidrio («glassy») para la apariencia de la app,
 > porque «actualmente lo siento todo muy plano». Ese mismo día decidió: **«Sí, Inicio + glassy en toda la app»**.
@@ -1115,3 +1115,52 @@ uno, con su mutación.
   rosca (AV-15 y AV-19, con servidor) no se toca.
 - **El tenue de la APK** (F-143): esta es la «próxima versión» que esperaba. Con ella, el website y la APK usan el mismo
   tenue en Azul noche.
+
+## 10. Lo programado en la etapa A (2026-11-11)
+
+En la rama `wp-app-vuelta-2` (#255, en borrador), con un commit por parte, los oráculos antes del código y cada prueba
+verificada con su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`). Solo la APK: no toca la API, el dominio ni el
+`package.json` de la raíz, y no redespliega nada.
+
+### 10.1 Lo que cambió al programar (AV2-T14 a AV2-T16, a ratificar)
+
+- **AV2-T14 · El brillo de arriba se apaga dentro del relleno (12 dp), no al 45 % del alto.** §5.2 se midió sin el
+  brillo. Con el brillo al 5 % debajo, en Azul noche la etiqueta de estado bajaba a 4,00:1, el tenue sobre el nivel 2 a
+  4,24:1 y el borde de un campo a 2,95:1. A 12 dp, el relleno más chico de un nivel 1, el brillo no queda debajo de
+  ningún contenido; el texto de nivel 1 se mide igual con el brillo (5,02:1 o más). Lo fija TEST-AV2-002.
+- **AV2-T15 · La receta pura vive en `receta-de-vidrio.ts`,** y `vidrio.tsx` la aplica (el contexto, los ganchos y la
+  sombra de la lámina): las pruebas de Node no cargan `.tsx`. Es el mismo «un solo lugar» de §3.2, en dos archivos.
+- **AV2-T16 · La etiqueta de estado, neutra en toda la app:**
+  - `positiva` deja de pintar en verde; la tilde en `exito` va con `hecha`, solo con lo que la persona hizo (la sesión
+    realizada, la comida registrada y el formulario respondido). «Vigente», «Otorgado», «Del plan» y «Ejercicio activo»
+    quedan neutros;
+  - el relleno va solo sobre una tarjeta de nivel 1 (de vidrio o `superficie`): directo sobre el fondo con los destellos,
+    el tenue sobre ella bajaba a 3,69:1, y dentro de un nivel 2 también quedaba por debajo.
+
+### 10.2 Detalles de la programación
+
+- **Un control suelto sobre el fondo** (un botón secundario o unos Segmentos fuera de toda tarjeta) conserva su
+  superficie opaca: no se vuelve una tarjeta con sombra (`nivelDelControl`).
+- **La tira de la semana no pide nada nuevo:** Inicio lee una vez la sesión de hoy (API-TRN-14) y la actividad de 30 días
+  (API-TRN-19-LISTA) y las comparte con la tira; la lectura de 30 días suma un detalle por día, en cuentas. Una visita a
+  Inicio hace las mismas solicitudes que antes. Sin plan de entrenamiento y sin nada hecho en la semana, la tira no se
+  dibuja.
+- **Inicio ya no lleva «Ver tu historial»:** la tarjeta «Actividad» no se toca, como dice §3.4 («Actividad de los últimos
+  30 días: …», sin «botón»). Tu historial sigue en Entrenamiento.
+- **La medida destacada** dice para el lector «… Ver la evolución» (no «Ver la evolución del peso»): el nombre de la
+  medida ya va al principio de la etiqueta y no hace falta adivinar su género. El «Cómo se lee» que explicaba por qué se
+  destaca esa medida no entra en la tarjeta chica: pasa al de Evolución con AV2-20 (etapa B), y hasta entonces no se ve.
+- **«Dejarlo incompleto»** es el texto de siempre del dominio (la sesión de otro día, en Inicio), y no «Dejar
+  incompleta».
+- **Nutrición, sin «la que sigue»,** abre en la primera comida del plan, como antes.
+- **Las fechas y las horas** se escriben sin el `Intl` de Hermes para los nombres y la hora (`formato.ts`): «sept», no
+  «sep», y nunca «p. m.». El día de un instante es el del teléfono de la persona.
+
+### 10.3 Lo que queda
+
+- AV2-16, la medición en el teléfono (`EVIDENCIA/APP-VUELTA-2/rendimiento/`), y AV2-18, la muestra
+  (`EVIDENCIA/APP-VUELTA-2/muestra/`): la candidata 0.24.0-candidata.1 se arma después de integrar la etapa A, como
+  prerelease (AV2-D11).
+- TalkBack, la letra ×1,3, el alto contraste y el dibujo de Android, en el teléfono: ninguna prueba los da por
+  aprobados.
+- La etapa B, con el visto bueno de Dirección a la muestra.

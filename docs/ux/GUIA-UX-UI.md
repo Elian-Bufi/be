@@ -189,7 +189,13 @@ Toda vista que lee datos contempla estos estados, con las piezas de `estados.tsx
   medidos: los pone también sobre el velo azul de la cara pública, donde el valor medido no llegaba a 4,5:1.
 - **El texto secundario de Azul noche es gris azulado** (`#a3b1c2`), desde el 2026-10-15: el celeste de la paleta
   medida (`#8dcae5`) se confundía con los enlaces y el tema quedaba de un solo color. El cian queda para enlaces, acentos
-  y datos. Lo pidió la crítica de diseño y lo aprobó Dirección. La APK conserva el celeste hasta su próxima versión.
+  y datos. Lo pidió la crítica de diseño y lo aprobó Dirección. La APK lo toma con WP-APP-VUELTA-2 (DL-170): `tenue`
+  es `#A3B1C2` en Azul noche y `#5B6B82` en Claro, porque el de antes (`#62728A`) bajaba a 4,43:1 sobre el degradé.
+- **La luz del fondo de la APK** (DL-170): un degradé con dos destellos, cian arriba y azul a media altura. Es la única
+  luz que no marca algo que se toca: es quieta, no pulsa ni se anima, y su tope lo pone la prueba de contraste (con los
+  destellos al 14 % y al 18 %, el tenue de Azul noche directo sobre el fondo bajaba a 4,16:1).
+- **En la APK, el cian solo para lo que se toca** (DL-170): los íconos decorativos van en `tenue`, la etiqueta de estado
+  es neutra (rellena, sin borde y con el texto en `tenue`), y el enlace con flecha no lleva subrayado.
 - **Un solo botón secundario** en el website: fondo de tarjeta, borde de 1 px gris medio y texto en peso 600. Uno lleno
   por vista; uno apagado, gris neutro. Las píldoras de estado y las etiquetas, livianas: no tienen que parecer botones.
 - **El cian no es color de texto sobre fondo claro.** Marca el encabezado y lo elegido sobre azul profundo; un texto
@@ -247,6 +253,11 @@ todavía usa los suyos. Qué simboliza cada uno y dónde va está en
   reservada para el agua. Antes de usar uno para algo nuevo se mira el catálogo.
 - **Ninguno califica:** no hay estrellas, medallas, pulgares, caritas ni rachas (lo cuida `iconos.test.ts`), y una
   tilde no va al lado de un dato, porque se leería como «cumplió».
+- **La tilde de lo que la persona hizo va en `exito`** (DL-170; Dirección, 2026-11-08: se celebra lo que la persona hace,
+  sin rachas que castiguen). En la APK marca un acto de la persona: el día con una sesión realizada en la tira de la
+  semana, la comida registrada y las etiquetas «Realizada», «Registrado» y «Respondida». Nunca va con un número ni con
+  una medida del cuerpo, y lo no hecho queda neutro, nunca en rojo ni con una cruz. Sobre el círculo verde de Azul noche
+  la tilde va oscura (`botonTexto`), porque la blanca no llega a 3:1.
 - **Tamaños:** 24 px en un título de área, 20 en filas y botones, 18 en pestañas y enlaces, 15 dentro de una
   etiqueta. El objetivo táctil lo da el control, no el dibujo.
 - **Se elige mirándolo en su lugar:** dentro del control donde va a vivir, a su tamaño real y en los dos temas. Suelto
@@ -1154,19 +1165,39 @@ Durante la sesión, la fila de acciones y la navegación van fijas. Está decidi
 
 ### III.3 Superficies
 
-- **Superficies en escalones** (`tema.ts`):
-  - `fondo` para la pantalla;
-  - `superficie` para las tarjetas y las secciones;
-  - `superficieElevada` para lo que se destaca sobre ellas: el botón secundario y las fichas de fecha. La cápsula de la
-    barra tiene sus propios tokens: `barraVidrio`, `barraBorde`, `barraTexto` y `barraElegido`.
-  El `borde` decorativo es un azul apagado: separa sin competir. Era un azul brillante que competía con el cian.
-- **Las tarjetas sobre la figura y los indicadores son de vidrio** (`vidrio.tsx`; pulido del 2026-10-04).
-  - Las separan un borde fino y translúcido (`laminaFilo`, `vidrioFilo`), un brillo arriba que se apaga a la mitad
-    (`laminaBrillo`, `vidrioBrillo`) y una sombra suave. No llevan bordes fuertes.
-  - En Claro no hay brillo, que sobre blanco no se vería: separan la sombra y el filo.
-  - El brillo no baja el contraste del texto: la prueba de contraste lo mide sobre la mezcla.
-  El vidrio es de la APK: el website profesional es mate (II.2).
-- **El botón principal** es claro sobre oscuro (`botonFondo`), y el secundario es tonal, no un contorno cian.
+- **El fondo de la APK tiene luz** (DL-170, WP-APP-VUELTA-2 AV2-03): `FondoDeLaApp`, el primer hijo de la raíz, dibuja un
+  degradé de `fondoArriba` a `fondoAbajo` (con `fondo` al 55 % del alto en Azul noche y al medio en Claro) y dos
+  destellos quietos (`destello` y `destelloAzul`), con `experimental_backgroundImage` y sin mapa de bits. Va fuera del
+  desplazamiento, no recibe toques y el lector no lo recorre; sus medidas salen de la ventana, no de porcentajes. Con el
+  «Texto de alto contraste» de Android, el fondo es `fondo` liso.
+- **Las tarjetas son de vidrio, en dos niveles** (la receta: `receta-de-vidrio.ts`, aplicada desde `vidrio.tsx`):
+  - **nivel 1**, una tarjeta o una sección suelta: `vidrio`, el borde de luz de 1 dp (`vidrioFilo`), radio 20, la sombra
+    por fuera (`sombraVidrio`, con `boxShadow`) y la línea de luz por dentro (`vidrioLuz`); en Azul noche, además, un
+    brillo arriba (`vidrioBrillo`) que se apaga a 12 dp, dentro del relleno, para que no quede debajo de ningún
+    contenido: con el brillo debajo, la etiqueta de estado bajaba a 4,00:1;
+  - **nivel 2**, lo que va adentro (una tarjeta dentro de una sección, las fichas, los Segmentos, el aviso informativo y
+    el botón secundario): `vidrioInterior`, radio 14 y sin sombra. Más adentro, sin relleno: vidrio dentro de vidrio se
+    ensucia. Un control suelto sobre el fondo conserva su superficie opaca.
+  - El nivel lo resuelve el contexto (`NivelDeVidrio`): Seccion, Tarjeta y las tarjetas de Inicio lo proveen.
+  - **Ninguna vista hija y sin `elevation` en lo translúcido** (AV2-T3 y T4): todo es estilo de la misma vista, que es la
+    intención de la excepción 13 de `REFERENCIAS_VISUALES.md` (WP-ENTRENAMIENTO-SERIES §7.7). La sombra de `elevation` se
+    vería a través del vidrio como una mancha.
+  - **Por ahora, solo en Inicio** (§3.3 del paquete): un interruptor del contexto, que App.tsx prende en la ruta
+    `inicio`, hasta el visto bueno de Dirección a la muestra (AV2-26). En las demás pantallas, una tarjeta es
+    `superficie`, opaca, que es el vidrio ya resuelto sobre el fondo liso: no desentona. Con alto contraste, todo opaco.
+  - `superficie` sigue opaca (AV2-T2): los diálogos, la fila fija de la sesión, los campos y lo que todavía no migró.
+  - Las tarjetas de la lámina de la toma conservan lo suyo: su filo (`laminaFilo`) y su sombra (`sombraDeVidrio`).
+  - La prueba de contraste mide el texto en el peor punto: los tres puntos del degradé, con cada destello solo y con los
+    dos juntos, el vidrio encima y el nivel 2.
+  El vidrio es de la APK: el website profesional es mate (II.2) hasta WP-EDITORES-PROFESIONAL.
+- **La barra** tiene sus propios tokens (`barraVidrio`, al 88 %; `barraTexto` y `barraElegido`), con el borde y la línea
+  de luz de la receta y una sombra con `boxShadow`. Durante la sesión, fija y opaca (PV-11).
+- **El botón principal** es el cian (`botonFondo`) en Azul noche y el azul en Claro; con el vidrio, un degradé hasta
+  `botonFondoFin`, radio 14 y un resplandor quieto (`resplandorPrimario`) solo si está habilitado. El secundario es
+  tonal, no un contorno cian.
+- **La etiqueta de estado es neutra:** rellena con `etiquetaFondo` sobre una tarjeta de nivel 1 (sin relleno sobre el fondo
+  o dentro de un nivel 2), sin borde y con el texto en `tenue`. No se confunde con un botón.
+- **«La que sigue»** (las comidas de Inicio) lleva el borde del acento y el tinte `destacadaFondo`.
 - **Una silueta clara sobre un fondo claro lleva contorno**, con su contraste medido. En Claro, el cuerpo blanco daba de
   1,01:1 a 1,19:1 contra la lámina; el contorno (`laminaContorno`) da 4,0:1, y la prueba de contraste lo verifica.
 - **El significado no va solo en el color:** un pliegue de la cara posterior se marca con el aro punteado y la palabra
