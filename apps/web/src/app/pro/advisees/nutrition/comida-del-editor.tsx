@@ -45,7 +45,7 @@ import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
-import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnUnaLinea, type TotalDeLaOpcion } from './rangos';
+import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type TotalDeLaOpcion } from './rangos';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
 export type ComidaEnEdicion = Estructura[number]['meals'][number];
@@ -286,7 +286,12 @@ export function ComidaDelEditor({
                 {total ? (
                   <div className="opcion-del-editor__total" data-total-de-la-opcion>
                     <p>
-                      <strong>{totalEnUnaLinea(total)}</strong> <span className="nota">· {COPY_OPCIONES.estimacion}</span>
+                      <strong>
+                        {/* Las iniciales a la vista; el lector de pantalla lee los nombres completos. */}
+                        <span aria-hidden="true">{totalEnUnaLinea(total)}</span>
+                        <span className="visualmente-oculto">{totalEnPalabras(total)}</span>
+                      </strong>{' '}
+                      <span className="nota">· {COPY_OPCIONES.estimacion}</span>
                     </p>
                     {faltan.length > 0 ? <p className="nota">{faltan.slice(0, 3).map(queFaltaEnPalabras).join('; ')}{faltan.length > 3 ? `; y ${faltan.length - 3} más` : ''}</p> : null}
                   </div>

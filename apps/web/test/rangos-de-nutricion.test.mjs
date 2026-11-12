@@ -153,3 +153,10 @@ test('ED-30 (DJ-7) · ningún texto de las pantallas de Nutrición dice «%»', 
     for (const t of textos) assert.doesNotMatch(t, /\d\s?%|%\s|\bpor ciento\b/, `${archivo}: ${t}`);
   }
 });
+
+test('ED-31 · el total de la opción, con los nombres completos para el lector de pantalla (maqueta 08)', () => {
+  const v = (exacto) => ({ exacto, faltan: [] });
+  const total = { energyKcal: v(107), proteinG: v(1.3), carbohydrateG: v(27.4), fatG: { exacto: null, faltan: [] } };
+  assert.equal(R.totalEnPalabras(total), 'Energía 107 kcal · Proteínas 1,3 g · Carbohidratos 27,4 g · Grasas sin dato');
+  assert.equal(R.totalEnUnaLinea(total), '107 kcal · P 1,3 g · C 27,4 g · G Sin dato');
+});

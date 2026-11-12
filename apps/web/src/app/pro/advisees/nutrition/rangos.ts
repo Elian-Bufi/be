@@ -209,6 +209,8 @@ export function alimentosSinComposicion(items: readonly ItemParaElTotal[], compo
 
 const UNIDAD: Readonly<Record<NutrienteDelRango, string>> = { energyKcal: 'kcal', proteinG: 'g', carbohydrateG: 'g', fatG: 'g' };
 const INICIAL: Readonly<Record<NutrienteDelRango, string>> = { energyKcal: '', proteinG: 'P', carbohydrateG: 'C', fatG: 'G' };
+/** Los nombres completos, para quien no ve las iniciales (un lector de pantalla), como en la maqueta 08. */
+const NOMBRE_COMPLETO: Readonly<Record<NutrienteDelRango, string>> = { energyKcal: 'Energía', proteinG: 'Proteínas', carbohydrateG: 'Carbohidratos', fatG: 'Grasas' };
 
 export const COPY_RANGOS = {
   pestana: 'Rangos y totales',
@@ -275,6 +277,14 @@ export function totalEnUnaLinea(t: TotalDeLaOpcion): string {
     const v = t[n];
     const valor = v.exacto === null ? COPY_RANGOS.sinDato : `${numeroDe(v.exacto, n)} ${UNIDAD[n]}`;
     return INICIAL[n] ? `${INICIAL[n]} ${valor}` : valor;
+  }).join(' · ');
+}
+
+/** ED-31: lo mismo, con los nombres completos: «Energía 107 kcal · Proteínas 1,3 g · …». Es lo que lee un lector de pantalla. */
+export function totalEnPalabras(t: TotalDeLaOpcion): string {
+  return NUTRIENTES_DEL_RANGO.map((n) => {
+    const v = t[n];
+    return `${NOMBRE_COMPLETO[n]} ${v.exacto === null ? COPY_RANGOS.sinDato.toLowerCase() : `${numeroDe(v.exacto, n)} ${UNIDAD[n]}`}`;
   }).join(' · ');
 }
 
