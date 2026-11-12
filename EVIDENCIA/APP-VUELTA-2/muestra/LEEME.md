@@ -1,6 +1,10 @@
 # AV2-18 · La muestra en el teléfono de Dirección (WP-APP-VUELTA-2 §5.4)
 
-> **Estado (2026-11-12): se arma.** La etapa A (AV2-01 a AV2-17) está programada en #255, en borrador y sin
+> **Publicada el 2026-11-12 como prerelease:** tag `be-apk-0.25.0-candidata.1` en `40e564b` (esta rama, con `main`
+> traído y la CI en verde, más la versión), versionCode 39, SHA-256 del APK `6209608a…1839`. El AAB y la APK quedaron
+> verificados con todo bien, con la 0.24.0-candidata.1 de referencia. La descarga del website sigue siendo la 0.24.
+>
+> **Estado (2026-11-12): cómo se armó.** La etapa A (AV2-01 a AV2-17) está programada en #255, en borrador y sin
 > integrar. Por la numeración que decidió Dirección el 2026-11-11, la candidata de la muestra es la
 > **0.25.0-candidata.1** (la 0.24, con el nombre obligatorio de UF-01, es la «latest» que ofrece el website). Se arma
 > por el circuito de siempre (`docs/DESPLIEGUE.md`): la rama `aab/candidata-0.25.0-1` (esta rama, con `main` traído,
