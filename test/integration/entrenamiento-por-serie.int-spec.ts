@@ -305,76 +305,15 @@ describe('DL-122 · objetivos por serie (P01, P02)', () => {
   });
 });
 
-// ─── C01 · compatibilidad con la APK 0.13.2 ───────────────────────────────────────────────────────
+// ─── Un plan sin objetivos por serie (DL-122 §8) ──────────────────────────────────────────────────
 
-/** Las claves de una prescripción en las lecturas que valida la APK 0.13.2, y las de cada serie. */
-const CLAVES_DE_PRESCRIPCION = ['exerciseId', 'exerciseName', 'exerciseVersionId', 'intensity', 'note', 'order', 'prescriptionId', 'professionalParameters', 'sets', 'suggestedLoad'];
-const CLAVES_DE_SERIE = ['note', 'repetitions', 'setIndex'];
-const CAMPOS_NUEVOS = /"(restSeconds|loadBasis|repetitionBasis|targetOrigin|imagesAsOf|imageVersion|image)"/;
+// C01 también probaba que las lecturas de entrenamiento pasaban los esquemas estrictos de la APK 0.13.2 con la
+// prescripción de siempre. Esa parte salió el 2026-11-11 con UF-00 de WP-USO-FINAL (UF-D11): la 0.13.2 dejó de estar
+// entre las vigentes (enmienda de DL-152), y lo que lee la última APK lo protege `lecturas-de-las-apk.int-spec.ts`. Queda
+// lo que no depende de ninguna APK: los datos de un plan viejo no se reinterpretan.
 
-/** Las prescripciones planificadas de una respuesta, dondequiera que estén (plan, «Hoy», ejecución, contexto). */
-function prescripcionesDe(valor: unknown): Record<string, unknown>[] {
-  if (Array.isArray(valor)) return valor.flatMap(prescripcionesDe);
-  if (valor === null || typeof valor !== 'object') return [];
-  const o = valor as Record<string, unknown>;
-  const propia = 'prescriptionId' in o && 'order' in o && 'intensity' in o ? [o] : [];
-  return [...propia, ...Object.values(o).flatMap(prescripcionesDe)];
-}
-
-describe('C01 · lo que lee la APK 0.13.2 no cambia (DL-122 §8)', () => {
-  it('C01 · TRN-07 a 10, 12, 14, 14-PERIODO, 15 a 21 y 19-LISTA, del profesional y del titular, pasan los esquemas estrictos con la prescripción de siempre, aunque el plan tenga objetivos por serie', async () => {
-    const plan = await borradorDeLaDemo(app, etiqueta('c01'));
-    const pro = conSesion(app, plan.pro.token);
-    // El titular lee con la APK que muestra los objetivos por serie y lo declara: a un cliente que no lo declara, este plan
-    // no se le entrega (compatibilidad-de-clientes.int-spec.ts). Las formas que valida son las mismas.
-    const ase = conLaApk(app, plan.ase.token);
-    const vistas: [string, unknown][] = [];
-    const ver = (nombre: string, esquema: { parse: (v: unknown) => unknown }, cuerpo: unknown) => {
-      esquema.parse(cuerpo);
-      vistas.push([nombre, cuerpo]);
-    };
-    ver('API-TRN-07', PlanDeEntrenamientoResponseSchema, plan.creado);
-    ver('API-TRN-10', PlanDeEntrenamientoResponseSchema, plan.guardado);
-    ver('API-TRN-09 · profesional, borrador', PlanDeEntrenamientoResponseSchema, (await pro.get(`/api/v1/training/plans/${plan.planId}`).expect(200)).body);
-    ver('API-TRN-12', ActivacionDePlanDeEntrenamientoResponseSchema, (await activar(app, plan).expect(200)).body);
-    ver('API-TRN-08 · profesional', ListaDePlanesDeEntrenamientoResponseSchema, (await pro.get(`/api/v1/advisees/${plan.ase.id}/training/plans`).expect(200)).body);
-    ver('API-TRN-08 · titular', ListaDePlanesDeEntrenamientoResponseSchema, (await ase.get(`/api/v1/advisees/${plan.ase.id}/training/plans`).expect(200)).body);
-    ver('API-TRN-09 · profesional', PlanDeEntrenamientoResponseSchema, (await pro.get(`/api/v1/training/plans/${plan.planId}`).expect(200)).body);
-    ver('API-TRN-09 · titular', PlanDeEntrenamientoResponseSchema, (await ase.get(`/api/v1/training/plans/${plan.planId}`).expect(200)).body);
-    const hoy = (await ase.get('/api/v1/me/training/today').expect(200)).body;
-    ver('API-TRN-14', HoyDeEntrenamientoResponseSchema, hoy);
-    const fecha = hoy.data.date as string;
-    ver('API-TRN-14-PERIODO', OcurrenciasDelPeriodoResponseSchema, (await ase.get(`/api/v1/me/training/occurrences?periodStart=${fecha}&periodEnd=${fecha}`).expect(200)).body);
-    const abierto = (await ase.put(`/api/v1/training/occurrences/${hoy.data.occurrences[0].occurrenceId as string}/execution-draft`).send({}).expect(201)).body;
-    ver('API-TRN-15', BorradorDeEjecucionResponseSchema, abierto);
-    ver('API-TRN-16', BorradorDeEjecucionResponseSchema, (await ase.get(`/api/v1/training/execution-drafts/${abierto.data.draftId as string}`).expect(200)).body);
-    const { executionId, guardado, confirmado } = await registrarYConfirmar(app, plan, { draftId: abierto.data.draftId as string, version: abierto.data.version as string });
-    ver('API-TRN-17', BorradorDeEjecucionResponseSchema, guardado);
-    ver('API-TRN-18', ConfirmacionDeEjecucionResponseSchema, confirmado);
-    ver('API-TRN-19 · titular', EjecucionDeEntrenamientoResponseSchema, (await ase.get(`/api/v1/training/executions/${executionId}`).expect(200)).body);
-    ver('API-TRN-19 · profesional', EjecucionDeEntrenamientoResponseSchema, (await pro.get(`/api/v1/training/executions/${executionId}`).expect(200)).body);
-    ver('API-TRN-19-LISTA', HistorialDeEntrenamientoResponseSchema, (await ase.get(`/api/v1/me/training/executions?periodStart=${fecha}&periodEnd=${fecha}`).expect(200)).body);
-    const corregida = { ...registroDeLaDemo(plan.ejercicios), sessionCondition: 'COMPLETED_WITH_DEVIATION', reason: 'Una serie quedó corta.', sessionSummary: null };
-    ver('API-TRN-20', EjecucionDeEntrenamientoResponseSchema, (await pro.post(`/api/v1/training/executions/${executionId}/corrections`).send({ reason: 'El asesorado avisó un desvío.', correction: corregida }).expect(201)).body);
-    ver('API-TRN-21', ContextoDeRevisionDeEntrenamientoResponseSchema, (await pro.get(`/api/v1/advisees/${plan.ase.id}/training/review-context`).expect(200)).body);
-
-    let prescripciones = 0;
-    for (const [nombre, cuerpo] of vistas) {
-      expect([nombre, JSON.stringify(cuerpo).match(CAMPOS_NUEVOS)?.[0] ?? null]).toEqual([nombre, null]);
-      for (const p of prescripcionesDe(cuerpo)) {
-        prescripciones++;
-        expect([nombre, Object.keys(p).sort()]).toEqual([nombre, CLAVES_DE_PRESCRIPCION]);
-        for (const s of p.sets as Record<string, unknown>[]) expect([nombre, Object.keys(s).sort()]).toEqual([nombre, CLAVES_DE_SERIE]);
-      }
-    }
-    // Las prescripciones de la sesión aparecen en el plan, en «Hoy», en el período, en la ejecución, en el historial…
-    expect(prescripciones).toBeGreaterThanOrEqual(SESION_DEMO.exercises.length * 10);
-    // La carga y el criterio que ve esa APK son los de la prescripción, no los de cada serie (§8: lo que no se puede evitar).
-    const vieja = (hoy.data.occurrences[0].plannedSession.prescriptions as Record<string, unknown>[]).find((p) => p.prescriptionId === prescripcionIdDe(EJ_A))!;
-    expect([vieja.suggestedLoad, (vieja.intensity as { target: { value: number } }).target.value]).toEqual([EJ_A.sets[0]!.suggestedLoad, EJ_A.sets[0]!.plannedRir]);
-  });
-
-  it('C01 · un plan sin objetivos por serie se guarda como antes, y sus datos no se reinterpretan: el parámetro libre «Descanso» no se vuelve descanso estructurado', async () => {
+describe('DL-122 §8 · un plan sin objetivos por serie', () => {
+  it('se guarda como antes, y sus datos no se reinterpretan: el parámetro libre «Descanso» no se vuelve descanso estructurado', async () => {
     const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('c01-viejo'));
     const r = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructuraDeEntrenamiento() }).expect(201);
     const fila = await prisma.versionDePlanDeEntrenamiento.findUniqueOrThrow({ where: { id: r.body.data.planId as string } });

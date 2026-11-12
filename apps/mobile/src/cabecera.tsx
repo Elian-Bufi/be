@@ -5,16 +5,20 @@
  * - **a la derecha**, la campana de las novedades, con cuántas hay sin leer (DL-133).
  * Desde DL-166 (PV-1, 2026-11-07) la cabecera queda con la marca y Novedades: el menú auxiliar y el avatar se fueron, y lo
  * que abrían está en Perfil, el quinto destino de la barra;
- * - **debajo**, la franja del ambiente de prueba, siempre a la vista (08 §33), y la línea de actualización.
+ * - **debajo**, la franja con el aviso de prueba (08 §33) y la línea de actualización. Desde UF-08 de WP-USO-FINAL
+ *   (DL-169) la franja sale del ambiente: va solo en las builds que muestran los avisos de prueba (`ambiente.ts`), con el
+ *   texto del dominio. Sin ella no queda lugar reservado: la fila de la marca cierra la cabecera.
  *
  * Volver no depende del botón ni de un gesto del sistema (10-B10 §9). El botón dice adónde vuelve al lector de pantalla
  * («Volver a Inicio») y a la vista muestra «Volver», que está contenido en ese nombre (WCAG 2.5.3).
  * Los textos crecen con la letra hasta 1,15 veces: la cabecera queda compacta, y el contenido de cada pantalla crece sin
  * tope (prueba de la 0.13.1).
  */
+import { AVISOS_DE_PRUEBA } from '@be/domain';
 import Constants from 'expo-constants';
 import { Image, Pressable, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import { AVISOS_DE_PRUEBA_VISIBLES } from './ambiente';
 import { useApariencia } from './apariencia';
 import { Icono } from './icono';
 import { LineaDeActualizacion } from './estados';
@@ -81,9 +85,11 @@ export function Cabecera({
           ) : null}
         </View>
       </View>
-      <Text style={estilos.ambiente} numberOfLines={2} maxFontSizeMultiplier={1.15}>
-        Ambiente de prueba · solo datos sintéticos
-      </Text>
+      {AVISOS_DE_PRUEBA_VISIBLES ? (
+        <Text style={estilos.ambiente} numberOfLines={2} maxFontSizeMultiplier={1.15}>
+          {AVISOS_DE_PRUEBA.franja}
+        </Text>
+      ) : null}
       <LineaDeActualizacion activa={actualizando} />
     </View>
   );

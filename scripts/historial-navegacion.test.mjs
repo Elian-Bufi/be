@@ -384,7 +384,9 @@ test('la cabecera (DL-166): la marca y Novedades, sin menú ni avatar, y volver 
   assert.match(CABECERA, /Novedades, \$\{sinLeer\} sin leer/);
   const codigo = CABECERA.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(codigo, /profile|displayName|email|correo|iniciales/i, 'el perfil no tiene nombre ni foto (D-2)');
-  assert.match(CABECERA, /Ambiente de prueba · solo datos sintéticos/, 'el ambiente siempre a la vista (08 §33)');
+  // Cambió con UF-08 de WP-USO-FINAL (DL-169, Dirección, 2026-11-11): el aviso de prueba sale del ambiente. Va con el
+  // texto del dominio y solo en las builds que lo muestran; en producción, nunca (08 §33 sigue valiendo en test).
+  assert.match(CABECERA, /\{AVISOS_DE_PRUEBA_VISIBLES \? \(\s*<Text[^>]*>\s*\{AVISOS_DE_PRUEBA\.franja\}/, 'el aviso de prueba, según el ambiente (UF-08)');
   assert.doesNotMatch(APP, /MenuAuxiliar|conMenu|conAvatar/, 'App.tsx no dibuja menú ni avatar');
   assert.match(APP, /volverA=\{recuperacion \|\| raiz \? null : anterior\(ruta\)\}/, 'volver en todo lo que no es raíz');
 });

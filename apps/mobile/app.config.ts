@@ -146,6 +146,9 @@ const config: ExpoConfig = {
   ],
   extra: {
     appEnv: process.env.APP_ENV ?? 'development',
+    // UF-08 de WP-USO-FINAL (DL-169): «no» apaga los avisos de prueba en un build que no es de producción, para mostrar
+    // BE como la app final; en producción no aparecen nunca (src/ambiente.ts).
+    avisosDePrueba: process.env.BE_AVISOS_DE_PRUEBA ?? null,
     apiBaseUrl: process.env.API_BASE_URL ?? null,
     googleWebClientId: CLIENT_ID_WEB_DE_GOOGLE,
     commit: process.env.EAS_BUILD_GIT_COMMIT_HASH ?? null,

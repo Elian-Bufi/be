@@ -20,14 +20,13 @@
  * fuera también lo cierra, y también salir de él con el teclado: abierto, tapa lo que tiene debajo, y el foco no puede
  * quedar detrás de un panel (WCAG 2.2, 2.4.11).
  */
-import { CODIGOS_DE_SESION_NO_VALIDA } from '@be/domain';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
-import { api } from '../lib/api';
 import { aplicarTema, leerTema, NOMBRE_DEL_TEMA, sePuedeGuardar, TEMA_PREDETERMINADO, TEMAS, temaValido, type Tema } from '../lib/apariencia';
 import { COPY } from '../lib/copy';
-import { olvidarNombrePropio, useNombrePropio } from '../lib/nombre-propio';
+import { CERRANDO_SESION, useCerrarSesion } from '../lib/cerrar-sesion';
+import { useNombrePropio } from '../lib/nombre-propio';
 import { ponerNombresOcultos, useNombresOcultosElegido } from '../lib/nombres-ocultos';
 import { useSesion } from '../lib/sesion';
 import { Icono } from './icono';
@@ -36,7 +35,7 @@ import { Retrato } from './retrato';
 export function MenuDeCuenta() {
   const id = useId();
   const ruta = usePathname();
-  const { sesion, cerrada } = useSesion();
+  const { sesion } = useSesion();
   const raiz = useRef<HTMLDivElement>(null);
   const boton = useRef<HTMLButtonElement>(null);
   const [abierto, setAbierto] = useState(false);
@@ -44,8 +43,8 @@ export function MenuDeCuenta() {
   // que el script de inicio ya puso (así no hay salto ni diferencia de hidratación en el resto).
   const [tema, setTema] = useState<Tema>(TEMA_PREDETERMINADO);
   const [guardable, setGuardable] = useState(true);
-  const [cerrando, setCerrando] = useState(false);
-  const [problema, setProblema] = useState<string | null>(null);
+  // Cerrar la sesión es lo mismo acá y en «Antes de seguir» (`useCerrarSesion`).
+  const { cerrar: cerrarSesion, cerrando, problema, olvidarProblema } = useCerrarSesion();
   const nombrePropio = useNombrePropio();
   const ocultos = useNombresOcultosElegido();
   const [ocultosGuardados, setOcultosGuardados] = useState(true);
@@ -62,8 +61,8 @@ export function MenuDeCuenta() {
   // Al cambiar de página, el panel se cierra.
   useEffect(() => {
     setAbierto(false);
-    setProblema(null);
-  }, [ruta]);
+    olvidarProblema();
+  }, [ruta, olvidarProblema]);
 
   // Abierto, se cierra con Escape (el foco vuelve al botón) o al tocar fuera de él.
   useEffect(() => {
@@ -85,27 +84,6 @@ export function MenuDeCuenta() {
   }, [abierto]);
 
   const token = sesion?.token ?? null;
-
-  /**
-   * Cierra esta sesión, igual que el botón de «Cuenta». Con la sesión cerrada (o si la API dice que ya no valía), va a
-   * «Iniciar sesión» con una carga completa de la página: la sesión vive en memoria, así no queda nada de la visita.
-   */
-  async function cerrarSesion() {
-    if (!token || cerrando) return;
-    setCerrando(true);
-    setProblema(null);
-    const r = await api.finalizarSesion(token);
-    if (r.ok || (r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo))) {
-      // DL-147: la API borró la cookie de reanudación; las otras pestañas se enteran y olvidan la sesión.
-      cerrada();
-      olvidarNombrePropio();
-      window.location.assign('/login?aviso=sesion-cerrada');
-      return;
-    }
-    setCerrando(false);
-    setProblema(r.tipo === 'RED' ? COPY.resultadoIncierto : COPY.noDisponible);
-  }
-
   const conSesion = token !== null;
   const enElEspacio = conSesion && (ruta === '/pro' || ruta.startsWith('/pro/'));
   return (
@@ -185,9 +163,9 @@ export function MenuDeCuenta() {
             </div>
           ) : null}
           {conSesion ? (
-            <button type="button" className="menu-de-cuenta__opcion" onClick={cerrarSesion} disabled={cerrando}>
+            <button type="button" className="menu-de-cuenta__opcion" onClick={() => void cerrarSesion()} disabled={cerrando}>
               <Icono nombre="salir" />
-              {cerrando ? 'Cerrando sesión…' : COPY.cerrarSesion}
+              {cerrando ? CERRANDO_SESION : COPY.cerrarSesion}
             </button>
           ) : null}
           {problema ? (

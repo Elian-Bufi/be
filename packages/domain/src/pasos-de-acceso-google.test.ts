@@ -17,13 +17,18 @@ const SESION: IniciarSesionResponse = {
   },
 };
 
-const rechazo = (status: number, codigo: string, extra: { issues?: { code: string; path: string }[]; correoDeGoogle?: string } = {}): Resultado<IniciarSesionResponse> => ({
+const rechazo = (
+  status: number,
+  codigo: string,
+  extra: { issues?: { code: string; path: string }[]; correoDeGoogle?: string; nombreDeGoogle?: string | null } = {},
+): Resultado<IniciarSesionResponse> => ({
   ok: false,
   tipo: 'API',
   status,
   codigo,
   issues: extra.issues ?? [],
   ...(extra.correoDeGoogle ? { correoDeGoogle: extra.correoDeGoogle } : {}),
+  ...(extra.nombreDeGoogle !== undefined ? { nombreDeGoogle: extra.nombreDeGoogle } : {}),
 });
 
 const OPERACIONES: readonly OperacionDeGoogle[] = ['ENTRAR', 'VINCULAR', 'CREAR'];
@@ -45,6 +50,7 @@ test('vincular o crear: el paso lleva el correo de la cuenta de Google; sin el c
   assert.deepEqual(pasoDeAccesoConGoogle('ENTRAR', rechazo(404, 'GOOGLE_ACCOUNT_NOT_FOUND', { correoDeGoogle: 'persona@example.invalid' }), 'APK'), {
     tipo: 'CREAR',
     correo: 'persona@example.invalid',
+    nombre: null,
   });
   // Mientras la persona completaba el alta, alguien creó una cuenta con contraseña y ese correo: pasa a vincular.
   assert.deepEqual(pasoDeAccesoConGoogle('CREAR', rechazo(409, 'GOOGLE_LINK_REQUIRED', { correoDeGoogle: 'persona@example.invalid' }), 'WEB'), {
@@ -133,4 +139,32 @@ test('con el cliente real: el 409 de la API, con el correo en details, lleva a v
       new Response(JSON.stringify({ error: { code: 'GOOGLE_LINK_REQUIRED', message: 'x', details: { email: 'persona@example.invalid' } } }), { status: 409 })) as unknown as typeof fetch,
   });
   assert.deepEqual(pasoDeAccesoConGoogle('ENTRAR', await cliente.iniciarSesionConGoogle('id-token-sintetico'), 'WEB'), { tipo: 'VINCULAR', correo: 'persona@example.invalid' });
+});
+
+// ─── DL-169 (UF-01, UF-D2): el nombre al crear la cuenta con Google ────────────────────────────────
+
+test('TEST-UF-002 · crear con Google: el paso trae el nombre de la cuenta de Google que propuso la API, o null para escribirlo', () => {
+  assert.deepEqual(pasoDeAccesoConGoogle('ENTRAR', rechazo(404, 'GOOGLE_ACCOUNT_NOT_FOUND', { correoDeGoogle: 'persona@example.invalid', nombreDeGoogle: 'Persona de Google' }), 'WEB'), {
+    tipo: 'CREAR',
+    correo: 'persona@example.invalid',
+    nombre: 'Persona de Google',
+  });
+  assert.deepEqual(pasoDeAccesoConGoogle('ENTRAR', rechazo(404, 'GOOGLE_ACCOUNT_NOT_FOUND', { correoDeGoogle: 'persona@example.invalid', nombreDeGoogle: null }), 'APK'), {
+    tipo: 'CREAR',
+    correo: 'persona@example.invalid',
+    nombre: null,
+  });
+});
+
+test('TEST-UF-002 · crear con Google: el nombre vacío o que no se puede guardar vuelve a su campo; sin nombre, el cliente viejo pide actualizar', () => {
+  for (const code of ['DISPLAY_NAME_REQUIRED', 'INVALID_DISPLAY_NAME']) {
+    assert.deepEqual(pasoDeAccesoConGoogle('CREAR', rechazo(422, 'VALIDATION_FAILED', { issues: [{ code, path: 'profile.displayName' }] }), 'WEB'), {
+      tipo: 'CAMPO',
+      campo: 'nombre',
+      mensaje: MENSAJE_DE_CAMPO[code],
+    });
+  }
+  // Un cliente anterior a DL-169 no manda el nombre: la API responde lo de DL-138 D-10, que se traduce a actualizar.
+  const sinNombre = rechazo(422, 'TERMS_VERSION_NOT_ACCEPTABLE', { issues: [{ code: 'DISPLAY_NAME_REQUIRED', path: 'profile.displayName' }] });
+  assert.deepEqual(pasoDeAccesoConGoogle('CREAR', sinNombre, 'APK'), { tipo: 'AVISO', mensaje: COPY.versionDesactualizadaApk, reiniciar: false });
 });

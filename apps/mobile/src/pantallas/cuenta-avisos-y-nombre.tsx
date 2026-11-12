@@ -6,12 +6,13 @@
  *   activar los avisos por primera vez los dos recordatorios se encienden, porque se activan para eso; se apagan con su
  *   casilla. Sin Firebase en esta versión, se dice que no están disponibles: las novedades siguen en su pantalla.
  * - **Tu nombre** (DL-009 y DL-040, decididas por Dirección el 2026-10-15): el que ven tus profesionales mientras tengas un
- *   vínculo vigente con ellos. Se cambia o se quita; cada cambio es una versión.
+ *   vínculo vigente con ellos. Cada cambio es una versión. Desde DL-169 (WP-USO-FINAL, UF-D3) es obligatorio: se cambia
+ *   pero no se quita, y vacío lo dice el campo, como el 422 de la API.
  */
 import {
+  COPY_DEL_NOMBRE,
   COPY_NOVEDADES,
   LARGO_MAXIMO_DEL_NOMBRE_VISIBLE,
-  nombreVisibleValido,
   normalizarNombreVisible,
   type PerfilPropio,
   type PreferenciasDeAvisos,
@@ -22,6 +23,7 @@ import { api } from '../api';
 import { activar, desactivar, estadoGuardado, type EstadoDeAvisos } from '../avisos';
 import { dependenciasDeAvisos } from '../avisos-del-telefono';
 import { Cargando, ErrorConReintento } from '../estados';
+import { mensajeDelNombreEnLaRespuesta, revisarElNombre } from '../nombre-obligatorio';
 import { Aviso, Boton, Campo, Casilla, Parrafo, Seccion } from '../ui';
 
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'error'; sinConexion: boolean };
@@ -141,17 +143,18 @@ export function SeccionDeTuNombre({ token, sesionPerdida }: { token: string; ses
     void cargar();
   }, [cargar]);
 
-  async function guardar(quitar: boolean) {
+  async function guardar() {
     if (perfil.tipo !== 'listo' || guardando) return;
-    const nombre = quitar ? null : nombreVisibleValido(texto);
-    if (!quitar && nombre === null) {
-      setError(`Escribí un nombre de 1 a ${LARGO_MAXIMO_DEL_NOMBRE_VISIBLE} caracteres.`);
+    // DL-169 (UF-D3): el nombre se cambia, no se quita. Vacío, largo o con invisibles, lo dice el campo.
+    const revisado = revisarElNombre(texto);
+    if (!revisado.ok) {
+      setError(revisado.mensaje);
       return;
     }
     setGuardando(true);
     setError(null);
     setGuardado(false);
-    const r = await api.editarPerfilPropio(token, { expectedVersion: perfil.datos.version, changes: { displayName: nombre } });
+    const r = await api.editarPerfilPropio(token, { expectedVersion: perfil.datos.version, changes: { displayName: revisado.nombre } });
     setGuardando(false);
     if (sesionPerdida(r)) return;
     if (r.ok) {
@@ -162,8 +165,13 @@ export function SeccionDeTuNombre({ token, sesionPerdida }: { token: string; ses
       return;
     }
     if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
-      setError('Tu nombre cambió en otro lugar. Lo volvimos a leer: revisalo y guardá de nuevo.');
+      setError(COPY_DEL_NOMBRE.cambioEnOtroLugar);
       void cargar();
+      return;
+    }
+    const delCampo = r.tipo === 'API' ? mensajeDelNombreEnLaRespuesta(r.issues) : null;
+    if (delCampo) {
+      setError(delCampo);
       return;
     }
     setError(r.tipo === 'RED' ? 'No hay conexión: no sabemos si el cambio quedó. Probá de nuevo.' : 'No pudimos guardar tu nombre. Probá de nuevo.');
@@ -181,17 +189,19 @@ export function SeccionDeTuNombre({ token, sesionPerdida }: { token: string; ses
           {editando ? (
             <>
               <Campo
-                etiqueta="Nombre"
+                etiqueta={COPY_DEL_NOMBRE.etiqueta}
+                ayuda={COPY_DEL_NOMBRE.noSeQuita}
                 value={texto}
                 onChangeText={setTexto}
                 onBlur={() => setTexto(normalizarNombreVisible(texto))}
                 maxLength={LARGO_MAXIMO_DEL_NOMBRE_VISIBLE + 20}
                 autoCapitalize="words"
+                autoCorrect={false}
                 autoComplete="name"
+                textContentType="name"
                 error={error}
               />
-              <Boton texto={guardando ? 'Guardando…' : 'Guardar'} onPress={() => void guardar(false)} ocupado={guardando} />
-              {perfil.datos.displayName ? <Boton texto="Quitar mi nombre" tipo="secundario" onPress={() => void guardar(true)} deshabilitado={guardando} /> : null}
+              <Boton texto={guardando ? 'Guardando…' : 'Guardar'} onPress={() => void guardar()} ocupado={guardando} />
               <Boton
                 texto="Cancelar"
                 tipo="secundario"

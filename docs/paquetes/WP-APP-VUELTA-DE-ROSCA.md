@@ -14,6 +14,11 @@
 > alternativa) y AVD-5 y AVD-8 (como se recomendaba). AVD-2, AVD-4, AVD-6 y AVD-7 siguen **a ratificar**, y también
 > AVD-9, que es nueva y sale de AVD-1.
 >
+> **Enmienda del 2026-11-11 (WP-USO-FINAL, DL-169).** El nombre es obligatorio (UF-01): Perfil ya no ofrece «Agregá tu
+> nombre» (AV-03 y AV-17), porque una cuenta sin nombre lo completa en «Antes de seguir» antes de llegar ahí. La franja
+> del ambiente de la cabecera depende del ambiente (UF-08). Los oráculos que lo fijaban (TEST-AVR-002, 004 y 029) llevan
+> la nota en `WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`.
+>
 > **Encargo** (Dirección, 2026-11-07): «Las pantallas deben llevar a acciones claras, y recién en esas acciones el
 > desarrollo o más texto (…) bien segmentado, con información clara, y si es necesario más información, un
 > desplegable». Para el engranaje del descanso: «las configuraciones así tienen que ser contextuales».

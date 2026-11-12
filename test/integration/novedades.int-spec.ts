@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import request from 'supertest';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, NOMBRE_SINTETICO } from './soporte-api';
 import { circuitoConPlanActivo, cuerpoDeRevision, registrarComida } from './soporte-nutricion';
 import { pausar, revocarB2, versionDeVinculo } from './soporte-vinculo';
 
@@ -31,7 +31,6 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const REFERENCIA = /^Asesorado · [0-9a-f]{6}$/;
 /** Identificadores y tokens nuevos en cada corrida: la prueba no depende de lo que dejó otra en la misma base. */
 const sufijo = () => randomUUID().replace(/-/g, '').slice(0, 12);
 const tokenDePrueba = (nombre: string) => `ExponentPushToken[${nombre}-${sufijo()}]`;
@@ -75,12 +74,12 @@ describe('RF-061 · el centro de novedades', () => {
     await expect(prisma.$executeRawUnsafe(`DELETE FROM lectura_de_novedad WHERE novedad_id = '${plan.newsId}'`)).rejects.toThrow(/append-only/);
   });
 
-  it('el profesional ve la aceptación con la referencia neutral, y con el nombre visible cuando la persona lo declara (DL-040)', async () => {
+  it('el profesional ve la aceptación con el nombre visible de la persona, y el nuevo cuando lo cambia (DL-040; desde DL-169 toda cuenta nueva tiene nombre)', async () => {
     const c = await circuitoConPlanActivo(app, 'nov-nombre');
     const antes = (await novedades(app, c.pro.token)).data.find((n) => n.kind === 'RELATIONSHIP_REQUEST_ACCEPTED')!;
-    expect(antes.source?.displayName).toMatch(REFERENCIA);
+    expect(antes.source?.displayName).toBe(NOMBRE_SINTETICO);
     expect(antes.open).toEqual({ view: 'ADVISEE', referenceId: c.ase.id });
-    await conSesion(app, c.ase.token).patch('/api/v1/me/profile').send({ expectedVersion: 'v0', changes: { displayName: 'Diego Prueba' } }).expect(200);
+    await conSesion(app, c.ase.token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Diego Prueba' } }).expect(200);
     const despues = (await novedades(app, c.pro.token)).data.find((n) => n.kind === 'RELATIONSHIP_REQUEST_ACCEPTED')!;
     expect(despues.body).toBe('Diego Prueba aceptó tu solicitud de vínculo de Nutrición.');
   });
@@ -235,6 +234,8 @@ describe('RF-062 y DL-133 · los avisos y los recordatorios diarios', () => {
     const propio = enviados.find((m) => m.to === token)!;
     expect(propio).toEqual(expect.objectContaining({ title: 'BE', body: 'Tenés un recordatorio para hoy.', data: { type: 'NEW_INTERNAL_UPDATE', referenceId: recordatorio.newsId } }));
     expect(JSON.stringify(enviados)).not.toMatch(/Profesional sintético|Nutrición|comida|kcal|Asesorado/);
+    // Tampoco el nombre de la persona (DL-169: toda cuenta nueva tiene uno).
+    expect(JSON.stringify(enviados)).not.toContain(NOMBRE_SINTETICO);
     expect(expo.pedidos[expo.pedidos.length - 1]!.encabezados.authorization).toBe('Bearer token-de-acceso-sintetico');
     // El teléfono que Expo no reconoce queda dado de baja.
     expect((await prisma.suscripcionPush.findFirst({ where: { dispositivoId: telefonoInvalido } }))?.motivoDeBaja).toBe('TOKEN_INVALIDO');

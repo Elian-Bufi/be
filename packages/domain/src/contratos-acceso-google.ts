@@ -38,6 +38,11 @@ export type VincularGoogleRequest = z.infer<typeof VincularGoogleRequestSchema>;
 export const RegistrarConGoogleRequestSchema = z.strictObject({
   idToken: IdTokenDeGoogleSchema,
   registrationIntent: RegistrationIntentSchema,
+  /**
+   * El nombre visible, obligatorio desde DL-169 (UF-01): el de la cuenta de Google que propuso la API (UF-D2), confirmado
+   * o corregido por la persona. Optativo en el schema, como en API-ACC-01, para responder el 422 preciso de UF-D1.
+   */
+  profile: z.strictObject({ displayName: z.string().max(400).optional() }).optional(),
   termsAcceptance: z.strictObject({ versionId: IdOpaco }),
   privacyAcknowledgement: z.strictObject({ versionId: IdOpaco }),
   /** Obligatoria (08 §24.7 a); optativa en el schema para que falte con un 422 preciso, como en API-ACC-01. */
@@ -54,6 +59,15 @@ export const SesionConGoogleResponseSchema = IniciarSesionResponseSchema;
  */
 export const DetalleDeCuentaDeGoogleSchema = z.strictObject({ email: z.string().min(1) });
 export type DetalleDeCuentaDeGoogle = z.infer<typeof DetalleDeCuentaDeGoogleSchema>;
+
+/**
+ * `error.details` de GOOGLE_ACCOUNT_NOT_FOUND desde DL-169 (UF-D2): el correo y el nombre de la cuenta de Google, leído
+ * del token ya verificado, para proponerlo en «Crear la cuenta con Google». `null` si el token no trae un nombre que se
+ * pueda guardar (de 1 a 60 caracteres, sin invisibles): la persona lo escribe. La 0.23 lee estos detalles con el esquema
+ * de solo el correo, así que su paso de Google muestra un error general; tampoco podría crear la cuenta (UF-D1).
+ */
+export const DetalleDeCuentaDeGoogleInexistenteSchema = z.strictObject({ email: z.string().min(1), name: z.string().nullable() });
+export type DetalleDeCuentaDeGoogleInexistente = z.infer<typeof DetalleDeCuentaDeGoogleInexistenteSchema>;
 
 /** Las rutas de la familia GOO, bajo el prefijo que bosqueja el 09 v0.12 §11 («/auth/federated/google/…»). */
 export const RUTAS_DE_ACCESO_GOOGLE = {

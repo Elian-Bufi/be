@@ -44,18 +44,16 @@ const APK = readdirSync(CARPETA)
   .map((archivo) => ({ archivo, ...(JSON.parse(readFileSync(join(CARPETA, archivo), 'utf8')) as Congelado) }));
 
 /**
- * Las APK que importan hoy (DL-152): la estable instalada y las candidatas que puede haber en un teléfono. Cambiar esta
- * lista es una decisión: al publicar una candidata nueva se congela y se suma; al dejar de haber teléfonos con una
- * versión, se saca. La 0.20.0-candidata.1 (2026-11-05, los formularios de inicio de DL-164) lee la familia FRI (01 a 05
- * y 08) en lugar de FRM-02 y 05 a 08. El mismo día, Dirección sacó la 0.17.0-candidata.3 y la 0.18.0-candidata.1: ya no
- * hay teléfonos con ellas (DL-152, en el encargo de DL-165). La 0.21.0-candidata.1 (2026-11-05, la ronda 2 de DL-165)
- * se sumó sin sacar la 0.20, que Dirección tiene instalada hasta que actualice: declara `forms-format-3`, lee FRI en el
- * formato 3 y suma API-HBT-01 a 04. La 0.22.0-candidata.1 (2026-11-06, la ronda 2.1 de DL-165) se sumó sin sacar la 0.20
- * ni la 0.21, porque Dirección todavía no actualizó: suma API-HBT-08 y 09, los pedidos de acceso a sus hábitos, y lo demás
- * lo lee con la forma de la 0.21. La 0.23.0-candidata.1 (2026-11-08, la vuelta de rosca de DL-166, etapas solo de app) se
- * sumó sin sacar ninguna: lee las mismas 88 operaciones que la 0.22, con la misma forma.
+ * Las APK que importan hoy (DL-152, enmendada por UF-00 de WP-USO-FINAL el 2026-11-11): mientras Dirección no establezca
+ * una estable, solo la última versión distribuida, la que ofrece la descarga del website. Al publicar una nueva, se
+ * congela y reemplaza a la anterior, cuyo archivo se borra (queda en la historia de git y se regenera desde su tag).
+ * Cuando haya una estable, la lista vuelve a tener la estable y la última candidata.
+ *
+ * Hasta el 2026-11-11 la lista tuvo la estable 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1. Ese día Dirección
+ * dijo que solo su teléfono y dos o tres de su familia tienen la app, y que no hay que sostener las anteriores. La
+ * 0.23.0-candidata.2 (el arreglo de #250) lee las mismas 88 operaciones que la .1, con la misma forma.
  */
-const VIGENTES = ['0.13.2', '0.20.0-candidata.1', '0.21.0-candidata.1', '0.22.0-candidata.1', '0.23.0-candidata.1'];
+const VIGENTES = ['0.23.0-candidata.2'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en
@@ -64,7 +62,7 @@ const VIGENTES = ['0.13.2', '0.20.0-candidata.1', '0.21.0-candidata.1', '0.22.0-
  */
 const REGLAS_REVISADAS_APARTE = ['repetitions: refine', 'professionalParameters[]: refine', 'objective: refine', 'at: refine'];
 
-test('DL-152 · están congeladas la APK estable y la candidata vigentes, cada una con su tag y su commit', () => {
+test('TEST-UF-006 · DL-152 (enmendada por UF-00) · está congelada exactamente la última versión distribuida, con su tag y su commit', () => {
   assert.deepEqual(
     APK.map((a) => a.apk.version),
     VIGENTES,

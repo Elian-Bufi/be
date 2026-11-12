@@ -1,3 +1,4 @@
+import { AVISOS_DE_PRUEBA, DESCARGAR_LA_APP } from '@be/domain';
 import Link from 'next/link';
 import { Suspense, type ReactNode } from 'react';
 import { AvisoDeLlegada } from '../components/aviso-de-llegada';
@@ -5,16 +6,18 @@ import { Encabezado } from '../components/encabezado';
 import { Icono } from '../components/icono';
 import { Pie } from '../components/pie';
 import { PortadaConSesion } from '../components/portada-con-sesion';
+import { AVISOS_DE_PRUEBA_VISIBLES } from '../lib/ambiente';
 import isotipo from '../marca/isotipo-640.png';
 
-/** Dónde se descarga la APK de prueba: la última release de GitHub, con su SHA-256 en la evidencia (DESPLIEGUE.md). */
+/** Dónde se descarga la app para Android: la última release de GitHub, con su SHA-256 en la evidencia (DESPLIEGUE.md). */
 const APK = 'https://github.com/Elian-Bufi/be/releases/latest';
 
 /**
  * Landing pública: el estado `PUBLIC` de la jornada de acceso (B10-02 §3), que lleva a «Crear cuenta» y a «Iniciar
  * sesión». El contenido sale del legajo, no se inventa: el nombre de las portadas del legajo, la declaración central
  * (02 §3.2) y la propuesta de valor (02 §9), y lo que queda fuera del alcance (02 §14). No promete resultados de salud
- * (RNF-ACC-002) y dice que es un ambiente de prueba con datos sintéticos (08 §33).
+ * (RNF-ACC-002). Los avisos de prueba (08 §33), el del pie y el del botón de descarga, salen del ambiente (WP-USO-FINAL
+ * UF-08): en producción no aparecen.
  * Con la sesión abierta no se muestra: `PortadaConSesion` lleva a la persona a su inicio (DL-025, 2026-10-17).
  */
 export default function Inicio() {
@@ -117,7 +120,7 @@ export default function Inicio() {
               <p className="nota">Se instala fuera de Google Play: Android te va a pedir permiso para instalar apps de origen desconocido.</p>
             </div>
             <a className="boton boton--secundario" href={APK}>
-              Descargar la APK de prueba
+              {AVISOS_DE_PRUEBA_VISIBLES ? AVISOS_DE_PRUEBA.descargarLaApk : DESCARGAR_LA_APP}
             </a>
           </section>
         </main>

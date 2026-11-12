@@ -49,6 +49,8 @@ export function clienteDe(origen) {
       cuerpo: {
         registrationIntent: intencion,
         identity: { localIdentifier: correo, localCredential: clave },
+        // DL-169 (UF-01): toda alta lleva el nombre; el de cada persona de la cohorte se pone después, como versión nueva.
+        profile: { displayName: 'Persona de la cohorte' },
         termsAcceptance: { versionId: dominio.VERSION_VIGENTE.TERMINOS.id },
         privacyAcknowledgement: { versionId: dominio.VERSION_VIGENTE.PRIVACIDAD_INFO.id },
         // DL-138: toda alta declara la mayoría de edad (las personas de la cohorte son adultas).

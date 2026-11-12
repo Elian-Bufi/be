@@ -1,7 +1,8 @@
 /**
  * Contratos de WP-ENTRENAMIENTO-SERIES (encargo de Dirección del 2026-10-06; DL-122, DL-123 y DL-124). Son operaciones
- * nuevas: ninguna respuesta que lee la APK 0.13.2 cambia de forma. Sus formas están congeladas en
- * `fixtures/respuestas-que-lee-la-apk-instalada.json` y se prueban en `entrenamiento-por-serie.test.ts`.
+ * nuevas: ninguna respuesta que leía la APK 0.13.2 cambió de forma. Sus formas están congeladas en
+ * `fixtures/respuestas-que-lee-la-apk-instalada.json`; la prueba que las comparaba (C01) salió con UF-00 de WP-USO-FINAL,
+ * y lo que lee la última APK lo protege `lecturas-de-la-apk.test.ts` (DL-152).
  *
  * - **Objetivos por serie (DL-122).** El RIR objetivo, la carga sugerida y el descanso recomendado de cada serie, con
  *   herencia desde la prescripción. Se escriben con API-TRN-07 y 10, que solo usa la web. Se leen con dos lecturas

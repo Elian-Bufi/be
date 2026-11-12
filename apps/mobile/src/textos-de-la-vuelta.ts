@@ -21,7 +21,6 @@ export const TEXTOS_DE_LA_VUELTA = {
   // ─── La barra y Perfil (AV-02 a AV-04) ─────────────────────────────────────────────────────
   perfil: 'Perfil',
   hayAlgoParaResponder: 'hay algo para responder',
-  agregaTuNombre: 'Agregá tu nombre',
   compartir: 'Compartir',
   compartirTuIdentificador: 'Compartir tu identificador BE',
   tuInformacion: 'Tu información',

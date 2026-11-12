@@ -37,15 +37,20 @@
  *   sin sesión, queda pendiente hasta iniciarla, igual que un aviso tocado.
  * - WP-FORMULARIOS-RONDA-2 (FR-01): lo escrito en un formulario se guarda cifrado en el teléfono, por cuenta y por
  *   solicitud (src/formularios-en-el-telefono.ts). Cerrar la sesión desde Cuenta lo borra; una sesión vencida, no.
+ * - WP-USO-FINAL (DL-169), UF-01: con cada sesión (al iniciarla, con Google o al recuperar la guardada), la raíz pregunta
+ *   qué falta para seguir (API-ACC-07). Mientras falte algo, muestra «Antes de seguir» en lugar de la app, sin barra, sin
+ *   campana y sin volver (src/nombre-obligatorio.ts, src/pantallas/antes-de-seguir.tsx). UF-08: los avisos de prueba
+ *   salen del ambiente del build (src/ambiente.ts).
  * Identidad del build visible en Bienvenida (07 §34, TEST-APK-008).
  */
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
-import type { SecretoDeInvitacionRequest } from '@be/domain';
+import { AVISOS_DE_PRUEBA, type SecretoDeInvitacionRequest } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { api, apiConfigurada, consultarCuentaConSenal, extra } from './src/api';
+import { AVISOS_DE_PRUEBA_VISIBLES } from './src/ambiente';
+import { api, apiConfigurada, consultarCuentaConSenal, extra, loQueFaltaParaSeguirConTope } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
 import { BarraDeZonas, SEPARACION_DE_LA_BARRA, VeloDeLaBarra } from './src/barra-de-zonas';
 import { almacenSeguro } from './src/almacen-seguro';
@@ -63,9 +68,20 @@ import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lectur
 import { cancelarAvisoDelDescanso } from './src/avisos-del-telefono';
 import { FilaFijaDeLaSesion, useFilaFija } from './src/fila-fija';
 import { marcaEnPerfil, useMarcaEnPerfil } from './src/marca-de-perfil';
+import {
+  TOPE_DE_LO_QUE_FALTA_MS,
+  compuertaAlEmpezar,
+  compuertaConLaRespuesta,
+  compuertaEnMemoria,
+  dejaSeguir,
+  vuelveAPreguntar,
+  type Compuerta,
+  type MomentoDeLaPregunta,
+} from './src/nombre-obligatorio';
 import { paraResponder } from './src/perfil';
 import { alIniciarSesion, anterior, esRaiz, mismaPantalla, navegar, pestanaActiva, requiereSesion, sinBarraInferior, traePedido, type ModoDeNavegacion, type Ruta, type Salida } from './src/navegacion';
 import type { AlIniciar } from './src/pantallas/acceso-con-google';
+import { PantallaAntesDeSeguir } from './src/pantallas/antes-de-seguir';
 import { PantallaDeMiEvolucion } from './src/pantallas/antropometria';
 import { PantallaDeComidaDiferente } from './src/pantallas/comida-diferente';
 import { PantallaDeConsentimiento } from './src/pantallas/consentimiento';
@@ -165,6 +181,13 @@ function Contenido() {
   const [vigiaDeDemora] = useState(() => crearVigiaDeDemora(TEMPORIZADOR_DE_DEMORA, () => setTardando(true)));
   // Si la sesión quedó guardada en el teléfono: Cuenta lo dice, y no promete recordarla si no se pudo guardar.
   const [recordada, setRecordada] = useState<boolean | null>(() => (alMontar.estado === 'vigente' ? guarda.recordada(alMontar.sesion.token) : null));
+  // UF-01 (DL-169, UF-D4): «Antes de seguir». Una sesión nueva empieza preguntando qué falta (API-ACC-07), y mientras
+  // falte algo no se muestra la app. Si Android recreó la pantalla con la compuerta ya abierta, no se vuelve a preguntar.
+  const [compuerta, setCompuerta] = useState<Compuerta>(() => (alMontar.estado === 'vigente' ? compuertaAlEmpezar(alMontar.sesion.token) : { tipo: 'preguntando' }));
+  const compuertaActual = useRef(compuerta);
+  compuertaActual.current = compuerta;
+  /** La sesión con la que hay una pregunta en curso: de a una por vez. */
+  const preguntandoCon = useRef<string | null>(null);
   const desplazamiento = useRef<ScrollView>(null);
   const hayActualizaciones = useHayActualizaciones();
   // El entrenamiento en curso guardado en el teléfono es de la cuenta con sesión: se abre con ella y se cierra al salir.
@@ -284,10 +307,13 @@ function Contenido() {
       olvidarSesion();
       memoria.olvidarLaSesion();
       marcaEnPerfil.olvidar();
+      // La sesión que venga vuelve a preguntar qué falta para seguir (UF-01).
+      compuertaEnMemoria.olvidar();
       // Cerrar la sesión cancela el aviso de un descanso que estuviera corriendo (DL-166, AV-12).
       void cancelarAvisoDelDescanso();
       setSesion(null);
       setRecordada(null);
+      setCompuerta({ tipo: 'preguntando' });
       registroDeCambios.olvidar();
       ir(destino);
     },
@@ -333,6 +359,8 @@ function Contenido() {
         alturas.current.clear();
         setSesion(resultado.sesion);
         setRecordada(true);
+        // La sesión recuperada también pregunta qué falta antes de mostrar la app (UF-01): la espera sigue igual.
+        setCompuerta(compuertaAlEmpezar(resultado.sesion.token));
         ir(alIniciarSesion({ nombre: 'bienvenida' }));
       } else if (resultado.tipo === 'vencida') {
         ir({ nombre: 'login', aviso: avisoDeVencimiento({ vigenciaMs: resultado.vigenciaMs }) });
@@ -493,9 +521,66 @@ function Contenido() {
     [terminar],
   );
 
-  // Con sesión verificada: la barra y la campana. Mientras se verifica una sesión guardada, nada de la cuenta.
-  const conSesion = sesion !== null && recuperacion === null && requiereSesion(ruta);
-  const raiz = esRaiz(ruta);
+  /**
+   * UF-01 (DL-169, UF-D4): pregunta qué falta para seguir (API-ACC-07), de a una pregunta por vez y con tope. Lo que se
+   * muestra con la respuesta lo decide `compuertaConLaRespuesta`, según el momento: al entrar, la pantalla espera; de nuevo
+   * (la app ya se usa, porque no se supo) o después de guardar el nombre, la pantalla sigue como está hasta la respuesta.
+   */
+  const preguntar = useCallback(
+    async (token: string, momento: MomentoDeLaPregunta) => {
+      if (preguntandoCon.current === token) return;
+      preguntandoCon.current = token;
+      if (momento === 'al-entrar') setCompuerta({ tipo: 'preguntando' });
+      let respuesta: Awaited<ReturnType<typeof loQueFaltaParaSeguirConTope>>;
+      try {
+        respuesta = await loQueFaltaParaSeguirConTope(token, TOPE_DE_LO_QUE_FALTA_MS);
+      } finally {
+        if (preguntandoCon.current === token) preguntandoCon.current = null;
+      }
+      // Si mientras tanto la sesión terminó o cambió, la respuesta ya no corresponde.
+      if (sesionActual.current?.token !== token) return;
+      const siguiente = compuertaConLaRespuesta(momento, respuesta);
+      if (!siguiente) return;
+      if (siguiente.tipo === 'sesion-perdida') return salir(siguiente.motivo);
+      if (siguiente.tipo === 'abierta') compuertaEnMemoria.abrir(token);
+      setCompuerta(siguiente);
+    },
+    [salir],
+  );
+
+  // Con cada sesión, la pregunta de «Antes de seguir»; abierta en este proceso (Android recreó la pantalla), no se repite.
+  useEffect(() => {
+    if (!tokenDeLaSesion || compuertaEnMemoria.abierta(tokenDeLaSesion)) return;
+    void preguntar(tokenDeLaSesion, 'al-entrar');
+  }, [tokenDeLaSesion, preguntar]);
+
+  // Sin saber qué falta (no hubo respuesta al entrar), la app se usa con lo guardado y vuelve a preguntar al volver al
+  // primer plano y al cambiar de pantalla: la primera respuesta de la API decide.
+  useEffect(() => {
+    if (!tokenDeLaSesion || !vuelveAPreguntar(compuerta)) return;
+    const token = tokenDeLaSesion;
+    const alVolver = AppState.addEventListener('change', (momento) => {
+      if (momento === 'active') void preguntar(token, 'de-nuevo');
+    });
+    return () => alVolver.remove();
+  }, [compuerta, tokenDeLaSesion, preguntar]);
+  useEffect(() => {
+    const actual = sesionActual.current;
+    if (actual && vuelveAPreguntar(compuertaActual.current)) void preguntar(actual.token, 'de-nuevo');
+  }, [ruta, preguntar]);
+
+  /** «Antes de seguir» guardó el nombre: se vuelve a preguntar qué falta y, con nada, entra (UF-01). */
+  const alGuardarElNombre = useCallback(async () => {
+    const actual = sesionActual.current;
+    if (actual) await preguntar(actual.token, 'despues-de-guardar');
+  }, [preguntar]);
+
+  // «Antes de seguir» en lugar de la app, mientras falte algo o se esté preguntando (UF-01). Es una raíz: no se saltea, y
+  // no lleva volver ni la barra.
+  const enAntesDeSeguir = sesion !== null && recuperacion === null && requiereSesion(ruta) && !dejaSeguir(compuerta);
+  // Con sesión verificada y nada pendiente: la barra y la campana. Mientras se verifica una sesión guardada, nada de la cuenta.
+  const conSesion = sesion !== null && recuperacion === null && requiereSesion(ruta) && dejaSeguir(compuerta);
+  const raiz = esRaiz(ruta) || enAntesDeSeguir;
   // Desde PA-02, también la sesión de entrenamiento lleva la barra: lo escrito queda guardado en el teléfono.
   const conBarra = conSesion && !sinBarraInferior(ruta);
   const entrenamientoEnCurso = useHayEntrenamientoEnCurso();
@@ -523,6 +608,8 @@ function Contenido() {
     const nueva = crearSesion({ token, identidadId, expiresAt, fechaDelServidor }, performance.now(), Date.now());
     setSesion(nueva);
     setRecordada(null);
+    // Antes de mostrar la app, la pregunta de «Antes de seguir» (UF-01): la sesión nueva no hereda la compuerta de otra.
+    setCompuerta(compuertaAlEmpezar(token));
     // La credencial va al almacenamiento seguro. Si no se pudo guardar, Cuenta lo dice: no se promete recordarla.
     void guarda.guardar({ token, identidadId, expiresAt, vigenciaMs: nueva.vigenciaMs }).then((guardada) => {
       if (sesionActual.current?.token === token) setRecordada(guardada);
@@ -583,9 +670,12 @@ function Contenido() {
               {ruta.aviso ? <Aviso tipo="info" titulo={ruta.aviso} /> : null}
               <Boton texto="Crear cuenta" onPress={() => ir({ nombre: 'registro' })} />
               <Boton texto="Iniciar sesión" tipo="secundario" onPress={() => ir({ nombre: 'login' })} />
-              <Parrafo tenue icono="info">
-                Ambiente de prueba: usá solo datos sintéticos. No ingreses datos reales de personas.
-              </Parrafo>
+              {/* UF-08: el aviso de prueba, solo en las builds que lo muestran; la identidad del build sigue siempre. */}
+              {AVISOS_DE_PRUEBA_VISIBLES ? (
+                <Parrafo tenue icono="info">
+                  {AVISOS_DE_PRUEBA.general}
+                </Parrafo>
+              ) : null}
               <Text style={estilos.identidad}>
                 app {version} · {extra.appEnv ?? 'ambiente no declarado'} · commit {commit}
               </Text>
@@ -596,7 +686,12 @@ function Contenido() {
 
           {ruta.nombre === 'login' ? <PantallaDeLogin aviso={ruta.aviso} irARegistro={() => ir({ nombre: 'registro' })} alIniciar={entrar} subir={subir} /> : null}
 
-          {requiereSesion(ruta) && sesion ? (
+          {/* UF-01 (DL-169): mientras falte algo para seguir, o mientras se pregunta, «Antes de seguir» en lugar de la app. */}
+          {enAntesDeSeguir && sesion ? (
+            <PantallaAntesDeSeguir key={sesion.token} compuerta={compuerta} token={sesion.token} identidadId={sesion.identidadId} salir={salir} alGuardar={alGuardarElNombre} />
+          ) : null}
+
+          {requiereSesion(ruta) && sesion && dejaSeguir(compuerta) ? (
             <>
               {/* Volver, sin depender del botón ni de un gesto del sistema (10-B10 §9), está en la cabecera. */}
               {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} salir={salir} ir={ir} /> : null}

@@ -4,6 +4,8 @@
  * local permanece disponible»).
  * Lo que se le dice a la persona es sobre su propia cuenta: solo llega con un ID token válido de Google para ese correo.
  */
+import { AVISOS_DE_PRUEBA } from './ambiente-de-prueba';
+
 export const COPY_ACCESO_GOOGLE = {
   continuarConGoogle: 'Continuar con Google',
   /** Entre el botón de Google y el formulario de correo y contraseña. */
@@ -39,7 +41,8 @@ export const COPY_ACCESO_GOOGLE = {
   volver: 'Volver',
   /**
    * 08 §33: en el ambiente de prueba van solo datos sintéticos, y con Google el correo no se inventa: es el de la cuenta.
-   * Es el mismo aviso que el alta con correo, para la cuenta de Google.
+   * Es el mismo aviso que el alta con correo, para la cuenta de Google. Se muestra solo si `muestraLosAvisosDePrueba` lo
+   * permite (UF-08).
    */
-  avisoDePrueba: 'Ambiente de prueba: BE guarda el correo de esta cuenta de Google. Usá una cuenta de Google de prueba.',
+  avisoDePrueba: AVISOS_DE_PRUEBA.google,
 } as const;
