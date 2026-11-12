@@ -7118,12 +7118,12 @@ necesario más información, un desplegable». Para el descanso: «las configura
 - **PV-1 · Perfil reemplaza a «Información»** y absorbe Cuenta y el menú. Vínculos pasa a Perfil, «Tu historial» a
   Entrenamiento y los registros nutricionales a Nutrición. La cabecera queda con la marca y Novedades.
 - **PV-2 · Las comidas del día, como fichas en Inicio.** «La que sigue» es la primera sin registrar en el orden del
-  plan, nunca por la hora.
+  plan, nunca por la hora. *Enmendada por DL-170 (2026-11-11), AV2-D1 paso 1: la siguiente a la última registrada hoy.*
 - **PV-3 · «Quién ve qué», en esta vuelta:** es solo de lectura, usa operaciones que ya existen y sus textos se revisan
   contra 10-B04.
 - **PV-4 · La regla de los desplegables:** se pliega lo que explica y nunca lo que hace falta para decidir (estado,
   fecha, quién y si se puede responder). Está en la GUIA-UX-UI, III.7.
-- **PV-5 · «Tu actividad» en Inicio, un solo número** en 30 días. El desglose va en «Tu historial».
+- **PV-5 · «Tu actividad» en Inicio, un solo número** en 30 días. El desglose va en «Tu historial». *Reemplazada por DL-170 (2026-11-11), AV2-D2: realizadas y no realizadas por separado.*
 - **PV-6 · Una marca de pendientes en Perfil** (Dirección eligió distinto de la recomendación). Es un punto sin número
   que desaparece cuando la persona responde o dice que no: negarse vale igual.
 - **El ícono de «Mis hábitos»:** un reloj envuelto por una flecha circular.
@@ -7163,7 +7163,7 @@ necesario más información, un desplegable». Para el descanso: «las configura
   navegación pasa a dos filas debajo de la fila de acciones, sin excepción a PV-11. La alternativa es esconder la
   navegación durante la sesión, que es una excepción a PV-11.
 - **AVD-2, AVD-4, AVD-6 y AVD-7,** con la recomendación del paquete: los 30 días en «Tu historial», la acción del medio
-  de la fila fija, el campo opcional de los eventos y «Arranca sola» solo con la app viva.
+  de la fila fija, el campo opcional de los eventos y «Arranca sola» solo con la app viva. *AVD-2, reemplazada por DL-170 (2026-11-11), AV2-D2.*
 - **AVD-9, nueva** (sale de AVD-1): la persona puede responder después de haber dicho que no, mientras la solicitud siga
   abierta, y decir que no queda en la historia de la solicitud.
 
@@ -7351,8 +7351,9 @@ TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · D
 DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · DL-049 · DL-077 · DL-106 · DL-111 · `WP-ENTRENAMIENTO-SERIES.md` §7.7 y
 la excepción 13 de `REFERENCIAS_VISUALES.md` · GUIA-UX-UI I.6, I.8, II.2, III.3 y III.4 · F-143 de WP-ESCRITORIO-AREAS ·
 **Estado:** DECIDIDA por Dirección el 2026-11-11 · etapa A programada en #255, sin integrar. El 2026-11-11 Dirección
-aprobó la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; la etapa B espera el visto bueno a la muestra.
-Las técnicas AV2-T1 a AV2-T16, del continuador, están a ratificar (`docs/paquetes/WP-APP-VUELTA-2.md` §6.1 y §10).
+aprobó la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; para AV2-D3, D4, D5, D7 y D8 rigen las
+recomendaciones; la etapa B espera el visto bueno a la muestra. Las técnicas AV2-T1 a AV2-T22, del continuador (T17 a
+T22, de la revisión de la etapa A), están a ratificar (`docs/paquetes/WP-APP-VUELTA-2.md` §6.1 y §10).
 
 **Qué dice lo vigente.**
 - **La superficie de la APK es mate.** Desde el 2026-10-06 no tiene brillo interno (`WP-ENTRENAMIENTO-SERIES.md` §7.7,
@@ -7392,7 +7393,8 @@ capturas de la 0.23 (2026-11-09) había encontrado seis errores de lógica en In
 - **Cambian tokens:** el tenue (#A3B1C2 en Azul noche, el del website, y #5B6B82 en Claro), el borde de los campos de
   Azul noche (#6497BD) y el botón principal (cian, con degradé).
 - **En el peor punto,** el texto pasa 4,5:1 en los dos temas y los bordes de control, 3:1. Los márgenes más finos son el
-  tenue de Azul noche sobre el fondo (4,55), las etiquetas de la barra (4,58) y el error de Claro (4,54).
+  tenue de Azul noche sobre el fondo (4,55), las etiquetas de la barra (4,58) y el error de Claro (4,54); entre los bordes,
+  el de un campo directo sobre el fondo (3,17 y 3,03), que se mide desde la revisión de la etapa A.
 
 **Qué modifica.**
 - **`WP-ENTRENAMIENTO-SERIES.md` §7.7:** la superficie mate deja de ser la regla de la APK. Se conserva la intención de
@@ -7404,12 +7406,17 @@ capturas de la 0.23 (2026-11-09) había encontrado seis errores de lógica en In
   - I.8: la tilde de lo que la persona hizo (la sesión de un día, la comida registrada) va en `exito`. Es la decisión
     del 2026-11-08: celebra un acto, nunca un número ni una medida del cuerpo;
   - y `INICIO-Y-NAVEGACION.md`: la barra al 88 % y la cabecera sin «BE» en texto.
-- **Solo con su decisión ratificada,** y cada prueba con su mutación, nunca para que pase:
-  - con AV2-D1, PV-2 y TEST-AVR-010: «la que sigue» se ancla en la última comida registrada hoy y, después, en la hora
-    habitual de la persona;
-  - con AV2-D2, PV-5, AVD-2 y TEST-AVR-012 y 013: «2 realizadas · 1 no realizada», como la maqueta. Nunca un total que
-    mezcle lo hecho con lo no hecho;
-  - con AV2-D6, el encuadre del 2026-10-04 y su prueba: el cuerpo entero, escalado con su capa de puntos.
+- **Lo que enmiendan las decisiones ratificadas** (Dirección, 2026-11-11), cada prueba con su mutación, nunca para que
+  pase:
+  - **PV-2 queda enmendada por AV2-D1, paso 1:** la que sigue es la siguiente a la última comida registrada hoy en el
+    orden del plan, y las anteriores sin registrar quedan neutras («Sin registrar»). Sin nada registrado hoy, la primera
+    del plan. TEST-AVR-010 pide la regla nueva. El paso 2 (la hora habitual de la persona, AV2-27) sigue sin decidir;
+  - **PV-5 y AVD-2 quedan reemplazadas por AV2-D2:** Inicio dice «2 realizadas · 1 no realizada · 30 días», como la
+    maqueta, nunca un total que mezcle lo hecho con lo no hecho; «Tu historial» da el desglose de los mismos 30 días, sin
+    ceros, y la tira, «N sesiones realizadas esta semana». Las tres salen de la misma lectura. TEST-AVR-012 y 013 piden la
+    regla nueva.
+- **Solo con AV2-D6 ratificada** (a ratificar, etapa B), y con su mutación: el encuadre del 2026-10-04 y su prueba; el
+  cuerpo entero, escalado con su capa de puntos.
 
 **Cómo se respeta el legajo.**
 - El contraste AA se mide en el peor punto, en los dos temas, con su prueba (RNF-ACC-001).
@@ -7431,8 +7438,10 @@ capturas de la 0.23 (2026-11-09) había encontrado seis errores de lógica en In
 una, con su mutación. El rendimiento se mide con `dumpsys gfxinfo`, antes y después, en el teléfono de Dirección.
 
 **Lo que queda abierto:**
-- el sí de Dirección a las partes;
-- AV2-D1 a AV2-D12, y las técnicas AV2-T1 a AV2-T13;
+- el visto bueno de Dirección a la muestra (AV2-18), que abre la etapa B (AV2-19 a AV2-26), y su sí a esas partes;
+- de las decisiones: el paso 2 de AV2-D1 (la hora habitual, AV2-27) y AV2-D6, D9, D10 y D12, de la etapa B. AV2-D3, D4,
+  D5, D7 y D8 rigen con la recomendación, y cambian si Dirección lo pide al ver la muestra;
+- las técnicas AV2-T1 a AV2-T22, a ratificar (T14 a T16, de la programación; T17 a T22, de la revisión de la etapa A);
 - la muestra en su teléfono;
 - TalkBack y el rendimiento en un teléfono real.
 

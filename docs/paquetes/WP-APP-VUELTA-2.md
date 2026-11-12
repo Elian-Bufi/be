@@ -2,7 +2,7 @@
 
 > **Estado:** etapa A programada en #255 (en borrador, sin integrar; DL-170). El 2026-11-11 Dirección aprobó la etapa A
 > (AV2-01 a AV2-18), AV2-D1 (el paso 1), AV2-D2 y AV2-D11; para D3, D4, D5, D7 y D8 rigen las recomendaciones (§6). La
-> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, T14 a T16 de la programación y T17 en adelante de la revisión (§10.4), a ratificar. Los
+> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, T14 a T16 de la programación y T17 a T22 de la revisión (§10.4), a ratificar. Los
 > oráculos están en `WP-APP-VUELTA-2-ORACULOS.md`; lo programado y lo que cambió al programar, en §10.
 >
 > **Encargo** (Dirección, 2026-11-11): pasó una referencia del tema de vidrio («glassy») para la apariencia de la app,
@@ -867,7 +867,7 @@ Es un plan y no una promesa. Lo que sí está fijo es el congelamiento del 25/11
   AV2-06. Después Inicio: AV2-07, AV2-08 y las partes de los errores.
 - **Las decisiones que la muestra necesita:** las que no cambian una decisión ratificada (AV2-D4, D5, D7 y D8) van con la
   recomendación si Dirección no responde antes de programar, y se cambian si corrige al ver la muestra. Las que sí la
-  cambian (AV2-D1, D2 y D6) esperan su ratificación; mientras tanto rige lo vigente, y la muestra lo dice.
+  cambian (AV2-D1, D2 y D6) esperan su ratificación; mientras tanto rige lo vigente, y la muestra lo dice. (2026-11-11: AV2-D1, paso 1, y D2, ratificadas; D3, D4, D5, D7 y D8, con la recomendación; D6, de la etapa B, a ratificar.)
 - **El corte:** si el degradé nativo no se dibuja en el teléfono, se pasa al plan B (§3.2) antes de seguir. Las hojas
   salen sin frenar a las demás: AV2-20, AV2-22, AV2-25, AV2-27 y AV2-28. Si la etapa B no llega, vale AV2-D12.
 - **La PC tiene poca memoria:** los procesos pesados van de a uno, y el AAB se construye en GitHub Actions.
@@ -918,7 +918,7 @@ dibuja como Android estas propiedades.
 ### 5.4 Qué hace falta para la muestra en el teléfono de Dirección
 
 1. **El sí de Dirección a los IDs de la etapa A** (AV2-01 a AV2-18) y su respuesta a AV2-D1, D2 y D11. Las demás de la
-   muestra van con la recomendación (§5.1).
+   muestra van con la recomendación (§5.1). Dados el 2026-11-11.
 2. **La etapa A programada,** con la CI verde, e integrada en `main` con su autorización.
 3. **La candidata de la muestra,** 0.24.0-candidata.1, por el circuito de siempre (`docs/DESPLIEGUE.md`, Google Play):
    - la rama `aab/candidata-0.24.0-1`: `main` más un commit con la versión y el `versionCode` 38 (la 0.23.0-candidata.2
@@ -941,7 +941,7 @@ candidata de la muestra no podría crear cuentas: para mirar Inicio no hace falt
 Son propuestas del continuador, cada una con su recomendación y su alternativa. Las que revisan una decisión ya
 ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
 
-- **AV2-D1 · «La que sigue» y la hora** · **a ratificar; revisa PV-2 de DL-166 y TEST-AVR-010.**
+- **AV2-D1 · «La que sigue» y la hora** · **el paso 1, ratificado por Dirección el 2026-11-11 (enmienda PV-2 de DL-166 y TEST-AVR-010); el paso 2 (AV2-27), sin decidir.**
   - *Recomiendo* dos pasos, en una función pura que compartan Inicio y Nutrición:
     - paso 1, en la muestra y sin datos nuevos (AV2-10): la que sigue es la primera sin registrar después de la última
       comida registrada hoy, en el orden del plan, y las anteriores sin registrar quedan neutras;
@@ -953,7 +953,7 @@ ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
       WP-EDITORES-PROFESIONAL;
     - franjas fijas por el nombre de la comida. Se descarta: BE inventaría un horario, y los nombres son libres.
   - Sin la ratificación, Inicio sigue con PV-2.
-- **AV2-D2 · «Actividad» con desglose, como en la imagen** · **a ratificar; revisa PV-5 de DL-166, AVD-2 y TEST-AVR-012
+- **AV2-D2 · «Actividad» con desglose, como en la imagen** · **ratificada por Dirección el 2026-11-11; reemplaza PV-5 de DL-166 y AVD-2, y cambia TEST-AVR-012
   y 013.**
   - *Recomiendo:* nunca un total que mezcle lo hecho con lo que no se hizo. Inicio dice «2 realizadas · 1 no realizada ·
     30 días»; Tu historial, «Últimos 30 días: 2 realizadas (1 con desvío) y 1 no realizada.»; la tira, «N sesiones
@@ -961,7 +961,7 @@ ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
   - *Alternativa:* conservar PV-5 («3 sesiones registradas») y explicar la relación en Tu historial: «3 sesiones
     registradas (2 realizadas y 1 no realizada)». Se descarta, porque «registrada» se lee como «hecha».
   - Sin la ratificación, se arregla solo el error 5.
-- **AV2-D3 · El desenfoque real, solo en la barra** · **a ratificar.**
+- **AV2-D3 · El desenfoque real, solo en la barra** · **rige la recomendación (Dirección, 2026-11-11): la muestra, sin desenfoque.**
   - *Recomiendo:* la muestra va sin desenfoque: la barra al 88 %, con el borde y la línea de luz y la sombra. Al
     desplazar, el contenido pasa sobre los destellos quietos, y el vidrio ya se nota. El desenfoque entra solo si
     Dirección lo pide al verla (AV2-28), y nunca en la barra fija de la sesión. Para que se vea, la barra tiene que bajar
@@ -969,11 +969,11 @@ ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
     de UF-01 o en la siguiente, y redespliega la API y el website por el `package-lock.json`.
   - *Alternativa:* el desenfoque en todas las tarjetas. Se descarta: vuelve a dibujar el contenido en cada cuadro, pesa
     en un teléfono de gama baja y no se ve antes de Android 12.
-- **AV2-D4 · «Ya la hice» en las otras sesiones, con una en curso** · **a ratificar.**
+- **AV2-D4 · «Ya la hice» en las otras sesiones, con una en curso** · **rige la recomendación (Dirección, 2026-11-11).**
   - *Recomiendo:* en Inicio, no: se ve solo la sesión en curso. En Entrenamiento, sí: sirve para registrar una sesión que
     ya se hizo, y la API lo acepta.
   - *Alternativa:* ocultarlo también en Entrenamiento hasta que la sesión en curso termine o quede incompleta.
-- **AV2-D5 · La semana de la tira** · **a ratificar.**
+- **AV2-D5 · La semana de la tira** · **rige la recomendación (Dirección, 2026-11-11): de lunes a domingo.**
   - *Recomiendo:* la semana calendario, de lunes a domingo, como la maqueta. El lunes arranca vacía y no arrastra nada.
   - *Alternativa:* los últimos 7 días: nunca empieza vacía, pero las letras se corren cada día.
 - **AV2-D6 · La figura entera en Evolución** · **a ratificar; revisa el encuadre del pulido del 2026-10-04 (GUIA III.4) y
@@ -983,11 +983,11 @@ ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
     Ningún punto se mueve.
   - *Alternativa:* conservar el recorte, con un margen que deje entero el hombro. El recorte se había elegido porque ISAK
     mide del lado derecho de la persona, y del lado recortado no hay sitios.
-- **AV2-D7 · La campana** · **a ratificar.**
+- **AV2-D7 · La campana** · **rige la recomendación (Dirección, 2026-11-11): el punto de 8 dp.**
   - *Recomiendo:* un punto cian de 8 dp, sin número y sin animación, como la maqueta. El número sigue en el nombre para
     TalkBack.
   - *Alternativa:* el número, con tope en «9+».
-- **AV2-D8 · La cabecera de un detalle** · **a ratificar.**
+- **AV2-D8 · La cabecera de un detalle** · **rige la recomendación (Dirección, 2026-11-11).**
   - *Recomiendo:* en las cinco raíces, el logo a la izquierda. En un detalle, «Volver» a la izquierda y nada al centro.
     La campana, siempre a la derecha.
   - *Alternativa:* en los detalles, el logo al centro.
@@ -999,7 +999,7 @@ ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
   - *Recomiendo:* Segmentos compactos arriba y una sola tarjeta (AV2-21). Ya es un grupo accesible para TalkBack, y con
     letra grande se parte en renglones.
   - *Alternativa:* las opciones en una lista vertical compacta, sin navegación.
-- **AV2-D11 · Cómo llega la muestra a su teléfono** · **a ratificar.**
+- **AV2-D11 · Cómo llega la muestra a su teléfono** · **ratificada por Dirección el 2026-11-11: aparte, como prerelease y no «latest».**
   - *Recomiendo:* integrar la etapa A en `main` y publicar la 0.24.0-candidata.1 como **prerelease y no «latest»**.
     Así la descarga del website sigue ofreciendo la 0.23 a la familia hasta la APK con UF-01 y el vidrio entero. Es una
     excepción a la regla del 11/11 («cada versión nueva, como latest»), solo para la muestra.
@@ -1165,7 +1165,7 @@ verificada con su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`). Solo la APK: no
   aprobados.
 - La etapa B, con el visto bueno de Dirección a la muestra.
 
-### 10.4 Lo que cambió con la revisión de la etapa A (2026-11-12; AV2-T17 en adelante, a ratificar)
+### 10.4 Lo que cambió con la revisión de la etapa A (2026-11-12; AV2-T17 a AV2-T22, a ratificar)
 
 Una revisión adversarial de la etapa A, antes de la muestra, encontró defectos que las pruebas no veían. Cada arreglo va
 con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
