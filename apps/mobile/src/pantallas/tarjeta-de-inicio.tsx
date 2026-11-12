@@ -147,8 +147,8 @@ export function Accion({ children }: { children: ReactNode }) {
 export const estilos = estilosPorTema((COLOR) => ({
   linea: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 4 },
   textoDeLinea: { fontSize: 15, lineHeight: 21, color: COLOR.tenue, flexShrink: 1 },
-  // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde; con el vidrio, la receta (DL-170).
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: RELLENO_DE_LA_TARJETA, marginVertical: 8, backgroundColor: COLOR.superficie },
+  // El fondo lo pone la receta (`useSuperficie`), con el vidrio o sin él (DL-170).
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: RELLENO_DE_LA_TARJETA, marginVertical: 8 },
   presionada: { opacity: 0.7 },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: SEPARACION_DE_LA_CAJA, marginBottom: 6 },
   cabezaApilada: { flexDirection: 'column', alignItems: 'flex-start' },

@@ -10,8 +10,8 @@
  * - **El nivel lo resuelve el contexto** (`NivelDeVidrio`): Seccion, TarjetaDeInicio y una Tarjeta suelta son nivel 1 y
  *   lo proveen; lo que va adentro baja solo a nivel 2. Fuera de toda tarjeta, una pieza que sería de nivel 2 (un aviso,
  *   una ficha) es de nivel 1.
- * - **El interruptor** (`activo`, §3.3): App.tsx lo prende solo en Inicio hasta el visto bueno de Dirección a la muestra;
- *   con él apagado, una tarjeta es la superficie opaca de hoy y nada desentona. Con el «Texto de alto contraste» de
+ * - **El interruptor** (`activo`, §3.3): App.tsx lo prendía solo en Inicio hasta el visto bueno de Dirección a la muestra;
+ *   desde el 2026-11-12 va prendido en toda la app (AV2-26). Apagado, una tarjeta es la superficie opaca de siempre. Con el «Texto de alto contraste» de
  *   Android (`alto-contraste.ts`), todo vuelve a ser opaco y el fondo, liso.
  * - **Los estilos se arman una vez** por tema, nivel y estado, y se reusan: no cambian de identidad en cada dibujo.
  * La verificación en Android queda para el teléfono: el render del navegador no usa Yoga ni dibuja estas propiedades.
@@ -24,7 +24,7 @@ import { PALETAS, type Tema } from './tema';
 export { RELLENO_DE_LA_TARJETA, RADIO_DE_LA_FICHA, RADIO_DE_LA_TARJETA } from './receta-de-vidrio';
 
 export interface EstadoDelVidrio {
-  /** El interruptor: prendido solo en Inicio hasta el visto bueno (AV2-26). */
+  /** El interruptor: prendido en toda la app desde el visto bueno a la muestra (AV2-26). */
   readonly activo: boolean;
   readonly altoContraste: boolean;
   /** El nivel del lugar: 0 fuera de toda tarjeta. */

@@ -10,7 +10,8 @@ import { celdaDeMacro, celdasDeLaFranja, columnasDeLaFranja, LETRA_DE_LA_ETIQUET
 import { accesibilidadDelDesplegable } from './desplegable';
 import { Flecha, IconoDeInformacion } from './iconos-de-nutricion';
 import { COLOR, estilosPorTema } from './tema';
-import { CajaDeCasilla, Cifra } from './ui';
+import { CajaDeCasilla, Cifra, Superficie } from './ui';
+import { useSuperficie } from './vidrio';
 
 /**
  * Calorías, Carbohidratos, Grasas y Proteínas. Cuatro columnas si entran; si no, dos por dos, y con letra muy grande una
@@ -68,13 +69,13 @@ function ValorDeMacro({ celda }: { celda: CeldaDeMacro }) {
 /** Un aviso informativo con su ícono: «Cantidades sin confirmar», «Macros sin calcular». Se lee como una sola frase. */
 export function CajaInformativa({ titulo, texto }: { titulo: string; texto?: string }) {
   return (
-    <View style={estilos.caja} accessible accessibilityRole="summary" accessibilityLabel={texto ? `${titulo}. ${texto}` : titulo}>
+    <Superficie style={estilos.caja} accessible accessibilityRole="summary" accessibilityLabel={texto ? `${titulo}. ${texto}` : titulo}>
       <IconoDeInformacion color={COLOR.acento} />
       <View style={estilos.textosDeCaja}>
         <Text style={estilos.tituloDeCaja}>{titulo}</Text>
         {texto ? <Text style={estilos.textoDeCaja}>{texto}</Text> : null}
       </View>
-    </View>
+    </Superficie>
   );
 }
 
@@ -100,6 +101,8 @@ export function FilaQueAbre({
   acento?: boolean;
   deshabilitada?: boolean;
 }) {
+  // Destacada, es una superficie de la receta, con el borde del acento encima (AV2-24): se toca entera.
+  const { estilo } = useSuperficie();
   return (
     <Pressable
       accessibilityRole="button"
@@ -107,7 +110,7 @@ export function FilaQueAbre({
       accessibilityState={{ disabled: deshabilitada }}
       disabled={deshabilitada}
       onPress={onPress}
-      style={({ pressed }) => [estilos.filaQueAbre, destacada && estilos.filaDestacada, pressed && estilos.presionada, deshabilitada && estilos.deshabilitada]}
+      style={({ pressed }) => [estilos.filaQueAbre, destacada && [estilos.filaDestacada, estilo, estilos.bordeDestacado], pressed && estilos.presionada, deshabilitada && estilos.deshabilitada]}
     >
       {icono ? <View style={estilos.iconoDeFila}>{icono}</View> : null}
       <View style={estilos.textosDeFila}>
@@ -177,12 +180,13 @@ const estilos = estilosPorTema((COLOR) => ({
   etiquetaEnFila: { fontSize: 14, lineHeight: 19, fontWeight: '600', color: COLOR.tenue },
   sinDato: { fontSize: 14, lineHeight: 20, fontWeight: '700', color: COLOR.tenue },
   fibra: { fontSize: 14, lineHeight: 19, color: COLOR.tenue, marginBottom: 4 },
-  caja: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginVertical: 8, backgroundColor: COLOR.superficie },
+  caja: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginVertical: 8 },
   textosDeCaja: { flex: 1 },
   tituloDeCaja: { fontSize: 16, lineHeight: 22, fontWeight: '700', color: COLOR.texto },
   textoDeCaja: { fontSize: 15, lineHeight: 21, color: COLOR.tenue, marginTop: 2 },
   filaQueAbre: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 8, marginVertical: 2 },
-  filaDestacada: { borderWidth: 1, borderColor: COLOR.acento, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginVertical: 8, backgroundColor: COLOR.superficie },
+  filaDestacada: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginVertical: 8 },
+  bordeDestacado: { borderColor: COLOR.acento },
   iconoDeFila: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada },
   textosDeFila: { flex: 1 },
   textoDeFila: { fontSize: 16, lineHeight: 22, fontWeight: '700', color: COLOR.texto },

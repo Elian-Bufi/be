@@ -45,7 +45,7 @@ export type NivelDelContexto = 0 | NivelDeLaSuperficie;
 export const nivelQueSigue = (contexto: NivelDelContexto): NivelDeLaSuperficie => (contexto >= 2 ? 3 : contexto === 1 ? 2 : 1);
 
 export interface OpcionesDelVidrio {
-  /** El interruptor de §3.3: App.tsx lo prende solo en Inicio hasta el visto bueno de Dirección (AV2-26). */
+  /** El interruptor de §3.3: prendido en toda la app desde el visto bueno de Dirección a la muestra (AV2-26). */
   readonly activo: boolean;
   /** El «Texto de alto contraste» de Android: con él, todo vuelve a ser opaco. */
   readonly altoContraste: boolean;

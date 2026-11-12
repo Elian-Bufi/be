@@ -16,7 +16,7 @@ import { Cargando, ErrorConReintento, EstadoDeCarga, VerMas } from '../estados';
 import { dia, fecha } from '../formato';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
-import { Aviso, Dato, Parrafo, Seccion, Titulo, estilosPorTema } from '../ui';
+import { Aviso, Dato, Parrafo, Seccion, SuperficieTocable, Titulo, estilosPorTema } from '../ui';
 
 export type AreaDeRevision = 'NUTRICION' | 'ENTRENAMIENTO';
 type RevisionPropia = Revision | RevisionDeEntrenamiento;
@@ -49,19 +49,20 @@ export function PantallaDeRevisiones({ token, area, salir, ir }: { token: string
       {lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? <Parrafo>{COPY_REVISIONES_PROPIAS.vacio}</Parrafo> : null}
       {lista.estado.tipo === 'listo'
         ? lista.estado.items.map((r) => (
-            <Pressable
+            <SuperficieTocable
               key={r.reviewId}
               accessibilityRole="button"
               accessibilityLabel={`${COPY_REVISIONES_PROPIAS.revisionDel(fecha(r.recordedAt))}. ${ETIQUETA_DE_RESULTADO[r.result]}. ${r.author.displayName}`}
               onPress={() => ir({ nombre: 'revision', area, id: r.reviewId })}
-              style={({ pressed }) => [estilos.fila, pressed && estilos.presionada]}
+              style={estilos.fila}
+              encima={(presionada) => presionada && estilos.presionada}
             >
               <Text style={estilos.titulo}>{COPY_REVISIONES_PROPIAS.revisionDel(fecha(r.recordedAt))}</Text>
               <Text style={estilos.texto}>
                 {ETIQUETA_DE_RESULTADO[r.result]} · {r.author.displayName}
               </Text>
               <Text style={estilos.tenue}>{r.application ? COPY_REVISIONES_PROPIAS.aplicadaEl(dia(r.application.appliedAt)) : COPY_REVISIONES_PROPIAS.sinAplicar}</Text>
-            </Pressable>
+            </SuperficieTocable>
           ))
         : null}
       <VerMas estado={lista.estado} onVerMas={lista.verMas} />
@@ -120,7 +121,7 @@ export function PantallaDeRevision({ token, area, id, salir }: { token: string; 
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  fila: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginBottom: 10, backgroundColor: COLOR.superficie, minHeight: 48 },
+  fila: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginBottom: 10, minHeight: 48 },
   presionada: { opacity: 0.7 },
   titulo: { fontSize: 16, fontWeight: '700', color: COLOR.texto },
   texto: { fontSize: 15, color: COLOR.texto, marginTop: 4 },

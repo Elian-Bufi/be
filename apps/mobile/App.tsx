@@ -638,8 +638,8 @@ function Contenido() {
   };
 
   return (
-    // DL-170 (§3.3): el vidrio se prende solo en Inicio hasta el visto bueno de Dirección a la muestra (AV2-26).
-    <ProveedorDeVidrio activo={ruta.nombre === 'inicio'} altoContraste={altoContraste}>
+    // DL-170 (§3.3): con el visto bueno de Dirección a la muestra (2026-11-12), el vidrio va en toda la app (AV2-26).
+    <ProveedorDeVidrio activo altoContraste={altoContraste}>
     {/* «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
         (adjustResize deja de tener efecto), así que sin esto el teclado tapa los campos de abajo (validación de la 0.11.2).
         La raíz no pinta el fondo: lo dibuja FondoDeLaApp, su primer hijo, salvo con alto contraste. */}

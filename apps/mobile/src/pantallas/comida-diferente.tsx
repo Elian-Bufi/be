@@ -50,7 +50,7 @@ import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../na
 import { CajaInformativa } from '../piezas-de-nutricion';
 import { ahoraEnElServidor, registrarComida } from '../registro-de-comidas';
 import { relojDelServidor } from '../reloj-del-servidor';
-import { Aviso, Boton, Campo, COLOR, estilos as ui, estilosPorTema, Parrafo, Titulo } from '../ui';
+import { Aviso, Boton, Campo, COLOR, estilos as ui, estilosPorTema, Parrafo, Superficie, Titulo } from '../ui';
 
 /** Lo escrito mientras la cámara o la galería están abiertas, por si Android cierra la app (ver arriba). */
 const borradoresEnElSelector = new Map<string, { readonly descripcion: string; readonly cantidad: string }>();
@@ -311,7 +311,7 @@ export function PantallaDeComidaDiferente({
       <Text style={estilos.contexto}>{`${comida} · ${fechaLarga(fecha)}`}</Text>
       <Parrafo>{COPY_REGISTRO_DE_COMIDAS.podesAgregar}</Parrafo>
 
-      <View style={[estilos.cajaDeFoto, foto ? estilos.cajaConFoto : null]}>
+      <Superficie style={[estilos.cajaDeFoto, foto ? estilos.cajaConFoto : null]} encima={foto ? null : estilos.bordePunteado}>
         {foto ? (
           <>
             <Image source={{ uri: foto.uri }} style={estilos.vistaPrevia} resizeMode="cover" accessible accessibilityRole="image" accessibilityLabel={COPY_REGISTRO_DE_COMIDAS.tuFoto} />
@@ -338,7 +338,7 @@ export function PantallaDeComidaDiferente({
             {origenes}
           </>
         )}
-      </View>
+      </Superficie>
       {avisoDeFoto ? <Aviso tipo="error" titulo={avisoDeFoto} /> : null}
       <Parrafo tenue>{COPY_REGISTRO_DE_COMIDAS.fotoPrivada}</Parrafo>
 
@@ -415,18 +415,10 @@ const estilos = estilosPorTema((COLOR) => ({
   contexto: { fontSize: 15, lineHeight: 21, fontWeight: '700', color: COLOR.acento, marginTop: -6, marginBottom: 4 },
   textoLargo: { minHeight: 96, paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top' },
   textoMedio: { paddingTop: 12, paddingBottom: 12, textAlignVertical: 'top' },
-  cajaDeFoto: {
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: COLOR.acento,
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 8,
-    backgroundColor: COLOR.superficie,
-  },
-  cajaConFoto: { borderStyle: 'solid', borderColor: COLOR.borde, alignItems: 'stretch' },
+  // La caja de la foto es una superficie de la receta (AV2-24); sin foto, el borde punteado del acento va encima: se toca.
+  cajaDeFoto: { alignItems: 'center', gap: 8, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8 },
+  bordePunteado: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: COLOR.acento },
+  cajaConFoto: { alignItems: 'stretch' },
   agregarFoto: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: COLOR.acento },
   rotuloDeFoto: { fontSize: 15, fontWeight: '700', color: COLOR.texto, marginTop: 4 },
   vistaPrevia: { alignSelf: 'stretch', aspectRatio: 4 / 3, borderRadius: 12, backgroundColor: COLOR.superficieElevada },

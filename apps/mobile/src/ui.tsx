@@ -15,7 +15,7 @@
  *   la persona hizo (`hecha`); el enlace con flecha no lleva subrayado.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type PressableProps, type StyleProp, type TextInputProps, type ViewProps, type ViewStyle } from 'react-native';
 import { BotonDeIcono, CajaDelIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
 import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
@@ -484,7 +484,7 @@ export function Casilla({
   children?: ReactNode;
 }) {
   return (
-    <View style={[estilos.acto, error ? estilos.actoConError : null]}>
+    <Superficie style={estilos.acto} encima={error ? estilos.actoConError : null}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: marcada, disabled: deshabilitada }}
@@ -507,7 +507,7 @@ export function Casilla({
       </Pressable>
       {children}
       {error ? <TextoDeError texto={error} /> : null}
-    </View>
+    </Superficie>
   );
 }
 
@@ -578,6 +578,38 @@ export function Subtitulo({ children }: { children: ReactNode }) {
     <Text style={estilos.subtitulo} accessibilityRole="header">
       {children}
     </Text>
+  );
+}
+
+/**
+ * Una superficie propia de una pantalla, con la receta de vidrio (AV2-24): una tarjeta, un grupo de filas o un bloque que
+ * la pantalla arma a mano. Es la misma regla que `Tarjeta`, sin su relleno ni su margen:
+ * - `style` va debajo de la receta: el relleno, el margen, el borde de 1 dp y lo que la pieza necesita. La receta pone el
+ *   fondo, el borde de luz, el radio y la sombra del nivel que le toca; con el vidrio apagado, la superficie opaca.
+ * - `encima` va arriba de la receta: un borde de estado (un error, lo elegido) que tiene que verse igual con el vidrio.
+ * Lo de adentro baja un nivel. Una pieza que se toca entera (un `Pressable`) usa `useSuperficie` con la misma regla.
+ */
+export function Superficie({ style, encima, children, ...resto }: ViewProps & { encima?: StyleProp<ViewStyle> }) {
+  const { estilo, nivel } = useSuperficie();
+  return (
+    <View {...resto} style={[style, estilo, encima]}>
+      <DentroDelNivel nivel={nivel}>{children}</DentroDelNivel>
+    </View>
+  );
+}
+
+/** Lo mismo que `Superficie`, para una pieza que se toca entera (una fila de una lista, una baldosa). */
+export function SuperficieTocable({
+  style,
+  encima,
+  children,
+  ...resto
+}: Omit<PressableProps, 'style' | 'children'> & { style?: StyleProp<ViewStyle>; encima?: (presionada: boolean) => StyleProp<ViewStyle>; children: ReactNode }) {
+  const { estilo, nivel } = useSuperficie();
+  return (
+    <Pressable {...resto} style={({ pressed }) => [style, estilo, encima?.(pressed)]}>
+      <DentroDelNivel nivel={nivel}>{children}</DentroDelNivel>
+    </Pressable>
   );
 }
 
@@ -773,7 +805,7 @@ export const estilos = estilosPorTema((COLOR) => ({
   lineaDeError: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
   iconoDeError: { paddingTop: 1 },
   textoDeError: { flex: 1, marginTop: 0 },
-  acto: { borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, borderRadius: 8, padding: 12, marginVertical: 6 },
+  acto: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 6 },
   actoConError: { borderColor: COLOR.error, borderWidth: 2 },
   filaDeCasilla: { flexDirection: 'row', alignItems: 'flex-start', minHeight: 48 },
   // La casilla (2026-11-02): 26 dp, esquinas de 7 y borde de 2 dp del acento; marcada, llena del acento.
@@ -793,13 +825,14 @@ export const estilos = estilosPorTema((COLOR) => ({
   avisoConIcono: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   iconoDeAviso: { paddingTop: 1 },
   cuerpoDeAviso: { flex: 1 },
-  seccion: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
+  // El fondo, el borde y el radio de la sección y de la tarjeta los pone la receta (`useSuperficie`), con el vidrio o sin él.
+  seccion: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8 },
   seccionPeligro: { borderColor: COLOR.error },
   tituloDeSeccion: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginBottom: 6 },
   cabezaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   tituloConIcono: { flexShrink: 1, marginBottom: 0 },
   subtitulo: { fontSize: 17, fontWeight: '700', color: COLOR.texto, marginTop: 12, marginBottom: 4 },
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 12, marginVertical: 6 },
   dato: { flexDirection: 'row', alignItems: 'flex-start', columnGap: 12, marginVertical: 6 },
   datoApilado: { marginVertical: 6, rowGap: 2 },
   etiquetaDeDato: { fontSize: 15, lineHeight: 22, fontWeight: '700', color: COLOR.texto },

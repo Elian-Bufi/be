@@ -75,7 +75,7 @@ import {
   type Unidad,
 } from '../series-de-la-sesion';
 import { sustitutosPosibles, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado, type SustitucionDelEjercicio } from '../sustitucion-de-ejercicio';
-import { Aviso, Ayuda, Boton, Campo, Casilla, CasillaSola, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Segmentos } from '../ui';
+import { Aviso, Ayuda, Boton, Campo, Casilla, CasillaSola, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Segmentos, Superficie } from '../ui';
 
 /** El lado de la imagen del ejercicio activo, en dp (§7.2: de 100 a 140). */
 export const TAMANO_DE_LA_IMAGEN = 112;
@@ -163,7 +163,7 @@ export function FranjaDeLaSesion({
 }) {
   const tiempos = [tiempoDeLaSesion, tiempoDelEjercicio].filter((t): t is Temporizador => t !== null);
   return (
-    <View style={[estilos.tarjeta, estilos.franja]}>
+    <Superficie style={[estilos.tarjeta, estilos.franja]}>
       <View style={estilos.cabezaDeLaFranja}>
         <Text style={[estilos.detalle, estilos.textos]} numberOfLines={2}>
           {sesion}
@@ -195,7 +195,7 @@ export function FranjaDeLaSesion({
           </Text>
         </View>
       ) : null}
-    </View>
+    </Superficie>
   );
 }
 
@@ -229,7 +229,7 @@ export function EjercicioActivo({
 }) {
   const { fontScale } = useWindowDimensions();
   return (
-    <View style={[estilos.tarjeta, estilos.ejercicio, fontScale >= 1.6 && estilos.ejercicioApilado]}>
+    <Superficie style={[estilos.tarjeta, estilos.ejercicio, fontScale >= 1.6 && estilos.ejercicioApilado]}>
       <ImagenDeMedio
         token={token}
         mediaId={p.image?.mediaId ?? null}
@@ -263,7 +263,7 @@ export function EjercicioActivo({
           </Pressable>
         ) : null}
       </View>
-    </View>
+    </Superficie>
   );
 }
 
@@ -653,7 +653,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
   ) : null;
   if (activa && f.estado === 'sin-registrar') {
     return (
-      <View style={[estilos.tarjetaDeSerie, estilos.tarjetaActiva]}>
+      <Superficie style={estilos.tarjetaDeSerie} encima={estilos.tarjetaActiva}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
         {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
           <Campo
@@ -669,7 +669,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
         ))}
         {botonDelReloj}
         {casilla}
-      </View>
+      </Superficie>
     );
   }
   const r = textoRegistrado(f);
@@ -680,7 +680,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
     return campo === 'tiempo' ? '—' : p[campo];
   };
   return (
-    <View style={[estilos.tarjetaDeSerie, (f.estado === 'guardada' || f.estado === 'pendiente-de-enviar') && estilos.tarjetaRegistrada, activa && estilos.tarjetaActiva]}>
+    <Superficie style={estilos.tarjetaDeSerie} encima={[(f.estado === 'guardada' || f.estado === 'pendiente-de-enviar') && estilos.tarjetaRegistrada, activa && estilos.tarjetaActiva]}>
       <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita)} onPress={() => acciones.onEnfocar(f.setIndex)} style={({ pressed }) => [pressed && estilos.presionado]}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
         {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
@@ -692,7 +692,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
       </Pressable>
       {botonDelReloj}
       {casilla}
-    </View>
+    </Superficie>
   );
 }
 
@@ -710,14 +710,14 @@ export function ErroresDeLaFila({ errores }: { errores: { readonly setIndex: num
 
 export function BandaDelPlan({ banda }: { banda: ReturnType<typeof bandaDeLaSerie> }) {
   return (
-    <View style={[estilos.tarjeta, estilos.conIcono]} accessible accessibilityLabel={banda.completa}>
+    <Superficie style={[estilos.tarjeta, estilos.conIcono]} accessible accessibilityLabel={banda.completa}>
       <IconoDePlan color={COLOR.acento} />
       <View style={estilos.textos}>
         <Text style={estilos.tituloDeBloque}>{banda.titulo}</Text>
         <Text style={estilos.textoDeBloque}>{banda.plan}</Text>
         {banda.descanso ? <Text style={estilos.detalle}>{banda.descanso}</Text> : null}
       </View>
-    </View>
+    </Superficie>
   );
 }
 
@@ -806,7 +806,7 @@ export function BloqueDeDescanso({
   if (estado.tipo === 'disponible') {
     const recomendado = estado.recomendado === null ? e.sinDescansoRecomendado : e.recomendadoTrasLaSerie(estado.serie, textoDeSegundos(estado.recomendado) ?? '');
     return (
-      <View style={[estilos.tarjeta, estilos.descansoAlPie]}>
+      <Superficie style={[estilos.tarjeta, estilos.descansoAlPie]}>
         <View style={estilos.cabezaDelDescanso}>
           <View style={[estilos.conIcono, estilos.textos]} accessible accessibilityLabel={`${COPY_ENTRENAMIENTO.descanso}. ${recomendado}`}>
             <Icono nombre="descanso" tamano={24} tono="acento" />
@@ -818,7 +818,7 @@ export function BloqueDeDescanso({
           {engranaje}
         </View>
         <Boton texto={e.iniciarDescanso} tipo="secundario" onPress={onIniciar} deshabilitado={deshabilitado} />
-      </View>
+      </Superficie>
     );
   }
   const ms = estado.duracion?.ms ?? null;
@@ -1357,7 +1357,8 @@ const estilos = estilosPorTema((COLOR) => ({
   tiemposDeLaFranja: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28 },
   enlaceConFlecha: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 48, alignSelf: 'flex-start' },
   // Superficies mates con su borde, sin brillo interno (§7.7).
-  tarjeta: { borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, padding: 12, marginVertical: 6 },
+  // Las tarjetas de la sesión son superficies de la receta (AV2-23): el fondo, el borde de luz y el radio los pone ella.
+  tarjeta: { borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, padding: 12, marginVertical: 6 },
   ejercicio: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   ejercicioApilado: { flexDirection: 'column', alignItems: 'flex-start' },
   datosDelEjercicio: { flex: 1, minWidth: 140 },
@@ -1375,7 +1376,8 @@ const estilos = estilosPorTema((COLOR) => ({
   columnaCasilla: { width: ANCHO_DE_LA_CASILLA },
   fila: { flexDirection: 'row', alignItems: 'stretch', gap: SEPARACION_DE_CELDAS },
   filaQuieta: { borderRadius: 12, borderWidth: 2, borderColor: 'transparent', padding: 4, marginVertical: 2 },
-  filaActiva: { borderRadius: 12, borderWidth: 2, borderColor: COLOR.acento, padding: 4, marginVertical: 2, backgroundColor: COLOR.superficie },
+  // La fila activa va dentro de la tarjeta de vidrio: sin fondo propio, que sería un parche opaco (AV2-23).
+  filaActiva: { borderRadius: 12, borderWidth: 2, borderColor: COLOR.acento, padding: 4, marginVertical: 2 },
   serieActual: { fontSize: 13, fontWeight: '800', color: COLOR.acento, marginLeft: 4, marginBottom: 2 },
   // La fila registrada va en el azul elevado del tema, con un borde fino del acento (Dirección, 2026-11-02): no en el
   // verde del éxito, porque la tilde de la casilla ya dice que quedó, y con el borde para que en Claro se separe del
@@ -1409,7 +1411,7 @@ const estilos = estilosPorTema((COLOR) => ({
   comoElPlan: { fontSize: 12, fontWeight: '700', color: COLOR.tenue },
   estadoEnConflicto: { color: COLOR.error },
   estadoRegistrada: { color: COLOR.texto },
-  tarjetaDeSerie: { borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, padding: 12, marginVertical: 4 },
+  tarjetaDeSerie: { borderRadius: 12, borderWidth: 1, borderColor: COLOR.borde, padding: 12, marginVertical: 4 },
   tarjetaActiva: { borderWidth: 2, borderColor: COLOR.acento },
   // La tarjeta registrada, como la fila: azul elevado y borde fino del acento, sin tocar su padding.
   tarjetaRegistrada: { backgroundColor: COLOR.superficieElevada, borderColor: COLOR.acento },

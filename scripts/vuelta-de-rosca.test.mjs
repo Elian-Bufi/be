@@ -745,7 +745,8 @@ test('TEST-AV2-004 · el fondo es el primer hijo de la raíz, fuera del desplaza
   assert.ok(desplazamiento > 0);
   assert.ok(fondo > app.indexOf('<KeyboardAvoidingView') && fondo < app.indexOf('<Cabecera') && fondo < desplazamiento, 'primer hijo de la raíz');
   assert.equal(app.indexOf('<FondoDeLaApp', desplazamiento), -1, 'fuera del desplazamiento');
-  assert.match(app, /<ProveedorDeVidrio activo=\{ruta\.nombre === 'inicio'\} altoContraste=\{altoContraste\}>/, 'el interruptor, solo en Inicio');
+  // Desde el visto bueno a la muestra (AV2-26), en toda la app; antes era `activo={ruta.nombre === 'inicio'}`.
+  assert.match(app, /<ProveedorDeVidrio activo altoContraste=\{altoContraste\}>/, 'el interruptor, prendido en toda la app');
   assert.match(app, /raiz: \{ flex: 1 \},/, 'la raíz no pinta el fondo liso');
   assert.match(app, /style=\{\[estilos\.raiz, altoContraste && estilos\.raizLisa\]\}/, 'salvo con alto contraste');
   const componente = sinComentarios(leer('fondo-de-la-app.tsx'));
@@ -926,6 +927,77 @@ test('TEST-AV2-027 · arriba de todo, transparente; con contenido detrás, un fo
   assert.match(app, /Animated\.timing\(cubierta, \{ toValue: ahora \? 1 : 0, duration: movimientoReducido \? 0 : FUNDIDO_DE_LA_CABECERA, useNativeDriver: true \}\)/);
   assert.match(app, /<\/ScrollView>\s*(\{\}\s*)?<DesvanecidoDeLaCabecera cubierta=\{cubierta\} altoContraste=\{altoContraste\} \/>/, 'el desvanecido, encima del borde de arriba del desplazamiento');
   assert.match(app, /cubierta=\{cubierta\}\s*altoContraste=\{altoContraste\}\s*\/>\s*<View style=\{estilos\.desplazable\}>/);
+});
+
+// ─── TEST-AV2-022 · ninguna tarjeta escribe la superficie a mano (AV2-24) ───────────────────────
+
+/**
+ * Lo que sigue opaco por decisión: los diálogos y la hoja (nada se ve a través de ellos), la fila fija de la sesión
+ * (PV-11), la lámina de la toma y sus tarjetas (Indicadores y Progreso, con su sombra), los controles (los campos, las
+ * fichas de las comidas y los Segmentos, que la receta cubre dentro de una tarjeta), el aviso informativo (la receta lo
+ * cubre con el vidrio prendido) y el círculo de la nube de la recuperación, que no es una tarjeta.
+ */
+const OPACO_POR_DECISION = [
+  'campos-de-formulario.tsx · chip',
+  'campos-de-formulario.tsx · renglon',
+  'cuenta.tsx · dialogo',
+  'dialogo.tsx · dialogo',
+  'dialogo.tsx · opcionElegida',
+  'evidencia-visual.tsx · dialogo',
+  'fila-fija.tsx · fila',
+  'indicadores.tsx · tarjeta',
+  'nutricion-hoy.tsx · ficha',
+  'progreso.tsx · tarjeta',
+  'recuperacion.tsx · circuloDeLaNube',
+  'sesion-enfocada.tsx · dialogo',
+  'sesion-enfocada.tsx · hoja',
+  'ui.tsx · aviso_info',
+  'ui.tsx · entrada',
+  'ui.tsx · segmentos',
+];
+
+/** Cada estilo que escribe `backgroundColor: COLOR.superficie`, como «archivo · estilo». */
+function superficiesEscritasAMano() {
+  const usos = [];
+  for (const archivo of archivosDeLaApk()) {
+    const lineas = sinComentarios(readFileSync(archivo, 'utf8')).split('\n');
+    lineas.forEach((linea, i) => {
+      if (!/backgroundColor: COLOR\.superficie\b(?!Elevada)/.test(linea)) return;
+      let k = i;
+      while (k >= 0 && !/^\s{2}(\w+): \{/.test(lineas[k])) k--;
+      usos.push(`${archivo.replace(/\\/g, '/').split('/').pop()} · ${k >= 0 ? lineas[k].match(/^\s{2}(\w+):/)[1] : '?'}`);
+    });
+  }
+  return usos.sort();
+}
+
+test('TEST-AV2-022 · ningún estilo de tarjeta escribe «COLOR.superficie» a mano, salvo lo opaco por decisión', () => {
+  assert.deepEqual(superficiesEscritasAMano(), OPACO_POR_DECISION);
+  // Las piezas que la pantalla arma a mano usan la receta: `Superficie`, `SuperficieTocable` o `useSuperficie`.
+  const ui = sinComentarios(leer('ui.tsx'));
+  assert.match(ui, /export function Superficie\(\{ style, encima, children, \.\.\.resto \}[^)]*\) \{\s*const \{ estilo, nivel \} = useSuperficie\(\);\s*return \(\s*<View \{\.\.\.resto\} style=\{\[style, estilo, encima\]\}>\s*<DentroDelNivel nivel=\{nivel\}>/);
+  assert.match(ui, /<Pressable \{\.\.\.resto\} style=\{\(\{ pressed \}\) => \[style, estilo, encima\?\.\(pressed\)\]\}>\s*<DentroDelNivel nivel=\{nivel\}>/);
+  const usan = archivosDeLaApk()
+    .filter((a) => /<Superficie(Tocable)?\b/.test(readFileSync(a, 'utf8')))
+    .map((a) => a.replace(/\\/g, '/').split('/').pop())
+    .sort();
+  for (const archivo of ['comida-diferente.tsx', 'correccion-de-entrenamiento.tsx', 'mis-habitos.tsx', 'notas-de-coordinacion.tsx', 'novedades.tsx', 'nutricion-hoy.tsx', 'perfil.tsx', 'piezas-de-nutricion.tsx', 'progreso-de-una-medida.tsx', 'quien-ve-que.tsx', 'revisiones.tsx', 'sesion-enfocada.tsx', 'texto-versionado.tsx', 'ui.tsx']) {
+    assert.ok(usan.includes(archivo), `${archivo} usa la receta`);
+  }
+});
+
+// ─── TEST-AV2-021 · la sesión enfocada, con vidrio, y lo opaco, opaco (AV2-23) ──────────────────
+
+test('TEST-AV2-021 · las tarjetas de la sesión son de vidrio; la fila fija, la hoja y el diálogo siguen opacos', () => {
+  const sesion = sinComentarios(leer('pantallas/sesion-enfocada.tsx'));
+  assert.equal((sesion.match(/<Superficie style=\{\[estilos\.tarjeta,/g) ?? []).length, 4, 'las cuatro tarjetas de la sesión');
+  assert.equal((sesion.match(/<Superficie style=\{estilos\.tarjetaDeSerie\} encima=/g) ?? []).length, 2, 'las tarjetas de cada serie, con su estado encima');
+  // Las celdas son pozos dentro de la tarjeta: `fondo`, que se lee como un hueco.
+  assert.match(sesion, /celdaQuieta: \{ borderColor: COLOR\.borde, backgroundColor: COLOR\.fondo \}/);
+  assert.match(sesion, /filaActiva: \{ borderRadius: 12, borderWidth: 2, borderColor: COLOR\.acento, padding: 4, marginVertical: 2 \}/, 'sin un parche opaco dentro del vidrio');
+  // PV-11: nada se ve a través de la fila fija ni de la barra fija.
+  assert.match(sinComentarios(leer('fila-fija.tsx')), /fila: \{[^}]*backgroundColor: COLOR\.superficie/);
+  assert.ok(OPACO_POR_DECISION.includes('sesion-enfocada.tsx · hoja') && OPACO_POR_DECISION.includes('sesion-enfocada.tsx · dialogo'));
 });
 
 // ─── TEST-AV2-012 · «Cómo se lee», alineado (AV2-11) ────────────────────────────────────────────

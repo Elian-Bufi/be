@@ -48,7 +48,7 @@ import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CajaInformativa, FilaQueAbre, FranjaDeMacros } from '../piezas-de-nutricion';
 import { ahoraEnElServidor, registrarComida, useDeshacer } from '../registro-de-comidas';
-import { Aviso, Boton, COLOR, estilosPorTema, Insignia, Parrafo } from '../ui';
+import { Aviso, Boton, COLOR, estilosPorTema, Insignia, Parrafo, Superficie } from '../ui';
 
 export type HoyConOpciones = HoyConOpcionesResponse['data'];
 type Comida = HoyConOpciones['meals'][number];
@@ -433,7 +433,7 @@ function OpcionesDeLaComida({
 
   return (
     <View>
-      <View style={estilos.panel}>
+      <Superficie style={estilos.panel}>
         <View style={estilos.cabezaDeComida}>
           <Text style={estilos.nombreDeComida} accessibilityRole="header">
             {comida.label}
@@ -461,7 +461,7 @@ function OpcionesDeLaComida({
             {fallo.opcion ? <Boton texto={COPY.reintentar} tipo="secundario" onPress={() => fallo.opcion && void comi(fallo.opcion)} ocupado={registrando !== null} /> : null}
           </Aviso>
         ) : null}
-      </View>
+      </Superficie>
       <FilaQueAbre
         destacada
         texto={COPY_REGISTRO_DE_COMIDAS.comiAlgoDiferente}
@@ -696,7 +696,7 @@ function ComidaRegistrada({
         <Text style={estilos.textoDelTitular}>{titular}</Text>
       </View>
       {registro ? (
-        <View style={[estilos.tarjetaRegistrada, apilada && estilos.tarjetaApilada]}>
+        <Superficie style={[estilos.tarjetaRegistrada, apilada && estilos.tarjetaApilada]}>
           <View style={estilos.textosRegistrados}>
             <Text style={estilos.nombreRegistrado}>{deUnaOpcion ? (opcion?.label ?? comida.label) : COPY_REGISTRO_DE_COMIDAS.comisteAlgoDiferente}</Text>
             {deUnaOpcion && posicion >= 0 && comida.options.length > 1 ? <Text style={estilos.posicion}>{COPY_REGISTRO_DE_COMIDAS.opcionDe(posicion + 1, comida.options.length)}</Text> : null}
@@ -718,7 +718,7 @@ function ComidaRegistrada({
               />
             </View>
           ) : null}
-        </View>
+        </Superficie>
       ) : null}
       {deUnaOpcion && estado === 'UNCONFIRMED' ? <CajaInformativa titulo={COPY_REGISTRO_DE_COMIDAS.cantidadesSinConfirmar} texto={COPY_REGISTRO_DE_COMIDAS.cantidadesSinConfirmarDetalle} /> : null}
       {deUnaOpcion && estado !== null && estado !== 'UNCONFIRMED' ? <CajaInformativa titulo={COPY_REGISTRO_DE_COMIDAS.estadoDeCantidades[estado]} /> : null}
@@ -761,7 +761,7 @@ const estilos = estilosPorTema((COLOR) => ({
   // Sobre la esquina, con un aro del color del fondo que la separa de la ficha.
   marcaDeFicha: { position: 'absolute', top: -7, right: -7, borderRadius: 11, borderWidth: 2, borderColor: COLOR.fondo, backgroundColor: COLOR.fondo },
   presionada: { opacity: 0.8 },
-  panel: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 10, marginTop: 6, backgroundColor: COLOR.superficie },
+  panel: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 10, marginTop: 6 },
   cabezaDeComida: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, marginBottom: 8, paddingHorizontal: 4 },
   nombreDeComida: { fontSize: 19, lineHeight: 25, fontWeight: '800', color: COLOR.texto },
   estadoDeComida: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -780,7 +780,7 @@ const estilos = estilosPorTema((COLOR) => ({
   puntoElegido: { backgroundColor: COLOR.acento },
   titular: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 8 },
   textoDelTitular: { flex: 1, fontSize: 23, lineHeight: 29, fontWeight: '800', color: COLOR.texto },
-  tarjetaRegistrada: { flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 12, backgroundColor: COLOR.superficie },
+  tarjetaRegistrada: { flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 12 },
   tarjetaApilada: { flexDirection: 'column-reverse' },
   textosRegistrados: { flex: 1, justifyContent: 'center' },
   nombreRegistrado: { fontSize: 19, lineHeight: 25, fontWeight: '800', color: COLOR.texto },

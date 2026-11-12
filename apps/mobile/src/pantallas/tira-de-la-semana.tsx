@@ -63,7 +63,7 @@ export function TiraDeLaSemana({ tira }: { tira: Tira }) {
 
 const estilos = estilosPorTema((COLOR) => ({
   // La superficie de siempre; con el vidrio, la receta de nivel 1 (DL-170).
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie, gap: 10 },
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, gap: 10 },
   dias: { flexDirection: 'row', justifyContent: 'space-between' },
   dia: { flex: 1, alignItems: 'center', gap: 6 },
   letra: { fontSize: 13, fontWeight: '700', color: COLOR.tenue },

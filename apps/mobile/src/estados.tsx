@@ -17,20 +17,20 @@ import { useSuperficie } from './vidrio';
  * movimiento». Con el vidrio (DL-170), los bloques son de nivel 1, como las tarjetas que van a llegar.
  */
 export function Cargando({ forma }: { forma?: 'lista' | 'figura' } = {}) {
-  const { estilo, prendido } = useSuperficie();
+  const { estilo } = useSuperficie();
   if (!forma) return <Parrafo tenue>Cargando…</Parrafo>;
   const altos = forma === 'figura' ? [22, 56, 440, 56, 72] : [72, 72, 72];
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel="Cargando" accessibilityLiveRegion="polite">
       {altos.map((alto, i) => (
-        <View key={i} style={[estilosDeCarga.bloque, prendido ? estilo : null, { height: alto }, i === 0 && forma === 'figura' ? estilosDeCarga.renglon : null]} />
+        <View key={i} style={[estilosDeCarga.bloque, estilo, { height: alto }, i === 0 && forma === 'figura' ? estilosDeCarga.renglon : null]} />
       ))}
     </View>
   );
 }
 
 const estilosDeCarga = estilosPorTema((COLOR) => ({
-  bloque: { borderRadius: 12, marginVertical: 6, backgroundColor: COLOR.superficie, borderWidth: 1, borderColor: COLOR.borde },
+  bloque: { borderRadius: 12, marginVertical: 6, borderWidth: 1, borderColor: COLOR.borde },
   renglon: { width: '60%', borderRadius: 6 },
 }));
 

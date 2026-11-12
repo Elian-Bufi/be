@@ -111,7 +111,7 @@ const estilos = estilosPorTema((COLOR) => ({
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   cuenta: { minWidth: 26, height: 26, borderRadius: 13, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada },
   textoDeCuenta: { fontSize: 14, fontWeight: '800', color: COLOR.tenue },
-  grupo: { borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, marginVertical: 8, overflow: 'hidden' },
+  grupo: { borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, marginVertical: 8, overflow: 'hidden' },
   fila: { minHeight: 56, paddingVertical: 10, paddingHorizontal: 14, justifyContent: 'center' },
   conLinea: { borderBottomWidth: 1, borderBottomColor: COLOR.borde },
   presionado: { opacity: 0.6 },

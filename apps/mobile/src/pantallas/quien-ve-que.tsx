@@ -16,7 +16,7 @@ import { useLecturaRecordada } from '../lecturas';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { habitosParaLeer, quienVeQue } from '../quien-ve-que';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
-import { Boton, Desplegable, estilosPorTema, Parrafo, Titulo } from '../ui';
+import { Boton, Desplegable, estilosPorTema, Parrafo, Superficie, Titulo } from '../ui';
 import { NoSePudo, Verificando } from './tarjeta-de-inicio';
 
 export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: Ir }) {
@@ -51,7 +51,7 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
       {!vista && !falla ? <Verificando /> : null}
       {vista ? (
         <>
-          <View style={estilos.tarjeta}>
+          <Superficie style={estilos.tarjeta}>
             <View style={estilos.cabeza}>
               <Icono nombre="candado" tamano={20} tono="acento" />
               <Text style={estilos.titulo} accessibilityRole="header">
@@ -60,10 +60,10 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
             </View>
             <Text style={estilos.texto}>{vista.a3.texto}</Text>
             <Boton texto={T.cambiarEnPrivacidad} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'privacidad' })} />
-          </View>
+          </Superficie>
           {vista.tarjetas.length === 0 ? <Parrafo tenue>{T.ningunVinculo}</Parrafo> : null}
           {vista.tarjetas.map((t) => (
-            <View key={t.profesionalId} style={estilos.tarjeta}>
+            <Superficie key={t.profesionalId} style={estilos.tarjeta}>
               <Text style={estilos.titulo} accessibilityRole="header">
                 {t.nombre}
               </Text>
@@ -96,7 +96,7 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
                   <Boton texto={T.cambiarEnMisHabitos} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'mis-habitos' })} />
                 </View>
               ) : null}
-            </View>
+            </Superficie>
           ))}
         </>
       ) : null}
@@ -105,7 +105,7 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8 },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   titulo: { fontSize: 18, fontWeight: '800', color: COLOR.texto, flexShrink: 1 },
   rotulo: { fontSize: 12, fontWeight: '700', letterSpacing: 1, color: COLOR.tenue, marginTop: 10, textTransform: 'uppercase' },
