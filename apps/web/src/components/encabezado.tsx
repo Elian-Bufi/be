@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { CampanaDeNovedades } from './campana-de-novedades';
 import { MenuDeCuenta } from './menu-de-cuenta';
 import type { ReactNode } from 'react';
@@ -22,12 +22,12 @@ export function Encabezado({ navegacion, campana = true }: { navegacion?: ReactN
       <a className="saltar" href="#contenido">
         Saltar al contenido
       </a>
-      <Link href="/" className="encabezado__marca" aria-label="BE, ir al inicio">
+      <Enlace href="/" className="encabezado__marca" aria-label="BE, ir al inicio">
         {/* El isotipo es decorativo: el nombre accesible del enlace ya dice «BE». */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={isotipo.src} width={36} height={36} alt="" />
         <span aria-hidden="true">BE</span>
-      </Link>
+      </Enlace>
       {navegacion}
       {campana ? <CampanaDeNovedades /> : null}
       <MenuDeCuenta />

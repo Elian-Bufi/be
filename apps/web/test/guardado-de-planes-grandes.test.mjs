@@ -39,6 +39,9 @@ test('DL-168 · sin respuesta, una respuesta que no se entiende o un 5xx: «No p
     assert.equal(d.falloDeGuardado(r), 'SIN_RESPUESTA', JSON.stringify(r));
   }
   assert.equal(d.COPY_GUARDADO.sinRespuesta, 'No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.');
+  // Es lo que dice la barra de los dos editores con ese motivo, también en el autoguardado (ED-03).
+  const fallo = { guardando: false, sucio: true, puedeGuardar: true, fallo: true, conflicto: false, guardadoA: null, motivoDelFallo: 'SIN_RESPUESTA' };
+  assert.equal(d.estadoDeGuardado(fallo).texto, d.COPY_GUARDADO.sinRespuesta);
   // Ninguno de los dos se dice como «El servicio no está disponible»: eso hacía pensar que BE estaba caído.
   for (const texto of [d.COPY_GUARDADO.sinRespuesta, d.COPY_GUARDADO.demasiadoGrande]) assert.doesNotMatch(texto, /no está disponible/);
 });
@@ -66,8 +69,8 @@ test('DL-168 · los dos editores de planes la usan, y al fallar no tocan lo escr
     const rama = fuente.slice(fuente.lastIndexOf('setFallo(true);', motivo), fuente.indexOf('\n    }\n', motivo));
     // El que no entra se dice también en el autoguardado, sin mover el foco: nada corta antes, y el autoguardado corta después.
     assert.doesNotMatch(rama.slice(0, rama.indexOf("motivo === 'DEMASIADO_GRANDE'")), /return/, archivo);
-    assert.match(rama, /motivo === 'DEMASIADO_GRANDE'[\s\S]*COPY_GUARDADO\.demasiadoGrande, sinFoco: automatico[\s\S]*if \(automatico\) return null;/, archivo);
-    assert.match(rama, /motivo === 'SIN_RESPUESTA'[\s\S]*COPY_GUARDADO\.sinRespuesta/, archivo);
+    // Después, el autoguardado corta, y la falta de respuesta también: la dice la barra, en los dos casos (ED-03).
+    assert.match(rama, /motivo === 'DEMASIADO_GRANDE'[\s\S]*COPY_GUARDADO\.demasiadoGrande, sinFoco: automatico[\s\S]*if \(automatico \|\| motivo === 'SIN_RESPUESTA'\) return null;/, archivo);
     // Lo escrito no se toca: ni la estructura ni «sucio», ni se recarga lo guardado.
     assert.doesNotMatch(rama, /setEstructura\(|setBloques\(|setSucio\(|cargar\(/, archivo);
     // Un aviso sin foco no se enfoca.

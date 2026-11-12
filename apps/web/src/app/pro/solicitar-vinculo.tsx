@@ -14,7 +14,8 @@
  */
 import { ALCANCES, COPY, COPY_INVITACION, COPY_VINCULO, ETIQUETA_DE_ALCANCE, ETIQUETA_DE_FINALIDAD, FINALIDAD_DE_ALCANCE, type Alcance } from '@be/domain';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { Aviso, Campo } from '../../components/formulario';
+import { AnuncioDeLosAvisos, Aviso, Campo, erroresPorCampo, useAvisosVivos } from '../../components/formulario';
+import { COPY_AVISOS_VIVOS } from '../../components/validacion-viva';
 import { api, type Resultado } from '../../lib/api';
 import { esIncierto, useClaveDeIntento } from '../../lib/intento';
 
@@ -42,7 +43,10 @@ export function SolicitarVinculo({
   const intento = useClaveDeIntento();
   const [asesorado, setAsesorado] = useState('');
   const [alcance, setAlcance] = useState<Alcance | ''>('');
-  const [errores, setErrores] = useState<{ asesorado?: string; alcance?: string }>({});
+  // ED-04: los avisos se muestran al enviar y se actualizan al salir de cada campo (antes, `editar` no los limpiaba).
+  const avisos = useAvisosVivos(loQueFaltaParaSolicitar);
+  const porCampo = erroresPorCampo(avisos.errores);
+  const errores = { asesorado: porCampo[`${id}-asesorado`], alcance: porCampo[`${id}-alcance`] };
   const [envio, setEnvio] = useState<Envio>({ tipo: 'editando' });
   const enviando = envio.tipo === 'enviando';
 
@@ -63,14 +67,18 @@ export function SolicitarVinculo({
     if (envio.tipo !== 'enviando') setEnvio({ tipo: 'editando' });
   }
 
+  /** Lo que falta para solicitar, ahora (ED-04: se recalcula al enviar y al salir de cada campo). */
+  function loQueFaltaParaSolicitar(): { id: string; texto: string }[] {
+    return [
+      ...(!asesorado.trim() ? [{ id: `${id}-asesorado`, texto: 'Ingresá el identificador BE de la persona.' }] : []),
+      ...(!alcance ? [{ id: `${id}-alcance`, texto: 'Elegí un área.' }] : []),
+    ];
+  }
+
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
     if (enviando) return;
-    const encontrados: typeof errores = {};
-    if (!asesorado.trim()) encontrados.asesorado = 'Ingresá el identificador BE del asesorado.';
-    if (!alcance) encontrados.alcance = 'Elegí un área.';
-    setErrores(encontrados);
-    if (Object.keys(encontrados).length > 0 || !alcance) return;
+    if (avisos.alEnviar().length > 0 || !alcance) return;
 
     setEnvio({ tipo: 'enviando' });
     const r = await api.solicitarVinculo(token, { asesoradoId: asesorado.trim(), alcance }, intento.actual());
@@ -106,7 +114,8 @@ export function SolicitarVinculo({
       onClose={onCerrar}
     >
       <h2 id={`${id}-titulo`}>{COPY_VINCULO.solicitarVinculo}</h2>
-      <form className="formulario" onSubmit={enviar} noValidate>
+      <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} noValidate>
+        <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaEnviar)} />
         {envio.tipo === 'error' ? (
           <Aviso tipo="error" enfocar>
             <p>{envio.texto}</p>
@@ -155,7 +164,7 @@ export function SolicitarVinculo({
             <strong>{COPY_VINCULO.finalidad}:</strong> {finalidad}
           </p>
         ) : null}
-        <p className="nota">El asesorado decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
+        <p className="nota">La persona decide si acepta el vínculo y, por separado, si autoriza el acceso.</p>
         <div className="acciones">
           <button type="button" className="boton boton--secundario" onClick={onCerrar} disabled={enviando}>
             Volver

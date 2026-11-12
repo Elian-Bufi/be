@@ -8,7 +8,7 @@
  * «Leer…»: el texto entero está en la etiqueta.
  */
 import { COPY, MENSAJE_DE_CAMPO, VERSION_VIGENTE } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from './enlace';
 
 export type ActoDelAlta = 'a1' | 'a2' | 'mayoria';
 export type ActosMarcados = Readonly<Record<ActoDelAlta, boolean>>;
@@ -63,9 +63,9 @@ function Acto({
       <p id={`${id}-version`} className="acto__version">
         {lectura ? (
           <>
-            <Link href={lectura.href} target="_blank" rel="noopener">
+            <Enlace href={lectura.href} target="_blank" rel="noopener">
               {lectura.texto}
-            </Link>{' '}
+            </Enlace>{' '}
             · versión <code>{version}</code>
           </>
         ) : (

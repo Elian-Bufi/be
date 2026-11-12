@@ -200,9 +200,9 @@ export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estad
       onToggle={(e) => setAbierto((e.target as HTMLDetailsElement).open)}
     >
       <summary>Vistas guardadas{vistas ? ` (${vistas.length})` : ''}</summary>
-      <p className="nota">Se guarda la configuración (la pregunta, las métricas, el modo, el período, las capas y la referencia del cambio relativo), nunca los datos. Sirve para cualquier asesorado.</p>
+      <p className="nota">Se guarda la configuración (la pregunta, las métricas, el modo, el período, las capas y la referencia del cambio relativo), nunca los datos. Sirve para cualquier persona.</p>
       {pregunta && traeSeleccionesDelAsesorado(pregunta.params) ? (
-        <p className="nota">Esta vista lleva selecciones de este asesorado (la versión del plan, las etapas o el ejercicio): en otro asesorado se te van a pedir de nuevo.</p>
+        <p className="nota">Esta vista lleva selecciones de esta persona (la versión del plan, las etapas o el ejercicio): con otra persona se te van a pedir de nuevo.</p>
       ) : null}
       {soloAbrir ? null : (
         <>

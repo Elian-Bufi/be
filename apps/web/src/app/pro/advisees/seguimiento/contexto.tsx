@@ -86,7 +86,7 @@ const Contexto = createContext<ContextoDelSeguimiento | null>(null);
 
 export function useSeguimiento(): ContextoDelSeguimiento {
   const c = useContext(Contexto);
-  if (!c) throw new Error('useSeguimiento fuera de la ficha del asesorado');
+  if (!c) throw new Error('useSeguimiento fuera de la ficha de la persona');
   return c;
 }
 

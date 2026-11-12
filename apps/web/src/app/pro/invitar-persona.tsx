@@ -27,6 +27,7 @@ import { Aviso } from '../../components/formulario';
 import { CodigoQr } from '../../components/codigo-qr';
 import { api, type Resultado } from '../../lib/api';
 import { esIncierto, useClaveDeIntento } from '../../lib/intento';
+import { ESTADO_DE_LA_INVITACION, venceElDiaYHora } from './vinculo-en-palabras';
 
 type Creada = InvitacionCreadaResponse['data'] & { readonly enlace: string };
 type Estado =
@@ -84,10 +85,15 @@ export function InvitarPersona({
     if (abierto && !d.open) {
       d.showModal();
       void cargar();
-      if (areaSugerida) setAlcance((elegida) => elegida || areaSugerida);
     }
     if (!abierto && d.open) d.close();
-  }, [abierto, cargar, areaSugerida]);
+  }, [abierto, cargar]);
+
+  // El área sugerida sale de los vínculos, que pueden llegar con el diálogo ya abierto: se aplica también entonces, sin
+  // pisar un área ya elegida.
+  useEffect(() => {
+    if (abierto && areaSugerida) setAlcance((elegida) => elegida || areaSugerida);
+  }, [abierto, areaSugerida]);
 
   async function crear(evento: FormEvent) {
     evento.preventDefault();
@@ -167,17 +173,21 @@ export function InvitarPersona({
         <section className="invitar__lista" aria-labelledby={`${id}-lista`}>
           <h3 id={`${id}-lista`}>{COPY_INVITACION.lista}</h3>
           <p className="nota">
-            {area} · {COPY_INVITACION.vence(vence)} {COPY_INVITACION.soloAhora}
+            {area} · {venceElDiaYHora(creada.expiresAt)} {COPY_INVITACION.soloAhora}
           </p>
+          {/* ED-41: primero «Compartir» (o, si el navegador no comparte, «Copiar el enlace»); WhatsApp y el mensaje, al lado. */}
           <div className="invitar__compartir">
-            <a className="boton boton--primario" href={`https://wa.me/?text=${encodeURIComponent(mensaje)}`} target="_blank" rel="noopener noreferrer">
-              {COPY_INVITACION.compartirPorWhatsApp}
-            </a>
             {puedeCompartir ? (
-              <button type="button" className="boton boton--secundario" onClick={() => void navigator.share({ text: mensaje }).catch(() => undefined)}>
+              <button type="button" className="boton boton--primario" onClick={() => void navigator.share({ text: mensaje }).catch(() => undefined)}>
                 {COPY_INVITACION.compartir}
               </button>
             ) : null}
+            <button type="button" className={`boton ${puedeCompartir ? 'boton--secundario' : 'boton--primario'}`} onClick={() => void copiar('enlace', creada.enlace)} data-copiar-el-enlace>
+              {copiado === 'enlace' ? COPY_INVITACION.copiado : COPY_INVITACION.copiarEnlace}
+            </button>
+            <a className="boton boton--secundario" href={`https://wa.me/?text=${encodeURIComponent(mensaje)}`} target="_blank" rel="noopener noreferrer">
+              {COPY_INVITACION.compartirPorWhatsApp}
+            </a>
             <button type="button" className="boton boton--secundario" onClick={() => void copiar('mensaje', mensaje)}>
               {copiado === 'mensaje' ? COPY_INVITACION.copiado : COPY_INVITACION.copiarMensaje}
             </button>
@@ -196,16 +206,13 @@ export function InvitarPersona({
                 <strong>{COPY_INVITACION.enlace}:</strong>
               </p>
               <p className="invitar__enlace">{creada.enlace}</p>
-              <button type="button" className="boton boton--enlace" onClick={() => void copiar('enlace', creada.enlace)}>
-                {copiado === 'enlace' ? COPY_INVITACION.copiado : COPY_INVITACION.copiarEnlace}
-              </button>
             </div>
           </div>
           <div className="acciones">
             <button type="button" className="boton boton--secundario" onClick={otra}>
               {COPY_INVITACION.otraInvitacion}
             </button>
-            <button type="button" className="boton boton--primario" onClick={onCerrar}>
+            <button type="button" className="boton boton--secundario" onClick={onCerrar}>
               Listo
             </button>
           </div>
@@ -227,6 +234,8 @@ export function InvitarPersona({
               aria-describedby={[errorDeArea ? `${id}-area-error` : null, areaSugerida && alcance === areaSugerida ? `${id}-area-sugerida` : null].filter(Boolean).join(' ') || undefined}
               onChange={(e) => {
                 setAlcance(e.target.value as Alcance | '');
+                // ED-04: elegir un área corrige el aviso de «elegí un área» (el de un área no habilitada espera al envío).
+                if (e.target.value && errorDeArea === COPY_INVITACION.elegirArea) setErrorDeArea(undefined);
                 intento.descartar();
                 if (!creando) setEstado({ tipo: 'eligiendo' });
               }}
@@ -276,7 +285,7 @@ export function InvitarPersona({
             {lista.items.map((i) => (
               <li key={i.invitationId}>
                 <span>
-                  {i.scope.label} · {COPY_INVITACION.estado[i.state]} · {COPY_INVITACION.vence(fechaDeVencimiento(i.expiresAt))}
+                  {i.scope.label} · {ESTADO_DE_LA_INVITACION[i.state]}{i.state === 'PENDING' ? ` · ${venceElDiaYHora(i.expiresAt)}` : ''}
                 </span>
                 {i.state === 'PENDING' ? (
                   <button type="button" className="boton boton--enlace" onClick={() => void anular(i)}>

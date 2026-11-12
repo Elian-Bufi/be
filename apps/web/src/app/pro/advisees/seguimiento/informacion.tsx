@@ -9,7 +9,7 @@
  * «Reintentar lo que faltó» vuelve a pedir las lecturas que fallaron (encargo de consolidación, bloque 5).
  */
 import { NOMBRE_DEL_AREA, cantidad, comidasDelPlanEnPalabras, numero, type CalidadDeEntrada, type LineaDeTiempoResponse, type TipoDeEvento } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useId, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { api } from '../../../../lib/api';
@@ -63,7 +63,7 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
     recordedAt ? (
       <>
         La revisión del {fecha(recordedAt)} ·{' '}
-        <Link href={href({ vista: 'linea', areas: dominio, novedades: recordedAt, tipos: null, estados: null, calidad: null, tardias: null, plan: null, ej: null })}>Ver lo nuevo desde esa revisión</Link>
+        <Enlace href={href({ vista: 'linea', areas: dominio, novedades: recordedAt, tipos: null, estados: null, calidad: null, tardias: null, plan: null, ej: null })}>Ver lo nuevo desde esa revisión</Enlace>
       </>
     ) : (
       'Sin revisiones: se mira el período elegido'
@@ -131,9 +131,9 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
               </div>
             </dl>
             <p className="acciones">
-              <Link className="boton boton--secundario boton--compacto" href={ruta('nutrition', 'revisiones&preparar=1')}>
+              <Enlace className="boton boton--secundario boton--compacto" href={ruta('nutrition', 'revisiones&preparar=1')}>
                 Preparar la revisión de Nutrición
-              </Link>
+              </Enlace>
             </p>
           </div>
         ) : null}
@@ -184,9 +184,9 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
               </div>
             </dl>
             <p className="acciones">
-              <Link className="boton boton--secundario boton--compacto" href={ruta('training', 'revisiones&preparar=1')}>
+              <Enlace className="boton boton--secundario boton--compacto" href={ruta('training', 'revisiones&preparar=1')}>
                 Preparar la revisión de Entrenamiento
-              </Link>
+              </Enlace>
             </p>
           </div>
         ) : null}
@@ -224,9 +224,9 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
         ) : null}
       </div>
       <p className="acciones">
-        <Link className="boton boton--secundario" href={ruta('forms', 'pedir')}>
+        <Enlace className="boton boton--secundario" href={ruta('forms', 'pedir')}>
           Pedir información
-        </Link>
+        </Enlace>
       </p>
     </section>
   );

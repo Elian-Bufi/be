@@ -15,7 +15,7 @@
  * - **«Ocultar nombres»** (TB-05): cada persona se ve por su referencia neutral. La del asesorado es la de DL-040; la de
  *   un profesional, «Profesional · 1a2b3c», con la misma referencia corta. Con los nombres ocultos tampoco hay iniciales.
  */
-import { normalizarTexto, referenciaCorta, referenciaNeutral } from '@be/domain';
+import { normalizarTexto, referenciaCorta } from '@be/domain';
 
 /** Lo que el website recibe de cada persona: su identidad y el nombre que este actor puede ver (DL-040). */
 export interface Actor {
@@ -71,7 +71,7 @@ const TITULOS: ReadonlySet<string> = new Set([
 const PARTICULAS: ReadonlySet<string> = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'da', 'das', 'do', 'dos', 'di', 'du', 'van', 'von', 'der', 'den', 'le', 'lo']);
 
 /** La referencia neutral de DL-040 y el reemplazo que la API usa para un profesional sin nombre: no son un nombre. */
-const ES_REFERENCIA = /^(asesorado|profesional)(\s*·\s*[0-9a-z]{6})?$/i;
+const ES_REFERENCIA = /^(asesorado|persona|profesional)(\s*·\s*[0-9a-z]{6})?$/i;
 
 /** La primera letra de una palabra, en mayúscula y con su tilde. */
 const letraDe = (palabra: string): string => (/\p{L}/u.exec(palabra)?.[0] ?? '').toLocaleUpperCase('es');
@@ -107,13 +107,20 @@ export function inicialesDe(nombre: string | null | undefined): string | null {
 /** Cómo se ve un profesional con los nombres ocultos: «Profesional · 1a2b3c», con la referencia corta de su identidad. */
 export const referenciaDeProfesional = (identityId: string): string => `Profesional · ${referenciaCorta(identityId)}`;
 
+/**
+ * ED-06 (WP-EDITORES-PROFESIONAL): la referencia de una persona con los nombres ocultos, «Persona · d21da6». La del
+ * dominio (`referenciaNeutral`, «Asesorado · d21da6») la usa también la API para quien no tiene nombre: cambia en la
+ * ventana de la API. Una referencia que ya viene de la API se sigue reconociendo (`ES_REFERENCIA`).
+ */
+export const referenciaDePersona = (identityId: string): string => `Persona · ${referenciaCorta(identityId)}`;
+
 /** El papel de quien escribió algo en la ficha de `asesoradoId`: la persona, o uno de sus profesionales. */
 export const rolDe = (actor: Actor, asesoradoId: string): RolDeQuien => (actor.role === 'ADVISEE' || actor.identityId === asesoradoId ? 'asesorado' : 'profesional');
 
 /** El nombre que se muestra: el visible o, con los nombres ocultos, la referencia neutral de su papel. */
 export function nombreQueSeVe(actor: Actor, ocultos: boolean, rol: RolDeQuien): string {
   if (!ocultos) return actor.displayName;
-  return rol === 'asesorado' ? referenciaNeutral(actor.identityId) : referenciaDeProfesional(actor.identityId);
+  return rol === 'asesorado' ? referenciaDePersona(actor.identityId) : referenciaDeProfesional(actor.identityId);
 }
 
 /**

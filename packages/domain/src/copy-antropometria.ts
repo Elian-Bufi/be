@@ -43,7 +43,7 @@ export const COPY_ANTROPOMETRIA = {
   registrarEvaluacion: 'Registrar toma',
   confirmarRegistro: 'Registrar esta toma',
   explicacionDeRegistro:
-    'Al registrarla pasa a formar parte de la historia del asesorado y de su evolución. Después no se edita: si hace falta cambiar un valor, se corrige o se anula la medición, y queda constancia.',
+    'Al registrarla pasa a formar parte de la historia de la persona y de su evolución. Después no se edita: si hace falta cambiar un valor, se corrige o se anula la medición, y queda constancia.',
   sinContenidoRegistrable: 'Una toma sin mediciones no se puede registrar.',
   registroHecho: 'Toma registrada. Ya forma parte de la evolución.',
   yaRegistrada: 'Esta toma ya está registrada. Para cambiar un valor, corregí o anulá la medición.',
@@ -146,7 +146,7 @@ export const COPY_ANTROPOMETRIA = {
   comparableConElAnterior: 'Comparable con el punto anterior',
   corregida: 'Corregida',
   vistaParcial:
-    'Esta evolución se armó con lo que vos podés consultar. El asesorado tiene tomas de otro profesional en este período: existen, y no se muestran acá.',
+    'Esta evolución se armó con lo que vos podés consultar. La persona tiene tomas de otro profesional en este período: existen, y no se muestran acá.',
   noComparable: 'No comparable con el punto anterior',
   motivoNoComparable: {
     PROTOCOL: 'Se tomó con otro protocolo',

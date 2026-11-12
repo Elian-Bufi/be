@@ -20,6 +20,11 @@
  * la derivación posterior de B-11» (06:5677; INV-06-153). Si alguna vez hace falta un valor derivado, el único canal
  * admitido es el patrón transversal de cálculo T-06-N12, ya implementado en `calculo.ts` (REG-06-202).
  *
+ * **DL-171 (Dirección, 2026-11-11; aprobada el 2026-11-12)** suma un método por ese canal, sin cambiar B-08: Epley v1
+ * (`BE-E1RM`, versión 1, `EPLEY_V1`, en `estimacion-de-fuerza.ts`), solo para el profesional y desde una serie que
+ * escribió la persona o que observó el profesional, nunca desde la prescripción. B-08 sigue sin fórmula y sin convertir
+ * entre criterios: la captura no cambia.
+ *
  * Las estructuras de plan y de versión reutilizan el patrón común de B-07 sin renombrarlo (06:4956-4965): por eso
  * las transiciones de la versión de plan son literalmente las mismas que las de nutrición. REG-06-07 lo autoriza —
  * «conceptos homólogos […] comparten patrón estructural y taxonomías comunes […] **sin fusionar dominios ni crear

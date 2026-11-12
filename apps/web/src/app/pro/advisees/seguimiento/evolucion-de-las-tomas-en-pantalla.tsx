@@ -8,7 +8,7 @@
  * (WCAG 1.1.1). Ninguna marca cambia de color por su valor.
  */
 import { numero } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useMemo } from 'react';
 import { diaCivil, diaYMesCivil } from '../../../../lib/formato';
 import type { TomaDeLaComposicion } from './composicion';
@@ -64,7 +64,7 @@ export function EvolucionDeLasTomasEnLaTarjeta({ tomas, plegada, href }: { tomas
         <TablaDeLaEvolucion e={e} />
         <p className="pieza-del-area__nota">{COMO_SE_LEE_LA_EVOLUCION}</p>
         <p className="pieza-del-area__nota">
-          <Link href={href}>Ver la evolución de todas las medidas</Link>
+          <Enlace href={href}>Ver la evolución de todas las medidas</Enlace>
         </p>
       </div>
     </Pieza>

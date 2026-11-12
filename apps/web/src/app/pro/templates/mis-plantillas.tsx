@@ -12,6 +12,7 @@
 import { COPY_PLANTILLAS, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, EstadoVacio, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -30,6 +31,9 @@ export function MisPlantillas() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional('/pro/templates');
   const [estado, setEstado] = useState<Estado | ''>('');
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
+  // ED-65: cerrar el detalle, abrir otra o cambiar el filtro (la lista vuelve a leerse) lo desmontan: con el nombre o la
+  // descripción sin guardar, pregunta.
+  const detalle = useDetalleConGuardia();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   // «Ver todas» desaparece al quitar el filtro: el foco va al filtro, que es lo que cambió.
   const filtroDeEstado = useRef<HTMLSelectElement>(null);
@@ -80,7 +84,15 @@ export function MisPlantillas() {
         {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
         <div className="campo">
           <label htmlFor="plantillas-estado">Estado</label>
-          <select ref={filtroDeEstado} id="plantillas-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
+          <select
+            ref={filtroDeEstado}
+            id="plantillas-estado"
+            value={estado}
+            onChange={(e) => {
+              const nuevo = e.target.value as Estado | '';
+              detalle.antes(() => setEstado(nuevo));
+            }}
+          >
             <option value="">Todas</option>
             <option value="ACTIVE">{COPY_PLANTILLAS.activa}</option>
             <option value="ARCHIVED">{COPY_PLANTILLAS.archivada}</option>
@@ -116,7 +128,7 @@ export function MisPlantillas() {
                   <p className="nota">
                     Versión {p.versionNumber} · {COPY_PLANTILLAS.sesiones(p.sessionCount)} · {p.copiedLoads ? COPY_PLANTILLAS.conCargas : COPY_PLANTILLAS.sinCargas} · {p.origin ? COPY_PLANTILLAS.origen(fecha(p.createdAt)) : COPY_PLANTILLAS.desdeCero} · actualizada el {fecha(p.updatedAt)}
                   </p>
-                  <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === p.templateId} onClick={() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId)}>
+                  <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === p.templateId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId))}>
                     {abiertaId === p.templateId ? 'Cerrar' : 'Ver'}
                   </button>
                   {abiertaId === p.templateId ? (
@@ -124,6 +136,7 @@ export function MisPlantillas() {
                       token={token}
                       resumen={p}
                       sesionPerdida={sesionPerdida}
+                      avisarSinGuardar={detalle.anotar}
                       onCambio={(texto) => {
                         setAviso({ tipo: 'exito', texto });
                         void lista.recargar();
@@ -145,12 +158,28 @@ export function MisPlantillas() {
   );
 }
 
-function DetalleDePlantilla({ token, resumen, sesionPerdida, onCambio }: { token: string; resumen: ResumenDePlantillaDeEntrenamiento; sesionPerdida: (r: Resultado<unknown>) => boolean; onCambio: (texto: string) => void }) {
+function DetalleDePlantilla({
+  token,
+  resumen,
+  sesionPerdida,
+  avisarSinGuardar,
+  onCambio,
+}: {
+  token: string;
+  resumen: ResumenDePlantillaDeEntrenamiento;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  avisarSinGuardar: (hay: boolean) => void;
+  onCambio: (texto: string) => void;
+}) {
   const [r, setR] = useState<Resultado<{ data: PlantillaDeEntrenamiento }> | null>(null);
   const [nombre, setNombre] = useState(resumen.name);
   const [descripcion, setDescripcion] = useState(resumen.description ?? '');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ED-65: con el nombre o la descripción cambiados y sin guardar, salir pregunta, y cerrarlo desde la lista también.
+  const sinGuardar = !!r?.ok && (nombre.trim() !== r.datos.data.name || (descripcion.trim() || null) !== r.datos.data.description);
+  useCambiosParaSalir(sinGuardar, 'el nombre o la descripción de la plantilla');
+  useAvisarALaLista(sinGuardar, avisarSinGuardar);
   // La carga va en un efecto: un estado que se cambia durante el render vuelve a renderizar sin fin.
   const cargar = useCallback(async () => {
     setR(null);

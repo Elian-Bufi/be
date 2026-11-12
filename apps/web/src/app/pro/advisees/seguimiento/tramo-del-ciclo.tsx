@@ -10,7 +10,7 @@
  * `tramoDelCiclo` (`lib/reloj.ts`), que solo lee fechas del profesional (TEST-TAG-001).
  */
 import { NOMBRE_DEL_AREA, type ResumenDeEntrenamiento, type ResumenDeNutricion } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { Icono } from '../../../../components/icono';
 import { nombreDelDiaDeLaSemana } from '../../../../lib/formato';
 import { textosDelTramo, tramoDelCiclo } from '../../../../lib/reloj';
@@ -39,10 +39,10 @@ export function TramoDelCiclo({
       <Icono nombre="reloj" tamano={18} />
       <span>
         {tramo.tipo === 'RELOJ' ? (
-          <Link href={revisiones}>
+          <Enlace href={revisiones}>
             {t.titulo}
             <span className="visualmente-oculto"> · ver las revisiones de {NOMBRE_DEL_AREA[area]}</span>
-          </Link>
+          </Enlace>
         ) : (
           <strong>{t.titulo}</strong>
         )}

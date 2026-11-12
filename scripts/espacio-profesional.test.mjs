@@ -61,7 +61,7 @@ test('un área sin acceso se dice con las palabras de BE, las mismas de `estadoP
   const casos = [
     [{ relationshipState: 'FINALIZADO' }, 'Finalizado'],
     [{ relationshipState: 'PAUSADO', pausedBy: 'ADVISEE' }, 'Pausado · sin acceso'],
-    [{ consentState: 'REQUIRED', accessMode: 'BLOCKED' }, 'Vínculo activo · Acceso pendiente de autorización del asesorado'],
+    [{ consentState: 'REQUIRED', accessMode: 'BLOCKED' }, 'Vínculo activo · Acceso pendiente de autorización de la persona'],
     [{ consentState: 'REVOKED', accessMode: 'BLOCKED' }, 'Consentimiento revocado · Acceso no disponible'],
     [{ consentState: 'ACTIVE', accessMode: 'BLOCKED' }, 'Vínculo activo · Acceso no disponible'],
   ];
@@ -229,7 +229,7 @@ test('la acción principal de la ficha: revisión de la semana, después el borr
   const dominios = (nutrition, training) => ({ nutrition, training, anthropometry: ajeno });
 
   // Persona nueva, solo Entrenamiento: empezar, sin decir el área.
-  assert.deepEqual(accionDeLaFicha(dominios(ajeno, legible(resumen())), HOY), { tipo: 'empezar', area: 'ENTRENAMIENTO', texto: 'Empezar el plan', vista: 'plan', extra: '' });
+  assert.deepEqual(accionDeLaFicha(dominios(ajeno, legible(resumen())), HOY), { tipo: 'empezar', area: 'ENTRENAMIENTO', texto: 'Empezar el plan', vista: 'plan', extra: '&asistente=1' });
   // Con borrador: seguirlo.
   assert.equal(accionDeLaFicha(dominios(ajeno, legible(resumen({ draftPlan: { planVersionId: 'b', recordedAt: '2026-10-18T12:00:00.000Z', fromReviewId: null } }))), HOY).tipo, 'borrador');
   // Plan vigente al día: ninguna.

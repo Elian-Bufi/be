@@ -32,7 +32,7 @@ export const COPY_PLANTILLAS = {
   noSeLeyeronLasDeComidas: 'No pudimos leer tus plantillas de comidas.',
   /** El diálogo de «Empezar desde una plantilla» (WP-ESCRITORIO-AREAS, parte 5). Una lectura que falla no es «no tenés». */
   noCargaron: 'No pudimos leer tus plantillas',
-  elegiUna: 'Elegí la plantilla con la que empieza la versión nueva. Nace como borrador: el asesorado no la ve hasta que la actives.',
+  elegiUna: 'Elegí la plantilla con la que empieza la versión nueva. Nace como borrador: la persona no la ve hasta que la actives.',
   /**
    * WP-TABLERO-ALTA-GAMA TB-48: el cuadro sin plantillas prometía que «se escriben en «Plantillas y habituales»», y ahí
    * no se arma una desde cero: se ven, se cambian y se archivan.
@@ -49,7 +49,7 @@ export const COPY_PLANTILLAS = {
   sinNotas: 'Esta versión no tiene notas de texto libre.',
   guardada: 'Plantilla guardada. La encontrás en «Mis plantillas».',
   versionCreada: 'Nueva versión guardada. Las anteriores no cambian; los planes ya creados tampoco.',
-  aplicada: 'Borrador creado desde la plantilla. Adaptalo a la persona antes de activarlo: no es visible para el asesorado hasta que lo actives.',
+  aplicada: 'Borrador creado desde la plantilla. Adaptalo a la persona antes de activarlo: la persona no lo ve hasta que lo actives.',
   creadaDesde: (nombre: string, numero: number): string => `Creada desde la plantilla «${nombre}», versión ${numero}. El plan es de esta persona: la plantilla no cambia si lo editás.`,
   origenDesconocido: 'Creada desde una plantilla que ya no está disponible.',
   nombreTomado: 'Ya tenés una plantilla con ese nombre.',

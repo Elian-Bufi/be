@@ -9,32 +9,40 @@
 import { COPY, COPY_VINCULO } from '@be/domain';
 import { useMemo, useRef } from 'react';
 import { nuevaClaveDeIdempotencia, type Resultado } from './api';
+import { ClaveDeIntento } from './clave-de-intento';
 
 /** Sin respuesta, o una respuesta que la UI no reconoce: no se sabe si la acción ocurrió. */
 export function esIncierto(r: Resultado<unknown>): boolean {
   return !r.ok && (r.tipo === 'RED' || r.codigo === 'RESPUESTA_NO_RECONOCIDA');
 }
 
+/** La key de un intento lógico (la regla vive en `clave-de-intento.ts`, sin React, con su prueba). */
 export function useClaveDeIntento() {
-  const clave = useRef<string | null>(null);
-  return useMemo(
-    () => ({
-      /** La key del intento en curso; se crea al primer uso. */
-      actual(): string {
-        clave.current ??= nuevaClaveDeIdempotencia();
-        return clave.current;
+  const clave = useRef<ClaveDeIntento | null>(null);
+  return useMemo(() => {
+    const de = (): ClaveDeIntento => (clave.current ??= new ClaveDeIntento(nuevaClaveDeIdempotencia));
+    return {
+      /**
+       * La key del intento en curso; se crea al primer uso. Con `que` (lo que se manda), un pedido distinto es otro intento
+       * lógico y usa otra key (ED-62).
+       */
+      actual(que: string | null = null): string {
+        return de().actual(que);
       },
       /** Después de cada respuesta: solo un resultado incierto conserva la key para el reintento. */
       registrar(r: Resultado<unknown>): void {
-        if (!esIncierto(r)) clave.current = null;
+        de().registrar(esIncierto(r));
       },
       /** El usuario abandona un intento que terminó sin resultado incierto. */
       descartar(): void {
-        clave.current = null;
+        de().descartar();
       },
-    }),
-    [],
-  );
+      /** ED-62: si el último intento terminó sin saber si ocurrió: «Volver» conserva la key para el reintento. */
+      quedoIncierto(): boolean {
+        return de().quedoIncierto();
+      },
+    };
+  }, []);
 }
 
 /**

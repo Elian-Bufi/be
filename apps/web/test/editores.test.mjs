@@ -251,7 +251,9 @@ test('TB-48 · se quita cualquier serie, también una del medio, y las demás co
   assert.deepEqual(X.sinLaSerie(series, 0), [series[1], series[2]]);
   assert.equal(series.length, 3, 'no cambia la lista que recibe');
   const ejercicio = leer('training/ejercicio-del-editor.tsx');
-  assert.match(ejercicio, /data-quitar-serie=\{n \+ 1\}\s+onClick=\{\(\) => onCambiar\(\{ sets: sinLaSerie\(p\.sets, n\) \}\)\}/);
+  // ED-23: con valores propios, pide confirmar antes (TEST-EDP-056); después quita con la misma operación.
+  assert.match(ejercicio, /data-quitar-serie=\{n \+ 1\}\s+onClick=\{\(\) => pedirQuitar\(n\)\}/);
+  assert.match(ejercicio, /onCambiar\(\{ sets: sinLaSerie\(p\.sets, n\) \}\);/);
   assert.match(ejercicio, /aria-label=\{`\$\{EDICION\.quitarLaSerie\(n\)\} de \$\{nombre\}`\}/);
   assert.doesNotMatch(ejercicio, /Quitar la última serie|slice\(0, -1\)/);
 });
@@ -302,15 +304,20 @@ test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar n
   assert.match(leerDelDominio('copy-nutricion.ts'), /validarPlan: 'Revisar el plan',/);
   assert.match(leerDelDominio('copy-entrenamiento.ts'), /validarPlan: 'Revisar el plan',/);
   assert.match(leerDelDominio('copy-entrenamiento.ts'), /noJuzga: 'Revisar el plan mira su forma, no su calidad/);
+  // ED-07 (DJ-6): lo sin completar lo dice «Antes de activar», aparte de lo que impide y sin bloquear el principal.
   for (const [archivo, funcion] of [['nutrition/editor.tsx', 'loQueQuedaSinCompletarEnNutricion(estructura)'], ['training/editor.tsx', 'loQueQuedaSinCompletarEnEntrenamiento(bloques)']]) {
     const editor = leer(archivo);
-    assert.ok(editor.includes(`const falta = ${funcion};`), archivo);
-    assert.match(editor, /setSinCompletar\(falta\);/);
-    assert.match(editor, /<ul className="problemas-del-plan" data-sin-completar>/);
-    // Nada más lee lo sin completar: ni guardar, ni el autoguardado, ni «Activar plan».
-    assert.equal((editor.match(/sinCompletar\b/g) ?? []).length, 5, `${archivo}: el estado, la lista (tres veces) y su texto`);
+    assert.ok(editor.includes(`const sinCompletarAlActivar = confirmar ? ${funcion}.map(`), archivo);
+    assert.match(editor, /sinCompletar=\{sinCompletarAlActivar\}/, archivo);
+    // Nada más lee lo sin completar: ni guardar, ni el autoguardado, ni lo que impide activar.
+    assert.equal((editor.match(/sinCompletarAlActivar\b/g) ?? []).length, 2, `${archivo}: se calcula y va al cuadro`);
+    assert.doesNotMatch(editor.slice(editor.indexOf('const impidenActivar = ['), editor.indexOf('const sinCompletarAlActivar')), /SinCompletar/, archivo);
     assert.doesNotMatch(editor, /Validar plan/);
   }
+  const cuadro = leer('cuadro-antes-de-activar.tsx');
+  assert.match(cuadro, /<ul className="antes-de-activar__lista" data-sin-completar>/);
+  // El principal no cuenta lo sin completar: solo lo que impide.
+  assert.match(cuadro, /motivoDelPrincipal\(\{ impiden: impiden\.length,/);
   for (const t of [...Object.values(R.TEXTO_DE_LO_INCOMPLETO), ...Object.values(R.COPY_REVISAR_EL_PLAN), 'Revisar el plan', 'No hay nada que impida activar.']) {
     assert.deepEqual(d.terminosProhibidosEn(t), [], t);
     assert.deepEqual(d.terminosProhibidosDeEntrenamientoEn(t), [], t);
@@ -319,7 +326,11 @@ test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar n
 });
 
 test('TB-48 · «Guardar como plantilla» va con su texto, a la vista, y si no se puede dice por qué', () => {
-  for (const [archivo, motivo] of [['nutrition/editor.tsx', 'sinPlantilla'], ['training/editor.tsx', 'antesHayQueCorregir']]) {
+  // ED-12 (WP-EDITORES-PROFESIONAL): en la estación de Entrenamiento, el plan se guarda «como preset» desde el «⋯» de la
+  // barra, con su tipo a elegir y el mismo motivo si no se puede; Nutrición conserva el botón hasta su estación (etapa 3).
+  const estacion = leer('training/editor.tsx');
+  assert.match(estacion, /\{ clave: 'plantilla', texto: `\$\{CE\.guardarComoPreset\}: \$\{CE\.elPlanComoPlantilla\}`, alElegir: \(\) => setGuardarPlantilla\(true\), noSePuede: antesHayQueCorregir \}/);
+  for (const [archivo, motivo] of [['nutrition/editor.tsx', 'sinPlantilla']]) {
     const editor = leer(archivo);
     assert.doesNotMatch(editor, /Más acciones de esta versión/, `${archivo}: ya no es un menú «⋯» sin texto`);
     const boton = editor.slice(editor.indexOf('data-guardar-como-plantilla'), editor.indexOf('{COPY_PLANTILLAS.guardarComoPlantilla}') + 40);

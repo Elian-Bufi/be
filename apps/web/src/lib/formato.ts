@@ -18,6 +18,17 @@ export const horaDelDia = (momento: Date) => soloHora.format(momento);
  */
 const diaYMesDeUnInstante = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' });
 export const diaSinElAnioEnCurso = (iso: string, ahora: Date = new Date()) => (new Date(iso).getFullYear() === ahora.getFullYear() ? diaYMesDeUnInstante.format(new Date(iso)) : dia(iso));
+/**
+ * «martes 10 de noviembre» si el instante es del año en curso; «martes 9 de diciembre de 2025» si no. En la zona del
+ * navegador. Para una fecha dentro de una frase («vigente desde el martes 10 de noviembre»), donde «10 nov.» se lee cortado.
+ */
+const diaDeLaSemanaDeUnInstante = new Intl.DateTimeFormat('es-AR', { weekday: 'long' });
+const diaYMesLargos = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' });
+const diaMesYAnioLargos = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+export const diaEnUnaFrase = (iso: string, ahora: Date = new Date()): string => {
+  const d = new Date(iso);
+  return `${diaDeLaSemanaDeUnInstante.format(d)} ${(d.getFullYear() === ahora.getFullYear() ? diaYMesLargos : diaMesYAnioLargos).format(d)}`;
+};
 
 /** «08/09»: una fecha civil (`AAAA-MM-DD`) corta, para el eje de un gráfico. La fecha civil no cambia con la zona. */
 const diaYMes = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });

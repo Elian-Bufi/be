@@ -8,6 +8,7 @@
 import { cantidad, COPY_PLANTILLAS, ETIQUETA_DE_PREPARACION, type EstructuraDePlanEntrada, type PlantillaNutricional, type ResumenDePlantillaNutricional } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, EstadoVacio, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -20,6 +21,9 @@ type Estado = 'ACTIVE' | 'ARCHIVED';
 export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
   const [estado, setEstado] = useState<Estado | ''>('');
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
+  // ED-65: cerrar el detalle, abrir otra o cambiar el filtro (la lista vuelve a leerse) lo desmontan: con el nombre o la
+  // descripción sin guardar, pregunta.
+  const detalle = useDetalleConGuardia();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   // Un profesional sin Nutrición recibe 403: la sección no es para él y no se muestra (el enlace no autoriza nada). Solo
   // ese código la oculta: cualquier otra falla se dice, porque esconderla hacía creer que no había plantillas.
@@ -59,7 +63,15 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
       {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
       <div className="campo">
         <label htmlFor="plantillas-nutricion-estado">Estado</label>
-        <select ref={filtroDeEstado} id="plantillas-nutricion-estado" value={estado} onChange={(e) => setEstado(e.target.value as Estado | '')}>
+        <select
+          ref={filtroDeEstado}
+          id="plantillas-nutricion-estado"
+          value={estado}
+          onChange={(e) => {
+            const nuevo = e.target.value as Estado | '';
+            detalle.antes(() => setEstado(nuevo));
+          }}
+        >
           <option value="">Todas</option>
           <option value="ACTIVE">{COPY_PLANTILLAS.activa}</option>
           <option value="ARCHIVED">{COPY_PLANTILLAS.archivada}</option>
@@ -95,7 +107,7 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
                 <p className="nota">
                   Versión {p.versionNumber} · {COPY_PLANTILLAS.comidas(p.mealCount)} · {p.copiedQuantities ? COPY_PLANTILLAS.conCantidades : COPY_PLANTILLAS.sinCantidades} · {p.origin ? COPY_PLANTILLAS.origen(fecha(p.createdAt)) : COPY_PLANTILLAS.desdeCero} · actualizada el {fecha(p.updatedAt)}
                 </p>
-                <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === p.templateId} onClick={() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId)}>
+                <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === p.templateId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId))}>
                   {abiertaId === p.templateId ? 'Cerrar' : 'Ver'}
                 </button>
                 {abiertaId === p.templateId ? (
@@ -103,6 +115,7 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
                     token={token}
                     resumen={p}
                     sesionPerdida={sesionPerdida}
+                    avisarSinGuardar={detalle.anotar}
                     onCambio={(texto) => {
                       setAviso({ tipo: 'exito', texto });
                       void lista.recargar();
@@ -119,12 +132,28 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
   );
 }
 
-function DetalleNutricional({ token, resumen, sesionPerdida, onCambio }: { token: string; resumen: ResumenDePlantillaNutricional; sesionPerdida: (r: Resultado<unknown>) => boolean; onCambio: (texto: string) => void }) {
+function DetalleNutricional({
+  token,
+  resumen,
+  sesionPerdida,
+  avisarSinGuardar,
+  onCambio,
+}: {
+  token: string;
+  resumen: ResumenDePlantillaNutricional;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  avisarSinGuardar: (hay: boolean) => void;
+  onCambio: (texto: string) => void;
+}) {
   const [r, setR] = useState<Resultado<{ data: PlantillaNutricional }> | null>(null);
   const [nombre, setNombre] = useState(resumen.name);
   const [descripcion, setDescripcion] = useState(resumen.description ?? '');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ED-65: con el nombre o la descripción cambiados y sin guardar, salir pregunta, y cerrarlo desde la lista también.
+  const sinGuardar = !!r?.ok && (nombre.trim() !== r.datos.data.name || (descripcion.trim() || null) !== r.datos.data.description);
+  useCambiosParaSalir(sinGuardar, 'el nombre o la descripción de la plantilla');
+  useAvisarALaLista(sinGuardar, avisarSinGuardar);
   const cargar = useCallback(async () => {
     setR(null);
     const res = await api.consultarPlantillaNutricional(token, resumen.templateId);

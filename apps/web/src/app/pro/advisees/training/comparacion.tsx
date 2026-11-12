@@ -271,7 +271,7 @@ function textoDeLaFuente(c: ComparacionDeEjercicio): string {
   const f = c.fuente;
   if (f.tipo === 'no-resoluble') return COPY_COMPARACION.vistaNoResoluble;
   if (f.tipo === 'original') return `${COPY_COMPARACION.registroOriginal}, registrado el ${fecha(f.registradoEl)}`;
-  const quien = f.rolDelAutor === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por el asesorado';
+  const quien = f.rolDelAutor === 'PROFESSIONAL' ? COPY_ENTRENAMIENTO.corregidoPorElProfesional : 'Corregido por la persona';
   return `${COPY_COMPARACION.correccionVigente}: ${quien} (${f.autor}), el ${fecha(f.registradaEl)}. Motivo: ${f.motivo}`;
 }
 
