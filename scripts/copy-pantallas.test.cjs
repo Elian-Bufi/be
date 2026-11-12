@@ -544,3 +544,24 @@ test('ED-06 · la guardia encuentra «Tus asesorados» y deja pasar una clave (p
   const textos = textosDe('prueba.tsx', 'export const P = () => <section id="tus-asesorados"><h2>Tus asesorados</h2><Icono nombre="asesorados" /></section>;');
   assert.deepEqual(textos.filter(({ texto }) => /asesorad/i.test(texto) && !ES_IDENTIFICADOR.test(texto)).map(({ texto }) => texto), ['Tus asesorados']);
 });
+
+/**
+ * DJ-6 (WP-EDITORES-PROFESIONAL; ED-15): la versión en preparación lleva número, el de las activadas más uno (hay una
+ * sola por plan). Ningún texto del website profesional dice que no lo tiene: «Cómo se lee el Plan» lo decía en las dos
+ * áreas, mientras «Antes de activar» nombraba «la versión 9» (revisión adversaria de la etapa 1).
+ */
+const SIN_NUMERO = /(en preparación|borrador)[^.]*no (tiene|lleva) número/i;
+
+test('DJ-6 · ningún texto del website profesional dice que la versión en preparación no tiene número', () => {
+  const hallazgos = CON_PERSONA.flatMap((a) =>
+    textosDe(a)
+      .filter(({ texto }) => SIN_NUMERO.test(texto))
+      .map(({ texto, linea }) => `${a.slice(RAIZ.length + 1)}:${linea} ${JSON.stringify(texto.slice(0, 120))}`),
+  );
+  assert.deepEqual(hallazgos, []);
+});
+
+test('DJ-6 · la guardia encuentra la frase vieja en un texto y no en un comentario (prueba de la prueba)', () => {
+  const textos = textosDe('prueba.tsx', '// Un borrador no lleva número.\nexport const P = () => <p>Es la 1. Una versión en preparación todavía no tiene número.</p>;');
+  assert.deepEqual(textos.filter(({ texto }) => SIN_NUMERO.test(texto)).map(({ texto }) => texto), ['Es la 1. Una versión en preparación todavía no tiene número.']);
+});

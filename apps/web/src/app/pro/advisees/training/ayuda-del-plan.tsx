@@ -21,7 +21,7 @@ export function AyudaDelPlanDeEntrenamiento() {
           sigue igual hasta que actives la otra.
         </Renglon>
         <Renglon muestra={<Icono nombre="plan" tamano={20} />}>
-          <strong>El número de una versión es su orden de activación:</strong> la primera que se activó es la 1. Una versión en preparación todavía no tiene número.
+          <strong>El número de una versión es su orden de activación:</strong> la primera que se activó es la 1. La que está en preparación lleva el número que va a tener al activarse, el de las activadas más uno: hay una sola por plan.
         </Renglon>
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
           <strong>Se mira una sesión por vez.</strong> Se eligen el bloque, el microciclo —si el bloque los usa— y la sesión. Con una sola cosa para elegir, la pantalla dice su nombre; con muchas, las ofrece en una lista.

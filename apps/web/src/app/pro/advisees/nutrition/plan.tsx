@@ -258,7 +258,7 @@ export function VistaDePlan() {
                   onReintentar={() => void cargar(false)}
                 />
 
-                {borrador && activa ? <SelectorDeVersion mostrada={mostrada} numeroDeLaActiva={numeroDeLaActiva ?? 1} onElegir={(cual) => ir({ version: cual === 'activa' ? 'activa' : null })} /> : null}
+                {borrador && activa ? <SelectorDeVersion mostrada={mostrada} numeroDeLaActiva={numeroDeLaActiva ?? 1} numeroDelBorrador={numeroDelBorrador(historial)} onElegir={(cual) => ir({ version: cual === 'activa' ? 'activa' : null })} /> : null}
 
                 {borrador ? (
                   // Queda montada aunque se mire la activa: lo escrito sin guardar sigue ahí al volver.

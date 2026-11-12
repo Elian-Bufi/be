@@ -474,7 +474,8 @@ async function primerPlan({ p, d }) {
   // 3. El plan.
   await clic(p, '[data-crear-version]');
   await elemento(p, '.editor-del-plan');
-  await esperarTexto(p, 'Versión en preparación');
+  // DJ-6: la primera versión en preparación lleva el número 1.
+  await esperarTexto(p, 'Versión 1 · en preparación');
 
   // De vuelta en la ficha, la acción del momento cambió: ahora es seguir el borrador.
   await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}`, { waitUntil: 'networkidle2' });

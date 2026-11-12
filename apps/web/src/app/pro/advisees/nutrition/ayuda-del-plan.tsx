@@ -19,7 +19,7 @@ export function AyudaDelPlan() {
           sigue igual hasta que actives la otra.
         </Renglon>
         <Renglon muestra={<Icono nombre="plan" tamano={20} />}>
-          <strong>El número de una versión es su orden de activación:</strong> la primera que se activó es la 1. Una versión en preparación todavía no tiene número.
+          <strong>El número de una versión es su orden de activación:</strong> la primera que se activó es la 1. La que está en preparación lleva el número que va a tener al activarse, el de las activadas más uno: hay una sola por plan.
         </Renglon>
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
           <strong>Se lee de a un día tipo.</strong> Si el plan tiene más de uno, se elige cuál mirar; si tiene uno solo, la pantalla dice su nombre.

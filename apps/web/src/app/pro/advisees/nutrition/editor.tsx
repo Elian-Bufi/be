@@ -26,10 +26,10 @@
 import {
   COPY_DE_ACTIVAR_EL_PLAN,
   COPY_DESCARTAR_LA_VERSION,
+  COPY_DE_VERSIONES,
   COPY_GUARDADO,
   COPY_DEL_PLAN,
   COPY_HABITUALES,
-  COPY_NUTRICION,
   COPY_PLANTILLAS,
   COPY_RECETAS,
   PROBLEMA_DEL_EDITOR,
@@ -77,7 +77,7 @@ import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
-import { useCambiosSinGuardar } from '../marco-del-area';
+import { useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
 import { loQueQuedaSinCompletarEnNutricion, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
 import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
@@ -191,6 +191,8 @@ export function EditorDeBorrador({
   onDescartado: (porOtraPestana?: string) => void;
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
+  // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
+  const persona = usePersonaDelArea();
   const propio = useId();
   const [version, setVersion] = useState<VersionDePlan | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
@@ -667,11 +669,12 @@ export function EditorDeBorrador({
   return (
     <section className="seccion editor-del-plan" aria-labelledby="titulo-borrador">
       <div className="editor-del-plan__cabecera">
+        {/* DJ-6: la versión en preparación lleva número (el de las activadas más uno) y dice que la persona no la ve. */}
         <h2 id="titulo-borrador">
-          Versión en preparación{' '}
+          {COPY_DE_VERSIONES.versionEnPreparacion(numero)}{' '}
           <span className="etiqueta-de-dato">
             <Icono nombre="borrador" tamano={15} />
-            {COPY_NUTRICION.borrador}
+            {COPY_DE_VERSIONES.noLaVe(persona)}
           </span>
         </h2>
         <div className="editor-del-plan__acciones">

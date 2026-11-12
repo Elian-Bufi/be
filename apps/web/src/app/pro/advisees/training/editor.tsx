@@ -29,6 +29,7 @@
  */
 import {
   COPY_AGENDA_DE_ENTRENAMIENTO,
+  COPY_DE_VERSIONES,
   COPY_GUARDADO,
   COPY_COMPATIBILIDAD_DE_CLIENTES,
   COPY_DE_ACTIVAR_EL_PLAN,
@@ -86,7 +87,7 @@ import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
-import { useCambiosSinGuardar } from '../marco-del-area';
+import { useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
 import { loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
 import {
@@ -237,6 +238,8 @@ export function EditorDePlan({
   onDescartado: (porOtraPestana?: string) => void;
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
+  // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
+  const persona = usePersonaDelArea();
   const [version, setVersion] = useState<PlanConObjetivos | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [bloques, setBloques] = useState<Bloques>([]);
@@ -861,11 +864,12 @@ export function EditorDePlan({
   return (
     <section className="seccion editor-del-plan editor-de-entrenamiento" aria-labelledby="titulo-borrador">
       <div className="editor-del-plan__cabecera">
+        {/* DJ-6: la versión en preparación lleva número (el de las activadas más uno) y dice que la persona no la ve. */}
         <h2 id="titulo-borrador">
-          Versión en preparación{' '}
+          {COPY_DE_VERSIONES.versionEnPreparacion(numero)}{' '}
           <span className="etiqueta-de-dato">
             <Icono nombre="borrador" tamano={15} />
-            {COPY_ENTRENAMIENTO.borrador}
+            {COPY_DE_VERSIONES.noLaVe(persona)}
           </span>
         </h2>
         <div className="editor-del-plan__acciones">

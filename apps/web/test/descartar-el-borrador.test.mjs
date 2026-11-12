@@ -104,3 +104,21 @@ test('TEST-EDP-002 · el cuadro: «Cancelar» con el foco y un solo botón de ef
   const dialogo = leer('components/dialogo.tsx');
   assert.equal((dialogo.match(/<button/g) ?? []).length, 2);
 });
+
+test('DJ-6 · la versión en preparación lleva su número en el título, en el selector y en los cuadros', () => {
+  // Revisión adversaria de la etapa 1: los cuadros decían «la versión 9» y la cabecera, «Versión en preparación», sin número.
+  assert.equal(d.COPY_DE_VERSIONES.versionEnPreparacion(9), 'Versión 9 · en preparación');
+  assert.equal(d.COPY_DE_VERSIONES.enPreparacionConNumero(9), '9 · en preparación');
+  assert.equal(d.COPY_DE_VERSIONES.noLaVe('Diego'), 'Diego no la ve');
+  assert.equal(d.COPY_DE_VERSIONES.noLaVe(null), 'La persona no la ve');
+  for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
+    const fuente = leer(ruta);
+    assert.match(fuente, /<h2 id="titulo-borrador">\n\s*\{COPY_DE_VERSIONES\.versionEnPreparacion\(numero\)\}\{' '\}/, ruta);
+    assert.match(fuente, /\{COPY_DE_VERSIONES\.noLaVe\(persona\)\}/, ruta);
+    assert.doesNotMatch(fuente, /Versión en preparación\{' '\}/, ruta);
+  }
+  for (const ruta of ['app/pro/advisees/training/plan.tsx', 'app/pro/advisees/nutrition/plan.tsx']) {
+    assert.match(leer(ruta), /<SelectorDeVersion mostrada=\{mostrada\} numeroDeLaActiva=\{numeroDeLaActiva \?\? 1\} numeroDelBorrador=\{numeroDelBorrador\(historial\)\} /, ruta);
+  }
+  assert.match(leer('app/pro/advisees/versiones-del-plan.tsx'), /\{COPY_DE_VERSIONES\.enPreparacionConNumero\(numeroDelBorrador\)\}/);
+});
