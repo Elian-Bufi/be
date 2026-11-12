@@ -2,7 +2,7 @@
 
 > **Estado (2026-11-11): preparado, sin medir.** No hay un teléfono conectado. El procedimiento y sus dos herramientas
 > están listos; la medición «antes» se puede hacer ya con la 0.23 que Dirección tiene instalada, y la «después», con la
-> 0.24.0-candidata.1 de la muestra (AV2-18). Las capturas del render del navegador no sirven para esto: no usa Yoga y no
+> 0.25.0-candidata.1 de la muestra (AV2-18). Las capturas del render del navegador no sirven para esto: no usa Yoga y no
 > dibuja como Android el degradé, la sombra ni el vidrio.
 
 ## Qué hace falta
@@ -19,7 +19,7 @@
    y por cada una de las tres corridas, el guion pide abrir la pantalla y apretar Enter. Después borra las estadísticas
    (`adb shell dumpsys gfxinfo com.elianbufi.be reset`), hace diez deslizamientos iguales con `adb shell input swipe`
    (las mismas coordenadas, del 75 % al 30 % del alto, en 300 ms) y guarda `dumpsys gfxinfo` crudo.
-2. Instalar la 0.24.0-candidata.1 encima (el mismo certificado y un `versionCode` mayor) y repetir: `bash medir.sh despues`.
+2. Instalar la 0.25.0-candidata.1 encima (el mismo certificado y un `versionCode` mayor) y repetir: `bash medir.sh despues`.
 3. En las opciones de desarrollador, «Depurar superposición de GPU»: una captura de Inicio con la 0.23 y otra con la
    candidata, en la misma pantalla, el mismo lugar y el mismo tema (`adb exec-out screencap -p >
    antes/superposicion-inicio.png` y `> despues/superposicion-inicio.png`). Se comparan; **no es un criterio de

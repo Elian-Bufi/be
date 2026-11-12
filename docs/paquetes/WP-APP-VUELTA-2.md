@@ -675,8 +675,8 @@ verifica con una mutación: se rompe la regla a propósito, la prueba se pone en
   vidrio que todavía no tiene.
 
 **AV2-18 · La muestra en el teléfono de Dirección**
-- *Qué cambia:* la candidata de la muestra, 0.24.0-candidata.1, por el circuito de siempre (§5.4), con la distribución
-  que elija AV2-D11.
+- *Qué cambia:* la candidata de la muestra, 0.25.0-candidata.1 (la numeración que decidió Dirección el 2026-11-11), por el
+  circuito de siempre (§5.4), con la distribución de AV2-D11.
 - *API:* no.
 - *Dado* la candidata instalada, *cuando* Dirección abre Inicio con sus datos o con una cuenta sintética, en los dos
   temas, con letra ×1,3 y con TalkBack, *entonces* su respuesta (el visto bueno o las correcciones) queda escrita en
@@ -858,7 +858,7 @@ Es un plan y no una promesa. Lo que sí está fijo es el congelamiento del 25/11
 |---|---|---|---|---|
 | 0 · Aprobación | mié 11 y jue 12 | Esta declaración; AV2-D1 a AV2-D12 | La declaración, si Dirección la aprueba | El rendimiento de la 0.23 en su teléfono (AV2-16, «antes») |
 | A · La muestra | jue 12 a sáb 14 | AV2-01 a AV2-17 | Sola: es solo de la APK y no redespliega la API ni el website | El contraste, con la prueba |
-| A · En su teléfono | dom 15 | AV2-18 | La 0.24.0-candidata.1, según AV2-D11 | El rendimiento «después», los dos temas, la letra ×1,3 y TalkBack |
+| A · En su teléfono | dom 15 | AV2-18 | La 0.25.0-candidata.1, según AV2-D11 | El rendimiento «después», los dos temas, la letra ×1,3 y TalkBack |
 | B · Toda la app | lun 16 a sáb 21 | AV2-19 a AV2-26; AV2-27 y AV2-28, solo con su decisión | Por partes, cada una con su CI. AV2-27, en la ventana de la API (sáb 21 o dom 22, la de WP-EDITORES-PROFESIONAL) | El contraste y el rendimiento, otra vez |
 | Cierre | dom 22 a mar 24 | AV2-29, con UF-01 | La candidata con UF-01 | Todo |
 | Congelamiento | mié 25 | — | Nada más | — |
@@ -920,9 +920,10 @@ dibuja como Android estas propiedades.
 1. **El sí de Dirección a los IDs de la etapa A** (AV2-01 a AV2-18) y su respuesta a AV2-D1, D2 y D11. Las demás de la
    muestra van con la recomendación (§5.1). Dados el 2026-11-11.
 2. **La etapa A programada,** con la CI verde, e integrada en `main` con su autorización.
-3. **La candidata de la muestra,** 0.24.0-candidata.1, por el circuito de siempre (`docs/DESPLIEGUE.md`, Google Play):
-   - la rama `aab/candidata-0.24.0-1`: `main` más un commit con la versión y el `versionCode` 38 (la 0.23.0-candidata.2
-     lleva el 37);
+3. **La candidata de la muestra,** 0.25.0-candidata.1, por el circuito de siempre (`docs/DESPLIEGUE.md`, Google Play):
+   - la rama `aab/candidata-0.25.0-1`: esta rama, con `main` traído (ya trae el nombre obligatorio de UF-01), más un
+     commit con la versión y el `versionCode` 39 (la 0.24.0-candidata.1, la de UF-01, lleva el 38). La etapa A sigue
+     sin integrar hasta el sí de Dirección;
    - GitHub Actions arma el AAB sin firma, en unos 10 minutos;
    - en la PC de Dirección: bajarlo, comparar la huella, firmarlo y verificarlo (`firmar-aab.mjs` y `verificar-aab.mjs`,
      unos 5 minutos, con sus contraseñas por el entorno), y armar la APK con `apk-desde-aab.mjs`, con más de 1,2 GB
@@ -1000,6 +1001,9 @@ ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
     letra grande se parte en renglones.
   - *Alternativa:* las opciones en una lista vertical compacta, sin navegación.
 - **AV2-D11 · Cómo llega la muestra a su teléfono** · **ratificada por Dirección el 2026-11-11: aparte, como prerelease y no «latest».**
+  - **Numeración (decisión de Dirección del 2026-11-11):** la 0.24 lleva el nombre obligatorio (UF-01) y es la «latest»;
+    la muestra con vidrio es la **0.25.0-candidata.1**, prerelease y solo para Dirección, armada sobre esta rama con
+    `main` traído, sin integrar la etapa A. Lo que sigue es la recomendación original, que quedó así:
   - *Recomiendo:* integrar la etapa A en `main` y publicar la 0.24.0-candidata.1 como **prerelease y no «latest»**.
     Así la descarga del website sigue ofreciendo la 0.23 a la familia hasta la APK con UF-01 y el vidrio entero. Es una
     excepción a la regla del 11/11 («cada versión nueva, como latest»), solo para la muestra.
@@ -1159,8 +1163,8 @@ verificada con su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`). Solo la APK: no
 ### 10.3 Lo que queda
 
 - AV2-16, la medición en el teléfono (`EVIDENCIA/APP-VUELTA-2/rendimiento/`), y AV2-18, la muestra
-  (`EVIDENCIA/APP-VUELTA-2/muestra/`): la candidata 0.24.0-candidata.1 se arma después de integrar la etapa A, como
-  prerelease (AV2-D11).
+  (`EVIDENCIA/APP-VUELTA-2/muestra/`): la candidata 0.25.0-candidata.1 se arma sobre esta rama, con `main` traído, como
+  prerelease (AV2-D11 y la numeración del 2026-11-11).
 - TalkBack, la letra ×1,3, el alto contraste y el dibujo de Android, en el teléfono: ninguna prueba los da por
   aprobados.
 - La etapa B, con el visto bueno de Dirección a la muestra.

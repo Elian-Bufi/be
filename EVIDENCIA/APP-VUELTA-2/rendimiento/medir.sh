@@ -3,7 +3,7 @@
 #
 # Uso (con el teléfono conectado por USB y la depuración USB activada; `adb` en el PATH):
 #   bash medir.sh antes      # con la 0.23 instalada
-#   bash medir.sh despues    # con la 0.24.0-candidata.1 instalada
+#   bash medir.sh despues    # con la 0.25.0-candidata.1 instalada
 # Después: node resumir.mjs   (arma la tabla y aplica el criterio)
 #
 # Por cada pantalla (Inicio, Nutrición Hoy, Entrenamiento y Tu historial) y por cada una de las tres corridas:
