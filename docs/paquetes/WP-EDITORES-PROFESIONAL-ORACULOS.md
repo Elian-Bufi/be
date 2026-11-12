@@ -250,16 +250,22 @@ STEPS                1. Con una sesión sin ejercicios, tocar «Revisar y activa
                      2. Con cambios sin guardar, abrir el cuadro.
                      3. Con un borrador listo, abrir el cuadro y mirar la fecha.
                      4. Mirar de dónde sale la validación final.
+                     5. Con un nombre vacío a la vista (una sesión o una comida), «Ir a corregir» (revisión adversaria
+                        de la etapa 1).
 EXPECTED             1 → el cuadro abre con «Tren superior liviano: sin ejercicios · Ir a corregir» y «Activar la
                      versión N de Entrenamiento» apagado, con su motivo («Falta corregir 1 cosa»). 2 → ofrece
                      primero «Guardar ahora», y el principal sigue apagado hasta la respuesta del servidor. 3 →
                      «¿Cuándo la revisás?», con «Sin fecha por ahora» y nada elegido; el principal se enciende
                      recién con una elección. 4 → antes de activar se pide la validación a la API (API-TRN-11 /
-                     API-NUT-11) y la activación la decide la API.
+                     API-NUT-11) y la activación la decide la API. 5 → el cuadro se cierra y el foco queda en el
+                     campo del nombre, no en «Revisar y activar…».
 NEGATIVE_ASSERTIONS  El principal nunca se enciende con algo por corregir, con cambios sin guardar ni sin una
-                     elección de fecha. «Sin fecha por ahora» nunca desaparece. Hay un solo botón principal.
+                     elección de fecha. «Sin fecha por ahora» nunca desaparece. Hay un solo botón principal. Cerrar
+                     el cuadro nunca le saca el foco al lugar al que llevó «Ir a corregir».
 AUTOMATION           apps/web/test/antes-de-activar.test.mjs («TEST-EDP-008 · …») sobre `advisees/antes-de-activar.ts`
-                     (el estado del principal y su motivo) y la lectura de los dos editores
+                     (el estado del principal y su motivo) y la lectura de los dos editores y del cuadro (se abre y
+                     se cierra en un efecto de diseño) · recorrido `irACorregir` en test/navegador/recorridos.mjs (una
+                     comida sin nombre: después de «Ir a corregir», el foco está en su campo)
 ENVIRONMENT          Local (node --test) y CI
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR
 ```

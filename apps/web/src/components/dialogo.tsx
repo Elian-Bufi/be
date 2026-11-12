@@ -4,9 +4,14 @@
  * Confirmación contextual con CTA explícito (10-B04 §26: sin «Escribí FINALIZAR»). `<dialog>` nativo en modo modal:
  * retiene el foco y lo devuelve al disparador al cerrar; Esc equivale a «Volver» salvo mientras se envía. El foco
  * inicial cae en el primer control (el motivo, si hay, o «Volver»): la acción de efecto nunca es la opción por defecto.
+ *
+ * Se abre y se cierra en un efecto de diseño (`useLayoutEffect`), antes de los efectos comunes de la página. Cerrar un
+ * diálogo modal devuelve el foco a quien lo abrió: si eso pasara después, le sacaría el foco a lo que la página enfoca al
+ * cerrarlo. Pasaba con «Ir a corregir» de «Antes de activar» y un nombre vacío: el campo tomaba el foco y el cierre se lo
+ * devolvía a «Revisar y activar…» (revisión adversaria de la etapa 1 de WP-EDITORES-PROFESIONAL).
  */
 import { COPY_VINCULO } from '@be/domain';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Aviso } from './formulario';
 
 interface PropsDeDialogo {
@@ -51,7 +56,7 @@ export function DialogoDeConfirmacion({
   const volver = useRef<HTMLButtonElement>(null);
   const id = useId();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialogo = ref.current;
     if (!dialogo) return;
     if (abierto && !dialogo.open) {

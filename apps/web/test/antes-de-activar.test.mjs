@@ -163,3 +163,16 @@ test('TEST-EDP-009 · nada del resumen califica, y los textos pasan las guardias
   const cuadro = leer('app/pro/advisees/cuadro-antes-de-activar.tsx');
   assert.doesNotMatch(cuadro, /aviso--exito|aviso--error|--exito|insignia--si/);
 });
+
+test('TEST-EDP-008 · «Ir a corregir» deja el foco en su lugar: el cuadro se cierra antes de que el campo tome el foco', () => {
+  // Revisión adversaria de la etapa 1: el cuadro se abría y se cerraba en un efecto común, que corre después del efecto
+  // del campo del nombre (está antes en el árbol). Cerrar un diálogo modal devuelve el foco a quien lo abrió («Revisar y
+  // activar…»), así que el campo lo perdía, y al perderlo se cerraba. Con el efecto de diseño, el cuadro se cierra antes.
+  const dialogo = leer('components/dialogo.tsx');
+  assert.match(dialogo, /useLayoutEffect\(\(\) => \{\n\s*const dialogo = ref\.current;\n\s*if \(!dialogo\) return;\n\s*if \(abierto && !dialogo\.open\) \{/);
+  assert.doesNotMatch(dialogo, /\buseEffect\(/);
+  // Los dos editores cierran el cuadro y después van al problema: el foco lo toma el campo (o lo que diga `paraEnfocar`).
+  for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
+    assert.match(leer(ruta), /const irDesdeElCuadro = \(p: ValidationIssue\) => \(\) => \{\n\s*cerrarAntesDeActivar\(\);\n\s*irAlProblema\(p\);/, ruta);
+  }
+});
