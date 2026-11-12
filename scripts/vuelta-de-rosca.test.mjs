@@ -1592,3 +1592,44 @@ test('TEST-AV2-020 · Tu historial dice su período, y cada sesión es una fila 
   assert.doesNotMatch(contenido, /verLaSesion|verElPlan|<Tarjeta/, 'una sola acción por fila: la fila entera');
   assert.equal((contenido.match(/<FilaQueAbreElHistorial /g) ?? []).length, 2, 'las sesiones y los planes, con el mismo trato');
 });
+
+// ─── TEST-AV2-018 · Evolución: «Figura» a la vista y las tomas por su fecha (AV2-20) ────────────
+
+const nombresDeLasTomas = await import('../apps/mobile/src/nombres-de-las-tomas.ts');
+
+test('TEST-AV2-018 · las tomas se nombran por su fecha, nunca «T1»; dos del mismo día, por su orden', () => {
+  const tomas = [
+    { evaluacionId: 'a', etiqueta: 'T1', fecha: '2026-09-02' },
+    { evaluacionId: 'b', etiqueta: 'T2', fecha: '2026-11-09' },
+    { evaluacionId: 'c', etiqueta: 'T3', fecha: '2026-11-09' },
+  ];
+  assert.deepEqual(
+    nombresDeLasTomas.conNombresPorFecha(tomas).map((t) => [t.evaluacionId, t.etiqueta]),
+    [
+      ['a', '2 sept'],
+      ['b', '9 nov (1)'],
+      ['c', '9 nov (2)'],
+    ],
+  );
+  assert.deepEqual(nombresDeLasTomas.conNombresPorFecha(tomas.slice(0, 2)).map((t) => t.etiqueta), ['2 sept', '9 nov']);
+  // Ninguna pantalla de Evolución muestra «T1»: las tomas salen de `conNombresPorFecha`, en la pantalla y en la serie.
+  const antropometria = sinComentarios(leer('pantallas/antropometria.tsx'));
+  assert.match(antropometria, /useMemo\(\(\) => conNombresPorFecha\(tomasDelPeriodo\(datos\)\), \[datos\]\)/);
+  assert.match(sinComentarios(leer('serie-de-la-medida.ts')), /conNombresPorFecha\(tomasDelPeriodo\(datos\)\)/);
+  assert.doesNotMatch(antropometria, /\bT\d\b|`Toma \$\{/);
+  assert.doesNotMatch(antropometria, /\$\{numero\(enLaFigura\.length\)\} medidas/, 'sin «16 medidas» en «La figura, en lista»');
+});
+
+test('TEST-AV2-018 · «Figura: Hombre | Mujer» arriba, en la fila de controles, con el rótulo a la vista, en el mapa y en Progreso', () => {
+  const figura = sinComentarios(leer('pantallas/figura-de-la-toma.tsx'));
+  const controles = figura.indexOf('<ControlesDeLaFigura>');
+  const lamina = figura.indexOf('backgroundColor: lamina.fondo');
+  assert.ok(controles > 0 && controles < lamina, 'los controles van arriba de la lámina');
+  assert.ok(figura.indexOf('<ElegirLaFigura sexo={sexo} alElegir={setSexo} />') > controles && figura.indexOf('<ElegirLaFigura sexo={sexo} alElegir={setSexo} />') < lamina, 'la figura, en la fila');
+  assert.equal((figura.match(/<ElegirLaFigura /g) ?? []).length, 1, 'y no al pie');
+  assert.match(figura, /\{`\$\{COPY_ANTROPOMETRIA\.figura\}:`\}/, 'el rótulo «Figura:» a la vista');
+  const progreso = sinComentarios(leer('pantallas/progreso.tsx'));
+  const fila = progreso.slice(progreso.indexOf('<ControlesDeLaFigura>'), progreso.indexOf('</ControlesDeLaFigura>'));
+  assert.match(fila, /<ElegirLaFigura sexo=\{sexo\} alElegir=\{setSexo\} \/>/);
+  assert.equal((progreso.match(/<ElegirLaFigura /g) ?? []).length, 1);
+});

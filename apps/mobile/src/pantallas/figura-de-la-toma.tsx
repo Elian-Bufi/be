@@ -48,7 +48,7 @@ import {
   type SexoDeLaLamina,
 } from '@be/domain';
 import { medidaConUnDecimal } from '../formato';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop, Text as TextoSvg } from 'react-native-svg';
 import { useApariencia } from '../apariencia';
@@ -172,23 +172,24 @@ export function FiguraDeLaToma({
 
   return (
     <View>
-      {/* La lámina: la familia arriba, compacta (una elección del mapa, distinta de las vistas de la pantalla), y debajo
-          la figura, entera dentro de esta caja desde AV2-19 (ENCUADRE, en composicion-de-la-figura.ts). */}
-      <View style={{ backgroundColor: lamina.fondo, borderRadius: 18, overflow: 'hidden', marginTop: 6, marginBottom: 8 }}>
+      {/* Una sola fila de controles arriba de la figura (AV2-20): la familia y, al lado, «Figura: Hombre | Mujer», con el
+          rótulo a la vista. Debajo, la lámina, con la figura entera desde AV2-19 (ENCUADRE, en composicion-de-la-figura.ts). */}
+      <ControlesDeLaFigura>
         {hayPerimetros && hayPliegues ? (
-          <View style={{ paddingHorizontal: 8, paddingTop: 8 }}>
-            <Segmentos
-              compactos
-              etiqueta={COPY_ANTROPOMETRIA.medidasDeLaFigura}
-              opciones={[
-                { valor: 'PERIMETROS', texto: COPY_ANTROPOMETRIA.perimetrosEnLaFigura },
-                { valor: 'PLIEGUES', texto: COPY_ANTROPOMETRIA.plieguesEnLaFigura },
-              ]}
-              valor={familiaVisible}
-              alElegir={setFamilia}
-            />
-          </View>
+          <Segmentos
+            compactos
+            etiqueta={COPY_ANTROPOMETRIA.medidasDeLaFigura}
+            opciones={[
+              { valor: 'PERIMETROS', texto: COPY_ANTROPOMETRIA.perimetrosEnLaFigura },
+              { valor: 'PLIEGUES', texto: COPY_ANTROPOMETRIA.plieguesEnLaFigura },
+            ]}
+            valor={familiaVisible}
+            alElegir={setFamilia}
+          />
         ) : null}
+        <ElegirLaFigura sexo={sexo} alElegir={setSexo} />
+      </ControlesDeLaFigura>
+      <View style={{ backgroundColor: lamina.fondo, borderRadius: 18, overflow: 'hidden', marginTop: 6, marginBottom: 8 }}>
         <View onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {composicion ? <Lamina composicion={composicion} sexo={sexo} tema={tema} elegida={sitioElegido?.clave ?? null} alternar={alternar} tocar={tocar} /> : null}
         </View>
@@ -206,7 +207,6 @@ export function FiguraDeLaToma({
         </Text>
       ) : null}
       {sitioElegido ? <DetalleDelSitio medida={sitioElegido.medida} rotulo={sitioElegido.rotulo} lamina={lamina} verSuProgreso={verSuProgreso} /> : null}
-      <ElegirLaFigura sexo={sexo} alElegir={setSexo} />
     </View>
   );
 }
@@ -231,19 +231,36 @@ export function useSexoDeLaFigura(): readonly [SexoDeLaLamina, (s: SexoDeLaLamin
   return [sexo, elegir] as const;
 }
 
-/** El control de la figura, debajo del dibujo. */
+/**
+ * La fila de controles de la figura (AV2-20), en el mapa y en Progreso: los controles juntos, arriba, y si no entran en
+ * una línea (letra grande, 360 dp), el segundo baja.
+ */
+export function ControlesDeLaFigura({ children }: { children: ReactNode }) {
+  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 6, marginTop: 6 }}>{children}</View>;
+}
+
+/**
+ * El control de la figura, arriba del dibujo y con su rótulo a la vista: «Figura: Hombre | Mujer» (AV2-20). Hasta la
+ * 0.25 iba al pie, sin rótulo.
+ */
 export function ElegirLaFigura({ sexo, alElegir }: { sexo: SexoDeLaLamina; alElegir: (s: SexoDeLaLamina) => void }) {
+  const { tema } = useApariencia();
   return (
-    <Segmentos
-      compactos
-      etiqueta={COPY_ANTROPOMETRIA.figura}
-      opciones={[
-        { valor: 'HOMBRE', texto: COPY_ANTROPOMETRIA.figuraHombre },
-        { valor: 'MUJER', texto: COPY_ANTROPOMETRIA.figuraMujer },
-      ]}
-      valor={sexo}
-      alElegir={alElegir}
-    />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Text style={{ fontSize: 14, fontWeight: '700', color: PALETAS[tema].tenue }} accessibilityElementsHidden importantForAccessibility="no">
+        {`${COPY_ANTROPOMETRIA.figura}:`}
+      </Text>
+      <Segmentos
+        compactos
+        etiqueta={COPY_ANTROPOMETRIA.figura}
+        opciones={[
+          { valor: 'HOMBRE', texto: COPY_ANTROPOMETRIA.figuraHombre },
+          { valor: 'MUJER', texto: COPY_ANTROPOMETRIA.figuraMujer },
+        ]}
+        valor={sexo}
+        alElegir={alElegir}
+      />
+    </View>
   );
 }
 

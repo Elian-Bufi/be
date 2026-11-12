@@ -311,11 +311,11 @@ test('DL-118: la serie de una medida usa el grupo de la toma elegida, cuenta apa
   assert.equal(serieDeLaMedida.indiceDeLaToma(cintura.observaciones, 'ev-3'), 1);
   assert.equal(serieDeLaMedida.indiceDeLaToma(cintura.observaciones, 'ev-2'), null, 'la toma de agosto no tiene la cintura');
   assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'perimetro-muslo', null).observaciones, [], 'una medida que no está, vacía');
-  // La toma de cada punto, con la numeración del selector (ajuste del 2026-10-05): el hueco de agosto se ve en que falta
-  // la T2, y el tríceps ISAK de agosto es la T2 aunque vaya en otro eje.
-  assert.deepEqual(cintura.tomas, ['T1', 'T3']);
-  assert.deepEqual(propio.tomas, ['T1', 'T3']);
-  assert.deepEqual(isak.tomas, ['T2']);
+  // La toma de cada punto, con el nombre del selector (ajuste del 2026-10-05; por su fecha desde AV2-20, TEST-AV2-018):
+  // el hueco de agosto se ve en que falta su toma, y el tríceps ISAK de agosto es esa toma aunque vaya en otro eje.
+  assert.deepEqual(cintura.tomas, ['20 jul', '24 sept']);
+  assert.deepEqual(propio.tomas, ['20 jul', '24 sept']);
+  assert.deepEqual(isak.tomas, ['25 ago']);
   assert.deepEqual(serieDeLaMedida.serieDeLaMedida(TRES, 'perimetro-muslo', null).tomas, []);
 });
 
@@ -344,8 +344,9 @@ test('DL-118, ajuste del 2026-10-05: la cabecera dice la toma y su fecha, sin «
   assert.equal(peso.anterior.fecha, '2026-08-25', 'el peso de la misma toma se compara con otra fecha');
   const pantalla = readFileSync(new URL('../apps/mobile/src/pantallas/antropometria.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(pantalla, /se compara con/, 'la cabecera no dice una sola fecha de comparación');
-  assert.match(pantalla, /<Text style=\{estilos\.contexto\}>\{nombreDeLaToma\}<\/Text>/, 'la cabecera dice cuál es la toma');
-  assert.match(pantalla, /<Text style=\{estilos\.fechaDeLaToma\}>\{fechaCivil\(toma\.fecha\)\}<\/Text>/, 'y su fecha');
+  // «Última toma · 9 nov» (AV2-20): cuál es la toma y su fecha, en una línea.
+  assert.match(pantalla, /<Text style=\{estilos\.fechaDeLaToma\}>\{`\$\{nombreDeLaToma\} · \$\{fechaCivil\(toma\.fecha\)\}`\}<\/Text>/, 'la cabecera dice cuál es la toma y su fecha');
+  assert.match(pantalla, /const nombreDeLaToma = mostrada === ultima \? 'Última toma' : 'Toma anterior';/);
   // Las tarjetas escriben la suya: «respecto del 20 jul» y «respecto del 25 ago».
   const tarjeta = readFileSync(new URL('../apps/mobile/src/pantallas/progreso-de-una-medida.tsx', import.meta.url), 'utf8');
   assert.match(tarjeta, /respecto: `respecto del \$\{fechaCorta\(anterior\.fecha\)\}`/);
