@@ -4,7 +4,7 @@
 > Acá van escritos con los trece campos que la §6 del 11A declara obligatorios (11A:150-169), como los TEST-AVR de
 > `WP-APP-VUELTA-DE-ROSCA-ORACULOS.md`. Este archivo trae los de la **etapa A** (AV2-01 a AV2-15), que Dirección aprobó el
 > 2026-11-11 junto con AV2-D1 (paso 1), AV2-D2 y AV2-D11; para AV2-D3, D4, D5, D7 y D8 rigen las recomendaciones del
-> paquete. Los TEST-AV2-017 a 025 son de la etapa B y se escriben con su tanda.
+> paquete. Los de la etapa B (TEST-AV2-017 a 023 y 027) van al final, en «Etapa B».
 >
 > **Qué no es esto.** No modifica el 11A, protegido por `docs/MANIFEST.sha256`.
 >
@@ -547,4 +547,183 @@ AUTOMATION           scripts/copy-pantallas.test.cjs («TEST-AV2-026 · …»). 
                      tira → la prueba falla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde
+```
+
+---
+
+# Etapa B (2026-11-12): AV2-19 a AV2-26, con la vuelta de Dirección a la 0.25
+
+> Con los mismos trece campos. Cada prueba se verificó con su mutación. TEST-AV2-024 (AV2-27) y TEST-AV2-025 (AV2-28)
+> quedan sin escribir: sus partes quedan afuera (§2 del paquete). Lo que solo se ve en el teléfono queda para AV2-29.
+
+## TEST-AV2-017 — La figura entera, con los sitios en su lugar
+
+```text
+TEST_ID              TEST-AV2-017
+TITLE                En Evolución el cuerpo se ve entero, y ningún punto de la lámina se mueve
+LEVEL                APK (lógica pura)
+PRIORITY             P1
+SOURCES              AV2-19 · AV2-D6 (a ratificar) · §1.3, error 3
+PRECONDITIONS        `apps/mobile/src/composicion-de-la-figura.ts` y `FIGURAS_DE_LA_LAMINA` del dominio.
+SYNTHETIC_FIXTURE    Las medidas de prueba de `composicion-de-la-figura.test.mjs`, hombre y mujer, perímetros y pliegues,
+                     letra ×1, ×1,15 y ×2, láminas de 280 a 372 dp.
+STEPS                1. Componer la figura en cada caso.
+                     2. Calcular el borde derecho de la caja del cuerpo, más el contorno de 1,25 dp.
+                     3. En la lámina de un teléfono de 360 dp (unos 320), medir el alto del cuerpo.
+EXPECTED             2 → termina 2 dp o más antes del borde. 3 → entre 420 y 450 dp. Cada sitio sigue a la vista y a la
+                     derecha de las tarjetas.
+NEGATIVE_ASSERTIONS  Ningún punto de `FIGURAS_DE_LA_LAMINA` cambia; el hombro no se corta.
+AUTOMATION           scripts/composicion-de-la-figura.test.mjs («TEST-AV2-017 · …»). Mutación: `anchoDeLaImagen` en 1,44
+                     → la prueba falla (466 dp de alto).
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; la figura entera en el teléfono, en los dos temas (AV2-29)
+```
+
+## TEST-AV2-018 — Evolución: «Figura» a la vista y las tomas por su fecha
+
+```text
+TEST_ID              TEST-AV2-018
+TITLE                Los controles de la figura, juntos y arriba; las tomas se nombran por su fecha
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-20 · AV2-T29 · AV2-T13
+PRECONDITIONS        `nombres-de-las-tomas.ts`, `pantallas/figura-de-la-toma.tsx`, `progreso.tsx` y `antropometria.tsx`.
+SYNTHETIC_FIXTURE    Tres tomas: el 2026-09-02 y dos el 2026-11-09.
+STEPS                1. Nombrar las tomas.
+                     2. Leer dónde va «Figura: Hombre | Mujer» en el mapa y en Progreso.
+                     3. Buscar los nombres T{n} y la cuenta de medidas en Antropometría.
+EXPECTED             1 → «2 sept», «9 nov (1)», «9 nov (2)»; sin repetidas, solo la fecha. 2 → en la fila de controles, arriba
+                     de la lámina, con el rótulo «Figura:» a la vista, una sola vez. 3 → ninguno de los dos.
+NEGATIVE_ASSERTIONS  El selector de la figura no queda al pie; la serie del gráfico no nombra las tomas por número.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-018 · …») y scripts/selector-de-tomas.test.mjs.
+                     Mutación: no distinguir dos tomas del mismo día → la prueba falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; la fila de controles con letra ×1,3 en el teléfono (AV2-29)
+```
+
+## TEST-AV2-019 — Nutrición Hoy: una sola navegación, sin marco vacío, con la opción recordada
+
+```text
+TEST_ID              TEST-AV2-019
+TITLE                Las opciones de una comida se eligen con un solo control, y se ve una sola
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-21 · AV2-D10 (a ratificar) · AV2-T28
+PRECONDITIONS        `carrusel-de-opciones.ts` y `pantallas/nutricion-hoy.tsx`.
+SYNTHETIC_FIXTURE    Una, tres y cuatro opciones; el orden del plan cambiado; una opción que salió del plan.
+STEPS                1. Pedir los segmentos y el anuncio.
+                     2. Volver con la opción 2 recordada, con el plan en otro orden.
+                     3. Leer la pantalla: el control, la opción a la vista y la imagen.
+EXPECTED             1 → «Opción 1» a «Opción 3»; con cuatro, «1» a «4»; con una, ninguno; «Opción 2 de 3». 2 → la misma
+                     opción, por su identidad. 3 → un solo `Segmentos`, una sola opción, la miniatura de 72 dp solo con
+                     imagen, «Imagen de referencia» para TalkBack y «Estimación del plan» en `tenue`.
+NEGATIVE_ASSERTIONS  Sin desplazamiento con imán, sin flechas, sin puntitos, sin avance automático; elegir no registra.
+AUTOMATION           scripts/registro-de-comidas.test.mjs («1 · TEST-AV2-019 · …»). Mutación: la miniatura en 96 dp → la
+                     prueba falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; TalkBack anuncia «Opción 2 de 3» en el teléfono (AV2-29)
+```
+
+## TEST-AV2-020 — Tu historial: el período a la vista y una acción por fila
+
+```text
+TEST_ID              TEST-AV2-020
+TITLE                La lista dice su período, y cada sesión es una fila que se toca entera
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-22 · AV2-T30 · REG-06-16 · DL-161
+PRECONDITIONS        `historial-en-filas.ts` y `pantallas/historial.tsx`.
+SYNTHETIC_FIXTURE    «Piernas A» el 2026-11-09: realizada, con desvío, no realizada y no realizada corregida a realizada;
+                     un plan vigente.
+STEPS                1. Armar la fila de cada sesión y la del plan.
+                     2. Leer la pantalla.
+EXPECTED             1 → «9 nov», el estado en palabras, la tilde solo en lo realizado (también con desvío), «Corregida» en el
+                     detalle; TalkBack: «Piernas A, 9 de noviembre, realizada. … Ver la sesión». 2 → «Últimos 90 días»,
+                     la misma constante que pide la API, y dos listas de filas.
+NEGATIVE_ASSERTIONS  Ningún botón «Ver la sesión» o «Ver el plan» por fila; una no realizada no lleva tilde ni rojo.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-020 · …») y la guardia D-C2 de copy-pantallas.
+                     Mutación: la tilde en una no realizada → la prueba falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; TalkBack en el teléfono (AV2-29)
+```
+
+## TEST-AV2-021 — La sesión: lo opaco sigue opaco
+
+```text
+TEST_ID              TEST-AV2-021
+TITLE                Las tarjetas de la sesión son de vidrio; la fila fija, la hoja y el diálogo, opacos
+LEVEL                APK (estructura)
+PRIORITY             P1
+SOURCES              AV2-23 · PV-11
+PRECONDITIONS        `pantallas/sesion-enfocada.tsx` y `fila-fija.tsx`.
+SYNTHETIC_FIXTURE    No usa datos.
+STEPS                1. Contar las tarjetas de la sesión con `Superficie`.
+                     2. Leer la fila activa, las celdas y la fila fija.
+EXPECTED             1 → las cuatro tarjetas y las dos de cada serie, con su estado encima. 2 → la fila activa sin fondo
+                     propio, las celdas en `fondo` (un pozo) y la fila fija en `superficie`.
+NEGATIVE_ASSERTIONS  Nada se ve a través de la fila fija, de la hoja ni del diálogo.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-021 · …»).
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; la sesión en curso en el teléfono (AV2-29)
+```
+
+## TEST-AV2-022 — Ninguna tarjeta escrita a mano fuera de la receta
+
+```text
+TEST_ID              TEST-AV2-022
+TITLE                Ningún estilo de tarjeta escribe `COLOR.superficie` a mano, salvo lo opaco por decisión
+LEVEL                APK (estructura)
+PRIORITY             P1
+SOURCES              AV2-24 · AV2-T27
+PRECONDITIONS        Todos los archivos de `apps/mobile/src`.
+SYNTHETIC_FIXTURE    No usa datos.
+STEPS                1. Recorrer los estilos que escriben `backgroundColor: COLOR.superficie`.
+                     2. Compararlos con la lista de lo opaco por decisión (diálogos, la hoja, la fila fija, la lámina, los
+                        controles y el aviso informativo).
+EXPECTED             2 → la misma lista; las pantallas migradas usan `Superficie`, `SuperficieTocable` o `useSuperficie`.
+NEGATIVE_ASSERTIONS  Una tarjeta nueva escrita a mano pone la prueba en rojo.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-022 · …»).
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; las pantallas que heredan, en los dos temas y con letra ×1,3 (AV2-29)
+```
+
+## TEST-AV2-023 — Las medidas con un decimal, sin redondear
+
+```text
+TEST_ID              TEST-AV2-023
+TITLE                «39» se lee «39,0 cm», y «58,75» queda igual
+LEVEL                APK (lógica pura)
+PRIORITY             P1
+SOURCES              AV2-25 · AV2-D9 (a ratificar) · AV2-T31 · REG-06-158
+PRECONDITIONS        `formato.ts`, `inicio-de-hoy.ts` y las pantallas de la toma.
+SYNTHETIC_FIXTURE    39, 58,8, 58,75 y 1203 cm; 12 mm; 0,85 sin dimensión; la cintura de 82 cm en Inicio.
+STEPS                1. Escribir cada valor.
+                     2. Escribir la medida de Inicio como medida y como resultado de fórmula.
+EXPECTED             1 → «39,0 cm», «58,8 cm», «58,75», «1.203,0», «12,0 mm», «0,85». 2 → «82,0» y «82».
+NEGATIVE_ASSERTIONS  Nunca se redondea a un decimal; un resultado de fórmula no se completa con cero.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-023 · …»). Mutación: redondear a un decimal → la prueba
+                     falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde
+```
+
+## TEST-AV2-027 — La cabecera responde al desplazamiento
+
+```text
+TEST_ID              TEST-AV2-027
+TITLE                Arriba de todo, transparente; con contenido detrás, un fondo tenue con su línea y el desvanecido
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-T26 · la vuelta de Dirección a la 0.25 (2026-11-12)
+PRECONDITIONS        `receta-de-vidrio.ts`, `cabecera.tsx` y `App.tsx`.
+SYNTHETIC_FIXTURE    Desplazamientos de 0, del umbral y de más.
+STEPS                1. Preguntar si la cabecera está cubierta en cada desplazamiento.
+                     2. Leer la capa, el desvanecido y cómo se animan.
+EXPECTED             1 → transparente en 0, cubierta desde el umbral. 2 → solo cambia la opacidad, con el controlador
+                     nativo, al cruzar el umbral; sin desvanecido con alto contraste.
+NEGATIVE_ASSERTIONS  Al desplazar no se vuelve a dibujar nada de React; el contenido no se corta de golpe.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-027 · …») y scripts/contraste.test.cjs (la cabecera
+                     cubierta). Mutación: el umbral con «>=» → la prueba falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; el fundido en el teléfono (AV2-29)
 ```

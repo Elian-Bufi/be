@@ -1246,3 +1246,47 @@ con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
   El arreglo es el mismo: comparar con `alcanzaLaEscala` (`escala-de-letra.ts`) y probar con `Math.fround(1.3)`. No entra
   acá porque cambia Nutrición y Evolución, fuera de la etapa A; va en la etapa B (AV2-21 y AV2-19 tocan esos archivos) o
   en un arreglo aparte, con el sí de Dirección.
+
+### 10.6 La etapa B, con la vuelta de Dirección a la 0.25 (2026-11-12; AV2-T23 a AV2-T31, a ratificar)
+
+Dirección vio la 0.25 y dio el visto bueno a la etapa B con ajustes: un vidrio más profundo; en Azul noche, un fondo más
+oscuro con un grano muy fino y dos luces, y un filo de luz arriba de las tarjetas; en Claro, barridos celestes en las
+esquinas, cajas de íconos con un tinte celeste y sombras levemente azuladas; y una cabecera que responde al
+desplazamiento. Quedan programadas AV2-19 a AV2-26. AV2-27 (la API) y AV2-28 (un módulo nativo) quedan afuera, como dice
+§2. Cada parte va con su prueba y su mutación (§8 y `WP-APP-VUELTA-2-ORACULOS.md`, «Etapa B»).
+
+- **AV2-T23 · El grano de Azul noche: una imagen chica en mosaico.** `apps/mobile/assets/grano.png`, de 512 × 512 px (53 KB
+  en la APK y 1 MB decodificada), se dibuja píxel a píxel en piezas de 512 px físicos (`mosaicoDelGrano`): 15 piezas en
+  un teléfono de 1080 × 2400 y 21 en uno de 1440 × 3200, que comparten un solo mapa de bits. No es un SVG a pantalla
+  completa (unos 10 MB, AV2-T1). Va encima de las luces, y el fondo deja de pintar `fondo` liso debajo del degradé, que
+  es opaco: la cantidad de pasadas queda igual que en la muestra. En Claro no hay grano. El contraste se mide con la
+  mota más clara y la más oscura del grano (`scripts/contraste.test.cjs`).
+- **AV2-T24 · La profundidad: el filo de luz y una sombra más baja.** El borde de 1 dp de cada tarjeta es más claro
+  arriba que a los costados, como una luz que viene de arriba, y la sombra del nivel 1 baja y se alarga.
+- **AV2-T25 · Los acentos de Claro.** Dos barridos celestes muy suaves en las esquinas, arriba a la izquierda y abajo a
+  la derecha; la caja del ícono con un tinte celeste, con el ícono en `azul`; la sombra levemente azulada. Para que los
+  barridos entren sin bajar el contraste, el acento, el éxito, el error y el borde de los campos de Claro bajaron un
+  tono. Las tarjetas de Inicio y las secciones con ícono llevan su ícono en la caja.
+- **AV2-T26 · La cabecera responde al desplazamiento.** Arriba de todo, transparente; con contenido detrás (desde 4 dp),
+  un fondo tenue con su línea, en un fundido de 160 ms, y debajo de la línea el contenido se desvanece en 20 dp en lugar
+  de cortarse de golpe. Cambia solo la opacidad de dos vistas, con el controlador nativo, al cruzar el umbral: al
+  desplazar no se vuelve a dibujar nada de React. Con movimiento reducido, sin fundido; con alto contraste, sin
+  desvanecido. Lo fija TEST-AV2-027.
+- **AV2-T27 · Las superficies propias, con una línea** (AV2-24): `Superficie` y `SuperficieTocable` (`ui.tsx`) ponen la
+  receta en lo que una pantalla arma a mano, con `encima` para un borde de estado (un error, lo elegido, lo registrado)
+  que tiene que verse igual con el vidrio.
+- **AV2-T28 · Las opciones de una comida, sin tarjeta anidada** (AV2-21). La opción va directo en la tarjeta de la
+  comida; con más de tres opciones, cada segmento dice solo su número, para que entren; el grupo se llama «Opciones de
+  Almuerzo». «Opción n de m» se anuncia con `announceForAccessibility` al cambiar.
+- **AV2-T29 · Las tomas del mismo día** (AV2-20): «9 nov (1)» y «9 nov (2)». La cabecera de una toma que no es la última
+  dice «Toma anterior · 2 sept».
+- **AV2-T30 · Tu historial, como una lista agrupada** (AV2-22): las filas van dentro de la sección de vidrio, sin
+  superficie propia, separadas por una línea y con la flecha, como en Apple HIG y Material 3.
+- **AV2-T31 · La medida de Inicio, con un decimal solo si es medida** (AV2-25): si la destacada es un resultado de
+  fórmula, sigue con su precisión.
+
+**Lo que queda de la etapa B:**
+- El rendimiento en el teléfono, con el grano y el vidrio en toda la app (§5.3, `EVIDENCIA/APP-VUELTA-2/rendimiento/`): no
+  había un teléfono conectado. El criterio es el de AV2-16: el percentil 90 en 16,7 ms o menos a 60 Hz, y no más de 2
+  puntos de cuadros lentos que la 0.23. Si no pasa, lo primero que se baja es el grano.
+- TalkBack, la letra ×1,3, el alto contraste y el dibujo de Android en las pantallas de AV2-19 a AV2-24 (AV2-29).

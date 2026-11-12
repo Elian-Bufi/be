@@ -6,7 +6,7 @@
  * - **Un solo control.** Arriba, «Opción 1 | Opción 2 | Opción 3» en Segmentos compactos, y debajo una sola opción a
  *   todo el ancho. Se van el desplazamiento con imán, el asomo de la siguiente, las flechas y los puntitos: eran tres
  *   formas de hacer lo mismo. Con más de tres opciones, los segmentos dicen solo el número, para que entren; el grupo
- *   se llama «Opciones del Almuerzo» y TalkBack lo dice.
+ *   se llama «Opciones de Almuerzo» y TalkBack lo dice.
  * - **Manual.** Elegir una opción no registra ni cambia el plan: registrar es «Comí esta opción».
  * - **Se anuncia «Opción n de m»** al cambiar, para TalkBack. Con una sola opción no hay control.
  * - **La posición se recuerda por la opción, no por el índice.** Si el plan cambia el orden o saca una opción, se vuelve a
