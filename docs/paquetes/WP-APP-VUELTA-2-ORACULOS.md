@@ -736,17 +736,28 @@ TITLE                «Terminar serie 3» tilda la serie 3, empieza su descanso 
 LEVEL                APK (lógica pura y estructura)
 PRIORITY             P0
 SOURCES              AV2-30 · AV2-T32 · el hallazgo de Dirección en la 0.25 (2026-11-12) · DL-166 (AV-13, AVD-3)
-PRECONDITIONS        `descanso-automatico.ts` (`queHaceElMedio`, `filaDeAcciones`, `accionAlTildar`) y la corrida.
-SYNTHETIC_FIXTURE    Sentadilla con cuatro series, las dos primeras registradas, y el reloj de prueba.
+PRECONDITIONS        `descanso-automatico.ts` (`queHaceElMedio`, `filaDeAcciones`, `accionAlTildar`),
+                     `series-de-la-sesion.ts` (`alTerminarLaSerie`, el `serieAlTildar` real) y la corrida.
+SYNTHETIC_FIXTURE    Sentadilla con cuatro series, las dos primeras registradas (estados reales de la fila), y el reloj
+                     de prueba. Dos planes: 8 repeticiones con 60 kg, y un rango 10–12 sin carga sugerida.
 STEPS                1. Tocar «Empezar serie 3», esperar 40 s y tocar «Terminar serie 3».
                      2. Seguir con la serie 4 hasta el final.
                      3. Con la serie ya registrada, tocar «Terminar».
-EXPECTED             1 → la serie 3 queda tildada; los eventos son SET_TIMING_FINISHED y REST_STARTED en una acción; la
-                     fila dice «Empezar serie 4». 2 → la 4 se tilda sin descanso; no queda nada que empezar; cada serie
-                     con su tiempo medido. 3 → solo se para el reloj.
-NEGATIVE_ASSERTIONS  La fila no vuelve a «Empezar serie 3»; una serie registrada no se destilda.
+                     4. Con el rango sin carga y nada escrito: «Terminar serie 3»; después «Registrar serie 3» sin
+                        escribir; después, con 11 repeticiones escritas.
+                     5. Con la medición abierta hace 87 horas (la sesión del 8 nov): «Terminar serie 3».
+EXPECTED             1 → la serie 3 queda registrada con lo planificado y 40 s; los eventos son SET_TIMING_FINISHED y
+                     REST_STARTED en una acción; la fila dice «Empezar serie 4». 2 → la 4 se tilda sin descanso; no
+                     queda nada que empezar; cada serie con su tiempo medido. 3 → solo se para el reloj.
+                     4 → solo SET_TIMING_FINISHED, sin descanso; la serie sigue sin registrar; la fila dice «Registrar
+                     serie 3» con «Para registrar la serie 3, escribí cuántas repeticiones hiciste (10–12) o la carga.»,
+                     lo mismo que se anuncia; sin escribir, nada cambia; con 11 escritas, se registra y empieza su descanso.
+                     5 → no se cierra nada ni empieza un descanso: se pregunta con el diálogo de la medición.
+NEGATIVE_ASSERTIONS  La fila no vuelve a «Empezar serie 3»; una serie registrada no se destilda; ningún descanso corre con
+                     la serie sin registrar; una medición de más de 10 horas no se escribe en la fila.
 AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-028 · …»). Reproducida en rojo con la conducta de la 0.25
-                     (solo parar el reloj) antes del arreglo.
+                     (solo parar el reloj) antes del arreglo. Mutaciones (revisión de la etapa B): el máximo con «>=»,
+                     `registrar` sin validar, sin «Registrar serie N» y sin el mensaje del rango → fallan.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; la sesión en el teléfono (AV2-29)
 ```
@@ -885,4 +896,50 @@ NEGATIVE_ASSERTIONS  Sin porcentajes ni color de juicio.
 AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-035 · …»).
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde
+```
+
+## TEST-AV2-036 — El cierre tras la revisión: el motivo, los segmentos, el aviso y los textos
+
+```text
+TEST_ID              TEST-AV2-036
+TITLE                El motivo de la no realizada a la vista; con «Realizada» no viaja motivo; el cierre no arrastra avisos
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-31 · AV2-34 · REG-06-131 · B10 §33 y §34 · la revisión de la etapa B (2026-11-12)
+PRECONDITIONS        `cierre-de-la-sesion.ts` (`motivoQueViaja`, `TEXTOS_DEL_CIERRE`), el cierre de
+                     `pantallas/entrenamiento.tsx` y `Segmentos` (`ui.tsx`).
+SYNTHETIC_FIXTURE    Un motivo escrito, con cada condición.
+STEPS                1. Pedir el motivo que viaja con cada condición.
+                     2. Leer el cierre: dónde está el campo del motivo y qué manda cada acción.
+                     3. Leer los segmentos y la apertura y la salida del cierre.
+EXPECTED             1 → con «Realizada», ninguno; con el desvío y la no realizada, lo escrito, sin espacios; vacío es
+                     ninguno. 2 → el campo está con el desvío y, si no, en «¿No pudiste entrenar?», antes del botón; el
+                     segmento, «No pude» y Finalizar mandan `motivoQueViaja`. 3 → los segmentos se deshabilitan mientras
+                     se guarda; abrir el cierre y volver a la sesión limpian el aviso. Los textos: «Finalizar el
+                     entrenamiento», «Realizada con desvío» y «(recomendado: 01:30)».
+NEGATIVE_ASSERTIONS  Ningún `reason: motivo.trim()` directo; el motivo de la no realizada no queda sin campo.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-036 · …»). Mutación: sin el caso de «Realizada» → falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; el cierre en el teléfono (AV2-29)
+```
+
+## TEST-AV2-037 — El borde de estado cierra también arriba
+
+```text
+TEST_ID              TEST-AV2-037
+TITLE                El filo de luz del nivel 1 no le gana al borde de estado de `encima`
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-T24 · AV2-T27 · la revisión de la etapa B (2026-11-12)
+PRECONDITIONS        `receta-de-vidrio.ts` (`filoDelEstado`), `Superficie` y `SuperficieTocable` (`ui.tsx`).
+SYNTHETIC_FIXTURE    Un borde de estado de 2 dp en acento; uno que ya dice su color de arriba; uno sin borde.
+STEPS                1. Pedir el filo de cada uno.
+                     2. Leer las dos piezas y recorrer todos los `encima=` de la APK.
+EXPECTED             1 → el mismo color arriba; `null` si el estado ya lo dice o no tiene borde. 2 → las dos piezas lo
+                     suman a todo `encima`, y cada `encima=` de la APK pasa por una de ellas.
+NEGATIVE_ASSERTIONS  El contorno de la serie activa, de una novedad sin leer o de un error no queda abierto arriba.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-037 · …»). Mutación: `filoDelEstado` siempre `null` →
+                     falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; la serie activa en el teléfono, en los dos temas (AV2-29)
 ```

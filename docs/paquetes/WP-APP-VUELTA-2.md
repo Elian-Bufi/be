@@ -2,7 +2,7 @@
 
 > **Estado:** etapa A programada en #255 (en borrador, sin integrar; DL-170). El 2026-11-11 Dirección aprobó la etapa A
 > (AV2-01 a AV2-18), AV2-D1 (el paso 1), AV2-D2 y AV2-D11; para D3, D4, D5, D7 y D8 rigen las recomendaciones (§6). La
-> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, T14 a T16 de la programación y T17 a T22 de la revisión (§10.4), a ratificar. Los
+> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, T14 a T16 de la programación y T17 a T22 de la revisión (§10.4), y T23 a T39 de la etapa B (§10.6 a §10.8), a ratificar. Los
 > oráculos están en `WP-APP-VUELTA-2-ORACULOS.md`; lo programado y lo que cambió al programar, en §10.
 >
 > **Encargo** (Dirección, 2026-11-11): pasó una referencia del tema de vidrio («glassy») para la apariencia de la app,
@@ -1339,3 +1339,39 @@ como hallazgo a verificar con el teléfono.
   conteo.
 
 **Lo que queda:** las partes AV2-30 a AV2-38, en el teléfono, con TalkBack (AV2-29), y la causa de AV2-33.
+
+### 10.8 La revisión de la etapa B (2026-11-12; AV2-T37 a AV2-T39, a ratificar)
+
+Una revisión del código de la etapa B encontró nueve cosas. Cada una se comprobó en el código antes de arreglarla.
+
+| Severidad | Lo que encontró | Qué se hizo | Oráculo |
+|---|---|---|---|
+| Alta | «Terminar serie N» cerraba el reloj y empezaba el descanso **antes** de validar. Con un rango sin carga sugerida y nada escrito, o con una medición de otro día, la serie quedaba sin registrar, el descanso corría y la fila volvía a «Empezar serie N» | Se valida primero (`alTerminarLaSerie`). Si falta un dato, se para solo el reloj y la fila dice «Registrar serie N» con lo que falta, que también se anuncia. Una medición de más de 10 horas no se escribe en la fila: se resuelve con el diálogo de la medición | TEST-AV2-028 |
+| Media | «No pude realizarla» mandaba el motivo, pero el campo ya no estaba a la vista; y lo escrito en el desvío viajaba escondido con «Realizada» | El campo está en «¿No pudiste entrenar?», antes del botón y con ella elegida. Con «Realizada» no viaja motivo (`motivoQueViaja`) | TEST-AV2-036 |
+| Media | El cierre volvía a contar «Sin pausas: 89:08:26» con la sesión del 8 nov | El cierre usa lo mismo que la franja: el resultado va solo y, debajo, «Sesión abierta desde el 8 nov · 10:15» | TEST-AV2-031 |
+| Media | El filo de luz (`borderTopColor`) le ganaba al borde de estado: la serie activa, una novedad sin leer o un error quedaban abiertos arriba | `Superficie` y `SuperficieTocable` suman a todo `encima` el mismo color arriba (`filoDelEstado`) | TEST-AV2-037 |
+| Media | El rendimiento de la sesión con el vidrio no está medido | Queda como condición antes de la APK (abajo) | AV2-16 |
+| Baja | Los segmentos de la condición se podían tocar mientras se guardaba | `Segmentos` acepta `deshabilitado` | TEST-AV2-036 |
+| Baja | Un aviso anterior de la sesión aparecía en el cierre y se anunciaba como del cierre | Se limpia al abrir el cierre y al volver | TEST-AV2-036 |
+| Baja | Tres textos: el recomendado se leía como otro descanso, dos verbos para lo mismo y «Con desvío» acortado | «Descansos: 01:32 · 01:45 (recomendado: 01:30)», «Finalizar el entrenamiento» y «Realizada con desvío» (B10 §33) | TEST-AV2-032 y 036 |
+| Baja | El acento de Claro de la APK ya no es el del website | Pasa a ser una decisión propia: AV2-T39 | — |
+
+**Las decisiones técnicas nuevas (a ratificar):**
+- **AV2-T37 · «Registrar serie N», con el motivo junto al botón.** Si «Terminar» no puede registrar la serie, la fila fija
+  no vuelve a «Empezar»: dice «Registrar serie N» y, encima, lo que falta, en el mismo lugar que el error de AV2-31. El
+  lector lo anuncia en el momento. Es lo que hacen Strong y Hevy: el tilde no avanza sin las repeticiones. Material 3 pide
+  decir el motivo junto a la acción.
+- **AV2-T38 · Una medición de más de 10 horas se resuelve antes de registrar.** El máximo de una serie es de 10 horas
+  (DL-161). Más que eso es una sesión que quedó abierta: «Terminar» abre el diálogo de la medición («Terminó ahora» o
+  «Dejarla incompleta»), y después la fila ofrece «Registrar serie N». El tiempo absurdo nunca llega a la fila.
+- **AV2-T39 · El acento de Claro, un tono más oscuro en la APK** (AV2-T25). Para que los barridos entren con el contraste
+  medido, la APK usa `#125EE0` en el acento de Claro, y bajó un tono el error y el éxito. El website sigue con
+  `#1465F1`, así que la paleta Claro aprobada deja de ser igual en las dos. **Recomendación:** ratificar el tono de la
+  APK y llevarlo al website en su rediseño (WP-EDITORES-PROFESIONAL). La alternativa es bajar la fuerza de los barridos y
+  volver a `#1465F1`, si Dirección quiere la misma paleta ya.
+
+**Antes de la APK, la medición de la sesión (AV2-16).** La sesión pasa de ser opaca a tener cuatro tarjetas de nivel 1,
+cada una con su sombra, su línea y su brillo, encima del grano y de los degradés. Con la letra grande se suma una tarjeta
+por serie. Además, el reloj vuelve a dibujar la pantalla cada segundo. Se mide con `dumpsys gfxinfo` en la sesión en vivo,
+en Azul noche (§5.3). Hoy no había un teléfono conectado. Si el percentil 90 pasa de 16,7 ms, las series van como filas
+de nivel 2 dentro de una sola tarjeta por ejercicio, como en Strong y Hevy: son de 4 a 6 sombras menos.
