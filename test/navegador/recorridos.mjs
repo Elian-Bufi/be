@@ -681,9 +681,12 @@ async function primerPlan({ p, d }) {
   await p.type('#objetivo-fundamento', 'Objetivo del recorrido de navegador.');
   await clic(p, 'form button[type="submit"]', 'Guardar nueva versión');
 
-  // 3. El plan.
-  await clic(p, '[data-crear-version]');
+  // 3. El plan. Se llegó con «Empezar el plan», que abre el asistente (ED-30): con el objetivo ya escrito, el paso 1
+  // ofrece desde dónde arrancar; «En blanco» y «Siguiente» crean la versión y siguen en el paso 2, el objetivo general.
+  await clic(p, '[data-punto-de-partida="blanco"]');
+  await clic(p, '[data-asistente-principal]');
   await elemento(p, '.editor-del-plan');
+  await elemento(p, '[data-objetivo-general]');
   // DJ-6: la primera versión en preparación lleva el número 1.
   await esperarTexto(p, 'Versión 1 · en preparación');
 
