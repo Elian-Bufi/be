@@ -71,7 +71,7 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
-import { avisoDelPendiente, COPY_PARTES, cuentaDeLaParte, cuentaEnPalabras, filasALaVista, loQueLeLlega, ninguna, pedidoPendiente, pedirTodas, resumenDelPedido } from './partes-del-pedido';
+import { avisoDelPendiente, COPY_BUSCADOR_DE_PREGUNTAS as B, COPY_PARTES, cuentaDeLaParte, cuentaEnPalabras, filasALaVista, loQueLeLlega, ninguna, pedidoPendiente, pedirTodas, preguntasQueCoinciden, resultadoDeLaBusqueda, resumenDelPedido } from './partes-del-pedido';
 import { habitosParaSumar, marcadaPorOmision, mensajeDelEnvio, motivoDeLaSugerencia, pedidoDeHabitos, sugerenciaDelCajon, type DesenlaceDeEnvio, type LecturaDeLoQueSabe } from './sumar-habitos';
 
 const H = COPY_HABITOS.web;
@@ -197,6 +197,8 @@ export function PedidoDeInformacion({
   }, [abierto, token, asesoradoId, sesionPerdida]);
   // ED-40: las partes abiertas (con más de una parte, vienen plegadas).
   const [partesAbiertas, setPartesAbiertas] = useState<ReadonlySet<string>>(() => new Set());
+  // ED-40: el buscador de preguntas. Mientras busca, se ven solo las que coinciden, con sus partes abiertas.
+  const [busqueda, setBusqueda] = useState('');
 
   /** Elige un formulario y lee su versión. Si se elige otro antes de que llegue, la respuesta vieja no pisa a la nueva. */
   const lecturaEnCurso = useRef(0);
@@ -205,6 +207,7 @@ export function PedidoDeInformacion({
       const esta = ++lecturaEnCurso.current;
       intento.descartar();
       setElegido(p);
+      setBusqueda('');
       setLectura({ tipo: 'cargando' });
       setConPrecarga(precarga);
       // Otro formulario: la casilla de «Tus hábitos» vuelve a lo que sugiere el dominio.
@@ -305,7 +308,11 @@ export function PedidoDeInformacion({
     setFaltas(encontradas);
     // Con algo por completar en las preguntas, todas abiertas, y así quedan: el foco tiene que poder llegar, y la tabla no
     // se pliega bajo la casilla que se acaba de marcar cuando la falta se resuelve.
-    if (encontradas.preguntas && version) setPartesAbiertas(new Set(version.sections.map((s) => s.sectionCode)));
+    if (encontradas.preguntas && version) {
+      setPartesAbiertas(new Set(version.sections.map((s) => s.sectionCode)));
+      // La búsqueda podría esconder la pregunta a la que va el foco.
+      setBusqueda('');
+    }
     if (Object.keys(encontradas).length > 0 || !version || !areaDelPedido) return setIntentosConFaltas((n) => n + 1);
 
     // Lo que estaba elegido al tocar «Enviar»: la casilla de «Tus hábitos» no cambia en el medio del envío.
@@ -374,6 +381,8 @@ export function PedidoDeInformacion({
   const leLlega = version ? loQueLeLlega(persona, version.name, elegidas.length, version.sections.filter((s) => s.fields.some((c) => pedidas.includes(c.fieldCode))).length) : null;
   const pendiente = elegido && enviadas ? pedidoPendiente(enviadas, elegido.templateId) : null;
   const variasPartes = (version?.sections.length ?? 0) > 1;
+  const coinciden = version ? preguntasQueCoinciden(version.sections, busqueda) : null;
+  const queCoinciden = coinciden ? coinciden.flat() : [];
   const parteAbierta = (codigo: string) => !variasPartes || partesAbiertas.has(codigo);
   const alternarParte = (codigo: string) =>
     setPartesAbiertas((s) => {
@@ -550,7 +559,47 @@ export function PedidoDeInformacion({
                   {C.aclaracionesDeLasPreguntas}
                 </p>
               ) : null}
-              {variasPartes ? (
+              {/* ED-40: el buscador de preguntas, arriba de la tabla. Escape lo borra. */}
+              <div className="campo preguntas-del-pedido__buscador">
+                <label htmlFor={`${id}-buscar-pregunta`}>{B.etiqueta}</label>
+                <input
+                  id={`${id}-buscar-pregunta`}
+                  type="search"
+                  value={busqueda}
+                  autoComplete="off"
+                  aria-describedby={`${id}-buscar-pregunta-ayuda`}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape' && busqueda) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setBusqueda('');
+                    }
+                  }}
+                />
+                <span className="nota" id={`${id}-buscar-pregunta-ayuda`}>
+                  {B.ayuda}
+                </span>
+              </div>
+              {coinciden ? (
+                <p className="nota preguntas-del-pedido__resultado" role="status" data-resultado-de-la-busqueda>
+                  {resultadoDeLaBusqueda(queCoinciden.length, busqueda)}{' '}
+                  {queCoinciden.length > 0 ? (
+                    <>
+                      <button type="button" className="boton boton--enlace" disabled={enviando} onClick={() => editar(() => setPedidas(pedirTodas(pedidas, queCoinciden)), 'preguntas')}>
+                        {B.pedirLasQueCoinciden(queCoinciden.length)}
+                      </button>{' '}
+                      <button type="button" className="boton boton--enlace" disabled={enviando} onClick={() => editar(() => setPedidas(ninguna(pedidas, queCoinciden)))}>
+                        {B.ningunaDeLasQueCoinciden(queCoinciden.length)}
+                      </button>{' '}
+                    </>
+                  ) : null}
+                  <button type="button" className="boton boton--enlace" onClick={() => setBusqueda('')}>
+                    {B.borrar}
+                  </button>
+                </p>
+              ) : null}
+              {variasPartes && !coinciden ? (
                 <p className="nota">
                   <button
                     type="button"
@@ -562,6 +611,7 @@ export function PedidoDeInformacion({
                   </button>
                 </p>
               ) : null}
+              {coinciden && queCoinciden.length === 0 ? null : (
               <table className="preguntas-del-pedido" aria-labelledby={`${id}-paso-2`} aria-describedby={faltas.preguntas ? `${id}-falta-preguntas` : undefined}>
                 <thead>
                   <tr>
@@ -573,12 +623,26 @@ export function PedidoDeInformacion({
                     <th scope="col">{C.requerida}</th>
                   </tr>
                 </thead>
-                {version.sections.map((s) => (
+                {version.sections.map((s, i) => coinciden && coinciden[i]!.length === 0 ? null : (
                   <tbody key={s.sectionCode}>
                     {/* El título de la sección, solo si el formulario tiene más de una. ED-40: plegada, con su cuenta (las
                         obligatorias y lo que se suma si corresponde se cuentan también plegada) y «Pedir todas» o
                         «Ninguna». Plegar no cambia lo que se envía. */}
-                    {variasPartes ? (
+                    {/* ED-40: buscando, la parte dice cuántas de las suyas coinciden; «Pedir todas» y «Ninguna» van arriba,
+                        sobre lo que coincide, para no tocar sin querer las que no se ven. */}
+                    {variasPartes && coinciden ? (
+                      <tr className="preguntas-del-pedido__seccion" data-parte={s.sectionCode} data-abierta="si">
+                        <th colSpan={4} scope="rowgroup">
+                          <span className="preguntas-del-pedido__parte">
+                            <span className="preguntas-del-pedido__titulo-de-la-parte">{s.title}</span>
+                            <span className="nota">
+                              {coinciden[i]!.length} de {s.fields.length}
+                            </span>
+                          </span>
+                        </th>
+                      </tr>
+                    ) : null}
+                    {variasPartes && !coinciden ? (
                       <tr className="preguntas-del-pedido__seccion" data-parte={s.sectionCode} data-abierta={parteAbierta(s.sectionCode) ? 'si' : undefined}>
                         <th colSpan={4} scope="rowgroup">
                           <span className="preguntas-del-pedido__parte">
@@ -601,7 +665,7 @@ export function PedidoDeInformacion({
                         </th>
                       </tr>
                     ) : null}
-                    {filasALaVista(s.fields, parteAbierta(s.sectionCode)).map((c) => {
+                    {(coinciden ? coinciden[i]! : filasALaVista(s.fields, parteAbierta(s.sectionCode))).map((c) => {
                       const pedida = pedidas.includes(c.fieldCode);
                       const obligatoria = pedida && requeridas.includes(c.fieldCode);
                       // DL-164 D-2: una pregunta condicional aparece solo cuando se cumple su condición; se dice con palabras.
@@ -673,6 +737,7 @@ export function PedidoDeInformacion({
                   </tbody>
                 ))}
               </table>
+              )}
             </>
           ) : null}
           {faltas.preguntas ? <Falta id={`${id}-falta-preguntas`} texto={faltas.preguntas} /> : null}

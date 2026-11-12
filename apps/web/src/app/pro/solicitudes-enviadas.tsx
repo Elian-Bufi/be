@@ -109,7 +109,7 @@ export function SolicitudesEnviadas({
               ))}
             </div>
             {personas.length > 1 ? (
-              <label className="solicitudes-enviadas__persona">
+              <label className="campo solicitudes-enviadas__persona">
                 Persona
                 <select value={filtro.persona ?? ''} onChange={(e) => onFiltro({ ...filtro, persona: e.target.value || null })}>
                   <option value="">Todas las personas</option>

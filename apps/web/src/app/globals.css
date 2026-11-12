@@ -16343,6 +16343,19 @@ p.cifra-del-espacio__desglose {
   margin: 0.5rem 0 0;
 }
 
+/* El buscador de preguntas: el campo a lo ancho que da, hasta 32rem, con su ayuda debajo. */
+.preguntas-del-pedido__buscador {
+  margin: 0.5rem 0;
+}
+
+.preguntas-del-pedido__buscador input {
+  width: min(32rem, 100%);
+}
+
+.preguntas-del-pedido__titulo-de-la-parte {
+  font-weight: 700;
+}
+
 /* ═══ ED-41 · Las dos entradas del vínculo, con su subtítulo ════════════════════════════════════════════════════════ */
 .boton__con-subtitulo {
   display: inline-flex;
