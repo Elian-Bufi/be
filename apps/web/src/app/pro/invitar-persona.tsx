@@ -85,10 +85,15 @@ export function InvitarPersona({
     if (abierto && !d.open) {
       d.showModal();
       void cargar();
-      if (areaSugerida) setAlcance((elegida) => elegida || areaSugerida);
     }
     if (!abierto && d.open) d.close();
-  }, [abierto, cargar, areaSugerida]);
+  }, [abierto, cargar]);
+
+  // El área sugerida sale de los vínculos, que pueden llegar con el diálogo ya abierto: se aplica también entonces, sin
+  // pisar un área ya elegida.
+  useEffect(() => {
+    if (abierto && areaSugerida) setAlcance((elegida) => elegida || areaSugerida);
+  }, [abierto, areaSugerida]);
 
   async function crear(evento: FormEvent) {
     evento.preventDefault();
