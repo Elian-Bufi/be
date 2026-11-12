@@ -8,11 +8,15 @@
  * - en una corrección del profesional, un valor que cambió no puede decir `PERSON` (422); lo que no cambió conserva su
  *   clave, aunque la carga vigente salga de JSONB con las claves en otro orden; y no se cambia ni se agrega procedencia
  *   (de una serie tildada, o de PLAN, a PERSON: FIELD_ORIGIN_NOT_PRESERVED).
+ * - TEST-EDP-046 (EDT-46, a ratificar) · la APK congelada sin `fieldOrigins` en su esquema sigue leyendo lo que ella
+ *   registra, también después de que el profesional lo corrige (no le puede agregar el campo); una ejecución con
+ *   procedencia, registrada con la APK nueva, no la lee: el caso que queda, como el de DL-161.
  * Sin migración: las series viven en el JSON del borrador, de la ejecución y de la corrección.
  */
 import type { INestApplication } from '@nestjs/common';
 import { HoyDeEntrenamientoResponseSchema } from '@be/domain';
 import { appDePrueba, conSesion } from './soporte-api';
+import { LaApk, VERSIONES } from './soporte-lecturas-de-la-apk';
 import { CATALOGO_DE_EJERCICIOS, circuitoConPlanDeEntrenamientoActivo } from './soporte-entrenamiento';
 
 let app: INestApplication;
@@ -130,5 +134,34 @@ describe('ED-70 · la procedencia por campo de la serie registrada', () => {
       { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: 7 },
       soloLasRepeticiones(2),
     ]).expect(201);
+  });
+});
+
+/** Las APK congeladas cuyo esquema de la ejecución (API-TRN-19) no conoce la procedencia por campo: hoy, la 0.24. */
+const sinLaProcedencia = VERSIONES.filter((v) => {
+  const l = new LaApk(v, () => app).congelado.lecturas['API-TRN-19'];
+  return l !== undefined && !JSON.stringify(l.respuesta).includes('fieldOrigins');
+});
+
+// Cuando ninguna congelada quede sin la procedencia, no queda el caso (y Jest no acepta un each vacío).
+if (sinLaProcedencia.length > 0) describe.each(sinLaProcedencia)('TEST-EDP-046 · la APK %s, que no conoce la procedencia por campo', (version) => {
+  const apk = new LaApk(version, () => app);
+  /** Las cinco claves de siempre, como manda la serie una APK sin la procedencia. */
+  const comoLaApk = (setIndex: number, reps = 8): Serie => ({ setIndex, load: { value: 70, unit: 'kg' }, completedRepetitions: reps, rir: 2, perceivedExertion: null });
+
+  it('lee lo que ella registra después de que el profesional lo corrige: la corrección no le agrega el campo', async () => {
+    const x = await registrada([comoLaApk(1)]);
+    await corregir(x.pro, x.executionId, [comoLaApk(1, 9)]).expect(201);
+    const leida = await apk.pide('API-TRN-19', { token: x.c.ase.token, params: { executionId: x.executionId } });
+    expect(leida.body.data.corrections).toHaveLength(1);
+    expect(apk.rechazos()).toEqual([]);
+  });
+
+  it('no lee una ejecución con procedencia (registrada con la APK nueva): el caso que queda, declarado en EDT-46', async () => {
+    const x = await registrada([todoEscrito(1)]);
+    await apk.pide('API-TRN-19', { token: x.c.ase.token, params: { executionId: x.executionId } });
+    const rechazos = apk.rechazos();
+    expect(rechazos).toHaveLength(1);
+    expect(rechazos[0]).toMatch(/fieldOrigins/);
   });
 });
