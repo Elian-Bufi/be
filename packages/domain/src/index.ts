@@ -157,6 +157,7 @@ export * from './recuperacion-de-acceso';
 export * from './ayuda-y-contacto';
 export * from './textos-vigentes';
 export * from './estimacion-de-fuerza';
+export * from './carga-desde-la-estimacion';
 export * from './descripciones-de-plantillas';
 export * from './prescripcion-rapida';
 export * from './presets-de-be';
