@@ -27,6 +27,7 @@ import {
 } from './contratos-administracion';
 import { ErrorEnvelopeSchema, type EsquemaDeContrato, type SalidaDe, type ValidationIssue } from './contratos';
 import { RecuperacionAsistidaResponseSchema, type EmitirRecuperacionAsistidaRequest } from './recuperacion-de-acceso';
+import { SegundoFactorRestablecidoResponseSchema, type RestablecerSegundoFactorRequest } from './segundo-factor-del-profesional';
 import type { Alcance } from './alcance';
 
 export type ResultadoAdministrativo<T> =
@@ -178,6 +179,10 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
      */
     emitirRecuperacionAsistida(token: string, pedido: EmitirRecuperacionAsistidaRequest) {
       return llamar('POST', '/admin/access-recoveries', { token, cuerpo: pedido, esquema: RecuperacionAsistidaResponseSchema });
+    },
+    /** API-ADM-19 — restablecer el segundo factor de un profesional (UF-T56), con el fundamento. */
+    restablecerSegundoFactor(token: string, pedido: RestablecerSegundoFactorRequest) {
+      return llamar('POST', '/admin/professional-second-factor-resets', { token, cuerpo: pedido, esquema: SegundoFactorRestablecidoResponseSchema });
     },
   };
 }

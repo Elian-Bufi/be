@@ -293,6 +293,9 @@ model Identidad {
   pedidosDeDerecho        PedidoDeDerecho[]   @relation("PedidoDeDerechoDelTitular")
   pedidosDeDerechoResueltos PedidoDeDerecho[] @relation("PedidoDeDerechoDelAdministrador")
   exportacionesPropias    ExportacionPropia[] @relation("ExportacionPropiaDelTitular")
+  // WP-USO-FINAL, UF-11 (DL-169; UF-T56): los restablecimientos del segundo factor, del profesional y del administrador que los hizo.
+  restablecimientosDeSegundoFactor   RestablecimientoDeSegundoFactor[] @relation("RestablecimientoDelProfesional")
+  restablecimientosDecididos         RestablecimientoDeSegundoFactor[] @relation("RestablecimientoDelAdministrador")
 
   @@map("identidad")
 }
@@ -754,6 +757,28 @@ model CambioDeNombreProfesional {
   @@index([identidadId])
   @@index([administradorId])
   @@map("cambio_de_nombre_profesional")
+}
+
+/// UF-11 de WP-USO-FINAL (DL-169; UF-T56, revisión adversarial de la etapa 2): cada restablecimiento del segundo factor de
+/// un profesional (API-ADM-19), con el fundamento y el administrador (rol vigente; nadie restablece el propio, trigger).
+/// Su autenticador y sus códigos dejan de valer y sus sesiones terminan en la misma transacción. Solo se agrega.
+model RestablecimientoDeSegundoFactor {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId          String    @map("identidad_id") @db.Uuid
+  administradorId      String    @map("administrador_id") @db.Uuid
+  fundamento           String
+  /// Si tenía un autenticador activo que dejó de valer (sin él, el restablecimiento igual cierra las sesiones).
+  autenticadorRevocado Boolean   @map("autenticador_revocado")
+  procedencia          Json
+  momentoDeOcurrencia  DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro    DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional   Identidad @relation("RestablecimientoDelProfesional", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad @relation("RestablecimientoDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@index([administradorId])
+  @@map("restablecimiento_de_segundo_factor")
 }
 
 // ─── WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7) ─────────────────────

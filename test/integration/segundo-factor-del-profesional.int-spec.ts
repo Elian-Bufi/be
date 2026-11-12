@@ -14,7 +14,8 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
 import { appDePrueba, conSesion, correoSintetico, registrarOk, tokenDe } from './soporte-api';
-import { codigoQueNoVale } from './soporte-administracion';
+import { randomUUID } from 'node:crypto';
+import { adm, administradorListo, codigoQueNoVale, primerFactor } from './soporte-administracion';
 import { codigoDelPaso, verificarSegundoFactor } from './soporte-segundo-factor';
 import { prepararAsesorado, prepararProfesional, vinculoCompleto, type Parte } from './soporte-vinculo';
 
@@ -176,5 +177,56 @@ describe('TEST-UF-014 · configurar, verificar, recuperar y reemplazar', () => {
     const sinVerificar = await tokenDe(app, pro.correo, 'WEB');
     expect((await conSesion(app, sinVerificar).post(`${RUTA}/enrollment`).send({}).expect(422)).body.error.code).toBe('INVALID_STATE_TRANSITION');
     expect((await conSesion(app, sinVerificar).post(`${RUTA}/recovery-codes`).send({}).expect(422)).body.error.code).toBe('INVALID_STATE_TRANSITION');
+  });
+});
+
+describe('TEST-UF-014 · Administración restablece el segundo factor de un profesional (API-ADM-19, UF-T56)', () => {
+  it('quien configuró un autenticador ajeno queda afuera: se revoca, los códigos dejan de valer, las sesiones terminan y el profesional lo configura de nuevo', async () => {
+    // Revisión adversarial de la etapa 2: con la contraseña del profesional, otro configuró su autenticador en los primeros
+    // 10 minutos. Sin esta operación, el profesional legítimo quedaba en REQUIRED para siempre.
+    const pro = await profesionalSinAutenticador('restablecer');
+    const ajeno = await configurar(pro.token);
+    const otra = await tokenDe(app, pro.correo, 'WEB');
+    expect((await estado(otra)).secondFactor).toEqual({ state: 'REQUIRED' });
+    const a = await administradorListo(app, prisma, `uf11-rsf-${randomUUID().slice(0, 6)}`);
+    const restablecer = (token: string, cuerpo: Record<string, unknown>) => adm(app, token).post('/admin/professional-second-factor-resets').send(cuerpo);
+    const fundamento = 'Escribió desde el correo de la cuenta y confirmó su matrícula (sintético).';
+
+    // Sin el segundo factor de la sesión administrativa: 403. Los 422 en su campo; un correo sin cuenta, 404.
+    const sinSegundo = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+    expect((await restablecer(sinSegundo, { email: pro.correo, rationale: fundamento }).expect(403)).body.error.code).toBe('MFA_REQUIRED');
+    const issue = async (cuerpo: Record<string, unknown>) => (await restablecer(a.token, cuerpo).expect(422)).body.error.details.issues;
+    expect(await issue({ email: pro.correo, rationale: '  ' })).toEqual([{ code: 'RATIONALE_REQUIRED', path: 'rationale' }]);
+    expect(await issue({ email: a.correo, rationale: fundamento })).toEqual([{ code: 'ACCOUNT_IS_ADMINISTRATIVE', path: 'email' }]);
+    const persona = correoSintetico('uf11-rsf-persona');
+    await registrarOk(app, persona, 'WEB');
+    expect(await issue({ email: persona, rationale: fundamento })).toEqual([{ code: 'ACCOUNT_NOT_PROFESSIONAL', path: 'email' }]);
+    await restablecer(a.token, { email: correoSintetico('uf11-rsf-nadie'), rationale: fundamento }).expect(404);
+
+    const hecho = await restablecer(a.token, { email: pro.correo.toUpperCase(), rationale: fundamento }).expect(200);
+    expect(hecho.body.data).toMatchObject({ identityId: pro.id, authenticatorRevoked: true });
+    expect(hecho.body.data.sessionsRevoked).toBeGreaterThanOrEqual(2);
+    // Las sesiones de antes terminan; el autenticador y los códigos ajenos ya no valen.
+    for (const viejo of [pro.token, otra]) expect((await conSesion(app, viejo).get('/api/v1/me').expect(401)).body.error.code).toBe('SESSION_REVOKED');
+    expect(await prisma.factorTotp.count({ where: { identidadId: pro.id, estado: 'ACTIVO' } })).toBe(0);
+    expect(await prisma.codigoDeRecuperacion.count({ where: { identidadId: pro.id, momentoDeUso: null, momentoDeInvalidacion: null } })).toBe(0);
+    // El profesional entra de nuevo y lo configura él: el autenticador ajeno no sirve para verificar.
+    const nueva = await tokenDe(app, pro.correo, 'WEB');
+    expect((await estado(nueva)).secondFactor.state).toBe('ENROLLMENT_REQUIRED');
+    const propio = await configurar(nueva);
+    expect(propio.secreto).not.toBe(ajeno.secreto);
+    expect((await estado(nueva)).secondFactor.state).toBe('VERIFIED');
+    // El hecho, con el fundamento y el administrador; la auditoría, sin el fundamento.
+    expect(await prisma.restablecimientoDeSegundoFactor.findMany({ where: { identidadId: pro.id } })).toEqual([
+      expect.objectContaining({ administradorId: a.id, fundamento, autenticadorRevocado: true }),
+    ]);
+    const auditada = await prisma.registroDeAuditoria.findFirstOrThrow({ where: { operacion: 'API-ADM-19', resultado: 'EXITO', sujetoId: pro.id } });
+    expect(auditada).toMatchObject({ actorId: a.id, motivo: `SESIONES_REVOCADAS:${hecho.body.data.sessionsRevoked}` });
+    expect(JSON.stringify(auditada)).not.toContain(fundamento);
+    // La base no deja registrar un restablecimiento sin un administrador vigente, ni borrarlo.
+    await expect(
+      prisma.restablecimientoDeSegundoFactor.create({ data: { identidadId: pro.id, administradorId: pro.id, fundamento: 'x', autenticadorRevocado: false, procedencia: { fuente: 'PRUEBA' } } }),
+    ).rejects.toThrow(/rol administrativo vigente/);
+    await expect(prisma.$executeRaw`DELETE FROM "restablecimiento_de_segundo_factor" WHERE "identidad_id" = ${pro.id}::uuid`).rejects.toThrow();
   });
 });

@@ -10,6 +10,7 @@ import {
   type ListaAdministrativaDePedidosDeDerechoResponse,
   type ListaDeProfesionalesResponse,
   type RecuperacionAsistidaResponse,
+  type SegundoFactorRestablecidoResponse,
   type SegundoFactorVerificadoResponse,
   type SesionAdministrativaResponse,
 } from '@be/domain';
@@ -248,5 +249,18 @@ export class AdministracionController {
   recuperacionAsistida(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<RecuperacionAsistidaResponse> {
     sinParametrosDeQuery(query);
     return this.recuperacion.emitirAsistida(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /**
+   * API-ADM-19 — SESSION_MFA, sin Idempotency-Key: restablecer el segundo factor de un profesional (UF-11 de WP-USO-FINAL,
+   * UF-T56). Repetirlo no cambia más de lo que ya cambió.
+   */
+  @Post('professional-second-factor-resets')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-19')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  restablecerSegundoFactor(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<SegundoFactorRestablecidoResponse> {
+    sinParametrosDeQuery(query);
+    return this.administracion.restablecerSegundoFactor(actorAdministrativoDe(req), cuerpo, contextoDe(req));
   }
 }

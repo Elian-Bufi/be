@@ -33,10 +33,21 @@ export function abrirElContextoDelPedido(_req: unknown, _res: unknown, siguiente
   contexto.run({ sesion: null }, siguiente);
 }
 
-/** Lo anota `SesionGuard` al autenticar. Fuera de un pedido (una prueba unitaria) no hace nada. */
+/**
+ * Lo anota `SesionGuard` al autenticar. Falla cerrado (revisión adversarial de la etapa 2): `SesionGuard` siempre corre
+ * dentro de un pedido HTTP, y un pedido sin contexto (una app armada sin `crearApp`, un middleware que quede antes de
+ * `abrirElContextoDelPedido` o un evento que no lo conserve) dejaría a un profesional sin el segundo factor actuar como
+ * profesional sin que nada falle. Mejor un 500 que esa puerta abierta.
+ */
 export function anotarLaSesionDelPedido(sesion: SesionDelPedido): void {
   const actual = contexto.getStore();
-  if (actual) actual.sesion = sesion;
+  if (!actual) throw new Error('BE: el pedido no tiene contexto; SesionGuard no puede anotar la sesión (falta abrirElContextoDelPedido)');
+  actual.sesion = sesion;
+}
+
+/** Corre `fn` dentro del contexto de un pedido, como lo abre el middleware. Para las pruebas unitarias. */
+export function dentroDeUnPedido<T>(fn: () => T): T {
+  return contexto.run({ sesion: null }, fn);
 }
 
 /** La sesión del pedido en curso, si la hay. */

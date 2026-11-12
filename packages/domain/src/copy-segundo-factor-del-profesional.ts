@@ -8,6 +8,32 @@ import { COPY_ADMINISTRACION } from './copy-administracion';
 
 const A = COPY_ADMINISTRACION;
 
+/** /admin: restablecer el segundo factor de un profesional (API-ADM-19, UF-T56). */
+export const COPY_RESTABLECER_SEGUNDO_FACTOR = {
+  titulo: 'Restablecer el segundo factor de un profesional',
+  queEs:
+    'Cuando un profesional perdió el autenticador y los códigos de recuperación, o alguien configuró uno con su cuenta, lo verificás por el canal de ayuda y restablecés su segundo factor. El autenticador y los códigos dejan de valer y se cierran todas sus sesiones: al volver a entrar, lo configura de nuevo en los 10 minutos siguientes.',
+  siHayDudas: 'Si creés que alguien más tiene su contraseña, emitile también la recuperación del acceso.',
+  correo: 'Correo de acceso del profesional',
+  fundamento: 'Cómo verificaste que es el profesional',
+  fundamentoAyuda: 'Por ejemplo: «Escribió desde el correo de la cuenta el 12/11 y confirmó su matrícula». Lo ve solo Administración.',
+  restablecer: 'Restablecer el segundo factor',
+  confirmar: '¿Restablecer el segundo factor de esta cuenta? Su autenticador y sus códigos dejan de valer y se cierran todas sus sesiones, también las de la app.',
+  siRestablecer: 'Sí, restablecer',
+  cancelar: 'Cancelar',
+  restableciendo: 'Restableciendo…',
+  hecho: (autenticador: boolean, sesiones: number): string =>
+    `Listo: ${autenticador ? 'el autenticador y los códigos de recuperación dejaron de valer' : 'no tenía un autenticador activo; sus códigos dejaron de valer'}. ${sesiones === 1 ? 'Se cerró 1 sesión' : `Se cerraron ${sesiones} sesiones`}. Avisale por el canal de ayuda que entre de nuevo y lo configure.`,
+  problemas: {
+    RATIONALE_REQUIRED: 'Escribí cómo verificaste al profesional (de 1 a 1000 caracteres).',
+    INVALID_LOCAL_IDENTIFIER: 'Revisá el correo.',
+    ACCOUNT_IS_ADMINISTRATIVE: 'Es una cuenta administrativa: su segundo factor lo restablece el operador con el comando interno.',
+    ACCOUNT_NOT_PROFESSIONAL: 'Esa cuenta no es de un profesional: no tiene segundo factor que restablecer.',
+    ACCOUNT_NOT_OPERATIONAL: 'La cuenta está suspendida o cerrada.',
+  } as Readonly<Record<string, string>>,
+  sinCuenta: 'No hay una cuenta con ese correo.',
+} as const;
+
 export const COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL = {
   /** El paso del código, con autenticador. */
   codigo: {
@@ -25,7 +51,8 @@ export const COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL = {
       'Hubo demasiados códigos del autenticador que no valen, seguidos: por seguridad, el autenticador quedó bloqueado. Entrá con un código de recuperación, que lo desbloquea.',
     demasiadosIntentos: A.segundoFactor.demasiadosIntentos,
     perdisteTitulo: 'Si perdiste el autenticador y los códigos',
-    perdiste: 'Escribile al equipo de BE por el canal de ayuda: después de verificar que sos vos, restablecen tu segundo factor y lo configurás de nuevo.',
+    perdiste:
+      'Escribile a Administración por el canal de ayuda, desde el correo de tu cuenta. Después de verificar que sos vos, restablece tu segundo factor y cierra tus sesiones: entrás de nuevo y lo configurás en los 10 minutos siguientes.',
   },
   recuperacion: {
     titulo: A.recuperacion.titulo,
@@ -62,6 +89,10 @@ export const COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL = {
     listo: A.codigos.listo,
     regenerar: A.codigos.regenerar,
     regenerarAyuda: 'Los códigos anteriores dejan de valer y tus otras sesiones vuelven a pedir el código.',
+    /** Generar códigos nuevos es destructivo: se confirma antes (revisión adversarial de la etapa 2). */
+    confirmar: '¿Generar códigos nuevos? Los que tenés guardados dejan de valer y tus otras sesiones vuelven a pedir el código.',
+    siGenerar: 'Sí, generar códigos nuevos',
+    noGenerar: 'Cancelar',
   },
   /** Sin autenticador y con el plazo vencido: volver a entrar. */
   volverAEntrar: {

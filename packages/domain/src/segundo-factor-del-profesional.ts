@@ -17,7 +17,7 @@
  */
 import { z } from 'zod';
 import { PLAZO_DEL_SEGUNDO_FACTOR_MS, type MetodoDelSegundoFactor } from './administracion';
-import { Instante } from './contratos';
+import { IdOpaco, Instante } from './contratos';
 import { CodigosDeRecuperacionSchema } from './contratos-administracion';
 
 export type EstadoDelSegundoFactorDelProfesional =
@@ -109,3 +109,39 @@ export const ConfiguracionDeLaSesionConfirmadaResponseSchema = z.strictObject({
   data: z.strictObject({ recoveryCodes: CodigosDeRecuperacionSchema, secondFactor: EstadoDelSegundoFactorDelProfesionalSchema }),
 });
 export type ConfiguracionDeLaSesionConfirmadaResponse = z.infer<typeof ConfiguracionDeLaSesionConfirmadaResponseSchema>;
+
+// ─── API-ADM-19 · Administración restablece el segundo factor de un profesional (UF-T56) ─────────
+
+/**
+ * Revisión adversarial de la etapa 2: un profesional que perdió el autenticador y los códigos, o al que otro le configuró
+ * uno con su contraseña, no tenía cómo salir (quedaba en REQUIRED para siempre). Administración lo verifica por el canal
+ * de ayuda y lo restablece: el autenticador y los códigos dejan de valer y se cierran todas sus sesiones. Al volver a
+ * entrar, lo configura de nuevo (dentro de los 10 minutos de la entrada, UF-T19).
+ */
+export const RestablecerSegundoFactorRequestSchema = z.strictObject({
+  /** El correo de acceso de la cuenta, como lo escribió el profesional por el canal de ayuda. */
+  email: z.string().max(400),
+  /** Cómo se verificó que quien pide es el profesional (lo ve solo Administración). */
+  rationale: z.string().max(2000),
+});
+export type RestablecerSegundoFactorRequest = z.infer<typeof RestablecerSegundoFactorRequestSchema>;
+
+export const SegundoFactorRestablecidoResponseSchema = z.strictObject({
+  data: z.strictObject({
+    identityId: IdOpaco,
+    /** Si tenía un autenticador activo, que dejó de valer. */
+    authenticatorRevoked: z.boolean(),
+    /** Cuántas sesiones de la cuenta se cerraron. */
+    sessionsRevoked: z.number().int().min(0),
+  }),
+});
+export type SegundoFactorRestablecidoResponse = z.infer<typeof SegundoFactorRestablecidoResponseSchema>;
+
+/** Los issues del 422 de API-ADM-19, en el campo del correo o del fundamento. */
+export const ISSUE_DE_RESTABLECIMIENTO = {
+  FUNDAMENTO: 'RATIONALE_REQUIRED',
+  CORREO: 'INVALID_LOCAL_IDENTIFIER',
+  CUENTA_ADMINISTRATIVA: 'ACCOUNT_IS_ADMINISTRATIVE',
+  NO_ES_PROFESIONAL: 'ACCOUNT_NOT_PROFESSIONAL',
+  CUENTA_NO_OPERATIVA: 'ACCOUNT_NOT_OPERATIONAL',
+} as const;

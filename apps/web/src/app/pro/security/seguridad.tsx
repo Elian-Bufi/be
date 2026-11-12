@@ -31,6 +31,8 @@ export function SeguridadDelProfesional() {
   const [codigos, setCodigos] = useState<readonly string[] | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  /** «Generar códigos nuevos» invalida los guardados: se confirma antes de llamar a API-MFA-06. */
+  const [confirmando, setConfirmando] = useState(false);
   const releer = useCallback((nuevoAviso: string | null = null) => {
     setAviso(nuevoAviso);
     setModo('ver');
@@ -115,10 +117,31 @@ export function SeguridadDelProfesional() {
         <button type="button" className="boton boton--secundario" onClick={() => setModo('reemplazar')} disabled={!reciente || enviando}>
           {C.configuracion.reemplazar}
         </button>
-        <button type="button" className="boton boton--secundario" onClick={() => void generarCodigos()} disabled={!reciente || enviando} aria-busy={enviando}>
+        <button type="button" className="boton boton--secundario" onClick={() => setConfirmando(true)} disabled={!reciente || enviando || confirmando}>
           {C.codigos.regenerar}
         </button>
       </div>
+      {confirmando ? (
+        <Aviso tipo="info" enfocar>
+          <p>{C.codigos.confirmar}</p>
+          <div className="acciones">
+            <button
+              type="button"
+              className="boton boton--peligro"
+              onClick={() => {
+                setConfirmando(false);
+                void generarCodigos();
+              }}
+              disabled={enviando}
+            >
+              {C.codigos.siGenerar}
+            </button>
+            <button type="button" className="boton boton--secundario" onClick={() => setConfirmando(false)}>
+              {C.codigos.noGenerar}
+            </button>
+          </div>
+        </Aviso>
+      ) : null}
       <p className="nota">{C.codigos.regenerarAyuda}</p>
     </section>
   );

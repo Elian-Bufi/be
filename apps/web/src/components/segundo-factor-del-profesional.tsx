@@ -84,6 +84,34 @@ export function SegundoFactorDelProfesional({ children }: { children: ReactNode 
     };
   }, [token, vuelta, alPerderLaSesion]);
 
+  // Revisión adversarial de la etapa 2: `verificada` no se enteraba si otra sesión reemplazaba el autenticador o renovaba
+  // los códigos (el servidor deja esta sesión en REQUIRED, y /pro se veía vacío). Se vuelve a preguntar, sin tapar la
+  // página, al cambiar de pantalla dentro de /pro y al volver a la pestaña; si ya no sigue, se muestra el paso.
+  useEffect(() => {
+    if (!token) return;
+    let vigente = true;
+    const revisar = () => {
+      if (verificada !== token || document.visibilityState !== 'visible') return;
+      void api.segundoFactorDeLaSesion(token).then((r) => {
+        if (!vigente || verificada !== token) return;
+        const nuevo = pasoDelSegundoFactor(r);
+        if (nuevo.tipo === 'seguir' || nuevo.tipo === 'sin-respuesta') return;
+        if (nuevo.tipo === 'sesion') {
+          alPerderLaSesion(r);
+          return;
+        }
+        verificada = null;
+        setLectura({ para: token, paso: nuevo });
+      });
+    };
+    revisar();
+    document.addEventListener('visibilitychange', revisar);
+    return () => {
+      vigente = false;
+      document.removeEventListener('visibilitychange', revisar);
+    };
+  }, [token, ruta, alPerderLaSesion]);
+
   const paso: PasoDelSegundoFactor | null = token === null ? null : token === verificada ? { tipo: 'seguir' } : lectura?.para === token ? lectura.paso : null;
   const sinRespuesta = paso?.tipo === 'sin-respuesta';
   useEffect(() => {

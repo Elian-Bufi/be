@@ -28,7 +28,14 @@ import {
   SolicitarCierreResponseSchema,
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, LoQueFaltaParaSeguirResponseSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
-import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema, SinCuerpoDelSegundoFactorSchema } from './segundo-factor-del-profesional';
+import {
+  ConfiguracionDeLaSesionConfirmadaResponseSchema,
+  RestablecerSegundoFactorRequestSchema,
+  SegundoFactorDeLaSesionResponseSchema,
+  SegundoFactorDeLaSesionVerificadoResponseSchema,
+  SegundoFactorRestablecidoResponseSchema,
+  SinCuerpoDelSegundoFactorSchema,
+} from './segundo-factor-del-profesional';
 import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSchema } from './incorporacion-de-profesionales';
 import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
 import { CompletarRecuperacionRequestSchema, EmitirRecuperacionAsistidaRequestSchema, PedirRecuperacionRequestSchema, RecuperacionAsistidaResponseSchema, RecuperacionPedidaResponseSchema } from './recuperacion-de-acceso';
@@ -4095,6 +4102,20 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 201, schema: RecuperacionAsistidaResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
     fuente: 'UF-03 y UF-D9 de WP-USO-FINAL («una recuperación asistida por Administración, con fundamento: revoca las sesiones y emite un código de un solo uso») · 04 RF-005 · 08 §24.4 («contingencia asistida documentada») · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-11 de WP-USO-FINAL (DL-169; UF-T56): restablecer el segundo factor de un profesional ──────────────────────────
+  {
+    id: 'API-ADM-19',
+    metodo: 'post',
+    ruta: '/admin/professional-second-factor-resets',
+    resumen:
+      'Restablecer el segundo factor de un profesional que perdió el autenticador y los códigos de recuperación, o al que otro le configuró uno: Administración lo verificó por el canal de ayuda y, para la cuenta de ese correo de acceso, con el fundamento (cómo lo verificó), en una transacción revoca el autenticador activo, descarta uno pendiente, invalida los códigos de recuperación y cierra todas las sesiones de la cuenta. Queda el hecho con el fundamento y el administrador, y la auditoría sin el fundamento. Al volver a entrar, el profesional lo configura de nuevo (API-MFA-04 y 05, dentro de los 10 minutos de la entrada). Sin idempotencia: repetirlo no cambia más de lo que ya cambió. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no es de un profesional o que no opera, 422 VALIDATION_FAILED.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: RestablecerSegundoFactorRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorRestablecidoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-11 de WP-USO-FINAL (UF-T56, revisión adversarial de la etapa 2: sin esto, un profesional sin su autenticador quedaba sin poder actuar como profesional) · 08 §25 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
   },
   // ─── UF-07 de WP-USO-FINAL (DL-169): el canal de ayuda y contacto ─────────────────────────────────────────────────────
   {

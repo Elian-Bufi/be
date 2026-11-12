@@ -6,6 +6,13 @@ import {
   DecidirSobreAreaRequestSchema,
   IncorporarProfesionalRequestSchema,
   ISSUE_DE_INCORPORACION,
+  ISSUE_DE_RESTABLECIMIENTO,
+  identificadorLocalValido,
+  LARGO_MAXIMO_DEL_FUNDAMENTO,
+  normalizarIdentificadorLocal,
+  RestablecerSegundoFactorRequestSchema,
+  type SegundoFactorRestablecidoResponse,
+  type ValidationIssue,
   evaluarCambioDeNombre,
   evaluarIncorporacion,
   cambioDeOperacion,
@@ -44,6 +51,7 @@ import { conReintento, momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicadorDeNovedades, type HechoParaNovedad } from '../novedades/publicador';
 import { VerificacionService } from '../profesional/verificacion.service';
+import { revocarSesiones } from '../sesion/sesion.service';
 import type { ActorAdministrativo } from './sesion-administrativa.guard';
 
 type Tx = Prisma.TransactionClient;
@@ -398,7 +406,83 @@ export class AdministracionService {
     }
   }
 
-  /** Un rechazo de ADM-14 o ADM-15, auditado aparte (la transacción se revirtió), sin nada del cuerpo. */
+  // ─── API-ADM-19 ──────────────────────────────────────────────────────────────────────────────
+  /**
+   * UF-11 (DL-169; UF-T56, revisión adversarial de la etapa 2): restablecer el segundo factor de un profesional que perdió el
+   * autenticador y los códigos, o al que otro le configuró uno con su contraseña. Sin esto quedaba en REQUIRED para siempre.
+   * En una transacción, con la identidad en modo exclusivo y sus autenticadores tomados (como el comando del operador, así
+   * una confirmación de API-MFA-05 simultánea va antes o después): el autenticador activo se revoca, uno pendiente se
+   * descarta, los códigos de recuperación dejan de valer y todas las sesiones terminan (también las de la app: quien le
+   * configuró el autenticador queda afuera). Queda el hecho, con el fundamento, y la auditoría sin él. Sin idempotencia:
+   * repetirlo no cambia más de lo que ya cambió.
+   */
+  async restablecerSegundoFactor(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<SegundoFactorRestablecidoResponse> {
+    const pedido = validarCuerpo(RestablecerSegundoFactorRequestSchema, cuerpo);
+    const correo = normalizarIdentificadorLocal(pedido.email);
+    const fundamento = pedido.rationale.normalize('NFC').trim();
+    const issues: ValidationIssue[] = [];
+    if (!identificadorLocalValido(correo)) issues.push({ code: ISSUE_DE_RESTABLECIMIENTO.CORREO, path: 'email' });
+    if (!fundamento || [...fundamento].length > LARGO_MAXIMO_DEL_FUNDAMENTO) issues.push({ code: ISSUE_DE_RESTABLECIMIENTO.FUNDAMENTO, path: 'rationale' });
+    const procedencia = procedenciaDe(ctx, 'UF-11', 'API-ADM-19');
+    let sujetoId: string | null = null;
+    try {
+      if (issues.length > 0) throw errores.validacionFallida(issues);
+      return await this.prisma.$transaction(async (tx) => {
+        const [metodo] = await tx.$queryRaw<{ identidadId: string }[]>`
+          SELECT "identidad_id"::text AS "identidadId" FROM "metodo_de_acceso"
+           WHERE ("tipo" = 'LOCAL' AND "referencia" = ${correo}) OR ("tipo" = 'GOOGLE' AND "correo" = ${correo})
+           ORDER BY "tipo" LIMIT 1`;
+        if (!metodo) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'CUENTA_NO_ENCONTRADA');
+        const identidadId = metodo.identidadId;
+        sujetoId = identidadId;
+        const [cuenta] = await tx.$queryRaw<{ estado: string; administrativa: boolean; profesional: boolean }[]>`
+          SELECT i."estado_operativo_de_cuenta"::text AS "estado",
+                 EXISTS (SELECT 1 FROM "rol_administrativo" r WHERE r."identidad_id" = i."id" AND r."estado" = 'VIGENTE') AS "administrativa",
+                 EXISTS (SELECT 1 FROM "perfil_profesional" p WHERE p."identidad_id" = i."id") AS "profesional"
+            FROM "identidad" i WHERE i."id" = ${identidadId}::uuid FOR NO KEY UPDATE`;
+        if (!cuenta) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'CUENTA_NO_ENCONTRADA');
+        const problema = cuenta.administrativa
+          ? ISSUE_DE_RESTABLECIMIENTO.CUENTA_ADMINISTRATIVA
+          : !cuenta.profesional
+            ? ISSUE_DE_RESTABLECIMIENTO.NO_ES_PROFESIONAL
+            : cuenta.estado !== 'OPERATIVA'
+              ? ISSUE_DE_RESTABLECIMIENTO.CUENTA_NO_OPERATIVA
+              : null;
+        if (problema) throw new ErrorDeApi(422, 'VALIDATION_FAILED', 'El segundo factor de esta cuenta no se restablece desde acá.', { issues: [{ code: problema, path: 'email' }] }, problema);
+        const ahora = await momentoDeLaBase(tx);
+        await tx.$queryRaw`SELECT "id" FROM "factor_totp" WHERE "identidad_id" = ${identidadId}::uuid FOR UPDATE`;
+        const revocados = await tx.factorTotp.updateMany({ where: { identidadId, estado: 'ACTIVO' }, data: { estado: 'REVOCADO', momentoDeBaja: ahora } });
+        await tx.factorTotp.updateMany({ where: { identidadId, estado: 'PENDIENTE' }, data: { estado: 'DESCARTADO', momentoDeBaja: ahora } });
+        await tx.codigoDeRecuperacion.updateMany({ where: { identidadId, momentoDeUso: null, momentoDeInvalidacion: null }, data: { momentoDeInvalidacion: ahora } });
+        const sesiones = await revocarSesiones(tx, identidadId, 'SEGUNDO_FACTOR_RESTABLECIDO', ahora);
+        const fila = await tx.restablecimientoDeSegundoFactor.create({
+          data: { identidadId, administradorId: actor.identidadId, fundamento, autenticadorRevocado: revocados.count > 0, procedencia: procedencia as unknown as Prisma.InputJsonValue, momentoDeOcurrencia: ahora },
+          select: { id: true },
+        });
+        await this.auditoria.registrar(
+          {
+            operacion: 'API-ADM-19',
+            resultado: 'EXITO',
+            motivo: `SESIONES_REVOCADAS:${sesiones}`,
+            actorId: actor.identidadId,
+            sujetoId: identidadId,
+            recursoTipo: 'RestablecimientoDeSegundoFactor',
+            recursoId: fila.id,
+            superficie: procedencia.superficie,
+            requestId: procedencia.requestId,
+            momentoDeOcurrencia: ahora,
+          },
+          tx,
+        );
+        return { data: { identityId: identidadId, authenticatorRevoked: revocados.count > 0, sessionsRevoked: sesiones } };
+      });
+    } catch (e) {
+      if (e instanceof ErrorDeApi) await this.auditarRechazoDe('API-ADM-19', actor, sujetoId, 'RestablecimientoDeSegundoFactor', null, e, ctx);
+      throw e;
+    }
+  }
+
+  /** Un rechazo de ADM-14, ADM-15 o ADM-19, auditado aparte (la transacción se revirtió), sin nada del cuerpo. */
   private auditarRechazoDe(operacion: string, actor: ActorAdministrativo, sujetoId: string | null, recursoTipo: string, recursoId: string | null, e: ErrorDeApi, ctx: ContextoDeSolicitud): Promise<void> {
     return this.auditoria.registrar({
       operacion,
