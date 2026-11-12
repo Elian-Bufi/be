@@ -138,8 +138,9 @@ export function BarraDeZonas({
 }
 
 /**
- * El velo detrás de la barra: del color del fondo, transparente arriba y casi opaco abajo. App.tsx lo dibuja antes de la
- * cápsula, desde donde termina el espacio libre del contenido. No recibe toques ni lo recorre el lector de pantalla.
+ * El velo detrás de la barra: del color de abajo del fondo (`fondoAbajo`, DL-170: con `fondo` quedaba una franja sobre
+ * el degradé), transparente arriba y casi opaco abajo. App.tsx lo dibuja antes de la cápsula, desde donde termina el
+ * espacio libre del contenido. No recibe toques ni lo recorre el lector de pantalla.
  */
 export function VeloDeLaBarra({ alto }: { alto: number }) {
   useApariencia();
@@ -148,9 +149,9 @@ export function VeloDeLaBarra({ alto }: { alto: number }) {
       <Svg width="100%" height="100%">
         <Defs>
           <LinearGradient id="velo-de-la-barra" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={COLOR.fondo.slice(0, 7)} stopOpacity={0} />
-            <Stop offset="0.4" stopColor={COLOR.fondo.slice(0, 7)} stopOpacity={0.9} />
-            <Stop offset="1" stopColor={COLOR.fondo.slice(0, 7)} stopOpacity={0.97} />
+            <Stop offset="0" stopColor={COLOR.fondoAbajo.slice(0, 7)} stopOpacity={0} />
+            <Stop offset="0.4" stopColor={COLOR.fondoAbajo.slice(0, 7)} stopOpacity={0.9} />
+            <Stop offset="1" stopColor={COLOR.fondoAbajo.slice(0, 7)} stopOpacity={0.97} />
           </LinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#velo-de-la-barra)" />

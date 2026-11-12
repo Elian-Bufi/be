@@ -92,6 +92,9 @@ import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
 import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
+import { useAltoContraste } from './src/alto-contraste';
+import { FondoDeLaApp } from './src/fondo-de-la-app';
+import { ProveedorDeVidrio } from './src/vidrio';
 import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Icono, type NombreDeIcono } from './src/icono';
@@ -134,7 +137,7 @@ const commit = extra.commit ? extra.commit.slice(0, 7) : 'no declarado';
  */
 export default function App() {
   const apariencia = useAparienciaGuardada();
-  if (!apariencia.lista) return <View style={estilos.raiz} />;
+  if (!apariencia.lista) return <View style={[estilos.raiz, estilos.raizLisa]} />;
   return (
     <ProveedorDeApariencia value={apariencia}>
       <SafeAreaProvider>
@@ -146,6 +149,8 @@ export default function App() {
 
 function Contenido() {
   const { tema } = useApariencia();
+  // DL-170: con el «Texto de alto contraste» de Android, el vidrio vuelve a ser opaco y el fondo, liso.
+  const altoContraste = useAltoContraste();
   // Inset inferior real del sistema (barra de navegación de Android edge-to-edge / home indicator de iOS).
   const insets = useSafeAreaInsets();
   // Si Android recreó la pantalla (por ejemplo, al cambiar el tamaño de letra), la sesión y la pantalla siguen en el
@@ -531,9 +536,13 @@ function Contenido() {
   };
 
   return (
-    // «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
-    // (adjustResize deja de tener efecto), así que sin esto el teclado tapa los campos de abajo (validación de la 0.11.2).
-    <KeyboardAvoidingView style={estilos.raiz} behavior="padding">
+    // DL-170 (§3.3): el vidrio se prende solo en Inicio hasta el visto bueno de Dirección a la muestra (AV2-26).
+    <ProveedorDeVidrio activo={ruta.nombre === 'inicio'} altoContraste={altoContraste}>
+    {/* «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
+        (adjustResize deja de tener efecto), así que sin esto el teclado tapa los campos de abajo (validación de la 0.11.2).
+        La raíz no pinta el fondo: lo dibuja FondoDeLaApp, su primer hijo, salvo con alto contraste. */}
+    <KeyboardAvoidingView style={[estilos.raiz, altoContraste && estilos.raizLisa]} behavior="padding">
+      <FondoDeLaApp />
       <Cabecera
         volverA={recuperacion || raiz ? null : anterior(ruta)}
         conSesion={conSesion}
@@ -708,6 +717,7 @@ function Contenido() {
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>
+    </ProveedorDeVidrio>
   );
 }
 
@@ -721,7 +731,9 @@ const AREAS_DE_LA_BIENVENIDA: readonly { readonly icono: NombreDeIcono; readonly
 ];
 
 const estilos = estilosPorTema((COLOR) => ({
-  raiz: { flex: 1, backgroundColor: COLOR.fondo },
+  // Sin fondo propio: lo dibuja FondoDeLaApp (DL-170). Liso solo mientras se lee la apariencia y con alto contraste.
+  raiz: { flex: 1 },
+  raizLisa: { backgroundColor: COLOR.fondo },
   // El margen inferior se completa en el contentContainerStyle con el alto de la barra y el inset real del sistema
   // (safe-area-context): Android es edge-to-edge desde Expo SDK 54 y el ScrollView llega por detrás de la barra de
   // navegación.

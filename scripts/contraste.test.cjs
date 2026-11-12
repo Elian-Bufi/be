@@ -446,6 +446,14 @@ test('APK · la receta de vidrio pasa AA en el peor punto, en los dos temas (TES
   assert.deepEqual(fallas, []);
 });
 
+test('APK · los degradés de la receta terminan en el mismo color con alfa 00, nunca en «transparent» (DL-170)', () => {
+  // En Android, un degradé hacia `transparent` pasa por gris: el último color es el mismo, con alfa cero.
+  for (const archivo of ['apps/mobile/src/receta-de-vidrio.ts', 'apps/mobile/src/fondo-de-la-app.tsx', 'apps/mobile/src/vidrio.tsx']) {
+    const codigo = readFileSync(join(RAIZ, archivo), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    assert.doesNotMatch(codigo, /['"]transparent['"]|\btransparent\b/, `${archivo} usa «transparent»`);
+  }
+});
+
 /** Todo color literal en estilos vive en los tokens: si no, la prueba no lo ve. */
 test('ningún estilo del website ni de la APK escribe un color fuera de los tokens', () => {
   const archivos = [];

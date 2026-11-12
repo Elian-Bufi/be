@@ -558,3 +558,139 @@ test('TEST-AVR-030 · con letra grande, la fila de acciones sigue en una fila y 
   assert.deepEqual(descanso.disposicionDeLaSesion(360, 1, zonas), { filasDeAcciones: 1, filasDeNavegacion: 1, navegacionVisible: true });
   for (const escala of [1.3, 2]) assert.deepEqual(descanso.disposicionDeLaSesion(360, escala, zonas), { filasDeAcciones: 1, filasDeNavegacion: 2, navegacionVisible: true }, `×${escala}`);
 });
+
+// ═══ WP-APP-VUELTA-2 (DL-170): la etapa A, con sus oráculos TEST-AV2 (docs/paquetes/WP-APP-VUELTA-2-ORACULOS.md) ═══
+
+const receta = await import('../apps/mobile/src/receta-de-vidrio.ts');
+
+/** Las paletas de tema.ts, leídas como texto: tema.ts importa react-native y no se puede importar acá. */
+function paletaDe(nombre) {
+  const ts = leer('tema.ts');
+  const inicio = ts.search(new RegExp(`export const ${nombre}(: \\w+)? = \\{`));
+  const cuerpo = ts.slice(inicio, ts.indexOf('};', inicio));
+  return Object.fromEntries([...cuerpo.matchAll(/(\w+):\s*'([^']*)'/g)].map((m) => [m[1], m[2]]));
+}
+const AZUL = paletaDe('AZUL_NOCHE');
+const CLARO = paletaDe('CLARO');
+const PRENDIDO = { activo: true, altoContraste: false };
+/** El código sin comentarios: lo que se ejecuta, no lo que se explica. */
+const sinComentarios = (codigo) => codigo.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+// ─── TEST-AV2-002 · la superficie por nivel, el interruptor y el alto contraste (AV2-02) ─────────
+
+test('TEST-AV2-002 · nivel 1 con sombra y línea de luz, nivel 2 sin sombra, y sin relleno más adentro', () => {
+  const n1 = receta.superficieDeVidrio(AZUL, 'azul-noche', 1, PRENDIDO);
+  assert.equal(n1.backgroundColor, AZUL.vidrio);
+  assert.equal(n1.borderColor, AZUL.vidrioFilo);
+  assert.equal(n1.borderWidth, 1);
+  assert.equal(n1.borderRadius, 20);
+  assert.deepEqual(n1.boxShadow, [
+    { offsetX: 0, offsetY: 8, blurRadius: 24, spreadDistance: -4, color: AZUL.sombraVidrio },
+    { offsetX: 0, offsetY: 1, blurRadius: 0, inset: true, color: AZUL.vidrioLuz },
+  ]);
+  // En Claro, la sombra no se recoge y la línea de luz no se dibuja (sobre blanco no se vería).
+  assert.deepEqual(receta.superficieDeVidrio(CLARO, 'claro', 1, PRENDIDO).boxShadow, [{ offsetX: 0, offsetY: 8, blurRadius: 24, spreadDistance: 0, color: CLARO.sombraVidrio }]);
+  for (const [paleta, tema] of [[AZUL, 'azul-noche'], [CLARO, 'claro']]) {
+    const n2 = receta.superficieDeVidrio(paleta, tema, 2, PRENDIDO);
+    assert.equal(n2.backgroundColor, paleta.vidrioInterior, tema);
+    assert.equal(n2.borderRadius, 14, tema);
+    assert.equal(n2.boxShadow, undefined, `${tema}: el nivel 2 no lleva sombra`);
+    const n3 = receta.superficieDeVidrio(paleta, tema, 3, PRENDIDO);
+    assert.match(n3.backgroundColor, /00$/i, `${tema}: dentro de un nivel 2, sin relleno`);
+    assert.equal(n3.boxShadow, undefined);
+  }
+  // El contexto: afuera, nivel 1; dentro de un nivel 1, nivel 2; dentro de un nivel 2, sin relleno (3).
+  assert.deepEqual([0, 1, 2, 3].map(receta.nivelQueSigue), [1, 2, 3, 3]);
+});
+
+test('TEST-AV2-002 · con el interruptor apagado o con alto contraste, la superficie opaca de hoy', () => {
+  for (const [paleta, tema] of [[AZUL, 'azul-noche'], [CLARO, 'claro']]) {
+    for (const opciones of [{ activo: false, altoContraste: false }, { activo: true, altoContraste: true }, { activo: false, altoContraste: true }]) {
+      for (const nivel of [1, 2, 3]) {
+        assert.deepEqual(receta.superficieDeVidrio(paleta, tema, nivel, opciones), { backgroundColor: paleta.superficie, borderColor: paleta.borde, borderWidth: 1 }, `${tema} ${JSON.stringify(opciones)} nivel ${nivel}`);
+      }
+    }
+  }
+  // Sin el vidrio, el botón principal es el de siempre.
+  assert.equal(receta.botonPrincipal(AZUL, { activo: false, altoContraste: false, habilitado: true }), null);
+  assert.equal(receta.botonPrincipal(AZUL, { activo: true, altoContraste: true, habilitado: true }), null);
+});
+
+test('TEST-AV2-002 · el brillo de arriba se apaga dentro del relleno, en el mismo color con alfa 00; en Claro no se dibuja', () => {
+  const brillo = receta.brilloDeArriba(AZUL);
+  assert.equal(brillo, `linear-gradient(to bottom, ${AZUL.vidrioBrillo} 0px, ${AZUL.vidrioBrillo.slice(0, 7)}00 ${receta.ALTO_DEL_BRILLO}px)`);
+  assert.ok(receta.ALTO_DEL_BRILLO <= receta.RELLENO_MINIMO_DEL_NIVEL_1, 'el brillo no llega al contenido de ningún nivel 1');
+  assert.ok(receta.RELLENO_MINIMO_DEL_NIVEL_1 <= receta.RELLENO_DE_LA_TARJETA);
+  assert.equal(receta.superficieDeVidrio(AZUL, 'azul-noche', 1, PRENDIDO).experimental_backgroundImage, brillo);
+  assert.equal(receta.brilloDeArriba(CLARO), null);
+  assert.equal(receta.superficieDeVidrio(CLARO, 'claro', 1, PRENDIDO).experimental_backgroundImage, undefined);
+});
+
+// ─── TEST-AV2-003 · sin vistas hijas y sin «elevation» (AV2-02) ─────────────────────────────────
+
+test('TEST-AV2-003 · lo translúcido no usa «elevation»: la sombra es «boxShadow»', () => {
+  for (const [paleta, tema] of [[AZUL, 'azul-noche'], [CLARO, 'claro']]) {
+    for (const nivel of [1, 2, 3]) {
+      const s = receta.superficieDeVidrio(paleta, tema, nivel, PRENDIDO);
+      assert.equal('elevation' in s, false, `${tema} nivel ${nivel}`);
+      assert.equal('shadowOpacity' in s, false, `${tema} nivel ${nivel}`);
+    }
+    const boton = receta.botonPrincipal(paleta, { ...PRENDIDO, habilitado: true });
+    assert.equal('elevation' in boton, false);
+  }
+});
+
+test('TEST-AV2-003 · el vidrio no agrega vistas hijas: la receta y el contexto solo devuelven estilos', () => {
+  for (const archivo of ['receta-de-vidrio.ts', 'vidrio.tsx']) {
+    const codigo = sinComentarios(leer(archivo));
+    assert.doesNotMatch(codigo, /<(View|Svg|Animated|Image|Text)\b/, `${archivo} dibuja una vista`);
+    assert.doesNotMatch(codigo, /position:\s*'absolute'/, `${archivo} posiciona algo`);
+    assert.doesNotMatch(codigo, /from 'react-native-svg'/, archivo);
+  }
+  // `sombraDeVidrio`, con `elevation`, queda solo para la lámina y sus tarjetas, que son opacas.
+  const usan = archivosDeLaApk()
+    .filter((a) => !a.endsWith('vidrio.tsx') && /sombraDeVidrio\(/.test(readFileSync(a, 'utf8')))
+    .map((a) => a.replace(/\\/g, '/').split('/').pop());
+  assert.deepEqual(usan.sort(), ['figura-de-la-toma.tsx', 'indicadores.tsx', 'progreso.tsx']);
+});
+
+// ─── TEST-AV2-004 · el fondo de la app (AV2-03) ─────────────────────────────────────────────────
+
+test('TEST-AV2-004 · el fondo sale de los tokens: dos destellos que se apagan y el degradé, con dp de la ventana', () => {
+  for (const [paleta, tema, medio] of [[AZUL, 'azul-noche', '55%'], [CLARO, 'claro', '50%']]) {
+    for (const [ancho, alto] of [[360, 800], [412, 915]]) {
+      const capas = receta.recetaDelFondo(paleta, tema, ancho, alto);
+      assert.deepEqual(capas.map((c) => c.type), ['radial-gradient', 'radial-gradient', 'linear-gradient'], 'los destellos encima del degradé');
+      const [cian, azul, degrade] = capas;
+      assert.deepEqual(cian.colorStops.map((p) => p.color), [paleta.destello, `${paleta.destello.slice(0, 7)}00`]);
+      assert.deepEqual(azul.colorStops.map((p) => p.color), [paleta.destelloAzul, `${paleta.destelloAzul.slice(0, 7)}00`]);
+      assert.deepEqual(degrade.colorStops.map((p) => [p.color, p.positions[0]]), [[paleta.fondoArriba, '0%'], [paleta.fondo, medio], [paleta.fondoAbajo, '100%']]);
+      for (const d of [cian, azul]) {
+        for (const v of [d.size.x, d.size.y, d.position.top, d.position.left]) assert.ok(Number.isInteger(v), `${tema} ${ancho}×${alto}: ${v} no es un número de dp`);
+      }
+      assert.ok(cian.position.top < azul.position.top, 'el cian arriba; el azul a media altura');
+      assert.ok(cian.position.left > ancho / 2 && azul.position.left < ancho / 2, 'de lados opuestos');
+    }
+  }
+});
+
+test('TEST-AV2-004 · el fondo es el primer hijo de la raíz, fuera del desplazamiento, sin toques ni lector, y liso con alto contraste', () => {
+  const app = sinComentarios(readFileSync(join(RAIZ, 'apps/mobile/App.tsx'), 'utf8'));
+  const fondo = app.indexOf('<FondoDeLaApp');
+  // El desplazamiento en el JSX (`useRef<ScrollView>` no cuenta).
+  const desplazamiento = app.search(/<ScrollView\s/);
+  assert.ok(desplazamiento > 0);
+  assert.ok(fondo > app.indexOf('<KeyboardAvoidingView') && fondo < app.indexOf('<Cabecera') && fondo < desplazamiento, 'primer hijo de la raíz');
+  assert.equal(app.indexOf('<FondoDeLaApp', desplazamiento), -1, 'fuera del desplazamiento');
+  assert.match(app, /<ProveedorDeVidrio activo=\{ruta\.nombre === 'inicio'\} altoContraste=\{altoContraste\}>/, 'el interruptor, solo en Inicio');
+  assert.match(app, /raiz: \{ flex: 1 \},/, 'la raíz no pinta el fondo liso');
+  assert.match(app, /style=\{\[estilos\.raiz, altoContraste && estilos\.raizLisa\]\}/, 'salvo con alto contraste');
+  const componente = sinComentarios(leer('fondo-de-la-app.tsx'));
+  for (const regla of [/pointerEvents="none"/, /accessible=\{false\}/, /importantForAccessibility="no-hide-descendants"/, /accessibilityElementsHidden/, /useWindowDimensions\(\)/, /if \(altoContraste\) return null;/, /position: 'absolute'/]) {
+    assert.match(componente, regla);
+  }
+  assert.doesNotMatch(componente, /%|react-native-svg/, 'sin porcentajes ni SVG');
+  // El velo de la barra sale de abajo del degradé: con `fondo` quedaba una franja.
+  assert.match(leer('barra-de-zonas.tsx'), /stopColor=\{COLOR\.fondoAbajo\.slice\(0, 7\)\}/);
+  assert.doesNotMatch(leer('barra-de-zonas.tsx'), /COLOR\.fondo\.slice/);
+});
