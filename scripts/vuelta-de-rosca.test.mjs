@@ -976,8 +976,8 @@ test('TEST-AV2-022 · ningún estilo de tarjeta escribe «COLOR.superficie» a m
   assert.deepEqual(superficiesEscritasAMano(), OPACO_POR_DECISION);
   // Las piezas que la pantalla arma a mano usan la receta: `Superficie`, `SuperficieTocable` o `useSuperficie`.
   const ui = sinComentarios(leer('ui.tsx'));
-  assert.match(ui, /export function Superficie\(\{ style, encima, children, \.\.\.resto \}[^)]*\) \{\s*const \{ estilo, nivel \} = useSuperficie\(\);\s*return \(\s*<View \{\.\.\.resto\} style=\{\[style, estilo, encima\]\}>\s*<DentroDelNivel nivel=\{nivel\}>/);
-  assert.match(ui, /<Pressable \{\.\.\.resto\} style=\{\(\{ pressed \}\) => \[style, estilo, encima\?\.\(pressed\)\]\}>\s*<DentroDelNivel nivel=\{nivel\}>/);
+  assert.match(ui, /export function Superficie\(\{ style, encima, children, \.\.\.resto \}[^)]*\) \{\s*const \{ estilo, nivel \} = useSuperficie\(\);\s*return \(\s*<View \{\.\.\.resto\} style=\{\[style, estilo, encima, filoDelEstado\(StyleSheet\.flatten\(encima\)\)\]\}>\s*<DentroDelNivel nivel=\{nivel\}>/);
+  assert.match(ui, /return \[style, estilo, estado, filoDelEstado\(StyleSheet\.flatten\(estado\)\)\];\s*\}\}\s*>\s*<DentroDelNivel nivel=\{nivel\}>/);
   const usan = archivosDeLaApk()
     .filter((a) => /<Superficie(Tocable)?\b/.test(readFileSync(a, 'utf8')))
     .map((a) => a.replace(/\\/g, '/').split('/').pop())
@@ -999,6 +999,27 @@ test('TEST-AV2-021 · las tarjetas de la sesión son de vidrio; la fila fija, la
   // PV-11: nada se ve a través de la fila fija ni de la barra fija.
   assert.match(sinComentarios(leer('fila-fija.tsx')), /fila: \{[^}]*backgroundColor: COLOR\.superficie/);
   assert.ok(OPACO_POR_DECISION.includes('sesion-enfocada.tsx · hoja') && OPACO_POR_DECISION.includes('sesion-enfocada.tsx · dialogo'));
+});
+
+test('TEST-AV2-037 · el borde de estado cierra también arriba: el filo de luz del nivel 1 no le gana', () => {
+  assert.deepEqual(receta.filoDelEstado({ borderWidth: 2, borderColor: '#125EE0' }), { borderTopColor: '#125EE0' });
+  assert.equal(receta.filoDelEstado({ borderTopColor: '#000000', borderColor: '#125EE0' }), null, 'si el estado ya dice el de arriba, manda el suyo');
+  assert.equal(receta.filoDelEstado({ opacity: 0.8 }), null);
+  assert.equal(receta.filoDelEstado(null), null);
+  assert.equal(receta.filoDelEstado(undefined), null);
+  // `Superficie` y `SuperficieTocable` lo suman a todo `encima`: la serie activa y la registrada, las novedades sin leer
+  // o importantes, la casilla con error y el recuadro punteado de la comida diferente.
+  const ui = sinComentarios(leer('ui.tsx'));
+  assert.match(ui, /style=\{\[style, estilo, encima, filoDelEstado\(StyleSheet\.flatten\(encima\)\)\]\}/);
+  assert.match(ui, /const estado = encima\?\.\(pressed\);\s*return \[style, estilo, estado, filoDelEstado\(StyleSheet\.flatten\(estado\)\)\];/);
+  // Cada `encima=` con un borde de color pasa por esas dos piezas: no hay otra forma de poner un estado sobre el vidrio.
+  const usos = [];
+  for (const archivo of archivosDeLaApk()) {
+    const texto = sinComentarios(readFileSync(archivo, 'utf8'));
+    for (const m of texto.matchAll(/\bencima=/g)) usos.push([...texto.slice(0, m.index).matchAll(/<([A-Z]\w*)\b/g)].pop()?.[1]);
+  }
+  assert.ok(usos.length >= 7, 'los usos de hoy');
+  assert.deepEqual([...new Set(usos)].sort(), ['Superficie', 'SuperficieTocable']);
 });
 
 // ─── TEST-AV2-012 · «Cómo se lee», alineado (AV2-11) ────────────────────────────────────────────

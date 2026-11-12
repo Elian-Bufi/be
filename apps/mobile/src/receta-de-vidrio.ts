@@ -111,6 +111,17 @@ export function brilloDeArriba(color: Paleta): string | null {
 const FRANJA_DEL_BRILLO = { experimental_backgroundSize: `100% ${ALTO_DEL_BRILLO}px`, experimental_backgroundRepeat: 'no-repeat' } as const;
 
 /**
+ * El borde de estado cierra también arriba (revisión de la etapa B). En React Native, el color de un lado manda sobre
+ * `borderColor`, sin importar el orden: el filo de luz del nivel 1 (`borderTopColor`) le ganaría al borde de la serie
+ * activa, de una novedad sin leer o de un error, y el contorno quedaría abierto arriba, blanco o celeste. Con un
+ * `borderColor` de estado y sin `borderTopColor` propio, devuelve ese mismo color para arriba; si no, `null`.
+ */
+export function filoDelEstado(encima: { readonly borderColor?: unknown; readonly borderTopColor?: unknown } | null | undefined): { readonly borderTopColor: ViewStyle['borderTopColor'] } | null {
+  if (!encima || encima.borderColor === undefined || encima.borderTopColor !== undefined) return null;
+  return { borderTopColor: encima.borderColor as ViewStyle['borderTopColor'] };
+}
+
+/**
  * La superficie de una tarjeta, una sección, una ficha o un aviso, según su nivel. Con el vidrio apagado o con alto
  * contraste, la opaca de hoy: `superficie` y el borde de siempre, con el radio de cada pieza.
  */

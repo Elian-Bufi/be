@@ -19,7 +19,7 @@ import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, us
 import { BotonDeIcono, CajaDelIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
 import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
-import { BORDE_DEL_BOTON, estiloDeLaEtiqueta, RELLENO_DEL_BOTON, subrayadoDelEnlace } from './receta-de-vidrio';
+import { BORDE_DEL_BOTON, estiloDeLaEtiqueta, filoDelEstado, RELLENO_DEL_BOTON, subrayadoDelEnlace } from './receta-de-vidrio';
 import { COLOR, estilosPorTema, PALETAS } from './tema';
 import { DentroDelNivel, useBotonPrincipal, useSuperficie, useSuperficieDeControl, useVidrio } from './vidrio';
 
@@ -592,7 +592,7 @@ export function Subtitulo({ children }: { children: ReactNode }) {
 export function Superficie({ style, encima, children, ...resto }: ViewProps & { encima?: StyleProp<ViewStyle> }) {
   const { estilo, nivel } = useSuperficie();
   return (
-    <View {...resto} style={[style, estilo, encima]}>
+    <View {...resto} style={[style, estilo, encima, filoDelEstado(StyleSheet.flatten(encima))]}>
       <DentroDelNivel nivel={nivel}>{children}</DentroDelNivel>
     </View>
   );
@@ -607,7 +607,13 @@ export function SuperficieTocable({
 }: Omit<PressableProps, 'style' | 'children'> & { style?: StyleProp<ViewStyle>; encima?: (presionada: boolean) => StyleProp<ViewStyle>; children: ReactNode }) {
   const { estilo, nivel } = useSuperficie();
   return (
-    <Pressable {...resto} style={({ pressed }) => [style, estilo, encima?.(pressed)]}>
+    <Pressable
+      {...resto}
+      style={({ pressed }) => {
+        const estado = encima?.(pressed);
+        return [style, estilo, estado, filoDelEstado(StyleSheet.flatten(estado))];
+      }}
+    >
       <DentroDelNivel nivel={nivel}>{children}</DentroDelNivel>
     </Pressable>
   );
