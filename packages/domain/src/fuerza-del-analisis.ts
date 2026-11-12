@@ -84,28 +84,37 @@ export function estimacionApi(e: EstimacionDeFuerza): EstimacionDeFuerzaApi {
 interface SeriesDeLaSesion {
   readonly ejecucion: EjecucionDeEntrenamiento;
   readonly exerciseId: string;
-  readonly setIndexes: readonly number[];
+  /** Dónde está cada serie del registro: su prescripción y su número, en el mismo orden que `series`. */
+  readonly ubicaciones: readonly { readonly prescriptionId: string; readonly setIndex: number }[];
   readonly series: readonly SerieParaEstimar[];
 }
 
-/** Las series de los ejercicios de la lista en el registro vigente de cada sesión, con lo que necesita el método. */
+/**
+ * Las series de los ejercicios de la lista en el registro vigente de cada sesión, con lo que necesita el método: un
+ * grupo por ejercicio y ejecución. Una sesión puede tener dos prescripciones del mismo ejercicio (una principal y una
+ * descarga): sus series se juntan, en orden de prescripción y de serie, antes de elegir, porque la regla por sesión de
+ * DL-171 da un punto por ejercicio, ejecución y unidad, no por prescripción.
+ */
 export function seriesDeLasSesiones(ejecuciones: readonly EjecucionDeEntrenamiento[], bases: ReadonlyMap<string, BasesDeLaVersion>): SeriesDeLaSesion[] {
   const resultado: SeriesDeLaSesion[] = [];
   for (const x of ejecuciones) {
     if (x.effectiveView.kind === 'NOT_RESOLVABLE') continue;
     const r = registroVigente(x);
     if (r.sessionCondition === 'NOT_COMPLETED' || r.granularity !== 'SET') continue;
-    for (const e of r.exercises) {
-      const prescripcion = x.plannedSession.prescriptions.find((p) => p.prescriptionId === e.prescriptionId);
+    const porEjercicio = new Map<string, { ubicaciones: { prescriptionId: string; setIndex: number }[]; series: SerieParaEstimar[] }>();
+    const registrados = r.exercises
+      .map((e) => ({ e, prescripcion: x.plannedSession.prescriptions.find((p) => p.prescriptionId === e.prescriptionId) }))
+      .sort((a, b) => (a.prescripcion?.order ?? 0) - (b.prescripcion?.order ?? 0));
+    for (const { e, prescripcion } of registrados) {
       if (!prescripcion || !e.sets || e.sets.length === 0 || !entraEnLaEstimacion(prescripcion.exerciseId)) continue;
       const base = bases.get(x.planId)?.get(e.prescriptionId);
-      resultado.push({
-        ejecucion: x,
-        exerciseId: prescripcion.exerciseId,
-        setIndexes: e.sets.map((s) => s.setIndex),
-        series: e.sets.map((s) => ({
+      const grupo = porEjercicio.get(prescripcion.exerciseId) ?? { ubicaciones: [], series: [] };
+      porEjercicio.set(prescripcion.exerciseId, grupo);
+      grupo.ubicaciones.push(...e.sets.map((s) => ({ prescriptionId: e.prescriptionId, setIndex: s.setIndex })));
+      grupo.series.push(
+        ...e.sets.map((s) => ({
           exerciseId: prescripcion.exerciseId,
-          fuente: 'PERSONA',
+          fuente: 'PERSONA' as const,
           ...(s.recordedAs ? { recordedAs: s.recordedAs } : {}),
           ...(s.fieldOrigins ? { fieldOrigins: s.fieldOrigins } : {}),
           load: s.load,
@@ -116,8 +125,9 @@ export function seriesDeLasSesiones(ejecuciones: readonly EjecucionDeEntrenamien
           sustituido: e.substituted,
           fechaCivil: x.date,
         })),
-      });
+      );
     }
+    for (const [exerciseId, grupo] of porEjercicio) resultado.push({ ejecucion: x, exerciseId, ...grupo });
   }
   return resultado;
 }
@@ -154,16 +164,17 @@ export function estimacionDeFuerzaDelPeriodo(d: EntradaDeLaEstimacionDelPeriodo)
     const x = s.ejecucion;
     s.series.forEach((serie, i) => {
       const r = estimarLaSerie(serie);
-      if (!r.entra) notIncluded.push({ executionId: x.executionId, date: x.date, setIndex: s.setIndexes[i] as number, reason: r.motivo, fields: [...(r.campos ?? [])] });
+      const donde = s.ubicaciones[i]!;
+      if (!r.entra) notIncluded.push({ executionId: x.executionId, date: x.date, prescriptionId: donde.prescriptionId, setIndex: donde.setIndex, reason: r.motivo, fields: [...(r.campos ?? [])] });
     });
     for (const elegida of seriesElegidasDeLaSesion(s.series, { incluirOrientativas: d.incluirOrientativas })) {
       if (elegida.unidad !== unit) continue;
-      const setIndex = s.setIndexes[elegida.posicion] as number;
+      const { prescriptionId, setIndex } = s.ubicaciones[elegida.posicion]!;
       points.push({
-        pointId: `x:${x.executionId}:${setIndex}`,
+        pointId: `x:${x.executionId}:${prescriptionId}:${setIndex}`,
         date: x.date,
         source: 'PERSON',
-        origin: { type: 'TRAINING_EXECUTION', id: x.executionId, setIndex, corrected: x.effectiveView.kind === 'CORRECTED' },
+        origin: { type: 'TRAINING_EXECUTION', id: x.executionId, prescriptionId, setIndex, corrected: x.effectiveView.kind === 'CORRECTED' },
         writtenBy: d.persona,
         estimate: estimacionApi(elegida.estimacion),
       });

@@ -170,3 +170,26 @@ test('la respuesta de API-PRJ-01 con la clave nueva cumple el contrato', () => {
   });
   assert.equal(r.success, true, JSON.stringify(r.error?.issues));
 });
+
+test('DL-171 · dos prescripciones del mismo ejercicio en una sesión (principal y descarga): un solo punto, con su prescripción', () => {
+  // Press de banca: principal 100 × 3 con RIR 1 y descarga 85 × 8 con RIR 2, como dos prescripciones de la misma sesión.
+  const x = ejecucion('e9', '2026-11-12', [serie(1, 100, 3, 1)]);
+  const descarga = { ...x.original.exercises[0]!, prescriptionId: 'rx-banca-descarga', sets: [serie(1, 85, 8, 2), serie(2, 85, 8, null)] };
+  const dos: EjecucionDeEntrenamiento = {
+    ...x,
+    plannedSession: { ...x.plannedSession, prescriptions: [...x.plannedSession.prescriptions, { ...x.plannedSession.prescriptions[0]!, prescriptionId: 'rx-banca-descarga', order: 2 }] },
+    original: { ...x.original, exercises: [...x.original.exercises, descarga] },
+  };
+  const r = derivar([dos]).estimate!;
+  // Uno por ejercicio, ejecución y unidad: el de 100 kg, aunque esté en otra prescripción que la descarga.
+  assert.equal(r.points.length, 1);
+  assert.equal(r.points[0]!.estimate.load.value, 100);
+  assert.equal(r.points[0]!.pointId, 'x:e9:rx-banca:1');
+  assert.deepEqual(r.points[0]!.origin, { type: 'TRAINING_EXECUTION', id: 'e9', prescriptionId: 'rx-banca', setIndex: 1, corrected: false });
+  // «Cómo se calculó» ubica la serie que no entró por su prescripción.
+  assert.deepEqual(
+    r.notIncluded.map((n) => [n.prescriptionId, n.setIndex, n.reason]),
+    [['rx-banca-descarga', 2, 'SIN_RIR']],
+  );
+  assert.equal(derivar([dos], { exerciseId: null }).exercises[0]!.sessions, 1);
+});

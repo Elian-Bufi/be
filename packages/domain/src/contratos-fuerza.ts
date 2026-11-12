@@ -131,9 +131,12 @@ export const PuntoDeFuerzaSchema = z.strictObject({
   /** La fecha civil de la sesión o de la observación (RM-15). */
   date: FechaLocalSchema,
   source: z.enum(['PERSON', 'OBSERVED']),
-  /** El registro de origen: la ejecución (con la serie elegida) o la observación. */
+  /**
+   * El registro de origen: la ejecución (con la serie elegida, por su prescripción y su número: una sesión puede tener
+   * dos prescripciones del mismo ejercicio) o la observación.
+   */
   origin: z.discriminatedUnion('type', [
-    z.strictObject({ type: z.literal('TRAINING_EXECUTION'), id: IdOpaco, setIndex: z.number().int().positive(), corrected: z.boolean() }),
+    z.strictObject({ type: z.literal('TRAINING_EXECUTION'), id: IdOpaco, prescriptionId: z.string().min(1), setIndex: z.number().int().positive(), corrected: z.boolean() }),
     z.strictObject({ type: z.literal('STRENGTH_OBSERVATION'), id: IdOpaco }),
   ]),
   /** Quién escribió los valores: la persona en la app, o el profesional que la observó (RM-21). */
@@ -146,6 +149,8 @@ export type PuntoDeFuerza = z.infer<typeof PuntoDeFuerzaSchema>;
 export const SerieQueNoEntroSchema = z.strictObject({
   executionId: IdOpaco,
   date: FechaLocalSchema,
+  /** La prescripción de la serie: con dos del mismo ejercicio en la sesión, el número de serie solo no la ubica. */
+  prescriptionId: z.string().min(1),
   setIndex: z.number().int().positive(),
   reason: MotivoFueraDeLaEstimacionApiSchema,
   /** Para la procedencia: qué valores vinieron del plan o no dicen quién los escribió. */
