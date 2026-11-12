@@ -28,6 +28,7 @@ import {
   SolicitarCierreResponseSchema,
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, LoQueFaltaParaSeguirResponseSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
+import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema, SinCuerpoDelSegundoFactorSchema } from './segundo-factor-del-profesional';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -3822,6 +3823,89 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: DecisionRegistradaResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['INVALID_STATE_TRANSITION', 'RATIONALE_REQUIRED', 'VALIDATION_FAILED'] },
     fuente: 'adapta API-PRO-11, 12 y 13 (09v8:980-1104) · UC-P02 y UC-P03 · habilitación: REG-06-79 y 06 §8.6.6 (UC-ADM-04) · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-155, DL-156 y DL-157',
+  },
+  // ─── UF-11 de WP-USO-FINAL (DL-169; UF-D12): el segundo factor del profesional, familia MFA ──────────────────────────
+  {
+    id: 'API-MFA-01',
+    metodo: 'get',
+    ruta: '/me/second-factor',
+    resumen:
+      'El segundo factor de la sesión, como lo decide el servidor en este pedido. Una identidad con perfil profesional actúa como profesional solo con el segundo factor verificado en esa sesión: sin él, el PDP, las áreas y las listas donde es el profesional no responden nada de lo profesional, y lo de la persona sigue igual (la app de la persona no lo pide). Estados: NOT_REQUIRED (sin perfil profesional), VERIFIED (vale lo que dura la sesión), REQUIRED (tiene autenticador: falta el código en esta sesión), ENROLLMENT_REQUIRED (sin autenticador: se configura hasta deadline, 10 minutos después de entrar) y RECENT_SIGN_IN_REQUIRED (sin autenticador y el plazo pasó: volver a entrar). recentSignInUntil dice hasta cuándo se puede reemplazar el autenticador o generar códigos sin volver a entrar.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: SegundoFactorDeLaSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '08 §25 · 08 §42, condición 6 · UF-11 y UF-D12 de WP-USO-FINAL · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-02',
+    metodo: 'post',
+    ruta: '/me/second-factor/verification',
+    resumen:
+      'Verificar la sesión con el código del autenticador (TOTP, RFC 6238: 6 dígitos, 30 s, el paso actual y uno de cada lado), como en Administración. Un código ya usado no vale otra vez. Cinco códigos fallidos en la sesión la revocan; diez seguidos en cualquier sesión de la identidad bloquean el autenticador (SECOND_FACTOR_LOCKED) hasta que entra un código de recuperación; diez intentos por identidad cada 15 minutos dan 429. Sin perfil profesional o sin autenticador, INVALID_STATE_TRANSITION.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: VerificarSegundoFactorRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'SECOND_FACTOR_LOCKED', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 (TOTP como línea base) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-05, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-03',
+    metodo: 'post',
+    ruta: '/me/second-factor/recovery-code',
+    resumen:
+      'Verificar la sesión con un código de recuperación, que vale una sola vez (lo marca usado en la misma transacción), desbloquea el autenticador y no lo desactiva. Es el camino de quien perdió el autenticador: entra y lo reemplaza (API-MFA-04 y 05). Los mismos cupos que API-MFA-02.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: UsarCodigoDeRecuperacionRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 (códigos de recuperación de un solo uso) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-06, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-04',
+    metodo: 'post',
+    ruta: '/me/second-factor/enrollment',
+    resumen:
+      'Empezar a configurar el autenticador, sin cuerpo. Sin uno activo, dentro de los 10 minutos de entrar (con la contraseña o con Google): un token robado no alcanza para cargar otro. Para reemplazarlo, con el segundo factor verificado y una entrada reciente (la re-autenticación de 08 §25, la misma con contraseña que con Google). El secreto nuevo queda pendiente, cifrado y atado a esta sesión, y vence a los 10 minutos; la clave y su URI otpauth se devuelven una sola vez. Fuera de esas condiciones, INVALID_STATE_TRANSITION.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: SinCuerpoDelSegundoFactorSchema,
+    requestOpcional: true,
+    exitos: [{ status: 200, schema: ConfiguracionDelAutenticadorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    fuente: '08 §25 (re-autenticación para cambiar el factor) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-07, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-05',
+    metodo: 'post',
+    ruta: '/me/second-factor/enrollment/confirm',
+    resumen:
+      'Confirmar la configuración con un código del autenticador nuevo. En una transacción: el pendiente pasa a activo (el anterior, si había, a reemplazado, y las otras sesiones de la identidad vuelven a pedir el código, sin cerrarse), los códigos de recuperación anteriores dejan de valer y salen diez nuevos, que se muestran una sola vez, y esta sesión queda verificada.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ConfirmarConfiguracionRequestSchema,
+    exitos: [{ status: 200, schema: ConfiguracionDeLaSesionConfirmadaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-08, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-06',
+    metodo: 'post',
+    ruta: '/me/second-factor/recovery-codes',
+    resumen:
+      'Diez códigos de recuperación nuevos, sin cuerpo, con el segundo factor verificado y una entrada reciente. Los anteriores sin usar dejan de valer, y las otras sesiones de la identidad vuelven a pedir el código.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: SinCuerpoDelSegundoFactorSchema,
+    requestOpcional: true,
+    exitos: [{ status: 200, schema: CodigosDeRecuperacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-09, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
   },
 ];
 

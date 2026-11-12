@@ -300,3 +300,54 @@ AUTOMATION           packages/domain/src/ambiente-de-prueba.test.ts («TEST-UF-0
 ENVIRONMENT          `npm test` (dominio y API) y el job de integración de la CI
 EVIDENCE_EXPECTED    La CI verde
 ```
+
+---
+
+## TEST-UF-014 — `/pro` pide el segundo factor: sin él, la sesión no actúa como profesional
+
+```text
+TEST_ID              TEST-UF-014
+TITLE                Una sesión de una identidad con perfil profesional, sin el segundo factor verificado, no lee ni
+                     decide nada como profesional (ni por el PDP, ni por un área, ni por sus listas), y como persona
+                     sigue igual; lo configura dentro de los 10 minutos de entrar, lo verifica con el autenticador o
+                     con un código de recuperación, y lo reemplaza
+LEVEL                Dominio (el estado y la evaluación del PDP), integración (API real con PostgreSQL) y website (la
+                     compuerta de /pro)
+PRIORITY             P0
+SOURCES              UF-11 (WP-USO-FINAL.md §4.1) · UF-D12 (§7) · DL-169 · 08 §25 · 08 §27.2 · 08 §42, condición 6 ·
+                     DL-155 (el segundo factor de Administración)
+PRECONDITIONS        BE_CLAVE_DEL_SEGUNDO_FACTOR configurada (como en test desde #214).
+SYNTHETIC_FIXTURE    Un profesional sintético de Nutrición con una persona vinculada (B2 y A3); el autenticador se
+                     simula con otpauth sobre la clave que devuelve la configuración.
+STEPS                1. Evaluar el estado con y sin perfil profesional, verificado, con autenticador, sin él dentro y
+                        fuera de los 10 minutos; evaluar el PDP con todo a favor salvo el segundo factor.
+                     2. Con una sesión nueva del profesional, sin segundo factor: pedir el tablero de la persona
+                        (API-DSH-03), su cartera (API-CAR-01), el catálogo (API-NUT-13-BUSQUEDA), sus vínculos
+                        (API-REL-05) e invitar (API-INV-01). Como persona: /me (API-ACC-05) y lo que falta (API-ACC-07).
+                     3. Leer el estado (API-MFA-01), configurar (API-MFA-04 y 05) y repetir el paso 2.
+                     4. Otra sesión: el estado; un código que no vale; el código del autenticador (API-MFA-02); otra
+                        sesión con un código de recuperación (API-MFA-03), y el mismo código otra vez.
+                     5. Reemplazar el autenticador desde una sesión reciente verificada (API-MFA-04 y 05) y generar
+                        códigos nuevos (API-MFA-06).
+                     6. En el website: entrar a /pro con cada estado.
+EXPECTED             1 → sin perfil, NO_REQUERIDO; verificado, VERIFICADO; con autenticador, REQUERIDO; sin él,
+                     CONFIGURACION_REQUERIDA hasta los 10 minutos e INICIO_RECIENTE_REQUERIDO después; el PDP deniega
+                     por SITUACION. 2 → API-DSH-03 404; la cartera vacía; el catálogo 403; API-REL-05 sin los vínculos
+                     donde es el profesional; API-INV-01 403; como persona, todo 200 y API-ACC-07 sin pasos nuevos.
+                     3 → ENROLLMENT_REQUIRED con su plazo; al confirmar, diez códigos y VERIFIED; el paso 2 da 200 con
+                     los datos. 4 → REQUIRED; 422 con los intentos que quedan; VERIFIED; con el código de recuperación,
+                     VERIFIED con un código menos, y el mismo código otra vez, 422. 5 → el autenticador nuevo vale y el
+                     viejo no; las otras sesiones vuelven a pedir el código; los códigos viejos dejan de valer. 6 → la
+                     página no se monta hasta VERIFIED; «Cerrar sesión» siempre está.
+NEGATIVE_ASSERTIONS  Ninguna lectura ni decisión profesional corre sin el segundo factor, por ninguna superficie (08 §27.2:
+                     ocultar un botón no es control de acceso). La app de la persona no lo pide: lo que la 0.24 lee como
+                     persona sigue igual. API-ACC-07 no suma un paso (la 0.24 pediría actualizar). Ni la clave ni los
+                     códigos quedan en la auditoría ni en el registro.
+AUTOMATION           packages/domain/src/segundo-factor-del-profesional.test.ts («TEST-UF-014 · …»),
+                     test/integration/segundo-factor-del-profesional.int-spec.ts y, del website,
+                     apps/web/test/segundo-factor-del-profesional.test.mjs. Mutaciones: el estado que deja pasar sin
+                     verificar; el PDP sin la condición → rojo en el dominio; la compuerta que deja pasar un estado que
+                     no conoce → rojo en el website.
+ENVIRONMENT          `npm test` y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde; en /pro, la configuración con una app de códigos (pendiente de prueba manual)
+```

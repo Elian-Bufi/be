@@ -20,6 +20,7 @@ import { AuditoriaService } from '../plataforma/auditoria.service';
 import { esUuid } from '../plataforma/ejecutor';
 import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
+import { puedeActuarComoProfesional } from '../sesion/sesion-de-la-solicitud';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { nombreDeProfesional, nombreDelPar, nombresDeAsesoradosPorPar } from '../vinculo/lectura';
 import { TIPO_API } from './tipos';
@@ -63,8 +64,10 @@ export class NovedadesService {
     const consulta = leerConsultaDeLista(query, {});
     return conReintento(() =>
       this.prisma.$transaction(async (tx) => {
+        // UF-11: sin el segundo factor de la sesión, solo lo que recibe como persona.
+        const comoPersona = await soloComoPersona(tx, actor.identidadId);
         const filas = await tx.novedad.findMany({
-          where: { destinatarioId: actor.identidadId, ...despuesDelCursor(consulta.cursor) },
+          where: { destinatarioId: actor.identidadId, ...comoPersona, ...despuesDelCursor(consulta.cursor) },
           orderBy: [{ momentoDeRegistro: 'desc' }, { id: 'desc' }],
           take: consulta.limit + 1,
           select: SELECCION,
@@ -72,7 +75,7 @@ export class NovedadesService {
         const hayMas = filas.length > consulta.limit;
         const pagina = filas.slice(0, consulta.limit);
         const ultima = pagina[pagina.length - 1];
-        const sinLeer = await tx.novedad.count({ where: { destinatarioId: actor.identidadId, lectura: { is: null } } });
+        const sinLeer = await tx.novedad.count({ where: { destinatarioId: actor.identidadId, ...comoPersona, lectura: { is: null } } });
         return {
           data: await componer(tx, actor.identidadId, pagina),
           page: { limit: consulta.limit, nextCursor: hayMas && ultima ? escribirCursor(ultima.momentoDeRegistro, ultima.id) : null, hasMore: hayMas },
@@ -87,7 +90,7 @@ export class NovedadesService {
     if (!esUuid(newsId)) throw errores.recursoNoEncontrado();
     return conReintento(() =>
       this.prisma.$transaction(async (tx) => {
-        const fila = await tx.novedad.findFirst({ where: { id: newsId.toLowerCase(), destinatarioId: actor.identidadId }, select: SELECCION });
+        const fila = await tx.novedad.findFirst({ where: { id: newsId.toLowerCase(), destinatarioId: actor.identidadId, ...(await soloComoPersona(tx, actor.identidadId)) }, select: SELECCION });
         if (!fila) throw errores.recursoNoEncontrado();
         if (!fila.lectura) {
           // La primera lectura; dos aperturas simultáneas dejan una sola (la clave es la novedad).
@@ -224,6 +227,26 @@ export class NovedadesService {
  * de BE (`source: null`): el profesional y las personas no reciben la identidad del administrador.
  */
 const DE_ADMINISTRACION: ReadonlySet<string> = new Set(['DECISION_ADMINISTRATIVA', 'ACCESO_PROFESIONAL_SUSPENDIDO', 'ACCESO_PROFESIONAL_RESTABLECIDO']);
+
+/**
+ * UF-11 (DL-169; UF-D12): lo que la sesión ve como persona, si no puede actuar como profesional (sin su segundo factor).
+ * Recibe como profesional: una nota de coordinación, una decisión de Administración y lo que originó una persona que
+ * acompaña o acompañó (la misma regla de `componer`). Con el segundo factor, o sin perfil profesional, no filtra nada.
+ */
+async function soloComoPersona(tx: Tx, lectorId: string): Promise<Prisma.NovedadWhereInput> {
+  if (puedeActuarComoProfesional(lectorId)) return {};
+  const asesorados = await tx.$queryRaw<{ id: string }[]>`
+    SELECT v."asesorado_id"::text AS "id" FROM "vinculo" v WHERE v."profesional_id" = ${lectorId}::uuid
+     UNION SELECT s."asesorado_id"::text FROM "solicitud_de_vinculo" s WHERE s."profesional_id" = ${lectorId}::uuid`;
+  return {
+    AND: [
+      { tipo: { notIn: ['NOTA_DE_COORDINACION_RECIBIDA', 'DECISION_ADMINISTRATIVA'] } },
+      // Una novedad sin quien la originó, o de alguien que no es una persona suya, o el aviso a la persona de que su
+      // profesional dejó de operar (o volvió a operar) un área: es de la persona.
+      { OR: [{ fuenteId: null }, { fuenteId: { notIn: asesorados.map((a) => a.id) } }, { tipo: { in: ['ACCESO_PROFESIONAL_SUSPENDIDO', 'ACCESO_PROFESIONAL_RESTABLECIDO'] } }] },
+    ],
+  };
+}
 
 async function componer(tx: Tx, lectorId: string, filas: readonly FilaDeNovedad[]): Promise<Novedad[]> {
   const deAdministracion = await textosDeAdministracion(tx, lectorId, filas.filter((f) => DE_ADMINISTRACION.has(f.tipo)));

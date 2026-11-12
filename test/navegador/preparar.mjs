@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import * as OTPAuth from 'otpauth';
-import { CREDENCIAL, dominio, pedir, ponerNombre, registrar, sesion, vincular } from './api.mjs';
+import { CREDENCIAL, dominio, pedir, ponerNombre, registrar, sesion, verificarSegundoFactor, vincular } from './api.mjs';
 import { baseDeclarada, REPO } from './entorno.mjs';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -211,6 +211,8 @@ export async function datos(estado) {
   for (const [recorrido, r] of Object.entries(RECORRIDOS)) {
     const e = estado[recorrido];
     const pro = await sesion(e.pro.correo);
+    // UF-11 (DL-169): la primera sesión del profesional configura su segundo factor, como al entrar a /pro.
+    await verificarSegundoFactor(e.pro.correo, pro);
     const ase = await sesion(e.ase.correo, 'APK');
     e.ase.nombre = nombreDeLaPersona(recorrido);
     await ponerNombre(ase, e.ase.nombre);

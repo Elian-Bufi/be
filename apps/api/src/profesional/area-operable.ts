@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { Alcance } from '@be/domain';
+import { puedeActuarComoProfesional } from '../sesion/sesion-de-la-solicitud';
 
 type Cliente = Pick<Prisma.TransactionClient, '$queryRaw'>;
 
@@ -12,8 +13,12 @@ type Cliente = Pick<Prisma.TransactionClient, '$queryRaw'>;
  * la transacción de quien llama, como las toma el PDP (`be_bloquear_lo_que_corta`). Una decisión de Administración las toma
  * en modo exclusivo: una operación profesional en curso termina antes de la suspensión o empieza después y la ve; nunca
  * queda en el medio. Fuera de una transacción, el bloqueo dura lo que la sentencia, y la lectura es la del momento.
+ *
+ * UF-11 (DL-169; UF-D12): la sesión del pedido actúa como profesional solo con su segundo factor verificado. Sin él, no
+ * opera ningún área, aunque la base diga que está verificada y habilitada (`sesion-de-la-solicitud.ts`).
  */
 export async function puedeOperarArea(cliente: Cliente, identidadId: string, alcance?: Alcance): Promise<boolean> {
+  if (!puedeActuarComoProfesional(identidadId)) return false;
   const filtro = alcance ? Prisma.sql`AND vp."alcance" = ${alcance}::"Alcance"` : Prisma.empty;
   const filas = await cliente.$queryRaw<{ ok: boolean }[]>`
     SELECT (vp."estado" = 'VERIFICADO' AND h."estado" = 'CONCEDIDA') AS "ok"

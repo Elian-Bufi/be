@@ -372,7 +372,7 @@ test('DL-038 — CON-02 elige la transición según la situación actual', () =>
 
 const base: HechosDeAutorizacion = {
   operacion: { alcance: 'NUTRICION', finalidad: 'ACOMPANAMIENTO_NUTRICIONAL' },
-  actor: { identidadId: 'pn', cuentaOperativa: true, tienePerfilProfesional: true },
+  actor: { identidadId: 'pn', cuentaOperativa: true, tienePerfilProfesional: true, conSegundoFactor: true },
   titular: { identidadId: 'a01', cuentaOperativa: true, a3Vigente: true },
   verificacion: 'VERIFICADO',
   habilitacion: 'CONCEDIDA',
@@ -431,7 +431,7 @@ test('PDP — titular inexistente o no revelable: deniega igual (UC-I02 E05), si
 test('REG-06-53 — ninguna dimensión aislada autoriza: con todo lo demás ausente, cada hecho favorable solo no alcanza', () => {
   const vacio: HechosDeAutorizacion = {
     operacion: base.operacion,
-    actor: { identidadId: 'pn', cuentaOperativa: false, tienePerfilProfesional: false },
+    actor: { identidadId: 'pn', cuentaOperativa: false, tienePerfilProfesional: false, conSegundoFactor: false },
     titular: null,
     verificacion: null,
     habilitacion: null,

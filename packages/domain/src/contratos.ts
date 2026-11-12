@@ -228,6 +228,11 @@ export const CodigoDeError = {
   INCORPORATION_CODE_INVALID: 'INCORPORATION_CODE_INVALID',
   /** La administración no está configurada en este ambiente (falta la clave del segundo factor). */
   ADMINISTRATION_NOT_AVAILABLE: 'ADMINISTRATION_NOT_AVAILABLE',
+  /**
+   * UF-11 (DL-169): el segundo factor del profesional (familia MFA) no está configurado en este ambiente: falta la misma
+   * clave. Sin él, ninguna sesión actúa como profesional.
+   */
+  SECOND_FACTOR_NOT_AVAILABLE: 'SECOND_FACTOR_NOT_AVAILABLE',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

@@ -216,6 +216,8 @@ export const errores = {
     new ErrorDeApi(422, CodigoDeError.INCORPORATION_CODE_INVALID, 'El código de incorporación no es válido, venció o ya se usó.', { attemptsRemaining: restantes }, motivo),
   /** Falta `BE_CLAVE_DEL_SEGUNDO_FACTOR`: sin ella no se protege ningún secreto, y la administración no abre. */
   administracionNoDisponible: () => new ErrorDeApi(503, CodigoDeError.ADMINISTRATION_NOT_AVAILABLE, 'La administración no está configurada en este ambiente.'),
+  /** UF-11 (DL-169): falta `BE_CLAVE_DEL_SEGUNDO_FACTOR`; sin ella, el segundo factor del profesional no se configura. */
+  segundoFactorNoDisponible: () => new ErrorDeApi(503, CodigoDeError.SECOND_FACTOR_NOT_AVAILABLE, 'El segundo factor no está configurado en este ambiente.'),
   /** 09v8 PRO-11: una decisión administrativa sin fundamento. */
   fundamentoRequerido: () => new ErrorDeApi(422, CodigoDeError.RATIONALE_REQUIRED, 'Falta el fundamento de la decisión.'),
   /** La decisión exige el texto para el profesional (observación, rechazo, suspensión, retiro). */

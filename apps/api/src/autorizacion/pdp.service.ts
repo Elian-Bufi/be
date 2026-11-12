@@ -19,6 +19,7 @@ import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi } from '../http/errores';
 import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
+import { puedeActuarComoProfesional } from '../sesion/sesion-de-la-solicitud';
 
 type Cliente = Prisma.TransactionClient | PrismaService;
 
@@ -461,6 +462,8 @@ function aHechos(actorId: string, f: FilaDeHechos): HechosDeAutorizacion {
       identidadId: actorId,
       cuentaOperativa: f.actor_existe && f.actor_estado === 'OPERATIVA',
       tienePerfilProfesional: f.actor_perfil,
+      // UF-11 (DL-169): si la decisión es de la sesión de este actor, con el segundo factor del profesional verificado.
+      conSegundoFactor: puedeActuarComoProfesional(actorId),
     },
     titular: f.titular_id
       ? { identidadId: f.titular_id, cuentaOperativa: f.titular_estado === 'OPERATIVA', a3Vigente: f.a3_vigente }

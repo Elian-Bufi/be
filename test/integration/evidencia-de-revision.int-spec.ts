@@ -16,7 +16,8 @@ import type { INestApplication } from '@nestjs/common';
 import { EvidenciaDeRevisionResponseSchema, RevisionResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
-import { appDePrueba, claveDeIdempotencia, conSesion, tokenDe } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { sesionDeProfesional } from './soporte-segundo-factor';
 import { activar, circuitoConPlanActivo, clavesProhibidas } from './soporte-nutricion';
 import { prepararProfesional, revocarB2, vinculoCompleto } from './soporte-vinculo';
 
@@ -111,7 +112,8 @@ describe('API-NUT-19-EVIDENCIA · la evidencia de una revisión registrada (DL-1
     expect(clavesProhibidas(r)).toEqual([]);
     expect(JSON.stringify(r)).not.toMatch(/"(quantity|consumed|energyKcal|items)":\s*\{/);
     // Volver a entrar: otra sesión del mismo profesional lee lo mismo (está guardado, no armado en el navegador).
-    const otraSesion = await tokenDe(app, e.c.pro.correo, 'WEB');
+    // UF-11 (DL-169): la sesión nueva verifica el segundo factor del profesional, como al volver a entrar a /pro.
+    const otraSesion = await sesionDeProfesional(app, e.c.pro);
     expect(await evidencia(otraSesion, rev.reviewId)).toEqual(r);
   });
 

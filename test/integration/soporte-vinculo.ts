@@ -9,6 +9,7 @@ import { FINALIDAD_DE_ALCANCE, VERSION_VIGENTE, type Alcance, type TipoDePerfilP
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { claveDeIdempotencia, conSesion, correoSintetico, registrarOk, tokenDe } from './soporte-api';
+import { verificarSegundoFactor } from './soporte-segundo-factor';
 
 export interface Parte {
   readonly correo: string;
@@ -22,7 +23,11 @@ export const TIPO_POR_ALCANCE: Readonly<Record<Alcance, TipoDePerfilProfesional>
   ANTROPOMETRIA: 'NO_SANITARIO',
 };
 
-/** Profesional sintético con perfil, alcance VERIFICADO y habilitación CONCEDIDA en cada alcance pedido. */
+/**
+ * Profesional sintético con perfil, alcance VERIFICADO y habilitación CONCEDIDA en cada alcance pedido. Desde UF-11
+ * (DL-169), su sesión configura el segundo factor del profesional, como al entrar a `/pro`: sin él no actúa como
+ * profesional. Otra sesión del mismo profesional se pide con `sesionDeProfesional` (soporte-segundo-factor.ts).
+ */
 export async function prepararProfesional(app: INestApplication, etiqueta: string, alcances: readonly Alcance[]): Promise<Parte> {
   const correo = correoSintetico(`pro-${etiqueta}`);
   const id = await registrarOk(app, correo, 'WEB');
@@ -33,7 +38,9 @@ export async function prepararProfesional(app: INestApplication, etiqueta: strin
       verificacion.prepararProfesional(tx, id, { alcance, tipo: TIPO_POR_ALCANCE[alcances[0]], nombreVisible: `Profesional sintético ${etiqueta}` }, new Date()),
     );
   }
-  return { correo, id, token: await tokenDe(app, correo, 'WEB') };
+  const token = await tokenDe(app, correo, 'WEB');
+  await verificarSegundoFactor(app, id, token);
+  return { correo, id, token };
 }
 
 /** Asesorado sintético; con `a3` otorga el tratamiento de datos de salud por API-CON-06. */

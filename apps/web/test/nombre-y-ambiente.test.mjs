@@ -144,7 +144,9 @@ test('TEST-UF-005 · después de un 409, si lo leído es lo que se quería guard
 
 test('TEST-UF-005 · la compuerta envuelve a /account y a /pro, pregunta API-ACC-07 y no está en /admin', () => {
   for (const layout of ['src/app/account/layout.tsx', 'src/app/pro/layout.tsx']) {
-    assert.match(leer(layout), /<AntesDeSeguir espacio="(cuenta|pro)">\{children\}<\/AntesDeSeguir>/, layout);
+    // UF-11 (DL-169): en /pro la página va, además, adentro del segundo factor del profesional; «Antes de seguir» sigue
+    // envolviendo todo.
+    assert.match(leer(layout), /<AntesDeSeguir espacio="(cuenta|pro)">\s*(\{children\}|<SegundoFactorDelProfesional>\{children\}<\/SegundoFactorDelProfesional>)\s*<\/AntesDeSeguir>/, layout);
   }
   const compuerta = leer('src/components/antes-de-seguir.tsx');
   assert.match(compuerta, /api\.loQueFaltaParaSeguir\(token\)/);

@@ -31,6 +31,8 @@ import {
 } from './contratos-perfil-propio';
 import { DetalleDeCuentaDeGoogleInexistenteSchema, DetalleDeCuentaDeGoogleSchema, RUTAS_DE_ACCESO_GOOGLE, SesionConGoogleResponseSchema } from './contratos-acceso-google';
 import { declaracionDeMayoriaDeEdad } from './mayoria-de-edad';
+import { CodigosDeRecuperacionResponseSchema, ConfiguracionDelAutenticadorResponseSchema, DetalleDeCodigoInvalidoSchema } from './contratos-administracion';
+import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema } from './segundo-factor-del-profesional';
 import {
   CandidatoDeAlimentoResponseSchema,
   CandidatoDeEjercicioResponseSchema,
@@ -388,6 +390,8 @@ export type Resultado<T> =
        * verificado, para proponerlo al crear la cuenta; `null` si no trae uno que se pueda guardar.
        */
       readonly nombreDeGoogle?: string | null;
+      /** Con `SECOND_FACTOR_INVALID` (familia MFA, UF-11): cuántos intentos le quedan a la sesión antes de revocarse. */
+      readonly intentosRestantes?: number;
     }
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
   | { readonly ok: false; readonly tipo: 'RED' };
@@ -465,6 +469,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       // el correo.
       const cuentaInexistente = error.data.error.code === 'GOOGLE_ACCOUNT_NOT_FOUND' ? DetalleDeCuentaDeGoogleInexistenteSchema.safeParse(error.data.error.details) : null;
       const cuentaDeGoogle = CODIGOS_CON_CORREO_DE_GOOGLE.has(error.data.error.code) ? DetalleDeCuentaDeGoogleSchema.safeParse(error.data.error.details) : null;
+      const codigoInvalido = error.data.error.code === 'SECOND_FACTOR_INVALID' ? DetalleDeCodigoInvalidoSchema.safeParse(error.data.error.details) : null;
       const deGoogle = cuentaInexistente?.success
         ? { correoDeGoogle: cuentaInexistente.data.email, nombreDeGoogle: cuentaInexistente.data.name }
         : cuentaDeGoogle?.success
@@ -478,6 +483,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         issues,
         ...(evidenciaVisual?.success ? { evidenciaVisual: evidenciaVisual.data } : {}),
         ...deGoogle,
+        ...(codigoInvalido?.success ? { intentosRestantes: codigoInvalido.data.attemptsRemaining } : {}),
       };
     }
     const fecha = respuesta.headers?.get?.('date');
@@ -618,6 +624,31 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      */
     loQueFaltaParaSeguir(token: string): Promise<Resultado<LoQueFaltaParaSeguirResponse>> {
       return llamar('GET', '/me/pending-steps', { token, esquema: LoQueFaltaParaSeguirResponseSchema });
+    },
+    // ─── UF-11 (DL-169): el segundo factor del profesional, familia MFA ───────────────────────────────
+    /** API-MFA-01: el estado del segundo factor de la sesión. */
+    segundoFactorDeLaSesion(token: string) {
+      return llamar('GET', '/me/second-factor', { token, esquema: SegundoFactorDeLaSesionResponseSchema });
+    },
+    /** API-MFA-02: el código del autenticador. */
+    verificarSegundoFactorDeLaSesion(token: string, codigo: string) {
+      return llamar('POST', '/me/second-factor/verification', { token, cuerpo: { code: codigo }, esquema: SegundoFactorDeLaSesionVerificadoResponseSchema });
+    },
+    /** API-MFA-03: un código de recuperación. */
+    usarCodigoDeRecuperacionDeLaSesion(token: string, codigo: string) {
+      return llamar('POST', '/me/second-factor/recovery-code', { token, cuerpo: { recoveryCode: codigo }, esquema: SegundoFactorDeLaSesionVerificadoResponseSchema });
+    },
+    /** API-MFA-04: empezar a configurar (o a reemplazar) el autenticador. */
+    iniciarConfiguracionDeLaSesion(token: string) {
+      return llamar('POST', '/me/second-factor/enrollment', { token, cuerpo: {}, esquema: ConfiguracionDelAutenticadorResponseSchema });
+    },
+    /** API-MFA-05: confirmar la configuración con un código del autenticador nuevo. */
+    confirmarConfiguracionDeLaSesion(token: string, codigo: string) {
+      return llamar('POST', '/me/second-factor/enrollment/confirm', { token, cuerpo: { code: codigo }, esquema: ConfiguracionDeLaSesionConfirmadaResponseSchema });
+    },
+    /** API-MFA-06: diez códigos de recuperación nuevos. */
+    codigosDeRecuperacionNuevosDeLaSesion(token: string) {
+      return llamar('POST', '/me/second-factor/recovery-codes', { token, cuerpo: {}, esquema: CodigosDeRecuperacionResponseSchema });
     },
     /** API-CON-05 (solo lectura). */
     consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>> {

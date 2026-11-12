@@ -128,6 +128,16 @@ export function MenuDeCuenta() {
               </span>
             </Link>
           ) : null}
+          {/* UF-11 (DL-169): el segundo factor del profesional, en el espacio profesional. */}
+          {conSesion && ruta.startsWith('/pro') && ruta !== '/pro/security' ? (
+            <Link href="/pro/security" className="menu-de-cuenta__opcion">
+              <Icono nombre="persona" />
+              <span>
+                Seguridad de tu acceso
+                <span className="nota">Tu segundo factor y sus códigos</span>
+              </span>
+            </Link>
+          ) : null}
           <fieldset className="menu-de-cuenta__apariencia">
             <legend>Apariencia</legend>
             {TEMAS.map((t) => (

@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { AppModule, OpcionesApp } from './app.module';
 import { esJsonDePlanOReceta, LIMITE_DE_PLANES_Y_RECETAS } from './http/limite-de-cuerpo';
 import { requestId } from './http/request-id';
+import { abrirElContextoDelPedido } from './sesion/sesion-de-la-solicitud';
 
 /**
  * 07 §29: los contratos de WP-02 son JSON chicos; un cuerpo mayor se rechaza antes de parsear. Salvo las diez escrituras
@@ -46,6 +47,9 @@ export async function crearApp(opciones: OpcionesApp): Promise<INestApplication>
   app.useBodyParser('json', { limit: LIMITE_DE_PLANES_Y_RECETAS, type: esJsonDePlanOReceta });
   app.useBodyParser('json', { limit: LIMITE_DE_CUERPO });
   app.useBodyParser('urlencoded', { limit: LIMITE_DE_CUERPO, extended: false });
+  // UF-11 (DL-169): el contexto de cada pedido, donde SesionGuard anota la sesión y el segundo factor del profesional. Va
+  // después de los parsers: su lectura del cuerpo sigue en un evento del stream, que no conserva el contexto.
+  app.use(abrirElContextoDelPedido);
   // 09 §3.1 — prefijo obligatorio; health queda fuera (07 §13.2, DEUDA_LEGAJO DL-004), y la ruta interna de las tareas (DL-133).
   app.setGlobalPrefix('api/v1', {
     exclude: [

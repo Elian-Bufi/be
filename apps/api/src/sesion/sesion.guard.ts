@@ -1,8 +1,10 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { cuentaPermiteOperar, type EstadoOperativoDeCuenta } from '@be/domain';
+import { cuentaPermiteOperar, estadoDelSegundoFactorDelProfesional, type EstadoDelSegundoFactorDelProfesional, type EstadoOperativoDeCuenta } from '@be/domain';
 import type { Request } from 'express';
 import { errores } from '../http/errores';
 import { PrismaService } from '../prisma/prisma.service';
+import { METODO_API } from '../administracion/sesion-administrativa.guard';
+import { anotarLaSesionDelPedido } from './sesion-de-la-solicitud';
 import { extraerBearer, TokensService } from './tokens.service';
 
 /** Actor autenticado. Sale siempre del token verificado + la base, nunca del cliente (07:883-897). */
@@ -11,6 +13,11 @@ export interface ActorAutenticado {
   readonly sesionId: string;
   readonly momentoDeAutenticacion: Date;
   readonly expiraEn: Date;
+  /**
+   * UF-11 (DL-169): el segundo factor del profesional en esta sesión, leído de la base en este pedido. Sin perfil
+   * profesional, NO_REQUERIDO. Lo profesional lo pregunta con `puedeActuarComoProfesional` (sesion-de-la-solicitud.ts).
+   */
+  readonly segundoFactor: EstadoDelSegundoFactorDelProfesional;
 }
 
 export type SolicitudAutenticada = Request & { actor?: ActorAutenticado };
@@ -38,7 +45,16 @@ export class SesionGuard implements CanActivate {
         momentoDeOcurrencia: true,
         versionDeControl: true,
         clase: true,
-        identidad: { select: { estadoOperativoDeCuenta: true, controlDeSesion: { select: { version: true } } } },
+        // UF-11: el segundo factor de esta sesión y lo que lo decide (perfil profesional y autenticador activo).
+        segundoFactor: { select: { verificadoEn: true, metodo: true } },
+        identidad: {
+          select: {
+            estadoOperativoDeCuenta: true,
+            controlDeSesion: { select: { version: true } },
+            perfilProfesional: { select: { id: true } },
+            factoresTotp: { where: { estado: 'ACTIVO' }, select: { id: true } },
+          },
+        },
       },
     });
     if (!sesion || sesion.identidadId !== reclamos.sub) throw errores.sesionInvalida();
@@ -52,12 +68,23 @@ export class SesionGuard implements CanActivate {
     // INV-06-28 / REG-06-23: SUSPENDIDA y CERRADA no operan, aunque la sesión siga marcada ACTIVA.
     if (!cuentaPermiteOperar(sesion.identidad.estadoOperativoDeCuenta as EstadoOperativoDeCuenta)) throw errores.sesionRevocada();
 
+    const segundoFactor = estadoDelSegundoFactorDelProfesional({
+      esProfesional: sesion.identidad.perfilProfesional !== null,
+      inicioDeLaSesion: sesion.momentoDeOcurrencia,
+      verificadoEn: sesion.segundoFactor?.verificadoEn ?? null,
+      metodo: sesion.segundoFactor?.metodo ? METODO_API[sesion.segundoFactor.metodo] : null,
+      tieneAutenticadorActivo: sesion.identidad.factoresTotp.length > 0,
+      ahora: new Date(),
+    });
     req.actor = {
       identidadId: sesion.identidadId,
       sesionId: reclamos.sid,
       momentoDeAutenticacion: sesion.momentoDeOcurrencia,
       expiraEn: sesion.expiraEn,
+      segundoFactor,
     };
+    // UF-11: lo profesional de este pedido se decide con esto (el PDP, las áreas y las listas del profesional).
+    anotarLaSesionDelPedido({ identidadId: sesion.identidadId, sesionId: reclamos.sid, segundoFactor });
     return true;
   }
 }
