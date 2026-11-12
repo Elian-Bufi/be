@@ -360,6 +360,7 @@ import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
 import { RecuperacionPedidaResponseSchema, type RecuperacionPedidaResponse } from './recuperacion-de-acceso';
 import { CanalDeContactoResponseSchema, type CanalDeContactoResponse } from './ayuda-y-contacto';
+import { AceptacionDeVersionResponseSchema, type AceptacionDeVersionResponse, type TextoAAceptar } from './textos-vigentes';
 
 export type Resultado<T> =
   | {
@@ -647,6 +648,13 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      */
     loQueFaltaParaSeguir(token: string): Promise<Resultado<LoQueFaltaParaSeguirResponse>> {
       return llamar('GET', '/me/pending-steps', { token, esquema: LoQueFaltaParaSeguirResponseSchema });
+    },
+    /**
+     * API-ACC-08 (UF-05, DL-169): aceptar la versión vigente de los términos o de la privacidad que la pantalla mostró.
+     * 201 con el acto nuevo, o 200 si ya estaba aceptada; otra versión, TERMS_ o PRIVACY_VERSION_NOT_ACCEPTABLE.
+     */
+    aceptarVersionVigente(token: string, texto: TextoAAceptar, versionId: string): Promise<Resultado<AceptacionDeVersionResponse>> {
+      return llamar('POST', '/me/legal-acceptances', { token, cuerpo: { text: texto, versionId }, esquema: AceptacionDeVersionResponseSchema });
     },
     // ─── UF-11 (DL-169): el segundo factor del profesional, familia MFA ───────────────────────────────
     /** API-MFA-01: el estado del segundo factor de la sesión. */

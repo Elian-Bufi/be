@@ -19,17 +19,22 @@ import {
   CODIGOS_DE_SESION_NO_VALIDA,
   COPY,
   COPY_DEL_NOMBRE,
+  COPY_TEXTOS_VIGENTES,
   ISSUE_DEL_NOMBRE,
   MENSAJE_DE_CAMPO,
   conocePasos,
   nombreVisibleValido,
   normalizarNombreVisible,
   problemaDelNombre,
+  textoDelPaso,
+  versionPublicada,
   type ClienteBe,
   type LoQueFaltaParaSeguirResponse,
   type PasoParaSeguir,
   type Resultado,
+  type TextoAAceptar,
   type ValidationIssue,
+  type VersionDeTexto,
 } from '@be/domain';
 
 // ─── El campo «Nombre y apellido» ────────────────────────────────────────────────────────────────
@@ -67,6 +72,8 @@ export type Compuerta =
   | { readonly tipo: 'sin-saber' }
   /** Falta el nombre: «Antes de seguir», con el nombre que propone la API (el del perfil profesional) o vacío. */
   | { readonly tipo: 'nombre'; readonly propuesta: string | null }
+  /** UF-05: la versión vigente de los términos y de la privacidad, cada una con el texto que esta APK tiene. */
+  | { readonly tipo: 'textos'; readonly pendientes: readonly { readonly texto: TextoAAceptar; readonly version: VersionDeTexto }[] }
   /** Un paso que esta versión no sabe resolver, o una respuesta que no reconoce: hay que actualizar la app. */
   | { readonly tipo: 'actualizar' };
 
@@ -86,8 +93,8 @@ export type MomentoDeLaPregunta = 'al-entrar' | 'de-nuevo' | 'despues-de-guardar
  */
 export const TOPE_DE_LO_QUE_FALTA_MS = 10_000;
 
-/** Los pasos que «Antes de seguir» sabe pedir en esta versión. UF-05 y UF-13 sumarán los suyos, con su pantalla. */
-const PASOS_QUE_PIDE_LA_APK: readonly PasoParaSeguir[] = ['DISPLAY_NAME'];
+/** Los pasos que «Antes de seguir» sabe pedir en esta versión: el nombre y, desde UF-05, los textos. UF-13 sumará el suyo. */
+const PASOS_QUE_PIDE_LA_APK: readonly PasoParaSeguir[] = ['DISPLAY_NAME', 'ACCEPT_TERMS', 'ACKNOWLEDGE_PRIVACY'];
 
 /** Si la app se muestra: no falta nada, o no se pudo saber. */
 export const dejaSeguir = (c: Compuerta): boolean => c.tipo === 'abierta' || c.tipo === 'sin-saber';
@@ -105,7 +112,8 @@ function propuestaDelNombre(sugerencia: string | null): string | null {
 
 /**
  * Lo que muestra la raíz con la respuesta de API-ACC-07, o `null` si no cambia nada.
- * - **Sin pasos,** la app. **Con el nombre pendiente,** «Antes de seguir», con la propuesta de la API.
+ * - **Sin pasos,** la app. **Con el nombre pendiente,** «Antes de seguir», con la propuesta de la API. **Con los textos**
+ *   (UF-05), la versión que pide la API, si esta APK la tiene; si no, actualizar.
  * - **Un paso que esta versión no conoce** (`conocePasos`) o que no sabe pedir, o una respuesta que no reconoce: actualizar
  *   la app. No se saltea.
  * - **La sesión que la API ya no acepta** se cierra.
@@ -119,7 +127,11 @@ export function compuertaConLaRespuesta(momento: MomentoDeLaPregunta, r: Resulta
     const sabePedirlos = conocePasos(pasos) && pasos.every((p) => (PASOS_QUE_PIDE_LA_APK as readonly string[]).includes(p.step));
     if (!sabePedirlos) return { tipo: 'actualizar' };
     const nombre = pasos.find((p) => p.step === 'DISPLAY_NAME');
-    return { tipo: 'nombre', propuesta: propuestaDelNombre(nombre?.suggestion ?? null) };
+    if (nombre) return { tipo: 'nombre', propuesta: propuestaDelNombre(nombre.suggestion) };
+    // UF-05: los textos, con la versión que pide la API; si esta APK no la tiene, hay que actualizar.
+    const pendientes = pasos.map((p) => ({ texto: textoDelPaso(p.step), version: versionPublicada(p.suggestion) }));
+    if (pendientes.every((p): p is { texto: TextoAAceptar; version: VersionDeTexto } => p.texto !== null && p.version !== null)) return { tipo: 'textos', pendientes };
+    return { tipo: 'actualizar' };
   }
   if (r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo)) return sesionPerdida(r.codigo);
   // La API contestó que sí, pero con algo que esta versión no sabe leer (un paso con otra forma): lo resuelve la nueva.
@@ -194,4 +206,38 @@ export async function guardarElNombre(api: ApiDelNombre, token: string, texto: s
   const delCampo = r.tipo === 'API' ? mensajeDelNombreEnLaRespuesta(r.issues) : null;
   if (delCampo) return { tipo: 'campo', mensaje: delCampo };
   return falla(r);
+}
+
+// ─── UF-05 · aceptar la versión vigente de los textos ────────────────────────────────────────────
+
+export type ApiDeLosTextos = Pick<ClienteBe, 'aceptarVersionVigente'>;
+
+export type AlAceptarLosTextos =
+  /** Quedaron aceptados: la raíz vuelve a preguntar qué falta. */
+  | { readonly tipo: 'aceptados' }
+  /** La API dice que la versión ya no es la vigente: se publicó otra después de construir esta APK. Hay que actualizarla. */
+  | { readonly tipo: 'actualizar'; readonly mensaje: string }
+  /** No se pudo: sin respuesta (no se sabe si quedó) u otra falla. Se puede volver a intentar: aceptar dos veces no duplica. */
+  | { readonly tipo: 'aviso'; readonly mensaje: string }
+  | SesionPerdida;
+
+/**
+ * Acepta, de a uno y en orden, los textos que mostró «Antes de seguir», cada uno con la versión que la pantalla mostró
+ * (API-ACC-08; 08 §12.2). Si uno falla, para: los que ya quedaron no se piden de nuevo (API-ACC-07 ya no los lista), y
+ * volver a aceptar uno que quedó responde 200 sin otro acto.
+ */
+export async function aceptarLosTextos(
+  api: ApiDeLosTextos,
+  token: string,
+  pendientes: readonly { readonly texto: TextoAAceptar; readonly version: Pick<VersionDeTexto, 'id'> }[],
+): Promise<AlAceptarLosTextos> {
+  for (const p of pendientes) {
+    const r = await api.aceptarVersionVigente(token, p.texto, p.version.id);
+    if (r.ok) continue;
+    if (r.tipo === 'RED') return { tipo: 'aviso', mensaje: COPY.resultadoIncierto };
+    if (CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo)) return sesionPerdida(r.codigo);
+    if (r.codigo === 'TERMS_VERSION_NOT_ACCEPTABLE' || r.codigo === 'PRIVACY_VERSION_NOT_ACCEPTABLE') return { tipo: 'actualizar', mensaje: COPY_TEXTOS_VIGENTES.cambioDeVersionApk };
+    return { tipo: 'aviso', mensaje: r.codigo === 'RATE_LIMITED' ? COPY.demasiadosIntentos : COPY.noDisponible };
+  }
+  return { tipo: 'aceptados' };
 }

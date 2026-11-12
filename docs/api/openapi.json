@@ -1314,7 +1314,7 @@
     "/me/pending-steps": {
       "get": {
         "operationId": "API-ACC-07",
-        "summary": "Lo que falta para seguir (DL-169, UF-D4): los pasos que la cuenta tiene que completar antes de usar BE, en orden. Hoy, `DISPLAY_NAME` cuando la cuenta no tiene nombre visible (una cuenta anterior a DL-169), con `suggestion`: el nombre profesional de la identidad, si tiene uno. Vacío, la cuenta sigue. El paso viaja como texto: un cliente que no lo conoce pide actualizar la app.",
+        "summary": "Lo que falta para seguir (DL-169, UF-D4): los pasos que la cuenta tiene que completar antes de usar BE, en orden. `DISPLAY_NAME` cuando la cuenta no tiene nombre visible (una cuenta anterior a DL-169), con `suggestion`: el nombre profesional de la identidad, si tiene uno. Desde UF-05, `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY` cuando la última aceptación de los términos o de la información de privacidad no es la versión vigente, con `suggestion`: el id de la vigente, que se acepta con API-ACC-08; esos dos se piden solo a un cliente que declara la capacidad `pending-steps-texts-1` (X-BE-Capabilities). Vacío, la cuenta sigue. El paso viaja como texto: un cliente que no lo conoce pide actualizar la app.",
         "description": "Fuente: WP-USO-FINAL UF-01 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 05 UC-P25 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169. AuthN: SESSION.",
         "security": [
           {
@@ -1408,6 +1408,221 @@
           },
           "401": {
             "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/legal-acceptances": {
+      "post": {
+        "operationId": "API-ACC-08",
+        "summary": "Aceptar la versión vigente de los términos (TERMS, el acto A1) o de la información de privacidad (PRIVACY, A2) desde una cuenta que ya existe (UF-05, UF-D4): lo pide «Antes de seguir» cuando cambia la versión. Registra el acto con la versión que la pantalla mostró, su hash, la finalidad y la evidencia de la superficie (08 §12.2), y queda auditado. La versión tiene que ser la vigente: otra (una anterior, una que todavía no se publicó o una inventada) responde 422 TERMS_VERSION_NOT_ACCEPTABLE o PRIVACY_VERSION_NOT_ACCEPTABLE, que un cliente traduce a recargar o actualizar. Idempotente por naturaleza, sin Idempotency-Key: si la última aceptación de ese texto ya es esa versión, responde 200 con ese acto y no crea otro; si no, 201 con el nuevo.",
+        "description": "Fuente: WP-USO-FINAL UF-05 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 08 §12.2 · 09 §31.2.6 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "enum": [
+                      "TERMS",
+                      "PRIVACY"
+                    ]
+                  },
+                  "versionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "text",
+                  "versionId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "actId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "enum": [
+                            "TERMS",
+                            "PRIVACY"
+                          ]
+                        },
+                        "versionId": {
+                          "type": "string"
+                        },
+                        "acceptedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "actId",
+                        "text",
+                        "versionId",
+                        "acceptedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "actId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "enum": [
+                            "TERMS",
+                            "PRIVACY"
+                          ]
+                        },
+                        "versionId": {
+                          "type": "string"
+                        },
+                        "acceptedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "actId",
+                        "text",
+                        "versionId",
+                        "acceptedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: TERMS_VERSION_NOT_ACCEPTABLE | PRIVACY_VERSION_NOT_ACCEPTABLE",
             "content": {
               "application/json": {
                 "schema": {

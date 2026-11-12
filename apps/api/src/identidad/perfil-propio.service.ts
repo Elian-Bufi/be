@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EditarPerfilPropioRequestSchema, nombreVisibleValido, problemaDelNombre, type LoQueFaltaParaSeguirResponse, type PasoPendiente, type PerfilPropio, type PerfilPropioResponse } from '@be/domain';
+import { AceptarVersionVigenteRequestSchema, EditarPerfilPropioRequestSchema, nombreVisibleValido, problemaDelNombre, type LoQueFaltaParaSeguirResponse, type PasoPendiente, type PerfilPropio, type PerfilPropioResponse } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import type { ContextoDeSolicitud } from '../http/contexto';
@@ -11,6 +11,7 @@ import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { token } from '../vinculo/lectura';
+import { pasosDeTextosPendientes, registrarAceptacionVigente } from './textos-vigentes';
 
 type Tx = Prisma.TransactionClient;
 
@@ -78,7 +79,31 @@ export class PerfilPropioService {
           const profesional = await tx.perfilProfesional.findUnique({ where: { identidadId: actor.identidadId }, select: { nombreVisible: true } });
           steps.push({ step: 'DISPLAY_NAME', suggestion: profesional ? nombreVisibleValido(profesional.nombreVisible) : null });
         }
+        // UF-05: la versión vigente de los términos y de la privacidad, solo para un cliente que sabe mostrarla.
+        steps.push(...(await pasosDeTextosPendientes(tx, actor.identidadId, ctx.capacidades)));
         return { data: { steps } };
+      },
+    });
+  }
+
+  // ─── API-ACC-08 · Aceptar la versión vigente (UF-05, DL-169) ─────────────────────────────────────
+  /**
+   * Registra la aceptación de la versión vigente de los términos o de la información de privacidad que mostró «Antes de
+   * seguir». Sin Idempotency-Key: si ya estaba aceptada esa versión, 200 con ese acto; si no, 201 con el nuevo.
+   */
+  aceptarVersionVigente(actor: ActorAutenticado, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    return this.ejecutor.escribir({
+      operacion: 'API-ACC-08',
+      casoDeUso: CASO_DE_USO,
+      actor,
+      ctx,
+      recursoIntentado: null,
+      esquema: AceptarVersionVigenteRequestSchema,
+      cuerpo,
+      efecto: async (tx, pedido, procedencia) => {
+        const momento = await momentoDeLaBase(tx);
+        const r = await registrarAceptacionVigente(tx, { identidadId: actor.identidadId, texto: pedido.text, versionId: pedido.versionId, ctx, procedencia, momento });
+        return { estadoHttp: r.creado ? 201 : 200, cuerpo: r.respuesta, sujetoId: actor.identidadId, recurso: { tipo: 'ActoRegistrable', id: r.respuesta.data.actId } };
       },
     });
   }

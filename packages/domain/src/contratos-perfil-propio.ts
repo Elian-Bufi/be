@@ -95,11 +95,12 @@ export type EditarPerfilPropioRequest = z.infer<typeof EditarPerfilPropioRequest
 // ─── API-ACC-07 · Lo que falta para seguir (DL-169, UF-D4) ──────────────────────────────────────────
 
 /**
- * Los pasos que una cuenta tiene que completar antes de usar BE, en el orden en que se piden. Hoy, el nombre (UF-01);
- * UF-05 suma la versión nueva de los textos y UF-13, el correo. El paso viaja como texto (como `kind` de la novedad): un
- * paso nuevo no deja sin leer la respuesta a un cliente que no lo conoce, que pide actualizar la app.
+ * Los pasos que una cuenta tiene que completar antes de usar BE, en el orden en que se piden: el nombre (UF-01) y, desde
+ * UF-05, la versión vigente de los términos (ACCEPT_TERMS) y de la información de privacidad (ACKNOWLEDGE_PRIVACY), que se
+ * piden solo a un cliente que declara `CAPACIDAD_TEXTOS_VIGENTES`. UF-13 sumará el correo. El paso viaja como texto (como
+ * `kind` de la novedad): un paso nuevo no deja sin leer la respuesta a un cliente que no lo conoce, que pide actualizar.
  */
-export const PASOS_PARA_SEGUIR = ['DISPLAY_NAME'] as const;
+export const PASOS_PARA_SEGUIR = ['DISPLAY_NAME', 'ACCEPT_TERMS', 'ACKNOWLEDGE_PRIVACY'] as const;
 export type PasoParaSeguir = (typeof PASOS_PARA_SEGUIR)[number];
 
 export const PasoPendienteSchema = z.strictObject({
@@ -107,7 +108,9 @@ export const PasoPendienteSchema = z.strictObject({
   step: z.string().min(1),
   /**
    * Lo que la pantalla puede proponer, o `null`. En `DISPLAY_NAME`, el nombre profesional de la identidad, si tiene
-   * perfil profesional (UF-01, punto 4): la persona lo confirma o lo corrige.
+   * perfil profesional (UF-01, punto 4): la persona lo confirma o lo corrige. En `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY`
+   * (UF-05), el id de la versión vigente que hay que aceptar: el cliente muestra ese texto, y si no lo tiene, pide
+   * actualizar (la forma del paso no cambia, así la lectura congelada de la 0.24 sigue valiendo).
    */
   suggestion: z.string().nullable(),
 });

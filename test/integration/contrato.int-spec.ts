@@ -23,6 +23,7 @@
  * - WP-USO-FINAL (UF-04): API-ADM-14 y 15, la entrada de los profesionales reales y su nombre profesional (DL-169).
  * - WP-USO-FINAL (UF-03): API-ACC-P1-01 y 02 y API-ADM-18, recuperar el acceso y la recuperación asistida (DL-169).
  * - WP-USO-FINAL (UF-07): API-SOP-01, el canal de ayuda y contacto (DL-169).
+ * - WP-USO-FINAL (UF-05): API-ACC-08, aceptar la versión vigente de los términos o de la privacidad (DL-169).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -2274,6 +2275,17 @@ it('TEST-CT (WP-USO-FINAL, UF-03): ACC-P1-01 y 02 y ADM-18 — recuperar el acce
 it('TEST-CT (WP-USO-FINAL, UF-07): SOP-01 — el canal de ayuda y contacto, sin sesión (DL-169)', async () => {
   await request(app.getHttpServer()).get('/api/v1/support/contact').expect(200);
   await request(app.getHttpServer()).get('/api/v1/support/contact?x=1').expect(400); // INVALID_REQUEST
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-05): ACC-08 — aceptar la versión vigente de los términos o de la privacidad (DL-169)', async () => {
+  const persona = correoSintetico('ct-uf05');
+  await registrarOk(app, persona, 'WEB');
+  const yo = conSesion(app, await tokenDe(app, persona, 'WEB'));
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id }).expect(200); // ya aceptada
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: 'terminos-que-no-existe' }).expect(422); // TERMS_VERSION_NOT_ACCEPTABLE
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'PRIVACY', versionId: VERSION_VIGENTE.TERMINOS.id }).expect(422); // PRIVACY_VERSION_NOT_ACCEPTABLE
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await request(app.getHttpServer()).post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id }).expect(401); // AUTHENTICATION_REQUIRED
 });
 
 it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-47): PLN-07 y PLE-05 — descartar un borrador, con éxitos y errores declarados (DL-163 D-21)', async () => {

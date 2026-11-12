@@ -11,15 +11,18 @@ import { beforeEach, describe, expect, test } from '@jest/globals';
 import {
   COPY,
   COPY_DEL_NOMBRE,
+  COPY_TEXTOS_VIGENTES,
   LoQueFaltaParaSeguirResponseSchema,
   MENSAJE_DE_CAMPO,
   PerfilPropioResponseSchema,
+  VERSION_VIGENTE,
   type EditarPerfilPropioRequest,
   type LoQueFaltaParaSeguirResponse,
   type PerfilPropioResponse,
   type Resultado,
 } from '@be/domain';
 import {
+  aceptarLosTextos,
   compuertaAlEmpezar,
   compuertaConLaRespuesta,
   compuertaEnMemoria,
@@ -208,5 +211,43 @@ describe('guardar el nombre en «Antes de seguir» (API-ACC-06 con expectedVersi
     expect(await guardarElNombre(apiDePrueba([perfil(null, 'v0')], [rechazo(429, 'RATE_LIMITED')]).api, 't', 'Ana')).toEqual({ tipo: 'aviso', mensaje: COPY.demasiadosIntentos });
     expect(await guardarElNombre(apiDePrueba([rechazo(401, 'SESSION_EXPIRED')]).api, 't', 'Ana')).toEqual({ tipo: 'sesion-perdida', motivo: 'sesion-vencida' });
     expect(await guardarElNombre(apiDePrueba([perfil(null, 'v0')], [rechazo(401, 'SESSION_REVOKED')]).api, 't', 'Ana')).toEqual({ tipo: 'sesion-perdida', motivo: 'sesion-no-valida' });
+  });
+});
+
+describe('la versión nueva de los textos en «Antes de seguir» (UF-05; TEST-UF-010, del lado de la APK)', () => {
+  const terminos = VERSION_VIGENTE.TERMINOS;
+  const privacidad = VERSION_VIGENTE.PRIVACIDAD_INFO;
+
+  test('los pasos de textos con una versión que esta APK tiene: el paso, con el texto de cada una; y no deja seguir', () => {
+    const c = compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'ACCEPT_TERMS', suggestion: terminos.id }, { step: 'ACKNOWLEDGE_PRIVACY', suggestion: privacidad.id }]));
+    expect(c).toEqual({ tipo: 'textos', pendientes: [{ texto: 'TERMS', version: terminos }, { texto: 'PRIVACY', version: privacidad }] });
+    expect(dejaSeguir({ tipo: 'textos', pendientes: [{ texto: 'TERMS', version: terminos }] })).toBe(false);
+    // El nombre va primero; los textos se piden después de guardarlo.
+    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: null }, { step: 'ACCEPT_TERMS', suggestion: terminos.id }]))).toEqual({ tipo: 'nombre', propuesta: null });
+  });
+
+  test('una versión que esta APK no tiene (publicada después), o sin versión: actualizar la app', () => {
+    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'ACCEPT_TERMS', suggestion: 'terminos-2099-01' }]))).toEqual({ tipo: 'actualizar' });
+    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'ACKNOWLEDGE_PRIVACY', suggestion: null }]))).toEqual({ tipo: 'actualizar' });
+    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'ACCEPT_TERMS', suggestion: terminos.id }, { step: 'ACKNOWLEDGE_PRIVACY', suggestion: 'privacidad-2099-01' }]))).toEqual({ tipo: 'actualizar' });
+  });
+
+  test('aceptar: de a uno, con la versión que se mostró; si la API dice que ya no es la vigente, actualizar', async () => {
+    const pedidos: { texto: string; version: string }[] = [];
+    const conRespuestas = (...respuestas: Resultado<never>[]) => ({
+      async aceptarVersionVigente(_token: string, texto: string, version: string) {
+        pedidos.push({ texto, version });
+        return respuestas.shift() ?? ({ ok: true, datos: { data: { actId: 'a', text: texto, versionId: version, acceptedAt: '2026-11-12T12:00:00.000Z' } } } as never);
+      },
+    });
+    const pendientes = [{ texto: 'TERMS', version: terminos }, { texto: 'PRIVACY', version: privacidad }] as const;
+    expect(await aceptarLosTextos(conRespuestas() as never, 't', pendientes)).toEqual({ tipo: 'aceptados' });
+    expect(pedidos).toEqual([{ texto: 'TERMS', version: terminos.id }, { texto: 'PRIVACY', version: privacidad.id }]);
+    pedidos.length = 0;
+    expect(await aceptarLosTextos(conRespuestas(rechazo(422, 'TERMS_VERSION_NOT_ACCEPTABLE') as never) as never, 't', pendientes)).toEqual({ tipo: 'actualizar', mensaje: COPY_TEXTOS_VIGENTES.cambioDeVersionApk });
+    expect(pedidos).toHaveLength(1);
+    expect(await aceptarLosTextos(conRespuestas(red as never) as never, 't', pendientes)).toEqual({ tipo: 'aviso', mensaje: COPY.resultadoIncierto });
+    expect(await aceptarLosTextos(conRespuestas(rechazo(503, 'SERVICE_UNAVAILABLE') as never) as never, 't', pendientes)).toEqual({ tipo: 'aviso', mensaje: COPY.noDisponible });
+    expect(await aceptarLosTextos(conRespuestas(rechazo(401, 'SESSION_EXPIRED') as never) as never, 't', pendientes)).toEqual({ tipo: 'sesion-perdida', motivo: 'sesion-vencida' });
   });
 });

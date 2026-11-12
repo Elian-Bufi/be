@@ -358,7 +358,7 @@ function TuIdentificador({ identityId }: { identityId: string }) {
  * ofrecerse y el aviso queda visible aunque se cierre el diálogo; «Reintentar» usa la MISMA key (10-B10:430-438), así
  * el servidor devuelve el resultado original aunque la sesión ya se haya revocado por el cierre.
  */
-function CierreDeCuenta({
+export function CierreDeCuenta({
   token,
   alTerminar,
   alPerderSesion,

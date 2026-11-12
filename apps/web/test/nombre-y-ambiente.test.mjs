@@ -114,6 +114,24 @@ test('TEST-UF-005 · un paso que el website no conoce no se saltea, aunque venga
   assert.deepEqual(N.pasoQueSigue(pasos({ step: 'EMAIL_VERIFICATION', suggestion: null }, { step: 'DISPLAY_NAME', suggestion: null })), { tipo: 'desconocido' });
 });
 
+test('TEST-UF-010 · la versión nueva de los textos: el paso trae el texto que el website tiene para esa versión; una que no tiene pide recargar', async () => {
+  const { VERSION_VIGENTE } = await import('@be/domain');
+  const terminos = VERSION_VIGENTE.TERMINOS;
+  const privacidad = VERSION_VIGENTE.PRIVACIDAD_INFO;
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'ACCEPT_TERMS', suggestion: terminos.id }, { step: 'ACKNOWLEDGE_PRIVACY', suggestion: privacidad.id })), {
+    tipo: 'textos',
+    pendientes: [
+      { texto: 'TERMS', version: terminos },
+      { texto: 'PRIVACY', version: privacidad },
+    ],
+  });
+  // Una versión que este website no tiene (publicada después de construirlo): recargar trae la nueva.
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'ACCEPT_TERMS', suggestion: 'terminos-2099-01' })), { tipo: 'desconocido' });
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'ACCEPT_TERMS', suggestion: null })), { tipo: 'desconocido' });
+  // El nombre va primero.
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'DISPLAY_NAME', suggestion: null }, { step: 'ACCEPT_TERMS', suggestion: terminos.id })), { tipo: 'nombre', sugerencia: null });
+});
+
 test('TEST-UF-005 · sin respuesta no se deja pasar: se reintenta; una sesión que ya no sirve vuelve a Iniciar sesión', () => {
   for (const sin of [RED, api(503, 'SERVICE_UNAVAILABLE'), api(500, 'INTERNAL_ERROR'), api(429, 'RATE_LIMITED'), api(200, 'RESPUESTA_NO_RECONOCIDA'), api(404, 'NOT_FOUND')]) {
     assert.deepEqual(N.pasoQueSigue(sin), { tipo: 'sin-respuesta' }, JSON.stringify(sin));

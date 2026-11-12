@@ -7,20 +7,24 @@
  *   profesional, la API propone ese nombre: viene escrito, con su ayuda, y la persona lo confirma o lo corrige. Guardar lee
  *   el perfil propio y lo cambia con su versión (API-ACC-06); si cambió en otro lugar, lo vuelve a leer y lo dice; si el
  *   nombre no sirve, lo dice el campo. Guardado, la raíz vuelve a preguntar qué falta, y con nada, entra.
- * - **Un paso que esta versión no conoce** (o una respuesta que no reconoce): pide actualizar la app.
+ * - **La versión nueva de los términos o de la privacidad** (UF-05): el texto completo de cada una, con su versión y su
+ *   fecha, y un botón que los acepta (API-ACC-08) con la versión que se mostró. Si la API dice que ya no es la vigente, pide
+ *   actualizar la app. Quien no quiere aceptarlos puede cerrar sesión o cerrar su cuenta, ahí mismo.
+ * - **Un paso que esta versión no conoce** (o una versión de un texto que no tiene): pide actualizar la app.
  * - **No se saltea.** El botón Atrás de Android hace lo de una raíz, como en Inicio: deja la app, sin pasar a la pantalla
  *   de abajo, y al volver el paso sigue ahí. «Cerrar sesión» está siempre, como en Sesión y este teléfono.
  * Nada queda plegado: lo que hace falta para decidir está a la vista (GUIA-UX-UI III.7). Los textos son los del dominio
  * (`COPY_DEL_NOMBRE`), iguales en el website.
  */
-import { COPY, COPY_DEL_NOMBRE as N, LARGO_MAXIMO_DEL_NOMBRE_VISIBLE, normalizarNombreVisible } from '@be/domain';
+import { COPY, COPY_DEL_NOMBRE as N, COPY_TEXTOS_VIGENTES as T, LARGO_MAXIMO_DEL_NOMBRE_VISIBLE, normalizarNombreVisible, type TextoAAceptar, type VersionDeTexto } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, BackHandler } from 'react-native';
 import { api } from '../api';
 import { useSesionPerdida, type Salida } from '../navegacion';
-import { guardarElNombre, revisarElNombre, type Compuerta } from '../nombre-obligatorio';
+import { dia } from '../formato';
+import { aceptarLosTextos, guardarElNombre, revisarElNombre, type Compuerta } from '../nombre-obligatorio';
 import { Aviso, Boton, Campo, Parrafo, Seccion, Titulo } from '../ui';
-import { retirarAvisos } from './cuenta';
+import { CierreDeCuenta, retirarAvisos } from './cuenta';
 import { PantallaDeRecuperacion } from './recuperacion';
 
 const NADA = () => undefined;
@@ -36,7 +40,7 @@ export function PantallaAntesDeSeguir({
   token: string;
   identidadId: string;
   salir: (motivo: Salida) => void;
-  /** El nombre quedó guardado: la raíz vuelve a preguntar qué falta (API-ACC-07) y, con nada, entra. */
+  /** El nombre quedó guardado o los textos, aceptados: la raíz vuelve a preguntar qué falta (API-ACC-07) y, con nada, entra. */
   alGuardar: () => Promise<void>;
 }) {
   // No se saltea: Atrás hace lo de una raíz (deja la app) y no llega al de App.tsx, que llevaría a la pantalla de abajo.
@@ -53,8 +57,14 @@ export function PantallaAntesDeSeguir({
     <>
       <Titulo>{N.antesDeSeguir}</Titulo>
       {compuerta.tipo === 'nombre' ? <PasoDelNombre propuesta={compuerta.propuesta} token={token} salir={salir} alGuardar={alGuardar} /> : null}
+      {compuerta.tipo === 'textos' ? <PasoDeLosTextos pendientes={compuerta.pendientes} token={token} salir={salir} alAceptar={alGuardar} /> : null}
       {compuerta.tipo === 'actualizar' ? <Aviso tipo="info" titulo={N.pasoDesconocidoApk} /> : null}
       <CerrarSesion token={token} identidadId={identidadId} salir={salir} />
+      {compuerta.tipo === 'textos' ? (
+        <Seccion titulo={T.cerrarCuenta}>
+          <CierreDeCuentaDelPaso token={token} identidadId={identidadId} salir={salir} />
+        </Seccion>
+      ) : null}
     </>
   );
 }
@@ -125,6 +135,75 @@ function PasoDelNombre({ propuesta, token, salir, alGuardar }: { propuesta: stri
       <Boton texto={guardando ? N.guardando : N.guardarYSeguir} onPress={() => void guardar()} ocupado={guardando} />
     </Seccion>
   );
+}
+
+/**
+ * UF-05 (DL-169): la versión nueva de los términos y de la información de privacidad, cada una con su texto completo, su
+ * versión y su fecha (la que esta APK tiene para el id que pidió la API). Un botón las acepta, de a una y con la versión que
+ * se mostró (API-ACC-08). No se saltea: abajo están «Cerrar sesión» y el cierre de la cuenta.
+ */
+function PasoDeLosTextos({
+  pendientes,
+  token,
+  salir,
+  alAceptar,
+}: {
+  pendientes: readonly { readonly texto: TextoAAceptar; readonly version: VersionDeTexto }[];
+  token: string;
+  salir: (motivo: Salida) => void;
+  alAceptar: () => Promise<void>;
+}) {
+  const [aviso, setAviso] = useState<{ readonly mensaje: string; readonly actualizar: boolean } | null>(null);
+  const [aceptando, setAceptando] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.announceForAccessibility(`${N.antesDeSeguir}. ${pendientes.map((p) => T.titulo[p.texto]).join('. ')}`);
+  }, [pendientes]);
+
+  async function aceptar() {
+    if (aceptando) return;
+    setAviso(null);
+    setAceptando(true);
+    const r = await aceptarLosTextos(api, token, pendientes);
+    switch (r.tipo) {
+      case 'aceptados':
+        await alAceptar();
+        break;
+      case 'actualizar':
+        setAviso({ mensaje: r.mensaje, actualizar: true });
+        break;
+      case 'aviso':
+        setAviso({ mensaje: r.mensaje, actualizar: false });
+        break;
+      case 'sesion-perdida':
+        return salir(r.motivo);
+    }
+    setAceptando(false);
+  }
+
+  return (
+    <>
+      <Parrafo>{T.explicacion}</Parrafo>
+      {pendientes.map((p) => (
+        <Seccion key={p.version.id} titulo={T.titulo[p.texto]}>
+          <Parrafo tenue>{T.version(p.version.id, dia(p.version.vigenteDesde))}</Parrafo>
+          {p.version.texto.split('\n\n').map((parrafo, i) => (
+            <Parrafo key={i}>{parrafo}</Parrafo>
+          ))}
+        </Seccion>
+      ))}
+      {aviso ? <Aviso tipo={aviso.actualizar ? 'info' : 'error'} titulo={aviso.mensaje} /> : null}
+      {aviso?.actualizar ? null : (
+        <Boton texto={aceptando ? T.aceptando : pendientes.map((p) => T.aceptar[p.texto]).join(' y ')} onPress={() => void aceptar()} ocupado={aceptando} />
+      )}
+    </>
+  );
+}
+
+/** El cierre de la cuenta de Cuenta, para quien no quiere aceptar la versión nueva (UF-05). */
+function CierreDeCuentaDelPaso({ token, identidadId, salir }: { token: string; identidadId: string; salir: (motivo: Salida) => void }) {
+  const sesionPerdida = useSesionPerdida(salir);
+  return <CierreDeCuenta token={token} identidadId={identidadId} salir={salir} sesionPerdida={sesionPerdida} />;
 }
 
 /**

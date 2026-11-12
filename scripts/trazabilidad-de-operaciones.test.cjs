@@ -58,9 +58,10 @@ const IDS_DEL_09_FUERA_DEL_INVENTARIO = { 'API-RGT-01': 'DL-169', 'API-RGT-02': 
 /**
  * Los IDs nuevos dentro de una familia del 09 que el 09 no usa, cada uno con la DL que lo declara. El 09 tiene API-ACC-01
  * a 06 y las P1; DL-169 (WP-USO-FINAL, UF-D4, ratificada por Dirección el 2026-11-11) suma API-ACC-07, «Lo que falta para
- * seguir». La guardia exige además que el 09 no tenga ese ID: si lo usara, serían dos operaciones con el mismo nombre.
+ * seguir», y API-ACC-08, «Aceptar la versión vigente» de los términos o de la privacidad (UF-05). La guardia exige además
+ * que el 09 no tenga ese ID: si lo usara, serían dos operaciones con el mismo nombre.
  */
-const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169' };
+const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169', 'API-ACC-08': 'DL-169' };
 
 const normalizar = (ruta) => ruta.replace(/^\/api\/v1/, '').replace(/\?.*$/, '').replace(/\{[^}]+\}/g, '{}').replace(/\/$/, '');
 

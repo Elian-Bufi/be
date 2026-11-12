@@ -33,6 +33,7 @@ import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSche
 import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
 import { CompletarRecuperacionRequestSchema, EmitirRecuperacionAsistidaRequestSchema, PedirRecuperacionRequestSchema, RecuperacionAsistidaResponseSchema, RecuperacionPedidaResponseSchema } from './recuperacion-de-acceso';
 import { CanalDeContactoResponseSchema } from './ayuda-y-contacto';
+import { AceptacionDeVersionResponseSchema, AceptarVersionVigenteRequestSchema } from './textos-vigentes';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -538,12 +539,28 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/pending-steps',
     resumen:
-      'Lo que falta para seguir (DL-169, UF-D4): los pasos que la cuenta tiene que completar antes de usar BE, en orden. Hoy, `DISPLAY_NAME` cuando la cuenta no tiene nombre visible (una cuenta anterior a DL-169), con `suggestion`: el nombre profesional de la identidad, si tiene uno. Vacío, la cuenta sigue. El paso viaja como texto: un cliente que no lo conoce pide actualizar la app.',
+      'Lo que falta para seguir (DL-169, UF-D4): los pasos que la cuenta tiene que completar antes de usar BE, en orden. `DISPLAY_NAME` cuando la cuenta no tiene nombre visible (una cuenta anterior a DL-169), con `suggestion`: el nombre profesional de la identidad, si tiene uno. Desde UF-05, `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY` cuando la última aceptación de los términos o de la información de privacidad no es la versión vigente, con `suggestion`: el id de la vigente, que se acepta con API-ACC-08; esos dos se piden solo a un cliente que declara la capacidad `pending-steps-texts-1` (X-BE-Capabilities). Vacío, la cuenta sigue. El paso viaja como texto: un cliente que no lo conoce pide actualizar la app.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: LoQueFaltaParaSeguirResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: 'WP-USO-FINAL UF-01 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 05 UC-P25 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ACC-08',
+    metodo: 'post',
+    ruta: '/me/legal-acceptances',
+    resumen:
+      'Aceptar la versión vigente de los términos (TERMS, el acto A1) o de la información de privacidad (PRIVACY, A2) desde una cuenta que ya existe (UF-05, UF-D4): lo pide «Antes de seguir» cuando cambia la versión. Registra el acto con la versión que la pantalla mostró, su hash, la finalidad y la evidencia de la superficie (08 §12.2), y queda auditado. La versión tiene que ser la vigente: otra (una anterior, una que todavía no se publicó o una inventada) responde 422 TERMS_VERSION_NOT_ACCEPTABLE o PRIVACY_VERSION_NOT_ACCEPTABLE, que un cliente traduce a recargar o actualizar. Idempotente por naturaleza, sin Idempotency-Key: si la última aceptación de ese texto ya es esa versión, responde 200 con ese acto y no crea otro; si no, 201 con el nuevo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: AceptarVersionVigenteRequestSchema,
+    exitos: [
+      { status: 201, schema: AceptacionDeVersionResponseSchema },
+      { status: 200, schema: AceptacionDeVersionResponseSchema },
+    ],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE'] },
+    fuente: 'WP-USO-FINAL UF-05 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 08 §12.2 · 09 §31.2.6 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
   },
   {
     id: 'API-ACC-P1-03',

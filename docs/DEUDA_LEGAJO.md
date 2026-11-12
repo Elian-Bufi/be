@@ -7535,3 +7535,10 @@ ratificar (§13.5 y §13.6 del paquete):
 - **UF-07:** el canal de ayuda y contacto sale de la configuración de la API (`BE_CONTACTO_SOPORTE` y
   `BE_CONTACTO_PRIVACIDAD`, que define Dirección) y lo publica API-SOP-01, sin sesión. Está en el pie y en la cuenta del
   website y en Perfil de la app (APK nueva); ninguna dirección real queda escrita en el código.
+- **UF-05:** el mecanismo de los textos de uso real. Las diez versiones nuevas (términos, privacidad, datos de salud,
+  cierre, B2 sanitario y no sanitario, evidencia visual y lo que se comparte entre áreas) están escritas **sin publicar**
+  (`packages/domain/src/textos-sin-publicar.ts`): no dicen «demostración», suceden a la vigente de su tipo con su hash y no
+  se pueden publicar sin la validación jurídica (condición 1 del gate) ni con datos «[A COMPLETAR …]». Publicadas,
+  «Antes de seguir» pide los términos y la privacidad nuevos a quien aceptó los anteriores (API-ACC-07, solo a un cliente
+  que declara la capacidad `pending-steps-texts-1`, así la 0.24 no los recibe) y API-ACC-08 registra el acto con la versión
+  que la pantalla mostró. Pide una APK nueva.

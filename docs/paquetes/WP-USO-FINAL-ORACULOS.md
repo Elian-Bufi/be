@@ -576,3 +576,61 @@ ENVIRONMENT          `npm test` y el job de integración de la CI
 EVIDENCE_EXPECTED    La CI verde; con las direcciones cargadas en Render, «Ayuda y contacto» en el website y en la app
                      (pendiente: las direcciones las define Dirección)
 ```
+
+---
+
+## TEST-UF-010 — La versión nueva de los textos no dice «demostración», queda sin publicar y, publicada, se pide en «Antes de seguir»
+
+```text
+TEST_ID              TEST-UF-010
+TITLE                Las versiones nuevas de los diez textos de uso real (términos, privacidad, datos de salud, B2
+                     sanitario y no sanitario, cierre, evidencia visual y lo que se comparte entre áreas) no dicen
+                     «demostración», suceden a la vigente de su tipo con su hash y quedan sin publicar mientras falte la
+                     validación jurídica; publicadas, ningún texto vigente dice «demostración», API-ACC-07 pide a quien
+                     aceptó la anterior los términos y la privacidad nuevos (solo a un cliente que los sabe mostrar) y
+                     API-ACC-08 registra el acto con la versión que la pantalla mostró
+LEVEL                Dominio (los textos, la regla de publicación y qué pasos faltan), integración (API real con
+                     PostgreSQL; la publicación simulada dentro de una transacción que se revierte), website y APK
+PRIORITY             P0
+SOURCES              UF-05 (WP-USO-FINAL.md §4.1) · §13.2 («la versión nueva queda sin publicar hasta esa validación») ·
+                     §13.3 (API-ACC-07 no emite un paso nuevo hasta que haya una APK que lo entienda) · UF-D4 · DL-169 ·
+                     08 §12.2 (versión mostrada = versión aceptada) · 08 §42, condición 1 · 09 §31.2.6 (una versión nueva
+                     no hereda aceptaciones)
+PRECONDITIONS        El catálogo vigente (las versiones de demostración) y las diez versiones nuevas sin publicar.
+SYNTHETIC_FIXTURE    Personas sintéticas (`@example.invalid`); la publicación se simula insertando dos versiones nuevas en
+                     una transacción que se revierte, así el catálogo de la base sigue igual al de @be/domain.
+STEPS                1. Recorrer las versiones sin publicar: el tipo, a quién reemplazan, el hash y el texto.
+                     2. Preguntar qué falta para publicar cada una.
+                     3. Simular la publicación de todas sobre el catálogo vigente y leer los textos vigentes.
+                     4. Calcular los pasos de una cuenta que aceptó la versión vigente, una que aceptó la anterior y una
+                        sin aceptación, con y sin la capacidad del cliente.
+                     5. Con la API: API-ACC-07 de una cuenta nueva (con la capacidad) y API-ACC-08 con la vigente, con
+                        otra versión y con un campo de más.
+                     6. En una transacción que se revierte: publicar los términos y la privacidad nuevos, pedir los pasos
+                        de una cuenta que aceptó los anteriores, aceptar cada uno y volver a pedir los pasos.
+EXPECTED             1 → ninguna dice «demostración»; cada una reemplaza a la vigente de su tipo y su hash es el SHA-256 de
+                     su texto. 2 → a todas les falta la validación jurídica (y los datos marcados «[A COMPLETAR …]»): no
+                     se pueden publicar. 3 → ningún texto vigente dice «demostración». 4 → con la capacidad, la vigente no
+                     pide nada; la anterior o ninguna piden ACCEPT_TERMS o ACKNOWLEDGE_PRIVACY con el id de la versión
+                     vigente en `suggestion`; sin la capacidad, ningún paso de textos. 5 → `steps` vacío; con la vigente,
+                     200 sin un acto nuevo; con otra, 422 TERMS_VERSION_NOT_ACCEPTABLE o PRIVACY_VERSION_NOT_ACCEPTABLE;
+                     un campo de más, 400. 6 → los dos pasos; aceptar los términos crea su acto con la versión y el hash
+                     nuevos y deja solo la privacidad; aceptar la privacidad deja la lista vacía; aceptar otra vez no
+                     duplica. Revertida la transacción, las versiones nuevas no quedan en la base.
+NEGATIVE_ASSERTIONS  La 0.24 (sin la capacidad) nunca recibe un paso de textos: su lectura congelada de API-ACC-07 sigue
+                     igual. Una versión nueva no hereda la aceptación de la anterior. Un texto sin publicar no está en la
+                     base ni en el catálogo de @be/domain, y API-ACC-08 no lo acepta.
+AUTOMATION           packages/domain/src/textos-de-uso-real.test.ts («TEST-UF-010 · …»),
+                     test/integration/textos-de-uso-real.int-spec.ts, la prueba de contrato,
+                     apps/mobile/src/nombre-obligatorio.test.ts y las lecturas congeladas de la 0.24. Mutaciones: la regla
+                     que da por aceptada cualquier versión del tipo → rojo en el dominio; publicar con la validación
+                     jurídica pendiente → rojo en el dominio.
+ENVIRONMENT          `npm test` y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde; los textos validados por la asesoría (condición 1 del gate, pendiente) y, publicados,
+                     «Antes de seguir» en el teléfono y en el website (pendiente de prueba manual)
+```
+
+**Oráculo existente que cambia con UF-05:** TEST-UF-005 fijaba la lista de pasos de API-ACC-07 en `['DISPLAY_NAME']`
+(`contratos-perfil-propio.test.ts`). Con UF-05 la lista suma `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY`, y la prueba lleva una
+nota que lo explica. Lo demás de TEST-UF-005 no cambia: una cuenta sin nombre ve el nombre primero, y la 0.24 no recibe los
+pasos de textos porque no declara la capacidad.

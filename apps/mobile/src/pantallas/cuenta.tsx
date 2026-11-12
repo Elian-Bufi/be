@@ -175,7 +175,7 @@ function TuIdentificador({ id }: { id: string }) {
  * conserva, «Cancelar» deja de ofrecerse y el aviso queda en la sección aunque se cierre el modal; «Reintentar» usa la
  * MISMA key (10-B10:430-438), así el servidor devuelve el resultado original aunque la sesión ya esté revocada.
  */
-function CierreDeCuenta({
+export function CierreDeCuenta({
   token,
   identidadId,
   salir,
