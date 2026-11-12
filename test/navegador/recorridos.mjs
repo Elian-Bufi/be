@@ -441,6 +441,8 @@ async function descartar({ p, d, salida }) {
   await clic(p, 'dialog[open] .boton--peligro', D.confirmar(1));
   await esperarTexto(p, D.descartada(null));
   await elemento(p, '[data-crear-version]');
+  // El foco va a «Crear una nueva versión»: el «⋯» que abrió el cuadro ya no está (revisión adversaria de la etapa 1).
+  await p.waitForFunction(() => document.activeElement?.hasAttribute('data-crear-version'), { timeout: ESPERA, polling: 100 });
   await elemento(p, '[data-empezar-desde-plantilla]');
   assert.equal(await p.$('.editor-del-plan'), null, 'ya no hay versión en preparación');
   await captura(p, salida, 'descartar-hecho-1440');

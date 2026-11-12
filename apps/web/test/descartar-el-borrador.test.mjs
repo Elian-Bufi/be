@@ -84,7 +84,7 @@ test('TEST-EDP-002 · los dos editores: el «⋯», el cuadro, la misma clave en
   for (const ruta of ['app/pro/advisees/training/plan.tsx', 'app/pro/advisees/nutrition/plan.tsx']) {
     const fuente = leer(ruta);
     assert.match(fuente, /numero=\{numeroDelBorrador\(historial\)\}/, ruta);
-    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n\s*setAviso\(porOtraPestana \? \{ tipo: 'error', texto: porOtraPestana \} : \{ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION\.descartada\(/, ruta);
+    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n\s*setFocoTrasDescartar\(true\);\n\s*setAviso\(porOtraPestana \? \{ tipo: 'error', texto: porOtraPestana \} : \{ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION\.descartada\(/, ruta);
   }
   // La vigente (`PlanActivo`) nunca ofrece descartar.
   const plan = leer('app/pro/advisees/training/plan.tsx');
@@ -135,5 +135,15 @@ test('TEST-EDP-002 · el cuadro dice la fecha en prosa: «vigente desde el marte
   assert.equal(D.cuadroDelDescarte({ numero: 6, vigente, sinGuardar: false }).parrafos[0], 'Salió de la versión 5, vigente desde el martes 10 de noviembre. Se borra lo que armaste en esta versión.');
   for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
     assert.match(leer(ruta), /vigente=\{vigente \? \{ numero: vigente\.numero, desde: diaEnUnaFrase\(vigente\.desde\) \} : null\}/, ruta);
+  }
+});
+
+test('TEST-EDP-002 · después de descartar, el foco va a «Crear una nueva versión»: el «⋯» que abrió el cuadro ya no está', () => {
+  // Revisión adversaria de la etapa 1: el cuadro devolvía el foco al «⋯», pero volver a leer el plan desmontaba el editor
+  // con ese botón adentro, y el foco caía al principio de la página.
+  for (const ruta of ['app/pro/advisees/training/plan.tsx', 'app/pro/advisees/nutrition/plan.tsx']) {
+    const fuente = leer(ruta);
+    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n\s*setFocoTrasDescartar\(true\);/, ruta);
+    assert.match(fuente, /if \(!focoTrasDescartar \|\| !r\) return;\n\s*\(document\.querySelector<HTMLElement>\('\[data-crear-version\]'\) \?\? document\.querySelector<HTMLElement>\('\[data-empezar-desde-plantilla\]'\)\)\?\.focus\(\);/, ruta);
   }
 });

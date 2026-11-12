@@ -80,6 +80,15 @@ export function VistaDePlan() {
   // Qué lectura falló, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
   const [queFallo, setQueFallo] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  // ED-01: después de descartar, el «⋯» que abrió el cuadro ya no existe (volver a leer desmonta el editor). El foco va a
+  // «Crear una nueva versión» (o a «Empezar desde una plantilla») apenas se vuelve a leer, para no perderse al principio
+  // de la página.
+  const [focoTrasDescartar, setFocoTrasDescartar] = useState(false);
+  useEffect(() => {
+    if (!focoTrasDescartar || !r) return;
+    (document.querySelector<HTMLElement>('[data-crear-version]') ?? document.querySelector<HTMLElement>('[data-empezar-desde-plantilla]'))?.focus();
+    setFocoTrasDescartar(false);
+  }, [focoTrasDescartar, r]);
   const [creando, setCreando] = useState(false);
   // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108).
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -277,6 +286,7 @@ export function VistaDePlan() {
                       }}
                       // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
                       onDescartado={(porOtraPestana) => {
+                        setFocoTrasDescartar(true);
                         setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
                         ir({ version: null, dia: null, comidas: null });
                         void cargar();
