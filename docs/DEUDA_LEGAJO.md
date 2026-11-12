@@ -7481,3 +7481,10 @@ borrador y **sin integrar** (el detalle, las decisiones de implementación UF-T 
   API-ACC-07), en la web y en la APK, con «Antes de seguir» para las cuentas anteriores (TEST-UF-001 a 005).
 - **UF-08:** los avisos de prueba dependen del ambiente y se apagan en `test` con `BE_AVISOS_DE_PRUEBA=no`, que Dirección
   carga en Render cuando quiera (TEST-UF-012).
+
+**La numeración de las APK (2026-11-11).** Dirección decidió:
+- **la 0.24** lleva el nombre obligatorio, es la descarga del website («latest») y sale **sin los avisos de prueba**.
+  Por eso el perfil `test` de `apps/mobile/eas.json` lleva `BE_AVISOS_DE_PRUEBA=no`, y toda APK de `test` sale
+  sin ellos;
+- **la muestra con vidrio** de WP-APP-VUELTA-2 sale después como **0.25**, prerelease y solo para Dirección, construida
+  sobre `main` con este paquete integrado, así que ya trae el nombre obligatorio.

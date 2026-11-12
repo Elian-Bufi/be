@@ -612,13 +612,14 @@ entra en esta etapa.
 
 ### 12.4 Lo que tiene que hacer o decidir Dirección
 
-- **Nada en Render para integrar.** El PR no toca `render.yaml` ni pide variables nuevas para funcionar: sin ellas, `test`
-  sigue mostrando los avisos de prueba, como hoy.
+- **Nada en Render para integrar.** El PR no toca `render.yaml` ni pide variables nuevas para funcionar: sin ellas, el
+  website de `test` sigue mostrando los avisos de prueba, como hoy.
 - **Para apagar los avisos de prueba en `test` (UF-08):**
   - **el website:** en Render, be-web → Environment → agregar `BE_AVISOS_DE_PRUEBA` con el valor `no` → «Save, rebuild,
     and deploy»;
-  - **la APK:** el perfil `test` de `apps/mobile/eas.json` con `"BE_AVISOS_DE_PRUEBA": "no"`, en la rama de la candidata
-    o en `main`. Sin eso, la APK de `test` los muestra.
+  - **la APK:** ya está. Dirección decidió el 2026-11-11 que la 0.24 salga sin los avisos de prueba, y desde este PR el
+    perfil `test` de `apps/mobile/eas.json` lleva `"BE_AVISOS_DE_PRUEBA": "no"` (`construir-aab.mjs` le pasa al build
+    todo el entorno del perfil). Toda APK de `test` sale sin ellos.
 - **Para producción (UF-10, cuando exista):** be-web con `BE_AMBIENTE=production` (sin ella mostraría los avisos) y la
   API con `APP_ENV=production`, como ya está previsto.
 - **zod de Expo (DL-114):** no hay nada que renovar. La CLI de Expo 57.0.33 ya no lo pide. Si la candidata 0.24 no se
@@ -630,8 +631,10 @@ entra en esta etapa.
 - La CI en verde del PR y la integración, con el sí de Dirección.
 - **La APK 0.24.0-candidata.1,** que pide el nombre: se construye después de integrar y desplegar, porque llama a
   API-ACC-07 al entrar (con la API de antes, no podría seguir). Desde ese despliegue, la 0.23 ya no crea cuentas (pide
-  actualizar) y su paso de Google muestra un error general; lo que ya existe sigue andando. Se publica como «latest» y
-  se congela lo que lee (UF-00: reemplaza a la 0.23.0-candidata.2 en `VIGENTES`).
+  actualizar) y su paso de Google muestra un error general; lo que ya existe sigue andando. Se publica como «latest»,
+  sin los avisos de prueba (§12.4), y se congela lo que lee (UF-00: reemplaza a la 0.23.0-candidata.2 en `VIGENTES`). La
+  numeración la decidió Dirección el 2026-11-11: la muestra con vidrio de WP-APP-VUELTA-2 sale después, como 0.25,
+  prerelease y solo para Dirección, construida sobre `main` con este paquete integrado.
 - **En el teléfono:** crear una cuenta con correo y con Google (el nombre propuesto), entrar con una cuenta anterior sin
-  nombre («Antes de seguir»), cambiar el nombre y comprobar que no se puede vaciar, y ver la app con y sin los avisos de
-  prueba. Que la APK se haya construido con la CLI nueva de Expo es, además, la prueba de UF-12 en la app.
+  nombre («Antes de seguir»), cambiar el nombre y comprobar que no se puede vaciar, y ver que la app sale sin los avisos
+  de prueba (la regla, con y sin el interruptor, la cubre TEST-UF-012). Que la APK se haya construido con la CLI nueva de Expo es, además, la prueba de UF-12 en la app.
