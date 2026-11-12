@@ -777,6 +777,19 @@ test('TEST-AV2-006 · la cabecera: transparente, una fila de 48 dp, el logo con 
   assert.match(app, /conLogo=\{raiz\}/, 'el logo, solo en las cinco raíces');
 });
 
+// ─── TEST-AV2-012 · «Cómo se lee», alineado (AV2-11) ────────────────────────────────────────────
+
+test('TEST-AV2-012 · el título de la ayuda no lleva «flex»: el ancho lo toma la columna, y el (?) queda centrado', () => {
+  const ui = sinComentarios(leer('ui.tsx'));
+  const titulo = /\n  tituloDeAyuda: \{([^}]*)\}/.exec(ui);
+  assert.ok(titulo, 'el estilo existe');
+  assert.doesNotMatch(titulo[1], /\bflex(Grow|Shrink|Basis)?\s*:/, 'tituloDeAyuda no se estira');
+  // Los títulos del desplegable tampoco: la columna que los contiene es la que lleva el ancho.
+  assert.doesNotMatch(/\n  tituloDeDesplegable: \{([^}]*)\}/.exec(ui)[1], /\bflex(Grow)?\s*:/);
+  assert.match(ui, /\n  textoDeDesplegable: \{ flex: 1 \},/);
+  assert.match(ui, /\n  cabezaDeAyuda: \{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8 \},/, 'la fila centra el título y el (?)');
+});
+
 // ─── TEST-AV2-016 · las fechas en tres formas y la hora en 24 h (AV2-15) ────────────────────────
 
 const formato = await import('../apps/mobile/src/formato.ts');

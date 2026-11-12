@@ -810,7 +810,9 @@ export const estilos = estilosPorTema((COLOR) => ({
   insigniaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ayuda: { marginTop: 4 },
   cabezaDeAyuda: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  tituloDeAyuda: { flex: 1, fontSize: 15, fontWeight: '700', color: COLOR.acento },
+  // Sin `flex` (DL-170, AV2-11): el ancho ya lo toma `textoDeDesplegable`. Con `flex: 1` dentro de esa columna, y las
+  // erratas de Yoga de React Native 0.86, el texto se estiraba al alto de la fila (48 dp) y quedaba pegado arriba del (?).
+  tituloDeAyuda: { fontSize: 15, fontWeight: '700', color: COLOR.acento },
   cuerpoDeAyuda: { borderLeftWidth: 3, borderLeftColor: COLOR.borde, paddingLeft: 10, marginBottom: 6 },
   desplegable: { borderTopWidth: 1, borderTopColor: COLOR.borde, marginTop: 8 },
   desplegableConVidrio: { borderTopColor: COLOR.vidrioFilo },
