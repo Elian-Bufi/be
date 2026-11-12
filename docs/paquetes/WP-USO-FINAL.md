@@ -1,8 +1,9 @@
 # WP-USO-FINAL — lo que la demostración no necesitaba y el uso real sí
 
 > **Estado:** DECLARADO el 2026-11-11. Ese mismo día Dirección **ratificó UF-D1 a UF-D13** y pidió la **etapa 1**: lo que
-> bloquea y tiene que entrar antes de congelar la app el 25/11. La etapa 1 (UF-12, UF-00, UF-01 y UF-08) está
-> **programada en el PR #253, sin integrar** (§12). Las demás partes siguen declaradas, sin programar.
+> bloquea y tiene que entrar antes de congelar la app el 25/11. La etapa 1 (UF-12, UF-00, UF-01 y UF-08) quedó
+> **integrada** el 2026-11-12 con #253 (§12). La **etapa 2**, el resto del P0 salvo UF-10, quedó declarada ese mismo día
+> (§13) y se programa en un PR en borrador, sin integrar.
 >
 > **Encargo** (Dirección, 2026-11-11):
 > - «En la creación de la cuenta ya tiene que ponerle el nombre. Empecemos a completar esas secciones que por ser datos
@@ -643,3 +644,71 @@ entra en esta etapa.
   nombre («Antes de seguir»), cambiar el nombre y comprobar que no se puede vaciar, y ver que la app sale sin los avisos
   de prueba (la regla, con y sin el interruptor, la cubre TEST-UF-012). Que la APK se haya construido con la CLI nueva
   de Expo es, además, la prueba de UF-12 en la app.
+
+## 13. La etapa 2 (declarada el 2026-11-12)
+
+Dirección pidió todo el P0 antes del 25/11, cuando se congela la app. El 2026-11-12 delegó las decisiones técnicas:
+«Okey a tus recomendaciones, cualquier cosa lo revisamos, pero no podemos frenar». Por eso las decisiones de la
+implementación nuevas (UF-T15 en adelante) se toman con la recomendación y quedan **a ratificar por Dirección**, cada
+una con su alternativa. Integrar a `main` sigue siendo de Dirección: la etapa va en un PR en borrador.
+
+### 13.1 Las partes y el orden
+
+La etapa 2 son las ocho partes P0 que quedan, sin UF-10, que es de Dirección:
+
+| Orden | Parte | Toca | APK nueva | Lo que espera de Dirección |
+|---|---|---|---|---|
+| 1 | UF-09 · El catálogo sin demostración en producción | API | no | nada |
+| 2 | UF-11 · El segundo factor del profesional | API, base, web | no | nada |
+| 3 | UF-04 · La entrada de los profesionales reales (API-ADM-14 y 15) | API, base, web (`/admin`) | no | nada |
+| 4 | UF-06 · Los derechos de la persona | API, base, web, app | sí | los plazos, con la asesoría |
+| 5 | UF-07 · Ayuda y contacto | web, app, textos | sí | las direcciones |
+| 6 | UF-03 · Recuperar el acceso | API, web, app | sí | el proveedor de correo |
+| 7 | UF-05 · Los textos legales de verdad | dominio, API, web, app | sí | el texto validado |
+| 8 | UF-02 · El gate del 08 §42, condición por condición | documento | no | lo que no es código (§9) |
+
+Por qué este orden:
+- **Primero, lo que no espera a nadie y no pide una APK nueva** (UF-09, UF-11 y UF-04).
+- **UF-11 antes que UF-04:** un profesional real que entra por Administración llega a `/pro` con el segundo factor desde
+  el primer día.
+- **UF-06 es la parte más grande de la app:** va primero entre las que piden una APK nueva, para llegar a la candidata
+  del 25/11.
+- **UF-07 antes que UF-03 y que UF-05:** la recuperación asistida y los pedidos de UF-04 llegan por el canal de UF-07, y
+  los textos nuevos de UF-05 nombran ese canal y el de los derechos.
+- **UF-02 al final,** porque cita la evidencia de todas.
+
+La **primera mitad** (UF-09, UF-11, UF-04 y UF-06) se programa primero. La segunda (UF-07, UF-03, UF-05 y UF-02) sigue
+en el mismo PR.
+
+### 13.2 Lo que depende de Dirección
+
+- **UF-03:** la cuenta del proveedor de correo, con su DPA, y el dominio propio del remitente. Mientras tanto:
+  - la recuperación asistida de UF-D9: Administración revoca las sesiones y emite un código de un solo uso, con
+    fundamento;
+  - el adaptador del proveedor, listo para cuando Dirección cargue la clave en Render. Sin clave, la API no manda
+    correos y lo dice.
+- **UF-05:** el contenido de los textos lo redacta y lo valida la asesoría jurídica (condición 1 del gate). Se programa
+  el mecanismo: la versión, su hash, su sucesión (`reemplazaA`), «Antes de seguir» y API-ACC-08. La versión nueva queda
+  **sin publicar** hasta esa validación.
+- **UF-07:** las direcciones de soporte y de privacidad, por configuración. Ninguna dirección personal queda en el
+  repositorio.
+- **UF-10:** lo decide y lo aplica Dirección: el plan de Render, su costo y el cambio de `render.yaml`.
+- **UF-06:** los plazos de la Ley 25.326 (art. 14, diez días corridos para el acceso; art. 16, cinco días hábiles para
+  rectificar o suprimir) quedan «a confirmar con la asesoría».
+
+### 13.3 Las reglas de la etapa
+
+- **La 0.24.0-candidata.1 es la última APK distribuida** (`VIGENTES`). Toda respuesta de la API sigue validando contra
+  lo que esa APK lee (`lecturas-de-la-apk.test.ts` y `lecturas-de-las-apk.int-spec.ts`): un cambio de la API nunca
+  rompe lo que la 0.24 ya hace.
+- **API-ACC-07 no emite un paso nuevo hasta que haya una APK que lo entienda.** La 0.24 pide actualizar ante un paso que
+  no conoce (UF-T12). El segundo factor del profesional (UF-11) no pasa por API-ACC-07: lo pide `/pro` en el website, y
+  la app de la persona no lo pide.
+- **Las partes con APK nueva** entran en la candidata que se congela el 25/11 o esperan la siguiente.
+- **El método, el de la etapa 1:**
+  - los oráculos primero (TEST-UF-007 en adelante, en `WP-USO-FINAL-ORACULOS.md`), cada uno probado en rojo con una
+    mutación;
+  - un commit por parte, con su TRACE;
+  - las migraciones solo agregan;
+  - los contratos, en `packages/domain`, con OPERACIONES y el OpenAPI al día;
+  - la API, con permisos, auditoría, idempotencia donde corresponde y límites de intento.
