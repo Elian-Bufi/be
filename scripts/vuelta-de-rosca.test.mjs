@@ -850,7 +850,14 @@ test('TEST-AV2-006 · la cabecera: transparente, una fila de 48 dp, el logo con 
   assert.match(cabecera, /<View style=\{estilos\.logo\} accessible accessibilityLabel="BE">/, 'el logo es accesible y se llama «BE»');
   assert.doesNotMatch(cabecera, />\s*BE\s*</, 'sin el texto «BE» a la vista');
   assert.match(cabecera, /<Svg [^>]*accessible=\{false\} importantForAccessibility="no-hide-descendants"/, 'el brillo no se lee');
-  assert.match(cabecera, /Ambiente de prueba · solo datos sintéticos/, 'el ambiente sigue a la vista (08 §33)');
+  // Desde UF-08 (DL-169, traído de main el 2026-11-12) la línea del aviso de prueba sale del ambiente y su texto, del
+  // dominio: la cabecera la dibuja solo con AVISOS_DE_PRUEBA_VISIBLES y nunca la escribe a mano (TEST-UF-012).
+  assert.match(
+    cabecera,
+    /\{AVISOS_DE_PRUEBA_VISIBLES \? \(\s*<Text style=\{estilos\.ambiente\}[^>]*>\s*\{AVISOS_DE_PRUEBA\.franja\}\s*<\/Text>\s*\) : null\}/,
+    'la línea del aviso de prueba, según el ambiente y con el texto del dominio (UF-08, 08 §33)',
+  );
+  assert.doesNotMatch(cabecera, /solo datos sintéticos/, 'el texto del aviso no se escribe en la cabecera');
   assert.match(cabecera, /ambiente: \{[^}]*color: COLOR\.tenue/);
   const app = sinComentarios(readFileSync(join(RAIZ, 'apps/mobile/App.tsx'), 'utf8'));
   assert.match(app, /conLogo=\{raiz\}/, 'el logo, solo en las cinco raíces');
