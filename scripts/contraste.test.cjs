@@ -429,6 +429,11 @@ function medicionesDeLaReceta(nombre) {
     medir('el botón principal, arriba', 'botonTexto', { botonFondo: t.botonFondo }, TEXTO),
     medir('el botón principal, abajo', 'botonTexto', { botonFondoFin: t.botonFondoFin }, TEXTO),
     medir('el borde de un campo sobre el vidrio y el nivel 2', 'bordeControl', { ...nivel1, ...nivel2 }, NO_TEXTO),
+    // El fondo con luz está en toda la app: Iniciar sesión, Crear cuenta y los formularios fuera de tarjetas llevan sus
+    // campos y sus casillas directo sobre él. Es el margen más fino de los bordes (3,17:1 y 3,03:1): sin esta medición,
+    // un retoque de `fondoAbajo` o de los destellos lo rompería en silencio.
+    medir('el borde de un campo directo sobre el fondo', 'bordeControl', fondo, NO_TEXTO),
+    medir('el borde de una casilla directo sobre el fondo', 'acento', fondo, NO_TEXTO),
     medir('la tilde del día sobre el círculo', 'botonTexto', { exito: t.exito }, NO_TEXTO),
     medir('el círculo del día contra la tarjeta', 'exito', { ...nivel1, ...opacas }, NO_TEXTO),
     // El aro de hoy va por fuera del círculo, con 2 dp de la tarjeta en el medio: tiene la tarjeta de los dos lados, también

@@ -883,7 +883,7 @@ tres puntos del degradé, con cada destello solo y con los dos juntos; el vidrio
 | Sobre el vidrio (nivel 1) | 12,64 · 5,79 · 7,21 · 8,29 · 6,22 | 15,96 · 5,33 · 4,96 · 4,98 · 4,92 |
 | Sobre el nivel 2 | 10,66 · 4,89 · 6,08 · 6,99 · 5,25 | 16,25 · 5,43 · 5,05 · 5,07 · 5,01 |
 | `botonTexto` sobre el botón principal, arriba y abajo | 10,68 · 7,78 | 4,73 · 6,75 |
-| `bordeControl` sobre el vidrio y el nivel 2 (mínimo 3) | 3,40 (hoy, 2,49) | 3,29 |
+| `bordeControl` sobre el vidrio y el nivel 2 (mínimo 3); directo sobre el fondo, medido desde la revisión (§10.4) | 3,40 (hoy, 2,49); 3,17 | 3,29; 3,03 |
 | La tilde del día sobre `exito` · el círculo · el aro de hoy, contra la tarjeta (mínimo 3; el aro, en `texto` y por fuera del círculo desde AV2-T21) | 12,29 · 8,29 · 12,64 (en el acento era 7,21) | 5,07 · 4,98 · 15,96 (era 4,96) |
 | `tenue` sobre la etiqueta de estado | 4,60 | 4,75 |
 | «La que sigue»: acento · tenue · texto | 6,11 · 4,91 · 10,72 | 4,60 · 4,95 · 14,81 |
@@ -1209,6 +1209,12 @@ con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
   `texto` y 2 dp del color de la tarjeta en el medio, y se mide contra la tarjeta de los dos lados (12,64:1 y 15,96:1).
   El círculo deja lugar al aro dentro de su séptimo: a 360 dp mide 32 dp. Lo fijan TEST-AV2-009, TEST-AV2-008 y la
   medición de TEST-AV2-001.
+- **El borde de un campo directo sobre el fondo, medido** (no cambia ningún color). El fondo con luz está en toda la app
+  (Iniciar sesión, Crear cuenta y los formularios fuera de tarjetas), pero `bordeControl` se medía solo sobre `fondo`
+  liso y sobre el vidrio. Directo sobre el degradé da 3,17:1 en Azul noche (arriba, con los dos destellos) y 3,03:1 en
+  Claro (abajo): pasaba por 0,03 sin nada que lo cuidara. TEST-AV2-001 lo mide ahora, y también el acento como borde de
+  una casilla (5,66:1 y 4,57:1). Un `bordeControl` de #5E91B7 en Azul noche o de #7C8FA9 en Claro pasaba todo lo de
+  antes y ahora pone la prueba en rojo.
 
 ### 10.5 Hallazgos fuera del paquete
 

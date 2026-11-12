@@ -40,21 +40,28 @@ STEPS                1. Armar los puntos del fondo: `fondoArriba`, `fondo` y `fo
                      3. Medir `botonTexto` sobre `botonFondo` y `botonFondoFin`; `bordeControl` sobre el vidrio y el
                         nivel 2; la tilde del día sobre `exito`, el círculo contra la tarjeta y el aro de hoy (`texto`,
                         por fuera del círculo) contra lo que tiene a cada lado: la tarjeta por fuera y, por dentro, los
-                        2 dp de la tarjeta que lo separan del círculo; la tarjeta, de vidrio o `superficie`.
+                        2 dp de la tarjeta que lo separan del círculo; la tarjeta, de vidrio o `superficie`. Medir
+                        también `bordeControl` (el borde de un campo) y `acento` (el borde de una casilla) directo sobre
+                        cada punto del fondo con luz: Iniciar sesión, Crear cuenta y los formularios fuera de tarjetas.
                      4. Medir el tenue y la tilde sobre la etiqueta de estado donde va rellena: sobre el vidrio de nivel
                         1, sobre `superficie` (interruptor apagado o alto contraste, en cualquier nivel) y sobre el
                         nivel 2 cuando es opaco (Claro); y acento, tenue y texto sobre «la que sigue», sobre el vidrio
                         y sobre `superficie`.
                      5. Medir las etiquetas de la barra sobre su vidrio, con cada color opaco del tema detrás.
 EXPECTED             1-2 → cada texto, 4,5:1 o más en su peor punto. 3 → el botón, 4,5:1 o más arriba y abajo; el borde
-                     de control, la tilde, el círculo y el aro, 3:1 o más. 4 → 4,5:1 o más para el texto y 3:1 para la
-                     tilde. 5 → 4,5:1 o más. Las cifras coinciden con §5.2 del paquete (Azul noche, tenue directo:
-                     4,55; Claro, error directo: 4,54).
+                     de control, la tilde, el círculo y el aro, 3:1 o más; el borde de un campo directo sobre el fondo,
+                     3:1 o más (3,17:1 en Azul noche y 3,03:1 en Claro: el margen más fino de los bordes, que nada
+                     cuidaba), y el de una casilla, también. 4 → 4,5:1 o más para el texto y 3:1 para la tilde. 5 →
+                     4,5:1 o más. Las cifras coinciden con §5.2 del paquete (Azul noche, tenue directo: 4,55; Claro,
+                     error directo: 4,54).
 NEGATIVE_ASSERTIONS  Ningún color de la APK se escribe fuera de tema.ts (la prueba de siempre falla con un literal). Los
                      dos temas no difieren en las claves. `laminaBrillo` ya no existe.
-AUTOMATION           scripts/contraste.test.cjs («APK · la receta de vidrio pasa AA en el peor punto…»). Mutación: los
+AUTOMATION           scripts/contraste.test.cjs («APK · la receta de vidrio pasa AA en el peor punto…»). Mutaciones: los
                      destellos de Azul noche al 14 % y al 18 % (#27D5F924 y #1D98DE2E) → el tenue directo baja a 4,16:1
-                     y el error a 4,47:1, y la prueba falla.
+                     y el error a 4,47:1, y la prueba falla; `bordeControl` de Azul noche en #5E91B7 o el de Claro en
+                     #7C8FA9 (pasan las mediciones de antes, 3,15:1 y 3,05:1, y directo sobre el fondo bajan a 2,93:1 y
+                     2,99:1) → la prueba falla; el acento de Claro en un azul claro que no llega a 3:1 sobre el fondo →
+                     la prueba falla y nombra el borde de la casilla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde y la tabla de contraste, con el peor punto de cada par, en EVIDENCIA/APP-VUELTA-2/LEEME.md
 ```
