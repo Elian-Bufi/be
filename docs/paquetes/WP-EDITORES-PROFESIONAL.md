@@ -1704,8 +1704,8 @@ estimación, fuera de la APK de la persona (D-V3-02, por DJ-1). El 1RM medido co
 
 ### 6.3 Las de la implementación (EDT), a ratificar por Dirección
 
-Las tomó Claude al programar la etapa 1 (EDT-01 a EDT-10) y la etapa 2 del website (EDT-11 en adelante), el
-2026-11-12. Ninguna cambia la forma de un contrato ni lo que la API acepta o devuelve. Cada una dice qué se eligió y qué otra opción había, y su commit la explica.
+Las tomó Claude al programar la etapa 1 (EDT-01 a EDT-10), la etapa 2 del website (EDT-11 a EDT-20) y la etapa 3 del
+website (EDT-21 en adelante), el 2026-11-12. Ninguna cambia la forma de un contrato ni lo que la API acepta o devuelve. Cada una dice qué se eligió y qué otra opción había, y su commit la explica.
 
 | ID | Parte | Lo elegido | La alternativa |
 |---|---|---|---|
@@ -1729,6 +1729,20 @@ Las tomó Claude al programar la etapa 1 (EDT-01 a EDT-10) y la etapa 2 del webs
 | EDT-18 | ED-23 | «Volver a lo general» quita la clave del objetivo, también la de «Sin objetivo»: no deja `null` | Dejar `null`, que es «Sin objetivo en esta serie» (DL-122) |
 | EDT-19 | ED-18 | El vidrio, solo en la estación y el asistente (`body:has(.estacion)`), y casi opaco en Claro (95 %; en Azul noche, 90 %): con menos, el borde de un campo no llega a 3:1 cuando pasa texto por detrás. «Lo que puede pasar detrás» es una lista de trece tokens más el fondo con sus destellos, sin el QR ni la figura | Todo el website de vidrio; o medir contra todos los tokens, que dejaba Claro opaco del todo |
 | EDT-20 | ED-23 | `CuadroEnfocado` suma `focoEnCancelar`, para las confirmaciones que hacen perder algo (quitar una serie con valores propios) | Un `DialogoDeConfirmacion` aparte dentro de la planilla |
+| EDT-21 | ED-31 y ED-34 | Los totales se estiman en el website con la cuenta del dominio (§8.2). La composición de cada alimento sale del buscador al elegirlo, de los habituales o, para lo que ya estaba en el plan, de una lectura del buscador por su nombre que se acepta solo si vuelve el mismo alimento (por su identidad); de a tres lecturas, una vez cada uno. Si no vuelve, «Sin dato: no se pudo leer su composición» | Esperar a API-PLN-01 (la ventana del vie 20) y no mostrar totales hasta entonces; o una lectura nueva del catálogo por identidad, que es de la API |
+| EDT-22 | ED-34 | El rango de cada comida va del mínimo al máximo **de cada nutriente por separado**: el mínimo de proteínas puede venir de otra opción que el de las kcal. El del día suma esos mínimos y esos máximos | Tomar los macros de la opción con menos y con más kcal |
+| EDT-23 | ED-34 | En Nutrición, el panel es una columna al costado del editor que ya existía (desde 1280; por debajo, abajo), con «Rangos y totales» primero y «Antes de activar» en vivo | Pasar el editor de Nutrición a la estación de tres zonas (ED-15 para Nutrición), que es más grande y queda para después |
+| EDT-24 | ED-33 | «Contenido» es un alimento o una receta en alguna opción; en un día tipo, alguna comida. Una «Opción 1» vacía recién creada se quita sin preguntar. La confirmación se suma también al quitar una opción | Preguntar siempre, también sin nada escrito |
+| EDT-25 | ED-32 | La receta nueva se crea en un cuadro; agregarla al plan es un cambio del borrador que viaja con el autoguardado. «No se pudo agregar» es que la comida ya no está o llegó a doce opciones: el reintento usa la misma versión y no la duplica | Un PATCH propio justo después de crear la receta, con su falla aparte |
+| EDT-26 | ED-40 | El aviso dice «Ya hay un pedido de «Cómo comés hoy» del 3/11 que todavía no respondió. Podés enviar otro igual.»: sale de las solicitudes de la persona, y así es cierto sin saber quién lo pidió | «Ya le pediste…», el texto de §5.6, que supone que lo pidió el mismo profesional |
+| EDT-27 | ED-40 | Las partes vienen plegadas solo si el formulario tiene más de una; con algo por completar en las preguntas, se abren todas para que el foco llegue. El buscador de preguntas no se suma todavía | Plegadas siempre; o el buscador ya, en esta tanda |
+| EDT-28 | ED-41 | Los textos nuevos viven en el website (`vinculo-en-palabras.ts`); los de `COPY_INVITACION` y `COPY_VINCULO` no cambian, porque los leen la APK y la API | Cambiarlos en el dominio, que reconstruye la API (`render.yaml`) |
+| EDT-29 | ED-41 | Un estado nombra el acceso solo para decir que lo decide la persona: «Usada · el vínculo empezó; el acceso a sus datos lo decide la persona» y «Aceptada · …» (TEST-EDP-035) | «Usada» y «Aceptada» a secas |
+| EDT-30 | ED-23 | «Copiar la prescripción a…» y «Copiar estas series a…» van a otros ejercicios de la misma sesión. La prescripción es todo menos el ejercicio, su identificador y su nota; las series, solo las series | A cualquier ejercicio del plan, con un destino de dos niveles |
+| EDT-31 | ED-24 | La sesión copiada a otro bloque o semana conserva su nombre (es la misma sesión en otra semana), va al final del destino y sin días: los elige con los chips | El sufijo «(copia)», como «Duplicar» |
+| EDT-32 | ED-21 | Los chips por zona filtran lo que trajo la búsqueda, y varias zonas se suman (o): un ejercicio entra si nombra alguna, como principal o secundaria | Que se crucen (y); o filtrar el catálogo entero, que es de la API |
+| EDT-33 | ED-23 | No se suma «Detalle» de la serie en un cuadro: una serie tiene cinco campos en el contrato (repeticiones, RIR, carga, descanso y nota) y los cinco ya están en su fila; el tempo y los parámetros por serie no existen (DJ-13) | Un cuadro que repite la fila |
+| EDT-34 | ED-14 | «Lo que llevás armado» se ve desde el paso 2 y se deduce del borrador (no se guarda): la estructura y, por sesión, sus ejercicios, lo que falta prescribir y sus días, hasta ocho sesiones | Guardarlo como un resumen aparte del asistente |
 
 ## 7. Medición: antes y después
 
@@ -1885,6 +1899,44 @@ Programada en la rama `wp-editores-profesional` (PR #251, en borrador), sin la A
 - **ED-15 y ED-18:** las capturas en Claro y Azul noche a 1280, 1440 y 1920 y el zoom al 200 %, en la corrida de la
   etapa 2 con la API local; la medición de §7 (A y AC), también.
 - **ED-16:** «Armar la versión del plan con este objetivo» (B04) es de Nutrición: etapa 3.
+
+### 8.4 La etapa 3 en el website: lo hecho y lo que queda (2026-11-12)
+
+Programada en la rama `wp-editores-profesional` (PR #251, en borrador), sin la API ni la APK. Las decisiones nuevas son
+EDT-21 a EDT-34 (§6.3), a ratificar.
+
+| Parte | Commit | Lo que quedó |
+|---|---|---|
+| ED-31, ED-33 y ED-34 | f10538a9 | En el editor de Nutrición: el total de cada opción al instante, el panel con «Rangos y totales» (el rango del día, DJ-4, y una fila por comida, sin «%») y «Antes de activar» en vivo; «Opción de alimentos» y «Opción de receta» por separado; «+ Comida» con su opción 1; quitar con contenido pregunta (TEST-EDP-029, 032 y 057; ED-30: ningún texto de Nutrición dice «%») |
+| ED-32 | 574d381b | «Receta nueva» desde la comida, en un cuadro, con «Guardar la receta y agregarla a Merienda» y «Guardar solo en Mis recetas», y la recuperación si el agregado no se puede (TEST-EDP-030 en su parte del website) |
+| ED-40 y ED-41 | 3f5b340e | Las partes plegadas con su cuenta, «Pedir todas» y «Ninguna», el resumen fijo junto al botón, lo que le llega a la persona y el aviso de un pedido pendiente; las dos entradas del vínculo con su subtítulo, los estados en palabras y el vencimiento con hora (TEST-EDP-033, 034, 035 y 058) |
+| ED-23 y ED-24 | 6bbec3c1 | «Copiar la sesión a…» y «Copiar a otra semana», con destino y vista previa; «Copiar el ejercicio a…», «Copiar la prescripción a…» y «Copiar estas series a…» |
+| ED-14 | f60a8520 | «Lo que llevás armado», al costado de cada paso del asistente |
+| ED-21 | c53087e5 | Los chips por zona sobre lo encontrado |
+
+**Lo que queda, declarado:**
+- **De la API (la ventana del vie 20):** ED-13 (los presets propios de prescripción), ED-64, API-PLN-01 (con ella, los
+  totales dejan de ser una estimación del editor y la composición de lo ya guardado llega con el plan), API-PLN-02 y 03
+  («Usar lo que cubren como rango») y la fuerza (ED-72 a ED-76).
+- **ED-30:** el asistente de Nutrición (el objetivo en el paso 2 con «Objetivo general», su versión y su fecha; un
+  reparto propio guardado, que es ED-13). El reparto se sigue escribiendo en gramos, como hoy, y ningún texto de
+  Nutrición dice «%».
+- **ED-31:** el buscador dentro del cuadro de la opción (Enter elige y sigue abierto) y el origen «dato de demostración»
+  en cada fila del plan.
+- **ED-32:** la foto como paso después de guardar y «Hay una versión 3 de esta receta · Usarla».
+- **ED-33:** en el «⋯» de la comida, copiar una opción de otra comida o usar una comida habitual como opción.
+- **ED-40:** el buscador de preguntas. **ED-41:** «Solicitudes enviadas» como sección con filtros (corte).
+- **ED-11:** las plantillas como pestaña de la galería. La galería se abre desde un borrador que ya existe, y aplicar una
+  plantilla ahí no deja su origen (`templateOrigin` lo pone la API solo al crear desde una plantilla). Pide una decisión:
+  reemplazar el borrador (descartarlo y crear desde la plantilla) o una operación nueva de la API.
+- **ED-23:** la fila «General» dentro de la tabla (lo general sigue debajo) y elegir varios ejercicios (P2). El
+  «Detalle» de la serie no se suma (EDT-33).
+- **ED-24:** «Duplicar el día». V3 no dice si copia las sesiones de ese día o les suma otro día en la agenda; se
+  programa cuando Dirección elija.
+- **ED-21:** «Crear un ejercicio propio» con los parecidos. **ED-14:** en el paso 4, las pestañas por sesión y las
+  tarjetas de presets en línea.
+- **Las capturas y la medición** de esta etapa (Claro y Azul noche a 1280, 1440 y 1920, y el zoom al 200 %), en la
+  corrida con la API local.
 
 ## 9. Riesgos
 

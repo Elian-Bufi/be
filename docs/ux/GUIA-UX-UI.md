@@ -1078,6 +1078,17 @@ Dos caminos sobre el mismo borrador y las mismas operaciones: **el asistente** p
   «Cancelar».
 - **Varios a la vez:** se marcan (ejercicios o series) y se aplica con un solo botón que dice cuántos y a qué; nada se
   escribe al marcar.
+- **Copiar dice adónde y qué pisa** (ED-23 y ED-24): un verbo por cada copia («Copiar la sesión a…», «Copiar el ejercicio
+  a…», «Copiar la prescripción a…», «Copiar estas series a…»), en un cuadro con el destino, la vista previa y lo que se
+  reemplaza antes de tocar el principal. La copia va sin identificadores y se guarda sola.
+- **Quitar con contenido pregunta** (ED-33): el cuadro nombra lo que se va («Quitar Merienda: 2 opciones y 7
+  alimentos») y el foco entra en «Cancelar». Sin nada escrito, se quita en el acto.
+- **Los totales de Nutrición en el editor** (ED-31 y ED-34): son una estimación del editor y lo dicen; lo que falta es
+  «Sin dato» con qué lo impide, nunca cero; dos opciones de una misma comida nunca se suman, y el día va «de X a Y kcal
+  según lo que elija». Sin «%» y sin semáforo. La persona no ve nada de esto.
+- **Dos salidas, un principal** (ED-32): cuando un cuadro crea algo que puede quedar suelto o entrar donde se lo pidió,
+  el principal es lo que se vino a hacer («Guardar la receta y agregarla a Merienda») y la otra salida es secundaria. Si
+  la segunda escritura no se puede, el cuadro dice que la primera ya quedó y ofrece reintentar sin repetirla.
 
 ## Parte III · APK del asesorado
 
