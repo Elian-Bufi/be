@@ -269,7 +269,7 @@ export function VistaDePlan() {
                       planId={borrador.planId}
                       numero={numeroDelBorrador(historial)}
                       objetivo={objetivo ?? null}
-                      vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt } : null}
+                      vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
                       onActivado={() => {
                         setAviso({ tipo: 'exito', texto: COPY_DEL_PLAN.versionActivadaAviso });
                         ir({ version: null, dia: null, comidas: null });

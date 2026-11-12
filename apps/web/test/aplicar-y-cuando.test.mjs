@@ -148,7 +148,8 @@ test('TEST-TAG-034 · nada viene elegido: sin elegir no hay fecha y falta elegir
     assert.doesNotMatch(lista, /Próxima revisión \(opcional\)/, area);
     const editor = leer(`app/pro/advisees/${area}/editor.tsx`);
     assert.match(editor, /useState<EleccionDeLaProxima>\(NADA_ELEGIDO\)/, area);
-    assert.match(editor, /confirmarDeshabilitado=\{fechaQueResulta\(cuando, hoyEn\(\)\) === undefined\}/, area);
+    // ED-07: el cuadro es «Antes de activar», y su principal espera la elección (`motivoDelPrincipal`).
+    assert.match(editor, /eligioCuando=\{fechaQueResulta\(cuando, hoyEn\(\)\) !== undefined\}/, area);
     assert.match(editor, /momento="ACTIVAR"/, area);
   }
 });

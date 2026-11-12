@@ -302,15 +302,20 @@ test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar n
   assert.match(leerDelDominio('copy-nutricion.ts'), /validarPlan: 'Revisar el plan',/);
   assert.match(leerDelDominio('copy-entrenamiento.ts'), /validarPlan: 'Revisar el plan',/);
   assert.match(leerDelDominio('copy-entrenamiento.ts'), /noJuzga: 'Revisar el plan mira su forma, no su calidad/);
+  // ED-07 (DJ-6): lo sin completar lo dice «Antes de activar», aparte de lo que impide y sin bloquear el principal.
   for (const [archivo, funcion] of [['nutrition/editor.tsx', 'loQueQuedaSinCompletarEnNutricion(estructura)'], ['training/editor.tsx', 'loQueQuedaSinCompletarEnEntrenamiento(bloques)']]) {
     const editor = leer(archivo);
-    assert.ok(editor.includes(`const falta = ${funcion};`), archivo);
-    assert.match(editor, /setSinCompletar\(falta\);/);
-    assert.match(editor, /<ul className="problemas-del-plan" data-sin-completar>/);
-    // Nada más lee lo sin completar: ni guardar, ni el autoguardado, ni «Activar plan».
-    assert.equal((editor.match(/sinCompletar\b/g) ?? []).length, 5, `${archivo}: el estado, la lista (tres veces) y su texto`);
+    assert.ok(editor.includes(`const sinCompletarAlActivar = confirmar ? ${funcion}.map(`), archivo);
+    assert.match(editor, /sinCompletar=\{sinCompletarAlActivar\}/, archivo);
+    // Nada más lee lo sin completar: ni guardar, ni el autoguardado, ni lo que impide activar.
+    assert.equal((editor.match(/sinCompletarAlActivar\b/g) ?? []).length, 2, `${archivo}: se calcula y va al cuadro`);
+    assert.doesNotMatch(editor.slice(editor.indexOf('const impidenActivar = ['), editor.indexOf('const sinCompletarAlActivar')), /SinCompletar/, archivo);
     assert.doesNotMatch(editor, /Validar plan/);
   }
+  const cuadro = leer('cuadro-antes-de-activar.tsx');
+  assert.match(cuadro, /<ul className="antes-de-activar__lista" data-sin-completar>/);
+  // El principal no cuenta lo sin completar: solo lo que impide.
+  assert.match(cuadro, /motivoDelPrincipal\(\{ impiden: impiden\.length,/);
   for (const t of [...Object.values(R.TEXTO_DE_LO_INCOMPLETO), ...Object.values(R.COPY_REVISAR_EL_PLAN), 'Revisar el plan', 'No hay nada que impida activar.']) {
     assert.deepEqual(d.terminosProhibidosEn(t), [], t);
     assert.deepEqual(d.terminosProhibidosDeEntrenamientoEn(t), [], t);

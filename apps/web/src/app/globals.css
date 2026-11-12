@@ -1044,6 +1044,81 @@ details summary {
   margin-top: 0;
 }
 
+/* ED-07: un cuadro con más para leer («Antes de activar»): más ancho y, si entra, en dos columnas. */
+.dialogo--ancho {
+  max-width: min(64rem, calc(100vw - 2rem));
+  width: 100%;
+}
+
+/* ED-07: por qué el botón de efecto está apagado, a su lado. */
+.dialogo__motivo {
+  margin: 0;
+  align-self: center;
+}
+
+.antes-de-activar__bajada {
+  margin: -0.5rem 0 0.75rem;
+}
+
+.antes-de-activar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem 1.5rem;
+}
+
+@media (min-width: 56rem) {
+  .antes-de-activar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.antes-de-activar__columna {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.antes-de-activar__parte h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.antes-de-activar__parte p {
+  margin: 0 0 0.4rem;
+}
+
+.antes-de-activar__lista {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.4rem;
+  padding-left: 1.1rem;
+}
+
+.antes-de-activar__lista li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+/* Con cambios sin guardar: lo que hay que hacer primero, con su ícono (nunca solo color). */
+.antes-de-activar__sin-guardar {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: var(--fondo-suave);
+}
+
+.antes-de-activar__sin-guardar p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
 @media (max-width: 30rem) {
   .acciones .boton {
     width: 100%;

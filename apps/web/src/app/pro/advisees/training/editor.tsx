@@ -20,9 +20,11 @@
  * - **Lo que no deja guardar se lista con su lugar,** antes de pedirle nada a la API: un nombre vacío, el objetivo de
  *   intensidad que falta, un dato que no se entiende. Un dato mal escrito ya no viaja: en un descanso o en el RIR de una
  *   serie se guardaba, en silencio, como «sin objetivo».
- * - **«Activar plan» guarda antes, si hace falta,** y recién entonces pregunta. El diálogo dice qué entra y qué queda, y
- *   ahí se fija la próxima revisión, que es parte de ese acto. Si el asesorado todavía no usó una app que muestre los
- *   objetivos por serie y el plan los tiene, «Activar plan» está apagado y dice por qué (precierre del 2026-10-06, §2).
+ * - **«Revisar y activar…» (ED-07, DJ-6) abre «Antes de activar» siempre:** lo que impide activar, lo que queda sin
+ *   completar, lo que cambia frente a la vigente y lo que va a ver la persona, y ahí se fija la próxima revisión, que es
+ *   parte de ese acto. Con cambios sin guardar, primero se guardan. Si la persona todavía no usó una app que muestre los
+ *   objetivos por serie y el plan los tiene, eso impide activar y se dice por qué (precierre del 2026-10-06, §2; hasta
+ *   ED-08, la API todavía lo espera).
  * - **Cada problema lleva a su lugar:** elige el bloque, el microciclo y la sesión, abre el ejercicio y deja el foco ahí.
  */
 import {
@@ -41,10 +43,10 @@ import {
   avisoDeLoQueNoDejaGuardarElEntrenamiento,
   cuentaDeLaSesion,
   detalleDelFallo,
+  ejercicioPlegadoDelEditor,
   ejerciciosAbiertosEnElEditor,
   estructuraConObjetivosComoEntrada,
   falloDeGuardado,
-  loQueEntraAlActivarElEntrenamiento,
   loQueNoDejaGuardarElEntrenamiento,
   loQueSeMiraEnElEditor,
   lugarDelProblemaDeEntrenamiento,
@@ -65,7 +67,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
-import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
@@ -79,12 +80,15 @@ import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
+import { compararEntrenamiento } from '../comparar-versiones';
+import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
-import { COPY_REVISAR_EL_PLAN, loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
+import { loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
 import {
   COPY_DE_LOS_EDITORES as E,
   copiaDeLaSesion,
@@ -98,7 +102,7 @@ import {
   posicionesTrasQuitar,
 } from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
-import { AgendaDelPlan, agendaVigente, resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
+import { AgendaDelPlan, agendaVigente, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
 import { EjercicioDelEditor, type BloqueE, type Bloques, type PrescripcionE, type SesionE } from './ejercicio-del-editor';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
@@ -219,8 +223,11 @@ export function EditorDePlan({
   numero: number;
   /** El objetivo vigente hoy, que ya leyó la sección: si es más nuevo que el de la versión, al guardar pasa a usarlo. */
   objetivoVigente: string | null;
-  /** La versión que rige hoy, que al activar esta queda en el historial; `null` si es la primera. */
-  vigente?: { readonly numero: number; readonly desde: string } | null;
+  /**
+   * La versión que rige hoy, que al activar esta queda en el historial; `null` si es la primera. Con su plan, «Antes de
+   * activar» dice lo que cambia (ED-07).
+   */
+  vigente?: { readonly numero: number; readonly desde: string; readonly plan?: PlanConObjetivos | null } | null;
   onActivado: () => void;
   /** ED-01: la versión en preparación se descartó (o ya no estaba): la sección vuelve a leer el plan. */
   onDescartado: () => void;
@@ -255,8 +262,8 @@ export function EditorDePlan({
   // `sinFoco`: un aviso del autoguardado (DL-168) se anuncia sin sacarle el foco a lo que se está editando.
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deValidar?: boolean; sinFoco?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
-  // TB-48: lo que «Revisar el plan» encontró sin completar. No impide guardar ni activar.
-  const [sinCompletar, setSinCompletar] = useState<readonly ValidationIssue[] | null>(null);
+  // ED-07: la revisión de la API de lo guardado, para «Antes de activar» (`null`: todavía no se pidió).
+  const [revision, setRevision] = useState<{ readonly estado: 'revisando' | 'lista' | 'fallo'; readonly problemas: readonly ValidationIssue[] } | null>(null);
   const [confirmar, setConfirmar] = useState(false);
   // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -318,7 +325,6 @@ export function EditorDePlan({
     setBloques((b) => f(structuredClone(b)));
     setSucio(true);
     setProblemas(null);
-    setSinCompletar(null);
     setMensaje(null);
     setParaEnfocar(null);
   };
@@ -463,30 +469,44 @@ export function EditorDePlan({
     guardar: () => void guardar(true),
   });
 
-  async function validar() {
-    const v = sucio ? await guardar() : version;
-    if (!v) return;
+  /**
+   * ED-07: la revisión de la API de la versión guardada (API-TRN-11). Lo que dice entra en «Lo que impide activar»; la
+   * validación final sigue siendo la de la API al activar. Revisar mira la forma, no la calidad (B10-06:563-591).
+   */
+  async function revisar(v: PlanConObjetivos) {
+    setRevision({ estado: 'revisando', problemas: [] });
     const r = await api.validarPlanDeEntrenamiento(token, planId, v.version);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok) return setMensaje({ tipo: 'error', texto: mensajeDeFallo(r) });
-    // TB-48: además de lo que impide activar, lo que queda sin completar, que no lo impide.
-    const falta = loQueQuedaSinCompletarEnEntrenamiento(bloques);
-    setProblemas(r.datos.data.issues);
-    setSinCompletar(falta);
-    // Revisar mira la forma, no la calidad del programa: se dice junto al resultado (B10-06:563-591).
-    if (!r.datos.data.valid) return setMensaje({ tipo: 'error', texto: COPY_ENTRENAMIENTO.hayElementosPorCorregir, deValidar: true });
-    setMensaje(falta.length > 0 ? { tipo: 'info', texto: COPY_ENTRENAMIENTO.sinProblemas, deValidar: true } : { tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.sinProblemas} ${COPY_ENTRENAMIENTO.noJuzga}` });
+    setRevision(r.ok ? { estado: 'lista', problemas: r.datos.data.issues } : { estado: 'fallo', problemas: [] });
   }
 
-  /** «Activar plan»: con cambios, guarda antes; si no se puede guardar, no pregunta nada (el motivo queda a la vista). */
-  async function abrirLaActivacion() {
-    const v = sucio ? await guardar() : version;
-    if (!v) return;
+  /** ED-07 (DJ-6): «Revisar y activar…» abre el cuadro siempre, también con algo por corregir o sin guardar. */
+  function abrirAntesDeActivar() {
+    if (!version) return;
     setFalloDeActivacion(null);
-    setCuando(eleccionAlActivar(v.nextReviewAt));
-    setProximaRevision(v.nextReviewAt ?? '');
+    setCuando(eleccionAlActivar(version.nextReviewAt));
+    setProximaRevision(version.nextReviewAt ?? '');
+    setRevision(null);
     setConfirmar(true);
   }
+
+  /** ED-07: cerrar el cuadro sin activar. La fecha es de este acto: vuelve a la que estaba guardada. */
+  function cerrarAntesDeActivar() {
+    setConfirmar(false);
+    setFalloDeActivacion(null);
+    setProximaRevision(version?.nextReviewAt ?? '');
+    setCuando(NADA_ELEGIDO);
+    setRevision(null);
+    intentoDeActivar.descartar();
+  }
+
+  // ED-07: con el cuadro abierto y todo guardado, la API revisa lo guardado (al abrirlo, o apenas llega la respuesta de
+  // un guardado). Con cambios sin guardar, el cuadro ofrece primero «Guardar ahora».
+  useEffect(() => {
+    if (confirmar && version && !sucio && !guardando && revision === null) void revisar(version);
+    // `revisar` es de este render y lee lo mismo que estas dependencias.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmar, version, sucio, guardando, revision]);
 
   async function activar() {
     if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
@@ -582,6 +602,43 @@ export function EditorDePlan({
   const rutasConProblemas = (problemas ?? []).filter((p) => !esDelEditor(p.code)).map((p) => p.path);
   const impideGuardar = loQueNoDejaGuardar(bloques);
   const antesHayQueCorregir = impideGuardar.length > 0 ? 'Antes hay que corregir lo que no deja guardar esta versión.' : null;
+
+  // ── ED-07: lo que dice «Antes de activar» ─────────────────────────────────────────────────────────────────────
+  /** Cerrar el cuadro y llevar a una cosa por corregir: a su lugar, con el foco ahí. */
+  const irDesdeElCuadro = (p: ValidationIssue) => () => {
+    cerrarAntesDeActivar();
+    irAlProblema(p);
+  };
+  const conSuLugar = (p: ValidationIssue, texto: string) => ({ texto: `${dondeEsta(p, bloques)}: ${texto}`, ir: lugarDelProblemaDeEntrenamiento(p.path).bloque === null ? null : irDesdeElCuadro(p) });
+  // Lo que impide activar: lo que el editor ve solo (al instante), lo que dijo la API de lo guardado y, hasta ED-08, la
+  // app de la persona (la API todavía la espera).
+  const impidenActivar = [
+    ...impideGuardar.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
+    ...(revision?.estado === 'lista' ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+    ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
+  ];
+  // TB-48: lo que queda sin completar no impide nada; se dice aparte, cada cosa con su lugar.
+  const sinCompletarAlActivar = confirmar ? loQueQuedaSinCompletarEnEntrenamiento(bloques).map((p) => conSuLugar(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento')) : [];
+  const nombresDeLaVigente = vigente?.plan ? nombresDe(vigente.plan) : {};
+  // Frente a la vigente; en la primera versión, frente a nada: todo es «agregado». Sin la vigente leída, nada.
+  const baseDeLaComparacion = vigente?.plan ? aEntrada(vigente.plan) : !version.predecessorPlanId ? [] : null;
+  const cambiosFrenteALaVigente =
+    confirmar && baseDeLaComparacion
+      ? compararEntrenamiento(baseDeLaComparacion, bloques, {
+          nombreDelEjercicio: (id) => nombres[id] ?? nombresDeLaVigente[id] ?? 'Ejercicio',
+          renglon: (p) => ejercicioPlegadoDelEditor(p, 0).resumen,
+          ...(vigente?.plan ? { agendas: { vigente: vigente.plan.agenda, borrador: agendaVisible } } : {}),
+        })
+      : null;
+  // Lo que va a ver la persona: cada sesión, con sus días si los tiene, y lo que tiene.
+  const loQueVeLaPersona = confirmar
+    ? bloques
+        .flatMap((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)])
+        .map((s, n) => {
+          const dias = s.sessionId ? (agendaVisible?.sessions.find((x) => x.sessionId === s.sessionId)?.weekdays ?? []) : [];
+          return `${dias.length > 0 ? `${COPY_AGENDA_DE_ENTRENAMIENTO.diasDeLaSesion(dias)}: ` : ''}${sesionesDeLaAgenda[n]?.nombre ?? nombreDeLaSesion(s, n)} · ${cuentaDeLaSesion(s)}`;
+        })
+    : [];
 
   const elegirBloque = (n: number) => {
     setParaEnfocar(null);
@@ -823,31 +880,12 @@ export function EditorDePlan({
               {antesHayQueCorregir}
             </span>
           ) : null}
-          {/* Los tres se apagan con `aria-disabled`, no con `disabled`: un botón deshabilitado pierde el foco, y quien
-              guarda con el teclado quedaría fuera de lugar (y «Volver», en el diálogo, no tendría a dónde volver). */}
-          <button
-            type="button"
-            className="boton boton--quieto"
-            aria-disabled={guardando || undefined}
-            onClick={() => {
-              if (!guardando) void validar();
-            }}
-          >
-            {COPY_ENTRENAMIENTO.validarPlan}
-          </button>
-          {/* Un solo botón lleno (crítica de diseño del 2026-10-15), y siempre el mismo (DJ-6): activar no cambia de lugar ni
-              de forma mientras se escribe. */}
-          <button
-            type="button"
-            className="boton boton--primario"
-            aria-disabled={guardando || bloqueadoPorLaApp || undefined}
-            aria-describedby={bloqueadoPorLaApp ? 'motivo-sin-activar' : undefined}
-            onClick={() => {
-              if (!guardando && !bloqueadoPorLaApp) void abrirLaActivacion();
-            }}
-          >
+          {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
+              barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
+              ni de lugar mientras se escribe. */}
+          <button type="button" className="boton boton--primario" data-revisar-y-activar onClick={abrirAntesDeActivar}>
             <Icono nombre="activar" tamano={18} />
-            {COPY_ENTRENAMIENTO.activarPlan}
+            {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
           </button>
           {/* ED-01: el «⋯» de la versión, con «Descartar la versión en preparación». La vigente nunca lo ofrece. */}
           {ofreceDescartar(version) ? (
@@ -927,21 +965,6 @@ export function EditorDePlan({
                 </li>
               ))}
             </ul>
-          ) : null}
-          {/* TB-48: lo que queda sin completar, que no impide activar; cada cosa lleva a su lugar, como un problema. */}
-          {sinCompletar && sinCompletar.length > 0 ? (
-            <>
-              <p>{COPY_REVISAR_EL_PLAN.sinCompletar}</p>
-              <ul className="problemas-del-plan" data-sin-completar>
-                {sinCompletar.map((p, n) => (
-                  <li key={n}>
-                    <button type="button" className="boton boton--enlace" onClick={() => irAlProblema(p)}>
-                      {ubicacionDelProblemaDeEntrenamiento(p.path, bloques)} → {TEXTO_DE_LO_INCOMPLETO[p.code]}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
           ) : null}
           {mensaje.deValidar ? <p className="nota">{COPY_ENTRENAMIENTO.noJuzga}</p> : null}
         </Aviso>
@@ -1228,54 +1251,43 @@ export function EditorDePlan({
         onCerrar={() => setAgregando(false)}
       />
 
-      <DialogoDeConfirmacion
+      <AntesDeActivar
         abierto={confirmar}
-        titulo={COPY_ENTRENAMIENTO.activarPlan}
-        textoVolver={COPY_DE_ACTIVAR_EL_PLAN.volver}
-        textoConfirmar={COPY_DE_ACTIVAR_EL_PLAN.activarEstaVersion}
-        textoEnviando={COPY_DE_ACTIVAR_EL_PLAN.activando}
-        enviando={activando}
+        area="Entrenamiento"
+        numero={numero}
+        vigente={vigente?.numero ?? null}
+        primera={!version.predecessorPlanId}
+        impiden={impidenActivar}
+        sinCompletar={sinCompletarAlActivar}
+        revisando={revision?.estado === 'revisando'}
+        sinRevisar={revision?.estado === 'fallo'}
+        onVolverARevisar={() => void revisar(version)}
+        sinGuardar={sucio}
+        guardando={guardando}
+        onGuardarAhora={() => void guardar()}
+        cambios={cambiosFrenteALaVigente}
+        loQueVe={loQueVeLaPersona}
+        eligioCuando={fechaQueResulta(cuando, hoyEn()) !== undefined}
+        activando={activando}
         error={falloDeActivacion}
-        focoEnVolver
-        confirmarDeshabilitado={fechaQueResulta(cuando, hoyEn()) === undefined}
-        onVolver={() => {
-          setConfirmar(false);
-          setFalloDeActivacion(null);
-          // La fecha es de este acto: si no se activa, vuelve a la que estaba guardada.
-          setProximaRevision(version.nextReviewAt ?? '');
-          setCuando(NADA_ELEGIDO);
-          intentoDeActivar.descartar();
-        }}
-        onConfirmar={() => void activar()}
-      >
-        <p>{COPY_ENTRENAMIENTO.consecuenciaDeActivar}</p>
-        <div className="lo-que-cambia-al-activar" data-lo-que-cambia>
-          {[COPY_DE_ACTIVAR_EL_PLAN.entra(loQueEntraAlActivarElEntrenamiento(bloques)), ...(vigente ? [COPY_DE_ACTIVAR_EL_PLAN.queda(vigente.numero, diaSinElAnioEnCurso(vigente.desde))] : [])].map((frase) => (
-            <p key={frase.quien}>
-              <strong>{frase.quien}</strong>
-              {frase.que}
-            </p>
-          ))}
-        </div>
-        {agendaVisible && agendaVisible.sessions.length > 0 ? (
-          <p className="nota" data-dias-al-activar>
-            <strong>{COPY_AGENDA_DE_ENTRENAMIENTO.titulo}:</strong> {resumenDeLaAgenda(agendaVisible, sesionesDeLaAgenda)}
-          </p>
-        ) : null}
-        <CuandoLaRevisas
-          id="trn-proxima-revision"
-          hoy={hoyEn()}
-          momento="ACTIVAR"
-          conSinFecha
-          primerPlan={!vigente}
-          eleccion={cuando}
-          alElegir={(e) => {
-            setCuando(e);
-            setProximaRevision(fechaQueResulta(e, hoyEn()) ?? '');
-          }}
-          aviso={loQueFalta(cuando, hoyEn())}
-        />
-      </DialogoDeConfirmacion>
+        onActivar={() => void activar()}
+        onVolver={cerrarAntesDeActivar}
+        cuando={
+          <CuandoLaRevisas
+            id="trn-proxima-revision"
+            hoy={hoyEn()}
+            momento="ACTIVAR"
+            conSinFecha
+            primerPlan={!vigente}
+            eleccion={cuando}
+            alElegir={(e) => {
+              setCuando(e);
+              setProximaRevision(fechaQueResulta(e, hoyEn()) ?? '');
+            }}
+            aviso={loQueFalta(cuando, hoyEn())}
+          />
+        }
+      />
 
       <CuadroDelDescarte
         abierto={descartar}

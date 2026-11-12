@@ -22,6 +22,10 @@ interface PropsDeDialogo {
   readonly confirmarDeshabilitado?: boolean;
   /** Al abrirse, el foco va a «Volver»: para un diálogo con un campo adentro, que si no se llevaría el foco. */
   readonly focoEnVolver?: boolean;
+  /** ED-07: por qué el botón de efecto está apagado, dicho a su lado (y al lector, como su descripción). */
+  readonly motivo?: string | null;
+  /** ED-07: un cuadro con más para leer («Antes de activar»): más ancho, en dos columnas si entran. */
+  readonly ancho?: boolean;
   readonly onVolver: () => void;
   readonly onConfirmar: () => void;
 }
@@ -38,6 +42,8 @@ export function DialogoDeConfirmacion({
   error = null,
   confirmarDeshabilitado = false,
   focoEnVolver = false,
+  motivo = null,
+  ancho = false,
   onVolver,
   onConfirmar,
 }: PropsDeDialogo) {
@@ -58,7 +64,7 @@ export function DialogoDeConfirmacion({
   return (
     <dialog
       ref={ref}
-      className="dialogo"
+      className={ancho ? 'dialogo dialogo--ancho' : 'dialogo'}
       aria-labelledby={`${id}-titulo`}
       onCancel={(e) => {
         e.preventDefault();
@@ -73,6 +79,11 @@ export function DialogoDeConfirmacion({
         </Aviso>
       ) : null}
       <div className="acciones">
+        {motivo ? (
+          <p id={`${id}-motivo`} className="nota dialogo__motivo">
+            {motivo}
+          </p>
+        ) : null}
         <button ref={volver} type="button" className="boton boton--secundario" onClick={onVolver} disabled={enviando}>
           {textoVolver}
         </button>
@@ -82,6 +93,7 @@ export function DialogoDeConfirmacion({
           onClick={onConfirmar}
           disabled={enviando || confirmarDeshabilitado}
           aria-busy={enviando}
+          aria-describedby={motivo ? `${id}-motivo` : undefined}
         >
           {enviando ? textoEnviando : textoConfirmar}
         </button>

@@ -18,9 +18,10 @@
  * (cambiar un nombre, quitar, guardar como plantilla o como habitual) va en un menú. Hace lo mismo que antes:
  * - **Lo que se mira vive en la dirección,** por su posición: el día tipo (`dia`) y las comidas abiertas (`comidas`).
  *   «Actualizar» y volver atrás lo conservan. Al entrar no hay ninguna comida abierta: el día se lee de un vistazo.
- * - **«Activar plan» guarda antes, si hace falta,** y recién entonces pregunta. El diálogo dice qué entra y qué queda, y
- *   ahí se fija la próxima revisión, que es parte de ese acto. Si no se puede guardar, no se abre, y se dice por qué.
- * - **Cada problema de «Validar» lleva a su lugar:** elige el día tipo, abre la comida y la opción.
+ * - **«Revisar y activar…» (ED-07, DJ-6) abre «Antes de activar» siempre:** lo que impide activar, lo que queda sin
+ *   completar, lo que cambia frente a la vigente y lo que va a ver la persona, y ahí se fija la próxima revisión, que es
+ *   parte de ese acto. Con cambios sin guardar, primero se guardan.
+ * - **Cada cosa por corregir lleva a su lugar:** elige el día tipo, abre la comida y la opción.
  */
 import {
   COPY,
@@ -38,7 +39,6 @@ import {
   detalleDelFallo,
   estructuraNutricionalComoEntrada,
   falloDeGuardado,
-  loQueEntraAlActivar,
   loQueNoDejaGuardar,
   lugarDelProblema,
   motivoSinGuardarAhora,
@@ -60,7 +60,6 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
-import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
@@ -72,12 +71,15 @@ import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
+import { compararNutricion } from '../comparar-versiones';
+import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
-import { COPY_REVISAR_EL_PLAN, loQueQuedaSinCompletarEnNutricion, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
+import { loQueQuedaSinCompletarEnNutricion, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
 import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
@@ -175,8 +177,11 @@ export function EditorDeBorrador({
    * El editor no lo vuelve a pedir: sin esa lectura, la sección no llega a mostrarlo.
    */
   objetivo: VersionDeObjetivo | null;
-  /** La versión que rige hoy, que al activar esta queda en el historial; `null` si es la primera. */
-  vigente?: { readonly numero: number; readonly desde: string } | null;
+  /**
+   * La versión que rige hoy, que al activar esta queda en el historial; `null` si es la primera. Con su plan, «Antes de
+   * activar» dice lo que cambia (ED-07).
+   */
+  vigente?: { readonly numero: number; readonly desde: string; readonly plan?: VersionDePlan | null } | null;
   onActivado: () => void;
   /** ED-01: la versión en preparación se descartó (o ya no estaba): la sección vuelve a leer el plan. */
   onDescartado: () => void;
@@ -211,8 +216,8 @@ export function EditorDeBorrador({
   // `sinFoco`: un aviso del autoguardado (DL-168) se anuncia sin sacarle el foco a lo que se está editando.
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deRevisar?: boolean; sinFoco?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
-  // TB-48: lo que «Revisar el plan» encontró sin completar. No impide guardar ni activar.
-  const [sinCompletar, setSinCompletar] = useState<readonly ValidationIssue[] | null>(null);
+  // ED-07: la revisión de la API de lo guardado, para «Antes de activar» (`null`: todavía no se pidió).
+  const [revision, setRevision] = useState<{ readonly estado: 'revisando' | 'lista' | 'fallo'; readonly problemas: readonly ValidationIssue[] } | null>(null);
   const [confirmar, setConfirmar] = useState(false);
   // «Guardar como plantilla» sobre el borrador tal como está en pantalla (PF-09; DL-108); sin origen: no es una versión activada.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -278,7 +283,6 @@ export function EditorDeBorrador({
     setEstructura((e) => f(structuredClone(e)));
     setSucio(true);
     setProblemas(null);
-    setSinCompletar(null);
     setMensaje(null);
     setParaEnfocar(null);
   };
@@ -411,29 +415,44 @@ export function EditorDeBorrador({
     guardar: () => void guardar(true),
   });
 
-  async function validar() {
-    const v = sucio ? await guardar() : version;
-    if (!v) return;
+  /**
+   * ED-07: la revisión de la API de la versión guardada (API-NUT-11). Lo que dice entra en «Lo que impide activar»; la
+   * validación final sigue siendo la de la API al activar. Revisar mira la forma, no la calidad.
+   */
+  async function revisar(v: VersionDePlan) {
+    setRevision({ estado: 'revisando', problemas: [] });
     const r = await api.validarPlan(token, planId, v.version);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok) return setMensaje({ tipo: 'error', texto: mensajeDeFallo(r) });
-    // TB-48: además de lo que impide activar, lo que queda sin completar, que no lo impide.
-    const falta = loQueQuedaSinCompletarEnNutricion(estructura);
-    setProblemas(r.datos.data.issues);
-    setSinCompletar(falta);
-    if (!r.datos.data.valid) return setMensaje({ tipo: 'error', texto: COPY_NUTRICION.hayElementosPorCorregir });
-    setMensaje(falta.length > 0 ? { tipo: 'info', texto: COPY_NUTRICION.planValido, deRevisar: true } : { tipo: 'exito', texto: COPY_NUTRICION.planValido });
+    setRevision(r.ok ? { estado: 'lista', problemas: r.datos.data.issues } : { estado: 'fallo', problemas: [] });
   }
 
-  /** «Activar plan»: con cambios, guarda antes; si no se puede guardar, no pregunta nada (el motivo queda a la vista). */
-  async function abrirLaActivacion() {
-    const v = sucio ? await guardar() : version;
-    if (!v) return;
+  /** ED-07 (DJ-6): «Revisar y activar…» abre el cuadro siempre, también con algo por corregir o sin guardar. */
+  function abrirAntesDeActivar() {
+    if (!version) return;
     setFalloDeActivacion(null);
-    setCuando(eleccionAlActivar(v.nextReviewAt));
-    setProximaRevision(v.nextReviewAt ?? '');
+    setCuando(eleccionAlActivar(version.nextReviewAt));
+    setProximaRevision(version.nextReviewAt ?? '');
+    setRevision(null);
     setConfirmar(true);
   }
+
+  /** ED-07: cerrar el cuadro sin activar. La fecha es de este acto: vuelve a la que estaba guardada. */
+  function cerrarAntesDeActivar() {
+    setConfirmar(false);
+    setFalloDeActivacion(null);
+    setProximaRevision(version?.nextReviewAt ?? '');
+    setCuando(NADA_ELEGIDO);
+    setRevision(null);
+    intentoDeActivar.descartar();
+  }
+
+  // ED-07: con el cuadro abierto y todo guardado, la API revisa lo guardado (al abrirlo, o apenas llega la respuesta de
+  // un guardado). Con cambios sin guardar, el cuadro ofrece primero «Guardar ahora».
+  useEffect(() => {
+    if (confirmar && version && !sucio && !guardando && revision === null) void revisar(version);
+    // `revisar` es de este render y lee lo mismo que estas dependencias.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmar, version, sucio, guardando, revision]);
 
   async function activar() {
     if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
@@ -587,6 +606,23 @@ export function EditorDeBorrador({
       ? `${comidaDondeSeAgrega.label.trim() || `Comida ${agregando.j + 1}`} · opción ${agregando.k + 1}${opcionDondeSeAgrega.label.trim() ? `: ${opcionDondeSeAgrega.label.trim()}` : ''}`
       : null;
   const comidaDeLaReceta = eligiendoReceta ? estructura[eligiendoReceta.i]?.meals[eligiendoReceta.j] : undefined;
+  // ── ED-07: lo que dice «Antes de activar» ─────────────────────────────────────────────────────────────────────
+  /** Cerrar el cuadro y llevar a una cosa por corregir: a su lugar, con el foco ahí. */
+  const irDesdeElCuadro = (p: ValidationIssue) => () => {
+    cerrarAntesDeActivar();
+    irAlProblema(p);
+  };
+  const conSuLugar = (p: ValidationIssue, texto: string) => ({ texto: `${ubicacionDelProblema(p.path, estructura)}: ${texto}`, ir: lugarDelProblema(p.path).dia === null ? null : irDesdeElCuadro(p) });
+  // Lo que impide activar: lo que el editor ve solo (al instante) y lo que dijo la API de lo guardado.
+  const impidenActivar = [
+    ...loQueNoDejaGuardarElPlan(estructura).map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
+    ...(revision?.estado === 'lista' ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+  ];
+  // TB-48: lo que queda sin completar no impide nada; se dice aparte, cada cosa con su lugar.
+  const sinCompletarAlActivar = confirmar ? loQueQuedaSinCompletarEnNutricion(estructura).map((p) => conSuLugar(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento')) : [];
+  // Lo que va a ver la persona: cada día tipo, con sus comidas.
+  const loQueVeLaPersona = confirmar ? estructura.map((d, n) => `${d.label.trim() || `Día tipo ${n + 1}`}: ${d.meals.length === 1 ? '1 comida incluida' : `${d.meals.length} comidas incluidas`}`) : [];
+
   // Una plantilla no guarda recetas (DL-119): con una opción de receta, «Guardar como plantilla» dice por qué no.
   const sinPlantilla = estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null;
 
@@ -650,30 +686,12 @@ export function EditorDeBorrador({
               {sinPlantilla}
             </span>
           ) : null}
-          {/* Los tres se apagan con `aria-disabled`, no con `disabled`: un botón deshabilitado pierde el foco, y quien
-              guarda con el teclado quedaría fuera de lugar (y «Volver», en el diálogo, no tendría a dónde volver). */}
-          <button
-            type="button"
-            className="boton boton--quieto"
-            aria-disabled={guardando || undefined}
-            onClick={() => {
-              if (!guardando) void validar();
-            }}
-          >
-            {COPY_NUTRICION.validarPlan}
-          </button>
-          {/* Un solo botón lleno (crítica de diseño del 2026-10-15), y siempre el mismo (DJ-6): activar no cambia de lugar ni
-              de forma mientras se escribe. */}
-          <button
-            type="button"
-            className="boton boton--primario"
-            aria-disabled={guardando || undefined}
-            onClick={() => {
-              if (!guardando) void abrirLaActivacion();
-            }}
-          >
+          {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
+              barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
+              ni de lugar mientras se escribe. */}
+          <button type="button" className="boton boton--primario" data-revisar-y-activar onClick={abrirAntesDeActivar}>
             <Icono nombre="activar" tamano={18} />
-            {COPY_NUTRICION.activarPlan}
+            {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
           </button>
           {/* ED-01: el «⋯» de la versión, con «Descartar la versión en preparación». La vigente nunca lo ofrece. */}
           {ofreceDescartar(version) ? (
@@ -738,21 +756,6 @@ export function EditorDeBorrador({
                 </li>
               ))}
             </ul>
-          ) : null}
-          {/* TB-48: lo que queda sin completar, que no impide activar; cada cosa lleva a su lugar, como un problema. */}
-          {sinCompletar && sinCompletar.length > 0 ? (
-            <>
-              <p>{COPY_REVISAR_EL_PLAN.sinCompletar}</p>
-              <ul className="problemas-del-plan" data-sin-completar>
-                {sinCompletar.map((p, n) => (
-                  <li key={n}>
-                    <button type="button" className="boton boton--enlace" onClick={() => irAlProblema(p)}>
-                      {ubicacionDelProblema(p.path, estructura)} → {TEXTO_DE_LO_INCOMPLETO[p.code]}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
           ) : null}
         </Aviso>
       ) : null}
@@ -986,49 +989,43 @@ export function EditorDeBorrador({
         />
       </Cajon>
 
-      <DialogoDeConfirmacion
+      <AntesDeActivar
         abierto={confirmar}
-        titulo={COPY_NUTRICION.activarPlan}
-        textoVolver={COPY_DE_ACTIVAR_EL_PLAN.volver}
-        textoConfirmar={COPY_DE_ACTIVAR_EL_PLAN.activarEstaVersion}
-        textoEnviando={COPY_DE_ACTIVAR_EL_PLAN.activando}
-        enviando={activando}
+        area="Nutrición"
+        numero={numero}
+        vigente={vigente?.numero ?? null}
+        primera={!version.predecessorPlanId}
+        impiden={impidenActivar}
+        sinCompletar={sinCompletarAlActivar}
+        revisando={revision?.estado === 'revisando'}
+        sinRevisar={revision?.estado === 'fallo'}
+        onVolverARevisar={() => void revisar(version)}
+        sinGuardar={sucio}
+        guardando={guardando}
+        onGuardarAhora={() => void guardar()}
+        cambios={confirmar && (vigente?.plan || !version.predecessorPlanId) ? compararNutricion(vigente?.plan ? aEntrada(vigente.plan) : [], estructura) : null}
+        loQueVe={loQueVeLaPersona}
+        eligioCuando={fechaQueResulta(cuando, hoyEn()) !== undefined}
+        activando={activando}
         error={falloDeActivacion}
-        focoEnVolver
-        confirmarDeshabilitado={fechaQueResulta(cuando, hoyEn()) === undefined}
-        onVolver={() => {
-          setConfirmar(false);
-          setFalloDeActivacion(null);
-          // La fecha es de este acto: si no se activa, vuelve a la que estaba guardada.
-          setProximaRevision(version.nextReviewAt ?? '');
-          setCuando(NADA_ELEGIDO);
-          intentoDeActivar.descartar();
-        }}
-        onConfirmar={() => void activar()}
-      >
-        <p>{COPY_NUTRICION.confirmarActivacion}</p>
-        <div className="lo-que-cambia-al-activar" data-lo-que-cambia>
-          {[COPY_DE_ACTIVAR_EL_PLAN.entra(loQueEntraAlActivar(estructura)), ...(vigente ? [COPY_DE_ACTIVAR_EL_PLAN.queda(vigente.numero, diaSinElAnioEnCurso(vigente.desde))] : [])].map((frase) => (
-            <p key={frase.quien}>
-              <strong>{frase.quien}</strong>
-              {frase.que}
-            </p>
-          ))}
-        </div>
-        <CuandoLaRevisas
-          id="proxima-revision"
-          hoy={hoyEn()}
-          momento="ACTIVAR"
-          conSinFecha
-          primerPlan={!vigente}
-          eleccion={cuando}
-          alElegir={(e) => {
-            setCuando(e);
-            setProximaRevision(fechaQueResulta(e, hoyEn()) ?? '');
-          }}
-          aviso={loQueFalta(cuando, hoyEn())}
-        />
-      </DialogoDeConfirmacion>
+        onActivar={() => void activar()}
+        onVolver={cerrarAntesDeActivar}
+        cuando={
+          <CuandoLaRevisas
+            id="proxima-revision"
+            hoy={hoyEn()}
+            momento="ACTIVAR"
+            conSinFecha
+            primerPlan={!vigente}
+            eleccion={cuando}
+            alElegir={(e) => {
+              setCuando(e);
+              setProximaRevision(fechaQueResulta(e, hoyEn()) ?? '');
+            }}
+            aviso={loQueFalta(cuando, hoyEn())}
+          />
+        }
+      />
 
       <CuadroDelDescarte
         abierto={descartar}
