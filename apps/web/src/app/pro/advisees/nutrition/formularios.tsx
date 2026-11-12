@@ -28,6 +28,7 @@ import { dia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useNutricion } from './nutricion';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
+import { RepartosHabituales } from './repartos-habituales';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
 
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
@@ -302,6 +303,8 @@ export function CamposDeObjetivo({
           />
           <Campo id={`${prefijo}-grasas`} etiqueta="Grasas (g)" inputMode="decimal" value={valores.grasas} onChange={(e) => c({ grasas: e.target.value })} error={err('grasas')} />
         </div>
+        {/* ED-13: usar un reparto habitual escribe sus gramos; el que se escribió se puede guardar como habitual. */}
+        <RepartosHabituales gramos={valores} onUsar={(g) => c(g)} />
       </fieldset>
       <div className="campo">
         <label htmlFor={`${prefijo}-distribucion`}>Distribución por comidas (opcional)</label>

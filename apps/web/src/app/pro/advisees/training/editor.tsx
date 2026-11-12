@@ -126,6 +126,7 @@ import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
 import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales } from './habituales';
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
+import { COPY_PRESCRIPCION_HABITUAL, DialogoGuardarPrescripcionHabitual, usePrescripcionesHabituales } from './prescripcion-habitual';
 
 type MicrocicloE = NonNullable<BloqueE['microcycles']>[number];
 
@@ -308,6 +309,9 @@ export function EditorDePlan({
   const ejerciciosHabituales = useEjerciciosHabituales(token);
   const sesionesHabituales = useSesionesHabituales(token);
   const [sesionHabitual, setSesionHabitual] = useState<SesionE | null>(null);
+  // ED-13: las prescripciones habituales (la galería las ofrece en «Tuyos») y el diálogo de guardar una.
+  const prescripcionesHabituales = usePrescripcionesHabituales(token);
+  const [prescripcionHabitual, setPrescripcionHabitual] = useState(false);
   const [insertandoHabitual, setInsertandoHabitual] = useState(false);
   // «Agregar ejercicio»: el cajón suma a la sesión que se mira.
   const [agregando, setAgregando] = useState(false);
@@ -1441,7 +1445,7 @@ export function EditorDePlan({
                   },
                   noSePuede: antesHayQueCorregir ?? (sesion ? null : C.sinSesiones),
                 },
-                { clave: 'prescripcion-habitual', texto: `${CE.guardarComoPreset}: ${CE.lasSeriesComoPrescripcion}`, alElegir: () => undefined, noSePuede: CE.prescripcionHabitualMasAdelante },
+                { clave: 'prescripcion-habitual', texto: `${CE.guardarComoPreset}: ${CE.lasSeriesComoPrescripcion}`, alElegir: () => setPrescripcionHabitual(true), noSePuede: antesHayQueCorregir ?? (sesion?.prescriptions.some((x) => x.sets.length > 0) ? null : CE.sinSeriesParaPrescripcion) },
                 // ED-14: retomar no depende de nada guardado aparte: el paso que sigue se deduce del borrador.
                 { clave: 'seguir-asistente', texto: CA.seguirConElAsistente(sugerido), alElegir: () => irAlPaso(sugerido) },
                 { clave: 'asistente', texto: CE.rehacerConElAsistente, alElegir: () => irAlPaso(1) },
@@ -2002,6 +2006,7 @@ export function EditorDePlan({
         seReemplazan={loQueReemplazaLaEstructura(sesiones, tieneDias).map((n) => nombreDeLaSesion(sesiones[n]!, n))}
         nombreDe={(p) => nombres[p.exerciseVersionId] ?? 'Ejercicio'}
         habituales={sesionesHabituales.sesiones}
+        prescripcionesHabituales={prescripcionesHabituales.lista}
         onAplicarPrescripcion={aplicarElPreset}
         onAplicarEstructura={aplicarLaEstructura}
         onInsertarHabitual={insertarSesion}
@@ -2029,6 +2034,19 @@ export function EditorDePlan({
           setSesionHabitual(null);
           setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.guardadaSesion });
           void sesionesHabituales.recargar();
+        }}
+      />
+
+      <DialogoGuardarPrescripcionHabitual
+        token={token}
+        abierto={prescripcionHabitual && !!sesion}
+        ejercicios={(sesion?.prescriptions ?? []).map((x) => ({ nombre: nombres[x.exerciseVersionId] ?? 'Ejercicio', prescripcion: x }))}
+        existentes={prescripcionesHabituales.lista}
+        onCerrar={() => setPrescripcionHabitual(false)}
+        onGuardada={(h) => {
+          setPrescripcionHabitual(false);
+          setMensaje({ tipo: 'exito', texto: COPY_PRESCRIPCION_HABITUAL.guardada(h.name) });
+          void prescripcionesHabituales.recargar();
         }}
       />
 

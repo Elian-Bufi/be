@@ -3,8 +3,8 @@
 /**
  * ED-11 (WP-EDITORES-PROFESIONAL, §2.4; DJ-8) · La galería de presets, en un cuadro enfocado (ED-10). Muestra juntos los
  * de BE («De BE · punto de partida») y los tuyos, filtrados por la tarea desde donde se abre:
- * - **prescripción** (desde una sesión o un ejercicio): las cuatro de BE; las propias llegan con ED-13 (la API, en la
- *   ventana del vie 20), y mientras tanto se dice;
+ * - **prescripción** (desde una sesión o un ejercicio): las cuatro de BE y tus prescripciones habituales (ED-13,
+ *   API-HAB-06), que se aplican igual: con la vista previa del alcance si pisan algo, y las cargas se conservan (DJ-8);
  * - **estructura** (desde la estructura o el asistente): las tres de BE, y tus sesiones habituales (HAB, DL-109).
  *
  * Nada viene elegido al abrir (TEST-EDP-014). Elegir una tarjeta muestra su vista previa al costado. «Usar» aplica con
@@ -14,22 +14,31 @@
  */
 import {
   COPY_PRESETS as C,
+  ejercicioPlegadoDelEditor,
   PRESETS_DE_ESTRUCTURA,
   PRESETS_DE_PRESCRIPCION,
   prescripcionDelPreset,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type PresetDeEstructura,
+  type PrescripcionHabitual,
   type PresetDePrescripcion,
   type SesionHabitual,
 } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { CuadroEnfocado } from '../../../components/cuadro-enfocado';
-import { alcanceDelPreset, type AlcanceDelPreset } from './alcance-del-preset';
+import { alcanceDelPreset, alcanceDeLaHabitual, type AlcanceDelPreset } from './alcance-del-preset';
 
 type SesionE = NonNullable<EstructuraDePlanDeEntrenamientoEntrada['blocks'][number]['sessions']>[number];
 type PrescripcionE = SesionE['prescriptions'][number];
 
-type Elegido = { readonly tipo: 'BE'; readonly preset: PresetDePrescripcion | PresetDeEstructura } | { readonly tipo: 'HABITUAL'; readonly sesion: SesionHabitual } | null;
+type Elegido =
+  | { readonly tipo: 'BE'; readonly preset: PresetDePrescripcion | PresetDeEstructura }
+  | { readonly tipo: 'HABITUAL'; readonly sesion: SesionHabitual }
+  | { readonly tipo: 'PRESCRIPCION'; readonly habitual: PrescripcionHabitual }
+  | null;
+
+/** «4 × 5 · RIR 1 · 3:00»: una prescripción habitual en una línea, como se lee un ejercicio plegado. */
+const enUnaLinea = (h: PrescripcionHabitual): string => ejercicioPlegadoDelEditor({ exerciseVersionId: '', ...structuredClone(h.prescription) } as PrescripcionE, 0).resumen;
 
 export function GaleriaDePresets({
   abierto,
@@ -41,6 +50,7 @@ export function GaleriaDePresets({
   seReemplazan = [],
   nombreDe,
   habituales,
+  prescripcionesHabituales = [],
   onAplicarPrescripcion,
   onAplicarEstructura,
   onInsertarHabitual,
@@ -59,6 +69,8 @@ export function GaleriaDePresets({
   seReemplazan?: readonly string[];
   nombreDe: (p: PrescripcionE) => string;
   habituales: readonly SesionHabitual[];
+  /** ED-13: las prescripciones habituales del profesional (API-HAB-06). */
+  prescripcionesHabituales?: readonly PrescripcionHabitual[];
   onAplicarPrescripcion: (a: AlcanceDelPreset, nombre: string) => void;
   onAplicarEstructura: (p: PresetDeEstructura) => void;
   onInsertarHabitual: (h: SesionHabitual) => void;
@@ -78,7 +90,14 @@ export function GaleriaDePresets({
   };
   const prescripciones = sesion?.prescriptions ?? [];
   const posiciones = soloElEjercicio && ejercicio !== null ? [ejercicio] : prescripciones.map((_, n) => n);
-  const alcance = elegido?.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION' ? alcanceDelPreset(prescripciones, posiciones, prescripcionDelPreset(elegido.preset), nombreDe, nombreDeLaSesion) : null;
+  const alcance =
+    elegido?.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION'
+      ? alcanceDelPreset(prescripciones, posiciones, prescripcionDelPreset(elegido.preset), nombreDe, nombreDeLaSesion)
+      : elegido?.tipo === 'PRESCRIPCION'
+        ? alcanceDeLaHabitual(prescripciones, posiciones, elegido.habitual.prescription as Parameters<typeof alcanceDeLaHabitual>[2], nombreDe, nombreDeLaSesion)
+        : null;
+  /** El nombre de lo elegido, si se aplica a ejercicios. */
+  const nombreDelElegido = elegido?.tipo === 'PRESCRIPCION' ? elegido.habitual.name : elegido?.tipo === 'BE' ? elegido.preset.nombre : '';
 
   const usar = () => {
     if (!elegido) return;
@@ -86,29 +105,29 @@ export function GaleriaDePresets({
       onInsertarHabitual(elegido.sesion);
       return cerrar();
     }
-    if (elegido.preset.tipo === 'ESTRUCTURA') {
+    if (elegido.tipo === 'BE' && elegido.preset.tipo === 'ESTRUCTURA') {
       onAplicarEstructura(elegido.preset);
       return cerrar();
     }
     if (!alcance || alcance.filas.length === 0) return;
     // DJ-8: con un clic si solo llena lo vacío; si pisa algo, primero la vista previa del alcance.
     if (paso === 'elegir' && !alcance.soloLlenaLoVacio) return setPaso('alcance');
-    onAplicarPrescripcion(alcance, elegido.preset.nombre);
+    onAplicarPrescripcion(alcance, nombreDelElegido);
     cerrar();
   };
 
   const presetsDeBe = tarea === 'prescripcion' ? PRESETS_DE_PRESCRIPCION : PRESETS_DE_ESTRUCTURA;
   const sinEjercicios = tarea === 'prescripcion' && prescripciones.length === 0;
   const titulo =
-    paso === 'alcance' && elegido?.tipo === 'BE'
-      ? C.aplicarA(elegido.preset.nombre, soloElEjercicio && ejercicio !== null ? nombreDe(prescripciones[ejercicio]!) : nombreDeLaSesion)
+    paso === 'alcance' && (elegido?.tipo === 'BE' || elegido?.tipo === 'PRESCRIPCION')
+      ? C.aplicarA(nombreDelElegido, soloElEjercicio && ejercicio !== null ? nombreDe(prescripciones[ejercicio]!) : nombreDeLaSesion)
       : tarea === 'prescripcion'
         ? `Presets de prescripción para ${nombreDeLaSesion}`
         : 'Presets de estructura';
   const principal =
     paso === 'alcance' && alcance
       ? { texto: C.aplicarAEjercicios(alcance.filas.length), alTocar: usar }
-      : { texto: C.usar, alTocar: usar, apagado: !elegido ? C.nadaElegido : sinEjercicios && elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION' ? C.sinEjercicios : null };
+      : { texto: C.usar, alTocar: usar, apagado: !elegido ? C.nadaElegido : sinEjercicios && (elegido.tipo === 'PRESCRIPCION' || (elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION')) ? C.sinEjercicios : null };
 
   return (
     <CuadroEnfocado
@@ -141,7 +160,20 @@ export function GaleriaDePresets({
             <section aria-labelledby="galeria-tuyos">
               <h3 id="galeria-tuyos">{C.tuyos}</h3>
               {tarea === 'prescripcion' ? (
-                <p className="nota">{C.prescripcionesPropiasMasAdelante}</p>
+                prescripcionesHabituales.length === 0 ? (
+                  <p className="nota">{C.sinTuyos}</p>
+                ) : (
+                  <ul className="galeria__tarjetas" role="list" data-prescripciones-habituales>
+                    {prescripcionesHabituales.map((h) => (
+                      <li key={h.presetId}>
+                        <button type="button" className="galeria__tarjeta" aria-pressed={elegido?.tipo === 'PRESCRIPCION' && elegido.habitual.presetId === h.presetId} onClick={() => setElegido({ tipo: 'PRESCRIPCION', habitual: h })}>
+                          <span className="galeria__nombre">{h.name}</span>
+                          <span className="nota">{enUnaLinea(h)} · sin cargas</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )
               ) : habituales.length === 0 ? (
                 <p className="nota">{C.sinTuyos}</p>
               ) : (
@@ -168,7 +200,7 @@ export function GaleriaDePresets({
                 </p>
                 <p className="nota">{elegido.sesion.structure.prescriptions.length} ejercicios. Se suma al final de las sesiones que mirás.</p>
               </>
-            ) : elegido.preset.tipo === 'ESTRUCTURA' ? (
+            ) : elegido.tipo === 'BE' && elegido.preset.tipo === 'ESTRUCTURA' ? (
               <>
                 <p>{C.estructuraEscribe(elegido.preset.sesiones.length)}</p>
                 <ul>
@@ -185,7 +217,7 @@ export function GaleriaDePresets({
             ) : (
               <>
                 <p>
-                  <strong>{elegido.preset.nombre}</strong> · {elegido.preset.detalle}
+                  <strong>{nombreDelElegido}</strong> · {elegido.tipo === 'PRESCRIPCION' ? `${enUnaLinea(elegido.habitual)} · sin cargas` : elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION' ? elegido.preset.detalle : ''}
                 </p>
                 {ejercicio !== null ? (
                   <fieldset className="galeria__alcance">

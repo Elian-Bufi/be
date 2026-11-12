@@ -91,7 +91,7 @@ export const COPY_ESTACION = {
   elPlanComoPlantilla: 'El plan, como plantilla',
   laSesionComoHabitual: 'Esta sesión, como sesión habitual',
   lasSeriesComoPrescripcion: 'Estas series, como prescripción habitual',
-  prescripcionHabitualMasAdelante: 'Llega con la próxima actualización del servidor.',
+  sinSeriesParaPrescripcion: 'Esta sesión todavía no tiene un ejercicio con series.',
   galeriaDeEstructura: 'Presets de estructura',
   rehacerConElAsistente: 'Rehacer con el asistente',
 } as const;

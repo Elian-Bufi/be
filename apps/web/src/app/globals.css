@@ -16807,3 +16807,18 @@ p.cifra-del-espacio__desglose {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ED-13 · los repartos habituales en el objetivo de Nutrición */
+.repartos-habituales {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.repartos-habituales__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
