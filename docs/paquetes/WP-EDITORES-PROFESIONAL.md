@@ -1771,6 +1771,20 @@ website (EDT-21 en adelante), el 2026-11-12. Ninguna cambia la forma de un contr
 | EDT-46 | ED-70 (TEST-EDP-046) | La APK 0.24 lee lo que ella registra, también después de que el profesional lo corrige (EDT-36 le impide agregar el campo). Una ejecución con procedencia, registrada con la APK nueva, no la lee la 0.24 («respuesta no reconocida» en ese detalle, en «Tu historial» del período y en el borrador): pasa solo si la misma persona vuelve a la 0.24 o usa dos teléfonos con versiones distintas. Queda como riesgo aceptado, como el de DL-161, y lo prueba `procedencia-por-campo.int-spec.ts` | Una capacidad nueva en `X-BE-Capabilities` (como DL-122): la API devuelve `fieldOrigins` solo a quien la declara. Una corrección desde la 0.24 perdería la procedencia sin aviso |
 | EDT-45 | API-PLN-01 | La ruta es la del TB-38 (`/nutrition/plans/{planId}/option-estimates`). Un borrador se estima con lo que usaría la instantánea si se activara hoy; un alimento que ya no está disponible queda sin composición y la opción dice «sin dato» por él | Rechazar el borrador hasta que se pueda activar |
 
+**Las del website (EDT-47 en adelante), a ratificar.** Las tomó Claude al programar la tarea 2 (el website de la API,
+rama `wp-editores-api`), el 2026-11-12. Ninguna cambia la API ni lo que leen las APK.
+
+| ID | Parte | Lo elegido | La alternativa |
+|---|---|---|---|
+| EDT-47 | ED-75 | El detalle con la fuerza es un cuadro al costado, «Detalle y fuerza estimada», que se abre desde el cuerpo del ejercicio y desde su «Más», solo en los ejercicios de la lista. «Lo que indica el plan» va arriba, en una línea, y «Lo registrado» abajo. «Las últimas sesiones» de la maqueta 14 queda para después: la tabla de origen de la evolución dice lo mismo | La tarjeta dentro del cuerpo del ejercicio, mezclada con la planilla |
+| EDT-48 | ED-72 | La fecha de la observación se escribe en la zona que devuelve API-PRJ-01 en su período, y «Hoy» es el último día de ese período: el website no tiene una lectura de la zona de la persona | Una lectura nueva de la zona de la persona |
+| EDT-49 | ED-72 | El RIR observado se elige de 0 a 2 de a medio (maqueta 17), más «Más de 2», que existe para que el cuadro diga «Con un RIR mayor que 2 no se estima» y no guarde nada (ED-D19) | Un campo libre |
+| EDT-50 | ED-74 | La evolución es una pregunta del website (`pregunta=fuerza-estimada`), como la de la composición (TA-25): no se guarda como vista y usa el período de la ficha. El gráfico es propio (SVG), con la tabla de origen como su texto | Sumarla a `ID_DE_PREGUNTAS`, que cambia lo que acepta la API |
+| EDT-51 | ED-76 | El cuadro de la carga escribe en la fila general; «desde las series elegidas» queda para después. El % RM de entrada es el del criterio, si es % RM | Escribir también en las series elegidas |
+| EDT-52 | ED-13 | «Estas series, como prescripción habitual» sale del «⋯» de la versión y pide elegir el ejercicio de la sesión. Aplicar una habitual sigue DJ-8 como un preset de BE, y un objetivo propio de una serie que cambia se nombra antes | Guardarla desde el «Más» de cada ejercicio |
+| EDT-53 | ED-24 | «Duplicar el día» va en la tira de la semana. Cada copia queda después de su original, con «(copia)», y lleva un identificador de sesión del cliente para entrar en la agenda con el día de destino en el mismo guardado (la API conserva el que recibe) | Copias sin identificador, con los días elegidos después de guardar |
+| EDT-54 | ED-11 | Reemplazar el borrador con una plantilla son dos operaciones de hoy: descartar (API-PLE-05) y crear desde la plantilla (API-TRN-07). Si la segunda falla, la versión activa sigue igual y el diálogo de plantillas queda abierto con el motivo | Una operación nueva de la API que lo haga de una vez |
+
 ## 7. Medición: antes y después
 
 **El mismo script:** `flujos-de-planificacion.mjs`, con sus 73 tareas (A01-A32, B01-B27 y C01-C14, sin B28, que es un
@@ -1995,6 +2009,25 @@ EDT-45 (§6.3), a ratificar.
   activación: van en la próxima tanda, con su decisión. El editor sigue armando el rango del día con los totales
   (EDT-21 y EDT-22), que ahora puede confirmar con API-PLN-01.
 - **El website** de ED-72 a ED-76, ED-13 y API-PLN-01 es la tarea 2; **la APK** de ED-70, su rama.
+
+### 8.6 El website de la API (tarea 2): lo hecho y lo que queda (2026-11-12)
+
+Programado en la rama `wp-editores-api` (PR #258, en borrador). Las decisiones nuevas son EDT-47 a EDT-54 (§6.3), a
+ratificar.
+
+| Parte | Commit | Lo que quedó |
+|---|---|---|
+| ED-72 a ED-76 | 43b6e77f | El detalle del ejercicio con la tarjeta de fuerza, «Cómo se calculó», «Registrar una serie observada» y «Calcular la carga desde la estimación…» en el mismo cuadro, con «Atrás»; la evolución en «Analizar» (TEST-EDP-063, 065 y 066 en su parte del website; RM-36, RM-37, RM-40 y RM-43) |
+| ED-13 | 0b3a1e8d | Guardar y usar las prescripciones habituales (la galería, «Tuyos») y los repartos habituales en el objetivo de Nutrición, en gramos |
+| ED-24 y ED-11 | 620a6557 | «Duplicar el día» en la tira de la semana; las plantillas como pestaña de la galería de estructura, que reemplazan el borrador |
+
+**Lo que queda, declarado:**
+- **ED-74:** las capturas de las maquetas 14 a 18 en Claro y Azul noche, con la API local y una persona con series de
+  la app nueva; hasta entonces, lo verifican las pruebas y la CI.
+- **ED-75:** «Las últimas sesiones» del detalle (EDT-47). **ED-76:** escribir en las series elegidas (EDT-51).
+- **ED-72:** corregir o anular una observación (API-FZA-03) desde el website.
+- **ED-30:** el asistente de Nutrición con el reparto propio en su paso 2: hoy el reparto habitual se usa en el formulario
+  del objetivo.
 
 ## 9. Riesgos
 

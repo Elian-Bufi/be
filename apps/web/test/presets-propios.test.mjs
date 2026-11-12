@@ -54,6 +54,6 @@ test('ED-11 · las plantillas son una pestaña de la galería de estructura: se 
   assert.ok(reemplazar.indexOf('descartarBorradorDePlanDeEntrenamiento') < reemplazar.indexOf('onReemplazarConPlantilla(templateVersionId)'));
   assert.match(reemplazar, /if \(queNoSeHizo\) return setFalloAlReemplazar\(queNoSeHizo\);/);
   // El plan lo crea con API-TRN-07 desde la plantilla: la API anota de cuál salió (`templateOrigin`).
-  assert.match(plan, /onReemplazarConPlantilla=\{\(id\) => void aplicar\(id\)\}/);
+  assert.match(plan, /onReemplazarConPlantilla=\{\(id\) => \{\n\s*setFalloDesdePlantilla\(null\);\n\s*setDesdePlantilla\(true\);\n\s*void aplicar\(id\);/);
   assert.match(plan, /fromTemplateVersionId: templateVersionId/);
 });
