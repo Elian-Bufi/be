@@ -75,6 +75,7 @@ import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
+import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
 import { COPY_REVISAR_EL_PLAN, loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
@@ -103,6 +104,9 @@ type MicrocicloE = NonNullable<BloqueE['microcycles']>[number];
 
 /** La jerarquía de API-SER-01 como entrada del PATCH, con los tres estados de cada serie (en el dominio, para que las pruebas editen igual). */
 const aEntrada = (v: PlanConObjetivos): Bloques => estructuraConObjetivosComoEntrada(v);
+
+/** ED-61: lo que quedó guardado en una versión, en la forma en que se compara con lo que mandó esta pantalla. */
+const cuerpoGuardado = (v: PlanConObjetivos): CuerpoDelGuardado => ({ estructura: aEntrada(v), proximaRevision: v.nextReviewAt, agenda: v.agenda, objetivo: v.objectiveVersionId });
 
 /** Cada prescripción de la versión, en orden: de ahí salen los nombres y las imágenes por versión de ejercicio. */
 function prescripcionesDe(v: PlanConObjetivos) {
@@ -232,6 +236,8 @@ export function EditorDePlan({
   const [guardadoA, setGuardadoA] = useState<string | null>(null);
   // Cuántas ediciones hubo: lo que se escribe mientras viaja un guardado no se pisa con la respuesta.
   const ediciones = useRef(0);
+  // ED-61: lo que esta pantalla mandó y no tuvo respuesta; ante un 409, se compara con lo guardado.
+  const sinRespuesta = useRef<CuerpoDelGuardado[]>([]);
   // `sinFoco`: un aviso del autoguardado (DL-168) se anuncia sin sacarle el foco a lo que se está editando.
   const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'exito' | 'info'; texto: string; deValidar?: boolean; sinFoco?: boolean } | null>(null);
   const [problemas, setProblemas] = useState<readonly ValidationIssue[] | null>(null);
@@ -268,6 +274,7 @@ export function EditorDePlan({
     setSucio(false);
     setFallo(false);
     setConflicto(false);
+    sinRespuesta.current = [];
   }, [token, planId, sesionPerdida]);
 
   useEffect(() => {
@@ -297,12 +304,18 @@ export function EditorDePlan({
     setParaEnfocar(null);
   };
 
-  /** Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. */
-  async function guardar(automatico = false): Promise<PlanConObjetivos | null> {
-    if (!version) return null;
+  /**
+   * Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. `reenvio` (ED-61): lo escrito después de un guardado
+   * cuya respuesta se perdió, que se manda otra vez sobre la versión que ese guardado dejó, con las ediciones contadas
+   * desde el primer envío.
+   */
+  async function guardar(automatico = false, reenvio: { readonly base: PlanConObjetivos; readonly bloques: Bloques; readonly ediciones: number } | null = null): Promise<PlanConObjetivos | null> {
+    const base = reenvio?.base ?? version;
+    if (!base) return null;
+    const bloquesEnviados = reenvio?.bloques ?? bloques;
     // Un nombre vacío o un dato que no se entiende pueden estar en otro bloque, en otra sesión o en un ejercicio
     // plegado: se listan, y cada uno lleva a su lugar. Nada de eso viaja: un dato mal escrito se guardaría como «nada».
-    const impide = loQueNoDejaGuardar(bloques);
+    const impide = loQueNoDejaGuardar(bloquesEnviados);
     if (impide.length > 0) {
       // El autoguardado espera a que se pueda guardar: no abre avisos mientras se escribe.
       if (automatico) return null;
@@ -310,18 +323,20 @@ export function EditorDePlan({
       setMensaje({ tipo: 'error', texto: impide.some((p) => esUnTope(p.code)) ? AVISO_DE_LOS_TOPES : avisoDeLoQueNoDejaGuardarElEntrenamiento(impide) });
       return null;
     }
-    const edicionesAlEnviar = ediciones.current;
-    const bloquesEnviados = bloques;
+    const edicionesAlEnviar = reenvio?.ediciones ?? ediciones.current;
     setGuardando(true);
     if (!automatico) setMensaje(null);
-    const actualizarObjetivo = objetivoVigente && objetivoVigente !== version.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
+    const actualizarObjetivo = objetivoVigente && objetivoVigente !== base.objectiveVersionId ? { objectiveVersionId: objetivoVigente } : {};
     // La agenda viaja siempre: la que se ve, o `null` si no quedó ninguna sesión con días (DL-137).
-    const dias = agendaVigente(agenda, sesionesParaLaAgenda(bloques));
+    const dias = agendaVigente(agenda, sesionesParaLaAgenda(bloquesEnviados));
+    const agendaEnviada = dias && dias.sessions.length > 0 ? dias : null;
+    // ED-61: lo que se manda, por si la respuesta se pierde y el guardado siguiente da 409.
+    const cuerpo: CuerpoDelGuardado = { estructura: bloquesEnviados, proximaRevision: proximaRevision || null, agenda: agendaEnviada, objetivo: actualizarObjetivo.objectiveVersionId ?? base.objectiveVersionId };
     const r = await api.editarPlanDeEntrenamiento(token, planId, {
-      expectedVersion: version.version,
-      changes: { blocks: bloques },
+      expectedVersion: base.version,
+      changes: { blocks: bloquesEnviados },
       nextReviewAt: proximaRevision || null,
-      agenda: dias && dias.sessions.length > 0 ? dias : null,
+      agenda: agendaEnviada,
       ...actualizarObjetivo,
     });
     if (sesionPerdida(r) || accesoRetirado(r)) {
@@ -329,25 +344,50 @@ export function EditorDePlan({
       return null;
     }
     if (!r.ok) {
-      setGuardando(false);
       if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
-        // Si el intento anterior se perdió en la red, lo guardado puede ser lo nuestro: entonces no hay conflicto.
-        const actual = fallo ? await api.planConObjetivos(token, planId) : null;
-        if (actual?.ok && JSON.stringify(aEntrada(actual.datos.data)) === JSON.stringify(bloquesEnviados) && (actual.datos.data.nextReviewAt ?? '') === proximaRevision) {
-          setVersion(actual.datos.data);
-          setFallo(false);
-          setGuardadoA(horaDelDia(new Date()));
-          if (ediciones.current === edicionesAlEnviar) setSucio(false);
-          autoguardado.informar('GUARDADO');
-          return actual.datos.data;
+        // ED-61: si un guardado de esta pantalla se quedó sin respuesta, lo guardado puede ser lo que mandó. Se relee y
+        // se compara con cada cuerpo sin respuesta, sin los identificadores que puso el servidor.
+        const mandados = sinRespuesta.current;
+        const actual = mandados.length > 0 && !reenvio ? await api.planConObjetivos(token, planId) : null;
+        if (actual && sesionPerdida(actual)) {
+          setGuardando(false);
+          return null;
         }
+        const cual = actual?.ok ? cualMande(cuerpoGuardado(actual.datos.data), mandados) : -1;
+        if (actual?.ok && cual >= 0) {
+          // Lo guardado es de esta pantalla: no hay conflicto. Se adopta la versión que quedó (su token y sus
+          // identificadores) y, si se escribió algo después, se manda sobre ella.
+          sinRespuesta.current = [];
+          const guardada = actual.datos.data;
+          const mandado = mandados[cual]!;
+          setVersion(guardada);
+          setFallo(false);
+          setNombres((n) => ({ ...n, ...nombresDe(guardada) }));
+          setImagenes((x) => ({ ...x, ...imagenesDe(guardada) }));
+          if (huellaDelGuardado(cuerpo) !== huellaDelGuardado(mandado)) {
+            return guardar(automatico, { base: guardada, bloques: conLosIdentificadoresNuevos(bloquesEnviados, mandado.estructura, aEntrada(guardada)), ediciones: edicionesAlEnviar });
+          }
+          setGuardando(false);
+          setGuardadoA(horaDelDia(new Date()));
+          autoguardado.informar('GUARDADO');
+          if (ediciones.current === edicionesAlEnviar) {
+            setBloques(aEntrada(guardada));
+            setAgenda(guardada.agenda);
+            setSucio(false);
+          }
+          return guardada;
+        }
+        setGuardando(false);
         setConflicto(true);
         autoguardado.informar('OTRO');
         return null;
       }
+      setGuardando(false);
       // Lo escrito queda como está: ni los bloques ni «sucio» cambian, y el próximo guardado lo vuelve a mandar.
       setFallo(true);
       const motivo = falloDeGuardado(r);
+      // ED-61: sin respuesta, el guardado pudo haber llegado. Se recuerda lo que se mandó, para reconocerlo ante un 409.
+      if (motivo === 'SIN_RESPUESTA') sinRespuesta.current = [...sinRespuesta.current, cuerpo];
       // ED-60: un rechazo que no se arregla solo no se reintenta sin un cambio; sin respuesta, la espera crece.
       autoguardado.informar(motivo, ediciones.current !== edicionesAlEnviar);
       // DL-168: si el plan no entra, reintentar no lo arregla: se dice también en el autoguardado, sin mover el foco.
@@ -369,8 +409,10 @@ export function EditorDePlan({
     // vuelve a leer con API-SER-01. Si esa lectura falla, lo guardado es lo que se mandó y solo cambia el token.
     const detalle = await api.planConObjetivos(token, planId);
     setGuardando(false);
+    // ED-61: con una respuesta, lo que se mandó antes sin respuesta ya no es candidato (el token avanzó).
+    sinRespuesta.current = [];
     if (sesionPerdida(detalle)) return null;
-    const guardada: PlanConObjetivos = detalle.ok ? detalle.datos.data : { ...version, version: r.datos.data.version, nextReviewAt: r.datos.data.nextReviewAt, objectiveVersionId: r.datos.data.objectiveVersionId };
+    const guardada: PlanConObjetivos = detalle.ok ? detalle.datos.data : { ...base, version: r.datos.data.version, nextReviewAt: r.datos.data.nextReviewAt, objectiveVersionId: r.datos.data.objectiveVersionId };
     setVersion(guardada);
     setFallo(false);
     setConflicto(false);
