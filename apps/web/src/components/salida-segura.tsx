@@ -12,9 +12,11 @@
  *   «Volver a la ficha». Si hay que guardar o preguntar, la navegación espera; después sigue con el enrutador.
  * - El cuadro: «Seguir editando» es el principal y tiene el foco; Escape es «Seguir editando» (nunca sale), y al cerrarse
  *   el foco vuelve al enlace. «Salir sin guardar» sale.
+ * - Una lista con el detalle abierto en el lugar (las plantillas y los habituales) pasa por la guardia al cerrarlo, abrir
+ *   otro o volver a leerse (`useDetalleConGuardia`).
  */
 import { useRouter } from 'next/navigation';
-import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { COPY_SALIDA_SEGURA as S, guardarAntesDeSalir, queHacerAlSalir, type FotoDelEditor } from '../lib/salida-segura';
 import { Icono } from './icono';
 
@@ -187,6 +189,29 @@ export function useAlNavegar(): (href: string, reemplazar?: boolean) => AlNavega
 export function useAntesDeSalir(): (accion: () => void) => void {
   const salida = useContext(Contexto);
   return (accion) => (salida ? salida.antesDe(accion) : accion());
+}
+
+/**
+ * ED-65 · Una lista que abre el detalle de un elemento en el mismo lugar (las plantillas y los habituales). Cerrar el
+ * detalle, abrir otro, cambiar el filtro o volver a leer la lista lo desmontan: si el detalle tiene cambios sin guardar,
+ * esas acciones pasan por la guardia y preguntan, como «Volver a la lista» de las recetas. Si no tiene, van derecho,
+ * aunque otro editor de la página tenga los suyos: a ese no lo tocan. El detalle avisa con `useAvisarALaLista`.
+ */
+export function useDetalleConGuardia(): { readonly anotar: (hay: boolean) => void; readonly antes: (accion: () => void) => void } {
+  const antesDeSalir = useAntesDeSalir();
+  const conCambios = useRef(false);
+  const anotar = useCallback((hay: boolean) => {
+    conCambios.current = hay;
+  }, []);
+  return { anotar, antes: (accion: () => void) => (conCambios.current ? antesDeSalir(accion) : accion()) };
+}
+
+/** El detalle de `useDetalleConGuardia` le dice a su lista si tiene cambios sin guardar, y que ya no, al cerrarse. */
+export function useAvisarALaLista(hay: boolean, avisar: (hay: boolean) => void): void {
+  useEffect(() => {
+    avisar(hay);
+    return () => avisar(false);
+  }, [hay, avisar]);
 }
 
 /**

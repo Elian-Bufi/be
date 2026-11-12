@@ -216,3 +216,41 @@ test('TEST-EDP-052 · la receta nunca se guarda sola al salir, y «Volver a la l
   assert.doesNotMatch(receta, /useCambiosParaSalir\(sucio, 'la receta', /);
   assert.match(receta, /onClick=\{\(\) => antesDeSalir\(onVolver\)\}/);
 });
+
+/** Las listas que abren el detalle de un elemento en el mismo lugar: la lista, su detalle, su identificador y si filtra. */
+const LISTAS_CON_DETALLE = [
+  ['app/pro/templates/mis-plantillas.tsx', 'DetalleDePlantilla', 'p.templateId', true],
+  ['app/pro/templates/mis-plantillas-nutricion.tsx', 'DetalleNutricional', 'p.templateId', true],
+  ['app/pro/templates/mis-habituales.tsx', 'DetalleDeSesionHabitual', 'h.presetId', false],
+  ['app/pro/templates/mis-habituales-nutricion.tsx', 'DetalleDeComida', 'c.presetId', false],
+];
+
+test('TEST-EDP-052 · plantillas y habituales: cerrar el detalle, abrir otro o cambiar el filtro pasan por la guardia', () => {
+  // Revisión adversaria de la etapa 1: la guardia miraba solo los enlaces y la recarga. «Cerrar», abrir otra plantilla o
+  // cambiar el filtro (la lista vuelve a leerse) desmontaban el detalle, y el nombre o la descripción escritos se perdían
+  // sin aviso.
+  const escapar = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (const [ruta, detalle, id, conFiltro] of LISTAS_CON_DETALLE) {
+    const fuente = leer(ruta);
+    assert.match(fuente, /const detalle = useDetalleConGuardia\(\);/, ruta);
+    // «Ver» y «Cerrar»: cerrar este o abrir otro desmonta el abierto.
+    assert.match(fuente, new RegExp(`onClick=\\{\\(\\) => detalle\\.antes\\(\\(\\) => setAbiertaId\\(abiertaId === ${escapar(id)} \\? null : ${escapar(id)}\\)\\)\\}`), ruta);
+    assert.doesNotMatch(fuente, /onClick=\{\(\) => setAbiertaId\(/, ruta);
+    // El detalle le avisa a la lista si tiene cambios sin guardar.
+    assert.match(fuente, new RegExp(`<${detalle}\\n[^>]*avisarSinGuardar=\\{detalle\\.anotar\\}`), ruta);
+    assert.match(fuente, /useAvisarALaLista\([^;]+, avisarSinGuardar\);/, ruta);
+    if (conFiltro) {
+      // Cambiar el filtro vuelve a leer la lista: el detalle abierto se desmonta.
+      assert.match(fuente, /onChange=\{\(e\) => \{\n\s*const nuevo = e\.target\.value as Estado \| '';\n\s*detalle\.antes\(\(\) => setEstado\(nuevo\)\);/, ruta);
+      assert.doesNotMatch(fuente, /onChange=\{\(e\) => setEstado\(/, ruta);
+    }
+  }
+  // «Quitar» otro habitual también vuelve a leer la lista.
+  assert.match(leer('app/pro/templates/mis-habituales.tsx'), /onClick=\{\(\) => detalle\.antes\(\(\) => void quitar\(h\)\)\}/);
+  // La regla: con cambios en el detalle, pregunta; sin cambios, va derecho, aunque otro editor de la página tenga los
+  // suyos (a ese no lo toca).
+  const guardia = leer('components/salida-segura.tsx');
+  assert.match(guardia, /export function useDetalleConGuardia\(\)/);
+  assert.match(guardia, /antes: \(accion: \(\) => void\) => \(conCambios\.current \? antesDeSalir\(accion\) : accion\(\)\)/);
+  assert.match(guardia, /export function useAvisarALaLista\(hay: boolean, avisar: \(hay: boolean\) => void\): void \{\n\s*useEffect\(\(\) => \{\n\s*avisar\(hay\);\n\s*return \(\) => avisar\(false\);/);
+});

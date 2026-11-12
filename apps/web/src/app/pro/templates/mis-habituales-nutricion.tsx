@@ -11,7 +11,7 @@
 import { cantidad, COPY_HABITUALES, ETIQUETA_DE_PREPARACION, type ComidaHabitual, type ElementoDeCatalogo } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
-import { useCambiosParaSalir } from '../../../components/salida-segura';
+import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -27,6 +27,8 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
   const [sinArea, setSinArea] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
+  // ED-65: cerrar el detalle o abrir otra lo desmontan: con el nombre sin guardar, pregunta.
+  const detalle = useDetalleConGuardia();
   const comidas = useListaPaginada(
     useMemo(
       () => (cursor?: string) =>
@@ -92,7 +94,7 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
                 <p className="nota">
                   {COPY_HABITUALES.alimentos(c.itemCount)} · {c.copiedQuantities ? COPY_HABITUALES.conCantidades : COPY_HABITUALES.sinCantidades} · {COPY_HABITUALES.actualizada(fecha(c.updatedAt))}
                 </p>
-                <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === c.presetId} onClick={() => setAbiertaId(abiertaId === c.presetId ? null : c.presetId)}>
+                <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === c.presetId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === c.presetId ? null : c.presetId))}>
                   {abiertaId === c.presetId ? 'Cerrar' : 'Ver'}
                 </button>
                 {abiertaId === c.presetId ? (
@@ -100,6 +102,7 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
                     token={token}
                     comida={c}
                     sesionPerdida={sesionPerdida}
+                    avisarSinGuardar={detalle.anotar}
                     onCambio={(texto) => {
                       setAviso({ tipo: 'exito', texto });
                       void comidas.recargar();
@@ -138,12 +141,25 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
   );
 }
 
-function DetalleDeComida({ token, comida: c, sesionPerdida, onCambio }: { token: string; comida: ComidaHabitual; sesionPerdida: (r: Resultado<unknown>) => boolean; onCambio: (texto: string) => void }) {
+function DetalleDeComida({
+  token,
+  comida: c,
+  sesionPerdida,
+  avisarSinGuardar,
+  onCambio,
+}: {
+  token: string;
+  comida: ComidaHabitual;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  avisarSinGuardar: (hay: boolean) => void;
+  onCambio: (texto: string) => void;
+}) {
   const [nombre, setNombre] = useState(c.name);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // ED-65: con el nombre cambiado y sin guardar, salir pregunta.
+  // ED-65: con el nombre cambiado y sin guardar, salir pregunta, y cerrarlo desde la lista también.
   useCambiosParaSalir(nombre.trim() !== c.name, 'el nombre de la comida habitual');
+  useAvisarALaLista(nombre.trim() !== c.name, avisarSinGuardar);
 
   async function editar(cambios: { name?: string; state?: 'REMOVED' }, texto: string) {
     setEnviando(true);

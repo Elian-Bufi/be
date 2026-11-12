@@ -473,9 +473,13 @@ STEPS                1. Recorrer la lista de editores (planes, recetas, plantill
                         en la guardia.
                      2. Con una receta con cambios, tocar un enlace interno o recargar.
                      3. Mutación: sacar la guardia de un editor de la lista.
+                     4. Con el nombre de una plantilla o de un habitual sin guardar, tocar «Cerrar», abrir otro,
+                        cambiar el filtro o quitar otro habitual (revisión adversaria de la etapa 1).
 EXPECTED             1 → todos la usan. 2 → «Tenés cambios sin guardar», con «Seguir editando» como principal; la
-                     receta no se guarda sola. 3 → la prueba falla y nombra el editor.
-NEGATIVE_ASSERTIONS  La receta nunca se guarda sola al salir (guardar crea una versión).
+                     receta no se guarda sola. 3 → la prueba falla y nombra el editor. 4 → el mismo cuadro antes de
+                     desmontar el detalle; sin cambios en ese detalle, la acción va derecho.
+NEGATIVE_ASSERTIONS  La receta nunca se guarda sola al salir (guardar crea una versión). Cerrar el detalle de una
+                     plantilla o de un habitual, o volver a leer su lista, nunca pierde lo escrito sin preguntar.
 AUTOMATION           apps/web/test/salida-segura.test.mjs («TEST-EDP-052 · …»)
 ENVIRONMENT          Local (node --test) y CI
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR, con la mutación anotada en el commit

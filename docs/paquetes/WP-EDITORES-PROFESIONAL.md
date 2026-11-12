@@ -711,7 +711,11 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
 - *Toca:* `recipes/editor-de-receta.tsx`, `templates/*` y `components/salida-segura.tsx` (de ED-02).
 - *Dado* una receta con cambios, *cuando* el profesional toca un enlace interno o recarga, *entonces* un cuadro «Tenés
   cambios sin guardar», con «Seguir editando» como principal. No se guarda sola: guardar una receta crea una versión.
-- *Pruebas:* TEST-EDP-052 (cada editor con cambios tiene la guardia: una prueba recorre la lista de editores).
+- *En las plantillas y los habituales,* el detalle se abre en la lista: cerrarlo, abrir otro, cambiar el filtro o quitar
+  un habitual (la lista vuelve a leerse) también pasan por la guardia si ese detalle tiene cambios; si no, van derecho
+  (`useDetalleConGuardia`; lo encontró la revisión adversaria de la etapa 1).
+- *Pruebas:* TEST-EDP-052 (cada editor con cambios tiene la guardia: una prueba recorre la lista de editores, y otra, las
+  cuatro listas con el detalle en el lugar).
 
 ### 5.3 P1 · Lo común: cuadros, presets, asistente y estación
 

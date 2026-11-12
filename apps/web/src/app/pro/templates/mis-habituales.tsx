@@ -12,7 +12,7 @@
 import { COPY_HABITUALES, type EjercicioDeCatalogo, type SesionHabitual } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
-import { useCambiosParaSalir } from '../../../components/salida-segura';
+import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -27,6 +27,9 @@ const RENOMBRADA = 'Sesión habitual renombrada.';
 
 export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: { token: string; sesionPerdida?: (r: Resultado<unknown>) => boolean }) {
   const [abiertaId, setAbiertaId] = useState<string | null>(null);
+  // ED-65: cerrar el detalle, abrir otra o quitar una (la lista vuelve a leerse) lo desmontan: con el nombre sin guardar,
+  // pregunta.
+  const detalle = useDetalleConGuardia();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [sinArea, setSinArea] = useState(false);
   const [quitando, setQuitando] = useState<string | null>(null);
@@ -85,10 +88,10 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
                   {COPY_HABITUALES.ejercicios(h.prescriptionCount)} · {h.copiedLoads ? COPY_HABITUALES.conCargas : COPY_HABITUALES.sinCargas} · {COPY_HABITUALES.actualizada(fecha(h.updatedAt))}
                 </p>
                 <div className="acciones">
-                  <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === h.presetId} onClick={() => setAbiertaId(abiertaId === h.presetId ? null : h.presetId)}>
+                  <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === h.presetId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === h.presetId ? null : h.presetId))}>
                     {abiertaId === h.presetId ? 'Cerrar' : 'Ver'}
                   </button>
-                  <button type="button" className="boton boton--enlace" disabled={quitando === h.presetId} onClick={() => void quitar(h)}>
+                  <button type="button" className="boton boton--enlace" disabled={quitando === h.presetId} onClick={() => detalle.antes(() => void quitar(h))}>
                     {COPY_HABITUALES.quitar}
                   </button>
                 </div>
@@ -97,6 +100,7 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
                     token={token}
                     habitual={h}
                     sesionPerdida={sesionPerdida}
+                    avisarSinGuardar={detalle.anotar}
                     onCambio={(texto) => {
                       setAviso({ tipo: 'exito', texto });
                       void lista.recargar();
@@ -116,12 +120,25 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
 }
 
 /** La sesión en solo lectura, con los nombres vigentes del catálogo; renombrar con `expectedVersion`. */
-function DetalleDeSesionHabitual({ token, habitual: h, sesionPerdida, onCambio }: { token: string; habitual: SesionHabitual; sesionPerdida: (r: Resultado<unknown>) => boolean; onCambio: (texto: string) => void }) {
+function DetalleDeSesionHabitual({
+  token,
+  habitual: h,
+  sesionPerdida,
+  avisarSinGuardar,
+  onCambio,
+}: {
+  token: string;
+  habitual: SesionHabitual;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  avisarSinGuardar: (hay: boolean) => void;
+  onCambio: (texto: string) => void;
+}) {
   const [nombre, setNombre] = useState(h.name);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // ED-65: con el nombre cambiado y sin guardar, salir pregunta.
+  // ED-65: con el nombre cambiado y sin guardar, salir pregunta, y cerrarlo desde la lista también.
   useCambiosParaSalir(nombre.trim() !== h.name, 'el nombre de la sesión habitual');
+  useAvisarALaLista(nombre.trim() !== h.name, avisarSinGuardar);
   const s = h.structure;
 
   async function renombrar() {
