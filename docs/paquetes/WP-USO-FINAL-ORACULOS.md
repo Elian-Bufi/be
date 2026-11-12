@@ -634,3 +634,35 @@ EVIDENCE_EXPECTED    La CI verde; los textos validados por la asesoría (condici
 (`contratos-perfil-propio.test.ts`). Con UF-05 la lista suma `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY`, y la prueba lleva una
 nota que lo explica. Lo demás de TEST-UF-005 no cambia: una cuenta sin nombre ve el nombre primero, y la 0.24 no recibe los
 pasos de textos porque no declara la capacidad.
+
+---
+
+## TEST-UF-018 — El gate del 08 §42, condición por condición: ninguna se da por cumplida sin evidencia
+
+```text
+TEST_ID              TEST-UF-018
+TITLE                EVIDENCIA/USO-FINAL/GATE-08-42.md tiene las 24 condiciones del 08 §42 (y las 25 a 28 del §56.9), cada
+                     una con su estado; la que se da por cumplida cita evidencia que existe en el repositorio, y la que no,
+                     un dueño y una fecha. Mientras alguna no esté cumplida, el documento dice que el gate está cerrado
+LEVEL                Documento, verificado por una guardia de la raíz
+PRIORITY             P0
+SOURCES              UF-02 (WP-USO-FINAL.md §4.1) · 08 §42 y §56.9 · §9 del paquete (lo que no es código) · DL-169
+PRECONDITIONS        El documento del gate.
+SYNTHETIC_FIXTURE    Ninguno: la guardia lee el documento y los package.json del repositorio.
+STEPS                1. Leer las dos tablas del documento (§42 y §56.9).
+                     2. Para cada fila, leer el estado, la evidencia, el dueño y la fecha.
+                     3. Comprobar cada ruta citada como evidencia.
+                     4. Contar los estados y compararlos con el resumen; buscar la frase del gate cerrado.
+                     5. Recorrer los package.json del repositorio (condición 18).
+EXPECTED             1 → las condiciones 1 a 24 y 25 a 28, cada una una sola vez. 2 → el estado es CON EVIDENCIA, EN EL PR,
+                     PARCIAL o PENDIENTE. 3 → CON EVIDENCIA, EN EL PR y PARCIAL citan al menos una ruta, y todas existen;
+                     EN EL PR, PARCIAL y PENDIENTE llevan un dueño y una fecha (AAAA-MM-DD). 4 → el resumen coincide con las
+                     filas; con alguna condición sin cumplir, «El gate está cerrado». 5 → ninguna dependencia de un SDK de
+                     IA externa (OpenAI, Anthropic, Google Generative AI, LangChain, Cohere, Mistral).
+NEGATIVE_ASSERTIONS  Una condición CON EVIDENCIA sin ruta, o con una ruta que no existe, no pasa. Una pendiente sin dueño o
+                     sin fecha no pasa. Una condición que falta o se repite no pasa.
+AUTOMATION           scripts/gate-08-42.test.cjs (en `npm test`). Mutaciones: una condición CON EVIDENCIA que cita una
+                     ruta que no existe → rojo; una pendiente sin fecha → rojo; la condición 24 borrada → rojo.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; las decisiones de Dirección sobre cada condición sin cumplir (lo que no es código, §9)
+```

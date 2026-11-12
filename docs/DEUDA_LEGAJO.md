@@ -7542,3 +7542,8 @@ ratificar (§13.5 y §13.6 del paquete):
   «Antes de seguir» pide los términos y la privacidad nuevos a quien aceptó los anteriores (API-ACC-07, solo a un cliente
   que declara la capacidad `pending-steps-texts-1`, así la 0.24 no los recibe) y API-ACC-08 registra el acto con la versión
   que la pantalla mostró. Pide una APK nueva.
+- **UF-02:** el gate del 08 §42, condición por condición, en `EVIDENCIA/USO-FINAL/GATE-08-42.md`, con las cuatro del
+  §56.9. **Está cerrado:** 10 condiciones con evidencia, 1 en el PR, 10 parciales y 7 pendientes, la mayoría de Dirección
+  y la asesoría jurídica (los textos validados, los DPA, la transferencia, el plan de la base con sus copias y los
+  ensayos). Cada una tiene su evidencia o su dueño y una fecha propuesta, y una guardia (TEST-UF-018) lo sostiene en cada
+  PR. Hallazgo: suspender la cuenta de una persona (el menor descubierto, §24.7 c) no tiene operación de Administración.
