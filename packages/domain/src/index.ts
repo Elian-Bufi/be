@@ -145,3 +145,4 @@ export * from './zonas-musculares';
 export * from './contratos-catalogo-visual';
 export * from './descarte-de-borrador';
 export * from './contratos-descarte-de-borrador';
+export * from './estimacion-de-fuerza';
