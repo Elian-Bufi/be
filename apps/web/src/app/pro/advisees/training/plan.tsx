@@ -331,6 +331,9 @@ export function VistaDePlan() {
                         void cargar();
                       }}
                       // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
+                      // ED-11: la pestaña de plantillas de la galería; descartado el borrador, nace otro desde la plantilla.
+                      leerPlantillas={leerPlantillas}
+                      onReemplazarConPlantilla={(id) => void aplicar(id)}
                       onDescartado={(porOtraPestana) => {
                         // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
                         focoTrasDescartar.current = !porOtraPestana;

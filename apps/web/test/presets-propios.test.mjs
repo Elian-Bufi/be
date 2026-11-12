@@ -39,3 +39,21 @@ test('DJ-7 · el reparto habitual se lee y se guarda en gramos por día, sin por
   assert.match(fuente, /unit: 'g\/day' as const/);
   assert.doesNotMatch(fuente, /%/);
 });
+
+test('ED-11 · las plantillas son una pestaña de la galería de estructura: se leen al abrirla, y reemplazar descarta antes de crear', () => {
+  const galeria = readFileSync(new URL('../src/app/pro/advisees/galeria-de-presets.tsx', import.meta.url), 'utf8');
+  const editor = readFileSync(new URL('../src/app/pro/advisees/training/editor.tsx', import.meta.url), 'utf8');
+  const plan = readFileSync(new URL('../src/app/pro/advisees/training/plan.tsx', import.meta.url), 'utf8');
+  // Solo en la galería de estructura, y la lista se pide al abrir la pestaña.
+  assert.match(galeria, /\{tarea === 'estructura' && plantillas && paso === 'elegir' \? \(/);
+  assert.match(galeria, /if \(abierto && pestana === 'plantillas'\) void leerPlantillas\(\);/);
+  // Nada viene elegido al cambiar de pestaña (TEST-EDP-014).
+  assert.match(galeria, /setPestana\(p\);\n\s*setElegido\(null\);/);
+  // El editor descarta con la versión que muestra y solo si se hizo le pide al plan el borrador nuevo desde la plantilla.
+  const reemplazar = editor.slice(editor.indexOf('async function reemplazarConPlantilla'), editor.indexOf("if (error === 'no-disponible')"));
+  assert.ok(reemplazar.indexOf('descartarBorradorDePlanDeEntrenamiento') < reemplazar.indexOf('onReemplazarConPlantilla(templateVersionId)'));
+  assert.match(reemplazar, /if \(queNoSeHizo\) return setFalloAlReemplazar\(queNoSeHizo\);/);
+  // El plan lo crea con API-TRN-07 desde la plantilla: la API anota de cuál salió (`templateOrigin`).
+  assert.match(plan, /onReemplazarConPlantilla=\{\(id\) => void aplicar\(id\)\}/);
+  assert.match(plan, /fromTemplateVersionId: templateVersionId/);
+});

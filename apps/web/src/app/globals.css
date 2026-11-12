@@ -16822,3 +16822,28 @@ p.cifra-del-espacio__desglose {
   gap: 0.5rem 1rem;
   margin: 0;
 }
+
+/* ED-24 · «Duplicar el día», en la tira de la semana */
+.estacion__duplicar-el-dia {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.duplicar-el-dia {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.duplicar-el-dia > p {
+  margin: 0;
+}
+
+/* ED-11 · las pestañas de la galería de estructura: presets y habituales, o tus plantillas */
+.galeria__pestanas {
+  margin: 0 0 1rem;
+}

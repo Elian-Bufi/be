@@ -74,10 +74,11 @@ import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
+import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
-import { api } from '../../../../lib/api';
+import { api, type Resultado } from '../../../../lib/api';
 import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaEnUnaFrase, horaDelDia } from '../../../../lib/formato';
@@ -126,7 +127,9 @@ import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
 import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales } from './habituales';
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
+import type { PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { COPY_PRESCRIPCION_HABITUAL, DialogoGuardarPrescripcionHabitual, usePrescripcionesHabituales } from './prescripcion-habitual';
+import { COPY_DUPLICAR_EL_DIA as DD, diasDeDestino, duplicarElDia, sesionesDelDia } from '../estacion/duplicar-el-dia';
 
 type MicrocicloE = NonNullable<BloqueE['microcycles']>[number];
 
@@ -240,6 +243,8 @@ export function EditorDePlan({
   vigente = null,
   onActivado,
   onDescartado,
+  leerPlantillas,
+  onReemplazarConPlantilla,
 }: {
   planId: string;
   /** El número de esta versión en preparación: el de las activadas más uno (DJ-6). */
@@ -259,6 +264,10 @@ export function EditorDePlan({
    * lo que se dice si la descartó otra pestaña (ED-62).
    */
   onDescartado: (porOtraPestana?: string) => void;
+  /** ED-11: las plantillas de plan, para la pestaña de la galería de estructura. */
+  leerPlantillas?: () => Promise<Resultado<readonly PlantillaParaEmpezar[]>>;
+  /** ED-11: descartado este borrador, el plan crea otro desde la plantilla (API-TRN-07), que anota de cuál salió. */
+  onReemplazarConPlantilla?: (templateVersionId: string) => void;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
@@ -305,6 +314,9 @@ export function EditorDePlan({
   const [descartando, setDescartando] = useState(false);
   const [falloDelDescarte, setFalloDelDescarte] = useState<string | null>(null);
   const intentoDeDescartar = useClaveDeIntento();
+  // ED-11: reemplazar el borrador con una plantilla, desde la galería.
+  const [reemplazando, setReemplazando] = useState(false);
+  const [falloAlReemplazar, setFalloAlReemplazar] = useState<string | null>(null);
   // «Mis habituales» (PF-09 bis; DL-109): ejercicios a mano en el buscador; sesiones para guardar e insertar.
   const ejerciciosHabituales = useEjerciciosHabituales(token);
   const sesionesHabituales = useSesionesHabituales(token);
@@ -312,6 +324,8 @@ export function EditorDePlan({
   // ED-13: las prescripciones habituales (la galería las ofrece en «Tuyos») y el diálogo de guardar una.
   const prescripcionesHabituales = usePrescripcionesHabituales(token);
   const [prescripcionHabitual, setPrescripcionHabitual] = useState(false);
+  // ED-24: «Duplicar el día», con el día de origen y el de destino elegido en su cuadro.
+  const [duplicandoElDia, setDuplicandoElDia] = useState<{ readonly desde: DiaDeLaSemana; readonly hacia: DiaDeLaSemana | null } | null>(null);
   const [insertandoHabitual, setInsertandoHabitual] = useState(false);
   // «Agregar ejercicio»: el cajón suma a la sesión que se mira.
   const [agregando, setAgregando] = useState(false);
@@ -668,6 +682,26 @@ export function EditorDePlan({
     setSucio(false);
     setDescartar(false);
     onDescartado();
+  }
+
+  /**
+   * ED-11 (Dirección, 2026-11-12): una plantilla elegida en la galería reemplaza el borrador. Se descarta con la versión
+   * que muestra la pantalla, como «Descartar», y el plan crea el nuevo desde la plantilla; si el descarte no se hizo, la
+   * galería dice por qué y nada cambia.
+   */
+  async function reemplazarConPlantilla(templateVersionId: string) {
+    if (!version || reemplazando || !onReemplazarConPlantilla) return;
+    setReemplazando(true);
+    setFalloAlReemplazar(null);
+    const r = await api.descartarBorradorDePlanDeEntrenamiento(token, planId, version.version, intentoDeDescartar.actual());
+    intentoDeDescartar.registrar(r);
+    setReemplazando(false);
+    if (sesionPerdida(r)) return;
+    const queNoSeHizo = textoDelDescarteQueNoSeHizo(resultadoDelDescarte(r));
+    if (queNoSeHizo) return setFalloAlReemplazar(queNoSeHizo);
+    setSucio(false);
+    setGaleria(null);
+    onReemplazarConPlantilla(templateVersionId);
   }
 
   if (error === 'no-disponible') return <NoDisponible />;
@@ -1717,6 +1751,14 @@ export function EditorDePlan({
                 <li key={d.dia} data-con-sesion={d.sesiones.length > 0 ? '' : undefined}>
                   <span className="nota">{DIA_LARGO[d.dia]}</span>
                   <span>{d.sesiones.length > 0 ? d.sesiones.join(' · ') : CE.sinSesionEseDia}</span>
+                  {/* ED-24: «Duplicar el día» copia las sesiones de ese día a otro (Dirección, 2026-11-12). */}
+                  {d.sesiones.length > 0 ? (
+                    <button type="button" className="boton boton--enlace estacion__duplicar-el-dia" data-duplicar-el-dia={d.dia} onClick={() => setDuplicandoElDia({ desde: d.dia, hacia: null })}>
+                      <Icono nombre="duplicar" tamano={15} />
+                      {DD.accion}
+                      <span className="visualmente-oculto"> {DIA_LARGO[d.dia]}</span>
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ol>
@@ -2007,6 +2049,11 @@ export function EditorDePlan({
         nombreDe={(p) => nombres[p.exerciseVersionId] ?? 'Ejercicio'}
         habituales={sesionesHabituales.sesiones}
         prescripcionesHabituales={prescripcionesHabituales.lista}
+        plantillas={
+          leerPlantillas && onReemplazarConPlantilla
+            ? { leer: leerPlantillas, borrador: `versión ${numero} en preparación`, reemplazando, error: falloAlReemplazar, onReemplazar: (id) => void reemplazarConPlantilla(id) }
+            : null
+        }
         onAplicarPrescripcion={aplicarElPreset}
         onAplicarEstructura={aplicarLaEstructura}
         onInsertarHabitual={insertarSesion}
@@ -2036,6 +2083,50 @@ export function EditorDePlan({
           void sesionesHabituales.recargar();
         }}
       />
+
+      {/* ED-24: «Duplicar el día», con el día de destino y la vista previa antes de copiar. */}
+      <CuadroEnfocado
+        abierto={duplicandoElDia !== null}
+        forma="dialogo"
+        titulo={duplicandoElDia ? DD.titulo(duplicandoElDia.desde) : ''}
+        principal={
+          duplicandoElDia
+            ? {
+                texto: duplicandoElDia.hacia ? DD.principal(duplicandoElDia.hacia) : DD.accion,
+                apagado: !duplicandoElDia.hacia ? DD.nadaElegido : null,
+                alTocar: () => {
+                  const { desde, hacia } = duplicandoElDia;
+                  if (!hacia) return;
+                  const r = duplicarElDia(bloques, agendaVisible, desde, hacia, () => crypto.randomUUID());
+                  if (r.tipo !== 'duplicado') return setMensaje({ tipo: 'error', texto: DD.motivo[r.motivo] });
+                  cambiar(() => r.bloques);
+                  cambiarAgenda(r.agenda);
+                  setDuplicandoElDia(null);
+                  setMensaje({ tipo: 'exito', texto: DD.hecho(r.copiadas.length, hacia) });
+                },
+              }
+            : null
+        }
+        onCerrar={() => setDuplicandoElDia(null)}
+      >
+        {duplicandoElDia ? (
+          <div className="duplicar-el-dia" data-cuadro-duplicar-el-dia>
+            <fieldset className="segmentos">
+              <legend>{DD.destino}</legend>
+              <div className="segmentos__fila">
+                {diasDeDestino(duplicandoElDia.desde).map((d) => (
+                  <label key={d} className="segmento">
+                    <input type="radio" name="duplicar-el-dia" checked={duplicandoElDia.hacia === d} onChange={() => setDuplicandoElDia({ desde: duplicandoElDia.desde, hacia: d })} />
+                    {DIA_CORTO[d]}
+                    <span className="visualmente-oculto"> ({DIA_LARGO[d]})</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {duplicandoElDia.hacia ? <p data-vista-previa-del-dia>{DD.vistaPrevia(sesionesDelDia(bloques, agendaVisible, duplicandoElDia.desde), duplicandoElDia.hacia)}</p> : null}
+          </div>
+        ) : null}
+      </CuadroEnfocado>
 
       <DialogoGuardarPrescripcionHabitual
         token={token}
