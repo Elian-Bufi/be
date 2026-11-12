@@ -128,7 +128,10 @@ describe('ED-72 · la serie observada por el profesional (API-FZA-01 a 03)', () 
     expect(await filas(x.c.pro.id)).toEqual(['API-FZA-01 EXITO', 'API-FZA-03 EXITO']);
     const decisiones = await prisma.decisionDeAcceso.findMany({ where: { actorId: x.c.pro.id, operacion: 'API-FZA-02' }, select: { actorId: true, resultado: true } });
     expect(decisiones.map((d) => d.resultado)).toEqual(['PERMITIDA']);
-    expect(await filas(otro.c.pro.id)).toEqual(['API-FZA-01 RECHAZO', 'API-FZA-02 RECHAZO', 'API-FZA-03 RECHAZO']);
+    // Los rechazos de las escrituras, en la auditoría; el de la lectura, en la decisión denegada del PDP.
+    expect(await filas(otro.c.pro.id)).toEqual(['API-FZA-01 RECHAZO', 'API-FZA-03 RECHAZO']);
+    const denegadas = await prisma.decisionDeAcceso.findMany({ where: { actorId: otro.c.pro.id, operacion: 'API-FZA-02' }, select: { resultado: true } });
+    expect(denegadas.map((d) => d.resultado)).toEqual(['DENEGADA']);
   });
 
   it('RM-42 · un profesional de Nutrición con la misma persona no ve las observaciones ni la estimación', async () => {
