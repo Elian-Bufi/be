@@ -38,7 +38,7 @@ test('TEST-EDP-002 · el cuadro: de qué versión salió, que la vigente no camb
   assert.equal(cuadro.confirmar, 'Descartar la versión 9');
   // Sin cambios sin guardar, no lo dice; sin vigente, lo dice así.
   const primera = D.cuadroDelDescarte({ numero: 1, vigente: null, sinGuardar: false });
-  assert.deepEqual(primera.parrafos, [d.COPY_DESCARTAR_LA_VERSION.primera, d.COPY_DESCARTAR_LA_VERSION.laPersonaNoLaVio]);
+  assert.deepEqual(primera.parrafos, [d.COPY_DESCARTAR_LA_VERSION.primera, d.COPY_DESCARTAR_LA_VERSION.noLaVio(null)]);
   assert.equal(d.COPY_DESCARTAR_LA_VERSION.noSeDeshace, 'No se puede deshacer.');
   // Los textos pasan las guardias: nada que califique ni términos prohibidos.
   const textos = Object.values(d.COPY_DESCARTAR_LA_VERSION).map((t) => (typeof t === 'function' ? t(9, 'martes 10 de noviembre') : t));
@@ -154,4 +154,14 @@ test('TEST-EDP-002 · después de descartar, el foco va a «Crear una nueva vers
     // Nada que mire solo la lectura del plan: ahí el botón puede no estar todavía.
     assert.doesNotMatch(fuente, /if \(!focoTrasDescartar \|\| !r\) return;/, ruta);
   }
+});
+
+test('TEST-EDP-002 · el cuadro de descartar dice el nombre de la persona (DL-169; maqueta 11)', () => {
+  const conVigente = D.cuadroDelDescarte({ numero: 6, vigente: { numero: 5, desde: 'martes 10 de noviembre' }, sinGuardar: false, persona: 'Diego' });
+  assert.equal(conVigente.parrafos[1], 'La versión 5 no cambia, y Diego no ve nada distinto.');
+  const primera = D.cuadroDelDescarte({ numero: 1, vigente: null, sinGuardar: false, persona: 'Diego' });
+  assert.equal(primera.parrafos[1], 'Diego no ve nada distinto: nunca vio esta versión.');
+  // Sin nombre, «la persona».
+  assert.equal(D.cuadroDelDescarte({ numero: 1, vigente: null, sinGuardar: false, persona: null }).parrafos[1], 'La persona no ve nada distinto: nunca vio esta versión.');
+  assert.match(leer('app/pro/advisees/cuadro-del-descarte.tsx'), /cuadroDelDescarte\(\{ numero, vigente, sinGuardar, persona \}\)/);
 });

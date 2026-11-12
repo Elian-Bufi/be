@@ -183,7 +183,8 @@ export function EditorDeBorrador({
    */
   vigente?: { readonly numero: number; readonly desde: string; readonly plan?: VersionDePlan | null } | null;
   /** Se activó. `texto`: lo que se dice si ya estaba activa (ED-62: un pedido anterior la había activado). */
-  onActivado: (texto: string | null) => void;
+  /** Activada (o ya activa): el texto del resultado, con el número y el nombre (ED-07). */
+  onActivado: (texto: string) => void;
   /**
    * ED-01: la versión en preparación se descartó (o ya no estaba): la sección vuelve a leer el plan. `porOtraPestana`:
    * lo que se dice si la descartó otra pestaña (ED-62).
@@ -500,7 +501,7 @@ export function EditorDeBorrador({
       case 'ACTIVADA':
       case 'YA_QUEDO_ACTIVA':
         setConfirmar(false);
-        return onActivado(que.tipo === 'YA_QUEDO_ACTIVA' ? COPY_RESULTADO_DE_ACTIVAR.yaQuedoActiva(numero) : null);
+        return onActivado(que.tipo === 'YA_QUEDO_ACTIVA' ? COPY_RESULTADO_DE_ACTIVAR.yaQuedoActiva(numero, persona) : COPY_RESULTADO_DE_ACTIVAR.activada(numero, persona));
       case 'YA_NO_ESTA':
         // Se descartó en otra pestaña: no hay nada que activar ni que guardar; la sección vuelve a leer el plan.
         setConfirmar(false);
@@ -1033,6 +1034,7 @@ export function EditorDeBorrador({
       <AntesDeActivar
         abierto={confirmar}
         area="Nutrición"
+        persona={persona}
         numero={numero}
         vigente={vigente?.numero ?? null}
         primera={!version.predecessorPlanId}
@@ -1071,6 +1073,7 @@ export function EditorDeBorrador({
 
       <CuadroDelDescarte
         abierto={descartar}
+        persona={persona}
         numero={numero}
         vigente={vigente ? { numero: vigente.numero, desde: diaEnUnaFrase(vigente.desde) } : null}
         sinGuardar={sucio}

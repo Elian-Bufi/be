@@ -69,9 +69,17 @@ export function loQuePasoAlActivar(r: Resultado<unknown>, releida: VersionReleid
   }
 }
 
-/** Los textos de cada resultado: en palabras, sin códigos. */
+/** DL-169: el nombre de la persona o su referencia neutral, en medio de la frase; sin ninguno, «la persona». */
+const quien = (persona: string | null | undefined): string => (typeof persona === 'string' && persona.trim()) || 'la persona';
+
+/**
+ * Los textos de cada resultado: en palabras, sin códigos. Activada, el mismo texto en las dos áreas, con el número y el
+ * nombre (ED-07: «Versión 9 vigente desde hoy · Diego ya la ve», con «Ver lo que recibe»; maqueta 12).
+ */
 export const COPY_RESULTADO_DE_ACTIVAR = {
-  yaQuedoActiva: (numero: number): string => `Ya quedó activa. La versión ${numero} es la vigente, y la persona ya la ve.`,
+  activada: (numero: number, persona: string | null = null): string => `Versión ${numero} vigente desde hoy · ${quien(persona)} ya la ve`,
+  verLoQueRecibe: 'Ver lo que recibe',
+  yaQuedoActiva: (numero: number, persona: string | null = null): string => `Ya quedó activa. La versión ${numero} es la vigente, y ${quien(persona)} ya la ve.`,
   yaNoEsta: 'Esta versión ya no está: se descartó en otra pestaña. No se activó nada.',
   impide: 'Hay cosas por corregir antes de activar: están arriba, cada una con su lugar.',
   cambioEnOtraPestana: 'Este borrador cambió en otra pestaña o en otro equipo, así que no se activó. Volvé al plan y cargá la versión guardada.',

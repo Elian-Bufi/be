@@ -252,13 +252,17 @@ STEPS                1. Con una sesión sin ejercicios, tocar «Revisar y activa
                      4. Mirar de dónde sale la validación final.
                      5. Con un nombre vacío a la vista (una sesión o una comida), «Ir a corregir» (revisión adversaria
                         de la etapa 1).
+                     6. Activar un borrador listo, en las dos áreas (revisión adversaria de la etapa 1).
 EXPECTED             1 → el cuadro abre con «Tren superior liviano: sin ejercicios · Ir a corregir» y «Activar la
                      versión N de Entrenamiento» apagado, con su motivo («Falta corregir 1 cosa»). 2 → ofrece
                      primero «Guardar ahora», y el principal sigue apagado hasta la respuesta del servidor. 3 →
                      «¿Cuándo la revisás?», con «Sin fecha por ahora» y nada elegido; el principal se enciende
                      recién con una elección. 4 → antes de activar se pide la validación a la API (API-TRN-11 /
                      API-NUT-11) y la activación la decide la API. 5 → el cuadro se cierra y el foco queda en el
-                     campo del nombre, no en «Revisar y activar…».
+                     campo del nombre, no en «Revisar y activar…». 6 → el mismo texto en las dos áreas, con el
+                     número y el nombre (DL-169): «Versión 9 vigente desde hoy · Diego ya la ve», con «Ver lo que
+                     recibe», que lleva a la versión activa; el cuadro decía «Lo que va a ver Diego». Sin nombre,
+                     «la persona».
 NEGATIVE_ASSERTIONS  El principal nunca se enciende con algo por corregir, con cambios sin guardar ni sin una
                      elección de fecha. «Sin fecha por ahora» nunca desaparece. Hay un solo botón principal. Cerrar
                      el cuadro nunca le saca el foco al lugar al que llevó «Ir a corregir».

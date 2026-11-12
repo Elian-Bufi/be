@@ -52,6 +52,7 @@ import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { numeroDelBorrador } from '../descartar-el-borrador';
+import { COPY_RESULTADO_DE_ACTIVAR } from '../resultado-de-activar';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
 import { PrimerPlan } from '../primer-plan';
@@ -96,7 +97,8 @@ export function VistaDePlan() {
   const [r, setR] = useState<Resultado<Datos> | null>(null);
   // Qué lectura falló, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
   const [queFallo, setQueFallo] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  // ED-07: activada, el aviso trae «Ver lo que recibe».
+  const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string; verLoQueRecibe?: boolean } | null>(null);
   // ED-01: después de descartar, el «⋯» que abrió el cuadro ya no existe (volver a leer desmonta el editor). El foco va a
   // «Crear una nueva versión» apenas el botón aparece, para no perderse al principio de la página. Aparece cuando termina
   // de leerse lo que haga falta: sin una versión activa, va dentro de «Empezar el plan», que antes lee las evaluaciones
@@ -107,6 +109,11 @@ export function VistaDePlan() {
     focoTrasDescartar.current = false;
     boton.focus();
   }, []);
+  // ED-07: «Ver lo que recibe» lleva a la versión activa, la instantánea que recibe la persona, y cierra el aviso.
+  const verLoQueRecibe = () => {
+    document.getElementById('titulo-activo')?.focus();
+    setAviso(null);
+  };
   const [creando, setCreando] = useState(false);
   // «Guardar como plantilla» sobre la versión activa (PF-09; DL-108): abre el diálogo con la estructura de esa versión.
   const [guardarPlantilla, setGuardarPlantilla] = useState(false);
@@ -264,8 +271,16 @@ export function VistaDePlan() {
             return (
               <div className="plan" data-version={mostrada}>
                 {aviso && aviso.tipo === 'exito' ? (
-                  <AvisoFlotante onCerrar={() => setAviso(null)}>
+                  // Con «Ver lo que recibe», el aviso se queda hasta que se cierra: no se va con la acción adentro.
+                  <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={!!aviso.verLoQueRecibe}>
                     <p>{aviso.texto}</p>
+                    {aviso.verLoQueRecibe ? (
+                      <p>
+                        <button type="button" className="boton boton--enlace" onClick={verLoQueRecibe}>
+                          {COPY_RESULTADO_DE_ACTIVAR.verLoQueRecibe}
+                        </button>
+                      </p>
+                    ) : null}
                   </AvisoFlotante>
                 ) : null}
                 {aviso && aviso.tipo === 'error' ? (
@@ -292,8 +307,9 @@ export function VistaDePlan() {
                       numero={numeroDelBorrador(historial)}
                       objetivoVigente={objetivo}
                       vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
+                      // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».
                       onActivado={(texto) => {
-                        setAviso({ tipo: 'exito', texto: texto ?? `${COPY_ENTRENAMIENTO.planActivado}. La persona ya ve esta planificación como vigente.` });
+                        setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
                         ir(TODO_LO_ELEGIDO);
                         void cargar();
                       }}
@@ -501,7 +517,7 @@ function PlanActivo({ version, numero, historial, acciones, aviso }: { version: 
   return (
     <section className="plan__activo" aria-labelledby="titulo-activo">
       <div className="plan__encabezado">
-        <h2 id="titulo-activo">Plan activo</h2>
+        <h2 id="titulo-activo" tabIndex={-1}>Plan activo</h2>
         <span className="etiqueta-de-dato">
           <Icono nombre="candado" tamano={15} />
           Solo lectura

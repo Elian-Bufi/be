@@ -52,11 +52,15 @@ export function estadoDeVersionDePlanApi(estado: EstadoDeVersionConDescarte): 'D
   return estado === 'ACTIVADA' ? 'ACTIVATED' : 'DRAFT';
 }
 
+/** DL-169: el nombre de la persona, o su referencia neutral; sin ninguno, «la persona» (con mayúscula al empezar). */
+const quien = (nombre: unknown, alEmpezar: boolean): string => (typeof nombre === 'string' && nombre.trim()) || (alEmpezar ? 'La persona' : 'la persona');
+
 /**
  * ED-01 · «Descartar la versión en preparación» en el website del profesional (WP-EDITORES-PROFESIONAL; DL-167). Los dos
  * editores dicen lo mismo, con el número de la versión (DJ-6: el borrador es el de las activadas más uno):
  * - el cuadro dice de qué versión salió, que lo armado se borra, que la vigente no cambia y que no se deshace, con
  *   «Cancelar» como opción enfocada; con cambios sin guardar, que también se pierden;
+ * - quien no ve nada distinto se dice con su nombre, como en la maqueta 11 («Diego no ve nada distinto»);
  * - cada rechazo se dice con sus palabras, sin códigos.
  */
 export const COPY_DESCARTAR_LA_VERSION = {
@@ -65,8 +69,8 @@ export const COPY_DESCARTAR_LA_VERSION = {
   titulo: (numero: number): string => `¿Descartar la versión ${numero} en preparación?`,
   saleDe: (numero: number, desde: string): string => `Salió de la versión ${numero}, vigente desde el ${desde}. Se borra lo que armaste en esta versión.`,
   primera: 'Es la primera versión del plan: todavía no hay una vigente. Se borra lo que armaste en esta versión.',
-  vigenteNoCambia: (numero: number): string => `La versión ${numero} no cambia, y la persona no ve nada distinto.`,
-  laPersonaNoLaVio: 'La persona no ve nada distinto: nunca vio esta versión.',
+  vigenteNoCambia: (numero: number, persona: string | null = null): string => `La versión ${numero} no cambia, y ${quien(persona, false)} no ve nada distinto.`,
+  noLaVio: (persona: string | null = null): string => `${quien(persona, true)} no ve nada distinto: nunca vio esta versión.`,
   sinGuardar: 'También se pierden los cambios que todavía no se guardaron.',
   noSeDeshace: 'No se puede deshacer.',
   paraConservar: 'Si querés conservar algo, antes guardalo como plantilla.',

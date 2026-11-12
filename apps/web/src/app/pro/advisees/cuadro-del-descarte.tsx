@@ -2,8 +2,8 @@
 
 /**
  * ED-01 · El cuadro «¿Descartar la versión N en preparación?», igual en los dos editores de planes (maqueta 11 de la v3).
- * - Dice de qué versión salió, que lo armado se borra, que la vigente no cambia y la persona no ve nada distinto, y que no
- *   se deshace; con cambios sin guardar, que también se pierden (`cuadroDelDescarte`).
+ * - Dice de qué versión salió, que lo armado se borra, que la vigente no cambia y la persona (con su nombre, DL-169) no
+ *   ve nada distinto, y que no se deshace; con cambios sin guardar, que también se pierden (`cuadroDelDescarte`).
  * - «Cancelar» tiene el foco al abrirse (la acción de efecto nunca es la opción por defecto); Escape es «Cancelar», y
  *   ninguno de los dos llama a la API.
  * - Un solo botón de efecto, el que descarta, con el color de lo que no se deshace y su nombre completo.
@@ -18,6 +18,7 @@ export function CuadroDelDescarte({
   numero,
   vigente,
   sinGuardar,
+  persona,
   enviando,
   error,
   onCancelar,
@@ -27,12 +28,14 @@ export function CuadroDelDescarte({
   numero: number;
   vigente: VigenteParaElCuadro | null;
   sinGuardar: boolean;
+  /** El nombre de la persona o su referencia neutral (DL-169); `null` mientras el marco no la leyó. */
+  persona: string | null;
   enviando: boolean;
   error: string | null;
   onCancelar: () => void;
   onDescartar: () => void;
 }) {
-  const cuadro = cuadroDelDescarte({ numero, vigente, sinGuardar });
+  const cuadro = cuadroDelDescarte({ numero, vigente, sinGuardar, persona });
   return (
     <DialogoDeConfirmacion
       abierto={abierto}

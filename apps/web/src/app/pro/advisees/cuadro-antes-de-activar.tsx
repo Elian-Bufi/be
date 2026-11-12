@@ -29,6 +29,7 @@ export interface CosaParaRevisar {
 export function AntesDeActivar({
   abierto,
   area,
+  persona,
   numero,
   vigente,
   primera,
@@ -52,6 +53,8 @@ export function AntesDeActivar({
 }: {
   abierto: boolean;
   area: AreaQueSeActiva;
+  /** El nombre de la persona o su referencia neutral (DL-169): «Lo que va a ver Diego». `null` mientras no se leyó. */
+  persona: string | null;
   /** El número de esta versión: el de las activadas más uno (DJ-6). */
   numero: number;
   /** El número de la vigente, que queda en el historial; `null` si es la primera o no se pudo leer. */
@@ -194,7 +197,7 @@ export function AntesDeActivar({
           <section className="antes-de-activar__parte" data-lo-que-ve aria-labelledby="antes-de-activar-ve">
             <h3 id="antes-de-activar-ve">
               <Icono nombre="ver" tamano={18} />
-              {A.loQueVe}
+              {A.loQueVe(persona)}
             </h3>
             <ul className="antes-de-activar__lista">
               {loQueVe.map((t, n) => (

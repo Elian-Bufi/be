@@ -113,7 +113,6 @@ export const COPY_DE_VERSIONES = {
   huella: 'Huella de la instantánea',
   primeroElObjetivo: 'Para planificar, primero definí el objetivo: el plan se relaciona con el objetivo vigente.',
   irAResumen: 'Ir a Resumen',
-  versionActivadaAviso: 'Versión activada. La persona ya ve esta planificación como vigente.',
   /** Con una versión en preparación a la vista, la activa no ofrece crear otra: hay una sola a la vez. */
   yaHayUnaEnPreparacion: 'Ya hay una versión en preparación: se sigue sobre esa.',
 } as const;

@@ -48,11 +48,24 @@ export interface VigenteParaElCuadro {
   readonly desde: string;
 }
 
-/** Lo que dice el cuadro, en orden: el título, los párrafos y el botón que descarta. */
-export function cuadroDelDescarte({ numero, vigente, sinGuardar }: { readonly numero: number; readonly vigente: VigenteParaElCuadro | null; readonly sinGuardar: boolean }) {
+/**
+ * Lo que dice el cuadro, en orden: el título, los párrafos y el botón que descarta. `persona` es el nombre o la referencia
+ * neutral (DL-169), como en la maqueta 11 («Diego no ve nada distinto»); sin ninguno, «la persona».
+ */
+export function cuadroDelDescarte({
+  numero,
+  vigente,
+  sinGuardar,
+  persona = null,
+}: {
+  readonly numero: number;
+  readonly vigente: VigenteParaElCuadro | null;
+  readonly sinGuardar: boolean;
+  readonly persona?: string | null;
+}) {
   return {
     titulo: D.titulo(numero),
-    parrafos: [vigente ? D.saleDe(vigente.numero, vigente.desde) : D.primera, vigente ? D.vigenteNoCambia(vigente.numero) : D.laPersonaNoLaVio, ...(sinGuardar ? [D.sinGuardar] : [])],
+    parrafos: [vigente ? D.saleDe(vigente.numero, vigente.desde) : D.primera, vigente ? D.vigenteNoCambia(vigente.numero, persona) : D.noLaVio(persona), ...(sinGuardar ? [D.sinGuardar] : [])],
     confirmar: D.confirmar(numero),
   } as const;
 }

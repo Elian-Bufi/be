@@ -102,3 +102,24 @@ test('TEST-EDP-049 · los editores: la clave del pedido, la relectura y «Volver
     assert.doesNotMatch(fuente, /\n\s*intentoDeActivar\.descartar\(\);\n/, ruta);
   }
 });
+
+test('TEST-EDP-049 · ED-07: un solo texto del resultado para las dos áreas, con el número, el nombre y «Ver lo que recibe»', () => {
+  // Revisión adversaria de la etapa 1: Entrenamiento decía «Plan activado. La persona ya ve…» y Nutrición «Versión
+  // activada. La persona ya ve…», sin el número ni el nombre (DL-169) ni «Ver lo que recibe».
+  const T = R.COPY_RESULTADO_DE_ACTIVAR;
+  assert.equal(T.activada(9, 'Diego'), 'Versión 9 vigente desde hoy · Diego ya la ve');
+  assert.equal(T.activada(9, null), 'Versión 9 vigente desde hoy · la persona ya la ve');
+  assert.equal(T.yaQuedoActiva(9, 'Diego'), 'Ya quedó activa. La versión 9 es la vigente, y Diego ya la ve.');
+  assert.equal(T.verLoQueRecibe, 'Ver lo que recibe');
+  for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
+    assert.match(leer(ruta), /return onActivado\(que\.tipo === 'YA_QUEDO_ACTIVA' \? COPY_RESULTADO_DE_ACTIVAR\.yaQuedoActiva\(numero, persona\) : COPY_RESULTADO_DE_ACTIVAR\.activada\(numero, persona\)\);/, ruta);
+  }
+  for (const ruta of ['app/pro/advisees/training/plan.tsx', 'app/pro/advisees/nutrition/plan.tsx']) {
+    const fuente = leer(ruta);
+    assert.match(fuente, /onActivado=\{\(texto\) => \{\n\s*setAviso\(\{ tipo: 'exito', texto, verLoQueRecibe: true \}\);/, ruta);
+    assert.doesNotMatch(fuente, /versionActivadaAviso|planActivado\}\. La persona ya ve/, ruta);
+    // «Ver lo que recibe» lleva al plan activo, que es lo que recibe la persona (su instantánea).
+    assert.match(fuente, /\{COPY_RESULTADO_DE_ACTIVAR\.verLoQueRecibe\}/, ruta);
+    assert.match(fuente, /<h2 id="titulo-activo" tabIndex=\{-1\}>/, ruta);
+  }
+});

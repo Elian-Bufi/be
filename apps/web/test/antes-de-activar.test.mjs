@@ -204,3 +204,16 @@ test('TEST-EDP-008 · el motivo del principal apagado va pegado a él, entre «V
   const estilos = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
   assert.match(estilos, /\.dialogo__motivo \{\n\s*margin: 0 0 0 auto;/);
 });
+
+test('TEST-EDP-008 · los cuadros dicen el nombre de la persona (DL-169), como las maquetas 10 y 11', () => {
+  // Revisión adversaria de la etapa 1: «Lo que va a ver la persona» y «la persona no ve nada distinto», donde la maqueta
+  // pone el nombre.
+  assert.equal(A.COPY_ANTES_DE_ACTIVAR.loQueVe('Diego'), 'Lo que va a ver Diego');
+  assert.equal(A.COPY_ANTES_DE_ACTIVAR.loQueVe(null), 'Lo que va a ver la persona');
+  assert.match(leer('app/pro/advisees/cuadro-antes-de-activar.tsx'), /\{A\.loQueVe\(persona\)\}/);
+  for (const ruta of EDITORES) {
+    const fuente = leer(ruta);
+    assert.match(fuente, /<AntesDeActivar\n[^<]*?\n\s+persona=\{persona\}\n/, ruta);
+    assert.match(fuente, /<CuadroDelDescarte\n[^<]*?\n\s+persona=\{persona\}\n/, ruta);
+  }
+});

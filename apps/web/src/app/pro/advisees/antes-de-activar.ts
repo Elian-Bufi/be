@@ -39,8 +39,8 @@ export const COPY_ANTES_DE_ACTIVAR = {
   sinCambios: 'No cambia nada frente a la vigente.',
   sinLaVigente: 'No pudimos leer la versión vigente para compararla.',
   yMas: (n: number): string => (n === 1 ? 'y 1 cambio más' : `y ${n} cambios más`),
-  // 3. Lo que va a ver la persona.
-  loQueVe: 'Lo que va a ver la persona',
+  // 3. Lo que va a ver la persona, con su nombre o su referencia neutral (DL-169), como en la maqueta 10.
+  loQueVe: (persona: string | null): string => `Lo que va a ver ${(typeof persona === 'string' && persona.trim()) || 'la persona'}`,
   // 4. Su app (hasta ED-08, la API todavía la espera: va con lo que impide).
   suApp: 'Su app',
   // El principal y su motivo.
