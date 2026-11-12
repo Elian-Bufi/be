@@ -22,6 +22,7 @@ import sharp from 'sharp';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { RAIZ } from './soporte';
 import { appDePrueba, conSesion, CREDENCIAL_SINTETICA } from './soporte-api';
+import { autenticadorDe } from './soporte-segundo-factor';
 import { prepararProfesional, type Parte } from './soporte-vinculo';
 
 const CARPETA = join(RAIZ, 'EVIDENCIA', 'DASHBOARD-PROFESIONAL', 'herramientas', 'datos', 'recetas', 'ampliacion-2026-10-28');
@@ -95,7 +96,11 @@ beforeAll(async () => {
   carpeta = mkdtempSync(join(tmpdir(), 'be-recetas-ampliacion-'));
   cuentas = join(carpeta, 'cuentas.env');
   // Una cuenta sintética de esta prueba, en una carpeta temporal que se borra al final.
-  writeFileSync(cuentas, `PRO_N_CORREO=${pro.correo}\nPRO_N_CLAVE=${CREDENCIAL_SINTETICA}\n`);
+  // UF-11 (DL-169): la cuenta es profesional; la herramienta verifica su segundo factor con la clave y los códigos de
+  // recuperación que configuró la preparación (sintéticos, en esta carpeta temporal).
+  const autenticador = autenticadorDe(pro.id);
+  if (!autenticador) throw new Error('el profesional de la prueba no configuró su segundo factor');
+  writeFileSync(cuentas, `PRO_N_CORREO=${pro.correo}\nPRO_N_CLAVE=${CREDENCIAL_SINTETICA}\nPRO_N_TOTP=${autenticador.secreto}\nPRO_N_RECUPERACION=${autenticador.codigosDeRecuperacion.join(',')}\n`);
   fotos = join(carpeta, 'fotos');
   estado = join(carpeta, 'estado');
   mkdirSync(fotos);

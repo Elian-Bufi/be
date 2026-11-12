@@ -26,7 +26,7 @@ import { escribirCursor, leerConsultaDeLista } from '../http/paginacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase, sinDuplicar } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
-import { CatalogoDeEjerciciosService, ejercicioVisible } from './catalogo.service';
+import { CatalogoDeEjerciciosService } from './catalogo.service';
 import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import { visualDeEjercicios } from './catalogo-visual';
@@ -286,7 +286,7 @@ export class HabitualesDeEntrenamientoService {
         JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"
        WHERE e."id" = ANY(${validos}::uuid[])
          AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
-         AND ${ejercicioVisible([profesionalId])}`;
+         AND ${this.catalogo.visibles([profesionalId])}`;
     return new Map(filas.map((f) => [f.ejercicioId, f]));
   }
 

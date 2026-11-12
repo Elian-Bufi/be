@@ -92,12 +92,15 @@ import { PantallaDeFormularios, PantallaDeMiSolicitud } from './src/pantallas/fo
 import { PantallaDeHistorial, PantallaDePlanDeEntrenamiento } from './src/pantallas/historial';
 import { PantallaDeInicio } from './src/pantallas/inicio';
 import { PantallaDeLogin } from './src/pantallas/login';
+import { PantallaDeRecuperarElAcceso } from './src/pantallas/recuperar-el-acceso';
 import { PantallaDeMisHabitos } from './src/pantallas/mis-habitos';
 import { PantallaDeNovedades } from './src/pantallas/novedades';
 import { PantallaDeHoy, PantallaDePlanActual, PantallaDeRegistroNutricional, PantallaDeRegistros } from './src/pantallas/nutricion';
 import { PantallaDeOpcionDeComida } from './src/pantallas/opcion-de-comida';
 import { PantallaDePerfil } from './src/pantallas/perfil';
 import { PantallaDeQuienVeQue } from './src/pantallas/quien-ve-que';
+import { PantallaDeTusDatos } from './src/pantallas/tus-datos';
+import { PantallaDeAyudaYContacto } from './src/pantallas/ayuda-y-contacto';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
@@ -684,7 +687,12 @@ function Contenido() {
 
           {ruta.nombre === 'registro' ? <PantallaDeRegistro irALogin={() => ir({ nombre: 'login' })} mostrarAviso={subir} alIniciar={entrar} /> : null}
 
-          {ruta.nombre === 'login' ? <PantallaDeLogin aviso={ruta.aviso} irARegistro={() => ir({ nombre: 'registro' })} alIniciar={entrar} subir={subir} /> : null}
+          {ruta.nombre === 'login' ? (
+            <PantallaDeLogin aviso={ruta.aviso} irARegistro={() => ir({ nombre: 'registro' })} irARecuperar={() => ir({ nombre: 'recuperar-el-acceso' })} alIniciar={entrar} subir={subir} />
+          ) : null}
+
+          {/* UF-03 (DL-169): recuperar el acceso; al cambiar la contraseña entra como el login. */}
+          {ruta.nombre === 'recuperar-el-acceso' ? <PantallaDeRecuperarElAcceso irALogin={() => ir({ nombre: 'login' })} alIniciar={entrar} subir={subir} /> : null}
 
           {/* UF-01 (DL-169): mientras falte algo para seguir, o mientras se pregunta, «Antes de seguir» en lugar de la app. */}
           {enAntesDeSeguir && sesion ? (
@@ -697,6 +705,8 @@ function Contenido() {
               {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'perfil' ? <PantallaDePerfil token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'quien-ve-que' ? <PantallaDeQuienVeQue token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'tus-datos' ? <PantallaDeTusDatos token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'ayuda-y-contacto' ? <PantallaDeAyudaYContacto /> : null}
               {ruta.nombre === 'cuenta' ? (
                 <PantallaDeCuenta key={ruta.seccion ?? 'datos'} token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} seccion={ruta.seccion} sesionRecordada={recordada} />
               ) : null}

@@ -71,7 +71,9 @@ test('TEST-UF-001 a 004 · el problema del nombre: falta (no vino, null o vacío
 });
 
 test('TEST-UF-005 · API-ACC-07: lo que falta para seguir, con su paso como texto y su propuesta; vacío, la cuenta sigue', () => {
-  assert.deepEqual([...PASOS_PARA_SEGUIR], ['DISPLAY_NAME']);
+  // Cambió con UF-05 de WP-USO-FINAL (DL-169, etapa 2, 2026-11-12): después del nombre, la versión vigente de los términos y
+  // de la privacidad (TEST-UF-010). Los dos se piden solo a un cliente que declara la capacidad: la 0.24 nunca los recibe.
+  assert.deepEqual([...PASOS_PARA_SEGUIR], ['DISPLAY_NAME', 'ACCEPT_TERMS', 'ACKNOWLEDGE_PRIVACY']);
   assert.ok(LoQueFaltaParaSeguirResponseSchema.safeParse({ data: { steps: [] } }).success);
   assert.ok(LoQueFaltaParaSeguirResponseSchema.safeParse({ data: { steps: [{ step: 'DISPLAY_NAME', suggestion: 'Lic. Sofía Paz' }] } }).success);
   assert.ok(LoQueFaltaParaSeguirResponseSchema.safeParse({ data: { steps: [{ step: 'DISPLAY_NAME', suggestion: null }] } }).success);

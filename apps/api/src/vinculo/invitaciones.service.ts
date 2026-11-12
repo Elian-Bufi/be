@@ -35,6 +35,10 @@ import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/id
 import { LimitadorService } from '../plataforma/limitador.service';
 import { esViolacionDeUnicidad, sinDuplicar } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
+import { puedeActuarComoProfesional } from '../sesion/sesion-de-la-solicitud';
+
+/** Un identificador que no es de nadie: la lista de un profesional que, sin su segundo factor, no ve las suyas. */
+const SIN_NADIE = '00000000-0000-0000-0000-000000000000';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { itemDeSolicitud, nombreDeProfesional, resumenDeAlcance } from './lectura';
 import { alcanceYFinalidadDelPedido, exigirClave, SolicitudesService } from './solicitudes.service';
@@ -144,7 +148,8 @@ export class InvitacionesService {
     const ahora = ctx.momentoDeRecepcion;
     const estado = consulta.filtros.state as EstadoDeInvitacion | undefined;
     const filas = await this.prisma.invitacionDeVinculo.findMany({
-      where: { AND: [{ profesionalId: actor.identidadId }, estado ? filtroDeEstado(estado, ahora) : {}, despuesDelCursor(consulta.cursor)] },
+      // UF-11: sin el segundo factor de la sesión, las invitaciones del profesional no existen para ella.
+      where: { AND: [{ profesionalId: puedeActuarComoProfesional(actor.identidadId) ? actor.identidadId : SIN_NADIE }, estado ? filtroDeEstado(estado, ahora) : {}, despuesDelCursor(consulta.cursor)] },
       orderBy: ORDEN_DE_LISTA,
       take: consulta.limit + 1,
       include: { resolucion: true },
@@ -168,7 +173,8 @@ export class InvitacionesService {
         const [propia] = await tx.$queryRaw<{ id: string }[]>`
           SELECT "id"::text AS "id" FROM "invitacion_de_vinculo"
            WHERE "id" = ${id}::uuid AND "profesional_id" = ${actor.identidadId}::uuid FOR NO KEY UPDATE`;
-        if (!propia) throw errores.recursoNoEncontrado();
+        // UF-11: sin el segundo factor de la sesión, la propia también da el 404 de lo ajeno.
+        if (!propia || !puedeActuarComoProfesional(actor.identidadId)) throw errores.recursoNoEncontrado();
         // Con la invitación bloqueada, la resolución se lee en otra sentencia: ve la de un uso que terminó recién.
         const invitacion = await tx.invitacionDeVinculo.findUniqueOrThrow({ where: { id }, include: { resolucion: true } });
         exigirVigente(invitacion, ctx.momentoDeRecepcion);

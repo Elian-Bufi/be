@@ -17,8 +17,8 @@
  * recupera, o mientras se pregunta, la página todavía no se monta: no lee nada antes de tiempo ni se monta dos veces.
  * Accesible: el paso lleva el foco a su título al aparecer, el campo tiene su etiqueta y su error, y los avisos se anuncian.
  */
-import { clasificarFalla, COPY, COPY_DEL_NOMBRE, type PerfilPropio } from '@be/domain';
-import { usePathname } from 'next/navigation';
+import { botonDeAceptar, clasificarFalla, COPY, COPY_DEL_NOMBRE, COPY_TEXTOS_VIGENTES, type PerfilPropio, type TextoAAceptar, type VersionDeTexto } from '@be/domain';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { api, type Resultado } from '../lib/api';
 import { CERRANDO_SESION, useCerrarSesion } from '../lib/cerrar-sesion';
@@ -27,6 +27,8 @@ import { EsperandoSesion, useSesion } from '../lib/sesion';
 import { useSesionPerdida } from '../lib/sesion-requerida';
 import { Encabezado } from './encabezado';
 import { Cargando, ErrorConReintento } from './estados';
+import { CierreDeCuenta } from '../app/account/cuenta';
+import { dia } from '../lib/formato';
 import { Aviso, ResumenDeErrores } from './formulario';
 import { NavegacionDeCuenta, NavegacionProfesional } from './navegacion';
 import { CampoDeNombreYApellido } from './nombre-y-apellido';
@@ -120,6 +122,12 @@ export function AntesDeSeguir({ espacio, children }: { espacio: Espacio; childre
       return (
         <MarcoDelPaso>
           <PasoDelNombre key={token} token={token} sugerencia={paso.sugerencia} alGuardar={preguntarDeNuevo} alPerderLaSesion={alPerderLaSesion} />
+        </MarcoDelPaso>
+      );
+    case 'textos':
+      return (
+        <MarcoDelPaso>
+          <PasoDeLosTextos key={token} token={token} pendientes={paso.pendientes} alAceptar={preguntarDeNuevo} alPerderLaSesion={alPerderLaSesion} />
         </MarcoDelPaso>
       );
     case 'desconocido':
@@ -302,6 +310,87 @@ function PasoDelNombre({
         </div>
         <ProblemaAlCerrar salida={salida} />
       </form>
+    </>
+  );
+}
+
+/**
+ * UF-05 (DL-169): la versión vigente de los términos y de la información de privacidad, cada una con su texto completo, su
+ * versión y su fecha. Aceptar manda la versión que se mostró (API-ACC-08), de a una, y vuelve a preguntar qué falta. Si la
+ * API dice que ya no es la vigente, se pide recargar. No se saltea: se puede cerrar sesión o cerrar la cuenta.
+ */
+function PasoDeLosTextos({
+  token,
+  pendientes,
+  alAceptar,
+  alPerderLaSesion,
+}: {
+  token: string;
+  pendientes: readonly { readonly texto: TextoAAceptar; readonly version: VersionDeTexto }[];
+  alAceptar: () => void;
+  alPerderLaSesion: (r: Resultado<unknown>) => boolean;
+}) {
+  const salida = useCerrarSesion();
+  const router = useRouter();
+  const { olvidar } = useSesion();
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  async function aceptar(evento: FormEvent) {
+    evento.preventDefault();
+    if (guardando) return;
+    setAviso(null);
+    setGuardando(true);
+    try {
+      for (const p of pendientes) {
+        const r = await api.aceptarVersionVigente(token, p.texto, p.version.id);
+        if (r.ok) continue;
+        if (alPerderLaSesion(r)) return;
+        if (r.tipo === 'API' && (r.codigo === 'TERMS_VERSION_NOT_ACCEPTABLE' || r.codigo === 'PRIVACY_VERSION_NOT_ACCEPTABLE')) return setAviso(COPY_TEXTOS_VIGENTES.cambioDeVersionWeb);
+        return setAviso(r.tipo === 'RED' ? COPY.resultadoIncierto : COPY.noDisponible);
+      }
+      alAceptar();
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  const salirA = (destino: string) => {
+    olvidar();
+    router.replace(destino);
+  };
+
+  return (
+    <>
+      <TituloDelPaso />
+      <form className="formulario" onSubmit={aceptar} noValidate>
+        {aviso ? (
+          <Aviso tipo="error" enfocar>
+            <p>{aviso}</p>
+          </Aviso>
+        ) : null}
+        <p>{COPY_TEXTOS_VIGENTES.explicacion}</p>
+        {pendientes.map((p) => (
+          <section key={p.version.id} className="texto-vigente" aria-labelledby={`texto-${p.version.id}`}>
+            <h2 id={`texto-${p.version.id}`}>{COPY_TEXTOS_VIGENTES.titulo[p.texto]}</h2>
+            <p className="nota">{COPY_TEXTOS_VIGENTES.version(p.version.id, dia(p.version.vigenteDesde))}</p>
+            <div className="texto-vigente__cuerpo" tabIndex={0} role="region" aria-label={`Texto completo: ${COPY_TEXTOS_VIGENTES.titulo[p.texto]}`}>
+              {p.version.texto.split('\n\n').map((parrafo, i) => (
+                <p key={i}>{parrafo}</p>
+              ))}
+            </div>
+          </section>
+        ))}
+        <div className="acciones">
+          <button type="submit" className="boton boton--primario" disabled={guardando} aria-busy={guardando}>
+            {guardando ? COPY_TEXTOS_VIGENTES.aceptando : botonDeAceptar(pendientes.map((p) => p.texto))}
+          </button>
+          <CerrarSesion salida={salida} />
+        </div>
+        <ProblemaAlCerrar salida={salida} />
+      </form>
+      <p>{COPY_TEXTOS_VIGENTES.cerrarCuenta}</p>
+      <CierreDeCuenta token={token} alTerminar={() => salirA('/?aviso=cierre-registrado')} alPerderSesion={alPerderLaSesion} alReautenticar={() => salirA('/login?volver=/account&aviso=reautenticar')} />
     </>
   );
 }

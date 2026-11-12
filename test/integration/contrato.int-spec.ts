@@ -19,6 +19,11 @@
  *   descartar un borrador de plan que nunca se activó (DL-163 D-21; TB-47).
  *   Y la familia RES, lo que la persona comparte de otras áreas, el plan del otro y el pedido (DL-163 D-13, ampliada;
  *   TB-52 a TB-56).
+ * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169).
+ * - WP-USO-FINAL (UF-04): API-ADM-14 y 15, la entrada de los profesionales reales y su nombre profesional (DL-169).
+ * - WP-USO-FINAL (UF-03): API-ACC-P1-01 y 02 y API-ADM-18, recuperar el acceso y la recuperación asistida (DL-169).
+ * - WP-USO-FINAL (UF-07): API-SOP-01, el canal de ayuda y contacto (DL-169).
+ * - WP-USO-FINAL (UF-05): API-ACC-08, aceptar la versión vigente de los términos o de la privacidad (DL-169).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -31,7 +36,10 @@ import request from 'supertest';
 import { erroresDeclarados, OPERACIONES, operacionDe } from '../../packages/domain/src/openapi';
 import { incorporarAdministrador } from '../../apps/api/src/administracion/incorporacion';
 import { TokensService } from '../../apps/api/src/sesion/tokens.service';
-import { adm, codigoQueNoVale, codigoTotp, primerFactor, profesionalPendiente } from './soporte-administracion';
+import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
+import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
+import { adm, administradorListo, codigoQueNoVale, codigoTotp, primerFactor, profesionalPendiente } from './soporte-administracion';
+import { codigoDelPaso } from './soporte-segundo-factor';
 import {
   appDePrueba,
   claveDeIdempotencia,
@@ -2131,6 +2139,175 @@ it('TEST-CT (WP-ADMINISTRACION): ADM-01 a 13, con éxitos y errores declarados (
   await adm(app, tercera).delete('/admin/auth/sessions/current').expect(204);
   await adm(app, tercera).delete('/admin/auth/sessions/current?x=1').expect(400);
   await adm(app).delete('/admin/auth/sessions/current').expect(401); // AUTHENTICATION_REQUIRED
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-11): MFA-01 a 06 — el segundo factor del profesional, con éxitos y errores declarados (DL-169)', async () => {
+  const ruta = '/api/v1/me/second-factor';
+  // Un profesional sin autenticador, recién entrado (como uno que incorpora Administración), y una persona.
+  const correo = correoSintetico('ct-mfa');
+  const id = await registrarOk(app, correo, 'WEB');
+  await app.get(PrismaService).$transaction((tx) => app.get(VerificacionService).prepararProfesional(tx, id, { alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Contrato MFA' }, new Date()));
+  const t = await tokenDe(app, correo, 'WEB');
+  const persona = await prepararAsesorado(app, 'ct-mfa');
+  // MFA-01.
+  expect((await conSesion(app, t).get(ruta).expect(200)).body.data.secondFactor.state).toBe('ENROLLMENT_REQUIRED');
+  await conSesion(app, t).get(`${ruta}?x=1`).expect(400); // INVALID_REQUEST
+  await request(app.getHttpServer()).get(ruta).expect(401); // AUTHENTICATION_REQUIRED
+  // MFA-04 y 05: configurar.
+  await conSesion(app, persona.token).post(`${ruta}/enrollment`).send({}).expect(422); // INVALID_STATE_TRANSITION: sin perfil profesional
+  await conSesion(app, t).post(`${ruta}/enrollment`).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const secreto = (await conSesion(app, t).post(`${ruta}/enrollment`).send({}).expect(200)).body.data.secret as string;
+  await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
+  await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: '123456', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const paso = Math.floor(Date.now() / 30_000);
+  const codigos = (await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: codigoDelPaso(secreto, paso) }).expect(200)).body.data.recoveryCodes as string[];
+  // MFA-02: otra sesión, con el código del paso siguiente.
+  const otra = await tokenDe(app, correo, 'WEB');
+  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
+  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: '123456', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await conSesion(app, persona.token).post(`${ruta}/verification`).send({ code: '123456' }).expect(422); // INVALID_STATE_TRANSITION
+  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: codigoDelPaso(secreto, paso + 1) }).expect(200);
+  // MFA-03: una tercera, con un código de recuperación.
+  const tercera = await tokenDe(app, correo, 'WEB');
+  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: 'AAAA-AAAA-AAAA' }).expect(422); // SECOND_FACTOR_INVALID
+  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: codigos[0], extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: codigos[0] }).expect(200);
+  // MFA-06: desde la sesión reciente y verificada; sin verificar, no.
+  const sinVerificar = await tokenDe(app, correo, 'WEB');
+  await conSesion(app, sinVerificar).post(`${ruta}/recovery-codes`).send({}).expect(422); // INVALID_STATE_TRANSITION
+  await conSesion(app, t).post(`${ruta}/recovery-codes`).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  expect((await conSesion(app, t).post(`${ruta}/recovery-codes`).send({}).expect(200)).body.data.recoveryCodes).toHaveLength(10);
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-04): ADM-14 y ADM-15 — incorporar a un profesional y cambiar su nombre profesional, con éxitos y errores declarados (DL-169)', async () => {
+  const a = await administradorListo(app, prisma, `ct-uf04-${randomUUID().slice(0, 6)}`);
+  const correo = correoSintetico('ct-uf04');
+  const id = await registrarOk(app, correo, 'WEB');
+  const cuerpo = { email: correo, professionalName: 'Lic. Contrato Incorporada', profileType: 'HEALTH_PROFESSIONAL', license: { number: 'MN 000001', jurisdiction: 'Provincia sintética' }, scopes: ['NUTRICION'], rationale: 'Verificada en el registro sintético.' };
+  const incorporar = (body: Record<string, unknown>, token = a.token) => adm(app, token).post('/admin/professionals').set('Idempotency-Key', claveDeIdempotencia()).send(body);
+  // ADM-14.
+  await adm(app, a.token).post('/admin/professionals').send(cuerpo).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await incorporar({ ...cuerpo, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await incorporar({ ...cuerpo, rationale: '' }).expect(422); // VALIDATION_FAILED
+  await incorporar({ ...cuerpo, email: correoSintetico('ct-uf04-nadie') }).expect(404); // RESOURCE_NOT_FOUND
+  const persona = await prepararAsesorado(app, 'ct-uf04');
+  await incorporar(cuerpo, persona.token).expect(403); // ACTION_FORBIDDEN: una sesión común
+  const sinSegundoFactor = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+  await incorporar(cuerpo, sinSegundoFactor).expect(403); // MFA_REQUIRED
+  await adm(app).post('/admin/professionals').set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401); // AUTHENTICATION_REQUIRED
+  await incorporar(cuerpo).expect(201);
+  // ADM-15.
+  const cambiar = (body: Record<string, unknown>, profesional = id) => adm(app, a.token).post(`/admin/professionals/${profesional}/name`).set('Idempotency-Key', claveDeIdempotencia()).send(body);
+  await cambiar({ professionalName: 'Lic. Contrato', expectedName: 'Otro', rationale: 'Pedido.' }).expect(409); // VERSION_CONFLICT
+  await cambiar({ professionalName: '', expectedName: 'Lic. Contrato Incorporada', rationale: 'Pedido.' }).expect(422); // VALIDATION_FAILED
+  await cambiar({ professionalName: 'Lic. Contrato', expectedName: 'Lic. Contrato Incorporada', rationale: 'Pedido.', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await cambiar({ professionalName: 'Lic. Contrato', expectedName: 'X', rationale: 'Pedido.' }, randomUUID()).expect(404); // RESOURCE_NOT_FOUND
+  await cambiar({ professionalName: 'Lic. Contrato Renombrada', expectedName: 'Lic. Contrato Incorporada', rationale: 'Pedido por el canal.' }).expect(200);
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-06): RGT-01 a 03, EXP-01, EXP-02 y su descarga, y ADM-16 y 17 — los derechos de la persona, con éxitos y errores declarados (DL-169)', async () => {
+  const persona = await prepararAsesorado(app, 'ct-uf06');
+  const otra = await prepararAsesorado(app, 'ct-uf06-otra');
+  const yo = conSesion(app, persona.token);
+  // RGT-01 a 03.
+  await request(app.getHttpServer()).post('/api/v1/me/data-rights-requests').set('Authorization', `Bearer ${persona.token}`).send({ type: 'ACCESS', scope: {} }).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await yo.post('/api/v1/me/data-rights-requests').send({ type: 'ACCESS', scope: {}, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post('/api/v1/me/data-rights-requests').send({ type: 'ACCESS', scope: { note: 'x'.repeat(1001) } }).expect(422); // VALIDATION_FAILED
+  const pedido = (await yo.post('/api/v1/me/data-rights-requests').send({ type: 'RECTIFICATION', scope: { note: 'Mi fecha está mal.' } }).expect(201)).body.data.requestId as string;
+  await request(app.getHttpServer()).post('/api/v1/me/data-rights-requests').set('Idempotency-Key', claveDeIdempotencia()).send({ type: 'ACCESS', scope: {} }).expect(401); // AUTHENTICATION_REQUIRED
+  await yo.get(`/api/v1/me/data-rights-requests/${pedido}`).expect(200);
+  await conSesion(app, otra.token).get(`/api/v1/me/data-rights-requests/${pedido}`).expect(404); // RESOURCE_NOT_FOUND
+  await yo.get(`/api/v1/me/data-rights-requests/${pedido}?x=1`).expect(400); // INVALID_REQUEST
+  await yo.get('/api/v1/me/data-rights-requests?limit=5').expect(200);
+  await yo.get('/api/v1/me/data-rights-requests?cursor=no-es-un-cursor').expect(400); // INVALID_CURSOR
+  // EXP-01, EXP-02 y la descarga.
+  await yo.post('/api/v1/me/exports').send({ scope: { domains: [], period: null } }).expect(422); // VALIDATION_FAILED
+  await yo.post('/api/v1/me/exports').send({ scope: { domains: ['NUTRITION'], period: null }, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const exportacion = (await yo.post('/api/v1/me/exports').send({ scope: { domains: ['NUTRITION', 'TRAINING'], period: null } }).expect(201)).body.data.exportId as string;
+  const ruta = (await yo.get(`/api/v1/me/exports/${exportacion}`).expect(200)).body.data.download.path as string;
+  await conSesion(app, otra.token).get(`/api/v1/me/exports/${exportacion}`).expect(404); // RESOURCE_NOT_FOUND
+  await yo.get(`/api/v1/me/exports/${exportacion}?x=1`).expect(400); // INVALID_REQUEST
+  await request(app.getHttpServer()).get(`/api/v1${ruta}`).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/exports/content/no.vale').expect(404); // RESOURCE_NOT_FOUND
+  await request(app.getHttpServer()).get(`/api/v1${ruta}?x=1`).expect(400); // INVALID_REQUEST
+  // ADM-16 y ADM-17.
+  const a = await administradorListo(app, prisma, `ct-uf06-${randomUUID().slice(0, 6)}`);
+  await adm(app, a.token).post('/admin/data-rights-requests/query').send({ state: 'RECEIVED' }).expect(200);
+  await adm(app, a.token).post('/admin/data-rights-requests/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/data-rights-requests/query').send({ cursor: '###' }).expect(400); // INVALID_CURSOR
+  await adm(app, persona.token).post('/admin/data-rights-requests/query').send({}).expect(403); // ACTION_FORBIDDEN
+  const resolver = (id: string, cuerpo: Record<string, unknown>) => adm(app, a.token).post(`/admin/data-rights-requests/${id}/resolution`).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo);
+  await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: '' }).expect(422); // VALIDATION_FAILED
+  await resolver(randomUUID(), { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.' }).expect(404); // RESOURCE_NOT_FOUND
+  await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await resolver(pedido, { outcome: 'RESOLVED', response: 'Corregida.', rationale: 'Pedido por el canal.' }).expect(200);
+  await resolver(pedido, { outcome: 'REJECTED', response: 'Otra vez.', rationale: 'Otra vez.' }).expect(422); // INVALID_STATE_TRANSITION
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-03): ACC-P1-01 y 02 y ADM-18 — recuperar el acceso, con éxitos y errores declarados (DL-169)', async () => {
+  const servidor = app.getHttpServer();
+  const persona = correoSintetico('ct-uf03');
+  await registrarOk(app, persona, 'WEB');
+  const pedir = (cuerpo: Record<string, unknown>) => request(servidor).post('/api/v1/auth/recovery-requests').send(cuerpo);
+  const completar = (id: string, cuerpo: Record<string, unknown>) => request(servidor).post(`/api/v1/auth/recovery-requests/${id}/complete`).send(cuerpo);
+  // ACC-P1-01: sin proveedor de correo (como en test), 202 con la entrega asistida.
+  const pedido = (await pedir({ identifier: persona }).expect(202)).body.data.recoveryId as string;
+  await pedir({ identifier: persona, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await pedir({ identifier: 'sin-arroba' }).expect(422); // VALIDATION_FAILED
+  await request(servidor).post('/api/v1/auth/recovery-requests?x=1').send({ identifier: persona }).expect(400); // INVALID_REQUEST
+  // ADM-18: el código de la recuperación asistida.
+  const a = await administradorListo(app, prisma, `ct-uf03-${randomUUID().slice(0, 6)}`);
+  const asistida = (cuerpo: Record<string, unknown>) => adm(app, a.token).post('/admin/access-recoveries').send(cuerpo);
+  await asistida({ email: persona, rationale: '' }).expect(422); // VALIDATION_FAILED
+  await asistida({ email: correoSintetico('ct-uf03-nadie'), rationale: 'Pedido por el canal.' }).expect(404); // RESOURCE_NOT_FOUND
+  await asistida({ email: persona, rationale: 'Pedido por el canal.', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app).post('/admin/access-recoveries').send({ email: persona, rationale: 'Pedido por el canal.' }).expect(401); // AUTHENTICATION_REQUIRED
+  const sinSegundo = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+  await adm(app, sinSegundo).post('/admin/access-recoveries').send({ email: persona, rationale: 'Pedido por el canal.' }).expect(403); // MFA_REQUIRED
+  const codigo = (await asistida({ email: persona, rationale: 'Escribió desde el correo de la cuenta.' }).expect(201)).body.data.code as string;
+  // ACC-P1-02.
+  await completar(pedido, { proof: codigo, newCredential: 'corta' }).expect(422); // VALIDATION_FAILED
+  await completar(pedido, { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await completar(randomUUID(), { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }).expect(422); // RECOVERY_CODE_INVALID
+  await completar(pedido, { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }).expect(204);
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-11): ADM-19 — Administración restablece el segundo factor de un profesional (DL-169, UF-T56)', async () => {
+  const pro = await prepararProfesional(app, 'ct-uf11-rsf', ['NUTRICION']);
+  const persona = correoSintetico('ct-uf11-rsf-persona');
+  await registrarOk(app, persona, 'WEB');
+  const a = await administradorListo(app, prisma, `ct-uf11-${randomUUID().slice(0, 6)}`);
+  const restablecer = (token: string | undefined, cuerpo: Record<string, unknown>) => adm(app, token).post('/admin/professional-second-factor-resets').send(cuerpo);
+  const fundamento = 'Escribió desde el correo de la cuenta (sintético).';
+  await restablecer(a.token, { email: pro.correo, rationale: fundamento }).expect(200);
+  await restablecer(a.token, { email: persona, rationale: fundamento }).expect(422); // VALIDATION_FAILED (no es profesional)
+  await restablecer(a.token, { email: correoSintetico('ct-uf11-nadie'), rationale: fundamento }).expect(404); // RESOURCE_NOT_FOUND
+  await restablecer(a.token, { email: pro.correo, rationale: fundamento, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await restablecer(undefined, { email: pro.correo, rationale: fundamento }).expect(401); // AUTHENTICATION_REQUIRED
+  const sinSegundo = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+  await restablecer(sinSegundo, { email: pro.correo, rationale: fundamento }).expect(403); // MFA_REQUIRED
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-05): ACC-09 — el texto de una versión publicada, sin sesión (DL-169, UF-T57)', async () => {
+  await request(app.getHttpServer()).get(`/api/v1/legal-texts/${VERSION_VIGENTE.TERMINOS.id}`).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/legal-texts/terminos-que-no-existe').expect(404); // RESOURCE_NOT_FOUND
+  await request(app.getHttpServer()).get(`/api/v1/legal-texts/${VERSION_VIGENTE.TERMINOS.id}?x=1`).expect(400); // INVALID_REQUEST
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-07): SOP-01 — el canal de ayuda y contacto, sin sesión (DL-169)', async () => {
+  await request(app.getHttpServer()).get('/api/v1/support/contact').expect(200);
+  await request(app.getHttpServer()).get('/api/v1/support/contact?x=1').expect(400); // INVALID_REQUEST
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-05): ACC-08 — aceptar la versión vigente de los términos o de la privacidad (DL-169)', async () => {
+  const persona = correoSintetico('ct-uf05');
+  await registrarOk(app, persona, 'WEB');
+  const yo = conSesion(app, await tokenDe(app, persona, 'WEB'));
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id }).expect(200); // ya aceptada
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: 'terminos-que-no-existe' }).expect(422); // TERMS_VERSION_NOT_ACCEPTABLE
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'PRIVACY', versionId: VERSION_VIGENTE.TERMINOS.id }).expect(422); // PRIVACY_VERSION_NOT_ACCEPTABLE
+  await yo.post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await request(app.getHttpServer()).post('/api/v1/me/legal-acceptances').send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id }).expect(401); // AUTHENTICATION_REQUIRED
 });
 
 it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-47): PLN-07 y PLE-05 — descartar un borrador, con éxitos y errores declarados (DL-163 D-21)', async () => {

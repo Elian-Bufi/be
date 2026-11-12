@@ -1,9 +1,10 @@
 /**
- * APK · Iniciar sesión (PROTO-10-ACC-05): un único mensaje neutral para todo fallo (10-B02:198-225). Sin recuperación.
+ * APK · Iniciar sesión (PROTO-10-ACC-05): un único mensaje neutral para todo fallo (10-B02:198-225). Desde UF-03 de
+ * WP-USO-FINAL (DL-169), «¿Olvidaste tu contraseña?» lleva a Recuperar el acceso.
  * DL-138: «Continuar con Google» arriba del correo y la contraseña, si el build tiene el client ID. La sesión que abre
  * Google sigue el mismo camino que la del login.
  */
-import { COPY } from '@be/domain';
+import { COPY, COPY_RECUPERACION } from '@be/domain';
 import { useState } from 'react';
 import { api } from '../api';
 import { Aviso, Boton, Campo, Titulo } from '../ui';
@@ -13,6 +14,7 @@ export function PantallaDeLogin({
   aviso,
   alIniciar,
   irARegistro,
+  irARecuperar,
   subir,
 }: {
   aviso?: string;
@@ -20,6 +22,8 @@ export function PantallaDeLogin({
   /** `fechaDelServidor`: la cabecera `Date` de la respuesta, para medir la vigencia contra el reloj del servidor. */
   alIniciar: AlIniciar;
   irARegistro: () => void;
+  /** UF-03 (DL-169): «¿Olvidaste tu contraseña?». */
+  irARecuperar: () => void;
   /** Lleva la pantalla al principio, donde aparecen los pasos y los avisos de Google. */
   subir: () => void;
 }) {
@@ -71,6 +75,7 @@ export function PantallaDeLogin({
           textContentType="password"
         />
         <Boton texto={enviando ? 'Iniciando sesión…' : COPY.iniciarSesion} onPress={enviar} ocupado={enviando} />
+        <Boton texto={COPY_RECUPERACION.enlace} tipo="enlace" onPress={irARecuperar} />
         <Boton texto="¿No tenés cuenta? Crear cuenta" tipo="enlace" onPress={irARegistro} />
       </AccesoConGoogle>
     </>

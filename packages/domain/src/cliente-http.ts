@@ -31,6 +31,9 @@ import {
 } from './contratos-perfil-propio';
 import { DetalleDeCuentaDeGoogleInexistenteSchema, DetalleDeCuentaDeGoogleSchema, RUTAS_DE_ACCESO_GOOGLE, SesionConGoogleResponseSchema } from './contratos-acceso-google';
 import { declaracionDeMayoriaDeEdad } from './mayoria-de-edad';
+import { CodigosDeRecuperacionResponseSchema, ConfiguracionDelAutenticadorResponseSchema, DetalleDeCodigoInvalidoSchema } from './contratos-administracion';
+import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema } from './segundo-factor-del-profesional';
+import { ExportacionResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoResponseSchema, type CrearExportacionRequest, type CrearPedidoDeDerechoRequest } from './derechos-del-titular';
 import {
   CandidatoDeAlimentoResponseSchema,
   CandidatoDeEjercicioResponseSchema,
@@ -355,6 +358,9 @@ import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
 import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
+import { RecuperacionPedidaResponseSchema, type RecuperacionPedidaResponse } from './recuperacion-de-acceso';
+import { CanalDeContactoResponseSchema, type CanalDeContactoResponse } from './ayuda-y-contacto';
+import { AceptacionDeVersionResponseSchema, TextoPublicadoResponseSchema, type AceptacionDeVersionResponse, type TextoAAceptar, type TextoPublicadoResponse } from './textos-vigentes';
 
 export type Resultado<T> =
   | {
@@ -388,6 +394,8 @@ export type Resultado<T> =
        * verificado, para proponerlo al crear la cuenta; `null` si no trae uno que se pueda guardar.
        */
       readonly nombreDeGoogle?: string | null;
+      /** Con `SECOND_FACTOR_INVALID` (familia MFA, UF-11): cuántos intentos le quedan a la sesión antes de revocarse. */
+      readonly intentosRestantes?: number;
     }
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
   | { readonly ok: false; readonly tipo: 'RED' };
@@ -465,6 +473,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       // el correo.
       const cuentaInexistente = error.data.error.code === 'GOOGLE_ACCOUNT_NOT_FOUND' ? DetalleDeCuentaDeGoogleInexistenteSchema.safeParse(error.data.error.details) : null;
       const cuentaDeGoogle = CODIGOS_CON_CORREO_DE_GOOGLE.has(error.data.error.code) ? DetalleDeCuentaDeGoogleSchema.safeParse(error.data.error.details) : null;
+      const codigoInvalido = error.data.error.code === 'SECOND_FACTOR_INVALID' ? DetalleDeCodigoInvalidoSchema.safeParse(error.data.error.details) : null;
       const deGoogle = cuentaInexistente?.success
         ? { correoDeGoogle: cuentaInexistente.data.email, nombreDeGoogle: cuentaInexistente.data.name }
         : cuentaDeGoogle?.success
@@ -478,6 +487,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         issues,
         ...(evidenciaVisual?.success ? { evidenciaVisual: evidenciaVisual.data } : {}),
         ...deGoogle,
+        ...(codigoInvalido?.success ? { intentosRestantes: codigoInvalido.data.attemptsRemaining } : {}),
       };
     }
     const fecha = respuesta.headers?.get?.('date');
@@ -583,6 +593,26 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       });
     },
     /**
+     * API-ACC-P1-01 (UF-03, DL-169): pedir la recuperación del acceso con el correo de la cuenta. La respuesta es la misma
+     * exista o no la cuenta: el pedido, su vencimiento y cómo llega el código (por correo o por Administración).
+     */
+    pedirRecuperacion(correo: string): Promise<Resultado<RecuperacionPedidaResponse>> {
+      return llamar('POST', '/auth/recovery-requests', { esquema: RecuperacionPedidaResponseSchema, cuerpo: { identifier: correo } });
+    },
+    /**
+     * API-SOP-01 (UF-07, DL-169): el canal de ayuda y contacto, sin sesión. Cada dirección es null si todavía no se publicó.
+     */
+    consultarCanalDeContacto(): Promise<Resultado<CanalDeContactoResponse>> {
+      return llamar('GET', '/support/contact', { esquema: CanalDeContactoResponseSchema });
+    },
+    /**
+     * API-ACC-P1-02 (UF-03): completar con el código y la contraseña nueva. Sin cuerpo en la respuesta (204): después se
+     * entra con la contraseña nueva. Un código que no vale, siempre RECOVERY_CODE_INVALID.
+     */
+    completarRecuperacion(recoveryId: string, codigo: string, contrasenaNueva: string): Promise<Resultado<null>> {
+      return llamar('POST', `/auth/recovery-requests/${encodeURIComponent(recoveryId)}/complete`, { esquema: null, cuerpo: { proof: codigo, newCredential: contrasenaNueva } });
+    },
+    /**
      * API-ACC-02-REANUDACION (DL-147): después de recargar, el website pide un token nuevo de la misma sesión con la cookie
      * de reanudación. Sin cookie, o con una sesión que ya no sirve, responde un código de sesión (401).
      */
@@ -618,6 +648,66 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      */
     loQueFaltaParaSeguir(token: string): Promise<Resultado<LoQueFaltaParaSeguirResponse>> {
       return llamar('GET', '/me/pending-steps', { token, esquema: LoQueFaltaParaSeguirResponseSchema });
+    },
+    /**
+     * API-ACC-08 (UF-05, DL-169): aceptar la versión vigente de los términos o de la privacidad que la pantalla mostró.
+     * 201 con el acto nuevo, o 200 si ya estaba aceptada; otra versión, TERMS_ o PRIVACY_VERSION_NOT_ACCEPTABLE.
+     */
+    aceptarVersionVigente(token: string, texto: TextoAAceptar, versionId: string): Promise<Resultado<AceptacionDeVersionResponse>> {
+      return llamar('POST', '/me/legal-acceptances', { token, cuerpo: { text: texto, versionId }, esquema: AceptacionDeVersionResponseSchema });
+    },
+    /**
+     * API-ACC-09 (UF-T57): el texto de una versión publicada, sin sesión. Lo pide «Antes de seguir» cuando la API pide una
+     * versión que este cliente no trae en su catálogo; 404 si no está publicada.
+     */
+    textoPublicado(versionId: string): Promise<Resultado<TextoPublicadoResponse>> {
+      return llamar('GET', `/legal-texts/${encodeURIComponent(versionId)}`, { esquema: TextoPublicadoResponseSchema });
+    },
+    // ─── UF-11 (DL-169): el segundo factor del profesional, familia MFA ───────────────────────────────
+    /** API-MFA-01: el estado del segundo factor de la sesión. */
+    segundoFactorDeLaSesion(token: string) {
+      return llamar('GET', '/me/second-factor', { token, esquema: SegundoFactorDeLaSesionResponseSchema });
+    },
+    /** API-MFA-02: el código del autenticador. */
+    verificarSegundoFactorDeLaSesion(token: string, codigo: string) {
+      return llamar('POST', '/me/second-factor/verification', { token, cuerpo: { code: codigo }, esquema: SegundoFactorDeLaSesionVerificadoResponseSchema });
+    },
+    /** API-MFA-03: un código de recuperación. */
+    usarCodigoDeRecuperacionDeLaSesion(token: string, codigo: string) {
+      return llamar('POST', '/me/second-factor/recovery-code', { token, cuerpo: { recoveryCode: codigo }, esquema: SegundoFactorDeLaSesionVerificadoResponseSchema });
+    },
+    /** API-MFA-04: empezar a configurar (o a reemplazar) el autenticador. */
+    iniciarConfiguracionDeLaSesion(token: string) {
+      return llamar('POST', '/me/second-factor/enrollment', { token, cuerpo: {}, esquema: ConfiguracionDelAutenticadorResponseSchema });
+    },
+    /** API-MFA-05: confirmar la configuración con un código del autenticador nuevo. */
+    confirmarConfiguracionDeLaSesion(token: string, codigo: string) {
+      return llamar('POST', '/me/second-factor/enrollment/confirm', { token, cuerpo: { code: codigo }, esquema: ConfiguracionDeLaSesionConfirmadaResponseSchema });
+    },
+    /** API-MFA-06: diez códigos de recuperación nuevos. */
+    codigosDeRecuperacionNuevosDeLaSesion(token: string) {
+      return llamar('POST', '/me/second-factor/recovery-codes', { token, cuerpo: {}, esquema: CodigosDeRecuperacionResponseSchema });
+    },
+    // ─── UF-06 (DL-169): los derechos de la persona ───────────────────────────────────────────────────
+    /** API-RGT-01: pedir el acceso, la rectificación o la supresión, con su clave de idempotencia. */
+    pedirUnDerecho(token: string, pedido: CrearPedidoDeDerechoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/data-rights-requests', { token, cuerpo: pedido, claveDeIdempotencia, esquema: PedidoDeDerechoResponseSchema });
+    },
+    /** API-RGT-03: los pedidos propios. */
+    pedidosDeDerechos(token: string, cursor?: string) {
+      return llamar('GET', `/me/data-rights-requests?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { token, esquema: ListaDePedidosDeDerechoResponseSchema });
+    },
+    /** API-EXP-01: pedir la exportación propia. */
+    exportarMisDatos(token: string, pedido: CrearExportacionRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/exports', { token, cuerpo: pedido, claveDeIdempotencia, esquema: ExportacionResponseSchema });
+    },
+    /** API-EXP-02: el estado de la exportación, con una ruta de descarga firmada nueva (relativa a la base de la API). */
+    exportacionPropia(token: string, exportacionId: string) {
+      return llamar('GET', `/me/exports/${encodeURIComponent(exportacionId)}`, { token, esquema: ExportacionResponseSchema });
+    },
+    /** La dirección completa de una ruta firmada de descarga (API-EXP-02-DESCARGA), para abrirla en el navegador. */
+    direccionDeDescarga(ruta: string): string {
+      return `${opciones.baseUrl}${ruta}`;
     },
     /** API-CON-05 (solo lectura). */
     consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>> {

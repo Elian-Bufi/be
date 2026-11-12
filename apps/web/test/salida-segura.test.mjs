@@ -137,6 +137,7 @@ const NAVEGAN_SIN_LA_GUARDIA = {
   'components/salida-segura.tsx': 'es la guardia: sigue la navegación después de guardar o de preguntar',
   'components/portada-con-sesion.tsx': 'la portada pública, fuera de /pro: lleva a su espacio a quien ya tiene sesión',
   'app/pro/advisees/forms/pedir.tsx': 'después de enviar el pedido: lo escrito ya se guardó, y el editor todavía no dibujó que no le queda nada',
+  'components/antes-de-seguir.tsx': 'cierra la sesión y sale de la compuerta de UF-05: mientras pide los textos, la página de /pro no está montada y no hay nada sin guardar',
 };
 
 test('TEST-EDP-003 · ningún enlace interno de /pro ni de los componentes se salta la guardia (tampoco un router.push)', () => {
@@ -160,8 +161,12 @@ test('TEST-EDP-003 · ningún enlace interno de /pro ni de los componentes se sa
 });
 
 test('TEST-EDP-003 · cada enlace interno pasa por la guardia: la barra, las pestañas y «Volver a la ficha»', () => {
-  // La guardia envuelve a la compuerta de UF-01, que sigue siendo la de siempre (TEST-UF-005).
-  assert.match(leer('app/pro/layout.tsx'), /<SalidaSegura>\n\s*<AntesDeSeguir espacio="pro">\{children\}<\/AntesDeSeguir>\n\s*<\/SalidaSegura>/);
+  // La guardia envuelve a las dos compuertas, que siguen siendo las de siempre: la de UF-01 (TEST-UF-005) y, adentro, el
+  // segundo factor del profesional (UF-11, TEST-UF-014).
+  assert.match(
+    leer('app/pro/layout.tsx'),
+    /<SalidaSegura>\n\s*<AntesDeSeguir espacio="pro">\n\s*<SegundoFactorDelProfesional>\{children\}<\/SegundoFactorDelProfesional>\n\s*<\/AntesDeSeguir>\n\s*<\/SalidaSegura>/,
+  );
   assert.match(leer('components/navegacion.tsx'), /<Enlace href=\{e\.href\} /);
   // Las pestañas de un área reemplazan la entrada del historial, también después de guardar.
   assert.match(leer('components/pestanas.tsx'), /<Enlace href=\{href\(v\.clave\)\} [^>]*replace>/);

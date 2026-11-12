@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   ACTOS_DEL_REGISTRO,
+  CAPACIDAD_TEXTOS_VIGENTES,
   CodigoDeError,
   RegistrarIdentidadRequestSchema,
   TipoDeTexto,
@@ -11,6 +12,7 @@ import {
   problemaDelNombre,
   problemaDeCredencialLocal,
   problemaDeMayoriaDeEdad,
+  versionAceptableEnElAlta,
   type DeclaracionDeMayoriaDeEdad,
   type RegistrarIdentidadResponse,
   type RegistrationIntent,
@@ -43,15 +45,20 @@ interface ActosPresentados {
 }
 
 /**
- * 08 §12.2 / 09 §31.2.5: la versión mostrada debe ser la vigente. Y la declaración de mayoría de edad (08 §24.7 a;
+ * 08 §12.2 / 09 §31.2.5: la versión mostrada debe ser la vigente (desde UF-T57, o la que la vigente reemplaza, para un
+ * cliente con `CAPACIDAD_TEXTOS_VIGENTES`: `versionAceptableEnElAlta`). Devuelve las versiones de los términos y de la
+ * privacidad que se mostraron, con las que quedan los actos. Y la declaración de mayoría de edad (08 §24.7 a;
  * DL-138), marcada y con la versión vigente. Sin ella no hay alta:
  * - `faltante: 'CLIENTE_ANTERIOR'` (API-ACC-01): un cuerpo sin la declaración es el de un cliente anterior a DL-138, que
  *   no muestra la casilla; responde el código que esos clientes ya traducen a «actualizá la app» (DL-138, D-9).
  * - `faltante: 'ESTRICTO'` (API-GOO-03, sin clientes anteriores): 422 VALIDATION_FAILED con el issue preciso.
  */
-export function validarActosDelAlta(solicitud: ActosPresentados, faltante: 'CLIENTE_ANTERIOR' | 'ESTRICTO'): void {
-  if (solicitud.termsAcceptance.versionId !== VERSION_VIGENTE[TipoDeTexto.TERMINOS].id) throw errores.versionDeTerminosNoAceptable();
-  if (solicitud.privacyAcknowledgement.versionId !== VERSION_VIGENTE[TipoDeTexto.PRIVACIDAD_INFO].id) throw errores.versionDePrivacidadNoAceptable();
+export function validarActosDelAlta(solicitud: ActosPresentados, faltante: 'CLIENTE_ANTERIOR' | 'ESTRICTO', capacidades: ReadonlySet<string> = new Set()): VersionesDelAlta {
+  const conCapacidad = capacidades.has(CAPACIDAD_TEXTOS_VIGENTES);
+  const terminos = versionAceptableEnElAlta(TipoDeTexto.TERMINOS, solicitud.termsAcceptance.versionId, conCapacidad);
+  if (!terminos) throw errores.versionDeTerminosNoAceptable();
+  const privacidad = versionAceptableEnElAlta(TipoDeTexto.PRIVACIDAD_INFO, solicitud.privacyAcknowledgement.versionId, conCapacidad);
+  if (!privacidad) throw errores.versionDePrivacidadNoAceptable();
   switch (problemaDeMayoriaDeEdad(solicitud.adultDeclaration)) {
     case 'FALTA':
       throw faltante === 'CLIENTE_ANTERIOR' ? errores.mayoriaDeEdadAusente() : errores.mayoriaDeEdadRequerida('adultDeclaration');
@@ -60,9 +67,12 @@ export function validarActosDelAlta(solicitud: ActosPresentados, faltante: 'CLIE
     case 'VERSION_NO_VIGENTE':
       throw errores.versionDeMayoriaDeEdadNoAceptable();
     case null:
-      return;
+      return { TERMINOS: terminos, PRIVACIDAD_INFO: privacidad };
   }
 }
+
+/** Las versiones de los términos y de la privacidad que mostró el alta: con ellas quedan los actos A1 y A2 (UF-T57). */
+export type VersionesDelAlta = Readonly<Record<'TERMINOS' | 'PRIVACIDAD_INFO', string>>;
 
 /**
  * DL-169 (UF-01, UF-D1): el nombre con que nace la cuenta, ya normalizado. Sin `profile.displayName` el cuerpo es el de un
@@ -120,7 +130,7 @@ export class RegistroService {
     if (problema) issues.push({ code: problema, path: 'identity.localCredential' });
     if (issues.length > 0) throw errores.solicitudInvalida(issues);
 
-    validarActosDelAlta(solicitud, 'CLIENTE_ANTERIOR');
+    const versiones = validarActosDelAlta(solicitud, 'CLIENTE_ANTERIOR', ctx.capacidades);
     const nombreVisible = validarNombreDelAlta(solicitud.profile);
 
     // Siempre se calcula el hash, exista o no el identificador: trabajo equivalente en ambas ramas (DL-010).
@@ -145,7 +155,7 @@ export class RegistroService {
           if ((await metodosDelCorreo(tx, identificador)).length > 0) throw errores.registroNoDisponible();
           const { identidadId, momentoDeRegistro } = await this.crearIdentidad(
             tx,
-            { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'LOCAL', identificador, hash }, nombreVisible },
+            { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'LOCAL', identificador, hash }, nombreVisible, versiones },
             ctx,
             OPERACION,
           );
@@ -186,7 +196,7 @@ export class RegistroService {
    */
   async crearIdentidad(
     tx: Prisma.TransactionClient,
-    datos: { readonly registrationIntent: RegistrationIntent; readonly metodo: MetodoDelAlta; readonly nombreVisible: string },
+    datos: { readonly registrationIntent: RegistrationIntent; readonly metodo: MetodoDelAlta; readonly nombreVisible: string; readonly versiones: VersionesDelAlta },
     ctx: ContextoDeSolicitud,
     operacion: string,
   ): Promise<{ readonly identidadId: string; readonly momentoDeRegistro: Date }> {
@@ -217,8 +227,9 @@ export class RegistroService {
     if (datos.metodo.tipo === 'LOCAL') await tx.credencialLocal.create({ data: { metodoDeAccesoId: metodo.id, hash: datos.metodo.hash } });
 
     // A1, A2 y la declaración de mayoría de edad: actos separados con evidencia propia (08 §12.1-12.2; DL-138). A3 NO
-    // (ACTOS_DEL_REGISTRO).
-    const versiones = await tx.versionDeTexto.findMany({ where: { id: { in: ACTOS_DEL_REGISTRO.map((tipo) => VERSION_VIGENTE[tipo].id) } } });
+    // (ACTOS_DEL_REGISTRO). A1 y A2, con la versión que mostró la pantalla (UF-T57: en la transición, la anterior).
+    const mostrada = (tipo: TipoDeActoRegistrable): string => (tipo === 'TERMINOS' || tipo === 'PRIVACIDAD_INFO' ? datos.versiones[tipo] : VERSION_VIGENTE[tipo].id);
+    const versiones = await tx.versionDeTexto.findMany({ where: { id: { in: ACTOS_DEL_REGISTRO.map(mostrada) } } });
     for (const tipo of ACTOS_DEL_REGISTRO) {
       const version = versiones.find((v) => v.tipo === tipo);
       if (!version) throw VERSION_FALTANTE[tipo]();

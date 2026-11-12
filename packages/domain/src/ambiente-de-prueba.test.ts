@@ -5,7 +5,7 @@
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { AVISOS_DE_PRUEBA, AVISOS_DE_PRUEBA_APAGADOS, DESCARGAR_LA_APP, muestraLosAvisosDePrueba } from './ambiente-de-prueba';
+import { AVISOS_DE_PRUEBA, AVISOS_DE_PRUEBA_APAGADOS, DESCARGAR_LA_APP, muestraLosAvisosDePrueba, ofreceElCatalogoDeDemostracion, PROCEDENCIA_DE_DEMOSTRACION } from './ambiente-de-prueba';
 import { COPY_ACCESO_GOOGLE } from './copy-acceso-google';
 
 test('TEST-UF-012 · en producción no se muestran nunca, tampoco con el interruptor en otra cosa', () => {
@@ -31,4 +31,15 @@ test('TEST-UF-012 · los textos de prueba viven acá, y el de Google es el mismo
   for (const texto of Object.values(AVISOS_DE_PRUEBA)) assert.match(texto, /de prueba/i);
   assert.equal(COPY_ACCESO_GOOGLE.avisoDePrueba, AVISOS_DE_PRUEBA.google);
   assert.doesNotMatch(DESCARGAR_LA_APP, /prueba/i);
+});
+
+test('TEST-UF-013 · el catálogo de demostración solo se ofrece en test y en desarrollo; en producción, nunca', () => {
+  for (const ambiente of ['test', 'development', ' Test ']) assert.equal(ofreceElCatalogoDeDemostracion(ambiente), true, ambiente);
+  assert.equal(ofreceElCatalogoDeDemostracion('production'), false);
+  assert.equal(ofreceElCatalogoDeDemostracion(' PRODUCTION '), false, 'sin distinguir mayúsculas ni espacios');
+});
+
+test('TEST-UF-013 · un ambiente que no se reconoce o que falta no lo ofrece: un ejemplo de menos, nunca un valor inventado en una base real', () => {
+  for (const ambiente of [undefined, null, '', 'staging', 'prod', 'produccion']) assert.equal(ofreceElCatalogoDeDemostracion(ambiente), false, String(ambiente));
+  assert.equal(PROCEDENCIA_DE_DEMOSTRACION, 'BE_SYNTHETIC_SEED');
 });

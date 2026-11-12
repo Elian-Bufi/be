@@ -172,7 +172,7 @@
 | DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) INTEGRADAS en `main` el 2026-11-07 (#247, `64508a8`) y publicadas en la APK 0.23.0-candidata.1 el 2026-11-08, con su cierre (#249), y en la 0.23.0-candidata.2 el 2026-11-11, con el arreglo del cierre al empezar un entrenamiento (#250): la «latest» que ofrece el website, que lee lo mismo que la .1**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
 | DL-167 | Pedido de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; actualizado el mismo día con el paquete V3 y sus decisiones) | RF-030 · RF-039 a RF-041 · UC-P10 · UC-P11 · UC-P15 · UC-P16 · UC-I04 · UC-P32 · REG-06-119 y 120 · INV-06-133 · REG-06-145 · B10-05 · B10-06 · B10-10 · DL-108 · DL-109 · DL-119 · DL-148 · DL-152 · DL-161 · DL-163 (D-17 a D-21) · DL-168 · DL-169 · DL-170 · DL-171 | Los editores del profesional piden mucho desplazamiento, no muestran totales, no dejan descartar un borrador, avisan tarde lo que impide activar y obligan a salir del plan para crear una receta; Dirección pide crear con un asistente de cuadros y presets, y editar en una estación de trabajo, antes de congelar el 25/11 | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · la etapa 1, en programación**: «todo el rediseño antes de congelar la app el 25/11», con la dirección de diseño del mismo día (crear con un asistente por pasos, los cuadros enfocados y los presets de primera clase; la estación de tres zonas para editar). Paquete declarado en `docs/paquetes/WP-EDITORES-PROFESIONAL.md` (ED-00 a ED-76, con lo que suma V3, seis defectos P0, el vidrio del website y la vertical de fuerza), en borrador. Ratificadas el 11/11: DJ-1, DJ-2, DJ-4 a DJ-11 y DJ-13 a DJ-16, ED-D5, ED-D7, ED-D9, ED-D10 y ED-D12. El 2026-11-12, Dirección aprobó la página de maquetas v3 entera: el alcance de las 53 partes, las maquetas, el resto de las ED-D como se recomendaban y las recomendaciones de Claude del 11/11 (R1 a R13) |
 | DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA e integrada en `main` (#252, 6a05fee)**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. **Ampliación a las plantillas** (API-TPN-01 y 04, API-TPL-01 y 04, con el mismo límite y el mismo mensaje en «Guardar como plantilla») integrada en `main` con #254 |
-| DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) programada en el PR #253, **sin integrar**; las demás partes, declaradas (`docs/paquetes/WP-USO-FINAL.md`) |
+| DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) **integrada** el 2026-11-12 (#253, main `549f41e3`); la **etapa 2** (UF-09, UF-11, UF-04, UF-06, UF-07, UF-03, UF-05 y UF-02) declarada ese día, en un PR en borrador y **sin integrar**, con las decisiones técnicas nuevas (UF-T15 en adelante) a ratificar (`docs/paquetes/WP-USO-FINAL.md` §13); la **primera mitad** (UF-09, UF-11, UF-04 y UF-06) programada ese día en el PR #257 |
 | DL-171 | Decisión de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; DJ-1 y DJ-2 del juicio del paquete V3) | 09v10:356 · 06:5431 · REG-06-182 · INV-06-192 · REG-06-202 a 207 · B10-06:426-431 · B10-08 · INV-06-152 · DL-126 · DL-161 · DL-167 | El legajo dice que BE no fija una fórmula de repetición máxima, y un RIR registrado puede ser el del plan sin marca; Dirección pide seguir la fuerza desde lo que se hizo, no desde lo indicado | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · el método, en programación (etapa 1)**: Epley v1 (n/30, bandas sobre las repeticiones equivalentes, RIR de 0 a 2), solo para el profesional y en el website, desde una serie que observa el profesional o que escribió la persona, con la procedencia por campo en la APK de esta actualización; el profesional elige un % y BE sugiere los kilos, que él confirma. Enmienda 09v10:356 sin tocar el legajo. ED-70 a ED-76; ED-D17 a ED-D21, decididas el 2026-11-12 como se recomendaban; el website le explica al profesional la regla del RIR de 0 a 2 (R3) |
 
 ---
@@ -7688,6 +7688,68 @@ borrador y **sin integrar** (el detalle, las decisiones de implementación UF-T 
 en `test`. La 0.24.0-candidata.1 salió ese día como «latest» (tag en `1cb3cdc`, versionCode 38) y su cierre congela lo
 que lee: `VIGENTES = ['0.24.0-candidata.1']`, 89 operaciones (las 88 de la 0.23 y API-ACC-07). El congelado de la
 0.23.0-candidata.2 sale y se regenera desde su tag. Falta la prueba en el teléfono (§12.5 del paquete).
+
+**La etapa 2 (2026-11-12).** Dirección pidió todo el P0 antes del 25/11, cuando se congela la app, y ese día delegó las
+decisiones técnicas: «Okey a tus recomendaciones, cualquier cosa lo revisamos, pero no podemos frenar». La etapa 2 son
+las ocho partes P0 que quedan, sin UF-10 (§13 del paquete):
+- **el orden:** UF-09 (el catálogo sin demostración en producción), UF-11 (el segundo factor del profesional), UF-04 (la
+  entrada de los profesionales reales, API-ADM-14 y 15), UF-06 (los derechos de la persona), UF-07 (ayuda y contacto),
+  UF-03 (recuperar el acceso), UF-05 (los textos legales de verdad) y UF-02 (el gate del 08 §42), al final porque cita
+  la evidencia de todas;
+- **lo que depende de Dirección:**
+  - UF-03, la cuenta del proveedor de correo y el dominio propio. Mientras tanto, la recuperación asistida de UF-D9 y el
+    adaptador del proveedor, listo para cuando Dirección cargue la clave en Render; sin clave, la API no manda correos y
+    lo dice;
+  - UF-05, el texto, que redacta y valida la asesoría jurídica (condición 1 del gate). Se programa el mecanismo, y la
+    versión nueva queda sin publicar hasta esa validación;
+  - UF-07, las direcciones de soporte y de privacidad, por configuración;
+  - UF-10, que decide y aplica Dirección;
+  - UF-06, los plazos de la Ley 25.326, a confirmar con la asesoría;
+- **las decisiones técnicas nuevas** (UF-T15 en adelante) se toman con la recomendación y quedan a ratificar por
+  Dirección. Nada se integra sin su sí: la etapa va en un PR en borrador.
+
+**La primera mitad, programada (2026-11-12, PR #257 en borrador).** UF-09, UF-11, UF-04 y UF-06 quedaron en la rama
+`wp-uso-final-2`, cada una con su oráculo escrito antes del código y probado en rojo (TEST-UF-013, TEST-UF-014,
+TEST-UF-009 y TEST-UF-011), y con sus decisiones técnicas UF-T15 a UF-T33, a ratificar (§13.4 y §13.5 del paquete):
+- **UF-09:** con `APP_ENV=production`, la API no ofrece lo sembrado como demostración y nada nuevo lo acepta;
+- **UF-11:** una sesión actúa como profesional solo con el segundo factor verificado en ella (familia MFA, API-MFA-01 a
+  06); `/pro` lo pide y «Seguridad» lo administra. La app de la persona no cambia;
+- **UF-04:** Administración incorpora a un profesional real y le cambia el nombre profesional, con sus hechos
+  (API-ADM-14 y 15);
+- **UF-06:** la persona descarga lo suyo por una ruta firmada de 15 minutos y pide el acceso, la rectificación o la
+  supresión, que Administración resuelve con fundamento (API-RGT-01 a 03, API-EXP-01 y 02, API-ADM-16 y 17). Pide una
+  APK nueva («Tus datos», en Perfil).
+
+**La segunda mitad, programada (2026-11-12, PR #257 en borrador).** Siguió en la misma rama, en el orden UF-03, UF-07,
+UF-05 y UF-02, con los oráculos escritos antes del código y probados en rojo, y las decisiones técnicas desde UF-T34, a
+ratificar (§13.5 y §13.6 del paquete):
+- **UF-03:** la persona recupera el acceso con un código de un solo uso (API-ACC-P1-01 y 02, del 09 v0.12): la respuesta
+  es la misma exista o no la cuenta, la identidad no cambia y sus sesiones terminan. El correo de BE es un adaptador para
+  Brevo o Postmark que Dirección prende con `BE_CORREO_*`; sin él, Administración da el código con la recuperación
+  asistida (API-ADM-18). Pide una APK nueva (Iniciar sesión → «¿Olvidaste tu contraseña?»).
+- **UF-07:** el canal de ayuda y contacto sale de la configuración de la API (`BE_CONTACTO_SOPORTE` y
+  `BE_CONTACTO_PRIVACIDAD`, que define Dirección) y lo publica API-SOP-01, sin sesión. Está en el pie y en la cuenta del
+  website y en Perfil de la app (APK nueva); ninguna dirección real queda escrita en el código.
+- **UF-05:** el mecanismo de los textos de uso real. Las diez versiones nuevas (términos, privacidad, datos de salud,
+  cierre, B2 sanitario y no sanitario, evidencia visual y lo que se comparte entre áreas) están escritas **sin publicar**
+  (`packages/domain/src/textos-sin-publicar.ts`): no dicen «demostración», suceden a la vigente de su tipo con su hash y no
+  se pueden publicar sin la validación jurídica (condición 1 del gate) ni con datos «[A COMPLETAR …]». Publicadas,
+  «Antes de seguir» pide los términos y la privacidad nuevos a quien aceptó los anteriores (API-ACC-07, solo a un cliente
+  que declara la capacidad `pending-steps-texts-1`, así la 0.24 no los recibe) y API-ACC-08 registra el acto con la versión
+  que la pantalla mostró. Pide una APK nueva.
+- **UF-02:** el gate del 08 §42, condición por condición, en `EVIDENCIA/USO-FINAL/GATE-08-42.md`, con las cuatro del
+  §56.9. **Está cerrado:** 10 condiciones con evidencia, 1 en el PR, 10 parciales y 7 pendientes, la mayoría de Dirección
+  y la asesoría jurídica (los textos validados, los DPA, la transferencia, el plan de la base con sus copias y los
+  ensayos). Cada una tiene su evidencia o su dueño y una fecha propuesta, y una guardia (TEST-UF-018) lo sostiene en cada
+  PR. Hallazgo: suspender la cuenta de una persona (el menor descubierto, §24.7 c) no tiene operación de Administración.
+
+**Las revisiones adversarias de la etapa 2 (2026-11-12, mismo PR).** Dos revisiones, «aprobado con arreglos»; todos los
+hallazgos se comprobaron contra el código y se arreglaron (§13.8 del paquete), con las decisiones UF-T56 a UF-T60, a
+ratificar. Suma dos operaciones con DL-169: **API-ADM-19** (familia ADM, propia de BE: Administración restablece el
+segundo factor de un profesional, con fundamento) y **API-ACC-09** (ID nuevo de la familia ACC, que el 09 no usa: el texto
+de una versión publicada, sin sesión, para que la APK del 25/11 lea los textos que se publiquen después). Corrige el plan
+para publicar los textos (§13.7): no hace falta otra APK para los términos y la privacidad; A3, B2 y los que se aceptan
+al usarlos quedan pendientes para el PR de publicación.
 
 ## DL-171 — Epley v1: BE estima la repetición máxima, solo para el profesional, desde una serie escrita u observada
 

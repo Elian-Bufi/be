@@ -228,6 +228,16 @@ export const CodigoDeError = {
   INCORPORATION_CODE_INVALID: 'INCORPORATION_CODE_INVALID',
   /** La administración no está configurada en este ambiente (falta la clave del segundo factor). */
   ADMINISTRATION_NOT_AVAILABLE: 'ADMINISTRATION_NOT_AVAILABLE',
+  /**
+   * UF-11 (DL-169): el segundo factor del profesional (familia MFA) no está configurado en este ambiente: falta la misma
+   * clave. Sin él, ninguna sesión actúa como profesional.
+   */
+  SECOND_FACTOR_NOT_AVAILABLE: 'SECOND_FACTOR_NOT_AVAILABLE',
+  /**
+   * UF-03 (DL-169; 09 v0.12 §10, API-ACC-P1-02): el código de recuperación no vale. El mismo 422 sea cual sea la causa: no
+   * es, venció, ya se usó, es de otra cuenta, el pedido no existe o se anuló por cinco intentos. Nada cambia.
+   */
+  RECOVERY_CODE_INVALID: 'RECOVERY_CODE_INVALID',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

@@ -6,7 +6,7 @@
  * Esta guardia lee el 09 (solo lectura: el legajo está en el manifiesto y no se toca) y exige:
  * 1. una operación con un ID del inventario P0 del 09 tiene el método y la ruta que el 09 le da;
  * 2. una operación con un ID que no está en el inventario es una extensión declarada de BE, con una familia propia
- *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
+ *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES, MFA, SOP), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
  *    nombra o con un ID nuevo de una familia del 09 que el 09 no usa, declarado con su DL (API-ACC-07), y cita su fuente;
  * 3. ningún ID se repite.
  * Requiere `npm run build:domain` antes.
@@ -37,20 +37,31 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
  * TB-47: API-PLN-07 y API-PLE-05). No chocan con HAB ni con HBT.
  * RES (DL-163 D-13, ampliada por Dirección el 2026-11-07; WP-TABLERO-ALTA-GAMA §4.3, TB-52 a TB-56): lo que la persona
  * comparte de otras áreas, el plan del otro y el pedido de verlo; el 09 no la tiene.
+ * MFA (DL-169, UF-11 de WP-USO-FINAL): el segundo factor del profesional sobre su sesión común (08 §25 y §42, condición 6);
+ * el 09 solo lo nombra como política (MFA_REQUIRED, 09v7 §4.3) y el de Administración es la familia ADM.
+ * SOP (DL-169, UF-07 de WP-USO-FINAL): el canal de ayuda y contacto, leído de la configuración; el 09 no lo tiene, y las
+ * incidencias de RF-068 (09 v0.12 §16) quedan afuera.
  */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169' };
 /**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
  * de una revisión, DL-154).
  */
-const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO', 'BUSQUEDA', 'REANUDACION', 'EVIDENCIA'];
+const SUFIJOS_DE_BE = ['LISTA', 'PROPIA', 'PERIODO', 'BUSQUEDA', 'REANUDACION', 'EVIDENCIA', 'DESCARGA'];
+/**
+ * Las operaciones que el 09 define fuera del inventario P0, con su ruta, y que BE implementa tal cual, cada una con la DL
+ * que la trae: los derechos del titular y la exportación propia (09 v0.12 §14 y §15; UF-06 de WP-USO-FINAL, DL-169). La
+ * guardia exige que tengan el método y la ruta que el 09 les da. DESCARGA (DL-169) es la descarga firmada de API-EXP-02.
+ */
+const IDS_DEL_09_FUERA_DEL_INVENTARIO = { 'API-RGT-01': 'DL-169', 'API-RGT-02': 'DL-169', 'API-RGT-03': 'DL-169', 'API-EXP-01': 'DL-169', 'API-EXP-02': 'DL-169' };
 /**
  * Los IDs nuevos dentro de una familia del 09 que el 09 no usa, cada uno con la DL que lo declara. El 09 tiene API-ACC-01
  * a 06 y las P1; DL-169 (WP-USO-FINAL, UF-D4, ratificada por Dirección el 2026-11-11) suma API-ACC-07, «Lo que falta para
- * seguir». La guardia exige además que el 09 no tenga ese ID: si lo usara, serían dos operaciones con el mismo nombre.
+ * seguir», y API-ACC-08, «Aceptar la versión vigente» de los términos o de la privacidad (UF-05). La guardia exige además
+ * que el 09 no tenga ese ID: si lo usara, serían dos operaciones con el mismo nombre.
  */
-const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169' };
+const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169', 'API-ACC-08': 'DL-169', 'API-ACC-09': 'DL-169' };
 
 const normalizar = (ruta) => ruta.replace(/^\/api\/v1/, '').replace(/\?.*$/, '').replace(/\{[^}]+\}/g, '{}').replace(/\/$/, '');
 
@@ -116,7 +127,9 @@ test('un ID fuera del inventario es una extensión declarada de BE y cita su fue
     const sufijo = op.id.match(/^(API-[A-Z]+-\d{2})-([A-Z]+)$/);
     const p1 = /^API-[A-Z]+-P1-\d{2}$/.test(op.id) && del09.has(op.id);
     const nuevoEnFamiliaDel09 = op.id in IDS_NUEVOS_EN_FAMILIAS_DEL_09 && !del09.has(op.id);
-    const declarada = (familia && familia[1] in FAMILIAS_DE_BE) || (sufijo && inventario.has(sufijo[1]) && SUFIJOS_DE_BE.includes(sufijo[2])) || p1 || nuevoEnFamiliaDel09;
+    const del09FueraDelInventario = op.id in IDS_DEL_09_FUERA_DEL_INVENTARIO && del09.has(op.id);
+    const baseDelSufijo = sufijo && (inventario.has(sufijo[1]) || sufijo[1] in IDS_DEL_09_FUERA_DEL_INVENTARIO);
+    const declarada = (familia && familia[1] in FAMILIAS_DE_BE) || (baseDelSufijo && SUFIJOS_DE_BE.includes(sufijo[2])) || p1 || nuevoEnFamiliaDel09 || del09FueraDelInventario;
     if (!declarada || !op.fuente || !op.fuente.trim()) sinDeclarar.push(op.id);
   }
   assert.deepEqual(sinDeclarar, [], `extensiones sin declarar: ${sinDeclarar.join(', ')}`);
@@ -134,4 +147,21 @@ test('un ID nuevo en una familia del 09 es uno que el 09 no usa, y está en el c
     assert.equal(inventario.has(id), false, `${id} (${dl}) está en el inventario P0 del 09`);
     assert.ok(OPERACIONES.some((o) => o.id === id && o.fuente.includes(dl)), `${id} no está en el contrato o no cita ${dl}`);
   }
+});
+
+test('una operación del 09 fuera del inventario tiene el método y la ruta que el 09 le da, y cita su DL (DL-169)', () => {
+  const choques = [];
+  for (const [id, dl] of Object.entries(IDS_DEL_09_FUERA_DEL_INVENTARIO)) {
+    const op = OPERACIONES.find((o) => o.id === id);
+    const rutas = del09.get(id);
+    if (!op || !rutas) {
+      choques.push(`${id}: ${!op ? 'no está en el contrato' : 'el 09 no la define'}`);
+      continue;
+    }
+    if (!op.fuente.includes(dl)) choques.push(`${id}: no cita ${dl}`);
+    if (!rutas.some((r) => r.metodo === op.metodo && r.ruta === normalizar(op.ruta))) {
+      choques.push(`${id}: el contrato dice ${op.metodo.toUpperCase()} ${normalizar(op.ruta)}; el 09, ${rutas.map((r) => `${r.metodo.toUpperCase()} ${r.ruta}`).join(' o ')}`);
+    }
+  }
+  assert.deepEqual(choques, [], choques.join('\n'));
 });

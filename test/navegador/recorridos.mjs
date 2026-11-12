@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { CREDENCIAL, dominio, pedir, sesion as sesionPorApi } from './api.mjs';
+import { codigoParaEntrar, CREDENCIAL, dominio, pedir, sesion as sesionPorApi, verificarSegundoFactor } from './api.mjs';
 import { API, WEB } from './entorno.mjs';
 import { NOMBRE_DEL_ADMINISTRADOR, NOMBRE_DEL_OTRO_ADMINISTRADOR, NOMBRE_DEL_PENDIENTE, SECRETOS, codigoTotp, nombreDelProfesional, sesionAdministrativa } from './preparar.mjs';
 
@@ -61,6 +61,23 @@ async function entrar(p, correo) {
   await clic(p, 'form button[type="submit"]', 'Iniciar sesión');
   // DL-025: el profesional entra directo a su espacio.
   await esperarCamino(p, '/pro');
+  await pasarElSegundoFactor(p, correo);
+}
+
+/**
+ * UF-11 (DL-169): la compuerta de `/pro` pide el segundo factor una vez por sesión. La preparación ya lo configuró por la
+ * API: acá se escribe el código del autenticador o, si el paso de 30 s no avanzó, uno de recuperación.
+ */
+async function pasarElSegundoFactor(p, correo) {
+  await p.waitForSelector('#mfa-codigo', { timeout: ESPERA });
+  const { tipo, codigo } = codigoParaEntrar(correo);
+  const campo = tipo === 'autenticador' ? '#mfa-codigo' : '#mfa-recuperacion';
+  if (tipo === 'recuperacion') await clic(p, 'button.mfa-cambiar-modo');
+  await p.waitForSelector(campo, { timeout: ESPERA });
+  await hidratado(p, campo);
+  await p.type(campo, codigo);
+  await clic(p, 'form button[type="submit"]', 'Confirmar');
+  await p.waitForFunction(() => !document.querySelector('#mfa-codigo') && !document.querySelector('#mfa-recuperacion'), { timeout: ESPERA, polling: 100 });
 }
 
 /** Abre la ficha de la persona desde «Tus asesorados». */
@@ -159,6 +176,7 @@ async function sesion({ contexto, p, d }) {
   await p.type('#contrasena', CREDENCIAL);
   await clic(p, 'form button[type="submit"]', 'Iniciar sesión');
   await esperarCamino(p, '/pro/advisees');
+  await pasarElSegundoFactor(p, d.pro.correo);
   const vuelta = ruta(p).parametros;
   assert.equal(vuelta.get('id'), d.ase.id, 'vuelve a la misma persona');
   assert.equal(vuelta.get('vista'), 'linea', 'con la misma vista');
@@ -1101,6 +1119,8 @@ async function administracion({ contexto, p, d, salida }) {
   await clic(p, 'form button[type="submit"]', 'Continuar');
   await esperarTexto(p, 'No pudimos verificar los datos de acceso');
   const tokenDelProfesional = await sesionPorApi(d.pro.correo);
+  // UF-11 (DL-169): la sesión del profesional opera como tal con su segundo factor verificado.
+  await verificarSegundoFactor(d.pro.correo, tokenDelProfesional);
   await pedir('GET', `/admin/professionals/${d.pendiente.id}`, { token: tokenDelProfesional, esperado: 403 });
   await pedir('POST', '/admin/professionals/query', { token: tokenDelProfesional, cuerpo: {}, clave: false, esperado: 403 });
 

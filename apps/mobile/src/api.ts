@@ -2,7 +2,7 @@
  * Cliente de la API para el APK: base absoluta del perfil de build (API_BASE_URL, eas.json) y superficie APK.
  * La APK va directo a la API por HTTPS, sin CORS (07:645, 790). La definición del cliente es única: @be/domain.
  */
-import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_OBJETIVOS_POR_SERIE, crearClienteBe } from '@be/domain';
+import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_TEXTOS_VIGENTES, crearClienteBe } from '@be/domain';
 import Constants from 'expo-constants';
 import { randomUUID } from 'expo-crypto';
 import { memoria } from './lecturas';
@@ -48,7 +48,8 @@ const fetchQueOlvidaAlEscribir: typeof fetch = async (entrada, init) => {
  * Lo que declara esta APK: los objetivos de cada serie y, desde la ronda 2 de los formularios (DL-165, FR-08), las versiones
  * de formato 3 (el renglón con varias opciones y lo demás de la ronda 2), que dibuja `campos-de-formulario.tsx`.
  */
-const CAPACIDADES = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3] as const;
+// UF-05 (DL-169): y la versión nueva de los términos y de la privacidad en «Antes de seguir».
+const CAPACIDADES = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES] as const;
 
 export const api = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: CAPACIDADES, fetch: fetchQueOlvidaAlEscribir });
 

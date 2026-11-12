@@ -29,6 +29,19 @@ import {
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, LoQueFaltaParaSeguirResponseSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
+  ConfiguracionDeLaSesionConfirmadaResponseSchema,
+  RestablecerSegundoFactorRequestSchema,
+  SegundoFactorDeLaSesionResponseSchema,
+  SegundoFactorDeLaSesionVerificadoResponseSchema,
+  SegundoFactorRestablecidoResponseSchema,
+  SinCuerpoDelSegundoFactorSchema,
+} from './segundo-factor-del-profesional';
+import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSchema } from './incorporacion-de-profesionales';
+import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
+import { CompletarRecuperacionRequestSchema, EmitirRecuperacionAsistidaRequestSchema, PedirRecuperacionRequestSchema, RecuperacionAsistidaResponseSchema, RecuperacionPedidaResponseSchema } from './recuperacion-de-acceso';
+import { CanalDeContactoResponseSchema } from './ayuda-y-contacto';
+import { AceptacionDeVersionResponseSchema, AceptarVersionVigenteRequestSchema, TextoPublicadoResponseSchema } from './textos-vigentes';
+import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
   ConfiguracionDelAutenticadorResponseSchema,
@@ -367,7 +380,7 @@ export interface Operacion {
   readonly requestBinario?: readonly string[];
   readonly query?: readonly ParametroDeQuery[];
   /** El primero es el éxito principal. REL-01 y CON-02 también responden 200 (deduplicado o replay). */
-  readonly exitos: readonly { readonly status: 200 | 201 | 204; readonly schema?: z.ZodType; readonly binario?: string }[];
+  readonly exitos: readonly { readonly status: 200 | 201 | 202 | 204; readonly schema?: z.ZodType; readonly binario?: string }[];
   readonly errores: Errores;
   /**
    * La forma de `error.details` de un código 422 que la trae (DL-104). Se declara sobre el ErrorEnvelope común, sin
@@ -418,7 +431,7 @@ const ALCANCE: ParametroDeQuery = { nombre: 'scope', descripcion: 'Filtra por al
 
 /** Cómo compara el buscador de los catálogos de alimentos y de ejercicios (DL-139): lo dicen sus cuatro operaciones. */
 const COMO_BUSCA_EL_CATALOGO =
-  'Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141).';
+  'Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). En producción no ofrece lo sembrado como demostración (provenance BE_SYNTHETIC_SEED), y un plan, una plantilla, una receta o un habitual nuevos tampoco lo aceptan; en test y en desarrollo, sí (UF-09, DL-169).';
 
 /** Errores de una escritura REL/CON sobre un recurso que puede no ser revelable para el actor (09:213-233). */
 const ESCRITURA_REVELABLE: Errores = {
@@ -533,12 +546,40 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/pending-steps',
     resumen:
-      'Lo que falta para seguir (DL-169, UF-D4): los pasos que la cuenta tiene que completar antes de usar BE, en orden. Hoy, `DISPLAY_NAME` cuando la cuenta no tiene nombre visible (una cuenta anterior a DL-169), con `suggestion`: el nombre profesional de la identidad, si tiene uno. Vacío, la cuenta sigue. El paso viaja como texto: un cliente que no lo conoce pide actualizar la app.',
+      'Lo que falta para seguir (DL-169, UF-D4): los pasos que la cuenta tiene que completar antes de usar BE, en orden. `DISPLAY_NAME` cuando la cuenta no tiene nombre visible (una cuenta anterior a DL-169), con `suggestion`: el nombre profesional de la identidad, si tiene uno. Desde UF-05, `ACCEPT_TERMS` y `ACKNOWLEDGE_PRIVACY` cuando la última aceptación de los términos o de la información de privacidad no es la versión vigente, con `suggestion`: el id de la vigente, que se acepta con API-ACC-08; esos dos se piden solo a un cliente que declara la capacidad `pending-steps-texts-1` (X-BE-Capabilities). Vacío, la cuenta sigue. El paso viaja como texto: un cliente que no lo conoce pide actualizar la app.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: LoQueFaltaParaSeguirResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: 'WP-USO-FINAL UF-01 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 05 UC-P25 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ACC-08',
+    metodo: 'post',
+    ruta: '/me/legal-acceptances',
+    resumen:
+      'Aceptar la versión vigente de los términos (TERMS, el acto A1) o de la información de privacidad (PRIVACY, A2) desde una cuenta que ya existe (UF-05, UF-D4): lo pide «Antes de seguir» cuando cambia la versión. Registra el acto con la versión que la pantalla mostró, su hash, la finalidad y la evidencia de la superficie (08 §12.2), y queda auditado. La versión tiene que ser la vigente: otra (una anterior, una que todavía no se publicó o una inventada) responde 422 TERMS_VERSION_NOT_ACCEPTABLE o PRIVACY_VERSION_NOT_ACCEPTABLE, que un cliente traduce a recargar o actualizar. Idempotente por naturaleza, sin Idempotency-Key: si la última aceptación de ese texto ya es esa versión, responde 200 con ese acto y no crea otro; si no, 201 con el nuevo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: AceptarVersionVigenteRequestSchema,
+    exitos: [
+      { status: 201, schema: AceptacionDeVersionResponseSchema },
+      { status: 200, schema: AceptacionDeVersionResponseSchema },
+    ],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE'] },
+    fuente: 'WP-USO-FINAL UF-05 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 08 §12.2 · 09 §31.2.6 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ACC-09',
+    metodo: 'get',
+    ruta: '/legal-texts/{versionId}',
+    resumen:
+      'El texto de una versión publicada (UF-05, UF-T57): el título, la finalidad, la fecha desde la que rige, el texto completo, su SHA-256 y la versión que reemplaza. Lo pide «Antes de seguir» cuando API-ACC-07 pide aceptar una versión que el cliente no trae en su catálogo (una APK construida antes de publicarla), así no hace falta actualizar la app para leerla. Pública: los textos legales publicados no son de nadie. No lee la base ni datos de nadie; una versión se publica una sola vez y no cambia, así que se puede guardar un día. Una versión sin publicar o inexistente, 404.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: TextoPublicadoResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-USO-FINAL UF-05 (UF-T57, revisión adversarial de la etapa 2: la APK del 25/11 no trae las versiones que se publiquen después) · 08 §12.2 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
   },
   {
     id: 'API-ACC-P1-03',
@@ -558,6 +599,33 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'],
     },
     fuente: '09v12:578-603 · DEUDA_LEGAJO DL-016/DL-017/DL-018',
+  },
+  // ─── UF-03 de WP-USO-FINAL (DL-169; UF-D9): recuperar el acceso local (04 RF-005, UC-E09; 09 v0.12 §10) ──────────────
+  {
+    id: 'API-ACC-P1-01',
+    metodo: 'post',
+    ruta: '/auth/recovery-requests',
+    resumen:
+      'Pedir la recuperación del acceso local con el correo de la cuenta. Responde siempre 202 con la misma forma, exista o no la cuenta: un recoveryId nuevo, el vencimiento de un código por correo (30 minutos) y delivery, que dice si BE manda el código por correo (EMAIL) o si lo da Administración (ASSISTED, sin proveedor de correo; UF-D9). Lo único que cambia es lo que llega por correo: a una cuenta operativa con contraseña, el código (diez caracteres, un solo uso); a una que solo entra con Google, el aviso de que no tiene contraseña; a un correo sin cuenta o a una cuenta que no opera, nada. No cambia la contraseña ni cierra sesiones. Cupos: 3 pedidos por hora por correo, desde cualquier red, y 30 por hora por red (08 §38), iguales exista o no la cuenta (429). Auditado sin el correo ni el código.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: PedirRecuperacionRequestSchema,
+    exitos: [{ status: 202, schema: RecuperacionPedidaResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['VALIDATION_FAILED'], 429: ['RATE_LIMITED'] },
+    fuente: '09 v0.12 §10 (API-ACC-P1-01: «202, mismo shape exista o no exista la cuenta») · 04 RF-005 (UC-E09) · 08 §24.4, §24.5 y §38 · UF-03 y UF-D9 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ACC-P1-02',
+    metodo: 'post',
+    ruta: '/auth/recovery-requests/{recoveryId}/complete',
+    resumen:
+      'Completar la recuperación: con un código vigente de la cuenta del pedido (el que llegó por correo o el que dio Administración con API-ADM-18), define la contraseña nueva, con la política del alta. En una transacción: la credencial cambia con su cambio registrado (la base no la deja cambiar sin él), el código se usa, los demás códigos de la cuenta se anulan, todas sus sesiones se revocan y queda auditado. La identidad es la misma, con su historia y sus vínculos; el método de Google no se toca. Un código que no vale —mal escrito, vencido, usado, de otra cuenta, o un pedido que no existe o se anuló— responde siempre el mismo 422 RECOVERY_CODE_INVALID y nada cambia; cinco sobre el mismo pedido lo anulan. Una contraseña nueva que no cumple la política, 422 VALIDATION_FAILED, sin gastar un intento. Cupo: 10 intentos cada 15 minutos por red (429).',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    request: CompletarRecuperacionRequestSchema,
+    exitos: [{ status: 204 }],
+    errores: { 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['RECOVERY_CODE_INVALID', 'VALIDATION_FAILED'], 429: ['RATE_LIMITED'] },
+    fuente: '09 v0.12 §10 (API-ACC-P1-02) · 04 RF-005 · 08 §24.4, §24.6 y §26.3 (el cambio de credencial revoca las sesiones) · UF-03 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
   },
   {
     id: 'API-CON-05',
@@ -3822,6 +3890,257 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: DecisionRegistradaResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['INVALID_STATE_TRANSITION', 'RATIONALE_REQUIRED', 'VALIDATION_FAILED'] },
     fuente: 'adapta API-PRO-11, 12 y 13 (09v8:980-1104) · UC-P02 y UC-P03 · habilitación: REG-06-79 y 06 §8.6.6 (UC-ADM-04) · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-155, DL-156 y DL-157',
+  },
+  // ─── UF-11 de WP-USO-FINAL (DL-169; UF-D12): el segundo factor del profesional, familia MFA ──────────────────────────
+  {
+    id: 'API-MFA-01',
+    metodo: 'get',
+    ruta: '/me/second-factor',
+    resumen:
+      'El segundo factor de la sesión, como lo decide el servidor en este pedido. Una identidad con perfil profesional actúa como profesional solo con el segundo factor verificado en esa sesión: sin él, el PDP, las áreas y las listas donde es el profesional no responden nada de lo profesional, y lo de la persona sigue igual (la app de la persona no lo pide). Estados: NOT_REQUIRED (sin perfil profesional), VERIFIED (vale lo que dura la sesión), REQUIRED (tiene autenticador: falta el código en esta sesión), ENROLLMENT_REQUIRED (sin autenticador: se configura hasta deadline, 10 minutos después de entrar) y RECENT_SIGN_IN_REQUIRED (sin autenticador y el plazo pasó: volver a entrar). recentSignInUntil dice hasta cuándo se puede reemplazar el autenticador o generar códigos sin volver a entrar.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: SegundoFactorDeLaSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '08 §25 · 08 §42, condición 6 · UF-11 y UF-D12 de WP-USO-FINAL · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-02',
+    metodo: 'post',
+    ruta: '/me/second-factor/verification',
+    resumen:
+      'Verificar la sesión con el código del autenticador (TOTP, RFC 6238: 6 dígitos, 30 s, el paso actual y uno de cada lado), como en Administración. Un código ya usado no vale otra vez. Cinco códigos fallidos en la sesión la revocan; diez seguidos en cualquier sesión de la identidad bloquean el autenticador (SECOND_FACTOR_LOCKED) hasta que entra un código de recuperación; diez intentos por identidad cada 15 minutos dan 429. Sin perfil profesional o sin autenticador, INVALID_STATE_TRANSITION.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: VerificarSegundoFactorRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'SECOND_FACTOR_LOCKED', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 (TOTP como línea base) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-05, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-03',
+    metodo: 'post',
+    ruta: '/me/second-factor/recovery-code',
+    resumen:
+      'Verificar la sesión con un código de recuperación, que vale una sola vez (lo marca usado en la misma transacción), desbloquea el autenticador y no lo desactiva. Es el camino de quien perdió el autenticador: entra y lo reemplaza (API-MFA-04 y 05). Los mismos cupos que API-MFA-02.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: UsarCodigoDeRecuperacionRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 (códigos de recuperación de un solo uso) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-06, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-04',
+    metodo: 'post',
+    ruta: '/me/second-factor/enrollment',
+    resumen:
+      'Empezar a configurar el autenticador, sin cuerpo. Sin uno activo, dentro de los 10 minutos de entrar (con la contraseña o con Google): un token robado no alcanza para cargar otro. Para reemplazarlo, con el segundo factor verificado y una entrada reciente (la re-autenticación de 08 §25, la misma con contraseña que con Google). El secreto nuevo queda pendiente, cifrado y atado a esta sesión, y vence a los 10 minutos; la clave y su URI otpauth se devuelven una sola vez. Fuera de esas condiciones, INVALID_STATE_TRANSITION.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: SinCuerpoDelSegundoFactorSchema,
+    requestOpcional: true,
+    exitos: [{ status: 200, schema: ConfiguracionDelAutenticadorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    fuente: '08 §25 (re-autenticación para cambiar el factor) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-07, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-05',
+    metodo: 'post',
+    ruta: '/me/second-factor/enrollment/confirm',
+    resumen:
+      'Confirmar la configuración con un código del autenticador nuevo. En una transacción: el pendiente pasa a activo (el anterior, si había, a reemplazado, y las otras sesiones de la identidad vuelven a pedir el código, sin cerrarse), los códigos de recuperación anteriores dejan de valer y salen diez nuevos, que se muestran una sola vez, y esta sesión queda verificada.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ConfirmarConfiguracionRequestSchema,
+    exitos: [{ status: 200, schema: ConfiguracionDeLaSesionConfirmadaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-08, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-MFA-06',
+    metodo: 'post',
+    ruta: '/me/second-factor/recovery-codes',
+    resumen:
+      'Diez códigos de recuperación nuevos, sin cuerpo, con el segundo factor verificado y una entrada reciente. Los anteriores sin usar dejan de valer, y las otras sesiones de la identidad vuelven a pedir el código.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: SinCuerpoDelSegundoFactorSchema,
+    requestOpcional: true,
+    exitos: [{ status: 200, schema: CodigosDeRecuperacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-09, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  // ─── UF-04 de WP-USO-FINAL (DL-169; UF-D6 a UF-D8): la entrada de los profesionales reales ────────────────────────────
+  {
+    id: 'API-ADM-14',
+    metodo: 'post',
+    ruta: '/admin/professionals',
+    resumen:
+      'Incorporar un profesional real (UF-D6): Administración verificó la matrícula o la formación fuera de BE y, sobre una cuenta que ya existe (por su correo de acceso o el de Google), crea el perfil profesional con el nombre profesional (la regla del nombre visible), el tipo, la matrícula de un sanitario (número y jurisdicción; un no sanitario no lleva) y, por cada área pedida, la verificación y la habilitación. En la misma transacción: los hechos de M-02 con el administrador como actor y el fundamento (dónde se verificó), y la auditoría, que no guarda el fundamento ni la matrícula. La cuenta tiene que estar operativa, no ser administrativa ni profesional (422 VALIDATION_FAILED con ACCOUNT_NOT_OPERATIONAL, ACCOUNT_IS_ADMINISTRATIVE o ALREADY_PROFESSIONAL); un correo sin cuenta, 404. Es el único camino de un profesional en producción, donde la siembra no corre. El profesional entra a /pro con su segundo factor (UF-11).',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: IncorporarProfesionalRequestSchema,
+    exitos: [{ status: 201, schema: FichaDeProfesionalResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-04 y UF-D6 a UF-D8 de WP-USO-FINAL · 06 §6.8 (perfil, verificación y habilitación por alcance) · las precondiciones de CMD-ADM-INCORPORAR · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  {
+    id: 'API-ADM-15',
+    metodo: 'post',
+    ruta: '/admin/professionals/{professionalId}/name',
+    resumen:
+      'Cambiar el nombre profesional (UF-D7): es parte de lo verificado y lo ve la persona, así que lo cambia Administración, con fundamento (el profesional lo pide por el canal de ayuda). Contra el nombre que vio el administrador (si cambió, 409 VERSION_CONFLICT). En la misma transacción: el hecho del cambio, con el nombre anterior, el nuevo, el fundamento y el administrador (la base no deja cambiar el nombre sin él), y la auditoría. Devuelve la ficha.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: CambiarNombreProfesionalRequestSchema,
+    exitos: [{ status: 200, schema: FichaDeProfesionalResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-04 y UF-D7 de WP-USO-FINAL · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-06 de WP-USO-FINAL (DL-169; 08 §18 y §19): los derechos de la persona (09 v0.12 §14 y §15) ──────────────────
+  {
+    id: 'API-RGT-01',
+    metodo: 'post',
+    ruta: '/me/data-rights-requests',
+    resumen:
+      'Pedir el acceso, la rectificación o la supresión de los datos propios (09 v0.12 §14). El sujeto es siempre la persona autenticada: no se pide por otra. Queda con su plazo (deadline, fecha civil de Buenos Aires): diez días corridos para el acceso (Ley 25.326, art. 14) y cinco hábiles para rectificar o suprimir (art. 16), a confirmar con la asesoría. Lo resuelve Administración (API-ADM-17); la supresión no promete borrar lo que la ley obliga a conservar (08 §18). La nota es opcional, de hasta 1000 caracteres.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPedidoDeDerechoRequestSchema,
+    exitos: [{ status: 201, schema: PedidoDeDerechoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: '09 v0.12 §14 (API-RGT-01) · 08 §19 · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-RGT-02',
+    metodo: 'get',
+    ruta: '/me/data-rights-requests/{requestId}',
+    resumen: 'Un pedido propio, con su estado, su plazo y la respuesta de Administración (nunca su fundamento interno). El de otra persona, o uno que no existe: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PedidoDeDerechoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09 v0.12 §14 (API-RGT-02) · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-RGT-03',
+    metodo: 'get',
+    ruta: '/me/data-rights-requests',
+    resumen: 'Los pedidos propios, del más nuevo al más viejo, de a páginas (limit y cursor).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDePedidosDeDerechoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09 v0.12 §14 (API-RGT-03) · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-EXP-01',
+    metodo: 'post',
+    ruta: '/me/exports',
+    resumen:
+      'Pedir la exportación propia (09 v0.12 §15): de los dominios pedidos (al menos uno; period, todavía null) y siempre el perfil, los vínculos con sus consentimientos, los actos aceptados y los formularios. Exporta solo lo del titular; de sus profesionales, la referencia mínima (identificador y nombre profesional). Queda registrada con su vencimiento (24 horas) y auditada; el archivo no se guarda: se arma al descargarlo (API-EXP-02-DESCARGA).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearExportacionRequestSchema,
+    exitos: [{ status: 201, schema: ExportacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: '09 v0.12 §15 (API-EXP-01) · 08 §19 · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-EXP-02',
+    metodo: 'get',
+    ruta: '/me/exports/{exportId}',
+    resumen:
+      'El estado de una exportación propia y, mientras está vigente, una ruta de descarga firmada nueva que vence a los 15 minutos (08 §21). La de otra persona, o una que no existe: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ExportacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09 v0.12 §15 (API-EXP-02) · 08 §21 · UF-06 de WP-USO-FINAL · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-EXP-02-DESCARGA',
+    metodo: 'get',
+    ruta: '/exports/content/{token}',
+    resumen:
+      'La descarga de la exportación propia por su ruta firmada: el archivo JSON (be-exportacion-propia/1), como adjunto y sin caché, armado en ese momento con lo del titular. Cada entrega se audita, sin el contenido. Una ruta vencida, alterada o de una exportación vencida: 404. La ruta no lleva sesión: el cupo es por red, el de las lecturas protegidas (429).',
+    autenticacion: 'SIGNED_URL',
+    idempotencia: false,
+    exitos: [{ status: 200, binario: 'application/json' }],
+    errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'], 429: ['RATE_LIMITED'] },
+    fuente: '09 v0.12 §15 («una URL de descarga, si existe, es temporal y autenticada/firmada») · 08 §21 · ID propio de BE (variante DESCARGA de API-EXP-02) · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ADM-16',
+    metodo: 'post',
+    ruta: '/admin/data-rights-requests/query',
+    resumen:
+      'Los pedidos de derechos de las personas, para resolverlos dentro de su plazo: los pendientes primero, por plazo, y después los resueltos. De cada persona, su identificador y su correo de acceso (para responderle por el canal); nada de salud. Filtra por estado; la consulta va en el cuerpo.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarPedidosDeDerechoRequestSchema,
+    exitos: [{ status: 200, schema: ListaAdministrativaDePedidosDeDerechoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD', 'INVALID_CURSOR'] },
+    fuente: 'UF-06 de WP-USO-FINAL · 08 §19 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  {
+    id: 'API-ADM-17',
+    metodo: 'post',
+    ruta: '/admin/data-rights-requests/{requestId}/resolution',
+    resumen:
+      'Resolver un pedido de derechos: hecho (RESOLVED) o no se pudo (REJECTED), con la respuesta para la persona y el fundamento interno (de 1 a 1000 caracteres, lo ve solo Administración). Un pedido se resuelve una sola vez (422 INVALID_STATE_TRANSITION). La supresión se hace con el cierre de la cuenta y la política de 08 §18; esta respuesta dice lo hecho y lo que se conserva.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: ResolverPedidoDeDerechoRequestSchema,
+    exitos: [{ status: 200, schema: PedidoDeDerechoAdministrativoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
+    fuente: 'UF-06 de WP-USO-FINAL · 08 §18 y §19 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-03 de WP-USO-FINAL (DL-169; UF-D9): la recuperación asistida ──────────────────────────────────────────────────
+  {
+    id: 'API-ADM-18',
+    metodo: 'post',
+    ruta: '/admin/access-recoveries',
+    resumen:
+      'La recuperación asistida (UF-D9): Administración verificó a la persona por el canal de ayuda y, para la cuenta de ese correo de acceso, emite un código de recuperación de un solo uso que vale 24 horas, con el fundamento (cómo la verificó). En una transacción: se revocan todas las sesiones de la cuenta, se anulan sus códigos anteriores y queda auditado sin el fundamento ni el código. El código se devuelve una sola vez (la base guarda su huella) y la persona lo usa con API-ACC-P1-01 y 02, como el del correo. Sin idempotencia, para que el código no quede guardado: cada pedido emite uno nuevo y anula el anterior. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no opera o sin contraseña (entra con Google), 422 VALIDATION_FAILED.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: EmitirRecuperacionAsistidaRequestSchema,
+    exitos: [{ status: 201, schema: RecuperacionAsistidaResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-03 y UF-D9 de WP-USO-FINAL («una recuperación asistida por Administración, con fundamento: revoca las sesiones y emite un código de un solo uso») · 04 RF-005 · 08 §24.4 («contingencia asistida documentada») · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-11 de WP-USO-FINAL (DL-169; UF-T56): restablecer el segundo factor de un profesional ──────────────────────────
+  {
+    id: 'API-ADM-19',
+    metodo: 'post',
+    ruta: '/admin/professional-second-factor-resets',
+    resumen:
+      'Restablecer el segundo factor de un profesional que perdió el autenticador y los códigos de recuperación, o al que otro le configuró uno: Administración lo verificó por el canal de ayuda y, para la cuenta de ese correo de acceso, con el fundamento (cómo lo verificó), en una transacción revoca el autenticador activo, descarta uno pendiente, invalida los códigos de recuperación y cierra todas las sesiones de la cuenta. Queda el hecho con el fundamento y el administrador, y la auditoría sin el fundamento. Al volver a entrar, el profesional lo configura de nuevo (API-MFA-04 y 05, dentro de los 10 minutos de la entrada). Sin idempotencia: repetirlo no cambia más de lo que ya cambió. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no es de un profesional o que no opera, 422 VALIDATION_FAILED.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: RestablecerSegundoFactorRequestSchema,
+    exitos: [{ status: 200, schema: SegundoFactorRestablecidoResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-11 de WP-USO-FINAL (UF-T56, revisión adversarial de la etapa 2: sin esto, un profesional sin su autenticador quedaba sin poder actuar como profesional) · 08 §25 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  // ─── UF-07 de WP-USO-FINAL (DL-169): el canal de ayuda y contacto ─────────────────────────────────────────────────────
+  {
+    id: 'API-SOP-01',
+    metodo: 'get',
+    ruta: '/support/contact',
+    resumen:
+      'El canal de ayuda y contacto de BE: la dirección de soporte (la app, la cuenta, recuperar el acceso, entrar como profesional) y la de privacidad (los datos y los derechos de la persona, 08 §19), tal como las cargó Dirección en la configuración de la API (BE_CONTACTO_SOPORTE y BE_CONTACTO_PRIVACIDAD). Cada una es null si todavía no se publicó: la pantalla lo dice y no inventa otra. Pública, para que la lea también quien no puede entrar; no lee la base ni datos de nadie. Se puede guardar cinco minutos (Cache-Control público), así un cambio de configuración se ve sin reconstruir la APK.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: CanalDeContactoResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST'] },
+    fuente: 'UF-07 de WP-USO-FINAL (§4.1 y §13.2: las direcciones por configuración, ninguna en el repositorio) · 08 §19 · ID propio de BE (familia SOP) · DEUDA_LEGAJO DL-169',
   },
 ];
 

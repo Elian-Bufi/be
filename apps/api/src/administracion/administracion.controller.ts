@@ -7,7 +7,10 @@ import {
   type EstadoDeSesionAdministrativaResponse,
   type FichaDeProfesionalResponse,
   type HistorialAdministrativoResponse,
+  type ListaAdministrativaDePedidosDeDerechoResponse,
   type ListaDeProfesionalesResponse,
+  type RecuperacionAsistidaResponse,
+  type SegundoFactorRestablecidoResponse,
   type SegundoFactorVerificadoResponse,
   type SesionAdministrativaResponse,
 } from '@be/domain';
@@ -15,6 +18,8 @@ import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { sinParametrosDeQuery } from '../http/validacion';
 import { borrarCookieDeReanudacion, PERFIL_ADMINISTRATIVO } from '../sesion/reanudacion.service';
+import { DerechosService } from '../derechos/derechos.service';
+import { RecuperacionService } from '../recuperacion/recuperacion.service';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
 import { AdministracionService } from './administracion.service';
 import { actorAdministrativoDe, OperacionAdministrativa, SegundoFactorGuard, SesionAdministrativaGuard, type SolicitudAdministrativa } from './sesion-administrativa.guard';
@@ -22,7 +27,9 @@ import { actorAdministrativoDe, OperacionAdministrativa, SegundoFactorGuard, Ses
 type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
 
 /**
- * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13. Prefijo global /api/v1.
+ * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13; desde UF-04 de WP-USO-FINAL (DL-169), también API-ADM-14
+ * (incorporar un profesional) y 15 (cambiar su nombre profesional); desde UF-06, 16 y 17 (los pedidos de derechos), y desde
+ * UF-03, 18 (la recuperación asistida). Prefijo global /api/v1.
  * - Sin guard: abrir y reanudar la sesión (el primer factor y la cookie) y cerrarla (idempotente).
  * - `SesionAdministrativaGuard`: una sesión administrativa válida, con el rol vigente. Alcanza solo para el segundo factor
  *   y para el estado de la propia sesión.
@@ -34,6 +41,8 @@ export class AdministracionController {
   constructor(
     private readonly acceso: AccesoAdministrativoService,
     private readonly administracion: AdministracionService,
+    private readonly derechos: DerechosService,
+    private readonly recuperacion: RecuperacionService,
   ) {}
 
   /** API-ADM-01 — PUBLIC. */
@@ -164,5 +173,94 @@ export class AdministracionController {
     const r = await this.administracion.decidir(actorAdministrativoDe(req), profesionalId, alcance, cuerpo, clave, contextoDe(req));
     res.status(r.estadoHttp);
     return r.cuerpo;
+  }
+
+  /** API-ADM-14 — SESSION_MFA, Idempotency-Key requerida (UF-04 de WP-USO-FINAL, DL-169). */
+  @Post('professionals')
+  @OperacionAdministrativa('API-ADM-14')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async incorporar(
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.administracion.incorporar(actorAdministrativoDe(req), cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  /** API-ADM-15 — SESSION_MFA, Idempotency-Key requerida (UF-04 de WP-USO-FINAL, DL-169). */
+  @Post('professionals/:professionalId/name')
+  @OperacionAdministrativa('API-ADM-15')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async cambiarNombre(
+    @Param('professionalId') profesionalId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.administracion.cambiarNombre(actorAdministrativoDe(req), profesionalId, cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  /** API-ADM-16 — SESSION_MFA. Los pedidos de derechos de las personas (UF-06 de WP-USO-FINAL, DL-169). */
+  @Post('data-rights-requests/query')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-16')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  pedidosDeDerecho(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ListaAdministrativaDePedidosDeDerechoResponse> {
+    sinParametrosDeQuery(query);
+    return this.derechos.consultarParaAdministracion(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /** API-ADM-17 — SESSION_MFA, Idempotency-Key requerida. Resolver un pedido de derechos (UF-06). */
+  @Post('data-rights-requests/:requestId/resolution')
+  @OperacionAdministrativa('API-ADM-17')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async resolverPedidoDeDerecho(
+    @Param('requestId') pedidoId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.derechos.resolver(actorAdministrativoDe(req), pedidoId, cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  /**
+   * API-ADM-18 — SESSION_MFA, sin Idempotency-Key: la recuperación asistida (UF-03 de WP-USO-FINAL, UF-D9). Cada pedido
+   * emite un código nuevo y anula el anterior; el código no se guarda en ningún lado en claro.
+   */
+  @Post('access-recoveries')
+  @HttpCode(201)
+  @OperacionAdministrativa('API-ADM-18')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  recuperacionAsistida(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<RecuperacionAsistidaResponse> {
+    sinParametrosDeQuery(query);
+    return this.recuperacion.emitirAsistida(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /**
+   * API-ADM-19 — SESSION_MFA, sin Idempotency-Key: restablecer el segundo factor de un profesional (UF-11 de WP-USO-FINAL,
+   * UF-T56). Repetirlo no cambia más de lo que ya cambió.
+   */
+  @Post('professional-second-factor-resets')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-ADM-19')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  restablecerSegundoFactor(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<SegundoFactorRestablecidoResponse> {
+    sinParametrosDeQuery(query);
+    return this.administracion.restablecerSegundoFactor(actorAdministrativoDe(req), cuerpo, contextoDe(req));
   }
 }

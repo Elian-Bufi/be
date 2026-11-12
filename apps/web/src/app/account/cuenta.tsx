@@ -16,6 +16,7 @@
  */
 import {
   CODIGOS_DE_SESION_NO_VALIDA,
+  COPY_AYUDA,
   COPY_DEL_NOMBRE,
   COPY_VINCULO,
   ISSUE_DEL_NOMBRE,
@@ -37,6 +38,8 @@ import { COPY } from '../../lib/copy';
 import { errorDelNombre, mensajeDelNombreEn } from '../../lib/nombre-y-apellido';
 import { useSesion, EsperandoSesion } from '../../lib/sesion';
 import { fecha } from '../../lib/formato';
+import { TusDatos } from './tus-datos';
+import { CanalDeContacto } from '../../components/canal-de-contacto';
 
 const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], string> = {
   OPERATIVA: 'Operativa',
@@ -164,6 +167,16 @@ export function Cuenta() {
         <p>
           <Link href="/account/privacy">Gestionar privacidad y consentimientos</Link>
         </p>
+      </section>
+
+      {/* UF-06 (DL-169): descargar lo propio y pedir el acceso, la rectificación o la supresión. */}
+      {token ? <TusDatos token={token} /> : null}
+
+      {/* UF-07 (DL-169): el canal de ayuda y contacto, leído de la API. */}
+      <section className="seccion" aria-labelledby="titulo-ayuda">
+        <h2 id="titulo-ayuda">{COPY_AYUDA.titulo}</h2>
+        <p>{COPY_AYUDA.queEs}</p>
+        <CanalDeContacto />
       </section>
 
       <section className="seccion" aria-labelledby="titulo-seguridad">
@@ -345,7 +358,7 @@ function TuIdentificador({ identityId }: { identityId: string }) {
  * ofrecerse y el aviso queda visible aunque se cierre el diálogo; «Reintentar» usa la MISMA key (10-B10:430-438), así
  * el servidor devuelve el resultado original aunque la sesión ya se haya revocado por el cierre.
  */
-function CierreDeCuenta({
+export function CierreDeCuenta({
   token,
   alTerminar,
   alPerderSesion,

@@ -28,6 +28,8 @@ import { AuditoriaService } from '../plataforma/auditoria.service';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { conReintento } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
+import { puedeActuarComoProfesional } from '../sesion/sesion-de-la-solicitud';
+import { participaciones } from './participacion';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import {
   INCLUIR_PARTES_DE_SOLICITUD,
@@ -249,7 +251,8 @@ export class SolicitudesService {
   // ─── API-REL-02 ────────────────────────────────────────────────────────────────────────────
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<ListaDeSolicitudesResponse> {
     const consulta = leerConsultaDeLista(query, { state: ESTADOS });
-    const propias = { OR: [{ profesionalId: actor.identidadId }, { asesoradoId: actor.identidadId }] };
+    // UF-11: como profesional, solo con el segundo factor de la sesión.
+    const propias = { OR: participaciones(actor.identidadId) };
     // Caducidad perezosa antes de mostrar: el estado listado es el vigente (DL-037).
     await conReintento(() => this.prisma.$transaction((tx) => this.caducarVencidas(tx, propias, new Date())));
     const filas = await this.prisma.solicitudDeVinculo.findMany({
@@ -543,6 +546,9 @@ export class SolicitudesService {
 
   /** Perfil, verificación y habilitación del profesional para el alcance (06 §6.8; REG-06-79). La usa también API-INV-01. */
   async profesionalHabilitado(tx: Prisma.TransactionClient, profesionalId: string, alcance: Alcance): Promise<boolean> {
+    // UF-11 (DL-169): si es la sesión del pedido, solo con su segundo factor (REL-01 e INV-01 responden 422
+    // SCOPE_NOT_AVAILABLE, como a quien no opera el área).
+    if (!puedeActuarComoProfesional(profesionalId)) return false;
     const e = await this.elegibilidad(tx, profesionalId, profesionalId, alcance);
     return e.perfilProfesional && e.verificado && e.habilitado;
   }

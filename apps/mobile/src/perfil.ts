@@ -78,13 +78,15 @@ export interface DatosDePerfil {
 }
 
 export type BloqueDePerfil = 'quien-sos' | 'tu-informacion' | 'tus-profesionales' | 'formularios-y-pedidos' | 'ajustes';
-export type Ajuste = 'apariencia' | 'avisos' | 'privacidad' | 'sesion' | 'cerrar-mi-cuenta';
+export type Ajuste = 'apariencia' | 'avisos' | 'privacidad' | 'tus-datos' | 'ayuda-y-contacto' | 'sesion' | 'cerrar-mi-cuenta';
 
 /** Los bloques de Perfil, en orden (maqueta 02): quién sos, tu información, tus profesionales, formularios y ajustes. */
 export const BLOQUES_DE_PERFIL: readonly BloqueDePerfil[] = ['quien-sos', 'tu-informacion', 'tus-profesionales', 'formularios-y-pedidos', 'ajustes'];
 
 /** Los ajustes, con Cerrar mi cuenta al final y en su color (maqueta 02). Apariencia se cambia ahí mismo. */
-export const AJUSTES_DE_PERFIL: readonly Ajuste[] = ['apariencia', 'avisos', 'privacidad', 'sesion', 'cerrar-mi-cuenta'];
+// UF-06 (DL-169): «Tus datos», después de Privacidad.
+// UF-07 (DL-169): «Ayuda y contacto», después de «Tus datos».
+export const AJUSTES_DE_PERFIL: readonly Ajuste[] = ['apariencia', 'avisos', 'privacidad', 'tus-datos', 'ayuda-y-contacto', 'sesion', 'cerrar-mi-cuenta'];
 
 /**
  * El nombre de quién sos: el visible (DL-009, DL-040). Desde DL-169 (WP-USO-FINAL, UF-01) es obligatorio, y una cuenta sin

@@ -259,6 +259,10 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
         reanudacion: { maximo: 10_000, ventanaMs: 60_000 },
         loginAdministrativo: { maximo: 10_000, ventanaMs: 60_000 },
         segundoFactor: { maximo: 10_000, ventanaMs: 60_000 },
+        recuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+        recuperacionPorIp: { maximo: 10_000, ventanaMs: 60_000 },
+        completarRecuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+        derechos: { maximo: 10_000, ventanaMs: 60_000 },
       },
     });
   });
@@ -294,6 +298,10 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
         reanudacion: { maximo: 10_000, ventanaMs: 60_000 },
         loginAdministrativo: { maximo: 10_000, ventanaMs: 60_000 },
         segundoFactor: { maximo: 10_000, ventanaMs: 60_000 },
+        recuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+        recuperacionPorIp: { maximo: 10_000, ventanaMs: 60_000 },
+        completarRecuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+        derechos: { maximo: 10_000, ventanaMs: 60_000 },
       },
     });
     try {
@@ -319,6 +327,10 @@ describe('TEST-RNF-SEC-003 — límite de intentos neutral', () => {
           reanudacion: { maximo: 10_000, ventanaMs: 60_000 },
           loginAdministrativo: { maximo: 10_000, ventanaMs: 60_000 },
           segundoFactor: { maximo: 10_000, ventanaMs: 60_000 },
+          recuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+          recuperacionPorIp: { maximo: 10_000, ventanaMs: 60_000 },
+          completarRecuperacion: { maximo: 10_000, ventanaMs: 60_000 },
+          derechos: { maximo: 10_000, ventanaMs: 60_000 },
         },
       },
     );
