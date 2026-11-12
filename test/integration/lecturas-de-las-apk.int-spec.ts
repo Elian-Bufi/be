@@ -9,7 +9,8 @@
  * lectura suya tenga escenario.
  *
  * UF-00 de WP-USO-FINAL (2026-11-11, enmienda de DL-152): mientras Dirección no establezca una estable, la congelada es
- * solo la última distribuida, hoy la 0.23.0-candidata.2. Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
+ * solo la última distribuida, hoy la 0.24.0-candidata.1 (desde el 2026-11-12; reemplazó a la 0.23.0-candidata.2, y
+ * suma API-ACC-07). Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
  * (antes, el 2026-11-05, la 0.17.0-candidata.3 y la 0.18.0-candidata.1). Los escenarios de lo que solo leían ellas (FRM,
  * una APK sin `forms-format-3`, el alta sin la casilla de mayoría de edad) quedan: se arman solo si una APK congelada
  * llama esa operación o no declara esa capacidad.
@@ -47,6 +48,7 @@ import { circuitoAntropometrico } from './soporte-antropometria';
 import { CATALOGO_DE_EJERCICIOS, circuitoConPlanDeEntrenamientoActivo } from './soporte-entrenamiento';
 import { CLIENTE_APK, googleDePrueba, idTokenDeGoogle, levantarGoogleFalso, reclamosDeGoogle, subSintetico, type GoogleFalso } from './soporte-google';
 import { LaApk, VERSIONES } from './soporte-lecturas-de-la-apk';
+import { cuentaAnteriorSinNombre } from './soporte-nombre';
 import { activar as activarPlanNutricional, circuitoConPlanActivo, circuitoListoParaPlanificar, crearBorrador, cuerpoDeObjetivo, cuerpoDeRevision, patchConSesion, registrarComida } from './soporte-nutricion';
 import {
   activar as activarLaDemo,
@@ -194,6 +196,13 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     await apk.pide('API-ACC-02', { cuerpo: { method: 'LOCAL', identifier: correo, credential: OTRA_CREDENCIAL_SINTETICA }, status: 401 });
     const token = await entrar();
     await apk.pide('API-ACC-05', { token });
+    // «Lo que falta para seguir» (API-ACC-07, DL-169): desde la 0.24 la APK lo lee al entrar. Las dos formas que puede
+    // ver: la lista vacía de una cuenta con nombre, y el paso del nombre de una cuenta anterior sin nombre.
+    if (apk.lee('API-ACC-07')) {
+      await apk.pide('API-ACC-07', { token });
+      const anterior = await cuentaAnteriorSinNombre(app, etiqueta(`${corta}-pasos`));
+      await apk.pide('API-ACC-07', { token: anterior.token });
+    }
 
     // El A3: el requisito, el otorgamiento con la versión que mostró, el historial y la revocación.
     const requisito = await apk.pide('API-CON-05', { token });

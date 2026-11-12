@@ -13,7 +13,7 @@
 >   (PR #251, ED-06 y ED-D9) y acá no se duplica (§10).
 > - Sobre las apps anteriores: «no te preocupes de las apps viejas: hasta que te diga, solo mi celular tiene las apps, o
 >   2 o 3 personas de mi familia que instale para probar». Desde ese mismo día, la descarga del website sirve siempre la
->   última versión, que hoy es la 0.23.0-candidata.2.
+>   última versión: la 0.23.0-candidata.2 hasta el 2026-11-12 y, desde ese día, la 0.24.0-candidata.1.
 >
 > **Fuente:** el código de `main` `bb757d9`, leído con git y grep, sin levantar la API, la web ni la base. Se suman cinco
 > hallazgos de una revisión de Codex sobre el mismo commit, verificados uno por uno (§3, filas 26 a 30).
@@ -628,8 +628,12 @@ entra en esta etapa.
 
 ### 12.5 Lo que falta para cerrar la etapa
 
-- La CI en verde del PR y la integración, con el sí de Dirección.
-- **La APK 0.24.0-candidata.1,** que pide el nombre: se construye después de integrar y desplegar, porque llama a
+- ~~La CI en verde del PR y la integración, con el sí de Dirección~~: integrado el 2026-11-12 (main `549f41e3`) y
+  desplegado en `test` ese mismo día.
+- **La APK 0.24.0-candidata.1 (publicada el 2026-11-12 como «latest»:** tag `be-apk-0.24.0-candidata.1` en `1cb3cdc`,
+  versionCode 38, SHA-256 `39a76ae7…4396`; AAB y APK verificados con todo bien, con la 0.23.0-candidata.2 de referencia;
+  lo que lee, congelado: 89 operaciones, las 88 de la 0.23 y API-ACC-07, con su escenario en
+  `lecturas-de-las-apk.int-spec.ts`), que pide el nombre: se construye después de integrar y desplegar, porque llama a
   API-ACC-07 al entrar (con la API de antes, no podría seguir). Desde ese despliegue, la 0.23 ya no crea cuentas (pide
   actualizar) y su paso de Google muestra un error general; lo que ya existe sigue andando. Se publica como «latest»,
   sin los avisos de prueba (§12.4), y se congela lo que lee (UF-00: reemplaza a la 0.23.0-candidata.2 en `VIGENTES`). La
