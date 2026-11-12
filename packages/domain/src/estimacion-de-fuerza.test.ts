@@ -30,7 +30,7 @@ import {
   type ResultadoDeLaSerie,
   type SerieParaEstimar,
 } from './estimacion-de-fuerza';
-import { numeroConPrecision } from './formato-numeros';
+import { numero, numeroConPrecision } from './formato-numeros';
 
 const BANCA = 'b5a3ddca-2d35-5d67-833b-cedfe0f6b1d7';
 const SENTADILLA = '2aba46d7-c2d9-539c-847f-dc13a4322e18';
@@ -83,7 +83,7 @@ function textosDelMetodo(): string[] {
     rotuloDeLaEstimacion('NUCLEO'),
     rotuloDeLaEstimacion('ORIENTATIVA'),
     laCuentaDeLaEstimacion(e),
-    estimacionALaVista(e.valor, e.unidad),
+    estimacionALaVista(e),
     origenDeLaEstimacion('PERSONA', 'Diego'),
     origenDeLaEstimacion('OBSERVADA', 'Martín'),
     diferenciaEntreEstimaciones(valor(escrita(90, 1, 0)), valor(escrita(70, 12, 0)))!,
@@ -102,7 +102,7 @@ test('RM-02 · 70 × 12 con RIR 0, escrita por la persona: 98,0 kg (n_eq 12), or
   assert.equal(e.repeticionesEquivalentes, 12);
   assert.equal(e.banda, 'ORIENTATIVA');
   assert.equal(e.fechaCivil, '2026-11-11');
-  assert.equal(estimacionALaVista(e.valor, e.unidad), '≈ 98 kg');
+  assert.equal(estimacionALaVista(e), '≈ 98 kg');
   assert.equal(rotuloDeLaEstimacion(e.banda), 'estimación orientativa · Epley v1');
 });
 
@@ -110,8 +110,8 @@ test('RM-03 · 80 × 6 con RIR 2: 101,33 (n_eq 8), núcleo; a la vista «≈ 101
   const e = valor(escrita(80, 6, 2));
   casi(e.valor, 80 * (1 + 8 / 30));
   assert.equal(e.banda, 'NUCLEO');
-  assert.equal(estimacionALaVista(e.valor, e.unidad), '≈ 101,5 kg');
-  assert.equal(estimacionConLaDecima(e.valor, e.unidad), '101,3 kg');
+  assert.equal(estimacionALaVista(e), '≈ 101,5 kg');
+  assert.equal(estimacionConLaDecima(e), '101,3 kg');
   assert.equal(laCuentaDeLaEstimacion(e), '6 + 2 = 8 repeticiones equivalentes · 80 × (1 + 8/30) = 101,3 kg');
 });
 
@@ -134,7 +134,7 @@ test('RM-06 · 100 × 1 con RIR 0: la carga (100,0 kg), nunca 103,3, y nunca «1
   const e = valor(escrita(100, 1, 0));
   assert.equal(e.repeticionesEquivalentes, 1);
   assert.equal(e.valor, 100);
-  assert.equal(estimacionConLaDecima(e.valor, e.unidad), '100,0 kg');
+  assert.equal(estimacionConLaDecima(e), '100,0 kg');
   assert.equal(laCuentaDeLaEstimacion(e), '1 + 0 = 1 repetición equivalente · con una sola, la estimación es la carga: 100,0 kg');
   for (const t of textosDelMetodo()) assert.doesNotMatch(t.toLowerCase(), /1rm real/);
 });
@@ -273,12 +273,57 @@ test('RM-21 · cada valor dice de dónde sale y su fecha; nunca «validado»', (
 });
 
 test('RM-22 · sin intervalo ni «±»; al medio kilo o a la libra entera, con «≈»; la décima, solo en «Cómo se calculó»', () => {
-  assert.equal(estimacionALaVista(86.666, 'kg'), '≈ 86,5 kg');
-  assert.equal(estimacionALaVista(106.666, 'kg'), '≈ 106,5 kg');
-  assert.equal(estimacionALaVista(106.8, 'kg'), '≈ 107 kg');
-  assert.equal(estimacionALaVista(216.4, 'lb'), '≈ 216 lb');
+  const enLibras = (carga: number, repeticiones: number, rir: number) => valor(escrita(carga, repeticiones, rir, { load: { value: carga, unit: 'lb' } }));
+  // 65 × 8 con RIR 2 = 86,67; 80 × 8 con RIR 2 = 106,67; 89 × 6 con RIR 0 = 106,8.
+  assert.equal(estimacionALaVista(valor(escrita(65, 8, 2))), '≈ 86,5 kg');
+  assert.equal(estimacionALaVista(valor(escrita(80, 8, 2))), '≈ 106,5 kg');
+  assert.equal(estimacionALaVista(valor(escrita(89, 6, 0))), '≈ 107 kg');
+  // 162,5 lb × 10 con RIR 0 = 216,67: a la libra entera.
+  assert.equal(estimacionALaVista(enLibras(162.5, 10, 0)), '≈ 217 lb');
   for (const t of textosDelMetodo()) assert.doesNotMatch(t, /±|intervalo/, t);
-  assert.doesNotMatch(estimacionALaVista(101.333, 'kg'), /101,3/);
+  assert.doesNotMatch(estimacionALaVista(valor(escrita(80, 6, 2))), /101,3/);
+});
+
+test('ED-71 · un empate se redondea como la cuenta a mano: 41,25 × 12 con RIR 0 es 57,75 justo, «≈ 58 kg» y 57,8 kg', () => {
+  // Con `carga × (1 + n/30)` daba 57,749999…, y se mostraba «≈ 57,5 kg» y 57,7 kg (la forma vieja, en rojo).
+  const e = valor(escrita(41.25, 12, 0));
+  assert.equal(e.valor, 57.75);
+  assert.equal(estimacionALaVista(e), '≈ 58 kg');
+  assert.equal(estimacionConLaDecima(e), '57,8 kg');
+  assert.equal(laCuentaDeLaEstimacion(e), '12 + 0 = 12 repeticiones equivalentes · 41,25 × (1 + 12/30) = 57,8 kg');
+  // Los otros empates que destapó la revisión: 25 × 4 con RIR 0,5 (28,75), 43,75 × 12 con RIR 0 (61,25) y 90 lb × 8 con
+  // RIR 0,5 (115,5 lb).
+  assert.equal(estimacionALaVista(valor(escrita(25, 4, 0.5))), '≈ 29 kg');
+  assert.equal(estimacionALaVista(valor(escrita(43.75, 12, 0))), '≈ 61,5 kg');
+  assert.equal(estimacionALaVista(valor(escrita(90, 8, 0.5, { load: { value: 90, unit: 'lb' } }))), '≈ 116 lb');
+  // Una décima que empata y no tiene número binario exacto: 21 × 4 con RIR 0,5 son 24,15 (el binario más cercano queda
+  // por debajo, y con él se mostraba 24,1); 20,25 × 4 con RIR 0 son 22,95.
+  assert.equal(estimacionConLaDecima(valor(escrita(21, 4, 0.5))), '24,2 kg');
+  assert.equal(estimacionConLaDecima(valor(escrita(20.25, 4, 0))), '23,0 kg');
+});
+
+test('ED-71 · la vista y la décima son las de la cuenta exacta para toda carga de 0,25 en 0,25 kg y todo RIR de 0,5 en 0,5', () => {
+  // La cuenta exacta con enteros, independiente del método: la carga en cuartos (c4) y n_eq en medios (n2). El valor es
+  // c4 × (60 + n2) / 240 (con n_eq 1, la carga: c4 × 60 / 240). Se redondea mitad hacia arriba.
+  const aMano = (c4: number, n2: number, pasosPorUnidad: number) => {
+    const numerador = c4 * (n2 === 2 ? 60 : 60 + n2);
+    return Math.floor((2 * numerador * pasosPorUnidad + 240) / 480) / pasosPorUnidad;
+  };
+  const distintas: string[] = [];
+  for (let c4 = 1; c4 <= 4 * 200; c4++) {
+    for (let repeticiones = 1; repeticiones <= 12; repeticiones++) {
+      for (let r2 = 0; r2 <= 4; r2++) {
+        const n2 = 2 * repeticiones + r2;
+        if (n2 > 24) continue;
+        const kg = valor(escrita(c4 / 4, repeticiones, r2 / 2));
+        const lb = valor(escrita(c4 / 4, repeticiones, r2 / 2, { load: { value: c4 / 4, unit: 'lb' } }));
+        const esperado = [`≈ ${numero(aMano(c4, n2, 2), 1)} kg`, `${numeroConPrecision(aMano(c4, n2, 10), 1)} kg`, `≈ ${numero(aMano(c4, n2, 1), 1)} lb`];
+        const obtenido = [estimacionALaVista(kg), estimacionConLaDecima(kg), estimacionALaVista(lb)];
+        if (obtenido.join('|') !== esperado.join('|') && distintas.length < 5) distintas.push(`${c4 / 4} × ${repeticiones} RIR ${r2 / 2}: ${obtenido.join(' ')} ≠ ${esperado.join(' ')}`);
+      }
+    }
+  }
+  assert.deepEqual(distintas, []);
 });
 
 test('RM-23 · una serie de carga rápida (AS_PLANNED) no da valor', () => {
@@ -330,7 +375,7 @@ test('RM-29 · series en kg y en lb del mismo ejercicio: dos líneas aparte, sin
     ],
   );
   casi(elegidas[1]!.estimacion.valor, 225 * (1 + 6 / 30));
-  assert.equal(estimacionALaVista(elegidas[1]!.estimacion.valor, 'lb'), '≈ 270 lb');
+  assert.equal(estimacionALaVista(elegidas[1]!.estimacion), '≈ 270 lb');
 });
 
 test('RM-30 · la carga por implemento o las repeticiones por lado quedan fuera en la v1', () => {
@@ -371,9 +416,9 @@ test('RM-34 · 80 × 10 con RIR 1 (109,3) y 95 × 3 con RIR 1 (107,7): se toma 9
   for (const incluirOrientativas of [false, true]) {
     const [elegida] = seriesElegidasDeLaSesion(sesion, { incluirOrientativas });
     assert.equal(elegida!.posicion, 1);
-    assert.equal(estimacionConLaDecima(elegida!.estimacion.valor, 'kg'), '107,7 kg');
+    assert.equal(estimacionConLaDecima(elegida!.estimacion), '107,7 kg');
   }
-  assert.equal(estimacionConLaDecima(valor(sesion[0]!).valor, 'kg'), '109,3 kg');
+  assert.equal(estimacionConLaDecima(valor(sesion[0]!)), '109,3 kg');
 });
 
 test('RM-35 · dos series que entran con la misma carga: la primera de la sesión', () => {
@@ -386,8 +431,8 @@ test('RM-43 · 70 × 12 RIR 0 y 65 × 8 RIR 2: apagado, 65 × 8 («≈ 86,5 kg»
   const [apagado] = seriesElegidasDeLaSesion(sesion, { incluirOrientativas: false });
   assert.equal(apagado!.posicion, 1);
   casi(apagado!.estimacion.valor, 65 * (1 + 10 / 30));
-  assert.equal(estimacionConLaDecima(apagado!.estimacion.valor, 'kg'), '86,7 kg');
-  assert.equal(estimacionALaVista(apagado!.estimacion.valor, 'kg'), '≈ 86,5 kg');
+  assert.equal(estimacionConLaDecima(apagado!.estimacion), '86,7 kg');
+  assert.equal(estimacionALaVista(apagado!.estimacion), '≈ 86,5 kg');
   assert.equal(apagado!.estimacion.banda, 'NUCLEO');
   const [encendido] = seriesElegidasDeLaSesion(sesion, { incluirOrientativas: true });
   assert.equal(encendido!.posicion, 0);
@@ -406,5 +451,5 @@ test('DL-171 · la serie que observa el profesional entra sin procedencia: 85 ×
   casi(e.valor, 102);
   assert.equal(e.repeticionesEquivalentes, 6);
   assert.equal(e.banda, 'NUCLEO');
-  assert.equal(COPY_FUERZA.queNoSignifica(estimacionConLaDecima(e.valor, e.unidad)), 'No se levantaron 102,0 kg. No es una marca. No es una indicación de carga: la carga la elegís vos con un % RM.');
+  assert.equal(COPY_FUERZA.queNoSignifica(estimacionConLaDecima(e)), 'No se levantaron 102,0 kg. No es una marca. No es una indicación de carga: la carga la elegís vos con un % RM.');
 });

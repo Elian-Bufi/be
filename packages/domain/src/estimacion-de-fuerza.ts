@@ -8,7 +8,9 @@
  * vive en DL-171.
  *
  * - **La cuenta.** n_eq = repeticiones + RIR. Con n_eq 1, la estimación es la carga. Si no, carga × (1 + n_eq/30), con
- *   n/30 exacto (con 0,0333, 70 × 12 con RIR 2 daría 102,6 en lugar de 102,7).
+ *   n/30 exacto (con 0,0333, 70 × 12 con RIR 2 daría 102,6 en lugar de 102,7). El valor se calcula con una sola
+ *   división, y lo que se muestra (el medio kilo, la libra, la décima) se redondea sobre la cuenta exacta, con enteros:
+ *   nunca sobre un número binario que en un empate queda apenas por debajo.
  * - **Las bandas, sobre n_eq:** núcleo, hasta 10; orientativa, de más de 10 a 12; fuera, más de 12 (sin valor).
  * - **Lo que entra, todo junto:** un ejercicio de la lista cerrada de la v1, sin sustituir en esa sesión; una serie que
  *   escribió la persona (`TYPED`, con la carga, las repeticiones y el RIR de procedencia `PERSON`, ED-70) o que observó
@@ -133,9 +135,14 @@ export type ResultadoDeLaSerie =
 
 const CAMPOS: readonly CampoDeLaSerie[] = ['load', 'completedRepetitions', 'rir'];
 
-/** Epley con n/30 exacto; con una sola repetición equivalente, la carga (RM-06). */
+/**
+ * Epley con n/30 exacto; con una sola repetición equivalente, la carga (RM-06). Va con una sola división: `carga × (1 +
+ * n/30)` redondeaba dos veces en binario (n/30 y el producto), y en un empate quedaba apenas por debajo: 41,25 × 12 con
+ * RIR 0 daba 57,749999… en lugar de 57,75. Lo que se muestra no sale de este número sino de la cuenta exacta
+ * (`redondeoDeLaCuenta`).
+ */
 export function epley(carga: number, repeticionesEquivalentes: number): number {
-  return repeticionesEquivalentes === 1 ? carga : carga * (1 + repeticionesEquivalentes / 30);
+  return repeticionesEquivalentes === 1 ? carga : (carga * (30 + repeticionesEquivalentes)) / 30;
 }
 
 /** La banda de unas repeticiones equivalentes; `null` cuando pasan de 12 (fuera, sin valor). */
@@ -245,15 +252,48 @@ export function diaDeLaEstimacion(fechaCivil: string): string {
   return `${dia} ${MESES[(mes ?? 1) - 1]}`;
 }
 
+/** Lo que hace falta para mostrar una estimación: sus entradas, de las que sale la cuenta exacta, y la unidad. */
+export type EntradasDeLaEstimacion = Pick<EstimacionDeFuerza, 'carga' | 'repeticiones' | 'rir' | 'unidad'>;
+
+/** Un número tal como se escribió, en enteros: 20,25 son 2025 centésimas (cifras 2025, escala 2). */
+function enDecimal(x: number): { readonly cifras: bigint; readonly escala: number } {
+  // La representación más corta de JavaScript es la del número escrito («20.25», «61.2»); con exponente, se lo aplica.
+  const [mantisa = '0', exponente = '0'] = Math.abs(x).toString().split('e');
+  const [enteros = '0', decimales = ''] = mantisa.split('.');
+  const escala = decimales.length - Number(exponente);
+  const cifras = BigInt(`${enteros}${decimales}`);
+  return escala >= 0 ? { cifras, escala } : { cifras: cifras * 10n ** BigInt(-escala), escala: 0 };
+}
+
+/**
+ * La cuenta de Epley redondeada al múltiplo de `decimasDelPaso` décimas (5: medio kilo; 10: una libra; 1: una décima),
+ * mitad hacia arriba, hecha con enteros: carga × (30 + n_eq) / 30, sin pasar por binario. Así un empate exacto (57,75
+ * al medio kilo; 22,95 a la décima) redondea como en la cuenta a mano, aunque el número binario más cercano quede
+ * apenas por debajo.
+ */
+function redondeoDeLaCuenta(e: EntradasDeLaEstimacion, decimasDelPaso: bigint): number {
+  const carga = enDecimal(e.carga);
+  const rir = enDecimal(e.rir);
+  const escalaDeLaCarga = 10n ** BigInt(carga.escala);
+  const escalaDelRir = 10n ** BigInt(rir.escala);
+  // n_eq en la escala del RIR: repeticiones + RIR.
+  const equivalentes = BigInt(e.repeticiones) * escalaDelRir + rir.cifras;
+  // El valor exacto, como fracción: con n_eq 1 es la carga (RM-06).
+  const [numerador, denominador] =
+    equivalentes === escalaDelRir ? [carga.cifras, escalaDeLaCarga] : [carga.cifras * (30n * escalaDelRir + equivalentes), 30n * escalaDeLaCarga * escalaDelRir];
+  // Cuántos pasos entran (en décimas), mitad hacia arriba: ⌊(2·n·10 + d·p) / (2·d·p)⌋.
+  const pasos = (2n * numerador * 10n + denominador * decimasDelPaso) / (2n * denominador * decimasDelPaso);
+  return Number(pasos * decimasDelPaso) / 10;
+}
+
 /** «≈ 98 kg» o «≈ 86,5 kg» (al medio kilo); «≈ 216 lb» (a la libra entera). Nunca un intervalo ni «±» (RM-22). */
-export function estimacionALaVista(valor: number, unidad: UnidadDeLaCarga): string {
-  const redondeado = unidad === 'kg' ? Math.round(valor * 2) / 2 : Math.round(valor);
-  return `≈ ${numero(redondeado, 1)} ${unidad}`;
+export function estimacionALaVista(e: EntradasDeLaEstimacion): string {
+  return `≈ ${numero(redondeoDeLaCuenta(e, e.unidad === 'kg' ? 5n : 10n), 1)} ${e.unidad}`;
 }
 
 /** Con la décima, solo para «Cómo se calculó» (REG-06-158): «106,7 kg», «98,0 kg». */
-export function estimacionConLaDecima(valor: number, unidad: UnidadDeLaCarga): string {
-  return `${numeroConPrecision(valor, 1)} ${unidad}`;
+export function estimacionConLaDecima(e: EntradasDeLaEstimacion): string {
+  return `${numeroConPrecision(redondeoDeLaCuenta(e, 1n), 1)} ${e.unidad}`;
 }
 
 /** El rótulo de cada valor, con el método y la versión (RM-14): «estimación · Epley v1» o «estimación orientativa · Epley v1». */
@@ -265,15 +305,15 @@ export function rotuloDeLaEstimacion(banda: BandaDeLaEstimacion): string {
 export function laCuentaDeLaEstimacion(e: EstimacionDeFuerza): string {
   const n = numero(e.repeticionesEquivalentes);
   const suma = `${numero(e.repeticiones)} + ${numero(e.rir)} = ${n} ${e.repeticionesEquivalentes === 1 ? 'repetición equivalente' : 'repeticiones equivalentes'}`;
-  if (e.repeticionesEquivalentes === 1) return `${suma} · con una sola, la estimación es la carga: ${estimacionConLaDecima(e.valor, e.unidad)}`;
-  return `${suma} · ${numero(e.carga)} × (1 + ${n}/30) = ${estimacionConLaDecima(e.valor, e.unidad)}`;
+  if (e.repeticionesEquivalentes === 1) return `${suma} · con una sola, la estimación es la carga: ${estimacionConLaDecima(e)}`;
+  return `${suma} · ${numero(e.carga)} × (1 + ${n}/30) = ${estimacionConLaDecima(e)}`;
 }
 
 /** Entre dos estimaciones de la misma línea, la diferencia en su unidad, nunca un % (RM-12); con una sola, ninguna. */
 export function diferenciaEntreEstimaciones(anterior: EstimacionDeFuerza | null, actual: EstimacionDeFuerza): string | null {
   if (!anterior || anterior.unidad !== actual.unidad || anterior.exerciseId !== actual.exerciseId) return null;
-  const a = estimacionALaVista(anterior.valor, anterior.unidad).replace('≈ ', '').replace(` ${anterior.unidad}`, '');
-  return `${COPY_FUERZA.estimacion}: ${a} → ${estimacionALaVista(actual.valor, actual.unidad).replace('≈ ', '')}`;
+  const a = estimacionALaVista(anterior).replace('≈ ', '').replace(` ${anterior.unidad}`, '');
+  return `${COPY_FUERZA.estimacion}: ${a} → ${estimacionALaVista(actual).replace('≈ ', '')}`;
 }
 
 /** De dónde sale cada valor (RM-21): «la escribió Diego en la app» o «la observó Martín». Nunca «validado». */
