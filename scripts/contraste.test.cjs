@@ -372,14 +372,21 @@ const capa = (translucido, abajo) => mezcla(translucido.slice(0, 7), abajo, pars
  * directo sobre el fondo, o una tarjeta de vidrio.
  */
 function puntosDelFondo(t) {
-  const puntos = {};
+  const luz = {};
   for (const base of ['fondoArriba', 'fondo', 'fondoAbajo']) {
     const b = t[base];
-    puntos[base] = b;
-    puntos[`${base} con el destello`] = capa(t.destello, b);
-    puntos[`${base} con el destello azul`] = capa(t.destelloAzul, b);
-    puntos[`${base} con los dos destellos`] = capa(t.destelloAzul, capa(t.destello, b));
-    puntos[`${base} con los dos destellos, al revés`] = capa(t.destello, capa(t.destelloAzul, b));
+    luz[base] = b;
+    luz[`${base} con el destello`] = capa(t.destello, b);
+    luz[`${base} con el destello azul`] = capa(t.destelloAzul, b);
+    luz[`${base} con los dos destellos`] = capa(t.destelloAzul, capa(t.destello, b));
+    luz[`${base} con los dos destellos, al revés`] = capa(t.destello, capa(t.destelloAzul, b));
+  }
+  // El grano (AV2-T23) va encima de las luces: cada punto, también con la mota más clara y con la más oscura del grano.
+  // Los tokens son el tope de la imagen (`assets/grano.png`), y la prueba del grano lo verifica.
+  const puntos = { ...luz };
+  for (const [k, v] of Object.entries(luz)) {
+    puntos[`${k}, con el grano claro`] = capa(t.granoLuz, v);
+    puntos[`${k}, con el grano oscuro`] = capa(t.granoSombra, v);
   }
   return puntos;
 }
@@ -399,7 +406,7 @@ function puntosDelFondo(t) {
  */
 function medicionesDeLaReceta(nombre) {
   const t = { ...temaApk(nombre), ...translucidosApk(nombre) };
-  for (const clave of ['fondoArriba', 'fondo', 'fondoAbajo', 'destello', 'destelloAzul', 'vidrio', 'vidrioInterior', 'vidrioBrillo', 'botonFondo', 'botonFondoFin', 'etiquetaFondo', 'destacadaFondo']) {
+  for (const clave of ['fondoArriba', 'fondo', 'fondoAbajo', 'destello', 'destelloAzul', 'granoLuz', 'granoSombra', 'vidrio', 'vidrioInterior', 'vidrioBrillo', 'botonFondo', 'botonFondoFin', 'etiquetaFondo', 'destacadaFondo', 'cabeceraFondo', 'iconoFondo']) {
     assert.ok(t[clave], `${nombre}: falta el token «${clave}»`);
   }
   const fondo = puntosDelFondo(t);
@@ -444,6 +451,11 @@ function medicionesDeLaReceta(nombre) {
     medir('«la que sigue»: el acento', 'acento', destacada, TEXTO),
     medir('«la que sigue»: el tenue', 'tenue', destacada, TEXTO),
     medir('«la que sigue»: el texto', 'texto', destacada, TEXTO),
+    // La cabecera con contenido detrás (AV2-T26): «Volver», la campana y la línea del aviso de prueba, sobre su fondo
+    // tenue encima de cualquier punto del fondo. Arriba de todo es transparente: ahí valen las mediciones directas.
+    ...['texto', 'tenue', 'acento'].map((f) => medir('la cabecera con contenido detrás', f, sobre(fondo, t.cabeceraFondo), TEXTO)),
+    // La caja del ícono de una tarjeta (AV2-T25): el ícono, en `azul`, sobre su tinte, en el vidrio o en lo opaco.
+    medir('el ícono sobre su caja', 'azul', { ...sobre(nivel1, t.iconoFondo), ...sobre(opacas, t.iconoFondo) }, NO_TEXTO),
   ];
 }
 
@@ -456,6 +468,37 @@ test('APK · la receta de vidrio pasa AA en el peor punto, en los dos temas (TES
     }
   }
   assert.deepEqual(fallas, []);
+});
+
+/**
+ * El grano de Azul noche (AV2-T23): la imagen chica que se repite. La medición de arriba usa los tokens como el tope de
+ * cada mota; esta prueba lee la paleta del archivo y falla si una mota es más clara o más oscura que su token, o si la
+ * imagen deja de ser chica. En Claro, los dos tokens tienen alfa 00 y el grano no se dibuja.
+ */
+test('APK · el grano no pasa sus tokens y sigue siendo una imagen chica (AV2-T23)', () => {
+  const png = readFileSync(join(RAIZ, 'apps/mobile/assets/grano.png'));
+  const trozos = {};
+  for (let i = 8; i < png.length; ) {
+    const largo = png.readUInt32BE(i);
+    trozos[png.toString('ascii', i + 4, i + 8)] = png.subarray(i + 8, i + 8 + largo);
+    i += 12 + largo;
+  }
+  const [ancho, alto, bits, tipo] = [trozos.IHDR.readUInt32BE(0), trozos.IHDR.readUInt32BE(4), trozos.IHDR[8], trozos.IHDR[9]];
+  assert.deepEqual([ancho, alto, tipo], [512, 512, 3], 'una imagen de 512 × 512 con paleta');
+  assert.ok(bits <= 2 && png.length <= 64 * 1024, `chica: ${bits} bits por píxel y ${png.length} bytes`);
+  const azul = translucidosApk('AZUL_NOCHE');
+  const tope = (token) => parseInt(azul[token].slice(7), 16);
+  for (let i = 0; i < trozos.PLTE.length / 3; i++) {
+    const color = trozos.PLTE.subarray(i * 3, i * 3 + 3).toString('hex');
+    const alfa = trozos.tRNS[i] ?? 255;
+    if (alfa === 0) continue;
+    if (color === 'ffffff') assert.ok(alfa <= tope('granoLuz'), `una mota clara con alfa ${alfa}, más que granoLuz`);
+    else if (color === '000000') assert.ok(alfa <= tope('granoSombra'), `una mota oscura con alfa ${alfa}, más que granoSombra`);
+    else assert.fail(`una mota de color #${color}: el grano es blanco y negro`);
+  }
+  const claro = translucidosApk('CLARO');
+  assert.match(claro.granoLuz ?? '', /00$/, 'en Claro, sin grano');
+  assert.match(claro.granoSombra ?? '', /00$/, 'en Claro, sin grano');
 });
 
 test('APK · los degradés de la receta terminan en el mismo color con alfa 00, nunca en «transparent» (DL-170)', () => {

@@ -17,9 +17,14 @@
  *   (#FCFDFE contra #FFFFFF). Los diálogos, la fila fija de la sesión, los campos y lo que todavía no migró la usan y no
  *   desentonan. Volverla translúcida rompería los diálogos (nada se ve a través de ellos) y la prueba.
  * - **Los destellos tienen un tope:** cian al 12 % y azul al 14 % en Azul noche. La prueba mide el texto en el peor
- *   punto (los tres puntos del degradé, con cada destello solo y con los dos juntos, y el vidrio encima), y el margen es
- *   fino: con el 14 % y el 18 %, el tenue directo sobre el fondo baja a 4,16:1. Un destello más fuerte no entra sin
- *   bajar otra cosa.
+ *   punto (los tres puntos del degradé, con cada destello solo y con los dos juntos, con la mota más clara y la más
+ *   oscura del grano, y el vidrio encima). Un destello más fuerte no entra sin bajar otra cosa.
+ * - **La vuelta de Dirección a la 0.25 (2026-11-12, AV2-T23 a AV2-T26):** en Azul noche, un fondo más oscuro con un
+ *   grano muy fino y las dos luces, el filo de luz arriba de las tarjetas y una sombra más profunda; en Claro, barridos
+ *   celestes en las esquinas, cajas de íconos con un tinte celeste y sombras levemente azuladas; en los dos, la cabecera
+ *   que toma un fondo tenue con contenido detrás. Con el fondo más oscuro, el tenue de Azul noche ganó margen (4,57:1 en
+ *   el peor punto); en Claro, para que los barridos se vean, el acento, el éxito, el error y el borde de los campos
+ *   bajaron un tono (AV2-T25).
  *
  * Las pantallas no leen estos objetos: leen `COLOR` y las hojas de `estilosPorTema`, que siguen al tema elegido.
  */
@@ -27,11 +32,12 @@ import { StyleSheet } from 'react-native';
 
 export const AZUL_NOCHE = {
   // Superficies y texto. El fondo de la app es un degradé de `fondoArriba` a `fondoAbajo`, con `fondo` al 55 % del alto;
-  // con el «Texto de alto contraste» de Android, `fondo` liso (DL-170).
-  fondoArriba: '#04223D',
-  fondo: '#011325',
-  fondoAbajo: '#000D1A',
-  superficie: '#052238',
+  // con el «Texto de alto contraste» de Android, `fondo` liso (DL-170). Más oscuro desde la vuelta a la 0.25 (AV2-T23):
+  // el vidrio y las luces resaltan más. Era #04223D, #011325 y #000D1A.
+  fondoArriba: '#021427',
+  fondo: '#010A16',
+  fondoAbajo: '#00050D',
+  superficie: '#07223A',
   // Un escalón más claro que la superficie: el botón secundario, las fichas y lo elegido (tanda del 2026-10-03).
   superficieElevada: '#0A2B47',
   texto: '#FFFFFF',
@@ -73,22 +79,32 @@ export const AZUL_NOCHE = {
   // Los dos destellos del fondo: luz quieta, que no marca nada que se toque (GUIA I.6). Su tope está en el encabezado.
   destello: '#27D5F91F',
   destelloAzul: '#1D98DE24',
+  // El grano (AV2-T23): la mota más clara y la más oscura de `assets/grano.png`, que se genera desde estos dos tokens
+  // (`scripts/generar-grano.cjs`). La prueba de contraste los usa como el tope de cada mota.
+  granoLuz: '#FFFFFF0A',
+  granoSombra: '#00000026',
   // La tarjeta de nivel 1 y lo que va adentro (nivel 2). Sobre el fondo liso, `vidrio` da exactamente `superficie`.
-  vidrio: '#072B449E',
+  vidrio: '#0A2E4DA8',
   vidrioInterior: '#FFFFFF0F',
   // El borde de luz, de 1 dp: el filo del vidrio del compositor (LAMINA-DEL-COMPOSITOR §3.9).
-  vidrioFilo: '#96C8EB3B',
+  vidrioFilo: '#A6D8F847',
+  // El filo de luz del borde de arriba (AV2-T24): el mismo borde, más claro arriba, como una luz que viene de arriba.
+  vidrioFiloArriba: '#D2EEFF8C',
   // La línea de luz bajo el borde de arriba, por dentro.
-  vidrioLuz: '#FFFFFF33',
+  vidrioLuz: '#FFFFFF40',
   // El brillo de arriba de una tarjeta de nivel 1. Se apaga dentro del relleno: ningún texto queda encima (AV2-T14).
-  vidrioBrillo: '#FFFFFF0D',
+  vidrioBrillo: '#FFFFFF10',
   // La sombra de una tarjeta de nivel 1 y el resplandor del botón principal habilitado: no son texto ni borde.
-  sombraVidrio: '#00000059',
+  sombraVidrio: '#00000085',
   resplandorPrimario: '#27D5F94D',
   // La etiqueta de estado neutra (rellena, sin borde, con el texto en `tenue`) y el tinte de «la que sigue», con el borde
   // en `acento`. El tinte es del 8 %: con el 12 %, el tenue quedaba en 4,45:1 (AV2-T7).
   etiquetaFondo: '#FFFFFF14',
   destacadaFondo: '#27D5F914',
+  // El fondo tenue de la cabecera con contenido detrás, y el desvanecido de abajo, que se apaga desde él (AV2-T26).
+  cabeceraFondo: '#04192EEB',
+  // La caja del ícono de una tarjeta o una sección: un tinte apenas azul; el ícono va en `azul` (AV2-T25).
+  iconoFondo: '#1D98DE1F',
   // La lámina de la toma (DL-111): los colores del tema «Azul» del compositor (`.slide.blue`), con las transparencias
   // ya resueltas sobre su fondo para que la prueba de contraste las pueda medir.
   laminaFondo: '#0C2E63',
@@ -117,16 +133,20 @@ export const AZUL_NOCHE = {
 
 export const CLARO: Paleta = {
   // El «gris azulado» de la maqueta sale de la sombra de las tarjetas, no de oscurecer el fondo: un fondo más oscuro que
-  // `fondoAbajo` deja el tenue, el acento, el éxito y el error por debajo de 4,5:1 (WP-APP-VUELTA-2 §1.2).
-  fondoArriba: '#F7F9FD',
-  fondo: '#F2F6FC',
-  fondoAbajo: '#F0F4FB',
+  // `fondoAbajo` deja el tenue, el acento, el éxito y el error por debajo de 4,5:1 (WP-APP-VUELTA-2 §1.2). Desde la
+  // vuelta a la 0.25 la base es casi blanca y los barridos celestes de las esquinas la tiñen (AV2-T25).
+  fondoArriba: '#F9FBFE',
+  fondo: '#F6F8FD',
+  fondoAbajo: '#F4F7FC',
   superficie: '#FFFFFF',
   superficieElevada: '#F4F7FC',
   texto: '#0A1F44',
   // Sobre el degradé, el de antes (#62728A) bajaba a 4,43:1 (AV2-T5).
   tenue: '#5B6B82',
-  acento: '#1465F1',
+  // Un tono más oscuro que el del website (#1465F1) desde la vuelta a la 0.25: con los barridos celestes del fondo, el de
+  // antes bajaba a 4,17:1 (AV2-T25). Lo mismo el borde de los campos (era #7B8EA8), el error (#BB4D1C) y el éxito
+  // (#107F45).
+  acento: '#125EE0',
   azul: '#1E6BF2',
   botonFondo: '#1E6BF2',
   botonFondoFin: '#1453C9',
@@ -134,10 +154,10 @@ export const CLARO: Paleta = {
   peligroFondo: '#BB4D1C',
   peligroTexto: '#FFFFFF',
   borde: '#E3ECFF',
-  bordeControl: '#7B8EA8',
-  error: '#BB4D1C',
+  bordeControl: '#70839D',
+  error: '#B0471A',
   errorFondo: '#FFF4F0',
-  exito: '#107F45',
+  exito: '#0E7840',
   exitoFondo: '#EEF8F2',
   velo: 'rgba(10, 31, 68, 0.45)',
   // La barra inferior: el blanco que deja ver un 12 % de lo que pasa detrás (antes, un 5 %). Las etiquetas van más
@@ -146,20 +166,26 @@ export const CLARO: Paleta = {
   barraTexto: '#4A5A70',
   barraElegido: '#1453C9',
   sombra: '#0A1F44',
-  // La receta de vidrio en Claro: los destellos aclaran; el vidrio es blanco translúcido y el nivel 2, blanco opaco; el
-  // borde de luz es blanco; sin línea ni brillo arriba, que sobre blanco no se verían; la sombra, azul y suave.
-  destello: '#FFFFFF99',
-  destelloAzul: '#F0FAFFCC',
+  // La receta de vidrio en Claro: los destellos son dos barridos celestes en las esquinas (AV2-T25); el vidrio es blanco
+  // translúcido y el nivel 2, blanco opaco; el borde de luz es blanco; sin línea ni brillo arriba, que sobre blanco no se
+  // verían; sin grano; la sombra, levemente azulada y más profunda (AV2-T24).
+  destello: '#D6E9FF8C',
+  destelloAzul: '#DCEDFF80',
+  granoLuz: '#FFFFFF00',
+  granoSombra: '#00000000',
   vidrio: '#FFFFFFC7',
   vidrioInterior: '#FFFFFFFF',
   vidrioFilo: '#FFFFFFE6',
+  vidrioFiloArriba: '#FFFFFFFF',
   vidrioLuz: '#FFFFFF00',
   vidrioBrillo: '#FFFFFF00',
-  sombraVidrio: '#14326421',
+  sombraVidrio: '#1A4C9F2E',
   resplandorPrimario: '#1E6BF240',
   etiquetaFondo: '#0A1F440F',
   // «La que sigue»: un celeste opaco. Con #E8F1FF, el acento quedaba en 4,44:1 (AV2-T7).
   destacadaFondo: '#EEF5FFFF',
+  cabeceraFondo: '#F7F9FEEB',
+  iconoFondo: '#E3F0FFFF',
   // La lámina de la toma (DL-111): los colores del tema «Claro» del compositor (`.slide.light`). El detalle va más
   // oscuro que su `.rowUnit`, que no llega a 4,5:1.
   laminaFondo: '#E4ECF8',

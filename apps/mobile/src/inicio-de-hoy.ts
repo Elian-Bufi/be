@@ -147,8 +147,8 @@ export function columnasDeLasFichas(ancho: number, escalaDeLetra: number, nombre
 /** El título de una tarjeta de Inicio, en sp (`tarjeta-de-inicio.tsx`), y hasta dónde crece con la letra de la persona. */
 export const LETRA_DEL_TITULO = 19;
 export const TOPE_DEL_TITULO = 1.5;
-/** Lo que ocupa el ícono al lado del título: 20 dp y su separación de 8. */
-const ICONO_DEL_TITULO = 20 + 8;
+/** Lo que ocupa el ícono al lado del título: su caja de 32 dp y su separación de 10 (AV2-T25; `icono.tsx`). */
+export const ICONO_DEL_TITULO = 32 + 10;
 
 /** Dónde va el ícono de una tarjeta para que la palabra más larga del título no se parta: al lado, arriba, o no entra. */
 export type LugarDelIcono = 'al-lado' | 'arriba' | 'no-entra';

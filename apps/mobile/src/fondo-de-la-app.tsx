@@ -8,14 +8,19 @@
  *   que a pantalla completa costarían unos 10 MB (AV2-T1).
  * - Sus medidas salen de la ventana, nunca en porcentajes: al abrir el teclado no cambia de tamaño ni salta.
  * - Con el «Texto de alto contraste» no dibuja nada, y la raíz pinta `fondo` liso.
- * - Debajo del degradé va `fondo` liso: si el degradé no se dibujara, queda el fondo de siempre (plan B en §3.2).
+ * - **El grano de Azul noche** (AV2-T23, con la vuelta de Dirección a la 0.25): una imagen chica en mosaico encima de las
+ *   luces, píxel a píxel (`mosaicoDelGrano`). Suma una pasada sobre la pantalla; a cambio, el fondo ya no pinta `fondo`
+ *   liso debajo del degradé, que es opaco y se vio en el teléfono con la 0.25 (el plan B de §3.2 ya no hace falta): la
+ *   cantidad de pasadas queda igual que en la muestra.
  */
 import { useContext } from 'react';
-import { Dimensions, useWindowDimensions, View } from 'react-native';
+import { Dimensions, Image, PixelRatio, useWindowDimensions, View } from 'react-native';
 import { useApariencia } from './contexto-de-apariencia';
-import { recetaDelFondo } from './receta-de-vidrio';
+import { mosaicoDelGrano, recetaDelFondo } from './receta-de-vidrio';
 import { estilosPorTema, PALETAS } from './tema';
 import { NivelDeVidrio } from './vidrio';
+
+const GRANO = require('../assets/grano.png');
 
 export function FondoDeLaApp() {
   const { width, height } = useWindowDimensions();
@@ -24,6 +29,7 @@ export function FondoDeLaApp() {
   if (altoContraste) return null;
   // La ventana puede no contar la barra del sistema: el fondo cubre la pantalla entera.
   const alto = Math.max(height, Dimensions.get('screen').height);
+  const grano = mosaicoDelGrano(PALETAS[tema], width, alto, PixelRatio.get());
   return (
     <View
       pointerEvents="none"
@@ -31,10 +37,15 @@ export function FondoDeLaApp() {
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[estilos.fondo, { width, height: alto, experimental_backgroundImage: recetaDelFondo(PALETAS[tema], tema, width, alto) }]}
-    />
+    >
+      {grano?.piezas.map((p) => (
+        <Image key={`${p.left}-${p.top}`} source={GRANO} fadeDuration={0} style={[estilos.grano, { left: p.left, top: p.top, width: grano.lado, height: grano.lado }]} />
+      ))}
+    </View>
   );
 }
 
-const estilos = estilosPorTema((COLOR) => ({
-  fondo: { position: 'absolute', top: 0, left: 0, backgroundColor: COLOR.fondo },
+const estilos = estilosPorTema(() => ({
+  fondo: { position: 'absolute', top: 0, left: 0 },
+  grano: { position: 'absolute' },
 }));

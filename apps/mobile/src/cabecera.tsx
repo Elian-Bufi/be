@@ -11,6 +11,11 @@
  *   WP-USO-FINAL (DL-169) esa línea sale del ambiente: va solo en las builds que muestran los avisos de prueba
  *   (`ambiente.ts`), con el texto del dominio. Sin ella no queda lugar reservado: la fila de la marca cierra la cabecera.
  *
+ * - **Responde al desplazamiento** (AV2-T26, con la vuelta de Dirección a la 0.25): arriba de todo es transparente; con
+ *   contenido detrás toma un fondo tenue con su línea (`capaDeLaCabecera`), en un fundido corto, y debajo de la línea el
+ *   contenido se desvanece (`DesvanecidoDeLaCabecera`, en App.tsx) en lugar de cortarse de golpe. La capa es una vista
+ *   aparte, debajo de la fila, y solo cambia su opacidad: la cabecera no se vuelve a dibujar.
+ *
  * Volver no depende del botón ni de un gesto del sistema (10-B10 §9). El botón dice adónde vuelve al lector de pantalla
  * («Volver a Inicio») y a la vista muestra «Volver», que está contenido en ese nombre (WCAG 2.5.3).
  * Los textos crecen con la letra hasta 1,15 veces: la cabecera queda compacta, y el contenido de cada pantalla crece sin
@@ -18,14 +23,15 @@
  */
 import { AVISOS_DE_PRUEBA } from '@be/domain';
 import Constants from 'expo-constants';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Animated, Image, Pressable, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { AVISOS_DE_PRUEBA_VISIBLES } from './ambiente';
 import { useApariencia } from './apariencia';
 import { Icono } from './icono';
 import { LineaDeActualizacion } from './estados';
 import { textoDeVolverA, type Ruta } from './navegacion';
-import { COLOR, estilosPorTema } from './tema';
+import { ALTO_DEL_DESVANECIDO, capaDeLaCabecera, desvanecidoDeLaCabecera } from './receta-de-vidrio';
+import { COLOR, estilosPorTema, PALETAS } from './tema';
 
 const ISOTIPO = require('../assets/isotipo.png');
 
@@ -37,6 +43,8 @@ export function Cabecera({
   volver,
   sinLeer = null,
   abrirNovedades,
+  cubierta,
+  altoContraste = false,
 }: {
   /** Adónde vuelve el botón de volver. `null`: la pantalla no lo lleva (una raíz, Bienvenida). */
   volverA: Ruta | null;
@@ -49,9 +57,16 @@ export function Cabecera({
   /** Las novedades sin leer (DL-133); `null` mientras no se sabe. Es un dato, no una alerta: un punto, sin número. */
   sinLeer?: number | null;
   abrirNovedades?: () => void;
+  /** De 0 a 1: si hay contenido detrás (AV2-T26). Lo mueve App.tsx al desplazar. */
+  cubierta?: Animated.Value;
+  altoContraste?: boolean;
 }) {
+  const { tema } = useApariencia();
   return (
     <View style={estilos.cabecera}>
+      {cubierta ? (
+        <Animated.View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={[estilos.capa, capaDeLaCabecera(PALETAS[tema], altoContraste), { opacity: cubierta }]} />
+      ) : null}
       <View style={estilos.fila}>
         <View style={[estilos.lado, estilos.izquierda]}>
           {volverA ? (
@@ -87,6 +102,25 @@ export function Cabecera({
       ) : null}
       <LineaDeActualizacion activa={actualizando} />
     </View>
+  );
+}
+
+/**
+ * El desvanecido debajo de la cabecera (AV2-T26): el contenido se apaga al pasar por debajo de la línea, en lugar de
+ * cortarse de golpe. Va encima del desplazamiento, sin toques ni lector, y se ve solo con contenido detrás. Con el alto
+ * contraste no se dibuja: el contenido se corta en la línea.
+ */
+export function DesvanecidoDeLaCabecera({ cubierta, altoContraste }: { cubierta: Animated.Value; altoContraste: boolean }) {
+  const { tema } = useApariencia();
+  const degrade = desvanecidoDeLaCabecera(PALETAS[tema], altoContraste);
+  if (!degrade) return null;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+      style={[estilos.desvanecido, { experimental_backgroundImage: degrade, opacity: cubierta }]}
+    />
   );
 }
 
@@ -129,5 +163,8 @@ const estilos = estilosPorTema((COLOR) => ({
   isotipo: { width: 30, height: 30 },
   // El punto de lo sin leer: 8 dp en el acento, arriba a la derecha de la campana, sin número ni animación (AV2-D7).
   punto: { position: 'absolute', top: 11, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: COLOR.acento },
+  // La capa de la cabecera con contenido detrás y el desvanecido de abajo (AV2-T26).
+  capa: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  desvanecido: { position: 'absolute', top: 0, left: 0, right: 0, height: ALTO_DEL_DESVANECIDO },
   ambiente: { fontSize: 12, lineHeight: 15, color: COLOR.tenue, textAlign: 'center', paddingHorizontal: 16, paddingBottom: 6 },
 }));

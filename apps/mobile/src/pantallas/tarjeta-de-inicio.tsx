@@ -13,7 +13,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { IconoDeZona } from '../barra-de-zonas';
 import { alcanzaLaEscala } from '../escala-de-letra';
-import { Icono, type NombreDeIcono } from '../icono';
+import { CajaDelIcono, Icono, SEPARACION_DE_LA_CAJA, type NombreDeIcono } from '../icono';
 import { lugarDelIcono } from '../inicio-de-hoy';
 import type { Ir, Zona } from '../navegacion';
 import { RELLENO_DE_LA_TARJETA } from '../receta-de-vidrio';
@@ -64,8 +64,9 @@ export function TarjetaDeInicio({
   const contenido = (
     <DentroDelNivel nivel={nivel}>
       <View style={[estilos.cabeza, apilar && estilos.cabezaApilada]}>
-        {/* El de su módulo, salvo que la tarjeta pida otro de la familia (PA-06). Decorativo: en `tenue`, sin círculo. */}
-        {icono ? <Icono nombre={icono} tamano={20} tono="tenue" /> : <IconoDeZona zona={zona} color={COLOR.tenue} tamano={20} />}
+        {/* El de su módulo, salvo que la tarjeta pida otro de la familia (PA-06). Decorativo: en su caja con el tinte, en
+            `azul`, que es solo decoración (AV2-T25). */}
+        <CajaDelIcono>{icono ? <Icono nombre={icono} tamano={20} tono="azul" /> : <IconoDeZona zona={zona} color={COLOR.azul} tamano={20} />}</CajaDelIcono>
         <View style={[estilos.textosDeCabeza, apilar && estilos.textosApilados]}>
           {/* La red: si una palabra igual no entrara, se parte por sílabas y con guion, no en cualquier letra. */}
           <Text style={estilos.titulo} accessibilityRole="header" maxFontSizeMultiplier={1.5} android_hyphenationFrequency="normal">
@@ -149,7 +150,7 @@ export const estilos = estilosPorTema((COLOR) => ({
   // Las tarjetas mantienen un fondo estable: la superficie del tema, con su borde; con el vidrio, la receta (DL-170).
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: RELLENO_DE_LA_TARJETA, marginVertical: 8, backgroundColor: COLOR.superficie },
   presionada: { opacity: 0.7 },
-  cabeza: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  cabeza: { flexDirection: 'row', alignItems: 'center', gap: SEPARACION_DE_LA_CAJA, marginBottom: 6 },
   cabezaApilada: { flexDirection: 'column', alignItems: 'flex-start' },
   textosDeCabeza: { flex: 1 },
   // Apilados, los textos ocupan su alto: con flex 1 en una columna sin alto fijo, podían quedar sin lugar.

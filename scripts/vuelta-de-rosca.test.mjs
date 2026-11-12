@@ -620,14 +620,23 @@ test('TEST-AV2-002 · nivel 1 con sombra y línea de luz, nivel 2 sin sombra, y 
   const n1 = receta.superficieDeVidrio(AZUL, 'azul-noche', 1, PRENDIDO);
   assert.equal(n1.backgroundColor, AZUL.vidrio);
   assert.equal(n1.borderColor, AZUL.vidrioFilo);
+  // El filo de luz arriba (AV2-T24): el mismo borde de 1 dp, más claro arriba.
+  assert.equal(n1.borderTopColor, AZUL.vidrioFiloArriba);
   assert.equal(n1.borderWidth, 1);
   assert.equal(n1.borderRadius, 20);
+  // Más profundo (AV2-T24): una sola sombra, más baja y más larga que en la muestra, recogida a los costados.
   assert.deepEqual(n1.boxShadow, [
-    { offsetX: 0, offsetY: 8, blurRadius: 24, spreadDistance: -4, color: AZUL.sombraVidrio },
+    { offsetX: 0, offsetY: 12, blurRadius: 32, spreadDistance: -6, color: AZUL.sombraVidrio },
     { offsetX: 0, offsetY: 1, blurRadius: 0, inset: true, color: AZUL.vidrioLuz },
   ]);
-  // En Claro, la sombra no se recoge y la línea de luz no se dibuja (sobre blanco no se vería).
-  assert.deepEqual(receta.superficieDeVidrio(CLARO, 'claro', 1, PRENDIDO).boxShadow, [{ offsetX: 0, offsetY: 8, blurRadius: 24, spreadDistance: 0, color: CLARO.sombraVidrio }]);
+  // En Claro, la sombra azulada y la línea de luz no se dibuja (sobre blanco no se vería).
+  const claroN1 = receta.superficieDeVidrio(CLARO, 'claro', 1, PRENDIDO);
+  assert.deepEqual(claroN1.boxShadow, [{ offsetX: 0, offsetY: 10, blurRadius: 28, spreadDistance: -2, color: CLARO.sombraVidrio }]);
+  assert.equal(claroN1.borderTopColor, CLARO.vidrioFiloArriba);
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(CLARO.sombraVidrio.slice(i, i + 2), 16));
+  assert.ok(b > g && g > r, `la sombra de Claro es levemente azulada: ${CLARO.sombraVidrio}`);
+  // Sin el vidrio, ni filo ni sombra: la superficie opaca de hoy.
+  assert.equal('borderTopColor' in receta.superficieDeVidrio(AZUL, 'azul-noche', 1, { activo: false, altoContraste: false }), false);
   for (const [paleta, tema] of [[AZUL, 'azul-noche'], [CLARO, 'claro']]) {
     const n2 = receta.superficieDeVidrio(paleta, tema, 2, PRENDIDO);
     assert.equal(n2.backgroundColor, paleta.vidrioInterior, tema);
@@ -712,8 +721,18 @@ test('TEST-AV2-004 · el fondo sale de los tokens: dos destellos que se apagan y
       for (const d of [cian, azul]) {
         for (const v of [d.size.x, d.size.y, d.position.top, d.position.left]) assert.ok(Number.isInteger(v), `${tema} ${ancho}×${alto}: ${v} no es un número de dp`);
       }
-      assert.ok(cian.position.top < azul.position.top, 'el cian arriba; el azul a media altura');
-      assert.ok(cian.position.left > ancho / 2 && azul.position.left < ancho / 2, 'de lados opuestos');
+      if (tema === 'azul-noche') {
+        assert.ok(cian.position.top < azul.position.top, 'el cian arriba; el azul a media altura');
+        assert.ok(cian.position.left > ancho / 2 && azul.position.left < ancho / 2, 'de lados opuestos');
+      } else {
+        // Claro (AV2-T25): los barridos celestes en dos esquinas opuestas, arriba a la izquierda y abajo a la derecha.
+        assert.deepEqual([cian.position.left, cian.position.top], [0, 0]);
+        assert.deepEqual([azul.position.left, azul.position.top], [ancho, alto]);
+        for (const token of ['destello', 'destelloAzul']) {
+          const [r, g, b] = [1, 3, 5].map((i) => parseInt(paleta[token].slice(i, i + 2), 16));
+          assert.ok(b >= g && g > r, `${token} de Claro es celeste: ${paleta[token]}`);
+        }
+      }
     }
   }
 });
@@ -863,6 +882,52 @@ test('TEST-AV2-006 · la cabecera: transparente, una fila de 48 dp, el logo con 
   assert.match(app, /conLogo=\{raiz\}/, 'el logo, solo en las cinco raíces');
 });
 
+// ─── TEST-AV2-026 · el grano de Azul noche, liviano (AV2-T23, la vuelta de Dirección a la 0.25) ──
+
+test('TEST-AV2-026 · el grano es una imagen chica en mosaico, píxel a píxel, que cubre la pantalla; en Claro no hay', () => {
+  for (const [anchoPx, altoPx, densidad, tope] of [[1080, 2400, 2.625, 15], [720, 1600, 2, 8], [1440, 3200, 3.5, 21]]) {
+    const [ancho, alto] = [anchoPx / densidad, altoPx / densidad];
+    const m = receta.mosaicoDelGrano(AZUL, ancho, alto, densidad);
+    assert.ok(Math.abs(m.lado * densidad - receta.LADO_DEL_GRANO) < 1e-9, 'cada pieza, píxel a píxel: sin escalar el grano');
+    assert.equal(m.piezas.length, Math.ceil(anchoPx / 512) * Math.ceil(altoPx / 512));
+    assert.ok(m.piezas.length <= tope, `${anchoPx}×${altoPx}: ${m.piezas.length} piezas`);
+    const derecha = Math.max(...m.piezas.map((p) => p.left)) + m.lado;
+    const abajo = Math.max(...m.piezas.map((p) => p.top)) + m.lado;
+    assert.ok(derecha >= ancho && abajo >= alto, 'cubre la pantalla entera');
+    for (const p of m.piezas) assert.ok([p.left, p.top].every((v) => Math.abs(Math.round(v * densidad) - v * densidad) < 1e-6), 'en píxeles enteros');
+  }
+  assert.equal(receta.mosaicoDelGrano(CLARO, 412, 915, 2.625), null, 'en Claro, sin grano');
+  const fondo = sinComentarios(leer('fondo-de-la-app.tsx'));
+  assert.match(fondo, /const GRANO = require\('\.\.\/assets\/grano\.png'\);/);
+  assert.match(fondo, /<Image key=\{`[^`]+`\} source=\{GRANO\} fadeDuration=\{0\}/, 'quieto: sin el fundido de entrada de Android');
+  // Un mosaico con «repeat» arma en Android un mapa de bits del tamaño de la vista (AV2-T1).
+  assert.doesNotMatch(fondo, /resizeMode|repeat/);
+  // El grano suma una pasada y el fondo liso debajo del degradé se va: las pasadas quedan como en la muestra.
+  assert.match(fondo, /fondo: \{ position: 'absolute', top: 0, left: 0 \},/);
+});
+
+// ─── TEST-AV2-027 · la cabecera responde al desplazamiento (AV2-T26) ────────────────────────────
+
+test('TEST-AV2-027 · arriba de todo, transparente; con contenido detrás, un fondo tenue con su línea y el desvanecido', () => {
+  assert.deepEqual([0, receta.UMBRAL_DE_LA_CABECERA, receta.UMBRAL_DE_LA_CABECERA + 1].map(receta.cabeceraCubierta), [false, false, true]);
+  for (const paleta of [AZUL, CLARO]) {
+    assert.deepEqual(receta.capaDeLaCabecera(paleta, false), { backgroundColor: paleta.cabeceraFondo, borderBottomColor: paleta.borde, borderBottomWidth: 1 });
+    assert.equal(receta.capaDeLaCabecera(paleta, true).backgroundColor, paleta.fondo, 'con alto contraste, el fondo liso');
+    assert.equal(receta.desvanecidoDeLaCabecera(paleta, false), `linear-gradient(to bottom, ${paleta.cabeceraFondo}, ${paleta.cabeceraFondo.slice(0, 7)}00)`);
+    assert.equal(receta.desvanecidoDeLaCabecera(paleta, true), null, 'con alto contraste, sin desvanecido');
+  }
+  const cabecera = sinComentarios(leer('cabecera.tsx'));
+  assert.match(cabecera, /<Animated\.View pointerEvents="none" accessible=\{false\} importantForAccessibility="no-hide-descendants" style=\{\[estilos\.capa, capaDeLaCabecera\(PALETAS\[tema\], altoContraste\), \{ opacity: cubierta \}\]\} \/>/);
+  assert.match(cabecera, /desvanecido: \{ position: 'absolute', top: 0, left: 0, right: 0, height: ALTO_DEL_DESVANECIDO \}/);
+  const app = sinComentarios(readFileSync(join(RAIZ, 'apps/mobile/App.tsx'), 'utf8'));
+  assert.match(app, /onScroll=\{\(e\) => alDesplazar\(e\.nativeEvent\.contentOffset\.y\)\}/);
+  // Se anima al cruzar el umbral, con el controlador nativo; con movimiento reducido, sin fundido.
+  assert.match(app, /if \(ahora === cubiertaAhora\.current\) return;/, 'no en cada evento');
+  assert.match(app, /Animated\.timing\(cubierta, \{ toValue: ahora \? 1 : 0, duration: movimientoReducido \? 0 : FUNDIDO_DE_LA_CABECERA, useNativeDriver: true \}\)/);
+  assert.match(app, /<\/ScrollView>\s*(\{\}\s*)?<DesvanecidoDeLaCabecera cubierta=\{cubierta\} altoContraste=\{altoContraste\} \/>/, 'el desvanecido, encima del borde de arriba del desplazamiento');
+  assert.match(app, /cubierta=\{cubierta\}\s*altoContraste=\{altoContraste\}\s*\/>\s*<View style=\{estilos\.desplazable\}>/);
+});
+
 // ─── TEST-AV2-012 · «Cómo se lee», alineado (AV2-11) ────────────────────────────────────────────
 
 test('TEST-AV2-012 · el título de la ayuda no lleva «flex»: el ancho lo toma la columna, y el (?) queda centrado', () => {
@@ -938,9 +1003,9 @@ test('TEST-AV2-008 · el título es la fecha y, de arriba abajo: el paso que fal
   assert.deepEqual([...inicio.ORDEN_DE_INICIO], ['paso-que-falta', 'semana', 'sesion', 'comidas', 'para-responder', 'medida', 'actividad']);
   assert.doesNotMatch(pantalla, /Rotulo|paraMirar|Hola/, 'sin «Para mirar» ni «Hola»');
   assert.match(pantalla, /<View style=\{estilos\.parDeTarjetas\}>\s*<Mediciones [^>]*ancho=\{chicas\.ancho\}[^>]*\/>\s*<ActividadDeEntrenamiento [^>]*ancho=\{chicas\.ancho\}/, 'la medida y la actividad, lado a lado');
-  // Las tarjetas usan las piezas base: el ícono de 20 dp en `tenue`, sin círculo, y la receta de vidrio.
+  // Las tarjetas usan las piezas base: el ícono de 20 dp en `azul`, en su caja con el tinte (AV2-T25), y la receta de vidrio.
   const tarjeta = sinComentarios(leer('pantallas/tarjeta-de-inicio.tsx'));
-  assert.match(tarjeta, /<IconoDeZona zona=\{zona\} color=\{COLOR\.tenue\} tamano=\{20\} \/>/);
+  assert.match(tarjeta, /<CajaDelIcono>\{icono \? <Icono nombre=\{icono\} tamano=\{20\} tono="azul" \/> : <IconoDeZona zona=\{zona\} color=\{COLOR\.azul\} tamano=\{20\} \/>\}<\/CajaDelIcono>/);
   assert.match(tarjeta, /const \{ estilo, nivel \} = useSuperficie\(\);/);
   assert.doesNotMatch(tarjeta, /borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor/, 'sin el círculo del ícono');
 });
@@ -1018,8 +1083,8 @@ test('TEST-AV2-008 · las fichas pasan a una columna si un nombre no entra en me
 test('TEST-AV2-008 · las tarjetas chicas: el ícono arriba si el título no entra al lado, y una columna si tampoco entra arriba', () => {
   // 360 dp con letra ×1: «Mediciones», el título mientras carga, no entra al lado del ícono; arriba, sí.
   assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(360, 1, TITULOS_CHICOS), { columnas: 2, ancho: 156, iconoArriba: true });
-  // 412 dp: entra al lado, como en la maqueta; con ×1,15, arriba.
-  assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(412, 1, TITULOS_CHICOS), { columnas: 2, ancho: 182, iconoArriba: false });
+  // 412 dp: con la caja del ícono (AV2-T25), arriba, como en la referencia de Dirección; con ×1,15, también.
+  assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(412, 1, TITULOS_CHICOS), { columnas: 2, ancho: 182, iconoArriba: true });
   assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(412, ANDROID_115, TITULOS_CHICOS), { columnas: 2, ancho: 182, iconoArriba: true });
   // 360 dp con ×1,15: tampoco entra arriba, y van en una columna, con el ícono al lado.
   assert.deepEqual(inicio.disposicionDeLasTarjetasChicas(360, ANDROID_115, TITULOS_CHICOS), { columnas: 1, ancho: 320, iconoArriba: false });
@@ -1030,7 +1095,7 @@ test('TEST-AV2-008 · las tarjetas chicas: el ícono arriba si el título no ent
       const d = inicio.disposicionDeLasTarjetasChicas(ancho, escala, TITULOS_CHICOS);
       const interior = d.ancho - 2 * (receta.RELLENO_DE_LA_TARJETA + 1);
       const palabra = comidasDeHoy.anchoDeLaPalabraMasLarga(TITULOS_CHICOS, inicio.LETRA_DEL_TITULO, Math.min(escala, inicio.TOPE_DEL_TITULO));
-      assert.ok(palabra <= interior - (d.iconoArriba ? 0 : 20 + 8), `${ancho} dp ×${escala}: ${palabra.toFixed(1)} dp en ${interior} dp`);
+      assert.ok(palabra <= interior - (d.iconoArriba ? 0 : inicio.ICONO_DEL_TITULO), `${ancho} dp ×${escala}: ${palabra.toFixed(1)} dp en ${interior} dp`);
       assert.equal(d.ancho, inicio.anchoDeCadaColumna(ancho, d.columnas, false));
     }
   }
@@ -1047,13 +1112,16 @@ test('TEST-AV2-008 · las tarjetas chicas: el ícono arriba si el título no ent
     const chicas = codigo.match(/<TarjetaDeInicio [^>]*ancho=\{ancho\}[^>]*>/g) ?? [];
     assert.ok(chicas.length > 0 && chicas.every((t) => t.includes('iconoArriba={iconoArriba}')), `${archivo}: cada tarjeta chica lleva el ícono donde lo decide el par`);
   }
-  // La tarjeta: el título de 19 sp, que crece hasta ×1,5, y el ícono de 20 dp con su separación de 8, como la cuenta.
+  // La tarjeta: el título de 19 sp, que crece hasta ×1,5, y la caja del ícono de 32 dp con su separación de 10, como la
+  // cuenta (AV2-T25).
+  assert.equal(inicio.ICONO_DEL_TITULO, 32 + 10);
+  assert.match(leer('icono.tsx'), /export const CAJA_DEL_ICONO = 32;\s*export const SEPARACION_DE_LA_CAJA = 10;/);
   const tarjeta = sinComentarios(leer('pantallas/tarjeta-de-inicio.tsx'));
   assert.equal(inicio.LETRA_DEL_TITULO, 19);
   assert.equal(inicio.TOPE_DEL_TITULO, 1.5);
   assert.match(tarjeta, /titulo: \{ fontSize: 19, fontWeight: '800'/);
   assert.match(tarjeta, /accessibilityRole="header" maxFontSizeMultiplier=\{1\.5\}/);
-  assert.match(tarjeta, /cabeza: \{ flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  assert.match(tarjeta, /cabeza: \{ flexDirection: 'row', alignItems: 'center', gap: SEPARACION_DE_LA_CAJA,/);
   assert.match(tarjeta, /const apilar = iconoArriba \|\| \(ancho !== undefined && lugarDelIcono\(\[titulo\], ancho, fontScale\) !== 'al-lado'\) \|\| alcanzaLaEscala\(fontScale, ESCALA_PARA_APILAR\);/);
   assert.match(tarjeta, /<View style=\{\[estilos\.cabeza, apilar && estilos\.cabezaApilada\]\}>/);
   // La red: si igual no entrara, se parte por sílabas y con guion.

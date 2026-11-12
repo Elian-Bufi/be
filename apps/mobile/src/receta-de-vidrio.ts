@@ -70,10 +70,14 @@ export interface SombraDeLaReceta {
   readonly color: string;
 }
 
-/** La sombra del nivel 1, {x, y, desenfoque, extensión} en dp: en Azul noche se recoge 4 dp; en Claro, no. */
+/**
+ * La sombra del nivel 1, {x, y, desenfoque, extensión} en dp (AV2-T24, con la vuelta de Dirección a la 0.25: «más
+ * profundo»): más baja y más larga que en la muestra, recogida para que no ensucie los costados. Sigue siendo una sola
+ * sombra por tarjeta: cada sombra exterior es un desenfoque más por cuadro.
+ */
 const SOMBRA_DEL_NIVEL_1: Readonly<Record<Tema, { readonly x: number; readonly y: number; readonly desenfoque: number; readonly extension: number }>> = {
-  'azul-noche': { x: 0, y: 8, desenfoque: 24, extension: -4 },
-  claro: { x: 0, y: 8, desenfoque: 24, extension: 0 },
+  'azul-noche': { x: 0, y: 12, desenfoque: 32, extension: -6 },
+  claro: { x: 0, y: 10, desenfoque: 28, extension: -2 },
 };
 /** La línea de luz bajo el borde de arriba: una sombra interior de 1 dp, sin desenfoque. */
 const LINEA_DE_LUZ = { offsetX: 0, offsetY: 1, blurRadius: 0 } as const;
@@ -83,6 +87,8 @@ const RESPLANDOR = { offsetX: 0, offsetY: 6, blurRadius: 18 } as const;
 export interface EstiloDeSuperficie {
   readonly backgroundColor: string;
   readonly borderColor: string;
+  /** El filo de luz del borde de arriba (AV2-T24): el mismo borde de 1 dp, más claro arriba que a los costados. */
+  readonly borderTopColor?: string;
   readonly borderWidth: number;
   readonly borderRadius?: number;
   readonly boxShadow?: readonly SombraDeLaReceta[];
@@ -118,6 +124,7 @@ export function superficieDeVidrio(color: Paleta, tema: Tema, nivel: NivelDeLaSu
     return {
       backgroundColor: color.vidrio,
       borderColor: color.vidrioFilo,
+      borderTopColor: color.vidrioFiloArriba,
       borderWidth: 1,
       borderRadius: RADIO_DE_LA_TARJETA,
       boxShadow: sombras,
@@ -217,14 +224,31 @@ export const subrayadoDelEnlace = (conFlecha: boolean): 'none' | 'underline' => 
 /** Dónde está el fondo liso a lo largo del alto: en Azul noche, un poco más abajo del medio. */
 const PARADA_DEL_FONDO: Readonly<Record<Tema, string>> = { 'azul-noche': '55%', claro: '50%' };
 
+interface Destello {
+  readonly token: 'destello' | 'destelloAzul';
+  readonly centroX: number;
+  readonly centroY: number;
+  readonly radioX: number;
+  readonly radioY: number;
+}
+
 /**
- * Los dos destellos, en proporción de la ventana: el cian arriba a la derecha y el azul a media altura del otro lado.
- * Son quietos: no marcan nada que se toque (GUIA I.6).
+ * Los dos destellos, en proporción de la ventana. Son quietos: no marcan nada que se toque (GUIA I.6).
+ * - **Azul noche:** dos luces, la celeste arriba a la derecha y la azul a media altura del otro lado.
+ * - **Claro** (AV2-T25, con la vuelta de Dirección a la 0.25): dos barridos celestes muy suaves en las esquinas, arriba
+ *   a la izquierda y abajo a la derecha, como en su referencia. Lo que pueden oscurecer el fondo lo fija la prueba de
+ *   contraste: por eso el acento, el éxito, el error y el borde de los campos de Claro bajaron un tono.
  */
-const DESTELLOS = [
-  { token: 'destello', centroX: 0.84, centroY: 0.05, radioX: 0.95, radioY: 0.3 },
-  { token: 'destelloAzul', centroX: 0.08, centroY: 0.46, radioX: 0.85, radioY: 0.26 },
-] as const;
+const DESTELLOS: Readonly<Record<Tema, readonly [Destello, Destello]>> = {
+  'azul-noche': [
+    { token: 'destello', centroX: 0.84, centroY: 0.05, radioX: 0.95, radioY: 0.3 },
+    { token: 'destelloAzul', centroX: 0.08, centroY: 0.46, radioX: 0.85, radioY: 0.26 },
+  ],
+  claro: [
+    { token: 'destello', centroX: 0, centroY: 0, radioX: 0.9, radioY: 0.32 },
+    { token: 'destelloAzul', centroX: 1, centroY: 1, radioX: 0.95, radioY: 0.34 },
+  ],
+};
 
 /**
  * El fondo de la app (AV2-03, AV2-T1): los dos destellos radiales encima y el degradé lineal debajo, desde los tokens.
@@ -232,7 +256,7 @@ const DESTELLOS = [
  * Sin mapa de bits: lo dibuja Android.
  */
 export function recetaDelFondo(color: Paleta, tema: Tema, ancho: number, alto: number): NonNullable<Exclude<ViewStyle['experimental_backgroundImage'], string>> {
-  const destellos = DESTELLOS.map((d) => ({
+  const destellos = DESTELLOS[tema].map((d) => ({
     type: 'radial-gradient' as const,
     shape: 'ellipse' as const,
     size: { x: Math.round(ancho * d.radioX), y: Math.round(alto * d.radioY) },
@@ -253,3 +277,65 @@ export function recetaDelFondo(color: Paleta, tema: Tema, ancho: number, alto: n
   };
   return [...destellos, degrade];
 }
+
+// ─── La vuelta de Dirección a la 0.25 (2026-11-12): el grano y la cabecera que responde al desplazamiento ───────────
+
+/** El lado de la imagen del grano, en píxeles del teléfono (`assets/grano.png`, `scripts/generar-grano.cjs`). */
+export const LADO_DEL_GRANO = 512;
+
+export interface MosaicoDelGrano {
+  /** El lado de cada pieza, en dp: la imagen, píxel a píxel, sin escalar. */
+  readonly lado: number;
+  readonly piezas: readonly { readonly left: number; readonly top: number }[];
+}
+
+/**
+ * El grano de Azul noche (AV2-T23): una imagen chica que se repite en mosaico sobre el degradé y las luces, cada pieza
+ * píxel a píxel (con la densidad del teléfono), para que sea un grano muy fino y no una trama agrandada.
+ * - **Liviano:** una sola imagen decodificada (1 MB) que todas las piezas comparten, y una pieza cada 512 píxeles: unas
+ *   quince en un teléfono de 1080 × 2400. Es quieto: está debajo del desplazamiento y no se vuelve a armar al desplazar.
+ *   Un mosaico con `resizeMode="repeat"` armaría en Android un mapa de bits del tamaño de la vista, unos 10 MB (AV2-T1).
+ * - **Sin grano** (`null`) si el tema no lo dibuja (Claro: los dos tokens con alfa 00).
+ */
+export function mosaicoDelGrano(color: Paleta, ancho: number, alto: number, densidad: number): MosaicoDelGrano | null {
+  if (!seVe(color.granoLuz) && !seVe(color.granoSombra)) return null;
+  const lado = LADO_DEL_GRANO / densidad;
+  const columnas = Math.ceil(ancho / lado);
+  const filas = Math.ceil(alto / lado);
+  const piezas: { left: number; top: number }[] = [];
+  for (let f = 0; f < filas; f++) for (let c = 0; c < columnas; c++) piezas.push({ left: c * lado, top: f * lado });
+  return { lado, piezas };
+}
+
+/** Desde cuántos dp desplazados hay contenido detrás de la cabecera (AV2-T26). */
+export const UMBRAL_DE_LA_CABECERA = 4;
+/** El alto del desvanecido debajo de la cabecera, en dp: el contenido se apaga ahí en lugar de cortarse de golpe. */
+export const ALTO_DEL_DESVANECIDO = 20;
+/** Cuánto tarda la cabecera en tomar o soltar su fondo, en ms: un fundido corto, sin rebote (Material 3). */
+export const FUNDIDO_DE_LA_CABECERA = 160;
+
+/** Si hay contenido detrás de la cabecera: arriba de todo, no. */
+export const cabeceraCubierta = (desplazamiento: number): boolean => desplazamiento > UMBRAL_DE_LA_CABECERA;
+
+export interface CapaDeLaCabecera {
+  readonly backgroundColor: string;
+  readonly borderBottomColor: string;
+  readonly borderBottomWidth: number;
+}
+
+/**
+ * El fondo de la cabecera con contenido detrás (AV2-T26): un tenue con su línea abajo. Arriba de todo la cabecera es
+ * transparente (AV2-05) y esta capa no se ve. Con el «Texto de alto contraste», el fondo liso.
+ */
+export const capaDeLaCabecera = (color: Paleta, altoContraste: boolean): CapaDeLaCabecera => ({
+  backgroundColor: altoContraste ? color.fondo : color.cabeceraFondo,
+  borderBottomColor: color.borde,
+  borderBottomWidth: 1,
+});
+
+/**
+ * El desvanecido debajo de la línea: el mismo tenue de la cabecera, que se apaga en `ALTO_DEL_DESVANECIDO`. Con el alto
+ * contraste no hay desvanecido (`null`): el contenido se corta en la línea, que se ve más clara.
+ */
+export const desvanecidoDeLaCabecera = (color: Paleta, altoContraste: boolean): string | null =>
+  altoContraste ? null : `linear-gradient(to bottom, ${color.cabeceraFondo}, ${sinAlfa(color.cabeceraFondo)})`;

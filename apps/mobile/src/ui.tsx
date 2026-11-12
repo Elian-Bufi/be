@@ -16,7 +16,7 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type TextInputProps } from 'react-native';
-import { BotonDeIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
+import { BotonDeIcono, CajaDelIcono, Icono, type NombreDeIcono, type TonoDeIcono } from './icono';
 import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
 import { BORDE_DEL_BOTON, estiloDeLaEtiqueta, RELLENO_DEL_BOTON, subrayadoDelEnlace } from './receta-de-vidrio';
@@ -561,7 +561,7 @@ export function Seccion({ titulo, children, peligro = false, icono }: { titulo: 
     <View style={[estilos.seccion, estilo, peligro && estilos.seccionPeligro]}>
       {icono ? (
         <View style={estilos.cabezaConIcono}>
-          <Icono nombre={icono} tamano={20} tono={peligro ? 'error' : 'tenue'} />
+          {peligro ? <Icono nombre={icono} tamano={20} tono="error" /> : <CajaDelIcono><Icono nombre={icono} tamano={20} tono="azul" /></CajaDelIcono>}
           {encabezado}
         </View>
       ) : (
@@ -796,7 +796,7 @@ export const estilos = estilosPorTema((COLOR) => ({
   seccion: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, backgroundColor: COLOR.superficie },
   seccionPeligro: { borderColor: COLOR.error },
   tituloDeSeccion: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginBottom: 6 },
-  cabezaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  cabezaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
   tituloConIcono: { flexShrink: 1, marginBottom: 0 },
   subtitulo: { fontSize: 17, fontWeight: '700', color: COLOR.texto, marginTop: 12, marginBottom: 4 },
   tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },

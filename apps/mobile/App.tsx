@@ -47,7 +47,7 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { AVISOS_DE_PRUEBA, type SecretoDeInvitacionRequest } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, View } from 'react-native';
+import { Animated, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AVISOS_DE_PRUEBA_VISIBLES } from './src/ambiente';
 import { api, apiConfigurada, consultarCuentaConSenal, extra, loQueFaltaParaSeguirConTope } from './src/api';
@@ -58,7 +58,7 @@ import { esAvisoDeBe, renovar } from './src/avisos';
 import { invitacionDelEnlace } from './src/enlace-de-invitacion';
 import { PantallaDeInvitacion } from './src/pantallas/invitacion';
 import { avisoQueAbrioLaApp, dependenciasDeAvisos, escucharAvisosRecibidos, escucharAvisosTocados } from './src/avisos-del-telefono';
-import { Cabecera } from './src/cabecera';
+import { Cabecera, DesvanecidoDeLaCabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
 import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambios';
 import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/entrenamiento-en-curso';
@@ -110,6 +110,8 @@ import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
 import { useAltoContraste } from './src/alto-contraste';
 import { FondoDeLaApp } from './src/fondo-de-la-app';
+import { useMovimientoReducido } from './src/movimiento-reducido';
+import { cabeceraCubierta, FUNDIDO_DE_LA_CABECERA } from './src/receta-de-vidrio';
 import { ProveedorDeVidrio } from './src/vidrio';
 import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
@@ -215,6 +217,19 @@ function Contenido() {
   const rutaActual = useRef(ruta);
   rutaActual.current = ruta;
   const alturaActual = useRef(0);
+  // La cabecera responde al desplazamiento (AV2-T26): un valor de 0 a 1 que mueve solo la opacidad de su capa y del
+  // desvanecido, con el controlador nativo. Se anima al cruzar el umbral, no en cada evento: nada de React se vuelve a
+  // dibujar al desplazar.
+  const cubierta = useRef(new Animated.Value(0)).current;
+  const cubiertaAhora = useRef(false);
+  const movimientoReducido = useMovimientoReducido();
+  const alDesplazar = (y: number) => {
+    alturaActual.current = y;
+    const ahora = cabeceraCubierta(y);
+    if (ahora === cubiertaAhora.current) return;
+    cubiertaAhora.current = ahora;
+    Animated.timing(cubierta, { toValue: ahora ? 1 : 0, duration: movimientoReducido ? 0 : FUNDIDO_DE_LA_CABECERA, useNativeDriver: true }).start();
+  };
   const alturas = useRef(new Map<string, number>());
   const [restauracion] = useState(() => crearRestauracionDeAltura());
   // El alto real de la barra inferior, medido: el contenido deja ese espacio libre al final. 0 mientras no se ve.
@@ -638,14 +653,15 @@ function Contenido() {
         volver={volverConCuidado}
         sinLeer={conSesion ? sinLeer : null}
         abrirNovedades={() => irConCuidado({ nombre: 'novedades' })}
+        cubierta={cubierta}
+        altoContraste={altoContraste}
       />
+      <View style={estilos.desplazable}>
       <ScrollView
         ref={desplazamiento}
         contentContainerStyle={[estilos.contenido, { paddingBottom: espacioDeLaBarra }]}
         keyboardShouldPersistTaps="handled"
-        onScroll={(e) => {
-          alturaActual.current = e.nativeEvent.contentOffset.y;
-        }}
+        onScroll={(e) => alDesplazar(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={100}
         onScrollBeginDrag={restauracion.alArrastrar}
         onContentSizeChange={alCambiarElContenido}
@@ -803,6 +819,9 @@ function Contenido() {
           ) : null}
         </ProveedorDeCambios>
       </ScrollView>
+      {/* Debajo de la línea de la cabecera, el contenido se desvanece en lugar de cortarse de golpe (AV2-T26). */}
+      <DesvanecidoDeLaCabecera cubierta={cubierta} altoContraste={altoContraste} />
+      </View>
       {/* La barra flota sobre el final del contenido, que deja libre su alto (espacioDeLaBarra). Resalta la raíz donde
           empezó el camino hasta esta pantalla; en Novedades, ninguna. */}
       {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
@@ -830,6 +849,8 @@ const estilos = estilosPorTema((COLOR) => ({
   // Sin fondo propio: lo dibuja FondoDeLaApp (DL-170). Liso solo mientras se lee la apariencia y con alto contraste.
   raiz: { flex: 1 },
   raizLisa: { backgroundColor: COLOR.fondo },
+  // El desplazamiento y el desvanecido de la cabecera, que va encima de su borde de arriba.
+  desplazable: { flex: 1 },
   // El margen inferior se completa en el contentContainerStyle con el alto de la barra y el inset real del sistema
   // (safe-area-context): Android es edge-to-edge desde Expo SDK 54 y el ScrollView llega por detrás de la barra de
   // navegación.
