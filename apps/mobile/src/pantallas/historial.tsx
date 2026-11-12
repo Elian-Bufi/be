@@ -15,6 +15,7 @@
  */
 import {
   COPY_ENTRENAMIENTO,
+  type HistorialDeEntrenamientoResponse,
   type Resultado,
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDePlanDeEntrenamiento,
@@ -34,6 +35,7 @@ import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Dato, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Titulo } from '../ui';
 import { textoDePrescripcion } from './entrenamiento';
 
+type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
 
 /** Estado de una lectura: cargando, permitida con datos, sin A3 (403), o error de red/servidor. */
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'sinA3' } | { tipo: 'error'; sinConexion: boolean };

@@ -1,8 +1,8 @@
 /**
  * WP-NUTRICION-RECETAS · la APK, sin teléfono (docs/paquetes/WP-NUTRICION-RECETAS.md §10.4): lo que decide el carrusel, el
  * registro y la comida diferente, con los módulos puros de producción.
- *  1. El carrusel (`carrusel-de-opciones.ts`): el asomo de la siguiente, los índices, los extremos, el contador y una sola
- *     opción, y la posición recordada por la opción.
+ *  1. Las opciones de una comida (`carrusel-de-opciones.ts`, desde AV2-21 una sola navegación): los segmentos, el anuncio,
+ *     una sola opción, y la posición recordada por la opción.
  *  2. La franja de macros (`franja-de-macros.ts`): el orden, las unidades, el redondeo del dominio sobre las tres recetas
  *     del paquete, «Sin dato» en lugar de cero y las columnas (4, 2 por 2 o 1) sin recortar.
  *  3. «¿Cuánto comiste?» (`consumo-de-la-opcion.ts`): vacío no es cero, el cero no se acepta, la casilla, «No lo comí» y
@@ -54,50 +54,36 @@ function macrosDe(receta) {
   return d.nutrientesDelResultado(d.calcularNutrientes(ingredientes));
 }
 
-// ─── 1. El carrusel ─────────────────────────────────────────────────────────────────────────────
+// ─── 1. Las opciones de una comida: una sola navegación (AV2-21, TEST-AV2-019) ──────────────────
+// Hasta la 0.25 era un carrusel con asomo, flechas y puntitos; estas pruebas protegían lo mismo que siguen protegiendo:
+// la opción recordada por su identidad, el anuncio «Opción n de m», que elegir no registra y la imagen que se carga.
 
-test('1 · se ve una parte de la tarjeta siguiente, y cada gesto se detiene alineado en una tarjeta', () => {
-  for (const ancho of [298, 328, 350]) {
-    const m = carrusel.medidasDelCarrusel(ancho, 3);
-    assert.equal(ancho - m.anchoDeTarjeta - carrusel.SEPARACION_ENTRE_TARJETAS, carrusel.ASOMO_DE_LA_SIGUIENTE, `a ${ancho} dp se asoma la siguiente`);
-    assert.ok(carrusel.ASOMO_DE_LA_SIGUIENTE >= 16, 'el asomo se ve');
-    assert.equal(m.paso, m.anchoDeTarjeta + carrusel.SEPARACION_ENTRE_TARJETAS);
-    // El relleno final deja que la última también se detenga alineada: el desplazamiento máximo es (n − 1) pasos.
-    const contenido = 3 * m.anchoDeTarjeta + 2 * carrusel.SEPARACION_ENTRE_TARJETAS + m.rellenoFinal;
-    assert.equal(contenido - ancho, carrusel.desplazamientoDe(2, m.paso, 3));
-  }
-  // Con una sola opción, la tarjeta ocupa todo el ancho y no hay nada que desplazar.
-  assert.deepEqual(carrusel.medidasDelCarrusel(320, 1), { anchoDeTarjeta: 320, paso: 320, rellenoFinal: 0 });
-  // Sin medir todavía, nada negativo.
-  assert.ok(carrusel.medidasDelCarrusel(0, 3).anchoDeTarjeta >= 1);
-});
-
-test('1 · el índice sale del desplazamiento, por cercanía, y nunca se pasa de los extremos', () => {
-  const { paso } = carrusel.medidasDelCarrusel(320, 3);
-  assert.equal(carrusel.indiceDesdeDesplazamiento(0, paso, 3), 0);
-  assert.equal(carrusel.indiceDesdeDesplazamiento(paso * 0.49, paso, 3), 0);
-  assert.equal(carrusel.indiceDesdeDesplazamiento(paso * 0.51, paso, 3), 1);
-  assert.equal(carrusel.indiceDesdeDesplazamiento(paso * 2, paso, 3), 2);
-  assert.equal(carrusel.indiceDesdeDesplazamiento(paso * 9, paso, 3), 2, 'el rebote del final no inventa una cuarta');
-  assert.equal(carrusel.indiceDesdeDesplazamiento(-40, paso, 3), 0, 'ni una antes de la primera');
+test('1 · TEST-AV2-019 · los segmentos de las opciones: «Opción n» hasta tres, solo el número desde cuatro, ninguno con una', () => {
+  const tres = [{ optionId: 'a' }, { optionId: 'b' }, { optionId: 'c' }];
+  assert.deepEqual(carrusel.segmentosDeLasOpciones(tres), [
+    { valor: 'a', texto: 'Opción 1' },
+    { valor: 'b', texto: 'Opción 2' },
+    { valor: 'c', texto: 'Opción 3' },
+  ]);
+  assert.deepEqual(
+    carrusel.segmentosDeLasOpciones([...tres, { optionId: 'd' }]).map((s) => s.texto),
+    ['1', '2', '3', '4'],
+  );
+  assert.deepEqual(carrusel.segmentosDeLasOpciones([{ optionId: 'a' }]), [], 'con una sola opción no hay nada que elegir');
+  assert.deepEqual(carrusel.segmentosDeLasOpciones([]), []);
   assert.equal(carrusel.indiceValido(Number.NaN, 3), 0);
+  assert.equal(carrusel.indiceValido(7, 3), 2);
   assert.equal(carrusel.indiceValido(7, 0), 0);
-  assert.equal(carrusel.desplazamientoDe(1, paso, 3), paso);
-  assert.equal(carrusel.desplazamientoDe(5, paso, 3), 2 * paso);
 });
 
-test('1 · «Opción n de m» y las flechas: deshabilitadas en los extremos; con una sola opción, sin contador ni flechas', () => {
-  assert.deepEqual(carrusel.controlesDelCarrusel(0, 3), { contador: 'Opción 1 de 3', anteriorHabilitada: false, siguienteHabilitada: true });
-  assert.deepEqual(carrusel.controlesDelCarrusel(1, 3), { contador: 'Opción 2 de 3', anteriorHabilitada: true, siguienteHabilitada: true });
-  assert.deepEqual(carrusel.controlesDelCarrusel(2, 3), { contador: 'Opción 3 de 3', anteriorHabilitada: true, siguienteHabilitada: false });
-  assert.deepEqual(carrusel.controlesDelCarrusel(0, 1), { contador: null, anteriorHabilitada: false, siguienteHabilitada: false });
-  assert.deepEqual(carrusel.controlesDelCarrusel(0, 0), { contador: null, anteriorHabilitada: false, siguienteHabilitada: false });
-  // El texto es el del dominio, y las flechas se llaman como pide el encargo.
-  assert.equal(C.opcionDe(2, 3), 'Opción 2 de 3');
-  assert.deepEqual([C.opcionAnterior, C.opcionSiguiente], ['Opción anterior', 'Opción siguiente']);
+test('1 · TEST-AV2-019 · «Opción n de m» se anuncia al cambiar; con una sola opción, nada', () => {
+  assert.equal(carrusel.anuncioDeLaOpcion(1, 3), 'Opción 2 de 3');
+  assert.equal(carrusel.anuncioDeLaOpcion(9, 3), 'Opción 3 de 3');
+  assert.equal(carrusel.anuncioDeLaOpcion(0, 1), null);
+  assert.equal(C.opcionDe(2, 3), 'Opción 2 de 3', 'el texto es el del dominio');
 });
 
-test('1 · al volver del detalle, el carrusel queda en la misma opción, aunque el plan cambie el orden', () => {
+test('1 · al volver del detalle, la comida sigue en la misma opción, aunque el plan cambie el orden', () => {
   const opciones = [{ optionId: 'pollo' }, { optionId: 'salmon' }, { optionId: 'lentejas' }];
   assert.equal(carrusel.indiceDeLaOpcion(opciones, 'salmon'), 1);
   assert.equal(carrusel.indiceDeLaOpcion([opciones[2], opciones[0], opciones[1]], 'salmon'), 2, 'por la opción, no por el índice');
@@ -105,17 +91,26 @@ test('1 · al volver del detalle, el carrusel queda en la misma opción, aunque 
   assert.equal(carrusel.indiceDeLaOpcion(opciones, null), 0);
 });
 
-test('1 · el carrusel no avanza solo ni registra al deslizar: la pantalla no tiene temporizadores, y registrar es un botón', () => {
+test('1 · TEST-AV2-019 · una sola navegación: elegir no registra, sin marco vacío, y solo se carga la imagen a la vista', () => {
   const HOY = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/nutricion-hoy.tsx'), 'utf8');
-  const carruselEnPantalla = HOY.slice(HOY.indexOf('function Carrusel('), HOY.indexOf('function TarjetaDeOpcion('));
-  assert.doesNotMatch(carruselEnPantalla, /setInterval|setTimeout|autoplay/i, 'sin avance automático');
-  assert.doesNotMatch(carruselEnPantalla, /registrarComida|comi\(/, 'el gesto solo cambia la opción a la vista');
-  assert.match(carruselEnPantalla, /snapToInterval=\{total > 1 \? medidas\.paso : undefined\}/);
-  assert.match(carruselEnPantalla, /importantForAccessibility=\{i === indice \? 'auto' : 'no-hide-descendants'\}/, 'el lector recorre solo la tarjeta a la vista');
-  assert.match(carruselEnPantalla, /accessibilityLiveRegion="polite"/, 'el contador se anuncia al cambiar');
-  // Mientras una flecha desliza el carrusel, las posiciones de paso no cambian la opción: el contador no anuncia la anterior.
-  assert.match(carruselEnPantalla, /if \(destino\.current !== null\) \{\s*if \(j === destino\.current\) destino\.current = null;\s*return;/);
-  assert.match(carruselEnPantalla, /onScrollBeginDrag=\{\(\) => \{\s*destino\.current = null;/, 'el dedo manda sobre la flecha');
+  const opciones = HOY.slice(HOY.indexOf('function OpcionesEnSegmentos('), HOY.indexOf('function OpcionALaVista('));
+  const opcion = HOY.slice(HOY.indexOf('function OpcionALaVista('), HOY.indexOf('// ─── Con registro'));
+  assert.ok(opciones.length > 0 && opcion.length > 0);
+  assert.doesNotMatch(opciones, /setInterval|setTimeout|autoplay/i, 'sin avance automático');
+  assert.doesNotMatch(opciones, /registrarComida|comi\(/, 'elegir solo cambia la opción a la vista');
+  // Un solo control: los Segmentos compactos. Ni desplazamiento con imán, ni flechas, ni puntitos.
+  assert.match(opciones, /<Segmentos<string> compactos etiqueta=\{COPY_REGISTRO_DE_COMIDAS\.opcionesDe\(comida\.label\)\}/);
+  assert.doesNotMatch(HOY, /snapToInterval|BotonDeFlecha|estilos\.punto|ASOMO_DE_LA_SIGUIENTE|<ScrollView/);
+  // La opción elegida se recuerda por su identidad, y se anuncia al cambiar.
+  assert.match(opciones, /useSeleccionRecordada<string \| null>\(token, `nutricion:opcion:\$\{fecha\}:\$\{comida\.mealId\}`, null\)/);
+  assert.match(opciones, /AccessibilityInfo\.announceForAccessibility\(anuncio\)/);
+  // Una sola opción a la vista: solo ella pide su imagen. Sin imagen, ningún marco; con imagen, la miniatura de 72 dp.
+  assert.equal((opciones.match(/<OpcionALaVista\b/g) ?? []).length, 1);
+  assert.match(opcion, /\{mediaId \? \(\s*<ImagenDeMedio [^>]*tamano=\{TAMANO_DE_LA_MINIATURA\} rotuloVisible=\{false\}/);
+  assert.match(HOY, /const TAMANO_DE_LA_MINIATURA = 72;/);
+  assert.match(opcion, /rotulo=\{COPY_REGISTRO_DE_COMIDAS\.imagenDeReferencia\}/, 'TalkBack sigue diciendo «Imagen de referencia»');
+  // «Estimación del plan» no se toca: en `tenue`.
+  assert.match(HOY, /estimacion: \{[^}]*color: COLOR\.tenue/);
 });
 
 // ─── 2. La franja de macros ─────────────────────────────────────────────────────────────────────
