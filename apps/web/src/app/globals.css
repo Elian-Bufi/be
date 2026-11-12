@@ -16651,3 +16651,40 @@ p.cifra-del-espacio__desglose {
 .version-nueva-de-la-receta .lista-compacta {
   margin: 0 0 0.5rem;
 }
+
+/* ═══ ED-21 · «Crear un ejercicio propio»: los parecidos del catálogo, antes de crear ═════════════════════════════════ */
+.parecidos-del-catalogo {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.parecidos-del-catalogo__titulo {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.parecidos-del-catalogo__igual {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.parecidos-del-catalogo__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.parecidos-del-catalogo__lista li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.parecidos-del-catalogo__lista li:first-child {
+  border-top: 0;
+}

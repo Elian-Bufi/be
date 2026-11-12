@@ -189,3 +189,34 @@ test('ED-32 · guardada la receta, el cuadro pasa a la foto (opcional) y vuelve 
   assert.match(editor, /principal=\{fotoDeLaReceta \? \{ texto: COPY_FOTO_DE_LA_RECETA\.listo, alTocar: cerrarLaRecetaNueva \} : null\}/);
   assert.match(editor, /<ImagenDeReceta\n\s+token=\{token\}\n\s+receta=\{fotoDeLaReceta\.receta\}/);
 });
+
+// ─── ED-21 · «Crear un ejercicio propio», con los parecidos del catálogo antes de crear ────────────────────────────
+
+const E = await import('../src/app/pro/advisees/training/parecidos-del-catalogo.ts');
+const ej = (versionId, name) => ({ versionId, name });
+
+test('ED-21 · qué se busca: el nombre entero y, si hace falta, su palabra más larga', () => {
+  assert.deepEqual(E.busquedasDeParecidos('  Sentadilla   búlgara con mancuernas '), { principal: 'Sentadilla búlgara con mancuernas', otra: 'sentadilla' });
+  assert.deepEqual(E.busquedasDeParecidos('Remo'), { principal: 'Remo', otra: null });
+  assert.equal(E.haySugerencias('ab'), false);
+  assert.equal(E.haySugerencias('a b c'), true);
+});
+
+test('ED-21 · los parecidos van del más al menos parecido, sin repetir, hasta cinco; los que no comparten nada, no', () => {
+  const candidatos = [ej('1', 'Press de banca'), ej('2', 'Sentadilla búlgara'), ej('3', 'Sentadilla'), ej('2', 'Sentadilla búlgara'), ej('4', 'Sentadilla búlgara con mancuernas')];
+  assert.deepEqual(E.parecidos('sentadilla bulgara con mancuernas', candidatos).map((c) => c.versionId), ['4', '2', '3']);
+  assert.deepEqual(E.parecidos('Remo', candidatos), []);
+  const muchos = Array.from({ length: 8 }, (_, n) => ej(String(n), `Curl ${n}`));
+  assert.equal(E.parecidos('curl', muchos).length, 5);
+  // «con», «de» y «la» no cuentan.
+  assert.deepEqual(E.palabrasQueCuentan('Press de la banca con barra'), ['press', 'banca', 'barra']);
+});
+
+test('ED-21 · uno que se llama igual se dice aparte y crear otro pide «Crear igual»; nada se crea solo', () => {
+  assert.deepEqual(E.elQueSeLlamaIgual('sentadilla BÚLGARA', [ej('2', 'Sentadilla búlgara')]), ej('2', 'Sentadilla búlgara'));
+  assert.equal(E.elQueSeLlamaIgual('Sentadilla', [ej('2', 'Sentadilla búlgara')]), null);
+  const agregar = leer('training/agregar-ejercicio.tsx');
+  assert.match(agregar, /\{creando \? 'Creando…' : igual \? EP\.crearIgual : EP\.crearYMarcar\}/);
+  // Elegir un parecido lo marca (como lo creado): entra con «Agregar», nunca solo (EDT-17).
+  assert.match(agregar, /onClick=\{\(\) => onCreado\(p\)\}/);
+});
