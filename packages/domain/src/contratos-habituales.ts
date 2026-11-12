@@ -159,7 +159,7 @@ export const PrescripcionHabitualResponseSchema = z.strictObject({ data: Prescri
 /** API-HAB-06: las propias y activas, la guardada más recientemente primero; hasta 200, sin paginar. */
 export const ListaDePrescripcionesHabitualesResponseSchema = z.strictObject({ data: z.array(PrescripcionHabitualSchema) });
 
-/** Gramos por día de un macro: el reparto habitual se escribe en gramos (DJ-7: sin «%» antes del 25/11). */
+/** Gramos por día de un macro: el reparto habitual se escribe en gramos (DJ-7: nunca en proporciones antes del 25/11). */
 const GramosPorDiaSchema = z.strictObject({ value: z.number().nonnegative().finite().max(2000), unit: z.literal('g/day') });
 
 /** Un reparto habitual de macros, en gramos por día, como el que escribe el profesional en el objetivo. */

@@ -4286,7 +4286,7 @@ model PrescripcionHabitual {
 }
 
 /// ED-13 (WP-EDITORES-PROFESIONAL, DL-167): un reparto habitual de macros del profesional, en gramos por día (DJ-7: sin
-/// «%» antes del 25/11). Lo ve solo él; aplicarlo escribe los gramos en el objetivo, como cualquier otro valor.
+/// porcentajes antes del 25/11). Lo ve solo él; aplicarlo escribe los gramos en el objetivo, como cualquier otro valor.
 model RepartoHabitual {
   id                     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   profesionalId          String           @map("profesional_id") @db.Uuid

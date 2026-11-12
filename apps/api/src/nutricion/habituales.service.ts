@@ -67,7 +67,7 @@ export class HabitualesNutricionalesService {
 
   /**
    * ED-13 (WP-EDITORES-PROFESIONAL; DL-167) · Los repartos habituales (API-HAN-06 a 08): proteínas, carbohidratos y
-   * grasas en gramos por día, como los escribe el profesional en el objetivo (DJ-7: sin «%»). El contrato ya valida los
+   * grasas en gramos por día, como los escribe el profesional en el objetivo (DJ-7: nunca en proporciones). El contrato ya valida los
    * gramos; no hay nada del catálogo que verificar.
    */
   readonly repartos: PresetsPropios<typeof GuardarRepartoHabitualRequestSchema> = new PresetsPropios({
