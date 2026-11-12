@@ -675,8 +675,8 @@ verifica con una mutación: se rompe la regla a propósito, la prueba se pone en
   vidrio que todavía no tiene.
 
 **AV2-18 · La muestra en el teléfono de Dirección**
-- *Qué cambia:* la candidata de la muestra, 0.25.0-candidata.1 (la numeración que decidió Dirección el 2026-11-11), por el
-  circuito de siempre (§5.4), con la distribución de AV2-D11.
+- *Qué cambia:* la candidata de la muestra, 0.25.0-candidata.1 (la numeración que decidió Dirección el 2026-11-11),
+  por el circuito de siempre (§5.4), con la distribución de AV2-D11.
 - *API:* no.
 - *Dado* la candidata instalada, *cuando* Dirección abre Inicio con sus datos o con una cuenta sintética, en los dos
   temas, con letra ×1,3 y con TalkBack, *entonces* su respuesta (el visto bueno o las correcciones) queda escrita en

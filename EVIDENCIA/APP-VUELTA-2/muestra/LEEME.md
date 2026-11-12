@@ -1,11 +1,12 @@
 # AV2-18 · La muestra en el teléfono de Dirección (WP-APP-VUELTA-2 §5.4)
 
-> **Estado (2026-11-12): se arma.** La etapa A (AV2-01 a AV2-17) está programada en #255, en borrador y sin integrar. Por
-> la numeración que decidió Dirección el 2026-11-11, la candidata de la muestra es la **0.25.0-candidata.1** (la 0.24, con
-> el nombre obligatorio de UF-01, es la «latest» que ofrece el website). Se arma por el circuito de siempre
-> (`docs/DESPLIEGUE.md`): la rama `aab/candidata-0.25.0-1` (esta rama, con `main` traído, más un commit con la versión y
-> el `versionCode` 39), el AAB sin firma en GitHub Actions, la firma y la verificación en la PC de Dirección y la APK con
-> `apk-desde-aab.mjs`. Por AV2-D11 se publica **aparte, como prerelease y no «latest»**: la familia sigue con la 0.24.
+> **Estado (2026-11-12): se arma.** La etapa A (AV2-01 a AV2-17) está programada en #255, en borrador y sin
+> integrar. Por la numeración que decidió Dirección el 2026-11-11, la candidata de la muestra es la
+> **0.25.0-candidata.1** (la 0.24, con el nombre obligatorio de UF-01, es la «latest» que ofrece el website). Se arma
+> por el circuito de siempre (`docs/DESPLIEGUE.md`): la rama `aab/candidata-0.25.0-1` (esta rama, con `main` traído,
+> más un commit con la versión y el `versionCode` 39), el AAB sin firma en GitHub Actions, la firma y la verificación
+> en la PC de Dirección y la APK con `apk-desde-aab.mjs`. Por AV2-D11 se publica **aparte, como prerelease y no
+> «latest»**: la familia sigue con la 0.24.
 >
 > Lo coordina el agente principal; esta carpeta deja escrito qué mirar y dónde queda la respuesta.
 
