@@ -27,6 +27,7 @@ import {
   normalizarNombreVisible,
   problemaDelNombre,
   textoDelPaso,
+  versionDeLaApi,
   versionPublicada,
   type ClienteBe,
   type LoQueFaltaParaSeguirResponse,
@@ -63,6 +64,16 @@ export function mensajeDelNombreEnLaRespuesta(issues: readonly ValidationIssue[]
 // ─── La compuerta «Antes de seguir» (API-ACC-07) ─────────────────────────────────────────────────
 
 /** Lo que muestra la raíz con una sesión, según lo que falta para seguir. */
+/**
+ * Un texto que «Antes de seguir» pide aceptar: la versión que pide la API y, si esta APK la trae en su catálogo, su texto.
+ * Sin él (una versión publicada después de construir la APK), la pantalla lo lee de API-ACC-09 (UF-T57).
+ */
+export interface TextoPendiente {
+  readonly texto: TextoAAceptar;
+  readonly versionId: string;
+  readonly version: VersionDeTexto | null;
+}
+
 export type Compuerta =
   /** Preguntando a la API: todavía no se muestra nada de la cuenta. */
   | { readonly tipo: 'preguntando' }
@@ -73,7 +84,7 @@ export type Compuerta =
   /** Falta el nombre: «Antes de seguir», con el nombre que propone la API (el del perfil profesional) o vacío. */
   | { readonly tipo: 'nombre'; readonly propuesta: string | null }
   /** UF-05: la versión vigente de los términos y de la privacidad, cada una con el texto que esta APK tiene. */
-  | { readonly tipo: 'textos'; readonly pendientes: readonly { readonly texto: TextoAAceptar; readonly version: VersionDeTexto }[] }
+  | { readonly tipo: 'textos'; readonly pendientes: readonly TextoPendiente[] }
   /** Un paso que esta versión no sabe resolver, o una respuesta que no reconoce: hay que actualizar la app. */
   | { readonly tipo: 'actualizar' };
 
@@ -128,9 +139,11 @@ export function compuertaConLaRespuesta(momento: MomentoDeLaPregunta, r: Resulta
     if (!sabePedirlos) return { tipo: 'actualizar' };
     const nombre = pasos.find((p) => p.step === 'DISPLAY_NAME');
     if (nombre) return { tipo: 'nombre', propuesta: propuestaDelNombre(nombre.suggestion) };
-    // UF-05: los textos, con la versión que pide la API; si esta APK no la tiene, hay que actualizar.
-    const pendientes = pasos.map((p) => ({ texto: textoDelPaso(p.step), version: versionPublicada(p.suggestion) }));
-    if (pendientes.every((p): p is { texto: TextoAAceptar; version: VersionDeTexto } => p.texto !== null && p.version !== null)) return { tipo: 'textos', pendientes };
+    // UF-05: los textos, con la versión que pide la API. Si esta APK no la trae (se publicó después), la pantalla la lee de
+    // API-ACC-09 (UF-T57, revisión adversarial de la etapa 2): antes pedía actualizar, y la APK del 25/11 bloqueaba a todas
+    // las cuentas el día de la publicación. Sin versión, no hay qué mostrar: actualizar.
+    const pendientes = pasos.map((p) => ({ texto: textoDelPaso(p.step), versionId: p.suggestion, version: versionPublicada(p.suggestion) }));
+    if (pendientes.every((p): p is TextoPendiente => p.texto !== null && p.versionId !== null)) return { tipo: 'textos', pendientes };
     return { tipo: 'actualizar' };
   }
   if (r.tipo === 'API' && CODIGOS_DE_SESION_NO_VALIDA.has(r.codigo)) return sesionPerdida(r.codigo);
@@ -211,6 +224,36 @@ export async function guardarElNombre(api: ApiDelNombre, token: string, texto: s
 // ─── UF-05 · aceptar la versión vigente de los textos ────────────────────────────────────────────
 
 export type ApiDeLosTextos = Pick<ClienteBe, 'aceptarVersionVigente'>;
+
+export type ApiDelTextoPublicado = Pick<ClienteBe, 'textoPublicado'>;
+
+export type AlCompletarLosTextos =
+  /** Cada pendiente con su texto: el de esta APK o el que dio API-ACC-09. */
+  | { readonly tipo: 'listos'; readonly pendientes: readonly (TextoPendiente & { readonly version: VersionDeTexto })[] }
+  /** La API no tiene esa versión publicada, o devolvió otra: lo resuelve una APK nueva. */
+  | { readonly tipo: 'actualizar' }
+  /** Sin red u otra falla: se puede volver a intentar. */
+  | { readonly tipo: 'sin-respuesta' };
+
+/**
+ * UF-T57: completa los pendientes que esta APK no trae en su catálogo con el texto de API-ACC-09, que tiene que ser la
+ * versión pedida y del tipo del paso (`versionDeLaApi`). Los que la APK trae no se piden.
+ */
+export async function completarLosTextos(api: ApiDelTextoPublicado, pendientes: readonly TextoPendiente[]): Promise<AlCompletarLosTextos> {
+  const listos: (TextoPendiente & { readonly version: VersionDeTexto })[] = [];
+  for (const p of pendientes) {
+    if (p.version) {
+      listos.push({ ...p, version: p.version });
+      continue;
+    }
+    const r = await api.textoPublicado(p.versionId);
+    if (!r.ok) return r.tipo === 'API' && r.status === 404 ? { tipo: 'actualizar' } : { tipo: 'sin-respuesta' };
+    const version = versionDeLaApi(r.datos, p.versionId, p.texto);
+    if (!version) return { tipo: 'actualizar' };
+    listos.push({ ...p, version });
+  }
+  return { tipo: 'listos', pendientes: listos };
+}
 
 export type AlAceptarLosTextos =
   /** Quedaron aceptados: la raíz vuelve a preguntar qué falta. */

@@ -16,13 +16,13 @@
  * Nada queda plegado: lo que hace falta para decidir está a la vista (GUIA-UX-UI III.7). Los textos son los del dominio
  * (`COPY_DEL_NOMBRE`), iguales en el website.
  */
-import { COPY, COPY_DEL_NOMBRE as N, COPY_TEXTOS_VIGENTES as T, LARGO_MAXIMO_DEL_NOMBRE_VISIBLE, normalizarNombreVisible, type TextoAAceptar, type VersionDeTexto } from '@be/domain';
+import { botonDeAceptar, COPY, COPY_DEL_NOMBRE as N, COPY_TEXTOS_VIGENTES as T, LARGO_MAXIMO_DEL_NOMBRE_VISIBLE, normalizarNombreVisible, type TextoAAceptar, type VersionDeTexto } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, BackHandler } from 'react-native';
 import { api } from '../api';
 import { useSesionPerdida, type Salida } from '../navegacion';
 import { dia } from '../formato';
-import { aceptarLosTextos, guardarElNombre, revisarElNombre, type Compuerta } from '../nombre-obligatorio';
+import { aceptarLosTextos, completarLosTextos, guardarElNombre, revisarElNombre, type AlCompletarLosTextos, type Compuerta, type TextoPendiente } from '../nombre-obligatorio';
 import { Aviso, Boton, Campo, Parrafo, Seccion, Titulo } from '../ui';
 import { CierreDeCuenta, retirarAvisos } from './cuenta';
 import { PantallaDeRecuperacion } from './recuperacion';
@@ -138,11 +138,43 @@ function PasoDelNombre({ propuesta, token, salir, alGuardar }: { propuesta: stri
 }
 
 /**
- * UF-05 (DL-169): la versión nueva de los términos y de la información de privacidad, cada una con su texto completo, su
- * versión y su fecha (la que esta APK tiene para el id que pidió la API). Un botón las acepta, de a una y con la versión que
- * se mostró (API-ACC-08). No se saltea: abajo están «Cerrar sesión» y el cierre de la cuenta.
+ * UF-05 (DL-169): los textos que pide la API. Los que esta APK no trae en su catálogo (una versión publicada después de
+ * construirla) se leen de API-ACC-09 antes de mostrarlos (UF-T57); si la API no la tiene o devuelve otra, hay que
+ * actualizar, y sin red se puede reintentar.
  */
-function PasoDeLosTextos({
+function PasoDeLosTextos({ pendientes, token, salir, alAceptar }: { pendientes: readonly TextoPendiente[]; token: string; salir: (motivo: Salida) => void; alAceptar: () => Promise<void> }) {
+  const [completos, setCompletos] = useState<AlCompletarLosTextos | null>(null);
+  const [vuelta, setVuelta] = useState(0);
+  useEffect(() => {
+    let vigente = true;
+    setCompletos(null);
+    void completarLosTextos(api, pendientes).then((r) => {
+      if (vigente) setCompletos(r);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [pendientes, vuelta]);
+
+  if (completos === null) return <Parrafo tenue>{T.trayendo}</Parrafo>;
+  if (completos.tipo === 'actualizar') return <Aviso tipo="info" titulo={N.pasoDesconocidoApk} />;
+  if (completos.tipo === 'sin-respuesta') {
+    return (
+      <>
+        <Aviso tipo="error" titulo={T.sinTexto} />
+        <Boton texto={COPY.reintentar} tipo="secundario" onPress={() => setVuelta((n) => n + 1)} />
+      </>
+    );
+  }
+  return <TextosParaAceptar pendientes={completos.pendientes} token={token} salir={salir} alAceptar={alAceptar} />;
+}
+
+/**
+ * La versión nueva de los términos y de la información de privacidad, cada una con su texto completo, su versión y su
+ * fecha. Un botón las acepta, de a una y con la versión que se mostró (API-ACC-08). No se saltea: abajo están «Cerrar
+ * sesión» y el cierre de la cuenta.
+ */
+function TextosParaAceptar({
   pendientes,
   token,
   salir,
@@ -194,7 +226,7 @@ function PasoDeLosTextos({
       ))}
       {aviso ? <Aviso tipo={aviso.actualizar ? 'info' : 'error'} titulo={aviso.mensaje} /> : null}
       {aviso?.actualizar ? null : (
-        <Boton texto={aceptando ? T.aceptando : pendientes.map((p) => T.aceptar[p.texto]).join(' y ')} onPress={() => void aceptar()} ocupado={aceptando} />
+        <Boton texto={aceptando ? T.aceptando : botonDeAceptar(pendientes.map((p) => p.texto))} onPress={() => void aceptar()} ocupado={aceptando} />
       )}
     </>
   );

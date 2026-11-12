@@ -141,7 +141,7 @@ export class AccesoGoogleService {
   async registrar(cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<{ readonly estadoHttp: 200 | 201; readonly cuerpo: IniciarSesionResponse }> {
     const solicitud = validarCuerpo(RegistrarConGoogleRequestSchema, cuerpo);
     this.limitador.consumir('registro', ctx.direccionIp);
-    validarActosDelAlta(solicitud, 'ESTRICTO');
+    const versiones = validarActosDelAlta(solicitud, 'ESTRICTO', ctx.capacidades);
     // DL-169 (UF-D1): el nombre que la persona confirmó o corrigió; sin él, lo mismo que API-ACC-01.
     const nombreVisible = validarNombreDelAlta(solicitud.profile);
     const cuenta = await this.verificar(solicitud.idToken, OPERACION_ALTA, ctx);
@@ -162,7 +162,7 @@ export class AccesoGoogleService {
         if (delCorreo.length > 0) throw new ConSujeto(errores.registroNoDisponible(), null, 'CORREO_DE_OTRA_IDENTIDAD');
         const { identidadId } = await this.registro.crearIdentidad(
           tx,
-          { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'GOOGLE', sub: cuenta.sub, correo: cuenta.correo }, nombreVisible },
+          { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'GOOGLE', sub: cuenta.sub, correo: cuenta.correo }, nombreVisible, versiones },
           ctx,
           OPERACION_ALTA,
         );

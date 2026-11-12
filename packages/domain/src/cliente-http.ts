@@ -360,7 +360,7 @@ import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
 import { RecuperacionPedidaResponseSchema, type RecuperacionPedidaResponse } from './recuperacion-de-acceso';
 import { CanalDeContactoResponseSchema, type CanalDeContactoResponse } from './ayuda-y-contacto';
-import { AceptacionDeVersionResponseSchema, type AceptacionDeVersionResponse, type TextoAAceptar } from './textos-vigentes';
+import { AceptacionDeVersionResponseSchema, TextoPublicadoResponseSchema, type AceptacionDeVersionResponse, type TextoAAceptar, type TextoPublicadoResponse } from './textos-vigentes';
 
 export type Resultado<T> =
   | {
@@ -655,6 +655,13 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      */
     aceptarVersionVigente(token: string, texto: TextoAAceptar, versionId: string): Promise<Resultado<AceptacionDeVersionResponse>> {
       return llamar('POST', '/me/legal-acceptances', { token, cuerpo: { text: texto, versionId }, esquema: AceptacionDeVersionResponseSchema });
+    },
+    /**
+     * API-ACC-09 (UF-T57): el texto de una versión publicada, sin sesión. Lo pide «Antes de seguir» cuando la API pide una
+     * versión que este cliente no trae en su catálogo; 404 si no está publicada.
+     */
+    textoPublicado(versionId: string): Promise<Resultado<TextoPublicadoResponse>> {
+      return llamar('GET', `/legal-texts/${encodeURIComponent(versionId)}`, { esquema: TextoPublicadoResponseSchema });
     },
     // ─── UF-11 (DL-169): el segundo factor del profesional, familia MFA ───────────────────────────────
     /** API-MFA-01: el estado del segundo factor de la sesión. */

@@ -17,7 +17,7 @@
  * recupera, o mientras se pregunta, la página todavía no se monta: no lee nada antes de tiempo ni se monta dos veces.
  * Accesible: el paso lleva el foco a su título al aparecer, el campo tiene su etiqueta y su error, y los avisos se anuncian.
  */
-import { clasificarFalla, COPY, COPY_DEL_NOMBRE, COPY_TEXTOS_VIGENTES, type PerfilPropio, type TextoAAceptar, type VersionDeTexto } from '@be/domain';
+import { botonDeAceptar, clasificarFalla, COPY, COPY_DEL_NOMBRE, COPY_TEXTOS_VIGENTES, type PerfilPropio, type TextoAAceptar, type VersionDeTexto } from '@be/domain';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { api, type Resultado } from '../lib/api';
@@ -383,7 +383,7 @@ function PasoDeLosTextos({
         ))}
         <div className="acciones">
           <button type="submit" className="boton boton--primario" disabled={guardando} aria-busy={guardando}>
-            {guardando ? COPY_TEXTOS_VIGENTES.aceptando : pendientes.map((p) => COPY_TEXTOS_VIGENTES.aceptar[p.texto]).join(' y ')}
+            {guardando ? COPY_TEXTOS_VIGENTES.aceptando : botonDeAceptar(pendientes.map((p) => p.texto))}
           </button>
           <CerrarSesion salida={salida} />
         </div>

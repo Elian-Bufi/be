@@ -40,7 +40,7 @@ import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSche
 import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
 import { CompletarRecuperacionRequestSchema, EmitirRecuperacionAsistidaRequestSchema, PedirRecuperacionRequestSchema, RecuperacionAsistidaResponseSchema, RecuperacionPedidaResponseSchema } from './recuperacion-de-acceso';
 import { CanalDeContactoResponseSchema } from './ayuda-y-contacto';
-import { AceptacionDeVersionResponseSchema, AceptarVersionVigenteRequestSchema } from './textos-vigentes';
+import { AceptacionDeVersionResponseSchema, AceptarVersionVigenteRequestSchema, TextoPublicadoResponseSchema } from './textos-vigentes';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -568,6 +568,18 @@ const DEFINIDAS: readonly Operacion[] = [
     ],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE'] },
     fuente: 'WP-USO-FINAL UF-05 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 08 §12.2 · 09 §31.2.6 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
+  },
+  {
+    id: 'API-ACC-09',
+    metodo: 'get',
+    ruta: '/legal-texts/{versionId}',
+    resumen:
+      'El texto de una versión publicada (UF-05, UF-T57): el título, la finalidad, la fecha desde la que rige, el texto completo, su SHA-256 y la versión que reemplaza. Lo pide «Antes de seguir» cuando API-ACC-07 pide aceptar una versión que el cliente no trae en su catálogo (una APK construida antes de publicarla), así no hace falta actualizar la app para leerla. Pública: los textos legales publicados no son de nadie. No lee la base ni datos de nadie; una versión se publica una sola vez y no cambia, así que se puede guardar un día. Una versión sin publicar o inexistente, 404.',
+    autenticacion: 'PUBLIC',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: TextoPublicadoResponseSchema }],
+    errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-USO-FINAL UF-05 (UF-T57, revisión adversarial de la etapa 2: la APK del 25/11 no trae las versiones que se publiquen después) · 08 §12.2 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
   },
   {
     id: 'API-ACC-P1-03',

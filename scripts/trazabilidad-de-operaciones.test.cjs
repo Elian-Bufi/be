@@ -61,7 +61,7 @@ const IDS_DEL_09_FUERA_DEL_INVENTARIO = { 'API-RGT-01': 'DL-169', 'API-RGT-02': 
  * seguir», y API-ACC-08, «Aceptar la versión vigente» de los términos o de la privacidad (UF-05). La guardia exige además
  * que el 09 no tenga ese ID: si lo usara, serían dos operaciones con el mismo nombre.
  */
-const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169', 'API-ACC-08': 'DL-169' };
+const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169', 'API-ACC-08': 'DL-169', 'API-ACC-09': 'DL-169' };
 
 const normalizar = (ruta) => ruta.replace(/^\/api\/v1/, '').replace(/\?.*$/, '').replace(/\{[^}]+\}/g, '{}').replace(/\/$/, '');
 

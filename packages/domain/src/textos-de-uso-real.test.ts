@@ -10,7 +10,17 @@ import { conocePasos, PASOS_PARA_SEGUIR } from './contratos-perfil-propio';
 import { OPERACIONES } from './openapi';
 import { CATALOGO_DE_TEXTOS, VERSION_VIGENTE, type TipoDeTexto } from './textos';
 import { catalogoPublicando, faltaParaPublicar, VERSIONES_SIN_PUBLICAR } from './textos-sin-publicar';
-import { AceptarVersionVigenteRequestSchema, pasosDeLosTextos, textoDelPaso, versionPublicada } from './textos-vigentes';
+import {
+  AceptarVersionVigenteRequestSchema,
+  botonDeAceptar,
+  pasosDeLosTextos,
+  textoDelPaso,
+  TextoPublicadoResponseSchema,
+  textoPublicadoApi,
+  versionAceptableEnElAlta,
+  versionDeLaApi,
+  versionPublicada,
+} from './textos-vigentes';
 
 const TIPOS_DEL_PAQUETE: readonly TipoDeTexto[] = [
   'TERMINOS',
@@ -88,4 +98,33 @@ test('TEST-UF-010 · el contrato: los pasos nuevos los conoce el cliente nuevo, 
   assert.ok(op, 'API-ACC-08 está en el contrato');
   assert.deepEqual([op.metodo, op.ruta, op.autenticacion, op.exitos.map((e) => e.status).sort()], ['post', '/me/legal-acceptances', 'SESSION', [200, 201]]);
   assert.deepEqual([...(op.errores[422] ?? [])].sort(), ['PRIVACY_VERSION_NOT_ACCEPTABLE', 'TERMS_VERSION_NOT_ACCEPTABLE']);
+});
+
+test('TEST-UF-010 · revisión adversarial de la etapa 2 (UF-T57): publicados, el alta de una APK construida antes sigue andando y el texto nuevo se lee de API-ACC-09', () => {
+  const { vigentes } = catalogoPublicando(VERSIONES_SIN_PUBLICAR, '2026-12-01T03:00:00.000Z');
+  const anterior = VERSION_VIGENTE.TERMINOS.id;
+  // El alta: la vigente siempre; la que reemplaza, solo de un cliente con la capacidad (que después pide la vigente).
+  assert.equal(versionAceptableEnElAlta('TERMINOS', 'terminos-2026-11', false, vigentes), 'terminos-2026-11');
+  assert.equal(versionAceptableEnElAlta('TERMINOS', anterior, true, vigentes), anterior);
+  assert.equal(versionAceptableEnElAlta('TERMINOS', anterior, false, vigentes), null, 'la 0.24, sin la capacidad, no: no se le pedirían los textos nuevos');
+  assert.equal(versionAceptableEnElAlta('PRIVACIDAD_INFO', anterior, true, vigentes), null, 'la de otro tipo, no');
+  assert.equal(versionAceptableEnElAlta('TERMINOS', 'terminos-1999-01', true, vigentes), null, 'una más vieja o inventada, no');
+  // Hoy, sin publicar: la vigente es la de demostración y no reemplaza a nada.
+  assert.equal(versionAceptableEnElAlta('TERMINOS', anterior, true), anterior);
+  assert.equal(versionAceptableEnElAlta('PRIVACIDAD_INFO', 'privacidad-2026-11', true), null);
+  // API-ACC-09: el texto de una versión publicada, y el cliente lo usa solo si es la que pidió y del tipo del paso.
+  const nueva = vigentes.PRIVACIDAD_INFO;
+  const leida = textoPublicadoApi(nueva);
+  assert.deepEqual(TextoPublicadoResponseSchema.parse(leida), leida);
+  assert.deepEqual(versionDeLaApi(leida, nueva.id, 'PRIVACY'), nueva);
+  assert.equal(versionDeLaApi(leida, 'otra', 'PRIVACY'), null);
+  assert.equal(versionDeLaApi(leida, nueva.id, 'TERMS'), null);
+  assert.equal(createHash('sha256').update(leida.data.text, 'utf8').digest('hex'), leida.data.sha256);
+  const op = OPERACIONES.find((o) => o.id === 'API-ACC-09');
+  assert.ok(op, 'API-ACC-09 está en el contrato');
+  assert.deepEqual([op.metodo, op.ruta, op.autenticacion], ['get', '/legal-texts/{versionId}', 'PUBLIC']);
+  // Una versión sin publicar no está en el catálogo que sirve API-ACC-09.
+  assert.equal(versionPublicada('privacidad-2026-11'), null);
+  // El botón, en una sola oración.
+  assert.equal(botonDeAceptar(['TERMS', 'PRIVACY']), 'Acepto los términos de uso y leí la información de privacidad');
 });

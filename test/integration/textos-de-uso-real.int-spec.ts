@@ -13,7 +13,7 @@ import request from 'supertest';
 import { catalogoPublicando, VERSIONES_SIN_PUBLICAR } from '../../packages/domain/src/textos-sin-publicar';
 import type { ContextoDeSolicitud } from '../../apps/api/src/http/contexto';
 import { pasosDeTextosPendientes, registrarAceptacionVigente } from '../../apps/api/src/identidad/textos-vigentes';
-import { appDePrueba, conSesion, correoSintetico, registrarOk, tokenDe } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, correoSintetico, DECLARACION_DE_MAYORIA, registrarOk, tokenDe } from './soporte-api';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -52,6 +52,41 @@ describe('TEST-UF-010 · la versión vigente de los textos, con la API', () => {
     await yo.post(ACEPTAR).send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id, extra: 1 }).expect(400);
     await request(app.getHttpServer()).post(ACEPTAR).send({ text: 'TERMS', versionId: VERSION_VIGENTE.TERMINOS.id }).expect(401);
     expect(await actos()).toBe(antes);
+  });
+
+  it('API-ACC-09 da el texto de una versión publicada, sin sesión; una sin publicar o inventada, 404 (UF-T57)', async () => {
+    // Revisión adversarial de la etapa 2: la APK del 25/11 no trae las versiones que se publiquen después; las lee acá.
+    const vigente = VERSION_VIGENTE.PRIVACIDAD_INFO;
+    const r = await request(app.getHttpServer()).get(`/api/v1/legal-texts/${vigente.id}`).expect(200);
+    expect(r.headers['cache-control']).toMatch(/^public, max-age=\d+$/);
+    expect(r.body).toEqual({
+      data: { versionId: vigente.id, type: 'PRIVACIDAD_INFO', title: vigente.titulo, purpose: vigente.finalidad, effectiveFrom: vigente.vigenteDesde, text: vigente.texto, sha256: vigente.hash, replaces: vigente.reemplazaA },
+    });
+    // El mismo texto y el mismo hash que la base sembró.
+    expect(await prisma.versionDeTexto.findUniqueOrThrow({ where: { id: vigente.id } })).toMatchObject({ hash: vigente.hash });
+    const sinPublicar = VERSIONES_SIN_PUBLICAR.find((v) => v.tipo === 'PRIVACIDAD_INFO')!.id;
+    for (const id of [sinPublicar, 'privacidad-2099-01']) expect((await request(app.getHttpServer()).get(`/api/v1/legal-texts/${id}`).expect(404)).body.error.code).toBe('RESOURCE_NOT_FOUND');
+    await request(app.getHttpServer()).get(`/api/v1/legal-texts/${vigente.id}?x=1`).expect(400);
+  });
+
+  it('el alta con la versión vigente sigue igual con la capacidad o sin ella; una inventada, el 422 de siempre (UF-T57)', async () => {
+    for (const capacidades of [CAPACIDAD_TEXTOS_VIGENTES, '']) {
+      const correo = correoSintetico(`uf05-alta-${capacidades ? 'capaz' : 'sin'}`);
+      const cuerpo = (terminos: string) => ({
+        registrationIntent: 'ADVISEE',
+        identity: { localIdentifier: correo, localCredential: 'clave-sintetica-uf05-alta' },
+        profile: { displayName: 'Persona Sintética' },
+        termsAcceptance: { versionId: terminos },
+        privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+        adultDeclaration: DECLARACION_DE_MAYORIA,
+      });
+      const alta = (terminos: string) =>
+        request(app.getHttpServer()).post('/api/v1/registrations').set('Idempotency-Key', claveDeIdempotencia()).set(HEADER_DE_CAPACIDADES, capacidades).send(cuerpo(terminos));
+      expect((await alta('terminos-1999-01').expect(422)).body.error.code).toBe('TERMS_VERSION_NOT_ACCEPTABLE');
+      const creada = await alta(VERSION_VIGENTE.TERMINOS.id).expect(201);
+      const actos = await prisma.actoRegistrable.findMany({ where: { identidadId: creada.body.data.identityId, tipo: { in: ['TERMINOS', 'PRIVACIDAD_INFO'] } } });
+      expect(actos.map((a) => a.versionDeTextoId).sort()).toEqual([VERSION_VIGENTE.PRIVACIDAD_INFO.id, VERSION_VIGENTE.TERMINOS.id].sort());
+    }
   });
 });
 

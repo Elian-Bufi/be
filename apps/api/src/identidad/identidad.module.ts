@@ -7,15 +7,17 @@ import { EstadoDeCuentaService } from './estado-de-cuenta.service';
 import { IdentidadController } from './identidad.controller';
 import { EjecutorDePerfilPropio, PerfilPropioService } from './perfil-propio.service';
 import { RegistroService } from './registro.service';
+import { TextosPublicadosController } from './textos-publicados.controller';
 
 /**
  * Identidad, perfil propio y ciclo de vida de la cuenta (06 §5.4, §5.5, §5.7). El cierre finaliza vínculos (WP-03). El
  * perfil propio tiene su nombre visible desde el 2026-10-15 (DL-009 y DL-040). El alta la comparte el acceso con Google
- * (DL-138), que crea la identidad con los mismos actos.
+ * (DL-138), que crea la identidad con los mismos actos. Desde UF-T57 (DL-169), también el texto de una versión publicada
+ * (API-ACC-09).
  */
 @Module({
   imports: [SesionModule, VinculoModule],
-  controllers: [IdentidadController],
+  controllers: [IdentidadController, TextosPublicadosController],
   providers: [RegistroService, CuentaPropiaService, CierreService, EstadoDeCuentaService, EjecutorDePerfilPropio, PerfilPropioService],
   exports: [EstadoDeCuentaService, RegistroService],
 })
