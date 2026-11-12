@@ -736,7 +736,7 @@ async function grafico({ p, d }) {
 
 /** Abre «Invitar a una persona» y devuelve el selector del área de ese diálogo. */
 async function abrirInvitar(p) {
-  await clic(p, '.espacio-profesional__invitar', dominio.COPY_INVITACION.invitar);
+  await clic(p, '.espacio-profesional__invitar', 'Invitar a alguien nuevo'); // ED-41: el botón dice el camino («Invitar a alguien nuevo · enlace, QR o código»).
   const area = await elemento(p, 'dialog[open] select');
   return area;
 }

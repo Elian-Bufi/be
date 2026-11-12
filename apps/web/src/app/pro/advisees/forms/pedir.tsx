@@ -45,12 +45,18 @@
  * formulario de inicio, venga de donde venga, se sugiere su «para qué» si el profesional no escribió uno
  * (`propositoAlElegir`): lo que escribió no se pisa.
  *
+ * **ED-40 (WP-EDITORES-PROFESIONAL), compacto:** con más de una parte, las partes vienen plegadas, cada una con su cuenta
+ * («12 de 12 pedidas · 3 obligatorias · 1 que se suma si corresponde»), «Pedir todas» y «Ninguna»; «Ver todas» las abre.
+ * Plegar no cambia lo que se envía. Junto al botón, fijo: «Vas a pedir 49 preguntas (19 obligatorias) para Nutrición.
+ * Pedir no amplía tu acceso.», la línea de lo que le llega a la persona y, si el mismo formulario tiene un pedido sin
+ * responder, el aviso (se puede enviar igual). La cuenta y los textos, en `partes-del-pedido.ts`.
+ *
  * WP-FORMULARIOS-RONDA-2, ronda 2.1 (DL-165 D-15 nueva; D-22): los hábitos son un formulario aparte, «Tus hábitos». Al
  * elegir uno de área que no los trae, el cajón ofrece **«Sumar «Tus hábitos»»**, marcado o no según lo que este profesional
  * ya ve de la persona (API-HBT-07; `sumar-habitos.ts`). Con la casilla marcada se envían las dos solicitudes en un paso:
  * primero la de área y después la de hábitos, cada una con su clave. Si una falla, se dice cuál.
  */
-import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_HABITOS, COPY_SOLICITUDES as C, COPY_VINCULO, descripcionDeLaPlantilla, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
+import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_HABITOS, COPY_SOLICITUDES as C, COPY_VINCULO, descripcionDeLaPlantilla, ETIQUETA_DE_ALCANCE, todasLasPaginas, type Alcance, type Plantilla, type SolicitudDeFormulario, type VersionDePlantillaV2 } from '@be/domain';
 import { Enlace } from '../../../../components/enlace';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -65,6 +71,7 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { condicionEnPalabras, marcadoPorOmision, noVienePedida, origenDelPedido, PRECARGA_DEL_ORIGEN, propositoAlElegir, respondeConV2, vueltaDelOrigen } from './formulario-de-inicio';
 import { EstadoDeLectura, useFormularios } from './formularios';
+import { avisoDelPendiente, COPY_PARTES, cuentaDeLaParte, cuentaEnPalabras, loQueLeLlega, ninguna, pedidoPendiente, pedirTodas, resumenDelPedido } from './partes-del-pedido';
 import { habitosParaSumar, marcadaPorOmision, mensajeDelEnvio, motivoDeLaSugerencia, pedidoDeHabitos, sugerenciaDelCajon, type DesenlaceDeEnvio, type LecturaDeLoQueSabe } from './sumar-habitos';
 
 const H = COPY_HABITOS.web;
@@ -173,6 +180,24 @@ export function PedidoDeInformacion({
     void cargarLoQueSabe();
   }, [abierto, cargar, cargarLoQueSabe]);
 
+  // ED-40: lo ya pedido a la persona, cada vez que se abre el cajón, para avisar si el mismo formulario sigue sin
+  // respuesta. Si no se puede leer, no se avisa nada: la lista de «Solicitudes» sigue a la vista por detrás.
+  const [enviadas, setEnviadas] = useState<readonly SolicitudDeFormulario[] | null>(null);
+  useEffect(() => {
+    if (!abierto) return;
+    let vigente = true;
+    void (async () => {
+      const r = await todasLasPaginas((f) => api.listarSolicitudesDeFormulario(token, asesoradoId, f));
+      if (!vigente || sesionPerdida(r)) return;
+      setEnviadas(r.ok ? r.datos.data : null);
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [abierto, token, asesoradoId, sesionPerdida]);
+  // ED-40: las partes abiertas (con más de una parte, vienen plegadas).
+  const [partesAbiertas, setPartesAbiertas] = useState<ReadonlySet<string>>(() => new Set());
+
   /** Elige un formulario y lee su versión. Si se elige otro antes de que llegue, la respuesta vieja no pisa a la nueva. */
   const lecturaEnCurso = useRef(0);
   const elegir = useCallback(
@@ -198,6 +223,7 @@ export function PedidoDeInformacion({
       // Igual desde «Más» que llegando desde un área: desde Nutrición (FR-02) y, desde DL-165 D-29, desde Entrenamiento,
       // que antes precargaba solo las seis de DL-100. Lo que precarga el área es el formulario, el «para qué» y el área.
       const marcado = marcadoPorOmision(v.datos.data.sections);
+      setPartesAbiertas(new Set());
       setPedidas(marcado.pedidas);
       setRequeridas(marcado.requeridas);
       if (precarga && precargaDelOrigen) setArea(precargaDelOrigen.area);
@@ -339,6 +365,20 @@ export function PedidoDeInformacion({
   }
 
   const primeraPregunta = preguntas[0]?.fieldCode ?? null;
+  // ED-40: lo que hay que saber antes de enviar, fijo junto al botón; y el pedido pendiente del mismo formulario.
+  const obligatoriasElegidas = elegidas.filter((c) => requeridas.includes(c)).length;
+  const resumen = version ? resumenDelPedido(elegidas.length, obligatoriasElegidas, areaDelPedido ? ETIQUETA_DE_ALCANCE[areaDelPedido] : null) : null;
+  const leLlega = version ? loQueLeLlega(persona, version.name, elegidas.length, version.sections.filter((s) => s.fields.some((c) => pedidas.includes(c.fieldCode))).length) : null;
+  const pendiente = elegido && enviadas ? pedidoPendiente(enviadas, elegido.templateId) : null;
+  const variasPartes = (version?.sections.length ?? 0) > 1;
+  // Con algo por completar en las preguntas, todas abiertas: el foco tiene que poder llegar.
+  const parteAbierta = (codigo: string) => !variasPartes || partesAbiertas.has(codigo) || !!faltas.preguntas;
+  const alternarParte = (codigo: string) =>
+    setPartesAbiertas((s) => {
+      const n = new Set(s);
+      if (!n.delete(codigo)) n.add(codigo);
+      return n;
+    });
   return (
     <Cajon
       abierto={abierto}
@@ -353,8 +393,20 @@ export function PedidoDeInformacion({
             {enviando ? C.enviando : envio.tipo === 'error' && envio.incierto ? COPY.reintentar : F.enviarSolicitud}
           </button>
           {/* Antes de un acto que no se deshace, lo que hay que saber va junto al botón, siempre a la vista. */}
+          {resumen ? (
+            <p className="pedido__resumen" data-resumen-del-pedido aria-live="polite">
+              <strong>{resumen}</strong>
+            </p>
+          ) : null}
+          {/* ED-40 (TEST-EDP-058): un pedido pendiente del mismo formulario se dice antes de enviar; no lo impide. */}
+          {pendiente ? (
+            <p className="pedido__aviso" data-pedido-pendiente>
+              <Icono nombre="aviso" tamano={18} />
+              {avisoDelPendiente(pendiente.templateName, diaSinElAnioEnCurso(pendiente.createdAt))}
+            </p>
+          ) : null}
           <p className="nota pedido__antes-de-enviar">
-            {C.laVaAVer}
+            {leLlega ?? C.laVaAVer}
             <br />
             {C.noSeCancelaNiSeEdita}
           </p>
@@ -496,6 +548,18 @@ export function PedidoDeInformacion({
                   {C.aclaracionesDeLasPreguntas}
                 </p>
               ) : null}
+              {variasPartes ? (
+                <p className="nota">
+                  <button
+                    type="button"
+                    className="boton boton--enlace"
+                    data-ver-todas
+                    onClick={() => setPartesAbiertas(version.sections.every((s) => partesAbiertas.has(s.sectionCode)) ? new Set() : new Set(version.sections.map((s) => s.sectionCode)))}
+                  >
+                    {version.sections.every((s) => partesAbiertas.has(s.sectionCode)) ? COPY_PARTES.plegarTodas : COPY_PARTES.verTodas}
+                  </button>
+                </p>
+              ) : null}
               <table className="preguntas-del-pedido" aria-labelledby={`${id}-paso-2`} aria-describedby={faltas.preguntas ? `${id}-falta-preguntas` : undefined}>
                 <thead>
                   <tr>
@@ -509,15 +573,33 @@ export function PedidoDeInformacion({
                 </thead>
                 {version.sections.map((s) => (
                   <tbody key={s.sectionCode}>
-                    {/* El título de la sección, solo si el formulario tiene más de una. */}
-                    {version.sections.length > 1 ? (
-                      <tr className="preguntas-del-pedido__seccion">
+                    {/* El título de la sección, solo si el formulario tiene más de una. ED-40: plegada, con su cuenta (las
+                        obligatorias y lo que se suma si corresponde se cuentan también plegada) y «Pedir todas» o
+                        «Ninguna». Plegar no cambia lo que se envía. */}
+                    {variasPartes ? (
+                      <tr className="preguntas-del-pedido__seccion" data-parte={s.sectionCode} data-abierta={parteAbierta(s.sectionCode) ? 'si' : undefined}>
                         <th colSpan={4} scope="rowgroup">
-                          {s.title}
+                          <span className="preguntas-del-pedido__parte">
+                            <button type="button" className="boton boton--enlace" aria-expanded={parteAbierta(s.sectionCode)} onClick={() => alternarParte(s.sectionCode)}>
+                              <Icono nombre={parteAbierta(s.sectionCode) ? 'arriba' : 'abajo'} tamano={18} />
+                              {s.title}
+                            </button>
+                            <span className="nota" data-cuenta-de-la-parte>
+                              {cuentaEnPalabras(cuentaDeLaParte(s.fields, pedidas, requeridas))}
+                            </span>
+                            <button type="button" className="boton boton--enlace" disabled={enviando} onClick={() => editar(() => setPedidas(pedirTodas(pedidas, s.fields)), 'preguntas')}>
+                              {COPY_PARTES.pedirTodas}
+                              <span className="visualmente-oculto"> {COPY_PARTES.deLaParte(s.title)}</span>
+                            </button>
+                            <button type="button" className="boton boton--enlace" disabled={enviando} onClick={() => editar(() => setPedidas(ninguna(pedidas, s.fields)))}>
+                              {COPY_PARTES.ninguna}
+                              <span className="visualmente-oculto"> {COPY_PARTES.deLaParte(s.title)}</span>
+                            </button>
+                          </span>
                         </th>
                       </tr>
                     ) : null}
-                    {s.fields.map((c) => {
+                    {(parteAbierta(s.sectionCode) ? s.fields : []).map((c) => {
                       const pedida = pedidas.includes(c.fieldCode);
                       const obligatoria = pedida && requeridas.includes(c.fieldCode);
                       // DL-164 D-2: una pregunta condicional aparece solo cuando se cumple su condición; se dice con palabras.

@@ -16265,3 +16265,32 @@ p.cifra-del-espacio__desglose {
 .opcion-del-editor__total p {
   margin: 0.15rem 0;
 }
+
+/* ═══ ED-40 · Pedir información, compacto: las partes plegadas y el resumen junto al botón ════════════════════════ */
+.preguntas-del-pedido__parte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.preguntas-del-pedido__parte .nota {
+  font-weight: 400;
+}
+
+.pedido__resumen {
+  margin: 0.5rem 0 0;
+}
+
+/* ═══ ED-41 · Las dos entradas del vínculo, con su subtítulo ════════════════════════════════════════════════════════ */
+.boton__con-subtitulo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.boton__subtitulo {
+  font-size: 0.8em;
+  font-weight: 400;
+}

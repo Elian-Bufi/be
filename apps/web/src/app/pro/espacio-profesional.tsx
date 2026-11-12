@@ -49,6 +49,7 @@ import { useSesionRequerida } from '../../lib/sesion-requerida';
 import type { Periodo } from './advisees/periodo';
 import { Asesorados } from './asesorados';
 import { InvitarPersona } from './invitar-persona';
+import { ENTRADAS_DEL_VINCULO } from './vinculo-en-palabras';
 import { TeTocaAVos, TODO, type PaginaDeCartera } from './te-toca-a-vos';
 import { SolicitarVinculo } from './solicitar-vinculo';
 import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
@@ -308,11 +309,18 @@ export function EspacioProfesional() {
           {hoy ? <p className="espacio-profesional__hoy">Hoy, {diaConSuSemana(hoy)}</p> : null}
           <button type="button" className={`boton ${conCajon ? 'boton--secundario' : 'boton--primario'} espacio-profesional__invitar`} aria-haspopup="dialog" onClick={() => setInvitar(true)}>
             <Icono nombre="persona" tamano={20} />
-            {COPY_INVITACION.invitar}
+            {/* ED-41: dos caminos distintos, dichos en el botón. */}
+            <span className="boton__con-subtitulo">
+              {ENTRADAS_DEL_VINCULO.invitar.titulo}
+              <span className="boton__subtitulo">{ENTRADAS_DEL_VINCULO.invitar.subtitulo}</span>
+            </span>
           </button>
           <button type="button" className="boton boton--secundario espacio-profesional__solicitar" aria-haspopup="dialog" onClick={() => setFormulario(true)}>
             <Icono nombre="solicitud" tamano={20} />
-            {COPY_VINCULO.solicitarVinculo}
+            <span className="boton__con-subtitulo">
+              {ENTRADAS_DEL_VINCULO.pedir.titulo}
+              <span className="boton__subtitulo">{ENTRADAS_DEL_VINCULO.pedir.subtitulo}</span>
+            </span>
           </button>
         </>
       }
