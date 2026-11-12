@@ -22,8 +22,14 @@ import {
   type SolicitarCierreResponse,
   type ValidationIssue,
 } from './contratos';
-import { PerfilPropioResponseSchema, type EditarPerfilPropioRequest, type PerfilPropioResponse } from './contratos-perfil-propio';
-import { DetalleDeCuentaDeGoogleSchema, RUTAS_DE_ACCESO_GOOGLE, SesionConGoogleResponseSchema } from './contratos-acceso-google';
+import {
+  LoQueFaltaParaSeguirResponseSchema,
+  PerfilPropioResponseSchema,
+  type EditarPerfilPropioRequest,
+  type LoQueFaltaParaSeguirResponse,
+  type PerfilPropioResponse,
+} from './contratos-perfil-propio';
+import { DetalleDeCuentaDeGoogleInexistenteSchema, DetalleDeCuentaDeGoogleSchema, RUTAS_DE_ACCESO_GOOGLE, SesionConGoogleResponseSchema } from './contratos-acceso-google';
 import { declaracionDeMayoriaDeEdad } from './mayoria-de-edad';
 import {
   CandidatoDeAlimentoResponseSchema,
@@ -377,6 +383,11 @@ export type Resultado<T> =
        * Google, para decir con qué cuenta sigue la persona (vincular o crear).
        */
       readonly correoDeGoogle?: string;
+      /**
+       * Con `GOOGLE_ACCOUNT_NOT_FOUND` (DL-169, UF-D2): el nombre de la cuenta de Google que la API leyó del token
+       * verificado, para proponerlo al crear la cuenta; `null` si no trae uno que se pueda guardar.
+       */
+      readonly nombreDeGoogle?: string | null;
     }
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
   | { readonly ok: false; readonly tipo: 'RED' };
@@ -450,7 +461,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       if (!error.success) return { ok: false, tipo: 'API', status: respuesta.status, codigo: 'RESPUESTA_NO_RECONOCIDA', issues: [] };
       const issues = (error.data.error.details as { issues?: ValidationIssue[] } | undefined)?.issues ?? [];
       const evidenciaVisual = error.data.error.code === 'VISUAL_EVIDENCE_ACT_REQUIRED' ? DetalleDeEvidenciaVisualRequeridaSchema.safeParse(error.data.error.details) : null;
+      // GOOGLE_ACCOUNT_NOT_FOUND trae también el nombre de la cuenta de Google (DL-169, UF-D2); GOOGLE_LINK_REQUIRED, solo
+      // el correo.
+      const cuentaInexistente = error.data.error.code === 'GOOGLE_ACCOUNT_NOT_FOUND' ? DetalleDeCuentaDeGoogleInexistenteSchema.safeParse(error.data.error.details) : null;
       const cuentaDeGoogle = CODIGOS_CON_CORREO_DE_GOOGLE.has(error.data.error.code) ? DetalleDeCuentaDeGoogleSchema.safeParse(error.data.error.details) : null;
+      const deGoogle = cuentaInexistente?.success
+        ? { correoDeGoogle: cuentaInexistente.data.email, nombreDeGoogle: cuentaInexistente.data.name }
+        : cuentaDeGoogle?.success
+          ? { correoDeGoogle: cuentaDeGoogle.data.email }
+          : {};
       return {
         ok: false,
         tipo: 'API',
@@ -458,7 +477,7 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
         codigo: error.data.error.code,
         issues,
         ...(evidenciaVisual?.success ? { evidenciaVisual: evidenciaVisual.data } : {}),
-        ...(cuentaDeGoogle?.success ? { correoDeGoogle: cuentaDeGoogle.data.email } : {}),
+        ...deGoogle,
       };
     }
     const fecha = respuesta.headers?.get?.('date');
@@ -508,14 +527,16 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      * API-ACC-01. A1, A2 y la declaración de mayoría de edad viajan como actos separados con la versión que la UI mostró.
      * Nunca A3. `mayoriaDeEdad` es la casilla que la persona marcó (08 §24.7 a; DL-138): el cliente no la declara por ella.
      * Sin ese dato no viaja la declaración, y la API responde 422 (la pantalla tiene que mostrar la casilla).
+     * `nombre` es «Nombre y apellido», obligatorio desde DL-169 (UF-01): la cuenta nace con su perfil propio v1.
      */
-    registrar(datos: { correo: string; contrasena: string; mayoriaDeEdad?: boolean }, claveDeIdempotencia: string): Promise<Resultado<RegistrarIdentidadResponse>> {
+    registrar(datos: { correo: string; contrasena: string; nombre: string; mayoriaDeEdad?: boolean }, claveDeIdempotencia: string): Promise<Resultado<RegistrarIdentidadResponse>> {
       return llamar('POST', '/registrations', {
         claveDeIdempotencia,
         esquema: RegistrarIdentidadResponseSchema,
         cuerpo: {
           registrationIntent: 'ADVISEE', // DL-024: la UI registra solo asesorados
           identity: { localIdentifier: datos.correo, localCredential: datos.contrasena },
+          profile: { displayName: datos.nombre },
           termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
           privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
           ...(datos.mayoriaDeEdad === undefined ? {} : { adultDeclaration: declaracionDeMayoriaDeEdad(datos.mayoriaDeEdad) }),
@@ -537,13 +558,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /**
      * API-GOO-03 (DL-138): crear la cuenta con Google, con los mismos actos que `registrar` y la casilla de mayoría de
      * edad que la persona marcó. Responde la sesión (201 creada; 200 si esa cuenta de Google ya tenía identidad).
+     * `nombre`: el que propuso la API (el de la cuenta de Google, UF-D2), confirmado o corregido por la persona (DL-169).
      */
-    registrarConGoogle(idToken: string, mayoriaDeEdad: boolean): Promise<Resultado<IniciarSesionResponse>> {
+    registrarConGoogle(idToken: string, mayoriaDeEdad: boolean, nombre: string): Promise<Resultado<IniciarSesionResponse>> {
       return llamar('POST', RUTAS_DE_ACCESO_GOOGLE.registros, {
         esquema: SesionConGoogleResponseSchema,
         cuerpo: {
           idToken,
           registrationIntent: 'ADVISEE', // DL-024: la UI registra solo asesorados
+          profile: { displayName: nombre },
           termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
           privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
           adultDeclaration: declaracionDeMayoriaDeEdad(mayoriaDeEdad),
@@ -582,9 +605,19 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     consultarPerfilPropio(token: string): Promise<Resultado<PerfilPropioResponse>> {
       return llamar('GET', '/me/profile', { token, esquema: PerfilPropioResponseSchema });
     },
-    /** API-ACC-06: cambia el nombre visible (o lo quita, con `null`). Sin Idempotency-Key: concurrencia por `expectedVersion`. */
+    /**
+     * API-ACC-06: cambia el nombre visible. Desde DL-169 (UF-D3) no se quita: `null` o vacío responden 422. Sin
+     * Idempotency-Key: concurrencia por `expectedVersion`.
+     */
     editarPerfilPropio(token: string, cuerpo: EditarPerfilPropioRequest): Promise<Resultado<PerfilPropioResponse>> {
       return llamar('PATCH', '/me/profile', { token, cuerpo, esquema: PerfilPropioResponseSchema });
+    },
+    /**
+     * API-ACC-07 (DL-169, UF-D4): lo que la cuenta tiene que completar antes de usar BE. Vacío, sigue; con pasos, la
+     * pantalla «Antes de seguir» los pide, y uno que este cliente no conoce pide actualizar (`conocePasos`).
+     */
+    loQueFaltaParaSeguir(token: string): Promise<Resultado<LoQueFaltaParaSeguirResponse>> {
+      return llamar('GET', '/me/pending-steps', { token, esquema: LoQueFaltaParaSeguirResponseSchema });
     },
     /** API-CON-05 (solo lectura). */
     consultarRequisitoA3(token: string): Promise<Resultado<RequisitoDeConsentimientoDeSaludResponse>> {

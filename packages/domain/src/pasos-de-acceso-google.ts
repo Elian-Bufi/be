@@ -16,6 +16,7 @@ import type { Resultado } from './cliente-http';
 import type { IniciarSesionResponse } from './contratos';
 import { COPY, MENSAJE_DE_CAMPO } from './copy';
 import { COPY_ACCESO_GOOGLE } from './copy-acceso-google';
+import { ISSUE_DEL_NOMBRE } from './contratos-perfil-propio';
 import { ISSUE_DE_MAYORIA_DE_EDAD } from './mayoria-de-edad';
 import { Superficie } from './procedencia';
 
@@ -27,10 +28,13 @@ export type PasoDeAccesoConGoogle =
   | { readonly tipo: 'SESION'; readonly sesion: IniciarSesionResponse; readonly fechaDelServidor: string | null }
   /** Hay una cuenta BE con contraseña y ese correo: confirmar la contraseña para vincular (API-GOO-02). */
   | { readonly tipo: 'VINCULAR'; readonly correo: string }
-  /** Ninguna cuenta BE tiene esa cuenta de Google ni ese correo: el alta con sus tres casillas (API-GOO-03). */
-  | { readonly tipo: 'CREAR'; readonly correo: string }
+  /**
+   * Ninguna cuenta BE tiene esa cuenta de Google ni ese correo: el alta con su nombre y sus tres casillas (API-GOO-03).
+   * `nombre` es el de la cuenta de Google que propone la API (DL-169, UF-D2), o `null`: la persona lo confirma o lo escribe.
+   */
+  | { readonly tipo: 'CREAR'; readonly correo: string; readonly nombre: string | null }
   /** Se corrige en el mismo paso. */
-  | { readonly tipo: 'CAMPO'; readonly campo: 'contrasena' | 'mayoriaDeEdad'; readonly mensaje: string }
+  | { readonly tipo: 'CAMPO'; readonly campo: 'contrasena' | 'mayoriaDeEdad' | 'nombre'; readonly mensaje: string }
   | { readonly tipo: 'AVISO'; readonly mensaje: string; readonly reiniciar: boolean };
 
 const aviso = (mensaje: string, reiniciar: boolean): PasoDeAccesoConGoogle => ({ tipo: 'AVISO', mensaje, reiniciar });
@@ -47,7 +51,7 @@ export function pasoDeAccesoConGoogle(operacion: OperacionDeGoogle, resultado: R
     case 'GOOGLE_LINK_REQUIRED':
       return resultado.correoDeGoogle ? { tipo: 'VINCULAR', correo: resultado.correoDeGoogle } : aviso(COPY_ACCESO_GOOGLE.noDisponible, true);
     case 'GOOGLE_ACCOUNT_NOT_FOUND':
-      return resultado.correoDeGoogle ? { tipo: 'CREAR', correo: resultado.correoDeGoogle } : aviso(COPY_ACCESO_GOOGLE.noDisponible, true);
+      return resultado.correoDeGoogle ? { tipo: 'CREAR', correo: resultado.correoDeGoogle, nombre: resultado.nombreDeGoogle ?? null } : aviso(COPY_ACCESO_GOOGLE.noDisponible, true);
     case 'GOOGLE_TOKEN_INVALID':
       // UC-E05 E03. También cuando lo que dio Google venció (dura una hora) mientras la persona estaba en un paso.
       return aviso(COPY_ACCESO_GOOGLE.tokenInvalido, true);
@@ -66,12 +70,16 @@ export function pasoDeAccesoConGoogle(operacion: OperacionDeGoogle, resultado: R
       // La pantalla no manda una contraseña vacía; si igual pasa, se corrige ahí. Otra cosa es un ID token con otra forma.
       if (operacion === 'VINCULAR' && resultado.issues.some((i) => i.path === 'credential')) return { tipo: 'CAMPO', campo: 'contrasena', mensaje: COPY_ACCESO_GOOGLE.contrasenaRequerida };
       return aviso(COPY_ACCESO_GOOGLE.tokenInvalido, true);
-    case 'VALIDATION_FAILED':
+    case 'VALIDATION_FAILED': {
+      // DL-169 (UF-01): el nombre vacío o que no se puede guardar vuelve a su campo.
+      const delNombre = resultado.issues.find((i) => i.code === ISSUE_DEL_NOMBRE.REQUERIDO || i.code === ISSUE_DEL_NOMBRE.INVALIDO);
+      if (delNombre) return { tipo: 'CAMPO', campo: 'nombre', mensaje: MENSAJE_DE_CAMPO[delNombre.code] ?? COPY.noDisponible };
       if (resultado.issues.some((i) => i.code === ISSUE_DE_MAYORIA_DE_EDAD.REQUERIDA)) {
         return { tipo: 'CAMPO', campo: 'mayoriaDeEdad', mensaje: MENSAJE_DE_CAMPO.MAYORIA_REQUERIDA ?? COPY.noDisponible };
       }
       if (resultado.issues.some((i) => i.code === ISSUE_DE_MAYORIA_DE_EDAD.VERSION_NO_VIGENTE)) return aviso(versionDesactualizada(superficie), false);
       return aviso(COPY.noDisponible, false);
+    }
     case 'TERMS_VERSION_NOT_ACCEPTABLE':
     case 'PRIVACY_VERSION_NOT_ACCEPTABLE':
       return aviso(versionDesactualizada(superficie), false);

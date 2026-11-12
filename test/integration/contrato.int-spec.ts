@@ -42,6 +42,7 @@ import {
   cuerpoDeCierre,
   cuerpoDeRegistro,
   login,
+  NOMBRE_SINTETICO,
   OTRA_CREDENCIAL_SINTETICA,
   registrar,
   registrarOk,
@@ -143,7 +144,7 @@ afterAll(async () => {
 
 const CIERRE = '/api/v1/me/account-closure-requests';
 
-it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones, las dos del perfil propio (DL-009) y la reanudación del website (DL-147)', async () => {
+it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de identidad y sesiones, las tres del perfil propio (DL-009 y DL-169) y la reanudación del website (DL-147)', async () => {
   const servidor = app.getHttpServer();
   // ACC-01
   const correo = correoSintetico('contrato');
@@ -165,6 +166,14 @@ it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de 
     .send({ ...cuerpoDeRegistro(correoSintetico('privacidad')), privacyAcknowledgement: { versionId: 'vieja' } })
     .expect(422);
   await request(servidor).post('/api/v1/registrations').set('Content-Type', 'application/json').set('Idempotency-Key', claveDeIdempotencia()).send('{no es json').expect(400);
+  // DL-169 (UF-D1): sin el nombre, lo que un cliente anterior traduce a «actualizá la app»; en blanco, el error del campo.
+  const { profile: _sinNombre, ...sinNombre } = cuerpoDeRegistro(correoSintetico('ct-sin-nombre'));
+  await request(servidor).post('/api/v1/registrations').set('Idempotency-Key', claveDeIdempotencia()).send(sinNombre).expect(422); // TERMS_VERSION_NOT_ACCEPTABLE
+  await request(servidor)
+    .post('/api/v1/registrations')
+    .set('Idempotency-Key', claveDeIdempotencia())
+    .send({ ...sinNombre, profile: { displayName: '  ' } })
+    .expect(422); // VALIDATION_FAILED
 
   // ACC-02
   await login(app, correo).expect(201);
@@ -189,12 +198,18 @@ it('TEST-CT (WP-02): se ejercitan éxitos y errores de las siete operaciones de 
   await conSesion(app, token).get('/api/v1/me/profile').expect(200);
   await conSesion(app, token).get('/api/v1/me/profile?x=1').expect(400);
   await request(servidor).get('/api/v1/me/profile').expect(401);
-  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v0', changes: { displayName: 'Ana Paz' } }).expect(200);
-  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v0', changes: { displayName: 'Otra' } }).expect(409); // VERSION_CONFLICT
-  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: '   ' } }).expect(422); // INVALID_PROFILE_DATA
+  // La cuenta nace con su nombre (v1, DL-169).
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Ana Paz' } }).expect(200);
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Otra' } }).expect(409); // VERSION_CONFLICT
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v2', changes: { displayName: '   ' } }).expect(422); // INVALID_PROFILE_DATA
+  await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v2', changes: { displayName: null } }).expect(422); // INVALID_PROFILE_DATA (no se quita, UF-D3)
   await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Ana', email: 'ana@example.invalid' } }).expect(400); // UNKNOWN_FIELD
   await conSesion(app, token).patch('/api/v1/me/profile').send({ expectedVersion: 'uno', changes: { displayName: 'Ana' } }).expect(400); // INVALID_REQUEST
   await request(servidor).patch('/api/v1/me/profile').send({ expectedVersion: 'v1', changes: { displayName: 'Ana' } }).expect(401);
+  // ACC-07: lo que falta para seguir (DL-169, UF-D4).
+  await conSesion(app, token).get('/api/v1/me/pending-steps').expect(200);
+  await conSesion(app, token).get('/api/v1/me/pending-steps?x=1').expect(400);
+  await request(servidor).get('/api/v1/me/pending-steps').expect(401);
   await conSesion(app, token).get('/api/v1/me/health-data-consent-requirement').expect(200);
   await conSesion(app, token).get('/api/v1/me/health-data-consent-requirement?x=1').expect(400);
   await request(servidor).get('/api/v1/me/health-data-consent-requirement').expect(401);
@@ -1906,6 +1921,7 @@ it('TEST-CT (WP-ACCESO-GOOGLE): GOO-01 a 03 y la declaración de mayoría de eda
   const cuerpoDeAlta = (idToken: string, cambios: Record<string, unknown> = {}) => ({
     idToken,
     registrationIntent: 'ADVISEE',
+    profile: { displayName: NOMBRE_SINTETICO },
     termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
     privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
     adultDeclaration: { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
@@ -1934,6 +1950,7 @@ it('TEST-CT (WP-ACCESO-GOOGLE): GOO-01 a 03 y la declaración de mayoría de eda
   await crear(app, { ...cuerpoDeAlta(tokenNuevo), rol: 'X' }).expect(400); // UNKNOWN_FIELD
   await crear(app, { ...cuerpoDeAlta(tokenNuevo), idToken: '' }).expect(400); // INVALID_REQUEST
   await crear(app, cuerpoDeAlta(tokenNuevo, { adultDeclaration: undefined })).expect(422); // VALIDATION_FAILED
+  await crear(app, cuerpoDeAlta(tokenGoogle(subSintetico(), correoSintetico('ct-goo-sin-nombre')), { profile: undefined })).expect(422); // TERMS_VERSION_NOT_ACCEPTABLE (DL-169)
   await crear(app, cuerpoDeAlta(tokenNuevo, { termsAcceptance: { versionId: 'vieja' } })).expect(422); // TERMS_VERSION_NOT_ACCEPTABLE
   await crear(app, cuerpoDeAlta(tokenNuevo, { privacyAcknowledgement: { versionId: 'vieja' } })).expect(422); // PRIVACY_VERSION_NOT_ACCEPTABLE
   await crear(app, cuerpoDeAlta(tokenGoogle(subSintetico(), correoSintetico('ct-goo-nv'), { email_verified: false }))).expect(422); // GOOGLE_EMAIL_NOT_VERIFIED

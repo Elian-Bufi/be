@@ -71,4 +71,34 @@ export const MENSAJE_DE_CAMPO: Readonly<Record<string, string>> = {
   A2_REQUERIDO: 'Para crear la cuenta tenés que confirmar que recibiste la información de privacidad.',
   /** 08 §24.7 a (DL-138): sin la declaración no hay alta. BE es solo para personas adultas. */
   MAYORIA_REQUERIDA: 'Para crear la cuenta tenés que declarar que tenés 18 años o más.',
+  /** DL-169 (UF-01): el nombre es obligatorio, con las mismas claves que los issues de la API (`ISSUE_DEL_NOMBRE`). */
+  DISPLAY_NAME_REQUIRED: 'Escribí tu nombre y apellido.',
+  INVALID_DISPLAY_NAME: 'El nombre puede tener hasta 60 caracteres, sin símbolos invisibles.',
 };
+
+/**
+ * DL-169 (UF-01, UF-D4 y UF-D5): el nombre al crear la cuenta y el paso «Antes de seguir», iguales en el website y en la
+ * APK. Un solo campo, «Nombre y apellido».
+ */
+export const COPY_DEL_NOMBRE = {
+  etiqueta: 'Nombre y apellido',
+  /** Debajo del campo, al crear la cuenta y en «Antes de seguir». */
+  ayuda: 'Es el nombre que van a ver tus profesionales.',
+  /** Al crear la cuenta con Google, cuando la API propuso el nombre de esa cuenta (UF-D2). */
+  ayudaConGoogle: 'Lo tomamos de tu cuenta de Google: confirmalo o corregilo.',
+  /** En «Antes de seguir», cuando la API propone el nombre profesional de la identidad (UF-01, punto 4). */
+  ayudaConElNombreProfesional: 'Te proponemos el de tu perfil profesional: confirmalo o corregilo.',
+  antesDeSeguir: 'Antes de seguir',
+  pregunta: '¿Cómo te llamás?',
+  explicacion: 'Para usar BE, tu cuenta necesita tu nombre. Lo podés cambiar cuando quieras desde tu perfil.',
+  guardarYSeguir: 'Guardar y seguir',
+  guardando: 'Guardando…',
+  salir: 'Cerrar sesión',
+  /** El nombre cambió en otro lugar mientras la persona escribía (409 VERSION_CONFLICT): se volvió a leer. */
+  cambioEnOtroLugar: 'Tu nombre cambió en otro lugar. Lo volvimos a leer: revisalo y guardá de nuevo.',
+  /** La API pidió un paso que este cliente no sabe resolver (un paso nuevo): solo la versión nueva lo resuelve. */
+  pasoDesconocidoApk: 'Para seguir, hay algo que completar en la versión nueva de la app. Actualizala para continuar.',
+  pasoDesconocidoWeb: 'Para seguir, hay algo que completar en la versión nueva de BE. Recargá la página para continuar.',
+  /** Al cambiar el nombre en el perfil: se cambia, no se quita (UF-D3). */
+  noSeQuita: 'Tu nombre se puede cambiar, pero no quitar: es el que ven tus profesionales.',
+} as const;

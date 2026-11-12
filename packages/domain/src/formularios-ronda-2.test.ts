@@ -5,15 +5,13 @@
  * - FR-03 y FR-04 · una parte por pantalla (D-1): qué partes tiene una solicitud, qué se ve en cada una, qué falta y
  *   adónde lleva un problema al enviar.
  * - FR-08 · el formato 3 (D-6): el subcampo de varias opciones en un renglón y el ejemplo de un subcampo de texto, cómo
- *   se validan, se normalizan y se leen, qué hace que una versión sea de formato 3, y por qué no se le puede entregar a la
- *   APK 0.20: su esquema congelado no lo lee (DL-152).
+ *   se validan, se normalizan y se leen, y qué hace que una versión sea de formato 3. Que la API no se la entrega a un
+ *   cliente que no declara `forms-format-3` lo prueba la integración (`formularios-ronda-2.int-spec.ts`); la prueba de
+ *   la APK 0.20 salió con ella de las vigentes (UF-00 de WP-USO-FINAL, enmienda de DL-152).
  * - FR-07 · la regla «no más días que los marcados» (D-5): el tope de un número desde una tabla anterior.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { z } from 'zod';
 import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_OBJETIVOS_POR_SERIE, capacidadesDeclaradas } from './compatibilidad-de-clientes';
 import { SubcampoDeListaSchema, VersionDePlantillaV2Schema, type CampoDePlantillaV2, type RespuestaDeCampoV2Entrada, type SeccionDePlantillaV2 } from './contratos-formularios-v2';
 import { terminosProhibidosDeFormulariosEn } from './copy-formularios';
@@ -211,17 +209,6 @@ test('DL-165 · lo que hace de formato 3 a una versión: el subcampo de varias o
   assert.equal(usaLoDelFormato3(PARTES), false);
   // La capacidad se declara junto a la de los objetivos por serie y se lee como cualquier otra.
   assert.deepEqual([...capacidadesDeclaradas(`${CAPACIDAD_OBJETIVOS_POR_SERIE},${CAPACIDAD_FORMULARIOS_FORMATO_3}`)], [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3]);
-});
-
-test('DL-152 · la APK 0.20 no lee el formato 3: su esquema congelado de API-FRI-01 rechaza el renglón con varias opciones y el formato 3, y lee el formato 2', () => {
-  const congelado = JSON.parse(readFileSync(join(__dirname, '..', 'fixtures', 'lecturas-de-la-apk', '0.20.0-candidata.1.json'), 'utf8')) as { lecturas: Record<string, { respuesta: Record<string, unknown> }> };
-  const deLaApk020 = z.fromJSONSchema(congelado.lecturas['API-FRI-01']!.respuesta as Parameters<typeof z.fromJSONSchema>[0]);
-  const version = { templateId: 'a', templateVersionId: 'b', key: 'K', name: 'N', purpose: 'P', domain: null, version: '1', status: 'SELECTABLE', usesNewTypes: true, estimatedMinutes: null, supersededByVersionId: null, effectiveSince: '2026-11-05T00:00:00.000Z', provenanceNote: 'x' };
-  const sinLoNuevo: SeccionDePlantillaV2[] = [{ sectionCode: 's', title: 'S', intro: null, fields: [{ ...OTRA_ACTIVIDAD, itemFields: [{ code: 'cual', label: 'Cuál', required: true, dataType: 'TEXT', maxLength: 80 }] }] }];
-  assert.equal(deLaApk020.safeParse({ data: { ...version, format: 2, sections: sinLoNuevo } }).success, true);
-  // Por eso se le retiene: con el formato 3 o con el subtipo nuevo, esa pantalla diría «respuesta no reconocida».
-  assert.equal(deLaApk020.safeParse({ data: { ...version, format: 3, sections: sinLoNuevo } }).success, false);
-  assert.equal(deLaApk020.safeParse({ data: { ...version, format: 2, sections: DE_FORMATO_3 } }).success, false);
 });
 
 // ─── FR-07 · no más días que los marcados ───────────────────────────────────────────────────────

@@ -7,7 +7,7 @@
  * Cada cosa queda en un solo lugar. Perfil no escribe: cada dato se lee con la misma operación y el mismo permiso que en
  * su módulo, y para cambiar algo lleva a la pantalla de siempre.
  */
-import type { MisHabitosResponse, PedidoDeAccesoParaLaPersona, SolicitudPropiaV2 } from '@be/domain';
+import { referenciaNeutral, type MisHabitosResponse, type PedidoDeAccesoParaLaPersona, type SolicitudPropiaV2 } from '@be/domain';
 import type { VistaConPliegue } from './desplegable';
 import { aQuienesPreguntarSinPedido, pedidosEnOrden } from './habitos-en-el-telefono';
 import type { Ruta } from './navegacion';
@@ -86,10 +86,16 @@ export const BLOQUES_DE_PERFIL: readonly BloqueDePerfil[] = ['quien-sos', 'tu-in
 /** Los ajustes, con Cerrar mi cuenta al final y en su color (maqueta 02). Apariencia se cambia ahí mismo. */
 export const AJUSTES_DE_PERFIL: readonly Ajuste[] = ['apariencia', 'avisos', 'privacidad', 'sesion', 'cerrar-mi-cuenta'];
 
-/** El nombre de quién sos: el visible, o «Agregá tu nombre» si no hay (DL-009, DL-040). Mientras se lee, nada. */
-export function nombreEnPerfil(nombre: string | null | undefined): { readonly texto: string; readonly agregar: boolean } | null {
+/**
+ * El nombre de quién sos: el visible (DL-009, DL-040). Desde DL-169 (WP-USO-FINAL, UF-01) es obligatorio, y una cuenta sin
+ * nombre lo completa en «Antes de seguir» antes de llegar acá, así que Perfil ya no ofrece agregarlo. Si igual llega sin
+ * él (entró sin conexión y la app no pudo preguntar), se ve la referencia con que la ven sus profesionales, hasta que la
+ * app pueda preguntar. Mientras se lee, o sin el identificador para la referencia, nada.
+ */
+export function nombreEnPerfil(nombre: string | null | undefined, identificador: string | undefined): string | null {
   if (nombre === undefined) return null;
-  return nombre && nombre.trim() ? { texto: nombre.trim(), agregar: false } : { texto: T.agregaTuNombre, agregar: true };
+  if (nombre && nombre.trim()) return nombre.trim();
+  return identificador ? referenciaNeutral(identificador) : null;
 }
 
 /** Lo que dice la baldosa de «Mis hábitos», en palabras (AV-17: cada baldosa dice su estado, sin ceros). */

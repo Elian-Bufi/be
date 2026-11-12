@@ -25,7 +25,7 @@ import { VerificacionService } from '../../apps/api/src/profesional/verificacion
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { appDePrueba, claveDeIdempotencia, conSesion, CREDENCIAL_SINTETICA, correoSintetico, login, registrarOk, tokenDe } from './soporte-api';
 import { adm, administradorListo, codigoQueNoVale, codigoTotp, decidirSobre, otraSesion, primerFactor, profesionalPendiente, type Administrador } from './soporte-administracion';
-import { LaApk } from './soporte-lecturas-de-la-apk';
+import { LA_ULTIMA_APK, LaApk } from './soporte-lecturas-de-la-apk';
 import { esperarQueEsperen, pidDeLaTransaccion } from './soporte-concurrencia';
 import { circuitoConPlanActivo, registrarComida } from './soporte-nutricion';
 import { finalizar, prepararAsesorado, prepararProfesional, revocarB2, solicitar, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
@@ -592,8 +592,9 @@ describe('Avisos (criterio 8)', () => {
     expect(delPro.body).toContain('Revisá la documentación con Administración.');
     expect(JSON.stringify(delPro)).not.toContain('Motivo interno reservado');
     expect(JSON.stringify(delPro)).not.toContain(a.id);
-    // Lo que lee la persona, con la APK candidata 0.20.0-1 (DL-152): el efecto, sin motivos, con vistas que conoce.
-    const apk = new LaApk('0.20.0-candidata.1', () => app);
+    // Lo que lee la persona, con la última APK distribuida (DL-152, enmendada por UF-00): el efecto, sin motivos, con
+    // vistas que conoce.
+    const apk = new LaApk(LA_ULTIMA_APK, () => app);
     const lista = (await apk.pide('API-NOV-01', { token: activa.token, consulta: { limit: '30' } })).body.data as { newsId: string; kind: string; body: string; open: { view: string } }[];
     const aviso = lista.find((n) => n.kind === 'PROFESSIONAL_ACCESS_SUSPENDED')!;
     expect(aviso.open.view).toBe('RELATIONSHIPS');

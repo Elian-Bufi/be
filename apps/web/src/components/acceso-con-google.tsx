@@ -6,24 +6,28 @@
  * - **Entrar** (API-GOO-01): Google entrega el ID token y la API abre la sesión, que se guarda como la del login.
  * - **Vincular** (API-GOO-02): si ya hay una cuenta BE con ese correo y contraseña, Google se le suma solo después de que
  *   la persona confirma esa contraseña. Nunca se vincula sola (UC-E05 E02).
- * - **Crear** (API-GOO-03): si no hay cuenta, el alta con las mismas tres casillas que el alta con correo. Registra un
- *   asesorado, como el alta con correo (DL-024).
+ * - **Crear** (API-GOO-03): si no hay cuenta, el alta con su nombre y las mismas tres casillas que el alta con correo.
+ *   Registra un asesorado, como el alta con correo (DL-024). El campo «Nombre y apellido» llega con el nombre de la cuenta
+ *   de Google, que propone la API (DL-169, UF-D2): la persona lo confirma o lo corrige. Sin propuesta, lo escribe.
  * Mientras dura un paso, el formulario de correo y contraseña queda detrás de «Volver»: Google es una opción más, y el
  * acceso local sigue siempre (UC-E05 E01). Qué hacer con cada respuesta lo decide `pasoDeAccesoConGoogle`, la misma regla
- * que usa la APK.
+ * que usa la APK. El aviso de prueba sale del ambiente (UF-08).
  */
-import { COPY, COPY_ACCESO_GOOGLE as C, pasoDeAccesoConGoogle, type IniciarSesionResponse, type PasoDeAccesoConGoogle } from '@be/domain';
+import { COPY, COPY_ACCESO_GOOGLE as C, COPY_DEL_NOMBRE, pasoDeAccesoConGoogle, type IniciarSesionResponse, type PasoDeAccesoConGoogle } from '@be/domain';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { AVISOS_DE_PRUEBA_VISIBLES } from '../lib/ambiente';
 import { api } from '../lib/api';
 import { CLIENT_ID_WEB_DE_GOOGLE, dibujarBotonDeGoogle } from '../lib/google';
-import { ActosDelAlta, erroresDeLosActos, idDelActo, NINGUN_ACTO_MARCADO, type ActoDelAlta, type ActosMarcados, type ErroresDeLosActos } from './actos-del-alta';
+import { errorDelNombre } from '../lib/nombre-y-apellido';
+import { ActosDelAlta, erroresDeLosActos, idDelActo, NINGUN_ACTO_MARCADO, type ActosMarcados, type ErroresDeLosActos } from './actos-del-alta';
 import { Aviso, Campo, ResumenDeErrores } from './formulario';
+import { CampoDeNombreYApellido } from './nombre-y-apellido';
 
 type Estado =
   | { readonly tipo: 'inicio'; readonly aviso: string | null }
   | { readonly tipo: 'verificando' }
   | { readonly tipo: 'vincular'; readonly idToken: string; readonly correo: string }
-  | { readonly tipo: 'crear'; readonly idToken: string; readonly correo: string };
+  | { readonly tipo: 'crear'; readonly idToken: string; readonly correo: string; readonly nombre: string | null };
 
 /** Lo que un paso le devuelve al conjunto: la sesión, otro paso o un aviso que vuelve al principio. */
 type Seguir = (paso: PasoDeAccesoConGoogle, idToken: string) => void;
@@ -47,7 +51,7 @@ function ConGoogle({ clientId, alEntrar, children }: { clientId: string; alEntra
       case 'VINCULAR':
         return setEstado({ tipo: 'vincular', idToken, correo: paso.correo });
       case 'CREAR':
-        return setEstado({ tipo: 'crear', idToken, correo: paso.correo });
+        return setEstado({ tipo: 'crear', idToken, correo: paso.correo, nombre: paso.nombre });
       case 'AVISO':
       case 'CAMPO':
         // Un aviso al entrar, o uno que invalida lo que dio Google: de vuelta al principio, con el correo y la contraseña.
@@ -63,7 +67,7 @@ function ConGoogle({ clientId, alEntrar, children }: { clientId: string; alEntra
   const volver = () => setEstado({ tipo: 'inicio', aviso: null });
 
   if (estado.tipo === 'vincular') return <PasoDeVincular key={estado.idToken} idToken={estado.idToken} correo={estado.correo} seguir={seguir} volver={volver} />;
-  if (estado.tipo === 'crear') return <PasoDeCrear key={estado.idToken} idToken={estado.idToken} correo={estado.correo} seguir={seguir} volver={volver} />;
+  if (estado.tipo === 'crear') return <PasoDeCrear key={estado.idToken} idToken={estado.idToken} correo={estado.correo} propuesto={estado.nombre} seguir={seguir} volver={volver} />;
 
   return (
     <>
@@ -199,11 +203,19 @@ function PasoDeVincular({ idToken, correo, seguir, volver }: { idToken: string; 
   );
 }
 
-/** GOOGLE_ACCOUNT_NOT_FOUND: crear la cuenta con Google, con A1, A2 y la declaración de mayoría de edad (API-GOO-03). */
-function PasoDeCrear({ idToken, correo, seguir, volver }: { idToken: string; correo: string; seguir: Seguir; volver: () => void }) {
+/** Los errores del paso de crear: el nombre y los tres actos. */
+type ErroresDeCrear = ErroresDeLosActos & { nombre?: string };
+const ID_DEL_NOMBRE = 'google-nombre';
+
+/**
+ * GOOGLE_ACCOUNT_NOT_FOUND: crear la cuenta con Google, con el nombre, A1, A2 y la declaración de mayoría de edad
+ * (API-GOO-03). `propuesto` es el nombre de la cuenta de Google (DL-169, UF-D2), o `null`.
+ */
+function PasoDeCrear({ idToken, correo, propuesto, seguir, volver }: { idToken: string; correo: string; propuesto: string | null; seguir: Seguir; volver: () => void }) {
   const titulo = useTituloEnfocado();
+  const [nombre, setNombre] = useState(propuesto ?? '');
   const [marcados, setMarcados] = useState<ActosMarcados>(NINGUN_ACTO_MARCADO);
-  const [errores, setErrores] = useState<ErroresDeLosActos>({});
+  const [errores, setErrores] = useState<ErroresDeCrear>({});
   const [aviso, setAviso] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [intento, setIntento] = useState(0);
@@ -212,15 +224,17 @@ function PasoDeCrear({ idToken, correo, seguir, volver }: { idToken: string; cor
     evento.preventDefault();
     if (enviando) return;
     setAviso(null);
-    const encontrados = erroresDeLosActos(marcados);
+    const delNombre = errorDelNombre(nombre);
+    // En el orden en que se ven: el nombre y después los actos.
+    const encontrados: ErroresDeCrear = { ...(delNombre ? { nombre: delNombre } : {}), ...erroresDeLosActos(marcados) };
     setErrores(encontrados);
     setIntento((n) => n + 1);
     if (Object.keys(encontrados).length > 0) return;
     setEnviando(true);
-    const paso = pasoDeAccesoConGoogle('CREAR', await api.registrarConGoogle(idToken, marcados.mayoria), 'WEB');
+    const paso = pasoDeAccesoConGoogle('CREAR', await api.registrarConGoogle(idToken, marcados.mayoria, nombre), 'WEB');
     setEnviando(false);
     if (paso.tipo === 'CAMPO') {
-      setErrores({ mayoria: paso.mensaje });
+      setErrores(paso.campo === 'nombre' ? { nombre: paso.mensaje } : { mayoria: paso.mensaje });
       setIntento((n) => n + 1);
       return;
     }
@@ -228,7 +242,7 @@ function PasoDeCrear({ idToken, correo, seguir, volver }: { idToken: string; cor
     seguir(paso, idToken);
   }
 
-  const lista = (Object.entries(errores) as [ActoDelAlta, string][]).map(([acto, texto]) => ({ id: idDelActo(acto, 'google-'), texto }));
+  const lista = (Object.entries(errores) as [keyof ErroresDeCrear, string][]).map(([campo, texto]) => ({ id: campo === 'nombre' ? ID_DEL_NOMBRE : idDelActo(campo, 'google-'), texto }));
   return (
     <form className="formulario" onSubmit={enviar} noValidate>
       <h2 ref={titulo} tabIndex={-1}>
@@ -241,7 +255,14 @@ function PasoDeCrear({ idToken, correo, seguir, volver }: { idToken: string; cor
         </Aviso>
       ) : null}
       <p>{C.crearTexto(correo)}</p>
-      <p className="nota">{C.avisoDePrueba}</p>
+      {AVISOS_DE_PRUEBA_VISIBLES ? <p className="nota">{C.avisoDePrueba}</p> : null}
+      <CampoDeNombreYApellido
+        id={ID_DEL_NOMBRE}
+        valor={nombre}
+        alCambiar={setNombre}
+        error={errores.nombre}
+        ayuda={propuesto ? COPY_DEL_NOMBRE.ayudaConGoogle : COPY_DEL_NOMBRE.ayuda}
+      />
       <ActosDelAlta prefijo="google-" marcados={marcados} errores={errores} alCambiar={(acto, valor) => setMarcados((m) => ({ ...m, [acto]: valor }))} />
       <button className="boton boton--primario" type="submit" disabled={enviando} aria-busy={enviando}>
         {enviando ? C.creando : C.crear}

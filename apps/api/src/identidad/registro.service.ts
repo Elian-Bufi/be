@@ -6,7 +6,9 @@ import {
   TipoDeTexto,
   VERSION_VIGENTE,
   identificadorLocalValido,
+  nombreVisibleValido,
   normalizarIdentificadorLocal,
+  problemaDelNombre,
   problemaDeCredencialLocal,
   problemaDeMayoriaDeEdad,
   type DeclaracionDeMayoriaDeEdad,
@@ -62,6 +64,20 @@ export function validarActosDelAlta(solicitud: ActosPresentados, faltante: 'CLIE
   }
 }
 
+/**
+ * DL-169 (UF-01, UF-D1): el nombre con que nace la cuenta, ya normalizado. Sin `profile.displayName` el cuerpo es el de un
+ * cliente anterior: 422 TERMS_VERSION_NOT_ACCEPTABLE (`nombreAusente`), que esos clientes traducen a «actualizá la app».
+ * En blanco o con algo que no se puede guardar, 422 VALIDATION_FAILED con el issue del campo. Lo usan API-ACC-01 y
+ * API-GOO-03.
+ */
+export function validarNombreDelAlta(perfil: { readonly displayName?: string } | undefined): string {
+  const nombre = perfil?.displayName;
+  if (nombre === undefined) throw errores.nombreAusente();
+  const problema = problemaDelNombre(nombre);
+  if (problema) throw errores.nombreDelAlta(problema);
+  return nombreVisibleValido(nombre)!;
+}
+
 /** La falta de una versión sembrada en la base se responde como la versión no vigente de ese acto. */
 const VERSION_FALTANTE: Readonly<Record<TipoDeActoRegistrable, () => ErrorDeApi>> = {
   TERMINOS: errores.versionDeTerminosNoAceptable,
@@ -72,7 +88,8 @@ const VERSION_FALTANTE: Readonly<Record<TipoDeActoRegistrable, () => ErrorDeApi>
 
 /**
  * UC-P25 — Registrar identidad BE y perfil propio (API-ACC-01, 09v8 §4).
- * En una sola transacción (REQUIRED_SAME_TX): Identidad OPERATIVA + Perfil propio + control de sesión + método LOCAL
+ * En una sola transacción (REQUIRED_SAME_TX): Identidad OPERATIVA + Perfil propio con su nombre (versión 1, DL-169) +
+ * control de sesión + método LOCAL
  * + credencial + A1 (TERMINOS) + A2 (PRIVACIDAD_INFO) + la declaración de mayoría de edad (DL-138) + eventos
  * IdentidadCreada/MetodoDeAccesoAsociado + auditoría.
  * No crea sesión, ni A3, ni rol, especialidad, vínculo o autorización (09v8 §2.2; 06:2013).
@@ -104,6 +121,7 @@ export class RegistroService {
     if (issues.length > 0) throw errores.solicitudInvalida(issues);
 
     validarActosDelAlta(solicitud, 'CLIENTE_ANTERIOR');
+    const nombreVisible = validarNombreDelAlta(solicitud.profile);
 
     // Siempre se calcula el hash, exista o no el identificador: trabajo equivalente en ambas ramas (DL-010).
     const hash = await this.credenciales.generarHash(solicitud.identity.localCredential);
@@ -127,7 +145,7 @@ export class RegistroService {
           if ((await metodosDelCorreo(tx, identificador)).length > 0) throw errores.registroNoDisponible();
           const { identidadId, momentoDeRegistro } = await this.crearIdentidad(
             tx,
-            { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'LOCAL', identificador, hash } },
+            { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'LOCAL', identificador, hash }, nombreVisible },
             ctx,
             OPERACION,
           );
@@ -162,11 +180,13 @@ export class RegistroService {
    * El alta (UC-P25) dentro de `tx`, con el método con que nace la identidad: la usan API-ACC-01 (LOCAL) y API-GOO-03
    * (GOOGLE, DL-138). Identidad OPERATIVA + Perfil propio + control de sesión + el método (con su credencial, si es local)
    * + A1, A2 y la declaración de mayoría de edad como actos separados + IdentidadCreada y MetodoDeAccesoAsociado +
-   * auditoría de `operacion`. Quien llama ya validó los actos (`validarActosDelAlta`) y tomó el cerrojo del correo.
+   * auditoría de `operacion`. Quien llama ya validó los actos (`validarActosDelAlta`) y el nombre (`validarNombreDelAlta`), y
+   * tomó el cerrojo del correo. Desde DL-169 (UF-01) el perfil propio nace con su versión 1, con el nombre: no hay cuentas
+   * nuevas sin nombre.
    */
   async crearIdentidad(
     tx: Prisma.TransactionClient,
-    datos: { readonly registrationIntent: RegistrationIntent; readonly metodo: MetodoDelAlta },
+    datos: { readonly registrationIntent: RegistrationIntent; readonly metodo: MetodoDelAlta; readonly nombreVisible: string },
     ctx: ContextoDeSolicitud,
     operacion: string,
   ): Promise<{ readonly identidadId: string; readonly momentoDeRegistro: Date }> {
@@ -179,8 +199,11 @@ export class RegistroService {
       // 06 §5.4.2 «autoría de creación»: en autorregistro, la propia identidad.
       data: { id: identidadId, autoriaDeCreacionId: identidadId, procedencia, momentoDeOcurrencia: ocurrencia },
     });
-    // INV-06-22: exactamente un Perfil propio (la base lo verifica al confirmar). Sin contenido: DL-009.
-    await tx.perfilPropio.create({ data: { identidadId, momentoDeOcurrencia: ocurrencia } });
+    // INV-06-22: exactamente un Perfil propio (la base lo verifica al confirmar). Nace con el nombre visible como su versión 1
+    // (DL-009, DL-040 y DL-169), con la procedencia del alta; la auditoría del alta no lo guarda.
+    const perfil = await tx.perfilPropio.create({ data: { identidadId, momentoDeOcurrencia: ocurrencia } });
+    const primera = await tx.versionDePerfilPropio.create({ data: { perfilPropioId: perfil.id, numero: 1, nombreVisible: datos.nombreVisible, procedencia } });
+    await tx.perfilPropio.update({ where: { id: perfil.id }, data: { versionEfectivaId: primera.id } });
     await tx.controlDeSesion.create({ data: { identidadId } });
     const metodo =
       datos.metodo.tipo === 'LOCAL'

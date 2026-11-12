@@ -1,4 +1,4 @@
-import { CodigoDeError, ISSUE_DE_MAYORIA_DE_EDAD, type ValidationIssue } from '@be/domain';
+import { CodigoDeError, ISSUE_DE_MAYORIA_DE_EDAD, ISSUE_DEL_NOMBRE, type ValidationIssue } from '@be/domain';
 
 /**
  * Error de contrato: se serializa como ErrorEnvelope (09 §3.2, 09v7 T03).
@@ -152,6 +152,28 @@ export const errores = {
     new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'La versión de la declaración de mayoría de edad no es la vigente.', {
       issues: [{ code: ISSUE_DE_MAYORIA_DE_EDAD.VERSION_NO_VIGENTE, path: 'adultDeclaration.versionId' }],
     }),
+  // ─── WP-USO-FINAL (DL-169, UF-01): el nombre obligatorio ────────────────────────────────────────────────────────────
+  /**
+   * El alta no trae `profile.displayName`: es lo que manda un cliente anterior a DL-169 (UF-D1). Sale con el código que
+   * esos clientes ya traducen a «Actualizá la app para continuar», como la mayoría de edad de DL-138 (D-10).
+   */
+  nombreAusente: () =>
+    new ErrorDeApi(422, CodigoDeError.TERMS_VERSION_NOT_ACCEPTABLE, 'Para crear la cuenta hace falta tu nombre. Actualizá la app para continuar.', {
+      issues: [{ code: ISSUE_DEL_NOMBRE.REQUERIDO, path: 'profile.displayName' }],
+    }),
+  /** El alta trae el nombre en blanco (`REQUERIDO`) o con algo que no se puede guardar (`INVALIDO`): se corrige en el campo. */
+  nombreDelAlta: (problema: 'FALTA' | 'INVALIDO') =>
+    new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, problema === 'FALTA' ? 'Escribí tu nombre y apellido.' : 'El nombre puede tener hasta 60 caracteres, sin símbolos invisibles.', {
+      issues: [{ code: problema === 'FALTA' ? ISSUE_DEL_NOMBRE.REQUERIDO : ISSUE_DEL_NOMBRE.INVALIDO, path: 'profile.displayName' }],
+    }),
+  /** API-ACC-06: el nombre se cambia pero no se quita (UF-D3); o el nuevo no se puede guardar. */
+  nombreDelPerfil: (problema: 'FALTA' | 'INVALIDO') =>
+    new ErrorDeApi(
+      422,
+      CodigoDeError.INVALID_PROFILE_DATA,
+      problema === 'FALTA' ? 'Tu nombre se puede cambiar, pero no quitar.' : 'El nombre tiene que tener entre 1 y 60 caracteres, sin símbolos invisibles.',
+      { issues: [{ code: problema === 'FALTA' ? ISSUE_DEL_NOMBRE.REQUERIDO : ISSUE_DEL_NOMBRE.INVALIDO, path: 'changes.displayName' }] },
+    ),
   // ─── WP-ACCESO-GOOGLE (DL-138) ─────────────────────────────────────────────────────────────────────────────────────
   /** UC-E05 E01: Google sin configurar o sin responder. «Se informa la contingencia y se ofrece acceso local». */
   googleNoDisponible: (motivo: 'GOOGLE_NO_CONFIGURADO' | 'CLAVES_NO_DISPONIBLES') =>
@@ -163,8 +185,9 @@ export const errores = {
   /** Hay una cuenta BE con contraseña y ese correo: nunca se vincula sola (UC-E05 E02). */
   vinculacionConGoogleRequerida: (correo: string) =>
     new ErrorDeApi(409, CodigoDeError.GOOGLE_LINK_REQUIRED, 'Para entrar con Google a esa cuenta, confirmá su contraseña una vez.', { email: correo }),
-  cuentaDeGoogleInexistente: (correo: string) =>
-    new ErrorDeApi(404, CodigoDeError.GOOGLE_ACCOUNT_NOT_FOUND, 'Todavía no hay una cuenta BE con esa cuenta de Google.', { email: correo }),
+  /** DL-169 (UF-D2): con el nombre de la cuenta de Google, leído del token ya verificado, para proponerlo en el alta. */
+  cuentaDeGoogleInexistente: (correo: string, nombre: string | null) =>
+    new ErrorDeApi(404, CodigoDeError.GOOGLE_ACCOUNT_NOT_FOUND, 'Todavía no hay una cuenta BE con esa cuenta de Google.', { email: correo, name: nombre }),
   cuentaDeGoogleYaVinculada: () => new ErrorDeApi(409, CodigoDeError.GOOGLE_ACCOUNT_ALREADY_LINKED, 'La cuenta BE ya está vinculada con otra cuenta de Google.'),
   // ─── WP-NOTAS-DE-COORDINACION (DL-140) ────────────────────────────────────────────────────────────────────────────
   /** UC-E07 E01: con esa visibilidad, la nota no tiene a quién llegar. Llega después de autorizar al autor. */

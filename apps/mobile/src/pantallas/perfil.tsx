@@ -11,8 +11,9 @@
  *   verifica antes de mostrar. Para cambiar algo, lleva a la pantalla de siempre.
  * - **La marca de la pestaña** sale de lo que hay para responder, igual que en Inicio (`paraResponder`): la confirma acá
  *   la lectura, y abrir Perfil no la saca.
- * - **Una cuenta nueva** (AV-17): «Agregá tu nombre» en el lugar del nombre, y cada baldosa dice su estado en palabras.
- *   Lo que no tiene nada no se dibuja: no hay ceros ni tarjetas vacías.
+ * - **Una cuenta nueva** (AV-17): cada baldosa dice su estado en palabras. Lo que no tiene nada no se dibuja: no hay ceros
+ *   ni tarjetas vacías. Desde DL-169 (UF-01) el nombre es obligatorio y lo pide «Antes de seguir»: Perfil ya no ofrece
+ *   «Agregá tu nombre» (`nombreEnPerfil`).
  */
 import { COPY_INVITACION, ETIQUETA_DE_ALCANCE, type Alcance } from '@be/domain';
 import { useCallback, useEffect, type ReactNode } from 'react';
@@ -51,7 +52,8 @@ export function PantallaDePerfil({ token, salir, ir }: { token: string; salir: (
   }, [filas]);
 
   const datos: DatosDePerfil = {
-    nombre: nombre.r?.ok ? nombre.r.datos.data.displayName : nombre.r ? null : undefined,
+    // Lo que no se pudo leer no es «sin nombre»: queda sin afirmar, como el resto de Perfil.
+    nombre: nombre.r?.ok ? nombre.r.datos.data.displayName : undefined,
     identificador: cuenta.r?.ok ? cuenta.r.datos.data.identityId : undefined,
     profesionales: vinculos.r?.ok
       ? vinculos.r.datos.data
@@ -62,7 +64,7 @@ export function PantallaDePerfil({ token, salir, ir }: { token: string; salir: (
     respondidos: bandeja.r?.ok ? bandeja.r.datos.solicitudes.filter((s) => s.status === 'RESPONDED').length : undefined,
     habitos: habitos.r?.ok ? { cargados: habitos.r.datos.data.current !== null, losReciben: habitos.r.datos.data.professionals.filter((p) => p.sharing === 'RECEIVES').length } : undefined,
   };
-  const quien = nombreEnPerfil(datos.nombre);
+  const quien = nombreEnPerfil(datos.nombre, datos.identificador);
 
   async function compartir(id: string) {
     try {
@@ -82,13 +84,9 @@ export function PantallaDePerfil({ token, salir, ir }: { token: string; salir: (
         <View style={estilos.textosDeQuien}>
           {quien === null ? (
             <Verificando />
-          ) : quien.agregar ? (
-            <Pressable accessibilityRole="button" onPress={() => ir({ nombre: 'cuenta', seccion: 'datos' })} style={({ pressed }) => pressed && estilos.presionado}>
-              <Text style={[estilos.nombre, estilos.agregar]}>{quien.texto}</Text>
-            </Pressable>
           ) : (
             <Text style={estilos.nombre} accessibilityRole="header">
-              {quien.texto}
+              {quien}
             </Text>
           )}
           {datos.identificador ? (
@@ -253,7 +251,6 @@ const estilos = estilosPorTema((COLOR) => ({
   circulo: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLOR.acento, backgroundColor: COLOR.superficieElevada },
   textosDeQuien: { flex: 1 },
   nombre: { fontSize: 24, fontWeight: '800', color: COLOR.texto },
-  agregar: { color: COLOR.acento },
   filaDelId: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   identificador: { fontFamily: Platform.select({ android: 'monospace', ios: 'Menlo', default: undefined }), fontSize: 15, fontWeight: '700', color: COLOR.texto, flexShrink: 1 },
   compartir: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada },

@@ -27,6 +27,8 @@ export async function registrar(correo) {
     cuerpo: {
       registrationIntent: 'ADVISEE',
       identity: { localIdentifier: correo, localCredential: CREDENCIAL },
+      // DL-169 (UF-01): toda alta lleva el nombre; así ningún recorrido cae en «Antes de seguir».
+      profile: { displayName: 'Persona Sintética' },
       termsAcceptance: { versionId: dominio.VERSION_VIGENTE.TERMINOS.id },
       privacyAcknowledgement: { versionId: dominio.VERSION_VIGENTE.PRIVACIDAD_INFO.id },
       adultDeclaration: { versionId: dominio.VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
@@ -55,5 +57,8 @@ export async function vincular(pro, ase, aseId, alcance) {
   return { vinculoId, consentId: consentimiento.data.consentId };
 }
 
-/** El nombre visible de la persona, en la primera versión de su perfil (DL-009, DL-040). */
-export const ponerNombre = (token, nombre) => pedir('PATCH', '/me/profile', { token, superficie: 'APK', cuerpo: { expectedVersion: 'v0', changes: { displayName: nombre } } });
+/** El nombre visible de la persona, como versión nueva de su perfil (DL-009, DL-040; desde DL-169 la cuenta nace con uno). */
+export async function ponerNombre(token, nombre) {
+  const actual = (await pedir('GET', '/me/profile', { token, superficie: 'APK' })).data;
+  return pedir('PATCH', '/me/profile', { token, superficie: 'APK', cuerpo: { expectedVersion: actual.version, changes: { displayName: nombre } } });
+}

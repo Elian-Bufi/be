@@ -2,7 +2,8 @@
 
 /**
  * Website `/account` (DL-025 A): Estado · Tu nombre · Tu identificador BE · Privacidad · Seguridad · Cerrar mi cuenta.
- * - Tu nombre (DL-009 y DL-040, 2026-10-15): el que ven los profesionales con un vínculo vigente; se cambia o se quita.
+ * - Tu nombre (DL-009 y DL-040, 2026-10-15): el que ven los profesionales con un vínculo vigente. Desde DL-169 (UF-D3)
+ *   se cambia, pero no se quita. Una cuenta sin nombre no llega acá: lo completa antes, en «Antes de seguir».
  * - Estado: solo el estado operativo (TEST-RF-006: nunca «habilitado»).
  * - Tu identificador BE (DL-035): lo que el asesorado comparte con el profesional para recibir una solicitud. Por sí
  *   solo no da acceso a nada: el acceso exige vínculo aceptado y consentimiento (RF-021).
@@ -15,9 +16,10 @@
  */
 import {
   CODIGOS_DE_SESION_NO_VALIDA,
+  COPY_DEL_NOMBRE,
   COPY_VINCULO,
-  LARGO_MAXIMO_DEL_NOMBRE_VISIBLE,
-  nombreVisibleValido,
+  ISSUE_DEL_NOMBRE,
+  MENSAJE_DE_CAMPO,
   normalizarNombreVisible,
   VERSION_VIGENTE,
   type MeResponse,
@@ -29,8 +31,10 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ErrorConReintento } from '../../components/estados';
 import { Aviso } from '../../components/formulario';
+import { CampoDeNombreYApellido } from '../../components/nombre-y-apellido';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../lib/api';
 import { COPY } from '../../lib/copy';
+import { errorDelNombre, mensajeDelNombreEn } from '../../lib/nombre-y-apellido';
 import { useSesion, EsperandoSesion } from '../../lib/sesion';
 import { fecha } from '../../lib/formato';
 
@@ -207,15 +211,17 @@ function EstadoA3({ datos }: { datos: RequisitoDeConsentimientoDeSaludResponse['
 
 /**
  * «Tu nombre» (DL-009, opción B, y DL-040, decididas por Dirección el 2026-10-15): el nombre con que te ven los
- * profesionales con los que tenés un vínculo vigente. Es tuyo: lo cambiás o lo quitás cuando quieras, y cada cambio
- * queda en tu historia. Sin nombre, ven una referencia («Asesorado · c36743»). Tu correo no lo ven nunca.
- * - Guardar manda la versión que se leyó: si cambió en otra pestaña, se vuelve a leer y se dice, sin pisar nada.
- * - Lo que se escribe se valida con la misma regla que la API (de 1 a 60 caracteres, sin símbolos invisibles).
+ * profesionales con los que tenés un vínculo vigente. Es tuyo: lo cambiás cuando quieras, y cada cambio queda en tu
+ * historia. Desde DL-169 (UF-D3) no se quita: vacío, el campo dice que falta y no se envía. Tu correo no lo ven nunca.
+ * - Guardar manda la versión que se leyó: si cambió en otro lugar, se vuelve a leer y se dice, sin pisar nada.
+ * - Lo que se escribe se valida con la misma regla que la API (de 1 a 60 caracteres, sin símbolos invisibles), y un 422
+ *   del nombre vuelve al campo.
  */
 function TuNombre({ token, alPerderSesion }: { token: string; alPerderSesion: (r: Resultado<unknown>) => boolean }) {
   const [perfil, setPerfil] = useState<Carga<PerfilPropio>>({ tipo: 'cargando' });
   const [escrito, setEscrito] = useState('');
-  const [estado, setEstado] = useState<{ tipo: 'libre' } | { tipo: 'guardando' } | { tipo: 'guardado'; texto: string } | { tipo: 'error'; mensaje: string }>({ tipo: 'libre' });
+  const [error, setError] = useState<string | null>(null);
+  const [estado, setEstado] = useState<{ tipo: 'libre' } | { tipo: 'guardando' } | { tipo: 'guardado' } | { tipo: 'error'; mensaje: string }>({ tipo: 'libre' });
 
   const cargar = useCallback(async () => {
     setPerfil({ tipo: 'cargando' });
@@ -230,25 +236,26 @@ function TuNombre({ token, alPerderSesion }: { token: string; alPerderSesion: (r
     void cargar();
   }, [cargar]);
 
-  async function guardar(nombre: string | null) {
+  async function guardar() {
     if (perfil.tipo !== 'listo' || estado.tipo === 'guardando') return;
-    if (nombre !== null && nombreVisibleValido(nombre) === null) {
-      return setEstado({ tipo: 'error', mensaje: `Escribí entre 1 y ${LARGO_MAXIMO_DEL_NOMBRE_VISIBLE} caracteres.` });
-    }
+    const problema = errorDelNombre(escrito);
+    setError(problema);
+    if (problema) return setEstado({ tipo: 'libre' });
     setEstado({ tipo: 'guardando' });
-    const r = await api.editarPerfilPropio(token, { expectedVersion: perfil.datos.version, changes: { displayName: nombre } });
+    const r = await api.editarPerfilPropio(token, { expectedVersion: perfil.datos.version, changes: { displayName: escrito } });
     if (alPerderSesion(r)) return;
     if (r.ok) {
       setPerfil({ tipo: 'listo', datos: r.datos.data });
       setEscrito(r.datos.data.displayName ?? '');
-      return setEstado({ tipo: 'guardado', texto: r.datos.data.displayName ? 'Nombre guardado.' : 'Quitaste tu nombre: los profesionales ven tu referencia.' });
+      return setEstado({ tipo: 'guardado' });
     }
     if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
       await cargar();
-      return setEstado({ tipo: 'error', mensaje: 'Tu nombre cambió en otra pestaña: lo volvimos a leer. Si querés, guardalo de nuevo.' });
+      return setEstado({ tipo: 'error', mensaje: COPY_DEL_NOMBRE.cambioEnOtroLugar });
     }
     if (r.tipo === 'API' && r.codigo === 'INVALID_PROFILE_DATA') {
-      return setEstado({ tipo: 'error', mensaje: `Escribí entre 1 y ${LARGO_MAXIMO_DEL_NOMBRE_VISIBLE} caracteres, sin símbolos invisibles.` });
+      setError(mensajeDelNombreEn(r.issues) ?? MENSAJE_DE_CAMPO[ISSUE_DEL_NOMBRE.INVALIDO] ?? COPY.noDisponible);
+      return setEstado({ tipo: 'libre' });
     }
     setEstado({ tipo: 'error', mensaje: r.tipo === 'RED' ? COPY.resultadoIncierto : COPY.noDisponible });
   }
@@ -258,43 +265,35 @@ function TuNombre({ token, alPerderSesion }: { token: string; alPerderSesion: (r
   return (
     <section className="seccion" aria-labelledby="titulo-nombre">
       <h2 id="titulo-nombre">Tu nombre</h2>
-      <p className="nota">Es el nombre con que te ven los profesionales con los que tenés un vínculo vigente. Sin nombre, ven una referencia, como «Asesorado · c36743». Tu correo no lo ven.</p>
+      <p className="nota">Es el nombre con que te ven los profesionales con los que tenés un vínculo vigente. Tu correo no lo ven.</p>
       {perfil.tipo === 'cargando' ? <p aria-busy="true">Cargando…</p> : null}
       {perfil.tipo === 'error' ? <ErrorConReintento onReintentar={cargar} /> : null}
       {perfil.tipo === 'listo' ? (
         <form
           className="tu-nombre"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            void guardar(escrito);
+            void guardar();
           }}
         >
-          <div className="campo">
-            <label htmlFor="nombre-visible">Nombre</label>
-            <input
-              id="nombre-visible"
-              value={escrito}
-              maxLength={LARGO_MAXIMO_DEL_NOMBRE_VISIBLE + 20}
-              autoComplete="name"
-              aria-describedby="nombre-visible-estado"
-              onChange={(e) => {
-                setEscrito(e.target.value);
-                if (estado.tipo !== 'guardando') setEstado({ tipo: 'libre' });
-              }}
-            />
-          </div>
+          <CampoDeNombreYApellido
+            id="nombre-visible"
+            valor={escrito}
+            alCambiar={(valor) => {
+              setEscrito(valor);
+              if (estado.tipo !== 'guardando') setEstado({ tipo: 'libre' });
+            }}
+            error={error}
+            ayuda={COPY_DEL_NOMBRE.noSeQuita}
+          />
           <div className="acciones">
-            <button type="submit" className="boton boton--primario" disabled={estado.tipo === 'guardando' || sinCambios || escrito.trim() === ''}>
-              {estado.tipo === 'guardando' ? 'Guardando…' : 'Guardar nombre'}
+            <button type="submit" className="boton boton--primario" disabled={estado.tipo === 'guardando' || sinCambios}>
+              {estado.tipo === 'guardando' ? COPY_DEL_NOMBRE.guardando : 'Guardar nombre'}
             </button>
-            {actual ? (
-              <button type="button" className="boton boton--secundario" onClick={() => void guardar(null)} disabled={estado.tipo === 'guardando'}>
-                Quitar el nombre
-              </button>
-            ) : null}
           </div>
-          <p id="nombre-visible-estado" role="status" className={estado.tipo === 'error' ? 'campo__error' : 'nota'}>
-            {estado.tipo === 'guardado' ? estado.texto : estado.tipo === 'error' ? estado.mensaje : ''}
+          <p role="status" className={estado.tipo === 'error' ? 'campo__error' : 'nota'}>
+            {estado.tipo === 'guardado' ? 'Nombre guardado.' : estado.tipo === 'error' ? estado.mensaje : ''}
           </p>
         </form>
       ) : null}

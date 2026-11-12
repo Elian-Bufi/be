@@ -1,5 +1,9 @@
 # La excepción del zod de Expo: procedencia comprobada (DL-114, ratificada por Dirección el 2026-10-24)
 
+> **Retirada el 2026-11-11** con UF-12 de WP-USO-FINAL (PR #253): la CLI de Expo 57.0.33, del mismo SDK 57, ya no pide
+> zod, y la de node-forge también se retiró. Lo que sigue es la evidencia de cuando estaba vigente; el estado actual está
+> en DL-114 (`docs/DEUDA_LEGAJO.md`) y en `scripts/auditoria-de-dependencias.cjs`.
+
 **Qué se responde acá.** Qué copia de zod es vulnerable en la APK, quién la usa, qué zod usa el dominio, cuál viaja en el
 bundle de Android, y qué hace fallar la excepción. Todo es del 2026-10-24, sobre la rama
 `seguridad/excepcion-zod-expo-propuesta` (sobre `seguridad/avisos-2026-10-23`, sobre `main` = `0fb1bff`).

@@ -3,11 +3,16 @@
  *
  * Cada APK valida las respuestas con esquemas estrictos: un campo nuevo, un valor nuevo de una enumeración o un `null`
  * donde no lo había, en una respuesta que lee una APK instalada, hacen fallar esa pantalla en el teléfono («respuesta no
- * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`
- * (hoy la estable 0.13.2, la 0.20.0-candidata.1, la 0.21.0-candidata.1, la 0.22.0-candidata.1 y la 0.23.0-candidata.1; la 0.17.0-candidata.3 y
- * la 0.18.0-candidata.1 salieron el 2026-11-05), como la pide esa APK, con las capacidades que declara, y lee la respuesta real
- * con el esquema de esa APK (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva
- * no pasa hasta que cada lectura suya tenga escenario.
+ * reconocida»). Esta prueba pide cada operación que llama cada APK congelada en `packages/domain/fixtures/lecturas-de-la-apk/`,
+ * como la pide esa APK, con las capacidades que declara, y lee la respuesta real con el esquema de esa APK
+ * (`soporte-lecturas-de-la-apk.ts`). Al final exige haber leído todas: una APK congelada nueva no pasa hasta que cada
+ * lectura suya tenga escenario.
+ *
+ * UF-00 de WP-USO-FINAL (2026-11-11, enmienda de DL-152): mientras Dirección no establezca una estable, la congelada es
+ * solo la última distribuida, hoy la 0.23.0-candidata.2. Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
+ * (antes, el 2026-11-05, la 0.17.0-candidata.3 y la 0.18.0-candidata.1). Los escenarios de lo que solo leían ellas (FRM,
+ * una APK sin `forms-format-3`, el alta sin la casilla de mayoría de edad) quedan: se arman solo si una APK congelada
+ * llama esa operación o no declara esa capacidad.
  *
  * Lo que se arma alrededor (los profesionales, los vínculos, los planes, las revisiones) va por la API de hoy, como en el
  * resto de las pruebas: lo que se prueba es lo que pide y lee la APK. Las respuestas se leen con datos de verdad, también
@@ -36,6 +41,7 @@ import { CAMPOS_DE_HABITOS, CAPACIDAD_FORMULARIOS_FORMATO_3, VERSION_VIGENTE, ty
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
+import request from 'supertest';
 import { appDePrueba, conSesion, correoSintetico, CREDENCIAL_SINTETICA, OTRA_CREDENCIAL_SINTETICA, registrarOk } from './soporte-api';
 import { circuitoAntropometrico } from './soporte-antropometria';
 import { CATALOGO_DE_EJERCICIOS, circuitoConPlanDeEntrenamientoActivo } from './soporte-entrenamiento';
@@ -102,11 +108,15 @@ const CAMPOS_DE_ANTECEDENTES =['trn_objetivo_declarado', 'trn_experiencia', 'trn
 
 /**
  * Lo que una APK lee pero hoy no puede recibir una respuesta exitosa, por una decisión registrada. De eso se lee el
- * rechazo, con el sobre de error de esa APK.
- * - 0.13.2 · API-ACC-01: desde DL-138 (D-10), una APK sin la casilla de mayoría de edad no crea cuentas. Recibe el 422
- *   TERMS_VERSION_NOT_ACCEPTABLE, que traduce a «Los textos cambiaron. Actualizá la app para continuar.».
+ * rechazo, con el sobre de error de esa APK. Se decide por lo que manda la APK, no por su número:
+ * - API-ACC-01, si no manda la casilla de mayoría de edad (DL-138 D-10) o el nombre (DL-169, UF-D1): la 0.13.2, hasta
+ *   UF-00, y la 0.23 desde UF-01. Recibe 422 TERMS_VERSION_NOT_ACCEPTABLE, que traduce a «Actualizá la app para continuar».
+ * - API-GOO-03, si no manda el nombre (DL-169, UF-D1): la 0.23.
  */
-const SOLO_EL_RECHAZO: Readonly<Record<string, readonly string[]>> = { '0.13.2': ['API-ACC-01'] };
+const soloElRechazo = (apk: LaApk): string[] => [
+  ...(apk.lee('API-ACC-01') && !(apk.mandaElCampo('API-ACC-01', 'adultDeclaration') && apk.mandaElCampo('API-ACC-01', 'profile.displayName')) ? ['API-ACC-01'] : []),
+  ...(apk.lee('API-GOO-03') && !apk.mandaElCampo('API-GOO-03', 'profile.displayName') ? ['API-GOO-03'] : []),
+];
 
 /**
  * DL-165 D-9 · respuestas completas de la parte «Tus hábitos», en su forma canónica (las de
@@ -162,11 +172,19 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       termsAcceptance: { versionId: t.TERMINOS },
       privacyAcknowledgement: { versionId: t.PRIVACIDAD_INFO },
     };
-    if (apk.mandaElCampo('API-ACC-01', 'adultDeclaration')) {
-      await apk.pide('API-ACC-01', { cuerpo: { ...alta, adultDeclaration: { versionId: t.MAYORIA_DE_EDAD, declared: true } }, status: 201 });
+    const conMayoria = apk.mandaElCampo('API-ACC-01', 'adultDeclaration');
+    const conNombre = apk.mandaElCampo('API-ACC-01', 'profile.displayName');
+    const comoLaManda = {
+      ...alta,
+      ...(conNombre ? { profile: { displayName: 'Persona de la APK' } } : {}),
+      ...(conMayoria ? { adultDeclaration: { versionId: t.MAYORIA_DE_EDAD, declared: true } } : {}),
+    };
+    if (!soloElRechazo(apk).includes('API-ACC-01')) {
+      await apk.pide('API-ACC-01', { cuerpo: comoLaManda, status: 201 });
     } else {
-      // DL-138 D-10: el rechazo decidido, en la forma que esta APK reconoce. La cuenta se crea como hoy, para seguir.
-      const rechazo = await apk.pide('API-ACC-01', { cuerpo: alta, status: 422 });
+      // DL-138 D-10 y DL-169 (UF-D1): el rechazo decidido, en la forma que esta APK reconoce. La cuenta se crea como hoy,
+      // con el nombre, para seguir.
+      const rechazo = await apk.pide('API-ACC-01', { cuerpo: comoLaManda, status: 422 });
       expect(rechazo.body.error.code).toBe('TERMS_VERSION_NOT_ACCEPTABLE');
       await registrarOk(app, correo, 'APK');
     }
@@ -947,18 +965,36 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const t = apk.textos;
     const deLaApk = (sub: string, correo: string) => idTokenDeGoogle(google, reclamosDeGoogle(sub, correo, { aud: CLIENTE_APK, azp: CLIENTE_APK }));
     const nueva = deLaApk(subSintetico(), correoSintetico(etiqueta(`${corta}-goo`)));
+    const conNombre = apk.mandaElCampo('API-GOO-03', 'profile.displayName');
     const alta = {
       idToken: nueva,
       registrationIntent: 'ADVISEE',
+      ...(conNombre ? { profile: { displayName: 'Persona de Google' } } : {}),
       termsAcceptance: { versionId: t.TERMINOS },
       privacyAcknowledgement: { versionId: t.PRIVACIDAD_INFO },
       adultDeclaration: { versionId: t.MAYORIA_DE_EDAD, declared: true },
     };
-    await apk.pide('API-GOO-03', { cuerpo: alta, status: 201 });
-    await apk.pide('API-GOO-03', { cuerpo: alta, status: 200 });
+    if (conNombre) {
+      await apk.pide('API-GOO-03', { cuerpo: alta, status: 201 });
+      await apk.pide('API-GOO-03', { cuerpo: alta, status: 200 });
+    } else {
+      // DL-169 (UF-D1): sin el nombre, el rechazo decidido en la forma que esta APK reconoce («Actualizá la app»). La cuenta
+      // se crea como hoy, con el nombre, para seguir.
+      expect((await apk.pide('API-GOO-03', { cuerpo: alta, status: 422 })).body.error.code).toBe('TERMS_VERSION_NOT_ACCEPTABLE');
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/federated/google/registrations')
+        .set('X-BE-Surface', 'APK')
+        .send({ ...alta, profile: { displayName: 'Persona de Google' } })
+        .expect(201);
+    }
     await apk.pide('API-GOO-01', { cuerpo: { idToken: nueva }, status: 201 });
-    // Una cuenta de Google sin identidad en BE: el 404 con el correo, que la APK lee para ofrecer crearla.
+    // Una cuenta de Google sin identidad en BE: el 404 con el correo, que la APK lee para ofrecer crearla. Desde DL-169
+    // (UF-D2) trae también el nombre propuesto: una APK que lee el detalle solo con el correo (la 0.23) no lo reconoce, y
+    // su paso de Google muestra un error general; tampoco podría crear la cuenta (UF-D1). Es lo decidido, y nada más.
     await apk.pide('API-GOO-01', { cuerpo: { idToken: deLaApk(subSintetico(), correoSintetico(etiqueta(`${corta}-goo-nadie`))) }, status: 404 });
+    const delDetalle = apk.rechazos();
+    if (apk.leeEnElDetalle('GOOGLE_ACCOUNT_NOT_FOUND', 'name')) expect(delDetalle).toEqual([]);
+    else expect(delDetalle).toEqual([expect.stringMatching(/API-GOO-01: el detalle de GOOGLE_ACCOUNT_NOT_FOUND no tiene la forma que la APK lee .*name/)]);
     // El correo ya es de una cuenta con contraseña: el 409 con el correo, y vincular con la contraseña.
     const correoLocal = correoSintetico(etiqueta(`${corta}-goo-local`));
     await registrarOk(app, correoLocal, 'APK');
@@ -973,7 +1009,9 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
   // ─── Todo lo que lee ───────────────────────────────────────────────────────────────────────────
 
   it('leyó con su esquema cada respuesta que esta APK lee, y cada detalle de rechazo que interpreta', () => {
-    expect(apk.sinLeer()).toEqual([...(SOLO_EL_RECHAZO[version] ?? [])]);
-    expect(apk.detallesSinLeer()).toEqual([]);
+    expect(apk.sinLeer()).toEqual(soloElRechazo(apk));
+    // DL-169 (UF-D2): el detalle de GOOGLE_ACCOUNT_NOT_FOUND con el nombre no lo lee una APK que lo espera solo con el correo.
+    const detalleQueYaNoLee = apk.lee('API-GOO-01') && !apk.leeEnElDetalle('GOOGLE_ACCOUNT_NOT_FOUND', 'name') && 'GOOGLE_ACCOUNT_NOT_FOUND' in apk.congelado.errores.detalles;
+    expect(apk.detallesSinLeer()).toEqual(detalleQueYaNoLee ? ['GOOGLE_ACCOUNT_NOT_FOUND'] : []);
   });
 });
