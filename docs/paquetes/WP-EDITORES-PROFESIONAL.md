@@ -1635,7 +1635,7 @@ el cuadro dice «Sin RIR no se puede estimar» (ED-72).
 |---|---|---|---|
 | DJ-1 | ¿BE adopta un método propio de estimación de la repetición máxima? | **Sí:** Epley v1, en esta actualización, con las reglas de DL-171; solo para el profesional y en el website; nunca como marca; nunca invitar a un máximo | DL-171; ED-71 a ED-76 |
 | DJ-2 | ¿La serie registrada guarda qué campos vinieron del plan? | **Sí, en la APK de esta actualización.** Las series de antes, sin procedencia, quedan fuera del cálculo | ED-70 |
-| DJ-3 | ¿Qué se celebra de lo que hace la persona? | **Un acto, nunca un número** (recomendación de Claude) | DL-170 |
+| DJ-3 | ¿Qué se celebra de lo que hace la persona? | **Un acto, nunca un número** (recomendación de Claude aplicada el 2026-11-11, a ratificar por Dirección; abajo) | DL-170 |
 | DJ-4 | ¿Un total del día en el editor de Nutrición? | **El rango del día,** con «Sin dato» si falta, sin una opción elegida, solo para el profesional; enmienda TB-38 y TEST-TAG-025 | ED-34 |
 | DJ-5 | ¿Se sigue bloqueando la activación si la persona nunca abrió una app que muestre objetivos por serie? | **No: un aviso** | ED-08 |
 | DJ-6 | ¿Cómo se revisa y se activa? | **Una entrada fija, «Revisar y activar…»,** que abre «Antes de activar»: valida al abrirse, lleva a cada cosa por corregir y deja «Activar la versión de [área]» apagado, con su motivo, hasta resolverlas. «Guardar ahora», fijo y secundario junto al estado. El borrador, numerado | ED-07, ED-15 |
