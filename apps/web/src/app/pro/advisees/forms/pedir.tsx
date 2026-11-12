@@ -581,9 +581,14 @@ export function PedidoDeInformacion({
                   {B.ayuda}
                 </span>
               </div>
+              {/* La región viva es solo la frase («7 preguntas dicen «sueño»»), siempre montada para que se anuncie al
+                  cambiar; los botones van en la línea visible, fuera de ella. */}
+              <p className="visualmente-oculto" role="status">
+                {coinciden ? resultadoDeLaBusqueda(queCoinciden.length, busqueda) : ''}
+              </p>
               {coinciden ? (
-                <p className="nota preguntas-del-pedido__resultado" role="status" data-resultado-de-la-busqueda>
-                  {resultadoDeLaBusqueda(queCoinciden.length, busqueda)}{' '}
+                <p className="nota preguntas-del-pedido__resultado" data-resultado-de-la-busqueda>
+                  <span aria-hidden="true">{resultadoDeLaBusqueda(queCoinciden.length, busqueda)}</span>{' '}
                   {queCoinciden.length > 0 ? (
                     <>
                       <button type="button" className="boton boton--enlace" disabled={enviando} onClick={() => editar(() => setPedidas(pedirTodas(pedidas, queCoinciden)), 'preguntas')}>
@@ -594,7 +599,15 @@ export function PedidoDeInformacion({
                       </button>{' '}
                     </>
                   ) : null}
-                  <button type="button" className="boton boton--enlace" onClick={() => setBusqueda('')}>
+                  <button
+                    type="button"
+                    className="boton boton--enlace"
+                    onClick={() => {
+                      // El botón se va con la búsqueda: el foco vuelve al campo, no al cuerpo de la página.
+                      setBusqueda('');
+                      document.getElementById(`${id}-buscar-pregunta`)?.focus();
+                    }}
+                  >
                     {B.borrar}
                   </button>
                 </p>

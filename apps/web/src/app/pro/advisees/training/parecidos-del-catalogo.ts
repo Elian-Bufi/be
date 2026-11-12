@@ -69,6 +69,8 @@ export const COPY_EJERCICIO_PROPIO = {
   crear: 'Crear un ejercicio propio',
   queEs: 'Un ejercicio tuyo. Queda en el catálogo para volver a usarlo.',
   antesDeCrear: 'Antes de crear, ¿es alguno de estos?',
+  parecidosDelCatalogo: 'Parecidos del catálogo',
+  cuantosParecidos: (n: number) => (n === 1 ? 'Hay 1 parecido en el catálogo.' : `Hay ${n} parecidos en el catálogo.`),
   buscandoParecidos: 'Buscando parecidos en el catálogo…',
   sinParecidos: (nombre: string) => `No hay ninguno parecido a «${nombre.trim()}» en el catálogo.`,
   noSePudieronBuscar: 'No pudimos buscar parecidos. Podés crearlo igual.',

@@ -516,10 +516,15 @@ function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: strin
       <p className="nota">{EP.queEs}</p>
       <Campo id={`${id}-nombre`} etiqueta="Nombre del ejercicio" value={nombre} maxLength={120} onChange={(e) => setNombre(e.target.value)} error={falta} autoComplete="off" />
       {/* ED-21: los parecidos, antes de crear. Elegir uno lo marca y vuelve a la búsqueda; crear sigue siendo un botón. */}
-      <section className="parecidos-del-catalogo" aria-labelledby={`${id}-parecidos`} aria-live="polite">
-        {vigentes?.estado === 'buscando' ? <p className="nota">{EP.buscandoParecidos}</p> : null}
-        {vigentes?.estado === 'falla' ? <p className="nota">{EP.noSePudieronBuscar}</p> : null}
-        {vigentes?.estado === 'listas' && losParecidos.length === 0 ? <p className="nota">{EP.sinParecidos(nombre)}</p> : null}
+      {/* La sección tiene un rótulo fijo; la región viva es solo la frase de estado: en cada tecla, el lector dice una
+          frase y no repite cada «Usar este». */}
+      <section className="parecidos-del-catalogo" aria-label={EP.parecidosDelCatalogo}>
+        <p className="nota parecidos-del-catalogo__estado" role="status">
+          {vigentes?.estado === 'buscando' ? EP.buscandoParecidos : null}
+          {vigentes?.estado === 'falla' ? EP.noSePudieronBuscar : null}
+          {vigentes?.estado === 'listas' && losParecidos.length === 0 ? EP.sinParecidos(nombre) : null}
+          {losParecidos.length > 0 ? <span className="visualmente-oculto">{EP.cuantosParecidos(losParecidos.length)}</span> : null}
+        </p>
         {losParecidos.length > 0 ? (
           <>
             <h4 id={`${id}-parecidos`} className="parecidos-del-catalogo__titulo">
