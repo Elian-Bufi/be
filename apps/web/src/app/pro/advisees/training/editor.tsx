@@ -28,7 +28,6 @@
  * - **Cada problema lleva a su lugar:** elige el bloque, el microciclo y la sesión, abre el ejercicio y deja el foco ahí.
  */
 import {
-  COPY,
   COPY_AGENDA_DE_ENTRENAMIENTO,
   COPY_GUARDADO,
   COPY_COMPATIBILIDAD_DE_CLIENTES,
@@ -77,7 +76,7 @@ import { api } from '../../../../lib/api';
 import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaSinElAnioEnCurso, horaDelDia } from '../../../../lib/formato';
-import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { eleccionAlActivar, fechaQueResulta, loQueFalta, NADA_ELEGIDO, type EleccionDeLaProxima } from '../../../../lib/cuando-la-revisas';
 import { CuandoLaRevisas } from '../cuando-la-revisas';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
@@ -86,6 +85,7 @@ import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
+import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
 import { loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
@@ -228,9 +228,13 @@ export function EditorDePlan({
    * activar» dice lo que cambia (ED-07).
    */
   vigente?: { readonly numero: number; readonly desde: string; readonly plan?: PlanConObjetivos | null } | null;
-  onActivado: () => void;
-  /** ED-01: la versión en preparación se descartó (o ya no estaba): la sección vuelve a leer el plan. */
-  onDescartado: () => void;
+  /** Se activó. `texto`: lo que se dice si ya estaba activa (ED-62: un pedido anterior la había activado). */
+  onActivado: (texto: string | null) => void;
+  /**
+   * ED-01: la versión en preparación se descartó (o ya no estaba): la sección vuelve a leer el plan. `porOtraPestana`:
+   * lo que se dice si la descartó otra pestaña (ED-62).
+   */
+  onDescartado: (porOtraPestana?: string) => void;
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
   const [version, setVersion] = useState<PlanConObjetivos | null>(null);
@@ -497,7 +501,8 @@ export function EditorDePlan({
     setProximaRevision(version?.nextReviewAt ?? '');
     setCuando(NADA_ELEGIDO);
     setRevision(null);
-    intentoDeActivar.descartar();
+    // ED-62: con el resultado incierto, la clave se conserva: el intento siguiente (el mismo pedido) la reusa.
+    if (!intentoDeActivar.quedoIncierto()) intentoDeActivar.descartar();
   }
 
   // ED-07: con el cuadro abierto y todo guardado, la API revisa lo guardado (al abrirlo, o apenas llega la respuesta de
@@ -521,26 +526,50 @@ export function EditorDePlan({
         return setFalloDeActivacion(COPY_DE_ACTIVAR_EL_PLAN.noSePudoGuardarAntes);
       }
     }
-    const r = await api.activarPlanDeEntrenamiento(token, planId, v.version, intentoDeActivar.actual());
+    // ED-62: la clave es la de este pedido (la versión que se activa); un resultado incierto la conserva.
+    const r = await api.activarPlanDeEntrenamiento(token, planId, v.version, intentoDeActivar.actual(`${planId}:${v.version}`));
     intentoDeActivar.registrar(r);
+    if (sesionPerdida(r) || accesoRetirado(r)) return setActivando(false);
+    // ED-62: con un 409, un 422 sin lugar o sin respuesta, se relee la versión antes de decir qué pasó.
+    let releida: VersionReleida | null = null;
+    if (hayQueReleer(r)) {
+      const actual = await api.planConObjetivos(token, planId);
+      if (sesionPerdida(actual)) return setActivando(false);
+      releida = actual.ok ? { estado: actual.datos.data.state, version: actual.datos.data.version } : actual.tipo === 'API' && actual.codigo === 'RESOURCE_NOT_FOUND' ? { estado: 'NO_ESTA' } : null;
+    }
     setActivando(false);
-    if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok) {
-      if (r.tipo === 'API' && r.issues.length > 0) {
+    const que = loQuePasoAlActivar(r, releida, v.version);
+    switch (que.tipo) {
+      case 'ACTIVADA':
+      case 'YA_QUEDO_ACTIVA':
         setConfirmar(false);
-        setProblemas(r.issues);
-        return setMensaje({ tipo: 'error', texto: COPY_ENTRENAMIENTO.hayElementosPorCorregir, deValidar: true });
-      }
-      if (r.tipo === 'API' && r.codigo === 'CAPACITY_NOT_AVAILABLE') return setFalloDeActivacion('No hay capacidad disponible para iniciar un nuevo seguimiento. Los seguimientos vigentes no se modifican.');
-      if (r.tipo === 'API' && r.codigo === 'ACTIVE_PLAN_CONFLICT') return setFalloDeActivacion('El asesorado ya tiene un plan de entrenamiento vigente con otro profesional.');
-      if (r.tipo === 'API' && r.codigo === 'CLIENT_CAPABILITY_REQUIRED') {
+        return onActivado(que.tipo === 'YA_QUEDO_ACTIVA' ? COPY_RESULTADO_DE_ACTIVAR.yaQuedoActiva(numero) : null);
+      case 'YA_NO_ESTA':
+        // Se descartó en otra pestaña: no hay nada que activar ni que guardar; la sección vuelve a leer el plan.
+        setConfirmar(false);
+        setSucio(false);
+        return onDescartado(COPY_RESULTADO_DE_ACTIVAR.yaNoEsta);
+      case 'IMPIDE':
+        // Lo que impide activar, con su lugar, en el mismo cuadro.
+        setRevision({ estado: 'lista', problemas: que.problemas });
+        return setFalloDeActivacion(COPY_RESULTADO_DE_ACTIVAR.impide);
+      case 'CAMBIO_EN_OTRA_PESTANA':
+        // Al volver al plan, el aviso del conflicto ofrece «Cargar la versión guardada».
+        setConflicto(true);
+        return setFalloDeActivacion(COPY_RESULTADO_DE_ACTIVAR.cambioEnOtraPestana);
+      case 'OTRO_PLAN_VIGENTE':
+        return setFalloDeActivacion(COPY_RESULTADO_DE_ACTIVAR.otroPlanVigente('entrenamiento'));
+      case 'SIN_CAPACIDAD':
+        return setFalloDeActivacion(COPY_RESULTADO_DE_ACTIVAR.sinCapacidad);
+      case 'SU_APP':
+        // Hasta ED-08, la API espera que la persona haya abierto una app que muestre los objetivos por serie.
         void cargar();
         return setFalloDeActivacion(`${COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada} ${COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}`);
-      }
-      return setFalloDeActivacion(esIncierto(r) ? COPY.resultadoIncierto : 'No pudimos activar el plan. Probá de nuevo.');
+      case 'INCIERTO':
+        return setFalloDeActivacion(COPY_RESULTADO_DE_ACTIVAR.incierto);
+      default:
+        return setFalloDeActivacion(COPY_RESULTADO_DE_ACTIVAR.otro);
     }
-    setConfirmar(false);
-    onActivado();
   }
 
   /**

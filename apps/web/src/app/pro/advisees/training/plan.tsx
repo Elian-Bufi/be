@@ -282,14 +282,14 @@ export function VistaDePlan() {
                       numero={numeroDelBorrador(historial)}
                       objetivoVigente={objetivo}
                       vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
-                      onActivado={() => {
-                        setAviso({ tipo: 'exito', texto: `${COPY_ENTRENAMIENTO.planActivado}. El asesorado ya ve esta planificación como vigente.` });
+                      onActivado={(texto) => {
+                        setAviso({ tipo: 'exito', texto: texto ?? `${COPY_ENTRENAMIENTO.planActivado}. El asesorado ya ve esta planificación como vigente.` });
                         ir(TODO_LO_ELEGIDO);
                         void cargar();
                       }}
                       // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
-                      onDescartado={() => {
-                        setAviso({ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
+                      onDescartado={(porOtraPestana) => {
+                        setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
                         ir(TODO_LO_ELEGIDO);
                         void cargar();
                       }}

@@ -56,7 +56,7 @@ test('TEST-EDP-008 · los editores: una sola entrada fija, la revisión de la AP
     // Con todo guardado, el cuadro pide la revisión a la API; la activación la decide la API.
     assert.match(fuente, /if \(confirmar && version && !sucio && !guardando && revision === null\) void revisar\(version\);/, ruta);
     assert.match(fuente, /const r = await api\.validarPlan(DeEntrenamiento)?\(token, planId, v\.version\);/, ruta);
-    assert.match(fuente, /await api\.activarPlan(DeEntrenamiento)?\(token, planId, v\.version, intentoDeActivar\.actual\(\)\)/, ruta);
+    assert.match(fuente, /await api\.activarPlan(DeEntrenamiento)?\(token, planId, v\.version, intentoDeActivar\.actual\(/, ruta);
     // «¿Cuándo la revisás?» con «Sin fecha por ahora», y el principal espera una elección.
     assert.match(fuente, /cuando=\{\n\s*<CuandoLaRevisas\n[\s\S]*?conSinFecha\n/, ruta);
     assert.match(fuente, /eligioCuando=\{fechaQueResulta\(cuando, hoyEn\(\)\) !== undefined\}/, ruta);

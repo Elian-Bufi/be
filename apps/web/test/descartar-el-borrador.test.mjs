@@ -84,7 +84,7 @@ test('TEST-EDP-002 · los dos editores: el «⋯», el cuadro, la misma clave en
   for (const ruta of ['app/pro/advisees/training/plan.tsx', 'app/pro/advisees/nutrition/plan.tsx']) {
     const fuente = leer(ruta);
     assert.match(fuente, /numero=\{numeroDelBorrador\(historial\)\}/, ruta);
-    assert.match(fuente, /onDescartado=\{\(\) => \{\n\s*setAviso\(\{ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION\.descartada\(/, ruta);
+    assert.match(fuente, /onDescartado=\{\(porOtraPestana\) => \{\n\s*setAviso\(porOtraPestana \? \{ tipo: 'error', texto: porOtraPestana \} : \{ tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION\.descartada\(/, ruta);
   }
   // La vigente (`PlanActivo`) nunca ofrece descartar.
   const plan = leer('app/pro/advisees/training/plan.tsx');
