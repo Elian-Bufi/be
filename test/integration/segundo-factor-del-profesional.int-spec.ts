@@ -218,14 +218,14 @@ describe('TEST-UF-014 · Administración restablece el segundo factor de un prof
     expect((await estado(nueva)).secondFactor.state).toBe('VERIFIED');
     // El hecho, con el fundamento y el administrador; la auditoría, sin el fundamento.
     expect(await prisma.restablecimientoDeSegundoFactor.findMany({ where: { identidadId: pro.id } })).toEqual([
-      expect.objectContaining({ administradorId: a.id, fundamento, autenticadorRevocado: true }),
+      expect.objectContaining({ administradorId: a.id, fundamento }),
     ]);
     const auditada = await prisma.registroDeAuditoria.findFirstOrThrow({ where: { operacion: 'API-ADM-19', resultado: 'EXITO', sujetoId: pro.id } });
     expect(auditada).toMatchObject({ actorId: a.id, motivo: `SESIONES_REVOCADAS:${hecho.body.data.sessionsRevoked}` });
     expect(JSON.stringify(auditada)).not.toContain(fundamento);
     // La base no deja registrar un restablecimiento sin un administrador vigente, ni borrarlo.
     await expect(
-      prisma.restablecimientoDeSegundoFactor.create({ data: { identidadId: pro.id, administradorId: pro.id, fundamento: 'x', autenticadorRevocado: false, procedencia: { fuente: 'PRUEBA' } } }),
+      prisma.restablecimientoDeSegundoFactor.create({ data: { identidadId: pro.id, administradorId: pro.id, fundamento: 'x', procedencia: { fuente: 'PRUEBA' } } }),
     ).rejects.toThrow(/rol administrativo vigente/);
     await expect(prisma.$executeRaw`DELETE FROM "restablecimiento_de_segundo_factor" WHERE "identidad_id" = ${pro.id}::uuid`).rejects.toThrow();
   });

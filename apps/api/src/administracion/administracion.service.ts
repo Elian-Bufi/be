@@ -456,7 +456,7 @@ export class AdministracionService {
         await tx.codigoDeRecuperacion.updateMany({ where: { identidadId, momentoDeUso: null, momentoDeInvalidacion: null }, data: { momentoDeInvalidacion: ahora } });
         const sesiones = await revocarSesiones(tx, identidadId, 'SEGUNDO_FACTOR_RESTABLECIDO', ahora);
         const fila = await tx.restablecimientoDeSegundoFactor.create({
-          data: { identidadId, administradorId: actor.identidadId, fundamento, autenticadorRevocado: revocados.count > 0, procedencia: procedencia as unknown as Prisma.InputJsonValue, momentoDeOcurrencia: ahora },
+          data: { identidadId, administradorId: actor.identidadId, fundamento, procedencia: procedencia as unknown as Prisma.InputJsonValue, momentoDeOcurrencia: ahora },
           select: { id: true },
         });
         await this.auditoria.registrar(

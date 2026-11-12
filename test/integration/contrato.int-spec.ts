@@ -2272,6 +2272,28 @@ it('TEST-CT (WP-USO-FINAL, UF-03): ACC-P1-01 y 02 y ADM-18 — recuperar el acce
   await completar(pedido, { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }).expect(204);
 });
 
+it('TEST-CT (WP-USO-FINAL, UF-11): ADM-19 — Administración restablece el segundo factor de un profesional (DL-169, UF-T56)', async () => {
+  const pro = await prepararProfesional(app, 'ct-uf11-rsf', ['NUTRICION']);
+  const persona = correoSintetico('ct-uf11-rsf-persona');
+  await registrarOk(app, persona, 'WEB');
+  const a = await administradorListo(app, prisma, `ct-uf11-${randomUUID().slice(0, 6)}`);
+  const restablecer = (token: string | undefined, cuerpo: Record<string, unknown>) => adm(app, token).post('/admin/professional-second-factor-resets').send(cuerpo);
+  const fundamento = 'Escribió desde el correo de la cuenta (sintético).';
+  await restablecer(a.token, { email: pro.correo, rationale: fundamento }).expect(200);
+  await restablecer(a.token, { email: persona, rationale: fundamento }).expect(422); // VALIDATION_FAILED (no es profesional)
+  await restablecer(a.token, { email: correoSintetico('ct-uf11-nadie'), rationale: fundamento }).expect(404); // RESOURCE_NOT_FOUND
+  await restablecer(a.token, { email: pro.correo, rationale: fundamento, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await restablecer(undefined, { email: pro.correo, rationale: fundamento }).expect(401); // AUTHENTICATION_REQUIRED
+  const sinSegundo = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+  await restablecer(sinSegundo, { email: pro.correo, rationale: fundamento }).expect(403); // MFA_REQUIRED
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-05): ACC-09 — el texto de una versión publicada, sin sesión (DL-169, UF-T57)', async () => {
+  await request(app.getHttpServer()).get(`/api/v1/legal-texts/${VERSION_VIGENTE.TERMINOS.id}`).expect(200);
+  await request(app.getHttpServer()).get('/api/v1/legal-texts/terminos-que-no-existe').expect(404); // RESOURCE_NOT_FOUND
+  await request(app.getHttpServer()).get(`/api/v1/legal-texts/${VERSION_VIGENTE.TERMINOS.id}?x=1`).expect(400); // INVALID_REQUEST
+});
+
 it('TEST-CT (WP-USO-FINAL, UF-07): SOP-01 — el canal de ayuda y contacto, sin sesión (DL-169)', async () => {
   await request(app.getHttpServer()).get('/api/v1/support/contact').expect(200);
   await request(app.getHttpServer()).get('/api/v1/support/contact?x=1').expect(400); // INVALID_REQUEST

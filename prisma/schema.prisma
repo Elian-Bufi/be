@@ -767,8 +767,6 @@ model RestablecimientoDeSegundoFactor {
   identidadId          String    @map("identidad_id") @db.Uuid
   administradorId      String    @map("administrador_id") @db.Uuid
   fundamento           String
-  /// Si tenía un autenticador activo que dejó de valer (sin él, el restablecimiento igual cierra las sesiones).
-  autenticadorRevocado Boolean   @map("autenticador_revocado")
   procedencia          Json
   momentoDeOcurrencia  DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro    DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)

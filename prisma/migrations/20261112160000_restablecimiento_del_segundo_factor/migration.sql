@@ -7,7 +7,6 @@ CREATE TABLE "restablecimiento_de_segundo_factor" (
     "identidad_id" UUID NOT NULL,
     "administrador_id" UUID NOT NULL,
     "fundamento" TEXT NOT NULL,
-    "autenticador_revocado" BOOLEAN NOT NULL,
     "procedencia" JSONB NOT NULL,
     "momento_de_ocurrencia" TIMESTAMPTZ(3),
     "momento_de_registro" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
