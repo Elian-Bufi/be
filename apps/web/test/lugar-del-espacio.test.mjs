@@ -67,9 +67,9 @@ test('TEST-TAG-035 · al volver, el foco va a lo que se abrió o a lo que seguí
 
 test('TEST-TAG-035 · cada ficha, cada verbo y cada salida del cajón guardan el lugar y llevan el retorno', () => {
   const mesa = leer('te-toca-a-vos.tsx');
-  assert.match(mesa, /<Link className="pendiente__enlace" href=\{conOrigenEnElEspacio\(rutaQueResuelve\(p\)\)\}[^>]*data-pendiente=\{claveDelPendiente\(p\)\} onClick=\{\(\) => alAbrir\?\.\(p\)\}>/);
+  assert.match(mesa, /<Enlace className="pendiente__enlace" href=\{conOrigenEnElEspacio\(rutaQueResuelve\(p\)\)\}[^>]*data-pendiente=\{claveDelPendiente\(p\)\} onClick=\{\(\) => alAbrir\?\.\(p\)\}>/);
   const semana = leer('tu-semana-en-pantalla.tsx');
-  assert.match(semana, /<Link className="ficha-de-la-semana" href=\{conOrigenEnElEspacio\(rutaQueResuelve\(f\)\)\} data-ficha=\{claveDelPendiente\(f\)\} onClick=\{\(\) => alAbrir\?\.\(f\)\}>/);
+  assert.match(semana, /<Enlace className="ficha-de-la-semana" href=\{conOrigenEnElEspacio\(rutaQueResuelve\(f\)\)\} data-ficha=\{claveDelPendiente\(f\)\} onClick=\{\(\) => alAbrir\?\.\(f\)\}>/);
   const cajon = leer('cajon-de-a-una.tsx');
   assert.match(cajon, /if \(actual\) onSalir\(actual\);/);
   assert.match(cajon, /href=\{conOrigenEnElEspacio\(salida\.href\)\}/);

@@ -4,7 +4,8 @@
  * Lo que comparten las secciones «Plan» de Nutrición y de Entrenamiento (WP-ESCRITORIO-AREAS, partes 5 y 6): el selector
  * de versión, el historial y el menú de las plantillas.
  * - **El selector** aparece cuando hay una versión en preparación y una activa (C-39): se mira una u otra. La que está
- *   en preparación no lleva número hasta activarse: se nombra por lo que es.
+ *   en preparación lleva el número que va a tener al activarse, el de las activadas más uno (DJ-6): «9 · en
+ *   preparación», al lado de «8 · activa».
  * - **El historial** lista las versiones activadas, de la más nueva a la más vieja, con su día y su hora, y cuál rige
  *   (lo dice la API, no la fecha). Al pie, plegada, la huella de la instantánea que se está leyendo: es una constancia
  *   técnica, que no hace falta para leer el plan (crítica de diseño del 2026-10-15).
@@ -21,7 +22,18 @@ import { diaSinElAnioEnCurso, horaDelDia } from '../../../lib/formato';
 /** La versión que se mira: la que está en preparación o la activa. */
 export type VersionMostrada = 'preparacion' | 'activa';
 
-export function SelectorDeVersion({ mostrada, numeroDeLaActiva, onElegir }: { mostrada: VersionMostrada; numeroDeLaActiva: number; onElegir: (cual: VersionMostrada) => void }) {
+export function SelectorDeVersion({
+  mostrada,
+  numeroDeLaActiva,
+  numeroDelBorrador,
+  onElegir,
+}: {
+  mostrada: VersionMostrada;
+  numeroDeLaActiva: number;
+  /** El número de la versión en preparación: el de las activadas más uno (DJ-6). */
+  numeroDelBorrador: number;
+  onElegir: (cual: VersionMostrada) => void;
+}) {
   const nombre = useId();
   return (
     <div className="plan__selector">
@@ -30,7 +42,7 @@ export function SelectorDeVersion({ mostrada, numeroDeLaActiva, onElegir }: { mo
         <div className="segmentos__fila">
           <label className="segmento">
             <input type="radio" name={nombre} value="preparacion" checked={mostrada === 'preparacion'} onChange={() => onElegir('preparacion')} />
-            {COPY_DE_VERSIONES.enPreparacion}
+            {COPY_DE_VERSIONES.enPreparacionConNumero(numeroDelBorrador)}
           </label>
           <label className="segmento">
             <input type="radio" name={nombre} value="activa" checked={mostrada === 'activa'} onChange={() => onElegir('activa')} />

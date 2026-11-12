@@ -15,7 +15,7 @@
  * «Solicitud enviada.».
  */
 import { COPY_PRIMER_PLAN, cantidad, COPY_NUTRICION, type ContextoDeRevisionResponse, type EvaluacionNutricional, type VersionDeObjetivo, type VersionDePlan } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Cargando } from '../../../../components/estados';
@@ -196,7 +196,7 @@ function Resumen({
             <div>
               <dt>{COPY_NUTRICION.borrador}</dt>
               <dd>
-                Hay un borrador en preparación. No es visible para el asesorado.{' '}
+                Hay un borrador en preparación. La persona no lo ve.{' '}
                 <button type="button" className="boton boton--enlace" onClick={onIrAlPlan}>
                   Abrir borrador
                 </button>
@@ -299,9 +299,9 @@ function Resumen({
               {efectivo ? COPY_NUTRICION.nuevaVersionDeObjetivo : COPY_NUTRICION.definirObjetivo}
             </button>
             {/* PF-02 (FR-02): pedir información desde acá y volver acá al enviarla, como en Entrenamiento. */}
-            <Link className="boton boton--secundario" href={pedirInformacion}>
+            <Enlace className="boton boton--secundario" href={pedirInformacion}>
               {COPY_NUTRICION.pedirInformacion}
-            </Link>
+            </Enlace>
           </div>
           {objetivoNoSePuede && (evaluaciones !== null && objetivos !== null) ? (
             <p id="objetivo-no-se-puede" className="nota">

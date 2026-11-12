@@ -11,7 +11,7 @@
  * pudo leer lo dice en su lugar: una falla no es «nada espera».
  */
 import { COPY_CARTERA, fechaCivil, numero, type Invitacion, type SolicitudDeVinculo } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useId } from 'react';
 import { Icono } from '../../components/icono';
 import { Retrato } from '../../components/retrato';
@@ -91,10 +91,10 @@ export function EsperanRespuesta({
                   <span className="esperan__que">
                     {texto} · {COPY_CARTERA.dominio[p.domain]}
                   </span>
-                  <Link className="pendiente__enlace" href={rutaQueResuelve(p)} aria-label={`${COPY_CARTERA.accion[p.kind]}: ${quien}, ${texto}`}>
+                  <Enlace className="pendiente__enlace" href={rutaQueResuelve(p)} aria-label={`${COPY_CARTERA.accion[p.kind]}: ${quien}, ${texto}`}>
                     {COPY_CARTERA.accion[p.kind]}
                     <Icono nombre="derecha" tamano={18} />
-                  </Link>
+                  </Enlace>
                 </li>
               );
             }

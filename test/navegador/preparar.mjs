@@ -31,6 +31,17 @@ export const RECORRIDOS = {
   primerPlan: { habilitado: ['NUTRICION'], datos: [] },
   borrador: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-01 (WP-EDITORES-PROFESIONAL): descartar la versión en preparación.
+  descartar: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-02 (WP-EDITORES-PROFESIONAL): salir con cambios sin guardar.
+  salidaSegura: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-07 (WP-EDITORES-PROFESIONAL): «Ir a corregir» deja el foco en su lugar.
+  irACorregir: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // ED-61, ED-03 y ED-02 (WP-EDITORES-PROFESIONAL): la respuesta perdida, «Reintentar» después de un 503 y la salida
+  // cuando el guardado falla (sin red y con un 409).
+  respuestaPerdida: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  reintentar: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  salidaConFallas: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   retorno: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
   grafico: { habilitado: ['ANTROPOMETRIA'], datos: ['tomas'] },
   // El área sugerida al invitar (bloque 5): sin vínculos, ninguna; con vínculos en una sola de dos áreas, esa.

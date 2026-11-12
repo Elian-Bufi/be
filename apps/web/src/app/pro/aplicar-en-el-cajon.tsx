@@ -13,7 +13,7 @@
  * - **Después,** el cajón dice lo que hizo la aplicación y ofrece seguir (`cajon-de-a-una.tsx`).
  */
 import { ETIQUETA_DE_RESULTADO, type Revision, type RevisionDeEntrenamiento } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Aviso } from '../../components/formulario';
 import { api, type Resultado } from '../../lib/api';
@@ -93,9 +93,9 @@ export function AplicarEnElCajon({
       {lectura.tipo === 'error' ? (
         <p className="nota">
           {COPY_CAJON.sinLeerLaRevision}{' '}
-          <Link href={revisiones} onClick={alSalir}>
+          <Enlace href={revisiones} onClick={alSalir}>
             {COPY_CAJON.verLaRevision}
-          </Link>
+          </Enlace>
         </p>
       ) : null}
       {revision ? (
@@ -122,9 +122,9 @@ export function AplicarEnElCajon({
             </p>
           )}
           <p className="nota">
-            <Link href={revisiones} onClick={alSalir}>
+            <Enlace href={revisiones} onClick={alSalir}>
               {COPY_CAJON.verLaRevision}
-            </Link>
+            </Enlace>
           </p>
         </div>
       ) : null}

@@ -14,7 +14,7 @@
  * - Una falla de esta lectura no esconde los pendientes, y dice su motivo.
  */
 import { COPY_VINCULO, numero, type PaginaDeUnaLista, type Vinculo } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { BloqueDeEstado, EstadoVacio } from '../../components/estados';
 import { Icono } from '../../components/icono';
@@ -56,7 +56,7 @@ export function Asesorados({
     <section id="tus-asesorados" className="tarjeta-del-espacio directorio" aria-labelledby={`${id}-titulo`} tabIndex={-1}>
       <div className="tarjeta-del-espacio__cabecera">
         <Icono nombre="asesorados" tamano={24} />
-        <h2 id={`${id}-titulo`}>Tus asesorados</h2>
+        <h2 id={`${id}-titulo`}>Las personas que acompañás</h2>
         {listo ? (
           <p className="directorio__cuenta" role="status">
             {buscando ? `${numero(coinciden.length)} de ${numero(personas.length)}${mas}` : `${numero(personas.length)}${mas}`}
@@ -69,17 +69,17 @@ export function Asesorados({
 
       {vinculos.tipo === 'cargando' ? (
         <p className="cargando" role="status">
-          Cargando tus asesorados…
+          Cargando las personas que acompañás…
         </p>
       ) : null}
       {vinculos.tipo === 'error' ? (
-        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[vinculos.motivo]} titulo="No pudimos cargar tus asesorados" onReintentar={onReintentar} deQue="tus asesorados">
+        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[vinculos.motivo]} titulo="No pudimos cargar las personas que acompañás" onReintentar={onReintentar} deQue="las personas que acompañás">
           {razonDeFalla(vinculos.motivo)}
         </BloqueDeEstado>
       ) : null}
       {/* Un «Actualizar» que falló: lo leído sigue a la vista, con su hora (bloque 5 del encargo de consolidación). */}
       {listo?.fallaAlActualizar ? (
-        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[listo.fallaAlActualizar]} titulo="No pudimos actualizar tus asesorados" onReintentar={onReintentar} deQue="tus asesorados" rol="alert">
+        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[listo.fallaAlActualizar]} titulo="No pudimos actualizar las personas que acompañás" onReintentar={onReintentar} deQue="las personas que acompañás" rol="alert">
           {razonDeFalla(listo.fallaAlActualizar)} Se ve lo consultado a las {horaDelDia(listo.consultado)}.
         </BloqueDeEstado>
       ) : null}
@@ -137,7 +137,7 @@ export function Asesorados({
 function Persona({ persona }: { persona: PersonaDelDirectorio }) {
   return (
     <li className="persona" data-persona={persona.identityId}>
-      <Link className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`}>
+      <Enlace className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`}>
         {/* TB-05: el monograma; sin nombre visible (un vínculo que terminó) o con los nombres ocultos, el ícono. */}
         <Retrato nombre={persona.nombre} tamano="medio" />
         <span className="persona__resumen">
@@ -158,7 +158,7 @@ function Persona({ persona }: { persona: PersonaDelDirectorio }) {
         </span>
         <span className="visualmente-oculto">. Abrir su ficha</span>
         <Icono nombre="derecha" tamano={18} />
-      </Link>
+      </Enlace>
     </li>
   );
 }

@@ -1,5 +1,5 @@
 import type { VersionDeTexto } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from './enlace';
 
 /**
  * Texto versionado (08 §12.2): muestra id, vigencia y hash de la versión exacta que el registro acepta.
@@ -32,7 +32,7 @@ export function TextoVersionado({ version }: { version: VersionDeTexto }) {
         <p key={i}>{p}</p>
       ))}
       <p>
-        <Link href="/register">Volver a Crear cuenta</Link>
+        <Enlace href="/register">Volver a Crear cuenta</Enlace>
       </p>
     </article>
   );

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Enlace } from './enlace';
 
 /**
  * Dónde está la persona dentro del espacio profesional: «Espacio profesional › Mis recetas» (B10-01, header contextual;
@@ -12,7 +12,7 @@ export function Migas({ pasos }: { pasos: readonly { texto: string; href?: strin
       <ol>
         {pasos.map((p, i) => (
           <li key={`${i}-${p.texto}`}>
-            {p.href && i < pasos.length - 1 ? <Link href={p.href}>{p.texto}</Link> : <span aria-current="page">{p.texto}</span>}
+            {p.href && i < pasos.length - 1 ? <Enlace href={p.href}>{p.texto}</Enlace> : <span aria-current="page">{p.texto}</span>}
           </li>
         ))}
       </ol>

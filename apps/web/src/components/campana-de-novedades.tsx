@@ -8,7 +8,7 @@
  *   clínicas»). El nombre accesible lo dice entero: «Novedades, 2 sin leer».
  * - Si la lectura falla, la campana queda sin número: las novedades siguen en su página.
  */
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
@@ -37,7 +37,7 @@ export function CampanaDeNovedades() {
   const actual = ruta === destino;
   const nombre = sinLeer && sinLeer > 0 ? `Novedades, ${sinLeer} sin leer` : 'Novedades';
   return (
-    <Link href={destino} className="campana-de-novedades" aria-label={nombre} aria-current={actual ? 'page' : undefined}>
+    <Enlace href={destino} className="campana-de-novedades" aria-label={nombre} aria-current={actual ? 'page' : undefined}>
       <Icono nombre="novedades" />
       <span className="campana-de-novedades__palabra" aria-hidden="true">
         Novedades
@@ -47,6 +47,6 @@ export function CampanaDeNovedades() {
           {sinLeer > 99 ? '99+' : sinLeer}
         </span>
       ) : null}
-    </Link>
+    </Enlace>
   );
 }

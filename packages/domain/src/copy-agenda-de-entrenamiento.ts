@@ -58,12 +58,12 @@ export function fechaDeLaAgenda(fecha: string): string {
 export const COPY_AGENDA_DE_ENTRENAMIENTO = {
   titulo: 'Días de entrenamiento',
   /** Sin agenda: como antes de DL-137. */
-  sinAgenda: 'Este plan no tiene días: tu asesorado elige qué sesión hace cada vez, y no recibe avisos de entrenamiento.',
+  sinAgenda: 'Este plan no tiene días: la persona elige qué sesión hace cada vez, y no recibe avisos de entrenamiento.',
   ponerDias: 'Elegir los días',
   cambiarDias: 'Cambiar los días',
   ocultar: 'Listo',
   quitarDias: 'Quitar los días',
-  quitarDiasAyuda: 'Sin días, tu asesorado elige qué sesión hace, y no recibe avisos de entrenamiento.',
+  quitarDiasAyuda: 'Sin días, la persona elige qué sesión hace, y no recibe avisos de entrenamiento.',
   desde: 'Empieza el',
   desdeAyuda: 'Antes de que actives esta versión no hay nada previsto: cuenta desde la activación.',
   sesion: 'Sesión',
@@ -84,8 +84,8 @@ export const COPY_AGENDA_DE_ENTRENAMIENTO = {
   movidaDesde: (desde: string): string => `Movida desde ${fechaDeLaAgenda(desde)}`,
   deshacerMovimiento: 'Volver a su día',
   /** Lo que cambia para la persona, sin prometer más de lo que hace BE. */
-  avisos: 'Con días, tu asesorado ve qué sesión le toca, puede pasarla a otro día o saltearla, y recibe un aviso a las 10 el día que le toca y otro a las 22 si todavía no la registró.',
-  sinDiaAsignado: 'Sin día asignado: tu asesorado elige cuál hace.',
+  avisos: 'Con días, la persona ve qué sesión le toca, puede pasarla a otro día o saltearla, y recibe un aviso a las 10 el día que le toca y otro a las 22 si todavía no la registró.',
+  sinDiaAsignado: 'Sin día asignado: la persona elige cuál hace.',
   // ── En la APK, para la persona ──
   hoyTeToca: 'Hoy te toca',
   hoyNoHaySesion: 'Hoy no tenés una sesión prevista. Si querés entrenar igual, elegí una sesión de tu plan.',

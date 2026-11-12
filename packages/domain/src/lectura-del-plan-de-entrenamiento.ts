@@ -182,8 +182,8 @@ export const COPY_DEL_PLAN_DE_ENTRENAMIENTO = {
   /** «Propósito: más carga, menos repeticiones». */
   proposito: 'Propósito',
   /** El plan no asigna días: el teléfono muestra todas las sesiones y la persona elige cuál hace. */
-  sinDiaAsignado: 'Sin día asignado: tu asesorado elige cuál hace.',
-  loQueRecibe: 'Lo que recibe tu asesorado',
+  sinDiaAsignado: 'Sin día asignado: la persona elige cuál hace.',
+  loQueRecibe: 'Lo que recibe la persona',
   loGeneral: 'Lo general del ejercicio',
   intensidad: 'Intensidad',
   laCargaSeCuenta: 'La carga se cuenta',

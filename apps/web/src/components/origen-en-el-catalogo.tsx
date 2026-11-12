@@ -13,7 +13,7 @@
  * Los textos salen del dominio (`copy-origen-en-el-catalogo.ts`).
  */
 import { COPY_ORIGEN_EN_EL_CATALOGO, origenEnElCatalogo, type ItemConOrigen } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { dia } from '../lib/formato';
 import { Pista } from './pista';
 
@@ -22,7 +22,7 @@ export function OrigenEnElCatalogo({ item }: { item: ItemConOrigen }) {
   if (origen.seccion === null) return <span className="origen-en-el-catalogo">{origen.breve}</span>;
   return (
     <Pista texto={origen.detalle}>
-      <Link
+      <Enlace
         className="origen-en-el-catalogo origen-en-el-catalogo--enlace"
         href={`/legal/fuentes#${origen.seccion}`}
         target="_blank"
@@ -31,7 +31,7 @@ export function OrigenEnElCatalogo({ item }: { item: ItemConOrigen }) {
         data-origen={origen.seccion}
       >
         {origen.breve}
-      </Link>
+      </Enlace>
     </Pista>
   );
 }

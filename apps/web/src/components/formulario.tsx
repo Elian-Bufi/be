@@ -4,7 +4,8 @@
  * Piezas de formulario accesibles (10-B10 §6-§8): label persistente (el placeholder no la sustituye), error asociado al
  * campo con texto (no solo color), resumen de errores que recibe el foco.
  */
-import { forwardRef, useEffect, useRef, type InputHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useEffect, useRef, useState, type FocusEvent, type InputHTMLAttributes, type ReactNode } from 'react';
+import { alEnviar, alSalirDelCampo, anuncioDeLosAvisos, idsDelCampo, SIN_AVISOS, type AvisosDelFormulario, type ErrorDeCampo } from './validacion-viva';
 
 interface PropsDeCampo extends InputHTMLAttributes<HTMLInputElement> {
   readonly id: string;
@@ -80,5 +81,45 @@ export function Aviso({ tipo, children, enfocar = false }: { tipo: 'error' | 'in
     <div ref={ref} className={`aviso aviso--${tipo}`} role={tipo === 'error' ? 'alert' : 'status'} tabIndex={enfocar ? -1 : undefined}>
       {children}
     </div>
+  );
+}
+
+/**
+ * ED-04 (WP-EDITORES-PROFESIONAL) · Los avisos de un formulario, vivos: se muestran al enviar y se actualizan al salir de
+ * cada campo; mientras se escribe, nada cambia (la regla, en `validacion-viva.ts`). `validar` dice lo que falta ahora.
+ * El formulario pone `alSalir` en el `onBlur` de su `<form>`, `errores` y `envios` en `ResumenDeErrores`, y
+ * `AnuncioDeLosAvisos` con el texto de listo.
+ */
+export function useAvisosVivos(validar: () => readonly ErrorDeCampo[]) {
+  const [avisos, setAvisos] = useState<AvisosDelFormulario>(SIN_AVISOS);
+  const [envios, setEnvios] = useState(0);
+  const ultimo = useRef(validar);
+  ultimo.current = validar;
+  return {
+    errores: avisos.mostrados,
+    envios,
+    /** Al enviar: muestra todo lo que falta y lo devuelve. */
+    alEnviar: (): readonly ErrorDeCampo[] => {
+      const ahora = ultimo.current();
+      setAvisos(alEnviar(ahora));
+      setEnvios((n) => n + 1);
+      return ahora;
+    },
+    /** En el `onBlur` del `<form>`: el campo que se dejó dice lo que tiene ahora. */
+    alSalir: (evento: FocusEvent<HTMLElement>): void => {
+      const campo = idsDelCampo(evento.target, evento.currentTarget);
+      setAvisos((a) => alSalirDelCampo(a, campo, ultimo.current()));
+    },
+    /** Lo que oye el lector cuando ya no queda nada por corregir. */
+    anuncio: (listo: string): string => anuncioDeLosAvisos(avisos, listo),
+  };
+}
+
+/** ED-04: la región que lee el lector de pantalla cuando ya no queda nada por corregir («Listo para registrar»). */
+export function AnuncioDeLosAvisos({ texto }: { texto: string }) {
+  return (
+    <p className="visualmente-oculto" role="status" aria-live="polite" data-anuncio-de-los-avisos>
+      {texto}
+    </p>
   );
 }
