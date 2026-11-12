@@ -1,5 +1,6 @@
 /**
- * WP-ADMINISTRACION (DL-155): el cliente HTTP de la consola de Administración del website (API-ADM-01 a 13). Va aparte del
+ * WP-ADMINISTRACION (DL-155): el cliente HTTP de la consola de Administración del website (API-ADM-01 a 13; desde UF-04 de
+ * WP-USO-FINAL, DL-169, también 14 y 15). Va aparte del
  * cliente común (`cliente-http.ts`) a propósito: la sesión administrativa es otra, con otro token y otra cookie, y ninguna
  * pantalla de la consola llama a una operación de profesionales o de personas (ni viceversa).
  * - El Bearer lo guarda quien llama, en memoria. La cookie de reanudación de Administración (HttpOnly, de la API) viaja
@@ -7,6 +8,7 @@
  * - Toda respuesta exitosa se valida contra su schema; un `SECOND_FACTOR_INVALID` trae cuántos intentos le quedan a la
  *   sesión.
  */
+import type { CambiarNombreProfesionalRequest, IncorporarProfesionalRequest } from './incorporacion-de-profesionales';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -151,6 +153,14 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
         claveDeIdempotencia,
         esquema: DecisionRegistradaResponseSchema,
       });
+    },
+    /** API-ADM-14 — incorporar a un profesional real (UF-04, DL-169), con su clave de idempotencia. */
+    incorporarProfesional(token: string, pedido: IncorporarProfesionalRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/admin/professionals', { token, cuerpo: pedido, claveDeIdempotencia, esquema: FichaDeProfesionalResponseSchema });
+    },
+    /** API-ADM-15 — cambiar el nombre profesional (UF-D7), contra el que se vio, con su clave de idempotencia. */
+    cambiarNombreProfesional(token: string, profesionalId: string, pedido: CambiarNombreProfesionalRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/professionals/${encodeURIComponent(profesionalId)}/name`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: FichaDeProfesionalResponseSchema });
     },
   };
 }

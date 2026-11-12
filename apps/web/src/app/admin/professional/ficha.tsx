@@ -35,6 +35,7 @@ import { useAdministracion } from '../../../lib/sesion-administrativa';
 import { Situacion } from '../situacion';
 import { DECISIONES_DE_PELIGRO, DialogoDeDecision } from './decision';
 import { HistorialAdministrativo } from './historial';
+import { CambioDelNombreProfesional } from './nombre';
 
 const F = COPY_ADMINISTRACION.ficha;
 const ICONO_DEL_AREA: Readonly<Record<Alcance, NombreDeIcono>> = { NUTRICION: 'nutricion', ENTRENAMIENTO: 'entrenamiento', ANTROPOMETRIA: 'antropometria' };
@@ -204,6 +205,7 @@ export function FichaDelProfesional() {
             {' · '}
             {p.email ?? COPY_ADMINISTRACION.lista.sinCorreo}
             {p.profileSince ? ` · ${F.desde} el ${dia(p.profileSince)}` : ''}
+            {p.license ? ` · ${COPY_ADMINISTRACION.nombreProfesional.matricula(p.license.number, p.license.jurisdiction)}` : ''}
             {p.accountState !== 'OPERATIVA' ? ` · ${COPY_ADMINISTRACION.cuentaEnPalabras[p.accountState]}` : ''}
           </p>
         </div>
@@ -226,6 +228,17 @@ export function FichaDelProfesional() {
         <Icono nombre="info" tamano={18} />
         {COPY_ADMINISTRACION.noCertifica}
       </p>
+      {/* UF-04 (DL-169; UF-D7): el nombre profesional lo cambia Administración, con fundamento. */}
+      <CambioDelNombreProfesional
+        profesionalId={p.professionalId}
+        nombreDeHoy={p.displayName}
+        alReleer={leer}
+        alCambiar={(ficha, aviso) => {
+          setEstado((e) => (e.tipo === 'listo' ? { ...e, ficha: ficha.data, consultadaEn: new Date() } : e));
+          setRefrescoDelHistorial((n) => n + 1);
+          setRegistrada(aviso);
+        }}
+      />
 
       <section className="seccion" aria-labelledby="areas-de-la-ficha">
         <h2 id="areas-de-la-ficha">{F.areas}</h2>

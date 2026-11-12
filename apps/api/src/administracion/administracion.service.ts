@@ -1,8 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ALCANCES,
+  CambiarNombreProfesionalRequestSchema,
   ConsultarProfesionalesRequestSchema,
   DecidirSobreAreaRequestSchema,
+  IncorporarProfesionalRequestSchema,
+  ISSUE_DE_INCORPORACION,
+  evaluarCambioDeNombre,
+  evaluarIncorporacion,
   cambioDeOperacion,
   decisionesDisponibles,
   esAlcance,
@@ -26,6 +31,8 @@ import {
   type ProfesionalDeLaLista,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
+import type { Entorno } from '../config/entorno';
+import { ENTORNO } from '../config/tokens';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
@@ -75,6 +82,9 @@ const PERFIL_API = { SANITARIO: 'HEALTH_PROFESSIONAL', NO_SANITARIO: 'NON_HEALTH
  */
 @Injectable()
 export class AdministracionService {
+  /** UF-04: en `test` y en desarrollo, API-ADM-14 solo incorpora cuentas sintéticas, como el comando del primer administrador. */
+  private readonly soloCuentasSinteticas: boolean;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly verificacion: VerificacionService,
@@ -82,7 +92,10 @@ export class AdministracionService {
     private readonly idempotencia: IdempotenciaService,
     private readonly auditoria: AuditoriaService,
     private readonly limitador: LimitadorService,
-  ) {}
+    @Inject(ENTORNO) entorno: Entorno,
+  ) {
+    this.soloCuentasSinteticas = entorno.appEnv !== 'production';
+  }
 
   // ─── API-ADM-10 ──────────────────────────────────────────────────────────────────────────────
   async consultar(actor: ActorAdministrativo, cuerpo: unknown, ctx: ContextoDeSolicitud): Promise<ListaDeProfesionalesResponse> {
@@ -110,7 +123,7 @@ export class AdministracionService {
         await this.auditarLectura(tx, 'API-ADM-10', actor, null, 'ListaDeProfesionales', null, ctx);
         return {
           // La lista no lleva la fecha del perfil: es de la ficha (el contrato de la lista es estricto).
-          data: pagina.map(({ p: { profileSince: _desde, ...p } }) => p),
+          data: pagina.map(({ p: { profileSince: _desde, license: _matricula, ...p } }) => p),
           page: { limit: limite, nextCursor: hayMas && ultima ? escribirCursorDeLista(ultima.clave) : null, hasMore: hayMas },
           totals: { matching: coinciden.length, pendingReview: pendientes },
         };
@@ -245,6 +258,171 @@ export class AdministracionService {
     }
   }
 
+// ─── API-ADM-14 ──────────────────────────────────────────────────────────────────────────────
+  /**
+   * UF-04 (DL-169; UF-D6): incorporar a un profesional real sobre una cuenta que ya existe. El orden es el de ADM-13: la
+   * forma (400), la clave de idempotencia, lo que se puede pedir (422), la cuenta (404) y su estado (422). Con la identidad
+   * tomada en modo exclusivo: el perfil con su matrícula y, por área, la presentación, la verificación y la habilitación,
+   * cada una con su hecho del administrador y el fundamento; la auditoría, sin el fundamento ni la matrícula. Un rechazo no
+   * deja nada guardado y se audita igual, con su motivo. En `test` y en desarrollo, como el comando del primer
+   * administrador, solo cuentas sintéticas (08 §33).
+   */
+  async incorporar(actor: ActorAdministrativo, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    const pedido = validarCuerpo(IncorporarProfesionalRequestSchema, cuerpo);
+    if (!IdempotenciaService.claveValida(clave)) {
+      throw errores.solicitudInvalida([{ code: 'IDEMPOTENCY_KEY_REQUIRED', path: 'Idempotency-Key' }], { header: 'Idempotency-Key' });
+    }
+    const procedencia = procedenciaDe(ctx, 'UC-ADM-05', 'API-ADM-14');
+    const huella = IdempotenciaService.huella({ pedido });
+    let sujetoId: string | null = null;
+    try {
+      const evaluada = evaluarIncorporacion(pedido);
+      if (!evaluada.ok) throw errores.validacionFallida([...evaluada.issues]);
+      if (this.soloCuentasSinteticas && !evaluada.correo.endsWith('@example.invalid')) {
+        throw new ErrorDeApi(422, 'VALIDATION_FAILED', 'En este ambiente solo se incorporan cuentas sintéticas.', { issues: [{ code: ISSUE_DE_INCORPORACION.SINTETICA, path: 'email' }] }, 'CUENTA_NO_SINTETICA');
+      }
+      return await this.idempotencia.ejecutar({ operacion: 'API-ADM-14', ambito: actor.identidadId, clave, huella }, async (tx) => {
+        const [metodo] = await tx.$queryRaw<{ identidadId: string }[]>`
+          SELECT "identidad_id"::text AS "identidadId" FROM "metodo_de_acceso"
+           WHERE ("tipo" = 'LOCAL' AND "referencia" = ${evaluada.correo}) OR ("tipo" = 'GOOGLE' AND "correo" = ${evaluada.correo})
+           ORDER BY "tipo" LIMIT 1`;
+        if (!metodo) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'CUENTA_NO_ENCONTRADA');
+        const identidadId = metodo.identidadId;
+        sujetoId = identidadId;
+        // La identidad en modo exclusivo: dos incorporaciones de la misma cuenta quedan una después de la otra, y la
+        // segunda ve el perfil de la primera. Lo mismo un cierre o una suspensión de la cuenta.
+        const [cuenta] = await tx.$queryRaw<{ estado: string; administrativa: boolean; profesional: boolean }[]>`
+          SELECT i."estado_operativo_de_cuenta"::text AS "estado",
+                 EXISTS (SELECT 1 FROM "rol_administrativo" r WHERE r."identidad_id" = i."id" AND r."estado" = 'VIGENTE') AS "administrativa",
+                 EXISTS (SELECT 1 FROM "perfil_profesional" p WHERE p."identidad_id" = i."id") AS "profesional"
+            FROM "identidad" i WHERE i."id" = ${identidadId}::uuid FOR NO KEY UPDATE`;
+        const problema = !cuenta
+          ? null
+          : cuenta.administrativa
+            ? ISSUE_DE_INCORPORACION.CUENTA_ADMINISTRATIVA
+            : cuenta.profesional
+              ? ISSUE_DE_INCORPORACION.YA_ES_PROFESIONAL
+              : cuenta.estado !== 'OPERATIVA'
+                ? ISSUE_DE_INCORPORACION.CUENTA_NO_OPERATIVA
+                : null;
+        if (!cuenta) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'CUENTA_NO_ENCONTRADA');
+        if (problema) throw new ErrorDeApi(422, 'VALIDATION_FAILED', 'Esta cuenta no se puede incorporar como profesional.', { issues: [{ code: problema, path: 'email' }] }, problema);
+        const momento = await momentoDeLaBase(tx);
+        const autor = { tipo: 'ADMINISTRADOR' as const, administradorId: actor.identidadId, mensaje: null, procedencia };
+        await this.verificacion.crearPerfilIncorporado(tx, identidadId, { tipo: evaluada.tipo, nombreVisible: evaluada.nombre, matricula: evaluada.matricula }, evaluada.fundamento, momento, autor);
+        for (const alcance of evaluada.alcances) {
+          await this.verificacion.transicionarVerificacion(tx, identidadId, alcance, 'PresentarAlcance', evaluada.fundamento, momento, autor);
+          await this.verificacion.transicionarVerificacion(tx, identidadId, alcance, 'VerificarAlcance', evaluada.fundamento, momento, autor);
+          await this.verificacion.transicionarHabilitacion(tx, identidadId, alcance, 'ConcederHabilitacion', evaluada.fundamento, momento, autor);
+        }
+        await this.auditoria.registrar(
+          {
+            operacion: 'API-ADM-14',
+            resultado: 'EXITO',
+            motivo: evaluada.alcances.join(','),
+            actorId: actor.identidadId,
+            sujetoId: identidadId,
+            recursoTipo: 'PerfilProfesional',
+            recursoId: identidadId,
+            superficie: procedencia.superficie,
+            requestId: procedencia.requestId,
+            momentoDeOcurrencia: momento,
+          },
+          tx,
+        );
+        return { estadoHttp: 201, cuerpo: (await this.fichaEn(tx, identidadId)) as unknown as Prisma.InputJsonValue };
+      });
+    } catch (e) {
+      if (e instanceof ErrorDeApi) await this.auditarRechazoDe('API-ADM-14', actor, sujetoId, 'PerfilProfesional', sujetoId, e, ctx);
+      throw e;
+    }
+  }
+
+  // ─── API-ADM-15 ──────────────────────────────────────────────────────────────────────────────
+  /**
+   * UF-04 (DL-169; UF-D7): cambiar el nombre profesional, con fundamento, contra el nombre que vio el administrador. El
+   * cambio queda como hecho (nombre anterior, nuevo, fundamento y administrador) y el perfil se actualiza en la misma
+   * transacción: la base no deja cambiar el nombre sin ese hecho. Devuelve la ficha.
+   */
+  async cambiarNombre(actor: ActorAdministrativo, profesionalId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    const pedido = validarCuerpo(CambiarNombreProfesionalRequestSchema, cuerpo);
+    if (!IdempotenciaService.claveValida(clave)) {
+      throw errores.solicitudInvalida([{ code: 'IDEMPOTENCY_KEY_REQUIRED', path: 'Idempotency-Key' }], { header: 'Idempotency-Key' });
+    }
+    const id = esUuid(profesionalId) ? profesionalId.toLowerCase() : null;
+    const procedencia = procedenciaDe(ctx, 'UC-ADM-05', 'API-ADM-15');
+    const huella = IdempotenciaService.huella({ profesionalId: id, pedido });
+    try {
+      return await this.idempotencia.ejecutar({ operacion: 'API-ADM-15', ambito: actor.identidadId, clave, huella }, async (tx) => {
+        // El perfil, tomado: dos cambios a la vez quedan uno después del otro, y el segundo ve el nombre del primero (409).
+        const [perfil] = id ? await tx.$queryRaw<{ nombre: string }[]>`SELECT "nombre_visible" AS "nombre" FROM "perfil_profesional" WHERE "identidad_id" = ${id}::uuid FOR UPDATE` : [];
+        if (!id || !perfil) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'PROFESIONAL_NO_ENCONTRADO');
+        if (perfil.nombre !== pedido.expectedName) {
+          throw new ErrorDeApi(409, 'VERSION_CONFLICT', 'El nombre profesional cambió desde que abriste la ficha. Revisá cómo está ahora.', undefined, 'NOMBRE_PROFESIONAL');
+        }
+        const evaluado = evaluarCambioDeNombre(pedido, perfil.nombre);
+        if (!evaluado.ok) throw errores.validacionFallida([...evaluado.issues]);
+        const momento = await momentoDeLaBase(tx);
+        await tx.cambioDeNombreProfesional.create({
+          data: {
+            identidadId: id,
+            nombreAnterior: perfil.nombre,
+            nombreNuevo: evaluado.nombre,
+            fundamento: evaluado.fundamento,
+            administradorId: actor.identidadId,
+            procedencia: procedencia as unknown as Prisma.InputJsonValue,
+            momentoDeOcurrencia: momento,
+          },
+        });
+        await tx.perfilProfesional.update({ where: { identidadId: id }, data: { nombreVisible: evaluado.nombre } });
+        await this.auditoria.registrar(
+          {
+            operacion: 'API-ADM-15',
+            resultado: 'EXITO',
+            motivo: null,
+            actorId: actor.identidadId,
+            sujetoId: id,
+            recursoTipo: 'PerfilProfesional',
+            recursoId: id,
+            superficie: procedencia.superficie,
+            requestId: procedencia.requestId,
+            momentoDeOcurrencia: momento,
+          },
+          tx,
+        );
+        return { estadoHttp: 200, cuerpo: (await this.fichaEn(tx, id)) as unknown as Prisma.InputJsonValue };
+      });
+    } catch (e) {
+      if (e instanceof ErrorDeApi) await this.auditarRechazoDe('API-ADM-15', actor, id, 'PerfilProfesional', id, e, ctx);
+      throw e;
+    }
+  }
+
+  /** Un rechazo de ADM-14 o ADM-15, auditado aparte (la transacción se revirtió), sin nada del cuerpo. */
+  private auditarRechazoDe(operacion: string, actor: ActorAdministrativo, sujetoId: string | null, recursoTipo: string, recursoId: string | null, e: ErrorDeApi, ctx: ContextoDeSolicitud): Promise<void> {
+    return this.auditoria.registrar({
+      operacion,
+      resultado: 'RECHAZO',
+      motivo: e.motivoDeAuditoria ?? e.code,
+      actorId: actor.identidadId,
+      sujetoId,
+      recursoTipo,
+      recursoId,
+      superficie: ctx.superficie,
+      requestId: ctx.requestId,
+      momentoDeOcurrencia: ctx.momentoDeRecepcion,
+    });
+  }
+
+  /** La ficha de un profesional (lo de API-ADM-11, sin la auditoría de la lectura): la respuesta de ADM-14 y ADM-15. */
+  private async fichaEn(tx: Tx, profesionalId: string): Promise<FichaDeProfesionalResponse> {
+    const [p] = await this.profesionales(tx, profesionalId);
+    if (!p) throw errores.recursoNoEncontrado();
+    const areas = await this.areasDeLaFicha(tx, p.professionalId);
+    const { scopes: _scopes, ...identidad } = p;
+    return { data: { professional: identidad, scopes: areas } };
+  }
+
   /** La decisión dentro de la transacción de la idempotencia. */
   private async aplicar(
     tx: Tx,
@@ -341,7 +519,7 @@ export class AdministracionService {
   }
 
   /** Los profesionales registrados (o uno), con sus áreas en el orden del catálogo. Una sola lectura de cada tabla. */
-  private async profesionales(tx: Tx, uno: string | null): Promise<(ProfesionalDeLaLista & { profileSince: string | null })[]> {
+  private async profesionales(tx: Tx, uno: string | null): Promise<(ProfesionalDeLaLista & { profileSince: string | null; license: { number: string; jurisdiction: string } | null })[]> {
     const filtro = uno ? { identidadId: uno } : {};
     const perfiles = await tx.perfilProfesional.findMany({
       where: filtro,
@@ -351,6 +529,8 @@ export class AdministracionService {
         tipo: true,
         momentoDeOcurrencia: true,
         momentoDeRegistro: true,
+        matriculaNumero: true,
+        matriculaJurisdiccion: true,
         identidad: { select: { estadoOperativoDeCuenta: true, metodosDeAcceso: { where: { tipo: 'LOCAL' }, select: { referencia: true } } } },
       },
     });
@@ -370,6 +550,8 @@ export class AdministracionService {
       email: p.identidad.metodosDeAcceso[0]?.referencia ?? null,
       accountState: p.identidad.estadoOperativoDeCuenta,
       profileSince: (p.momentoDeOcurrencia ?? p.momentoDeRegistro).toISOString(),
+      // UF-04 (UF-D8): la matrícula verificada, si la tiene; solo la muestra la ficha.
+      license: p.matriculaNumero && p.matriculaJurisdiccion ? { number: p.matriculaNumero, jurisdiction: p.matriculaJurisdiccion } : null,
       scopes: ALCANCES.map((alcance): AreaDelProfesional => {
         const fv = v.get(clave(p.identidadId, alcance));
         const fh = h.get(clave(p.identidadId, alcance));

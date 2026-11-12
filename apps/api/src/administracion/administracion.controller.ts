@@ -22,7 +22,8 @@ import { actorAdministrativoDe, OperacionAdministrativa, SegundoFactorGuard, Ses
 type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
 
 /**
- * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13. Prefijo global /api/v1.
+ * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13; desde UF-04 de WP-USO-FINAL (DL-169), también API-ADM-14
+ * (incorporar un profesional) y 15 (cambiar su nombre profesional). Prefijo global /api/v1.
  * - Sin guard: abrir y reanudar la sesión (el primer factor y la cookie) y cerrarla (idempotente).
  * - `SesionAdministrativaGuard`: una sesión administrativa válida, con el rol vigente. Alcanza solo para el segundo factor
  *   y para el estado de la propia sesión.
@@ -162,6 +163,41 @@ export class AdministracionController {
   ): Promise<unknown> {
     sinParametrosDeQuery(query);
     const r = await this.administracion.decidir(actorAdministrativoDe(req), profesionalId, alcance, cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  /** API-ADM-14 — SESSION_MFA, Idempotency-Key requerida (UF-04 de WP-USO-FINAL, DL-169). */
+  @Post('professionals')
+  @OperacionAdministrativa('API-ADM-14')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async incorporar(
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.administracion.incorporar(actorAdministrativoDe(req), cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  /** API-ADM-15 — SESSION_MFA, Idempotency-Key requerida (UF-04 de WP-USO-FINAL, DL-169). */
+  @Post('professionals/:professionalId/name')
+  @OperacionAdministrativa('API-ADM-15')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async cambiarNombre(
+    @Param('professionalId') profesionalId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.administracion.cambiarNombre(actorAdministrativoDe(req), profesionalId, cuerpo, clave, contextoDe(req));
     res.status(r.estadoHttp);
     return r.cuerpo;
   }

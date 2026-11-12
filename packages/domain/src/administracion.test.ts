@@ -269,7 +269,8 @@ test('la ficha no admite campos de más: nada que se parezca a un dato de salud 
   };
   const ficha = {
     data: {
-      professional: { professionalId: 'p', displayName: 'Lic. P', profileType: 'HEALTH_PROFESSIONAL', email: 'p@example.invalid', accountState: 'OPERATIVA', profileSince: null },
+      // UF-04 (DL-169; UF-D8): la ficha dice la matrícula verificada; `null` para quien no la tiene.
+      professional: { professionalId: 'p', displayName: 'Lic. P', profileType: 'HEALTH_PROFESSIONAL', email: 'p@example.invalid', accountState: 'OPERATIVA', profileSince: null, license: null },
       scopes: [area],
     },
   };

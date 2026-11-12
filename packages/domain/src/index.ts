@@ -148,3 +148,4 @@ export * from './contratos-descarte-de-borrador';
 export * from './ambiente-de-prueba';
 export * from './segundo-factor-del-profesional';
 export * from './copy-segundo-factor-del-profesional';
+export * from './incorporacion-de-profesionales';

@@ -189,7 +189,11 @@ export type AreaDeLaFicha = z.infer<typeof AreaDeLaFichaSchema>;
 
 export const FichaDeProfesionalResponseSchema = z.strictObject({
   data: z.strictObject({
-    professional: ProfesionalDeLaListaSchema.omit({ scopes: true }).extend({ profileSince: Instante.nullable() }),
+    professional: ProfesionalDeLaListaSchema.omit({ scopes: true }).extend({
+      profileSince: Instante.nullable(),
+      /** UF-04 (DL-169; UF-D8): la matrícula verificada de un sanitario incorporado por Administración; `null` si no tiene. */
+      license: z.strictObject({ number: z.string(), jurisdiction: z.string() }).nullable(),
+    }),
     scopes: z.array(AreaDeLaFichaSchema),
   }),
 });

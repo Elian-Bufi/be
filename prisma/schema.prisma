@@ -278,6 +278,10 @@ model Identidad {
   pedidosDeAccesoAPlanHechos PedidoDeAccesoAPlan[]     @relation("PedidoDeAccesoAPlanDelProfesional")
   pedidosDeAccesoAPlanRecibidos PedidoDeAccesoAPlan[]  @relation("PedidoDeAccesoAPlanALaPersona")
 
+  // WP-USO-FINAL, UF-04 (DL-169; UF-D7): los cambios del nombre profesional, del profesional y del administrador que los hizo.
+  cambiosDeNombreProfesional CambioDeNombreProfesional[] @relation("CambioDeNombreDelProfesional")
+  cambiosDeNombreDecididos   CambioDeNombreProfesional[] @relation("CambioDeNombreDelAdministrador")
+
   @@map("identidad")
 }
 
@@ -629,10 +633,14 @@ model PerfilProfesional {
   id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   identidadId         String                  @unique @map("identidad_id") @db.Uuid
   tipo                TipoDePerfilProfesional
+  /// Desde UF-04 (DL-169; UF-D7) cambia, y solo con su `CambioDeNombreProfesional` en la misma transacción (trigger).
   nombreVisible       String                  @map("nombre_visible")
   procedencia         Json
   momentoDeOcurrencia DateTime?               @map("momento_de_ocurrencia") @db.Timestamptz(3)
   momentoDeRegistro   DateTime                @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  /// UF-04 (DL-169; UF-D8): la matrícula verificada de un sanitario incorporado por Administración. Las dos o ninguna (CHECK).
+  matriculaNumero       String? @map("matricula_numero")
+  matriculaJurisdiccion String? @map("matricula_jurisdiccion")
 
   identidad Identidad @relation(fields: [identidadId], references: [id], onDelete: Restrict)
 
@@ -709,6 +717,28 @@ model EventoDeVerificacion {
   @@index([identidadId, alcance])
   @@index([administradorId])
   @@map("evento_de_verificacion")
+}
+
+/// UF-04 de WP-USO-FINAL (DL-169; UF-D7): cada cambio del nombre profesional, con el anterior, el nuevo, el fundamento y el
+/// administrador (rol vigente; nadie cambia el propio, trigger). Solo se agrega. `transaccion` lo ata al UPDATE del perfil.
+model CambioDeNombreProfesional {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identidadId         String    @map("identidad_id") @db.Uuid
+  nombreAnterior      String    @map("nombre_anterior")
+  nombreNuevo         String    @map("nombre_nuevo")
+  fundamento          String
+  administradorId     String    @map("administrador_id") @db.Uuid
+  transaccion         BigInt    @default(dbgenerated("txid_current()"))
+  procedencia         Json
+  momentoDeOcurrencia DateTime? @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional   Identidad @relation("CambioDeNombreDelProfesional", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad @relation("CambioDeNombreDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([identidadId])
+  @@index([administradorId])
+  @@map("cambio_de_nombre_profesional")
 }
 
 // ─── WP-03 · M-03: solicitud, vínculo por alcance y consentimiento (06 §7) ─────────────────────

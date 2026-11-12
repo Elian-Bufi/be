@@ -29,6 +29,7 @@ import {
 } from './contratos';
 import { EditarPerfilPropioRequestSchema, LoQueFaltaParaSeguirResponseSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import { ConfiguracionDeLaSesionConfirmadaResponseSchema, SegundoFactorDeLaSesionResponseSchema, SegundoFactorDeLaSesionVerificadoResponseSchema, SinCuerpoDelSegundoFactorSchema } from './segundo-factor-del-profesional';
+import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSchema } from './incorporacion-de-profesionales';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -3906,6 +3907,33 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: CodigosDeRecuperacionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
     fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-09, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+  },
+  // ─── UF-04 de WP-USO-FINAL (DL-169; UF-D6 a UF-D8): la entrada de los profesionales reales ────────────────────────────
+  {
+    id: 'API-ADM-14',
+    metodo: 'post',
+    ruta: '/admin/professionals',
+    resumen:
+      'Incorporar un profesional real (UF-D6): Administración verificó la matrícula o la formación fuera de BE y, sobre una cuenta que ya existe (por su correo de acceso o el de Google), crea el perfil profesional con el nombre profesional (la regla del nombre visible), el tipo, la matrícula de un sanitario (número y jurisdicción; un no sanitario no lleva) y, por cada área pedida, la verificación y la habilitación. En la misma transacción: los hechos de M-02 con el administrador como actor y el fundamento (dónde se verificó), y la auditoría, que no guarda el fundamento ni la matrícula. La cuenta tiene que estar operativa, no ser administrativa ni profesional (422 VALIDATION_FAILED con ACCOUNT_NOT_OPERATIONAL, ACCOUNT_IS_ADMINISTRATIVE o ALREADY_PROFESSIONAL); un correo sin cuenta, 404. Es el único camino de un profesional en producción, donde la siembra no corre. El profesional entra a /pro con su segundo factor (UF-11).',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: IncorporarProfesionalRequestSchema,
+    exitos: [{ status: 201, schema: FichaDeProfesionalResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-04 y UF-D6 a UF-D8 de WP-USO-FINAL · 06 §6.8 (perfil, verificación y habilitación por alcance) · las precondiciones de CMD-ADM-INCORPORAR · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+  },
+  {
+    id: 'API-ADM-15',
+    metodo: 'post',
+    ruta: '/admin/professionals/{professionalId}/name',
+    resumen:
+      'Cambiar el nombre profesional (UF-D7): es parte de lo verificado y lo ve la persona, así que lo cambia Administración, con fundamento (el profesional lo pide por el canal de ayuda). Contra el nombre que vio el administrador (si cambió, 409 VERSION_CONFLICT). En la misma transacción: el hecho del cambio, con el nombre anterior, el nuevo, el fundamento y el administrador (la base no deja cambiar el nombre sin él), y la auditoría. Devuelve la ficha.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: CambiarNombreProfesionalRequestSchema,
+    exitos: [{ status: 200, schema: FichaDeProfesionalResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'UF-04 y UF-D7 de WP-USO-FINAL · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
   },
 ];
 

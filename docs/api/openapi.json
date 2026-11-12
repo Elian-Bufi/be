@@ -126131,6 +126131,29 @@
                                   "type": "null"
                                 }
                               ]
+                            },
+                            "license": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "number": {
+                                      "type": "string"
+                                    },
+                                    "jurisdiction": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "number",
+                                    "jurisdiction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -126139,7 +126162,8 @@
                             "profileType",
                             "email",
                             "accountState",
-                            "profileSince"
+                            "profileSince",
+                            "license"
                           ],
                           "additionalProperties": false
                         },
@@ -128492,6 +128516,955 @@
           },
           "503": {
             "description": "ErrorEnvelope: SECOND_FACTOR_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/professionals": {
+      "post": {
+        "operationId": "API-ADM-14",
+        "summary": "Incorporar un profesional real (UF-D6): Administración verificó la matrícula o la formación fuera de BE y, sobre una cuenta que ya existe (por su correo de acceso o el de Google), crea el perfil profesional con el nombre profesional (la regla del nombre visible), el tipo, la matrícula de un sanitario (número y jurisdicción; un no sanitario no lleva) y, por cada área pedida, la verificación y la habilitación. En la misma transacción: los hechos de M-02 con el administrador como actor y el fundamento (dónde se verificó), y la auditoría, que no guarda el fundamento ni la matrícula. La cuenta tiene que estar operativa, no ser administrativa ni profesional (422 VALIDATION_FAILED con ACCOUNT_NOT_OPERATIONAL, ACCOUNT_IS_ADMINISTRATIVE o ALREADY_PROFESSIONAL); un correo sin cuenta, 404. Es el único camino de un profesional en producción, donde la siembra no corre. El profesional entra a /pro con su segundo factor (UF-11).",
+        "description": "Fuente: UF-04 y UF-D6 a UF-D8 de WP-USO-FINAL · 06 §6.8 (perfil, verificación y habilitación por alcance) · las precondiciones de CMD-ADM-INCORPORAR · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 320
+                  },
+                  "professionalName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "profileType": {
+                    "type": "string",
+                    "enum": [
+                      "HEALTH_PROFESSIONAL",
+                      "NON_HEALTH_PROFESSIONAL"
+                    ]
+                  },
+                  "license": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "number": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "jurisdiction": {
+                            "type": "string",
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "number",
+                          "jurisdiction"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "scopes": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "NUTRICION",
+                        "ENTRENAMIENTO",
+                        "ANTROPOMETRIA"
+                      ]
+                    }
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "email",
+                  "professionalName",
+                  "profileType",
+                  "license",
+                  "scopes",
+                  "rationale"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "professional": {
+                          "type": "object",
+                          "properties": {
+                            "professionalId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            },
+                            "profileType": {
+                              "type": "string",
+                              "enum": [
+                                "HEALTH_PROFESSIONAL",
+                                "NON_HEALTH_PROFESSIONAL"
+                              ]
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "accountState": {
+                              "type": "string",
+                              "enum": [
+                                "OPERATIVA",
+                                "SUSPENDIDA",
+                                "CERRADA"
+                              ]
+                            },
+                            "profileSince": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "license": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "number": {
+                                      "type": "string"
+                                    },
+                                    "jurisdiction": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "number",
+                                    "jurisdiction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "professionalId",
+                            "displayName",
+                            "profileType",
+                            "email",
+                            "accountState",
+                            "profileSince",
+                            "license"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "scopes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "scope": {
+                                "type": "string",
+                                "enum": [
+                                  "NUTRICION",
+                                  "ENTRENAMIENTO",
+                                  "ANTROPOMETRIA"
+                                ]
+                              },
+                              "situation": {
+                                "type": "string",
+                                "enum": [
+                                  "NOT_PRESENTED",
+                                  "PENDING_REVIEW",
+                                  "CAN_OPERATE",
+                                  "VERIFIED_NOT_ENABLED",
+                                  "SUSPENDED",
+                                  "REJECTED"
+                                ]
+                              },
+                              "verification": {
+                                "type": "object",
+                                "properties": {
+                                  "state": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "PENDIENTE",
+                                          "VERIFICADO",
+                                          "RECHAZADO",
+                                          "SUSPENDIDO"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "state",
+                                  "since"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "enablement": {
+                                "type": "object",
+                                "properties": {
+                                  "state": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "CONCEDIDA",
+                                          "RETIRADA"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "state",
+                                  "since"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "canOperate": {
+                                "type": "boolean"
+                              },
+                              "version": {
+                                "type": "string",
+                                "pattern": "^a\\d{1,9}-\\d{1,9}$"
+                              },
+                              "availableDecisions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "OBSERVE",
+                                    "VERIFY",
+                                    "REJECT",
+                                    "SUSPEND",
+                                    "REINSTATE",
+                                    "GRANT_ENABLEMENT",
+                                    "WITHDRAW_ENABLEMENT"
+                                  ]
+                                }
+                              },
+                              "linkedPeople": {
+                                "type": "object",
+                                "properties": {
+                                  "active": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "paused": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "active",
+                                  "paused"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "lastObservation": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      "messageToProfessional": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "at",
+                                      "messageToProfessional"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "scope",
+                              "situation",
+                              "verification",
+                              "enablement",
+                              "canOperate",
+                              "version",
+                              "availableDecisions",
+                              "linkedPeople",
+                              "lastObservation"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "professional",
+                        "scopes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/professionals/{professionalId}/name": {
+      "post": {
+        "operationId": "API-ADM-15",
+        "summary": "Cambiar el nombre profesional (UF-D7): es parte de lo verificado y lo ve la persona, así que lo cambia Administración, con fundamento (el profesional lo pide por el canal de ayuda). Contra el nombre que vio el administrador (si cambió, 409 VERSION_CONFLICT). En la misma transacción: el hecho del cambio, con el nombre anterior, el nuevo, el fundamento y el administrador (la base no deja cambiar el nombre sin él), y la auditoría. Devuelve la ficha.",
+        "description": "Fuente: UF-04 y UF-D7 de WP-USO-FINAL · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "professionalName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "expectedName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "professionalName",
+                  "expectedName",
+                  "rationale"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "professional": {
+                          "type": "object",
+                          "properties": {
+                            "professionalId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            },
+                            "profileType": {
+                              "type": "string",
+                              "enum": [
+                                "HEALTH_PROFESSIONAL",
+                                "NON_HEALTH_PROFESSIONAL"
+                              ]
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "accountState": {
+                              "type": "string",
+                              "enum": [
+                                "OPERATIVA",
+                                "SUSPENDIDA",
+                                "CERRADA"
+                              ]
+                            },
+                            "profileSince": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "license": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "number": {
+                                      "type": "string"
+                                    },
+                                    "jurisdiction": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "number",
+                                    "jurisdiction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "professionalId",
+                            "displayName",
+                            "profileType",
+                            "email",
+                            "accountState",
+                            "profileSince",
+                            "license"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "scopes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "scope": {
+                                "type": "string",
+                                "enum": [
+                                  "NUTRICION",
+                                  "ENTRENAMIENTO",
+                                  "ANTROPOMETRIA"
+                                ]
+                              },
+                              "situation": {
+                                "type": "string",
+                                "enum": [
+                                  "NOT_PRESENTED",
+                                  "PENDING_REVIEW",
+                                  "CAN_OPERATE",
+                                  "VERIFIED_NOT_ENABLED",
+                                  "SUSPENDED",
+                                  "REJECTED"
+                                ]
+                              },
+                              "verification": {
+                                "type": "object",
+                                "properties": {
+                                  "state": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "PENDIENTE",
+                                          "VERIFICADO",
+                                          "RECHAZADO",
+                                          "SUSPENDIDO"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "state",
+                                  "since"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "enablement": {
+                                "type": "object",
+                                "properties": {
+                                  "state": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "CONCEDIDA",
+                                          "RETIRADA"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "state",
+                                  "since"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "canOperate": {
+                                "type": "boolean"
+                              },
+                              "version": {
+                                "type": "string",
+                                "pattern": "^a\\d{1,9}-\\d{1,9}$"
+                              },
+                              "availableDecisions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "OBSERVE",
+                                    "VERIFY",
+                                    "REJECT",
+                                    "SUSPEND",
+                                    "REINSTATE",
+                                    "GRANT_ENABLEMENT",
+                                    "WITHDRAW_ENABLEMENT"
+                                  ]
+                                }
+                              },
+                              "linkedPeople": {
+                                "type": "object",
+                                "properties": {
+                                  "active": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "paused": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "active",
+                                  "paused"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "lastObservation": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      "messageToProfessional": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "at",
+                                      "messageToProfessional"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "scope",
+                              "situation",
+                              "verification",
+                              "enablement",
+                              "canOperate",
+                              "version",
+                              "availableDecisions",
+                              "linkedPeople",
+                              "lastObservation"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "professional",
+                        "scopes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
             "content": {
               "application/json": {
                 "schema": {

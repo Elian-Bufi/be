@@ -351,3 +351,48 @@ AUTOMATION           packages/domain/src/segundo-factor-del-profesional.test.ts 
 ENVIRONMENT          `npm test` y el job de integración de la CI
 EVIDENCE_EXPECTED    La CI verde; en /pro, la configuración con una app de códigos (pendiente de prueba manual)
 ```
+
+---
+
+## TEST-UF-009 — Administración incorpora a un profesional real, con su matrícula, y cambia su nombre profesional
+
+```text
+TEST_ID              TEST-UF-009
+TITLE                API-ADM-14 incorpora una cuenta que ya existe como profesional, solo con una sesión administrativa
+                     con segundo factor y con fundamento: crea el perfil con su matrícula y, por área, la verificación y
+                     la habilitación, con los hechos de M-02 del administrador; API-ADM-15 cambia el nombre profesional
+                     con su hecho, y la base no deja cambiarlo sin él
+LEVEL                Dominio (la forma del pedido), integración (API real con PostgreSQL) y website (/admin)
+PRIORITY             P0
+SOURCES              UF-04 (WP-USO-FINAL.md §4.1) · UF-D6, UF-D7 y UF-D8 (§7) · DL-169 · DL-155 · DL-036 · 06 §6.8 ·
+                     WP-ADMINISTRACION §2 y §6
+PRECONDITIONS        Un administrador incorporado por el comando interno, con su autenticador; una cuenta común con
+                     nombre, creada por el alta.
+SYNTHETIC_FIXTURE    Correos `@example.invalid`; matrícula sintética («MN 000000», «Ciudad Autónoma de Buenos Aires»);
+                     el autenticador con otpauth.
+STEPS                1. Evaluar la forma del pedido: sin fundamento, sin nombre, sanitario sin matrícula, no sanitario
+                        con matrícula, sin áreas o con un área repetida.
+                     2. API-ADM-14 con una sesión común, con una administrativa sin segundo factor y con una vigente.
+                     3. Incorporar la cuenta (sanitario, Nutrición, con matrícula) y leer la ficha (API-ADM-11).
+                     4. Repetir con la misma Idempotency-Key y con otra; incorporar un correo que no existe y una cuenta
+                        administrativa.
+                     5. El profesional entra a /pro (configura su segundo factor), invita a una persona y la persona,
+                        al aceptar, ve su nombre profesional.
+                     6. API-ADM-15 con el nombre que se vio y con otro; actualizar el nombre en la base sin su hecho.
+EXPECTED             1 → 422 con RATIONALE_REQUIRED, DISPLAY_NAME_REQUIRED, LICENSE_REQUIRED, LICENSE_NOT_APPLICABLE,
+                     SCOPES_REQUIRED o SCOPE_REPEATED. 2 → 403 ACTION_FORBIDDEN, 403 MFA_REQUIRED y 201. 3 → la ficha con
+                     el nombre profesional, el tipo, la matrícula y Nutrición en CAN_OPERATE; en la base, el perfil con
+                     su matrícula y los hechos PerfilProfesionalCreado, AlcancePresentado, AlcanceVerificado y
+                     HabilitacionConcedida del administrador, con el fundamento. 4 → la misma respuesta; 422
+                     ALREADY_PROFESSIONAL; 404; 422 ACCOUNT_IS_ADMINISTRATIVE. 5 → 201 la invitación; la persona ve el
+                     nombre profesional. 6 → 200 con el nombre nuevo, que ve la persona, y el hecho con el nombre
+                     anterior; 409 VERSION_CONFLICT; la base lo rechaza.
+NEGATIVE_ASSERTIONS  Nada queda a medias: un rechazo no crea perfil, verificación, habilitación ni hechos. Nadie se
+                     incorpora a sí mismo. El nombre profesional no cambia sin fundamento ni sin su hecho. La auditoría
+                     no guarda el fundamento ni la matrícula.
+AUTOMATION           packages/domain/src/incorporacion-de-profesionales.test.ts («TEST-UF-009 · …»),
+                     test/integration/incorporacion-de-profesionales.int-spec.ts y la prueba de contrato. Mutaciones: la
+                     forma que acepta un sanitario sin matrícula → rojo en el dominio.
+ENVIRONMENT          `npm test` y el job de integración de la CI
+EVIDENCE_EXPECTED    La CI verde; en /admin, la incorporación de una cuenta sintética (pendiente de prueba manual)
+```

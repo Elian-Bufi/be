@@ -20,6 +20,7 @@
  *   Y la familia RES, lo que la persona comparte de otras áreas, el plan del otro y el pedido (DL-163 D-13, ampliada;
  *   TB-52 a TB-56).
  * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169).
+ * - WP-USO-FINAL (UF-04): API-ADM-14 y 15, la entrada de los profesionales reales y su nombre profesional (DL-169).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -34,7 +35,7 @@ import { incorporarAdministrador } from '../../apps/api/src/administracion/incor
 import { TokensService } from '../../apps/api/src/sesion/tokens.service';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
-import { adm, codigoQueNoVale, codigoTotp, primerFactor, profesionalPendiente } from './soporte-administracion';
+import { adm, administradorListo, codigoQueNoVale, codigoTotp, primerFactor, profesionalPendiente } from './soporte-administracion';
 import { codigoDelPaso } from './soporte-segundo-factor';
 import {
   appDePrueba,
@@ -2173,6 +2174,32 @@ it('TEST-CT (WP-USO-FINAL, UF-11): MFA-01 a 06 — el segundo factor del profesi
   await conSesion(app, sinVerificar).post(`${ruta}/recovery-codes`).send({}).expect(422); // INVALID_STATE_TRANSITION
   await conSesion(app, t).post(`${ruta}/recovery-codes`).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
   expect((await conSesion(app, t).post(`${ruta}/recovery-codes`).send({}).expect(200)).body.data.recoveryCodes).toHaveLength(10);
+});
+
+it('TEST-CT (WP-USO-FINAL, UF-04): ADM-14 y ADM-15 — incorporar a un profesional y cambiar su nombre profesional, con éxitos y errores declarados (DL-169)', async () => {
+  const a = await administradorListo(app, prisma, `ct-uf04-${randomUUID().slice(0, 6)}`);
+  const correo = correoSintetico('ct-uf04');
+  const id = await registrarOk(app, correo, 'WEB');
+  const cuerpo = { email: correo, professionalName: 'Lic. Contrato Incorporada', profileType: 'HEALTH_PROFESSIONAL', license: { number: 'MN 000001', jurisdiction: 'Provincia sintética' }, scopes: ['NUTRICION'], rationale: 'Verificada en el registro sintético.' };
+  const incorporar = (body: Record<string, unknown>, token = a.token) => adm(app, token).post('/admin/professionals').set('Idempotency-Key', claveDeIdempotencia()).send(body);
+  // ADM-14.
+  await adm(app, a.token).post('/admin/professionals').send(cuerpo).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await incorporar({ ...cuerpo, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await incorporar({ ...cuerpo, rationale: '' }).expect(422); // VALIDATION_FAILED
+  await incorporar({ ...cuerpo, email: correoSintetico('ct-uf04-nadie') }).expect(404); // RESOURCE_NOT_FOUND
+  const persona = await prepararAsesorado(app, 'ct-uf04');
+  await incorporar(cuerpo, persona.token).expect(403); // ACTION_FORBIDDEN: una sesión común
+  const sinSegundoFactor = (await primerFactor(app, a.correo).expect(201)).body.data.session.accessToken as string;
+  await incorporar(cuerpo, sinSegundoFactor).expect(403); // MFA_REQUIRED
+  await adm(app).post('/admin/professionals').set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401); // AUTHENTICATION_REQUIRED
+  await incorporar(cuerpo).expect(201);
+  // ADM-15.
+  const cambiar = (body: Record<string, unknown>, profesional = id) => adm(app, a.token).post(`/admin/professionals/${profesional}/name`).set('Idempotency-Key', claveDeIdempotencia()).send(body);
+  await cambiar({ professionalName: 'Lic. Contrato', expectedName: 'Otro', rationale: 'Pedido.' }).expect(409); // VERSION_CONFLICT
+  await cambiar({ professionalName: '', expectedName: 'Lic. Contrato Incorporada', rationale: 'Pedido.' }).expect(422); // VALIDATION_FAILED
+  await cambiar({ professionalName: 'Lic. Contrato', expectedName: 'Lic. Contrato Incorporada', rationale: 'Pedido.', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await cambiar({ professionalName: 'Lic. Contrato', expectedName: 'X', rationale: 'Pedido.' }, randomUUID()).expect(404); // RESOURCE_NOT_FOUND
+  await cambiar({ professionalName: 'Lic. Contrato Renombrada', expectedName: 'Lic. Contrato Incorporada', rationale: 'Pedido por el canal.' }).expect(200);
 });
 
 it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-47): PLN-07 y PLE-05 — descartar un borrador, con éxitos y errores declarados (DL-163 D-21)', async () => {
