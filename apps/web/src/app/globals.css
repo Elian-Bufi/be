@@ -16319,3 +16319,29 @@ p.cifra-del-espacio__desglose {
   margin-top: 0.75rem;
   font-weight: 600;
 }
+
+/* ═══ ED-14 · «Lo que llevás armado», al costado del paso del asistente ═══════════════════════════════════════════ */
+.asistente__con-lo-armado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 80rem) {
+  .asistente__con-lo-armado {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+  }
+}
+
+.asistente__armado {
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.asistente__armado h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}

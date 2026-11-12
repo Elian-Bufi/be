@@ -94,3 +94,36 @@ export async function sePuedeAvanzar(p: { readonly sucio: boolean; readonly guar
   if (!p.sucio) return 'avanza';
   return (await p.guardar()) != null ? 'avanza' : 'no-avanza';
 }
+
+/**
+ * ED-14 (maquetas 01 y 03) · «Lo que llevás armado»: el borrador en pocas líneas, al costado del paso. Se deduce del
+ * borrador, como el paso sugerido: no se guarda nada aparte. Por sesión, cuántos ejercicios tiene, cuántos sin
+ * prescribir y sus días; hasta `maximo` sesiones, y cuántas más.
+ */
+export function loQueLlevasArmado(bloques: Bloques, agenda: AgendaDeEntrenamiento | null, diaCorto: (d: string) => string, maximo = 8): readonly string[] {
+  const sesiones = todasLasSesiones(bloques);
+  const microciclos = bloques.reduce((n, b) => n + (b.microcycles?.length ?? 0), 0);
+  const estructura = [
+    bloques.length === 1 ? '1 bloque' : `${bloques.length} bloques`,
+    ...(microciclos > 0 ? [microciclos === 1 ? '1 semana' : `${microciclos} semanas`] : []),
+    sesiones.length === 1 ? '1 sesión' : `${sesiones.length} sesiones`,
+  ].join(' · ');
+  if (sesiones.length === 0) return [estructura, 'Todavía sin sesiones.'];
+  const diasDe = (id: string | undefined) => (id ? (agenda?.sessions.find((s) => s.sessionId === id)?.weekdays ?? []) : []);
+  const filas = sesiones.slice(0, maximo).map((s, n) => {
+    const nombre = s.label.trim() || `Sesión ${n + 1}`;
+    const ejercicios = s.prescriptions.length;
+    const faltan = s.prescriptions.filter(sinPrescribir).length;
+    const dias = diasDe(s.sessionId);
+    return [
+      nombre,
+      ejercicios === 0 ? 'sin ejercicios' : ejercicios === 1 ? '1 ejercicio' : `${ejercicios} ejercicios`,
+      ...(faltan > 0 ? [faltan === 1 ? '1 sin prescribir' : `${faltan} sin prescribir`] : []),
+      dias.length > 0 ? dias.map(diaCorto).join(' ') : 'sin días',
+    ].join(' · ');
+  });
+  const resto = sesiones.length - filas.length;
+  return [estructura, ...filas, ...(resto > 0 ? [resto === 1 ? 'y 1 sesión más' : `y ${resto} sesiones más`] : [])];
+}
+
+export const COPY_LO_ARMADO = { titulo: 'Lo que llevás armado', queEs: 'Se guarda solo: es el mismo borrador que la estación.' } as const;

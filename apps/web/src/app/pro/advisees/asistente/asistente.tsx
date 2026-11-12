@@ -11,7 +11,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
-import { COPY_ASISTENTE as C, PASOS_DEL_ASISTENTE, type PasoDelAsistente } from './paso-que-sigue';
+import { COPY_ASISTENTE as C, COPY_LO_ARMADO, PASOS_DEL_ASISTENTE, type PasoDelAsistente } from './paso-que-sigue';
 
 export function ArmazonDelAsistente({
   paso,
@@ -25,6 +25,7 @@ export function ArmazonDelAsistente({
   principal,
   noAvanzo,
   onReintentar,
+  armado = null,
 }: {
   paso: PasoDelAsistente;
   /** El paso que se deduce del borrador; `null` sin borrador (paso 1). */
@@ -42,6 +43,8 @@ export function ArmazonDelAsistente({
   /** «Siguiente» no pudo guardar: el paso queda abierto, con lo escrito y «Reintentar». */
   noAvanzo: boolean;
   onReintentar: () => void;
+  /** ED-14: «Lo que llevás armado», en pocas líneas (`loQueLlevasArmado`); `null` sin borrador. */
+  armado?: readonly string[] | null;
 }) {
   const tituloRef = useRef<HTMLHeadingElement>(null);
   // El foco entra al título de cada paso: dice qué se decide.
@@ -66,6 +69,7 @@ export function ArmazonDelAsistente({
           })}
         </ol>
       </nav>
+      <div className="asistente__con-lo-armado">
       <div className="asistente__cuadro">
         <p className="nota asistente__cuenta">{C.pasoNDe7(paso)}</p>
         <h3 id="titulo-del-paso" ref={tituloRef} tabIndex={-1}>
@@ -110,6 +114,18 @@ export function ArmazonDelAsistente({
             {principal.ocupado ?? principal.texto}
           </button>
         </div>
+      </div>
+      {armado ? (
+        <aside className="asistente__armado" aria-labelledby="titulo-lo-armado" data-lo-armado>
+          <h3 id="titulo-lo-armado">{COPY_LO_ARMADO.titulo}</h3>
+          <ul className="estacion__lista-del-panel">
+            {armado.map((linea, n) => (
+              <li key={n}>{linea}</li>
+            ))}
+          </ul>
+          <p className="nota">{COPY_LO_ARMADO.queEs}</p>
+        </aside>
+      ) : null}
       </div>
     </section>
   );

@@ -92,7 +92,7 @@ import { GaleriaDePresets } from '../galeria-de-presets';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 import { PrimerUso } from '../../../../components/primer-uso';
 import { ArmazonDelAsistente } from '../asistente/asistente';
-import { COPY_ASISTENTE as CA, pasoPedido, pasoQueSigue, sePuedeAvanzar, type PasoDelAsistente } from '../asistente/paso-que-sigue';
+import { COPY_ASISTENTE as CA, loQueLlevasArmado, pasoPedido, pasoQueSigue, sePuedeAvanzar, type PasoDelAsistente } from '../asistente/paso-que-sigue';
 import { claveDeLaSesion, conLaEstructura, firmaDeLaCarga, gruposDelAsistente, loQueReemplazaLaEstructura, sesionesDelGrupo, type GrupoDelAsistente } from '../asistente/operaciones-del-asistente';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { prescripcionesDeLosMarcados } from './varios-a-la-vez';
@@ -1354,6 +1354,7 @@ export function EditorDePlan({
             }
             noAvanzo={noAvanzo}
             onReintentar={() => proximo && void siguiente(proximo)}
+            armado={pasoDelAsistente > 1 ? loQueLlevasArmado(bloques, agendaVisible, (d) => DIA_CORTO[d as DiaDeLaSemana]) : null}
           >
             {cuerpo}
           </ArmazonDelAsistente>
