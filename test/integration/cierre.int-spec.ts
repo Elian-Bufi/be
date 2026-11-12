@@ -214,6 +214,8 @@ describe('TEST-UC-P27 / TEST-CT-P1-ACC-P1-03 — cierre de cuenta', () => {
       .send({
         registrationIntent: 'ADVISEE',
         identity: { localIdentifier: correo, localCredential: 'clave-sintetica-nueva-01' },
+        // DL-169: toda alta lleva el nombre; sin él también respondería 422 antes de mirar el correo.
+        profile: { displayName: 'Persona Sintética Nueva' },
         termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
         privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
         // DL-138: toda alta declara la mayoría de edad; sin ella respondería 422 antes de mirar el correo.

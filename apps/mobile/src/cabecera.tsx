@@ -7,17 +7,20 @@
  *   dice «BE» una vez; en un detalle, «Volver»; nada al centro;
  * - **a la derecha**, la campana de las novedades (DL-133) con un punto de 8 dp en el acento mientras haya algo sin leer,
  *   sin número ni animación. El número sigue en su nombre para el lector: «Novedades, 47 sin leer»;
- * - **debajo**, la línea fina del ambiente de prueba, en `tenue` y siempre a la vista (08 §33), hasta que UF-08 la
- *   resuelva por ambiente, y la línea de actualización.
+ * - **debajo**, la línea fina del ambiente de prueba, en `tenue` (08 §33), y la línea de actualización. Desde UF-08 de
+ *   WP-USO-FINAL (DL-169) esa línea sale del ambiente: va solo en las builds que muestran los avisos de prueba
+ *   (`ambiente.ts`), con el texto del dominio. Sin ella no queda lugar reservado: la fila de la marca cierra la cabecera.
  *
  * Volver no depende del botón ni de un gesto del sistema (10-B10 §9). El botón dice adónde vuelve al lector de pantalla
  * («Volver a Inicio») y a la vista muestra «Volver», que está contenido en ese nombre (WCAG 2.5.3).
  * Los textos crecen con la letra hasta 1,15 veces: la cabecera queda compacta, y el contenido de cada pantalla crece sin
  * tope (prueba de la 0.13.1).
  */
+import { AVISOS_DE_PRUEBA } from '@be/domain';
 import Constants from 'expo-constants';
 import { Image, Pressable, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import { AVISOS_DE_PRUEBA_VISIBLES } from './ambiente';
 import { useApariencia } from './apariencia';
 import { Icono } from './icono';
 import { LineaDeActualizacion } from './estados';
@@ -77,9 +80,11 @@ export function Cabecera({
           ) : null}
         </View>
       </View>
-      <Text style={estilos.ambiente} numberOfLines={2} maxFontSizeMultiplier={1.15}>
-        Ambiente de prueba · solo datos sintéticos
-      </Text>
+      {AVISOS_DE_PRUEBA_VISIBLES ? (
+        <Text style={estilos.ambiente} numberOfLines={2} maxFontSizeMultiplier={1.15}>
+          {AVISOS_DE_PRUEBA.franja}
+        </Text>
+      ) : null}
       <LineaDeActualizacion activa={actualizando} />
     </View>
   );

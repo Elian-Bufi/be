@@ -87,10 +87,19 @@ export function claveDeIdempotencia(): string {
 /** Desde DL-138 toda alta declara la mayoría de edad (08 §24.7 a): las personas sintéticas de las pruebas son adultas. */
 export const DECLARACION_DE_MAYORIA = { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true } as const;
 
+/**
+ * Desde DL-169 (WP-USO-FINAL, UF-01) toda alta lleva el nombre: las cuentas sintéticas nacen con este. Es distintivo a
+ * propósito, para que una prueba pueda exigir que no aparezca donde no tiene que aparecer (un aviso del teléfono, una
+ * novedad para alguien sin vínculo). Una cuenta anterior, sin nombre, se arma con `cuentaAnteriorSinNombre`
+ * (`soporte-nombre.ts`).
+ */
+export const NOMBRE_SINTETICO = 'Persona Sintética';
+
 export function cuerpoDeRegistro(correo: string, credencial = CREDENCIAL_SINTETICA): Record<string, unknown> {
   return {
     registrationIntent: 'ADVISEE',
     identity: { localIdentifier: correo, localCredential: credencial },
+    profile: { displayName: NOMBRE_SINTETICO },
     termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
     privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
     adultDeclaration: DECLARACION_DE_MAYORIA,

@@ -57,6 +57,12 @@ export const VERSIONES: readonly string[] = readdirSync(CARPETA)
   .filter((f) => f.endsWith('.json'))
   .map((f) => f.replace(/\.json$/, ''))
   .sort();
+/**
+ * La última APK distribuida, la que ofrece la descarga del website. Mientras no haya una estable, es la única congelada
+ * (DL-152, enmendada por UF-00 de WP-USO-FINAL); las pruebas que leen «con la APK de hoy» la nombran así, para no
+ * cambiar con cada candidata.
+ */
+export const LA_ULTIMA_APK: string = VERSIONES[VERSIONES.length - 1]!;
 
 export interface Pedido {
   /** El Bearer, cuando la APK lo manda en esa operación. */
@@ -115,9 +121,21 @@ export class LaApk {
       .includes(capacidad);
   }
 
-  /** Si el pedido de esa operación, en esta APK, tiene el campo (por ejemplo, la declaración de mayoría de edad del alta). */
+  /**
+   * Si el pedido de esa operación, en esta APK, tiene el campo (por ejemplo, la declaración de mayoría de edad del alta).
+   * Un campo anidado va con puntos: `profile.displayName` (DL-169: el nombre del alta).
+   */
   mandaElCampo(operacion: string, campo: string): boolean {
-    return campo in (this.lectura(operacion).pedido?.properties ?? {});
+    return tieneLaRuta(this.lectura(operacion).pedido, campo);
+  }
+
+  /**
+   * Si el detalle de un rechazo que esta APK lee con su esquema admite el campo. La 0.23 lee el de
+   * GOOGLE_ACCOUNT_NOT_FOUND solo con el correo; desde DL-169 (UF-D2) la API manda también el nombre propuesto.
+   */
+  leeEnElDetalle(codigo: string, campo: string): boolean {
+    const detalle = this.congelado.errores.detalles[codigo]?.respuesta as { properties?: Record<string, unknown> } | undefined;
+    return tieneLaRuta(detalle ?? null, campo);
   }
 
   /** Las versiones de los textos que esta APK manda como aceptadas: las de su commit. */
@@ -226,6 +244,17 @@ export class LaApk {
     if (leido.success) this.detallesLeidos.add(error.code);
     else this.problemas.push(`APK ${this.version} · ${operacion}: el detalle de ${error.code} no tiene la forma que la APK lee (${detalle.esquema}): ${resumen(leido.error?.issues ?? [])}`);
   }
+}
+
+/** Si un JSON Schema de objeto declara la ruta (`a.b`), bajando por `properties`. */
+function tieneLaRuta(esquema: { properties?: Record<string, unknown> } | null, ruta: string): boolean {
+  let actual: unknown = esquema;
+  for (const parte of ruta.split('.')) {
+    const propiedades = (actual as { properties?: Record<string, unknown> } | null)?.properties;
+    if (!propiedades || !(parte in propiedades)) return false;
+    actual = propiedades[parte];
+  }
+  return true;
 }
 
 /** Los problemas de zod en una línea: el campo, el código y, si sobran claves, cuáles. */

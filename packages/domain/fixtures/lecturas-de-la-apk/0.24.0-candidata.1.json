@@ -1,11 +1,11 @@
 {
  "apk": {
-  "version": "0.22.0-candidata.1",
-  "versionCode": 35,
-  "tag": "be-apk-0.22.0-candidata.1",
-  "commit": "1254269843c2dcd4270df349e48d2a59e1b450df"
+  "version": "0.24.0-candidata.1",
+  "versionCode": 38,
+  "tag": "be-apk-0.24.0-candidata.1",
+  "commit": "1cb3cdcb8f313f3851780c112b309779b1c32152"
  },
- "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.22.0-candidata.1» desde las fuentes del commit 1254269 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
+ "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.24.0-candidata.1» desde las fuentes del commit 1cb3cdc (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
  "cabeceras": {
   "X-BE-Surface": "APK",
   "X-BE-Capabilities": "training-set-targets-1,forms-format-3"
@@ -19,7 +19,9 @@
   "CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO": "acceso-profesional-no-sanitario-2026-09-demo",
   "EVIDENCIA_VISUAL": "evidencia-visual-2026-10-propuesta",
   "MAYORIA_DE_EDAD": "mayoria-de-edad-2026-10",
-  "HABITOS_COMPARTIDOS": "habitos-compartidos-2026-11-propuesta"
+  "HABITOS_COMPARTIDOS": "habitos-compartidos-2026-11-propuesta",
+  "RESUMENES_COMPARTIDOS": "resumenes-compartidos-2026-11-propuesta-3",
+  "RESUMENES_Y_PLAN_COMPARTIDOS": "resumenes-y-plan-compartidos-2026-11-propuesta"
  },
  "errores": {
   "esquema": "ErrorEnvelopeSchema",
@@ -203,7 +205,12 @@
      },
      "profile": {
       "type": "object",
-      "properties": {},
+      "properties": {
+       "displayName": {
+        "type": "string",
+        "maxLength": 400
+       }
+      },
       "additionalProperties": false
      },
      "termsAcceptance": {
@@ -616,6 +623,61 @@
        "displayName",
        "version",
        "updatedAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": null
+  },
+  "API-ACC-07": {
+   "metodo": "get",
+   "ruta": "/me/pending-steps",
+   "llamadas": [
+    "loQueFaltaParaSeguir"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "LoQueFaltaParaSeguirResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "steps": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "step": {
+           "type": "string",
+           "minLength": 1
+          },
+          "suggestion": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         },
+         "required": [
+          "step",
+          "suggestion"
+         ],
+         "additionalProperties": false
+        }
+       }
+      },
+      "required": [
+       "steps"
       ],
       "additionalProperties": false
      }
@@ -7048,6 +7110,16 @@
        "ADVISEE",
        "PROFESSIONAL"
       ]
+     },
+     "profile": {
+      "type": "object",
+      "properties": {
+       "displayName": {
+        "type": "string",
+        "maxLength": 400
+       }
+      },
+      "additionalProperties": false
      },
      "termsAcceptance": {
       "type": "object",

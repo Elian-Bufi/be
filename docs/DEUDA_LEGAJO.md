@@ -118,7 +118,7 @@
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
-| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vence el 2026-12-01 00:00 UTC (21:00 ART del 30/11), sin renovación automática |
+| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vencían el 2026-12-01 00:00 UTC (21:00 ART del 30/11) · **RETIRADAS LAS DOS** el 2026-11-11 con UF-12 de WP-USO-FINAL (UF-D13, ratificada por Dirección ese día), en el PR #253 sin integrar: node-forge pasa a la 1.4.3, fuera del aviso, y la CLI de Expo 57.0.33 (SDK 57) ya no pide zod; sin excepciones, la auditoría no vence |
 | DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios` (#133), integrada en `main` el 2026-10-03 con la candidata 0.13.2 (#140, `2f0c140`) y publicada en la APK 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección · la solución preparada (opción A, API-CAR-01) está en `main` desde el 2026-10-03 (#135, con la candidata 0.13.2, `2f0c140`) |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación integrada en `main` el 2026-10-06 (#146, `d727226`) |
@@ -155,7 +155,7 @@
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 | DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **RATIFICADO** por Dirección el 2026-10-25 (R-1 a R-6) e **INTEGRADO** en main (#195, `0be86b3`): la sustitución alcanza a todas las series de ese ejercicio en la sesión y no modifica el plan; la traen las APK candidatas 0.18.0-candidata.1 (2026-10-26) y 0.19.0-candidata.1 (2026-11-03); falta la prueba en el teléfono |
-| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo |
+| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo · **ENMENDADA** el 2026-11-11 (DL-169, UF-00 de WP-USO-FINAL, PR #253 sin integrar): mientras no haya una estable, `VIGENTES` tiene solo la última distribuida (la 0.23.0-candidata.2; desde el 2026-11-12, la 0.24.0-candidata.1), y C01 y D10 se retiran |
 | DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-4, con criterios) e **INTEGRADA** (#200, `cddd005`), desplegada en test: las comidas del plan se cuentan por la cobertura del registro (la opción del plan o una comida diferente, con el desglose), el subtotal dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-3, con criterios) e **INTEGRADA** (#203, `8aaec16`), desplegada en test: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; al abrir, el panel avisa que es el estado de hoy o, si solo se activó otra versión, que es la misma que se revisó; la forma de la revisión, que lee la APK, no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-155 | Encargo de Dirección · 2026-10-25 (WP-ADMINISTRACION, D-1 a D-7) | 09v8 PRO-09 a 13 · B10-03 §14, §21 y ADV-10-PRO-11 · 08 §25, §28, §29 · DL-036 · DL-020 | La administración de profesionales por área no tenía operación viable: PRO-09 a 13 resuelven «presentaciones» que no existen sin el alta (PRO-01 a 08), y B10-03 no permitía una lista de profesionales que el 09 no expone | **INTEGRADO** el 2026-10-25 (#210, `ea70404`) y desplegado en test, con el alcance que ratificó Dirección ese día: familia ADM (API-ADM-01 a 13), con TOTP, identidad administrativa separada y comando interno, sobre los perfiles profesionales que ya existen; el alta completa de profesionales nuevos sigue pendiente; falta incorporar al primer administrador y la prueba con personas |
@@ -171,6 +171,7 @@
 | DL-165 | Prueba de Dirección · 2026-11-05 (WP-FORMULARIOS-RONDA-2, ratificada el mismo día, pregunta por pregunta) | RF-071 · RNF-SEC-006 · UC-P32 · UC-P33 · REG-06-209 · 08 §11, C-11, C-12 · DL-164 · DL-152 · DL-122 | Después de probarlos, los formularios de inicio piden pantallas por parte, ayudas plegadas, otra forma de pedir los días y que la persona pueda compartir sus hábitos con todos sus profesionales; el legajo hace que cada área vea solo lo suyo | **RATIFICADA** 2026-11-05 · **INTEGRADA** en `main` el 2026-11-05: FR-01 y FR-02 (#236, `3231364`) y FR-03 a FR-10 (#237, `bdbf490`), con la sección común de hábitos (familia API-HBT); publicada en la APK 0.21.0-candidata.1, con su cierre (#238, `b91dc3f`). D-10 a D-13 ratificadas el 2026-11-05. **Ronda 2.1:** **INTEGRADA** en `main` el 2026-11-06 (#241, `67d7f61`) y publicada en la APK 0.22.0-candidata.1, con su cierre (#242, `47522b8`); D-15 y D-17 nuevas de Dirección («Tus hábitos» aparte y «Pedir acceso a sus hábitos»). **RATIFICADAS** 2026-11-06: D-14, D-16 y D-18; D-19, tal como está programada (retirar también pide confirmar); D-20 a D-28, en bloque. **D-29**, nueva y **RATIFICADA** 2026-11-06: desde Entrenamiento, «Antes de entrenar» llega completo; integrada en `main` ese día (#244, `33dcad9`). Con personas reales, después de la revisión legal y del gate del 08 §42 |
 | DL-166 | Decisión de Dirección · 2026-11-07 (WP-APP-VUELTA-DE-ROSCA; PV-1 a PV-12, ratificadas el mismo día) | TEST-PRJ-009 · RNF-ACC-001 · B10-10 §9 · 08 §33 · 10-B04 · B10-06 §57 · DL-117 · DL-124 · DL-122 · DL-152 · WP-ENTRENAMIENTO-SERIES §7.3 y §7.4 · PA-02 | La APK se lee más de lo que se toca: Inicio e «Información» explican antes de llevar a la acción, lo de la persona está repartido en tres lugares y, en la sesión, el descanso se maneja a mano y en dos toques | **DECIDIDA 2026-11-07 por Dirección · etapas 1 y 2 (solo app) INTEGRADAS en `main` el 2026-11-07 (#247, `64508a8`) y publicadas en la APK 0.23.0-candidata.1 el 2026-11-08, con su cierre (#249), y en la 0.23.0-candidata.2 el 2026-11-11, con el arreglo del cierre al empezar un entrenamiento (#250): la «latest» que ofrece el website, que lee lo mismo que la .1**: Perfil en lugar de «Información», Inicio con acciones, «Quién ve qué», la regla de los desplegables (GUIA-UX-UI III.7), el descanso automático con su barra y su engranaje, y la fila fija de la sesión. Modifica §7.3 y §7.4 de WP-ENTRENAMIENTO-SERIES. Tocan el servidor y la base solo PV-8 («Arranca sola», AV-15) y AVD-1 («Eligió no responder», un estado nuevo de la solicitud que ve el profesional, AV-19). PV-13 (la sesión con letra grande) la eligió el continuador y está a ratificar. Las partes AV-01 a AV-19 esperan el sí de Dirección. **RATIFICADAS** por Dirección el 2026-11-07: AVD-1 y AVD-3 (el descanso automático solo entre series del mismo ejercicio), con la alternativa, y AVD-5 y AVD-8, como se recomendaba. AVD-2, AVD-4, AVD-6, AVD-7 y AVD-9, a ratificar |
 | DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA e integrada en `main` (#252, 6a05fee)**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. **Ampliación a las plantillas** (API-TPN-01 y 04, API-TPL-01 y 04, con el mismo límite y el mismo mensaje en «Guardar como plantilla») integrada en `main` con #254 |
+| DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) programada en el PR #253, **sin integrar**; las demás partes, declaradas (`docs/paquetes/WP-USO-FINAL.md`) |
 | DL-170 | Decisión de Dirección · 2026-11-11 (WP-APP-VUELTA-2) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · DL-166 (PV-2, PV-5, PV-11 y AVD-2) · DL-117 · DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · WP-ENTRENAMIENTO-SERIES §7.7 · GUIA-UX-UI I.6, I.8, III.3 y III.4 · F-143 | La APK se siente plana: el fondo es liso, las tarjetas son mates y opacas y el botón principal es casi blanco. Además, el Inicio de la 0.23 tiene seis errores de lógica: «Empezar» con una sesión en curso, «la que sigue» sin mirar lo hecho hoy, la figura cortada en Evolución, «Cómo se lee» desalineado, ceros en Tu historial y una actividad que se lee de dos maneras | **DECIDIDA por Dirección el 2026-11-11 · etapa A programada, sin integrar (#255)**: «Sí, Inicio + glassy en toda la app», en la misma APK que UF-01 y antes del congelamiento del 25/11; primero, el Inicio real en el teléfono de Dirección. Aprobadas la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; la etapa B espera el visto bueno a la muestra (`docs/paquetes/WP-APP-VUELTA-2.md` §10) |
 
 ---
@@ -3010,6 +3011,36 @@ CI de todas las ramas.
 - **Decisión:** Dirección autorizó el 2026-11-02 seguir las recomendaciones salvo una decisión crítica; esto corrige y no
   amplía nada.
 
+**Retiradas las dos el 2026-11-11 (UF-12 de WP-USO-FINAL, PR #253, sin integrar).** Dirección ratificó ese día UF-D13:
+retirar la de node-forge y, para la de zod, ver si un parche del mismo SDK la resuelve antes de pensar en renovarla.
+Las fuentes, revisadas el 2026-11-11 con `gh api advisories/<GHSA>` y `npm view`:
+- **node-forge:** GHSA-86w9-cpqp-85rv sigue abarcando hasta la 1.4.0 y el lockfile tiene la 1.4.2 desde el 2026-11-02.
+  El 2026-11-10 GitHub publicó cuatro avisos más (GHSA-6889-vf6x-f3g5, bajo; GHSA-w4xr-hqv8-ch44, GHSA-6cv4-p8m7-4r25 y
+  GHSA-j8rw-jp99-435v, medios), hasta la 1.4.2 y corregidos en la 1.4.3. No frenan la auditoría, que falla con altos y
+  críticos, pero el lockfile pasa a la 1.4.3, que cumple el `^1.3.3` de la CLI y de su paquete de firma.
+- **zod:** la CLI de Expo 57.0.33, publicada el 2026-11-05 y del mismo SDK 57, dice en su registro de cambios «Remove the
+  Zod production dependency by using schema-utils for DevTools validation». `expo` 57.0.23, el que usa la APK, pide
+  `^57.0.25`: la 57.0.33 entra en ese rango sin tocar `apps/mobile/package.json`. El lockfile se regeneró solo para la
+  CLI (`npm update @expo/cli --package-lock-only`, en una carpeta aislada):
+  - suben, en parches del SDK 57, la CLI y los paquetes de construcción que pide (`@expo/config`, `@expo/config-plugins`,
+    `@expo/metro-config`, `@expo/prebuild-config`, `expo-modules-autolinking` 57.0.17 y otros); ningún módulo nativo
+    que declara la APK cambia de versión;
+  - el zod 3.25.76 de la raíz queda solo para chromium-bidi, de Puppeteer, que es de desarrollo, y `npm audit
+    --omit=dev` no lo cuenta;
+  - el router de servidor de la CLI pide `expo-constants` ^57.0.23 como dependencia par, así que npm anida una copia
+    57.0.23 bajo `expo`. Es el mismo arreglo que ya tenía `expo-notifications` con su copia 57.0.22: el módulo nativo
+    que se enlaza sigue siendo el 57.0.18 que fija la APK.
+- **Sin excepciones,** `EXCEPCIONES` queda vacía y la auditoría no depende de una fecha: no falla el 2026-12-01. El
+  mecanismo de la procedencia queda para una excepción futura; sus pruebas lo ejercitan con las dos declaraciones
+  retiradas, copiadas tal cual. Los escenarios con npm de verdad (`npm run audit:escenarios`) pasaron a ser nueve:
+  sin cambios, el 2026-12-01, aprueban la APK, la API y el website; y la CLI 57.0.25 de vuelta, zod 3 en la APK, en una
+  biblioteca de la APK o en la API, y node-forge 1.4.0 en la APK o en la API, bloquean. Los nueve dieron lo esperado el
+  2026-11-11.
+- **Lo que falta y a qué prestar atención:** la CLI nueva construye el bundle y prepara el proyecto nativo de la APK.
+  Que la app no se rompió se comprueba al construir la próxima candidata (0.24.0-candidata.1) y probarla en el
+  teléfono. Si esa construcción fallara por la CLI, la salida es volver este cambio del lockfile y que Dirección decida
+  si renueva la de zod hasta el SDK siguiente: la excepción no vuelve sola.
+
 ---
 
 ## DL-115 — Revocado el A3, el titular sigue leyendo su evolución antropométrica y sus formularios
@@ -5618,6 +5649,30 @@ Si un cambio de la API rompe una lectura de una APK vigente, no se arregla tocan
 
 **Condición de cierre:** la prueba en verde en la CI de main, y la regla aplicada en la próxima promoción a estable.
 
+**Enmienda del 2026-11-11 (DL-169; UF-00 de WP-USO-FINAL, PR #253, sin integrar).** Dirección decidió ese día que no hay
+que sostener las APK anteriores («hasta que te diga, solo mi celular tiene las apps, o 2 o 3 personas de mi familia») y
+que la descarga del website sirve siempre la última. Ratificó UF-D11 el mismo día. Lo que cambia:
+- **`VIGENTES` tiene solo la última versión distribuida,** hoy `['0.23.0-candidata.2']`, congelada desde su tag
+  (`c9ec44f`) con el script. Lee las mismas 88 operaciones que la .1, que se congeló en el cierre de la 0.23 (#249).
+- **Salen los congelados** de la 0.13.2, la 0.20, la 0.21, la 0.22 y la 0.23.0-candidata.1. Quedan en la historia de git
+  y se regeneran desde sus tags. Al publicar una APK nueva, su congelado reemplaza al anterior.
+- **Salen las pruebas que nombraban una versión que ya no está:** la de la 0.20 y el formato 3 en
+  `formularios-ronda-2.test.ts` (la regla de la API sigue probada en `formularios-ronda-2.int-spec.ts`) y la de la 0.13.2
+  en `registro-por-niveles.int-spec.ts`. La de los avisos de Administración (`administracion.int-spec.ts`) lee con la
+  última APK, por su nombre en el soporte (`LA_ULTIMA_APK`), para no cambiar con cada candidata.
+- **C01 y D10 se retiran (UF-D11):** la comparación con las 16 lecturas de la 0.13.2 en `entrenamiento-por-serie.test.ts`
+  y en `recetas-y-registro.test.ts`, y la parte de C01 en `entrenamiento-por-serie.int-spec.ts` que leía con sus
+  esquemas. De C01 queda lo que no dependía de ninguna APK: los datos de un plan sin objetivos por serie no se
+  reinterpretan. El «D10» de `nutricion.int-spec.ts` es otro (un reintento no duplica, REG-06-107) y no se toca.
+  `fixtures/respuestas-que-lee-la-apk-instalada.json` queda, porque lo usan las pruebas del catálogo y de la
+  compatibilidad de clientes.
+- **`SOLO_EL_RECHAZO` pierde la 0.13.2.** Con UF-01 entran ahí el alta con correo y la de Google de la 0.23, que la API
+  rechaza por no traer el nombre (como D-5).
+- **Quedan las herramientas:** el script, `LaApk`, las dos pruebas y las capacidades (`X-BE-Capabilities`). La CI no
+  cambia.
+- **Cuando Dirección «establezca una estable»,** `VIGENTES` vuelve a tener la estable y la última candidata, y la regla
+  para promover de esta entrada vuelve a aplicarse.
+
 ---
 
 ## DL-153 — Nutrición: el número dice qué representa y qué falta registrar del plan
@@ -7343,6 +7398,102 @@ cambios»», y «Activar plan», «No pudimos guardar los cambios, y sin guardar
 
 **Condición de cierre:** el PR integrado en `main` con la CI en verde y desplegado en `test`, y un plan real de Dirección
 de dos o más días tipo guardado en `test`. La ampliación, igual: integrada, y una plantilla de un plan real guardada.
+
+---
+
+## DL-169 — El uso final: el nombre obligatorio, las APK anteriores en suspenso y lo que la demostración no necesitaba
+
+**Prioridad:** alta (la línea entre la demostración y el uso real) · **Documento:** 08 §42 (Ready-for-Real-Data) · 08 §33
+· 08 §12 · 08 §18 y §19 · 04 RF-005 · 09 v0.12 (API-ACC-P1-01 y 02, API-RGT-01 a 03, API-EXP-01 y 02) · 09 v0.8
+(API-PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 · **Estado:** DECIDIDA por
+Dirección el 2026-11-11 · sin implementar (`docs/paquetes/WP-USO-FINAL.md`). Las partes UF-00 a UF-24 esperan el sí de
+Dirección a los IDs, y las decisiones UF-D1 a UF-D13, su ratificación.
+
+**Qué dice lo vigente.**
+- **El nombre visible es optativo** (DL-009, opción B, y DL-040):
+  - el alta con correo no lo pide: API-ACC-01 lleva `profile: {}`, porque no había «campos mínimos» aprobados;
+  - el alta con Google no tiene perfil;
+  - la persona lo agrega, lo cambia o lo quita en su perfil;
+  - sin nombre, el profesional ve la referencia neutral.
+- **DL-152:** lo que leen y hacen las APK instaladas no cambia. `VIGENTES` tiene la estable 0.13.2 y las candidatas 0.20
+  a 0.22.
+- **El 08 §42 pide 24 condiciones antes del primer dato real sensible** y dice que «hoy NO se cumple». Varias partes del
+  sistema se resolvieron para datos de prueba:
+  - no hay recuperación de contraseña ni correo de BE;
+  - no hay entrada para profesionales reales;
+  - los textos legales son de demostración;
+  - los avisos de prueba están escritos fijos y el catálogo de demostración está en las migraciones;
+  - no hay producción ni segundo factor para el profesional.
+
+**Qué pidió Dirección** (2026-11-11): «En la creación de la cuenta ya tiene que ponerle el nombre. Empecemos a completar
+esas secciones que por ser datos de prueba no tuvimos en cuenta, pero ya lo tenemos que armar como para el uso final:
+poner el nombre de la persona no puede ser una opción. Si se te ocurren otras cosas que ya tenemos que estar puliendo,
+decime.» El mismo día, sobre las apps anteriores: «no te preocupes de las apps viejas: hasta que te diga, solo mi celular
+tiene las apps, o 2 o 3 personas de mi familia que instale para probar».
+
+**Lo decidido** (Dirección, 2026-11-11):
+- **El nombre es obligatorio:**
+  - en el alta con correo y en la de Google, que propone el nombre de la cuenta de Google para que la persona lo
+    confirme o lo corrija;
+  - las cuentas que ya existen sin nombre lo completan al entrar, en la web y en la app nueva;
+  - el profesional también tiene un nombre visible.
+- **Las APK anteriores quedan en suspenso** (enmienda de DL-152):
+  - mientras Dirección no establezca una estable, `VIGENTES` conserva solo la última versión distribuida, hoy la
+    0.23.0-candidata.2;
+  - las pruebas de lecturas congeladas se achican en consecuencia, sin borrar la historia ni las herramientas;
+  - la API puede exigir lo nuevo a las versiones anteriores, con el código que esas versiones ya traducen a «Actualizá
+    la app para continuar» (DL-138 D-10).
+- **La descarga del website sirve siempre la última versión.**
+- **En el website, a la persona se la nombra por su nombre** y, si no hay uno posible, «persona». Lo programa
+  WP-EDITORES-PROFESIONAL (ED-06 y ED-D9).
+
+**Lo que queda a decidir:** UF-D1 a UF-D13, con su recomendación, están en el §7 del paquete. Entre ellas:
+- qué responde un alta sin nombre;
+- de dónde sale el nombre de Google;
+- si el nombre se puede quitar;
+- el paso «Antes de seguir»;
+- cómo entra un profesional real;
+- el correo de BE;
+- el catálogo de demostración en producción;
+- el segundo factor del profesional;
+- DL-114 antes del 30/11.
+
+**Lo que no es código y también bloquea el uso real** (§9 del paquete):
+- la validación jurídica de los textos (condición 1 del 08 §42, que un acta no dispensa);
+- los DPA con los proveedores;
+- la transferencia internacional;
+- el registro de las bases;
+- el runbook de incidentes;
+- el procedimiento de menor descubierto;
+- el acceso del operador.
+
+**Condición de cierre:**
+- UF-00 a UF-12 integradas, con su evidencia;
+- el documento del gate (UF-02), con cada condición del 08 §42 cumplida con evidencia o con su dueño y su fecha.
+
+**Ratificación y etapa 1 (2026-11-11).** Dirección ratificó ese día **UF-D1 a UF-D13**, tal como se recomendaban, y pidió
+la etapa 1: lo que bloquea y tiene que entrar antes de congelar la app el 25/11. Quedó programada en el PR #253, en
+borrador y **sin integrar** (el detalle, las decisiones de implementación UF-T y lo que falta, en el §12 del paquete):
+- **UF-12:** DL-114 sin excepciones. node-forge pasa a la 1.4.3 y la CLI de Expo a la 57.0.33, del mismo SDK, que ya no
+  pide zod; la auditoría no depende de una fecha y no falla el 2026-12-01 (TEST-UF-016).
+- **UF-00:** `VIGENTES = ['0.23.0-candidata.2']`, congelada desde su tag; salen los congelados viejos y C01 y D10
+  (TEST-UF-006). La enmienda está escrita en DL-152.
+- **UF-01:** el nombre obligatorio en la API (el alta con correo y con Google, no se quita, la base lo sostiene,
+  API-ACC-07), en la web y en la APK, con «Antes de seguir» para las cuentas anteriores (TEST-UF-001 a 005).
+- **UF-08:** los avisos de prueba dependen del ambiente y se apagan en `test` con `BE_AVISOS_DE_PRUEBA=no`, que Dirección
+  carga en Render cuando quiera (TEST-UF-012).
+
+**La numeración de las APK (2026-11-11).** Dirección decidió:
+- **la 0.24** lleva el nombre obligatorio, es la descarga del website («latest») y sale **sin los avisos de prueba**.
+  Por eso el perfil `test` de `apps/mobile/eas.json` lleva `BE_AVISOS_DE_PRUEBA=no`, y toda APK de `test` sale
+  sin ellos;
+- **la muestra con vidrio** de WP-APP-VUELTA-2 sale después como **0.25**, prerelease y solo para Dirección, construida
+  sobre `main` con este paquete integrado, así que ya trae el nombre obligatorio.
+
+**Integración y la 0.24 (2026-11-12).** La etapa 1 se integró con el sí de Dirección (main `549f41e3`) y se desplegó
+en `test`. La 0.24.0-candidata.1 salió ese día como «latest» (tag en `1cb3cdc`, versionCode 38) y su cierre congela lo
+que lee: `VIGENTES = ['0.24.0-candidata.1']`, 89 operaciones (las 88 de la 0.23 y API-ACC-07). El congelado de la
+0.23.0-candidata.2 sale y se regenera desde su tag. Falta la prueba en el teléfono (§12.5 del paquete).
 
 ## DL-170 — La APK con profundidad: vidrio en toda la app, primero en Inicio, y los errores de lógica de Inicio
 

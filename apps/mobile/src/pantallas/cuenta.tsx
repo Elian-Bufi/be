@@ -35,9 +35,9 @@ import { SeccionDeAvisos, SeccionDeTuNombre } from './cuenta-avisos-y-nombre';
 
 /**
  * Antes de cerrar la sesión: este teléfono deja de recibir los avisos de la cuenta (DL-133). Lo mejor posible y con
- * tope: si la API no responde en 4 s, la sesión se cierra igual.
+ * tope: si la API no responde en 4 s, la sesión se cierra igual. También lo usa «Cerrar sesión» en «Antes de seguir».
  */
-function retirarAvisos(token: string, identidadId: string): Promise<void> {
+export function retirarAvisos(token: string, identidadId: string): Promise<void> {
   return Promise.race([retirarAlSalir(dependenciasDeAvisos, { token, identidadId }).catch(() => undefined), new Promise<void>((r) => setTimeout(r, 4_000))]);
 }
 

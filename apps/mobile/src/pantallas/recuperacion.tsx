@@ -2,9 +2,11 @@
  * APK · La recuperación de la sesión al abrir la app (WP-ENTRENAMIENTO-SERIES §7.6; referencia
  * `02_carga_y_reintento.png`). Reemplaza a «Verificando tu sesión guardada…» con tres bloques vacíos.
  *
- * - **Mientras comprueba:** la identidad real de BE (el isotipo del repositorio y «BE»; la cabecera dice «Ambiente de
- *   prueba»), «Preparando tu espacio», «Comprobando tu sesión», un indicador de actividad y «Un momento, por favor.». Sin
- *   porcentajes ni mensajes de éxito antes de confirmar. Con movimiento reducido, el indicador queda quieto.
+ * - **Mientras comprueba:** la identidad real de BE (el isotipo del repositorio y «BE»; la cabecera lleva el aviso de
+ *   prueba en las builds que lo muestran), «Preparando tu espacio», «Comprobando tu sesión», un indicador de actividad y
+ *   «Un momento, por favor.». Sin porcentajes ni mensajes de éxito antes de confirmar. Con movimiento reducido, el
+ *   indicador queda quieto. La misma espera se ve mientras la raíz pregunta qué falta para seguir (UF-01, DL-169:
+ *   `antes-de-seguir.tsx`).
  * - **A los 5 s** (`UMBRAL_DE_DEMORA_MS`): «Está tardando más de lo habitual» y que sigue esperando el mismo pedido,
  *   que puede tardar alrededor de un minuto si el servicio estaba en reposo (`ESPERA_MAXIMA_DE_VERIFICACION_MS`). Sin
  *   «Reintentar»: mientras hay un pedido en curso, otro se le superpondría (precierre del 2026-10-06, §5).

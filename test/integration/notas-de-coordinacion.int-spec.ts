@@ -27,7 +27,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { DespachadorDeAvisos } from '../../apps/api/src/novedades/despachador';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, claveDeIdempotencia, conSesion, NOMBRE_SINTETICO } from './soporte-api';
 import { circuitoConPlanActivo, circuitoListoParaPlanificar, crearBorrador, cuerpoDeRevision, registrarComida } from './soporte-nutricion';
 import {
   a3Vigente,
@@ -157,7 +157,8 @@ describe('TEST-RF-057 · TEST-UC-E07 · escribir y leer una nota de coordinació
       const [nov, ...otras] = await novedadesDeNotas(pro);
       expect(otras).toEqual([]);
       expect(nov).toMatchObject({ scope: 'NUTRICION', source: { identityId: e.nut.id }, title: 'Nota de coordinación', open: { view: 'ADVISEE', referenceId: e.ase.id } });
-      expect(nov!.body).toMatch(/^Profesional sintético nut-crd-todos dejó una nota de coordinación sobre Asesorado · [0-9a-f]{6}\.$/);
+      // Sobre la persona, por su nombre: el profesional tiene un vínculo vigente con ella (DL-040), y desde DL-169 lo tiene.
+      expect(nov!.body).toBe(`Profesional sintético nut-crd-todos dejó una nota de coordinación sobre ${NOMBRE_SINTETICO}.`);
       expect(nov!.body).not.toContain('cena');
     }
     // Ni el autor ni la persona reciben esa novedad: el autor la escribió; la persona la lee en su app.
@@ -169,6 +170,7 @@ describe('TEST-RF-057 · TEST-UC-E07 · escribir y leer una nota de coordinació
     const aviso = expo.mensajes.filter((m) => m.to === telefono);
     expect(aviso).toEqual([expect.objectContaining({ title: 'BE', body: 'Tenés una novedad.' })]);
     expect(JSON.stringify(aviso)).not.toMatch(/cena|Profesional sintético|Asesorado|Nutrición|coordinación/);
+    expect(JSON.stringify(aviso)).not.toContain(NOMBRE_SINTETICO);
 
     // CRD-D2: la persona la lee entera, con quién la escribió y a quién fue.
     const [propia] = await notasPropias(e.ase);

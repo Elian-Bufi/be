@@ -104,6 +104,8 @@ async function registrarCuenta(correo, superficie) {
     cuerpo: {
       registrationIntent: 'ADVISEE',
       identity: { localIdentifier: correo, localCredential: CRED },
+      // DL-169 (UF-01): toda alta lleva el nombre; el de cada persona se pone después (`ponerNombre`).
+      profile: { displayName: 'Persona Sintética' },
       termsAcceptance: { versionId: dominio.VERSION_VIGENTE.TERMINOS.id },
       privacyAcknowledgement: { versionId: dominio.VERSION_VIGENTE.PRIVACIDAD_INFO.id },
       // DL-138: toda alta declara la mayoría de edad (las personas sintéticas son adultas).
@@ -128,9 +130,10 @@ async function vincular(pro, ase, aseId, alcance) {
  */
 export const NOMBRES = { A: 'Martina Gómez', B: 'Lucas Fernández', C: 'Valentina Ruiz', E: 'Joaquín Medina', DESCARTABLE: 'Tomás Herrera' };
 
-/** El nombre visible de la persona de esa sesión, en su primera versión del perfil. */
+/** El nombre visible de la persona de esa sesión, como versión nueva del perfil (desde DL-169 la cuenta nace con uno). */
 async function ponerNombre(token, nombre) {
-  await pedir('PATCH', '/me/profile', { token, superficie: 'APK', cuerpo: { expectedVersion: 'v0', changes: { displayName: nombre } } });
+  const actual = (await pedir('GET', '/me/profile', { token, superficie: 'APK' })).data;
+  await pedir('PATCH', '/me/profile', { token, superficie: 'APK', cuerpo: { expectedVersion: actual.version, changes: { displayName: nombre } } });
 }
 
 // ─── Base de datos (SQL parametrizado; los disparadores quedan activos) ───────────────────────────────────────────

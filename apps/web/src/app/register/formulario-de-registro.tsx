@@ -7,8 +7,12 @@
  * PROTO-10-ACC-02 — después del alta no hay auto-login (10-B02:170-194).
  * DL-138: «Continuar con Google» arriba del formulario, si el build tiene el client ID. El alta con Google sí abre la
  * sesión (la API la devuelve con la cuenta), y se guarda igual que la del login.
+ * DL-169 (WP-USO-FINAL UF-01): «Nombre y apellido» es obligatorio y va arriba del correo. Sin él el formulario no se envía
+ * y el campo dice qué falta; la cuenta nace con su nombre. Si la API lo rechaza (422), el error vuelve al campo.
+ * UF-08: el aviso de prueba sale del ambiente (`AVISOS_DE_PRUEBA_VISIBLES`); sin él, el formulario no lo nombra.
  */
 import {
+  AVISOS_DE_PRUEBA,
   ISSUE_DE_MAYORIA_DE_EDAD,
   MENSAJE_DE_CAMPO,
   identificadorLocalValido,
@@ -22,11 +26,14 @@ import { useRef, useState, type FormEvent } from 'react';
 import { AccesoConGoogle } from '../../components/acceso-con-google';
 import { ActosDelAlta, erroresDeLosActos, idDelActo, NINGUN_ACTO_MARCADO, type ActoDelAlta, type ActosMarcados } from '../../components/actos-del-alta';
 import { Aviso, Campo, ResumenDeErrores } from '../../components/formulario';
+import { CampoDeNombreYApellido } from '../../components/nombre-y-apellido';
+import { AVISOS_DE_PRUEBA_VISIBLES } from '../../lib/ambiente';
 import { api, nuevaClaveDeIdempotencia } from '../../lib/api';
 import { COPY, destinoSeguro } from '../../lib/copy';
+import { errorDelNombre, mensajeDelNombreEn } from '../../lib/nombre-y-apellido';
 import { useSesion } from '../../lib/sesion';
 
-type Campos = 'correo' | 'contrasena' | ActoDelAlta;
+type Campos = 'nombre' | 'correo' | 'contrasena' | ActoDelAlta;
 type Errores = Partial<Record<Campos, string>>;
 type Estado =
   | { tipo: 'editando' }
@@ -38,8 +45,11 @@ type Estado =
 
 const ACTOS: ReadonlySet<Campos> = new Set<Campos>(['a1', 'a2', 'mayoria']);
 
-function validar(correo: string, contrasena: string, actos: ActosMarcados): Errores {
+/** En el orden en que se ven: el nombre, el correo, la contraseña y los actos (así los enumera el resumen). */
+function validar(nombre: string, correo: string, contrasena: string, actos: ActosMarcados): Errores {
   const errores: Errores = {};
+  const delNombre = errorDelNombre(nombre);
+  if (delNombre) errores.nombre = delNombre;
   if (!identificadorLocalValido(normalizarIdentificadorLocal(correo))) errores.correo = MENSAJE_DE_CAMPO.INVALID_LOCAL_IDENTIFIER;
   const problema = problemaDeCredencialLocal(contrasena);
   if (problema) errores.contrasena = MENSAJE_DE_CAMPO[problema];
@@ -49,6 +59,7 @@ function validar(correo: string, contrasena: string, actos: ActosMarcados): Erro
 export function FormularioDeRegistro() {
   const router = useRouter();
   const { guardar } = useSesion();
+  const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [actos, setActos] = useState<ActosMarcados>(NINGUN_ACTO_MARCADO);
@@ -70,13 +81,13 @@ export function FormularioDeRegistro() {
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
     if (estado.tipo === 'enviando') return; // sin doble envío (10-B04:1071-1113)
-    const encontrados = validar(correo, contrasena, actos);
+    const encontrados = validar(nombre, correo, contrasena, actos);
     setErrores(encontrados);
     setIntento((n) => n + 1);
     if (Object.keys(encontrados).length > 0) return;
 
     setEstado({ tipo: 'enviando' });
-    const r = await api.registrar({ correo, contrasena, mayoriaDeEdad: actos.mayoria }, clave.current);
+    const r = await api.registrar({ correo, contrasena, nombre, mayoriaDeEdad: actos.mayoria }, clave.current);
     if (r.ok) {
       setContrasena('');
       setEstado({ tipo: 'creada' });
@@ -98,16 +109,22 @@ export function FormularioDeRegistro() {
         setIntento((n) => n + 1);
         return setEstado({ tipo: 'editando' });
       }
-      case 'VALIDATION_FAILED':
-        // DL-138: la declaración de mayoría de edad sin marcar vuelve a su casilla; con otra versión, los textos cambiaron.
+      case 'VALIDATION_FAILED': {
+        // DL-169: el nombre vacío o que no se puede guardar vuelve a su campo. DL-138: la declaración de mayoría de edad sin
+        // marcar vuelve a su casilla; con otra versión, los textos cambiaron.
         renovarClave();
-        if (r.issues.some((i) => i.code === ISSUE_DE_MAYORIA_DE_EDAD.REQUERIDA)) {
-          setErrores({ mayoria: MENSAJE_DE_CAMPO.MAYORIA_REQUERIDA });
+        const deLaApi: Errores = {};
+        const delNombre = mensajeDelNombreEn(r.issues);
+        if (delNombre) deLaApi.nombre = delNombre;
+        if (r.issues.some((i) => i.code === ISSUE_DE_MAYORIA_DE_EDAD.REQUERIDA)) deLaApi.mayoria = MENSAJE_DE_CAMPO.MAYORIA_REQUERIDA;
+        if (Object.keys(deLaApi).length > 0) {
+          setErrores(deLaApi);
           setIntento((n) => n + 1);
           return setEstado({ tipo: 'editando' });
         }
         if (r.issues.some((i) => i.code === ISSUE_DE_MAYORIA_DE_EDAD.VERSION_NO_VIGENTE)) return setEstado({ tipo: 'error', mensaje: COPY.versionDesactualizada });
         return setEstado({ tipo: 'error', mensaje: COPY.noDisponible });
+      }
       case 'TERMS_VERSION_NOT_ACCEPTABLE':
       case 'PRIVACY_VERSION_NOT_ACCEPTABLE':
         return setEstado({ tipo: 'error', mensaje: COPY.versionDesactualizada });
@@ -141,7 +158,8 @@ export function FormularioDeRegistro() {
 
   return (
     <AccesoConGoogle alEntrar={entrarConGoogle}>
-      <form className="formulario" onSubmit={enviar} noValidate aria-describedby="registro-aviso">
+      {/* Sin el aviso de prueba, el formulario no lo nombra: un aria-describedby no apunta a nada que no esté. */}
+      <form className="formulario" onSubmit={enviar} noValidate aria-describedby={AVISOS_DE_PRUEBA_VISIBLES ? 'registro-aviso' : undefined}>
         <ResumenDeErrores titulo={COPY.resumenDeErrores(listaDeErrores.length)} errores={listaDeErrores} intento={intento} />
 
         {estado.tipo === 'no-disponible' ? (
@@ -163,10 +181,13 @@ export function FormularioDeRegistro() {
           </Aviso>
         ) : null}
 
-        <p id="registro-aviso" className="nota">
-          Ambiente de prueba: usá un correo inventado (por ejemplo, terminado en <code>@example.invalid</code>) y una contraseña que no uses en otro lado.
-        </p>
+        {AVISOS_DE_PRUEBA_VISIBLES ? (
+          <p id="registro-aviso" className="nota">
+            {AVISOS_DE_PRUEBA.registro}
+          </p>
+        ) : null}
 
+        <CampoDeNombreYApellido id="nombre" valor={nombre} alCambiar={cambiar(setNombre)} error={errores.nombre} />
         <Campo
           id="correo"
           etiqueta="Correo electrónico"

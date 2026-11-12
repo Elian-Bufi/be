@@ -16,6 +16,7 @@ import {
   DECLARACION_DE_MAYORIA,
   entornoDePrueba,
   login,
+  NOMBRE_SINTETICO,
   OTRA_CREDENCIAL_SINTETICA,
   registrar,
   registrarOk,
@@ -65,6 +66,8 @@ function crear(a: INestApplication, idToken: string, cambios: Record<string, unk
   return req.send({
     idToken,
     registrationIntent: 'ADVISEE',
+    // DL-169 (UF-01): el nombre que la persona confirmó; las pruebas del nombre están en nombre-obligatorio.int-spec.ts.
+    profile: { displayName: NOMBRE_SINTETICO },
     termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
     privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
     adultDeclaration: DECLARACION_DE_MAYORIA,

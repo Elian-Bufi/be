@@ -65,6 +65,8 @@ for (let i = 0; i < ciclos; i++) {
     cuerpo: {
       registrationIntent: 'ADVISEE',
       identity: { localIdentifier: correo, localCredential: contrasena },
+      // DL-169 (UF-01): toda alta lleva el nombre.
+      profile: { displayName: 'Persona Sintética' },
       termsAcceptance: { versionId: 'terminos-2026-09-demo' },
       privacyAcknowledgement: { versionId: 'privacidad-2026-09-demo' },
       // DL-138: toda alta declara la mayoría de edad (las personas sintéticas son adultas).

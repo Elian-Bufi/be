@@ -12,7 +12,7 @@ import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
 import { bloquearCorreoDeAcceso, metodosDelCorreo } from '../identidad/correo-de-acceso';
-import { esColisionDeIdentificador, RegistroService, validarActosDelAlta } from '../identidad/registro.service';
+import { esColisionDeIdentificador, RegistroService, validarActosDelAlta, validarNombreDelAlta } from '../identidad/registro.service';
 import { AuditoriaService } from '../plataforma/auditoria.service';
 import { CredencialesService } from '../plataforma/credenciales.service';
 import { LimitadorService } from '../plataforma/limitador.service';
@@ -40,7 +40,8 @@ class CuentaNoOperativa extends Error {
  *   una cuenta con contraseña para ese correo (vincular) o ninguna (crear). Nunca vincula ni crea.
  * - **API-GOO-02** vincula solo después de verificar la contraseña de esa cuenta, con las mismas reglas y los mismos cupos
  *   que el login local (Dirección, 2026-10-16: «solo después de que la persona confirme la contraseña»).
- * - **API-GOO-03** crea la identidad con los mismos actos que el alta local, y la declaración de mayoría de edad.
+ * - **API-GOO-03** crea la identidad con los mismos actos que el alta local, la declaración de mayoría de edad y el nombre
+ *   que la persona confirmó (DL-169; API-GOO-01 se lo propone desde la cuenta de Google, UF-D2).
  * Un correo es de una sola identidad (RF-001; INV-06-21): las tres operaciones que escriben toman el cerrojo del correo.
  */
 @Injectable()
@@ -79,7 +80,8 @@ export class AccesoGoogleService {
         select: { identidadId: true },
       });
       if (local) await this.rechazar(OPERACION_SESION, errores.vinculacionConGoogleRequerida(cuenta.correo), ctx, local.identidadId, 'VINCULACION_REQUERIDA');
-      await this.rechazar(OPERACION_SESION, errores.cuentaDeGoogleInexistente(cuenta.correo), ctx, null, 'CUENTA_DE_GOOGLE_INEXISTENTE');
+      // DL-169 (UF-D2): con el nombre de la cuenta de Google, leído del token ya verificado, para proponerlo en el alta.
+      await this.rechazar(OPERACION_SESION, errores.cuentaDeGoogleInexistente(cuenta.correo, cuenta.nombre), ctx, null, 'CUENTA_DE_GOOGLE_INEXISTENTE');
     }
     return this.abrirSesion(metodo!.identidadId, ctx, OPERACION_SESION);
   }
@@ -140,6 +142,8 @@ export class AccesoGoogleService {
     const solicitud = validarCuerpo(RegistrarConGoogleRequestSchema, cuerpo);
     this.limitador.consumir('registro', ctx.direccionIp);
     validarActosDelAlta(solicitud, 'ESTRICTO');
+    // DL-169 (UF-D1): el nombre que la persona confirmó o corrigió; sin él, lo mismo que API-ACC-01.
+    const nombreVisible = validarNombreDelAlta(solicitud.profile);
     const cuenta = await this.verificar(solicitud.idToken, OPERACION_ALTA, ctx);
 
     const intentar = () =>
@@ -158,7 +162,7 @@ export class AccesoGoogleService {
         if (delCorreo.length > 0) throw new ConSujeto(errores.registroNoDisponible(), null, 'CORREO_DE_OTRA_IDENTIDAD');
         const { identidadId } = await this.registro.crearIdentidad(
           tx,
-          { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'GOOGLE', sub: cuenta.sub, correo: cuenta.correo } },
+          { registrationIntent: solicitud.registrationIntent, metodo: { tipo: 'GOOGLE', sub: cuenta.sub, correo: cuenta.correo }, nombreVisible },
           ctx,
           OPERACION_ALTA,
         );

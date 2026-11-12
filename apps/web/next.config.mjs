@@ -15,6 +15,12 @@
  * en el JS del website, como en cualquier página con «Continuar con Google»); no es un secreto. Sin ella, el website no
  * muestra el botón ni carga nada de Google. Con un valor que no tiene la forma de un client ID, el build falla, como la
  * API con GOOGLE_CLIENT_IDS: puede ser un secreto pegado por error, y el mensaje no lo repite.
+ *
+ * WP-USO-FINAL UF-08 (DL-169): los avisos de prueba dependen del ambiente, no de un texto fijo (`src/lib/ambiente.ts`).
+ * - BE_AMBIENTE: el ambiente del build. Sin ella, `development` con `next dev` y `test` en cualquier otro build: Render no
+ *   la define hoy, y `test` es el único ambiente que existe. En `production` los avisos no aparecen nunca.
+ * - BE_AVISOS_DE_PRUEBA: el interruptor, tal cual (vacío si no está). «no» apaga los avisos fuera de producción.
+ * Ninguna de las dos es secreta: van en el JS del website.
  * @type {import('next').NextConfig}
  */
 import { readFileSync } from 'node:fs';
@@ -24,6 +30,8 @@ const desarrollo = process.env.NODE_ENV === 'development';
 const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 const apiBaseUrl = (process.env.BE_API_BASE_URL ?? '').replace(/\/+$/, '');
 const googleWebClientId = (process.env.BE_GOOGLE_WEB_CLIENT_ID ?? '').trim();
+const ambiente = (process.env.BE_AMBIENTE ?? '').trim() || (desarrollo ? 'development' : 'test');
+const avisosDePrueba = process.env.BE_AVISOS_DE_PRUEBA ?? '';
 
 if (process.env.RENDER && !/^https:\/\/[a-z0-9.-]+$/i.test(apiBaseUrl)) {
   throw new Error('BE_API_BASE_URL es obligatoria en el build de Render: origen https de la API, sin ruta (DL-030)');
@@ -50,6 +58,9 @@ const nextConfig = {
     BE_CONSTRUIDO_EN: new Date().toISOString(),
     BE_API_BASE_URL: apiBaseUrl,
     BE_GOOGLE_WEB_CLIENT_ID: googleWebClientId,
+    // WP-USO-FINAL UF-08: el ambiente y el interruptor de los avisos de prueba (ver arriba).
+    BE_AMBIENTE: ambiente,
+    BE_AVISOS_DE_PRUEBA: avisosDePrueba,
     // WP-TABLERO-ALTA-GAMA TB-12: el interruptor del cajón «De a una». Solo «si» lo prende; Render no lo define.
     BE_CAJON_DE_A_UNA: process.env.BE_CAJON_DE_A_UNA === 'si' ? 'si' : '',
   },

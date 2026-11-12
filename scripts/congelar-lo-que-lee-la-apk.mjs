@@ -23,9 +23,10 @@
  * operación, el sobre de error (`ErrorEnvelopeSchema`: con otra forma, la APK dice «respuesta no reconocida» en lugar del
  * rechazo) y los detalles de los rechazos que la APK lee con su propio esquema.
  *
- * Al publicar una APK nueva (estable o candidata): taggearla `be-apk-<versión>`, correr este script con ese tag, sumar la
- * versión a `VIGENTES` en la prueba del dominio y correr la de integración. Al dejar de haber teléfonos con una versión, se
- * borra su archivo. Ver DL-152 en `docs/DEUDA_LEGAJO.md`.
+ * Al publicar una APK nueva: taggearla `be-apk-<versión>`, correr este script con ese tag, poner la versión en `VIGENTES`
+ * de la prueba del dominio y correr la de integración. Mientras Dirección no establezca una estable (UF-00 de WP-USO-FINAL,
+ * enmienda de DL-152 del 2026-11-11), `VIGENTES` tiene solo la última: la nueva reemplaza a la anterior, cuyo archivo se
+ * borra (queda en la historia de git y se regenera desde su tag). Ver DL-152 en `docs/DEUDA_LEGAJO.md`.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

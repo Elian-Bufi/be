@@ -126,10 +126,14 @@ test('TEST-AVR-002 · con letra ×1 la barra va en una fila sin achicar; con ×1
   assert.equal(dos.escalaEfectiva, 1.3, 'cambia la composición, no la letra');
 });
 
-test('TEST-AVR-002 · la cabecera tiene la marca y Novedades, sin menú ni avatar, con la franja del ambiente', () => {
+test('TEST-AVR-002 · la cabecera tiene la marca y Novedades, sin menú ni avatar, y la franja del aviso de prueba sale del ambiente', () => {
   const cabecera = leer('cabecera.tsx');
   assert.doesNotMatch(cabecera, /Abrir el menú|accessibilityLabel="Cuenta"|menu-de-la-app/);
-  assert.match(cabecera, /Ambiente de prueba · solo datos sintéticos/);
+  // Cambió con UF-08 de WP-USO-FINAL (DL-169, Dirección, 2026-11-11): la franja ya no va siempre. Lleva el texto del
+  // dominio y va solo en las builds que muestran los avisos de prueba (en producción, nunca; en test, salvo con
+  // BE_AVISOS_DE_PRUEBA=no).
+  assert.match(cabecera, /\{AVISOS_DE_PRUEBA_VISIBLES \? \(\s*<Text[^>]*>\s*\{AVISOS_DE_PRUEBA\.franja\}/);
+  assert.doesNotMatch(cabecera, /Ambiente de prueba/, 'el texto del aviso vive en el dominio');
   assert.match(cabecera, /Novedades, \$\{sinLeer\} sin leer/);
 });
 
@@ -152,13 +156,19 @@ const solicitud = (id, status, extra = {}) => ({ formRequestId: id, status, temp
 const pedido = (id, profesional) => ({ accessRequestId: id, version: 'v1', professional: { identityId: profesional, displayName: `Prof. ${profesional}` }, scope: { code: 'ENTRENAMIENTO', label: 'Entrenamiento' }, requestedAt: '2026-11-02T12:00:00Z' });
 const habitosCon = (profesionales) => ({ sharing: { status: 'ACTIVE', version: 'v', activeSince: '2026-10-01T00:00:00Z', withdrawnAt: null, acceptedTextVersionId: 't' }, professionals: profesionales });
 const profesionalDeHabitos = (id, sharing, link = 'ACTIVE') => ({ professional: { identityId: id, displayName: `Prof. ${id}` }, scopes: [{ code: 'ENTRENAMIENTO', label: 'Entrenamiento' }], link, sharing, sharedSince: sharing === 'RECEIVES' ? '2026-10-01T00:00:00Z' : null });
+/** El identificador de una cuenta de ejemplo, para la referencia neutral del dominio (DL-040). */
+const IDENTIDAD = '0f6c2a1e-5b7d-4c3e-9a8f-2d1e0c36743a';
+const { referenciaNeutral } = await import('../packages/domain/dist/index.js');
 
 test('TEST-AVR-004 · Perfil: quién sos, tu información, tus profesionales, formularios y ajustes, con Cerrar mi cuenta al final', () => {
   assert.deepEqual(perfil.BLOQUES_DE_PERFIL, ['quien-sos', 'tu-informacion', 'tus-profesionales', 'formularios-y-pedidos', 'ajustes']);
   assert.deepEqual(perfil.AJUSTES_DE_PERFIL, ['apariencia', 'avisos', 'privacidad', 'sesion', 'cerrar-mi-cuenta']);
-  assert.deepEqual(perfil.nombreEnPerfil('Diego Sosa'), { texto: 'Diego Sosa', agregar: false });
-  assert.deepEqual(perfil.nombreEnPerfil(null), { texto: 'Agregá tu nombre', agregar: true });
-  assert.equal(perfil.nombreEnPerfil(undefined), null, 'mientras se lee, nada');
+  assert.equal(perfil.nombreEnPerfil('Diego Sosa', IDENTIDAD), 'Diego Sosa');
+  // Cambió con UF-01 de WP-USO-FINAL (DL-169, Dirección, 2026-11-11): el nombre es obligatorio y lo pide «Antes de
+  // seguir», así que Perfil ya no ofrece «Agregá tu nombre». Sin nombre (la app entró sin poder preguntar), la referencia.
+  assert.equal(perfil.nombreEnPerfil(null, IDENTIDAD), referenciaNeutral(IDENTIDAD));
+  assert.equal(perfil.nombreEnPerfil(null, undefined), null, 'sin el identificador, nada');
+  assert.equal(perfil.nombreEnPerfil(undefined, IDENTIDAD), null, 'mientras se lee, nada');
   assert.deepEqual(
     perfil.baldosasDePerfil({ habitos: { cargados: true, losReciben: 2 } }).map((b) => [b.titulo, b.detalle]),
     [
@@ -391,7 +401,10 @@ test('TEST-AVR-029 · una cuenta nueva: el paso que falta primero, líneas sin p
   assert.equal(inicio.seDibujaParaResponder(undefined), false, 'sin lectura, no se afirma nada');
   const nada = perfil.paraResponder([], habitosCon([]), []);
   assert.deepEqual(perfil.marcaDePerfil(nada), { visible: false, paraLeer: null });
-  assert.equal(perfil.nombreEnPerfil(null).texto, 'Agregá tu nombre');
+  // Desde DL-169 (UF-01) una cuenta nueva nace con su nombre, y la que no lo tiene lo completa en «Antes de seguir»:
+  // Perfil no ofrece agregarlo.
+  assert.equal(perfil.nombreEnPerfil('Persona Sintética', IDENTIDAD), 'Persona Sintética');
+  assert.notEqual(perfil.nombreEnPerfil(null, IDENTIDAD), 'Agregá tu nombre');
   assert.equal(perfil.estadoDeMisHabitos({ cargados: false, losReciben: 0 }), 'Todavía no los contaste');
   assert.deepEqual(perfil.filasDeFormularios({ paraResponder: nada, respondidos: 0 }), [{ que: 'para-responder', titulo: 'Para responder', detalle: 'Nada para responder', cuenta: null }], 'sin respondidos, sin fila; sin ceros');
   const pantalla = leer('pantallas/inicio.tsx');

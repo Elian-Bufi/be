@@ -77,8 +77,12 @@ async function motivoDe(promesa: Promise<unknown>): Promise<string> {
 }
 
 describe('VerificadorDeGoogle (DL-138)', () => {
-  it('un ID token válido da el sub y el correo normalizado; nada más', async () => {
-    await expect(verificador().verificar(token(reclamos()))).resolves.toEqual({ sub: '100000000000000000001', correo: 'persona.sintetica@example.invalid' });
+  it('un ID token válido da el sub, el correo normalizado y el nombre de la cuenta si se puede guardar; nada más', async () => {
+    await expect(verificador().verificar(token(reclamos()))).resolves.toEqual({ sub: '100000000000000000001', correo: 'persona.sintetica@example.invalid', nombre: null });
+    // DL-169 (UF-D2): el nombre de la cuenta de Google se propone normalizado; uno que no se puede guardar, o que no es
+    // texto, no se propone (TEST-UF-002).
+    await expect(verificador().verificar(token(reclamos({ name: '  Persona   de Google ' })))).resolves.toMatchObject({ nombre: 'Persona de Google' });
+    for (const name of ['x'.repeat(61), '   ', 42]) await expect(verificador().verificar(token(reclamos({ name })))).resolves.toMatchObject({ nombre: null });
     // También el client ID de la APK, y el emisor sin esquema que Google documenta.
     await expect(verificador().verificar(token(reclamos({ aud: CLIENTE_APK, iss: 'accounts.google.com' })))).resolves.toMatchObject({ sub: '100000000000000000001' });
   });

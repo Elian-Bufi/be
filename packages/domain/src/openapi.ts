@@ -27,7 +27,7 @@ import {
   SolicitarCierreRequestSchema,
   SolicitarCierreResponseSchema,
 } from './contratos';
-import { EditarPerfilPropioRequestSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
+import { EditarPerfilPropioRequestSchema, LoQueFaltaParaSeguirResponseSchema, PerfilPropioResponseSchema } from './contratos-perfil-propio';
 import {
   CodigosDeRecuperacionResponseSchema,
   ConfiguracionConfirmadaResponseSchema,
@@ -50,6 +50,7 @@ import {
   VerificarSegundoFactorRequestSchema,
 } from './contratos-administracion';
 import {
+  DetalleDeCuentaDeGoogleInexistenteSchema,
   DetalleDeCuentaDeGoogleSchema,
   IniciarSesionConGoogleRequestSchema,
   RegistrarConGoogleRequestSchema,
@@ -433,7 +434,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/registrations',
     resumen:
-      'Registrar identidad BE y perfil propio con A1 (términos), A2 (privacidad) y la declaración de mayoría de edad (08 §24.7 a) como actos separados. No concede A3. Sin la declaración no hay alta: un cuerpo que no la trae (un cliente anterior a DL-138) recibe 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue ADULT_DECLARATION_REQUIRED, para que las APK instaladas pidan actualizar; sin marcar o con otra versión, 422 VALIDATION_FAILED con ADULT_DECLARATION_REQUIRED o ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE. Un correo que ya usa otra cuenta, también con Google, responde el mismo 409 neutral.',
+      'Registrar identidad BE y perfil propio con A1 (términos), A2 (privacidad) y la declaración de mayoría de edad (08 §24.7 a) como actos separados. No concede A3. El perfil nace con el nombre visible (`profile.displayName`, «Nombre y apellido», de 1 a 60 caracteres; DL-169): sin él, el cuerpo es el de un cliente anterior y responde 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue DISPLAY_NAME_REQUIRED, sin crear nada; vacío, 422 VALIDATION_FAILED con DISPLAY_NAME_REQUIRED; largo o con invisibles, 422 VALIDATION_FAILED con INVALID_DISPLAY_NAME. Sin la declaración no hay alta: un cuerpo que no la trae (un cliente anterior a DL-138) recibe 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue ADULT_DECLARATION_REQUIRED, para que las APK instaladas pidan actualizar; sin marcar o con otra versión, 422 VALIDATION_FAILED con ADULT_DECLARATION_REQUIRED o ADULT_DECLARATION_VERSION_NOT_ACCEPTABLE. Un correo que ya usa otra cuenta, también con Google, responde el mismo 409 neutral.',
     autenticacion: 'PUBLIC',
     idempotencia: true,
     request: RegistrarIdentidadRequestSchema,
@@ -444,7 +445,7 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE', 'VALIDATION_FAILED'],
       429: ['RATE_LIMITED'],
     },
-    fuente: '09v8:227-307 · 08 §24.7 a y §42 ítem 22 (declaración de mayoría de edad) · DEUDA_LEGAJO DL-023 y DL-138',
+    fuente: '09v8:227-307 · 08 §24.7 a y §42 ítem 22 (declaración de mayoría de edad) · DEUDA_LEGAJO DL-023, DL-138 y DL-169 (el nombre obligatorio, UF-D1)',
   },
   {
     id: 'API-ACC-02',
@@ -508,13 +509,13 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'patch',
     ruta: '/me/profile',
     resumen:
-      'Editar el perfil propio con la versión esperada: hoy, el nombre visible (o quitarlo). Cada cambio es una versión. Lo ve el profesional con un vínculo vigente; si no, la referencia neutral.',
+      'Editar el perfil propio con la versión esperada: hoy, el nombre visible. Cada cambio es una versión. Desde DL-169 (UF-D3) se cambia pero no se quita: `null` o un texto vacío responden 422 INVALID_PROFILE_DATA con el issue DISPLAY_NAME_REQUIRED, y el nombre anterior sigue. Lo ve el profesional con un vínculo vigente; si no, la referencia neutral.',
     autenticacion: 'SESSION',
     idempotencia: false,
     request: EditarPerfilPropioRequestSchema,
     exitos: [{ status: 200, schema: PerfilPropioResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['VERSION_CONFLICT'], 422: ['INVALID_PROFILE_DATA'] },
-    fuente: '09v8:509-554 · DEUDA_LEGAJO DL-009 (opción B) y DL-040, decididas por Dirección el 2026-10-15',
+    fuente: '09v8:509-554 · DEUDA_LEGAJO DL-009 (opción B) y DL-040, decididas por Dirección el 2026-10-15 · DL-169 (UF-D3: no se quita)',
   },
   {
     id: 'API-ACC-06-PROPIA',
@@ -526,6 +527,18 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PerfilPropioResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
     fuente: 'variante de lectura de API-ACC-06 (09v8:509-554) · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-009 y DL-040',
+  },
+  {
+    id: 'API-ACC-07',
+    metodo: 'get',
+    ruta: '/me/pending-steps',
+    resumen:
+      'Lo que falta para seguir (DL-169, UF-D4): los pasos que la cuenta tiene que completar antes de usar BE, en orden. Hoy, `DISPLAY_NAME` cuando la cuenta no tiene nombre visible (una cuenta anterior a DL-169), con `suggestion`: el nombre profesional de la identidad, si tiene uno. Vacío, la cuenta sigue. El paso viaja como texto: un cliente que no lo conoce pide actualizar la app.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: LoQueFaltaParaSeguirResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'WP-USO-FINAL UF-01 y UF-D4 (ratificadas por Dirección el 2026-11-11) · 05 UC-P25 · ID nuevo de la familia ACC, que el 09 no usa · DEUDA_LEGAJO DL-169',
   },
   {
     id: 'API-ACC-P1-03',
@@ -3482,7 +3495,11 @@ const DEFINIDAS: readonly Operacion[] = [
       429: ['RATE_LIMITED'],
       503: ['DEPENDENCY_UNAVAILABLE'],
     },
-    detalleDe404: { codigo: 'GOOGLE_ACCOUNT_NOT_FOUND', schema: DetalleDeCuentaDeGoogleSchema, descripcion: 'details.email es el correo verificado de la cuenta de Google, para ofrecer el alta con ese correo.' },
+    detalleDe404: {
+      codigo: 'GOOGLE_ACCOUNT_NOT_FOUND',
+      schema: DetalleDeCuentaDeGoogleInexistenteSchema,
+      descripcion: 'details.email es el correo verificado de la cuenta de Google, para ofrecer el alta con ese correo; details.name, el nombre de esa cuenta leído del token verificado (DL-169, UF-D2), para proponerlo, o null si no trae uno que se pueda guardar.',
+    },
     detalleDe409: { codigo: 'GOOGLE_LINK_REQUIRED', schema: DetalleDeCuentaDeGoogleSchema, descripcion: 'details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).' },
     fuente: 'pedido de Dirección del 2026-10-16 · 04 RF-003 · 05 UC-E05 · 06 §5.6 · 08 §24.1 y §24.5 · 09 §12 y 09v12 §11 (bosquejo) · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138',
   },
@@ -3511,7 +3528,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: RUTAS_DE_ACCESO_GOOGLE.registros,
     resumen:
-      'Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.',
+      'Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. El perfil nace con el nombre visible (`profile.displayName`, el de la cuenta de Google que propuso API-GOO-01, confirmado o corregido; DL-169): sin él, 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue DISPLAY_NAME_REQUIRED, sin crear nada; vacío o inválido, 422 VALIDATION_FAILED con DISPLAY_NAME_REQUIRED o INVALID_DISPLAY_NAME. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.',
     autenticacion: 'PUBLIC',
     idempotencia: false,
     request: RegistrarConGoogleRequestSchema,
@@ -3528,7 +3545,7 @@ const DEFINIDAS: readonly Operacion[] = [
       503: ['DEPENDENCY_UNAVAILABLE'],
     },
     detalleDe409: { codigo: 'GOOGLE_LINK_REQUIRED', schema: DetalleDeCuentaDeGoogleSchema, descripcion: 'details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).' },
-    fuente: 'pedido de Dirección del 2026-10-16 · 04 RF-001 y RF-003 · 05 UC-P25 y UC-E05 · 06 §5.6 · 08 §12.1, §24.1 y §24.7 a · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138',
+    fuente: 'pedido de Dirección del 2026-10-16 · 04 RF-001 y RF-003 · 05 UC-P25 y UC-E05 · 06 §5.6 · 08 §12.1, §24.1 y §24.7 a · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138 y DL-169 (el nombre obligatorio, UF-D1 y UF-D2)',
   },
 
   // ─── REV-A (propuesta del 2026-09-29; opciones A tomadas el 2026-10-16 con el mandato de Dirección; DL-134) ─────────
