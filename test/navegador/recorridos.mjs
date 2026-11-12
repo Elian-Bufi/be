@@ -446,6 +446,40 @@ async function descartar({ p, d, salida }) {
   await captura(p, salida, 'descartar-hecho-1440');
 }
 
+/**
+ * ED-07 (WP-EDITORES-PROFESIONAL; TEST-EDP-008): «Ir a corregir» lleva a su lugar, con el foco ahí. Con una comida sin
+ * nombre, «Antes de activar» lo lista; «Ir a corregir» cierra el cuadro y deja el foco en el campo del nombre (la revisión
+ * adversaria de la etapa 1 encontró que el cierre del cuadro se lo devolvía a «Revisar y activar…»).
+ */
+async function irACorregir({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  const segunda = '.comida-del-editor[data-comida="2"]';
+  await elemento(p, segunda);
+  // La comida 2, sin nombre: el campo queda a la vista (sin nombre no se puede guardar).
+  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
+  await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
+  await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
+  const campo = await p.evaluate(() => document.activeElement.id);
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  // «Revisar y activar…» abre el cuadro, que lista el nombre que falta con «Ir a corregir».
+  await clic(p, '[data-revisar-y-activar]');
+  await elemento(p, 'dialog[open] [data-antes-de-activar]');
+  await clic(p, 'dialog[open] [data-impiden] button', 'Ir a corregir');
+  await p.waitForFunction(() => !document.querySelector('dialog[open] [data-antes-de-activar]'), { timeout: ESPERA });
+  // El foco queda en el campo del nombre, no en «Revisar y activar…».
+  await p
+    .waitForFunction((id) => document.activeElement?.id === id, { timeout: ESPERA, polling: 100 }, campo)
+    .catch(async () => assert.fail(`el foco quedó en «${await p.evaluate(() => document.activeElement?.textContent?.trim() || document.activeElement?.id)}», no en el campo del nombre`));
+  await captura(p, salida, 'ir-a-corregir-1440');
+}
+
 /** Bloque 5: una ficha nueva lleva a empezar el plan; evaluación, objetivo y plan en la misma pantalla, en orden. */
 async function primerPlan({ p, d }) {
   await entrar(p, d.pro.correo);
@@ -1292,7 +1326,7 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
