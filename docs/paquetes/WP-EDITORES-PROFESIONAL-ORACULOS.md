@@ -114,8 +114,8 @@ AUTOMATION           apps/web/test/salida-segura.test.mjs («TEST-EDP-003 · …
                      respuesta) y la lectura de la barra y del marco del área (cada enlace interno pasa por la
                      guardia) · la regla de los enlaces: en `app/pro/**` y `components/**` nadie importa
                      `next/link` directo (todos van por `Enlace`, con la guardia) y cada `router.push` pasa por
-                     `antesDeSalir`, salvo los de una lista con su motivo · recorrido `salidaSegura` (si entra en la
-                     etapa; si no, declarado)
+                     `antesDeSalir`, salvo los de una lista con su motivo · recorridos `salidaSegura` (pasos 1 a 4) y
+                     `salidaConFallas` (pasos 5 y 6: la red cortada y un 409) en test/navegador/recorridos.mjs
 ENVIRONMENT          Local (node --test) y CI
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR
 ```
@@ -151,7 +151,8 @@ EXPECTED             1 → cada estado es el texto del dominio; «Guardado a las
 NEGATIVE_ASSERTIONS  «Guardado» nunca aparece con un fallo, un conflicto o sin respuesta. Ningún texto de la barra
                      dice «Guardar cambios». El detalle técnico no lleva nombres ni identificadores de la persona.
 AUTOMATION           apps/web/test/estado-de-guardado.test.mjs («TEST-EDP-004 · …») ·
-                     apps/web/test/guardado-de-planes-grandes.test.mjs (DL-168, sigue verde)
+                     apps/web/test/guardado-de-planes-grandes.test.mjs (DL-168, sigue verde) · recorrido `reintentar`
+                     (un 503 simulado dentro de la página y después «Reintentar», que guarda)
 ENVIRONMENT          Local (node --test) y CI (verificar)
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR
 ```
@@ -397,8 +398,9 @@ EXPECTED             1 → coincide: el editor adopta la versión, vuelve a mand
 NEGATIVE_ASSERTIONS  Un conflicto real nunca se toma por propio. Lo escrito después nunca se pierde al adoptar. Una
                      relectura que no respondió nunca se toma por un conflicto.
 AUTOMATION           apps/web/test/es-lo-que-mande.test.mjs («TEST-EDP-048 · …») sobre
-                     `advisees/es-lo-que-mande.ts` · el recorrido «respuesta perdida» (si entra en la etapa; si
-                     no, declarado)
+                     `advisees/es-lo-que-mande.ts` · recorrido `respuestaPerdida` en test/navegador/recorridos.mjs
+                     (la respuesta se pierde dentro de la página después de que el servidor guardó; con la versión
+                     real, lo releído sin identificadores coincide con lo que mandó el editor)
 ENVIRONMENT          Local (node --test) y CI
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR, con la mutación anotada en el commit
 ```
