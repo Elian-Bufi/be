@@ -637,4 +637,5 @@ entra en esta etapa.
   prerelease y solo para Dirección, construida sobre `main` con este paquete integrado.
 - **En el teléfono:** crear una cuenta con correo y con Google (el nombre propuesto), entrar con una cuenta anterior sin
   nombre («Antes de seguir»), cambiar el nombre y comprobar que no se puede vaciar, y ver que la app sale sin los avisos
-  de prueba (la regla, con y sin el interruptor, la cubre TEST-UF-012). Que la APK se haya construido con la CLI nueva de Expo es, además, la prueba de UF-12 en la app.
+  de prueba (la regla, con y sin el interruptor, la cubre TEST-UF-012). Que la APK se haya construido con la CLI nueva
+  de Expo es, además, la prueba de UF-12 en la app.
