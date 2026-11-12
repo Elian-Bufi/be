@@ -165,12 +165,34 @@ export function botonPrincipal(color: Paleta, opciones: OpcionesDelVidrio & { re
   };
 }
 
+/** Si un color es opaco: `#rrggbb`, o `#rrggbbaa` con alfa FF. */
+export const esOpaco = (color: string): boolean => color.length === 7 || color.slice(7).toLowerCase() === 'ff';
+
+/** El relleno a los costados de la etiqueta de estado cuando va rellena, en dp. */
+export const RELLENO_DE_LA_ETIQUETA = 12;
+
+export interface EstiloDeLaEtiqueta {
+  readonly backgroundColor: string;
+  readonly borderWidth: 0;
+  readonly paddingHorizontal: number;
+}
+
 /**
- * La etiqueta de estado neutra (AV2-04): rellena, sin borde. El relleno va solo sobre una tarjeta de nivel 1 (vidrio o
- * `superficie`), donde lo mide la prueba de contraste; directo sobre el fondo o dentro de un nivel 2, sin relleno.
+ * La etiqueta de estado neutra (AV2-04, AV2-T16; revisada por AV2-T20): sin borde, y rellena con `etiquetaFondo` solo
+ * donde la prueba de contraste mide que el tenue se lee sobre el relleno:
+ * - sobre lo opaco: con el vidrio apagado o con alto contraste, cualquier tarjeta es `superficie` (5,98:1 en Azul noche y
+ *   4,84:1 en Claro), y con el vidrio, el nivel 2 de Claro, que es blanco opaco;
+ * - sobre el vidrio de nivel 1 (4,60:1 y 4,75:1).
+ * Directo sobre el fondo con los destellos (3,69:1 y 4,37:1) o dentro del nivel 2 translúcido de Azul noche (3,89:1), va
+ * sin relleno y sin la sangría de 12 dp: queda alineada con el texto de al lado. Antes el relleno se sacaba en todo nivel
+ * que no fuera el 1, también con el vidrio apagado, y la etiqueta quedaba como un texto gris corrido 12 dp (Tu historial,
+ * Novedades, los formularios y los vínculos).
  */
-export function estiloDeLaEtiqueta(color: Paleta, contexto: NivelDelContexto): { readonly backgroundColor: string; readonly borderWidth: 0 } {
-  return { backgroundColor: contexto === 1 ? color.etiquetaFondo : sinAlfa(color.etiquetaFondo), borderWidth: 0 };
+export function estiloDeLaEtiqueta(color: Paleta, contexto: NivelDelContexto, prendido: boolean): EstiloDeLaEtiqueta {
+  const rellena = contexto !== 0 && (contexto === 1 || !prendido || esOpaco(color.vidrioInterior));
+  return rellena
+    ? { backgroundColor: color.etiquetaFondo, borderWidth: 0, paddingHorizontal: RELLENO_DE_LA_ETIQUETA }
+    : { backgroundColor: sinAlfa(color.etiquetaFondo), borderWidth: 0, paddingHorizontal: 0 };
 }
 
 /**

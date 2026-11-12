@@ -1195,8 +1195,8 @@ Durante la sesión, la fila de acciones y la navegación van fijas. Está decidi
 - **El botón principal** es el cian (`botonFondo`) en Azul noche y el azul en Claro; con el vidrio, un degradé hasta
   `botonFondoFin`, radio 14 y un resplandor quieto (`resplandorPrimario`) solo si está habilitado. El secundario es
   tonal, no un contorno cian.
-- **La etiqueta de estado es neutra:** rellena con `etiquetaFondo` sobre una tarjeta de nivel 1 (sin relleno sobre el fondo
-  o dentro de un nivel 2), sin borde y con el texto en `tenue`. No se confunde con un botón.
+- **La etiqueta de estado es neutra:** sin borde y con el texto en `tenue`; rellena con `etiquetaFondo` donde el tenue se lee sobre el relleno (lo opaco y el vidrio de nivel 1),
+  y sin relleno ni sangría directo sobre el fondo o dentro del nivel 2 translúcido de Azul noche (AV2-T20). No se confunde con un botón.
 - **«La que sigue»** (las comidas de Inicio) lleva el borde del acento y el tinte `destacadaFondo`.
 - **Una silueta clara sobre un fondo claro lleva contorno**, con su contraste medido. En Claro, el cuerpo blanco daba de
   1,01:1 a 1,19:1 contra la lámina; el contorno (`laminaContorno`) da 4,0:1, y la prueba de contraste lo verifica.

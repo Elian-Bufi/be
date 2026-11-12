@@ -760,14 +760,39 @@ test('TEST-AV2-005 · el enlace con flecha no lleva subrayado y sigue siendo un 
   assert.match(ui, /accessibilityRole=\{tipo === 'enlace' \? 'link' : 'button'\}/, 'TalkBack lo lee como enlace');
 });
 
-test('TEST-AV2-005 · la etiqueta de estado no tiene borde ni parece un botón; la tilde en éxito, solo con lo hecho', () => {
-  for (const paleta of [AZUL, CLARO]) {
-    assert.deepEqual(receta.estiloDeLaEtiqueta(paleta, 1), { backgroundColor: paleta.etiquetaFondo, borderWidth: 0 });
-    for (const lugar of [0, 2, 3]) assert.match(receta.estiloDeLaEtiqueta(paleta, lugar).backgroundColor, /00$/i, `sin relleno en el lugar ${lugar}`);
+test('TEST-AV2-005 · la etiqueta de estado no tiene borde ni parece un botón; rellena donde se lee y sin sangría donde no; la tilde en éxito, solo con lo hecho', () => {
+  const rellena = (paleta) => ({ backgroundColor: paleta.etiquetaFondo, borderWidth: 0, paddingHorizontal: 12 });
+  for (const [paleta, tema] of [[AZUL, 'azul-noche'], [CLARO, 'claro']]) {
+    // Sobre lo opaco: con el vidrio apagado (o con alto contraste), cualquier tarjeta es `superficie`, y rellena se lee.
+    // Es Tu historial (Seccion › Tarjeta, nivel 2), los formularios y los vínculos.
+    for (const lugar of [1, 2, 3]) assert.deepEqual(receta.estiloDeLaEtiqueta(paleta, lugar, false), rellena(paleta), `${tema}, vidrio apagado, lugar ${lugar}`);
+    // Sobre el vidrio de nivel 1, rellena.
+    assert.deepEqual(receta.estiloDeLaEtiqueta(paleta, 1, true), rellena(paleta), `${tema}, vidrio de nivel 1`);
+    // Directo sobre el fondo con los destellos no se lee rellena (3,69:1 y 4,37:1): sin relleno y sin sangría, con el
+    // vidrio o sin él, alineada con el texto de al lado.
+    for (const prendido of [true, false]) {
+      const suelta = receta.estiloDeLaEtiqueta(paleta, 0, prendido);
+      assert.match(suelta.backgroundColor, /00$/i, `${tema}: sin relleno sobre el fondo`);
+      assert.equal(suelta.paddingHorizontal, 0, `${tema}: sin relleno, sin la sangría de 12 dp`);
+      assert.equal(suelta.borderWidth, 0);
+    }
+  }
+  // Dentro de un nivel 2 con el vidrio: en Azul noche el nivel 2 es translúcido y el tenue sobre el relleno baja a
+  // 3,89:1, así que va sin relleno y sin sangría; en Claro es blanco opaco, y rellena se lee (4,84:1).
+  assert.equal(receta.esOpaco(AZUL.vidrioInterior), false);
+  assert.equal(receta.esOpaco(CLARO.vidrioInterior), true);
+  for (const lugar of [2, 3]) {
+    const azul = receta.estiloDeLaEtiqueta(AZUL, lugar, true);
+    assert.match(azul.backgroundColor, /00$/i, `Azul noche, nivel ${lugar}`);
+    assert.equal(azul.paddingHorizontal, 0);
+    assert.deepEqual(receta.estiloDeLaEtiqueta(CLARO, lugar, true), rellena(CLARO), `Claro, nivel ${lugar}`);
   }
   const ui = sinComentarios(leer('ui.tsx'));
   const estilo = /\n  insignia: \{([^}]*)\}/.exec(ui)[1];
   assert.doesNotMatch(estilo, /border(Width|Color)/, 'sin borde');
+  assert.doesNotMatch(estilo, /paddingHorizontal/, 'la sangría la pone la receta, solo con relleno');
+  assert.match(ui, /const \{ tema, nivel, prendido \} = useVidrio\(\);\s*\n\s*const dibujo/);
+  assert.match(ui, /estiloDeLaEtiqueta\(PALETAS\[tema\], nivel, prendido\)/);
   assert.match(ui, /textoInsignia: \{ fontWeight: '700', color: COLOR\.tenue, fontSize: 15 \},/);
   assert.match(ui, /const dibujo: NombreDeIcono \| undefined = hecha \? 'tilde' : icono;/);
   assert.match(ui, /tono=\{hecha \? 'exito' : 'tenue'\}/);

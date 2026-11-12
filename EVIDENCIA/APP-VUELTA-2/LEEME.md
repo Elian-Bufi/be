@@ -59,6 +59,9 @@ quedar igual.
 | «Mediciones» se partía al lado del ícono a 360 dp (AV2-T18) | TEST-AV2-008 | El ícono siempre al lado | Rojo |
 | El círculo del día medía 17 dp a 360 dp (AV2-T18) | TEST-AV2-008 | La columna de la tira, de media tarjeta | Rojo |
 | El botón principal con una franja invertida de 2 dp arriba y abajo (AV2-T19) | TEST-AV2-005 | El borde de 2 dp sin color, de vuelta | Rojo |
+| La etiqueta de estado, sin fondo y corrida 12 dp fuera de Inicio (AV2-T20) | TEST-AV2-005 | Rellena solo sobre un nivel 1, como antes | Rojo |
+| La misma, sin relleno pero con la sangría (AV2-T20) | TEST-AV2-005 | La sangría de 12 dp sin el relleno | Rojo |
+| La misma, rellena donde no se lee (AV2-T20) | TEST-AV2-005 | Rellena también en el nivel 2 translúcido de Azul noche (3,89:1) | Rojo |
 
 ## El contraste, medido en el peor punto (TEST-AV2-001)
 
@@ -83,8 +86,10 @@ arriba debajo (sin el brillo: 12,64 · 5,79 · 7,21 · 8,29 · 6,22 en Azul noch
   Azul noche la etiqueta de estado bajaba a 4,00:1, el tenue sobre el nivel 2 a 4,24:1 y el borde de un campo a 2,95:1.
   El brillo se apaga a 12 dp, dentro del relleno más chico de un nivel 1, y no queda debajo de ningún contenido; el texto
   de nivel 1 se mide igual con el brillo debajo (5,02 o más).
-- **La etiqueta de estado** lleva relleno solo sobre una tarjeta de nivel 1: directo sobre el fondo con los destellos, el
-  tenue sobre ella bajaba a 3,69:1, y dentro de un nivel 2 también quedaba por debajo.
+- **La etiqueta de estado** va rellena donde el tenue se lee sobre el relleno (AV2-T20): sobre el vidrio de nivel 1
+  (4,60:1 y 4,75:1), sobre `superficie` con el vidrio apagado (5,98:1 y 4,84:1) y sobre el nivel 2 opaco de Claro
+  (4,84:1). Directo sobre el fondo con los destellos bajaba a 3,69:1 (Azul noche) y 4,37:1 (Claro), y en el nivel 2
+  translúcido de Azul noche a 3,89:1: ahí va sin relleno y sin sangría.
 - **El borde de un campo** sobre el vidrio con los destellos: con el de antes (#4F7FA3), 2,49:1; con #6497BD, 3,40:1.
 
 ## Lo que no se pudo hacer sin teléfono

@@ -39,8 +39,10 @@ STEPS                1. Armar los puntos del fondo: `fondoArriba`, `fondo` y `fo
                         cada uno (con y sin el brillo de arriba) y sobre `vidrioInterior` encima del vidrio.
                      3. Medir `botonTexto` sobre `botonFondo` y `botonFondoFin`; `bordeControl` sobre el vidrio y el
                         nivel 2; la tilde del día sobre `exito`, el círculo y el aro de hoy contra la tarjeta.
-                     4. Medir el tenue y la tilde sobre la etiqueta de estado, y acento, tenue y texto sobre «la que
-                        sigue», sobre el vidrio y sobre `superficie` (interruptor apagado o alto contraste).
+                     4. Medir el tenue y la tilde sobre la etiqueta de estado donde va rellena: sobre el vidrio de nivel
+                        1, sobre `superficie` (interruptor apagado o alto contraste, en cualquier nivel) y sobre el
+                        nivel 2 cuando es opaco (Claro); y acento, tenue y texto sobre «la que sigue», sobre el vidrio
+                        y sobre `superficie`.
                      5. Medir las etiquetas de la barra sobre su vidrio, con cada color opaco del tema detrás.
 EXPECTED             1-2 → cada texto, 4,5:1 o más en su peor punto. 3 → el botón, 4,5:1 o más arriba y abajo; el borde
                      de control, la tilde, el círculo y el aro, 3:1 o más. 4 → 4,5:1 o más para el texto y 3:1 para la
@@ -156,8 +158,9 @@ PRECONDITIONS        `receta-de-vidrio.ts` (`botonPrincipal`, `estiloDeLaEtiquet
 SYNTHETIC_FIXTURE    Las paletas de los dos temas.
 STEPS                1. Pedir el botón principal habilitado y deshabilitado, con el vidrio prendido y apagado.
                      2. Pedir el estilo de un enlace con flecha y de uno sin flecha; leer el enlace en `ui.tsx`.
-                     3. Pedir la etiqueta de estado sobre una tarjeta de nivel 1 y dentro de un nivel 2; leer la
-                        `Insignia` de `ui.tsx`.
+                     3. Pedir la etiqueta de estado directo sobre el fondo, sobre una tarjeta de nivel 1 y dentro de un
+                        nivel 2 y de un nivel 3, con el vidrio prendido y apagado, en los dos temas; leer la `Insignia`
+                        de `ui.tsx`.
 EXPECTED             1 → con el vidrio y habilitado: el degradé de `botonFondo` a `botonFondoFin`, radio 14, sin borde
                      y con sus 2 dp pasados a relleno (2 arriba y abajo, 18 + 2 a los costados), así que el alto y el
                      lugar del texto no cambian y el degradé ocupa el botón entero; y el resplandor en
@@ -167,13 +170,20 @@ EXPECTED             1 → con el vidrio y habilitado: el degradé de `botonFond
                      se veía el final del degradé y abajo el principio, una franja invertida de 2 dp (1,37:1 en Azul
                      noche y 1,43:1 en Claro contra el degradé vecino). 2 → con flecha, sin subrayado y con el chevron
                      (`derecha`, 18 dp) pegado al texto; sin flecha, subrayado; el rol sigue siendo «link». 3 → sin
-                     borde, rellena con `etiquetaFondo` sobre un nivel 1 y sin relleno dentro de un nivel 2; el texto en
-                     `tenue`; lo hecho lleva la tilde en `exito`.
+                     borde y con el texto en `tenue`; rellena con `etiquetaFondo` y 12 dp a los costados donde el
+                     contraste medido pasa: sobre lo opaco (con el vidrio apagado o con alto contraste, cualquier
+                     tarjeta es `superficie`: 5,98:1 en Azul noche y 4,84:1 en Claro; con el vidrio, el nivel 2 de
+                     Claro, blanco opaco) y sobre el vidrio de nivel 1 (4,60:1 y 4,75:1). Sin relleno y sin sangría,
+                     alineada con el texto de al lado, donde no pasa: directo sobre el fondo con los destellos (3,69:1 y
+                     4,37:1) y dentro del nivel 2 translúcido de Azul noche (3,89:1). Lo hecho lleva la tilde en
+                     `exito`.
 NEGATIVE_ASSERTIONS  Nada pulsa ni se anima: el resplandor es quieto. La etiqueta no tiene borde de 2 dp ni el texto en
-                     cian.
-AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-005 · …»). Mutaciones: el resplandor también con el
-                     botón deshabilitado → la prueba falla; el borde de 2 dp sin color de vuelta en el botón con el
-                     vidrio → la prueba falla.
+                     cian. Sin relleno, no queda corrida 12 dp como un texto suelto.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-005 · …») y scripts/contraste.test.cjs. Mutaciones: el
+                     resplandor también con el botón deshabilitado → la prueba falla; el borde de 2 dp sin color de
+                     vuelta en el botón con el vidrio → la prueba falla; la etiqueta rellena solo sobre un nivel 1, como
+                     antes (sin relleno en Tu historial con el vidrio apagado) → la prueba falla; sin relleno, la
+                     sangría de 12 dp de vuelta → la prueba falla.
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; en el teléfono, «Continuar» con degradé y brillo, sin una línea más oscura arriba ni una
                      más clara abajo (una captura ampliada del borde, en los dos temas), y TalkBack leyendo «enlace»

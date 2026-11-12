@@ -391,9 +391,11 @@ function puntosDelFondo(t) {
  * - **El brillo de arriba** (`vidrioBrillo`) entra en el nivel 1 para el texto de nivel 1, aunque se apague dentro del
  *   relleno (AV2-T14, `receta-de-vidrio.ts`). Lo que va adentro (el nivel 2, la etiqueta, «la que sigue» y los campos)
  *   no queda nunca sobre el brillo: con el brillo debajo, la etiqueta bajaría a 4,00:1, y por eso no llega al contenido.
- * - **Con el interruptor apagado o con alto contraste** las tarjetas son `superficie`, opaca: la etiqueta de estado y
- *   «la que sigue», que cambian en toda la app, se miden también sobre ella. Dentro del nivel 2 la etiqueta va sin
- *   relleno (`ui.tsx`): ahí vale la medición del nivel 2.
+ * - **Con el interruptor apagado o con alto contraste** las tarjetas son `superficie`, opaca, en cualquier nivel: la
+ *   etiqueta de estado y «la que sigue», que cambian en toda la app, se miden también sobre ella.
+ * - **La etiqueta de estado va rellena donde esto pasa** (`estiloDeLaEtiqueta`, revisión de la etapa A): sobre el vidrio
+ *   de nivel 1, sobre `superficie` y, con el vidrio, sobre el nivel 2 solo si `vidrioInterior` es opaco (Claro). Directo
+ *   sobre el fondo y en el nivel 2 translúcido de Azul noche va sin relleno: ahí valen las mediciones del texto.
  */
 function medicionesDeLaReceta(nombre) {
   const t = { ...temaApk(nombre), ...translucidosApk(nombre) };
@@ -407,7 +409,9 @@ function medicionesDeLaReceta(nombre) {
   // Con su propio nombre: al juntarlo con el nivel 1 (el borde de un campo), las claves iguales se pisarían.
   const nivel2 = Object.fromEntries(Object.entries(sobre(nivel1, t.vidrioInterior)).map(([k, v]) => [`${k}, en el nivel 2`, v]));
   const opacas = { superficie: t.superficie };
-  const etiqueta = { ...sobre(nivel1, t.etiquetaFondo), ...sobre(opacas, t.etiquetaFondo) };
+  // El nivel 2 lleva la etiqueta rellena solo si es opaco: la misma regla de `estiloDeLaEtiqueta`.
+  const nivel2Opaco = /ff$/i.test(t.vidrioInterior) ? nivel2 : {};
+  const etiqueta = { ...sobre(nivel1, t.etiquetaFondo), ...sobre(opacas, t.etiquetaFondo), ...sobre(nivel2Opaco, t.etiquetaFondo) };
   const destacada = { ...sobre(nivel1, t.destacadaFondo), ...sobre(opacas, t.destacadaFondo) };
   const peor = (frente, fondos) =>
     Object.entries(fondos)

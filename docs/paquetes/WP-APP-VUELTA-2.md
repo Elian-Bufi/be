@@ -1135,7 +1135,7 @@ verificada con su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`). Solo la APK: no
     realizada, la comida registrada y el formulario respondido). «Vigente», «Otorgado», «Del plan» y «Ejercicio activo»
     quedan neutros;
   - el relleno va solo sobre una tarjeta de nivel 1 (de vidrio o `superficie`): directo sobre el fondo con los destellos,
-    el tenue sobre ella bajaba a 3,69:1, y dentro de un nivel 2 también quedaba por debajo.
+    el tenue sobre ella bajaba a 3,69:1, y dentro de un nivel 2 también quedaba por debajo. (Revisado por AV2-T20, §10.4.)
 
 ### 10.2 Detalles de la programación
 
@@ -1194,6 +1194,14 @@ con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
   del borde y la repite (`BackgroundImageDrawable.updatePath`): arriba se veía el final del degradé y abajo el principio,
   una franja invertida de 2 dp (1,37:1 en Azul noche y 1,43:1 en Claro contra el degradé vecino). Ahora el borde es 0 y
   sus 2 dp pasan a relleno: el alto y el lugar del texto no cambian. Lo fija TEST-AV2-005.
+- **AV2-T20 · La etiqueta de estado, rellena donde se lee** (revisa AV2-T16). AV2-T16 sacaba el relleno en todo lugar que
+  no fuera un nivel 1, sin mirar si el vidrio estaba prendido, y la pieza cambia en toda la app: en Tu historial
+  (Seccion › Tarjeta), Novedades, los formularios, los vínculos y el plan histórico, la etiqueta perdía el fondo pero
+  conservaba la sangría de 12 dp, y quedaba como un texto gris corrido. Ahora va rellena donde el contraste medido pasa:
+  sobre lo opaco (con el vidrio apagado o con alto contraste, cualquier tarjeta es `superficie`: 5,98:1 en Azul noche y
+  4,84:1 en Claro; con el vidrio, el nivel 2 de Claro, que es blanco opaco) y sobre el vidrio de nivel 1. Sin relleno y
+  sin sangría, alineada con el texto de al lado, donde no pasa: directo sobre el fondo con los destellos (3,69:1 y
+  4,37:1) y dentro del nivel 2 translúcido de Azul noche (3,89:1). Lo fijan TEST-AV2-005 y la medición de TEST-AV2-001.
 
 ### 10.5 Hallazgos fuera del paquete
 

@@ -683,16 +683,17 @@ function Chevron({ abierto }: { abierto: boolean }) {
 
 /**
  * La etiqueta de un estado (10-B10 §7; DL-170): el texto dice el estado, en `tenue`, y el ícono de 15 dp solo acompaña.
- * Es neutra, rellena y sin borde, para que no se confunda con un botón: el relleno va sobre una tarjeta de nivel 1, y sin
- * relleno directo sobre el fondo o dentro de un nivel 2 (`estiloDeLaEtiqueta`). Lo que la persona hizo («Realizada»,
+ * Es neutra y sin borde, para que no se confunda con un botón. Va rellena donde el tenue se lee sobre el relleno (sobre lo
+ * opaco y sobre el vidrio de nivel 1), y sin relleno ni sangría, alineada con el texto de al lado, directo sobre el fondo
+ * o dentro del nivel 2 translúcido de Azul noche (`estiloDeLaEtiqueta`). Lo que la persona hizo («Realizada»,
  * «Registrado», «Respondida») lleva la tilde en `exito` (`hecha`): se celebra lo hecho, y lo no hecho queda neutro, nunca
  * en rojo. La tilde nunca va con un número ni con una medida del cuerpo (GUIA I.8).
  */
 export function Insignia({ texto, hecha = false, etiqueta, icono }: { texto: string; hecha?: boolean; etiqueta?: string; icono?: NombreDeIcono }) {
-  const { tema, nivel } = useVidrio();
+  const { tema, nivel, prendido } = useVidrio();
   const dibujo: NombreDeIcono | undefined = hecha ? 'tilde' : icono;
   return (
-    <View style={[estilos.insignia, estiloDeLaEtiqueta(PALETAS[tema], nivel), dibujo ? estilos.insigniaConIcono : null]} accessible accessibilityLabel={etiqueta ? `${etiqueta}: ${texto}` : texto}>
+    <View style={[estilos.insignia, estiloDeLaEtiqueta(PALETAS[tema], nivel, prendido), dibujo ? estilos.insigniaConIcono : null]} accessible accessibilityLabel={etiqueta ? `${etiqueta}: ${texto}` : texto}>
       {dibujo ? <Icono nombre={dibujo} tamano={15} tono={hecha ? 'exito' : 'tenue'} /> : null}
       <Text style={estilos.textoInsignia}>{texto}</Text>
     </View>
@@ -805,8 +806,8 @@ export const estilos = estilosPorTema((COLOR) => ({
   etiquetaEnFila: { flex: 1 },
   valorDeDato: { fontSize: 16, lineHeight: 22, color: COLOR.texto },
   valorEnFila: { flexShrink: 0, maxWidth: '55%', textAlign: 'right' },
-  // La etiqueta de estado (DL-170): sin borde; el relleno lo pone `estiloDeLaEtiqueta`, según dónde está.
-  insignia: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 6 },
+  // La etiqueta de estado (DL-170): sin borde; el relleno y su sangría los pone `estiloDeLaEtiqueta`, según dónde está.
+  insignia: { alignSelf: 'flex-start', borderRadius: 999, paddingVertical: 4, marginVertical: 6 },
   textoInsignia: { fontWeight: '700', color: COLOR.tenue, fontSize: 15 },
   insigniaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ayuda: { marginTop: 4 },
