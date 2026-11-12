@@ -16191,3 +16191,77 @@ p.cifra-del-espacio__desglose {
     box-shadow: none;
   }
 }
+
+/* ═══ ED-31, ED-33 y ED-34 · Nutrición en el editor: el panel con los rangos, las opciones por clase y el total ════ */
+.editor-de-nutricion__zonas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 80rem) {
+  .editor-de-nutricion__zonas {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    align-items: start;
+  }
+
+  .panel-de-nutricion {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.panel-de-nutricion {
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.panel-de-nutricion h3 {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.panel-de-nutricion__del-dia {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.panel-de-nutricion__tabla {
+  font-size: 0.85rem;
+}
+
+.panel-de-nutricion__tabla td {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-de-nutricion__fila-del-dia {
+  border-top: 2px solid var(--borde);
+  font-weight: 700;
+}
+
+.segmento__nota {
+  color: var(--tenue);
+  font-size: 0.85em;
+}
+
+.comida-del-editor__agregar-opcion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.opcion-del-editor__total {
+  margin: 0.5rem 0;
+}
+
+.opcion-del-editor__total p {
+  margin: 0.15rem 0;
+}

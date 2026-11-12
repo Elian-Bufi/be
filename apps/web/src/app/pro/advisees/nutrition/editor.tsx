@@ -22,6 +22,16 @@
  *   completar, lo que cambia frente a la vigente y lo que va a ver la persona, y ahí se fija la próxima revisión, que es
  *   parte de ese acto. Con cambios sin guardar, primero se guardan.
  * - **Cada cosa por corregir lleva a su lugar:** elige el día tipo, abre la comida y la opción.
+ *
+ * **ED-31, ED-33 y ED-34 (WP-EDITORES-PROFESIONAL, etapa 3 del website).**
+ * - Al costado, un panel con dos pestañas: «Rangos y totales» (el rango del día tipo que se mira, «El día va de 1.850 a
+ *   2.420 kcal según lo que elija», DJ-4, y una fila por comida, sin «%» y sin semáforo: `rangos.ts`) y «Antes de
+ *   activar», en vivo, como ED-25 en Entrenamiento. Los totales son una estimación del editor hasta API-PLN-01 (§8.2):
+ *   la composición de cada alimento sale del catálogo (la que trae el buscador al elegirlo, la de los habituales o, para
+ *   lo que ya estaba en el plan, una lectura del buscador por su nombre que se queda solo con el mismo alimento).
+ * - «+ Comida» nace con su opción 1 lista; las opciones de alimentos y de receta se agregan por separado.
+ * - Quitar un día tipo, una comida o una opción con contenido pregunta, con lo que se va (`quitar-con-contenido.ts`);
+ *   «Cancelar» no toca nada. Sin contenido, se quita en el acto, como antes.
  */
 import {
   COPY_DE_ACTIVAR_EL_PLAN,
@@ -55,7 +65,7 @@ import {
   type VersionDePlan,
 } from '@be/domain';
 import { Enlace } from '../../../../components/enlace';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
@@ -74,6 +84,10 @@ import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
 import { compararNutricion } from '../comparar-versiones';
 import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
+import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
+import { COPY_ESTACION as CE } from '../estacion/estacion';
+import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
+import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
@@ -250,6 +264,12 @@ export function EditorDeBorrador({
   const [pestanas, setPestanas] = useState<Readonly<Record<string, number>>>({});
   const [nombreQueSeCambia, setNombreQueSeCambia] = useState<NombreQueSeCambia>(null);
   const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
+  // ED-31 y ED-34: la composición de cada alimento, por su identidad, para estimar los totales en el editor.
+  const [composiciones, setComposiciones] = useState<ReadonlyMap<string, ComposicionConocida>>(() => new Map());
+  // ED-33: lo que se quita con contenido espera la confirmación, con lo que se va.
+  const [porQuitar, setPorQuitar] = useState<{ readonly texto: string; readonly hacer: () => void } | null>(null);
+  // ED-34: la pestaña del panel.
+  const [pestanaDelPanel, setPestanaDelPanel] = useState<'antes' | 'rangos'>('rangos');
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -274,6 +294,49 @@ export function EditorDeBorrador({
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  // ED-34: los habituales ya traen su composición.
+  useEffect(() => {
+    if (alimentosHabituales.habituales.length === 0) return;
+    setComposiciones((m) => {
+      const n = new Map(m);
+      for (const h of alimentosHabituales.habituales) if (typeof n.get(h.catalogItemId) !== 'object') n.set(h.catalogItemId, h.composition);
+      return n;
+    });
+  }, [alimentosHabituales.habituales]);
+
+  // ED-34: lo que ya estaba en el día tipo que se mira y todavía no tiene composición conocida se lee del buscador, por su
+  // nombre, y se toma solo si vuelve el mismo alimento (por su identidad). De a tres lecturas a la vez, una vez cada uno.
+  const diaMirado = estructura[posicionPedida(estructura.length, parametros.get('dia'))];
+  const porLeer = useMemo(
+    () =>
+      diaMirado && version
+        ? alimentosSinComposicion(
+            diaMirado.meals.flatMap((m) => m.options.flatMap((o) => itemsParaElTotal(o, nombres, (id) => itemsGuardados(version, id)) ?? [])),
+            composiciones,
+          )
+        : [],
+    [diaMirado, version, nombres, composiciones],
+  );
+  useEffect(() => {
+    if (porLeer.length === 0) return;
+    setComposiciones((m) => {
+      const n = new Map(m);
+      for (const a of porLeer) n.set(a.catalogItemId, 'leyendo');
+      return n;
+    });
+    const cola = [...porLeer];
+    const leer = async () => {
+      for (let a = cola.shift(); a; a = cola.shift()) {
+        const { catalogItemId, nombre } = a;
+        const r = await api.buscarEnCatalogo(token, nombre.slice(0, 80));
+        if (sesionPerdida(r)) return;
+        const encontrado = r.ok ? r.datos.data.find((e) => e.catalogItemId === catalogItemId) : undefined;
+        setComposiciones((m) => new Map(m).set(catalogItemId, encontrado ? encontrado.composition : 'sin-composicion'));
+      }
+    };
+    void Promise.all([leer(), leer(), leer()]);
+  }, [porLeer, token, sesionPerdida]);
 
   // Después de ir a un problema, el foco va a su lugar en cuanto está dibujado (el día tipo puede tardar un instante
   // en cambiar). Si la persona hace otra cosa antes, ese foco pendiente se olvida: no salta más tarde.
@@ -580,9 +643,12 @@ export function EditorDeBorrador({
     setPestanas({});
     elegirDia(Math.max(0, i - 1));
   };
+  /** ED-33: con contenido, primero se confirma, con lo que se va; sin contenido, se hace en el acto. */
+  const pedirQuitar = (texto: string | null, hacer: () => void) => (texto ? setPorQuitar({ texto, hacer }) : hacer());
   const agregarComida = () => {
     const j = dia?.meals.length ?? 0;
-    cambiar((x) => (x[i]!.meals.push({ label: '', prescriptionMode: 'DISH_OPTIONS', options: [] }), x));
+    // ED-33: la comida nace con su opción 1 lista, para empezar a sumarle alimentos.
+    cambiar((x) => (x[i]!.meals.push({ label: '', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Opción 1', items: [] }] }), x));
     dejarAbiertas(new Set([...abiertas, j]));
     // Una comida sin nombre no se puede guardar: nace con el campo abierto.
     setNombreQueSeCambia({ de: 'comida', i, j });
@@ -663,6 +729,27 @@ export function EditorDeBorrador({
   const sinCompletarAlActivar = confirmar ? loQueQuedaSinCompletarEnNutricion(estructura).map((p) => conSuLugar(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento')) : [];
   // Lo que va a ver la persona: cada día tipo, con sus comidas.
   const loQueVeLaPersona = confirmar ? estructura.map((d, n) => `${d.label.trim() || `Día tipo ${n + 1}`}: ${d.meals.length === 1 ? '1 comida incluida' : `${d.meals.length} comidas incluidas`}`) : [];
+
+  // ── ED-25 en Nutrición: «Antes de activar», en vivo en el panel; «Ir a corregir» va directo ──────────────────────
+  const enElPanel = (p: ValidationIssue, texto: string) => ({ texto: `${ubicacionDelProblema(p.path, estructura)}: ${texto}`, ir: lugarDelProblema(p.path).dia === null ? null : () => irAlProblema(p) });
+  const impidenEnVivo = [
+    ...loQueNoDejaGuardarElPlan(estructura).map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
+    ...(revision?.estado === 'lista' && !sucio ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+  ];
+  const sinCompletarEnVivo = loQueQuedaSinCompletarEnNutricion(estructura).map((p) => enElPanel(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento'));
+  // ── ED-31 y ED-34: los totales de cada opción y los rangos del día tipo que se mira ─────────────────────────
+  const rangos = dia ? rangosDelDia(dia, i, composiciones, nombres, (id) => itemsGuardados(version, id), (rv) => recetas[rv]?.name ?? null) : null;
+  const leyendoComposiciones = [...composiciones.values()].filter((c) => c === 'leyendo').length;
+  const huecosDelDia = rangos
+    ? [
+        ...new Set(
+          NUTRIENTES_DEL_RANGO.flatMap((n) => {
+            const r = rangos.dia[n];
+            return r.tipo === 'sin-dato' ? r.faltan.map(queFaltaEnPalabras) : [];
+          }),
+        ),
+      ]
+    : [];
 
   // Una plantilla no guarda recetas (DL-119): con una opción de receta, «Guardar como plantilla» dice por qué no.
   const sinPlantilla = estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null;
@@ -802,6 +889,8 @@ export function EditorDeBorrador({
         </Aviso>
       ) : null}
 
+      <div className="editor-de-nutricion__zonas">
+      <div className="editor-de-nutricion__principal">
       <div className="editor-del-plan__dia">
         {estructura.length > 0 ? (
           <fieldset className="segmentos segmentos--que-bajan" data-dia-tipo="varios">
@@ -811,6 +900,8 @@ export function EditorDeBorrador({
                 <label key={d.dayTypeId ?? `nuevo-${n}`} className="segmento">
                   <input type="radio" id={`dia-tipo-${n}`} name={`${propio}-dia`} checked={n === i} onChange={() => elegirDia(n)} />
                   {d.label.trim() || `Día tipo ${n + 1}`}
+                  {/* ED-33 (ED-D4): cuántas comidas tiene, sin color y sin bloquear. */}
+                  <span className="segmento__nota"> · {d.meals.length === 0 ? 'Sin comidas' : d.meals.length === 1 ? '1 comida incluida' : `${d.meals.length} comidas incluidas`}</span>
                 </label>
               ))}
             </div>
@@ -832,7 +923,7 @@ export function EditorDeBorrador({
               { clave: 'duplicar', texto: E.duplicarDiaTipo, alElegir: duplicarDia, noSePuede: estructura.length >= MAXIMO_DE_DIAS_TIPO ? E.topeDeDiasTipo(MAXIMO_DE_DIAS_TIPO) : null },
               { clave: 'antes', texto: E.moverAntes, alElegir: () => moverDia(i - 1), noSePuede: i === 0 ? E.yaEsElPrimero : null },
               { clave: 'despues', texto: E.moverDespues, alElegir: () => moverDia(i + 1), noSePuede: i === estructura.length - 1 ? E.yaEsElUltimo : null },
-              { clave: 'quitar', texto: 'Quitar este día tipo', alElegir: quitarDia, noSePuede: estructura.length <= 1 ? 'Es el único día tipo de la versión.' : null },
+              { clave: 'quitar', texto: 'Quitar este día tipo', alElegir: () => pedirQuitar(alQuitarElDia(dia, i), quitarDia), noSePuede: estructura.length <= 1 ? 'Es el único día tipo de la versión.' : null },
             ]}
           />
         ) : null}
@@ -901,7 +992,14 @@ export function EditorDeBorrador({
                 elegirPestana(j, k + 1);
                 setNombreQueSeCambia({ de: 'opcion', i, j, k: k + 1 });
               }}
-              alQuitar={() => quitarComida(j)}
+              alQuitar={() => pedirQuitar(alQuitarLaComida(m, j), () => quitarComida(j))}
+              alQuitarOpcion={(k) =>
+                pedirQuitar(alQuitarLaOpcion(m.options[k]!, k), () => {
+                  cambiar((x) => (x[i]!.meals[j]!.options.splice(k, 1), x));
+                  elegirPestana(j, Math.max(0, k - 1));
+                })
+              }
+              totalDeLaOpcion={(k) => rangos?.comidas[j]?.opciones[k]?.total ?? null}
               alGuardarComoHabitual={() => setGuardarHabitual({ i, j })}
               alAgregarItem={(k) => setAgregando({ i, j, k })}
               alAgregarReceta={() => setEligiendoReceta({ i, j })}
@@ -974,6 +1072,96 @@ export function EditorDeBorrador({
           </div>
         </div>
       ) : null}
+      </div>
+      <PanelDeNutricion
+        pestana={pestanaDelPanel}
+        alElegir={setPestanaDelPanel}
+        impiden={impidenEnVivo}
+        sinCompletar={sinCompletarEnVivo}
+        persona={persona}
+        rangos={
+          rangos ? (
+            <>
+              <h3>{COPY_RANGOS.tituloDelDia(nombreDelDia)}</h3>
+              <p className="panel-de-nutricion__del-dia" data-rango-del-dia>
+                {rangoDelDiaEnPalabras(rangos.dia.energyKcal)}
+              </p>
+              {rangos.comidas.length > 0 ? (
+                <div className="desplazable-x">
+                  <table className="tabla panel-de-nutricion__tabla" data-rangos-por-comida>
+                    <caption className="visualmente-oculto">{COPY_RANGOS.tituloDeLasComidas}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">{COPY_RANGOS.comida}</th>
+                        {NUTRIENTES_DEL_RANGO.map((n) => (
+                          <th key={n} scope="col">
+                            {COPY_RANGOS.nutriente[n]}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rangos.comidas.map((c, j) => (
+                        <tr key={j}>
+                          <th scope="row">
+                            {c.nombre} <span className="nota">· {c.opciones.length === 1 ? '1 opción' : `${c.opciones.length} opciones`}</span>
+                          </th>
+                          {NUTRIENTES_DEL_RANGO.map((n) => (
+                            <td key={n}>{rangoEnUnaCelda(c.rango[n], n)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                      <tr className="panel-de-nutricion__fila-del-dia">
+                        <th scope="row">{COPY_RANGOS.elDia}</th>
+                        {NUTRIENTES_DEL_RANGO.map((n) => (
+                          <td key={n}>{rangoEnUnaCelda(rangos.dia[n], n)}</td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+              {huecosDelDia.length > 0 ? (
+                <ul className="estacion__lista-del-panel" data-huecos>
+                  {huecosDelDia.slice(0, 6).map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                  {huecosDelDia.length > 6 ? <li>{COPY_RANGOS.yMas(huecosDelDia.length - 6)}</li> : null}
+                </ul>
+              ) : null}
+              {leyendoComposiciones > 0 ? (
+                <p className="nota" role="status">
+                  {COPY_RANGOS.leyendo(leyendoComposiciones)}
+                </p>
+              ) : null}
+              <p className="nota">{COPY_RANGOS.comoSeLee}</p>
+              <p className="nota">{COPY_RANGOS.estimacion}</p>
+            </>
+          ) : (
+            <p className="nota">{COPY_RANGOS.sinDiaTipo}</p>
+          )
+        }
+      />
+      </div>
+
+      {/* ED-33: lo que se quita con contenido se confirma, con lo que se va; «Cancelar» tiene el foco y no toca nada. */}
+      <CuadroEnfocado
+        abierto={porQuitar !== null}
+        forma="dialogo"
+        titulo={COPY_QUITAR.titulo}
+        focoEnCancelar
+        principal={{
+          texto: COPY_QUITAR.quitar,
+          alTocar: () => {
+            porQuitar?.hacer();
+            setPorQuitar(null);
+          },
+        }}
+        onCerrar={() => setPorQuitar(null)}
+      >
+        <p data-lo-que-se-va>{porQuitar?.texto}</p>
+        <p className="nota">{COPY_QUITAR.queSeVa}</p>
+      </CuadroEnfocado>
 
       <DialogoGuardarPlantillaNutricional
         token={token}
@@ -1007,6 +1195,8 @@ export function EditorDeBorrador({
           if (!agregando) return;
           const { i: di, j, k } = agregando;
           setNombres((n) => ({ ...n, [el.catalogItemId]: el.name }));
+          // ED-31: el buscador ya trajo su composición; el total de la opción se ve al instante.
+          setComposiciones((m) => new Map(m).set(el.catalogItemId, el.composition));
           // El ítem nace sin cantidad ni estado: se completan en la opción (REG-06-122).
           cambiar((x) => (x[di]!.meals[j]!.options[k]!.items.push({ catalogItemId: el.catalogItemId, quantity: null, preparationState: null, note: null }), x));
         }}
@@ -1090,6 +1280,90 @@ export function EditorDeBorrador({
     </section>
   );
 }
+
+/**
+ * ED-25 y ED-34 en Nutrición · El panel al costado, con dos pestañas: «Rangos y totales» y «Antes de activar», en vivo.
+ * Las pestañas se recorren con las flechas, Inicio y Fin (el patrón de pestañas de ARIA).
+ */
+function PanelDeNutricion({
+  pestana,
+  alElegir,
+  impiden,
+  sinCompletar,
+  persona,
+  rangos,
+}: {
+  pestana: 'antes' | 'rangos';
+  alElegir: (p: 'antes' | 'rangos') => void;
+  impiden: readonly ParaCorregir[];
+  sinCompletar: readonly ParaCorregir[];
+  persona: string | null;
+  rangos: ReactNode;
+}) {
+  const lista = (cosas: readonly ParaCorregir[]) => (
+    <ul className="estacion__lista-del-panel">
+      {cosas.map((x, n) => (
+        <li key={n}>
+          {x.texto}{' '}
+          {x.ir ? (
+            <button type="button" className="boton boton--enlace" onClick={x.ir}>
+              {CE.irACorregir}
+            </button>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+  const pestanas = [
+    ['rangos', COPY_RANGOS.pestana],
+    ['antes', CE.pestanaAntes],
+  ] as const;
+  return (
+    <aside className="panel-de-nutricion" aria-label={CE.panel} data-panel-de-nutricion>
+      <div
+        className="estacion__pestanas"
+        role="tablist"
+        aria-label={CE.panel}
+        onKeyDown={(e) => {
+          const otra = pestana === 'rangos' ? 'antes' : 'rangos';
+          const destino = e.key === 'ArrowRight' || e.key === 'ArrowLeft' ? otra : e.key === 'Home' ? 'rangos' : e.key === 'End' ? 'antes' : null;
+          if (!destino) return;
+          e.preventDefault();
+          alElegir(destino);
+          document.getElementById(`pestana-nut-${destino}`)?.focus();
+        }}
+      >
+        {pestanas.map(([clave, texto]) => (
+          <button key={clave} type="button" role="tab" id={`pestana-nut-${clave}`} aria-selected={pestana === clave} aria-controls={`panel-nut-${clave}`} tabIndex={pestana === clave ? 0 : -1} onClick={() => alElegir(clave)}>
+            {texto}
+            {clave === 'antes' && impiden.length > 0 ? <span className="estacion__cuenta"> {impiden.length}</span> : null}
+          </button>
+        ))}
+      </div>
+      {pestana === 'antes' ? (
+        <div role="tabpanel" id="panel-nut-antes" aria-labelledby="pestana-nut-antes" data-panel-en-vivo>
+          <h3>
+            <Icono nombre="aviso" tamano={15} />
+            {CE.impide}
+          </h3>
+          {impiden.length === 0 ? <p className="nota">{CE.nadaImpide}</p> : lista(impiden)}
+          <h3>
+            {CE.quedaSinCompletar} <span className="nota">· {CE.noImpide}</span>
+          </h3>
+          {sinCompletar.length === 0 ? <p className="nota">{CE.nadaSinCompletar}</p> : lista(sinCompletar)}
+          <p className="nota">{CE.enVivo(persona)}</p>
+        </div>
+      ) : (
+        <div role="tabpanel" id="panel-nut-rangos" aria-labelledby="pestana-nut-rangos" data-rangos>
+          {rangos}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+/** Una cosa por corregir o por completar, con el camino a su lugar. */
+type ParaCorregir = { readonly texto: string; readonly ir: (() => void) | null };
 
 /**
  * La lista de recetas propias, para sumar una como opción de una comida (DL-119). Va dentro de un cajón. Desde TB-48,
