@@ -8,7 +8,7 @@
  * Uso: npm run test -w @be/web.
  */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const S = await import('../src/lib/salida-segura.ts');
@@ -125,12 +125,56 @@ test('TEST-EDP-003 · el cuadro: «Seguir editando» es el principal y tiene el 
   for (const ruta of ['components/salida-segura.tsx', 'lib/salida-segura.ts']) assert.doesNotMatch(leer(ruta), /localStorage|sessionStorage|indexedDB/, ruta);
 });
 
+/** Los `.ts` y `.tsx` de una carpeta de `src`, con la ruta desde `src`. */
+function archivosDe(carpeta) {
+  return readdirSync(new URL(`../src/${carpeta}`, import.meta.url), { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? archivosDe(`${carpeta}/${e.name}`) : /\.tsx?$/.test(e.name) ? [`${carpeta}/${e.name}`] : [],
+  );
+}
+
+/** Los `router.push` y `router.replace` que no pasan por la guardia, cada uno con su motivo. */
+const NAVEGAN_SIN_LA_GUARDIA = {
+  'components/salida-segura.tsx': 'es la guardia: sigue la navegación después de guardar o de preguntar',
+  'components/portada-con-sesion.tsx': 'la portada pública, fuera de /pro: lleva a su espacio a quien ya tiene sesión',
+  'app/pro/advisees/forms/pedir.tsx': 'después de enviar el pedido: lo escrito ya se guardó, y el editor todavía no dibujó que no le queda nada',
+};
+
+test('TEST-EDP-003 · ningún enlace interno de /pro ni de los componentes se salta la guardia (tampoco un router.push)', () => {
+  // Revisión adversaria de la etapa 1: la marca «BE», la campana de Novedades, el menú de la cuenta, «Ir a Mis recetas»
+  // adentro del editor de Nutrición y el centro de novedades navegaban sin la guardia, y lo escrito se perdía sin aviso.
+  const archivos = ['app/pro', 'components'].flatMap(archivosDe);
+  assert.ok(archivos.length > 100, `se recorren los archivos (${archivos.length})`);
+  // Nadie importa `next/link` directo: el enlace interno es `Enlace`, que pasa por la guardia.
+  assert.deepEqual(
+    archivos.filter((a) => a !== 'components/enlace.tsx' && /from 'next\/link'/.test(leer(a))),
+    [],
+  );
+  assert.match(leer('components/enlace.tsx'), /<Link \{\.\.\.resto\} href=\{href\} replace=\{replace\} onNavigate=\{alNavegar\(href, replace \?\? false\)\} \/>/);
+  // Cada `router.push` o `router.replace` pasa por la guardia (`antesDeSalir`), salvo los de la lista, con su motivo.
+  const sinGuardia = archivos.flatMap((a) => {
+    if (NAVEGAN_SIN_LA_GUARDIA[a]) return [];
+    const fuente = leer(a);
+    return [...fuente.matchAll(/router\.(push|replace)\(/g)].filter((m) => !/antesDeSalir\(\(\) => $/.test(fuente.slice(Math.max(0, m.index - 40), m.index))).map((m) => `${a}: router.${m[1]}`);
+  });
+  assert.deepEqual(sinGuardia, []);
+});
+
 test('TEST-EDP-003 · cada enlace interno pasa por la guardia: la barra, las pestañas y «Volver a la ficha»', () => {
   // La guardia envuelve a la compuerta de UF-01, que sigue siendo la de siempre (TEST-UF-005).
   assert.match(leer('app/pro/layout.tsx'), /<SalidaSegura>\n\s*<AntesDeSeguir espacio="pro">\{children\}<\/AntesDeSeguir>\n\s*<\/SalidaSegura>/);
-  assert.match(leer('components/navegacion.tsx'), /<Link href=\{e\.href\} [^>]*onNavigate=\{alNavegar\(e\.href\)\}>/);
-  assert.match(leer('components/pestanas.tsx'), /<Link href=\{href\(v\.clave\)\} [^>]*replace onNavigate=\{alNavegar\(href\(v\.clave\), true\)\}>/);
-  assert.match(leer('app/pro/advisees/marco-del-area.tsx'), /<Link href=\{camino\.href\} onNavigate=\{alNavegar\(camino\.href\)\}>/);
+  assert.match(leer('components/navegacion.tsx'), /<Enlace href=\{e\.href\} /);
+  // Las pestañas de un área reemplazan la entrada del historial, también después de guardar.
+  assert.match(leer('components/pestanas.tsx'), /<Enlace href=\{href\(v\.clave\)\} [^>]*replace>/);
+  assert.match(leer('app/pro/advisees/marco-del-area.tsx'), /<Enlace href=\{camino\.href\}>/);
+  // Los del encabezado, de a uno: la marca, la campana y el menú de la cuenta.
+  assert.match(leer('components/encabezado.tsx'), /<Enlace href="\/" className="encabezado__marca"/);
+  assert.match(leer('components/campana-de-novedades.tsx'), /<Enlace href=\{destino\} className="campana-de-novedades"/);
+  assert.match(leer('components/menu-de-cuenta.tsx'), /<Enlace href="\/account" /);
+  assert.match(leer('components/menu-de-cuenta.tsx'), /<Enlace href="\/pro\/guia" /);
+  // «Ir a Mis recetas», adentro del editor de Nutrición, cuando no hay recetas para elegir.
+  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), /<Enlace href="\/pro\/recipes">\{COPY_RECETAS\.irAMisRecetas\}<\/Enlace>/);
+  // El centro de novedades lleva a la pantalla de una novedad por la guardia.
+  assert.match(leer('components/centro-de-novedades.tsx'), /antesDeSalir\(\(\) => router\.push\(destino\)\);/);
   // Los dos editores de planes se guardan antes de salir, si se puede: nada a medio escribir ni un conflicto.
   for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
     assert.match(

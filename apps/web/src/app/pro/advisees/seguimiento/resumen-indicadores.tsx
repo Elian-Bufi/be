@@ -34,7 +34,7 @@ import {
   type SerieAnalitica,
   type VistaDeAnalisis,
 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -133,14 +133,14 @@ function Indicadores({
               <li key={s.clave} className="indicador" data-metrica={s.ref.metricId}>
                 {/* El nombre abre el gráfico grande en «Analizar»: como en las tarjetas, un renglón con flecha abre algo. */}
                 <h3>
-                  <Link className="indicador__analizar" href={href({ vista: 'analizar', m: codificarReferencia(s.ref), modo: null, f: null, pregunta: null })}>
+                  <Enlace className="indicador__analizar" href={href({ vista: 'analizar', m: codificarReferencia(s.ref), modo: null, f: null, pregunta: null })}>
                     <Icono nombre={iconoDeLaReferencia(s.ref, s.definicion)} tamano={20} />
                     <span className="indicador__nombre">
                       {nombre}
                       <span className="visualmente-oculto"> · analizar</span>
                     </span>
                     <Icono nombre="derecha" tamano={18} />
-                  </Link>
+                  </Enlace>
                 </h3>
                 {s.estado.tipo === 'cargando' ? (
                   <BloqueDeEstado tipo="cargando" icono="cargando">

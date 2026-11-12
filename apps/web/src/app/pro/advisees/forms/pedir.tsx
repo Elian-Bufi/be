@@ -51,7 +51,7 @@
  * primero la de área y después la de hábitos, cada una con su clave. Si una falla, se dice cuál.
  */
 import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_HABITOS, COPY_SOLICITUDES as C, COPY_VINCULO, descripcionDeLaPlantilla, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Cajon } from '../../../../components/cajon';
@@ -371,7 +371,7 @@ export function PedidoDeInformacion({
           <p className="pedido__aviso" data-desde={origen}>
             <Icono nombre={desdeEntrenamiento ? 'entrenamiento' : 'nutricion'} tamano={18} />
             <span>
-              {desdeEntrenamiento ? F.pedidoDesdeEntrenamiento : F.pedidoDesdeNutricion} <Link href={vuelta.href}>{vuelta.texto}</Link>
+              {desdeEntrenamiento ? F.pedidoDesdeEntrenamiento : F.pedidoDesdeNutricion} <Enlace href={vuelta.href}>{vuelta.texto}</Enlace>
             </span>
           </p>
         ) : null}

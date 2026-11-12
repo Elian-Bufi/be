@@ -1,5 +1,5 @@
 import { AVISOS_DE_PRUEBA } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { AVISOS_DE_PRUEBA_VISIBLES } from '../lib/ambiente';
 
 const version = process.env.BE_VERSION ?? 'no declarada';
@@ -18,13 +18,13 @@ export function Pie() {
         <nav aria-label="Textos legales">
           <ul>
             <li>
-              <Link href="/legal/terminos">Términos y condiciones</Link>
+              <Enlace href="/legal/terminos">Términos y condiciones</Enlace>
             </li>
             <li>
-              <Link href="/legal/privacidad">Política de privacidad</Link>
+              <Enlace href="/legal/privacidad">Política de privacidad</Enlace>
             </li>
             <li>
-              <Link href="/legal/fuentes">Fuentes del catálogo</Link>
+              <Enlace href="/legal/fuentes">Fuentes del catálogo</Enlace>
             </li>
           </ul>
         </nav>

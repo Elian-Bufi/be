@@ -7,7 +7,7 @@
  * devuelve la misma revocación. La revocación no finaliza el vínculo ni borra historial (REG-06-52).
  */
 import { COPY, COPY_VINCULO } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { useState } from 'react';
 import { api, type Resultado } from '../lib/api';
 import { esIncierto, mensajeDeFallo } from '../lib/intento';
@@ -79,7 +79,7 @@ export function AvisoDeAccesoRevocado({ vinculoId, onCerrar }: { vinculoId?: str
       <p>{COPY_VINCULO.vinculoContinua}</p>
       {vinculoId ? (
         <p>
-          <Link href={`/account/relationships/detail?id=${encodeURIComponent(vinculoId)}`}>{COPY_VINCULO.verVinculo}</Link>
+          <Enlace href={`/account/relationships/detail?id=${encodeURIComponent(vinculoId)}`}>{COPY_VINCULO.verVinculo}</Enlace>
         </p>
       ) : null}
     </AvisoFlotante>

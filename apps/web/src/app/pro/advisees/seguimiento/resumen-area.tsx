@@ -50,7 +50,7 @@ import {
   type ResumenDeNutricion,
   type VigenciaDePlan,
 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useId, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -287,10 +287,10 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
           />
           <div className="area__accion">
             {/* Abre la toma en preparación: no guarda ni registra nada hasta que se confirme allá. */}
-            <Link className="boton boton--secundario" href={ruta('ANTROPOMETRIA', 'preparacion')}>
+            <Enlace className="boton boton--secundario" href={ruta('ANTROPOMETRIA', 'preparacion')}>
               <Icono nombre="mas" tamano={20} />
               Preparar una toma
-            </Link>
+            </Enlace>
           </div>
         </Tarjeta>
       ) : null}
@@ -341,10 +341,10 @@ function EmpezarElPlan({ area, href }: { area: 'NUTRICION' | 'ENTRENAMIENTO'; hr
     return (
       <div className="area__sin-datos">
         <p className="tenue">{COPY_VINCULO.sinDatosTodavia}</p>
-        <Link className="boton boton--secundario" href={href}>
+        <Enlace className="boton boton--secundario" href={href}>
           <Icono nombre="plan" tamano={18} />
           {COPY_PRIMER_PLAN.titulo}
-        </Link>
+        </Enlace>
       </div>
     );
   }
@@ -361,10 +361,10 @@ function Tarjeta({ area, abrir, children }: { area: AreaDelResumen; abrir: strin
           <Icono nombre={ICONO_DEL_AREA[area]} tamano={24} />
           {NOMBRE_DEL_AREA[area]}
         </h2>
-        <Link className="area__abrir" href={abrir}>
+        <Enlace className="area__abrir" href={abrir}>
           Abrir {NOMBRE_DEL_AREA[area]}
           <Icono nombre="abrir" tamano={18} />
-        </Link>
+        </Enlace>
       </header>
       {children}
     </section>
@@ -398,10 +398,10 @@ function FilaDelPlan({ area, resumen, vigencias, href, formato }: { area: AreaCo
       <dd>
         {vigente ? (
           <>
-            <Link href={href}>
+            <Enlace href={href}>
               {etiqueta ? `Versión ${etiqueta.replace(/^v/, '')}` : 'Versión vigente'}
               <span className="visualmente-oculto"> · ver la planificación de {NOMBRE_DEL_AREA[area]}</span>
-            </Link>
+            </Enlace>
             <span className="tenue"> · desde el {formato.dia(vigente.activatedAt)}</span>
           </>
         ) : (
@@ -497,10 +497,10 @@ function Hechos({
               <strong>
                 Desde la{' '}
                 {revisiones ? (
-                  <Link href={revisiones}>
+                  <Enlace href={revisiones}>
                     revisión del {formato.dia(revision.recordedAt)}
                     <span className="visualmente-oculto"> · ver las revisiones de {NOMBRE_DEL_AREA[area]}</span>
-                  </Link>
+                  </Enlace>
                 ) : (
                   `revisión del ${formato.dia(revision.recordedAt)}`
                 )}
@@ -582,9 +582,9 @@ function Hecho({ o, formato, enlace, detalles }: { o: ObservacionDelResumen; for
   return (
     <li className="observacion" data-regla={o.regla} data-prioridad={o.prioridad}>
       {enlace ? (
-        <Link className="observacion__fila" href={enlace.href}>
+        <Enlace className="observacion__fila" href={enlace.href}>
           {contenido}
-        </Link>
+        </Enlace>
       ) : (
         <div className="observacion__fila">{contenido}</div>
       )}
@@ -602,10 +602,10 @@ function AccionDeRevisar({ area, resumen, href, llena }: { area: AreaConPlan; re
   return (
     <div className="area__accion">
       <Pista texto={COPY_PISTAS.revision.preparar}>
-        <Link className={llena ? 'boton boton--primario' : 'boton boton--secundario'} href={href}>
+        <Enlace className={llena ? 'boton boton--primario' : 'boton boton--secundario'} href={href}>
           <Icono nombre="revision" tamano={20} />
           Preparar la revisión de {NOMBRE_DEL_AREA[area]}
-        </Link>
+        </Enlace>
       </Pista>
     </div>
   );

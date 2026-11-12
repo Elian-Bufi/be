@@ -14,7 +14,7 @@
  * - Una falla de esta lectura no esconde los pendientes, y dice su motivo.
  */
 import { COPY_VINCULO, numero, type PaginaDeUnaLista, type Vinculo } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { BloqueDeEstado, EstadoVacio } from '../../components/estados';
 import { Icono } from '../../components/icono';
@@ -137,7 +137,7 @@ export function Asesorados({
 function Persona({ persona }: { persona: PersonaDelDirectorio }) {
   return (
     <li className="persona" data-persona={persona.identityId}>
-      <Link className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`}>
+      <Enlace className="persona__abrir" href={`/pro/advisees?id=${encodeURIComponent(persona.identityId)}`}>
         {/* TB-05: el monograma; sin nombre visible (un vínculo que terminó) o con los nombres ocultos, el ícono. */}
         <Retrato nombre={persona.nombre} tamano="medio" />
         <span className="persona__resumen">
@@ -158,7 +158,7 @@ function Persona({ persona }: { persona: PersonaDelDirectorio }) {
         </span>
         <span className="visualmente-oculto">. Abrir su ficha</span>
         <Icono nombre="derecha" tamano={18} />
-      </Link>
+      </Enlace>
     </li>
   );
 }

@@ -12,7 +12,7 @@
  *   Esta pieza no escribe nada: solo ordena.
  */
 import { COPY_PRIMER_PLAN as C } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../components/enlace';
 import type { ReactNode } from 'react';
 import { Icono } from '../../../components/icono';
 
@@ -60,10 +60,10 @@ export function PrimerPlan(p: PrimerPlanProps) {
                   {C.registrarEvaluacion}
                 </button>
                 {p.pedirInformacion ? (
-                  <Link className="boton boton--secundario" href={p.pedirInformacion}>
+                  <Enlace className="boton boton--secundario" href={p.pedirInformacion}>
                     <Icono nombre="solicitar" tamano={18} />
                     {C.pedirInformacion}
-                  </Link>
+                  </Enlace>
                 ) : null}
               </div>
             )

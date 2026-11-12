@@ -106,12 +106,16 @@ EXPECTED             1 → aparece «Guardando antes de salir…» y se sale con
                      guardado también se guarda antes de salir (hasta tres rondas); si se sigue escribiendo, el
                      cuadro. Nunca se guarda con lo que el editor dibujó antes de la respuesta (daría un 409).
 NEGATIVE_ASSERTIONS  Nunca se sale con un cambio sin guardar sin el cuadro o sin la respuesta del servidor, tampoco
-                     con uno escrito mientras viajaba el guardado de la salida. Nada se escribe en localStorage ni
-                     en sessionStorage. Sin cambios, el enlace navega sin preguntar.
+                     con uno escrito mientras viajaba el guardado de la salida, ni por un enlace del encabezado (la
+                     marca, la campana, el menú de la cuenta) o de adentro del editor («Ir a Mis recetas»). Nada se
+                     escribe en localStorage ni en sessionStorage. Sin cambios, el enlace navega sin preguntar.
 AUTOMATION           apps/web/test/salida-segura.test.mjs («TEST-EDP-003 · …») sobre `lib/salida-segura.ts`
                      (`queHacerAlSalir` y `guardarAntesDeSalir`, con editores de mentira que dibujan después de la
                      respuesta) y la lectura de la barra y del marco del área (cada enlace interno pasa por la
-                     guardia) · recorrido `salidaSegura` (si entra en la etapa; si no, declarado)
+                     guardia) · la regla de los enlaces: en `app/pro/**` y `components/**` nadie importa
+                     `next/link` directo (todos van por `Enlace`, con la guardia) y cada `router.push` pasa por
+                     `antesDeSalir`, salvo los de una lista con su motivo · recorrido `salidaSegura` (si entra en la
+                     etapa; si no, declarado)
 ENVIRONMENT          Local (node --test) y CI
 EVIDENCE_EXPECTED    La corrida verde de la CI en el PR
 ```

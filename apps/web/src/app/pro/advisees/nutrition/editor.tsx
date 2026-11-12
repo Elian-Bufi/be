@@ -54,7 +54,7 @@ import {
   type VersionDeObjetivo,
   type VersionDePlan,
 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
@@ -1129,7 +1129,7 @@ function ElegirReceta({ onElegir }: { onElegir: (r: Receta) => void }) {
       ) : null}
       {estado.tipo === 'lista' && estado.recetas.length === 0 ? (
         <p>
-          {COPY_RECETAS.sinRecetasParaElegir} <Link href="/pro/recipes">{COPY_RECETAS.irAMisRecetas}</Link>
+          {COPY_RECETAS.sinRecetasParaElegir} <Enlace href="/pro/recipes">{COPY_RECETAS.irAMisRecetas}</Enlace>
         </p>
       ) : null}
       {estado.tipo === 'lista' && estado.recetas.length > 0 ? (

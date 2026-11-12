@@ -28,7 +28,7 @@ import {
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDeObjetivoDeEntrenamiento,
 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { Aviso, Campo, ResumenDeErrores } from '../../../../components/formulario';
@@ -246,9 +246,9 @@ export function VistaDeResumen() {
                   {COPY_ENTRENAMIENTO.nuevaEvaluacion}
                 </button>
                 {/* PF-02 (CA-FOR-06): pedir contexto desde acá y volver acá al enviarlo. La misma dirección que en Nutrición (DL-165 D-8). */}
-                <Link className="boton boton--secundario" href={pedidoDesde('entrenamiento', asesoradoId)}>
+                <Enlace className="boton boton--secundario" href={pedidoDesde('entrenamiento', asesoradoId)}>
                   {COPY_ENTRENAMIENTO.solicitarContexto}
-                </Link>
+                </Enlace>
               </div>
               <Ayuda titulo="Qué se le pide a la persona">
                 <p>{COPY_ENTRENAMIENTO.ayudaSolicitarContexto}</p>

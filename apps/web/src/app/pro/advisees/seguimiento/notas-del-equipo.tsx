@@ -11,7 +11,7 @@
  *   citado se nombra pero no se abre con la nota (CRD-D5).
  */
 import { COPY_NOTAS_DE_COORDINACION as T, type EntradaDeLineaDeTiempo, type LineaDeTiempoResponse } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useId } from 'react';
 import { Icono } from '../../../../components/icono';
 import { Retrato } from '../../../../components/retrato';
@@ -92,10 +92,10 @@ export function NotasRecientesDelEquipo() {
           </ul>
         ) : null}
         {total > 0 ? (
-          <Link className="notas-del-equipo__todas" href={href({ vista: 'linea', tipos: TIPO, p: '365', desde: null, hasta: null, areas: null, estados: null, calidad: null, tardias: null, plan: null, ej: null, novedades: null })}>
+          <Enlace className="notas-del-equipo__todas" href={href({ vista: 'linea', tipos: TIPO, p: '365', desde: null, hasta: null, areas: null, estados: null, calidad: null, tardias: null, plan: null, ej: null, novedades: null })}>
             {T.verTodas}
             {total > RECIENTES ? ` (${total})` : ''}
-          </Link>
+          </Enlace>
         ) : null}
       </div>
     </section>

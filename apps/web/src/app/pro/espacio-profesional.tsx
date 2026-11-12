@@ -36,7 +36,7 @@
  * o, si ya no está, a lo que seguía. Si se salió por el cajón, se abre el cajón.
  */
 import { COPY_INVITACION, COPY_VINCULO, numero, type FiltroDePendientes, type PendienteDeCartera } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../components/estados';
@@ -120,7 +120,7 @@ export function SinEspacioProfesional() {
     <Aviso tipo="info">
       <p>{COPY_VINCULO.recursoNoDisponible}</p>
       <p>
-        <Link href="/account">Ir a tu cuenta</Link>
+        <Enlace href="/account">Ir a tu cuenta</Enlace>
       </p>
     </Aviso>
   );

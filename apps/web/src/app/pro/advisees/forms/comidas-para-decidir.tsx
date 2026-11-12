@@ -10,7 +10,7 @@
  *   precargado. Se deja el nombre listo para copiar y el camino a Nutrición · Plan.
  * - Los textos ubican, no califican: ninguna comida es «buena» ni «mala». Las reglas están en `comidas-declaradas.ts`.
  */
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useId, useState } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
 import { Aviso } from '../../../../components/formulario';
@@ -123,10 +123,10 @@ function PasarAHabituales({ comida, asesoradoId, onCerrar }: { comida: ComidaDec
           <Icono nombre="duplicar" tamano={18} />
           {T.copiar}
         </button>
-        <Link className="boton boton--secundario" href={`/pro/advisees/nutrition?id=${encodeURIComponent(asesoradoId)}&vista=plan`}>
+        <Enlace className="boton boton--secundario" href={`/pro/advisees/nutrition?id=${encodeURIComponent(asesoradoId)}&vista=plan`}>
           <Icono nombre="plan" tamano={18} />
           {T.irAlPlan}
-        </Link>
+        </Enlace>
         <button type="button" className="boton boton--enlace" onClick={onCerrar}>
           {T.cerrar}
         </button>

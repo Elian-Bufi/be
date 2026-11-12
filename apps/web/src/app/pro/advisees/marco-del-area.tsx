@@ -23,7 +23,7 @@
  * vuelta.
  */
 import { COPY_PISTAS, COPY, COPY_VINCULO, todasLasPaginas, type DashboardResponse, type NombreDeIcono, type Vinculo } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../components/enlace';
 import { useSearchParams } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DialogoDeConfirmacion } from '../../../components/dialogo';
@@ -32,7 +32,7 @@ import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { Pestanas } from '../../../components/pestanas';
 import { Retrato } from '../../../components/retrato';
-import { useAlNavegar, useCambiosParaSalir, type GuardarAntesDeSalir } from '../../../components/salida-segura';
+import { useCambiosParaSalir, type GuardarAntesDeSalir } from '../../../components/salida-segura';
 import { api, type Resultado } from '../../../lib/api';
 import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla } from '../../../lib/fallas';
 import { horaDelDia } from '../../../lib/formato';
@@ -115,7 +115,7 @@ export function NoDisponibleEnElArea() {
     <Aviso tipo="info">
       <p>{COPY_VINCULO.recursoNoDisponible}</p>
       <p>
-        <Link href="/pro">{COPY_VINCULO.volver}</Link>
+        <Enlace href="/pro">{COPY_VINCULO.volver}</Enlace>
       </p>
     </Aviso>
   );
@@ -267,7 +267,6 @@ export function MarcoDelArea<C extends string>({
   );
   const { delAsesorado } = useNombres();
   // ED-02: «Volver a la ficha» pasa por la guardia de la salida.
-  const alNavegar = useAlNavegar();
   // TB-07: se llegó desde el Espacio (una ficha de «Tu semana», un verbo de «Te toca a vos» o el cajón).
   const desdeElEspacio = useSearchParams().get('origen') === 'espacio';
 
@@ -291,10 +290,10 @@ export function MarcoDelArea<C extends string>({
         <div className="marco-de-la-ficha__ancho">
           <div className="marco-de-la-ficha__persona">
             <p className="retorno-a-la-ficha">
-              <Link href={camino.href} onNavigate={alNavegar(camino.href)}>
+              <Enlace href={camino.href}>
                 <Icono nombre="volver" tamano={18} />
                 {camino.texto}
-              </Link>
+              </Enlace>
             </p>
             <h1 id="titulo-del-area">{titulo}</h1>
             {listo && nombre ? (

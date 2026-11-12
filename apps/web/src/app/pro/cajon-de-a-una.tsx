@@ -20,7 +20,7 @@
  *   festejos ni tachados.
  */
 import { COPY_CARTERA, fechaCivil, partesDeObservacion, sintesisDelResumen, type DashboardResponse, type FormatoDeLaSintesis, type LineaDeTiempoResponse, type PendienteDeCartera } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Icono } from '../../components/icono';
 import { Retrato } from '../../components/retrato';
@@ -213,9 +213,9 @@ export function CajonDeAUna({
   const elPlan = actual ? conOrigenEnElEspacio(`/pro/advisees/${actual.domain}?id=${encodeURIComponent(actual.advisee.identityId)}&vista=plan`) : '';
   const siguiente = () => ir(indice !== null && indice + 1 < cola.length ? indice + 1 : null);
   const abrirLaFicha = actual ? (
-    <Link className="boton boton--secundario" href={fichaDe(actual)} onClick={alSalir}>
+    <Enlace className="boton boton--secundario" href={fichaDe(actual)} onClick={alSalir}>
       {COPY_CAJON.abrirLaFicha}
-    </Link>
+    </Enlace>
   ) : null;
 
   return (
@@ -265,9 +265,9 @@ export function CajonDeAUna({
               </p>
               <div className="cajon__salidas">
                 {hecho.borrador ? (
-                  <Link className="boton boton--primario" href={elPlan} onClick={alSalir}>
+                  <Enlace className="boton boton--primario" href={elPlan} onClick={alSalir}>
                     {COPY_CAJON.seguirElBorrador}
-                  </Link>
+                  </Enlace>
                 ) : null}
                 {abrirLaFicha}
                 <button type="button" className={`boton ${hecho.borrador ? 'boton--quieto' : 'boton--secundario'}`} onClick={siguiente}>
@@ -299,9 +299,9 @@ export function CajonDeAUna({
             </AplicarEnElCajon>
           ) : (
             <div className="cajon__salidas">
-              <Link className="boton boton--primario" href={conOrigenEnElEspacio(salida.href)} onClick={alSalir}>
+              <Enlace className="boton boton--primario" href={conOrigenEnElEspacio(salida.href)} onClick={alSalir}>
                 {salida.texto}
-              </Link>
+              </Enlace>
               {abrirLaFicha}
               <button type="button" className="boton boton--quieto" onClick={saltear}>
                 {COPY_CAJON.saltear}

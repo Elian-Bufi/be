@@ -58,7 +58,7 @@ import {
   type RegistroDeEjecucion,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { EnPartes, FraseEnPartes } from '../../../../components/en-partes';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
@@ -402,7 +402,7 @@ function Sesiones({
       <DiasSinSesion dias={contexto.missingData} />
       <p className="sesiones__a-analizar">
         <Icono nombre="analizar" tamano={18} />
-        <Link href={haciaAnalizar}>¿Cómo viene progresando un ejercicio? Verlo en Analizar</Link>
+        <Enlace href={haciaAnalizar}>¿Cómo viene progresando un ejercicio? Verlo en Analizar</Enlace>
       </p>
 
       {/* En una ventana angosta el detalle no entra al costado: se abre encima, en un panel que retiene el foco. */}

@@ -27,7 +27,7 @@ import {
   type TipoDePendiente,
   type VistaDePendientes,
 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../components/enlace';
 import { useId, useState } from 'react';
 import { BloqueDeEstado, EstadoVacio } from '../../components/estados';
 import { Icono } from '../../components/icono';
@@ -145,10 +145,10 @@ export function TeTocaAVos({
     return { texto, area, quien, ultimo: ultimoRegistroDe(p, { zona, conPeriodo, dia }), etiqueta: `${COPY_CARTERA.accion[p.kind]}: ${quien}, ${area}, ${texto}` };
   };
   const verbo = (p: PendienteDeCartera, etiqueta: string) => (
-    <Link className="pendiente__enlace" href={conOrigenEnElEspacio(rutaQueResuelve(p))} aria-label={etiqueta} data-pendiente={claveDelPendiente(p)} onClick={() => alAbrir?.(p)}>
+    <Enlace className="pendiente__enlace" href={conOrigenEnElEspacio(rutaQueResuelve(p))} aria-label={etiqueta} data-pendiente={claveDelPendiente(p)} onClick={() => alAbrir?.(p)}>
       {COPY_CARTERA.accion[p.kind]}
       <Icono nombre="derecha" tamano={18} />
-    </Link>
+    </Enlace>
   );
 
   return (

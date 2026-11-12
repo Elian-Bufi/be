@@ -27,7 +27,7 @@ import {
   type Revision,
   type VersionDePlan,
 } from '@be/domain';
-import Link from 'next/link';
+import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
@@ -85,7 +85,7 @@ export function VistaDeRevisiones() {
           {aviso.volver ? (
             <p>
               {/* Un `Link`, no un ancla suelta: recargar la página cortaría la sesión, que vive en memoria (DL-012). */}
-              <Link href={aviso.volver}>Volver a la ficha, donde estabas</Link>
+              <Enlace href={aviso.volver}>Volver a la ficha, donde estabas</Enlace>
             </p>
           ) : null}
           {aviso.alPlan ? (

@@ -14,7 +14,7 @@
  * tiempo, quedan en la Guía del espacio profesional (`/pro/guia`), a un clic desde el mismo diálogo. Adentro de
  * `GuiaDeAyudas`, cada ayuda es una sección entera, con su título, sin botón ni diálogo.
  */
-import Link from 'next/link';
+import { Enlace } from './enlace';
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icono } from './icono';
 
@@ -92,9 +92,9 @@ export function AyudaDeVista({
         </h2>
         {children}
         <div className="acciones como-se-lee__acciones">
-          <Link className="boton boton--enlace" href={`/pro/guia#${anclaDeLaAyuda(deQue)}`}>
+          <Enlace className="boton boton--enlace" href={`/pro/guia#${anclaDeLaAyuda(deQue)}`}>
             Todo el detalle, en la Guía
-          </Link>
+          </Enlace>
           <button type="button" className="boton boton--secundario" onClick={() => dialogo.current?.close()}>
             Cerrar
           </button>
