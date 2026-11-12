@@ -84,3 +84,26 @@ test('ED-23 · «Copiar la prescripción a…» pisa todo menos el ejercicio, su
   assert.equal(C.loQueSeReemplaza(b, { i: 0, j: 0, k: 0, l: 1 }, [0], 'series', nombre), 'Se reemplazan las 2 series de Sentadilla.');
   assert.deepEqual(b, antes);
 });
+
+test('ED-23 · lo que se reemplaza, sin «0 series», con la base de la carga y de las repeticiones, y en singular si es una sola cosa', () => {
+  const nombre = (p) => ({ sentadilla: 'Sentadilla', remo: 'Remo' })[p.exerciseVersionId];
+  const desde = { i: 0, j: 0, k: 0, l: 0 };
+  const conRemo = (remo) => {
+    const b = plan();
+    b[0].microcycles[0].sessions[0].prescriptions[1] = remo;
+    return b;
+  };
+  // Sin series pero con lo general: se pisa solo lo general.
+  assert.equal(C.loQueSeReemplaza(conRemo(ejercicio('remo', [], { restSeconds: 90 })), desde, [1], 'prescripcion', nombre), 'Se reemplaza lo general de Remo.');
+  // La base de la carga y la de las repeticiones también son lo general, y la copia las pisa.
+  assert.equal(C.loQueSeReemplaza(conRemo(ejercicio('remo', [], { loadBasis: 'PER_IMPLEMENT' })), desde, [1], 'prescripcion', nombre), 'Se reemplaza lo general de Remo.');
+  assert.equal(C.loQueSeReemplaza(conRemo(ejercicio('remo', [], { repetitionBasis: 'PER_SIDE' })), desde, [1], 'prescripcion', nombre), 'Se reemplaza lo general de Remo.');
+  // Sin series ni nada de lo general, no se pisa nada.
+  assert.equal(C.loQueSeReemplaza(conRemo(ejercicio('remo', [])), desde, [1], 'prescripcion', nombre), null);
+  assert.equal(C.loQueSeReemplaza(conRemo(ejercicio('remo', [], { restSeconds: 90 })), desde, [1], 'series', nombre), null);
+  // Una sola serie, copiando solo las series: singular.
+  assert.equal(C.loQueSeReemplaza(plan(), desde, [1], 'series', nombre), 'Se reemplaza la serie de Remo.');
+  // Varios: la lista, en plural.
+  const dos = conRemo(ejercicio('remo', [], { loadBasis: 'PER_IMPLEMENT' }));
+  assert.equal(C.loQueSeReemplaza(dos, { i: 0, j: 0, k: 0, l: 1 }, [0], 'prescripcion', nombre), 'Se reemplazan las 2 series y lo general de Sentadilla.');
+});

@@ -130,18 +130,27 @@ export function copiarSobre(b: Bloques, desde: LugarDelEjercicio, a: readonly nu
   return nuevos;
 }
 
+/** Si la prescripción declara algo de lo general, que «Copiar la prescripción» pisa (todo menos las series y la nota). */
+function tieneLoGeneral(p: Prescripcion): boolean {
+  return !!(p.intensity || p.suggestedLoad || p.restSeconds || p.loadBasis || p.repetitionBasis || (p.professionalParameters?.length ?? 0) > 0);
+}
+
 /** Lo que se reemplaza en los elegidos: «Se reemplazan las 4 series de Sentadilla y las 3 de Remo.» `null` si no pisa nada. */
 export function loQueSeReemplaza(b: Bloques, desde: LugarDelEjercicio, a: readonly number[], que: QueSeCopia, nombreDe: (p: Prescripcion) => string): string | null {
   const sesion = sesionesDe(b, desde)?.[desde.k];
   if (!sesion) return null;
   const pisados = a.filter((l) => l !== desde.l).flatMap((l) => {
     const p = sesion.prescriptions[l];
-    return p && (p.sets.length > 0 || (que === 'prescripcion' && (p.intensity || p.suggestedLoad || p.restSeconds || (p.professionalParameters?.length ?? 0) > 0))) ? [p] : [];
+    return p && (p.sets.length > 0 || (que === 'prescripcion' && tieneLoGeneral(p))) ? [p] : [];
   });
   if (pisados.length === 0) return null;
-  const partes = pisados.map((p) => `${p.sets.length === 1 ? 'la serie' : `las ${p.sets.length} series`}${que === 'prescripcion' ? ' y lo general' : ''} de ${nombreDe(p)}`);
+  // Sin series, lo que se pisa es solo lo general: «lo general de Remo», no «las 0 series y lo general».
+  const series = (p: Prescripcion) => (p.sets.length === 0 ? null : p.sets.length === 1 ? 'la serie' : `las ${p.sets.length} series`);
+  const partes = pisados.map((p) => `${[series(p), que === 'prescripcion' ? 'lo general' : null].filter(Boolean).join(' y ')} de ${nombreDe(p)}`);
   const lista = partes.length === 1 ? partes[0]! : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
-  return `Se reemplazan ${lista}.`;
+  // Una sola cosa en singular («Se reemplaza lo general de Remo», «Se reemplaza la serie de Remo»).
+  const una = pisados.length === 1 && pisados[0]!.sets.length <= 1 && (pisados[0]!.sets.length === 0) !== (que === 'series');
+  return `${una ? 'Se reemplaza' : 'Se reemplazan'} ${lista}.`;
 }
 
 export const COPY_COPIAR = {
