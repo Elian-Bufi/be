@@ -70,6 +70,7 @@ import type { Disponibles } from './series';
 import { TiraDelObjetivo, type MacrosDelObjetivo } from './tira-del-objetivo';
 import { TramoDelCiclo } from './tramo-del-ciclo';
 import { Pista } from '../../../../components/pista';
+import { accionDelPlan } from '../accion-de-la-ficha';
 
 type AreaConPlan = 'NUTRICION' | 'ENTRENAMIENTO';
 const RUTA_DEL_AREA: Readonly<Record<AreaDelResumen, string>> = { NUTRICION: 'nutrition', ENTRENAMIENTO: 'training', ANTROPOMETRIA: 'anthropometry' };
@@ -218,6 +219,18 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
                 </div>
                 <FilaDelPlan area="ENTRENAMIENTO" resumen={d.training.summary} vigencias={p.disponibles.vigencias.entrenamiento} href={ruta('ENTRENAMIENTO', 'plan')} formato={p.formato} />
               </dl>
+              {/* ED-16: la acción del plan según su estado: crear (asistente), ajustar (estación) o seguir el borrador. */}
+              {(() => {
+                const a = accionDelPlan(d.training.summary);
+                return (
+                  <p className="area__accion-del-plan">
+                    <Enlace className="boton boton--quieto boton--compacto" href={ruta('ENTRENAMIENTO', 'plan', a.extra)} data-accion-del-plan={a.tipo}>
+                      <Icono nombre={a.tipo === 'ajustar' ? 'duplicar' : 'plan'} tamano={18} />
+                      {a.texto}
+                    </Enlace>
+                  </p>
+                );
+              })()}
               <Hechos
                 area="ENTRENAMIENTO"
                 observaciones={delArea('ENTRENAMIENTO')}
@@ -237,7 +250,7 @@ export function TarjetasDeArea(p: PropsDeLasAreas) {
               <AccionDeRevisar area="ENTRENAMIENTO" resumen={d.training.summary} href={ruta('ENTRENAMIENTO', 'revisiones', '&preparar=1')} llena={llena === 'ENTRENAMIENTO'} />
             </>
           ) : (
-            <EmpezarElPlan area="ENTRENAMIENTO" href={ruta('ENTRENAMIENTO', 'plan')} />
+            <EmpezarElPlan area="ENTRENAMIENTO" href={ruta('ENTRENAMIENTO', 'plan', '&asistente=1')} />
           )}
         </Tarjeta>
       ) : null}

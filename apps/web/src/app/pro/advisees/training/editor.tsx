@@ -68,7 +68,7 @@ import {
   type SesionHabitual,
   type ValidationIssue,
 } from '@be/domain';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
@@ -89,6 +89,9 @@ import { alternarDia, COPY_ESTACION as CE, DIA_CORTO, DIA_LARGO, diasCompartidos
 import { GaleriaDePresets } from '../galeria-de-presets';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 import { PrimerUso } from '../../../../components/primer-uso';
+import { ArmazonDelAsistente } from '../asistente/asistente';
+import { COPY_ASISTENTE as CA, pasoPedido, pasoQueSigue, sePuedeAvanzar, type PasoDelAsistente } from '../asistente/paso-que-sigue';
+import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
 import { compararEntrenamiento } from '../comparar-versiones';
 import { AntesDeActivar } from '../cuadro-antes-de-activar';
@@ -314,6 +317,16 @@ export function EditorDePlan({
   // ED-11 (DJ-8): «Deshacer» de la última aplicación, con las prescripciones de antes por posición. Es la operación
   // inversa, que se autoguarda como cualquier cambio; otro cambio cualquiera la retira, para que devuelva exacto.
   const [deshacer, setDeshacer] = useState<{ readonly texto: string; readonly lugar: Lugar & { readonly k: number }; readonly antes: ReadonlyMap<number, PrescripcionE> } | null>(null);
+  // ED-14: «Siguiente» del asistente guarda y espera; si no pudo, el paso queda abierto con «Reintentar».
+  const [avanzando, setAvanzando] = useState(false);
+  const [noAvanzo, setNoAvanzo] = useState(false);
+  // ED-20: «Desde un preset» (paso 1) llega al paso 2 con la galería de estructuras abierta, una vez.
+  const presetPedido = parametros.get('preset');
+  useEffect(() => {
+    if (!version || presetPedido !== 'estructura') return;
+    setGaleria({ tarea: 'estructura', ejercicio: null });
+    ir({ preset: null });
+  }, [version, presetPedido, ir]);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -824,6 +837,8 @@ export function EditorDePlan({
     if (l.bloque === null) return;
     setInsertandoHabitual(false);
     ir({
+      // ED-14: desde el paso «Revisar» del asistente, corregir es ir a la estación (el borrador es el mismo).
+      asistente: null,
       bloque: pedidoDeLaPosicion(l.bloque),
       micro: l.microciclo === null ? null : pedidoDeLaPosicion(l.microciclo),
       sesion: l.sesion === null ? null : pedidoDeLaPosicion(l.sesion),
@@ -937,8 +952,260 @@ export function EditorDePlan({
     setMensaje({ tipo: 'exito', texto: COPY_PRESETS.estructuraEscribe(p.sesiones.length) });
   };
 
+  /** ED-24: los días de una sesión en siete chips y «Sin día»; la estación y el paso 5 del asistente usan los mismos. */
+  const chipsDeDias = (s: SesionE, n: number) => {
+    const id = s.sessionId;
+    if (!id) return <p className="nota">{CE.primeroGuardar}</p>;
+    const dias = agendaVisible?.sessions.find((x) => x.sessionId === id)?.weekdays ?? [];
+    return (
+      <div className="estacion__chips" role="group" aria-label={CE.diasDe(nombreDeLaSesion(s, n))}>
+        {DIAS_DE_LA_SEMANA.map((d) => (
+          <button key={d} type="button" className="estacion__chip" aria-pressed={dias.includes(d)} aria-label={DIA_LARGO[d]} data-dia={d} onClick={() => cambiarAgenda(alternarDia(agendaVisible, id, d, hoyEn()))}>
+            {DIA_CORTO[d]}
+          </button>
+        ))}
+        <button type="button" className="estacion__chip estacion__chip--sin-dia" aria-pressed={dias.length === 0} onClick={() => agendaVisible && cambiarAgenda(sinDias(agendaVisible, id))}>
+          {CE.sinDia}
+        </button>
+      </div>
+    );
+  };
+  /** ED-20: los días que trajo un preset, marcados «del preset», para confirmar. */
+  const diasDelPresetDe = (s: SesionE) => {
+    const id = s.sessionId;
+    const dias = id ? (agendaVisible?.sessions.find((x) => x.sessionId === id)?.weekdays ?? []) : [];
+    const delPreset = diasDelPreset[s.label] ?? [];
+    return id && dias.length === 0 && delPreset.length > 0 ? (
+      <button type="button" className="boton boton--enlace" data-dias-del-preset onClick={() => cambiarAgenda(ponerDias(agendaVisible, id, delPreset, hoyEn()))}>
+        {CE.confirmarDelPreset(delPreset.map((d) => DIA_LARGO[d]).join(', '))}
+      </button>
+    ) : null;
+  };
+
+  // ── ED-14 y ED-20: el asistente, sobre el mismo borrador y las mismas operaciones que la estación ─────────────────
+  // Cada paso escribe solo lo que toca (con `cambiar` o `cambiarAgenda`, como la estación): lo que no muestra (los
+  // valores propios de una serie, las notas, los parámetros) viaja intacto (TEST-EDP-021 y TEST-EDP-055).
+  const pasoDelAsistente = pasoPedido(parametros.get('asistente'));
+  const sugerido = pasoQueSigue(bloques, agendaVisible);
+  const irAlPaso = (n: PasoDelAsistente | null) => {
+    setNoAvanzo(false);
+    ir({ asistente: n === null ? null : String(n) });
+  };
+  /** TEST-EDP-017: «Siguiente» guarda y espera la respuesta; si falla, no avanza. */
+  const siguiente = async (n: PasoDelAsistente) => {
+    setAvanzando(true);
+    const puede = await sePuedeAvanzar({ sucio, guardando, guardar: () => guardar() });
+    setAvanzando(false);
+    if (!puede) return setNoAvanzo(true);
+    irAlPaso(n);
+  };
+  const conCadaSesion = (f: (s: SesionE, n: number) => ReactNode) =>
+    sesiones.length === 0 ? (
+      <p className="nota">{C.sinSesiones}</p>
+    ) : (
+      <ol className="asistente__sesiones">
+        {sesiones.map((s, n) => (
+          <li key={s.sessionId ?? `nueva-${n}`} className="asistente__sesion" data-sesion-del-asistente={n + 1}>
+            {f(s, n)}
+          </li>
+        ))}
+      </ol>
+    );
+  const contenidoDelPaso = (p: PasoDelAsistente): { titulo: string; cuerpo: ReactNode } => {
+    switch (p) {
+      case 1:
+        return {
+          titulo: CA.puntoDePartida,
+          cuerpo: (
+            <>
+              <p>{CA.yaHayBorrador}</p>
+              <button
+                type="button"
+                className="boton boton--quieto"
+                onClick={() => {
+                  setFalloDelDescarte(null);
+                  setDescartar(true);
+                }}
+              >
+                {COPY_DESCARTAR_LA_VERSION.accion}
+              </button>
+            </>
+          ),
+        };
+      case 2:
+        return {
+          titulo: CA.estructura,
+          cuerpo: (
+            <>
+              {conCadaSesion((s, n) => (
+                <label className="asistente__campo">
+                  <span>{CA.nombreDeLaSesion(n + 1)}</span>
+                  <input type="text" maxLength={120} value={s.label} onChange={(e) => cambiar((x) => ((lasSesiones(x)[n]!.label = e.target.value), x))} />
+                </label>
+              ))}
+              <div className="asistente__acciones">
+                <button type="button" className="boton boton--quieto" data-asistente-agregar-sesion onClick={() => cambiar((x) => (lasSesiones(x).push(sesionVacia(sesiones.length + 1)), x))}>
+                  <Icono nombre="mas" tamano={18} />
+                  {CA.agregarSesion}
+                </button>
+                <button type="button" className="boton boton--quieto" data-asistente-preset-de-estructura onClick={() => setGaleria({ tarea: 'estructura', ejercicio: null })}>
+                  <Icono nombre="plantillas" tamano={18} />
+                  {CA.presetDeEstructura}
+                </button>
+              </div>
+            </>
+          ),
+        };
+      case 3:
+        return {
+          titulo: CA.ejercicios,
+          cuerpo: conCadaSesion((s, n) => (
+            <>
+              <h4>{nombreDeLaSesion(s, n)}</h4>
+              {s.prescriptions.length === 0 ? <p className="nota">{CA.sinEjercicios}</p> : <p>{s.prescriptions.map((x) => nombres[x.exerciseVersionId] ?? 'Ejercicio').join(' · ')}</p>}
+              <button
+                type="button"
+                className="boton boton--quieto"
+                onClick={() => {
+                  elegirSesion(n);
+                  setAgregando(true);
+                }}
+              >
+                <Icono nombre="mas" tamano={18} />
+                {CA.agregarEjercicios(nombreDeLaSesion(s, n))}
+              </button>
+            </>
+          )),
+        };
+      case 4:
+        return {
+          titulo: CA.prescripcion,
+          cuerpo: conCadaSesion((s, n) => (
+            <>
+              <h4>{nombreDeLaSesion(s, n)}</h4>
+              {s.prescriptions.length === 0 ? <p className="nota">{CA.sinEjercicios}</p> : null}
+              {s.prescriptions.map((x, l) => (
+                <div key={x.prescriptionId ?? `nuevo-${l}`} className="asistente__ejercicio">
+                  <LineaDePrescripcion
+                    id={`asistente-${prefijo}-s${n}-p${l}`}
+                    nombre={nombres[x.exerciseVersionId] ?? 'Ejercicio'}
+                    prescripcion={x}
+                    onAplicar={(nueva, revisar) => {
+                      cambiar((b) => ((lasSesiones(b)[n]!.prescriptions[l] = nueva), b));
+                      setCargasARevisar((m) => ({ ...m, [`${prefijo}-s${n}-p${l}`]: revisar ?? '' }));
+                    }}
+                  />
+                </div>
+              ))}
+              {s.prescriptions.length > 0 ? (
+                <button
+                  type="button"
+                  className="boton boton--quieto"
+                  onClick={() => {
+                    elegirSesion(n);
+                    setGaleria({ tarea: 'prescripcion', ejercicio: null });
+                  }}
+                >
+                  <Icono nombre="plantillas" tamano={18} />
+                  {CA.presetDePrescripcion(nombreDeLaSesion(s, n))}
+                </button>
+              ) : null}
+            </>
+          )),
+        };
+      case 5:
+        return {
+          titulo: CA.dias,
+          cuerpo: (
+            <>
+              <p className="nota">{CA.diasAyuda}</p>
+              {conCadaSesion((s, n) => (
+                <>
+                  <h4>{nombreDeLaSesion(s, n)}</h4>
+                  {chipsDeDias(s, n)}
+                  {diasDelPresetDe(s)}
+                </>
+              ))}
+            </>
+          ),
+        };
+      case 6:
+        return {
+          titulo: CA.revisar,
+          cuerpo: (
+            <>
+              <p className="nota">{CA.revisarAyuda}</p>
+              <h4>{CE.impide}</h4>
+              {impidenEnVivo.length === 0 ? (
+                <p className="nota">{CE.nadaImpide}</p>
+              ) : (
+                <ul className="estacion__lista-del-panel">
+                  {impidenEnVivo.map((x, n) => (
+                    <li key={n}>
+                      {x.texto}{' '}
+                      {x.ir ? (
+                        <button type="button" className="boton boton--enlace" onClick={x.ir}>
+                          {CA.irEnLaEstacion}
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <h4>
+                {CE.quedaSinCompletar} <span className="nota">· {CE.noImpide}</span>
+              </h4>
+              {sinCompletarEnVivo.length === 0 ? (
+                <p className="nota">{CE.nadaSinCompletar}</p>
+              ) : (
+                <ul className="estacion__lista-del-panel">
+                  {sinCompletarEnVivo.map((x, n) => (
+                    <li key={n}>
+                      {x.texto}{' '}
+                      {x.ir ? (
+                        <button type="button" className="boton boton--enlace" onClick={x.ir}>
+                          {CA.irEnLaEstacion}
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ),
+        };
+      case 7:
+        return { titulo: CA.activar, cuerpo: <p>{CA.activarAyuda(persona ?? 'la persona')}</p> };
+    }
+  };
+  const asistente = pasoDelAsistente
+    ? (() => {
+        const { titulo, cuerpo } = contenidoDelPaso(pasoDelAsistente);
+        const proximo = pasoDelAsistente < 7 ? ((pasoDelAsistente + 1) as PasoDelAsistente) : null;
+        return (
+          <ArmazonDelAsistente
+            paso={pasoDelAsistente}
+            sugerido={sugerido}
+            titulo={titulo}
+            onElegirPaso={irAlPaso}
+            onAtras={pasoDelAsistente > 1 ? () => irAlPaso((pasoDelAsistente - 1) as PasoDelAsistente) : null}
+            onEstacion={() => irAlPaso(null)}
+            principal={
+              proximo
+                ? { texto: CA.siguiente(proximo), onClick: () => void siguiente(proximo), ocupado: avanzando || guardando ? CA.guardando : null }
+                : { texto: COPY_ANTES_DE_ACTIVAR.revisarYActivar, onClick: abrirAntesDeActivar }
+            }
+            noAvanzo={noAvanzo}
+            onReintentar={() => proximo && void siguiente(proximo)}
+          >
+            {cuerpo}
+          </ArmazonDelAsistente>
+        );
+      })()
+    : null;
+
   return (
-    <section className="seccion editor-del-plan editor-de-entrenamiento estacion" aria-labelledby="titulo-borrador" data-estacion data-panel-abierto={panelAbierto ? '' : undefined}>
+    <section className="seccion editor-del-plan editor-de-entrenamiento estacion" aria-labelledby="titulo-borrador" data-estacion data-panel-abierto={panelAbierto ? '' : undefined} data-en-el-asistente={pasoDelAsistente ? '' : undefined}>
       {/* ED-15 (DJ-6): la barra de comandos, fija, con cada acción siempre en el mismo lugar. El único botón lleno es
           «Revisar y activar…». «Guardar como preset» y lo demás van en el «⋯» (ED-12). */}
       <div className="editor-del-plan__cabecera estacion__barra" data-barra-de-comandos>
@@ -985,11 +1252,14 @@ export function EditorDePlan({
           {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
               barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
               ni de lugar mientras se escribe. */}
-          <button type="button" className="boton boton--primario" data-revisar-y-activar onClick={abrirAntesDeActivar}>
-            <Icono nombre="activar" tamano={18} />
-            {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
-          </button>
-          {ofreceDescartar(version) ? (
+          {/* En el asistente, la acción principal es la del paso (un solo principal por vista). */}
+          {pasoDelAsistente ? null : (
+            <button type="button" className="boton boton--primario" data-revisar-y-activar onClick={abrirAntesDeActivar}>
+              <Icono nombre="activar" tamano={18} />
+              {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
+            </button>
+          )}
+          {!pasoDelAsistente && ofreceDescartar(version) ? (
             <MenuDeAcciones
               id="mas-de-la-version"
               rotulo={CE.masDeLaVersion}
@@ -1005,7 +1275,9 @@ export function EditorDePlan({
                   noSePuede: antesHayQueCorregir ?? (sesion ? null : C.sinSesiones),
                 },
                 { clave: 'prescripcion-habitual', texto: `${CE.guardarComoPreset}: ${CE.lasSeriesComoPrescripcion}`, alElegir: () => undefined, noSePuede: CE.prescripcionHabitualMasAdelante },
-                { clave: 'asistente', texto: CE.rehacerConElAsistente, alElegir: () => ir({ asistente: '1' }) },
+                // ED-14: retomar no depende de nada guardado aparte: el paso que sigue se deduce del borrador.
+                { clave: 'seguir-asistente', texto: CA.seguirConElAsistente(sugerido), alElegir: () => irAlPaso(sugerido) },
+                { clave: 'asistente', texto: CE.rehacerConElAsistente, alElegir: () => irAlPaso(1) },
                 {
                   clave: 'descartar',
                   texto: COPY_DESCARTAR_LA_VERSION.accion,
@@ -1018,12 +1290,16 @@ export function EditorDePlan({
             />
           ) : null}
           {/* ED-15: a 1280 × 800, el panel se abre con «Panel» y se superpone al centro, sin achicar las celdas. */}
+          {pasoDelAsistente ? null : (
           <button type="button" className="boton boton--quieto estacion__abrir-panel" aria-expanded={panelAbierto} aria-controls="zona-panel" onClick={() => setPanelAbierto((x) => !x)} data-abrir-panel>
             <Icono nombre="menu" tamano={18} />
             {panelAbierto ? CE.cerrarPanel : CE.abrirPanel}
           </button>
+          )}
         </div>
       </div>
+      {pasoDelAsistente ? null : (
+      <>
       {/* TEST-EDP-018: los saltos entre las zonas, para el teclado. Se ven al recibir el foco. */}
       <nav className="estacion__saltos" aria-label={CE.saltos}>
         {(
@@ -1048,6 +1324,8 @@ export function EditorDePlan({
       </nav>
       {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. */}
       <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
+      </>
+      )}
       {conflicto ? (
         <Aviso tipo="error" enfocar>
           <p>{COPY_GUARDADO.conflicto}</p>
@@ -1109,6 +1387,7 @@ export function EditorDePlan({
         </Aviso>
       ) : null}
 
+      {asistente ?? (
       <div className="estacion__zonas">
         <div id="zona-estructura" className="estacion__zona estacion__estructura" data-zona="estructura" role="region" aria-label={CE.estructura} tabIndex={-1}>
           <div className="plan__niveles niveles-del-editor">
@@ -1245,26 +1524,8 @@ export function EditorDePlan({
                         </span>
                       </button>
                       {/* ED-24: los días en siete chips, que escriben la agenda de DL-137 sin abrir un diálogo. */}
-                      {id ? (
-                        <div className="estacion__chips" role="group" aria-label={CE.diasDe(nombreDeLaSesion(s, n))}>
-                          {DIAS_DE_LA_SEMANA.map((d) => (
-                            <button key={d} type="button" className="estacion__chip" aria-pressed={dias.includes(d)} aria-label={DIA_LARGO[d]} data-dia={d} onClick={() => cambiarAgenda(alternarDia(agendaVisible, id, d, hoyEn()))}>
-                              {DIA_CORTO[d]}
-                            </button>
-                          ))}
-                          <button type="button" className="estacion__chip estacion__chip--sin-dia" aria-pressed={dias.length === 0} onClick={() => agendaVisible && cambiarAgenda(sinDias(agendaVisible, id))}>
-                            {CE.sinDia}
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="nota">{CE.primeroGuardar}</p>
-                      )}
-                      {/* ED-20: los días que trajo un preset, marcados «del preset», para confirmar. */}
-                      {id && dias.length === 0 && (diasDelPreset[s.label]?.length ?? 0) > 0 ? (
-                        <button type="button" className="boton boton--enlace" data-dias-del-preset onClick={() => cambiarAgenda(ponerDias(agendaVisible, id, diasDelPreset[s.label]!, hoyEn()))}>
-                          {CE.confirmarDelPreset(diasDelPreset[s.label]!.map((d) => DIA_LARGO[d]).join(', '))}
-                        </button>
-                      ) : null}
+                      {chipsDeDias(s, n)}
+                      {diasDelPresetDe(s)}
                       {compartidos.length > 0 ? (
                         <p className="nota" data-dia-compartido>
                           {CE.compartido(compartidos)}
@@ -1514,6 +1775,7 @@ export function EditorDePlan({
           ) : null}
         </aside>
       </div>
+      )}
 
       {deshacer ? (
         <AvisoFlotante onCerrar={() => setDeshacer(null)} seQueda>

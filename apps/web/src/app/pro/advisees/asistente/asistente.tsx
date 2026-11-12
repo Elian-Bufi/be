@@ -1,0 +1,108 @@
+'use client';
+
+/**
+ * ED-14 (WP-EDITORES-PROFESIONAL, §2.1) · El armazón del asistente, común a las dos áreas: los siete pasos a la vista
+ * (el sugerido, marcado; cualquiera se elige), «Paso N de 7», el título de la decisión y, abajo, «Atrás», «Seguir en la
+ * estación» y una sola acción principal.
+ *
+ * El asistente es una vista de la página, una tarjeta por paso, y no un `<dialog>`: así el buscador de ejercicios y la
+ * galería de presets se abren como cuadros enfocados sin apilar un cuadro sobre otro (§2.3; EDT-11).
+ */
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Aviso } from '../../../../components/formulario';
+import { Icono } from '../../../../components/icono';
+import { COPY_ASISTENTE as C, PASOS_DEL_ASISTENTE, type PasoDelAsistente } from './paso-que-sigue';
+
+export function ArmazonDelAsistente({
+  paso,
+  sugerido,
+  titulo,
+  children,
+  onElegirPaso,
+  onAtras,
+  onEstacion,
+  principal,
+  noAvanzo,
+  onReintentar,
+}: {
+  paso: PasoDelAsistente;
+  /** El paso que se deduce del borrador; `null` sin borrador (paso 1). */
+  sugerido: PasoDelAsistente | null;
+  titulo: string;
+  children: ReactNode;
+  /** Elegir un paso del indicador; `null` mientras no hay borrador (los pasos 2 a 7 necesitan uno). */
+  onElegirPaso: ((n: PasoDelAsistente) => void) | null;
+  onAtras: (() => void) | null;
+  onEstacion: (() => void) | null;
+  /** La única acción principal del paso («Siguiente: …» o «Revisar y activar…»). */
+  principal: { readonly texto: string; readonly onClick: () => void; readonly ocupado?: string | null };
+  /** «Siguiente» no pudo guardar: el paso queda abierto, con lo escrito y «Reintentar». */
+  noAvanzo: boolean;
+  onReintentar: () => void;
+}) {
+  const tituloRef = useRef<HTMLHeadingElement>(null);
+  // El foco entra al título de cada paso: dice qué se decide.
+  useEffect(() => {
+    tituloRef.current?.focus();
+  }, [paso]);
+  return (
+    <section className="asistente" aria-labelledby="titulo-del-paso" data-asistente={paso}>
+      <nav aria-label={C.pasos}>
+        <ol className="asistente__pasos">
+          {PASOS_DEL_ASISTENTE.map((nombre, n) => {
+            const numero = (n + 1) as PasoDelAsistente;
+            return (
+              <li key={nombre} data-hecho={numero < paso ? '' : undefined}>
+                <button type="button" className="asistente__paso" aria-current={numero === paso ? 'step' : undefined} disabled={!onElegirPaso && numero !== paso} onClick={() => onElegirPaso?.(numero)}>
+                  <span className="asistente__numero">{numero}</span>
+                  {nombre}
+                  {numero === sugerido && numero !== paso ? <span className="nota"> · {C.sugerido}</span> : null}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+      <div className="asistente__cuadro">
+        <p className="nota asistente__cuenta">{C.pasoNDe7(paso)}</p>
+        <h3 id="titulo-del-paso" ref={tituloRef} tabIndex={-1}>
+          {titulo}
+        </h3>
+        {children}
+        {noAvanzo ? (
+          <Aviso tipo="error" enfocar>
+            <p>{C.noAvanzo}</p>
+            <button type="button" className="boton boton--secundario" onClick={onReintentar}>
+              Reintentar
+            </button>
+          </Aviso>
+        ) : null}
+        <div className="asistente__pie">
+          {onAtras ? (
+            <button type="button" className="boton boton--quieto" onClick={onAtras} data-asistente-atras>
+              <Icono nombre="volver" tamano={18} />
+              {C.atras}
+            </button>
+          ) : null}
+          {onEstacion ? (
+            <button type="button" className="boton boton--enlace" onClick={onEstacion} data-seguir-en-la-estacion>
+              {C.seguirEnLaEstacion}
+            </button>
+          ) : null}
+          {/* Un solo botón principal por cuadro (§2.3). Mientras viaja un guardado, dice por qué espera. */}
+          <button
+            type="button"
+            className="boton boton--primario asistente__siguiente"
+            data-asistente-principal
+            aria-disabled={principal.ocupado ? true : undefined}
+            onClick={() => {
+              if (!principal.ocupado) principal.onClick();
+            }}
+          >
+            {principal.ocupado ?? principal.texto}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}

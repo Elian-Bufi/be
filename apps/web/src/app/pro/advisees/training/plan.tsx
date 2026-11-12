@@ -59,6 +59,8 @@ import { PrimerPlan } from '../primer-plan';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { EditorDePlan } from './editor';
+import { pasoPedido } from '../asistente/paso-que-sigue';
+import { PuntoDePartida } from '../asistente/punto-de-partida';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
@@ -90,7 +92,7 @@ interface Datos {
 
 /** Lo que pide la dirección de la sección, y lo que se quita al elegir cada cosa: lo de más adentro vuelve a lo primero. */
 const LO_DE_ADENTRO = { bloque: { micro: null, sesion: null, ejercicios: null }, micro: { sesion: null, ejercicios: null }, sesion: { ejercicios: null } } as const;
-const TODO_LO_ELEGIDO = { version: null, bloque: null, micro: null, sesion: null, ejercicios: null } as const;
+const TODO_LO_ELEGIDO = { version: null, bloque: null, micro: null, sesion: null, ejercicios: null, asistente: null, preset: null, crear: null } as const;
 
 export function VistaDePlan() {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir, irA } = useEntrenamiento();
@@ -178,7 +180,20 @@ export function VistaDePlan() {
 
   const objetivo = r?.ok ? r.datos.objetivo : null;
 
-  async function crear(basadaEn: string | null) {
+  // ED-16: «Ajustar el plan» (la tarjeta de la ficha) llega con `crear=vigente`: crea la versión nueva desde la vigente y
+  // abre la estación, en un clic. Una sola vez por llegada; con un borrador, lo abre (no crea otro).
+  const ajusteHecho = useRef(false);
+  useEffect(() => {
+    if (ajusteHecho.current || !r?.ok || parametros.get('crear') !== 'vigente') return;
+    ajusteHecho.current = true;
+    const { versiones, activa, faltan } = r.datos;
+    if (versiones.some((v) => v.state === 'DRAFT') || !activa || !objetivo || faltan.activa) return ir({ crear: null });
+    void crear(activa.planId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `crear` cambia en cada dibujo; se llama una vez por llegada.
+  }, [r]);
+
+  /** `despues`: adónde sigue (ED-14: el asistente pasa al paso 2; ED-20: «Desde un preset» abre la galería). */
+  async function crear(basadaEn: string | null, despues: Readonly<Record<string, string | null>> = {}) {
     if (!objetivo) return;
     setCreando(true);
     setAviso(null);
@@ -194,7 +209,7 @@ export function VistaDePlan() {
     if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
     setAviso({ tipo: 'exito', texto: 'Borrador creado. La persona no lo ve hasta que lo actives.' });
-    ir(TODO_LO_ELEGIDO);
+    ir({ ...TODO_LO_ELEGIDO, ...despues });
     await cargar();
   }
 
@@ -210,7 +225,8 @@ export function VistaDePlan() {
     if (!res.ok) return setFalloDesdePlantilla(res.tipo === 'API' && res.codigo === 'TEMPLATE_ARCHIVED' ? COPY_PLANTILLAS.archivadaNoSeAplica : mensajeDeFallo(res));
     setDesdePlantilla(false);
     setAviso({ tipo: 'exito', texto: COPY_PLANTILLAS.aplicada });
-    ir(TODO_LO_ELEGIDO);
+    // ED-14: desde el asistente, sigue en el paso 2 con lo que trajo la plantilla.
+    ir({ ...TODO_LO_ELEGIDO, asistente: parametros.get('asistente') ? '2' : null });
     await cargar();
   }
 
@@ -249,6 +265,7 @@ export function VistaDePlan() {
             // Las acciones que crean una versión: solo sin borrador, con un objetivo vigente del que nacer y, si hay una versión
             // activa, habiéndola leído (la nueva nace de ella).
             const sePuedeCrear = !borrador && !!objetivo && !faltan.activa;
+            const conElAsistente = sePuedeCrear && pasoPedido(parametros.get('asistente')) !== null;
             const desdeUnaPlantilla = (
               <button type="button" className="boton boton--quieto" onClick={abrirDesdePlantilla} disabled={creando} data-empezar-desde-plantilla>
                 <Icono nombre="plantillas" tamano={18} />
@@ -318,7 +335,8 @@ export function VistaDePlan() {
                         // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
                         focoTrasDescartar.current = !porOtraPestana;
                         setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
-                        ir(TODO_LO_ELEGIDO);
+                        // ED-14: descartado desde el asistente, se vuelve a elegir el punto de partida.
+                        ir({ ...TODO_LO_ELEGIDO, asistente: parametros.get('asistente') ? '1' : null });
                         void cargar();
                       }}
                     />
@@ -326,7 +344,20 @@ export function VistaDePlan() {
                   </div>
                 ) : null}
 
-                {mostrada === 'activa' && activa ? (
+                {/* ED-14 y ED-20: el paso 1 del asistente, sin borrador y con un objetivo del que nacer (sin objetivo, sigue
+                    «Empezar el plan», el paso 0). */}
+                {conElAsistente ? (
+                  <PuntoDePartida
+                    hayVigente={!!activa}
+                    creando={creando}
+                    onElegir={(p) => {
+                      if (p === 'plantilla') return abrirDesdePlantilla();
+                      void crear(p === 'vigente' && activa ? activa.planId : null, { asistente: '2', preset: p === 'preset' ? 'estructura' : null });
+                    }}
+                  />
+                ) : null}
+
+                {mostrada === 'activa' && activa && !conElAsistente ? (
                   <PlanActivo
                     version={activa}
                     numero={numeroDeLaActiva ?? 1}
@@ -354,7 +385,7 @@ export function VistaDePlan() {
                 {/* Si no se pudo leer la versión activa o el objetivo, los pasos de «Empezar el plan» dirían que no hay: va la historia. */}
                 {mostrada === 'activa' && !activa && (faltan.activa || faltan.objetivo) && historial.length > 0 ? <HistorialDelPlan historial={historial} huella={null} /> : null}
 
-                {mostrada === 'activa' && !activa && !faltan.activa && !faltan.objetivo ? (
+                {mostrada === 'activa' && !activa && !faltan.activa && !faltan.objetivo && !conElAsistente ? (
                   <>
                     {/* Sin plan: los tres pasos en orden, en esta misma pantalla (DL-145). La acción principal va primera. */}
                     <PrimerPlanDeEntrenamiento

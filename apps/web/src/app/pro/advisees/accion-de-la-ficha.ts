@@ -74,6 +74,29 @@ export function accionDeLaFicha(dominios: Dominios, hoy: string): AccionDeLaFich
 
   // 4. Un área sin plan vigente.
   const sinPlan = legibles.find(({ resumen }) => !resumen?.activePlan);
-  if (sinPlan) return { tipo: 'empezar', area: sinPlan.area, texto: `Empezar el plan${deCual(sinPlan.area)}`, vista: 'plan', extra: '' };
+  // ED-16: en Entrenamiento, empezar es abrir el asistente (sin objetivo, empieza por ahí: el paso 0 de DL-145).
+  if (sinPlan) return { tipo: 'empezar', area: sinPlan.area, texto: `Empezar el plan${deCual(sinPlan.area)}`, vista: 'plan', extra: sinPlan.area === 'ENTRENAMIENTO' ? '&asistente=1' : '' };
   return null;
+}
+
+/**
+ * ED-16 (WP-EDITORES-PROFESIONAL) · La acción del plan en la tarjeta de Entrenamiento, según el estado del área
+ * (TEST-EDP-019):
+ * - sin plan vigente ni borrador, «Crear el plan» abre el asistente;
+ * - con plan vigente, «Ajustar el plan» crea la versión nueva desde la vigente y abre la estación, en un clic;
+ * - con borrador, «Seguir el borrador» lo abre donde quedó.
+ * Usa la cadena de TB-09; no la reemplaza: la acción principal de la ficha sigue siendo una. Nutrición se suma con su
+ * asistente y su estación (ED-30 y ED-33).
+ */
+export interface AccionDelPlan {
+  readonly tipo: 'crear' | 'ajustar' | 'seguir';
+  readonly texto: string;
+  /** Lo que se suma a `vista=plan`. */
+  readonly extra: string;
+}
+
+export function accionDelPlan(resumen: { readonly activePlan: unknown; readonly draftPlan: unknown } | null): AccionDelPlan {
+  if (resumen?.draftPlan) return { tipo: 'seguir', texto: 'Seguir el borrador', extra: '' };
+  if (resumen?.activePlan) return { tipo: 'ajustar', texto: 'Ajustar el plan', extra: '&crear=vigente' };
+  return { tipo: 'crear', texto: 'Crear el plan', extra: '&asistente=1' };
 }

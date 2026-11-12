@@ -275,6 +275,13 @@ export function Workspace() {
           ) : null}
           {/* Lo de vez en cuando, junto: pedir información (vuelve a esta vista al enviar o al salir) y escribir una nota de
               coordinación para los otros profesionales de la persona (DL-140; UC-E07). */}
+          {/* ED-16 (C11): «Pedir información», a la vista y no en «Más». */}
+          {disponible ? (
+            <button type="button" className="boton boton--quieto boton--compacto" data-pedir-informacion onClick={() => antesDeSalir(() => router.push(conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, retorno)))}>
+              <Icono nombre="solicitar" tamano={18} />
+              Pedir información
+            </button>
+          ) : null}
           {disponible ? (
             <MenuDeAcciones
               rotulo="Más acciones de la ficha"
@@ -282,7 +289,6 @@ export function Workspace() {
               conFlecha
               alineado="izquierda"
               acciones={[
-                { clave: 'pedir', texto: 'Pedir información', detalle: COPY_PISTAS.ficha.pedirInformacion, icono: <Icono nombre="solicitar" tamano={18} />, alElegir: () => antesDeSalir(() => router.push(conRetorno(`/pro/advisees/forms?id=${encodeURIComponent(id)}&vista=pedir`, retorno))) },
                 { clave: 'nota', texto: COPY_NOTAS_DE_COORDINACION.escribirCorto, detalle: COPY_PISTAS.ficha.notaDeCoordinacion, icono: <Icono nombre="texto" tamano={18} />, alElegir: () => abrirNota({}) },
               ]}
             />

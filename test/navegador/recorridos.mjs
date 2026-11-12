@@ -241,7 +241,9 @@ async function pistas({ contexto, p, d, salida }) {
   assert.ok(Math.abs(barra.marca - barra.cuenta) < 12, `la barra superior entra en un renglón a 1.024 px (${barra.marca} y ${barra.cuenta})`);
   await p.focus('.marco-de-la-ficha .menu-de-acciones__boton');
   await p.keyboard.press('Enter');
-  await elemento(p, '.marco-de-la-ficha .menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Pedir información');
+  // ED-16 (C11): «Pedir información» está a la vista; en «Más» queda la nota de coordinación.
+  await elemento(p, '.marco-de-la-ficha [data-pedir-informacion]', 'Pedir información');
+  await elemento(p, '.marco-de-la-ficha .menu-de-acciones[data-abierto] .menu-de-acciones__accion');
   await p.keyboard.press('Tab');
   assert.ok(await p.evaluate(() => document.activeElement?.closest('.menu-de-acciones__lista') !== null), 'Tab entra a las acciones del menú');
   await captura(p, salida, 'ficha-menu-mas-abierto-1024');
