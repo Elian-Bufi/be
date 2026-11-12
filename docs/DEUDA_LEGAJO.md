@@ -7428,16 +7428,26 @@ delegó: «salvo una decisión crítica, hacé lo que recomiendes»):
 - Las de la fuerza (el RIR de la serie observada, el rótulo, el interruptor de la evolución y lo que viaja con el plan),
   en DL-171.
 
+**La etapa 1, programada el 2026-11-12** (rama `wp-editores-profesional`, PR #251, en borrador; §8 del paquete):
+- en el website, ED-01 a ED-07, ED-60 a ED-63 y ED-65; en el dominio, ED-71 (Epley v1, DL-171). Cada parte va en su
+  commit, con sus oráculos (TEST-EDP-002 a 009, 047 a 050 y 052; RM-01 a RM-35 y RM-43) y sus mutaciones;
+- nada de lo que la API acepta o devuelve cambia: se integra sin ventana (R1);
+- las decisiones que tomó Claude al programarla, EDT-01 a EDT-10, están en §6.3 del paquete, a ratificar por Dirección.
+  Entre ellas, EDT-04: el detalle técnico de un guardado que falla muestra el código del error, plegado
+  (10-B01:1146-1189 dice que no se muestra). Y EDT-10: lo que también devuelve la API y dice «asesorado» cambia con
+  ED-08.
+
 **Lo que queda abierto:**
 - ~~el sí de Dirección a las partes (ED-00 a ED-76) y a las maquetas corregidas~~: dado el 2026-11-12 (arriba);
+- EDT-01 a EDT-10 (§6.3 del paquete), a ratificar por Dirección;
 - ~~DJ-3, las recomendaciones de Claude del 2026-11-11 y las ED-D que faltaban~~: decididas y ratificadas el
   2026-11-12;
 - la validación de los presets de BE (ED-D2), antes de publicarlos;
 - la ventana de redespliegue de la API, el vie 20, para lo que cambia su conducta: ED-08, ED-13, ED-64, ED-70, ED-72,
   ED-74 y API-PLN-01 a 03;
 - la candidata del 25/11 con ED-70, armada junto con UF-01 (WP-USO-FINAL) y el vidrio de la APK (WP-APP-VUELTA-2);
-- DL-169 y DL-170 todavía no están en `main`: viven en #253 y #255, en borrador. Este paquete las cita, así que se
-  integran antes que él, en el orden de arriba;
+- ~~DL-169 todavía no está en `main`~~: integrada con #253 (`549f41e3`) y traída a esta rama. DL-170 sigue en #255:
+  este paquete la cita, así que se integra antes que él;
 - **ED-50** (P2): el texto de la declaración, «−10 % de carga», choca con la guardia de Entrenamiento, que solo admite
   «% RM». Recomendación de Claude del 2026-11-11, ratificada por Dirección el 2026-11-12: cuando se programe, el texto
   es «Bajar las cargas un 10 %», y la guardia admite «% de la carga» además de «% RM» (bajar una carga es una

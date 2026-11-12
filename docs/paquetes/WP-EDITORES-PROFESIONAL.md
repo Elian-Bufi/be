@@ -1692,6 +1692,24 @@ estimación, fuera de la APK de la persona (D-V3-02, por DJ-1). El 1RM medido co
 - el descarte, solo de un borrador nunca activado (D-21, TB-47);
 - la edición simultánea responde un conflicto explícito (DL-148).
 
+### 6.3 Las de la implementación (EDT), a ratificar por Dirección
+
+Las tomó Claude al programar la etapa 1 (2026-11-12). Ninguna cambia la forma de un contrato ni lo que la API acepta o
+devuelve. Cada una dice qué se eligió y qué otra opción había, y su commit la explica.
+
+| ID | Parte | Lo elegido | La alternativa |
+|---|---|---|---|
+| EDT-01 | ED-63 | Una versión aparte para los textos del diccionario de métricas (`VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO`); la de las derivaciones, la que devuelve API-PRJ-01, no sube: sin ventana (R1) | Subir la versión única, en la ventana del vie 20 |
+| EDT-02 | ED-60 | Un cambio escrito mientras viajaba un guardado rechazado cuenta como el cambio que destraba el autoguardado: lo nuevo se intenta en la primera pausa | Esperar el próximo cambio |
+| EDT-03 | ED-61 | Una parte que se movió después del envío perdido puede quedar sin el identificador que le dio el servidor; el guardado siguiente la crea de nuevo, con el mismo contenido. Nunca se asigna un identificador a otra parte ni se repite | Seguir cada parte con una clave propia del editor, que cambiaba la forma de lo que se guarda |
+| EDT-04 | ED-03 | El detalle técnico, plegado y solo para el profesional, muestra el estado HTTP y el código del error, como pide ED-03. 10-B01:1146-1189 dice que el código no se muestra | Solo el motivo en palabras y la hora |
+| EDT-05 | ED-07 | El cuadro vive en `cuadro-antes-de-activar.tsx` y la regla, en `antes-de-activar.ts` (los oráculos la nombran así) | `antes-de-activar.tsx`, el nombre de §5.2, que dejaba ambigua la importación |
+| EDT-06 | ED-07 | «Lo que va a ver la persona»: cada sesión con sus días y lo que tiene; en Nutrición, cada día tipo con sus comidas | Un resumen por semana, que depende de TB-44 |
+| EDT-07 | ED-62 | `useClaveDeIntento` no cambia para las demás escrituras: `descartar()` sigue tirando la clave, y los editores no lo llaman con un resultado incierto. Con lo que se manda (`de`), otro pedido usa otra clave | Que `descartar()` la conserve siempre: en los diálogos del vínculo, la misma clave con otro cuerpo da 409 IDEMPOTENCY_KEY_REUSED |
+| EDT-08 | ED-02 | La guardia de la salida es un contexto en `app/pro/layout.tsx`, alrededor de la compuerta de UF-01, y los enlaces la consultan en el `onNavigate` de `<Link>` | Interceptar todos los clics del documento, que también toma enlaces que no navegan |
+| EDT-09 | ED-04 | La salida de un campo se escucha una vez, en el `onBlur` del `<form>`, y el campo se reconoce por su `id` y los de sus grupos | Un `onBlur` en cada campo, cerca de cuarenta controles |
+| EDT-10 | ED-06 | Lo que también devuelve la API y dice «asesorado» (el mensaje del 409 CLIENT_CAPABILITY_REQUIRED y la referencia neutral de quien no tiene nombre) cambia con ED-08, en la ventana del vie 20. Hasta entonces, T13 los cuenta uno por uno | Cambiarlo ya y redesplegar la API fuera de la ventana |
+
 ## 7. Medición: antes y después
 
 **El mismo script:** `flujos-de-planificacion.mjs`, con sus 73 tareas (A01-A32, B01-B27 y C01-C14, sin B28, que es un
