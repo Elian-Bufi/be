@@ -444,8 +444,11 @@ test('D-C2 · ninguna pantalla muestra la condición del original como si fuera 
   assert.ok(archivos.length >= 30, `se esperaban las pantallas de la APK y del entrenamiento del website, hay ${archivos.length}`);
   const hallazgos = archivos.filter((a) => CONDICION_DEL_ORIGINAL.test(readFileSync(a, 'utf8'))).map((a) => a.slice(RAIZ.length + 1));
   assert.deepEqual(hallazgos, []);
-  // El historial de la APK, que es donde estaba el defecto, lee lo vigente.
-  assert.match(readFileSync(join(RAIZ, 'apps/mobile/src/pantallas/historial.tsx'), 'utf8'), /etiquetaDeCondicionRegistrada\(registroVigente\(e\)\)/);
+  // El historial de la APK, que es donde estaba el defecto, lee lo vigente. Desde AV2-22 sus filas se arman en
+  // `historial-en-filas.ts`, que también pasa por la guardia.
+  const filas = readFileSync(join(RAIZ, 'apps/mobile/src/historial-en-filas.ts'), 'utf8');
+  assert.doesNotMatch(filas, CONDICION_DEL_ORIGINAL);
+  assert.match(filas, /etiquetaDeCondicionRegistrada\(registroVigente\(e\)\)/);
 });
 
 test('D-C2 · la guardia detecta la condición leída del original', () => {

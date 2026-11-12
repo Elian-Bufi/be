@@ -1550,3 +1550,45 @@ test('TEST-AV2-023 · «39» se lee «39,0 cm», y «58,8» y «58,75» quedan i
   assert.match(sinComentarios(leer('pantallas/antropometria.tsx')), /const valor = medidaConUnDecimal\(medida\.actual\.punto\.value, medida\.actual\.punto\.unit\);/);
   assert.match(sinComentarios(leer('pantallas/figura-de-la-toma.tsx')), /\$\{rotulo\}: \$\{medidaConUnDecimal\(medida\.actual\.punto\.value, medida\.actual\.punto\.unit\)\}/);
 });
+
+// ─── TEST-AV2-020 · Tu historial: el período a la vista y una acción por fila (AV2-22) ──────────
+
+const historialEnFilas = await import('../apps/mobile/src/historial-en-filas.ts');
+
+test('TEST-AV2-020 · Tu historial dice su período, y cada sesión es una fila que se toca entera, con la tilde solo en lo hecho', () => {
+  formato.fijarDiaDeReferencia('2026-11-11');
+  const sesion = (sessionCondition, extra = {}) => ({
+    executionId: 'e1',
+    date: '2026-11-09',
+    plannedSession: { label: 'Piernas A' },
+    effectiveView: { kind: 'ORIGINAL' },
+    corrections: [],
+    original: { sessionCondition, granularity: 'EXERCISE_OR_SESSION', exercises: [] },
+    ...extra,
+  });
+  const realizada = historialEnFilas.filaDeSesion(sesion('COMPLETED'));
+  assert.deepEqual([realizada.titulo, realizada.fecha, realizada.estado, realizada.hecha], ['Piernas A', '9 nov', 'Realizada', true]);
+  assert.match(realizada.paraLeer, /^Piernas A, 9 de noviembre, realizada\. .*Ver la sesión$/);
+  // Con desvío también es lo hecho, y se dice en palabras; una no realizada queda neutra, sin tilde ni detalle.
+  const conDesvio = historialEnFilas.filaDeSesion(sesion('COMPLETED_WITH_DEVIATION'));
+  assert.deepEqual([conDesvio.estado, conDesvio.hecha], ['Realizada con desvío', true]);
+  const noRealizada = historialEnFilas.filaDeSesion(sesion('NOT_COMPLETED'));
+  assert.deepEqual([noRealizada.estado, noRealizada.hecha, noRealizada.detalle], ['No realizada', false, null]);
+  assert.equal(noRealizada.paraLeer, 'Piernas A, 9 de noviembre, no realizada. Ver la sesión');
+  // Rige la corrección vigente, y «Corregida» va en el detalle, en una línea.
+  const corregida = historialEnFilas.filaDeSesion(
+    sesion('NOT_COMPLETED', { effectiveView: { kind: 'CORRECTED', correctionId: 'c1' }, corrections: [{ correctionId: 'c1', correction: { sessionCondition: 'COMPLETED', granularity: 'EXERCISE_OR_SESSION', exercises: [] } }] }),
+  );
+  assert.equal(corregida.hecha, true);
+  assert.match(corregida.detalle, / · Corregida$/);
+  const plan = historialEnFilas.filaDePlan({ professional: { displayName: 'Lucía Pérez' }, activatedAt: null, isEffective: true });
+  assert.deepEqual([plan.estado, plan.hecha, plan.paraLeer], ['Vigente', false, 'Lucía Pérez, vigente. Ver el plan']);
+  // La pantalla: el período a la vista, ningún botón por fila y la ventana de la lista con la misma constante.
+  assert.equal(historialEnFilas.TEXTOS_DEL_HISTORIAL.periodo, 'Últimos 90 días');
+  const pantalla = sinComentarios(leer('pantallas/historial.tsx'));
+  assert.match(pantalla, /<Text style=\{estilos\.periodo\}>\{TEXTOS_DEL_HISTORIAL\.periodo\}<\/Text>/);
+  assert.match(pantalla, /ultimosDiasEnZona\(DIAS_DEL_HISTORIAL, ZONA_DEL_HISTORIAL\)/);
+  const contenido = pantalla.slice(pantalla.indexOf('export function ContenidoDelHistorial'), pantalla.indexOf('function FilaQueAbreElHistorial'));
+  assert.doesNotMatch(contenido, /verLaSesion|verElPlan|<Tarjeta/, 'una sola acción por fila: la fila entera');
+  assert.equal((contenido.match(/<FilaQueAbreElHistorial /g) ?? []).length, 2, 'las sesiones y los planes, con el mismo trato');
+});
