@@ -119,6 +119,16 @@ export function superficieDeVidrio(color: Paleta, tema: Tema, nivel: NivelDeLaSu
   return { backgroundColor: nivel === 2 ? color.vidrioInterior : sinAlfa(color.vidrioInterior), borderColor: color.borde, borderWidth: 1, borderRadius: RADIO_DE_LA_FICHA };
 }
 
+/**
+ * La sombra de la barra flotante (AV2-06): `boxShadow` en lugar de `elevation`, que con el vidrio al 88 % se vería a
+ * través como una mancha, y la línea de luz por dentro si el tema la dibuja. Fija durante la sesión no se usa: no flota.
+ */
+export function sombrasDeLaBarra(color: Paleta): readonly SombraDeLaReceta[] {
+  const sombras: SombraDeLaReceta[] = [{ offsetX: 0, offsetY: 6, blurRadius: 18, spreadDistance: -2, color: color.sombraVidrio }];
+  if (seVe(color.vidrioLuz)) sombras.push({ ...LINEA_DE_LUZ, inset: true, color: color.vidrioLuz });
+  return sombras;
+}
+
 /** Lo que el botón principal suma con el vidrio: el degradé, el radio, el borde sin color y, si está habilitado, el resplandor. */
 export interface EstiloDelBotonPrincipal {
   readonly borderColor: string;

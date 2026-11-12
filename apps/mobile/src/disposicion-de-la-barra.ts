@@ -48,6 +48,18 @@ const BORDE_DE_LA_CAPSULA = 1;
  */
 export const TOLERANCIA_EN_UNA_FILA = 1;
 
+/**
+ * El alto mínimo de un destino, en dp (DL-170, AV2-06): la barra es más fina que antes (56) y sigue por encima de los 48
+ * del objetivo táctil.
+ */
+export const ALTO_DEL_DESTINO = 52;
+
+/**
+ * El token del fondo de la barra: flotante, el vidrio (`barraVidrio`); fija durante la sesión, `fondo`, opaco: nada se ve
+ * a través de ella (PV-11, DL-166).
+ */
+export const tokenDelFondoDeLaBarra = (fija: boolean): 'fondo' | 'barraVidrio' => (fija ? 'fondo' : 'barraVidrio');
+
 /** El margen de la cápsula a cada lado: en un teléfono angosto, la cápsula gana ancho antes que achicar las etiquetas. */
 export function margenDeLaBarra(anchoDePantalla: number): number {
   return anchoDePantalla < 340 ? 6 : anchoDePantalla < 400 ? 8 : 12;

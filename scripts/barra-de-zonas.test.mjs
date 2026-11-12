@@ -78,3 +78,42 @@ test('el ancho de cada etiqueta es el medido con Roboto en negrita: «Entrenamie
   assert.equal(Object.entries(em).sort((a, b) => b[1] - a[1])[0][0], 'entrenamiento');
   assert.ok(em.entrenamiento * barra.LETRA_DE_LA_BARRA > 78 && em.entrenamiento * barra.LETRA_DE_LA_BARRA < 80, 'unos 79 dp a 12 sp');
 });
+
+// ─── WP-APP-VUELTA-2 (DL-170), TEST-AV2-007: la barra con la receta de vidrio (AV2-06) ───────────
+
+const { readFileSync } = await import('node:fs');
+const BARRA = readFileSync(new URL('../apps/mobile/src/barra-de-zonas.tsx', import.meta.url), 'utf8');
+const TEMA = readFileSync(new URL('../apps/mobile/src/tema.ts', import.meta.url), 'utf8');
+/** El valor de un token en un tema de tema.ts. */
+function token(tema, clave) {
+  const inicio = TEMA.search(new RegExp(`export const ${tema}(: \\w+)? = \\{`));
+  return new RegExp(`\\n  ${clave}: '([^']+)'`).exec(TEMA.slice(inicio, TEMA.indexOf('};', inicio)))?.[1];
+}
+
+test('TEST-AV2-007 · un destino de 52 dp, por encima de los 48 del objetivo táctil', () => {
+  assert.equal(barra.ALTO_DEL_DESTINO, 52);
+  assert.ok(barra.ALTO_DEL_DESTINO >= 48);
+  assert.equal(Number(/destino: \{[^}]*minHeight: (\d+)/.exec(BARRA)?.[1]), barra.ALTO_DEL_DESTINO, 'el estilo usa ese alto');
+});
+
+test('TEST-AV2-007 · con letra ×1,3 a 360 dp, dos filas enteras, sin cortar ni achicar ninguna etiqueta', () => {
+  const d = disponer(360, 1.3);
+  assert.deepEqual(d.filas, [['inicio', 'nutricion', 'entrenamiento'], ['evolucion', 'perfil']]);
+  assert.equal(d.escalaEfectiva, 1.3);
+  assert.doesNotMatch(BARRA, /numberOfLines=\{0\}|display: 'none'/);
+});
+
+test('TEST-AV2-007 · durante la sesión la barra es opaca; flotante, de vidrio con borde y línea de luz y sin «elevation»', () => {
+  assert.equal(barra.tokenDelFondoDeLaBarra(true), 'fondo');
+  assert.equal(barra.tokenDelFondoDeLaBarra(false), 'barraVidrio');
+  for (const tema of ['AZUL_NOCHE', 'CLARO']) {
+    assert.match(token(tema, 'fondo'), /^#[0-9a-f]{6}$/i, `${tema}: el fondo de la barra fija es opaco`);
+    assert.match(token(tema, 'barraVidrio'), /^#[0-9a-f]{6}e0$/i, `${tema}: el vidrio de la barra, al 88 %`);
+  }
+  assert.match(BARRA, /const fondo = COLOR\[tokenDelFondoDeLaBarra\(fija\)\];/);
+  assert.match(BARRA, /\? \[estilos\.fija, \{ paddingBottom: insets\.bottom \+ 4, backgroundColor: fondo \}\]/);
+  const capsula = /\n  capsula: \{([\s\S]*?)\n  \},/.exec(BARRA)[1].replace(/\/\/.*$/gm, '');
+  assert.match(capsula, /borderColor: COLOR\.vidrioFilo/);
+  assert.match(capsula, /boxShadow: sombrasDeLaBarra\(COLOR\)/);
+  assert.doesNotMatch(capsula, /elevation|shadowOpacity/, 'sin la sombra de elevation');
+});

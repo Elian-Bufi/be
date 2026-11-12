@@ -2,8 +2,9 @@
  * La barra inferior de la APK (DL-117, decisión de Dirección del 2026-10-04): una cápsula flotante con los cinco destinos
  * siempre a la vista, en este orden: Inicio, Nutrición, Entrenamiento, Evolución y Perfil (desde DL-166, Perfil reemplaza a
  * «Información»).
- * - **Forma.** Una sola cápsula, con los extremos redondeados del todo, márgenes a los costados, un borde fino y un vidrio
- *   ahumado moderado y sin desenfoque (`barraVidrio` en tema.ts). La sombra la separa del contenido.
+ * - **Forma.** Una sola cápsula, con los extremos redondeados del todo, márgenes a los costados y un vidrio ahumado al
+ *   88 %, sin desenfoque (`barraVidrio` en tema.ts). Desde DL-170 lleva la receta de vidrio: el borde de luz, la línea de
+ *   luz por dentro y una sombra con `boxShadow`, sin `elevation` (que a través del vidrio se vería como una mancha).
  * - **El destino elegido** se marca con el ícono en cian, la etiqueta en negrita y cian, y una iluminación suave detrás del
  *   ícono, que es un degradé radial sin borde. No hay puntito, recuadro ni aro, y no hay botón central. El lector de
  *   pantalla dice cuál está elegido (rol `tab`, estado `selected`): el color nunca es la única señal (10-B10 §7).
@@ -37,7 +38,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
 import { DibujoDeIcono, type NombreDeIcono } from './icono';
-import { disposicionDeLaBarra } from './disposicion-de-la-barra';
+import { disposicionDeLaBarra, tokenDelFondoDeLaBarra } from './disposicion-de-la-barra';
+import { sombrasDeLaBarra } from './receta-de-vidrio';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
 import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
 import { TEXTOS_DE_LA_VUELTA } from './textos-de-la-vuelta';
@@ -94,14 +96,16 @@ export function BarraDeZonas({
   if (oculta) return null;
   // Una fila o dos, y el margen: según el ancho del teléfono y la letra de la persona.
   const { filas, margen } = disposicionDeLaBarra({ anchoDePantalla: width, escalaDeLetra: fontScale, zonas: ZONAS.map((z) => z.zona) });
+  // Flotante, el vidrio; fija durante la sesión, opaca (PV-11).
+  const fondo = COLOR[tokenDelFondoDeLaBarra(fija)];
   return (
     <View
       accessibilityRole="tablist"
       onLayout={(e) => alMedir(Math.ceil(e.nativeEvent.layout.height))}
       style={
         fija
-          ? [estilos.fija, { paddingBottom: insets.bottom + 4, backgroundColor: COLOR.fondo }]
-          : [estilos.capsula, filas.length > 1 && estilos.capsulaEnDosFilas, { left: margen, right: margen, bottom: insets.bottom + SEPARACION_DE_LA_BARRA, backgroundColor: COLOR.barraVidrio }]
+          ? [estilos.fija, { paddingBottom: insets.bottom + 4, backgroundColor: fondo }]
+          : [estilos.capsula, filas.length > 1 && estilos.capsulaEnDosFilas, { left: margen, right: margen, bottom: insets.bottom + SEPARACION_DE_LA_BARRA, backgroundColor: fondo }]
       }
     >
       {filas.map((fila) => (
@@ -203,12 +207,10 @@ const estilos = estilosPorTema((COLOR) => ({
     paddingVertical: 4,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: COLOR.barraBorde,
-    shadowColor: COLOR.sombra,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    // DL-170 (AV2-06): el borde y la línea de luz de la receta, y la sombra con `boxShadow`: con el vidrio al 88 %, la de
+    // `elevation` se vería a través como una mancha.
+    borderColor: COLOR.vidrioFilo,
+    boxShadow: sombrasDeLaBarra(COLOR),
   },
   // Fija (la sesión, PV-11): de lado a lado, pegada abajo, opaca y con una línea arriba. Sin sombra: no flota.
   fija: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 4, paddingHorizontal: 4, borderTopWidth: 1, borderColor: COLOR.borde, rowGap: 2 },
@@ -216,8 +218,9 @@ const estilos = estilosPorTema((COLOR) => ({
   capsulaEnDosFilas: { borderRadius: 28, paddingVertical: 6, rowGap: 2 },
   fila: { flexDirection: 'row' },
   // Cada destino mide lo que su texto más una parte igual del resto: con anchos iguales, «Entrenamiento» no entraba. Los
-  // 2 dp a cada lado separan dos etiquetas vecinas cuando la letra es grande y la barra va justa.
-  destino: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto', minWidth: 48, minHeight: 56, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, paddingHorizontal: 2, borderRadius: 999 },
+  // 2 dp a cada lado separan dos etiquetas vecinas cuando la letra es grande y la barra va justa. Desde DL-170, un destino
+  // de 52 dp (ALTO_DEL_DESTINO): más fino, y por encima de los 48 del objetivo táctil.
+  destino: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto', minWidth: 48, minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, paddingHorizontal: 2, borderRadius: 999 },
   presionado: { opacity: 0.7 },
   // El lugar del ícono es más angosto que el destino más chico (48): el brillo lo desborda apenas, ya transparente.
   lugarDelIcono: { width: 40, height: 28, alignItems: 'center', justifyContent: 'center' },

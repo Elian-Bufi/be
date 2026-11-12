@@ -65,7 +65,6 @@ export const AZUL_NOCHE = {
   // receta. Desde DL-170 deja ver un 12 % de lo que pasa detrás (antes, un 6 %). `scripts/contraste.test.cjs` mide las
   // etiquetas sobre la mezcla del vidrio con cualquier color del tema que pueda pasar detrás.
   barraVidrio: '#0A2B47E0',
-  barraBorde: '#1D4B72',
   barraTexto: '#A3B1C2',
   barraElegido: '#27D5F9',
   // La sombra de lo que todavía no migró (la lámina de la toma y sus tarjetas): no es texto ni borde.
@@ -144,7 +143,6 @@ export const CLARO: Paleta = {
   // La barra inferior: el blanco que deja ver un 12 % de lo que pasa detrás (antes, un 5 %). Las etiquetas van más
   // oscuras que `tenue` y que `acento`: sobre el vidrio, con un texto oscuro pasando detrás, esos dos no llegan a 4,5:1.
   barraVidrio: '#FFFFFFE0',
-  barraBorde: '#D5E0F0',
   barraTexto: '#4A5A70',
   barraElegido: '#1453C9',
   sombra: '#0A1F44',
