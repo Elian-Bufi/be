@@ -13,6 +13,7 @@ import {
   ejerciciosSinLaMarca,
   evaluarNuevaCorreccion,
   evaluarTransicionDeEjecucion,
+  origenesQueAtribuyenALaPersona,
   problemasDeCoherencia,
   problemasParaConfirmar,
   resolverVistaEfectiva,
@@ -642,8 +643,16 @@ export class EjecucionesDeEntrenamientoService {
         // Corregir exige un cambio (B10-06:879-884): una corrección igual a lo que hoy rige no rectifica nada, y dejaría
         // una «Corrección vigente» idéntica al registro que dice corregir. La marca «como el plan» no es un dato de lo que
         // se hizo (DL-161): cambiar solo la marca no corrige nada. La duración, sí.
-        if (serializacionCanonica(paraComparar(guardado)) === serializacionCanonica(paraComparar(await this.contenidoVigente(tx, x.id, terminal)))) {
+        const vigente = await this.contenidoVigente(tx, x.id, terminal);
+        if (serializacionCanonica(paraComparar(guardado)) === serializacionCanonica(paraComparar(vigente))) {
           throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'La corrección no cambia nada del registro.', { issues: [{ code: 'CORRECTION_WITHOUT_CHANGES', path: 'correction' }] });
+        }
+        // ED-70 (TEST-EDP-060): el dato corregido por el profesional no se le atribuye a la persona (05:9209-9224).
+        if (x.asesoradoId !== actor.identidadId) {
+          const atribuidos = origenesQueAtribuyenALaPersona(contenido.exercises, vigente.exercises);
+          if (atribuidos.length > 0) {
+            throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'Un valor que corrige el profesional no lo escribió la persona.', { issues: atribuidos.map((i) => ({ code: i.code, path: `correction.${i.path}` })) });
+          }
         }
         const correccion = await tx.correccionDeEjecucionDeEntrenamiento.create({
           data: {

@@ -24,6 +24,7 @@ import type {
   SesionEntrada,
   VersionDePlanDeEntrenamiento,
 } from './contratos-entrenamiento';
+import { CAMPOS_CON_ORIGEN } from './contratos-entrenamiento';
 import type { PlanConObjetivos } from './contratos-entrenamiento-por-serie';
 import { problemasDeObjetivosPorSerie } from './objetivos-por-serie';
 import type { ValidationIssue } from './contratos';
@@ -354,6 +355,9 @@ export const CodigoDeProblemaDeRegistro = {
   EXECUTION_DATA_REQUIRED: 'EXECUTION_DATA_REQUIRED',
   SET_REQUIRED: 'SET_REQUIRED',
   SET_WITHOUT_DATA: 'SET_WITHOUT_DATA',
+  // Al guardar (EXECUTION_VALUE_INVALID), ED-70: la procedencia de un valor que no está, o `PERSON` en una serie tildada.
+  FIELD_ORIGIN_WITHOUT_VALUE: 'FIELD_ORIGIN_WITHOUT_VALUE',
+  FIELD_ORIGIN_PERSON_AS_PLANNED: 'FIELD_ORIGIN_PERSON_AS_PLANNED',
   OCCURRED_AT_REQUIRED: 'OCCURRED_AT_REQUIRED',
 } as const;
 const R = CodigoDeProblemaDeRegistro;
@@ -391,6 +395,13 @@ export function problemasDeCoherencia(r: RegistroEnBorrador): { readonly granula
         // DL-161: «como el plan» son los valores del plan que la persona confirmó. Sin carga ni repeticiones no hay
         // nada confirmado, y una serie realizada sin datos no existe: se rechaza ya al guardar, no recién al confirmar.
         if (s.recordedAs === 'AS_PLANNED' && s.load === null && s.completedRepetitions === null) valores.push({ code: R.SET_WITHOUT_DATA, path: `${ruta}.sets[${j}]` });
+        // ED-70: la procedencia es de un valor que está; en una serie tildada con lo planificado, nada lo escribió la persona.
+        for (const c of CAMPOS_CON_ORIGEN) {
+          const origen = s.fieldOrigins?.[c];
+          if (origen === undefined) continue;
+          if (s[c] === null) valores.push({ code: R.FIELD_ORIGIN_WITHOUT_VALUE, path: `${ruta}.sets[${j}].fieldOrigins.${c}` });
+          else if (origen === 'PERSON' && s.recordedAs === 'AS_PLANNED') valores.push({ code: R.FIELD_ORIGIN_PERSON_AS_PLANNED, path: `${ruta}.sets[${j}].fieldOrigins.${c}` });
+        }
       });
     }
   });
