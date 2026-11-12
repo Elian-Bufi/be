@@ -15543,6 +15543,11 @@ p.cifra-del-espacio__desglose {
   max-width: 115rem;
 }
 
+/* ED-15: la ficha topa en 100 rem (1600 px); con la estación adentro, su cuerpo llega a 115 rem (1840 px) a 1920. */
+.ficha__cuerpo:has(.estacion) {
+  max-width: 115rem;
+}
+
 .estacion__barra {
   position: sticky;
   top: 0;
@@ -15603,7 +15608,8 @@ p.cifra-del-espacio__desglose {
   display: none;
 }
 
-@media (max-width: 90rem) and (min-width: 64.0625rem) {
+/* Por debajo de 1440 (90 rem, que es de las tres zonas): «90rem» con max-width incluía 1440 y le escondía el panel. */
+@media (min-width: 64.0625rem) and (width < 90rem) {
   .estacion {
     --estacion-izquierda: 12.5rem;
   }
@@ -15953,7 +15959,30 @@ p.cifra-del-espacio__desglose {
   border-radius: 10px;
 }
 
-.asistente__sesion h4 {
+.asistente__sesion h4,
+.asistente__sesion h5 {
+  margin: 0;
+}
+
+/* ED-14: con varias semanas o bloques, cada grupo con su encabezado; en el paso 4, cada ejercicio dice qué tiene ahora. */
+.asistente__grupo + .asistente__grupo {
+  margin-top: 1.25rem;
+}
+
+.asistente__grupo-titulo {
+  margin: 0 0 0.5rem;
+}
+
+.asistente__ejercicio {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.asistente__ejercicio-actual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
   margin: 0;
 }
 
