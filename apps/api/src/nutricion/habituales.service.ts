@@ -5,6 +5,7 @@ import {
   CodigoDeProblemaDePlan,
   EditarHabitualRequestSchema,
   GuardarComidaHabitualRequestSchema,
+  GuardarRepartoHabitualRequestSchema,
   itemsDeLaComida,
   MarcarHabitualRequestSchema,
   nombreNormalizadoDeHabitual,
@@ -29,6 +30,7 @@ import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
 import { opcionesDeRecetaNoAdmitidas } from './opciones-de-receta';
+import { PresetsPropios } from '../plataforma/presets-propios';
 
 type Tx = Prisma.TransactionClient;
 const RECURSO_COMIDA = 'ComidaHabitual';
@@ -41,7 +43,7 @@ const TOPE_DE_ALIMENTOS = 200;
 /** La comida se valida envuelta en un día tipo; los problemas se devuelven relativos a la comida. */
 const PREFIJO_DE_ENVOLTURA = /^dayTypes\[0\]\.meals\[0\]\.?/;
 
-type TipoDeEvento = 'AlimentoHabitualMarcado' | 'AlimentoHabitualQuitado' | 'ComidaHabitualGuardada' | 'ComidaHabitualEditada';
+type TipoDeEvento = 'AlimentoHabitualMarcado' | 'AlimentoHabitualQuitado' | 'ComidaHabitualGuardada' | 'ComidaHabitualEditada' | 'RepartoHabitualGuardado' | 'RepartoHabitualQuitado';
 
 /**
  * PF-09 bis · DL-109 — «Mis habituales» de nutrición (API-HAN-01 a 05): los alimentos que el profesional marca para
@@ -62,6 +64,27 @@ export class HabitualesNutricionalesService {
     private readonly ejecutor: EjecutorNutricional,
     private readonly catalogo: CatalogoService,
   ) {}
+
+  /**
+   * ED-13 (WP-EDITORES-PROFESIONAL; DL-167) · Los repartos habituales (API-HAN-06 a 08): proteínas, carbohidratos y
+   * grasas en gramos por día, como los escribe el profesional en el objetivo (DJ-7: sin «%»). El contrato ya valida los
+   * gramos; no hay nada del catálogo que verificar.
+   */
+  readonly repartos = new PresetsPropios({
+    operaciones: { listar: 'API-HAN-06', guardar: 'API-HAN-07', editar: 'API-HAN-08' },
+    casoDeUso: 'UC-P15',
+    recurso: 'RepartoHabitual',
+    columna: 'reparto',
+    clave: 'distribution',
+    esquemaDeGuardado: GuardarRepartoHabitualRequestSchema,
+    delegado: (tx) => tx.repartoHabitual as never,
+    ejecutor: () => this.ejecutor,
+    exigirProfesional: (tx, id) => this.catalogo.exigirProfesionalDeNutricion(tx, id),
+    contenidoVerificado: async (_tx, _profesionalId, pedido) => pedido.distribution,
+    evento: (tx, tipo, actorId, recurso, previo, posterior, procedencia, momento) =>
+      this.evento(tx, tipo === 'QUITADO' ? 'RepartoHabitualQuitado' : 'RepartoHabitualGuardado', actorId, recurso, previo, posterior, procedencia, momento),
+    nombreTomado: 'Ya tenés un reparto habitual con ese nombre.',
+  });
 
   // ─── API-HAN-01 ──────────────────────────────────────────────────────────
   listarAlimentos(actor: ActorAutenticado, ctx: ContextoDeSolicitud): Promise<{ data: ElementoDeCatalogo[] }> {

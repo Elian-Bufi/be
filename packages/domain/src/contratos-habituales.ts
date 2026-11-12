@@ -11,7 +11,16 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
-import { EjercicioDeCatalogoSchema, SesionEntradaSchema } from './contratos-entrenamiento';
+import {
+  BaseDeCargaSchema,
+  BaseDeRepeticionesSchema,
+  DescansoRecomendadoSchema,
+  EjercicioDeCatalogoSchema,
+  IntensidadEntradaSchema,
+  ParametroProfesionalSchema,
+  SeriePrescriptaEntradaSchema,
+  SesionEntradaSchema,
+} from './contratos-entrenamiento';
 import { ComidaEntradaSchema, ElementoDeCatalogoSchema } from './contratos-nutricion';
 import { PaginaSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
@@ -109,3 +118,69 @@ export const ComidaHabitualSchema = z.strictObject({
 export type ComidaHabitual = z.infer<typeof ComidaHabitualSchema>;
 export const ComidaHabitualResponseSchema = z.strictObject({ data: ComidaHabitualSchema });
 export const ListaDeComidasHabitualesResponseSchema = z.strictObject({ data: z.array(ComidaHabitualSchema), page: PaginaSchema });
+
+// ─── Prescripciones y repartos habituales (ED-13 de WP-EDITORES-PROFESIONAL; DL-167) ───────────────────────────────
+/**
+ * Una prescripción habitual («Mi fuerza 5×3 · RIR 1»): lo de una prescripción menos el ejercicio, la nota y las cargas.
+ * Las series no admiten `suggestedLoad` (el esquema es estricto: es un 400): la carga es de cada persona y de cada
+ * ejercicio (ED-D2, A05). Se valida como una prescripción de un plan: el criterio de intensidad, el RIR y los objetivos
+ * por serie (DL-122).
+ */
+export const PrescripcionHabitualContenidoSchema = z.strictObject({
+  sets: z.array(SeriePrescriptaEntradaSchema.omit({ suggestedLoad: true })).min(1).max(20),
+  intensity: IntensidadEntradaSchema.nullable(),
+  restSeconds: DescansoRecomendadoSchema.nullable().optional(),
+  loadBasis: BaseDeCargaSchema.nullable().optional(),
+  repetitionBasis: BaseDeRepeticionesSchema.nullable().optional(),
+  professionalParameters: z.array(ParametroProfesionalSchema).max(12).optional(),
+});
+export type PrescripcionHabitualContenido = z.infer<typeof PrescripcionHabitualContenidoSchema>;
+
+/**
+ * API-HAB-07: guardar o reemplazar por nombre. Un nombre en uso por otra activa sin `replaces` que la señale es 409
+ * PRESET_NAME_TAKEN, como las sesiones habituales; con `replaces` (propia y activa), la reemplaza si su versión es
+ * `expectedVersion`.
+ */
+export const GuardarPrescripcionHabitualRequestSchema = z
+  .strictObject({ name: Texto(120), prescription: PrescripcionHabitualContenidoSchema, replaces: IdOpaco.optional(), expectedVersion: TokenDeVersionSchema.optional() })
+  .refine((p) => (p.replaces === undefined) === (p.expectedVersion === undefined), { message: 'Reemplazar pide la versión esperada', path: ['expectedVersion'] });
+export type GuardarPrescripcionHabitualRequest = z.infer<typeof GuardarPrescripcionHabitualRequestSchema>;
+
+export const PrescripcionHabitualSchema = z.strictObject({
+  presetId: IdOpaco,
+  version: TokenDeVersionSchema,
+  name: z.string(),
+  prescription: PrescripcionHabitualContenidoSchema,
+  createdAt: Instante,
+  updatedAt: Instante,
+});
+export type PrescripcionHabitual = z.infer<typeof PrescripcionHabitualSchema>;
+export const PrescripcionHabitualResponseSchema = z.strictObject({ data: PrescripcionHabitualSchema });
+/** API-HAB-06: las propias y activas, la guardada más recientemente primero; hasta 200, sin paginar. */
+export const ListaDePrescripcionesHabitualesResponseSchema = z.strictObject({ data: z.array(PrescripcionHabitualSchema) });
+
+/** Gramos por día de un macro: el reparto habitual se escribe en gramos (DJ-7: sin «%» antes del 25/11). */
+const GramosPorDiaSchema = z.strictObject({ value: z.number().nonnegative().finite().max(2000), unit: z.literal('g/day') });
+
+/** Un reparto habitual de macros, en gramos por día, como el que escribe el profesional en el objetivo. */
+export const RepartoHabitualContenidoSchema = z.strictObject({ protein: GramosPorDiaSchema, carbohydrate: GramosPorDiaSchema, fat: GramosPorDiaSchema });
+export type RepartoHabitualContenido = z.infer<typeof RepartoHabitualContenidoSchema>;
+
+/** API-HAN-07: guardar o reemplazar por nombre, con las reglas de API-HAB-07. */
+export const GuardarRepartoHabitualRequestSchema = z
+  .strictObject({ name: Texto(120), distribution: RepartoHabitualContenidoSchema, replaces: IdOpaco.optional(), expectedVersion: TokenDeVersionSchema.optional() })
+  .refine((p) => (p.replaces === undefined) === (p.expectedVersion === undefined), { message: 'Reemplazar pide la versión esperada', path: ['expectedVersion'] });
+export type GuardarRepartoHabitualRequest = z.infer<typeof GuardarRepartoHabitualRequestSchema>;
+
+export const RepartoHabitualSchema = z.strictObject({
+  presetId: IdOpaco,
+  version: TokenDeVersionSchema,
+  name: z.string(),
+  distribution: RepartoHabitualContenidoSchema,
+  createdAt: Instante,
+  updatedAt: Instante,
+});
+export type RepartoHabitual = z.infer<typeof RepartoHabitualSchema>;
+export const RepartoHabitualResponseSchema = z.strictObject({ data: RepartoHabitualSchema });
+/** API-HAN-06: los propios y activos, el guardado más recientemente primero; hasta 200, sin paginar. */
+export const ListaDeRepartosHabitualesResponseSchema = z.strictObject({ data: z.array(RepartoHabitualSchema) });

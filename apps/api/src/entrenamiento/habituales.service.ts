@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import {
   CodigoDeError,
   EditarHabitualRequestSchema,
+  GuardarPrescripcionHabitualRequestSchema,
   GuardarSesionHabitualRequestSchema,
   MarcarHabitualRequestSchema,
   nombreNormalizadoDeHabitual,
@@ -31,11 +32,12 @@ import { EjecutorDeEntrenamiento, esUuid } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import { visualDeEjercicios } from './catalogo-visual';
 import { ejercicioApi, type FilaDeEjercicio } from './lectura-entrenamiento';
+import { PresetsPropios } from '../plataforma/presets-propios';
 
 type Tx = Prisma.TransactionClient;
 type SesionFila = Prisma.SesionHabitualGetPayload<Record<string, never>>;
 type EstadoDeHabitual = SesionFila['estado'];
-type TipoDeEvento = 'EjercicioHabitualMarcado' | 'EjercicioHabitualQuitado' | 'SesionHabitualGuardada' | 'SesionHabitualEditada';
+type TipoDeEvento = 'EjercicioHabitualMarcado' | 'EjercicioHabitualQuitado' | 'SesionHabitualGuardada' | 'SesionHabitualEditada' | 'PrescripcionHabitualGuardada' | 'PrescripcionHabitualQuitada';
 
 const RECURSO_EJERCICIO = 'EjercicioHabitual';
 const RECURSO_SESION = 'SesionHabitual';
@@ -44,6 +46,9 @@ const TOPE_DE_EJERCICIOS = 200;
 const token = (n: number): string => `v${n}`;
 /** Prefijo con el que la sesión se envuelve para validarla como parte de un plan; se quita de las rutas de los problemas. */
 const PREFIJO_DE_ENVOLTURA = /^blocks\[0\]\.sessions\[0\]\.?/;
+/** ED-13: la prescripción habitual se valida como la única prescripción de una sesión; el ejercicio es un marcador. */
+const PREFIJO_DE_LA_PRESCRIPCION = /^blocks\[0\]\.sessions\[0\]\.prescriptions\[0\]\.?/;
+const EJERCICIO_MARCADOR = '00000000-0000-4000-8000-000000000000';
 
 /**
  * DL-109 — «Mis habituales» de entrenamiento (API-HAB-01 a 05).
@@ -65,6 +70,35 @@ export class HabitualesDeEntrenamientoService {
     private readonly ejecutor: EjecutorDeEntrenamiento,
     private readonly catalogo: CatalogoDeEjerciciosService,
   ) {}
+
+  /**
+   * ED-13 (WP-EDITORES-PROFESIONAL; DL-167) · Las prescripciones habituales (API-HAB-06 a 08): series, intensidad,
+   * descanso y bases de una prescripción, sin el ejercicio y sin cargas, validadas como en un plan.
+   */
+  readonly prescripciones = new PresetsPropios({
+    operaciones: { listar: 'API-HAB-06', guardar: 'API-HAB-07', editar: 'API-HAB-08' },
+    casoDeUso: CASO_DE_USO,
+    recurso: 'PrescripcionHabitual',
+    columna: 'prescripcion',
+    clave: 'prescription',
+    esquemaDeGuardado: GuardarPrescripcionHabitualRequestSchema,
+    delegado: (tx) => tx.prescripcionHabitual as never,
+    ejecutor: () => this.ejecutor,
+    exigirProfesional: (tx, id) => this.exigirProfesional(tx, id),
+    contenidoVerificado: async (_tx, _profesionalId, pedido) => {
+      const envoltura: EstructuraDePlanDeEntrenamientoEntrada = { blocks: [{ label: 'Habitual', sessions: [{ label: 'Habitual', prescriptions: [{ ...pedido.prescription, exerciseVersionId: EJERCICIO_MARCADOR }] }] }] };
+      const r = normalizarEstructuraDeEntrenamiento(envoltura, randomUUID);
+      if (!r.ok) {
+        const codigo = r.tipo === 'ESTRUCTURA' ? CodigoDeError.TRAINING_PLAN_STRUCTURE_INVALID : CodigoDeError.INTENSITY_CRITERION_INVALID;
+        const issues = r.issues.map((i) => ({ ...i, path: ['prescription', i.path.replace(PREFIJO_DE_LA_PRESCRIPCION, '')].filter(Boolean).join('.') }));
+        throw new ErrorDeApi(422, codigo, 'Hay valores de la prescripción que no se pueden guardar.', { issues });
+      }
+      return pedido.prescription;
+    },
+    evento: (tx, tipo, actorId, recurso, previo, posterior, procedencia, momento) =>
+      this.evento(tx, tipo === 'QUITADO' ? 'PrescripcionHabitualQuitada' : 'PrescripcionHabitualGuardada', actorId, recurso, previo as EstadoDeHabitual | null, posterior as EstadoDeHabitual, procedencia, momento),
+    nombreTomado: 'Ya tenés una prescripción habitual con ese nombre.',
+  });
 
   // ─── API-HAB-01 ──────────────────────────────────────────────────────────
   listarEjercicios(actor: ActorAutenticado, ctx: ContextoDeSolicitud): Promise<{ data: EjercicioDeCatalogo[] }> {
