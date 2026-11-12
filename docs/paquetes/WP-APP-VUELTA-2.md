@@ -1290,3 +1290,52 @@ desplazamiento. Quedan programadas AV2-19 a AV2-26. AV2-27 (la API) y AV2-28 (un
   había un teléfono conectado. El criterio es el de AV2-16: el percentil 90 en 16,7 ms o menos a 60 Hz, y no más de 2
   puntos de cuadros lentos que la 0.23. Si no pasa, lo primero que se baja es el grano.
 - TalkBack, la letra ×1,3, el alto contraste y el dibujo de Android en las pantallas de AV2-19 a AV2-24 (AV2-29).
+
+### 10.7 La sesión de entrenamiento, con lo que encontró Dirección en la 0.25 (2026-11-12; AV2-30 a AV2-38 y AV2-T32 a AV2-T36, a ratificar)
+
+Dirección probó la 0.25 con la cuenta de Diego, en la sesión «Piernas A · 8 nov», y encontró diez cosas
+(`be-hallazgos-prueba-0-25`). Dos eran graves y entran antes de la APK final. Las demás van en la etapa B porque son de la
+misma pantalla. Las partes son de la APK y no tocan la API.
+
+| Parte | Lo que encontró Dirección | Lo que cambia | Oráculo |
+|---|---|---|---|
+| AV2-30 | **[Alta]** «Terminar serie 3» volvía a «Empezar serie 3», el conteo a cero y la serie sin tildar | «Terminar serie N» tilda la serie, como su casilla: la registra, cierra su reloj, empieza el descanso con el ajuste automático y pasa a la siguiente. Con la serie ya registrada, solo para el reloj | TEST-AV2-028 |
+| AV2-31 | **[Alta]** «Finalizar» no guardaba y el aviso salía arriba de todo | Lo que falta se dice junto al botón y el botón se deshabilita; lo que falla al tocarlo sale ahí mismo y el lector lo anuncia. «Realizada» viene elegida solo si los datos lo dicen | TEST-AV2-029 |
+| AV2-32 | Las casillas del ajuste del descanso, sin texto | La casilla con su texto (la de Nutrición) | TEST-AV2-034 |
+| AV2-33 | «Guardamos los tiempos…» volvía cada vez | Una sola vez por cuenta: la marca vive aparte y se pone al mostrarla | TEST-AV2-033 |
+| AV2-34 | Finalizar era un desplazamiento largo de párrafos, y la barra tapaba los tiempos | El cierre corto: el resultado, cómo resultó, Finalizar y Volver, y el detalle plegado | TEST-AV2-029 y 032 |
+| AV2-35 | «Hora de la sesión (HH:MM)» se pedía al final | La hora es la de «Iniciar entrenamiento», si cae en el día de la sesión; se pide solo sin ella | TEST-AV2-030 |
+| AV2-36 | El tramo de Sentadilla, 4 de 4, quedaba vacío | Los tramos ya se llenaban con lo registrado: quedaba vacío por AV2-30. Se congela el lleno y el parcial | TEST-AV2-035 |
+| AV2-37 | «Sesión 89:08:26 · Este ejercicio 87:54:16» | Abierta hace seis horas o más: «Sesión abierta desde el 8 nov · 10:15», sin el tiempo del ejercicio | TEST-AV2-031 |
+| AV2-38 | «sin recomendado» en cada fila de los tiempos | Un renglón por ejercicio; el recomendado, una vez y solo si es el mismo | TEST-AV2-032 |
+
+**La causa de AV2-30.** Viene de la 0.23 (DL-166, AV-13, commit 174b59c0), no de la etapa A: la función del reloj de la
+fila (`relojDeLaFila`) y la de la fila (`filaDeAcciones`) son idénticas en la 0.23 y en la 0.25. La acción del medio
+llamaba al reloj de la fila, que solo cierra la medición (`SET_TIMING_FINISHED`). La serie seguía sin registrar, así que
+la fila volvía a ofrecer «Empezar serie» de la misma, y el bloque mostraba un conteo nuevo. Primero se reprodujo en rojo
+(TEST-AV2-028, con la conducta de la 0.25) y después se arregló (`queHaceElMedio`, en `descanso-automatico.ts`).
+
+**AV2-33, sin reproducir.** Las pruebas del almacén conservan la marca de la explicación entre procesos. La causa más
+probable es que en el teléfono de Dirección falle la lectura de lo guardado: lo que no se puede leer se aparta, la
+sesión vuelve del servicio y la marca se pierde con ella. Si es así, vale la pena mirar por qué falla esa lectura: queda
+como hallazgo a verificar con el teléfono.
+
+**Las decisiones técnicas nuevas (a ratificar):**
+- **AV2-T32 · «Terminar serie» es el tilde.** Como en Strong y Hevy, donde el tilde de la serie la cierra y arranca el
+  descanso. La alternativa, dejar «Terminar» solo para el reloj y pedir el tilde aparte, es la conducta que confundió a
+  Dirección.
+- **AV2-T33 · El botón deshabilitado, con el motivo arriba.** Material 3 y Apple piden decir por qué un botón no se
+  puede usar. El motivo va en texto, encima del botón, y el lector lo lee antes. Lo que solo se sabe al tocar (el envío,
+  la API) sale en el aviso, en el mismo lugar.
+- **AV2-T34 · «Realizada» elegida por la regla.** Solo con todas las series del plan registradas, nada escrito sin
+  registrar y ningún ejercicio sustituido (`condicionQueCorresponde`). Se dice por qué viene elegida, y se guarda al
+  finalizar. En cualquier otro caso no hay ninguna elegida: un desvío no se infiere.
+- **AV2-T35 · El cierre es una pantalla corta, no una hoja modal.** Dirección pidió «una hoja corta». Se hizo una
+  pantalla corta en el mismo lugar, como el «Guardar entrenamiento» de Hevy. Así, las preguntas que abre (descartar lo
+  escrito, la medición abierta) no quedan encima de otra ventana, y el teclado de la hora y del motivo funciona como en
+  el resto de la app. Si Dirección la quiere modal, el contenido ya está armado para pasarlo.
+- **AV2-T36 · Seis horas.** Desde las seis horas de sesión abierta, el conteo deja de servir y se dice desde cuándo está
+  abierta. Ninguna sesión de entrenamiento dura seis horas seguidas, y una sesión que cruza la medianoche sigue con su
+  conteo.
+
+**Lo que queda:** las partes AV2-30 a AV2-38, en el teléfono, con TalkBack (AV2-29), y la causa de AV2-33.

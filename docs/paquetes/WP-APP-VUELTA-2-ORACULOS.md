@@ -727,3 +727,162 @@ AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-027 · …») 
 ENVIRONMENT          `npm test`
 EVIDENCE_EXPECTED    La CI verde; el fundido en el teléfono (AV2-29)
 ```
+
+## TEST-AV2-028 — «Terminar serie N» tilda la serie y pasa a la siguiente
+
+```text
+TEST_ID              TEST-AV2-028
+TITLE                «Terminar serie 3» tilda la serie 3, empieza su descanso y la fila pasa a «Empezar serie 4»
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P0
+SOURCES              AV2-30 · AV2-T32 · el hallazgo de Dirección en la 0.25 (2026-11-12) · DL-166 (AV-13, AVD-3)
+PRECONDITIONS        `descanso-automatico.ts` (`queHaceElMedio`, `filaDeAcciones`, `accionAlTildar`) y la corrida.
+SYNTHETIC_FIXTURE    Sentadilla con cuatro series, las dos primeras registradas, y el reloj de prueba.
+STEPS                1. Tocar «Empezar serie 3», esperar 40 s y tocar «Terminar serie 3».
+                     2. Seguir con la serie 4 hasta el final.
+                     3. Con la serie ya registrada, tocar «Terminar».
+EXPECTED             1 → la serie 3 queda tildada; los eventos son SET_TIMING_FINISHED y REST_STARTED en una acción; la
+                     fila dice «Empezar serie 4». 2 → la 4 se tilda sin descanso; no queda nada que empezar; cada serie
+                     con su tiempo medido. 3 → solo se para el reloj.
+NEGATIVE_ASSERTIONS  La fila no vuelve a «Empezar serie 3»; una serie registrada no se destilda.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-028 · …»). Reproducida en rojo con la conducta de la 0.25
+                     (solo parar el reloj) antes del arreglo.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; la sesión en el teléfono (AV2-29)
+```
+
+## TEST-AV2-029 — Finalizar: el motivo junto al botón y «Realizada» por la regla
+
+```text
+TEST_ID              TEST-AV2-029
+TITLE                Lo que falta para finalizar se dice junto al botón; «Realizada» viene elegida solo si los datos lo dicen
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P0
+SOURCES              AV2-31 · AV2-34 · AV2-T33 · AV2-T34 · el hallazgo de Dirección en la 0.25
+PRECONDITIONS        `cierre-de-la-sesion.ts` y el cierre de `pantallas/entrenamiento.tsx`.
+SYNTHETIC_FIXTURE    Resúmenes con todo registrado, con una serie sin registrar, con algo escrito y con un sustituido.
+STEPS                1. Pedir el motivo con cada falta.
+                     2. Pedir la condición que corresponde a cada resumen.
+                     3. Leer el orden del cierre.
+EXPECTED             1 → la medición abierta, lo escrito, la condición y la hora, en ese orden; sin falta, ninguno.
+                     2 → «Realizada» solo con todo el plan registrado y nada escrito ni sustituido. 3 → el aviso va
+                     después del estado del envío y antes de Finalizar; Finalizar se deshabilita con el motivo.
+NEGATIVE_ASSERTIONS  El aviso no sale arriba de todo; un desvío no se infiere.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-029 · …»). Mutaciones: sin el motivo de la condición y
+                     sin la regla del sustituido → la prueba falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde
+```
+
+## TEST-AV2-030 — La hora de la sesión, tomada al empezar
+
+```text
+TEST_ID              TEST-AV2-030
+TITLE                La hora es la de «Iniciar entrenamiento» si cae en el día de la sesión; si no, se pide
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-35 · DL-137 D-5
+PRECONDITIONS        `horaTomadaAlEmpezar` e `inicioDeLaCorrida`.
+SYNTHETIC_FIXTURE    Un inicio del 8/11 a las 10:15 y otro a las 22:30 de Buenos Aires.
+STEPS                1. Pedir la hora con la sesión del 8, del 7 y sin corrida.
+EXPECTED             El inicio, si su día en la zona es el de la sesión; si no, nada (se pide como antes).
+NEGATIVE_ASSERTIONS  Un inicio de otro día no se usa como hora.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-030 · …»). Mutación: sin mirar el día → falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde
+```
+
+## TEST-AV2-031 — Una sesión abierta hace horas, con su fecha
+
+```text
+TEST_ID              TEST-AV2-031
+TITLE                Con seis horas o más, «Sesión abierta desde el 8 nov · 10:15»; antes, el conteo
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-37 · AV2-T36
+PRECONDITIONS        `tiempoDeLaSesionAbierta`.
+SYNTHETIC_FIXTURE    89 horas, el umbral menos 1 ms y el umbral.
+STEPS                1. Pedir cómo se muestra cada uno.
+EXPECTED             89 h y el umbral → desde cuándo, con fecha y hora; antes del umbral → el conteo. El tiempo del
+                     ejercicio no se muestra con la fecha.
+NEGATIVE_ASSERTIONS  Nunca «89:08:26».
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-031 · …»). Mutación: el umbral con «<=» → falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde
+```
+
+## TEST-AV2-032 — Los tiempos de la sesión, resumidos
+
+```text
+TEST_ID              TEST-AV2-032
+TITLE                Un renglón por ejercicio y el recomendado una vez, sin «sin recomendado»
+LEVEL                APK (lógica pura)
+PRIORITY             P2
+SOURCES              AV2-38 · AV2-34
+PRECONDITIONS        `tiemposResumidos`.
+SYNTHETIC_FIXTURE    Descansos medidos, estimados e incompletos, con recomendado igual, distinto y sin recomendado.
+STEPS                1. Resumir los tiempos de tres ejercicios.
+EXPECTED             Un renglón por ejercicio con algo medido; el recomendado una vez solo si es el mismo; lo estimado y
+                     lo incompleto, dichos.
+NEGATIVE_ASSERTIONS  «sin recomendado» no aparece; un ejercicio sin tiempos no tiene renglón.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-032 · …»). Mutación: sin la igualdad de los
+                     recomendados → falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde
+```
+
+## TEST-AV2-033 — La explicación de los tiempos, una sola vez
+
+```text
+TEST_ID              TEST-AV2-033
+TITLE                Una sola vez por cuenta: la marca vive aparte y se pone al mostrarla
+LEVEL                APK (lógica pura y estructura)
+PRIORITY             P1
+SOURCES              AV2-33 · el hallazgo de Dirección en la 0.25
+PRECONDITIONS        `explicacion-de-los-tiempos.ts` y la sesión.
+SYNTHETIC_FIXTURE    Un almacenamiento en memoria, uno que falla y dos cuentas.
+STEPS                1. Leer, decidir, marcar y volver a leer en un proceso nuevo.
+                     2. Decidir con las dos marcas, con una y sin leer.
+EXPECTED             1 → la segunda vez no se muestra, aunque se hayan perdido las sesiones guardadas. 2 → alcanza con
+                     una marca; sin leer no se decide. Con el almacenamiento roto, vale mientras la app siga abierta.
+NEGATIVE_ASSERTIONS  «Entendido» no es lo único que marca; otra cuenta no hereda la marca.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-033 · …»). Mutación: una sola marca → falla.
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde; en el teléfono, abrir la sesión dos veces (AV2-29)
+```
+
+## TEST-AV2-034 — Los ajustes del descanso, con su texto
+
+```text
+TEST_ID              TEST-AV2-034
+TITLE                Las dos casillas de «Cómo funciona el descanso» con su texto a la vista
+LEVEL                APK (estructura)
+PRIORITY             P2
+SOURCES              AV2-32 · DL-166 (AV-11)
+PRECONDITIONS        `HojaDelDescanso` en `pantallas/sesion-enfocada.tsx`.
+SYNTHETIC_FIXTURE    —
+STEPS                1. Leer la hoja.
+EXPECTED             Vibrar y «También con el teléfono bloqueado» usan la casilla con texto.
+NEGATIVE_ASSERTIONS  La casilla sola no está en la hoja.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-034 · …»).
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde
+```
+
+## TEST-AV2-035 — Los tramos de la franja
+
+```text
+TEST_ID              TEST-AV2-035
+TITLE                Cada tramo se llena con las series registradas de su ejercicio; lo que falta queda neutro
+LEVEL                APK (lógica pura)
+PRIORITY             P2
+SOURCES              AV2-36 · PA-02
+PRECONDITIONS        `tramosDelRecorrido` y `cuentaDelRecorrido`.
+SYNTHETIC_FIXTURE    Sentadilla 4 de 4, un ejercicio 2 de 4, otro 0 de 3, y una serie de más.
+STEPS                1. Pedir los tramos y la cuenta.
+EXPECTED             Lleno, a medias y vacío; la serie de más no pasa del lleno; 6 de 11.
+NEGATIVE_ASSERTIONS  Sin porcentajes ni color de juicio.
+AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-035 · …»).
+ENVIRONMENT          `npm test`
+EVIDENCE_EXPECTED    La CI verde
+```
