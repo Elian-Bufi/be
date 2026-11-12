@@ -94,7 +94,11 @@ export const SerieObservadaGuardadaSchema = z.strictObject({
 export type SerieObservadaGuardada = z.infer<typeof SerieObservadaGuardadaSchema>;
 export const SerieObservadaResponseSchema = z.strictObject({ data: SerieObservadaGuardadaSchema });
 
-/** API-FZA-02: las vigentes de la persona (las que nadie sucedió ni anuló), de la más reciente a la más antigua. */
+/**
+ * API-FZA-02: las vigentes de la persona (las que nadie sucedió ni anuló), de la más reciente a la más antigua. El tope de
+ * 200 es definitivo (EDT-38): `hasMore` dice que hay más y `nextCursor` es siempre `null`; la evolución (API-PRJ-01) las
+ * suma todas.
+ */
 export const ListaDeSeriesObservadasResponseSchema = z.strictObject({ data: z.array(SerieObservadaGuardadaSchema), page: PaginaSchema });
 
 /** API-FZA-03: la corrección devuelve la observación nueva; la anulación, a cuál anuló y cuándo. */

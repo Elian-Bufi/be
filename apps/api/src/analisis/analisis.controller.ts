@@ -250,7 +250,7 @@ export class AnalisisController {
         // (ED-72). Nunca la clave de las marcas, nunca desde la prescripción y nunca para la persona (el PdpGuard).
         const d = await leer(async (tx) => {
           const ejecuciones = await ejecucionesDelPeriodo(tx, this.ejecuciones, profesionalId, titularId, desde, hasta);
-          const observaciones = await vigentesDe(tx, profesionalId, titularId, null, 1000, { desde, hasta });
+          const observaciones = await vigentesDe(tx, profesionalId, titularId, null, null, { desde, hasta });
           return {
             ahora: await momentoDeLaBase(tx),
             ejecuciones,

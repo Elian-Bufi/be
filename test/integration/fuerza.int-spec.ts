@@ -11,6 +11,7 @@ import type { INestApplication } from '@nestjs/common';
 import { ListaDeSeriesObservadasResponseSchema, ProyeccionResponseSchema, SerieObservadaResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { appDePrueba, conSesion } from './soporte-api';
+import { prepararProfesional, vinculoCompleto } from './soporte-vinculo';
 import { CATALOGO_DE_EJERCICIOS, circuitoDeEntrenamiento } from './soporte-entrenamiento';
 
 let app: INestApplication;
@@ -110,6 +111,36 @@ describe('ED-72 · la serie observada por el profesional (API-FZA-01 a 03)', () 
     expect(await prisma.serieObservada.count({ where: { asesoradoId: x.c.ase.id } })).toBe(1);
   });
 
+  it('TEST-EDP-061 · cada operación FZA deja su fila de auditoría: el éxito y el rechazo', async () => {
+    const x = await circuito();
+    const r = (await x.registrar(serie()).expect(201)).body.data;
+    await x.listar().expect(200);
+    await x.pro.post(`/api/v1/training/observed-sets/${r.observationId}/successors`).send({ action: 'CORRECT', expectedVersion: 'v1', reason: 'Era 87,5.', observation: { ...serie({ load: { value: 87.5, unit: 'kg' } }), exerciseId: undefined } }).expect(201);
+    const otro = await circuito();
+    expect((await otro.pro.post(`/api/v1/advisees/${x.c.ase.id}/training/observed-sets`).send(serie())).status).toBe(404);
+    expect((await otro.pro.get(`/api/v1/advisees/${x.c.ase.id}/training/observed-sets`)).status).toBe(404);
+    expect((await otro.pro.post(`/api/v1/training/observed-sets/${r.observationId}/successors`).send({ action: 'VOID', expectedVersion: 'v2', reason: 'Ajena' })).status).toBe(404);
+    const filas = async (actorId: string) =>
+      (await prisma.registroDeAuditoria.findMany({ where: { actorId, operacion: { startsWith: 'API-FZA-' } }, select: { operacion: true, resultado: true } }))
+        .map((f) => `${f.operacion} ${f.resultado}`)
+        .sort();
+    expect(await filas(x.c.pro.id)).toEqual(['API-FZA-01 EXITO', 'API-FZA-02 EXITO', 'API-FZA-03 EXITO']);
+    expect(await filas(otro.c.pro.id)).toEqual(['API-FZA-01 RECHAZO', 'API-FZA-02 RECHAZO', 'API-FZA-03 RECHAZO']);
+  });
+
+  it('RM-42 · un profesional de Nutrición con la misma persona no ve las observaciones ni la estimación', async () => {
+    const x = await circuito();
+    await x.registrar(serie()).expect(201);
+    const nut = await prepararProfesional(app, `fza-nut-${++contador}`, ['NUTRICION']);
+    await vinculoCompleto(app, nut, x.c.ase, 'NUTRICION');
+    const cliente = conSesion(app, nut.token);
+    const lista = await cliente.get(`/api/v1/advisees/${x.c.ase.id}/training/observed-sets`);
+    expect(lista.status).toBeGreaterThanOrEqual(400);
+    expect(JSON.stringify(lista.body)).not.toContain('observationId');
+    const p = ProyeccionResponseSchema.parse((await cliente.get(`/api/v1/advisees/${x.c.ase.id}/projections/TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE`).expect(200)).body).data;
+    expect([p.dataState, p.result]).toEqual(['NOT_AVAILABLE_TO_VIEW', null]);
+  });
+
   it('RM-41 y RM-42 · lo ajeno es 404, y la persona no recibe ni las observaciones ni la estimación', async () => {
     const x = await circuito();
     const r = (await x.registrar(serie()).expect(201)).body.data;
@@ -141,5 +172,14 @@ describe('ED-74 · la estimación por ejercicio en API-PRJ-01 (TRAINING_STRENGTH
     expect((await x.pro.get(`/api/v1/advisees/${x.c.ase.id}/projections/TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE?metric=LOAD`)).status).toBe(400);
     const marcas = ProyeccionResponseSchema.parse((await x.pro.get(`/api/v1/advisees/${x.c.ase.id}/projections/TRAINING_PERSONAL_RECORDS`).expect(200)).body).data;
     expect([marcas.dataState, marcas.reason, marcas.result]).toEqual(['INSUFFICIENT_INFORMATION', 'SPECIFICATION_PENDING', null]);
+  });
+  it('suma todas las observaciones vigentes del período, sin recortar: más de mil', async () => {
+    const x = await circuito();
+    const o = (await x.registrar(serie()).expect(201)).body.data;
+    const fila = await prisma.serieObservada.findUniqueOrThrow({ where: { id: o.observationId } });
+    const { id: _id, momentoDeRegistro: _m, ...resto } = fila;
+    await prisma.serieObservada.createMany({ data: Array.from({ length: 1000 }, () => ({ ...resto, estimacion: resto.estimacion as object, procedencia: resto.procedencia as object })) });
+    const r = ProyeccionResponseSchema.parse((await x.pro.get(`/api/v1/advisees/${x.c.ase.id}/projections/TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE?exerciseId=${PRESS}`).expect(200)).body).data.result;
+    expect(r?.kind === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE' && [r.exercises[0]!.observations, r.estimate!.points.length]).toEqual([1001, 1001]);
   });
 });

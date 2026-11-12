@@ -229,9 +229,10 @@ function valores(s: SerieObservadaApiEntrada, estimacion: EstimacionDeFuerzaApi)
 
 /**
  * Las observaciones vigentes de este profesional con la persona: las que nadie sucedió (ni corrigió ni anuló), de la
- * más reciente a la más antigua. ED-74 las suma a la evolución.
+ * más reciente a la más antigua. ED-74 las suma a la evolución: sin tope (`null`), porque el período ya está acotado y
+ * un recorte dejaría la evolución incompleta sin decirlo.
  */
-export function vigentesDe(tx: Tx, profesionalId: string, asesoradoId: string, ejercicioId: string | null, tope: number, periodo?: { desde: string; hasta: string }): Promise<FilaDeSerieObservada[]> {
+export function vigentesDe(tx: Tx, profesionalId: string, asesoradoId: string, ejercicioId: string | null, tope: number | null, periodo?: { desde: string; hasta: string }): Promise<FilaDeSerieObservada[]> {
   return tx.serieObservada.findMany({
     where: {
       profesionalId,
@@ -242,7 +243,7 @@ export function vigentesDe(tx: Tx, profesionalId: string, asesoradoId: string, e
       ...(periodo ? { fechaLocal: { gte: comoFecha(periodo.desde), lte: comoFecha(periodo.hasta) } } : {}),
     },
     orderBy: [{ fechaLocal: 'desc' }, { momentoDeRegistro: 'desc' }, { id: 'desc' }],
-    take: tope,
+    ...(tope === null ? {} : { take: tope }),
   });
 }
 
