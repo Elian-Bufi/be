@@ -19,10 +19,12 @@ import type { ResumenDelEjercicio } from './series-de-la-sesion';
 export type CondicionDeLaSesion = 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED';
 
 export const TEXTOS_DEL_CIERRE = {
-  titulo: 'Terminar el entrenamiento',
+  // «Finalizar», como el botón: «Terminar» es el verbo de la serie.
+  titulo: 'Finalizar el entrenamiento',
   comoResulto: '¿Cómo resultó?',
   realizada: 'Realizada',
-  conDesvio: 'Con desvío',
+  // La etiqueta del legajo (B10 §33), entera.
+  conDesvio: 'Realizada con desvío',
   porQueRealizada: 'Viene elegida porque registraste todas las series del plan. Podés cambiarla.',
   volverALaSesion: 'Volver a la sesión',
   detalle: 'Ver el detalle',
@@ -35,7 +37,7 @@ export const TEXTOS_DEL_CIERRE = {
   abiertaDesde: (cuando: string) => `Sesión abierta desde el ${cuando}`,
   sinPausas: (duracion: string) => `Sin pausas: ${duracion}`,
   descansos: (lista: string) => `Descansos: ${lista}`,
-  recomendado: (duracion: string) => `${duracion} recomendado`,
+  recomendado: (duracion: string) => `(recomendado: ${duracion})`,
   seriesMedidas: (lista: string) => `Series medidas: ${lista}`,
 } as const;
 
@@ -70,6 +72,29 @@ export function lineaDelResultado(resumen: readonly Pick<ResumenDelEjercicio, 'p
   const planificadas = resumen.reduce((n, r) => n + r.planificadas, 0);
   const registradas = resumen.reduce((n, r) => n + r.planificadas - r.sinRegistrar.length, 0);
   return TEXTOS_DEL_CIERRE.seriesRegistradas(registradas, planificadas);
+}
+
+/**
+ * El primer renglón del cierre (AV2-37, revisión): el resultado y, con la sesión de hoy, cuánto lleva sin pausas. Una
+ * sesión abierta otro día no cuenta «Sin pausas: 89:08:26»: el resultado va solo y, debajo, desde cuándo está abierta.
+ */
+export function renglonesDelResultado(
+  resumen: readonly Pick<ResumenDelEjercicio, 'planificadas' | 'sinRegistrar'>[],
+  tiempo: { readonly tipo: 'conteo'; readonly sinPausasMs: number | null } | { readonly tipo: 'desde'; readonly texto: string },
+): { readonly resultado: string; readonly abierta: string | null } {
+  const linea = lineaDelResultado(resumen);
+  if (tiempo.tipo === 'desde') return { resultado: linea, abierta: tiempo.texto };
+  const sinPausas = tiempo.sinPausasMs === null ? null : duracionParaMostrar(tiempo.sinPausasMs);
+  return { resultado: sinPausas ? `${linea} · ${TEXTOS_DEL_CIERRE.sinPausas(sinPausas)}` : linea, abierta: null };
+}
+
+/**
+ * El motivo que viaja con la condición (revisión de la etapa B): con «Realizada», ninguno, aunque haya quedado algo
+ * escrito al pasar por «Realizada con desvío»; con el desvío o la no realizada, lo escrito, opcional (REG-06-131).
+ */
+export function motivoQueViaja(condicion: CondicionDeLaSesion | null, escrito: string): string | null {
+  if (condicion === 'COMPLETED') return null;
+  return escrito.trim() || null;
 }
 
 // ─── La hora de la sesión (AV2-35) ──────────────────────────────────────────────────────────────
@@ -115,7 +140,7 @@ function duracionCorta(d: DuracionApi): string {
 export interface RenglonDeTiempos {
   readonly prescriptionId: string;
   readonly nombre: string;
-  /** «Descansos: 01:32 · 01:45 · 01:30 recomendado», o `null` sin descansos. */
+  /** «Descansos: 01:32 · 01:45 (recomendado: 01:30)», o `null` sin descansos. */
   readonly descansos: string | null;
   /** «Series medidas: 00:40 · 00:38», o `null` sin series cronometradas. */
   readonly series: string | null;
@@ -139,7 +164,8 @@ export function tiemposResumidos(calculo: Pick<CalculoDeTiempos, 'rests' | 'time
       {
         prescriptionId: x.prescriptionId,
         nombre: x.nombre,
-        descansos: descansos.length === 0 ? null : TEXTOS_DEL_CIERRE.descansos(uno ? `${listaDeDescansos} · ${TEXTOS_DEL_CIERRE.recomendado(uno)}` : listaDeDescansos),
+        // El recomendado entre paréntesis, no con el mismo separador: no se lee como un descanso más.
+        descansos: descansos.length === 0 ? null : TEXTOS_DEL_CIERRE.descansos(uno ? `${listaDeDescansos} ${TEXTOS_DEL_CIERRE.recomendado(uno)}` : listaDeDescansos),
         series: series.length === 0 ? null : TEXTOS_DEL_CIERRE.seriesMedidas(series.map((s) => duracionCorta(s.duration)).join(' · ')),
       },
     ];

@@ -1870,13 +1870,65 @@ test('TEST-AV2-032 · los tiempos de la sesión, resumidos: un renglón por ejer
   ];
   const renglones = cierre.tiemposResumidos({ rests: [d('pA', 1, 92_000, 90), d('pA', 2, 105_000, 90, 'ESTIMATED'), d('pB', 1, 60_000, null), d('pB', 2, null, null, 'INCOMPLETE')], timedSets: [x('pA', 3, 40_000)] }, orden);
   assert.deepEqual(renglones, [
-    { prescriptionId: 'pA', nombre: 'Sentadilla', descansos: 'Descansos: 01:32 · 01:45 estimado · 01:30 recomendado', series: 'Series medidas: 00:40' },
+    { prescriptionId: 'pA', nombre: 'Sentadilla', descansos: 'Descansos: 01:32 · 01:45 estimado (recomendado: 01:30)', series: 'Series medidas: 00:40' },
     { prescriptionId: 'pB', nombre: 'Prensa', descansos: 'Descansos: 01:00 · incompleto', series: null },
   ]);
   assert.doesNotMatch(JSON.stringify(renglones), /sin recomendado/);
   // Recomendados distintos en un mismo ejercicio: no se elige uno.
   assert.equal(cierre.tiemposResumidos({ rests: [d('pC', 1, 90_000, 120), d('pC', 2, 95_000, 90)], timedSets: [] }, orden)[0].descansos, 'Descansos: 01:30 · 01:35');
   assert.deepEqual(cierre.tiemposResumidos(null, orden), []);
+});
+
+// ─── La revisión de la etapa B: el cierre y el motivo ──────────────────────────────────────────────
+
+test('TEST-AV2-031 · en el cierre, una sesión abierta otro día no cuenta «Sin pausas: 89:08:26»: dice desde cuándo está abierta', () => {
+  const resumen = [ejercicioDelResumen(4), { ...ejercicioDelResumen(4), prescriptionId: 'pB' }];
+  const desde = cierre.tiempoDeLaSesionAbierta(89 * 3600_000, '2026-11-08T13:15:00.000Z', ZONA_DE_PRUEBA);
+  assert.deepEqual(cierre.renglonesDelResultado(resumen, desde), { resultado: '8 de 8 series del plan registradas', abierta: 'Sesión abierta desde el 8 nov · 10:15' });
+  assert.deepEqual(cierre.renglonesDelResultado(resumen, { tipo: 'conteo', sinPausasMs: 52 * 60_000 + 8_000 }), { resultado: '8 de 8 series del plan registradas · Sin pausas: 52:08', abierta: null });
+  assert.deepEqual(cierre.renglonesDelResultado(resumen, { tipo: 'conteo', sinPausasMs: null }), { resultado: '8 de 8 series del plan registradas', abierta: null });
+  // En la pantalla: el cierre usa el mismo `abiertaDesde` que la franja, no el conteo en vivo.
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  const hoja = PANTALLA.slice(PANTALLA.indexOf('if (finalizando) {'), PANTALLA.indexOf('const bases = basesDeLaPrescripcion(p);'));
+  assert.match(hoja, /renglonesDelResultado\(resumen, abiertaDesde\.tipo === 'desde' \? abiertaDesde :/);
+  assert.doesNotMatch(hoja, /C\.sinPausas\(/, 'el «Sin pausas» lo arma solo la función');
+});
+
+test('TEST-AV2-036 · el motivo: opcional con la no realizada (REG-06-131) y con el desvío; con «Realizada» no viaja', () => {
+  assert.equal(cierre.motivoQueViaja('COMPLETED', 'me dolía la rodilla'), null, 'lo escrito en el desvío no viaja escondido');
+  assert.equal(cierre.motivoQueViaja('COMPLETED_WITH_DEVIATION', '  me dolía la rodilla '), 'me dolía la rodilla');
+  assert.equal(cierre.motivoQueViaja('NOT_COMPLETED', 'viaje'), 'viaje');
+  assert.equal(cierre.motivoQueViaja('NOT_COMPLETED', '   '), null);
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  const hoja = PANTALLA.slice(PANTALLA.indexOf('if (finalizando) {'), PANTALLA.indexOf('const bases = basesDeLaPrescripcion(p);'));
+  const noPudiste = hoja.slice(hoja.indexOf('titulo="¿No pudiste entrenar?"'));
+  // Con la no realizada (o antes de elegirla), el campo está en su sección, antes del botón.
+  assert.match(noPudiste, /\{condicion !== 'COMPLETED_WITH_DEVIATION' \? campoDelMotivo : null\}\s*<Boton texto=\{COPY_ENTRENAMIENTO\.noPudeRealizarla\}/);
+  assert.match(hoja, /\{condicion === 'COMPLETED_WITH_DEVIATION' \? campoDelMotivo : null\}/);
+  assert.match(hoja, /const campoDelMotivo = <Campo etiqueta=\{COPY_ENTRENAMIENTO\.motivoOpcional\}/);
+  // Lo que viaja: siempre por `motivoQueViaja`, en el segmento, en «No pude» y al finalizar.
+  assert.match(hoja, /sessionCondition: c, reason: motivoQueViaja\(c, motivo\)/);
+  assert.match(PANTALLA, /sessionCondition: 'NOT_COMPLETED'[^\n]*reason: motivoQueViaja\('NOT_COMPLETED', motivo\)/);
+  assert.match(PANTALLA, /const elMotivo = motivoQueViaja\(condicion, motivo\);/);
+  assert.doesNotMatch(PANTALLA, /reason: motivo\.trim\(\)/);
+});
+
+test('TEST-AV2-036 · mientras se guarda, los segmentos de la condición no se tocan; y el cierre no arrastra el aviso de la sesión', () => {
+  const ui = sinComentarios(leer('ui.tsx'));
+  const segmentos = ui.slice(ui.indexOf('export function Segmentos'), ui.indexOf('export function Pestanas'));
+  assert.match(segmentos, /accessibilityState=\{\{ checked: elegida, disabled: deshabilitado \}\}/);
+  assert.match(segmentos, /disabled=\{deshabilitado\}/);
+  const PANTALLA = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  const hoja = PANTALLA.slice(PANTALLA.indexOf('if (finalizando) {'), PANTALLA.indexOf('const bases = basesDeLaPrescripcion(p);'));
+  assert.match(hoja, /alElegir=\{elegir\}\s*deshabilitado=\{ocupado\}/);
+  assert.match(PANTALLA, /setAviso\(null\);\s*setFinalizando\(true\);/, 'al abrir el cierre');
+  assert.match(PANTALLA, /setAviso\(null\);\s*setFinalizando\(false\);/, 'al volver a la sesión');
+});
+
+test('TEST-AV2-036 · los textos del cierre: un solo verbo, la etiqueta del legajo y el recomendado aparte', () => {
+  assert.equal(cierre.TEXTOS_DEL_CIERRE.titulo, 'Finalizar el entrenamiento');
+  assert.equal(cierre.TEXTOS_DEL_CIERRE.conDesvio, 'Realizada con desvío', 'B10 §33');
+  assert.equal(cierre.TEXTOS_DEL_CIERRE.recomendado('01:30'), '(recomendado: 01:30)');
 });
 
 test('TEST-AV2-033 · la explicación de los tiempos, una sola vez por cuenta: la marca vive aparte y se pone al mostrarla', async () => {

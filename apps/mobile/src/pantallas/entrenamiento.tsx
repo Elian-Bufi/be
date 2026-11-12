@@ -77,7 +77,7 @@ import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { enCursoDeLaApi, enCursoEnElTelefono, marchaDeLaSesionEnCurso, otraSesionEnCurso, sePuedeIniciar, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
-import { condicionQueCorresponde, horaTomadaAlEmpezar, inicioDeLaCorrida, lineaDelResultado, motivoParaNoFinalizar, TEXTOS_DEL_CIERRE, tiempoDeLaSesionAbierta, tiemposResumidos } from '../cierre-de-la-sesion';
+import { condicionQueCorresponde, horaTomadaAlEmpezar, inicioDeLaCorrida, motivoParaNoFinalizar, motivoQueViaja, renglonesDelResultado, TEXTOS_DEL_CIERRE, tiempoDeLaSesionAbierta, tiemposResumidos } from '../cierre-de-la-sesion';
 import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
   bandaDeLaSerie,
@@ -1420,7 +1420,7 @@ export function PantallaDeSesion({
     const series = borrador.exercises.reduce((n, e) => n + (e.sets?.length ?? 0), 0) + (local?.series.length ?? 0);
     if (series > 0 && !(await preguntar(COPY_ENTRENAMIENTO.noPudeRealizarla, `Se descartan ${cantidadDeSeries(series)} de esta sesión.`, 'Descartar y seguir'))) return;
     entrenamientoLocal.descartarSeries(draftId);
-    await guardarEnElBorrador({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivo.trim() || null });
+    await guardarEnElBorrador({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivoQueViaja('NOT_COMPLETED', motivo) });
   }
 
   /** Lo escrito sin registrar de toda la sesión, en el teléfono ahora (PA-01). */
@@ -1483,8 +1483,10 @@ export function PantallaDeSesion({
       const condicion = s.borrador.sessionCondition ?? (s.sesion ? condicionQueCorresponde(resumenDelRegistro(s.sesion, s.borrador, s.series, s.quitadas, s.escritas)) : null);
       if (!condicion) return setAviso({ tipo: 'error', texto: TEXTOS_DEL_CIERRE.faltaLaCondicion });
       const cambiaLaCondicion = condicion !== s.borrador.sessionCondition;
-      const cambiaElMotivo = motivo.trim() !== (s.borrador.reason ?? '').trim();
-      if ((cambiaLaCondicion || cambiaElMotivo) && !(await guardarEnElBorrador({ ...(cambiaLaCondicion ? { sessionCondition: condicion } : {}), ...(cambiaElMotivo ? { reason: motivo.trim() || null } : {}) }))) return;
+      // Con «Realizada» no viaja motivo, aunque haya quedado algo escrito al pasar por el desvío.
+      const elMotivo = motivoQueViaja(condicion, motivo);
+      const cambiaElMotivo = elMotivo !== (s.borrador.reason?.trim() || null);
+      if ((cambiaLaCondicion || cambiaElMotivo) && !(await guardarEnElBorrador({ ...(cambiaLaCondicion ? { sessionCondition: condicion } : {}), ...(cambiaElMotivo ? { reason: elMotivo } : {}) }))) return;
       s = entrenamientoLocal.sesion(draftId);
       // Una «no realizada» de un día pasado no tiene hora: la API pone el último instante de ese día (DL-137 D-5).
       if (s?.borrador && !s.borrador.occurredAt && s.borrador.sessionCondition !== 'NOT_COMPLETED') {
@@ -1740,8 +1742,10 @@ export function PantallaDeSesion({
       faltaLaHora: pideLaHora && !/^\d{2}:\d{2}$/.test(hora),
     });
     const tiempos = modo === 'en-vivo' ? tiemposResumidos(calculo, s.prescriptions.map((x) => ({ prescriptionId: x.prescriptionId, nombre: x.exerciseName }))) : [];
-    const sinPausas = modo === 'en-vivo' && sesionSinPausas?.ms != null ? duracionParaMostrar(sesionSinPausas.ms) : null;
-    const elegir = (c: 'COMPLETED' | 'COMPLETED_WITH_DEVIATION') => void guardarEnElBorrador({ sessionCondition: c, reason: motivo.trim() || null });
+    // AV2-37: con la sesión abierta otro día, el cierre no cuenta «Sin pausas: 89:08:26»; dice desde cuándo está abierta.
+    const renglones = renglonesDelResultado(resumen, abiertaDesde.tipo === 'desde' ? abiertaDesde : { tipo: 'conteo', sinPausasMs: modo === 'en-vivo' ? (sesionSinPausas?.ms ?? null) : null });
+    const elegir = (c: 'COMPLETED' | 'COMPLETED_WITH_DEVIATION') => void guardarEnElBorrador({ sessionCondition: c, reason: motivoQueViaja(c, motivo) });
+    const campoDelMotivo = <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} ayuda={COPY_ENTRENAMIENTO.ayudaDelMotivo} value={motivo} onChangeText={setMotivo} />;
     return (
       <View>
         <Titulo>{C.titulo}</Titulo>
@@ -1759,7 +1763,8 @@ export function PantallaDeSesion({
           </Seccion>
         ) : null}
         <Seccion titulo={C.comoResulto} icono="desvio">
-          <Parrafo>{sinPausas ? `${lineaDelResultado(resumen)} · ${C.sinPausas(sinPausas)}` : lineaDelResultado(resumen)}</Parrafo>
+          <Parrafo>{renglones.resultado}</Parrafo>
+          {renglones.abierta ? <Parrafo tenue>{renglones.abierta}</Parrafo> : null}
           <Segmentos
             etiqueta={C.comoResulto}
             opciones={[
@@ -1768,10 +1773,11 @@ export function PantallaDeSesion({
             ]}
             valor={(condicion === 'COMPLETED' || condicion === 'COMPLETED_WITH_DEVIATION' ? condicion : 'ninguna') as 'COMPLETED' | 'COMPLETED_WITH_DEVIATION'}
             alElegir={elegir}
+            deshabilitado={ocupado}
           />
           {!borrador?.sessionCondition && sugerida ? <Parrafo tenue>{C.porQueRealizada}</Parrafo> : null}
-          {/* El motivo, con el desvío: lo escrito viaja con la condición. */}
-          {condicion === 'COMPLETED_WITH_DEVIATION' ? <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} ayuda={COPY_ENTRENAMIENTO.ayudaDelMotivo} value={motivo} onChangeText={setMotivo} /> : null}
+          {/* El motivo, con el desvío: lo escrito viaja con la condición. Con la no realizada, va abajo, en su sección. */}
+          {condicion === 'COMPLETED_WITH_DEVIATION' ? campoDelMotivo : null}
           {pideLaHora ? <Campo etiqueta={`${COPY_ENTRENAMIENTO.horaDeLaSesion} (HH:MM)`} value={hora} onChangeText={setHora} keyboardType="numbers-and-punctuation" /> : null}
           {!pideLaHora && !borrador?.occurredAt && horaTomada ? <Parrafo tenue>{C.horaTomada(horaDe(horaTomada, zona))}</Parrafo> : null}
         </Seccion>
@@ -1780,7 +1786,15 @@ export function PantallaDeSesion({
         {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
         {motivoParaNo ? <Parrafo>{motivoParaNo}</Parrafo> : <Parrafo tenue>{COPY_ENTRENAMIENTO.confirmarEsDefinitivo}</Parrafo>}
         <Boton texto={e.finalizarEntrenamiento} onPress={() => void finalizar()} ocupado={ocupado} deshabilitado={motivoParaNo !== null} />
-        <Boton texto={C.volverALaSesion} tipo="secundario" onPress={() => setFinalizando(false)} deshabilitado={ocupado} />
+        <Boton
+          texto={C.volverALaSesion}
+          tipo="secundario"
+          onPress={() => {
+            setAviso(null);
+            setFinalizando(false);
+          }}
+          deshabilitado={ocupado}
+        />
         <Desplegable titulo={C.detalle} icono="series">
           <SeriesDelResumen resumen={resumen} />
           <Parrafo tenue>{t.sinTildarNoCuentan}</Parrafo>
@@ -1800,6 +1814,8 @@ export function PantallaDeSesion({
         </Desplegable>
         {/* Lejos de «Finalizar» y de los botones frecuentes, y con confirmación si hay algo cargado (B10-10:337). */}
         <Seccion titulo="¿No pudiste entrenar?" icono="salteada">
+          {/* El motivo de la no realizada, opcional (REG-06-131; B10 §34): antes del botón y con ella elegida. */}
+          {condicion !== 'COMPLETED_WITH_DEVIATION' ? campoDelMotivo : null}
           <Boton texto={COPY_ENTRENAMIENTO.noPudeRealizarla} tipo="secundario" seleccionado={borrador?.sessionCondition === 'NOT_COMPLETED'} onPress={() => void noPude()} deshabilitado={ocupado} />
         </Seccion>
       </View>
@@ -1945,7 +1961,15 @@ export function PantallaDeSesion({
       {/* Siguiente ejercicio y Pausar están en la fila fija (PV-11); sin corrida en vivo, Siguiente ejercicio queda acá. */}
       {siguiente && !conCorrida ? <Boton texto={e.siguienteEjercicio} tipo="secundario" onPress={() => pasarA(siguiente.prescriptionId)} /> : null}
       {/* «Finalizar entrenamiento» queda al final de la pantalla y en «Ver rutina», como antes: no compite en la fila. */}
-      <Boton texto={e.finalizarEntrenamiento} tipo="secundario" onPress={() => setFinalizando(true)} />
+      <Boton
+        texto={e.finalizarEntrenamiento}
+        tipo="secundario"
+        onPress={() => {
+          // Un aviso de la sesión (un rechazo de una acción de tiempo) no es del cierre: no se arrastra ni se anuncia ahí.
+          setAviso(null);
+          setFinalizando(true);
+        }}
+      />
       <HojaDelDescanso
         visible={hojaDelDescanso}
         ajustes={ajustes}

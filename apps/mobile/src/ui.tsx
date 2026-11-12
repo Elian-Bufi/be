@@ -279,6 +279,7 @@ export function Segmentos<T extends string>({
   valor,
   alElegir,
   compactos = false,
+  deshabilitado = false,
 }: {
   /** El nombre del grupo para el lector de pantalla. */
   etiqueta: string;
@@ -286,6 +287,8 @@ export function Segmentos<T extends string>({
   valor: T;
   alElegir: (valor: T) => void;
   compactos?: boolean;
+  /** Mientras se guarda algo: no se elige otra opción a la vez (dos guardados simultáneos chocan). */
+  deshabilitado?: boolean;
 }) {
   // DL-170: dentro de una tarjeta con el vidrio, el contenedor es de nivel 2; la cápsula conserva su radio.
   const control = useSuperficieDeControl();
@@ -297,11 +300,12 @@ export function Segmentos<T extends string>({
           <Pressable
             key={o.valor}
             accessibilityRole="radio"
-            accessibilityState={{ checked: elegida }}
+            accessibilityState={{ checked: elegida, disabled: deshabilitado }}
             accessibilityLabel={o.texto}
             onPress={() => alElegir(o.valor)}
+            disabled={deshabilitado}
             hitSlop={compactos ? { top: 4, bottom: 4 } : undefined}
-            style={({ pressed }) => [estilos.segmento, compactos && estilos.segmentoCompacto, elegida && estilos.segmentoElegido, pressed && estilos.presionado]}
+            style={({ pressed }) => [estilos.segmento, compactos && estilos.segmentoCompacto, elegida && estilos.segmentoElegido, deshabilitado && estilos.segmentoDeshabilitado, pressed && estilos.presionado]}
           >
             {o.icono ? (
               <View style={estilos.contenidoDeOpcion}>
@@ -785,6 +789,7 @@ export const estilos = estilosPorTema((COLOR) => ({
   // Relleno lateral de 10: con letra normal, tres opciones entran en una línea en un teléfono de 360 dp.
   segmento: { flexGrow: 1, flexBasis: 'auto', minHeight: 48, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   segmentoElegido: { backgroundColor: COLOR.botonFondo },
+  segmentoDeshabilitado: { opacity: 0.6 },
   textoDeSegmento: { fontSize: 16, fontWeight: '600', color: COLOR.texto, textAlign: 'center' },
   textoDeSegmentoElegido: { fontWeight: '800', color: COLOR.botonTexto },
   // Compactas: del ancho de sus opciones, más chicas y sin margen propio; el área de toque llega a 48 con `hitSlop`.
