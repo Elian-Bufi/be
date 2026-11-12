@@ -65,7 +65,11 @@ export const COPY_AYUDA = {
   /** Los casos más comunes, con lo que conviene escribir. */
   casos: [
     { titulo: 'No puedo entrar', texto: 'Probá primero «¿Olvidaste tu contraseña?». Si no te llega el código, escribí a soporte desde el correo de tu cuenta.' },
-    { titulo: 'Soy profesional y quiero usar BE', texto: 'Creá tu cuenta con tu nombre y escribí a soporte con tu matrícula (número y jurisdicción) y las áreas en que trabajás.' },
+    // Un profesional no sanitario no tiene matrícula (UF-D8: la API responde LICENSE_NOT_APPLICABLE): se le pide su formación.
+    {
+      titulo: 'Soy profesional y quiero usar BE',
+      texto: 'Creá tu cuenta con tu nombre y escribí a soporte con tu matrícula (número y jurisdicción) si sos profesional de la salud, o tu formación si no, y las áreas en que trabajás.',
+    },
     { titulo: 'Quiero mis datos o borrarlos', texto: 'En «Tus datos» podés descargar lo tuyo y pedir el acceso, la rectificación o la supresión. Si preferís, escribí a privacidad.' },
   ],
 } as const;
