@@ -324,11 +324,12 @@ export function VistaDePlan() {
                       objetivo={objetivo ?? null}
                       vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
                       // ED-30: el asistente escribió una versión nueva del objetivo: se vuelve a leer, con el plan a la vista.
-                      onObjetivoNuevo={() => void cargar(false)}
+                      onObjetivoNuevo={() => cargar(false)}
                       // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».
                       onActivado={(texto) => {
                         setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
-                        ir({ version: null, dia: null, comidas: null });
+                        // Activada desde el paso 7 del asistente, se sale de él: lo que sigue es ver el plan activo, no el paso 1 de otra versión.
+                        ir({ version: null, dia: null, comidas: null, asistente: null });
                         void cargar();
                       }}
                       // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
@@ -336,7 +337,8 @@ export function VistaDePlan() {
                         // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
                         focoTrasDescartar.current = !porOtraPestana;
                         setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
-                        ir({ version: null, dia: null, comidas: null });
+                        // Como en Entrenamiento: descartada desde el asistente, vuelve a su paso 1 (desde dónde arrancar otra).
+                        ir({ version: null, dia: null, comidas: null, asistente: parametros.get('asistente') ? '1' : null });
                         void cargar();
                       }}
                     />

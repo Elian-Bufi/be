@@ -122,12 +122,98 @@ test('ED-31 · «Guardar la opción» conserva la identidad que un guardado le d
 test('ED-31 · Enter suma el marcado y el cuadro sigue abierto; el borrador cambia solo con «Guardar la opción»', () => {
   const cuadro = leer('nutrition/cuadro-de-la-opcion.tsx');
   assert.match(cuadro, /role="combobox"/);
-  assert.match(cuadro, /else if \(e\.key === 'Enter'\) \{\n\s+e\.preventDefault\(\);\n\s+if \(actual >= 0\) elegir\(actual\);/);
+  assert.match(cuadro, /else if \(e\.key === 'Enter'\) \{\n\s+e\.preventDefault\(\);\n\s+if \(actual >= 0 && columna === 1\) alternar\(actual\);\n\s+else if \(actual >= 0\) elegir\(actual\);/);
   // Elegir vacía el campo y deja el foco adentro: no cierra nada.
-  assert.match(cuadro, /setTexto\(''\);\n\s+setMarcado\(0\);\n\s+campo\.current\?\.focus\(\);/);
+  assert.match(cuadro, /alSumar\(r\.alimento\);\n\s+escribir\(''\);\n\s+campo\.current\?\.focus\(\);/);
   const editor = leer('nutrition/editor.tsx');
   assert.match(editor, /m\.options\[k\] = opcionAlGuardar\(m\.options\[k\], copia\);/);
   assert.doesNotMatch(editor, /<AgregarItem/);
+});
+
+test('ED-31 (DL-109) · el cuadro deja marcar y quitar un habitual en cada resultado, sin un botón adentro de una opción', () => {
+  const cuadro = leer('nutrition/cuadro-de-la-opcion.tsx');
+  // La lista es una grilla: la estrella va en su propia celda, con su estado y el nombre del alimento en su rótulo.
+  assert.match(cuadro, /aria-haspopup="grid"/);
+  assert.match(cuadro, /role="grid"/);
+  assert.doesNotMatch(cuadro, /role="option"/);
+  assert.match(cuadro, /aria-pressed=\{esHabitual\}/);
+  assert.match(cuadro, /aria-label=\{`\$\{esHabitual \? COPY_HABITUALES\.quitarMarca : COPY_HABITUALES\.marcar\}: \$\{r\.alimento\.name\}`\}/);
+  assert.match(cuadro, /if \(r\) void habituales\.alternar\(r\.alimento\);/);
+  // Una lectura que falló se dice, con «Reintentar»; un marcado que falló, también.
+  assert.match(cuadro, /habituales\.lectura === 'falla' \? \(\n\s+<Aviso tipo="error">\n\s+<p>\{C\.habitualesNoSeLeyeron\(habituales\.motivoDeLectura\)\}<\/p>\n\s+<button type="button" className="boton boton--secundario" onClick=\{habituales\.recargar\}>/);
+  assert.match(cuadro, /habituales\.fallo \? \(/);
+  // Con el teclado: a la derecha se llega a la estrella solo con el cursor al final; a la izquierda se vuelve.
+  assert.equal(Q.columnaTrasTecla(0, 'ArrowRight', true, true), 1);
+  assert.equal(Q.columnaTrasTecla(0, 'ArrowRight', true, false), null);
+  assert.equal(Q.columnaTrasTecla(0, 'ArrowRight', false, true), null);
+  assert.equal(Q.columnaTrasTecla(1, 'ArrowLeft', true, false), 0);
+  assert.equal(Q.columnaTrasTecla(0, 'ArrowLeft', true, true), null);
+  assert.equal(Q.columnaTrasTecla(1, 'ArrowRight', true, true), null);
+});
+
+test('ED-31 · «Guardar la opción» aplica la regla del plan: sin nombre o con una cantidad ilegible no guarda, y lleva al campo', () => {
+  const nombres = { arroz: 'Arroz', pollo: 'Pollo' };
+  const item = (catalogItemId, value) => ({ catalogItemId, quantity: value === null ? null : { value, unit: 'g' } });
+  assert.equal(Q.loQueNoDejaGuardarLaOpcion({ label: 'Almuerzo', items: [item('arroz', 100), item('pollo', null)] }, nombres), null);
+  // «1o0» viaja como NaN: no se guarda, y se dice cuál.
+  assert.deepEqual(Q.loQueNoDejaGuardarLaOpcion({ label: 'Almuerzo', items: [item('arroz', 100), item('pollo', Number.NaN)] }, nombres), { motivo: 'Hay una cantidad que no se entiende: Pollo.', fila: 1 });
+  assert.deepEqual(Q.loQueNoDejaGuardarLaOpcion({ label: ' ', items: [item('pollo', Number.NaN)] }, nombres), { motivo: Q.COPY_OPCION_EN_UN_CUADRO.sinNombre, fila: null });
+  const cuadro = leer('nutrition/cuadro-de-la-opcion.tsx');
+  assert.match(cuadro, /apagado: impide\?\.motivo \?\? null,/);
+  assert.match(cuadro, /alTocarApagado: \(\) => document\.getElementById\(impide && impide\.fila !== null \? `cuadro-item-\$\{impide\.fila\}-cantidad` : 'opcion-en-un-cuadro-nombre'\)\?\.focus\(\)/);
+});
+
+test('ED-31 · al volver de «Crearlo a mano» o de «Importarlo…», el foco vuelve al buscador, con lo buscado y lo agregado', () => {
+  const cuadro = leer('nutrition/cuadro-de-la-opcion.tsx');
+  assert.match(cuadro, /if \(modo === 'opcion' && modoAnterior\.current !== 'opcion'\) buscador\.current\?\.focus\(\);/);
+  assert.match(cuadro, /<CrearManualmente id="opcion-crear-a-mano" nombreInicial=\{texto\.trim\(\)\}/);
+  // Lo creado o importado se anuncia como lo elegido en el buscador: «Agregado: …».
+  assert.match(cuadro, /setAgregado\(\(a\) => \(\{ nombre: e\.name, veces: \(a\?\.veces \?\? 0\) \+ 1 \}\)\);/);
+  // Lo que cubren las opciones no se llama «rango»: no es un rango indicado por el profesional.
+  assert.equal(Q.COPY_OPCION_EN_UN_CUADRO.rangoDe('Almuerzo'), 'Lo que cubren las opciones de Almuerzo');
+});
+
+test('ED-30 · «Agregar una opción» del paso 5 no toca el borrador hasta «Guardar la opción»: cancelar no deja una vacía', () => {
+  assert.deepEqual(Q.opcionNueva(2), { label: 'Opción 3', items: [] });
+  const pasos = leer('nutrition/pasos-del-asistente.tsx');
+  assert.match(pasos, /onClick=\{\(\) => onAgregarOpcion\(i, j\)\}/);
+  assert.doesNotMatch(pasos, /options\.push\(\{ label: `Opción/);
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /if \(m && nueva\) \{\n\s+if \(m\.options\.length < MAXIMO_DE_OPCIONES\) m\.options\.push\(copia\);/);
+});
+
+test('ED-31 · el cuadro calcula con las opciones de su propio día tipo, y lo que no se leyó todavía dice «leyendo»', () => {
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /otrasOpciones=\{otrasOpcionesDelCuadro\}/);
+  assert.match(editor, /rangosDelDia\(diaDeLaOpcion, agregando\.i,/);
+  // En el asistente se leen las composiciones de todos los días tipo; fuera de él, el que se mira y el del cuadro.
+  assert.match(editor, /const dias = conTodosLosDias \? estructura : \[\.\.\.new Set\(\[diaMirado, diaDelCuadro\]\)\]/);
+});
+
+test('ED-32 · después de «Usar la versión N», la porción guardada de la versión anterior ya no cuenta', () => {
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /return recipeVersionId === undefined \|\| o\.recipe\?\.recipeVersionId === recipeVersionId \? o\.items : null;/);
+  assert.doesNotMatch(editor, /\(id\) => itemsGuardados\(version, id\)/);
+});
+
+test('ED-30 · activar desde el paso 7 sale del asistente y muestra el plan activo', () => {
+  const plan = leer('nutrition/plan.tsx');
+  assert.match(plan, /ir\(\{ version: null, dia: null, comidas: null, asistente: null \}\);\n\s+void cargar\(\);/);
+});
+
+test('EDC-12 · un objetivo nuevo cuenta como algo por guardar recién cuando llega su relectura, y «Siguiente» la espera', () => {
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /const objetivoPorGuardar = objetivoPedido && !!version && !!objetivoVigente && objetivoVigente !== version\.objectiveVersionId;/);
+  assert.match(editor, /habilitado: !!version && porGuardar && puedeGuardar/);
+  assert.match(editor, /setObjetivoPedido\(true\);\n\s+return onObjetivoNuevo\(\);/);
+  // Ya no se marca «sucio» antes de que llegue el objetivo nuevo: ese guardado saldría sin él.
+  assert.doesNotMatch(editor, /setSucio\(true\);\n\s+onObjetivoNuevo\(\);/);
+  const pasos = leer('nutrition/pasos-del-asistente.tsx');
+  assert.match(pasos, /ocupado: releyendoElObjetivo \? C\.leyendoElObjetivoNuevo/);
+  assert.match(leer('nutrition/plan.tsx'), /onObjetivoNuevo=\{\(\) => cargar\(false\)\}/);
+  // El número de la versión cuenta todas las páginas; con la lista a medias, solo la fecha.
+  assert.match(pasos, /todasLasPaginas\(\(f\) => api\.listarObjetivos\(token, asesoradoId, f\)\)/);
+  assert.match(pasos, /r\.datos\.completa \? numeroDeLaVersionDelObjetivo/);
 });
 
 // ─── ED-32 · La foto después de guardar y «Usar la versión nueva» ──────────────────────────────────────────────────

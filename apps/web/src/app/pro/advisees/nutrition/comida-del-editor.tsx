@@ -107,7 +107,8 @@ export function ComidaDelEditor({
   nombreEnEdicion: NombreEnEdicion;
   nombres: Readonly<Record<string, string>>;
   recetas: Readonly<Record<string, RecetaDeOpcion>>;
-  itemsDeLaReceta: (optionId: string | undefined) => ItemsGuardados | null;
+  /** Con la versión que cita la opción: la porción guardada de otra versión no vale (después de «Usar la versión N»). */
+  itemsDeLaReceta: (optionId: string | undefined, recipeVersionId: string) => ItemsGuardados | null;
   /** ED-32: si la receta de la opción `k` tiene una versión más nueva, su número y lo que cambia en una porción. */
   versionNueva: (k: number) => { readonly numero: number; readonly cambios: readonly string[]; readonly conLaPorcionDeAhora: boolean } | null;
   alUsarLaVersionNueva: (k: number) => void;
@@ -270,7 +271,7 @@ export function ComidaDelEditor({
                 ) : null}
                 {opcion.recipeVersionId ? (
                   <>
-                    <OpcionDeReceta receta={recetas[opcion.recipeVersionId] ?? null} items={itemsDeLaReceta(opcion.optionId)} nombres={nombres} />
+                    <OpcionDeReceta receta={recetas[opcion.recipeVersionId] ?? null} items={itemsDeLaReceta(opcion.optionId, opcion.recipeVersionId)} nombres={nombres} />
                     {/* ED-32: «Hay una versión 3 de esta receta», con lo que cambia, y pasarla solo a pedido. */}
                     {nueva ? (
                       <div className="version-nueva-de-la-receta" data-version-nueva={nueva.numero}>

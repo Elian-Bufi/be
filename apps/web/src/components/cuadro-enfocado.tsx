@@ -34,6 +34,8 @@ export interface PrincipalDelCuadro {
   readonly alTocar: () => void;
   /** Por qué está apagado, dicho a su lado; `null` o ausente: se puede tocar. */
   readonly apagado?: string | null;
+  /** Tocado apagado: llevar al lugar que lo impide (por ejemplo, el foco al campo). Sin esto, no hace nada. */
+  readonly alTocarApagado?: () => void;
   readonly enviando?: boolean;
   readonly textoEnviando?: string;
 }
@@ -176,7 +178,9 @@ export function CuadroEnfocado({
                 aria-busy={principal.enviando || undefined}
                 disabled={principal.enviando}
                 onClick={() => {
-                  if (!principal.apagado && !principal.enviando) principal.alTocar();
+                  if (principal.enviando) return;
+                  if (principal.apagado) principal.alTocarApagado?.();
+                  else principal.alTocar();
                 }}
               >
                 {principal.enviando ? (principal.textoEnviando ?? principal.texto) : principal.texto}

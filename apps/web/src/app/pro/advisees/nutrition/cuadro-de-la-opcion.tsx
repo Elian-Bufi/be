@@ -2,17 +2,20 @@
 
 /**
  * ED-31 (WP-EDITORES-PROFESIONAL; maqueta 06) · La opción en un cuadro: su nombre, sus alimentos en una tabla, el
- * buscador adentro y, al costado, el total al instante, el rango de su comida y el objetivo general. La lógica está en
- * `opcion-en-un-cuadro.ts`; la cuenta, en `rangos.ts` (la del dominio, `SUM_SOURCE_PER_100G_V1`).
+ * buscador adentro y, al costado, el total al instante, lo que cubren las opciones de su comida y el objetivo general.
+ * La lógica está en `opcion-en-un-cuadro.ts`; la cuenta, en `rangos.ts` (la del dominio, `SUM_SOURCE_PER_100G_V1`).
  *
  * - Lo abren «Agregar ítem» de una opción de alimentos y el paso 5 del asistente (ED-30). Trabaja sobre una copia: el
- *   borrador cambia solo con «Guardar la opción».
- * - El buscador es un combobox (ARIA 1.2): el foco queda en el campo y el marcado se anuncia por
- *   `aria-activedescendant`. Enter suma el marcado; el cuadro sigue abierto.
+ *   borrador cambia solo con «Guardar la opción», que aplica la regla del plan (sin nombre o con una cantidad que no se
+ *   entiende, dice por qué y lleva al campo).
+ * - El buscador es un combobox con grilla (ARIA 1.2): el foco queda en el campo y la celda marcada se anuncia por
+ *   `aria-activedescendant`. Enter suma el alimento marcado y el cuadro sigue abierto. Cada resultado lleva su estrella
+ *   («Marcar como habitual», DL-109) en su propia celda: la flecha a la derecha llega a ella y Enter la alterna.
  * - «Crearlo a mano» e «Importarlo de Open Food Facts» reemplazan el contenido del cuadro, con «Volver a la opción»: no
- *   se abre un cuadro encima de otro (§2.3).
+ *   se abre un cuadro encima de otro (§2.3). Lo buscado se conserva, «Crearlo a mano» arranca con ese nombre, y al volver
+ *   el foco vuelve al buscador y se anuncia lo agregado.
  */
-import { cantidad as formatearCantidad, habitualesQueCoinciden, origenEnElCatalogo, type ElementoDeCatalogo, type ElementoEncontrado, type VersionDeObjetivo } from '@be/domain';
+import { cantidad as formatearCantidad, COPY_HABITUALES, habitualesQueCoinciden, origenEnElCatalogo, type ElementoDeCatalogo, type ElementoEncontrado, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Aviso } from '../../../../components/formulario';
@@ -22,28 +25,34 @@ import { dia as fechaDelDia } from '../../../../lib/formato';
 import { mensajeDeFallo } from '../../../../lib/intento';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { CrearManualmente } from './agregar-item';
+import { COPY_ASISTENTE_DE_NUTRICION } from './asistente-de-nutricion';
 import { FilaDeItem, type OpcionEnEdicion } from './comida-del-editor';
 import type { AlimentosHabituales } from './habituales';
 import { ImportacionDeOpenFoodFacts } from './importacion';
 import { useNutricion } from './nutricion';
 import {
   cambioLaOpcion,
+  columnaTrasTecla,
   completitudEnPalabras,
   COPY_OPCION_EN_UN_CUADRO as C,
   esDeDemostracion,
   hayQueBuscar,
   itemNuevo,
+  loQueNoDejaGuardarLaOpcion,
   marcadoTrasTecla,
   PAUSA_DEL_BUSCADOR,
   resultadosDelBuscador,
 } from './opcion-en-un-cuadro';
-import { COPY_RANGOS, faltantesDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type TotalDeLaOpcion } from './rangos';
+import { useNumeroDelObjetivo } from './pasos-del-asistente';
+import { COPY_RANGOS, faltantesDeLaOpcion, fibraDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type TotalDeLaOpcion } from './rangos';
 
 type Busqueda =
   | { readonly tipo: 'quieta' }
   | { readonly tipo: 'buscando'; readonly texto: string }
   | { readonly tipo: 'lista'; readonly texto: string; readonly alimentos: readonly ElementoEncontrado[] }
   | { readonly tipo: 'falla'; readonly texto: string; readonly motivo: string };
+
+type Agregado = { readonly nombre: string; readonly veces: number } | null;
 
 const NOMBRE_DEL_TOTAL = { energyKcal: 'Energía', carbohydrateG: 'Carbohidratos', proteinG: 'Proteínas', fatG: 'Grasas' } as const;
 const UNIDAD_DEL_TOTAL = { energyKcal: 'kcal', carbohydrateG: 'g', proteinG: 'g', fatG: 'g' } as const;
@@ -69,11 +78,11 @@ export function CuadroDeLaOpcion({
   titulo: string;
   /** «Día habitual · se elige una de 3 opciones». */
   subtitulo: string;
-  /** La opción como está en el borrador al abrir. */
+  /** La opción como está en el borrador al abrir (o la nueva, que todavía no está). */
   opcion: OpcionEnEdicion | null;
-  /** El nombre de su comida, para su rango. */
+  /** El nombre de su comida. */
   comida: string;
-  /** Las demás opciones de la comida con su total, para el rango con esta como queda. */
+  /** Las demás opciones de la comida, con su total, para lo que cubren todas con esta como queda. */
   otrasOpciones: readonly { readonly nombre: string; readonly total: TotalDeLaOpcion }[];
   nombres: Readonly<Record<string, string>>;
   composiciones: Composiciones;
@@ -87,7 +96,11 @@ export function CuadroDeLaOpcion({
   const [modo, setModo] = useState<'opcion' | 'manual' | 'importar'>('opcion');
   const [nombresNuevos, setNombresNuevos] = useState<Record<string, string>>({});
   const [composicionesNuevas, setComposicionesNuevas] = useState<ReadonlyMap<string, ElementoDeCatalogo['composition']>>(() => new Map());
+  // Lo buscado y lo último agregado viven acá: sobreviven a «Crearlo a mano» y a «Importarlo…».
+  const [texto, setTexto] = useState('');
+  const [agregado, setAgregado] = useState<Agregado>(null);
   const buscador = useRef<HTMLInputElement>(null);
+  const numeroDelObjetivo = useNumeroDelObjetivo(abierto ? objetivo : null);
   // Cada vez que se abre, la copia vuelve a ser la opción del borrador.
   useEffect(() => {
     if (!abierto) return;
@@ -95,9 +108,17 @@ export function CuadroDeLaOpcion({
     setModo('opcion');
     setNombresNuevos({});
     setComposicionesNuevas(new Map());
+    setTexto('');
+    setAgregado(null);
     // Solo al abrir: la opción del borrador no cambia con el cuadro abierto (es modal).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
+  // Al volver de «Crearlo a mano» o de «Importarlo…», el foco vuelve al buscador (WCAG 2.4.3); al abrir lo pone el cuadro.
+  const modoAnterior = useRef(modo);
+  useEffect(() => {
+    if (modo === 'opcion' && modoAnterior.current !== 'opcion') buscador.current?.focus();
+    modoAnterior.current = modo;
+  }, [modo]);
 
   const todosLosNombres = { ...nombres, ...nombresNuevos };
   const todasLasComposiciones: Composiciones = new Map([...composiciones, ...composicionesNuevas]);
@@ -105,6 +126,13 @@ export function CuadroDeLaOpcion({
     setNombresNuevos((n) => ({ ...n, [e.catalogItemId]: e.name }));
     setComposicionesNuevas((m) => new Map(m).set(e.catalogItemId, e.composition));
     setCopia((o) => (o ? { ...o, items: [...o.items, itemNuevo(e.catalogItemId)] } : o));
+    setAgregado((a) => ({ nombre: e.name, veces: (a?.veces ?? 0) + 1 }));
+  };
+  /** Creado a mano o importado: se suma, se vuelve a la opción y lo buscado ya no hace falta. */
+  const sumarDeAfuera = (e: ElementoDeCatalogo) => {
+    sumar(e);
+    setTexto('');
+    setModo('opcion');
   };
   const cambiar = (f: (o: OpcionEnEdicion) => void) =>
     setCopia((o) => {
@@ -114,10 +142,13 @@ export function CuadroDeLaOpcion({
       return x;
     });
 
-  const total = copia ? totalDeLaOpcion(itemsParaElTotal(copia, todosLosNombres, () => null), todasLasComposiciones) : null;
+  const items = copia ? itemsParaElTotal(copia, todosLosNombres, () => null) : null;
+  const total = copia ? totalDeLaOpcion(items, todasLasComposiciones) : null;
+  const fibra = copia ? fibraDeLaOpcion(items, todasLasComposiciones) : null;
   const faltan = total ? faltantesDeLaOpcion(total) : [];
   const rango = total ? rangoDeLaComida([...otrasOpciones, { nombre: copia?.label || titulo, total }], comida) : null;
   const sinNombre = copia !== null && copia.label.trim() === '';
+  const impide = copia ? loQueNoDejaGuardarLaOpcion(copia, todosLosNombres) : null;
 
   return (
     <CuadroEnfocado
@@ -133,7 +164,9 @@ export function CuadroDeLaOpcion({
         modo === 'opcion'
           ? {
               texto: C.guardar,
-              apagado: sinNombre ? C.sinNombre : null,
+              apagado: impide?.motivo ?? null,
+              // Apagado, lleva al campo que lo impide: el nombre o la cantidad que no se entiende.
+              alTocarApagado: () => document.getElementById(impide && impide.fila !== null ? `cuadro-item-${impide.fila}-cantidad` : 'opcion-en-un-cuadro-nombre')?.focus(),
               alTocar: () => copia && alGuardar(copia, { nombres: nombresNuevos, composiciones: composicionesNuevas }),
             }
           : null
@@ -141,15 +174,7 @@ export function CuadroDeLaOpcion({
       onCerrar={onCerrar}
     >
       {copia && modo === 'manual' ? (
-        <CrearManualmente
-          id="opcion-crear-a-mano"
-          nombreInicial=""
-          onCreado={(e) => {
-            sumar(e);
-            setModo('opcion');
-          }}
-          onVolver={() => setModo('opcion')}
-        />
+        <CrearManualmente id="opcion-crear-a-mano" nombreInicial={texto.trim()} onCreado={sumarDeAfuera} onVolver={() => setModo('opcion')} />
       ) : null}
       {copia && modo === 'importar' ? (
         <div className="agregar-item__otro">
@@ -157,14 +182,7 @@ export function CuadroDeLaOpcion({
             <Icono nombre="izquierda" tamano={18} />
             {C.volver}
           </button>
-          <ImportacionDeOpenFoodFacts
-            id="opcion-importar"
-            onIncorporado={(e) => {
-              sumar(e);
-              setModo('opcion');
-            }}
-            onCargarManualmente={() => setModo('manual')}
-          />
+          <ImportacionDeOpenFoodFacts id="opcion-importar" onIncorporado={sumarDeAfuera} onCargarManualmente={() => setModo('manual')} />
         </div>
       ) : null}
       {copia && modo === 'opcion' ? (
@@ -206,7 +224,7 @@ export function CuadroDeLaOpcion({
                 </table>
               </div>
             )}
-            <BuscadorDeLaOpcion campo={buscador} habituales={habituales} alSumar={sumar} />
+            <BuscadorDeLaOpcion campo={buscador} texto={texto} alEscribir={setTexto} agregado={agregado} habituales={habituales} alSumar={sumar} />
             <p className="nota cuadro-de-la-opcion__otro">
               {C.noEsta}{' '}
               <button type="button" className="boton boton--enlace" onClick={() => setModo('manual')}>
@@ -229,6 +247,11 @@ export function CuadroDeLaOpcion({
                       <dd>{total[n].exacto === null ? COPY_RANGOS.sinDato : `${formatearCantidad(Number(total[n].exacto), UNIDAD_DEL_TOTAL[n])}`}</dd>
                     </div>
                   ))}
+                  {/* La fibra, como en la maqueta 06: lo que falta es «Sin dato», nunca cero. */}
+                  <div data-fibra-de-la-opcion>
+                    <dt>{C.fibra}</dt>
+                    <dd>{fibra === null || fibra.exacto === null ? COPY_RANGOS.sinDato : formatearCantidad(Number(fibra.exacto), 'g')}</dd>
+                  </div>
                 </dl>
                 {faltan.length > 0 ? <p className="nota">{faltan.slice(0, 3).map(queFaltaEnPalabras).join('; ')}{faltan.length > 3 ? `; y ${faltan.length - 3} más` : ''}</p> : null}
                 <p className="nota">{C.comoSeCalcula}</p>
@@ -237,9 +260,7 @@ export function CuadroDeLaOpcion({
             {rango ? (
               <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-rango-de-la-comida">
                 <h3 id="opcion-rango-de-la-comida">{C.rangoDe(comida)}</h3>
-                <p>
-                  {NUTRIENTES_DEL_RANGO.map((n) => `${COPY_RANGOS.nutriente[n]}: ${rangoEnUnaCelda(rango[n], n)}`).join(' · ')}
-                </p>
+                <p>{NUTRIENTES_DEL_RANGO.map((n) => `${COPY_RANGOS.nutriente[n]}: ${rangoEnUnaCelda(rango[n], n)}`).join(' · ')}</p>
                 <p className="nota">{C.conEstaOpcion}</p>
               </section>
             ) : null}
@@ -248,7 +269,8 @@ export function CuadroDeLaOpcion({
               {objetivo ? (
                 <>
                   <TiraDelObjetivo calorias={objetivo.estimatedEnergyRequirement.value} macros={{ estado: 'listos', valor: objetivo.macronutrientDistribution }} onReintentar={() => undefined} />
-                  <p className="nota">Vigente desde el {fechaDelDia(objetivo.effectiveFrom)}.</p>
+                  {/* EDC-12: con su versión, como en el paso 2 del asistente. */}
+                  <p className="nota">{COPY_ASISTENTE_DE_NUTRICION.versionYFecha(numeroDelObjetivo, fechaDelDia(objetivo.effectiveFrom))}</p>
                 </>
               ) : (
                 <p className="nota">{C.sinObjetivo}</p>
@@ -261,14 +283,31 @@ export function CuadroDeLaOpcion({
   );
 }
 
-/** El buscador del cuadro: un combobox con los habituales primero y el catálogo, que busca mientras se escribe. */
-function BuscadorDeLaOpcion({ campo, habituales, alSumar }: { campo: RefObject<HTMLInputElement | null>; habituales: AlimentosHabituales; alSumar: (e: ElementoDeCatalogo) => void }) {
+/**
+ * El buscador del cuadro: un combobox con grilla, con los habituales primero y el catálogo, que busca mientras se
+ * escribe. Cada fila tiene dos celdas: el alimento (Enter lo suma) y su estrella (Enter lo marca o lo quita de los
+ * habituales). El foco no sale del campo: la celda marcada se anuncia por `aria-activedescendant`.
+ */
+function BuscadorDeLaOpcion({
+  campo,
+  texto,
+  alEscribir,
+  agregado,
+  habituales,
+  alSumar,
+}: {
+  campo: RefObject<HTMLInputElement | null>;
+  texto: string;
+  alEscribir: (t: string) => void;
+  agregado: Agregado;
+  habituales: AlimentosHabituales;
+  alSumar: (e: ElementoDeCatalogo) => void;
+}) {
   const { token, sesionPerdida } = useNutricion();
   const id = useId();
-  const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState<Busqueda>({ tipo: 'quieta' });
   const [marcado, setMarcado] = useState(0);
-  const [agregado, setAgregado] = useState<{ readonly nombre: string; readonly veces: number } | null>(null);
+  const [columna, setColumna] = useState<0 | 1>(0);
   const pedido = useRef(0);
 
   // Busca mientras se escribe, con una pausa: una respuesta vieja no pisa a la nueva.
@@ -294,14 +333,22 @@ function BuscadorDeLaOpcion({ campo, habituales, alSumar }: { campo: RefObject<H
   const resultados = q ? resultadosDelBuscador<ElementoDeCatalogo | ElementoEncontrado>(deHabituales, busqueda.tipo === 'lista' && busqueda.texto === q ? busqueda.alimentos : []) : [];
   const actual = resultados.length > 0 ? Math.min(marcado, resultados.length - 1) : -1;
   const abierta = q.length > 0;
+  const celda = (n: number, c: 0 | 1) => (c === 0 ? `${id}-r-${n}` : `${id}-r-${n}-habitual`);
+  const escribir = (t: string) => {
+    alEscribir(t);
+    setMarcado(0);
+    setColumna(0);
+  };
   const elegir = (n: number) => {
     const r = resultados[n];
     if (!r) return;
     alSumar(r.alimento);
-    setAgregado((a) => ({ nombre: r.alimento.name, veces: (a?.veces ?? 0) + 1 }));
-    setTexto('');
-    setMarcado(0);
+    escribir('');
     campo.current?.focus();
+  };
+  const alternar = (n: number) => {
+    const r = resultados[n];
+    if (r) void habituales.alternar(r.alimento);
   };
 
   return (
@@ -315,32 +362,35 @@ function BuscadorDeLaOpcion({ campo, habituales, alSumar }: { campo: RefObject<H
           ref={campo}
           id={`${id}-campo`}
           role="combobox"
+          aria-haspopup="grid"
           aria-expanded={abierta}
           aria-controls={`${id}-lista`}
           aria-autocomplete="list"
-          aria-activedescendant={actual >= 0 ? `${id}-r-${actual}` : undefined}
+          aria-activedescendant={actual >= 0 ? celda(actual, columna) : undefined}
           aria-describedby={`${id}-ayuda`}
           value={texto}
           maxLength={80}
           autoComplete="off"
           spellCheck={false}
           placeholder={C.buscar}
-          onChange={(e) => {
-            setTexto(e.target.value);
-            setMarcado(0);
-          }}
+          onChange={(e) => escribir(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            const otra = columnaTrasTecla(columna, e.key, actual >= 0, e.currentTarget.selectionStart === e.currentTarget.value.length);
+            if (otra !== null) {
+              e.preventDefault();
+              setColumna(otra);
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
               e.preventDefault();
               setMarcado((m) => marcadoTrasTecla(m, resultados.length, e.key));
             } else if (e.key === 'Enter') {
               e.preventDefault();
-              if (actual >= 0) elegir(actual);
+              if (actual >= 0 && columna === 1) alternar(actual);
+              else if (actual >= 0) elegir(actual);
             } else if (e.key === 'Escape' && texto) {
               // Con algo escrito, Escape borra la búsqueda; vacío, cierra el cuadro.
               e.preventDefault();
               e.stopPropagation();
-              setTexto('');
+              escribir('');
             }
           }}
         />
@@ -356,42 +406,74 @@ function BuscadorDeLaOpcion({ campo, habituales, alSumar }: { campo: RefObject<H
         {busqueda.tipo === 'buscando' && busqueda.texto === q ? ` ${C.buscando}` : null}
         {busqueda.tipo === 'lista' && busqueda.texto === q && resultados.length === 0 ? ` ${C.ningunoCoincide(q)}` : null}
       </p>
+      {/* Una lectura de los habituales que falló no es «no tenés habituales»: se dice, y se vuelve a leer. */}
+      {habituales.lectura === 'falla' ? (
+        <Aviso tipo="error">
+          <p>{C.habitualesNoSeLeyeron(habituales.motivoDeLectura)}</p>
+          <button type="button" className="boton boton--secundario" onClick={habituales.recargar}>
+            {C.reintentar}
+          </button>
+        </Aviso>
+      ) : null}
+      {habituales.fallo ? (
+        <Aviso tipo="error">
+          <p>{habituales.fallo}</p>
+        </Aviso>
+      ) : null}
       {busqueda.tipo === 'falla' && busqueda.texto === q ? (
         <Aviso tipo="error">
           <p>{C.noSePudoBuscar(busqueda.motivo)}</p>
         </Aviso>
       ) : null}
-      <ul id={`${id}-lista`} role="listbox" aria-label="Alimentos que coinciden" className="buscador-de-la-opcion__lista" hidden={resultados.length === 0}>
+      <div id={`${id}-lista`} role="grid" aria-label="Alimentos que coinciden" className="buscador-de-la-opcion__lista" hidden={resultados.length === 0}>
         {resultados.map((r, n) => {
           const c = r.alimento.composition;
+          const esHabitual = habituales.esHabitual(r.alimento.catalogItemId);
           return (
-            <li
-              key={r.alimento.catalogItemId}
-              id={`${id}-r-${n}`}
-              role="option"
-              aria-selected={n === actual}
-              className="buscador-de-la-opcion__resultado"
-              data-marcado={n === actual ? '' : undefined}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => elegir(n)}
-            >
-              <span className="buscador-de-la-opcion__nombre">
-                <strong>{r.alimento.name}</strong>
-                {r.habitual ? <span className="etiqueta-de-dato">{C.habitual}</span> : null}
-              </span>
-              <span className="buscador-de-la-opcion__valores">
-                {valorDe(c.energyKcal, 'kcal')} · carbohidratos {valorDe(c.carbohydrateG, 'g')} · proteínas {valorDe(c.proteinG, 'g')} · grasas {valorDe(c.fatG, 'g')}
-              </span>
-              <span className="nota buscador-de-la-opcion__detalle">
-                {esDeDemostracion(r.alimento) ? <span className="etiqueta-de-dato buscador-de-la-opcion__demostracion">{C.datoDeDemostracion}</span> : null}
-                {/* El origen, breve y como texto: una opción de la lista no lleva un enlace adentro. */}
-                {'origin' in r.alimento ? `${origenEnElCatalogo(r.alimento, fechaDelDia).breve} · ` : ''}
-                {C.cadaCien(c.referenceAmount === '100ml')} · {completitudEnPalabras(c)}
-              </span>
-            </li>
+            <div key={r.alimento.catalogItemId} role="row" className="buscador-de-la-opcion__resultado" data-marcado={n === actual ? '' : undefined}>
+              <div
+                id={celda(n, 0)}
+                role="gridcell"
+                aria-selected={n === actual && columna === 0}
+                className="buscador-de-la-opcion__alimento"
+                data-celda-marcada={n === actual && columna === 0 ? '' : undefined}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => elegir(n)}
+              >
+                <span className="buscador-de-la-opcion__nombre">
+                  <strong>{r.alimento.name}</strong>
+                  {r.habitual ? <span className="etiqueta-de-dato">{C.habitual}</span> : null}
+                </span>
+                <span className="buscador-de-la-opcion__valores">
+                  {valorDe(c.energyKcal, 'kcal')} · carbohidratos {valorDe(c.carbohydrateG, 'g')} · proteínas {valorDe(c.proteinG, 'g')} · grasas {valorDe(c.fatG, 'g')}
+                </span>
+                <span className="nota buscador-de-la-opcion__detalle">
+                  {esDeDemostracion(r.alimento) ? <span className="etiqueta-de-dato buscador-de-la-opcion__demostracion">{C.datoDeDemostracion}</span> : null}
+                  {/* El origen, breve y como texto: una celda de la grilla no lleva un enlace adentro. */}
+                  {'origin' in r.alimento ? `${origenEnElCatalogo(r.alimento, fechaDelDia).breve} · ` : ''}
+                  {C.cadaCien(c.referenceAmount === '100ml')} · {completitudEnPalabras(c)}
+                </span>
+              </div>
+              <div id={celda(n, 1)} role="gridcell" aria-selected={n === actual && columna === 1} className="buscador-de-la-opcion__estrella" data-celda-marcada={n === actual && columna === 1 ? '' : undefined}>
+                {/* El foco no sale del campo: el botón se toca con el puntero, y con el teclado se llega por la grilla. */}
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="boton boton--quieto alimentos-del-catalogo__habitual"
+                  aria-pressed={esHabitual}
+                  aria-label={`${esHabitual ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar}: ${r.alimento.name}`}
+                  title={esHabitual ? COPY_HABITUALES.quitarMarca : COPY_HABITUALES.marcar}
+                  data-marcar-habitual
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => alternar(n)}
+                >
+                  <Icono nombre="habitual" tamano={18} />
+                </button>
+              </div>
+            </div>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }

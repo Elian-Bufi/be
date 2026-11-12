@@ -16596,12 +16596,31 @@ p.cifra-del-espacio__desglose {
   overflow-y: auto;
 }
 
+/* Cada fila de la grilla: el alimento (se suma con un clic) y su estrella de habitual, en su propia celda (DL-109). */
 .buscador-de-la-opcion__resultado {
-  display: grid;
-  gap: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.6rem 0.75rem;
   border-top: 1px solid var(--borde);
+}
+
+.buscador-de-la-opcion__alimento {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
   cursor: pointer;
+}
+
+.buscador-de-la-opcion__estrella {
+  flex: none;
+}
+
+/* Con el teclado en la estrella, la marca va en ella y no en el alimento. */
+.buscador-de-la-opcion__estrella[data-celda-marcada] .alimentos-del-catalogo__habitual {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
 }
 
 .buscador-de-la-opcion__resultado:first-child {

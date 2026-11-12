@@ -6,7 +6,7 @@
  * pasos de Nutrición, y las mismas operaciones que la estación: lo que escribe un paso es un cambio del borrador que
  * lleva el autoguardado, y «Siguiente» guarda y espera (TEST-EDP-017). La lógica está en `asistente-de-nutricion.ts`.
  */
-import { type ComidaHabitual, type EvaluacionNutricional, type VersionDeObjetivo } from '@be/domain';
+import { todasLasPaginas, type ComidaHabitual, type EvaluacionNutricional, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
@@ -22,6 +22,7 @@ import { FormularioDeObjetivo } from './formularios';
 import { InsertarComidaHabitual } from './habituales';
 import { useNutricion } from './nutricion';
 import { nombreDeLaComida, nombreDelDiaTipo, totalEnUnaLinea, type RangosDelDia } from './rangos';
+import { MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { OPCION_INICIAL } from './receta-en-el-plan';
 
 const siguiente = (n: PasoDeNutricion) => `Siguiente: ${PASOS_DE_NUTRICION[n - 1]}`;
@@ -89,6 +90,7 @@ export function PasosDeNutricion({
   comidasHabituales,
   onIrAPaso,
   onAbrirOpcion,
+  onAgregarOpcion,
   onQuitarDia,
   onInsertarHabitual,
   onObjetivoNuevo,
@@ -111,14 +113,23 @@ export function PasosDeNutricion({
   /** Ir a un paso; \`null\`: salir a la estación. */
   onIrAPaso: (n: PasoDeNutricion | null) => void;
   onAbrirOpcion: (i: number, j: number, k: number) => void;
+  /** Abre el cuadro con una opción nueva, que entra al borrador recién con «Guardar la opción». */
+  onAgregarOpcion: (i: number, j: number) => void;
   onQuitarDia: (i: number) => void;
   onInsertarHabitual: (i: number, comida: ComidaHabitual['structure'], nombresNuevos: Readonly<Record<string, string>>) => void;
-  onObjetivoNuevo: () => void;
+  /** El objetivo nuevo se escribió: vuelve a leerlo. «Siguiente» espera esa relectura (la carrera del paso 2). */
+  onObjetivoNuevo: () => void | Promise<void>;
   onRevisarYActivar: () => void;
 }) {
   const id = useId();
   const [noAvanzo, setNoAvanzo] = useState(false);
   const [esperando, setEsperando] = useState<PasoDeNutricion | null>(null);
+  // EDC-12: con un objetivo recién escrito, hasta que llegue su relectura no se sabe qué hay que guardar.
+  const [releyendoElObjetivo, setReleyendoElObjetivo] = useState(false);
+  const alObjetivoNuevo = () => {
+    setReleyendoElObjetivo(true);
+    void Promise.resolve(onObjetivoNuevo()).finally(() => setReleyendoElObjetivo(false));
+  };
   const sugerido = pasoQueSigueEnNutricion(estructura);
 
   const avanzar = async (n: PasoDeNutricion) => {
@@ -142,7 +153,11 @@ export function PasosDeNutricion({
   const principal =
     paso === 7
       ? { texto: COPY_ANTES_DE_ACTIVAR.revisarYActivar, onClick: onRevisarYActivar }
-      : { texto: siguiente((paso + 1) as PasoDeNutricion), onClick: () => void avanzar((paso + 1) as PasoDeNutricion), ocupado: esperando !== null || (guardando && sucio) ? 'Guardando antes de seguir…' : null };
+      : {
+          texto: siguiente((paso + 1) as PasoDeNutricion),
+          onClick: () => void avanzar((paso + 1) as PasoDeNutricion),
+          ocupado: releyendoElObjetivo ? C.leyendoElObjetivoNuevo : esperando !== null || (guardando && sucio) ? 'Guardando antes de seguir…' : null,
+        };
 
   return (
     <ArmazonDelAsistente
@@ -158,7 +173,7 @@ export function PasosDeNutricion({
       onReintentar={() => void avanzar((paso + 1) as PasoDeNutricion)}
       armado={loQueLlevasArmadoEnNutricion(estructura)}
     >
-      {paso === 2 ? <PasoDelObjetivo objetivo={objetivo} onObjetivoNuevo={onObjetivoNuevo} /> : null}
+      {paso === 2 ? <PasoDelObjetivo objetivo={objetivo} onObjetivoNuevo={alObjetivoNuevo} /> : null}
 
       {paso === 3 ? (
         <>
@@ -244,12 +259,9 @@ export function PasosDeNutricion({
                     <button
                       type="button"
                       className="boton boton--enlace"
-                      disabled={m.options.length >= 12}
-                      onClick={() => {
-                        const k = m.options.length;
-                        cambiar((x) => (x[i]!.meals[j]!.options.push({ label: `Opción ${k + 1}`, items: [] }), x));
-                        onAbrirOpcion(i, j, k);
-                      }}
+                      aria-haspopup="dialog"
+                      disabled={m.options.length >= MAXIMO_DE_OPCIONES}
+                      onClick={() => onAgregarOpcion(i, j)}
                     >
                       <Icono nombre="mas" tamano={18} />
                       {C.agregarOpcion(nombreDeLaComida(m, j))}
@@ -275,24 +287,35 @@ export function PasosDeNutricion({
   );
 }
 
-/** Paso 2: el objetivo general vigente, con su versión y su fecha, o una versión nueva, como hoy. */
-function PasoDelObjetivo({ objetivo, onObjetivoNuevo }: { objetivo: VersionDeObjetivo | null; onObjetivoNuevo: () => void }) {
+/**
+ * EDC-12: el número de la versión del objetivo, contado entre todas sus versiones (todas las páginas: la API da 20 por
+ * página, de la más nueva a la más vieja). Si la lista no se pudo leer entera, `null`: se dice solo la fecha, nunca un
+ * número contado a medias. Con `objetivo` en `null` no lee nada.
+ */
+export function useNumeroDelObjetivo(objetivo: VersionDeObjetivo | null): number | null {
   const { token, asesoradoId, sesionPerdida } = useNutricion();
-  const [numero, setNumero] = useState<number | null>(null);
-  const [escribiendo, setEscribiendo] = useState(false);
-  const [evaluaciones, setEvaluaciones] = useState<readonly EvaluacionNutricional[] | null>(null);
-  const [nuevo, setNuevo] = useState(false);
+  const [numero, setNumero] = useState<{ readonly de: string; readonly n: number | null } | null>(null);
   useEffect(() => {
     if (!objetivo) return;
     let vigente = true;
-    void api.listarObjetivos(token, asesoradoId).then((r) => {
+    void todasLasPaginas((f) => api.listarObjetivos(token, asesoradoId, f)).then((r) => {
       if (!vigente || sesionPerdida(r) || !r.ok) return;
-      setNumero(numeroDeLaVersionDelObjetivo(r.datos.data, objetivo.versionId));
+      setNumero({ de: objetivo.versionId, n: r.datos.completa ? numeroDeLaVersionDelObjetivo(r.datos.data, objetivo.versionId) : null });
     });
     return () => {
       vigente = false;
     };
   }, [objetivo, token, asesoradoId, sesionPerdida]);
+  return objetivo && numero?.de === objetivo.versionId ? numero.n : null;
+}
+
+/** Paso 2: el objetivo general vigente, con su versión y su fecha, o una versión nueva, como hoy. */
+function PasoDelObjetivo({ objetivo, onObjetivoNuevo }: { objetivo: VersionDeObjetivo | null; onObjetivoNuevo: () => void }) {
+  const { token, asesoradoId, sesionPerdida } = useNutricion();
+  const numero = useNumeroDelObjetivo(objetivo);
+  const [escribiendo, setEscribiendo] = useState(false);
+  const [evaluaciones, setEvaluaciones] = useState<readonly EvaluacionNutricional[] | null>(null);
+  const [nuevo, setNuevo] = useState(false);
   useEffect(() => {
     if (!escribiendo || evaluaciones) return;
     void api.listarEvaluaciones(token, asesoradoId).then((r) => {

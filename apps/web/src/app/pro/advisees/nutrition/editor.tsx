@@ -108,7 +108,7 @@ import { CuadroDeLaOpcion } from './cuadro-de-la-opcion';
 import { PasosDeNutricion } from './pasos-del-asistente';
 import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
 import { pasoPedido } from '../asistente/paso-que-sigue';
-import { opcionAlGuardar, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
+import { opcionAlGuardar, opcionNueva, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
 import { CuadroCopiarDesdeOtraComida, CuadroUsarComidaHabitual } from './copiar-desde-otra-comida';
 import { COPY_DE_OTRA_COMIDA, copiaDesdeOtraComida, MAXIMO_DE_OPCIONES, opcionesDeLaHabitual, origenesDeLaCopia } from './opcion-de-otra-comida';
 import { ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
@@ -147,10 +147,16 @@ function recetasDe(v: VersionDePlan): Record<string, RecetaDeOpcion> {
   return r;
 }
 
-/** Los ítems que la API armó para una opción ya guardada (una porción de la receta). */
-function itemsGuardados(v: VersionDePlan, optionId: string | undefined) {
+/**
+ * Los ítems que la API armó para una opción ya guardada (una porción de la receta). Con `recipeVersionId`, solo si lo
+ * guardado cita esa misma versión: después de «Usar la versión N», la porción vieja no vale, y hasta el guardado la opción
+ * dice «se calcula cuando se guarda el plan» (`RECETA_SIN_GUARDAR`), como una receta nueva.
+ */
+function itemsGuardados(v: VersionDePlan, optionId: string | undefined, recipeVersionId?: string) {
   if (!optionId) return null;
-  for (const d of v.dayTypes) for (const m of d.meals) for (const o of m.options) if (o.optionId === optionId) return o.items;
+  for (const d of v.dayTypes)
+    for (const m of d.meals)
+      for (const o of m.options) if (o.optionId === optionId) return recipeVersionId === undefined || o.recipe?.recipeVersionId === recipeVersionId ? o.items : null;
   return null;
 }
 
@@ -219,7 +225,7 @@ export function EditorDeBorrador({
    */
   onDescartado: (porOtraPestana?: string) => void;
   /** ED-30: el asistente escribió una versión nueva del objetivo: la sección vuelve a leer el vigente. */
-  onObjetivoNuevo?: () => void;
+  onObjetivoNuevo?: () => void | Promise<void>;
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
@@ -240,6 +246,8 @@ export function EditorDeBorrador({
   const [recetas, setRecetas] = useState<Record<string, RecetaDeOpcion>>({});
   const [eligiendoReceta, setEligiendoReceta] = useState<{ readonly i: number; readonly j: number } | null>(null);
   const [sucio, setSucio] = useState(false);
+  // ED-30 (EDC-12): el asistente escribió una versión nueva del objetivo; hasta que el borrador la cite, hay algo por guardar.
+  const [objetivoPedido, setObjetivoPedido] = useState(false);
   const [guardando, setGuardando] = useState(false);
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
   // el autoguardado. «Guardado» solo con la respuesta del servidor; un 409 por versión no pisa nada.
@@ -269,7 +277,9 @@ export function EditorDeBorrador({
   // Los alimentos habituales se cargan una vez para todo el borrador.
   const alimentosHabituales = useAlimentosHabituales(token);
   // ED-31: «Agregar ítem» abre la opción en un cuadro, con el buscador adentro (maqueta 06); la opción que se edita.
-  const [agregando, setAgregando] = useState<{ readonly i: number; readonly j: number; readonly k: number } | null>(null);
+  // ED-31: la opción abierta en su cuadro. `nueva`: «Agregar una opción» del asistente (ED-30); todavía no está en el
+  // borrador, y entra recién con «Guardar la opción»: cancelar no deja una opción vacía.
+  const [agregando, setAgregando] = useState<{ readonly i: number; readonly j: number; readonly k: number; readonly nueva?: true } | null>(null);
   const [activando, setActivando] = useState(false);
   const [falloDeActivacion, setFalloDeActivacion] = useState<string | null>(null);
   const intentoDeActivar = useClaveDeIntento();
@@ -337,16 +347,21 @@ export function EditorDeBorrador({
 
   // ED-34: lo que ya estaba en el día tipo que se mira y todavía no tiene composición conocida se lee del buscador, por su
   // nombre, y se toma solo si vuelve el mismo alimento (por su identidad). De a tres lecturas a la vez, una vez cada uno.
+  // En el asistente (ED-30), el paso 5 muestra las opciones de todos los días tipo: se leen las de todos. El cuadro de una
+  // opción (ED-31) calcula con las demás opciones de su comida: se lee también el día de esa opción.
   const diaMirado = estructura[posicionPedida(estructura.length, parametros.get('dia'))];
+  const conTodosLosDias = (pasoPedido(parametros.get('asistente')) ?? 0) >= 2;
+  const diaDelCuadro = agregando ? estructura[agregando.i] : undefined;
   const porLeer = useMemo(
-    () =>
-      diaMirado && version
-        ? alimentosSinComposicion(
-            diaMirado.meals.flatMap((m) => m.options.flatMap((o) => itemsParaElTotal(o, nombres, (id) => itemsGuardados(version, id)) ?? [])),
-            composiciones,
-          )
-        : [],
-    [diaMirado, version, nombres, composiciones],
+    () => {
+      if (!version) return [];
+      const dias = conTodosLosDias ? estructura : [...new Set([diaMirado, diaDelCuadro])].filter((d) => d !== undefined);
+      return alimentosSinComposicion(
+        dias.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => itemsParaElTotal(o, nombres, (id, rv) => itemsGuardados(version, id, rv)) ?? []))),
+        composiciones,
+      );
+    },
+    [conTodosLosDias, estructura, diaMirado, diaDelCuadro, version, nombres, composiciones],
   );
   useEffect(() => {
     if (porLeer.length === 0) return;
@@ -390,7 +405,7 @@ export function EditorDeBorrador({
     const citada = o.recipeVersionId ? recetas[o.recipeVersionId] : undefined;
     const vigente = citada ? recetasVigentes.get(citada.recipeId) : undefined;
     if (!citada || !vigente || typeof vigente !== 'object' || !hayVersionNueva(citada, vigente)) return null;
-    const porcionDeAhora = version ? itemsGuardados(version, o.optionId) : null;
+    const porcionDeAhora = version ? itemsGuardados(version, o.optionId, o.recipeVersionId) : null;
     const antes = porcionDeAhora ? porcionDeAhora.map((it) => ({ catalogItemId: it.catalogItemId, nombre: it.name || nombres[it.catalogItemId] || 'Elemento', cantidad: it.quantity })) : null;
     return { citada, vigente, cambios: cambiosEnUnaPorcion(antes, porcionDe(vigente)), conLaPorcionDeAhora: antes !== null };
   };
@@ -418,6 +433,10 @@ export function EditorDeBorrador({
   };
 
   const objetivoVigente = objetivo?.versionId ?? null;
+  // EDC-12: con el objetivo nuevo ya leído, el borrador que cita el anterior tiene algo por guardar aunque no se haya
+  // tocado nada más. Se cuenta recién cuando llega la relectura: un guardado anterior no lo mandaría (la carrera del paso 2).
+  const objetivoPorGuardar = objetivoPedido && !!version && !!objetivoVigente && objetivoVigente !== version.objectiveVersionId;
+  const porGuardar = sucio || objetivoPorGuardar;
 
   /**
    * Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. `reenvio` (ED-61): lo escrito después de un guardado
@@ -544,16 +563,17 @@ export function EditorDeBorrador({
   // El autoguardado: la preparación se guarda sola en la primera pausa, si se puede y si no hay un acto abierto.
   const puedeGuardar = loQueNoDejaGuardarElPlan(estructura).length === 0;
   // ED-03: por qué «Guardar ahora» está apagado, o `null`.
-  const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
-  const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision], [estructura, proximaRevision]);
+  const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio: porGuardar, conflicto });
+  // El objetivo nuevo, recién leído, también cuenta como un cambio: el autoguardado lo manda en la primera pausa.
+  const cambiosParaGuardar = useMemo(() => [estructura, proximaRevision, objetivoPorGuardar], [estructura, proximaRevision, objetivoPorGuardar]);
   const autoguardado = useAutoguardado({
-    habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !descartar,
+    habilitado: !!version && porGuardar && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !descartar,
     cambios: cambiosParaGuardar,
     guardar: () => void guardar(true),
   });
   // ED-02: un enlace interno con cambios guarda antes de salir (si se puede: nada a medio escribir ni un conflicto) o
   // pregunta; recargar o cerrar la pestaña, también pregunta.
-  useCambiosSinGuardar(sucio, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
+  useCambiosSinGuardar(porGuardar, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
 
   /**
    * ED-07: la revisión de la API de la versión guardada (API-NUT-11). Lo que dice entra en «Lo que impide activar»; la
@@ -590,10 +610,10 @@ export function EditorDeBorrador({
   // ED-07: con el cuadro abierto y todo guardado, la API revisa lo guardado (al abrirlo, o apenas llega la respuesta de
   // un guardado). Con cambios sin guardar, el cuadro ofrece primero «Guardar ahora».
   useEffect(() => {
-    if (confirmar && version && !sucio && !guardando && revision === null) void revisar(version);
+    if (confirmar && version && !porGuardar && !guardando && revision === null) void revisar(version);
     // `revisar` es de este render y lee lo mismo que estas dependencias.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmar, version, sucio, guardando, revision]);
+  }, [confirmar, version, porGuardar, guardando, revision]);
 
   async function activar() {
     if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
@@ -817,7 +837,13 @@ export function EditorDeBorrador({
 
   // ED-31: la opción del cuadro, su comida y su día tipo.
   const comidaDondeSeAgrega = agregando ? estructura[agregando.i]?.meals[agregando.j] : undefined;
-  const opcionDondeSeAgrega = agregando ? comidaDondeSeAgrega?.options[agregando.k] : undefined;
+  const opcionDondeSeAgrega = agregando?.nueva ? (comidaDondeSeAgrega ? opcionNueva(agregando.k) : undefined) : agregando ? comidaDondeSeAgrega?.options[agregando.k] : undefined;
+  // Las demás opciones de la comida del cuadro, con su total, en el día tipo de esa opción (no en el que se mira).
+  const diaDeLaOpcion = agregando ? estructura[agregando.i] : undefined;
+  const otrasOpcionesDelCuadro =
+    agregando && diaDeLaOpcion
+      ? (rangosDelDia(diaDeLaOpcion, agregando.i, composiciones, nombres, (id, rv) => itemsGuardados(version, id, rv), (rv) => recetas[rv]?.name ?? null).comidas[agregando.j]?.opciones.filter((_, k) => k !== agregando.k) ?? [])
+      : [];
   const comidaDeLaReceta = eligiendoReceta ? estructura[eligiendoReceta.i]?.meals[eligiendoReceta.j] : undefined;
   // ── ED-07: lo que dice «Antes de activar» ─────────────────────────────────────────────────────────────────────
   /** Cerrar el cuadro y llevar a una cosa por corregir: a su lugar, con el foco ahí. */
@@ -840,11 +866,11 @@ export function EditorDeBorrador({
   const enElPanel = (p: ValidationIssue, texto: string) => ({ texto: `${ubicacionDelProblema(p.path, estructura)}: ${texto}`, ir: lugarDelProblema(p.path).dia === null ? null : () => irAlProblema(p) });
   const impidenEnVivo = [
     ...loQueNoDejaGuardarElPlan(estructura).map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
-    ...(revision?.estado === 'lista' && !sucio ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+    ...(revision?.estado === 'lista' && !porGuardar ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
   ];
   const sinCompletarEnVivo = loQueQuedaSinCompletarEnNutricion(estructura).map((p) => enElPanel(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento'));
   // ── ED-31 y ED-34: los totales de cada opción y los rangos del día tipo que se mira ─────────────────────────
-  const rangos = dia ? rangosDelDia(dia, i, composiciones, nombres, (id) => itemsGuardados(version, id), (rv) => recetas[rv]?.name ?? null) : null;
+  const rangos = dia ? rangosDelDia(dia, i, composiciones, nombres, (id, rv) => itemsGuardados(version, id, rv), (rv) => recetas[rv]?.name ?? null) : null;
   const leyendoComposiciones = [...composiciones.values()].filter((c) => c === 'leyendo').length;
   const huecosDelDia = rangos
     ? [
@@ -875,7 +901,7 @@ export function EditorDeBorrador({
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
-            sucio={sucio}
+            sucio={porGuardar}
             puedeGuardar={puedeGuardar}
             fallo={fallo}
             conflicto={conflicto}
@@ -1008,10 +1034,10 @@ export function EditorDeBorrador({
           estructura={estructura}
           cambiar={cambiar}
           nombres={nombres}
-          rangosDe={(n) => (estructura[n] ? rangosDelDia(estructura[n]!, n, composiciones, nombres, (id) => itemsGuardados(version, id), (rv) => recetas[rv]?.name ?? null) : null)}
+          rangosDe={(n) => (estructura[n] ? rangosDelDia(estructura[n]!, n, composiciones, nombres, (id, rv) => itemsGuardados(version, id, rv), (rv) => recetas[rv]?.name ?? null) : null)}
           objetivo={objetivo}
           persona={persona ?? 'la persona'}
-          sucio={sucio}
+          sucio={porGuardar}
           guardando={guardando}
           guardar={() => guardar()}
           impiden={impidenEnVivo}
@@ -1019,6 +1045,7 @@ export function EditorDeBorrador({
           comidasHabituales={comidasHabituales.lista}
           onIrAPaso={(n) => ir({ asistente: n === null ? null : String(n) })}
           onAbrirOpcion={(di, j, k) => setAgregando({ i: di, j, k })}
+          onAgregarOpcion={(di, j) => setAgregando({ i: di, j, k: estructura[di]?.meals[j]?.options.length ?? 0, nueva: true })}
           onQuitarDia={(n) => {
             const d = estructura[n];
             if (!d || estructura.length <= 1) return;
@@ -1033,9 +1060,10 @@ export function EditorDeBorrador({
             setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaComida });
           }}
           onObjetivoNuevo={() => {
-            // La versión en preparación pasa a usar el objetivo nuevo con el próximo guardado.
-            setSucio(true);
-            onObjetivoNuevo();
+            // La versión en preparación pasa a usar el objetivo nuevo con el próximo guardado: cuenta como algo por guardar
+            // recién cuando llega la relectura (`objetivoPorGuardar`), y «Siguiente» espera esa relectura.
+            setObjetivoPedido(true);
+            return onObjetivoNuevo();
           }}
           onRevisarYActivar={abrirAntesDeActivar}
         />
@@ -1126,7 +1154,7 @@ export function EditorDeBorrador({
               }
               nombres={nombres}
               recetas={recetas}
-              itemsDeLaReceta={(optionId) => itemsGuardados(version, optionId)}
+              itemsDeLaReceta={(optionId, rv) => itemsGuardados(version, optionId, rv)}
               versionNueva={(k) => {
                 const o = m.options[k];
                 const v = o ? versionNuevaDe(o) : null;
@@ -1401,24 +1429,26 @@ export function EditorDeBorrador({
       <CuadroDeLaOpcion
         abierto={agregando !== null && opcionDondeSeAgrega !== undefined}
         titulo={agregando && comidaDondeSeAgrega ? tituloDelCuadro(nombreDeLaComida(comidaDondeSeAgrega, agregando.j), agregando.k) : ''}
-        subtitulo={agregando && comidaDondeSeAgrega ? subtituloDelCuadro(nombreDelDiaTipo(estructura[agregando.i]!, agregando.i), comidaDondeSeAgrega.options.length) : ''}
+        subtitulo={agregando && comidaDondeSeAgrega ? subtituloDelCuadro(nombreDelDiaTipo(estructura[agregando.i]!, agregando.i), comidaDondeSeAgrega.options.length + (agregando.nueva ? 1 : 0)) : ''}
         opcion={opcionDondeSeAgrega ?? null}
         comida={agregando && comidaDondeSeAgrega ? nombreDeLaComida(comidaDondeSeAgrega, agregando.j) : ''}
-        otrasOpciones={agregando && agregando.i === i ? (rangos?.comidas[agregando.j]?.opciones.filter((_, k) => k !== agregando.k) ?? []) : []}
+        otrasOpciones={otrasOpcionesDelCuadro}
         nombres={nombres}
         composiciones={composiciones}
         objetivo={objetivo}
         habituales={alimentosHabituales}
         alGuardar={(copia, nuevos) => {
           if (!agregando) return;
-          const { i: di, j, k } = agregando;
+          const { i: di, j, k, nueva } = agregando;
           setNombres((n) => ({ ...n, ...nuevos.nombres }));
           // El buscador ya trajo su composición: los totales de la estación siguen al instante.
           setComposiciones((m) => new Map([...m, ...nuevos.composiciones]));
           // Sobre la estructura de ahora: si un guardado le dio identidad a la opción con el cuadro abierto, la conserva.
           cambiar((x) => {
             const m = x[di]?.meals[j];
-            if (m && m.options[k]) m.options[k] = opcionAlGuardar(m.options[k], copia);
+            if (m && nueva) {
+              if (m.options.length < MAXIMO_DE_OPCIONES) m.options.push(copia);
+            } else if (m && m.options[k]) m.options[k] = opcionAlGuardar(m.options[k], copia);
             return x;
           });
           setAgregando(null);
@@ -1527,7 +1557,7 @@ export function EditorDeBorrador({
         revisando={revision?.estado === 'revisando'}
         sinRevisar={revision?.estado === 'fallo'}
         onVolverARevisar={() => void revisar(version)}
-        sinGuardar={sucio}
+        sinGuardar={porGuardar}
         guardando={guardando}
         conflicto={conflicto}
         onGuardarAhora={() => void guardar()}

@@ -90,6 +90,7 @@ export const COPY_ASISTENTE_DE_NUTRICION = {
   // Paso 2
   objetivo: '¿Con qué objetivo se arma el plan?',
   objetivoGeneral: 'Objetivo general',
+  leyendoElObjetivoNuevo: 'Leyendo el objetivo nuevo…',
   versionYFecha: (n: number | null, desde: string) => (n ? `Versión ${n}, vigente desde el ${desde}.` : `Vigente desde el ${desde}.`),
   enGramos: 'El plan se escribe en gramos: cada alimento con su cantidad. El reparto del objetivo también va en gramos.',
   versionNueva: 'Escribir una versión nueva del objetivo',
