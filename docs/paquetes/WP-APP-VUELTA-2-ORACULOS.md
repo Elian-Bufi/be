@@ -221,8 +221,10 @@ STEPS                1. Pedir el nombre accesible de la campana con 47 sin leer 
 EXPECTED             1 → «Novedades, 47 sin leer» y «Novedades»; el lector agrega «botón». 2 → con 47, un punto de 8 dp
                      en el acento; con ninguna, nada. 3 → la fila mide 48 dp; el fondo es transparente y no hay línea
                      abajo; el logo va a la izquierda solo en las raíces, accesible y con el nombre «BE», sin el texto
-                     «BE» visible; en un detalle va «Volver»; la línea «Ambiente de prueba · solo datos sintéticos»
-                     sigue, en `tenue`, debajo de la fila.
+                     «BE» visible; en un detalle va «Volver»; la línea del aviso de prueba va en `tenue`, debajo de la
+                     fila. Desde UF-08 (DL-169, traído de `main` el 2026-11-12) esa línea sale del ambiente: se dibuja
+                     solo con `AVISOS_DE_PRUEBA_VISIBLES` y su texto es `AVISOS_DE_PRUEBA.franja`, del dominio; la
+                     cabecera nunca lo escribe a mano (TEST-UF-012).
 NEGATIVE_ASSERTIONS  La campana no dibuja el número ni «99+». El brillo del logo no se lee.
 AUTOMATION           scripts/vuelta-de-rosca.test.mjs («TEST-AV2-006 · …»). Mutación: volver a dibujar el número dentro
                      de la campana → la prueba falla.

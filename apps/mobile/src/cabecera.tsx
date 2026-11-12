@@ -7,7 +7,7 @@
  *   dice «BE» una vez; en un detalle, «Volver»; nada al centro;
  * - **a la derecha**, la campana de las novedades (DL-133) con un punto de 8 dp en el acento mientras haya algo sin leer,
  *   sin número ni animación. El número sigue en su nombre para el lector: «Novedades, 47 sin leer»;
- * - **debajo**, la línea fina del ambiente de prueba, en `tenue` (08 §33), y la línea de actualización. Desde UF-08 de
+ * - **debajo**, la línea fina del aviso de prueba, en `tenue` (08 §33), y la línea de actualización. Desde UF-08 de
  *   WP-USO-FINAL (DL-169) esa línea sale del ambiente: va solo en las builds que muestran los avisos de prueba
  *   (`ambiente.ts`), con el texto del dominio. Sin ella no queda lugar reservado: la fila de la marca cierra la cabecera.
  *
