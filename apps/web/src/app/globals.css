@@ -16258,7 +16258,9 @@ p.cifra-del-espacio__desglose {
   gap: 0.5rem;
 }
 
+/* Dos renglones reservados: el total y lo que falta. Cuando llega la composición y «leyendo» se va, lo de abajo no salta. */
 .opcion-del-editor__total {
+  min-height: 3.2em;
   margin: 0.5rem 0;
 }
 
