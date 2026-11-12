@@ -46,6 +46,7 @@ import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
+import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
 import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type TotalDeLaOpcion } from './rangos';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
@@ -72,6 +73,8 @@ export function ComidaDelEditor({
   nombres,
   recetas,
   itemsDeLaReceta,
+  versionNueva,
+  alUsarLaVersionNueva,
   alAlternar,
   alElegirOpcion,
   alEditarNombre,
@@ -105,6 +108,9 @@ export function ComidaDelEditor({
   nombres: Readonly<Record<string, string>>;
   recetas: Readonly<Record<string, RecetaDeOpcion>>;
   itemsDeLaReceta: (optionId: string | undefined) => ItemsGuardados | null;
+  /** ED-32: si la receta de la opción `k` tiene una versión más nueva, su número y lo que cambia en una porción. */
+  versionNueva: (k: number) => { readonly numero: number; readonly cambios: readonly string[]; readonly conLaPorcionDeAhora: boolean } | null;
+  alUsarLaVersionNueva: (k: number) => void;
   alAlternar: () => void;
   alElegirOpcion: (k: number) => void;
   alEditarNombre: (que: NombreEnEdicion) => void;
@@ -138,6 +144,7 @@ export function ComidaDelEditor({
   const cambiandoElNombre = nombreEnEdicion?.de === 'comida';
   const cambiandoElDeLaOpcion = nombreEnEdicion?.de === 'opcion' && nombreEnEdicion.opcion === k;
   const total = opcion ? totalDeLaOpcion(k) : null;
+  const nueva = opcion?.recipeVersionId ? versionNueva(k) : null;
   const faltan = total ? faltantesDeLaOpcion(total) : [];
   return (
     <section className="comida-del-plan comida-del-editor" data-comida={posicion + 1} data-abierta={abierta ? '' : undefined}>
@@ -262,7 +269,29 @@ export function ComidaDelEditor({
                   />
                 ) : null}
                 {opcion.recipeVersionId ? (
-                  <OpcionDeReceta receta={recetas[opcion.recipeVersionId] ?? null} items={itemsDeLaReceta(opcion.optionId)} nombres={nombres} />
+                  <>
+                    <OpcionDeReceta receta={recetas[opcion.recipeVersionId] ?? null} items={itemsDeLaReceta(opcion.optionId)} nombres={nombres} />
+                    {/* ED-32: «Hay una versión 3 de esta receta», con lo que cambia, y pasarla solo a pedido. */}
+                    {nueva ? (
+                      <div className="version-nueva-de-la-receta" data-version-nueva={nueva.numero}>
+                        <p>
+                          <Icono nombre="aviso" tamano={18} />
+                          <strong>{COPY_VERSION_NUEVA.hay(nueva.numero)}</strong>
+                        </p>
+                        <p className="nota">{nueva.conLaPorcionDeAhora ? COPY_VERSION_NUEVA.loQueCambia : COPY_VERSION_NUEVA.ingredientesDeLaNueva}:</p>
+                        <ul className="lista-compacta">
+                          {nueva.cambios.slice(0, 6).map((c) => (
+                            <li key={c}>{c}</li>
+                          ))}
+                          {nueva.cambios.length > 6 ? <li>y {nueva.cambios.length - 6} más</li> : null}
+                        </ul>
+                        <button type="button" className="boton boton--secundario boton--compacto" onClick={() => alUsarLaVersionNueva(k)}>
+                          {COPY_VERSION_NUEVA.usarla(nueva.numero)}
+                        </button>
+                        <p className="nota">{COPY_VERSION_NUEVA.queHace}</p>
+                      </div>
+                    ) : null}
+                  </>
                 ) : opcion.items.length === 0 ? (
                   <p className="nota">Esta opción todavía no tiene ítems.</p>
                 ) : (

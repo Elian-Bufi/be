@@ -129,3 +129,63 @@ test('ED-31 · Enter suma el marcado y el cuadro sigue abierto; el borrador camb
   assert.match(editor, /m\.options\[k\] = opcionAlGuardar\(m\.options\[k\], copia\);/);
   assert.doesNotMatch(editor, /<AgregarItem/);
 });
+
+// ─── ED-32 · La foto después de guardar y «Usar la versión nueva» ──────────────────────────────────────────────────
+
+const R = await import('../src/app/pro/advisees/nutrition/version-nueva-de-la-receta.ts');
+const vigente = {
+  recipeId: 'r1',
+  recipeVersionId: 'rv3',
+  versionNumber: 3,
+  name: 'Tazón de yogur, avena y banana',
+  servings: 2,
+  ingredients: [
+    { catalogItemId: 'yogur', name: 'Yogur', quantity: { value: 400, unit: 'g' } },
+    { catalogItemId: 'avena', name: 'Avena', quantity: { value: 100, unit: 'g' } },
+    { catalogItemId: 'banana', name: 'Banana', quantity: { value: 200, unit: 'g' } },
+  ],
+};
+
+test('ED-32 · hay una versión nueva solo si es de la misma receta y más nueva que la citada', () => {
+  assert.equal(R.hayVersionNueva({ recipeId: 'r1', versionNumber: 2 }, vigente), true);
+  assert.equal(R.hayVersionNueva({ recipeId: 'r1', versionNumber: 3 }, vigente), false);
+  assert.equal(R.hayVersionNueva({ recipeId: 'r2', versionNumber: 1 }, vigente), false);
+  assert.equal(R.hayVersionNueva({ recipeId: 'r1', versionNumber: 1 }, null), false);
+});
+
+test('ED-32 · lo que cambia en una porción: lo que entra, lo que sale y las cantidades', () => {
+  const porcion = R.porcionDe(vigente);
+  assert.deepEqual(porcion.map((p) => [p.catalogItemId, p.cantidad.value]), [['yogur', 200], ['avena', 50], ['banana', 100]]);
+  const antes = [
+    { catalogItemId: 'yogur', nombre: 'Yogur', cantidad: { value: 200, unit: 'g' } },
+    { catalogItemId: 'avena', nombre: 'Avena', cantidad: { value: 40, unit: 'g' } },
+    { catalogItemId: 'miel', nombre: 'Miel', cantidad: { value: 10, unit: 'g' } },
+  ];
+  assert.deepEqual(R.cambiosEnUnaPorcion(antes, porcion), ['Avena: de 40 g a 50 g', 'Se suma Banana, 100 g', 'Sale Miel']);
+  assert.deepEqual(R.cambiosEnUnaPorcion(porcion, porcion), ['Una porción tiene los mismos ingredientes y cantidades.']);
+  // Sin la porción de ahora (la opción no se guardó), los ingredientes de la nueva.
+  assert.deepEqual(R.cambiosEnUnaPorcion(null, porcion), ['Yogur, 200 g', 'Avena, 50 g', 'Banana, 100 g']);
+  assert.deepEqual(R.cambiosEnUnaPorcion([], [{ catalogItemId: 'x', nombre: 'Sal', cantidad: { value: 0.25, unit: 'g' } }]), ['Se suma Sal, 0,3 g']);
+});
+
+test('ED-32 · usarla cambia solo la versión citada, y el nombre si era el de la receta (TEST-EDP-030: nunca sola)', () => {
+  const citada = { name: 'Tazón de yogur' };
+  assert.deepEqual(R.opcionConLaVersionNueva({ optionId: 'o1', label: 'Tazón de yogur', items: [], recipeVersionId: 'rv2' }, citada, vigente), {
+    optionId: 'o1',
+    label: 'Tazón de yogur, avena y banana',
+    items: [],
+    recipeVersionId: 'rv3',
+  });
+  assert.equal(R.opcionConLaVersionNueva({ label: 'Merienda dulce', items: [], recipeVersionId: 'rv2' }, citada, vigente).label, 'Merienda dulce');
+  const editor = leer('nutrition/editor.tsx');
+  // Se pasa a pedido, y solo si la opción sigue citando la versión que se miró.
+  assert.match(editor, /if \(op\?\.recipeVersionId === v\.citada\.recipeVersionId\) x\[i\]!\.meals\[j\]!\.options\[k\] = opcionConLaVersionNueva\(op, v\.citada, v\.vigente\);/);
+});
+
+test('ED-32 · guardada la receta, el cuadro pasa a la foto (opcional) y vuelve al plan con lo que pasó', () => {
+  const editor = leer('nutrition/editor.tsx');
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.agregada\(r\.name, res\.k, recetaNueva\.nombre\)\);/);
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.soloGuardada\(r\.name\)\);/);
+  assert.match(editor, /principal=\{fotoDeLaReceta \? \{ texto: COPY_FOTO_DE_LA_RECETA\.listo, alTocar: cerrarLaRecetaNueva \} : null\}/);
+  assert.match(editor, /<ImagenDeReceta\n\s+token=\{token\}\n\s+receta=\{fotoDeLaReceta\.receta\}/);
+});

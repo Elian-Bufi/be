@@ -93,6 +93,8 @@ import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComid
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
 import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
+import { ImagenDeReceta } from '../../recipes/imagen-de-receta';
+import { cambiosEnUnaPorcion, COPY_FOTO_DE_LA_RECETA, COPY_VERSION_NUEVA, hayVersionNueva, opcionConLaVersionNueva, porcionDe, type RecetaVigente } from './version-nueva-de-la-receta';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
@@ -288,6 +290,10 @@ export function EditorDeBorrador({
   const [recetaNueva, setRecetaNueva] = useState<LugarDeLaReceta | null>(null);
   const [recetaSucia, setRecetaSucia] = useState(false);
   const [recuperar, setRecuperar] = useState<{ readonly receta: Receta; readonly motivo: 'YA_NO_ESTA' | 'TOPE' } | null>(null);
+  // ED-32: guardada la receta nueva, el paso de la foto en el mismo cuadro (opcional), con lo que se dirá al cerrar.
+  const [fotoDeLaReceta, setFotoDeLaReceta] = useState<{ readonly receta: Receta; readonly texto: string; readonly aviso: string | null } | null>(null);
+  // ED-32: cada receta de las opciones del día tipo que se mira, como está hoy, para ofrecer su versión nueva.
+  const [recetasVigentes, setRecetasVigentes] = useState<ReadonlyMap<string, RecetaVigente | 'leyendo' | 'falla'>>(() => new Map());
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -355,6 +361,33 @@ export function EditorDeBorrador({
     };
     void Promise.all([leer(), leer(), leer()]);
   }, [porLeer, token, sesionPerdida]);
+
+  // ED-32: las recetas de las opciones del día que se mira se leen como están hoy (una vez cada una), para decir si hay
+  // una versión más nueva que la que cita la opción. Si no se puede leer, no se ofrece nada.
+  const recetasPorLeer = useMemo(() => {
+    const ids = new Set<string>();
+    for (const m of diaMirado?.meals ?? []) for (const o of m.options) if (o.recipeVersionId && recetas[o.recipeVersionId]) ids.add(recetas[o.recipeVersionId]!.recipeId);
+    return [...ids].filter((id) => !recetasVigentes.has(id));
+  }, [diaMirado, recetas, recetasVigentes]);
+  useEffect(() => {
+    if (recetasPorLeer.length === 0) return;
+    setRecetasVigentes((m) => new Map([...m, ...recetasPorLeer.map((id) => [id, 'leyendo'] as const)]));
+    for (const id of recetasPorLeer) {
+      void api.consultarReceta(token, id).then((r) => {
+        if (sesionPerdida(r)) return;
+        setRecetasVigentes((m) => new Map(m).set(id, r.ok ? r.datos.data : 'falla'));
+      });
+    }
+  }, [recetasPorLeer, token, sesionPerdida]);
+  /** ED-32: la versión nueva de la receta de una opción, con lo que cambia en una porción; `null` si no hay. */
+  const versionNuevaDe = (o: ComidaEnEdicion['options'][number]) => {
+    const citada = o.recipeVersionId ? recetas[o.recipeVersionId] : undefined;
+    const vigente = citada ? recetasVigentes.get(citada.recipeId) : undefined;
+    if (!citada || !vigente || typeof vigente !== 'object' || !hayVersionNueva(citada, vigente)) return null;
+    const porcionDeAhora = version ? itemsGuardados(version, o.optionId) : null;
+    const antes = porcionDeAhora ? porcionDeAhora.map((it) => ({ catalogItemId: it.catalogItemId, nombre: it.name || nombres[it.catalogItemId] || 'Elemento', cantidad: it.quantity })) : null;
+    return { citada, vigente, cambios: cambiosEnUnaPorcion(antes, porcionDe(vigente)), conLaPorcionDeAhora: antes !== null };
+  };
 
   // Después de ir a un problema, el foco va a su lugar en cuanto está dibujado (el día tipo puede tardar un instante
   // en cambiar). Si la persona hace otra cosa antes, ese foco pendiente se olvida: no salta más tarde.
@@ -668,6 +701,15 @@ export function EditorDeBorrador({
     setRecetaNueva(null);
     setRecuperar(null);
     setRecetaSucia(false);
+    // ED-32: lo que pasó con la receta se dice al volver al plan, con la foto si se sumó.
+    if (fotoDeLaReceta) setMensaje({ tipo: 'exito', texto: fotoDeLaReceta.aviso ? `${fotoDeLaReceta.texto} ${fotoDeLaReceta.aviso}` : fotoDeLaReceta.texto });
+    setFotoDeLaReceta(null);
+  };
+  /** ED-32: la receta quedó guardada (y agregada, si se pidió): el cuadro pasa al paso de la foto, que es opcional. */
+  const pasarALaFoto = (r: Receta, texto: string) => {
+    setRecuperar(null);
+    setRecetaSucia(false);
+    setFotoDeLaReceta({ receta: r, texto, aviso: null });
   };
   /**
    * ED-32: la receta ya está en Mis recetas; se suma como opción de su comida y se la deja elegida, en el mismo día. Si no
@@ -687,14 +729,12 @@ export function EditorDeBorrador({
     }
     ir({ dia: pedidoDeLaPosicion(res.i), comidas: pedidoDeComidasDelEditor(new Set([...(res.i === i ? abiertas : []), res.j])) });
     setPestanas((p) => ({ ...p, [`${res.i}-${res.j}`]: res.k }));
-    cerrarLaRecetaNueva();
-    setMensaje({ tipo: 'exito', texto: COPY_RECETA_NUEVA.agregada(r.name, res.k, recetaNueva.nombre) });
+    pasarALaFoto(r, COPY_RECETA_NUEVA.agregada(r.name, res.k, recetaNueva.nombre));
   };
   const alGuardarLaRecetaNueva = (r: Receta, agregar: boolean) => {
     setRecetas((x) => ({ ...x, [r.recipeVersionId]: { recipeId: r.recipeId, recipeVersionId: r.recipeVersionId, versionNumber: r.versionNumber, name: r.name, servings: r.servings } }));
     if (agregar) return agregarLaRecetaNueva(r);
-    cerrarLaRecetaNueva();
-    setMensaje({ tipo: 'exito', texto: COPY_RECETA_NUEVA.soloGuardada(r.name) });
+    pasarALaFoto(r, COPY_RECETA_NUEVA.soloGuardada(r.name));
   };
   /** ED-33: suma opciones a la comida `j` del día que se mira, elige la primera nueva y lo dice. */
   const sumarOpciones = (di: number, j: number, opciones: ComidaEnEdicion['options'], texto: string) => {
@@ -1031,6 +1071,23 @@ export function EditorDeBorrador({
               nombres={nombres}
               recetas={recetas}
               itemsDeLaReceta={(optionId) => itemsGuardados(version, optionId)}
+              versionNueva={(k) => {
+                const o = m.options[k];
+                const v = o ? versionNuevaDe(o) : null;
+                return v ? { numero: v.vigente.versionNumber, cambios: v.cambios, conLaPorcionDeAhora: v.conLaPorcionDeAhora } : null;
+              }}
+              alUsarLaVersionNueva={(k) => {
+                const o = m.options[k];
+                const v = o ? versionNuevaDe(o) : null;
+                if (!v) return;
+                setRecetas((x) => ({ ...x, [v.vigente.recipeVersionId]: { recipeId: v.vigente.recipeId, recipeVersionId: v.vigente.recipeVersionId, versionNumber: v.vigente.versionNumber, name: v.vigente.name, servings: v.vigente.servings } }));
+                cambiar((x) => {
+                  const op = x[i]?.meals[j]?.options[k];
+                  if (op?.recipeVersionId === v.citada.recipeVersionId) x[i]!.meals[j]!.options[k] = opcionConLaVersionNueva(op, v.citada, v.vigente);
+                  return x;
+                });
+                setMensaje({ tipo: 'exito', texto: COPY_VERSION_NUEVA.usada(v.vigente.name, v.vigente.versionNumber) });
+              }}
               alAlternar={() => {
                 const s = new Set(abiertas);
                 if (!s.delete(j)) s.add(j);
@@ -1351,10 +1408,30 @@ export function EditorDeBorrador({
         ancho
         titulo={COPY_RECETA_NUEVA.titulo(recetaNueva?.nombre ?? '')}
         sobretitulo={persona}
-        conCambios={recetaSucia && !recuperar}
+        conCambios={recetaSucia && !recuperar && !fotoDeLaReceta}
+        principal={fotoDeLaReceta ? { texto: COPY_FOTO_DE_LA_RECETA.listo, alTocar: cerrarLaRecetaNueva } : null}
         onCerrar={cerrarLaRecetaNueva}
       >
-        {recuperar && recetaNueva ? (
+        {fotoDeLaReceta ? (
+          <div data-foto-de-la-receta>
+            <Aviso tipo="exito">
+              <p>{fotoDeLaReceta.texto}</p>
+            </Aviso>
+            <h3>{COPY_FOTO_DE_LA_RECETA.titulo}</h3>
+            <p className="nota">{COPY_FOTO_DE_LA_RECETA.queEs}</p>
+            {fotoDeLaReceta.aviso ? (
+              <Aviso tipo="exito">
+                <p>{fotoDeLaReceta.aviso}</p>
+              </Aviso>
+            ) : null}
+            <ImagenDeReceta
+              token={token}
+              receta={fotoDeLaReceta.receta}
+              sesionPerdida={sesionPerdida}
+              onCambio={(r, aviso) => setFotoDeLaReceta((f) => (f ? { ...f, receta: { ...f.receta, ...r }, aviso } : f))}
+            />
+          </div>
+        ) : recuperar && recetaNueva ? (
           <div data-recuperar-la-receta>
             <Aviso tipo="error" enfocar>
               <p>{COPY_RECETA_NUEVA.quedoGuardada(recuperar.receta.name, recuperar.receta.versionNumber)}</p>

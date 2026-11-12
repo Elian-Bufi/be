@@ -16627,3 +16627,27 @@ p.cifra-del-espacio__desglose {
 .buscador-de-la-opcion__demostracion {
   margin-right: 0.4rem;
 }
+
+/* ═══ ED-32 · «Hay una versión 3 de esta receta»: un recuadro sin color de alarma, con lo que cambia y el botón ═══════ */
+.version-nueva-de-la-receta {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde-control);
+  border-left: 4px solid var(--foco);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.version-nueva-de-la-receta p {
+  margin: 0 0 0.35rem;
+}
+
+.version-nueva-de-la-receta p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.version-nueva-de-la-receta .lista-compacta {
+  margin: 0 0 0.5rem;
+}
