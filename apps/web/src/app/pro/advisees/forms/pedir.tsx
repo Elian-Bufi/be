@@ -50,7 +50,7 @@
  * ya ve de la persona (API-HBT-07; `sumar-habitos.ts`). Con la casilla marcada se envían las dos solicitudes en un paso:
  * primero la de área y después la de hábitos, cada una con su clave. Si una falla, se dice cuál.
  */
-import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_HABITOS, COPY_SOLICITUDES as C, COPY_VINCULO, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
+import { ALCANCES, COPY, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, COPY_HABITOS, COPY_SOLICITUDES as C, COPY_VINCULO, descripcionDeLaPlantilla, ETIQUETA_DE_ALCANCE, type Alcance, type Plantilla, type VersionDePlantillaV2 } from '@be/domain';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -401,17 +401,19 @@ export function PedidoDeInformacion({
                           checked={es}
                           onChange={() => void elegir(p, false)}
                           disabled={enviando}
-                          aria-describedby={es ? `${id}-descripcion` : undefined}
+                          aria-describedby={es && descripcionDeLaPlantilla(p.key, p.purpose) ? `${id}-descripcion` : undefined}
                           data-falta={faltas.formulario && i === 0 ? 'si' : undefined}
                         />
                         <span className="formulario-del-pedido__nombre">{p.name}</span>
                         <span className="formulario-del-pedido__cuenta">{C.preguntas(p.fieldCount)}</span>
                       </label>
-                      {/* La descripción, solo en el elegido: elegir no envía nada, y la lista se recorre de un vistazo. */}
-                      {es ? (
+                      {/* La descripción, solo en el elegido: elegir no envía nada, y la lista se recorre de un vistazo. ED-05: la
+                          del dominio, por la clave, en palabras para el profesional; nunca el propósito guardado, que lleva
+                          notas del equipo. */}
+                      {es && descripcionDeLaPlantilla(p.key, p.purpose) ? (
                         <p className="formulario-del-pedido__descripcion" id={`${id}-descripcion`}>
                           {/* DL-165 D-3: no se dice cuánto le lleva a la persona; ella ve «Parte 1 de 6». */}
-                          {p.purpose}
+                          {descripcionDeLaPlantilla(p.key, p.purpose)}
                         </p>
                       ) : null}
                     </div>

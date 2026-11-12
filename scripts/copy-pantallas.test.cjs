@@ -10,7 +10,7 @@
  * Uso: node --test scripts/copy-pantallas.test.cjs (después de construir @be/domain).
  */
 const assert = require('node:assert/strict');
-const { readdirSync, readFileSync } = require('node:fs');
+const { readdirSync, readFileSync, statSync } = require('node:fs');
 const { basename, join } = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
@@ -21,6 +21,7 @@ const {
   terminosProhibidosDeCarteraEn,
   terminosProhibidosDeEntrenamientoEn,
   terminosProhibidosDeFormulariosEn,
+  CODIGO_INTERNO,
 } = require('../packages/domain/dist/index.js');
 
 const RAIZ = join(__dirname, '..');
@@ -443,4 +444,50 @@ test('PA-06 · la APK no escribe glifos como íconos ni dibuja íconos con SvgXm
   }
   assert.deepEqual(hallazgos, []);
   assert.ok(GLIFOS.test('✓ Guardado') && GLIFOS.test('‹ Anterior') && !GLIFOS.test('Anterior'), 'la guardia reconoce los glifos');
+});
+
+/**
+ * ED-05 (WP-EDITORES-PROFESIONAL; TEST-EDP-006): ningún texto del website profesional ni de los diccionarios de textos del
+ * dominio dice un código interno del equipo (DL-…, TB-…, RF-…, UC-…, API-…, REG-…, INV-…, «ronda»). «Pedir información»
+ * mostraba el propósito guardado de una plantilla, con «Sucede a la v2 (DL-165, ronda 2.1)» (la captura C13).
+ *
+ * Los nombres de las lecturas de «Otras áreas» son identificadores que usan sus pruebas, no texto a la vista: están
+ * contados uno por uno, y si alguno deja de existir, la prueba también falla.
+ */
+const CODIGOS_QUE_NO_SE_MUESTRAN = ['otras-areas.ts · API-RES-04', 'otras-areas.ts · API-RES-06', 'otras-areas.ts · API-RES-07'];
+const archivosDe = (dir) =>
+  readdirSync(dir).flatMap((f) => {
+    const ruta = join(dir, f);
+    return statSync(ruta).isDirectory() ? archivosDe(ruta) : /\.tsx?$/.test(f) && !/\.test\./.test(f) ? [ruta] : [];
+  });
+const SIN_CODIGOS = [
+  ...archivosDe(join(RAIZ, 'apps/web/src/app/pro')),
+  ...readdirSync(join(RAIZ, 'packages/domain/src'))
+    .filter((f) => /^copy.*\.ts$/.test(f) && !f.includes('.test.'))
+    .map((f) => join(RAIZ, 'packages/domain/src', f)),
+  join(RAIZ, 'packages/domain/src/descripciones-de-plantillas.ts'),
+];
+
+test('ED-05 · ningún texto del website profesional ni de los diccionarios del dominio dice un código interno', () => {
+  assert.ok(SIN_CODIGOS.length >= 150, `se esperaban las pantallas de /pro y los diccionarios, hay ${SIN_CODIGOS.length}`);
+  const permitidos = new Set();
+  const hallazgos = SIN_CODIGOS.flatMap((a) =>
+    textosDe(a)
+      .filter(({ texto }) => CODIGO_INTERNO.test(texto))
+      .flatMap(({ texto, linea }) => {
+        const lugar = `${basename(a)} · ${texto}`;
+        if (CODIGOS_QUE_NO_SE_MUESTRAN.includes(lugar)) {
+          permitidos.add(lugar);
+          return [];
+        }
+        return [`${a.slice(RAIZ.length + 1)}:${linea} ${JSON.stringify(texto)}`];
+      }),
+  );
+  assert.deepEqual(hallazgos, []);
+  assert.deepEqual([...permitidos].sort(), [...CODIGOS_QUE_NO_SE_MUESTRAN].sort(), 'cada identificador permitido sigue existiendo: si se fue, se saca de la lista');
+});
+
+test('ED-05 · la guardia de códigos encuentra «(DL-1)» en un texto y no en un comentario (prueba de la prueba)', () => {
+  const textos = textosDe('prueba.tsx', ['// DL-1 en un comentario', 'export const P = () => <p>Sucede a la v1 (DL-1)</p>;'].join(String.fromCharCode(10)));
+  assert.deepEqual(textos.filter(({ texto }) => CODIGO_INTERNO.test(texto)).map(({ texto }) => texto), ['Sucede a la v1 (DL-1)']);
 });
