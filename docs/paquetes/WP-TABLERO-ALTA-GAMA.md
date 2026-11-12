@@ -566,6 +566,9 @@ tiene su mutación, como E-06 y E-16 de WP-ESCRITORIO-AMABLE.
 - **TEST-TAG-025 · Los rangos ubican y no se suman** (D-17; TB-39 y TB-40). Ninguna marca cambia de color por caer
   afuera; las opciones nunca se suman como un total del día; «Usar lo que cubren como rango» escribe solo al tocarlo; en
   g por kg, el peso es el de la última toma y se dice su fecha; la persona no ve los rangos.
+  *Enmendada el 2026-11-11 por DJ-4 (DL-167), junto con el «sin total del día» de TB-38:* el profesional ve el rango del
+  día, que suma el mínimo y el máximo de cada comida, y nunca dos alternativas de la misma comida. La reemplaza la
+  prueba de ED-34 de WP-EDITORES-PROFESIONAL.
 - **TEST-TAG-026 · Un día de la semana, un solo día tipo** (D-18; TB-41 y TB-42). Un mismo día de la semana no queda en
   dos días tipo; sin días marcados, la app sigue como hoy y nunca elige en silencio.
 - **TEST-TAG-027 · Las semanas salen del calendario** (D-19; TB-43 y TB-44). Prueba de propiedad: con las mismas fechas,

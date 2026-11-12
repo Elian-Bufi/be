@@ -7312,6 +7312,8 @@ partes esperan el sí de Dirección al alcance y a las maquetas corregidas.
   0.23.0-candidata.2 no lee una ejecución registrada con él: es el caso que DL-161 ya declaró.
 - **El límite de los habituales** (API-HAB-04 y 05, API-HAN-04 y 05) pasa de 16 KB a 700 KB, como en DL-168 (ED-64).
 - **La métrica del RIR de «Analizar»** cambia de nombre y de explicación (ED-63).
+- **El texto `noSePudoReintento` de `COPY_GUARDADO`** («… o con «Guardar cambios»») pasa a nombrar «Guardar ahora», por
+  DJ-6 (ED-03).
 - **GUIA II.2, «Superficies mates»,** por el vidrio del website (ED-18).
 - **Los presets de BE son contenido nuevo de BE** (ED-D2): esquemas sin datos de la persona (estructuras, prescripciones
   sin cargas y estructuras del día), sin repartos en % (DJ-7). Ningún ejercicio ni alimento elegido por BE, porque la
@@ -7345,7 +7347,11 @@ aparte.
 - DJ-3; ED-D1 a ED-D4, ED-D6, ED-D8, ED-D11 y ED-D13 a ED-D16; y, de la fuerza, ED-D17 a ED-D21;
 - la validación de los presets de BE;
 - la ventana de redespliegue de la API, el vie 20, para ED-08, ED-13, ED-64, ED-70, ED-72, ED-74 y API-PLN-01 a 03;
-- la candidata del 25/11 con ED-70, armada junto con UF-01 (WP-USO-FINAL) y el vidrio de la APK (WP-APP-VUELTA-2).
+- la candidata del 25/11 con ED-70, armada junto con UF-01 (WP-USO-FINAL) y el vidrio de la APK (WP-APP-VUELTA-2);
+- DL-169 y DL-170 todavía no están en `main`: viven en #253 y #255, en borrador. Este paquete las cita, así que se
+  integran antes que él o junto con él;
+- los cambios en `packages/domain/**` de las etapas 1 y 2 (§8 del paquete) redespliegan la API, porque `render.yaml`
+  la reconstruye con cualquier cambio ahí: agruparlos hasta la ventana del vie 20 o aceptar más redespliegues.
 - ~~El arreglo del límite de 16 KB por pedido (B28), en otro carril~~: resuelto por DL-168 (#252 y #254).
 
 **Condición de cierre:**
@@ -7508,9 +7514,9 @@ ED-D21, a ratificar.
   (`apps/mobile/src/series-de-la-sesion.ts`, `serieAlTildar`). Un RIR registrado puede ser el del plan sin ninguna
   marca, aunque el contrato diga que «nunca se infiere» (INV-06-152; TEST-PRJ-004).
 
-**Qué pidió Dirección.** Un seguimiento de la fuerza que no dependa del peso ni de lo estético, con la repetición máxima
-medida y la estimada (el paquete V3 de ChatGPT, 2026-11-11). Sobre el juicio de Claude a ese paquete, decidió el mismo
-día.
+**Qué pidió Dirección.** Trajo el paquete V3 de ChatGPT (2026-11-11), que propone seguir la fuerza por ejercicio, con la
+repetición máxima medida y la estimada, «especialmente útil cuando el peso corporal o cambios estéticos no reflejan una
+adaptación temprana» (V3, 03). Sobre el juicio de Claude a ese paquete, decidió el mismo día.
 
 **Lo decidido** (Dirección, 2026-11-11):
 - **DJ-1: sí a Epley v1 como el método de BE para estimar la repetición máxima, y se implementa en esta
@@ -7521,8 +7527,8 @@ día.
   y en el website; nunca como marca; nunca invitar a un test máximo.
 - **Las fuentes:**
   - **(a) la evaluación del profesional:** en el ejercicio, el profesional escribe una serie observada (kg ×
-    repeticiones y el RIR) y BE calcula y guarda la estimación de esa persona para ese ejercicio, con la fecha, el autor
-    y el método;
+    repeticiones, y el RIR si aplica) y BE calcula y guarda la estimación de esa persona para ese ejercicio, con la
+    fecha, el autor y el método;
   - **(b) las series que hizo la persona:** solo las que escribió ella. Para eso, **la app nueva guarda la procedencia
     por campo** (qué escribió la persona y qué vino del plan): **DJ-2 = sí, en la APK de esta actualización.** Las series
     de antes, sin procedencia, quedan fuera del cálculo;
@@ -7536,6 +7542,8 @@ día.
   2 daría 102,6 en lugar de 102,7.
 - **Las bandas, sobre n_eq:** núcleo, hasta 10; orientativa, de más de 10 a 12; fuera, más de 12, sin valor. Sobre n_eq y
   no sobre las repeticiones: 70 × 10 con RIR 2 y 70 × 12 con RIR 0 dan lo mismo (98,0) y caen en la misma banda.
+  Dirección dijo «de 2 a 10» para el núcleo; lo que va de 1 a 2 entra también ahí, y con n_eq 1 la estimación es la
+  carga, como recomendó el juicio.
 - **Las entradas admisibles** (REG-06-204), todas juntas:
   - el ejercicio, de la lista cerrada de la v1 (ED-D18) y sin sustituir en esa sesión;
   - la fuente: una serie que escribió la persona (`TYPED`, con la carga, las repeticiones y el RIR de procedencia
@@ -7622,12 +7630,21 @@ equipos: por eso es una «estimación orientativa». **No se citan:** Hughes y c
 (PMID 33337690; la retractación, PMID 33470601), ni Macarilla (2022), que trata la predicción por velocidad y no Epley.
 Las fichas completas se verifican al citarlas en la tesis.
 
-**Pruebas:** RM-01 a RM-42 (§5.8 del paquete), en `estimacion-de-fuerza.test.ts`, y los oráculos TEST-EDP-059 a 067,
-cada negativa con su mutación.
+**Pruebas:** RM-01 a RM-42 (§5.8 del paquete): las del método (RM-01 a RM-35), en `estimacion-de-fuerza.test.ts`; las de
+la observación, el cálculo de la carga y los permisos (RM-36 a RM-42), en las de ED-72, ED-76 y ED-74. Y los oráculos
+TEST-EDP-059 a 067, cada negativa con su mutación.
 
-**Lo que queda abierto:** ED-D17 a ED-D21 (el sentido del redondeo, la lista de la v1, la observación que no se estima,
-qué estimación usa el cálculo de la carga y si la persona ve su observación); DJ-3 (qué se celebra); el 1RM medido con
-protocolo (D-V3-03), para después.
+**Lo que queda abierto:**
+- ED-D17 a ED-D21 (el sentido del redondeo, la lista de la v1, la observación que no se estima, qué estimación usa el
+  cálculo de la carga y si la persona ve su observación); DJ-3 (qué se celebra); el 1RM medido con protocolo
+  (D-V3-03), para después;
+- **el RIR de la serie observada, «si aplica»:** ED-72 lo pide de 0 a 2, y sin él no se estima ni se guarda (ED-D19).
+  Falta decir si una observación sin RIR se puede guardar, o si «si aplica» quiere decir otra cosa;
+- **el interruptor «Incluir las de 11 a 12» de la evolución (ED-74) y la regla por sesión:** si, apagado, la regla elige
+  entre las de hasta 10, o si la sesión cuya serie elegida es de 11 a 12 queda sin punto;
+- **lo que viaja con el plan:** con el criterio % RM, el plan ya lleva el %, y ED-76 le suma la carga. Los dos viajan
+  con el plan (RES-06), y con los dos se deduce una estimación aproximada (72,5 ÷ 0,75 ≈ 96,7 kg). Declararlo aceptado
+  (es la prescripción que escribió el profesional), o que esa carga no viaje por RES-06, que es un cambio de RES-06.
 
 **Condición de cierre:**
 - ED-70 integrada, con la API desplegada en `test` y la candidata del 25/11 publicada y probada en el teléfono de

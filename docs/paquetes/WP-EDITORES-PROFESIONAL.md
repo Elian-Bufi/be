@@ -155,8 +155,8 @@ A 1440 × 900:
     está apagado, con su motivo, cuando no hay nada que guardar;
   - **«Revisar y activar…»**, la única entrada a activar, fija y llena: abre «Antes de activar» (ED-07). No cambia de
     nombre ni de lugar mientras se escribe, y nunca pasa a ser «Guardar»;
-  - «⋯» («Guardar como plantilla», «Guardar como preset», «Comparar con la vigente», «Rehacer con el asistente»,
-    «Descartar la versión en preparación»).
+  - «⋯» («Guardar como preset», que guarda el plan como plantilla, o una sesión, una comida o unas series, ED-12;
+    «Comparar con la vigente», «Rehacer con el asistente» y «Descartar la versión en preparación»).
 - **Tres zonas**, cada una con su propio desplazamiento y solo si hace falta (la página no se desplaza):
   - **izquierda (~240 px), la estructura:** en Entrenamiento, el bloque, las semanas, las sesiones con su día y los
     ejercicios de la elegida; en Nutrición, los días tipo con sus días, las comidas y las opciones;
@@ -197,7 +197,7 @@ y «Tuyos».
 | Tipo de preset | De BE (nuevo, contenido estático versionado en el dominio) | Tuyos | ¿Modelo nuevo? |
 |---|---|---|---|
 | Plan entero (Entrenamiento) | — | **Plantillas de plan** (TPL, DL-108): ya existen | No: se reusa |
-| Estructura (sesiones o días) | «Cuerpo entero · 3 días», «Torso / Piernas · 4 días», «Empuje / Tirón / Piernas» (solo nombres y días sugeridos) | Una plantilla de plan sin ejercicios (TPL) | No; falta verificar al programar que TPL acepta sesiones vacías (TA-) |
+| Estructura (sesiones o días) | «Cuerpo entero · 3 días», «Torso / Piernas · 4 días», «Empuje / Tirón / Piernas» (solo nombres y días sugeridos) | Una plantilla de plan sin ejercicios (TPL) | No: la plantilla usa la misma estructura de entrada que el borrador (`contratos-plantillas.ts`), que admite sesiones vacías; una prueba lo confirma al programar, con su EDT |
 | Sesión con ejercicios | — (BE no elige ejercicios: ED-D2) | **Sesiones habituales** (HAB, DL-109): ya existen | No |
 | Ejercicio | — | **Ejercicios habituales** (HAB): ya existen | No |
 | Prescripción (series × repeticiones, RIR, descanso) | «Hipertrofia 4×8-12 · RIR 2 · 90 s», «Fuerza 5×5 · RIR 2 · 3 min», «Resistencia 3×15 · RIR 3 · 45 s», «Técnica 3×8 · RIR 4» (sin cargas) | **Prescripciones habituales** | **Sí:** ED-13 (API-HAB-06 a 08, una tabla) |
@@ -275,8 +275,8 @@ Lo programa ED-18, y cambia la pauta II.2 de la guía («Superficies mates»).
 - **Un hueco no es un cero:** «Sin dato» nombra qué falta (`SUM_SOURCE_PER_100G_V1`).
 - **Nada viene elegido** en una decisión del profesional (el punto de partida, la fecha, las preguntas obligatorias que
   la plantilla no sugiere).
-- **Las preguntas de un pedido vienen todas marcadas** (DL-131): compactar el cuadro no cambia qué se pide ni el
-  consentimiento.
+- **Las preguntas de un pedido vienen marcadas como las trae la plantilla** (DL-131; desde DL-165 D-4, el embarazo
+  viene sin pedir): compactar el cuadro no cambia qué se pide ni el consentimiento.
 
 ## 4. Lo que dice la auditoría y lo que verificamos
 
@@ -498,6 +498,8 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
   - los tres fallos de DL-168, con el detalle técnico plegado (la operación y el código, sin datos de la persona) y
     «Reintentar»: sin respuesta («No pudimos guardar los cambios. Tus cambios siguen acá. Reintentá.»), demasiado grande
     y el rechazo propio de cada caso;
+  - «No se pudo guardar: se reintenta al seguir editando o con «Guardar cambios»» (`noSePudoReintento`) pasa a nombrar
+    «Guardar ahora»: con DJ-6, «Guardar cambios» deja de existir. Es un cambio de `COPY_GUARDADO`, declarado en DL-167;
   - el conflicto de DL-148, con «Cargar la versión guardada», solo si es real (ED-61).
 - *Dado* un guardado que falla sin respuesta, *cuando* el profesional toca «Reintentar», *entonces* se reintenta con lo
   que está en pantalla, y «Activar la versión…» sigue apagado, con su motivo, hasta guardar.
@@ -823,7 +825,7 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
 - *Dado* un profesional que escribe, *cuando* corre el autoguardado o cambia el estado, *entonces* «Guardar ahora» y
   «Revisar y activar…» no se mueven ni cambian de nombre.
 - *Dado* un plan con 8 versiones activadas, *cuando* se abre su borrador, *entonces* la barra dice «Versión 9 · en
-  preparación».
+  preparación», también después de descartar otro borrador: un borrador descartado no consume número.
 - *Dado* 1440 × 900, *cuando* se abre la estación, *entonces* la barra de comandos y las tres zonas entran en la
   pantalla, la página no se desplaza y cada zona se desplaza sola.
 - *Dado* 1280 × 800, *cuando* se abre la estación, *entonces* el panel derecho se abre con «Panel».
@@ -1146,11 +1148,12 @@ Son 53 partes: las 39 de la declaración, la del vidrio, seis P0 que destapó V3
     «Pedir todas» o «Ninguna» por parte, un buscador y «Ver todas»;
   - el para qué y el área.
 
-  Abajo, fijo: «Vas a pedir 50 preguntas (38 obligatorias) para Nutrición. Pedir no amplía tu acceso.» y un solo
-  principal, «Enviar solicitud».
+  Abajo, fijo: «Vas a pedir 49 preguntas (19 obligatorias) para Nutrición. Pedir no amplía tu acceso.» y un solo
+  principal, «Enviar solicitud». Son las cuentas de «Cómo comés hoy» v3: 50 preguntas, el embarazo sin pedir (DL-165
+  D-4) y 19 obligatorias (DL-165 D-21).
 - *Dado* «Cómo comés hoy», *cuando* Sofía la elige, *entonces*:
   - el cuadro entra en una pantalla con las partes plegadas;
-  - todas las preguntas siguen pedidas (DL-131);
+  - las preguntas pedidas son las mismas que hoy (DL-131 y DL-165 D-4);
   - las obligatorias se cuentan a la vista;
   - lo condicional se dice en su parte.
 - *Suma (la revisión de permisos de V3):*
@@ -1317,6 +1320,8 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
 - *El contrato* (`@be/domain`): un campo opcional de la serie ejecutada, `fieldOrigins`, con `PERSON` o `PLAN` para la
   carga, las repeticiones y el RIR que tengan valor. Como DL-161 I-1, lo que no existe no se guarda: un objeto vacío no
   viaja. Una serie `AS_PLANNED` no lo lleva (todo es del plan). Un valor sin su clave es «sin saber quién lo escribió».
+  No es la `procedencia` que ya guarda cada escritura (T-06-23: la operación, la superficie y el pedido): dice de dónde
+  salió cada valor de la serie. El código lo llama `fieldOrigins` para no confundirlas.
 - *Toca:*
   - el dominio: `contratos-entrenamiento.ts` y `registro-por-niveles.ts` (`serieEnSuForma`; `problemasDeCoherencia`
     rechaza, con su código, una clave sin valor o `PERSON` en una serie `AS_PLANNED`); en una corrección, cambiar solo
@@ -1385,13 +1390,13 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
     ve en vivo, con «Cómo se calculó», y hay un solo principal: «Guardar la serie observada».
 - *Lo que no hace:* no la lee la APK; no es un «1RM medido» ni un test (D-V3-03, después); no pregunta «¿fue un
   máximo?».
-- *Dado* Martín en el Press de banca con barra de Diego, *cuando* registra 85 kg × 5 con RIR 1, *entonces* se guarda la
-  observación con su estimación (102,0 kg, núcleo, Epley v1, Martín y la fecha) y la tarjeta la muestra.
+- *Dado* Martín en el Press de banca plano con barra de Diego, *cuando* registra 85 kg × 5 con RIR 1, *entonces* se
+  guarda la observación con su estimación (102,0 kg, núcleo, Epley v1, Martín y la fecha) y la tarjeta la muestra.
 - *Dado* 60 kg × 15 con RIR 0, *cuando* intenta guardarla, *entonces* el cuadro dice «Con más de 12 repeticiones
   equivalentes no se estima» y no guarda nada (ED-D19).
 - *Pruebas:* TEST-EDP-061 (integración con PostgreSQL: crear, suceder, anular, lo ajeno, la auditoría, que la base
-  impida cambiarla o borrarla y que la persona no la reciba) y TEST-EDP-062 (la familia FZA en la guardia de
-  trazabilidad y en `openapi.json`).
+  impida cambiarla o borrarla y que la persona no la reciba), TEST-EDP-062 (la familia FZA en la guardia de
+  trazabilidad y en `openapi.json`), y RM-36 y RM-37.
 
 **ED-73 · «Cómo se calculó» (V3 F-02)**
 - *Toca:* un `fuerza/como-se-calculo.tsx` nuevo, que se abre desde cualquier valor: la tarjeta, un punto de la
@@ -1418,7 +1423,8 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
     ejercicio y por unidad, que se abre ya filtrada desde la tarjeta (ED-75).
 - *Cómo se ve:*
   - el punto lleno, hasta 10 repeticiones equivalentes; hueco, de 11 a 12, con «Incluir las de 11 a 12» apagado de
-    entrada; la observación del profesional, con otra forma y su leyenda;
+    entrada; la observación del profesional, con otra forma y su leyenda. Cómo se combina ese interruptor con la regla
+    por sesión (si, apagado, la regla elige entre las de hasta 10) queda abierto en DL-171;
   - sin línea a través de un hueco; kg y lb, aparte;
   - la diferencia entre dos estimaciones, en kg («estimación: 90 → 98 kg»), nunca un % ni «fuerza real»; con un solo
     punto, ninguna;
@@ -1429,14 +1435,15 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
 - *Permisos:* los de una clave de Entrenamiento en «Analizar» (el PDP y ser el profesional del plan). Sin fila en la
   matriz §3.1, no viaja a otra área ni a RES-06.
 - *Dado* Diego con tres sesiones de press de banca escritas con la app nueva, *cuando* Martín abre la evolución,
-  *entonces* ve tres puntos con su fecha civil, y el de 70 × 12 con RIR 0, hueco.
+  *entonces* ve los dos puntos de hasta 10 repeticiones equivalentes, con su fecha civil, y al encender «Incluir las de
+  11 a 12» aparece el de 70 × 12 con RIR 0, hueco.
 - *Pruebas:* TEST-EDP-064 (nunca un punto desde la prescripción; la clave de marcas no cambia; la persona y otra área
-  no la reciben).
+  no la reciben), y RM-41 y RM-42.
 
 **ED-75 · La tarjeta de fuerza en el detalle del ejercicio (V3 E-03)**
 - *Toca:* el cuadro «Detalle» del ejercicio (ED-23) y un `fuerza/tarjeta.tsx` nuevo.
 - *Cómo se ve,* aparte de «Series del plan», bajo «Lo registrado», y nunca mezclada con la prescripción:
-  - «Fuerza estimada · Press de banca con barra»;
+  - «Fuerza estimada · Press de banca plano con barra» (el nombre del catálogo);
   - «≈ 98 kg · 11 nov · estimación orientativa · Epley v1»;
   - «70 kg × 10 · RIR 2 · la escribió Diego en la app» (o «la observó Martín»);
   - «Cómo se calculó», «Ver evolución» y «Registrar una serie observada».
@@ -1444,6 +1451,11 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
   serie observada».
 - *Solo en los ejercicios de la lista* de la v1; en los demás no aparece. Si ED-74 no llegó (§8), la tarjeta muestra
   solo las observaciones.
+- *Dado* Diego con una sesión escrita en la app nueva (70 kg × 10 con RIR 2 en el Press de banca plano con barra),
+  *cuando* Martín abre el «Detalle» de ese ejercicio en la estación, *entonces* la tarjeta dice «≈ 98 kg» con su fecha,
+  su rótulo y quién la escribió, aparte de lo que indica el plan, y abrirla no cambia nada de la prescripción.
+- *Dado* un ejercicio de la lista sin series que entren, *cuando* se abre su «Detalle», *entonces* la tarjeta dice qué
+  hace falta y ofrece «Registrar una serie observada», sin ningún valor.
 - *Pruebas:* TEST-EDP-065 (la tarjeta lee lo registrado, nunca la prescripción; el estado vacío; fuera de la lista no
   aparece).
 
@@ -1471,11 +1483,12 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
   general es 72,5 kg y la referencia dice el método y la fecha.
 - *Dado* el mismo cuadro, *cuando* Martín toca «Cancelar», *entonces* no se escribe nada.
 - *Pruebas:* TEST-EDP-066 (nada se escribe sin confirmar; el redondeo es el elegido y se ve; la referencia nunca lleva el
-  valor; RES-06 no lleva ninguna estimación).
+  valor; RES-06 no lleva ninguna estimación), y RM-38 a RM-40.
 
 **Los oráculos del método.** Los de V3 03 §12, adaptados y sin la fuente retractada (RM-01 a RM-22), más los del juicio
-y los de las decisiones del 11/11. Viven en `estimacion-de-fuerza.test.ts` y en el archivo de oráculos; la cuenta usa
-el valor con todos sus decimales, y la vista, «≈» al medio kilo.
+y los de las decisiones del 11/11. Los del método (RM-01 a RM-35) viven en `estimacion-de-fuerza.test.ts`; los de la
+observación, el cálculo de la carga y los permisos (RM-36 a RM-42), en las pruebas de ED-72, ED-76 y ED-74; todos, en el
+archivo de oráculos. La cuenta usa el valor con todos sus decimales, y la vista, «≈» al medio kilo.
 
 | ID | Caso | Resultado |
 |---|---|---|
@@ -1489,7 +1502,7 @@ el valor con todos sus decimales, y la vista, «≈» al medio kilo.
 | RM-08 | Sin RIR | Fuera («sin RIR»); nunca se supone 0 |
 | RM-09 | 15 repeticiones | Fuera (más de 12 equivalentes) |
 | RM-10 | Press de banca con barra y press en máquina | Nunca en la misma línea: la identidad es el `exerciseId` |
-| RM-11 | Una corrección cambia la carga de la serie elegida | Se recalcula al leer con el registro vigente; el original queda en el historial y su valor se reproduce |
+| RM-11 | Una corrección cambia la carga de la serie elegida | Si la corrige la persona desde la app, se recalcula al leer con el registro vigente; si la corrige el profesional, ese valor pierde su procedencia (ED-70) y la serie queda fuera, con su motivo. En los dos casos, el original queda en el historial y su valor se reproduce |
 | RM-12 | Un solo punto; después, dos | Con uno, ningún cambio; con dos, la diferencia en kg entre estimaciones, nunca un % |
 | RM-13 | Cualquier vista | Nunca «1RM real», «máximo real», «récord» ni «marca personal» |
 | RM-14 | Cada punto | Dice el método y la versión |
@@ -1572,7 +1585,7 @@ implementación, EDT-. El estado, al 2026-11-11.
 | ED-D15 | Solicitudes que inicia la persona (C10; §12.6) | No crear la bandeja: la ayuda dice que el vínculo lo pide el profesional y lo acepta la persona | Una bandeja «Solicitudes recibidas», con autorización de las dos partes y su análisis legal |
 | ED-D16 | Atajos y planilla | «Vista simple» por defecto y «Vista planilla» como preferencia del navegador; atajos visibles y nunca necesarios | La planilla como única vista de la estación |
 | ED-D17 | ¿Hacia dónde redondea la carga sugerida desde un %? (ED-76) | Hacia abajo, al múltiplo elegido (2,5 kg de entrada): nunca más que el % pedido. El resultado se ve antes y después, y se puede editar | Al múltiplo más cercano |
-| ED-D18 | ¿Qué ejercicios entran en la v1? (ED-71) | Los de barra, con carga externa total y patrón bilateral, del catálogo base: sentadilla trasera con barra, sentadilla frontal con barra, press de banca con barra, peso muerto con barra, press militar con barra y remo con barra. Sumar uno es una versión nueva de la especificación | Abrir a cualquier ejercicio con carga externa: máquinas y poleas no se comparan entre sí |
+| ED-D18 | ¿Qué ejercicios entran en la v1? (ED-71) | Los de barra, con carga externa total y patrón bilateral, del catálogo base, con sus nombres de ahí: «Sentadilla trasera con barra», «Sentadilla frontal con barra», «Press de banca plano con barra», «Peso muerto convencional», «Press de hombros con barra» (el press militar con barra) y «Remo inclinado con barra, agarre prono» (el de agarre supino es otro ejercicio). La especificación los fija por su `exerciseId`. Sumar uno es una versión nueva de la especificación | Abrir a cualquier ejercicio con carga externa: máquinas y poleas no se comparan entre sí |
 | ED-D19 | ¿Una serie observada que no se puede estimar se guarda? (ED-72) | No: la observación existe para estimar, y el cuadro dice por qué no se puede | Guardarla «sin estimación», como dato de la evaluación |
 | ED-D20 | ¿Qué estimación usa el cálculo de la carga? (ED-76) | La que elige el profesional, con su fecha, su origen y su antigüedad a la vista; ninguna elegida de entrada | La más reciente, elegida de entrada |
 | ED-D21 | ¿La persona ve su serie observada? | No en la v1 (DJ-1: solo el profesional). Entra en lo que la persona puede pedir de sus datos cuando exista UF-06 | Mostrarla en la próxima APK |
@@ -1583,7 +1596,7 @@ implementación, EDT-. El estado, al 2026-11-11.
 |---|---|---|---|
 | DJ-1 | ¿BE adopta un método propio de estimación de la repetición máxima? | **Sí:** Epley v1, en esta actualización, con las reglas de DL-171; solo para el profesional y en el website; nunca como marca; nunca invitar a un máximo | DL-171; ED-71 a ED-76 |
 | DJ-2 | ¿La serie registrada guarda qué campos vinieron del plan? | **Sí, en la APK de esta actualización.** Las series de antes, sin procedencia, quedan fuera del cálculo | ED-70 |
-| DJ-3 | ¿Qué se celebra de lo que hace la persona? | **Abierta.** Lo único fijado: una estimación nunca se celebra (DJ-1). La recomendación del juicio (celebrar solo hechos escritos por la persona, en la APK, después del 25/11) espera su decisión | — |
+| DJ-3 | ¿Qué se celebra de lo que hace la persona? | **Abierta.** Lo único fijado: una estimación nunca se celebra (DJ-1). La recomendación del juicio (celebrar solo hechos escritos por la persona, en la APK, después del 25/11) espera su decisión. Ojo: DL-170 (WP-APP-VUELTA-2) ya registra la decisión del 8/11, «se celebra un acto, nunca un número ni una medida del cuerpo», y el ejemplo del juicio («Primera vez con 82,5 kg × 5») celebra un número: hay que decidir DJ-3 sobre esa regla | — |
 | DJ-4 | ¿Un total del día en el editor de Nutrición? | **El rango del día,** con «Sin dato» si falta, sin una opción elegida, solo para el profesional; enmienda TB-38 y TEST-TAG-025 | ED-34 |
 | DJ-5 | ¿Se sigue bloqueando la activación si la persona nunca abrió una app que muestre objetivos por serie? | **No: un aviso** | ED-08 |
 | DJ-6 | ¿Cómo se revisa y se activa? | **Una entrada fija, «Revisar y activar…»,** que abre «Antes de activar»: valida al abrirse, lleva a cada cosa por corregir y deja «Activar la versión de [área]» apagado, con su motivo, hasta resolverlas. «Guardar ahora», fijo y secundario junto al estado. El borrador, numerado | ED-07, ED-15 |
@@ -1639,7 +1652,7 @@ sigue siendo el de la página.
 | La prescripción (A15, A16) | 5 | 2 | Una línea y la nota |
 | La agenda (A18) | 7 | 5 | Un chip por sesión, sin abrir ni cerrar un diálogo |
 | Guardar y revisar (A19, A20) | 2 | 0 | Autoguardado y panel en vivo |
-| Activar (A21, A22) | 3 | 3 | «Activar…», la fecha y la confirmación |
+| Activar (A21, A22) | 3 | 3 | «Revisar y activar…», la fecha y «Activar la versión 9 de Entrenamiento» |
 | **Total del camino** | **26** | **15 (meta: 14 a 18)** | |
 
 | Tramo del flujo B (Nutrición) | Hoy | Meta en la estación | Por qué |
@@ -1671,7 +1684,7 @@ Es el precio de guiar, y se mide aparte.
 | Etapa | Fechas | Partes | Se integra | Se mide |
 |---|---|---|---|---|
 | 0 · Aprobación | mié 11 y jue 12 | Esta actualización (V3, DJ-1 a DJ-16 y DL-171); las maquetas corregidas; ED-00 | Esta declaración, si Dirección la aprueba | La línea de base en `main` y la de accesibilidad |
-| 1 · P0 y el método | jue 12 a sáb 14 | En el website: ED-01 a ED-07, ED-60 a ED-63 y ED-65. En el dominio: ED-71 y el contrato de ED-70 | El website y el dominio: no redespliegan la API | A, B y C con el script |
+| 1 · P0 y el método | jue 12 a sáb 14 | En el website: ED-01 a ED-07, ED-60 a ED-63 y ED-65. En el dominio: ED-71 y el contrato de ED-70 | El website. **Ojo:** `render.yaml` reconstruye la API con cualquier cambio en `packages/domain/**`, y varias de estas partes lo tocan (los textos de ED-01, ED-03, ED-05, ED-06 y ED-63, ED-71 y el contrato de ED-70; en la etapa 2, ED-11, ED-15 y ED-22): integrarlas redespliega la API y cierra la IP del operador. Agruparlas hasta la ventana del vie 20 o aceptar más redespliegues lo decide Dirección (DL-167) | A, B y C con el script |
 | 2 · Lo común, Entrenamiento y la API | dom 15 a mié 18 | ED-10 a ED-18 y ED-20 a ED-25. En la rama de la API, todo lo que va en la ventana: ED-70, ED-72, ED-74, ED-08, ED-13, ED-64 y API-PLN-01 a 03 (la ventana se adelanta al vie 20 para darle tres días a la APK). En la rama de la APK: ED-70, sobre la candidata de UF-01 (WP-USO-FINAL) y del vidrio (WP-APP-VUELTA-2) | El website, con su CI y sus capturas | A y AC |
 | **Corte** | **mié 18, 20 h** | Lo que sigue depende de §8.1 | | |
 | 3 · Nutrición, pedir información y la fuerza en el website | jue 19 a dom 22 | ED-30 a ED-34, ED-40 y ED-41; ED-72 (el cuadro), ED-73, ED-75, ED-76 y ED-74 (la métrica). **La API, en la única ventana de redespliegue: el vie 20**, con todo lo de la API de este paquete y API-PLN-01 a 03, antes que la APK | La API el vie 20; después, el website | B, BC, C y AF |
@@ -1686,7 +1699,8 @@ Es el precio de guiar, y se mide aparte.
    están verdes. Si no, pasa después del congelamiento, con DL-171, la especificación y los oráculos listos, y ED-71 ya
    en el dominio.
 3. **Dentro de la fuerza, el orden de caída:** primero ED-74 (la curva, que hasta que la app nueva junte series tiene
-   pocos puntos), después ED-75, después ED-76 y por último ED-73. ED-70, ED-71 y ED-72 quedan.
+   pocos puntos), después ED-75, después ED-76 y por último ED-73. ED-70 y ED-71 quedan; ED-72 queda si su API entra en
+   la ventana (punto 4). Si caen ED-72 y también ED-70, no queda ninguna fuente hasta la próxima APK.
 4. **La ventana del vie 20:** lo que no esté verde en la rama de la API el jue 19 a las 20 h no entra. El orden de
    caída: API-PLN-02 y 03, ED-74, ED-13, API-PLN-01, ED-72, ED-64, ED-08 y, último, ED-70.
 5. **La APK:** la candidata se construye solo con la API ya desplegada en `test`. Si el lun 23 la API con ED-70 no está
@@ -1891,6 +1905,9 @@ reemplazan.
 | 010 Biblioteca por tareas | ED-11 y ED-57 | | 020 La estimación en la app | Fuera (D-V3-02, por DJ-1) |
 
 ### 13.4 Las maquetas, antes de mostrarlas
+
+Los números de pantalla de esta lista son los de la versión 1 de la página de maquetas; la versión 2 (2026-11-11, en
+vidrio y con la fuerza) aplica todos los puntos.
 
 - «Activar · 1 cosa por corregir» pasa a «Revisar y activar…», fijo, y el cuadro abre con lo que impide activar.
 - «Guardar ahora», fijo y secundario junto al estado; «Versión 9 · en preparación» queda (DJ-6).
