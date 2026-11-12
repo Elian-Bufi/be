@@ -5,8 +5,8 @@
  * - «Pendientes» (API-CAR-01; PF-07, DL-107): a quién mirar hoy, con hechos fechados y sin juicios (`pendientes.tsx`).
  * - «Tus asesorados» (REL-05), un directorio para entrar a la ficha de cada persona, con el estado mínimo de 10-B04
  *   §28-§29 (`asesorados.tsx`).
- * - «Solicitar vínculo» (REL-01) y «Solicitudes enviadas» (REL-02), cada una a un clic (`solicitar-vinculo.tsx`,
- *   `solicitudes-enviadas.tsx`).
+ * - «Solicitar vínculo» (REL-01), a un clic (`solicitar-vinculo.tsx`), y «Solicitudes enviadas» (REL-02), una sección
+ *   con filtros por estado y por persona al pie del Espacio (`solicitudes-enviadas.tsx`, ED-41).
  * Solo cuentas con la capacidad PROFESSIONAL_WORKSPACE que informa la API entran a este espacio (criterio 11A n.º 1);
  * la capacidad no autoriza nada: cada operación la decide la API.
  *
@@ -52,7 +52,8 @@ import { InvitarPersona } from './invitar-persona';
 import { ENTRADAS_DEL_VINCULO } from './vinculo-en-palabras';
 import { TeTocaAVos, TODO, type PaginaDeCartera } from './te-toca-a-vos';
 import { SolicitarVinculo } from './solicitar-vinculo';
-import { SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
+import { ID_DE_SOLICITUDES_ENVIADAS, SolicitudesEnviadas, solicitudesEnviadasPor } from './solicitudes-enviadas';
+import { SIN_FILTRO, type FiltroDeSolicitudes } from './filtro-de-solicitudes';
 import { TuSemana } from './tu-semana-en-pantalla';
 import { areaUnicaDelProfesional, armarElDirectorio } from './directorio';
 import { EsperandoSesion } from '../../lib/sesion';
@@ -245,7 +246,18 @@ export function EspacioProfesional() {
   const [formulario, setFormulario] = useState(false);
   // WP-INVITACION (DL-136): invitar por enlace, QR o código es el camino principal; el identificador queda como alternativa.
   const [invitar, setInvitar] = useState(false);
-  const [solicitudes, setSolicitudes] = useState<{ abiertas: boolean; aviso: string | null }>({ abiertas: false, aviso: null });
+  // ED-41: «Solicitudes enviadas» es una sección; los botones llevan a ella, con un filtro si hace falta.
+  const [avisoDeSolicitudes, setAvisoDeSolicitudes] = useState<string | null>(null);
+  const [filtroDeSolicitudes, setFiltroDeSolicitudes] = useState<FiltroDeSolicitudes>(SIN_FILTRO);
+  const irASolicitudes = useCallback((filtro: FiltroDeSolicitudes | null, avisoNuevo: string | null) => {
+    if (filtro) setFiltroDeSolicitudes(filtro);
+    setAvisoDeSolicitudes(avisoNuevo);
+    window.requestAnimationFrame(() => {
+      const seccion = document.getElementById(ID_DE_SOLICITUDES_ENVIADAS);
+      seccion?.scrollIntoView({ block: 'start' });
+      seccion?.focus({ preventScroll: true });
+    });
+  }, []);
   const [aviso, setAviso] = useState<string | null>(null);
   // TB-05: el nombre con que las personas ven a la cuenta, para su monograma en el menú. Sale de los vínculos ya leídos.
   const vinculosLeidos = vinculos.estado.tipo === 'listo' ? vinculos.estado.items : null;
@@ -368,11 +380,11 @@ export function EspacioProfesional() {
           invitaciones={invitacionesQueEsperan}
           hoy={hoy ?? ''}
           zona={zona}
-          onVerSolicitudes={() => setSolicitudes({ abiertas: true, aviso: null })}
+          onVerSolicitudes={() => irASolicitudes({ estado: 'PENDIENTE', persona: null }, null)}
           onVerInvitaciones={() => setInvitar(true)}
         />
         <Asesorados vinculos={vinculos.estado} profesionalId={yo.id} onReintentar={() => void vinculos.recargar()} onVerMas={() => void vinculos.verMas()}>
-          <button type="button" className="boton boton--enlace directorio__solicitudes" aria-haspopup="dialog" onClick={() => setSolicitudes({ abiertas: true, aviso: null })}>
+          <button type="button" className="boton boton--enlace directorio__solicitudes" onClick={() => irASolicitudes(null, null)}>
             <Icono nombre="solicitar" tamano={18} />
             Solicitudes enviadas{propias ? ` (${numero(propias.length)}${enviadas.estado.tipo === 'listo' && !enviadas.estado.completa ? '+' : ''})` : ''}
           </button>
@@ -385,6 +397,17 @@ export function EspacioProfesional() {
         </Asesorados>
         </div>
       </div>
+      {/* ED-41: a todo el ancho, debajo de la mesa: es el historial de lo enviado, con sus filtros. */}
+      <SolicitudesEnviadas
+        aviso={avisoDeSolicitudes}
+        solicitudes={enviadas.estado}
+        profesionalId={yo.id}
+        filtro={filtroDeSolicitudes}
+        onFiltro={setFiltroDeSolicitudes}
+        onCerrarAviso={() => setAvisoDeSolicitudes(null)}
+        onReintentar={() => void enviadas.recargar()}
+        onVerMas={() => void enviadas.verMas()}
+      />
 
       {CAJON_DE_A_UNA ? (
         <CajonDeAUna
@@ -433,18 +456,9 @@ export function EspacioProfesional() {
           setFormulario(false);
           void enviadas.recargar();
           // «Te mostramos esa»: si ya había una igual pendiente, se abre la lista, que lo dice arriba.
-          if (deduplicada) setSolicitudes({ abiertas: true, aviso: texto });
+          if (deduplicada) irASolicitudes({ estado: 'PENDIENTE', persona: null }, texto);
           else setAviso(texto);
         }}
-      />
-      <SolicitudesEnviadas
-        abierto={solicitudes.abiertas}
-        aviso={solicitudes.aviso}
-        solicitudes={enviadas.estado}
-        profesionalId={yo.id}
-        onCerrar={() => setSolicitudes({ abiertas: false, aviso: null })}
-        onReintentar={() => void enviadas.recargar()}
-        onVerMas={() => void enviadas.verMas()}
       />
       {aviso ? (
         <AvisoFlotante onCerrar={() => setAviso(null)}>

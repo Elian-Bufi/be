@@ -90,3 +90,49 @@ test('ED-41 · el vencimiento con fecha y hora, en la hora de Buenos Aires', () 
   assert.equal(V.venceElDiaYHora('2026-11-19T17:30:00Z'), 'Vence el 19 de noviembre a las 14:30.');
   assert.equal(V.venceElDiaYHora('2026-11-20T02:05:00Z'), 'Vence el 19 de noviembre a las 23:05.');
 });
+
+// ─── ED-41 · «Solicitudes enviadas» como sección, con filtros por estado y por persona ─────────────────────────────
+
+const F = await import('../src/app/pro/filtro-de-solicitudes.ts');
+const SECCION = readFileSync(new URL('../src/app/pro/solicitudes-enviadas.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const ESPACIO = readFileSync(new URL('../src/app/pro/espacio-profesional.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const sol = (id, persona, state) => ({ relationshipRequestId: id, state, advisee: { identityId: persona } });
+const enviadas = [sol('1', 'camila', 'PENDIENTE'), sol('2', 'diego', 'ACEPTADA'), sol('3', 'camila', 'CADUCADA'), sol('4', 'diego', 'PENDIENTE'), sol('5', 'lucia', 'RECHAZADA')];
+
+test('ED-41 · los filtros por estado y por persona se cruzan y conservan el orden de la lista', () => {
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, F.SIN_FILTRO).map((s) => s.relationshipRequestId), ['1', '2', '3', '4', '5']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'PENDIENTE', persona: null }).map((s) => s.relationshipRequestId), ['1', '4']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'TODAS', persona: 'camila' }).map((s) => s.relationshipRequestId), ['1', '3']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'PENDIENTE', persona: 'camila' }).map((s) => s.relationshipRequestId), ['1']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'ACEPTADA', persona: 'camila' }), []);
+});
+
+test('ED-41 · cada chip cuenta dentro de la persona elegida; uno sin ninguna no se ofrece, salvo el elegido', () => {
+  const chips = (f) => F.chipsDeEstado(enviadas, f).map((c) => `${c.rotulo} · ${c.cuantas}`);
+  assert.deepEqual(chips(F.SIN_FILTRO), ['Todas · 5', 'Pendientes · 2', 'Aceptadas · 1', 'Rechazadas · 1', 'Caducadas · 1']);
+  assert.deepEqual(chips({ estado: 'TODAS', persona: 'camila' }), ['Todas · 2', 'Pendientes · 1', 'Caducadas · 1']);
+  // Elegido «Aceptadas» y después Camila: el chip queda (con 0) para poder salir de él sin que desaparezca bajo el foco.
+  assert.deepEqual(chips({ estado: 'ACEPTADA', persona: 'camila' }), ['Todas · 2', 'Pendientes · 1', 'Aceptadas · 0', 'Caducadas · 1']);
+});
+
+test('ED-41 · las personas salen una vez cada una, por su identidad; una que ya no está deja de filtrar', () => {
+  assert.deepEqual(
+    F.personasDeLasSolicitudes(enviadas, (s) => `P-${s.advisee.identityId}`),
+    [{ id: 'camila', nombre: 'P-camila' }, { id: 'diego', nombre: 'P-diego' }, { id: 'lucia', nombre: 'P-lucia' }],
+  );
+  assert.deepEqual(F.filtroVigente(enviadas, { estado: 'PENDIENTE', persona: 'nadie' }), { estado: 'PENDIENTE', persona: null });
+  assert.deepEqual(F.filtroVigente(enviadas, { estado: 'PENDIENTE', persona: 'diego' }), { estado: 'PENDIENTE', persona: 'diego' });
+  assert.equal(F.cuantasSeVen(5, 5, F.SIN_FILTRO), null);
+  assert.equal(F.cuantasSeVen(1, 5, { estado: 'PENDIENTE', persona: 'camila' }), 'Se ve 1 de 5.');
+  assert.equal(F.cuantasSeVen(0, 5, { estado: 'ACEPTADA', persona: 'camila' }), 'Se ven 0 de 5.');
+});
+
+test('ED-41 · es una sección del Espacio, no un diálogo; los botones llevan a ella', () => {
+  assert.doesNotMatch(SECCION, /<dialog|showModal/);
+  assert.match(SECCION, /<section id=\{ID_DE_SOLICITUDES_ENVIADAS\}/);
+  assert.match(SECCION, /aria-label="Filtrar por estado"/);
+  assert.match(ESPACIO, /onVerSolicitudes=\{\(\) => irASolicitudes\(\{ estado: 'PENDIENTE', persona: null \}, null\)\}/);
+  assert.match(ESPACIO, /if \(deduplicada\) irASolicitudes\(\{ estado: 'PENDIENTE', persona: null \}, texto\);/);
+  // Un estado pendiente sigue sin decirse como acceso (TEST-EDP-035): la fila usa las palabras de siempre.
+  assert.match(SECCION, /estadoDeLaSolicitud\(s\.state/);
+});
