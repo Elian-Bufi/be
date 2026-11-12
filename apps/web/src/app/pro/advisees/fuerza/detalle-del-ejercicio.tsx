@@ -178,7 +178,11 @@ export function DetalleDelEjercicio({
           exerciseId={exerciseId}
           recargar={recargar}
           onComoSeCalculo={(p) => abrir({ tipo: 'como', punto: p })}
-          onRegistrar={() => abrir({ tipo: 'observar' })}
+          onRegistrar={() => {
+            // La fecha de entrada es la de hoy de la lectura: si no hay nada escrito, el cuadro arranca de nuevo con ella.
+            if (!observar.conCambios) observar.reiniciar();
+            abrir({ tipo: 'observar' });
+          }}
         />
       </div>
     );
