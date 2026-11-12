@@ -166,6 +166,20 @@ test('DL-171 · R3 · un RIR mayor que 2 queda fuera, con su motivo; la regla se
   assert.equal(fuera(escrita(80, 5, 2.5)).motivo, 'RIR_MAYOR_QUE_2');
 });
 
+test('DL-171 · 10 con RIR 0,5 son 10,5 repeticiones equivalentes: orientativa, y el texto de la banda lo dice («de más de 10 a 12»)', () => {
+  const e = valor(escrita(80, 10, 0.5));
+  assert.equal(e.repeticionesEquivalentes, 10.5);
+  assert.equal(e.banda, 'ORIENTATIVA');
+  // El interruptor apagado (ED-74) la deja afuera; encendido, entra.
+  assert.deepEqual(seriesElegidasDeLaSesion([escrita(80, 10, 0.5)], { incluirOrientativas: false }), []);
+  assert.equal(seriesElegidasDeLaSesion([escrita(80, 10, 0.5)], { incluirOrientativas: true }).length, 1);
+  // El texto de la banda la incluye: «de 11 a 12» dejaba afuera, en palabras, a una serie que está adentro.
+  assert.equal(COPY_FUERZA.banda.ORIENTATIVA, 'de más de 10 a 12 repeticiones equivalentes: estimación orientativa');
+  assert.doesNotMatch(COPY_FUERZA.banda.ORIENTATIVA, /de 11 a 12/);
+  // Y 10 con RIR 0 sigue en el núcleo («hasta 10»).
+  assert.equal(valor(escrita(80, 10, 0)).banda, 'NUCLEO');
+});
+
 test('RM-09 · 15 repeticiones: fuera (más de 12 equivalentes)', () => {
   assert.equal(fuera(escrita(50, 15, 0)).motivo, 'MAS_DE_12');
   assert.equal(COPY_FUERZA.masDe12, 'Con más de 12 repeticiones equivalentes no se estima');
@@ -438,7 +452,7 @@ test('RM-43 · 70 × 12 RIR 0 y 65 × 8 RIR 2: apagado, 65 × 8 («≈ 86,5 kg»
   assert.equal(encendido!.posicion, 0);
   casi(encendido!.estimacion.valor, 98);
   assert.equal(encendido!.estimacion.banda, 'ORIENTATIVA');
-  // Una sesión que solo tiene series de 11 a 12: apagado queda sin punto; la tarjeta muestra la de mayor carga, orientativa.
+  // Una sesión que solo tiene orientativas: apagado queda sin punto; la tarjeta muestra la de mayor carga, orientativa.
   const soloOrientativas = [escrita(60, 12, 0), escrita(70, 12, 0)];
   assert.deepEqual(seriesElegidasDeLaSesion(soloOrientativas, { incluirOrientativas: false }), []);
   const [tarjeta] = seriesElegidasDeLaSesion(soloOrientativas, { incluirOrientativas: false, respaldoOrientativo: true });

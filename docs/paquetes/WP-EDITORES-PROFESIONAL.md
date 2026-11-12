@@ -1463,7 +1463,8 @@ profesional y en el website (DJ-1; DL-171). La estimación tiene dos fuentes y u
     ejercicio y por unidad, que se abre ya filtrada desde la tarjeta (ED-75).
 - *Cómo se ve:*
   - el punto lleno, hasta 10 repeticiones equivalentes; hueco, de 11 a 12, con «Incluir las de 11 a 12» apagado de
-    entrada; la observación del profesional, con otra forma y su leyenda;
+    entrada (el rótulo dice «de más de 10 a 12»: el RIR admite decimales, y 10 con RIR 0,5 ya es orientativa; DL-171,
+    precisión del 2026-11-12); la observación del profesional, con otra forma y su leyenda;
   - la regla por sesión sigue al interruptor (recomendación de Claude del 2026-11-11, ratificada por
     Dirección el 2026-11-12; DL-171): apagado, elige la serie que entra de mayor carga entre las de hasta 10 repeticiones
     equivalentes, y una sesión que solo tiene series de 11 a 12 queda sin punto; encendido, entre todas las de hasta 12;

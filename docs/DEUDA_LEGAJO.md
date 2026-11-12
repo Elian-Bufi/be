@@ -7864,6 +7864,17 @@ delegó: «salvo una decisión crítica, hacé lo que recomiendes»):
   estimación (72,5 ÷ 0,75 ≈ 96,7 kg). Se acepta: es un dato de la propia persona y no expone nada a terceros. RES-06 no
   cambia.
 
+**Precisiones de la etapa 1 (2026-11-12), a ratificar por Dirección** (las destapó la revisión adversaria; no cambian el
+método):
+- **La banda orientativa se nombra «de más de 10 a 12».** El RIR admite decimales: 10 con RIR 0,5 son 10,5 repeticiones
+  equivalentes, y ya es orientativa. «De 11 a 12» la dejaba afuera en palabras, al lado de su propia cuenta en «Cómo se
+  calculó». El texto de la banda dice «de más de 10 a 12 repeticiones equivalentes», y el interruptor de ED-74, «Incluir
+  las de más de 10 a 12» (la maqueta decía «las de 11 a 12»). «Las de 11 a 12», en esta DL y en el paquete, nombra esa
+  misma banda.
+- **Lo que se muestra se redondea sobre la cuenta exacta.** El valor se calcula con una sola división, y el medio kilo,
+  la libra y la décima salen de la cuenta hecha con enteros, mitad hacia arriba: 41,25 × 12 con RIR 0 es 57,75 justo, y
+  se muestra «≈ 58 kg» y 57,8 kg, como en la cuenta a mano. En binario quedaba 57,749999… y se mostraba 57,5 y 57,7.
+
 **Lo que queda abierto:**
 - ~~ED-D17 a ED-D21~~: decididas el 2026-11-12 como se recomendaban (el redondeo hacia abajo, de a 2,5 kg de entrada;
   los seis ejercicios con barra de la lista de la v1; la observación que no se estima no se guarda; la estimación la

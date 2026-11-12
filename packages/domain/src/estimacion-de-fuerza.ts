@@ -19,7 +19,7 @@
  * - **La regla por sesión:** de las series que entran de un ejercicio en una ejecución, la de mayor carga, por unidad; a
  *   igual carga, la primera. Nunca «la mayor estimación», que sube sola cuando hay más series. Con «Incluir las de 11 a
  *   12» apagado, elige entre las de hasta 10 repeticiones equivalentes; encendido, entre todas las de hasta 12.
- * - **Cómo se muestra:** «≈ 98 kg», al medio kilo o a la libra entera, con «estimación · Epley v1» (de 11 a 12,
+ * - **Cómo se muestra:** «≈ 98 kg», al medio kilo o a la libra entera, con «estimación · Epley v1» (de más de 10 a 12,
  *   «estimación orientativa · Epley v1»). La décima, solo en «Cómo se calculó» (REG-06-158). Sin intervalo ni «±».
  *
  * **Lo que nunca hace:** calcular desde la prescripción, avisar, celebrar, entrar en las marcas
@@ -209,10 +209,13 @@ export interface SerieElegidaDeLaSesion {
 }
 
 export interface OpcionesDeLaSesion {
-  /** «Incluir las de 11 a 12» (ED-74): apagado de entrada. */
+  /**
+   * «Incluir las de más de 10 a 12» (ED-74): apagado de entrada. La banda orientativa empieza apenas pasa de 10 (10 con
+   * RIR 0,5 son 10,5); la maqueta la llamaba «las de 11 a 12» (DL-171, precisión del 2026-11-12).
+   */
   readonly incluirOrientativas: boolean;
   /**
-   * La tarjeta del ejercicio (ED-75): con el interruptor apagado, si la sesión solo tiene series de 11 a 12, muestra la
+   * La tarjeta del ejercicio (ED-75): con el interruptor apagado, si la sesión solo tiene orientativas, muestra la
    * de mayor carga de ellas como «estimación orientativa».
    */
   readonly respaldoOrientativo?: boolean;
@@ -368,7 +371,8 @@ export const COPY_FUERZA = {
   masDe12: 'Con más de 12 repeticiones equivalentes no se estima',
   banda: {
     NUCLEO: 'hasta 10 repeticiones equivalentes',
-    ORIENTATIVA: 'de 11 a 12 repeticiones equivalentes: estimación orientativa',
+    // El RIR admite decimales: 10 con RIR 0,5 son 10,5, y ya es orientativa. «De 11 a 12» lo dejaba afuera del texto.
+    ORIENTATIVA: 'de más de 10 a 12 repeticiones equivalentes: estimación orientativa',
   } satisfies Record<BandaDeLaEstimacion, string>,
   /** Qué no significa el valor (ED-73), con la carga a la décima. */
   queNoSignifica: (valorConLaDecima: string): string =>
