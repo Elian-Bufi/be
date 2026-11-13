@@ -17393,11 +17393,16 @@ p.cifra-del-espacio__desglose {
   }
 
   .series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
-    width: 6.75rem;
+    width: 6.25rem;
+  }
+
+  /* El descanso lleva «Sin objetivo» escrito: un poco más ancho que los números. */
+  .series-del-editor thead th:nth-child(6):not(.series-del-editor__columna-nota) {
+    width: 7.5rem;
   }
 
   .series-del-editor thead th.series-del-editor__columna-quitar {
-    width: 2.75rem;
+    width: 3rem;
   }
 
   .series-del-editor th,
@@ -17409,6 +17414,17 @@ p.cifra-del-espacio__desglose {
   .series-del-editor .celda-de-objetivo {
     font-size: 0.9rem;
   }
+
+  .series-del-editor .celda-de-objetivo > input[data-texto] {
+    padding-inline-start: 0.45rem;
+    font-size: 0.82rem;
+  }
+}
+
+/* La barra de la estación es fija: lo que se lleva a la vista (un ejercicio, «Ir a corregir») queda debajo de ella y no
+   tapado, y las zonas no se esconden detrás al desplazarse la página. */
+html:has(.estacion:not([data-en-el-asistente])) {
+  scroll-padding-top: 5.5rem;
 }
 
 /* Rangos y totales, en el panel de Nutrición: una comida por bloque, con sus cuatro valores en dos columnas. La tabla de
@@ -17451,14 +17467,14 @@ p.cifra-del-espacio__desglose {
 }
 
 .panel-de-nutricion__tabla td {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+  white-space: normal;
 }
 
 .panel-de-nutricion__tabla td::before {
   content: attr(data-nutriente);
+  display: block;
   color: var(--tenue);
+  font-size: 0.8rem;
   font-weight: 400;
 }
 
