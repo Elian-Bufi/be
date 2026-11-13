@@ -38,7 +38,7 @@ const franja = await import('../apps/mobile/src/franja-de-la-sesion.ts');
 const { TEXTOS_DE_LA_SESION, enumerar } = await import('../apps/mobile/src/textos-de-la-sesion.ts');
 const { crearAlmacenDeEntrenamiento, claveDeLaCuenta, DEMORA_DE_LO_ESCRITO_MS } = await import('../apps/mobile/src/almacen-de-entrenamiento.ts');
 const { crearReloj } = await import('../apps/mobile/src/reloj-de-sesion.ts');
-const { COPY_ENTRENAMIENTO_POR_SERIE, EditarBorradorDeEjecucionRequestSchema, terminosProhibidosDeEntrenamientoEn } = await import('@be/domain');
+const { COPY_ENTRENAMIENTO_POR_SERIE, EditarBorradorDeEjecucionRequestSchema, SerieEjecutadaSchema, terminosProhibidosDeEntrenamientoEn } = await import('@be/domain');
 
 // ─── Una sesión chica, como la daría API-SER-02 ─────────────────────────────────────────────────
 
@@ -112,8 +112,8 @@ test('1 · tildar sin escribir registra lo planificado que se veía: AS_PLANNED,
 });
 
 test('1 · con algo escrito es TYPED: lo escrito manda y lo vacío toma el plan; el tiempo no cambia cómo se cargó', () => {
-  assert.deepEqual(series.serieAlTildar({ carga: '', repeticiones: '14', rir: '' }, objetivoDe(GOBLET, 1), 1, 'kg').serie, { setIndex: 1, load: { value: 16, unit: 'kg' }, completedRepetitions: 14, rir: 3, perceivedExertion: null, recordedAs: 'TYPED' });
-  assert.deepEqual(series.serieAlTildar({ carga: '17,5', repeticiones: '', rir: '0' }, objetivoDe(REMO, 1), 1, 'lb').serie, { setIndex: 1, load: { value: 17.5, unit: 'lb' }, completedRepetitions: 10, rir: 0, perceivedExertion: null, recordedAs: 'TYPED' });
+  assert.deepEqual(series.serieAlTildar({ carga: '', repeticiones: '14', rir: '' }, objetivoDe(GOBLET, 1), 1, 'kg').serie, { setIndex: 1, load: { value: 16, unit: 'kg' }, completedRepetitions: 14, rir: 3, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } });
+  assert.deepEqual(series.serieAlTildar({ carga: '17,5', repeticiones: '', rir: '0' }, objetivoDe(REMO, 1), 1, 'lb').serie, { setIndex: 1, load: { value: 17.5, unit: 'lb' }, completedRepetitions: 10, rir: 0, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PERSON', completedRepetitions: 'PLAN', rir: 'PERSON' } });
   // Solo el tiempo: los valores son los del plan, así que sigue siendo AS_PLANNED, con su duración.
   assert.deepEqual(series.serieAlTildar({ ...vacia, tiempo: '1:30' }, objetivoDe(REMO, 1), 1, 'kg').serie, { setIndex: 1, load: { value: 35, unit: 'lb' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'AS_PLANNED', durationSeconds: 90 });
 });
@@ -189,6 +189,64 @@ test('3 · cómo se cargó y cuánto duró cuentan para reconocer una serie que 
   assert.equal(series.mismosDatos({ ...base, recordedAs: 'AS_PLANNED' }, base), false);
   assert.equal(series.mismosDatos({ ...base, durationSeconds: 40 }, { ...base, durationSeconds: null }), false);
   assert.equal(series.mismosDatos({ ...base, durationSeconds: null }, base), true);
+});
+// ─── ED-70 · De dónde salió cada valor ───────────────────────────────────────────────────────────
+
+/** Un objetivo de serie a mano: 60 kg × 8 con RIR 2, el ejemplo de §5.8 del paquete. */
+const sesentaPorOcho = { repetitions: { value: 8 }, suggestedLoad: { value: 60, unit: 'kg' }, rir: 2, restSeconds: null, intensity: null };
+
+test('TEST-EDP-059 · ED-70 · con el plan 60 kg × 8 y RIR 2, escribir solo «10» registra 60 × 10 con RIR 2: la carga y el RIR del plan, las repeticiones de la persona', () => {
+  const r = series.serieAlTildar({ ...vacia, repeticiones: '10' }, sesentaPorOcho, 1, 'kg');
+  assert.deepEqual(r.serie, { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } });
+  // Cumple el contrato estricto de la serie.
+  assert.equal(SerieEjecutadaSchema.safeParse(r.serie).success, true);
+  // Escribir el mismo número que el plan es escribirlo: PERSON. Y lo que no tiene valor no lleva clave.
+  assert.deepEqual(series.serieAlTildar({ carga: '60', repeticiones: '', rir: '' }, { ...sesentaPorOcho, rir: null }, 1, 'kg').serie.fieldOrigins, { load: 'PERSON', completedRepetitions: 'PLAN' });
+  // Cada combinación de escrito y heredado, con sus claves en el orden del contrato.
+  const quien = (escrito) => (escrito ? 'PERSON' : 'PLAN');
+  for (const carga of ['', '60'])
+    for (const repeticiones of ['', '8'])
+      for (const rir of ['', '2']) {
+        const s = series.serieAlTildar({ carga, repeticiones, rir }, sesentaPorOcho, 1, 'kg').serie;
+        if (!carga && !repeticiones && !rir) {
+          assert.equal(s.recordedAs, 'AS_PLANNED');
+          assert.equal('fieldOrigins' in s, false, 'AS_PLANNED va sin el campo: todo es del plan');
+          continue;
+        }
+        assert.deepEqual(s.fieldOrigins, { load: quien(carga), completedRepetitions: quien(repeticiones), rir: quien(rir) }, `${carga}|${repeticiones}|${rir}`);
+        assert.deepEqual(Object.keys(s.fieldOrigins), ['load', 'completedRepetitions', 'rir']);
+      }
+});
+
+test('TEST-EDP-059 · ED-70 · el RIR que completa el plan queda PLAN, y sin RIR planificado no hay clave', () => {
+  const conRir = series.serieAlTildar({ carga: '62,5', repeticiones: '8', rir: '' }, sesentaPorOcho, 1, 'kg').serie;
+  assert.equal(conRir.rir, 2);
+  assert.equal(conRir.fieldOrigins.rir, 'PLAN');
+  const sinRir = series.serieAlTildar({ carga: '62,5', repeticiones: '8', rir: '' }, { ...sesentaPorOcho, rir: null }, 1, 'kg').serie;
+  assert.equal(sinRir.rir, null);
+  assert.deepEqual(sinRir.fieldOrigins, { load: 'PERSON', completedRepetitions: 'PERSON' });
+  // Un rango de repeticiones no se convierte en número: las repeticiones quedan sin valor y sin clave.
+  const rango = series.serieAlTildar({ carga: '60', repeticiones: '', rir: '' }, { ...sesentaPorOcho, repetitions: { min: 8, max: 10 } }, 1, 'kg').serie;
+  assert.deepEqual(rango.fieldOrigins, { load: 'PERSON', rir: 'PLAN' });
+});
+
+test('ED-70 · destildar devuelve escrito solo lo de la persona: lo del plan vuelve en gris, y volver a tildar da la misma serie', () => {
+  const tildada = series.serieAlTildar({ ...vacia, repeticiones: '10' }, sesentaPorOcho, 1, 'kg').serie;
+  const restaurar = series.escritaDeLaSerie(tildada, 'kg');
+  assert.deepEqual(restaurar, { carga: '', repeticiones: '10', rir: '', tiempo: '', unidad: 'kg' });
+  assert.deepEqual(series.serieAlTildar(restaurar, sesentaPorOcho, 1, 'kg').serie, tildada);
+  // Una serie de antes de la procedencia (sin el campo) vuelve escrita entera, como siempre.
+  const { fieldOrigins: _, ...deAntes } = tildada;
+  assert.deepEqual(series.escritaDeLaSerie(deAntes, 'kg'), { carga: '60', repeticiones: '10', rir: '2', tiempo: '', unidad: 'kg' });
+});
+
+test('ED-70 · la procedencia cuenta para reconocer una serie que el servidor ya tiene, sin importar el orden de las claves', () => {
+  const base = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null };
+  const local = { ...base, fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } };
+  assert.equal(series.mismosDatos(local, { ...base, fieldOrigins: { rir: 'PLAN', load: 'PLAN', completedRepetitions: 'PERSON' } }), true);
+  assert.equal(series.mismosDatos(local, { ...base, fieldOrigins: { load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PLAN' } }), false);
+  assert.equal(series.mismosDatos(local, base), false, 'sin el campo es «sin saber», no lo mismo');
+  assert.equal(series.mismosDatos({ ...base, fieldOrigins: {} }, base), true, 'un objeto vacío dice lo mismo que la ausencia');
 });
 
 // ─── 4. Lo escrito en el teléfono ───────────────────────────────────────────────────────────────
@@ -516,4 +574,18 @@ test('7 · el copy nuevo no califica: sin cumplimiento (tampoco negado), sin «b
     ...(/no realizad/i.test(t) ? [`«no realizada» en ${t}`] : []),
   ]);
   assert.deepEqual(hallazgos, []);
+});
+
+test('ED-70 · la APK lee un borrador con procedencia y, al volver a guardarlo entero (API-TRN-17), no la pierde ni la cambia', () => {
+  const delServidor = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } };
+  const borrador = { exercises: [ejercicioDelServidor('pA', [delServidor])] };
+  const nueva = series.serieAlTildar({ ...vacia, carga: '62,5' }, sesentaPorOcho, 2, 'kg').serie;
+  const { exercises } = series.ejerciciosParaGuardar(borrador, [{ prescriptionId: 'pA', performedExerciseVersionId: 'ev-pA', serie: nueva, enConflicto: false }]);
+  assert.deepEqual(exercises[0].sets, [delServidor, nueva]);
+  assert.deepEqual(nueva.fieldOrigins, { load: 'PERSON', completedRepetitions: 'PLAN', rir: 'PLAN' });
+  assert.equal(EditarBorradorDeEjecucionRequestSchema.safeParse({ expectedVersion: 'v1', changes: { granularity: 'SET', exercises } }).success, true);
+  // La serie que el servidor ya tiene igual, con sus claves en otro orden, se reconoce: no queda en conflicto.
+  const devuelta = { ...nueva, fieldOrigins: { rir: 'PLAN', completedRepetitions: 'PLAN', load: 'PERSON' } };
+  const conLaNueva = { exercises: [ejercicioDelServidor('pA', [delServidor, devuelta])] };
+  assert.deepEqual(series.conciliarSeries([{ prescriptionId: 'pA', performedExerciseVersionId: 'ev-pA', serie: nueva, enConflicto: false }], conLaNueva), []);
 });

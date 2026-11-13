@@ -139,9 +139,9 @@ test('3 · sumar lo que faltó: viaja como TYPED, con lo planificado en lo vací
   const press = pedido.correction.exercises.find((x) => x.prescriptionId === 'press');
   assert.equal(press.performedExerciseVersionId, 'ev-press');
   assert.deepEqual(press.sets, [
-    { setIndex: 1, load: { value: 45, unit: 'kg' }, completedRepetitions: 9, rir: 3, perceivedExertion: null, recordedAs: 'TYPED' },
+    { setIndex: 1, load: { value: 45, unit: 'kg' }, completedRepetitions: 9, rir: 3, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PERSON' } },
     // Solo se escribieron las repeticiones: la carga y el RIR son los que se veían en gris, como en la casilla de la sesión.
-    { setIndex: 2, load: { value: 45, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' },
+    { setIndex: 2, load: { value: 45, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } },
   ]);
   // La serie 3 de Press y la 3 de Sentadilla quedaron vacías: no se fabrican.
   assert.deepEqual(pedido.correction.exercises.find((x) => x.prescriptionId === 'sentadilla').sets.map((s) => s.setIndex), [1, 2]);
@@ -155,9 +155,12 @@ test('4 · lo que no se toca conserva cómo se cargó, el esfuerzo y la duració
   assert.deepEqual(igual.correction.exercises[0].sets, ORIGINAL.exercises[0].sets);
   const e = hacer(inicial(), escribir('sentadilla', 1, 'carga', '60'), escribir('sentadilla', 2, 'repeticiones', '5'));
   const [s1, s2] = c.construirCorreccion(e).correction.exercises[0].sets;
-  assert.deepEqual(s1, { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: null, perceivedExertion: 7, recordedAs: 'TYPED', durationSeconds: 40 });
-  // La 2 estaba «como lo planificado»; al reescribirla pasa a escrita, y no tenía duración: no se inventa.
-  assert.deepEqual(s2, { setIndex: 2, load: { value: 55, unit: 'kg' }, completedRepetitions: 5, rir: null, perceivedExertion: null, recordedAs: 'TYPED' });
+  assert.deepEqual(s1, { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: null, perceivedExertion: 7, recordedAs: 'TYPED', durationSeconds: 40, fieldOrigins: { load: 'PERSON' } });
+  // ED-70: la 1 es de antes de la procedencia; la carga cambiada es de la persona y las repeticiones, que no cambiaron,
+  // siguen sin saber quién las escribió (sin clave).
+  // La 2 estaba «como lo planificado»; al reescribirla pasa a escrita, y no tenía duración: no se inventa. La carga que
+  // no cambió sigue siendo del plan (ED-70); las repeticiones las escribió la persona.
+  assert.deepEqual(s2, { setIndex: 2, load: { value: 55, unit: 'kg' }, completedRepetitions: 5, rir: null, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON' } });
   // Sin tocar la 2, conserva su AS_PLANNED.
   const soloLa1 = c.construirCorreccion(hacer(inicial(), escribir('sentadilla', 1, 'carga', '60'))).correction.exercises[0].sets;
   assert.equal(soloLa1[1].recordedAs, 'AS_PLANNED');
@@ -336,12 +339,47 @@ test('13 · la casilla de la serie: destildar quita y se deshace; tildar una sin
   const escrita = c.corregir(otraVez, escribir('sentadilla', 3, 'repeticiones', '7'));
   assert.equal(c.filaTildada(fila(escrita, 'sentadilla', 3)), true);
   assert.equal(c.filaComoElPlan(fila(escrita, 'sentadilla', 3)), false);
-  assert.deepEqual(c.construirCorreccion(escrita).correction.exercises[0].sets.at(-1), { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 7, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' });
+  assert.deepEqual(c.construirCorreccion(escrita).correction.exercises[0].sets.at(-1), { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 7, rir: 2, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } });
   // Solo el RIR también alcanza: la carga y las repeticiones son las del plan.
   const soloElRir = c.corregir(otraVez, escribir('sentadilla', 3, 'rir', '0'));
-  assert.deepEqual(c.construirCorreccion(soloElRir).correction.exercises[0].sets.at(-1), { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 0, perceivedExertion: null, recordedAs: 'TYPED' });
+  assert.deepEqual(c.construirCorreccion(soloElRir).correction.exercises[0].sets.at(-1), { setIndex: 3, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 0, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PLAN', rir: 'PERSON' } });
   // Una serie agregada no tiene plan: tildarla sin escribir no fabrica nada y dice qué falta.
   const conOtra = c.corregir(e0, { tipo: 'agregar', prescriptionId: 'sentadilla' });
   const respuesta = c.alTocarLaCasilla(fila(conOtra, 'sentadilla', 4));
   assert.ok('errores' in respuesta && typeof respuesta.errores.fila === 'string', JSON.stringify(respuesta));
+});
+
+// ─── ED-70 · De dónde salió cada valor, al corregir ─────────────────────────────────────────────────
+
+test('ED-70 · al corregir, lo que la persona cambia pasa a PERSON y lo demás conserva su origen; un valor vaciado no lleva clave', () => {
+  // Registrada con la APK nueva: 60 kg × 10 con RIR 2; la carga y el RIR vinieron del plan.
+  const conOrigen = { ...ORIGINAL, exercises: [ejercicio('sentadilla', 'Sentadilla', [serie(1, 60, 10, { rir: 2, fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } })])] };
+  const ejecucion = { original: conOrigen, corrections: [], effectiveView: { kind: 'ORIGINAL' } };
+  const base = () => c.estadoInicial(ejecucion, SESION);
+  // Cambia solo el RIR: el RIR es de la persona; la carga sigue del plan y las repeticiones, de la persona.
+  const rir = conMotivo(c.corregir(base(), escribir('sentadilla', 1, 'rir', '1')));
+  const pedido = c.pedidoDeCorreccion(rir, conOrigen);
+  assert.equal(pedido.ok, true, pedido.mensaje);
+  assert.deepEqual(pedido.correction.exercises[0].sets[0].fieldOrigins, { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PERSON' });
+  assert.deepEqual(pasaElContrato(pedido), []);
+  // Vaciar el RIR lo saca, con su clave: la procedencia es de un valor que está.
+  const sinRir = c.construirCorreccion(c.corregir(base(), escribir('sentadilla', 1, 'rir', ''))).correction.exercises[0].sets[0];
+  assert.equal(sinRir.rir, null);
+  assert.deepEqual(sinRir.fieldOrigins, { load: 'PLAN', completedRepetitions: 'PERSON' });
+  // Escribir el mismo valor no es un cambio: la serie vuelve tal cual, con su procedencia.
+  const igual = c.construirCorreccion(c.corregir(base(), escribir('sentadilla', 1, 'carga', '60,0'))).correction.exercises[0].sets[0];
+  assert.deepEqual(igual, conOrigen.exercises[0].sets[0]);
+});
+
+test('ED-70 · origenesAlReescribir: nunca le pasa a un valor el origen de otro', () => {
+  const antes = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null };
+  const nueva = (extra) => ({ ...antes, ...extra });
+  // De una tildada con lo planificado, lo que no cambió es del plan.
+  assert.deepEqual(c.origenesAlReescribir(nueva({ completedRepetitions: 9 }), { ...antes, recordedAs: 'AS_PLANNED' }), { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' });
+  // De una de antes de la procedencia, lo que no cambió sigue sin clave.
+  assert.deepEqual(c.origenesAlReescribir(nueva({ load: { value: 62.5, unit: 'kg' } }), antes), { load: 'PERSON' });
+  // Otra unidad es otra carga: la escribió la persona.
+  assert.deepEqual(c.origenesAlReescribir(nueva({ load: { value: 60, unit: 'lb' } }), { ...antes, fieldOrigins: { load: 'PLAN' } }), { load: 'PERSON' });
+  // Nada cambió de valor y nada tenía origen: no viaja el campo.
+  assert.equal(c.origenesAlReescribir(nueva({}), antes), undefined);
 });
