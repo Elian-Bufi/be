@@ -305,9 +305,10 @@ test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar n
   assert.match(leerDelDominio('copy-entrenamiento.ts'), /validarPlan: 'Revisar el plan',/);
   assert.match(leerDelDominio('copy-entrenamiento.ts'), /noJuzga: 'Revisar el plan mira su forma, no su calidad/);
   // ED-07 (DJ-6): lo sin completar lo dice «Antes de activar», aparte de lo que impide y sin bloquear el principal.
-  for (const [archivo, funcion] of [['nutrition/editor.tsx', 'loQueQuedaSinCompletarEnNutricion(estructura)'], ['training/editor.tsx', 'loQueQuedaSinCompletarEnEntrenamiento(bloques)']]) {
+  // PG-10 (WP-PULIDO-GRANDES): en Entrenamiento, los iguales del mismo ejercicio van en un renglón (`enGrupos`).
+  for (const [archivo, calculo] of [['nutrition/editor.tsx', 'loQueQuedaSinCompletarEnNutricion(estructura).map('], ['training/editor.tsx', 'enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar)']]) {
     const editor = leer(archivo);
-    assert.ok(editor.includes(`const sinCompletarAlActivar = confirmar ? ${funcion}.map(`), archivo);
+    assert.ok(editor.includes(`const sinCompletarAlActivar = confirmar ? ${calculo}`), archivo);
     assert.match(editor, /sinCompletar=\{sinCompletarAlActivar\}/, archivo);
     // Nada más lee lo sin completar: ni guardar, ni el autoguardado, ni lo que impide activar.
     assert.equal((editor.match(/sinCompletarAlActivar\b/g) ?? []).length, 2, `${archivo}: se calcula y va al cuadro`);

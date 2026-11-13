@@ -17948,3 +17948,62 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .serie-observada__campos .campo-de-fecha {
   justify-self: start;
 }
+
+/* ─── PG-10 (WP-PULIDO-GRANDES): los avisos repetidos, en un solo renglón ─────────────────────────────────────── */
+.renglon-de-aviso__acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin-inline-start: 0.5rem;
+}
+
+.renglon-de-aviso__completar {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0.25rem;
+  flex-basis: 100%;
+}
+
+.renglon-de-aviso__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.renglon-de-aviso__fila input {
+  width: 7rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+}
+
+.renglon-de-aviso__fila input[aria-invalid='true'] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.renglon-de-aviso__detalle {
+  flex-basis: 100%;
+  margin: 0.35rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.renglon-de-aviso__detalle li + li {
+  margin-top: 0.2rem;
+}
+
+.fuerza-en-analizar__seguidas {
+  display: inline-block;
+}
+
+.fuerza-en-analizar__seguidas ul {
+  margin: 0.35rem 0 0;
+  padding-inline-start: 1.1rem;
+}

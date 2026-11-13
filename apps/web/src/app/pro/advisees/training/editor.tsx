@@ -117,7 +117,9 @@ import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoD
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
 import { useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
-import { loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
+import { INCOMPLETO, loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
+import { agruparAvisos, completarLasVacias, COPY_AVISOS_AGRUPADOS, leerLasRepeticiones, lugarDelEjercicio, seriesEnPalabras } from '../avisos-agrupados';
+import { RenglonDeAviso, type CosaParaRevisar } from '../renglon-de-aviso';
 import {
   COPY_DE_LOS_EDITORES as E,
   copiaDeLaSesion,
@@ -765,6 +767,45 @@ export function EditorDePlan({
   const impideGuardar = loQueNoDejaGuardar(bloques);
   const antesHayQueCorregir = impideGuardar.length > 0 ? 'Antes hay que corregir lo que no deja guardar esta versión.' : null;
 
+  // ── PG-10: los avisos iguales del mismo ejercicio, en un renglón; «Completar» escribe solo las vacías ─────────────
+  /**
+   * Fija las repeticiones de las series vacías del grupo, de una vez, con la operación de siempre (el borrador se guarda
+   * como cualquier cambio). «Deshacer» vuelve el ejercicio como estaba: las N series juntas. Un error, o `null`.
+   */
+  const completarElGrupo = (ejercicio: string, series: readonly number[], texto: string): string | null => {
+    const valor = leerLasRepeticiones(texto);
+    if (!valor) return COPY_AVISOS_AGRUPADOS.noSeEntiende;
+    const l = lugarDelEjercicio(ejercicio);
+    const antes = l ? sesionesDelGrupo(bloques, l)[l.k]?.prescriptions[l.l] : undefined;
+    if (!l || !antes) return null;
+    cambiar((x) => {
+      const p = sesionesDelGrupo(x, l)[l.k]!.prescriptions[l.l]!;
+      p.sets = completarLasVacias(p.sets, series, valor).sets;
+      return x;
+    });
+    setDeshacer({
+      texto: COPY_AVISOS_AGRUPADOS.completadas(seriesEnPalabras(series), texto.trim()),
+      lugar: { i: l.i, j: l.j, k: l.k },
+      antes: new Map([[l.l, structuredClone(antes)]]),
+      firmas: new Set(),
+    });
+    return null;
+  };
+  /** Los avisos con el mismo motivo y el mismo ejercicio, en un renglón con el rango; uno solo queda como estaba. */
+  const enGrupos = (lista: readonly ValidationIssue[], conLugar: (p: ValidationIssue, texto: string) => CosaParaRevisar): CosaParaRevisar[] => {
+    const texto = (p: ValidationIssue) => TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento';
+    return agruparAvisos(lista).map((g) => {
+      const primero = g.avisos[0]!;
+      if (g.avisos.length === 1 || g.ejercicio === null) return conLugar(primero, texto(primero));
+      const ejercicio = g.ejercicio;
+      return {
+        texto: `${ubicacionDelProblemaDeEntrenamiento(ejercicio, bloques)}: ${seriesEnPalabras(g.series)} ${texto(primero)}`,
+        detalle: g.avisos.map((p) => conLugar(p, texto(p))),
+        completar: g.code === INCOMPLETO.sinRepeticiones ? { cuantas: g.series.length, alCompletar: (v: string) => completarElGrupo(ejercicio, g.series, v) } : null,
+      };
+    });
+  };
+
   // ── ED-07: lo que dice «Antes de activar» ─────────────────────────────────────────────────────────────────────
   /** Cerrar el cuadro y llevar a una cosa por corregir: a su lugar, con el foco ahí. */
   const irDesdeElCuadro = (p: ValidationIssue) => () => {
@@ -780,7 +821,8 @@ export function EditorDePlan({
     ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
   ];
   // TB-48: lo que queda sin completar no impide nada; se dice aparte, cada cosa con su lugar.
-  const sinCompletarAlActivar = confirmar ? loQueQuedaSinCompletarEnEntrenamiento(bloques).map((p) => conSuLugar(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento')) : [];
+  // PG-10: los iguales del mismo ejercicio, en un renglón.
+  const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar) : [];
   const nombresDeLaVigente = vigente?.plan ? nombresDe(vigente.plan) : {};
   // Frente a la vigente; en la primera versión, frente a nada: todo es «agregado». Sin la vigente leída, nada.
   const baseDeLaComparacion = vigente?.plan ? aEntrada(vigente.plan) : !version.predecessorPlanId ? [] : null;
@@ -1075,7 +1117,7 @@ export function EditorDePlan({
     ...(revision?.estado === 'lista' && !sucio ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
     ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
   ];
-  const sinCompletarEnVivo = loQueQuedaSinCompletarEnEntrenamiento(bloques).map((p) => enElPanel(p, TEXTO_DE_LO_INCOMPLETO[p.code] ?? 'revisá este elemento'));
+  const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), enElPanel);
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
   const nombreDeLaSesionPorId = (id: string): string => sesionesDeLaAgenda.find((x) => x.sessionId === id)?.nombre ?? C.sesion;
 
@@ -1429,12 +1471,7 @@ export function EditorDePlan({
                 <ul className="estacion__lista-del-panel">
                   {sinCompletarEnVivo.map((x, n) => (
                     <li key={n}>
-                      {x.texto}{' '}
-                      {x.ir ? (
-                        <button type="button" className="boton boton--enlace" onClick={x.ir}>
-                          {CA.irEnLaEstacion}
-                        </button>
-                      ) : null}
+                      <RenglonDeAviso cosa={x} textoIr={CA.irEnLaEstacion} />
                     </li>
                   ))}
                 </ul>
@@ -2046,12 +2083,7 @@ export function EditorDePlan({
                 <ul className="estacion__lista-del-panel">
                   {sinCompletarEnVivo.map((x, n) => (
                     <li key={n}>
-                      {x.texto}{' '}
-                      {x.ir ? (
-                        <button type="button" className="boton boton--enlace" onClick={x.ir}>
-                          {CE.irACorregir}
-                        </button>
-                      ) : null}
+                      <RenglonDeAviso cosa={x} textoIr={CE.irACorregir} />
                     </li>
                   ))}
                 </ul>

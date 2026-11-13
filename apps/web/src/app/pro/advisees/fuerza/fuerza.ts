@@ -499,7 +499,49 @@ export function loQueNoEntraPorFecha(
   }
   for (const p of soloOrientativas) sesiones.set(p.origin.id, { fecha: p.date, texto: SOLO_ORIENTATIVAS });
   const todas = [...sesiones.values()].sort((a, b) => (a.fecha === b.fecha ? 0 : a.fecha < b.fecha ? 1 : -1));
-  return { lineas: todas.slice(0, cuantas).map((s) => `${diaConSemana(s.fecha)}: ${s.texto}`), quedan: Math.max(todas.length - cuantas, 0) };
+  // PG-10: el mismo motivo en fechas seguidas va en una línea, con el rango y cuántas sesiones son.
+  const lineas = seguidasConElMismo(todas, (s) => s.texto);
+  const aLaVista = lineas.slice(0, cuantas);
+  const sesionesALaVista = aLaVista.reduce((n, g) => n + g.length, 0);
+  return {
+    lineas: aLaVista.map((g) => `${g.length === 1 ? diaConSemana(g[0]!.fecha) : rangoDeSesiones(g.map((s) => s.fecha))}: ${g[0]!.texto}`),
+    quedan: Math.max(todas.length - sesionesALaVista, 0),
+  };
+}
+
+/**
+ * PG-10 de WP-PULIDO-GRANDES: corta una lista ordenada en tramos de elementos seguidos con la misma clave. Un elemento
+ * distinto corta el tramo, aunque después vuelva la misma clave: nunca se junta lo que no está junto.
+ */
+export function seguidasConElMismo<T>(lista: readonly T[], clave: (x: T) => string): T[][] {
+  const tramos: T[][] = [];
+  for (const x of lista) {
+    const ultimo = tramos[tramos.length - 1];
+    if (ultimo && clave(ultimo[0]!) === clave(x)) ultimo.push(x);
+    else tramos.push([x]);
+  }
+  return tramos;
+}
+
+/** «del mar 1 dic al vie 4 dic, 3 sesiones»: un tramo de sesiones, de la más antigua a la más reciente. */
+export function rangoDeSesiones(fechas: readonly string[]): string {
+  const orden = [...fechas].sort();
+  return `del ${diaConSemana(orden[0]!)} al ${diaConSemana(orden[orden.length - 1]!)}, ${orden.length} sesiones`;
+}
+
+/** Una fila de la tabla de origen después de juntar las sesiones seguidas sin estimación con el mismo motivo (PG-10). */
+export type FilaConLosMotivosSeguidos = FilaDeLaEvolucion | { readonly tipo: 'sin-estimacion-seguidas'; readonly motivo: string; readonly filas: readonly Extract<FilaDeLaEvolucion, { tipo: 'sin-estimacion' }>[] };
+
+/**
+ * PG-10: en la tabla de origen, las sesiones sin estimación seguidas con el mismo motivo van en una fila; un punto entre
+ * dos las separa. Una sola queda como estaba.
+ */
+export function filasConLosMotivosSeguidos(filas: readonly FilaDeLaEvolucion[]): FilaConLosMotivosSeguidos[] {
+  return seguidasConElMismo(filas, (f) => (f.tipo === 'sin-estimacion' ? `sin|${f.motivo}` : `punto|${f.punto.pointId}`)).map((g) => {
+    const primera = g[0]!;
+    if (g.length === 1 || primera.tipo !== 'sin-estimacion') return primera;
+    return { tipo: 'sin-estimacion-seguidas', motivo: primera.motivo, filas: g as Extract<FilaDeLaEvolucion, { tipo: 'sin-estimacion' }>[] };
+  });
 }
 
 /** Una vigencia del plan de entrenamiento, como la trae la clave (`planVersions`). */

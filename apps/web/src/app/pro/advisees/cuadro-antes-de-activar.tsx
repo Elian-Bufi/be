@@ -19,12 +19,9 @@ import { DialogoDeConfirmacion } from '../../../components/dialogo';
 import { Icono } from '../../../components/icono';
 import { CAMBIOS_A_LA_VISTA, COPY_ANTES_DE_ACTIVAR as A, motivoDelPrincipal, type AreaQueSeActiva } from './antes-de-activar';
 import { textoDeLosContadores, type CambiosFrenteALaVigente } from './comparar-versiones';
+import { RenglonDeAviso, type CosaParaRevisar } from './renglon-de-aviso';
 
-/** Una cosa que impide activar o que queda sin completar, con el camino a su lugar si lo tiene. */
-export interface CosaParaRevisar {
-  readonly texto: string;
-  readonly ir?: (() => void) | null;
-}
+export type { CosaParaRevisar };
 
 export function AntesDeActivar({
   abierto,
@@ -153,12 +150,8 @@ export function AntesDeActivar({
                 <ul className="antes-de-activar__lista" data-sin-completar>
                   {sinCompletar.map((c, n) => (
                     <li key={n}>
-                      <span>{c.texto}</span>
-                      {c.ir ? (
-                        <button type="button" className="boton boton--enlace" onClick={c.ir}>
-                          {A.ir}
-                        </button>
-                      ) : null}
+                      {/* PG-10: un grupo dice el rango, se abre y, sin repeticiones, ofrece «Completar». */}
+                      <RenglonDeAviso cosa={c} textoIr={A.ir} />
                     </li>
                   ))}
                 </ul>

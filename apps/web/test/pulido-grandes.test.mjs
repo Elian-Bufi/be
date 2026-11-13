@@ -18,7 +18,9 @@ import { fileURLToPath } from 'node:url';
 
 const D = await import('../src/lib/descarga-de-la-app.ts');
 const N = await import('../src/lib/no-encontrada.ts');
+const G = await import('../src/app/pro/advisees/avisos-agrupados.ts');
 const F = await import('../src/lib/fecha-en-palabras.ts');
+const FZ = await import('../src/app/pro/advisees/fuerza/fuerza.ts');
 const { terminosProhibidosEn } = await import('@be/domain');
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -128,6 +130,104 @@ test('TEST-PG-006 · la página no encontrada, en castellano y con sus dos salid
   assert.doesNotMatch(p, /could not be found|not found|404:/i);
   assert.doesNotMatch(p, /redirect|useRouter|router\.|fetch\(|api\.|usePathname|location/);
   for (const t of Object.values(N.COPY_NO_ENCONTRADA)) assert.deepEqual(terminosProhibidosEn(t), [], t);
+});
+
+// ── TEST-PG-009 · PG-10 ────────────────────────────────────────────────────────────────────────────────────────
+
+const R = (b, s, p, serie) => `blocks[${b}].sessions[${s}].prescriptions[${p}].sets[${serie}].repetitions`;
+const SIN = 'INCOMPLETO_SIN_REPETICIONES';
+
+test('TEST-PG-009 · los avisos con el mismo motivo y el mismo ejercicio van en un grupo, con su rango', () => {
+  const avisos = [
+    { code: SIN, path: R(0, 1, 2, 0) },
+    { code: SIN, path: R(0, 1, 2, 1) },
+    { code: 'INCOMPLETO_SIN_SERIES', path: 'blocks[0].sessions[1].prescriptions[3]' },
+    { code: SIN, path: R(0, 1, 2, 3) },
+    { code: SIN, path: R(0, 1, 2, 2) },
+    // Otro ejercicio, mismo motivo: otro grupo (la mutación «agrupar por motivo sin el ejercicio» lo junta).
+    { code: SIN, path: R(0, 1, 4, 0) },
+    // Mismo ejercicio, otro motivo: otro renglón.
+    { code: 'REPETITIONS_NOT_READABLE', path: R(0, 1, 2, 1) },
+    // La ruta con puntos y prefijo dice lo mismo que la de corchetes.
+    { code: SIN, path: 'changes.blocks.0.sessions.1.prescriptions.4.sets.2.repetitions' },
+  ];
+  const g = G.agruparAvisos(avisos);
+  assert.equal(g.length, 4);
+  assert.deepEqual(g.map((x) => [x.code, x.ejercicio, x.series, x.avisos.length]), [
+    [SIN, 'blocks[0].sessions[1].prescriptions[2]', [0, 1, 2, 3], 4],
+    ['INCOMPLETO_SIN_SERIES', null, [], 1],
+    [SIN, 'blocks[0].sessions[1].prescriptions[4]', [0, 2], 2],
+    ['REPETITIONS_NOT_READABLE', 'blocks[0].sessions[1].prescriptions[2]', [1], 1],
+  ]);
+  // Ningún aviso se pierde: el grupo abierto los tiene todos, con su ruta para «Ir a corregir».
+  assert.equal(g.flatMap((x) => x.avisos).length, avisos.length);
+  assert.deepEqual(G.agruparAvisos([{ code: SIN, path: R(0, 0, 0, 0), extra: 1 }])[0].avisos, [{ code: SIN, path: R(0, 0, 0, 0), extra: 1 }]);
+  // Microciclos: el grupo es del ejercicio de esa sesión de ese microciclo.
+  const m = G.agruparAvisos([
+    { code: SIN, path: 'blocks[1].microcycles[0].sessions[0].prescriptions[0].sets[0].repetitions' },
+    { code: SIN, path: 'blocks[1].microcycles[1].sessions[0].prescriptions[0].sets[0].repetitions' },
+  ]);
+  assert.equal(m.length, 2);
+  assert.deepEqual(G.lugarDelEjercicio('blocks[1].microcycles[0].sessions[2].prescriptions[3]'), { i: 1, j: 0, k: 2, l: 3 });
+  assert.deepEqual(G.lugarDelEjercicio('blocks[1].sessions[2].prescriptions[3]'), { i: 1, j: null, k: 2, l: 3 });
+  assert.equal(G.lugarDelEjercicio('agenda.sessions[0]'), null);
+});
+
+test('TEST-PG-009 · el rango se dice como se lee: «series 1 a 4», «series 1, 3 y 4»', () => {
+  assert.equal(G.seriesEnPalabras([0, 1, 2, 3]), 'series 1 a 4');
+  assert.equal(G.seriesEnPalabras([0, 2, 3]), 'series 1, 3 y 4');
+  assert.equal(G.seriesEnPalabras([3, 0, 1, 2, 5]), 'series 1 a 4 y 6');
+  assert.equal(G.seriesEnPalabras([0, 1]), 'series 1 y 2');
+  assert.equal(G.seriesEnPalabras([1]), 'serie 2');
+  assert.equal(G.seriesEnPalabras([0, 1, 2, 4, 5, 6]), 'series 1 a 3 y 5 a 7');
+  assert.equal(G.COPY_AVISOS_AGRUPADOS.completar(4), 'Completar las cuatro');
+  assert.equal(G.COPY_AVISOS_AGRUPADOS.completar(12), 'Completar las 12');
+  assert.equal(G.COPY_AVISOS_AGRUPADOS.completadas('series 1 a 4', '10'), 'Series 1 a 4: 10 repeticiones');
+  for (const t of textos(G.COPY_AVISOS_AGRUPADOS)) assert.deepEqual(terminosProhibidosEn(t), [], t);
+});
+
+test('TEST-PG-009 · «Completar» escribe solo las series del grupo y solo las vacías', () => {
+  const sets = [{ repetitions: null }, { repetitions: { value: 8 } }, { repetitions: null, rir: 2 }, {}, { repetitions: null }];
+  const r = G.completarLasVacias(sets, [0, 1, 2, 3], { value: 10 });
+  assert.deepEqual(r.escritas, [0, 2, 3]);
+  assert.deepEqual(r.sets, [{ repetitions: { value: 10 } }, { repetitions: { value: 8 } }, { repetitions: { value: 10 }, rir: 2 }, { repetitions: { value: 10 } }, { repetitions: null }]);
+  // No cambia lo que recibe: «Deshacer» vuelve a lo de antes.
+  assert.deepEqual(sets[0], { repetitions: null });
+  assert.deepEqual(G.completarLasVacias(sets, [1], { min: 8, max: 12 }).escritas, []);
+  assert.deepEqual(G.leerLasRepeticiones(' 10 '), { value: 10 });
+  assert.deepEqual(G.leerLasRepeticiones('8-12'), { min: 8, max: 12 });
+  for (const malo of ['', '0', '12-8', '8-8', 'diez', '8,5', '-3']) assert.equal(G.leerLasRepeticiones(malo), null, malo);
+});
+
+test('TEST-PG-009 · el editor agrupa lo sin completar en el cuadro y en el panel; el grupo se abre y conserva «Ir»', () => {
+  const editor = leer('src/app/pro/advisees/training/editor.tsx');
+  assert.match(editor, /const sinCompletarAlActivar = confirmar \? enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), conSuLugar\) : \[\];/);
+  assert.match(editor, /const sinCompletarEnVivo = enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), enElPanel\);/);
+  // Lo que impide activar no cambia: uno por renglón, y el principal cuenta lo mismo.
+  assert.match(editor, /\.\.\.impideGuardar\.map\(\(p\) => conSuLugar\(p, PROBLEMA\[p\.code\]/);
+  // «Completar» solo para las series sin repeticiones, con la operación de siempre y su «Deshacer».
+  assert.match(editor, /completar: g\.code === INCOMPLETO\.sinRepeticiones \?/);
+  const completar = editor.slice(editor.indexOf('const completarElGrupo ='), editor.indexOf('const enGrupos ='));
+  assert.match(completar, /cambiar\(\(x\) => \{/);
+  assert.match(completar, /completarLasVacias\(p\.sets, series, valor\)/);
+  assert.match(completar, /setDeshacer\(\{/);
+  assert.equal((editor.match(/<RenglonDeAviso cosa=\{x\}/g) ?? []).length, 2, 'los dos lugares del panel');
+  assert.match(leer('src/app/pro/advisees/cuadro-antes-de-activar.tsx'), /<RenglonDeAviso cosa=\{c\} textoIr=\{A\.ir\} \/>/);
+  const renglon = leer('src/app/pro/advisees/renglon-de-aviso.tsx');
+  assert.match(renglon, /aria-expanded=\{abierto\}/);
+  assert.match(renglon, /<span>\{d\.texto\}<\/span> \{d\.ir \? botonIr\(d\.ir\) : null\}/);
+});
+
+test('TEST-PG-009 · en Analizar · Fuerza, el mismo motivo en sesiones seguidas va en una fila; uno distinto corta', () => {
+  assert.deepEqual(FZ.seguidasConElMismo(['a', 'a', 'b', 'a', 'a', 'a'], (x) => x), [['a', 'a'], ['b'], ['a', 'a', 'a']]);
+  const s = (id, fecha, motivo = 'ninguna serie entra: el RIR es mayor que 2') => ({ tipo: 'sin-estimacion', fecha, executionId: id, motivo });
+  const punto = { tipo: 'punto', fecha: '2026-12-03', punto: { pointId: 'p1' } };
+  const filas = FZ.filasConLosMotivosSeguidos([s('e5', '2026-12-08'), s('e4', '2026-12-06'), s('e3', '2026-12-04'), punto, s('e2', '2026-12-02'), s('e1', '2026-12-01', 'otro motivo')]);
+  assert.deepEqual(filas.map((f) => (f.tipo === 'sin-estimacion-seguidas' ? f.filas.map((x) => x.executionId) : f.tipo)), [['e5', 'e4', 'e3'], 'punto', 'sin-estimacion', 'sin-estimacion']);
+  assert.equal(FZ.rangoDeSesiones(['2026-12-08', '2026-12-04', '2026-12-06']), 'del vie 4 dic al mar 8 dic, 3 sesiones');
+  const fuente = leer('src/app/pro/advisees/fuerza/fuerza-en-analizar.tsx');
+  assert.match(fuente, /const filas = filasConLosMotivosSeguidos\(filasDeLaEvolucion\(/);
+  assert.match(fuente, /<summary>\{C\.verLasSesiones\(f\.filas\.length\)\}<\/summary>/);
 });
 
 // ── TEST-PG-013 · PG-14 ────────────────────────────────────────────────────────────────────────────────────────
