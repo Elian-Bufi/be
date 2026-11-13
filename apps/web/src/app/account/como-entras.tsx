@@ -8,9 +8,12 @@
  *   confirma. El token vive en la memoria de la pantalla mientras dura el paso.
  * - **Desvincular Google** (API-MET-03): con una confirmación, y solo si queda la contraseña (la API lo decide; la pantalla
  *   muestra el botón cuando el método dice `removable`). Sin una entrada reciente, lleva a entrar otra vez y vuelve acá.
+ *   Hecho, ofrece cambiar la contraseña por si no fue la persona quien la vinculó (D-8: cerrar las sesiones no alcanza).
+ * - **Volver a vincular** (D-5): si la cuenta tuvo una cuenta de Google y la desvinculó, dice cuál se puede volver a vincular.
  * Sin el client ID de Google en el build, se ve con qué se entra y no se ofrece vincular.
  */
 import { COPY, COPY_METODOS_DE_ACCESO as C, type MetodosDeAccesoResponse } from '@be/domain';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { ErrorConReintento } from '../../components/estados';
@@ -32,7 +35,7 @@ export function ComoEntras({ token, alReautenticar }: { token: string; alReauten
   const { sesionPerdida } = useSesionPerdida(usePathname() ?? '/account');
   const [metodos, setMetodos] = useState<Metodos | 'falla' | null>(null);
   const [paso, setPaso] = useState<Paso>({ tipo: 'lista' });
-  const [aviso, setAviso] = useState<{ readonly tipo: 'info' | 'error'; readonly texto: string } | null>(null);
+  const [aviso, setAviso] = useState<{ readonly tipo: 'info' | 'error'; readonly texto: string; readonly cambiarContrasena?: boolean } | null>(null);
 
   const leer = useCallback(async () => {
     setMetodos(null);
@@ -79,6 +82,11 @@ export function ComoEntras({ token, alReautenticar }: { token: string; alReauten
       {aviso ? (
         <Aviso tipo={aviso.tipo} enfocar>
           <p>{aviso.texto}</p>
+          {aviso.cambiarContrasena ? (
+            <p>
+              <Link href="/recover">{C.cambiarContrasena}</Link>
+            </p>
+          ) : null}
         </Aviso>
       ) : null}
       {metodos === null ? <p aria-busy="true">{C.cargando}</p> : null}
@@ -115,7 +123,7 @@ export function ComoEntras({ token, alReautenticar }: { token: string; alReauten
                       setPaso({ tipo: 'lista' });
                       if (r.tipo === 'listo') {
                         setMetodos(r.metodos);
-                        setAviso({ tipo: 'info', texto: C.desvinculada });
+                        setAviso({ tipo: 'info', texto: C.desvinculada, cambiarContrasena: true });
                       } else if (r.tipo === 'error') setAviso({ tipo: 'error', texto: mensajeDe(r.codigo) });
                     }}
                     alReautenticar={alReautenticar}
@@ -132,6 +140,7 @@ export function ComoEntras({ token, alReautenticar }: { token: string; alReauten
               {paso.tipo === 'lista' || paso.tipo === 'desvincular' ? (
                 <>
                   <p>{C.vincularTexto}</p>
+                  {metodos.relinkableGoogleEmail ? <p className="nota">{C.volverAVincular(metodos.relinkableGoogleEmail)}</p> : null}
                   <BotonDeGoogle
                     clientId={CLIENT_ID_WEB_DE_GOOGLE}
                     alRecibir={(idToken) => {

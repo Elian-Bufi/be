@@ -3712,7 +3712,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: RUTAS_DE_ACCESO_GOOGLE.vinculos,
     resumen:
-      'Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.',
+      'Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado; si esa misma cuenta de Google se había desvinculado (API-MET-03; DL-172), la reasocia, con el hecho MetodoDeAccesoAsociado (datos.reasociacion). Un vínculo o una reasociación nuevos se avisan al correo de acceso (DL-172 D-11, de mejor esfuerzo). Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.',
     autenticacion: 'PUBLIC',
     idempotencia: false,
     request: VincularGoogleRequestSchema,
@@ -4349,7 +4349,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/access-methods',
     resumen:
-      'Con qué se entra a la cuenta propia: la contraseña (con el correo de acceso) y Google (con el correo de esa cuenta de Google), sin los métodos desvinculados. Cada uno dice si se puede desvincular (removable: solo Google, y solo si queda la contraseña), y canLinkGoogle dice si se puede vincular una cuenta de Google desde acá.',
+      'Con qué se entra a la cuenta propia: la contraseña (con el correo de acceso) y Google (con el correo de esa cuenta de Google), sin los métodos desvinculados. Cada uno dice si se puede desvincular (removable: solo Google, y solo si queda la contraseña), y canLinkGoogle dice si se puede vincular una cuenta de Google desde acá. relinkableGoogleEmail es el correo de la cuenta de Google que se desvinculó, la única que se puede volver a vincular (DL-172 D-5), o null.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: MetodosDeAccesoResponseSchema }],
@@ -4361,7 +4361,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/me/access-methods',
     resumen:
-      'Vincular una cuenta de Google a la cuenta propia, con sesión: la API verifica el ID token como API-GOO-01, y la persona confirma su contraseña de BE (la re-autenticación, con las reglas y los cupos del login: una contraseña equivocada es 422 VALIDATION_FAILED con CREDENTIAL_INCORRECT en credential). Una sesión con perfil profesional lo hace solo con el segundo factor verificado (403 MFA_REQUIRED). Si la cuenta de Google tiene otro correo, 409 GOOGLE_EMAIL_MISMATCH (details.email) hasta que la persona lo confirme con confirmDifferentEmail. Una cuenta de Google de otra cuenta BE, o una cuenta que ya tiene otra vinculada, 409 GOOGLE_ACCOUNT_ALREADY_LINKED; una que tuvo otra y la desvinculó, 409 GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE (DL-172 D-5). Vincular la misma que se había desvinculado la reasocia. Sin Idempotency-Key: repetirlo con la misma cuenta ya vinculada responde 200 sin cambiar nada. En una transacción: el método (o su reasociación), el hecho MetodoDeAccesoAsociado y la auditoría. Devuelve los métodos.',
+      'Vincular una cuenta de Google a la cuenta propia, con sesión: la API verifica el ID token como API-GOO-01, y la persona confirma su contraseña de BE (la re-autenticación, con las reglas y los cupos del login: una contraseña equivocada es 422 VALIDATION_FAILED con CREDENTIAL_INCORRECT en credential). Una sesión con perfil profesional lo hace solo con el segundo factor verificado (403 MFA_REQUIRED). Si la cuenta de Google tiene otro correo, 409 GOOGLE_EMAIL_MISMATCH (details.email) hasta que la persona lo confirme con confirmDifferentEmail. Una cuenta de Google de otra cuenta BE, o una cuenta que ya tiene otra vinculada, 409 GOOGLE_ACCOUNT_ALREADY_LINKED; una que tuvo otra y la desvinculó, 409 GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE (DL-172 D-5). Vincular la misma que se había desvinculado la reasocia. Sin Idempotency-Key: repetirlo con la misma cuenta ya vinculada responde 200 sin cambiar nada. En una transacción: el método (o su reasociación), el hecho MetodoDeAccesoAsociado (en la reasociación, con datos.reasociacion) y la auditoría. Confirmado, avisa al correo de acceso que se vinculó esa cuenta de Google (DL-172 D-11; de mejor esfuerzo: sin proveedor de correo no sale nada y la respuesta es la misma). Devuelve los métodos.',
     autenticacion: 'SESSION',
     idempotencia: false,
     request: VincularMetodoDeAccesoRequestSchema,
@@ -4386,7 +4386,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'delete',
     ruta: '/me/access-methods/{methodId}',
     resumen:
-      'Desvincular un método de la cuenta propia: hoy, solo Google. La contraseña no se desvincula (422 VALIDATION_FAILED con METHOD_NOT_REMOVABLE), y Google solo si queda la contraseña (409 LAST_ACCESS_METHOD: la cuenta nunca queda sin un método utilizable). Exige una entrada reciente (SESSION_STEP_UP: 10 minutos, DL-017; si no, 403 STEP_UP_REQUIRED) y, en una sesión con perfil profesional, el segundo factor verificado (403 MFA_REQUIRED). Uno ajeno, inexistente o ya desvinculado: 404. El método no se borra: en una transacción queda el retiro (de solo agregar), el hecho MetodoDeAccesoRetirado y la auditoría. Las sesiones abiertas siguen; la persona puede cerrarlas con API-ACC-04. Devuelve los métodos.',
+      'Desvincular un método de la cuenta propia: hoy, solo Google. La contraseña no se desvincula (422 VALIDATION_FAILED con METHOD_NOT_REMOVABLE), y Google solo si queda la contraseña (409 LAST_ACCESS_METHOD: la cuenta nunca queda sin un método utilizable). Exige una entrada reciente (SESSION_STEP_UP: 10 minutos, DL-017; si no, 403 STEP_UP_REQUIRED) y, en una sesión con perfil profesional, el segundo factor verificado (403 MFA_REQUIRED). Uno ajeno, inexistente o ya desvinculado: 404. El método no se borra: en una transacción queda el retiro (de solo agregar), el hecho MetodoDeAccesoRetirado y la auditoría. Confirmado, avisa al correo de acceso (DL-172 D-11, de mejor esfuerzo). Las sesiones abiertas siguen (D-8); si no fue la persona quien la vinculó, lo que corta el ciclo es cambiar la contraseña (API-ACC-P1-01 y 02, que además cierra todas las sesiones). Devuelve los métodos.',
     autenticacion: 'SESSION_STEP_UP',
     idempotencia: false,
     exitos: [{ status: 200, schema: MetodosDeAccesoResponseSchema }],

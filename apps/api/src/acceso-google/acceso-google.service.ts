@@ -14,12 +14,13 @@ import { validarCuerpo } from '../http/validacion';
 import { bloquearCorreoDeAcceso, metodosDelCorreo } from '../identidad/correo-de-acceso';
 import { esColisionDeIdentificador, RegistroService, validarActosDelAlta, validarNombreDelAlta } from '../identidad/registro.service';
 import { AuditoriaService } from '../plataforma/auditoria.service';
+import { CorreoService } from '../plataforma/correo.service';
 import { CredencialesService } from '../plataforma/credenciales.service';
 import { LimitadorService } from '../plataforma/limitador.service';
 import { esViolacionDeUnicidad } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { SesionService, type SesionAbierta } from '../sesion/sesion.service';
-import { metodoVigenteEnLaBase } from './metodos-de-la-cuenta';
+import { avisarCambioDeMetodo, metodoVigenteEnLaBase, registrarHechoDelCambio } from './metodos-de-la-cuenta';
 import { CorreoDeGoogleNoVerificado, GoogleNoDisponible, TokenDeGoogleInvalido, VerificadorDeGoogle, type CuentaDeGoogle } from './verificador-de-google';
 
 const OPERACION_SESION = 'API-GOO-01';
@@ -57,6 +58,7 @@ export class AccesoGoogleService {
     private readonly credenciales: CredencialesService,
     private readonly auditoria: AuditoriaService,
     private readonly limitador: LimitadorService,
+    private readonly correo: CorreoService,
   ) {}
 
   /**
@@ -121,7 +123,9 @@ export class AccesoGoogleService {
     const identidadId = local.identidadId;
     const procedencia = procedenciaDe(ctx, 'UC-E05', OPERACION_VINCULO) as unknown as Prisma.InputJsonValue;
     try {
+      let cambio = false;
       const sesion = await this.prisma.$transaction(async (tx) => {
+        cambio = false;
         await bloquearCorreoDeAcceso(tx, cuenta.correo);
         const google = await tx.metodoDeAcceso.findMany({
           where: { tipo: 'GOOGLE', OR: [{ referencia: cuenta.sub }, { identidadId }] },
@@ -130,12 +134,20 @@ export class AccesoGoogleService {
         const deEstaCuenta = google.find((m) => m.identidadId === identidadId && m.referencia === cuenta.sub);
         // La cuenta de Google es de otra identidad, o esta identidad ya tiene (o tuvo) otra cuenta de Google (una por identidad).
         if (!deEstaCuenta && google.length > 0) throw errores.cuentaDeGoogleYaVinculada();
-        if (!deEstaCuenta) await this.asociar(tx, identidadId, cuenta, procedencia, ctx);
+        if (!deEstaCuenta) {
+          await this.asociar(tx, identidadId, cuenta, procedencia, ctx);
+          cambio = true;
+        }
         // RF-004 (DL-172): la misma cuenta de Google, desvinculada desde la cuenta: confirmada la contraseña, se reasocia.
-        else if (deEstaCuenta._count.cambios % 2 === 1) await this.reasociar(tx, identidadId, deEstaCuenta.id, deEstaCuenta._count.cambios + 1, procedencia, ctx);
+        else if (deEstaCuenta._count.cambios % 2 === 1) {
+          await this.reasociar(tx, identidadId, deEstaCuenta.id, deEstaCuenta._count.cambios + 1, procedencia, ctx);
+          cambio = true;
+        }
         // Repetirlo con la misma cuenta ya vinculada (un reintento) abre otra sesión sin duplicar nada.
         return this.abrirEn(tx, identidadId, ctx, OPERACION_VINCULO);
       });
+      // D-11 (revisión de DL-172): un vínculo o una reasociación nuevos se avisan al correo de acceso (el de esta cuenta de Google).
+      if (cambio) avisarCambioDeMetodo(this.correo, { para: cuenta.correo, cambio: 'VINCULADA', correoDeGoogle: cuenta.correo, momento: ctx.momentoDeRecepcion, operacion: OPERACION_VINCULO, requestId: ctx.requestId });
       return this.sesiones.respuesta(identidadId, sesion);
     } catch (e) {
       throw await this.comoRechazo(e, OPERACION_VINCULO, ctx, identidadId, () => errores.cuentaDeGoogleYaVinculada());
@@ -244,9 +256,13 @@ export class AccesoGoogleService {
     );
   }
 
-  /** RF-004 (DL-172): la reasociación, una fila nueva de solo agregar con el número que sigue, y su auditoría. */
+  /**
+   * RF-004 (DL-172): la reasociación, una fila nueva de solo agregar con el número que sigue, su hecho de dominio
+   * (`MetodoDeAccesoAsociado` con `reasociacion`, REG-06-21) y su auditoría.
+   */
   private async reasociar(tx: Prisma.TransactionClient, identidadId: string, metodoId: string, numero: number, procedencia: Prisma.InputJsonValue, ctx: ContextoDeSolicitud): Promise<void> {
     await tx.cambioDeMetodoDeAcceso.create({ data: { metodoDeAccesoId: metodoId, identidadId, numero, accion: 'REASOCIACION', procedencia } });
+    await registrarHechoDelCambio(tx, { identidadId, metodoId, accion: 'REASOCIACION', procedencia, momento: ctx.momentoDeRecepcion });
     await this.auditoria.registrar(
       {
         operacion: OPERACION_VINCULO,

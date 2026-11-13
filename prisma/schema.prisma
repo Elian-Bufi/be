@@ -133,6 +133,8 @@ enum TipoDeEventoDeDominio {
   ActoRevocado
   /// WP-03: otorgamiento o reotorgamiento de A3 (API-CON-06).
   ActoOtorgado
+  /// RF-004 (DL-172; REG-06-21): se retiró (desvinculó) un método de acceso. La reasociación es `MetodoDeAccesoAsociado`.
+  MetodoDeAccesoRetirado
 }
 
 /// Resultado registrado en auditoría (08 §29).

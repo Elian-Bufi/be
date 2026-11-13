@@ -43,6 +43,7 @@ import { ENTORNO } from '../config/tokens';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
+import { metodoVigenteDelCorreo } from '../identidad/correo-de-acceso';
 import { AuditoriaService } from '../plataforma/auditoria.service';
 import { esUuid } from '../plataforma/ejecutor';
 import { IdempotenciaService, type ResultadoIdempotente } from '../plataforma/idempotencia.service';
@@ -292,7 +293,7 @@ export class AdministracionService {
       return await this.idempotencia.ejecutar({ operacion: 'API-ADM-14', ambito: actor.identidadId, clave, huella }, async (tx) => {
         const [metodo] = await tx.$queryRaw<{ identidadId: string }[]>`
           SELECT "identidad_id"::text AS "identidadId" FROM "metodo_de_acceso"
-           WHERE ("tipo" = 'LOCAL' AND "referencia" = ${evaluada.correo}) OR ("tipo" = 'GOOGLE' AND "correo" = ${evaluada.correo})
+           WHERE ${metodoVigenteDelCorreo('"metodo_de_acceso"', evaluada.correo)}
            ORDER BY "tipo" LIMIT 1`;
         if (!metodo) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'CUENTA_NO_ENCONTRADA');
         const identidadId = metodo.identidadId;
@@ -430,7 +431,7 @@ export class AdministracionService {
       return await this.prisma.$transaction(async (tx) => {
         const [metodo] = await tx.$queryRaw<{ identidadId: string }[]>`
           SELECT "identidad_id"::text AS "identidadId" FROM "metodo_de_acceso"
-           WHERE ("tipo" = 'LOCAL' AND "referencia" = ${correo}) OR ("tipo" = 'GOOGLE' AND "correo" = ${correo})
+           WHERE ${metodoVigenteDelCorreo('"metodo_de_acceso"', correo)}
            ORDER BY "tipo" LIMIT 1`;
         if (!metodo) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'CUENTA_NO_ENCONTRADA');
         const identidadId = metodo.identidadId;

@@ -3,6 +3,7 @@ import {
   actuaComoProfesional,
   decidirRetiro,
   decidirVinculoDeGoogle,
+  googleParaVolverAVincular,
   metodosUtilizables,
   VENTANA_DE_STEP_UP_MS,
   VincularMetodoDeAccesoRequestSchema,
@@ -14,13 +15,14 @@ import { ErrorDeApi, errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
 import { bloquearCorreoDeAcceso } from '../identidad/correo-de-acceso';
 import { AuditoriaService } from '../plataforma/auditoria.service';
+import { CorreoService } from '../plataforma/correo.service';
 import { CredencialesService } from '../plataforma/credenciales.service';
 import { esUuid } from '../plataforma/ejecutor';
 import { LimitadorService } from '../plataforma/limitador.service';
 import { conReintento, esViolacionDeUnicidad, momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
-import { metodosDeLaCuenta, type MetodoLeido } from './metodos-de-la-cuenta';
+import { avisarCambioDeMetodo, metodosDeLaCuenta, registrarHechoDelCambio, type MetodoLeido } from './metodos-de-la-cuenta';
 import { CorreoDeGoogleNoVerificado, GoogleNoDisponible, TokenDeGoogleInvalido, VerificadorDeGoogle, type CuentaDeGoogle } from './verificador-de-google';
 
 type Tx = Prisma.TransactionClient;
@@ -39,6 +41,7 @@ export function metodosApi(metodos: readonly MetodoLeido[]): MetodosDeAccesoResp
         removable: decidirRetiro(metodos, m.id) === 'RETIRAR',
       })),
       canLinkGoogle: utilizables.some((m) => m.tipo === 'LOCAL') && !utilizables.some((m) => m.tipo === 'GOOGLE'),
+      relinkableGoogleEmail: googleParaVolverAVincular(metodos)?.correo ?? null,
     },
   };
 }
@@ -53,7 +56,8 @@ export function metodosApi(metodos: readonly MetodoLeido[]): MetodosDeAccesoResp
  *   (`cambio_de_metodo_de_acceso_guardar`): nunca queda una cuenta sin un método utilizable.
  * - **El segundo factor del profesional** (UF-11): una sesión con perfil profesional cambia sus métodos solo con él
  *   verificado. Una sesión robada sin el código no agrega una puerta de entrada ni saca la del titular.
- * Todo cambio queda auditado, con su rechazo y su motivo real; al cliente le llega solo el error del contrato.
+ * Todo cambio queda auditado, con su rechazo y su motivo real; al cliente le llega solo el error del contrato. Cada
+ * vínculo, reasociación o retiro deja su hecho de dominio (REG-06-21) y, confirmado, avisa al correo de acceso (D-11).
  */
 @Injectable()
 export class MetodosDeAccesoService {
@@ -63,6 +67,7 @@ export class MetodosDeAccesoService {
     private readonly credenciales: CredencialesService,
     private readonly auditoria: AuditoriaService,
     private readonly limitador: LimitadorService,
+    private readonly correo: CorreoService,
   ) {}
 
   // ─── API-MET-01 ──────────────────────────────────────────────────────────────────────────────
@@ -107,7 +112,7 @@ export class MetodosDeAccesoService {
           });
           switch (decision) {
             case 'YA_ESTA':
-              return { estadoHttp: 200 as const, metodos: actuales };
+              return { estadoHttp: 200 as const, metodos: actuales, avisarA: null };
             case 'DE_OTRA_IDENTIDAD':
               throw new ConMotivo(errores.cuentaDeGoogleDeOtraCuenta(), 'GOOGLE_DE_OTRA_IDENTIDAD');
             case 'YA_TIENE_OTRA':
@@ -127,9 +132,14 @@ export class MetodosDeAccesoService {
               break;
             }
           }
-          return { estadoHttp: 201 as const, metodos: await metodosDeLaCuenta(tx, actor.identidadId) };
+          // D-11: el aviso va al correo de acceso (el de la contraseña, que acá siempre está).
+          const avisarA = actuales.find((m) => m.tipo === 'LOCAL')?.referencia ?? null;
+          return { estadoHttp: 201 as const, metodos: await metodosDeLaCuenta(tx, actor.identidadId), avisarA };
         }),
       );
+      if (resultado.avisarA) {
+        avisarCambioDeMetodo(this.correo, { para: resultado.avisarA, cambio: 'VINCULADA', correoDeGoogle: cuenta.correo, momento: ctx.momentoDeRecepcion, operacion: OPERACION, requestId: ctx.requestId });
+      }
       return { estadoHttp: resultado.estadoHttp, cuerpo: metodosApi(resultado.metodos) };
     } catch (e) {
       if (e instanceof ConMotivo) return this.rechazar(OPERACION, e.error, actor, ctx, e.motivo);
@@ -150,7 +160,7 @@ export class MetodosDeAccesoService {
     const id = esUuid(metodoId) ? metodoId.toLowerCase() : null;
     const procedencia = procedenciaDe(ctx, CASO_DE_USO, OPERACION) as unknown as Prisma.InputJsonValue;
     try {
-      const metodos = await conReintento(() =>
+      const { metodos, retirado, avisarA } = await conReintento(() =>
         this.prisma.$transaction(async (tx) => {
           // El método se toma antes de decidir: dos retiros simultáneos se ordenan, y el segundo ya lo ve retirado.
           if (id) await tx.$queryRaw`SELECT 1 FROM "metodo_de_acceso" WHERE "id" = ${id}::uuid AND "identidad_id" = ${actor.identidadId}::uuid FOR UPDATE`;
@@ -159,10 +169,15 @@ export class MetodosDeAccesoService {
           if (decision === 'NO_ESTA') throw new ConMotivo(new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.'), 'METODO_NO_ENCONTRADO');
           if (decision === 'LA_CONTRASENA_NO_SE_RETIRA') throw new ConMotivo(errores.validacionFallida([{ code: 'METHOD_NOT_REMOVABLE', path: 'methodId' }]), 'LA_CONTRASENA_NO_SE_RETIRA');
           if (decision === 'ULTIMO_METODO') throw new ConMotivo(errores.ultimoMetodoDeAcceso(), 'ULTIMO_METODO');
-          await this.registrarCambio(tx, actor, actuales.find((m) => m.id === id) as MetodoLeido, 'RETIRO', procedencia, ctx, OPERACION);
-          return metodosDeLaCuenta(tx, actor.identidadId);
+          const retirado = actuales.find((m) => m.id === id) as MetodoLeido;
+          await this.registrarCambio(tx, actor, retirado, 'RETIRO', procedencia, ctx, OPERACION);
+          const avisarA = actuales.find((m) => m.tipo === 'LOCAL')?.referencia ?? null;
+          return { metodos: await metodosDeLaCuenta(tx, actor.identidadId), retirado, avisarA };
         }),
       );
+      if (avisarA && retirado.correo) {
+        avisarCambioDeMetodo(this.correo, { para: avisarA, cambio: 'DESVINCULADA', correoDeGoogle: retirado.correo, momento: ctx.momentoDeRecepcion, operacion: OPERACION, requestId: ctx.requestId });
+      }
       return metodosApi(metodos);
     } catch (e) {
       if (e instanceof ConMotivo) return this.rechazar(OPERACION, e.error, actor, ctx, e.motivo, id);
@@ -209,10 +224,14 @@ export class MetodosDeAccesoService {
     await this.auditar(tx, 'API-MET-02', 'EXITO', 'METODO_GOOGLE_ASOCIADO', actor, metodo.id, ctx);
   }
 
-  /** REG-06-22: un retiro o una reasociación es una fila nueva (de solo agregar), con el número que sigue, y su auditoría. */
+  /**
+   * REG-06-22: un retiro o una reasociación es una fila nueva (de solo agregar), con el número que sigue, su hecho de dominio
+   * (REG-06-21: `MetodoDeAccesoRetirado`, o `MetodoDeAccesoAsociado` con `reasociacion`) y su auditoría.
+   */
   private async registrarCambio(tx: Tx, actor: ActorAutenticado, metodo: MetodoLeido, accion: 'RETIRO' | 'REASOCIACION', procedencia: Prisma.InputJsonValue, ctx: ContextoDeSolicitud, operacion: string): Promise<void> {
     const momento = await momentoDeLaBase(tx);
     await tx.cambioDeMetodoDeAcceso.create({ data: { metodoDeAccesoId: metodo.id, identidadId: actor.identidadId, numero: metodo.cambios + 1, accion, procedencia, momentoDeRegistro: momento } });
+    await registrarHechoDelCambio(tx, { identidadId: actor.identidadId, metodoId: metodo.id, accion, procedencia, momento: ctx.momentoDeRecepcion });
     await this.auditar(tx, operacion, 'EXITO', accion === 'RETIRO' ? 'METODO_GOOGLE_RETIRADO' : 'METODO_GOOGLE_REASOCIADO', actor, metodo.id, ctx);
   }
 

@@ -125287,7 +125287,7 @@
     "/auth/federated/google/links": {
       "post": {
         "operationId": "API-GOO-02",
-        "summary": "Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.",
+        "summary": "Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado; si esa misma cuenta de Google se había desvinculado (API-MET-03; DL-172), la reasocia, con el hecho MetodoDeAccesoAsociado (datos.reasociacion). Un vínculo o una reasociación nuevos se avisan al correo de acceso (DL-172 D-11, de mejor esfuerzo). Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.",
         "description": "Fuente: pedido de Dirección del 2026-10-16 («solo después de que la persona confirme la contraseña de esa cuenta») · 05 UC-E05 E02 · 06 REG-06-21 · 08 §24.5 y §24.6 · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138. AuthN: PUBLIC.",
         "security": [],
         "parameters": [
@@ -138653,7 +138653,7 @@
     "/me/access-methods": {
       "get": {
         "operationId": "API-MET-01",
-        "summary": "Con qué se entra a la cuenta propia: la contraseña (con el correo de acceso) y Google (con el correo de esa cuenta de Google), sin los métodos desvinculados. Cada uno dice si se puede desvincular (removable: solo Google, y solo si queda la contraseña), y canLinkGoogle dice si se puede vincular una cuenta de Google desde acá.",
+        "summary": "Con qué se entra a la cuenta propia: la contraseña (con el correo de acceso) y Google (con el correo de esa cuenta de Google), sin los métodos desvinculados. Cada uno dice si se puede desvincular (removable: solo Google, y solo si queda la contraseña), y canLinkGoogle dice si se puede vincular una cuenta de Google desde acá. relinkableGoogleEmail es el correo de la cuenta de Google que se desvinculó, la única que se puede volver a vincular (DL-172 D-5), o null.",
         "description": "Fuente: 09 v0.12 §12 («GET /me/access-methods», P2) · 04 RF-004 · 05 UC-E06 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172. AuthN: SESSION.",
         "security": [
           {
@@ -138740,11 +138740,18 @@
                         },
                         "canLinkGoogle": {
                           "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
                         "methods",
-                        "canLinkGoogle"
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
                       ],
                       "additionalProperties": false
                     }
@@ -138801,7 +138808,7 @@
       },
       "post": {
         "operationId": "API-MET-02",
-        "summary": "Vincular una cuenta de Google a la cuenta propia, con sesión: la API verifica el ID token como API-GOO-01, y la persona confirma su contraseña de BE (la re-autenticación, con las reglas y los cupos del login: una contraseña equivocada es 422 VALIDATION_FAILED con CREDENTIAL_INCORRECT en credential). Una sesión con perfil profesional lo hace solo con el segundo factor verificado (403 MFA_REQUIRED). Si la cuenta de Google tiene otro correo, 409 GOOGLE_EMAIL_MISMATCH (details.email) hasta que la persona lo confirme con confirmDifferentEmail. Una cuenta de Google de otra cuenta BE, o una cuenta que ya tiene otra vinculada, 409 GOOGLE_ACCOUNT_ALREADY_LINKED; una que tuvo otra y la desvinculó, 409 GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE (DL-172 D-5). Vincular la misma que se había desvinculado la reasocia. Sin Idempotency-Key: repetirlo con la misma cuenta ya vinculada responde 200 sin cambiar nada. En una transacción: el método (o su reasociación), el hecho MetodoDeAccesoAsociado y la auditoría. Devuelve los métodos.",
+        "summary": "Vincular una cuenta de Google a la cuenta propia, con sesión: la API verifica el ID token como API-GOO-01, y la persona confirma su contraseña de BE (la re-autenticación, con las reglas y los cupos del login: una contraseña equivocada es 422 VALIDATION_FAILED con CREDENTIAL_INCORRECT en credential). Una sesión con perfil profesional lo hace solo con el segundo factor verificado (403 MFA_REQUIRED). Si la cuenta de Google tiene otro correo, 409 GOOGLE_EMAIL_MISMATCH (details.email) hasta que la persona lo confirme con confirmDifferentEmail. Una cuenta de Google de otra cuenta BE, o una cuenta que ya tiene otra vinculada, 409 GOOGLE_ACCOUNT_ALREADY_LINKED; una que tuvo otra y la desvinculó, 409 GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE (DL-172 D-5). Vincular la misma que se había desvinculado la reasocia. Sin Idempotency-Key: repetirlo con la misma cuenta ya vinculada responde 200 sin cambiar nada. En una transacción: el método (o su reasociación), el hecho MetodoDeAccesoAsociado (en la reasociación, con datos.reasociacion) y la auditoría. Confirmado, avisa al correo de acceso que se vinculó esa cuenta de Google (DL-172 D-11; de mejor esfuerzo: sin proveedor de correo no sale nada y la respuesta es la misma). Devuelve los métodos.",
         "description": "Fuente: 09 v0.12 §12 («POST /me/access-methods», P2) · 04 RF-003 y RF-004 · 05 UC-E06 · 06 REG-06-21 · 08 §24.5, §24.6 y §25 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172. AuthN: SESSION.",
         "security": [
           {
@@ -138924,11 +138931,18 @@
                         },
                         "canLinkGoogle": {
                           "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
                         "methods",
-                        "canLinkGoogle"
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
                       ],
                       "additionalProperties": false
                     }
@@ -138995,11 +139009,18 @@
                         },
                         "canLinkGoogle": {
                           "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
                         "methods",
-                        "canLinkGoogle"
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
                       ],
                       "additionalProperties": false
                     }
@@ -139126,7 +139147,7 @@
     "/me/access-methods/{methodId}": {
       "delete": {
         "operationId": "API-MET-03",
-        "summary": "Desvincular un método de la cuenta propia: hoy, solo Google. La contraseña no se desvincula (422 VALIDATION_FAILED con METHOD_NOT_REMOVABLE), y Google solo si queda la contraseña (409 LAST_ACCESS_METHOD: la cuenta nunca queda sin un método utilizable). Exige una entrada reciente (SESSION_STEP_UP: 10 minutos, DL-017; si no, 403 STEP_UP_REQUIRED) y, en una sesión con perfil profesional, el segundo factor verificado (403 MFA_REQUIRED). Uno ajeno, inexistente o ya desvinculado: 404. El método no se borra: en una transacción queda el retiro (de solo agregar), el hecho MetodoDeAccesoRetirado y la auditoría. Las sesiones abiertas siguen; la persona puede cerrarlas con API-ACC-04. Devuelve los métodos.",
+        "summary": "Desvincular un método de la cuenta propia: hoy, solo Google. La contraseña no se desvincula (422 VALIDATION_FAILED con METHOD_NOT_REMOVABLE), y Google solo si queda la contraseña (409 LAST_ACCESS_METHOD: la cuenta nunca queda sin un método utilizable). Exige una entrada reciente (SESSION_STEP_UP: 10 minutos, DL-017; si no, 403 STEP_UP_REQUIRED) y, en una sesión con perfil profesional, el segundo factor verificado (403 MFA_REQUIRED). Uno ajeno, inexistente o ya desvinculado: 404. El método no se borra: en una transacción queda el retiro (de solo agregar), el hecho MetodoDeAccesoRetirado y la auditoría. Confirmado, avisa al correo de acceso (DL-172 D-11, de mejor esfuerzo). Las sesiones abiertas siguen (D-8); si no fue la persona quien la vinculó, lo que corta el ciclo es cambiar la contraseña (API-ACC-P1-01 y 02, que además cierra todas las sesiones). Devuelve los métodos.",
         "description": "Fuente: 09 v0.12 §12 («DELETE /me/access-methods/{methodId}», P2: «no permitir eliminar el último método de acceso utilizable»; «la remoción puede exigir step-up») · 04 RF-004 · 05 UC-E06 · 06 REG-06-22 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172. AuthN: SESSION_STEP_UP.",
         "security": [
           {
@@ -139221,11 +139242,18 @@
                         },
                         "canLinkGoogle": {
                           "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
                         "methods",
-                        "canLinkGoogle"
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
                       ],
                       "additionalProperties": false
                     }

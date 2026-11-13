@@ -3,6 +3,9 @@
  * - TEST-INC-007 a 009: avisar un problema, verlo, y Administración que lo gestiona; la historia no se sobrescribe.
  * - TEST-MET-006 a 010: ver, vincular y desvincular Google desde la cuenta, sin quedarse nunca sin un método, con la
  *   entrada reciente y el segundo factor del profesional.
+ * - TEST-MET-013 a 015 (la revisión de DL-172): el hecho de cada retiro y reasociación, el aviso por correo de cada cambio
+ *   (D-11) y que una cuenta de Google desvinculada ya no identifique la cuenta para recuperar el acceso. El correo va a un
+ *   proveedor falso local.
  */
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
@@ -11,6 +14,7 @@ import request from 'supertest';
 import { TokensService } from '../../apps/api/src/sesion/tokens.service';
 import { adm, administradorListo } from './soporte-administracion';
 import { appDePrueba, conSesion, correoSintetico, CREDENCIAL_SINTETICA, NOMBRE_SINTETICO, OTRA_CREDENCIAL_SINTETICA, registrarOk, tokenDe } from './soporte-api';
+import { levantarCorreoFalso, type CorreoFalso } from './soporte-correo';
 import { googleDePrueba, idTokenDeGoogle, levantarGoogleFalso, reclamosDeGoogle, subSintetico, type GoogleFalso } from './soporte-google';
 import { prepararAsesorado, prepararProfesional } from './soporte-vinculo';
 import { VERSION_VIGENTE } from '@be/domain';
@@ -245,5 +249,118 @@ describe('RF-004 · los métodos de acceso de una misma identidad', () => {
       })
       .expect(409);
     expect(alta.body.error.code).toBe('GOOGLE_ACCOUNT_UNLINKED');
+  });
+});
+
+describe('RF-004 · la revisión de DL-172: hechos, avisos y recuperación', () => {
+  let correo: CorreoFalso;
+  /** Con proveedor de correo (el falso) y con Google (el falso). */
+  let conCorreo: INestApplication;
+  beforeAll(async () => {
+    correo = await levantarCorreoFalso();
+    conCorreo = await appDePrueba({ correo: correo.config, ...googleDePrueba(google) });
+  });
+  afterAll(async () => {
+    await conCorreo.close();
+    await correo.cerrar();
+  });
+  const vincular = (a: INestApplication, token: string, idToken: string, confirmar = false) =>
+    conSesion(a, token).post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken, credential: CREDENCIAL_SINTETICA, ...(confirmar ? { confirmDifferentEmail: true } : {}) });
+  const googleDe = (cuerpo: { data: { methods: { methodId: string; type: string }[] } }) => cuerpo.data.methods.find((m) => m.type === 'GOOGLE')!.methodId;
+  const hechos = async (identidadId: string, metodoId: string) =>
+    (await prisma.eventoDeDominio.findMany({ where: { identidadId }, select: { tipo: true, datos: true, actorId: true } })).filter((e) => (e.datos as { metodoDeAccesoId?: string } | null)?.metodoDeAccesoId === metodoId);
+
+  it('TEST-MET-013 · cada retiro deja MetodoDeAccesoRetirado y cada reasociación MetodoDeAccesoAsociado (también la de API-GOO-02); la lista dice cuál se puede volver a vincular', async () => {
+    const acceso = correoSintetico('met-hechos');
+    const id = await registrarOk(app, acceso);
+    const token = await tokenDe(app, acceso);
+    expect((await conSesion(app, token).get('/api/v1/me/access-methods').expect(200)).body.data.relinkableGoogleEmail).toBeNull();
+    // Una cuenta de Google con otro correo: se vincula, se desvincula y se reasocia desde la cuenta (API-MET-02 y 03).
+    const deGoogle = correoSintetico('met-hechos-google');
+    const idToken = tokenDeGoogle(subSintetico(), deGoogle);
+    const vinculada = (await vincular(app, token, idToken, true).expect(201)).body;
+    expect(vinculada.data.relinkableGoogleEmail).toBeNull();
+    const metodo = googleDe(vinculada);
+    const sinGoogle = (await conSesion(app, token).delete(`/api/v1/me/access-methods/${metodo}`).expect(200)).body.data;
+    expect(sinGoogle).toMatchObject({ canLinkGoogle: true, relinkableGoogleEmail: deGoogle });
+    expect((await vincular(app, token, idToken, true).expect(201)).body.data.relinkableGoogleEmail).toBeNull();
+    await conSesion(app, token).delete(`/api/v1/me/access-methods/${metodo}`).expect(200);
+    const delMetodo = await hechos(id, metodo);
+    expect(delMetodo.filter((e) => e.tipo === 'MetodoDeAccesoRetirado')).toHaveLength(2);
+    expect(delMetodo.filter((e) => e.tipo === 'MetodoDeAccesoAsociado').map((e) => e.datos)).toEqual(
+      expect.arrayContaining([{ metodoDeAccesoId: metodo, tipo: 'GOOGLE' }, { metodoDeAccesoId: metodo, tipo: 'GOOGLE', reasociacion: true }]),
+    );
+    expect(delMetodo).toHaveLength(4);
+    expect(delMetodo.every((e) => e.actorId === id)).toBe(true);
+
+    // La reasociación al entrar (API-GOO-02, con la contraseña del mismo correo) también deja su hecho.
+    const otra = correoSintetico('met-hechos-goo02');
+    const otraId = await registrarOk(app, otra);
+    const otraToken = await tokenDe(app, otra);
+    const suToken = tokenDeGoogle(subSintetico(), otra);
+    const suMetodo = googleDe((await vincular(app, otraToken, suToken).expect(201)).body);
+    await conSesion(app, otraToken).delete(`/api/v1/me/access-methods/${suMetodo}`).expect(200);
+    await request(app.getHttpServer()).post('/api/v1/auth/federated/google/links').send({ idToken: suToken, credential: CREDENCIAL_SINTETICA }).expect(201);
+    const suyos = await hechos(otraId, suMetodo);
+    expect(suyos.map((e) => e.tipo).sort()).toEqual(['MetodoDeAccesoAsociado', 'MetodoDeAccesoAsociado', 'MetodoDeAccesoRetirado']);
+    expect(suyos.some((e) => (e.datos as { reasociacion?: boolean }).reasociacion === true)).toBe(true);
+  });
+
+  it('TEST-MET-014 · cada vínculo, reasociación o retiro se avisa al correo de acceso, con la cuenta de Google y el consejo de cambiar la contraseña (D-11)', async () => {
+    const acceso = correoSintetico('met-aviso');
+    await registrarOk(conCorreo, acceso);
+    const token = await tokenDe(conCorreo, acceso);
+    const deGoogle = correoSintetico('met-aviso-google');
+    const idToken = tokenDeGoogle(subSintetico(), deGoogle);
+    const metodo = googleDe((await vincular(conCorreo, token, idToken, true).expect(201)).body);
+    const avisoDeVinculo = await correo.esperar(acceso);
+    expect(avisoDeVinculo.asunto).toBe('Se vinculó una cuenta de Google a tu cuenta de BE');
+    expect(avisoDeVinculo.texto).toContain(`se vinculó la cuenta de Google ${deGoogle}`);
+    expect(avisoDeVinculo.texto).toMatch(/cambiá tu contraseña/);
+    // A la cuenta de Google no le llega nada: el aviso es para el titular, en su correo de acceso.
+    expect(correo.recibidos.some((m) => m.para === deGoogle)).toBe(false);
+    // Repetirlo (200, sin cambios) no avisa de nuevo.
+    await vincular(conCorreo, token, idToken, true).expect(200);
+    await conSesion(conCorreo, token).delete(`/api/v1/me/access-methods/${metodo}`).expect(200);
+    await correo.esperar(acceso, 2);
+    const tras = correo.recibidos.filter((m) => m.para === acceso);
+    expect(tras.map((m) => m.asunto)).toEqual(['Se vinculó una cuenta de Google a tu cuenta de BE', 'Se desvinculó una cuenta de Google de tu cuenta de BE']);
+    expect(tras[1]!.texto).toContain(`se desvinculó la cuenta de Google ${deGoogle}`);
+
+    // Al entrar: vincular (API-GOO-02) con la contraseña del mismo correo también avisa.
+    const otra = correoSintetico('met-aviso-goo02');
+    await registrarOk(conCorreo, otra);
+    await request(conCorreo.getHttpServer()).post('/api/v1/auth/federated/google/links').send({ idToken: tokenDeGoogle(subSintetico(), otra), credential: CREDENCIAL_SINTETICA }).expect(201);
+    expect((await correo.esperar(otra)).asunto).toBe('Se vinculó una cuenta de Google a tu cuenta de BE');
+  });
+
+  it('TEST-MET-015 · una cuenta de Google desvinculada ya no identifica la cuenta: recuperar con su correo no sugiere entrar con Google, y Administración no la encuentra por él', async () => {
+    const acceso = correoSintetico('met-recuperar');
+    const id = await registrarOk(conCorreo, acceso);
+    const token = await tokenDe(conCorreo, acceso);
+    const deGoogle = correoSintetico('met-recuperar-google');
+    const metodo = googleDe((await vincular(conCorreo, token, tokenDeGoogle(subSintetico(), deGoogle), true).expect(201)).body);
+    const pedir = () => request(conCorreo.getHttpServer()).post('/api/v1/auth/recovery-requests').set('X-BE-Surface', 'WEB').send({ identifier: deGoogle }).expect(202);
+    // Vinculada, el correo de Google la identifica (como antes de esta revisión): SIN_CONTRASENA y el correo de «entrá con Google».
+    const antes = await pedir();
+    expect(await prisma.registroDeAuditoria.findFirst({ where: { operacion: 'API-ACC-P1-01', requestId: antes.headers['x-request-id'] as string } })).toMatchObject({ motivo: 'SIN_CONTRASENA', sujetoId: id });
+    expect((await correo.esperar(deGoogle)).texto).toMatch(/Continuar con Google/);
+    await conSesion(conCorreo, token).delete(`/api/v1/me/access-methods/${metodo}`).expect(200);
+    // Desvinculada: como un correo sin cuenta. No le escribe «entrá con Google» (entrar con ella responde GOOGLE_ACCOUNT_UNLINKED).
+    const recibidosAntes = correo.recibidos.filter((m) => m.para === deGoogle).length;
+    const despues = await pedir();
+    expect(await prisma.registroDeAuditoria.findFirst({ where: { operacion: 'API-ACC-P1-01', requestId: despues.headers['x-request-id'] as string } })).toMatchObject({ motivo: 'CUENTA_INEXISTENTE', sujetoId: null });
+    // Un pedido con cuenta que manda correo después: cuando llega el suyo, el anterior ya se procesó.
+    await request(conCorreo.getHttpServer()).post('/api/v1/auth/recovery-requests').set('X-BE-Surface', 'WEB').send({ identifier: acceso }).expect(202);
+    // Tres a su correo de acceso: los avisos de vincular y de desvincular (D-11) y el código.
+    await correo.esperar(acceso, 3);
+    expect(correo.recibidos.filter((m) => m.para === acceso).some((m) => /código/.test(m.asunto))).toBe(true);
+    expect(correo.recibidos.filter((m) => m.para === deGoogle)).toHaveLength(recibidosAntes);
+
+    // La recuperación asistida (API-ADM-18) tampoco la encuentra por ese correo; por el de acceso, sí.
+    const a = await administradorListo(conCorreo, prisma, `met-rec-${randomUUID().slice(0, 6)}`);
+    const asistida = (email: string) => adm(conCorreo, a.token).post('/admin/access-recoveries').send({ email, rationale: 'Verificada por videollamada con su documento.' });
+    expect((await asistida(deGoogle).expect(404)).body.error.code).toBe('RESOURCE_NOT_FOUND');
+    await asistida(acceso).expect(201);
   });
 });

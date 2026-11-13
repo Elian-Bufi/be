@@ -1,10 +1,21 @@
 /**
  * RF-004 (DL-172) · Oráculos de los métodos de acceso de una misma identidad (TEST-MET-001 a 005;
- * docs/paquetes/WP-RF068-RF004-ORACULOS.md). Escritos antes que el servicio y verificados con mutación.
+ * docs/paquetes/WP-RF068-RF004-ORACULOS.md). Escritos antes que el servicio y verificados con mutación; los de la revisión
+ * (TEST-MET-011 y 012), también.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { decidirRetiro, decidirVinculoDeGoogle, metodosUtilizables, metodoVigente, type MetodoDeLaCuenta } from './metodos-de-acceso';
+import {
+  COPY_AVISO_DE_METODO_DE_ACCESO,
+  COPY_METODOS_DE_ACCESO,
+  decidirRetiro,
+  decidirVinculoDeGoogle,
+  googleParaVolverAVincular,
+  metodosUtilizables,
+  metodoVigente,
+  momentoDelAviso,
+  type MetodoDeLaCuenta,
+} from './metodos-de-acceso';
 import { pasoDeAccesoConGoogle } from './pasos-de-acceso-google';
 import { COPY_ACCESO_GOOGLE } from './copy-acceso-google';
 import { OPERACIONES } from './openapi';
@@ -69,4 +80,34 @@ test('TEST-MET-005 · el contrato: ver y vincular con sesión, desvincular con u
   assert.ok(op('API-MET-03')?.errores[409]?.includes('LAST_ACCESS_METHOD'));
   const rechazo = { ok: false as const, tipo: 'API' as const, status: 409, codigo: 'GOOGLE_ACCOUNT_UNLINKED', issues: [] };
   assert.deepEqual(pasoDeAccesoConGoogle('ENTRAR', rechazo, 'WEB'), { tipo: 'AVISO', mensaje: COPY_ACCESO_GOOGLE.desvinculada, reiniciar: true });
+});
+
+test('TEST-MET-011 · después de desvincular, la pantalla dice cuál cuenta de Google se puede volver a vincular (D-5)', () => {
+  assert.equal(googleParaVolverAVincular([contrasena()]), null);
+  assert.equal(googleParaVolverAVincular([contrasena(), google()]), null);
+  assert.equal(googleParaVolverAVincular([contrasena(), google({ vigente: false })])?.id, 'm-google');
+  // La contraseña nunca es «una cuenta de Google para volver a vincular», aunque no valga.
+  assert.equal(googleParaVolverAVincular([contrasena({ vigente: false })]), null);
+  assert.equal(COPY_METODOS_DE_ACCESO.volverAVincular('ana.personal@be.test'), 'Podés volver a vincular ana.personal@be.test. Para usar otra cuenta de Google, escribinos al canal de ayuda.');
+  // Con otro correo, la confirmación avisa que ese correo queda tomado aunque se desvincule (D-12).
+  assert.match(COPY_METODOS_DE_ACCESO.correoDistintoTexto('g@be.test', 'ana@be.test'), /g@be\.test queda asociado a tu cuenta BE aunque después desvincules Google/);
+});
+
+test('TEST-MET-012 · si no fue la persona, el consejo es cambiar la contraseña (cerrar las sesiones no alcanza), también en el aviso por correo (D-8, D-11)', () => {
+  assert.match(COPY_METODOS_DE_ACCESO.desvinculada, /cambiá tu contraseña/);
+  assert.doesNotMatch(COPY_METODOS_DE_ACCESO.desvinculada, /cerrá todas las sesiones/);
+  // La hora de Argentina (UTC−3), con día y mes de dos cifras y el reloj de 24 horas.
+  assert.equal(momentoDelAviso(new Date('2026-11-13T17:05:00Z')), '13/11/2026 a las 14:05 (hora de Argentina)');
+  assert.equal(momentoDelAviso(new Date('2026-01-02T02:30:00Z')), '01/01/2026 a las 23:30 (hora de Argentina)');
+  const vinculada = COPY_AVISO_DE_METODO_DE_ACCESO.texto('VINCULADA', 'g@be.test', 'X');
+  const desvinculada = COPY_AVISO_DE_METODO_DE_ACCESO.texto('DESVINCULADA', 'g@be.test', 'X');
+  for (const t of [vinculada, desvinculada]) {
+    assert.match(t, /El X se (des)?vinculó la cuenta de Google g@be\.test/);
+    assert.match(t, /Si no fuiste vos, cambiá tu contraseña ya: en Iniciar sesión, tocá «¿Olvidaste tu contraseña\?»/);
+  }
+  assert.match(vinculada, /El X se vinculó/);
+  assert.match(vinculada, /desvinculá la cuenta de Google que no reconozcas/);
+  assert.match(desvinculada, /El X se desvinculó/);
+  assert.doesNotMatch(desvinculada, /desvinculá la cuenta/);
+  assert.notEqual(COPY_AVISO_DE_METODO_DE_ACCESO.asunto.VINCULADA, COPY_AVISO_DE_METODO_DE_ACCESO.asunto.DESVINCULADA);
 });
