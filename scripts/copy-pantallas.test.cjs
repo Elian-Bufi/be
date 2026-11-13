@@ -59,6 +59,14 @@ const VUELTA_DE_ROSCA = [
   ...['perfil.tsx', 'quien-ve-que.tsx', 'cuenta.tsx'].map(inicio),
 ];
 const SESION_DE_LA_VUELTA = ['textos-del-descanso.ts', 'descanso-automatico.ts', 'fila-fija.tsx'].map(movil);
+/**
+ * WP-APP-VUELTA-2 (DL-170): los archivos con textos que la vuelta 2 toca o crea (Inicio con la tira de la semana, la
+ * cabecera, la sesión en curso, las comidas y las fechas). Pasan por todas las listas, y por la de TEST-AV2-026.
+ */
+const VUELTA_2 = [
+  ...['textos-de-la-vuelta.ts', 'textos-del-descanso.ts', 'inicio-de-hoy.ts', 'sesion-en-curso.ts', 'comidas-de-hoy.ts', 'formato.ts', 'cabecera.tsx'].map(movil),
+  ...['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-mediciones.tsx', 'inicio-informacion.tsx', 'tarjeta-de-inicio.tsx', 'tira-de-la-semana.tsx'].map(inicio),
+];
 
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
 const DOMINIOS = [
@@ -154,6 +162,19 @@ const DOMINIOS = [
     minimo: 8,
   },
   {
+    // WP-APP-VUELTA-2 (DL-170): Inicio con la tira de la semana, la actividad, la medida, las comidas y la sesión en curso
+    // hablan de todas las áreas: pasan por todas las listas. Se celebra lo hecho, sin rachas, y lo no hecho queda neutro.
+    nombre: 'la vuelta 2 de la APK',
+    // Menos dos, que ya pasan por la lista que les toca: los textos del descanso son de Entrenamiento («con desvío» es la
+    // condición registrada; SESION_DE_LA_VUELTA), y la cabecera dibuja el brillo del logo con un degradé SVG al «50%»,
+    // que no es un texto. Los dos siguen en TEST-AV2-026.
+    archivos: VUELTA_2.filter((a) => !/textos-del-descanso\.ts$|cabecera\.tsx$/.test(a)),
+    prohibidos: (texto) => [
+      ...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeCarteraEn(texto)]),
+    ],
+    minimo: 12,
+  },
+  {
     // WP-NOTAS-DE-COORDINACION (DL-140): el diálogo y el Resumen del website, la pantalla de la APK y su copy. Una nota habla
     // de cualquier área: pasa por la lista de nutrición y por la de la cartera, que ya reúne las de entrenamiento,
     // antropometría e información.
@@ -205,6 +226,9 @@ const DOMINIOS = [
       ...tsx(join(RAIZ, 'apps/web/src/app/admin')),
       ...tsx(join(RAIZ, 'apps/web/src/app/admin/professional')),
       ...tsx(join(RAIZ, 'apps/web/src/app/admin/security')),
+      // RF-068 (DL-172): las incidencias en la consola y sus textos.
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin/incidents')),
+      join(RAIZ, 'packages/domain/src/incidencias.ts'),
       join(RAIZ, 'packages/domain/src/copy-administracion.ts'),
     ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosDeAdministracionEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeCarteraEn(texto)])],
@@ -212,11 +236,15 @@ const DOMINIOS = [
   },
 ];
 
-/** Estilos de React Native: valores como '100%' no son texto para la persona. */
+/**
+ * Estilos de React Native: valores como '100%' no son texto para la persona. Tampoco los atributos técnicos, que aceptan
+ * solo unas palabras clave: el guionado de un texto (`android_hyphenationFrequency="normal"`, DL-170) no es «normal» como
+ * juicio.
+ */
 function dentroDeEstilos(nodo) {
   for (let n = nodo.parent; n; n = n.parent) {
     if (ts.isCallExpression(n) && n.expression.getText() === 'StyleSheet.create') return true;
-    if (ts.isJsxAttribute(n) && ['className', 'style', 'id', 'htmlFor', 'key', 'href', 'accessibilityRole', 'keyboardType'].includes(n.name.getText())) return true;
+    if (ts.isJsxAttribute(n) && ['className', 'style', 'id', 'htmlFor', 'key', 'href', 'accessibilityRole', 'keyboardType', 'android_hyphenationFrequency'].includes(n.name.getText())) return true;
     if (ts.isImportDeclaration(n)) return true;
   }
   return false;
@@ -307,6 +335,22 @@ test('T13 · en la ficha, un porcentaje fuera del cambio relativo se detecta (pr
   assert.equal(PORCENTAJES_DE_LA_FICHA.includes(`resumen.tsx · ${texto}`), false);
   // Y una palabra que califica, en cualquier pantalla de la ficha.
   assert.ok(prohibidos('La adherencia de la semana').includes('adherencia'));
+});
+
+/**
+ * TEST-AV2-026 (WP-APP-VUELTA-2, DL-170): ningún texto que la vuelta 2 toca o crea dice «cumplimiento», «adherencia» ni
+ * «racha», tampoco negado. Se celebra lo hecho sin rachas (Dirección, 2026-11-08), y nada califica (TEST-PRJ-009).
+ */
+test('TEST-AV2-026 · ningún texto de la vuelta 2 dice «cumplimiento», «adherencia» ni «racha», tampoco negado', () => {
+  assert.ok(VUELTA_2.length >= 14);
+  const hallazgos = VUELTA_2.flatMap((a) =>
+    textosDe(a)
+      .filter(({ texto }) => /(in)?cumplimiento|adherencia|\brachas?\b/i.test(texto))
+      .map(({ texto, linea }) => `${a.slice(RAIZ.length + 1)}:${linea} ${JSON.stringify(texto)}`),
+  );
+  assert.deepEqual(hallazgos, []);
+  // La prueba de la prueba: el extractor encuentra la palabra en un texto.
+  assert.ok(textosDe('fixture.tsx', "export const X = () => <p>Tu racha de 3 días</p>;").some(({ texto }) => /\brachas?\b/i.test(texto)));
 });
 
 test('T13 · el extractor encuentra un término prohibido en el copy e ignora los estilos', () => {
@@ -404,8 +448,11 @@ test('D-C2 · ninguna pantalla muestra la condición del original como si fuera 
   assert.ok(archivos.length >= 30, `se esperaban las pantallas de la APK y del entrenamiento del website, hay ${archivos.length}`);
   const hallazgos = archivos.filter((a) => CONDICION_DEL_ORIGINAL.test(readFileSync(a, 'utf8'))).map((a) => a.slice(RAIZ.length + 1));
   assert.deepEqual(hallazgos, []);
-  // El historial de la APK, que es donde estaba el defecto, lee lo vigente.
-  assert.match(readFileSync(join(RAIZ, 'apps/mobile/src/pantallas/historial.tsx'), 'utf8'), /etiquetaDeCondicionRegistrada\(registroVigente\(e\)\)/);
+  // El historial de la APK, que es donde estaba el defecto, lee lo vigente. Desde AV2-22 sus filas se arman en
+  // `historial-en-filas.ts`, que también pasa por la guardia.
+  const filas = readFileSync(join(RAIZ, 'apps/mobile/src/historial-en-filas.ts'), 'utf8');
+  assert.doesNotMatch(filas, CONDICION_DEL_ORIGINAL);
+  assert.match(filas, /etiquetaDeCondicionRegistrada\(registroVigente\(e\)\)/);
 });
 
 test('D-C2 · la guardia detecta la condición leída del original', () => {

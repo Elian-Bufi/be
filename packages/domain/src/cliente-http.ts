@@ -376,6 +376,8 @@ import type { Superficie } from './procedencia';
 import { VERSION_VIGENTE } from './textos';
 import { RecuperacionPedidaResponseSchema, type RecuperacionPedidaResponse } from './recuperacion-de-acceso';
 import { CanalDeContactoResponseSchema, type CanalDeContactoResponse } from './ayuda-y-contacto';
+import { IncidenciaPropiaResponseSchema, ListaDeIncidenciasPropiasResponseSchema, type ReportarIncidenciaRequest } from './incidencias';
+import { MetodosDeAccesoResponseSchema, type VincularMetodoDeAccesoRequest } from './metodos-de-acceso';
 import { AceptacionDeVersionResponseSchema, TextoPublicadoResponseSchema, type AceptacionDeVersionResponse, type TextoAAceptar, type TextoPublicadoResponse } from './textos-vigentes';
 
 export type Resultado<T> =
@@ -416,8 +418,11 @@ export type Resultado<T> =
   /** Sin respuesta: no se sabe si la acción ocurrió (10-B10:430-438). */
   | { readonly ok: false; readonly tipo: 'RED' };
 
-/** Los rechazos de la familia GOO que traen el correo de la cuenta de Google en `details` (DL-138). */
-const CODIGOS_CON_CORREO_DE_GOOGLE: ReadonlySet<string> = new Set(['GOOGLE_LINK_REQUIRED', 'GOOGLE_ACCOUNT_NOT_FOUND']);
+/**
+ * Los rechazos que traen el correo de la cuenta de Google en `details`: los de la familia GOO (DL-138) y el de vincular
+ * Google con otro correo desde la cuenta (API-MET-02, DL-172).
+ */
+const CODIGOS_CON_CORREO_DE_GOOGLE: ReadonlySet<string> = new Set(['GOOGLE_LINK_REQUIRED', 'GOOGLE_ACCOUNT_NOT_FOUND', 'GOOGLE_EMAIL_MISMATCH']);
 
 /** Códigos que significan «esta sesión ya no sirve»: la UI olvida el token y vuelve a Iniciar sesión. */
 export const CODIGOS_DE_SESION_NO_VALIDA: ReadonlySet<string> = new Set([
@@ -720,6 +725,28 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-EXP-02: el estado de la exportación, con una ruta de descarga firmada nueva (relativa a la base de la API). */
     exportacionPropia(token: string, exportacionId: string) {
       return llamar('GET', `/me/exports/${encodeURIComponent(exportacionId)}`, { token, esquema: ExportacionResponseSchema });
+    },
+    // ─── RF-068 (DL-172): avisar un problema y ver lo avisado ───────────────────────────────────────────
+    /** API-INC-01: avisar un problema (reportar una incidencia), con su clave de idempotencia. */
+    reportarIncidencia(token: string, pedido: ReportarIncidenciaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/incidents', { token, cuerpo: pedido, claveDeIdempotencia, esquema: IncidenciaPropiaResponseSchema });
+    },
+    /** API-INC-02: lo que avisó la persona, con su estado y la respuesta de Administración. */
+    incidenciasPropias(token: string, cursor?: string) {
+      return llamar('GET', `/me/incidents?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { token, esquema: ListaDeIncidenciasPropiasResponseSchema });
+    },
+    // ─── RF-004 (DL-172): los métodos de acceso de la cuenta propia ───────────────────────────────────
+    /** API-MET-01: con qué se entra. */
+    metodosDeAcceso(token: string) {
+      return llamar('GET', '/me/access-methods', { token, esquema: MetodosDeAccesoResponseSchema });
+    },
+    /** API-MET-02: vincular una cuenta de Google con el ID token y la contraseña de BE. Sin clave: es idempotente por la cuenta de Google. */
+    vincularMetodoDeAcceso(token: string, pedido: VincularMetodoDeAccesoRequest) {
+      return llamar('POST', '/me/access-methods', { token, cuerpo: pedido, esquema: MetodosDeAccesoResponseSchema });
+    },
+    /** API-MET-03: desvincular un método (hoy, solo Google). Pide una entrada reciente. */
+    desvincularMetodoDeAcceso(token: string, metodoId: string) {
+      return llamar('DELETE', `/me/access-methods/${encodeURIComponent(metodoId)}`, { token, esquema: MetodosDeAccesoResponseSchema });
     },
     /** La dirección completa de una ruta firmada de descarga (API-EXP-02-DESCARGA), para abrirla en el navegador. */
     direccionDeDescarga(ruta: string): string {

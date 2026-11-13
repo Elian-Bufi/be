@@ -59,6 +59,9 @@ export function pasoDeAccesoConGoogle(operacion: OperacionDeGoogle, resultado: R
       return aviso(COPY_ACCESO_GOOGLE.correoNoVerificado, true);
     case 'GOOGLE_ACCOUNT_ALREADY_LINKED':
       return aviso(COPY_ACCESO_GOOGLE.yaVinculada, true);
+    case 'GOOGLE_ACCOUNT_UNLINKED':
+      // RF-004 (DL-172): la persona la desvinculó; entra con la contraseña y, si quiere, la vincula otra vez.
+      return aviso(COPY_ACCESO_GOOGLE.desvinculada, true);
     case 'DEPENDENCY_UNAVAILABLE':
       // UC-E05 E01: Google sin configurar en la API o sin responder. El correo y la contraseña siguen.
       return aviso(COPY_ACCESO_GOOGLE.noDisponible, true);

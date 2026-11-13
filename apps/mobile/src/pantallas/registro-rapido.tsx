@@ -416,7 +416,7 @@ export function PantallaDeRegistroRapido({
       const gris = placeholdersDeLaSerie(s.target, unidad);
       const abierta = !plegadas || abiertas.has(clave) || tieneAlgoEscrito(serie.escrita) || error !== undefined || serieDelPlan(s) === null;
       // El rótulo visible es corto, como las columnas de la sesión; el lector de pantalla dice el campo entero.
-      const campo = (que: keyof FilaEscrita, visible: string, accesible: string, teclado: 'decimal-pad' | 'number-pad', enGris: string) => {
+      const campo = (que: Exclude<keyof FilaEscrita, 'sinProcedencia'>, visible: string, accesible: string, teclado: 'decimal-pad' | 'number-pad', enGris: string) => {
         const mensaje = error?.[que];
         return (
           <View style={estilos.celda}>

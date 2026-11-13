@@ -16,8 +16,21 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { createRequire, register } from 'node:module';
 import { test } from 'node:test';
+
+
+// Los módulos de la APK se importan entre sí sin extensión, como los resuelve Metro: Node necesita que se la agreguen
+// (desde AV2-25, la composición importa `formato`).
+const gancho = `export async function resolve(especificador, contexto, siguiente) {
+  try {
+    return await siguiente(especificador, contexto);
+  } catch (error) {
+    if (/^\\.\\.?\\//.test(especificador) && !/\\.[cm]?[jt]sx?$/.test(especificador)) return siguiente(especificador + '.ts', contexto);
+    throw error;
+  }
+}`;
+register('data:text/javascript,' + encodeURIComponent(gancho), import.meta.url);
 
 const require = createRequire(import.meta.url);
 const d = require('../packages/domain/dist/index.js');
@@ -148,12 +161,21 @@ test('encuadre: el cuerpo empieza arriba y no cambia de tamaño con la cantidad 
   }
 });
 
-test('encuadre: el borde derecho recorta el cuerpo, pero ningún sitio queda afuera ni debajo de las tarjetas', () => {
+// TEST-AV2-017 (AV2-19, AV2-D6): hasta la 0.25 el borde derecho recortaba el hombro; ahora el cuerpo se ve entero.
+test('TEST-AV2-017 · encuadre: el cuerpo entero, a 2 dp o más del borde, y ningún sitio afuera ni debajo de las tarjetas', () => {
   for (const ancho of [280, 320, 350, 372]) {
     for (const caso of CASOS) {
       const etiqueta = `${ancho} dp, ${caso.sexo} ${caso.familia} ×${caso.escalaDeLetra}`;
       const figura = c.componerLaFigura({ ancho, medidas: MEDIDAS, ...caso });
-      assert.ok(figura.imagen.x + figura.imagen.ancho > ancho, `${etiqueta}: la figura no llega al borde derecho`);
+      const cuerpo = d.FIGURAS_DE_LA_LAMINA[caso.sexo].ENTERO.cuerpo;
+      // La caja del cuerpo, más el contorno, que se corre 1,25 dp: termina 2 dp o más antes del borde.
+      const derechaDelCuerpo = figura.imagen.x + ((cuerpo.centroX + cuerpo.ancho / 2) / 100) * figura.imagen.ancho;
+      assert.ok(derechaDelCuerpo + 1.25 <= ancho - 2 + 1e-9, `${etiqueta}: el cuerpo se corta en el borde derecho (${derechaDelCuerpo.toFixed(1)})`);
+      // La lámina de un teléfono de 360 dp mide unos 320: ahí el cuerpo mide unos 430 a 440 dp, el alto del esqueleto de carga.
+      if (ancho === 320 && caso.escalaDeLetra === 1) {
+        const alto = (cuerpo.alto / 100) * figura.imagen.alto;
+        assert.ok(alto >= 420 && alto <= 450, `${etiqueta}: el cuerpo mide ${alto.toFixed(0)} dp de alto`);
+      }
       const derechaDeLasTarjetas = Math.max(...figura.tarjetas.map((t) => t.x + t.ancho));
       for (const s of figura.sitios) {
         // El centro del sitio a la vista: ahí responde el toque y ahí está su dibujo, aunque un anillo del tronco se

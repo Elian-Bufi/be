@@ -9,7 +9,7 @@ import { COPY_AYUDA, enlaceDeCorreo, type CanalDeContactoResponse } from '@be/do
 import { useCallback, useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 import { api } from '../api';
-import { Boton, Parrafo, Rotulo, Titulo } from '../ui';
+import { Boton, Parrafo, Seccion, Titulo } from '../ui';
 
 type Estado = { readonly tipo: 'cargando' } | { readonly tipo: 'sin-respuesta' } | { readonly tipo: 'listo'; readonly canal: CanalDeContactoResponse['data'] };
 const A = COPY_AYUDA;
@@ -52,14 +52,14 @@ export function CanalDeContacto({ soloSoporte = false }: { soloSoporte?: boolean
   );
 }
 
+/** Cada vía va en su sección: con el vidrio de la etapa B (DL-170), lo que se toca va sobre una superficie, no suelto sobre el fondo. */
 function ViaDeContacto({ titulo, queEs, direccion, escribir, asunto }: { titulo: string; queEs: string; direccion: string; escribir: string; asunto: string }) {
   return (
-    <>
-      <Rotulo>{titulo}</Rotulo>
+    <Seccion titulo={titulo}>
       <Parrafo>{queEs}</Parrafo>
       <Parrafo tenue>{direccion}</Parrafo>
       <Boton texto={escribir} tipo="secundario" icono="abrir" etiqueta={`${escribir}: ${direccion}`} onPress={() => void Linking.openURL(enlaceDeCorreo(direccion, asunto))} />
-    </>
+    </Seccion>
   );
 }
 
@@ -69,12 +69,13 @@ export function PantallaDeAyudaYContacto() {
       <Titulo>{A.titulo}</Titulo>
       <Parrafo>{A.queEs}</Parrafo>
       <CanalDeContacto />
-      <Rotulo>Lo más común</Rotulo>
-      {A.casos.map((c) => (
-        <Parrafo key={c.titulo}>
-          {c.titulo}: {c.texto}
-        </Parrafo>
-      ))}
+      <Seccion titulo="Lo más común">
+        {A.casos.map((c) => (
+          <Parrafo key={c.titulo}>
+            {c.titulo}: {c.texto}
+          </Parrafo>
+        ))}
+      </Seccion>
     </>
   );
 }

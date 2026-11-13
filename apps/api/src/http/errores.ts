@@ -195,6 +195,20 @@ export const errores = {
   cuentaDeGoogleInexistente: (correo: string, nombre: string | null) =>
     new ErrorDeApi(404, CodigoDeError.GOOGLE_ACCOUNT_NOT_FOUND, 'Todavía no hay una cuenta BE con esa cuenta de Google.', { email: correo, name: nombre }),
   cuentaDeGoogleYaVinculada: () => new ErrorDeApi(409, CodigoDeError.GOOGLE_ACCOUNT_ALREADY_LINKED, 'La cuenta BE ya está vinculada con otra cuenta de Google.'),
+  // ─── RF-004 · Los métodos de acceso de la cuenta propia (DL-172) ─────────────────────────────────────────────────
+  /** API-GOO-01 y 03: la persona desvinculó esa cuenta de Google desde su cuenta; entra con la contraseña. */
+  cuentaDeGoogleDesvinculada: () =>
+    new ErrorDeApi(409, CodigoDeError.GOOGLE_ACCOUNT_UNLINKED, 'Esa cuenta de Google se desvinculó de su cuenta BE. Entrá con tu correo y tu contraseña.'),
+  /** API-MET-02: esa cuenta de Google es de otra cuenta BE. Quien lo recibe tiene un ID token válido de esa cuenta. */
+  cuentaDeGoogleDeOtraCuenta: () => new ErrorDeApi(409, CodigoDeError.GOOGLE_ACCOUNT_ALREADY_LINKED, 'Esa cuenta de Google ya está vinculada con otra cuenta BE.'),
+  /** API-MET-02: la cuenta de Google tiene otro correo; se vincula solo con la confirmación explícita. */
+  correoDeGoogleDistinto: (correo: string) =>
+    new ErrorDeApi(409, CodigoDeError.GOOGLE_EMAIL_MISMATCH, 'La cuenta de Google tiene otro correo. Confirmá que es tuya para vincularla.', { email: correo }),
+  /** API-MET-02: tuvo otra cuenta de Google, que se desvinculó (DL-172 D-5). */
+  reemplazoDeGoogleNoDisponible: () =>
+    new ErrorDeApi(409, CodigoDeError.GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE, 'Tu cuenta tuvo otra cuenta de Google. Por ahora podés volver a vincular esa.'),
+  /** API-MET-03: la cuenta quedaría sin ningún método utilizable (04 RF-004). */
+  ultimoMetodoDeAcceso: () => new ErrorDeApi(409, CodigoDeError.LAST_ACCESS_METHOD, 'No podés quedarte sin una forma de entrar a tu cuenta.'),
   // ─── WP-NOTAS-DE-COORDINACION (DL-140) ────────────────────────────────────────────────────────────────────────────
   /** UC-E07 E01: con esa visibilidad, la nota no tiene a quién llegar. Llega después de autorizar al autor. */
   destinatarioDeNotaNoDisponible: (issues: ValidationIssue[]) =>

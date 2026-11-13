@@ -4,7 +4,7 @@
  * El menú de la cuenta administrativa, en la esquina de la barra: el mismo patrón que `MenuDeCuenta` (un botón que abre
  * un panel; Escape, tocar fuera o salir con el teclado lo cierran), con lo de Administración:
  * - **Con sesión:** quién está en la consola, «Seguridad de tu acceso», «Pedidos de derechos» (UF-06) y «Recuperar el
- *   acceso» (UF-03), los tres con el segundo factor vigente, la apariencia y «Cerrar sesión».
+ *   acceso» (UF-03) e «Incidencias» (RF-068), con el segundo factor vigente, la apariencia y «Cerrar sesión».
  * - **Sin sesión:** solo la apariencia.
  * La apariencia es la del website: se guarda en este navegador y no cambia nada más que los colores.
  */
@@ -120,6 +120,16 @@ export function MenuAdministrativo() {
               <span>
                 Pedidos de derechos
                 <span className="nota">Acceso, rectificación y supresión</span>
+              </span>
+            </Link>
+          ) : null}
+          {/* RF-068 (DL-172): las incidencias que avisaron las personas y los profesionales. */}
+          {vigente && ruta !== '/admin/incidents' ? (
+            <Link href="/admin/incidents" className="menu-de-cuenta__opcion">
+              <Icono nombre="persona" />
+              <span>
+                Incidencias
+                <span className="nota">Lo que avisaron sobre el acceso, los datos o la app</span>
               </span>
             </Link>
           ) : null}

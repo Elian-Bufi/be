@@ -160,6 +160,22 @@ export const CodigoDeError = {
   GOOGLE_ACCOUNT_NOT_FOUND: 'GOOGLE_ACCOUNT_NOT_FOUND',
   /** La cuenta BE ya tiene otra cuenta de Google, o esa cuenta de Google ya es de otra cuenta BE. */
   GOOGLE_ACCOUNT_ALREADY_LINKED: 'GOOGLE_ACCOUNT_ALREADY_LINKED',
+  // MET (familia propia de BE; RF-004, DL-172): los métodos de acceso de la cuenta propia. Quien los recibe tiene una sesión
+  // y un ID token de Google válido: lo que se le dice es sobre su cuenta o sobre la cuenta de Google que eligió.
+  /**
+   * API-MET-02: la cuenta de Google tiene otro correo que la cuenta BE. Se vincula solo si la persona lo confirma
+   * (`confirmDifferentEmail`). `details.email` es el correo de la cuenta de Google.
+   */
+  GOOGLE_EMAIL_MISMATCH: 'GOOGLE_EMAIL_MISMATCH',
+  /** API-GOO-01 y 03: esa cuenta de Google se desvinculó de su cuenta BE. Se entra con la contraseña y se vuelve a vincular. */
+  GOOGLE_ACCOUNT_UNLINKED: 'GOOGLE_ACCOUNT_UNLINKED',
+  /**
+   * API-MET-02: la cuenta BE tuvo otra cuenta de Google, que se desvinculó. Por ahora se puede volver a vincular esa, no una
+   * distinta (DL-172 D-5: cambiarla pide reemplazar un índice de la base, y las migraciones solo agregan).
+   */
+  GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE: 'GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE',
+  /** API-MET-03: retirar ese método dejaría la cuenta sin ningún método utilizable (04 RF-004). */
+  LAST_ACCESS_METHOD: 'LAST_ACCESS_METHOD',
   // CRD (09 §11.6; WP-NOTAS-DE-COORDINACION, DL-140). Quien los recibe ya está autorizado sobre la persona: el autor sin
   // acceso recibe antes el 404 neutral (UC-E07, paso 3).
   /**

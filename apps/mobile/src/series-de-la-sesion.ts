@@ -11,6 +11,11 @@
  * - **La casilla de la fila** (PA-02, 2026-11-02; DL-161) registra con `serieAlTildar`: lo escrito y, en lo vacío, lo
  *   planificado que se veía en gris, con `recordedAs` (`TYPED` o `AS_PLANNED`) y el tiempo en `durationSeconds`. Un rango
  *   de repeticiones no se convierte en un número. Destildar deja la fila para sacarla del borrador (`FilaQuitada`).
+ * - **De dónde salió cada valor** (ED-70; DL-171): una serie escrita lleva `fieldOrigins`, `PERSON` en lo que escribió
+ *   la persona y `PLAN` en lo que completó lo planificado. Una tildada sin escribir (`AS_PLANNED`) no lo lleva: todo es
+ *   del plan. Al destildar, lo que vino del plan vuelve a quedar en gris, no escrito (`escritaDeLaSerie`), y lo que no
+ *   decía de dónde salió (una serie de antes de la procedencia) vuelve escrito y, si no cambia, se vuelve a tildar sin
+ *   clave (`sinProcedencia`).
  * - **Lo escrito** de cada fila se guarda en el teléfono con su unidad (PA-01): `EscritasDeLaSesion`.
  * - **API-TRN-17 reemplaza `exercises` entero** (`ejerciciosParaGuardar`): se parte de lo que el servidor ya tiene y se
  *   suman las series pendientes del teléfono. Una serie que el servidor ya tiene con ese número no se pisa: queda en
@@ -19,6 +24,7 @@
  * Es lógica pura, sin React.
  */
 import {
+  CAMPOS_CON_ORIGEN,
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
   duracionParaMostrar,
@@ -32,8 +38,10 @@ import {
   textoDelPlanDeLaSerie,
   textoDeSegundos,
   type BorradorDeEjecucion,
+  type CampoConOrigen,
   type EjercicioRegistradoEntrada,
   type ObjetivoDeSerie,
+  type OrigenDelValor,
   type PrescripcionConObjetivos,
   type SerieEjecutadaApi,
   type SesionConObjetivos,
@@ -53,6 +61,20 @@ export interface FilaEscrita {
    * No es un valor del plan, así que no cuenta para decir si la serie se escribió o se tildó con lo planificado.
    */
   readonly tiempo?: string;
+  /**
+   * ED-70: los valores que volvieron a la fila al destildar una serie que no decía de dónde salieron (una serie de antes
+   * de la procedencia, o un valor sin clave). Opcional. Mientras sigan iguales, volver a tildar los deja sin clave («sin
+   * saber»): no pasan por escritos por la persona. Lo que ella cambia, sí es suyo (`PERSON`). La carga se compara por su
+   * número: la unidad es del ejercicio.
+   */
+  readonly sinProcedencia?: SinProcedencia;
+}
+
+/** Los valores de una fila que no se sabe quién escribió (ED-70), como se registraron: la carga con su unidad. */
+export interface SinProcedencia {
+  readonly carga?: { readonly value: number; readonly unit: Unidad };
+  readonly repeticiones?: number;
+  readonly rir?: number;
 }
 
 export const FILA_VACIA: FilaEscrita = { carga: '', repeticiones: '', rir: '' };
@@ -283,10 +305,26 @@ export function valoresDelPlan(objetivo: ObjetivoDeSerie | null): { readonly car
 }
 
 /**
+ * La procedencia de los valores de una serie (ED-70), con sus claves en el orden del contrato y solo las que tienen
+ * origen: un valor sin origen conocido no lleva clave, y una procedencia vacía no viaja (`undefined`), como en el
+ * dominio (`serieEnSuForma`).
+ */
+export function origenesDeLaSerie(origenes: Partial<Record<CampoConOrigen, OrigenDelValor | undefined>>): SerieEjecutadaApi['fieldOrigins'] {
+  const conClave = CAMPOS_CON_ORIGEN.filter((c) => origenes[c] !== undefined);
+  return conClave.length === 0 ? undefined : Object.fromEntries(conClave.map((c) => [c, origenes[c]]));
+}
+
+/**
  * La serie que registra la casilla de la fila (PA-02; DL-161): lo escrito y, en cada campo vacío, lo planificado que se
  * veía en gris. `recordedAs` dice cómo se cargó: `TYPED` si se escribió la carga, las repeticiones o el RIR;
  * `AS_PLANNED` si se tildó sin escribir ninguno. El tiempo, escrito o medido, va en `durationSeconds` y no cambia eso:
  * no es un valor del plan.
+ *
+ * ED-70 (DL-171, DJ-2): una serie `TYPED` dice de dónde salió cada valor (`fieldOrigins`): `PERSON` lo escrito, `PLAN`
+ * lo que completó lo planificado. Con el plan 60 kg × 8 y RIR 2, escribir solo «10» registra 60 × 10 con RIR 2 y
+ * `{ load: PLAN, completedRepetitions: PERSON, rir: PLAN }`: el RIR del plan nunca pasa por declarado. Escribir el mismo
+ * número que el plan es escribirlo (`PERSON`). Una serie `AS_PLANNED` no lleva el campo: todo es del plan, y la API
+ * rechaza `PERSON` en ella.
  *
  * Un rango de repeticiones (10–12) no se convierte en un número: queda sin informar. Sin carga ni repeticiones, ni
  * escritas ni planificadas, no hay serie: el dominio exige una de las dos (`SET_WITHOUT_DATA`), y nunca se fabrica.
@@ -303,31 +341,94 @@ export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, 
     const rango = f.repeticiones.trim() === '' && objetivo?.repetitions && 'min' in objetivo.repetitions ? objetivo.repetitions : null;
     return { ok: false, errores: { fila: rango ? TEXTOS_DE_LA_SESION.repeticionesEnRango(`${numero(rango.min, 0)}–${numero(rango.max, 0)}`) : COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato } };
   }
+  const rirDeLaSerie = rir ?? plan.rir;
+  const escrita = hayValoresEscritos(f);
+  // Lo escrito es de la persona; lo que quedó vacío y se completó, del plan; lo que no tiene valor no lleva clave. Lo que
+  // volvió de una serie sin procedencia y sigue igual, tampoco: no se sabe quién lo escribió. Una carga con el mismo
+  // número en otra unidad tampoco: la unidad es del ejercicio, y cambiarla no es escribir ese número (como en la corrección).
+  const sp = f.sinProcedencia;
+  const sinSaber = {
+    load: carga !== null && sp?.carga !== undefined && sp.carga.value === carga,
+    completedRepetitions: repeticiones !== null && sp?.repeticiones === repeticiones,
+    rir: rir !== null && sp?.rir === rir,
+  };
+  const origen = (c: CampoConOrigen, escrito: boolean, valor: unknown): OrigenDelValor | undefined => (valor === null ? undefined : !escrito ? 'PLAN' : sinSaber[c] ? undefined : 'PERSON');
+  const fieldOrigins = escrita ? origenesDeLaSerie({ load: origen('load', carga !== null, load), completedRepetitions: origen('completedRepetitions', repeticiones !== null, completedRepetitions), rir: origen('rir', rir !== null, rirDeLaSerie) }) : undefined;
   const serie: SerieEjecutadaApi = {
     setIndex,
     load,
     completedRepetitions,
-    rir: rir ?? plan.rir,
+    rir: rirDeLaSerie,
     perceivedExertion: null,
-    recordedAs: hayValoresEscritos(f) ? 'TYPED' : 'AS_PLANNED',
+    recordedAs: escrita ? 'TYPED' : 'AS_PLANNED',
     ...(tiempo.segundos === null ? {} : { durationSeconds: tiempo.segundos }),
+    ...(fieldOrigins ? { fieldOrigins } : {}),
   };
   return { ok: true, serie };
 }
 
+/** Lo que pasa al tocar «Terminar serie N» con la serie cronometrándose, decidido antes de cerrar nada. */
+export type AlTerminarLaSerie =
+  | { readonly tipo: 'registrar' }
+  | { readonly tipo: 'falta-un-dato'; readonly errores: ErroresDeFila; readonly anuncio: string }
+  | { readonly tipo: 'medicion-larga'; readonly anuncio: string };
+
+/**
+ * «Terminar serie N» (AV2-30, revisión de la etapa B): se valida **antes** de cerrar el reloj y de empezar el descanso,
+ * con lo escrito y el tiempo que se lleva medido, como lo validaría la casilla. Así nunca queda un descanso corriendo
+ * con la serie sin registrar.
+ * - Si la serie se puede registrar: `registrar` (la pantalla la tilda: cierra el reloj, registra y empieza el descanso).
+ * - Si falta un dato (un rango de repeticiones sin carga sugerida y nada escrito, un número ilegible): `falta-un-dato`,
+ *   con los errores de la fila y lo que se anuncia. La pantalla para solo el reloj, sin descanso, y la fila fija pasa a
+ *   «Registrar serie N» con el motivo a la vista.
+ * - Si la medición lleva más que el máximo de una serie (diez horas: la sesión quedó abierta de otro día), no se escribe
+ *   en la fila: `medicion-larga`, y se resuelve con el diálogo de la medición («Terminó ahora» o «Dejarla incompleta»).
+ */
+export function alTerminarLaSerie(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, msMedidos: number | null): AlTerminarLaSerie {
+  const n = numero(setIndex, 0);
+  if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(n) };
+  const conTiempo = msMedidos === null ? f : { ...f, tiempo: textoDeTiempo(Math.max(0, Math.round(msMedidos / 1000))) };
+  const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad);
+  if (lectura.ok) return { tipo: 'registrar' };
+  return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores) };
+}
+
+/** Lo que falta para registrar la serie N, dicho para el lector de pantalla y para la fila fija. */
+export function anuncioParaRegistrar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, errores: ErroresDeFila): string {
+  const n = numero(setIndex, 0);
+  const rango = f.repeticiones.trim() === '' && objetivo?.repetitions && 'min' in objetivo.repetitions ? objetivo.repetitions : null;
+  if (errores.fila && rango) return TEXTOS_DE_LA_SESION.paraRegistrarEnRango(n, `${numero(rango.min, 0)}–${numero(rango.max, 0)}`);
+  const motivo = errores.fila ?? errores.repeticiones ?? errores.carga ?? errores.rir ?? errores.tiempo ?? COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato;
+  return TEXTOS_DE_LA_SESION.paraRegistrar(n, motivo.charAt(0).toLowerCase() + motivo.slice(1));
+}
+
 /**
  * Lo que vuelve a la fila al destildar una serie: lo que se había escrito. Una tildada con lo planificado vuelve vacía,
- * con el plan en gris otra vez; el tiempo vuelve en las dos.
+ * con el plan en gris otra vez; el tiempo vuelve en las dos. En una escrita, lo que vino del plan (ED-70, `PLAN`)
+ * también vuelve vacío, con el plan en gris: así, volver a tildarla no lo hace pasar por escrito. Un valor sin clave (una
+ * serie de antes de la procedencia) vuelve escrito, como siempre, y queda anotado en `sinProcedencia`: si se vuelve a
+ * tildar sin cambiarlo, sigue sin clave, y la serie vuelve igual a la del servidor.
  */
 export function escritaDeLaSerie(serie: SerieEjecutadaApi, unidadDeLaColumna: Unidad): FilaEscritaGuardada {
   const tiempo = serie.durationSeconds === null || serie.durationSeconds === undefined ? '' : textoDeTiempo(serie.durationSeconds);
   if (serie.recordedAs === 'AS_PLANNED') return { carga: '', repeticiones: '', rir: '', tiempo, unidad: unidadDeLaColumna };
+  const delPlan = (c: CampoConOrigen): boolean => serie.fieldOrigins?.[c] === 'PLAN';
+  const carga = delPlan('load') ? null : serie.load;
+  const repeticiones = delPlan('completedRepetitions') ? null : serie.completedRepetitions;
+  const rir = delPlan('rir') ? null : serie.rir;
+  const sinClave = (c: CampoConOrigen): boolean => serie.fieldOrigins?.[c] === undefined;
+  const sinProcedencia: SinProcedencia = {
+    ...(carga && sinClave('load') ? { carga: { value: carga.value, unit: carga.unit } } : {}),
+    ...(repeticiones !== null && sinClave('completedRepetitions') ? { repeticiones } : {}),
+    ...(rir !== null && sinClave('rir') ? { rir } : {}),
+  };
   return {
-    carga: serie.load ? numero(serie.load.value) : '',
-    repeticiones: serie.completedRepetitions === null ? '' : String(serie.completedRepetitions),
-    rir: serie.rir === null ? '' : numero(serie.rir),
+    carga: carga ? numero(carga.value) : '',
+    repeticiones: repeticiones === null ? '' : String(repeticiones),
+    rir: rir === null ? '' : numero(rir),
     tiempo,
-    unidad: serie.load?.unit ?? unidadDeLaColumna,
+    unidad: carga?.unit ?? unidadDeLaColumna,
+    ...(Object.keys(sinProcedencia).length > 0 ? { sinProcedencia } : {}),
   };
 }
 
@@ -502,7 +603,8 @@ export function ejerciciosParaGuardar(
 
 /**
  * Si dos series registradas dicen lo mismo (para reconocer una pendiente que el servidor ya guardó). También cómo se
- * cargaron y cuánto duraron (DL-161): ausente es `TYPED` y sin tiempo.
+ * cargaron y cuánto duraron (DL-161): ausente es `TYPED` y sin tiempo. Y de dónde salió cada valor (ED-70): una clave
+ * que falta es «sin saber», y el servidor devuelve las claves en su orden, así que se comparan una por una.
  */
 export function mismosDatos(a: SerieEjecutadaApi, b: SerieEjecutadaApi): boolean {
   return (
@@ -512,7 +614,8 @@ export function mismosDatos(a: SerieEjecutadaApi, b: SerieEjecutadaApi): boolean
     a.perceivedExertion === b.perceivedExertion &&
     (a.load === null ? b.load === null : b.load !== null && a.load.value === b.load.value && a.load.unit === b.load.unit) &&
     (a.recordedAs ?? 'TYPED') === (b.recordedAs ?? 'TYPED') &&
-    (a.durationSeconds ?? null) === (b.durationSeconds ?? null)
+    (a.durationSeconds ?? null) === (b.durationSeconds ?? null) &&
+    CAMPOS_CON_ORIGEN.every((c) => a.fieldOrigins?.[c] === b.fieldOrigins?.[c])
   );
 }
 

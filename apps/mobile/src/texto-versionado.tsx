@@ -8,7 +8,7 @@ import type { VersionDeTexto } from '@be/domain';
 import { useState } from 'react';
 import { Modal, ScrollView, Text, View } from 'react-native';
 import { dia } from './formato';
-import { Boton, estilos as ui, estilosPorTema } from './ui';
+import { Boton, estilos as ui, estilosPorTema, Superficie } from './ui';
 
 /** Versión tal como la entrega la API: lo que la pantalla muestra es lo que se envía al aceptar. */
 export interface VersionDeLaApi {
@@ -34,7 +34,7 @@ export function TextoDesplegable({
     <View>
       <Boton texto={abierto ? 'Ocultar el texto' : textoDelBoton} tipo="enlace" onPress={() => setAbierto(!abierto)} />
       {abierto ? (
-        <View style={estilos.desplegado}>
+        <Superficie style={estilos.desplegado}>
           <Text style={[ui.parrafo, ui.negrita]} accessibilityRole="header">
             {titulo}
           </Text>
@@ -50,7 +50,7 @@ export function TextoDesplegable({
               {p}
             </Text>
           ))}
-        </View>
+        </Superficie>
       ) : null}
     </View>
   );
@@ -86,5 +86,5 @@ export function TextoVersionado({ version, visible, alCerrar }: { version: Versi
 const estilos = estilosPorTema((COLOR) => ({
   contenido: { padding: 24, paddingTop: 48 },
   meta: { borderLeftWidth: 4, borderLeftColor: COLOR.borde, paddingLeft: 10, marginBottom: 12 },
-  desplegado: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 6, backgroundColor: COLOR.superficie },
+  desplegado: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 6 },
 }));

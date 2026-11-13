@@ -6,7 +6,7 @@
  * Esta guardia lee el 09 (solo lectura: el legajo está en el manifiesto y no se toca) y exige:
  * 1. una operación con un ID del inventario P0 del 09 tiene el método y la ruta que el 09 le da;
  * 2. una operación con un ID que no está en el inventario es una extensión declarada de BE, con una familia propia
- *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES, MFA, SOP, FZA), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
+ *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES, MFA, SOP, FZA, INC, MET), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
  *    nombra o con un ID nuevo de una familia del 09 que el 09 no usa, declarado con su DL (API-ACC-07), y cita su fuente;
  * 3. ningún ID se repite.
  * Requiere `npm run build:domain` antes.
@@ -45,8 +45,11 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
  * no la tiene (09v10:356 no fija una fórmula, y DL-171 registra la decisión de Dirección que lo enmienda sin tocar el legajo).
  * Las prescripciones y los repartos habituales de ED-13 (API-HAB-06 a 08 y API-HAN-06 a 08) siguen en HAB y HAN (DL-109),
  * extendidas por DL-167.
+ * INC y MET (DL-172, pedido de Dirección del 2026-11-13): las incidencias de RF-068 y los métodos de acceso de RF-004. El 09
+ * v0.12 los bosqueja como superficies candidatas (§16 y §12), con rutas y sin IDs; BE las declara como familias propias y
+ * conserva las rutas del bosquejo (las de Administración, bajo /admin).
  */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169', FZA: 'DL-171' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169', FZA: 'DL-171', INC: 'DL-172', MET: 'DL-172' };
 /**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta

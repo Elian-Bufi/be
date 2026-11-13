@@ -106,7 +106,7 @@ function TarjetaDeSolicitud({ s, ir }: { s: SolicitudPropiaV2; ir: (r: Ruta) => 
   return (
     <Tarjeta>
       <Parrafo>{s.templateName}</Parrafo>
-      <Insignia texto={s.status === 'RESPONDED' ? COPY_FORMULARIOS.respondida : propuesta ? APK.paraConfirmar : COPY_FORMULARIOS.pendiente} positiva={s.status === 'RESPONDED'} />
+      <Insignia texto={s.status === 'RESPONDED' ? COPY_FORMULARIOS.respondida : propuesta ? APK.paraConfirmar : COPY_FORMULARIOS.pendiente} hecha={s.status === 'RESPONDED'} />
       <Parrafo tenue>
         {COPY_FORMULARIOS.pedidoPor} {s.professional.displayName} · {fecha(s.createdAt)}
       </Parrafo>
@@ -711,7 +711,7 @@ export function PantallaDeMiSolicitud({
 
       {alEmpezar && response ? (
         <Seccion titulo={COPY_FORMULARIOS.respuestaOriginal}>
-          {response.effectiveView.kind === 'ORIGINAL' ? <Insignia texto={COPY_FORMULARIOS.vigente} positiva /> : null}
+          {response.effectiveView.kind === 'ORIGINAL' ? <Insignia texto={COPY_FORMULARIOS.vigente} /> : null}
           {/* La procedencia (DL-164 D-4): quién lo cargó, cuándo se confirmó y cuánto se corrigió antes. */}
           {response.transcription ? (
             <Parrafo tenue icono="persona">
@@ -724,7 +724,7 @@ export function PantallaDeMiSolicitud({
               <Parrafo tenue>
                 {COPY_FORMULARIOS.correccion} · {fecha(c.recordedAt)} · {c.reason}
               </Parrafo>
-              {response.effectiveView.kind === 'RECTIFIED' && response.effectiveView.rectificationId === c.rectificationId ? <Insignia texto={COPY_FORMULARIOS.vigente} positiva /> : null}
+              {response.effectiveView.kind === 'RECTIFIED' && response.effectiveView.rectificationId === c.rectificationId ? <Insignia texto={COPY_FORMULARIOS.vigente} /> : null}
               <RespuestasEnPalabras datos={datos} respuestas={c.answers} comoSecciones={false} />
             </View>
           ))}

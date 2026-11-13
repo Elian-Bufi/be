@@ -12758,6 +12758,36 @@ details[open] > summary:not([class])::before {
   margin: 0.5rem 0;
 }
 
+/* La clave a la vista, al lado del QR (hallazgo de Dirección del 2026-11-13): desde el mismo teléfono se copia o se abre
+   la aplicación de códigos con el enlace. */
+.clave-a-la-vista {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.clave-a-la-vista__rotulo {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+}
+
+.clave-a-la-vista .acciones {
+  margin: 0.5rem 0;
+}
+
+/* «Abrir en la aplicación de códigos» y su nota, solo con el dedo: en la computadora, otpauth:// no tiene con qué
+   abrirse (Windows ofrece buscar una aplicación en la Store) y queda el QR. */
+@media not all and (pointer: coarse) {
+  .mfa-abrir-en-la-aplicacion,
+  .mfa-desde-el-telefono {
+    display: none;
+  }
+}
+
+/* El estado de la copia, vacío hasta copiar: sin margen, pero presente, para que el lector lo anuncie. */
+.clave-a-la-vista .nota[role='status']:empty {
+  margin: 0;
+}
+
 .clave-del-autenticador code {
   display: inline-block;
   padding: 0.3rem 0.5rem;

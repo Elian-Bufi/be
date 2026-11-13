@@ -40,6 +40,8 @@ import { CambiarNombreProfesionalRequestSchema, IncorporarProfesionalRequestSche
 import { ConsultarPedidosDeDerechoRequestSchema, CrearExportacionRequestSchema, CrearPedidoDeDerechoRequestSchema, ExportacionResponseSchema, ListaAdministrativaDePedidosDeDerechoResponseSchema, ListaDePedidosDeDerechoResponseSchema, PedidoDeDerechoAdministrativoResponseSchema, PedidoDeDerechoResponseSchema, ResolverPedidoDeDerechoRequestSchema } from './derechos-del-titular';
 import { CompletarRecuperacionRequestSchema, EmitirRecuperacionAsistidaRequestSchema, PedirRecuperacionRequestSchema, RecuperacionAsistidaResponseSchema, RecuperacionPedidaResponseSchema } from './recuperacion-de-acceso';
 import { CanalDeContactoResponseSchema } from './ayuda-y-contacto';
+import { CambiarEstadoDeIncidenciaRequestSchema, ConsultarIncidenciasRequestSchema, DetalleDeIncidenciaResponseSchema, IncidenciaPropiaResponseSchema, ListaAdministrativaDeIncidenciasResponseSchema, ListaDeIncidenciasPropiasResponseSchema, ReportarIncidenciaRequestSchema } from './incidencias';
+import { DetalleDeCorreoDistintoSchema, MetodosDeAccesoResponseSchema, VincularMetodoDeAccesoRequestSchema } from './metodos-de-acceso';
 import { AceptacionDeVersionResponseSchema, AceptarVersionVigenteRequestSchema, TextoPublicadoResponseSchema } from './textos-vigentes';
 import {
   CodigosDeRecuperacionResponseSchema,
@@ -3683,7 +3685,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: RUTAS_DE_ACCESO_GOOGLE.sesiones,
     resumen:
-      'Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.',
+      'Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Si la persona desvinculó esa cuenta de Google desde su cuenta (API-MET-03; DL-172), 409 GOOGLE_LINK_REQUIRED cuando su contraseña es de ese correo, o 409 GOOGLE_ACCOUNT_UNLINKED. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.',
     autenticacion: 'PUBLIC',
     idempotencia: false,
     request: IniciarSesionConGoogleRequestSchema,
@@ -3692,7 +3694,7 @@ const DEFINIDAS: readonly Operacion[] = [
       400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
       401: ['GOOGLE_TOKEN_INVALID', 'INVALID_CREDENTIALS'],
       404: ['GOOGLE_ACCOUNT_NOT_FOUND'],
-      409: ['GOOGLE_LINK_REQUIRED'],
+      409: ['GOOGLE_LINK_REQUIRED', 'GOOGLE_ACCOUNT_UNLINKED'],
       422: ['GOOGLE_EMAIL_NOT_VERIFIED'],
       429: ['RATE_LIMITED'],
       503: ['DEPENDENCY_UNAVAILABLE'],
@@ -3710,7 +3712,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: RUTAS_DE_ACCESO_GOOGLE.vinculos,
     resumen:
-      'Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.',
+      'Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado; si esa misma cuenta de Google se había desvinculado (API-MET-03; DL-172), la reasocia, con el hecho MetodoDeAccesoAsociado (datos.reasociacion). Un vínculo o una reasociación nuevos se avisan al correo de acceso (DL-172 D-11, de mejor esfuerzo). Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.',
     autenticacion: 'PUBLIC',
     idempotencia: false,
     request: VincularGoogleRequestSchema,
@@ -3730,7 +3732,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: RUTAS_DE_ACCESO_GOOGLE.registros,
     resumen:
-      'Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. El perfil nace con el nombre visible (`profile.displayName`, el de la cuenta de Google que propuso API-GOO-01, confirmado o corregido; DL-169): sin él, 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue DISPLAY_NAME_REQUIRED, sin crear nada; vacío o inválido, 422 VALIDATION_FAILED con DISPLAY_NAME_REQUIRED o INVALID_DISPLAY_NAME. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.',
+      'Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. El perfil nace con el nombre visible (`profile.displayName`, el de la cuenta de Google que propuso API-GOO-01, confirmado o corregido; DL-169): sin él, 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue DISPLAY_NAME_REQUIRED, sin crear nada; vacío o inválido, 422 VALIDATION_FAILED con DISPLAY_NAME_REQUIRED o INVALID_DISPLAY_NAME. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro; con esa cuenta de Google desvinculada de su cuenta BE (API-MET-03; DL-172), 409 GOOGLE_ACCOUNT_UNLINKED, sin crear otra.',
     autenticacion: 'PUBLIC',
     idempotencia: false,
     request: RegistrarConGoogleRequestSchema,
@@ -3741,7 +3743,7 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: {
       400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
       401: ['GOOGLE_TOKEN_INVALID', 'INVALID_CREDENTIALS'],
-      409: ['GOOGLE_LINK_REQUIRED', 'REGISTRATION_NOT_AVAILABLE'],
+      409: ['GOOGLE_LINK_REQUIRED', 'REGISTRATION_NOT_AVAILABLE', 'GOOGLE_ACCOUNT_UNLINKED'],
       422: ['GOOGLE_EMAIL_NOT_VERIFIED', 'TERMS_VERSION_NOT_ACCEPTABLE', 'PRIVACY_VERSION_NOT_ACCEPTABLE', 'VALIDATION_FAILED'],
       429: ['RATE_LIMITED'],
       503: ['DEPENDENCY_UNAVAILABLE'],
@@ -4276,6 +4278,121 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { 400: ['INVALID_REQUEST'] },
     fuente: 'UF-07 de WP-USO-FINAL (§4.1 y §13.2: las direcciones por configuración, ninguna en el repositorio) · 08 §19 · ID propio de BE (familia SOP) · DEUDA_LEGAJO DL-169',
   },
+  // ─── RF-068 (DL-172; 09 v0.12 §16): las incidencias administrativas mínimas, familia INC ──────────────────────────────
+  {
+    id: 'API-INC-01',
+    metodo: 'post',
+    ruta: '/incidents',
+    resumen:
+      'Avisar un problema (reportar una incidencia, 04 RF-068): sobre el acceso, el perfil, un vínculo, un dato que no coincide o que falta, o el funcionamiento de la app o del website. Quien la reporta es siempre la persona autenticada (persona o profesional). La descripción va de 1 a 2000 caracteres, sin los espacios de los bordes (422 VALIDATION_FAILED con DESCRIPTION_REQUIRED o DESCRIPTION_TOO_LONG). Nace abierta, sin responsable, y queda auditada sin la descripción. Tiene cupo por identidad (429). No es un chat: Administración la gestiona con API-INC-03 a 05 y la persona ve el estado con API-INC-02.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ReportarIncidenciaRequestSchema,
+    exitos: [{ status: 201, schema: IncidenciaPropiaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'], 429: ['RATE_LIMITED'] },
+    fuente: '09 v0.12 §16 («POST /incidents», candidata) · 04 RF-068 · 05 UC-P28 · 06 T-06-06 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172',
+  },
+  {
+    id: 'API-INC-02',
+    metodo: 'get',
+    ruta: '/me/incidents',
+    resumen:
+      'Las incidencias que reportó la persona autenticada, de la más nueva a la más vieja, de a páginas (limit y cursor): su estado y la última respuesta de Administración. Nunca el motivo interno de un cambio ni quién la atendió (04 RF-068: «el reportante puede conocer el estado de su caso»).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeIncidenciasPropiasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'] },
+    fuente: '09 v0.12 §16 («GET /me/incidents», candidata) · 04 RF-068 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172',
+  },
+  {
+    id: 'API-INC-03',
+    metodo: 'post',
+    ruta: '/admin/incidents/query',
+    resumen:
+      'Las incidencias, para Administración, filtradas por estados (por ejemplo, las pendientes: OPEN e IN_PROGRESS) y por categoría. Las pendientes primero, de la más vieja a la más nueva; las resueltas, de la más nueva a la más vieja. De quien la reportó, su identificador y su correo de acceso (para responderle por el canal); nada de salud. La consulta va en el cuerpo y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarIncidenciasRequestSchema,
+    exitos: [{ status: 200, schema: ListaAdministrativaDeIncidenciasResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD', 'INVALID_CURSOR'] },
+    fuente: '09 v0.12 §16 · 04 RF-068 («el administrador consulta y actualiza únicamente las incidencias autorizadas») · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172 y DL-155',
+  },
+  {
+    id: 'API-INC-04',
+    metodo: 'get',
+    ruta: '/admin/incidents/{incidentId}',
+    resumen:
+      'El detalle de una incidencia, para Administración: lo reportado, el estado vigente, su versión, quién la tiene a cargo y toda su historia (cada cambio con su motivo, su respuesta, el administrador y el momento), del primero al último. Una que no existe: 404. Queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: DetalleDeIncidenciaResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: '09 v0.12 §16 («GET /incidents/{incidentId}», candidata; acá, bajo /admin) · 04 RF-068 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172 y DL-155',
+  },
+  {
+    id: 'API-INC-05',
+    metodo: 'post',
+    ruta: '/admin/incidents/{incidentId}/updates',
+    resumen:
+      'Cambiar el estado de una incidencia (abierta, en curso o resuelta; también reabrirla), con el motivo (de 1 a 1000 caracteres, lo ve solo Administración) y, si corresponde, la respuesta para quien la reportó (obligatoria al resolverla, hasta 2000). Contra la versión que vio el administrador (si cambió, 409 VERSION_CONFLICT); al mismo estado, 422 INVALID_STATE_TRANSITION. En una transacción: el cambio (de solo agregar: la historia no se sobrescribe), la incidencia con su estado nuevo y quién la tiene a cargo, y la auditoría sin los textos. La base no deja cambiar el estado sin el cambio, ni a alguien sin el rol administrativo vigente. Devuelve el detalle.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: CambiarEstadoDeIncidenciaRequestSchema,
+    exitos: [{ status: 200, schema: DetalleDeIncidenciaResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
+    fuente: '09 v0.12 §16 («POST /admin/incidents/{incidentId}/updates» y «/resolve», candidatas: acá una sola, con el estado) · 04 RF-068 · 06 T-06-06 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172 y DL-155',
+  },
+  // ─── RF-004 (DL-172; 09 v0.12 §12): los métodos de acceso de la cuenta propia, familia MET ──────────────────────────
+  {
+    id: 'API-MET-01',
+    metodo: 'get',
+    ruta: '/me/access-methods',
+    resumen:
+      'Con qué se entra a la cuenta propia: la contraseña (con el correo de acceso) y Google (con el correo de esa cuenta de Google), sin los métodos desvinculados. Cada uno dice si se puede desvincular (removable: solo Google, y solo si queda la contraseña), y canLinkGoogle dice si se puede vincular una cuenta de Google desde acá. relinkableGoogleEmail es el correo de la cuenta de Google que se desvinculó, la única que se puede volver a vincular (DL-172 D-5), o null.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MetodosDeAccesoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: '09 v0.12 §12 («GET /me/access-methods», P2) · 04 RF-004 · 05 UC-E06 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172',
+  },
+  {
+    id: 'API-MET-02',
+    metodo: 'post',
+    ruta: '/me/access-methods',
+    resumen:
+      'Vincular una cuenta de Google a la cuenta propia, con sesión: la API verifica el ID token como API-GOO-01, y la persona confirma su contraseña de BE (la re-autenticación, con las reglas y los cupos del login: una contraseña equivocada es 422 VALIDATION_FAILED con CREDENTIAL_INCORRECT en credential). Una sesión con perfil profesional lo hace solo con el segundo factor verificado (403 MFA_REQUIRED). Si la cuenta de Google tiene otro correo, 409 GOOGLE_EMAIL_MISMATCH (details.email) hasta que la persona lo confirme con confirmDifferentEmail. Una cuenta de Google de otra cuenta BE, o una cuenta que ya tiene otra vinculada, 409 GOOGLE_ACCOUNT_ALREADY_LINKED; una que tuvo otra y la desvinculó, 409 GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE (DL-172 D-5). Vincular la misma que se había desvinculado la reasocia. Sin Idempotency-Key: repetirlo con la misma cuenta ya vinculada responde 200 sin cambiar nada. En una transacción: el método (o su reasociación), el hecho MetodoDeAccesoAsociado (en la reasociación, con datos.reasociacion) y la auditoría. Confirmado, avisa al correo de acceso que se vinculó esa cuenta de Google (DL-172 D-11; de mejor esfuerzo: sin proveedor de correo no sale nada y la respuesta es la misma). Devuelve los métodos.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: VincularMetodoDeAccesoRequestSchema,
+    exitos: [
+      { status: 201, schema: MetodosDeAccesoResponseSchema },
+      { status: 200, schema: MetodosDeAccesoResponseSchema },
+    ],
+    errores: {
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED', 'GOOGLE_TOKEN_INVALID'],
+      403: ['MFA_REQUIRED'],
+      409: ['GOOGLE_EMAIL_MISMATCH', 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE'],
+      422: ['VALIDATION_FAILED', 'GOOGLE_EMAIL_NOT_VERIFIED'],
+      429: ['RATE_LIMITED'],
+      503: ['DEPENDENCY_UNAVAILABLE'],
+    },
+    detalleDe409: { codigo: 'GOOGLE_EMAIL_MISMATCH', schema: DetalleDeCorreoDistintoSchema, descripcion: 'details.email es el correo de la cuenta de Google, para que la pantalla pida confirmar que es de la persona.' },
+    fuente: '09 v0.12 §12 («POST /me/access-methods», P2) · 04 RF-003 y RF-004 · 05 UC-E06 · 06 REG-06-21 · 08 §24.5, §24.6 y §25 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172',
+  },
+  {
+    id: 'API-MET-03',
+    metodo: 'delete',
+    ruta: '/me/access-methods/{methodId}',
+    resumen:
+      'Desvincular un método de la cuenta propia: hoy, solo Google. La contraseña no se desvincula (422 VALIDATION_FAILED con METHOD_NOT_REMOVABLE), y Google solo si queda la contraseña (409 LAST_ACCESS_METHOD: la cuenta nunca queda sin un método utilizable). Exige una entrada reciente (SESSION_STEP_UP: 10 minutos, DL-017; si no, 403 STEP_UP_REQUIRED) y, en una sesión con perfil profesional, el segundo factor verificado (403 MFA_REQUIRED). Uno ajeno, inexistente o ya desvinculado: 404. El método no se borra: en una transacción queda el retiro (de solo agregar), el hecho MetodoDeAccesoRetirado y la auditoría. Confirmado, avisa al correo de acceso (DL-172 D-11, de mejor esfuerzo). Las sesiones abiertas siguen (D-8); si no fue la persona quien la vinculó, lo que corta el ciclo es cambiar la contraseña (API-ACC-P1-01 y 02, que además cierra todas las sesiones). Devuelve los métodos.',
+    autenticacion: 'SESSION_STEP_UP',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MetodosDeAccesoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['STEP_UP_REQUIRED', 'MFA_REQUIRED'], 404: ['RESOURCE_NOT_FOUND'], 409: ['LAST_ACCESS_METHOD'], 422: ['VALIDATION_FAILED'] },
+    fuente: '09 v0.12 §12 («DELETE /me/access-methods/{methodId}», P2: «no permitir eliminar el último método de acceso utilizable»; «la remoción puede exigir step-up») · 04 RF-004 · 05 UC-E06 · 06 REG-06-22 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172',
+  },
 ];
 
 /**
@@ -4357,7 +4474,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
 // API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

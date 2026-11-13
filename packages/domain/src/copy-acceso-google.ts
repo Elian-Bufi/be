@@ -27,6 +27,8 @@ export const COPY_ACCESO_GOOGLE = {
   crear: 'Crear mi cuenta',
   /** GOOGLE_ACCOUNT_ALREADY_LINKED. */
   yaVinculada: 'Tu cuenta BE ya está vinculada con otra cuenta de Google. Entrá con tu correo y tu contraseña.',
+  /** GOOGLE_ACCOUNT_UNLINKED (RF-004, DL-172): la persona desvinculó esa cuenta de Google desde su cuenta. */
+  desvinculada: 'Esa cuenta de Google se desvinculó de tu cuenta BE. Entrá con tu correo y tu contraseña; si querés, la volvés a vincular desde tu cuenta.',
   /** Un 401 neutral, como el del acceso local: no dice qué falló (10-B02:198-225). */
   accesoFallido: 'No pudimos verificar los datos de acceso.',
   // Las piezas de los pasos, iguales en el website y en la APK.

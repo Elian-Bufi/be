@@ -191,7 +191,7 @@ function ActoDeFotos({
   return (
     <Tarjeta>
       <Text style={[ui.parrafo, ui.negrita]}>{acto.professional.displayName}</Text>
-      <Insignia texto={vigente ? COPY_EVIDENCIA_VISUAL.vigente : COPY_EVIDENCIA_VISUAL.revocada} positiva={vigente} etiqueta={COPY_EVIDENCIA_VISUAL.titulo} />
+      <Insignia texto={vigente ? COPY_EVIDENCIA_VISUAL.vigente : COPY_EVIDENCIA_VISUAL.revocada} etiqueta={COPY_EVIDENCIA_VISUAL.titulo} />
       <Dato etiqueta="Aceptada" valor={fecha(acto.acceptedAt)} />
       {acto.revokedAt ? <Dato etiqueta="Revocada" valor={fecha(acto.revokedAt)} /> : null}
       <Dato etiqueta="Versión" valor={acto.consentVersionId} apilado />

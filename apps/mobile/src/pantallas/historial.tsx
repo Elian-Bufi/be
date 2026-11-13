@@ -15,39 +15,29 @@
  */
 import {
   COPY_ENTRENAMIENTO,
-  COPY_REGISTRO_POR_NIVELES,
-  etiquetaDeCondicionRegistrada,
-  nivelDeDetalle,
-  registroVigente,
-  textoDelNivelDeDetalle,
   type HistorialDeEntrenamientoResponse,
   type Resultado,
   type ResumenDeVersionDePlanDeEntrenamiento,
   type VersionDePlanDeEntrenamiento,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { Cargando, ErrorConReintento } from '../estados';
 import { useDiaDeLaApi } from '../dia-de-la-api';
-import { dia, fechaCivil, ultimosDiasEnZona, ultimosDiasHasta } from '../formato';
+import { dia, ultimosDiasEnZona, ultimosDiasHasta } from '../formato';
+import { DIAS_DEL_HISTORIAL, filaDePlan, filaDeSesion, TEXTOS_DEL_HISTORIAL, type FilaDelHistorial } from '../historial-en-filas';
+import { Icono } from '../icono';
 import { desgloseDeActividad } from '../inicio-de-hoy';
-import { useLecturaRecordada } from '../lecturas';
+import { memoria, useLecturaRecordada } from '../lecturas';
 import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, Dato, EstadoVacio, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Titulo } from '../ui';
+import { volverAHoy, type DondeSeVe } from '../volver-a-hoy';
 import { textoDePrescripcion } from './entrenamiento';
 
 type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
-
-/**
- * El nivel de detalle de lo que rige de una sesión, en las palabras del dominio (DL-161). Nada para una no realizada,
- * que ya lo dice su condición, ni si no se puede saber qué rige.
- */
-function nivelDe(e: Ejecucion): string | null {
-  const nivel = nivelDeDetalle(e);
-  return nivel === null || nivel === 'NO_REALIZADA' ? null : textoDelNivelDeDetalle(nivel);
-}
 
 /** Estado de una lectura: cargando, permitida con datos, sin A3 (403), o error de red/servidor. */
 type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'sinA3' } | { tipo: 'error'; sinConexion: boolean };
@@ -60,13 +50,13 @@ type Carga<T> = { tipo: 'cargando' } | { tipo: 'listo'; datos: T } | { tipo: 'si
  * respondía 400 `PERIOD_IN_FUTURE` (validación en teléfono de la 0.11.1).
  */
 const ZONA_DEL_HISTORIAL = 'America/Argentina/Buenos_Aires';
-const ultimos90Dias = () => ultimosDiasEnZona(90, ZONA_DEL_HISTORIAL);
+const ultimos90Dias = () => ultimosDiasEnZona(DIAS_DEL_HISTORIAL, ZONA_DEL_HISTORIAL);
 
 export function PantallaDeHistorial({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
   return (
     <View>
       <Titulo>{COPY_ENTRENAMIENTO.tuHistorial}</Titulo>
-      <ContenidoDelHistorial token={token} identidadId={identidadId} salir={salir} ir={ir} />
+      <ContenidoDelHistorial token={token} identidadId={identidadId} salir={salir} ir={ir} hoy={{ en: 'pantalla', recordar: (clave, vista) => memoria.recordarSeleccion(token, clave, vista), ir }} />
     </View>
   );
 }
@@ -90,7 +80,20 @@ function DesgloseDe30Dias({ token, sesionPerdida }: { token: string; sesionPerdi
   return <Parrafo>{desgloseDeActividad(r.datos).texto}</Parrafo>;
 }
 
-export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: (r: Ruta) => void }) {
+export function ContenidoDelHistorial({
+  token,
+  identidadId,
+  salir,
+  ir,
+  hoy,
+}: {
+  token: string;
+  identidadId: string;
+  salir: (m: Salida) => void;
+  ir: (r: Ruta) => void;
+  /** Dónde se ve: en la pestaña, «Ir a Entrenamiento» elige Hoy; en la pantalla propia, la deja recordada y va. */
+  hoy: DondeSeVe;
+}) {
   const sesionPerdida = useSesionPerdida(salir);
   const [sesiones, setSesiones] = useState<Carga<Ejecucion[]>>({ tipo: 'cargando' });
   const [planes, setPlanes] = useState<Carga<ResumenDeVersionDePlanDeEntrenamiento[]>>({ tipo: 'cargando' });
@@ -126,20 +129,12 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
           <Seccion titulo={COPY_ENTRENAMIENTO.sesionesRegistradas}>
             {sesiones.tipo === 'cargando' ? <Cargando /> : null}
             {sesiones.tipo === 'error' ? <ErrorConReintento sinConexion={sesiones.sinConexion} onReintentar={cargar} /> : null}
-            {sesiones.tipo === 'listo' && sesiones.datos.length === 0 ? <Parrafo>{COPY_ENTRENAMIENTO.sinSesionesEnPeriodo}</Parrafo> : null}
+            {sesiones.tipo === 'listo' && sesiones.datos.length === 0 ? <EstadoVacio icono="calendario" {...TEXTOS_DE_LA_VUELTA.vacios.sinSesionesEnElPeriodo} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.sinSesionesEnElPeriodo.accion, onPress: () => volverAHoy('entrenamiento', hoy) }} /> : null}
+            {/* AV2-22: la lista dice su período, y cada sesión es una fila que se toca entera, sin botón propio. */}
+            <Text style={estilos.periodo}>{TEXTOS_DEL_HISTORIAL.periodo}</Text>
             {sesiones.tipo === 'listo'
-              ? sesiones.datos.map((e) => (
-                  <Tarjeta key={e.executionId}>
-                    <Parrafo>{e.plannedSession.label}</Parrafo>
-                    {/* La fecha civil de la sesión, sin desplazarla por la zona del dispositivo (misma función que el detalle). */}
-                    <Parrafo tenue>{fechaCivil(e.date)}</Parrafo>
-                    {/* Lo que hoy rige: una sesión corregida dice la condición corregida, no la que se corrigió (REG-06-16). */}
-                    <Insignia texto={etiquetaDeCondicionRegistrada(registroVigente(e))} />
-                    {/* Cómo se cargó lo que rige, con el rótulo que lee el profesional (DL-161): «Cargada como el plan»… */}
-                    {nivelDe(e) ? <Insignia texto={nivelDe(e)!} etiqueta={COPY_REGISTRO_POR_NIVELES.comoSeCargo} /> : null}
-                    {e.effectiveView.kind === 'CORRECTED' ? <Insignia texto={COPY_ENTRENAMIENTO.corregida} /> : null}
-                    <Boton texto={COPY_ENTRENAMIENTO.verLaSesion} tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
-                  </Tarjeta>
+              ? sesiones.datos.map((e, i) => (
+                  <FilaQueAbreElHistorial key={e.executionId} fila={filaDeSesion(e)} ultima={i === sesiones.datos.length - 1} onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: e.executionId })} />
                 ))
               : null}
           </Seccion>
@@ -149,13 +144,8 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
             {planes.tipo === 'error' ? <ErrorConReintento sinConexion={planes.sinConexion} onReintentar={cargar} /> : null}
             {planes.tipo === 'listo' && planes.datos.length === 0 ? <Parrafo>{COPY_ENTRENAMIENTO.sinPlanesEnHistorial}</Parrafo> : null}
             {planes.tipo === 'listo'
-              ? planes.datos.map((v) => (
-                  <Tarjeta key={v.planId}>
-                    <Parrafo>{v.professional.displayName}</Parrafo>
-                    {v.activatedAt ? <Parrafo tenue>{dia(v.activatedAt)}</Parrafo> : null}
-                    {v.isEffective ? <Insignia texto={COPY_ENTRENAMIENTO.vigente} positiva /> : null}
-                    <Boton texto={COPY_ENTRENAMIENTO.verElPlan} tipo="secundario" onPress={() => ir({ nombre: 'plan-de-entrenamiento', id: v.planId })} />
-                  </Tarjeta>
+              ? planes.datos.map((v, i) => (
+                  <FilaQueAbreElHistorial key={v.planId} fila={filaDePlan(v)} ultima={i === planes.datos.length - 1} onPress={() => ir({ nombre: 'plan-de-entrenamiento', id: v.planId })} />
                 ))
               : null}
           </Seccion>
@@ -164,6 +154,43 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
     </View>
   );
 }
+
+/**
+ * Una fila de «Tu historial» (AV2-22): el nombre, la fecha y el estado como etiqueta neutra, con la tilde si fue
+ * realizada; el detalle en `tenue`, en una línea, y la flecha. Va dentro de la sección, que ya es de vidrio: la fila no
+ * suma una superficie, solo la línea que la separa de la siguiente. Se toca entera y TalkBack la lee como un botón.
+ */
+function FilaQueAbreElHistorial({ fila, ultima, onPress }: { fila: FilaDelHistorial; ultima: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={fila.paraLeer} onPress={onPress} style={({ pressed }) => [estilos.fila, !ultima && estilos.conLinea, pressed && estilos.presionada]}>
+      <View style={estilos.textos} accessible={false} importantForAccessibility="no-hide-descendants">
+        <Text style={estilos.titulo}>{fila.titulo}</Text>
+        <View style={estilos.lineaDeEstado}>
+          {fila.fecha ? <Text style={estilos.fecha}>{fila.fecha}</Text> : null}
+          {fila.estado ? <Insignia texto={fila.estado} hecha={fila.hecha} /> : null}
+        </View>
+        {fila.detalle ? (
+          <Text style={estilos.detalle} numberOfLines={1}>
+            {fila.detalle}
+          </Text>
+        ) : null}
+      </View>
+      <Icono nombre="derecha" tamano={20} tono="tenue" />
+    </Pressable>
+  );
+}
+
+const estilos = estilosPorTema((COLOR) => ({
+  periodo: { fontSize: 14, lineHeight: 20, fontWeight: '600', color: COLOR.tenue, marginTop: -2, marginBottom: 4 },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 10 },
+  conLinea: { borderBottomWidth: 1, borderBottomColor: COLOR.borde },
+  presionada: { opacity: 0.6 },
+  textos: { flex: 1, gap: 2 },
+  titulo: { fontSize: 16, lineHeight: 22, fontWeight: '800', color: COLOR.texto },
+  lineaDeEstado: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 10 },
+  fecha: { fontSize: 14, lineHeight: 20, color: COLOR.tenue },
+  detalle: { fontSize: 13, lineHeight: 18, color: COLOR.tenue },
+}));
 
 // ─── Un plan tal como se aceptó (API-TRN-09), de solo lectura ───────────────────────────────────
 
@@ -198,7 +225,7 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
       <Titulo>{COPY_ENTRENAMIENTO.planHistoricoTitulo}</Titulo>
       <Parrafo tenue>{plan.professional.displayName}</Parrafo>
       {plan.activatedAt ? <Parrafo tenue>{dia(plan.activatedAt)}</Parrafo> : null}
-      {plan.isEffective ? <Insignia texto={COPY_ENTRENAMIENTO.vigente} positiva /> : null}
+      {plan.isEffective ? <Insignia texto={COPY_ENTRENAMIENTO.vigente} /> : null}
       {/* La versión histórica se muestra tal como se aceptó: los nombres son los de su instantánea, no los del catálogo actual (REG-06-112). */}
       {sesiones.map((s) => (
         <Seccion key={s.sessionId} titulo={s.label}>

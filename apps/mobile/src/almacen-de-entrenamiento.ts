@@ -70,6 +70,7 @@ import {
   type FilaQuitada,
   type ProteccionDeSerie,
   type SerieLocal,
+  type SinProcedencia,
   type Unidad,
 } from './series-de-la-sesion';
 
@@ -308,9 +309,30 @@ function leerEscritas(v: unknown): EscritasDeLaSesion {
     const tiempo = fila.tiempo === undefined ? '' : campo(fila.tiempo);
     const unidad: Unidad | null = fila.unidad === 'kg' ? 'kg' : fila.unidad === 'lb' ? 'lb' : null;
     if (carga === null || repeticiones === null || rir === null || tiempo === null || unidad === null) continue;
-    leidas[clave] = { carga, repeticiones, rir, tiempo, unidad };
+    const sinProcedencia = leerSinProcedencia(fila.sinProcedencia);
+    leidas[clave] = { carga, repeticiones, rir, tiempo, unidad, ...(sinProcedencia ? { sinProcedencia } : {}) };
   }
   return leidas;
+}
+
+/**
+ * Los valores de una fila que no se sabe quién escribió (ED-70): cada uno se lee solo, y el que no tiene la forma esperada
+ * se descarta (la fila sigue).
+ */
+function leerSinProcedencia(v: unknown): SinProcedencia | undefined {
+  if (!esObjeto(v)) return undefined;
+  const valor = (x: unknown): number | undefined => (typeof x === 'number' && Number.isFinite(x) && x >= 0 ? x : undefined);
+  const c = esObjeto(v.carga) ? v.carga : null;
+  const cargaValor = c ? valor(c.value) : undefined;
+  const unit: Unidad | null = c?.unit === 'kg' ? 'kg' : c?.unit === 'lb' ? 'lb' : null;
+  const repeticiones = valor(v.repeticiones);
+  const rir = valor(v.rir);
+  const leida: SinProcedencia = {
+    ...(cargaValor !== undefined && unit ? { carga: { value: cargaValor, unit } } : {}),
+    ...(repeticiones !== undefined ? { repeticiones } : {}),
+    ...(rir !== undefined ? { rir } : {}),
+  };
+  return Object.keys(leida).length > 0 ? leida : undefined;
 }
 
 /** Un valor por ejercicio (la unidad, las filas de más): lo que no tiene la forma esperada se descarta. */

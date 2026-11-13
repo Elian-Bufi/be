@@ -96,10 +96,10 @@ test('OpenAPI: GOO-01 a 03 bajo /auth/federated/google, públicas, sin Idempoten
     assert.ok(errores['422']!.includes('GOOGLE_EMAIL_NOT_VERIFIED'));
   }
   assert.deepEqual(erroresDeclarados('API-GOO-01')['404'], ['GOOGLE_ACCOUNT_NOT_FOUND']);
-  assert.deepEqual(erroresDeclarados('API-GOO-01')['409'], ['GOOGLE_LINK_REQUIRED']);
+  assert.deepEqual(erroresDeclarados('API-GOO-01')['409'], ['GOOGLE_LINK_REQUIRED', 'GOOGLE_ACCOUNT_UNLINKED']);
   // Las dos que escriben suman el 409 transversal del conflicto concurrente (un deadlock que persiste).
   assert.deepEqual(erroresDeclarados('API-GOO-02')['409'], ['GOOGLE_ACCOUNT_ALREADY_LINKED', 'RESOURCE_CONFLICT']);
-  assert.deepEqual(erroresDeclarados('API-GOO-03')['409'], ['GOOGLE_LINK_REQUIRED', 'REGISTRATION_NOT_AVAILABLE', 'RESOURCE_CONFLICT']);
+  assert.deepEqual(erroresDeclarados('API-GOO-03')['409'], ['GOOGLE_LINK_REQUIRED', 'REGISTRATION_NOT_AVAILABLE', 'GOOGLE_ACCOUNT_UNLINKED', 'RESOURCE_CONFLICT']);
   assert.deepEqual(
     OPERACIONES.find((o) => o.id === 'API-GOO-03')!.exitos.map((e) => e.status),
     [201, 200],

@@ -65,7 +65,7 @@ import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
 import { useLecturaRecordada } from '../lecturas';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { PreguntaV2 } from '../pregunta-v2';
-import { Aviso, Boton, Casilla, Dato, Parrafo, Seccion, Subtitulo, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
+import { Aviso, Boton, Casilla, Dato, Parrafo, Seccion, Subtitulo, Superficie, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
 import { Accion, Acciones, faltaElA3 } from './tarjeta-de-inicio';
 
 const A = COPY_HABITOS.apk;
@@ -332,7 +332,7 @@ function LoQueContaste({ d, token, sesionPerdida, avisar, releer, subir }: Comun
 function TextoDelActo({ texto }: { texto: MisHabitos['text'] }) {
   const [titulo, ...parrafos] = texto.text.split('\n\n');
   return (
-    <View style={estilos.texto}>
+    <Superficie style={estilos.texto}>
       <Parrafo>{A.leeAntes}</Parrafo>
       {texto.approval === 'PENDING_APPROVAL' ? <Aviso tipo="info" titulo={A.textoPropuesto} /> : null}
       <Text style={[ui.parrafo, ui.negrita]} accessibilityRole="header">
@@ -348,7 +348,7 @@ function TextoDelActo({ texto }: { texto: MisHabitos['text'] }) {
           {p}
         </Text>
       ))}
-    </View>
+    </Superficie>
   );
 }
 
@@ -663,6 +663,6 @@ function PreguntaPorUnNuevo({ p, ...comun }: Comun & { readonly p: ProfesionalPa
 
 const estilos = estilosPorTema((COLOR) => ({
   // El texto que se acepta, en un recuadro: se lee entero, con su versión y su huella.
-  texto: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 8, backgroundColor: COLOR.superficie },
+  texto: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 8, padding: 12, marginVertical: 8 },
   panel: { marginTop: 4 },
 }));

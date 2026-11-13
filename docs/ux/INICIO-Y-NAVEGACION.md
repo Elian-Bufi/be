@@ -17,7 +17,7 @@ operación, y bajo el mismo permiso, que en su módulo.
   - al centro, la marca BE;
   - a la derecha, el avatar.
 - **Avatar y saludo.** `MeResponse.profile` es `{}` («datos propios mínimos», DL-009): no hay nombre ni foto que mostrar.
-  - El avatar es un ícono neutro de persona y el saludo es «Hola», sin nombre.
+  - El avatar es un ícono neutro de persona y el saludo es «Hola», sin nombre. *Enmendado por DL-170 (2026-11-11), AV2-07: el título de Inicio es la fecha, sin «Hola».*
   - No se deriva un nombre del correo, de un identificador ni de una respuesta de salud.
 - **Ambiente de prueba:** una franja compacta bajo la cabecera, siempre a la vista (08 §33).
 - **Inicio** es la entrada normal después de iniciar sesión o de recuperar una sesión guardada válida. El destino de la
@@ -32,7 +32,7 @@ por sí solo los datos de salud: cada lectura trae su propio permiso.
 | Elemento | Fuente existente | Campos | Permisos | Destino exacto | Estados | Dependencia |
 |---|---|---|---|---|---|---|
 | **Entrenamiento de hoy** | API-TRN-14 `hoyDeEntrenamiento`. Clave `entrenamiento-hoy:<día>`, la de Entrenamiento | `date`, `planState`, `occurrences[]`: `occurrenceId`, `plannedSession` (`label`, `blockLabel`, `prescriptions`) y `execution` (`state`, `draftId`, `executionId`, `sessionCondition`) | Sesión y A3 vigente (08:406). Con el vínculo pausado o un consentimiento revocado, `NOT_AVAILABLE` | Comenzar o continuar: `abrirBorradorDeEjecucion` (API-TRN-15, una escritura que va **solo al tocar**) y después `sesion-de-entrenamiento`. Registrada: `ejecucion-de-entrenamiento`, con su id | Verificando · sin plan (`NO_ACTIVE_PLAN`) · no disponible (`NOT_AVAILABLE`) · **varias sesiones: se elige, no se toma la primera** (DL-077) · registrada como no completada (no se dice «completada») · sin A3 · error · sin red | Ninguna |
-| **Nutrición de hoy** | API-NUT-14 `hoyNutricional(díaTipo)`. Clave `hoy-nutricional:<día>:<díaTipo>`, la de Nutrición. El día tipo es la misma elección de Nutrición: `hoy-nutricional:dia` | `planState`, `activePlan.dayTypes[]` (`label`), `selectedDayTypeId`, `registeredIntake[]` (`origin`, `recordedAt`, `executionId`) | Sesión y A3 (DL-115) | Ver el plan: `plan-actual`. Registrar: `hoy` con `accion: 'registrar'`, que lleva a las comidas o a elegir el día. El último registro de hoy: `registro-nutricional`, con su id | Verificando · sin plan · no disponible · **elegir el día tipo: con varios y ninguno elegido, se pide la elección** (DL-049) · sin registros hoy (`NO_DATA`, nunca «0 %») · sin A3 · error | Parámetro de ruta nuevo: `accion` en `hoy` |
+| **Nutrición de hoy** | API-NUT-14 `hoyNutricional(díaTipo)`. Clave `hoy-nutricional:<día>:<díaTipo>`, la de Nutrición. El día tipo es la misma elección de Nutrición: `hoy-nutricional:dia` | `planState`, `activePlan.dayTypes[]` (`label`), `selectedDayTypeId`, `registeredIntake[]` (`origin`, `recordedAt`, `executionId`) | Sesión y A3 (DL-115) | Ver el plan: `plan-actual`. Registrar: `hoy` con `accion: 'registrar'`, que lleva a las comidas o a elegir el día. El último registro de hoy: `registro-nutricional`, con su id | Verificando · sin plan · no disponible · **elegir el día tipo: con varios y ninguno elegido, se pide la elección** (DL-049) · sin registros hoy (`NO_DATA`, nunca «0 %») · sin A3 · error | Parámetro de ruta nuevo: `accion` en `hoy`. *Enmendada por DL-170 (2026-11-11), AV2-13 y AV2-14: Inicio lee API-ING-01 `hoyConOpciones`, con la misma lectura y la misma clave que Nutrición (API-NUT-14 no veía la «comida diferente» y no cambia); la ruta `hoy` lleva también la comida que se tocó* |
 | **Actividad: entrenamiento** | API-TRN-19-LISTA `misEjecucionesDeEntrenamiento` de los últimos 30 días, en `leerActividadDeEntrenamiento`. Es la lista de «Tu historial», que no se pagina (hasta 92 días) | `executions[]` con su `effectiveView.sessionCondition`, **con las correcciones aplicadas**. El encabezado dice el período que respondió la API (`data.period`), no el pedido | Sesión y A3 | `historial-de-entrenamiento` | Verificando · sin registros en 30 días (un dato real, no una falla) · sin A3 · error | Ninguna |
 | **Actividad: nutrición** | API-NUT-16-LISTA `listarMisIngestas` con `limit` 1 (el del contrato), en `leerUltimoRegistro`. Es **una lectura aparte**, con su ciclo y su clave (`inicio-ultimo-registro`), y se pide **solo si hoy no hay registros**. La tarjeta no la espera | `data[0]`: `executionId`, `localDate`, `origin` | Sesión y A3 | `registro-nutricional`, con su id | Nunca registró · sin leer (una falla pasajera: la tarjeta no afirma nada) · sin A3 | **«Días con registros en 30 días» no se puede calcular con una página.** Exige recorrer todas las páginas o un agregado de la API (D-1). Se muestra lo último que se registró, con su fecha |
 | **Mediciones: última toma** | API-ANT-06-PROPIA `miEvolucionAntropometrica` vía `leerMiEvolucion`. Clave `mi-evolucion:ultimos-90`, la de Evolución | `metrics[].series[]`: `occurredAt`, `sourceEvaluationId`, `comparabilityGroup`, `value` y `unit` | Sesión y A3 | `mi-evolucion` | Verificando · sin mediciones · sin A3 · error | Ninguna |
@@ -133,29 +133,41 @@ Privacidad desde un aviso) lo decide esa pantalla, y que la sesión termine no p
 
 ### Barra y cabecera: cómo se ven
 
+> Al día con DL-166 (Perfil reemplaza a «Información», sin menú ni avatar) y con DL-170 (WP-APP-VUELTA-2, la receta de
+> vidrio, 2026-11-11). Lo de arriba de este documento es la decisión de 2026-10-04, que se conserva como historia.
+
 - **Barra.** Una cápsula flotante:
-  - con márgenes de 12 dp a los costados, u 8 en un teléfono de menos de 360 dp;
-  - extremos redondeados del todo y un borde fino (`barraBorde`);
-  - vidrio ahumado sin desenfoque (`barraVidrio`): el escalón elevado al 94 % en Azul noche y el blanco al 95 % en Claro;
-  - las cinco etiquetas siempre a la vista, a 12 sp, que crecen hasta 1,15 veces y, solo si no entran, bajan hasta un
-    80 %. Medido en el render del navegador: desde 390 dp no se achica ninguna, en 360 dp un 4 % con letra grande y en
-    320 dp un 17 % con letra grande; ninguna se corta;
+  - con márgenes de 12 dp a los costados, 8 en un teléfono de menos de 400 dp y 6 en uno de menos de 340;
+  - extremos redondeados del todo, con el borde de luz de la receta (`vidrioFilo`), la línea de luz por dentro y una
+    sombra con `boxShadow`, sin `elevation`, que a través del vidrio se vería como una mancha;
+  - vidrio ahumado sin desenfoque (`barraVidrio`), al 88 % en los dos temas (antes, 94 % en Azul noche y 95 % en
+    Claro). El desenfoque entra solo si Dirección lo pide (AV2-D3);
+  - cada destino mide 52 dp de alto (antes, 56), por encima de los 48 del objetivo táctil;
+  - las cinco etiquetas siempre a la vista, a 12 sp y con la letra de la persona: si no entran en una fila con su tamaño
+    entero, la cápsula pasa a dos filas, con Evolución y Perfil abajo (DL-166); ninguna se corta;
   - el destino elegido lleva el ícono y la etiqueta en `barraElegido`, la etiqueta en negrita y un brillo radial suave
-    detrás del ícono. No hay puntito, recuadro, aro ni botón central;
+    detrás del ícono. No hay recuadro, aro ni botón central; Perfil lleva un punto mientras haya algo para responder;
+  - un velo del color de abajo del fondo (`fondoAbajo`) va detrás de la cápsula;
+  - durante la sesión de entrenamiento va fija, opaca (`fondo`) y de lado a lado (PV-11): nada se ve a través;
   - mide su alto real y el contenido deja ese espacio libre al final.
 - **Contraste del vidrio.** `scripts/contraste.test.cjs` mide las etiquetas sobre la mezcla del vidrio con cada color
-  del tema, el peor caso de lo que puede pasar detrás. El mínimo medido es 6,86:1 en Azul noche y 6,13:1 en Claro.
-- **Cabecera.**
-  - A la izquierda: «Volver» con su flecha, que le dice al lector de pantalla adónde vuelve; el menú en una raíz; o
-    nada. También en Crear cuenta e Iniciar sesión, que vuelven a Bienvenida.
-  - Al centro: el isotipo y «BE», con un brillo contenido en su lugar.
-  - A la derecha: el avatar neutro, de 48 dp.
-  - Debajo: la franja del ambiente de prueba, y un borde fino sobre el que corre la línea de actualización en cian.
+  del tema, el peor caso de lo que puede pasar detrás. Con el 88 %, el mínimo es 4,58:1 en Azul noche (`barraTexto`) y
+  5,29:1 en Claro (`barraElegido`).
+- **Cabecera** (DL-170, AV2-05, con AV2-D7 y AV2-D8). Transparente sobre el fondo de la app y sin la línea de abajo; la
+  fila mide 48 dp.
+  - A la izquierda: en las cinco raíces, el logo redondo con su brillo, sin el texto «BE» (el lector dice «BE», una
+    vez); en un detalle, «Volver» con su flecha, que le dice al lector de pantalla adónde vuelve. También en Crear
+    cuenta e Iniciar sesión, que vuelven a Bienvenida.
+  - Al centro: nada.
+  - A la derecha: la campana de Novedades, con un punto de 8 dp en el acento mientras haya algo sin leer, sin número ni
+    animación. El número sigue en su nombre para el lector: «Novedades, 47 sin leer».
+  - Debajo: la línea fina del ambiente de prueba, en `tenue` (08 §33, hasta que UF-08 la resuelva por ambiente), y la
+    línea de actualización en cian.
 
 ## 4. Solicitudes por visita
 
 Cada tarjeta pide lo suyo una vez por entrada: así verifica antes de mostrar (G2). Lo recordado en la sesión evita
-recalcular y redibujar, no pedir. Contado con un cliente que anota cada pedido (`scripts/inicio.test.mjs`, sección 4):
+recalcular y redibujar, no pedir. Contado con un cliente que anota cada pedido (`scripts/inicio.test.mjs`, sección 4). *Desde DL-170 (2026-11-11, AV2-13), donde dice NUT-14 va ING-01 (`hoyConOpciones`, la lectura de Nutrición): las cuentas no cambian, una lectura por otra; la medición local de abajo es de antes.*
 
 | Momento | Solicitudes | Cuáles |
 |---|---|---|

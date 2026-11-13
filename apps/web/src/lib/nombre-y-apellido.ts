@@ -16,6 +16,7 @@ import {
   MENSAJE_DE_CAMPO,
   normalizarNombreVisible,
   problemaDelNombre,
+  sinTituloProfesional,
   textoDelPaso,
   versionPublicada,
   type LoQueFaltaParaSeguirResponse,
@@ -40,6 +41,9 @@ export function mensajeDelNombreEn(issues: readonly ValidationIssue[]): string |
   const delNombre = issues.find((i) => i.code === ISSUE_DEL_NOMBRE.REQUERIDO || i.code === ISSUE_DEL_NOMBRE.INVALIDO);
   return delNombre ? (MENSAJE_DE_CAMPO[delNombre.code] ?? null) : null;
 }
+
+/** El nombre personal que se propone desde el profesional, sin el título: vive en @be/domain, la misma regla de la APK. */
+export { sinTituloProfesional };
 
 /**
  * Lo que muestra «Antes de seguir» con la respuesta de API-ACC-07:
@@ -68,7 +72,11 @@ export function pasoQueSigue(r: Resultado<LoQueFaltaParaSeguirResponse>): PasoQu
   // Un paso que no se conoce no se saltea, aunque venga con otros que sí: se resuelven todos o ninguno.
   if (!conocePasos(pasos)) return { tipo: 'desconocido' };
   const primero = pasos[0];
-  if (primero?.step === 'DISPLAY_NAME') return { tipo: 'nombre', sugerencia: primero.suggestion?.trim() ? primero.suggestion : null };
+  if (primero?.step === 'DISPLAY_NAME') {
+    // La API propone el nombre del perfil profesional; el nombre personal va sin el título (hallazgo del 13/11).
+    const propuesto = sinTituloProfesional(primero.suggestion ?? '');
+    return { tipo: 'nombre', sugerencia: propuesto || null };
+  }
   // UF-05: los textos, con la versión que pide la API; si este website no la tiene, recargar trae la nueva.
   const pendientes = pasos.map((p) => ({ texto: textoDelPaso(p.step), version: versionPublicada(p.suggestion) }));
   if (pendientes.every((p): p is { texto: TextoAAceptar; version: VersionDeTexto } => p.texto !== null && p.version !== null)) return { tipo: 'textos', pendientes };

@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Website `/account` (DL-025 A): Estado · Tu nombre · Tu identificador BE · Privacidad · Seguridad · Cerrar mi cuenta.
+ * Website `/account` (DL-025 A): Estado · Tu nombre · Tu identificador BE · Privacidad · Tus datos · Ayuda y contacto ·
+ * Avisar un problema (RF-068) · Cómo entrás (RF-004) · Seguridad · Cerrar mi cuenta.
  * - Tu nombre (DL-009 y DL-040, 2026-10-15): el que ven los profesionales con un vínculo vigente. Desde DL-169 (UF-D3)
  *   se cambia, pero no se quita. Una cuenta sin nombre no llega acá: lo completa antes, en «Antes de seguir».
  * - Estado: solo el estado operativo (TEST-RF-006: nunca «habilitado»).
@@ -39,6 +40,8 @@ import { errorDelNombre, mensajeDelNombreEn } from '../../lib/nombre-y-apellido'
 import { useSesion, EsperandoSesion } from '../../lib/sesion';
 import { fecha } from '../../lib/formato';
 import { TusDatos } from './tus-datos';
+import { AvisarUnProblema } from './avisar-un-problema';
+import { ComoEntras } from './como-entras';
 import { CanalDeContacto } from '../../components/canal-de-contacto';
 
 const ESTADO_OPERATIVO: Record<MeResponse['data']['accountOperationalState'], string> = {
@@ -178,6 +181,12 @@ export function Cuenta() {
         <p>{COPY_AYUDA.queEs}</p>
         <CanalDeContacto />
       </section>
+
+      {/* RF-068 (DL-172): avisar un problema y ver lo avisado, con la respuesta de Administración. */}
+      <AvisarUnProblema token={token} />
+
+      {/* RF-004 (DL-172): con qué se entra; vincular y desvincular Google. */}
+      <ComoEntras token={token} alReautenticar={() => salir('/login?volver=/account&aviso=reautenticar')} />
 
       <section className="seccion" aria-labelledby="titulo-seguridad">
         <h2 id="titulo-seguridad">Seguridad</h2>

@@ -26,6 +26,7 @@ import {
   nombreVisibleValido,
   normalizarNombreVisible,
   problemaDelNombre,
+  sinTituloProfesional,
   textoDelPaso,
   versionDeLaApi,
   versionPublicada,
@@ -117,7 +118,9 @@ const sesionPerdida = (codigo: string): SesionPerdida => ({ tipo: 'sesion-perdid
 
 /** La propuesta de la API como se guardaría (sin espacios de más); `null` si no hay. Si no sirve, lo dice el campo al guardar. */
 function propuestaDelNombre(sugerencia: string | null): string | null {
-  const propuesta = sugerencia === null ? '' : normalizarNombreVisible(sugerencia);
+  // La API propone el nombre del perfil profesional; el nombre personal va sin el título (hallazgo del 13/11), con la
+  // misma regla del website (@be/domain).
+  const propuesta = sugerencia === null ? '' : sinTituloProfesional(sugerencia);
   return propuesta === '' ? null : propuesta;
 }
 

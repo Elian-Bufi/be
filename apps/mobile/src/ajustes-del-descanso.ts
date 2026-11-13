@@ -6,6 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 import { crearAjustesDelDescanso, type AjustesDelDescanso } from './descanso-automatico';
+import { crearMarcaDeLaExplicacion } from './explicacion-de-los-tiempos';
 
 export const ajustesDelDescanso = crearAjustesDelDescanso(AsyncStorage);
 void ajustesDelDescanso.leer();
@@ -13,3 +14,6 @@ void ajustesDelDescanso.leer();
 export function useAjustesDelDescanso(): AjustesDelDescanso {
   return useSyncExternalStore(ajustesDelDescanso.suscribir, ajustesDelDescanso.actuales, ajustesDelDescanso.actuales);
 }
+
+/** La marca de la explicación de los tiempos, una vez por cuenta en este teléfono (AV2-33). */
+export const marcaDeLaExplicacion = crearMarcaDeLaExplicacion(AsyncStorage);

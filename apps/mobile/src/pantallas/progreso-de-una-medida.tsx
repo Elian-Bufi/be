@@ -33,7 +33,7 @@ import { fecha, fechaCivil, fechaCorta } from '../formato';
 import { componerGrafico, componerGraficoCompacto, puntoMasCercano, RADIO_COMPACTO, RADIO_COMPACTO_ELEGIDA, type ComposicionDelGrafico } from '../grafico-de-evolucion';
 import { Icono } from '../icono';
 import { indiceDeLaToma, serieDeLaMedida } from '../serie-de-la-medida';
-import { Boton, Cifra, COLOR, Desplegable, estilosPorTema, Parrafo, Rotulo, Segmentos, Tarjeta } from '../ui';
+import { Boton, Cifra, COLOR, Desplegable, estilosPorTema, Parrafo, Rotulo, Segmentos, Superficie, Tarjeta } from '../ui';
 import { HuecoDeLaSerie, PuntoDeLaSerie } from './serie-en-lista';
 
 type Datos = EvolucionResponse['data'];
@@ -322,7 +322,7 @@ export function GraficoConFechas({
   const p = grafico?.puntos[elegida] ?? null;
 
   return (
-    <View style={estilos.grafico} onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessible accessibilityRole="image" accessibilityLabel={resumen}>
+    <Superficie style={estilos.grafico} onLayout={(e) => setAncho(Math.round(e.nativeEvent.layout.width))} accessible accessibilityRole="image" accessibilityLabel={resumen}>
       {grafico ? (
         <Pressable
           onPress={(e) => {
@@ -363,7 +363,7 @@ export function GraficoConFechas({
       ) : (
         <View style={{ height: alto }} />
       )}
-    </View>
+    </Superficie>
   );
 }
 
@@ -419,7 +419,7 @@ function ListaDeLaSerie({ filas }: { filas: readonly FilaDeEvolucion[] }) {
 
 const estilos = estilosPorTema((COLOR) => ({
   detalle: { marginTop: 8 },
-  grafico: { marginVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, overflow: 'hidden' },
+  grafico: { marginVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, overflow: 'hidden' },
   fechaDelDetalle: { fontSize: 14, fontWeight: '700', color: COLOR.tenue, marginBottom: 2 },
   pasos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   paso: { flexGrow: 1, flexBasis: 140 },

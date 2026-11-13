@@ -84,7 +84,10 @@ describe('la compuerta «Antes de seguir» (API-ACC-07; UF-D4; TEST-UF-005)', ()
 
   test('falta el nombre: «Antes de seguir», con el nombre profesional propuesto o vacío, y la app no se muestra', () => {
     expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: null }]))).toEqual({ tipo: 'nombre', propuesta: null });
-    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: '  Lic. Sofía   Paz ' }]))).toEqual({ tipo: 'nombre', propuesta: 'Lic. Sofía Paz' });
+    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: '  Lic. Sofía   Paz ' }]))).toEqual({ tipo: 'nombre', propuesta: 'Sofía Paz' });
+    // El nombre personal va sin el título del perfil profesional, con la regla del website (hallazgo del 13/11).
+    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: 'Dra. Elena Vidal, PhD' }]))).toEqual({ tipo: 'nombre', propuesta: 'Elena Vidal' });
+    expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: 'Licia Fernández' }]))).toEqual({ tipo: 'nombre', propuesta: 'Licia Fernández' });
     expect(compuertaConLaRespuesta('al-entrar', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: '   ' }]))).toEqual({ tipo: 'nombre', propuesta: null });
     // También si aparece al volver a preguntar o después de guardar: no se saltea.
     expect(compuertaConLaRespuesta('de-nuevo', loQueFalta([{ step: 'DISPLAY_NAME', suggestion: null }]))).toEqual({ tipo: 'nombre', propuesta: null });

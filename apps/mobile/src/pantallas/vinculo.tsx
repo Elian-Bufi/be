@@ -115,7 +115,7 @@ export function PantallaDeVinculo({
         <Seccion titulo={profesional}>
           <Dato etiqueta={COPY_VINCULO.alcance} valor={v.scope.label} />
           <Dato etiqueta={COPY_VINCULO.finalidad} valor={ETIQUETA_DE_FINALIDAD[v.purpose]} />
-          <Insignia texto={e.estado} positiva={activo} etiqueta="Estado del vínculo" />
+          <Insignia texto={e.estado} etiqueta="Estado del vínculo" />
           {e.detalle ? <Parrafo>{e.detalle}</Parrafo> : null}
           <Dato etiqueta="Desde" valor={fecha(v.acceptedAt)} />
           {v.relationshipState === 'FINALIZADO' && exito?.tipo !== 'finalizado' ? <Parrafo tenue>{COPY_VINCULO.historialDisponible}</Parrafo> : null}
@@ -124,7 +124,6 @@ export function PantallaDeVinculo({
         <Seccion titulo="Consentimiento">
           <Insignia
             texto={etiquetaDeConsentimiento(v.consentState, v.accessMode)}
-            positiva={v.consentState === 'ACTIVE' && v.accessMode === 'CONTEXTUAL'}
             etiqueta="Consentimiento"
           />
           {v.consent ? (

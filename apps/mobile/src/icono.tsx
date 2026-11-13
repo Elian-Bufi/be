@@ -16,11 +16,32 @@
  * - Si el dominio compilado es más viejo que este archivo y no trae un nombre, no dibuja nada: la app no se cae.
  */
 import { GROSOR_DE_ICONO, ICONOS, LIENZO_DE_ICONO, type FormaDeIcono, type NombreDeIcono } from '@be/domain';
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { useApariencia } from './contexto-de-apariencia';
-import { COLOR, type Paleta } from './tema';
+import { COLOR, estilosPorTema, type Paleta } from './tema';
+
+/** El lado de la caja de un ícono de tarjeta o de sección, en dp, y su separación del título. */
+export const CAJA_DEL_ICONO = 32;
+export const SEPARACION_DE_LA_CAJA = 10;
+
+/**
+ * La caja del ícono de una tarjeta o de una sección (AV2-T25, con la vuelta de Dirección a la 0.25): un cuadrado
+ * redondeado con el tinte `iconoFondo` (celeste en Claro, un azul apenas en Azul noche) y el ícono adentro, en `azul`,
+ * que es solo decoración. No se toca y no se lee: el título dice lo que es.
+ */
+export function CajaDelIcono({ children }: { children: ReactNode }) {
+  return (
+    <View style={cajas.caja} accessible={false} importantForAccessibility="no-hide-descendants">
+      {children}
+    </View>
+  );
+}
+
+const cajas = estilosPorTema((C) => ({
+  caja: { width: CAJA_DEL_ICONO, height: CAJA_DEL_ICONO, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: C.iconoFondo },
+}));
 
 export type { NombreDeIcono } from '@be/domain';
 
@@ -31,7 +52,7 @@ export type TamanoDeIcono = 15 | 18 | 20 | 24 | 40;
  * Los tokens del tema que ya se usan como color de texto o de trazo sobre las superficies, medidos por
  * `scripts/contraste.test.cjs` (un trazo necesita 3:1; estos pasan 4,5:1).
  */
-export type TonoDeIcono = Extract<keyof Paleta, 'acento' | 'texto' | 'tenue' | 'botonTexto' | 'peligroTexto' | 'error' | 'exito' | 'barraTexto' | 'barraElegido'>;
+export type TonoDeIcono = Extract<keyof Paleta, 'acento' | 'azul' | 'texto' | 'tenue' | 'botonTexto' | 'peligroTexto' | 'error' | 'exito' | 'barraTexto' | 'barraElegido'>;
 
 /** El grosor del destino elegido de la barra: la señal de «elegido» que no es solo el color. */
 const GROSOR_MARCADO = 2.1;
