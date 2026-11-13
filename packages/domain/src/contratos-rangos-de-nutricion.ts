@@ -41,7 +41,15 @@ export type RangoEntrada = z.infer<typeof RangoEntradaSchema>;
  * uno cargado a mano, con su fecha.
  */
 export const PesoDeReferenciaEntradaSchema = z.discriminatedUnion('source', [
-  z.strictObject({ source: z.literal('RECORDED'), measurementId: IdOpaco }),
+  z.strictObject({
+    source: z.literal('RECORDED'),
+    measurementId: IdOpaco,
+    /**
+     * Sin él, volver a mandar la toma que ya usa el plan conserva lo guardado tal cual, aunque la toma se haya corregido.
+     * `true`: el valor vigente de la toma, con su corrección. Recalcular siempre lo pide el profesional.
+     */
+    useCurrentValue: z.boolean().optional(),
+  }),
   z.strictObject({ source: z.literal('MANUAL'), valueKg: z.number().finite(), measuredOn: FechaLocalSchema }),
 ]);
 export type PesoDeReferenciaEntrada = z.infer<typeof PesoDeReferenciaEntradaSchema>;
@@ -96,6 +104,16 @@ export type PesoDeReferencia = z.infer<typeof PesoDeReferenciaSchema>;
 export const PesoRegistradoSchema = z.strictObject({ measurementId: IdOpaco, valueKg: z.number().positive(), measuredOn: FechaLocalSchema });
 export type PesoRegistrado = z.infer<typeof PesoRegistradoSchema>;
 
+/**
+ * Cómo está hoy en Antropometría la toma que usa el plan. `CURRENT`: vigente, con su valor de hoy en kg, al décimo (si se
+ * corrigió, el corregido). `NOT_CURRENT`: se anuló, o su valor ya no está en kg. Avisarlo no cambia lo guardado.
+ */
+export const TomaUsadaSchema = z.discriminatedUnion('state', [
+  z.strictObject({ state: z.literal('CURRENT'), valueKg: z.number().positive() }),
+  z.strictObject({ state: z.literal('NOT_CURRENT') }),
+]);
+export type TomaUsada = z.infer<typeof TomaUsadaSchema>;
+
 export const RangosDeDiaTipoSchema = z.strictObject({
   dayTypeId: IdOpaco,
   day: RangoSchema.nullable(),
@@ -119,6 +137,8 @@ export const RangosDelPlanSchema = z.strictObject({
     enabled: z.boolean(),
     /** El último peso registrado que puede ver; `null` si no hay o si Antropometría no está habilitada. */
     latestWeight: PesoRegistradoSchema.nullable(),
+    /** La toma que usa el plan, como está hoy; `null` si el plan no usa un peso registrado o Antropometría no está habilitada. */
+    usedMeasurement: TomaUsadaSchema.nullable(),
   }),
   dayTypes: z.array(RangosDeDiaTipoSchema),
 });

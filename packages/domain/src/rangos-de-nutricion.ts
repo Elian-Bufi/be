@@ -11,6 +11,8 @@
  *   (`pesoMasNuevo`) y se usa si el profesional lo pide, al volver a guardar.
  * - **Sin permiso, sin peso:** si los gramos salieron de un peso registrado que el profesional ya no puede ver, se
  *   devuelven los gramos y se retienen el peso y los gramos por kilo, de los que se lo podría deducir.
+ * - **Lo que no se toca queda como estaba:** un rango que vuelve con los mismos gramos guardados no se vuelve a rechazar
+ *   por los topes y, con el peso retenido, conserva sus g/kg y el peso del que salieron.
  */
 import type { ValidationIssue } from './contratos';
 import {
@@ -23,6 +25,7 @@ import {
   type RangoEntrada,
   type RangosDeDiaTipo,
   type RangosDeDiaTipoEntrada,
+  type TomaUsada,
 } from './contratos-rangos-de-nutricion';
 
 /** Los topes de lo que se escribe. Un valor fuera de estos topes no se guarda; se marca con su lugar. */
@@ -39,6 +42,17 @@ export const TOPES_DE_LOS_RANGOS = {
 export interface ContenidoDeRangos {
   readonly bodyWeight: PesoDeReferencia | null;
   readonly dayTypes: readonly RangosDeDiaTipo[];
+}
+
+/**
+ * Lo que ya estaba guardado, al escribir. Un macronutriente que vuelve en gramos con los mismos gramos guardados es lo que
+ * el profesional no tocó: no se vuelve a rechazar por los topes (en g/kg pudo pasar los 2.000 g). Y si el peso guardado
+ * está retenido (`pesoRetenido`: un peso registrado que este profesional ya no puede ver) y no se pide otro, conserva sus
+ * g/kg y el peso del que salieron: el profesional no los ve, y por eso los manda en gramos.
+ */
+export interface LoGuardado {
+  readonly contenido: ContenidoDeRangos | null;
+  readonly pesoRetenido: boolean;
 }
 
 /** Los días tipo y las comidas del borrador, por su identidad: los rangos solo se escriben sobre lo que existe. */
@@ -88,17 +102,32 @@ export function problemasDelPesoManual(valueKg: number, measuredOn: string, hoy:
 
 const usaGramosPorKilo = (r: RangoEntrada | null): boolean => !!r && MACROS_DEL_RANGO.some((m) => r[m]?.unit === 'g_per_kg');
 
+/** Cómo se escribe: el peso, si se conservan los g/kg de un peso retenido, los problemas y cuántos se conservaron. */
+interface Escritura {
+  readonly peso: PesoDeReferencia | null;
+  readonly conservarRetenido: boolean;
+  readonly issues: ValidationIssue[];
+  conservados: number;
+}
+
 /** Un macronutriente escrito, convertido a lo que guarda el plan, o sus problemas. */
-function macroParaGuardar(m: RangoDeMacroEntrada, peso: PesoDeReferencia | null, path: string, issues: ValidationIssue[]): RangoDeMacro | null {
+function macroParaGuardar(m: RangoDeMacroEntrada, previo: RangoDeMacro | undefined, path: string, e: Escritura): RangoDeMacro | null {
+  const { issues, peso } = e;
   if (m.min === null && m.max === null) {
     issues.push({ code: 'RANGE_BOUND_REQUIRED', path });
     return null;
+  }
+  // Lo que no se tocó: vuelve en gramos, con los mismos gramos guardados.
+  const sinTocar = m.unit === 'g' && !!previo && previo.grams.min === m.min && previo.grams.max === m.max;
+  if (sinTocar && e.conservarRetenido && previo.unit === 'g_per_kg') {
+    e.conservados += 1;
+    return previo;
   }
   const tope = m.unit === 'g' ? TOPES_DE_LOS_RANGOS.gramos : TOPES_DE_LOS_RANGOS.gramosPorKilo;
   let bien = true;
   for (const lado of ['min', 'max'] as const) {
     const v = m[lado];
-    if (v !== null && (escalado(v, tope.decimales) === null || v > tope.maximo)) {
+    if (v !== null && (escalado(v, tope.decimales) === null || (v > tope.maximo && !sinTocar))) {
       issues.push({ code: 'RANGE_VALUE_OUT_OF_BOUNDS', path: `${path}.${lado}` });
       bien = false;
     }
@@ -117,15 +146,15 @@ function macroParaGuardar(m: RangoDeMacroEntrada, peso: PesoDeReferencia | null,
   };
 }
 
-function rangoParaGuardar(r: RangoEntrada, peso: PesoDeReferencia | null, path: string, issues: ValidationIssue[]): Rango | null {
+function rangoParaGuardar(r: RangoEntrada, previo: Rango | null | undefined, path: string, e: Escritura): Rango | null {
   const presentes = MACROS_DEL_RANGO.filter((m) => r[m] !== undefined);
   if (presentes.length === 0) {
-    issues.push({ code: 'RANGE_EMPTY', path });
+    e.issues.push({ code: 'RANGE_EMPTY', path });
     return null;
   }
   const salida: { -readonly [M in (typeof MACROS_DEL_RANGO)[number]]?: RangoDeMacro } = {};
   for (const m of presentes) {
-    const guardado = macroParaGuardar(r[m]!, peso, `${path}.${m}`, issues);
+    const guardado = macroParaGuardar(r[m]!, previo?.[m], `${path}.${m}`, e);
     if (guardado) salida[m] = guardado;
   }
   return salida;
@@ -135,17 +164,19 @@ function rangoParaGuardar(r: RangoEntrada, peso: PesoDeReferencia | null, path: 
  * API-PLN-03 · Los rangos escritos, convertidos a lo que guarda el plan: los gramos de cada uno y el peso del que
  * salieron. El peso solo se guarda si algún macronutriente va en gramos por kilo. Un rango sobre un día tipo o una comida
  * que el borrador no tiene, repetido, vacío o con un valor que no se entiende, no se guarda: vuelven todos los problemas,
- * cada uno con su lugar.
+ * cada uno con su lugar. Lo que no se tocó: ver `LoGuardado`.
  */
 export function rangosParaGuardar(
   dias: readonly RangosDeDiaTipoEntrada[],
   peso: PesoDeReferencia | null,
   nodos: readonly NodosDelPlan[],
+  loGuardado: LoGuardado = { contenido: null, pesoRetenido: false },
 ): { readonly ok: true; readonly contenido: ContenidoDeRangos } | { readonly ok: false; readonly issues: readonly ValidationIssue[] } {
   const issues: ValidationIssue[] = [];
   const conGramosPorKilo = dias.some((d) => usaGramosPorKilo(d.day) || d.meals.some((m) => usaGramosPorKilo(m.range)));
   if (conGramosPorKilo && !peso) issues.push({ code: 'BODY_WEIGHT_REQUIRED', path: 'bodyWeight' });
   const pesoUsado = conGramosPorKilo ? peso : null;
+  const e: Escritura = { peso: pesoUsado, conservarRetenido: loGuardado.pesoRetenido && !peso && !!loGuardado.contenido?.bodyWeight, issues, conservados: 0 };
   const vistos = new Set<string>();
   const salida: RangosDeDiaTipo[] = [];
   dias.forEach((d, i) => {
@@ -154,7 +185,8 @@ export function rangosParaGuardar(
     if (!nodo) return void issues.push({ code: 'RANGE_TARGET_NOT_IN_PLAN', path: `${path}.dayTypeId` });
     if (vistos.has(d.dayTypeId)) return void issues.push({ code: 'RANGE_TARGET_REPEATED', path: `${path}.dayTypeId` });
     vistos.add(d.dayTypeId);
-    const day = d.day ? rangoParaGuardar(d.day, pesoUsado, `${path}.day`, issues) : null;
+    const previo = loGuardado.contenido?.dayTypes.find((x) => x.dayTypeId === d.dayTypeId);
+    const day = d.day ? rangoParaGuardar(d.day, previo?.day, `${path}.day`, e) : null;
     const comidasVistas = new Set<string>();
     const meals: { mealId: string; range: Rango }[] = [];
     d.meals.forEach((m, j) => {
@@ -162,12 +194,14 @@ export function rangosParaGuardar(
       if (!nodo.mealIds.includes(m.mealId)) return void issues.push({ code: 'RANGE_TARGET_NOT_IN_PLAN', path: `${lugar}.mealId` });
       if (comidasVistas.has(m.mealId)) return void issues.push({ code: 'RANGE_TARGET_REPEATED', path: `${lugar}.mealId` });
       comidasVistas.add(m.mealId);
-      const range = rangoParaGuardar(m.range, pesoUsado, `${lugar}.range`, issues);
+      const range = rangoParaGuardar(m.range, previo?.meals.find((x) => x.mealId === m.mealId)?.range, `${lugar}.range`, e);
       if (range) meals.push({ mealId: m.mealId, range });
     });
     if (day || meals.length > 0) salida.push({ dayTypeId: d.dayTypeId, day, meals });
   });
-  return issues.length > 0 ? { ok: false, issues } : { ok: true, contenido: { bodyWeight: pesoUsado, dayTypes: salida } };
+  // Con algo conservado de un peso retenido, sigue anotado el peso del que salió; sin nada en g/kg, no hay peso.
+  const bodyWeight = pesoUsado ?? (e.conservados > 0 ? loGuardado.contenido!.bodyWeight : null);
+  return issues.length > 0 ? { ok: false, issues } : { ok: true, contenido: { bodyWeight, dayTypes: salida } };
 }
 
 const sinPorKilo = (r: Rango): Rango => Object.fromEntries(Object.entries(r).map(([m, v]) => [m, { ...v, perKg: null }])) as Rango;
@@ -202,6 +236,30 @@ export function pesoMasNuevo(usado: PesoDeReferencia | null, ultimo: PesoRegistr
   if (!usado || !ultimo) return null;
   if (usado.source === 'RECORDED') return ultimo.measurementId !== usado.measurementId && ultimo.measuredOn >= usado.measuredOn ? ultimo : null;
   return ultimo.measuredOn > usado.measuredOn ? ultimo : null;
+}
+
+/** Lo que cambió del peso que usa el plan, para avisarlo en neutro. Ninguna novedad cambia lo guardado. */
+export type NovedadDelPeso =
+  /** La toma que usa el plan se corrigió en Antropometría: hoy vale `valueKg`. */
+  | { readonly tipo: 'corregido'; readonly valueKg: number }
+  /** La toma que usa el plan ya no está vigente: se anuló, o su valor ya no está en kg. */
+  | { readonly tipo: 'no-vigente' }
+  /** Hay un peso registrado más nuevo que el usado. */
+  | { readonly tipo: 'mas-nuevo'; readonly peso: PesoRegistrado };
+
+/**
+ * Las novedades del peso que usa el plan: la toma usada se corrigió o ya no está vigente, o hay un peso más nuevo. Sin
+ * novedades, una lista vacía. Avisar no cambia nada: recalcular es una decisión del profesional.
+ */
+export function novedadesDelPeso(usado: PesoDeReferencia | null, tomaUsada: TomaUsada | null, ultimo: PesoRegistrado | null): NovedadDelPeso[] {
+  const novedades: NovedadDelPeso[] = [];
+  if (usado?.source === 'RECORDED' && tomaUsada) {
+    if (tomaUsada.state === 'NOT_CURRENT') novedades.push({ tipo: 'no-vigente' });
+    else if (tomaUsada.valueKg !== usado.valueKg) novedades.push({ tipo: 'corregido', valueKg: tomaUsada.valueKg });
+  }
+  const nuevo = pesoMasNuevo(usado, ultimo);
+  if (nuevo) novedades.push({ tipo: 'mas-nuevo', peso: nuevo });
+  return novedades;
 }
 
 /** Los días tipo y las comidas de una estructura con identidades, para validar y filtrar los rangos. */

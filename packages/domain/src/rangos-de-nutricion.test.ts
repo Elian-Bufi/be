@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { EscribirRangosRequestSchema, RangosDelPlanSchema, type PesoDeReferencia, type RangosDeDiaTipoEntrada } from './contratos-rangos-de-nutricion';
-import { escalado, gramosDesdeGramosPorKilo, nodosDelPlan, pesoAlDecimo, pesoMasNuevo, problemasDelPesoManual, rangosParaGuardar, rangosParaMostrar } from './rangos-de-nutricion';
+import { escalado, gramosDesdeGramosPorKilo, nodosDelPlan, novedadesDelPeso, pesoAlDecimo, pesoMasNuevo, problemasDelPesoManual, rangosParaGuardar, rangosParaMostrar } from './rangos-de-nutricion';
 
 const NODOS = nodosDelPlan([
   { dayTypeId: 'd1', meals: [{ mealId: 'm1' }, { mealId: 'm2' }] },
@@ -178,5 +178,70 @@ test('API-PLN-02 · lo de un día tipo o una comida que el borrador ya no tiene 
   assert.deepEqual(sinM1niD2.dayTypes, [{ dayTypeId: 'd1', day: { fat: { unit: 'g', perKg: null, grams: { min: 60, max: 80 } } }, meals: [] }]);
   assert.deepEqual(rangosParaMostrar(null, NODOS, true), { bodyWeight: null, bodyWeightWithheld: false, dayTypes: [] });
   // La respuesta cumple el contrato.
-  assert.ok(RangosDelPlanSchema.safeParse({ planId: 'p', state: 'DRAFT', revision: 1, anthropometry: { enabled: true, latestWeight: null }, ...sinM1niD2 }).success);
+  assert.ok(RangosDelPlanSchema.safeParse({ planId: 'p', state: 'DRAFT', revision: 1, anthropometry: { enabled: true, latestWeight: null, usedMeasurement: null }, ...sinM1niD2 }).success);
+});
+
+test('la toma usada se corrigió o se anuló: se avisa en neutro, con el valor de hoy, y lo guardado no cambia', () => {
+  const ultimo80 = { measurementId: 'med-80', valueKg: 80, measuredOn: '2026-11-12' };
+  // La misma toma, corregida a 87 kg: es la última, con el mismo id, y antes no había aviso.
+  assert.deepEqual(novedadesDelPeso(REGISTRADO_78, { state: 'CURRENT', valueKg: 87 }, { measurementId: 'med-78', valueKg: 87, measuredOn: '2026-11-10' }), [{ tipo: 'corregido', valueKg: 87 }]);
+  // Anulada: queda una toma más vieja como la última; no es «más nueva», pero la usada ya no está vigente.
+  assert.deepEqual(novedadesDelPeso(REGISTRADO_78, { state: 'NOT_CURRENT' }, { measurementId: 'med-70', valueKg: 70, measuredOn: '2026-11-01' }), [{ tipo: 'no-vigente' }]);
+  assert.deepEqual(novedadesDelPeso(REGISTRADO_78, { state: 'NOT_CURRENT' }, null), [{ tipo: 'no-vigente' }]);
+  // Corregida y, además, un pesaje más nuevo: las dos cosas.
+  assert.deepEqual(novedadesDelPeso(REGISTRADO_78, { state: 'CURRENT', valueKg: 77.5 }, ultimo80), [
+    { tipo: 'corregido', valueKg: 77.5 },
+    { tipo: 'mas-nuevo', peso: ultimo80 },
+  ]);
+  // Vigente con el mismo valor, a mano o sin datos de la toma (sin Antropometría): nada que avisar de la toma.
+  assert.deepEqual(novedadesDelPeso(REGISTRADO_78, { state: 'CURRENT', valueKg: 78 }, { measurementId: 'med-78', valueKg: 78, measuredOn: '2026-11-10' }), []);
+  assert.deepEqual(novedadesDelPeso(A_MANO_80, { state: 'NOT_CURRENT' }, null), []);
+  assert.deepEqual(novedadesDelPeso(REGISTRADO_78, null, null), []);
+  // El contrato: volver a pedir el valor vigente de la misma toma es explícito.
+  assert.ok(EscribirRangosRequestSchema.safeParse({ expectedRevision: 1, bodyWeight: { source: 'RECORDED', measurementId: 'med-78', useCurrentValue: true }, dayTypes: [] }).success);
+  assert.equal(EscribirRangosRequestSchema.safeParse({ expectedRevision: 1, bodyWeight: { source: 'MANUAL', valueKg: 70, measuredOn: '2026-11-10', useCurrentValue: true }, dayTypes: [] }).success, false);
+});
+
+test('API-PLN-03 · con el peso retenido, lo que no se toca conserva sus g/kg y su peso; lo tocado va en gramos', () => {
+  const previo = rangosParaGuardar([dia({ protein: { unit: 'g_per_kg', min: 1.6, max: 2 }, fat: { unit: 'g', min: 60, max: 80 } }, [{ mealId: 'm1', range: { carbohydrate: { unit: 'g_per_kg', min: 3, max: 4 } } }])], REGISTRADO_78, NODOS);
+  assert.ok(previo.ok);
+  const retenido = { contenido: previo.contenido, pesoRetenido: true };
+  // El profesional no ve los g/kg: le vuelven en gramos (125 a 156; 234 a 312) y cambia solo las grasas del día.
+  const sinTocar = rangosParaGuardar([dia({ protein: { unit: 'g', min: 125, max: 156 }, fat: { unit: 'g', min: 50, max: 70 } }, [{ mealId: 'm1', range: { carbohydrate: { unit: 'g', min: 234, max: 312 } } }])], null, NODOS, retenido);
+  assert.ok(sinTocar.ok);
+  assert.deepEqual(sinTocar.contenido, {
+    bodyWeight: REGISTRADO_78,
+    dayTypes: [
+      {
+        dayTypeId: 'd1',
+        day: { protein: { unit: 'g_per_kg', perKg: { min: 1.6, max: 2 }, grams: { min: 125, max: 156 } }, fat: { unit: 'g', perKg: null, grams: { min: 50, max: 70 } } },
+        meals: [{ mealId: 'm1', range: { carbohydrate: { unit: 'g_per_kg', perKg: { min: 3, max: 4 }, grams: { min: 234, max: 312 } } } }],
+      },
+    ],
+  });
+  // Las proteínas cambiadas van en gramos; sin nada en g/kg, no queda peso.
+  const tocado = rangosParaGuardar([dia({ protein: { unit: 'g', min: 120, max: 156 } })], null, NODOS, retenido);
+  assert.ok(tocado.ok);
+  assert.deepEqual(tocado.contenido, { bodyWeight: null, dayTypes: [{ dayTypeId: 'd1', day: { protein: { unit: 'g', perKg: null, grams: { min: 120, max: 156 } } }, meals: [] }] });
+  // Con otro peso pedido, no se mezclan dos pesos: lo que vuelve en gramos queda en gramos.
+  const otroPeso = rangosParaGuardar([dia({ protein: { unit: 'g', min: 125, max: 156 }, fat: { unit: 'g_per_kg', min: 1, max: null } })], A_MANO_80, NODOS, retenido);
+  assert.ok(otroPeso.ok);
+  assert.deepEqual([otroPeso.contenido.bodyWeight, otroPeso.contenido.dayTypes[0]!.day!.protein!.unit], [A_MANO_80, 'g']);
+  // Sin el peso retenido (Antropometría habilitada), volver en gramos es pasar a gramos.
+  const visible = rangosParaGuardar([dia({ protein: { unit: 'g', min: 125, max: 156 } })], null, NODOS, { contenido: previo.contenido, pesoRetenido: false });
+  assert.ok(visible.ok);
+  assert.deepEqual([visible.contenido.bodyWeight, visible.contenido.dayTypes[0]!.day!.protein!.unit], [null, 'g']);
+});
+
+test('API-PLN-03 · lo guardado que vuelve sin tocar no se rechaza por el tope de 2.000 g', () => {
+  // 10 g/kg con 205 kg son 2.050 g: válido en g/kg, por encima del tope de lo escrito en gramos.
+  const pesado: PesoDeReferencia = { source: 'MANUAL', valueKg: 205, measuredOn: '2026-11-10', measurementId: null };
+  const previo = rangosParaGuardar([dia({ carbohydrate: { unit: 'g_per_kg', min: 10, max: null } })], pesado, NODOS);
+  assert.ok(previo.ok);
+  assert.equal(previo.contenido.dayTypes[0]!.day!.carbohydrate!.grams.min, 2050);
+  const vuelve = rangosParaGuardar([dia({ carbohydrate: { unit: 'g', min: 2050, max: null } }, [{ mealId: 'm1', range: { fat: { unit: 'g', min: null, max: 25 } } }])], null, NODOS, { contenido: previo.contenido, pesoRetenido: false });
+  assert.ok(vuelve.ok);
+  // Escrito a mano, el mismo valor en otro lugar sí se rechaza.
+  const escrito = rangosParaGuardar([dia({ carbohydrate: { unit: 'g', min: 2050, max: null } }, [], 'd2')], null, NODOS, { contenido: previo.contenido, pesoRetenido: false });
+  assert.deepEqual(!escrito.ok && escrito.issues, [{ code: 'RANGE_VALUE_OUT_OF_BOUNDS', path: 'dayTypes.0.day.carbohydrate.min' }]);
 });
