@@ -11,7 +11,8 @@
  * - **ED-21: se marcan varios y entran juntos.** Una casilla por fila (y los habituales, con un toque); lo creado a mano
  *   o importado queda marcado. Abajo, «Agregar 3 a Piernas A», con una prescripción opcional para todos (ED-22): entran
  *   en el orden marcado, y nada entra antes de «Agregar» (`varios-a-la-vez.ts`).
- * - «Crear manualmente» e «Importar desde wger» se abren adentro, con «Volver a la búsqueda».
+ * - «Crear un ejercicio propio» (con los parecidos del catálogo antes de crear, ED-21) e «Importar desde wger» se abren
+ *   adentro, con «Volver a la búsqueda».
  * - Al abrirse, el foco va al campo de búsqueda; cada vez que se abre, empieza vacío.
  * - Si los ejercicios habituales no se pueden leer, se dice: no es «todavía no marcaste ninguno».
  * - Si un ejercicio apareció por un nombre alternativo, se dice cuál: «Press de banca (bench press)» (DL-141).
@@ -49,6 +50,7 @@ import { useEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
 import { ImportacionDeWger } from './importacion';
 import { alternarMarcado, conLasZonas, COPY_VARIOS_A_LA_VEZ as V, sesionDeDonde, zonasDeLosResultados } from './varios-a-la-vez';
+import { busquedasDeParecidos, COPY_EJERCICIO_PROPIO as EP, elQueSeLlamaIgual, haySugerencias, parecidos, PAUSA_DE_LAS_SUGERENCIAS, POCOS_RESULTADOS } from './parecidos-del-catalogo';
 
 type Modo = 'buscar' | 'manual' | 'importar';
 
@@ -132,7 +134,7 @@ export function AgregarEjercicio({
             </button>
             <button type="button" className="boton boton--quieto" onClick={() => setModo('manual')}>
               <Icono nombre="mas" tamano={18} />
-              {COPY_ENTRENAMIENTO.crearManualmente}
+              {EP.crear}
             </button>
             <button type="button" className="boton boton--quieto" onClick={() => setModo('importar')}>
               <Icono nombre="descargar" tamano={18} />
@@ -450,7 +452,11 @@ function ContenidoDeAgregarEjercicio({
   );
 }
 
-/** «Crear manualmente»: un ejercicio propio. Solo se pide el nombre; lo crea y lo suma a la sesión. */
+/**
+ * «Crear un ejercicio propio» (ED-21): solo se pide el nombre y, mientras se escribe, se muestran los parecidos del
+ * catálogo, para usar uno en vez de duplicarlo (`parecidos-del-catalogo.ts`). Lo creado, o el parecido elegido, queda
+ * marcado y entra con «Agregar», como lo demás (EDT-17).
+ */
 function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: string; nombreInicial: string; onCreado: (e: EjercicioDeCatalogo) => void; onVolver: () => void }) {
   const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
   const intento = useClaveDeIntento();
@@ -458,6 +464,33 @@ function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: strin
   const [falta, setFalta] = useState<string | null>(null);
   const [fallo, setFallo] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
+  // ED-21: los parecidos del catálogo para el nombre escrito; una respuesta vieja no pisa a la nueva.
+  const [sugerencias, setSugerencias] = useState<{ readonly para: string; readonly estado: 'buscando' | 'falla' | 'listas'; readonly ejercicios: readonly EjercicioDeCatalogo[] } | null>(null);
+  const pedidoDeParecidos = useRef(0);
+  useEffect(() => {
+    const este = ++pedidoDeParecidos.current;
+    if (!haySugerencias(nombre)) return setSugerencias(null);
+    const espera = window.setTimeout(() => {
+      const { principal, otra } = busquedasDeParecidos(nombre);
+      setSugerencias({ para: nombre, estado: 'buscando', ejercicios: [] });
+      void (async () => {
+        const r = await api.buscarEjercicios(token, principal.slice(0, 80));
+        if (este !== pedidoDeParecidos.current || sesionPerdida(r)) return;
+        if (!r.ok) return setSugerencias({ para: nombre, estado: 'falla', ejercicios: [] });
+        let todos: readonly EjercicioDeCatalogo[] = r.datos.data;
+        if (todos.length < POCOS_RESULTADOS && otra) {
+          const r2 = await api.buscarEjercicios(token, otra);
+          if (este !== pedidoDeParecidos.current || sesionPerdida(r2)) return;
+          if (r2.ok) todos = [...todos, ...r2.datos.data];
+        }
+        setSugerencias({ para: nombre, estado: 'listas', ejercicios: todos });
+      })();
+    }, PAUSA_DE_LAS_SUGERENCIAS);
+    return () => window.clearTimeout(espera);
+  }, [nombre, token, sesionPerdida]);
+  const vigentes = sugerencias && sugerencias.para === nombre ? sugerencias : null;
+  const losParecidos = vigentes?.estado === 'listas' ? parecidos(nombre, vigentes.ejercicios) : [];
+  const igual = vigentes?.estado === 'listas' ? elQueSeLlamaIgual(nombre, vigentes.ejercicios) : null;
 
   async function crear(e: FormEvent) {
     e.preventDefault();
@@ -479,9 +512,38 @@ function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: strin
         <Icono nombre="izquierda" tamano={18} />
         Volver a la búsqueda
       </button>
-      <h3 className="agregar-item__titulo">{COPY_ENTRENAMIENTO.crearManualmente}</h3>
-      <p className="nota">Un ejercicio tuyo. Queda en el catálogo para volver a usarlo.</p>
-      <Campo id={`${id}-nombre`} etiqueta="Nombre del ejercicio" value={nombre} maxLength={120} onChange={(e) => setNombre(e.target.value)} error={falta} />
+      <h3 className="agregar-item__titulo">{EP.crear}</h3>
+      <p className="nota">{EP.queEs}</p>
+      <Campo id={`${id}-nombre`} etiqueta="Nombre del ejercicio" value={nombre} maxLength={120} onChange={(e) => setNombre(e.target.value)} error={falta} autoComplete="off" />
+      {/* ED-21: los parecidos, antes de crear. Elegir uno lo marca y vuelve a la búsqueda; crear sigue siendo un botón. */}
+      {/* La sección tiene un rótulo fijo; la región viva es solo la frase de estado: en cada tecla, el lector dice una
+          frase y no repite cada «Usar este». */}
+      <section className="parecidos-del-catalogo" aria-label={EP.parecidosDelCatalogo}>
+        <p className="nota parecidos-del-catalogo__estado" role="status">
+          {vigentes?.estado === 'buscando' ? EP.buscandoParecidos : null}
+          {vigentes?.estado === 'falla' ? EP.noSePudieronBuscar : null}
+          {vigentes?.estado === 'listas' && losParecidos.length === 0 ? EP.sinParecidos(nombre) : null}
+          {losParecidos.length > 0 ? <span className="visualmente-oculto">{EP.cuantosParecidos(losParecidos.length)}</span> : null}
+        </p>
+        {losParecidos.length > 0 ? (
+          <>
+            <h4 id={`${id}-parecidos`} className="parecidos-del-catalogo__titulo">
+              {EP.antesDeCrear}
+            </h4>
+            {igual ? <p className="parecidos-del-catalogo__igual">{EP.yaExiste(igual.name)}</p> : null}
+            <ul className="parecidos-del-catalogo__lista">
+              {losParecidos.map((p) => (
+                <li key={p.versionId}>
+                  <span>{p.name}</span>
+                  <button type="button" className="boton boton--secundario boton--compacto" aria-label={`${EP.usarEste}: ${p.name}`} onClick={() => onCreado(p)}>
+                    {EP.usarEste}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </section>
       <Ayuda titulo="Por qué solo se pide el nombre">
         <p>Las zonas musculares y el material didáctico se suman más adelante.</p>
       </Ayuda>
@@ -492,7 +554,7 @@ function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: strin
       ) : null}
       <div className="acciones">
         <button type="submit" className="boton boton--primario" disabled={creando}>
-          {creando ? 'Creando…' : 'Crear y agregar'}
+          {creando ? 'Creando…' : igual ? EP.crearIgual : EP.crearYMarcar}
         </button>
       </div>
     </form>

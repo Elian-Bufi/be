@@ -106,7 +106,7 @@ export function EsperanRespuesta({
                 <li key={e.clave} className="esperan__renglon" data-tipo="solicitud">
                   <span className="esperan__quien">{quien}</span>
                   <span className="esperan__que">{texto}</span>
-                  <button type="button" className="boton boton--enlace pendiente__enlace" aria-haspopup="dialog" aria-label={`${COPY_MESA.verLasSolicitudes}: ${quien}, ${texto}`} onClick={onVerSolicitudes}>
+                  <button type="button" className="boton boton--enlace pendiente__enlace" aria-label={`${COPY_MESA.verLasSolicitudes}: ${quien}, ${texto}`} onClick={onVerSolicitudes}>
                     {COPY_MESA.verLasSolicitudes}
                   </button>
                 </li>

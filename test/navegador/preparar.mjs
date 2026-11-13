@@ -29,6 +29,8 @@ export const RECORRIDOS = {
   sesion: { habilitado: ['NUTRICION'], datos: [] },
   pistas: { habilitado: ['NUTRICION'], datos: [] },
   primerPlan: { habilitado: ['NUTRICION'], datos: [] },
+  // ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito.
+  asistenteDeNutricion: { habilitado: ['NUTRICION'], datos: ['objetivo'] },
   borrador: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   // ED-01 (WP-EDITORES-PROFESIONAL): descartar la versión en preparación.
@@ -236,6 +238,7 @@ export async function datos(estado) {
       e.consentimientos[alcance] = consentId;
     }
 
+    if (r.datos.includes('objetivo')) await evaluacionYObjetivo(pro, e.ase.id);
     if (r.datos.includes('borrador')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
       const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;

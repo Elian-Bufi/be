@@ -3,7 +3,7 @@
 /**
  * «Mis habituales» en el plan de comidas (PF-09 bis; DL-109), el mismo juego que en entrenamiento:
  * - **alimentos habituales**: los que el profesional marca en «Agregar ítem» quedan arriba de los resultados, para
- *   elegirlos sin buscar (`agregar-item.tsx`); marcar y quitar es una sola operación (API-HAN-02), con actualización
+ *   elegirlos sin buscar (`cuadro-de-la-opcion.tsx`); marcar y quitar es una sola operación (API-HAN-02), con actualización
  *   optimista; acá está la lectura, que dice si falló;
  * - **comidas habituales**: «Guardar como habitual» sobre una comida del borrador (nombre, el interruptor de cantidades
  *   apagado —DL-108 D-2— y cada nota de ítem para confirmarla o vaciarla —D-3—); guardar otra con el mismo nombre la

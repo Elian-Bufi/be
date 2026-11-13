@@ -7331,15 +7331,47 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
-.dialogo--solicitudes {
-  width: min(52rem, calc(100vw - 2rem));
-  max-width: none;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
+/* ED-41: «Solicitudes enviadas», una sección a todo el ancho con sus filtros (antes, un diálogo). */
+.solicitudes-enviadas {
+  margin-top: 1.5rem;
 }
 
-.dialogo--solicitudes h2:focus {
+.solicitudes-enviadas:focus {
   outline: none;
+}
+
+.solicitudes-enviadas:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 4px;
+}
+
+.solicitudes-enviadas__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.5rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.solicitudes-enviadas__estados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.solicitudes-enviadas__persona {
+  display: grid;
+  gap: 0.25rem;
+  font-weight: 600;
+}
+
+.solicitudes-enviadas__persona select {
+  min-height: 44px;
+  min-width: min(16rem, 100%);
+}
+
+.solicitudes-enviadas__vence {
+  display: block;
 }
 
 /* En una ventana angosta la tabla pasa a tarjetas (`.tabla`): «Abrir» va a la izquierda, con lo demás, y cada dato
@@ -16311,6 +16343,19 @@ p.cifra-del-espacio__desglose {
   margin: 0.5rem 0 0;
 }
 
+/* El buscador de preguntas: el campo a lo ancho que da, hasta 32rem, con su ayuda debajo. */
+.preguntas-del-pedido__buscador {
+  margin: 0.5rem 0;
+}
+
+.preguntas-del-pedido__buscador input {
+  width: min(32rem, 100%);
+}
+
+.preguntas-del-pedido__titulo-de-la-parte {
+  font-weight: 700;
+}
+
 /* ═══ ED-41 · Las dos entradas del vínculo, con su subtítulo ════════════════════════════════════════════════════════ */
 .boton__con-subtitulo {
   display: inline-flex;
@@ -16406,6 +16451,301 @@ p.cifra-del-espacio__desglose {
 .chip-de-zona:focus-visible {
   outline: 3px solid var(--foco);
   outline-offset: 2px;
+}
+
+/* ═══ ED-33 · «Copiar desde otra comida» y «Usar una comida habitual»: una lista para elegir una sola cosa ══════════ */
+.eleccion-de-otra-comida {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.eleccion-de-otra-comida__grupo {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.eleccion-de-otra-comida__grupo legend {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.eleccion-de-otra-comida__opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.eleccion-de-otra-comida__opcion:has(input:checked) {
+  background: var(--fondo-suave);
+}
+
+/* ═══ ED-31 · La opción en un cuadro (maqueta 06): la opción y el buscador a la izquierda; los totales, al costado ═══ */
+.cuadro-de-la-opcion__cuerpo {
+  display: grid;
+  gap: 1rem 1.5rem;
+}
+
+@media (min-width: 62rem) {
+  .cuadro-de-la-opcion__cuerpo {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    align-items: start;
+  }
+}
+
+.cuadro-de-la-opcion__nombre input {
+  width: 100%;
+}
+
+.cuadro-de-la-opcion__costado {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.cuadro-de-la-opcion__tarjeta {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.cuadro-de-la-opcion__tarjeta h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.cuadro-de-la-opcion__tarjeta p {
+  margin: 0.3rem 0 0;
+}
+
+.cuadro-de-la-opcion__totales {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.cuadro-de-la-opcion__totales div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cuadro-de-la-opcion__totales dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cuadro-de-la-opcion__otro {
+  margin: 0.25rem 0 0;
+}
+
+.buscador-de-la-opcion {
+  margin-top: 0.75rem;
+}
+
+.buscador-de-la-opcion__campo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 0.75rem;
+  border: 2px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.buscador-de-la-opcion__campo:focus-within {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.buscador-de-la-opcion__campo input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  outline: none;
+}
+
+.buscador-de-la-opcion__pista {
+  white-space: nowrap;
+}
+
+.buscador-de-la-opcion__estado {
+  min-height: 1.4em;
+  margin: 0.25rem 0;
+}
+
+.buscador-de-la-opcion__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+/* Cada fila de la grilla: el alimento (se suma con un clic) y su estrella de habitual, en su propia celda (DL-109). */
+.buscador-de-la-opcion__resultado {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.buscador-de-la-opcion__alimento {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+  cursor: pointer;
+}
+
+.buscador-de-la-opcion__estrella {
+  flex: none;
+}
+
+/* Con el teclado en la estrella, la marca va en ella y no en el alimento. */
+.buscador-de-la-opcion__estrella[data-celda-marcada] .alimentos-del-catalogo__habitual {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.buscador-de-la-opcion__resultado:first-child {
+  border-top: 0;
+}
+
+.buscador-de-la-opcion__resultado[data-marcado] {
+  background: var(--fondo-suave);
+  box-shadow: inset 4px 0 0 var(--foco);
+}
+
+.buscador-de-la-opcion__nombre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.buscador-de-la-opcion__valores {
+  font-variant-numeric: tabular-nums;
+}
+
+.buscador-de-la-opcion__demostracion {
+  margin-right: 0.4rem;
+}
+
+/* ═══ ED-32 · «Hay una versión 3 de esta receta»: un recuadro sin color de alarma, con lo que cambia y el botón ═══════ */
+.version-nueva-de-la-receta {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde-control);
+  border-left: 4px solid var(--foco);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.version-nueva-de-la-receta p {
+  margin: 0 0 0.35rem;
+}
+
+.version-nueva-de-la-receta p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.version-nueva-de-la-receta .lista-compacta {
+  margin: 0 0 0.5rem;
+}
+
+/* ═══ ED-21 · «Crear un ejercicio propio»: los parecidos del catálogo, antes de crear ═════════════════════════════════ */
+.parecidos-del-catalogo {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.parecidos-del-catalogo__titulo {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.parecidos-del-catalogo__igual {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.parecidos-del-catalogo__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.parecidos-del-catalogo__lista li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.parecidos-del-catalogo__lista li:first-child {
+  border-top: 0;
+}
+
+/* ═══ ED-30 · El asistente de Nutrición: la estación queda montada detrás, oculta ═══════════════════════════════════ */
+.editor-de-nutricion__zonas[hidden] {
+  display: none;
+}
+
+.asistente__comida {
+  margin: 0.75rem 0;
+}
+
+.asistente__opciones {
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.asistente__opciones li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.asistente__objetivo {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.asistente__objetivo h4,
+.asistente__revisar h4 {
+  margin: 0 0 0.4rem;
 }
 
 /* ═══ §5.8 · La fuerza estimada (ED-72 a ED-76; maquetas 14 a 18) ═════════════════════════════════════════════════════

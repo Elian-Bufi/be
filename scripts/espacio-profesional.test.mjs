@@ -242,10 +242,10 @@ test('la acción principal de la ficha: revisión de la semana, después el borr
   // Lo que el profesional no puede leer no cuenta.
   assert.equal(accionDeLaFicha(dominios(ajeno, ajeno), HOY), null);
   // Un área legible sin ningún dato llega con el resumen en null: es un área sin plan, y la acción es empezarlo.
-  assert.deepEqual(accionDeLaFicha(dominios(legible(null), ajeno), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan', vista: 'plan', extra: '' });
+  assert.deepEqual(accionDeLaFicha(dominios(legible(null), ajeno), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan', vista: 'plan', extra: '&asistente=1' });
   // La dirección: el área, la vista y, para la revisión, el formulario abierto (`preparar=1`); el id va codificado.
   assert.equal(rutaDeLaAccion(accionDeLaFicha(dos, HOY), 'a b'), '/pro/advisees/training?id=a%20b&vista=revisiones&preparar=1');
-  assert.equal(rutaDeLaAccion(accionDeLaFicha(dominios(legible(resumen()), ajeno), HOY), 'x'), '/pro/advisees/nutrition?id=x&vista=plan');
+  assert.equal(rutaDeLaAccion(accionDeLaFicha(dominios(legible(resumen()), ajeno), HOY), 'x'), '/pro/advisees/nutrition?id=x&vista=plan&asistente=1');
 });
 
 // ─── La evaluación que el objetivo propone de entrada (bloque 5) ───────────────────────────────────────────────────
@@ -315,7 +315,7 @@ test('el objetivo propone la evaluación más reciente; sin evaluaciones, ningun
   test('TEST-TAG-010 · 3. el borrador, después de las revisiones; 4. empezar, al final', () => {
     assert.equal(accionDeLaFicha(dominios(legible(resumen({ activePlan: plan('2026-11-30'), draftPlan: borrador })), ajeno), HOY).tipo, 'borrador');
     assert.equal(accionDeLaFicha(dominios(legible(resumen()), legible(resumen({ activePlan: plan('2026-11-30'), draftPlan: borrador }))), HOY).texto, 'Seguir el borrador de Entrenamiento', 'el borrador gana a empezar en la otra área');
-    assert.deepEqual(accionDeLaFicha(dominios(legible(resumen()), legible(resumen({ activePlan: plan('2026-11-30') }))), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan de Nutrición', vista: 'plan', extra: '' });
+    assert.deepEqual(accionDeLaFicha(dominios(legible(resumen()), legible(resumen({ activePlan: plan('2026-11-30') }))), HOY), { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan de Nutrición', vista: 'plan', extra: '&asistente=1' });
   });
 
   test('TEST-TAG-010 · la cadena entera, de un eslabón al siguiente, como se cierra un ciclo', () => {
