@@ -821,8 +821,10 @@ export function EditorDePlan({
     ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
   ];
   // TB-48: lo que queda sin completar no impide nada; se dice aparte, cada cosa con su lugar.
-  // PG-10: los iguales del mismo ejercicio, en un renglón.
-  const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar) : [];
+  // PG-10: los iguales del mismo ejercicio, en un renglón. Dentro del cuadro modal no se ofrece «Completar»: su
+  // «Deshacer» vive en el aviso flotante, que con el cuadro abierto queda inerte y fuera del alcance del lector (revisión
+  // de la tanda A). Cada aviso conserva su «Ir»; «Completar» sigue en el panel y en el asistente.
+  const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar).map((c) => ({ ...c, completar: null })) : [];
   const nombresDeLaVigente = vigente?.plan ? nombresDe(vigente.plan) : {};
   // Frente a la vigente; en la primera versión, frente a nada: todo es «agregado». Sin la vigente leída, nada.
   const baseDeLaComparacion = vigente?.plan ? aEntrada(vigente.plan) : !version.predecessorPlanId ? [] : null;
@@ -1469,8 +1471,8 @@ export function EditorDePlan({
                 <p className="nota">{CE.nadaSinCompletar}</p>
               ) : (
                 <ul className="estacion__lista-del-panel">
-                  {sinCompletarEnVivo.map((x, n) => (
-                    <li key={n}>
+                  {sinCompletarEnVivo.map((x) => (
+                    <li key={x.texto}>
                       <RenglonDeAviso cosa={x} textoIr={CA.irEnLaEstacion} />
                     </li>
                   ))}
@@ -2081,8 +2083,9 @@ export function EditorDePlan({
                 <p className="nota">{CE.nadaSinCompletar}</p>
               ) : (
                 <ul className="estacion__lista-del-panel">
-                  {sinCompletarEnVivo.map((x, n) => (
-                    <li key={n}>
+                  {/* La clave es el texto del renglón, no la posición: lo abierto no pasa a la fila siguiente (PG-10). */}
+                  {sinCompletarEnVivo.map((x) => (
+                    <li key={x.texto}>
                       <RenglonDeAviso cosa={x} textoIr={CE.irACorregir} />
                     </li>
                   ))}

@@ -148,9 +148,10 @@ export function AntesDeActivar({
               <>
                 <p className="nota">{A.sinCompletar}</p>
                 <ul className="antes-de-activar__lista" data-sin-completar>
-                  {sinCompletar.map((c, n) => (
-                    <li key={n}>
-                      {/* PG-10: un grupo dice el rango, se abre y, sin repeticiones, ofrece «Completar». */}
+                  {sinCompletar.map((c) => (
+                    <li key={c.texto}>
+                      {/* PG-10: un grupo dice el rango y se abre. «Completar» no se ofrece acá: su «Deshacer» no se
+                          alcanza con el cuadro modal abierto (el editor lo saca antes de pasar la lista). */}
                       <RenglonDeAviso cosa={c} textoIr={A.ir} />
                     </li>
                   ))}

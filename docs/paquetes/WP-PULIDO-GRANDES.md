@@ -642,9 +642,13 @@ editor (TB-48 y TEST-EDP-026) cambian solo la forma del cálculo que leen: ahora
 - **PG-T37 · El campo de fecha:** un botón con la fecha en palabras y un calendario debajo, no un texto para escribir; «Hoy» cuando entra en los límites y «Quitar la fecha» donde el nativo dejaba vaciar (los períodos y la comparación a mano). Los meses cortos son los del resto del website («sept»).
 - **PG-T38 · «¿Cuándo la revisás?» sin mínimo:** el campo nativo no lo tenía y se conserva así. *Pregunta a Dirección:* ¿el mínimo tendría que ser mañana?
 - **PG-T39 · La página no encontrada:** sin la campana de novedades (quien llega no siempre tiene sesión) y fuera de los buscadores.
+- **PG-T40 · Los campos de fecha Y HORA, todavía nativos (revisión de la tanda A):** son cinco: la fecha y hora de la evaluación (Nutrición y Entrenamiento), «Vigente desde» de los objetivos (Nutrición y Entrenamiento) y la toma de antropometría. Quedan como están hasta que `CampoDeFecha` tenga la hora en 24 h (después del 25/11). TEST-PG-013 los lista uno por uno, así que uno nuevo pone la prueba en rojo. La alternativa era la variante con hora ya, pero no entraba antes del 23/11 con su revisión.
+- **PG-T41 · «Completar» no se ofrece dentro del cuadro «Antes de activar» (revisión de la tanda A):** su «Deshacer» vive en el aviso flotante, que con el cuadro modal abierto queda inerte y el lector no lo alcanza. En el cuadro, cada aviso conserva su «Ir»; «Completar» sigue en el panel y en el asistente. Las filas usan el texto del renglón como clave, para que lo abierto no pase a la fila siguiente. La alternativa era el «Deshacer» dentro del cuadro, con `role=status`.
+
+**Lo que quedó de la revisión de la tanda A para el 18/11** (cuando vuelvan las revisiones adversarias): un recorrido en el navegador que elija una fecha con el teclado y compruebe el valor AAAA-MM-DD, que Escape cierre el calendario sin cerrar el cuadro y que `/no-existe` responda 404; el foco después de «Completar» en el panel; y las seis observaciones de severidad baja.
 
 **Lo que falta antes de integrar, fuera de esta rama:**
-1. **La copia `be.apk` (PG-D5):** la última publicación de hoy no la tiene, y sin ella el QR y el botón dan «no encontrado». Hay que subirla a la publicación vigente y a cada una que siga.
+1. ~~**La copia `be.apk` (PG-D5)**~~: hecho el 2026-11-13, con el sí de Dirección. La 0.27 tiene la copia (mismo SHA-256) y el paso quedó en `docs/DESPLIEGUE.md`.
 2. **La política de contenido de `render.yaml`:** sumar `https://api.github.com` a `connect-src`. Sin eso, la línea de la versión no se dibuja en `test`; el QR y el botón andan igual.
 3. **El código 404 en `test`** se mide después de integrar, con una dirección inventada.
 4. **La mirada en pantalla** (Azul noche y Claro, 360 y 1440 px, el QR a 30 cm en 1366 × 768, el lector de pantalla en el calendario): queda para la evidencia de la tanda, con el website de `test`.

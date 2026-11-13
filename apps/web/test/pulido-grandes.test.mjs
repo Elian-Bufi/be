@@ -201,7 +201,11 @@ test('TEST-PG-009 · «Completar» escribe solo las series del grupo y solo las 
 
 test('TEST-PG-009 · el editor agrupa lo sin completar en el cuadro y en el panel; el grupo se abre y conserva «Ir»', () => {
   const editor = leer('src/app/pro/advisees/training/editor.tsx');
-  assert.match(editor, /const sinCompletarAlActivar = confirmar \? enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), conSuLugar\) : \[\];/);
+  // Dentro del cuadro modal, sin «Completar»: su «Deshacer» no se alcanza con el cuadro abierto (revisión de la tanda A).
+  assert.match(editor, /const sinCompletarAlActivar = confirmar \? enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), conSuLugar\)\.map\(\(c\) => \(\{ \.\.\.c, completar: null \}\)\) : \[\];/);
+  // Las filas, con una clave estable: lo abierto no pasa a la fila siguiente.
+  assert.doesNotMatch(editor, /sinCompletarEnVivo\.map\(\(x, n\) =>/);
+  assert.doesNotMatch(leer('src/app/pro/advisees/cuadro-antes-de-activar.tsx'), /sinCompletar\.map\(\(c, n\) =>/);
   assert.match(editor, /const sinCompletarEnVivo = enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), enElPanel\);/);
   // Lo que impide activar no cambia: uno por renglón, y el principal cuenta lo mismo.
   assert.match(editor, /\.\.\.impideGuardar\.map\(\(p\) => conSuLugar\(p, PROBLEMA\[p\.code\]/);
@@ -237,6 +241,16 @@ test('TEST-PG-013 · ningún campo de fecha nativo en el website del profesional
   assert.ok(pro.length > 50);
   const nativos = pro.filter((r) => /type=["']date["']|type=\{["']date["']\}/.test(readFileSync(r, 'utf8'))).map(nombre);
   assert.deepEqual(nativos, [], 'cada campo de fecha es CampoDeFecha');
+  // PG-T40 (a ratificar; revisión de la tanda A): los cinco campos de fecha Y HORA siguen nativos hasta que CampoDeFecha
+  // tenga la hora en 24 h. La lista es cerrada: uno nuevo, o uno en otro archivo, pone la prueba en rojo.
+  const conHora = pro.flatMap((r) => [...readFileSync(r, 'utf8').matchAll(/type=["']datetime-local["']|type=\{["']datetime-local["']\}/g)].map(() => nombre(r)));
+  assert.deepEqual(conHora.sort(), [
+    'src/app/pro/advisees/anthropometry/preparacion.tsx',
+    'src/app/pro/advisees/nutrition/formularios.tsx',
+    'src/app/pro/advisees/nutrition/formularios.tsx',
+    'src/app/pro/advisees/training/resumen.tsx',
+    'src/app/pro/advisees/training/resumen.tsx',
+  ], 'los campos de fecha y hora nativos que quedan son los cinco declarados en PG-T40');
   const usos = pro.flatMap((r) => [...readFileSync(r, 'utf8').matchAll(/<CampoDeFecha\b/g)].map(() => nombre(r)));
   assert.ok(usos.length >= 14, `se esperaban los catorce campos y hay ${usos.length}`);
   for (const r of ['src/app/pro/advisees/control-de-periodo.tsx', 'src/app/pro/advisees/cuando-la-revisas.tsx', 'src/app/pro/advisees/fuerza/serie-observada.tsx', 'src/app/pro/advisees/periodo.tsx', 'src/app/pro/advisees/seguimiento/analizar.tsx', 'src/app/pro/advisees/training/agenda-del-plan.tsx']) {
