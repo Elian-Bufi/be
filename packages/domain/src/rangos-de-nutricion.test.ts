@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { EscribirRangosRequestSchema, RangosDelPlanSchema, type PesoDeReferencia, type RangosDeDiaTipoEntrada } from './contratos-rangos-de-nutricion';
-import { escalado, gramosDesdeGramosPorKilo, nodosDelPlan, pesoMasNuevo, problemasDelPesoManual, rangosParaGuardar, rangosParaMostrar } from './rangos-de-nutricion';
+import { escalado, gramosDesdeGramosPorKilo, nodosDelPlan, pesoAlDecimo, pesoMasNuevo, problemasDelPesoManual, rangosParaGuardar, rangosParaMostrar } from './rangos-de-nutricion';
 
 const NODOS = nodosDelPlan([
   { dayTypeId: 'd1', meals: [{ mealId: 'm1' }, { mealId: 'm2' }] },
@@ -50,6 +50,11 @@ test('lo desconocido nunca es cero: sin valor, sin peso o con más decimales, no
   }
   assert.equal(escalado('1,6', 2), null);
   assert.equal(escalado(1.1, 1), 11);
+});
+
+test('el peso registrado se usa al décimo de kilo, con la mitad hacia arriba', () => {
+  assert.deepEqual([72.35, 72.3499, 78, 80.05, 64.25].map(pesoAlDecimo), [72.4, 72.3, 78, 80.1, 64.3]);
+  assert.deepEqual([0, -1, Number.NaN].map(pesoAlDecimo), [null, null, null]);
 });
 
 test('API-PLN-03 · en gramos se guarda lo escrito; en g/kg, los gramos y el peso del que salieron', () => {

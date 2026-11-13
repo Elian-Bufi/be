@@ -118,6 +118,7 @@ import { CarteraResponseSchema } from './contratos-cartera';
 import { ColaDeRevisionesResponseSchema } from './contratos-cola-de-revisiones';
 import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
 import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
+import { EscribirRangosRequestSchema, RangosDelPlanResponseSchema } from './contratos-rangos-de-nutricion';
 import { ListaDeSeriesObservadasResponseSchema, RegistrarSerieObservadaRequestSchema, SerieObservadaResponseSchema, SucederSerieObservadaRequestSchema, SucesionDeSerieObservadaResponseSchema } from './contratos-fuerza';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
@@ -1151,6 +1152,35 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: EstimacionDeLasOpcionesResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-20, TB-38) y DL-167 (ED-31, ED-D6) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL §8.3',
+  },
+  {
+    id: 'API-PLN-02',
+    metodo: 'get',
+    ruta: '/nutrition/plans/{planId}/ranges',
+    resumen:
+      'Los rangos de macronutrientes del plan (TB-39; ED-34; decisión de Dirección del 2026-11-13): por día tipo y por comida, las proteínas, los carbohidratos y las grasas con su mínimo y su máximo, en g o en g por kg. El plan guarda los gramos y el peso del que salieron (kg, fecha y origen: registrado o a mano), y se devuelven tal cual: un pesaje nuevo no los mueve, solo aparece como anthropometry.latestWeight. El peso registrado se lee con el PDP de Antropometría: si la persona no se lo habilitó a este profesional, no se devuelve por ningún camino (bodyWeightWithheld, sin el peso ni los g por kg; latestWeight en null). Las kcal no van acá. Solo el profesional del plan; la persona, otro profesional, lo descartado o lo inexistente: el mismo 404. planId es el id de la versión.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RangosDelPlanResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-17, TB-39) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL ED-34 y EDT-61 a EDT-66',
+  },
+  {
+    id: 'API-PLN-03',
+    metodo: 'put',
+    ruta: '/nutrition/plans/{planId}/ranges',
+    resumen:
+      'Escribir los rangos de un borrador (TB-39; ED-34): reemplaza todos; ninguno es obligatorio. Los g por kg se pasan a gramos en el servidor (g/kg × kg, al gramo, la mitad hacia arriba) con el peso pedido: el último registrado que el profesional puede leer en Antropometría (por su medición; el valor y la fecha los pone el servidor), el que ya estaba guardado, o uno a mano (20 a 350 kg, un decimal, sin fecha futura). Sin Antropometría habilitada, sin la medición o sin peso: 422 BODY_WEIGHT_NOT_AVAILABLE, el mismo para los tres. Una medición que ya no es la última: 422 BODY_WEIGHT_OUTDATED. Un día tipo o una comida que el borrador no tiene, un rango vacío o un valor fuera de sus topes: 422 con su lugar. Concurrencia por expectedRevision (la revisión de los rangos, aparte de la versión del borrador). Una versión activada: 422 PLAN_NOT_EDITABLE.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EscribirRangosRequestSchema,
+    exitos: [{ status: 200, schema: RangosDelPlanResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['VERSION_CONFLICT'],
+      422: ['PLAN_NOT_EDITABLE', 'VALIDATION_FAILED'],
+    },
+    fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-17, TB-39) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL ED-34 y EDT-61 a EDT-66',
   },
   {
     id: 'API-PLN-07',
@@ -4427,6 +4457,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-NUT-08',
   'API-NUT-09',
   'API-PLN-01',
+  'API-PLN-02',
   'API-NUT-16',
   'API-NUT-17',
   'API-NUT-19',
@@ -4474,7 +4505,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
 // API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-PLN-03', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

@@ -2647,6 +2647,23 @@ it('TEST-CT (WP-EDITORES-PROFESIONAL): FZA-01 a 03, HAB-06 a 08, HAN-06 a 08 y P
   await pn.get(totales(ajeno)).expect(404);
   await conSesion(app, n.ase.token).get(totales(b.planId)).expect(404);
   await request(servidor).get(totales(b.planId)).expect(401);
+
+  // PLN-02 y 03: los rangos de macronutrientes, con el peso a mano (este profesional no tiene Antropometría).
+  const rangos = (planId: string) => `/api/v1/nutrition/plans/${planId}/ranges`;
+  const dayTypeId = (b.body.dayTypes as { dayTypeId: string }[])[0]!.dayTypeId;
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+  const conRangos = { expectedRevision: 0, bodyWeight: { source: 'MANUAL', valueKg: 70, measuredOn: hoy }, dayTypes: [{ dayTypeId, day: { protein: { unit: 'g_per_kg', min: 1.6, max: 2 } }, meals: [] }] };
+  await pn.get(rangos(b.planId)).expect(200);
+  await pn.get(`${rangos(b.planId)}?x=1`).expect(400);
+  await pn.get(rangos(ajeno)).expect(404);
+  await conSesion(app, n.ase.token).get(rangos(b.planId)).expect(404);
+  await request(servidor).get(rangos(b.planId)).expect(401);
+  await pn.put(rangos(b.planId)).send(conRangos).expect(200);
+  await pn.put(rangos(b.planId)).send(conRangos).expect(409);
+  await pn.put(rangos(b.planId)).send({ ...conRangos, expectedRevision: 1, bodyWeight: { source: 'RECORDED', measurementId: ajeno } }).expect(422);
+  await pn.put(rangos(b.planId)).send({ ...conRangos, extra: 1 }).expect(400);
+  await pn.put(rangos(ajeno)).send(conRangos).expect(404);
+  await request(servidor).put(rangos(b.planId)).send(conRangos).expect(401);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

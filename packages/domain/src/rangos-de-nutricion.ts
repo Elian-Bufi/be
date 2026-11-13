@@ -67,6 +67,16 @@ export function gramosDesdeGramosPorKilo(gramosPorKilo: number | null | undefine
   return Math.floor((a * b + 500) / 1000);
 }
 
+/**
+ * El peso registrado, al décimo de kilo (la mitad hacia arriba), que es con lo que se hace la cuenta: una toma de
+ * 72,35 kg se usa como 72,4 kg, y así se dice. `null` si no es un peso positivo.
+ */
+export function pesoAlDecimo(kg: number): number | null {
+  if (!Number.isFinite(kg) || kg <= 0) return null;
+  // Las tomas guardan hasta cuatro decimales: el margen absorbe el error de coma flotante de n × 10.
+  return Math.floor(kg * 10 + 0.5 + 1e-7) / 10;
+}
+
 /** Lo que tiene de malo un peso cargado a mano: fuera de los topes, con más de un decimal o con una fecha futura. */
 export function problemasDelPesoManual(valueKg: number, measuredOn: string, hoy: string, path = 'bodyWeight'): ValidationIssue[] {
   const t = TOPES_DE_LOS_RANGOS.peso;
