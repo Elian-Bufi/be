@@ -21,8 +21,9 @@ export const COPY_PRESCRIPCION_HABITUAL = {
   deQueEjercicio: 'Las series de',
   nombre: 'Nombre',
   ejemplo: 'Por ejemplo, «Mi fuerza 5×3 · RIR 1».',
-  seGuarda: 'Se guardan las series, sus repeticiones y objetivos, el criterio de intensidad, el descanso y las bases. Lo ves solo vos.',
+  seGuarda: 'Se guardan las series, sus repeticiones y objetivos, el criterio de intensidad (sin la referencia del % RM), el descanso, las bases y los parámetros. Lo ves solo vos.',
   noSeGuarda: (que: readonly string[]) => `No se guardan ${que.join(' ni ')}.`,
+  escritos: (cuales: readonly string[]) => `Se guardan también los parámetros escritos ${cuales.join(', ')}: revisá que no nombren a la persona, porque la habitual se aplica a otras.`,
   guardar: 'Guardar la prescripción',
   reemplazar: 'Reemplazar la que se llama así',
   seReemplaza: (nombre: string) => `Ya tenés una prescripción habitual llamada «${nombre}»: se reemplaza por esta.`,
@@ -144,6 +145,11 @@ export function DialogoGuardarPrescripcionHabitual({
           {guardado.seQuita.length > 0 ? (
             <p className="nota" data-no-se-guarda>
               {C.noSeGuarda(guardado.seQuita)}
+            </p>
+          ) : null}
+          {guardado.seGuardanEscritos.length > 0 ? (
+            <p className="nota" data-se-guardan-escritos>
+              {C.escritos(guardado.seGuardanEscritos)}
             </p>
           ) : null}
         </>

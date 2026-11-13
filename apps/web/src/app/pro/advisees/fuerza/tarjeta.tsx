@@ -20,7 +20,10 @@ import type { LecturaDeFuerza } from './lectura-de-fuerza';
 
 export const COPY_TARJETA_DE_FUERZA = {
   loRegistrado: 'Lo registrado',
-  desdeElInicio: 'desde el inicio del acompañamiento',
+  // La lectura es la del último año, recortada al inicio del acompañamiento (`lectura-de-fuerza`).
+  enElUltimoAnio: 'en el último año',
+  orientativaDeSesion: 'Orientativa: esa sesión no tuvo series de hasta 10 repeticiones equivalentes.',
+  orientativaObservada: 'Orientativa: la serie observada tiene de más de 10 a 12 repeticiones equivalentes.',
   comoSeCalculo: 'Cómo se calculó',
   verEvolucion: 'Ver evolución',
   registrar: 'Registrar una serie observada',
@@ -105,12 +108,13 @@ export function TarjetaDeFuerza({
           <p>
             {laSerie(p)} · {quienLaEscribio(p, nombres.deQuien(p.writtenBy, asesoradoId))}
           </p>
-          {e.banda === 'ORIENTATIVA' ? <p className="nota">Orientativa: esa sesión no tuvo series de hasta 10 repeticiones equivalentes.</p> : null}
+          {e.banda === 'ORIENTATIVA' ? <p className="nota">{p.source === 'OBSERVED' ? C.orientativaObservada : C.orientativaDeSesion}</p> : null}
           <p className="tarjeta-de-fuerza__acciones">
             <button type="button" className="boton boton--enlace" data-como-se-calculo-abrir onClick={() => onComoSeCalculo(p)}>
               {C.comoSeCalculo}
             </button>
-            <Enlace href={haciaLaEvolucion(asesoradoId, exerciseId, e.unidad)}>{C.verEvolucion}</Enlace>
+            {/* Un valor orientativo está en la evolución con «Incluir las de más de 10 a 12» encendido. */}
+            <Enlace href={haciaLaEvolucion(asesoradoId, exerciseId, e.unidad, e.banda === 'ORIENTATIVA')}>{C.verEvolucion}</Enlace>
             {registrar}
           </p>
         </div>
@@ -122,7 +126,7 @@ export function TarjetaDeFuerza({
     <section className="tarjeta-de-fuerza" aria-label={`${COPY_FUERZA.titulo} · ${nombre}`} data-tarjeta-de-fuerza>
       <p className="tarjeta-de-fuerza__encabezado">
         <span className="ejercicio-del-plan__subtitulo">{C.loRegistrado}</span>
-        <span className="nota">{C.desdeElInicio}</span>
+        <span className="nota">{C.enElUltimoAnio}</span>
       </p>
       <div className="tarjeta-de-fuerza__caja">
         {titulo}

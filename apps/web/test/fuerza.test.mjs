@@ -158,3 +158,148 @@ test('§5.8 · los textos de la vertical pasan la guardia de fuerza y de Entrena
   assert.deepEqual(terminosProhibidosDeFuerzaEn('subió un 5 %'), ['%']);
   assert.deepEqual(terminosProhibidosDeFuerzaEn('tu nueva marca personal'), ['marca personal']);
 });
+
+// ─── Revisión adversaria del 13/11 ─────────────────────────────────────────────────────────────────────────────
+
+test('TEST-EDP-066 (revisión del 13/11) · el cuadro de la carga arranca de nuevo cada vez: ninguna elegida, y el % RM de la prescripción de ese momento', () => {
+  const p75 = { intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: null } } };
+  assert.deepEqual(F.entradaDelCuadroDeLaCarga(p75, 'kg'), { elegida: null, porcentaje: '75', paso: 2.5, sentido: 'ABAJO', propia: null });
+  assert.equal(F.entradaDelCuadroDeLaCarga({ intensity: { criterion: 'PERCENT_RM', target: { value: 72.5 } } }, 'lb').porcentaje, '72,5');
+  assert.equal(F.entradaDelCuadroDeLaCarga({ intensity: { criterion: 'PERCENT_RM', target: { value: 72.5 } } }, 'lb').paso, 5);
+  assert.equal(F.entradaDelCuadroDeLaCarga({ intensity: { criterion: 'RIR', target: { value: 2 } } }, 'kg').porcentaje, '');
+  // El estado se reinicia al entrar al paso y al cerrar, con la prescripción de ese momento (no la de cuando se montó).
+  const hook = readFileSync(new URL('../src/app/pro/advisees/fuerza/carga-desde-la-estimacion.tsx', import.meta.url), 'utf8');
+  assert.match(hook, /const entrada = entradaDelCuadroDeLaCarga\(prescripcion, unidad\);/);
+  assert.match(hook, /const reiniciar = \(\) => \{\n\s*setElegida\(entrada\.elegida\);\n\s*setPorcentaje\(entrada\.porcentaje\);\n\s*setPaso\(entrada\.paso\);\n\s*setSentido\(entrada\.sentido\);\n\s*setPropia\(entrada\.propia\);/);
+  const detalle = readFileSync(new URL('../src/app/pro/advisees/fuerza/detalle-del-ejercicio.tsx', import.meta.url), 'utf8');
+  assert.match(detalle, /if \(p\.tipo === 'carga'\) carga\.reiniciar\(\);/);
+  assert.match(detalle.slice(detalle.indexOf('const cerrar = '), detalle.indexOf('const abrir = ')), /carga\.reiniciar\(\);/);
+});
+
+test('ED-76 (revisión del 13/11) · RM-43 en el cuadro de la carga: se ofrece la de la tarjeta (65 × 8), no la orientativa de esa sesión', () => {
+  // La sesión del 11/12: 70 × 12 RIR 0 (98 kg, orientativa) y 65 × 8 RIR 2 (86,5 kg). Antes, otra con solo orientativas.
+  const apagado = [deSesion(E1, '2026-12-11', 65, 8, 2, 2)];
+  const encendido = [deSesion(E1, '2026-12-11', 70, 12, 0, 1), deSesion(E2, '2026-12-04', 60, 12, 0, 1)];
+  const lista = F.estimacionesParaLaCarga(apagado, encendido);
+  assert.deepEqual(
+    lista.map((p) => [p.date, p.estimate.load.value]),
+    [
+      ['2026-12-11', 65],
+      ['2026-12-04', 60],
+    ],
+  );
+  // Es el mismo valor que muestra la tarjeta.
+  assert.equal(F.valorDeLaTarjeta(apagado, encendido), lista[0]);
+  // Una observación orientativa, que no tiene otra, también se ofrece.
+  assert.equal(F.estimacionesParaLaCarga([], [observada('o1', '2026-12-10', 60, 11, 0)]).length, 1);
+  const detalle = readFileSync(new URL('../src/app/pro/advisees/fuerza/detalle-del-ejercicio.tsx', import.meta.url), 'utf8');
+  assert.match(detalle, /puntos=\{estimacionesParaLaCarga\(/);
+  assert.doesNotMatch(detalle, /puntos=\{deLaUnidad\.encendido/);
+});
+
+test('ED-76 (revisión del 13/11) · una lectura que falla no es «no hay estimaciones»: se dice y se reintenta', () => {
+  const detalle = readFileSync(new URL('../src/app/pro/advisees/fuerza/detalle-del-ejercicio.tsx', import.meta.url), 'utf8');
+  const desde = detalle.indexOf("} else if (paso.tipo === 'carga') {");
+  const paso = detalle.slice(desde, detalle.indexOf('principal = {', desde));
+  assert.match(paso, /deLaUnidad\.tipo === 'error' \? \(/);
+  assert.match(paso, /<BloqueDeEstado tipo="error"[^>]*onReintentar=\{recargarLaUnidad\}/);
+  assert.match(paso, /data-no-disponible/);
+  assert.doesNotMatch(paso, /sinEstimaciones/);
+  // Y desde su lista se abre «Cómo se calculó» (ED-73), que vuelve al cuadro con «Atrás».
+  assert.match(paso, /onComoSeCalculo=\{\(p\) => setPaso\(\{ tipo: 'como', punto: p, desde: 'carga' \}\)\}/);
+  assert.match(detalle, /alTocar: \(\) => setPaso\(\{ tipo: 'carga' \}\)/);
+});
+
+test('ED-74 (revisión del 13/11) · con el interruptor apagado, una sesión con solo orientativas es un hueco con su fila, y la tarjeta orientativa abre la evolución encendida', () => {
+  // ED-75: Diego, una sola sesión, 70 × 10 con RIR 2 (12 equivalentes).
+  const sola = deSesion(E1, '2026-12-18', 70, 10, 2);
+  const solo = F.sesionesSoloOrientativas([], [sola]);
+  assert.deepEqual(solo, [sola]);
+  const filas = F.filasDeLaEvolucion([], [], solo);
+  assert.deepEqual(
+    filas.map((f) => [f.tipo, f.fecha, f.motivo]),
+    [['sin-estimacion', '2026-12-18', F.SOLO_ORIENTATIVAS]],
+  );
+  // Entre dos puntos, separa la línea.
+  const puntos = [deSesion(E2, '2026-12-01', 75, 8, 2), deSesion(E3, '2026-12-22', 80, 6, 2)];
+  const conHueco = F.sesionesSoloOrientativas(puntos, [...puntos, sola]);
+  assert.deepEqual(F.tramosDeLaLinea(puntos, [], conHueco), []);
+  assert.deepEqual(F.tramosDeLaLinea(puntos, []), [[0, 1]]);
+  // Si además una serie no entró, el motivo de la fila es el de las orientativas (sí hubo series que entran).
+  const noEntro = [{ executionId: E1, date: '2026-12-18', prescriptionId: 'p1', setIndex: 2, reason: 'RIR_MAYOR_QUE_2', fields: [] }];
+  assert.equal(F.filasDeLaEvolucion([], noEntro, solo)[0].motivo, F.SOLO_ORIENTATIVAS);
+  // Encendido no hay ninguna; una observación no es una sesión.
+  assert.deepEqual(F.sesionesSoloOrientativas([sola], [sola]), []);
+  assert.deepEqual(F.sesionesSoloOrientativas([], [observada('o1', '2026-12-18', 60, 11, 0)]), []);
+  // «Ver evolución» desde un valor orientativo lleva el interruptor encendido.
+  assert.match(F.haciaLaEvolucion('a', PRESS, 'kg', true), /&orientativas=1$/);
+  assert.doesNotMatch(F.haciaLaEvolucion('a', PRESS, 'kg'), /orientativas/);
+  const tarjeta = readFileSync(new URL('../src/app/pro/advisees/fuerza/tarjeta.tsx', import.meta.url), 'utf8');
+  assert.match(tarjeta, /haciaLaEvolucion\(asesoradoId, exerciseId, e\.unidad, e\.banda === 'ORIENTATIVA'\)/);
+});
+
+test('ED-74 (revisión del 13/11) · con el teclado: cada fecha de la tabla elige su punto, como tocarlo en el gráfico (WCAG 2.1.1)', () => {
+  const fuente = readFileSync(new URL('../src/app/pro/advisees/fuerza/fuerza-en-analizar.tsx', import.meta.url), 'utf8');
+  const tabla = fuente.slice(fuente.indexOf('function TablaDeOrigen('), fuente.indexOf('function Lectura('));
+  assert.match(tabla, /<button type="button" className="boton boton--enlace" aria-pressed=\{esLaElegida\} data-elegir-punto onClick=\{\(\) => onElegir\(p\)\}>/);
+  assert.match(fuente, /<TablaDeOrigen [^\n]*onElegir=\{\(p\) => setElegidoId\(p\.pointId\)\}/);
+});
+
+test('ED-74 (revisión del 13/11) · la maqueta 15: eje de fechas, hoy, marcas sin estimación, franjas del plan y lo que no entra por fecha', () => {
+  assert.deepEqual(F.fechasDelEje('2026-11-16', '2026-12-22'), ['2026-11-16', '2026-11-25', '2026-12-04', '2026-12-13', '2026-12-22']);
+  assert.deepEqual(F.fechasDelEje('2026-12-22', '2026-12-22'), ['2026-12-22']);
+  assert.equal(F.fechasDelEje('2026-12-20', '2026-12-22').length, 3);
+  assert.equal(F.diaConSemana('2026-12-04'), 'vie 4 dic');
+  const versiones = [
+    { domain: 'TRAINING', label: 'v9', from: '2026-10-01', to: '2026-12-14' },
+    { domain: 'TRAINING', label: 'v10', from: '2026-12-14', to: null },
+    { domain: 'NUTRITION', label: 'v3', from: '2026-12-01', to: null },
+  ];
+  assert.equal(F.versionDelPlanEn('2026-12-13', versiones), 'versión 9');
+  // El día del corte ya rige la siguiente.
+  assert.equal(F.versionDelPlanEn('2026-12-14', versiones), 'versión 10');
+  assert.equal(F.versionDelPlanEn('2026-09-01', versiones), null);
+  const puntos = [deSesion(E1, '2026-12-01', 75, 8, 2), deSesion(E3, '2026-12-18', 70, 12, 0)];
+  const noEntraron = [
+    { executionId: E2, date: '2026-12-04', prescriptionId: 'p1', setIndex: 1, reason: 'MAS_DE_12', fields: [] },
+    { executionId: E1, date: '2026-12-01', prescriptionId: 'p1', setIndex: 2, reason: 'RIR_MAYOR_QUE_2', fields: [] },
+  ];
+  const r = F.loQueNoEntraPorFecha(puntos, noEntraron);
+  assert.deepEqual(r.lineas, [`vie 4 dic: ninguna serie entra: ${COPY_FUERZA.motivo.MAS_DE_12}`, `mar 1 dic: la serie 2 no entra: ${COPY_FUERZA.motivo.RIR_MAYOR_QUE_2}`]);
+  assert.equal(r.quedan, 0);
+  assert.equal(F.loQueNoEntraPorFecha(puntos, noEntraron, [], 1).quedan, 1);
+  const fuente = readFileSync(new URL('../src/app/pro/advisees/fuerza/fuerza-en-analizar.tsx', import.meta.url), 'utf8');
+  for (const pieza of ['fuerza-en-analizar__franja', 'fuerza-en-analizar__hoy', 'fuerza-en-analizar__sin-estimacion', 'fechasDelEje(desde, hasta)', 'data-no-entra-por-fecha', 'versionDelPlanEn(elegido.date, versiones)']) assert.ok(fuente.includes(pieza), pieza);
+});
+
+test('ED-73 (revisión del 13/11) · «Cómo se calculó» dice la regla por sesión y distingue otra prescripción del mismo ejercicio', () => {
+  const p = deSesion(E1, '2026-12-18', 85, 5, 1, 2);
+  const noEntraron = [
+    { executionId: E1, date: '2026-12-18', prescriptionId: 'p2', setIndex: 1, reason: 'SIN_RIR', fields: [] },
+    { executionId: E1, date: '2026-12-18', prescriptionId: 'p1', setIndex: 3, reason: 'RIR_MAYOR_QUE_2', fields: [] },
+  ];
+  assert.deepEqual(F.loQueNoEntroEnLaSesion(p, noEntraron), [`Serie 3: ${COPY_FUERZA.motivo.RIR_MAYOR_QUE_2}`, `Serie 1, de la otra prescripción del ejercicio: ${COPY_FUERZA.motivo.SIN_RIR}`]);
+  const como = readFileSync(new URL('../src/app/pro/advisees/fuerza/como-se-calculo.tsx', import.meta.url), 'utf8');
+  assert.match(como, /se toma la de mayor carga, nunca la de mayor estimación/);
+  assert.doesNotMatch(como, /es la que entra\./);
+});
+
+test('§5.8 (revisión del 13/11) · los textos que no eran ciertos en todos los casos', () => {
+  const fuente = readFileSync(new URL('../src/app/pro/advisees/fuerza/fuerza-en-analizar.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(fuente, /entre 2 y 3 kg/);
+  assert.doesNotMatch(fuente, /entra siempre/);
+  const tarjeta = readFileSync(new URL('../src/app/pro/advisees/fuerza/tarjeta.tsx', import.meta.url), 'utf8');
+  assert.match(tarjeta, /p\.source === 'OBSERVED' \? C\.orientativaObservada : C\.orientativaDeSesion/);
+  // La lectura es la del último año: el rótulo lo dice.
+  assert.match(tarjeta, /enElUltimoAnio: 'en el último año'/);
+  assert.doesNotMatch(tarjeta, /desde el inicio del acompañamiento/);
+});
+
+test('ED-72 (revisión del 13/11) · la fecha futura que rechaza la API viaja en issues[].code, no en el código del error', () => {
+  assert.equal(F.esLaFechaFutura({ ok: false, tipo: 'API', codigo: 'VALIDATION_FAILED', issues: [{ code: 'OBSERVED_DATE_IN_FUTURE', path: 'localDate' }] }), true);
+  assert.equal(F.esLaFechaFutura({ ok: false, tipo: 'API', codigo: 'VALIDATION_FAILED', issues: [{ code: 'OTRO' }] }), false);
+  assert.equal(F.esLaFechaFutura({ ok: false, tipo: 'RED' }), false);
+  const fuente = readFileSync(new URL('../src/app/pro/advisees/fuerza/serie-observada.tsx', import.meta.url), 'utf8');
+  assert.match(fuente, /esLaFechaFutura\(r\) \? COPY_SERIE_OBSERVADA\.fechaFutura/);
+  assert.doesNotMatch(fuente, /r\.codigo === 'OBSERVED_DATE_IN_FUTURE'/);
+});

@@ -5,6 +5,8 @@
  * escribe sus gramos en los tres campos (se ve antes de guardar el objetivo, que sigue pidiendo su fundamento), y el
  * reparto que se escribió se puede guardar como habitual (API-HAN-07). Siempre en gramos por día: nunca en proporciones
  * antes del 25/11 (DJ-7), y BE no calcula (B05:312-318).
+ *
+ * Si los campos ya tenían otros gramos, el aviso dice cuáles se reemplazaron y ofrece «Deshacer» (`loQueSePisa`).
  */
 import { leerNumero, nombreNormalizadoDePlantilla, type GuardarRepartoHabitualRequest, type RepartoHabitual } from '@be/domain';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -12,6 +14,7 @@ import { api } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { useNutricion } from './nutricion';
+import { loQueSePisa } from './reparto-que-se-pisa';
 
 export const COPY_REPARTOS_HABITUALES = {
   usar: 'Usar un reparto habitual',
@@ -26,6 +29,8 @@ export const COPY_REPARTOS_HABITUALES = {
   faltanGramos: 'Para guardarlo, escribí los gramos de los tres macronutrientes.',
   nombreTomado: 'Ya tenés un reparto con ese nombre. Elegí otro nombre o reemplazalo.',
   cancelar: 'Cancelar',
+  sePiso: (nombre: string, antes: string) => `Se escribieron los gramos de «${nombre}» en lugar de ${antes}.`,
+  deshacer: 'Deshacer',
 } as const;
 
 /** «P 150 · C 250 · G 70 g por día»: el reparto en una línea, en gramos. */
@@ -43,6 +48,10 @@ export function RepartosHabituales({ gramos, onUsar }: { gramos: { readonly prot
   const [nombre, setNombre] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<{ readonly tipo: 'error' | 'exito'; readonly texto: string } | null>(null);
+  // Lo que había antes de usar un reparto, si pisó algo escrito: «Deshacer» lo devuelve.
+  const [pisado, setPisado] = useState<{ readonly texto: string; readonly antes: typeof gramos; readonly escritos: typeof gramos } | null>(null);
+  // «Deshacer» vale mientras los campos digan lo que escribió el reparto: si después se escribió otra cosa, ya no.
+  const sigueEscrito = pisado !== null && pisado.escritos.proteina === gramos.proteina && pisado.escritos.carbohidratos === gramos.carbohidratos && pisado.escritos.grasas === gramos.grasas;
   const generacion = useRef(0);
   const leer = useCallback(async () => {
     const esta = ++generacion.current;
@@ -88,7 +97,12 @@ export function RepartosHabituales({ gramos, onUsar }: { gramos: { readonly prot
             aria-describedby={`${id}-usar-ayuda`}
             onChange={(e) => {
               const r = lista.find((x) => x.presetId === e.target.value);
-              if (r) onUsar({ proteina: numeroEnCampo(r.distribution.protein.value), carbohidratos: numeroEnCampo(r.distribution.carbohydrate.value), grasas: numeroEnCampo(r.distribution.fat.value) });
+              if (!r) return;
+              const nuevos = { proteina: numeroEnCampo(r.distribution.protein.value), carbohidratos: numeroEnCampo(r.distribution.carbohydrate.value), grasas: numeroEnCampo(r.distribution.fat.value) };
+              const antes = { ...gramos };
+              const sePisa = loQueSePisa(antes, nuevos);
+              setPisado(sePisa ? { texto: C.sePiso(r.name, sePisa), antes, escritos: nuevos } : null);
+              onUsar(nuevos);
             }}
           >
             <option value="">{C.elegir}</option>
@@ -101,6 +115,21 @@ export function RepartosHabituales({ gramos, onUsar }: { gramos: { readonly prot
           <p id={`${id}-usar-ayuda`} className="campo__ayuda">
             {C.escribe}
           </p>
+          {pisado && sigueEscrito ? (
+            <p className="nota repartos-habituales__pisado" role="status" data-reparto-piso>
+              {pisado.texto}{' '}
+              <button
+                type="button"
+                className="boton boton--enlace"
+                onClick={() => {
+                  onUsar({ ...pisado.antes });
+                  setPisado(null);
+                }}
+              >
+                {C.deshacer}
+              </button>
+            </p>
+          ) : null}
         </div>
       ) : null}
       {guardando ? (

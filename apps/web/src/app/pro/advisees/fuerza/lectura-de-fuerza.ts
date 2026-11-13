@@ -7,13 +7,16 @@
  * de la API; acá solo se lee.
  *
  * El período: el último año (la API acepta hasta 366 días), salvo que quien lee pida otro. La API ya lo recorta al
- * inicio del acompañamiento (RF-025, DJ-14).
+ * inicio del acompañamiento (RF-025, DJ-14). Por eso la tarjeta dice «en el último año».
+ *
+ * Sin una unidad pedida, la de lo más reciente: si el ejercicio tiene registros en kg y en lb, se leen las dos y queda la
+ * línea cuyo último punto es más nuevo (la API, sola, elige kg).
  */
 import type { PuntoDeFuerza } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Resultado } from '../../../../lib/api';
 import { motivoDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
-import type { SerieQueNoEntro } from './fuerza';
+import type { SerieQueNoEntro, VersionDelPlanEnElPeriodo } from './fuerza';
 
 /** Una línea de la evolución: los puntos de un ejercicio en una unidad, con las series que no entraron. */
 export interface LineaDeFuerza {
@@ -40,6 +43,8 @@ export type LecturaDeFuerza =
       readonly ejercicios: readonly { readonly exerciseId: string; readonly name: string; readonly units: readonly ('kg' | 'lb')[] }[];
       /** «Hay registros con otro profesional que no ves». */
       readonly deOtros: boolean;
+      /** Las vigencias del plan en el período: las franjas del gráfico y la versión de cada lectura (ED-74). */
+      readonly versiones: readonly VersionDelPlanEnElPeriodo[];
     };
 
 /** Casi un año para atrás: 365 días con hoy. La API acepta hasta 366, y el día de hoy del navegador puede ir uno adelante del de la API. */
@@ -50,6 +55,9 @@ export function unAnioAntes(hoy: string): string {
 }
 
 type Respuesta = Awaited<ReturnType<typeof api.proyeccion>>;
+
+/** La fecha del último punto de una línea; `''` si no tiene ninguno. */
+const ultimaFecha = (l: LineaDeFuerza | null): string => (l?.puntos ?? []).reduce((m, p) => (p.date > m ? p.date : m), '');
 
 function lineaDe(r: Respuesta): LineaDeFuerza | null {
   if (!r.ok) return null;
@@ -78,20 +86,36 @@ export function useLecturaDeFuerza(
     setLectura({ tipo: 'cargando' });
     const hoyLocal = new Date().toISOString().slice(0, 10);
     const base = {
-      ...(exerciseId ? { exerciseId, ...(unidad ? { unit: unidad } : {}) } : {}),
+      ...(exerciseId ? { exerciseId } : {}),
       periodStart: desde ?? unAnioAntes(hasta ?? hoyLocal),
       ...(hasta ? { periodEnd: hasta } : {}),
     };
-    void Promise.all([
-      api.proyeccion(token, asesoradoId, 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', { ...base, includeOrientative: 'false' }),
-      api.proyeccion(token, asesoradoId, 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', { ...base, includeOrientative: 'true' }),
-    ]).then(([a, e]) => {
-      if (!vigente || sesionPerdida(a) || sesionPerdida(e)) return;
-      for (const r of [a, e]) {
-        if (!r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') return setLectura({ tipo: 'no-disponible' });
-        if (!r.ok) return setLectura({ tipo: 'error', motivo: motivoDeFalla(r) });
+    const leer = (u: 'kg' | 'lb' | null) =>
+      Promise.all([
+        api.proyeccion(token, asesoradoId, 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', { ...base, ...(exerciseId && u ? { unit: u } : {}), includeOrientative: 'false' }),
+        api.proyeccion(token, asesoradoId, 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', { ...base, ...(exerciseId && u ? { unit: u } : {}), includeOrientative: 'true' }),
+      ]);
+    /** `true`: siguió (la sesión vencida, una lectura vieja o una falla ya se resolvieron acá). */
+    const fallo = (rs: readonly Respuesta[]): boolean => {
+      if (!vigente || rs.some((r) => sesionPerdida(r))) return true;
+      for (const r of rs) {
+        if (!r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') return (setLectura({ tipo: 'no-disponible' }), true);
+        if (!r.ok) return (setLectura({ tipo: 'error', motivo: motivoDeFalla(r) }), true);
       }
-      if (!a.ok || !e.ok) return;
+      return false;
+    };
+    void (async () => {
+      let [a, e] = await leer(unidad);
+      if (fallo([a, e]) || !a.ok || !e.ok) return;
+      const unidades = (a.datos.data.result?.kind === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE' ? a.datos.data.result.exercises : []).find((x) => x.exerciseId === exerciseId)?.units ?? [];
+      // Sin unidad pedida y con registros en las dos, la de lo más reciente.
+      if (exerciseId && !unidad && unidades.length > 1) {
+        const primera = lineaDe(e);
+        const otra = primera?.unidad === 'lb' ? 'kg' : 'lb';
+        const [a2, e2] = await leer(otra);
+        if (fallo([a2, e2]) || !a2.ok || !e2.ok) return;
+        if (ultimaFecha(lineaDe(e2)) > ultimaFecha(primera)) [a, e] = [a2, e2];
+      }
       const d = a.datos.data;
       const x = d.result?.kind === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE' ? d.result : null;
       setLectura({
@@ -103,8 +127,9 @@ export function useLecturaDeFuerza(
         desde: d.period.start,
         ejercicios: x?.exercises ?? [],
         deOtros: x?.otherProfessionalRecords ?? false,
+        versiones: x?.planVersions ?? [],
       });
-    });
+    })();
     return () => {
       vigente = false;
     };

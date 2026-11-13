@@ -13,7 +13,9 @@ import {
   leerNumero,
   motivoEnPalabras,
   origenDeLaEstimacion,
+  PASOS_DEL_REDONDEO,
   referenciaDeLaEstimacion,
+  type SentidoDelRedondeo,
   type EstimacionDeFuerza,
   type MotivoFueraDeLaEstimacion,
   type PuntoDeFuerza,
@@ -97,14 +99,23 @@ export function antiguedad(fecha: string, hoy: string): string {
   return semanas === 1 ? 'de hace 1 semana' : `de hace ${semanas} semanas`;
 }
 
-/** En la sesión del punto, las series que no entraron y por qué: «Serie 3: el RIR es el del plan» (ED-73). */
+/**
+ * En la sesión del punto, las series que no entraron y por qué: «Serie 3: el RIR es el del plan» (ED-73). Con otra
+ * prescripción del mismo ejercicio en la sesión, el número solo no la ubica: sus series dicen de cuál son («Serie 1, de
+ * la otra prescripción del ejercicio»; con más de una, numeradas en el orden en que aparecen). Primero las de la
+ * prescripción del punto.
+ */
 export function loQueNoEntroEnLaSesion(p: PuntoDeFuerza, noEntraron: readonly SerieQueNoEntro[]): string[] {
   if (p.origin.type !== 'TRAINING_EXECUTION') return [];
-  const id = p.origin.id;
-  return noEntraron
-    .filter((s) => s.executionId === id)
-    .sort((a, b) => a.setIndex - b.setIndex)
-    .map((s) => `Serie ${s.setIndex}: ${motivoEnPalabras({ entra: false, motivo: s.reason, campos: s.fields })}`);
+  const { id, prescriptionId } = p.origin;
+  const deLaSesion = noEntraron.filter((s) => s.executionId === id);
+  const otras = [...new Set(deLaSesion.map((s) => s.prescriptionId).filter((x) => x !== prescriptionId))];
+  const deCual = (s: SerieQueNoEntro): string =>
+    s.prescriptionId === prescriptionId ? '' : otras.length === 1 ? ', de la otra prescripción del ejercicio' : `, de otra prescripción del ejercicio (${otras.indexOf(s.prescriptionId) + 1}.ª)`;
+  const orden = (s: SerieQueNoEntro): number => (s.prescriptionId === prescriptionId ? 0 : otras.indexOf(s.prescriptionId) + 1);
+  return [...deLaSesion]
+    .sort((a, b) => orden(a) - orden(b) || a.setIndex - b.setIndex)
+    .map((s) => `Serie ${s.setIndex}${deCual(s)}: ${motivoEnPalabras({ entra: false, motivo: s.reason, campos: s.fields })}`);
 }
 
 /**
@@ -127,10 +138,13 @@ export function loQueHaceFalta(noEntraron: readonly SerieQueNoEntro[]): { readon
 /** «18 dic» para la tarjeta; la fecha civil tal como vino (RM-15). */
 export const diaDelPunto = (p: PuntoDeFuerza): string => diaDeLaEstimacion(p.date);
 
-/** El enlace a la evolución en «Analizar», ya filtrada (ED-74 desde ED-75). */
+/**
+ * El enlace a la evolución en «Analizar», ya filtrada (ED-74 desde ED-75). `orientativas`: con «Incluir las de más de 10
+ * a 12» encendido, para que un valor orientativo de la tarjeta esté también en la evolución.
+ */
 export const PREGUNTA_DE_LA_FUERZA = 'fuerza-estimada';
-export function haciaLaEvolucion(asesoradoId: string, exerciseId: string, unidad: 'kg' | 'lb' = 'kg'): string {
-  return `/pro/advisees?id=${encodeURIComponent(asesoradoId)}&vista=analizar&pregunta=${PREGUNTA_DE_LA_FUERZA}&ejercicio=${encodeURIComponent(exerciseId)}&unidad=${unidad}`;
+export function haciaLaEvolucion(asesoradoId: string, exerciseId: string, unidad: 'kg' | 'lb' = 'kg', orientativas = false): string {
+  return `/pro/advisees?id=${encodeURIComponent(asesoradoId)}&vista=analizar&pregunta=${PREGUNTA_DE_LA_FUERZA}&ejercicio=${encodeURIComponent(exerciseId)}&unidad=${unidad}${orientativas ? '&orientativas=1' : ''}`;
 }
 
 /** La sesión de origen en Registros, abierta (ED-73, «Ver la sesión»); `null` para una observación, que no tiene sesión. */
@@ -177,6 +191,14 @@ export function serieObservadaEnVivo(s: SerieObservadaEscrita): SerieObservadaEn
   return { tipo: 'no-se-estima', texto: `No se estima: ${motivoEnPalabras(r)}.` };
 }
 
+/**
+ * Si la API rechazó la observación por la fecha: responde 422 VALIDATION_FAILED y el motivo viaja en `issues[].code`
+ * (API-FZA-01), no en el código del error.
+ */
+export function esLaFechaFutura(r: { readonly ok: boolean; readonly tipo?: string; readonly issues?: readonly { readonly code: string }[] }): boolean {
+  return !r.ok && r.tipo === 'API' && (r.issues ?? []).some((i) => i.code === 'OBSERVED_DATE_IN_FUTURE');
+}
+
 /** Los RIR que se pueden elegir en el cuadro: de 0 a 2, de a medio (la maqueta 17). */
 export const RIR_DEL_CUADRO: readonly number[] = [0, 0.5, 1, 1.5, 2];
 /** «Más de 2»: un RIR que se puede elegir para que el cuadro diga que no se estima (ED-72); nunca se guarda. */
@@ -206,6 +228,29 @@ export function loQueSeEscribeEnLaFilaGeneral(
   return { suggestedLoad, intensity: { criterion: 'PERCENT_RM', target: { value: porcentaje, reference: { description: referenciaDeLaEstimacion(fechaDeLaEstimacion) } } } };
 }
 
+/**
+ * Cómo arranca el cuadro de la carga cada vez que se abre (ED-76; ED-D20): ninguna estimación elegida, el % RM de la
+ * prescripción de ese momento (si su criterio es % RM), el paso de entrada de la unidad de ese momento, hacia abajo
+ * (ED-D17) y la carga sugerida. Nada de una vez anterior: una elección vieja puede no estar entre las que se ven.
+ */
+export function entradaDelCuadroDeLaCarga(
+  p: PrescripcionParaLaCarga,
+  unidad: UnidadDeLaCarga,
+): { readonly elegida: null; readonly porcentaje: string; readonly paso: number; readonly sentido: SentidoDelRedondeo; readonly propia: null } {
+  const porcentaje = p.intensity?.criterion === 'PERCENT_RM' && Number.isFinite(p.intensity.target.value) ? numeroCorto(p.intensity.target.value) : '';
+  return { elegida: null, porcentaje, paso: PASOS_DEL_REDONDEO[unidad][0]!, sentido: 'ABAJO', propia: null };
+}
+
+/**
+ * Las estimaciones que ofrece el cuadro de la carga (ED-76), con la regla de la tarjeta (ED-75): por sesión, la del
+ * interruptor apagado; la orientativa, solo para una sesión (o una observación) que no tiene otra. Así se puede planificar
+ * con el valor que muestra la tarjeta (RM-43: con 70 × 12 RIR 0 y 65 × 8 RIR 2, la del 65 × 8, nunca la de 98 kg).
+ */
+export function estimacionesParaLaCarga(apagado: readonly PuntoDeFuerza[], encendido: readonly PuntoDeFuerza[]): PuntoDeFuerza[] {
+  const conNucleo = new Set(apagado.map(origenDe));
+  return delMasReciente([...apagado, ...encendido.filter((p) => !conNucleo.has(origenDe(p)))]);
+}
+
 /** «Escribir 72,5 kg en Press de banca»: el principal del cuadro, con lo que escribe. */
 export const textoDelPrincipalDeLaCarga = (valor: number, unidad: UnidadDeLaCarga, nombre: string): string => `Escribir ${numeroCorto(valor)} ${unidad} en ${nombre}`;
 
@@ -218,12 +263,23 @@ export function lasQueQuedan(resto: readonly PuntoDeFuerza[]): string | null {
 // ─── ED-74 · la evolución en «Analizar» ──────────────────────────────────────────────────────────────────────────
 
 /**
- * Los tramos de la línea: dos puntos seguidos se unen solo si entre ellos no hubo una sesión sin estimación («sin línea a
- * través de un hueco», ED-74). Devuelve los pares por su posición en `puntos`, que va del más antiguo al más reciente.
+ * Con el interruptor apagado, las sesiones que solo tienen series de más de 10 a 12: entran, así que no están entre las
+ * que no entraron, pero no dan punto. Son sesiones del ejercicio sin estimación (un hueco, ED-74) y tienen su fila. Salen
+ * de comparar con la lectura encendida, que ya está leída. Encendido, no hay ninguna.
  */
-export function tramosDeLaLinea(puntos: readonly PuntoDeFuerza[], noEntraron: readonly SerieQueNoEntro[]): readonly (readonly [number, number])[] {
+export function sesionesSoloOrientativas(apagado: readonly PuntoDeFuerza[], encendido: readonly PuntoDeFuerza[]): PuntoDeFuerza[] {
+  const conPunto = new Set(apagado.map(origenDe));
+  return encendido.filter((p) => p.origin.type === 'TRAINING_EXECUTION' && !conPunto.has(origenDe(p)));
+}
+
+/**
+ * Los tramos de la línea: dos puntos seguidos se unen solo si entre ellos no hubo una sesión sin estimación («sin línea a
+ * través de un hueco», ED-74), también una que solo tuvo orientativas con el interruptor apagado. Devuelve los pares por
+ * su posición en `puntos`, que va del más antiguo al más reciente.
+ */
+export function tramosDeLaLinea(puntos: readonly PuntoDeFuerza[], noEntraron: readonly SerieQueNoEntro[], soloOrientativas: readonly PuntoDeFuerza[] = []): readonly (readonly [number, number])[] {
   const conPunto = new Set(puntos.flatMap((p) => (p.origin.type === 'TRAINING_EXECUTION' ? [p.origin.id] : [])));
-  const huecos = [...new Set(noEntraron.filter((s) => !conPunto.has(s.executionId)).map((s) => s.date))];
+  const huecos = [...new Set([...noEntraron.filter((s) => !conPunto.has(s.executionId)).map((s) => s.date), ...soloOrientativas.map((p) => p.date)])];
   const tramos: [number, number][] = [];
   for (let i = 1; i < puntos.length; i++) {
     const a = puntos[i - 1]!.date;
@@ -236,16 +292,91 @@ export function tramosDeLaLinea(puntos: readonly PuntoDeFuerza[], noEntraron: re
 /** Una fila de la tabla de origen: un punto, o una sesión del ejercicio sin estimación, con lo que no entró. */
 export type FilaDeLaEvolucion = { readonly tipo: 'punto'; readonly fecha: string; readonly punto: PuntoDeFuerza } | { readonly tipo: 'sin-estimacion'; readonly fecha: string; readonly executionId: string; readonly motivo: string };
 
-/** La tabla de origen (ED-74), del más reciente al más antiguo: los puntos y las sesiones que quedaron sin punto. */
-export function filasDeLaEvolucion(puntos: readonly PuntoDeFuerza[], noEntraron: readonly SerieQueNoEntro[]): FilaDeLaEvolucion[] {
+/** El motivo de una sesión que solo tuvo orientativas, con el interruptor apagado. */
+export const SOLO_ORIENTATIVAS = 'solo series de más de 10 a 12 repeticiones equivalentes: encendé «Incluir las de más de 10 a 12» para verla';
+
+/**
+ * La tabla de origen (ED-74), del más reciente al más antiguo: los puntos y las sesiones que quedaron sin punto, también
+ * las que solo tuvieron orientativas con el interruptor apagado (`soloOrientativas`).
+ */
+export function filasDeLaEvolucion(puntos: readonly PuntoDeFuerza[], noEntraron: readonly SerieQueNoEntro[], soloOrientativas: readonly PuntoDeFuerza[] = []): FilaDeLaEvolucion[] {
   const conPunto = new Set(puntos.flatMap((p) => (p.origin.type === 'TRAINING_EXECUTION' ? [p.origin.id] : [])));
-  const sinPunto = new Map<string, SerieQueNoEntro[]>();
-  for (const s of noEntraron) if (!conPunto.has(s.executionId)) sinPunto.set(s.executionId, [...(sinPunto.get(s.executionId) ?? []), s]);
+  const sinPunto = new Map<string, { fecha: string; motivo: string }>();
+  const porSesion = new Map<string, SerieQueNoEntro[]>();
+  for (const s of noEntraron) if (!conPunto.has(s.executionId)) porSesion.set(s.executionId, [...(porSesion.get(s.executionId) ?? []), s]);
+  for (const [executionId, series] of porSesion) sinPunto.set(executionId, { fecha: series[0]!.date, motivo: motivoDeLaSesion(series) });
+  // Una sesión con orientativas tiene series que entran: su motivo es ese, aunque otras no hayan entrado.
+  for (const p of soloOrientativas) sinPunto.set(p.origin.id, { fecha: p.date, motivo: SOLO_ORIENTATIVAS });
   const filas: FilaDeLaEvolucion[] = [
     ...puntos.map((p) => ({ tipo: 'punto' as const, fecha: p.date, punto: p })),
-    ...[...sinPunto.entries()].map(([executionId, series]) => ({ tipo: 'sin-estimacion' as const, fecha: series[0]!.date, executionId, motivo: motivoDeLaSesion(series) })),
+    ...[...sinPunto.entries()].map(([executionId, s]) => ({ tipo: 'sin-estimacion' as const, fecha: s.fecha, executionId, motivo: s.motivo })),
   ];
   return filas.sort((a, b) => (a.fecha === b.fecha ? 0 : a.fecha < b.fecha ? 1 : -1));
+}
+
+const DIAS_CORTOS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+
+/** «vie 4 dic»: el día de la semana y la fecha civil, sin pasar por una zona (RM-15). */
+export function diaConSemana(fecha: string): string {
+  const [a, m, d] = fecha.split('-').map(Number);
+  return `${DIAS_CORTOS[new Date(Date.UTC(a!, m! - 1, d!, 12)).getUTCDay()]} ${diaDeLaEstimacion(fecha)}`;
+}
+
+/**
+ * «Lo que no entra», una línea por sesión y del más reciente al más antiguo (ED-74; maqueta 15): «vie 4 dic: ninguna
+ * serie entra: …», «mar 1 dic: la serie 2 no entra: el RIR es mayor que 2». `cuantas` corta la lista; `quedan` dice
+ * cuántas sesiones más hay en la tabla.
+ */
+export function loQueNoEntraPorFecha(
+  puntos: readonly PuntoDeFuerza[],
+  noEntraron: readonly SerieQueNoEntro[],
+  soloOrientativas: readonly PuntoDeFuerza[] = [],
+  cuantas = 6,
+): { readonly lineas: readonly string[]; readonly quedan: number } {
+  const conPunto = new Set(puntos.flatMap((p) => (p.origin.type === 'TRAINING_EXECUTION' ? [p.origin.id] : [])));
+  const sesiones = new Map<string, { fecha: string; texto: string }>();
+  const porSesion = new Map<string, SerieQueNoEntro[]>();
+  for (const s of noEntraron) porSesion.set(s.executionId, [...(porSesion.get(s.executionId) ?? []), s]);
+  for (const [id, series] of porSesion) {
+    if (!conPunto.has(id)) {
+      sesiones.set(id, { fecha: series[0]!.date, texto: motivoDeLaSesion(series) });
+      continue;
+    }
+    const motivos = [...new Set(series.map((s) => COPY_FUERZA.motivo[s.reason]))].join('; ');
+    const cuales = series.length === 1 ? `la serie ${series[0]!.setIndex} no entra` : `${series.length} series no entran`;
+    sesiones.set(id, { fecha: series[0]!.date, texto: `${cuales}: ${motivos}` });
+  }
+  for (const p of soloOrientativas) sesiones.set(p.origin.id, { fecha: p.date, texto: SOLO_ORIENTATIVAS });
+  const todas = [...sesiones.values()].sort((a, b) => (a.fecha === b.fecha ? 0 : a.fecha < b.fecha ? 1 : -1));
+  return { lineas: todas.slice(0, cuantas).map((s) => `${diaConSemana(s.fecha)}: ${s.texto}`), quedan: Math.max(todas.length - cuantas, 0) };
+}
+
+/** Una vigencia del plan de entrenamiento, como la trae la clave (`planVersions`). */
+export interface VersionDelPlanEnElPeriodo {
+  readonly domain: string;
+  readonly label: string;
+  readonly from: string;
+  readonly to: string | null;
+}
+
+/** «versión 10»: la versión del plan que regía ese día (el día del corte ya rige la siguiente); `null` si ninguna. */
+export function versionDelPlanEn(fecha: string, versiones: readonly VersionDelPlanEnElPeriodo[]): string | null {
+  const v = versiones.filter((x) => x.domain === 'TRAINING' && x.from <= fecha && (x.to === null || fecha < x.to)).sort((a, b) => (a.from < b.from ? 1 : -1))[0];
+  return v ? v.label.replace(/^v/, 'versión ') : null;
+}
+
+/**
+ * Las fechas del eje horizontal (ED-74; maqueta 15): de 4 a 6, repartidas en el período, la primera y la última
+ * incluidas. Fechas civiles, sin pasar por una zona.
+ */
+export function fechasDelEje(desde: string, hasta: string, cuantas = 5): string[] {
+  const t0 = Date.parse(`${desde}T12:00:00Z`);
+  const t1 = Date.parse(`${hasta}T12:00:00Z`);
+  const dias = Math.round((t1 - t0) / 86_400_000);
+  if (!(dias > 0)) return [desde];
+  const n = Math.max(2, Math.min(cuantas, dias + 1));
+  const fechas = Array.from({ length: n }, (_, i) => new Date(t0 + Math.round((dias * i) / (n - 1)) * 86_400_000).toISOString().slice(0, 10));
+  return [...new Set(fechas)];
 }
 
 /** El motivo más frecuente de una sesión sin punto, en palabras: «ninguna serie entra: el RIR es mayor que 2». */

@@ -52,6 +52,11 @@ export interface PlantillasEnLaGaleria {
   readonly borrador: string;
   readonly reemplazando: boolean;
   readonly error: string | null;
+  /**
+   * Por qué no se puede reemplazar ahora (EDT-54): sin el objetivo vigente no nace la versión nueva, así que el borrador
+   * no se descarta. `null`: se puede.
+   */
+  readonly noSePuede: string | null;
   readonly onReemplazar: (templateVersionId: string) => void;
 }
 
@@ -61,6 +66,8 @@ export const COPY_PLANTILLAS_EN_LA_GALERIA = {
   plantillas: 'Tus plantillas',
   reemplazar: (nombre: string) => `Reemplazar el borrador con «${nombre}»`,
   reemplazando: 'Reemplazando…',
+  sinObjetivoLeido: 'Falta leer el objetivo vigente de la persona: sin él no nace la versión nueva, y el borrador no se descarta. Actualizá la vista y probá de nuevo.',
+  sinObjetivo: 'La persona no tiene un objetivo vigente: sin él no nace la versión nueva, y el borrador no se descarta. Escribí el objetivo y volvé a la galería.',
   queHace: (borrador: string, nombre: string) =>
     `Se descarta la ${borrador} con todo lo que tiene, y se crea una nueva desde «${nombre}», que anota de qué plantilla salió. La versión activa no cambia.`,
 } as const;
@@ -149,8 +156,10 @@ export function GaleriaDePresets({
   const usar = () => {
     if (!elegido) return;
     if (elegido.tipo === 'PLANTILLA') {
-      // Reemplaza el borrador: el cuadro queda abierto con «Reemplazando…» hasta que el plan lo resuelve.
-      plantillas?.onReemplazar(elegido.plantilla.versionId);
+      // Reemplaza el borrador: el cuadro queda abierto con «Reemplazando…» hasta que el plan lo resuelve. Si el nuevo no
+      // puede nacer, no se descarta nada (EDT-54).
+      if (!plantillas || plantillas.noSePuede) return;
+      plantillas.onReemplazar(elegido.plantilla.versionId);
       return;
     }
     if (elegido.tipo === 'HABITUAL') {
@@ -178,7 +187,7 @@ export function GaleriaDePresets({
         : 'Presets de estructura';
   const principal =
     elegido?.tipo === 'PLANTILLA'
-      ? { texto: COPY_PLANTILLAS_EN_LA_GALERIA.reemplazar(elegido.plantilla.nombre), alTocar: usar, enviando: plantillas?.reemplazando ?? false, textoEnviando: COPY_PLANTILLAS_EN_LA_GALERIA.reemplazando }
+      ? { texto: COPY_PLANTILLAS_EN_LA_GALERIA.reemplazar(elegido.plantilla.nombre), alTocar: usar, apagado: plantillas?.noSePuede ?? null, enviando: plantillas?.reemplazando ?? false, textoEnviando: COPY_PLANTILLAS_EN_LA_GALERIA.reemplazando }
       : paso === 'alcance' && alcance
       ? { texto: C.aplicarAEjercicios(alcance.filas.length), alTocar: usar }
       : { texto: C.usar, alTocar: usar, apagado: !elegido ? C.nadaElegido : sinEjercicios && (elegido.tipo === 'PRESCRIPCION' || (elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION')) ? C.sinEjercicios : null };
@@ -252,6 +261,11 @@ export function GaleriaDePresets({
                   <strong>{elegido.plantilla.nombre}</strong> · {elegido.plantilla.detalle}
                 </p>
                 <p data-reemplaza-el-borrador>{COPY_PLANTILLAS_EN_LA_GALERIA.queHace(plantillas.borrador, elegido.plantilla.nombre)}</p>
+                {plantillas.noSePuede ? (
+                  <p className="campo__error" data-no-se-puede-reemplazar>
+                    {plantillas.noSePuede}
+                  </p>
+                ) : null}
                 {plantillas.error ? (
                   <p className="campo__error" role="alert">
                     {plantillas.error}
