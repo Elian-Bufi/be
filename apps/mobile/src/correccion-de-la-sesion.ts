@@ -384,11 +384,17 @@ const mismosValores = (a: SerieEjecutadaApi, b: SerieEjecutadaApi): boolean => m
  * (`PERSON`); lo que no cambió conserva su origen: `PLAN` en una serie tildada con lo planificado (`AS_PLANNED`, donde
  * todo vino del plan), la clave que ya tenía, o ninguna en una serie de antes de la procedencia, que no se sabe quién
  * escribió. Un valor vaciado no lleva clave. Nunca le pasa a un valor el origen de otro.
+ *
+ * Una carga con el mismo número y otra unidad no la escribió la persona en esa fila: cambiar la unidad es del ejercicio y
+ * arrastra todas sus filas. Conserva `PERSON` si ya lo era; si no, queda sin clave («sin saber»): ni del plan, que decía
+ * otra unidad, ni de la persona, que no escribió ese número.
  */
 export function origenesAlReescribir(nueva: SerieEjecutadaApi, antes: SerieEjecutadaApi): SerieEjecutadaApi['fieldOrigins'] {
   const igual = { load: mismaCarga(nueva.load, antes.load), completedRepetitions: nueva.completedRepetitions === antes.completedRepetitions, rir: nueva.rir === antes.rir };
+  const soloLaUnidad = !igual.load && nueva.load !== null && antes.load !== null && nueva.load.value === antes.load.value;
   const origen = (c: CampoConOrigen): OrigenDelValor | undefined => {
     if (nueva[c] === null) return undefined;
+    if (c === 'load' && soloLaUnidad) return antes.recordedAs !== 'AS_PLANNED' && antes.fieldOrigins?.load === 'PERSON' ? 'PERSON' : undefined;
     if (!igual[c]) return 'PERSON';
     return antes.recordedAs === 'AS_PLANNED' ? 'PLAN' : antes.fieldOrigins?.[c];
   };

@@ -64,7 +64,8 @@ export interface FilaEscrita {
   /**
    * ED-70: los valores que volvieron a la fila al destildar una serie que no decía de dónde salieron (una serie de antes
    * de la procedencia, o un valor sin clave). Opcional. Mientras sigan iguales, volver a tildar los deja sin clave («sin
-   * saber»): no pasan por escritos por la persona. Lo que ella cambia, sí es suyo (`PERSON`).
+   * saber»): no pasan por escritos por la persona. Lo que ella cambia, sí es suyo (`PERSON`). La carga se compara por su
+   * número: la unidad es del ejercicio.
    */
   readonly sinProcedencia?: SinProcedencia;
 }
@@ -343,10 +344,11 @@ export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, 
   const rirDeLaSerie = rir ?? plan.rir;
   const escrita = hayValoresEscritos(f);
   // Lo escrito es de la persona; lo que quedó vacío y se completó, del plan; lo que no tiene valor no lleva clave. Lo que
-  // volvió de una serie sin procedencia y sigue igual, tampoco: no se sabe quién lo escribió.
+  // volvió de una serie sin procedencia y sigue igual, tampoco: no se sabe quién lo escribió. Una carga con el mismo
+  // número en otra unidad tampoco: la unidad es del ejercicio, y cambiarla no es escribir ese número (como en la corrección).
   const sp = f.sinProcedencia;
   const sinSaber = {
-    load: carga !== null && sp?.carga !== undefined && sp.carga.value === carga && sp.carga.unit === unidad,
+    load: carga !== null && sp?.carga !== undefined && sp.carga.value === carga,
     completedRepetitions: repeticiones !== null && sp?.repeticiones === repeticiones,
     rir: rir !== null && sp?.rir === rir,
   };

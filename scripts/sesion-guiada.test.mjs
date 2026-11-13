@@ -261,8 +261,9 @@ test('ED-70 · al volver a tildar una serie de la 0.24, solo lo que la persona c
   assert.deepEqual(series.serieAlTildar({ ...restaurar, repeticiones: '11' }, sesentaPorOcho, 1, 'kg').serie.fieldOrigins, { completedRepetitions: 'PERSON' });
   assert.deepEqual(series.serieAlTildar({ ...restaurar, rir: '' }, sesentaPorOcho, 1, 'kg').serie.fieldOrigins, { rir: 'PLAN' });
   assert.deepEqual(series.serieAlTildar({ ...restaurar, carga: '62,5' }, sesentaPorOcho, 1, 'kg').serie.fieldOrigins, { load: 'PERSON' });
-  // Otra unidad es otra carga: la cambió la persona.
-  assert.deepEqual(series.serieAlTildar({ ...restaurar, unidad: 'lb' }, sesentaPorOcho, 1, 'lb').serie.fieldOrigins, { load: 'PERSON' });
+  // Cambiar la unidad del ejercicio no es escribir el número: la carga sigue sin clave, en la unidad nueva.
+  const enLibras = series.serieAlTildar({ ...restaurar, unidad: 'lb' }, sesentaPorOcho, 1, 'lb').serie;
+  assert.deepEqual([enLibras.load, 'fieldOrigins' in enLibras], [{ value: 60, unit: 'lb' }, false]);
   // El mismo número, escrito con punto, es el mismo valor: sigue sin clave.
   assert.equal('fieldOrigins' in series.serieAlTildar({ ...restaurar, carga: '60.0' }, sesentaPorOcho, 1, 'kg').serie, false);
   // Vaciar todo es tildar con lo planificado: AS_PLANNED, sin el campo.

@@ -371,6 +371,31 @@ test('ED-70 · al corregir, lo que la persona cambia pasa a PERSON y lo demás c
   assert.deepEqual(igual, conOrigen.exercises[0].sets[0]);
 });
 
+test('ED-70 · cambiar la unidad del ejercicio arrastra sus filas registradas sin hacerlas pasar por escritas: solo lo que la persona escribe es PERSON', () => {
+  // Registradas con la APK nueva: la 1 con la carga y el RIR del plan; la 2 con la carga escrita por la persona.
+  const registrado = { ...ORIGINAL, exercises: [ejercicio('sentadilla', 'Sentadilla', [
+    serie(1, 60, 10, { rir: 1, fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PERSON' } }),
+    serie(2, 62.5, 8, { rir: 2, fieldOrigins: { load: 'PERSON', completedRepetitions: 'PLAN', rir: 'PLAN' } }),
+  ])] };
+  const ejecucion = { original: registrado, corrections: [], effectiveView: { kind: 'ORIGINAL' } };
+  // La persona suma la serie 3, que faltó, y pasa el ejercicio a lb para escribirla.
+  let e = c.corregir(c.estadoInicial(ejecucion, SESION), { tipo: 'unidad', prescriptionId: 'sentadilla', unidad: 'lb' });
+  e = c.corregir(e, escribir('sentadilla', 3, 'carga', '135'));
+  e = c.corregir(e, escribir('sentadilla', 3, 'repeticiones', '6'));
+  // Y en la 1 reescribe las repeticiones.
+  e = c.corregir(e, escribir('sentadilla', 1, 'repeticiones', '9'));
+  const pedido = c.pedidoDeCorreccion(conMotivo(e), registrado);
+  assert.equal(pedido.ok, true, pedido.mensaje);
+  const [s1, s2, s3] = pedido.correction.exercises[0].sets;
+  // La 1: el 60 lo puso el plan en kg; en lb no es del plan ni lo escribió la persona: sin clave. Las repeticiones, suyas.
+  assert.deepEqual([s1.load, s1.fieldOrigins], [{ value: 60, unit: 'lb' }, { completedRepetitions: 'PERSON', rir: 'PERSON' }]);
+  // La 2: el número de la carga lo había escrito la persona, y lo sigue siendo; lo demás conserva su origen.
+  assert.deepEqual([s2.load, s2.fieldOrigins], [{ value: 62.5, unit: 'lb' }, { load: 'PERSON', completedRepetitions: 'PLAN', rir: 'PLAN' }]);
+  // La 3, escrita en lb: de la persona.
+  assert.deepEqual([s3.load, s3.fieldOrigins.load, s3.fieldOrigins.completedRepetitions], [{ value: 135, unit: 'lb' }, 'PERSON', 'PERSON']);
+  assert.deepEqual(pasaElContrato(pedido), []);
+});
+
 test('ED-70 · origenesAlReescribir: nunca le pasa a un valor el origen de otro', () => {
   const antes = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null };
   const nueva = (extra) => ({ ...antes, ...extra });
@@ -378,8 +403,13 @@ test('ED-70 · origenesAlReescribir: nunca le pasa a un valor el origen de otro'
   assert.deepEqual(c.origenesAlReescribir(nueva({ completedRepetitions: 9 }), { ...antes, recordedAs: 'AS_PLANNED' }), { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' });
   // De una de antes de la procedencia, lo que no cambió sigue sin clave.
   assert.deepEqual(c.origenesAlReescribir(nueva({ load: { value: 62.5, unit: 'kg' } }), antes), { load: 'PERSON' });
-  // Otra unidad es otra carga: la escribió la persona.
-  assert.deepEqual(c.origenesAlReescribir(nueva({ load: { value: 60, unit: 'lb' } }), { ...antes, fieldOrigins: { load: 'PLAN' } }), { load: 'PERSON' });
+  // Otra carga en otra unidad: la escribió la persona.
+  assert.deepEqual(c.origenesAlReescribir(nueva({ load: { value: 62.5, unit: 'lb' } }), { ...antes, fieldOrigins: { load: 'PLAN' } }), { load: 'PERSON' });
+  // El mismo número en otra unidad: cambió la unidad del ejercicio, no la escribió en esa fila. Sin clave («sin saber»), o
+  // PERSON si ya lo era.
+  assert.equal(c.origenesAlReescribir(nueva({ load: { value: 60, unit: 'lb' } }), { ...antes, fieldOrigins: { load: 'PLAN' } }), undefined);
+  assert.equal(c.origenesAlReescribir(nueva({ load: { value: 60, unit: 'lb' } }), { ...antes, recordedAs: 'AS_PLANNED' })?.load, undefined);
+  assert.deepEqual(c.origenesAlReescribir(nueva({ load: { value: 60, unit: 'lb' } }), { ...antes, fieldOrigins: { load: 'PERSON', rir: 'PLAN' } }), { load: 'PERSON', rir: 'PLAN' });
   // Nada cambió de valor y nada tenía origen: no viaja el campo.
   assert.equal(c.origenesAlReescribir(nueva({}), antes), undefined);
 });
