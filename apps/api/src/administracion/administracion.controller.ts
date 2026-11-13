@@ -2,11 +2,13 @@ import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Post, Query, R
 import {
   HEADER_IDEMPOTENCY_KEY,
   type CodigosDeRecuperacionResponse,
+  type DetalleDeIncidenciaResponse,
   type ConfiguracionConfirmadaResponse,
   type ConfiguracionDelAutenticadorResponse,
   type EstadoDeSesionAdministrativaResponse,
   type FichaDeProfesionalResponse,
   type HistorialAdministrativoResponse,
+  type ListaAdministrativaDeIncidenciasResponse,
   type ListaAdministrativaDePedidosDeDerechoResponse,
   type ListaDeProfesionalesResponse,
   type RecuperacionAsistidaResponse,
@@ -19,6 +21,7 @@ import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { sinParametrosDeQuery } from '../http/validacion';
 import { borrarCookieDeReanudacion, PERFIL_ADMINISTRATIVO } from '../sesion/reanudacion.service';
 import { DerechosService } from '../derechos/derechos.service';
+import { IncidenciasService } from '../incidencias/incidencias.service';
 import { RecuperacionService } from '../recuperacion/recuperacion.service';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
 import { AdministracionService } from './administracion.service';
@@ -29,7 +32,7 @@ type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
 /**
  * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13; desde UF-04 de WP-USO-FINAL (DL-169), también API-ADM-14
  * (incorporar un profesional) y 15 (cambiar su nombre profesional); desde UF-06, 16 y 17 (los pedidos de derechos), y desde
- * UF-03, 18 (la recuperación asistida). Prefijo global /api/v1.
+ * UF-03, 18 (la recuperación asistida). Desde RF-068 (DL-172), las incidencias: API-INC-03 a 05. Prefijo global /api/v1.
  * - Sin guard: abrir y reanudar la sesión (el primer factor y la cookie) y cerrarla (idempotente).
  * - `SesionAdministrativaGuard`: una sesión administrativa válida, con el rol vigente. Alcanza solo para el segundo factor
  *   y para el estado de la propia sesión.
@@ -43,6 +46,7 @@ export class AdministracionController {
     private readonly administracion: AdministracionService,
     private readonly derechos: DerechosService,
     private readonly recuperacion: RecuperacionService,
+    private readonly incidencias: IncidenciasService,
   ) {}
 
   /** API-ADM-01 — PUBLIC. */
@@ -262,5 +266,44 @@ export class AdministracionController {
   restablecerSegundoFactor(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<SegundoFactorRestablecidoResponse> {
     sinParametrosDeQuery(query);
     return this.administracion.restablecerSegundoFactor(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  // ─── RF-068 (DL-172): las incidencias administrativas mínimas ─────────────────────────────────────
+
+  /** API-INC-03 — SESSION_MFA. Los filtros van en el cuerpo. */
+  @Post('incidents/query')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-INC-03')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  consultarIncidencias(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ListaAdministrativaDeIncidenciasResponse> {
+    sinParametrosDeQuery(query);
+    return this.incidencias.consultar(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /** API-INC-04 — SESSION_MFA. */
+  @Get('incidents/:incidentId')
+  @OperacionAdministrativa('API-INC-04')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  incidencia(@Param('incidentId') incidenciaId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<DetalleDeIncidenciaResponse> {
+    sinParametrosDeQuery(query);
+    return this.incidencias.detalle(actorAdministrativoDe(req), incidenciaId, contextoDe(req));
+  }
+
+  /** API-INC-05 — SESSION_MFA, Idempotency-Key requerida. */
+  @Post('incidents/:incidentId/updates')
+  @OperacionAdministrativa('API-INC-05')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async cambiarEstadoDeIncidencia(
+    @Param('incidentId') incidenciaId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.incidencias.cambiarEstado(actorAdministrativoDe(req), incidenciaId, cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
   }
 }

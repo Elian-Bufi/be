@@ -4,6 +4,7 @@ import type { Entorno } from './config/entorno';
 import { AccesoGoogleModule } from './acceso-google/acceso-google.module';
 import { AdministracionModule } from './administracion/administracion.module';
 import { DerechosModule } from './derechos/derechos.module';
+import { IncidenciasModule } from './incidencias/incidencias.module';
 import { RecuperacionModule } from './recuperacion/recuperacion.module';
 import { ContactoModule } from './contacto/contacto.module';
 import { ENTORNO, VERSION } from './config/tokens';
@@ -102,6 +103,8 @@ export class AppModule {
         ContactoModule,
         // DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56): lo que la persona comparte de otras áreas.
         ResumenesModule,
+        // RF-068 (DL-172): las incidencias administrativas mínimas.
+        IncidenciasModule,
       ],
       // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
       providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],

@@ -19,6 +19,7 @@ import { LimitadorService } from '../plataforma/limitador.service';
 import { esViolacionDeUnicidad } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { SesionService, type SesionAbierta } from '../sesion/sesion.service';
+import { metodoVigenteEnLaBase } from './metodos-de-la-cuenta';
 import { CorreoDeGoogleNoVerificado, GoogleNoDisponible, TokenDeGoogleInvalido, VerificadorDeGoogle, type CuentaDeGoogle } from './verificador-de-google';
 
 const OPERACION_SESION = 'API-GOO-01';
@@ -43,6 +44,8 @@ class CuentaNoOperativa extends Error {
  * - **API-GOO-03** crea la identidad con los mismos actos que el alta local, la declaración de mayoría de edad y el nombre
  *   que la persona confirmó (DL-169; API-GOO-01 se lo propone desde la cuenta de Google, UF-D2).
  * Un correo es de una sola identidad (RF-001; INV-06-21): las tres operaciones que escriben toman el cerrojo del correo.
+ * Una cuenta de Google desvinculada desde la cuenta (API-MET-03; RF-004, DL-172) no abre sesión ni crea otra identidad:
+ * con la contraseña de ese correo, se vuelve a vincular (API-GOO-02 la reasocia); si no, 409 GOOGLE_ACCOUNT_UNLINKED.
  */
 @Injectable()
 export class AccesoGoogleService {
@@ -68,10 +71,13 @@ export class AccesoGoogleService {
     this.limitador.consumir('login', ctx.direccionIp, `google:${cuenta.sub}`);
     this.limitador.consumir('loginPorIdentificador', null, `google:${cuenta.sub}`);
 
-    const metodo = await this.prisma.metodoDeAcceso.findUnique({
+    const encontrado = await this.prisma.metodoDeAcceso.findUnique({
       where: { tipo_referencia: { tipo: 'GOOGLE', referencia: cuenta.sub } },
-      select: { identidadId: true },
+      select: { id: true, identidadId: true },
     });
+    // RF-004 (DL-172): una cuenta de Google desvinculada se trata como no vinculada, sin crear otra identidad.
+    const desvinculada = encontrado !== null && !(await metodoVigenteEnLaBase(this.prisma, encontrado.id));
+    const metodo = desvinculada ? null : encontrado;
     if (!metodo) {
       // Ninguna identidad tiene esa cuenta de Google. Con una cuenta local de ese correo, vincular exige su contraseña
       // (UC-E05 E02: «no se vincula ni crea sesión hasta resolver la asociación»); sin ninguna, el cliente ofrece el alta.
@@ -80,6 +86,7 @@ export class AccesoGoogleService {
         select: { identidadId: true },
       });
       if (local) await this.rechazar(OPERACION_SESION, errores.vinculacionConGoogleRequerida(cuenta.correo), ctx, local.identidadId, 'VINCULACION_REQUERIDA');
+      if (encontrado) await this.rechazar(OPERACION_SESION, errores.cuentaDeGoogleDesvinculada(), ctx, encontrado.identidadId, 'GOOGLE_DESVINCULADA');
       // DL-169 (UF-D2): con el nombre de la cuenta de Google, leído del token ya verificado, para proponerlo en el alta.
       await this.rechazar(OPERACION_SESION, errores.cuentaDeGoogleInexistente(cuenta.correo, cuenta.nombre), ctx, null, 'CUENTA_DE_GOOGLE_INEXISTENTE');
     }
@@ -118,12 +125,14 @@ export class AccesoGoogleService {
         await bloquearCorreoDeAcceso(tx, cuenta.correo);
         const google = await tx.metodoDeAcceso.findMany({
           where: { tipo: 'GOOGLE', OR: [{ referencia: cuenta.sub }, { identidadId }] },
-          select: { identidadId: true, referencia: true },
+          select: { id: true, identidadId: true, referencia: true, _count: { select: { cambios: true } } },
         });
-        const yaEsDeEstaCuenta = google.some((m) => m.identidadId === identidadId && m.referencia === cuenta.sub);
-        // La cuenta de Google es de otra identidad, o esta identidad ya tiene otra cuenta de Google (una por identidad).
-        if (!yaEsDeEstaCuenta && google.length > 0) throw errores.cuentaDeGoogleYaVinculada();
-        if (!yaEsDeEstaCuenta) await this.asociar(tx, identidadId, cuenta, procedencia, ctx);
+        const deEstaCuenta = google.find((m) => m.identidadId === identidadId && m.referencia === cuenta.sub);
+        // La cuenta de Google es de otra identidad, o esta identidad ya tiene (o tuvo) otra cuenta de Google (una por identidad).
+        if (!deEstaCuenta && google.length > 0) throw errores.cuentaDeGoogleYaVinculada();
+        if (!deEstaCuenta) await this.asociar(tx, identidadId, cuenta, procedencia, ctx);
+        // RF-004 (DL-172): la misma cuenta de Google, desvinculada desde la cuenta: confirmada la contraseña, se reasocia.
+        else if (deEstaCuenta._count.cambios % 2 === 1) await this.reasociar(tx, identidadId, deEstaCuenta.id, deEstaCuenta._count.cambios + 1, procedencia, ctx);
         // Repetirlo con la misma cuenta ya vinculada (un reintento) abre otra sesión sin duplicar nada.
         return this.abrirEn(tx, identidadId, ctx, OPERACION_VINCULO);
       });
@@ -151,9 +160,13 @@ export class AccesoGoogleService {
         await bloquearCorreoDeAcceso(tx, cuenta.correo);
         const existente = await tx.metodoDeAcceso.findUnique({
           where: { tipo_referencia: { tipo: 'GOOGLE', referencia: cuenta.sub } },
-          select: { identidadId: true },
+          select: { id: true, identidadId: true },
         });
-        if (existente) return { creada: false, identidadId: existente.identidadId, sesion: await this.abrirEn(tx, existente.identidadId, ctx, OPERACION_ALTA) };
+        if (existente) {
+          // RF-004 (DL-172): desvinculada desde la cuenta, no abre sesión ni crea otra identidad.
+          if (!(await metodoVigenteEnLaBase(tx, existente.id))) throw new ConSujeto(errores.cuentaDeGoogleDesvinculada(), existente.identidadId, 'GOOGLE_DESVINCULADA');
+          return { creada: false, identidadId: existente.identidadId, sesion: await this.abrirEn(tx, existente.identidadId, ctx, OPERACION_ALTA) };
+        }
         const delCorreo = await metodosDelCorreo(tx, cuenta.correo);
         // Nunca una identidad paralela: con una cuenta local de ese correo, se vincula con su contraseña (API-GOO-02).
         const local = delCorreo.find((m) => m.tipo === 'LOCAL');
@@ -223,6 +236,26 @@ export class AccesoGoogleService {
         sujetoId: identidadId,
         recursoTipo: 'MetodoDeAcceso',
         recursoId: metodo.id,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      },
+      tx,
+    );
+  }
+
+  /** RF-004 (DL-172): la reasociación, una fila nueva de solo agregar con el número que sigue, y su auditoría. */
+  private async reasociar(tx: Prisma.TransactionClient, identidadId: string, metodoId: string, numero: number, procedencia: Prisma.InputJsonValue, ctx: ContextoDeSolicitud): Promise<void> {
+    await tx.cambioDeMetodoDeAcceso.create({ data: { metodoDeAccesoId: metodoId, identidadId, numero, accion: 'REASOCIACION', procedencia } });
+    await this.auditoria.registrar(
+      {
+        operacion: OPERACION_VINCULO,
+        resultado: 'EXITO',
+        motivo: 'METODO_GOOGLE_REASOCIADO',
+        actorId: identidadId,
+        sujetoId: identidadId,
+        recursoTipo: 'MetodoDeAcceso',
+        recursoId: metodoId,
         superficie: ctx.superficie,
         requestId: ctx.requestId,
         momentoDeOcurrencia: ctx.momentoDeRecepcion,
