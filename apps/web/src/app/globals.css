@@ -10752,8 +10752,8 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 /* Angosto (una tableta de pie, un teléfono): cada serie es un bloque con su número y, debajo, sus campos con su rótulo.
-   Entre 40 y 46 rem (el centro de la estación a 1440) sigue siendo tabla, más apretada: ver la revisión visual del
-   2026-11-13, al final. */
+   Entre 40 y 46 rem (el centro de la estación a 1440) sigue siendo tabla, más apretada: va debajo (revisión visual
+   del 2026-11-13). */
 @container ejercicios (max-width: 40rem) {
   .series-del-editor thead {
     display: none;
@@ -10800,6 +10800,45 @@ button.comida-del-dia__fila > .icono:last-child {
   .series-del-editor td[data-etiqueta]::before {
     display: block;
     margin-bottom: 0.2rem;
+  }
+}
+
+/* La planilla de series entre 40 y 46 rem (el centro de la estación a 1440): tabla, con columnas más justas. */
+@container ejercicios (40rem < width <= 46rem) {
+  .series-del-editor thead th:first-child {
+    width: 2.5rem;
+  }
+
+  .series-del-editor thead th:nth-child(2) {
+    width: 4rem;
+  }
+
+  .series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
+    width: 6.25rem;
+  }
+
+  /* El descanso lleva «Sin objetivo» escrito: un poco más ancho que los números. */
+  .series-del-editor thead th:nth-child(6):not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
+    width: 7.5rem;
+  }
+
+  .series-del-editor thead th.series-del-editor__columna-quitar {
+    width: 3rem;
+  }
+
+  .series-del-editor th,
+  .series-del-editor td {
+    padding-inline: 0.2rem;
+  }
+
+  .series-del-editor .celda-de-serie,
+  .series-del-editor .celda-de-objetivo {
+    font-size: 0.9rem;
+  }
+
+  .series-del-editor .celda-de-objetivo > input[data-texto] {
+    padding-inline-start: 0.45rem;
+    font-size: 0.82rem;
   }
 }
 
@@ -17380,45 +17419,6 @@ p.cifra-del-espacio__desglose {
 /* El RIR observado: los seis segmentos entran en el cajón («Más de 2» se cortaba). */
 .serie-observada__rir .segmento {
   padding-inline: 0.6rem;
-}
-
-/* La planilla de series entre 40 y 46 rem (el centro de la estación a 1440): tabla, con columnas más justas. */
-@container ejercicios (40rem < width <= 46rem) {
-  .series-del-editor thead th:first-child {
-    width: 2.5rem;
-  }
-
-  .series-del-editor thead th:nth-child(2) {
-    width: 4rem;
-  }
-
-  .series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
-    width: 6.25rem;
-  }
-
-  /* El descanso lleva «Sin objetivo» escrito: un poco más ancho que los números. */
-  .series-del-editor thead th:nth-child(6):not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
-    width: 7.5rem;
-  }
-
-  .series-del-editor thead th.series-del-editor__columna-quitar {
-    width: 3rem;
-  }
-
-  .series-del-editor th,
-  .series-del-editor td {
-    padding-inline: 0.2rem;
-  }
-
-  .series-del-editor .celda-de-serie,
-  .series-del-editor .celda-de-objetivo {
-    font-size: 0.9rem;
-  }
-
-  .series-del-editor .celda-de-objetivo > input[data-texto] {
-    padding-inline-start: 0.45rem;
-    font-size: 0.82rem;
-  }
 }
 
 /* La barra de la estación es fija: lo que se lleva a la vista (un ejercicio, «Ir a corregir») queda debajo de ella y no
