@@ -2,8 +2,8 @@
 
 > **Estado:** DECLARADO el 2026-11-13, sin programar. Las partes PG-01 a PG-19 y el calendario (§3) son el pedido de
 > Dirección. Las decisiones PG-D1 a PG-D15 (§5) están **a ratificar**: mientras no haya respuesta, rige la
-> recomendación de cada una, salvo en las que lo dicen (PG-D10 y PG-D11 esperan el sí antes de programar su; PG-D1 la decidió Dirección el 2026-11-13
-> parte). DL-173.
+> recomendación de cada una, salvo en las que lo dicen (PG-D10 y PG-D11 esperan el sí antes de programar su
+> parte; PG-D1 la decidió Dirección el 2026-11-13). DL-173.
 >
 > **Encargo** (Dirección, 2026-11-13):
 > - de la página «Pulido como las grandes», Dirección eligió quince ideas y pidió: «Armá el paquete con sus IDs y decime
