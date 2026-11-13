@@ -53,6 +53,7 @@ import { useMovimientoReducido } from '../estados';
 import { BotonDeIcono, Icono } from '../icono';
 import { llenadoDeLaBarra, type AjustesDelDescanso, type PermisoDeAvisos } from '../descanso-automatico';
 import { TEXTOS_DEL_DESCANSO } from '../textos-del-descanso';
+import { TEXTOS_DEL_PULIDO } from '../textos-del-pulido';
 import { IconoDeCronometro, IconoDeEjercicio, IconoDeNube, IconoDePlan, IconoDeRutina } from '../iconos-de-entrenamiento';
 import { Flecha, IconoDeRegistrado } from '../iconos-de-nutricion';
 import { CasillaSimple } from '../piezas-de-nutricion';
@@ -875,6 +876,8 @@ export function HojaDelDescanso({
   visible,
   ajustes,
   permiso,
+  pantallaEncendida,
+  onPantallaEncendida,
   onCambiar,
   onPermitir,
   onCerrar,
@@ -882,6 +885,9 @@ export function HojaDelDescanso({
   visible: boolean;
   ajustes: AjustesDelDescanso;
   permiso: PermisoDeAvisos;
+  /** PG-05: la casilla de la pantalla encendida, guardada en el teléfono aparte de los ajustes del descanso. */
+  pantallaEncendida: boolean;
+  onPantallaEncendida: (prendida: boolean) => void;
   onCambiar: (cambios: Partial<AjustesDelDescanso>) => void;
   onPermitir: () => void;
   onCerrar: () => void;
@@ -922,6 +928,9 @@ export function HojaDelDescanso({
             </View>
           ) : null}
           {ajustes.vibrar && ajustes.tambienBloqueado && permiso === 'negado' ? <Text style={estilos.detalle}>{T.vibraSoloConLaAppAbierta}</Text> : null}
+          {/* PG-05 (WP-PULIDO-GRANDES): la casilla de la pantalla encendida; el lector la lee con su estado. */}
+          <CasillaSimple marcada={pantallaEncendida} onCambio={onPantallaEncendida} texto={TEXTOS_DEL_PULIDO.mantenerLaPantalla} />
+          <Text style={estilos.detalle}>{TEXTOS_DEL_PULIDO.mantenerLaPantallaDetalle}</Text>
           <Text style={[estilos.detalle, estilos.pieDeLaHoja]}>{T.ajustesEnEsteTelefono}</Text>
         </ScrollView>
       </View>

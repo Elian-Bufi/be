@@ -57,6 +57,8 @@ import {
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
 import { ajustesDelDescanso, marcaDeLaExplicacion, useAjustesDelDescanso } from '../ajustes-del-descanso';
+import { usePantallaEncendida } from '../pantalla-encendida-en-la-sesion';
+import { preferenciasDelTelefono, usePreferenciasDelTelefono } from '../preferencias-en-el-telefono';
 import { seMuestraLaExplicacion } from '../explicacion-de-los-tiempos';
 import { cancelarAvisoDelDescanso, pedirPermisoDeAvisos, permisoDeAvisos, programarAvisoDelDescanso } from '../avisos-del-telefono';
 import { accionAlDestildar, accionAlTildar, filaDeAcciones, llegoAlRecomendado, pedidoDelPermiso, planDelAviso, queHaceElMedio, type PermisoDeAvisos } from '../descanso-automatico';
@@ -1017,6 +1019,7 @@ export function PantallaDeSesion({
   // DL-166 (AV-11, AV-12): los ajustes del descanso (en el teléfono), su hoja, y el permiso de avisos, pedido en contexto.
   const ajustes = useAjustesDelDescanso();
   const [hojaDelDescanso, setHojaDelDescanso] = useState(false);
+  const preferencias = usePreferenciasDelTelefono();
   const [permiso, setPermiso] = useState<PermisoDeAvisos>('dado');
   const [permisoCerrado, setPermisoCerrado] = useState(false);
   useEffect(() => {
@@ -1099,6 +1102,9 @@ export function PantallaDeSesion({
   const nombreDe = (id: string) => prescripciones.find((x) => x.prescriptionId === id)?.exerciseName ?? 'Ejercicio';
   const recomendadoDe = (id: string, setIndex: number) => prescripciones.find((x) => x.prescriptionId === id)?.sets.find((s) => s.setIndex === setIndex)?.target.restSeconds ?? null;
   const conCorrida = modo === 'en-vivo' && estado !== null && estado.runId !== null && estado.cierre === null;
+  // PG-05 (WP-PULIDO-GRANDES): la pantalla encendida mientras la sesión corre en vivo, sin pausa; se libera al pausar,
+  // al finalizar, al salir de la sesión o con la app atrás (`pantalla-encendida.ts`).
+  usePantallaEncendida(conCorrida && !estado.pausada);
   const activoDeLaCorrida = conCorrida ? estado.ejercicioActivo : null;
   const p = prescripciones.find((x) => x.prescriptionId === (activoDeLaCorrida ?? local?.foco?.prescriptionId)) ?? prescripciones[0] ?? null;
   const borrador = local?.borrador ?? null;
@@ -1976,6 +1982,8 @@ export function PantallaDeSesion({
         visible={hojaDelDescanso}
         ajustes={ajustes}
         permiso={permiso}
+        pantallaEncendida={preferencias.pantallaEncendida}
+        onPantallaEncendida={(pantallaEncendida) => void preferenciasDelTelefono.cambiar({ pantallaEncendida })}
         onCambiar={(cambios) => void ajustesDelDescanso.cambiar(cambios)}
         onPermitir={() => void permitirAvisos()}
         onCerrar={() => setHojaDelDescanso(false)}
