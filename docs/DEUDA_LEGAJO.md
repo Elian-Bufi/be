@@ -176,6 +176,7 @@
 | DL-170 | Decisión de Dirección · 2026-11-11 (WP-APP-VUELTA-2) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · DL-166 (PV-2, PV-5, PV-11 y AVD-2) · DL-117 · DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · WP-ENTRENAMIENTO-SERIES §7.7 · GUIA-UX-UI I.6, I.8, III.3 y III.4 · F-143 | La APK se siente plana: el fondo es liso, las tarjetas son mates y opacas y el botón principal es casi blanco. Además, el Inicio de la 0.23 tiene seis errores de lógica: «Empezar» con una sesión en curso, «la que sigue» sin mirar lo hecho hoy, la figura cortada en Evolución, «Cómo se lee» desalineado, ceros en Tu historial y una actividad que se lee de dos maneras | **DECIDIDA por Dirección el 2026-11-11 · etapa A programada, sin integrar (#255)**: «Sí, Inicio + glassy en toda la app», en la misma APK que UF-01 y antes del congelamiento del 25/11; primero, el Inicio real en el teléfono de Dirección. Aprobadas la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; la etapa B espera el visto bueno a la muestra (`docs/paquetes/WP-APP-VUELTA-2.md` §10) |
 | DL-171 | Decisión de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; DJ-1 y DJ-2 del juicio del paquete V3) | 09v10:356 · 06:5431 · REG-06-182 · INV-06-192 · REG-06-202 a 207 · B10-06:426-431 · B10-08 · INV-06-152 · DL-126 · DL-161 · DL-167 | El legajo dice que BE no fija una fórmula de repetición máxima, y un RIR registrado puede ser el del plan sin marca; Dirección pide seguir la fuerza desde lo que se hizo, no desde lo indicado | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · el método, en programación (etapa 1)**: Epley v1 (n/30, bandas sobre las repeticiones equivalentes, RIR de 0 a 2), solo para el profesional y en el website, desde una serie que observa el profesional o que escribió la persona, con la procedencia por campo en la APK de esta actualización; el profesional elige un % y BE sugiere los kilos, que él confirma. Enmienda 09v10:356 sin tocar el legajo. ED-70 a ED-76; ED-D17 a ED-D21, decididas el 2026-11-12 como se recomendaban; el website le explica al profesional la regla del RIR de 0 a 2 (R3) |
 | DL-172 | Pedido de Dirección · 2026-11-13 («ve adelantando las cosas según prioridad»; WP-RF068-RF004) | 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.16.1 §4 · 09 v0.12 §12 y §16 · 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 | El 09 vigente (v0.16.1 §4) les da familia (`ACC-P2` y `ADM-P1`) sin IDs ni contratos; el v0.12 bosqueja las rutas. RF-068 estaba fuera de WP-USO-FINAL y RF-004 en parte | **PROGRAMADA en `wp-rf068-rf004` (PR en borrador) · D-1 a D-12 a ratificar**: familias propias INC (API-INC-01 a 05) y MET (API-MET-01 a 03) con las rutas del bosquejo; dos migraciones que solo agregan |
+| DL-173 | Pedido de Dirección · 2026-11-13 («Armá el paquete con sus IDs y decime cuándo sale cada cosa»; WP-PULIDO-GRANDES) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · B10-06 (feedback háptico opcional) · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 | De la página «Pulido como las grandes», Dirección eligió quince ideas, y al probar la 0.27 dejó cuatro de Inicio, la carga y la cabecera; ninguna tenía ID ni fecha de salida | **DECLARADA el 2026-11-13, sin programar** (`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador): 19 partes (PG-01 a PG-04, las de Inicio; PG-05 a PG-19, las quince elegidas). Tanda A, APK 0.28, objetivo martes 17/11 (PG-01 a PG-10 y PG-14); tanda B, APK 0.29, objetivo viernes 20/11 (PG-11 a PG-13 y PG-15 a PG-17); después del 25/11, PG-18 y PG-19. Desde el 23/11, solo arreglos; lo de la B que no esté estable el 20/11 pasa a después del 25/11. PG-D1 a PG-D15, a ratificar |
 
 ---
 
@@ -8125,3 +8126,48 @@ ni contratos.
   real en `/account`), y sumar la APK (Perfil) en su próxima versión.
 - **B:** lo mismo, pero con D-5 en su opción B (una migración que cambie el índice, para poder vincular otra cuenta de
   Google) y D-8 en su opción B (cerrar las otras sesiones al desvincular).
+
+---
+
+## DL-173 — Pulir BE como las grandes: diecinueve partes con su ID y su fecha de salida
+
+**Prioridad:** media (pulido de uso; ninguna parte cambia una garantía del legajo) · **Documento:** TEST-PRJ-009 ·
+RNF-ACC-001 y B10-10 · B10-06 · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137
+D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 · **Estado:** DECLARADA el 2026-11-13, sin programar
+(`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador). PG-D1 a PG-D15, a ratificar.
+
+**El pedido.** El 2026-11-13, Dirección eligió quince ideas de la página «Pulido como las grandes» y pidió: «Armá el
+paquete con sus IDs y decime cuándo sale cada cosa». Ese mismo día, al probar la 0.27, dejó cuatro ideas de Inicio, la
+carga y la cabecera, «para la próxima». La primera idea del catálogo (la palabra prohibida de la portada) ya está hecha
+en #266 y queda como antecedente, no como parte.
+
+**Las partes.**
+- **PG-01 a PG-04**, las de Dirección: Inicio con la sesión que sigue y «Otra sesión»; el logo que llena el círculo de la
+  carga; «BE está preparando tu espacio»; y el título de cada pantalla en la cabecera.
+- **PG-05 a PG-19**, las quince elegidas: la pantalla encendida en la sesión, el QR para bajar la APK, la página «no
+  encontrada», la háptica que confirma, tirar para actualizar con la hora de lo que se ve, los avisos repetidos en un
+  renglón, «La vez pasada», quién miró lo compartido, la primera vez, las fechas como se leen acá, la nota para el profe
+  al finalizar, las notas propias del profesional, el plan impreso, el ejercicio en el tiempo y lo que se anota sin
+  señal.
+
+**El calendario.**
+- **Tanda A, APK 0.28, objetivo martes 17/11:** PG-01 a PG-10 y PG-14, sin operaciones nuevas. Lo del website (PG-06,
+  PG-07, PG-10 y PG-14) sale al integrarse en `main`, sin esperar a la APK.
+- **Tanda B, APK 0.29, objetivo viernes 20/11:** PG-11, PG-12, PG-13, PG-15, PG-16 y PG-17. Lo que no esté estable el
+  20/11 pasa a después del 25/11.
+- **Después del 25/11:** PG-18, con el paquete de gráficos, y PG-19, que es grande.
+- **Congelamiento:** desde el lunes 23/11, solo arreglos.
+
+**Lo que toca el legajo o una DL.**
+- **DL-077** (BE no elige la sesión): PG-01 propone la que sigue en el orden que armó el profesional. Solo con PG-D1
+  ratificada; la alternativa es el desplegable que pensó Dirección, sin ninguna destacada.
+- **DL-137 D-7** (lo nuevo, en operaciones nuevas): PG-15 suma API-TRN-25 y API-TRN-25-LISTA, aparte de confirmar la
+  sesión (PG-D10), y PG-16, una familia propia de BE, **NPP** (API-NPP-01 a 03), que la guardia de trazabilidad declara
+  con esta DL al programarse (PG-D11).
+- **B10-01 §36 y 02 §14:** PG-19 guarda en espera lo que se anota sin señal y nunca lo muestra como guardado; no es el
+  «modo offline integral» que el MVP deja fuera.
+
+**Opciones para Dirección.**
+- **A (recomendada):** ratificar PG-D1 a PG-D15 como se recomiendan y programar por tandas, con el calendario de arriba.
+- **B:** lo mismo, con PG-D1 en su alternativa (el desplegable, sin destacar ninguna sesión), y PG-15 y PG-16 después
+  del 25/11, para que la tanda B no toque la API.
