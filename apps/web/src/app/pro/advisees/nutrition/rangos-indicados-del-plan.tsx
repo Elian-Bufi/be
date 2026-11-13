@@ -16,6 +16,7 @@
 
 import { MACROS_DEL_RANGO, type EscribirRangosRequest, type MacroDelRango, type RangosDelPlan } from '@be/domain';
 import { useCallback, useId, useRef, useState } from 'react';
+import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Aviso } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
@@ -347,23 +348,8 @@ function CuadroDelRango({
                   </span>
                 ) : null}
               </div>
-              <div className="campo">
-                <label htmlFor={`${id}-fecha`}>{C.fecha}</label>
-                <input
-                  id={`${id}-fecha`}
-                  type="date"
-                  max={hoy}
-                  aria-invalid={errFecha ? true : undefined}
-                  aria-describedby={errFecha ? `${id}-fecha-error` : undefined}
-                  value={peso.fecha}
-                  onChange={(e) => cambiarPeso({ ...peso, fecha: e.target.value })}
-                />
-                {errFecha ? (
-                  <span id={`${id}-fecha-error`} className="campo__error">
-                    {errFecha}
-                  </span>
-                ) : null}
-              </div>
+              {/* PG-14: el calendario propio, con el mismo límite de hoy y el mismo `id` (el error lleva el foco ahí). */}
+              <CampoDeFecha id={`${id}-fecha`} etiqueta={C.fecha} max={hoy} hoy={hoy} value={peso.fecha} onChange={(fecha) => cambiarPeso({ ...peso, fecha })} error={errFecha} required />
             </div>
           ) : null}
         </fieldset>
