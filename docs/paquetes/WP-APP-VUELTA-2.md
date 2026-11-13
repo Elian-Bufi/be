@@ -1375,3 +1375,18 @@ cada una con su sombra, su línea y su brillo, encima del grano y de los degrad�
 por serie. Además, el reloj vuelve a dibujar la pantalla cada segundo. Se mide con `dumpsys gfxinfo` en la sesión en vivo,
 en Azul noche (§5.3). Hoy no había un teléfono conectado. Si el percentil 90 pasa de 16,7 ms, las series van como filas
 de nivel 2 dentro de una sola tarjeta por ejercicio, como en Strong y Hevy: son de 4 a 6 sombras menos.
+
+### 10.9 La 0.27, publicada como «latest» (2026-11-13)
+
+Con el sí de Dirección del 2026-11-13, la **0.27.0-candidata.1** salió como «latest» y reemplaza a la 0.24.0-candidata.1:
+tag `be-apk-0.27.0-candidata.1` en `e145af9` (main `34ba8103`, con este paquete integrado, y el commit de la versión),
+versionCode 41, SHA-256 `dca29232…5011b`. El AAB y la APK se verificaron con todo bien, con la 0.26.0-candidata.1 de
+referencia.
+
+Su cierre congela lo que lee (DL-152): `VIGENTES = ['0.27.0-candidata.1']`, **98 operaciones**: las 89 de la 0.24 y nueve
+nuevas, cada una con su escenario en `lecturas-de-las-apk.int-spec.ts` (los textos, API-ACC-08 y 09; la ayuda, API-SOP-01;
+los derechos y la exportación, API-RGT-01 y 03 y API-EXP-01 y 02; y la recuperación del acceso, API-ACC-P1-01 y 02). Seis
+lecturas de la sesión de entrenamiento (API-TRN-15 a 17, 19, 19-LISTA y 20) suman la procedencia de cada serie
+(`fieldOrigins`, opcional). El congelado de la 0.24 sale y se regenera desde su tag.
+
+**Falta la prueba en el teléfono:** la sesión (AV2-30 a AV2-38), la medición del rendimiento (AV2-16) y TalkBack (AV2-29).
