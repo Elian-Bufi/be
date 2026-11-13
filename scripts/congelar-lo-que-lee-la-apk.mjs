@@ -76,8 +76,10 @@ try {
       fileName: ruta,
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
     }).outputText;
-    const ajenos = [...js.matchAll(/require\("([^"]+)"\)/g)].map((m) => m[1]).filter((m) => !m.startsWith('.') && m !== 'zod');
-    if (ajenos.length > 0) throw new Error(`${ruta} importa ${ajenos.join(', ')}: el script solo sabe resolver zod`);
+    // Los módulos propios de Node (`node:crypto`, desde la 0.27 en `textos-sin-publicar.ts`, que no sale del índice) los
+    // resuelve Node solo; cualquier otro paquete, no.
+    const ajenos = [...js.matchAll(/require\("([^"]+)"\)/g)].map((m) => m[1]).filter((m) => !m.startsWith('.') && !m.startsWith('node:') && m !== 'zod');
+    if (ajenos.length > 0) throw new Error(`${ruta} importa ${ajenos.join(', ')}: el script solo sabe resolver zod y los módulos de Node`);
     const destino = join(temporal, ruta.slice(PREFIJO.length).replace(/\.ts$/, '.js'));
     mkdirSync(dirname(destino), { recursive: true });
     writeFileSync(destino, js.replace(/require\("zod"\)/g, `require(${JSON.stringify(RUTA_DE_ZOD)})`));
@@ -410,7 +412,8 @@ function rutaDe(nodo, dominio, metodo) {
       if (esConsulta && tramo.literal.text !== '') throw new Error(`${metodo}: hay ruta después de la consulta`);
       ruta += (esConsulta ? '' : '{}') + tramo.literal.text;
     }
-    return ruta;
+    // La consulta escrita a mano (`/me/data-rights-requests?limit=20${…}`, desde la 0.27): desde el «?» no es ruta.
+    return ruta.split('?')[0];
   }
   if (ts.isPropertyAccessExpression(nodo)) {
     const valor = nodo.getText().split('.').reduce((o, k) => (o == null ? o : o[k]), dominio);

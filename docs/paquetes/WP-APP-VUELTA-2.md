@@ -2,7 +2,7 @@
 
 > **Estado:** etapa A programada en #255 (en borrador, sin integrar; DL-170). El 2026-11-11 Dirección aprobó la etapa A
 > (AV2-01 a AV2-18), AV2-D1 (el paso 1), AV2-D2 y AV2-D11; para D3, D4, D5, D7 y D8 rigen las recomendaciones (§6). La
-> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, T14 a T16 de la programación y T17 a T22 de la revisión (§10.4), y T23 a T39 de la etapa B (§10.6 a §10.8), a ratificar. Los
+> etapa B espera el visto bueno a la muestra (AV2-18). AV2-T1 a T13, T14 a T16 de la programación y T17 a T22 de la revisión (§10.4), y T23 a T39 de la etapa B (§10.6 a §10.8), ratificadas por Dirección el 2026-11-13. Los
 > oráculos están en `WP-APP-VUELTA-2-ORACULOS.md`; lo programado y lo que cambió al programar, en §10.
 >
 > **Encargo** (Dirección, 2026-11-11): pasó una referencia del tema de vidrio («glassy») para la apariencia de la app,
@@ -1014,7 +1014,7 @@ ratificada lo dicen. Ninguna se programa sin el sí de Dirección a su parte.
     pantallas cuyas superficies ya migraron. Nada se rompe: sin migrar, una tarjeta se ve como hoy.
   - *Alternativa:* prenderlo en toda la app igual. Lo que no migró se distingue solo cuando pasa sobre un destello.
 
-### 6.1 Las decisiones técnicas de esta declaración (AV2-T, a ratificar)
+### 6.1 Las decisiones técnicas de esta declaración (AV2-T, ratificadas por Dirección el 2026-11-13)
 
 Las tomó el continuador al declarar. Ninguna cambia una decisión de Dirección: completan lo que la maqueta no fija.
 
@@ -1126,7 +1126,7 @@ En la rama `wp-app-vuelta-2` (#255, en borrador), con un commit por parte, los o
 verificada con su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`). Solo la APK: no toca la API, el dominio ni el
 `package.json` de la raíz, y no redespliega nada.
 
-### 10.1 Lo que cambió al programar (AV2-T14 a AV2-T16, a ratificar)
+### 10.1 Lo que cambió al programar (AV2-T14 a AV2-T16, ratificadas por Dirección el 2026-11-13)
 
 - **AV2-T14 · El brillo de arriba se apaga dentro del relleno (12 dp), no al 45 % del alto.** §5.2 se midió sin el
   brillo. Con el brillo al 5 % debajo, en Azul noche la etiqueta de estado bajaba a 4,00:1, el tenue sobre el nivel 2 a
@@ -1169,7 +1169,7 @@ verificada con su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`). Solo la APK: no
   aprobados.
 - La etapa B, con el visto bueno de Dirección a la muestra.
 
-### 10.4 Lo que cambió con la revisión de la etapa A (2026-11-12; AV2-T17 a AV2-T22, a ratificar)
+### 10.4 Lo que cambió con la revisión de la etapa A (2026-11-12; AV2-T17 a AV2-T22, ratificadas por Dirección el 2026-11-13)
 
 Una revisión adversarial de la etapa A, antes de la muestra, encontró defectos que las pruebas no veían. Cada arreglo va
 con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
@@ -1247,7 +1247,7 @@ con su prueba y su mutación (`EVIDENCIA/APP-VUELTA-2/LEEME.md`).
   acá porque cambia Nutrición y Evolución, fuera de la etapa A; va en la etapa B (AV2-21 y AV2-19 tocan esos archivos) o
   en un arreglo aparte, con el sí de Dirección.
 
-### 10.6 La etapa B, con la vuelta de Dirección a la 0.25 (2026-11-12; AV2-T23 a AV2-T31, a ratificar)
+### 10.6 La etapa B, con la vuelta de Dirección a la 0.25 (2026-11-12; AV2-T23 a AV2-T31, ratificadas por Dirección el 2026-11-13)
 
 Dirección vio la 0.25 y dio el visto bueno a la etapa B con ajustes: un vidrio más profundo; en Azul noche, un fondo más
 oscuro con un grano muy fino y dos luces, y un filo de luz arriba de las tarjetas; en Claro, barridos celestes en las
@@ -1291,7 +1291,7 @@ desplazamiento. Quedan programadas AV2-19 a AV2-26. AV2-27 (la API) y AV2-28 (un
   puntos de cuadros lentos que la 0.23. Si no pasa, lo primero que se baja es el grano.
 - TalkBack, la letra ×1,3, el alto contraste y el dibujo de Android en las pantallas de AV2-19 a AV2-24 (AV2-29).
 
-### 10.7 La sesión de entrenamiento, con lo que encontró Dirección en la 0.25 (2026-11-12; AV2-30 a AV2-38 y AV2-T32 a AV2-T36, a ratificar)
+### 10.7 La sesión de entrenamiento, con lo que encontró Dirección en la 0.25 (2026-11-12; AV2-30 a AV2-38 y AV2-T32 a AV2-T36, ratificadas por Dirección el 2026-11-13)
 
 Dirección probó la 0.25 con la cuenta de Diego, en la sesión «Piernas A · 8 nov», y encontró diez cosas
 (`be-hallazgos-prueba-0-25`). Dos eran graves y entran antes de la APK final. Las demás van en la etapa B porque son de la
@@ -1320,7 +1320,7 @@ probable es que en el teléfono de Dirección falle la lectura de lo guardado: l
 sesión vuelve del servicio y la marca se pierde con ella. Si es así, vale la pena mirar por qué falla esa lectura: queda
 como hallazgo a verificar con el teléfono.
 
-**Las decisiones técnicas nuevas (a ratificar):**
+**Las decisiones técnicas nuevas (ratificadas por Dirección el 2026-11-13):**
 - **AV2-T32 · «Terminar serie» es el tilde.** Como en Strong y Hevy, donde el tilde de la serie la cierra y arranca el
   descanso. La alternativa, dejar «Terminar» solo para el reloj y pedir el tilde aparte, es la conducta que confundió a
   Dirección.
@@ -1340,7 +1340,7 @@ como hallazgo a verificar con el teléfono.
 
 **Lo que queda:** las partes AV2-30 a AV2-38, en el teléfono, con TalkBack (AV2-29), y la causa de AV2-33.
 
-### 10.8 La revisión de la etapa B (2026-11-12; AV2-T37 a AV2-T39, a ratificar)
+### 10.8 La revisión de la etapa B (2026-11-12; AV2-T37 a AV2-T39, ratificadas por Dirección el 2026-11-13)
 
 Una revisión del código de la etapa B encontró nueve cosas. Cada una se comprobó en el código antes de arreglarla.
 
@@ -1356,7 +1356,7 @@ Una revisión del código de la etapa B encontró nueve cosas. Cada una se compr
 | Baja | Tres textos: el recomendado se leía como otro descanso, dos verbos para lo mismo y «Con desvío» acortado | «Descansos: 01:32 · 01:45 (recomendado: 01:30)», «Finalizar el entrenamiento» y «Realizada con desvío» (B10 §33) | TEST-AV2-032 y 036 |
 | Baja | El acento de Claro de la APK ya no es el del website | Pasa a ser una decisión propia: AV2-T39 | — |
 
-**Las decisiones técnicas nuevas (a ratificar):**
+**Las decisiones técnicas nuevas (ratificadas por Dirección el 2026-11-13):**
 - **AV2-T37 · «Registrar serie N», con el motivo junto al botón.** Si «Terminar» no puede registrar la serie, la fila fija
   no vuelve a «Empezar»: dice «Registrar serie N» y, encima, lo que falta, en el mismo lugar que el error de AV2-31. El
   lector lo anuncia en el momento. Es lo que hacen Strong y Hevy: el tilde no avanza sin las repeticiones. Material 3 pide
@@ -1375,3 +1375,18 @@ cada una con su sombra, su línea y su brillo, encima del grano y de los degrad�
 por serie. Además, el reloj vuelve a dibujar la pantalla cada segundo. Se mide con `dumpsys gfxinfo` en la sesión en vivo,
 en Azul noche (§5.3). Hoy no había un teléfono conectado. Si el percentil 90 pasa de 16,7 ms, las series van como filas
 de nivel 2 dentro de una sola tarjeta por ejercicio, como en Strong y Hevy: son de 4 a 6 sombras menos.
+
+### 10.9 La 0.27, publicada como «latest» (2026-11-13)
+
+Con el sí de Dirección del 2026-11-13, la **0.27.0-candidata.1** salió como «latest» y reemplaza a la 0.24.0-candidata.1:
+tag `be-apk-0.27.0-candidata.1` en `e145af9` (main `34ba8103`, con este paquete integrado, y el commit de la versión),
+versionCode 41, SHA-256 `dca29232…5011b`. El AAB y la APK se verificaron con todo bien, con la 0.26.0-candidata.1 de
+referencia.
+
+Su cierre congela lo que lee (DL-152): `VIGENTES = ['0.27.0-candidata.1']`, **98 operaciones**: las 89 de la 0.24 y nueve
+nuevas, cada una con su escenario en `lecturas-de-las-apk.int-spec.ts` (los textos, API-ACC-08 y 09; la ayuda, API-SOP-01;
+los derechos y la exportación, API-RGT-01 y 03 y API-EXP-01 y 02; y la recuperación del acceso, API-ACC-P1-01 y 02). Seis
+lecturas de la sesión de entrenamiento (API-TRN-15 a 17, 19, 19-LISTA y 20) suman la procedencia de cada serie
+(`fieldOrigins`, opcional). El congelado de la 0.24 sale y se regenera desde su tag.
+
+**Falta la prueba en el teléfono:** la sesión (AV2-30 a AV2-38), la medición del rendimiento (AV2-16) y TalkBack (AV2-29).
