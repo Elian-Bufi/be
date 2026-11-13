@@ -17,6 +17,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const D = await import('../src/lib/descarga-de-la-app.ts');
+const N = await import('../src/lib/no-encontrada.ts');
 const { terminosProhibidosEn } = await import('@be/domain');
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -105,4 +106,25 @@ test('TEST-PG-005 · con el ancho de un teléfono no hay QR: hay un botón; los 
   assert.match(c, /<DibujoDelPaso marca=\{marca\} paso=\{\(n \+ 1\) as 1 \| 2 \| 3\} etiqueta=/);
   assert.match(c, /role="img" aria-label=\{etiqueta\}/);
   for (const t of [...textos(D.COPY_DESCARGA), ...Object.values(D.PASOS_DE_LA_INSTALACION).flat().flatMap((p) => [p.texto, p.enElDibujo])]) assert.deepEqual(terminosProhibidosEn(t), [], t);
+});
+
+// ── TEST-PG-006 · PG-07 ────────────────────────────────────────────────────────────────────────────────────────
+
+test('TEST-PG-006 · la página no encontrada, en castellano y con sus dos salidas', () => {
+  assert.deepEqual({ ...N.COPY_NO_ENCONTRADA }, {
+    titulo: 'Esta página no existe',
+    bajada: 'Si venías de una invitación, pedile a tu profesional un enlace nuevo.',
+    alInicio: 'Ir al inicio',
+    entrar: 'Entrar',
+  });
+  const p = leer('src/app/not-found.tsx');
+  assert.match(p, /export default function NoEncontrada\(\)/);
+  assert.match(p, /<h1>\{C\.titulo\}<\/h1>/);
+  assert.match(p, /<Link className="boton boton--primario" href="\/">\n\s*\{C\.alInicio\}/);
+  assert.match(p, /<Link className="boton boton--secundario" href="\/login">\n\s*\{C\.entrar\}/);
+  assert.match(p, /title: 'Esta página no existe · BE', robots: \{ index: false, follow: false \}/);
+  // Ningún texto de Next en inglés, y nada que redirija, busque o registre la dirección pedida.
+  assert.doesNotMatch(p, /could not be found|not found|404:/i);
+  assert.doesNotMatch(p, /redirect|useRouter|router\.|fetch\(|api\.|usePathname|location/);
+  for (const t of Object.values(N.COPY_NO_ENCONTRADA)) assert.deepEqual(terminosProhibidosEn(t), [], t);
 });

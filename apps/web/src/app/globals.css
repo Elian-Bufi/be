@@ -17781,3 +17781,28 @@ html:has(.estacion:not([data-en-el-asistente])) {
     margin-top: 0.75rem;
   }
 }
+
+/* ─── PG-07 (WP-PULIDO-GRANDES): la página «no encontrada» ──────────────────────────────────────────────────── */
+.no-encontrada {
+  max-width: 36rem;
+  padding-top: clamp(2rem, 8vh, 5rem);
+}
+
+.no-encontrada h1 {
+  margin: 0.75rem 0 0.5rem;
+}
+
+.no-encontrada .acciones {
+  margin-top: 1.5rem;
+}
+
+.no-encontrada__icono {
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 14px;
+  border: 1px solid var(--borde);
+  color: var(--enlace);
+  background: var(--superficie);
+}
