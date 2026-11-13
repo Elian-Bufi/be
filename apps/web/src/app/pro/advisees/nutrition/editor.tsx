@@ -1365,14 +1365,14 @@ export function EditorDeBorrador({
                             {c.nombre} <span className="nota">· {c.opciones.length === 1 ? '1 opción' : `${c.opciones.length} opciones`}</span>
                           </th>
                           {NUTRIENTES_DEL_RANGO.map((n) => (
-                            <td key={n}>{rangoEnUnaCelda(c.rango[n], n)}</td>
+                            <td key={n} data-nutriente={COPY_RANGOS.nutriente[n]}>{rangoEnUnaCelda(c.rango[n], n)}</td>
                           ))}
                         </tr>
                       ))}
                       <tr className="panel-de-nutricion__fila-del-dia">
                         <th scope="row">{COPY_RANGOS.elDia}</th>
                         {NUTRIENTES_DEL_RANGO.map((n) => (
-                          <td key={n}>{rangoEnUnaCelda(rangos.dia[n], n)}</td>
+                          <td key={n} data-nutriente={COPY_RANGOS.nutriente[n]}>{rangoEnUnaCelda(rangos.dia[n], n)}</td>
                         ))}
                       </tr>
                     </tbody>

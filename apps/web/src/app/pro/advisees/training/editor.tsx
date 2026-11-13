@@ -1591,8 +1591,6 @@ export function EditorDePlan({
           </button>
         ))}
       </nav>
-      {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. */}
-      <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
       </>
       )}
       {conflicto ? (
@@ -1808,6 +1806,9 @@ export function EditorDePlan({
           ) : null}
         </div>
         <div id="zona-editor" className="estacion__zona estacion__centro" data-zona="editor" role="region" aria-label={CE.editor} tabIndex={-1}>
+          {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. Va arriba del
+              centro y no encima de las zonas: así las tres entran en la pantalla (revisión visual del 2026-11-13). */}
+          <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
           {/* ED-24: la agenda entera, en una tira de la semana arriba. */}
           {agendaVisible ? (
             <ol className="estacion__tira" aria-label={CE.semana}>

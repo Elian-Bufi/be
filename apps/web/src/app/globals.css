@@ -10743,13 +10743,18 @@ button.comida-del-dia__fila > .icono:last-child {
   }
 }
 
-/* Angosto (una tableta de pie, un teléfono): cada serie es un bloque con su número y, debajo, sus campos con su rótulo. */
+/* Lo general, en una columna desde unos 740 px de ancho para los ejercicios. */
 @container ejercicios (max-width: 46rem) {
   .lo-general-del-editor,
   .lo-general-del-editor__par {
     grid-template-columns: minmax(0, 1fr);
   }
+}
 
+/* Angosto (una tableta de pie, un teléfono): cada serie es un bloque con su número y, debajo, sus campos con su rótulo.
+   Entre 40 y 46 rem (el centro de la estación a 1440) sigue siendo tabla, más apretada: ver la revisión visual del
+   2026-11-13, al final. */
+@container ejercicios (max-width: 40rem) {
   .series-del-editor thead {
     display: none;
   }
@@ -17264,4 +17269,279 @@ p.cifra-del-espacio__desglose {
 /* ED-11 · las pestañas de la galería de estructura: presets y habituales, o tus plantillas */
 .galeria__pestanas {
   margin: 0 0 1rem;
+}
+
+/* ═══ Revisión visual de los editores del profesional (2026-11-13) ══════════════════════════════════════════════════
+   Lo que encontró la recorrida en pantalla a 1280, 1440 y 1920, en Claro y en Azul noche
+   (EVIDENCIA/EDITORES-PROFESIONAL/herramientas/capturas.mjs). */
+
+/* El encabezado de la ficha: desde ED-16, «Pedir información» va a la vista y el primer renglón ya no tiene lugar para el
+   acceso. A 1440 la columna del acceso medía cero y la píldora se encimaba con el botón. El acceso va en su renglón, como
+   por debajo de 1.400 px, en todos los anchos; en un área (con un botón menos) sigue arriba. */
+@media (min-width: 87.5rem) {
+  .marco-de-la-ficha:not(.marco-del-area) .marco-de-la-ficha__estado {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    min-height: 2.25rem;
+    padding-block: 0.25rem 0.3rem;
+  }
+
+  .marco-de-la-ficha:not(.marco-del-area) .marco-de-la-ficha__estado .ficha__acceso {
+    justify-content: flex-start;
+  }
+
+  .marco-de-la-ficha:not(.marco-del-area) .marco-de-la-ficha__vistas {
+    grid-row: 3;
+  }
+
+  /* «Más» cae en la columna que era del acceso: no se estira. */
+  .marco-de-la-ficha:not(.marco-del-area) .marco-de-la-ficha__persona > .menu-de-acciones {
+    justify-self: start;
+  }
+}
+
+/* La estación a 1920: el encabezado del área llega al mismo ancho que la estación, con los bordes alineados. */
+.ficha:has(.estacion:not([data-en-el-asistente])) .marco-de-la-ficha__ancho {
+  max-width: 115rem;
+}
+
+/* El asistente usa el ancho de la ficha, como el de Nutrición: con 64 rem los siete pasos no entraban en un renglón. */
+.estacion[data-en-el-asistente] {
+  max-width: none;
+}
+
+.ficha__cuerpo:has(.estacion[data-en-el-asistente]) {
+  max-width: 100rem;
+}
+
+/* Las tres zonas, cerca de arriba: los saltos de teclado no ocupan lugar hasta recibir el foco, y «Otras áreas» no se
+   repite arriba de la estación (es la tercera pestaña del panel). */
+.estacion {
+  position: relative;
+}
+
+.estacion__saltos {
+  position: absolute;
+  z-index: 6;
+}
+
+.seccion-del-area:has(.plan__preparacion:not([hidden]) .estacion:not([data-en-el-asistente])) > .otras-areas {
+  display: none;
+}
+
+.estacion__centro > .primer-uso {
+  margin: 0 0 0.75rem;
+}
+
+/* Los campos de la línea de prescripción y de la serie observada, con el borde y el alto de los demás campos. */
+.linea-de-prescripcion__campo,
+.serie-observada__campos input:not([type='radio']),
+.serie-observada__campos select {
+  min-height: 44px;
+  max-width: 100%;
+  padding-block: 0.5rem;
+  padding-inline-start: 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background-color: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.linea-de-prescripcion__campo,
+.serie-observada__campos input:not([type='radio']) {
+  padding-inline-end: 0.75rem;
+}
+
+.linea-de-prescripcion__campo::placeholder,
+.serie-observada__campos input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.linea-de-prescripcion__campo {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* «Enter», como una tecla al lado del campo, no como otro campo estirado. */
+.linea-de-prescripcion__tecla {
+  justify-self: start;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.serie-observada__campos input[type='date'] {
+  justify-self: start;
+  min-width: 12rem;
+}
+
+/* El RIR observado: los seis segmentos entran en el cajón («Más de 2» se cortaba). */
+.serie-observada__rir .segmento {
+  padding-inline: 0.6rem;
+}
+
+/* La planilla de series entre 40 y 46 rem (el centro de la estación a 1440): tabla, con columnas más justas. */
+@container ejercicios (40rem < width <= 46rem) {
+  .series-del-editor thead th:first-child {
+    width: 2.5rem;
+  }
+
+  .series-del-editor thead th:nth-child(2) {
+    width: 4rem;
+  }
+
+  .series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
+    width: 6.75rem;
+  }
+
+  .series-del-editor thead th.series-del-editor__columna-quitar {
+    width: 2.75rem;
+  }
+
+  .series-del-editor th,
+  .series-del-editor td {
+    padding-inline: 0.2rem;
+  }
+
+  .series-del-editor .celda-de-serie,
+  .series-del-editor .celda-de-objetivo {
+    font-size: 0.9rem;
+  }
+}
+
+/* Rangos y totales, en el panel de Nutrición: una comida por bloque, con sus cuatro valores en dos columnas. La tabla de
+   cinco columnas no entraba en 24 rem ni a 1920 y se cortaba en «Proteínas». */
+.panel-de-nutricion__tabla {
+  margin: 0;
+}
+
+.panel-de-nutricion__tabla thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.panel-de-nutricion__tabla,
+.panel-de-nutricion__tabla tbody {
+  display: block;
+}
+
+.panel-de-nutricion__tabla tr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.panel-de-nutricion__tabla th,
+.panel-de-nutricion__tabla td {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+
+.panel-de-nutricion__tabla th[scope='row'] {
+  grid-column: 1 / -1;
+}
+
+.panel-de-nutricion__tabla td {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.panel-de-nutricion__tabla td::before {
+  content: attr(data-nutriente);
+  color: var(--tenue);
+  font-weight: 400;
+}
+
+.panel-de-nutricion__fila-del-dia {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.panel-de-nutricion .desplazable-x:has(.panel-de-nutricion__tabla) {
+  overflow: visible;
+}
+
+/* La galería de presets: «De BE» es un rótulo chico al pie de la tarjeta, y los grupos se separan. */
+.galeria__grupos {
+  display: grid;
+  align-content: start;
+  gap: 1.25rem;
+}
+
+.galeria__grupos > section > h3 {
+  margin-top: 0;
+}
+
+.galeria__tarjeta {
+  align-content: start;
+}
+
+.galeria__tarjeta .etiqueta-de-dato {
+  justify-self: start;
+  align-self: end;
+  margin-top: 0.25rem;
+}
+
+/* El asistente: el título del paso recibe el foco para el lector de pantalla; no es un control y no lleva aro. */
+#titulo-del-paso:focus {
+  outline: none;
+}
+
+/* Las cuatro maneras de empezar, en un renglón desde unos 880 px. */
+.asistente__tarjetas {
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+}
+
+/* Paso 5 de Nutrición: cada opción con su texto a la izquierda y «Armar …» siempre a la derecha. */
+.asistente__opciones li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+@media (max-width: 48rem) {
+  .asistente__opciones li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .asistente__opciones li > .boton {
+    justify-self: start;
+  }
+}
+
+/* «Pedir información»: «Para qué lo necesitás» a todo el ancho del cajón y el área debajo; «Enviar solicitud», a la
+   derecha del pie, como en la maqueta. */
+.pedido__dos-campos {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: none;
+  row-gap: 1rem;
+}
+
+.pedido__dos-campos > .campo {
+  grid-row: auto;
+  grid-template-rows: none;
+}
+
+.pedido__dos-campos > .campo > label,
+.pedido__dos-campos > .campo > .campo__ayuda,
+.pedido__dos-campos > .campo > input,
+.pedido__dos-campos > .campo > select,
+.pedido__dos-campos > .campo > .campo-fijo,
+.pedido__dos-campos > .campo > .campo__error {
+  grid-row: auto;
+}
+
+.cajon__pie:has([data-enviar]) > [data-enviar] {
+  order: 2;
+  margin-inline-start: auto;
 }
