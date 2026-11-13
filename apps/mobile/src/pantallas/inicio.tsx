@@ -28,10 +28,12 @@ import { api } from '../api';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { fechaLarga, ultimosDiasHasta } from '../formato';
 import { disposicionDeLasTarjetasChicas, registradasHoySegunElPlan, tiraDeLaSemana } from '../inicio-de-hoy';
+import { conLasSesiones } from '../la-que-sigue';
 import { useLecturaRecordada } from '../lecturas';
 import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
+import { HoraDeLoQueVes } from '../hora-en-pantalla';
 import { estilosPorTema, Titulo } from '../ui';
 import { AccesoIncompleto } from './inicio-acceso';
 import { ActividadDeEntrenamiento, EntrenamientoDeHoy } from './inicio-entrenamiento';
@@ -48,7 +50,8 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
   const entrenamientoDeHoy = useLecturaRecordada(token, `entrenamiento-hoy:${hoy}`, pedirHoy, sesionPerdida);
   // La actividad de 30 días (API-TRN-19-LISTA), con la misma clave que «Tu historial»: para la tira y para «Actividad».
   const periodo = useMemo(() => ultimosDiasHasta(hoy, DIAS_DE_ACTIVIDAD), [hoy]);
-  const pedirActividad = useCallback(() => leerActividadDeEntrenamiento(api, token, periodo), [token, periodo]);
+  // PG-01: la misma lectura, que además guarda qué sesión se registró y cuándo, para saber cuál sigue en el plan.
+  const pedirActividad = useCallback(() => conLasSesiones(api, (api) => leerActividadDeEntrenamiento(api, token, periodo)), [token, periodo]);
   const actividad = useLecturaRecordada(token, `inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`, pedirActividad, sesionPerdida);
   const ocurrencias = entrenamientoDeHoy.r?.ok ? entrenamientoDeHoy.r.datos.data : null;
   const tira = tiraDeLaSemana(hoy, actividad.r?.ok ? actividad.r.datos : null, ocurrencias ? registradasHoySegunElPlan(hoy, ocurrencias.occurrences) : null);
@@ -62,9 +65,11 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
   return (
     <View>
       <Titulo>{fechaLarga(hoy)}</Titulo>
+      {/* PG-09 (WP-PULIDO-GRANDES): de cuándo es lo que se ve; tirar hacia abajo lo vuelve a leer (App.tsx). */}
+      <HoraDeLoQueVes />
       <AccesoIncompleto token={token} sesionPerdida={sesionPerdida} ir={ir} />
       {conTira ? <TiraDeLaSemana tira={tira} /> : null}
-      <EntrenamientoDeHoy token={token} dia={hoy} lectura={entrenamientoDeHoy} sesionPerdida={sesionPerdida} ir={ir} />
+      <EntrenamientoDeHoy token={token} dia={hoy} lectura={entrenamientoDeHoy} registradas={actividad.r ? (actividad.r.ok ? actividad.r.datos.sesiones : null) : undefined} sesionPerdida={sesionPerdida} ir={ir} />
       <NutricionDeHoy token={token} sesionPerdida={sesionPerdida} ir={ir} />
       {/* DL-166 (PV-6): los formularios y los pedidos de hábitos juntos; sin nada para responder, no se dibuja. */}
       <Pendientes token={token} sesionPerdida={sesionPerdida} ir={ir} />
