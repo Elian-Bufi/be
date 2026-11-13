@@ -12,6 +12,7 @@ import { IngestasService } from './ingestas.service';
 import { NutricionController } from './nutricion.controller';
 import { PlanesService } from './planes.service';
 import { PlantillasNutricionalesService } from './plantillas.service';
+import { RangosDeNutricionService } from './rangos.service';
 import { RecetasController } from './recetas.controller';
 import { RecetasService } from './recetas.service';
 import { RegistroDeComidasController } from './registro-de-comidas.controller';
@@ -32,6 +33,7 @@ import { RevisionesService } from './revisiones.service';
     EvaluacionesService,
     PlanesService,
     PlantillasNutricionalesService,
+    RangosDeNutricionService,
     HabitualesNutricionalesService,
     IngestasService,
     RevisionesService,

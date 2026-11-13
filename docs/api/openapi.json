@@ -14632,6 +14632,1907 @@
         }
       }
     },
+    "/nutrition/plans/{planId}/ranges": {
+      "get": {
+        "operationId": "API-PLN-02",
+        "summary": "Los rangos de macronutrientes del plan (TB-39; ED-34; decisión de Dirección del 2026-11-13): por día tipo y por comida, las proteínas, los carbohidratos y las grasas con su mínimo y su máximo, en g o en g por kg. El plan guarda los gramos y el peso del que salieron (kg, fecha y origen: registrado o a mano), y se devuelven tal cual: un pesaje nuevo no los mueve, solo aparece como anthropometry.latestWeight; si la toma usada se corrige o se anula, tampoco: anthropometry.usedMeasurement dice cómo está hoy (CURRENT con su valor, o NOT_CURRENT). El peso registrado se lee con el PDP de Antropometría: si la persona no se lo habilitó a este profesional, no se devuelve por ningún camino (bodyWeightWithheld, sin el peso ni los g por kg; latestWeight y usedMeasurement en null). Las kcal no van acá. Solo el profesional del plan; la persona, otro profesional, lo descartado o lo inexistente: el mismo 404. planId es el id de la versión.",
+        "description": "Fuente: ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-17, TB-39) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL ED-34 y EDT-61 a EDT-66. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "planId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "DRAFT",
+                            "ACTIVATED"
+                          ]
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "bodyWeight": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RECORDED",
+                                    "MANUAL"
+                                  ]
+                                },
+                                "valueKg": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                },
+                                "measuredOn": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                "measurementId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "valueKg",
+                                "measuredOn",
+                                "measurementId"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "bodyWeightWithheld": {
+                          "type": "boolean"
+                        },
+                        "anthropometry": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "latestWeight": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "measurementId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "valueKg": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    },
+                                    "measuredOn": {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "measurementId",
+                                    "valueKg",
+                                    "measuredOn"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "usedMeasurement": {
+                              "anyOf": [
+                                {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "state": {
+                                          "type": "string",
+                                          "const": "CURRENT"
+                                        },
+                                        "valueKg": {
+                                          "type": "number",
+                                          "exclusiveMinimum": 0
+                                        }
+                                      },
+                                      "required": [
+                                        "state",
+                                        "valueKg"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "state": {
+                                          "type": "string",
+                                          "const": "NOT_CURRENT"
+                                        }
+                                      },
+                                      "required": [
+                                        "state"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "latestWeight",
+                            "usedMeasurement"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "dayTypes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "dayTypeId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "day": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "protein": {
+                                        "type": "object",
+                                        "properties": {
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "g",
+                                              "g_per_kg"
+                                            ]
+                                          },
+                                          "perKg": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "min": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "max": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "min",
+                                                  "max"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "grams": {
+                                            "type": "object",
+                                            "properties": {
+                                              "min": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              },
+                                              "max": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "min",
+                                              "max"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "unit",
+                                          "perKg",
+                                          "grams"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "carbohydrate": {
+                                        "type": "object",
+                                        "properties": {
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "g",
+                                              "g_per_kg"
+                                            ]
+                                          },
+                                          "perKg": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "min": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "max": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "min",
+                                                  "max"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "grams": {
+                                            "type": "object",
+                                            "properties": {
+                                              "min": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              },
+                                              "max": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "min",
+                                              "max"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "unit",
+                                          "perKg",
+                                          "grams"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "fat": {
+                                        "type": "object",
+                                        "properties": {
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "g",
+                                              "g_per_kg"
+                                            ]
+                                          },
+                                          "perKg": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "min": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "max": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "min",
+                                                  "max"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "grams": {
+                                            "type": "object",
+                                            "properties": {
+                                              "min": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              },
+                                              "max": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "min",
+                                              "max"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "unit",
+                                          "perKg",
+                                          "grams"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "meals": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "mealId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "range": {
+                                      "type": "object",
+                                      "properties": {
+                                        "protein": {
+                                          "type": "object",
+                                          "properties": {
+                                            "unit": {
+                                              "type": "string",
+                                              "enum": [
+                                                "g",
+                                                "g_per_kg"
+                                              ]
+                                            },
+                                            "perKg": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "min": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "max": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "min",
+                                                    "max"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "grams": {
+                                              "type": "object",
+                                              "properties": {
+                                                "min": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "max": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "min",
+                                                "max"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": [
+                                            "unit",
+                                            "perKg",
+                                            "grams"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "carbohydrate": {
+                                          "type": "object",
+                                          "properties": {
+                                            "unit": {
+                                              "type": "string",
+                                              "enum": [
+                                                "g",
+                                                "g_per_kg"
+                                              ]
+                                            },
+                                            "perKg": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "min": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "max": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "min",
+                                                    "max"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "grams": {
+                                              "type": "object",
+                                              "properties": {
+                                                "min": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "max": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "min",
+                                                "max"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": [
+                                            "unit",
+                                            "perKg",
+                                            "grams"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "fat": {
+                                          "type": "object",
+                                          "properties": {
+                                            "unit": {
+                                              "type": "string",
+                                              "enum": [
+                                                "g",
+                                                "g_per_kg"
+                                              ]
+                                            },
+                                            "perKg": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "min": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "max": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "min",
+                                                    "max"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "grams": {
+                                              "type": "object",
+                                              "properties": {
+                                                "min": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "max": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "min",
+                                                "max"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": [
+                                            "unit",
+                                            "perKg",
+                                            "grams"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "mealId",
+                                    "range"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "dayTypeId",
+                              "day",
+                              "meals"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "planId",
+                        "state",
+                        "revision",
+                        "bodyWeight",
+                        "bodyWeightWithheld",
+                        "anthropometry",
+                        "dayTypes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "API-PLN-03",
+        "summary": "Escribir los rangos de un borrador (TB-39; ED-34): reemplaza todos; ninguno es obligatorio. Los g por kg se pasan a gramos en el servidor (g/kg × kg, al gramo, la mitad hacia arriba) con el peso pedido: el último registrado que el profesional puede leer en Antropometría (por su medición; el valor y la fecha los pone el servidor), el que ya estaba guardado (la misma medición conserva lo guardado tal cual, aunque se haya corregido; con useCurrentValue en true se usa su valor vigente), o uno a mano (20 a 350 kg, un decimal, sin fecha futura). Lo que vuelve con los mismos gramos guardados no se rechaza por los topes y, con el peso retenido y sin otro peso pedido, conserva sus g por kg y su peso. Sin Antropometría habilitada, sin la medición o sin peso: 422 BODY_WEIGHT_NOT_AVAILABLE, el mismo para los tres (el motivo real queda solo en la auditoría, y la decisión denegada de Antropometría queda registrada aunque se rechace la escritura). Una medición que ya no es la última: 422 BODY_WEIGHT_OUTDATED. Un día tipo o una comida que el borrador no tiene, un rango vacío o un valor fuera de sus topes: 422 con su lugar. Concurrencia por expectedRevision (la revisión de los rangos, aparte de la versión del borrador). Una versión activada: 422 PLAN_NOT_EDITABLE.",
+        "description": "Fuente: ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-17, TB-39) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL ED-34 y EDT-61 a EDT-66. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "bodyWeight": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "string",
+                                "const": "RECORDED"
+                              },
+                              "measurementId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "useCurrentValue": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "measurementId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "string",
+                                "const": "MANUAL"
+                              },
+                              "valueKg": {
+                                "type": "number"
+                              },
+                              "measuredOn": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "valueKg",
+                              "measuredOn"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "dayTypes": {
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "dayTypeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "day": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "protein": {
+                                  "type": "object",
+                                  "properties": {
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "g",
+                                        "g_per_kg"
+                                      ]
+                                    },
+                                    "min": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "max": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "unit",
+                                    "min",
+                                    "max"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "carbohydrate": {
+                                  "type": "object",
+                                  "properties": {
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "g",
+                                        "g_per_kg"
+                                      ]
+                                    },
+                                    "min": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "max": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "unit",
+                                    "min",
+                                    "max"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "fat": {
+                                  "type": "object",
+                                  "properties": {
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "g",
+                                        "g_per_kg"
+                                      ]
+                                    },
+                                    "min": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "max": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "unit",
+                                    "min",
+                                    "max"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "meals": {
+                          "maxItems": 12,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "mealId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "range": {
+                                "type": "object",
+                                "properties": {
+                                  "protein": {
+                                    "type": "object",
+                                    "properties": {
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "g",
+                                          "g_per_kg"
+                                        ]
+                                      },
+                                      "min": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "max": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "unit",
+                                      "min",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "carbohydrate": {
+                                    "type": "object",
+                                    "properties": {
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "g",
+                                          "g_per_kg"
+                                        ]
+                                      },
+                                      "min": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "max": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "unit",
+                                      "min",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "fat": {
+                                    "type": "object",
+                                    "properties": {
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "g",
+                                          "g_per_kg"
+                                        ]
+                                      },
+                                      "min": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "max": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "unit",
+                                      "min",
+                                      "max"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "mealId",
+                              "range"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "dayTypeId",
+                        "day",
+                        "meals"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "expectedRevision",
+                  "bodyWeight",
+                  "dayTypes"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "planId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "DRAFT",
+                            "ACTIVATED"
+                          ]
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "bodyWeight": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RECORDED",
+                                    "MANUAL"
+                                  ]
+                                },
+                                "valueKg": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                },
+                                "measuredOn": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                "measurementId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "valueKg",
+                                "measuredOn",
+                                "measurementId"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "bodyWeightWithheld": {
+                          "type": "boolean"
+                        },
+                        "anthropometry": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "latestWeight": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "measurementId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "valueKg": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    },
+                                    "measuredOn": {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "measurementId",
+                                    "valueKg",
+                                    "measuredOn"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "usedMeasurement": {
+                              "anyOf": [
+                                {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "state": {
+                                          "type": "string",
+                                          "const": "CURRENT"
+                                        },
+                                        "valueKg": {
+                                          "type": "number",
+                                          "exclusiveMinimum": 0
+                                        }
+                                      },
+                                      "required": [
+                                        "state",
+                                        "valueKg"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "state": {
+                                          "type": "string",
+                                          "const": "NOT_CURRENT"
+                                        }
+                                      },
+                                      "required": [
+                                        "state"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "latestWeight",
+                            "usedMeasurement"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "dayTypes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "dayTypeId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "day": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "protein": {
+                                        "type": "object",
+                                        "properties": {
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "g",
+                                              "g_per_kg"
+                                            ]
+                                          },
+                                          "perKg": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "min": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "max": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "min",
+                                                  "max"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "grams": {
+                                            "type": "object",
+                                            "properties": {
+                                              "min": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              },
+                                              "max": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "min",
+                                              "max"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "unit",
+                                          "perKg",
+                                          "grams"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "carbohydrate": {
+                                        "type": "object",
+                                        "properties": {
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "g",
+                                              "g_per_kg"
+                                            ]
+                                          },
+                                          "perKg": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "min": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "max": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "min",
+                                                  "max"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "grams": {
+                                            "type": "object",
+                                            "properties": {
+                                              "min": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              },
+                                              "max": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "min",
+                                              "max"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "unit",
+                                          "perKg",
+                                          "grams"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "fat": {
+                                        "type": "object",
+                                        "properties": {
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "g",
+                                              "g_per_kg"
+                                            ]
+                                          },
+                                          "perKg": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "min": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "max": {
+                                                    "type": [
+                                                      "number",
+                                                      "null"
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "min",
+                                                  "max"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "grams": {
+                                            "type": "object",
+                                            "properties": {
+                                              "min": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              },
+                                              "max": {
+                                                "type": [
+                                                  "number",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "min",
+                                              "max"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "unit",
+                                          "perKg",
+                                          "grams"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "meals": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "mealId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "range": {
+                                      "type": "object",
+                                      "properties": {
+                                        "protein": {
+                                          "type": "object",
+                                          "properties": {
+                                            "unit": {
+                                              "type": "string",
+                                              "enum": [
+                                                "g",
+                                                "g_per_kg"
+                                              ]
+                                            },
+                                            "perKg": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "min": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "max": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "min",
+                                                    "max"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "grams": {
+                                              "type": "object",
+                                              "properties": {
+                                                "min": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "max": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "min",
+                                                "max"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": [
+                                            "unit",
+                                            "perKg",
+                                            "grams"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "carbohydrate": {
+                                          "type": "object",
+                                          "properties": {
+                                            "unit": {
+                                              "type": "string",
+                                              "enum": [
+                                                "g",
+                                                "g_per_kg"
+                                              ]
+                                            },
+                                            "perKg": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "min": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "max": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "min",
+                                                    "max"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "grams": {
+                                              "type": "object",
+                                              "properties": {
+                                                "min": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "max": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "min",
+                                                "max"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": [
+                                            "unit",
+                                            "perKg",
+                                            "grams"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "fat": {
+                                          "type": "object",
+                                          "properties": {
+                                            "unit": {
+                                              "type": "string",
+                                              "enum": [
+                                                "g",
+                                                "g_per_kg"
+                                              ]
+                                            },
+                                            "perKg": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "min": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    },
+                                                    "max": {
+                                                      "type": [
+                                                        "number",
+                                                        "null"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "min",
+                                                    "max"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            },
+                                            "grams": {
+                                              "type": "object",
+                                              "properties": {
+                                                "min": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "max": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "min",
+                                                "max"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "required": [
+                                            "unit",
+                                            "perKg",
+                                            "grams"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "mealId",
+                                    "range"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "dayTypeId",
+                              "day",
+                              "meals"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "planId",
+                        "state",
+                        "revision",
+                        "bodyWeight",
+                        "bodyWeightWithheld",
+                        "anthropometry",
+                        "dayTypes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: VERSION_CONFLICT | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: PLAN_NOT_EDITABLE | VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/nutrition/plans/{planId}/discard": {
       "post": {
         "operationId": "API-PLN-07",

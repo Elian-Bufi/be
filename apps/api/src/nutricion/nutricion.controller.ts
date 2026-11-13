@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { BusquedaEnCatalogoRequestSchema, HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
@@ -13,6 +13,7 @@ import { ImportacionNutricionalService } from './importacion.service';
 import { IngestasService } from './ingestas.service';
 import { PlanesService } from './planes.service';
 import { PlantillasNutricionalesService } from './plantillas.service';
+import { RangosDeNutricionService } from './rangos.service';
 import { RevisionesService } from './revisiones.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
@@ -34,6 +35,7 @@ export class NutricionController {
     private readonly limitador: LimitadorService,
     private readonly importacion: ImportacionNutricionalService,
     private readonly plantillas: PlantillasNutricionalesService,
+    private readonly rangos: RangosDeNutricionService,
   ) {}
 
   // ─── Evaluación y objetivo (UC-P09) ─────────────────────────────────────────────────────────
@@ -126,6 +128,20 @@ export class NutricionController {
   @Get('nutrition/plans/:planId/option-estimates')
   estimacionesDeLasOpciones(@Param('planId') planId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     return this.planes.estimacionesDeLasOpciones(actorDe(req), planId, query, contextoDe(req));
+  }
+
+  /** API-PLN-02 (TB-39; ED-34): los rangos de macronutrientes del plan, con los gramos y el peso del que salieron. */
+  @Get('nutrition/plans/:planId/ranges')
+  rangosDelPlan(@Param('planId') planId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    this.limitar(req);
+    return this.rangos.leer(actorDe(req), planId, query, contextoDe(req));
+  }
+
+  /** API-PLN-03 (TB-39; ED-34): escribe los rangos de un borrador. Sin Idempotency-Key: concurrencia por `expectedRevision`. */
+  @Put('nutrition/plans/:planId/ranges')
+  async escribirRangos(@Param('planId') planId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.rangos.escribir(actorDe(req), planId, cuerpo, contextoDe(req)));
   }
 
   /** API-PLN-07 (DL-163 D-21; TB-47): descartar un borrador que nunca se activó. */

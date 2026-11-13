@@ -200,6 +200,7 @@ import {
   type SucederSerieObservadaRequest,
 } from './contratos-fuerza';
 import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
+import { RangosDelPlanResponseSchema, type EscribirRangosRequest } from './contratos-rangos-de-nutricion';
 import {
   ActivacionDePlanResponseSchema,
   AplicarRevisionResponseSchema,
@@ -1100,6 +1101,14 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-PLN-01 (WP-EDITORES-PROFESIONAL §8.3): los totales de cada opción, calculados por el servidor. */
     estimarLasOpcionesDelPlan(token: string, planId: string) {
       return llamar('GET', `/nutrition/plans/${encodeURIComponent(planId)}/option-estimates`, { token, esquema: EstimacionDeLasOpcionesResponseSchema });
+    },
+    /** API-PLN-02 (ED-34): los rangos de macronutrientes, con los gramos y el peso del que salieron. */
+    rangosDelPlan(token: string, planId: string) {
+      return llamar('GET', `/nutrition/plans/${encodeURIComponent(planId)}/ranges`, { token, esquema: RangosDelPlanResponseSchema });
+    },
+    /** API-PLN-03 (ED-34): escribe los rangos de un borrador; concurrencia por la revisión de los rangos. */
+    escribirRangosDelPlan(token: string, planId: string, cuerpo: EscribirRangosRequest) {
+      return llamar('PUT', `/nutrition/plans/${encodeURIComponent(planId)}/ranges`, { token, esquema: RangosDelPlanResponseSchema, cuerpo });
     },
     /** API-NUT-10. Sin Idempotency-Key: concurrencia por la versión que la pantalla mostró. */
     guardarBorrador(token: string, planId: string, cuerpo: EditarBorradorRequest) {
