@@ -39,7 +39,8 @@ import { fecha, fechaCivil, hora } from '../formato';
 import { Flecha } from '../iconos-de-nutricion';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { falloDe } from '../intento';
-import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
+import { memoria, useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
+import { VISTA_RECORDADA, volverAHoy, type DondeSeVe } from '../volver-a-hoy';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CajaInformativa, FranjaDeMacros, LineaDeFibra } from '../piezas-de-nutricion';
@@ -83,7 +84,7 @@ export function PantallaDeHoy({
   /** Lleva la pantalla a una altura, medida desde el principio del contenido. */
   llevarA?: (y: number) => void;
 }) {
-  const [vista, setVista] = useSeleccionRecordada<VistaDeNutricion>(token, 'nutricion:vista', 'HOY');
+  const [vista, setVista] = useSeleccionRecordada<VistaDeNutricion>(token, VISTA_RECORDADA.nutricion, 'HOY');
   // El pedido de Inicio abre Hoy una vez, en la comida que se tocó; después, las pestañas mandan.
   const pedido = useRef(accion);
   const comidaPedida = useRef(comida);
@@ -111,7 +112,7 @@ export function PantallaDeHoy({
           <HoyDeNutricion token={token} salir={salir} ir={ir} subir={subir} accion={pedido.current} comida={comidaPedida.current} llevarA={(y) => llevarA?.(yDeLaPantalla.current + yDeLaVista.current + y)} />
         ) : null}
         {visible === 'PLAN' ? <ContenidoDelPlan token={token} salir={salir} /> : null}
-        {visible === 'REGISTROS' ? <ListaDeRegistros token={token} salir={salir} ir={ir} /> : null}
+        {visible === 'REGISTROS' ? <ListaDeRegistros token={token} salir={salir} ir={ir} hoy={{ en: 'pestana', elegir: setVista }} /> : null}
       </View>
     </View>
   );
@@ -190,7 +191,7 @@ export function PantallaDeRegistros({ token, salir, ir }: { token: string; salir
   return (
     <View>
       <Titulo>{COPY_NUTRICION.registros}</Titulo>
-      <ListaDeRegistros token={token} salir={salir} ir={ir} />
+      <ListaDeRegistros token={token} salir={salir} ir={ir} hoy={{ en: 'pantalla', recordar: (clave, vista) => memoria.recordarSeleccion(token, clave, vista), ir }} />
     </View>
   );
 }
@@ -203,7 +204,7 @@ function diaAnterior(fechaLocal: string): string {
 }
 
 /** B10-05 NUT-11: agrupados en Hoy / Ayer / fecha, con etiquetas que no dependen del color (B05:968-983). */
-function ListaDeRegistros({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: Ir }) {
+function ListaDeRegistros({ token, salir, ir, hoy: dondeSeVe }: { token: string; salir: (m: Salida) => void; ir: Ir; hoy: DondeSeVe }) {
   const sesionPerdida = useSesionPerdida(salir);
   const lista = useListaPaginada(
     useCallback((cursor?: string) => api.listarMisRegistrosDeComida(token, { cursor }), [token]),
@@ -216,7 +217,7 @@ function ListaDeRegistros({ token, salir, ir }: { token: string; salir: (m: Sali
   return (
     <View>
       <EstadoDeCarga estado={lista.estado} onReintentar={() => void lista.recargar()} />
-      {lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? <EstadoVacio icono="comida" {...TEXTOS_DE_LA_VUELTA.vacios.sinComidasRegistradas} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.sinComidasRegistradas.accion, onPress: () => ir({ nombre: 'hoy' }) }} /> : null}
+      {lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? <EstadoVacio icono="comida" {...TEXTOS_DE_LA_VUELTA.vacios.sinComidasRegistradas} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.sinComidasRegistradas.accion, onPress: () => volverAHoy('nutricion', dondeSeVe) }} /> : null}
       {lista.estado.tipo === 'listo'
         ? lista.estado.items.map((registro, k, todos) => (
             <View key={registro.recordId}>

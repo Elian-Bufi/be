@@ -2020,8 +2020,8 @@ test('las pantallas vacías principales dicen qué va a aparecer ahí y cuál es
     entrenamientoSinPlan: ['pantallas/entrenamiento.tsx', 'entrenamiento', "ir({ nombre: 'vinculos' })"],
     nutricionSinPlan: ['pantallas/nutricion-hoy.tsx', 'nutricion', "ir({ nombre: 'vinculos' })"],
     sinVinculos: ['pantallas/vinculos.tsx', 'persona', "ir({ nombre: 'perfil' })"],
-    sinComidasRegistradas: ['pantallas/nutricion.tsx', 'comida', "ir({ nombre: 'hoy' })"],
-    sinSesionesEnElPeriodo: ['pantallas/historial.tsx', 'calendario', "ir({ nombre: 'entrenamiento' })"],
+    sinComidasRegistradas: ['pantallas/nutricion.tsx', 'comida', "volverAHoy('nutricion', dondeSeVe)"],
+    sinSesionesEnElPeriodo: ['pantallas/historial.tsx', 'calendario', "volverAHoy('entrenamiento', hoy)"],
   };
   assert.deepEqual(Object.keys(T_VUELTA.vacios).sort(), Object.keys(VACIOS).sort());
   for (const [clave, [archivo, icono, destino]] of Object.entries(VACIOS)) {
@@ -2040,4 +2040,42 @@ test('las pantallas vacías principales dicen qué va a aparecer ahí y cuál es
   // La pieza: el ícono en su caja con tinte, el título como encabezado, los dos párrafos y la acción secundaria.
   const ui = sinComentarios(leer('ui.tsx'));
   assert.match(ui, /export function EstadoVacio\([\s\S]*?<Superficie style=\{estilos\.vacio\}>[\s\S]*?<CajaDelIcono>\s*<Icono nombre=\{icono\} tamano=\{20\} tono="azul" \/>\s*<\/CajaDelIcono>[\s\S]*?accessibilityRole="header"[\s\S]*?\{queAparece\}[\s\S]*?\{siguientePaso\}[\s\S]*?tipo="secundario"/);
+});
+
+// ─── «Ir a Entrenamiento» e «Ir a Hoy» de las pantallas vacías: la acción la resuelve el contenedor ──────────────────
+
+const volver = await import('../apps/mobile/src/volver-a-hoy.ts');
+
+test('en la pestaña, «Ir a Hoy» elige Hoy sin navegar; en la pantalla propia, deja Hoy recordado y después va', () => {
+  for (const zona of ['entrenamiento', 'nutricion']) {
+    // En la pestaña: `ir` a la misma zona no cambiaría nada, porque la pestaña elegida se recuerda.
+    const elegidas = [];
+    volver.volverAHoy(zona, { en: 'pestana', elegir: (v) => elegidas.push(v) });
+    assert.deepEqual(elegidas, ['HOY'], `${zona}: en la pestaña elige Hoy`);
+    // En la pantalla propia: primero se recuerda Hoy con la misma clave que lee la zona, después se va.
+    const pasos = [];
+    volver.volverAHoy(zona, { en: 'pantalla', recordar: (clave, v) => pasos.push(['recordar', clave, v]), ir: (ruta) => pasos.push(['ir', ruta]) });
+    assert.deepEqual(pasos, [
+      ['recordar', `${zona}:vista`, 'HOY'],
+      ['ir', { nombre: zona === 'nutricion' ? 'hoy' : 'entrenamiento' }],
+    ]);
+  }
+  // Las zonas leen su pestaña con esa misma clave, y cada contenedor pasa su forma.
+  const ent = sinComentarios(leer('pantallas/entrenamiento.tsx'));
+  assert.match(ent, /useSeleccionRecordada<VistaDeEntrenamiento>\(token, VISTA_RECORDADA\.entrenamiento, 'HOY'\)/);
+  assert.match(ent, /<ContenidoDelHistorial [^>]*hoy=\{\{ en: 'pestana', elegir: setVista \}\} \/>/);
+  const nut = sinComentarios(leer('pantallas/nutricion.tsx'));
+  assert.match(nut, /useSeleccionRecordada<VistaDeNutricion>\(token, VISTA_RECORDADA\.nutricion, 'HOY'\)/);
+  assert.match(nut, /visible === 'REGISTROS' \? <ListaDeRegistros [^>]*hoy=\{\{ en: 'pestana', elegir: setVista \}\} \/>/);
+  assert.match(nut, /export function PantallaDeRegistros[\s\S]*?<ListaDeRegistros [^>]*hoy=\{\{ en: 'pantalla', recordar: \(clave, vista\) => memoria\.recordarSeleccion\(token, clave, vista\), ir \}\} \/>/);
+  const his = sinComentarios(leer('pantallas/historial.tsx'));
+  assert.match(his, /export function PantallaDeHistorial[\s\S]*?<ContenidoDelHistorial [^>]*hoy=\{\{ en: 'pantalla', recordar: \(clave, vista\) => memoria\.recordarSeleccion\(token, clave, vista\), ir \}\} \/>/);
+  for (const [archivo, zona] of [['pantallas/historial.tsx', 'entrenamiento'], ['pantallas/nutricion.tsx', 'hoy']]) assert.doesNotMatch(sinComentarios(leer(archivo)), new RegExp(`onPress: \(\) => ir\(\{ nombre: '${zona}' \}\)`), `${archivo}: sin el ir a la misma zona`);
+});
+
+test('sin vínculos: con el identificador BE, lo que llega es la solicitud del profesional, en «Solicitudes recibidas» de esa pantalla', () => {
+  const { siguientePaso } = T_VUELTA.vacios.sinVinculos;
+  assert.match(siguientePaso, /su solicitud te llega acá, en «Solicitudes recibidas»/);
+  assert.doesNotMatch(siguientePaso, /para que te la mande/, 'con el identificador no llega una invitación (DL-035)');
+  assert.match(sinComentarios(leer('pantallas/vinculos.tsx')), /<Seccion titulo="Solicitudes recibidas">/, 'la sección que nombra existe en esa pantalla');
 });

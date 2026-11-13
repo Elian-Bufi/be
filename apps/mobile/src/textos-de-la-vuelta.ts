@@ -144,7 +144,8 @@ export const TEXTOS_DE_LA_VUELTA = {
     sinVinculos: {
       titulo: 'Todavía no tenés vínculos',
       queAparece: 'Acá van a aparecer los profesionales que te acompañan, con el área de cada uno y desde cuándo.',
-      siguientePaso: 'Para empezar, abrí la invitación que te mandó tu profesional, o compartile tu identificador BE desde Perfil para que te la mande.',
+      // Con el identificador, el profesional manda una solicitud de vínculo (DL-035), no una invitación.
+      siguientePaso: 'Para empezar, abrí la invitación que te mandó tu profesional, o compartile tu identificador BE desde Perfil: su solicitud te llega acá, en «Solicitudes recibidas».',
       accion: 'Ir a Perfil',
     },
     sinComidasRegistradas: {

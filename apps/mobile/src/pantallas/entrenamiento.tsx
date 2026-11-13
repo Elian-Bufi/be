@@ -74,6 +74,7 @@ import { Icono } from '../icono';
 import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
+import { VISTA_RECORDADA } from '../volver-a-hoy';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { enCursoDeLaApi, enCursoEnElTelefono, marchaDeLaSesionEnCurso, otraSesionEnCurso, sePuedeIniciar, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
@@ -242,7 +243,7 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
   const sesionPerdida = useSesionPerdida(salir);
   const { retirado, accesoRetirado } = useAccesoRetirado();
   // La pestaña elegida se recuerda mientras dure la sesión.
-  const [vista, setVista] = useSeleccionRecordada<VistaDeEntrenamiento>(token, 'entrenamiento:vista', 'HOY');
+  const [vista, setVista] = useSeleccionRecordada<VistaDeEntrenamiento>(token, VISTA_RECORDADA.entrenamiento, 'HOY');
   const pedir = useCallback((): Promise<Resultado<HoyDeEntrenamientoResponse>> => api.hoyDeEntrenamiento(token), [token]);
   // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
   // La clave nombra el día civil, en la zona con la que la API resuelve «hoy». A la medianoche cambia, y se vuelve a leer.
@@ -251,7 +252,7 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
 
   let contenido: ReactNode;
   // «Tu historial» no depende del plan (DL-096): se ve aunque Hoy y Plan no estén disponibles.
-  if (vista === 'HISTORIAL') contenido = <ContenidoDelHistorial token={token} identidadId={identidadId} salir={salir} ir={ir} />;
+  if (vista === 'HISTORIAL') contenido = <ContenidoDelHistorial token={token} identidadId={identidadId} salir={salir} ir={ir} hoy={{ en: 'pestana', elegir: setVista }} />;
   else if (retirado) {
     // Una escritura denegada con el 404 no revelador retira el contenido entero (B10-06:1145-1148): queda el mismo estado
     // neutral que con el acceso suspendido.
