@@ -77,7 +77,7 @@ export default function Inicio() {
               </ul>
             </article>
             <article className="tarjeta">
-              <h2>Para el asesorado</h2>
+              <h2>Para la persona</h2>
               <ul>
                 <li>Saber qué tiene que hacer.</li>
                 <li>Registrar lo que hizo.</li>
@@ -116,7 +116,7 @@ export default function Inicio() {
           <section className="landing__seccion tarjeta landing__app" aria-labelledby="titulo-app">
             <div>
               <h2 id="titulo-app">La app para Android</h2>
-              <p>El asesorado usa BE desde el celular: ve el plan de hoy, registra lo que hizo, sigue su evolución y administra sus vínculos.</p>
+              <p>La persona usa BE desde el celular: ve el plan de hoy, registra lo que hizo, sigue su evolución y administra sus vínculos.</p>
               <p className="nota">Se instala fuera de Google Play: Android te va a pedir permiso para instalar apps de origen desconocido.</p>
             </div>
             <a className="boton boton--secundario" href={APK}>
