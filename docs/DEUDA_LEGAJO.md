@@ -174,7 +174,7 @@
 | DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA e integrada en `main` (#252, 6a05fee)**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. **Ampliación a las plantillas** (API-TPN-01 y 04, API-TPL-01 y 04, con el mismo límite y el mismo mensaje en «Guardar como plantilla») integrada en `main` con #254 |
 | DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) **integrada** el 2026-11-12 (#253, main `549f41e3`); la **etapa 2** (UF-09, UF-11, UF-04, UF-06, UF-07, UF-03, UF-05 y UF-02) declarada ese día, en un PR en borrador y **sin integrar**, con las decisiones técnicas nuevas (UF-T15 en adelante) a ratificar (`docs/paquetes/WP-USO-FINAL.md` §13); la **primera mitad** (UF-09, UF-11, UF-04 y UF-06) programada ese día en el PR #257 |
 | DL-171 | Decisión de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; DJ-1 y DJ-2 del juicio del paquete V3) | 09v10:356 · 06:5431 · REG-06-182 · INV-06-192 · REG-06-202 a 207 · B10-06:426-431 · B10-08 · INV-06-152 · DL-126 · DL-161 · DL-167 | El legajo dice que BE no fija una fórmula de repetición máxima, y un RIR registrado puede ser el del plan sin marca; Dirección pide seguir la fuerza desde lo que se hizo, no desde lo indicado | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · el método, en programación (etapa 1)**: Epley v1 (n/30, bandas sobre las repeticiones equivalentes, RIR de 0 a 2), solo para el profesional y en el website, desde una serie que observa el profesional o que escribió la persona, con la procedencia por campo en la APK de esta actualización; el profesional elige un % y BE sugiere los kilos, que él confirma. Enmienda 09v10:356 sin tocar el legajo. ED-70 a ED-76; ED-D17 a ED-D21, decididas el 2026-11-12 como se recomendaban; el website le explica al profesional la regla del RIR de 0 a 2 (R3) |
-| DL-172 | Pedido de Dirección · 2026-11-13 («ve adelantando las cosas según prioridad»; WP-RF068-RF004) | 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.12 §12 y §16 · 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 | El 09 solo bosqueja las incidencias y los métodos de acceso (rutas candidatas, sin IDs), RF-068 estaba fuera de WP-USO-FINAL y RF-004 en parte | **PROGRAMADA en `wp-rf068-rf004` (PR en borrador) · D-1 a D-10 a ratificar**: familias propias INC (API-INC-01 a 05) y MET (API-MET-01 a 03) con las rutas del bosquejo; dos migraciones que solo agregan |
+| DL-172 | Pedido de Dirección · 2026-11-13 («ve adelantando las cosas según prioridad»; WP-RF068-RF004) | 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.16.1 §4 · 09 v0.12 §12 y §16 · 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 | El 09 vigente (v0.16.1 §4) les da familia (`ACC-P2` y `ADM-P1`) sin IDs ni contratos; el v0.12 bosqueja las rutas. RF-068 estaba fuera de WP-USO-FINAL y RF-004 en parte | **PROGRAMADA en `wp-rf068-rf004` (PR en borrador) · D-1 a D-12 a ratificar**: familias propias INC (API-INC-01 a 05) y MET (API-MET-01 a 03) con las rutas del bosquejo; dos migraciones que solo agregan |
 
 ---
 
@@ -7967,35 +7967,52 @@ método):
 ## DL-172 — Las incidencias mínimas (RF-068) y los métodos de acceso de la cuenta (RF-004): familias INC y MET
 
 **Prioridad:** alta (RF-068 es P1 y no estaba; RF-004, P2, estaba en parte; los dos se recomendaron cerrar antes del
-25/11) · **Documento:** 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.12 §12 y §16 ·
+25/11) · **Documento:** 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.16.1 §4 · 09 v0.12 §12 y §16 ·
 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 · **Estado:** PROGRAMADA el 2026-11-13 en `wp-rf068-rf004`
-(PR en borrador), con D-1 a D-10 a ratificar (`docs/paquetes/WP-RF068-RF004.md` §3). No integrada.
+(PR en borrador), con D-1 a D-12 a ratificar (`docs/paquetes/WP-RF068-RF004.md` §3). No integrada.
 
 **Qué dice lo vigente.**
 - **RF-068 (P1):** reportar y gestionar incidencias operativas «sin convertir el MVP en una plataforma general de
   soporte»; la incidencia «conserva reportante, categoría, fecha, estado, responsable y resolución», el historial «no se
-  sobrescribe» y el reportante «puede conocer el estado de su caso». El 09 v0.12 §16 bosqueja `POST /incidents`,
-  `GET /me/incidents`, `GET /incidents/{incidentId}`, `POST /admin/incidents/{incidentId}/updates` y `/resolve`, sin IDs.
+  sobrescribe» y el reportante «puede conocer el estado de su caso». El 09 vigente (v0.16.1 §4) la pone en la familia
+  `ADM-P1` («incidents minimal — P1»), sin IDs ni rutas. El 09 v0.12 §16 bosqueja `POST /incidents`, `GET /me/incidents`,
+  `GET /incidents/{incidentId}`, `POST /admin/incidents/{incidentId}/updates` y `/resolve`, sin IDs.
 - **RF-004 (P2):** asociar o retirar métodos sin fragmentar la identidad, sin dejar la cuenta sin un método utilizable y
-  con los cambios trazables. El 09 v0.12 §12 bosqueja `GET/POST/DELETE /me/access-methods`, sin IDs, y dice que «la
-  remoción puede exigir step-up».
+  con los cambios trazables. El 09 vigente (v0.16.1 §4) la pone en la familia `ACC-P2` («GET/POST/DELETE
+  /me/access-methods — P2»), sin IDs. El 09 v0.12 §12 bosqueja las mismas rutas y dice que «la remoción puede exigir
+  step-up».
 - **Lo que había:** WP-USO-FINAL §11 dejaba RF-068 afuera; Google se vinculaba solo al entrar (API-GOO-02, DL-138);
   `metodo_de_acceso` es de solo agregar (WP-02) y tiene un índice único «una cuenta de Google por identidad».
 
-**Por qué no se implementó tal cual.** El 09 no da IDs ni contratos cerrados, y una sesión de Administración no sirve
-para las operaciones de la persona (DL-155): una sola ruta `/incidents/{id}` para las dos no se puede.
+**Por qué no se implementó tal cual.** El 09 no da IDs ni contratos cerrados (a diferencia de RF-005, cuyo 09 v0.12 sí
+nombró API-ACC-P1-01 y 02), y una sesión de Administración no sirve para las operaciones de la persona (DL-155): una sola
+ruta `/incidents/{id}` para las dos no se puede.
+
+**Por qué INC y MET y no `ADM-P1` y `ACC-P2`.** La familia del 09 v0.16.1 §4 agrupa capacidades, no numera operaciones.
+`ADM-P1` no le sirve a RF-068 entero: dos de sus cinco operaciones (avisar y ver lo propio) son de la persona, con su
+sesión, y `ADM` es la familia de la consola, con su segundo factor (DL-155). `ACC-P2` sí le cabría a RF-004, pero
+numerarla como API-ACC-P2-0x sería inventar IDs en una familia del 09 que el 09 no numeró. Por eso INC y MET son
+familias propias de BE, declaradas en la guardia de trazabilidad, que **trazan** a `ADM-P1` (INC) y a `ACC-P2` (MET).
+Si Dirección prefiere los nombres del 09, renombrarlas es mecánico (IDs, guardia, OpenAPI y pruebas), sin cambiar rutas
+ni contratos.
 
 **Qué se hizo** (provisorio, del lado que no viola una garantía):
 - **Familias propias INC y MET** con las rutas del bosquejo; lo de Administración, bajo `/admin` y con su segundo
   factor. La guardia de trazabilidad las declara (`scripts/trazabilidad-de-operaciones.test.cjs`).
 - **La historia, de solo agregar:** `cambio_de_incidencia` y `cambio_de_metodo_de_acceso`, con triggers que no dejan
   cambiar una incidencia sin su cambio, ni retirar el último método utilizable.
-- **Las decisiones D-1 a D-10** del paquete, entre ellas: volver a vincular solo la misma cuenta de Google después de
-  desvincularla (D-5, porque cambiar el índice no es una migración que solo agrega) y que desvincular no cierre las
-  sesiones (D-8).
+- **Las decisiones D-1 a D-12** del paquete, entre ellas: las rutas de Administración sobre el bosquejo (D-4: una sola
+  operación de cambio de estado, el detalle bajo `/admin` y la consulta con filtros), volver a vincular solo la misma
+  cuenta de Google después de desvincularla (D-5, porque cambiar el índice no es una migración que solo agrega), que
+  desvincular no cierre las sesiones pero aconseje cambiar la contraseña (D-8), el aviso por correo de cada cambio
+  (D-11) y que el correo de una cuenta de Google desvinculada siga asociado a la cuenta (D-12).
+- **La revisión del 13/11:** el hecho `MetodoDeAccesoRetirado` (REG-06-21, una migración que solo agrega el valor) y
+  `MetodoDeAccesoAsociado` en cada reasociación; una cuenta de Google desvinculada ya no identifica la cuenta para
+  recuperar el acceso ni para Administración; API-MET-01 dice cuál cuenta de Google se puede volver a vincular; y la APK
+  0.24, que muestra su aviso general ante `GOOGLE_ACCOUNT_UNLINKED`, queda aceptada y documentada.
 
 **Opciones para Dirección.**
-- **A (recomendada):** ratificar D-1 a D-10 como están, integrar el PR y verificarlo en test (con una cuenta de Google
+- **A (recomendada):** ratificar D-1 a D-12 como están, integrar el PR y verificarlo en test (con una cuenta de Google
   real en `/account`), y sumar la APK (Perfil) en su próxima versión.
 - **B:** lo mismo, pero con D-5 en su opción B (una migración que cambie el índice, para poder vincular otra cuenta de
   Google) y D-8 en su opción B (cerrar las otras sesiones al desvincular).

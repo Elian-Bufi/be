@@ -31,3 +31,8 @@
 | TEST-MET-008 | Una cuenta creada con Google no se queda sin método, ni por la API ni por la base | integración |
 | TEST-MET-009 | Desvincular pide una entrada reciente; el profesional, su segundo factor para vincular | integración |
 | TEST-MET-010 | Una cuenta de Google de otra identidad no se vincula, ni desvinculada; entrar o crear con ella dice que se desvinculó | integración |
+| TEST-MET-011 | Después de desvincular, se dice cuál cuenta de Google se puede volver a vincular; la confirmación del correo distinto avisa que queda asociado (D-5, D-12) | dominio |
+| TEST-MET-012 | Si no fue la persona, el consejo es cambiar la contraseña, en la pantalla y en el aviso por correo, con la hora de Argentina (D-8, D-11) | dominio |
+| TEST-MET-013 | Cada retiro deja `MetodoDeAccesoRetirado`; cada reasociación, `MetodoDeAccesoAsociado` con `reasociacion` (también la de API-GOO-02); `relinkableGoogleEmail` | integración |
+| TEST-MET-014 | Cada vínculo, reasociación (API-GOO-02 incluida) o retiro se avisa al correo de acceso; repetir sin cambios no avisa (D-11) | integración |
+| TEST-MET-015 | Una cuenta de Google desvinculada no identifica la cuenta: recuperar con su correo no sugiere entrar con Google, y la asistida no la encuentra | integración |
