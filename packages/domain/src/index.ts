@@ -155,6 +155,8 @@ export * from './incorporacion-de-profesionales';
 export * from './derechos-del-titular';
 export * from './recuperacion-de-acceso';
 export * from './ayuda-y-contacto';
+export * from './incidencias';
+export * from './metodos-de-acceso';
 export * from './textos-vigentes';
 export * from './estimacion-de-fuerza';
 export * from './carga-desde-la-estimacion';

@@ -28,6 +28,7 @@ import { codigoAlAzar } from '../administracion/segundo-factor';
 import type { Entorno } from '../config/entorno';
 import { ENTORNO } from '../config/tokens';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
+import { metodoVigenteDelCorreo } from '../identidad/correo-de-acceso';
 import { ErrorDeApi, errores } from '../http/errores';
 import { validarCuerpo } from '../http/validacion';
 import { AuditoriaService } from '../plataforma/auditoria.service';
@@ -95,7 +96,8 @@ export class RecuperacionService {
     const procedencia = procedenciaDe(ctx, CASO_DE_USO, 'API-ACC-P1-01');
     const { plan, recoveryId, momento } = await this.prisma.$transaction(async (tx) => {
       const momento = await momentoDeLaBase(tx);
-      // El método del correo: el local (con su credencial, si no se suprimió) o, si no hay, la cuenta de Google con ese correo.
+      // El método del correo: el local (con su credencial, si no se suprimió) o, si no hay, la cuenta de Google con ese correo
+      // que no se desvinculó (con una desvinculada ya no se entra: no se le sugiere entrar con Google, DL-172).
       // Un código va solo al correo con que se entra con contraseña.
       // Una cuenta administrativa no se recupera por acá (la restablece el operador, como en API-ADM-18): su contraseña es
       // la de la consola, y un código por correo la cambiaría y cerraría sus sesiones con solo controlar el buzón.
@@ -107,7 +109,7 @@ export class RecuperacionService {
           FROM "metodo_de_acceso" m
           JOIN "identidad" i ON i."id" = m."identidad_id"
           LEFT JOIN "credencial_local" c ON c."metodo_de_acceso_id" = m."id"
-         WHERE (m."tipo" = 'LOCAL' AND m."referencia" = ${correo}) OR (m."tipo" = 'GOOGLE' AND m."correo" = ${correo})
+         WHERE ${metodoVigenteDelCorreo('m', correo)}
          ORDER BY m."tipo" LIMIT 1`;
       const plan = planDelPedidoDeRecuperacion(
         cuenta ? { operativa: cuenta.estado === 'OPERATIVA', conContrasena: cuenta.conContrasena, conGoogle: cuenta.conGoogle, administrativa: cuenta.administrativa } : null,
@@ -233,7 +235,7 @@ export class RecuperacionService {
       return await this.prisma.$transaction(async (tx) => {
         const [metodo] = await tx.$queryRaw<{ identidadId: string }[]>`
           SELECT "identidad_id"::text AS "identidadId" FROM "metodo_de_acceso"
-           WHERE ("tipo" = 'LOCAL' AND "referencia" = ${correo}) OR ("tipo" = 'GOOGLE' AND "correo" = ${correo})
+           WHERE ${metodoVigenteDelCorreo('"metodo_de_acceso"', correo)}
            ORDER BY "tipo" LIMIT 1`;
         if (!metodo) throw new ErrorDeApi(404, 'RESOURCE_NOT_FOUND', 'Recurso no encontrado.', undefined, 'CUENTA_NO_ENCONTRADA');
         const identidadId = metodo.identidadId;

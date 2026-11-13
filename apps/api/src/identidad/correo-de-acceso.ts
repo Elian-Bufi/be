@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 /**
  * Un correo es de una sola identidad, sea el de un método LOCAL (su `referencia`) o el de uno GOOGLE (su `correo`): RF-001
@@ -23,4 +23,17 @@ export function metodosDelCorreo(tx: Prisma.TransactionClient, correo: string) {
     where: { OR: [{ tipo: 'LOCAL', referencia: correo }, { tipo: 'GOOGLE', correo }] },
     select: { id: true, identidadId: true, tipo: true, referencia: true },
   });
+}
+
+/**
+ * La condición SQL «este método entra hoy con ese correo»: el LOCAL de ese correo o un GOOGLE con ese correo que no se
+ * desvinculó (RF-004, DL-172: una cantidad impar de cambios es un retiro). La usan las búsquedas de una cuenta por su
+ * correo para recuperar el acceso o atenderla (API-ACC-P1-01, API-ADM-14, 18 y 19): una cuenta de Google desvinculada ya
+ * no identifica la cuenta, porque con ella no se entra (revisión de DL-172). `alias` es el de `metodo_de_acceso` en la
+ * consulta. Distinto de `metodosDelCorreo`, que cuenta también los desvinculados: un correo no pasa a otra identidad (D-12).
+ */
+export function metodoVigenteDelCorreo(alias: string, correo: string): Prisma.Sql {
+  const m = Prisma.raw(alias);
+  return Prisma.sql`((${m}."tipo" = 'LOCAL' AND ${m}."referencia" = ${correo}) OR (${m}."tipo" = 'GOOGLE' AND ${m}."correo" = ${correo}
+    AND (SELECT count(*) FROM "cambio_de_metodo_de_acceso" x WHERE x."metodo_de_acceso_id" = ${m}."id") % 2 = 0))`;
 }

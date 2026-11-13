@@ -24,6 +24,7 @@
  * - WP-USO-FINAL (UF-03): API-ACC-P1-01 y 02 y API-ADM-18, recuperar el acceso y la recuperación asistida (DL-169).
  * - WP-USO-FINAL (UF-07): API-SOP-01, el canal de ayuda y contacto (DL-169).
  * - WP-USO-FINAL (UF-05): API-ACC-08, aceptar la versión vigente de los términos o de la privacidad (DL-169).
+ * - RF-068 y RF-004: las familias INC y MET, las incidencias y los métodos de acceso de la cuenta propia (DL-172).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -2297,6 +2298,108 @@ it('TEST-CT (WP-USO-FINAL, UF-05): ACC-09 — el texto de una versión publicada
 it('TEST-CT (WP-USO-FINAL, UF-07): SOP-01 — el canal de ayuda y contacto, sin sesión (DL-169)', async () => {
   await request(app.getHttpServer()).get('/api/v1/support/contact').expect(200);
   await request(app.getHttpServer()).get('/api/v1/support/contact?x=1').expect(400); // INVALID_REQUEST
+});
+
+it('TEST-CT (RF-068): INC-01 a 05 — avisar un problema, verlo y gestionarlo en Administración, con éxitos y errores declarados (DL-172)', async () => {
+  const persona = await prepararAsesorado(app, 'ct-inc');
+  const yo = conSesion(app, persona.token);
+  // INC-01 y 02.
+  await request(app.getHttpServer()).post('/api/v1/incidents').set('Authorization', `Bearer ${persona.token}`).send({ category: 'ACCESS', description: 'x' }).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await yo.post('/api/v1/incidents').send({ category: 'ACCESS', description: 'x', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post('/api/v1/incidents').send({ category: 'ACCESS', description: ' ' }).expect(422); // VALIDATION_FAILED
+  const clave = claveDeIdempotencia();
+  const id = (await yo.post('/api/v1/incidents', clave).send({ category: 'ACCESS', description: 'Sintético: no entra.' }).expect(201)).body.data.incidentId as string;
+  await yo.post('/api/v1/incidents', clave).send({ category: 'ACCESS', description: 'Otra cosa.' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await request(app.getHttpServer()).post('/api/v1/incidents').set('Idempotency-Key', claveDeIdempotencia()).send({ category: 'ACCESS', description: 'x' }).expect(401); // AUTHENTICATION_REQUIRED
+  await yo.get('/api/v1/me/incidents?limit=5').expect(200);
+  await yo.get('/api/v1/me/incidents?cursor=no-es-un-cursor').expect(400); // INVALID_CURSOR
+  // INC-03 a 05.
+  const a = await administradorListo(app, prisma, `ct-inc-${randomUUID().slice(0, 6)}`);
+  await adm(app, a.token).post('/admin/incidents/query').send({ states: ['OPEN'] }).expect(200);
+  await adm(app, a.token).post('/admin/incidents/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/incidents/query').send({ cursor: '###' }).expect(400); // INVALID_CURSOR
+  await adm(app, persona.token).post('/admin/incidents/query').send({}).expect(403); // ACTION_FORBIDDEN
+  await adm(app, a.token).get(`/admin/incidents/${id}`).expect(200);
+  await adm(app, a.token).get(`/admin/incidents/${randomUUID()}`).expect(404); // RESOURCE_NOT_FOUND
+  await adm(app, a.token).get(`/admin/incidents/${id}?x=1`).expect(400); // INVALID_REQUEST
+  const cambiar = (incidencia: string, cuerpo: Record<string, unknown>) => adm(app, a.token).post(`/admin/incidents/${incidencia}/updates`).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo);
+  await cambiar(id, { state: 'RESOLVED', reason: 'Listo.', expectedVersion: 'v0' }).expect(422); // VALIDATION_FAILED: sin respuesta
+  await cambiar(id, { state: 'OPEN', reason: 'Nada.', expectedVersion: 'v0' }).expect(422); // INVALID_STATE_TRANSITION
+  await cambiar(id, { state: 'IN_PROGRESS', reason: 'Lo veo.', expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await cambiar(randomUUID(), { state: 'IN_PROGRESS', reason: 'Lo veo.', expectedVersion: 'v0' }).expect(404); // RESOURCE_NOT_FOUND
+  await cambiar(id, { state: 'IN_PROGRESS', reason: 'Lo veo.', expectedVersion: 'v0', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await cambiar(id, { state: 'IN_PROGRESS', reason: 'Lo veo.', expectedVersion: 'v0' }).expect(200);
+});
+
+it('TEST-CT (RF-004): MET-01 a 03 — los métodos de acceso de la cuenta propia, con éxitos y errores declarados (DL-172)', async () => {
+  const correo = correoSintetico('ct-met');
+  await registrarOk(app, correo);
+  const token = await tokenDe(app, correo);
+  const yo = conSesion(app, token);
+  const tokenGoogle = (sub: string, c: string, cambios: Record<string, unknown> = {}) => idTokenDeGoogle(google, reclamosDeGoogle(sub, c, cambios));
+  // MET-01.
+  await yo.get('/api/v1/me/access-methods').expect(200);
+  await yo.get('/api/v1/me/access-methods?x=1').expect(400); // INVALID_REQUEST
+  await request(app.getHttpServer()).get('/api/v1/me/access-methods').expect(401); // AUTHENTICATION_REQUIRED
+  // MET-02.
+  const sub = subSintetico();
+  const vincular = (cuerpo: Record<string, unknown>) => yo.post('/api/v1/me/access-methods').send({ type: 'GOOGLE', credential: CREDENCIAL_SINTETICA, ...cuerpo });
+  await vincular({ idToken: tokenGoogle(sub, correo), extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await vincular({ idToken: 'no-es-un-token' }).expect(401); // GOOGLE_TOKEN_INVALID
+  await vincular({ idToken: tokenGoogle(sub, correo, { email_verified: false }) }).expect(422); // GOOGLE_EMAIL_NOT_VERIFIED
+  await vincular({ idToken: tokenGoogle(sub, correo), credential: OTRA_CREDENCIAL_SINTETICA }).expect(422); // VALIDATION_FAILED
+  await vincular({ idToken: tokenGoogle(sub, correoSintetico('ct-met-otro')) }).expect(409); // GOOGLE_EMAIL_MISMATCH
+  const metodos = (await vincular({ idToken: tokenGoogle(sub, correo) }).expect(201)).body.data.methods as { methodId: string; type: string }[];
+  await vincular({ idToken: tokenGoogle(sub, correo) }).expect(200);
+  await vincular({ idToken: tokenGoogle(subSintetico(), correo) }).expect(409); // GOOGLE_ACCOUNT_ALREADY_LINKED
+  const pro = await prepararProfesional(app, 'ct-met-pro', ['NUTRICION']);
+  await conSesion(app, await tokenDe(app, pro.correo, 'WEB')).post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(403); // MFA_REQUIRED
+  // MET-03.
+  const deGoogle = metodos.find((m) => m.type === 'GOOGLE')!.methodId;
+  const contrasena = metodos.find((m) => m.type === 'PASSWORD')!.methodId;
+  await yo.delete(`/api/v1/me/access-methods/${contrasena}`).expect(422); // VALIDATION_FAILED: la contraseña no se retira
+  await yo.delete(`/api/v1/me/access-methods/${randomUUID()}`).expect(404); // RESOURCE_NOT_FOUND
+  await yo.delete(`/api/v1/me/access-methods/${deGoogle}?x=1`).expect(400); // INVALID_REQUEST
+  await yo.delete(`/api/v1/me/access-methods/${deGoogle}`).expect(200);
+  await vincular({ idToken: tokenGoogle(subSintetico(), correo) }).expect(409); // GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE
+  // GOO-01 y 03 con una cuenta de Google desvinculada y sin una contraseña de ese correo: 409 GOOGLE_ACCOUNT_UNLINKED.
+  const otroCorreo = correoSintetico('ct-met-unlinked');
+  const subOtro = subSintetico();
+  const otra = correoSintetico('ct-met-otra');
+  await registrarOk(app, otra);
+  const deOtra = conSesion(app, await tokenDe(app, otra));
+  const suyos = (await deOtra.post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenGoogle(subOtro, otroCorreo), credential: CREDENCIAL_SINTETICA, confirmDifferentEmail: true }).expect(201)).body.data.methods as {
+    methodId: string;
+    type: string;
+  }[];
+  await deOtra.delete(`/api/v1/me/access-methods/${suyos.find((m) => m.type === 'GOOGLE')!.methodId}`).expect(200);
+  await request(app.getHttpServer()).post('/api/v1/auth/federated/google/sessions').send({ idToken: tokenGoogle(subOtro, otroCorreo) }).expect(409); // GOOGLE_ACCOUNT_UNLINKED
+  await request(app.getHttpServer())
+    .post('/api/v1/auth/federated/google/registrations')
+    .send({
+      idToken: tokenGoogle(subOtro, otroCorreo),
+      registrationIntent: 'ADVISEE',
+      profile: { displayName: NOMBRE_SINTETICO },
+      termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
+      privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+      adultDeclaration: { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
+    })
+    .expect(409); // GOOGLE_ACCOUNT_UNLINKED
+  // Una cuenta que entra solo con Google no desvincula su único método.
+  const soloGoogle = await request(app.getHttpServer())
+    .post('/api/v1/auth/federated/google/registrations')
+    .send({
+      idToken: tokenGoogle(subSintetico(), correoSintetico('ct-met-solo')),
+      registrationIntent: 'ADVISEE',
+      profile: { displayName: NOMBRE_SINTETICO },
+      termsAcceptance: { versionId: VERSION_VIGENTE.TERMINOS.id },
+      privacyAcknowledgement: { versionId: VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+      adultDeclaration: { versionId: VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
+    })
+    .expect(201);
+  const delSolo = conSesion(app, soloGoogle.body.data.session.accessToken as string);
+  const unico = (await delSolo.get('/api/v1/me/access-methods').expect(200)).body.data.methods[0].methodId as string;
+  await delSolo.delete(`/api/v1/me/access-methods/${unico}`).expect(409); // LAST_ACCESS_METHOD
 });
 
 it('TEST-CT (WP-USO-FINAL, UF-05): ACC-08 — aceptar la versión vigente de los términos o de la privacidad (DL-169)', async () => {

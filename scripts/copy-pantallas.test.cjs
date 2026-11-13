@@ -226,6 +226,9 @@ const DOMINIOS = [
       ...tsx(join(RAIZ, 'apps/web/src/app/admin')),
       ...tsx(join(RAIZ, 'apps/web/src/app/admin/professional')),
       ...tsx(join(RAIZ, 'apps/web/src/app/admin/security')),
+      // RF-068 (DL-172): las incidencias en la consola y sus textos.
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin/incidents')),
+      join(RAIZ, 'packages/domain/src/incidencias.ts'),
       join(RAIZ, 'packages/domain/src/copy-administracion.ts'),
     ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosDeAdministracionEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeCarteraEn(texto)])],

@@ -27,6 +27,7 @@ import {
 } from './contratos-administracion';
 import { ErrorEnvelopeSchema, type EsquemaDeContrato, type SalidaDe, type ValidationIssue } from './contratos';
 import { RecuperacionAsistidaResponseSchema, type EmitirRecuperacionAsistidaRequest } from './recuperacion-de-acceso';
+import { DetalleDeIncidenciaResponseSchema, ListaAdministrativaDeIncidenciasResponseSchema, type CambiarEstadoDeIncidenciaRequest, type ConsultarIncidenciasRequest } from './incidencias';
 import { SegundoFactorRestablecidoResponseSchema, type RestablecerSegundoFactorRequest } from './segundo-factor-del-profesional';
 import type { Alcance } from './alcance';
 
@@ -168,6 +169,18 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
     /** API-ADM-16 — los pedidos de derechos de las personas (UF-06, DL-169). */
     pedidosDeDerechos(token: string, consulta: ConsultarPedidosDeDerechoRequest) {
       return llamar('POST', '/admin/data-rights-requests/query', { token, cuerpo: consulta, esquema: ListaAdministrativaDePedidosDeDerechoResponseSchema });
+    },
+    /** API-INC-03 — las incidencias, con los filtros de estado y categoría (RF-068, DL-172). */
+    incidencias(token: string, consulta: ConsultarIncidenciasRequest) {
+      return llamar('POST', '/admin/incidents/query', { token, cuerpo: consulta, esquema: ListaAdministrativaDeIncidenciasResponseSchema });
+    },
+    /** API-INC-04 — el detalle de una incidencia, con su historia. */
+    incidencia(token: string, incidenciaId: string) {
+      return llamar('GET', `/admin/incidents/${encodeURIComponent(incidenciaId)}`, { token, esquema: DetalleDeIncidenciaResponseSchema });
+    },
+    /** API-INC-05 — cambiar el estado de una incidencia con su motivo, contra la versión vista, con su clave de idempotencia. */
+    cambiarEstadoDeIncidencia(token: string, incidenciaId: string, pedido: CambiarEstadoDeIncidenciaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/incidents/${encodeURIComponent(incidenciaId)}/updates`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: DetalleDeIncidenciaResponseSchema });
     },
     /** API-ADM-17 — resolver un pedido, con su clave de idempotencia. */
     resolverPedidoDeDerecho(token: string, pedidoId: string, pedido: ResolverPedidoDeDerechoRequest, claveDeIdempotencia: string) {

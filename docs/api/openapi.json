@@ -125005,7 +125005,7 @@
     "/auth/federated/google/sessions": {
       "post": {
         "operationId": "API-GOO-01",
-        "summary": "Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.",
+        "summary": "Iniciar sesión con Google. La API verifica el ID token (firma RS256 con las claves públicas de Google, emisor, audiencia, vencimiento y correo verificado). Si esa cuenta de Google ya es un método de una identidad BE, abre la sesión exactamente como API-ACC-02 (la cuenta suspendida o cerrada da el mismo 401 neutral). Si no: 409 GOOGLE_LINK_REQUIRED cuando hay una cuenta BE con contraseña y ese correo, o 404 GOOGLE_ACCOUNT_NOT_FOUND para ofrecer el alta. Si la persona desvinculó esa cuenta de Google desde su cuenta (API-MET-03; DL-172), 409 GOOGLE_LINK_REQUIRED cuando su contraseña es de ese correo, o 409 GOOGLE_ACCOUNT_UNLINKED. Nunca vincula ni crea nada. Sin Google configurado o sin respuesta de Google, 503: el acceso local sigue disponible.",
         "description": "Fuente: pedido de Dirección del 2026-10-16 · 04 RF-003 · 05 UC-E05 · 06 §5.6 · 08 §24.1 y §24.5 · 09 §12 y 09v12 §11 (bosquejo) · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138. AuthN: PUBLIC.",
         "security": [],
         "parameters": [
@@ -125204,7 +125204,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: GOOGLE_LINK_REQUIRED. GOOGLE_LINK_REQUIRED: details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).",
+            "description": "ErrorEnvelope: GOOGLE_LINK_REQUIRED | GOOGLE_ACCOUNT_UNLINKED. GOOGLE_LINK_REQUIRED: details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).",
             "content": {
               "application/json": {
                 "schema": {
@@ -125287,7 +125287,7 @@
     "/auth/federated/google/links": {
       "post": {
         "operationId": "API-GOO-02",
-        "summary": "Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado. Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.",
+        "summary": "Vincular Google a la cuenta BE con contraseña del mismo correo y abrir la sesión. Exige la contraseña de esa cuenta, con las mismas reglas y los mismos límites de intentos que API-ACC-02: una contraseña equivocada, un correo sin cuenta con contraseña o una cuenta no operativa dan el mismo 401 neutral. Agrega el método GOOGLE a esa identidad (nunca crea otra) y lo deja registrado; si esa misma cuenta de Google se había desvinculado (API-MET-03; DL-172), la reasocia, con el hecho MetodoDeAccesoAsociado (datos.reasociacion). Un vínculo o una reasociación nuevos se avisan al correo de acceso (DL-172 D-11, de mejor esfuerzo). Repetirlo con la misma cuenta de Google ya vinculada abre otra sesión, sin duplicar nada.",
         "description": "Fuente: pedido de Dirección del 2026-10-16 («solo después de que la persona confirme la contraseña de esa cuenta») · 05 UC-E05 E02 · 06 REG-06-21 · 08 §24.5 y §24.6 · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138. AuthN: PUBLIC.",
         "security": [],
         "parameters": [
@@ -125500,7 +125500,7 @@
     "/auth/federated/google/registrations": {
       "post": {
         "operationId": "API-GOO-03",
-        "summary": "Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. El perfil nace con el nombre visible (`profile.displayName`, el de la cuenta de Google que propuso API-GOO-01, confirmado o corregido; DL-169): sin él, 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue DISPLAY_NAME_REQUIRED, sin crear nada; vacío o inválido, 422 VALIDATION_FAILED con DISPLAY_NAME_REQUIRED o INVALID_DISPLAY_NAME. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro.",
+        "summary": "Crear la cuenta BE con Google y abrir la sesión: identidad, perfil propio, el método GOOGLE y los mismos actos que API-ACC-01 (A1, A2 y la declaración de mayoría de edad), en una transacción. Sin contraseña ni activación: Google verificó el correo. El perfil nace con el nombre visible (`profile.displayName`, el de la cuenta de Google que propuso API-GOO-01, confirmado o corregido; DL-169): sin él, 422 TERMS_VERSION_NOT_ACCEPTABLE con el issue DISPLAY_NAME_REQUIRED, sin crear nada; vacío o inválido, 422 VALIDATION_FAILED con DISPLAY_NAME_REQUIRED o INVALID_DISPLAY_NAME. Si esa cuenta de Google ya tiene identidad, responde 200 con una sesión nueva, como API-GOO-01 (así un reintento no crea otra). Con una cuenta BE con contraseña y ese correo, 409 GOOGLE_LINK_REQUIRED; con el correo en uso por otra cuenta, el 409 neutral del registro; con esa cuenta de Google desvinculada de su cuenta BE (API-MET-03; DL-172), 409 GOOGLE_ACCOUNT_UNLINKED, sin crear otra.",
         "description": "Fuente: pedido de Dirección del 2026-10-16 · 04 RF-001 y RF-003 · 05 UC-P25 y UC-E05 · 06 §5.6 · 08 §12.1, §24.1 y §24.7 a · ID propio de BE (familia GOO) · DEUDA_LEGAJO DL-138 y DL-169 (el nombre obligatorio, UF-D1 y UF-D2). AuthN: PUBLIC.",
         "security": [],
         "parameters": [
@@ -125799,7 +125799,7 @@
             }
           },
           "409": {
-            "description": "ErrorEnvelope: GOOGLE_LINK_REQUIRED | REGISTRATION_NOT_AVAILABLE | RESOURCE_CONFLICT. GOOGLE_LINK_REQUIRED: details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).",
+            "description": "ErrorEnvelope: GOOGLE_LINK_REQUIRED | REGISTRATION_NOT_AVAILABLE | GOOGLE_ACCOUNT_UNLINKED | RESOURCE_CONFLICT. GOOGLE_LINK_REQUIRED: details.email es el correo de la cuenta BE con contraseña; vincular Google exige confirmarla (API-GOO-02).",
             "content": {
               "application/json": {
                 "schema": {
@@ -137238,6 +137238,2086 @@
           },
           "400": {
             "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incidents": {
+      "post": {
+        "operationId": "API-INC-01",
+        "summary": "Avisar un problema (reportar una incidencia, 04 RF-068): sobre el acceso, el perfil, un vínculo, un dato que no coincide o que falta, o el funcionamiento de la app o del website. Quien la reporta es siempre la persona autenticada (persona o profesional). La descripción va de 1 a 2000 caracteres, sin los espacios de los bordes (422 VALIDATION_FAILED con DESCRIPTION_REQUIRED o DESCRIPTION_TOO_LONG). Nace abierta, sin responsable, y queda auditada sin la descripción. Tiene cupo por identidad (429). No es un chat: Administración la gestiona con API-INC-03 a 05 y la persona ve el estado con API-INC-02.",
+        "description": "Fuente: 09 v0.12 §16 («POST /incidents», candidata) · 04 RF-068 · 05 UC-P28 · 06 T-06-06 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "ACCESS",
+                      "PROFILE",
+                      "RELATIONSHIP",
+                      "DATA_INTEGRITY",
+                      "APP_FUNCTIONING"
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 4000
+                  }
+                },
+                "required": [
+                  "category",
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "incidentId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "ACCESS",
+                            "PROFILE",
+                            "RELATIONSHIP",
+                            "DATA_INTEGRITY",
+                            "APP_FUNCTIONING"
+                          ]
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "OPEN",
+                            "IN_PROGRESS",
+                            "RESOLVED"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "response": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "incidentId",
+                        "category",
+                        "description",
+                        "state",
+                        "createdAt",
+                        "updatedAt",
+                        "response"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/incidents": {
+      "get": {
+        "operationId": "API-INC-02",
+        "summary": "Las incidencias que reportó la persona autenticada, de la más nueva a la más vieja, de a páginas (limit y cursor): su estado y la última respuesta de Administración. Nunca el motivo interno de un cambio ni quién la atendió (04 RF-068: «el reportante puede conocer el estado de su caso»).",
+        "description": "Fuente: 09 v0.12 §16 («GET /me/incidents», candidata) · 04 RF-068 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tamaño de página (1 a 50; 20 por defecto).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Cursor opaco de la página siguiente.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "incidentId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "ACCESS",
+                              "PROFILE",
+                              "RELATIONSHIP",
+                              "DATA_INTEGRITY",
+                              "APP_FUNCTIONING"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "IN_PROGRESS",
+                              "RESOLVED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "response": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "incidentId",
+                          "category",
+                          "description",
+                          "state",
+                          "createdAt",
+                          "updatedAt",
+                          "response"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/incidents/query": {
+      "post": {
+        "operationId": "API-INC-03",
+        "summary": "Las incidencias, para Administración, filtradas por estados (por ejemplo, las pendientes: OPEN e IN_PROGRESS) y por categoría. Las pendientes primero, de la más vieja a la más nueva; las resueltas, de la más nueva a la más vieja. De quien la reportó, su identificador y su correo de acceso (para responderle por el canal); nada de salud. La consulta va en el cuerpo y queda auditada.",
+        "description": "Fuente: 09 v0.12 §16 · 04 RF-068 («el administrador consulta y actualiza únicamente las incidencias autorizadas») · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172 y DL-155. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "states": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "RESOLVED"
+                      ]
+                    }
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "ACCESS",
+                      "PROFILE",
+                      "RELATIONSHIP",
+                      "DATA_INTEGRITY",
+                      "APP_FUNCTIONING"
+                    ]
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "maxLength": 400
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "incidentId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "ACCESS",
+                              "PROFILE",
+                              "RELATIONSHIP",
+                              "DATA_INTEGRITY",
+                              "APP_FUNCTIONING"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "IN_PROGRESS",
+                              "RESOLVED"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "response": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reporter": {
+                            "type": "object",
+                            "properties": {
+                              "identityId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "email": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "identityId",
+                              "email"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "assignee": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "identityId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "identityId",
+                                  "name"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "incidentId",
+                          "category",
+                          "description",
+                          "state",
+                          "createdAt",
+                          "updatedAt",
+                          "response",
+                          "reporter",
+                          "version",
+                          "assignee"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/incidents/{incidentId}": {
+      "get": {
+        "operationId": "API-INC-04",
+        "summary": "El detalle de una incidencia, para Administración: lo reportado, el estado vigente, su versión, quién la tiene a cargo y toda su historia (cada cambio con su motivo, su respuesta, el administrador y el momento), del primero al último. Una que no existe: 404. Queda auditada.",
+        "description": "Fuente: 09 v0.12 §16 («GET /incidents/{incidentId}», candidata; acá, bajo /admin) · 04 RF-068 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172 y DL-155. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "incidentId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "ACCESS",
+                            "PROFILE",
+                            "RELATIONSHIP",
+                            "DATA_INTEGRITY",
+                            "APP_FUNCTIONING"
+                          ]
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "OPEN",
+                            "IN_PROGRESS",
+                            "RESOLVED"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "response": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reporter": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "email"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "assignee": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "identityId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "identityId",
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "history": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "number": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "from": {
+                                "type": "string",
+                                "enum": [
+                                  "OPEN",
+                                  "IN_PROGRESS",
+                                  "RESOLVED"
+                                ]
+                              },
+                              "to": {
+                                "type": "string",
+                                "enum": [
+                                  "OPEN",
+                                  "IN_PROGRESS",
+                                  "RESOLVED"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string"
+                              },
+                              "response": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "administrator": {
+                                "type": "object",
+                                "properties": {
+                                  "identityId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "identityId",
+                                  "name"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "number",
+                              "from",
+                              "to",
+                              "reason",
+                              "response",
+                              "administrator",
+                              "at"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "incidentId",
+                        "category",
+                        "description",
+                        "state",
+                        "createdAt",
+                        "updatedAt",
+                        "response",
+                        "reporter",
+                        "version",
+                        "assignee",
+                        "history"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/incidents/{incidentId}/updates": {
+      "post": {
+        "operationId": "API-INC-05",
+        "summary": "Cambiar el estado de una incidencia (abierta, en curso o resuelta; también reabrirla), con el motivo (de 1 a 1000 caracteres, lo ve solo Administración) y, si corresponde, la respuesta para quien la reportó (obligatoria al resolverla, hasta 2000). Contra la versión que vio el administrador (si cambió, 409 VERSION_CONFLICT); al mismo estado, 422 INVALID_STATE_TRANSITION. En una transacción: el cambio (de solo agregar: la historia no se sobrescribe), la incidencia con su estado nuevo y quién la tiene a cargo, y la auditoría sin los textos. La base no deja cambiar el estado sin el cambio, ni a alguien sin el rol administrativo vigente. Devuelve el detalle.",
+        "description": "Fuente: 09 v0.12 §16 («POST /admin/incidents/{incidentId}/updates» y «/resolve», candidatas: acá una sola, con el estado) · 04 RF-068 · 06 T-06-06 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172 y DL-155. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "OPEN",
+                      "IN_PROGRESS",
+                      "RESOLVED"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "response": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "expectedVersion": {
+                    "type": "string",
+                    "maxLength": 20
+                  }
+                },
+                "required": [
+                  "state",
+                  "reason",
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "incidentId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "ACCESS",
+                            "PROFILE",
+                            "RELATIONSHIP",
+                            "DATA_INTEGRITY",
+                            "APP_FUNCTIONING"
+                          ]
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "OPEN",
+                            "IN_PROGRESS",
+                            "RESOLVED"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "response": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "reporter": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "email": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "email"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "assignee": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "identityId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "identityId",
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "history": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "number": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "from": {
+                                "type": "string",
+                                "enum": [
+                                  "OPEN",
+                                  "IN_PROGRESS",
+                                  "RESOLVED"
+                                ]
+                              },
+                              "to": {
+                                "type": "string",
+                                "enum": [
+                                  "OPEN",
+                                  "IN_PROGRESS",
+                                  "RESOLVED"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string"
+                              },
+                              "response": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "administrator": {
+                                "type": "object",
+                                "properties": {
+                                  "identityId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "identityId",
+                                  "name"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "number",
+                              "from",
+                              "to",
+                              "reason",
+                              "response",
+                              "administrator",
+                              "at"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "incidentId",
+                        "category",
+                        "description",
+                        "state",
+                        "createdAt",
+                        "updatedAt",
+                        "response",
+                        "reporter",
+                        "version",
+                        "assignee",
+                        "history"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED | INVALID_STATE_TRANSITION",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/access-methods": {
+      "get": {
+        "operationId": "API-MET-01",
+        "summary": "Con qué se entra a la cuenta propia: la contraseña (con el correo de acceso) y Google (con el correo de esa cuenta de Google), sin los métodos desvinculados. Cada uno dice si se puede desvincular (removable: solo Google, y solo si queda la contraseña), y canLinkGoogle dice si se puede vincular una cuenta de Google desde acá. relinkableGoogleEmail es el correo de la cuenta de Google que se desvinculó, la única que se puede volver a vincular (DL-172 D-5), o null.",
+        "description": "Fuente: 09 v0.12 §12 («GET /me/access-methods», P2) · 04 RF-004 · 05 UC-E06 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "methods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "methodId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "PASSWORD",
+                                  "GOOGLE"
+                                ]
+                              },
+                              "email": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "linkedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "removable": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "methodId",
+                              "type",
+                              "email",
+                              "linkedAt",
+                              "removable"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "canLinkGoogle": {
+                          "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "methods",
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "API-MET-02",
+        "summary": "Vincular una cuenta de Google a la cuenta propia, con sesión: la API verifica el ID token como API-GOO-01, y la persona confirma su contraseña de BE (la re-autenticación, con las reglas y los cupos del login: una contraseña equivocada es 422 VALIDATION_FAILED con CREDENTIAL_INCORRECT en credential). Una sesión con perfil profesional lo hace solo con el segundo factor verificado (403 MFA_REQUIRED). Si la cuenta de Google tiene otro correo, 409 GOOGLE_EMAIL_MISMATCH (details.email) hasta que la persona lo confirme con confirmDifferentEmail. Una cuenta de Google de otra cuenta BE, o una cuenta que ya tiene otra vinculada, 409 GOOGLE_ACCOUNT_ALREADY_LINKED; una que tuvo otra y la desvinculó, 409 GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE (DL-172 D-5). Vincular la misma que se había desvinculado la reasocia. Sin Idempotency-Key: repetirlo con la misma cuenta ya vinculada responde 200 sin cambiar nada. En una transacción: el método (o su reasociación), el hecho MetodoDeAccesoAsociado (en la reasociación, con datos.reasociacion) y la auditoría. Confirmado, avisa al correo de acceso que se vinculó esa cuenta de Google (DL-172 D-11; de mejor esfuerzo: sin proveedor de correo no sale nada y la respuesta es la misma). Devuelve los métodos.",
+        "description": "Fuente: 09 v0.12 §12 («POST /me/access-methods», P2) · 04 RF-003 y RF-004 · 05 UC-E06 · 06 REG-06-21 · 08 §24.5, §24.6 y §25 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "GOOGLE"
+                  },
+                  "idToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "credential": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "confirmDifferentEmail": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "type",
+                  "idToken",
+                  "credential"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "methods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "methodId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "PASSWORD",
+                                  "GOOGLE"
+                                ]
+                              },
+                              "email": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "linkedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "removable": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "methodId",
+                              "type",
+                              "email",
+                              "linkedAt",
+                              "removable"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "canLinkGoogle": {
+                          "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "methods",
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "methods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "methodId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "PASSWORD",
+                                  "GOOGLE"
+                                ]
+                              },
+                              "email": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "linkedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "removable": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "methodId",
+                              "type",
+                              "email",
+                              "linkedAt",
+                              "removable"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "canLinkGoogle": {
+                          "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "methods",
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED | GOOGLE_TOKEN_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: GOOGLE_EMAIL_MISMATCH | GOOGLE_ACCOUNT_ALREADY_LINKED | GOOGLE_ACCOUNT_REPLACEMENT_NOT_AVAILABLE | RESOURCE_CONFLICT. GOOGLE_EMAIL_MISMATCH: details.email es el correo de la cuenta de Google, para que la pantalla pida confirmar que es de la persona.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "details": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "email": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "email"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED | GOOGLE_EMAIL_NOT_VERIFIED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DEPENDENCY_UNAVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/access-methods/{methodId}": {
+      "delete": {
+        "operationId": "API-MET-03",
+        "summary": "Desvincular un método de la cuenta propia: hoy, solo Google. La contraseña no se desvincula (422 VALIDATION_FAILED con METHOD_NOT_REMOVABLE), y Google solo si queda la contraseña (409 LAST_ACCESS_METHOD: la cuenta nunca queda sin un método utilizable). Exige una entrada reciente (SESSION_STEP_UP: 10 minutos, DL-017; si no, 403 STEP_UP_REQUIRED) y, en una sesión con perfil profesional, el segundo factor verificado (403 MFA_REQUIRED). Uno ajeno, inexistente o ya desvinculado: 404. El método no se borra: en una transacción queda el retiro (de solo agregar), el hecho MetodoDeAccesoRetirado y la auditoría. Confirmado, avisa al correo de acceso (DL-172 D-11, de mejor esfuerzo). Las sesiones abiertas siguen (D-8); si no fue la persona quien la vinculó, lo que corta el ciclo es cambiar la contraseña (API-ACC-P1-01 y 02, que además cierra todas las sesiones). Devuelve los métodos.",
+        "description": "Fuente: 09 v0.12 §12 («DELETE /me/access-methods/{methodId}», P2: «no permitir eliminar el último método de acceso utilizable»; «la remoción puede exigir step-up») · 04 RF-004 · 05 UC-E06 · 06 REG-06-22 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172. AuthN: SESSION_STEP_UP.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "methodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "methods": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "methodId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "PASSWORD",
+                                  "GOOGLE"
+                                ]
+                              },
+                              "email": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "linkedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "removable": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "methodId",
+                              "type",
+                              "email",
+                              "linkedAt",
+                              "removable"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "canLinkGoogle": {
+                          "type": "boolean"
+                        },
+                        "relinkableGoogleEmail": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "methods",
+                        "canLinkGoogle",
+                        "relinkableGoogleEmail"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: STEP_UP_REQUIRED | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: LAST_ACCESS_METHOD | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
             "content": {
               "application/json": {
                 "schema": {

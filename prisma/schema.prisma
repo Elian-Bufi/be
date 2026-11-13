@@ -133,6 +133,8 @@ enum TipoDeEventoDeDominio {
   ActoRevocado
   /// WP-03: otorgamiento o reotorgamiento de A3 (API-CON-06).
   ActoOtorgado
+  /// RF-004 (DL-172; REG-06-21): se retiró (desvinculó) un método de acceso. La reasociación es `MetodoDeAccesoAsociado`.
+  MetodoDeAccesoRetirado
 }
 
 /// Resultado registrado en auditoría (08 §29).
@@ -302,6 +304,12 @@ model Identidad {
   // WP-USO-FINAL, UF-11 (DL-169; UF-T56): los restablecimientos del segundo factor, del profesional y del administrador que los hizo.
   restablecimientosDeSegundoFactor   RestablecimientoDeSegundoFactor[] @relation("RestablecimientoDelProfesional")
   restablecimientosDecididos         RestablecimientoDeSegundoFactor[] @relation("RestablecimientoDelAdministrador")
+  // RF-068 (DL-172): las incidencias que reportó, las que tiene a cargo como administradora y los cambios que registró.
+  incidenciasReportadas  Incidencia[]         @relation("IncidenciaDelReportante")
+  incidenciasACargo      Incidencia[]         @relation("IncidenciaDelResponsable")
+  cambiosDeIncidencia    CambioDeIncidencia[] @relation("CambioDeIncidenciaDelAdministrador")
+  // RF-004 (DL-172): los retiros y las reasociaciones de sus métodos de acceso.
+  cambiosDeMetodoDeAcceso CambioDeMetodoDeAcceso[] @relation("CambioDeMetodoDeAccesoDeLaIdentidad")
 
   @@map("identidad")
 }
@@ -364,6 +372,8 @@ model MetodoDeAcceso {
   credencialLocal CredencialLocal?
   /// UF-03 de WP-USO-FINAL (DL-169): los cambios de la credencial de este método, por recuperación del acceso.
   cambiosDeCredencial CambioDeCredencial[]
+  /// RF-004 (DL-172): sus retiros y reasociaciones. Sin ninguno, o con una cantidad par, el método vale.
+  cambios CambioDeMetodoDeAcceso[]
 
   /// D3 de WP-02: dos registros concurrentes con el mismo correo no crean dos identidades.
   @@unique([tipo, referencia])
@@ -4346,4 +4356,98 @@ model SerieObservada {
 
   @@index([asesoradoId, profesionalId, ejercicioId, fechaLocal])
   @@map("serie_observada")
+}
+
+// ─── RF-068 · Incidencias administrativas mínimas (DL-172; 09 v0.12 §16) ───────────────────────────────────────────────
+
+/// RF-068: de qué se trata una incidencia (04 RF-068: el acceso, los perfiles, los vínculos, la integridad de la
+/// información o el funcionamiento de los recorridos).
+enum CategoriaDeIncidencia {
+  ACCESO
+  PERFIL
+  VINCULO
+  INTEGRIDAD_DE_DATOS
+  FUNCIONAMIENTO
+}
+
+/// RF-068: nace ABIERTA; cada cambio de estado es una fila de `CambioDeIncidencia` (trigger).
+enum EstadoDeIncidencia {
+  ABIERTA
+  EN_CURSO
+  RESUELTA
+}
+
+/// RF-068 (DL-172): una incidencia que reportó una persona o un profesional. Su descripción y su categoría no cambian; el
+/// estado, la versión y quién la tiene a cargo cambian solo con un cambio registrado antes, en la misma transacción
+/// (trigger). No se borra.
+model Incidencia {
+  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reportanteId           String                @map("reportante_id") @db.Uuid
+  categoria              CategoriaDeIncidencia
+  descripcion            String
+  estado                 EstadoDeIncidencia    @default(ABIERTA)
+  /// Cuántos cambios tuvo: el `version` del contrato («v0», «v1»…).
+  version                Int                   @default(0)
+  /// El administrador que registró el último cambio: quien la tiene a cargo o quien la resolvió.
+  responsableId          String?               @map("responsable_id") @db.Uuid
+  procedencia            Json
+  momentoDeRegistro      DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime              @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  reportante  Identidad            @relation("IncidenciaDelReportante", fields: [reportanteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  responsable Identidad?           @relation("IncidenciaDelResponsable", fields: [responsableId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  cambios     CambioDeIncidencia[]
+
+  @@index([reportanteId, momentoDeRegistro])
+  @@index([estado, momentoDeRegistro])
+  @@map("incidencia")
+}
+
+/// RF-068 (DL-172): un cambio de estado de una incidencia, con su motivo (lo ve Administración), la respuesta para quien la
+/// reportó (obligatoria al resolverla) y el administrador con su rol vigente. Solo se agrega: la historia no se sobrescribe.
+model CambioDeIncidencia {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  incidenciaId      String             @map("incidencia_id") @db.Uuid
+  /// 1, 2, 3…: la versión de la incidencia que deja este cambio.
+  numero            Int
+  estadoAnterior    EstadoDeIncidencia @map("estado_anterior")
+  estadoNuevo       EstadoDeIncidencia @map("estado_nuevo")
+  motivo            String
+  respuesta         String?
+  administradorId   String             @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime           @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  incidencia    Incidencia @relation(fields: [incidenciaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad  @relation("CambioDeIncidenciaDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([incidenciaId, numero])
+  @@map("cambio_de_incidencia")
+}
+
+// ─── RF-004 · Los métodos de acceso de una misma identidad (DL-172; 09 v0.12 §12) ───────────────────────────────────────
+
+/// RF-004: retirar un método o volver a asociarlo. Los impares son retiros y los pares, reasociaciones (CHECK).
+enum AccionSobreMetodoDeAcceso {
+  RETIRO
+  REASOCIACION
+}
+
+/// RF-004 (DL-172): un método de acceso no se borra (es de solo agregar desde WP-02): retirarlo es una fila acá, y volver a
+/// vincular la misma cuenta de Google es otra. Solo se retira Google, y solo si queda la contraseña (trigger). Solo se agrega.
+model CambioDeMetodoDeAcceso {
+  id                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  metodoDeAccesoId  String                    @map("metodo_de_acceso_id") @db.Uuid
+  identidadId       String                    @map("identidad_id") @db.Uuid
+  numero            Int
+  accion            AccionSobreMetodoDeAcceso
+  procedencia       Json
+  momentoDeRegistro DateTime                  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  metodoDeAcceso MetodoDeAcceso @relation(fields: [metodoDeAccesoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  identidad      Identidad      @relation("CambioDeMetodoDeAccesoDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([metodoDeAccesoId, numero])
+  @@index([identidadId])
+  @@map("cambio_de_metodo_de_acceso")
 }
