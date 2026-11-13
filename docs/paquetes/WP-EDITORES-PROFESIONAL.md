@@ -1786,6 +1786,17 @@ rama `wp-editores-api`), el 2026-11-12. Ninguna cambia la API ni lo que leen las
 | EDT-54 | ED-11 | Reemplazar el borrador con una plantilla son dos operaciones de hoy: descartar (API-PLE-05) y crear desde la plantilla (API-TRN-07). Si la segunda falla, la versión activa sigue igual y el diálogo de plantillas queda abierto con el motivo | Una operación nueva de la API que lo haga de una vez |
 | EDT-55 | ED-74 | La columna «Sesión» de la tabla de origen y el nombre de la sesión en la «Lectura» esperan que la clave TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE traiga el nombre de la sesión en cada punto y en cada serie que no entró: hoy no lo trae, y la lectura dice solo la versión del plan que regía (de `planVersions`). Revisión adversaria del 13/11 | Sumar el nombre de la sesión al contrato de la clave (cambio aditivo de API-PRJ-01) |
 
+**Las de los restos del website (EDT-56 en adelante), a ratificar.** Las tomó Claude al programar los restos (§8.8), el
+2026-11-13. Ninguna cambia la API ni lo que leen las APK.
+
+| ID | Parte | Lo elegido | La alternativa |
+|---|---|---|---|
+| EDT-56 | ED-76 | Desde las series elegidas, «Calcular la carga de las elegidas…» (en la barra de la planilla) abre el mismo cuadro, directo en el cálculo, y escribe solo la carga propia de esas series. El % RM y su referencia son de toda la prescripción: no se tocan, y el cuadro lo dice. Si el profesional vuelve al detalle y entra al cálculo desde su botón, ese escribe en la fila general. Una serie quitada con el cuadro abierto no se escribe | Escribir también el % RM y su referencia, que cambiarían lo que toman las demás series |
+| EDT-57 | ED-72 | «Corregir o anular esta serie observada» se ofrece en «Cómo se calculó» de una observación, solo a quien la observó (a los demás, API-FZA-03 no les revela que existe), y abre en el mismo cuadro, con «Atrás». Antes del formulario se lee la vigente con API-FZA-02, por su versión; corregir arranca con sus valores y pide un cambio; las dos acciones piden el motivo. Un 409 dice que otra ya la sucedió y no pisa nada | Ofrecerlo a cualquier profesional del vínculo, que recibiría un «no existe» |
+| EDT-58 | ED-14 | En el paso 4, una pestaña por sesión de todo el plan (con el bloque y la semana en el nombre si hay varios grupos) y la cuenta de ejercicios de cada una; el panel tiene la línea de prescripción de cada ejercicio y el preset de la sesión. Las tarjetas de presets en línea no se suman: la galería sigue a un botón | Las tarjetas de presets dentro de la pestaña |
+| EDT-59 | ED-23 | La fila «General» va dentro de la tabla, arriba de las series, con la carga sugerida y el descanso de la prescripción (los mismos identificadores, para que «Validar» lleve a ellos) y el RIR general como texto (se escribe en la intensidad). Debajo quedan el criterio, la unidad, las notas, las bases y los parámetros. Sin series, la tabla se ve igual, con su fila «General» | Repetir la carga y el descanso arriba y abajo |
+| EDT-60 | ED-32 | La vista previa de la versión nueva de una receta suma la porción con las cuentas de BE: la de ahora, de API-PLN-01 (solo si es de la versión del plan que se mira y cita la misma versión de la receta), y la nueva, del cálculo que la API guardó con la receta. Se lee una vez por versión guardada, y solo si hay una versión nueva que ofrecer. El origen «dato de demostración» por fila no entra: API-PLN-01 no trae la procedencia de cada alimento | Sumar la procedencia a API-PLN-01 (cambio aditivo del contrato) |
+
 ### 6.4 Las del cierre del website (EDC), a ratificar por Dirección
 
 Las tomó Claude al programar el cierre del website (§8.7), el 2026-11-12, en paralelo con la rama de la API. Ninguna
@@ -2087,6 +2098,30 @@ son EDC-01 a EDC-14 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editore
 - **La herramienta de capturas** (`EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/recorrido.mjs`): su tramo «Agregar ítem»
   todavía comprueba el cajón que se retiró (`.agregar-item__buscador`, buscar al enviar, «Limpiar búsqueda»). Se
   reescribe para el cuadro de ED-31 antes de la corrida con la API local, que es donde se puede comprobar.
+
+### 8.8 Los restos del website (2026-11-13)
+
+Programados en la rama `wp-editores-restos`, sobre main 64dfc39, con la API de #258 ya integrada: lo pendiente de §8.5 a
+§8.7 que es del website. Las decisiones nuevas son EDT-56 a EDT-60 (§6.3), a ratificar. Las pruebas, en
+`apps/web/test/editores-restos.test.mjs`.
+
+| Parte | Lo que quedó |
+|---|---|
+| ED-72 | Corregir o anular una serie observada desde «Cómo se calculó», con el motivo, sobre la versión leída (API-FZA-03; EDT-57) |
+| ED-76 | «Calcular la carga de las elegidas…» desde la barra de la planilla: escribe solo la carga de esas series (EDT-56) |
+| ED-14 | En el paso 4 del asistente, una pestaña por sesión, con las flechas, Inicio y Fin (maqueta 03; EDT-58) |
+| ED-23 | La fila «General» dentro de la tabla de series, con la carga y el descanso de la prescripción (EDT-59) |
+| ED-32 y API-PLN-01 | La vista previa de la versión nueva de la receta, con la porción de ahora y la nueva según las cuentas de BE (EDT-60) |
+
+**Lo que queda, declarado:**
+- **ED-31:** el origen «dato de demostración» en cada fila del plan y su aviso en «Antes de activar». API-PLN-01 trae la
+  versión del catálogo y la composición de cada ítem, pero no su procedencia: pide un cambio aditivo del contrato
+  (EDT-60), o una lectura del catálogo por alimento.
+- **ED-14:** las tarjetas de presets en línea dentro de cada pestaña (EDT-58). **ED-23:** elegir varios ejercicios (P2).
+- **ED-75:** «Las últimas sesiones» del detalle (EDT-47).
+- **La herramienta de capturas** (`recorrido.mjs`) sigue leyendo «lo general» por los identificadores de siempre, que la
+  fila «General» conserva; las capturas de esta tanda (Claro y Azul noche a 1280, 1440 y 1920, y el zoom al 200 %) van en
+  la corrida con la API local, como las de §8.3 a §8.7.
 
 ## 9. Riesgos
 
