@@ -126,7 +126,9 @@ const lugar = (extra) => barra.lugarDelContenido({ conBarra: true, fija: false, 
 
 test('el área que se desplaza termina arriba de la barra flotante: su alto, su separación y el área segura quedan fuera', () => {
   // Medida: 62 dp de cápsula, 10 de separación y 24 de área segura. El contenido deja su aire y se apaga en el fundido.
-  assert.deepEqual(lugar(), { margenAbajo: 62 + barra.SEPARACION_DE_LA_BARRA + 24, rellenoAbajo: barra.AIRE_AL_FINAL, fundido: true });
+  assert.deepEqual(lugar(), { margenAbajo: 62 + barra.SEPARACION_DE_LA_BARRA + 24, rellenoAbajo: Math.max(barra.AIRE_AL_FINAL, barra.ALTO_DEL_FUNDIDO), fundido: true });
+  // Al final del desplazamiento, el fundido no tapa nada: lo último queda entero arriba de él.
+  assert.ok(lugar().rellenoAbajo >= barra.ALTO_DEL_FUNDIDO, `el aire (${lugar().rellenoAbajo} dp) cubre el fundido (${barra.ALTO_DEL_FUNDIDO} dp)`);
   // Con dos filas y letra grande, lo que mide.
   assert.equal(lugar({ altoDeLaBarra: 130, filas: 2, escalaDeLetra: 2 }).margenAbajo, 130 + 10 + 24);
   // Antes de medirla, su alto estimado: nunca el primer dibujo con el contenido debajo de la barra.
@@ -167,4 +169,19 @@ test('un solo lugar: App.tsx decide dónde termina el contenido de todas las pan
   // El fundido, con el color de abajo del fondo, y sin recibir toques.
   assert.match(BARRA, /export function FundidoSobreLaBarra\(\)[\s\S]*?pointerEvents="none"[\s\S]*?height: ALTO_DEL_FUNDIDO[\s\S]*?COLOR\.fondoAbajo/);
   assert.doesNotMatch(BARRA, /VeloDeLaBarra/);
+  // Las maquetas de evidencia que todavía usan el velo viejo están marcadas como congeladas: no se reusan para la barra nueva.
+  const evidencia = new URL('../EVIDENCIA/', import.meta.url);
+  for (const paquete of readdirSync(evidencia)) {
+    const render = new URL(`${paquete}/herramientas/render-navegador/`, evidencia);
+    let archivos;
+    try {
+      archivos = readdirSync(render);
+    } catch {
+      continue;
+    }
+    const conElVelo = archivos.filter((n) => /\.tsx$/.test(n) && /VeloDeLaBarra/.test(readFileSync(new URL(n, render), 'utf8')));
+    if (conElVelo.length === 0) continue;
+    const leeme = archivos.includes('LEEME.md') ? readFileSync(new URL('LEEME.md', render), 'utf8') : '';
+    assert.match(leeme, /# Maquetas congeladas[\s\S]*lugarDelContenido[\s\S]*No reusarlas para capturar la barra nueva/, `${paquete}: ${conElVelo.join(', ')} usa el velo viejo sin decir que está congelada`);
+  }
 });

@@ -172,5 +172,6 @@ export function lugarDelContenido({
   }
   const barra = altoDeLaBarra ?? altoEstimadoDeLaBarra(filas, escalaDeLetra, false);
   if (barra === 0) return sinBarra;
-  return { margenAbajo: barra + SEPARACION_DE_LA_BARRA + insetAbajo, rellenoAbajo: AIRE_AL_FINAL, fundido: true };
+  // Al final del desplazamiento, lo último queda entero arriba del fundido: el aire no es menor que su alto.
+  return { margenAbajo: barra + SEPARACION_DE_LA_BARRA + insetAbajo, rellenoAbajo: Math.max(AIRE_AL_FINAL, ALTO_DEL_FUNDIDO), fundido: true };
 }
