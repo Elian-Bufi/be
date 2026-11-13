@@ -14,6 +14,7 @@ import {
   type PesoDeReferencia,
   type PesoRegistrado,
   type RangosDelPlan,
+  type TomaUsada,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
@@ -37,8 +38,16 @@ interface VersionDelProfesional {
 
 const noEditable = () =>
   new ErrorDeApi(422, CodigoDeError.PLAN_NOT_EDITABLE, 'Esta versión está activada: sus rangos quedan como se activaron. Para cambiarlos, creá una nueva versión a partir de esta.');
-/** Sin permiso, sin la medición o sin peso: el mismo problema, que no dice nada del peso. */
-const pesoNoDisponible = () => errores.validacionFallida([{ code: 'BODY_WEIGHT_NOT_AVAILABLE', path: 'bodyWeight.measurementId' }]);
+/**
+ * Sin permiso, sin la medición o sin peso: el mismo problema, que no dice nada del peso. El motivo real, si es el permiso,
+ * queda solo en la auditoría (`motivoDeAuditoria`, que nunca se serializa).
+ */
+const pesoNoDisponible = (motivoDeAuditoria?: string) => {
+  const e = errores.validacionFallida([{ code: 'BODY_WEIGHT_NOT_AVAILABLE', path: 'bodyWeight.measurementId' }]);
+  return motivoDeAuditoria ? new ErrorDeApi(e.status, e.code, e.mensajeSeguro, e.details, motivoDeAuditoria) : e;
+};
+/** El motivo en la auditoría cuando se pide un peso registrado sin Antropometría habilitada. */
+export const MOTIVO_SIN_ANTROPOMETRIA = 'ANTROPOMETRIA_NO_HABILITADA';
 
 /**
  * API-PLN-02 y API-PLN-03 (WP-EDITORES-PROFESIONAL ED-34; WP-TABLERO-ALTA-GAMA TB-39; decisión de Dirección del
@@ -47,7 +56,7 @@ const pesoNoDisponible = () => errores.validacionFallida([{ code: 'BODY_WEIGHT_N
  * - **Solo el profesional del plan,** con el PDP de Nutrición: lo ajeno, lo descartado o lo inexistente es el mismo 404, y
  *   la persona tampoco los lee (su plan, en «Hoy», no cambia).
  * - **El peso registrado, con el PDP de Antropometría:** la decisión se toma y se registra en cada lectura y en cada
- *   escritura que lo usa. Denegada, la API no devuelve el peso por ningún camino: ni el último registrado, ni el guardado
+ *   escritura (denegada, también cuando la escritura se rechaza por eso: se registra fuera de la transacción). Denegada, la API no devuelve el peso por ningún camino: ni el último registrado, ni el guardado
  *   (se retienen el peso y los g/kg, `rangosParaMostrar`), ni en el error, que es el mismo para «sin permiso», «no existe»
  *   y «no hay peso».
  * - **El último peso** es el más reciente que este profesional puede leer en Antropometría, con la misma regla que la
@@ -77,7 +86,8 @@ export class RangosDeNutricionService {
       lectura: async (tx) => {
         const v = await this.versionDelProfesional(tx, 'API-PLN-02', actor, planId, ctx, false);
         const fila = await tx.rangosDePlanNutricional.findUnique({ where: { versionDePlanId: v.id }, select: { revision: true, contenido: true } });
-        return { data: await this.respuesta(tx, 'API-PLN-02', actor, v, fila, ctx) };
+        const habilitada = await this.antropometriaHabilitada(tx, 'API-PLN-02', actor, v, ctx, 'en-la-transaccion');
+        return { data: await this.respuesta(tx, actor, v, fila, habilitada) };
       },
     });
   }
@@ -100,30 +110,37 @@ export class RangosDeNutricionService {
         const [actual] = await tx.$queryRaw<{ revision: number; contenido: ContenidoDeRangos }[]>`
           SELECT "revision", "contenido" FROM "rangos_de_plan_nutricional" WHERE "version_de_plan_id" = ${v.id}::uuid FOR UPDATE`;
         if (pedido.expectedRevision !== (actual?.revision ?? 0)) throw errores.conflictoDeVersion();
-        const peso = await this.pesoPedido(tx, pedido.bodyWeight, actual?.contenido.bodyWeight ?? null, actor, v, ctx);
-        const r = rangosParaGuardar(pedido.dayTypes, peso, nodosDelPlan(v.contenido.dayTypes));
+        // Una sola decisión por escritura. Denegada, se registra aparte: si la escritura se rechaza, el intento queda.
+        const habilitada = await this.antropometriaHabilitada(tx, 'API-PLN-03', actor, v, ctx, 'aparte');
+        const guardado = actual?.contenido ?? null;
+        const peso = await this.pesoPedido(tx, pedido.bodyWeight, guardado?.bodyWeight ?? null, habilitada, actor, v);
+        const r = rangosParaGuardar(pedido.dayTypes, peso, nodosDelPlan(v.contenido.dayTypes), {
+          contenido: guardado,
+          pesoRetenido: guardado?.bodyWeight?.source === 'RECORDED' && !habilitada,
+        });
         if (!r.ok) throw errores.validacionFallida([...r.issues]);
         const contenido = r.contenido as unknown as Prisma.InputJsonValue;
         const fila = actual
           ? await tx.rangosDePlanNutricional.update({ where: { versionDePlanId: v.id }, data: { revision: actual.revision + 1, contenido }, select: { revision: true, contenido: true } })
           : await tx.rangosDePlanNutricional.create({ data: { versionDePlanId: v.id, revision: 1, contenido }, select: { revision: true, contenido: true } });
-        return { estadoHttp: 200, cuerpo: { data: await this.respuesta(tx, 'API-PLN-03', actor, v, fila, ctx) }, sujetoId: v.titularId, recurso };
+        return { estadoHttp: 200, cuerpo: { data: await this.respuesta(tx, actor, v, fila, habilitada) }, sujetoId: v.titularId, recurso };
       },
     });
   }
 
   // ─── Auxiliares ─────────────────────────────────────────────────────────────────────────────
 
-  /** La respuesta de las dos operaciones: lo guardado, tal cual, con el peso retenido si Antropometría no está habilitada. */
+  /**
+   * La respuesta de las dos operaciones: lo guardado, tal cual, con el peso retenido si Antropometría no está habilitada.
+   * Con Antropometría, también el último peso y cómo está hoy la toma que usa el plan (corregida o anulada), para avisar.
+   */
   private async respuesta(
     tx: Tx,
-    operacion: string,
     actor: ActorAutenticado,
     v: VersionDelProfesional,
     fila: { revision: number; contenido: Prisma.JsonValue } | null,
-    ctx: ContextoDeSolicitud,
+    habilitada: boolean,
   ): Promise<RangosDelPlan> {
-    const habilitada = await this.antropometriaHabilitada(tx, operacion, actor, v, ctx);
     const vista = rangosParaMostrar((fila?.contenido as unknown as ContenidoDeRangos | undefined) ?? null, nodosDelPlan(v.contenido.dayTypes), habilitada);
     return {
       planId: v.id,
@@ -131,7 +148,14 @@ export class RangosDeNutricionService {
       revision: fila?.revision ?? 0,
       bodyWeight: vista.bodyWeight,
       bodyWeightWithheld: vista.bodyWeightWithheld,
-      anthropometry: { enabled: habilitada, latestWeight: habilitada ? await ultimoPesoRegistrado(tx, actor.identidadId, v.titularId) : null },
+      anthropometry: {
+        enabled: habilitada,
+        latestWeight: habilitada ? await ultimoPesoRegistrado(tx, actor.identidadId, v.titularId) : null,
+        usedMeasurement:
+          habilitada && vista.bodyWeight?.source === 'RECORDED' && vista.bodyWeight.measurementId
+            ? await tomaUsada(tx, actor.identidadId, v.titularId, vista.bodyWeight.measurementId)
+            : null,
+      },
       dayTypes: vista.dayTypes.map((d) => ({ ...d, meals: [...d.meals] })),
     };
   }
@@ -139,17 +163,18 @@ export class RangosDeNutricionService {
   /**
    * El peso que pide la escritura:
    * - a mano, con sus topes y sin fecha futura;
-   * - registrado, solo con Antropometría habilitada: el guardado, si es el mismo (se conserva tal cual, sin releerlo), o el
-   *   último que este profesional puede ver. Uno que ya no es el último es `BODY_WEIGHT_OUTDATED`; sin permiso, sin la
-   *   medición o sin peso, `BODY_WEIGHT_NOT_AVAILABLE`.
+   * - registrado, solo con Antropometría habilitada: el guardado, si es la misma toma (se conserva tal cual, sin releerla,
+   *   aunque se haya corregido), o el último que este profesional puede ver, con su valor vigente. Con `useCurrentValue`,
+   *   también la misma toma se relee: así se recalcula con la corrección, solo si el profesional lo pide. Uno que ya no es
+   *   el último es `BODY_WEIGHT_OUTDATED`; sin permiso, sin la medición o sin peso, `BODY_WEIGHT_NOT_AVAILABLE`.
    */
   private async pesoPedido(
     tx: Tx,
     pedido: EscribirRangosRequest['bodyWeight'],
     guardado: PesoDeReferencia | null,
+    habilitada: boolean,
     actor: ActorAutenticado,
     v: VersionDelProfesional,
-    ctx: ContextoDeSolicitud,
   ): Promise<PesoDeReferencia | null> {
     if (!pedido) return null;
     if (pedido.source === 'MANUAL') {
@@ -157,8 +182,8 @@ export class RangosDeNutricionService {
       if (issues.length > 0) throw errores.validacionFallida(issues);
       return { source: 'MANUAL', valueKg: pedido.valueKg, measuredOn: pedido.measuredOn, measurementId: null };
     }
-    if (!(await this.antropometriaHabilitada(tx, 'API-PLN-03', actor, v, ctx))) throw pesoNoDisponible();
-    if (guardado?.source === 'RECORDED' && guardado.measurementId === pedido.measurementId) return guardado;
+    if (!habilitada) throw pesoNoDisponible(MOTIVO_SIN_ANTROPOMETRIA);
+    if (!pedido.useCurrentValue && guardado?.source === 'RECORDED' && guardado.measurementId === pedido.measurementId) return guardado;
     const ultimo = await ultimoPesoRegistrado(tx, actor.identidadId, v.titularId);
     if (ultimo && ultimo.measurementId === pedido.measurementId) return { source: 'RECORDED', valueKg: ultimo.valueKg, measuredOn: ultimo.measuredOn, measurementId: ultimo.measurementId };
     if (ultimo && esUuid(pedido.measurementId) && (await tx.medicionAntropometrica.count({ where: { id: pedido.measurementId, ...pesosVisibles(actor.identidadId, v.titularId) } })) > 0) {
@@ -169,9 +194,18 @@ export class RangosDeNutricionService {
 
   /**
    * ¿La persona le habilitó Antropometría a este profesional? Decide el PDP, como en API-ANT-06. La decisión queda
-   * registrada también si se deniega: leer el plan no es leer el peso, y por eso no responde un 404.
+   * registrada también si se deniega: leer el plan no es leer el peso, y por eso no responde un 404. Al escribir, la
+   * denegada se registra `aparte`, fuera de la transacción: si la escritura se rechaza (por ejemplo, porque pidió un peso
+   * registrado sin permiso), el intento queda igual (EDT-65; 08:491).
    */
-  private async antropometriaHabilitada(tx: Tx, operacion: string, actor: ActorAutenticado, v: VersionDelProfesional, ctx: ContextoDeSolicitud): Promise<boolean> {
+  private async antropometriaHabilitada(
+    tx: Tx,
+    operacion: string,
+    actor: ActorAutenticado,
+    v: VersionDelProfesional,
+    ctx: ContextoDeSolicitud,
+    registro: 'en-la-transaccion' | 'aparte',
+  ): Promise<boolean> {
     try {
       await this.pdp.decidirEnTransaccion(
         tx,
@@ -181,7 +215,8 @@ export class RangosDeNutricionService {
       return true;
     } catch (e) {
       if (!(e instanceof DenegacionDelPdp)) throw e;
-      await tx.decisionDeAcceso.createMany({ data: [e.decision] });
+      if (registro === 'aparte') await this.pdp.registrarDenegacion(e);
+      else await tx.decisionDeAcceso.createMany({ data: [e.decision] });
       return false;
     }
   }
@@ -213,6 +248,19 @@ export class RangosDeNutricionService {
 /** Los pesos que este profesional puede leer de la persona: los de sus evaluaciones registradas, sin anular (API-ANT-06). */
 const pesosVisibles = (profesionalId: string, titularId: string) =>
   ({ metrica: 'peso', anulacion: { is: null }, evaluacion: { asesoradoId: titularId, profesionalId, estado: 'REGISTRADA' } }) satisfies Prisma.MedicionAntropometricaWhereInput;
+
+/**
+ * Cómo está hoy la toma que usa el plan, entre las que este profesional puede leer: vigente, con su valor en kg al décimo
+ * (corregido, si se corrigió), o no vigente (anulada, o en otra unidad: no se convierte en silencio, REG-06-09).
+ */
+async function tomaUsada(tx: Tx, profesionalId: string, titularId: string, measurementId: string): Promise<TomaUsada> {
+  const f = esUuid(measurementId)
+    ? await tx.medicionAntropometrica.findFirst({ where: { id: measurementId, ...pesosVisibles(profesionalId, titularId) }, include: { correcciones: { orderBy: { momentoDeRegistro: 'asc' } } } })
+    : null;
+  const m = f ? magnitudEfectiva(f) : null;
+  const kg = m && m.unit === 'kg' ? pesoAlDecimo(m.value) : null;
+  return kg === null ? { state: 'NOT_CURRENT' } : { state: 'CURRENT', valueKg: kg };
+}
 
 /**
  * El último peso registrado que este profesional puede leer: el de la toma más reciente, con su corrección vigente, en kg

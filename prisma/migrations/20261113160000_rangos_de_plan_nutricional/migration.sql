@@ -46,3 +46,5 @@ BEGIN
   RETURN NEW;
 END $$;
 CREATE TRIGGER "rangos_de_plan_nutricional_guardar" BEFORE INSERT OR UPDATE OR DELETE ON "rangos_de_plan_nutricional" FOR EACH ROW EXECUTE FUNCTION "be_rangos_de_plan_guardar"();
+-- Un TRUNCATE esquivaría la guarda de fila («no se borran»): se rechaza por sentencia, como en toda tabla con historia.
+CREATE TRIGGER "rangos_de_plan_nutricional_sin_truncate" BEFORE TRUNCATE ON "rangos_de_plan_nutricional" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
