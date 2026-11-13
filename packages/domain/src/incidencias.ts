@@ -190,7 +190,7 @@ export const COPY_INCIDENCIAS = {
     ACCESS: 'Entrar a mi cuenta',
     PROFILE: 'Mi perfil o mis datos de cuenta',
     RELATIONSHIP: 'Un vínculo con un profesional',
-    DATA_INTEGRITY: 'Un dato que se ve mal o falta',
+    DATA_INTEGRITY: 'Un dato que no coincide o que falta',
     APP_FUNCTIONING: 'Algo de la app o del website que no funciona',
   } as Readonly<Record<CategoriaDeIncidencia, string>>,
   descripcion: 'Qué pasó',

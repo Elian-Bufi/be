@@ -4284,7 +4284,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/incidents',
     resumen:
-      'Avisar un problema (reportar una incidencia, 04 RF-068): sobre el acceso, el perfil, un vínculo, un dato que se ve mal o el funcionamiento de la app o del website. Quien la reporta es siempre la persona autenticada (persona o profesional). La descripción va de 1 a 2000 caracteres, sin los espacios de los bordes (422 VALIDATION_FAILED con DESCRIPTION_REQUIRED o DESCRIPTION_TOO_LONG). Nace abierta, sin responsable, y queda auditada sin la descripción. Tiene cupo por identidad (429). No es un chat: Administración la gestiona con API-INC-03 a 05 y la persona ve el estado con API-INC-02.',
+      'Avisar un problema (reportar una incidencia, 04 RF-068): sobre el acceso, el perfil, un vínculo, un dato que no coincide o que falta, o el funcionamiento de la app o del website. Quien la reporta es siempre la persona autenticada (persona o profesional). La descripción va de 1 a 2000 caracteres, sin los espacios de los bordes (422 VALIDATION_FAILED con DESCRIPTION_REQUIRED o DESCRIPTION_TOO_LONG). Nace abierta, sin responsable, y queda auditada sin la descripción. Tiene cupo por identidad (429). No es un chat: Administración la gestiona con API-INC-03 a 05 y la persona ve el estado con API-INC-02.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: ReportarIncidenciaRequestSchema,

@@ -137272,7 +137272,7 @@
     "/incidents": {
       "post": {
         "operationId": "API-INC-01",
-        "summary": "Avisar un problema (reportar una incidencia, 04 RF-068): sobre el acceso, el perfil, un vínculo, un dato que se ve mal o el funcionamiento de la app o del website. Quien la reporta es siempre la persona autenticada (persona o profesional). La descripción va de 1 a 2000 caracteres, sin los espacios de los bordes (422 VALIDATION_FAILED con DESCRIPTION_REQUIRED o DESCRIPTION_TOO_LONG). Nace abierta, sin responsable, y queda auditada sin la descripción. Tiene cupo por identidad (429). No es un chat: Administración la gestiona con API-INC-03 a 05 y la persona ve el estado con API-INC-02.",
+        "summary": "Avisar un problema (reportar una incidencia, 04 RF-068): sobre el acceso, el perfil, un vínculo, un dato que no coincide o que falta, o el funcionamiento de la app o del website. Quien la reporta es siempre la persona autenticada (persona o profesional). La descripción va de 1 a 2000 caracteres, sin los espacios de los bordes (422 VALIDATION_FAILED con DESCRIPTION_REQUIRED o DESCRIPTION_TOO_LONG). Nace abierta, sin responsable, y queda auditada sin la descripción. Tiene cupo por identidad (429). No es un chat: Administración la gestiona con API-INC-03 a 05 y la persona ve el estado con API-INC-02.",
         "description": "Fuente: 09 v0.12 §16 («POST /incidents», candidata) · 04 RF-068 · 05 UC-P28 · 06 T-06-06 · ID propio de BE (familia INC) · DEUDA_LEGAJO DL-172. AuthN: SESSION.",
         "security": [
           {
