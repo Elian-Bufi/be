@@ -10537,6 +10537,17 @@ button.comida-del-dia__fila > .icono:last-child {
   font-weight: 700;
 }
 
+/* ED-23: la fila «General», arriba de las series y separada de ellas por una línea. */
+.series-del-editor tr.series-del-editor__general > th,
+.series-del-editor tr.series-del-editor__general > td {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--borde-control);
+}
+
+.series-del-editor tr.series-del-editor__general .nota {
+  font-size: 0.85rem;
+}
+
 /* Cada campo de la tabla, con el borde de los campos del website y el alto táctil. */
 .series-del-editor .celda-de-serie,
 .celda-de-objetivo {
@@ -15825,6 +15836,16 @@ p.cifra-del-espacio__desglose {
 
 .estacion__lista-del-panel li + li {
   margin-top: 0.35rem;
+}
+
+/* ED-14 (maqueta 03): en el paso 4 del asistente, una pestaña por sesión. Con muchas, bajan de renglón. */
+.asistente__pestanas {
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.asistente__pestanas [role='tab'] .nota {
+  font-weight: 400;
 }
 
 /* ═══ ED-17 · La ayuda de primer uso (`components/primer-uso.tsx`) ═════════════════════════════════════════════════ */

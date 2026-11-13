@@ -93,55 +93,12 @@ export function useSerieObservada(o: { token: string; asesoradoId: string; exerc
 }
 
 export function SerieObservada({ persona, hoy, formulario: x }: { persona: string; hoy: string; formulario: ReturnType<typeof useSerieObservada> }) {
-  const id = useId();
   const C = COPY_SERIE_OBSERVADA;
   const { f, cambiar, enVivo, falla } = x;
   return (
     <div className="serie-observada" data-serie-observada>
       <p>{C.queEs(persona)}</p>
-      <div className="serie-observada__campos">
-        <label htmlFor={`${id}-fecha`}>{C.fecha}</label>
-        <input id={`${id}-fecha`} type="date" max={hoy} value={f.fecha} onChange={(e) => cambiar({ fecha: e.target.value })} required />
-
-        <label htmlFor={`${id}-carga`}>{C.carga}</label>
-        <span className="serie-observada__par">
-          <input id={`${id}-carga`} inputMode="decimal" autoComplete="off" className="serie-observada__numero" value={f.carga} onChange={(e) => cambiar({ carga: e.target.value })} />
-          <select aria-label="Unidad de la carga" value={f.unidad} onChange={(e) => cambiar({ unidad: e.target.value as 'kg' | 'lb' })}>
-            <option value="kg">kg</option>
-            <option value="lb">lb</option>
-          </select>
-        </span>
-
-        <label htmlFor={`${id}-reps`}>{C.repeticiones}</label>
-        <input id={`${id}-reps`} inputMode="numeric" autoComplete="off" className="serie-observada__numero" value={f.repeticiones} onChange={(e) => cambiar({ repeticiones: e.target.value })} />
-
-        <span className="serie-observada__rotulo" aria-hidden="true">
-          {C.rir}
-        </span>
-        <div className="serie-observada__rir">
-          {/* De 0 a 2, de a medio (maqueta 17). «Más de 2» existe para que el cuadro lo diga: no se guarda (ED-D19). */}
-          <fieldset className="segmentos" aria-describedby={`${id}-regla`}>
-            <legend className="visualmente-oculto">{C.rir}</legend>
-            <div className="segmentos__fila">
-              {[...RIR_DEL_CUADRO, RIR_MAS_DE_2].map((r) => (
-                <label key={r} className="segmento" data-rir={r}>
-                  <input type="radio" name={`${id}-rir`} checked={f.rir === r} onChange={() => cambiar({ rir: r })} />
-                  {r === RIR_MAS_DE_2 ? C.masDe2 : String(r).replace('.', ',')}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <span className="nota">{COPY_FUERZA.campoDelRir}</span>
-          <p id={`${id}-regla`} className="nota serie-observada__regla" data-regla-del-rir>
-            {COPY_FUERZA.reglaDelRir}
-          </p>
-        </div>
-
-        <label htmlFor={`${id}-nota`}>
-          {C.nota} <span className="nota">{C.notaOpcional}</span>
-        </label>
-        <input id={`${id}-nota`} maxLength={500} value={f.nota} onChange={(e) => cambiar({ nota: e.target.value })} />
-      </div>
+      <CamposDeLaSerie f={f} cambiar={cambiar} hoy={hoy} />
       <EnVivo enVivo={enVivo} />
       <ul className="serie-observada__reglas">
         <li>
@@ -166,7 +123,61 @@ export function SerieObservada({ persona, hoy, formulario: x }: { persona: strin
   );
 }
 
-function EnVivo({ enVivo }: { enVivo: SerieObservadaEnVivo }) {
+/**
+ * Los campos de la serie: la fecha, la carga con su unidad, las repeticiones, el RIR observado y la nota. Los usan
+ * «Registrar una serie observada» y su corrección (API-FZA-03), con el mismo formulario.
+ */
+export function CamposDeLaSerie({ f, cambiar, hoy }: { f: FormularioDeSerieObservada; cambiar: (c: Partial<FormularioDeSerieObservada>) => void; hoy: string }) {
+  const id = useId();
+  const C = COPY_SERIE_OBSERVADA;
+  return (
+    <div className="serie-observada__campos">
+      <label htmlFor={`${id}-fecha`}>{C.fecha}</label>
+      <input id={`${id}-fecha`} type="date" max={hoy} value={f.fecha} onChange={(e) => cambiar({ fecha: e.target.value })} required />
+
+      <label htmlFor={`${id}-carga`}>{C.carga}</label>
+      <span className="serie-observada__par">
+        <input id={`${id}-carga`} inputMode="decimal" autoComplete="off" className="serie-observada__numero" value={f.carga} onChange={(e) => cambiar({ carga: e.target.value })} />
+        <select aria-label="Unidad de la carga" value={f.unidad} onChange={(e) => cambiar({ unidad: e.target.value as 'kg' | 'lb' })}>
+          <option value="kg">kg</option>
+          <option value="lb">lb</option>
+        </select>
+      </span>
+
+      <label htmlFor={`${id}-reps`}>{C.repeticiones}</label>
+      <input id={`${id}-reps`} inputMode="numeric" autoComplete="off" className="serie-observada__numero" value={f.repeticiones} onChange={(e) => cambiar({ repeticiones: e.target.value })} />
+
+      <span className="serie-observada__rotulo" aria-hidden="true">
+        {C.rir}
+      </span>
+      <div className="serie-observada__rir">
+        {/* De 0 a 2, de a medio (maqueta 17). «Más de 2» existe para que el cuadro lo diga: no se guarda (ED-D19). */}
+        <fieldset className="segmentos" aria-describedby={`${id}-regla`}>
+          <legend className="visualmente-oculto">{C.rir}</legend>
+          <div className="segmentos__fila">
+            {[...RIR_DEL_CUADRO, RIR_MAS_DE_2].map((r) => (
+              <label key={r} className="segmento" data-rir={r}>
+                <input type="radio" name={`${id}-rir`} checked={f.rir === r} onChange={() => cambiar({ rir: r })} />
+                {r === RIR_MAS_DE_2 ? C.masDe2 : String(r).replace('.', ',')}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <span className="nota">{COPY_FUERZA.campoDelRir}</span>
+        <p id={`${id}-regla`} className="nota serie-observada__regla" data-regla-del-rir>
+          {COPY_FUERZA.reglaDelRir}
+        </p>
+      </div>
+
+      <label htmlFor={`${id}-nota`}>
+        {C.nota} <span className="nota">{C.notaOpcional}</span>
+      </label>
+      <input id={`${id}-nota`} maxLength={500} value={f.nota} onChange={(e) => cambiar({ nota: e.target.value })} />
+    </div>
+  );
+}
+
+export function EnVivo({ enVivo }: { enVivo: SerieObservadaEnVivo }) {
   return (
     <div className="serie-observada__en-vivo" aria-live="polite" data-en-vivo={enVivo.tipo}>
       <p className="tarjeta-de-fuerza__titulo">

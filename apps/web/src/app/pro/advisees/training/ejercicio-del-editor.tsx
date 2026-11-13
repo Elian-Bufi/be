@@ -53,6 +53,7 @@ import { useEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_DETALLE_DEL_EJERCICIO, DetalleDelEjercicio } from '../fuerza/detalle-del-ejercicio';
+import { COPY_CARGA_DESDE_LA_ESTIMACION } from '../fuerza/carga-desde-la-estimacion';
 import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
 import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
@@ -213,6 +214,8 @@ export function EjercicioDelEditor({
   const plegado = ejercicioPlegadoDelEditor(p, problemas);
   // ED-75: el detalle con la fuerza estimada, solo en los ejercicios de la lista de la v1 (RM-16).
   const conFuerza = exerciseId !== null && entraEnLaEstimacion(exerciseId);
+  // ED-76 (EDT-56): las series elegidas en la planilla para las que se calcula la carga; `null`, la fila general.
+  const [seriesDeLaCarga, setSeriesDeLaCarga] = useState<readonly number[] | null>(null);
   const [detalle, setDetalle] = useState(false);
   return (
     <section className="comida-del-plan ejercicio-del-editor" data-ejercicio={posicion + 1} data-abierta={abierto ? '' : undefined}>
@@ -288,7 +291,20 @@ export function EjercicioDelEditor({
             ) : null}
             {/* ED-22: la prescripción en una línea, arriba de las series que escribe. */}
             <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
-            <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} />
+            <SeriesDelEjercicio
+              id={id}
+              nombre={nombre}
+              prescripcion={p}
+              onCambiar={onCambiar}
+              onCalcularLaCarga={
+                conFuerza
+                  ? (elegidas) => {
+                      setSeriesDeLaCarga(elegidas);
+                      setDetalle(true);
+                    }
+                  : null
+              }
+            />
             <div className="ejercicio-del-editor__general">
               <p className="ejercicio-del-plan__subtitulo">
                 {C.loGeneral} <span className="nota">Opcional</span>
@@ -302,7 +318,10 @@ export function EjercicioDelEditor({
       {conFuerza ? (
         <DetalleDelEjercicio
           abierto={detalle}
-          onCerrar={() => setDetalle(false)}
+          onCerrar={() => {
+            setDetalle(false);
+            setSeriesDeLaCarga(null);
+          }}
           token={token}
           asesoradoId={asesoradoId}
           sesionPerdida={sesionPerdida}
@@ -312,6 +331,9 @@ export function EjercicioDelEditor({
           prescripcion={p as PrescripcionParaLaCarga}
           loQueIndica={<EnPartes texto={ejercicioPlegadoDelEditor(p, 0).resumen} />}
           onEscribir={(c) => onCambiar(c as Partial<PrescripcionE>)}
+          series={seriesDeLaCarga}
+          sets={p.sets}
+          onEscribirEnLasSeries={(c) => onCambiar(c as Partial<PrescripcionE>)}
         />
       ) : null}
     </section>
@@ -383,6 +405,30 @@ function CeldaDeObjetivo({
   );
 }
 
+/**
+ * ED-23 · Un valor de la fila «General» (la carga sugerida o el descanso de la prescripción): el que toman las series que
+ * no tienen uno propio. Vacío, no hay valor general; lo que no se entiende queda a la vista, marcado, y no deja guardar.
+ */
+function CeldaGeneral({
+  id,
+  rotulo,
+  valor,
+  formatear,
+  interpretar,
+  onCambiar,
+}: {
+  id: string;
+  rotulo: string;
+  valor: number | null;
+  formatear: (n: number | null) => string;
+  interpretar: (t: string) => number | null;
+  onCambiar: (v: number | null) => void;
+}) {
+  const { texto, alEscribir, alSalir } = useTextoInterpretado(valor, { clave: String(valor), formatear, interpretar, mismo: mismoNumero, alCambiar: onCambiar, normalizarAlSalir: true });
+  const mal = texto.trim() !== '' && Number.isNaN(interpretar(texto));
+  return <input id={id} className="celda-de-serie" aria-label={rotulo} aria-invalid={mal || undefined} inputMode="decimal" autoComplete="off" value={texto} onChange={(e) => alEscribir(e.target.value)} onBlur={alSalir} />;
+}
+
 /** Las repeticiones de una serie: un número o un rango. No se toman de lo general: son de cada serie. */
 function CeldaDeRepeticiones({ id, rotulo, valor, onCambiar }: { id: string; rotulo: string; valor: Repeticiones; onCambiar: (r: Repeticiones) => void }) {
   const { texto, alEscribir, alSalir } = useTextoInterpretado(valor, { clave: JSON.stringify(valor), formatear: reps, interpretar: leerReps, mismo: mismasReps, alCambiar: onCambiar, normalizarAlSalir: true });
@@ -393,7 +439,20 @@ function CeldaDeRepeticiones({ id, rotulo, valor, onCambiar }: { id: string; rot
  * Las series, una por fila: sus repeticiones, sus objetivos (la carga sugerida, el RIR si ese es el criterio, y el
  * descanso) y su nota. Lo que una celda muestra en gris es lo que la serie toma de lo general.
  */
-function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: string; nombre: string; prescripcion: PrescripcionE; onCambiar: (c: Partial<PrescripcionE>) => void }) {
+function SeriesDelEjercicio({
+  id,
+  nombre,
+  prescripcion: p,
+  onCambiar,
+  onCalcularLaCarga = null,
+}: {
+  id: string;
+  nombre: string;
+  prescripcion: PrescripcionE;
+  onCambiar: (c: Partial<PrescripcionE>) => void;
+  /** ED-76 (EDT-56): abre el cálculo de la carga para las series elegidas; `null` fuera de la lista de la v1. */
+  onCalcularLaCarga?: ((elegidas: readonly number[]) => void) | null;
+}) {
   const conRir = (p.intensity?.criterion as Criterio | undefined) === 'RIR';
   const unidad = unidadDe(p);
   const valido = (n: number | null | undefined): n is number => typeof n === 'number' && !Number.isNaN(n);
@@ -449,10 +508,8 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
     });
   return (
     <div className="ejercicio-del-editor__series">
-      {p.sets.length === 0 ? (
-        <p className="nota">{C.sinSeries}</p>
-      ) : (
-        <>
+      {p.sets.length === 0 ? <p className="nota">{C.sinSeries}</p> : null}
+      <>
         {elegidas.size > 0 ? (
           <div className="series-del-editor__elegidas" role="group" aria-label={PL.elegidas(elegidas.size)} data-series-elegidas={elegidas.size}>
             <strong>{PL.elegidas(elegidas.size)}</strong>
@@ -486,6 +543,12 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
             <button type="button" className="boton boton--quieto boton--compacto" onClick={() => onCambiar({ sets: volverALoGeneral(p.sets, elegidas) })} data-volver-a-lo-general>
               {PL.volverALoGeneral}
             </button>
+            {onCalcularLaCarga ? (
+              <button type="button" className="boton boton--quieto boton--compacto" data-calcular-la-carga-de-las-elegidas onClick={() => onCalcularLaCarga([...elegidas].sort((a, b) => a - b))}>
+                <Icono nombre="calculado" tamano={18} />
+                {COPY_CARGA_DESDE_LA_ESTIMACION.abrirEnLasElegidas}
+              </button>
+            ) : null}
             <button type="button" className="boton boton--enlace" onClick={() => setElegidas(new Set())}>
               {PL.soltar}
             </button>
@@ -527,6 +590,46 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
             </tr>
           </thead>
           <tbody>
+            {/* ED-23: la fila «General», dentro de la tabla. Lo que tiene es lo que toman las series sin valor propio. */}
+            <tr className="series-del-editor__general" data-fila-general>
+              <td className="series-del-editor__elegir" />
+              <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
+                {PL.general}
+              </th>
+              <td data-etiqueta="Repeticiones">
+                <span className="nota">{PL.repeticionesPorSerie}</span>
+              </td>
+              <td data-etiqueta={`${C.cargaSugerida} (${unidad})`}>
+                <CeldaGeneral
+                  id={`${id}-carga`}
+                  rotulo={`${PL.general}: ${C.cargaSugerida.toLowerCase()} (${unidad})`}
+                  valor={p.suggestedLoad ? p.suggestedLoad.value : null}
+                  formatear={escribirNumero}
+                  interpretar={leerValor}
+                  onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
+                />
+              </td>
+              {conRir ? (
+                <td data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}>
+                  {/* El RIR general es el objetivo de la intensidad: se escribe en lo general, con su criterio. */}
+                  <span data-rir-general>{rirGeneral ?? '—'}</span> <span className="nota">{PL.rirDeLaIntensidad}</span>
+                </td>
+              ) : null}
+              <td data-etiqueta={COPY_ENTRENAMIENTO.descanso}>
+                <CeldaGeneral
+                  id={`${id}-descanso`}
+                  rotulo={`${PL.general}: ${COPY_ENTRENAMIENTO.descanso.toLowerCase()} (como 02:30, o en segundos)`}
+                  valor={p.restSeconds ?? null}
+                  formatear={escribirElDescanso}
+                  interpretar={leerElDescanso}
+                  onCambiar={(v) => onCambiar({ restSeconds: v })}
+                />
+              </td>
+              <td className="series-del-editor__nota">
+                <span className="nota">{PL.notaDeLoGeneral}</span>
+              </td>
+              <td />
+            </tr>
             {p.sets.map((s, n) => (
               <tr key={n} data-serie={n + 1} data-elegida={elegidas.has(n) ? '' : undefined}>
                 <td className="series-del-editor__elegir">
@@ -605,8 +708,7 @@ function SeriesDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: { id: st
             ))}
           </tbody>
         </table>
-        </>
-      )}
+      </>
       {/* TEST-EDP-056: lo que se pierde se dice antes, con «Cancelar» enfocado; cancelar no toca nada. */}
       <CuadroEnfocado
         abierto={quitando !== null}
@@ -642,7 +744,7 @@ function LoGeneralDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string;
   const unidad = unidadDe(p);
   return (
     <div className="lo-general-del-editor">
-      <p className="nota">La carga y el descanso son los que toman las series que no tienen uno propio.</p>
+      <p className="nota">{PL.loGeneralDeAbajo}</p>
       <div className="lo-general-del-editor__par">
         <div className="campo">
           <label htmlFor={`${id}-criterio`}>{COPY_ENTRENAMIENTO.intensidad}</label>
@@ -697,20 +799,8 @@ function LoGeneralDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string;
       ) : null}
       <div className="lo-general-del-editor__par">
         <div className="lo-general-del-editor__carga">
-          <CampoInterpretado
-            id={`${id}-carga`}
-            etiqueta={COPY_ENTRENAMIENTO.cargaSugerida}
-            inputMode="decimal"
-            valor={p.suggestedLoad ? p.suggestedLoad.value : null}
-            clave={String(p.suggestedLoad ? p.suggestedLoad.value : null)}
-            formatear={escribirNumero}
-            interpretar={leerValor}
-            mismo={mismoNumero}
-            noSeEntiende="No se entiende: va un número."
-            onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
-          />
           <div className="campo">
-            <label htmlFor={`${id}-unidad`}>Unidad</label>
+            <label htmlFor={`${id}-unidad`}>{PL.unidadDeLaCarga}</label>
             {/* Una sola unidad por prescripción: cambiarla cambia también la de las series, sin convertir números. */}
             <select
               id={`${id}-unidad`}
@@ -728,19 +818,6 @@ function LoGeneralDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string;
             </select>
           </div>
         </div>
-        <CampoInterpretado
-          id={`${id}-descanso`}
-          etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.descansoRecomendado}
-          ayuda="02:30, o en segundos"
-          valor={p.restSeconds ?? null}
-          clave={String(p.restSeconds ?? null)}
-          formatear={escribirElDescanso}
-          interpretar={leerElDescanso}
-          mismo={mismoNumero}
-          normalizarAlSalir
-          noSeEntiende="No se entiende: va como 02:30, o en segundos enteros."
-          onCambiar={(v) => onCambiar({ restSeconds: v })}
-        />
       </div>
       <div className="campo">
         <label htmlFor={`${id}-nota`}>{COPY_ENTRENAMIENTO.notas}</label>

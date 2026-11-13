@@ -7,11 +7,13 @@
  * - la tarjeta de fuerza (ED-75), que lee lo registrado y lo observado;
  * - «Cómo se calculó» (ED-73);
  * - «Registrar una serie observada» (ED-72);
- * - «Calcular la carga desde la estimación» (ED-76), que escribe en el borrador solo con su principal.
+ * - «Calcular la carga desde la estimación» (ED-76), que escribe en el borrador solo con su principal: en la fila
+ *   general o, si se abrió desde las series elegidas de la planilla, en esas series (EDT-56);
+ * - «Corregir o anular la serie observada» (ED-72, API-FZA-03), desde «Cómo se calculó» de una observación propia.
  *
  * Abrirlo no cambia nada de la prescripción (TEST-EDP-065).
  */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { PuntoDeFuerza } from '@be/domain';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { usePersonaDelArea } from '../marco-del-area';
@@ -22,19 +24,30 @@ import { CargaDesdeLaEstimacion, COPY_CARGA_DESDE_LA_ESTIMACION, textoDelPrincip
 import { ComoSeCalculo, COPY_COMO_SE_CALCULO } from './como-se-calculo';
 import { BloqueDeEstado } from '../../../../components/estados';
 import { ICONO_DE_FALLA } from '../../../../lib/fallas';
-import { estimacionesParaLaCarga, haciaLaEvolucion, loQueSeEscribeEnLaFilaGeneral, type PrescripcionParaLaCarga } from './fuerza';
+import { useSesion } from '../../../../lib/sesion';
+import { COPY_SUCESION, estimacionesParaLaCarga, haciaLaEvolucion, lasElegidasQueQuedan, lasSeriesEnPalabras, loQueSeEscribeEnLaFilaGeneral, loQueSeEscribeEnLasSeries, puedeSucederla, type PrescripcionParaLaCarga } from './fuerza';
+import { SucederSerieObservada, useSucesion } from './suceder-serie-observada';
 import { useLecturaDeFuerza, type LecturaDeFuerza } from './lectura-de-fuerza';
 import { COPY_SERIE_OBSERVADA, SerieObservada, useSerieObservada } from './serie-observada';
 import { TarjetaDeFuerza } from './tarjeta';
 
 /** `desde: 'carga'`: «Cómo se calculó» abierto desde la lista del cuadro de la carga (ED-73), que vuelve a ella con «Atrás». */
-type Paso = { readonly tipo: 'detalle' } | { readonly tipo: 'como'; readonly punto: PuntoDeFuerza; readonly desde?: 'carga' } | { readonly tipo: 'observar' } | { readonly tipo: 'carga' };
+type Paso =
+  | { readonly tipo: 'detalle' }
+  | { readonly tipo: 'como'; readonly punto: PuntoDeFuerza; readonly desde?: 'carga' }
+  | { readonly tipo: 'observar' }
+  | { readonly tipo: 'carga' }
+  | { readonly tipo: 'suceder'; readonly punto: PuntoDeFuerza };
+
+/** Una serie de la prescripción, con lo único que el cuadro de la carga toca en ella. */
+type SerieParaLaCarga = { readonly suggestedLoad?: { readonly value: number; readonly unit: 'kg' | 'lb' } | null };
 
 export const COPY_DETALLE_DEL_EJERCICIO = {
   abrir: 'Detalle y fuerza estimada',
   loQueIndicaElPlan: 'Lo que indica el plan',
   persona: 'La persona',
   escrita: (carga: string) => `Se escribió ${carga} en la fila general. El borrador se guarda solo.`,
+  escritaEnLasSeries: (carga: string, series: string) => `Se escribió ${carga} en ${series}. El borrador se guarda solo.`,
   noSeLeyo: 'No pudimos leer las estimaciones de este ejercicio, así que no hay de dónde calcular la carga ahora.',
   noDisponible: 'Con el acceso de ahora no podés ver los registros de Entrenamiento de esta persona.',
 } as const;
@@ -59,6 +72,9 @@ export function DetalleDelEjercicio({
   prescripcion,
   loQueIndica,
   onEscribir,
+  series = null,
+  sets = [],
+  onEscribirEnLasSeries,
 }: {
   abierto: boolean;
   onCerrar: () => void;
@@ -75,8 +91,22 @@ export function DetalleDelEjercicio({
   loQueIndica: ReactNode;
   /** Escribe en el borrador lo que confirmó el profesional (ED-76). */
   onEscribir: (cambio: ReturnType<typeof loQueSeEscribeEnLaFilaGeneral>) => void;
+  /**
+   * ED-76 desde la planilla (EDT-56): las series elegidas (desde 0). Con ellas, el cuadro abre directo en el cálculo de la
+   * carga y escribe solo en esas series; `null`, en la fila general.
+   */
+  series?: readonly number[] | null;
+  /** Las series de la prescripción de ahora, para escribir en las elegidas. */
+  sets?: readonly SerieParaLaCarga[];
+  /** Escribe la carga en las series elegidas: recibe todas las series, con la carga propia en las elegidas. */
+  onEscribirEnLasSeries?: (cambio: { sets: SerieParaLaCarga[] }) => void;
 }) {
   const [paso, setPaso] = useState<Paso>({ tipo: 'detalle' });
+  const yo = useSesion().sesion?.identidadId ?? null;
+  // Desde las series elegidas, el cuadro se abre en el cálculo de la carga, que arranca de nuevo (ED-D20) y escribe en
+  // ellas. Si el profesional vuelve al detalle y entra al cálculo desde su botón, ese escribe en la fila general.
+  const [enLasSeries, setEnLasSeries] = useState(false);
+  const desdeLasSeries = enLasSeries && series !== null && series.length > 0;
   const [aviso, setAviso] = useState<string | null>(null);
   const { lectura, recargar } = useLecturaDeFuerza(token, asesoradoId, abierto ? exerciseId : undefined, { sesionPerdida });
   // La lectura del cuadro de la carga sigue viva mientras se mira «Cómo se calculó» de una de sus estimaciones: al volver
@@ -101,24 +131,54 @@ export function DetalleDelEjercicio({
     },
   });
   const carga = useCargaDesdeLaEstimacion(prescripcion, unidad);
+  useEffect(() => {
+    if (!abierto || !series || series.length === 0) return;
+    setEnLasSeries(true);
+    carga.reiniciar();
+    setAviso(null);
+    setPaso({ tipo: 'carga' });
+    // Solo al abrir: cambiar las elegidas con el cuadro abierto no lo mueve de paso.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abierto]);
+  const sucesion = useSucesion({
+    token,
+    asesoradoId,
+    exerciseId,
+    observationId: paso.tipo === 'suceder' && paso.punto.origin.type === 'STRENGTH_OBSERVATION' ? paso.punto.origin.id : null,
+    hoy,
+    sesionPerdida,
+    alGuardar: (accion) => {
+      recargar();
+      setAviso(accion === 'anular' ? COPY_SUCESION.anulada : COPY_SUCESION.corregida);
+      setPaso({ tipo: 'detalle' });
+    },
+  });
   const volver =
     paso.tipo === 'como' && paso.desde === 'carga'
       ? { texto: `Atrás: ${COPY_CARGA_DESDE_LA_ESTIMACION.titulo}`, alTocar: () => setPaso({ tipo: 'carga' }) }
-      : { texto: `Atrás: ${nombre}`, alTocar: () => setPaso({ tipo: 'detalle' }) };
+      : paso.tipo === 'suceder'
+        ? { texto: `Atrás: ${COPY_COMO_SE_CALCULO.titulo}`, alTocar: () => setPaso({ tipo: 'como', punto: paso.punto }) }
+        : { texto: `Atrás: ${nombre}`, alTocar: () => setPaso({ tipo: 'detalle' }) };
   const cerrar = () => {
     setPaso({ tipo: 'detalle' });
     setAviso(null);
     observar.reiniciar();
     carga.reiniciar();
+    setEnLasSeries(false);
     onCerrar();
   };
   const abrir = (p: Paso) => {
     setAviso(null);
     // ED-D20: cada vez que se entra al cálculo de la carga, ninguna estimación elegida y el % RM de la prescripción de ahora.
-    if (p.tipo === 'carga') carga.reiniciar();
+    if (p.tipo === 'carga') {
+      carga.reiniciar();
+      setEnLasSeries(false);
+    }
     setPaso(p);
   };
 
+  // Las elegidas que siguen existiendo: una serie quitada con el cuadro abierto no se escribe.
+  const elegidas = desdeLasSeries ? lasElegidasQueQuedan(series ?? [], sets.length) : [];
   let titulo = nombre;
   let cuerpo: ReactNode;
   let principal = null;
@@ -128,7 +188,28 @@ export function DetalleDelEjercicio({
     titulo = COPY_COMO_SE_CALCULO.titulo;
     const deDonde = paso.desde === 'carga' ? deLaUnidad : lectura;
     const linea = deDonde.tipo === 'lista' ? ((deDonde.apagado?.puntos.includes(paso.punto) ? deDonde.apagado : deDonde.encendido) ?? null) : null;
-    cuerpo = <ComoSeCalculo punto={paso.punto} nombre={nombre} asesoradoId={asesoradoId} noEntraron={linea?.noEntraron ?? []} />;
+    const punto = paso.punto;
+    cuerpo = (
+      <ComoSeCalculo
+        punto={punto}
+        nombre={nombre}
+        asesoradoId={asesoradoId}
+        noEntraron={linea?.noEntraron ?? []}
+        // ED-72: solo quien la observó la corrige o la anula, y desde el detalle (no desde el cálculo de la carga).
+        onSuceder={paso.desde !== 'carga' && puedeSucederla(punto, yo) ? () => abrir({ tipo: 'suceder', punto }) : null}
+      />
+    );
+  } else if (paso.tipo === 'suceder') {
+    titulo = COPY_SUCESION.titulo;
+    cuerpo = <SucederSerieObservada hoy={hoy} estado={sucesion} />;
+    conCambios = sucesion.conCambios;
+    principal = {
+      texto: sucesion.accion === 'anular' ? COPY_SUCESION.anularla : COPY_SUCESION.guardarCorreccion,
+      alTocar: () => void sucesion.enviar(),
+      apagado: sucesion.apagado,
+      enviando: sucesion.enviando,
+      textoEnviando: COPY_SUCESION.guardando,
+    };
   } else if (paso.tipo === 'observar') {
     titulo = COPY_SERIE_OBSERVADA.titulo;
     cuerpo = <SerieObservada persona={persona} hoy={hoy} formulario={observar} />;
@@ -147,6 +228,7 @@ export function DetalleDelEjercicio({
           haciaLaEvolucion={haciaLaEvolucion(asesoradoId, exerciseId, unidad)}
           asesoradoId={asesoradoId}
           estado={carga}
+          series={desdeLasSeries ? elegidas : null}
           onComoSeCalculo={(p) => setPaso({ tipo: 'como', punto: p, desde: 'carga' })}
         />
       ) : deLaUnidad.tipo === 'cargando' ? (
@@ -162,13 +244,20 @@ export function DetalleDelEjercicio({
         <p data-no-disponible>{COPY_DETALLE_DEL_EJERCICIO.noDisponible}</p>
       );
     principal = {
-      texto: textoDelPrincipal(carga, nombre),
-      apagado: carga.apagado,
+      texto: textoDelPrincipal(carga, nombre, desdeLasSeries ? elegidas : null),
+      apagado: carga.apagado ?? (desdeLasSeries && elegidas.length === 0 ? COPY_CARGA_DESDE_LA_ESTIMACION.sinSeries : null),
       alTocar: () => {
         const r = carga.resultado;
         if (!r) return;
-        onEscribir(loQueSeEscribeEnLaFilaGeneral(prescripcion, { value: r.carga, unit: r.unidad }, r.porcentaje, r.punto.date));
-        setAviso(COPY_DETALLE_DEL_EJERCICIO.escrita(`${String(r.carga).replace('.', ',')} ${r.unidad}`));
+        const texto = `${String(r.carga).replace('.', ',')} ${r.unidad}`;
+        if (desdeLasSeries) {
+          if (elegidas.length === 0 || !onEscribirEnLasSeries) return;
+          onEscribirEnLasSeries(loQueSeEscribeEnLasSeries(sets, elegidas, { value: r.carga, unit: r.unidad }));
+          setAviso(COPY_DETALLE_DEL_EJERCICIO.escritaEnLasSeries(texto, lasSeriesEnPalabras(elegidas)));
+        } else {
+          onEscribir(loQueSeEscribeEnLaFilaGeneral(prescripcion, { value: r.carga, unit: r.unidad }, r.porcentaje, r.punto.date));
+          setAviso(COPY_DETALLE_DEL_EJERCICIO.escrita(texto));
+        }
         setPaso({ tipo: 'detalle' });
       },
     };
@@ -219,7 +308,7 @@ export function DetalleDelEjercicio({
       atras={paso.tipo === 'detalle' ? null : volver}
       paso={paso.tipo}
       conCambios={conCambios}
-      ocupado={observar.enviando}
+      ocupado={observar.enviando || sucesion.enviando}
       principal={principal}
       pie={pie}
       className="detalle-con-fuerza"

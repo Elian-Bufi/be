@@ -12,7 +12,7 @@
 import { COPY_FUERZA, estimacionALaVista, estimacionConLaDecima, laCuentaDeLaEstimacion, type PuntoDeFuerza } from '@be/domain';
 import { Enlace } from '../../../../components/enlace';
 import { useNombres } from '../../../../lib/nombres-ocultos';
-import { estimacionDelPunto, haciaLaSesion, loQueNoEntroEnLaSesion, type SerieQueNoEntro } from './fuerza';
+import { COPY_SUCESION, estimacionDelPunto, haciaLaSesion, loQueNoEntroEnLaSesion, type SerieQueNoEntro } from './fuerza';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -46,7 +46,20 @@ export const COPY_COMO_SE_CALCULO = {
 } as const;
 
 /** El contenido del cuadro: lo usan el detalle del ejercicio (en el mismo cuadro) y «Analizar» (en el suyo). */
-export function ComoSeCalculo({ punto: p, nombre, asesoradoId, noEntraron }: { punto: PuntoDeFuerza; nombre: string; asesoradoId: string; noEntraron: readonly SerieQueNoEntro[] }) {
+export function ComoSeCalculo({
+  punto: p,
+  nombre,
+  asesoradoId,
+  noEntraron,
+  onSuceder = null,
+}: {
+  punto: PuntoDeFuerza;
+  nombre: string;
+  asesoradoId: string;
+  noEntraron: readonly SerieQueNoEntro[];
+  /** ED-72: corregir o anular la observación (API-FZA-03); `null` si no es una observación propia. */
+  onSuceder?: (() => void) | null;
+}) {
   const e = estimacionDelPunto(p, '');
   const C = COPY_COMO_SE_CALCULO;
   const autor = useNombres().deQuien(p.writtenBy, asesoradoId);
@@ -153,7 +166,14 @@ export function ComoSeCalculo({ punto: p, nombre, asesoradoId, noEntraron }: { p
           )}
         </div>
       ) : (
-        <p className="nota">La observó {autor}: BE la guardó con la fecha, el autor y el método, y no se edita.</p>
+        <div className="como-se-calculo__observada">
+          <p className="nota">La observó {autor}: BE la guardó con la fecha, el autor y el método, y no se edita: se corrige o se anula, con un motivo.</p>
+          {onSuceder ? (
+            <button type="button" className="boton boton--secundario boton--compacto" data-suceder-la-observacion onClick={onSuceder}>
+              {COPY_SUCESION.abrir}
+            </button>
+          ) : null}
+        </div>
       )}
       <p className="nota como-se-calculo__version">{C.version}</p>
     </div>
