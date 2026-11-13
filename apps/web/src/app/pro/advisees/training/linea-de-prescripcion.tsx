@@ -6,13 +6,33 @@
  * aplica. Nunca adivina: lo que no entiende queda dicho y no se aplica nada. Lo que se pierde (series con valores propios,
  * un valor propio reemplazado, un criterio % RM que pasa a RIR) se dice en la vista previa, antes de Enter. La gramática
  * está en «Cómo se lee el Plan».
+ *
+ * El texto todavía sin aplicar puede vivir en quien la muestra (`texto` y `onTexto`): en el paso 4 del asistente las
+ * pestañas desmontan la línea, y lo escrito no se pierde al ir y volver (ED-14).
  */
 import { aplicarPrescripcion, COPY_PRESCRIPCION_RAPIDA as C, leerPrescripcion, vistaPreviaDePrescripcion } from '@be/domain';
 import { useId, useState } from 'react';
 import type { PrescripcionE } from './ejercicio-del-editor';
 
-export function LineaDePrescripcion({ id, nombre, prescripcion, onAplicar }: { id: string; nombre: string; prescripcion: PrescripcionE; onAplicar: (p: PrescripcionE, aviso: string | null) => void }) {
-  const [texto, setTexto] = useState('');
+export function LineaDePrescripcion({
+  id,
+  nombre,
+  prescripcion,
+  onAplicar,
+  texto: deAfuera,
+  onTexto,
+}: {
+  id: string;
+  nombre: string;
+  prescripcion: PrescripcionE;
+  onAplicar: (p: PrescripcionE, aviso: string | null) => void;
+  /** El texto sin aplicar, si lo guarda quien muestra la línea; sin esto, lo guarda la línea. */
+  texto?: string;
+  onTexto?: (t: string) => void;
+}) {
+  const [propioTexto, setPropioTexto] = useState('');
+  const texto = deAfuera ?? propioTexto;
+  const setTexto = onTexto ?? setPropioTexto;
   const propio = useId();
   const lectura = texto.trim() === '' ? null : leerPrescripcion(texto);
   const aplicada = lectura?.ok ? aplicarPrescripcion(prescripcion, lectura.leida) : null;

@@ -58,6 +58,19 @@ export const EJERCICIOS_BASE = {
   triceps: '4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e10',
   plancha: '4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e11',
   hipThrust: '4f1b2c6e-7a01-4c01-9e02-6a6d2b6a0e12',
+  // Las capturas de WP-EDITORES-PROFESIONAL (BE_COHORTE_CON_LA_ESTIMACION=si): la sentadilla, la banca, el peso muerto,
+  // el press militar y el remo pasan a los del catálogo de DL-141 que entran en la estimación de la fuerza (Epley v1,
+  // §5.8 del paquete), para que la fuerza estimada, su detalle y la serie observada tengan datos. Sin la variable, la
+  // cohorte es la de siempre.
+  ...(process.env.BE_COHORTE_CON_LA_ESTIMACION === 'si'
+    ? {
+        sentadilla: 'd0a0f237-50ea-557e-a9bd-625cc3e3bdca', // Sentadilla trasera con barra
+        banca: '20403912-203c-5cd0-bae2-68a57b905796', // Press de banca plano con barra
+        pesoMuerto: '2f7cac13-61c3-53e0-a2cc-03ada5d3ae8f', // Peso muerto convencional
+        pressMilitar: '69031ae5-f42a-5f09-83dc-17c0ee31edf4', // Press de hombros con barra
+        remo: 'bf6d4b90-45e9-5c16-8285-034f842cdbdb', // Remo inclinado con barra, agarre prono
+      }
+    : {}),
 };
 
 /** Los que el profesional de Entrenamiento agrega en «Mis ejercicios» (API-INT-TRN-01), como haría en la consulta. */

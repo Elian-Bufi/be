@@ -64,8 +64,11 @@ export function leerCuentas(d) {
   );
 }
 export function guardarCuenta(d, prefijo, { correo, clave, id }) {
-  const actuales = leerCuentas(d);
-  const nuevas = { ...actuales, [`${prefijo}_CORREO`]: correo, [`${prefijo}_CLAVE`]: clave, [`${prefijo}_ID`]: id };
+  guardarEnLasCuentas(d, { [`${prefijo}_CORREO`]: correo, [`${prefijo}_CLAVE`]: clave, [`${prefijo}_ID`]: id });
+}
+/** Suma o reemplaza valores de las cuentas sintéticas: por ejemplo, el autenticador de un profesional (UF-11). */
+export function guardarEnLasCuentas(d, pares) {
+  const nuevas = { ...leerCuentas(d), ...pares };
   const cabecera = '# Cuentas sintéticas de la cohorte (pedido de Dirección del 2026-10-16). NO versionar ni compartir por chat.\n';
   fs.writeFileSync(d.cuentas, cabecera + Object.entries(nuevas).map(([k, v]) => `${k}=${v}`).join('\n') + '\n');
 }

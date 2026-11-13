@@ -66,6 +66,7 @@ import {
   type ValidationIssue,
   type VersionDeObjetivo,
   type VersionDePlan,
+  type EstimacionDeLasOpcionesResponse,
 } from '@be/domain';
 import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -94,7 +95,17 @@ import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from '
 import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
 import { ImagenDeReceta } from '../../recipes/imagen-de-receta';
-import { cambiosEnUnaPorcion, COPY_FOTO_DE_LA_RECETA, COPY_VERSION_NUEVA, hayVersionNueva, opcionConLaVersionNueva, porcionDe, type RecetaVigente } from './version-nueva-de-la-receta';
+import {
+  cambiosEnUnaPorcion,
+  COPY_FOTO_DE_LA_RECETA,
+  COPY_VERSION_NUEVA,
+  estimacionDeLaOpcion,
+  hayVersionNueva,
+  nutrientesDeLaPorcion,
+  opcionConLaVersionNueva,
+  porcionDe,
+  type RecetaVigente,
+} from './version-nueva-de-la-receta';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
@@ -315,6 +326,10 @@ export function EditorDeBorrador({
   const [fotoDeLaReceta, setFotoDeLaReceta] = useState<{ readonly receta: Receta; readonly texto: string; readonly aviso: string | null } | null>(null);
   // ED-32: cada receta de las opciones del día tipo que se mira, como está hoy, para ofrecer su versión nueva.
   const [recetasVigentes, setRecetasVigentes] = useState<ReadonlyMap<string, RecetaVigente | 'leyendo' | 'falla'>>(() => new Map());
+  // API-PLN-01 en la vista previa de la versión nueva (§8.7): la estimación del servidor de las opciones guardadas, de una
+  // versión del plan. Se lee solo si alguna opción del día que se mira tiene una versión nueva para ofrecer.
+  const [estimacionDelPlan, setEstimacionDelPlan] = useState<EstimacionDeLasOpcionesResponse['data'] | null>(null);
+  const estimacionPedida = useRef<string | null>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -405,6 +420,30 @@ export function EditorDeBorrador({
       });
     }
   }, [recetasPorLeer, token, sesionPerdida]);
+  // API-PLN-01: una lectura por versión guardada del plan, cuando hay algo que comparar. Si falla, la vista previa sigue
+  // con los ingredientes y la porción nueva, sin la de ahora.
+  const hayVersionesNuevas = useMemo(
+    () =>
+      (diaMirado?.meals ?? []).some((m) =>
+        m.options.some((o) => {
+          const citada = o.recipeVersionId ? recetas[o.recipeVersionId] : undefined;
+          const vigente = citada ? recetasVigentes.get(citada.recipeId) : undefined;
+          return !!citada && !!vigente && typeof vigente === 'object' && hayVersionNueva(citada, vigente);
+        }),
+      ),
+    [diaMirado, recetas, recetasVigentes],
+  );
+  const versionGuardada = version?.version ?? null;
+  useEffect(() => {
+    if (!hayVersionesNuevas || !versionGuardada || estimacionPedida.current === versionGuardada) return;
+    estimacionPedida.current = versionGuardada;
+    void api.estimarLasOpcionesDelPlan(token, planId).then((r) => {
+      if (sesionPerdida(r)) return;
+      // Solo la del pedido vigente: si un autoguardado cambió la versión con esta en vuelo, una respuesta vieja que llega
+      // tarde no pisa la de la versión de ahora (que no se volvería a pedir).
+      if (r.ok && r.datos.data.version === estimacionPedida.current) setEstimacionDelPlan(r.datos.data);
+    });
+  }, [hayVersionesNuevas, versionGuardada, token, planId, sesionPerdida]);
   /** ED-32: la versión nueva de la receta de una opción, con lo que cambia en una porción; `null` si no hay. */
   const versionNuevaDe = (o: ComidaEnEdicion['options'][number]) => {
     const citada = o.recipeVersionId ? recetas[o.recipeVersionId] : undefined;
@@ -412,7 +451,15 @@ export function EditorDeBorrador({
     if (!citada || !vigente || typeof vigente !== 'object' || !hayVersionNueva(citada, vigente)) return null;
     const porcionDeAhora = version ? itemsGuardados(version, o.optionId, o.recipeVersionId) : null;
     const antes = porcionDeAhora ? porcionDeAhora.map((it) => ({ catalogItemId: it.catalogItemId, nombre: it.name || nombres[it.catalogItemId] || 'Elemento', cantidad: it.quantity })) : null;
-    return { citada, vigente, cambios: cambiosEnUnaPorcion(antes, porcionDe(vigente)), conLaPorcionDeAhora: antes !== null };
+    const estimada = estimacionDeLaOpcion(estimacionDelPlan, versionGuardada, o.optionId, citada.recipeVersionId);
+    return {
+      citada,
+      vigente,
+      cambios: cambiosEnUnaPorcion(antes, porcionDe(vigente)),
+      conLaPorcionDeAhora: antes !== null,
+      nutrientes: nutrientesDeLaPorcion(estimada, vigente.calculation?.perServing ?? null),
+      conLaEstimacion: estimada !== null,
+    };
   };
 
   // Después de ir a un problema, el foco va a su lugar en cuanto está dibujado (el día tipo puede tardar un instante
@@ -1159,7 +1206,7 @@ export function EditorDeBorrador({
               versionNueva={(k) => {
                 const o = m.options[k];
                 const v = o ? versionNuevaDe(o) : null;
-                return v ? { numero: v.vigente.versionNumber, cambios: v.cambios, conLaPorcionDeAhora: v.conLaPorcionDeAhora } : null;
+                return v ? { numero: v.vigente.versionNumber, cambios: v.cambios, conLaPorcionDeAhora: v.conLaPorcionDeAhora, nutrientes: v.nutrientes, conLaEstimacion: v.conLaEstimacion } : null;
               }}
               alUsarLaVersionNueva={(k) => {
                 const o = m.options[k];
@@ -1318,14 +1365,14 @@ export function EditorDeBorrador({
                             {c.nombre} <span className="nota">· {c.opciones.length === 1 ? '1 opción' : `${c.opciones.length} opciones`}</span>
                           </th>
                           {NUTRIENTES_DEL_RANGO.map((n) => (
-                            <td key={n}>{rangoEnUnaCelda(c.rango[n], n)}</td>
+                            <td key={n} data-nutriente={COPY_RANGOS.nutriente[n]}>{rangoEnUnaCelda(c.rango[n], n)}</td>
                           ))}
                         </tr>
                       ))}
                       <tr className="panel-de-nutricion__fila-del-dia">
                         <th scope="row">{COPY_RANGOS.elDia}</th>
                         {NUTRIENTES_DEL_RANGO.map((n) => (
-                          <td key={n}>{rangoEnUnaCelda(rangos.dia[n], n)}</td>
+                          <td key={n} data-nutriente={COPY_RANGOS.nutriente[n]}>{rangoEnUnaCelda(rangos.dia[n], n)}</td>
                         ))}
                       </tr>
                     </tbody>

@@ -110,7 +110,9 @@ export function ComidaDelEditor({
   /** Con la versión que cita la opción: la porción guardada de otra versión no vale (después de «Usar la versión N»). */
   itemsDeLaReceta: (optionId: string | undefined, recipeVersionId: string) => ItemsGuardados | null;
   /** ED-32: si la receta de la opción `k` tiene una versión más nueva, su número y lo que cambia en una porción. */
-  versionNueva: (k: number) => { readonly numero: number; readonly cambios: readonly string[]; readonly conLaPorcionDeAhora: boolean } | null;
+  versionNueva: (
+    k: number,
+  ) => { readonly numero: number; readonly cambios: readonly string[]; readonly conLaPorcionDeAhora: boolean; readonly nutrientes: readonly string[]; readonly conLaEstimacion: boolean } | null;
   alUsarLaVersionNueva: (k: number) => void;
   alAlternar: () => void;
   alElegirOpcion: (k: number) => void;
@@ -286,6 +288,17 @@ export function ComidaDelEditor({
                           ))}
                           {nueva.cambios.length > 6 ? <li>y {nueva.cambios.length - 6} más</li> : null}
                         </ul>
+                        {/* API-PLN-01 (§8.7): la porción de ahora la estima el servidor; la nueva, el cálculo guardado de la receta. */}
+                        {nueva.nutrientes.length > 0 ? (
+                          <>
+                            <p className="nota">{nueva.conLaEstimacion ? COPY_VERSION_NUEVA.nutrientesDeLaPorcion : COPY_VERSION_NUEVA.nutrientesDeLaNueva}:</p>
+                            <ul className="lista-compacta" data-nutrientes-de-la-porcion>
+                              {nueva.nutrientes.map((c) => (
+                                <li key={c}>{c}</li>
+                              ))}
+                            </ul>
+                          </>
+                        ) : null}
                         <button type="button" className="boton boton--secundario boton--compacto" onClick={() => alUsarLaVersionNueva(k)}>
                           {COPY_VERSION_NUEVA.usarla(nueva.numero)}
                         </button>

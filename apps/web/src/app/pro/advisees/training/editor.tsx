@@ -94,7 +94,18 @@ import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 import { PrimerUso } from '../../../../components/primer-uso';
 import { ArmazonDelAsistente } from '../asistente/asistente';
 import { COPY_ASISTENTE as CA, loQueLlevasArmado, pasoPedido, pasoQueSigue, sePuedeAvanzar, type PasoDelAsistente } from '../asistente/paso-que-sigue';
-import { claveDeLaSesion, conLaEstructura, firmaDeLaCarga, gruposDelAsistente, loQueReemplazaLaEstructura, sesionesDelGrupo, type GrupoDelAsistente } from '../asistente/operaciones-del-asistente';
+import {
+  claveDeLaSesion,
+  conLaEstructura,
+  firmaDeLaCarga,
+  gruposDelAsistente,
+  loQueReemplazaLaEstructura,
+  pestanaConLaTecla,
+  pestanasDelPaso4,
+  pestanaVigente,
+  sesionesDelGrupo,
+  type GrupoDelAsistente,
+} from '../asistente/operaciones-del-asistente';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { prescripcionesDeLosMarcados } from './varios-a-la-vez';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
@@ -356,6 +367,11 @@ export function EditorDePlan({
   const [avanzando, setAvanzando] = useState(false);
   const [noAvanzo, setNoAvanzo] = useState(false);
   const [avanzarA, setAvanzarA] = useState<PasoDelAsistente | null>(null);
+  // ED-14 (maqueta 03): la sesión que se mira en el paso 4, una pestaña por sesión de todo el plan.
+  const [pestanaDelPaso4, setPestanaDelPaso4] = useState(0);
+  // ED-14: lo escrito en la línea de cada ejercicio y todavía sin aplicar, por pestaña y ejercicio. La pestaña desmonta la
+  // línea, y así no se pierde al ir a otra sesión ni aparece en el ejercicio de otra.
+  const [lineasDelPaso4, setLineasDelPaso4] = useState<Readonly<Record<string, string>>>({});
   const siguienteRef = useRef<((n: PasoDelAsistente) => Promise<void>) | null>(null);
   // ED-20: «Desde un preset» (paso 1) llega al paso 2 con la galería de estructuras abierta, una vez.
   // TEST-EDP-017: «Siguiente» pedido mientras viajaba un autoguardado decide cuando ese guardado termina.
@@ -1272,56 +1288,99 @@ export function EditorDePlan({
             </>
           )),
         };
-      case 4:
+      case 4: {
+        // ED-14 (maqueta 03): una pestaña por sesión de todo el plan; el panel tiene los ejercicios de la elegida, con su
+        // línea de prescripción y su preset. Las flechas, Inicio y Fin recorren las pestañas (el patrón de ARIA).
+        const pestanas = pestanasDelPaso4(grupos, nombreDeLaSesion);
+        if (pestanas.length === 0) return { titulo: CA.prescripcion, cuerpo: <p className="nota">{C.sinSesiones}</p> };
+        const elegida = pestanaVigente(pestanaDelPaso4, pestanas.length);
+        const { g, n, clave: claveElegida } = pestanas[elegida]!;
+        const s = g.sesiones[n]!;
+        const idDeLaPestana = (clave: string) => `paso-4-pestana-${clave}`;
         return {
           titulo: CA.prescripcion,
-          cuerpo: conCadaSesion((s, n, g) => (
-            <>
-              <TituloDeSesion>{nombreDeLaSesion(s, n)}</TituloDeSesion>
-              {s.prescriptions.length === 0 ? <p className="nota">{CA.sinEjercicios}</p> : null}
-              {s.prescriptions.map((x, l) => {
-                // Como en la maqueta 03: el nombre a la vista, lo que tiene ahora y la marca de la carga, y al lado la línea.
-                const clave = claveDeLaSesion(g, n);
-                const nombre = nombres[x.exerciseVersionId] ?? 'Ejercicio';
-                const revisar = cargaARevisar(clave, x);
-                return (
-                  <div key={x.prescriptionId ?? `nuevo-${l}`} className="asistente__ejercicio" data-ejercicio-del-asistente={l + 1}>
-                    <p className="asistente__ejercicio-actual">
-                      <strong>{nombre}</strong> <span className="nota">· {CA.ahora}: {ejercicioPlegadoDelEditor(x, 0).resumen}</span>
-                      {revisar ? (
-                        <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
-                          {revisar}
-                        </span>
-                      ) : null}
-                    </p>
-                    <LineaDePrescripcion
-                      id={`asistente-${clave}-p${l}`}
-                      nombre={nombre}
-                      prescripcion={x}
-                      onAplicar={(nueva, texto) => {
-                        cambiar((b) => ((sesionesDelGrupo(b, g)[n]!.prescriptions[l] = nueva), b));
-                        marcarCargas(clave, [{ p: nueva, texto }]);
-                      }}
-                    />
-                  </div>
-                );
-              })}
-              {s.prescriptions.length > 0 ? (
-                <button
-                  type="button"
-                  className="boton boton--quieto"
-                  onClick={() => {
-                    mirarLaSesion(g, n);
-                    setGaleria({ tarea: 'prescripcion', ejercicio: null });
-                  }}
-                >
-                  <Icono nombre="plantillas" tamano={18} />
-                  {CA.presetDePrescripcion(nombreDeLaSesion(s, n))}
-                </button>
-              ) : null}
-            </>
-          )),
+          cuerpo: (
+            <div className="asistente__paso-4" data-pestanas-del-paso-4>
+              <div
+                className="estacion__pestanas asistente__pestanas"
+                role="tablist"
+                aria-label={CA.sesionesDelPlan}
+                onKeyDown={(e) => {
+                  const destino = pestanaConLaTecla(elegida, pestanas.length, e.key);
+                  if (destino === null) return;
+                  e.preventDefault();
+                  setPestanaDelPaso4(destino);
+                  document.getElementById(idDeLaPestana(pestanas[destino]!.clave))?.focus();
+                }}
+              >
+                {pestanas.map((t, k) => (
+                  <button
+                    key={t.clave}
+                    type="button"
+                    role="tab"
+                    id={idDeLaPestana(t.clave)}
+                    aria-selected={k === elegida}
+                    aria-controls="paso-4-panel"
+                    tabIndex={k === elegida ? 0 : -1}
+                    data-pestana-del-paso-4={k + 1}
+                    onClick={() => setPestanaDelPaso4(k)}
+                  >
+                    {t.rotulo}
+                    <span className="nota"> · {CA.cuantosEjercicios(t.ejercicios)}</span>
+                  </button>
+                ))}
+              </div>
+              <div key={claveElegida} role="tabpanel" id="paso-4-panel" aria-labelledby={idDeLaPestana(claveElegida)} className="asistente__sesion" data-sesion-del-asistente={n + 1}>
+                {s.prescriptions.length === 0 ? <p className="nota">{CA.sinEjercicios}</p> : null}
+                {s.prescriptions.map((x, l) => {
+                  // Como en la maqueta 03: el nombre a la vista, lo que tiene ahora y la marca de la carga, y al lado la línea.
+                  const clave = claveDeLaSesion(g, n);
+                  const nombre = nombres[x.exerciseVersionId] ?? 'Ejercicio';
+                  const revisar = cargaARevisar(clave, x);
+                  // Por posición: en el paso 4 no se agregan ni se quitan ejercicios, y el identificador llega recién con el guardado.
+                  const pendiente = `${claveElegida}·p${l}`;
+                  return (
+                    <div key={x.prescriptionId ?? `nuevo-${l}`} className="asistente__ejercicio" data-ejercicio-del-asistente={l + 1}>
+                      <p className="asistente__ejercicio-actual">
+                        <strong>{nombre}</strong> <span className="nota">· {CA.ahora}: {ejercicioPlegadoDelEditor(x, 0).resumen}</span>
+                        {revisar ? (
+                          <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
+                            {revisar}
+                          </span>
+                        ) : null}
+                      </p>
+                      <LineaDePrescripcion
+                        id={`asistente-${clave}-p${l}`}
+                        nombre={nombre}
+                        prescripcion={x}
+                        texto={lineasDelPaso4[pendiente] ?? ''}
+                        onTexto={(t) => setLineasDelPaso4((m) => ({ ...m, [pendiente]: t }))}
+                        onAplicar={(nueva, texto) => {
+                          cambiar((b) => ((sesionesDelGrupo(b, g)[n]!.prescriptions[l] = nueva), b));
+                          marcarCargas(clave, [{ p: nueva, texto }]);
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+                {s.prescriptions.length > 0 ? (
+                  <button
+                    type="button"
+                    className="boton boton--quieto"
+                    onClick={() => {
+                      mirarLaSesion(g, n);
+                      setGaleria({ tarea: 'prescripcion', ejercicio: null });
+                    }}
+                  >
+                    <Icono nombre="plantillas" tamano={18} />
+                    {CA.presetDePrescripcion(nombreDeLaSesion(s, n))}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ),
         };
+      }
       case 5:
         return {
           titulo: CA.dias,
@@ -1532,8 +1591,6 @@ export function EditorDePlan({
           </button>
         ))}
       </nav>
-      {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. */}
-      <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
       </>
       )}
       {conflicto ? (
@@ -1749,6 +1806,9 @@ export function EditorDePlan({
           ) : null}
         </div>
         <div id="zona-editor" className="estacion__zona estacion__centro" data-zona="editor" role="region" aria-label={CE.editor} tabIndex={-1}>
+          {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. Va arriba del
+              centro y no encima de las zonas: así las tres entran en la pantalla (revisión visual del 2026-11-13). */}
+          <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
           {/* ED-24: la agenda entera, en una tira de la semana arriba. */}
           {agendaVisible ? (
             <ol className="estacion__tira" aria-label={CE.semana}>

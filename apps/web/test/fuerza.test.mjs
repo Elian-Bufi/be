@@ -172,7 +172,7 @@ test('TEST-EDP-066 (revisión del 13/11) · el cuadro de la carga arranca de nue
   assert.match(hook, /const entrada = entradaDelCuadroDeLaCarga\(prescripcion, unidad\);/);
   assert.match(hook, /const reiniciar = \(\) => \{\n\s*setElegida\(entrada\.elegida\);\n\s*setPorcentaje\(entrada\.porcentaje\);\n\s*setPaso\(entrada\.paso\);\n\s*setSentido\(entrada\.sentido\);\n\s*setPropia\(entrada\.propia\);/);
   const detalle = readFileSync(new URL('../src/app/pro/advisees/fuerza/detalle-del-ejercicio.tsx', import.meta.url), 'utf8');
-  assert.match(detalle, /if \(p\.tipo === 'carga'\) carga\.reiniciar\(\);/);
+  assert.match(detalle, /if \(p\.tipo === 'carga'\) \{?\s*carga\.reiniciar\(\);/);
   assert.match(detalle.slice(detalle.indexOf('const cerrar = '), detalle.indexOf('const abrir = ')), /carga\.reiniciar\(\);/);
 });
 
