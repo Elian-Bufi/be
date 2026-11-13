@@ -22,8 +22,9 @@ const COMPOSICIONES = new Map([
   ['pollo', comp(165, 31, 0, 3.6)],
   ['sin-grasas', { referenceAmount: '100g', energyKcal: 50, proteinG: 1, carbohydrateG: 10, fatG: null }],
   ['leyendo', 'leyendo'],
+  ['ilegible', 'sin-composicion'],
 ]);
-const NOMBRES = { banana: 'Banana', arroz: 'Arroz', pollo: 'Pollo', 'sin-grasas': 'Caldo', leyendo: 'Avena', otro: 'Queso' };
+const NOMBRES = { banana: 'Banana', arroz: 'Arroz', pollo: 'Pollo', 'sin-grasas': 'Caldo', leyendo: 'Avena', otro: 'Queso', ilegible: 'Mijo' };
 const item = (catalogItemId, value, unit = 'g') => ({ catalogItemId, quantity: value === null ? null : { value, unit }, preparationState: 'RAW', note: null });
 const opcion = (label, items) => ({ label, items });
 const comida = (label, options) => ({ label, prescriptionMode: 'DISH_OPTIONS', options });
@@ -63,9 +64,16 @@ test('TEST-EDP-029 · un hueco nunca suma cero: dice «Sin dato» y qué lo impi
   assert.equal(R.queFaltaEnPalabras(caldo.fatG.faltan[0]), 'Caldo: la fuente no trae ese dato');
   // En unidades, sin equivalencia: «en unidades: sin estimación».
   assert.equal(R.queFaltaEnPalabras(t([item('banana', 2, 'unit')]).energyKcal.faltan[0]), 'Banana en unidades: sin estimación');
-  // Una composición que no se conoce, o que todavía se está leyendo.
-  assert.equal(t([item('otro', 30)]).energyKcal.faltan[0].motivo, 'SIN_COMPOSICION');
+  // Una composición cuya lectura falló; una que todavía se está leyendo, y una que ni se pidió (otro día tipo): esas
+  // dos dicen «leyendo», nunca «no se pudo leer».
+  assert.equal(t([item('ilegible', 30)]).energyKcal.faltan[0].motivo, 'SIN_COMPOSICION');
   assert.equal(t([item('leyendo', 30)]).energyKcal.faltan[0].motivo, 'LEYENDO');
+  assert.equal(t([item('otro', 30)]).energyKcal.faltan[0].motivo, 'LEYENDO');
+  // La fibra, con la misma cuenta: lo que la fuente no trae es «Sin dato».
+  assert.equal(R.fibraDeLaOpcion(R.itemsParaElTotal(opcion('X', [item('banana', 100)]), NOMBRES, sinReceta), COMPOSICIONES).exacto, null);
+  assert.equal(R.fibraDeLaOpcion([], COMPOSICIONES).faltan[0].motivo, 'SIN_ALIMENTOS');
+  const conFibra = new Map([['avena', { ...comp(389, 16.9, 66.3, 6.9), fiberG: 10.6 }]]);
+  assert.equal(R.fibraDeLaOpcion([{ catalogItemId: 'avena', quantity: { value: 50, unit: 'g' }, nombre: 'Avena' }], conFibra).exacto, '5.3');
   // Sin alimentos, o una receta todavía sin guardar: nada de cero.
   assert.equal(t([]).energyKcal.exacto, null);
   const receta = R.totalDeLaOpcion(R.itemsParaElTotal({ label: 'Budín', items: [], recipeVersionId: 'rv1' }, NOMBRES, sinReceta), COMPOSICIONES, 'Budín');

@@ -1051,8 +1051,8 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives`, { token, claveDeIdempotencia, esquema: ObjetivoResponseSchema, cuerpo });
     },
     /** API-NUT-05. */
-    listarObjetivos(token: string, asesoradoId: string) {
-      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives`, { token, esquema: ListaDeObjetivosResponseSchema });
+    listarObjetivos(token: string, asesoradoId: string, filtro: { cursor?: string; limit?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives${query(filtro)}`, { token, esquema: ListaDeObjetivosResponseSchema });
     },
     /** API-NUT-06. */
     objetivoEfectivo(token: string, asesoradoId: string) {

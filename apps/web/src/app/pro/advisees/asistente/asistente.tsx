@@ -26,6 +26,7 @@ export function ArmazonDelAsistente({
   noAvanzo,
   onReintentar,
   armado = null,
+  pasos = PASOS_DEL_ASISTENTE,
 }: {
   paso: PasoDelAsistente;
   /** El paso que se deduce del borrador; `null` sin borrador (paso 1). */
@@ -45,6 +46,8 @@ export function ArmazonDelAsistente({
   onReintentar: () => void;
   /** ED-14: «Lo que llevás armado», en pocas líneas (`loQueLlevasArmado`); `null` sin borrador. */
   armado?: readonly string[] | null;
+  /** Los nombres de los siete pasos: los de Entrenamiento, salvo que el área diga otros (ED-30, Nutrición). */
+  pasos?: readonly string[];
 }) {
   const tituloRef = useRef<HTMLHeadingElement>(null);
   // El foco entra al título de cada paso: dice qué se decide.
@@ -55,7 +58,7 @@ export function ArmazonDelAsistente({
     <section className="asistente" aria-labelledby="titulo-del-paso" data-asistente={paso}>
       <nav aria-label={C.pasos}>
         <ol className="asistente__pasos">
-          {PASOS_DEL_ASISTENTE.map((nombre, n) => {
+          {pasos.map((nombre, n) => {
             const numero = (n + 1) as PasoDelAsistente;
             return (
               <li key={nombre} data-hecho={numero < paso ? '' : undefined}>

@@ -104,3 +104,51 @@ export const COPY_PARTES = {
   plegarTodas: 'Plegar todas',
   deLaParte: (parte: string) => `de «${parte}»`,
 } as const;
+
+/** Para buscar sin que importen las mayúsculas, los acentos ni los espacios de más. */
+export const textoParaBuscar = (s: string): string =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/** Lo mínimo de una parte y sus preguntas que usa el buscador. */
+export interface ParteParaBuscar<T> {
+  readonly title: string;
+  readonly fields: readonly T[];
+}
+
+/**
+ * ED-40 · El buscador de preguntas: las de cada parte que dicen lo buscado, en su pregunta o en su aclaración, o todas
+ * las de una parte cuyo título lo dice («sueño» trae la parte «Sueño» entera). Cada palabra tiene que estar (y), en
+ * cualquier orden. Sin nada escrito, `null`: no se filtra. Una parte sin ninguna queda con la lista vacía.
+ */
+export function preguntasQueCoinciden<T extends { readonly label: string; readonly helpText?: string | null | undefined }>(
+  partes: readonly ParteParaBuscar<T>[],
+  consulta: string,
+): T[][] | null {
+  const palabras = textoParaBuscar(consulta).split(' ').filter(Boolean);
+  if (palabras.length === 0) return null;
+  const dice = (texto: string) => palabras.every((p) => texto.includes(p));
+  return partes.map((parte) => {
+    const titulo = textoParaBuscar(parte.title);
+    return parte.fields.filter((c) => dice(`${titulo} ${textoParaBuscar(c.label)} ${textoParaBuscar(c.helpText ?? '')}`));
+  });
+}
+
+/** «7 preguntas dicen «sueño»», «Ninguna pregunta dice «xyz»». */
+export function resultadoDeLaBusqueda(cuantas: number, consulta: string): string {
+  const q = consulta.trim();
+  if (cuantas === 0) return `Ninguna pregunta dice «${q}».`;
+  return cuantas === 1 ? `1 pregunta dice «${q}».` : `${cuantas} preguntas dicen «${q}».`;
+}
+
+export const COPY_BUSCADOR_DE_PREGUNTAS = {
+  etiqueta: 'Buscar una pregunta',
+  ayuda: 'Busca en las preguntas, sus aclaraciones y el título de cada parte. Escape borra la búsqueda.',
+  pedirLasQueCoinciden: (n: number) => (n === 1 ? 'Pedirla' : `Pedir las ${n}`),
+  ningunaDeLasQueCoinciden: (n: number) => (n === 1 ? 'No pedirla' : `Ninguna de las ${n}`),
+  borrar: 'Borrar la búsqueda',
+} as const;
