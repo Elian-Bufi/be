@@ -356,6 +356,15 @@ test('TEST-EDP-027 · el objetivo general con su versión; sin «%» en el asist
   assert.match(plan, /parametros\.get\('asistente'\) && !objetivo && !borrador && !faltan\.objetivo \? \(\n\s+<Aviso tipo="info">\n\s+<p>\{CAN\.sinObjetivo\}<\/p>/);
 });
 
+test('ED-30 y ED-13 · la versión nueva del paso 2 ofrece los repartos habituales (API-HAN-06 a 08)', () => {
+  // El paso 2 escribe la versión nueva con el formulario de siempre, que trae «Usar un reparto habitual» (ED-13): en gramos.
+  const pasos = leer('nutrition/pasos-del-asistente.tsx');
+  assert.match(pasos, /<FormularioDeObjetivo\n\s+evaluaciones=\{evaluaciones\}/);
+  const formularios = leer('nutrition/formularios.tsx');
+  assert.ok(formularios.includes('<RepartosHabituales gramos={valores} onUsar={(g) => c(g)} />'));
+  assert.match(N.COPY_ASISTENTE_DE_NUTRICION.versionNuevaDetalle, /repartos habituales/);
+});
+
 test('ED-30 · los pasos 2 a 7 van sobre el mismo borrador; «Siguiente» guarda y espera (TEST-EDP-017)', () => {
   const pasos = leer('nutrition/pasos-del-asistente.tsx');
   assert.match(pasos, /const r = await sePuedeAvanzar\(\{ sucio, guardando, guardar \}\);/);

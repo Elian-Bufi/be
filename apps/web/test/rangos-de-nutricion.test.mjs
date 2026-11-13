@@ -168,3 +168,19 @@ test('ED-31 · el total de la opción, con los nombres completos para el lector 
   assert.equal(R.totalEnPalabras(total), 'Energía 107 kcal · Proteínas 1,3 g · Carbohidratos 27,4 g · Grasas sin dato');
   assert.equal(R.totalEnUnaLinea(total), '107 kcal · P 1,3 g · C 27,4 g · G Sin dato');
 });
+
+test('DJ-7 · los habituales de Nutrición en la API, el dominio y el esquema no dicen «%», tampoco en un comentario ni en negación', () => {
+  const raiz = new URL('../../../', import.meta.url);
+  const leer = (ruta) => readFileSync(new URL(ruta, raiz), 'utf8');
+  const esquema = leer('prisma/schema.prisma');
+  const desde = esquema.indexOf('/// ED-13 (WP-EDITORES-PROFESIONAL, DL-167): un reparto habitual');
+  assert.ok(desde > 0, 'falta el modelo RepartoHabitual');
+  const fuentes = {
+    'apps/api/src/nutricion/habituales.service.ts': leer('apps/api/src/nutricion/habituales.service.ts'),
+    'packages/domain/src/contratos-habituales.ts': leer('packages/domain/src/contratos-habituales.ts'),
+    'prisma/schema.prisma (RepartoHabitual)': esquema.slice(desde, esquema.indexOf('\n}', desde)),
+  };
+  for (const [archivo, fuente] of Object.entries(fuentes)) {
+    fuente.split('\n').forEach((linea, i) => assert.doesNotMatch(linea, /%/, `${archivo}:${i + 1}: ${linea.trim()}`));
+  }
+});

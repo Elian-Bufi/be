@@ -115,6 +115,8 @@ import {
 import { CarteraResponseSchema } from './contratos-cartera';
 import { ColaDeRevisionesResponseSchema } from './contratos-cola-de-revisiones';
 import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrador';
+import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
+import { ListaDeSeriesObservadasResponseSchema, RegistrarSerieObservadaRequestSchema, SerieObservadaResponseSchema, SucederSerieObservadaRequestSchema, SucesionDeSerieObservadaResponseSchema } from './contratos-fuerza';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -146,6 +148,12 @@ import {
   MarcarHabitualRequestSchema,
   ComidaHabitualResponseSchema,
   SesionHabitualResponseSchema,
+  GuardarPrescripcionHabitualRequestSchema,
+  GuardarRepartoHabitualRequestSchema,
+  ListaDePrescripcionesHabitualesResponseSchema,
+  ListaDeRepartosHabitualesResponseSchema,
+  PrescripcionHabitualResponseSchema,
+  RepartoHabitualResponseSchema,
 } from './contratos-habituales';
 import {
   CandidatoDeAlimentoResponseSchema,
@@ -1131,6 +1139,18 @@ const DEFINIDAS: readonly Operacion[] = [
   },
   // ─── WP-TABLERO-ALTA-GAMA · PLN: planificar Nutrición (DL-163 D-17 a D-21). Familia propia de BE ─────────────────────
   {
+    id: 'API-PLN-01',
+    metodo: 'get',
+    ruta: '/nutrition/plans/{planId}/option-estimates',
+    resumen:
+      'Los totales del plan calculados por el servidor (TB-38; ED-31 y ED-D6 de WP-EDITORES-PROFESIONAL): la estimación de cada opción para las porciones del plan, con la misma cuenta que ve la app (SUM_SOURCE_PER_100G_V1, las kcal de la fuente) y, por ítem, la versión del catálogo y la composición que usó. En una versión activada, la de su instantánea; en un borrador, la que usaría la instantánea si se activara hoy. Lo que falta es «sin dato» con el ítem que lo impide, nunca un cero. Sin total del día: las opciones de una comida son alternativas. Solo el profesional del plan; la persona, otro profesional, lo descartado o lo inexistente: el mismo 404. planId es el id de la versión, como en API-NUT-09.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EstimacionDeLasOpcionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'ID propio de BE (familia PLN) · DEUDA_LEGAJO DL-163 (D-20, TB-38) y DL-167 (ED-31, ED-D6) · WP-TABLERO-ALTA-GAMA §4.4 · WP-EDITORES-PROFESIONAL §8.3',
+  },
+  {
     id: 'API-PLN-07',
     metodo: 'post',
     ruta: '/nutrition/plans/{planId}/discard',
@@ -2112,6 +2132,119 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: ComidaHabitualResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'PRESET_NAME_TAKEN'] },
     fuente: 'DEUDA_LEGAJO DL-109 · docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md',
+  },
+  // ─── ED-13 (WP-EDITORES-PROFESIONAL, DL-167): las prescripciones y los repartos habituales ─────────────────────────────
+  {
+    id: 'API-HAB-06',
+    metodo: 'get',
+    ruta: '/training/prescription-presets',
+    resumen: 'Mis prescripciones habituales (solo las propias y activas): series, intensidad, descanso y bases de una prescripción, sin ejercicio y sin cargas; la guardada más recientemente primero, hasta 200. Solo un profesional de Entrenamiento verificado y habilitado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDePrescripcionesHabitualesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-167 (ED-13) y DL-109 · WP-EDITORES-PROFESIONAL §2.4',
+  },
+  {
+    id: 'API-HAB-07',
+    metodo: 'post',
+    ruta: '/training/prescription-presets',
+    resumen:
+      'Guardar o reemplazar una prescripción habitual por nombre. Se valida como una prescripción de un plan (criterio de intensidad, RIR y objetivos por serie); las series no admiten cargas (400). Un nombre en uso por otra activa sin `replaces` que la señale: 409 PRESET_NAME_TAKEN; con `replaces` (propia y activa; si no, 404) y su `expectedVersion`, la reemplaza; el nombre de una quitada la reactiva.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: GuardarPrescripcionHabitualRequestSchema,
+    exitos: [{ status: 201, schema: PrescripcionHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'PRESET_NAME_TAKEN', 'VERSION_CONFLICT'], 422: ['TRAINING_PLAN_STRUCTURE_INVALID', 'INTENSITY_CRITERION_INVALID'] },
+    fuente: 'DEUDA_LEGAJO DL-167 (ED-13) y DL-109 · WP-EDITORES-PROFESIONAL §2.4',
+  },
+  {
+    id: 'API-HAB-08',
+    metodo: 'patch',
+    ruta: '/training/prescription-presets/{presetId}',
+    resumen: 'Renombrar o quitar una prescripción habitual propia, con `expectedVersion`; no cambia su contenido (para eso se vuelve a guardar). Ajena, quitada o inexistente: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarHabitualRequestSchema,
+    exitos: [{ status: 200, schema: PrescripcionHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'PRESET_NAME_TAKEN'] },
+    fuente: 'DEUDA_LEGAJO DL-167 (ED-13) y DL-109 · WP-EDITORES-PROFESIONAL §2.4',
+  },
+  {
+    id: 'API-HAN-06',
+    metodo: 'get',
+    ruta: '/nutrition/macro-presets',
+    resumen: 'Mis repartos habituales de macros (solo los propios y activos), en gramos por día; el guardado más recientemente primero, hasta 200. Solo un profesional de Nutrición verificado y habilitado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeRepartosHabitualesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'DEUDA_LEGAJO DL-167 (ED-13; DJ-7: en gramos) y DL-109 · WP-EDITORES-PROFESIONAL §2.4',
+  },
+  {
+    id: 'API-HAN-07',
+    metodo: 'post',
+    ruta: '/nutrition/macro-presets',
+    resumen:
+      'Guardar o reemplazar un reparto habitual por nombre: proteínas, carbohidratos y grasas en gramos por día (otra unidad es 400). Las reglas del nombre y del reemplazo son las de API-HAB-07.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: GuardarRepartoHabitualRequestSchema,
+    exitos: [{ status: 201, schema: RepartoHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'PRESET_NAME_TAKEN', 'VERSION_CONFLICT'] },
+    fuente: 'DEUDA_LEGAJO DL-167 (ED-13; DJ-7: en gramos) y DL-109 · WP-EDITORES-PROFESIONAL §2.4',
+  },
+  {
+    id: 'API-HAN-08',
+    metodo: 'patch',
+    ruta: '/nutrition/macro-presets/{presetId}',
+    resumen: 'Renombrar o quitar un reparto habitual propio, con `expectedVersion`. Ajeno, quitado o inexistente: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: EditarHabitualRequestSchema,
+    exitos: [{ status: 200, schema: RepartoHabitualResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'PRESET_NAME_TAKEN'] },
+    fuente: 'DEUDA_LEGAJO DL-167 (ED-13; DJ-7: en gramos) y DL-109 · WP-EDITORES-PROFESIONAL §2.4',
+  },
+  // ─── WP-EDITORES-PROFESIONAL · FZA: la serie observada por el profesional (ED-72; DL-171). Familia propia de BE ────────
+  {
+    id: 'API-FZA-01',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/training/observed-sets',
+    resumen:
+      'Registrar una serie observada por el profesional en un ejercicio de la lista de Epley v1: la carga con su unidad, las repeticiones, el RIR (obligatorio, de 0 a 2), la fecha civil y su zona, y una nota. Se guarda con su estimación (BE-E1RM v1, EPLEY_V1: banda, entradas y valor) como hecho histórico, con el autor y la fecha. Lo que no se puede estimar no se guarda: 422 STRENGTH_OBSERVATION_NOT_ESTIMABLE con el motivo (SIN_RIR, RIR_MAYOR_QUE_2, MAS_DE_12, FUERA_DE_LA_LISTA, SIN_CARGA o SIN_REPETICIONES). Una fecha futura: 422 VALIDATION_FAILED con OBSERVED_DATE_IN_FUTURE. Los permisos son los de la evaluación de entrenamiento (API-TRN-01): el PDP de Entrenamiento; lo ajeno, el 404 de lo inexistente. La persona no la recibe.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarSerieObservadaRequestSchema,
+    exitos: [{ status: 201, schema: SerieObservadaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['STRENGTH_OBSERVATION_NOT_ESTIMABLE', 'VALIDATION_FAILED'] },
+    fuente: 'ID propio de BE (familia FZA) · DEUDA_LEGAJO DL-171 · WP-EDITORES-PROFESIONAL ED-72 y ED-D19 · REG-06-202 a 205',
+  },
+  {
+    id: 'API-FZA-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/training/observed-sets',
+    resumen:
+      'Las series observadas vigentes de este profesional con la persona (las que nadie corrigió ni anuló), de la más reciente a la más antigua, hasta 200; por ejercicio si se pide. Cada una con su estimación, quién la observó y, si corrige a otra, a cuál y por qué. El PDP de Entrenamiento; la persona no la recibe.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [{ nombre: 'exerciseId', descripcion: 'El ejercicio del catálogo (no su versión).', schema: { type: 'string', format: 'uuid' } }],
+    exitos: [{ status: 200, schema: ListaDeSeriesObservadasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'ID propio de BE (familia FZA) · DEUDA_LEGAJO DL-171 · WP-EDITORES-PROFESIONAL ED-72',
+  },
+  {
+    id: 'API-FZA-03',
+    metodo: 'post',
+    ruta: '/training/observed-sets/{observationId}/successors',
+    resumen:
+      'Corregir o anular una serie observada propia: una observación nueva que sucede a la vigente, con su motivo y la versión esperada (la de la vigente). La anterior no cambia y queda en la historia; la base impide cambiarla, borrarla o sucederla dos veces (409 VERSION_CONFLICT). Corregir vuelve a estimar con las mismas reglas que API-FZA-01; anular no lleva valores. Ajena, anulada o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: SucederSerieObservadaRequestSchema,
+    exitos: [{ status: 201, schema: SucesionDeSerieObservadaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['STRENGTH_OBSERVATION_NOT_ESTIMABLE', 'VALIDATION_FAILED'] },
+    fuente: 'ID propio de BE (familia FZA) · DEUDA_LEGAJO DL-171 · WP-EDITORES-PROFESIONAL ED-72 · REG-06-205',
   },
   {
     id: 'API-INT-TRN-02',
@@ -3322,7 +3455,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/advisees/{adviseeId}/projections/{projectionKey}',
     resumen:
-      'Proyección profunda del asesorado (taxonomía cerrada de ocho claves). Tres tienen una derivación definida (nutrición prescripto y registrado, progresión por ejercicio y evolución antropométrica); las otras cinco responden INSUFFICIENT_INFORMATION con SPECIFICATION_PENDING. Puntos reales, sin interpolar, imputar ni arrastrar; lo desconocido es null con su motivo.',
+      'Proyección profunda de la persona (las ocho claves del 09 y una de BE). Tres del 09 tienen una derivación definida (nutrición prescripto y registrado, progresión por ejercicio y evolución antropométrica); las otras cinco responden INSUFFICIENT_INFORMATION con SPECIFICATION_PENDING. La de BE, TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE (ED-74, DL-171), es la estimación por ejercicio con Epley v1 (BE-E1RM v1), calculada al leer desde el registro vigente de cada sesión (solo los valores que escribió la persona, ED-70) y las series observadas por el profesional (API-FZA-01), con la regla por sesión y el interruptor includeOrientative; nunca desde la prescripción ni en TRAINING_PERSONAL_RECORDS. Puntos reales, sin interpolar, imputar ni arrastrar; lo desconocido es null con su motivo.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -3333,10 +3466,11 @@ const DEFINIDAS: readonly Operacion[] = [
       { nombre: 'setIndex', descripcion: 'El número de serie comparado entre sesiones, para la progresión.', schema: { type: 'integer', minimum: 1, maximum: 30 } },
       { nombre: 'unit', descripcion: 'La unidad de carga (kg o lb), para la progresión de la carga.', schema: { type: 'string', enum: ['kg', 'lb'] } },
       { nombre: 'grain', descripcion: 'El grano (ORIGINAL, DAY o WEEK), si la métrica lo admite.', schema: { type: 'string', enum: ['ORIGINAL', 'DAY', 'WEEK'] } },
+      { nombre: 'includeOrientative', descripcion: 'ED-74: incluir las estimaciones de más de 10 a 12 repeticiones equivalentes (false por defecto). En esta clave, exerciseId es el ejercicio del catálogo (uuid).', schema: { type: 'string', enum: ['true', 'false'] } },
     ],
     exitos: [{ status: 200, schema: ProyeccionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
-    fuente: '09v11:1063-1405 · B10-09 §15-§28 · 11A TEST-PRJ-001 a 010 · DEUDA_LEGAJO DL-126',
+    fuente: '09v11:1063-1405 · B10-09 §15-§28 · 11A TEST-PRJ-001 a 010 · DEUDA_LEGAJO DL-126 · DL-171 (ED-74)',
   },
   {
     id: 'API-VAN-01',
@@ -4175,11 +4309,13 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-NUT-06',
   'API-NUT-08',
   'API-NUT-09',
+  'API-PLN-01',
   'API-NUT-16',
   'API-NUT-17',
   'API-NUT-19',
   'API-TRN-02',
   'API-TRN-03',
+  'API-FZA-02',
   'API-TRN-05',
   'API-TRN-06',
   'API-TRN-08',
@@ -4221,7 +4357,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
 // API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAN-02', 'API-HAN-05', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

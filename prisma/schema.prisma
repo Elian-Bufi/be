@@ -207,6 +207,12 @@ model Identidad {
   sesionesHabituales                         SesionHabitual[]                          @relation("SesionHabitualDelProfesional")
   alimentosHabituales                        AlimentoHabitual[]                        @relation("AlimentoHabitualDelProfesional")
   comidasHabituales                          ComidaHabitual[]                          @relation("ComidaHabitualDelProfesional")
+  /// ED-13 (WP-EDITORES-PROFESIONAL, DL-167): las prescripciones y los repartos habituales del profesional.
+  prescripcionesHabituales                   PrescripcionHabitual[]                    @relation("PrescripcionHabitualDelProfesional")
+  repartosHabituales                         RepartoHabitual[]                         @relation("RepartoHabitualDelProfesional")
+  /// ED-72 (DL-171): las series que observó como profesional, y las que le observaron como persona.
+  seriesObservadasComoProfesional            SerieObservada[]                          @relation("SerieObservadaPorElProfesional")
+  seriesObservadasComoAsesorado              SerieObservada[]                          @relation("SerieObservadaDelAsesorado")
   evaluacionesDeEntrenamientoComoProfesional EvaluacionDeEntrenamiento[]               @relation("EvaluacionDeEntrenamientoDelProfesional")
   evaluacionesDeEntrenamientoComoAsesorado   EvaluacionDeEntrenamiento[]               @relation("EvaluacionDeEntrenamientoDelAsesorado")
   objetivosDeEntrenamientoComoProfesional    ObjetivoDeEntrenamiento[]                 @relation("ObjetivoDeEntrenamientoDelProfesional")
@@ -1317,6 +1323,9 @@ enum TipoDeEventoDeNutricion {
   AlimentoHabitualQuitado
   ComidaHabitualGuardada
   ComidaHabitualEditada
+  /// WP-EDITORES-PROFESIONAL (DL-167, ED-13): un reparto habitual guardado o reemplazado, y quitado.
+  RepartoHabitualGuardado
+  RepartoHabitualQuitado
   /// WP-NUTRICION-RECETAS (DL-119, DL-121).
   RecetaCreada
   RecetaVersionada
@@ -1965,6 +1974,12 @@ enum TipoDeEventoDeEntrenamiento {
   SesionHabitualEditada
   /// WP-TABLERO-ALTA-GAMA (DL-163 D-21; TB-47): un borrador de plan que nunca se activó, descartado.
   BorradorDePlanDeEntrenamientoDescartado
+  /// WP-EDITORES-PROFESIONAL (DL-171, ED-72): una serie observada por el profesional, y la que la corrige o la anula.
+  SerieObservadaRegistrada
+  SerieObservadaSucedida
+  /// WP-EDITORES-PROFESIONAL (DL-167, ED-13): una prescripción habitual guardada o reemplazada, y quitada.
+  PrescripcionHabitualGuardada
+  PrescripcionHabitualQuitada
 }
 
 /// D-B (docs/paquetes/WP-07.md): mismos dos nombres de evento que las transiciones de
@@ -2029,6 +2044,8 @@ model EjercicioDeCatalogo {
   nombresAlternativos NombreAlternativoDeEjercicio[]
   /// DL-081: la historia de sus zonas musculares.
   asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
+  /// ED-72 (DL-171): las series observadas por un profesional en este ejercicio.
+  seriesObservadas    SerieObservada[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -4244,4 +4261,89 @@ model CambioDeCredencial {
   @@index([metodoDeAccesoId])
   @@index([recuperacionId])
   @@map("cambio_de_credencial")
+}
+
+/// ED-13 (WP-EDITORES-PROFESIONAL, DL-167): una prescripción habitual del profesional («Mi fuerza 5×3 · RIR 1»): las
+/// series, la intensidad, el descanso y las bases de una prescripción, sin el ejercicio y sin cargas. La ve solo él;
+/// aplicarla escribe valores en el borrador, como cualquier otro. Guardar con el mismo nombre la reemplaza.
+model PrescripcionHabitual {
+  id                     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String           @map("profesional_id") @db.Uuid
+  nombre                 String
+  nombreNormalizado      String           @map("nombre_normalizado")
+  prescripcion           Json
+  estado                 EstadoDeHabitual @default(ACTIVO)
+  version                Int              @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime         @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad @relation("PrescripcionHabitualDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([profesionalId, nombreNormalizado])
+  @@index([profesionalId, estado, momentoDeActualizacion])
+  @@map("prescripcion_habitual")
+}
+
+/// ED-13 (WP-EDITORES-PROFESIONAL, DL-167): un reparto habitual de macros del profesional, en gramos por día (DJ-7: sin
+/// porcentajes antes del 25/11). Lo ve solo él; aplicarlo escribe los gramos en el objetivo, como cualquier otro valor.
+model RepartoHabitual {
+  id                     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String           @map("profesional_id") @db.Uuid
+  nombre                 String
+  nombreNormalizado      String           @map("nombre_normalizado")
+  reparto                Json
+  estado                 EstadoDeHabitual @default(ACTIVO)
+  version                Int              @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime         @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime         @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad @relation("RepartoHabitualDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([profesionalId, nombreNormalizado])
+  @@index([profesionalId, estado, momentoDeActualizacion])
+  @@map("reparto_habitual")
+}
+
+/// ED-72 (DL-171): una fila de la cadena de una serie observada: la observación, o la anulación que la sucede.
+enum TipoDeSerieObservada {
+  OBSERVADA
+  ANULACION
+}
+
+/// ED-72 (WP-EDITORES-PROFESIONAL, DL-171): una serie que observó el profesional, con su estimación Epley v1 guardada como
+/// hecho histórico (REG-06-205). Solo agregar: no se cambia ni se borra; corregirla o anularla es una fila nueva que
+/// sucede a la anterior (una sola sucesora), con su motivo. Una anulación no lleva valores. La persona no la recibe.
+model SerieObservada {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String    @map("profesional_id") @db.Uuid
+  asesoradoId       String    @map("asesorado_id") @db.Uuid
+  ejercicioId       String    @map("ejercicio_id") @db.Uuid
+  fechaLocal        DateTime  @map("fecha_local") @db.Date
+  zonaHoraria       String    @map("zona_horaria")
+  /// La carga tal como se escribió, con su unidad (kg o lb, sin convertir); `null` en una anulación.
+  carga             Float?
+  unidad            String?
+  repeticiones      Int?
+  rir               Float?
+  nota              String?
+  /// La estimación: especificación, versión, método, banda, entradas y valor (`EstimacionDeFuerzaApi`).
+  estimacion        Json?
+  /// `OBSERVADA`: con sus valores y su estimación; `ANULACION`: sin valores, anula la que sucede (los estados son enums).
+  tipo              TipoDeSerieObservada @default(OBSERVADA)
+  predecesoraId     String?   @unique @map("predecesora_id") @db.Uuid
+  motivo            String?
+  posicion          Int       @default(1)
+  procedencia       Json
+  momentoDeRegistro DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad           @relation("SerieObservadaPorElProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad           @relation("SerieObservadaDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejercicio   EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora SerieObservada?     @relation("SucesionDeSerieObservada", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    SerieObservada?     @relation("SucesionDeSerieObservada")
+
+  @@index([asesoradoId, profesionalId, ejercicioId, fechaLocal])
+  @@map("serie_observada")
 }

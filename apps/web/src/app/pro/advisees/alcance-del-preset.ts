@@ -6,7 +6,7 @@
  * - **Con vista previa, si pisa algo:** a qué se aplica, qué cambia fila por fila y lo que se pierde.
  * - **«Deshacer» es la operación inversa:** las prescripciones de antes, por posición, que el editor vuelve a escribir.
  */
-import { aplicarPrescripcion, COPY_PRESETS as C, type CambioDelEjercicio, type EstructuraDePlanDeEntrenamientoEntrada, type PrescripcionLeida } from '@be/domain';
+import { aplicarPrescripcion, aplicarPrescripcionHabitual, COPY_PRESETS as C, type CambioDelEjercicio, type ContenidoDePrescripcionHabitual, type EstructuraDePlanDeEntrenamientoEntrada, type PrescripcionLeida } from '@be/domain';
 
 type PrescripcionE = NonNullable<EstructuraDePlanDeEntrenamientoEntrada['blocks'][number]['sessions']>[number]['prescriptions'][number];
 
@@ -36,13 +36,29 @@ export const estaVacio = (p: PrescripcionE): boolean =>
   (p.restSeconds === undefined || p.restSeconds === null);
 
 export function alcanceDelPreset(prescripciones: readonly PrescripcionE[], posiciones: readonly number[], leida: PrescripcionLeida, nombreDe: (p: PrescripcionE) => string, sesion: string): AlcanceDelPreset {
+  return alcanceCon(prescripciones, posiciones, (p) => aplicarPrescripcion(p, leida), leida.series, nombreDe, sesion);
+}
+
+/** ED-13: lo mismo con una prescripción habitual del profesional, con sus series y sus objetivos por serie. */
+export function alcanceDeLaHabitual(prescripciones: readonly PrescripcionE[], posiciones: readonly number[], h: ContenidoDePrescripcionHabitual, nombreDe: (p: PrescripcionE) => string, sesion: string): AlcanceDelPreset {
+  return alcanceCon(prescripciones, posiciones, (p) => aplicarPrescripcionHabitual(p, h), h.sets.length, nombreDe, sesion);
+}
+
+function alcanceCon(
+  prescripciones: readonly PrescripcionE[],
+  posiciones: readonly number[],
+  aplicar: (p: PrescripcionE) => { readonly prescripcion: PrescripcionE; readonly cambio: CambioDelEjercicio },
+  seriesDespues: number,
+  nombreDe: (p: PrescripcionE) => string,
+  sesion: string,
+): AlcanceDelPreset {
   const filas: FilaDelAlcance[] = [];
   const nuevas = new Map<number, PrescripcionE>();
   const antes = new Map<number, PrescripcionE>();
   for (const n of posiciones) {
     const p = prescripciones[n];
     if (!p) continue;
-    const { prescripcion, cambio } = aplicarPrescripcion(p, leida);
+    const { prescripcion, cambio } = aplicar(p);
     filas.push({ posicion: n, nombre: nombreDe(p), cambio });
     nuevas.set(n, prescripcion);
     antes.set(n, structuredClone(p));
@@ -53,7 +69,7 @@ export function alcanceDelPreset(prescripciones: readonly PrescripcionE[], posic
   const partes = [C.seActualizan(filas.length, sesion)];
   if (conCargas) partes.push(C.lasCargasSeConservan);
   if (cambiaLaCantidad) {
-    if (seriesAntes.length === 1) partes.push(C.cadaUnoPasa(seriesAntes[0]!, leida.series));
+    if (seriesAntes.length === 1) partes.push(C.cadaUnoPasa(seriesAntes[0]!, seriesDespues));
     else for (const f of filas) if (f.cambio.series.antes !== f.cambio.series.despues) partes.push(C.pasaDe(f.nombre, f.cambio.series.antes, f.cambio.series.despues));
   }
   return {

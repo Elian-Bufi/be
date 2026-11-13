@@ -94,7 +94,7 @@ export const COPY_ASISTENTE_DE_NUTRICION = {
   versionYFecha: (n: number | null, desde: string) => (n ? `Versión ${n}, vigente desde el ${desde}.` : `Vigente desde el ${desde}.`),
   enGramos: 'El plan se escribe en gramos: cada alimento con su cantidad. El reparto del objetivo también va en gramos.',
   versionNueva: 'Escribir una versión nueva del objetivo',
-  versionNuevaDetalle: 'Queda en el historial del objetivo; la versión en preparación pasa a usarla al guardar.',
+  versionNuevaDetalle: 'Queda en el historial del objetivo y puede partir de uno de tus repartos habituales; la versión en preparación pasa a usarla al guardar.',
   sinEvaluaciones: 'Para escribir una versión nueva del objetivo, primero registrá una evaluación.',
   objetivoNuevo: 'El objetivo tiene una versión nueva: la versión en preparación pasa a usarla.',
   // Paso 3

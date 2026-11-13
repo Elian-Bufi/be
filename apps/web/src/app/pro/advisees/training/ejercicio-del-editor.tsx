@@ -35,6 +35,7 @@ import {
   leerNumero,
   objetivoElegidoEnLaCelda,
   objetivoEscritoEnLaCelda,
+  entraEnLaEstimacion,
   textoDeSegundos,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type ImagenDeEjercicio,
@@ -51,6 +52,8 @@ import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
+import { COPY_DETALLE_DEL_EJERCICIO, DetalleDelEjercicio } from '../fuerza/detalle-del-ejercicio';
+import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
 import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
 
@@ -176,6 +179,7 @@ export function EjercicioDelEditor({
   onCopiar,
   onAplicarLinea,
   revisar = null,
+  exerciseId = null,
 }: {
   /** El prefijo de los identificadores de sus campos: `b0-s1-p2`, las posiciones del bloque, la sesión y el ejercicio. */
   id: string;
@@ -201,10 +205,15 @@ export function EjercicioDelEditor({
   onAplicarLinea: (p: PrescripcionE, revisar: string | null) => void;
   /** DJ-8: la carga quedó escrita para otras repeticiones («escrita para 6-8: revisala»). */
   revisar?: string | null;
+  /** El ejercicio del catálogo, si ya se conoce (lo trae la versión guardada): con él, la fuerza estimada (§5.8). */
+  exerciseId?: string | null;
 }) {
-  const { token, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
   const propio = useId();
   const plegado = ejercicioPlegadoDelEditor(p, problemas);
+  // ED-75: el detalle con la fuerza estimada, solo en los ejercicios de la lista de la v1 (RM-16).
+  const conFuerza = exerciseId !== null && entraEnLaEstimacion(exerciseId);
+  const [detalle, setDetalle] = useState(false);
   return (
     <section className="comida-del-plan ejercicio-del-editor" data-ejercicio={posicion + 1} data-abierta={abierto ? '' : undefined}>
       <div className="comida-del-editor__cabecera">
@@ -249,6 +258,7 @@ export function EjercicioDelEditor({
               rotulo={`más acciones de ${nombre}`}
               texto="Más"
               acciones={[
+                ...(conFuerza ? [{ clave: 'detalle', texto: COPY_DETALLE_DEL_EJERCICIO.abrir, alElegir: () => setDetalle(true) }] : []),
                 { clave: 'duplicar', texto: EDICION.duplicarEjercicio, alElegir: onDuplicar },
                 // ED-23 (V3 E-02): un verbo para cada copia.
                 ...(onCopiar
@@ -267,6 +277,15 @@ export function EjercicioDelEditor({
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo ejercicio-del-editor__cuerpo" hidden={!abierto}>
         {abierto ? (
           <>
+            {conFuerza ? (
+              <p className="ejercicio-del-editor__fuerza">
+                <button type="button" className="boton boton--quieto boton--compacto" data-detalle-con-fuerza onClick={() => setDetalle(true)}>
+                  <Icono nombre="estimado" tamano={18} />
+                  {COPY_DETALLE_DEL_EJERCICIO.abrir}
+                  <span className="visualmente-oculto"> de {nombre}</span>
+                </button>
+              </p>
+            ) : null}
             {/* ED-22: la prescripción en una línea, arriba de las series que escribe. */}
             <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
             <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} />
@@ -280,6 +299,21 @@ export function EjercicioDelEditor({
           </>
         ) : null}
       </div>
+      {conFuerza ? (
+        <DetalleDelEjercicio
+          abierto={detalle}
+          onCerrar={() => setDetalle(false)}
+          token={token}
+          asesoradoId={asesoradoId}
+          sesionPerdida={sesionPerdida}
+          exerciseId={exerciseId!}
+          nombre={nombre}
+          unidad={unidadDe(p)}
+          prescripcion={p as PrescripcionParaLaCarga}
+          loQueIndica={<EnPartes texto={ejercicioPlegadoDelEditor(p, 0).resumen} />}
+          onEscribir={(c) => onCambiar(c as Partial<PrescripcionE>)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -655,7 +689,7 @@ function LoGeneralDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string;
         <Campo
           id={`${id}-referencia`}
           etiqueta={`${COPY_ENTRENAMIENTO.referenciaDeRm} (opcional)`}
-          ayuda="Por ejemplo: 1RM estimado por el método que usaste. BE no estima la repetición máxima."
+          ayuda="Por ejemplo: 1RM estimado por el método que usaste. En los ejercicios de la lista de Epley v1, «Calcular la carga desde la estimación…» la escribe con el método y la fecha."
           value={p.intensity.target.reference?.description ?? ''}
           onChange={(e) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, reference: e.target.value ? { description: e.target.value } : null } } })}
           maxLength={500}

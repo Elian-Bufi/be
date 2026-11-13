@@ -1753,9 +1753,41 @@ website (EDT-21 en adelante), el 2026-11-12. Ninguna cambia la forma de un contr
 - ED-11: las plantillas van como una pestaña más de la galería, y el borrador anota de qué plantilla salió.
 - Las dos quedan para la próxima tanda, porque no son parte del website integrado hoy.
 
+**Las de la API (EDT-35 en adelante), a ratificar.** Las tomó Claude al programar la tarea 1 (la API y el dominio, rama
+`wp-editores-api`), el 2026-11-12. Todas son aditivas: ninguna cambia lo que leen las APK.
+
+| ID | Parte | Lo elegido | La alternativa |
+|---|---|---|---|
+| EDT-35 | ED-70 | Un `fieldOrigins` vacío no se guarda (se normaliza, como `TYPED`); `PLAN` en una serie `AS_PLANNED` se acepta, y solo `PERSON` se rechaza (FIELD_ORIGIN_PERSON_AS_PLANNED), como dice §5.8 | Rechazar el objeto vacío con un 422 |
+| EDT-36 | ED-70 | En una corrección del profesional, cada serie se compara con la vigente por la prescripción y el número de serie, con los valores en su forma canónica (la carga vigente sale de JSONB con otro orden de claves). La procedencia se conserva o se saca, nunca se cambia ni se agrega: un valor que no cambió lleva la clave que tenía o ninguna; uno que cambió, o el de una serie nueva, va sin clave. `PERSON` en un valor que cambió es FIELD_ORIGIN_PERSON_ON_CHANGED_VALUE; lo demás (de `AS_PLANNED`, de una serie de antes o de `PLAN` a `PERSON`, o `PLAN` en un valor que cambió) es FIELD_ORIGIN_NOT_PRESERVED. Así el profesional no le agrega el campo a una serie de la 0.24 (revisión adversaria del 12/11) | Comparar por posición, que se cruza si el profesional agrega o quita una serie |
+| EDT-37 | ED-72 | Las rutas son `/advisees/{adviseeId}/training/observed-sets` (FZA-01 y 02) y `/training/observed-sets/{id}/successors` (FZA-03, con `action` CORRECT o VOID). La versión es la posición en la cadena (`v1`, `v2`): suceder a una que ya tiene sucesora es 409 | Un PATCH sobre la observación, que se parece a editarla |
+| EDT-38 | ED-72 | FZA-02 lista solo las vigentes del propio profesional (como las evaluaciones, DL-057), hasta 200 y sin paginar: el tope es definitivo, `hasMore` dice que hay más y `nextCursor` es siempre `null`. La evolución (API-PRJ-01) las suma todas, sin tope: el período ya está acotado. Una fecha futura es 422 OBSERVED_DATE_IN_FUTURE | Sumar las de otros profesionales, que la matriz no deja ver |
+| EDT-39 | ED-72 | La tabla `serie_observada` lleva un enum `tipo` (OBSERVADA o ANULACION): la anulación es una fila sin valores. La base repite la guardia de lo estimable (carga mayor que 0, RIR de 0 a 2, hasta 12 repeticiones equivalentes) y la de la sucesión, con `IS NOT NULL` explícito (`serie_observada_sin_nulos`, en una migración que solo agrega): un CHECK que da NULL se cumple | Una columna booleana, que la prueba del esquema prohíbe; o validar solo en la API |
+| EDT-40 | ED-74 | La clave es `TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE`, una extensión de BE aparte de las ocho del 09 (`CLAVES_DE_PROYECCION_DE_BE`; TEST-PRJ-001 no cambia). El resultado trae cada punto con sus entradas, quién lo escribió y su origen, y las series que no entraron con su motivo, para «Cómo se calculó»; no una serie analítica. Las observaciones siguen el interruptor, como las sesiones | Reusar la serie analítica de la progresión, que no lleva las entradas de la cuenta |
+| EDT-41 | ED-74 | En esta clave, `exerciseId` es el ejercicio del catálogo (uuid), no la clave `e:`/`v:` de la progresión: la lista de la v1 es por ejercicio | La clave de la progresión, que admite versiones sueltas |
+| EDT-42 | ED-13 | Las rutas son `/training/prescription-presets` y `/nutrition/macro-presets`; quitar es el PATCH con `state: REMOVED` (que también renombra), como API-HAB-05; reemplazar pide `replaces` y `expectedVersion`. Una serie con carga es 400: no se descarta en silencio | DELETE; o descartar las cargas sin decirlo |
+| EDT-43 | ED-13 | Las dos familias comparten una pieza de la API (`plataforma/presets-propios.ts`), con filas mutables y la historia en los eventos, como DL-109; quedan en 16 KB | Un servicio por familia, que repetía las mismas reglas |
+| EDT-44 | ED-64 | Suben a 700 KB las cuatro rutas que nombra §5.1 (también API-HAB-05 y API-HAN-05, que solo renombran o quitan) | Solo las dos de guardar, y los PATCH en 16 KB: sus cuerpos no pasan de unos cientos de bytes. **La revisión adversaria del 12/11 recomienda esta alternativa;** no se cambió porque §5.1 nombra las cuatro: decide Dirección al ratificar |
+| EDT-46 | ED-70 (TEST-EDP-046) | La APK 0.24 lee lo que ella registra, también después de que el profesional lo corrige (EDT-36 le impide agregar el campo). Una ejecución con procedencia, registrada con la APK nueva, no la lee la 0.24 («respuesta no reconocida» en ese detalle, en «Tu historial» del período y en el borrador): pasa solo si la misma persona vuelve a la 0.24 o usa dos teléfonos con versiones distintas. Queda como riesgo aceptado, como el de DL-161, y lo prueba `procedencia-por-campo.int-spec.ts` | Una capacidad nueva en `X-BE-Capabilities` (como DL-122): la API devuelve `fieldOrigins` solo a quien la declara. Una corrección desde la 0.24 perdería la procedencia sin aviso |
+| EDT-45 | API-PLN-01 | La ruta es la del TB-38 (`/nutrition/plans/{planId}/option-estimates`). Un borrador se estima con lo que usaría la instantánea si se activara hoy; un alimento que ya no está disponible queda sin composición y la opción dice «sin dato» por él | Rechazar el borrador hasta que se pueda activar |
+
+**Las del website (EDT-47 en adelante), a ratificar.** Las tomó Claude al programar la tarea 2 (el website de la API,
+rama `wp-editores-api`), el 2026-11-12. Ninguna cambia la API ni lo que leen las APK.
+
+| ID | Parte | Lo elegido | La alternativa |
+|---|---|---|---|
+| EDT-47 | ED-75 | El detalle con la fuerza es un cuadro al costado, «Detalle y fuerza estimada», que se abre desde el cuerpo del ejercicio y desde su «Más», solo en los ejercicios de la lista. «Lo que indica el plan» va arriba, en una línea, y «Lo registrado» abajo. «Las últimas sesiones» de la maqueta 14 queda para después: la tabla de origen de la evolución dice lo mismo | La tarjeta dentro del cuerpo del ejercicio, mezclada con la planilla |
+| EDT-48 | ED-72 | La fecha de la observación se escribe en la zona que devuelve API-PRJ-01 en su período, y «Hoy» es el último día de ese período: el website no tiene una lectura de la zona de la persona | Una lectura nueva de la zona de la persona |
+| EDT-49 | ED-72 | El RIR observado se elige de 0 a 2 de a medio (maqueta 17), más «Más de 2», que existe para que el cuadro diga «Con un RIR mayor que 2 no se estima» y no guarde nada (ED-D19) | Un campo libre |
+| EDT-50 | ED-74 | La evolución es una pregunta del website (`pregunta=fuerza-estimada`), como la de la composición (TA-25): no se guarda como vista y usa el período de la ficha. El gráfico es propio (SVG), con la tabla de origen como su texto | Sumarla a `ID_DE_PREGUNTAS`, que cambia lo que acepta la API |
+| EDT-51 | ED-76 | El cuadro de la carga escribe en la fila general; «desde las series elegidas» queda para después. El % RM de entrada es el del criterio, si es % RM | Escribir también en las series elegidas |
+| EDT-52 | ED-13 | «Estas series, como prescripción habitual» sale del «⋯» de la versión y pide elegir el ejercicio de la sesión. Aplicar una habitual sigue DJ-8 como un preset de BE, y un objetivo propio de una serie que cambia se nombra antes | Guardarla desde el «Más» de cada ejercicio |
+| EDT-53 | ED-24 | «Duplicar el día» va en la tira de la semana. Cada copia queda después de su original, con «(copia)», y lleva un identificador de sesión del cliente para entrar en la agenda con el día de destino en el mismo guardado (la API conserva el que recibe) | Copias sin identificador, con los días elegidos después de guardar |
+| EDT-54 | ED-11 | Reemplazar el borrador con una plantilla son dos operaciones de hoy: descartar (API-PLE-05) y crear desde la plantilla (API-TRN-07). Si la segunda falla, la versión activa sigue igual y el diálogo de plantillas queda abierto con el motivo | Una operación nueva de la API que lo haga de una vez |
+
 ### 6.4 Las del cierre del website (EDC), a ratificar por Dirección
 
-Las tomó Claude al programar el cierre del website (§8.5), el 2026-11-12, en paralelo con la rama de la API. Ninguna
+Las tomó Claude al programar el cierre del website (§8.7), el 2026-11-12, en paralelo con la rama de la API. Ninguna
 cambia un contrato ni lo que la API acepta o devuelve.
 
 | ID | Parte | Lo elegido | La alternativa |
@@ -1979,7 +2011,47 @@ EDT-21 a EDT-34 (§6.3), a ratificar.
 - **Las capturas y la medición** de esta etapa (Claro y Azul noche a 1280, 1440 y 1920, y el zoom al 200 %), en la
   corrida con la API local.
 
-### 8.5 El cierre del website: lo pendiente de V3 que no choca con la API (2026-11-12)
+### 8.5 La API y el dominio (tarea 1): lo hecho y lo que queda (2026-11-12)
+
+Programada en la rama `wp-editores-api` (PR #258, en borrador), sobre main 23904ee. Las decisiones nuevas son EDT-35 a
+EDT-45 (§6.3), a ratificar.
+
+| Parte | Lo que quedó |
+|---|---|
+| ED-64 | API-HAB-04 y 05 y API-HAN-04 y 05 a 700 KB (TEST-EDP-051) |
+| ED-70 | `fieldOrigins` en la serie ejecutada de API-TRN-15 a 20, sin migración ni capacidad nueva; la corrección del profesional no le atribuye a la persona lo que cambió (TEST-EDP-059 y 060) |
+| ED-72 | API-FZA-01 a 03 y la tabla `serie_observada`, de solo agregar (TEST-EDP-061 y 062; RM-36, RM-37, RM-41 y RM-42) |
+| ED-74 | La clave `TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE` de API-PRJ-01, calculada al leer (TEST-EDP-064; RM-01, RM-11, RM-16, RM-23 a 25, RM-29, RM-33 y RM-43) |
+| ED-13 | API-HAB-06 a 08 y API-HAN-06 a 08, con sus dos tablas |
+| API-PLN-01 | Los totales de cada opción, calculados por el servidor (TEST-EDP-028 del lado de la API) |
+
+**Lo que queda, declarado:**
+- **API-PLN-02 y 03** (los rangos por día tipo y por comida): son lo primero que cae (§8.1). En g por kg piden
+  el peso de la última toma, que es de Antropometría, y guardarlos en la versión y en su instantánea toca la
+  activación: van en la próxima tanda, con su decisión. El editor sigue armando el rango del día con los totales
+  (EDT-21 y EDT-22), que ahora puede confirmar con API-PLN-01.
+- **El website** de ED-72 a ED-76, ED-13 y API-PLN-01 es la tarea 2; **la APK** de ED-70, su rama.
+
+### 8.6 El website de la API (tarea 2): lo hecho y lo que queda (2026-11-12)
+
+Programado en la rama `wp-editores-api` (PR #258, en borrador). Las decisiones nuevas son EDT-47 a EDT-54 (§6.3), a
+ratificar.
+
+| Parte | Commit | Lo que quedó |
+|---|---|---|
+| ED-72 a ED-76 | 43b6e77f | El detalle del ejercicio con la tarjeta de fuerza, «Cómo se calculó», «Registrar una serie observada» y «Calcular la carga desde la estimación…» en el mismo cuadro, con «Atrás»; la evolución en «Analizar» (TEST-EDP-063, 065 y 066 en su parte del website; RM-36, RM-37, RM-40 y RM-43) |
+| ED-13 | 0b3a1e8d | Guardar y usar las prescripciones habituales (la galería, «Tuyos») y los repartos habituales en el objetivo de Nutrición, en gramos |
+| ED-24 y ED-11 | 620a6557 | «Duplicar el día» en la tira de la semana; las plantillas como pestaña de la galería de estructura, que reemplazan el borrador |
+
+**Lo que queda, declarado:**
+- **ED-74:** las capturas de las maquetas 14 a 18 en Claro y Azul noche, con la API local y una persona con series de
+  la app nueva; hasta entonces, lo verifican las pruebas y la CI.
+- **ED-75:** «Las últimas sesiones» del detalle (EDT-47). **ED-76:** escribir en las series elegidas (EDT-51).
+- **ED-72:** corregir o anular una observación (API-FZA-03) desde el website.
+- **ED-30:** el asistente de Nutrición con el reparto propio en su paso 2. Quedó al integrar el cierre del website
+  (§8.7): el paso 2 escribe la versión nueva con el mismo formulario del objetivo, que trae los repartos habituales.
+
+### 8.7 El cierre del website: lo pendiente de V3 que no choca con la API (2026-11-12)
 
 Programado en la rama `wp-editores-cierre` (PR #259, en borrador), en paralelo con `wp-editores-api` (la fuerza, ED-11,
 ED-13, ED-24 y la API): no toca ED-11, ED-13, ED-14, ED-23 ni ED-24, ni `training/editor.tsx`. Las decisiones nuevas
@@ -1995,10 +2067,12 @@ son EDC-01 a EDC-14 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editore
 | ED-21 | 87bd51d2 | «Crear un ejercicio propio», con los parecidos del catálogo antes de crear |
 | ED-30 | 5f6598fd | El asistente de Nutrición: siete pasos, el objetivo general con su versión y el reparto en gramos (TEST-EDP-027 y 017) |
 | Revisión | (esta tanda) | Lo que encontró la revisión del cierre: la estrella de habitual vuelve al cuadro, activar desde el paso 7 lleva al plan activo, el objetivo nuevo del paso 2 sin carrera, las composiciones de todos los días tipo, «Guardar la opción» con la regla del plan, «Agregar una opción» sin opciones vacías y la accesibilidad de ED-21 y ED-40. El recorrido de navegador «asistenteDeNutricion» recorre del paso 1 al 7, activa y ve el plan activo |
+| Integración con #258 | (el merge de main) | El paso 2 del asistente ofrece los repartos habituales (API-HAN-06 a 08): la versión nueva del objetivo se escribe con el formulario de siempre, que ahora trae «Usar un reparto habitual» y «Guardar este reparto como habitual», en gramos |
 
 **Lo que queda, declarado:**
-- **De la API:** un reparto propio guardado en el paso 2 (ED-13, el «Dado» de «Mi base · 300 / 120 / 80 g»);
-  API-PLN-01, con la que la vista previa de una versión nueva de la receta deja de ser una estimación por porción.
+- **API-PLN-01 en la vista previa de la receta:** la operación ya está en main (#258); conectarla hace que la vista
+  previa de una versión nueva de la receta deje de ser una estimación por porción. El reparto propio del paso 2 (ED-13,
+  el «Dado» de «Mi base · 300 / 120 / 80 g») ya no queda: llegó con la integración.
 - **ED-31:** el origen «dato de demostración» en cada fila del plan y su aviso en «Antes de activar»: lo ya guardado no
   trae su procedencia, y leerla ítem por ítem es una lectura más por alimento (llega con API-PLN-01).
 - **ED-41:** los filtros y sus cuentas son de las solicitudes ya leídas (hasta 200), y lo dicen.

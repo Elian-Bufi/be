@@ -19,6 +19,8 @@ import {
   serieDeEntrenamiento,
   serieNutricional,
   VERSION_DEL_DICCIONARIO,
+  basesDelPlan,
+  type BasesDeLaVersion,
   type ContenidoDeInstantanea,
   type DefinicionDeMetrica,
   type EjecucionDeEntrenamiento,
@@ -50,7 +52,9 @@ type Tx = Prisma.TransactionClient;
 
 type Derivacion = NonNullable<ProyeccionResponse['data']['derivation']>;
 
-export const DERIVACION: Readonly<Record<'NUTRITION_PRESCRIBED_VS_RECORDED' | 'TRAINING_PROGRESSION_BY_EXERCISE' | 'ANTHROPOMETRY_LONGITUDINAL', Derivacion>> = {
+export const DERIVACION: Readonly<Record<'NUTRITION_PRESCRIBED_VS_RECORDED' | 'TRAINING_PROGRESSION_BY_EXERCISE' | 'ANTHROPOMETRY_LONGITUDINAL' | 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', Derivacion>> = {
+  // ED-74 (DL-171): la especificación BE-E1RM, versión 1, método EPLEY_V1 (REG-06-203).
+  TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE: { specificationId: 'BE-E1RM', version: '1', method: 'EPLEY_V1' },
   NUTRITION_PRESCRIBED_VS_RECORDED: { specificationId: 'BE-PRJ-NUTRICION-REGISTRADA', version: VERSION_DEL_DICCIONARIO, method: 'SUM_SOURCE_PER_100G_V1' },
   TRAINING_PROGRESSION_BY_EXERCISE: { specificationId: 'BE-PRJ-PROGRESION-POR-SERIE', version: VERSION_DEL_DICCIONARIO, method: 'MISMA_SERIE_ENTRE_SESIONES' },
   ANTHROPOMETRY_LONGITUDINAL: { specificationId: 'API-ANT-06', version: VERSION_DEL_DICCIONARIO, method: 'GRUPOS_DE_COMPARABILIDAD' },
@@ -144,6 +148,19 @@ export async function objetivosDeLasVersiones(tx: Tx, ejecuciones: readonly Ejec
       const instantanea = v.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento | undefined;
       // Una versión sin instantánea legible queda sin objetivos por serie: se compara con la prescripción, como en el website.
       return instantanea?.contenido ? [[v.id, objetivosDeLaVersionDelPlan(instantanea.contenido)] as const] : [];
+    }),
+  );
+}
+
+/** ED-74: las bases de las prescripciones de cada versión que ejecutan las sesiones, desde su instantánea. */
+export async function basesDeLasVersiones(tx: Tx, ejecuciones: readonly EjecucionDeEntrenamiento[]): Promise<Map<string, BasesDeLaVersion>> {
+  const ids = [...new Set(ejecuciones.map((x) => x.planId))];
+  if (ids.length === 0) return new Map();
+  const versiones = await tx.versionDePlanDeEntrenamiento.findMany({ where: { id: { in: ids } }, select: { id: true, instantanea: { select: { contenido: true } } } });
+  return new Map(
+    versiones.flatMap((v) => {
+      const instantanea = v.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento | undefined;
+      return instantanea?.contenido ? [[v.id, basesDelPlan(instantanea.contenido)] as const] : [];
     }),
   );
 }

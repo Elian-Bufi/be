@@ -336,10 +336,31 @@ async function borrador({ p, d, salida }) {
   assert.equal(pregunto, false, 'con todo guardado, recargar no pregunta');
 }
 
+/**
+ * Abre la comida `n` del editor, si está plegada, y espera a que quede abierta. El clic va al centro del botón: si la
+ * página todavía se acomoda (lecturas que llegan después de volver atrás), el clic puede caer donde el botón ya no está.
+ * Por eso se comprueba `data-abierta` y se reintenta, y cada reintento se anota para que se vea en la CI (salidaSegura
+ * falló dos veces el 12/11 con la comida 2 plegada: el clic no la abrió).
+ */
+async function abrirComida(p, n) {
+  const comida = `.comida-del-editor[data-comida="${n}"]`;
+  for (let intento = 1; intento <= 3; intento++) {
+    if (await p.$(`${comida}[data-abierta]`)) return;
+    await clic(p, `${comida} .comida-del-plan__boton`);
+    try {
+      await p.waitForSelector(`${comida}[data-abierta]`, { timeout: 5000 });
+      return;
+    } catch {
+      console.log(`  (abrirComida: la comida ${n} sigue plegada tras el clic ${intento}; dirección ${p.url()})`);
+    }
+  }
+  await p.waitForSelector(`${comida}[data-abierta]`, { timeout: ESPERA });
+}
+
 async function renombrarComida(p, n, nombre) {
   const comida = `.comida-del-editor[data-comida="${n}"]`;
   // Las comidas del editor empiezan plegadas: su menú «Más» aparece al abrirla.
-  if (!(await p.$(`${comida}[data-abierta]`))) await clic(p, `${comida} .comida-del-plan__boton`);
+  await abrirComida(p, n);
   await clic(p, `${comida} .comida-del-editor__acciones .menu-de-acciones__boton`);
   await clic(p, `${comida} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
   await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
@@ -407,7 +428,7 @@ async function salidaSegura({ p, d, salida }) {
   await elemento(p, '.comida-del-editor[data-comida="1"]', NUEVO);
   // Algo que no se puede guardar (una comida sin nombre): el cuadro, con «Seguir editando» enfocado; no se sale.
   const segunda = '.comida-del-editor[data-comida="2"]';
-  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await abrirComida(p, 2);
   await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
   await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
   await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
@@ -481,7 +502,7 @@ async function irACorregir({ p, d, salida }) {
   const segunda = '.comida-del-editor[data-comida="2"]';
   await elemento(p, segunda);
   // La comida 2, sin nombre: el campo queda a la vista (sin nombre no se puede guardar).
-  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await abrirComida(p, 2);
   await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
   await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
   await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });

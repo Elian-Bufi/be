@@ -46,6 +46,27 @@ export class HabitualesDeEntrenamientoController {
     return responder(res, await this.habituales.guardarSesion(actorDe(req), cuerpo, clave, contextoDe(req)));
   }
 
+  /** API-HAB-06 (ED-13): mis prescripciones habituales. */
+  @Get('training/prescription-presets')
+  listarPrescripciones(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.habituales.prescripciones.listar(actorDe(req), contextoDe(req));
+  }
+
+  /** API-HAB-07 (ED-13): guardar o reemplazar una prescripción habitual. */
+  @Post('training/prescription-presets')
+  async guardarPrescripcion(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.habituales.prescripciones.guardar(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-HAB-08 (ED-13): renombrar o quitar una prescripción habitual. Sin Idempotency-Key: concurrencia por expectedVersion. */
+  @Patch('training/prescription-presets/:presetId')
+  async editarPrescripcion(@Param('presetId') presetId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.habituales.prescripciones.editar(actorDe(req), presetId, cuerpo, contextoDe(req)));
+  }
+
   /** API-HAB-05. Sin Idempotency-Key: concurrencia por expectedVersion. */
   @Patch('training/session-presets/:presetId')
   async editarSesion(@Param('presetId') presetId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {

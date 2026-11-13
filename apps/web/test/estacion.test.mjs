@@ -69,12 +69,12 @@ test('TEST-EDP-014 · la galería: nada viene elegido al abrir, y si pisa algo p
   assert.doesNotMatch(GALERIA, /boton--primario/);
 });
 
-test('TEST-EDP-015 · «Guardar como preset» escribe en lo que ya existe, y lo que no está todavía se dice', () => {
+test('TEST-EDP-015 · «Guardar como preset» escribe en lo que ya existe, y lo que no se puede se dice', () => {
   const menu = EDITOR.slice(EDITOR.indexOf('id="mas-de-la-version"'), EDITOR.indexOf('{/* ED-15: a 1280'));
   assert.match(menu, /CE\.elPlanComoPlantilla\}`, alElegir: \(\) => setGuardarPlantilla\(true\)/);
   assert.match(menu, /CE\.laSesionComoHabitual\}`,\n\s*alElegir: \(\) => \{\n\s*if \(sesion\) setSesionHabitual\(structuredClone\(sesion\)\);/);
-  // La prescripción habitual es de ED-13 (la API, en su ventana): apagada, con su motivo.
-  assert.match(menu, /CE\.lasSeriesComoPrescripcion\}`, alElegir: \(\) => undefined, noSePuede: CE\.prescripcionHabitualMasAdelante \}/);
+  // ED-13: la prescripción habitual abre su diálogo (API-HAB-07, desde `prescripcion-habitual.tsx`); sin series, apagada con su motivo.
+  assert.match(menu, /CE\.lasSeriesComoPrescripcion\}`, alElegir: \(\) => setPrescripcionHabitual\(true\), noSePuede: antesHayQueCorregir \?\? \(sesion\?\.prescriptions\.some\(\(x\) => x\.sets\.length > 0\) \? null : CE\.sinSeriesParaPrescripcion\) \}/);
   assert.doesNotMatch(EDITOR, /\/presets|api\.\w*[Pp]reset/);
 });
 

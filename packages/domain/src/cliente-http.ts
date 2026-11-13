@@ -148,6 +148,8 @@ export type FiltroDeProyeccion = {
   readonly setIndex?: string;
   readonly unit?: 'kg' | 'lb';
   readonly grain?: 'ORIGINAL' | 'DAY' | 'WEEK';
+  /** Solo TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE (ED-74): «Incluir las de más de 10 a 12», apagado de entrada. */
+  readonly includeOrientative?: 'true' | 'false';
 };
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
@@ -175,15 +177,29 @@ import {
   ListaDeAlimentosHabitualesResponseSchema,
   ListaDeComidasHabitualesResponseSchema,
   ListaDeEjerciciosHabitualesResponseSchema,
+  ListaDePrescripcionesHabitualesResponseSchema,
+  ListaDeRepartosHabitualesResponseSchema,
   ListaDeSesionesHabitualesResponseSchema,
   MarcaDeAlimentoResponseSchema,
   MarcaDeEjercicioResponseSchema,
+  PrescripcionHabitualResponseSchema,
+  RepartoHabitualResponseSchema,
   SesionHabitualResponseSchema,
   type EditarHabitualRequest,
   type GuardarComidaHabitualRequest,
+  type GuardarPrescripcionHabitualRequest,
+  type GuardarRepartoHabitualRequest,
   type GuardarSesionHabitualRequest,
   type MarcarHabitualRequest,
 } from './contratos-habituales';
+import {
+  ListaDeSeriesObservadasResponseSchema,
+  SerieObservadaResponseSchema,
+  SucesionDeSerieObservadaResponseSchema,
+  type RegistrarSerieObservadaRequest,
+  type SucederSerieObservadaRequest,
+} from './contratos-fuerza';
+import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
 import {
   ActivacionDePlanResponseSchema,
   AplicarRevisionResponseSchema,
@@ -981,6 +997,46 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       return llamar('PATCH', `/nutrition/meal-presets/${encodeURIComponent(presetId)}`, { token, cuerpo, esquema: ComidaHabitualResponseSchema });
     },
 
+    // ─── ED-13 (WP-EDITORES-PROFESIONAL; DL-167) · las prescripciones y los repartos habituales ──
+    /** API-HAB-06: mis prescripciones habituales, hasta 200. */
+    listarPrescripcionesHabituales(token: string) {
+      return llamar('GET', '/training/prescription-presets', { token, esquema: ListaDePrescripcionesHabitualesResponseSchema });
+    },
+    /** API-HAB-07: guardar o reemplazar por nombre. */
+    guardarPrescripcionHabitual(token: string, cuerpo: GuardarPrescripcionHabitualRequest, clave: string) {
+      return llamar('POST', '/training/prescription-presets', { token, cuerpo, claveDeIdempotencia: clave, esquema: PrescripcionHabitualResponseSchema });
+    },
+    /** API-HAB-08: renombrar o quitar. */
+    editarPrescripcionHabitual(token: string, presetId: string, cuerpo: EditarHabitualRequest) {
+      return llamar('PATCH', `/training/prescription-presets/${encodeURIComponent(presetId)}`, { token, cuerpo, esquema: PrescripcionHabitualResponseSchema });
+    },
+    /** API-HAN-06: mis repartos habituales, en gramos por día, hasta 200. */
+    listarRepartosHabituales(token: string) {
+      return llamar('GET', '/nutrition/macro-presets', { token, esquema: ListaDeRepartosHabitualesResponseSchema });
+    },
+    /** API-HAN-07: guardar o reemplazar por nombre. */
+    guardarRepartoHabitual(token: string, cuerpo: GuardarRepartoHabitualRequest, clave: string) {
+      return llamar('POST', '/nutrition/macro-presets', { token, cuerpo, claveDeIdempotencia: clave, esquema: RepartoHabitualResponseSchema });
+    },
+    /** API-HAN-08: renombrar o quitar. */
+    editarRepartoHabitual(token: string, presetId: string, cuerpo: EditarHabitualRequest) {
+      return llamar('PATCH', `/nutrition/macro-presets/${encodeURIComponent(presetId)}`, { token, cuerpo, esquema: RepartoHabitualResponseSchema });
+    },
+
+    // ─── ED-72 (WP-EDITORES-PROFESIONAL; DL-171) · la serie observada por el profesional ─────────
+    /** API-FZA-01: registrar una serie observada, con su estimación. */
+    registrarSerieObservada(token: string, asesoradoId: string, cuerpo: RegistrarSerieObservadaRequest, clave: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/observed-sets`, { token, cuerpo, claveDeIdempotencia: clave, esquema: SerieObservadaResponseSchema });
+    },
+    /** API-FZA-02: las vigentes de la persona, por ejercicio si se pide. */
+    listarSeriesObservadas(token: string, asesoradoId: string, filtro: { exerciseId?: string } = {}) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/observed-sets${query(filtro)}`, { token, esquema: ListaDeSeriesObservadasResponseSchema });
+    },
+    /** API-FZA-03: corregir o anular, con una observación nueva que sucede a la anterior. */
+    sucederSerieObservada(token: string, observationId: string, cuerpo: SucederSerieObservadaRequest, clave: string) {
+      return llamar('POST', `/training/observed-sets/${encodeURIComponent(observationId)}/successors`, { token, cuerpo, claveDeIdempotencia: clave, esquema: SucesionDeSerieObservadaResponseSchema });
+    },
+
     // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────
     /** API-NUT-01. */
     crearEvaluacion(token: string, asesoradoId: string, cuerpo: CrearEvaluacionRequest, claveDeIdempotencia: string) {
@@ -1013,6 +1069,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-NUT-09. Una versión activada llega desde su instantánea. */
     consultarPlan(token: string, planId: string) {
       return llamar('GET', `/nutrition/plans/${encodeURIComponent(planId)}`, { token, esquema: PlanResponseSchema });
+    },
+    /** API-PLN-01 (WP-EDITORES-PROFESIONAL §8.3): los totales de cada opción, calculados por el servidor. */
+    estimarLasOpcionesDelPlan(token: string, planId: string) {
+      return llamar('GET', `/nutrition/plans/${encodeURIComponent(planId)}/option-estimates`, { token, esquema: EstimacionDeLasOpcionesResponseSchema });
     },
     /** API-NUT-10. Sin Idempotency-Key: concurrencia por la versión que la pantalla mostró. */
     guardarBorrador(token: string, planId: string, cuerpo: EditarBorradorRequest) {

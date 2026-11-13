@@ -209,7 +209,20 @@ export type ConsultaDeProyeccion =
       readonly grano: 'ORIGINAL' | 'WEEK';
     }
   | { readonly clave: 'ANTHROPOMETRY_LONGITUDINAL'; readonly periodo: PeriodoDelAnalisis; readonly metricas: readonly string[] | null }
-  | { readonly clave: Exclude<ClaveDeProyeccion, 'NUTRITION_PRESCRIBED_VS_RECORDED' | 'TRAINING_PROGRESSION_BY_EXERCISE' | 'ANTHROPOMETRY_LONGITUDINAL'>; readonly periodo: PeriodoDelAnalisis };
+  | {
+      readonly clave: 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE';
+      readonly periodo: PeriodoDelAnalisis;
+      readonly exerciseId: string | null;
+      readonly unidad: 'kg' | 'lb' | null;
+      readonly incluirOrientativas: boolean;
+    }
+  | {
+      readonly clave: Exclude<ClaveDeProyeccion, 'NUTRITION_PRESCRIBED_VS_RECORDED' | 'TRAINING_PROGRESSION_BY_EXERCISE' | 'ANTHROPOMETRY_LONGITUDINAL' | 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE'>;
+      readonly periodo: PeriodoDelAnalisis;
+    };
+
+/** El ejercicio del catálogo de ED-74, por su identidad. */
+const UUID_DE_EJERCICIO = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 /** El período por defecto de una proyección: 12 semanas, el horizonte del encargo. */
 export const DIAS_POR_DEFECTO_DE_PROYECCION = 84;
@@ -264,6 +277,18 @@ export function leerConsultaDeProyeccion(query: Record<string, unknown>, paramet
       const metricas = m === undefined ? null : [...new Set(m.split(',').map((x) => x.trim()))];
       if (metricas && (metricas.length === 0 || metricas.length > 3 || metricas.some((x) => !CODIGO_ANTROPOMETRICO.test(x)))) invalida('INVALID_FILTER', 'metric');
       return { clave: k, periodo: leerPeriodo(query, DIAS_POR_DEFECTO_DE_PROYECCION), metricas };
+    }
+    case 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE': {
+      // ED-74 (DL-171): el ejercicio del catálogo (no su versión), la unidad y el interruptor «Incluir las de más de 10 a 12».
+      sinDesconocidos(query, ['periodStart', 'periodEnd', 'exerciseId', 'unit', 'includeOrientative'], 'NOT_APPLICABLE_QUERY_PARAMETER');
+      const exerciseId = texto(query, 'exerciseId') ?? null;
+      if (exerciseId !== null && !UUID_DE_EJERCICIO.test(exerciseId)) invalida('INVALID_FILTER', 'exerciseId');
+      const unidad = texto(query, 'unit') ?? null;
+      if (unidad !== null && unidad !== 'kg' && unidad !== 'lb') invalida('INVALID_FILTER', 'unit');
+      if (exerciseId === null && unidad !== null) invalida('EXERCISE_REQUIRED', 'exerciseId');
+      const orientativas = texto(query, 'includeOrientative') ?? 'false';
+      if (orientativas !== 'true' && orientativas !== 'false') invalida('INVALID_FILTER', 'includeOrientative');
+      return { clave: k, periodo: leerPeriodo(query, DIAS_POR_DEFECTO_DE_PROYECCION), exerciseId: exerciseId?.toLowerCase() ?? null, unidad: unidad as 'kg' | 'lb' | null, incluirOrientativas: orientativas === 'true' };
     }
     default:
       sinDesconocidos(query, ['periodStart', 'periodEnd'], 'NOT_APPLICABLE_QUERY_PARAMETER');
