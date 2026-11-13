@@ -15,12 +15,11 @@
  *   Entrenamiento arriba; Evolución y Perfil abajo. Es una adaptación excepcional y explícita: la píldora queda
  *   como un rectángulo de esquinas redondeadas. Solo si aun así no entran, la letra baja lo justo
  *   (`disposicion-de-la-barra.ts`; el tamaño efectivo, medido, en EVIDENCIA/INICIO-Y-NAVEGACION).
- * - **La altura sale del contenido**, no de un número fijo. La barra informa la suya (`alMedir`) para que el contenido
- *   deje ese espacio libre al final y nada quede tapado.
+ * - **La altura sale del contenido**, no de un número fijo. La barra informa la suya (`alMedir`), y el área que se
+ *   desplaza termina arriba de ella (`lugarDelContenido`, en `disposicion-de-la-barra.ts`): nada queda tapado.
  * - Respeta el área segura de abajo: flota por encima de la barra del sistema, con gestos o con botones.
- * - **Un velo detrás** (DL-118): un degradé del color del fondo, desde el final del espacio libre del contenido hasta el
- *   borde de la pantalla, cubre lo que pasa por detrás de la cápsula y de la barra del sistema. Las cifras y los trazos
- *   ya no compiten con los destinos, y el último contenido, al final del desplazamiento, queda entero por encima.
+ * - **Nada pasa por detrás** (hallazgos 5 y 12 de la 0.25 y la 0.26; antes, el velo de DL-118): el contenido termina
+ *   arriba de la cápsula y se apaga en un fundido corto (`FundidoSobreLaBarra`). Detrás del vidrio queda solo el fondo.
  * - Se oculta mientras el teclado está abierto, para no tapar el campo que se escribe.
  * - Tocar un destino abre su raíz, también desde un detalle de ese mismo destino.
  * - **Una sesión de entrenamiento en curso** (PA-02, 2026-11-02): la barra ya no se oculta en la sesión, y Entrenamiento
@@ -38,15 +37,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useApariencia } from './apariencia';
 import { DibujoDeIcono, type NombreDeIcono, type TamanoDeIcono } from './icono';
-import { disposicionDeLaBarra, tokenDelFondoDeLaBarra } from './disposicion-de-la-barra';
+import { ALTO_DEL_FUNDIDO, disposicionDeLaBarra, SEPARACION_DE_LA_BARRA, tokenDelFondoDeLaBarra } from './disposicion-de-la-barra';
 import { sombrasDeLaBarra } from './receta-de-vidrio';
 import { ZONAS, type Ruta, type Zona } from './navegacion';
 import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
 import { TEXTOS_DE_LA_VUELTA } from './textos-de-la-vuelta';
 import { COLOR, estilosPorTema } from './tema';
 
-/** Lo que la cápsula flota por encima del área segura de abajo, en dp. */
-export const SEPARACION_DE_LA_BARRA = 10;
+export { SEPARACION_DE_LA_BARRA } from './disposicion-de-la-barra';
 
 /** Si el teclado está abierto. En Android solo existen los eventos «Did»; en iOS, «Will» evita el salto. */
 export function useTecladoAbierto(): boolean {
@@ -142,23 +140,23 @@ export function BarraDeZonas({
 }
 
 /**
- * El velo detrás de la barra: del color de abajo del fondo (`fondoAbajo`, DL-170: con `fondo` quedaba una franja sobre
- * el degradé), transparente arriba y casi opaco abajo. App.tsx lo dibuja antes de la cápsula, desde donde termina el
- * espacio libre del contenido. No recibe toques ni lo recorre el lector de pantalla.
+ * El fundido del final del área que se desplaza, justo arriba de la barra flotante: el contenido se apaga en
+ * `fondoAbajo` (el color de abajo del fondo) en lugar de cortarse de golpe. Va dentro del área, pegado a su borde de
+ * abajo, que es donde empieza la cápsula: no tapa nada que no esté ya en el final del desplazamiento, porque ahí va el
+ * aire del contenido. No recibe toques ni lo recorre el lector de pantalla. Con alto contraste no se dibuja.
  */
-export function VeloDeLaBarra({ alto }: { alto: number }) {
+export function FundidoSobreLaBarra() {
   useApariencia();
   return (
-    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: alto }}>
+    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: ALTO_DEL_FUNDIDO }}>
       <Svg width="100%" height="100%">
         <Defs>
-          <LinearGradient id="velo-de-la-barra" x1="0" y1="0" x2="0" y2="1">
+          <LinearGradient id="fundido-sobre-la-barra" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={COLOR.fondoAbajo.slice(0, 7)} stopOpacity={0} />
-            <Stop offset="0.4" stopColor={COLOR.fondoAbajo.slice(0, 7)} stopOpacity={0.9} />
-            <Stop offset="1" stopColor={COLOR.fondoAbajo.slice(0, 7)} stopOpacity={0.97} />
+            <Stop offset="1" stopColor={COLOR.fondoAbajo.slice(0, 7)} stopOpacity={0.9} />
           </LinearGradient>
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#velo-de-la-barra)" />
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#fundido-sobre-la-barra)" />
       </Svg>
     </View>
   );

@@ -931,7 +931,7 @@ test('TEST-AV2-027 · arriba de todo, transparente; con contenido detrás, un fo
   assert.match(app, /if \(ahora === cubiertaAhora\.current\) return;/, 'no en cada evento');
   assert.match(app, /Animated\.timing\(cubierta, \{ toValue: ahora \? 1 : 0, duration: movimientoReducido \? 0 : FUNDIDO_DE_LA_CABECERA, useNativeDriver: true \}\)/);
   assert.match(app, /<\/ScrollView>\s*(\{\}\s*)?<DesvanecidoDeLaCabecera cubierta=\{cubierta\} altoContraste=\{altoContraste\} \/>/, 'el desvanecido, encima del borde de arriba del desplazamiento');
-  assert.match(app, /cubierta=\{cubierta\}\s*altoContraste=\{altoContraste\}\s*\/>\s*<View style=\{estilos\.desplazable\}>/);
+  assert.match(app, /cubierta=\{cubierta\}\s*altoContraste=\{altoContraste\}\s*\/>\s*<View style=\{\[estilos\.desplazable, \{ marginBottom: lugar\.margenAbajo \}\]\}>/);
 });
 
 // ─── TEST-AV2-022 · ninguna tarjeta escribe la superficie a mano (AV2-24) ───────────────────────

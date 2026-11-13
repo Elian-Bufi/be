@@ -47,12 +47,14 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { AVISOS_DE_PRUEBA, type SecretoDeInvitacionRequest } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, View } from 'react-native';
+import { Animated, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AVISOS_DE_PRUEBA_VISIBLES } from './src/ambiente';
 import { api, apiConfigurada, consultarCuentaConSenal, extra, loQueFaltaParaSeguirConTope } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
-import { BarraDeZonas, SEPARACION_DE_LA_BARRA, VeloDeLaBarra } from './src/barra-de-zonas';
+import { BarraDeZonas, FundidoSobreLaBarra } from './src/barra-de-zonas';
+import { disposicionDeLaBarra, lugarDelContenido } from './src/disposicion-de-la-barra';
+import { ZONAS } from './src/navegacion';
 import { almacenSeguro } from './src/almacen-seguro';
 import { esAvisoDeBe, renovar } from './src/avisos';
 import { invitacionDelEnlace } from './src/enlace-de-invitacion';
@@ -236,7 +238,8 @@ function Contenido() {
   const alturas = useRef(new Map<string, number>());
   const [restauracion] = useState(() => crearRestauracionDeAltura());
   // El alto real de la barra inferior, medido: el contenido deja ese espacio libre al final. 0 mientras no se ve.
-  const [altoDeLaBarra, setAltoDeLaBarra] = useState(0);
+  // `null` mientras la barra no se midió: hasta entonces, el contenido cuenta con su alto estimado.
+  const [altoDeLaBarra, setAltoDeLaBarra] = useState<number | null>(null);
   // DL-166 (PV-11): el alto de la fila fija de la sesión, que va apilada sobre la barra. 0 mientras no se ve.
   const [altoDeLaFila, setAltoDeLaFila] = useState(0);
   // DL-133: las novedades sin leer, para la campana; `null` mientras no se sabe. Y si un aviso tocado espera la sesión.
@@ -611,13 +614,12 @@ function Contenido() {
   // DL-166 (PV-11): durante la sesión en vivo, la fila de acciones y la barra van fijas, apiladas y opacas; nada flota.
   const filaDeLaSesion = useFilaFija();
   const enLaSesion = conBarra && filaDeLaSesion !== null;
-  // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación. Fijas, el
-  // contenido deja libre el alto de las dos (la barra fija ya incluye el área segura).
-  const espacioDeLaBarra = enLaSesion
-    ? altoDeLaBarra + altoDeLaFila + 16
-    : conBarra && altoDeLaBarra > 0
-      ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16
-      : 32 + insets.bottom;
+  // Dónde termina el contenido, en un solo lugar para todas las pantallas (hallazgos 5 y 12): el área que se desplaza
+  // termina arriba de la barra, con su alto real (o el estimado, antes de medirla), su separación y el área segura.
+  // Nada pasa por detrás de la barra. Fijas, durante la sesión, quedan fuera la barra y la fila de acciones.
+  const ventana = useWindowDimensions();
+  const filasDeLaBarra = disposicionDeLaBarra({ anchoDePantalla: ventana.width, escalaDeLetra: ventana.fontScale, zonas: ZONAS.map((z) => z.zona) }).filas.length;
+  const lugar = lugarDelContenido({ conBarra, fija: enLaSesion, altoDeLaBarra, altoDeLaFila, insetAbajo: insets.bottom, filas: filasDeLaBarra, escalaDeLetra: ventana.fontScale });
   const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
 
   /**
@@ -659,10 +661,10 @@ function Contenido() {
         cubierta={cubierta}
         altoContraste={altoContraste}
       />
-      <View style={estilos.desplazable}>
+      <View style={[estilos.desplazable, { marginBottom: lugar.margenAbajo }]}>
       <ScrollView
         ref={desplazamiento}
-        contentContainerStyle={[estilos.contenido, { paddingBottom: espacioDeLaBarra }]}
+        contentContainerStyle={[estilos.contenido, { paddingBottom: lugar.rellenoAbajo }]}
         keyboardShouldPersistTaps="handled"
         onScroll={(e) => alDesplazar(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={100}
@@ -831,13 +833,12 @@ function Contenido() {
       </ScrollView>
       {/* Debajo de la línea de la cabecera, el contenido se desvanece en lugar de cortarse de golpe (AV2-T26). */}
       <DesvanecidoDeLaCabecera cubierta={cubierta} altoContraste={altoContraste} />
+      {/* Y arriba de la barra flotante, se apaga en un fundido corto: el área termina donde empieza la cápsula. */}
+      {lugar.fundido && !altoContraste ? <FundidoSobreLaBarra /> : null}
       </View>
-      {/* La barra flota sobre el final del contenido, que deja libre su alto (espacioDeLaBarra). Resalta la raíz donde
-          empezó el camino hasta esta pantalla; en Novedades, ninguna. */}
-      {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
-          que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
-      {conBarra && altoDeLaBarra > 0 && !enLaSesion ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
-      {enLaSesion && filaDeLaSesion ? <FilaFijaDeLaSesion fila={filaDeLaSesion} abajo={altoDeLaBarra} alMedir={setAltoDeLaFila} /> : null}
+      {/* La barra flota debajo del final del área que se desplaza (lugar.margenAbajo). Resalta la raíz donde empezó el
+          camino hasta esta pantalla; en Novedades, ninguna. */}
+      {enLaSesion && filaDeLaSesion ? <FilaFijaDeLaSesion fila={filaDeLaSesion} abajo={altoDeLaBarra ?? 0} alMedir={setAltoDeLaFila} /> : null}
       {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} marcaEnPerfil={conMarcaEnPerfil} fija={enLaSesion} /> : null}
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
@@ -861,9 +862,8 @@ const estilos = estilosPorTema((COLOR) => ({
   raizLisa: { backgroundColor: COLOR.fondo },
   // El desplazamiento y el desvanecido de la cabecera, que va encima de su borde de arriba.
   desplazable: { flex: 1 },
-  // El margen inferior se completa en el contentContainerStyle con el alto de la barra y el inset real del sistema
-  // (safe-area-context): Android es edge-to-edge desde Expo SDK 54 y el ScrollView llega por detrás de la barra de
-  // navegación.
+  // El margen de abajo del área y el relleno final del contenido los decide `lugarDelContenido`, con el alto de la barra
+  // y el inset real del sistema (safe-area-context): Android es edge-to-edge desde Expo SDK 54.
   contenido: { padding: 20 },
   isotipoGrande: { width: 180, height: 180, alignSelf: 'center', marginTop: 16 },
   lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },

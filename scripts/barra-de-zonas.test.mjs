@@ -117,3 +117,54 @@ test('TEST-AV2-007 · durante la sesión la barra es opaca; flotante, de vidrio 
   assert.match(capsula, /boxShadow: sombrasDeLaBarra\(COLOR\)/);
   assert.doesNotMatch(capsula, /elevation|shadowOpacity/, 'sin la sombra de elevation');
 });
+
+// ─── Hallazgos 5 y 12 de la 0.25 y la 0.26: la barra no tapa contenido, en ninguna pantalla ──────────────────────────
+
+const { readdirSync, statSync } = await import('node:fs');
+const APP = readFileSync(new URL('../apps/mobile/App.tsx', import.meta.url), 'utf8');
+const lugar = (extra) => barra.lugarDelContenido({ conBarra: true, fija: false, altoDeLaBarra: 62, altoDeLaFila: 0, insetAbajo: 24, filas: 1, escalaDeLetra: 1, ...extra });
+
+test('el área que se desplaza termina arriba de la barra flotante: su alto, su separación y el área segura quedan fuera', () => {
+  // Medida: 62 dp de cápsula, 10 de separación y 24 de área segura. El contenido deja su aire y se apaga en el fundido.
+  assert.deepEqual(lugar(), { margenAbajo: 62 + barra.SEPARACION_DE_LA_BARRA + 24, rellenoAbajo: barra.AIRE_AL_FINAL, fundido: true });
+  // Con dos filas y letra grande, lo que mide.
+  assert.equal(lugar({ altoDeLaBarra: 130, filas: 2, escalaDeLetra: 2 }).margenAbajo, 130 + 10 + 24);
+  // Antes de medirla, su alto estimado: nunca el primer dibujo con el contenido debajo de la barra.
+  for (const escala of [1, 1.3, 2]) {
+    for (const filas of [1, 2]) {
+      const estimado = barra.altoEstimadoDeLaBarra(filas, escala, false);
+      assert.ok(estimado >= filas * barra.ALTO_DEL_DESTINO + 10, `${filas} filas ×${escala}: ${estimado} dp`);
+      assert.equal(lugar({ altoDeLaBarra: null, filas, escalaDeLetra: escala }).margenAbajo, estimado + 10 + 24);
+    }
+  }
+  assert.ok(barra.altoEstimadoDeLaBarra(1, 2, false) > barra.altoEstimadoDeLaBarra(1, 1, false), 'crece con la letra');
+  // Oculta con el teclado abierto, o sin barra: el área llega abajo y el contenido deja el área segura y su aire.
+  assert.deepEqual(lugar({ altoDeLaBarra: 0 }), { margenAbajo: 0, rellenoAbajo: 2 * barra.AIRE_AL_FINAL + 24, fundido: false });
+  assert.deepEqual(lugar({ conBarra: false }), { margenAbajo: 0, rellenoAbajo: 2 * barra.AIRE_AL_FINAL + 24, fundido: false });
+});
+
+test('durante la sesión, la barra fija (con el área segura) y la fila de acciones quedan fuera del área, sin fundido', () => {
+  assert.deepEqual(lugar({ fija: true, altoDeLaBarra: 90, altoDeLaFila: 64 }), { margenAbajo: 90 + 64, rellenoAbajo: barra.AIRE_AL_FINAL, fundido: false });
+  assert.equal(lugar({ fija: true, altoDeLaBarra: null, altoDeLaFila: 64 }).margenAbajo, barra.altoEstimadoDeLaBarra(1, 1, true) + 24 + 64);
+});
+
+test('un solo lugar: App.tsx decide dónde termina el contenido de todas las pantallas, y ninguna pantalla se desplaza por su cuenta', () => {
+  const app = APP.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.match(app, /const lugar = lugarDelContenido\(\{ conBarra, fija: enLaSesion, altoDeLaBarra, altoDeLaFila, insetAbajo: insets\.bottom, filas: filasDeLaBarra, escalaDeLetra: ventana\.fontScale \}\);/);
+  assert.match(app, /<View style=\{\[estilos\.desplazable, \{ marginBottom: lugar\.margenAbajo \}\]\}>\s*<ScrollView\s+ref=\{desplazamiento\}\s+contentContainerStyle=\{\[estilos\.contenido, \{ paddingBottom: lugar\.rellenoAbajo \}\]\}/);
+  assert.equal((app.match(/<ScrollView\s/g) ?? []).length, 1,'App.tsx tiene una sola área que se desplaza');
+  assert.match(app, /\{lugar\.fundido && !altoContraste \? <FundidoSobreLaBarra \/> : null\}\s*<\/View>/, 'el fundido va dentro del área, en su borde de abajo');
+  assert.match(app, /useState<number \| null>\(null\)/, 'la barra empieza sin medir, no con 0');
+  // Cualquier otro ScrollView de la APK es horizontal o va en un diálogo (Modal), que tapa la barra: ninguna pantalla
+  // arma su propio desplazamiento y se saltea el lugar común.
+  const fuentes = (dir) => readdirSync(dir).flatMap((n) => { const r = new URL(`${n}${statSync(new URL(n, dir)).isDirectory() ? '/' : ''}`, dir); return statSync(r).isDirectory() ? fuentes(r) : /\.tsx$/.test(n) ? [r] : []; });
+  for (const archivo of fuentes(new URL('../apps/mobile/src/', import.meta.url))) {
+    const codigo = readFileSync(archivo, 'utf8');
+    for (const m of codigo.matchAll(/<(ScrollView|FlatList|SectionList)\s[^>]*>/g)) {
+      assert.ok(/\bhorizontal\b/.test(m[0]) || /<Modal\b/.test(codigo), `${archivo.pathname.split('/src/')[1]}: ${m[0].slice(0, 60)} se desplaza por su cuenta`);
+    }
+  }
+  // El fundido, con el color de abajo del fondo, y sin recibir toques.
+  assert.match(BARRA, /export function FundidoSobreLaBarra\(\)[\s\S]*?pointerEvents="none"[\s\S]*?height: ALTO_DEL_FUNDIDO[\s\S]*?COLOR\.fondoAbajo/);
+  assert.doesNotMatch(BARRA, /VeloDeLaBarra/);
+});
