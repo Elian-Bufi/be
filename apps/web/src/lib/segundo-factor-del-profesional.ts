@@ -95,3 +95,31 @@ export function claveParaCopiar(secreto: string): string {
 export function restoDelEnlaceOtpauth(uri: string): string {
   return uri.startsWith('otpauth://') ? uri.slice('otpauth://'.length) : '';
 }
+
+/** Cuánto queda la clave copiada en el portapapeles, como mucho, si no se confirma antes: un minuto. */
+export const TOPE_DE_LA_CLAVE_COPIADA_MS = 60_000;
+
+/**
+ * La clave copiada no se queda en el portapapeles (revisión de la vuelta 2): la clave del autenticador es permanente
+ * una vez confirmada. Se vacía al confirmar el código (dentro del gesto, antes de esperar a la API, que es cuando el
+ * navegador lo permite), al pedir una clave nueva, al salir del paso, o al minuto. Es de mejor esfuerzo: si el navegador
+ * no deja escribir, no pasa nada; y el historial del teclado del teléfono no se alcanza, por eso la nota lo dice.
+ * Sin copia pendiente, vaciar no hace nada: no borra lo que la persona copió de otro lado.
+ */
+export function borradoDelPortapapeles(escribir: (texto: string) => Promise<void>, programar: (alVencer: () => void, ms: number) => unknown, cancelar: (programado: unknown) => void) {
+  let pendiente: { programado: unknown } | null = null;
+  const vaciar = (): void => {
+    if (pendiente === null) return;
+    cancelar(pendiente.programado);
+    pendiente = null;
+    escribir('').catch(() => {});
+  };
+  return {
+    /** Después de copiar la clave: vence al minuto (una copia nueva reinicia el plazo). */
+    alCopiar(): void {
+      if (pendiente !== null) cancelar(pendiente.programado);
+      pendiente = { programado: programar(vaciar, TOPE_DE_LA_CLAVE_COPIADA_MS) };
+    },
+    vaciar,
+  };
+}

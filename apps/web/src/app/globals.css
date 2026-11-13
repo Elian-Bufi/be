@@ -12719,6 +12719,15 @@ details[open] > summary:not([class])::before {
   margin: 0.5rem 0;
 }
 
+/* «Abrir en la aplicación de códigos» y su nota, solo con el dedo: en la computadora, otpauth:// no tiene con qué
+   abrirse (Windows ofrece buscar una aplicación en la Store) y queda el QR. */
+@media not all and (pointer: coarse) {
+  .mfa-abrir-en-la-aplicacion,
+  .mfa-desde-el-telefono {
+    display: none;
+  }
+}
+
 /* El estado de la copia, vacío hasta copiar: sin margen, pero presente, para que el lector lo anuncie. */
 .clave-a-la-vista .nota[role='status']:empty {
   margin: 0;

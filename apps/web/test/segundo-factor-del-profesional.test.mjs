@@ -79,3 +79,64 @@ test('TEST-UF-014 · /pro pone el segundo factor adentro de «Antes de seguir»;
   assert.match(compuerta, /case 'seguir':\s*return <>\{children\}<\/>;/, 'solo el paso «seguir» monta la página');
   assert.equal((compuerta.match(/<>\{children\}<\/>/g) ?? []).length, 2, 'la página se monta solo al seguir, o sin sesión (cada página manda a entrar)');
 });
+
+test('la clave copiada no se queda en el portapapeles: se vacía al confirmar, al pedir otra, al salir o al minuto', async () => {
+  const escrito = [];
+  const programados = new Map();
+  let siguiente = 0;
+  const crear = () =>
+    S.borradoDelPortapapeles(
+      async (texto) => void escrito.push(texto),
+      (alVencer, ms) => {
+        assert.equal(ms, S.TOPE_DE_LA_CLAVE_COPIADA_MS);
+        programados.set(++siguiente, alVencer);
+        return siguiente;
+      },
+      (id) => programados.delete(id),
+    );
+  // Sin copia pendiente, vaciar no hace nada: no se borra lo que la persona copió de otro lado.
+  const p = crear();
+  p.vaciar();
+  assert.deepEqual(escrito, []);
+  // Copiada y confirmada: se vacía una vez, y el minuto ya no corre.
+  p.alCopiar();
+  assert.equal(programados.size, 1);
+  p.vaciar();
+  p.vaciar();
+  assert.deepEqual(escrito, ['']);
+  assert.equal(programados.size, 0);
+  // Copiada y sin confirmar: al minuto se vacía. Copiar de nuevo reinicia el plazo, sin dos relojes.
+  p.alCopiar();
+  p.alCopiar();
+  assert.equal(programados.size, 1);
+  [...programados.values()][0]();
+  assert.deepEqual(escrito, ['', '']);
+  // Si el navegador no deja escribir, no rompe nada.
+  const q = S.borradoDelPortapapeles(() => Promise.reject(new Error('sin permiso')), () => 1, () => {});
+  q.alCopiar();
+  q.vaciar();
+  await new Promise((r) => setImmediate(r));
+  assert.equal(S.TOPE_DE_LA_CLAVE_COPIADA_MS, 60_000);
+
+  // La pantalla: al confirmar se vacía antes de esperar a la API; una clave nueva vacía y borra «Clave copiada.».
+  const pantalla = leer('src/components/segundo-factor-del-profesional.tsx');
+  const configuracion = pantalla.slice(pantalla.indexOf('export function PasoDeConfiguracion('));
+  assert.match(configuracion, /async function confirmar\(e: FormEvent\) \{\s*e\.preventDefault\(\);\s*if \(enviando\) return;\s*(?:\/\/[^\n]*\n\s*)*portapapeles\.current\?\.vaciar\(\);/);
+  const confirmar = configuracion.slice(configuracion.indexOf('async function confirmar('));
+  assert.ok(confirmar.indexOf('portapapeles.current?.vaciar()') < confirmar.indexOf('await '), 'se vacía antes del await');
+  assert.match(configuracion, /async function empezar\(\) \{[\s\S]*?portapapeles\.current\?\.vaciar\(\);\s*setCopiada\(null\);[\s\S]*?await api\.iniciarConfiguracionDeLaSesion/);
+  assert.match(configuracion, /await navigator\.clipboard\.writeText\(claveParaCopiar\(secreto\)\);\s*portapapeles\.current\?\.alCopiar\(\);/);
+  assert.match(configuracion, /return \(\) => alSalir\?\.vaciar\(\);/, 'al salir del paso');
+  assert.match(C.configuracion.claveCopiada, /vaciar el portapapeles/);
+});
+
+test('«Abrir en la aplicación de códigos» es el camino principal en el teléfono y no aparece en la computadora', () => {
+  const pantalla = leer('src/components/segundo-factor-del-profesional.tsx');
+  const acciones = pantalla.slice(pantalla.indexOf('<div className="clave-a-la-vista">'));
+  // Primero abrir; copiar, como alternativa.
+  assert.ok(acciones.indexOf('mfa-abrir-en-la-aplicacion') < acciones.indexOf('copiarLaClave(datos.secret)'));
+  assert.match(acciones, /className="boton boton--enlace" onClick=\{\(\) => void copiarLaClave\(datos\.secret\)\}/);
+  assert.match(acciones, /<p className="nota mfa-desde-el-telefono">\{C\.configuracion\.desdeElTelefono\}<\/p>/);
+  const css = readFileSync(join(WEB, 'src/app/globals.css'), 'utf8');
+  assert.match(css, /@media not all and \(pointer: coarse\) \{\s*\.mfa-abrir-en-la-aplicacion,\s*\.mfa-desde-el-telefono \{\s*display: none;\s*\}\s*\}/);
+});

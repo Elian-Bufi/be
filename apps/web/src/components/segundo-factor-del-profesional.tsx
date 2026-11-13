@@ -26,7 +26,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { api } from '../lib/api';
 import { CERRANDO_SESION, useCerrarSesion } from '../lib/cerrar-sesion';
 import { horaDelDia } from '../lib/formato';
-import { alEnviarUnCodigo, claveEnGrupos, claveParaCopiar, pasoDelSegundoFactor, restoDelEnlaceOtpauth, type PasoDelSegundoFactor } from '../lib/segundo-factor-del-profesional';
+import { alEnviarUnCodigo, borradoDelPortapapeles, claveEnGrupos, claveParaCopiar, pasoDelSegundoFactor, restoDelEnlaceOtpauth, type PasoDelSegundoFactor } from '../lib/segundo-factor-del-profesional';
 import { EsperandoSesion, useSesion } from '../lib/sesion';
 import { useSesionPerdida } from '../lib/sesion-requerida';
 import { CodigoQr } from './codigo-qr';
@@ -341,6 +341,17 @@ export function PasoDeConfiguracion({
   /** Si se copió la clave: `si`, `no` (sin permiso del navegador: se copia a mano) o `null` antes de intentarlo. */
   const [copiada, setCopiada] = useState<'si' | 'no' | null>(null);
   const campo = useRef<HTMLInputElement>(null);
+  // La clave copiada se vacía del portapapeles al confirmar, al pedir otra, al salir del paso o al minuto.
+  const portapapeles = useRef<ReturnType<typeof borradoDelPortapapeles> | null>(null);
+  portapapeles.current ??= borradoDelPortapapeles(
+    (texto) => (navigator.clipboard ? navigator.clipboard.writeText(texto) : Promise.resolve()),
+    (alVencer, ms) => window.setTimeout(alVencer, ms),
+    (programado) => window.clearTimeout(programado as number),
+  );
+  useEffect(() => {
+    const alSalir = portapapeles.current;
+    return () => alSalir?.vaciar();
+  }, []);
 
   /**
    * Copia la clave tal como se ve, sin los espacios de los grupos ni el relleno del final, como la piden las aplicaciones
@@ -349,6 +360,7 @@ export function PasoDeConfiguracion({
   async function copiarLaClave(secreto: string) {
     try {
       await navigator.clipboard.writeText(claveParaCopiar(secreto));
+      portapapeles.current?.alCopiar();
       setCopiada('si');
     } catch {
       setCopiada('no');
@@ -358,6 +370,9 @@ export function PasoDeConfiguracion({
   async function empezar() {
     if (enviando) return;
     setAviso(null);
+    // Una clave nueva: la copia anterior ya no sirve, ni su «Clave copiada.».
+    portapapeles.current?.vaciar();
+    setCopiada(null);
     setEnviando(true);
     const r = await api.iniciarConfiguracionDeLaSesion(token);
     setEnviando(false);
@@ -371,6 +386,8 @@ export function PasoDeConfiguracion({
   async function confirmar(e: FormEvent) {
     e.preventDefault();
     if (enviando) return;
+    // Dentro del gesto y antes de esperar a la API: es cuando el navegador deja escribir en el portapapeles.
+    portapapeles.current?.vaciar();
     setAviso(null);
     if (!normalizarCodigoDelAutenticador(codigo)) {
       setError(C.codigo.formaInvalida);
@@ -465,18 +482,20 @@ export function PasoDeConfiguracion({
                   <p className="clave-del-autenticador">
                     <code>{claveEnGrupos(datos.secret)}</code>
                   </p>
+                  {/* En el teléfono, abrir la aplicación es el camino principal; copiar, la alternativa. En la computadora
+                      el enlace no tiene con qué abrirse: no se muestra, y queda el QR (globals.css, pointer: coarse). */}
                   <div className="acciones">
-                    <button type="button" className="boton boton--secundario" onClick={() => void copiarLaClave(datos.secret)}>
-                      {C.configuracion.copiarLaClave}
-                    </button>
-                    <a className="boton boton--secundario" href={`otpauth://${restoDelEnlaceOtpauth(datos.otpauthUri)}`}>
+                    <a className="boton boton--secundario mfa-abrir-en-la-aplicacion" href={`otpauth://${restoDelEnlaceOtpauth(datos.otpauthUri)}`}>
                       {C.configuracion.abrirEnLaAplicacion}
                     </a>
+                    <button type="button" className="boton boton--enlace" onClick={() => void copiarLaClave(datos.secret)}>
+                      {C.configuracion.copiarLaClave}
+                    </button>
                   </div>
                   <p className="nota" role="status" aria-live="polite">
                     {copiada === 'si' ? C.configuracion.claveCopiada : copiada === 'no' ? C.configuracion.noSePudoCopiar : ''}
                   </p>
-                  <p className="nota">{C.configuracion.desdeElTelefono}</p>
+                  <p className="nota mfa-desde-el-telefono">{C.configuracion.desdeElTelefono}</p>
                   <p className="nota">{C.configuracion.cuenta(datos.accountName, datos.issuer)}</p>
                   <p className="nota">{C.configuracion.datosDeLaClave}</p>
                 </div>
