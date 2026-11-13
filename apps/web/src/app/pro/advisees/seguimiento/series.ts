@@ -108,6 +108,8 @@ type Respuesta = Awaited<ReturnType<typeof api.proyeccion>>;
 function serieDe(r: Respuesta): SerieAnalitica | null {
   if (!r.ok || !r.datos.data.result) return null;
   const res = r.datos.data.result;
+  // La estimación de fuerza (ED-74) no es una serie analítica: tiene su propia lectura, con la cuenta de cada punto.
+  if (res.kind === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE') return null;
   return res.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' ? res.recorded : res.kind === 'TRAINING_PROGRESSION_BY_EXERCISE' ? (res.progression?.series ?? null) : (res.series[0] ?? null);
 }
 

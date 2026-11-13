@@ -18,8 +18,9 @@
  *
  * Nada de esto califica: dice cómo se cargó, no si estuvo bien ni si fue mucho o poco.
  */
-import type { EjecucionDeEntrenamiento, EjercicioRegistradoEntrada, RegistroDeEjecucion, SerieEjecutadaApi } from './contratos-entrenamiento';
+import { CAMPOS_CON_ORIGEN, type EjecucionDeEntrenamiento, type EjercicioRegistradoEntrada, type RegistroDeEjecucion, type SerieEjecutadaApi } from './contratos-entrenamiento';
 import { ETIQUETA_DE_NIVEL_DE_DETALLE, etiquetaDeCondicionRegistrada, registroVigente } from './copy-entrenamiento';
+import { serializacionCanonica } from './versionado';
 
 /** La serie se registró con un toque, con los valores del plan que la persona tenía a la vista. */
 export const seCargoComoElPlan = (s: Pick<SerieEjecutadaApi, 'recordedAs'>): boolean => s.recordedAs === 'AS_PLANNED';
@@ -27,9 +28,13 @@ export const seCargoComoElPlan = (s: Pick<SerieEjecutadaApi, 'recordedAs'>): boo
 /**
  * La serie campo por campo, sin nada que no esté en el contrato. Los dos campos de DL-161 van solo si dicen algo: la
  * marca, si es `AS_PLANNED`; la duración, si es un número. Lo demás se copia tal cual, sin completar ni reinterpretar.
+ * La procedencia por campo (ED-70) va con sus claves en el orden del contrato y solo si tiene alguna: un objeto vacío no
+ * se guarda, como lo que no existe (DL-161 I-1). Así una serie sin procedencia queda idéntica a las de antes, y la
+ * APK 0.24.0-candidata.1, que no la conoce, sigue leyendo lo que ella registra.
  */
 export function serieEnSuForma(s: SerieEjecutadaApi): SerieEjecutadaApi {
   const { setIndex, load, completedRepetitions, rir, perceivedExertion } = s;
+  const origenes = origenesEnSuForma(s.fieldOrigins);
   return {
     setIndex,
     load,
@@ -38,7 +43,15 @@ export function serieEnSuForma(s: SerieEjecutadaApi): SerieEjecutadaApi {
     perceivedExertion,
     ...(s.recordedAs === 'AS_PLANNED' ? { recordedAs: 'AS_PLANNED' as const } : {}),
     ...(typeof s.durationSeconds === 'number' ? { durationSeconds: s.durationSeconds } : {}),
+    ...(origenes ? { fieldOrigins: origenes } : {}),
   };
+}
+
+/** La procedencia por campo en el orden del contrato, o `undefined` si no dice nada (ED-70). */
+function origenesEnSuForma(o: SerieEjecutadaApi['fieldOrigins']): SerieEjecutadaApi['fieldOrigins'] {
+  if (!o) return undefined;
+  const conClave = CAMPOS_CON_ORIGEN.filter((c) => o[c] !== undefined);
+  return conClave.length === 0 ? undefined : Object.fromEntries(conClave.map((c) => [c, o[c]]));
 }
 
 /** Los ejercicios de un registro con cada serie en su forma (`serieEnSuForma`). Un ejercicio resumido queda igual. */
@@ -47,13 +60,57 @@ export function ejerciciosEnSuForma(ejercicios: readonly EjercicioRegistradoEntr
 }
 
 /**
- * Los ejercicios sin la marca de cómo se cargó cada serie. Corregir es cambiar un dato (B10-06:879-884): una corrección
- * que solo cambia la marca no rectifica lo que se hizo, y la serie se ve igual en «Corrección vigente».
+ * Los ejercicios sin la marca de cómo se cargó cada serie ni la procedencia de sus valores. Corregir es cambiar un dato
+ * (B10-06:879-884): una corrección que solo cambia la marca, o solo de dónde salió un valor (ED-70, como DL-161 I-4), no
+ * rectifica lo que se hizo, y la serie se ve igual en «Corrección vigente».
  */
 export function ejerciciosSinLaMarca(ejercicios: readonly EjercicioRegistradoEntrada[]): EjercicioRegistradoEntrada[] {
-  // `TYPED` no se guarda (`serieEnSuForma`): marcar todas así es quitarles la marca.
-  return ejerciciosEnSuForma(ejercicios).map((e) => ('sets' in e ? { ...e, sets: e.sets.map((s) => serieEnSuForma({ ...s, recordedAs: 'TYPED' })) } : e));
+  // `TYPED` y una procedencia vacía no se guardan (`serieEnSuForma`): marcar todas así es quitarles las dos cosas.
+  return ejerciciosEnSuForma(ejercicios).map((e) => ('sets' in e ? { ...e, sets: e.sets.map((s) => serieEnSuForma({ ...s, recordedAs: 'TYPED', fieldOrigins: undefined })) } : e));
 }
+
+/**
+ * ED-70 (TEST-EDP-060): en una corrección del profesional, la procedencia de cada valor se conserva o se saca; nunca se
+ * cambia ni se agrega. Compara cada serie con la del registro que hoy rige, por la prescripción y el número de serie:
+ * - un valor que no cambió puede llevar la misma clave que tenía en la serie vigente, o ninguna;
+ * - un valor que cambió, o el de una serie nueva (no tiene con qué compararse), va sin clave.
+ * Así el profesional no le atribuye a la persona lo que vino del plan, de una serie tildada (`AS_PLANNED`) o de una
+ * serie de antes de la procedencia (05:9209-9224; RM-23, RM-24, RM-33), y no le agrega el campo a una serie que una APK
+ * anterior registró sin él. Los valores se comparan en su forma canónica: la carga vigente sale de una columna JSONB,
+ * que guarda sus claves en otro orden que el pedido. Devuelve los lugares, relativos a la corrección. La API no recalcula
+ * el plan para verificar `PLAN` (como DL-161 I-3).
+ */
+export type ProblemaDeProcedencia = {
+  readonly code: 'FIELD_ORIGIN_PERSON_ON_CHANGED_VALUE' | 'FIELD_ORIGIN_NOT_PRESERVED';
+  readonly path: string;
+};
+
+export function origenesQueAtribuyenALaPersona(
+  corregidos: readonly EjercicioRegistradoEntrada[],
+  vigentes: readonly EjercicioRegistradoEntrada[],
+): ProblemaDeProcedencia[] {
+  const antes = new Map<string, SerieEjecutadaApi>();
+  for (const e of vigentes) if ('sets' in e) for (const s of e.sets) antes.set(`${e.prescriptionId}|${s.setIndex}`, s);
+  const problemas: ProblemaDeProcedencia[] = [];
+  corregidos.forEach((e, i) => {
+    if (!('sets' in e)) return;
+    e.sets.forEach((s, j) => {
+      const previa = antes.get(`${e.prescriptionId}|${s.setIndex}`);
+      for (const c of CAMPOS_CON_ORIGEN) {
+        const origen = s.fieldOrigins?.[c];
+        if (origen === undefined) continue;
+        const path = `exercises[${i}].sets[${j}].fieldOrigins.${c}`;
+        const igual = previa !== undefined && mismoValor(previa[c], s[c]);
+        if (!igual) problemas.push({ code: origen === 'PERSON' ? 'FIELD_ORIGIN_PERSON_ON_CHANGED_VALUE' : 'FIELD_ORIGIN_NOT_PRESERVED', path });
+        else if (previa.fieldOrigins?.[c] !== origen) problemas.push({ code: 'FIELD_ORIGIN_NOT_PRESERVED', path });
+      }
+    });
+  });
+  return problemas;
+}
+
+/** Dos valores de una serie son el mismo sin importar el orden de las claves (la carga es `{ value, unit }`). */
+const mismoValor = (a: unknown, b: unknown): boolean => serializacionCanonica(a ?? null) === serializacionCanonica(b ?? null);
 
 // ─── El nivel de detalle de una ejecución ───────────────────────────────────────────────────────────────────
 

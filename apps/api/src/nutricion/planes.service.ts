@@ -16,7 +16,10 @@ import {
   problemasDeBorrador,
   problemasParaActivar,
   serializacionCanonica,
+  METODO_DE_CALCULO_NUTRICIONAL,
+  type ContenidoDeInstantanea,
   type ContenidoDePlan,
+  type EstimacionDeLasOpcionesResponse,
   type EstadoDeVersionConDescarte,
   type Procedencia,
   type ValidationIssue,
@@ -42,6 +45,7 @@ import { EvaluacionesService } from './evaluaciones.service';
 import { registrarEventoDeNutricion } from './eventos';
 import { INCLUIR_PLAN, nombreVisibleDe, nombresDeCatalogo, versionDePlanApi, type VersionConPlan } from './lectura-nutricion';
 import { conOpcionesDeReceta, instantaneaConRecetas, recetasDelBorrador } from './opciones-de-receta';
+import { estimacionDeLaInstantanea, estimacionDelBorrador } from './totales-del-plan';
 
 type Tx = Prisma.TransactionClient;
 
@@ -298,6 +302,36 @@ export class PlanesService {
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
         }
         return { data: await this.leerVersion(tx, v.id, v.plan.profesionalId, titular !== actor.identidadId) };
+      },
+    });
+  }
+
+  // ─── API-PLN-01 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * Los totales del plan calculados por el servidor (TB-38; ED-31 y ED-D6): la estimación de cada opción para las porciones
+   * del plan, con la composición que usó cada ítem. Solo el profesional del plan, con el PDP de Nutrición: lo ajeno, lo
+   * descartado o lo inexistente es el mismo 404. La persona no la recibe.
+   */
+  estimacionesDeLasOpciones(actor: ActorAutenticado, planId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<EstimacionDeLasOpcionesResponse> {
+    sinParametrosDeQuery(query);
+    const recurso = { tipo: 'VersionDePlanNutricional', id: planId };
+    return this.ejecutor.leer({
+      operacion: 'API-PLN-01',
+      casoDeUso: 'UC-P10',
+      actor,
+      ctx,
+      recursoIntentado: recurso,
+      lectura: async (tx) => {
+        const v = esUuid(planId) ? await tx.versionDePlanNutricional.findUnique({ where: { id: planId }, include: INCLUIR_PLAN }) : null;
+        if (!v || !esVersionVisible(v.estado)) throw this.ejecutor.noRevelable({ operacion: 'API-PLN-01', actorId: actor.identidadId, recurso }, ctx);
+        const titular = v.plan.asesoradoId;
+        await this.decidir(tx, 'API-PLN-01', actor, actor.identidadId, titular, recurso, ctx);
+        if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-PLN-01', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
+        const activada = v.estado === 'ACTIVADA' && v.instantanea;
+        const dayTypes = activada
+          ? estimacionDeLaInstantanea(v.instantanea!.contenido as unknown as ContenidoDeInstantanea)
+          : await estimacionDelBorrador(tx, this.catalogo, v.plan.profesionalId, v.contenido as unknown as ContenidoDePlan);
+        return { data: { planId: v.id, version: `v${v.version}`, state: activada ? 'ACTIVATED' : 'DRAFT', method: METODO_DE_CALCULO_NUTRICIONAL, dayTypes } };
       },
     });
   }

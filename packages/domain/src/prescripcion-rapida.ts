@@ -234,3 +234,84 @@ export function aplicarPrescripcion(p: PrescripcionEntrada, l: PrescripcionLeida
     },
   };
 }
+
+// ─── ED-13 (WP-EDITORES-PROFESIONAL; DL-167) · la prescripción habitual ─────────────────────────────────────────────
+
+/** Una prescripción habitual, como la guarda API-HAB-07: lo de una prescripción menos el ejercicio, la nota y las cargas. */
+export interface ContenidoDePrescripcionHabitual {
+  readonly sets: readonly Omit<SerieEntrada, 'suggestedLoad'>[];
+  readonly intensity: PrescripcionEntrada['intensity'];
+  readonly restSeconds?: number | null;
+  readonly loadBasis?: PrescripcionEntrada['loadBasis'];
+  readonly repetitionBasis?: PrescripcionEntrada['repetitionBasis'];
+  readonly professionalParameters?: PrescripcionEntrada['professionalParameters'];
+}
+
+/**
+ * «Estas series, como prescripción habitual» (ED-12 y ED-13): lo que se guarda de un ejercicio. Las cargas no viajan
+ * (son de cada persona y de cada ejercicio, ED-D2 y A05; la API las rechaza con un 400), ni la nota del ejercicio ni
+ * las de sus series, que pueden nombrar a la persona. `seQuita` dice antes qué no se guarda.
+ */
+export function prescripcionHabitualDe(p: PrescripcionEntrada): { readonly contenido: ContenidoDePrescripcionHabitual; readonly seQuita: readonly string[] } {
+  const seQuita: string[] = [];
+  if (p.suggestedLoad || p.sets.some((s) => !!s.suggestedLoad)) seQuita.push('las cargas, que son de cada persona y de cada ejercicio');
+  if (p.note || p.sets.some((s) => !!s.note)) seQuita.push('las notas, que pueden nombrar a la persona');
+  const sets = p.sets.map(({ suggestedLoad: _carga, note: _nota, ...s }) => s);
+  const contenido: ContenidoDePrescripcionHabitual = {
+    sets,
+    intensity: p.intensity,
+    ...(p.restSeconds !== undefined ? { restSeconds: p.restSeconds } : {}),
+    ...(p.loadBasis !== undefined ? { loadBasis: p.loadBasis } : {}),
+    ...(p.repetitionBasis !== undefined ? { repetitionBasis: p.repetitionBasis } : {}),
+    ...(p.professionalParameters && p.professionalParameters.length > 0 ? { professionalParameters: p.professionalParameters } : {}),
+  };
+  return { contenido, seQuita };
+}
+
+/**
+ * Aplica una prescripción habitual a un ejercicio (DJ-8, como un preset de BE): las series pasan a ser las de la
+ * habitual, con sus objetivos por serie; cada serie que queda conserva su carga y su nota, y la carga general se
+ * conserva y queda para revisar si cambian las repeticiones. El criterio, el descanso y las bases pasan a ser los de la
+ * habitual; lo que se pierde se nombra antes.
+ */
+export function aplicarPrescripcionHabitual(p: PrescripcionEntrada, h: ContenidoDePrescripcionHabitual): { readonly prescripcion: PrescripcionEntrada; readonly cambio: CambioDelEjercicio } {
+  const sePierde: string[] = [...loQueSePierdeAlQuitarSeries(p.sets, h.sets.length)];
+  if (p.intensity?.criterion === 'PERCENT_RM' && h.intensity?.criterion !== 'PERCENT_RM') {
+    const ref = p.intensity.target.reference?.description;
+    sePierde.unshift(`Su criterio % RM (${numero(p.intensity.target.value)} %${ref ? `, referencia «${ref}»` : ''}) pasa a ser ${intensidadDe(h.intensity) ?? 'sin criterio'}`);
+  }
+  const sets: SerieEntrada[] = h.sets.map((s, n) => {
+    const antes = p.sets[n];
+    const nueva: SerieEntrada = structuredClone(s) as SerieEntrada;
+    // Los objetivos propios de la serie pasan a ser los de la habitual: si cambian, se nombran antes.
+    if (antes?.rir !== undefined && antes.rir !== null && antes.rir !== nueva.rir) sePierde.push(`Serie ${n + 1}: su RIR propio (${numero(antes.rir)}) pasa a ser el de la prescripción habitual`);
+    if (antes?.restSeconds !== undefined && antes.restSeconds !== null && antes.restSeconds !== nueva.restSeconds) sePierde.push(`Serie ${n + 1}: su descanso propio (${textoDelDescanso(antes.restSeconds)}) pasa a ser el de la prescripción habitual`);
+    if (antes?.note && !nueva.note) nueva.note = antes.note;
+    if (antes?.suggestedLoad !== undefined) nueva.suggestedLoad = antes.suggestedLoad;
+    return nueva;
+  });
+  const prescripcion: PrescripcionEntrada = {
+    ...p,
+    sets,
+    intensity: h.intensity ? structuredClone(h.intensity) : null,
+    ...(h.restSeconds !== undefined ? { restSeconds: h.restSeconds } : {}),
+    ...(h.loadBasis !== undefined ? { loadBasis: h.loadBasis } : {}),
+    ...(h.repetitionBasis !== undefined ? { repetitionBasis: h.repetitionBasis } : {}),
+    ...(h.professionalParameters !== undefined ? { professionalParameters: structuredClone(h.professionalParameters) } : {}),
+  };
+  const repsAntes = repsDelEjercicio(p);
+  const repsDespues = repsDelEjercicio(prescripcion) ?? 'Sin dato';
+  const conCargas = !!p.suggestedLoad || p.sets.some((s) => !!s.suggestedLoad);
+  const revisar = conCargas && repsAntes !== null && repsAntes !== repsDespues ? COPY_PRESCRIPCION_RAPIDA.escritaPara(repsAntes) : null;
+  return {
+    prescripcion,
+    cambio: {
+      series: { antes: p.sets.length, despues: sets.length },
+      repeticiones: { antes: repsAntes, despues: repsDespues },
+      intensidad: { antes: intensidadDe(p.intensity), despues: intensidadDe(prescripcion.intensity) },
+      descanso: { antes: p.restSeconds ?? null, despues: prescripcion.restSeconds ?? null },
+      carga: { texto: p.suggestedLoad ? `${numero(p.suggestedLoad.value)} ${p.suggestedLoad.unit}` : null, revisar },
+      sePierde,
+    },
+  };
+}

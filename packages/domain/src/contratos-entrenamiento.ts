@@ -603,6 +603,12 @@ export const OcurrenciasDelPeriodoResponseSchema = z.strictObject({
 export type OcurrenciasDelPeriodoResponse = z.infer<typeof OcurrenciasDelPeriodoResponseSchema>;
 
 // ─── Registro de ejecución (API-TRN-15 a 20) ────────────────────────────────────────────────────
+/** ED-70: el origen de un valor de una serie registrada: lo escribió la persona o vino del plan. */
+export const OrigenDelValorSchema = z.enum(['PERSON', 'PLAN']);
+export type OrigenDelValor = z.infer<typeof OrigenDelValorSchema>;
+/** Los tres valores de la serie que llevan su origen (ED-70), en el orden del contrato. */
+export const CAMPOS_CON_ORIGEN = ['load', 'completedRepetitions', 'rir'] as const;
+export type CampoConOrigen = (typeof CAMPOS_CON_ORIGEN)[number];
 /**
  * 09v10:1055-1066. La carga lleva unidad; reps, RIR y esfuerzo percibido son opcionales y **nunca se infieren**
  * (INV-06-152; TEST-PRJ-004). El esfuerzo percibido es dato de ejecución, jamás de prescripción (REG-06-129); su
@@ -622,6 +628,15 @@ export const SerieEjecutadaSchema = z.strictObject({
   recordedAs: z.enum(['TYPED', 'AS_PLANNED']).optional(),
   /** Cuánto duró la serie, en segundos (DL-161): la midió el cronómetro o la escribió la persona; nunca se infiere. */
   durationSeconds: z.number().int().nonnegative().max(36000).nullable().optional(),
+  /**
+   * ED-70 (WP-EDITORES-PROFESIONAL; DL-171, DJ-2): de dónde salió cada valor de la serie. `PERSON`: lo escribió la
+   * persona; `PLAN`: vino del plan al tildar. Solo para la carga, las repeticiones y el RIR que tengan valor. Ausente: la
+   * serie se registró antes de la procedencia; una clave que falta: no se sabe quién escribió ese valor. No es la
+   * `procedencia` de cada escritura (T-06-23): esa dice la operación, la superficie y el pedido.
+   */
+  fieldOrigins: z
+    .strictObject({ load: OrigenDelValorSchema.optional(), completedRepetitions: OrigenDelValorSchema.optional(), rir: OrigenDelValorSchema.optional() })
+    .optional(),
 });
 export type SerieEjecutadaApi = z.infer<typeof SerieEjecutadaSchema>;
 /** Cómo se cargó una serie; ausente se lee como `TYPED` (DL-161). */
