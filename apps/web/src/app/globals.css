@@ -17429,11 +17429,6 @@ p.cifra-del-espacio__desglose {
   font-weight: 600;
 }
 
-.serie-observada__campos input[type='date'] {
-  justify-self: start;
-  min-width: 12rem;
-}
-
 /* El RIR observado: los seis segmentos entran en el cajón («Más de 2» se cortaba). */
 .serie-observada__rir .segmento {
   padding-inline: 0.6rem;
@@ -17805,4 +17800,151 @@ html:has(.estacion:not([data-en-el-asistente])) {
   border: 1px solid var(--borde);
   color: var(--enlace);
   background: var(--superficie);
+}
+
+/* ─── PG-14 (WP-PULIDO-GRANDES): el campo de fecha propio, en palabras y con la semana desde el lunes ───────────── */
+.campo-de-fecha {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.campo-de-fecha__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  min-width: 11rem;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.campo-de-fecha__boton svg {
+  flex: none;
+  color: var(--tenue);
+}
+
+.campo-de-fecha__boton:focus-visible {
+  outline: 2px solid var(--enlace);
+  outline-offset: 2px;
+}
+
+.campo-de-fecha__vacio {
+  color: var(--tenue);
+}
+
+.campo--error .campo-de-fecha__boton,
+.campo-de-fecha__boton[aria-invalid='true'] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.campo-de-fecha__calendario {
+  position: absolute;
+  z-index: 40;
+  inset-block-start: calc(100% + 0.35rem);
+  inset-inline-start: 0;
+  width: 19rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  box-shadow: var(--sombra);
+}
+
+.campo-de-fecha__mes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.campo-de-fecha__titulo {
+  margin: 0;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.campo-de-fecha__grilla {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.campo-de-fecha__grilla th {
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tenue);
+  text-align: center;
+}
+
+.campo-de-fecha__grilla td {
+  padding: 1px;
+  text-align: center;
+}
+
+.campo-de-fecha__dia {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.campo-de-fecha__dia:hover:not([aria-disabled='true']) {
+  border-color: var(--borde-control);
+}
+
+.campo-de-fecha__dia[aria-current='date'] {
+  border-color: var(--enlace);
+  font-weight: 700;
+}
+
+.campo-de-fecha__dia[aria-pressed='true'] {
+  background: var(--boton-fondo);
+  color: var(--boton-texto);
+  border-color: var(--boton-fondo);
+}
+
+.campo-de-fecha__dia[aria-disabled='true'] {
+  color: var(--tenue);
+  opacity: 0.55;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.campo-de-fecha__dia:focus-visible {
+  outline: 2px solid var(--enlace);
+  outline-offset: 1px;
+}
+
+.campo-de-fecha__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.campo-de-fecha__pie:empty {
+  display: none;
+}
+
+.serie-observada__campos .campo-de-fecha {
+  justify-self: start;
 }

@@ -10,7 +10,7 @@
  * - El ciclo que se acordó la última vez va como dato, nunca como opción elegida.
  */
 import { useId } from 'react';
-import { Campo } from '../../../components/formulario';
+import { CampoDeFecha } from '../../../components/campo-de-fecha';
 import { diaDelAnioEnCurso, nombreDelDiaDeLaSemana } from '../../../lib/formato';
 import { claveDeLaEleccion, COPY_CUANDO, fechaQueResulta, opcionesDeLaPregunta, type EleccionDeLaProxima, type MomentoDeLaPregunta } from '../../../lib/cuando-la-revisas';
 import { ErrorDelCampo } from './revision-en-preparacion';
@@ -77,13 +77,13 @@ export function CuandoLaRevisas({
         ))}
       </div>
       {eleccion.tipo === 'FECHA' ? (
-        <Campo
+        <CampoDeFecha
           id={`${id}-fecha`}
           etiqueta={COPY_CUANDO.laFecha}
-          type="date"
           value={eleccion.fecha}
+          hoy={hoy}
           ayuda={eleccion.yaEstaba ? COPY_CUANDO.yaEstaba : undefined}
-          onChange={(e) => alElegir({ tipo: 'FECHA', fecha: e.target.value })}
+          onChange={(fecha) => alElegir({ tipo: 'FECHA', fecha })}
         />
       ) : null}
       {efecto ? (

@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 const D = await import('../src/lib/descarga-de-la-app.ts');
 const N = await import('../src/lib/no-encontrada.ts');
+const F = await import('../src/lib/fecha-en-palabras.ts');
 const { terminosProhibidosEn } = await import('@be/domain');
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -127,4 +128,86 @@ test('TEST-PG-006 · la página no encontrada, en castellano y con sus dos salid
   assert.doesNotMatch(p, /could not be found|not found|404:/i);
   assert.doesNotMatch(p, /redirect|useRouter|router\.|fetch\(|api\.|usePathname|location/);
   for (const t of Object.values(N.COPY_NO_ENCONTRADA)) assert.deepEqual(terminosProhibidosEn(t), [], t);
+});
+
+// ── TEST-PG-013 · PG-14 ────────────────────────────────────────────────────────────────────────────────────────
+
+test('TEST-PG-013 · ningún campo de fecha nativo en el website del profesional', () => {
+  const pro = archivos(join(WEB, 'src/app/pro'));
+  assert.ok(pro.length > 50);
+  const nativos = pro.filter((r) => /type=["']date["']|type=\{["']date["']\}/.test(readFileSync(r, 'utf8'))).map(nombre);
+  assert.deepEqual(nativos, [], 'cada campo de fecha es CampoDeFecha');
+  const usos = pro.flatMap((r) => [...readFileSync(r, 'utf8').matchAll(/<CampoDeFecha\b/g)].map(() => nombre(r)));
+  assert.ok(usos.length >= 14, `se esperaban los catorce campos y hay ${usos.length}`);
+  for (const r of ['src/app/pro/advisees/control-de-periodo.tsx', 'src/app/pro/advisees/cuando-la-revisas.tsx', 'src/app/pro/advisees/fuerza/serie-observada.tsx', 'src/app/pro/advisees/periodo.tsx', 'src/app/pro/advisees/seguimiento/analizar.tsx', 'src/app/pro/advisees/training/agenda-del-plan.tsx']) {
+    assert.ok(usos.includes(r), r);
+  }
+  // Los límites de hoy se conservan donde estaban.
+  assert.match(leer('src/app/pro/advisees/fuerza/serie-observada.tsx'), /<CampoDeFecha id=\{`\$\{id\}-fecha`\} etiqueta=\{C\.fecha\} max=\{hoy\}/);
+  assert.match(leer('src/app/pro/advisees/control-de-periodo.tsx'), /max=\{hasta \|\| hoy\}/);
+  assert.match(leer('src/app/pro/advisees/training/agenda-del-plan.tsx'), /etiqueta=\{A\.moverA\} value=\{moviendo\.hacia\} min=\{agenda\.startDate\}/);
+});
+
+test('TEST-PG-013 · la fecha en palabras y con los nombres de acá, la semana desde el lunes', () => {
+  assert.equal(F.fechaCorta('2026-11-27', '2026-11-13'), 'vie 27 nov');
+  assert.equal(F.fechaCorta('2027-11-26', '2026-11-13'), 'vie 26 nov 2027');
+  assert.equal(F.fechaCorta('2026-09-01', '2026-11-13'), 'mar 1 sept');
+  assert.equal(F.fechaCompleta('2026-11-27'), 'viernes 27 de noviembre de 2026');
+  assert.equal(F.fechaCompleta('2026-11-29'), 'domingo 29 de noviembre de 2026');
+  assert.equal(F.mesEnPalabras(2026, 10), 'noviembre de 2026');
+  // Noviembre de 2026 arranca un domingo: la primera semana tiene seis lugares vacíos y el 1 al final.
+  const nov = F.semanasDelMes(2026, 10);
+  assert.deepEqual(nov[0], [null, null, null, null, null, null, '2026-11-01']);
+  assert.deepEqual(nov[nov.length - 1], ['2026-11-30', null, null, null, null, null, null]);
+  assert.ok(nov.every((s) => s.length === 7));
+  assert.deepEqual(F.DIAS_DE_LA_GRILLA, ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do']);
+  assert.equal(F.semanasDelMes(2027, 1).length, 4, 'febrero de 2027 arranca lunes y tiene 28 días');
+  // Sin `Intl` para los nombres: no dependen del idioma del navegador.
+  assert.doesNotMatch(leer('src/lib/fecha-en-palabras.ts').replace(/export function hoyEnBuenosAires[^]*?\n\}/, ''), /Intl\.|toLocale/);
+  assert.equal(F.esFechaCivil('2026-02-30'), false);
+  assert.equal(F.esFechaCivil('2026-02-28'), true);
+});
+
+test('TEST-PG-013 · el teclado: flechas, Inicio, Fin, Re Pág y Av Pág, sin salir de los límites', () => {
+  const k = (f, t, mayus = false, min, max) => F.fechaConLaTecla(f, t, mayus, min, max);
+  assert.equal(k('2026-11-27', 'ArrowLeft'), '2026-11-26');
+  assert.equal(k('2026-11-30', 'ArrowRight'), '2026-12-01');
+  assert.equal(k('2026-11-27', 'ArrowUp'), '2026-11-20');
+  assert.equal(k('2026-11-27', 'ArrowDown'), '2026-12-04');
+  assert.equal(k('2026-11-27', 'Home'), '2026-11-23', 'el lunes de esa semana');
+  assert.equal(k('2026-11-27', 'End'), '2026-11-29', 'el domingo de esa semana');
+  assert.equal(k('2026-01-31', 'PageDown'), '2026-02-28');
+  assert.equal(k('2026-03-31', 'PageUp'), '2026-02-28');
+  assert.equal(k('2026-11-27', 'PageUp', true), '2025-11-27');
+  assert.equal(k('2028-02-29', 'PageDown', true), '2029-02-28');
+  assert.equal(k('2026-11-27', 'Tab'), null);
+  // Los límites: no se puede llegar a un día fuera.
+  assert.equal(k('2026-11-13', 'ArrowRight', false, undefined, '2026-11-13'), '2026-11-13');
+  assert.equal(k('2026-11-02', 'PageUp', false, '2026-11-01'), '2026-11-01');
+  assert.equal(F.dentroDeLosLimites('2026-11-14', undefined, '2026-11-13'), false);
+  assert.equal(F.dentroDeLosLimites('2026-11-13', '2026-11-13', '2026-11-13'), true);
+  assert.equal(F.dentroDeLosLimites('2026-11-13', '', ''), true, 'un límite vacío no limita, como en el nativo');
+  const campo = leer('src/components/campo-de-fecha.tsx');
+  assert.match(campo, /if \(e\.key === 'Enter' \|\| e\.key === ' '\)/);
+  assert.match(campo, /if \(e\.key === 'Escape' && abierto\)/);
+  assert.match(campo, /aria-label=\{`\$\{fechaCompleta\(f\)\}/);
+  assert.match(campo, /aria-disabled=\{dentroDeLosLimites\(f, min, max\) \? undefined : true\}/);
+  // Elegir un día fuera de los límites no hace nada.
+  assert.match(campo, /const elegir = \(f: string\) => \{\n\s*if \(!dentroDeLosLimites\(f, min, max\)\) return;/);
+});
+
+test('TEST-PG-013 · el valor enviado es la misma fecha civil AAAA-MM-DD que mandaba el campo nativo', () => {
+  // Todo lo que el calendario produce tiene la forma del valor del nativo.
+  for (const f of ['2026-11-27', '2026-12-31', '2027-01-01', '2028-02-29']) {
+    for (const t of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']) {
+      const n = F.fechaConLaTecla(f, t, false);
+      assert.match(n, /^\d{4}-\d{2}-\d{2}$/);
+      assert.ok(F.esFechaCivil(n), `${f} ${t} → ${n}`);
+    }
+  }
+  for (const [s, semana] of F.semanasDelMes(2026, 11).entries()) for (const f of semana) if (f !== null) assert.ok(F.esFechaCivil(f), `${s}: ${f}`);
+  // El campo le pasa a cada pantalla la fecha tal cual (como `e.target.value`), y nada más.
+  const campo = leer('src/components/campo-de-fecha.tsx');
+  assert.match(campo, /if \(f !== value\) onChange\(f\);/);
+  for (const t of textos(F.COPY_CAMPO_DE_FECHA)) assert.deepEqual(terminosProhibidosEn(t), [], t);
 });

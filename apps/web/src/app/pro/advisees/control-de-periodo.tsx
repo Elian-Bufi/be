@@ -12,6 +12,7 @@
  * de una revisión, 92 días.
  */
 import { useEffect, useId, useRef, useState } from 'react';
+import { CampoDeFecha } from '../../../components/campo-de-fecha';
 import { Icono } from '../../../components/icono';
 import { diaYMesCivil, rangoCivil } from '../../../lib/formato';
 import { diasEntre, hoyEn } from './seguimiento/estado';
@@ -130,14 +131,8 @@ export function ControlDePeriodo<D extends number>({
             <p id={`${id}-rango`} className="periodo-del-seguimiento__otro">
               Otro rango
             </p>
-            <div className="campo">
-              <label htmlFor={`${id}-desde`}>Desde</label>
-              <input id={`${id}-desde`} type="date" value={desde} max={hasta || hoy} onChange={(e) => setDesde(e.target.value)} />
-            </div>
-            <div className="campo">
-              <label htmlFor={`${id}-hasta`}>Hasta</label>
-              <input id={`${id}-hasta`} type="date" value={hasta} min={desde} onChange={(e) => setHasta(e.target.value)} />
-            </div>
+            <CampoDeFecha id={`${id}-desde`} etiqueta="Desde" value={desde} max={hasta || hoy} hoy={hoy} vaciable onChange={setDesde} />
+            <CampoDeFecha id={`${id}-hasta`} etiqueta="Hasta" value={hasta} min={desde || undefined} hoy={hoy} vaciable onChange={setHasta} />
             <button type="button" className="boton boton--secundario" onClick={aplicar}>
               Aplicar
             </button>

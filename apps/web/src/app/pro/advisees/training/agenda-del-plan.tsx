@@ -25,7 +25,8 @@ import {
   type DiaDeLaSemana,
 } from '@be/domain';
 import { useState } from 'react';
-import { Aviso, Campo } from '../../../../components/formulario';
+import { CampoDeFecha } from '../../../../components/campo-de-fecha';
+import { Aviso } from '../../../../components/formulario';
 
 /** Una sesión del plan, en su orden: con su identificador si ya se guardó. */
 export interface SesionDeLaAgenda {
@@ -214,7 +215,7 @@ export function AgendaDelPlan({
         </button>
       </div>
       <div className="agenda-del-plan__inicio">
-        <Campo id="agenda-desde" etiqueta={A.desde} ayuda={A.desdeAyuda} type="date" value={agenda.startDate} onChange={(e) => cambiarInicio(e.target.value)} />
+        <CampoDeFecha id="agenda-desde" etiqueta={A.desde} ayuda={A.desdeAyuda} value={agenda.startDate} onChange={cambiarInicio} />
       </div>
 
       <table className="agenda-del-plan__semana">
@@ -312,7 +313,7 @@ export function AgendaDelPlan({
           <p>
             <strong>{nombreDe(moviendo.sessionId)}</strong>, {fechaDeLaAgenda(moviendo.desde)}
           </p>
-          <Campo id="agenda-mover-a" etiqueta={A.moverA} type="date" value={moviendo.hacia} min={agenda.startDate} onChange={(e) => setMoviendo({ ...moviendo, hacia: e.target.value })} />
+          <CampoDeFecha id="agenda-mover-a" etiqueta={A.moverA} value={moviendo.hacia} min={agenda.startDate} onChange={(hacia) => setMoviendo({ ...moviendo, hacia })} />
           <div className="acciones">
             <button type="button" className="boton boton--secundario boton--compacto" onClick={() => (setMoviendo(null), setProblema(null))}>
               {A.moverCancelar}
