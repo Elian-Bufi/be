@@ -22,8 +22,9 @@ const COMPOSICIONES = new Map([
   ['pollo', comp(165, 31, 0, 3.6)],
   ['sin-grasas', { referenceAmount: '100g', energyKcal: 50, proteinG: 1, carbohydrateG: 10, fatG: null }],
   ['leyendo', 'leyendo'],
+  ['ilegible', 'sin-composicion'],
 ]);
-const NOMBRES = { banana: 'Banana', arroz: 'Arroz', pollo: 'Pollo', 'sin-grasas': 'Caldo', leyendo: 'Avena', otro: 'Queso' };
+const NOMBRES = { banana: 'Banana', arroz: 'Arroz', pollo: 'Pollo', 'sin-grasas': 'Caldo', leyendo: 'Avena', otro: 'Queso', ilegible: 'Mijo' };
 const item = (catalogItemId, value, unit = 'g') => ({ catalogItemId, quantity: value === null ? null : { value, unit }, preparationState: 'RAW', note: null });
 const opcion = (label, items) => ({ label, items });
 const comida = (label, options) => ({ label, prescriptionMode: 'DISH_OPTIONS', options });
@@ -63,9 +64,16 @@ test('TEST-EDP-029 · un hueco nunca suma cero: dice «Sin dato» y qué lo impi
   assert.equal(R.queFaltaEnPalabras(caldo.fatG.faltan[0]), 'Caldo: la fuente no trae ese dato');
   // En unidades, sin equivalencia: «en unidades: sin estimación».
   assert.equal(R.queFaltaEnPalabras(t([item('banana', 2, 'unit')]).energyKcal.faltan[0]), 'Banana en unidades: sin estimación');
-  // Una composición que no se conoce, o que todavía se está leyendo.
-  assert.equal(t([item('otro', 30)]).energyKcal.faltan[0].motivo, 'SIN_COMPOSICION');
+  // Una composición cuya lectura falló; una que todavía se está leyendo, y una que ni se pidió (otro día tipo): esas
+  // dos dicen «leyendo», nunca «no se pudo leer».
+  assert.equal(t([item('ilegible', 30)]).energyKcal.faltan[0].motivo, 'SIN_COMPOSICION');
   assert.equal(t([item('leyendo', 30)]).energyKcal.faltan[0].motivo, 'LEYENDO');
+  assert.equal(t([item('otro', 30)]).energyKcal.faltan[0].motivo, 'LEYENDO');
+  // La fibra, con la misma cuenta: lo que la fuente no trae es «Sin dato».
+  assert.equal(R.fibraDeLaOpcion(R.itemsParaElTotal(opcion('X', [item('banana', 100)]), NOMBRES, sinReceta), COMPOSICIONES).exacto, null);
+  assert.equal(R.fibraDeLaOpcion([], COMPOSICIONES).faltan[0].motivo, 'SIN_ALIMENTOS');
+  const conFibra = new Map([['avena', { ...comp(389, 16.9, 66.3, 6.9), fiberG: 10.6 }]]);
+  assert.equal(R.fibraDeLaOpcion([{ catalogItemId: 'avena', quantity: { value: 50, unit: 'g' }, nombre: 'Avena' }], conFibra).exacto, '5.3');
   // Sin alimentos, o una receta todavía sin guardar: nada de cero.
   assert.equal(t([]).energyKcal.exacto, null);
   const receta = R.totalDeLaOpcion(R.itemsParaElTotal({ label: 'Budín', items: [], recipeVersionId: 'rv1' }, NOMBRES, sinReceta), COMPOSICIONES, 'Budín');
@@ -159,4 +167,20 @@ test('ED-31 · el total de la opción, con los nombres completos para el lector 
   const total = { energyKcal: v(107), proteinG: v(1.3), carbohydrateG: v(27.4), fatG: { exacto: null, faltan: [] } };
   assert.equal(R.totalEnPalabras(total), 'Energía 107 kcal · Proteínas 1,3 g · Carbohidratos 27,4 g · Grasas sin dato');
   assert.equal(R.totalEnUnaLinea(total), '107 kcal · P 1,3 g · C 27,4 g · G Sin dato');
+});
+
+test('DJ-7 · los habituales de Nutrición en la API, el dominio y el esquema no dicen «%», tampoco en un comentario ni en negación', () => {
+  const raiz = new URL('../../../', import.meta.url);
+  const leer = (ruta) => readFileSync(new URL(ruta, raiz), 'utf8');
+  const esquema = leer('prisma/schema.prisma');
+  const desde = esquema.indexOf('/// ED-13 (WP-EDITORES-PROFESIONAL, DL-167): un reparto habitual');
+  assert.ok(desde > 0, 'falta el modelo RepartoHabitual');
+  const fuentes = {
+    'apps/api/src/nutricion/habituales.service.ts': leer('apps/api/src/nutricion/habituales.service.ts'),
+    'packages/domain/src/contratos-habituales.ts': leer('packages/domain/src/contratos-habituales.ts'),
+    'prisma/schema.prisma (RepartoHabitual)': esquema.slice(desde, esquema.indexOf('\n}', desde)),
+  };
+  for (const [archivo, fuente] of Object.entries(fuentes)) {
+    fuente.split('\n').forEach((linea, i) => assert.doesNotMatch(linea, /%/, `${archivo}:${i + 1}: ${linea.trim()}`));
+  }
 });

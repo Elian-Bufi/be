@@ -74,8 +74,8 @@ export function accionDeLaFicha(dominios: Dominios, hoy: string): AccionDeLaFich
 
   // 4. Un área sin plan vigente.
   const sinPlan = legibles.find(({ resumen }) => !resumen?.activePlan);
-  // ED-16: en Entrenamiento, empezar es abrir el asistente (sin objetivo, empieza por ahí: el paso 0 de DL-145).
-  if (sinPlan) return { tipo: 'empezar', area: sinPlan.area, texto: `Empezar el plan${deCual(sinPlan.area)}`, vista: 'plan', extra: sinPlan.area === 'ENTRENAMIENTO' ? '&asistente=1' : '' };
+  // ED-16 y ED-30: en las dos áreas, empezar es abrir el asistente (sin objetivo, empieza por ahí: el paso 0 de DL-145).
+  if (sinPlan) return { tipo: 'empezar', area: sinPlan.area, texto: `Empezar el plan${deCual(sinPlan.area)}`, vista: 'plan', extra: '&asistente=1' };
   return null;
 }
 

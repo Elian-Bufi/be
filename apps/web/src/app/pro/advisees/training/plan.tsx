@@ -54,6 +54,7 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { numeroDelBorrador } from '../descartar-el-borrador';
 import { COPY_RESULTADO_DE_ACTIVAR } from '../resultado-de-activar';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
+import { COPY_PLANTILLAS_EN_LA_GALERIA } from '../galeria-de-presets';
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
 import { PrimerPlan } from '../primer-plan';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
@@ -179,6 +180,8 @@ export function VistaDePlan() {
   }, [cargar]);
 
   const objetivo = r?.ok ? r.datos.objetivo : null;
+  // EDT-54: sin el objetivo vigente no nace una versión nueva; la galería lo dice y no descarta el borrador.
+  const motivoSinObjetivo = r?.ok && !objetivo ? (r.datos.faltan.objetivo ? COPY_PLANTILLAS_EN_LA_GALERIA.sinObjetivoLeido : COPY_PLANTILLAS_EN_LA_GALERIA.sinObjetivo) : null;
 
   // ED-16: «Ajustar el plan» (la tarjeta de la ficha) llega con `crear=vigente`: crea la versión nueva desde la vigente y
   // abre la estación, en un clic. Una sola vez por llegada; con un borrador, lo abre (no crea otro).
@@ -213,16 +216,29 @@ export function VistaDePlan() {
     await cargar();
   }
 
-  /** Crear el borrador desde una plantilla propia (API-TRN-07 con `fromTemplateVersionId`): nace de la persona, con su objetivo. */
-  async function aplicar(templateVersionId: string) {
-    if (!objetivo) return;
+  /**
+   * Crear el borrador desde una plantilla propia (API-TRN-07 con `fromTemplateVersionId`): nace de la persona, con su
+   * objetivo. `trasDescartar`: viene de la galería, que ya descartó el borrador (ED-11). Si el nuevo no nace, el plan se
+   * vuelve a leer: el editor del borrador descartado se desmonta y no queda nada escribiendo contra una versión que ya no
+   * existe (EDT-54). El diálogo de plantillas queda abierto con el motivo.
+   */
+  async function aplicar(templateVersionId: string, trasDescartar = false) {
+    if (!objetivo) {
+      setFalloDesdePlantilla(motivoSinObjetivo);
+      if (trasDescartar) void cargar(false);
+      return;
+    }
     setCreando(true);
     setFalloDesdePlantilla(null);
     const res = await api.crearPlanDeEntrenamiento(token, asesoradoId, { objectiveVersionId: objetivo, fromTemplateVersionId: templateVersionId }, intentoDeAplicar.actual());
     intentoDeAplicar.registrar(res);
     setCreando(false);
     if (sesionPerdida(res) || accesoRetirado(res)) return;
-    if (!res.ok) return setFalloDesdePlantilla(res.tipo === 'API' && res.codigo === 'TEMPLATE_ARCHIVED' ? COPY_PLANTILLAS.archivadaNoSeAplica : mensajeDeFallo(res));
+    if (!res.ok) {
+      setFalloDesdePlantilla(res.tipo === 'API' && res.codigo === 'TEMPLATE_ARCHIVED' ? COPY_PLANTILLAS.archivadaNoSeAplica : mensajeDeFallo(res));
+      if (trasDescartar) void cargar(false);
+      return;
+    }
     setDesdePlantilla(false);
     setAviso({ tipo: 'exito', texto: COPY_PLANTILLAS.aplicada });
     // ED-14: desde el asistente, sigue en el paso 2 con lo que trajo la plantilla.
@@ -329,6 +345,15 @@ export function VistaDePlan() {
                         setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
                         ir(TODO_LO_ELEGIDO);
                         void cargar();
+                      }}
+                      // ED-11: la pestaña de plantillas de la galería; descartado el borrador, nace otro desde la plantilla. Si
+                      // crearlo falla, el diálogo de plantillas queda abierto con el motivo, para reintentar.
+                      leerPlantillas={leerPlantillas}
+                      plantillasNoSePueden={motivoSinObjetivo}
+                      onReemplazarConPlantilla={(id) => {
+                        setFalloDesdePlantilla(null);
+                        setDesdePlantilla(true);
+                        void aplicar(id, true);
                       }}
                       // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
                       onDescartado={(porOtraPestana) => {

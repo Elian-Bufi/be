@@ -6,7 +6,7 @@
  * Esta guardia lee el 09 (solo lectura: el legajo está en el manifiesto y no se toca) y exige:
  * 1. una operación con un ID del inventario P0 del 09 tiene el método y la ruta que el 09 le da;
  * 2. una operación con un ID que no está en el inventario es una extensión declarada de BE, con una familia propia
- *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES, MFA, SOP), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
+ *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES, MFA, SOP, FZA), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
  *    nombra o con un ID nuevo de una familia del 09 que el 09 no usa, declarado con su DL (API-ACC-07), y cita su fuente;
  * 3. ningún ID se repite.
  * Requiere `npm run build:domain` antes.
@@ -41,8 +41,12 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
  * el 09 solo lo nombra como política (MFA_REQUIRED, 09v7 §4.3) y el de Administración es la familia ADM.
  * SOP (DL-169, UF-07 de WP-USO-FINAL): el canal de ayuda y contacto, leído de la configuración; el 09 no lo tiene, y las
  * incidencias de RF-068 (09 v0.12 §16) quedan afuera.
+ * FZA (DL-171, ED-72 de WP-EDITORES-PROFESIONAL): la serie observada por el profesional, con su estimación Epley v1; el 09
+ * no la tiene (09v10:356 no fija una fórmula, y DL-171 registra la decisión de Dirección que lo enmienda sin tocar el legajo).
+ * Las prescripciones y los repartos habituales de ED-13 (API-HAB-06 a 08 y API-HAN-06 a 08) siguen en HAB y HAN (DL-109),
+ * extendidas por DL-167.
  */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169', FZA: 'DL-171' };
 /**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
@@ -164,4 +168,11 @@ test('una operación del 09 fuera del inventario tiene el método y la ruta que 
     }
   }
   assert.deepEqual(choques, [], choques.join('\n'));
+});
+
+test('ED-72 · la familia FZA cita DL-171 en cada operación y el 09 no la usa (TEST-EDP-062)', () => {
+  const fza = OPERACIONES.filter((o) => o.id.startsWith('API-FZA-'));
+  assert.deepEqual(fza.map((o) => o.id), ['API-FZA-01', 'API-FZA-02', 'API-FZA-03']);
+  for (const o of fza) assert.ok(o.fuente.includes('DL-171'), `${o.id} no cita DL-171`);
+  assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-FZA-')), []);
 });

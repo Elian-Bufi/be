@@ -15,7 +15,7 @@
  *   composición de la versión disponible de cada alimento. Al guardar no viaja nada de esto, y la persona no lo ve.
  * - Sin «%» y sin semáforo: se describe, no se califica (B05; `copy-nutricion.ts`).
  */
-import { calcularNutrientes, decimalExacto, nutrienteParaMostrar, pestanaDeLaOpcion, sumaExacta, type ComposicionParaCalcular, type EstructuraDePlanEntrada } from '@be/domain';
+import { calcularNutrientes, decimalExacto, nutrienteParaMostrar, pestanaDeLaOpcion, sumaExacta, type ComposicionParaCalcular, type EstructuraDePlanEntrada, type NutrienteCalculado } from '@be/domain';
 
 type Estructura = EstructuraDePlanEntrada['dayTypes'];
 type Dia = Estructura[number];
@@ -34,7 +34,7 @@ export type Composiciones = ReadonlyMap<string, ComposicionConocida>;
  * Por qué un nutriente no tiene total:
  * - los del dominio (`SIN_CANTIDAD`, `SIN_COMPOSICION`, `SIN_DATO_DEL_NUTRIENTE`), y `EN_UNIDADES` u `OTRA_UNIDAD` cuando
  *   la unidad no tiene equivalencia;
- * - `LEYENDO`: la composición del alimento todavía no llegó;
+ * - `LEYENDO`: la composición del alimento todavía no llegó (o todavía no se pidió);
  * - `RECETA_SIN_GUARDAR`: una opción de receta se arma en el servidor al guardar (DL-119);
  * - `SIN_ALIMENTOS`, `SIN_OPCIONES` y `SIN_COMIDAS`: no hay nada que sumar.
  */
@@ -97,6 +97,21 @@ const todoFalta = (falta: QueFalta): TotalDeLaOpcion => porNutriente(() => ({ ex
 export function totalDeLaOpcion(items: readonly ItemParaElTotal[] | null, composiciones: Composiciones, receta: string | null = null): TotalDeLaOpcion {
   if (items === null) return todoFalta({ donde: '', nombre: receta ?? '', motivo: 'RECETA_SIN_GUARDAR' });
   if (items.length === 0) return todoFalta({ donde: '', nombre: '', motivo: 'SIN_ALIMENTOS' });
+  return porNutriente(cuentaDe(items, composiciones));
+}
+
+/** ED-31 (maqueta 06): la fibra de la opción, con la misma cuenta. Lo que falta es «Sin dato», nunca cero. */
+export function fibraDeLaOpcion(items: readonly ItemParaElTotal[] | null, composiciones: Composiciones): ValorDeLaOpcion {
+  if (items === null) return { exacto: null, faltan: [{ donde: '', nombre: '', motivo: 'RECETA_SIN_GUARDAR' }] };
+  if (items.length === 0) return { exacto: null, faltan: [{ donde: '', nombre: '', motivo: 'SIN_ALIMENTOS' }] };
+  return cuentaDe(items, composiciones)('fiberG');
+}
+
+/**
+ * La cuenta de una lista de ítems, para cualquier nutriente del dominio (también la fibra). Una composición que todavía
+ * no llegó, o que todavía no se pidió, es «leyendo»: «no se pudo leer» queda para la lectura que falló.
+ */
+function cuentaDe(items: readonly ItemParaElTotal[], composiciones: Composiciones): (n: NutrienteCalculado) => ValorDeLaOpcion {
   const conocida = (id: string) => composiciones.get(id);
   const resultado = calcularNutrientes(
     items.map((it, n) => {
@@ -106,13 +121,13 @@ export function totalDeLaOpcion(items: readonly ItemParaElTotal[] | null, compos
       return { clave: String(n), cantidad, composicion: c && typeof c === 'object' ? c : null };
     }),
   );
-  return porNutriente((nutriente) => {
+  return (nutriente) => {
     const v = resultado.nutrientes[nutriente];
     const faltan = v.faltan.map((f): QueFalta => {
       const it = items[Number(f.clave)]!;
       const c = conocida(it.catalogItemId);
       const motivo: PorQueFalta =
-        f.motivo === 'SIN_COMPOSICION' && c === 'leyendo'
+        f.motivo === 'SIN_COMPOSICION' && (c === 'leyendo' || c === undefined)
           ? 'LEYENDO'
           : f.motivo === 'UNIDAD_SIN_EQUIVALENCIA'
             ? it.quantity?.unit === 'unit'
@@ -122,7 +137,7 @@ export function totalDeLaOpcion(items: readonly ItemParaElTotal[] | null, compos
       return { donde: '', nombre: it.nombre, motivo };
     });
     return { exacto: v.exacto, faltan: sinRepetir(faltan) };
-  });
+  };
 }
 
 /** Compara dos decimales exactos: negativo si `a` es menor. */
@@ -168,8 +183,12 @@ export const nombreDeLaComida = (m: Pick<Comida, 'label'>, j: number): string =>
 export const nombreDelDiaTipo = (d: Pick<Dia, 'label'>, i: number): string => d.label.trim() || `Día tipo ${i + 1}`;
 
 /** Los ítems de una opción para la cuenta: los suyos o, si es de receta, los que armó la API (o `null`, sin guardar). */
-export function itemsParaElTotal(opcion: Opcion, nombres: Readonly<Record<string, string>>, deLaReceta: (optionId: string | undefined) => readonly { readonly catalogItemId: string; readonly name: string; readonly quantity: ItemParaElTotal['quantity'] }[] | null): readonly ItemParaElTotal[] | null {
-  if (opcion.recipeVersionId) return deLaReceta(opcion.optionId)?.map((it) => ({ catalogItemId: it.catalogItemId, quantity: it.quantity, nombre: it.name || nombres[it.catalogItemId] || 'Elemento' })) ?? null;
+export function itemsParaElTotal(
+  opcion: Opcion,
+  nombres: Readonly<Record<string, string>>,
+  deLaReceta: (optionId: string | undefined, recipeVersionId: string) => readonly { readonly catalogItemId: string; readonly name: string; readonly quantity: ItemParaElTotal['quantity'] }[] | null,
+): readonly ItemParaElTotal[] | null {
+  if (opcion.recipeVersionId) return deLaReceta(opcion.optionId, opcion.recipeVersionId)?.map((it) => ({ catalogItemId: it.catalogItemId, quantity: it.quantity, nombre: it.name || nombres[it.catalogItemId] || 'Elemento' })) ?? null;
   return opcion.items.map((it) => ({ catalogItemId: it.catalogItemId, quantity: it.quantity, nombre: nombres[it.catalogItemId] ?? 'Elemento' }));
 }
 

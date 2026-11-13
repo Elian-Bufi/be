@@ -37,7 +37,7 @@ test('TEST-EDP-033 · «Pedir todas» y «Ninguna» tocan solo su parte, sin rep
   assert.match(PEDIR, /const elegidas = preguntas\.map\(\(c\) => c\.fieldCode\)\.filter\(\(c\) => pedidas\.includes\(c\)\);/);
   // Con algo por completar en las preguntas, todas se abren y quedan abiertas (es estado, no se deduce de la falta): el
   // foco llega a lo que falta y, al marcar una casilla, la falta se resuelve sin que la tabla se pliegue bajo el foco.
-  assert.match(PEDIR, /if \(encontradas\.preguntas && version\) setPartesAbiertas\(new Set\(version\.sections\.map\(\(s\) => s\.sectionCode\)\)\);/);
+  assert.match(PEDIR, /if \(encontradas\.preguntas && version\) \{\n\s+setPartesAbiertas\(new Set\(version\.sections\.map\(\(s\) => s\.sectionCode\)\)\);/);
   assert.match(PEDIR, /const parteAbierta = \(codigo: string\) => !variasPartes \|\| partesAbiertas\.has\(codigo\);/);
   assert.doesNotMatch(PEDIR, /!!faltas\.preguntas/);
 });
@@ -48,7 +48,7 @@ test('ED-40 · plegada, la parte deja a la vista la pregunta que no viene pedida
   assert.deepEqual(P.filasALaVista(campos, true), campos);
   assert.deepEqual(P.filasALaVista(campos, false), [embarazo]);
   assert.deepEqual(P.filasALaVista([campo('a')], false), []);
-  assert.match(PEDIR, /filasALaVista\(s\.fields, parteAbierta\(s\.sectionCode\)\)\.map/);
+  assert.match(PEDIR, /\(coinciden \? coinciden\[i\]! : filasALaVista\(s\.fields, parteAbierta\(s\.sectionCode\)\)\)\.map/);
 });
 
 test('ED-40 · el resumen junto al botón y lo que le llega a la persona', () => {
@@ -89,4 +89,83 @@ test('TEST-EDP-035 · ningún estado pendiente se dice como acceso; aceptar tamp
 test('ED-41 · el vencimiento con fecha y hora, en la hora de Buenos Aires', () => {
   assert.equal(V.venceElDiaYHora('2026-11-19T17:30:00Z'), 'Vence el 19 de noviembre a las 14:30.');
   assert.equal(V.venceElDiaYHora('2026-11-20T02:05:00Z'), 'Vence el 19 de noviembre a las 23:05.');
+});
+
+// ─── ED-41 · «Solicitudes enviadas» como sección, con filtros por estado y por persona ─────────────────────────────
+
+const F = await import('../src/app/pro/filtro-de-solicitudes.ts');
+const SECCION = readFileSync(new URL('../src/app/pro/solicitudes-enviadas.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const ESPACIO = readFileSync(new URL('../src/app/pro/espacio-profesional.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const sol = (id, persona, state) => ({ relationshipRequestId: id, state, advisee: { identityId: persona } });
+const enviadas = [sol('1', 'camila', 'PENDIENTE'), sol('2', 'diego', 'ACEPTADA'), sol('3', 'camila', 'CADUCADA'), sol('4', 'diego', 'PENDIENTE'), sol('5', 'lucia', 'RECHAZADA')];
+
+test('ED-41 · los filtros por estado y por persona se cruzan y conservan el orden de la lista', () => {
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, F.SIN_FILTRO).map((s) => s.relationshipRequestId), ['1', '2', '3', '4', '5']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'PENDIENTE', persona: null }).map((s) => s.relationshipRequestId), ['1', '4']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'TODAS', persona: 'camila' }).map((s) => s.relationshipRequestId), ['1', '3']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'PENDIENTE', persona: 'camila' }).map((s) => s.relationshipRequestId), ['1']);
+  assert.deepEqual(F.filtrarSolicitudes(enviadas, { estado: 'ACEPTADA', persona: 'camila' }), []);
+});
+
+test('ED-41 · cada chip cuenta dentro de la persona elegida; uno sin ninguna no se ofrece, salvo el elegido', () => {
+  const chips = (f) => F.chipsDeEstado(enviadas, f).map((c) => `${c.rotulo} · ${c.cuantas}`);
+  assert.deepEqual(chips(F.SIN_FILTRO), ['Todas · 5', 'Pendientes · 2', 'Aceptadas · 1', 'Rechazadas · 1', 'Caducadas · 1']);
+  assert.deepEqual(chips({ estado: 'TODAS', persona: 'camila' }), ['Todas · 2', 'Pendientes · 1', 'Caducadas · 1']);
+  // Elegido «Aceptadas» y después Camila: el chip queda (con 0) para poder salir de él sin que desaparezca bajo el foco.
+  assert.deepEqual(chips({ estado: 'ACEPTADA', persona: 'camila' }), ['Todas · 2', 'Pendientes · 1', 'Aceptadas · 0', 'Caducadas · 1']);
+});
+
+test('ED-41 · las personas salen una vez cada una, por su identidad; una que ya no está deja de filtrar', () => {
+  assert.deepEqual(
+    F.personasDeLasSolicitudes(enviadas, (s) => `P-${s.advisee.identityId}`),
+    [{ id: 'camila', nombre: 'P-camila' }, { id: 'diego', nombre: 'P-diego' }, { id: 'lucia', nombre: 'P-lucia' }],
+  );
+  assert.deepEqual(F.filtroVigente(enviadas, { estado: 'PENDIENTE', persona: 'nadie' }), { estado: 'PENDIENTE', persona: null });
+  assert.deepEqual(F.filtroVigente(enviadas, { estado: 'PENDIENTE', persona: 'diego' }), { estado: 'PENDIENTE', persona: 'diego' });
+  assert.equal(F.cuantasSeVen(5, 5, F.SIN_FILTRO), null);
+  assert.equal(F.cuantasSeVen(1, 5, { estado: 'PENDIENTE', persona: 'camila' }), 'Se ve 1 de 5.');
+  assert.equal(F.cuantasSeVen(0, 5, { estado: 'ACEPTADA', persona: 'camila' }), 'Se ven 0 de 5.');
+});
+
+test('ED-41 · es una sección del Espacio, no un diálogo; los botones llevan a ella', () => {
+  assert.doesNotMatch(SECCION, /<dialog|showModal/);
+  assert.match(SECCION, /<section id=\{ID_DE_SOLICITUDES_ENVIADAS\}/);
+  assert.match(SECCION, /aria-label="Filtrar por estado"/);
+  assert.match(ESPACIO, /onVerSolicitudes=\{\(\) => irASolicitudes\(\{ estado: 'PENDIENTE', persona: null \}, null\)\}/);
+  assert.match(ESPACIO, /if \(deduplicada\) irASolicitudes\(\{ estado: 'PENDIENTE', persona: null \}, texto\);/);
+  // Un estado pendiente sigue sin decirse como acceso (TEST-EDP-035): la fila usa las palabras de siempre.
+  assert.match(SECCION, /estadoDeLaSolicitud\(s\.state/);
+});
+
+// ─── ED-40 · El buscador de preguntas ──────────────────────────────────────────────────────────────────────────────
+
+const pregunta = (fieldCode, label, helpText = null) => ({ fieldCode, label, helpText, showIf: null });
+const partes = [
+  { title: 'Sueño', fields: [pregunta('horas', 'Horas por noche'), pregunta('despertar', '¿Te despertás cansado?')] },
+  { title: 'Comidas', fields: [pregunta('desayuno', 'Qué desayunás'), pregunta('cafe', 'Café por día', 'Contá tazas, no jarros')] },
+];
+
+test('ED-40 · el buscador encuentra por la pregunta, su aclaración o el título de la parte, sin acentos ni mayúsculas', () => {
+  const codigos = (q) => P.preguntasQueCoinciden(partes, q)?.map((p) => p.map((c) => c.fieldCode)) ?? null;
+  assert.equal(codigos(''), null);
+  assert.equal(codigos('   '), null);
+  assert.deepEqual(codigos('SUENO'), [['horas', 'despertar'], []]);
+  assert.deepEqual(codigos('cafe'), [[], ['cafe']]);
+  assert.deepEqual(codigos('tazas'), [[], ['cafe']]);
+  // Cada palabra tiene que estar, en cualquier orden, sumando la parte: «noche sueño» es la de las horas.
+  assert.deepEqual(codigos('noche sueño'), [['horas'], []]);
+  assert.deepEqual(codigos('xyz'), [[], []]);
+});
+
+test('ED-40 · «Pedir las n» y «Ninguna de las n» tocan solo lo que coincide; el resultado se dice en palabras', () => {
+  const q = P.preguntasQueCoinciden(partes, 'sueño').flat();
+  assert.deepEqual(P.pedirTodas(['cafe'], q), ['cafe', 'horas', 'despertar']);
+  assert.deepEqual(P.ninguna(['cafe', 'horas', 'despertar'], q), ['cafe']);
+  assert.equal(P.resultadoDeLaBusqueda(2, ' sueño '), '2 preguntas dicen «sueño».');
+  assert.equal(P.resultadoDeLaBusqueda(1, 'café'), '1 pregunta dice «café».');
+  assert.equal(P.resultadoDeLaBusqueda(0, 'xyz'), 'Ninguna pregunta dice «xyz».');
+  // Buscar no cambia lo que se envía (TEST-EDP-033): lo enviado sigue saliendo de lo pedido.
+  assert.match(PEDIR, /requestedFieldCodes: elegidas,/);
+  // Con una falta en las preguntas, la búsqueda se borra para que el foco llegue a la primera.
+  assert.match(PEDIR, /setPartesAbiertas\(new Set\(version\.sections\.map\(\(s\) => s\.sectionCode\)\)\);\n\s+\/\/ La búsqueda podría esconder la pregunta a la que va el foco\.\n\s+setBusqueda\(''\);/);
 });

@@ -33,6 +33,27 @@ export class HabitualesNutricionalesController {
     return responder(res, await this.habituales.marcarAlimento(actorDe(req), catalogItemId, cuerpo, contextoDe(req)));
   }
 
+  /** API-HAN-06 (ED-13): mis repartos habituales. */
+  @Get('nutrition/macro-presets')
+  listarRepartos(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.habituales.repartos.listar(actorDe(req), contextoDe(req));
+  }
+
+  /** API-HAN-07 (ED-13): guardar o reemplazar un reparto habitual. */
+  @Post('nutrition/macro-presets')
+  async guardarReparto(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.habituales.repartos.guardar(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-HAN-08 (ED-13): renombrar o quitar un reparto habitual. Sin Idempotency-Key: concurrencia por `expectedVersion`. */
+  @Patch('nutrition/macro-presets/:presetId')
+  async editarReparto(@Param('presetId') presetId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.habituales.repartos.editar(actorDe(req), presetId, cuerpo, contextoDe(req)));
+  }
+
   /** API-HAN-03. */
   @Get('nutrition/meal-presets')
   listarComidas(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {

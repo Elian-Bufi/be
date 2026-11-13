@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { esEscrituraDePlanOReceta, LIMITE_DE_PLANES_Y_RECETAS, RUTAS_DE_PLANES_Y_RECETAS } from './limite-de-cuerpo';
 
 /**
- * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las diez escrituras que llevan un plan entero (un
+ * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las catorce escrituras que llevan un plan entero (un
  * borrador o una plantilla) o una receta aceptan hasta 700 KB; el resto de la API, 16 KB, como siempre. Estas pruebas no
  * usan base de datos: la app se
  * arma con `crearApp`, como en producción, y un pedido sin sesión que pasa el parser llega al guard (401). Lo que guarda
@@ -28,7 +28,7 @@ function cuerpoDe(bytes: number): string {
 }
 
 /**
- * Las diez, fijas y como las declaran los controladores: el archivo, el decorador y, de ahí, el método y una ruta de
+ * Las catorce, fijas y como las declaran los controladores: el archivo, el decorador y, de ahí, el método y una ruta de
  * ejemplo. Las pruebas de abajo recorren esta lista y no la de `limite-de-cuerpo.ts`, que es lo que se prueba: si una ruta
  * se cae de aquella, su pedido grande deja de entrar y la prueba lo dice.
  */
@@ -43,9 +43,14 @@ const ESPERADAS: Readonly<Record<string, readonly [archivo: string, decorador: s
   'API-TPL-04': ['entrenamiento/entrenamiento.controller.ts', "@Post('training/plan-templates/:templateId/versions')"],
   'API-REC-01': ['nutricion/recetas.controller.ts', "@Post('nutrition/recipes')"],
   'API-REC-04': ['nutricion/recetas.controller.ts', "@Patch('nutrition/recipes/:recipeId')"],
+  // ED-64 (WP-EDITORES-PROFESIONAL, DL-167): los habituales grandes se guardan (TEST-EDP-051).
+  'API-HAB-04': ['entrenamiento/habituales.controller.ts', "@Post('training/session-presets')"],
+  'API-HAB-05': ['entrenamiento/habituales.controller.ts', "@Patch('training/session-presets/:presetId')"],
+  'API-HAN-04': ['nutricion/habituales.controller.ts', "@Post('nutrition/meal-presets')"],
+  'API-HAN-05': ['nutricion/habituales.controller.ts', "@Patch('nutrition/meal-presets/:presetId')"],
 };
 
-/** El método y una ruta de ejemplo de una de las diez, con un identificador en cada parámetro. */
+/** El método y una ruta de ejemplo de una de las catorce, con un identificador en cada parámetro. */
 function pedidoDe(operacion: string): { readonly metodo: string; readonly ruta: string } {
   const [, metodo, ruta] = /^@(\w+)\('([^']+)'\)$/.exec((ESPERADAS[operacion] as readonly [string, string])[1]) as RegExpExecArray;
   return { metodo: metodo!.toUpperCase(), ruta: `/api/v1/${ruta!.replace(/:\w+/g, ID)}` };
@@ -71,9 +76,15 @@ const VECINAS: readonly (readonly [string, string])[] = [
   ['PATCH', `/api/v1/advisees/${ID}/nutrition/plans`],
   ['PATCH', `/api/v1/nutrition/plans/${ID}/otra-cosa`],
   ['PATCH', `/api/v2/nutrition/plans/${ID}`],
+  // ED-64: marcar un ejercicio o un alimento habitual, y las prescripciones y los repartos habituales (ED-13), siguen con 16 KB.
+  ['PATCH', `/api/v1/training/favorite-exercises/${ID}`],
+  ['PATCH', `/api/v1/nutrition/favorite-items/${ID}`],
+  ['POST', '/api/v1/training/prescription-presets'],
+  ['POST', '/api/v1/nutrition/macro-presets'],
+  ['POST', `/api/v1/training/session-presets/${ID}`],
 ];
 
-describe('DL-168 · las diez escrituras con el límite de planes y recetas', () => {
+describe('DL-168 · las catorce escrituras con el límite de planes y recetas (diez de DL-168 y cuatro de ED-64)', () => {
   it('son las de los controladores, con su método y su ruta', () => {
     expect(RUTAS_DE_PLANES_Y_RECETAS.map((r) => r.operacion).sort()).toEqual(Object.keys(ESPERADAS).sort());
     for (const [operacion, [archivo, decorador]] of Object.entries(ESPERADAS)) {

@@ -36,6 +36,7 @@ import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
 import { LA_PREGUNTA_DE_LA_COMPOSICION, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
+import { LA_PREGUNTA_DE_LA_FUERZA, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
 import { hoyEn, parametrosDePregunta, restarDias } from './estado';
 import type { Disponibles } from './series';
 
@@ -136,6 +137,20 @@ export function ListaDePreguntas() {
       </button>
     </li>
   ) : null;
+  // ED-74: la fuerza estimada, solo si el profesional ve Entrenamiento (como la composición, TA-25).
+  const conEntrenamiento = panel.tipo === 'listo' && panel.datos.domains.training.available;
+  const fuerza = conEntrenamiento ? (
+    <li key={PREGUNTA_DE_LA_FUERZA}>
+      <button type="button" className="tarjeta-de-pregunta" data-pregunta-de-fuerza onClick={() => ir({ ...parametrosDePregunta(null), pregunta: PREGUNTA_DE_LA_FUERZA, m: null, f: null }, { agregarAlHistorial: true })}>
+        <Icono nombre="estimado" tamano={20} />
+        <span className="tarjeta-de-pregunta__textos">
+          <span className="tarjeta-de-pregunta__pregunta">{LA_PREGUNTA_DE_LA_FUERZA.pregunta}</span>
+          <span className="tarjeta-de-pregunta__muestra">{LA_PREGUNTA_DE_LA_FUERZA.muestra}</span>
+        </span>
+        <Icono nombre="derecha" tamano={18} />
+      </button>
+    </li>
+  ) : null;
   const principales = PREGUNTAS_PROFESIONALES.filter((p) => p.principal);
   const otras = PREGUNTAS_PROFESIONALES.filter((p) => !p.principal);
   const fila = (p: (typeof PREGUNTAS_PROFESIONALES)[number]) => (
@@ -158,6 +173,7 @@ export function ListaDePreguntas() {
       <ul className="preguntas-profesionales__lista">
         {principales.map(fila)}
         {composicion}
+        {fuerza}
       </ul>
       <details className="preguntas-profesionales__mas">
         <summary>Más preguntas ({otras.length})</summary>

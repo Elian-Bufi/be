@@ -2448,6 +2448,104 @@ it('TEST-CT (WP-TABLERO-ALTA-GAMA, TB-52 a TB-56): RES-01 a 04 y 06 a 10 — lo 
   await compartir({ expectedVersion: 'v4' }).expect(403); // ampliar, después de retirar
 });
 
+it('TEST-CT (WP-EDITORES-PROFESIONAL): FZA-01 a 03, HAB-06 a 08, HAN-06 a 08 y PLN-01, con éxitos y errores declarados (DL-167 y DL-171)', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const sinClave = (token: string, ruta: string) => request(servidor).post(ruta).set('Authorization', `Bearer ${token}`);
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
+  // FZA-01 a 03 (ED-72): la serie observada.
+  const e = await circuitoDeEntrenamiento(app, 'ct-fuerza');
+  const pe = conSesion(app, e.pro.token);
+  const tercero = conSesion(app, (await prepararProfesional(app, 'ct-fuerza-tercero', ['ENTRENAMIENTO'])).token);
+  const observadas = `/api/v1/advisees/${e.ase.id}/training/observed-sets`;
+  const serie = { exerciseId: 'b5a3ddca-2d35-5d67-833b-cedfe0f6b1d7', localDate: hoy, timeZone: 'America/Argentina/Buenos_Aires', load: { value: 85, unit: 'kg' }, completedRepetitions: 5, rir: 1 };
+  const clave = claveDeIdempotencia();
+  const creada = await pe.post(observadas, clave).send(serie).expect(201);
+  await pe.post(observadas, clave).send({ ...serie, rir: 2 }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pe.post(observadas).send({ ...serie, rir: 3 }).expect(422); // STRENGTH_OBSERVATION_NOT_ESTIMABLE
+  await pe.post(observadas).send({ ...serie, localDate: '2999-01-01' }).expect(422); // VALIDATION_FAILED
+  await pe.post(observadas).send({ ...serie, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await sinClave(e.pro.token, observadas).send(serie).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await request(servidor).post(observadas).send(serie).expect(401);
+  await tercero.post(observadas).send(serie).expect(404);
+  await pe.get(observadas).expect(200);
+  await pe.get(`${observadas}?exerciseId=no`).expect(400);
+  await tercero.get(observadas).expect(404);
+  await request(servidor).get(observadas).expect(401);
+  const sucesoras = (id: string) => `/api/v1/training/observed-sets/${id}/successors`;
+  const id = creada.body.data.observationId as string;
+  const corregir = { action: 'CORRECT', expectedVersion: 'v1', reason: 'Eran 4.', observation: { ...serie, completedRepetitions: 4, exerciseId: undefined } };
+  await pe.post(sucesoras(id)).send({ ...corregir, expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await pe.post(sucesoras(id)).send({ ...corregir, observation: { ...corregir.observation, rir: null } }).expect(422);
+  await pe.post(sucesoras(id)).send({ action: 'BORRAR', expectedVersion: 'v1', reason: 'x' }).expect(400);
+  await sinClave(e.pro.token, sucesoras(id)).send(corregir).expect(400);
+  await request(servidor).post(sucesoras(id)).send(corregir).expect(401);
+  await pe.post(sucesoras(ajeno)).send(corregir).expect(404);
+  const claveS = claveDeIdempotencia();
+  const nueva = await pe.post(sucesoras(id), claveS).send(corregir).expect(201);
+  await pe.post(sucesoras(id), claveS).send({ ...corregir, reason: 'Otro motivo' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pe.post(sucesoras(nueva.body.data.observation.observationId)).send({ action: 'VOID', expectedVersion: 'v2', reason: 'No era de esta persona.' }).expect(201);
+
+  // HAB-06 a 08 (ED-13): la prescripción habitual.
+  const fuerza = { sets: [{ repetitions: { value: 3 }, rir: 1 }], intensity: { criterion: 'RIR', target: { value: 1 } } };
+  const prescripciones = '/api/v1/training/prescription-presets';
+  const guardada = await pe.post(prescripciones).send({ name: 'Fuerza de contrato', prescription: fuerza }).expect(201);
+  await pe.post(prescripciones).send({ name: 'fuerza de contrato', prescription: fuerza }).expect(409); // PRESET_NAME_TAKEN
+  await pe.post(prescripciones).send({ name: 'Otra', prescription: fuerza, replaces: ajeno, expectedVersion: 'v1' }).expect(404);
+  await pe.post(prescripciones).send({ name: 'Fuerza de contrato', prescription: fuerza, replaces: guardada.body.data.presetId, expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await pe.post(prescripciones).send({ name: 'RPE', prescription: { ...fuerza, intensity: { criterion: 'RPE', target: { value: 8 } } } }).expect(422);
+  await pe.post(prescripciones).send({ name: 'Con carga', prescription: { ...fuerza, sets: [{ repetitions: { value: 3 }, suggestedLoad: { value: 100, unit: 'kg' } }] } }).expect(400);
+  await sinClave(e.pro.token, prescripciones).send({ name: 'Sin clave', prescription: fuerza }).expect(400);
+  await request(servidor).post(prescripciones).send({ name: 'x', prescription: fuerza }).expect(401);
+  await conSesion(app, e.ase.token).post(prescripciones).send({ name: 'x', prescription: fuerza }).expect(403);
+  await pe.get(prescripciones).expect(200);
+  await pe.get(`${prescripciones}?x=1`).expect(400);
+  await request(servidor).get(prescripciones).expect(401);
+  await conSesion(app, e.ase.token).get(prescripciones).expect(403);
+  const unaPrescripcion = `${prescripciones}/${guardada.body.data.presetId}`;
+  await pe.patch(unaPrescripcion).send({ expectedVersion: 'v9', name: 'Otro' }).expect(409);
+  await pe.patch(unaPrescripcion).send({ expectedVersion: 'v1' }).expect(400);
+  await pe.patch(`${prescripciones}/${ajeno}`).send({ expectedVersion: 'v1', name: 'Otro' }).expect(404);
+  await request(servidor).patch(unaPrescripcion).send({ expectedVersion: 'v1', name: 'Otro' }).expect(401);
+  await conSesion(app, e.ase.token).patch(unaPrescripcion).send({ expectedVersion: 'v1', name: 'Otro' }).expect(403);
+  await pe.patch(unaPrescripcion).send({ expectedVersion: 'v1', state: 'REMOVED' }).expect(200);
+
+  // HAN-06 a 08 (ED-13): el reparto habitual, en gramos por día.
+  const n = await circuitoListoParaPlanificar(app, 'ct-repartos');
+  const pn = conSesion(app, n.pro.token);
+  const reparto = { protein: { value: 140, unit: 'g/day' }, carbohydrate: { value: 250, unit: 'g/day' }, fat: { value: 70, unit: 'g/day' } };
+  const repartos = '/api/v1/nutrition/macro-presets';
+  const guardado = await pn.post(repartos).send({ name: 'Reparto de contrato', distribution: reparto }).expect(201);
+  await pn.post(repartos).send({ name: 'reparto de contrato', distribution: reparto }).expect(409);
+  await pn.post(repartos).send({ name: 'Otro', distribution: reparto, replaces: ajeno, expectedVersion: 'v1' }).expect(404);
+  await pn.post(repartos).send({ name: 'Reparto de contrato', distribution: reparto, replaces: guardado.body.data.presetId, expectedVersion: 'v9' }).expect(409);
+  await pn.post(repartos).send({ name: 'En proporción', distribution: { ...reparto, fat: { value: 30, unit: 'energy_share' } } }).expect(400);
+  await sinClave(n.pro.token, repartos).send({ name: 'Sin clave', distribution: reparto }).expect(400);
+  await request(servidor).post(repartos).send({ name: 'x', distribution: reparto }).expect(401);
+  await conSesion(app, n.ase.token).post(repartos).send({ name: 'x', distribution: reparto }).expect(403);
+  await pn.get(repartos).expect(200);
+  await pn.get(`${repartos}?x=1`).expect(400);
+  await request(servidor).get(repartos).expect(401);
+  await conSesion(app, n.ase.token).get(repartos).expect(403);
+  const unReparto = `${repartos}/${guardado.body.data.presetId}`;
+  await pn.patch(unReparto).send({ expectedVersion: 'v9', name: 'Otro' }).expect(409);
+  await pn.patch(unReparto).send({ expectedVersion: 'v1' }).expect(400);
+  await pn.patch(`${repartos}/${ajeno}`).send({ expectedVersion: 'v1', name: 'Otro' }).expect(404);
+  await request(servidor).patch(unReparto).send({ expectedVersion: 'v1', name: 'Otro' }).expect(401);
+  await conSesion(app, n.ase.token).patch(unReparto).send({ expectedVersion: 'v1', name: 'Otro' }).expect(403);
+  await pn.patch(unReparto).send({ expectedVersion: 'v1', state: 'REMOVED' }).expect(200);
+
+  // PLN-01: los totales del plan, del profesional del plan.
+  const b = await crearBorrador(app, n);
+  const totales = (planId: string) => `/api/v1/nutrition/plans/${planId}/option-estimates`;
+  await pn.get(totales(b.planId)).expect(200);
+  await pn.get(`${totales(b.planId)}?x=1`).expect(400);
+  await pn.get(totales(ajeno)).expect(404);
+  await conSesion(app, n.ase.token).get(totales(b.planId)).expect(404);
+  await request(servidor).get(totales(b.planId)).expect(401);
+});
+
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
   const noDeclaradas: string[] = [];
   const porOperacion = new Map<string, Set<string>>();

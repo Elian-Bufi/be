@@ -336,10 +336,31 @@ async function borrador({ p, d, salida }) {
   assert.equal(pregunto, false, 'con todo guardado, recargar no pregunta');
 }
 
+/**
+ * Abre la comida `n` del editor, si está plegada, y espera a que quede abierta. El clic va al centro del botón: si la
+ * página todavía se acomoda (lecturas que llegan después de volver atrás), el clic puede caer donde el botón ya no está.
+ * Por eso se comprueba `data-abierta` y se reintenta, y cada reintento se anota para que se vea en la CI (salidaSegura
+ * falló dos veces el 12/11 con la comida 2 plegada: el clic no la abrió).
+ */
+async function abrirComida(p, n) {
+  const comida = `.comida-del-editor[data-comida="${n}"]`;
+  for (let intento = 1; intento <= 3; intento++) {
+    if (await p.$(`${comida}[data-abierta]`)) return;
+    await clic(p, `${comida} .comida-del-plan__boton`);
+    try {
+      await p.waitForSelector(`${comida}[data-abierta]`, { timeout: 5000 });
+      return;
+    } catch {
+      console.log(`  (abrirComida: la comida ${n} sigue plegada tras el clic ${intento}; dirección ${p.url()})`);
+    }
+  }
+  await p.waitForSelector(`${comida}[data-abierta]`, { timeout: ESPERA });
+}
+
 async function renombrarComida(p, n, nombre) {
   const comida = `.comida-del-editor[data-comida="${n}"]`;
   // Las comidas del editor empiezan plegadas: su menú «Más» aparece al abrirla.
-  if (!(await p.$(`${comida}[data-abierta]`))) await clic(p, `${comida} .comida-del-plan__boton`);
+  await abrirComida(p, n);
   await clic(p, `${comida} .comida-del-editor__acciones .menu-de-acciones__boton`);
   await clic(p, `${comida} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
   await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
@@ -407,7 +428,7 @@ async function salidaSegura({ p, d, salida }) {
   await elemento(p, '.comida-del-editor[data-comida="1"]', NUEVO);
   // Algo que no se puede guardar (una comida sin nombre): el cuadro, con «Seguir editando» enfocado; no se sale.
   const segunda = '.comida-del-editor[data-comida="2"]';
-  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await abrirComida(p, 2);
   await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
   await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
   await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
@@ -481,7 +502,7 @@ async function irACorregir({ p, d, salida }) {
   const segunda = '.comida-del-editor[data-comida="2"]';
   await elemento(p, segunda);
   // La comida 2, sin nombre: el campo queda a la vista (sin nombre no se puede guardar).
-  if (!(await p.$(`${segunda}[data-abierta]`))) await clic(p, `${segunda} .comida-del-plan__boton`);
+  await abrirComida(p, 2);
   await clic(p, `${segunda} .comida-del-editor__acciones .menu-de-acciones__boton`);
   await clic(p, `${segunda} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cambiar el nombre');
   await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
@@ -681,15 +702,83 @@ async function primerPlan({ p, d }) {
   await p.type('#objetivo-fundamento', 'Objetivo del recorrido de navegador.');
   await clic(p, 'form button[type="submit"]', 'Guardar nueva versión');
 
-  // 3. El plan.
-  await clic(p, '[data-crear-version]');
+  // 3. El plan. Se llegó con «Empezar el plan», que abre el asistente (ED-30): con el objetivo ya escrito, el paso 1
+  // ofrece desde dónde arrancar; «En blanco» y «Siguiente» crean la versión y siguen en el paso 2, el objetivo general.
+  await clic(p, '[data-punto-de-partida="blanco"]');
+  await clic(p, '[data-asistente-principal]');
   await elemento(p, '.editor-del-plan');
+  await elemento(p, '[data-objetivo-general]');
   // DJ-6: la primera versión en preparación lleva el número 1.
   await esperarTexto(p, 'Versión 1 · en preparación');
 
   // De vuelta en la ficha, la acción del momento cambió: ahora es seguir el borrador.
   await p.goto(`${WEB}/pro/advisees?id=${encodeURIComponent(d.ase.id)}`, { waitUntil: 'networkidle2' });
   await elemento(p, '[data-accion-de-la-ficha="borrador"]', 'Seguir el borrador');
+}
+
+/**
+ * ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito. Del paso
+ * 1 al 7 sobre el mismo borrador: el día tipo de «En blanco», una comida con un alimento del catálogo base, y activar. Activada desde el
+ * paso 7, se sale del asistente y se ve el plan activo (no el paso 1 de otra versión). En el paso 5, «Agregar una opción»
+ * cancelado no deja una opción vacía en el borrador.
+ */
+async function asistenteDeNutricion({ p, d }) {
+  await entrar(p, d.pro.correo);
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="empezar"]', 'Empezar el plan');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+
+  // 1 y 2. En blanco; el paso 2 muestra el objetivo general.
+  await clic(p, '[data-punto-de-partida="blanco"]');
+  await clic(p, '[data-asistente-principal]');
+  await elemento(p, '[data-objetivo-general]');
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Días tipo');
+
+  // 3. «En blanco» ya trae un día tipo, «Día habitual»: se sigue con él.
+  await elemento(p, '[data-asistente-agregar-dia]');
+  assert.equal(await p.evaluate(() => document.querySelectorAll('li[data-dia-del-asistente]').length), 1, 'en blanco, un día tipo');
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Comidas');
+
+  // 4. Una comida, con su nombre (sin nombre no se puede guardar).
+  await clic(p, '[data-asistente-agregar-comida]');
+  const comida = await elemento(p, '[data-dia-del-asistente="1"] .asistente__sesiones input');
+  await comida.type('Almuerzo');
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Opciones');
+
+  // 5. «Agregar una opción» y cancelar: el borrador sigue con una sola opción.
+  await elemento(p, '[data-opcion-del-asistente="1"]');
+  await clic(p, '[data-asistente-agregar-opcion]');
+  await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
+  assert.equal(await p.evaluate(() => document.querySelectorAll('[data-opcion-del-asistente]').length), 1, 'cancelar «Agregar una opción» no deja una opción vacía');
+
+  // La opción 1, en su cuadro: buscar, Enter suma el marcado, la cantidad y el estado, y «Guardar la opción».
+  await clic(p, '[data-armar-la-opcion]');
+  const buscador = await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
+  await buscador.type('arroz');
+  await elemento(p, '.cuadro-de-la-opcion [role="gridcell"][aria-selected="true"]');
+  await p.keyboard.press('Enter');
+  const cantidad = await elemento(p, '#cuadro-item-0-cantidad');
+  await cantidad.type('150');
+  await p.select('#cuadro-item-0-preparacion', 'COOKED');
+  await clic(p, '.cuadro-de-la-opcion [data-principal-del-cuadro]', 'Guardar la opción');
+  await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Revisar');
+
+  // 6 y 7. Revisar y activar, sin fecha de revisión.
+  await clic(p, '[data-asistente-principal]', 'Siguiente: Activar');
+  await clic(p, '[data-asistente-principal]', 'Revisar y activar');
+  await elemento(p, 'dialog[open] [data-antes-de-activar]');
+  await clic(p, 'dialog[open] .cuando-la-revisas input[value="sin-fecha"]');
+  // El principal se enciende cuando la API terminó de revisar lo guardado y hay una fecha elegida.
+  await p.waitForFunction(() => [...document.querySelectorAll('dialog[open] button.boton--primario')].some((b) => b.textContent.includes('Activar la versión 1') && !b.disabled), { timeout: ESPERA });
+  await clic(p, 'dialog[open] button.boton--primario', 'Activar la versión 1');
+
+  // Activada: sin el asistente en la dirección y con el plan activo a la vista.
+  await elemento(p, '.plan__activo');
+  assert.equal(ruta(p).parametros.get('asistente'), null, 'activar desde el paso 7 sale del asistente');
+  assert.equal(await p.$('[data-punto-de-partida]'), null, 'no aparece el paso 1 de otra versión');
 }
 
 /** Bloque 5: preparar la revisión desde la ficha y volver «donde estabas», con la vista y el período. */
@@ -1504,7 +1593,7 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

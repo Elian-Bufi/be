@@ -39,7 +39,8 @@ export interface RutaConLimiteMayor {
 }
 
 /**
- * Las diez escrituras con el límite de planes y recetas: los borradores de planes, las plantillas y las recetas. Las
+ * Las catorce escrituras con el límite de planes y recetas: los borradores de planes, las plantillas, las recetas y, desde
+ * ED-64 (WP-EDITORES-PROFESIONAL, DL-167), los habituales: una sesión de 8 ejercicios × 6 series con notas pasa los 16 KB. Las
  * demás de esas familias (validar, activar, descartar, cambiar el nombre o el estado de una plantilla, el cálculo de una
  * receta, su imagen) siguen con 16 KB: sus cuerpos son chicos.
  */
@@ -54,9 +55,13 @@ export const RUTAS_DE_PLANES_Y_RECETAS: readonly RutaConLimiteMayor[] = [
   { operacion: 'API-TPL-04', metodo: 'POST', patron: /^\/api\/v1\/training\/plan-templates\/[^/]+\/versions\/?$/i },
   { operacion: 'API-REC-01', metodo: 'POST', patron: /^\/api\/v1\/nutrition\/recipes\/?$/i },
   { operacion: 'API-REC-04', metodo: 'PATCH', patron: /^\/api\/v1\/nutrition\/recipes\/[^/]+\/?$/i },
+  { operacion: 'API-HAB-04', metodo: 'POST', patron: /^\/api\/v1\/training\/session-presets\/?$/i },
+  { operacion: 'API-HAB-05', metodo: 'PATCH', patron: /^\/api\/v1\/training\/session-presets\/[^/]+\/?$/i },
+  { operacion: 'API-HAN-04', metodo: 'POST', patron: /^\/api\/v1\/nutrition\/meal-presets\/?$/i },
+  { operacion: 'API-HAN-05', metodo: 'PATCH', patron: /^\/api\/v1\/nutrition\/meal-presets\/[^/]+\/?$/i },
 ];
 
-/** Si el pedido es una de esas diez escrituras, por su método y su ruta (sin la consulta). */
+/** Si el pedido es una de esas catorce escrituras, por su método y su ruta (sin la consulta). */
 export function esEscrituraDePlanOReceta(req: Pick<IncomingMessage, 'method' | 'url'>): boolean {
   const ruta = (req.url ?? '').split('?')[0] ?? '';
   return RUTAS_DE_PLANES_Y_RECETAS.some((r) => r.metodo === req.method && r.patron.test(ruta));
@@ -64,7 +69,7 @@ export function esEscrituraDePlanOReceta(req: Pick<IncomingMessage, 'method' | '
 
 /**
  * El `type` del parser de planes y recetas (bootstrap.ts): un cuerpo JSON, como el que lee el parser general, en una de
- * las diez rutas. Lo que no cumple las dos cosas lo lee el general, con sus 16 KB.
+ * las catorce rutas. Lo que no cumple las dos cosas lo lee el general, con sus 16 KB.
  */
 export function esJsonDePlanOReceta(req: IncomingMessage): boolean {
   const tipo = String(req.headers['content-type'] ?? '')

@@ -34,6 +34,8 @@ export interface PrincipalDelCuadro {
   readonly alTocar: () => void;
   /** Por qué está apagado, dicho a su lado; `null` o ausente: se puede tocar. */
   readonly apagado?: string | null;
+  /** Tocado apagado: llevar al lugar que lo impide (por ejemplo, el foco al campo). Sin esto, no hace nada. */
+  readonly alTocarApagado?: () => void;
   readonly enviando?: boolean;
   readonly textoEnviando?: string;
 }
@@ -50,6 +52,8 @@ export function CuadroEnfocado({
   pie = null,
   ancho = false,
   focoEnCancelar = false,
+  atras = null,
+  paso = null,
   className = '',
   onCerrar,
   children,
@@ -72,6 +76,10 @@ export function CuadroEnfocado({
   ancho?: boolean;
   /** Una confirmación que hace perder algo (ED-23): el foco entra en «Cancelar». */
   focoEnCancelar?: boolean;
+  /** ED-10: un paso abierto dentro de otro, en el mismo cuadro: «Atrás: Press de banca» vuelve al anterior. */
+  atras?: { readonly texto: string; readonly alTocar: () => void } | null;
+  /** El paso que se muestra: cuando cambia con el cuadro abierto, el foco va al título del paso nuevo. */
+  paso?: string | null;
   className?: string;
   onCerrar: () => void;
   children?: ReactNode;
@@ -100,6 +108,13 @@ export function CuadroEnfocado({
     if (preguntando) seguirRef.current?.focus();
   }, [preguntando]);
 
+  // El paso siguiente reemplaza al anterior en el mismo cuadro: el foco va a su título, como al abrir.
+  const pasoAnterior = useRef(paso);
+  useEffect(() => {
+    if (pasoAnterior.current !== paso && ref.current?.open) tituloRef.current?.focus({ preventScroll: true });
+    pasoAnterior.current = paso;
+  }, [paso]);
+
   /** Escape, «Cerrar» y «Cancelar»: nunca escriben. Con cambios, primero preguntan. */
   const pedirCerrar = () => {
     if (ocupado) return;
@@ -125,6 +140,12 @@ export function CuadroEnfocado({
     >
       <div className="cajon__cabecera">
         <div>
+          {atras ? (
+            <button type="button" className="boton boton--enlace cuadro-enfocado__atras" onClick={atras.alTocar} disabled={ocupado} data-atras-del-cuadro>
+              <Icono nombre="izquierda" tamano={18} />
+              {atras.texto}
+            </button>
+          ) : null}
           {sobretitulo ? <p className="cajon__sobretitulo">{sobretitulo}</p> : null}
           <h2 id={`${id}-titulo`} ref={tituloRef} tabIndex={-1}>
             {titulo}
@@ -176,7 +197,9 @@ export function CuadroEnfocado({
                 aria-busy={principal.enviando || undefined}
                 disabled={principal.enviando}
                 onClick={() => {
-                  if (!principal.apagado && !principal.enviando) principal.alTocar();
+                  if (principal.enviando) return;
+                  if (principal.apagado) principal.alTocarApagado?.();
+                  else principal.alTocar();
                 }}
               >
                 {principal.enviando ? (principal.textoEnviando ?? principal.texto) : principal.texto}

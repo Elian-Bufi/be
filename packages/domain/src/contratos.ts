@@ -238,6 +238,12 @@ export const CodigoDeError = {
    * es, venció, ya se usó, es de otra cuenta, el pedido no existe o se anuló por cinco intentos. Nada cambia.
    */
   RECOVERY_CODE_INVALID: 'RECOVERY_CODE_INVALID',
+  /**
+   * API-FZA-01 y 03 (ED-72; DL-171): la serie observada no se puede estimar con Epley v1 y no se guarda (ED-D19). `details.issues`
+   * dice el motivo con el código del dominio: SIN_RIR, RIR_MAYOR_QUE_2, MAS_DE_12, FUERA_DE_LA_LISTA, SIN_CARGA o
+   * SIN_REPETICIONES.
+   */
+  STRENGTH_OBSERVATION_NOT_ESTIMABLE: 'STRENGTH_OBSERVATION_NOT_ESTIMABLE',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 

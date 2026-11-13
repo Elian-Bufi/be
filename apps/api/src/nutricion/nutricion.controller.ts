@@ -122,6 +122,12 @@ export class NutricionController {
     return responder(res, await this.planes.activar(actorDe(req), planId, cuerpo, clave, contextoDe(req)));
   }
 
+  /** API-PLN-01 (TB-38; ED-31): la estimación de cada opción del plan, calculada por el servidor. */
+  @Get('nutrition/plans/:planId/option-estimates')
+  estimacionesDeLasOpciones(@Param('planId') planId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.planes.estimacionesDeLasOpciones(actorDe(req), planId, query, contextoDe(req));
+  }
+
   /** API-PLN-07 (DL-163 D-21; TB-47): descartar un borrador que nunca se activó. */
   @Post('nutrition/plans/:planId/discard')
   async descartarBorrador(@Param('planId') planId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
