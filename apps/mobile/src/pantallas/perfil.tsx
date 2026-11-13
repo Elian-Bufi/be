@@ -16,8 +16,8 @@
  *   «Agregá tu nombre» (`nombreEnPerfil`).
  */
 import { COPY_AYUDA, COPY_DERECHOS, COPY_INVITACION, ETIQUETA_DE_ALCANCE, type Alcance } from '@be/domain';
-import { useCallback, useEffect, type ReactNode } from 'react';
-import { Platform, Pressable, Share, Text, View } from 'react-native';
+import { Fragment, useCallback, useEffect, type ReactNode } from 'react';
+import { Platform, Pressable, Share, Switch, Text, View } from 'react-native';
 import { api } from '../api';
 import { SelectorDeApariencia } from '../apariencia';
 import { IconoDeZona } from '../barra-de-zonas';
@@ -28,7 +28,9 @@ import { leerLista } from '../lecturas-de-las-zonas';
 import { marcaEnPerfil } from '../marca-de-perfil';
 import { useSesionPerdida, type Ir, type Salida, type Zona } from '../navegacion';
 import { AJUSTES_DE_PERFIL, baldosasDePerfil, filasDeFormularios, nombreEnPerfil, paraResponder, type Ajuste, type DatosDePerfil } from '../perfil';
+import { preferenciasDelTelefono, usePreferenciasDelTelefono } from '../preferencias-en-el-telefono';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
+import { TEXTOS_DEL_PULIDO as TP } from '../textos-del-pulido';
 import { COLOR, estilosPorTema, Rotulo, Superficie, SuperficieTocable } from '../ui';
 import { Verificando } from './tarjeta-de-inicio';
 
@@ -163,7 +165,11 @@ export function PantallaDePerfil({ token, salir, ir }: { token: string; salir: (
       <Rotulo>{T.ajustes}</Rotulo>
       <Superficie style={estilos.grupo}>
         {AJUSTES_DE_PERFIL.map((a, i) => (
-          <FilaDeAjuste key={a} ajuste={a} ir={ir} ultima={i === AJUSTES_DE_PERFIL.length - 1} />
+          <Fragment key={a}>
+            <FilaDeAjuste ajuste={a} ir={ir} ultima={i === AJUSTES_DE_PERFIL.length - 1} />
+            {/* PG-08 (WP-PULIDO-GRANDES): el interruptor de la háptica, al lado de la apariencia: se cambia ahí mismo. */}
+            {a === 'apariencia' ? <FilaDeLaHaptica /> : null}
+          </Fragment>
         ))}
       </Superficie>
     </View>
@@ -207,6 +213,37 @@ function FilaDeAjuste({ ajuste, ir, ultima }: { ajuste: Ajuste; ir: Ir; ultima: 
     case 'cerrar-mi-cuenta':
       return <Fila icono={icono} titulo={T.cerrarMiCuenta} onPress={() => ir({ nombre: 'cuenta', seccion: 'cierre' })} peligro ultima={ultima} />;
   }
+}
+
+/**
+ * PG-08: «Vibrar al confirmar», con un interruptor que se cambia ahí mismo y queda guardado en este teléfono (PG-D4:
+ * prendido de fábrica). La fila entera es el interruptor: el lector la lee con su estado.
+ */
+function FilaDeLaHaptica() {
+  const { haptica } = usePreferenciasDelTelefono();
+  const cambiar = () => void preferenciasDelTelefono.cambiar({ haptica: !haptica });
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={`${TP.haptica}. ${TP.hapticaDetalle}`}
+      accessibilityState={{ checked: haptica }}
+      onPress={cambiar}
+      style={({ pressed }) => [estilos.fila, estilos.conLinea, pressed && estilos.presionado]}
+    >
+      <View style={estilos.filaConIcono}>
+        <View accessible={false} importantForAccessibility="no-hide-descendants">
+          <Icono nombre="ya-la-hice" tamano={20} tono="acento" />
+        </View>
+        <View style={estilos.textosDeFila}>
+          <Text style={estilos.tituloDeFila}>{TP.haptica}</Text>
+          <Text style={estilos.detalle}>{TP.hapticaDetalle}</Text>
+        </View>
+        <View accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none">
+          <Switch value={haptica} trackColor={{ false: COLOR.borde, true: COLOR.acento }} />
+        </View>
+      </View>
+    </Pressable>
+  );
 }
 
 /**

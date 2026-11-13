@@ -57,6 +57,7 @@ import {
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
 import { ajustesDelDescanso, marcaDeLaExplicacion, useAjustesDelDescanso } from '../ajustes-del-descanso';
+import { tocarPorUnError, tocarTrasLaSerie } from '../haptica';
 import { usePantallaEncendida } from '../pantalla-encendida-en-la-sesion';
 import { preferenciasDelTelefono, usePreferenciasDelTelefono } from '../preferencias-en-el-telefono';
 import { seMuestraLaExplicacion } from '../explicacion-de-los-tiempos';
@@ -1277,6 +1278,8 @@ export function PantallaDeSesion({
           setErrores({ setIndex: f.setIndex, errores: lectura.errores });
           if (porRegistrar?.prescriptionId === p.prescriptionId && porRegistrar.setIndex === f.setIndex) setPorRegistrar({ ...porRegistrar, nota: anuncio });
           AccessibilityInfo.announceForAccessibility(anuncio);
+          // PG-08: el doble toque suave, junto con el texto que dice qué falta.
+          tocarPorUnError();
           return;
         }
         setErrores(null);
@@ -1284,6 +1287,8 @@ export function PantallaDeSesion({
         // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
         const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie }, { olvidarFilasDeMas: !f.planificada });
         if (resultado !== 'registrada') return;
+        // PG-08: la serie quedó guardada en el teléfono: el toque de confirmar.
+        tocarTrasLaSerie(resultado);
         setEscribiendoTiempo(null);
         AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieRegistradaAnuncio(f.setIndex));
         if (descansoAuto && !descansoEmpezado) hacer(descansoAuto, anuncioDelDescanso(f.setIndex));
@@ -1299,6 +1304,8 @@ export function PantallaDeSesion({
       // Una carga registrada en otra unidad vuelve con su unidad: la columna del ejercicio pasa a esa.
       if (conAlgo && restaurar.carga !== '' && restaurar.unidad !== unidad) entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, restaurar.unidad);
       if (entrenamientoLocal.quitarSerie(draftId, p.prescriptionId, f.setIndex, conAlgo ? restaurar : null) !== 'quitada') return;
+      // PG-08: destildar deshace: su toque, distinto del de confirmar.
+      tocarTrasLaSerie('quitada');
       // Destildar con su descanso corriendo lo termina (AVD-3): el evento no se borra, se cierra.
       const terminarElDescanso = accionAlDestildar(estado, { prescriptionId: p.prescriptionId, setIndex: f.setIndex });
       if (terminarElDescanso) hacer(terminarElDescanso);
