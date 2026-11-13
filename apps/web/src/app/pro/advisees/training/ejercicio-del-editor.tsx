@@ -416,6 +416,7 @@ function CeldaGeneral({
   formatear,
   interpretar,
   onCambiar,
+  noSeEntiende,
 }: {
   id: string;
   rotulo: string;
@@ -423,10 +424,32 @@ function CeldaGeneral({
   formatear: (n: number | null) => string;
   interpretar: (t: string) => number | null;
   onCambiar: (v: number | null) => void;
+  /** Lo que se dice, a la vista y asociado al campo, cuando lo escrito no se entiende (WCAG 3.3.1), como en lo general de antes. */
+  noSeEntiende: string;
 }) {
   const { texto, alEscribir, alSalir } = useTextoInterpretado(valor, { clave: String(valor), formatear, interpretar, mismo: mismoNumero, alCambiar: onCambiar, normalizarAlSalir: true });
   const mal = texto.trim() !== '' && Number.isNaN(interpretar(texto));
-  return <input id={id} className="celda-de-serie" aria-label={rotulo} aria-invalid={mal || undefined} inputMode="decimal" autoComplete="off" value={texto} onChange={(e) => alEscribir(e.target.value)} onBlur={alSalir} />;
+  return (
+    <>
+      <input
+        id={id}
+        className="celda-de-serie"
+        aria-label={rotulo}
+        aria-invalid={mal || undefined}
+        aria-describedby={mal ? `${id}-no-se-entiende` : undefined}
+        inputMode="decimal"
+        autoComplete="off"
+        value={texto}
+        onChange={(e) => alEscribir(e.target.value)}
+        onBlur={alSalir}
+      />
+      {mal ? (
+        <span id={`${id}-no-se-entiende`} className="campo__error" data-celda-general-no-se-entiende>
+          {noSeEntiende}
+        </span>
+      ) : null}
+    </>
+  );
 }
 
 /** Las repeticiones de una serie: un número o un rango. No se toman de lo general: son de cada serie. */
@@ -607,6 +630,7 @@ function SeriesDelEjercicio({
                   formatear={escribirNumero}
                   interpretar={leerValor}
                   onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
+                  noSeEntiende="No se entiende: va un número."
                 />
               </td>
               {conRir ? (
@@ -623,6 +647,7 @@ function SeriesDelEjercicio({
                   formatear={escribirElDescanso}
                   interpretar={leerElDescanso}
                   onCambiar={(v) => onCambiar({ restSeconds: v })}
+                  noSeEntiende="No se entiende: va como 02:30, o en segundos enteros."
                 />
               </td>
               <td className="series-del-editor__nota">

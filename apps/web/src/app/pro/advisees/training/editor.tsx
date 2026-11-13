@@ -369,6 +369,9 @@ export function EditorDePlan({
   const [avanzarA, setAvanzarA] = useState<PasoDelAsistente | null>(null);
   // ED-14 (maqueta 03): la sesión que se mira en el paso 4, una pestaña por sesión de todo el plan.
   const [pestanaDelPaso4, setPestanaDelPaso4] = useState(0);
+  // ED-14: lo escrito en la línea de cada ejercicio y todavía sin aplicar, por pestaña y ejercicio. La pestaña desmonta la
+  // línea, y así no se pierde al ir a otra sesión ni aparece en el ejercicio de otra.
+  const [lineasDelPaso4, setLineasDelPaso4] = useState<Readonly<Record<string, string>>>({});
   const siguienteRef = useRef<((n: PasoDelAsistente) => Promise<void>) | null>(null);
   // ED-20: «Desde un preset» (paso 1) llega al paso 2 con la galería de estructuras abierta, una vez.
   // TEST-EDP-017: «Siguiente» pedido mientras viajaba un autoguardado decide cuando ese guardado termina.
@@ -1327,13 +1330,15 @@ export function EditorDePlan({
                   </button>
                 ))}
               </div>
-              <div role="tabpanel" id="paso-4-panel" aria-labelledby={idDeLaPestana(claveElegida)} className="asistente__sesion" data-sesion-del-asistente={n + 1}>
+              <div key={claveElegida} role="tabpanel" id="paso-4-panel" aria-labelledby={idDeLaPestana(claveElegida)} className="asistente__sesion" data-sesion-del-asistente={n + 1}>
                 {s.prescriptions.length === 0 ? <p className="nota">{CA.sinEjercicios}</p> : null}
                 {s.prescriptions.map((x, l) => {
                   // Como en la maqueta 03: el nombre a la vista, lo que tiene ahora y la marca de la carga, y al lado la línea.
                   const clave = claveDeLaSesion(g, n);
                   const nombre = nombres[x.exerciseVersionId] ?? 'Ejercicio';
                   const revisar = cargaARevisar(clave, x);
+                  // Por posición: en el paso 4 no se agregan ni se quitan ejercicios, y el identificador llega recién con el guardado.
+                  const pendiente = `${claveElegida}·p${l}`;
                   return (
                     <div key={x.prescriptionId ?? `nuevo-${l}`} className="asistente__ejercicio" data-ejercicio-del-asistente={l + 1}>
                       <p className="asistente__ejercicio-actual">
@@ -1348,6 +1353,8 @@ export function EditorDePlan({
                         id={`asistente-${clave}-p${l}`}
                         nombre={nombre}
                         prescripcion={x}
+                        texto={lineasDelPaso4[pendiente] ?? ''}
+                        onTexto={(t) => setLineasDelPaso4((m) => ({ ...m, [pendiente]: t }))}
                         onAplicar={(nueva, texto) => {
                           cambiar((b) => ((sesionesDelGrupo(b, g)[n]!.prescriptions[l] = nueva), b));
                           marcarCargas(clave, [{ p: nueva, texto }]);

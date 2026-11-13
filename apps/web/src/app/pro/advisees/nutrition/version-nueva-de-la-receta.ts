@@ -89,9 +89,11 @@ const NUTRIENTES_DE_LA_PORCION = ['energyKcal', 'proteinG', 'carbohydrateG', 'fa
 
 /**
  * API-PLN-01 en la vista previa (§8.7): lo que cambia en una porción, con las cuentas del servidor. «Antes» es la
- * estimación que API-PLN-01 hace de la opción guardada (la porción que armó con la versión que cita), y «después», el
- * cálculo que la API guardó con la versión nueva de la receta, por porción: los dos con el mismo método, nunca una cuenta
- * del editor. Sin la estimación de la opción (no se leyó, o la opción todavía no se guardó con esa versión), se dice solo
+ * estimación que API-PLN-01 hace de la opción guardada: suma los alimentos de la porción que armó con la versión que cita,
+ * con cada cantidad redondeada a 0,1 por porción. «Después» es el cálculo que la API guardó con la versión nueva, que
+ * divide el total exacto de la receta por sus porciones. No es el mismo método (EDT-60): con porciones que no dividen
+ * exacto, una receta sin cambios nutricionales puede mostrar una unidad de diferencia («de 1474 kcal a 1473 kcal»). Las dos
+ * son cuentas del servidor, nunca del editor; igualarlas pide el cálculo por porción de la versión citada, que la API no da. Sin la estimación de la opción (no se leyó, o la opción todavía no se guardó con esa versión), se dice solo
  * la porción nueva. Lo que no tiene dato dice «sin dato», nunca 0.
  */
 export function nutrientesDeLaPorcion(antes: NutrientesDeLaPorcion | null, despues: NutrientesDeLaPorcion | null): string[] {

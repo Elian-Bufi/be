@@ -439,7 +439,9 @@ export function EditorDeBorrador({
     estimacionPedida.current = versionGuardada;
     void api.estimarLasOpcionesDelPlan(token, planId).then((r) => {
       if (sesionPerdida(r)) return;
-      if (r.ok) setEstimacionDelPlan(r.datos.data);
+      // Solo la del pedido vigente: si un autoguardado cambió la versión con esta en vuelo, una respuesta vieja que llega
+      // tarde no pisa la de la versión de ahora (que no se volvería a pedir).
+      if (r.ok && r.datos.data.version === estimacionPedida.current) setEstimacionDelPlan(r.datos.data);
     });
   }, [hayVersionesNuevas, versionGuardada, token, planId, sesionPerdida]);
   /** ED-32: la versión nueva de la receta de una opción, con lo que cambia en una porción; `null` si no hay. */

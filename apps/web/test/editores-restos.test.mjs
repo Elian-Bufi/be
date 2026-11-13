@@ -104,6 +104,31 @@ test('ED-76 · las elegidas en palabras, el principal, y una serie quitada con e
   assert.match(leer('fuerza/detalle-del-ejercicio.tsx'), /onEscribirEnLasSeries\(loQueSeEscribeEnLasSeries\(sets, elegidas, \{ value: r\.carga, unit: r\.unidad \}\)\)/);
 });
 
+test('ED-76 · en las elegidas con % RM, la estimación tiene que ser la de la referencia; si no, no se escribe (EDT-56)', () => {
+  const conRef = { intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado · Epley v1 · 01/10/2026' } } } };
+  assert.equal(F.procedenciaEnLasSeries(conRef, '2026-10-01'), null);
+  // La del 11/11 con la referencia del 01/10: los kilos saldrían de otra estimación que la que dice el plan.
+  assert.equal(F.procedenciaEnLasSeries(conRef, '2026-11-11'), 'otra-referencia');
+  assert.equal(F.procedenciaEnLasSeries({ intensity: { criterion: 'PERCENT_RM', target: { value: 75 } } }, '2026-11-11'), 'sin-referencia');
+  assert.equal(F.procedenciaEnLasSeries({ intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '  ' } } } }, '2026-11-11'), 'sin-referencia');
+  // Con RIR, o sin criterio, no hay referencia que cuidar.
+  assert.equal(F.procedenciaEnLasSeries({ intensity: { criterion: 'RIR', target: { value: 2 } } }, '2026-11-11'), null);
+  assert.equal(F.procedenciaEnLasSeries({}, '2026-11-11'), null);
+  // El % de las elegidas es el de la prescripción y no se edita; el detalle le dice al cuadro que escribe en las series.
+  const cuadro = leer('fuerza/carga-desde-la-estimacion.tsx');
+  assert.match(cuadro, /const porcentajeFijo = enLasSeries && prescripcion\.intensity\?\.criterion === 'PERCENT_RM';/);
+  assert.match(cuadro, /const pct = leerNumero\(porcentajeFijo \? entrada\.porcentaje : porcentaje\);/);
+  assert.match(cuadro, /readOnly=\{x\.porcentajeFijo\}/);
+  assert.match(cuadro, /procedencia === 'otra-referencia'\n\s+\? C\.otraReferencia/);
+  assert.match(leer('fuerza/detalle-del-ejercicio.tsx'), /useCargaDesdeLaEstimacion\(prescripcion, unidad, desdeLasSeries\)/);
+});
+
+test('ED-72 · el principal apagado dice el motivo de la lectura: «ya no está» o la falla, no «Leyendo…»', () => {
+  const cuadro = leer('fuerza/suceder-serie-observada.tsx');
+  assert.match(cuadro, /lectura\.tipo === 'no-esta' \? COPY_SUCESION\.noEsta : lectura\.tipo === 'error' \? lectura\.texto : lectura\.tipo !== 'lista' \? COPY_SUCESION\.leyendo/);
+  assert.match(cuadro, /<p role="status" data-sucesion-no-esta>/);
+});
+
 test('§5.8 · los textos nuevos de la vertical pasan la guardia de fuerza y de Entrenamiento, también en los comentarios', () => {
   for (const archivo of ['fuerza/suceder-serie-observada.tsx', 'fuerza/fuerza.ts', 'fuerza/detalle-del-ejercicio.tsx', 'fuerza/carga-desde-la-estimacion.tsx']) {
     assert.deepEqual(terminosProhibidosDeFuerzaEn(leer(archivo)), [], archivo);
@@ -149,6 +174,16 @@ test('ED-14 · las flechas dan la vuelta, Inicio y Fin van a las puntas; si se q
   assert.match(editor, /role="tabpanel" id="paso-4-panel" aria-labelledby=\{idDeLaPestana\(claveElegida\)\}/);
 });
 
+test('ED-14 · el panel es uno por pestaña, y lo escrito sin aplicar queda en su sesión y su ejercicio', () => {
+  const editor = leer('training/editor.tsx');
+  // Sin la key, React reusa la línea del ejercicio 1 de A en el ejercicio 1 de B, y un Enter aplica ahí lo escrito en A.
+  assert.match(editor, /<div key=\{claveElegida\} role="tabpanel" id="paso-4-panel"/);
+  assert.match(editor, /const pendiente = `\$\{claveElegida\}·p\$\{l\}`;/);
+  assert.match(editor, /texto=\{lineasDelPaso4\[pendiente\] \?\? ''\}\n\s+onTexto=\{\(t\) => setLineasDelPaso4\(\(m\) => \(\{ \.\.\.m, \[pendiente\]: t \}\)\)\}/);
+  const linea = leer('training/linea-de-prescripcion.tsx');
+  assert.match(linea, /const texto = deAfuera \?\? propioTexto;\n\s+const setTexto = onTexto \?\? setPropioTexto;/);
+});
+
 // ─── ED-23 · la fila «General» ──────────────────────────────────────────────────────────────────────────────────────
 
 test('ED-23 · la fila «General» está dentro de la tabla, arriba de las series, con la carga y el descanso de la prescripción', () => {
@@ -162,6 +197,10 @@ test('ED-23 · la fila «General» está dentro de la tabla, arriba de las serie
   // Y una sola vez en el archivo: lo general de abajo ya no los repite.
   assert.equal(editor.match(/id=\{`\$\{id\}-carga`\}/g).length, 1);
   assert.equal(editor.match(/id=\{`\$\{id\}-descanso`\}/g).length, 1);
+  // Lo general que no se entiende lo dice a la vista y asociado al campo (WCAG 3.3.1), como antes de la planilla.
+  assert.match(editor, /aria-describedby=\{mal \? `\$\{id\}-no-se-entiende` : undefined\}/);
+  assert.match(tabla, /noSeEntiende="No se entiende: va un número\."/);
+  assert.match(tabla, /noSeEntiende="No se entiende: va como 02:30, o en segundos enteros\."/);
   // La tabla se ve también sin series: la fila «General» es donde se escribe la carga general.
   assert.doesNotMatch(editor, /p\.sets\.length === 0 \? \(\n\s+<p className="nota">\{C\.sinSeries\}<\/p>\n\s+\) : \(/);
 });
@@ -190,4 +229,14 @@ test('API-PLN-01 · la estimación vale solo para la versión del plan que se mi
   assert.equal(V.estimacionDeLaOpcion(null, 'v7', 'o1', 'rv2'), null);
   const editor = leer('nutrition/editor.tsx');
   assert.match(editor, /api\.estimarLasOpcionesDelPlan\(token, planId\)/);
+  // Una respuesta de una versión vieja que llega tarde no pisa la de la versión de ahora.
+  assert.match(editor, /if \(r\.ok && r\.datos\.data\.version === estimacionPedida\.current\) setEstimacionDelPlan\(r\.datos\.data\);/);
+});
+
+test('ED-32 · con porciones que no dividen exacto, los mismos ingredientes no se leen como un cambio (EDT-60)', () => {
+  // 100 g en 3 porciones: la API arma 33,3 g por porción y la receta da 33,33…; las dos se comparan con un decimal.
+  const despues = V.porcionDe({ servings: 3, ingredients: [{ catalogItemId: 'avena', name: 'Avena', quantity: { value: 100, unit: 'g' } }] });
+  assert.deepEqual(V.cambiosEnUnaPorcion([{ catalogItemId: 'avena', nombre: 'Avena', cantidad: { value: 33.3, unit: 'g' } }], despues), ['Una porción tiene los mismos ingredientes y cantidades.']);
+  // Los nutrientes vienen de dos métodos del servidor: el comentario lo dice, y no los presenta como el mismo.
+  assert.match(leer('nutrition/version-nueva-de-la-receta.ts'), /No es el mismo método \(EDT-60\)/);
 });

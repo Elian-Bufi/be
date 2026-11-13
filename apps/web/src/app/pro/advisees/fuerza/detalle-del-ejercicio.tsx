@@ -130,7 +130,7 @@ export function DetalleDelEjercicio({
       setPaso({ tipo: 'detalle' });
     },
   });
-  const carga = useCargaDesdeLaEstimacion(prescripcion, unidad);
+  const carga = useCargaDesdeLaEstimacion(prescripcion, unidad, desdeLasSeries);
   useEffect(() => {
     if (!abierto || !series || series.length === 0) return;
     setEnLasSeries(true);

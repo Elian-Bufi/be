@@ -99,7 +99,9 @@ export function useSucesion(o: {
       tocar();
     },
     enVivo,
-    apagado: lectura.tipo !== 'lista' ? COPY_SUCESION.leyendo : pedido && !pedido.ok ? pedido.falta : null,
+    // El motivo del principal apagado sigue a la lectura: una que ya no está o que falló no se anuncia como «Leyendo…».
+    apagado:
+      lectura.tipo === 'no-esta' ? COPY_SUCESION.noEsta : lectura.tipo === 'error' ? lectura.texto : lectura.tipo !== 'lista' ? COPY_SUCESION.leyendo : pedido && !pedido.ok ? pedido.falta : null,
     enviando,
     falla,
     enviar,
@@ -118,7 +120,13 @@ export function SucederSerieObservada({ hoy, estado: x }: { hoy: string; estado:
       </p>
     );
   }
-  if (x.lectura.tipo === 'no-esta') return <p data-sucesion-no-esta>{C.noEsta}</p>;
+  if (x.lectura.tipo === 'no-esta') {
+    return (
+      <p role="status" data-sucesion-no-esta>
+        {C.noEsta}
+      </p>
+    );
+  }
   if (x.lectura.tipo === 'error') {
     return (
       <div className="campo__error" role="alert">

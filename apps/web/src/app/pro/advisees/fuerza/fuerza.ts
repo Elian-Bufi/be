@@ -388,6 +388,19 @@ export function loQueSeEscribeEnLasSeries<S extends { readonly suggestedLoad?: {
   return { sets: sets.map((s, n) => (cuales.has(n) ? { ...s, suggestedLoad: { value: carga.value, unit: carga.unit } } : s)) };
 }
 
+/**
+ * EDT-56, con el criterio % RM: las elegidas toman el % RM y la referencia de toda la prescripción, que no cambian. Para que
+ * su carga tenga de dónde salir, la estimación elegida tiene que ser la de esa referencia. `'sin-referencia'`: la
+ * prescripción no tiene una; `'otra-referencia'`: la elegida es otra. En los dos casos no se escribe desde las elegidas: se
+ * calcula desde la fila general, que escribe el % RM y la referencia. Con otro criterio no hay referencia que cuidar: `null`.
+ */
+export function procedenciaEnLasSeries(p: PrescripcionParaLaCarga, fechaDeLaElegida: string): 'sin-referencia' | 'otra-referencia' | null {
+  if (p.intensity?.criterion !== 'PERCENT_RM') return null;
+  const ref = p.intensity.target.reference?.description?.trim();
+  if (!ref) return 'sin-referencia';
+  return ref === referenciaDeLaEstimacion(fechaDeLaElegida) ? null : 'otra-referencia';
+}
+
 /** Las elegidas que todavía existen: si se quitó una serie con el cuadro abierto, no se escribe en una que no está. */
 export const lasElegidasQueQuedan = (elegidas: Iterable<number>, cuantas: number): number[] =>
   [...new Set(elegidas)].filter((n) => Number.isInteger(n) && n >= 0 && n < cuantas).sort((a, b) => a - b);
