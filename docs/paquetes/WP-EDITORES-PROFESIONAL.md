@@ -1702,7 +1702,7 @@ estimación, fuera de la APK de la persona (D-V3-02, por DJ-1). El 1RM medido co
 - el descarte, solo de un borrador nunca activado (D-21, TB-47);
 - la edición simultánea responde un conflicto explícito (DL-148).
 
-### 6.3 Las de la implementación (EDT), a ratificar por Dirección
+### 6.3 Las de la implementación (EDT), EDT-01 a EDT-34 ratificadas el 2026-11-12; EDT-35 a EDT-60, ratificadas por Dirección el 2026-11-13
 
 Las tomó Claude al programar la etapa 1 (EDT-01 a EDT-10), la etapa 2 del website (EDT-11 a EDT-20) y la etapa 3 del
 website (EDT-21 en adelante), el 2026-11-12. Ninguna cambia la forma de un contrato ni lo que la API acepta o devuelve. Cada una dice qué se eligió y qué otra opción había, y su commit la explica.
@@ -1753,7 +1753,7 @@ website (EDT-21 en adelante), el 2026-11-12. Ninguna cambia la forma de un contr
 - ED-11: las plantillas van como una pestaña más de la galería, y el borrador anota de qué plantilla salió.
 - Las dos quedan para la próxima tanda, porque no son parte del website integrado hoy.
 
-**Las de la API (EDT-35 en adelante), a ratificar.** Las tomó Claude al programar la tarea 1 (la API y el dominio, rama
+**Las de la API (EDT-35 en adelante), ratificadas por Dirección el 2026-11-13.** Las tomó Claude al programar la tarea 1 (la API y el dominio, rama
 `wp-editores-api`), el 2026-11-12. Todas son aditivas: ninguna cambia lo que leen las APK.
 
 | ID | Parte | Lo elegido | La alternativa |
@@ -1771,7 +1771,7 @@ website (EDT-21 en adelante), el 2026-11-12. Ninguna cambia la forma de un contr
 | EDT-46 | ED-70 (TEST-EDP-046) | La APK 0.24 lee lo que ella registra, también después de que el profesional lo corrige (EDT-36 le impide agregar el campo). Una ejecución con procedencia, registrada con la APK nueva, no la lee la 0.24 («respuesta no reconocida» en ese detalle, en «Tu historial» del período y en el borrador): pasa solo si la misma persona vuelve a la 0.24 o usa dos teléfonos con versiones distintas. Queda como riesgo aceptado, como el de DL-161, y lo prueba `procedencia-por-campo.int-spec.ts` | Una capacidad nueva en `X-BE-Capabilities` (como DL-122): la API devuelve `fieldOrigins` solo a quien la declara. Una corrección desde la 0.24 perdería la procedencia sin aviso |
 | EDT-45 | API-PLN-01 | La ruta es la del TB-38 (`/nutrition/plans/{planId}/option-estimates`). Un borrador se estima con lo que usaría la instantánea si se activara hoy; un alimento que ya no está disponible queda sin composición y la opción dice «sin dato» por él | Rechazar el borrador hasta que se pueda activar |
 
-**Las del website (EDT-47 en adelante), a ratificar.** Las tomó Claude al programar la tarea 2 (el website de la API,
+**Las del website (EDT-47 en adelante), ratificadas por Dirección el 2026-11-13.** Las tomó Claude al programar la tarea 2 (el website de la API,
 rama `wp-editores-api`), el 2026-11-12. Ninguna cambia la API ni lo que leen las APK.
 
 | ID | Parte | Lo elegido | La alternativa |
@@ -1786,7 +1786,7 @@ rama `wp-editores-api`), el 2026-11-12. Ninguna cambia la API ni lo que leen las
 | EDT-54 | ED-11 | Reemplazar el borrador con una plantilla son dos operaciones de hoy: descartar (API-PLE-05) y crear desde la plantilla (API-TRN-07). Si la segunda falla, la versión activa sigue igual y el diálogo de plantillas queda abierto con el motivo | Una operación nueva de la API que lo haga de una vez |
 | EDT-55 | ED-74 | La columna «Sesión» de la tabla de origen y el nombre de la sesión en la «Lectura» esperan que la clave TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE traiga el nombre de la sesión en cada punto y en cada serie que no entró: hoy no lo trae, y la lectura dice solo la versión del plan que regía (de `planVersions`). Revisión adversaria del 13/11 | Sumar el nombre de la sesión al contrato de la clave (cambio aditivo de API-PRJ-01) |
 
-**Las de los restos del website (EDT-56 en adelante), a ratificar.** Las tomó Claude al programar los restos (§8.8), el
+**Las de los restos del website (EDT-56 en adelante), ratificadas por Dirección el 2026-11-13.** Las tomó Claude al programar los restos (§8.8), el
 2026-11-13. Ninguna cambia la API ni lo que leen las APK.
 
 | ID | Parte | Lo elegido | La alternativa |
@@ -1797,7 +1797,7 @@ rama `wp-editores-api`), el 2026-11-12. Ninguna cambia la API ni lo que leen las
 | EDT-59 | ED-23 | La fila «General» va dentro de la tabla, arriba de las series, con la carga sugerida y el descanso de la prescripción (los mismos identificadores, para que «Validar» lleve a ellos) y el RIR general como texto (se escribe en la intensidad). Debajo quedan el criterio, la unidad, las notas, las bases y los parámetros. Sin series, la tabla se ve igual, con su fila «General» | Repetir la carga y el descanso arriba y abajo |
 | EDT-60 | ED-32 | La vista previa de la versión nueva de una receta suma la porción con las cuentas de BE: la de ahora, de API-PLN-01 (solo si es de la versión del plan que se mira y cita la misma versión de la receta), y la nueva, del cálculo que la API guardó con la receta. No es el mismo método: la de ahora suma los alimentos con cantidades redondeadas a 0,1 por porción, y la nueva divide el total exacto por las porciones; con porciones que no dividen exacto puede verse una unidad de diferencia sin cambio nutricional. Se lee una vez por versión guardada, y solo si hay una versión nueva que ofrecer. El origen «dato de demostración» por fila no entra: API-PLN-01 no trae la procedencia de cada alimento | Sumar la procedencia a API-PLN-01 (cambio aditivo del contrato). Comparar el cálculo por porción de la versión citada con el de la nueva, que pide leer una versión de la receta por su identificador (otra operación) |
 
-### 6.4 Las del cierre del website (EDC), a ratificar por Dirección
+### 6.4 Las del cierre del website (EDC), ratificadas por Dirección el 2026-11-13
 
 Las tomó Claude al programar el cierre del website (§8.7), el 2026-11-12, en paralelo con la rama de la API. Ninguna
 cambia un contrato ni lo que la API acepta o devuelve.
@@ -1978,7 +1978,7 @@ Programada en la rama `wp-editores-profesional` (PR #251, en borrador), sin la A
 ### 8.4 La etapa 3 en el website: lo hecho y lo que queda (2026-11-12)
 
 Programada en la rama `wp-editores-profesional` (PR #251, en borrador), sin la API ni la APK. Las decisiones nuevas son
-EDT-21 a EDT-34 (§6.3), a ratificar.
+EDT-21 a EDT-34 (§6.3), ratificadas el 2026-11-12 (§6.3).
 
 | Parte | Commit | Lo que quedó |
 |---|---|---|
@@ -2026,7 +2026,7 @@ EDT-21 a EDT-34 (§6.3), a ratificar.
 ### 8.5 La API y el dominio (tarea 1): lo hecho y lo que queda (2026-11-12)
 
 Programada en la rama `wp-editores-api` (PR #258, en borrador), sobre main 23904ee. Las decisiones nuevas son EDT-35 a
-EDT-45 (§6.3), a ratificar.
+EDT-45 (§6.3), ratificadas por Dirección el 2026-11-13.
 
 | Parte | Lo que quedó |
 |---|---|
@@ -2067,7 +2067,7 @@ ratificar.
 
 Programado en la rama `wp-editores-cierre` (PR #259, en borrador), en paralelo con `wp-editores-api` (la fuerza, ED-11,
 ED-13, ED-24 y la API): no toca ED-11, ED-13, ED-14, ED-23 ni ED-24, ni `training/editor.tsx`. Las decisiones nuevas
-son EDC-01 a EDC-14 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editores-cierre.test.mjs`.
+son EDC-01 a EDC-14 (§6.4), ratificadas por Dirección el 2026-11-13. Las pruebas, en `apps/web/test/editores-cierre.test.mjs`.
 
 | Parte | Commit | Lo que quedó |
 |---|---|---|
@@ -2102,7 +2102,7 @@ son EDC-01 a EDC-14 (§6.4), a ratificar. Las pruebas, en `apps/web/test/editore
 ### 8.8 Los restos del website (2026-11-13)
 
 Programados en la rama `wp-editores-restos`, sobre main 64dfc39, con la API de #258 ya integrada: lo pendiente de §8.5 a
-§8.7 que es del website. Las decisiones nuevas son EDT-56 a EDT-60 (§6.3), a ratificar. Las pruebas, en
+§8.7 que es del website. Las decisiones nuevas son EDT-56 a EDT-60 (§6.3), ratificadas por Dirección el 2026-11-13. Las pruebas, en
 `apps/web/test/editores-restos.test.mjs`.
 
 | Parte | Lo que quedó |
