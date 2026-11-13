@@ -52,9 +52,11 @@ const APK = readdirSync(CARPETA)
  * Hasta el 2026-11-11 la lista tuvo la estable 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1. Ese día Dirección
  * dijo que solo su teléfono y dos o tres de su familia tienen la app, y que no hay que sostener las anteriores. La
  * 0.23.0-candidata.2 (el arreglo de #250) leía las mismas 88 operaciones que la .1, con la misma forma. El 2026-11-12 la
- * reemplazó la 0.24.0-candidata.1 (el nombre obligatorio de WP-USO-FINAL, UF-01), que lee esas 88 y API-ACC-07.
+ * reemplazó la 0.24.0-candidata.1 (el nombre obligatorio de WP-USO-FINAL, UF-01), que leía esas 88 y API-ACC-07. El
+ * 2026-11-13 la reemplazó la 0.27.0-candidata.1 (WP-APP-VUELTA-2), que lee esas 89 y nueve más: ACC-08 y 09, ACC-P1-01 y
+ * 02, EXP-01 y 02, RGT-01 y 03, y SOP-01.
  */
-const VIGENTES = ['0.24.0-candidata.1'];
+const VIGENTES = ['0.27.0-candidata.1'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en

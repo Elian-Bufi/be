@@ -1,14 +1,14 @@
 {
  "apk": {
-  "version": "0.24.0-candidata.1",
-  "versionCode": 38,
-  "tag": "be-apk-0.24.0-candidata.1",
-  "commit": "1cb3cdcb8f313f3851780c112b309779b1c32152"
+  "version": "0.27.0-candidata.1",
+  "versionCode": 41,
+  "tag": "be-apk-0.27.0-candidata.1",
+  "commit": "e145af9ee4734c36134c14fbff9574410e3cd96d"
  },
- "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.24.0-candidata.1» desde las fuentes del commit 1cb3cdc (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
+ "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.27.0-candidata.1» desde las fuentes del commit e145af9 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
  "cabeceras": {
   "X-BE-Surface": "APK",
-  "X-BE-Capabilities": "training-set-targets-1,forms-format-3"
+  "X-BE-Capabilities": "training-set-targets-1,forms-format-3,pending-steps-texts-1"
  },
  "textos": {
   "TERMINOS": "terminos-2026-09-demo",
@@ -90,6 +90,24 @@
      },
      "required": [
       "email"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "SECOND_FACTOR_INVALID": {
+    "esquema": "DetalleDeCodigoInvalidoSchema",
+    "respuesta": {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "type": "object",
+     "properties": {
+      "attemptsRemaining": {
+       "type": "integer",
+       "minimum": 0,
+       "maximum": 9007199254740991
+      }
+     },
+     "required": [
+      "attemptsRemaining"
      ],
      "additionalProperties": false
     }
@@ -689,6 +707,245 @@
    },
    "noRepresentado": [],
    "pedido": null
+  },
+  "API-ACC-08": {
+   "metodo": "post",
+   "ruta": "/me/legal-acceptances",
+   "llamadas": [
+    "aceptarVersionVigente"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "AceptacionDeVersionResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "actId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "text": {
+        "type": "string",
+        "enum": [
+         "TERMS",
+         "PRIVACY"
+        ]
+       },
+       "versionId": {
+        "type": "string"
+       },
+       "acceptedAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       }
+      },
+      "required": [
+       "actId",
+       "text",
+       "versionId",
+       "acceptedAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string",
+      "enum": [
+       "TERMS",
+       "PRIVACY"
+      ]
+     },
+     "versionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+     }
+    },
+    "required": [
+     "text",
+     "versionId"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "API-ACC-09": {
+   "metodo": "get",
+   "ruta": "/legal-texts/{versionId}",
+   "llamadas": [
+    "textoPublicado"
+   ],
+   "conSesion": false,
+   "conClave": false,
+   "esquema": "TextoPublicadoResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "versionId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "type": {
+        "type": "string",
+        "minLength": 1
+       },
+       "title": {
+        "type": "string"
+       },
+       "purpose": {
+        "type": "string"
+       },
+       "effectiveFrom": {
+        "type": "string"
+       },
+       "text": {
+        "type": "string"
+       },
+       "sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+       },
+       "replaces": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      },
+      "required": [
+       "versionId",
+       "type",
+       "title",
+       "purpose",
+       "effectiveFrom",
+       "text",
+       "sha256",
+       "replaces"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": null
+  },
+  "API-ACC-P1-01": {
+   "metodo": "post",
+   "ruta": "/auth/recovery-requests",
+   "llamadas": [
+    "pedirRecuperacion"
+   ],
+   "conSesion": false,
+   "conClave": false,
+   "esquema": "RecuperacionPedidaResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "recoveryId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "expiresAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       },
+       "delivery": {
+        "type": "string",
+        "enum": [
+         "EMAIL",
+         "ASSISTED"
+        ]
+       }
+      },
+      "required": [
+       "recoveryId",
+       "expiresAt",
+       "delivery"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "identifier": {
+      "type": "string",
+      "maxLength": 400
+     }
+    },
+    "required": [
+     "identifier"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "API-ACC-P1-02": {
+   "metodo": "post",
+   "ruta": "/auth/recovery-requests/{recoveryId}/complete",
+   "llamadas": [
+    "completarRecuperacion"
+   ],
+   "conSesion": false,
+   "conClave": false,
+   "esquema": null,
+   "comoElContrato": true,
+   "respuesta": null,
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "proof": {
+      "type": "string",
+      "maxLength": 100
+     },
+     "newCredential": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "proof",
+     "newCredential"
+    ],
+    "additionalProperties": false
+   }
   },
   "API-ACC-P1-03": {
    "metodo": "post",
@@ -2840,6 +3097,232 @@
        "consentId",
        "state",
        "revokedAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": null
+  },
+  "API-EXP-01": {
+   "metodo": "post",
+   "ruta": "/me/exports",
+   "llamadas": [
+    "exportarMisDatos"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "ExportacionResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "exportId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "state": {
+        "type": "string",
+        "enum": [
+         "READY",
+         "EXPIRED"
+        ]
+       },
+       "domains": {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "enum": [
+          "NUTRITION",
+          "TRAINING",
+          "ANTHROPOMETRY"
+         ]
+        }
+       },
+       "createdAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       },
+       "expiresAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       },
+       "download": {
+        "anyOf": [
+         {
+          "type": "object",
+          "properties": {
+           "path": {
+            "type": "string",
+            "format": "starts_with",
+            "pattern": "^\\/exports\\/content\\/.*"
+           },
+           "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           }
+          },
+          "required": [
+           "path",
+           "expiresAt"
+          ],
+          "additionalProperties": false
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "exportId",
+       "state",
+       "domains",
+       "createdAt",
+       "expiresAt",
+       "download"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "scope": {
+      "type": "object",
+      "properties": {
+       "domains": {
+        "maxItems": 3,
+        "type": "array",
+        "items": {
+         "type": "string",
+         "enum": [
+          "NUTRITION",
+          "TRAINING",
+          "ANTHROPOMETRY"
+         ]
+        }
+       },
+       "period": {
+        "type": "null"
+       }
+      },
+      "required": [
+       "domains",
+       "period"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "scope"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "API-EXP-02": {
+   "metodo": "get",
+   "ruta": "/me/exports/{exportId}",
+   "llamadas": [
+    "exportacionPropia"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "ExportacionResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "exportId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "state": {
+        "type": "string",
+        "enum": [
+         "READY",
+         "EXPIRED"
+        ]
+       },
+       "domains": {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "enum": [
+          "NUTRITION",
+          "TRAINING",
+          "ANTHROPOMETRY"
+         ]
+        }
+       },
+       "createdAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       },
+       "expiresAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       },
+       "download": {
+        "anyOf": [
+         {
+          "type": "object",
+          "properties": {
+           "path": {
+            "type": "string",
+            "format": "starts_with",
+            "pattern": "^\\/exports\\/content\\/.*"
+           },
+           "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           }
+          },
+          "required": [
+           "path",
+           "expiresAt"
+          ],
+          "additionalProperties": false
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "exportId",
+       "state",
+       "domains",
+       "createdAt",
+       "expiresAt",
+       "download"
       ],
       "additionalProperties": false
      }
@@ -22520,6 +23003,249 @@
     "additionalProperties": false
    }
   },
+  "API-RGT-01": {
+   "metodo": "post",
+   "ruta": "/me/data-rights-requests",
+   "llamadas": [
+    "pedirUnDerecho"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "PedidoDeDerechoResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "requestId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "type": {
+        "type": "string",
+        "enum": [
+         "ACCESS",
+         "RECTIFICATION",
+         "SUPPRESSION"
+        ]
+       },
+       "note": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "state": {
+        "type": "string",
+        "enum": [
+         "RECEIVED",
+         "RESOLVED",
+         "REJECTED"
+        ]
+       },
+       "createdAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       },
+       "deadline": {
+        "type": "string",
+        "format": "date",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+       },
+       "resolvedAt": {
+        "anyOf": [
+         {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "response": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      },
+      "required": [
+       "requestId",
+       "type",
+       "note",
+       "state",
+       "createdAt",
+       "deadline",
+       "resolvedAt",
+       "response"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "type": {
+      "type": "string",
+      "enum": [
+       "ACCESS",
+       "RECTIFICATION",
+       "SUPPRESSION"
+      ]
+     },
+     "scope": {
+      "type": "object",
+      "properties": {
+       "note": {
+        "type": "string",
+        "maxLength": 2000
+       }
+      },
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "type",
+     "scope"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "API-RGT-03": {
+   "metodo": "get",
+   "ruta": "/me/data-rights-requests",
+   "llamadas": [
+    "pedidosDeDerechos"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "ListaDePedidosDeDerechoResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "requestId": {
+         "type": "string",
+         "minLength": 1
+        },
+        "type": {
+         "type": "string",
+         "enum": [
+          "ACCESS",
+          "RECTIFICATION",
+          "SUPPRESSION"
+         ]
+        },
+        "note": {
+         "type": [
+          "string",
+          "null"
+         ]
+        },
+        "state": {
+         "type": "string",
+         "enum": [
+          "RECEIVED",
+          "RESOLVED",
+          "REJECTED"
+         ]
+        },
+        "createdAt": {
+         "type": "string",
+         "format": "date-time",
+         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "deadline": {
+         "type": "string",
+         "format": "date",
+         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+        },
+        "resolvedAt": {
+         "anyOf": [
+          {
+           "type": "string",
+           "format": "date-time",
+           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          {
+           "type": "null"
+          }
+         ]
+        },
+        "response": {
+         "type": [
+          "string",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "requestId",
+        "type",
+        "note",
+        "state",
+        "createdAt",
+        "deadline",
+        "resolvedAt",
+        "response"
+       ],
+       "additionalProperties": false
+      }
+     },
+     "page": {
+      "type": "object",
+      "properties": {
+       "limit": {
+        "type": "integer",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991
+       },
+       "nextCursor": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "hasMore": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "limit",
+       "nextCursor",
+       "hasMore"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data",
+     "page"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": null
+  },
   "API-SER-02": {
    "metodo": "get",
    "ruta": "/training/occurrences/{occurrenceId}/session",
@@ -23166,6 +23892,65 @@
     "data.session.prescriptions[].professionalParameters[]: refine",
     "data.session.prescriptions[].sets[].target.repetitions: refine"
    ],
+   "pedido": null
+  },
+  "API-SOP-01": {
+   "metodo": "get",
+   "ruta": "/support/contact",
+   "llamadas": [
+    "consultarCanalDeContacto"
+   ],
+   "conSesion": false,
+   "conClave": false,
+   "esquema": "CanalDeContactoResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "supportEmail": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 254,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "privacyEmail": {
+        "anyOf": [
+         {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 254,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "supportEmail",
+       "privacyEmail"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
    "pedido": null
   },
   "API-TIE-01": {
@@ -31686,6 +32471,33 @@
                   "type": "null"
                  }
                 ]
+               },
+               "fieldOrigins": {
+                "type": "object",
+                "properties": {
+                 "load": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "completedRepetitions": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "rir": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 }
+                },
+                "additionalProperties": false
                }
               },
               "required": [
@@ -32036,6 +32848,33 @@
                   "type": "null"
                  }
                 ]
+               },
+               "fieldOrigins": {
+                "type": "object",
+                "properties": {
+                 "load": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "completedRepetitions": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "rir": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 }
+                },
+                "additionalProperties": false
                }
               },
               "required": [
@@ -32381,6 +33220,33 @@
                   "type": "null"
                  }
                 ]
+               },
+               "fieldOrigins": {
+                "type": "object",
+                "properties": {
+                 "load": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "completedRepetitions": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "rir": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 }
+                },
+                "additionalProperties": false
                }
               },
               "required": [
@@ -32669,6 +33535,33 @@
                   "type": "null"
                  }
                 ]
+               },
+               "fieldOrigins": {
+                "type": "object",
+                "properties": {
+                 "load": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "completedRepetitions": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "rir": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 }
+                },
+                "additionalProperties": false
                }
               },
               "required": [
@@ -33337,6 +34230,33 @@
                     "type": "null"
                    }
                   ]
+                 },
+                 "fieldOrigins": {
+                  "type": "object",
+                  "properties": {
+                   "load": {
+                    "type": "string",
+                    "enum": [
+                     "PERSON",
+                     "PLAN"
+                    ]
+                   },
+                   "completedRepetitions": {
+                    "type": "string",
+                    "enum": [
+                     "PERSON",
+                     "PLAN"
+                    ]
+                   },
+                   "rir": {
+                    "type": "string",
+                    "enum": [
+                     "PERSON",
+                     "PLAN"
+                    ]
+                   }
+                  },
+                  "additionalProperties": false
                  }
                 },
                 "required": [
@@ -33594,6 +34514,33 @@
                        "type": "null"
                       }
                      ]
+                    },
+                    "fieldOrigins": {
+                     "type": "object",
+                     "properties": {
+                      "load": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      },
+                      "completedRepetitions": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      },
+                      "rir": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      }
+                     },
+                     "additionalProperties": false
                     }
                    },
                    "required": [
@@ -34340,6 +35287,33 @@
                        "type": "null"
                       }
                      ]
+                    },
+                    "fieldOrigins": {
+                     "type": "object",
+                     "properties": {
+                      "load": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      },
+                      "completedRepetitions": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      },
+                      "rir": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      }
+                     },
+                     "additionalProperties": false
                     }
                    },
                    "required": [
@@ -34597,6 +35571,33 @@
                           "type": "null"
                          }
                         ]
+                       },
+                       "fieldOrigins": {
+                        "type": "object",
+                        "properties": {
+                         "load": {
+                          "type": "string",
+                          "enum": [
+                           "PERSON",
+                           "PLAN"
+                          ]
+                         },
+                         "completedRepetitions": {
+                          "type": "string",
+                          "enum": [
+                           "PERSON",
+                           "PLAN"
+                          ]
+                         },
+                         "rir": {
+                          "type": "string",
+                          "enum": [
+                           "PERSON",
+                           "PLAN"
+                          ]
+                         }
+                        },
+                        "additionalProperties": false
                        }
                       },
                       "required": [
@@ -35321,6 +36322,33 @@
                     "type": "null"
                    }
                   ]
+                 },
+                 "fieldOrigins": {
+                  "type": "object",
+                  "properties": {
+                   "load": {
+                    "type": "string",
+                    "enum": [
+                     "PERSON",
+                     "PLAN"
+                    ]
+                   },
+                   "completedRepetitions": {
+                    "type": "string",
+                    "enum": [
+                     "PERSON",
+                     "PLAN"
+                    ]
+                   },
+                   "rir": {
+                    "type": "string",
+                    "enum": [
+                     "PERSON",
+                     "PLAN"
+                    ]
+                   }
+                  },
+                  "additionalProperties": false
                  }
                 },
                 "required": [
@@ -35578,6 +36606,33 @@
                        "type": "null"
                       }
                      ]
+                    },
+                    "fieldOrigins": {
+                     "type": "object",
+                     "properties": {
+                      "load": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      },
+                      "completedRepetitions": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      },
+                      "rir": {
+                       "type": "string",
+                       "enum": [
+                        "PERSON",
+                        "PLAN"
+                       ]
+                      }
+                     },
+                     "additionalProperties": false
                     }
                    },
                    "required": [
@@ -35937,6 +36992,33 @@
                   "type": "null"
                  }
                 ]
+               },
+               "fieldOrigins": {
+                "type": "object",
+                "properties": {
+                 "load": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "completedRepetitions": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 },
+                 "rir": {
+                  "type": "string",
+                  "enum": [
+                   "PERSON",
+                   "PLAN"
+                  ]
+                 }
+                },
+                "additionalProperties": false
                }
               },
               "required": [
