@@ -55,11 +55,14 @@ export function cargaDesdeLaEstimacion(
   const sugerida = Number((pasos * paso).toFixed(2));
   if (sugerida <= 0) return null;
   const u = estimacion.unidad;
+  // Hacia abajo, el bruto se muestra truncado a la décima: redondeado, 87,47 se leería 87,5, un múltiplo del paso que
+  // después «baja» a 85. Truncado («87,4 kg → 85 kg») la cuenta a la vista dice lo mismo que la que se hace.
+  const brutaALaVista = sentido === 'ABAJO' ? Math.floor(bruta * 10 + MARGEN) / 10 : bruta;
   return {
     bruta,
     sugerida,
     unidad: u,
-    cuenta: `${numero(porcentaje, 2)} % RM de ${estimacionConLaDecima(estimacion)} = ${numero(bruta, 1)} ${u} → ${numero(sugerida, 2)} ${u}`,
+    cuenta: `${numero(porcentaje, 2)} % RM de ${estimacionConLaDecima(estimacion)} = ${numero(brutaALaVista, 1)} ${u} → ${numero(sugerida, 2)} ${u}`,
     redondeo: `Múltiplo de ${numero(paso, 1)}, ${SENTIDO_DEL_REDONDEO[sentido]}${sentido === 'ABAJO' ? ': nunca más que el % RM pedido.' : '.'}`,
   };
 }

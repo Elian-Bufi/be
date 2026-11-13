@@ -8,12 +8,17 @@
  *   observación del profesional, un rombo, con su leyenda.
  * - Sin línea a través de un hueco (una sesión del ejercicio sin estimación); kg y lb, aparte.
  * - La diferencia entre dos estimaciones, en kg, nunca un porcentaje (RM-12).
- * - La tabla de origen, con «Cómo se calculó» en cada valor, y lo que no entra en palabras.
+ * - La tabla de origen, con «Cómo se calculó» en cada valor, y lo que no entra en palabras, una línea por sesión.
+ * - El eje de fechas, la línea de hoy, una marca por sesión sin estimación y las franjas de las versiones del plan.
+ * - **Con el teclado:** cada fecha de la tabla elige su punto (la lectura del costado y la diferencia con el anterior),
+ *   como tocarlo en el gráfico (WCAG 2.1.1). La tabla es el texto del gráfico.
+ * - Con el interruptor apagado, una sesión que solo tuvo series de más de 10 a 12 es un hueco con su fila.
+ * - La columna «Sesión» de la maqueta espera que la clave traiga el nombre de la sesión (EDT-55).
  *
  * Como la composición (TA-25), la pregunta vive en el website y no se guarda como vista: su identificador no entra en
  * `ID_DE_PREGUNTAS`, que valida la API. El período es el de la ficha, que la API recorta al inicio del acompañamiento.
  */
-import { COPY_FUERZA, diaDeLaEstimacion, diferenciaEntreEstimaciones, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, rotuloDeLaEstimacion, type PuntoDeFuerza } from '@be/domain';
+import { COPY_FUERZA, diaDeLaEstimacion, diferenciaEntreEstimaciones, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, numero, rotuloDeLaEstimacion, type PuntoDeFuerza } from '@be/domain';
 import { useId, useMemo, useState } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
@@ -23,8 +28,23 @@ import { ICONO_DE_FALLA } from '../../../../lib/fallas';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 import { useSeguimiento } from '../seguimiento/contexto';
 import { parametrosDePregunta } from '../seguimiento/estado';
-import { ComoSeCalculo, COPY_COMO_SE_CALCULO } from './como-se-calculo';
-import { diaDelPunto, estimacionDelPunto, filasDeLaEvolucion, haciaLaSesion, laSerie, loQueHaceFalta, PREGUNTA_DE_LA_FUERZA, tramosDeLaLinea } from './fuerza';
+import { ComoSeCalculo, COPY_COMO_SE_CALCULO, fechaLarga } from './como-se-calculo';
+import {
+  diaConSemana,
+  diaDelPunto,
+  estimacionDelPunto,
+  fechasDelEje,
+  filasDeLaEvolucion,
+  haciaLaSesion,
+  laSerie,
+  loQueHaceFalta,
+  loQueNoEntraPorFecha,
+  PREGUNTA_DE_LA_FUERZA,
+  sesionesSoloOrientativas,
+  tramosDeLaLinea,
+  versionDelPlanEn,
+  type VersionDelPlanEnElPeriodo,
+} from './fuerza';
 import { useLecturaDeFuerza, type LineaDeFuerza } from './lectura-de-fuerza';
 
 export const LA_PREGUNTA_DE_LA_FUERZA = {
@@ -34,17 +54,24 @@ export const LA_PREGUNTA_DE_LA_FUERZA = {
   ejercicio: 'Ejercicio',
   unidad: 'Unidad',
   orientativas: 'Incluir las de más de 10 a 12 repeticiones equivalentes',
-  leyenda: { nucleo: 'hasta 10 repeticiones equivalentes', orientativa: 'de más de 10 a 12', observada: 'observada por vos' },
+  leyenda: { nucleo: 'hasta 10 repeticiones equivalentes', orientativa: 'de más de 10 a 12', observada: 'observada por vos', sinEstimacion: 'sin estimación', hoy: 'hoy' },
   elegirEjercicio: 'Elegí un ejercicio de la lista de Epley v1.',
   sinNada: 'En este período no hay series de los ejercicios de la lista que permitan estimar.',
   sinPuntos: 'En este período no hay estimaciones de este ejercicio en esta unidad.',
+  soloOrientativas: 'Hay sesiones con solo series de más de 10 a 12 repeticiones equivalentes: encendé «Incluir las de más de 10 a 12» para verlas.',
+  elegirEnLaTabla: 'Elegí una fecha de la tabla para leer esa estimación al costado.',
+  leerEsta: 'leer esta estimación',
+  plan: (version: string) => `Plan · ${version}`,
+  planDeLaLectura: (version: string) => `plan ${version}`,
+  quedan: (n: number) => (n === 1 ? 'Y 1 sesión más, en la tabla.' : `Y ${n} sesiones más, en la tabla.`),
   loQueNoEntra: 'Lo que no entra',
   lectura: (dia: string) => `Lectura del ${dia}`,
   frente: (dia: string) => `Frente a la del ${dia}:`,
-  diferencia: 'Una diferencia entre dos estimaciones, en su unidad. Un RIR de diferencia mueve la cuenta entre 2 y 3 kg.',
+  // Con Epley, un RIR de diferencia mueve la cuenta la carga sobre 30: se calcula con la serie elegida y su unidad.
+  diferencia: (carga: number, unidad: string) => `Una diferencia entre dos estimaciones, en su unidad. Un RIR de diferencia mueve esta cuenta ≈ ${numero(carga / 30, 1)} ${unidad}.`,
   cambiarLaPregunta: 'Cambiar la pregunta',
   deOtros: 'Hay registros con otro profesional que no ves.',
-  antes: 'Lo que la persona registró antes de la app nueva no dice quién escribió cada valor: no entra. Lo que observaste vos entra siempre.',
+  antes: 'Lo que la persona registró antes de la app nueva no dice quién escribió cada valor: no entra. Lo que observaste vos entra si se puede estimar; las de más de 10 a 12, con el interruptor encendido.',
   limite: 'Una estimación con una serie no es una repetición máxima medida, y no es una indicación de carga.',
 } as const;
 
@@ -62,6 +89,12 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
   const [como, setComo] = useState<PuntoDeFuerza | null>(null);
   const nombre = EJERCICIOS_DE_LA_ESTIMACION_V1.find((e) => e.exerciseId === exerciseId)?.nombre ?? null;
   const linea: LineaDeFuerza | null = lectura.tipo === 'lista' ? (encendido ? lectura.encendido : lectura.apagado) : null;
+  // Apagado, las sesiones que solo tuvieron orientativas: sin punto y sin fila entre las que no entraron, son un hueco.
+  const soloOrientativas = useMemo(
+    () => (lectura.tipo === 'lista' && !encendido ? sesionesSoloOrientativas(lectura.apagado?.puntos ?? [], lectura.encendido?.unidad === lectura.apagado?.unidad ? (lectura.encendido?.puntos ?? []) : []) : []),
+    [lectura, encendido],
+  );
+  const versiones = lectura.tipo === 'lista' ? lectura.versiones : [];
   const puntos = linea?.puntos ?? [];
   const elegido = puntos.find((p) => p.pointId === elegidoId) ?? puntos[puntos.length - 1] ?? null;
   const unidades = lectura.tipo === 'lista' ? (lectura.ejercicios.find((e) => e.exerciseId === exerciseId)?.units ?? []) : [];
@@ -124,10 +157,10 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
       ) : (
         <div className="fuerza-en-analizar__zonas">
           <div>
-            <Grafico linea={linea} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} hasta={lectura.hoy} desde={lectura.desde} />
-            <TablaDeOrigen linea={linea} asesoradoId={asesoradoId} onComo={setComo} />
+            <Grafico linea={linea} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} hasta={lectura.hoy} desde={lectura.desde} zona={lectura.zona} soloOrientativas={soloOrientativas} versiones={versiones} />
+            <TablaDeOrigen linea={linea} asesoradoId={asesoradoId} onComo={setComo} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} soloOrientativas={soloOrientativas} />
           </div>
-          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} />
+          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} soloOrientativas={soloOrientativas} versiones={versiones} />
         </div>
       )}
       {lectura.tipo === 'lista' && lectura.deOtros ? <p className="nota">{C.deOtros}</p> : null}
@@ -159,11 +192,41 @@ function EjerciciosConDatos({ lectura, onElegir }: { lectura: ReturnType<typeof 
 }
 
 const ANCHO = 720;
-const ALTO = 240;
-const MARGEN = { izq: 48, der: 16, arr: 16, abj: 28 };
+const ALTO = 260;
+const MARGEN = { izq: 48, der: 16, arr: 40, abj: 28 };
 
-/** El gráfico: un punto por sesión (lleno, hueco u observado), sin línea a través de un hueco. */
-function Grafico({ linea, elegido, onElegir, desde, hasta }: { linea: LineaDeFuerza | null; elegido: PuntoDeFuerza | null; onElegir: (p: PuntoDeFuerza) => void; desde: string; hasta: string }) {
+/** El día de hoy en la zona de la lectura, como fecha civil. */
+function hoyEn(zona: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+/**
+ * El gráfico: un punto por sesión (lleno, hueco u observado), sin línea a través de un hueco; el eje de fechas, la
+ * línea de hoy, una marca por sesión sin estimación y las franjas de las versiones del plan (maqueta 15).
+ */
+function Grafico({
+  linea,
+  elegido,
+  onElegir,
+  desde,
+  hasta,
+  zona,
+  soloOrientativas,
+  versiones,
+}: {
+  linea: LineaDeFuerza | null;
+  elegido: PuntoDeFuerza | null;
+  onElegir: (p: PuntoDeFuerza) => void;
+  desde: string;
+  hasta: string;
+  zona: string;
+  soloOrientativas: readonly PuntoDeFuerza[];
+  versiones: readonly VersionDelPlanEnElPeriodo[];
+}) {
   const puntos = linea?.puntos ?? [];
   const geo = useMemo(() => {
     const valores = puntos.map((p) => p.estimate.value);
@@ -183,11 +246,19 @@ function Grafico({ linea, elegido, onElegir, desde, hasta }: { linea: LineaDeFue
           <strong>{C.sinPuntos}</strong>
         </p>
         {falta.motivos ? <p>{falta.motivos}</p> : null}
+        {soloOrientativas.length > 0 ? <p data-solo-orientativas>{C.soloOrientativas}</p> : null}
         <p className="nota">{falta.regla}</p>
       </div>
     );
   }
-  const tramos = tramosDeLaLinea(puntos, linea.noEntraron);
+  const tramos = tramosDeLaLinea(puntos, linea.noEntraron, soloOrientativas);
+  const sinEstimacion = [...new Set(filasDeLaEvolucion(puntos, linea.noEntraron, soloOrientativas).flatMap((f) => (f.tipo === 'sin-estimacion' ? [f.fecha] : [])))];
+  const hoy = hoyEn(zona);
+  const abajo = ALTO - MARGEN.abj;
+  const franjas = versiones
+    .filter((v) => v.domain === 'TRAINING' && (v.to === null || v.to > desde) && v.from <= hasta)
+    .map((v) => ({ v, x0: geo.x(v.from < desde ? desde : v.from), x1: geo.x(v.to === null || v.to > hasta ? hasta : v.to) }))
+    .filter((f) => f.x1 > f.x0);
   return (
     <figure className="fuerza-en-analizar__grafico">
       <figcaption>
@@ -196,9 +267,37 @@ function Grafico({ linea, elegido, onElegir, desde, hasta }: { linea: LineaDeFue
           <span data-forma="lleno">{C.leyenda.nucleo}</span>
           <span data-forma="hueco">{C.leyenda.orientativa}</span>
           <span data-forma="rombo">{C.leyenda.observada}</span>
+          <span data-forma="marca">{C.leyenda.sinEstimacion}</span>
+          <span data-forma="hoy">{C.leyenda.hoy}</span>
         </span>
       </figcaption>
-      <svg viewBox={`0 0 ${ANCHO} ${ALTO}`} role="img" aria-label={`Evolución de la fuerza estimada, en ${linea.unidad}: ${puntos.length} ${puntos.length === 1 ? 'estimación' : 'estimaciones'}. La tabla de abajo tiene cada valor.`}>
+      <svg viewBox={`0 0 ${ANCHO} ${ALTO}`} role="img" aria-label={`Evolución de la fuerza estimada, en ${linea.unidad}: ${puntos.length} ${puntos.length === 1 ? 'estimación' : 'estimaciones'}. La tabla de abajo tiene cada valor, y cada fecha elige su lectura.`}>
+        {franjas.map(({ v, x0, x1 }, i) => (
+          <g key={`${v.label}-${v.from}`} className="fuerza-en-analizar__franja" data-par={(i & 1) === 0 ? '' : undefined}>
+            <rect x={x0} y={0} width={x1 - x0} height={abajo} />
+            {x1 - x0 > 96 ? (
+              <text x={x0 + 6} y={12} className="fuerza-en-analizar__eje">
+                {C.plan(v.label.replace(/^v/, 'versión '))}
+              </text>
+            ) : null}
+          </g>
+        ))}
+        {fechasDelEje(desde, hasta).map((f, i, todas) => (
+          <text key={f} x={geo.x(f)} y={ALTO - 8} textAnchor={i === 0 ? 'start' : i === todas.length - 1 ? 'end' : 'middle'} className="fuerza-en-analizar__eje">
+            {diaDeLaEstimacion(f)}
+          </text>
+        ))}
+        {sinEstimacion.map((f) => (
+          <line key={`sin-${f}`} x1={geo.x(f)} x2={geo.x(f)} y1={abajo - 12} y2={abajo} className="fuerza-en-analizar__sin-estimacion" />
+        ))}
+        {hoy >= desde && hoy <= hasta ? (
+          <g className="fuerza-en-analizar__hoy">
+            <line x1={geo.x(hoy)} x2={geo.x(hoy)} y1={0} y2={abajo} />
+            <text x={geo.x(hoy) - 4} y={12} textAnchor="end" className="fuerza-en-analizar__eje">
+              {C.leyenda.hoy}
+            </text>
+          </g>
+        ) : null}
         {[geo.min, (geo.min + geo.max) / 2, geo.max].map((v) => (
           <g key={v}>
             <line x1={MARGEN.izq} x2={ANCHO - MARGEN.der} y1={geo.y(v)} y2={geo.y(v)} className="fuerza-en-analizar__guia" />
@@ -230,14 +329,33 @@ function Grafico({ linea, elegido, onElegir, desde, hasta }: { linea: LineaDeFue
   );
 }
 
-/** La tabla de origen: la fecha, la serie que entra, quién la escribió, la banda, el valor y «Cómo se calculó». */
-function TablaDeOrigen({ linea, asesoradoId, onComo }: { linea: LineaDeFuerza | null; asesoradoId: string; onComo: (p: PuntoDeFuerza) => void }) {
+/**
+ * La tabla de origen: la fecha, la serie que entra, quién la escribió, la banda, el valor y «Cómo se calculó». Cada fecha
+ * de un punto es un botón que lo elige, como tocarlo en el gráfico: así se llega con el teclado y con un lector de
+ * pantalla a la lectura del costado (WCAG 2.1.1).
+ */
+function TablaDeOrigen({
+  linea,
+  asesoradoId,
+  onComo,
+  elegido,
+  onElegir,
+  soloOrientativas,
+}: {
+  linea: LineaDeFuerza | null;
+  asesoradoId: string;
+  onComo: (p: PuntoDeFuerza) => void;
+  elegido: PuntoDeFuerza | null;
+  onElegir: (p: PuntoDeFuerza) => void;
+  soloOrientativas: readonly PuntoDeFuerza[];
+}) {
   const nombres = useNombres();
   if (!linea) return null;
-  const filas = filasDeLaEvolucion(linea.puntos, linea.noEntraron);
+  const filas = filasDeLaEvolucion(linea.puntos, linea.noEntraron, soloOrientativas);
   if (filas.length === 0) return null;
   return (
     <div className="grafico__desplazable">
+      {linea.puntos.length > 1 ? <p className="nota">{C.elegirEnLaTabla}</p> : null}
       <table className="tabla fuerza-en-analizar__tabla" data-tabla-de-origen>
         <caption className="visualmente-oculto">Cada estimación con su serie de origen, y las sesiones sin estimación</caption>
         <thead>
@@ -256,7 +374,7 @@ function TablaDeOrigen({ linea, asesoradoId, onComo }: { linea: LineaDeFuerza | 
               const sesion = `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}&vista=ejecuciones&desde=${f.fecha}&hasta=${f.fecha}&sesion=${encodeURIComponent(f.executionId)}`;
               return (
                 <tr key={f.executionId} data-sin-estimacion>
-                  <th scope="row">{diaDeLaEstimacion(f.fecha)}</th>
+                  <th scope="row">{diaConSemana(f.fecha)}</th>
                   <td colSpan={4}>{f.motivo}</td>
                   <td>
                     sin estimación · <Enlace href={sesion}>Ver la sesión</Enlace>
@@ -266,9 +384,15 @@ function TablaDeOrigen({ linea, asesoradoId, onComo }: { linea: LineaDeFuerza | 
             }
             const p = f.punto;
             const e = estimacionDelPunto(p, '');
+            const esLaElegida = elegido?.pointId === p.pointId;
             return (
-              <tr key={p.pointId}>
-                <th scope="row">{diaDelPunto(p)}</th>
+              <tr key={p.pointId} data-elegida={esLaElegida ? '' : undefined}>
+                <th scope="row">
+                  <button type="button" className="boton boton--enlace" aria-pressed={esLaElegida} data-elegir-punto onClick={() => onElegir(p)}>
+                    {diaConSemana(p.date)}
+                    <span className="visualmente-oculto">: {C.leerEsta}</span>
+                  </button>
+                </th>
                 <td>{laSerie(p)}</td>
                 <td>{p.source === 'OBSERVED' ? 'La observaste vos' : `${nombres.deQuien(p.writtenBy, asesoradoId)}, en la app`}</td>
                 <td>
@@ -291,8 +415,25 @@ function TablaDeOrigen({ linea, asesoradoId, onComo }: { linea: LineaDeFuerza | 
   );
 }
 
-/** La lectura al costado: el punto elegido (el último, de entrada), la diferencia con el anterior y lo que no entra. */
-function Lectura({ linea, elegido, asesoradoId, onComo }: { linea: LineaDeFuerza | null; elegido: PuntoDeFuerza | null; asesoradoId: string; onComo: (p: PuntoDeFuerza) => void }) {
+/**
+ * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día, la
+ * diferencia con el anterior y lo que no entra, una línea por sesión.
+ */
+function Lectura({
+  linea,
+  elegido,
+  asesoradoId,
+  onComo,
+  soloOrientativas,
+  versiones,
+}: {
+  linea: LineaDeFuerza | null;
+  elegido: PuntoDeFuerza | null;
+  asesoradoId: string;
+  onComo: (p: PuntoDeFuerza) => void;
+  soloOrientativas: readonly PuntoDeFuerza[];
+  versiones: readonly VersionDelPlanEnElPeriodo[];
+}) {
   const nombres = useNombres();
   if (!linea || !elegido) return null;
   const puntos = linea.puntos;
@@ -301,9 +442,12 @@ function Lectura({ linea, elegido, asesoradoId, onComo }: { linea: LineaDeFuerza
   const e = estimacionDelPunto(elegido, '');
   const diferencia = anterior ? diferenciaEntreEstimaciones(estimacionDelPunto(anterior, ''), e) : null;
   const sesion = haciaLaSesion(asesoradoId, elegido);
+  const version = elegido.source === 'PERSON' ? versionDelPlanEn(elegido.date, versiones) : null;
+  const noEntra = loQueNoEntraPorFecha(puntos, linea.noEntraron, soloOrientativas);
   return (
     <aside className="fuerza-en-analizar__lectura" aria-live="polite" data-lectura-de-fuerza>
-      <h3>{C.lectura(diaDelPunto(elegido))}</h3>
+      <h3>{C.lectura(fechaLarga(elegido.date))}</h3>
+      {version ? <p className="nota">{C.planDeLaLectura(version)}</p> : null}
       <p className="tarjeta-de-fuerza__valor">
         <span className="tarjeta-de-fuerza__numero">{estimacionALaVista(e)}</span>
       </p>
@@ -324,15 +468,19 @@ function Lectura({ linea, elegido, asesoradoId, onComo }: { linea: LineaDeFuerza
           <p>
             {C.frente(diaDelPunto(anterior))} <strong>{diferencia}</strong>
           </p>
-          <p className="nota">{C.diferencia}</p>
+          <p className="nota">{C.diferencia(elegido.estimate.load.value, elegido.estimate.load.unit)}</p>
         </div>
       ) : null}
       <div>
         <h4>{C.loQueNoEntra}</h4>
-        {(() => {
-          const falta = loQueHaceFalta(linea.noEntraron);
-          return falta.motivos ? <p>{falta.motivos}</p> : null;
-        })()}
+        {noEntra.lineas.length > 0 ? (
+          <ul className="fuerza-en-analizar__no-entra" data-no-entra-por-fecha>
+            {noEntra.lineas.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        ) : null}
+        {noEntra.quedan > 0 ? <p className="nota">{C.quedan(noEntra.quedan)}</p> : null}
         <p className="nota">{C.antes}</p>
         <p className="nota">{COPY_FUERZA.reglaDelRir}</p>
       </div>

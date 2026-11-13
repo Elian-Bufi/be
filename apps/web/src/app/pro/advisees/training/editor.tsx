@@ -245,6 +245,7 @@ export function EditorDePlan({
   onDescartado,
   leerPlantillas,
   onReemplazarConPlantilla,
+  plantillasNoSePueden = null,
 }: {
   planId: string;
   /** El número de esta versión en preparación: el de las activadas más uno (DJ-6). */
@@ -268,6 +269,8 @@ export function EditorDePlan({
   leerPlantillas?: () => Promise<Resultado<readonly PlantillaParaEmpezar[]>>;
   /** ED-11: descartado este borrador, el plan crea otro desde la plantilla (API-TRN-07), que anota de cuál salió. */
   onReemplazarConPlantilla?: (templateVersionId: string) => void;
+  /** EDT-54: por qué no se puede reemplazar con una plantilla (falta el objetivo vigente); `null`: se puede. */
+  plantillasNoSePueden?: string | null;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
@@ -691,6 +694,8 @@ export function EditorDePlan({
    */
   async function reemplazarConPlantilla(templateVersionId: string) {
     if (!version || reemplazando || !onReemplazarConPlantilla) return;
+    // Sin el objetivo vigente, el nuevo no puede nacer: el borrador no se descarta, y la galería dice por qué (EDT-54).
+    if (plantillasNoSePueden) return setFalloAlReemplazar(plantillasNoSePueden);
     setReemplazando(true);
     setFalloAlReemplazar(null);
     const r = await api.descartarBorradorDePlanDeEntrenamiento(token, planId, version.version, intentoDeDescartar.actual());
@@ -2051,7 +2056,7 @@ export function EditorDePlan({
         prescripcionesHabituales={prescripcionesHabituales.lista}
         plantillas={
           leerPlantillas && onReemplazarConPlantilla
-            ? { leer: leerPlantillas, borrador: `versión ${numero} en preparación`, reemplazando, error: falloAlReemplazar, onReemplazar: (id) => void reemplazarConPlantilla(id) }
+            ? { leer: leerPlantillas, borrador: `versión ${numero} en preparación`, reemplazando, error: falloAlReemplazar, noSePuede: plantillasNoSePueden, onReemplazar: (id) => void reemplazarConPlantilla(id) }
             : null
         }
         onAplicarPrescripcion={aplicarElPreset}

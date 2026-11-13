@@ -20,18 +20,23 @@ import { Icono } from '../../../../components/icono';
 import type { Resultado } from '../../../../lib/api';
 import { CargaDesdeLaEstimacion, COPY_CARGA_DESDE_LA_ESTIMACION, textoDelPrincipal, useCargaDesdeLaEstimacion } from './carga-desde-la-estimacion';
 import { ComoSeCalculo, COPY_COMO_SE_CALCULO } from './como-se-calculo';
-import { haciaLaEvolucion, loQueSeEscribeEnLaFilaGeneral, type PrescripcionParaLaCarga } from './fuerza';
+import { BloqueDeEstado } from '../../../../components/estados';
+import { ICONO_DE_FALLA } from '../../../../lib/fallas';
+import { estimacionesParaLaCarga, haciaLaEvolucion, loQueSeEscribeEnLaFilaGeneral, type PrescripcionParaLaCarga } from './fuerza';
 import { useLecturaDeFuerza, type LecturaDeFuerza } from './lectura-de-fuerza';
 import { COPY_SERIE_OBSERVADA, SerieObservada, useSerieObservada } from './serie-observada';
 import { TarjetaDeFuerza } from './tarjeta';
 
-type Paso = { readonly tipo: 'detalle' } | { readonly tipo: 'como'; readonly punto: PuntoDeFuerza } | { readonly tipo: 'observar' } | { readonly tipo: 'carga' };
+/** `desde: 'carga'`: «Cómo se calculó» abierto desde la lista del cuadro de la carga (ED-73), que vuelve a ella con «Atrás». */
+type Paso = { readonly tipo: 'detalle' } | { readonly tipo: 'como'; readonly punto: PuntoDeFuerza; readonly desde?: 'carga' } | { readonly tipo: 'observar' } | { readonly tipo: 'carga' };
 
 export const COPY_DETALLE_DEL_EJERCICIO = {
   abrir: 'Detalle y fuerza estimada',
   loQueIndicaElPlan: 'Lo que indica el plan',
   persona: 'La persona',
   escrita: (carga: string) => `Se escribió ${carga} en la fila general. El borrador se guarda solo.`,
+  noSeLeyo: 'No pudimos leer las estimaciones de este ejercicio, así que no hay de dónde calcular la carga ahora.',
+  noDisponible: 'Con el acceso de ahora no podés ver los registros de Entrenamiento de esta persona.',
 } as const;
 
 /** El nombre de la persona como la ve este profesional (DL-169): el del área o, si no llegó, el que traen sus series. */
@@ -74,7 +79,10 @@ export function DetalleDelEjercicio({
   const [paso, setPaso] = useState<Paso>({ tipo: 'detalle' });
   const [aviso, setAviso] = useState<string | null>(null);
   const { lectura, recargar } = useLecturaDeFuerza(token, asesoradoId, abierto ? exerciseId : undefined, { sesionPerdida });
-  const { lectura: deLaUnidad } = useLecturaDeFuerza(token, asesoradoId, abierto && paso.tipo === 'carga' ? exerciseId : undefined, { unidad, sesionPerdida });
+  // La lectura del cuadro de la carga sigue viva mientras se mira «Cómo se calculó» de una de sus estimaciones: al volver
+  // no se lee de nuevo y lo elegido sigue ahí.
+  const enLaCarga = paso.tipo === 'carga' || (paso.tipo === 'como' && paso.desde === 'carga');
+  const { lectura: deLaUnidad, recargar: recargarLaUnidad } = useLecturaDeFuerza(token, asesoradoId, abierto && enLaCarga ? exerciseId : undefined, { unidad, sesionPerdida });
   const nombres = useNombres();
   const persona = nombreDeLaPersona(usePersonaDelArea(), lectura, nombres.delAsesorado);
   const hoy = lectura.tipo === 'lista' ? lectura.hoy : new Date().toISOString().slice(0, 10);
@@ -93,15 +101,21 @@ export function DetalleDelEjercicio({
     },
   });
   const carga = useCargaDesdeLaEstimacion(prescripcion, unidad);
-  const volver = { texto: `Atrás: ${nombre}`, alTocar: () => setPaso({ tipo: 'detalle' }) };
+  const volver =
+    paso.tipo === 'como' && paso.desde === 'carga'
+      ? { texto: `Atrás: ${COPY_CARGA_DESDE_LA_ESTIMACION.titulo}`, alTocar: () => setPaso({ tipo: 'carga' }) }
+      : { texto: `Atrás: ${nombre}`, alTocar: () => setPaso({ tipo: 'detalle' }) };
   const cerrar = () => {
     setPaso({ tipo: 'detalle' });
     setAviso(null);
     observar.reiniciar();
+    carga.reiniciar();
     onCerrar();
   };
   const abrir = (p: Paso) => {
     setAviso(null);
+    // ED-D20: cada vez que se entra al cálculo de la carga, ninguna estimación elegida y el % RM de la prescripción de ahora.
+    if (p.tipo === 'carga') carga.reiniciar();
     setPaso(p);
   };
 
@@ -112,7 +126,8 @@ export function DetalleDelEjercicio({
   let pie: ReactNode = null;
   if (paso.tipo === 'como') {
     titulo = COPY_COMO_SE_CALCULO.titulo;
-    const linea = lectura.tipo === 'lista' ? ((lectura.apagado?.puntos.includes(paso.punto) ? lectura.apagado : lectura.encendido) ?? null) : null;
+    const deDonde = paso.desde === 'carga' ? deLaUnidad : lectura;
+    const linea = deDonde.tipo === 'lista' ? ((deDonde.apagado?.puntos.includes(paso.punto) ? deDonde.apagado : deDonde.encendido) ?? null) : null;
     cuerpo = <ComoSeCalculo punto={paso.punto} nombre={nombre} asesoradoId={asesoradoId} noEntraron={linea?.noEntraron ?? []} />;
   } else if (paso.tipo === 'observar') {
     titulo = COPY_SERIE_OBSERVADA.titulo;
@@ -125,19 +140,26 @@ export function DetalleDelEjercicio({
     cuerpo =
       deLaUnidad.tipo === 'lista' ? (
         <CargaDesdeLaEstimacion
-          puntos={deLaUnidad.encendido?.unidad === unidad ? deLaUnidad.encendido.puntos : []}
+          // La regla de la tarjeta (ED-75): por sesión, la del interruptor apagado; la orientativa, si la sesión no tiene otra.
+          puntos={estimacionesParaLaCarga(deLaUnidad.apagado?.unidad === unidad ? deLaUnidad.apagado.puntos : [], deLaUnidad.encendido?.unidad === unidad ? deLaUnidad.encendido.puntos : [])}
           hoy={deLaUnidad.hoy}
           criterio={prescripcion.intensity?.criterion ?? null}
           haciaLaEvolucion={haciaLaEvolucion(asesoradoId, exerciseId, unidad)}
           asesoradoId={asesoradoId}
           estado={carga}
+          onComoSeCalculo={(p) => setPaso({ tipo: 'como', punto: p, desde: 'carga' })}
         />
       ) : deLaUnidad.tipo === 'cargando' ? (
         <p className="cargando" role="status">
           Cargando…
         </p>
+      ) : deLaUnidad.tipo === 'error' ? (
+        // Una lectura que falló no es un ejercicio sin estimaciones: se dice y se reintenta, como en la tarjeta.
+        <BloqueDeEstado tipo="error" icono={ICONO_DE_FALLA[deLaUnidad.motivo]} onReintentar={recargarLaUnidad} deQue="las estimaciones del ejercicio">
+          {COPY_DETALLE_DEL_EJERCICIO.noSeLeyo}
+        </BloqueDeEstado>
       ) : (
-        <p>{COPY_CARGA_DESDE_LA_ESTIMACION.sinEstimaciones(unidad)}</p>
+        <p data-no-disponible>{COPY_DETALLE_DEL_EJERCICIO.noDisponible}</p>
       );
     principal = {
       texto: textoDelPrincipal(carga, nombre),

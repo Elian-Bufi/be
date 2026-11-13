@@ -16943,6 +16943,19 @@ p.cifra-del-espacio__desglose {
   margin-top: 0.2rem;
 }
 
+/* Cada estimación del cuadro de la carga con su «Cómo se calculó» al lado (ED-73 desde ED-76). */
+.opcion-de-estimacion__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 0.75rem;
+}
+
+.opcion-de-estimacion__fila > .opcion-de-estimacion {
+  flex: 1 1 16rem;
+}
+
 .carga-desde-la-estimacion__par {
   display: flex;
   flex-wrap: wrap;
@@ -17115,6 +17128,50 @@ p.cifra-del-espacio__desglose {
   fill: none;
   stroke: var(--texto);
   stroke-width: 2;
+}
+
+/* Las versiones del plan, en franjas alternadas; la línea de hoy y la marca de cada sesión sin estimación (maqueta 15). */
+.fuerza-en-analizar__franja rect {
+  fill: transparent;
+}
+
+.fuerza-en-analizar__franja[data-par] rect {
+  fill: var(--fondo-suave);
+}
+
+.fuerza-en-analizar__hoy line {
+  stroke: var(--ahora);
+  stroke-width: 2;
+}
+
+.fuerza-en-analizar__sin-estimacion {
+  stroke: var(--tenue);
+  stroke-width: 2;
+}
+
+.fuerza-en-analizar__leyenda [data-forma="marca"]::before,
+.fuerza-en-analizar__leyenda [data-forma="hoy"]::before {
+  width: 2px;
+  height: 0.8rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--tenue);
+}
+
+.fuerza-en-analizar__leyenda [data-forma="hoy"]::before {
+  background: var(--ahora);
+}
+
+.fuerza-en-analizar__tabla tr[data-elegida] {
+  background: var(--fondo-suave);
+}
+
+.fuerza-en-analizar__no-entra {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .fuerza-en-analizar__lectura h3 {

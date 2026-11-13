@@ -16,7 +16,7 @@ import { cargaDesdeLaEstimacion, COPY_FUERZA, estimacionALaVista, leerNumero, PA
 import { useId, useState } from 'react';
 import { Enlace } from '../../../../components/enlace';
 import { useNombres } from '../../../../lib/nombres-ocultos';
-import { antiguedad, delMasReciente, diaDelPunto, estimacionDelPunto, lasQueQuedan, quienLaEscribio, textoDelPrincipalDeLaCarga, type PrescripcionParaLaCarga } from './fuerza';
+import { antiguedad, delMasReciente, diaDelPunto, entradaDelCuadroDeLaCarga, estimacionDelPunto, lasQueQuedan, quienLaEscribio, textoDelPrincipalDeLaCarga, type PrescripcionParaLaCarga } from './fuerza';
 
 /** Cuántas estimaciones se ofrecen a la vista; las demás, en la evolución. */
 const A_LA_VISTA = 4;
@@ -35,6 +35,7 @@ export const COPY_CARGA_DESDE_LA_ESTIMACION = {
   laPodesCambiar: 'la podés cambiar',
   loQueSeEscribe: 'Lo que se escribe en el borrador',
   verEvolucion: 'Ver evolución',
+  comoSeCalculo: 'Cómo se calculó',
   sinEstimaciones: (unidad: string) => `Todavía no hay estimaciones de este ejercicio en ${unidad}. Sin una estimación no hay de dónde calcular la carga.`,
   elegiUna: 'Elegí una estimación.',
   porcentajeInvalido: 'Escribí un % RM mayor que 0 y hasta 100.',
@@ -49,14 +50,27 @@ export interface CargaElegida {
   readonly unidad: 'kg' | 'lb';
 }
 
+/**
+ * El estado del cuadro. Vive en quien lo abre, que queda montado mientras se mira la sesión: por eso `reiniciar` vuelve a
+ * la entrada (`entradaDelCuadroDeLaCarga`) cada vez que se entra al paso y al cerrar. Ninguna elegida (ED-D20) y el % RM de
+ * la prescripción de ese momento, no el de cuando se montó.
+ */
 export function useCargaDesdeLaEstimacion(prescripcion: PrescripcionParaLaCarga, unidad: 'kg' | 'lb') {
-  const deEntrada = prescripcion.intensity?.criterion === 'PERCENT_RM' && Number.isFinite(prescripcion.intensity.target.value) ? String(prescripcion.intensity.target.value).replace('.', ',') : '';
-  const [elegida, setElegida] = useState<PuntoDeFuerza | null>(null);
-  const [porcentaje, setPorcentaje] = useState(deEntrada);
-  const [paso, setPaso] = useState<number>(PASOS_DEL_REDONDEO[unidad][0]!);
-  const [sentido, setSentido] = useState<SentidoDelRedondeo>('ABAJO');
+  const entrada = entradaDelCuadroDeLaCarga(prescripcion, unidad);
+  const deEntrada = entrada.porcentaje;
+  const [elegida, setElegida] = useState<PuntoDeFuerza | null>(entrada.elegida);
+  const [porcentaje, setPorcentaje] = useState(entrada.porcentaje);
+  const [paso, setPaso] = useState<number>(entrada.paso);
+  const [sentido, setSentido] = useState<SentidoDelRedondeo>(entrada.sentido);
   // `null`: la carga a escribir es la sugerida; un texto: la cambió el profesional.
-  const [propia, setPropia] = useState<string | null>(null);
+  const [propia, setPropia] = useState<string | null>(entrada.propia);
+  const reiniciar = () => {
+    setElegida(entrada.elegida);
+    setPorcentaje(entrada.porcentaje);
+    setPaso(entrada.paso);
+    setSentido(entrada.sentido);
+    setPropia(entrada.propia);
+  };
   const pct = leerNumero(porcentaje);
   const cuenta = elegida && pct !== null ? cargaDesdeLaEstimacion(estimacionDelPunto(elegida, ''), pct, paso, sentido) : null;
   const escrita = propia === null ? (cuenta?.sugerida ?? null) : leerNumero(propia);
@@ -92,6 +106,7 @@ export function useCargaDesdeLaEstimacion(prescripcion: PrescripcionParaLaCarga,
     resultado,
     conCambios,
     unidad,
+    reiniciar,
   };
 }
 
@@ -106,8 +121,9 @@ export function CargaDesdeLaEstimacion({
   haciaLaEvolucion,
   asesoradoId,
   estado: x,
+  onComoSeCalculo,
 }: {
-  /** Las estimaciones del ejercicio en la unidad de la prescripción, con el interruptor encendido. */
+  /** Las estimaciones del ejercicio en la unidad de la prescripción, con la regla de la tarjeta (`estimacionesParaLaCarga`). */
   puntos: readonly PuntoDeFuerza[];
   hoy: string;
   /** El criterio de la prescripción: con % RM se escriben el valor del % RM y la referencia; si no, solo la carga. */
@@ -115,6 +131,8 @@ export function CargaDesdeLaEstimacion({
   haciaLaEvolucion: string;
   asesoradoId: string;
   estado: ReturnType<typeof useCargaDesdeLaEstimacion>;
+  /** ED-73: «Cómo se calculó» de cada estimación de la lista, en el mismo cuadro y con «Atrás». */
+  onComoSeCalculo: (p: PuntoDeFuerza) => void;
 }) {
   const id = useId();
   const nombres = useNombres();
@@ -132,18 +150,24 @@ export function CargaDesdeLaEstimacion({
         {aLaVista.map((p) => {
           const e = estimacionDelPunto(p, '');
           return (
-            <label key={p.pointId} className="opcion-de-estimacion" data-elegida={x.elegida?.pointId === p.pointId ? '' : undefined}>
-              <input type="radio" name={`${id}-estimacion`} checked={x.elegida?.pointId === p.pointId} onChange={() => x.elegir(p)} />
-              <span>
-                <strong>
-                  {estimacionALaVista(e)} · {diaDelPunto(p)}
-                </strong>
-                <span className="nota">
-                  {' '}
-                  {quienLaEscribio(p, nombres.deQuien(p.writtenBy, asesoradoId))} · {COPY_FUERZA.banda[e.banda]} · {antiguedad(p.date, hoy)}
+            <div key={p.pointId} className="opcion-de-estimacion__fila">
+              <label className="opcion-de-estimacion" data-elegida={x.elegida?.pointId === p.pointId ? '' : undefined}>
+                <input type="radio" name={`${id}-estimacion`} checked={x.elegida?.pointId === p.pointId} onChange={() => x.elegir(p)} />
+                <span>
+                  <strong>
+                    {estimacionALaVista(e)} · {diaDelPunto(p)}
+                  </strong>
+                  <span className="nota">
+                    {' '}
+                    {quienLaEscribio(p, nombres.deQuien(p.writtenBy, asesoradoId))} · {COPY_FUERZA.banda[e.banda]} · {antiguedad(p.date, hoy)}
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
+              <button type="button" className="boton boton--enlace" data-como-se-calculo-de-la-carga onClick={() => onComoSeCalculo(p)}>
+                {C.comoSeCalculo}
+                <span className="visualmente-oculto"> del {diaDelPunto(p)}</span>
+              </button>
+            </div>
           );
         })}
         <p className="nota">

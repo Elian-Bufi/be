@@ -40,6 +40,8 @@ export const COPY_COMO_SE_CALCULO = {
   queNoSignifica: 'Qué no significa',
   enEsaSesion: 'En esa sesión',
   todasEntraron: 'Ninguna otra serie del ejercicio quedó afuera.',
+  laQueSeToma: 'es la que se toma.',
+  regla: 'La regla por sesión: si entra más de una serie, se toma la de mayor carga, nunca la de mayor estimación. Por eso puede no ser el valor más alto de la sesión.',
   version: 'Con una versión nueva del método, esta cuenta sigue dando lo mismo.',
 } as const;
 
@@ -134,8 +136,11 @@ export function ComoSeCalculo({ punto: p, nombre, asesoradoId, noEntraron }: { p
           <h3>{C.enEsaSesion}</h3>
           <p>
             <strong>
-              Serie {p.origin.setIndex} · {String(e.carga).replace('.', ',')} {e.unidad} × {e.repeticiones} · RIR {String(e.rir).replace('.', ',')}: es la que entra.
+              Serie {p.origin.setIndex} · {String(e.carga).replace('.', ',')} {e.unidad} × {e.repeticiones} · RIR {String(e.rir).replace('.', ',')}: {C.laQueSeToma}
             </strong>
+          </p>
+          <p className="nota" data-regla-por-sesion>
+            {C.regla}
           </p>
           {fuera.length === 0 ? (
             <p className="nota">{C.todasEntraron}</p>

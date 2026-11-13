@@ -17,7 +17,7 @@ import { useId, useState } from 'react';
 import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo } from '../../../../lib/intento';
-import { RIR_DEL_CUADRO, RIR_MAS_DE_2, serieObservadaEnVivo, type SerieObservadaEnVivo } from './fuerza';
+import { esLaFechaFutura, RIR_DEL_CUADRO, RIR_MAS_DE_2, serieObservadaEnVivo, type SerieObservadaEnVivo } from './fuerza';
 
 export const COPY_SERIE_OBSERVADA = {
   titulo: 'Registrar una serie observada',
@@ -83,7 +83,7 @@ export function useSerieObservada(o: { token: string; asesoradoId: string; exerc
     );
     setEnviando(false);
     if (o.sesionPerdida(r)) return;
-    if (!r.ok) return setFalla(r.tipo === 'API' && r.codigo === 'OBSERVED_DATE_IN_FUTURE' ? COPY_SERIE_OBSERVADA.fechaFutura : mensajeDeFallo(r));
+    if (!r.ok) return setFalla(esLaFechaFutura(r) ? COPY_SERIE_OBSERVADA.fechaFutura : mensajeDeFallo(r));
     setF(vacio);
     setClave(nuevaClaveDeIdempotencia());
     o.alGuardar();

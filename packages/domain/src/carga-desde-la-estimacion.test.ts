@@ -55,3 +55,17 @@ test('RM-40 · la referencia lleva el método y la fecha, nunca el valor', () =>
   assert.doesNotMatch(r, /98|kg|lb/);
   assert.deepEqual(terminosProhibidosDeFuerzaEn(r), []);
 });
+
+test('ED-76 (revisión del 13/11) · hacia abajo, el bruto a la vista va truncado: la cuenta no muestra un múltiplo que después «baja»', () => {
+  // 80 × 8 con RIR 2: 80 × (1 + 10/30) = 106,7 kg (el ejemplo de ED-73). El 82 % es 87,47: redondeado se leía 87,5 → 85.
+  const c = cargaDesdeLaEstimacion({ carga: 80, repeticiones: 8, rir: 2, unidad: 'kg' }, 82);
+  assert.ok(c);
+  assert.equal(c.sugerida, 85);
+  assert.equal(c.cuenta, '82 % RM de 106,7 kg = 87,4 kg → 85 kg');
+  // Los otros dos casos de la revisión: 70 × 12 con RIR 0 al 51 % (49,98) y 85 × 5 con RIR 1 al 98 % (99,96).
+  assert.equal(cargaDesdeLaEstimacion(press, 51)!.cuenta, '51 % RM de 98,0 kg = 49,9 kg → 47,5 kg');
+  assert.equal(cargaDesdeLaEstimacion({ carga: 85, repeticiones: 5, rir: 1, unidad: 'kg' }, 98)!.cuenta, '98 % RM de 102,0 kg = 99,9 kg → 97,5 kg');
+  // Un bruto exacto no cambia (RM-38), y al más cercano se sigue redondeando.
+  assert.equal(cargaDesdeLaEstimacion(press, 75)!.cuenta, '75 % RM de 98,0 kg = 73,5 kg → 72,5 kg');
+  assert.equal(cargaDesdeLaEstimacion({ carga: 80, repeticiones: 8, rir: 2, unidad: 'kg' }, 82, 2.5, 'CERCANO')!.cuenta, '82 % RM de 106,7 kg = 87,5 kg → 87,5 kg');
+});

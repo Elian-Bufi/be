@@ -1784,6 +1784,7 @@ rama `wp-editores-api`), el 2026-11-12. Ninguna cambia la API ni lo que leen las
 | EDT-52 | ED-13 | «Estas series, como prescripción habitual» sale del «⋯» de la versión y pide elegir el ejercicio de la sesión. Aplicar una habitual sigue DJ-8 como un preset de BE, y un objetivo propio de una serie que cambia se nombra antes | Guardarla desde el «Más» de cada ejercicio |
 | EDT-53 | ED-24 | «Duplicar el día» va en la tira de la semana. Cada copia queda después de su original, con «(copia)», y lleva un identificador de sesión del cliente para entrar en la agenda con el día de destino en el mismo guardado (la API conserva el que recibe) | Copias sin identificador, con los días elegidos después de guardar |
 | EDT-54 | ED-11 | Reemplazar el borrador con una plantilla son dos operaciones de hoy: descartar (API-PLE-05) y crear desde la plantilla (API-TRN-07). Si la segunda falla, la versión activa sigue igual y el diálogo de plantillas queda abierto con el motivo | Una operación nueva de la API que lo haga de una vez |
+| EDT-55 | ED-74 | La columna «Sesión» de la tabla de origen y el nombre de la sesión en la «Lectura» esperan que la clave TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE traiga el nombre de la sesión en cada punto y en cada serie que no entró: hoy no lo trae, y la lectura dice solo la versión del plan que regía (de `planVersions`). Revisión adversaria del 13/11 | Sumar el nombre de la sesión al contrato de la clave (cambio aditivo de API-PRJ-01) |
 
 ### 6.4 Las del cierre del website (EDC), a ratificar por Dirección
 

@@ -175,3 +175,52 @@ test('ED-13 (DJ-8) · aplicar una habitual conserva las cargas, las marca si cam
   // Sin cargas, nada que revisar.
   assert.equal(aplicarPrescripcionHabitual({ ...p, suggestedLoad: null, sets: p.sets.map(({ suggestedLoad: _c, ...s }) => s) }, h).cambio.carga.revisar, null);
 });
+
+test('ED-13 (revisión del 13/11) · la referencia del % RM no se guarda en la habitual, y los parámetros escritos se nombran', () => {
+  const p = {
+    exerciseVersionId: 'v1',
+    sets: [{ repetitions: { value: 5 } }],
+    intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM de Diego medido el 3/11' } } },
+    professionalParameters: [
+      { label: 'Tempo', value: '3-1-1' },
+      { label: 'Pausa', value: 2, unit: 's' },
+    ],
+  };
+  const { contenido, seQuita, seGuardanEscritos } = prescripcionHabitualDe(p);
+  assert.deepEqual(contenido.intensity, { criterion: 'PERCENT_RM', target: { value: 75, reference: null } });
+  assert.doesNotMatch(JSON.stringify(contenido), /Diego/);
+  assert.ok(seQuita.includes('la referencia del % RM, que es de cada persona'));
+  // El parámetro de texto se guarda (suele ser del método), pero se nombra para revisarlo; el numérico, no.
+  assert.deepEqual(seGuardanEscritos, ['«Tempo: 3-1-1»']);
+  // La prescripción de entrada no cambia.
+  assert.equal(p.intensity.target.reference.description, '1RM de Diego medido el 3/11');
+});
+
+test('ED-13 (revisión del 13/11) · aplicada, la referencia del % RM es la del destino, y la base de las cargas escritas no cambia en silencio', () => {
+  const destino = {
+    exerciseVersionId: 'press-barra',
+    sets: [{ repetitions: { value: 5 } }, { repetitions: { value: 5 } }],
+    intensity: { criterion: 'PERCENT_RM', target: { value: 70, reference: { description: '1RM estimado · Epley v1 · 11/11/2026' } } },
+    suggestedLoad: { value: 60, unit: 'kg' as const },
+  };
+  // Una habitual guardada desde «Press inclinado con mancuernas» (por implemento) y con una referencia vieja, de antes de este arreglo.
+  const h = {
+    sets: [{ repetitions: { value: 6 } }, { repetitions: { value: 6 } }],
+    intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM de otra persona' } } },
+    loadBasis: 'PER_IMPLEMENT' as const,
+    repetitionBasis: 'PER_SET' as const,
+  };
+  const { prescripcion, cambio } = aplicarPrescripcionHabitual(destino, h);
+  assert.deepEqual(prescripcion.intensity, { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado · Epley v1 · 11/11/2026' } } });
+  // Con cargas escritas, la base de la carga queda la del destino, y se dice; la de las repeticiones, sin cambio de sentido, tampoco se impone.
+  assert.equal(prescripcion.loadBasis, undefined);
+  assert.ok(cambio.sePierde.includes('La base de la carga sigue siendo «sin declarar», la de las cargas escritas: no pasa a «por mancuerna o implemento», la de la habitual'));
+  // Sin cargas, la base es la de la habitual.
+  const sinCargas = aplicarPrescripcionHabitual({ ...destino, suggestedLoad: null }, h);
+  assert.equal(sinCargas.prescripcion.loadBasis, 'PER_IMPLEMENT');
+  assert.equal(sinCargas.prescripcion.repetitionBasis, 'PER_SET');
+  assert.ok(!sinCargas.cambio.sePierde.some((t) => /base/.test(t)));
+  // Si el destino no es % RM, la referencia de la habitual no viaja.
+  const rir = aplicarPrescripcionHabitual({ ...destino, intensity: { criterion: 'RIR', target: { value: 2, reference: null } } }, h);
+  assert.equal(rir.prescripcion.intensity?.target.reference, null);
+});
