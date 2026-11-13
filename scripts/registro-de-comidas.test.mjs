@@ -104,10 +104,15 @@ test('1 · TEST-AV2-019 · una sola navegación: elegir no registra, sin marco v
   // La opción elegida se recuerda por su identidad, y se anuncia al cambiar.
   assert.match(opciones, /useSeleccionRecordada<string \| null>\(token, `nutricion:opcion:\$\{fecha\}:\$\{comida\.mealId\}`, null\)/);
   assert.match(opciones, /AccessibilityInfo\.announceForAccessibility\(anuncio\)/);
-  // Una sola opción a la vista: solo ella pide su imagen. Sin imagen, ningún marco; con imagen, la miniatura de 72 dp.
+  // Una sola opción a la vista: solo ella pide su imagen. Con imagen, la miniatura de 72 dp; sin imagen (hallazgo 13 de
+  // la 0.26), la de reemplazo en el mismo lugar y del mismo tamaño: el plato en una caja con el tinte del tema.
   assert.equal((opciones.match(/<OpcionALaVista\b/g) ?? []).length, 1);
-  assert.match(opcion, /\{mediaId \? \(\s*<ImagenDeMedio [^>]*tamano=\{TAMANO_DE_LA_MINIATURA\} rotuloVisible=\{false\}/);
+  assert.match(opcion, /\{mediaId \? \(\s*<ImagenDeMedio [^>]*tamano=\{TAMANO_DE_LA_MINIATURA\} rotuloVisible=\{false\} respaldoCompacto \/>\s*\) : \(\s*<MiniaturaSinFoto \/>\s*\)\}/);
   assert.match(HOY, /const TAMANO_DE_LA_MINIATURA = 72;/);
+  assert.match(HOY, /miniaturaSinFoto: \{ width: TAMANO_DE_LA_MINIATURA, height: TAMANO_DE_LA_MINIATURA, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR\.iconoFondo \}/);
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/imagen-de-medio.tsx'), 'utf8'), /marco: \{[^}]*borderRadius: 12,/, 'el mismo radio que el marco de la foto');
+  const sinFoto = HOY.slice(HOY.indexOf('function MiniaturaSinFoto('), HOY.indexOf('// ─── Con registro'));
+  assert.match(sinFoto, /<View style=\{estilos\.miniaturaSinFoto\} accessible=\{false\} importantForAccessibility="no-hide-descendants">\s*<IconoDePlato color=\{COLOR\.azul\} tamano=\{36\} \/>/);
   assert.match(opcion, /rotulo=\{COPY_REGISTRO_DE_COMIDAS\.imagenDeReferencia\}/, 'TalkBack sigue diciendo «Imagen de referencia»');
   // «Estimación del plan» no se toca: en `tenue`.
   assert.match(HOY, /estimacion: \{[^}]*color: COLOR\.tenue/);

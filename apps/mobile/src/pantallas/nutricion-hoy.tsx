@@ -7,8 +7,9 @@
  * - **Por comida, una sola navegación entre sus opciones** (`carrusel-de-opciones.ts`, AV2-21): «Opción 1 | Opción 2 |
  *   Opción 3» en Segmentos compactos y, debajo, la opción elegida a todo el ancho. Hasta la 0.25 era un carrusel con
  *   asomo, flechas y puntitos. Con una sola opción, sin control.
- * - **La opción:** una miniatura de 72 dp si tiene imagen (sin imagen, ningún marco), el nombre, la franja de macros de
- *   las porciones del plan (una estimación, no lo consumido), «Ver detalle» y «Comí esta opción». Elegir no registra.
+ * - **La opción:** una miniatura de 72 dp (sin foto, la de reemplazo: el plato en una caja con el tinte del tema), el
+ *   nombre, la franja de macros de las porciones del plan (una estimación, no lo consumido), «Ver detalle» y «Comí esta
+ *   opción». Elegir no registra.
  * - **«Comí esta opción»** registra con el comando único (`registro-de-comidas.tsx`), con las cantidades sin confirmar:
  *   lo previsto nunca se convierte en consumido. Un doble toque o un reintento no duplican.
  * - **Con la comida registrada**, en lugar del carrusel: «Almuerzo registrado», la opción con su foto, «Cantidades sin
@@ -41,7 +42,7 @@ import { useDiaDeLaApi } from '../dia-de-la-api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fechaLarga } from '../formato';
 import { Icono } from '../icono';
-import { IconoDeCamara, IconoDeRegistrado, IconoSinRegistro } from '../iconos-de-nutricion';
+import { IconoDeCamara, IconoDePlato, IconoDeRegistrado, IconoSinRegistro } from '../iconos-de-nutricion';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { esIncierto, falloDe } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
@@ -534,9 +535,10 @@ function OpcionesEnSegmentos({
 }
 
 /**
- * La opción a la vista, compacta (AV2-21): sin imagen no hay marco; con imagen, una miniatura de 72 dp al lado del
- * nombre, que TalkBack sigue llamando «Imagen de referencia». Va directo en la tarjeta de la comida, sin otra tarjeta
- * adentro. «Estimación del plan», en `tenue`: no se toca.
+ * La opción a la vista, compacta (AV2-21): con imagen, una miniatura de 72 dp al lado del nombre, que TalkBack sigue
+ * llamando «Imagen de referencia». Sin imagen (hallazgo 13 de la 0.26: faltan las fotos de muchas recetas), la miniatura
+ * de reemplazo en el mismo lugar y del mismo tamaño: la opción no queda coja. Va directo en la tarjeta de la comida, sin
+ * otra tarjeta adentro. «Estimación del plan», en `tenue`: no se toca.
  */
 function OpcionALaVista({
   token,
@@ -561,7 +563,9 @@ function OpcionALaVista({
       <View style={estilos.cabezaDeOpcion}>
         {mediaId ? (
           <ImagenDeMedio token={token} mediaId={mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} tamano={TAMANO_DE_LA_MINIATURA} rotuloVisible={false} respaldoCompacto />
-        ) : null}
+        ) : (
+          <MiniaturaSinFoto />
+        )}
         <View style={estilos.textosDeOpcion}>
           <Text style={estilos.nombreDeOpcion}>{opcion.label}</Text>
           <Text style={estilos.estimacion}>{COPY_REGISTRO_DE_COMIDAS.estimacionDelPlan}</Text>
@@ -570,6 +574,19 @@ function OpcionALaVista({
       <FranjaDeMacros nutrientes={opcion.planned} />
       <FilaQueAbre texto={COPY_REGISTRO_DE_COMIDAS.verDetalle} acento onPress={alVerDetalle} />
       <Boton texto={registrando ? COPY_REGISTRO_DE_COMIDAS.guardando : COPY_REGISTRO_DE_COMIDAS.comiEstaOpcion} onPress={alComer} ocupado={registrando} deshabilitado={otraRegistrando} />
+    </View>
+  );
+}
+
+/**
+ * La miniatura de una opción sin foto (hallazgo 13 de la 0.26): el plato en `azul` dentro de una caja con el tinte
+ * `iconoFondo` del tema, como la caja del ícono de las tarjetas (AV2-T25), del tamaño y con el radio del marco de la
+ * foto. Es decoración: el lector de pantalla no la recorre, y no dice «sin imagen» (el nombre de la opción alcanza).
+ */
+function MiniaturaSinFoto() {
+  return (
+    <View style={estilos.miniaturaSinFoto} accessible={false} importantForAccessibility="no-hide-descendants">
+      <IconoDePlato color={COLOR.azul} tamano={36} />
     </View>
   );
 }
@@ -689,6 +706,8 @@ const estilos = estilosPorTema((COLOR) => ({
   textoDeEstado: { fontSize: 14, lineHeight: 19, color: COLOR.tenue },
   // La opción a la vista va directo en la tarjeta de la comida (AV2-21): sin otra tarjeta adentro.
   opcion: { paddingHorizontal: 4, paddingTop: 10 },
+  // Del tamaño y con el radio del marco de la foto (`imagen-de-medio.tsx`), con el tinte de la caja del ícono.
+  miniaturaSinFoto: { width: TAMANO_DE_LA_MINIATURA, height: TAMANO_DE_LA_MINIATURA, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.iconoFondo },
   cabezaDeOpcion: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 6 },
   textosDeOpcion: { flex: 1, minWidth: 160 },
   nombreDeOpcion: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: COLOR.texto },
