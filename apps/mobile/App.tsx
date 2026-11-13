@@ -47,7 +47,7 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { AVISOS_DE_PRUEBA, type SecretoDeInvitacionRequest } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AVISOS_DE_PRUEBA_VISIBLES } from './src/ambiente';
 import { api, apiConfigurada, consultarCuentaConSenal, extra, loQueFaltaParaSeguirConTope } from './src/api';
@@ -66,7 +66,9 @@ import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambi
 import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/entrenamiento-en-curso';
 import { borraLosBorradores } from './src/borrador-de-formulario';
 import { borradoresDeFormularios } from './src/formularios-en-el-telefono';
-import { exigirVerificacion, memoria, useHayActualizaciones } from './src/lecturas';
+import { actualizarLoQueSeVe, exigirVerificacion, horaDeLoQueVesAhora, memoria, useHayActualizaciones } from './src/lecturas';
+import { admiteTirarParaActualizar, anuncioAlActualizar } from './src/hora-de-lo-que-ves';
+import { horaDeUnInstante } from './src/hora-en-pantalla';
 import { cancelarAvisoDelDescanso } from './src/avisos-del-telefono';
 import { FilaFijaDeLaSesion, useFilaFija } from './src/fila-fija';
 import { marcaEnPerfil, useMarcaEnPerfil } from './src/marca-de-perfil';
@@ -121,7 +123,7 @@ import { ProveedorDeVidrio } from './src/vidrio';
 import { crearRegistroDelTitulo, duracionDelTitulo, tituloEnLaCabecera } from './src/titulo-de-la-cabecera';
 import { ContextoDelTitulo } from './src/titulo-en-la-cabecera';
 import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
-import { BARRA_DEL_SISTEMA } from './src/tema';
+import { BARRA_DEL_SISTEMA, COLOR } from './src/tema';
 import { Icono, type NombreDeIcono } from './src/icono';
 import { Aviso, Boton, Parrafo, estilosPorTema } from './src/ui';
 
@@ -333,6 +335,23 @@ function Contenido() {
     },
     [restauracion],
   );
+
+  /**
+   * PG-09 (WP-PULIDO-GRANDES): tirar hacia abajo en Inicio, Nutrición, Entrenamiento y Novedades vuelve a pedir todo lo
+   * que se ve, con lo confirmado a la vista mientras tanto. Al terminar, el lector anuncia «Actualizado, 10:42» (o que no
+   * se pudo, y de cuándo es lo que se ve). No actualiza solo.
+   */
+  const [tirando, setTirando] = useState(false);
+  const alTirar = useCallback(async () => {
+    setTirando(true);
+    try {
+      await actualizarLoQueSeVe();
+    } finally {
+      setTirando(false);
+    }
+    const anuncio = anuncioAlActualizar(horaDeLoQueVesAhora(), horaDeUnInstante);
+    if (anuncio) AccessibilityInfo.announceForAccessibility(anuncio);
+  }, []);
 
   /** Lleva la pantalla al principio, donde cada pantalla deja el resultado de una acción. */
   const subir = useCallback(() => {
@@ -693,6 +712,11 @@ function Contenido() {
         scrollEventThrottle={100}
         onScrollBeginDrag={restauracion.alArrastrar}
         onContentSizeChange={alCambiarElContenido}
+        refreshControl={
+          conSesion && admiteTirarParaActualizar(ruta.nombre) ? (
+            <RefreshControl refreshing={tirando} onRefresh={() => void alTirar()} colors={[COLOR.acento]} tintColor={COLOR.acento} progressBackgroundColor={COLOR.superficieElevada} />
+          ) : undefined
+        }
       >
         <ProveedorDeCambios registro={registroDeCambios}>
         <ContextoDelTitulo.Provider value={tituloCompartido}>

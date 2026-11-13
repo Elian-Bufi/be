@@ -58,6 +58,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Re
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
 import { ajustesDelDescanso, marcaDeLaExplicacion, useAjustesDelDescanso } from '../ajustes-del-descanso';
 import { tocarPorUnError, tocarTrasLaSerie } from '../haptica';
+import { HoraDeLoQueVes } from '../hora-en-pantalla';
 import { usePantallaEncendida } from '../pantalla-encendida-en-la-sesion';
 import { preferenciasDelTelefono, usePreferenciasDelTelefono } from '../preferencias-en-el-telefono';
 import { seMuestraLaExplicacion } from '../explicacion-de-los-tiempos';
@@ -290,6 +291,7 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
   return (
     <View>
       <Titulo>{COPY_ENTRENAMIENTO.pestana}</Titulo>
+      <HoraDeLoQueVes />
       <Pestanas etiqueta="Qué ver de tu entrenamiento" opciones={VISTAS} valor={vista} alElegir={setVista} />
       {contenido}
       {/* REV-A (DL-134): las revisiones de tu profesional, completas; son historia, así que están aunque no haya plan. */}

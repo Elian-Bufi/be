@@ -46,6 +46,7 @@ import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CajaInformativa, FranjaDeMacros, LineaDeFibra } from '../piezas-de-nutricion';
 import { useDeshacer } from '../registro-de-comidas';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { HoraDeLoQueVes } from '../hora-en-pantalla';
 import { Aviso, Boton, COLOR, Dato, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Titulo } from '../ui';
 import { HoyDeNutricion } from './nutricion-hoy';
 
@@ -97,6 +98,7 @@ export function PantallaDeHoy({
   return (
     <View onLayout={(e) => (yDeLaPantalla.current = e.nativeEvent.layout.y)}>
       <Titulo>{COPY_NUTRICION.pestana}</Titulo>
+      <HoraDeLoQueVes />
       <Pestanas
         etiqueta={COPY_REGISTRO_DE_COMIDAS.queVer}
         opciones={VISTAS}

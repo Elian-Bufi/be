@@ -16,6 +16,9 @@ import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { EstadoDeCarga, VerMas } from '../estados';
 import { fecha } from '../formato';
+import { HoraDeLoQueVes } from '../hora-en-pantalla';
+import { eventoDeLaLista } from '../hora-de-lo-que-ves';
+import { useMarcaDeLectura } from '../lecturas';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { etiquetaDeNovedad, insigniaDeImportancia, rutaDeNovedad } from '../novedades-en-el-telefono';
@@ -50,6 +53,8 @@ export function PantallaDeNovedades({
     [token, alCambiarSinLeer],
   );
   const lista = useListaPaginada(pedir, sesionPerdida);
+  // PG-09: la lista deja su marca (de cuándo es lo que se ve) y se vuelve a pedir al tirar hacia abajo.
+  useMarcaDeLectura(eventoDeLaLista(lista.estado.tipo), lista.recargar);
 
   async function abrir(n: Novedad) {
     if (abriendo) return;
@@ -74,6 +79,7 @@ export function PantallaDeNovedades({
   return (
     <>
       <Titulo>{COPY_NOVEDADES.titulo}</Titulo>
+      <HoraDeLoQueVes />
       <EstadoDeCarga estado={lista.estado} onReintentar={lista.recargar} />
       {lista.estado.tipo === 'listo' && items.length === 0 ? <Parrafo>{COPY_NOVEDADES.vacio}</Parrafo> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}

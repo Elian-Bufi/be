@@ -33,6 +33,7 @@ import { useLecturaRecordada } from '../lecturas';
 import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
+import { HoraDeLoQueVes } from '../hora-en-pantalla';
 import { estilosPorTema, Titulo } from '../ui';
 import { AccesoIncompleto } from './inicio-acceso';
 import { ActividadDeEntrenamiento, EntrenamientoDeHoy } from './inicio-entrenamiento';
@@ -64,6 +65,8 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
   return (
     <View>
       <Titulo>{fechaLarga(hoy)}</Titulo>
+      {/* PG-09 (WP-PULIDO-GRANDES): de cuándo es lo que se ve; tirar hacia abajo lo vuelve a leer (App.tsx). */}
+      <HoraDeLoQueVes />
       <AccesoIncompleto token={token} sesionPerdida={sesionPerdida} ir={ir} />
       {conTira ? <TiraDeLaSemana tira={tira} /> : null}
       <EntrenamientoDeHoy token={token} dia={hoy} lectura={entrenamientoDeHoy} registradas={actividad.r ? (actividad.r.ok ? actividad.r.datos.sesiones : null) : undefined} sesionPerdida={sesionPerdida} ir={ir} />

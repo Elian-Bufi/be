@@ -15,9 +15,10 @@
  * Se pide una vez por entrada: no se precarga nada ni se multiplica la carga sobre la API.
  */
 import { crearMemoriaDeLecturas, type Resultado } from '@be/domain';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import { crearCicloDeLectura, type CicloDeLectura, type EstadoDeLectura, type OpcionesDeCarga } from './ciclo-de-lectura';
+import { eventoDelCiclo, horaDeLaPantalla, marcaTrasEvento, SIN_MARCA, type EventoDeLectura, type HoraDeLaPantalla, type MarcaDeLectura } from './hora-de-lo-que-ves';
 
 /** Una sola memoria para toda la app, en el proceso. Nunca va a disco. */
 export const memoria = crearMemoriaDeLecturas();
@@ -47,6 +48,61 @@ export function useHayActualizaciones(): boolean {
 const oyentesDeEpoca = new Set<() => void>();
 export function exigirVerificacion(): void {
   for (const oyente of oyentesDeEpoca) oyente();
+}
+
+// ─── PG-09 (WP-PULIDO-GRANDES): tirar para actualizar y la hora de lo que se ve ──────────────────
+// Cada lectura a la vista deja su marca (cuándo la confirmó el servidor) y cómo volver a pedirla. La pantalla dice la
+// hora más vieja de lo que muestra (`hora-de-lo-que-ves.ts`), y tirar hacia abajo vuelve a pedir todas.
+const marcas = new Map<string, MarcaDeLectura>();
+const recargas = new Map<string, () => Promise<void>>();
+const oyentesDeLaHora = new Set<() => void>();
+let horaVigente: HoraDeLaPantalla = horaDeLaPantalla([]);
+function avisarLaHora(): void {
+  const nueva = horaDeLaPantalla(marcas.values());
+  if (nueva.hora === horaVigente.hora && nueva.fallo === horaVigente.fallo) return;
+  horaVigente = nueva;
+  for (const oyente of oyentesDeLaHora) oyente();
+}
+function marcar(id: string, evento: EventoDeLectura): void {
+  marcas.set(id, marcaTrasEvento(marcas.get(id) ?? SIN_MARCA, evento, Date.now()));
+  avisarLaHora();
+}
+function olvidarLaMarca(id: string): void {
+  marcas.delete(id);
+  recargas.delete(id);
+  avisarLaHora();
+}
+const suscribirALaHora = (oyente: () => void) => {
+  oyentesDeLaHora.add(oyente);
+  return () => {
+    oyentesDeLaHora.delete(oyente);
+  };
+};
+
+/** La hora de lo que se ve en la pantalla: la más vieja de lo confirmado, y si algo no se pudo actualizar. */
+export function useHoraDeLoQueVes(): HoraDeLaPantalla {
+  return useSyncExternalStore(suscribirALaHora, () => horaVigente);
+}
+
+/** La hora de ahora, para el anuncio de App.tsx al terminar de tirar. */
+export const horaDeLoQueVesAhora = (): HoraDeLaPantalla => horaVigente;
+
+/** Tirar hacia abajo: vuelve a pedir todo lo que está a la vista, con lo confirmado a la vista mientras tanto. */
+export async function actualizarLoQueSeVe(): Promise<void> {
+  await Promise.all([...recargas.values()].map((recargar) => recargar().catch(() => undefined)));
+}
+
+/**
+ * Para una lectura que no usa `useLecturaRecordada` (la lista paginada de Novedades): deja su marca con cada evento y se
+ * ofrece para volver a pedir al tirar. `recargar` tiene que ser estable.
+ */
+export function useMarcaDeLectura(evento: EventoDeLectura, recargar: () => Promise<void>): void {
+  const id = useId();
+  useEffect(() => {
+    recargas.set(id, recargar);
+    return () => olvidarLaMarca(id);
+  }, [id, recargar]);
+  useEffect(() => marcar(id, evento), [id, evento]);
 }
 
 export interface LecturaRecordada<T> {
@@ -86,17 +142,31 @@ export function useLecturaRecordada<T>(token: string, clave: string, pedir: () =
   const [conClave, setConClave] = useState<{ readonly clave: string; readonly estado: EstadoDeLectura<T> }>({ clave, estado: { tipo: 'verificando' } });
   const estado: EstadoDeLectura<T> = conClave.clave === clave ? conClave.estado : { tipo: 'verificando' };
   const ciclo = useRef<CicloDeLectura<T> | null>(null);
+  const idDeLaMarca = useId();
 
   useEffect(() => {
-    const c = crearCicloDeLectura<T>({ memoria, token, clave, pedir, sesionPerdida, alCambiar: (nuevo) => setConClave({ clave, estado: nuevo }) });
+    const c = crearCicloDeLectura<T>({
+      memoria,
+      token,
+      clave,
+      pedir,
+      sesionPerdida,
+      alCambiar: (nuevo) => {
+        // PG-09: la marca de esta lectura, con lo que le pasó (pedir no mueve la hora; confirmar, sí).
+        marcar(idDeLaMarca, eventoDelCiclo(nuevo));
+        setConClave({ clave, estado: nuevo });
+      },
+    });
     ciclo.current = c;
+    recargas.set(idDeLaMarca, () => c.cargar());
     setConClave({ clave, estado: { tipo: 'verificando' } });
     void c.cargar();
     return () => {
       c.terminar();
       if (ciclo.current === c) ciclo.current = null;
+      olvidarLaMarca(idDeLaMarca);
     };
-  }, [token, clave, pedir, sesionPerdida]);
+  }, [token, clave, pedir, sesionPerdida, idDeLaMarca]);
 
   // La línea del encabezado corre mientras la pantalla confirma, al entrar o al actualizar.
   const ocupada = estado.tipo === 'verificando' || (estado.tipo === 'listo' && estado.actualizando);
