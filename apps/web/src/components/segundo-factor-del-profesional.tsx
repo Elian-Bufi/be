@@ -26,7 +26,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import { api } from '../lib/api';
 import { CERRANDO_SESION, useCerrarSesion } from '../lib/cerrar-sesion';
 import { horaDelDia } from '../lib/formato';
-import { alEnviarUnCodigo, claveEnGrupos, pasoDelSegundoFactor, type PasoDelSegundoFactor } from '../lib/segundo-factor-del-profesional';
+import { alEnviarUnCodigo, claveEnGrupos, claveParaCopiar, pasoDelSegundoFactor, restoDelEnlaceOtpauth, type PasoDelSegundoFactor } from '../lib/segundo-factor-del-profesional';
 import { EsperandoSesion, useSesion } from '../lib/sesion';
 import { useSesionPerdida } from '../lib/sesion-requerida';
 import { CodigoQr } from './codigo-qr';
@@ -338,7 +338,22 @@ export function PasoDeConfiguracion({
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(avisoInicial);
   const [enviando, setEnviando] = useState(false);
+  /** Si se copió la clave: `si`, `no` (sin permiso del navegador: se copia a mano) o `null` antes de intentarlo. */
+  const [copiada, setCopiada] = useState<'si' | 'no' | null>(null);
   const campo = useRef<HTMLInputElement>(null);
+
+  /**
+   * Copia la clave tal como se ve, sin los espacios de los grupos ni el relleno del final, como la piden las aplicaciones
+   * de códigos. Va al portapapeles porque la persona lo pide; no se guarda en ningún otro lado.
+   */
+  async function copiarLaClave(secreto: string) {
+    try {
+      await navigator.clipboard.writeText(claveParaCopiar(secreto));
+      setCopiada('si');
+    } catch {
+      setCopiada('no');
+    }
+  }
 
   async function empezar() {
     if (enviando) return;
@@ -443,16 +458,28 @@ export function PasoDeConfiguracion({
               <p>{C.configuracion.paso2}</p>
               <div className="configuracion-del-autenticador">
                 <CodigoQr texto={datos.otpauthUri} etiqueta={C.configuracion.etiquetaQr} tamano={200} />
-                <details className="ayuda">
-                  <summary>{C.configuracion.clave}</summary>
-                  <div className="ayuda__cuerpo">
-                    <p className="clave-del-autenticador">
-                      <code>{claveEnGrupos(datos.secret)}</code>
-                    </p>
-                    <p className="nota">{C.configuracion.cuenta(datos.accountName, datos.issuer)}</p>
-                    <p className="nota">{C.configuracion.datosDeLaClave}</p>
+                {/* La clave a la vista, con su botón para copiarla, y el enlace que abre la aplicación: así se configura
+                    también desde el mismo teléfono, donde el QR no se puede escanear. */}
+                <div className="clave-a-la-vista">
+                  <p className="clave-a-la-vista__rotulo">{C.configuracion.clave}</p>
+                  <p className="clave-del-autenticador">
+                    <code>{claveEnGrupos(datos.secret)}</code>
+                  </p>
+                  <div className="acciones">
+                    <button type="button" className="boton boton--secundario" onClick={() => void copiarLaClave(datos.secret)}>
+                      {C.configuracion.copiarLaClave}
+                    </button>
+                    <a className="boton boton--secundario" href={`otpauth://${restoDelEnlaceOtpauth(datos.otpauthUri)}`}>
+                      {C.configuracion.abrirEnLaAplicacion}
+                    </a>
                   </div>
-                </details>
+                  <p className="nota" role="status" aria-live="polite">
+                    {copiada === 'si' ? C.configuracion.claveCopiada : copiada === 'no' ? C.configuracion.noSePudoCopiar : ''}
+                  </p>
+                  <p className="nota">{C.configuracion.desdeElTelefono}</p>
+                  <p className="nota">{C.configuracion.cuenta(datos.accountName, datos.issuer)}</p>
+                  <p className="nota">{C.configuracion.datosDeLaClave}</p>
+                </div>
               </div>
               <p className="nota">{C.configuracion.vence(hora(datos.expiresAt))}</p>
             </li>

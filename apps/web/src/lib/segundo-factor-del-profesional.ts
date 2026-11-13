@@ -78,3 +78,20 @@ export function alEnviarUnCodigo(r: Resultado<unknown>): AlEnviarUnCodigo {
 export function claveEnGrupos(secreto: string): string {
   return secreto.replace(/=+$/, '').match(/.{1,4}/g)?.join(' ') ?? secreto;
 }
+
+/**
+ * La clave para copiar al portapapeles: la misma que se ve, en un solo bloque, sin los espacios de los grupos ni el
+ * relleno de base32 (algunas aplicaciones de códigos rechazan el «=»).
+ */
+export function claveParaCopiar(secreto: string): string {
+  return claveEnGrupos(secreto).replace(/\s+/g, '');
+}
+
+/**
+ * Lo que sigue a `otpauth://` en el enlace de la configuración (el mismo que lleva el QR). El website arma el enlace
+ * «Abrir en la aplicación de códigos» con el esquema escrito a la vista, para que la guarda de enlaces sepa que abre otra
+ * aplicación y no recarga la página.
+ */
+export function restoDelEnlaceOtpauth(uri: string): string {
+  return uri.startsWith('otpauth://') ? uri.slice('otpauth://'.length) : '';
+}

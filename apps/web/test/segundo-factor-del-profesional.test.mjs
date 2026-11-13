@@ -52,6 +52,23 @@ test('TEST-UF-014 · lo que responde un código: al campo con los intentos, bloq
   assert.equal(S.claveEnGrupos('JBSWY3DPEHPK3PXP===='), 'JBSW Y3DP EHPK 3PXP');
 });
 
+test('desde el mismo teléfono: la clave a la vista, con un botón para copiarla y el enlace que abre la aplicación de códigos', () => {
+  // Lo que se copia es lo que se ve, en un bloque: sin espacios de los grupos ni el relleno de base32.
+  assert.equal(S.claveParaCopiar('JBSWY3DPEHPK3PXP===='), 'JBSWY3DPEHPK3PXP');
+  assert.equal(S.restoDelEnlaceOtpauth('otpauth://totp/BE:persona?secret=JBSW&issuer=BE'), 'totp/BE:persona?secret=JBSW&issuer=BE');
+  assert.equal(S.restoDelEnlaceOtpauth('https://otro.sitio/'), '', 'solo un enlace de la aplicación de códigos');
+  const pantalla = leer('src/components/segundo-factor-del-profesional.tsx');
+  const configuracion = pantalla.slice(pantalla.indexOf('export function PasoDeConfiguracion('));
+  // Ya no queda escondida en un desplegable: va al lado del QR.
+  assert.doesNotMatch(configuracion, /<details className="ayuda">\s*<summary>\{C\.configuracion\.clave\}/);
+  assert.match(configuracion, /<div className="clave-a-la-vista">[\s\S]*?<code>\{claveEnGrupos\(datos\.secret\)\}<\/code>/);
+  assert.match(configuracion, /onClick=\{\(\) => void copiarLaClave\(datos\.secret\)\}>\s*\{C\.configuracion\.copiarLaClave\}/);
+  assert.match(configuracion, /await navigator\.clipboard\.writeText\(claveParaCopiar\(secreto\)\);/);
+  assert.match(configuracion, /href=\{`otpauth:\/\/\$\{restoDelEnlaceOtpauth\(datos\.otpauthUri\)\}`\}>\s*\{C\.configuracion\.abrirEnLaAplicacion\}/);
+  assert.match(configuracion, /role="status" aria-live="polite"/, 'el resultado de copiar se anuncia');
+  for (const clave of ['copiarLaClave', 'claveCopiada', 'noSePudoCopiar', 'abrirEnLaAplicacion', 'desdeElTelefono']) assert.ok(C.configuracion[clave]?.trim(), clave);
+});
+
 test('TEST-UF-014 · /pro pone el segundo factor adentro de «Antes de seguir»; /account no lo pide', () => {
   const pro = leer('src/app/pro/layout.tsx');
   const adentro = pro.indexOf('<SegundoFactorDelProfesional>');
