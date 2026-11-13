@@ -205,6 +205,30 @@ export function ladoDelDiaDeLaTira(ancho: number, escalaDeLetra: number): number
   return Math.min(columna - aro, Math.round(CIRCULO_DEL_DIA * Math.min(Math.max(escalaDeLetra, 1), 1.3)));
 }
 
+/** El tamaño y el redondeo de una vista de la tira: un círculo de ese lado. */
+export interface Redondo {
+  readonly width: number;
+  readonly height: number;
+  readonly borderRadius: number;
+}
+
+/**
+ * La forma de un día de la tira (hallazgo 11 de la 0.26): el aro y el círculo, cada uno un círculo entero, con el
+ * círculo centrado adentro del aro. Las dos vistas van con `collapsable={false}` en `tira-de-la-semana.tsx`:
+ * - **La causa del cuadrado verde:** el círculo de un día sin sesión no tiene fondo ni borde, solo tamaño y radio. React
+ *   Native (Fabric) lo aplana: no crea su vista en Android. Cuando llega la sesión de hoy, el fondo verde obliga a crear
+ *   la vista, y Android la crea solo con lo que cambió en esa actualización (el fondo), sin el radio que ya tenía. Queda
+ *   un cuadrado del lado del círculo, y sus esquinas pasan el aro.
+ * - Con `collapsable={false}`, la vista existe desde el primer dibujo con su radio, y el verde solo se le suma.
+ */
+export function formaDelDiaDeLaTira(lado: number): { readonly aro: Redondo; readonly circulo: Redondo } {
+  const aro = lado + 2 * (ARO_DE_HOY.grosor + ARO_DE_HOY.separacion);
+  return {
+    aro: { width: aro, height: aro, borderRadius: aro / 2 },
+    circulo: { width: lado, height: lado, borderRadius: lado / 2 },
+  };
+}
+
 /** El nombre del día del plan bajo «Comidas»: solo si el plan tiene más de un tipo de día (AV2-07). */
 export function nombreDelDiaEnInicio(dias: readonly { readonly dayTypeId: string; readonly label: string }[], elegido: string | null): string | undefined {
   if (dias.length <= 1) return undefined;

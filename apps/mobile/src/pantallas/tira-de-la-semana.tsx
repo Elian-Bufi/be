@@ -18,7 +18,7 @@
  */
 import { Text, useWindowDimensions, View } from 'react-native';
 import { Icono } from '../icono';
-import { ARO_DE_HOY, ladoDelDiaDeLaTira, type TiraDeLaSemana as Tira } from '../inicio-de-hoy';
+import { ARO_DE_HOY, formaDelDiaDeLaTira, ladoDelDiaDeLaTira, type TiraDeLaSemana as Tira } from '../inicio-de-hoy';
 import { estilosPorTema } from '../ui';
 import { useSuperficie } from '../vidrio';
 
@@ -27,7 +27,7 @@ export function TiraDeLaSemana({ tira }: { tira: Tira }) {
   const { width, fontScale } = useWindowDimensions();
   // Siete columnas dentro de la tarjeta, a todo el ancho: el círculo crece con la letra y, con su aro, no pasa su columna.
   const lado = ladoDelDiaDeLaTira(width, fontScale);
-  const aro = lado + 2 * (ARO_DE_HOY.grosor + ARO_DE_HOY.separacion);
+  const forma = formaDelDiaDeLaTira(lado);
   return (
     <View style={[estilos.tarjeta, estilo]} accessible accessibilityLabel={tira.paraLeer}>
       <View style={estilos.dias} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
@@ -36,9 +36,11 @@ export function TiraDeLaSemana({ tira }: { tira: Tira }) {
             <Text style={estilos.letra} maxFontSizeMultiplier={1.3}>
               {d.letra}
             </Text>
-            {/* El aro envuelve al círculo; solo hoy tiene color. */}
-            <View style={[estilos.aro, { width: aro, height: aro, borderRadius: aro / 2 }, d.hoy && estilos.aroDeHoy]}>
-              <View style={[estilos.circulo, { width: lado, height: lado, borderRadius: lado / 2 }, d.realizada && estilos.realizado]}>
+            {/* El aro envuelve al círculo; solo hoy tiene color. Las dos vistas existen siempre (collapsable={false}): sin
+                eso, Android creaba el círculo al llegar la sesión de hoy sin su radio, y se veía un cuadrado verde
+                (hallazgo 11 de la 0.26; formaDelDiaDeLaTira). */}
+            <View collapsable={false} style={[estilos.aro, forma.aro, d.hoy && estilos.aroDeHoy]}>
+              <View collapsable={false} style={[estilos.circulo, forma.circulo, d.realizada && estilos.realizado]}>
                 {d.realizada ? (
                   <Icono nombre="tilde" tamano={18} tono="botonTexto" />
                 ) : (

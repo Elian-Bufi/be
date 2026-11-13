@@ -1364,14 +1364,39 @@ test('TEST-AV2-009 · el dibujo: una sola etiqueta para el lector, la tilde en �
   assert.match(tira, /realizado: \{ backgroundColor: COLOR\.exito \}/);
   // El aro de hoy envuelve al círculo: su propia vista, con 2 dp de aro y 2 dp de separación del color de la tarjeta, así
   // que se ve también sobre un día con la tilde. No es el borde del círculo, que sobre el verde no se distinguía.
-  assert.match(tira, /const aro = lado \+ 2 \* \(ARO_DE_HOY\.grosor \+ ARO_DE_HOY\.separacion\);/);
-  assert.match(tira, /<View style=\{\[estilos\.aro, \{ width: aro, height: aro, borderRadius: aro \/ 2 \}, d\.hoy && estilos\.aroDeHoy\]\}>\s*<View style=\{\[estilos\.circulo, \{ width: lado, height: lado, borderRadius: lado \/ 2 \}, d\.realizada && estilos\.realizado\]\}>/);
+  assert.match(tira, /const forma = formaDelDiaDeLaTira\(lado\);/);
+  assert.match(tira, /<View collapsable=\{false\} style=\{\[estilos\.aro, forma\.aro, d\.hoy && estilos\.aroDeHoy\]\}>\s*<View collapsable=\{false\} style=\{\[estilos\.circulo, forma\.circulo, d\.realizada && estilos\.realizado\]\}>/);
   assert.match(tira, /aro: \{ alignItems: 'center', justifyContent: 'center', borderWidth: ARO_DE_HOY\.grosor, padding: ARO_DE_HOY\.separacion, borderColor: 'transparent' \}/);
   assert.match(tira, /circulo: \{ alignItems: 'center', justifyContent: 'center' \}/, 'el círculo no tiene borde');
   // Neutro: la tira no se toca, y en la APK el cian es solo para lo que se toca (GUIA I.6).
   assert.match(tira, /aroDeHoy: \{ borderColor: COLOR\.texto \}/);
   assert.doesNotMatch(tira, /COLOR\.acento/, 'nada en la tira va en el acento');
   assert.doesNotMatch(tira, /COLOR\.(error|peligro)|nombre="(cerrar|aviso|salteada)"/, 'lo no hecho, neutro');
+});
+
+test('Hallazgo 11 de la 0.26 · el día de hoy con una sesión es un círculo dentro del aro, no un cuadrado verde que lo pasa', () => {
+  // Los estilos que se aplican, en cada ancho y letra: el círculo es redondo entero y entra justo en el aro.
+  for (const ancho of [320, 360, 412]) {
+    for (const escala of [1, ANDROID_13, 2]) {
+      const lado = inicio.ladoDelDiaDeLaTira(ancho, escala);
+      const { aro, circulo } = inicio.formaDelDiaDeLaTira(lado);
+      assert.deepEqual(circulo, { width: lado, height: lado, borderRadius: lado / 2 }, `${ancho} dp ×${escala}: el círculo`);
+      assert.equal(aro.width, aro.height);
+      assert.equal(aro.borderRadius, aro.width / 2, `${ancho} dp ×${escala}: el aro`);
+      // Adentro del aro van su grosor y la separación de cada lado; lo que queda es exactamente el círculo.
+      assert.equal(aro.width - 2 * (inicio.ARO_DE_HOY.grosor + inicio.ARO_DE_HOY.separacion), circulo.width);
+      // Un cuadrado del mismo lado pasa el aro por las esquinas: la mitad de su diagonal supera el radio del aro.
+      assert.ok((circulo.width * Math.SQRT2) / 2 > aro.width / 2, `${ancho} dp ×${escala}: sin el radio, las esquinas pasan el aro`);
+    }
+  }
+  // La causa: un círculo sin fondo ni borde, solo con tamaño y radio, React Native (Fabric) lo aplana y no crea su vista.
+  // Cuando llega la sesión de hoy, Android la crea con lo que cambió (el fondo) y sin el radio. Las dos vistas existen
+  // siempre, y lo que se suma al estar hecho es solo el color: nada después del radio lo pisa.
+  const tira = sinComentarios(leer('pantallas/tira-de-la-semana.tsx'));
+  assert.equal((tira.match(/<View collapsable=\{false\} style=\{\[estilos\.(aro|circulo), forma\.(aro|circulo)/g) ?? []).length, 2);
+  assert.match(tira, /\n  realizado: \{ backgroundColor: COLOR\.exito \},/, 'hecho: solo el color');
+  assert.match(tira, /\n  aroDeHoy: \{ borderColor: COLOR\.texto \},/, 'hoy: solo el color del aro');
+  assert.doesNotMatch(tira, /borderRadius: 0|overflow: 'hidden'/);
 });
 
 // ─── TEST-AV2-010 · con una sesión en curso, ninguna otra ofrece empezar (AV2-09) ───────────────
