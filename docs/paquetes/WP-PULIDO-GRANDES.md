@@ -2,7 +2,7 @@
 
 > **Estado:** DECLARADO el 2026-11-13, sin programar. Las partes PG-01 a PG-19 y el calendario (§3) son el pedido de
 > Dirección. Las decisiones PG-D1 a PG-D15 (§5) están **a ratificar**: mientras no haya respuesta, rige la
-> recomendación de cada una, salvo en las que lo dicen (PG-D1, PG-D10 y PG-D11 esperan el sí antes de programar su
+> recomendación de cada una, salvo en las que lo dicen (PG-D10 y PG-D11 esperan el sí antes de programar su; PG-D1 la decidió Dirección el 2026-11-13
 > parte). DL-173.
 >
 > **Encargo** (Dirección, 2026-11-13):
@@ -475,7 +475,7 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
 Son propuestas del continuador, cada una con su recomendación y su alternativa, **a ratificar**. Mientras no haya
 respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan el sí antes de programar su parte.
 
-- **PG-D1 · Inicio con varias sesiones** · **a ratificar; revisa DL-077 para Inicio (espera el sí).**
+- **PG-D1 · Inicio con varias sesiones** · **decidida por Dirección el 2026-11-13: la que sigue y «Otra sesión»; revisa DL-077 para Inicio.**
   - *Recomiendo:* la tarjeta con la que sigue en el orden del plan, después de la última registrada, y «Otra sesión»
     con todas, como Hevy y Fitbod. El orden lo puso el profesional al armar el plan: BE no elige, sigue ese orden y lo
     dice («Sigue en tu plan»).
