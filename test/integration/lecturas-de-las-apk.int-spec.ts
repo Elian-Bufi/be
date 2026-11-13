@@ -9,8 +9,10 @@
  * lectura suya tenga escenario.
  *
  * UF-00 de WP-USO-FINAL (2026-11-11, enmienda de DL-152): mientras Dirección no establezca una estable, la congelada es
- * solo la última distribuida, hoy la 0.24.0-candidata.1 (desde el 2026-11-12; reemplazó a la 0.23.0-candidata.2, y
- * suma API-ACC-07). Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
+ * solo la última distribuida, hoy la 0.27.0-candidata.1 (desde el 2026-11-13; reemplazó a la 0.24.0-candidata.1, que el
+ * 2026-11-12 había reemplazado a la 0.23.0-candidata.2 sumando API-ACC-07). La 0.27 suma nueve lecturas, cada una con su
+ * escenario: los textos (ACC-08 y 09), la ayuda (SOP-01), los derechos y la exportación (RGT-01 y 03, EXP-01 y 02) y la
+ * recuperación del acceso (ACC-P1-01 y 02). Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
  * (antes, el 2026-11-05, la 0.17.0-candidata.3 y la 0.18.0-candidata.1). Los escenarios de lo que solo leían ellas (FRM,
  * una APK sin `forms-format-3`, el alta sin la casilla de mayoría de edad) quedan: se arman solo si una APK congelada
  * llama esa operación o no declara esa capacidad.
@@ -43,7 +45,9 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import request from 'supertest';
-import { appDePrueba, conSesion, correoSintetico, CREDENCIAL_SINTETICA, OTRA_CREDENCIAL_SINTETICA, registrarOk } from './soporte-api';
+import { erroresDeclarados } from '../../packages/domain/src/openapi';
+import { adm, administradorListo } from './soporte-administracion';
+import { appDePrueba, claveDeIdempotencia, conSesion, correoSintetico, CREDENCIAL_SINTETICA, OTRA_CREDENCIAL_SINTETICA, registrarOk } from './soporte-api';
 import { circuitoAntropometrico } from './soporte-antropometria';
 import { CATALOGO_DE_EJERCICIOS, circuitoConPlanDeEntrenamientoActivo } from './soporte-entrenamiento';
 import { CLIENTE_APK, googleDePrueba, idTokenDeGoogle, levantarGoogleFalso, reclamosDeGoogle, subSintetico, type GoogleFalso } from './soporte-google';
@@ -1015,12 +1019,78 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     expect(apk.rechazos()).toEqual([]);
   });
 
+  // ─── Los textos, la ayuda, los derechos y la recuperación (desde la 0.27) ─────────────────────
+
+  siLee('API-ACC-09', 'los textos legales: leer la versión publicada y aceptar la vigente (ACC-09 y ACC-08, DL-169 UF-05)', async () => {
+    const t = apk.textos;
+    // «Antes de seguir» abre el texto de la versión que pide aceptar, sin sesión, y la acepta con la sesión.
+    await apk.pide('API-ACC-09', { params: { versionId: t.TERMINOS } });
+    await apk.pide('API-ACC-09', { params: { versionId: t.PRIVACIDAD_INFO } });
+    await apk.pide('API-ACC-09', { params: { versionId: 'terminos-que-no-existe' }, status: 404 });
+    if (apk.lee('API-ACC-08')) {
+      const persona = await prepararAsesorado(app, etiqueta(`${corta}-textos`));
+      // La vigente ya aceptada en el alta: 200 con lo guardado, la misma forma que la aceptación nueva.
+      await apk.pide('API-ACC-08', { token: persona.token, cuerpo: { text: 'TERMS', versionId: t.TERMINOS } });
+      await apk.pide('API-ACC-08', { token: persona.token, cuerpo: { text: 'PRIVACY', versionId: t.PRIVACIDAD_INFO } });
+      await apk.pide('API-ACC-08', { token: persona.token, cuerpo: { text: 'TERMS', versionId: 'terminos-que-no-existe' }, status: 422 });
+    }
+    expect(apk.rechazos()).toEqual([]);
+  });
+
+  siLee('API-SOP-01', 'la ayuda: el canal de contacto, sin sesión (SOP-01, DL-169 UF-07)', async () => {
+    await apk.pide('API-SOP-01', {});
+    expect(apk.rechazos()).toEqual([]);
+  });
+
+  siLee('API-RGT-01', 'los derechos: pedir, la lista con un pedido resuelto, y la exportación propia (RGT-01, RGT-03, EXP-01 y EXP-02, DL-169 UF-06)', async () => {
+    const persona = await prepararAsesorado(app, etiqueta(`${corta}-derechos`));
+    const token = persona.token;
+    // La lista vacía, como la ve quien nunca pidió nada (la APK pide de a 20).
+    await apk.pide('API-RGT-03', { token, consulta: { limit: '20' } });
+    const rectificacion = (await apk.pide('API-RGT-01', { token, cuerpo: { type: 'RECTIFICATION', scope: { note: 'Mi fecha de nacimiento está mal.' } }, status: 201 })).body.data.requestId as string;
+    await apk.pide('API-RGT-01', { token, cuerpo: { type: 'ACCESS', scope: {} }, status: 201 });
+    // Administración resuelve la rectificación (ADM-17): la lista trae un pedido recibido y otro con la respuesta.
+    const a = await administradorListo(app, prisma, `${corta}-rgt-${randomUUID().slice(0, 6)}`);
+    await adm(app, a.token)
+      .post(`/admin/data-rights-requests/${rectificacion}/resolution`)
+      .set('Idempotency-Key', claveDeIdempotencia())
+      .send({ outcome: 'RESOLVED', response: 'La corregimos.', rationale: 'Pedido por el canal de ayuda (sintético).' })
+      .expect(200);
+    await apk.pide('API-RGT-03', { token, consulta: { limit: '20' } });
+    if (apk.lee('API-EXP-01')) {
+      const pedida = await apk.pide('API-EXP-01', { token, cuerpo: { scope: { domains: ['NUTRITION', 'TRAINING', 'ANTHROPOMETRY'], period: null } }, status: 201 });
+      await apk.pide('API-EXP-02', { token, params: { exportId: pedida.body.data.exportId as string } });
+      await apk.pide('API-EXP-02', { token, params: { exportId: randomUUID() }, status: 404 });
+    }
+    expect(apk.rechazos()).toEqual([]);
+  });
+
+  siLee('API-ACC-P1-01', 'recuperar el acceso: pedir, sin proveedor de correo, y completar con el código asistido (ACC-P1-01 y 02, DL-169 UF-03)', async () => {
+    const correo = correoSintetico(etiqueta(`${corta}-recupera`));
+    await registrarOk(app, correo, 'APK');
+    // Sin proveedor de correo (como en `test`): 202 con la entrega asistida; lo mismo para un correo que no es de nadie.
+    const pedido = (await apk.pide('API-ACC-P1-01', { cuerpo: { identifier: correo }, status: 202 })).body.data.recoveryId as string;
+    await apk.pide('API-ACC-P1-01', { cuerpo: { identifier: correoSintetico(etiqueta(`${corta}-recupera-nadie`)) }, status: 202 });
+    if (apk.lee('API-ACC-P1-02')) {
+      const a = await administradorListo(app, prisma, `${corta}-rec-${randomUUID().slice(0, 6)}`);
+      const codigo = (await adm(app, a.token).post('/admin/access-recoveries').send({ email: correo, rationale: 'Escribió desde el correo de la cuenta (sintético).' }).expect(201)).body.data.code as string;
+      await apk.pide('API-ACC-P1-02', { params: { recoveryId: randomUUID() }, cuerpo: { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }, status: 422 });
+      await apk.pide('API-ACC-P1-02', { params: { recoveryId: pedido }, cuerpo: { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }, status: 204 });
+      // Entra con la contraseña nueva.
+      await apk.pide('API-ACC-02', { cuerpo: { method: 'LOCAL', identifier: correo, credential: OTRA_CREDENCIAL_SINTETICA }, status: 201 });
+    }
+    expect(apk.rechazos()).toEqual([]);
+  });
+
   // ─── Todo lo que lee ───────────────────────────────────────────────────────────────────────────
 
   it('leyó con su esquema cada respuesta que esta APK lee, y cada detalle de rechazo que interpreta', () => {
     expect(apk.sinLeer()).toEqual(soloElRechazo(apk));
     // DL-169 (UF-D2): el detalle de GOOGLE_ACCOUNT_NOT_FOUND con el nombre no lo lee una APK que lo espera solo con el correo.
     const detalleQueYaNoLee = apk.lee('API-GOO-01') && !apk.leeEnElDetalle('GOOGLE_ACCOUNT_NOT_FOUND', 'name') && 'GOOGLE_ACCOUNT_NOT_FOUND' in apk.congelado.errores.detalles;
-    expect(apk.detallesSinLeer()).toEqual(detalleQueYaNoLee ? ['GOOGLE_ACCOUNT_NOT_FOUND'] : []);
+    // Un detalle que ninguna operación que llama esta APK declara no le puede llegar: el cliente compartido lo interpreta
+    // para el website (desde la 0.27, SECOND_FACTOR_INVALID, que solo dan la familia MFA y la de Administración).
+    const puedeLlegarle = (codigo: string): boolean => Object.keys(apk.congelado.lecturas).some((op) => Object.values(erroresDeclarados(op)).some((codigos) => codigos.includes(codigo)));
+    expect(apk.detallesSinLeer().filter(puedeLlegarle)).toEqual(detalleQueYaNoLee ? ['GOOGLE_ACCOUNT_NOT_FOUND'] : []);
   });
 });
