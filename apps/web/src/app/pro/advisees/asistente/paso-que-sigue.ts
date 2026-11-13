@@ -74,6 +74,8 @@ export const COPY_ASISTENTE = {
   sinEjercicios: 'Sin ejercicios todavía.',
   prescripcion: '¿Cómo se prescribe cada ejercicio?',
   presetDePrescripcion: (sesion: string) => `Aplicar un preset a ${sesion}`,
+  sesionesDelPlan: 'Las sesiones del plan',
+  cuantosEjercicios: (n: number) => (n === 0 ? 'sin ejercicios' : n === 1 ? '1 ejercicio' : `${n} ejercicios`),
   dias: '¿Qué días va cada sesión?',
   diasAyuda: 'Los días son opcionales: sin días, la persona elige cuándo hacer cada sesión.',
   revisar: 'Lo que impide activar y lo que queda sin completar',

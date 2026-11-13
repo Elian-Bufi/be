@@ -8,6 +8,10 @@
  *
  * Lo que se escribe: la carga de la fila general y, si el criterio es % RM, el valor del % RM y la referencia con el método y la
  * fecha, nunca el valor (RM-40), porque el plan viaja a otras áreas (RES-06). Con el criterio RIR, solo la carga.
+ * Abierto desde las series elegidas de la planilla (EDT-56), solo la carga propia de esas series: el % RM es de toda la
+ * prescripción y no se toca. Con el criterio % RM, ese valor queda fijo (de solo lectura) y la estimación elegida tiene que ser
+ * la de su referencia; si es otra, o si no hay referencia, el principal queda apagado y dice por qué
+ * (`procedenciaEnLasSeries`): una carga que sale de otra estimación no tendría de dónde salir en el plan.
  * Nunca convierte entre kg y lb (RM-39).
  *
  * El estado vive en quien abre el cuadro (`useCargaDesdeLaEstimacion`), para que el principal esté en su pie.
@@ -16,7 +20,20 @@ import { cargaDesdeLaEstimacion, COPY_FUERZA, estimacionALaVista, leerNumero, PA
 import { useId, useState } from 'react';
 import { Enlace } from '../../../../components/enlace';
 import { useNombres } from '../../../../lib/nombres-ocultos';
-import { antiguedad, delMasReciente, diaDelPunto, entradaDelCuadroDeLaCarga, estimacionDelPunto, lasQueQuedan, quienLaEscribio, textoDelPrincipalDeLaCarga, type PrescripcionParaLaCarga } from './fuerza';
+import {
+  antiguedad,
+  delMasReciente,
+  diaDelPunto,
+  entradaDelCuadroDeLaCarga,
+  estimacionDelPunto,
+  lasQueQuedan,
+  lasSeriesEnPalabras,
+  quienLaEscribio,
+  textoDelPrincipalDeLaCarga,
+  procedenciaEnLasSeries,
+  textoDelPrincipalEnLasSeries,
+  type PrescripcionParaLaCarga,
+} from './fuerza';
 
 /** Cuántas estimaciones se ofrecen a la vista; las demás, en la evolución. */
 const A_LA_VISTA = 4;
@@ -24,6 +41,9 @@ const A_LA_VISTA = 4;
 export const COPY_CARGA_DESDE_LA_ESTIMACION = {
   titulo: 'Calcular la carga desde la estimación',
   abrir: 'Calcular la carga desde la estimación…',
+  abrirEnLasElegidas: 'Calcular la carga de las elegidas…',
+  sinSeries: 'Las series elegidas ya no están: cerrá el cuadro y elegí otras.',
+  elPorcentajeNoCambia: 'El % RM y su referencia son de toda la prescripción: no cambian, y las demás series siguen como están.',
   nadaSeEscribe: 'Nada se escribe hasta que confirmes.',
   queEstimacion: '1 · ¿Qué estimación usás?',
   ningunaElegida: 'ninguna viene elegida',
@@ -41,6 +61,9 @@ export const COPY_CARGA_DESDE_LA_ESTIMACION = {
   porcentajeInvalido: 'Escribí un % RM mayor que 0 y hasta 100.',
   cargaInvalida: 'Escribí una carga mayor que 0.',
   nuncaAutomatica: 'Una estimación nueva no cambia esta carga, y nada se escribe sin este clic.',
+  porcentajeFijo: 'El de la prescripción: en las elegidas no cambia.',
+  sinReferencia: 'La prescripción no dice de qué estimación sale su % RM. Calculá desde la fila general, que escribe el % RM con su referencia.',
+  otraReferencia: (referencia: string) => `Las elegidas toman el % RM de «${referencia}». Elegí esa estimación, o calculá desde la fila general para cambiar la referencia.`,
 } as const;
 
 export interface CargaElegida {
@@ -55,8 +78,10 @@ export interface CargaElegida {
  * la entrada (`entradaDelCuadroDeLaCarga`) cada vez que se entra al paso y al cerrar. Ninguna elegida (ED-D20) y el % RM de
  * la prescripción de ese momento, no el de cuando se montó.
  */
-export function useCargaDesdeLaEstimacion(prescripcion: PrescripcionParaLaCarga, unidad: 'kg' | 'lb') {
+export function useCargaDesdeLaEstimacion(prescripcion: PrescripcionParaLaCarga, unidad: 'kg' | 'lb', enLasSeries = false) {
   const entrada = entradaDelCuadroDeLaCarga(prescripcion, unidad);
+  // EDT-56: en las elegidas, con el criterio % RM, el valor es el de la prescripción y no se cambia.
+  const porcentajeFijo = enLasSeries && prescripcion.intensity?.criterion === 'PERCENT_RM';
   const deEntrada = entrada.porcentaje;
   const [elegida, setElegida] = useState<PuntoDeFuerza | null>(entrada.elegida);
   const [porcentaje, setPorcentaje] = useState(entrada.porcentaje);
@@ -71,10 +96,22 @@ export function useCargaDesdeLaEstimacion(prescripcion: PrescripcionParaLaCarga,
     setSentido(entrada.sentido);
     setPropia(entrada.propia);
   };
-  const pct = leerNumero(porcentaje);
+  const pct = leerNumero(porcentajeFijo ? entrada.porcentaje : porcentaje);
   const cuenta = elegida && pct !== null ? cargaDesdeLaEstimacion(estimacionDelPunto(elegida, ''), pct, paso, sentido) : null;
   const escrita = propia === null ? (cuenta?.sugerida ?? null) : leerNumero(propia);
-  const apagado = !elegida ? COPY_CARGA_DESDE_LA_ESTIMACION.elegiUna : !cuenta ? COPY_CARGA_DESDE_LA_ESTIMACION.porcentajeInvalido : escrita === null || !(escrita > 0) ? COPY_CARGA_DESDE_LA_ESTIMACION.cargaInvalida : null;
+  const C = COPY_CARGA_DESDE_LA_ESTIMACION;
+  const procedencia = enLasSeries && elegida ? procedenciaEnLasSeries(prescripcion, elegida.date) : null;
+  const apagado = !elegida
+    ? C.elegiUna
+    : procedencia === 'sin-referencia'
+      ? C.sinReferencia
+      : procedencia === 'otra-referencia'
+        ? C.otraReferencia(prescripcion.intensity?.target.reference?.description?.trim() ?? '')
+        : !cuenta
+          ? C.porcentajeInvalido
+          : escrita === null || !(escrita > 0)
+            ? C.cargaInvalida
+            : null;
   const resultado: CargaElegida | null = !apagado && elegida && cuenta && escrita !== null ? { punto: elegida, porcentaje: pct!, carga: escrita, unidad } : null;
   const conCambios = elegida !== null || porcentaje !== deEntrada || propia !== null;
   return {
@@ -83,8 +120,11 @@ export function useCargaDesdeLaEstimacion(prescripcion: PrescripcionParaLaCarga,
       setElegida(p);
       setPropia(null);
     },
-    porcentaje,
+    porcentaje: porcentajeFijo ? entrada.porcentaje : porcentaje,
+    porcentajeFijo,
+    procedencia,
     setPorcentaje: (t: string) => {
+      if (porcentajeFijo) return;
       setPorcentaje(t);
       setPropia(null);
     },
@@ -110,8 +150,9 @@ export function useCargaDesdeLaEstimacion(prescripcion: PrescripcionParaLaCarga,
   };
 }
 
-export function textoDelPrincipal(x: ReturnType<typeof useCargaDesdeLaEstimacion>, nombre: string): string {
-  return x.resultado ? textoDelPrincipalDeLaCarga(x.resultado.carga, x.unidad, nombre) : 'Escribir la carga';
+export function textoDelPrincipal(x: ReturnType<typeof useCargaDesdeLaEstimacion>, nombre: string, series: readonly number[] | null = null): string {
+  if (!x.resultado) return 'Escribir la carga';
+  return series ? textoDelPrincipalEnLasSeries(x.resultado.carga, x.unidad, series, nombre) : textoDelPrincipalDeLaCarga(x.resultado.carga, x.unidad, nombre);
 }
 
 export function CargaDesdeLaEstimacion({
@@ -121,6 +162,7 @@ export function CargaDesdeLaEstimacion({
   haciaLaEvolucion,
   asesoradoId,
   estado: x,
+  series = null,
   onComoSeCalculo,
 }: {
   /** Las estimaciones del ejercicio en la unidad de la prescripción, con la regla de la tarjeta (`estimacionesParaLaCarga`). */
@@ -131,6 +173,8 @@ export function CargaDesdeLaEstimacion({
   haciaLaEvolucion: string;
   asesoradoId: string;
   estado: ReturnType<typeof useCargaDesdeLaEstimacion>;
+  /** Las series elegidas de la planilla (desde 0), si el cuadro escribe en ellas (EDT-56); `null`, en la fila general. */
+  series?: readonly number[] | null;
   /** ED-73: «Cómo se calculó» de cada estimación de la lista, en el mismo cuadro y con «Atrás». */
   onComoSeCalculo: (p: PuntoDeFuerza) => void;
 }) {
@@ -179,9 +223,23 @@ export function CargaDesdeLaEstimacion({
         <div className="campo">
           <label htmlFor={`${id}-pct`}>{C.porcentaje}</label>
           <span className="serie-observada__par">
-            <input id={`${id}-pct`} inputMode="decimal" autoComplete="off" className="serie-observada__numero" value={x.porcentaje} onChange={(e) => x.setPorcentaje(e.target.value)} />
+            <input
+              id={`${id}-pct`}
+              inputMode="decimal"
+              autoComplete="off"
+              className="serie-observada__numero"
+              value={x.porcentaje}
+              readOnly={x.porcentajeFijo}
+              aria-describedby={x.porcentajeFijo ? `${id}-pct-fijo` : undefined}
+              onChange={(e) => x.setPorcentaje(e.target.value)}
+            />
             <span>% RM</span>
           </span>
+          {x.porcentajeFijo ? (
+            <span id={`${id}-pct-fijo`} className="nota" data-porcentaje-fijo>
+              {C.porcentajeFijo}
+            </span>
+          ) : null}
         </div>
         <div className="campo">
           <span className="carga-desde-la-estimacion__rotulo">{C.redondeo}</span>
@@ -223,10 +281,19 @@ export function CargaDesdeLaEstimacion({
           <p>
             <strong>{C.loQueSeEscribe}</strong>
           </p>
-          <p>
-            La carga de la fila general: <strong>{`${String(x.resultado.carga).replace('.', ',')} ${x.unidad}`}</strong>.
-          </p>
-          {criterio === 'PERCENT_RM' ? (
+          {series ? (
+            <>
+              <p data-en-las-series>
+                La carga propia de {lasSeriesEnPalabras(series)}: <strong>{`${String(x.resultado.carga).replace('.', ',')} ${x.unidad}`}</strong>.
+              </p>
+              <p>{C.elPorcentajeNoCambia}</p>
+            </>
+          ) : (
+            <p>
+              La carga de la fila general: <strong>{`${String(x.resultado.carga).replace('.', ',')} ${x.unidad}`}</strong>.
+            </p>
+          )}
+          {series ? null : criterio === 'PERCENT_RM' ? (
             <p>
               El % RM, {String(x.resultado.porcentaje).replace('.', ',')}, y su referencia: «{referenciaDeLaEstimacion(x.resultado.punto.date)}». El método y la fecha, nunca el valor: el plan viaja a otras áreas.
             </p>

@@ -72,4 +72,11 @@ export const COPY_PLANILLA = {
   atajo: 'Ctrl+D copia en la celda el valor de la serie de arriba.',
   quitarTitulo: (n: number) => `¿Quitar la serie ${n}?`,
   quitar: (n: number) => `Quitar la serie ${n}`,
+  // ED-23: la fila «General» dentro de la tabla.
+  general: 'General',
+  repeticionesPorSerie: 'en cada serie',
+  rirDeLaIntensidad: '· de la intensidad, abajo',
+  notaDeLoGeneral: 'Las notas, abajo',
+  loGeneralDeAbajo: 'La carga y el descanso generales están en la fila «General» de la tabla: los toman las series que no tienen uno propio.',
+  unidadDeLaCarga: 'Unidad de la carga',
 } as const;

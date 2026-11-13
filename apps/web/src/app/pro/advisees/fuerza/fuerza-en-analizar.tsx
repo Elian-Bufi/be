@@ -60,6 +60,8 @@ export const LA_PREGUNTA_DE_LA_FUERZA = {
   sinPuntos: 'En este período no hay estimaciones de este ejercicio en esta unidad.',
   soloOrientativas: 'Hay sesiones con solo series de más de 10 a 12 repeticiones equivalentes: encendé «Incluir las de más de 10 a 12» para verlas.',
   elegirEnLaTabla: 'Elegí una fecha de la tabla para leer esa estimación al costado.',
+  /** Revisión visual del 2026-11-13: el motivo de una sesión sin estimación se dice una vez; las filas que siguen con el mismo, en corto. */
+  mismoMotivo: 'ninguna serie entra, por el mismo motivo',
   leerEsta: 'leer esta estimación',
   plan: (version: string) => `Plan · ${version}`,
   planDeLaLectura: (version: string) => `plan ${version}`,
@@ -369,13 +371,18 @@ function TablaDeOrigen({
           </tr>
         </thead>
         <tbody>
-          {filas.map((f) => {
+          {filas.map((f, n) => {
             if (f.tipo === 'sin-estimacion') {
+              // El mismo motivo que la fila de arriba no se repite entero (revisión visual del 2026-11-13).
+              const anterior = filas[n - 1];
+              const repetido = anterior?.tipo === 'sin-estimacion' && anterior.motivo === f.motivo;
               const sesion = `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}&vista=ejecuciones&desde=${f.fecha}&hasta=${f.fecha}&sesion=${encodeURIComponent(f.executionId)}`;
               return (
                 <tr key={f.executionId} data-sin-estimacion>
                   <th scope="row">{diaConSemana(f.fecha)}</th>
-                  <td colSpan={4}>{f.motivo}</td>
+                  <td colSpan={4} className={repetido ? 'nota' : undefined} data-motivo={repetido ? 'repetido' : undefined}>
+                    {repetido ? C.mismoMotivo : f.motivo}
+                  </td>
                   <td>
                     sin estimación · <Enlace href={sesion}>Ver la sesión</Enlace>
                   </td>

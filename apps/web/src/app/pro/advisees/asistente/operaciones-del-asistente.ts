@@ -68,3 +68,41 @@ const cargaEnTexto = (c: { readonly value: number; readonly unit: string } | nul
 /** Lo que define la marca de una carga a revisar: el ejercicio, sus repeticiones y sus cargas (sin identificadores). */
 export const firmaDeLaCarga = (p: PrescripcionE): string =>
   [p.exerciseVersionId, cargaEnTexto(p.suggestedLoad), ...p.sets.map((s) => `${repsEnTexto(s.repetitions)}/${cargaEnTexto(s.suggestedLoad)}`)].join('|');
+
+/** ED-14 · Una pestaña del paso 4: una sesión de un grupo, con su nombre y cuántos ejercicios tiene. */
+export interface PestanaDelPaso4 {
+  /** La clave de la sesión (`b0-m1-s2`), para los identificadores de la pestaña y de su panel. */
+  readonly clave: string;
+  readonly g: GrupoDelAsistente;
+  readonly n: number;
+  /** «Sesión A» o, con varios grupos, «Bloque 1 · Semana 2 · Sesión A». */
+  readonly rotulo: string;
+  readonly ejercicios: number;
+}
+
+/**
+ * ED-14 (maqueta 03) · Las pestañas del paso 4, una por sesión de todo el plan, en el orden de los pasos 2 a 5. Con un
+ * solo grupo, el nombre de la sesión; con varios, también el del grupo, porque dos semanas pueden tener una «Sesión A».
+ */
+export function pestanasDelPaso4(grupos: readonly GrupoDelAsistente[], nombreDeLaSesion: (s: SesionE, n: number) => string): PestanaDelPaso4[] {
+  const varios = grupos.length > 1;
+  return grupos.flatMap((g) =>
+    g.sesiones.map((s, n) => ({ clave: claveDeLaSesion(g, n), g, n, rotulo: varios ? `${g.titulo} · ${nombreDeLaSesion(s, n)}` : nombreDeLaSesion(s, n), ejercicios: s.prescriptions.length })),
+  );
+}
+
+/**
+ * La pestaña a la que lleva una tecla, con el patrón de pestañas de ARIA: las flechas dan la vuelta, Inicio y Fin van a
+ * las puntas. `null` si la tecla no mueve.
+ */
+export function pestanaConLaTecla(actual: number, total: number, tecla: string): number | null {
+  if (total <= 0) return null;
+  if (tecla === 'ArrowRight') return (actual + 1) % total;
+  if (tecla === 'ArrowLeft') return (actual - 1 + total) % total;
+  if (tecla === 'Home') return 0;
+  if (tecla === 'End') return total - 1;
+  return null;
+}
+
+/** La pestaña que se muestra: la elegida si sigue existiendo; si se quitaron sesiones, la última. */
+export const pestanaVigente = (elegida: number, total: number): number => (total <= 0 ? 0 : Math.min(Math.max(elegida, 0), total - 1));

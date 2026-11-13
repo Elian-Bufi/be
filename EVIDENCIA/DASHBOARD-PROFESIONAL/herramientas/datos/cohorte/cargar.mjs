@@ -28,11 +28,13 @@ import { createRequire } from 'node:module';
 import { REPO } from '../../rutas.mjs';
 import { clienteDe, dominio } from './api.mjs';
 import { EJERCICIOS_BASE, EJERCICIOS_PROPIOS, PROFESIONALES, demoProfesionales } from './catalogo.mjs';
-import { claveNueva, destino, guardarCuenta, guardarEstado, leerCuentas, leerEstado } from './destino.mjs';
+import { claveNueva, destino, guardarCuenta, guardarEnLasCuentas, guardarEstado, leerCuentas, leerEstado } from './destino.mjs';
 import { ZONA, diaMenos, instante, macros, masMinutos, planNutricional, redondear } from './herramientas.mjs';
 import { METODOS, PERSONAS } from './personas.mjs';
 import { etapasDe, historia, idDePrescripcion, mesDe, revisionesDe, diaDe } from './historia.mjs';
 import { curva } from './herramientas.mjs';
+
+const OTPAuth = createRequire(`${REPO}/apps/api/`)('otpauth');
 
 const [nombreDestino, fase, soloPersona] = process.argv.slice(2);
 const d = destino(nombreDestino);
@@ -93,9 +95,39 @@ async function sesionDe(prefijo, superficie = 'WEB') {
   if (!sesiones.has(k)) {
     const c = cuentas();
     if (!c[`${prefijo}_CORREO`]) throw new Error(`falta la cuenta ${prefijo}`);
-    sesiones.set(k, await api.sesion(c[`${prefijo}_CORREO`], c[`${prefijo}_CLAVE`], superficie));
+    const token = await api.sesion(c[`${prefijo}_CORREO`], c[`${prefijo}_CLAVE`], superficie);
+    if (prefijo.startsWith('PRO_')) await verificarElSegundoFactor(prefijo, token);
+    sesiones.set(k, token);
   }
   return sesiones.get(k);
+}
+
+// UF-11 (WP-USO-FINAL; DL-169): una sesión de un profesional actúa como profesional solo con su segundo factor
+// verificado. La primera sesión lo configura por la API (como `/pro` la primera vez) y guarda la clave del autenticador
+// en las cuentas sintéticas (que no se versionan); cada sesión nueva escribe el código de un paso de 30 s que esa cuenta
+// todavía no usó (uno usado no vale otra vez). Las capturas leen la misma clave para pasar la compuerta de `/pro`.
+const PERIODO_DEL_CODIGO_MS = 30_000;
+const codigoDelPaso = (secreto, paso) =>
+  new OTPAuth.TOTP({ secret: OTPAuth.Secret.fromBase32(secreto), algorithm: 'SHA1', digits: 6, period: 30 }).generate({ timestamp: paso * PERIODO_DEL_CODIGO_MS });
+async function pasoSinUsar(prefijo) {
+  const ultimo = Number(cuentas()[`${prefijo}_ULTIMO_PASO`] ?? -1);
+  while (Math.floor(Date.now() / PERIODO_DEL_CODIGO_MS) <= ultimo) await new Promise((r) => setTimeout(r, 1000));
+  const paso = Math.floor(Date.now() / PERIODO_DEL_CODIGO_MS);
+  guardarEnLasCuentas(d, { [`${prefijo}_ULTIMO_PASO`]: paso });
+  return paso;
+}
+async function verificarElSegundoFactor(prefijo, token) {
+  const estado = (await api.pedir('GET', '/me/second-factor', { token })).data.secondFactor.state;
+  if (estado === 'VERIFIED' || estado === 'NOT_REQUIRED') return;
+  if (estado === 'ENROLLMENT_REQUIRED') {
+    const secreto = (await api.pedir('POST', '/me/second-factor/enrollment', { token, cuerpo: {}, clave: false })).data.secret;
+    guardarEnLasCuentas(d, { [`${prefijo}_AUTENTICADOR`]: secreto });
+    await api.pedir('POST', '/me/second-factor/enrollment/confirm', { token, cuerpo: { code: codigoDelPaso(secreto, await pasoSinUsar(prefijo)) }, clave: false });
+    return;
+  }
+  const secreto = cuentas()[`${prefijo}_AUTENTICADOR`];
+  if (estado !== 'REQUIRED' || !secreto) throw new Error(`el segundo factor de ${prefijo} está en ${estado}${secreto ? '' : ', sin autenticador guardado'}`);
+  await api.pedir('POST', '/me/second-factor/verification', { token, cuerpo: { code: codigoDelPaso(secreto, await pasoSinUsar(prefijo)) }, clave: false });
 }
 const idDe = (prefijo) => cuentas()[`${prefijo}_ID`];
 const tipoDelProfesional = (k, alcance) => PROFESIONALES[k].alcances.find(([a]) => a === alcance)[1];

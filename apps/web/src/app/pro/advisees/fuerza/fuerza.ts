@@ -204,6 +204,111 @@ export const RIR_DEL_CUADRO: readonly number[] = [0, 0.5, 1, 1.5, 2];
 /** «Más de 2»: un RIR que se puede elegir para que el cuadro diga que no se estima (ED-72); nunca se guarda. */
 export const RIR_MAS_DE_2 = 3;
 
+// ─── ED-72 · corregir o anular una serie observada (API-FZA-03) ──────────────────────────────────────────────────
+
+/** Lo que se escribe en el cuadro de la serie observada, como texto (el mismo formulario que al registrarla). */
+export interface FormularioDeLaObservacion {
+  readonly fecha: string;
+  readonly carga: string;
+  readonly unidad: UnidadDeLaCarga;
+  readonly repeticiones: string;
+  readonly rir: number | null;
+  readonly nota: string;
+}
+
+/** La observación guardada, con lo que hace falta para sucederla (API-FZA-02). */
+export interface ObservacionGuardada {
+  readonly observationId: string;
+  readonly version: string;
+  readonly localDate: string;
+  readonly timeZone: string;
+  readonly note: string | null;
+  readonly estimate: { readonly load: { readonly value: number; readonly unit: UnidadDeLaCarga }; readonly completedRepetitions: number; readonly rir: number };
+}
+
+/** El formulario de la corrección arranca con los valores de la observación: se cambia solo lo que estaba mal. */
+export function formularioDeLaObservacion(o: ObservacionGuardada): FormularioDeLaObservacion {
+  const e = o.estimate;
+  return { fecha: o.localDate, carga: numeroCorto(e.load.value), unidad: e.load.unit, repeticiones: String(e.completedRepetitions), rir: e.rir, nota: o.note ?? '' };
+}
+
+export type AccionDeLaSucesion = 'corregir' | 'anular';
+
+type CuerpoDeLaSucesion =
+  | { action: 'VOID'; expectedVersion: string; reason: string }
+  | {
+      action: 'CORRECT';
+      expectedVersion: string;
+      reason: string;
+      observation: { localDate: string; timeZone: string; load: { value: number; unit: UnidadDeLaCarga }; completedRepetitions: number; rir: number; note: string | null };
+    };
+
+/**
+ * El cuerpo de API-FZA-03, o por qué todavía no se puede enviar. Anular pide solo el motivo; corregir, además, una serie
+ * que se pueda estimar y que cambie algo (una corrección igual a la anterior sería una versión nueva sin nada nuevo). La
+ * versión esperada es la que se leyó: si alguien la sucedió mientras tanto, la API responde 409 y no se pisa nada.
+ */
+export function cuerpoDeLaSucesion(
+  accion: AccionDeLaSucesion,
+  motivo: string,
+  o: ObservacionGuardada,
+  f: FormularioDeLaObservacion,
+  enVivo: SerieObservadaEnVivo,
+  hoy: string,
+): { readonly ok: true; readonly cuerpo: CuerpoDeLaSucesion } | { readonly ok: false; readonly falta: string } {
+  const razon = motivo.trim();
+  if (!razon) return { ok: false, falta: COPY_SUCESION.faltaElMotivo };
+  if (razon.length > 500) return { ok: false, falta: COPY_SUCESION.motivoLargo };
+  if (accion === 'anular') return { ok: true, cuerpo: { action: 'VOID', expectedVersion: o.version, reason: razon } };
+  if (f.fecha > hoy) return { ok: false, falta: COPY_SUCESION.fechaFutura };
+  if (enVivo.tipo !== 'estima') return { ok: false, falta: enVivo.texto };
+  const nota = f.nota.trim() ? f.nota.trim() : null;
+  const e = o.estimate;
+  const igual =
+    f.fecha === o.localDate && enVivo.carga === e.load.value && f.unidad === e.load.unit && enVivo.repeticiones === e.completedRepetitions && enVivo.rir === e.rir && nota === (o.note?.trim() || null);
+  if (igual) return { ok: false, falta: COPY_SUCESION.sinCambios };
+  return {
+    ok: true,
+    cuerpo: {
+      action: 'CORRECT',
+      expectedVersion: o.version,
+      reason: razon,
+      observation: { localDate: f.fecha, timeZone: o.timeZone, load: { value: enVivo.carga, unit: f.unidad }, completedRepetitions: enVivo.repeticiones, rir: enVivo.rir, note: nota },
+    },
+  };
+}
+
+/** Si la API rechazó la sucesión porque otra ya sucedió a esa observación: 409, la versión esperada ya no es la vigente. */
+export const laSucedioOtro = (r: { readonly ok: boolean; readonly tipo?: string; readonly status?: number }): boolean => !r.ok && r.tipo === 'API' && r.status === 409;
+
+/** Solo quien la observó puede sucederla (API-FZA-03): a los demás, la API no les revela que existe. */
+export const puedeSucederla = (p: PuntoDeFuerza, yo: string | null | undefined): boolean => p.source === 'OBSERVED' && p.origin.type === 'STRENGTH_OBSERVATION' && !!yo && p.writtenBy.identityId === yo;
+
+export const COPY_SUCESION = {
+  abrir: 'Corregir o anular esta serie observada',
+  titulo: 'Corregir o anular la serie observada',
+  queEs: 'La serie observada no se edita: la corrección es una observación nueva que la reemplaza, y la anulación la saca de la estimación. Las dos quedan en la historia, con tu motivo.',
+  accion: '¿Qué hacés?',
+  corregir: 'Corregirla',
+  corregirQueEs: 'Los valores estaban mal: escribís los correctos.',
+  anular: 'Anularla',
+  anularQueEs: 'No debió registrarse: deja de contar en la estimación.',
+  motivo: 'Motivo',
+  motivoAyuda: 'Obligatorio. Queda guardado con la fecha y tu nombre.',
+  guardarCorreccion: 'Guardar la corrección',
+  anularla: 'Anular la serie observada',
+  guardando: 'Guardando…',
+  faltaElMotivo: 'Escribí el motivo.',
+  motivoLargo: 'El motivo tiene hasta 500 caracteres.',
+  fechaFutura: 'La fecha no puede ser posterior a hoy.',
+  sinCambios: 'La corrección tiene los mismos valores: cambiá lo que estaba mal.',
+  corregida: 'Se guardó la corrección de la serie observada.',
+  anulada: 'Se anuló la serie observada. Ya no cuenta en la estimación.',
+  leyendo: 'Leyendo la serie observada…',
+  noEsta: 'Esta serie observada ya no está vigente: alguien la corrigió o la anuló. Volvé atrás para ver la de ahora.',
+  laSucedioOtro: 'Mientras tanto, esta serie observada se corrigió o se anuló. No se guardó nada: volvé atrás para ver la de ahora.',
+} as const;
+
 // ─── ED-76 · lo que se escribe en el borrador ────────────────────────────────────────────────────────────────────
 
 /** Lo mínimo de una prescripción que toca el cálculo de la carga: el criterio y la carga general. */
@@ -253,6 +358,52 @@ export function estimacionesParaLaCarga(apagado: readonly PuntoDeFuerza[], encen
 
 /** «Escribir 72,5 kg en Press de banca»: el principal del cuadro, con lo que escribe. */
 export const textoDelPrincipalDeLaCarga = (valor: number, unidad: UnidadDeLaCarga, nombre: string): string => `Escribir ${numeroCorto(valor)} ${unidad} en ${nombre}`;
+
+/**
+ * «la serie 2», «las series 2 y 3», «las series 1, 2 y 4»: las elegidas en la planilla (desde 0), contadas desde 1 y en
+ * orden.
+ */
+export function lasSeriesEnPalabras(elegidas: Iterable<number>): string {
+  const n = [...new Set(elegidas)].sort((a, b) => a - b).map((x) => String(x + 1));
+  if (n.length === 0) return 'ninguna serie';
+  if (n.length === 1) return `la serie ${n[0]}`;
+  return `las series ${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}`;
+}
+
+/** «Escribir 72,5 kg en las series 2 y 3 de Press de banca»: el principal del cuadro cuando escribe en las elegidas. */
+export const textoDelPrincipalEnLasSeries = (valor: number, unidad: UnidadDeLaCarga, elegidas: Iterable<number>, nombre: string): string =>
+  `Escribir ${numeroCorto(valor)} ${unidad} en ${lasSeriesEnPalabras(elegidas)} de ${nombre}`;
+
+/**
+ * Lo que deja «Escribir 72,5 kg en las series 2 y 3» (ED-76, desde las series elegidas; EDT-56): la carga sugerida propia
+ * de cada elegida, en la unidad de la prescripción, y nada más. Las demás series, la fila general, el % RM y su referencia
+ * no cambian: el % RM es de toda la prescripción, y escribirlo cambiaría también lo que toman las otras series.
+ */
+export function loQueSeEscribeEnLasSeries<S extends { readonly suggestedLoad?: { readonly value: number; readonly unit: UnidadDeLaCarga } | null }>(
+  sets: readonly S[],
+  elegidas: Iterable<number>,
+  carga: { readonly value: number; readonly unit: UnidadDeLaCarga },
+): { sets: S[] } {
+  const cuales = new Set(elegidas);
+  return { sets: sets.map((s, n) => (cuales.has(n) ? { ...s, suggestedLoad: { value: carga.value, unit: carga.unit } } : s)) };
+}
+
+/**
+ * EDT-56, con el criterio % RM: las elegidas toman el % RM y la referencia de toda la prescripción, que no cambian. Para que
+ * su carga tenga de dónde salir, la estimación elegida tiene que ser la de esa referencia. `'sin-referencia'`: la
+ * prescripción no tiene una; `'otra-referencia'`: la elegida es otra. En los dos casos no se escribe desde las elegidas: se
+ * calcula desde la fila general, que escribe el % RM y la referencia. Con otro criterio no hay referencia que cuidar: `null`.
+ */
+export function procedenciaEnLasSeries(p: PrescripcionParaLaCarga, fechaDeLaElegida: string): 'sin-referencia' | 'otra-referencia' | null {
+  if (p.intensity?.criterion !== 'PERCENT_RM') return null;
+  const ref = p.intensity.target.reference?.description?.trim();
+  if (!ref) return 'sin-referencia';
+  return ref === referenciaDeLaEstimacion(fechaDeLaElegida) ? null : 'otra-referencia';
+}
+
+/** Las elegidas que todavía existen: si se quitó una serie con el cuadro abierto, no se escribe en una que no está. */
+export const lasElegidasQueQuedan = (elegidas: Iterable<number>, cuantas: number): number[] =>
+  [...new Set(elegidas)].filter((n) => Number.isInteger(n) && n >= 0 && n < cuantas).sort((a, b) => a - b);
 
 /** «Y 2 más, del 27 y del 23 de noviembre»: lo que no entra en la lista corta del cuadro de la carga. */
 export function lasQueQuedan(resto: readonly PuntoDeFuerza[]): string | null {
