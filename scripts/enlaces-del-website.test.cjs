@@ -32,7 +32,8 @@ function archivos(dir) {
  * Destinos que no recargan la aplicación: dentro de la página, a otro sitio, un correo, un teléfono o una app de Android
  * (`intent:`, el enlace de /invitacion que abre la APK; WP-INVITACION).
  */
-const NO_RECARGA = /^(#|https?:\/\/|mailto:|tel:|intent:)/;
+// `otpauth://` abre la aplicación de códigos del teléfono (el segundo factor del profesional): tampoco recarga la página.
+const NO_RECARGA = /^(#|https?:\/\/|mailto:|tel:|intent:|otpauth:\/\/)/;
 
 /** El comienzo fijo de un texto escrito en el código: una cadena o el arranque de una plantilla. Si no, `null`. */
 function comienzoDe(e) {

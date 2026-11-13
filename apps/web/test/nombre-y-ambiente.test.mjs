@@ -104,8 +104,35 @@ test('TEST-UF-001/002 · el alta con correo pide el nombre arriba del correo y l
 test('TEST-UF-005 · sin pasos sigue la página; con el nombre, el paso, con el nombre profesional propuesto si lo hay', () => {
   assert.deepEqual(N.pasoQueSigue(pasos()), { tipo: 'seguir' });
   assert.deepEqual(N.pasoQueSigue(pasos({ step: 'DISPLAY_NAME', suggestion: null })), { tipo: 'nombre', sugerencia: null });
-  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'DISPLAY_NAME', suggestion: 'Lic. Persona Sintética' })), { tipo: 'nombre', sugerencia: 'Lic. Persona Sintética' });
+  // El nombre personal se propone sin el título del nombre profesional (hallazgo de Dirección del 2026-11-13).
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'DISPLAY_NAME', suggestion: 'Lic. Persona Sintética' })), { tipo: 'nombre', sugerencia: 'Persona Sintética' });
   assert.deepEqual(N.pasoQueSigue(pasos({ step: 'DISPLAY_NAME', suggestion: '  ' })), { tipo: 'nombre', sugerencia: null }, 'una propuesta en blanco no es propuesta');
+});
+
+test('«Antes de seguir» propone el nombre personal sin el título profesional: ni «Lic.», ni «Dr.», ni «Prof.», ni el posgrado', () => {
+  const casos = [
+    ['Lic. Ana Pérez', 'Ana Pérez'],
+    ['lic ana pérez', 'ana pérez'],
+    ['Lic.Ana Pérez', 'Ana Pérez'],
+    ['Dr. Juan Gómez', 'Juan Gómez'],
+    ['Dra. María José Ruiz', 'María José Ruiz'],
+    ['Prof. Carlos Díaz', 'Carlos Díaz'],
+    ['Profesora Laura Sosa', 'Laura Sosa'],
+    ['Mg. Lic. Paula Ríos', 'Paula Ríos'],
+    ['Klgo. Martín Paz', 'Martín Paz'],
+    ['Nut. Sofía Luna', 'Sofía Luna'],
+    ['Dra. Elena Vidal, PhD', 'Elena Vidal'],
+    ['  Lic.   Ana    Pérez  ', 'Ana Pérez'],
+    // Lo que no es un título se queda: un nombre que empieza igual, o un nombre sin título.
+    ['Licia Fernández', 'Licia Fernández'],
+    ['Draco Alvarez', 'Draco Alvarez'],
+    ['Ingrid Bauer', 'Ingrid Bauer'],
+    ['Ana Pérez', 'Ana Pérez'],
+    // Solo el título: no se inventa un nombre, se propone lo que había y la persona lo corrige.
+    ['Lic.', 'Lic.'],
+  ];
+  for (const [profesional, personal] of casos) assert.equal(N.sinTituloProfesional(profesional), personal, profesional);
+  assert.deepEqual(N.pasoQueSigue(pasos({ step: 'DISPLAY_NAME', suggestion: 'Dr. Juan Gómez' })), { tipo: 'nombre', sugerencia: 'Juan Gómez' });
 });
 
 test('TEST-UF-005 · un paso que el website no conoce no se saltea, aunque venga con uno que sí', () => {

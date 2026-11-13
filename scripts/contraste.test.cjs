@@ -361,28 +361,152 @@ test('APK · las etiquetas de la barra se leen sobre el vidrio, pase lo que pase
   assert.deepEqual(fallas, []);
 });
 
+// ─── WP-APP-VUELTA-2 (DL-170): la receta de vidrio, en el peor punto (TEST-AV2-001) ──────────────
+
+/** Lo que se ve con un color translúcido `#rrggbbaa` encima de uno opaco. */
+const capa = (translucido, abajo) => mezcla(translucido.slice(0, 7), abajo, parseInt(translucido.slice(7), 16) / 255);
+
 /**
- * El vidrio de las tarjetas (pulido del 2026-10-04): un brillo translúcido arriba. El texto se mide sobre la mezcla del
- * brillo con la tarjeta, que es donde más se aclara, además de sobre la tarjeta sola.
+ * Los puntos del fondo de la app (`fondo-de-la-app.tsx`): los tres del degradé, cada uno solo, con cada destello solo y
+ * con los dos juntos, en los dos órdenes en que se pueden apilar. Es donde puede caer cualquier cosa que se dibuje
+ * directo sobre el fondo, o una tarjeta de vidrio.
  */
-test('APK · el brillo del vidrio no baja el contraste del texto de las tarjetas', () => {
+function puntosDelFondo(t) {
+  const luz = {};
+  for (const base of ['fondoArriba', 'fondo', 'fondoAbajo']) {
+    const b = t[base];
+    luz[base] = b;
+    luz[`${base} con el destello`] = capa(t.destello, b);
+    luz[`${base} con el destello azul`] = capa(t.destelloAzul, b);
+    luz[`${base} con los dos destellos`] = capa(t.destelloAzul, capa(t.destello, b));
+    luz[`${base} con los dos destellos, al revés`] = capa(t.destello, capa(t.destelloAzul, b));
+  }
+  // El grano (AV2-T23) va encima de las luces: cada punto, también con la mota más clara y con la más oscura del grano.
+  // Los tokens son el tope de la imagen (`assets/grano.png`), y la prueba del grano lo verifica.
+  const puntos = { ...luz };
+  for (const [k, v] of Object.entries(luz)) {
+    puntos[`${k}, con el grano claro`] = capa(t.granoLuz, v);
+    puntos[`${k}, con el grano oscuro`] = capa(t.granoSombra, v);
+  }
+  return puntos;
+}
+
+/**
+ * Las mediciones de la receta (WP-APP-VUELTA-2 §5.2): cada par, en el peor de sus fondos. Devuelve `[qué, frente, mínimo,
+ * relación, fondo]` para que la prueba lo diga y el informe lo copie.
+ * - **El nivel 1** es `vidrio` encima de cada punto del fondo; **el nivel 2**, `vidrioInterior` encima del nivel 1.
+ * - **El brillo de arriba** (`vidrioBrillo`) entra en el nivel 1 para el texto de nivel 1, aunque se apague dentro del
+ *   relleno (AV2-T14, `receta-de-vidrio.ts`). Lo que va adentro (el nivel 2, la etiqueta, «la que sigue» y los campos)
+ *   no queda nunca sobre el brillo: con el brillo debajo, la etiqueta bajaría a 4,00:1, y por eso no llega al contenido.
+ * - **Con el interruptor apagado o con alto contraste** las tarjetas son `superficie`, opaca, en cualquier nivel: la
+ *   etiqueta de estado y «la que sigue», que cambian en toda la app, se miden también sobre ella.
+ * - **La etiqueta de estado va rellena donde esto pasa** (`estiloDeLaEtiqueta`, revisión de la etapa A): sobre el vidrio
+ *   de nivel 1, sobre `superficie` y, con el vidrio, sobre el nivel 2 solo si `vidrioInterior` es opaco (Claro). Directo
+ *   sobre el fondo y en el nivel 2 translúcido de Azul noche va sin relleno: ahí valen las mediciones del texto.
+ */
+function medicionesDeLaReceta(nombre) {
+  const t = { ...temaApk(nombre), ...translucidosApk(nombre) };
+  for (const clave of ['fondoArriba', 'fondo', 'fondoAbajo', 'destello', 'destelloAzul', 'granoLuz', 'granoSombra', 'vidrio', 'vidrioInterior', 'vidrioBrillo', 'botonFondo', 'botonFondoFin', 'etiquetaFondo', 'destacadaFondo', 'cabeceraFondo', 'iconoFondo']) {
+    assert.ok(t[clave], `${nombre}: falta el token «${clave}»`);
+  }
+  const fondo = puntosDelFondo(t);
+  const sobre = (fondos, encima) => Object.fromEntries(Object.entries(fondos).map(([k, v]) => [k, capa(encima, v)]));
+  const nivel1 = sobre(fondo, t.vidrio);
+  const nivel1ConBrillo = Object.fromEntries(Object.entries(sobre(nivel1, t.vidrioBrillo)).map(([k, v]) => [`${k}, con el brillo`, v]));
+  // Con su propio nombre: al juntarlo con el nivel 1 (el borde de un campo), las claves iguales se pisarían.
+  const nivel2 = Object.fromEntries(Object.entries(sobre(nivel1, t.vidrioInterior)).map(([k, v]) => [`${k}, en el nivel 2`, v]));
+  const opacas = { superficie: t.superficie };
+  // El nivel 2 lleva la etiqueta rellena solo si es opaco: la misma regla de `estiloDeLaEtiqueta`.
+  const nivel2Opaco = /ff$/i.test(t.vidrioInterior) ? nivel2 : {};
+  const etiqueta = { ...sobre(nivel1, t.etiquetaFondo), ...sobre(opacas, t.etiquetaFondo), ...sobre(nivel2Opaco, t.etiquetaFondo) };
+  const destacada = { ...sobre(nivel1, t.destacadaFondo), ...sobre(opacas, t.destacadaFondo) };
+  const peor = (frente, fondos) =>
+    Object.entries(fondos)
+      .map(([k, v]) => [contraste(t[frente], v), k])
+      .sort((a, b) => a[0] - b[0])[0];
+  const medir = (que, frente, fondos, minimo) => {
+    const [relacion, donde] = peor(frente, fondos);
+    return [que, frente, minimo, relacion, donde];
+  };
+  const TEXTOS = ['texto', 'tenue', 'acento', 'exito', 'error'];
+  return [
+    ...TEXTOS.map((f) => medir('directo sobre el fondo', f, fondo, TEXTO)),
+    ...TEXTOS.map((f) => medir('sobre el vidrio (nivel 1)', f, { ...nivel1, ...nivel1ConBrillo }, TEXTO)),
+    ...TEXTOS.map((f) => medir('sobre el nivel 2', f, nivel2, TEXTO)),
+    medir('el botón principal, arriba', 'botonTexto', { botonFondo: t.botonFondo }, TEXTO),
+    medir('el botón principal, abajo', 'botonTexto', { botonFondoFin: t.botonFondoFin }, TEXTO),
+    medir('el borde de un campo sobre el vidrio y el nivel 2', 'bordeControl', { ...nivel1, ...nivel2 }, NO_TEXTO),
+    // El fondo con luz está en toda la app: Iniciar sesión, Crear cuenta y los formularios fuera de tarjetas llevan sus
+    // campos y sus casillas directo sobre él. Es el margen más fino de los bordes (3,17:1 y 3,03:1): sin esta medición,
+    // un retoque de `fondoAbajo` o de los destellos lo rompería en silencio.
+    medir('el borde de un campo directo sobre el fondo', 'bordeControl', fondo, NO_TEXTO),
+    medir('el borde de una casilla directo sobre el fondo', 'acento', fondo, NO_TEXTO),
+    medir('la tilde del día sobre el círculo', 'botonTexto', { exito: t.exito }, NO_TEXTO),
+    medir('el círculo del día contra la tarjeta', 'exito', { ...nivel1, ...opacas }, NO_TEXTO),
+    // El aro de hoy va por fuera del círculo, con 2 dp de la tarjeta en el medio: tiene la tarjeta de los dos lados, también
+    // el día en que la persona entrenó (antes era el borde del círculo, en el acento sobre el verde: 1,15:1 y 1,00:1).
+    medir('el aro de hoy, contra la tarjeta de los dos lados', 'texto', { ...nivel1, ...opacas }, NO_TEXTO),
+    medir('el texto de la etiqueta de estado', 'tenue', etiqueta, TEXTO),
+    medir('la tilde de lo hecho en la etiqueta de estado', 'exito', etiqueta, NO_TEXTO),
+    medir('«la que sigue»: el acento', 'acento', destacada, TEXTO),
+    medir('«la que sigue»: el tenue', 'tenue', destacada, TEXTO),
+    medir('«la que sigue»: el texto', 'texto', destacada, TEXTO),
+    // La cabecera con contenido detrás (AV2-T26): «Volver», la campana y la línea del aviso de prueba, sobre su fondo
+    // tenue encima de cualquier punto del fondo. Arriba de todo es transparente: ahí valen las mediciones directas.
+    ...['texto', 'tenue', 'acento'].map((f) => medir('la cabecera con contenido detrás', f, sobre(fondo, t.cabeceraFondo), TEXTO)),
+    // La caja del ícono de una tarjeta (AV2-T25): el ícono, en `azul`, sobre su tinte, en el vidrio o en lo opaco.
+    medir('el ícono sobre su caja', 'azul', { ...sobre(nivel1, t.iconoFondo), ...sobre(opacas, t.iconoFondo) }, NO_TEXTO),
+  ];
+}
+
+test('APK · la receta de vidrio pasa AA en el peor punto, en los dos temas (TEST-AV2-001)', (t) => {
   const fallas = [];
-  for (const nombre of ['AZUL_NOCHE', 'CLARO']) {
-    const opacos = temaApk(nombre);
-    const translucidos = translucidosApk(nombre);
-    for (const [brillo, fondo, frentes] of [
-      ['laminaBrillo', 'laminaTarjeta', ['laminaNombre', 'laminaValor', 'laminaDetalle']],
-      ['vidrioBrillo', 'superficie', ['texto', 'tenue', 'acento']],
-    ]) {
-      assert.ok(translucidos[brillo], `${nombre}: falta el token «${brillo}»`);
-      const [base, alfa] = [translucidos[brillo].slice(0, 7), parseInt(translucidos[brillo].slice(7), 16) / 255];
-      for (const frente of frentes) {
-        const relacion = contraste(opacos[frente], mezcla(base, opacos[fondo], alfa));
-        if (relacion < TEXTO) fallas.push(`${nombre} · ${frente} sobre ${fondo} con ${brillo} = ${relacion.toFixed(2)}:1`);
-      }
+  for (const [nombre, legible] of [['AZUL_NOCHE', 'Azul noche'], ['CLARO', 'Claro']]) {
+    for (const [que, frente, minimo, relacion, donde] of medicionesDeLaReceta(nombre)) {
+      t.diagnostic(`${legible} · ${que} · ${frente}: ${relacion.toFixed(2)}:1 (peor punto: ${donde})`);
+      if (relacion < minimo) fallas.push(`${legible} · ${que} · ${frente} = ${relacion.toFixed(2)}:1 (mínimo ${minimo}:1) en ${donde}`);
     }
   }
   assert.deepEqual(fallas, []);
+});
+
+/**
+ * El grano de Azul noche (AV2-T23): la imagen chica que se repite. La medición de arriba usa los tokens como el tope de
+ * cada mota; esta prueba lee la paleta del archivo y falla si una mota es más clara o más oscura que su token, o si la
+ * imagen deja de ser chica. En Claro, los dos tokens tienen alfa 00 y el grano no se dibuja.
+ */
+test('APK · el grano no pasa sus tokens y sigue siendo una imagen chica (AV2-T23)', () => {
+  const png = readFileSync(join(RAIZ, 'apps/mobile/assets/grano.png'));
+  const trozos = {};
+  for (let i = 8; i < png.length; ) {
+    const largo = png.readUInt32BE(i);
+    trozos[png.toString('ascii', i + 4, i + 8)] = png.subarray(i + 8, i + 8 + largo);
+    i += 12 + largo;
+  }
+  const [ancho, alto, bits, tipo] = [trozos.IHDR.readUInt32BE(0), trozos.IHDR.readUInt32BE(4), trozos.IHDR[8], trozos.IHDR[9]];
+  assert.deepEqual([ancho, alto, tipo], [512, 512, 3], 'una imagen de 512 × 512 con paleta');
+  assert.ok(bits <= 2 && png.length <= 64 * 1024, `chica: ${bits} bits por píxel y ${png.length} bytes`);
+  const azul = translucidosApk('AZUL_NOCHE');
+  const tope = (token) => parseInt(azul[token].slice(7), 16);
+  for (let i = 0; i < trozos.PLTE.length / 3; i++) {
+    const color = trozos.PLTE.subarray(i * 3, i * 3 + 3).toString('hex');
+    const alfa = trozos.tRNS[i] ?? 255;
+    if (alfa === 0) continue;
+    if (color === 'ffffff') assert.ok(alfa <= tope('granoLuz'), `una mota clara con alfa ${alfa}, más que granoLuz`);
+    else if (color === '000000') assert.ok(alfa <= tope('granoSombra'), `una mota oscura con alfa ${alfa}, más que granoSombra`);
+    else assert.fail(`una mota de color #${color}: el grano es blanco y negro`);
+  }
+  const claro = translucidosApk('CLARO');
+  assert.match(claro.granoLuz ?? '', /00$/, 'en Claro, sin grano');
+  assert.match(claro.granoSombra ?? '', /00$/, 'en Claro, sin grano');
+});
+
+test('APK · los degradés de la receta terminan en el mismo color con alfa 00, nunca en «transparent» (DL-170)', () => {
+  // En Android, un degradé hacia `transparent` pasa por gris: el último color es el mismo, con alfa cero.
+  for (const archivo of ['apps/mobile/src/receta-de-vidrio.ts', 'apps/mobile/src/fondo-de-la-app.tsx', 'apps/mobile/src/vidrio.tsx']) {
+    const codigo = readFileSync(join(RAIZ, archivo), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    assert.doesNotMatch(codigo, /['"]transparent['"]|\btransparent\b/, `${archivo} usa «transparent»`);
+  }
 });
 
 /** Los colores translúcidos del website (`#rrggbbaa` en tokens.css), por tema: el vidrio de ED-18. */
@@ -397,7 +521,6 @@ function translucidosWeb() {
   const claro = leer(':root');
   return { claro, oscuro: { ...claro, ...leer("[data-tema='azul-noche']") } };
 }
-const capa = (translucido, abajo) => mezcla(translucido.slice(0, 7), abajo, parseInt(translucido.slice(7), 16) / 255);
 
 /**
  * TEST-EDP-053 (ED-18; DL-170): el vidrio del website. El texto y los bordes de los controles se miden en el peor punto

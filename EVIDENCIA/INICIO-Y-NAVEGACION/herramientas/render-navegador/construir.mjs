@@ -4,7 +4,8 @@
 // - BE_REPO: la raíz del repo que se compila; por omisión, este. Para el «antes», un árbol de trabajo (git worktree).
 // - BE_DEPENDENCIAS: dónde están los node_modules de la app, si BE_REPO no los tiene (un árbol de trabajo no los tiene).
 // - SALIDA: el archivo que se escribe en salida/; por omisión, maqueta.js.
-// - ENCUADRE: «ancho,derecha», para compilar otro encuadre sin tocar el código; p. ej. 1.55,0.09 es la variante C.
+// - ENCUADRE: «ancho,margen», para compilar otro encuadre sin tocar el código; p. ej. 1,0.015 es el de AV2-19. Hasta la
+//   0.25 el segundo número era lo que se veía a la derecha del eje (0.13); desde AV2-19 es el margen después del cuerpo.
 import { build } from 'esbuild';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -40,12 +41,12 @@ const encuadre = {
   name: 'encuadre',
   setup(b) {
     if (!process.env.ENCUADRE) return;
-    const [ancho, derecha] = process.env.ENCUADRE.split(',').map(Number);
-    if (!(ancho > 0 && derecha > 0)) throw new Error('ENCUADRE se escribe «ancho,derecha», por ejemplo 1.55,0.09');
+    const [ancho, margen] = process.env.ENCUADRE.split(',').map(Number);
+    if (!(ancho > 0 && margen >= 0)) throw new Error('ENCUADRE se escribe «ancho,margen», por ejemplo 1,0.015');
     b.onLoad({ filter: /composicion-de-la-figura\.ts$/ }, (args) => {
       const fuente = readFileSync(args.path, 'utf8');
       const conAncho = fuente.replace(/anchoDeLaImagen: [\d.]+/, `anchoDeLaImagen: ${ancho}`);
-      const conDerecha = conAncho.replace(/aLaDerechaDelEje: [\d.]+/, `aLaDerechaDelEje: ${derecha}`);
+      const conDerecha = conAncho.replace(/margenDelCuerpo: [\d.]+/, `margenDelCuerpo: ${margen}`);
       if (conAncho === fuente || conDerecha === conAncho) throw new Error('ENCUADRE: no encontré las dos constantes de ENCUADRE en la composición');
       return { contents: conDerecha, loader: 'ts' };
     });

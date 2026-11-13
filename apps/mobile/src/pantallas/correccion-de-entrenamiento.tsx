@@ -64,7 +64,7 @@ import { ImagenDeMedio } from '../imagen-de-medio';
 import { falloDe, useClaveDeIntento } from '../intento';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { AVISO_SIN_PLAN_POR_SERIE, placeholdersDeLaSerie, sesionDesdeLaOcurrencia, type ErroresDeFila, type FilaEscrita, type Unidad } from '../series-de-la-sesion';
-import { Aviso, Boton, Campo, CasillaSola, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Segmentos, Titulo } from '../ui';
+import { Aviso, Boton, Campo, CasillaSola, Desplegable, estilosPorTema, Insignia, Parrafo, Seccion, Segmentos, Superficie, Titulo } from '../ui';
 import { RESPALDO_DE_EJERCICIO } from './sesion-enfocada';
 
 type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
@@ -230,10 +230,10 @@ function FormularioDeLaCorreccion({
       ) : (
         <>
           {estado.ejercicios.map((ej) => (
-            <View key={ej.prescriptionId} style={estilos.tarjeta}>
+            <Superficie key={ej.prescriptionId} style={estilos.tarjeta}>
               <CabezaDelEjercicio ej={ej} prescripcion={prescripcion(ej.prescriptionId)} token={token} sesionPerdida={sesionPerdida} />
               <Campo etiqueta={`${T.resumenDelEjercicio} (opcional)`} value={ej.resumen ?? ''} onChangeText={(texto) => despachar({ tipo: 'resumen', prescriptionId: ej.prescriptionId, texto })} multiline />
-            </View>
+            </Superficie>
           ))}
           <Campo etiqueta={`${T.resumenDeLaSesion} (opcional)`} value={estado.resumenDeSesion} onChangeText={(texto) => despachar({ tipo: 'resumen-de-sesion', texto })} multiline />
         </>
@@ -312,7 +312,7 @@ function TarjetaDelEjercicio({
 }) {
   const unidad = unidadDelEjercicioEnCorreccion(ej);
   return (
-    <View style={estilos.tarjeta}>
+    <Superficie style={estilos.tarjeta}>
       <CabezaDelEjercicio ej={ej} prescripcion={prescripcion} token={token} sesionPerdida={sesionPerdida} />
       <Segmentos<Unidad>
         compactos
@@ -346,7 +346,7 @@ function TarjetaDelEjercicio({
       ))}
       {ej.filas.some((f) => f.origen !== 'registrada') ? <Text style={estilos.nota}>{T.enGris}</Text> : null}
       {sePuedeAgregar(ej) ? <Boton texto={T.agregarSerie} tipo="enlace" icono="mas" onPress={() => hacer({ tipo: 'agregar', prescriptionId: ej.prescriptionId })} /> : null}
-    </View>
+    </Superficie>
   );
 }
 
@@ -476,7 +476,7 @@ function Celda({ valor, plan, teclado, etiqueta, conError, onCambiar }: { valor:
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  tarjeta: { borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, padding: 12, marginVertical: 6 },
+  tarjeta: { borderRadius: 14, borderWidth: 1, borderColor: COLOR.borde, padding: 12, marginVertical: 6 },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
   datos: { flex: 1 },
   nombre: { fontSize: 18, fontWeight: '800', color: COLOR.texto },

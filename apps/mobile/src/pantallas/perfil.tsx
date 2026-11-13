@@ -29,7 +29,7 @@ import { marcaEnPerfil } from '../marca-de-perfil';
 import { useSesionPerdida, type Ir, type Salida, type Zona } from '../navegacion';
 import { AJUSTES_DE_PERFIL, baldosasDePerfil, filasDeFormularios, nombreEnPerfil, paraResponder, type Ajuste, type DatosDePerfil } from '../perfil';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
-import { COLOR, estilosPorTema, Rotulo } from '../ui';
+import { COLOR, estilosPorTema, Rotulo, Superficie, SuperficieTocable } from '../ui';
 import { Verificando } from './tarjeta-de-inicio';
 
 /** El ícono del área de un profesional, el mismo de la barra. */
@@ -113,22 +113,23 @@ export function PantallaDePerfil({ token, salir, ir }: { token: string; salir: (
       <Rotulo>{T.tuInformacion}</Rotulo>
       <View style={estilos.baldosas}>
         {baldosasDePerfil(datos).map((b) => (
-          <Pressable
+          <SuperficieTocable
             key={b.titulo}
             accessibilityRole="button"
             accessibilityLabel={b.detalle ? `${b.titulo}. ${b.detalle}` : b.titulo}
             onPress={() => ir(b.ruta)}
-            style={({ pressed }) => [estilos.baldosa, pressed && estilos.presionado]}
+            style={estilos.baldosa}
+            encima={(presionada) => presionada && estilos.presionado}
           >
             <Icono nombre={b.icono} tamano={24} tono="acento" />
             <Text style={estilos.tituloDeBaldosa}>{b.titulo}</Text>
             {b.detalle ? <Text style={estilos.detalle}>{b.detalle}</Text> : null}
-          </Pressable>
+          </SuperficieTocable>
         ))}
       </View>
 
       <Rotulo>{T.tusProfesionales}</Rotulo>
-      <View style={estilos.grupo}>
+      <Superficie style={estilos.grupo}>
         {datos.profesionales === undefined ? <Verificando /> : null}
         {datos.profesionales?.length === 0 ? <Text style={[estilos.detalle, estilos.vacio]}>{T.sinProfesionales}</Text> : null}
         {datos.profesionales?.map((p) => (
@@ -142,10 +143,10 @@ export function PantallaDePerfil({ token, salir, ir }: { token: string; salir: (
         ))}
         <Fila icono={<Icono nombre="seguimiento" tamano={20} tono="acento" />} titulo={T.todosTusVinculos} onPress={() => ir({ nombre: 'vinculos' })} />
         <Fila icono={<Icono nombre="mas" tamano={20} tono="acento" />} titulo={COPY_INVITACION.tengoUnCodigo} onPress={() => ir({ nombre: 'invitacion' })} ultima />
-      </View>
+      </Superficie>
 
       <Rotulo>{T.formulariosYPedidos}</Rotulo>
-      <View style={estilos.grupo}>
+      <Superficie style={estilos.grupo}>
         {filasDeFormularios(datos).map((f, i, todas) => (
           <Fila
             key={f.que}
@@ -157,14 +158,14 @@ export function PantallaDePerfil({ token, salir, ir }: { token: string; salir: (
             ultima={i === todas.length - 1}
           />
         ))}
-      </View>
+      </Superficie>
 
       <Rotulo>{T.ajustes}</Rotulo>
-      <View style={estilos.grupo}>
+      <Superficie style={estilos.grupo}>
         {AJUSTES_DE_PERFIL.map((a, i) => (
           <FilaDeAjuste key={a} ajuste={a} ir={ir} ultima={i === AJUSTES_DE_PERFIL.length - 1} />
         ))}
-      </View>
+      </Superficie>
     </View>
   );
 }
@@ -261,11 +262,11 @@ const estilos = estilosPorTema((COLOR) => ({
   identificador: { fontFamily: Platform.select({ android: 'monospace', ios: 'Menlo', default: undefined }), fontSize: 15, fontWeight: '700', color: COLOR.texto, flexShrink: 1 },
   compartir: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.superficieElevada },
   baldosas: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
-  baldosa: { flexGrow: 1, flexBasis: 140, minHeight: 112, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, gap: 4 },
+  baldosa: { flexGrow: 1, flexBasis: 140, minHeight: 112, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, gap: 4 },
   tituloDeBaldosa: { fontSize: 17, fontWeight: '800', color: COLOR.texto, marginTop: 6 },
   detalle: { fontSize: 14, lineHeight: 20, color: COLOR.tenue },
   vacio: { padding: 14 },
-  grupo: { borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, backgroundColor: COLOR.superficie, marginBottom: 12, overflow: 'hidden' },
+  grupo: { borderRadius: 16, borderWidth: 1, borderColor: COLOR.borde, marginBottom: 12, overflow: 'hidden' },
   fila: { minHeight: 56, paddingVertical: 10, paddingHorizontal: 14, justifyContent: 'center' },
   conLinea: { borderBottomWidth: 1, borderBottomColor: COLOR.borde },
   filaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 12 },

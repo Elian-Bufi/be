@@ -37,11 +37,13 @@ const VENCIDA = falla(401, 'SESSION_EXPIRED');
 const FUTURO = { ok: false, tipo: 'API', status: 400, codigo: 'INVALID_REQUEST', issues: [{ code: 'PERIOD_IN_FUTURE', path: 'periodEnd' }] };
 
 const ingesta = (id, origin, recordedAt, localDate = '2026-10-04') => ({ executionId: id, origin, recordedAt, localDate });
-const hoyNutricional = (registeredIntake = [], extra = {}) => ({
-  data: { date: '2026-10-04', timeZone: 'America/Argentina/Buenos_Aires', planState: 'AVAILABLE', activePlan: null, selectedDayTypeId: null, registeredIntake, dataState: registeredIntake.length ? 'HAS_DATA' : 'NO_DATA', ...extra },
+/** «Hoy» con opciones (API-ING-01): desde DL-170 (AV2-13), la lectura de las comidas de Inicio, la misma de Nutrición. */
+const hoyConOpciones = (records = [], extra = {}) => ({
+  data: { date: '2026-10-04', timeZone: 'America/Argentina/Buenos_Aires', planState: 'AVAILABLE', plan: null, dayTypes: [], selectedDayTypeId: null, meals: [], records, ...extra },
 });
-const ejecucion = (id, condicion, correcciones = []) => ({
+const ejecucion = (id, condicion, correcciones = [], date = '2026-10-04') => ({
   executionId: id,
+  date,
   original: { sessionCondition: condicion },
   corrections: correcciones.map((c, i) => ({ correctionId: `${id}-c${i}`, correction: { sessionCondition: c } })),
   effectiveView: correcciones.length ? { kind: 'CORRECTED', correctionId: `${id}-c${correcciones.length - 1}` } : { kind: 'ORIGINAL' },
@@ -59,7 +61,7 @@ function clienteDePrueba(respuestas = {}) {
   };
   const api = {
     hoyDeEntrenamiento: (...a) => responder('hoyDeEntrenamiento', ...a),
-    hoyNutricional: (...a) => responder('hoyNutricional', ...a),
+    hoyConOpciones: (...a) => responder('hoyConOpciones', ...a),
     listarMisIngestas: (...a) => responder('listarMisIngestas', ...a),
     misEjecucionesDeEntrenamiento: (...a) => responder('misEjecucionesDeEntrenamiento', ...a),
     miBandejaDeFormularios: (...a) => responder('miBandejaDeFormularios', ...a),
@@ -120,7 +122,8 @@ test('actividad: cuenta por la condición vigente, con las correcciones aplicada
   });
   const periodo = { periodStart: '2026-09-05', periodEnd: '2026-10-04' };
   const r = await inicio.leerActividadDeEntrenamiento(api, 't', periodo);
-  assert.deepEqual(r.datos, { periodo: { desde: '2026-09-05', hasta: '2026-10-04' }, registradas: 6, realizadas: 3, conDesvio: 1, noRealizadas: 2, corregidas: 2, sinOrdenar: 1 });
+  // DL-170 (AV2-08): el detalle por día, para la tira de la semana, también son cuentas (realizadas incluye las con desvío).
+  assert.deepEqual(r.datos, { periodo: { desde: '2026-09-05', hasta: '2026-10-04' }, registradas: 6, realizadas: 3, conDesvio: 1, noRealizadas: 2, corregidas: 2, sinOrdenar: 1, porDia: { '2026-10-04': { realizadas: 4, noRealizadas: 2 } } });
   assert.deepEqual(pedidos[0].args[1], periodo);
   assert.deepEqual(await inicio.leerActividadDeEntrenamiento(clienteDePrueba({ misEjecucionesDeEntrenamiento: SIN_A3 }).api, 't', periodo), SIN_A3);
 });
@@ -404,7 +407,7 @@ test('el saludo dice el día civil sin correrlo, y la actividad mira los 30 día
 async function visita(api, { diaTipo } = {}) {
   await Promise.all([
     api.hoyDeEntrenamiento('t'),
-    api.hoyNutricional('t', diaTipo).then((r) => (r.ok && inicio.pideElUltimoRegistro(r.datos.data) ? inicio.leerUltimoRegistro(api, 't') : null)),
+    api.hoyConOpciones('t', diaTipo).then((r) => (r.ok && inicio.pideElUltimoRegistro(r.datos.data) ? inicio.leerUltimoRegistro(api, 't') : null)),
     inicio.leerPendientes(api, 't'),
     inicio.leerActividadDeEntrenamiento(api, 't', formato.ultimosDiasHasta('2026-10-04', inicio.DIAS_DE_ACTIVIDAD)),
     zonas.leerMiEvolucion(api, 't'),
@@ -414,7 +417,7 @@ const conMediciones = { data: { period: { start: '2026-07-07', end: '2026-10-04'
 const sinMediciones = { data: { period: { start: '2026-07-07', end: '2026-10-04', timeZone: 'America/Argentina/Buenos_Aires' }, metrics: [{ metricCode: 'peso', series: [] }] } };
 const respuestasComunes = (registrosDeHoy, evolucion = conMediciones) => ({
   hoyDeEntrenamiento: ok({ data: { date: '2026-10-04', planState: 'AVAILABLE', occurrences: [] } }),
-  hoyNutricional: ok(hoyNutricional(registrosDeHoy)),
+  hoyConOpciones: ok(hoyConOpciones(registrosDeHoy)),
   listarMisIngestas: ok({ data: [], page: { hasMore: false } }),
   misEjecucionesDeEntrenamiento: (_token, p) => ok({ data: { period: { start: p.periodStart, end: p.periodEnd, timeZone: 'America/Argentina/Buenos_Aires' }, executions: [] } }),
   miBandejaDeFormularios: ok({ data: [], page: { limit: 3, nextCursor: null, hasMore: false } }),
@@ -435,7 +438,7 @@ test('una visita a Inicio hace 6 solicitudes, 7 si hoy no hay registros de comid
   assert.equal(sinRegistros.pedidos.length, 7);
   assert.deepEqual(
     [...new Set(sinRegistros.pedidos.map((p) => p.nombre))].sort(),
-    ['consultarRequisitoA3', 'hoyDeEntrenamiento', 'hoyNutricional', 'listarMisIngestas', 'miBandejaDeFormularios', 'miEvolucionAntropometrica', 'misEjecucionesDeEntrenamiento'],
+    ['consultarRequisitoA3', 'hoyConOpciones', 'hoyDeEntrenamiento', 'listarMisIngestas', 'miBandejaDeFormularios', 'miEvolucionAntropometrica', 'misEjecucionesDeEntrenamiento'],
   );
   // Ninguna escribe: todas son lecturas.
   assert.ok(sinRegistros.pedidos.every((p) => !/^(abrir|guardar|registrar|confirmar|corregir|otorgar|revocar)/.test(p.nombre)));
@@ -451,7 +454,7 @@ test('sin mediciones en 90 días, «Mi evolución» mira hacia atrás hasta un a
 // ─── 5. Lo que se ve en el código de la pantalla ───────────────────────────────────────────────
 
 /** La pantalla y sus tarjetas, una por módulo (`inicio-*.tsx`), con sus piezas comunes. */
-const ARCHIVOS = ['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-informacion.tsx', 'inicio-mediciones.tsx', 'tarjeta-de-inicio.tsx', 'inicio-acceso.tsx'];
+const ARCHIVOS = ['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-informacion.tsx', 'inicio-mediciones.tsx', 'tarjeta-de-inicio.tsx', 'inicio-acceso.tsx', 'tira-de-la-semana.tsx'];
 const fuente = (archivo) => readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas', archivo), 'utf8');
 const PANTALLA = ARCHIVOS.map(fuente).join('\n');
 
@@ -460,10 +463,10 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
   assert.deepEqual(
     claves.sort(),
     [
-      '`entrenamiento-hoy:${dia}`',
+      // DL-170 (AV2-08): la pantalla la lee una vez y la comparte con la tira de la semana.
+      '`entrenamiento-hoy:${hoy}`',
       '`entrenamiento-agenda:${dia}`',
       "'entrenamiento-en-curso'",
-      '`hoy-nutricional:${dia}:${diaTipo ?? \'\'}`',
       "'inicio-ultimo-registro'",
       '`inicio-actividad:${periodo.periodStart}:${periodo.periodEnd}`',
       "'inicio-pendientes'",
@@ -481,8 +484,12 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
   // Las cinco tarjetas están en la pantalla, cada una con su lectura.
   const PRINCIPAL = fuente('inicio.tsx');
   for (const tarjeta of ['EntrenamientoDeHoy', 'NutricionDeHoy', 'Pendientes', 'ActividadDeEntrenamiento', 'Mediciones']) assert.match(PRINCIPAL, new RegExp(`<${tarjeta} `));
-  // El día del plan es la misma elección que en Nutrición: elegirlo en Inicio vale en las dos pantallas.
-  assert.match(PANTALLA, /useSeleccionRecordada<string \| undefined>\(token, 'hoy-nutricional:dia', undefined\)/);
+  // DL-170 (AV2-13): las comidas de Inicio leen «Hoy» con opciones (API-ING-01) con el mismo gancho de Nutrición, así que
+  // la clave y el día del plan son los mismos: elegirlo en Inicio vale en las dos pantallas.
+  assert.match(PANTALLA, /useLecturaDeHoyConOpciones\(token, sesionPerdida\)/);
+  const NUTRICION_HOY = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/nutricion-hoy.tsx'), 'utf8');
+  assert.match(NUTRICION_HOY, /useSeleccionRecordada<string \| undefined>\(token, 'hoy-nutricional:dia', undefined\)/);
+  assert.ok(NUTRICION_HOY.includes("useLecturaRecordada(token, `hoy-con-opciones:${hoyDeLaApi}:${diaTipo ?? ''}`"));
   const NUTRICION = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/nutricion.tsx'), 'utf8');
   const ENTRENAMIENTO = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/entrenamiento.tsx'), 'utf8');
   assert.match(NUTRICION, /useSeleccionRecordada<string \| undefined>\(token, 'hoy-nutricional:dia', undefined\)/);
@@ -497,14 +504,14 @@ test('cada tarjeta lee sola, con la clave de su módulo cuando es la misma lectu
 
 test('las acciones van a destinos tipados, y la única escritura es abrir un borrador al tocar «Comenzar» o «Continuar»', () => {
   for (const destino of [
-    "ir({ nombre: 'hoy', accion: 'registrar' })",
+    // DL-170 (AV2-14): cada ficha abre su comida; la ruta la arma `rutaDeLaFicha` (inicio-de-hoy.ts).
+    'ir(rutaDeLaFicha(f))',
     "ir({ nombre: 'plan-actual' })",
     "ir({ nombre: 'mi-evolucion', vista: 'ultima' })",
     "ir({ nombre: 'mi-evolucion', vista: 'evolucion', metrica: destacada.metrica })",
     // DL-166 (AV-06): «Para responder» arma sus filas con `paraResponder` (perfil.ts); cada formulario abre su solicitud.
     "ir({ nombre: 'mi-solicitud', id: f.id })",
     "ir({ nombre: 'ejecucion-de-entrenamiento', id: executionId })",
-    "ir({ nombre: 'historial-de-entrenamiento' })",
   ]) {
     assert.ok(PANTALLA.includes(destino), `falta ${destino}`);
   }
@@ -518,7 +525,10 @@ test('con letra grande, el título de una tarjeta no parte una palabra y dos acc
   const TARJETA = fuente('tarjeta-de-inicio.tsx');
   // Render del navegador con letra ×2 en 360 dp: el título partía «Entrenamient / o». Crece hasta 1,5 y el ícono va arriba.
   assert.match(TARJETA, /accessibilityRole="header" maxFontSizeMultiplier=\{1\.5\}/);
-  assert.match(TARJETA, /fontScale >= ESCALA_PARA_APILAR && estilos\.cabezaApilada/);
+  // DL-170: también va arriba en una tarjeta chica cuyo título no entra al lado (TEST-AV2-008), con la escala comparada
+  // como la manda Android (`escala-de-letra.ts`).
+  assert.match(TARJETA, /\|\| alcanzaLaEscala\(fontScale, ESCALA_PARA_APILAR\);/);
+  assert.match(TARJETA, /apilar && estilos\.cabezaApilada/);
   // Cada acción pide un ancho que crece con la letra: con letra grande baja a su línea entera.
   assert.match(TARJETA, /flexBasis: 140 \* Math\.min\(Math\.max\(fontScale, 1\), 2\.2\)/);
 });
@@ -536,7 +546,9 @@ test('revisión de la candidata: las respuestas tardías al abrir un borrador', 
 
 test('el saludo es neutro y no hay marcas de progreso', () => {
   const codigo = PANTALLA.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-  assert.match(codigo, /<Titulo>Hola<\/Titulo>/);
+  // DL-170 (AV2-07): el título es la fecha, sin «Hola» y sin nombre.
+  assert.match(codigo, /<Titulo>\{fechaLarga\(hoy\)\}<\/Titulo>/);
+  assert.doesNotMatch(codigo, /<Titulo>Hola/);
   assert.doesNotMatch(codigo, /displayName\}?\s*\}?<\/Titulo>|profile|iniciales/i, 'sin nombre ni iniciales en el saludo (D-2)');
   assert.doesNotMatch(codigo, /`[^`]*\$\{[^}]+\}\s*\/\s*\$\{[^}]+\}[^`]*`/, 'sin «2/4»');
   assert.doesNotMatch(codigo, /%/, 'ni en el texto ni en los estilos: la prueba de textos no distingue los anchos');

@@ -17,6 +17,7 @@ import {
   problemaDelNombre,
   referenciaCorta,
   referenciaNeutral,
+  sinTituloProfesional,
 } from './contratos-perfil-propio';
 import { MENSAJE_DE_CAMPO } from './copy';
 import { OPERACIONES } from './openapi';
@@ -95,4 +96,20 @@ test('TEST-UF-004 · API-ACC-06: el schema admite null para que la API responda 
   const op = OPERACIONES.find((o) => o.id === 'API-ACC-06')!;
   assert.match(op.resumen, /no se quita/);
   assert.ok(op.errores[422]?.includes('INVALID_PROFILE_DATA'));
+});
+
+test('el nombre personal que se propone desde el profesional va sin el título, la misma regla en el website y en la APK', () => {
+  const casos: readonly (readonly [string, string])[] = [
+    ['Lic. Ana Pérez', 'Ana Pérez'],
+    ['lic ana pérez', 'ana pérez'],
+    ['Lic.Ana Pérez', 'Ana Pérez'],
+    ['Mg. Lic. Paula Ríos', 'Paula Ríos'],
+    ['Dra. Elena Vidal, PhD', 'Elena Vidal'],
+    ['  Lic.   Ana    Pérez  ', 'Ana Pérez'],
+    // Lo que no es un título se queda; con solo el título, no se inventa un nombre.
+    ['Licia Fernández', 'Licia Fernández'],
+    ['Draco Alvarez', 'Draco Alvarez'],
+    ['Lic.', 'Lic.'],
+  ];
+  for (const [profesional, personal] of casos) assert.equal(sinTituloProfesional(profesional), personal, profesional);
 });

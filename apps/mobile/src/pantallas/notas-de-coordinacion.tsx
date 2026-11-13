@@ -18,7 +18,7 @@ import { EstadoDeCarga, VerMas } from '../estados';
 import { dia, fecha } from '../formato';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Salida } from '../navegacion';
-import { Aviso, Parrafo, Titulo, estilosPorTema } from '../ui';
+import { Aviso, Parrafo, Superficie, Titulo, estilosPorTema } from '../ui';
 
 /** El A3 revocado: la API responde 403 ACTION_FORBIDDEN y se dice por qué, sin mostrar nada. */
 const sinA3 = (r: Resultado<unknown>): boolean => !r.ok && r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN';
@@ -55,7 +55,7 @@ function TarjetaDeNota({ nota: n }: { nota: NotaDeCoordinacion }) {
   const nombres = nombresEnUnaFrase(n.recipients.people.map((p) => p.displayName));
   const para = n.recipients.mode === 'ONE' ? T.paraTusProfesionales(nombres) : T.paraTodosTusProfesionales(nombres);
   return (
-    <View
+    <Superficie
       style={estilos.tarjeta}
       accessible
       accessibilityLabel={`${n.author.displayName}, desde ${n.originScope.label}. ${ETIQUETA_DE_FINALIDAD_DE_NOTA[n.purpose]}. ${para}. ${fecha(n.recordedAt)}.`}
@@ -78,12 +78,12 @@ function TarjetaDeNota({ nota: n }: { nota: NotaDeCoordinacion }) {
           {T.laCorrige(dia(c.recordedAt))}
         </Text>
       ))}
-    </View>
+    </Superficie>
   );
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginBottom: 10, backgroundColor: COLOR.superficie },
+  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginBottom: 10 },
   autor: { fontSize: 16, fontWeight: '700', color: COLOR.texto },
   finalidad: { fontSize: 15, color: COLOR.texto, marginTop: 4 },
   texto: { fontSize: 15, lineHeight: 22, color: COLOR.texto, marginTop: 8, marginBottom: 4 },

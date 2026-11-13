@@ -12,6 +12,9 @@
  * - **Lo que no se toca queda igual**, con su forma de carga (`recordedAs`), su esfuerzo percibido y su duración
  *   (DL-161). Lo que se escribe va como `TYPED`: lo escribió la persona. La duración no se inventa: una serie que se
  *   suma va sin ella, y una que se reescribe conserva la que tenía.
+ * - **De dónde salió cada valor** (ED-70; DL-171), en una serie que se reescribe: lo que la persona cambia pasa a
+ *   `PERSON`; lo que no cambia conserva su origen (`PLAN` si la serie se había tildado con lo planificado, la clave que
+ *   tenía si ya la traía, ninguna si es de antes de la procedencia). Una serie que se suma lleva el de la casilla.
  * - **La casilla de cada serie** (Dirección, 2026-11-02), al final de la fila, como en la sesión. **Quitar una serie es
  *   destildarla**: queda tachada, con «Deshacer» (o se vuelve a tildar) hasta registrar la corrección, y «Qué cambia» lo
  *   dice («Se quita la serie 3 de Sentadilla»). Las demás conservan su número (la API admite huecos; solo prohíbe
@@ -31,13 +34,15 @@ import {
   numero,
   registroVigente,
   type EjecucionDeEntrenamiento,
+  type CampoConOrigen,
   type EjercicioRegistradoEntrada,
   type ObjetivoDeSerie,
+  type OrigenDelValor,
   type RegistroDeEjecucion,
   type SerieEjecutadaApi,
   type SesionConObjetivos,
 } from '@be/domain';
-import { ANCHO_DE_LA_CASILLA, FILA_VACIA, hayAlgoEscrito, leerFila, MAXIMO_DE_SERIES, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita, type Unidad } from './series-de-la-sesion';
+import { ANCHO_DE_LA_CASILLA, FILA_VACIA, hayAlgoEscrito, leerFila, MAXIMO_DE_SERIES, origenesDeLaSerie, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita, type Unidad } from './series-de-la-sesion';
 
 export type Condicion = 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED';
 
@@ -375,6 +380,28 @@ const mismaCarga = (a: SerieEjecutadaApi['load'], b: SerieEjecutadaApi['load']):
 const mismosValores = (a: SerieEjecutadaApi, b: SerieEjecutadaApi): boolean => mismaCarga(a.load, b.load) && a.completedRepetitions === b.completedRepetitions && a.rir === b.rir;
 
 /**
+ * ED-70: de dónde sale cada valor de una serie registrada que la persona reescribe. Lo que cambió lo escribió ella
+ * (`PERSON`); lo que no cambió conserva su origen: `PLAN` en una serie tildada con lo planificado (`AS_PLANNED`, donde
+ * todo vino del plan), la clave que ya tenía, o ninguna en una serie de antes de la procedencia, que no se sabe quién
+ * escribió. Un valor vaciado no lleva clave. Nunca le pasa a un valor el origen de otro.
+ *
+ * Una carga con el mismo número y otra unidad no la escribió la persona en esa fila: cambiar la unidad es del ejercicio y
+ * arrastra todas sus filas. Conserva `PERSON` si ya lo era; si no, queda sin clave («sin saber»): ni del plan, que decía
+ * otra unidad, ni de la persona, que no escribió ese número.
+ */
+export function origenesAlReescribir(nueva: SerieEjecutadaApi, antes: SerieEjecutadaApi): SerieEjecutadaApi['fieldOrigins'] {
+  const igual = { load: mismaCarga(nueva.load, antes.load), completedRepetitions: nueva.completedRepetitions === antes.completedRepetitions, rir: nueva.rir === antes.rir };
+  const soloLaUnidad = !igual.load && nueva.load !== null && antes.load !== null && nueva.load.value === antes.load.value;
+  const origen = (c: CampoConOrigen): OrigenDelValor | undefined => {
+    if (nueva[c] === null) return undefined;
+    if (c === 'load' && soloLaUnidad) return antes.recordedAs !== 'AS_PLANNED' && antes.fieldOrigins?.load === 'PERSON' ? 'PERSON' : undefined;
+    if (!igual[c]) return 'PERSON';
+    return antes.recordedAs === 'AS_PLANNED' ? 'PLAN' : antes.fieldOrigins?.[c];
+  };
+  return origenesDeLaSerie({ load: origen('load'), completedRepetitions: origen('completedRepetitions'), rir: origen('rir') });
+}
+
+/**
  * La serie que se registra con una fila, o sus errores; `null` si la fila no viaja (destildada, o vacía y sin tildar).
  * Una registrada que no cambió vuelve tal cual: conserva su forma de carga, su esfuerzo y su duración. Una sin registro
  * se lee como la casilla de la sesión: tildada sin escribir nada, con lo planificado de esa serie; con algo escrito, lo
@@ -394,12 +421,14 @@ function serieDeLaFila(f: FilaEnCorreccion): { readonly serie: SerieEjecutadaApi
     return { serie: null, errores: vaciada ? { fila: T.vaciada(f.setIndex) } : lectura.errores };
   }
   if (f.antes && mismosValores(lectura.serie, f.antes)) return { serie: f.antes, errores: null };
+  const fieldOrigins = f.antes ? origenesAlReescribir(lectura.serie, f.antes) : undefined;
   const serie: SerieEjecutadaApi = {
     ...lectura.serie,
     perceivedExertion: f.antes?.perceivedExertion ?? null,
     // Escrita por la persona en la corrección (DL-161).
     recordedAs: 'TYPED',
     ...(f.antes?.durationSeconds !== undefined ? { durationSeconds: f.antes.durationSeconds } : {}),
+    ...(fieldOrigins ? { fieldOrigins } : {}),
   };
   return { serie, errores: null };
 }

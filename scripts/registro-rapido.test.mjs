@@ -282,8 +282,9 @@ test('5 · «Cambié algo»: lo escrito va TYPED y, en lo vacío, lo planificado
   assert.equal(armado.ok, true);
   const goblet = armado.changes.exercises.find((e) => e.prescriptionId === 'pGoblet');
   assert.deepEqual(goblet.sets, [
-    // El RIR no se escribió: va el del plan, que se veía en gris, como en la casilla de la sesión.
-    { setIndex: 1, load: { value: 18.5, unit: 'kg' }, completedRepetitions: 9, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' },
+    // El RIR no se escribió: va el del plan, que se veía en gris, como en la casilla de la sesión, y dice que es del plan
+    // (ED-70). La tildada sin escribir va AS_PLANNED, sin el campo: todo es del plan.
+    { setIndex: 1, load: { value: 18.5, unit: 'kg' }, completedRepetitions: 9, rir: 2, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PLAN' } },
     { setIndex: 2, load: { value: 16, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'AS_PLANNED' },
   ]);
   assert.equal(armado.changes.sessionCondition, 'COMPLETED_WITH_DEVIATION', 'una serie que no hizo es un desvío');
@@ -308,12 +309,12 @@ test('5 · «Cambiar la serie N» desde el final: lo que queda vacío va con lo 
   assert.deepEqual(rr.estadoEnElFinal(GOBLET, r.ejercicios.pGoblet), { estado: 'cambiado', texto: '3 series · 1 cambiada' });
   const armado = rr.armarRegistro(ctx, r, AHORA);
   assert.equal(armado.ok, true);
-  assert.deepEqual(armado.changes.exercises[0].sets[2], { setIndex: 3, load: { value: 16, unit: 'kg' }, completedRepetitions: 6, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' });
+  assert.deepEqual(armado.changes.exercises[0].sets[2], { setIndex: 3, load: { value: 16, unit: 'kg' }, completedRepetitions: 6, rir: 2, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PERSON', rir: 'PLAN' } });
   cumpleElContrato(armado.changes);
   // Solo el RIR también alcanza: ya no frena «Volver al final» pidiendo la carga o las repeticiones.
   const soloElRir = rr.armarRegistro({ ...ctx, sesion: { prescriptions: [GOBLET] } }, rr.escribir(conTodo(ctx), 'pGoblet', 2, 'rir', '0'), AHORA);
   assert.equal(soloElRir.ok, true, soloElRir.motivo);
-  assert.deepEqual(soloElRir.changes.exercises[0].sets[1], { setIndex: 2, load: { value: 16, unit: 'kg' }, completedRepetitions: 10, rir: 0, perceivedExertion: null, recordedAs: 'TYPED' });
+  assert.deepEqual(soloElRir.changes.exercises[0].sets[1], { setIndex: 2, load: { value: 16, unit: 'kg' }, completedRepetitions: 10, rir: 0, perceivedExertion: null, recordedAs: 'TYPED', fieldOrigins: { load: 'PLAN', completedRepetitions: 'PLAN', rir: 'PERSON' } });
   // Un rango no se completa con un número: con «10–12» y sin carga, escribir solo el RIR sigue pidiendo un dato.
   const enRango = rr.armarRegistro(ctxDe(sesion(ZANCADA)), rr.escribir(conTodo(ctxDe(sesion(ZANCADA))), 'pZancada', 1, 'rir', '2'), AHORA);
   assert.equal(enRango.ok, false);

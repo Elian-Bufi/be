@@ -7,12 +7,13 @@
  *   el detalle permite verlo (REG-06-162/164).
  * - **Las fechas reales del período**, con sus huecos (`filasDelPeriodo`): un tramo sin medición no se completa
  *   (REG-06-165/166).
- * - **La toma de cada punto** (T1, T2…), con la numeración del selector (`tomasDelPeriodo`): el gráfico de una tarjeta la
+ * - **La toma de cada punto**, con el nombre del selector (`tomasDelPeriodo`, por su fecha desde AV2-20): el gráfico de una tarjeta la
  *   escribe bajo cada punto (ajuste de Dirección del 2026-10-05).
  * - **Los tramos de la línea**, solo entre tomas seguidas (`tramosDeLaSerie`): una toma sin la medida la corta.
  * - El resumen de cada toma (`tomaDe`), la numeración y la serie preparada se calculan una vez por respuesta.
  */
 import { filasDelPeriodo, grupoVigente, prepararSerie, tomaDe, tomasDelPeriodo, type EvolucionResponse, type FilaDeEvolucion, type GrupoDeComparabilidad, type Observacion, type SeriePreparada, type UltimaToma } from '@be/domain';
+import { conNombresPorFecha } from './nombres-de-las-tomas';
 
 type Datos = EvolucionResponse['data'];
 
@@ -49,13 +50,13 @@ type TomaDeLaEvaluacion = { readonly etiqueta: string; readonly orden: number };
 const tomasPorRespuesta = new WeakMap<Datos, ReadonlyMap<string, TomaDeLaEvaluacion>>();
 
 /**
- * La toma de cada evaluación del período: su etiqueta (T1, T2…), la misma del selector de tomas, y su orden. Se calcula
+ * La toma de cada evaluación del período: su nombre por la fecha («2 sept»; AV2-20), el mismo del selector de tomas, y su orden. Se calcula
  * una vez por respuesta.
  */
 export function tomasPorEvaluacion(datos: Datos): ReadonlyMap<string, TomaDeLaEvaluacion> {
   let porEvaluacion = tomasPorRespuesta.get(datos);
   if (!porEvaluacion) {
-    porEvaluacion = new Map(tomasDelPeriodo(datos).map((t, orden) => [t.evaluacionId, { etiqueta: t.etiqueta, orden }]));
+    porEvaluacion = new Map(conNombresPorFecha(tomasDelPeriodo(datos)).map((t, orden) => [t.evaluacionId, { etiqueta: t.etiqueta, orden }]));
     tomasPorRespuesta.set(datos, porEvaluacion);
   }
   return porEvaluacion;
@@ -87,7 +88,7 @@ export interface SerieDeLaMedida {
   readonly filas: readonly FilaDeEvolucion[];
   /** Las observaciones del grupo dentro del período: lo que dibuja el gráfico. */
   readonly observaciones: readonly Observacion[];
-  /** La toma de cada observación (T1, T2…), en el mismo orden; `null` si su evaluación no está en el período. */
+  /** La toma de cada observación («2 sept», AV2-20), en el mismo orden; `null` si su evaluación no está en el período. */
   readonly tomas: readonly (string | null)[];
   /** Los pares de observaciones que une la línea: solo tomas seguidas (`tramosDeLaSerie`). */
   readonly tramos: readonly (readonly [number, number])[];

@@ -73,6 +73,15 @@ export const COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL = {
     etiquetaQr: A.configuracion.etiquetaQr,
     clave: A.configuracion.clave,
     datosDeLaClave: A.configuracion.datosDeLaClave,
+    // Desde el mismo teléfono no se puede escanear el QR: la clave a la vista, para copiarla, y el enlace que abre la
+    // aplicación de códigos (hallazgo de Dirección del 2026-11-13).
+    // Solo en el teléfono (en la computadora, el enlace no se muestra y queda el QR).
+    desdeElTelefono: 'Si estás en el teléfono donde tenés la aplicación de códigos, abrila desde acá. Si no se abre, copiá la clave y pegala en la aplicación.',
+    abrirEnLaAplicacion: 'Abrir en la aplicación de códigos',
+    copiarLaClave: 'Copiar la clave',
+    // La copia no queda en el portapapeles: se vacía al confirmar o al minuto, de mejor esfuerzo (revisión de la vuelta 2).
+    claveCopiada: 'Clave copiada. Al confirmar el código, o en un minuto, BE intenta vaciar el portapapeles; si tu teclado guarda lo que copiás, borrala también de ahí.',
+    noSePudoCopiar: 'No se pudo copiar: seleccioná la clave y copiala a mano.',
     paso3: A.configuracion.paso3,
     cuenta: A.configuracion.cuenta,
     vence: A.configuracion.vence,

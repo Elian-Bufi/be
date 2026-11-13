@@ -20,9 +20,9 @@
  * del 2026-10-04 se retiraron: el progreso va en la vista Progreso, con fechas reales y la figura de cada zona
  * (`componerLaFiguraDeZona`, al final de este módulo).
  *
- * **Encuadre** (pulido del 2026-10-04, `ENCUADRE`). El cuerpo es grande, va a la derecha y lo recorta el borde derecho de
- * la lámina. Ahí no hay sitios: se mide del lado derecho de la persona, que en la figura de frente queda a la izquierda,
- * y los anillos del tronco tienen su centro en el eje del cuerpo, que queda a la vista. El tamaño sale del ancho de la
+ * **Encuadre** (pulido del 2026-10-04, `ENCUADRE`; entero desde AV2-19). El cuerpo es grande, va a la derecha y se ve
+ * entero: el borde derecho de su caja queda a un margen del de la lámina (AV2-D6). Hasta la 0.25 lo recortaba el borde, porque de ese lado no hay
+ * sitios (se mide del lado derecho de la persona, que en la figura de frente queda a la izquierda). El tamaño sale del ancho de la
  * lámina y de los sitios posibles de la familia, no de cuántas medidas tiene la toma, y el cuerpo empieza arriba: sumar
  * medidas alarga las tarjetas hacia abajo, pero no achica el cuerpo ni deja un hueco encima. Figura, anillos, puntos,
  * guías y zonas de toque salen del mismo rectángulo de la imagen: la misma escala y el mismo desplazamiento.
@@ -38,7 +38,6 @@ import {
   ACHATAMIENTO_DEL_ANILLO,
   anilloEnLaLamina,
   apilarTarjetas,
-  cantidad,
   esPliegueDeLaCaraPosterior,
   FIGURAS_DE_LA_LAMINA,
   numero,
@@ -51,6 +50,7 @@ import {
   type RectanguloEnLaLamina,
   type SexoDeLaLamina,
 } from '@be/domain';
+import { medidaConUnDecimal } from './formato';
 
 export type FamiliaDeLaFigura = 'PERIMETROS' | 'PLIEGUES';
 export type ModoDeLaFigura = 'TARJETAS' | 'NUMEROS';
@@ -60,17 +60,32 @@ export const LETRA = { rotulo: 13, valor: 15, detalle: 12, ficha: 12 } as const;
 export const INTERLINEA = { rotulo: 17, valor: 20, detalle: 16 } as const;
 
 /**
- * El encuadre del cuerpo en la lámina del teléfono (pulido del 2026-10-04): grande, a la derecha y recortado por el borde
- * derecho, donde no hay sitios. Ver el comentario del módulo.
+ * El encuadre del cuerpo en la lámina del teléfono (pulido del 2026-10-04): grande, a la derecha y, desde AV2-19, entero.
+ * Ver el comentario del módulo.
  */
 export const ENCUADRE = {
-  /** El ancho de la imagen de la lámina, en veces el ancho de la lámina en el teléfono. */
-  anchoDeLaImagen: 1.44,
-  /** Cuánto se ve a la derecha del eje del cuerpo, en fracción del ancho de la imagen: lo demás queda fuera del borde. */
-  aLaDerechaDelEje: 0.13,
+  /**
+   * El ancho de la imagen de la lámina, en veces el ancho de la lámina en el teléfono. Era 1,44, con el hombro derecho
+   * recortado; desde AV2-19 (AV2-D6) el cuerpo se ve entero.
+   */
+  anchoDeLaImagen: 1.0,
+  /**
+   * Lo que queda entre el borde derecho de la caja del cuerpo y el de la lámina, en fracción del ancho de la imagen
+   * (AV2-19). Lo que se ve a la derecha del eje sale de la caja de cada figura (`aLaDerechaDelEje`): ≈ 0,233 en el hombre
+   * y ≈ 0,214 en la mujer. Antes era un 0,13 fijo, que cortaba el hombro.
+   */
+  margenDelCuerpo: 0.015,
   /** El ancho mínimo de una tarjeta: si no entra a la izquierda de los sitios, el cuerpo se achica lo justo. */
   anchoMinimoDeTarjeta: 132,
 } as const;
+
+/**
+ * Cuánto se ve a la derecha del eje de la imagen, en fracción de su ancho: el borde derecho de la caja del cuerpo más el
+ * margen (AV2-19). Ningún sitio cambia: la figura entera se escala con su capa de puntos.
+ */
+export function aLaDerechaDelEje(cuerpo: { readonly centroX: number; readonly ancho: number }): number {
+  return (cuerpo.centroX - 50) / 100 + cuerpo.ancho / 200 + ENCUADRE.margenDelCuerpo;
+}
 /** El radio del punto de un pliegue con su halo, en dp: su dibujo entero queda a la vista. */
 const RADIO_DEL_PUNTO = 7;
 /** Lo que separa el nombre del valor cuando van en la misma línea. */
@@ -240,7 +255,7 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
   return enTarjetas ?? componer('NUMEROS');
 
   function componer(modo: ModoDeLaFigura): ComposicionDeLaFigura | null {
-    // El cuerpo, grande y a la derecha, recortado por el borde derecho (`ENCUADRE`). Su tamaño no depende de cuántas
+    // El cuerpo, grande, a la derecha y entero (`ENCUADRE`, AV2-19). Su tamaño no depende de cuántas
     // medidas hay: el borde izquierdo se calcula con todos los sitios posibles de la familia.
     ficha = modo === 'NUMEROS' ? Math.round(24 * Math.min(escala, ESCALA_MAXIMA_DE_LA_FICHA)) : 0;
     const columna = modo === 'TARJETAS' ? ENCUADRE.anchoMinimoDeTarjeta : MARGEN / 2 + ficha + 4;
@@ -248,11 +263,11 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
     const aLaIzquierda = -Math.min(...relativos);
     const punto = familia === 'PLIEGUES' ? RADIO_DEL_PUNTO : 0;
     // Si la columna de la izquierda no entra con el cuerpo al tamaño buscado, el cuerpo se achica lo justo.
-    const tope = (ancho - columna - CALLE - punto) / (ENCUADRE.aLaDerechaDelEje + aLaIzquierda);
+    const tope = (ancho - columna - CALLE - punto) / (aLaDerechaDelEje(figura.cuerpo) + aLaIzquierda);
     const anchoDeImagen = Math.min(ancho * ENCUADRE.anchoDeLaImagen, tope);
     const altoDeImagen = (anchoDeImagen * figura.altoPx) / figura.anchoPx;
     const altoDelCuerpo = (altoDeImagen * figura.cuerpo.alto) / 100;
-    const eje = ancho - ENCUADRE.aLaDerechaDelEje * anchoDeImagen;
+    const eje = ancho - aLaDerechaDelEje(figura.cuerpo) * anchoDeImagen;
     // El cuerpo empieza arriba, en el margen, sin importar el alto de las tarjetas.
     const imagenFija: RectanguloEnLaLamina = { x: eje - anchoDeImagen / 2, y: MARGEN - (figura.cuerpo.arriba / 100) * altoDeImagen, ancho: anchoDeImagen, alto: altoDeImagen };
     const izquierdaDeLaFamilia = eje - aLaIzquierda * anchoDeImagen - punto;
@@ -263,7 +278,7 @@ export function componerLaFigura(entrada: EntradaDeLaComposicion): ComposicionDe
       claves.map((grupo) =>
         grupo.map((clave): SitioDeLaFigura => {
           const medida = porClave.get(clave)!;
-          const base = { medida, clave, numero: 0, rotulo: rotuloDelSitio(clave), valor: cantidad(medida.actual.punto.value, medida.actual.punto.unit), diferencia: entrada.diferencias === false ? null : diferenciaDe(medida) };
+          const base = { medida, clave, numero: 0, rotulo: rotuloDelSitio(clave), valor: medidaConUnDecimal(medida.actual.punto.value, medida.actual.punto.unit), diferencia: entrada.diferencias === false ? null : diferenciaDe(medida) };
           if (familia === 'PERIMETROS') {
             const a = anilloEnLaLamina(imagen, figura.perimetros[clave as keyof typeof figura.perimetros]!);
             return { ...base, cx: a.cx, cy: a.cy, izquierda: a.cx - a.rx, anillo: { rx: a.rx, ry: Math.max(a.ry, 3) }, posterior: false };
@@ -441,7 +456,7 @@ export interface FiguraDeLaZona {
  *   Ningún sitio se mueve.
  * - La franja y el tamaño salen de todos los sitios con datos de la zona, no del panel: pasar de un panel a otro no mueve
  *   el cuerpo.
- * - El cuerpo va centrado en el espacio libre, sin pasar el límite de recorte del mapa (`ENCUADRE.aLaDerechaDelEje`) y
+ * - El cuerpo va centrado en el espacio libre, sin pasar el borde derecho de su caja (`aLaDerechaDelEje`) y
  *   sin que el sitio más a la izquierda quede debajo de la columna de números.
  * - Los números van de arriba hacia abajo, en el orden de la altura de sus sitios.
  */
@@ -468,7 +483,7 @@ export function componerLaFiguraDeZona(e: EntradaDeLaFiguraDeZona): FiguraDeLaZo
   // Entre la franja y el borde de la figura: el margen y, en los pliegues, el radio del punto, que se dibuja entero.
   const borde = MARGEN + punto;
   const porAlto = Math.max(1, e.altoMaximo - 2 * borde) / ((hasta - desde) * proporcion);
-  const porAncho = (ancho - columna - CALLE - punto) / (ENCUADRE.aLaDerechaDelEje + aLaIzquierda);
+  const porAncho = (ancho - columna - CALLE - punto) / (aLaDerechaDelEje(figura.cuerpo) + aLaIzquierda);
   const anchoDeImagen = Math.min(porAlto, porAncho, ancho * ANCHO_MAXIMO_DE_LA_IMAGEN_DE_ZONA);
   const altoDeImagen = anchoDeImagen * proporcion;
   const altoDeLaFranja = (hasta - desde) * altoDeImagen + 2 * borde;
@@ -476,7 +491,7 @@ export function componerLaFiguraDeZona(e: EntradaDeLaFiguraDeZona): FiguraDeLaZo
   // El eje de la imagen es su centro; la caja del cuerpo puede estar un poco corrida de él.
   const ejeCentrado = (libre + ancho) / 2 - ((figura.cuerpo.centroX - 50) / 100) * anchoDeImagen;
   const ejeMinimo = libre + aLaIzquierda * anchoDeImagen;
-  const ejeMaximo = Math.max(ejeMinimo, ancho - ENCUADRE.aLaDerechaDelEje * anchoDeImagen);
+  const ejeMaximo = Math.max(ejeMinimo, ancho - aLaDerechaDelEje(figura.cuerpo) * anchoDeImagen);
   const eje = Math.min(Math.max(ejeCentrado, ejeMinimo), ejeMaximo);
   const separacion = 4;
   const numeros = Math.max(claves.length, e.maximoDeNumeros ?? 0);

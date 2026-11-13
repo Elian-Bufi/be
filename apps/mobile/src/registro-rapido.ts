@@ -12,7 +12,8 @@
  *   `recordedAs: 'AS_PLANNED'`: la persona los tuvo a la vista y los confirmó (B10-06 §56). Lo escrito va `TYPED` y, en
  *   lo que quedó vacío, con lo planificado que se veía en gris: la misma regla que la casilla de la sesión
  *   (`serieAlTildar`). Una serie sin tildar no se manda: no la hizo. Un ejercicio sin series en el plan tampoco: no hay
- *   qué registrar por serie, y el último cuadro lo dice.
+ *   qué registrar por serie, y el último cuadro lo dice. De dónde salió cada valor (ED-70) también sigue la regla de
+ *   la casilla: lo escrito lleva `PERSON` y lo completado con el plan, `PLAN`; la serie `AS_PLANNED` va sin el campo.
  * - **Nunca se fabrica una serie** (SET_WITHOUT_DATA): si el plan de una serie no trae ni carga ni un número de
  *   repeticiones (por ejemplo, «10–12 rep.»), tildarla sin escribir no alcanza, y el recorrido pide anotarlo.
  * - **Un ejercicio sin tildar no se manda**: queda como no hecho. Con «Hice algo distinto» y nada tildado, la sesión se

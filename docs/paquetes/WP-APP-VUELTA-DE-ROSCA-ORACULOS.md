@@ -208,7 +208,7 @@ EVIDENCE_EXPECTED    La CI verde; la revisión de los textos contra 10-B04, anot
 
 ---
 
-## TEST-AVR-010 a TEST-AVR-012 — Inicio
+## TEST-AVR-010 a TEST-AVR-012 — Inicio (TEST-AVR-010 y 012, enmendados por DL-170 el 2026-11-11: AV2-D1 paso 1 y AV2-D2; las pruebas piden la regla nueva)
 
 ```text
 TEST_ID              TEST-AVR-010 · TEST-AVR-011 · TEST-AVR-012
@@ -239,7 +239,7 @@ EVIDENCE_EXPECTED    La CI verde; el conteo de palabras y botones de Inicio, ant
 
 ---
 
-## TEST-AVR-013 — El número de Inicio y el desglose de «Tu historial»
+## TEST-AVR-013 — El número de Inicio y el desglose de «Tu historial» (enmendado por DL-170 el 2026-11-11, AV2-D2: Inicio ya no da un total)
 
 ```text
 TEST_ID              TEST-AVR-013

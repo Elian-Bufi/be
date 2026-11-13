@@ -4,11 +4,12 @@
  * - **La fecha civil es la de la API**, y las comidas son las del plan, en fichas, con lo registrado marcado
  *   (`comidas-de-hoy.ts`). Si el plan tiene varios días, la persona elige cuál es hoy: BE no elige en silencio (DL-049).
  *   La elección es la misma de Inicio y de «Plan».
- * - **Por comida, un carrusel manual de sus opciones** (`carrusel-de-opciones.ts`): se ve una parte de la tarjeta
- *   siguiente, con «Opción n de m» y flechas accesibles, sin avance automático. Con una sola opción, sin controles. Solo
- *   la tarjeta a la vista la recorre el lector de pantalla.
- * - **Cada tarjeta:** la imagen de referencia o el ícono de respaldo, el nombre, la franja de macros de las porciones del
- *   plan (una estimación, no lo consumido), «Ver detalle» y «Comí esta opción». Deslizar no registra.
+ * - **Por comida, una sola navegación entre sus opciones** (`carrusel-de-opciones.ts`, AV2-21): «Opción 1 | Opción 2 |
+ *   Opción 3» en Segmentos compactos y, debajo, la opción elegida a todo el ancho. Hasta la 0.25 era un carrusel con
+ *   asomo, flechas y puntitos. Con una sola opción, sin control.
+ * - **La opción:** una miniatura de 72 dp (sin foto, la de reemplazo: el plato en una caja con el tinte del tema), el
+ *   nombre, la franja de macros de las porciones del plan (una estimación, no lo consumido), «Ver detalle» y «Comí esta
+ *   opción». Elegir no registra.
  * - **«Comí esta opción»** registra con el comando único (`registro-de-comidas.tsx`), con las cantidades sin confirmar:
  *   lo previsto nunca se convierte en consumido. Un doble toque o un reintento no duplican.
  * - **Con la comida registrada**, en lugar del carrusel: «Almuerzo registrado», la opción con su foto, «Cantidades sin
@@ -32,23 +33,24 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { AccessibilityInfo, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
-import { controlesDelCarrusel, desplazamientoDe, indiceDeLaOpcion, indiceDesdeDesplazamiento, indiceValido, medidasDelCarrusel, SEPARACION_ENTRE_TARJETAS } from '../carrusel-de-opciones';
+import { anuncioDeLaOpcion, indiceDeLaOpcion, indiceValido, segmentosDeLasOpciones } from '../carrusel-de-opciones';
 import { intentoDeLaComida } from '../comando-de-registro';
-import { comidaQueSeMuestra, comidaRegistrada, etiquetaDeLaComida, fichasPorFila, LETRA_DE_LA_FICHA, registroDeLaComida, RELLENO_DE_LA_FICHA, SEPARACION_DE_LAS_FICHAS } from '../comidas-de-hoy';
+import { comidaPedidaOElegida, comidaQueSeMuestra, comidaRegistrada, etiquetaDeLaComida, fichasPorFila, LETRA_DE_LA_FICHA, registroDeLaComida, RELLENO_DE_LA_FICHA, SEPARACION_DE_LAS_FICHAS } from '../comidas-de-hoy';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fechaLarga } from '../formato';
 import { Icono } from '../icono';
-import { Flecha, IconoDeCamara, IconoDeRegistrado, IconoSinRegistro } from '../iconos-de-nutricion';
+import { IconoDeCamara, IconoDePlato, IconoDeRegistrado, IconoSinRegistro } from '../iconos-de-nutricion';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { esIncierto, falloDe } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CajaInformativa, FilaQueAbre, FranjaDeMacros } from '../piezas-de-nutricion';
 import { ahoraEnElServidor, registrarComida, useDeshacer } from '../registro-de-comidas';
-import { Aviso, Boton, COLOR, estilosPorTema, Insignia, Parrafo } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, COLOR, EstadoVacio, estilosPorTema, Insignia, Parrafo, Segmentos, Superficie } from '../ui';
 
 export type HoyConOpciones = HoyConOpcionesResponse['data'];
 type Comida = HoyConOpciones['meals'][number];
@@ -57,16 +59,22 @@ type AvisoDeHoy = { readonly tipo: 'exito' | 'error' | 'info'; readonly texto: s
 
 /**
  * «Hoy» con opciones (API-ING-01), con el día del plan elegido. La clave nombra el día civil de la API y el día del plan:
- * a la medianoche cambia y se vuelve a leer. La usan esta pestaña y el detalle de una opción.
+ * a la medianoche cambia y se vuelve a leer. La usan esta pestaña, el detalle de una opción y, desde DL-170 (AV2-13), las
+ * comidas de Inicio: la misma lectura y la misma clave, así Inicio ve lo que se registró acá sin recargar.
  */
-export function useHoyConOpciones(token: string, salir: (m: Salida) => void) {
-  const sesionPerdida = useSesionPerdida(salir);
+export function useLecturaDeHoyConOpciones(token: string, sesionPerdida: AlPerderLaSesion) {
   // El día del plan es la misma elección de Inicio y de «Plan» (API-NUT-14): se recuerda mientras dure la sesión.
   const [diaTipo, setDiaTipo] = useSeleccionRecordada<string | undefined>(token, 'hoy-nutricional:dia', undefined);
   const pedir = useCallback((): Promise<Resultado<HoyConOpcionesResponse>> => api.hoyConOpciones(token, diaTipo), [token, diaTipo]);
   const hoyDeLaApi = useDiaDeLaApi();
   const lectura = useLecturaRecordada(token, `hoy-con-opciones:${hoyDeLaApi}:${diaTipo ?? ''}`, pedir, sesionPerdida);
-  return { ...lectura, setDiaTipo, sesionPerdida };
+  return { ...lectura, setDiaTipo };
+}
+
+/** La lectura de «Hoy» para las pantallas de Nutrición, que reciben cómo salir si la sesión ya no sirve. */
+export function useHoyConOpciones(token: string, salir: (m: Salida) => void) {
+  const sesionPerdida = useSesionPerdida(salir);
+  return { ...useLecturaDeHoyConOpciones(token, sesionPerdida), sesionPerdida };
 }
 
 export function HoyDeNutricion({
@@ -75,6 +83,7 @@ export function HoyDeNutricion({
   ir,
   subir,
   accion,
+  comida,
   llevarA,
 }: {
   token: string;
@@ -84,6 +93,8 @@ export function HoyDeNutricion({
   subir: () => void;
   /** Desde Inicio, «Registrar» abre Hoy en las comidas, o en la elección del día si hace falta (DL-117). */
   accion?: 'registrar';
+  /** La comida de la ficha que se tocó en Inicio (AV2-14). */
+  comida?: string;
   /** Lleva la pantalla a una altura medida desde el principio de esta pestaña. */
   llevarA?: (y: number) => void;
 }) {
@@ -133,6 +144,7 @@ export function HoyDeNutricion({
         avisar={avisar}
         actualizar={(desdeCero) => void cargar(desdeCero ? { desdeCero: true } : undefined)}
         accion={accion}
+        comidaPedida={comida}
         llevarA={llevarA}
       />
     </>
@@ -149,6 +161,7 @@ function DiaDeNutricion({
   avisar,
   actualizar,
   accion,
+  comidaPedida,
   llevarA,
 }: {
   hoy: HoyConOpciones;
@@ -160,9 +173,19 @@ function DiaDeNutricion({
   avisar: (aviso: AvisoDeHoy | null) => void;
   actualizar: (desdeCero: boolean) => void;
   accion?: 'registrar';
+  comidaPedida?: string;
   llevarA?: (y: number) => void;
 }) {
   const [elegida, setElegida] = useSeleccionRecordada<string | null>(token, `nutricion:comida:${hoy.date}`, null);
+  // AV2-14: la comida que se tocó en Inicio, una vez. Si está en el plan de hoy, pasa a ser la elegida (y queda recordada).
+  const pedida = useRef(comidaPedida ?? null);
+  const elegidaAhora = comidaPedidaOElegida(pedida.current, elegida, hoy.meals);
+  useEffect(() => {
+    if (pedida.current && elegidaAhora === pedida.current && elegida !== pedida.current) setElegida(pedida.current);
+    pedida.current = null;
+    // Solo al abrir: después, la persona elige.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Lo registrado en esta pantalla se muestra enseguida, con lo que respondió la API, mientras «Hoy» se vuelve a leer.
   // Cuando llega la lectura nueva, manda la API: lo de acá se olvida (si se deshizo en otro lado, no queda a la vista).
   const [recientes, setRecientes] = useState<Readonly<Record<string, RegistroDeComida>>>({});
@@ -170,7 +193,7 @@ function DiaDeNutricion({
     setRecientes({});
   }, [hoy]);
   const registros = [...Object.values(recientes), ...hoy.records];
-  const comidaId = comidaQueSeMuestra(hoy.meals, registros, elegida);
+  const comidaId = comidaQueSeMuestra(hoy.meals, registros, elegidaAhora);
   const comida = hoy.meals.find((m) => m.mealId === comidaId) ?? null;
 
   // El pedido de Inicio se atiende una vez, cuando aparece dónde se registra.
@@ -203,7 +226,8 @@ function DiaDeNutricion({
           {fechaLarga(hoy.date)}
         </Text>
       </View>
-      {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_NUTRICION.sinPlanAsesorado} /> : null}
+      {/* Vacía: qué va a aparecer acá y el siguiente paso (vuelta 2), no solo que no hay plan. */}
+      {hoy.planState === 'NO_ACTIVE_PLAN' ? <EstadoVacio icono="nutricion" {...TEXTOS_DE_LA_VUELTA.vacios.nutricionSinPlan} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.nutricionSinPlan.accion, onPress: () => ir({ nombre: 'vinculos' }) }} /> : null}
       {hoy.planState === 'NOT_AVAILABLE' ? (
         <Aviso tipo="info" titulo={COPY_NUTRICION.planNoDisponible}>
           <Boton texto={COPY_REGISTRO_DE_COMIDAS.irAVinculos} tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
@@ -412,7 +436,7 @@ function OpcionesDeLaComida({
 
   return (
     <View>
-      <View style={estilos.panel}>
+      <Superficie style={estilos.panel}>
         <View style={estilos.cabezaDeComida}>
           <Text style={estilos.nombreDeComida} accessibilityRole="header">
             {comida.label}
@@ -425,7 +449,7 @@ function OpcionesDeLaComida({
         {comida.options.length === 0 ? (
           <Parrafo tenue>{COPY_REGISTRO_DE_COMIDAS.sinOpciones}</Parrafo>
         ) : (
-          <Carrusel
+          <OpcionesEnSegmentos
             token={token}
             fecha={fecha}
             comida={comida}
@@ -440,7 +464,7 @@ function OpcionesDeLaComida({
             {fallo.opcion ? <Boton texto={COPY.reintentar} tipo="secundario" onPress={() => fallo.opcion && void comi(fallo.opcion)} ocupado={registrando !== null} /> : null}
           </Aviso>
         ) : null}
-      </View>
+      </Superficie>
       <FilaQueAbre
         destacada
         texto={COPY_REGISTRO_DE_COMIDAS.comiAlgoDiferente}
@@ -452,11 +476,15 @@ function OpcionesDeLaComida({
   );
 }
 
+/** El lado de la miniatura de una opción, en dp (AV2-21). */
+const TAMANO_DE_LA_MINIATURA = 72;
+
 /**
- * El carrusel manual. El ancho de cada tarjeta deja ver una parte de la siguiente; cada gesto se detiene en una tarjeta
- * (`snapToInterval`), y las flechas hacen lo mismo. La opción a la vista se recuerda por su identidad.
+ * Las opciones de una comida, con una sola navegación (AV2-21, con AV2-D10): arriba, «Opción 1 | Opción 2 | Opción 3»
+ * en Segmentos compactos; debajo, la opción elegida a todo el ancho. Elegir no registra. La opción elegida se recuerda
+ * por su identidad, se anuncia «Opción n de m» al cambiar, y solo se pide la imagen de la que está a la vista.
  */
-function Carrusel({
+function OpcionesEnSegmentos({
   token,
   fecha,
   comida,
@@ -476,118 +504,47 @@ function Carrusel({
   const opciones = comida.options;
   const total = opciones.length;
   const [recordada, setRecordada] = useSeleccionRecordada<string | null>(token, `nutricion:opcion:${fecha}:${comida.mealId}`, null);
-  const [indice, setIndice] = useState(() => indiceDeLaOpcion(opciones, recordada));
-  const [ancho, setAncho] = useState(0);
-  const lista = useRef<ScrollView>(null);
-  const medidas = medidasDelCarrusel(ancho, total);
-  const controles = controlesDelCarrusel(indice, total);
-  // Donde empieza el carrusel: la opción recordada, sin animación. Se fija una vez, al medir.
-  const inicio = useRef<number | null>(null);
-  if (ancho > 0 && inicio.current === null) inicio.current = desplazamientoDe(indice, medidas.paso, total);
+  const indice = indiceValido(indiceDeLaOpcion(opciones, recordada), total);
+  const opcion = opciones[indice];
+  const segmentos = segmentosDeLasOpciones(opciones);
 
-  // Adónde va el carrusel después de una flecha: mientras se desliza solo, las posiciones de paso no cambian la opción
-  // (el contador se anuncia, y no tiene que decir la anterior un instante).
-  const destino = useRef<number | null>(null);
-  // Las imágenes se piden cuando la tarjeta está a la vista o al lado, y quedan: cada acceso queda registrado en la API.
-  const cercanas = useRef(new Set<number>());
-  for (const k of [indice - 1, indice, indice + 1]) if (k >= 0 && k < total) cercanas.current.add(k);
-
-  const elegir = (i: number, desplazar: boolean) => {
-    const j = indiceValido(i, total);
-    setIndice(j);
-    const id = opciones[j]?.optionId ?? null;
-    if (id !== recordada) setRecordada(id);
-    if (desplazar) {
-      destino.current = j;
-      lista.current?.scrollTo({ x: desplazamientoDe(j, medidas.paso, total), animated: true });
-    }
+  const elegir = (id: string) => {
+    if (id === opcion?.optionId) return;
+    setRecordada(id);
+    const anuncio = anuncioDeLaOpcion(
+      opciones.findIndex((o) => o.optionId === id),
+      total,
+    );
+    if (anuncio) AccessibilityInfo.announceForAccessibility(anuncio);
   };
 
-  // Al medir (y si cambia el ancho), la tarjeta elegida queda alineada, sin animación.
-  const indiceActual = useRef(indice);
-  indiceActual.current = indice;
-  useEffect(() => {
-    if (medidas.paso > 0) lista.current?.scrollTo({ x: desplazamientoDe(indiceActual.current, medidas.paso, total), animated: false });
-  }, [medidas.paso, total]);
-
-  const alDesplazar = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const j = indiceDesdeDesplazamiento(e.nativeEvent.contentOffset.x, medidas.paso, total);
-    if (destino.current !== null) {
-      if (j === destino.current) destino.current = null;
-      return;
-    }
-    if (j !== indiceActual.current) elegir(j, false);
-  };
-
+  if (!opcion) return null;
   return (
-    <View onLayout={(e) => setAncho(Math.floor(e.nativeEvent.layout.width))}>
-      {ancho > 0 ? (
-        <ScrollView
-          ref={lista}
-          horizontal
-          accessibilityLabel={COPY_REGISTRO_DE_COMIDAS.opcionesDe(comida.label)}
-          showsHorizontalScrollIndicator={false}
-          scrollEnabled={total > 1}
-          snapToInterval={total > 1 ? medidas.paso : undefined}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          disableIntervalMomentum
-          nestedScrollEnabled
-          contentOffset={{ x: inicio.current ?? 0, y: 0 }}
-          contentContainerStyle={{ paddingRight: medidas.rellenoFinal }}
-          onScroll={alDesplazar}
-          // Si la persona toma el carrusel con el dedo, manda el gesto, aunque una flecha lo estuviera moviendo.
-          onScrollBeginDrag={() => {
-            destino.current = null;
-          }}
-          scrollEventThrottle={32}
-        >
-          {opciones.map((o, i) => (
-            <View
-              key={o.optionId}
-              style={[estilos.lugarDeTarjeta, { width: medidas.anchoDeTarjeta, marginRight: i < total - 1 ? SEPARACION_ENTRE_TARJETAS : 0 }]}
-              // Solo la tarjeta a la vista la recorre el lector: las otras se alcanzan con las flechas.
-              importantForAccessibility={i === indice ? 'auto' : 'no-hide-descendants'}
-              accessibilityElementsHidden={i !== indice}
-            >
-              <TarjetaDeOpcion
-                token={token}
-                opcion={o}
-                cargarImagen={cercanas.current.has(i)}
-                sesionPerdida={sesionPerdida}
-                registrando={registrando === o.optionId}
-                otraRegistrando={registrando !== null && registrando !== o.optionId}
-                alVerDetalle={() => alVerDetalle(o)}
-                alComer={() => alComer(o)}
-              />
-            </View>
-          ))}
-        </ScrollView>
-      ) : null}
-      {controles.contador ? (
-        <View style={estilos.controles}>
-          <BotonDeFlecha hacia="izquierda" texto={COPY_REGISTRO_DE_COMIDAS.opcionAnterior} habilitado={controles.anteriorHabilitada} onPress={() => elegir(indice - 1, true)} />
-          <Text style={estilos.contador} accessibilityLiveRegion="polite">
-            {controles.contador}
-          </Text>
-          <BotonDeFlecha hacia="derecha" texto={COPY_REGISTRO_DE_COMIDAS.opcionSiguiente} habilitado={controles.siguienteHabilitada} onPress={() => elegir(indice + 1, true)} />
-        </View>
-      ) : null}
-      {total > 1 ? (
-        <View style={estilos.puntos} accessible={false} importantForAccessibility="no-hide-descendants">
-          {opciones.map((o, i) => (
-            <View key={o.optionId} style={[estilos.punto, i === indice && estilos.puntoElegido]} />
-          ))}
-        </View>
-      ) : null}
+    <View>
+      {segmentos.length > 0 ? <Segmentos<string> compactos etiqueta={COPY_REGISTRO_DE_COMIDAS.opcionesDe(comida.label)} opciones={segmentos} valor={opcion.optionId} alElegir={elegir} /> : null}
+      <OpcionALaVista
+        key={opcion.optionId}
+        token={token}
+        opcion={opcion}
+        sesionPerdida={sesionPerdida}
+        registrando={registrando === opcion.optionId}
+        otraRegistrando={registrando !== null && registrando !== opcion.optionId}
+        alVerDetalle={() => alVerDetalle(opcion)}
+        alComer={() => alComer(opcion)}
+      />
     </View>
   );
 }
 
-function TarjetaDeOpcion({
+/**
+ * La opción a la vista, compacta (AV2-21): con imagen, una miniatura de 72 dp al lado del nombre, que TalkBack sigue
+ * llamando «Imagen de referencia». Sin imagen (hallazgo 13 de la 0.26: faltan las fotos de muchas recetas), la miniatura
+ * de reemplazo en el mismo lugar y del mismo tamaño: la opción no queda coja. Va directo en la tarjeta de la comida, sin
+ * otra tarjeta adentro. «Estimación del plan», en `tenue`: no se toca.
+ */
+function OpcionALaVista({
   token,
   opcion,
-  cargarImagen,
   sesionPerdida,
   registrando,
   otraRegistrando,
@@ -596,39 +553,43 @@ function TarjetaDeOpcion({
 }: {
   token: string;
   opcion: OpcionConMacros;
-  cargarImagen: boolean;
   sesionPerdida: AlPerderLaSesion;
   registrando: boolean;
   otraRegistrando: boolean;
   alVerDetalle: () => void;
   alComer: () => void;
 }) {
+  const mediaId = opcion.image?.mediaId ?? null;
   return (
-    <View style={estilos.tarjeta}>
-      <ImagenDeMedio token={token} mediaId={opcion.image?.mediaId ?? null} cargar={cargarImagen} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} />
-      <Text style={estilos.nombreDeOpcion}>{opcion.label}</Text>
-      <Text style={estilos.estimacion}>{COPY_REGISTRO_DE_COMIDAS.estimacionDelPlan}</Text>
+    <View style={estilos.opcion}>
+      <View style={estilos.cabezaDeOpcion}>
+        {mediaId ? (
+          <ImagenDeMedio token={token} mediaId={mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} tamano={TAMANO_DE_LA_MINIATURA} rotuloVisible={false} respaldoCompacto />
+        ) : (
+          <MiniaturaSinFoto />
+        )}
+        <View style={estilos.textosDeOpcion}>
+          <Text style={estilos.nombreDeOpcion}>{opcion.label}</Text>
+          <Text style={estilos.estimacion}>{COPY_REGISTRO_DE_COMIDAS.estimacionDelPlan}</Text>
+        </View>
+      </View>
       <FranjaDeMacros nutrientes={opcion.planned} />
-      {/* Las tarjetas miden lo mismo: lo que sobra va antes de las acciones, que quedan alineadas abajo. */}
-      <View style={estilos.empuje} />
       <FilaQueAbre texto={COPY_REGISTRO_DE_COMIDAS.verDetalle} acento onPress={alVerDetalle} />
       <Boton texto={registrando ? COPY_REGISTRO_DE_COMIDAS.guardando : COPY_REGISTRO_DE_COMIDAS.comiEstaOpcion} onPress={alComer} ocupado={registrando} deshabilitado={otraRegistrando} />
     </View>
   );
 }
 
-function BotonDeFlecha({ hacia, texto, habilitado, onPress }: { hacia: 'izquierda' | 'derecha'; texto: string; habilitado: boolean; onPress: () => void }) {
+/**
+ * La miniatura de una opción sin foto (hallazgo 13 de la 0.26): el plato en `azul` dentro de una caja con el tinte
+ * `iconoFondo` del tema, como la caja del ícono de las tarjetas (AV2-T25), del tamaño y con el radio del marco de la
+ * foto. Es decoración: el lector de pantalla no la recorre, y no dice «sin imagen» (el nombre de la opción alcanza).
+ */
+function MiniaturaSinFoto() {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={texto}
-      accessibilityState={{ disabled: !habilitado }}
-      disabled={!habilitado}
-      onPress={onPress}
-      style={({ pressed }) => [estilos.flecha, !habilitado && estilos.flechaDeshabilitada, pressed && estilos.presionada]}
-    >
-      <Flecha color={habilitado ? COLOR.acento : COLOR.tenue} hacia={hacia} />
-    </Pressable>
+    <View style={estilos.miniaturaSinFoto} accessible={false} importantForAccessibility="no-hide-descendants">
+      <IconoDePlato color={COLOR.azul} tamano={36} />
+    </View>
   );
 }
 
@@ -675,7 +636,7 @@ function ComidaRegistrada({
         <Text style={estilos.textoDelTitular}>{titular}</Text>
       </View>
       {registro ? (
-        <View style={[estilos.tarjetaRegistrada, apilada && estilos.tarjetaApilada]}>
+        <Superficie style={[estilos.tarjetaRegistrada, apilada && estilos.tarjetaApilada]}>
           <View style={estilos.textosRegistrados}>
             <Text style={estilos.nombreRegistrado}>{deUnaOpcion ? (opcion?.label ?? comida.label) : COPY_REGISTRO_DE_COMIDAS.comisteAlgoDiferente}</Text>
             {deUnaOpcion && posicion >= 0 && comida.options.length > 1 ? <Text style={estilos.posicion}>{COPY_REGISTRO_DE_COMIDAS.opcionDe(posicion + 1, comida.options.length)}</Text> : null}
@@ -683,7 +644,7 @@ function ComidaRegistrada({
             {!deUnaOpcion && registro.approximateQuantity ? (
               <Text style={estilos.posicion}>{`${COPY_REGISTRO_DE_COMIDAS.cantidadAproximadaInformada}: ${registro.approximateQuantity}`}</Text>
             ) : null}
-            <Insignia texto={COPY_REGISTRO_DE_COMIDAS.registrado} positiva etiqueta={comida.label} />
+            <Insignia texto={COPY_REGISTRO_DE_COMIDAS.registrado} hecha etiqueta={comida.label} />
           </View>
           {conImagen ? (
             <View style={apilada ? estilos.imagenApilada : estilos.imagenAlLado}>
@@ -697,7 +658,7 @@ function ComidaRegistrada({
               />
             </View>
           ) : null}
-        </View>
+        </Superficie>
       ) : null}
       {deUnaOpcion && estado === 'UNCONFIRMED' ? <CajaInformativa titulo={COPY_REGISTRO_DE_COMIDAS.cantidadesSinConfirmar} texto={COPY_REGISTRO_DE_COMIDAS.cantidadesSinConfirmarDetalle} /> : null}
       {deUnaOpcion && estado !== null && estado !== 'UNCONFIRMED' ? <CajaInformativa titulo={COPY_REGISTRO_DE_COMIDAS.estadoDeCantidades[estado]} /> : null}
@@ -740,26 +701,23 @@ const estilos = estilosPorTema((COLOR) => ({
   // Sobre la esquina, con un aro del color del fondo que la separa de la ficha.
   marcaDeFicha: { position: 'absolute', top: -7, right: -7, borderRadius: 11, borderWidth: 2, borderColor: COLOR.fondo, backgroundColor: COLOR.fondo },
   presionada: { opacity: 0.8 },
-  panel: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 10, marginTop: 6, backgroundColor: COLOR.superficie },
+  panel: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 10, marginTop: 6 },
   cabezaDeComida: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, marginBottom: 8, paddingHorizontal: 4 },
   nombreDeComida: { fontSize: 19, lineHeight: 25, fontWeight: '800', color: COLOR.texto },
   estadoDeComida: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   textoDeEstado: { fontSize: 14, lineHeight: 19, color: COLOR.tenue },
-  lugarDeTarjeta: { alignSelf: 'stretch' },
-  tarjeta: { flex: 1, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 14, padding: 10, backgroundColor: COLOR.superficieElevada },
-  nombreDeOpcion: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: COLOR.texto, marginTop: 8 },
-  estimacion: { fontSize: 13, lineHeight: 18, fontWeight: '600', color: COLOR.acento, marginTop: 2 },
-  empuje: { flexGrow: 1 },
-  controles: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 },
-  contador: { fontSize: 15, lineHeight: 20, fontWeight: '700', color: COLOR.texto, textAlign: 'center', flexShrink: 1 },
-  flecha: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  flechaDeshabilitada: { opacity: 0.45 },
-  puntos: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginBottom: 2 },
-  punto: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLOR.borde },
-  puntoElegido: { backgroundColor: COLOR.acento },
+  // La opción a la vista va directo en la tarjeta de la comida (AV2-21): sin otra tarjeta adentro.
+  opcion: { paddingHorizontal: 4, paddingTop: 10 },
+  // Del tamaño y con el radio del marco de la foto (`imagen-de-medio.tsx`), con el tinte de la caja del ícono.
+  miniaturaSinFoto: { width: TAMANO_DE_LA_MINIATURA, height: TAMANO_DE_LA_MINIATURA, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.iconoFondo },
+  cabezaDeOpcion: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 6 },
+  textosDeOpcion: { flex: 1, minWidth: 160 },
+  nombreDeOpcion: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: COLOR.texto },
+  // «Estimación del plan» no se toca: en `tenue`, no en el cian de lo que se toca (AV2-21).
+  estimacion: { fontSize: 13, lineHeight: 18, fontWeight: '600', color: COLOR.tenue, marginTop: 2 },
   titular: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 8 },
   textoDelTitular: { flex: 1, fontSize: 23, lineHeight: 29, fontWeight: '800', color: COLOR.texto },
-  tarjetaRegistrada: { flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 12, backgroundColor: COLOR.superficie },
+  tarjetaRegistrada: { flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 12 },
   tarjetaApilada: { flexDirection: 'column-reverse' },
   textosRegistrados: { flex: 1, justifyContent: 'center' },
   nombreRegistrado: { fontSize: 19, lineHeight: 25, fontWeight: '800', color: COLOR.texto },

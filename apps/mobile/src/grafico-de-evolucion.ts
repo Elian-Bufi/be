@@ -112,7 +112,7 @@ export function puntoMasCercano(grafico: ComposicionDelGrafico, x: number, y: nu
 
 export interface EntradaDelGraficoCompacto {
   readonly observaciones: readonly Observacion[];
-  /** La toma de cada observación (T1, T2…), en el mismo orden; `null` si no se sabe. */
+  /** La toma de cada observación, por su fecha («2 sept»; AV2-20), en el mismo orden; `null` si no se sabe. */
   readonly tomas: readonly (string | null)[];
   /** La observación de la toma elegida: su rótulo no se saltea nunca. */
   readonly elegida: number | null;
@@ -143,7 +143,7 @@ const ESPACIO_ENTRE_ROTULOS = 6;
  * El gráfico de una tarjeta de Progreso o de Indicadores (DL-118, con la forma del ejemplo de Dirección del 2026-10-05):
  * los mismos puntos y la misma regla de eje que el gráfico grande.
  * - **Fechas reales.** Cada punto va en su fecha, dentro del período: dos observaciones cercanas en el tiempo quedan
- *   cerca. Debajo de cada punto va su toma (T1, T2…), la del selector. Si dos rótulos se pisan, se escriben primero el de
+ *   cerca. Debajo de cada punto va su toma, por su fecha como en el selector (AV2-20). Si dos rótulos se pisan, se escriben primero el de
  *   la toma elegida, el último y el primero, y después los demás de izquierda a derecha.
  * - **La escala se ve.** Tres líneas de referencia: los extremos del dominio (`dominioDelEjeVertical`), que no fuerza el
  *   cero y deja un margen, y el medio, redondeado a la unidad del eje.

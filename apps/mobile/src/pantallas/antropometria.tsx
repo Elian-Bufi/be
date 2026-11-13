@@ -30,7 +30,6 @@
  * Cada valor se escribe con `cantidad`/`numero` de `@be/domain`, con la coma decimal del país.
  */
 import {
-  cantidad,
   COPY_ANTROPOMETRIA,
   ETIQUETA_DE_FAMILIA,
   FAMILIA_DE_METRICA,
@@ -59,7 +58,8 @@ import {
   type VistaVisible,
 } from '../disposicion-de-la-toma';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
-import { dia, fechaCivil, fechaCorta } from '../formato';
+import { dia, fechaCivil, fechaCorta, medidaConUnDecimal } from '../formato';
+import { conNombresPorFecha } from '../nombres-de-las-tomas';
 import { memoria, useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { leerMiEvolucion } from '../lecturas-de-las-zonas';
 import { useSesionPerdida, type Ruta, type Salida, type VistaDeEvolucion } from '../navegacion';
@@ -136,10 +136,11 @@ export function PantallaDeMiEvolucion({
  */
 const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; token: string }) {
   const [vista, setVista] = useSeleccionRecordada<string>(token, 'mi-evolucion:vista', 'TOMA');
-  // DL-117 · el selector de tomas: T1, T2, T3… por evaluación, nunca por fecha. Sin elección, la última.
+  // DL-117 · el selector de tomas, una por evaluación; desde AV2-20, nombradas por su fecha. Sin elección, la última.
   const [pedida, setPedida] = useSeleccionRecordada<string | null>(token, 'mi-evolucion:toma', null);
   const [medida, setMedida] = useSeleccionRecordada<string | null>(token, 'mi-evolucion:medida', null);
-  const tomas = useMemo(() => tomasDelPeriodo(datos), [datos]);
+  // Las tomas por su fecha, nunca «T1» (AV2-20).
+  const tomas = useMemo(() => conNombresPorFecha(tomasDelPeriodo(datos)), [datos]);
   const contenidos = useMemo(() => {
     const vacio = { medidas: [], derivadas: [] };
     return new Map<string, ContenidoDeLaToma>(tomas.map((t) => [t.evaluacionId, contenidoDeLaToma(resumenDe(datos, t.evaluacionId) ?? vacio)]));
@@ -176,7 +177,7 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
     memoria.recordarSeleccion<string | null>(token, 'mi-evolucion:panel', null);
     setVista('PROGRESO');
   };
-  const nombreDeLaToma = mostrada === ultima ? 'Última toma' : `Toma ${mostrada.etiqueta}`;
+  const nombreDeLaToma = mostrada === ultima ? 'Última toma' : 'Toma anterior';
   return (
     <>
       {/* Las vistas, en pestañas: son la navegación de la pantalla. Con una sola vista, no hay pestañas. */}
@@ -185,9 +186,9 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
       ) : null}
       {/* La toma: su fecha y cuál es, y las tomas que tienen datos para esta vista. Con qué fecha se compara lo dice cada
           tarjeta: cada medida puede tener otra anterior comparable (ajuste de Dirección del 2026-10-05). */}
+      {/* «Última toma · 9 nov» (AV2-20): cuál es y su fecha, en una línea. */}
       <View style={estilos.encabezadoDeLaToma} accessible accessibilityLabel={`${nombreDeLaToma}, ${fechaCivil(toma.fecha)}`}>
-        <Text style={estilos.fechaDeLaToma}>{fechaCivil(toma.fecha)}</Text>
-        <Text style={estilos.contexto}>{nombreDeLaToma}</Text>
+        <Text style={estilos.fechaDeLaToma}>{`${nombreDeLaToma} · ${fechaCivil(toma.fecha)}`}</Text>
       </View>
       {mostrada !== elegida ? <Text style={estilos.otraToma}>{otraTomaQueLaElegida(visible, elegida, mostrada)}</Text> : null}
       {seVeElSelectorDeTomas(deLaVista.length) ? <SelectorDeToma tomas={deLaVista} elegida={mostrada.evaluacionId} alElegir={setPedida} periodo={periodo} /> : null}
@@ -227,7 +228,7 @@ const Evolucion = memo(function Evolucion({ datos, token }: { datos: Datos; toke
 /** Por qué la vista muestra otra toma que la elegida, con las dos fechas. */
 function otraTomaQueLaElegida(vista: VistaVisible, elegida: TomaDelPeriodo, mostrada: TomaDelPeriodo): string {
   const falta = vista === 'INDICADORES' ? 'no tiene indicadores' : 'no tiene perímetros ni pliegues';
-  return `La ${elegida.etiqueta} (${fechaCorta(elegida.fecha)}) ${falta}: se ve la ${mostrada.etiqueta}, del ${fechaCorta(mostrada.fecha)}.`;
+  return `La toma del ${elegida.etiqueta} ${falta}: se ve la del ${mostrada.etiqueta}.`;
 }
 
 /**
@@ -254,7 +255,7 @@ function SelectorDeToma({ tomas, elegida, alElegir, periodo }: { tomas: readonly
             key={t.evaluacionId}
             accessibilityRole="radio"
             accessibilityState={{ checked: esLaElegida }}
-            accessibilityLabel={`${t.etiqueta}, ${fechaCivil(t.fecha)}`}
+            accessibilityLabel={`Toma del ${fechaCivil(t.fecha)}`}
             hitSlop={{ top: 4, bottom: 4 }}
             onPress={() => alElegir(t.evaluacionId)}
             // La elegida queda a la vista: si no entra de entrada (con doce tomas, la última), la fila se desliza hasta ella.
@@ -268,7 +269,7 @@ function SelectorDeToma({ tomas, elegida, alElegir, periodo }: { tomas: readonly
             }
             style={({ pressed }) => [estilos.toma, esLaElegida && estilos.tomaElegida, pressed && estilos.presionado]}
           >
-            <Text style={[estilos.textoDeToma, esLaElegida && estilos.textoDeTomaElegida]}>{`${t.etiqueta} · ${fechaCorta(t.fecha)}`}</Text>
+            <Text style={[estilos.textoDeToma, esLaElegida && estilos.textoDeTomaElegida]}>{t.etiqueta}</Text>
           </Pressable>
         );
       })}
@@ -276,9 +277,9 @@ function SelectorDeToma({ tomas, elegida, alElegir, periodo }: { tomas: readonly
   );
 }
 
-/** El período de las tomas, para «Cómo se lee»: T1 es la primera del período que se ve, no la primera de la historia. */
+/** El período de las tomas, para «Cómo se lee»: cada toma se nombra por su fecha (AV2-20), dentro del período que se ve. */
 function periodoDeLasTomas(periodo: string): string {
-  return `Las tomas T1, T2, T3… son las evaluaciones del período, de la más vieja a la más nueva. ${periodo}.`;
+  return `Cada toma es una evaluación del período, nombrada por su fecha, de la más vieja a la más nueva. ${periodo}.`;
 }
 
 /**
@@ -315,7 +316,8 @@ function MapaCorporal({ toma, medida, alElegir, verSuProgreso }: { toma: UltimaT
   return (
     <View>
       <FiguraDeLaToma medidas={toma.medidas} elegida={medida} alElegir={alElegir} verSuProgreso={verSuProgreso} />
-      <Desplegable titulo="La figura, en lista" detalle={enLaFigura.length === 1 ? '1 medida, con su cambio' : `${numero(enLaFigura.length)} medidas, con su cambio`}>
+      {/* Sin la cuenta de medidas (AV2-20): el título dice qué es; el cambio de cada una, adentro. */}
+      <Desplegable titulo="La figura, en lista" detalle="Cada medida, con su cambio">
         <ListaPorFamilia medidas={enLaFigura} />
       </Desplegable>
       <Ayuda>
@@ -353,7 +355,8 @@ function ListaPorFamilia({ medidas }: { medidas: readonly MedidaDeLaToma[] }) {
 
 /** Una medida de la lista: nombre y valor, el cambio respecto de la anterior comparable y la clase del dato. */
 function FilaDeLaToma({ medida }: { medida: MedidaDeLaToma }) {
-  const valor = cantidad(medida.actual.punto.value, medida.actual.punto.unit);
+  // Una medida medida, con un decimal (AV2-25).
+  const valor = medidaConUnDecimal(medida.actual.punto.value, medida.actual.punto.unit);
   const cambio = textoDelCambio(medida);
   const clase = textoDeLaClase(medida);
   return (
@@ -371,7 +374,6 @@ function FilaDeLaToma({ medida }: { medida: MedidaDeLaToma }) {
 const estilos = estilosPorTema((COLOR) => ({
   encabezadoDeLaToma: { marginTop: 10 },
   fechaDeLaToma: { fontSize: 20, lineHeight: 26, fontWeight: '800', color: COLOR.texto },
-  contexto: { fontSize: 13, lineHeight: 18, color: COLOR.tenue },
   otraToma: { fontSize: 13, lineHeight: 18, color: COLOR.texto, marginTop: 4 },
   tomas: { marginTop: 8, marginHorizontal: -20, flexGrow: 0 },
   filaDeTomas: { gap: 6, paddingHorizontal: 20, paddingVertical: 4 },
