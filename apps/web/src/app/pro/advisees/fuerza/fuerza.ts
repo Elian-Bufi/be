@@ -498,14 +498,19 @@ export function loQueNoEntraPorFecha(
     sesiones.set(id, { fecha: series[0]!.date, texto: `${cuales}: ${motivos}` });
   }
   for (const p of soloOrientativas) sesiones.set(p.origin.id, { fecha: p.date, texto: SOLO_ORIENTATIVAS });
-  const todas = [...sesiones.values()].sort((a, b) => (a.fecha === b.fecha ? 0 : a.fecha < b.fecha ? 1 : -1));
+  // Las sesiones que entraron enteras no se listan, pero cortan el tramo: entre dos sesiones con el mismo motivo hubo
+  // una con su estimación, y juntarlas diría que ese motivo cubrió también esa fecha (PG-10: «nunca se junta lo que
+  // no está junto»).
+  const cortes = puntos.filter((p) => !sesiones.has(p.origin.id)).map((p) => ({ fecha: p.date, texto: null as string | null, corte: p.origin.id }));
+  const listadas = [...sesiones.values()].map((s) => ({ ...s, corte: null as string | null }));
+  const todas = [...listadas, ...cortes].sort((a, b) => (a.fecha === b.fecha ? 0 : a.fecha < b.fecha ? 1 : -1));
   // PG-10: el mismo motivo en fechas seguidas va en una línea, con el rango y cuántas sesiones son.
-  const lineas = seguidasConElMismo(todas, (s) => s.texto);
+  const lineas = seguidasConElMismo(todas, (s) => s.corte ?? s.texto ?? '').filter((g) => g[0]!.corte === null);
   const aLaVista = lineas.slice(0, cuantas);
   const sesionesALaVista = aLaVista.reduce((n, g) => n + g.length, 0);
   return {
     lineas: aLaVista.map((g) => `${g.length === 1 ? diaConSemana(g[0]!.fecha) : rangoDeSesiones(g.map((s) => s.fecha))}: ${g[0]!.texto}`),
-    quedan: Math.max(todas.length - sesionesALaVista, 0),
+    quedan: Math.max(listadas.length - sesionesALaVista, 0),
   };
 }
 
@@ -523,10 +528,15 @@ export function seguidasConElMismo<T>(lista: readonly T[], clave: (x: T) => stri
   return tramos;
 }
 
-/** «del mar 1 dic al vie 4 dic, 3 sesiones»: un tramo de sesiones, de la más antigua a la más reciente. */
+/**
+ * «del mar 1 dic al vie 4 dic, 3 sesiones»: un tramo de sesiones, de la más antigua a la más reciente. Si todas son del
+ * mismo día, «mar 1 dic, 2 sesiones».
+ */
 export function rangoDeSesiones(fechas: readonly string[]): string {
   const orden = [...fechas].sort();
-  return `del ${diaConSemana(orden[0]!)} al ${diaConSemana(orden[orden.length - 1]!)}, ${orden.length} sesiones`;
+  const desde = orden[0]!;
+  const hasta = orden[orden.length - 1]!;
+  return desde === hasta ? `${diaConSemana(desde)}, ${orden.length} sesiones` : `del ${diaConSemana(desde)} al ${diaConSemana(hasta)}, ${orden.length} sesiones`;
 }
 
 /** Una fila de la tabla de origen después de juntar las sesiones seguidas sin estimación con el mismo motivo (PG-10). */
