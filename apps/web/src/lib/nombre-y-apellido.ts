@@ -42,6 +42,26 @@ export function mensajeDelNombreEn(issues: readonly ValidationIssue[]): string |
 }
 
 /**
+ * Los títulos y las profesiones abreviadas que encabezan un nombre profesional: «Lic.», «Dr.», «Dra.», «Prof.», «Mg.»,
+ * «Ing.», «Klgo.», «Nut.»… Con o sin punto, en mayúsculas o no, y solo como palabra entera seguida del nombre.
+ */
+const TITULO_AL_PRINCIPIO =
+  /^(?:(?:lic|licenciad[oa]|dr|dra|doctor|doctora|prof|profa|profesor|profesora|mg|mgtr|mag|magister|magíster|ing|klgo|klga|kgo|kine|nut|nutr|esp|psic|ps|tec|téc)(?:\.\s*|\s+))+/i;
+/** Los títulos de posgrado que cierran un nombre: «, PhD», «MSc». */
+const TITULO_AL_FINAL = /,?\s+(?:phd|ph\.d\.|msc|m\.sc\.|mba)\.?$/i;
+
+/**
+ * El nombre personal que se propone desde el nombre profesional (hallazgo de Dirección del 2026-11-13): sin el título de
+ * adelante ni el de posgrado del final. «Lic. Ana Pérez» → «Ana Pérez»; «Dra. María Gómez, PhD» → «María Gómez». Si
+ * quitar el título deja el nombre vacío, se propone lo que había (sin espacios de más): nunca se inventa un nombre.
+ */
+export function sinTituloProfesional(nombre: string): string {
+  const limpio = nombre.trim().replace(/\s+/g, ' ');
+  const sinTitulos = limpio.replace(TITULO_AL_PRINCIPIO, '').replace(TITULO_AL_FINAL, '').trim();
+  return sinTitulos || limpio;
+}
+
+/**
  * Lo que muestra «Antes de seguir» con la respuesta de API-ACC-07:
  * - `seguir`: no falta nada, va la página;
  * - `nombre`: el paso del nombre, con lo que propone la API (el nombre profesional) o `null`;
@@ -68,7 +88,11 @@ export function pasoQueSigue(r: Resultado<LoQueFaltaParaSeguirResponse>): PasoQu
   // Un paso que no se conoce no se saltea, aunque venga con otros que sí: se resuelven todos o ninguno.
   if (!conocePasos(pasos)) return { tipo: 'desconocido' };
   const primero = pasos[0];
-  if (primero?.step === 'DISPLAY_NAME') return { tipo: 'nombre', sugerencia: primero.suggestion?.trim() ? primero.suggestion : null };
+  if (primero?.step === 'DISPLAY_NAME') {
+    // La API propone el nombre del perfil profesional; el nombre personal va sin el título (hallazgo del 13/11).
+    const propuesto = sinTituloProfesional(primero.suggestion ?? '');
+    return { tipo: 'nombre', sugerencia: propuesto || null };
+  }
   // UF-05: los textos, con la versión que pide la API; si este website no la tiene, recargar trae la nueva.
   const pendientes = pasos.map((p) => ({ texto: textoDelPaso(p.step), version: versionPublicada(p.suggestion) }));
   if (pendientes.every((p): p is { texto: TextoAAceptar; version: VersionDeTexto } => p.texto !== null && p.version !== null)) return { tipo: 'textos', pendientes };
