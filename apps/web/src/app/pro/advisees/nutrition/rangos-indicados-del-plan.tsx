@@ -9,11 +9,12 @@
  * - El cuadro: por macronutriente, «g» o «g/kg», el mínimo y el máximo, y los gramos que resultan, que son los que se
  *   guardan. Con g/kg, el peso de referencia: el que usa el plan, el último registrado (solo con Antropometría habilitada)
  *   o uno a mano.
- * - Lo guardado no se mueve: un peso más nuevo se avisa en neutro y se usa solo si el profesional lo elige.
+ * - Lo guardado no se mueve: un peso más nuevo, o la toma usada corregida o anulada, se avisa en neutro y se usa solo si el
+ *   profesional lo elige.
  * - Los rangos se guardan aparte de la estructura (su propia revisión): no esperan al autoguardado ni lo frenan.
  */
 
-import { MACROS_DEL_RANGO, type MacroDelRango, type RangosDelPlan } from '@be/domain';
+import { MACROS_DEL_RANGO, type EscribirRangosRequest, type MacroDelRango, type RangosDelPlan } from '@be/domain';
 import { useCallback, useId, useRef, useState } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Aviso } from '../../../../components/formulario';
@@ -21,18 +22,21 @@ import { api } from '../../../../lib/api';
 import { mensajeDeFallo } from '../../../../lib/intento';
 import { hoyEn } from '../seguimiento/estado';
 import {
-  avisoDePesoMasNuevo,
+  avisosDelPeso,
   COPY_RANGOS_INDICADOS as C,
   cuerpoParaGuardar,
   formularioDesde,
   gramosQueResultan,
+  guardadoDelCuadro,
   kilosDelPeso,
   NOMBRE_DEL_MACRO,
+  opcionesDelPeso,
   pesoEnPalabras,
   pesoInicial,
   pesoParaMandar,
   problemaDelCampo,
-  rangoDelFormulario,
+  problemasDelPesoAMano,
+  problemasEnSuCampo,
   rangoEnPalabras,
   rangoEnUnaLinea,
   usaGramosPorKilo,
@@ -43,14 +47,25 @@ import {
 
 export type EstadoDeLosRangos = { readonly estado: 'leyendo' } | { readonly estado: 'falla' } | { readonly estado: 'listo'; readonly datos: RangosDelPlan };
 
-/** API-PLN-02: los rangos de la versión. Los lee `recargar`: el editor la llama con cada versión guardada de la estructura. */
+/**
+ * API-PLN-02: los rangos de la versión. Los lee `recargar`: el editor la llama con cada versión guardada de la estructura.
+ * Cada pedido lleva su número: una lectura que llega después de otra más nueva, o de lo que devolvió un guardado, no pisa
+ * la pantalla con una revisión vieja.
+ */
 export function useRangosIndicados(token: string, planId: string) {
   const [estado, setEstado] = useState<EstadoDeLosRangos>({ estado: 'leyendo' });
+  const ultimo = useRef(0);
   const recargar = useCallback(async () => {
+    const numero = ++ultimo.current;
     const r = await api.rangosDelPlan(token, planId);
+    if (numero !== ultimo.current) return;
     setEstado(r.ok ? { estado: 'listo', datos: r.datos.data } : { estado: 'falla' });
   }, [token, planId]);
-  return { estado, recargar, setDatos: (datos: RangosDelPlan) => setEstado({ estado: 'listo', datos }) };
+  const setDatos = useCallback((datos: RangosDelPlan) => {
+    ultimo.current += 1;
+    setEstado({ estado: 'listo', datos });
+  }, []);
+  return { estado, recargar, setDatos };
 }
 
 export type RangosIndicadosHook = ReturnType<typeof useRangosIndicados>;
@@ -78,7 +93,7 @@ export function RangosIndicados({ token, planId, rangos, dias, titulo = true }: 
     );
   const datos = estado.datos;
   const activada = datos.state === 'ACTIVATED';
-  const masNuevo = avisoDePesoMasNuevo(datos);
+  const avisosDelPesoUsado = avisosDelPeso(datos);
   const rangoDe = (dayTypeId: string | undefined, mealId: string | null) => {
     const d = datos.dayTypes.find((x) => x.dayTypeId === dayTypeId);
     return mealId === null ? (d?.day ?? null) : (d?.meals.find((m) => m.mealId === mealId)?.range ?? null);
@@ -89,9 +104,14 @@ export function RangosIndicados({ token, planId, rangos, dias, titulo = true }: 
     return (
       <li key={`${dayTypeId ?? 'nuevo'}-${mealId ?? 'dia'}-${nombre}`}>
         <span className="rangos-indicados__donde">{nombre}</span>{' '}
-        <span className="rangos-indicados__valor" aria-label={r ? rangoEnPalabras(r) : undefined}>
-          {r ? rangoEnUnaLinea(r) : C.sinRango}
-        </span>{' '}
+        {r ? (
+          <span className="rangos-indicados__valor">
+            <span aria-hidden="true">{rangoEnUnaLinea(r)}</span>
+            <span className="visualmente-oculto">{rangoEnPalabras(r)}</span>
+          </span>
+        ) : (
+          <span className="rangos-indicados__valor">{C.sinRango}</span>
+        )}{' '}
         {activada ? null : sinGuardar ? (
           <span className="nota">· {C.guardaPrimero}</span>
         ) : (
@@ -108,11 +128,11 @@ export function RangosIndicados({ token, planId, rangos, dias, titulo = true }: 
       <p className="nota">{C.ayuda}</p>
       {datos.bodyWeight ? <p data-peso-usado>{pesoEnPalabras(datos.bodyWeight)}</p> : null}
       {datos.bodyWeightWithheld ? <p className="nota">{C.pesoRetenido}</p> : null}
-      {masNuevo ? (
-        <p className="nota" role="status" data-peso-mas-nuevo>
-          {masNuevo}
+      {avisosDelPesoUsado.map((texto) => (
+        <p key={texto} className="nota" role="status" data-peso-mas-nuevo>
+          {texto}
         </p>
-      ) : null}
+      ))}
       {activada ? <p className="nota">{C.soloLectura}</p> : null}
       {aviso ? <Aviso tipo="exito">{aviso}</Aviso> : null}
       {dias.map((d) => (
@@ -169,22 +189,34 @@ function CuadroDelRango({
   const [peso, setPeso] = useState<PesoElegido>(() => pesoInicial(datos, hoyEn()));
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Lo que la API marcó en un campo («protein.min», «kg», «fecha»); se borra al cambiar algo.
+  const [delServidor, setDelServidor] = useState<Readonly<Record<string, string>>>({});
   const [cambiado, setCambiado] = useState(false);
+  const hoy = hoyEn();
   const conGramosPorKilo = usaGramosPorKilo(form);
   const kg = kilosDelPeso(peso, datos.bodyWeight, datos.anthropometry.latestWeight);
-  const problemas = MACROS_DEL_RANGO.flatMap((m) => [problemaDelCampo(form[m], 'min'), problemaDelCampo(form[m], 'max')]).filter(Boolean);
-  const pesoParaGuardar = conGramosPorKilo ? pesoParaMandar(peso, datos.bodyWeight, datos.anthropometry.latestWeight) : null;
-  const apagado = problemas.length > 0 ? 'Hay un valor por corregir.' : conGramosPorKilo && !pesoParaGuardar ? C.faltaElPeso : null;
+  const delPeso = problemasDelPesoAMano(peso, hoy);
+  const errKg = delPeso.kg ?? delServidor.kg ?? null;
+  const errFecha = delPeso.fecha ?? delServidor.fecha ?? null;
+  const guardado = guardadoDelCuadro(datos, donde, form, peso, hoy);
 
   const cambiar = (m: MacroDelRango, cambio: Partial<FormularioDelRango[MacroDelRango]>) => {
     setForm((f) => ({ ...f, [m]: { ...f[m], ...cambio } }));
+    setDelServidor({});
+    setCambiado(true);
+  };
+  const cambiarPeso = (nuevo: PesoElegido) => {
+    setPeso(nuevo);
+    setDelServidor({});
     setCambiado(true);
   };
 
   async function guardar(quitar = false) {
+    const cuerpo: EscribirRangosRequest | null = quitar ? cuerpoParaGuardar(datos, donde, null, pesoParaMandar({ tipo: 'guardado' }, datos.bodyWeight, null)) : guardado.cuerpo;
+    if (!cuerpo) return;
     setEnviando(true);
     setError(null);
-    const cuerpo = cuerpoParaGuardar(datos, donde, quitar ? null : rangoDelFormulario(form), quitar ? pesoParaMandar({ tipo: 'guardado' }, datos.bodyWeight, null) : pesoParaGuardar);
+    setDelServidor({});
     const r = await api.escribirRangosDelPlan(token, planId, cuerpo);
     setEnviando(false);
     if (r.ok) return onGuardado(r.datos.data, quitar ? C.quitado : C.guardado);
@@ -205,16 +237,19 @@ function CuadroDelRango({
       setPeso({ tipo: 'a-mano', kg: '', fecha: hoyEn() });
       return setError(C.pesoNoDisponible);
     }
-    setError(r.tipo === 'API' && r.issues.length > 0 ? C.noSeGuardo : mensajeDeFallo(r));
+    if (codigos.includes('BODY_WEIGHT_REQUIRED')) {
+      await onReleer();
+      return setError(C.faltoElPesoDelPlan);
+    }
+    if (r.tipo === 'API' && r.issues.length > 0) {
+      const { campos, otros } = problemasEnSuCampo(r.issues, cuerpo, donde);
+      setDelServidor(campos);
+      return setError(otros === 0 ? C.revisaLoMarcado : C.noSeGuardo);
+    }
+    setError(mensajeDeFallo(r));
   }
 
-  const opcionesDePeso: { valor: PesoElegido['tipo']; texto: string }[] = [
-    ...(datos.bodyWeight ? [{ valor: 'guardado' as const, texto: C.pesoGuardado(pesoEnPalabras(datos.bodyWeight)) }] : []),
-    ...(datos.anthropometry.latestWeight && datos.anthropometry.latestWeight.measurementId !== datos.bodyWeight?.measurementId
-      ? [{ valor: 'registrado' as const, texto: C.pesoRegistrado(datos.anthropometry.latestWeight.valueKg, datos.anthropometry.latestWeight.measuredOn) }]
-      : []),
-    { valor: 'a-mano', texto: C.pesoAMano },
-  ];
+  const opcionesDePeso = opcionesDelPeso(datos);
 
   return (
     <CuadroEnfocado
@@ -224,7 +259,7 @@ function CuadroDelRango({
       focoInicial={primero}
       ocupado={enviando}
       conCambios={cambiado}
-      principal={{ texto: C.guardar, alTocar: () => void guardar(), apagado, enviando, textoEnviando: C.guardando }}
+      principal={{ texto: C.guardar, alTocar: () => void guardar(), apagado: guardado.apagado, enviando, textoEnviando: C.guardando }}
       pie={actual ? <button type="button" className="boton boton--secundario" disabled={enviando} onClick={() => void guardar(true)}>{C.quitar}</button> : null}
       onCerrar={onCerrar}
     >
@@ -244,8 +279,8 @@ function CuadroDelRango({
           {MACROS_DEL_RANGO.map((m, n) => {
             const c = form[m];
             const resultado = gramosQueResultan(c, kg);
-            const errMin = problemaDelCampo(c, 'min');
-            const errMax = problemaDelCampo(c, 'max');
+            const errMin = problemaDelCampo(c, 'min') ?? delServidor[`${m}.min`] ?? null;
+            const errMax = problemaDelCampo(c, 'max') ?? delServidor[`${m}.max`] ?? null;
             return (
               <tr key={m}>
                 <th scope="row">{NOMBRE_DEL_MACRO[m]}</th>
@@ -271,7 +306,7 @@ function CuadroDelRango({
                     </span>
                   ) : null}
                 </td>
-                <td data-se-guarda>{resultado ?? (c.unidad === 'g_per_kg' && (c.min || c.max) && kg === null ? C.faltaElPeso : '')}</td>
+                <td data-se-guarda>{resultado ?? (c.unidad === 'g_per_kg' && (c.min || c.max) && kg === null ? (delPeso.kg ? C.revisaElPeso : C.faltaElPeso) : '')}</td>
               </tr>
             );
           })}
@@ -288,10 +323,7 @@ function CuadroDelRango({
                 type="radio"
                 name={`${id}-peso`}
                 checked={peso.tipo === o.valor}
-                onChange={() => {
-                  setPeso(o.valor === 'a-mano' ? { tipo: 'a-mano', kg: '', fecha: hoyEn() } : { tipo: o.valor });
-                  setCambiado(true);
-                }}
+                onChange={() => cambiarPeso(o.valor === 'a-mano' ? { tipo: 'a-mano', kg: '', fecha: hoy } : { tipo: o.valor })}
               />{' '}
               {o.texto}
             </label>
@@ -300,11 +332,37 @@ function CuadroDelRango({
             <div className="rangos-indicados__a-mano">
               <div className="campo">
                 <label htmlFor={`${id}-kg`}>{C.kilos}</label>
-                <input id={`${id}-kg`} inputMode="decimal" size={6} value={peso.kg} onChange={(e) => setPeso({ ...peso, kg: e.target.value })} />
+                <input
+                  id={`${id}-kg`}
+                  inputMode="decimal"
+                  size={6}
+                  aria-invalid={errKg ? true : undefined}
+                  aria-describedby={errKg ? `${id}-kg-error` : undefined}
+                  value={peso.kg}
+                  onChange={(e) => cambiarPeso({ ...peso, kg: e.target.value })}
+                />
+                {errKg ? (
+                  <span id={`${id}-kg-error`} className="campo__error">
+                    {errKg}
+                  </span>
+                ) : null}
               </div>
               <div className="campo">
                 <label htmlFor={`${id}-fecha`}>{C.fecha}</label>
-                <input id={`${id}-fecha`} type="date" max={hoyEn()} value={peso.fecha} onChange={(e) => setPeso({ ...peso, fecha: e.target.value })} />
+                <input
+                  id={`${id}-fecha`}
+                  type="date"
+                  max={hoy}
+                  aria-invalid={errFecha ? true : undefined}
+                  aria-describedby={errFecha ? `${id}-fecha-error` : undefined}
+                  value={peso.fecha}
+                  onChange={(e) => cambiarPeso({ ...peso, fecha: e.target.value })}
+                />
+                {errFecha ? (
+                  <span id={`${id}-fecha-error`} className="campo__error">
+                    {errFecha}
+                  </span>
+                ) : null}
               </div>
             </div>
           ) : null}

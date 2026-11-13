@@ -13,7 +13,8 @@
 import {
   gramosDesdeGramosPorKilo,
   MACROS_DEL_RANGO,
-  pesoMasNuevo,
+  novedadesDelPeso,
+  problemasDelPesoManual,
   TOPES_DE_LOS_RANGOS,
   type EscribirRangosRequest,
   type MacroDelRango,
@@ -25,6 +26,7 @@ import {
   type RangosDeDiaTipo,
   type RangosDelPlan,
   type UnidadDeRango,
+  type ValidationIssue,
 } from '@be/domain';
 
 export interface CampoDeMacro {
@@ -87,12 +89,35 @@ export function problemaDelCampo(c: CampoDeMacro, lado: 'min' | 'max'): string |
   return null;
 }
 
-/** El peso con el que se hace la cuenta, en kg; `null` si no hay uno elegido o el escrito no se entiende. */
+/** Lo que tiene de malo el peso a mano, en palabras, junto a cada campo; `null` en el que está bien o vacío. */
+export interface ProblemasDelPesoAMano {
+  readonly kg: string | null;
+  readonly fecha: string | null;
+}
+
+/**
+ * El peso a mano, con las mismas reglas que la API (`problemasDelPesoManual`): entre 20 y 350 kg, con hasta un decimal, y
+ * sin fecha futura. Una balanza que da 72,35 se escribe 72,4. Lo vacío no es un problema del campo: apaga «Guardar».
+ */
+export function problemasDelPesoAMano(elegido: PesoElegido, hoy: string): ProblemasDelPesoAMano {
+  if (elegido.tipo !== 'a-mano') return { kg: null, fecha: null };
+  const t = TOPES_DE_LOS_RANGOS.peso;
+  const kg = leerNumero(elegido.kg);
+  let problemaKg: string | null = null;
+  if (kg !== null && Number.isNaN(kg)) problemaKg = 'Escribí un número, por ejemplo 72,4.';
+  else if (kg !== null && problemasDelPesoManual(kg, hoy, hoy).length > 0) {
+    problemaKg = kg >= t.minimo && kg <= t.maximo ? 'Hasta un decimal: por ejemplo 72,4.' : `Entre ${numero(t.minimo)} y ${numero(t.maximo)} kg.`;
+  }
+  const fecha = elegido.fecha && problemasDelPesoManual(t.minimo, elegido.fecha, hoy).length > 0 ? 'La fecha no puede ser posterior a hoy.' : null;
+  return { kg: problemaKg, fecha };
+}
+
+/** El peso con el que se hace la cuenta, en kg; `null` si no hay uno elegido o el escrito no se entiende o no vale. */
 export function kilosDelPeso(elegido: PesoElegido, guardado: PesoDeReferencia | null, ultimo: PesoRegistrado | null): number | null {
   if (elegido.tipo === 'guardado') return guardado?.valueKg ?? null;
   if (elegido.tipo === 'registrado') return ultimo?.valueKg ?? null;
   const kg = leerNumero(elegido.kg);
-  return kg === null || Number.isNaN(kg) ? null : kg;
+  return kg === null || Number.isNaN(kg) || problemasDelPesoAMano(elegido, '9999-12-31').kg ? null : kg;
 }
 
 /** Los gramos que resultan de un campo, para mostrarlos antes de guardar: «125 a 156 g», «desde 125 g», «hasta 25 g». */
@@ -138,10 +163,32 @@ export function pesoEnPalabras(p: PesoDeReferencia): string {
   return `Con ${numero(p.valueKg)} kg del ${diaYMes(p.measuredOn)} · ${p.source === 'RECORDED' ? 'peso registrado en Antropometría' : 'cargado a mano'}`;
 }
 
-/** El aviso neutro de un peso más nuevo que el usado: «Hay un peso más nuevo (80 kg del 12/11).» `null` si no lo hay. */
-export function avisoDePesoMasNuevo(datos: Pick<RangosDelPlan, 'bodyWeight' | 'anthropometry'>): string | null {
-  const nuevo = pesoMasNuevo(datos.bodyWeight, datos.anthropometry.latestWeight);
-  return nuevo ? `Hay un peso más nuevo (${numero(nuevo.valueKg)} kg del ${diaYMes(nuevo.measuredOn)}). Lo guardado no cambia: para usarlo, abrí un rango y elegilo.` : null;
+/**
+ * Los avisos neutros del peso que usa el plan: la toma se corrigió («La toma del 10/11 se corrigió: hoy dice 87 kg.»), ya
+ * no está vigente, o hay un peso más nuevo («Hay un peso más nuevo (80 kg del 12/11).»). Ninguno cambia lo guardado.
+ */
+export function avisosDelPeso(datos: Pick<RangosDelPlan, 'bodyWeight' | 'anthropometry'>): string[] {
+  const usado = datos.bodyWeight;
+  return novedadesDelPeso(usado, datos.anthropometry.usedMeasurement, datos.anthropometry.latestWeight).map((n) => {
+    if (n.tipo === 'corregido') return `La toma del ${diaYMes(usado!.measuredOn)} se corrigió en Antropometría: hoy dice ${numero(n.valueKg)} kg. Lo guardado no cambia: para usar el valor de hoy, abrí un rango y elegilo.`;
+    if (n.tipo === 'no-vigente') return `La toma del ${diaYMes(usado!.measuredOn)} ya no está vigente en Antropometría. Lo guardado no cambia: para usar otro peso, abrí un rango y elegilo.`;
+    return `Hay un peso más nuevo (${numero(n.peso.valueKg)} kg del ${diaYMes(n.peso.measuredOn)}). Lo guardado no cambia: para usarlo, abrí un rango y elegilo.`;
+  });
+}
+
+/**
+ * Las opciones del peso en el cuadro: el que usa el plan; el último registrado, si es otra toma o si la misma vale hoy
+ * otra cosa (se corrigió); y uno a mano.
+ */
+export function opcionesDelPeso(datos: Pick<RangosDelPlan, 'bodyWeight' | 'anthropometry'>): { readonly valor: PesoElegido['tipo']; readonly texto: string }[] {
+  const usado = datos.bodyWeight;
+  const ultimo = datos.anthropometry.latestWeight;
+  const opciones: { valor: PesoElegido['tipo']; texto: string }[] = [];
+  if (usado) opciones.push({ valor: 'guardado', texto: COPY_RANGOS_INDICADOS.pesoGuardado(pesoEnPalabras(usado)) });
+  if (ultimo && ultimo.measurementId !== usado?.measurementId) opciones.push({ valor: 'registrado', texto: COPY_RANGOS_INDICADOS.pesoRegistrado(ultimo.valueKg, ultimo.measuredOn) });
+  else if (ultimo && usado && ultimo.valueKg !== usado.valueKg) opciones.push({ valor: 'registrado', texto: COPY_RANGOS_INDICADOS.pesoCorregido(ultimo.valueKg, ultimo.measuredOn) });
+  opciones.push({ valor: 'a-mano', texto: COPY_RANGOS_INDICADOS.pesoAMano });
+  return opciones;
 }
 
 /** ¿Algún macronutriente del formulario va en g/kg con algo escrito? */
@@ -207,15 +254,74 @@ export function cuerpoParaGuardar(
   return { expectedRevision: datos.revision, bodyWeight: algoEnGramosPorKilo ? peso : null, dayTypes: conAlgo };
 }
 
-/** El peso que se manda: el guardado (por su medición o tal cual, si fue a mano), el último registrado o uno a mano. */
-export function pesoParaMandar(elegido: PesoElegido, guardado: PesoDeReferencia | null, ultimo: PesoRegistrado | null): EscribirRangosRequest['bodyWeight'] {
+/**
+ * El peso que se manda: el guardado (por su medición, que la API conserva tal cual, o el de a mano), el último registrado
+ * con su valor de hoy (`useCurrentValue`: también si es la misma toma, corregida) o uno a mano que valga.
+ */
+export function pesoParaMandar(elegido: PesoElegido, guardado: PesoDeReferencia | null, ultimo: PesoRegistrado | null, hoy = '9999-12-31'): EscribirRangosRequest['bodyWeight'] {
   if (elegido.tipo === 'guardado') {
     if (!guardado) return null;
     return guardado.source === 'RECORDED' && guardado.measurementId ? { source: 'RECORDED', measurementId: guardado.measurementId } : { source: 'MANUAL', valueKg: guardado.valueKg, measuredOn: guardado.measuredOn };
   }
-  if (elegido.tipo === 'registrado') return ultimo ? { source: 'RECORDED', measurementId: ultimo.measurementId } : null;
+  if (elegido.tipo === 'registrado') return ultimo ? { source: 'RECORDED', measurementId: ultimo.measurementId, useCurrentValue: true } : null;
   const kg = leerNumero(elegido.kg);
-  return kg === null || Number.isNaN(kg) || !elegido.fecha ? null : { source: 'MANUAL', valueKg: kg, measuredOn: elegido.fecha };
+  const p = problemasDelPesoAMano(elegido, hoy);
+  return kg === null || Number.isNaN(kg) || !elegido.fecha || p.kg || p.fecha ? null : { source: 'MANUAL', valueKg: kg, measuredOn: elegido.fecha };
+}
+
+/** Lo que manda el cuadro al guardar, o por qué «Guardar» está apagado. */
+export type GuardadoDelCuadro = { readonly cuerpo: EscribirRangosRequest; readonly apagado: null } | { readonly cuerpo: null; readonly apagado: string };
+
+/**
+ * El guardado del cuadro, sin React. El peso depende del cuerpo entero, no solo del rango abierto: si el rango abierto va
+ * en g/kg, el peso elegido; si no, el que ya usa el plan, para los demás rangos en g/kg que vuelven tal cual. Así guardar
+ * un rango en gramos nunca deja sin peso a los demás.
+ */
+export function guardadoDelCuadro(
+  datos: Pick<RangosDelPlan, 'revision' | 'dayTypes' | 'bodyWeight' | 'anthropometry'>,
+  donde: DondeVaElRango,
+  form: FormularioDelRango,
+  elegido: PesoElegido,
+  hoy: string,
+): GuardadoDelCuadro {
+  const C = COPY_RANGOS_INDICADOS;
+  if (MACROS_DEL_RANGO.some((m) => problemaDelCampo(form[m], 'min') || problemaDelCampo(form[m], 'max'))) return { cuerpo: null, apagado: C.hayQueCorregir };
+  const conGramosPorKilo = usaGramosPorKilo(form);
+  if (conGramosPorKilo) {
+    const p = problemasDelPesoAMano(elegido, hoy);
+    if (p.kg || p.fecha) return { cuerpo: null, apagado: C.revisaElPeso };
+  }
+  const peso = conGramosPorKilo ? pesoParaMandar(elegido, datos.bodyWeight, datos.anthropometry.latestWeight, hoy) : pesoParaMandar({ tipo: 'guardado' }, datos.bodyWeight, null);
+  const cuerpo = cuerpoParaGuardar(datos, donde, rangoDelFormulario(form), peso);
+  const algoEnGramosPorKilo = cuerpo.dayTypes.some((d) => [d.day, ...d.meals.map((m) => m.range)].some((r) => r && MACROS_DEL_RANGO.some((m) => r[m]?.unit === 'g_per_kg')));
+  if (algoEnGramosPorKilo && !cuerpo.bodyWeight) return { cuerpo: null, apagado: C.faltaElPeso };
+  return { cuerpo, apagado: null };
+}
+
+/**
+ * Los problemas que devolvió la API, llevados a su campo del cuadro por su `path`: `protein.min`, `kg`, `fecha`. Los
+ * que no son de un campo del cuadro quedan en `otros`.
+ */
+export function problemasEnSuCampo(issues: readonly ValidationIssue[], cuerpo: EscribirRangosRequest, donde: DondeVaElRango): { readonly campos: Readonly<Record<string, string>>; readonly otros: number } {
+  const C = COPY_RANGOS_INDICADOS;
+  const i = cuerpo.dayTypes.findIndex((d) => d.dayTypeId === donde.dayTypeId);
+  const j = i < 0 || donde.mealId === null ? -1 : cuerpo.dayTypes[i]!.meals.findIndex((m) => m.mealId === donde.mealId);
+  const prefijo = donde.mealId === null ? `dayTypes.${i}.day.` : `dayTypes.${i}.meals.${j}.range.`;
+  const campos: Record<string, string> = {};
+  let otros = 0;
+  for (const issue of issues) {
+    const texto = C.problemaDeLaApi[issue.code as keyof typeof C.problemaDeLaApi];
+    let campo: string | null = null;
+    if (issue.path === 'bodyWeight.valueKg') campo = 'kg';
+    else if (issue.path === 'bodyWeight.measuredOn') campo = 'fecha';
+    else if (i >= 0 && (donde.mealId === null || j >= 0) && issue.path.startsWith(prefijo)) {
+      const [macro, lado] = issue.path.slice(prefijo.length).split('.');
+      if (MACROS_DEL_RANGO.includes(macro as MacroDelRango)) campo = `${macro}.${lado === 'min' ? 'min' : 'max'}`;
+    }
+    if (campo && texto) campos[campo] ??= texto;
+    else otros += 1;
+  }
+  return { campos, otros };
 }
 
 /** El peso que se propone al abrir el cuadro: el guardado si hay; si no, el último registrado; si no, a mano. */
@@ -239,9 +345,12 @@ export const COPY_RANGOS_INDICADOS = {
   vacioEsSinLimite: 'Un campo vacío es sin límite de ese lado.',
   resultan: (texto: string) => `Se guardan ${texto}.`,
   faltaElPeso: 'Para pasar a gramos falta el peso.',
+  revisaElPeso: 'Para pasar a gramos, revisá el peso.',
+  hayQueCorregir: 'Hay un valor por corregir.',
   peso: 'Peso de referencia',
   pesoGuardado: (texto: string) => `El que usa el plan: ${texto.replace(/^Con /, '')}`,
   pesoRegistrado: (kg: number, fecha: string) => `El último registrado en Antropometría: ${numero(kg)} kg del ${diaYMes(fecha)}`,
+  pesoCorregido: (kg: number, fecha: string) => `La misma toma, con su corrección: ${numero(kg)} kg del ${diaYMes(fecha)}`,
   pesoAMano: 'Cargarlo a mano',
   kilos: 'Peso (kg)',
   fecha: 'Fecha del peso',
@@ -262,5 +371,14 @@ export const COPY_RANGOS_INDICADOS = {
   pesoViejo: 'Hay un peso registrado más nuevo: se volvió a leer. Elegilo o seguí con el que usa el plan.',
   pesoNoDisponible: 'Ese peso no está disponible: cargalo a mano.',
   noSeGuardo: 'No se pudo guardar el rango. Probá de nuevo.',
+  revisaLoMarcado: 'No se guardó: revisá lo marcado.',
+  faltoElPesoDelPlan: 'Faltó el peso de los rangos en g/kg: se volvieron a leer. Revisá y guardá de nuevo.',
+  /** Los problemas que devuelve la API, junto a su campo. */
+  problemaDeLaApi: {
+    BODY_WEIGHT_OUT_OF_BOUNDS: 'Entre 20 y 350 kg, con hasta un decimal.',
+    BODY_WEIGHT_DATE_IN_FUTURE: 'La fecha no puede ser posterior a hoy.',
+    RANGE_VALUE_OUT_OF_BOUNDS: 'Este valor está fuera de lo que se acepta.',
+    RANGE_MIN_ABOVE_MAX: 'El máximo es menor que el mínimo.',
+  },
   soloLectura: 'La versión está activada: sus rangos quedan como se activaron.',
 } as const;

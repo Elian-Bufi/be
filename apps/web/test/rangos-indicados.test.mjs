@@ -49,7 +49,7 @@ test('el peso: el guardado, el último registrado o uno a mano', () => {
   assert.equal(R.kilosDelPeso({ tipo: 'a-mano', kg: '70,5', fecha: '2026-11-13' }, P78, ULTIMO_80), 70.5);
   assert.equal(R.kilosDelPeso({ tipo: 'a-mano', kg: '', fecha: '2026-11-13' }, P78, ULTIMO_80), null);
   assert.deepEqual(R.pesoParaMandar({ tipo: 'guardado' }, P78, ULTIMO_80), { source: 'RECORDED', measurementId: 'med-78' });
-  assert.deepEqual(R.pesoParaMandar({ tipo: 'registrado' }, P78, ULTIMO_80), { source: 'RECORDED', measurementId: 'med-80' });
+  assert.deepEqual(R.pesoParaMandar({ tipo: 'registrado' }, P78, ULTIMO_80), { source: 'RECORDED', measurementId: 'med-80', useCurrentValue: true });
   assert.deepEqual(R.pesoParaMandar({ tipo: 'a-mano', kg: '70,5', fecha: '2026-11-13' }, P78, null), { source: 'MANUAL', valueKg: 70.5, measuredOn: '2026-11-13' });
   assert.equal(R.pesoParaMandar({ tipo: 'a-mano', kg: 'x', fecha: '2026-11-13' }, P78, null), null);
   assert.equal(R.pesoEnPalabras(P78), 'Con 78 kg del 10/11 · peso registrado en Antropometría');
@@ -57,9 +57,112 @@ test('el peso: el guardado, el último registrado o uno a mano', () => {
 });
 
 test('un peso más nuevo se avisa en neutro y no cambia nada', () => {
-  assert.match(R.avisoDePesoMasNuevo({ bodyWeight: P78, anthropometry: { enabled: true, latestWeight: ULTIMO_80 } }), /^Hay un peso más nuevo \(80 kg del 12\/11\)\. Lo guardado no cambia/);
-  assert.equal(R.avisoDePesoMasNuevo({ bodyWeight: P78, anthropometry: { enabled: true, latestWeight: { ...ULTIMO_80, measurementId: 'med-78' } } }), null);
-  assert.equal(R.avisoDePesoMasNuevo({ bodyWeight: null, anthropometry: { enabled: true, latestWeight: ULTIMO_80 } }), null);
+  const ant = (latestWeight, usedMeasurement = { state: 'CURRENT', valueKg: 78 }) => ({ enabled: true, latestWeight, usedMeasurement });
+  const [aviso, ...resto] = R.avisosDelPeso({ bodyWeight: P78, anthropometry: ant(ULTIMO_80) });
+  assert.match(aviso, /^Hay un peso más nuevo \(80 kg del 12\/11\)\. Lo guardado no cambia/);
+  assert.deepEqual(resto, []);
+  assert.deepEqual(R.avisosDelPeso({ bodyWeight: P78, anthropometry: ant({ ...ULTIMO_80, measurementId: 'med-78', valueKg: 78, measuredOn: '2026-11-10' }) }), []);
+  assert.deepEqual(R.avisosDelPeso({ bodyWeight: null, anthropometry: ant(ULTIMO_80, null) }), []);
+});
+
+test('la toma usada se corrigió o se anuló: se avisa, se ofrece el valor de hoy y lo guardado no cambia', () => {
+  const corregida = { bodyWeight: P78, anthropometry: { enabled: true, latestWeight: { measurementId: 'med-78', valueKg: 87, measuredOn: '2026-11-10' }, usedMeasurement: { state: 'CURRENT', valueKg: 87 } } };
+  assert.deepEqual(R.avisosDelPeso(corregida), ['La toma del 10/11 se corrigió en Antropometría: hoy dice 87 kg. Lo guardado no cambia: para usar el valor de hoy, abrí un rango y elegilo.']);
+  // El cuadro ofrece la misma toma con su corrección, y pedirla es explícito.
+  assert.deepEqual(
+    R.opcionesDelPeso(corregida).map((o) => [o.valor, o.texto]),
+    [
+      ['guardado', 'El que usa el plan: 78 kg del 10/11 · peso registrado en Antropometría'],
+      ['registrado', 'La misma toma, con su corrección: 87 kg del 10/11'],
+      ['a-mano', 'Cargarlo a mano'],
+    ],
+  );
+  assert.deepEqual(R.pesoParaMandar({ tipo: 'registrado' }, P78, corregida.anthropometry.latestWeight), { source: 'RECORDED', measurementId: 'med-78', useCurrentValue: true });
+  assert.deepEqual(R.pesoParaMandar({ tipo: 'guardado' }, P78, corregida.anthropometry.latestWeight), { source: 'RECORDED', measurementId: 'med-78' });
+  // Sin corrección, la misma toma no se ofrece dos veces.
+  assert.deepEqual(R.opcionesDelPeso({ bodyWeight: P78, anthropometry: { enabled: true, latestWeight: { measurementId: 'med-78', valueKg: 78, measuredOn: '2026-11-10' }, usedMeasurement: { state: 'CURRENT', valueKg: 78 } } }).map((o) => o.valor), ['guardado', 'a-mano']);
+  const anulada = { bodyWeight: P78, anthropometry: { enabled: true, latestWeight: { measurementId: 'med-70', valueKg: 70, measuredOn: '2026-11-01' }, usedMeasurement: { state: 'NOT_CURRENT' } } };
+  assert.deepEqual(R.avisosDelPeso(anulada), ['La toma del 10/11 ya no está vigente en Antropometría. Lo guardado no cambia: para usar otro peso, abrí un rango y elegilo.']);
+  assert.deepEqual(R.opcionesDelPeso(anulada).map((o) => o.valor), ['guardado', 'registrado', 'a-mano']);
+});
+
+test('el peso a mano se revisa en su campo, con las reglas de la API, y apaga «Guardar»', () => {
+  const aMano = (kg, fecha = '2026-11-12') => ({ tipo: 'a-mano', kg, fecha });
+  assert.deepEqual(R.problemasDelPesoAMano(aMano('72,4'), '2026-11-13'), { kg: null, fecha: null });
+  assert.deepEqual(R.problemasDelPesoAMano(aMano('72,35'), '2026-11-13'), { kg: 'Hasta un decimal: por ejemplo 72,4.', fecha: null });
+  assert.deepEqual(R.problemasDelPesoAMano(aMano('400'), '2026-11-13'), { kg: 'Entre 20 y 350 kg.', fecha: null });
+  assert.deepEqual(R.problemasDelPesoAMano(aMano('15'), '2026-11-13'), { kg: 'Entre 20 y 350 kg.', fecha: null });
+  assert.deepEqual(R.problemasDelPesoAMano(aMano('x'), '2026-11-13').kg, 'Escribí un número, por ejemplo 72,4.');
+  assert.deepEqual(R.problemasDelPesoAMano(aMano('70', '2026-11-14'), '2026-11-13'), { kg: null, fecha: 'La fecha no puede ser posterior a hoy.' });
+  // Vacío no es un problema del campo: lo dice «Guardar», apagado.
+  assert.deepEqual(R.problemasDelPesoAMano(aMano(''), '2026-11-13'), { kg: null, fecha: null });
+  // Con un peso que no vale, no hay cuenta ni cuerpo.
+  assert.equal(R.kilosDelPeso(aMano('72,35'), null, null), null);
+  assert.equal(R.pesoParaMandar(aMano('72,35'), null, null, '2026-11-13'), null);
+  assert.equal(R.pesoParaMandar(aMano('70', '2026-11-14'), null, null, '2026-11-13'), null);
+  const datos = { revision: 0, bodyWeight: null, anthropometry: { enabled: false, latestWeight: null, usedMeasurement: null }, dayTypes: [] };
+  const f = { ...R.formularioDesde(undefined), protein: campo('g_per_kg', '1,6', '2') };
+  assert.deepEqual(R.guardadoDelCuadro(datos, { dayTypeId: 'd1', mealId: null }, f, aMano('72,35'), '2026-11-13'), { cuerpo: null, apagado: 'Para pasar a gramos, revisá el peso.' });
+  assert.deepEqual(R.guardadoDelCuadro(datos, { dayTypeId: 'd1', mealId: null }, f, aMano(''), '2026-11-13'), { cuerpo: null, apagado: 'Para pasar a gramos falta el peso.' });
+  assert.deepEqual(R.guardadoDelCuadro(datos, { dayTypeId: 'd1', mealId: null }, f, aMano('72,4'), '2026-11-13').cuerpo.bodyWeight, { source: 'MANUAL', valueKg: 72.4, measuredOn: '2026-11-12' });
+});
+
+test('guardar un rango en gramos con otro en g/kg: va el peso que usa el plan, no queda sin peso', () => {
+  // El día tiene proteínas en 1,6 g/kg con 78 kg; el profesional abre «Almuerzo» y pone grasas hasta 25 g.
+  const datos = {
+    revision: 1,
+    bodyWeight: P78,
+    anthropometry: { enabled: true, latestWeight: { measurementId: 'med-78', valueKg: 78, measuredOn: '2026-11-10' }, usedMeasurement: { state: 'CURRENT', valueKg: 78 } },
+    dayTypes: [{ dayTypeId: 'd1', day: { protein: { unit: 'g_per_kg', perKg: { min: 1.6, max: 2 }, grams: { min: 125, max: 156 } } }, meals: [] }],
+  };
+  const f = { ...R.formularioDesde(undefined), fat: campo('g', '', '25') };
+  // Aunque el cuadro proponga otro peso (no se ve: el rango abierto no usa g/kg), va el del plan.
+  for (const elegido of [{ tipo: 'guardado' }, { tipo: 'a-mano', kg: '', fecha: '2026-11-13' }]) {
+    const g = R.guardadoDelCuadro(datos, { dayTypeId: 'd1', mealId: 'almuerzo' }, f, elegido, '2026-11-13');
+    assert.equal(g.apagado, null);
+    assert.deepEqual(g.cuerpo, {
+      expectedRevision: 1,
+      bodyWeight: { source: 'RECORDED', measurementId: 'med-78' },
+      dayTypes: [{ dayTypeId: 'd1', day: { protein: { unit: 'g_per_kg', min: 1.6, max: 2 } }, meals: [{ mealId: 'almuerzo', range: { fat: { unit: 'g', min: null, max: 25 } } }] }],
+    });
+  }
+  // Un valor por corregir apaga «Guardar».
+  assert.deepEqual(R.guardadoDelCuadro(datos, { dayTypeId: 'd1', mealId: 'almuerzo' }, { ...f, fat: campo('g', '', 'x') }, { tipo: 'guardado' }, '2026-11-13'), { cuerpo: null, apagado: 'Hay un valor por corregir.' });
+});
+
+test('lo que marca la API vuelve a su campo, por su lugar en el cuerpo', () => {
+  const cuerpo = {
+    expectedRevision: 1,
+    bodyWeight: { source: 'MANUAL', valueKg: 72.4, measuredOn: '2026-11-12' },
+    dayTypes: [
+      { dayTypeId: 'd0', day: { fat: { unit: 'g', min: 1, max: 2 } }, meals: [] },
+      { dayTypeId: 'd1', day: null, meals: [{ mealId: 'm0', range: { fat: { unit: 'g', min: 1, max: 2 } } }, { mealId: 'm1', range: { protein: { unit: 'g_per_kg', min: 1.6, max: 2 } } }] },
+    ],
+  };
+  const r = R.problemasEnSuCampo(
+    [
+      { code: 'BODY_WEIGHT_OUT_OF_BOUNDS', path: 'bodyWeight.valueKg' },
+      { code: 'BODY_WEIGHT_DATE_IN_FUTURE', path: 'bodyWeight.measuredOn' },
+      { code: 'RANGE_VALUE_OUT_OF_BOUNDS', path: 'dayTypes.1.meals.1.range.protein.max' },
+      { code: 'RANGE_MIN_ABOVE_MAX', path: 'dayTypes.1.meals.1.range.carbohydrate' },
+      // De otro rango, que no está abierto: no se marca acá.
+      { code: 'RANGE_VALUE_OUT_OF_BOUNDS', path: 'dayTypes.0.day.fat.min' },
+    ],
+    cuerpo,
+    { dayTypeId: 'd1', mealId: 'm1' },
+  );
+  assert.deepEqual(r, {
+    campos: {
+      kg: 'Entre 20 y 350 kg, con hasta un decimal.',
+      fecha: 'La fecha no puede ser posterior a hoy.',
+      'protein.max': 'Este valor está fuera de lo que se acepta.',
+      'carbohydrate.max': 'El máximo es menor que el mínimo.',
+    },
+    otros: 1,
+  });
+  assert.deepEqual(R.problemasEnSuCampo([{ code: 'RANGE_VALUE_OUT_OF_BOUNDS', path: 'dayTypes.0.day.fat.min' }], cuerpo, { dayTypeId: 'd0', mealId: null }).campos, { 'fat.min': 'Este valor está fuera de lo que se acepta.' });
+  // El mismo lugar en otro día tipo no es el campo abierto.
+  assert.deepEqual(R.problemasEnSuCampo([{ code: 'RANGE_VALUE_OUT_OF_BOUNDS', path: 'dayTypes.1.day.protein.min' }], cuerpo, { dayTypeId: 'd0', mealId: null }), { campos: {}, otros: 1 });
 });
 
 test('el cuerpo de API-PLN-03: lo guardado tal cual, el rango nuevo en su lugar y el peso solo si algo va en g/kg', () => {
