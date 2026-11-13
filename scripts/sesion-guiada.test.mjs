@@ -151,7 +151,7 @@ test('2 · el tiempo se escribe en segundos, en minutos y segundos o con horas; 
 // ─── 3. Destildar ───────────────────────────────────────────────────────────────────────────────
 
 test('3 · destildar devuelve lo escrito: una TYPED vuelve con sus valores; una AS_PLANNED, vacía y con el plan en gris', () => {
-  assert.deepEqual(series.escritaDeLaSerie({ setIndex: 1, load: { value: 17.5, unit: 'kg' }, completedRepetitions: 14, rir: 2, perceivedExertion: null, recordedAs: 'TYPED', durationSeconds: 45 }, 'kg'), { carga: '17,5', repeticiones: '14', rir: '2', tiempo: '00:45', unidad: 'kg' });
+  assert.deepEqual(series.escritaDeLaSerie({ setIndex: 1, load: { value: 17.5, unit: 'kg' }, completedRepetitions: 14, rir: 2, perceivedExertion: null, recordedAs: 'TYPED', durationSeconds: 45 }, 'kg'), { carga: '17,5', repeticiones: '14', rir: '2', tiempo: '00:45', unidad: 'kg', sinProcedencia: { carga: { value: 17.5, unit: 'kg' }, repeticiones: 14, rir: 2 } });
   assert.deepEqual(series.escritaDeLaSerie({ setIndex: 1, load: { value: 16, unit: 'kg' }, completedRepetitions: null, rir: 3, perceivedExertion: null, recordedAs: 'AS_PLANNED' }, 'kg'), { carga: '', repeticiones: '', rir: '', tiempo: '', unidad: 'kg' });
   // Sin `recordedAs` es TYPED: así quedó todo lo registrado antes de DL-161.
   assert.equal(series.escritaDeLaSerie({ setIndex: 2, load: null, completedRepetitions: 9, rir: null, perceivedExertion: null }, 'lb').repeticiones, '9');
@@ -237,7 +237,49 @@ test('ED-70 · destildar devuelve escrito solo lo de la persona: lo del plan vue
   assert.deepEqual(series.serieAlTildar(restaurar, sesentaPorOcho, 1, 'kg').serie, tildada);
   // Una serie de antes de la procedencia (sin el campo) vuelve escrita entera, como siempre.
   const { fieldOrigins: _, ...deAntes } = tildada;
-  assert.deepEqual(series.escritaDeLaSerie(deAntes, 'kg'), { carga: '60', repeticiones: '10', rir: '2', tiempo: '', unidad: 'kg' });
+  assert.deepEqual(series.escritaDeLaSerie(deAntes, 'kg'), { carga: '60', repeticiones: '10', rir: '2', tiempo: '', unidad: 'kg', sinProcedencia: { carga: { value: 60, unit: 'kg' }, repeticiones: 10, rir: 2 } });
+});
+
+/** Una serie que registró la 0.24, antes de la procedencia: 60 kg × 10 con RIR 2, TYPED y sin `fieldOrigins`. */
+const deLa024 = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 10, rir: 2, perceivedExertion: null, recordedAs: 'TYPED' };
+
+test('ED-70 · una serie de la 0.24 destildada y vuelta a tildar sin cambios vuelve igual: ninguna clave PERSON en lo que no se escribió', () => {
+  const restaurar = series.escritaDeLaSerie(deLa024, 'kg');
+  const vuelta = series.serieAlTildar(restaurar, sesentaPorOcho, 1, 'kg').serie;
+  assert.deepEqual(vuelta, deLa024, 'sin el campo: no se sabe quién escribió cada valor');
+  assert.equal(series.mismosDatos(deLa024, vuelta), true, 'la vuelta no cambia nada, como antes de ED-70');
+  // Lo que viaja en la API-TRN-17 es la misma serie que el servidor ya tenía.
+  const borrador = { exercises: [ejercicioDelServidor('pA', [deLa024])] };
+  const { exercises } = series.ejerciciosParaGuardar(borrador, [{ prescriptionId: 'pA', performedExerciseVersionId: 'ev-pA', serie: vuelta, enConflicto: false }], [{ prescriptionId: 'pA', setIndex: 1 }]);
+  assert.deepEqual(exercises[0].sets, [deLa024]);
+  assert.equal(JSON.stringify(exercises).includes('PERSON'), false);
+  assert.equal(EditarBorradorDeEjecucionRequestSchema.safeParse({ expectedVersion: 'v1', changes: { granularity: 'SET', exercises } }).success, true);
+});
+
+test('ED-70 · al volver a tildar una serie de la 0.24, solo lo que la persona cambia es suyo; lo que vacía lo completa el plan', () => {
+  const restaurar = series.escritaDeLaSerie(deLa024, 'kg');
+  assert.deepEqual(series.serieAlTildar({ ...restaurar, repeticiones: '11' }, sesentaPorOcho, 1, 'kg').serie.fieldOrigins, { completedRepetitions: 'PERSON' });
+  assert.deepEqual(series.serieAlTildar({ ...restaurar, rir: '' }, sesentaPorOcho, 1, 'kg').serie.fieldOrigins, { rir: 'PLAN' });
+  assert.deepEqual(series.serieAlTildar({ ...restaurar, carga: '62,5' }, sesentaPorOcho, 1, 'kg').serie.fieldOrigins, { load: 'PERSON' });
+  // Otra unidad es otra carga: la cambió la persona.
+  assert.deepEqual(series.serieAlTildar({ ...restaurar, unidad: 'lb' }, sesentaPorOcho, 1, 'lb').serie.fieldOrigins, { load: 'PERSON' });
+  // El mismo número, escrito con punto, es el mismo valor: sigue sin clave.
+  assert.equal('fieldOrigins' in series.serieAlTildar({ ...restaurar, carga: '60.0' }, sesentaPorOcho, 1, 'kg').serie, false);
+  // Vaciar todo es tildar con lo planificado: AS_PLANNED, sin el campo.
+  assert.equal(series.serieAlTildar({ ...restaurar, carga: '', repeticiones: '', rir: '' }, sesentaPorOcho, 1, 'kg').serie.recordedAs, 'AS_PLANNED');
+  // Una serie con procedencia parcial (un valor sin clave) vuelve con su misma procedencia.
+  const parcial = { ...deLa024, completedRepetitions: 8, fieldOrigins: { load: 'PERSON', completedRepetitions: 'PLAN' } };
+  const restaurada = series.escritaDeLaSerie(parcial, 'kg');
+  assert.deepEqual(restaurada.sinProcedencia, { rir: 2 });
+  assert.deepEqual(series.serieAlTildar(restaurada, sesentaPorOcho, 1, 'kg').serie, parcial);
+});
+
+test('ED-70 · «Antes de finalizar» registra una serie de la 0.24 destildada como estaba, sin PERSON', () => {
+  const goblet = { ...deLa024, load: { value: 16, unit: 'kg' }, completedRepetitions: 14, rir: 3 };
+  const borrador = { exercises: [ejercicioDelServidor('pA', [goblet])] };
+  const escritas = { 'pA:1': series.escritaDeLaSerie(goblet, 'kg') };
+  const [pendiente] = series.pendientesDeRegistrar(SESION, borrador, [], [{ prescriptionId: 'pA', setIndex: 1 }], escritas);
+  assert.deepEqual(pendiente.lectura.serie, goblet);
 });
 
 test('ED-70 · la procedencia cuenta para reconocer una serie que el servidor ya tiene, sin importar el orden de las claves', () => {
@@ -400,6 +442,43 @@ test('4 · destildar una serie que el servidor ya tiene: lo escrito vuelve a la 
   assert.deepEqual([almacen.sesion('borrador-1').quitadas, almacen.sesion('borrador-1').series], [[], []]);
   await almacen.sincronizar('borrador-1');
   assert.equal(api.pedidos.length, 3, 'sin pedido de más');
+});
+
+test('4 · ED-70 · una serie de la 0.24 que se destilda y se vuelve a tildar sin cambios no se reemplaza: lo que no se sabe quién escribió sobrevive a un proceso nuevo', async () => {
+  const api = apiDePrueba();
+  const { almacen, plano } = await almacenListo({ api });
+  const goblet = { setIndex: 1, load: { value: 16, unit: 'kg' }, completedRepetitions: 14, rir: 3, perceivedExertion: null, recordedAs: 'TYPED' };
+  api.borrador = { ...api.borrador, granularity: 'SET', exercises: [ejercicioDelServidor('pA', [goblet])] };
+  almacen.fijarBorrador('borrador-1', api.borrador);
+  assert.equal(almacen.quitarSerie('borrador-1', 'pA', 1, series.escritaDeLaSerie(goblet, 'kg')), 'quitada');
+  await almacen.guardarYa();
+  // La app se cierra con la fila destildada: lo que no se sabe quién escribió vuelve con ella.
+  const { almacen: otro } = await almacenListo({ plano, api });
+  const escrita = otro.sesion('borrador-1').escritas['pA:1'];
+  assert.deepEqual(escrita.sinProcedencia, { carga: { value: 16, unit: 'kg' }, repeticiones: 14, rir: 3 });
+  const vuelta = series.serieAlTildar(escrita, objetivoDe(GOBLET, 1), 1, 'kg').serie;
+  assert.equal(otro.registrarSerie('borrador-1', { prescriptionId: 'pA', performedExerciseVersionId: 'ev-pA', serie: vuelta }), 'registrada');
+  assert.deepEqual([otro.sesion('borrador-1').quitadas, otro.sesion('borrador-1').series], [[], []], 'alcanza con no sacarla del borrador');
+  const pedidos = api.pedidos.length;
+  await otro.sincronizar('borrador-1');
+  assert.equal(api.pedidos.length, pedidos, 'sin pedido que reemplace la serie del servidor');
+});
+
+test('4 · lo que no se sabe quién escribió, guardado con otra forma, se descarta solo y la fila sigue', async () => {
+  const plano = almacenEnMemoria();
+  const { almacen } = await almacenListo({ plano });
+  await almacen.escrituras();
+  const guardado = JSON.parse(plano.datos.get(claveDeLaCuenta('cuenta-a')));
+  guardado.sesiones[0].escritas = {
+    'pA:1': { carga: '16', repeticiones: '14', rir: '', unidad: 'kg', sinProcedencia: { carga: { value: 16, unit: 'oz' }, repeticiones: 14, rir: 'tres' } },
+    'pA:2': { carga: '16', repeticiones: '', rir: '', unidad: 'kg', sinProcedencia: 'otra cosa' },
+  };
+  plano.datos.set(claveDeLaCuenta('cuenta-a'), JSON.stringify(guardado));
+  const { almacen: otro } = await almacenListo({ plano });
+  assert.deepEqual(otro.sesion('borrador-1').escritas, {
+    'pA:1': { carga: '16', repeticiones: '14', rir: '', tiempo: '', unidad: 'kg', sinProcedencia: { repeticiones: 14 } },
+    'pA:2': { carga: '16', repeticiones: '', rir: '', tiempo: '', unidad: 'kg' },
+  });
 });
 
 test('4 · destildar una serie que solo está en el teléfono no manda nada al servidor', async () => {

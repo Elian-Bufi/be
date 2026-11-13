@@ -13,7 +13,9 @@
  *   de repeticiones no se convierte en un número. Destildar deja la fila para sacarla del borrador (`FilaQuitada`).
  * - **De dónde salió cada valor** (ED-70; DL-171): una serie escrita lleva `fieldOrigins`, `PERSON` en lo que escribió
  *   la persona y `PLAN` en lo que completó lo planificado. Una tildada sin escribir (`AS_PLANNED`) no lo lleva: todo es
- *   del plan. Al destildar, lo que vino del plan vuelve a quedar en gris, no escrito (`escritaDeLaSerie`).
+ *   del plan. Al destildar, lo que vino del plan vuelve a quedar en gris, no escrito (`escritaDeLaSerie`), y lo que no
+ *   decía de dónde salió (una serie de antes de la procedencia) vuelve escrito y, si no cambia, se vuelve a tildar sin
+ *   clave (`sinProcedencia`).
  * - **Lo escrito** de cada fila se guarda en el teléfono con su unidad (PA-01): `EscritasDeLaSesion`.
  * - **API-TRN-17 reemplaza `exercises` entero** (`ejerciciosParaGuardar`): se parte de lo que el servidor ya tiene y se
  *   suman las series pendientes del teléfono. Una serie que el servidor ya tiene con ese número no se pisa: queda en
@@ -59,6 +61,19 @@ export interface FilaEscrita {
    * No es un valor del plan, así que no cuenta para decir si la serie se escribió o se tildó con lo planificado.
    */
   readonly tiempo?: string;
+  /**
+   * ED-70: los valores que volvieron a la fila al destildar una serie que no decía de dónde salieron (una serie de antes
+   * de la procedencia, o un valor sin clave). Opcional. Mientras sigan iguales, volver a tildar los deja sin clave («sin
+   * saber»): no pasan por escritos por la persona. Lo que ella cambia, sí es suyo (`PERSON`).
+   */
+  readonly sinProcedencia?: SinProcedencia;
+}
+
+/** Los valores de una fila que no se sabe quién escribió (ED-70), como se registraron: la carga con su unidad. */
+export interface SinProcedencia {
+  readonly carga?: { readonly value: number; readonly unit: Unidad };
+  readonly repeticiones?: number;
+  readonly rir?: number;
 }
 
 export const FILA_VACIA: FilaEscrita = { carga: '', repeticiones: '', rir: '' };
@@ -327,9 +342,16 @@ export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, 
   }
   const rirDeLaSerie = rir ?? plan.rir;
   const escrita = hayValoresEscritos(f);
-  // Lo escrito es de la persona; lo que quedó vacío y se completó, del plan; lo que no tiene valor no lleva clave.
-  const origen = (escrito: boolean, valor: unknown): OrigenDelValor | undefined => (valor === null ? undefined : escrito ? 'PERSON' : 'PLAN');
-  const fieldOrigins = escrita ? origenesDeLaSerie({ load: origen(carga !== null, load), completedRepetitions: origen(repeticiones !== null, completedRepetitions), rir: origen(rir !== null, rirDeLaSerie) }) : undefined;
+  // Lo escrito es de la persona; lo que quedó vacío y se completó, del plan; lo que no tiene valor no lleva clave. Lo que
+  // volvió de una serie sin procedencia y sigue igual, tampoco: no se sabe quién lo escribió.
+  const sp = f.sinProcedencia;
+  const sinSaber = {
+    load: carga !== null && sp?.carga !== undefined && sp.carga.value === carga && sp.carga.unit === unidad,
+    completedRepetitions: repeticiones !== null && sp?.repeticiones === repeticiones,
+    rir: rir !== null && sp?.rir === rir,
+  };
+  const origen = (c: CampoConOrigen, escrito: boolean, valor: unknown): OrigenDelValor | undefined => (valor === null ? undefined : !escrito ? 'PLAN' : sinSaber[c] ? undefined : 'PERSON');
+  const fieldOrigins = escrita ? origenesDeLaSerie({ load: origen('load', carga !== null, load), completedRepetitions: origen('completedRepetitions', repeticiones !== null, completedRepetitions), rir: origen('rir', rir !== null, rirDeLaSerie) }) : undefined;
   const serie: SerieEjecutadaApi = {
     setIndex,
     load,
@@ -382,19 +404,29 @@ export function anuncioParaRegistrar(f: FilaEscrita, objetivo: ObjetivoDeSerie |
  * Lo que vuelve a la fila al destildar una serie: lo que se había escrito. Una tildada con lo planificado vuelve vacía,
  * con el plan en gris otra vez; el tiempo vuelve en las dos. En una escrita, lo que vino del plan (ED-70, `PLAN`)
  * también vuelve vacío, con el plan en gris: así, volver a tildarla no lo hace pasar por escrito. Un valor sin clave (una
- * serie de antes de la procedencia) vuelve escrito, como siempre.
+ * serie de antes de la procedencia) vuelve escrito, como siempre, y queda anotado en `sinProcedencia`: si se vuelve a
+ * tildar sin cambiarlo, sigue sin clave, y la serie vuelve igual a la del servidor.
  */
 export function escritaDeLaSerie(serie: SerieEjecutadaApi, unidadDeLaColumna: Unidad): FilaEscritaGuardada {
   const tiempo = serie.durationSeconds === null || serie.durationSeconds === undefined ? '' : textoDeTiempo(serie.durationSeconds);
   if (serie.recordedAs === 'AS_PLANNED') return { carga: '', repeticiones: '', rir: '', tiempo, unidad: unidadDeLaColumna };
   const delPlan = (c: CampoConOrigen): boolean => serie.fieldOrigins?.[c] === 'PLAN';
   const carga = delPlan('load') ? null : serie.load;
+  const repeticiones = delPlan('completedRepetitions') ? null : serie.completedRepetitions;
+  const rir = delPlan('rir') ? null : serie.rir;
+  const sinClave = (c: CampoConOrigen): boolean => serie.fieldOrigins?.[c] === undefined;
+  const sinProcedencia: SinProcedencia = {
+    ...(carga && sinClave('load') ? { carga: { value: carga.value, unit: carga.unit } } : {}),
+    ...(repeticiones !== null && sinClave('completedRepetitions') ? { repeticiones } : {}),
+    ...(rir !== null && sinClave('rir') ? { rir } : {}),
+  };
   return {
     carga: carga ? numero(carga.value) : '',
-    repeticiones: serie.completedRepetitions === null || delPlan('completedRepetitions') ? '' : String(serie.completedRepetitions),
-    rir: serie.rir === null || delPlan('rir') ? '' : numero(serie.rir),
+    repeticiones: repeticiones === null ? '' : String(repeticiones),
+    rir: rir === null ? '' : numero(rir),
     tiempo,
     unidad: carga?.unit ?? unidadDeLaColumna,
+    ...(Object.keys(sinProcedencia).length > 0 ? { sinProcedencia } : {}),
   };
 }
 
