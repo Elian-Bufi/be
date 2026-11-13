@@ -1658,18 +1658,6 @@ details summary {
   background: var(--superficie);
 }
 
-.landing__app {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem 2rem;
-}
-
-.landing__app p {
-  margin: 0.25rem 0;
-}
-
 @media (max-width: 48rem) {
   .portada {
     grid-template-columns: 1fr;
@@ -17590,4 +17578,206 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .cajon__pie:has([data-enviar]) > [data-enviar] {
   order: 2;
   margin-inline-start: auto;
+}
+
+/* ─── PG-06 (WP-PULIDO-GRANDES): «La app para Android», con el QR al archivo y los tres pasos ─────────────────── */
+.descarga {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.descarga__cabeza {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem 2rem;
+  align-items: center;
+}
+
+.descarga__texto p {
+  margin: 0.25rem 0;
+}
+
+.descarga__version {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.descarga__qr {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  max-width: 15rem;
+  text-align: center;
+}
+
+.descarga__qr figcaption {
+  display: grid;
+  gap: 0.25rem;
+}
+
+/* En la compu, el QR; el botón grande es para el teléfono. */
+.descarga__en-el-telefono {
+  display: none;
+}
+
+.descarga__pasos-y-marca h3 {
+  margin: 0 0 0.75rem;
+}
+
+.descarga__marcas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.descarga__marcas-titulo {
+  color: var(--tenue);
+  margin-inline-end: 0.25rem;
+}
+
+.descarga__marca {
+  position: relative;
+}
+
+.descarga__marca input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.descarga__marca span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+}
+
+.descarga__marca input:checked + span {
+  border-color: var(--enlace);
+  color: var(--enlace);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--enlace);
+}
+
+.descarga__marca input:focus-visible + span {
+  outline: 2px solid var(--enlace);
+  outline-offset: 2px;
+}
+
+.descarga__pasos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.descarga__paso {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.descarga__paso p {
+  margin: 0;
+}
+
+.dibujo-del-paso {
+  display: block;
+  width: 4.5rem;
+  height: auto;
+}
+
+.dibujo-del-paso__marco {
+  fill: var(--superficie);
+  stroke: var(--borde);
+  stroke-width: 2;
+}
+
+.dibujo-del-paso__pantalla {
+  fill: var(--fondo, transparent);
+  stroke: var(--borde);
+}
+
+.dibujo-del-paso__linea {
+  fill: var(--tenue);
+  opacity: 0.45;
+}
+
+.dibujo-del-paso__hoja {
+  fill: var(--superficie);
+  stroke: var(--borde);
+}
+
+.dibujo-del-paso__resalte {
+  fill: none;
+  stroke: var(--enlace);
+  stroke-width: 2.5;
+}
+
+.dibujo-del-paso__icono {
+  fill: none;
+  stroke: var(--enlace);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dibujo-del-paso__texto {
+  fill: var(--texto);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.dibujo-del-paso__texto--boton {
+  fill: var(--enlace);
+}
+
+.dibujo-del-paso__interruptor {
+  fill: var(--enlace);
+}
+
+.dibujo-del-paso__perilla {
+  fill: var(--superficie);
+}
+
+.dibujo-del-paso__app {
+  fill: var(--enlace);
+  opacity: 0.6;
+}
+
+@media (max-width: 48rem) {
+  .descarga__pasos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Con el ancho de un teléfono: sin QR, y el botón «Bajar BE» a todo el ancho. */
+@media (max-width: 40rem) {
+  .descarga__cabeza {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .descarga__qr {
+    display: none;
+  }
+
+  .descarga__en-el-telefono {
+    display: inline-flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.75rem;
+  }
 }
