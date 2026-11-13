@@ -54,11 +54,12 @@ import {
   type Resultado,
   type SesionDeOcurrencia,
 } from '@be/domain';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
-import { ajustesDelDescanso, useAjustesDelDescanso } from '../ajustes-del-descanso';
+import { ajustesDelDescanso, marcaDeLaExplicacion, useAjustesDelDescanso } from '../ajustes-del-descanso';
+import { seMuestraLaExplicacion } from '../explicacion-de-los-tiempos';
 import { cancelarAvisoDelDescanso, pedirPermisoDeAvisos, permisoDeAvisos, programarAvisoDelDescanso } from '../avisos-del-telefono';
-import { accionAlDestildar, accionAlTildar, filaDeAcciones, llegoAlRecomendado, pedidoDelPermiso, planDelAviso, type PermisoDeAvisos } from '../descanso-automatico';
+import { accionAlDestildar, accionAlTildar, filaDeAcciones, llegoAlRecomendado, pedidoDelPermiso, planDelAviso, queHaceElMedio, type PermisoDeAvisos } from '../descanso-automatico';
 import { usePublicarFilaFija } from '../fila-fija';
 import { TEXTOS_DEL_DESCANSO } from '../textos-del-descanso';
 import { estadoDeSincronizacion, type SesionLocal } from '../almacen-de-entrenamiento';
@@ -70,11 +71,14 @@ import { entrenamientoLocal, useEntrenamientoLocal } from '../entrenamiento-en-c
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fecha, fechaCivil, fechaLarga, hora as horaDe } from '../formato';
 import { Icono } from '../icono';
-import { IconoDeEjercicio, iconoDelEstado } from '../iconos-de-entrenamiento';
+import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
+import { VISTA_RECORDADA } from '../volver-a-hoy';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
-import { enCursoDeLaApi, enCursoEnElTelefono, otraSesionEnCurso, sesionEnCursoParaMostrar, type EnCurso } from '../sesion-en-curso';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { enCursoDeLaApi, enCursoEnElTelefono, marchaDeLaSesionEnCurso, otraSesionEnCurso, sePuedeIniciar, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
+import { condicionQueCorresponde, horaTomadaAlEmpezar, inicioDeLaCorrida, motivoParaNoFinalizar, motivoQueViaja, renglonesDelResultado, TEXTOS_DEL_CIERRE, tiempoDeLaSesionAbierta, tiemposResumidos } from '../cierre-de-la-sesion';
 import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
   bandaDeLaSerie,
@@ -96,6 +100,8 @@ import {
   primeraSinRegistrar,
   problemaParaConfirmar,
   resumenDelRegistro,
+  alTerminarLaSerie,
+  anuncioParaRegistrar,
   serieAlTildar,
   serieQueOriginaElDescanso,
   sesionDesdeLaOcurrencia,
@@ -111,7 +117,7 @@ import {
 } from '../series-de-la-sesion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { cambiosParaSustituir, ejercicioRealizadoDe, sePuedeSustituir, sustitucionDe, textoDeLaConfirmacion, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado } from '../sustitucion-de-ejercicio';
-import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Segmentos, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { ContenidoDelHistorial } from './historial';
 import { PlanPorSerie } from './plan-por-serie';
 import { AlLado, aRegistroRapido } from './registro-rapido';
@@ -132,8 +138,6 @@ import {
   SustituirEjercicio,
   TablaDeSeries,
   TecnicaDelEjercicio,
-  textoDeLaCondicion,
-  TiemposMarcados,
   type EstadoDelDescanso,
   type RelojDeLaTabla,
   type Temporizador,
@@ -175,6 +179,22 @@ function preguntar(titulo: string, detalle: string, accion: string, estilo: 'des
 }
 
 /** DL-137: al empezar una sesión con otra pendiente, qué hace la persona con la pendiente. */
+/** «Terminar serie N» con una medición de más de diez horas (AV2-30): qué pasó con ella, como en su diálogo. */
+function preguntarPorLaMedicionLarga(detalle: string): Promise<'termino-ahora' | 'incompleta' | 'cancelar'> {
+  return new Promise((resolver) =>
+    Alert.alert(
+      COPY_ENTRENAMIENTO_POR_SERIE.medicionAbierta,
+      detalle,
+      [
+        { text: 'Cancelar', style: 'cancel', onPress: () => resolver('cancelar') },
+        { text: COPY_ENTRENAMIENTO_POR_SERIE.dejarIncompleta, onPress: () => resolver('incompleta') },
+        { text: COPY_ENTRENAMIENTO_POR_SERIE.terminoAhora, onPress: () => resolver('termino-ahora') },
+      ],
+      { cancelable: true, onDismiss: () => resolver('cancelar') },
+    ),
+  );
+}
+
 function preguntarPorLaPendiente(p: { readonly etiqueta: string; readonly fecha: string }): Promise<'saltear' | 'dejar' | 'cancelar'> {
   return new Promise((resolver) =>
     Alert.alert(
@@ -223,7 +243,7 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
   const sesionPerdida = useSesionPerdida(salir);
   const { retirado, accesoRetirado } = useAccesoRetirado();
   // La pestaña elegida se recuerda mientras dure la sesión.
-  const [vista, setVista] = useSeleccionRecordada<VistaDeEntrenamiento>(token, 'entrenamiento:vista', 'HOY');
+  const [vista, setVista] = useSeleccionRecordada<VistaDeEntrenamiento>(token, VISTA_RECORDADA.entrenamiento, 'HOY');
   const pedir = useCallback((): Promise<Resultado<HoyDeEntrenamientoResponse>> => api.hoyDeEntrenamiento(token), [token]);
   // Al entrar se verifica antes de mostrar (src/ciclo-de-lectura.ts).
   // La clave nombra el día civil, en la zona con la que la API resuelve «hoy». A la medianoche cambia, y se vuelve a leer.
@@ -232,7 +252,7 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
 
   let contenido: ReactNode;
   // «Tu historial» no depende del plan (DL-096): se ve aunque Hoy y Plan no estén disponibles.
-  if (vista === 'HISTORIAL') contenido = <ContenidoDelHistorial token={token} identidadId={identidadId} salir={salir} ir={ir} />;
+  if (vista === 'HISTORIAL') contenido = <ContenidoDelHistorial token={token} identidadId={identidadId} salir={salir} ir={ir} hoy={{ en: 'pestana', elegir: setVista }} />;
   else if (retirado) {
     // Una escritura denegada con el 404 no revelador retira el contenido entero (B10-06:1145-1148): queda el mismo estado
     // neutral que con el acceso suspendido.
@@ -248,7 +268,8 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
     contenido = (
       <>
         <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-        {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.sinPlanAsesorado} /> : null}
+        {/* Vacía: qué va a aparecer acá y el siguiente paso (vuelta 2), no solo que no hay plan. */}
+        {hoy.planState === 'NO_ACTIVE_PLAN' ? <EstadoVacio icono="entrenamiento" {...TEXTOS_DE_LA_VUELTA.vacios.entrenamientoSinPlan} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.entrenamientoSinPlan.accion, onPress: () => ir({ nombre: 'vinculos' }) }} /> : null}
         {hoy.planState === 'NOT_AVAILABLE' ? (
           <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible}>
             <Boton texto="Ir a Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />
@@ -325,6 +346,8 @@ function HoyDeEntrenamiento({
   const remota = enCurso.r?.ok ? enCurso.r.datos.data.inProgress : null;
   // Primero la que informa la API, que es la que impide iniciar otra; después la del teléfono (`sesion-en-curso.ts`).
   const ahora: EnCurso | null = sesionEnCursoParaMostrar(remota, local.sesiones());
+  // DL-170 (AV2-09): si la que corre está en pausa, la etiqueta lo dice; y con una en curso, ninguna otra ofrece empezar.
+  const marcha = ahora ? marchaDeLaSesionEnCurso(remota, local.sesiones().find((s) => s.draftId === ahora.draftId)) : null;
   // Una sesión en curso de otro día (pasó la medianoche): se retoma desde acá, aunque no esté en la lista de hoy.
   const deOtroDia = ahora && !hoy.occurrences.some((o) => o.occurrenceId === ahora.occurrenceId) ? ahora : null;
   const tarjeta = (o: Ocurrencia, pendiente: PendienteParaPreguntar | null = null) => (
@@ -337,6 +360,8 @@ function HoyDeEntrenamiento({
       accesoRetirado={accesoRetirado}
       ir={ir}
       enCurso={ahora?.occurrenceId === o.occurrenceId}
+      marcha={ahora?.occurrenceId === o.occurrenceId ? marcha : null}
+      bloqueadaPor={sePuedeIniciar(o.occurrenceId, ahora) ? null : ahora}
       pendiente={pendiente}
       alSaltear={recargarTodo}
     />
@@ -363,7 +388,7 @@ function HoyDeEntrenamiento({
         />
       ) : null}
       {agenda ? (
-        <AgendaDelDia agenda={agenda} hoy={hoy} tarjeta={tarjeta} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} alSaltear={recargarTodo} />
+        <AgendaDelDia agenda={agenda} hoy={hoy} tarjeta={tarjeta} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} alSaltear={recargarTodo} enCurso={ahora} />
       ) : (
         <>
           {hoy.occurrences.length > 1 ? <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo> : null}
@@ -444,6 +469,7 @@ function AgendaDelDia({
   accesoRetirado,
   ir,
   alSaltear,
+  enCurso,
 }: {
   agenda: AgendaDelDiaApi;
   hoy: HoyDeEntrenamientoResponse['data'];
@@ -453,6 +479,8 @@ function AgendaDelDia({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: Ir;
   alSaltear: () => void;
+  /** La sesión en curso, si hay una: con ella, «Hacerla hoy» no se ofrece (AV2-09). */
+  enCurso: EnCurso | null;
 }) {
   const deLaSesion = (sessionId: string): Ocurrencia | undefined => hoy.occurrences.find((o) => o.plannedSession.sessionId === sessionId);
   const deHoy = agenda.today.flatMap((f) => deLaSesion(f.sessionId) ?? []);
@@ -487,6 +515,7 @@ function AgendaDelDia({
               accesoRetirado={accesoRetirado}
               ir={ir}
               alSaltear={alSaltear}
+              bloqueadaPor={sePuedeIniciar(p.ocurrenciaDeHoy.occurrenceId, enCurso) ? null : enCurso}
             />
           ))}
         </>
@@ -522,6 +551,7 @@ function TarjetaDePendiente({
   accesoRetirado,
   ir,
   alSaltear,
+  bloqueadaPor,
 }: {
   etiqueta: string;
   fecha: string;
@@ -532,6 +562,8 @@ function TarjetaDePendiente({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: Ir;
   alSaltear: () => void;
+  /** Otra sesión en curso: mientras tanto, «Hacerla hoy» no se ofrece (AV2-09). «La hice ese día» sí (AV2-D4). */
+  bloqueadaPor: EnCurso | null;
 }) {
   const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: ocurrenciaDeHoy, token, sesionPerdida, accesoRetirado, ir });
   const intento = useClaveDeIntento();
@@ -560,8 +592,9 @@ function TarjetaDePendiente({
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
       {otraEnCurso ? <AvisoDeEntrenamientoEnCurso enCurso={otraEnCurso} token={token} sesionPerdida={sesionPerdida} ir={ir} alTerminar={() => void abrir()} motivo={MOTIVO_ANTES_DE_INICIAR} /> : null}
+      {bloqueadaPor ? <Parrafo tenue>{TEXTOS_DE_LA_VUELTA.hayUnEntrenamientoEnCurso(bloqueadaPor.etiqueta)}</Parrafo> : null}
       <AlLado>
-        <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />
+        {bloqueadaPor ? null : <Boton texto={AG.hacerlaHoy} onPress={() => void abrir()} ocupado={abriendo} deshabilitado={salteando} />}
         {laHiceEseDia ? (
           <Boton
             texto={TEXTOS_DEL_REGISTRO_RAPIDO.laHiceEseDia}
@@ -578,24 +611,11 @@ function TarjetaDePendiente({
 }
 
 /**
- * «Tenés un entrenamiento sin finalizar»: continuarlo, o dejarlo incompleto sin afirmar cuándo terminó. Lo usan
- * Entrenamiento, Inicio y la sesión enfocada; `motivo` dice por qué aparece (por ejemplo, antes de iniciar otra sesión).
+ * Dejar incompleta una sesión en curso, sin afirmar cuándo terminó: pregunta antes, cierra la corrida con los eventos
+ * del teléfono (o con los de la API, si corre en otro dispositivo) y los manda. Lo usan el aviso de abajo y la tarjeta de
+ * la sesión en curso de Inicio (DL-170, AV2-09). Solo escribe cuando la persona lo confirma.
  */
-export function AvisoDeEntrenamientoEnCurso({
-  enCurso: e,
-  token,
-  sesionPerdida,
-  ir,
-  alTerminar,
-  motivo,
-}: {
-  enCurso: EnCurso;
-  token: string;
-  sesionPerdida: AlPerderLaSesion;
-  ir: Ir;
-  alTerminar: () => void;
-  motivo?: string;
-}) {
+export function useDejarIncompleto({ enCurso: e, token, sesionPerdida, alTerminar }: { enCurso: EnCurso; token: string; sesionPerdida: AlPerderLaSesion; alTerminar: () => void }) {
   const [dejando, setDejando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
 
@@ -632,6 +652,29 @@ export function AvisoDeEntrenamientoEnCurso({
     alTerminar();
   }
 
+  return { dejando, fallo, dejarIncompleto } as const;
+}
+
+/**
+ * «Tenés un entrenamiento sin finalizar»: continuarlo, o dejarlo incompleto sin afirmar cuándo terminó. Lo usan
+ * Entrenamiento y la sesión enfocada; `motivo` dice por qué aparece (por ejemplo, antes de iniciar otra sesión).
+ */
+export function AvisoDeEntrenamientoEnCurso({
+  enCurso: e,
+  token,
+  sesionPerdida,
+  ir,
+  alTerminar,
+  motivo,
+}: {
+  enCurso: EnCurso;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  ir: Ir;
+  alTerminar: () => void;
+  motivo?: string;
+}) {
+  const { dejando, fallo, dejarIncompleto } = useDejarIncompleto({ enCurso: e, token, sesionPerdida, alTerminar });
   return (
     <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO_POR_SERIE.sesionSinFinalizar}>
       <Parrafo>{`${e.etiqueta} · ${fechaCivil(e.fecha)}`}</Parrafo>
@@ -811,6 +854,8 @@ function TarjetaDeOcurrencia({
   accesoRetirado,
   ir,
   enCurso,
+  marcha = null,
+  bloqueadaPor = null,
   pendiente = null,
   alSaltear,
 }: {
@@ -821,6 +866,10 @@ function TarjetaDeOcurrencia({
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: (r: Ruta) => void;
   enCurso: boolean;
+  /** Si esta es la sesión en curso: en curso o en pausa. La etiqueta sale de acá, no de cualquier borrador (AV2-09). */
+  marcha?: MarchaDeLaCorrida | null;
+  /** Otra sesión en curso, si la hay: mientras tanto esta no ofrece empezar (AV2-09). «Ya la hice» sí (AV2-D4). */
+  bloqueadaPor?: EnCurso | null;
   /** DL-137: una sesión pendiente de otro día, para preguntar por ella antes de empezar esta. */
   pendiente?: PendienteParaPreguntar | null;
   alSaltear?: () => void;
@@ -828,8 +877,11 @@ function TarjetaDeOcurrencia({
   const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
   const intentoDeSaltear = useClaveDeIntento();
   const [problema, setProblema] = useState<string | null>(null);
-  const vista = vistaDeOcurrencia(o, hoy);
+  // La etiqueta: «En curso» o «En pausa» solo para la corrida abierta (AV2-09); el resto, desde `vistaDeOcurrencia`.
+  const vista = vistaDeLaSesion(vistaDeOcurrencia(o, hoy), o.execution, marcha);
   const deHoy = o.date === hoy;
+  // Con otra sesión en curso, esta no se empieza hoy: primero se continúa o se deja incompleta la otra.
+  const sinEmpezar = deHoy && bloqueadaPor !== null;
   const continuar = enCurso || o.execution.state === 'DRAFT_IN_PROGRESS';
   // PA-03 (DL-160): «Ya la hice» registra la sesión por pasos, sin cronómetros, también hoy. Solo sin borrador.
   const local = useEntrenamientoLocal();
@@ -874,7 +926,7 @@ function TarjetaDeOcurrencia({
           <Parrafo tenue>{`${ejerciciosYSeries(o.plannedSession.prescriptions)}${deHoy ? '' : ` · ${fechaCivil(o.date)}`}`}</Parrafo>
         </View>
       </View>
-      <Insignia texto={vista.texto} positiva={vista.registrada} etiqueta="Estado" icono={iconoDelEstado(o.execution)} />
+      <Insignia texto={vista.texto} hecha={vista.hecha} etiqueta="Estado" icono={vista.icono} />
       {/* La acción va arriba, antes de lo planificado: con una sesión larga, al final de la tarjeta quedaba fuera de la vista. */}
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
@@ -883,10 +935,13 @@ function TarjetaDeOcurrencia({
       {o.execution.state === 'REGISTERED' && o.execution.executionId ? (
         <Boton texto="Ver registro" tipo="secundario" onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: o.execution.executionId! })} />
       ) : (
-        <AlLado>
-          <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />
-          {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
-        </AlLado>
+        <>
+          {sinEmpezar && bloqueadaPor ? <Parrafo tenue>{TEXTOS_DE_LA_VUELTA.hayUnEntrenamientoEnCurso(bloqueadaPor.etiqueta)}</Parrafo> : null}
+          <AlLado>
+            {sinEmpezar ? null : <Boton texto={accion} onPress={() => void empezar()} ocupado={abriendo} />}
+            {yaLaHice ? <Boton texto={TEXTOS_DEL_REGISTRO_RAPIDO.yaLaHice} tipo="secundario" onPress={() => ir(aRegistroRapido(o))} deshabilitado={abriendo} icono="ya-la-hice" /> : null}
+          </AlLado>
+        </>
       )}
       {o.plannedSession.prescriptions.map((p) => (
         <Text key={p.prescriptionId} style={estilos.ejercicioDeLaSesion}>
@@ -943,6 +998,11 @@ export function PantallaDeSesion({
   const [carga, setCarga] = useState<'leyendo' | 'lista' | 'error'>('leyendo');
   // Lo escrito vive en el almacén del teléfono (PA-01): acá quedan solo los errores de la última fila que se quiso tildar.
   const [errores, setErrores] = useState<{ readonly setIndex: number; readonly errores: ErroresDeFila } | null>(null);
+  /**
+   * AV2-30: la serie que «Terminar serie N» no pudo registrar porque falta un dato, con lo que falta. La fila fija pasa a
+   * «Registrar serie N» con ese motivo junto al botón; se olvida al registrarla, al cronometrar otra o al cambiar de ejercicio.
+   */
+  const [porRegistrar, setPorRegistrar] = useState<{ readonly prescriptionId: string; readonly setIndex: number; readonly nota: string } | null>(null);
   /** La fila en la que se escribe el tiempo sin medirlo (se mantuvo apretado su reloj). */
   const [escribiendoTiempo, setEscribiendoTiempo] = useState<number | null>(null);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
@@ -1146,6 +1206,7 @@ export function PantallaDeSesion({
     }
     // Con un descanso en curso, la acción compuesta lo finaliza y arranca la serie en el mismo instante.
     if (!hacer({ tipo: 'cronometrar-serie', prescriptionId: p.prescriptionId, setIndex }, COPY_ENTRENAMIENTO_POR_SERIE.serieEnCurso(setIndex))) return;
+    setPorRegistrar(null);
     enfocar(setIndex);
   }
 
@@ -1165,6 +1226,34 @@ export function PantallaDeSesion({
     try {
       if (f.estado === 'sin-registrar') {
         let escrita: FilaEscrita = escritasDelActivo.get(f.setIndex) ?? FILA_VACIA;
+        const unidadDeLaFila = escritasDelActivo.get(f.setIndex)?.unidad ?? unidad;
+        const cronometrandose = abierta?.kind === 'SET' && abierta.prescriptionId === p.prescriptionId && abierta.setIndex === f.setIndex;
+        // AV2-30 (revisión): se valida antes de cerrar el reloj y de empezar el descanso, con lo que se lleva medido.
+        if (cronometrandose) {
+          const ahora = entrenamientoLocal.sesion(draftId);
+          const ms = ahora ? (enVivoDeLaCorrida(ahora.corrida, almacen.reloj)?.medicionAbierta?.ms ?? null) : null;
+          const plan = alTerminarLaSerie(escrita, f.objetivo, f.setIndex, unidadDeLaFila, ms);
+          if (plan.tipo === 'medicion-larga') {
+            // No se escribe en la fila: se resuelve como la medición que quedó abierta, y después se registra.
+            const serie = { prescriptionId: p.prescriptionId, setIndex: f.setIndex };
+            enfocar(f.setIndex);
+            void preguntarPorLaMedicionLarga(plan.anuncio).then((resolucion) => {
+              if (resolucion === 'cancelar') return;
+              if (!hacer({ tipo: 'resolver-medicion', resolucion }, resolucion === 'termino-ahora' ? 'Medición finalizada' : 'Medición incompleta')) return;
+              setPorRegistrar({ ...serie, nota: TEXTOS_DE_LA_SESION.medicionResuelta(f.setIndex) });
+            });
+            return;
+          }
+          if (plan.tipo === 'falta-un-dato') {
+            // Solo se para el reloj: sin descanso, la serie sigue sin registrar y la fila fija dice qué falta.
+            pararElReloj(abierta);
+            enfocar(f.setIndex);
+            setErrores({ setIndex: f.setIndex, errores: plan.errores });
+            setPorRegistrar({ prescriptionId: p.prescriptionId, setIndex: f.setIndex, nota: plan.anuncio });
+            AccessibilityInfo.announceForAccessibility(plan.anuncio);
+            return;
+          }
+        }
         // DL-166 (PV-7, AVD-3): con el ajuste automático, el descanso de esta serie empieza al tildarla, salvo tras la
         // última del ejercicio. Si la serie se estaba cronometrando, la misma acción cierra su medición.
         const ultimaDelEjercicio = f.setIndex === Math.max(...filas.map((x) => x.setIndex));
@@ -1175,13 +1264,17 @@ export function PantallaDeSesion({
           descansoEmpezado = descansoAuto !== null && medidos !== null;
           if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
         }
-        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, escritasDelActivo.get(f.setIndex)?.unidad ?? unidad);
+        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila);
         if (!lectura.ok) {
+          const anuncio = anuncioParaRegistrar(escrita, f.objetivo, f.setIndex, lectura.errores);
           enfocar(f.setIndex);
           setErrores({ setIndex: f.setIndex, errores: lectura.errores });
+          if (porRegistrar?.prescriptionId === p.prescriptionId && porRegistrar.setIndex === f.setIndex) setPorRegistrar({ ...porRegistrar, nota: anuncio });
+          AccessibilityInfo.announceForAccessibility(anuncio);
           return;
         }
         setErrores(null);
+        setPorRegistrar(null);
         // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
         const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie }, { olvidarFilasDeMas: !f.planificada });
         if (resultado !== 'registrada') return;
@@ -1220,6 +1313,7 @@ export function PantallaDeSesion({
     const filasDestino = filasDe(destino);
     entrenamientoLocal.enfocar(draftId, { prescriptionId, setIndex: (primeraSinRegistrar(filasDestino) ?? filasDestino[0])?.setIndex ?? 1 });
     setErrores(null);
+    setPorRegistrar(null);
     setEscribiendoTiempo(null);
     setDialogo(null);
   }
@@ -1328,7 +1422,7 @@ export function PantallaDeSesion({
     const series = borrador.exercises.reduce((n, e) => n + (e.sets?.length ?? 0), 0) + (local?.series.length ?? 0);
     if (series > 0 && !(await preguntar(COPY_ENTRENAMIENTO.noPudeRealizarla, `Se descartan ${cantidadDeSeries(series)} de esta sesión.`, 'Descartar y seguir'))) return;
     entrenamientoLocal.descartarSeries(draftId);
-    await guardarEnElBorrador({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivo.trim() || null });
+    await guardarEnElBorrador({ sessionCondition: 'NOT_COMPLETED', granularity: null, exercises: [], sessionSummary: null, reason: motivoQueViaja('NOT_COMPLETED', motivo) });
   }
 
   /** Lo escrito sin registrar de toda la sesión, en el teléfono ahora (PA-01). */
@@ -1387,15 +1481,27 @@ export function PantallaDeSesion({
       if (!s?.borrador) return setAviso({ tipo: 'error', texto: COPY.resultadoIncierto });
       if (modo === 'en-vivo' && estadoLocal(s.corrida).medicionAbierta) return setAviso({ tipo: 'error', texto: 'Hay una medición abierta: resolvela antes de finalizar.' });
       if (pendientesAhora().length > 0) return setAviso({ tipo: 'error', texto: TEXTOS_DE_LA_SESION.quedanEscritas });
-      if (!s.borrador.sessionCondition) return setAviso({ tipo: 'error', texto: 'Falta indicar cómo resultó la sesión.' });
-      if (motivo.trim() !== (s.borrador.reason ?? '').trim() && !(await guardarEnElBorrador({ reason: motivo.trim() || null }))) return;
+      // AV2-31: «Realizada» viene elegida solo cuando los datos lo dicen (todo lo del plan registrado, nada sustituido).
+      const condicion = s.borrador.sessionCondition ?? (s.sesion ? condicionQueCorresponde(resumenDelRegistro(s.sesion, s.borrador, s.series, s.quitadas, s.escritas)) : null);
+      if (!condicion) return setAviso({ tipo: 'error', texto: TEXTOS_DEL_CIERRE.faltaLaCondicion });
+      const cambiaLaCondicion = condicion !== s.borrador.sessionCondition;
+      // Con «Realizada» no viaja motivo, aunque haya quedado algo escrito al pasar por el desvío.
+      const elMotivo = motivoQueViaja(condicion, motivo);
+      const cambiaElMotivo = elMotivo !== (s.borrador.reason?.trim() || null);
+      if ((cambiaLaCondicion || cambiaElMotivo) && !(await guardarEnElBorrador({ ...(cambiaLaCondicion ? { sessionCondition: condicion } : {}), ...(cambiaElMotivo ? { reason: elMotivo } : {}) }))) return;
       s = entrenamientoLocal.sesion(draftId);
       // Una «no realizada» de un día pasado no tiene hora: la API pone el último instante de ese día (DL-137 D-5).
-      if (s?.borrador && s.borrador.date !== hoyEn(s.borrador.timeZone) && !s.borrador.occurredAt && s.borrador.sessionCondition !== 'NOT_COMPLETED') {
-        if (!/^\d{2}:\d{2}$/.test(hora)) return setAviso({ tipo: 'error', texto: COPY_ENTRENAMIENTO.horaRequerida });
-        // Argentina no tiene horario de verano desde 2009: la zona del demo es UTC-3 todo el año. La API igual verifica
-        // que el instante caiga en el día de la sesión.
-        if (!(await guardarEnElBorrador({ occurredAt: new Date(`${s.borrador.date}T${hora}:00-03:00`).toISOString() }))) return;
+      if (s?.borrador && !s.borrador.occurredAt && s.borrador.sessionCondition !== 'NOT_COMPLETED') {
+        // AV2-35: la hora se toma sola al empezar, si «Iniciar entrenamiento» cayó en el día de la sesión.
+        const tomada = horaTomadaAlEmpezar({ fechaDeLaSesion: s.borrador.date, zona: s.borrador.timeZone, inicio: inicioDeLaCorrida(eventosDeLaCorrida(s.corrida)) });
+        if (tomada) {
+          if (!(await guardarEnElBorrador({ occurredAt: tomada }))) return;
+        } else if (s.borrador.date !== hoyEn(s.borrador.timeZone)) {
+          if (!/^\d{2}:\d{2}$/.test(hora)) return setAviso({ tipo: 'error', texto: COPY_ENTRENAMIENTO.horaRequerida });
+          // Argentina no tiene horario de verano desde 2009: la zona del demo es UTC-3 todo el año. La API igual verifica
+          // que el instante caiga en el día de la sesión.
+          if (!(await guardarEnElBorrador({ occurredAt: new Date(`${s.borrador.date}T${hora}:00-03:00`).toISOString() }))) return;
+        }
       }
       const series = await entrenamientoLocal.sincronizarYEsperar(draftId);
       if (series && sesionPerdida(series)) return;
@@ -1488,18 +1594,54 @@ export function PantallaDeSesion({
   const ejercicioSiguiente = indiceDelActivo >= 0 ? (prescripciones[indiceDelActivo + 1] ?? null) : null;
   const datosDeLaFila =
     conCorrida && p && !finalizando
-      ? filaDeAcciones({ pausada: estado.pausada, abierta, prescriptionId: p.prescriptionId, siguienteSinRegistrar: primeraSinRegistrar(filas)?.setIndex ?? null, haySiguienteEjercicio: ejercicioSiguiente !== null })
+      ? filaDeAcciones({
+          pausada: estado.pausada,
+          abierta,
+          prescriptionId: p.prescriptionId,
+          siguienteSinRegistrar: primeraSinRegistrar(filas)?.setIndex ?? null,
+          haySiguienteEjercicio: ejercicioSiguiente !== null,
+          porRegistrar: porRegistrar?.prescriptionId === p.prescriptionId && filas.some((f) => f.setIndex === porRegistrar.setIndex && f.estado === 'sin-registrar') ? porRegistrar : null,
+        })
       : null;
   usePublicarFilaFija(datosDeLaFila, ocupado, {
     izquierda: () => (estado?.pausada ? hacer({ tipo: 'reanudar' }, 'Sesión reanudada') : pausar()),
-    // «Empezar serie N» con un descanso corriendo es la acción compuesta de siempre; «Terminar serie N» para su reloj.
+    // «Empezar serie N» con un descanso corriendo es la acción compuesta de siempre. «Terminar serie N» tilda la serie,
+    // como su casilla: la registra, cierra su reloj, empieza el descanso y pasa a la siguiente (AV2-30).
     medio: () => {
-      if (datosDeLaFila?.medio) relojDeLaFila(datosDeLaFila.medio.setIndex);
+      if (!datosDeLaFila?.medio) return;
+      const toque = queHaceElMedio(datosDeLaFila.medio, filas);
+      const fila = filas.find((f) => f.setIndex === toque.setIndex);
+      if (toque.tipo === 'tildar' && fila) tildar(fila);
+      else relojDeLaFila(toque.setIndex);
     },
     siguiente: () => {
       if (ejercicioSiguiente) pasarA(ejercicioSiguiente.prescriptionId);
     },
   });
+
+  // AV2-33: la explicación de los tiempos, una sola vez por cuenta. Se decide una vez al abrir la sesión y se marca al
+  // mostrarla: queda a la vista hasta «Entendido» o hasta salir, y la próxima vez ya no aparece.
+  const cuentaAbierta = almacen.cuenta();
+  const vistaEnElTelefono = useSyncExternalStore(marcaDeLaExplicacion.suscribir, () => (cuentaAbierta ? marcaDeLaExplicacion.vista(cuentaAbierta) : null));
+  useEffect(() => {
+    if (cuentaAbierta) void marcaDeLaExplicacion.leer(cuentaAbierta);
+  }, [cuentaAbierta]);
+  const [explicacion, setExplicacion] = useState<'sin-decidir' | 'a-la-vista' | 'no'>('sin-decidir');
+  const enVivoConCorrida = modo === 'en-vivo' && !!estado?.runId;
+  const decision = seMuestraLaExplicacion({ enVivo: enVivoConCorrida, vistaEnLasSesiones: almacen.lista() ? almacen.explicacionVista() : null, vistaEnElTelefono });
+  useEffect(() => {
+    if (explicacion !== 'sin-decidir' || !enVivoConCorrida || decision === null || !cuentaAbierta) return;
+    setExplicacion(decision ? 'a-la-vista' : 'no');
+    if (decision) {
+      void marcaDeLaExplicacion.marcar(cuentaAbierta);
+      entrenamientoLocal.marcarExplicacionVista();
+    }
+  }, [explicacion, enVivoConCorrida, decision, cuentaAbierta]);
+
+  // AV2-31: en el cierre, lo que falló se dice junto al botón y el lector de pantalla lo anuncia.
+  useEffect(() => {
+    if (finalizando && aviso?.tipo === 'error') AccessibilityInfo.announceForAccessibility(aviso.texto);
+  }, [finalizando, aviso]);
 
   // ─── Lo que se ve ───
   // Escritura denegada: se retira el borrador de la pantalla y queda el estado neutral. Volver está en la cabecera.
@@ -1518,8 +1660,14 @@ export function PantallaDeSesion({
   const t = TEXTOS_DE_LA_SESION;
 
   const sesionSinPausas = estado?.cierre === null ? (vivo?.sesionSinPausas ?? null) : (calculo?.session.withoutPauses ?? null);
+  // AV2-37: una sesión que quedó abierta otro día no cuenta «89:08:26»: dice desde cuándo está abierta, con su fecha.
+  const inicioDeLaSesion = inicioDeLaCorrida(eventosDeLaCorrida(local.corrida));
+  const abiertaDesde =
+    conCorrida && inicioDeLaSesion ? tiempoDeLaSesionAbierta(Date.parse(almacen.reloj.ahora().civil) - Date.parse(inicioDeLaSesion), inicioDeLaSesion, borrador?.timeZone) : ({ tipo: 'conteo' } as const);
   const temporizador: Temporizador | null =
-    modo === 'en-vivo' && estado?.runId && sesionSinPausas
+    abiertaDesde.tipo === 'desde'
+      ? { texto: abiertaDesde.texto, calidad: null, etiqueta: abiertaDesde.texto }
+      : modo === 'en-vivo' && estado?.runId && sesionSinPausas
       ? {
           texto: `${pausada ? `${e.sesionEnPausa} ·` : e.sesion} ${duracionParaMostrar(sesionSinPausas.ms) ?? '—'}`,
           calidad: sesionSinPausas.quality === 'MEASURED' ? null : ETIQUETA_DE_CALIDAD_DE_TIEMPO[sesionSinPausas.quality],
@@ -1529,7 +1677,7 @@ export function PantallaDeSesion({
   // El tiempo en el ejercicio actual, con la corrida abierta: sus tramos activos, sin las pausas (PA-02).
   const enElEjercicio = conCorrida ? tiempoDelEjercicioEnVivo(local.corrida, almacen.reloj.ahora(), p.prescriptionId) : null;
   const temporizadorDelEjercicio: Temporizador | null =
-    enElEjercicio && enElEjercicio.ms !== null
+    enElEjercicio && enElEjercicio.ms !== null && abiertaDesde.tipo === 'conteo'
       ? { texto: `${t.esteEjercicio} ${duracionParaMostrar(enElEjercicio.ms) ?? '—'}`, calidad: null, etiqueta: `${t.esteEjercicio}: ${duracionParaLeer(enElEjercicio.ms)}` }
       : null;
 
@@ -1575,17 +1723,35 @@ export function PantallaDeSesion({
   );
 
   if (finalizando) {
+    // AV2-31 a AV2-34: el cierre es corto. Arriba, el resultado y cómo resultó; junto al botón, por qué no se puede
+    // finalizar todavía o qué falló; el detalle (las series y los tiempos), plegado.
+    const C = TEXTOS_DEL_CIERRE;
     const deHoy = borrador ? borrador.date === hoyEn(borrador.timeZone) : true;
     const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion);
     const porEjercicio = s.prescriptions.flatMap((x) => {
       const series = pendientes.filter((q) => q.prescriptionId === x.prescriptionId).map((q) => q.setIndex);
       return series.length > 0 ? [{ prescriptionId: x.prescriptionId, nombre: x.exerciseName, series }] : [];
     });
+    const sugerida = condicionQueCorresponde(resumen);
+    const condicion = borrador?.sessionCondition ?? sugerida;
+    const zona = borrador?.timeZone;
+    const horaTomada = borrador ? horaTomadaAlEmpezar({ fechaDeLaSesion: borrador.date, zona: borrador.timeZone, inicio: inicioDeLaCorrida(eventosDeLaCorrida(local.corrida)) }) : null;
+    const pideLaHora = !deHoy && !borrador?.occurredAt && condicion !== 'NOT_COMPLETED' && horaTomada === null;
+    const motivoParaNo = motivoParaNoFinalizar({
+      condicion,
+      medicionAbierta: modo === 'en-vivo' && abierta !== null,
+      escritasSinRegistrar: porEjercicio.length > 0,
+      faltaLaHora: pideLaHora && !/^\d{2}:\d{2}$/.test(hora),
+    });
+    const tiempos = modo === 'en-vivo' ? tiemposResumidos(calculo, s.prescriptions.map((x) => ({ prescriptionId: x.prescriptionId, nombre: x.exerciseName }))) : [];
+    // AV2-37: con la sesión abierta otro día, el cierre no cuenta «Sin pausas: 89:08:26»; dice desde cuándo está abierta.
+    const renglones = renglonesDelResultado(resumen, abiertaDesde.tipo === 'desde' ? abiertaDesde : { tipo: 'conteo', sinPausasMs: modo === 'en-vivo' ? (sesionSinPausas?.ms ?? null) : null });
+    const elegir = (c: 'COMPLETED' | 'COMPLETED_WITH_DEVIATION') => void guardarEnElBorrador({ sessionCondition: c, reason: motivoQueViaja(c, motivo) });
+    const campoDelMotivo = <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} ayuda={COPY_ENTRENAMIENTO.ayudaDelMotivo} value={motivo} onChangeText={setMotivo} />;
     return (
       <View>
-        <Titulo>{e.resumenAntesDeFinalizar}</Titulo>
+        <Titulo>{C.titulo}</Titulo>
         <Parrafo tenue>{`${s.label} · ${fechaCivil(local.fecha)}`}</Parrafo>
-        {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
         {modo === 'en-vivo' && abierta ? dialogoDeMedicion(deOtroProceso ? e.laSesionQuedoAbierta : e.medicionAbierta, abierta) : null}
         {/* Lo escrito sin registrar, antes que todo: se registra de una o se descarta, nunca se pierde en silencio (PA-01). */}
         {porEjercicio.length > 0 ? (
@@ -1598,43 +1764,60 @@ export function PantallaDeSesion({
             <Boton texto={t.descartarLoEscrito} tipo="peligroSecundario" onPress={() => void descartarEscritas()} deshabilitado={ocupado} />
           </Seccion>
         ) : null}
-        <Seccion titulo={COPY_ENTRENAMIENTO.series} icono="series">
+        <Seccion titulo={C.comoResulto} icono="desvio">
+          <Parrafo>{renglones.resultado}</Parrafo>
+          {renglones.abierta ? <Parrafo tenue>{renglones.abierta}</Parrafo> : null}
+          <Segmentos
+            etiqueta={C.comoResulto}
+            opciones={[
+              { valor: 'COMPLETED', texto: C.realizada },
+              { valor: 'COMPLETED_WITH_DEVIATION', texto: C.conDesvio },
+            ]}
+            valor={(condicion === 'COMPLETED' || condicion === 'COMPLETED_WITH_DEVIATION' ? condicion : 'ninguna') as 'COMPLETED' | 'COMPLETED_WITH_DEVIATION'}
+            alElegir={elegir}
+            deshabilitado={ocupado}
+          />
+          {!borrador?.sessionCondition && sugerida ? <Parrafo tenue>{C.porQueRealizada}</Parrafo> : null}
+          {/* El motivo, con el desvío: lo escrito viaja con la condición. Con la no realizada, va abajo, en su sección. */}
+          {condicion === 'COMPLETED_WITH_DEVIATION' ? campoDelMotivo : null}
+          {pideLaHora ? <Campo etiqueta={`${COPY_ENTRENAMIENTO.horaDeLaSesion} (HH:MM)`} value={hora} onChangeText={setHora} keyboardType="numbers-and-punctuation" /> : null}
+          {!pideLaHora && !borrador?.occurredAt && horaTomada ? <Parrafo tenue>{C.horaTomada(horaDe(horaTomada, zona))}</Parrafo> : null}
+        </Seccion>
+        {estadoDelEnvio}
+        {/* Junto al botón: lo que falta o lo que falló. Arriba de todo, la persona no lo veía (AV2-31). */}
+        {aviso ? <Aviso tipo={aviso.tipo} titulo={aviso.texto} /> : null}
+        {motivoParaNo ? <Parrafo>{motivoParaNo}</Parrafo> : <Parrafo tenue>{COPY_ENTRENAMIENTO.confirmarEsDefinitivo}</Parrafo>}
+        <Boton texto={e.finalizarEntrenamiento} onPress={() => void finalizar()} ocupado={ocupado} deshabilitado={motivoParaNo !== null} />
+        <Boton
+          texto={C.volverALaSesion}
+          tipo="secundario"
+          onPress={() => {
+            setAviso(null);
+            setFinalizando(false);
+          }}
+          deshabilitado={ocupado}
+        />
+        <Desplegable titulo={C.detalle} icono="series">
           <SeriesDelResumen resumen={resumen} />
           <Parrafo tenue>{t.sinTildarNoCuentan}</Parrafo>
-        </Seccion>
-        {modo === 'en-vivo' ? (
-          <Seccion titulo={e.tiemposDeLaSesion} icono="reloj">
-            <TiemposMarcados tiempos={{ sesion: sesionSinPausas, calculo, nombreDe }} />
-          </Seccion>
-        ) : null}
-        <Seccion titulo={COPY_ENTRENAMIENTO.condicionDeLaSesion} icono="desvio">
-          {/* El motivo va antes que los botones: lo escrito viaja con la condición. */}
-          <Campo etiqueta={COPY_ENTRENAMIENTO.motivoOpcional} ayuda={COPY_ENTRENAMIENTO.ayudaDelMotivo} value={motivo} onChangeText={setMotivo} />
-          <Parrafo>{textoDeLaCondicion(borrador?.sessionCondition ?? null)}</Parrafo>
-          <Boton
-            texto="Realizada"
-            tipo={borrador?.sessionCondition === 'COMPLETED' ? 'primario' : 'secundario'}
-            seleccionado={borrador?.sessionCondition === 'COMPLETED'}
-            onPress={() => void guardarEnElBorrador({ sessionCondition: 'COMPLETED', reason: motivo.trim() || null })}
-            deshabilitado={ocupado}
-          />
-          <Boton
-            texto="Realizada con desvío"
-            tipo={borrador?.sessionCondition === 'COMPLETED_WITH_DEVIATION' ? 'primario' : 'secundario'}
-            seleccionado={borrador?.sessionCondition === 'COMPLETED_WITH_DEVIATION'}
-            onPress={() => void guardarEnElBorrador({ sessionCondition: 'COMPLETED_WITH_DEVIATION', reason: motivo.trim() || null })}
-            deshabilitado={ocupado}
-          />
-        </Seccion>
-        {!deHoy && !borrador?.occurredAt && borrador?.sessionCondition !== 'NOT_COMPLETED' ? (
-          <Campo etiqueta={`${COPY_ENTRENAMIENTO.horaDeLaSesion} (HH:MM)`} value={hora} onChangeText={setHora} keyboardType="numbers-and-punctuation" />
-        ) : null}
-        {estadoDelEnvio}
-        <Parrafo tenue>{COPY_ENTRENAMIENTO.confirmarEsDefinitivo}</Parrafo>
-        <Boton texto={e.finalizarEntrenamiento} onPress={() => void finalizar()} ocupado={ocupado} />
-        <Boton texto="Volver a la sesión" tipo="secundario" onPress={() => setFinalizando(false)} deshabilitado={ocupado} />
+          {tiempos.length > 0 ? (
+            <View>
+              <Text style={estilos.tituloDelDetalle}>{e.tiemposDeLaSesion}</Text>
+              {tiempos.map((r) => (
+                <View key={r.prescriptionId} style={estilos.renglonDeTiempos}>
+                  <Text style={estilos.nombreEnElDetalle}>{r.nombre}</Text>
+                  {r.descansos ? <Text style={estilos.textoDelDetalle}>{r.descansos}</Text> : null}
+                  {r.series ? <Text style={estilos.textoDelDetalle}>{r.series}</Text> : null}
+                </View>
+              ))}
+              <Parrafo tenue>{COPY_ENTRENAMIENTO_POR_SERIE.noSonMinutosDeEsfuerzo}</Parrafo>
+            </View>
+          ) : null}
+        </Desplegable>
         {/* Lejos de «Finalizar» y de los botones frecuentes, y con confirmación si hay algo cargado (B10-10:337). */}
         <Seccion titulo="¿No pudiste entrenar?" icono="salteada">
+          {/* El motivo de la no realizada, opcional (REG-06-131; B10 §34): antes del botón y con ella elegida. */}
+          {condicion !== 'COMPLETED_WITH_DEVIATION' ? campoDelMotivo : null}
           <Boton texto={COPY_ENTRENAMIENTO.noPudeRealizarla} tipo="secundario" seleccionado={borrador?.sessionCondition === 'NOT_COMPLETED'} onPress={() => void noPude()} deshabilitado={ocupado} />
         </Seccion>
       </View>
@@ -1710,7 +1893,7 @@ export function PantallaDeSesion({
           <Boton texto={e.iniciarEntrenamiento} onPress={() => void iniciarEntrenamiento()} ocupado={ocupado} />
         </Aviso>
       ) : null}
-      {modo === 'en-vivo' && estado?.runId && !almacen.explicacionVista() ? <ExplicacionDeLosTiempos onEntendido={() => entrenamientoLocal.marcarExplicacionVista()} /> : null}
+      {explicacion === 'a-la-vista' ? <ExplicacionDeLosTiempos onEntendido={() => setExplicacion('no')} /> : null}
       {pausada ? <Aviso tipo="info" titulo={e.sesionEnPausa} /> : null}
       <EjercicioActivo
         token={token}
@@ -1780,7 +1963,15 @@ export function PantallaDeSesion({
       {/* Siguiente ejercicio y Pausar están en la fila fija (PV-11); sin corrida en vivo, Siguiente ejercicio queda acá. */}
       {siguiente && !conCorrida ? <Boton texto={e.siguienteEjercicio} tipo="secundario" onPress={() => pasarA(siguiente.prescriptionId)} /> : null}
       {/* «Finalizar entrenamiento» queda al final de la pantalla y en «Ver rutina», como antes: no compite en la fila. */}
-      <Boton texto={e.finalizarEntrenamiento} tipo="secundario" onPress={() => setFinalizando(true)} />
+      <Boton
+        texto={e.finalizarEntrenamiento}
+        tipo="secundario"
+        onPress={() => {
+          // Un aviso de la sesión (un rechazo de una acción de tiempo) no es del cierre: no se arrastra ni se anuncia ahí.
+          setAviso(null);
+          setFinalizando(true);
+        }}
+      />
       <HojaDelDescanso
         visible={hojaDelDescanso}
         ajustes={ajustes}
@@ -1932,4 +2123,9 @@ const estilos = estilosPorTema((COLOR) => ({
   tituloDeLaSerie: { fontSize: 19, fontWeight: '800', color: COLOR.texto, marginTop: 8 },
   accionesDeLaTabla: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16 },
   ayudaDelBoton: { fontSize: 14, lineHeight: 20, color: COLOR.tenue, textAlign: 'center', marginBottom: 4 },
+  // El detalle plegado del cierre (AV2-34): un renglón por ejercicio, con sus descansos y sus series medidas.
+  tituloDelDetalle: { fontSize: 16, fontWeight: '800', color: COLOR.texto, marginTop: 12, marginBottom: 4 },
+  renglonDeTiempos: { paddingVertical: 6, borderTopWidth: 1, borderTopColor: COLOR.borde, gap: 2 },
+  nombreEnElDetalle: { fontSize: 15, fontWeight: '700', color: COLOR.texto },
+  textoDelDetalle: { fontSize: 14, lineHeight: 20, color: COLOR.texto },
 }));

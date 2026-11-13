@@ -19,7 +19,7 @@ import { fecha } from '../formato';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { etiquetaDeNovedad, insigniaDeImportancia, rutaDeNovedad } from '../novedades-en-el-telefono';
-import { Aviso, Insignia, Parrafo, Titulo, estilosPorTema } from '../ui';
+import { Aviso, Insignia, Parrafo, SuperficieTocable, Titulo, estilosPorTema } from '../ui';
 
 /** A qué pantalla lleva cada novedad, y cuál se destaca: lógica pura, probada en `novedades-en-el-telefono.test.ts`. */
 export { rutaDeNovedad } from '../novedades-en-el-telefono';
@@ -78,13 +78,14 @@ export function PantallaDeNovedades({
       {lista.estado.tipo === 'listo' && items.length === 0 ? <Parrafo>{COPY_NOVEDADES.vacio}</Parrafo> : null}
       {problema ? <Aviso tipo="error" titulo={problema} /> : null}
       {items.map((n) => (
-        <Pressable
+        <SuperficieTocable
           key={n.newsId}
           accessibilityRole="button"
           accessibilityLabel={etiquetaDeNovedad(n, fecha(n.occurredAt ?? n.recordedAt))}
           accessibilityState={{ busy: abriendo === n.newsId }}
           onPress={() => void abrir(n)}
-          style={({ pressed }) => [estilos.novedad, !n.readAt && estilos.sinLeer, insigniaDeImportancia(n) !== null && estilos.importante, pressed && estilos.presionada]}
+          style={estilos.novedad}
+          encima={(presionada) => [!n.readAt && estilos.sinLeer, insigniaDeImportancia(n) !== null && estilos.importante, presionada && estilos.presionada]}
         >
           <View style={estilos.encabezado}>
             <Text style={estilos.titulo}>{n.title}</Text>
@@ -93,7 +94,7 @@ export function PantallaDeNovedades({
           </View>
           <Text style={estilos.cuerpo}>{n.body}</Text>
           <Text style={estilos.fecha}>{abriendo === n.newsId ? 'Abriendo…' : fecha(n.occurredAt ?? n.recordedAt)}</Text>
-        </Pressable>
+        </SuperficieTocable>
       ))}
       <VerMas estado={lista.estado} onVerMas={lista.verMas} />
     </>
@@ -101,7 +102,7 @@ export function PantallaDeNovedades({
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  novedad: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginBottom: 10, backgroundColor: COLOR.superficie, minHeight: 48 },
+  novedad: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 14, marginBottom: 10, minHeight: 48 },
   sinLeer: { borderColor: COLOR.acento },
   // Importante: el borde más grueso acompaña a la palabra «Importante»; no la reemplaza.
   importante: { borderWidth: 2, borderColor: COLOR.acento },

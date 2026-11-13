@@ -173,6 +173,7 @@
 | DL-167 | Pedido de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; actualizado el mismo día con el paquete V3 y sus decisiones) | RF-030 · RF-039 a RF-041 · UC-P10 · UC-P11 · UC-P15 · UC-P16 · UC-I04 · UC-P32 · REG-06-119 y 120 · INV-06-133 · REG-06-145 · B10-05 · B10-06 · B10-10 · DL-108 · DL-109 · DL-119 · DL-148 · DL-152 · DL-161 · DL-163 (D-17 a D-21) · DL-168 · DL-169 · DL-170 · DL-171 | Los editores del profesional piden mucho desplazamiento, no muestran totales, no dejan descartar un borrador, avisan tarde lo que impide activar y obligan a salir del plan para crear una receta; Dirección pide crear con un asistente de cuadros y presets, y editar en una estación de trabajo, antes de congelar el 25/11 | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · la etapa 1, en programación**: «todo el rediseño antes de congelar la app el 25/11», con la dirección de diseño del mismo día (crear con un asistente por pasos, los cuadros enfocados y los presets de primera clase; la estación de tres zonas para editar). Paquete declarado en `docs/paquetes/WP-EDITORES-PROFESIONAL.md` (ED-00 a ED-76, con lo que suma V3, seis defectos P0, el vidrio del website y la vertical de fuerza), en borrador. Ratificadas el 11/11: DJ-1, DJ-2, DJ-4 a DJ-11 y DJ-13 a DJ-16, ED-D5, ED-D7, ED-D9, ED-D10 y ED-D12. El 2026-11-12, Dirección aprobó la página de maquetas v3 entera: el alcance de las 53 partes, las maquetas, el resto de las ED-D como se recomendaban y las recomendaciones de Claude del 11/11 (R1 a R13) |
 | DL-168 | Hallazgo de las capturas de Dirección · 2026-11-11 (B28 de los flujos de planificación; carril rápido autorizado por Dirección el mismo día) | 09v7 §4.1 (400 INVALID_REQUEST) · WP-02 (el límite de 16 KB) · API-NUT-07 y 10 · API-TRN-07 y 10 · API-REC-01 y 04 · DL-148 · DL-152 · GHSA-mrhx-c7xc-m3w5 | Un plan de Nutrición realista no se guardaba: la API aceptaba 16 KB por pedido en todas las rutas, el editor manda el borrador entero en cada guardado, y el rechazo se veía como «El servicio no está disponible» | **ARREGLADA e integrada en `main` (#252, 6a05fee)**: 700 KB solo para las seis escrituras de planes y recetas; el 400 dice TOO_BIG en `(body)`; la web lo dice claro y conserva lo escrito. **Ampliación a las plantillas** (API-TPN-01 y 04, API-TPL-01 y 04, con el mismo límite y el mismo mensaje en «Guardar como plantilla») integrada en `main` con #254 |
 | DL-169 | Encargo de Dirección · 2026-11-11 (WP-USO-FINAL; la regla de las APK anteriores, el mismo día) | 08 §42 · 08 §33 · 08 §12 · 08 §19 · 04 RF-005 · 09 v0.12 (ACC-P1, RGT, EXP) · 09 v0.8 (PRO-01 a 08) · DL-009 · DL-040 · DL-024 · DL-036 · DL-138 · DL-152 · DL-155 · DL-114 | El nombre era optativo y varias partes se pensaron para datos de prueba: el alta sin nombre, sin recuperación de contraseña ni entrada para profesionales reales, con textos legales de demostración y sin producción | **DECIDIDA por Dirección el 2026-11-11**: el nombre es obligatorio, y las APK anteriores quedan en suspenso (enmienda de DL-152). **UF-D1 a UF-D13 RATIFICADAS** el mismo día · la **etapa 1** (UF-12, UF-00, UF-01 y UF-08) **integrada** el 2026-11-12 (#253, main `549f41e3`); la **etapa 2** (UF-09, UF-11, UF-04, UF-06, UF-07, UF-03, UF-05 y UF-02) declarada ese día, en un PR en borrador y **sin integrar**, con las decisiones técnicas nuevas (UF-T15 en adelante) a ratificar (`docs/paquetes/WP-USO-FINAL.md` §13); la **primera mitad** (UF-09, UF-11, UF-04 y UF-06) programada ese día en el PR #257 |
+| DL-170 | Decisión de Dirección · 2026-11-11 (WP-APP-VUELTA-2) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · DL-166 (PV-2, PV-5, PV-11 y AVD-2) · DL-117 · DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · WP-ENTRENAMIENTO-SERIES §7.7 · GUIA-UX-UI I.6, I.8, III.3 y III.4 · F-143 | La APK se siente plana: el fondo es liso, las tarjetas son mates y opacas y el botón principal es casi blanco. Además, el Inicio de la 0.23 tiene seis errores de lógica: «Empezar» con una sesión en curso, «la que sigue» sin mirar lo hecho hoy, la figura cortada en Evolución, «Cómo se lee» desalineado, ceros en Tu historial y una actividad que se lee de dos maneras | **DECIDIDA por Dirección el 2026-11-11 · etapa A programada, sin integrar (#255)**: «Sí, Inicio + glassy en toda la app», en la misma APK que UF-01 y antes del congelamiento del 25/11; primero, el Inicio real en el teléfono de Dirección. Aprobadas la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; la etapa B espera el visto bueno a la muestra (`docs/paquetes/WP-APP-VUELTA-2.md` §10) |
 | DL-171 | Decisión de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; DJ-1 y DJ-2 del juicio del paquete V3) | 09v10:356 · 06:5431 · REG-06-182 · INV-06-192 · REG-06-202 a 207 · B10-06:426-431 · B10-08 · INV-06-152 · DL-126 · DL-161 · DL-167 | El legajo dice que BE no fija una fórmula de repetición máxima, y un RIR registrado puede ser el del plan sin marca; Dirección pide seguir la fuerza desde lo que se hizo, no desde lo indicado | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · el método, en programación (etapa 1)**: Epley v1 (n/30, bandas sobre las repeticiones equivalentes, RIR de 0 a 2), solo para el profesional y en el website, desde una serie que observa el profesional o que escribió la persona, con la procedencia por campo en la APK de esta actualización; el profesional elige un % y BE sugiere los kilos, que él confirma. Enmienda 09v10:356 sin tocar el legajo. ED-70 a ED-76; ED-D17 a ED-D21, decididas el 2026-11-12 como se recomendaban; el website le explica al profesional la regla del RIR de 0 a 2 (R3) |
 
 ---
@@ -7174,12 +7175,12 @@ necesario más información, un desplegable». Para el descanso: «las configura
 - **PV-1 · Perfil reemplaza a «Información»** y absorbe Cuenta y el menú. Vínculos pasa a Perfil, «Tu historial» a
   Entrenamiento y los registros nutricionales a Nutrición. La cabecera queda con la marca y Novedades.
 - **PV-2 · Las comidas del día, como fichas en Inicio.** «La que sigue» es la primera sin registrar en el orden del
-  plan, nunca por la hora.
+  plan, nunca por la hora. *Enmendada por DL-170 (2026-11-11), AV2-D1 paso 1: la siguiente a la última registrada hoy.*
 - **PV-3 · «Quién ve qué», en esta vuelta:** es solo de lectura, usa operaciones que ya existen y sus textos se revisan
   contra 10-B04.
 - **PV-4 · La regla de los desplegables:** se pliega lo que explica y nunca lo que hace falta para decidir (estado,
   fecha, quién y si se puede responder). Está en la GUIA-UX-UI, III.7.
-- **PV-5 · «Tu actividad» en Inicio, un solo número** en 30 días. El desglose va en «Tu historial».
+- **PV-5 · «Tu actividad» en Inicio, un solo número** en 30 días. El desglose va en «Tu historial». *Reemplazada por DL-170 (2026-11-11), AV2-D2: realizadas y no realizadas por separado.*
 - **PV-6 · Una marca de pendientes en Perfil** (Dirección eligió distinto de la recomendación). Es un punto sin número
   que desaparece cuando la persona responde o dice que no: negarse vale igual.
 - **El ícono de «Mis hábitos»:** un reloj envuelto por una flecha circular.
@@ -7219,7 +7220,7 @@ necesario más información, un desplegable». Para el descanso: «las configura
   navegación pasa a dos filas debajo de la fila de acciones, sin excepción a PV-11. La alternativa es esconder la
   navegación durante la sesión, que es una excepción a PV-11.
 - **AVD-2, AVD-4, AVD-6 y AVD-7,** con la recomendación del paquete: los 30 días en «Tu historial», la acción del medio
-  de la fila fija, el campo opcional de los eventos y «Arranca sola» solo con la app viva.
+  de la fila fija, el campo opcional de los eventos y «Arranca sola» solo con la app viva. *AVD-2, reemplazada por DL-170 (2026-11-11), AV2-D2.*
 - **AVD-9, nueva** (sale de AVD-1): la persona puede responder después de haber dicho que no, mientras la solicitud siga
   abierta, y decir que no queda en la historia de la solicitud.
 
@@ -7750,6 +7751,114 @@ segundo factor de un profesional, con fundamento) y **API-ACC-09** (ID nuevo de 
 de una versión publicada, sin sesión, para que la APK del 25/11 lea los textos que se publiquen después). Corrige el plan
 para publicar los textos (§13.7): no hace falta otra APK para los términos y la privacidad; A3, B2 y los que se aceptan
 al usarlos quedan pendientes para el PR de publicación.
+
+## DL-170 — La APK con profundidad: vidrio en toda la app, primero en Inicio, y los errores de lógica de Inicio
+
+**Prioridad:** alta (la primera impresión de la APK, y datos equivocados a la vista en Inicio) · **Documento:**
+TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · DL-166 (PV-2, PV-5, PV-11 y AVD-2) · DL-117 ·
+DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · DL-049 · DL-077 · DL-106 · DL-111 · `WP-ENTRENAMIENTO-SERIES.md` §7.7 y
+la excepción 13 de `REFERENCIAS_VISUALES.md` · GUIA-UX-UI I.6, I.8, II.2, III.3 y III.4 · F-143 de WP-ESCRITORIO-AREAS ·
+**Estado:** DECIDIDA por Dirección el 2026-11-11 · etapa A programada en #255, sin integrar. El 2026-11-11 Dirección
+aprobó la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; para AV2-D3, D4, D5, D7 y D8 rigen las
+recomendaciones; la etapa B espera el visto bueno a la muestra. Las técnicas AV2-T1 a AV2-T22, del continuador (T17 a
+T22, de la revisión de la etapa A), están a ratificar (`docs/paquetes/WP-APP-VUELTA-2.md` §6.1 y §10).
+
+**Qué dice lo vigente.**
+- **La superficie de la APK es mate.** Desde el 2026-10-06 no tiene brillo interno (`WP-ENTRENAMIENTO-SERIES.md` §7.7,
+  por la excepción 13: nada adentro que pueda quedar recortado). Hay vidrio solo en la barra, ahumada y sin desenfoque,
+  y en las tarjetas de la figura. El website es mate (GUIA II.2).
+- **El fondo es liso, y el botón principal de Azul noche, casi blanco** (#E8F5FE). El tenue de la APK sigue en el
+  celeste #8DCAE5, aunque el website pasó a #A3B1C2 el 2026-10-15 (F-143: «la APK conserva el celeste hasta su próxima
+  versión»).
+- **GUIA I.8:** los íconos no tienen color propio, y una tilde no va al lado de un dato, porque se leería como «cumplió».
+- **DL-166:** «la que sigue» es la primera comida sin registrar en el orden del plan, nunca por la hora (PV-2), y «Tu
+  actividad» es un solo número, las sesiones registradas en 30 días (PV-5).
+- **El encuadre del 2026-10-04** (GUIA III.4): el cuerpo del mapa, grande y recortado por el borde derecho, donde no hay
+  sitios.
+
+**Qué pidió Dirección** (2026-11-11). Pasó una referencia del tema de vidrio para la apariencia de la app, porque
+«actualmente lo siento todo muy plano», y decidió: «Sí, Inicio + glassy en toda la app». Antes, la crítica de las
+capturas de la 0.23 (2026-11-09) había encontrado seis errores de lógica en Inicio.
+
+**Lo decidido** (Dirección, 2026-11-11):
+- **Vidrio en toda la APK,** con la maqueta oficial (dos imágenes, Azul noche y Claro) como referencia aprobada: un fondo
+  con degradé y destellos, tarjetas de vidrio con un borde de luz, un botón principal con brillo y una barra fina.
+- **Primero el Inicio, en su teléfono.** Se extiende a toda la app recién con su visto bueno.
+- **En la misma APK que UF-01,** antes del congelamiento del 25/11.
+- **El vidrio del website va en WP-EDITORES-PROFESIONAL.**
+- **Se puede celebrar lo que la persona hace** (Dirección, 2026-11-08; no estaba escrito en el repo), sin rachas que
+  castiguen. Lo no hecho queda neutro, nunca rojo.
+
+**La receta, medida** (§3.1 y §5.2 del paquete):
+- **El fondo** es un degradé con dos destellos, al 12 % y al 14 % en Azul noche. En Claro, los destellos aclaran, y el
+  «gris azulado» sale de la sombra de las tarjetas: un fondo más oscuro deja el texto por debajo de 4,5:1.
+- **El vidrio va en dos niveles:** el de afuera, con el borde de luz, la línea de luz y la sombra; el de adentro, sin
+  sombra.
+- **`superficie` sigue opaca:** es el vidrio ya resuelto sobre el fondo liso. Los diálogos y la fila fija de la sesión
+  siguen opacos.
+- **Sin vistas hijas ni librerías nuevas:** `boxShadow` y `experimental_backgroundImage`, de React Native 0.86. Plan B,
+  `expo-linear-gradient`.
+- **Cambian tokens:** el tenue (#A3B1C2 en Azul noche, el del website, y #5B6B82 en Claro), el borde de los campos de
+  Azul noche (#6497BD) y el botón principal (cian, con degradé).
+- **En el peor punto,** el texto pasa 4,5:1 en los dos temas y los bordes de control, 3:1. Los márgenes más finos son el
+  tenue de Azul noche sobre el fondo (4,55), las etiquetas de la barra (4,58) y el error de Claro (4,54); entre los bordes,
+  el de un campo directo sobre el fondo (3,17 y 3,03), que se mide desde la revisión de la etapa A.
+
+**Qué modifica.**
+- **`WP-ENTRENAMIENTO-SERIES.md` §7.7:** la superficie mate deja de ser la regla de la APK. Se conserva la intención de
+  la excepción 13: el vidrio no agrega vistas hijas, y el brillo y la línea de luz los dibuja la propia vista, recortados
+  a su radio.
+- **La guía,** con el código que la cambia (AV2-17):
+  - III.3: las superficies, con la receta;
+  - I.6: el tenue de la APK pasa a #A3B1C2, y los destellos del fondo son la única luz que no marca algo que se toca;
+  - I.8: la tilde de lo que la persona hizo (la sesión de un día, la comida registrada) va en `exito`. Es la decisión
+    del 2026-11-08: celebra un acto, nunca un número ni una medida del cuerpo;
+  - y `INICIO-Y-NAVEGACION.md`: la barra al 88 % y la cabecera sin «BE» en texto.
+- **Lo que enmiendan las decisiones ratificadas** (Dirección, 2026-11-11), cada prueba con su mutación, nunca para que
+  pase:
+  - **PV-2 queda enmendada por AV2-D1, paso 1:** la que sigue es la siguiente a la última comida registrada hoy en el
+    orden del plan, y las anteriores sin registrar quedan neutras («Sin registrar»). Sin nada registrado hoy, la primera
+    del plan. TEST-AVR-010 pide la regla nueva. El paso 2 (la hora habitual de la persona, AV2-27) sigue sin decidir;
+  - **PV-5 y AVD-2 quedan reemplazadas por AV2-D2:** Inicio dice «2 realizadas · 1 no realizada · 30 días», como la
+    maqueta, nunca un total que mezcle lo hecho con lo no hecho; «Tu historial» da el desglose de los mismos 30 días, sin
+    ceros, y la tira, «N sesiones realizadas esta semana». Las tres salen de la misma lectura. TEST-AVR-012 y 013 piden la
+    regla nueva.
+- **Solo con AV2-D6 ratificada** (a ratificar, etapa B), y con su mutación: el encuadre del 2026-10-04 y su prueba; el
+  cuerpo entero, escalado con su capa de puntos.
+
+**Cómo se respeta el legajo.**
+- El contraste AA se mide en el peor punto, en los dos temas, con su prueba (RNF-ACC-001).
+- Nada califica (TEST-PRJ-009). La tilde celebra un acto; no hay cuenta de días seguidos; lo no hecho es neutro, sin
+  rojo ni cruz. Ningún texto nuevo dice «cumplimiento», «adherencia» ni «racha».
+- El cuerpo se ubica y no se califica: la figura entera se escala con sus puntos, y ninguno se mueve.
+- Inicio no escribe nada, y lee con las operaciones y los permisos de cada módulo. La muestra no toca la API.
+- En `test`, el ambiente sigue a la vista (08 §33) hasta UF-08.
+- TalkBack lee cada ícono por su texto, y el fondo y los brillos no se recorren. La letra ×1,3 cambia la composición y
+  no achica nada. Nada se anima. Con el texto de alto contraste de Android, todo vuelve a ser opaco.
+
+**Los defectos nuevos que encontró la verificación.**
+- **Severidad alta:** las comidas de Inicio leen API-NUT-14, que no ve la «comida diferente». Inicio la deja sin
+  registrar y la cuenta «fuera del plan», mientras Nutrición (API-ING-01) la muestra registrada. Confirmado en el
+  código, sin probar en el teléfono. Se arregla en la APK (AV2-13), sin tocar API-NUT-14.
+- **Tocar una ficha de comida no abre esa comida** (AV2-14).
+
+**Pruebas:** TEST-AV2-001 a 026 (§8 del paquete), en `WP-APP-VUELTA-2-ORACULOS.md`, que se escribe al programar. Cada
+una, con su mutación. El rendimiento se mide con `dumpsys gfxinfo`, antes y después, en el teléfono de Dirección.
+
+**Lo que queda abierto:**
+- el visto bueno de Dirección a la muestra (AV2-18), que abre la etapa B (AV2-19 a AV2-26), y su sí a esas partes;
+- de las decisiones: el paso 2 de AV2-D1 (la hora habitual, AV2-27) y AV2-D6, D9, D10 y D12, de la etapa B. AV2-D3, D4,
+  D5, D7 y D8 rigen con la recomendación, y cambian si Dirección lo pide al ver la muestra;
+- las técnicas AV2-T1 a AV2-T22, a ratificar (T14 a T16, de la programación; T17 a T22, de la revisión de la etapa A);
+- la muestra en su teléfono;
+- TalkBack y el rendimiento en un teléfono real.
+
+**Condición de cierre:**
+- la candidata con UF-01, publicada en `test` antes del congelamiento del 25/11 (o la siguiente), con sus lecturas
+  congeladas;
+- la prueba de contraste en verde, y el rendimiento medido antes y después;
+- en `EVIDENCIA/APP-VUELTA-2/LEEME.md`: las capturas de cada pantalla en los dos temas y con letra ×1,3, el visto bueno
+  de Dirección a la muestra, y TalkBack escrito como hecho o como pendiente.
 
 ## DL-171 — Epley v1: BE estima la repetición máxima, solo para el profesional, desde una serie escrita u observada
 

@@ -47,18 +47,20 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { AVISOS_DE_PRUEBA, type SecretoDeInvitacionRequest } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, View } from 'react-native';
+import { Animated, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AVISOS_DE_PRUEBA_VISIBLES } from './src/ambiente';
 import { api, apiConfigurada, consultarCuentaConSenal, extra, loQueFaltaParaSeguirConTope } from './src/api';
 import { ProveedorDeApariencia, useApariencia, useAparienciaGuardada } from './src/apariencia';
-import { BarraDeZonas, SEPARACION_DE_LA_BARRA, VeloDeLaBarra } from './src/barra-de-zonas';
+import { BarraDeZonas, FundidoSobreLaBarra } from './src/barra-de-zonas';
+import { disposicionDeLaBarra, lugarDelContenido } from './src/disposicion-de-la-barra';
+import { ZONAS } from './src/navegacion';
 import { almacenSeguro } from './src/almacen-seguro';
 import { esAvisoDeBe, renovar } from './src/avisos';
 import { invitacionDelEnlace } from './src/enlace-de-invitacion';
 import { PantallaDeInvitacion } from './src/pantallas/invitacion';
 import { avisoQueAbrioLaApp, dependenciasDeAvisos, escucharAvisosRecibidos, escucharAvisosTocados } from './src/avisos-del-telefono';
-import { Cabecera } from './src/cabecera';
+import { Cabecera, DesvanecidoDeLaCabecera } from './src/cabecera';
 import { ProveedorDeCambios, preguntarAntesDeSalir } from './src/cambios-sin-guardar';
 import { crearRegistroDeCambios, salirConCuidado } from './src/registro-de-cambios';
 import { useCuentaDelEntrenamiento, useHayEntrenamientoEnCurso } from './src/entrenamiento-en-curso';
@@ -111,6 +113,11 @@ import { PantallaDeVinculo } from './src/pantallas/vinculo';
 import { PantallaDeVinculos } from './src/pantallas/vinculos';
 import { crearRestauracionDeAltura } from './src/altura-de-las-zonas';
 import { avisoDeVencimiento, crearSesion, olvidarSesion, quizasVencida, recordarSesion, restanteMs, sesionAlMontar, type Sesion } from './src/sesion-en-memoria';
+import { useAltoContraste } from './src/alto-contraste';
+import { FondoDeLaApp } from './src/fondo-de-la-app';
+import { useMovimientoReducido } from './src/movimiento-reducido';
+import { cabeceraCubierta, FUNDIDO_DE_LA_CABECERA } from './src/receta-de-vidrio';
+import { ProveedorDeVidrio } from './src/vidrio';
 import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Icono, type NombreDeIcono } from './src/icono';
@@ -153,7 +160,7 @@ const commit = extra.commit ? extra.commit.slice(0, 7) : 'no declarado';
  */
 export default function App() {
   const apariencia = useAparienciaGuardada();
-  if (!apariencia.lista) return <View style={estilos.raiz} />;
+  if (!apariencia.lista) return <View style={[estilos.raiz, estilos.raizLisa]} />;
   return (
     <ProveedorDeApariencia value={apariencia}>
       <SafeAreaProvider>
@@ -165,6 +172,8 @@ export default function App() {
 
 function Contenido() {
   const { tema } = useApariencia();
+  // DL-170: con el «Texto de alto contraste» de Android, el vidrio vuelve a ser opaco y el fondo, liso.
+  const altoContraste = useAltoContraste();
   // Inset inferior real del sistema (barra de navegación de Android edge-to-edge / home indicator de iOS).
   const insets = useSafeAreaInsets();
   // Si Android recreó la pantalla (por ejemplo, al cambiar el tamaño de letra), la sesión y la pantalla siguen en el
@@ -213,10 +222,24 @@ function Contenido() {
   const rutaActual = useRef(ruta);
   rutaActual.current = ruta;
   const alturaActual = useRef(0);
+  // La cabecera responde al desplazamiento (AV2-T26): un valor de 0 a 1 que mueve solo la opacidad de su capa y del
+  // desvanecido, con el controlador nativo. Se anima al cruzar el umbral, no en cada evento: nada de React se vuelve a
+  // dibujar al desplazar.
+  const cubierta = useRef(new Animated.Value(0)).current;
+  const cubiertaAhora = useRef(false);
+  const movimientoReducido = useMovimientoReducido();
+  const alDesplazar = (y: number) => {
+    alturaActual.current = y;
+    const ahora = cabeceraCubierta(y);
+    if (ahora === cubiertaAhora.current) return;
+    cubiertaAhora.current = ahora;
+    Animated.timing(cubierta, { toValue: ahora ? 1 : 0, duration: movimientoReducido ? 0 : FUNDIDO_DE_LA_CABECERA, useNativeDriver: true }).start();
+  };
   const alturas = useRef(new Map<string, number>());
   const [restauracion] = useState(() => crearRestauracionDeAltura());
   // El alto real de la barra inferior, medido: el contenido deja ese espacio libre al final. 0 mientras no se ve.
-  const [altoDeLaBarra, setAltoDeLaBarra] = useState(0);
+  // `null` mientras la barra no se midió: hasta entonces, el contenido cuenta con su alto estimado.
+  const [altoDeLaBarra, setAltoDeLaBarra] = useState<number | null>(null);
   // DL-166 (PV-11): el alto de la fila fija de la sesión, que va apilada sobre la barra. 0 mientras no se ve.
   const [altoDeLaFila, setAltoDeLaFila] = useState(0);
   // DL-133: las novedades sin leer, para la campana; `null` mientras no se sabe. Y si un aviso tocado espera la sesión.
@@ -591,13 +614,12 @@ function Contenido() {
   // DL-166 (PV-11): durante la sesión en vivo, la fila de acciones y la barra van fijas, apiladas y opacas; nada flota.
   const filaDeLaSesion = useFilaFija();
   const enLaSesion = conBarra && filaDeLaSesion !== null;
-  // La barra flota sobre el contenido: el contenido deja libre su alto real, el área segura y la separación. Fijas, el
-  // contenido deja libre el alto de las dos (la barra fija ya incluye el área segura).
-  const espacioDeLaBarra = enLaSesion
-    ? altoDeLaBarra + altoDeLaFila + 16
-    : conBarra && altoDeLaBarra > 0
-      ? altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16
-      : 32 + insets.bottom;
+  // Dónde termina el contenido, en un solo lugar para todas las pantallas (hallazgos 5 y 12): el área que se desplaza
+  // termina arriba de la barra, con su alto real (o el estimado, antes de medirla), su separación y el área segura.
+  // Nada pasa por detrás de la barra. Fijas, durante la sesión, quedan fuera la barra y la fila de acciones.
+  const ventana = useWindowDimensions();
+  const filasDeLaBarra = disposicionDeLaBarra({ anchoDePantalla: ventana.width, escalaDeLetra: ventana.fontScale, zonas: ZONAS.map((z) => z.zona) }).filas.length;
+  const lugar = lugarDelContenido({ conBarra, fija: enLaSesion, altoDeLaBarra, altoDeLaFila, insetAbajo: insets.bottom, filas: filasDeLaBarra, escalaDeLetra: ventana.fontScale });
   const faseDeLaRecuperacion: FaseDeLaRecuperacion | null = !recuperacion ? null : recuperacion.tipo === 'sin-verificar' ? { tipo: 'sin-verificar', causa: recuperacion.causa } : tardando ? { tipo: 'tardando' } : { tipo: 'comprobando' };
 
   /**
@@ -621,24 +643,30 @@ function Contenido() {
   };
 
   return (
-    // «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
-    // (adjustResize deja de tener efecto), así que sin esto el teclado tapa los campos de abajo (validación de la 0.11.2).
-    <KeyboardAvoidingView style={estilos.raiz} behavior="padding">
+    // DL-170 (§3.3): con el visto bueno de Dirección a la muestra (2026-11-12), el vidrio va en toda la app (AV2-26).
+    <ProveedorDeVidrio activo altoContraste={altoContraste}>
+    {/* «padding» también en Android: con edge-to-edge (Expo SDK 54+) el sistema ya no achica la ventana al abrir el teclado
+        (adjustResize deja de tener efecto), así que sin esto el teclado tapa los campos de abajo (validación de la 0.11.2).
+        La raíz no pinta el fondo: lo dibuja FondoDeLaApp, su primer hijo, salvo con alto contraste. */}
+    <KeyboardAvoidingView style={[estilos.raiz, altoContraste && estilos.raizLisa]} behavior="padding">
+      <FondoDeLaApp />
       <Cabecera
         volverA={recuperacion || raiz ? null : anterior(ruta)}
+        conLogo={raiz}
         conSesion={conSesion}
         actualizando={hayActualizaciones && sesion !== null}
         volver={volverConCuidado}
         sinLeer={conSesion ? sinLeer : null}
         abrirNovedades={() => irConCuidado({ nombre: 'novedades' })}
+        cubierta={cubierta}
+        altoContraste={altoContraste}
       />
+      <View style={[estilos.desplazable, { marginBottom: lugar.margenAbajo }]}>
       <ScrollView
         ref={desplazamiento}
-        contentContainerStyle={[estilos.contenido, { paddingBottom: espacioDeLaBarra }]}
+        contentContainerStyle={[estilos.contenido, { paddingBottom: lugar.rellenoAbajo }]}
         keyboardShouldPersistTaps="handled"
-        onScroll={(e) => {
-          alturaActual.current = e.nativeEvent.contentOffset.y;
-        }}
+        onScroll={(e) => alDesplazar(e.nativeEvent.contentOffset.y)}
         scrollEventThrottle={100}
         onScrollBeginDrag={restauracion.alArrastrar}
         onContentSizeChange={alCambiarElContenido}
@@ -722,7 +750,7 @@ function Contenido() {
               {ruta.nombre === 'consentimiento' ? (
                 <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
-              {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} llevarA={llevarA} /> : null}
+              {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} comida={ruta.comida} llevarA={llevarA} /> : null}
               {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'revisiones' ? <PantallaDeRevisiones key={ruta.area} token={sesion.token} area={ruta.area} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'revision' ? <PantallaDeRevision key={ruta.id} token={sesion.token} area={ruta.area} id={ruta.id} salir={salir} /> : null}
@@ -803,16 +831,19 @@ function Contenido() {
           ) : null}
         </ProveedorDeCambios>
       </ScrollView>
-      {/* La barra flota sobre el final del contenido, que deja libre su alto (espacioDeLaBarra). Resalta la raíz donde
-          empezó el camino hasta esta pantalla; en Novedades, ninguna. */}
-      {/* DL-118: un velo del color del fondo detrás de la cápsula, desde donde termina el espacio libre del contenido. Lo
-          que pasa por detrás no compite con los destinos, y el último contenido queda entero por encima. */}
-      {conBarra && altoDeLaBarra > 0 && !enLaSesion ? <VeloDeLaBarra alto={altoDeLaBarra + insets.bottom + SEPARACION_DE_LA_BARRA + 16} /> : null}
-      {enLaSesion && filaDeLaSesion ? <FilaFijaDeLaSesion fila={filaDeLaSesion} abajo={altoDeLaBarra} alMedir={setAltoDeLaFila} /> : null}
+      {/* Debajo de la línea de la cabecera, el contenido se desvanece en lugar de cortarse de golpe (AV2-T26). */}
+      <DesvanecidoDeLaCabecera cubierta={cubierta} altoContraste={altoContraste} />
+      {/* Y arriba de la barra flotante, se apaga en un fundido corto: el área termina donde empieza la cápsula. */}
+      {lugar.fundido && !altoContraste ? <FundidoSobreLaBarra /> : null}
+      </View>
+      {/* La barra flota debajo del final del área que se desplaza (lugar.margenAbajo). Resalta la raíz donde empezó el
+          camino hasta esta pantalla; en Novedades, ninguna. */}
+      {enLaSesion && filaDeLaSesion ? <FilaFijaDeLaSesion fila={filaDeLaSesion} abajo={altoDeLaBarra ?? 0} alMedir={setAltoDeLaFila} /> : null}
       {conSesion ? <BarraDeZonas actual={pestanaActiva(ruta)} ir={irConCuidado} alMedir={setAltoDeLaBarra} oculta={!conBarra} entrenamientoEnCurso={entrenamientoEnCurso} marcaEnPerfil={conMarcaEnPerfil} fija={enLaSesion} /> : null}
       {/* Los íconos de la barra del sistema: claros sobre Azul noche, oscuros sobre Claro. */}
       <StatusBar style={BARRA_DEL_SISTEMA[tema]} />
     </KeyboardAvoidingView>
+    </ProveedorDeVidrio>
   );
 }
 
@@ -826,10 +857,13 @@ const AREAS_DE_LA_BIENVENIDA: readonly { readonly icono: NombreDeIcono; readonly
 ];
 
 const estilos = estilosPorTema((COLOR) => ({
-  raiz: { flex: 1, backgroundColor: COLOR.fondo },
-  // El margen inferior se completa en el contentContainerStyle con el alto de la barra y el inset real del sistema
-  // (safe-area-context): Android es edge-to-edge desde Expo SDK 54 y el ScrollView llega por detrás de la barra de
-  // navegación.
+  // Sin fondo propio: lo dibuja FondoDeLaApp (DL-170). Liso solo mientras se lee la apariencia y con alto contraste.
+  raiz: { flex: 1 },
+  raizLisa: { backgroundColor: COLOR.fondo },
+  // El desplazamiento y el desvanecido de la cabecera, que va encima de su borde de arriba.
+  desplazable: { flex: 1 },
+  // El margen de abajo del área y el relleno final del contenido los decide `lugarDelContenido`, con el alto de la barra
+  // y el inset real del sistema (safe-area-context): Android es edge-to-edge desde Expo SDK 54.
   contenido: { padding: 20 },
   isotipoGrande: { width: 180, height: 180, alignSelf: 'center', marginTop: 16 },
   lema: { fontSize: 14, fontWeight: '800', letterSpacing: 3, color: COLOR.acento, textAlign: 'center', marginTop: 12 },

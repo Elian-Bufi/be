@@ -425,6 +425,10 @@ Las respuestas que lee la APK 0.13.2 no cambian (§8).
 - **Corrección.** Superficie mate uniforme con su borde, sin el degradado interno. Es lo que pide la excepción 13 de
   `REFERENCIAS_VISUALES.md`.
 - La verificación en Android queda pendiente del teléfono: el render del navegador no usa Yoga.
+- **Nota del 2026-11-11 (DL-170, WP-APP-VUELTA-2).** La superficie mate deja de ser la regla de la APK: Dirección pidió
+  vidrio en toda la app. Se conserva la intención de esta corrección: el vidrio no agrega ninguna vista hija y el brillo
+  es `experimental_backgroundImage` de la propia tarjeta, que React Native 0.86 recorta a su radio, sin nada adentro que
+  pueda quedar recortado. La receta está en `apps/mobile/src/receta-de-vidrio.ts` y en GUIA-UX-UI III.3.
 
 ### 7.8 Web del profesional
 - **Editor de la prescripción.**

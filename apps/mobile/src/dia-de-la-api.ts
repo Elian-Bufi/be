@@ -15,7 +15,7 @@
  */
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import { diaDeLaApi, msHastaLaMedianocheDeLaApi } from './formato';
+import { diaDeLaApi, fijarDiaDeReferencia, msHastaLaMedianocheDeLaApi } from './formato';
 import { diaSinRetroceso, relojDelServidor, vigilarElDia, type Temporizador } from './reloj-del-servidor';
 
 const TEMPORIZADOR: Temporizador = {
@@ -46,5 +46,7 @@ export function useDiaDeLaApi(): string {
       suscripcion.remove();
     };
   }, []);
+  // Las fechas de los textos llevan el año solo si no es el de este día (DL-170, AV2-15).
+  fijarDiaDeReferencia(estado.dia);
   return estado.dia;
 }

@@ -13,6 +13,8 @@
  * - Con letra grande sigue en una fila: los textos largos bajan a dos renglones dentro de su botón, sin cortarse ni
  *   achicarse (PV-13).
  * - Con el teclado abierto no se dibuja, como la barra.
+ * - «Registrar serie N» lleva arriba lo que falta para registrarla (AV2-30): el motivo queda junto al botón, no solo en
+ *   la fila de la tabla, que puede estar fuera de la vista.
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -75,54 +77,63 @@ export function FilaFijaDeLaSesion({ fila, abajo, alMedir }: { fila: FilaPublica
     acciones.current.medio();
   };
   return (
-    <View style={[estilos.fila, { bottom: abajo }]} onLayout={(e) => alMedir(Math.ceil(e.nativeEvent.layout.height))} accessibilityLabel={TEXTOS_DEL_DESCANSO.accionesDeLaSesion}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={datos.izquierda.texto}
-        onPress={() => acciones.current.izquierda()}
-        disabled={ocupado}
-        style={({ pressed }) => [estilos.lateral, pressed && estilos.presionado]}
-      >
-        <Icono nombre={datos.izquierda.tipo === 'pausar' ? 'espera' : 'actualizar'} tamano={20} tono="acento" />
-        <Text style={estilos.textoLateral}>{datos.izquierda.texto}</Text>
-      </Pressable>
-      {datos.medio ? (
+    <View style={[estilos.fila, { bottom: abajo }]} onLayout={(e) => alMedir(Math.ceil(e.nativeEvent.layout.height))}>
+      {datos.nota ? (
+        <Text style={estilos.nota} accessibilityLiveRegion="polite">
+          {datos.nota}
+        </Text>
+      ) : null}
+      <View style={estilos.botones} accessibilityLabel={TEXTOS_DEL_DESCANSO.accionesDeLaSesion}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={datos.motivo ? `${datos.medio.texto}. ${datos.motivo}` : datos.medio.texto}
-          accessibilityState={{ disabled: !medioHabilitado }}
-          onPress={tocarElMedio}
-          disabled={!medioHabilitado}
-          style={({ pressed }) => [estilos.medio, !medioHabilitado && estilos.deshabilitado, pressed && estilos.presionado]}
+          accessibilityLabel={datos.izquierda.texto}
+          onPress={() => acciones.current.izquierda()}
+          disabled={ocupado}
+          style={({ pressed }) => [estilos.lateral, pressed && estilos.presionado]}
         >
-          <Icono nombre={datos.medio.tipo === 'empezar-serie' ? 'derecha' : 'tilde'} tamano={20} tono="botonTexto" />
-          <Text style={estilos.textoDelMedio}>{datos.medio.texto}</Text>
+          <Icono nombre={datos.izquierda.tipo === 'pausar' ? 'espera' : 'actualizar'} tamano={20} tono="acento" />
+          <Text style={estilos.textoLateral}>{datos.izquierda.texto}</Text>
         </Pressable>
-      ) : (
-        <View style={estilos.medioVacio} />
-      )}
-      {datos.siguienteEjercicio ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={datos.siguienteEjercicio.texto}
-          accessibilityState={{ disabled: !datos.siguienteEjercicio.habilitado || ocupado }}
-          disabled={!datos.siguienteEjercicio.habilitado || ocupado}
-          onPress={() => acciones.current.siguiente()}
-          style={({ pressed }) => [estilos.lateral, (!datos.siguienteEjercicio?.habilitado || ocupado) && estilos.deshabilitado, pressed && estilos.presionado]}
-        >
-          <Icono nombre="derecha" tamano={20} tono="acento" />
-          <Text style={estilos.textoLateral}>{datos.siguienteEjercicio.texto}</Text>
-        </Pressable>
-      ) : (
-        <View style={estilos.lateral} />
-      )}
+        {datos.medio ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={[datos.medio.texto, datos.motivo ?? datos.nota].filter(Boolean).join('. ')}
+            accessibilityState={{ disabled: !medioHabilitado }}
+            onPress={tocarElMedio}
+            disabled={!medioHabilitado}
+            style={({ pressed }) => [estilos.medio, !medioHabilitado && estilos.deshabilitado, pressed && estilos.presionado]}
+          >
+            <Icono nombre={datos.medio.tipo === 'empezar-serie' ? 'derecha' : 'tilde'} tamano={20} tono="botonTexto" />
+            <Text style={estilos.textoDelMedio}>{datos.medio.texto}</Text>
+          </Pressable>
+        ) : (
+          <View style={estilos.medioVacio} />
+        )}
+        {datos.siguienteEjercicio ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={datos.siguienteEjercicio.texto}
+            accessibilityState={{ disabled: !datos.siguienteEjercicio.habilitado || ocupado }}
+            disabled={!datos.siguienteEjercicio.habilitado || ocupado}
+            onPress={() => acciones.current.siguiente()}
+            style={({ pressed }) => [estilos.lateral, (!datos.siguienteEjercicio?.habilitado || ocupado) && estilos.deshabilitado, pressed && estilos.presionado]}
+          >
+            <Icono nombre="derecha" tamano={20} tono="acento" />
+            <Text style={estilos.textoLateral}>{datos.siguienteEjercicio.texto}</Text>
+          </Pressable>
+        ) : (
+          <View style={estilos.lateral} />
+        )}
+      </View>
     </View>
   );
 }
 
 const estilos = estilosPorTema((COLOR) => ({
   // Opaca y de lado a lado: nada se ve a través de ella.
-  fila: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 6, backgroundColor: COLOR.superficie, borderTopWidth: 1, borderTopColor: COLOR.borde },
+  fila: { position: 'absolute', left: 0, right: 0, backgroundColor: COLOR.superficie, borderTopWidth: 1, borderTopColor: COLOR.borde },
+  botones: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 6 },
+  nota: { fontSize: 14, lineHeight: 19, fontWeight: '600', color: COLOR.error, paddingHorizontal: 16, paddingTop: 8 },
   lateral: { width: 84, minHeight: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 4 },
   textoLateral: { fontSize: 12, lineHeight: 15, fontWeight: '700', color: COLOR.acento, textAlign: 'center' },
   medio: { flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingHorizontal: 10, backgroundColor: COLOR.botonFondo },

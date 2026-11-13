@@ -220,8 +220,12 @@ test('3 · antes de abrir el borrador se consulta la sesión en curso, y si hay 
 test('3 · Inicio muestra la sesión en curso de otro día, y la sesión enfocada ofrece resolver la que la bloquea', () => {
   const INICIO = fuente('apps/mobile/src/pantallas/inicio-entrenamiento.tsx');
   assert.match(INICIO, /useLecturaRecordada\(token, 'entrenamiento-en-curso', pedirEnCurso, sesionPerdida\)/, 'la misma lectura que Entrenamiento');
-  assert.match(INICIO, /const deOtroDia = ahora && !hoy\.occurrences\.some\(\(o\) => o\.occurrenceId === ahora\.occurrenceId\) \? ahora : null;/);
-  assert.match(INICIO, /enCurso=\{ahora\?\.occurrenceId === o\.occurrenceId\}/, '«Continuar» si es la sesión en curso');
+  // DL-170 (AV2-09): con una sesión en curso, de hoy o de otro día, Inicio muestra solo esa, con «Continuar»; si es de otro
+  // día, también «Dejarlo incompleto», con el mismo gancho que el aviso de Entrenamiento.
+  assert.match(INICIO, /else if \(ahora\) \{[\s\S]*?<SesionEnCursoDeInicio[\s\S]*?deOtroDia=\{deHoy === null\}/);
+  assert.match(INICIO, /ir\(\{ nombre: 'sesion-de-entrenamiento', draftId: e\.draftId, occurrenceId: e\.occurrenceId, fecha: e\.fecha, modo: 'en-vivo', etiqueta: e\.etiqueta \}\)/, '«Continuar» retoma la sesión en curso');
+  assert.match(INICIO, /useDejarIncompleto\(\{ enCurso: e, token, sesionPerdida, alTerminar \}\)/);
+  assert.match(INICIO, /\{deOtroDia \? <Boton texto=\{COPY_ENTRENAMIENTO_POR_SERIE\.dejarSesionIncompleta\}/);
   const ENTRENAMIENTO = fuente('apps/mobile/src/pantallas/entrenamiento.tsx');
   assert.match(ENTRENAMIENTO, /local\.problema\.motivo === 'ANOTHER_SESSION_IN_PROGRESS'/);
   assert.match(ENTRENAMIENTO, /<OtraSesionQueBloquea draftId=\{draftId\} token=\{token\} sesionPerdida=\{sesionPerdida\} ir=\{ir\} alTerminar=\{\(\) => entrenamientoLocal\.reintentar\(draftId\)\} \/>/);

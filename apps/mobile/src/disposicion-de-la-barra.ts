@@ -48,6 +48,18 @@ const BORDE_DE_LA_CAPSULA = 1;
  */
 export const TOLERANCIA_EN_UNA_FILA = 1;
 
+/**
+ * El alto mínimo de un destino, en dp (DL-170, AV2-06): la barra es más fina que antes (56) y sigue por encima de los 48
+ * del objetivo táctil.
+ */
+export const ALTO_DEL_DESTINO = 52;
+
+/**
+ * El token del fondo de la barra: flotante, el vidrio (`barraVidrio`); fija durante la sesión, `fondo`, opaco: nada se ve
+ * a través de ella (PV-11, DL-166).
+ */
+export const tokenDelFondoDeLaBarra = (fija: boolean): 'fondo' | 'barraVidrio' => (fija ? 'fondo' : 'barraVidrio');
+
 /** El margen de la cápsula a cada lado: en un teléfono angosto, la cápsula gana ancho antes que achicar las etiquetas. */
 export function margenDeLaBarra(anchoDePantalla: number): number {
   return anchoDePantalla < 340 ? 6 : anchoDePantalla < 400 ? 8 : 12;
@@ -87,4 +99,79 @@ export function disposicionDeLaBarra({ anchoDePantalla, escalaDeLetra, zonas }: 
   const filas = [zonas.slice(0, corte), zonas.slice(corte)];
   const enDos = Math.min(...filas.map((f) => proporcionQueEntra(f, escalaPedida, anchoUtil)));
   return { filas, margen, anchoUtil, escalaPedida, escalaEfectiva: escalaPedida * enDos };
+}
+
+// ─── Dónde termina el contenido (hallazgos 5 y 12 de la 0.25 y la 0.26) ───────────────────────────────
+
+/** Lo que la cápsula flota por encima del área segura de abajo, en dp. */
+export const SEPARACION_DE_LA_BARRA = 10;
+
+/** El aire entre lo último del contenido y el borde de abajo del área que se desplaza, en dp. */
+export const AIRE_AL_FINAL = 16;
+
+/** El alto del fundido con que el contenido se apaga justo arriba de la barra, en dp. */
+export const ALTO_DEL_FUNDIDO = 20;
+
+/**
+ * El alto de la barra antes de medirla (el primer dibujo de una pantalla), en dp: cada fila mide su destino, que crece
+ * con la letra (el ícono de 28, la etiqueta de 16 sp y su relleno), más el borde y el relleno de la cápsula. Fija, suma
+ * su línea de arriba y su relleno, sin el área segura, que se suma aparte.
+ */
+export function altoEstimadoDeLaBarra(filas: number, escalaDeLetra: number, fija: boolean): number {
+  const destino = Math.max(ALTO_DEL_DESTINO, Math.ceil(28 + 1 + 16 * Math.max(escalaDeLetra, 1) + 8));
+  const entreFilas = (filas - 1) * 2;
+  if (fija) return filas * destino + entreFilas + 1 + 4 + 4;
+  return filas * destino + entreFilas + 2 * BORDE_DE_LA_CAPSULA + 2 * (filas > 1 ? 6 : 4);
+}
+
+/** Dónde termina el área que se desplaza y cuánto aire deja el contenido al final. */
+export interface LugarDelContenido {
+  /** Lo que el área que se desplaza deja libre abajo, en dp: ahí van la barra, su separación y el área segura. */
+  readonly margenAbajo: number;
+  /** El relleno al final del contenido, en dp. */
+  readonly rellenoAbajo: number;
+  /** Si el contenido se apaga en un fundido justo arriba de la barra flotante. */
+  readonly fundido: boolean;
+}
+
+/**
+ * El único lugar que decide dónde termina el contenido de todas las pantallas (App.tsx; Material 3 y HIG: lo que se
+ * toca no queda debajo de la navegación):
+ * - **Con la barra flotante**, el área que se desplaza termina donde empieza la cápsula: su alto, su separación y el área
+ *   segura quedan fuera. Nada pasa por detrás de la barra, ni al final ni a mitad de camino («Empezar» de Torso A en
+ *   Inicio, «Comí algo diferente» en Nutrición, «Tiempos de la sesión» en el cierre). El contenido se apaga en un
+ *   fundido corto justo arriba, en lugar de cortarse de golpe.
+ * - **Fijas, durante la sesión,** la barra (que ya incluye el área segura) y la fila de acciones quedan fuera igual.
+ * - **Antes de medirla**, la barra cuenta con su alto estimado; **oculta** (con el teclado abierto), no ocupa nada.
+ * - **Sin barra**, el área llega abajo y el contenido deja el área segura y su aire.
+ *
+ * `altoDeLaBarra`: `null` mientras no se midió; 0 si está oculta.
+ */
+export function lugarDelContenido({
+  conBarra,
+  fija,
+  altoDeLaBarra,
+  altoDeLaFila,
+  insetAbajo,
+  filas,
+  escalaDeLetra,
+}: {
+  conBarra: boolean;
+  fija: boolean;
+  altoDeLaBarra: number | null;
+  altoDeLaFila: number;
+  insetAbajo: number;
+  filas: number;
+  escalaDeLetra: number;
+}): LugarDelContenido {
+  const sinBarra: LugarDelContenido = { margenAbajo: 0, rellenoAbajo: 2 * AIRE_AL_FINAL + insetAbajo, fundido: false };
+  if (!conBarra) return sinBarra;
+  if (fija) {
+    const barra = altoDeLaBarra ?? altoEstimadoDeLaBarra(filas, escalaDeLetra, true) + insetAbajo;
+    return { margenAbajo: barra + altoDeLaFila, rellenoAbajo: AIRE_AL_FINAL, fundido: false };
+  }
+  const barra = altoDeLaBarra ?? altoEstimadoDeLaBarra(filas, escalaDeLetra, false);
+  if (barra === 0) return sinBarra;
+  // Al final del desplazamiento, lo último queda entero arriba del fundido: el aire no es menor que su alto.
+  return { margenAbajo: barra + SEPARACION_DE_LA_BARRA + insetAbajo, rellenoAbajo: Math.max(AIRE_AL_FINAL, ALTO_DEL_FUNDIDO), fundido: true };
 }

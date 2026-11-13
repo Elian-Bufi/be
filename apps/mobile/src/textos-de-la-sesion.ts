@@ -61,6 +61,11 @@ export const TEXTOS_DE_LA_SESION = {
   tiempoIlegible: 'Escribí el tiempo en minutos y segundos (1:30) o solo en segundos (45).',
   tiempoMaximo: 'Revisá el tiempo: el máximo es de 10 horas.',
   // Tildar sin datos
+  // «Terminar serie N» o «Registrar serie N» que no pudo registrar (AV2-30): se anuncia y queda junto al botón
+  paraRegistrarEnRango: (n: string, rango: string) => `Para registrar la serie ${n}, escribí cuántas repeticiones hiciste (${rango}) o la carga.`,
+  paraRegistrar: (n: string, motivo: string) => `Para registrar la serie ${n}: ${motivo}`,
+  medicionResuelta: (n: number) => `La medición de la serie ${numero(n, 0)} quedó resuelta: registrala con lo que hiciste.`,
+  medicionLarga: (n: string) => `La serie ${n} se está midiendo desde hace más de 10 horas: decidí si terminó ahora o si queda incompleta.`,
   repeticionesEnRango: (rango: string) => `Las repeticiones del plan van en un rango (${rango}): anotá las que hiciste, o la carga.`,
   // Antes de finalizar
   escritasTitulo: 'Series escritas sin registrar',

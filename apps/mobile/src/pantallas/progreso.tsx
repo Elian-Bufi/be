@@ -27,7 +27,7 @@ import { PALETAS } from '../tema';
 import { COLOR, estilosPorTema, Segmentos } from '../ui';
 import { accesibilidadDelDesplegable } from '../desplegable';
 import { sombraDeVidrio } from '../vidrio';
-import { ElegirLaFigura, FiguraDeZona, useSexoDeLaFigura } from './figura-de-la-toma';
+import { ControlesDeLaFigura, ElegirLaFigura, FiguraDeZona, useSexoDeLaFigura } from './figura-de-la-toma';
 import { fraseDeLaSerie, GraficoCompacto, ProgresoDeUnaMedida, textoDeLaClase, textoDelCambio, ValorYCambio } from './progreso-de-una-medida';
 
 type Datos = EvolucionResponse['data'];
@@ -76,8 +76,8 @@ export function Progreso({
 
   return (
     <View>
-      {/* Las dos elecciones de Progreso, compactas: no son pestañas del módulo. */}
-      <View style={estilos.controles}>
+      {/* Las elecciones de Progreso, compactas y juntas, arriba (AV2-20): la familia, la zona y la figura. */}
+      <ControlesDeLaFigura>
         {familias.length > 1 ? (
           <Segmentos
             compactos
@@ -99,7 +99,8 @@ export function Progreso({
             alElegir={(z) => setPanel(paneles.find((p) => p.zona === z)?.clave ?? null)}
           />
         ) : null}
-      </View>
+        <ElegirLaFigura sexo={sexo} alElegir={setSexo} />
+      </ControlesDeLaFigura>
       <View style={[estilos.lamina, { backgroundColor: paleta.laminaFondo }]}>
         {panelesDeLaZona.length > 1 ? (
           <View style={estilos.panelesDelTorso}>
@@ -123,7 +124,6 @@ export function Progreso({
           insignia={insignia}
         />
       ))}
-      <ElegirLaFigura sexo={sexo} alElegir={setSexo} />
     </View>
   );
 }
@@ -185,7 +185,6 @@ function TarjetaDeProgreso({
 }
 
 const estilos = estilosPorTema((COLOR) => ({
-  controles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   lamina: { borderRadius: 18, overflow: 'hidden', marginTop: 8, marginBottom: 8 },
   panelesDelTorso: { paddingHorizontal: 8, paddingTop: 8 },
   tarjeta: {
