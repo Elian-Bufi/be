@@ -2012,3 +2012,32 @@ test('TEST-AV2-035 · cada tramo de la franja se llena con las series registrada
   assert.equal(franja.tramosDelRecorrido([{ ...ejercicioDelResumen(4), registradas: 5 }], null)[0].fraccion, 1);
   assert.deepEqual(franja.cuentaDelRecorrido(resumen), { registradas: 6, planificadas: 11 });
 });
+
+// ─── Las pantallas vacías (vuelta 2): qué va a aparecer ahí y cuál es el siguiente paso ──────────────────────────────
+
+test('las pantallas vacías principales dicen qué va a aparecer ahí y cuál es el siguiente paso, con su acción', () => {
+  const VACIOS = {
+    entrenamientoSinPlan: ['pantallas/entrenamiento.tsx', 'entrenamiento', "ir({ nombre: 'vinculos' })"],
+    nutricionSinPlan: ['pantallas/nutricion-hoy.tsx', 'nutricion', "ir({ nombre: 'vinculos' })"],
+    sinVinculos: ['pantallas/vinculos.tsx', 'persona', "ir({ nombre: 'perfil' })"],
+    sinComidasRegistradas: ['pantallas/nutricion.tsx', 'comida', "ir({ nombre: 'hoy' })"],
+    sinSesionesEnElPeriodo: ['pantallas/historial.tsx', 'calendario', "ir({ nombre: 'entrenamiento' })"],
+  };
+  assert.deepEqual(Object.keys(T_VUELTA.vacios).sort(), Object.keys(VACIOS).sort());
+  for (const [clave, [archivo, icono, destino]] of Object.entries(VACIOS)) {
+    const v = T_VUELTA.vacios[clave];
+    for (const parte of ['titulo', 'queAparece', 'siguientePaso', 'accion']) assert.ok(v[parte]?.trim(), `${clave}: falta ${parte}`);
+    assert.match(v.queAparece, /^(Acá|Cuando)/, `${clave}: dice qué va a aparecer`);
+    assert.doesNotMatch(v.titulo, /\.$/, `${clave}: el título, sin punto`);
+    const codigo = sinComentarios(leer(archivo));
+    const uso = `<EstadoVacio icono="${icono}" {...TEXTOS_DE_LA_VUELTA.vacios.${clave}} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.${clave}.accion, onPress: () => ${destino} }} />`;
+    assert.ok(codigo.includes(uso), `${archivo}: el estado vacío de ${clave}`);
+  }
+  // Lo que reemplazan: el párrafo o el aviso que solo decía que no había nada.
+  assert.doesNotMatch(sinComentarios(leer('pantallas/vinculos.tsx')), /<Parrafo>\{COPY_VINCULO\.sinVinculos\}<\/Parrafo>/);
+  assert.doesNotMatch(sinComentarios(leer('pantallas/entrenamiento.tsx')), /titulo=\{COPY_ENTRENAMIENTO\.sinPlanAsesorado\}/);
+  assert.doesNotMatch(sinComentarios(leer('pantallas/nutricion-hoy.tsx')), /titulo=\{COPY_NUTRICION\.sinPlanAsesorado\}/);
+  // La pieza: el ícono en su caja con tinte, el título como encabezado, los dos párrafos y la acción secundaria.
+  const ui = sinComentarios(leer('ui.tsx'));
+  assert.match(ui, /export function EstadoVacio\([\s\S]*?<Superficie style=\{estilos\.vacio\}>[\s\S]*?<CajaDelIcono>\s*<Icono nombre=\{icono\} tamano=\{20\} tono="azul" \/>\s*<\/CajaDelIcono>[\s\S]*?accessibilityRole="header"[\s\S]*?\{queAparece\}[\s\S]*?\{siguientePaso\}[\s\S]*?tipo="secundario"/);
+});

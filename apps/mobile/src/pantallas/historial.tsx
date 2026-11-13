@@ -32,7 +32,8 @@ import { desgloseDeActividad } from '../inicio-de-hoy';
 import { useLecturaRecordada } from '../lecturas';
 import { DIAS_DE_ACTIVIDAD, leerActividadDeEntrenamiento } from '../lecturas-de-inicio';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, Dato, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Titulo } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, Dato, EstadoVacio, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Titulo } from '../ui';
 import { textoDePrescripcion } from './entrenamiento';
 
 type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
@@ -114,7 +115,7 @@ export function ContenidoDelHistorial({ token, identidadId, salir, ir }: { token
           <Seccion titulo={COPY_ENTRENAMIENTO.sesionesRegistradas}>
             {sesiones.tipo === 'cargando' ? <Cargando /> : null}
             {sesiones.tipo === 'error' ? <ErrorConReintento sinConexion={sesiones.sinConexion} onReintentar={cargar} /> : null}
-            {sesiones.tipo === 'listo' && sesiones.datos.length === 0 ? <Parrafo>{COPY_ENTRENAMIENTO.sinSesionesEnPeriodo}</Parrafo> : null}
+            {sesiones.tipo === 'listo' && sesiones.datos.length === 0 ? <EstadoVacio icono="calendario" {...TEXTOS_DE_LA_VUELTA.vacios.sinSesionesEnElPeriodo} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.sinSesionesEnElPeriodo.accion, onPress: () => ir({ nombre: 'entrenamiento' }) }} /> : null}
             {/* AV2-22: la lista dice su período, y cada sesión es una fila que se toca entera, sin botón propio. */}
             <Text style={estilos.periodo}>{TEXTOS_DEL_HISTORIAL.periodo}</Text>
             {sesiones.tipo === 'listo'

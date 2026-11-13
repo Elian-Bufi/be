@@ -49,7 +49,8 @@ import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CajaInformativa, FilaQueAbre, FranjaDeMacros } from '../piezas-de-nutricion';
 import { ahoraEnElServidor, registrarComida, useDeshacer } from '../registro-de-comidas';
-import { Aviso, Boton, COLOR, estilosPorTema, Insignia, Parrafo, Segmentos, Superficie } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, COLOR, EstadoVacio, estilosPorTema, Insignia, Parrafo, Segmentos, Superficie } from '../ui';
 
 export type HoyConOpciones = HoyConOpcionesResponse['data'];
 type Comida = HoyConOpciones['meals'][number];
@@ -225,7 +226,8 @@ function DiaDeNutricion({
           {fechaLarga(hoy.date)}
         </Text>
       </View>
-      {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_NUTRICION.sinPlanAsesorado} /> : null}
+      {/* Vacía: qué va a aparecer acá y el siguiente paso (vuelta 2), no solo que no hay plan. */}
+      {hoy.planState === 'NO_ACTIVE_PLAN' ? <EstadoVacio icono="nutricion" {...TEXTOS_DE_LA_VUELTA.vacios.nutricionSinPlan} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.nutricionSinPlan.accion, onPress: () => ir({ nombre: 'vinculos' }) }} /> : null}
       {hoy.planState === 'NOT_AVAILABLE' ? (
         <Aviso tipo="info" titulo={COPY_NUTRICION.planNoDisponible}>
           <Boton texto={COPY_REGISTRO_DE_COMIDAS.irAVinculos} tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />

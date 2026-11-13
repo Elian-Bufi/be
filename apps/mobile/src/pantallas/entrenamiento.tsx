@@ -116,7 +116,7 @@ import {
 } from '../series-de-la-sesion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { cambiosParaSustituir, ejercicioRealizadoDe, sePuedeSustituir, sustitucionDe, textoDeLaConfirmacion, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado } from '../sustitucion-de-ejercicio';
-import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Segmentos, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Segmentos, Subtitulo, Tarjeta, Titulo } from '../ui';
 import { ContenidoDelHistorial } from './historial';
 import { PlanPorSerie } from './plan-por-serie';
 import { AlLado, aRegistroRapido } from './registro-rapido';
@@ -267,7 +267,8 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
     contenido = (
       <>
         <SinActualizar visible={sinActualizar} onReintentar={() => void cargar()} />
-        {hoy.planState === 'NO_ACTIVE_PLAN' ? <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.sinPlanAsesorado} /> : null}
+        {/* Vacía: qué va a aparecer acá y el siguiente paso (vuelta 2), no solo que no hay plan. */}
+        {hoy.planState === 'NO_ACTIVE_PLAN' ? <EstadoVacio icono="entrenamiento" {...TEXTOS_DE_LA_VUELTA.vacios.entrenamientoSinPlan} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.entrenamientoSinPlan.accion, onPress: () => ir({ nombre: 'vinculos' }) }} /> : null}
         {hoy.planState === 'NOT_AVAILABLE' ? (
           <Aviso tipo="info" titulo={COPY_ENTRENAMIENTO.planNoDisponible}>
             <Boton texto="Ir a Vínculos" tipo="secundario" onPress={() => ir({ nombre: 'vinculos' })} />

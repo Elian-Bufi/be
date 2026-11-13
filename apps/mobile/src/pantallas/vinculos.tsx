@@ -18,7 +18,8 @@ import { dia, fecha } from '../formato';
 import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
 import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
-import { Aviso, Boton, Dato, Insignia, Parrafo, Seccion, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, Dato, EstadoVacio, Insignia, Parrafo, Seccion, Tarjeta, Titulo, estilos as ui, estilosPorTema } from '../ui';
 
 type Decision = { readonly tipo: 'aceptada'; readonly vinculoId: string } | { readonly tipo: 'rechazada' };
 
@@ -99,7 +100,7 @@ export function PantallaDeVinculos({
 
       <Seccion titulo="Tus vínculos">
         <EstadoDeCarga estado={vinculos.estado} onReintentar={vinculos.recargar} />
-        {vinculos.estado.tipo === 'listo' && propios.length === 0 ? <Parrafo>{COPY_VINCULO.sinVinculos}</Parrafo> : null}
+        {vinculos.estado.tipo === 'listo' && propios.length === 0 ? <EstadoVacio icono="persona" {...TEXTOS_DE_LA_VUELTA.vacios.sinVinculos} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.sinVinculos.accion, onPress: () => ir({ nombre: 'perfil' }) }} /> : null}
         {propios.map((v) => (
           <TarjetaDeVinculo key={v.relationshipId} v={v} onVer={() => ir({ nombre: 'vinculo', id: v.relationshipId })} />
         ))}

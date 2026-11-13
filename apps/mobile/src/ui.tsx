@@ -602,6 +602,41 @@ export function Superficie({ style, encima, children, ...resto }: ViewProps & { 
   );
 }
 
+/**
+ * Una pantalla o una lista vacía que orienta (vuelta 2; Material 3 y HIG: un estado vacío explica y propone el paso que
+ * sigue): el ícono en su caja con tinte, qué falta, **qué va a aparecer ahí** y **cuál es el siguiente paso**, con su
+ * acción si la hay. Nunca solo «no hay nada». Ubica, no califica: no dice que la persona deba algo.
+ */
+export function EstadoVacio({
+  icono,
+  titulo,
+  queAparece,
+  siguientePaso,
+  accion,
+}: {
+  icono: NombreDeIcono;
+  titulo: string;
+  queAparece: string;
+  siguientePaso: string;
+  accion?: { readonly texto: string; readonly onPress: () => void };
+}) {
+  return (
+    <Superficie style={estilos.vacio}>
+      <View style={estilos.cabezaDelVacio}>
+        <CajaDelIcono>
+          <Icono nombre={icono} tamano={20} tono="azul" />
+        </CajaDelIcono>
+        <Text style={estilos.tituloDelVacio} accessibilityRole="header">
+          {titulo}
+        </Text>
+      </View>
+      <Text style={estilos.parrafo}>{queAparece}</Text>
+      <Text style={[estilos.parrafo, estilos.textoTenue]}>{siguientePaso}</Text>
+      {accion ? <Boton texto={accion.texto} tipo="secundario" icono="derecha" iconoAlFinal onPress={accion.onPress} /> : null}
+    </Superficie>
+  );
+}
+
 /** Lo mismo que `Superficie`, para una pieza que se toca entera (una fila de una lista, una baldosa). */
 export function SuperficieTocable({
   style,
@@ -751,6 +786,11 @@ export const estilos = estilosPorTema((COLOR) => ({
   unidadDeCifra: { fontWeight: '600', color: COLOR.tenue },
   parrafo: { fontSize: 16, color: COLOR.texto, lineHeight: 23, marginVertical: 4 },
   tenue: { color: COLOR.tenue, fontSize: 14 },
+  // El estado vacío: la tarjeta, el ícono en su caja al lado del título, y el siguiente paso en `tenue`.
+  vacio: { borderRadius: 16, padding: 16, marginVertical: 8, gap: 4 },
+  cabezaDelVacio: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
+  tituloDelVacio: { flex: 1, fontSize: 17, lineHeight: 23, fontWeight: '800', color: COLOR.texto },
+  textoTenue: { color: COLOR.tenue },
   // Un párrafo con ícono: el ícono arriba, alineado con el primer renglón; el texto ocupa el resto y se parte.
   parrafoConIcono: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginVertical: 4 },
   iconoDelParrafo: { paddingTop: 2 },

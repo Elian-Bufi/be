@@ -44,7 +44,8 @@ import { useListaPaginada } from '../lista';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CajaInformativa, FranjaDeMacros, LineaDeFibra } from '../piezas-de-nutricion';
 import { useDeshacer } from '../registro-de-comidas';
-import { Aviso, Boton, COLOR, Dato, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Titulo } from '../ui';
+import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
+import { Aviso, Boton, COLOR, Dato, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Titulo } from '../ui';
 import { HoyDeNutricion } from './nutricion-hoy';
 
 /** Lo que acompaña al nombre de un ítem del plan: « · 150 g · cocido». La cantidad, con la coma del país. */
@@ -215,7 +216,7 @@ function ListaDeRegistros({ token, salir, ir }: { token: string; salir: (m: Sali
   return (
     <View>
       <EstadoDeCarga estado={lista.estado} onReintentar={() => void lista.recargar()} />
-      {lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? <Parrafo>{COPY_REGISTRO_DE_COMIDAS.sinRegistros}</Parrafo> : null}
+      {lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? <EstadoVacio icono="comida" {...TEXTOS_DE_LA_VUELTA.vacios.sinComidasRegistradas} accion={{ texto: TEXTOS_DE_LA_VUELTA.vacios.sinComidasRegistradas.accion, onPress: () => ir({ nombre: 'hoy' }) }} /> : null}
       {lista.estado.tipo === 'listo'
         ? lista.estado.items.map((registro, k, todos) => (
             <View key={registro.recordId}>

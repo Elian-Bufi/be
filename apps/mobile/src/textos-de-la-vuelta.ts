@@ -127,4 +127,37 @@ export const TEXTOS_DE_LA_VUELTA = {
   masDe: (n: number) => `Más de ${numero(n)}`,
   sinPlanDe: (area: string) => `${area}: todavía sin plan.`,
 
+  // ─── Las pantallas vacías (vuelta 2): qué va a aparecer ahí y cuál es el siguiente paso ──────────
+  vacios: {
+    entrenamientoSinPlan: {
+      titulo: 'Todavía no tenés un plan de entrenamiento activo',
+      queAparece: 'Cuando tu profesional de entrenamiento active un plan, acá vas a ver la sesión de cada día, con sus ejercicios y sus series, y tu semana.',
+      siguientePaso: 'Si ya tenés profesional, avisale que te arme el plan. Si todavía no, vinculate: abrí la invitación que te mandó o compartile tu identificador BE desde Perfil.',
+      accion: 'Ver mis vínculos',
+    },
+    nutricionSinPlan: {
+      titulo: 'Todavía no tenés un plan de Nutrición activo',
+      queAparece: 'Cuando tu profesional de Nutrición active un plan, acá vas a ver las comidas de cada día con sus opciones, para registrar lo que comiste.',
+      siguientePaso: 'Si ya tenés profesional, avisale que te arme el plan. Si todavía no, vinculate: abrí la invitación que te mandó o compartile tu identificador BE desde Perfil.',
+      accion: 'Ver mis vínculos',
+    },
+    sinVinculos: {
+      titulo: 'Todavía no tenés vínculos',
+      queAparece: 'Acá van a aparecer los profesionales que te acompañan, con el área de cada uno y desde cuándo.',
+      siguientePaso: 'Para empezar, abrí la invitación que te mandó tu profesional, o compartile tu identificador BE desde Perfil para que te la mande.',
+      accion: 'Ir a Perfil',
+    },
+    sinComidasRegistradas: {
+      titulo: 'Todavía no registraste comidas',
+      queAparece: 'Acá van a aparecer las comidas que registres, agrupadas por día, con la opción o la foto de cada una.',
+      siguientePaso: 'Para registrar una, andá a Hoy y tocá «Comí esta opción» o «Comí algo diferente».',
+      accion: 'Ir a Hoy',
+    },
+    sinSesionesEnElPeriodo: {
+      titulo: 'Sin sesiones registradas en este período',
+      queAparece: 'Acá van a aparecer las sesiones que registres, con su fecha y lo que hiciste en cada ejercicio.',
+      siguientePaso: 'Las registrás desde Entrenamiento: al terminar la sesión del día, o con «Ya la hice» si la hiciste sin la app.',
+      accion: 'Ir a Entrenamiento',
+    },
+  },
 } as const;
