@@ -603,7 +603,61 @@ Al programar, en `WP-PULIDO-GRANDES-ORACULOS.md`, con los trece campos del 11A. 
 - **Lo que el continuador recomienda mirar antes del 25/11, fuera de este paquete:** «Si algo se rompe, BE no se cierra
   y te deja avisar». Es el seguro de la entrega: hoy un error de dibujo cierra la app. Queda a decisión de Dirección.
 
-## 9. Lo programado · tanda A · website (rama `wp-pulido-a-web`, #268, en borrador)
+## 9. Lo programado: tanda A en la APK (rama `wp-pulido-a-app`, 2026-11-13)
+
+> **Estado:** programado en una rama desde `main` `6b3f1afe`, con el PR en borrador y sin integrar. Cubre PG-01 a PG-05,
+> PG-08 y PG-09 (la APK). PG-06, PG-07, PG-10 y PG-14 (el website) van en otra rama.
+
+| Parte | Qué quedó | Dónde | Prueba (oráculo) |
+|---|---|---|---|
+| PG-01 | Una sola tarjeta con la que sigue en el orden del plan («Sigue en tu plan»), con «Empezar» y «Ya la hice», y «Otra sesión» con una hoja desde abajo: todas, en el orden del plan, con el mismo peso y su estado de la semana. Con una en curso, solo esa; con días, el día | `la-que-sigue.ts`, `pantallas/inicio-entrenamiento.tsx` | `la-que-sigue.test.ts` (TEST-PG-001) |
+| PG-02 y PG-03 | El logo llena el aro, sin «BE» adentro; «BE está preparando tu espacio» y «Comprobando tu sesión» en una sola región viva | `logo-de-la-carga.ts`, `pantallas/recuperacion.tsx` | `logo-de-la-carga.test.ts` (TEST-PG-002) |
+| PG-04 | El título grande sube a la cabecera al desplazar, con un solo valor de fundido (v y 1 − v); sin fundido con «reducir movimiento» | `titulo-de-la-cabecera.ts`, `titulo-en-la-cabecera.tsx`, `ui.tsx`, `cabecera.tsx`, `App.tsx` | `titulo-de-la-cabecera.test.ts` (TEST-PG-003) |
+| PG-05 | La pantalla encendida con la sesión corriendo; liberada al pausar, finalizar, salir o con la app atrás; la casilla en los ajustes del descanso | `pantalla-encendida.ts`, `pantalla-encendida-en-la-sesion.ts`, `preferencias-del-telefono.ts` | `pantalla-encendida.test.ts` (TEST-PG-004) |
+| PG-08 | Tres toques en un solo lugar (`haptica.ts`), después de confirmar; «Vibrar al confirmar» en Perfil | `toques.ts`, `haptica.ts`, `registro-de-comidas.tsx`, `pantallas/entrenamiento.tsx`, `pantallas/perfil.tsx` | `toques.test.ts` (TEST-PG-007) |
+| PG-09 | Tirar para actualizar en Inicio, Nutrición, Entrenamiento y Novedades, con «Al día, 10:42» o «Ves lo de las 9:15» debajo del título | `hora-de-lo-que-ves.ts`, `hora-en-pantalla.tsx`, `lecturas.ts`, `App.tsx` | `hora-de-lo-que-ves.test.ts` (TEST-PG-008) |
+
+Cada prueba se verificó con su mutación (la regla rota a propósito pone la prueba en rojo). Los módulos nativos van en un
+solo cambio del `package-lock.json`: `expo-haptics` 57.0.3 (nuevo) y `expo-keep-awake` 57.0.2 (ya venía con Expo; ahora
+se declara), los dos de la línea 57 del SDK.
+
+### 9.1 Decisiones del continuador al programar (a ratificar)
+
+- **PG-T1 · Qué corre el orden de «la que sigue».** *Elegí:* solo una sesión realizada (también con desvío), con la
+  condición vigente después de las correcciones; una registrada sin realizar no lo corre, porque la persona no la hizo.
+  *Alternativa:* cualquier sesión registrada.
+- **PG-T2 · De dónde sale lo registrado.** *Elegí:* la misma lectura de 30 días que Inicio ya hacía para la tira y la
+  actividad (una sola, con la misma clave), ubicando cada sesión por su identificador en el plan. Si la última realizada
+  es de hace más de 30 días, arranca por la primera; si no se pudo leer, dice «La primera de tu plan» y no «Sigue».
+  *Alternativa:* una lectura nueva más larga.
+- **PG-T3 · Elegir otra en la hoja.** *Elegí:* la pone en la tarjeta por hoy, mientras dure la sesión de la app (en
+  memoria), con «Volver a la que sigue». La hoja conserva la frase de siempre: «Tu plan tiene varias sesiones. Elegí la
+  que hiciste o vas a hacer.». *Alternativa:* que tocar una sesión de la hoja la abra directo.
+- **PG-T4 · La carga.** *Elegí:* sale «Un momento, por favor.»; «Está tardando» y «No pudimos comprobar tu sesión»
+  siguen como estaban. La pantalla que Android dibuja antes no se tocó: `app.config.ts` no declara una propia.
+- **PG-T5 · Qué título sube.** *Elegí:* el primer título de la pantalla con texto simple; sube al pasar su borde de
+  abajo (el relleno de 20 dp, su lugar y su alto), y el chico deja 112 dp a cada lado con «Volver» y 60 con el logo.
+- **PG-T6 · Dónde se guardan la casilla y el interruptor.** *Elegí:* en el teléfono, aparte de los ajustes del descanso
+  (`be:preferencias-del-telefono`), para no cambiar lo que esos guardan.
+- **PG-T7 · Qué toque hace el teléfono.** *Elegí:* en Android, la háptica del sistema (confirmar, «toggle off» y
+  rechazar), que no pide el permiso de vibrar, y si el teléfono es viejo y no la tiene, una de siempre; en iOS, un
+  impacto leve, la selección y el aviso doble. También suena el error al tildar una serie con un dato que falta.
+  Completar cantidades no suena todavía.
+- **PG-T8 · El gesto en las pestañas.** *Elegí:* en Nutrición y en Entrenamiento, el gesto va en toda la pantalla (Hoy,
+  Plan y lo demás), porque son una sola pantalla con pestañas; la hora es la más vieja de lo que se ve.
+- **PG-T9 · El interruptor de la háptica.** *Elegí:* una fila con interruptor en Perfil → Ajustes, debajo de la
+  apariencia; la lista de ajustes de Perfil no cambia.
+
+### 9.2 Lo que falta para cerrar la tanda A en la APK
+
+- Probarlo en el teléfono: la letra ×1,3 en Inicio y en la cabecera, TalkBack en las seis partes, la pantalla encendida
+  con el teléfono apoyado, la háptica en un Android 10 y en uno nuevo, y el gesto de tirar en las cuatro pantallas.
+- La medición de cuadros de PG-04 (percentil 90 frente a la 0.27, como en AV2-16): sin teléfono no se puede medir. Si
+  empeora más de 2 puntos, el título queda fijo (la alternativa de PG-D2).
+- `WP-PULIDO-GRANDES-ORACULOS.md` con los trece campos: en modo liviano, los oráculos quedaron en las pruebas, con su
+  mutación; la ficha se escribe al cerrar la tanda.
+
+## 10. Lo programado · tanda A · website (rama `wp-pulido-a-web`, #268, en borrador)
 
 > Programado el 2026-11-13 sobre `main` `6b3f1afe`, con #266 ya integrado. Sin integrar: lo revisa Dirección. Las
 > decisiones nuevas (PG-T30 a PG-T39) están **a ratificar**; mientras tanto, rige lo programado.

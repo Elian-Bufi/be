@@ -117,6 +117,7 @@ import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { CuadroDeLaOpcion } from './cuadro-de-la-opcion';
 import { PasosDeNutricion } from './pasos-del-asistente';
+import { RangosIndicados, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
 import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
 import { pasoPedido } from '../asistente/paso-que-sigue';
 import { opcionAlGuardar, opcionNueva, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
@@ -205,6 +206,11 @@ const esDelEditor = (codigo: string): boolean => codigo === PROBLEMA_DEL_EDITOR.
 /** Qué nombre se está cambiando: el de un día tipo, el de una comida o el de una opción, por sus posiciones. */
 type NombreQueSeCambia = { readonly de: 'dia'; readonly i: number } | { readonly de: 'comida'; readonly i: number; readonly j: number } | { readonly de: 'opcion'; readonly i: number; readonly j: number; readonly k: number } | null;
 
+/** API-PLN-02 y 03: un día tipo para la lista de rangos indicados, con sus identidades (las tiene si ya se guardó). */
+function paraLosRangos(d: Estructura[number], i: number): DiaParaLosRangos {
+  return { dayTypeId: d.dayTypeId, nombre: nombreDelDiaTipo(d, i), comidas: d.meals.map((m, j) => ({ mealId: m.mealId, nombre: nombreDeLaComida(m, j) })) };
+}
+
 export function EditorDeBorrador({
   planId,
   numero,
@@ -241,6 +247,8 @@ export function EditorDeBorrador({
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
   const persona = usePersonaDelArea();
+  // API-PLN-02 y 03: los rangos indicados, con su propia revisión (no esperan al autoguardado).
+  const rangosIndicados = useRangosIndicados(token, planId);
   const propio = useId();
   const [version, setVersion] = useState<VersionDePlan | null>(null);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
@@ -434,6 +442,11 @@ export function EditorDeBorrador({
     [diaMirado, recetas, recetasVigentes],
   );
   const versionGuardada = version?.version ?? null;
+  // API-PLN-02: cada guardado de la estructura puede sumar o quitar comidas; los rangos se vuelven a leer con lo guardado.
+  const releerRangos = rangosIndicados.recargar;
+  useEffect(() => {
+    if (versionGuardada) void releerRangos();
+  }, [versionGuardada, releerRangos]);
   useEffect(() => {
     if (!hayVersionesNuevas || !versionGuardada || estimacionPedida.current === versionGuardada) return;
     estimacionPedida.current = versionGuardada;
@@ -1114,6 +1127,7 @@ export function EditorDeBorrador({
             return onObjetivoNuevo();
           }}
           onRevisarYActivar={abrirAntesDeActivar}
+          rangosIndicados={<RangosIndicados token={token} planId={planId} rangos={rangosIndicados} dias={estructura.map(paraLosRangos)} titulo={false} />}
         />
       ) : null}
       <div className="editor-de-nutricion__zonas" hidden={enElAsistente}>
@@ -1394,6 +1408,7 @@ export function EditorDeBorrador({
               ) : null}
               <p className="nota">{COPY_RANGOS.comoSeLee}</p>
               <p className="nota">{COPY_RANGOS.estimacion}</p>
+              <RangosIndicados token={token} planId={planId} rangos={rangosIndicados} dias={[paraLosRangos(dia!, i)]} />
             </>
           ) : (
             <p className="nota">{COPY_RANGOS.sinDiaTipo}</p>

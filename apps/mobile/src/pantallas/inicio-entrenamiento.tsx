@@ -19,22 +19,26 @@ import {
   type Ocurrencia,
   type Resultado,
 } from '@be/domain';
-import { useCallback, type ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { useCallback, useState, type ReactNode } from 'react';
+import { Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { api } from '../api';
 import { corridaAbierta } from '../corrida-de-entrenamiento';
 import { useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { SinActualizar } from '../estados';
 import { ejerciciosYSeries } from '../series-de-la-sesion';
 import { fechaCivil } from '../formato';
-import { useLecturaRecordada, type LecturaRecordada } from '../lecturas';
+import { BotonDeIcono } from '../icono';
+import { encabezadoDeLaQueSigue, estadoEnLaSemana, sesionQueSigue, usaLaQueSigue, type SesionRegistrada } from '../la-que-sigue';
+import { useLecturaRecordada, useSeleccionRecordada, type LecturaRecordada } from '../lecturas';
+import { useMovimientoReducido } from '../movimiento-reducido';
 import type { ActividadDeEntrenamiento as ActividadLeida } from '../lecturas-de-inicio';
 import { useAccesoRetirado, type Ir } from '../navegacion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { lineaDeLaSerie, marchaDeLaSesionEnCurso, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
 import { actividadDeInicio, detalleDeLaSesion } from '../inicio-de-hoy';
 import { TEXTOS_DE_LA_VUELTA, TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
-import { Aviso, Boton, Cifra, Desplegable, Insignia, Parrafo } from '../ui';
+import { TEXTOS_DEL_PULIDO as TP } from '../textos-del-pulido';
+import { Aviso, Boton, Cifra, Desplegable, estilosPorTema, Insignia, Parrafo } from '../ui';
 import { AvisoDeEntrenamientoEnCurso, MOTIVO_ANTES_DE_INICIAR, useAbrirOcurrencia, useDejarIncompleto } from './entrenamiento';
 import { AlLado, aRegistroRapido } from './registro-rapido';
 import { estilos, faltaElA3, LineaDeInicio, NoSePudo, SinA3, TarjetaDeInicio, Verificando, type AlPerderLaSesion } from './tarjeta-de-inicio';
@@ -47,12 +51,15 @@ export function EntrenamientoDeHoy({
   token,
   dia,
   lectura,
+  registradas,
   sesionPerdida,
   ir,
 }: {
   token: string;
   dia: string;
   lectura: LecturaRecordada<HoyDeEntrenamientoResponse>;
+  /** PG-01: lo registrado en 30 días, sesión por sesión; `undefined` mientras se leen y `null` si no se pudieron leer. */
+  registradas: readonly SesionRegistrada[] | null | undefined;
   sesionPerdida: AlPerderLaSesion;
   ir: Ir;
 }) {
@@ -124,10 +131,17 @@ export function EntrenamientoDeHoy({
           {deHoy.length === 0 && agenda.upcoming[0] ? <Parrafo tenue>{AG.proxima(etiqueta(agenda.upcoming[0].sessionId), agenda.upcoming[0].plannedDate, hoy.date)}</Parrafo> : null}
         </>
       );
-    } else
+    } else if (usaLaQueSigue(hoy.occurrences.length, false))
+      // PG-01 (PG-D1, Dirección 2026-11-13): una sola tarjeta con la que sigue en el orden del plan, y «Otra sesión».
+      contenido =
+        registradas === undefined ? (
+          <Verificando />
+        ) : (
+          <LaQueSigue ocurrencias={hoy.occurrences} registradas={registradas} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />
+        );
+    else
       contenido = (
         <>
-          {hoy.occurrences.length > 1 ? <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo> : null}
           {hoy.occurrences.map((o) => (
             <SesionDeHoy key={o.occurrenceId} ocurrencia={o} hoy={hoy.date} token={token} sesionPerdida={sesionPerdida} accesoRetirado={accesoRetirado} ir={ir} />
           ))}
@@ -202,6 +216,7 @@ function SesionDeHoy({
   sesionPerdida,
   accesoRetirado,
   ir,
+  encabezado = null,
 }: {
   ocurrencia: Ocurrencia;
   hoy: string;
@@ -209,6 +224,8 @@ function SesionDeHoy({
   sesionPerdida: AlPerderLaSesion;
   accesoRetirado: (r: Resultado<unknown>) => boolean;
   ir: Ir;
+  /** PG-01: «Sigue en tu plan» sobre el nombre; el lector lo lee junto con él, una sola vez. */
+  encabezado?: string | null;
 }) {
   const { abriendo, fallo, abrir, otraEnCurso } = useAbrirOcurrencia({ ocurrencia: o, token, sesionPerdida, accesoRetirado, ir });
   const vista = vistaDeLaSesion(vistaDeOcurrencia(o, hoy), o.execution, null);
@@ -221,8 +238,15 @@ function SesionDeHoy({
   // DL-166 (AV-06): el nombre y el estado a la vista; el bloque, la semana y los ejercicios, plegados (III.7).
   const detalle = detalleDeLaSesion(o.plannedSession);
   return (
-    <View style={estilos.fila}>
-      <Text style={estilos.nombre}>{o.plannedSession.label}</Text>
+    <View style={encabezado ? null : estilos.fila}>
+      {encabezado ? (
+        <Text style={estilosDeLaQueSigue.encabezado} importantForAccessibility="no" accessibilityElementsHidden>
+          {encabezado}
+        </Text>
+      ) : null}
+      <Text style={estilos.nombre} accessibilityLabel={encabezado ? TP.paraLeerLaQueSigue(encabezado, o.plannedSession.label) : undefined}>
+        {o.plannedSession.label}
+      </Text>
       <Insignia texto={vista.texto} hecha={vista.hecha} etiqueta="Estado" icono={vista.icono} />
       {fallo ? <Aviso tipo="error" titulo={fallo} /> : null}
       {/* La red de seguridad: si la lectura estaba vieja y había otra en curso, se ofrece continuarla o dejarla incompleta. */}
@@ -247,6 +271,139 @@ function SesionDeHoy({
     </View>
   );
 }
+
+/**
+ * PG-01 (WP-PULIDO-GRANDES, con PG-D1 decidida por Dirección el 2026-11-13): un plan sin días con dos o más sesiones
+ * muestra una sola: la que sigue en el orden del plan, después de la última realizada (`la-que-sigue.ts`). «Sigue en tu
+ * plan» dice de dónde sale el orden. «Otra sesión» abre una hoja desde abajo con todas, en el orden del plan y con el
+ * mismo peso, cada una con lo que pasó esta semana; elegir una la pone en la tarjeta por hoy, y «Volver a la que sigue»
+ * deshace la elección. BE no elige por la hora ni por el día, no oculta sesiones ni marca nada como atrasado.
+ */
+function LaQueSigue({
+  ocurrencias,
+  registradas,
+  hoy,
+  token,
+  sesionPerdida,
+  accesoRetirado,
+  ir,
+}: {
+  ocurrencias: readonly Ocurrencia[];
+  registradas: readonly SesionRegistrada[] | null;
+  hoy: string;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  accesoRetirado: (r: Resultado<unknown>) => boolean;
+  ir: Ir;
+}) {
+  const [hoja, setHoja] = useState(false);
+  // La elección vale por hoy y mientras dure la sesión, como el día del plan de Nutrición.
+  const [elegida, elegir] = useSeleccionRecordada<string | null>(token, `inicio-otra-sesion:${hoy}`, null);
+  const sigue = sesionQueSigue(ocurrencias.map((o) => o.plannedSession), registradas);
+  const indiceElegido = elegida ? ocurrencias.findIndex((o) => o.plannedSession.sessionId === elegida) : -1;
+  const o = ocurrencias[indiceElegido >= 0 ? indiceElegido : (sigue?.indice ?? 0)];
+  if (!o || !sigue) return null;
+  const conEleccion = indiceElegido >= 0 && indiceElegido !== sigue.indice;
+  return (
+    <View>
+      <SesionDeHoy
+        key={o.occurrenceId}
+        ocurrencia={o}
+        hoy={hoy}
+        token={token}
+        sesionPerdida={sesionPerdida}
+        accesoRetirado={accesoRetirado}
+        ir={ir}
+        encabezado={conEleccion ? TP.elegidaPorVos : encabezadoDeLaQueSigue(sigue.motivo)}
+      />
+      {conEleccion ? (
+        <Boton texto={TP.volverALaQueSigue} tipo="enlace" onPress={() => elegir(null)} />
+      ) : sigue.motivo === 'sin-historial' ? null : (
+        <Text style={estilos.detalle}>{TP.deDondeSaleElOrden}</Text>
+      )}
+      <Boton texto={TP.otraSesion} etiqueta={TP.otraSesionParaLeer(ocurrencias.length)} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => setHoja(true)} />
+      <HojaDeLasSesiones
+        visible={hoja}
+        ocurrencias={ocurrencias}
+        registradas={registradas}
+        hoy={hoy}
+        onElegir={(sessionId) => {
+          elegir(sessionId === ocurrencias[sigue.indice]?.plannedSession.sessionId ? null : sessionId);
+          setHoja(false);
+        }}
+        onCerrar={() => setHoja(false)}
+      />
+    </View>
+  );
+}
+
+/**
+ * La hoja de «Otra sesión»: todas las sesiones del plan, en su orden y con el mismo peso (ninguna destacada), cada una
+ * con su estado de la semana. Tocar una la elige. Se cierra con la cruz, tocando afuera o con el botón atrás. Con
+ * «reducir movimiento», aparece sin deslizarse.
+ */
+function HojaDeLasSesiones({
+  visible,
+  ocurrencias,
+  registradas,
+  hoy,
+  onElegir,
+  onCerrar,
+}: {
+  visible: boolean;
+  ocurrencias: readonly Ocurrencia[];
+  registradas: readonly SesionRegistrada[] | null;
+  hoy: string;
+  onElegir: (sessionId: string) => void;
+  onCerrar: () => void;
+}) {
+  const reducido = useMovimientoReducido();
+  const { height } = useWindowDimensions();
+  return (
+    <Modal visible={visible} transparent animationType={reducido ? 'none' : 'slide'} onRequestClose={onCerrar} statusBarTranslucent>
+      <View style={estilosDeLaQueSigue.fondo}>
+        <Pressable style={estilosDeLaQueSigue.afuera} onPress={onCerrar} accessible={false} importantForAccessibility="no" />
+        <ScrollView style={[estilosDeLaQueSigue.hoja, { maxHeight: Math.round(height * 0.8) }]} contentContainerStyle={estilosDeLaQueSigue.contenido} accessibilityViewIsModal>
+          <View style={estilosDeLaQueSigue.cabeza}>
+            <Text style={estilosDeLaQueSigue.titulo} accessibilityRole="header">
+              {TP.lasSesionesDeTuPlan(ocurrencias.length)}
+            </Text>
+            <BotonDeIcono nombre="cerrar" etiqueta={TP.cerrarLaLista} onPress={onCerrar} />
+          </View>
+          <Parrafo tenue>Tu plan tiene varias sesiones. Elegí la que hiciste o vas a hacer.</Parrafo>
+          {ocurrencias.map((x) => {
+            const estado = estadoEnLaSemana(x.plannedSession.sessionId, registradas, hoy);
+            return (
+              <Pressable
+                key={x.occurrenceId}
+                accessibilityRole="button"
+                accessibilityLabel={[x.plannedSession.label, estado].filter(Boolean).join('. ')}
+                onPress={() => onElegir(x.plannedSession.sessionId)}
+                style={({ pressed }) => [estilosDeLaQueSigue.renglon, pressed && estilosDeLaQueSigue.presionado]}
+              >
+                <Text style={estilos.nombre}>{x.plannedSession.label}</Text>
+                {estado ? <Text style={estilos.detalle}>{estado}</Text> : null}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+const estilosDeLaQueSigue = estilosPorTema((COLOR) => ({
+  encabezado: { fontSize: 13, fontWeight: '700', letterSpacing: 0.4, color: COLOR.tenue, marginBottom: 2 },
+  fondo: { flex: 1, justifyContent: 'flex-end', backgroundColor: COLOR.velo },
+  afuera: { flex: 1 },
+  hoja: { backgroundColor: COLOR.superficieElevada, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  contenido: { padding: 20, paddingBottom: 32, gap: 4 },
+  cabeza: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  titulo: { flex: 1, fontSize: 20, fontWeight: '800', color: COLOR.texto },
+  // Todas con el mismo peso: el mismo renglón, sin color de estado ni marca para ninguna.
+  renglon: { minHeight: 56, justifyContent: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: COLOR.borde },
+  presionado: { opacity: 0.6 },
+}));
 
 // ─── La actividad de 30 días, en una tarjeta chica (AV2-07, AV2-12) ─────────────────────────────
 

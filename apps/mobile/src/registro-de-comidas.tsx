@@ -13,6 +13,7 @@ import { COPY_REGISTRO_DE_COMIDAS, type RectificarCantidadesRequest, type Regist
 import { api, nuevaClaveDeIdempotencia } from './api';
 import { crearComandoDeRegistro, huellaDelPedido } from './comando-de-registro';
 import { DialogoDeConfirmacion, useAccionConfirmada } from './dialogo';
+import { tocarTrasLaRespuesta } from './haptica';
 import { esIncierto } from './intento';
 import { relojDelServidor } from './reloj-del-servidor';
 import { Parrafo } from './ui';
@@ -28,9 +29,14 @@ export const comandoDeCantidades = crearComandoDeRegistro<RectificarCantidadesRe
 /** El instante de un registro: la hora del servidor, estimada con las respuestas de la API. */
 export const ahoraEnElServidor = (): string => new Date(relojDelServidor.ahora()).toISOString();
 
-/** Registra con el comando único. `intento` nombra la comida y el día (`intentoDeLaComida`). */
-export function registrarComida(token: string, intento: string, cuerpo: RegistrarComidaRequest): Promise<Resultado<{ data: RegistroDeComida }>> {
-  return comandoDeRegistro.enviar(intento, cuerpo, (c, clave) => api.registrarComida(token, c, clave));
+/**
+ * Registra con el comando único. `intento` nombra la comida y el día (`intentoDeLaComida`). PG-08: con la respuesta del
+ * servidor, el toque de confirmar (o el de error si no confirmó); nunca al tocar el botón.
+ */
+export async function registrarComida(token: string, intento: string, cuerpo: RegistrarComidaRequest): Promise<Resultado<{ data: RegistroDeComida }>> {
+  const r = await comandoDeRegistro.enviar(intento, cuerpo, (c, clave) => api.registrarComida(token, c, clave));
+  tocarTrasLaRespuesta(r, 'guardar');
+  return r;
 }
 
 /** Completa o corrige las cantidades de un registro, con su propio intento. */
@@ -68,7 +74,12 @@ export function useDeshacer({
       onVolver={accion.volver}
       onActualizar={accion.actualizar}
       onConfirmar={() =>
-        void accion.ejecutar((clave) => api.deshacerRegistroDeComida(token, registro.recordId, { reason: null, expectedVersion: registro.version }, clave))
+        void accion.ejecutar(async (clave) => {
+          const r = await api.deshacerRegistroDeComida(token, registro.recordId, { reason: null, expectedVersion: registro.version }, clave);
+          // PG-08: el toque de deshacer cuando el servidor lo confirmó; si no, el de error.
+          tocarTrasLaRespuesta(r, 'deshacer');
+          return r;
+        })
       }
     >
       <Parrafo>{COPY_REGISTRO_DE_COMIDAS.deshacerPregunta}</Parrafo>

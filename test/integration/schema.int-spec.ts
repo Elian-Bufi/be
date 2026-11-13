@@ -296,6 +296,8 @@ describe('08 §29 — historia por adición', () => {
     'destinatario_de_habitos',
     // DL-165, ronda 2.1 (2026-11-06, FR-14): los pedidos de acceso a los hábitos (se resuelven con UPDATE; no se borran ni se truncan)
     'pedido_de_acceso_a_habitos',
+    // Decisión de Dirección del 2026-11-13 (API-PLN-03): los rangos del plan (se reescriben con UPDATE; no se borran ni se truncan)
+    'rangos_de_plan_nutricional',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

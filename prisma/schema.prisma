@@ -1502,7 +1502,8 @@ model VersionDePlanNutricional {
   versionDeObjetivo  VersionDeObjetivoNutricional  @relation(fields: [versionDeObjetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   revisionDeOrigen   RevisionNutricional?          @relation("PlanDeRevision", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   instantanea        InstantaneaDePlanNutricional?
-  efectivaDe         PlanNutricional?              @relation("VersionEfectiva")
+  rangos             RangosDePlanNutricional?
+  efectivaDe        PlanNutricional?              @relation("VersionEfectiva")
   procesoAbierto     ProcesoOperativo?             @relation("AperturaDeProceso")
   ingestas           IngestaNutricional[]
   proximasRevisiones ProximaRevision[]
@@ -1523,6 +1524,21 @@ model InstantaneaDePlanNutricional {
   versionDePlan VersionDePlanNutricional @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("instantanea_de_plan_nutricional")
+}
+
+/// API-PLN-02 y 03 (WP-EDITORES-PROFESIONAL ED-34; decisión de Dirección del 2026-11-13): los rangos de macronutrientes
+/// que indica el profesional en una versión del plan, por día tipo y por comida, con los gramos y el peso del que salieron
+/// (`contenido`). Se escriben solo en un BORRADOR, con su propia revisión; activada la versión, quedan fijos con ella.
+model RangosDePlanNutricional {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionDePlanId   String   @unique @map("version_de_plan_id") @db.Uuid
+  revision          Int
+  contenido         Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  versionDePlan VersionDePlanNutricional @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("rangos_de_plan_nutricional")
 }
 
 /// T-06-54 — Ingesta registrada: hecho confirmado contra una versión ACTIVADA; nunca modifica la prescripción

@@ -4,7 +4,9 @@
  * (WP-APP-VUELTA-2 AV2-05, con AV2-D7 y AV2-D8) es transparente sobre el fondo de la app, sin la línea de abajo, y la fila
  * mide 48 dp:
  * - **a la izquierda**, en las cinco raíces, el logo redondo con su brillo y sin el texto «BE»: es accesible y el lector
- *   dice «BE» una vez; en un detalle, «Volver»; nada al centro;
+ *   dice «BE» una vez; en un detalle, «Volver»;
+ * - **al centro** (PG-04 de WP-PULIDO-GRANDES), el título de la pantalla, chico, solo cuando el grande ya subió al
+ *   desplazar (`TituloChico`);
  * - **a la derecha**, la campana de las novedades (DL-133) con un punto de 8 dp en el acento mientras haya algo sin leer,
  *   sin número ni animación. El número sigue en su nombre para el lector: «Novedades, 47 sin leer»;
  * - **debajo**, la línea fina del aviso de prueba, en `tenue` (08 §33), y la línea de actualización. Desde UF-08 de
@@ -31,6 +33,8 @@ import { Icono } from './icono';
 import { LineaDeActualizacion } from './estados';
 import { textoDeVolverA, type Ruta } from './navegacion';
 import { ALTO_DEL_DESVANECIDO, capaDeLaCabecera, desvanecidoDeLaCabecera } from './receta-de-vidrio';
+import { margenDelTituloChico } from './titulo-de-la-cabecera';
+import { useTextoDelTitulo, type TituloCompartido } from './titulo-en-la-cabecera';
 import { COLOR, estilosPorTema, PALETAS } from './tema';
 
 const ISOTIPO = require('../assets/isotipo.png');
@@ -43,6 +47,7 @@ export function Cabecera({
   volver,
   sinLeer = null,
   abrirNovedades,
+  titulo,
   cubierta,
   altoContraste = false,
 }: {
@@ -57,6 +62,8 @@ export function Cabecera({
   /** Las novedades sin leer (DL-133); `null` mientras no se sabe. Es un dato, no una alerta: un punto, sin número. */
   sinLeer?: number | null;
   abrirNovedades?: () => void;
+  /** PG-04: el título de la pantalla y su fundido, que App.tsx mueve al desplazar. */
+  titulo?: TituloCompartido;
   /** De 0 a 1: si hay contenido detrás (AV2-T26). Lo mueve App.tsx al desplazar. */
   cubierta?: Animated.Value;
   altoContraste?: boolean;
@@ -68,6 +75,7 @@ export function Cabecera({
         <Animated.View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={[estilos.capa, capaDeLaCabecera(PALETAS[tema], altoContraste), { opacity: cubierta }]} />
       ) : null}
       <View style={estilos.fila}>
+        {titulo ? <TituloChico titulo={titulo} conVolver={volverA !== null} /> : null}
         <View style={[estilos.lado, estilos.izquierda]}>
           {volverA ? (
             <Pressable
@@ -125,6 +133,29 @@ export function DesvanecidoDeLaCabecera({ cubierta, altoContraste }: { cubierta:
 }
 
 /**
+ * PG-04: el título de la pantalla, chico y al centro, cuando el grande ya subió. Va por debajo de lo de los costados y no
+ * los empuja nunca: con letra grande se corta con «…». No se recorre con el lector: el título se lee una vez, el grande.
+ */
+function TituloChico({ titulo, conVolver }: { titulo: TituloCompartido; conVolver: boolean }) {
+  const texto = useTextoDelTitulo(titulo.registro);
+  if (!texto) return null;
+  const margen = margenDelTituloChico(conVolver);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+      style={[estilos.centro, { left: margen, right: margen, opacity: titulo.valor }]}
+    >
+      <Text style={estilos.tituloChico} numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.15}>
+        {texto}
+      </Text>
+    </Animated.View>
+  );
+}
+
+/**
  * El logo redondo de BE con un brillo suave detrás, sin el texto «BE» a la vista. Es accesible con el nombre «BE»: el
  * lector lo dice una vez, y el brillo y el dibujo no se recorren.
  */
@@ -166,5 +197,8 @@ const estilos = estilosPorTema((COLOR) => ({
   // La capa de la cabecera con contenido detrás y el desvanecido de abajo (AV2-T26).
   capa: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   desvanecido: { position: 'absolute', top: 0, left: 0, right: 0, height: ALTO_DEL_DESVANECIDO },
+  // PG-04: el título chico, al centro de la fila y sin tocar los costados.
+  centro: { position: 'absolute', top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  tituloChico: { fontSize: 17, fontWeight: '700', color: COLOR.texto },
   ambiente: { fontSize: 12, lineHeight: 15, color: COLOR.tenue, textAlign: 'center', paddingHorizontal: 16, paddingBottom: 6 },
 }));

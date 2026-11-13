@@ -2,10 +2,11 @@
  * APK · La recuperación de la sesión al abrir la app (WP-ENTRENAMIENTO-SERIES §7.6; referencia
  * `02_carga_y_reintento.png`). Reemplaza a «Verificando tu sesión guardada…» con tres bloques vacíos.
  *
- * - **Mientras comprueba:** la identidad real de BE (el isotipo del repositorio y «BE»; la cabecera lleva el aviso de
- *   prueba en las builds que lo muestran), «Preparando tu espacio», «Comprobando tu sesión», un indicador de actividad y
- *   «Un momento, por favor.». Sin porcentajes ni mensajes de éxito antes de confirmar. Con movimiento reducido, el
- *   indicador queda quieto. La misma espera se ve mientras la raíz pregunta qué falta para seguir (UF-01, DL-169:
+ * - **Mientras comprueba:** el logo redondo de BE llenando el aro, sin el texto «BE» adentro (PG-02 de
+ *   WP-PULIDO-GRANDES, `logo-de-la-carga.ts`), «BE está preparando tu espacio» y, abajo y más chico, «Comprobando tu
+ *   sesión» (PG-03), con un indicador de actividad. Los dos textos van en una sola región viva: el lector los dice juntos
+ *   y una sola vez, y el indicador no se anuncia aparte. Sin barra de progreso ni porcentajes, y sin mensajes de éxito
+ *   antes de confirmar. Con movimiento reducido, el indicador queda quieto. La misma espera se ve mientras la raíz pregunta qué falta para seguir (UF-01, DL-169:
  *   `antes-de-seguir.tsx`).
  * - **A los 5 s** (`UMBRAL_DE_DEMORA_MS`): «Está tardando más de lo habitual» y que sigue esperando el mismo pedido,
  *   que puede tardar alrededor de un minuto si el servicio estaba en reposo (`ESPERA_MAXIMA_DE_VERIFICACION_MS`). Sin
@@ -22,6 +23,7 @@ import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg'
 import { useApariencia } from '../apariencia';
 import { useMovimientoReducido } from '../estados';
 import { IconoDeNubeConAviso } from '../iconos-de-entrenamiento';
+import { LADO_DEL_EMBLEMA, LADO_DEL_LOGO_DE_LA_CARGA, RADIO_DEL_ARO } from '../logo-de-la-carga';
 import type { CausaDeLaFalla } from '../sesion-persistente';
 import { Boton, COLOR, estilosPorTema } from '../ui';
 
@@ -30,9 +32,8 @@ const ISOTIPO = require('../../assets/isotipo.png');
 export type FaseDeLaRecuperacion = { readonly tipo: 'comprobando' } | { readonly tipo: 'tardando' } | { readonly tipo: 'sin-verificar'; readonly causa: CausaDeLaFalla };
 
 export const TEXTOS_DE_LA_RECUPERACION = {
-  preparando: 'Preparando tu espacio',
+  preparando: 'BE está preparando tu espacio',
   comprobando: 'Comprobando tu sesión',
-  unMomento: 'Un momento, por favor.',
   tardando: 'Está tardando más de lo habitual',
   todaviaNo: 'Si el servicio estaba en reposo, puede tardar alrededor de un minuto en responder.',
   seguimosEsperando: 'Seguimos esperando la respuesta: no hace falta que hagas nada.',
@@ -58,12 +59,12 @@ export function PantallaDeRecuperacion({ fase, reintentar, iniciarDeNuevo }: { f
     return (
       <View style={estilos.centro}>
         <Emblema />
-        <Text style={estilos.titulo} accessibilityRole="header">
-          {t.preparando}
-        </Text>
-        <Text style={estilos.subtitulo}>{t.comprobando}</Text>
-        <Indicador />
-        <Text style={estilos.nota}>{t.unMomento}</Text>
+        {/* PG-03: una sola región viva con los dos textos, en ese orden: el lector los dice juntos, una vez. */}
+        <View accessible accessibilityLiveRegion="polite" accessibilityLabel={`${t.preparando}. ${t.comprobando}`}>
+          <Text style={estilos.titulo}>{t.preparando}</Text>
+          <Text style={estilos.subtitulo}>{t.comprobando}</Text>
+        </View>
+        <Indicador anunciado={false} />
       </View>
     );
   }
@@ -101,7 +102,10 @@ export function PantallaDeRecuperacion({ fase, reintentar, iniciarDeNuevo }: { f
   );
 }
 
-/** El isotipo real de BE y «BE» dentro de un aro con un brillo suave y circular (no una placa recortada). */
+/**
+ * El logo redondo de BE llenando el aro, con un brillo suave y circular alrededor (PG-02): sin el texto «BE» adentro. El
+ * nombre accesible sigue siendo «BE», una sola vez.
+ */
 function Emblema() {
   const { tema } = useApariencia();
   return (
@@ -115,18 +119,21 @@ function Emblema() {
           </RadialGradient>
         </Defs>
         <Circle cx={84} cy={84} r={84} fill="url(#brillo-del-emblema)" />
-        <Circle cx={84} cy={84} r={66} stroke={COLOR.acento} strokeWidth={2} fill="none" />
       </Svg>
       <Image source={ISOTIPO} style={estilos.isotipo} accessible={false} />
-      <Text style={estilos.marca} importantForAccessibility="no">
-        BE
-      </Text>
+      {/* El aro va encima del canto de la esfera: no queda un borde vacío entre los dos. */}
+      <Svg width={LADO_DEL_EMBLEMA} height={LADO_DEL_EMBLEMA} style={estilos.aro} accessible={false} importantForAccessibility="no-hide-descendants">
+        <Circle cx={LADO_DEL_EMBLEMA / 2} cy={LADO_DEL_EMBLEMA / 2} r={RADIO_DEL_ARO} stroke={COLOR.acento} strokeWidth={2} fill="none" />
+      </Svg>
     </View>
   );
 }
 
-/** Un indicador de actividad sin porcentaje: gira; con movimiento reducido, queda quieto. */
-function Indicador() {
+/**
+ * Un indicador de actividad sin porcentaje: gira; con movimiento reducido, queda quieto. Si los textos ya dicen qué pasa
+ * en su región viva (`anunciado={false}`), el indicador no se anuncia aparte.
+ */
+function Indicador({ anunciado = true }: { anunciado?: boolean }) {
   const reducido = useMovimientoReducido();
   const giro = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -143,7 +150,10 @@ function Indicador() {
     </Svg>
   );
   return (
-    <View style={estilos.indicador} accessible accessibilityRole="progressbar" accessibilityLabel={TEXTOS_DE_LA_RECUPERACION.comprobando}>
+    <View
+      style={estilos.indicador}
+      {...(anunciado ? { accessible: true, accessibilityRole: 'progressbar' as const, accessibilityLabel: TEXTOS_DE_LA_RECUPERACION.comprobando } : { accessible: false, importantForAccessibility: 'no-hide-descendants' as const })}
+    >
       {reducido ? arco : <Animated.View style={{ transform: [{ rotate: giro.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>{arco}</Animated.View>}
     </View>
   );
@@ -153,8 +163,7 @@ const estilos = estilosPorTema((COLOR) => ({
   centro: { alignItems: 'center', paddingTop: 32, paddingBottom: 16 },
   emblema: { width: 168, height: 168, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   aro: { position: 'absolute', left: 0, top: 0 },
-  isotipo: { width: 64, height: 64 },
-  marca: { fontSize: 26, fontWeight: '800', color: COLOR.texto, letterSpacing: 1, marginTop: 4 },
+  isotipo: { width: LADO_DEL_LOGO_DE_LA_CARGA, height: LADO_DEL_LOGO_DE_LA_CARGA },
   titulo: { fontSize: 25, fontWeight: '800', color: COLOR.texto, textAlign: 'center', marginTop: 8 },
   subtitulo: { fontSize: 18, lineHeight: 25, color: COLOR.tenue, textAlign: 'center', marginTop: 8 },
   nota: { fontSize: 15, lineHeight: 22, color: COLOR.tenue, textAlign: 'center', marginTop: 16 },

@@ -57,6 +57,10 @@ import {
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
 import { ajustesDelDescanso, marcaDeLaExplicacion, useAjustesDelDescanso } from '../ajustes-del-descanso';
+import { tocarPorUnError, tocarTrasLaSerie } from '../haptica';
+import { HoraDeLoQueVes } from '../hora-en-pantalla';
+import { usePantallaEncendida } from '../pantalla-encendida-en-la-sesion';
+import { preferenciasDelTelefono, usePreferenciasDelTelefono } from '../preferencias-en-el-telefono';
 import { seMuestraLaExplicacion } from '../explicacion-de-los-tiempos';
 import { cancelarAvisoDelDescanso, pedirPermisoDeAvisos, permisoDeAvisos, programarAvisoDelDescanso } from '../avisos-del-telefono';
 import { accionAlDestildar, accionAlTildar, filaDeAcciones, llegoAlRecomendado, pedidoDelPermiso, planDelAviso, queHaceElMedio, type PermisoDeAvisos } from '../descanso-automatico';
@@ -287,6 +291,7 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
   return (
     <View>
       <Titulo>{COPY_ENTRENAMIENTO.pestana}</Titulo>
+      <HoraDeLoQueVes />
       <Pestanas etiqueta="Qué ver de tu entrenamiento" opciones={VISTAS} valor={vista} alElegir={setVista} />
       {contenido}
       {/* REV-A (DL-134): las revisiones de tu profesional, completas; son historia, así que están aunque no haya plan. */}
@@ -1017,6 +1022,7 @@ export function PantallaDeSesion({
   // DL-166 (AV-11, AV-12): los ajustes del descanso (en el teléfono), su hoja, y el permiso de avisos, pedido en contexto.
   const ajustes = useAjustesDelDescanso();
   const [hojaDelDescanso, setHojaDelDescanso] = useState(false);
+  const preferencias = usePreferenciasDelTelefono();
   const [permiso, setPermiso] = useState<PermisoDeAvisos>('dado');
   const [permisoCerrado, setPermisoCerrado] = useState(false);
   useEffect(() => {
@@ -1099,6 +1105,9 @@ export function PantallaDeSesion({
   const nombreDe = (id: string) => prescripciones.find((x) => x.prescriptionId === id)?.exerciseName ?? 'Ejercicio';
   const recomendadoDe = (id: string, setIndex: number) => prescripciones.find((x) => x.prescriptionId === id)?.sets.find((s) => s.setIndex === setIndex)?.target.restSeconds ?? null;
   const conCorrida = modo === 'en-vivo' && estado !== null && estado.runId !== null && estado.cierre === null;
+  // PG-05 (WP-PULIDO-GRANDES): la pantalla encendida mientras la sesión corre en vivo, sin pausa; se libera al pausar,
+  // al finalizar, al salir de la sesión o con la app atrás (`pantalla-encendida.ts`).
+  usePantallaEncendida(conCorrida && !estado.pausada);
   const activoDeLaCorrida = conCorrida ? estado.ejercicioActivo : null;
   const p = prescripciones.find((x) => x.prescriptionId === (activoDeLaCorrida ?? local?.foco?.prescriptionId)) ?? prescripciones[0] ?? null;
   const borrador = local?.borrador ?? null;
@@ -1271,6 +1280,8 @@ export function PantallaDeSesion({
           setErrores({ setIndex: f.setIndex, errores: lectura.errores });
           if (porRegistrar?.prescriptionId === p.prescriptionId && porRegistrar.setIndex === f.setIndex) setPorRegistrar({ ...porRegistrar, nota: anuncio });
           AccessibilityInfo.announceForAccessibility(anuncio);
+          // PG-08: el doble toque suave, junto con el texto que dice qué falta.
+          tocarPorUnError();
           return;
         }
         setErrores(null);
@@ -1278,6 +1289,8 @@ export function PantallaDeSesion({
         // Se registra con el ejercicio que figura en el borrador: una sustitución hecha antes se respeta (DL-151).
         const resultado = entrenamientoLocal.registrarSerie(draftId, { prescriptionId: p.prescriptionId, performedExerciseVersionId: ejercicioRealizadoDe(borrador, p), serie: lectura.serie }, { olvidarFilasDeMas: !f.planificada });
         if (resultado !== 'registrada') return;
+        // PG-08: la serie quedó guardada en el teléfono: el toque de confirmar.
+        tocarTrasLaSerie(resultado);
         setEscribiendoTiempo(null);
         AccessibilityInfo.announceForAccessibility(TEXTOS_DE_LA_SESION.serieRegistradaAnuncio(f.setIndex));
         if (descansoAuto && !descansoEmpezado) hacer(descansoAuto, anuncioDelDescanso(f.setIndex));
@@ -1293,6 +1306,8 @@ export function PantallaDeSesion({
       // Una carga registrada en otra unidad vuelve con su unidad: la columna del ejercicio pasa a esa.
       if (conAlgo && restaurar.carga !== '' && restaurar.unidad !== unidad) entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, restaurar.unidad);
       if (entrenamientoLocal.quitarSerie(draftId, p.prescriptionId, f.setIndex, conAlgo ? restaurar : null) !== 'quitada') return;
+      // PG-08: destildar deshace: su toque, distinto del de confirmar.
+      tocarTrasLaSerie('quitada');
       // Destildar con su descanso corriendo lo termina (AVD-3): el evento no se borra, se cierra.
       const terminarElDescanso = accionAlDestildar(estado, { prescriptionId: p.prescriptionId, setIndex: f.setIndex });
       if (terminarElDescanso) hacer(terminarElDescanso);
@@ -1976,6 +1991,8 @@ export function PantallaDeSesion({
         visible={hojaDelDescanso}
         ajustes={ajustes}
         permiso={permiso}
+        pantallaEncendida={preferencias.pantallaEncendida}
+        onPantallaEncendida={(pantallaEncendida) => void preferenciasDelTelefono.cambiar({ pantallaEncendida })}
         onCambiar={(cambios) => void ajustesDelDescanso.cambiar(cambios)}
         onPermitir={() => void permitirAvisos()}
         onCerrar={() => setHojaDelDescanso(false)}

@@ -125,6 +125,8 @@ export const COPY_ASISTENTE_DE_NUTRICION = {
   impiden: 'Lo que impide activar',
   sinCompletar: 'Lo que queda sin completar',
   irEnLaEstacion: 'Ir a corregirlo en la estación',
+  rangosIndicados: 'Rangos de macronutrientes (opcional)',
+  rangosIndicadosAyuda: 'Si querés, indicá un rango para el día o para cada comida, en gramos o en gramos por kilo. No impide activar.',
   activar: 'Activar la versión',
   activarAyuda: (persona: string) => `«Revisar y activar…» abre lo que va a ver ${persona}, la fecha de la próxima revisión y el botón para activar.`,
 } as const;

@@ -18007,3 +18007,51 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0.35rem 0 0;
   padding-inline-start: 1.1rem;
 }
+
+/* API-PLN-02 y 03 (ED-34): los rangos indicados por el profesional, en el panel y en el paso 6 del asistente. Sin color
+   por valor: se describe, no se califica. */
+.rangos-indicados {
+  margin-top: 1rem;
+  border-top: 1px solid var(--borde);
+  padding-top: 0.75rem;
+}
+
+.rangos-indicados h4 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.9rem;
+}
+
+.rangos-indicados__donde {
+  font-weight: 600;
+}
+
+.rangos-indicados__valor {
+  font-variant-numeric: tabular-nums;
+}
+
+.rangos-indicados__tabla input,
+.rangos-indicados__tabla select {
+  max-width: 6rem;
+}
+
+.rangos-indicados__tabla td {
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+
+.rangos-indicados__tabla .campo__error {
+  display: block;
+  white-space: normal;
+}
+
+.rangos-indicados__peso {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rangos-indicados__a-mano {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
