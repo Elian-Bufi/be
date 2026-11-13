@@ -227,6 +227,12 @@ export class PlanesService {
       },
       select: { id: true },
     });
+    // API-PLN-03: la sucesora conserva los rangos de la efectiva, con los mismos gramos y el mismo peso. Nada se recalcula
+    // (decisión de Dirección del 2026-11-13); la copia conserva los identificadores de nodo, así que siguen en su lugar.
+    if (p.basadaEn) {
+      const rangos = await tx.rangosDePlanNutricional.findUnique({ where: { versionDePlanId: p.basadaEn }, select: { contenido: true } });
+      if (rangos) await tx.rangosDePlanNutricional.create({ data: { versionDePlanId: version.id, revision: 1, contenido: rangos.contenido as Prisma.InputJsonValue } });
+    }
     await registrarEventoDeNutricion(tx, {
       tipo: 'BorradorDePlanCreado',
       profesionalId: p.profesionalId,
