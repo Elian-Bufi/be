@@ -86,6 +86,7 @@ import {
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
@@ -994,14 +995,8 @@ function SeleccionDeIntervalo({ desde, hasta, minimo, maximo, onCambiar }: { des
     <details className="intervalo">
       <summary>Elegir un intervalo con fechas (también se puede arrastrar sobre un gráfico)</summary>
       <div className="acciones">
-        <div className="campo">
-          <label htmlFor={`${id}-d`}>Desde</label>
-          <input id={`${id}-d`} type="date" min={minimo} max={hasta} value={desde} onChange={(e) => e.target.value && onCambiar(e.target.value, hasta)} />
-        </div>
-        <div className="campo">
-          <label htmlFor={`${id}-h`}>Hasta</label>
-          <input id={`${id}-h`} type="date" min={desde} max={maximo} value={hasta} onChange={(e) => e.target.value && onCambiar(desde, e.target.value)} />
-        </div>
+        <CampoDeFecha id={`${id}-d`} etiqueta="Desde" min={minimo} max={hasta} value={desde} onChange={(v) => v && onCambiar(v, hasta)} />
+        <CampoDeFecha id={`${id}-h`} etiqueta="Hasta" min={desde} max={maximo} value={hasta} onChange={(v) => v && onCambiar(desde, v)} />
       </div>
     </details>
   );
@@ -1068,14 +1063,8 @@ function ElegirReferencia({
           </label>
           {tipo === 'RANGE' ? (
             <div className="acciones">
-              <div className="campo">
-                <label htmlFor={`${id}-desde`}>Desde</label>
-                <input id={`${id}-desde`} type="date" min={periodo.desde} max={periodo.hasta} value={inicio} onChange={(e) => setInicio(e.target.value)} />
-              </div>
-              <div className="campo">
-                <label htmlFor={`${id}-hasta`}>Hasta</label>
-                <input id={`${id}-hasta`} type="date" min={periodo.desde} max={periodo.hasta} value={fin} onChange={(e) => setFin(e.target.value)} />
-              </div>
+              <CampoDeFecha id={`${id}-desde`} etiqueta="Desde" min={periodo.desde} max={periodo.hasta} value={inicio} vaciable onChange={setInicio} />
+              <CampoDeFecha id={`${id}-hasta`} etiqueta="Hasta" min={periodo.desde} max={periodo.hasta} value={fin} vaciable onChange={setFin} />
               {visible ? (
                 <button
                   type="button"
@@ -1244,9 +1233,8 @@ function PanelDeLectura({
           <Icono nombre="derecha" tamano={18} />
         </button>
       </div>
-      <div className="campo lectura__fecha">
-        <label htmlFor={`${id}-fecha`}>Ir a una fecha</label>
-        <input id={`${id}-fecha`} type="date" value={fecha ?? ''} onChange={(e) => e.target.value && onFecha(e.target.value)} />
+      <div className="lectura__fecha">
+        <CampoDeFecha id={`${id}-fecha`} etiqueta="Ir a una fecha" value={fecha ?? ''} onChange={(v) => v && onFecha(v)} />
       </div>
       <div aria-live="polite">
         {fecha ? (
@@ -1644,14 +1632,8 @@ function ContenidoDeLaComparacion({
         {(['a', 'b'] as const).map((lado) => (
           <fieldset key={lado} className="capas">
             <legend>Período {lado.toUpperCase()}</legend>
-            <div className="campo">
-              <label htmlFor={`${id}-${lado}-d`}>Desde</label>
-              <input id={`${id}-${lado}-d`} type="date" min={minimo} max={maximo} value={c?.[lado].desde ?? ''} onChange={(e) => poner(lado, 'desde', e.target.value)} />
-            </div>
-            <div className="campo">
-              <label htmlFor={`${id}-${lado}-h`}>Hasta</label>
-              <input id={`${id}-${lado}-h`} type="date" min={minimo} max={maximo} value={c?.[lado].hasta ?? ''} onChange={(e) => poner(lado, 'hasta', e.target.value)} />
-            </div>
+            <CampoDeFecha id={`${id}-${lado}-d`} etiqueta="Desde" min={minimo} max={maximo} value={c?.[lado].desde ?? ''} vaciable onChange={(v) => poner(lado, 'desde', v)} />
+            <CampoDeFecha id={`${id}-${lado}-h`} etiqueta="Hasta" min={minimo} max={maximo} value={c?.[lado].hasta ?? ''} vaciable onChange={(v) => poner(lado, 'hasta', v)} />
           </fieldset>
         ))}
         {c ? (

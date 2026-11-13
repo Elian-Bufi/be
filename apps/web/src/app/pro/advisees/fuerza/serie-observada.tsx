@@ -14,6 +14,7 @@
  */
 import { COPY_FUERZA, estimacionALaVista, laCuentaDeLaEstimacion, rotuloDeLaEstimacion } from '@be/domain';
 import { useId, useState } from 'react';
+import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo } from '../../../../lib/intento';
@@ -132,8 +133,7 @@ export function CamposDeLaSerie({ f, cambiar, hoy }: { f: FormularioDeSerieObser
   const C = COPY_SERIE_OBSERVADA;
   return (
     <div className="serie-observada__campos">
-      <label htmlFor={`${id}-fecha`}>{C.fecha}</label>
-      <input id={`${id}-fecha`} type="date" max={hoy} value={f.fecha} onChange={(e) => cambiar({ fecha: e.target.value })} required />
+      <CampoDeFecha id={`${id}-fecha`} etiqueta={C.fecha} max={hoy} hoy={hoy} value={f.fecha} onChange={(fecha) => cambiar({ fecha })} required sinEnvoltorio />
 
       <label htmlFor={`${id}-carga`}>{C.carga}</label>
       <span className="serie-observada__par">

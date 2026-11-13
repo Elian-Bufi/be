@@ -656,3 +656,54 @@ se declara), los dos de la línea 57 del SDK.
   empeora más de 2 puntos, el título queda fijo (la alternativa de PG-D2).
 - `WP-PULIDO-GRANDES-ORACULOS.md` con los trece campos: en modo liviano, los oráculos quedaron en las pruebas, con su
   mutación; la ficha se escribe al cerrar la tanda.
+
+## 10. Lo programado · tanda A · website (rama `wp-pulido-a-web`, #268, en borrador)
+
+> Programado el 2026-11-13 sobre `main` `6b3f1afe`, con #266 ya integrado. Sin integrar: lo revisa Dirección. Las
+> decisiones nuevas (PG-T30 a PG-T39) están **a ratificar**; mientras tanto, rige lo programado.
+
+| Parte | Commit | Qué quedó | Oráculo |
+|---|---|---|---|
+| PG-06 | `642b19f0` | `components/descarga-de-la-app.tsx` y `lib/descarga-de-la-app.ts`: el QR (con `CodigoQr`) y el botón al archivo `releases/latest/download/be.apk`; la línea de la versión y el tamaño solo si la lectura pública de la última publicación responde con la copia `be.apk`; los tres pasos por marca, con dibujo | TEST-PG-005 |
+| PG-07 | `1cc5f5a0` | `app/not-found.tsx` y `lib/no-encontrada.ts`: el texto, «Ir al inicio» y «Entrar»; sin redirigir, sin buscar y sin indexar | TEST-PG-006 |
+| PG-14 | `481497db` | `components/campo-de-fecha.tsx` y `lib/fecha-en-palabras.ts`: los catorce campos de fecha del profesional, con sus mismos límites | TEST-PG-013 |
+| PG-10 | `68f3bfbd` | `avisos-agrupados.ts` y `renglon-de-aviso.tsx`: el cuadro «Antes de activar», el panel y el asistente agrupan lo sin completar; «Completar» y su «Deshacer»; en Fuerza, la tabla y «Lo que no entra» juntan las sesiones seguidas con el mismo motivo | TEST-PG-009 |
+
+**Oráculos** (en `apps/web/test/pulido-grandes.test.mjs`, que corre con `npm run test -w @be/web`). Cada mutación se probó
+cambiando el código y corriendo la prueba; todas la ponen en rojo:
+
+| Oráculo | Mutación | Resultado |
+|---|---|---|
+| TEST-PG-005 | La versión se toma de cualquier `.apk` de la publicación, no de la copia `be.apk` | rojo |
+| TEST-PG-009 | Agrupar por motivo sin el ejercicio | rojo |
+| TEST-PG-009 | «Completar» escribe también las series que ya tenían repeticiones | rojo |
+| TEST-PG-009 | El rango nunca dice «a» («series 1, 2, 3 y 4») | rojo |
+| TEST-PG-013 | La semana arranca el domingo | rojo |
+| TEST-PG-013 | El teclado sale de los mínimos y máximos | rojo |
+| TEST-PG-013 | Volver a poner un `type="date"` en un campo | rojo |
+
+TEST-PG-006 es de estructura (el texto, los dos enlaces, nada que redirija): no tiene lógica que mutar. Dos pruebas del
+editor (TB-48 y TEST-EDP-026) cambian solo la forma del cálculo que leen: ahora pasa por `enGrupos`.
+
+**Decisiones nuevas, a ratificar:**
+- **PG-T30 · La marca de los pasos:** arranca en Samsung, la más común acá, y se cambia con un toque. *Alternativa:* adivinarla por el navegador (poco confiable).
+- **PG-T31 · La línea de la versión:** «Versión 0.28.0 · 85 MB», con la etiqueta tal cual (si la última es candidata, lo dice) y el tamaño en megabytes de mil, como lo dice Android al bajar.
+- **PG-T32 · En la compu, también el archivo:** debajo del QR, un enlace chico «O bajá el archivo en esta compu». El botón grande es solo para el ancho de un teléfono, y en `test` conserva el aviso de prueba de UF-08.
+- **PG-T33 · Lo que impide activar no se agrupa:** cada cosa sigue con su «Ir a corregir» y el principal cuenta lo mismo. Se agrupa lo sin completar. *Alternativa:* agrupar también lo que impide, contando el grupo como una cosa.
+- **PG-T34 · «Completar»:** solo para las series sin repeticiones; acepta un número o un rango («8-12», el menor primero); escribe solo las vacías y se deshace con el «Deshacer» del editor. No aparece para otros motivos.
+- **PG-T35 · Cómo se dice el rango:** tres o más series seguidas van con «a» («series 1 a 4»); dos seguidas se nombran («series 1 y 2»).
+- **PG-T36 · «Seguidas» en Fuerza:** sesiones vecinas en la tabla, no días de calendario; una estimación entre medio corta el grupo. Se lee «del mar 1 dic al vie 4 dic, 3 sesiones».
+- **PG-T37 · El campo de fecha:** un botón con la fecha en palabras y un calendario debajo, no un texto para escribir; «Hoy» cuando entra en los límites y «Quitar la fecha» donde el nativo dejaba vaciar (los períodos y la comparación a mano). Los meses cortos son los del resto del website («sept»).
+- **PG-T38 · «¿Cuándo la revisás?» sin mínimo:** el campo nativo no lo tenía y se conserva así. *Pregunta a Dirección:* ¿el mínimo tendría que ser mañana?
+- **PG-T39 · La página no encontrada:** sin la campana de novedades (quien llega no siempre tiene sesión) y fuera de los buscadores.
+- **PG-T40 · Los campos de fecha Y HORA, todavía nativos (revisión de la tanda A):** son cinco: la fecha y hora de la evaluación (Nutrición y Entrenamiento), «Vigente desde» de los objetivos (Nutrición y Entrenamiento) y la toma de antropometría. Quedan como están hasta que `CampoDeFecha` tenga la hora en 24 h (después del 25/11). TEST-PG-013 los lista uno por uno, así que uno nuevo pone la prueba en rojo. La alternativa era la variante con hora ya, pero no entraba antes del 23/11 con su revisión.
+- **PG-T41 · «Completar» no se ofrece dentro del cuadro «Antes de activar» (revisión de la tanda A):** su «Deshacer» vive en el aviso flotante, que con el cuadro modal abierto queda inerte y el lector no lo alcanza. En el cuadro, cada aviso conserva su «Ir»; «Completar» sigue en el panel y en el asistente. Las filas usan el texto del renglón como clave, para que lo abierto no pase a la fila siguiente. La alternativa era el «Deshacer» dentro del cuadro, con `role=status`.
+
+**Lo que quedó de la revisión de la tanda A para el 18/11** (cuando vuelvan las revisiones adversarias): un recorrido en el navegador que elija una fecha con el teclado y compruebe el valor AAAA-MM-DD, que Escape cierre el calendario sin cerrar el cuadro y que `/no-existe` responda 404; el foco después de «Completar» en el panel; y las seis observaciones de severidad baja.
+
+**Lo que falta antes de integrar, fuera de esta rama:**
+1. ~~**La copia `be.apk` (PG-D5)**~~: hecho el 2026-11-13, con el sí de Dirección. La 0.27 tiene la copia (mismo SHA-256) y el paso quedó en `docs/DESPLIEGUE.md`.
+2. **La política de contenido de `render.yaml`:** sumar `https://api.github.com` a `connect-src`. Sin eso, la línea de la versión no se dibuja en `test`; el QR y el botón andan igual.
+3. **El código 404 en `test`** se mide después de integrar, con una dirección inventada.
+4. **La mirada en pantalla** (Azul noche y Claro, 360 y 1440 px, el QR a 30 cm en 1366 × 768, el lector de pantalla en el calendario): queda para la evidencia de la tanda, con el website de `test`.
+5. `/invitacion` sigue ofreciendo la página de publicaciones si no hay app: lo cambia PG-17 (tanda B).

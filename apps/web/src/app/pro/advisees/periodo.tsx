@@ -9,7 +9,7 @@
  * este mismo formulario y la misma validación previa, en vez de dos campos sueltos sin validar por pantalla.
  */
 import { useState, type FormEvent } from 'react';
-import { Campo } from '../../../components/formulario';
+import { CampoDeFecha } from '../../../components/campo-de-fecha';
 
 export interface Periodo {
   readonly periodStart?: string;
@@ -37,8 +37,8 @@ export function FiltroDePeriodo({ id, onAplicar, diasMaximos = DIAS_MAXIMOS, ini
 
   return (
     <form className="fila-de-dato filtro-de-periodo" onSubmit={aplicar} noValidate>
-      <Campo id={`${id}-desde`} etiqueta="Desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} error={error?.campo === 'desde' ? error.texto : null} />
-      <Campo id={`${id}-hasta`} etiqueta="Hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} error={error?.campo === 'hasta' ? error.texto : null} />
+      <CampoDeFecha id={`${id}-desde`} etiqueta="Desde" value={desde} vaciable onChange={setDesde} error={error?.campo === 'desde' ? error.texto : null} />
+      <CampoDeFecha id={`${id}-hasta`} etiqueta="Hasta" value={hasta} vaciable onChange={setHasta} error={error?.campo === 'hasta' ? error.texto : null} />
       <button type="submit" className="boton boton--secundario">
         Ver período
       </button>

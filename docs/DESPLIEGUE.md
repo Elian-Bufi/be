@@ -179,6 +179,16 @@ Si EAS no puede construir (por ejemplo, cuota mensual agotada), la alternativa u
 
 El artefacto de EAS expira a los 14 días. Por eso el APK de cada paquete se publica como release permanente de GitHub (`be-apk-x.y.z`), con su SHA-256 en la evidencia.
 
+**La copia `be.apk` (PG-06 y PG-D5 de WP-PULIDO-GRANDES, desde el 2026-11-13).** Toda publicación que va como «latest» lleva, además del archivo con el nombre largo, **el mismo archivo con el nombre `be.apk`**. Es idéntico y tiene el mismo SHA-256. El QR y el botón «Bajar BE» de la portada apuntan a `releases/latest/download/be.apk`: sin la copia, la descarga da 404.
+
+```bash
+cp be-x.y.z-<commit>.apk be.apk && sha256sum be.apk   # el mismo SHA que el .apk.sha256
+gh release upload be-apk-x.y.z be.apk --repo Elian-Bufi/be
+curl -sL -o /dev/null -w "%{http_code} %{size_download}\n" https://github.com/Elian-Bufi/be/releases/latest/download/be.apk   # 200 y el tamaño del APK
+```
+
+La 0.27.0-candidata.1 recibió su copia el 2026-11-13, con el sí de Dirección.
+
 ### Google Play · pruebas internas (WP-GOOGLE-PLAY-PRUEBAS-INTERNAS, 2026-10-28)
 
 La ruta completa, con las fuentes oficiales y las decisiones de Dirección, está en `docs/paquetes/GOOGLE-PLAY-PRUEBAS-INTERNAS-2026-10-28.md`; el guion de prueba y las verificaciones del artefacto, en `EVIDENCIA/GOOGLE-PLAY/`. Lo operativo:

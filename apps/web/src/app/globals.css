@@ -1658,18 +1658,6 @@ details summary {
   background: var(--superficie);
 }
 
-.landing__app {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem 2rem;
-}
-
-.landing__app p {
-  margin: 0.25rem 0;
-}
-
 @media (max-width: 48rem) {
   .portada {
     grid-template-columns: 1fr;
@@ -17441,11 +17429,6 @@ p.cifra-del-espacio__desglose {
   font-weight: 600;
 }
 
-.serie-observada__campos input[type='date'] {
-  justify-self: start;
-  min-width: 12rem;
-}
-
 /* El RIR observado: los seis segmentos entran en el cajón («Más de 2» se cortaba). */
 .serie-observada__rir .segmento {
   padding-inline: 0.6rem;
@@ -17590,6 +17573,439 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .cajon__pie:has([data-enviar]) > [data-enviar] {
   order: 2;
   margin-inline-start: auto;
+}
+
+/* ─── PG-06 (WP-PULIDO-GRANDES): «La app para Android», con el QR al archivo y los tres pasos ─────────────────── */
+.descarga {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.descarga__cabeza {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem 2rem;
+  align-items: center;
+}
+
+.descarga__texto p {
+  margin: 0.25rem 0;
+}
+
+.descarga__version {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.descarga__qr {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  max-width: 15rem;
+  text-align: center;
+}
+
+.descarga__qr figcaption {
+  display: grid;
+  gap: 0.25rem;
+}
+
+/* En la compu, el QR; el botón grande es para el teléfono. */
+.descarga__en-el-telefono {
+  display: none;
+}
+
+.descarga__pasos-y-marca h3 {
+  margin: 0 0 0.75rem;
+}
+
+.descarga__marcas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.descarga__marcas-titulo {
+  color: var(--tenue);
+  margin-inline-end: 0.25rem;
+}
+
+.descarga__marca {
+  position: relative;
+}
+
+.descarga__marca input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.descarga__marca span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+}
+
+.descarga__marca input:checked + span {
+  border-color: var(--enlace);
+  color: var(--enlace);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--enlace);
+}
+
+.descarga__marca input:focus-visible + span {
+  outline: 2px solid var(--enlace);
+  outline-offset: 2px;
+}
+
+.descarga__pasos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.descarga__paso {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.descarga__paso p {
+  margin: 0;
+}
+
+.dibujo-del-paso {
+  display: block;
+  width: 4.5rem;
+  height: auto;
+}
+
+.dibujo-del-paso__marco {
+  fill: var(--superficie);
+  stroke: var(--borde);
+  stroke-width: 2;
+}
+
+.dibujo-del-paso__pantalla {
+  fill: var(--fondo, transparent);
+  stroke: var(--borde);
+}
+
+.dibujo-del-paso__linea {
+  fill: var(--tenue);
+  opacity: 0.45;
+}
+
+.dibujo-del-paso__hoja {
+  fill: var(--superficie);
+  stroke: var(--borde);
+}
+
+.dibujo-del-paso__resalte {
+  fill: none;
+  stroke: var(--enlace);
+  stroke-width: 2.5;
+}
+
+.dibujo-del-paso__icono {
+  fill: none;
+  stroke: var(--enlace);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dibujo-del-paso__texto {
+  fill: var(--texto);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.dibujo-del-paso__texto--boton {
+  fill: var(--enlace);
+}
+
+.dibujo-del-paso__interruptor {
+  fill: var(--enlace);
+}
+
+.dibujo-del-paso__perilla {
+  fill: var(--superficie);
+}
+
+.dibujo-del-paso__app {
+  fill: var(--enlace);
+  opacity: 0.6;
+}
+
+@media (max-width: 48rem) {
+  .descarga__pasos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Con el ancho de un teléfono: sin QR, y el botón «Bajar BE» a todo el ancho. */
+@media (max-width: 40rem) {
+  .descarga__cabeza {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .descarga__qr {
+    display: none;
+  }
+
+  .descarga__en-el-telefono {
+    display: inline-flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.75rem;
+  }
+}
+
+/* ─── PG-07 (WP-PULIDO-GRANDES): la página «no encontrada» ──────────────────────────────────────────────────── */
+.no-encontrada {
+  max-width: 36rem;
+  padding-top: clamp(2rem, 8vh, 5rem);
+}
+
+.no-encontrada h1 {
+  margin: 0.75rem 0 0.5rem;
+}
+
+.no-encontrada .acciones {
+  margin-top: 1.5rem;
+}
+
+.no-encontrada__icono {
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 14px;
+  border: 1px solid var(--borde);
+  color: var(--enlace);
+  background: var(--superficie);
+}
+
+/* ─── PG-14 (WP-PULIDO-GRANDES): el campo de fecha propio, en palabras y con la semana desde el lunes ───────────── */
+.campo-de-fecha {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.campo-de-fecha__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  min-width: 11rem;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.campo-de-fecha__boton svg {
+  flex: none;
+  color: var(--tenue);
+}
+
+.campo-de-fecha__boton:focus-visible {
+  outline: 2px solid var(--enlace);
+  outline-offset: 2px;
+}
+
+.campo-de-fecha__vacio {
+  color: var(--tenue);
+}
+
+.campo--error .campo-de-fecha__boton,
+.campo-de-fecha__boton[aria-invalid='true'] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.campo-de-fecha__calendario {
+  position: absolute;
+  z-index: 40;
+  inset-block-start: calc(100% + 0.35rem);
+  inset-inline-start: 0;
+  width: 19rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  box-shadow: var(--sombra);
+}
+
+.campo-de-fecha__mes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.campo-de-fecha__titulo {
+  margin: 0;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.campo-de-fecha__grilla {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.campo-de-fecha__grilla th {
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tenue);
+  text-align: center;
+}
+
+.campo-de-fecha__grilla td {
+  padding: 1px;
+  text-align: center;
+}
+
+.campo-de-fecha__dia {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.campo-de-fecha__dia:hover:not([aria-disabled='true']) {
+  border-color: var(--borde-control);
+}
+
+.campo-de-fecha__dia[aria-current='date'] {
+  border-color: var(--enlace);
+  font-weight: 700;
+}
+
+.campo-de-fecha__dia[aria-pressed='true'] {
+  background: var(--boton-fondo);
+  color: var(--boton-texto);
+  border-color: var(--boton-fondo);
+}
+
+.campo-de-fecha__dia[aria-disabled='true'] {
+  color: var(--tenue);
+  opacity: 0.55;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.campo-de-fecha__dia:focus-visible {
+  outline: 2px solid var(--enlace);
+  outline-offset: 1px;
+}
+
+.campo-de-fecha__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.campo-de-fecha__pie:empty {
+  display: none;
+}
+
+.serie-observada__campos .campo-de-fecha {
+  justify-self: start;
+}
+
+/* ─── PG-10 (WP-PULIDO-GRANDES): los avisos repetidos, en un solo renglón ─────────────────────────────────────── */
+.renglon-de-aviso__acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin-inline-start: 0.5rem;
+}
+
+.renglon-de-aviso__completar {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0.25rem;
+  flex-basis: 100%;
+}
+
+.renglon-de-aviso__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.renglon-de-aviso__fila input {
+  width: 7rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+}
+
+.renglon-de-aviso__fila input[aria-invalid='true'] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.renglon-de-aviso__detalle {
+  flex-basis: 100%;
+  margin: 0.35rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.renglon-de-aviso__detalle li + li {
+  margin-top: 0.2rem;
+}
+
+.fuerza-en-analizar__seguidas {
+  display: inline-block;
+}
+
+.fuerza-en-analizar__seguidas ul {
+  margin: 0.35rem 0 0;
+  padding-inline-start: 1.1rem;
 }
 
 /* API-PLN-02 y 03 (ED-34): los rangos indicados por el profesional, en el panel y en el paso 6 del asistente. Sin color

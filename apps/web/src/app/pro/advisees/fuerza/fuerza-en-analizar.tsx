@@ -34,12 +34,14 @@ import {
   diaDelPunto,
   estimacionDelPunto,
   fechasDelEje,
+  filasConLosMotivosSeguidos,
   filasDeLaEvolucion,
   haciaLaSesion,
   laSerie,
   loQueHaceFalta,
   loQueNoEntraPorFecha,
   PREGUNTA_DE_LA_FUERZA,
+  rangoDeSesiones,
   sesionesSoloOrientativas,
   tramosDeLaLinea,
   versionDelPlanEn,
@@ -60,8 +62,8 @@ export const LA_PREGUNTA_DE_LA_FUERZA = {
   sinPuntos: 'En este período no hay estimaciones de este ejercicio en esta unidad.',
   soloOrientativas: 'Hay sesiones con solo series de más de 10 a 12 repeticiones equivalentes: encendé «Incluir las de más de 10 a 12» para verlas.',
   elegirEnLaTabla: 'Elegí una fecha de la tabla para leer esa estimación al costado.',
-  /** Revisión visual del 2026-11-13: el motivo de una sesión sin estimación se dice una vez; las filas que siguen con el mismo, en corto. */
-  mismoMotivo: 'ninguna serie entra, por el mismo motivo',
+  /** PG-10: las sesiones seguidas sin estimación con el mismo motivo van en una fila, que se abre para ver cada una. */
+  verLasSesiones: (n: number) => `Ver las ${n} sesiones`,
   leerEsta: 'leer esta estimación',
   plan: (version: string) => `Plan · ${version}`,
   planDeLaLectura: (version: string) => `plan ${version}`,
@@ -353,8 +355,10 @@ function TablaDeOrigen({
 }) {
   const nombres = useNombres();
   if (!linea) return null;
-  const filas = filasDeLaEvolucion(linea.puntos, linea.noEntraron, soloOrientativas);
+  const filas = filasConLosMotivosSeguidos(filasDeLaEvolucion(linea.puntos, linea.noEntraron, soloOrientativas));
   if (filas.length === 0) return null;
+  const verLaSesion = (f: { readonly fecha: string; readonly executionId: string }) =>
+    `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}&vista=ejecuciones&desde=${f.fecha}&hasta=${f.fecha}&sesion=${encodeURIComponent(f.executionId)}`;
   return (
     <div className="grafico__desplazable">
       {linea.puntos.length > 1 ? <p className="nota">{C.elegirEnLaTabla}</p> : null}
@@ -371,20 +375,36 @@ function TablaDeOrigen({
           </tr>
         </thead>
         <tbody>
-          {filas.map((f, n) => {
+          {filas.map((f) => {
+            if (f.tipo === 'sin-estimacion-seguidas') {
+              // PG-10: el mismo motivo en sesiones seguidas, en una fila con el rango; se abre para ver cada una.
+              return (
+                <tr key={f.filas[0]!.executionId} data-sin-estimacion data-seguidas={f.filas.length}>
+                  <th scope="row">{rangoDeSesiones(f.filas.map((x) => x.fecha))}</th>
+                  <td colSpan={4}>{f.motivo}</td>
+                  <td>
+                    sin estimación ·{' '}
+                    <details className="fuerza-en-analizar__seguidas">
+                      <summary>{C.verLasSesiones(f.filas.length)}</summary>
+                      <ul>
+                        {f.filas.map((x) => (
+                          <li key={x.executionId}>
+                            {diaConSemana(x.fecha)}: <Enlace href={verLaSesion(x)}>Ver la sesión</Enlace>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </td>
+                </tr>
+              );
+            }
             if (f.tipo === 'sin-estimacion') {
-              // El mismo motivo que la fila de arriba no se repite entero (revisión visual del 2026-11-13).
-              const anterior = filas[n - 1];
-              const repetido = anterior?.tipo === 'sin-estimacion' && anterior.motivo === f.motivo;
-              const sesion = `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}&vista=ejecuciones&desde=${f.fecha}&hasta=${f.fecha}&sesion=${encodeURIComponent(f.executionId)}`;
               return (
                 <tr key={f.executionId} data-sin-estimacion>
                   <th scope="row">{diaConSemana(f.fecha)}</th>
-                  <td colSpan={4} className={repetido ? 'nota' : undefined} data-motivo={repetido ? 'repetido' : undefined}>
-                    {repetido ? C.mismoMotivo : f.motivo}
-                  </td>
+                  <td colSpan={4}>{f.motivo}</td>
                   <td>
-                    sin estimación · <Enlace href={sesion}>Ver la sesión</Enlace>
+                    sin estimación · <Enlace href={verLaSesion(f)}>Ver la sesión</Enlace>
                   </td>
                 </tr>
               );

@@ -268,6 +268,28 @@ test('ED-74 (revisión del 13/11) · la maqueta 15: eje de fechas, hoy, marcas s
   assert.deepEqual(r.lineas, [`vie 4 dic: ninguna serie entra: ${COPY_FUERZA.motivo.MAS_DE_12}`, `mar 1 dic: la serie 2 no entra: ${COPY_FUERZA.motivo.RIR_MAYOR_QUE_2}`]);
   assert.equal(r.quedan, 0);
   assert.equal(F.loQueNoEntraPorFecha(puntos, noEntraron, [], 1).quedan, 1);
+  // PG-10 (revisión de la tanda A): una sesión que entró entera corta el tramo, aunque no se liste.
+  const E4 = '33333333-3333-4333-8333-333333333334';
+  const conCorte = F.loQueNoEntraPorFecha(
+    [deSesion(E3, '2026-12-06', 70, 8, 1)],
+    [
+      { executionId: E2, date: '2026-12-08', prescriptionId: 'p1', setIndex: 1, reason: 'MAS_DE_12', fields: [] },
+      { executionId: E4, date: '2026-12-04', prescriptionId: 'p1', setIndex: 1, reason: 'MAS_DE_12', fields: [] },
+    ],
+  );
+  assert.deepEqual(conCorte.lineas, [`mar 8 dic: ninguna serie entra: ${COPY_FUERZA.motivo.MAS_DE_12}`, `vie 4 dic: ninguna serie entra: ${COPY_FUERZA.motivo.MAS_DE_12}`]);
+  assert.equal(conCorte.quedan, 0);
+  // Sin el corte, las dos van juntas en un tramo.
+  const sinCorte = F.loQueNoEntraPorFecha(
+    [],
+    [
+      { executionId: E2, date: '2026-12-08', prescriptionId: 'p1', setIndex: 1, reason: 'MAS_DE_12', fields: [] },
+      { executionId: E4, date: '2026-12-04', prescriptionId: 'p1', setIndex: 1, reason: 'MAS_DE_12', fields: [] },
+    ],
+  );
+  assert.deepEqual(sinCorte.lineas, [`del vie 4 dic al mar 8 dic, 2 sesiones: ninguna serie entra: ${COPY_FUERZA.motivo.MAS_DE_12}`]);
+  // Dos sesiones del mismo día: la fecha una sola vez.
+  assert.equal(F.rangoDeSesiones(['2026-12-01', '2026-12-01']), 'mar 1 dic, 2 sesiones');
   const fuente = readFileSync(new URL('../src/app/pro/advisees/fuerza/fuerza-en-analizar.tsx', import.meta.url), 'utf8');
   for (const pieza of ['fuerza-en-analizar__franja', 'fuerza-en-analizar__hoy', 'fuerza-en-analizar__sin-estimacion', 'fechasDelEje(desde, hasta)', 'data-no-entra-por-fecha', 'versionDelPlanEn(elegido.date, versiones)']) assert.ok(fuente.includes(pieza), pieza);
 });
