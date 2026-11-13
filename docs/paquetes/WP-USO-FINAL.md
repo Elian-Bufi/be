@@ -560,7 +560,10 @@ UF-02 las sigue:
 
 - **iPhone:** pide una cuenta de Apple paga y una Mac o un servicio. Lo decide Dirección.
 - **Google Play:** está en pausa, y no es necesario para UF-14.
-- **Las incidencias administrativas** (RF-068) y un sistema de tickets: alcanza con el canal de UF-07.
+- **Las incidencias administrativas** (RF-068) y un sistema de tickets: alcanza con el canal de UF-07. *Actualizado el
+  2026-11-13:* Dirección pidió cerrarlas antes del 25/11, junto con RF-004 (los métodos de acceso de la cuenta, que
+  estaba en parte). Las dos van en su propio paquete, `WP-RF068-RF004.md` (DL-172), sin un sistema de tickets:
+  **RF-068 programado** (API-INC-01 a 05) y **RF-004 programado en el website** (API-MET-01 a 03), en un PR en borrador.
 - **La cartera:** está en #222.
 - **El nombre de la persona en los textos del website:** está en #251.
 - **Lo comercial de producción.**
