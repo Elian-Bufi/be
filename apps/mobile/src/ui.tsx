@@ -21,16 +21,23 @@ import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
 import { BORDE_DEL_BOTON, estiloDeLaEtiqueta, filoDelEstado, RELLENO_DEL_BOTON, subrayadoDelEnlace } from './receta-de-vidrio';
 import { COLOR, estilosPorTema, PALETAS } from './tema';
+import { useTituloGrande } from './titulo-en-la-cabecera';
 import { DentroDelNivel, useBotonPrincipal, useSuperficie, useSuperficieDeControl, useVidrio } from './vidrio';
 
 // Los colores viven en tema.ts, donde los verifica la prueba de contraste; se reexportan para las pantallas.
 export { COLOR, estilosPorTema } from './tema';
 
+/**
+ * El título grande de una pantalla. Desde PG-04 (WP-PULIDO-GRANDES), al desplazar más que su alto sube a la cabecera,
+ * achicado y al centro, y el grande se apaga con el mismo fundido (`titulo-de-la-cabecera.ts`). El lector lo lee una sola
+ * vez, acá, como encabezado: el de la cabecera no se recorre.
+ */
 export function Titulo({ children }: { children: ReactNode }) {
+  const { alMedir, opacidad } = useTituloGrande(typeof children === 'string' ? children : null);
   return (
-    <Text style={estilos.titulo} accessibilityRole="header">
+    <Animated.Text style={[estilos.titulo, opacidad ? { opacity: opacidad } : null]} accessibilityRole="header" onLayout={alMedir}>
       {children}
-    </Text>
+    </Animated.Text>
   );
 }
 

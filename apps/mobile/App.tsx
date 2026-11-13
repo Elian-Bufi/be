@@ -46,7 +46,7 @@
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { AVISOS_DE_PRUEBA, type SecretoDeInvitacionRequest } from '@be/domain';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AVISOS_DE_PRUEBA_VISIBLES } from './src/ambiente';
@@ -118,6 +118,8 @@ import { FondoDeLaApp } from './src/fondo-de-la-app';
 import { useMovimientoReducido } from './src/movimiento-reducido';
 import { cabeceraCubierta, FUNDIDO_DE_LA_CABECERA } from './src/receta-de-vidrio';
 import { ProveedorDeVidrio } from './src/vidrio';
+import { crearRegistroDelTitulo, duracionDelTitulo, tituloEnLaCabecera } from './src/titulo-de-la-cabecera';
+import { ContextoDelTitulo } from './src/titulo-en-la-cabecera';
 import { AVISO_DE_SESION_NO_VALIDA, crearGuardaDeSesion, crearVigiaDeDemora, recuperarSesion, type CausaDeLaFalla, type CredencialGuardada, type Recuperacion, type TemporizadorDeDemora } from './src/sesion-persistente';
 import { BARRA_DEL_SISTEMA } from './src/tema';
 import { Icono, type NombreDeIcono } from './src/icono';
@@ -228,8 +230,28 @@ function Contenido() {
   const cubierta = useRef(new Animated.Value(0)).current;
   const cubiertaAhora = useRef(false);
   const movimientoReducido = useMovimientoReducido();
+  // PG-04 (WP-PULIDO-GRANDES): el título grande de la pantalla sube a la cabecera al desplazar más que su alto. El mismo
+  // valor, de 0 a 1, apaga uno y prende el otro; se anima al cruzar el umbral, con el controlador nativo.
+  const [registroDelTitulo] = useState(crearRegistroDelTitulo);
+  const valorDelTitulo = useRef(new Animated.Value(0)).current;
+  const tituloArriba = useRef(false);
+  const tituloCompartido = useMemo(() => ({ registro: registroDelTitulo, valor: valorDelTitulo }), [registroDelTitulo, valorDelTitulo]);
+  // Otra pantalla u otro alto del título: se ubica de nuevo, sin fundido.
+  useEffect(
+    () =>
+      registroDelTitulo.suscribir(() => {
+        tituloArriba.current = tituloEnLaCabecera(alturaActual.current, registroDelTitulo.actual()?.fin ?? null);
+        valorDelTitulo.setValue(tituloArriba.current ? 1 : 0);
+      }),
+    [registroDelTitulo, valorDelTitulo],
+  );
   const alDesplazar = (y: number) => {
     alturaActual.current = y;
+    const arriba = tituloEnLaCabecera(y, registroDelTitulo.actual()?.fin ?? null);
+    if (arriba !== tituloArriba.current) {
+      tituloArriba.current = arriba;
+      Animated.timing(valorDelTitulo, { toValue: arriba ? 1 : 0, duration: duracionDelTitulo(movimientoReducido), useNativeDriver: true }).start();
+    }
     const ahora = cabeceraCubierta(y);
     if (ahora === cubiertaAhora.current) return;
     cubiertaAhora.current = ahora;
@@ -658,6 +680,7 @@ function Contenido() {
         volver={volverConCuidado}
         sinLeer={conSesion ? sinLeer : null}
         abrirNovedades={() => irConCuidado({ nombre: 'novedades' })}
+        titulo={tituloCompartido}
         cubierta={cubierta}
         altoContraste={altoContraste}
       />
@@ -672,6 +695,7 @@ function Contenido() {
         onContentSizeChange={alCambiarElContenido}
       >
         <ProveedorDeCambios registro={registroDeCambios}>
+        <ContextoDelTitulo.Provider value={tituloCompartido}>
           {!apiConfigurada ? <Aviso tipo="error" titulo="Este build no tiene una API configurada." /> : null}
 
           {recuperacion && faseDeLaRecuperacion ? (
@@ -829,6 +853,7 @@ function Contenido() {
               <Boton texto="Iniciar sesión" onPress={() => ir({ nombre: 'login' })} />
             </Aviso>
           ) : null}
+        </ContextoDelTitulo.Provider>
         </ProveedorDeCambios>
       </ScrollView>
       {/* Debajo de la línea de la cabecera, el contenido se desvanece en lugar de cortarse de golpe (AV2-T26). */}
