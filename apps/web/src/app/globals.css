@@ -17397,7 +17397,7 @@ p.cifra-del-espacio__desglose {
   }
 
   /* El descanso lleva «Sin objetivo» escrito: un poco más ancho que los números. */
-  .series-del-editor thead th:nth-child(6):not(.series-del-editor__columna-nota) {
+  .series-del-editor thead th:nth-child(6):not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
     width: 7.5rem;
   }
 
