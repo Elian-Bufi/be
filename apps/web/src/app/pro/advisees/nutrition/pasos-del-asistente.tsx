@@ -7,7 +7,7 @@
  * lleva el autoguardado, y «Siguiente» guarda y espera (TEST-EDP-017). La lógica está en `asistente-de-nutricion.ts`.
  */
 import { todasLasPaginas, type ComidaHabitual, type EvaluacionNutricional, type VersionDeObjetivo } from '@be/domain';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { dia as fechaDelDia } from '../../../../lib/formato';
@@ -95,6 +95,7 @@ export function PasosDeNutricion({
   onInsertarHabitual,
   onObjetivoNuevo,
   onRevisarYActivar,
+  rangosIndicados = null,
 }: {
   paso: Exclude<PasoDeNutricion, 1>;
   estructura: Estructura;
@@ -120,6 +121,8 @@ export function PasosDeNutricion({
   /** El objetivo nuevo se escribió: vuelve a leerlo. «Siguiente» espera esa relectura (la carrera del paso 2). */
   onObjetivoNuevo: () => void | Promise<void>;
   onRevisarYActivar: () => void;
+  /** Paso 6: los rangos indicados de cada día tipo (API-PLN-02 y 03), con el mismo cuadro que la estación. */
+  rangosIndicados?: ReactNode;
 }) {
   const id = useId();
   const [noAvanzo, setNoAvanzo] = useState(false);
@@ -280,6 +283,13 @@ export function PasosDeNutricion({
           <p className="nota">{C.revisarAyuda}</p>
           <ListaDeLugares titulo={C.impiden} vacia={C.nadaImpide} lugares={impiden} />
           <ListaDeLugares titulo={C.sinCompletar} vacia={C.nadaSinCompletar} lugares={sinCompletar} />
+          {rangosIndicados ? (
+            <>
+              <h3>{C.rangosIndicados}</h3>
+              <p className="nota">{C.rangosIndicadosAyuda}</p>
+              {rangosIndicados}
+            </>
+          ) : null}
         </>
       ) : null}
 
