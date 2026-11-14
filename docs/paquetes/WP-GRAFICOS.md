@@ -1352,7 +1352,59 @@ no se corre nada pesado, así que ponerlas en rojo una por una queda para la rev
 
 ### 13.4 Rama C · `wp-graficos-nutricion-y-cuerpo`
 
-> Sin programar al declarar este paquete.
+> Programada el 2026-11-14 desde el primer commit de la base (`257912a6`), con la base (#276) y `main` (#273 integrado)
+> traídos. Sin integrar al escribir esto. Sin operaciones nuevas en la API, sin migraciones y sin dependencias nuevas; la
+> APK no lee nada de esta rama. Fuera de sus archivos toca, con lo mínimo, `graficos/lecturas.ts` (de la base: un import
+> y una línea, para que `leerSerieDelCatalogo` lea los g/kg) y, como pedía el reparto, `nutrition/registros.tsx` y
+> `anthropometry/evolucion.tsx`.
+
+| Parte | Lo que quedó | Dónde | Oráculo |
+|---|---|---|---|
+| GR-11 | La capa de temporadas de todo gráfico de Nutrición: las versiones del plan de fondo, alternadas y sin color de juicio, con su rótulo arriba del primer panel («Plan v3»); una línea fina donde empieza cada versión del plan o del objetivo; la lista entera en texto («Plan v3 · desde el 5/10 · Objetivo desde el 1/10»); el objetivo en kcal o g por día en escalón, leído contra la versión que regía cada día. Una proporción de las calorías se escribe («30 de las calorías (proporción): BE no la convierte a gramos ni la dibuja») y no se dibuja | `graficos/nutricion/temporadas.ts` | TEST-GRF-041 |
+| GR-12 | Las calorías registradas por día: lleno con todo registrado, hueco si es un subtotal (dice qué falta) u hoy, contorno cortado si no se puede saber si faltan comidas, y nada sin registros; lo cargado después con su muesca (API-DSH-04 con `late`); el objetivo en escalón y la media de cada semana, que dice con qué días se hizo y cuáles quedaron afuera («con 4 de 7 días; 1 sin registro, 1 con cantidades faltantes y 1 con comidas del plan sin registro»), o cuánto le falta | `graficos/nutricion/energia-por-dia.ts` y `-en-pantalla.tsx`, `dias-de-nutricion.ts` | TEST-GRF-042, 043 y 056 |
+| GR-13 | Proteínas, carbohidratos, grasas y fibra, cada uno en su panel con su eje desde cero y su objetivo; la fibra sin dato es un subtotal, no un cero. Los g/kg, en una tarjeta propia: cada día dividido por el peso medido de la última toma propia en ese día o antes, con la fecha del peso en cada punto, la lista de los pesos usados y los días sin peso anterior; la línea se corta donde cambia el peso. En el catálogo, los g/kg pasan a ofrecidos y «Analizar» los lee | `graficos/nutricion/macros-en-paneles.ts` y `-en-pantalla.tsx`, `gramos-por-kilo.ts`, `lecturas-de-nutricion.ts`, `series-disponibles-nutricion.ts` | TEST-GRF-044, 045 y 051 |
+| GR-14 | Lo indicado y lo registrado, día por día, en calorías y en los tres macronutrientes: un rombo hueco para lo indicado del día (solo si el plan no deja elegir) y la marca del día para lo registrado, unidos con la diferencia con su signo («+18 g») solo en los días con todo registrado. Debajo, la tira por comida de API-NUT-17 (con la opción del plan, con una comida diferente, sin registro); un día sin registros es un hueco. En «Registros» de Nutrición va arriba de la lista, como «Día por día» | `graficos/nutricion/indicado-y-registrado-por-dia.ts` y `-en-pantalla.tsx`, `dia-por-dia-en-registros.tsx`, `nutrition/registros.tsx` | TEST-GRF-046 y 047 |
+| GR-18 | El perfil por sitio entre dos tomas (por omisión, la más nueva y la anterior; se elige otro par): una fila por sitio en el orden del catálogo, cada familia con su eje común, la toma anterior en cuadrado y la más nueva en círculo, unidas solo dentro del mismo grupo de comparabilidad, y la diferencia escrita. Un sitio medido en una sola toma es un hueco. Debajo, que no hay reducción localizada y la línea del error de medición. Es la vista «Por sitio» de «Evolución» | `graficos/antropometria/perfil-por-sitio.ts` y `-en-pantalla.tsx`, `tomas.ts`, `vistas-de-evolucion.tsx`, `anthropometry/evolucion.tsx` | TEST-GRF-048 |
+| GR-20 | La masa grasa según Durnin y Womersley y según Faulkner en un panel con un eje común, la libre de grasa en otro y la muscular de Lee aparte; cada método con su forma y su versión, calculado con su punto adentro; nada une dos tomas, y una línea fina dice cuánto se separan los dos métodos de la misma toma. Dice que se mueven juntos por construcción. Es la vista «Por método» de «Evolución» | `graficos/antropometria/masa-grasa-por-metodo.ts` y `-en-pantalla.tsx`, `series-disponibles-antropometria.ts` | TEST-GRF-049 |
+| El lienzo y el registro | Un lienzo propio para estas capas, sobre las piezas puras de la base y con sus medidas comunes (una fecha cae en el mismo lugar que en la cinta), con el mismo teclado, cursor compartido, lectura viva y tabla. Seis gráficos en los registros de la rama, ofrecidos solo si se ofrecen todas sus series; cada pantalla se carga al dibujarse | `graficos/nutricion-y-cuerpo/`, `graficos/nutricion/registro.ts`, `graficos/antropometria/registro.ts` | TEST-GRF-040 y 050 a 055 |
+
+**Las pruebas:** `apps/web/test/graficos-nutricion-y-cuerpo.test.mjs` (TEST-GRF-040 a 056). **Las mutaciones** están en
+el título de cada prueba y se revisaron leyendo el código, sin correrlas (la PC no tiene memoria para las pruebas; la CI
+es el juez de que pasan).
+
+**Decisiones del continuador al programar, a ratificar (§6.3):**
+- **GR-T40 · Un lienzo propio de la rama** (`graficos/nutricion-y-cuerpo/`, una carpeta que el reparto no nombraba), sobre
+  las piezas puras de la base y sus medidas, porque los paneles alineados no dibujan dos series con un eje (GR-20), las
+  uniones (GR-14), las medias semanales (GR-12) ni la tira por comida. *Alternativa:* sumar esas capas a
+  `paneles-alineados.tsx`, de la rama A.
+- **GR-T41 · Tres marcas para un día de Nutrición:** lleno, hueco y, sin poder saber si faltan comidas (sin plan vigente o
+  sin día tipo), contorno cortado. *Alternativa:* lleno, con la duda solo en la lectura.
+- **GR-T42 · La media de la semana (v1):** el promedio de los días con cantidades en todos sus registros, con 4 o más;
+  hoy no cuenta; dice cuántos y cuáles quedaron afuera, por motivo. *Alternativa:* la media por semana de API-PRJ-01, que
+  promedia también los subtotales.
+- **GR-T43 · En los g/kg, solo el peso medido en kg** de las tomas propias; uno reportado o en otra unidad no se usa.
+- **GR-T44 · El peso anterior se busca hasta un año antes del período,** sin pasar del inicio del vínculo; la nota dice
+  desde cuándo.
+- **GR-T45 · GR-14:** lo indicado es un rombo hueco, como en «Analizar» (el círculo hueco ya es el subtotal); la
+  diferencia va solo en los días llenos; suma las calorías, como el sugerido del dominio; sin líneas entre días.
+- **GR-T46 · GR-18:** «en orden anatómico» es el orden del catálogo de medidas (el de la planilla); una familia, un eje;
+  las dos tomas se ordenan en el tiempo aunque se elijan al revés.
+- **GR-T47 · GR-20:** la línea fina entre los dos métodos de una toma; Lee con perímetros y con peso y talla en su panel;
+  las otras masas siguen en «Por medida».
+- **GR-T48 · Los g/kg en una tarjeta propia del registro** (`nutricion.macros-por-kilo`, GR-13), que pide las dos áreas y
+  lo propio en las dos: el gráfico no recibe el acceso, y así nunca pide la lectura de un área que no está. Falta sumarla
+  a `GRAFICOS_SUGERIDOS` (rama A). *Alternativa:* un conmutador dentro de GR-13, que pide pasarle el acceso al gráfico.
+- **GR-T49 · Lo demás de la pantalla:** las pantallas del registro se cargan al dibujarse (React.lazy, sin JSX en el
+  registro); «Día por día» arranca abierto y se pliega; en pantalla, «Calorías» (C-28); los ejes de Nutrición desde cero;
+  «Por sitio» y «Por método» usan la lectura de «Evolución» (API-ANT-06, un punto por día y por medida, como GR-T79).
+
+**Lo que falta para cerrar:**
+1. **«Patrones» (rama E):** los seis gráficos se ven ahí cuando entre; las series de GR-12, GR-13 y GR-20, también en
+   «Analizar» (rama D).
+2. **GR-11 detrás de otra área, a pedido:** las ramas B y D usan `temporadasDeNutricion` con su conmutador.
+3. **La evidencia en pantalla:** Azul noche y Claro; 1440, 1280 y 1024; el lector de pantalla en las tablas.
+4. **El error de medición** (GR-17, GR-D4, fase 4): la columna y la franja de GR-18 y GR-20.
+5. **Correr las mutaciones** de cada prueba.
 
 ### 13.5 Rama D · `wp-graficos-cruces-y-analizar`
 
