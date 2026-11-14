@@ -54,9 +54,11 @@ const APK = readdirSync(CARPETA)
  * 0.23.0-candidata.2 (el arreglo de #250) leía las mismas 88 operaciones que la .1, con la misma forma. El 2026-11-12 la
  * reemplazó la 0.24.0-candidata.1 (el nombre obligatorio de WP-USO-FINAL, UF-01), que leía esas 88 y API-ACC-07. El
  * 2026-11-13 la reemplazó la 0.27.0-candidata.1 (WP-APP-VUELTA-2), que lee esas 89 y nueve más: ACC-08 y 09, ACC-P1-01 y
- * 02, EXP-01 y 02, RGT-01 y 03, y SOP-01.
+ * 02, EXP-01 y 02, RGT-01 y 03, y SOP-01. El 2026-11-14 la reemplazó la 0.28.0-candidata.1 (la tanda A de
+ * WP-PULIDO-GRANDES), que lee las mismas 98 operaciones con la misma forma y suma el detalle de GOOGLE_EMAIL_MISMATCH
+ * (RF-004, DL-172), que solo da API-MET-02: la 0.28 no llama esa operación, así que nunca le llega.
  */
-const VIGENTES = ['0.27.0-candidata.1'];
+const VIGENTES = ['0.28.0-candidata.1'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en
