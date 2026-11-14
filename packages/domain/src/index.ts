@@ -165,3 +165,8 @@ export * from './carga-desde-la-estimacion';
 export * from './descripciones-de-plantillas';
 export * from './prescripcion-rapida';
 export * from './presets-de-be';
+// WP-GRAFICOS (DL-174), fase 1: «La vez pasada» (GR-01, la misma pieza que PG-11), la marca «Con historial» del buscador
+// (GR-04) y la tabla «Desde el inicio y desde la anterior» de cada toma (GR-16).
+export * from './la-vez-pasada';
+export * from './historial-del-buscador';
+export * from './desde-el-inicio';
