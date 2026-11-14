@@ -11,6 +11,10 @@
  *   general o, si se abrió desde las series elegidas de la planilla, en esas series (EDT-56);
  * - «Corregir o anular la serie observada» (ED-72, API-FZA-03), desde «Cómo se calculó» de una observación propia.
  *
+ * WP-GRAFICOS GR-01 (DL-174, fase 1): debajo de «Lo que indica el plan», «La vez pasada» (las últimas tres sesiones del
+ * ejercicio, serie por serie, de `training/la-vez-pasada.tsx`) y después la tarjeta de fuerza: lo registrado va abajo,
+ * nunca mezclado con lo indicado.
+ *
  * Abrirlo no cambia nada de la prescripción (TEST-EDP-065).
  */
 import { useEffect, useState, type ReactNode } from 'react';
@@ -30,6 +34,7 @@ import { SucederSerieObservada, useSucesion } from './suceder-serie-observada';
 import { useLecturaDeFuerza, type LecturaDeFuerza } from './lectura-de-fuerza';
 import { COPY_SERIE_OBSERVADA, SerieObservada, useSerieObservada } from './serie-observada';
 import { TarjetaDeFuerza } from './tarjeta';
+import { LaVezPasada, useLaVezPasada } from '../training/la-vez-pasada';
 
 /** `desde: 'carga'`: «Cómo se calculó» abierto desde la lista del cuadro de la carga (ED-73), que vuelve a ella con «Atrás». */
 type Paso =
@@ -109,6 +114,8 @@ export function DetalleDelEjercicio({
   const desdeLasSeries = enLasSeries && series !== null && series.length > 0;
   const [aviso, setAviso] = useState<string | null>(null);
   const { lectura, recargar } = useLecturaDeFuerza(token, asesoradoId, abierto ? exerciseId : undefined, { sesionPerdida });
+  // GR-01: las últimas veces del ejercicio, leídas al abrir el cuadro.
+  const { lectura: vezPasada, recargar: recargarLaVezPasada } = useLaVezPasada(token, asesoradoId, abierto ? exerciseId : undefined, sesionPerdida);
   // La lectura del cuadro de la carga sigue viva mientras se mira «Cómo se calculó» de una de sus estimaciones: al volver
   // no se lee de nuevo y lo elegido sigue ahí.
   const enLaCarga = paso.tipo === 'carga' || (paso.tipo === 'como' && paso.desde === 'carga');
@@ -281,6 +288,7 @@ export function DetalleDelEjercicio({
             <span className="nota">{COPY_CARGA_DESDE_LA_ESTIMACION.nadaSeEscribe}</span>
           </p>
         </section>
+        <LaVezPasada lectura={vezPasada} recargar={recargarLaVezPasada} nombre={nombre} />
         <TarjetaDeFuerza
           lectura={lectura}
           nombre={nombre}
