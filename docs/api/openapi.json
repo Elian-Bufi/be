@@ -141249,6 +141249,1422 @@
           }
         }
       }
+    },
+    "/training/executions/{executionId}/notes": {
+      "post": {
+        "operationId": "API-TRN-25",
+        "summary": "Agregar una nota a una sesión propia ya registrada, para su profesional («¿Algo para contarle a tu profe?»). Hasta 280 caracteres, sin los espacios de los bordes. Solo agrega: una nota no se edita ni se borra, y una nueva queda debajo, con su hora; hasta 20 por sesión (después, 422 VALIDATION_FAILED con NOTE_LIMIT_REACHED). La escribe solo la persona de la sesión, con el permiso con que corrige la sesión (API-TRN-20): mientras su profesional la acompaña. Una sesión ajena, inexistente o sin ese permiso: el mismo 404. No cambia la sesión, no dispara avisos y no depende de su condición ni de su motivo (REG-06-131). API-TRN-18 no cambia: la nota viaja aparte, después de confirmar.",
+        "description": "Fuente: WP-PULIDO-GRANDES PG-15 y PG-D10 (aprobada por Dirección el 2026-11-14) · ID nuevo en la familia TRN del 09, que el 09 no usa · DEUDA_LEGAJO DL-173 · DL-137 D-7. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "executionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 280
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "noteId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "executionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 280
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "noteId",
+                        "executionId",
+                        "text",
+                        "recordedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advisees/{adviseeId}/training/execution-notes": {
+      "get": {
+        "operationId": "API-TRN-25-LISTA",
+        "summary": "Para el profesional de Entrenamiento: las notas que la persona dejó en las sesiones que él ya puede ver (las registradas en sus planes con ella, como API-TRN-19 y API-TRN-21), de las sesiones con fecha en el período (obligatorio, hasta 92 días). De la sesión más nueva a la más vieja y, dentro de una sesión, de la nota más vieja a la más nueva. El PDP de Entrenamiento; sin acceso, el 404 de lo inexistente. Sin contadores ni interpretación del texto.",
+        "description": "Fuente: variante de API-TRN-25 · WP-PULIDO-GRANDES PG-15 · ID propio de BE (sufijo LISTA) · DEUDA_LEGAJO DL-173. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "periodStart",
+            "in": "query",
+            "required": true,
+            "description": "Fecha local YYYY-MM-DD.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "periodEnd",
+            "in": "query",
+            "required": true,
+            "description": "Fecha local YYYY-MM-DD.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "period": {
+                          "type": "object",
+                          "properties": {
+                            "start": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "end": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "timeZone": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end",
+                            "timeZone"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "notes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "noteId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "executionId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "text": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 280
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "executionDate": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              }
+                            },
+                            "required": [
+                              "noteId",
+                              "executionId",
+                              "text",
+                              "recordedAt",
+                              "executionDate"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "period",
+                        "notes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/training/executions/{executionId}/notes": {
+      "get": {
+        "operationId": "API-TRN-25-PROPIA",
+        "summary": "Las notas que la persona dejó en una sesión suya, de la más vieja a la más nueva. Es su historia: exige solo su A3 vigente (403 sin él), como «Tu historial» (DL-089 opción A). Una sesión ajena o inexistente: 404.",
+        "description": "Fuente: variante del titular de API-TRN-25 · WP-PULIDO-GRANDES PG-15 (decisión del continuador PG-T64, a ratificar) · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-173. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "executionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "noteId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "executionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 280
+                          },
+                          "recordedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "noteId",
+                          "executionId",
+                          "text",
+                          "recordedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advisees/{adviseeId}/professional-notes": {
+      "post": {
+        "operationId": "API-NPP-01",
+        "summary": "Agregar una nota propia del profesional sobre una persona que hoy acompaña en algún área (el PDP de alguna): hasta 1000 caracteres, sin los espacios de los bordes, opcionalmente atada a un ejercicio del catálogo que él puede citar (pide Entrenamiento con la persona) o a una comida del plan por su nombre (pide Nutrición). Un ejercicio que no existe o que no puede citar: 422 VALIDATION_FAILED con ANCHOR_NOT_AVAILABLE. Solo agrega. Solo la lee su autor; no se manda a nadie ni dispara avisos. Sin acceso a la persona: el 404 de lo inexistente.",
+        "description": "Fuente: WP-PULIDO-GRANDES PG-16 y PG-D11 (aprobada por Dirección el 2026-11-14) · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "anchor": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "EXERCISE"
+                              },
+                              "exerciseId": {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "exerciseId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "MEAL"
+                              },
+                              "mealLabel": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "mealLabel"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "noteId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1000
+                        },
+                        "anchor": {
+                          "anyOf": [
+                            {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "EXERCISE"
+                                    },
+                                    "exerciseId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "exerciseName": {
+                                      "type": "string"
+                                    },
+                                    "inPlan": {
+                                      "type": [
+                                        "boolean",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "exerciseId",
+                                    "exerciseName",
+                                    "inPlan"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "MEAL"
+                                    },
+                                    "mealLabel": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "inPlan": {
+                                      "type": [
+                                        "boolean",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "mealLabel",
+                                    "inPlan"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "archivedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "noteId",
+                        "adviseeId",
+                        "text",
+                        "anchor",
+                        "recordedAt",
+                        "archivedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "API-NPP-02",
+        "summary": "Las notas propias de quien consulta sobre esa persona, las activas y las archivadas (con archivedAt), de la más nueva a la más vieja, hasta 200 (page.hasMore dice si quedaron más viejas afuera). Las de otro profesional no aparecen nunca, aunque sea del mismo equipo o área. Cada ancla dice si hoy está en la última versión del plan del autor con esa persona en su área (inPlan; null sin plan). El PDP de alguna área; sin acceso, el 404 de lo inexistente.",
+        "description": "Fuente: WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "noteId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "adviseeId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "anchor": {
+                            "anyOf": [
+                              {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "EXERCISE"
+                                      },
+                                      "exerciseId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "exerciseName": {
+                                        "type": "string"
+                                      },
+                                      "inPlan": {
+                                        "type": [
+                                          "boolean",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "exerciseId",
+                                      "exerciseName",
+                                      "inPlan"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "type": {
+                                        "type": "string",
+                                        "const": "MEAL"
+                                      },
+                                      "mealLabel": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "inPlan": {
+                                        "type": [
+                                          "boolean",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "mealLabel",
+                                      "inPlan"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "recordedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "archivedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "noteId",
+                          "adviseeId",
+                          "text",
+                          "anchor",
+                          "recordedAt",
+                          "archivedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/professional-notes/{noteId}/archive": {
+      "post": {
+        "operationId": "API-NPP-03",
+        "summary": "Archivar una nota propia: deja de verse entre las activas y queda en la historia, con la fecha en que se archivó; nunca se borra. Archivar una ya archivada responde 200 con la misma nota, sin cambiar nada. Solo su autor, mientras acompaña a la persona en algún área; una nota de otro profesional o inexistente: el mismo 404.",
+        "description": "Fuente: WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "noteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "noteId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "adviseeId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1000
+                        },
+                        "anchor": {
+                          "anyOf": [
+                            {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "EXERCISE"
+                                    },
+                                    "exerciseId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "exerciseName": {
+                                      "type": "string"
+                                    },
+                                    "inPlan": {
+                                      "type": [
+                                        "boolean",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "exerciseId",
+                                    "exerciseName",
+                                    "inPlan"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "MEAL"
+                                    },
+                                    "mealLabel": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "inPlan": {
+                                      "type": [
+                                        "boolean",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "mealLabel",
+                                    "inPlan"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "archivedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "noteId",
+                        "adviseeId",
+                        "text",
+                        "anchor",
+                        "recordedAt",
+                        "archivedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
