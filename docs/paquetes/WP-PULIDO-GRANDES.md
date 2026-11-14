@@ -2,8 +2,8 @@
 
 > **Estado:** DECLARADO el 2026-11-13, sin programar. Las partes PG-01 a PG-19 y el calendario (§3) son el pedido de
 > Dirección. Las decisiones PG-D1 a PG-D15 (§5) están **a ratificar**: mientras no haya respuesta, rige la
-> recomendación de cada una, salvo en las que lo dicen (PG-D10 y PG-D11 esperan el sí antes de programar su
-> parte; PG-D1 la decidió Dirección el 2026-11-13). DL-173.
+> recomendación de cada una. Tres ya las decidió Dirección: PG-D1, el 2026-11-13, y PG-D10 y PG-D11, el 2026-11-14
+> («Tienes mi sí para las notas»). DL-173.
 >
 > **Encargo** (Dirección, 2026-11-13):
 > - de la página «Pulido como las grandes», Dirección eligió quince ideas y pidió: «Armá el paquete con sus IDs y decime
@@ -90,7 +90,8 @@ contraseña todos los días», «Los recordatorios, a la hora que te sirve», «
 «Modo cocina» y «Comparar dos tomas que elijas». Siguen en el catálogo para otra vuelta. El continuador recomienda
 volver a mirar la primera antes del 25/11 (§8).
 
-**Tampoco entra:** el paquete de gráficos que se está investigando. PG-18 se diseña junto con él.
+**Tampoco entra:** el paquete de gráficos que se estaba investigando, declarado el 2026-11-14 como WP-GRAFICOS
+(DL-174). PG-18 se diseña junto con él, y PG-11 es la misma pieza que su GR-01 («La vez pasada»).
 
 ## 3. El calendario
 
@@ -247,6 +248,10 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
   - los tres pasos están en castellano, con la marca elegible y su dibujo;
   - con el ancho de un teléfono, no hay QR y no hay desplazamiento horizontal.
 - *Lo que NO hace:* no publica en Google Play; no cambia cómo se construye ni cómo se firma la APK; no pide datos.
+- *Desde el 2026-11-14* (Dirección: «Tiene que tener el QR para descargar y un botón de descarga también»): en la
+  compu, la portada muestra el QR **y** el botón «Bajar BE», uno al lado del otro; con el ancho de un teléfono, sigue
+  solo el botón, a todo el ancho (#270, TEST-PG-005). El enlace chico «O bajá el archivo en esta compu» (PG-T32) salió:
+  lo reemplaza el botón.
 
 **PG-07 · La página «no encontrada», con la voz de BE**
 - *Qué ve la persona:* «Esta página no existe. Si venías de una invitación, pedile a tu profesional un enlace nuevo»,
@@ -435,6 +440,11 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
   - una prueba fija que la hoja no imprime la navegación (mutación: sacar la regla de impresión).
 - *Lo que NO hace:* no genera un archivo en el servidor; no manda el plan por correo ni por WhatsApp; no imprime la
   evolución ni las medidas.
+- *Desde el 2026-11-14* (el mismo pedido de Dirección que PG-06: «Tiene que tener el QR para descargar y un botón de
+  descarga también»): el PDF lleva el QR de la app, para bajarla, y la pantalla del plan, un botón de descarga, como la
+  portada (PG-06). El QR sigue sin datos de la persona (PG-D12). Si el QR lleva directo al archivo de la última
+  publicación (DL-169, UF-00) o a la dirección de PG-D12, que abre el plan en la app y sin ella ofrece bajarla, se
+  define al programar PG-17 y se anota con PG-D12.
 
 ### 4.3 Después del 25/11
 
@@ -473,7 +483,8 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
 ## 5. Lo que decide Dirección (PG-D)
 
 Son propuestas del continuador, cada una con su recomendación y su alternativa, **a ratificar**. Mientras no haya
-respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan el sí antes de programar su parte.
+respuesta, rige la recomendación. PG-D1 (el 2026-11-13) y PG-D10 y PG-D11 (el 2026-11-14) ya las decidió Dirección: PG-15
+y PG-16 se pueden programar.
 
 - **PG-D1 · Inicio con varias sesiones** · **decidida por Dirección el 2026-11-13: la que sigue y «Otra sesión»; revisa DL-077 para Inicio.**
   - *Recomiendo:* la tarjeta con la que sigue en el orden del plan, después de la última registrada, y «Otra sesión»
@@ -519,12 +530,14 @@ respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan 
     («en 2 semanas») y las revisiones marcadas, en otra vuelta.
   - *Alternativa:* todo junto, como en el catálogo. Corre el riesgo de no llegar al 17/11, y el congelamiento del 23/11
     deja poco margen.
-- **PG-D10 · Dónde viaja la nota para tu profe** · **a ratificar (espera el sí).**
+- **PG-D10 · Dónde viaja la nota para tu profe** · **aprobada por Dirección el 2026-11-14 («Tienes mi sí para las
+  notas»): rige la recomendación.**
   - *Recomiendo:* las dos operaciones nuevas de PG-15 (API-TRN-25 y su lista), aparte de confirmar la sesión. Las APK
     instaladas no cambian, y si la nota falla, la sesión ya quedó registrada.
   - *Alternativa:* un campo opcional en API-TRN-18. Es una operación menos, pero cambia lo que manda la APK al confirmar
     y va contra DL-137 D-7.
-- **PG-D11 · Quién ve las notas propias del profesional** · **a ratificar (espera el sí).**
+- **PG-D11 · Quién ve las notas propias del profesional** · **aprobada por Dirección el 2026-11-14 («Tienes mi sí
+  para las notas»): rige la recomendación.**
   - *Recomiendo:* solo su autor. La persona no las ve en la app, pero entran en lo que puede pedir de sus datos: son
     datos sobre ella (derecho de acceso).
   - *Alternativa:* que la persona las vea siempre, en «Quién ve qué». Es más transparente, pero el profesional deja de
@@ -599,7 +612,9 @@ Al programar, en `WP-PULIDO-GRANDES-ORACULOS.md`, con los trece campos del 11A. 
   - WP-EDITORES-PROFESIONAL (DL-167): PG-10, PG-14 y PG-16 van sobre los editores integrados;
   - la portada sin la palabra prohibida (#266): PG-06 cambia la misma sección de la portada. Se programa después
     de que #266 se integre, para no pisarse;
-  - el paquete de gráficos (en investigación): PG-18.
+  - WP-GRAFICOS (DL-174, declarado el 2026-11-14): PG-18 usa sus marcas y su función de comparabilidad; PG-11 y su
+    GR-01 son la misma pieza («La vez pasada»); las notas de PG-15 y PG-16 entran en su cinta del tiempo (GR-23), y su
+    rama con API (los enfoques) se integra después de la tanda B.
 - **Lo que el continuador recomienda mirar antes del 25/11, fuera de este paquete:** «Si algo se rompe, BE no se cierra
   y te deja avisar». Es el seguro de la entrega: hoy un error de dibujo cierra la app. Queda a decisión de Dirección.
 
@@ -688,7 +703,7 @@ editor (TB-48 y TEST-EDP-026) cambian solo la forma del cálculo que leen: ahora
 **Decisiones nuevas, a ratificar:**
 - **PG-T30 · La marca de los pasos:** arranca en Samsung, la más común acá, y se cambia con un toque. *Alternativa:* adivinarla por el navegador (poco confiable).
 - **PG-T31 · La línea de la versión:** «Versión 0.28.0 · 85 MB», con la etiqueta tal cual (si la última es candidata, lo dice) y el tamaño en megabytes de mil, como lo dice Android al bajar.
-- **PG-T32 · En la compu, también el archivo:** debajo del QR, un enlace chico «O bajá el archivo en esta compu». El botón grande es solo para el ancho de un teléfono, y en `test` conserva el aviso de prueba de UF-08.
+- **PG-T32 · En la compu, también el archivo:** debajo del QR, un enlace chico «O bajá el archivo en esta compu». El botón grande es solo para el ancho de un teléfono, y en `test` conserva el aviso de prueba de UF-08. **Reemplazada el 2026-11-14 (#270), por pedido de Dirección:** en la compu, el botón «Bajar BE» va al lado del QR y el enlace chico salió (PG-06).
 - **PG-T33 · Lo que impide activar no se agrupa:** cada cosa sigue con su «Ir a corregir» y el principal cuenta lo mismo. Se agrupa lo sin completar. *Alternativa:* agrupar también lo que impide, contando el grupo como una cosa.
 - **PG-T34 · «Completar»:** solo para las series sin repeticiones; acepta un número o un rango («8-12», el menor primero); escribe solo las vacías y se deshace con el «Deshacer» del editor. No aparece para otros motivos.
 - **PG-T35 · Cómo se dice el rango:** tres o más series seguidas van con «a» («series 1 a 4»); dos seguidas se nombran («series 1 y 2»).
