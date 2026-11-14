@@ -109,6 +109,14 @@ function partesDelInstante(iso: string, zona?: string): { readonly fecha: string
   };
 }
 
+/**
+ * La fecha civil (`AAAA-MM-DD`) de un instante real: en `zona` si se pasa (las pruebas), o en la del teléfono. Para
+ * decir de qué día es algo con las palabras de acá («hoy», «ayer», «el martes 10»), no para mostrarla así.
+ */
+export function fechaCivilDeUnInstante(iso: string, zona?: string): string {
+  return partesDelInstante(iso, zona).fecha;
+}
+
 /** La hora de un instante real, de 24 h: «13:10», «00:05». Para una lista que ya dice el día. */
 export function hora(iso: string, zona?: string): string {
   const p = partesDelInstante(iso, zona);

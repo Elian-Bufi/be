@@ -105,7 +105,10 @@ import { PantallaDePerfil } from './src/pantallas/perfil';
 import { PantallaDeQuienVeQue } from './src/pantallas/quien-ve-que';
 import { PantallaDeTusDatos } from './src/pantallas/tus-datos';
 import { PantallaDeAyudaYContacto } from './src/pantallas/ayuda-y-contacto';
+import { PantallaDePresentacion } from './src/pantallas/presentacion';
 import { PantallaDePrivacidad } from './src/pantallas/privacidad';
+import { TEXTOS_DE_LA_PRESENTACION } from './src/presentacion';
+import { usePresentacion } from './src/presentacion-en-el-telefono';
 import { PantallaDeRecuperacion, type FaseDeLaRecuperacion } from './src/pantallas/recuperacion';
 import { PantallaDeRegistro } from './src/pantallas/registro';
 import { PantallaDeRegistroRapido } from './src/pantallas/registro-rapido';
@@ -187,6 +190,8 @@ function Contenido() {
     alMontar.estado === 'vigente' ? alMontar.ruta : alMontar.estado === 'vencida' ? { nombre: 'login', aviso: avisoDeVencimiento(alMontar.sesion) } : { nombre: 'bienvenida' },
   );
   const [sesion, setSesion] = useState<Sesion | null>(alMontar.estado === 'vigente' ? alMontar.sesion : null);
+  // PG-13: si la cuenta con sesión ya vio la presentación en este teléfono (se lee una vez por cuenta).
+  const presentacion = usePresentacion(sesion?.identidadId ?? null);
   // Sin sesión en el proceso, se busca la credencial guardada y se verifica con la API antes de mostrar nada (DL-012).
   const [recuperacion, setRecuperacion] = useState<EstadoDeRecuperacion | null>(() => (alMontar.estado === 'ninguna' ? { tipo: 'verificando' } : null));
   const intentoDeRecuperacion = useRef(0);
@@ -645,9 +650,13 @@ function Contenido() {
   // «Antes de seguir» en lugar de la app, mientras falte algo o se esté preguntando (UF-01). Es una raíz: no se saltea, y
   // no lleva volver ni la barra.
   const enAntesDeSeguir = sesion !== null && recuperacion === null && requiereSesion(ruta) && !dejaSeguir(compuerta);
+  // PG-13 (WP-PULIDO-GRANDES): después de «Antes de seguir», la presentación, una sola vez por teléfono y por cuenta. Como
+  // «Antes de seguir», va en lugar de la app, sin la barra ni la campana. Mientras se lee lo guardado, no se muestra nada.
+  const compuertaAbierta = sesion !== null && recuperacion === null && requiereSesion(ruta) && dejaSeguir(compuerta);
+  const enLaPresentacion = compuertaAbierta && presentacion !== 'vista';
   // Con sesión verificada y nada pendiente: la barra y la campana. Mientras se verifica una sesión guardada, nada de la cuenta.
-  const conSesion = sesion !== null && recuperacion === null && requiereSesion(ruta) && dejaSeguir(compuerta);
-  const raiz = esRaiz(ruta) || enAntesDeSeguir;
+  const conSesion = compuertaAbierta && presentacion === 'vista';
+  const raiz = esRaiz(ruta) || enAntesDeSeguir || enLaPresentacion;
   // Desde PA-02, también la sesión de entrenamiento lleva la barra: lo escrito queda guardado en el teléfono.
   const conBarra = conSesion && !sinBarraInferior(ruta);
   const entrenamientoEnCurso = useHayEntrenamientoEnCurso();
@@ -734,8 +743,9 @@ function Contenido() {
             <View>
               <Image source={ISOTIPO} style={estilos.isotipoGrande} accessible={false} />
               <Text style={estilos.lema}>BE · Better Everyday</Text>
+              {/* PG-13: lo que BE es para la persona, en sus palabras (antes, «Plataforma integrada de inteligencia en salud»). */}
               <Text style={estilos.tituloBienvenida} accessibilityRole="header">
-                Plataforma integrada de inteligencia en salud
+                {TEXTOS_DE_LA_PRESENTACION.bienvenida}
               </Text>
               {/* Las tres áreas, con los íconos de la barra: lo que hay adentro, antes de entrar. */}
               <View style={estilos.areasDeBienvenida} accessible accessibilityLabel={AREAS_DE_LA_BIENVENIDA.map((a) => a.texto).join(', ')}>
@@ -775,7 +785,10 @@ function Contenido() {
             <PantallaAntesDeSeguir key={sesion.token} compuerta={compuerta} token={sesion.token} identidadId={sesion.identidadId} salir={salir} alGuardar={alGuardarElNombre} />
           ) : null}
 
-          {requiereSesion(ruta) && sesion && dejaSeguir(compuerta) ? (
+          {/* PG-13 (WP-PULIDO-GRANDES): la primera vez, la presentación; al terminarla, lo visto se guarda y sigue la app. */}
+          {enLaPresentacion && sesion && presentacion === 'pendiente' ? <PantallaDePresentacion key={sesion.identidadId} token={sesion.token} identidadId={sesion.identidadId} /> : null}
+
+          {requiereSesion(ruta) && sesion && dejaSeguir(compuerta) && presentacion === 'vista' ? (
             <>
               {/* Volver, sin depender del botón ni de un gesto del sistema (10-B10 §9), está en la cabecera. */}
               {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} salir={salir} ir={ir} /> : null}
@@ -920,5 +933,6 @@ const estilos = estilosPorTema((COLOR) => ({
   areaDeBienvenida: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   textoDeArea: { fontSize: 15, fontWeight: '600', color: COLOR.texto },
   tituloBienvenida: { fontSize: 26, fontWeight: '700', color: COLOR.texto, marginVertical: 12, textAlign: 'center' },
-  identidad: { fontSize: 12, color: COLOR.tenue, marginTop: 32 },
+  // PG-13: la línea de la versión y el commit sigue (07 §34), más chica: es para quien prueba, no para la persona.
+  identidad: { fontSize: 11, lineHeight: 15, color: COLOR.tenue, marginTop: 32, textAlign: 'center' },
 }));

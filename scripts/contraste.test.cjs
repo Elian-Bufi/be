@@ -114,6 +114,10 @@ const PARES_WEB = [
   ['foco', 'superficie', NO_TEXTO, 'anillo de foco dentro de secciones'],
   ['encabezado-foco', 'encabezado-fondo', NO_TEXTO, 'anillo de foco en el encabezado'],
   ['encabezado-foco', 'encabezado-fondo-2', NO_TEXTO, 'anillo de foco en el encabezado, del otro lado del degradé'],
+  // PG-17 (WP-PULIDO-GRANDES): la hoja del plan, impresa o en PDF, en blanco y negro en los dos temas.
+  ['hoja-texto', 'hoja-fondo', TEXTO, 'el texto de la hoja del plan'],
+  ['hoja-tenue', 'hoja-fondo', TEXTO, 'lo secundario de la hoja del plan: las cantidades de opciones, las notas, el pie'],
+  ['hoja-borde', 'hoja-fondo', NO_TEXTO, 'las líneas entre comidas y sesiones, y las de la tabla de series'],
 ];
 
 /**

@@ -52,6 +52,7 @@ import { tomarAvisoPara } from '../../../../lib/aviso-al-llegar';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { numeroDelBorrador } from '../descartar-el-borrador';
+import { DescargarElPlan } from '../descargar-el-plan';
 import { COPY_RESULTADO_DE_ACTIVAR } from '../resultado-de-activar';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { COPY_PLANTILLAS_EN_LA_GALERIA } from '../galeria-de-presets';
@@ -569,7 +570,7 @@ function SesionQueSeMira({
 }
 
 function PlanActivo({ version, numero, historial, acciones, aviso }: { version: PlanConObjetivos; numero: number; historial: readonly VersionDelHistorial[]; acciones: ReactNode; aviso: ReactNode }) {
-  const { token, sesionPerdida, parametros, ir } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, parametros, ir } = useEntrenamiento();
   const activadaEl = diaSinElAnioEnCurso(version.activatedAt as string);
   return (
     <section className="plan__activo" aria-labelledby="titulo-activo">
@@ -582,7 +583,11 @@ function PlanActivo({ version, numero, historial, acciones, aviso }: { version: 
         <p className="plan__version">
           <EnPartes texto={[C.versionActivada(numero, activadaEl), ...(version.isEffective ? [C.esLoQueVe] : [])].join(' · ')} />
         </p>
-        <div className="plan__acciones">{acciones}</div>
+        <div className="plan__acciones">
+          {/* PG-17 (WP-PULIDO-GRANDES): la hoja para la consulta, con las sesiones y sus series y el QR para bajar la app. */}
+          <DescargarElPlan plan={{ area: 'ENTRENAMIENTO', version }} numero={numero} token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} />
+          {acciones}
+        </div>
       </div>
       {aviso}
       <SesionQueSeMira

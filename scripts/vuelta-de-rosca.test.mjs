@@ -293,9 +293,11 @@ test('TEST-AVR-008 · en pausa, terminado o sin A3: dice que no ve, y por qué',
 test('TEST-AVR-009 · «Quién ve qué» solo lee, y no dice nada que prohíba 10-B04', () => {
   const pantalla = leer('pantallas/quien-ve-que.tsx');
   const llamadas = [...pantalla.matchAll(/api\.([a-zA-Z0-9]+)\(/g)].map((m) => m[1]).sort();
-  assert.deepEqual(llamadas, ['consultarConsentimientos', 'consultarRequisitoA3', 'consultarVinculos', 'misHabitos', 'pedidosDeAccesoAMisHabitos']);
+  // PG-12 (WP-PULIDO-GRANDES): también lee lo que la persona comparte de otras áreas, para decir quién lo miró. Sigue
+  // siendo una lectura: ninguna escritura sale de esta pantalla.
+  assert.deepEqual(llamadas, ['consultarConsentimientos', 'consultarRequisitoA3', 'consultarVinculos', 'misHabitos', 'misResumenesCompartidos', 'pedidosDeAccesoAMisHabitos']);
   // Lo que se muestra, sin los comentarios (que citan la regla de 10-B04).
-  const textos = (leer('textos-de-la-vuelta.ts') + leer('quien-ve-que.ts') + pantalla).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const textos = (leer('textos-de-la-vuelta.ts') + leer('quien-ve-que.ts') + leer('quien-miro.ts') + pantalla).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(textos, /todos tus datos|toda tu información|puede ver todo/i);
   for (const v of [qvq.PLIEGUE_DE_QUIEN_VE_QUE, perfil.PLIEGUE_DE_PERFIL]) assert.deepEqual(desplegable.problemasDelPliegue(v), [], v.nombre);
 });
