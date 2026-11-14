@@ -666,6 +666,8 @@ se declara), los dos de la línea 57 del SDK.
 
 ### 9.2 Lo que falta para cerrar la tanda A en la APK
 
+**Publicada el 2026-11-14 como la 0.28.0-candidata.1 (latest, con `be.apk`; versionCode 42; commit 7729c2b).** Dirección pidió no esperar al calendario: «Todo se integra lo antes posible una vez que esté aprobado». El AAB y la APK dieron todo bien en la PC de Dirección, con la 0.27 como referencia, y lo que lee la 0.28 quedó congelado (`packages/domain/fixtures/lecturas-de-la-apk/0.28.0-candidata.1.json`): las mismas 98 operaciones que la 0.27. Lo que sigue de esta lista se prueba sobre la 0.28.
+
 - Probarlo en el teléfono: la letra ×1,3 en Inicio y en la cabecera, TalkBack en las seis partes, la pantalla encendida
   con el teléfono apoyado, la háptica en un Android 10 y en uno nuevo, y el gesto de tirar en las cuatro pantallas.
 - La medición de cuadros de PG-04 (percentil 90 frente a la 0.27, como en AV2-16): sin teléfono no se puede medir. Si
