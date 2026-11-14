@@ -3,7 +3,7 @@
 /**
  * «¿De qué está hecho el cambio de peso?», la pregunta de la composición en «Analizar» (WP-TABLERO-ALTA-GAMA TB-24;
  * DL-163 D-11). Responde con la pieza de la composición corporal, la misma de la pestaña Antropometría, en el período de
- * la ficha (hasta un año), y ofrece abrir el peso y las dos masas «Juntas», con el resto de «Analizar».
+ * la ficha (hasta un año), y ofrece abrir el peso y las dos masas «Superpuestas» (antes «Juntas»), con el resto de «Analizar».
  *
  * TA-25: la pregunta vive en el website y no se guarda como vista. Su identificador no entra en `ID_DE_PREGUNTAS`, que
  * valida la API al guardar una vista (API-VAN): sumarlo cambiaría lo que la API acepta, y esta parte no toca la API.
@@ -25,7 +25,7 @@ export const LA_PREGUNTA_DE_LA_COMPOSICION = {
   limite: 'El peso no distingue grasa de músculo, y las masas son una estimación de su método: un cambio de método corta la comparación.',
 } as const;
 
-/** Las tres métricas para verlas «Juntas» en «Analizar»: el peso y las dos masas del método de dos compartimentos. */
+/** Las tres métricas para verlas «Superpuestas» en «Analizar»: el peso y las dos masas del método de dos compartimentos. */
 const juntas = (familia: keyof typeof DOS_COMPARTIMENTOS): string =>
   ['peso', DOS_COMPARTIMENTOS[familia].libre, DOS_COMPARTIMENTOS[familia].grasa].map((c) => codificarReferencia({ metricId: `antropometria.${c}`, exerciseKey: null, setIndex: null, unit: null })).join(',');
 
@@ -47,7 +47,7 @@ export function ComposicionEnAnalizar({ tituloId }: { tituloId: string }) {
           {familias[0] ? (
             <button type="button" className="boton boton--quieto boton--compacto" onClick={() => ir({ ...parametrosDePregunta(null), m: juntas(familias[0] as keyof typeof DOS_COMPARTIMENTOS), modo: 'S', f: null }, { agregarAlHistorial: true })}>
               <Icono nombre="juntas" tamano={18} />
-              Ver peso y masas «Juntas»
+              Ver peso y masas «Superpuestas»
             </button>
           ) : null}
         </div>

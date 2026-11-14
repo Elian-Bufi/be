@@ -1,1 +1,214 @@
 /* WP-GRAFICOS fase 2 (DL-174): los estilos de los cruces y «Armá tu gráfico». Los escribe solo la rama D. */
+
+/* ─── Los cruces (SP-01 y SP-02) y «Dos etapas» (GR-24) ─────────────────────────────────────────── */
+
+.cruce {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.cruce__pregunta {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--tenue);
+}
+
+.cruce__lectura {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.cruce__ventana,
+.cruce__primera-linea,
+.cruce__frase {
+  margin: 0;
+}
+
+/* Lo que cambió en lo indicado va primero, a la vista: el ruido antes que el cambio (regla de honestidad 12). */
+.cruce__primera-linea {
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px solid var(--borde-control);
+  background: var(--fondo-suave);
+  border-radius: 4px;
+}
+
+.cruce__lineas {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}
+
+.cruce__tambien h4 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.875rem;
+}
+
+.cruce__tambien ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.cruce__como-leerlo summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cruce__como-leerlo ul {
+  margin: 0.25rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.cruce__frase {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cruce__etapas {
+  display: grid;
+  gap: 1rem;
+}
+
+/* ─── Dos etapas lado a lado ───────────────────────────────────────────────────────────────────── */
+
+.dos-etapas {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.dos-etapas__titulo {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.dos-etapas__area {
+  min-width: 0;
+}
+
+.dos-etapas__svg {
+  display: block;
+  overflow: visible;
+}
+
+.dos-etapas__lados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.dos-etapas__lado {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.dos-etapas__lado div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.375rem;
+}
+
+.dos-etapas__lado dt {
+  font-weight: 600;
+}
+
+.dos-etapas__lado dt::after {
+  content: ':';
+}
+
+.dos-etapas__lado dd {
+  margin: 0;
+}
+
+.etapas-lado-a-lado {
+  display: grid;
+  gap: 1rem;
+}
+
+.etapas-lado-a-lado > h4 {
+  margin: 0;
+}
+
+/* ─── «Superpuestas»: los rótulos de los ejes ──────────────────────────────────────────────────── */
+
+.superpuestas__ejes,
+.grafico__ejes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.superpuestas__eje,
+.grafico__eje {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.superpuestas__eje--derecho,
+.grafico__eje[data-lado='DERECHA'] {
+  margin-inline-start: auto;
+}
+
+.grafico__ejes {
+  flex-basis: 100%;
+}
+
+/* ─── El compositor de «Armá tu gráfico» ───────────────────────────────────────────────────────── */
+
+.compositor {
+  display: grid;
+  gap: 1rem;
+}
+
+.compositor__series {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.compositor__elegidas {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compositor__elegidas li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.compositor__agregar {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.compositor__vista-previa {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.compositor__vista-previa h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+@media (max-width: 600px) {
+  .dos-etapas__lados {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

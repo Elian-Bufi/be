@@ -18,6 +18,12 @@
  *   clic («Abrir estos gráficos en grande»): no se quitó nada.
  * Las etapas se leen con su propio período (las dos completas, hasta un año): cambiar el período de la ficha no mueve
  * la referencia. La planificación de cada etapa se abre al costado, en solo lectura, y al cerrarla se vuelve acá.
+ *
+ * GR-24 (WP-GRAFICOS fase 2, DL-174): debajo de la tabla, **«Lado a lado, con todas las observaciones»**: cada métrica en
+ * las dos etapas, con todos sus días, sesiones o tomas, la mediana como una raya y la cantidad escrita; con menos de 5 de
+ * un lado no se dibuja y se dice cuánto hay. Con el 1RM estimado, la mediana del RIR y el rango de repeticiones de cada
+ * etapa. Y lo que también cambió entre una etapa y otra (las versiones de la otra área que se activaron en el medio, si se
+ * leen) y lo que BE no registra.
  */
 import {
   compararEtapas,
@@ -26,6 +32,7 @@ import {
   numero,
   periodoDeLasEtapas,
   resumenTextual,
+  serieDisponible,
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
   valorConUnidad,
   type EtapaDePlanificacion,
@@ -33,6 +40,11 @@ import {
   type ReferenciaDeMetrica,
   type ResumenDeEtapa,
 } from '@be/domain';
+import { escalaDeLaSerie, lecturaDelPunto } from '../graficos/arma-tu-grafico/compositor';
+import { COPY_DE_LOS_CRUCES } from '../graficos/cruces/copy';
+import { dosEtapasLadoALado, etapaDeLaPlanificacion } from '../graficos/cruces/dos-etapas';
+import { DosEtapasEnPantalla } from '../graficos/cruces/dos-etapas-en-pantalla';
+import { LO_QUE_BE_NO_REGISTRA, versionesQueSeActivaron } from '../graficos/cruces/lo-que-tambien-cambio';
 import dynamic from 'next/dynamic';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
@@ -131,6 +143,28 @@ export function ComparacionDeEtapas({
   // y el final de lo leído).
   const bandas = useMemo(() => [a, b].flatMap((e, i) => (e.ultimoDia ? [{ desde: e.desde, hasta: e.ultimoDia, rotulo: i === 0 ? 'A' : 'B' }] : [])), [a, b]);
   const fechasDelPie = useMemo(() => [leido.desde, b.desde, leido.hasta], [leido.desde, leido.hasta, b.desde]);
+  // GR-24: cada métrica lado a lado, con todas sus observaciones (5 por lado como mínimo para dibujarse).
+  const ladoALado = dibujables.map(({ s, indice }) => {
+    const unidad = s.estado.serie.unit;
+    const delCatalogo = serieDisponible(s.ref.metricId, unidad);
+    return {
+      s,
+      indice,
+      d: dosEtapasLadoALado({
+        serie: s.estado.observaciones,
+        definicion: s.definicion,
+        a: etapaDeLaPlanificacion(a, 'A'),
+        b: etapaDeLaPlanificacion(b, 'B'),
+        leido,
+        escala: delCatalogo ? escalaDeLaSerie(delCatalogo, unidad) : { enteros: false },
+        lectura: (p) => lecturaDelPunto(p, s.definicion, unidad),
+        fuerza: s.estado.fuerza ?? null,
+      }),
+    };
+  });
+  // Lo que también cambió entre una etapa y otra: las versiones de la otra área que se activaron en el medio (si se leen).
+  const deLaOtraArea = area === 'NUTRICION' ? disponibles.vigencias.entrenamiento : disponibles.vigencias.nutricion;
+  const tambienCambio = versionesQueSeActivaron(deLaOtraArea, a.desde, b.ultimoDia ?? leido.hasta);
 
   const tarjeta = (e: EtapaDePlanificacion, lado: 'A' | 'B') => {
     const otra = lado === 'A' ? b : a;
@@ -288,6 +322,30 @@ export function ComparacionDeEtapas({
           </BloqueDeEstado>
         ) : null}
       </div>
+      {/* GR-24: las mismas métricas, lado a lado, con todas sus observaciones y la cantidad de cada etapa. */}
+      {ladoALado.length > 0 ? (
+        <section className="tarjeta-de-etapas etapas-lado-a-lado" aria-labelledby={`${id}-lado-a-lado`}>
+          <h4 id={`${id}-lado-a-lado`}>Lado a lado, con todas las observaciones</h4>
+          {ladoALado.map(({ s, indice, d }) => (
+            <DosEtapasEnPantalla key={s.clave} titulo={tituloDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios)} d={d} decimales={s.definicion.decimales} indice={indice} densidad="COMPACTA" nivel={4} />
+          ))}
+          <div className="cruce__tambien">
+            <h4>{COPY_DE_LOS_CRUCES.tambienCambio}</h4>
+            {tambienCambio.length > 0 ? (
+              <ul>
+                {tambienCambio.map((t) => (
+                  <li key={t}>{t}.</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="nota">{COPY_DE_LOS_CRUCES.sinCambiosQueSeSepan}</p>
+            )}
+            <p className="nota">
+              {COPY_DE_LOS_CRUCES.noRegistra}: {LO_QUE_BE_NO_REGISTRA['GR-24'].join('; ')}.
+            </p>
+          </div>
+        </section>
+      ) : null}
       <div className="graficos-de-etapas">
         <div className="graficos-de-etapas__cabecera">
           <h4>Las mismas métricas, en el tiempo</h4>

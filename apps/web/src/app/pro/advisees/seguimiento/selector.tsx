@@ -7,21 +7,25 @@
  *   unidad (kg y lb nunca se mezclan); las de Antropometría salen de las tomas del período.
  * - **Las preguntas profesionales** (preguntas.tsx) llenan el selector, que sigue editable: cambiar una métrica a mano deja la
  *   pregunta y pasa a ser un análisis personalizado.
- * - Lo que no se ofrece todavía se ve, con el motivo (diccionario: incompleta o futura).
+ * - **GR-26 (WP-GRAFICOS fase 2, DL-174): el catálogo de series.** Se ofrece lo que el PDP deja leer con esta persona
+ *   (`seriesParaElegir`, sobre `seriesOfrecidas`), por área y con las de los gráficos sugeridos primero. Las series
+ *   nuevas aparecen cuando están ofrecidas: el 1RM estimado (Epley v1), solo con un ejercicio de la lista de la v1 y con
+ *   su unidad; el RIR indicado y los g/kg, cuando sus ramas los ofrezcan. Lo que no se ofrece no aparece, ni en gris ni
+ *   con candado.
  */
-import {
-  definicionDeMetrica,
-  MAXIMO_DE_METRICAS,
-  METRICAS_DEL_DICCIONARIO,
-  type DefinicionDeMetrica,
-  type EjercicioDelPeriodo,
-  type ReferenciaDeMetrica,
-} from '@be/domain';
+import { MAXIMO_DE_METRICAS, type AccesoDeLaPersona, type Alcance, type DefinicionDeMetrica, type EjercicioDelPeriodo, type ReferenciaDeMetrica } from '@be/domain';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
+import { definicionDeLaSerie, pideUnidad, referenciaDeEntrenamiento, seriesDelEjercicio, seriesParaElegir } from '../graficos/arma-tu-grafico/compositor';
 import { textoDeFalla } from './contexto';
 import { claveDeLaReferencia } from './estado';
 import type { Disponibles } from './series';
+
+/** Lo que el PDP dejó leer con esta persona en el período, como lo pide el catálogo (`seriesOfrecidas`). */
+export function accesoDeLosDisponibles(d: Pick<Disponibles, 'nutricion' | 'ejercicios' | 'antropometria' | 'propios'>): AccesoDeLaPersona {
+  const alcances: Alcance[] = [...(d.nutricion ? (['NUTRICION'] as const) : []), ...(d.ejercicios !== null ? (['ENTRENAMIENTO'] as const) : []), ...(d.antropometria !== null ? (['ANTROPOMETRIA'] as const) : [])];
+  return { alcances, propios: d.propios };
+}
 
 /** El nombre de una métrica elegida, con su ejercicio y su serie cuando corresponde. */
 export function nombreDeLaReferencia(ref: ReferenciaDeMetrica, definicion: DefinicionDeMetrica | null, ejercicios: readonly EjercicioDelPeriodo[] | null): string {
@@ -40,9 +44,6 @@ export function tituloDeLaReferencia(ref: ReferenciaDeMetrica, definicion: Defin
   return definicion && corto.startsWith(definicion.nombreCorto) ? `${definicion.nombre}${corto.slice(definicion.nombreCorto.length)}` : corto;
 }
 
-const MEDIDAS_DE_ENTRENAMIENTO = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'ENTRENAMIENTO' && m.implementada);
-const DE_NUTRICION = METRICAS_DEL_DICCIONARIO.filter((m) => m.area === 'NUTRICION' && m.implementada);
-
 type Area = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
 
 export function SelectorDeMetricas({
@@ -58,11 +59,17 @@ export function SelectorDeMetricas({
   marcas: readonly ReactNode[];
 }) {
   const id = useId();
-  const areas: Area[] = [...(disponibles.nutricion ? (['NUTRICION'] as const) : []), ...(disponibles.ejercicios?.length ? (['ENTRENAMIENTO'] as const) : []), ...(disponibles.antropometria?.length ? (['ANTROPOMETRIA'] as const) : [])];
+  // GR-26: lo que se ofrece sale del catálogo, con el acceso de este momento.
+  const porArea = seriesParaElegir(accesoDeLosDisponibles(disponibles));
+  const areas: Area[] = [
+    ...(disponibles.nutricion && porArea.NUTRICION.length > 0 ? (['NUTRICION'] as const) : []),
+    ...(disponibles.ejercicios?.length && porArea.ENTRENAMIENTO.length > 0 ? (['ENTRENAMIENTO'] as const) : []),
+    ...(disponibles.antropometria?.length ? (['ANTROPOMETRIA'] as const) : []),
+  ];
   const [area, setArea] = useState<Area | ''>('');
-  const [nutricional, setNutricional] = useState(DE_NUTRICION[0]?.id ?? '');
+  const [nutricional, setNutricional] = useState('');
   const [ejercicio, setEjercicio] = useState('');
-  const [medida, setMedida] = useState(MEDIDAS_DE_ENTRENAMIENTO[0]?.id ?? '');
+  const [medida, setMedida] = useState('');
   const [serie, setSerie] = useState(1);
   const [unidad, setUnidad] = useState<'kg' | 'lb'>('kg');
   const [antropometrica, setAntropometrica] = useState('');
@@ -91,14 +98,15 @@ export function SelectorDeMetricas({
     if (ej && ej.loadUnits.length > 0 && !ej.loadUnits.includes(unidad)) setUnidad(ej.loadUnits[0]!);
   }, [ej, serie, unidad]);
   const codigo = antropometrica || disponibles.antropometria?.[0]?.metricCode || '';
+  const nutricionalElegida = porArea.NUTRICION.find((s) => s.id === nutricional) ?? porArea.NUTRICION[0] ?? null;
+  // El 1RM estimado se ofrece solo con un ejercicio de la lista de la v1 (RM-16).
+  const medidasDelEjercicio = seriesDelEjercicio(porArea.ENTRENAMIENTO, ej?.exerciseKey ?? null);
+  const medidaElegida = medidasDelEjercicio.find((s) => s.id === medida) ?? medidasDelEjercicio[0] ?? null;
 
   const candidata = (): ReferenciaDeMetrica | null => {
-    if (area === 'NUTRICION') return nutricional ? { metricId: nutricional, exerciseKey: null, setIndex: null, unit: null } : null;
+    if (area === 'NUTRICION') return nutricionalElegida ? { metricId: nutricionalElegida.id, exerciseKey: null, setIndex: null, unit: null } : null;
     if (area === 'ANTROPOMETRIA') return codigo ? { metricId: `antropometria.${codigo}`, exerciseKey: null, setIndex: null, unit: null } : null;
-    if (area === 'ENTRENAMIENTO' && ej) {
-      const d = definicionDeMetrica(medida);
-      return { metricId: medida, exerciseKey: ej.exerciseKey, setIndex: d?.requiereSerie ? serie : null, unit: d?.parametro === 'LOAD' ? unidad : null };
-    }
+    if (area === 'ENTRENAMIENTO' && ej && medidaElegida) return referenciaDeEntrenamiento(medidaElegida, ej.exerciseKey, serie, unidad);
     return null;
   };
   const agregar = () => {
@@ -112,7 +120,7 @@ export function SelectorDeMetricas({
   };
   const definicionCandidata = (() => {
     const c = candidata();
-    return c ? definicionDeMetrica(c.metricId, '') : null;
+    return c ? definicionDeLaSerie(c.metricId) : null;
   })();
 
   return (
@@ -120,7 +128,7 @@ export function SelectorDeMetricas({
       {/* Las métricas elegidas son también la leyenda de los gráficos: la muestra de su color, el nombre y quitar. */}
       <ul className="metricas-elegidas metricas-elegidas--amable" aria-label={`Métricas elegidas: ${elegidas.length} de ${MAXIMO_DE_METRICAS}`}>
         {elegidas.map((ref, i) => {
-          const nombre = nombreDeLaReferencia(ref, definicionDeMetrica(ref.metricId, ''), disponibles.ejercicios);
+          const nombre = nombreDeLaReferencia(ref, definicionDeLaSerie(ref.metricId), disponibles.ejercicios);
           return (
             <li key={claveDeLaReferencia(ref)}>
               {marcas[i]}
@@ -168,10 +176,10 @@ export function SelectorDeMetricas({
               {area === 'NUTRICION' ? (
                 <div className="campo">
                   <label htmlFor={`${id}-nut`}>Métrica</label>
-                  <select id={`${id}-nut`} value={nutricional} onChange={(e) => setNutricional(e.target.value)}>
-                    {DE_NUTRICION.map((m) => (
+                  <select id={`${id}-nut`} value={nutricionalElegida?.id ?? ''} onChange={(e) => setNutricional(e.target.value)}>
+                    {porArea.NUTRICION.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.nombre}
+                        {m.definicion.nombre}
                       </option>
                     ))}
                   </select>
@@ -192,15 +200,15 @@ export function SelectorDeMetricas({
                   </div>
                   <div className="campo">
                     <label htmlFor={`${id}-medida`}>Qué se mide</label>
-                    <select id={`${id}-medida`} value={medida} onChange={(e) => setMedida(e.target.value)}>
-                      {MEDIDAS_DE_ENTRENAMIENTO.map((m) => (
+                    <select id={`${id}-medida`} value={medidaElegida?.id ?? ''} onChange={(e) => setMedida(e.target.value)}>
+                      {medidasDelEjercicio.map((m) => (
                         <option key={m.id} value={m.id}>
-                          {m.nombre}
+                          {m.definicion.nombre}
                         </option>
                       ))}
                     </select>
                   </div>
-                  {definicionDeMetrica(medida)?.requiereSerie && ej ? (
+                  {medidaElegida?.requiere.serie && ej ? (
                     <div className="campo">
                       <label htmlFor={`${id}-serie`}>Serie</label>
                       <select id={`${id}-serie`} value={serie} onChange={(e) => setSerie(Number(e.target.value))}>
@@ -212,7 +220,7 @@ export function SelectorDeMetricas({
                       </select>
                     </div>
                   ) : null}
-                  {definicionDeMetrica(medida)?.parametro === 'LOAD' && ej && ej.loadUnits.length > 1 ? (
+                  {medidaElegida && pideUnidad(medidaElegida) && ej && ej.loadUnits.length > 1 ? (
                     <div className="campo">
                       <label htmlFor={`${id}-unidad`}>Unidad (no se mezclan)</label>
                       <select id={`${id}-unidad`} value={unidad} onChange={(e) => setUnidad(e.target.value as 'kg' | 'lb')}>
@@ -255,7 +263,7 @@ export function SelectorDeMetricas({
       <DialogoDeReemplazo
         nueva={pendiente}
         elegidas={elegidas}
-        nombre={(r) => nombreDeLaReferencia(r, definicionDeMetrica(r.metricId, ''), disponibles.ejercicios)}
+        nombre={(r) => nombreDeLaReferencia(r, definicionDeLaSerie(r.metricId), disponibles.ejercicios)}
         onElegir={(i) => {
           if (pendiente) onCambiar(elegidas.map((e, j) => (j === i ? pendiente : e)));
           setPendiente(null);

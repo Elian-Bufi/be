@@ -8,6 +8,11 @@
  * comparación de períodos y la referencia del cambio relativo se calculan sobre ellas, en el rango exacto. Si el gráfico
  * se agrupa por semana, las observaciones se piden aparte (una segunda lectura, con el mismo PDP): agrupar el dibujo no
  * cambia el significado de un resumen, y una semana que un rango corta no se puede recortar.
+ *
+ * GR-26 (WP-GRAFICOS fase 2, DL-174): una serie que no está en el diccionario de DL-126 pero sí en el catálogo de los
+ * gráficos (el 1RM estimado; después, el RIR indicado y los g/kg) se lee por su camino (`leerSerieDelAnalisis`): el
+ * 1RM estimado con sus puntos (para la mediana del RIR y el rango de repeticiones de «Dos etapas») y lo demás con
+ * `leerSerieDelCatalogo`. Lo del diccionario se lee como siempre.
  */
 import {
   agregacionPara,
@@ -21,16 +26,19 @@ import {
   type IndicadoDeLaComidaApi,
   type IndicadoDelDiaApi,
   type ProyeccionResponse,
+  type PuntoDeFuerza,
   type ReferenciaDeMetrica,
   type ResultadoDeProyeccionNutricional,
   type SerieAnalitica,
   type VigenciaDePlan,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../../../../lib/api';
+import { api, type Resultado } from '../../../../lib/api';
 import { limitarLectura, motivoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { claveDeLaReferencia, type GranoElegido, type Periodo } from './estado';
-import { leerDisponibles, type Disponibles } from '../graficos/lecturas';
+import { caminoDeLaLectura, definicionDeLaSerie, ejercicioDeLaClave } from '../graficos/arma-tu-grafico/compositor';
+import { leerLaFuerza } from '../graficos/cruces/lecturas-de-los-cruces';
+import { leerDisponibles, leerSerieDelCatalogo, type Disponibles } from '../graficos/lecturas';
 
 export type EstadoDeSerie =
   | { readonly tipo: 'cargando' }
@@ -56,6 +64,8 @@ export type EstadoDeSerie =
       readonly parcial: boolean;
       readonly generada: string;
       readonly zona: string;
+      /** El 1RM estimado (GR-26): sus puntos tal como llegan, para la mediana del RIR y las repeticiones de cada etapa. */
+      readonly fuerza?: readonly PuntoDeFuerza[];
     }
   | { readonly tipo: 'sin-acceso' }
   | { readonly tipo: 'sin-especificacion' }
@@ -72,9 +82,12 @@ export interface SerieDelAnalisis {
   readonly estado: EstadoDeSerie;
 }
 
-/** La definición de una referencia elegida; la unidad antropométrica no se conoce hasta leer la serie. */
+/**
+ * La definición de una referencia elegida: la del diccionario o, si la serie solo está en el catálogo de los gráficos
+ * (GR-26), la suya. La unidad antropométrica no se conoce hasta leer la serie.
+ */
 export function definicionDe(ref: ReferenciaDeMetrica, unidad = ''): DefinicionDeMetrica | null {
-  return definicionDeMetrica(ref.metricId, unidad);
+  return definicionDeMetrica(ref.metricId, unidad) ?? definicionDeLaSerie(ref.metricId, unidad);
 }
 
 /** El grano que se usa para una métrica: el pedido si lo admite, si no el suyo (y la pantalla lo dice). */
@@ -163,6 +176,30 @@ export async function leerSerie(token: string, asesoradoId: string, p: SeriePedi
 }
 
 /**
+ * Lee una serie elegida por su camino (GR-26): lo del diccionario, con `leerSerie`; el 1RM estimado, con sus puntos
+ * (sin las orientativas, como «Fuerza» en «Analizar»); lo demás del catálogo, con `leerSerieDelCatalogo`. Las dos
+ * últimas ya dicen «cargando» si la sesión se perdió: no devuelven respuestas.
+ */
+export async function leerSerieDelAnalisis(
+  token: string,
+  asesoradoId: string,
+  p: SeriePedida,
+  periodo: Periodo,
+  sesionPerdida: (r: Resultado<unknown>) => boolean,
+): Promise<{ readonly estado: EstadoDeSerie; readonly respuestas: readonly Respuesta[] }> {
+  if (caminoDeLaLectura(p.ref.metricId) !== 'CATALOGO') return leerSerie(token, asesoradoId, p, periodo);
+  const lectura = { token, asesoradoId, periodo: { desde: periodo.desde, hasta: periodo.hasta, hoy: periodo.hasta, desdeElVinculo: null }, sesionPerdida };
+  if (p.ref.metricId === 'entrenamiento.1rm-estimado') {
+    const exerciseId = p.ref.exerciseKey ? ejercicioDeLaClave(p.ref.exerciseKey) : null;
+    if (!exerciseId) return { estado: { tipo: 'sin-datos' }, respuestas: [] };
+    const f = await leerLaFuerza(lectura, exerciseId, p.ref.unit ?? 'kg', false);
+    if (f.tipo !== 'lista') return { estado: f, respuestas: [] };
+    return { estado: { tipo: 'lista', serie: f.serie, observaciones: f.serie, bandas: f.bandas, objetivo: [], escalones: [], indicado: null, parcial: f.parcial, generada: f.generada, zona: f.zona, fuerza: f.puntos }, respuestas: [] };
+  }
+  return { estado: await leerSerieDelCatalogo(lectura, p.ref, p.grano), respuestas: [] };
+}
+
+/**
  * Las series de las métricas elegidas. Una respuesta tardía de otra selección se descarta. `recargar` vuelve a leer todas
  * (un permiso que cambió); `reintentarFallidas`, solo las que fallaron: es el único «Reintentar» de la vista, y las que se
  * leyeron bien no vuelven a «cargando» (encargo de consolidación, bloque 5).
@@ -190,7 +227,7 @@ export function useSeriesDelAnalisis(
   const clave = `${asesoradoId}|${periodo.desde}|${periodo.hasta}|${pedidas.map((p) => `${p.clave}@${p.grano}`).join(',')}|${vuelta}|${versionDeAcceso}`;
   /** Lee una serie y la guarda, si la lectura sigue siendo la vigente (`esta`). */
   const leerUna = (p: SeriePedida, esta: number) => {
-    void leerSerie(token, asesoradoId, p, periodo).then(({ estado, respuestas }) => {
+    void leerSerieDelAnalisis(token, asesoradoId, p, periodo, sesionPerdida).then(({ estado, respuestas }) => {
       if (esta !== generacion.current || respuestas.some((r) => sesionPerdida(r))) return;
       setEstados((e) => ({ ...e, [p.clave]: estado }));
       // §3.A: el encabezado no puede seguir diciendo «Activo» si la serie dice que el área no está disponible.

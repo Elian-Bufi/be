@@ -3,10 +3,15 @@
 /**
  * El lienzo de «Analizar» (ESPECIFICACION.md §4; INVESTIGACION.md F-01 a F-05; WP-ESCRITORIO-AMABLE, C-16, C-17, C-20,
  * C-22 y C-33):
- * - **Separadas** (por defecto): un panel por métrica, con el mismo eje temporal, la misma fecha elegida y el mismo
- *   intervalo, cada uno con su unidad y su escala. Sin doble eje vertical (F-01). Las fechas se escriben una vez, bajo
- *   el último panel; los demás conservan las marcas del eje, para ver que están alineados.
- * - **Juntas** (misma familia y unidad) y **cambio relativo** (contra una referencia explícita) en un solo gráfico.
+ * - **Alineadas** (por defecto; antes «Separadas»): un panel por métrica, con el mismo eje temporal, la misma fecha
+ *   elegida y el mismo intervalo, cada uno con su unidad y su escala. Las fechas se escriben una vez, bajo el último
+ *   panel; los demás conservan las marcas del eje, para ver que están alineados.
+ * - **Superpuestas** (antes «Juntas»; GR-26, WP-GRAFICOS fase 2, DL-174) y **cambio relativo** (contra una referencia
+ *   explícita) en un solo gráfico. «Superpuestas» admite dos unidades, **un eje a cada lado** (`yAxisId`), cuando las
+ *   series comparten el eje de fechas (`composicionPermitida`): cada eje lleva su rótulo con el nombre corto de sus
+ *   series, la unidad y su muestra, y la escala de cada uno es la que la biblioteca calcula con sus datos, como en
+ *   «Alineadas». No se sombrea entre líneas ni se marcan cruces. Con una sola unidad, el gráfico es el de siempre (una
+ *   vista guardada con `OVERLAY` se ve igual).
  * - **Todas las marcas son puntos.** La métrica se reconoce por su color **y por su nombre**: en el encabezado de su
  *   panel o, cuando comparten un gráfico, al final de su línea. El color nunca es el único medio (WCAG 1.4.1).
  * - **Lo registrado** es una línea continua con puntos. **El objetivo del profesional** en la misma unidad (las calorías
@@ -79,7 +84,18 @@ export interface SerieParaDibujar {
   readonly cortes?: readonly { readonly fecha: string; readonly texto: string }[];
   /** La cobertura del panel, en partes cortas (el texto es del dominio). */
   readonly cobertura?: readonly string[];
+  /** En «Superpuestas» con dos unidades (GR-26): de qué lado va su eje. Sin lado, a la izquierda. */
+  readonly lado?: 'IZQUIERDA' | 'DERECHA';
 }
+
+/** El ancho de un eje vertical, y el lugar que deja a la derecha el segundo (GR-26). */
+const ANCHO_DEL_EJE = 58;
+
+/** Si una serie va en el eje de la derecha. */
+const aLaDerecha = (s: Pick<SerieParaDibujar, 'lado'> | undefined): boolean => s?.lado === 'DERECHA';
+
+/** Lo que va en el eje de la derecha, para la biblioteca: el resto usa el eje de siempre (el de la izquierda). */
+const enSuEje = (derecha: boolean): { yAxisId?: string } => (derecha ? { yAxisId: 'derecha' } : {});
 
 export interface Hito {
   readonly fecha: string;
@@ -189,7 +205,9 @@ export function Lienzo(p: PropsDelLienzo) {
       </div>
     );
   }
-  const unidad = p.modo === 'RELATIVE' ? '%' : (p.series[0]?.unidad ?? '');
+  // Con dos ejes, cada uno dice su unidad en su rótulo: el título no lleva una sola.
+  const dosEjes = p.modo === 'OVERLAY' && p.series.some(aLaDerecha);
+  const unidad = p.modo === 'RELATIVE' ? '%' : dosEjes ? '' : (p.series[0]?.unidad ?? '');
   return <Panel {...p} rotularBandas unidad={unidad} alto={ALTO_COMPARTIDO} conFechas />;
 }
 
@@ -229,6 +247,9 @@ function Panel({
   const x1 = mediodia(hasta) + DIA / 2;
   const compartido = modo !== 'PANELS';
   const unica = compartido ? null : (series[0] ?? null);
+  // GR-26: «Superpuestas» con dos unidades, un eje a cada lado.
+  const dosEjes = modo === 'OVERLAY' && series.some(aLaDerecha);
+  const derechaDe = (indice: number): boolean => dosEjes && aLaDerecha(series.find((s) => s.indice === indice));
   // Una fila por instante con algún punto; una columna por tramo de cada serie (la línea une solo su tramo).
   const { filas, tramos, puntosPorFila, ultimos } = useMemo(() => {
     const mapa = new Map<number, Record<string, number | null>>();
@@ -312,11 +333,23 @@ function Panel({
   const corrimientos = useMemo(() => {
     const finales = [...ultimos.entries()];
     if (!compartido || finales.length < 2) return new Map<number, number>();
-    const valores = filas.flatMap((f) => Object.entries(f).filter(([k, v]) => k !== 'x' && v !== null).map(([, v]) => v as number));
-    const minimo = Math.min(...valores);
-    const rango = Math.max(...valores) - minimo || 1;
+    // Con dos ejes, cada final se estima con la escala de su lado.
+    const derechaDelTramo = (clave: string): boolean => tramos.some((t) => t.clave === clave && derechaDe(t.indice));
+    const valoresDe = (derecha: boolean): number[] =>
+      filas.flatMap((f) => Object.entries(f).filter(([k, v]) => k !== 'x' && v !== null && derechaDelTramo(k) === derecha).map(([, v]) => v as number));
+    const escalaDe = (derecha: boolean) => {
+      const valores = valoresDe(derecha);
+      const minimo = valores.length > 0 ? Math.min(...valores) : 0;
+      return { minimo, rango: (valores.length > 0 ? Math.max(...valores) : 1) - minimo || 1 };
+    };
+    const escalas = { izquierda: escalaDe(false), derecha: escalaDe(true) };
     const altoUtil = alto - 16;
-    const estimados = finales.map(([indice, f]) => ({ indice, y: (1 - (f.valor - minimo) / rango) * altoUtil })).sort((a, b) => a.y - b.y);
+    const estimados = finales
+      .map(([indice, f]) => {
+        const e = derechaDe(indice) ? escalas.derecha : escalas.izquierda;
+        return { indice, y: (1 - (f.valor - e.minimo) / e.rango) * altoUtil };
+      })
+      .sort((a, b) => a.y - b.y);
     const separacion = 17;
     const corridos = new Map<number, number>();
     let anterior = -Infinity;
@@ -326,7 +359,9 @@ function Panel({
       anterior = y;
     }
     return corridos;
-  }, [compartido, ultimos, filas, alto]);
+    // `derechaDe` sale de `series` y `dosEjes`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compartido, ultimos, filas, alto, tramos, series, dosEjes]);
 
   // El tamaño de la marca depende de cuánto lugar hay por día: con 90 días en un teléfono, marcas grandes se pisan y la
   // serie se vuelve una mancha. No se quita ningún punto (ni los extremos ni los cortes): solo se achica la marca. El
@@ -341,7 +376,8 @@ function Panel({
     observador.observe(lienzo);
     return () => observador.disconnect();
   }, [lienzo]);
-  const espacioPorDia = ancho > 0 ? (ancho - 62 - margenDerecho) / Math.max(1, Math.round((x1 - x0) / DIA)) : 12;
+  const ejeDerecho = dosEjes ? ANCHO_DEL_EJE : 0;
+  const espacioPorDia = ancho > 0 ? (ancho - 62 - margenDerecho - ejeDerecho) / Math.max(1, Math.round((x1 - x0) / DIA)) : 12;
   /** La marca de un punto, con la regla de los cuatro gráficos (TB-02): una hueca, cortada o con un punto adentro tiene su mínimo. */
   const medidaDe = (pt: PuntoAnalitico) => medidaDeMarca(estadoDeMarca(pt), espacioPorDia);
   const esElegido = (pt: PuntoAnalitico): boolean => fecha !== null && pt.date <= fecha && fecha <= (pt.dateEnd ?? pt.date);
@@ -363,9 +399,11 @@ function Panel({
       // DL-161: una serie de carga rápida (tildada sin escribir) también es hueca, con su leyenda «carga rápida».
       const cargaRapida = esPuntoDeCargaRapida(info.punto);
       const clase = info.punto.dataClass === 'REPORTED' || info.punto.dataClass === 'DERIVED' ? info.punto.dataClass : null;
+      // GR-26: en el 1RM estimado, una serie observada por el profesional (API-FZA-01) es un rombo, no un punto.
+      const observada = info.punto.segment.startsWith('observada:');
       return (
-        <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
-          <Punto cx={cx} cy={cy} color={e.color} medida={medidaDe(info.punto)} />
+        <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-observada={observada ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
+          {observada ? <Rombo cx={cx} cy={cy} porDia={espacioPorDia} color={e.color} /> : <Punto cx={cx} cy={cy} color={e.color} medida={medidaDe(info.punto)} />}
         </g>
       );
     };
@@ -399,7 +437,7 @@ function Panel({
   // El rótulo de cada etapa va arriba de su banda, fuera del dibujo: adentro lo cruzaban la línea del objetivo y los puntos.
   // Va entero si entra en el ancho de su banda («Nutrición · versión 2»); si la banda es angosta, corto («v2»); y si ni
   // eso entra (una etapa que apenas asoma en el período), no va: un rótulo sin banda debajo no dice dónde está.
-  const pxPorMs = ancho > 0 ? (ancho - 62 - margenDerecho) / (x1 - x0) : 0;
+  const pxPorMs = ancho > 0 ? (ancho - 62 - margenDerecho - ejeDerecho) / (x1 - x0) : 0;
   const bandasDibujadas = bandas.map((b) => {
     const xa = Math.max(x0, mediodia(b.from) - DIA / 2);
     const xb = Math.min(x1, b.to ? mediodia(b.to) - DIA / 2 : x1);
@@ -413,7 +451,14 @@ function Panel({
   // Los cortes (otro protocolo, método o unidad): uno solo lleva su motivo escrito; con varios, cada uno lleva un número
   // y el motivo se lee en la leyenda, debajo del gráfico (escritos, se pisaban).
   const cortes = [...(unica?.cortes ?? [])].sort((a, b) => a.fecha.localeCompare(b.fecha)).filter((c) => mediodia(c.fecha) - DIA / 2 > x0 && mediodia(c.fecha) - DIA / 2 < x1);
-  const nombre = unica ? unica.nombre : (tituloCompartido ?? (modo === 'RELATIVE' ? 'Cambio frente a la referencia' : 'Juntas'));
+  const nombre = unica ? unica.nombre : (tituloCompartido ?? (modo === 'RELATIVE' ? 'Cambio frente a la referencia' : 'Superpuestas'));
+  // GR-26: el rótulo de cada eje, con la muestra de sus series, su nombre corto y la unidad.
+  const ejes = dosEjes
+    ? (['IZQUIERDA', 'DERECHA'] as const).map((lado) => {
+        const delLado = series.filter((s) => (s.lado ?? 'IZQUIERDA') === lado);
+        return { lado, delLado, texto: `${delLado.map((s) => s.nombreCorto ?? s.nombre).join(' y ')} · ${delLado[0]?.unidad ?? ''}` };
+      })
+    : [];
   // Qué es cada punto y en qué unidad: «por día · kcal». En un gráfico compartido, lo primero solo si vale para todas.
   const cadaPunto = series.every((s) => s.cadaPunto === series[0]?.cadaPunto) ? series[0]?.cadaPunto : undefined;
   const detalle = [cadaPunto, unidad].filter(Boolean).join(' · ');
@@ -447,6 +492,18 @@ function Panel({
             {series.map((s) => (
               <span key={s.indice} className="grafico__muestra">
                 <Marca indice={s.indice} /> {rotulos.get(s.indice)}
+              </span>
+            ))}
+          </span>
+        ) : null}
+        {ejes.length > 0 ? (
+          <span className="grafico__ejes">
+            {ejes.map((e) => (
+              <span key={e.lado} className="grafico__eje" data-lado={e.lado}>
+                {e.delLado.map((s) => (
+                  <Marca key={s.indice} indice={s.indice} />
+                ))}{' '}
+                {e.lado === 'IZQUIERDA' ? 'Eje izquierdo' : 'Eje derecho'}: {e.texto}
               </span>
             ))}
           </span>
@@ -547,7 +604,11 @@ function Panel({
               tickLine={{ stroke: 'var(--borde-control)' }}
             />
             {/* Una métrica entera (repeticiones, RIR, conteos) no tiene marcas como «5,25 rep». La unidad va en el encabezado. */}
-            <YAxis width={58} domain={['auto', 'auto']} allowDecimals={modo === 'RELATIVE' || series.some((s) => s.decimales > 0)} tickFormatter={(v: number) => (modo === 'RELATIVE' ? `${v > 0 ? '+' : ''}${numero(v)} %` : numero(v))} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
+            <YAxis width={ANCHO_DEL_EJE} domain={['auto', 'auto']} allowDecimals={modo === 'RELATIVE' || series.some((s) => !aLaDerecha(s) && s.decimales > 0)} tickFormatter={(v: number) => (modo === 'RELATIVE' ? `${v > 0 ? '+' : ''}${numero(v)} %` : numero(v))} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
+            {/* GR-26: el segundo eje de «Superpuestas», con su escala propia, como la de su panel en «Alineadas». */}
+            {dosEjes ? (
+              <YAxis yAxisId="derecha" orientation="right" width={ANCHO_DEL_EJE} domain={['auto', 'auto']} allowDecimals={series.some((s) => aLaDerecha(s) && s.decimales > 0)} tickFormatter={(v: number) => numero(v)} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
+            ) : null}
             {/* Lo planificado: un tramo horizontal por escalón, discontinuo y sin puntos. El eje vertical lo incluye. */}
             {escalones.map((e, i) => {
               const xa = Math.max(x0, mediodia(e.desde) - DIA / 2);
@@ -585,7 +646,7 @@ function Panel({
             ))}
             {tramos.map((t) => {
               const e = ESTILOS[t.indice] ?? ESTILOS[0];
-              return <Line key={t.clave} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
+              return <Line key={t.clave} {...enSuEje(derechaDe(t.indice))} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
             })}
             {/* El nombre de cada línea, a la derecha de su último punto, en el margen: va en una capa aparte, porque los
                 puntos de una línea se recortan al área de dibujo. */}
@@ -593,14 +654,17 @@ function Panel({
               ? [...ultimos.entries()].map(([indice, final]) => (
                   <ReferenceDot
                     key={`nombre-${indice}`}
+                    {...enSuEje(derechaDe(indice))}
                     x={final.x}
                     y={final.valor}
                     r={0}
                     ifOverflow="visible"
                     label={(p: unknown) => {
                       const caja = (p as { viewBox?: { x?: number; y?: number; width?: number; height?: number } } | null)?.viewBox ?? {};
+                      // Con dos ejes, el nombre va después de las marcas del eje derecho, para no pisarlas.
+                      const x = (caja.x ?? 0) + (caja.width ?? 0) / 2 + 16;
                       return (
-                        <text className="grafico__nombre-de-linea" x={(caja.x ?? 0) + (caja.width ?? 0) / 2 + 16} y={(caja.y ?? 0) + (caja.height ?? 0) / 2 + (corrimientos.get(indice) ?? 0)} dominantBaseline="central" fill="var(--texto)" fontSize={LETRA} fontWeight={600}>
+                        <text className="grafico__nombre-de-linea" x={dosEjes && ancho > 0 ? Math.max(x, ancho - margenDerecho + 6) : x} y={(caja.y ?? 0) + (caja.height ?? 0) / 2 + (corrimientos.get(indice) ?? 0)} dominantBaseline="central" fill="var(--texto)" fontSize={LETRA} fontWeight={600}>
                           {rotulos.get(indice)}
                         </text>
                       );
@@ -615,6 +679,7 @@ function Panel({
             {aros.map((a) => (
               <ReferenceDot
                 key={`aro-${a.clave}`}
+                {...enSuEje(derechaDe(a.indice))}
                 x={a.x}
                 y={a.y}
                 r={medidaDelAro(espacioPorDia).r}
