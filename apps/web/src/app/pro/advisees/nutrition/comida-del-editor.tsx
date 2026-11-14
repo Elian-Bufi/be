@@ -36,6 +36,7 @@ import {
   type EstructuraDePlanEntrada,
   type RecetaDeOpcion,
   type VersionDePlan,
+  COPY_NOTAS_PROPIAS,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
@@ -48,6 +49,7 @@ import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
 import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type TotalDeLaOpcion } from './rangos';
+import { NotasAlLado, useNotasPropias } from '../notas-propias';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
 export type ComidaEnEdicion = Estructura[number]['meals'][number];
@@ -140,6 +142,8 @@ export function ComidaDelEditor({
   totalDeLaOpcion: (k: number) => TotalDeLaOpcion | null;
 }) {
   const propio = useId();
+  // PG-16 (DL-173): «Anotar sobre esta comida», si el editor tiene las notas propias.
+  const notasPropias = useNotasPropias();
   const plegada = comidaPlegadaDelEditor(comida, posicion, problemas);
   const k = Math.min(opcionElegida, comida.options.length - 1);
   const opcion = k >= 0 ? comida.options[k] : undefined;
@@ -187,6 +191,9 @@ export function ComidaDelEditor({
               texto="Más"
               acciones={[
                 { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => alEditarNombre({ de: 'comida' }) },
+                ...(notasPropias
+                  ? [{ clave: 'anotar', texto: COPY_NOTAS_PROPIAS.anotarSobreLaComida, alElegir: () => notasPropias.anotar({ tipo: 'MEAL', nombre: comida.label.trim() }), noSePuede: comida.label.trim() === '' ? 'Ponele un nombre a la comida para anotar sobre ella.' : null }]
+                  : []),
                 { clave: 'duplicar', texto: E.duplicarComida, alElegir: alDuplicar },
                 // ED-33: una opción más, desde otra comida del plan o desde una comida habitual.
                 { clave: 'copiar-desde-otra', texto: COPY_DE_OTRA_COMIDA.copiar, alElegir: alCopiarDesdeOtra, noSePuede: noSePuedeCopiar },
@@ -198,6 +205,8 @@ export function ComidaDelEditor({
           </div>
         ) : null}
       </div>
+      {/* PG-16: las notas propias atadas a esta comida (por su nombre), a la vista aunque esté plegada. */}
+      <NotasAlLado comida={comida.label} />
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo comida-del-editor__cuerpo" hidden={!abierta}>
         {abierta ? (
           <>

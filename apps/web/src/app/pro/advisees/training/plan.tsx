@@ -62,6 +62,7 @@ import { resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { EditorDePlan } from './editor';
 import { pasoPedido } from '../asistente/paso-que-sigue';
 import { PuntoDePartida } from '../asistente/punto-de-partida';
+import { ProveedorDeNotasPropias } from '../notas-propias';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
@@ -334,37 +335,40 @@ export function VistaDePlan() {
                   // Queda montada aunque se mire la activa: lo escrito sin guardar sigue ahí al volver.
                   <div className="plan__preparacion" hidden={mostrada !== 'preparacion'}>
                     {!activa ? <p className="nota">{COPY_ENTRENAMIENTO.sinPlanActivo}</p> : null}
-                    <EditorDePlan
-                      key={borrador.planId}
-                      planId={borrador.planId}
-                      numero={numeroDelBorrador(historial)}
-                      objetivoVigente={objetivo}
-                      vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
-                      // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».
-                      onActivado={(texto) => {
-                        setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
-                        ir(TODO_LO_ELEGIDO);
-                        void cargar();
-                      }}
-                      // ED-11: la pestaña de plantillas de la galería; descartado el borrador, nace otro desde la plantilla. Si
-                      // crearlo falla, el diálogo de plantillas queda abierto con el motivo, para reintentar.
-                      leerPlantillas={leerPlantillas}
-                      plantillasNoSePueden={motivoSinObjetivo}
-                      onReemplazarConPlantilla={(id) => {
-                        setFalloDesdePlantilla(null);
-                        setDesdePlantilla(true);
-                        void aplicar(id, true);
-                      }}
-                      // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
-                      onDescartado={(porOtraPestana) => {
-                        // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
-                        focoTrasDescartar.current = !porOtraPestana;
-                        setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
-                        // ED-14: descartado desde el asistente, se vuelve a elegir el punto de partida.
-                        ir({ ...TODO_LO_ELEGIDO, asistente: parametros.get('asistente') ? '1' : null });
-                        void cargar();
-                      }}
-                    />
+                    {/* PG-16 (DL-173): las notas propias del profesional, al lado de cada ejercicio y en su menú. */}
+                    <ProveedorDeNotasPropias token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida}>
+                      <EditorDePlan
+                        key={borrador.planId}
+                        planId={borrador.planId}
+                        numero={numeroDelBorrador(historial)}
+                        objetivoVigente={objetivo}
+                        vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
+                        // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».
+                        onActivado={(texto) => {
+                          setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
+                          ir(TODO_LO_ELEGIDO);
+                          void cargar();
+                        }}
+                        // ED-11: la pestaña de plantillas de la galería; descartado el borrador, nace otro desde la plantilla. Si
+                        // crearlo falla, el diálogo de plantillas queda abierto con el motivo, para reintentar.
+                        leerPlantillas={leerPlantillas}
+                        plantillasNoSePueden={motivoSinObjetivo}
+                        onReemplazarConPlantilla={(id) => {
+                          setFalloDesdePlantilla(null);
+                          setDesdePlantilla(true);
+                          void aplicar(id, true);
+                        }}
+                        // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
+                        onDescartado={(porOtraPestana) => {
+                          // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
+                          focoTrasDescartar.current = !porOtraPestana;
+                          setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
+                          // ED-14: descartado desde el asistente, se vuelve a elegir el punto de partida.
+                          ir({ ...TODO_LO_ELEGIDO, asistente: parametros.get('asistente') ? '1' : null });
+                          void cargar();
+                        }}
+                      />
+                    </ProveedorDeNotasPropias>
                     {!activa && historial.length > 0 ? <HistorialDelPlan historial={historial} huella={null} /> : null}
                   </div>
                 ) : null}

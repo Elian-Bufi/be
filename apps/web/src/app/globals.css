@@ -18175,3 +18175,101 @@ html:has(.estacion:not([data-en-el-asistente])) {
   display: block;
   font-weight: 400;
 }
+
+/* ─── PG-15 y PG-16 (WP-PULIDO-GRANDES; DL-173): la nota para el profe y las notas propias del profesional ───────── */
+
+/* «Tus notas», en el Resumen: la caja de «Notas recientes del equipo», con un campo para escribir arriba. */
+.tus-notas__escribir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.tus-notas__escribir .campo {
+  align-self: stretch;
+  margin: 0;
+}
+
+.tus-notas__escribir textarea {
+  min-height: 3.5rem;
+  resize: vertical;
+}
+
+.tus-notas__nota {
+  padding: 0.45rem 0;
+}
+
+.tus-notas__datos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  margin: 0;
+}
+
+.tus-notas__archivadas > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tus-notas__ocultar {
+  align-self: flex-start;
+}
+
+/* Al lado de un ejercicio o de una comida, en los editores: chica, con el candado de «solo vos». */
+.notas-al-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--borde);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.notas-al-lado__titulo,
+.notas-al-lado__ayuda,
+.detalle-de-sesion__notas-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.notas-al-lado__titulo .icono,
+.notas-al-lado__ayuda .icono,
+.detalle-de-sesion__notas-titulo .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.notas-al-lado__lista {
+  display: grid;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* El texto como se escribió: con sus saltos de línea. */
+.notas-al-lado__texto {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* En el detalle de una sesión registrada: lo que la persona contó al terminar, como contexto. */
+.detalle-de-sesion__notas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}

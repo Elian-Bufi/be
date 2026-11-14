@@ -7,6 +7,11 @@
  *     en Analizar · Fuerza, el mismo motivo en sesiones seguidas, en una fila;
  *  4. TEST-PG-013 · PG-14: ningún campo de fecha nativo en el website del profesional; la fecha en palabras, la semana
  *     desde el lunes, el teclado y los límites; el valor enviado, la misma fecha civil.
+ * Tanda B (las notas):
+ *  5. TEST-PG-015 · PG-16: «Tus notas» en las tres disposiciones del Resumen, con lo que dice PG-D11; los dos editores leen
+ *     las notas una sola vez y las muestran al lado de cada ejercicio y cada comida; con «Ocultar nombres», ocultas;
+ *  6. TEST-PG-014 · PG-15: Registros lee las notas aparte, con el período de las sesiones, y la fila dice «Con nota» sin
+ *     color de alarma. Mutaciones verificadas: sacar «Tus notas» de una disposición; leer las notas en cada ejercicio.
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
  */
@@ -326,4 +331,48 @@ test('TEST-PG-013 · el valor enviado es la misma fecha civil AAAA-MM-DD que man
   const campo = leer('src/components/campo-de-fecha.tsx');
   assert.match(campo, /if \(f !== value\) onChange\(f\);/);
   for (const t of textos(F.COPY_CAMPO_DE_FECHA)) assert.deepEqual(terminosProhibidosEn(t), [], t);
+});
+
+// ── Tanda B · TEST-PG-014 (PG-15) y TEST-PG-015 (PG-16), la parte del website ──────────────────────────────────────
+
+test('TEST-PG-015 · «Tus notas» va en las tres disposiciones del Resumen, después de las notas del equipo', () => {
+  const resumen = leer('src/app/pro/advisees/seguimiento/resumen.tsx');
+  assert.equal((resumen.match(/\{notas\}\s*\{tusNotas\}/g) ?? []).length, 3);
+});
+
+test('TEST-PG-015 · el bloc dice que solo lo ve quien escribe y que la persona lo recibe si pide sus datos (PG-D11)', async () => {
+  const { COPY_NOTAS_PROPIAS } = await import('@be/domain');
+  assert.match(COPY_NOTAS_PROPIAS.queSon, /^Solo las ves vos\./);
+  assert.match(COPY_NOTAS_PROPIAS.queSon, /si la persona pide sus datos, las recibe/);
+  assert.match(leer('src/app/pro/advisees/seguimiento/tus-notas.tsx'), /\{T\.queSon\}/);
+});
+
+test('TEST-PG-015 · los dos editores leen las notas una sola vez y las muestran al lado de cada ejercicio y cada comida', () => {
+  for (const ruta of ['src/app/pro/advisees/training/plan.tsx', 'src/app/pro/advisees/nutrition/plan.tsx']) assert.match(leer(ruta), /<ProveedorDeNotasPropias token=\{token\} asesoradoId=\{asesoradoId\} sesionPerdida=\{sesionPerdida\}>/);
+  assert.match(leer('src/app/pro/advisees/training/ejercicio-del-editor.tsx'), /<NotasAlLado ejercicio=\{exerciseId\} \/>/);
+  assert.match(leer('src/app/pro/advisees/nutrition/comida-del-editor.tsx'), /<NotasAlLado comida=\{comida\.label\} \/>/);
+  // API-NPP-02 se lee en el proveedor del editor y en el bloc del Resumen; nunca por ejercicio ni por comida.
+  const conLectura = archivos(join(WEB, 'src'))
+    .filter((r) => readFileSync(r, 'utf8').includes('api.notasPropias('))
+    .map(nombre)
+    .sort();
+  assert.deepEqual(conLectura, ['src/app/pro/advisees/notas-propias.tsx', 'src/app/pro/advisees/seguimiento/tus-notas.tsx']);
+});
+
+test('TEST-PG-015 · con «Ocultar nombres», el texto de las notas no se ve hasta pedirlo (PG-T73)', () => {
+  for (const ruta of ['src/app/pro/advisees/notas-propias.tsx', 'src/app/pro/advisees/seguimiento/tus-notas.tsx']) {
+    const codigo = leer(ruta);
+    assert.match(codigo, /useNombresOcultos\(\)/, ruta);
+    assert.match(codigo, /\{T\.ocultas\}/, ruta);
+    assert.match(codigo, /\{T\.mostrar\}/, ruta);
+  }
+});
+
+test('TEST-PG-014 · Registros lee las notas aparte, con el período de las sesiones, y la fila dice «Con nota» sin color de alarma', () => {
+  const codigo = leer('src/app/pro/advisees/training/ejecuciones.tsx');
+  assert.match(codigo, /api\.notasDeLasSesiones\(token, asesoradoId, \{ periodStart: desde, periodEnd: hasta \}\)/);
+  assert.match(codigo, /\$\{contexto\.period\.start\}\|\$\{contexto\.period\.end\}/);
+  const fila = codigo.slice(codigo.indexOf('{conNota ? ('), codigo.indexOf(') : null}', codigo.indexOf('{conNota ? (')));
+  assert.match(fila, /className="etiqueta-de-dato"/);
+  assert.doesNotMatch(fila, /--(alerta|error|aviso|acento)/);
 });

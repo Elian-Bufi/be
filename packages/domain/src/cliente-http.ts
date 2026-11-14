@@ -106,6 +106,22 @@ import {
   type NotaDeCoordinacionResponse,
 } from './contratos-notas-de-coordinacion';
 import {
+  NotaDeLaSesionResponseSchema,
+  NotasDeLasSesionesResponseSchema,
+  NotasDeUnaSesionResponseSchema,
+  type AgregarNotaDeLaSesionRequest,
+  type NotaDeLaSesionResponse,
+  type NotasDeLasSesionesResponse,
+  type NotasDeUnaSesionResponse,
+} from './contratos-notas-de-la-sesion';
+import {
+  ListaDeNotasPropiasDelProfesionalResponseSchema,
+  NotaPropiaResponseSchema,
+  type AgregarNotaPropiaRequest,
+  type ListaDeNotasPropiasDelProfesionalResponse,
+  type NotaPropiaResponse,
+} from './contratos-notas-propias';
+import {
   LineaDeTiempoResponseSchema,
   ListaDeVistasResponseSchema,
   ProyeccionResponseSchema,
@@ -1716,6 +1732,37 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-CRD-01-PROPIA: las notas de coordinación sobre la persona, todas (08 §9.15). */
     misNotasDeCoordinacion(token: string, filtro: { cursor?: string; limit?: string } = {}): Promise<Resultado<ListaDeNotasPropiasResponse>> {
       return llamar('GET', `/me/coordination-notes${query(filtro)}`, { token, esquema: ListaDeNotasPropiasResponseSchema });
+    },
+
+    // ─── PG-15 · la nota para tu profe (WP-PULIDO-GRANDES; DL-173, PG-D10) ────────────────────────
+    /**
+     * API-TRN-25: la persona agrega una nota a una sesión suya ya registrada. Va aparte de confirmar (API-TRN-18 no
+     * cambia): si falla, la sesión ya quedó registrada.
+     */
+    agregarNotaDeLaSesion(token: string, executionId: string, cuerpo: AgregarNotaDeLaSesionRequest, claveDeIdempotencia: string): Promise<Resultado<NotaDeLaSesionResponse>> {
+      return llamar('POST', `/training/executions/${encodeURIComponent(executionId)}/notes`, { token, claveDeIdempotencia, esquema: NotaDeLaSesionResponseSchema, cuerpo });
+    },
+    /** API-TRN-25-PROPIA: las notas de una sesión propia, de la más vieja a la más nueva. */
+    notasDeMiSesion(token: string, executionId: string): Promise<Resultado<NotasDeUnaSesionResponse>> {
+      return llamar('GET', `/me/training/executions/${encodeURIComponent(executionId)}/notes`, { token, esquema: NotasDeUnaSesionResponseSchema });
+    },
+    /** API-TRN-25-LISTA: el profesional lee las notas de las sesiones que ya ve, por período (hasta 92 días). */
+    notasDeLasSesiones(token: string, asesoradoId: string, periodo: { periodStart: string; periodEnd: string }): Promise<Resultado<NotasDeLasSesionesResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/execution-notes${query(periodo)}`, { token, esquema: NotasDeLasSesionesResponseSchema });
+    },
+
+    // ─── PG-16 · las notas propias del profesional, familia NPP (WP-PULIDO-GRANDES; DL-173, PG-D11) ──
+    /** API-NPP-01: agregar una nota propia, sin ancla o atada a un ejercicio o a una comida. Solo la lee quien la escribe. */
+    agregarNotaPropia(token: string, asesoradoId: string, cuerpo: AgregarNotaPropiaRequest, claveDeIdempotencia: string): Promise<Resultado<NotaPropiaResponse>> {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/professional-notes`, { token, claveDeIdempotencia, esquema: NotaPropiaResponseSchema, cuerpo });
+    },
+    /** API-NPP-02: las notas propias sobre esa persona, activas y archivadas. */
+    notasPropias(token: string, asesoradoId: string): Promise<Resultado<ListaDeNotasPropiasDelProfesionalResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/professional-notes`, { token, esquema: ListaDeNotasPropiasDelProfesionalResponseSchema });
+    },
+    /** API-NPP-03: archivar una nota propia; queda en la historia. */
+    archivarNotaPropia(token: string, noteId: string, claveDeIdempotencia: string): Promise<Resultado<NotaPropiaResponse>> {
+      return llamar('POST', `/professional-notes/${encodeURIComponent(noteId)}/archive`, { token, claveDeIdempotencia, esquema: NotaPropiaResponseSchema, cuerpo: {} });
     },
     /** API-EJE-01: los ejercicios propios, con su imagen vigente. */
     ejerciciosPropios(token: string) {

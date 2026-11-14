@@ -83,6 +83,7 @@ import { VISTA_RECORDADA } from '../volver-a-hoy';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { enCursoDeLaApi, enCursoEnElTelefono, marchaDeLaSesionEnCurso, otraSesionEnCurso, sePuedeIniciar, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
+import { NotaParaTuProfe } from './nota-para-tu-profe';
 import { condicionQueCorresponde, horaTomadaAlEmpezar, inicioDeLaCorrida, motivoParaNoFinalizar, motivoQueViaja, renglonesDelResultado, TEXTOS_DEL_CIERRE, tiempoDeLaSesionAbierta, tiemposResumidos } from '../cierre-de-la-sesion';
 import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
@@ -2120,6 +2121,8 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
       <Titulo>{x.plannedSession.label}</Titulo>
       <Parrafo tenue>{fechaCivil(x.date)}</Parrafo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
+      {/* PG-15 (DL-173): «¿Algo para contarle a tu profe?», opcional y aparte de confirmar: la sesión ya quedó registrada. */}
+      <NotaParaTuProfe token={token} executionId={x.executionId} sesionPerdida={sesionPerdida} />
       {vigente ? (
         <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente} icono="corregido">
           <Parrafo tenue>
