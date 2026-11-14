@@ -61,7 +61,7 @@ test('TEST-PG-005 · el QR y el botón llevan al archivo de la última publicaci
   assert.equal(D.NOMBRE_DEL_ARCHIVO, 'be.apk');
   const c = leer('src/components/descarga-de-la-app.tsx');
   assert.match(c, /<CodigoQr texto=\{APK_DE_LA_ULTIMA\} etiqueta=\{C\.etiquetaDelQr\}/);
-  assert.equal((c.match(/href=\{APK_DE_LA_ULTIMA\}/g) ?? []).length, 2, 'el botón del teléfono y el enlace de la compu');
+  assert.equal((c.match(/href=\{APK_DE_LA_ULTIMA\}/g) ?? []).length, 1, 'un solo botón, en la compu y en el teléfono (Dirección, 2026-11-14)');
   assert.ok(D.COPY_DESCARGA.etiquetaDelQr.includes(D.APK_DE_LA_ULTIMA), 'el texto alternativo dice el enlace');
   // Ninguna pantalla vuelve a la página de publicaciones de GitHub.
   for (const r of archivos(join(WEB, 'src/app')).filter((r) => !r.includes('invitacion'))) assert.doesNotMatch(readFileSync(r, 'utf8'), /releases\/latest['"`]/, nombre(r));
