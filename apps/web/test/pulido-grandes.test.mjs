@@ -61,7 +61,7 @@ test('TEST-PG-005 · el QR y el botón llevan al archivo de la última publicaci
   assert.equal(D.NOMBRE_DEL_ARCHIVO, 'be.apk');
   const c = leer('src/components/descarga-de-la-app.tsx');
   assert.match(c, /<CodigoQr texto=\{APK_DE_LA_ULTIMA\} etiqueta=\{C\.etiquetaDelQr\}/);
-  assert.equal((c.match(/href=\{APK_DE_LA_ULTIMA\}/g) ?? []).length, 2, 'el botón del teléfono y el enlace de la compu');
+  assert.equal((c.match(/href=\{APK_DE_LA_ULTIMA\}/g) ?? []).length, 1, 'un solo botón, en la compu y en el teléfono (Dirección, 2026-11-14)');
   assert.ok(D.COPY_DESCARGA.etiquetaDelQr.includes(D.APK_DE_LA_ULTIMA), 'el texto alternativo dice el enlace');
   // Ninguna pantalla vuelve a la página de publicaciones de GitHub.
   for (const r of archivos(join(WEB, 'src/app')).filter((r) => !r.includes('invitacion'))) assert.doesNotMatch(readFileSync(r, 'utf8'), /releases\/latest['"`]/, nombre(r));
@@ -92,11 +92,13 @@ test('TEST-PG-005 · la versión y el tamaño salen de la última publicación; 
   for (const r of ['src/app/page.tsx', 'src/components/descarga-de-la-app.tsx', 'src/lib/descarga-de-la-app.ts']) assert.doesNotMatch(leer(r), /Versión \d|0\.\d+\.\d+-candidata/, r);
 });
 
-test('TEST-PG-005 · con el ancho de un teléfono no hay QR: hay un botón; los tres pasos, en castellano y por marca', () => {
+test('TEST-PG-005 · el botón siempre; con el ancho de un teléfono, sin QR; los tres pasos, en castellano y por marca', () => {
   const css = leer('src/app/globals.css');
   const telefono = css.slice(css.indexOf('/* Con el ancho de un teléfono: sin QR'));
-  assert.match(telefono, /^[^]*?@media \(max-width: 40rem\) \{[^]*?\.descarga__qr \{\n\s*display: none;\n\s*\}[^]*?\.descarga__en-el-telefono \{\n\s*display: inline-flex;/);
-  assert.match(css, /\.descarga__en-el-telefono \{\n\s*display: none;\n\}/);
+  assert.match(telefono, /^[^]*?@media \(max-width: 40rem\) \{[^]*?\.descarga__qr \{\n\s*display: none;\n\s*\}[^]*?\.descarga__boton \{\n\s*display: inline-flex;/);
+  // Dirección, 2026-11-14: «el QR para descargar y un botón de descarga también». En la compu, los dos a la vista.
+  assert.doesNotMatch(css.slice(0, css.indexOf('/* Con el ancho de un teléfono: sin QR')), /\.descarga__boton \{[^}]*display: none/);
+  assert.match(leer('src/components/descarga-de-la-app.tsx'), /<a className="boton boton--primario descarga__boton" href=\{APK_DE_LA_ULTIMA\} download data-bajar-la-app>/);
   assert.deepEqual(Object.keys(D.PASOS_DE_LA_INSTALACION), ['samsung', 'motorola', 'xiaomi']);
   for (const [marca, pasos] of Object.entries(D.PASOS_DE_LA_INSTALACION)) {
     assert.equal(pasos.length, 3, marca);
