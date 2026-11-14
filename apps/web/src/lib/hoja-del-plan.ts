@@ -13,8 +13,8 @@
  * - **La próxima revisión es la acordada hoy** (la que lee el Resumen de la ficha), no la que se fijó al activar la
  *   versión: una revisión que mantuvo el plan pudo moverla. Si no se pudo leer, la hoja no la dice; sin fecha acordada,
  *   lo dice.
- * - **El nombre del archivo no lleva el de la persona:** el título de la pestaña queda en el historial del navegador
- *   (TB-05).
+ * - **El título de la pestaña no cambia al imprimir** (TEST-TAG-004): queda en el historial del navegador, y no lleva
+ *   nombres (TB-05).
  * Lo que no hace: no genera un archivo en el servidor, no manda el plan por correo ni por WhatsApp y no imprime la
  * evolución ni las medidas.
  */
@@ -79,7 +79,6 @@ export const COPY_HOJA_DEL_PLAN = {
     'La hoja sale como la pantalla: con la referencia en lugar del nombre de la persona y del tuyo. Para dársela con su nombre, apagá «Ocultar nombres» en el menú de tu cuenta y volvé a descargarla.',
   descargarSinNombres: 'Descargar sin los nombres',
   volver: 'Volver',
-  nombreDelArchivo: (area: string, numero: number) => `BE · Plan de ${area} · versión ${numero}`,
 } as const;
 const C = COPY_HOJA_DEL_PLAN;
 
@@ -165,8 +164,6 @@ export type CuerpoDeLaHoja =
 export interface HojaDelPlan {
   readonly area: AreaDeLaHoja;
   readonly titulo: string;
-  /** El título de la pestaña mientras se imprime: el nombre que propone el navegador para el PDF. Sin nombres. */
-  readonly nombreDelArchivo: string;
   readonly datos: readonly DatoDeLaHoja[];
   readonly cuerpo: CuerpoDeLaHoja;
   /** El QR para bajar la app: el archivo de la última publicación, sin datos de la persona. */
@@ -191,7 +188,6 @@ function armar(area: AreaDeLaHoja, c: ContextoDeLaHoja, activadaEl: string | nul
   return {
     area,
     titulo: C.titulo(NOMBRE_DEL_AREA[area]),
-    nombreDelArchivo: C.nombreDelArchivo(NOMBRE_DEL_AREA[area], c.numero),
     datos: datosDeLaHoja(c, activadaEl),
     cuerpo,
     app: { enlace: APK_DE_LA_ULTIMA, titulo: C.appTitulo, texto: C.appTexto, etiqueta: COPY_DESCARGA.etiquetaDelQr },
@@ -264,7 +260,7 @@ export function hojaDeEntrenamiento(version: Pick<PlanConObjetivos, 'activatedAt
 
 /** Los textos de la hoja que se ven, para la prueba de palabras: ubican, no califican. */
 export function textosDeLaHoja(h: HojaDelPlan): string[] {
-  const textos = [h.titulo, h.nombreDelArchivo, ...h.datos.flatMap((d) => [d.rotulo, d.valor]), h.app.titulo, h.app.texto, ...h.pie];
+  const textos = [h.titulo, ...h.datos.flatMap((d) => [d.rotulo, d.valor]), h.app.titulo, h.app.texto, ...h.pie];
   if (h.cuerpo.area === 'NUTRICION') {
     for (const d of h.cuerpo.dias) {
       textos.push(d.titulo, ...(d.vacio ? [d.vacio] : []));

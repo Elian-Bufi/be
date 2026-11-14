@@ -7,7 +7,7 @@
  *
  * - **Sin dependencias nuevas ni archivos en el servidor:** arma la hoja (`lib/hoja-del-plan.ts`), la monta aparte de la
  *   página y abre la ventana de impresión del navegador, donde «Guardar como PDF» la descarga. La pista del botón lo dice
- *   antes de tocarlo. Mientras se imprime, la pestaña se llama como el archivo, sin nombres (TB-05), y después vuelve.
+ *   antes de tocarlo. El título de la pestaña no cambia (TEST-TAG-004: queda en el historial del navegador).
  * - **Lo que imprime es lo que la pantalla ya leyó:** la versión activa, su número y quiénes son. Lo único que pregunta es
  *   la próxima revisión acordada hoy, con la lectura del Resumen de la ficha y el mismo permiso; si no contesta a
  *   tiempo, o la versión ya no es la activa, la hoja sale sin esa línea.
@@ -62,19 +62,15 @@ export function DescargarElPlan({
     [],
   );
 
-  // Con la hoja montada en <body>, la ventana de impresión. Al cerrarla (imprimir, guardar o cancelar), la hoja se va y
-  // la pestaña recupera su título.
+  // Con la hoja montada en <body>, la ventana de impresión. Al cerrarla (imprimir, guardar o cancelar), la hoja se va.
   useEffect(() => {
     if (!hoja) return;
-    const titulo = document.title;
-    document.title = hoja.nombreDelArchivo;
     const terminar = () => setHoja(null);
     window.addEventListener('afterprint', terminar);
     const espera = window.setTimeout(() => window.print(), 0);
     return () => {
       window.clearTimeout(espera);
       window.removeEventListener('afterprint', terminar);
-      document.title = titulo;
     };
   }, [hoja]);
 

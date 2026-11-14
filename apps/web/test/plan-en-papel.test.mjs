@@ -224,9 +224,6 @@ test('TEST-PG-016 · el QR baja la app, el mismo archivo de la portada, sin dato
     const qr = JSON.stringify(hoja.app);
     for (const dato of [PERSONA, 'Diego', ASESORADO, PLAN, 'Sofía']) assert.ok(!qr.includes(dato), `el QR no lleva «${dato}»`);
     assert.equal(hoja.app.titulo, 'Escaneá para bajar BE');
-    // El nombre del archivo (el título de la pestaña mientras se imprime) no lleva nombres: queda en el historial.
-    assert.match(hoja.nombreDelArchivo, /^BE · Plan de (Nutrición|Entrenamiento) · versión 3$/);
-    assert.ok(!hoja.nombreDelArchivo.includes('Diego') && !hoja.nombreDelArchivo.includes('Sofía'));
   }
   const componente = sinComentarios(leer('src/components/hoja-del-plan.tsx'));
   assert.match(componente, /<CodigoQr texto=\{hoja\.app\.enlace\} etiqueta=\{hoja\.app\.etiqueta\}/, 'el QR se dibuja en el navegador, sin servicios externos');
@@ -297,9 +294,10 @@ test('TEST-PG-016 · «Descargar el plan en PDF» está en el plan activo de Nut
   // Con «Ocultar nombres», avisa antes de imprimir.
   assert.match(boton, /if \(ocultos\) return setConfirmando\(true\);/);
   assert.match(boton, /titulo=\{C\.conNombresOcultosTitulo\}/);
-  // Y el título de la pestaña vuelve a ser el de antes.
-  assert.match(boton, /document\.title = hoja\.nombreDelArchivo;/);
-  assert.match(boton, /document\.title = titulo;/);
+  // El título de la pestaña no cambia al imprimir: queda en el historial del navegador (TEST-TAG-004).
+  assert.doesNotMatch(boton, /document\.title\s*=/);
+  // Al cerrar la ventana de impresión, la hoja se va.
+  assert.match(boton, /window\.addEventListener\('afterprint', terminar\);/);
 });
 
 // ── 5. /invitacion ─────────────────────────────────────────────────────────────────────────────────────────────
