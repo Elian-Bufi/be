@@ -26,6 +26,7 @@ import {
   type EntradaDeLineaDeTiempo,
   type FiltroDeLineaDeTiempo,
   type Grano,
+  type LineaDeTiempoResponse,
   type Medida,
   type ObjetivosDeLaVersion,
   type ReferenciaDeMetrica,
@@ -241,7 +242,7 @@ async function leerLasPaginas(p: ParametrosDeLectura, filtro: FiltroDeLineaDeTie
   let cursor: string | null = null;
   for (let pagina = 0; pagina < PAGINAS_DE_LA_CINTA; pagina++) {
     const desde: string | null = cursor;
-    const r = await limitarLectura(() => api.lineaDeTiempo(p.token, p.asesoradoId, { ...filtro, limit: String(POR_PAGINA), ...(desde ? { cursor: desde } : {}) }));
+    const r: Resultado<LineaDeTiempoResponse> = await limitarLectura(() => api.lineaDeTiempo(p.token, p.asesoradoId, { ...filtro, limit: String(POR_PAGINA), ...(desde ? { cursor: desde } : {}) }));
     if (!r.ok) return { falla: r };
     entradas.push(...r.datos.data.entries);
     if (!r.datos.page.hasMore || r.datos.page.nextCursor === null) return { entradas, truncada: false };
