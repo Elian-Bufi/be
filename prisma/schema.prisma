@@ -245,6 +245,10 @@ model Identidad {
 
   // WP-DASHBOARD-PROFESIONAL (DL-128)
   vistasDeAnalisis VistaDeAnalisis[] @relation("VistaDeAnalisisDelProfesional")
+  // WP-GRAFICOS GR-27 (DL-174): sus enfoques y dónde los eligió; como persona, los enfoques que eligieron para ella.
+  conjuntosDeGraficos                 ConjuntoDeGraficos[]           @relation("ConjuntoDeGraficosDelProfesional")
+  eleccionesDeGraficosComoProfesional EleccionDeConjuntoDeGraficos[] @relation("EleccionDeGraficosDelProfesional")
+  eleccionesDeGraficosComoPersona     EleccionDeConjuntoDeGraficos[] @relation("EleccionDeGraficosDeLaPersona")
 
   // WP-NOVEDADES-Y-AVISOS (DL-133)
   novedadesRecibidas         Novedad[]                   @relation("NovedadDelDestinatario")
@@ -1468,6 +1472,8 @@ model PlanNutricional {
   asesorado       Identidad                  @relation("PlanDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versionEfectiva VersionDePlanNutricional?  @relation("VersionEfectiva", fields: [versionEfectivaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versiones       VersionDePlanNutricional[] @relation("VersionesDelPlan")
+  /// GR-27 (DL-174): el enfoque elegido para la estación de este plan, si hay uno.
+  eleccionesDeGraficos EleccionDeConjuntoDeGraficos[]
 
   @@unique([profesionalId, asesoradoId])
   @@map("plan_nutricional")
@@ -2199,6 +2205,8 @@ model PlanDeEntrenamiento {
   asesorado       Identidad                      @relation("PlanDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versionEfectiva VersionDePlanDeEntrenamiento?  @relation("VersionEfectivaDeEntrenamiento", fields: [versionEfectivaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versiones       VersionDePlanDeEntrenamiento[] @relation("VersionesDelPlanDeEntrenamiento")
+  /// GR-27 (DL-174): el enfoque elegido para la estación de este plan, si hay uno.
+  eleccionesDeGraficos EleccionDeConjuntoDeGraficos[]
 
   @@unique([profesionalId, asesoradoId])
   @@map("plan_de_entrenamiento")
@@ -3650,6 +3658,68 @@ model VistaDeAnalisis {
 
   @@index([profesionalId, momentoDeActualizacion])
   @@map("vista_de_analisis")
+}
+
+// ─── Los enfoques: conjuntos de gráficos del profesional (WP-GRAFICOS GR-27; DL-174) ─────────────────────────────────
+// packages/domain/src/contratos-enfoques.ts (API-GRF-01 a 07). Lo que Prisma no modela está en la migración
+// 20261114200000: una elección por persona y una por plan (índices únicos parciales), el ámbito coherente con sus
+// columnas, el enfoque y el plan del mismo profesional y de la misma persona (disparador), y los CHECK del nombre, la
+// versión y el contenido.
+
+/// GR-27: un enfoque, un conjunto de hasta seis gráficos con nombre, propio del profesional y reutilizable con cualquier
+/// persona. Solo referencias —identificadores de gráficos y de series, ejercicios del catálogo, medidas y modos—, validadas
+/// por el esquema del dominio: nunca datos de salud ni un permiso, porque abrirlo vuelve a pedir cada lectura al PDP.
+/// Mutable, como las vistas de «Analizar»; cada escritura queda en la auditoría. `version` es el token de concurrencia.
+model ConjuntoDeGraficos {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String   @map("profesional_id") @db.Uuid
+  nombre                 String
+  contenido              Json
+  version                Int      @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad                      @relation("ConjuntoDeGraficosDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  elecciones  EleccionDeConjuntoDeGraficos[]
+
+  @@index([profesionalId, momentoDeActualizacion], map: "conjunto_de_graficos_profesional_id_actualizacion_idx")
+  @@map("conjunto_de_graficos")
+}
+
+/// GR-27: dónde rige un enfoque elegido: la persona entera o uno de sus planes.
+enum AmbitoDeEleccionDeGraficos {
+  PERSONA
+  PLAN_DE_ENTRENAMIENTO
+  PLAN_NUTRICIONAL
+}
+
+/// GR-27: el enfoque que el profesional eligió para una persona o para uno de sus planes con ella (API-GRF-05 a 07). Queda
+/// hasta que se cambie. Leerla, elegirla y quitarla piden el PDP de hoy con la persona (y el área del plan, si es de un
+/// plan): sin acceso, queda guardada y no se lee. Borrar el enfoque la borra (en cascada) y vuelven los sugeridos. La
+/// columna de la persona se llama `asesorado_id`, como en el resto del esquema: es un identificador y no se ve.
+model EleccionDeConjuntoDeGraficos {
+  id                     String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String                     @map("profesional_id") @db.Uuid
+  asesoradoId            String                     @map("asesorado_id") @db.Uuid
+  ambito                 AmbitoDeEleccionDeGraficos
+  planDeEntrenamientoId  String?                    @map("plan_de_entrenamiento_id") @db.Uuid
+  planNutricionalId      String?                    @map("plan_nutricional_id") @db.Uuid
+  conjuntoId             String                     @map("conjunto_id") @db.Uuid
+  version                Int                        @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime                   @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional         Identidad            @relation("EleccionDeGraficosDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado           Identidad            @relation("EleccionDeGraficosDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  planDeEntrenamiento PlanDeEntrenamiento? @relation(fields: [planDeEntrenamientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  planNutricional     PlanNutricional?     @relation(fields: [planNutricionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  conjunto            ConjuntoDeGraficos   @relation(fields: [conjuntoId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([profesionalId, asesoradoId], map: "eleccion_de_graficos_profesional_id_asesorado_id_idx")
+  @@index([conjuntoId])
+  @@map("eleccion_de_conjunto_de_graficos")
 }
 
 // ─── Novedades y avisos push (WP-NOVEDADES-Y-AVISOS; DL-133) ─────────────────────────────────────────────────────────

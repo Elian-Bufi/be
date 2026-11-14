@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { limitarLectura, motivoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
 import { claveDeLaReferencia, type GranoElegido, type Periodo } from './estado';
+import { leerDisponibles, type Disponibles } from '../graficos/lecturas';
 
 export type EstadoDeSerie =
   | { readonly tipo: 'cargando' }
@@ -221,24 +222,8 @@ export function useSeriesDelAnalisis(
 
 const DOMINIO_DEL_AREA: Readonly<Record<DefinicionDeMetrica['area'], DominioDeAnalisis>> = { NUTRICION: 'NUTRITION', ENTRENAMIENTO: 'TRAINING', ANTROPOMETRIA: 'ANTHROPOMETRY' };
 
-/** Lo que el selector puede ofrecer con los datos y permisos de este asesorado en el período. */
-export interface Disponibles {
-  readonly nutricion: boolean;
-  readonly ejercicios: readonly EjercicioDelPeriodo[] | null;
-  readonly antropometria: readonly { readonly metricCode: string; readonly name: string; readonly observations: number; readonly units: readonly string[]; readonly comparabilityGroups: number }[] | null;
-  /** La cobertura nutricional del período, de la misma lectura: días, registros con y sin cantidades, anulados. */
-  readonly coberturaNutricional: ResultadoDeProyeccionNutricional['coverage'] | null;
-  /** Las vigencias de los planes que tocan el período, por área (las bandas y las etapas). */
-  readonly vigencias: { readonly nutricion: readonly VigenciaDePlan[]; readonly entrenamiento: readonly VigenciaDePlan[] };
-  /** El instante de la lectura (para la duración de una etapa abierta). */
-  readonly leidoEl: string | null;
-  /** Si alguna de las tres lecturas falló: lo que falta no es «sin datos», y la pantalla lo dice. */
-  readonly falla: MotivoDeFalla | null;
-  /** Qué lectura falló, por área: la síntesis dice qué parte no se pudo completar. */
-  readonly fallas: { readonly nutricion: MotivoDeFalla | null; readonly entrenamiento: MotivoDeFalla | null; readonly antropometria: MotivoDeFalla | null };
-  readonly cargando: boolean;
-  readonly recargar: () => void;
-}
+/** Lo que el selector puede ofrecer con los datos y permisos de esta persona en el período (WP-GRAFICOS: la lectura vive en `graficos/lecturas.ts`). */
+export type { Disponibles } from '../graficos/lecturas';
 
 const SIN_DISPONIBLES = {
   nutricion: false,
@@ -246,6 +231,7 @@ const SIN_DISPONIBLES = {
   antropometria: null,
   coberturaNutricional: null,
   vigencias: { nutricion: [], entrenamiento: [] },
+  propios: { NUTRICION: false, ENTRENAMIENTO: false, ANTROPOMETRIA: false },
   leidoEl: null,
   falla: null,
   fallas: { nutricion: null, entrenamiento: null, antropometria: null },
@@ -261,40 +247,11 @@ export function useDisponibles(): Disponibles {
   useEffect(() => {
     const esta = ++generacion.current;
     setD(SIN_DISPONIBLES);
-    const base = { periodStart: periodo.desde, periodEnd: periodo.hasta };
-    void Promise.all([
-      limitarLectura(() => api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' })),
-      limitarLectura(() => api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base)),
-      limitarLectura(() => api.proyeccion(token, asesoradoId, 'ANTHROPOMETRY_LONGITUDINAL', base)),
-    ]).then(([n, t, a]) => {
-      if (esta !== generacion.current || sesionPerdida(n) || sesionPerdida(t) || sesionPerdida(a)) return;
-      const visible = (r: typeof n) => r.ok && r.datos.data.dataState !== 'NOT_AVAILABLE_TO_VIEW';
-      // Un 404 es «sin acceso» (anti-enumeración); cualquier otra falla se declara.
-      const fallo = (r: typeof n): MotivoDeFalla | null => (!r.ok && !(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') ? motivoDeFalla(r) : null);
-      const fallida = [n, t, a].find((r) => fallo(r) !== null);
+    void leerDisponibles({ token, asesoradoId, periodo: { desde: periodo.desde, hasta: periodo.hasta, hoy: periodo.hasta, desdeElVinculo: null }, sesionPerdida }).then((r) => {
+      if (esta !== generacion.current || r === null) return;
       // Un área que dice «no disponible» se avisa: si el encabezado la mostraba activa, se vuelve a preguntar el acceso.
-      const sinAcceso = (r: typeof n) => (r.ok ? r.datos.data.dataState === 'NOT_AVAILABLE_TO_VIEW' : r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND');
-      ([
-        [n, 'NUTRITION'],
-        [t, 'TRAINING'],
-        [a, 'ANTHROPOMETRY'],
-      ] as const).forEach(([r, dominio]) => {
-        if (sinAcceso(r)) avisarSinAcceso(dominio);
-      });
-      const vigencias = (r: typeof n): readonly VigenciaDePlan[] =>
-        visible(r) && r.ok && r.datos.data.result && r.datos.data.result.kind !== 'ANTHROPOMETRY_LONGITUDINAL' ? r.datos.data.result.planVersions : [];
-      const leida = [n, t, a].find((r): r is Extract<typeof n, { ok: true }> => r.ok);
-      setD({
-        falla: fallida ? motivoDeFalla(fallida) : null,
-        fallas: { nutricion: fallo(n), entrenamiento: fallo(t), antropometria: fallo(a) },
-        vigencias: { nutricion: vigencias(n), entrenamiento: vigencias(t) },
-        leidoEl: leida ? leida.datos.data.generatedAt : null,
-        nutricion: visible(n),
-        ejercicios: visible(t) && t.ok && t.datos.data.result?.kind === 'TRAINING_PROGRESSION_BY_EXERCISE' ? [...t.datos.data.result.exercises].sort((x, y) => y.sessions - x.sessions) : null,
-        antropometria: visible(a) && a.ok && a.datos.data.result?.kind === 'ANTHROPOMETRY_LONGITUDINAL' ? a.datos.data.result.available : null,
-        coberturaNutricional: visible(n) && n.ok && n.datos.data.result?.kind === 'NUTRITION_PRESCRIBED_VS_RECORDED' ? n.datos.data.result.coverage : null,
-        cargando: false,
-      });
+      for (const dominio of r.sinAcceso) avisarSinAcceso(dominio);
+      setD({ ...r.disponibles, cargando: false });
     });
     // `avisarSinAcceso` no cambia la lectura.
     // eslint-disable-next-line react-hooks/exhaustive-deps

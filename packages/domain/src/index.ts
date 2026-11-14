@@ -91,10 +91,22 @@ export * from './contratos-entrenamiento-por-serie';
 export * from './sesion-de-entrenamiento';
 export * from './copy-entrenamiento-por-serie';
 export * from './contratos-analisis';
+// WP-GRAFICOS (DL-174) · GR-27: los enfoques, la familia GRF.
+export * from './contratos-enfoques';
 export * from './contratos-evidencia-de-revision';
 export * from './evidencia-registrada';
 export * from './metricas-del-analisis';
 export * from './series-del-analisis';
+// WP-GRAFICOS fase 2 (DL-174): el catálogo de series, los gráficos sugeridos, la guardia de vocabulario, las marcas y el
+// ruido de la estimación.
+export * from './series-disponibles';
+export * from './series-disponibles-nutricion';
+export * from './series-disponibles-entrenamiento';
+export * from './series-disponibles-antropometria';
+export * from './graficos-sugeridos';
+export * from './vocabulario-de-los-graficos';
+export * from './marcas-de-los-graficos';
+export * from './lectura-de-la-estimacion';
 export * from './nutricion-del-analisis';
 export * from './indicado-del-plan';
 export * from './copy-comparacion-nutricional';

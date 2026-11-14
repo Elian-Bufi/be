@@ -260,6 +260,11 @@ export const CodigoDeError = {
    * SIN_REPETICIONES.
    */
   STRENGTH_OBSERVATION_NOT_ESTIMABLE: 'STRENGTH_OBSERVATION_NOT_ESTIMABLE',
+  /**
+   * API-GRF-02 (GR-27; DL-174): el profesional ya tiene 50 enfoques; para guardar otro, borra alguno. Es un código propio,
+   * que solo agrega: API-VAN sigue respondiendo su tope con VALIDATION_FAILED.
+   */
+  TOO_MANY_SETS: 'TOO_MANY_SETS',
 } as const;
 export type CodigoDeError = (typeof CodigoDeError)[keyof typeof CodigoDeError];
 
