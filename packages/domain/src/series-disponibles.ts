@@ -120,9 +120,11 @@ export interface AccesoDeLaPersona {
  * Las series que se pueden elegir con esta persona: solo las OFRECIDAS y con todos sus alcances permitidos. Una serie de
  * dos áreas (los g/kg) pide además planes o tomas propios en cada una, porque en el caso 1 se arma con lo del
  * profesional que consulta (GR-T21). Lo demás no aparece: ni en gris ni con candado.
+ *
+ * `catalogo` es el de BE salvo en las pruebas, que así prueban la regla de dos áreas con una serie ya ofrecida.
  */
-export function seriesOfrecidas(acceso: AccesoDeLaPersona): SerieDisponible[] {
-  return SERIES_DISPONIBLES.filter((s) => {
+export function seriesOfrecidas(acceso: AccesoDeLaPersona, catalogo: readonly SerieDisponible[] = SERIES_DISPONIBLES): SerieDisponible[] {
+  return catalogo.filter((s) => {
     if (s.estado !== 'OFRECIDA') return false;
     if (!s.acceso.alcances.every((a) => acceso.alcances.includes(a))) return false;
     return s.acceso.alcances.length < 2 || s.acceso.alcances.every((a) => acceso.propios[a] === true);
