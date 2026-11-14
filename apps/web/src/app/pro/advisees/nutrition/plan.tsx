@@ -40,6 +40,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { numeroDelBorrador } from '../descartar-el-borrador';
+import { DescargarElPlan } from '../descargar-el-plan';
 import { COPY_RESULTADO_DE_ACTIVAR } from '../resultado-de-activar';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
@@ -453,7 +454,7 @@ function PlanActivo({
   acciones: ReactNode;
   aviso: ReactNode;
 }) {
-  const { parametros, ir } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, parametros, ir } = useNutricion();
   const { lectura: objetivo, reintentar } = useObjetivoDeLaVersion(version, objetivoVigente);
   const dia = diaTipoElegido(version.dayTypes, parametros.get('dia'));
   const primero = diaTipoElegido(version.dayTypes, null);
@@ -469,7 +470,11 @@ function PlanActivo({
         <p className="plan__version">
           <EnPartes texto={[COPY_DEL_PLAN.versionActivada(numero, activadaEl), ...(version.isEffective ? [COPY_DEL_PLAN.esLoQueVe] : [])].join(' · ')} />
         </p>
-        <div className="plan__acciones">{acciones}</div>
+        <div className="plan__acciones">
+          {/* PG-17 (WP-PULIDO-GRANDES): la hoja para la consulta, con el QR para bajar la app. */}
+          <DescargarElPlan plan={{ area: 'NUTRICION', version }} numero={numero} token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} />
+          {acciones}
+        </div>
       </div>
       {aviso}
 
