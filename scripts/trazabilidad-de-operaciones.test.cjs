@@ -109,6 +109,14 @@ function rutasDel09() {
 const inventario = new Set([...fs.readFileSync(INVENTARIO, 'utf8').matchAll(/`(API-[A-Z-]+-\d{2})`/g)].map((m) => m[1]));
 const del09 = rutasDel09();
 
+/**
+ * GRF (DL-174, GR-27 de WP-GRAFICOS, pedido de Dirección del 2026-11-14): los enfoques, conjuntos de gráficos con nombre
+ * del profesional, y dónde los eligió (la persona o uno de sus planes). El 09 no los tiene, y no son las vistas de
+ * «Analizar» (VAN, DL-128), que guardan una sola configuración y no se eligen para nadie. Se declara aparte de la lista de
+ * arriba para que se integre sin pisar a otra familia que se sume en paralelo.
+ */
+FAMILIAS_DE_BE.GRF = 'DL-174';
+
 test('el inventario del 09 tiene 122 operaciones y de cada una se lee su ruta', () => {
   assert.equal(inventario.size, 122);
   const sinRuta = [...inventario].filter((id) => !del09.has(id));
@@ -171,6 +179,13 @@ test('una operación del 09 fuera del inventario tiene el método y la ruta que 
     }
   }
   assert.deepEqual(choques, [], choques.join('\n'));
+});
+
+test('GR-27 · la familia GRF son las siete operaciones de los enfoques, cada una cita DL-174 y el 09 no la usa (TEST-GRF-082)', () => {
+  const grf = OPERACIONES.filter((o) => o.id.startsWith('API-GRF-'));
+  assert.deepEqual(grf.map((o) => o.id), ['API-GRF-01', 'API-GRF-02', 'API-GRF-03', 'API-GRF-04', 'API-GRF-05', 'API-GRF-06', 'API-GRF-07']);
+  for (const o of grf) assert.ok(o.fuente.includes('DL-174'), `${o.id} no cita DL-174`);
+  assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-GRF-')), []);
 });
 
 test('ED-72 · la familia FZA cita DL-171 en cada operación y el 09 no la usa (TEST-EDP-062)', () => {

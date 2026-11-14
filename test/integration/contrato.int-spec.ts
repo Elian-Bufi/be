@@ -19,6 +19,7 @@
  *   descartar un borrador de plan que nunca se activó (DL-163 D-21; TB-47).
  *   Y la familia RES, lo que la persona comparte de otras áreas, el plan del otro y el pedido (DL-163 D-13, ampliada;
  *   TB-52 a TB-56).
+ * - WP-GRAFICOS (GR-27): la familia GRF, los enfoques del profesional y dónde los elige (DL-174).
  * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169).
  * - WP-USO-FINAL (UF-04): API-ADM-14 y 15, la entrada de los profesionales reales y su nombre profesional (DL-169).
  * - WP-USO-FINAL (UF-03): API-ACC-P1-01 y 02 y API-ADM-18, recuperar el acceso y la recuperación asistida (DL-169).
@@ -1807,6 +1808,65 @@ it('TEST-CT (WP-DASHBOARD-PROFESIONAL): DSH-04, DSH-04-BUSQUEDA, PRJ-01 y VAN-01
   await tercero.delete(ruta).set('Idempotency-Key', claveDeIdempotencia()).expect(404);
   await pro.delete(`${ruta}?x=1`).set('Idempotency-Key', claveDeIdempotencia()).expect(400);
   await pro.delete(ruta).set('Idempotency-Key', claveDeIdempotencia()).expect(204);
+});
+
+it('TEST-CT (WP-GRAFICOS, GR-27): GRF-01 a 07 — los enfoques y dónde se eligen, con éxitos y errores declarados (DL-174)', async () => {
+  const servidor = app.getHttpServer();
+  const c = await circuitoConPlanDeEntrenamientoActivo(app, 'contrato-grf');
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const tercero = conSesion(app, (await prepararProfesional(app, 'contrato-grf-tercero', ['ENTRENAMIENTO'])).token);
+  const enfoques = '/api/v1/me/chart-sets';
+  const grafico = { kind: 'SUGGESTED', chartId: 'entrenamiento.fuerza-estimada', exercise: { kind: 'MOST_RECORDED', rank: 1 }, bodyMetric: null };
+  const contenido = { schemaVersion: 1, charts: [grafico] };
+  // GRF-02: crear, solo de profesionales y solo referencias.
+  const clave = claveDeIdempotencia();
+  const creado = (await pro.post(enfoques, clave).send({ name: 'Foco en fuerza', content: contenido }).expect(201)).body.data;
+  await pro.post(enfoques, clave).send({ name: 'Otro', content: contenido }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(enfoques).send({ name: 'Con un valor', content: { ...contenido, value: 1 } }).expect(400); // UNKNOWN_FIELD
+  await pro.post(enfoques).send({ name: 'Siete', content: { schemaVersion: 1, charts: Array.from({ length: 7 }, () => grafico) } }).expect(400); // INVALID_REQUEST
+  await ase.post(enfoques).send({ name: 'Mío', content: contenido }).expect(403);
+  await request(servidor).post(enfoques).set('Idempotency-Key', claveDeIdempotencia()).send({ name: 'x', content: contenido }).expect(401);
+  // GRF-01
+  await pro.get(enfoques).expect(200);
+  await pro.get(`${enfoques}?x=1`).expect(400);
+  await ase.get(enfoques).expect(403);
+  await request(servidor).get(enfoques).expect(401);
+  // GRF-03: con la versión leída; uno ajeno, el 404 de lo inexistente.
+  const uno = `${enfoques}/${creado.setId}`;
+  await pro.put(uno).send({ expectedVersion: 'v1', name: 'Foco en fuerza 2', content: contenido }).expect(200);
+  await pro.put(uno).send({ expectedVersion: 'v1', name: 'Vieja', content: contenido }).expect(409); // VERSION_CONFLICT
+  await pro.put(uno).send({ expectedVersion: 'v2', name: 'Sin contenido' }).expect(400);
+  await tercero.put(uno).send({ expectedVersion: 'v2', name: 'Ajeno', content: contenido }).expect(404);
+  await ase.put(uno).send({ expectedVersion: 'v2', name: 'Mío', content: contenido }).expect(403);
+  await request(servidor).put(uno).send({ expectedVersion: 'v2', name: 'x', content: contenido }).expect(401);
+  // GRF-06: la persona y su plan de Entrenamiento (por su identidad); sin vínculo, el 404.
+  const elecciones = `/api/v1/advisees/${c.ase.id}/chart-set-choices`;
+  const deLaPersona = (await pro.put(elecciones).send({ scope: 'PERSON', setId: creado.setId, expectedVersion: null }).expect(201)).body.data;
+  await pro.put(elecciones).send({ scope: 'PERSON', setId: creado.setId, expectedVersion: 'v1' }).expect(200);
+  await pro.put(elecciones).send({ scope: 'PERSON', setId: creado.setId, expectedVersion: null }).expect(409); // VERSION_CONFLICT
+  await pro.put(elecciones).send({ scope: 'TRAINING_PLAN', trainingPlanId: c.trainingPlanId, setId: creado.setId, expectedVersion: null }).expect(201);
+  await pro.put(elecciones).send({ scope: 'TRAINING_PLAN', trainingPlanId: randomUUID(), setId: creado.setId, expectedVersion: null }).expect(404);
+  await pro.put(elecciones).send({ scope: 'PERSON', setId: creado.setId, expectedVersion: null, nota: 'x' }).expect(400); // UNKNOWN_FIELD
+  await tercero.put(elecciones).send({ scope: 'PERSON', setId: creado.setId, expectedVersion: null }).expect(404);
+  await request(servidor).put(elecciones).send({ scope: 'PERSON', setId: creado.setId, expectedVersion: null }).expect(401);
+  // GRF-05
+  await pro.get(elecciones).expect(200);
+  await pro.get(`${elecciones}?x=1`).expect(400);
+  await tercero.get(elecciones).expect(404);
+  await request(servidor).get(elecciones).expect(401);
+  // GRF-07: con Idempotency-Key; la de otro, el 404.
+  const quitar = `${elecciones}/${deLaPersona.choiceId}`;
+  await pro.delete(quitar).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await tercero.delete(quitar).set('Idempotency-Key', claveDeIdempotencia()).expect(404);
+  await pro.delete(quitar).set('Idempotency-Key', claveDeIdempotencia()).expect(204);
+  await request(servidor).delete(quitar).set('Idempotency-Key', claveDeIdempotencia()).expect(401);
+  // GRF-04: borrarlo quita sus elecciones.
+  await pro.delete(uno).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await tercero.delete(uno).set('Idempotency-Key', claveDeIdempotencia()).expect(404);
+  await ase.delete(uno).set('Idempotency-Key', claveDeIdempotencia()).expect(403);
+  await pro.delete(uno).set('Idempotency-Key', claveDeIdempotencia()).expect(204);
+  await request(servidor).delete(uno).set('Idempotency-Key', claveDeIdempotencia()).expect(401);
 });
 
 it('TEST-CT (WP-NOVEDADES-Y-AVISOS): NOV-01 a 06, con éxitos y errores declarados', async () => {

@@ -333,6 +333,15 @@ import {
   ReemplazarVistaRequestSchema,
   VistaDeAnalisisResponseSchema,
 } from './contratos-analisis';
+import {
+  CrearEnfoqueRequestSchema,
+  EleccionDeEnfoqueResponseSchema,
+  EleccionesDeEnfoqueResponseSchema,
+  ElegirEnfoqueRequestSchema,
+  EnfoqueResponseSchema,
+  ListaDeEnfoquesResponseSchema,
+  ReemplazarEnfoqueRequestSchema,
+} from './contratos-enfoques';
 import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
@@ -3551,6 +3560,98 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: 'encargo del 2026-10-08 §8 y §16 · ID propio de BE (familia VAN) · DEUDA_LEGAJO DL-128',
   },
+  // ─── WP-GRAFICOS (DL-174) · GR-27, los enfoques: conjuntos de gráficos del profesional y dónde los eligió (familia GRF,
+  // pedido de Dirección del 2026-11-14). Solo para el website del profesional: la APK no los lee. ──────────────────────
+  {
+    id: 'API-GRF-01',
+    metodo: 'get',
+    ruta: '/me/chart-sets',
+    resumen:
+      'Los enfoques del profesional: conjuntos de hasta seis gráficos con nombre, del cambiado más recientemente al más viejo, cada uno con en cuántos lugares está elegido (choices: personas o planes). Son configuración: solo referencias a gráficos, series del catálogo, ejercicios y medidas; no traen datos de salud ni conceden acceso. Solo un profesional verificado y habilitado en algún área (si no, 403).',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeEnfoquesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'WP-GRAFICOS GR-27 · pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174',
+  },
+  {
+    id: 'API-GRF-02',
+    metodo: 'post',
+    ruta: '/me/chart-sets',
+    resumen:
+      'Crear un enfoque: un nombre (de 1 a 80 caracteres, sin los espacios de los bordes) y de 1 a 6 gráficos. Cada gráfico es un sugerido (SUGGESTED: su identificador, validado con una expresión y no con una lista cerrada, con su ejercicio, fijo del catálogo o «el más registrado» del período del 1.º al 3.º, o su medida) o uno armado (CUSTOM: un título de hasta 60, de 1 a 3 series del catálogo y el modo PANELS u OVERLAY). Solo referencias: un campo que no lo sea es 400. Hasta 50 enfoques por profesional: el 51 responde 422 TOO_MANY_SETS.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearEnfoqueRequestSchema,
+    exitos: [{ status: 201, schema: EnfoqueResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['TOO_MANY_SETS'] },
+    fuente: 'WP-GRAFICOS GR-27 · pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174',
+  },
+  {
+    id: 'API-GRF-03',
+    metodo: 'put',
+    ruta: '/me/chart-sets/{setId}',
+    resumen:
+      'Cambiar el nombre o los gráficos de un enfoque propio, con la versión leída (si cambió desde entonces, 409 VERSION_CONFLICT). El cambio se ve en todos los lugares donde está elegido. Uno de otro profesional o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ReemplazarEnfoqueRequestSchema,
+    exitos: [{ status: 200, schema: EnfoqueResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 403: ['ACTION_FORBIDDEN'], 409: ['VERSION_CONFLICT', 'RESOURCE_CONFLICT'] },
+    fuente: 'WP-GRAFICOS GR-27 · pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174',
+  },
+  {
+    id: 'API-GRF-04',
+    metodo: 'delete',
+    ruta: '/me/chart-sets/{setId}',
+    resumen:
+      'Borrar un enfoque propio. Sus elecciones se quitan con él: esas personas y esos planes vuelven a los sugeridos. No borra ni oculta ningún dato. Uno de otro profesional o inexistente: el mismo 404. Responde 204, también al reintentar con la misma clave.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    exitos: [{ status: 204 }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'WP-GRAFICOS GR-27 · pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174',
+  },
+  {
+    id: 'API-GRF-05',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/chart-set-choices',
+    resumen:
+      'Qué enfoque eligió el profesional para la persona (PERSON) y para cada uno de sus planes con ella (TRAINING_PLAN con trainingPlanId o NUTRITION_PLAN con nutritionPlanId), con el nombre del enfoque. Decide el PDP de hoy, en la misma transacción: sin un área permitida con la persona, el 404 de lo inexistente; la elección del plan de un área sin acceso no aparece. Las elecciones de antes quedan guardadas y vuelven a leerse si vuelve el acceso.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: EleccionesDeEnfoqueResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-GRAFICOS GR-27 · pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174',
+  },
+  {
+    id: 'API-GRF-06',
+    metodo: 'put',
+    ruta: '/advisees/{adviseeId}/chart-set-choices',
+    resumen:
+      'Elegir o cambiar el enfoque de la persona (PERSON, con alguna área permitida hoy) o de uno de sus planes (TRAINING_PLAN con trainingPlanId o NUTRITION_PLAN con nutritionPlanId: la identidad de un plan de este profesional con esta persona, nunca una versión, con el área del plan permitida hoy). Con expectedVersion null la crea (201; si ya había una, 409 VERSION_CONFLICT, también cuando dos pestañas eligen a la vez); con la versión leída, la cambia (200). La persona, el plan o el enfoque ajenos o inexistentes: el mismo 404. Queda hasta que se cambie.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ElegirEnfoqueRequestSchema,
+    exitos: [
+      { status: 201, schema: EleccionDeEnfoqueResponseSchema },
+      { status: 200, schema: EleccionDeEnfoqueResponseSchema },
+    ],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['VERSION_CONFLICT', 'RESOURCE_CONFLICT'] },
+    fuente: 'WP-GRAFICOS GR-27 · pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174',
+  },
+  {
+    id: 'API-GRF-07',
+    metodo: 'delete',
+    ruta: '/advisees/{adviseeId}/chart-set-choices/{choiceId}',
+    resumen:
+      'Quitar una elección: la persona o el plan vuelven a los sugeridos para las áreas del profesional. El reintento con la misma clave vuelve a decidir con el PDP. Una elección de otro profesional, de otra persona o inexistente, o sin el acceso que pide su ámbito: el mismo 404. Responde 204.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    exitos: [{ status: 204 }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'WP-GRAFICOS GR-27 · pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174',
+  },
   // ─── WP-NOVEDADES-Y-AVISOS (DL-133): RF-061 y RF-062 con el bosquejo del 09v12 §20-21 ───────────────────────────────
   {
     id: 'API-NOV-01',
@@ -4439,6 +4540,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-DSH-04',
   'API-DSH-04-BUSQUEDA',
   'API-PRJ-01',
+  // WP-GRAFICOS (DL-174): qué enfoque rige para la persona y sus planes.
+  'API-GRF-05',
   'API-CAR-01',
   'API-ANT-03',
   'API-ANT-06',

@@ -115,6 +115,15 @@ import {
   type CrearVistaRequest,
   type ReemplazarVistaRequest,
 } from './contratos-analisis';
+import {
+  EleccionDeEnfoqueResponseSchema,
+  EleccionesDeEnfoqueResponseSchema,
+  EnfoqueResponseSchema,
+  ListaDeEnfoquesResponseSchema,
+  type CrearEnfoqueRequest,
+  type ElegirEnfoqueRequest,
+  type ReemplazarEnfoqueRequest,
+} from './contratos-enfoques';
 import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
 
 /**
@@ -1626,6 +1635,36 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-VAN-04. */
     borrarVistaDeAnalisis(token: string, viewId: string, claveDeIdempotencia: string) {
       return llamar('DELETE', `/me/analysis-views/${encodeURIComponent(viewId)}`, { token, claveDeIdempotencia, esquema: null });
+    },
+
+    // ─── GR-27 · los enfoques, familia GRF (WP-GRAFICOS; DL-174) ─────────────────────────────────────────────
+    /** API-GRF-01: mis enfoques, cada uno con en cuántos lugares está elegido. */
+    listarEnfoques(token: string) {
+      return llamar('GET', '/me/chart-sets', { token, esquema: ListaDeEnfoquesResponseSchema });
+    },
+    /** API-GRF-02: crear un enfoque (solo referencias; hasta 50, si no TOO_MANY_SETS). */
+    crearEnfoque(token: string, cuerpo: CrearEnfoqueRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/chart-sets', { token, claveDeIdempotencia, esquema: EnfoqueResponseSchema, cuerpo });
+    },
+    /** API-GRF-03: cambiar el nombre o los gráficos, con la versión leída. El cambio se ve donde esté elegido. */
+    reemplazarEnfoque(token: string, setId: string, cuerpo: ReemplazarEnfoqueRequest) {
+      return llamar('PUT', `/me/chart-sets/${encodeURIComponent(setId)}`, { token, esquema: EnfoqueResponseSchema, cuerpo });
+    },
+    /** API-GRF-04: borrar un enfoque propio; sus elecciones se quitan con él. */
+    borrarEnfoque(token: string, setId: string, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/me/chart-sets/${encodeURIComponent(setId)}`, { token, claveDeIdempotencia, esquema: null });
+    },
+    /** API-GRF-05: qué enfoque elegí para la persona y para cada uno de sus planes (sin acceso a la persona: 404). */
+    leerEleccionesDeEnfoque(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/chart-set-choices`, { token, esquema: EleccionesDeEnfoqueResponseSchema });
+    },
+    /** API-GRF-06: elegir (`expectedVersion: null`) o cambiar el enfoque de la persona o de uno de sus planes. */
+    elegirEnfoque(token: string, asesoradoId: string, cuerpo: ElegirEnfoqueRequest) {
+      return llamar('PUT', `/advisees/${encodeURIComponent(asesoradoId)}/chart-set-choices`, { token, esquema: EleccionDeEnfoqueResponseSchema, cuerpo });
+    },
+    /** API-GRF-07: quitar una elección: la persona o el plan vuelven a los sugeridos. */
+    quitarEleccionDeEnfoque(token: string, asesoradoId: string, choiceId: string, claveDeIdempotencia: string) {
+      return llamar('DELETE', `/advisees/${encodeURIComponent(asesoradoId)}/chart-set-choices/${encodeURIComponent(choiceId)}`, { token, claveDeIdempotencia, esquema: null });
     },
     /** API-NUT-19-LISTA (REV-A, DL-134): las revisiones de Nutrición propias, completas. */
     consultarMisRevisionesNutricionales(token: string, filtro: { cursor?: string; limit?: string } = {}) {
