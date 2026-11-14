@@ -57,6 +57,7 @@ import { COPY_DETALLE_DEL_EJERCICIO, DetalleDelEjercicio } from '../fuerza/detal
 import { COPY_CARGA_DESDE_LA_ESTIMACION } from '../fuerza/carga-desde-la-estimacion';
 import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
+import { COPY_LA_VEZ_PASADA_EN_EL_EDITOR, CuadroDeLaVezPasada } from './la-vez-pasada';
 import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
 
@@ -221,6 +222,11 @@ export function EjercicioDelEditor({
   // ED-76 (EDT-56): las series elegidas en la planilla para las que se calcula la carga; `null`, la fila general.
   const [seriesDeLaCarga, setSeriesDeLaCarga] = useState<readonly number[] | null>(null);
   const [detalle, setDetalle] = useState(false);
+  // GR-01 (WP-GRAFICOS, fase 1): «La vez pasada» de un ejercicio fuera de la lista de la v1, en su propio cuadro lateral,
+  // sin la fuerza estimada. Los de la lista la ven dentro del detalle (ED-75): DL-174 abre el cuadro para todos, y la
+  // fuerza estimada sigue solo en la lista de la v1 (GR-T70).
+  const conLaVezPasada = !conFuerza && exerciseId !== null;
+  const [vezPasada, setVezPasada] = useState(false);
   return (
     <section className="comida-del-plan ejercicio-del-editor" data-ejercicio={posicion + 1} data-abierta={abierto ? '' : undefined}>
       <div className="comida-del-editor__cabecera">
@@ -266,6 +272,7 @@ export function EjercicioDelEditor({
               texto="Más"
               acciones={[
                 ...(conFuerza ? [{ clave: 'detalle', texto: COPY_DETALLE_DEL_EJERCICIO.abrir, alElegir: () => setDetalle(true) }] : []),
+                ...(conLaVezPasada ? [{ clave: 'la-vez-pasada', texto: COPY_LA_VEZ_PASADA_EN_EL_EDITOR.abrir, alElegir: () => setVezPasada(true) }] : []),
                 ...(notasPropias && exerciseId !== null ? [{ clave: 'anotar', texto: COPY_NOTAS_PROPIAS.anotarSobreElEjercicio, alElegir: () => notasPropias.anotar({ tipo: 'EXERCISE', exerciseId, nombre }) }] : []),
                 { clave: 'duplicar', texto: EDICION.duplicarEjercicio, alElegir: onDuplicar },
                 // ED-23 (V3 E-02): un verbo para cada copia.
@@ -292,6 +299,14 @@ export function EjercicioDelEditor({
                 <button type="button" className="boton boton--quieto boton--compacto" data-detalle-con-fuerza onClick={() => setDetalle(true)}>
                   <Icono nombre="estimado" tamano={18} />
                   {COPY_DETALLE_DEL_EJERCICIO.abrir}
+                  <span className="visualmente-oculto"> de {nombre}</span>
+                </button>
+              </p>
+            ) : conLaVezPasada ? (
+              <p className="ejercicio-del-editor__fuerza">
+                <button type="button" className="boton boton--quieto boton--compacto" data-la-vez-pasada-del-ejercicio onClick={() => setVezPasada(true)}>
+                  <Icono nombre="linea-de-tiempo" tamano={18} />
+                  {COPY_LA_VEZ_PASADA_EN_EL_EDITOR.abrir}
                   <span className="visualmente-oculto"> de {nombre}</span>
                 </button>
               </p>
@@ -341,6 +356,18 @@ export function EjercicioDelEditor({
           series={seriesDeLaCarga}
           sets={p.sets}
           onEscribirEnLasSeries={(c) => onCambiar(c as Partial<PrescripcionE>)}
+        />
+      ) : null}
+      {conLaVezPasada && exerciseId ? (
+        <CuadroDeLaVezPasada
+          abierto={vezPasada}
+          onCerrar={() => setVezPasada(false)}
+          token={token}
+          asesoradoId={asesoradoId}
+          sesionPerdida={sesionPerdida}
+          exerciseId={exerciseId}
+          nombre={nombre}
+          loQueIndica={<EnPartes texto={ejercicioPlegadoDelEditor(p, 0).resumen} />}
         />
       ) : null}
     </section>

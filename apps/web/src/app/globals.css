@@ -18056,6 +18056,126 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.75rem;
 }
 
+/* ─── WP-GRAFICOS (DL-174), fase 1: GR-04, GR-01 y GR-16 ───────────────────────────────────────────────────────── */
+
+/* GR-04: «Con historial» en la fila del resultado del buscador, con el ícono a la altura del texto. Lo dice el texto: sin
+   un color propio ni una flecha. */
+.ejercicios-del-catalogo__historial {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ejercicios-del-catalogo__que-cuenta,
+.ejercicios-del-catalogo__sin-historial {
+  margin: 0.25rem 0 0.5rem;
+}
+
+/* GR-01: «La vez pasada» en el cuadro del ejercicio, debajo de «Lo que indica el plan» y nunca mezclada con eso. */
+.la-vez-pasada {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.la-vez-pasada > p {
+  margin: 0;
+}
+
+.la-vez-pasada__tabla th,
+.la-vez-pasada__tabla td {
+  vertical-align: top;
+}
+
+.la-vez-pasada__tabla th[scope='row'] {
+  min-width: 7.5rem;
+}
+
+.la-vez-pasada__fecha,
+.la-vez-pasada__sesion {
+  display: block;
+}
+
+.la-vez-pasada__fecha {
+  font-weight: 600;
+}
+
+.la-vez-pasada__etiqueta {
+  margin-top: 0.25rem;
+}
+
+/* Cada serie: la marca (llena si la escribió la persona, hueca si vino del plan) y el texto, con cifras alineadas. */
+.la-vez-pasada__serie {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.la-vez-pasada__marca-de-origen {
+  flex: none;
+  align-self: center;
+}
+
+/* Lo precargado del plan va en gris: la marca hueca y el texto «carga rápida» lo dicen también sin el color. */
+.la-vez-pasada__serie--del-plan {
+  color: var(--tenue);
+}
+
+.la-vez-pasada__del-plan {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--tenue);
+}
+
+.la-vez-pasada__leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.la-vez-pasada__en-lugar-de {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+/* GR-16: «Desde el inicio y desde la anterior», al final de la toma abierta. La diferencia es una resta: sin color. */
+.desde-el-inicio {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.desde-el-inicio > p,
+.desde-el-inicio .toma-abierta__titulo-de-bloque p {
+  margin: 0;
+}
+
+.desde-el-inicio__tabla th,
+.desde-el-inicio__tabla td {
+  vertical-align: top;
+}
+
+.desde-el-inicio__tabla td {
+  font-variant-numeric: tabular-nums;
+}
+
+.desde-el-inicio__diferencia,
+.desde-el-inicio__dias {
+  display: block;
+}
+
+.desde-el-inicio__grupo {
+  font-weight: 700;
+  background: var(--fondo-suave);
+}
+
+/* GR-16: el método de un resultado calculado, debajo de su nombre y sin la negrita del encabezado de la fila. */
+.desde-el-inicio__metodo {
+  display: block;
+  font-weight: 400;
+}
+
 /* ─── PG-15 y PG-16 (WP-PULIDO-GRANDES; DL-173): la nota para el profe y las notas propias del profesional ───────── */
 
 /* «Tus notas», en el Resumen: la caja de «Notas recientes del equipo», con un campo para escribir arriba. */
