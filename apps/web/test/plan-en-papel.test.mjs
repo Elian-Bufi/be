@@ -8,9 +8,9 @@
  *  4. el botón «Descargar el plan en PDF» está en las dos pantallas del plan activo, y con «Ocultar nombres» avisa antes;
  *  5. /invitacion, sin la app, también baja el archivo y no lleva a la página de publicaciones (§10, punto 5).
  *
- * Mutaciones verificadas (cada una pone la prueba en rojo): sacar la regla de impresión que esconde lo demás de la
- * página; poner el identificador del plan en el enlace del QR; tomar «vale desde» del día UTC en lugar del de Buenos
- * Aires; dejar de ordenar las comidas por su orden.
+ * Mutaciones verificadas en la CI (cada una pone en rojo su prueba, y solo esa): sacar la regla de impresión que esconde
+ * lo demás de la página; poner el nombre de la persona en el enlace del QR; tomar «vale desde» del día UTC en lugar del
+ * de Buenos Aires; dejar de ordenar las comidas por su orden.
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
  */
