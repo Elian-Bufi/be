@@ -25,6 +25,7 @@
  * - WP-USO-FINAL (UF-07): API-SOP-01, el canal de ayuda y contacto (DL-169).
  * - WP-USO-FINAL (UF-05): API-ACC-08, aceptar la versión vigente de los términos o de la privacidad (DL-169).
  * - RF-068 y RF-004: las familias INC y MET, las incidencias y los métodos de acceso de la cuenta propia (DL-172).
+ * - WP-PULIDO-GRANDES (DL-173): API-TRN-25 y sus variantes LISTA y PROPIA (PG-15) y la familia NPP (PG-16).
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -2663,6 +2664,71 @@ it('TEST-CT (WP-EDITORES-PROFESIONAL): FZA-01 a 03, HAB-06 a 08, HAN-06 a 08 y P
   await pn.put(rangos(b.planId)).send({ ...conRangos, extra: 1 }).expect(400);
   await pn.put(rangos(ajeno)).send(conRangos).expect(404);
   await request(servidor).put(rangos(b.planId)).send(conRangos).expect(401);
+});
+
+it('TEST-CT (WP-PULIDO-GRANDES, DL-173): la nota para tu profe (TRN-25, LISTA y PROPIA) y las notas propias del profesional (NPP-01 a 03)', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  // PG-15: una sesión registrada por la persona.
+  const c = await circuitoConPlanDeEntrenamientoActivo(app, 'contrato-notas');
+  const ase = conSesion(app, c.ase.token);
+  const pro = conSesion(app, c.pro.token);
+  const hoy = (await ase.get('/api/v1/me/training/today').expect(200)).body.data;
+  const borrador = (await ase.put(`/api/v1/training/occurrences/${hoy.occurrences[0].occurrenceId}/execution-draft`).send({}).expect(201)).body.data;
+  const serie = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null };
+  const guardado = (
+    await ase
+      .patch(`/api/v1/training/execution-drafts/${borrador.draftId}`)
+      .send({ expectedVersion: borrador.version, changes: { granularity: 'SET', exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie] }], sessionCondition: 'COMPLETED' } })
+      .expect(200)
+  ).body.data;
+  const executionId = (await ase.post(`/api/v1/training/execution-drafts/${borrador.draftId}/confirm`).send({ expectedVersion: guardado.version }).expect(201)).body.data.executionId as string;
+  // TRN-25
+  const notas = `/api/v1/training/executions/${executionId}/notes`;
+  const clave = claveDeIdempotencia();
+  await ase.post(notas, clave).send({ text: 'Algo me molestó.' }).expect(201);
+  await ase.post(notas, clave).send({ text: 'Otra cosa' }).expect(409);
+  await ase.post(notas).send({ text: 'x'.repeat(281) }).expect(400);
+  await ase.post(notas).send({ text: 'ok', extra: 1 }).expect(400);
+  await pro.post(notas).send({ text: 'Por ella' }).expect(404);
+  await ase.post(`/api/v1/training/executions/${ajeno}/notes`).send({ text: 'Nada' }).expect(404);
+  await request(servidor).post(notas).set('Idempotency-Key', claveDeIdempotencia()).send({ text: 'Sin sesión' }).expect(401);
+  for (let i = 0; i < 19; i++) await ase.post(notas).send({ text: `Nota ${i}` }).expect(201);
+  await ase.post(notas).send({ text: 'La 21' }).expect(422);
+  // TRN-25-PROPIA
+  await ase.get(`/api/v1/me/training/executions/${executionId}/notes`).expect(200);
+  await ase.get(`/api/v1/me/training/executions/${executionId}/notes?x=1`).expect(400);
+  await ase.get(`/api/v1/me/training/executions/${ajeno}/notes`).expect(404);
+  await request(servidor).get(`/api/v1/me/training/executions/${executionId}/notes`).expect(401);
+  // TRN-25-LISTA
+  const delPeriodo = `/api/v1/advisees/${c.ase.id}/training/execution-notes`;
+  await pro.get(`${delPeriodo}?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(200);
+  await pro.get(delPeriodo).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/execution-notes?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(404);
+  await request(servidor).get(`${delPeriodo}?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(401);
+  // PG-16: NPP-01
+  const propias = `/api/v1/advisees/${c.ase.id}/professional-notes`;
+  const claveDeLaNota = claveDeIdempotencia();
+  const nota = (await pro.post(propias, claveDeLaNota).send({ text: 'Le molesta la rodilla' }).expect(201)).body.data;
+  await pro.post(propias, claveDeLaNota).send({ text: 'Otra' }).expect(409);
+  await pro.post(propias).send({ text: 'x'.repeat(1001) }).expect(400);
+  await pro.post(propias).send({ text: 'x', anchor: { type: 'EXERCISE', exerciseId: ajeno } }).expect(422);
+  await pro.post(`/api/v1/advisees/${ajeno}/professional-notes`).send({ text: 'x' }).expect(404);
+  await request(servidor).post(propias).set('Idempotency-Key', claveDeIdempotencia()).send({ text: 'x' }).expect(401);
+  // NPP-02
+  await pro.get(propias).expect(200);
+  await pro.get(`${propias}?x=1`).expect(400);
+  await ase.get(propias).expect(404);
+  await request(servidor).get(propias).expect(401);
+  // NPP-03
+  const archivo = `/api/v1/professional-notes/${nota.noteId}/archive`;
+  const claveDelArchivo = claveDeIdempotencia();
+  await pro.post(archivo, claveDelArchivo).send({}).expect(200);
+  await pro.post(archivo, claveDelArchivo).send({ extra: 1 }).expect(400);
+  await pro.post(archivo).send({}).expect(200);
+  await ase.post(archivo).send({}).expect(404);
+  await pro.post(`/api/v1/professional-notes/${ajeno}/archive`).send({}).expect(404);
+  await request(servidor).post(archivo).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

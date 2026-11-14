@@ -310,6 +310,12 @@ model Identidad {
   cambiosDeIncidencia    CambioDeIncidencia[] @relation("CambioDeIncidenciaDelAdministrador")
   // RF-004 (DL-172): los retiros y las reasociaciones de sus métodos de acceso.
   cambiosDeMetodoDeAcceso CambioDeMetodoDeAcceso[] @relation("CambioDeMetodoDeAccesoDeLaIdentidad")
+  // PG-15 y PG-16 (DL-173): las notas que dejó en sus sesiones para su profesional; como profesional, sus notas propias y
+  // los archivos de esas notas; como persona, las notas propias que otros escribieron sobre ella (no las lee en la app).
+  notasDeSusSesiones     NotaDeEjecucion[]     @relation("NotaDeEjecucionDeLaPersona")
+  notasPropiasEscritas   NotaPropia[]          @relation("NotaPropiaDelProfesional")
+  notasPropiasSobreElla  NotaPropia[]          @relation("NotaPropiaSobreLaPersona")
+  archivosDeNotasPropias ArchivoDeNotaPropia[] @relation("ArchivoDeNotaPropiaDelProfesional")
 
   @@map("identidad")
 }
@@ -2072,6 +2078,8 @@ model EjercicioDeCatalogo {
   asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
   /// ED-72 (DL-171): las series observadas por un profesional en este ejercicio.
   seriesObservadas    SerieObservada[]
+  /// PG-16 (DL-173): las notas propias de un profesional atadas a este ejercicio.
+  notasPropias        NotaPropia[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2311,6 +2319,8 @@ model EjecucionDeEntrenamiento {
   versionDePlan VersionDePlanDeEntrenamiento           @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   borrador      BorradorDeEjecucionDeEntrenamiento     @relation(fields: [borradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   correcciones  CorreccionDeEjecucionDeEntrenamiento[]
+  /// PG-15 (DL-173): las notas que la persona dejó para su profesional. No cambian la ejecución.
+  notas         NotaDeEjecucion[]
 
   @@unique([asesoradoId, versionDePlanId, sesionPlanificadaId, fechaLocal])
   @@index([asesoradoId, fechaLocal])
@@ -4466,4 +4476,68 @@ model CambioDeMetodoDeAcceso {
   @@unique([metodoDeAccesoId, numero])
   @@index([identidadId])
   @@map("cambio_de_metodo_de_acceso")
+}
+
+// ─── WP-PULIDO-GRANDES (DL-173): PG-15, la nota para tu profe, y PG-16, las notas propias del profesional ──────────────
+
+/// PG-15 (PG-D10, aprobada por Dirección el 2026-11-14): la nota que la persona deja en una sesión suya ya registrada, para
+/// su profesional (API-TRN-25). Aparte de la ejecución, que no cambia. Solo se agrega: no se edita ni se borra (trigger).
+/// La base exige que la persona sea la de la ejecución y hasta 280 caracteres (CHECK).
+model NotaDeEjecucion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejecucionId       String   @map("ejecucion_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  texto             String
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejecucion EjecucionDeEntrenamiento @relation(fields: [ejecucionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado Identidad                @relation("NotaDeEjecucionDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([ejecucionId, momentoDeRegistro])
+  @@index([asesoradoId])
+  @@map("nota_de_ejecucion")
+}
+
+/// PG-16: a qué está atada una nota propia (PG-T67): un ejercicio del catálogo o una comida del plan, por su nombre.
+enum AnclaDeNotaPropia {
+  EJERCICIO
+  COMIDA
+}
+
+/// PG-16 (PG-D11, aprobada por Dirección el 2026-11-14): la nota propia de un profesional sobre una persona (API-NPP-01 a
+/// 03). Solo la lee y la archiva su autor; entra en la exportación de la persona. Solo se agrega (trigger): archivarla es
+/// una fila de `archivo_de_nota_propia`. El ancla es coherente con su tipo y el texto, de 1 a 1000 caracteres (CHECK).
+model NotaPropia {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String             @map("profesional_id") @db.Uuid
+  asesoradoId       String             @map("asesorado_id") @db.Uuid
+  texto             String
+  ancla             AnclaDeNotaPropia?
+  ejercicioId       String?            @map("ejercicio_id") @db.Uuid
+  comida            String?
+  procedencia       Json
+  momentoDeRegistro DateTime           @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad            @relation("NotaPropiaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad            @relation("NotaPropiaSobreLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejercicio   EjercicioDeCatalogo? @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivo     ArchivoDeNotaPropia?
+
+  @@index([profesionalId, asesoradoId])
+  @@index([asesoradoId])
+  @@map("nota_propia")
+}
+
+/// PG-16: el archivo de una nota propia, una sola vez y por su autor (trigger). La nota queda en la historia: no se borra.
+model ArchivoDeNotaPropia {
+  notaId            String   @id @map("nota_id") @db.Uuid
+  profesionalId     String   @map("profesional_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  nota        NotaPropia @relation(fields: [notaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad  @relation("ArchivoDeNotaPropiaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("archivo_de_nota_propia")
 }

@@ -17,6 +17,10 @@ type Tx = Prisma.TransactionClient;
  *   formularios, los hábitos, las notas de coordinación sobre la persona (08 §9.15: no hay notas secretas; la persona las
  *   lee con API-CRD-01-PROPIA) y los datos de sus fotos (los metadatos de sus medios, no los bytes); **por dominio**, lo de
  *   Nutrición, Entrenamiento y Antropometría que se pidió, con las revisiones que recibió (REV-A, completas).
+ * - **Las notas propias de sus profesionales** (PG-16 de WP-PULIDO-GRANDES; PG-D11, aprobada por Dirección el 2026-11-14):
+ *   la persona no las ve en la app, pero son datos sobre ella (derecho de acceso). Van siempre, con su autor (la referencia
+ *   mínima), su ancla y si se archivaron. En Entrenamiento, **las notas que ella dejó en sus sesiones** para su profesional
+ *   (PG-15).
  */
 export async function armarExportacion(tx: Tx, titularId: string, dominios: readonly DominioDeLaExportacion[], generadoEn: Date): Promise<Record<string, unknown>> {
   const filas = async (consulta: Promise<{ fila: unknown }[]>): Promise<unknown[]> => (await consulta).map((x) => x.fila);
@@ -71,6 +75,19 @@ export async function armarExportacion(tx: Tx, titularId: string, dominios: read
     medios: await filas(tx.$queryRaw`
       SELECT to_jsonb(m) - 'procedencia' AS "fila" FROM "medio" m
        WHERE m."propietario_id" = ${titularId}::uuid ORDER BY m."momento_de_registro"`),
+    notasPropiasDeSusProfesionales: await filas(tx.$queryRaw`
+      SELECT jsonb_build_object(
+               'nota', to_jsonb(n) - 'procedencia',
+               'autor', jsonb_build_object('identidad', n."profesional_id", 'nombreProfesional', pp."nombre_visible"),
+               'ejercicio', (SELECT v."nombre" FROM "version_de_ejercicio" v
+                              WHERE v."ejercicio_id" = n."ejercicio_id"
+                                AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id") LIMIT 1),
+               'archivada', a."nota_id" IS NOT NULL,
+               'archivo', to_jsonb(a) - 'procedencia') AS "fila"
+        FROM "nota_propia" n
+        LEFT JOIN "archivo_de_nota_propia" a ON a."nota_id" = n."id"
+        LEFT JOIN "perfil_profesional" pp ON pp."identidad_id" = n."profesional_id"
+       WHERE n."asesorado_id" = ${titularId}::uuid ORDER BY n."momento_de_registro"`),
   };
   if (dominios.includes('NUTRITION')) {
     archivo.nutricion = {
@@ -113,6 +130,9 @@ export async function armarExportacion(tx: Tx, titularId: string, dominios: read
         SELECT to_jsonb(v) - 'procedencia' AS "fila" FROM "revision_de_entrenamiento" v
           JOIN "proceso_operativo" p ON p."id" = v."proceso_id"
          WHERE p."asesorado_id" = ${titularId}::uuid ORDER BY v."momento_de_registro"`),
+      notasParaSuProfesional: await filas(tx.$queryRaw`
+        SELECT to_jsonb(n) - 'procedencia' AS "fila" FROM "nota_de_ejecucion" n
+         WHERE n."asesorado_id" = ${titularId}::uuid ORDER BY n."momento_de_registro"`),
     };
   }
   if (dominios.includes('ANTHROPOMETRY')) {
