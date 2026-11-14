@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="728pt" height="448pt" viewBox="0 0 728 448" data-lamina="COMP-01">
+<title>Componentes · El sistema y sus interfaces</title>
+<desc>Las piezas de software de BE, la interfaz que provee cada una y quién la requiere, con su ubicación en el repositorio. · Fuente: apps/web · apps/mobile · apps/api · packages/domain · prisma/schema.prisma · render.yaml · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="728" height="448" fill="#FFFFFF"/>
+<rect x="490" y="400" width="228" height="46" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 500 412.5 L 518 412.5" stroke="#33475F" stroke-width="1.1"/><circle cx="524" cy="412.5" r="5.5" fill="#FFFFFF" stroke="#33475F" stroke-width="1.2"/>
+<text x="538" y="416.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">interfaz provista</text>
+<path d="M 500 431.5 L 529 431.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 523 434.86 L 530 431.5 L 523 428.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="538" y="435.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">la requiere</text>
+<path d="M 290 135 L 256 135" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<path d="M 290 275 L 256 275" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<path d="M 560 56 L 530 56" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<path d="M 560 156 L 530 156" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<path d="M 560 246 L 530 246" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<path d="M 560 336 L 530 336" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<path d="M 180 62.5 L 195 62.5 Q 200 62.5 200 67.5 L 200 130 Q 200 135 205 135 L 244 135" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 237 138.36 L 244 135 L 237 131.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 180 182.5 L 195 182.5 Q 200 182.5 200 177.5 L 200 140 Q 200 135 205 135 L 244 135" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 237 138.36 L 244 135 L 237 131.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 180 302.5 L 195 302.5 Q 200 302.5 200 297.5 L 200 280 Q 200 275 205 275 L 244 275" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 237 278.36 L 244 275 L 237 271.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 460 72 L 500 72 Q 505 72 505 67 L 505 61 Q 505 56 510 56 L 518 56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 511 59.36 L 518 56 L 511 52.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 460 156 L 518 156" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 511 159.36 L 518 156 L 511 152.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 460 246 L 518 246" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 511 249.36 L 518 246 L 511 242.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 460 298 L 500 298 Q 505 298 505 303 L 505 331 Q 505 336 510 336 L 518 336" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 511 339.36 L 518 336 L 511 332.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 375 310 L 375 350" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 371.64 343 L 375 350 L 378.36 343" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="10" y="30" width="170" height="65" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="160" y="36" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="157" y="39" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="157" y="45" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="18" y="44" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«component»</text>
+<text x="18" y="59" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Website</text>
+<text x="18" y="74" font-family="Inter" font-size="10" font-weight="500" fill="#566881">apps/web · Next.js 15,</text>
+<text x="18" y="87" font-family="Inter" font-size="10" font-weight="500" fill="#566881">exportado como sitio estático</text>
+<rect x="10" y="150" width="170" height="65" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="160" y="156" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="157" y="159" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="157" y="165" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="18" y="164" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«component»</text>
+<text x="18" y="179" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">APK</text>
+<text x="18" y="194" font-family="Inter" font-size="10" font-weight="500" fill="#566881">apps/mobile · Expo SDK 57 ·</text>
+<text x="18" y="207" font-family="Inter" font-size="10" font-weight="500" fill="#566881">React Native 0.86</text>
+<rect x="10" y="270" width="170" height="65" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="160" y="276" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="157" y="279" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="157" y="285" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="18" y="284" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«component»</text>
+<text x="18" y="299" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Recordatorios</text>
+<text x="18" y="314" font-family="Inter" font-size="10" font-weight="500" fill="#566881">tarea programada de</text>
+<text x="18" y="327" font-family="Inter" font-size="10" font-weight="500" fill="#566881">render.yaml</text>
+<rect x="290" y="60" width="170" height="250" rx="3" fill="#DCE8FC" stroke="#0A1F44" stroke-width="2"/>
+<rect x="440" y="66" width="13" height="15" fill="#FFFFFF" stroke="#0A1F44" stroke-width="0.9"/>
+<rect x="437" y="69" width="7" height="3.2" fill="#FFFFFF" stroke="#0A1F44" stroke-width="0.9"/>
+<rect x="437" y="75" width="7" height="3.2" fill="#FFFFFF" stroke="#0A1F44" stroke-width="0.9"/>
+<text x="298" y="74" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«component»</text>
+<text x="298" y="89" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">API</text>
+<text x="298" y="104" font-family="Inter" font-size="10" font-weight="500" fill="#566881">apps/api · NestJS 11 · 22</text>
+<text x="298" y="117" font-family="Inter" font-size="10" font-weight="500" fill="#566881">módulos (COMP-02) · monolito</text>
+<text x="298" y="130" font-family="Inter" font-size="10" font-weight="500" fill="#566881">modular</text>
+<circle cx="250" cy="135" r="6" fill="#FFFFFF" stroke="#33475F" stroke-width="1.2"/>
+<circle cx="250" cy="275" r="6" fill="#FFFFFF" stroke="#33475F" stroke-width="1.2"/>
+<rect x="290" y="350" width="170" height="65" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="440" y="356" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="437" y="359" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="437" y="365" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="298" y="364" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«library»</text>
+<text x="298" y="379" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">@be/domain</text>
+<text x="298" y="394" font-family="Inter" font-size="10" font-weight="500" fill="#566881">packages/domain · reglas,</text>
+<text x="298" y="407" font-family="Inter" font-size="10" font-weight="500" fill="#566881">contratos y textos</text>
+<rect x="560" y="30" width="158" height="52" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="698" y="36" width="13" height="15" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="695" y="39" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<rect x="695" y="45" width="7" height="3.2" fill="#FFFFFF" stroke="#1453C9" stroke-width="0.9"/>
+<text x="568" y="44" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«database»</text>
+<text x="568" y="59" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Base de datos</text>
+<text x="568" y="74" font-family="Inter" font-size="10" font-weight="500" fill="#566881">PostgreSQL 16 · prisma/</text>
+<rect x="560" y="130" width="158" height="52" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<rect x="698" y="136" width="13" height="15" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<rect x="695" y="139" width="7" height="3.2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<rect x="695" y="145" width="7" height="3.2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<text x="568" y="144" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«component»</text>
+<text x="568" y="159" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Expo Push</text>
+<text x="568" y="174" font-family="Inter" font-size="10" font-weight="500" fill="#566881">avisos por FCM</text>
+<rect x="560" y="220" width="158" height="52" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<rect x="698" y="226" width="13" height="15" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<rect x="695" y="229" width="7" height="3.2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<rect x="695" y="235" width="7" height="3.2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<text x="568" y="234" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«component»</text>
+<text x="568" y="249" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Google</text>
+<text x="568" y="264" font-family="Inter" font-size="10" font-weight="500" fill="#566881">claves públicas (JWKS)</text>
+<rect x="560" y="310" width="158" height="52" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<rect x="698" y="316" width="13" height="15" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<rect x="695" y="319" width="7" height="3.2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<rect x="695" y="325" width="7" height="3.2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="0.9"/>
+<text x="568" y="324" font-family="Inter" font-size="10" font-weight="500" fill="#566881">«component»</text>
+<text x="568" y="339" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Open Food Facts · wger</text>
+<text x="568" y="354" font-family="Inter" font-size="10" font-weight="500" fill="#566881">API HTTP de catálogos</text>
+<circle cx="524" cy="56" r="6" fill="#FFFFFF" stroke="#33475F" stroke-width="1.2"/>
+<circle cx="524" cy="156" r="6" fill="#FFFFFF" stroke="#33475F" stroke-width="1.2"/>
+<circle cx="524" cy="246" r="6" fill="#FFFFFF" stroke="#33475F" stroke-width="1.2"/>
+<circle cx="524" cy="336" r="6" fill="#FFFFFF" stroke="#33475F" stroke-width="1.2"/>
+<path d="M 10 370 L 251 370 L 260 379 L 260 422.4 L 10 422.4 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 251 370 L 251 379 L 260 379" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="19" y="386.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">El website y la APK también importan</text>
+<text x="19" y="399.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">@be/domain: los contratos y los textos son los</text>
+<text x="19" y="412.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">mismos en las tres superficies.</text>
+<text x="220.08" y="125" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44">REST /api/v1</text>
+<text x="214.34" y="293" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44">tareas internas</text>
+<text x="514.1" y="46" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44">SQL</text>
+<text x="512.08" y="146" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44">Push</text>
+<text x="509.44" y="236" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44">JWKS</text>
+<text x="510.54" y="326" font-family="Inter" font-size="10" font-weight="500" fill="#0A1F44">HTTP</text>
+</svg>

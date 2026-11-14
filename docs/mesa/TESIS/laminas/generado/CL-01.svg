@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="CL-01">
+<title>Clases · Modelo de dominio del circuito nutricional</title>
+<desc>Nivel de análisis: entidades del dominio con sus atributos principales, sus operaciones expuestas y sus asociaciones. · Fuente: prisma/schema.prisma · rutas de los controladores de la API · datos/esquema.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="10" y="404" width="730" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 20 416.5 L 49 416.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<text x="58" y="420.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación, con su multiplicidad</text>
+<path d="M 258.02 416.5 L 287.02 416.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 288.02 416.5 L 282.02 420.5 L 276.02 416.5 L 282.02 412.5 Z" fill="#33475F" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="296.02" y="420.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">composición (el rombo, del lado del todo)</text>
+<rect x="542.05" y="410" width="30" height="13" rx="3" fill="#DCE8FC" stroke="#0A1F44" stroke-width="1.2"/>
+<text x="580.05" y="420.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">versión que se activa</text>
+<path d="M 205 34 L 167 34" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 155 34 L 161 30 L 167 34 L 161 38 Z" fill="#33475F" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 400 34 L 350 34" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 205 189 L 155 189" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 400 189 L 350 189" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 545 189 L 583 189" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 595 189 L 589 193 L 583 189 L 589 185 Z" fill="#33475F" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 155 326 L 193 326" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 205 326 L 199 330 L 193 326 L 199 322 Z" fill="#33475F" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 400 326 L 350 326" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 472.5 251 L 472.5 300" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 667.5 300 L 667.5 242 Q 667.5 237 662.5 237 L 545 237" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<rect x="10" y="8" width="145" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="8.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="28" x2="155" y2="28" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="34" x2="155" y2="34" stroke="#1453C9" stroke-width="0.8"/>
+<text x="82.5" y="24" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Vinculo</text>
+<rect x="205" y="8" width="145" height="102" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="205.6" y="8.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="205" y1="28" x2="350" y2="28" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="205" y1="62" x2="350" y2="62" stroke="#1453C9" stroke-width="0.8"/>
+<text x="277.5" y="24" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">AlcanceDeVinculo</text>
+<text x="213" y="42" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance, finalidad</text>
+<text x="213" y="56" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<text x="213" y="76" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">pausar()</text>
+<text x="213" y="90" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">reanudar()</text>
+<text x="213" y="104" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalizar()</text>
+<rect x="400" y="8" width="145" height="88" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="400.6" y="8.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="400" y1="28" x2="545" y2="28" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="400" y1="62" x2="545" y2="62" stroke="#1453C9" stroke-width="0.8"/>
+<text x="472.5" y="24" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Consentimiento</text>
+<text x="408" y="42" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">finalidad</text>
+<text x="408" y="56" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">situacion, version</text>
+<text x="408" y="76" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">otorgar()</text>
+<text x="408" y="90" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">revocar()</text>
+<rect x="10" y="150" width="145" height="60" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="150.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="170" x2="155" y2="170" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="204" x2="155" y2="204" stroke="#1453C9" stroke-width="0.8"/>
+<text x="82.5" y="166" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EvaluacionNutricional</text>
+<text x="18" y="184" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">valoracion</text>
+<text x="18" y="198" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">referencias</text>
+<rect x="205" y="150" width="145" height="73" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="205.6" y="150.6" width="143.8" height="32.4" fill="#DCE8FC"/>
+<line x1="205" y1="183" x2="350" y2="183" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="205" y1="217" x2="350" y2="217" stroke="#1453C9" stroke-width="0.8"/>
+<text x="277.5" y="163.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«nutricional»</text>
+<text x="277.5" y="179" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">VersionDeObjetivo</text>
+<text x="213" y="197" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">vigenteDesde</text>
+<text x="213" y="211" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">requerimientoEnergetico</text>
+<rect x="400" y="150" width="145" height="101" rx="2" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
+<rect x="400.6" y="150.6" width="143.8" height="32.4" fill="#DCE8FC"/>
+<line x1="400" y1="183" x2="545" y2="183" stroke="#0A1F44" stroke-width="0.8"/>
+<line x1="400" y1="217" x2="545" y2="217" stroke="#0A1F44" stroke-width="0.8"/>
+<text x="472.5" y="163.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«nutricional»</text>
+<text x="472.5" y="179" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">VersionDePlan</text>
+<text x="408" y="197" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">version</text>
+<text x="408" y="211" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<text x="408" y="231" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">validar()</text>
+<text x="408" y="245" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">activar()</text>
+<rect x="595" y="150" width="145" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="595.6" y="150.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="595" y1="170" x2="740" y2="170" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="595" y1="176" x2="740" y2="176" stroke="#1453C9" stroke-width="0.8"/>
+<text x="667.5" y="166" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PlanNutricional</text>
+<rect x="10" y="300" width="145" height="60" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="300.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="320" x2="155" y2="320" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="354" x2="155" y2="354" stroke="#1453C9" stroke-width="0.8"/>
+<text x="82.5" y="316" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">ProximaRevision</text>
+<text x="18" y="334" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">fechaObjetivo</text>
+<text x="18" y="348" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">fuente</text>
+<rect x="205" y="300" width="145" height="60" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="205.6" y="300.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="205" y1="320" x2="350" y2="320" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="205" y1="354" x2="350" y2="354" stroke="#1453C9" stroke-width="0.8"/>
+<text x="277.5" y="316" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">ProcesoOperativo</text>
+<text x="213" y="334" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alcance</text>
+<text x="213" y="348" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<rect x="400" y="300" width="145" height="88" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="400.6" y="300.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="400" y1="320" x2="545" y2="320" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="400" y1="354" x2="545" y2="354" stroke="#1453C9" stroke-width="0.8"/>
+<text x="472.5" y="316" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">RevisionNutricional</text>
+<text x="408" y="334" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">periodoInicio, periodoFin</text>
+<text x="408" y="348" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">resultado</text>
+<text x="408" y="368" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">registrar()</text>
+<text x="408" y="382" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">aplicar()</text>
+<rect x="595" y="300" width="145" height="102" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="595.6" y="300.6" width="143.8" height="19.4" fill="#DCE8FC"/>
+<line x1="595" y1="320" x2="740" y2="320" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="595" y1="354" x2="740" y2="354" stroke="#1453C9" stroke-width="0.8"/>
+<text x="667.5" y="316" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">IngestaNutricional</text>
+<text x="603" y="334" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">origen, modo</text>
+<text x="603" y="348" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">fechaLocal</text>
+<text x="603" y="368" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">registrar()</text>
+<text x="603" y="382" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">corregir()</text>
+<text x="603" y="396" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">anular()</text>
+<path d="M 595 8 L 731 8 L 740 17 L 740 111.6 L 595 111.6 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 731 8 L 731 17 L 740 17" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="604" y="24.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Identidad</text>
+<text x="604" y="37.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Todas estas clases se</text>
+<text x="604" y="50.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">asocian con Identidad</text>
+<text x="604" y="63.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">como profesional o como</text>
+<text x="604" y="75.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">asesorado; no se dibuja</text>
+<text x="604" y="88.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">para que se lea el circuito</text>
+<text x="604" y="101.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">(ver DER-01 a DER-07).</text>
+<text x="191.58" y="26" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1..*</text>
+<text x="163.03" y="50" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+<text x="385.93" y="26" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..1</text>
+<text x="358.03" y="50" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+<text x="190.46" y="181" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..*</text>
+<text x="163.03" y="205" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+<text x="385.46" y="181" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..*</text>
+<text x="358.03" y="205" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+<text x="558.42" y="181" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1..*</text>
+<text x="586.97" y="205" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+<text x="169.54" y="318" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..*</text>
+<text x="196.97" y="342" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+<text x="385.46" y="318" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..*</text>
+<text x="358.03" y="342" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+<rect x="431.24" y="268.1" width="36.26" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="465.5" y="278.79" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="end">origina</text>
+<text x="487.04" y="268" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..*</text>
+<text x="486.57" y="291" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..1</text>
+<rect x="605.13" y="229.6" width="38.59" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="607.13" y="240.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">ejecuta</text>
+<text x="682.04" y="291" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">0..*</text>
+<text x="553.03" y="253" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">1</text>
+</svg>

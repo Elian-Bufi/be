@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="D-00">
+<title>DFD de contexto (nivel 0)</title>
+<desc>BE como un único proceso y los datos que intercambia con personas y sistemas externos. · Fuente: ARQ-01 · apps/api/src (acceso-google, novedades, integraciones, analitica) · render.yaml · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="0" y="422" width="750" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<rect x="10" y="428" width="30" height="13" rx="3" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="48" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">persona externa</text>
+<rect x="130.22" y="428" width="30" height="13" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="168.22" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">sistema externo</text>
+<circle cx="263.76" cy="434.5" r="7.5" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="286.76" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">proceso numerado</text>
+<rect x="381.4" y="428" width="30" height="13" fill="#F4F7FC"/><path d="M 411.4 428 L 381.4 428 L 381.4 441 L 411.4 441 M 389.4 428 L 389.4 441" fill="none" stroke="#0A1F44" stroke-width="1.1"/>
+<text x="419.4" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">almacén de datos</text>
+<path d="M 508.34 434.5 L 537.34 434.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 531.34 437.86 L 538.34 434.5 L 531.34 431.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="546.34" y="438.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">flujo de datos; dos puntas: lee y escribe</text>
+<path d="M 120.66 96.88 L 312.13 184.9" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 304.37 185.03 L 312.13 184.9 L 307.18 178.93" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 318.82 170.37 L 158.97 96.88" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 166.73 96.75 L 158.97 96.88 L 163.92 102.86" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 166 297.1 L 317.13 236.73" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 311.87 242.45 L 317.13 236.73 L 309.38 236.21" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 311.19 221.87 L 125.61 296" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 130.87 290.28 L 125.61 296 L 133.36 296.52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 383 352 L 383 270.51" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 386.36 277.51 L 383 270.51 L 379.64 277.51" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 367 270.51 L 367 352" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 363.64 345 L 367 352 L 370.36 345" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 618.81 68.88 L 432.63 172.83" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 437.1 166.48 L 432.63 172.83 L 440.38 172.35" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 440.63 211.95 L 584 209.65" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 577.05 213.12 L 584 209.65 L 576.95 206.4" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 584 193.64 L 440.38 195.95" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 447.32 192.48 L 440.38 195.95 L 447.43 199.2" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 430.69 240.42 L 593.36 318" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 585.6 318.02 L 593.36 318 L 588.49 311.95" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 630.53 318 L 437.58 225.98" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 445.34 225.96 L 437.58 225.98 L 442.45 232.03" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="375" cy="205" r="66" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="375" y="155" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">0</text>
+<text x="375" y="206.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">BE: seguimiento</text>
+<text x="375" y="220.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">profesional</text>
+<rect x="16" y="52" width="150" height="44.88" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="91" y="71.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Profesional</text>
+<text x="91" y="84.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[website]</text>
+<rect x="16" y="296" width="150" height="44.88" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="91" y="315.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Asesorado</text>
+<text x="91" y="328.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[APK]</text>
+<rect x="300" y="352" width="150" height="58.96" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="375" y="371.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Responsable de</text>
+<text x="375" y="385.74" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">validación</text>
+<text x="375" y="398.85" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[comando interno]</text>
+<rect x="584" y="24" width="150" height="44.88" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="659" y="43.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Google</text>
+<text x="659" y="56.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[identidad]</text>
+<rect x="584" y="178" width="150" height="44.88" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="659" y="197.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Expo Push y FCM</text>
+<text x="659" y="210.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[avisos]</text>
+<rect x="584" y="318" width="150" height="44.88" rx="6" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="659" y="337.66" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Open Food Facts y wger</text>
+<text x="659" y="350.77" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">[catálogos abiertos]</text>
+<rect x="167.21" y="155.78" width="71.99" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="203.21" y="166.47" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">credenciales</text>
+<text x="203.21" y="179.27" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">e indicaciones</text>
+<rect x="208.26" y="87.54" width="90.93" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="253.73" y="98.23" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">sesión, invitación,</text>
+<text x="253.73" y="111.03" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">ficha y novedades</text>
+<rect x="194.41" y="290.06" width="123.82" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="256.32" y="300.74" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">credenciales, decisiones,</text>
+<text x="256.32" y="313.54" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">registros y preferencias</text>
+<rect x="147.67" y="209.99" width="113.39" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="204.36" y="220.68" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">sesión, plan, agenda,</text>
+<text x="204.36" y="233.48" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">evolución y novedades</text>
+<rect x="387" y="297.46" width="51.38" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="412.69" y="308.14" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">pedido de</text>
+<text x="412.69" y="320.94" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">medición</text>
+<rect x="300.02" y="317.01" width="62.98" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="331.51" y="327.7" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">resultado de</text>
+<text x="331.51" y="340.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">la TVCC-30</text>
+<rect x="473.03" y="87.95" width="76.9" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="511.48" y="98.64" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">claves públicas</text>
+<rect x="475.39" y="215.39" width="74.45" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="512.61" y="226.08" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">aviso sin datos</text>
+<text x="512.61" y="238.88" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">de salud</text>
+<rect x="487.79" y="162.81" width="48.21" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="511.9" y="173.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">resultado</text>
+<text x="511.9" y="186.3" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">del envío</text>
+<rect x="455.09" y="296.61" width="84.12" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="497.15" y="307.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">código de barras</text>
+<text x="497.15" y="320.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">o número</text>
+<rect x="549.49" y="247.32" width="93.18" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="596.08" y="258.01" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">datos del producto</text>
+<text x="596.08" y="270.81" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">o del ejercicio</text>
+</svg>
