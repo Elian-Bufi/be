@@ -5,6 +5,12 @@ import { ProveedorDeSesion } from '../lib/sesion';
 import { letraDeMarca, letraDeTexto } from '../letra/letra';
 import './tokens.css';
 import './globals.css';
+// WP-GRAFICOS fase 2 (DL-174): la base de los gráficos y una hoja por rama, para que nadie toque globals.css.
+import './pro/advisees/graficos/estilos/base.css';
+import './pro/advisees/graficos/estilos/entrenamiento.css';
+import './pro/advisees/graficos/estilos/nutricion-y-cuerpo.css';
+import './pro/advisees/graficos/estilos/cruces.css';
+import './pro/advisees/graficos/estilos/patrones.css';
 
 export const metadata: Metadata = {
   title: 'BE',
