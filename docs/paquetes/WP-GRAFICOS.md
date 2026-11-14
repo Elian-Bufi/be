@@ -1348,7 +1348,73 @@ no se corre nada pesado, así que ponerlas en rojo una por una queda para la rev
 
 ### 13.3 Rama B · `wp-graficos-entrenamiento`
 
-> Sin programar al declarar este paquete.
+> **Estado:** programada el 2026-11-14 en `wp-graficos-entrenamiento`, desde el primer commit de la base (`257912a6`),
+> con la base (#276) y la fase 1 (#273) traídas: depende de las dos. Sin integrar. Sin API, sin migraciones y sin
+> dependencias nuevas; la APK no cambia. Las decisiones GR-T30 a GR-T39 están **a ratificar**; mientras tanto, rigen.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| GR-02 | El 1RM estimado (Epley v1) sesión a sesión, con las versiones del plan de fondo: lleno hasta 10 repeticiones equivalentes, hueco de más de 10 a 12 (con «Incluir…» encendido) y rombo para lo observado; la línea no cruza una sesión sin estimación y lo observado no la corta; el eje abarca 10 kg o 22 lb como mínimo y dice los extremos. Arriba, la primera línea si lo indicado cambió entre versiones («De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no.»); debajo, cada versión con la mediana del RIR registrado, las repeticiones de la serie usada y el ruido propio desde 4 sesiones del núcleo; «Cómo se calculó» y lo que mueve un RIR | `graficos/entrenamiento/fuerza-estimada.ts` y `-en-pantalla.tsx` | TEST-GRF-022 a 025 |
+| GR-02 en «Analizar · Fuerza» | La misma primera línea arriba del gráfico de ED-74, cada versión con su ruido debajo, el ruido de la versión del punto elegido antes de «Frente a la del…», y el rango mínimo del eje | `fuerza/fuerza-en-analizar.tsx` | TEST-GRF-039 |
+| GR-03 | Carga, repeticiones y RIR de la misma serie en tres paneles alineados, sin doble eje; el RIR de 0 al máximo, con 5 como mínimo; el RIR indicado de cada sesión, hueco en su panel (`puntosDeLoIndicado`); un RIR sin escribir no es 0; la carga rápida, hueca y gris; lo cargado después, marcado | `graficos/entrenamiento/carga-repeticiones-y-rir.ts` y `-en-pantalla.tsx` | TEST-GRF-026 a 028 |
+| GR-05 | El RIR indicado por versión en escalón discontinuo (hueco en cada sesión si cambia según la sesión) y el registrado en puntos; «a igual carga» con la misma carga y la misma unidad; lo que se ve, por versión y en palabras, sin la carga rápida | `graficos/entrenamiento/rir-indicado-y-registrado.ts` y `-en-pantalla.tsx` | TEST-GRF-029 y 030 |
+| GR-06 | La dispersión de carga por repeticiones equivalentes, solo con lo que escribió la persona con RIR de 0 a 2: las últimas 4 semanas en punto lleno y las anteriores en cruz; en la lista de la v1, hasta tres curvas de igual 1RM estimado «de la fórmula»; teclado, lectura y tabla | `graficos/entrenamiento/perfil-carga-repeticiones.ts` y `-en-pantalla.tsx` | TEST-GRF-031 a 033 |
+| El historial en el cuadro | «En el tiempo» abre en el mismo cuadro «Historial» (GR-02 en la v1, GR-03 y GR-05 con un solo cursor y la cinta del tiempo debajo) y «Perfil» (GR-06), con el período, la serie, la unidad y «Abrir en Analizar» con lo elegido. Va en «Detalle y fuerza estimada» y en el cuadro de «La vez pasada»: el cuadro se abre con el historial para todos los ejercicios, y la tarjeta de fuerza sigue solo en la v1 | `graficos/entrenamiento/historial-del-ejercicio.tsx`, `acceso-al-historial.tsx`, `fuerza/detalle-del-ejercicio.tsx`, `training/la-vez-pasada.tsx` | TEST-GRF-034 y 035 |
+| El catálogo y el registro | `entrenamiento.rir-indicado` pasa a OFRECIDA (lo lee el despacho de la base); el registro ofrece GR-02 solo con un ejercicio de la lista de la v1 y nada sin Entrenamiento, y carga cada gráfico al dibujarse | `series-disponibles-entrenamiento.ts`, `graficos/entrenamiento/registro.ts` | TEST-GRF-020, 036 y 038 |
+
+**Las pruebas:** `apps/web/test/graficos-entrenamiento.test.mjs` (TEST-GRF-020 a 039): la lógica pura, con datos; las
+pantallas, el cuadro del ejercicio y «Analizar · Fuerza», leyendo el código. TEST-GRF-021 pasa todos los textos de la
+rama por la guardia de Entrenamiento, sin el signo más-menos, porcentajes ni flechas. Las mutaciones están en el título
+de cada prueba y se revisaron leyendo el código, sin correrlas (la PC no tiene memoria para las pruebas; la CI es el
+juez).
+
+**Decisiones del continuador al programar, a ratificar (§6.3):**
+- **GR-T30 · El cuadro con el historial para todos:** los ejercicios de la lista de la v1 lo abren desde «Detalle y fuerza
+  estimada» (ED-75) y los demás desde el cuadro de «La vez pasada» (GR-01, GR-T70); los dos suman «En el tiempo», con
+  «Historial» y «Perfil» en el mismo cuadro y «Atrás». La tarjeta de fuerza y GR-02, solo en la v1. *Alternativa:* un
+  solo cuadro para todos, con la tarjeta escondida fuera de la v1, que rehace el cuadro de la fase 1.
+- **GR-T31 · El período del historial:** 12 semanas de entrada, 6 meses o desde que la acompañás, con un año como tope
+  (lo que lee API-PRJ-01 en una vez); si el acompañamiento empezó antes, o no se pudo leer desde cuándo, la pantalla lo
+  dice. El inicio sale de los vínculos de quien mira con la persona, en Entrenamiento (TB-16). La cinta del cuadro
+  muestra solo Entrenamiento. *Alternativa:* más de un año en tramos y en grano semanal.
+- **GR-T32 · GR-02 con «Incluir las de más de 10 a 12» apagado de entrada** (como ED-74): lo hueco aparece al encenderlo.
+  Cada versión va en una lista debajo del gráfico, no escrita adentro de su banda, que con versiones cortas no se lee.
+  Los extremos del período van escritos en una nota. *Alternativa:* el texto adentro de cada banda.
+- **GR-T33 · Lo indicado de cada versión, para la primera línea:** el RIR y las repeticiones que indicaba esa versión
+  para las series que usó la regla por sesión (del comparador); si fueron series con objetivos distintos, el rango los
+  abarca. Cada versión se compara con la anterior que tuvo estimaciones. *Alternativa:* el objetivo de la serie 1,
+  siempre.
+- **GR-T34 · En «Analizar · Fuerza» queda «Frente a la del…» de ED-74** (DL-171, ratificado), con el ruido de la versión
+  del punto elegido antes; GR-02 no suma otra diferencia entre dos puntos ni saca la que ya estaba. *Alternativa:* sacar
+  «Frente a la del…», como pide GR-02 para su gráfico («sin diferencia entre dos puntos sueltos»).
+- **GR-T35 · El escalón de GR-05:** por versión, del primer al último día con sesiones de esa versión; si lo indicado
+  cambia según la sesión dentro de una versión, va hueco en cada sesión, porque un escalón diría algo que no existió.
+  «A igual carga» compara la mediana del RIR registrado entre dos versiones seguidas con dos sesiones o más cada una, y
+  sus puntos no se unen (entre dos puede haber habido otra carga). *Alternativa:* el escalón a lo ancho de la banda.
+- **GR-T36 · GR-06 sale del comparador** (API-TRN-21: todas las series de cada sesión, con la procedencia de cada valor,
+  ED-70) y no de la progresión por serie, que trae una serie por pedido y no dice quién escribió cada valor.
+  *Alternativa:* una lectura de API-PRJ-01 por número de serie.
+- **GR-T37 · Qué entra en el perfil:** las series que escribió la persona (carga, repeticiones y RIR de procedencia
+  PERSON, sin carga rápida) con RIR de 0 a 2; una registrada antes de la procedencia no dice quién la escribió y no
+  entra (como DJ-2), y la pantalla dice cuántas quedan afuera. Las últimas 4 semanas son 28 días con hoy.
+  *Alternativa:* aceptar las series sin procedencia.
+- **GR-T38 · Las curvas «de la fórmula», solo en la lista de la v1** (RM-16): fuera de la lista BE no estima, y van solo
+  los puntos, con el porqué. Hasta tres (la estimación más baja, la del medio y la más alta, redondeadas a 5 kg o 10
+  lb), de 1 a 12 repeticiones equivalentes, con un interruptor para sacarlas. *Alternativa:* las curvas en todos.
+- **GR-T39 · Cómo se lee:** el RIR indicado del catálogo pasa a OFRECIDA y lo lee el despacho de la base; en el historial,
+  un proveedor lee el comparador una vez para todos sus gráficos y la cinta (sin guardar nada después); el registro carga
+  cada gráfico al dibujarse (sin JSX, para que las pruebas lo importen); lo cargado después se cuenta con el día civil de
+  la zona de la sesión. *Alternativa:* que cada gráfico lea por su cuenta.
+
+**Hallazgo en la base (severidad media), arreglado con una línea:** la marca del medio del eje vertical se escribía con
+los decimales de las puntas: de 0 a 5 decía «3» en el lugar de 2,5, y de 95 a 110, «103» en el de 102,5. Ahora va solo si
+se escribe tal cual (`carriles.ts`); lo prueban TEST-GRF-024 y 026.
+
+**Lo que falta para cerrar:**
+1. **La evidencia en pantalla:** el cuadro en Azul noche y Claro, en 1440, 1280 y 1024, con el lector de pantalla.
+2. **GR-03 y GR-05 en «Patrones» y en «Analizar»:** el registro ya los ofrece; los muestran las ramas E y D.
+3. **Las notas de la tanda B en la cinta del cuadro** (PG-15 y PG-16), cuando se integren.
+4. **Correr las mutaciones** de cada prueba (descritas en su título).
 
 ### 13.4 Rama C · `wp-graficos-nutricion-y-cuerpo`
 
