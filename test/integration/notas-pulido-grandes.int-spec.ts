@@ -7,9 +7,10 @@
  *   profesional, aunque sea del mismo área, no); archivar no borra; sin vínculo vigente no se agregan ni se leen, y las de
  *   antes quedan; el ancla pide su área; y entran en la exportación de la persona.
  *
- * Mutaciones verificadas, cada una pone su prueba en rojo: dejar leer las notas de las sesiones a otra área (decidir con
- * cualquier alcance en API-TRN-25-LISTA); dejar que otro profesional lea las notas propias (filtrar por la persona y no por
- * el autor); permitir que el profesional del plan escriba la nota por la persona; borrar la nota al archivarla.
+ * Mutaciones que estas pruebas matan (descritas; quedan para correrlas con la base de la CI, no se corrieron en esta rama):
+ * dejar leer las notas de las sesiones a otra área (decidir con cualquier alcance en API-TRN-25-LISTA); dejar que otro
+ * profesional lea las notas propias (filtrar por la persona y no por el autor); permitir que el profesional del plan
+ * escriba la nota por la persona; borrar la nota al archivarla.
  */
 import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';

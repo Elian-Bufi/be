@@ -473,7 +473,8 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
 ## 5. Lo que decide Dirección (PG-D)
 
 Son propuestas del continuador, cada una con su recomendación y su alternativa, **a ratificar**. Mientras no haya
-respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan el sí antes de programar su parte.
+respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan el sí antes de programar su parte
+(PG-D1 la decidió Dirección el 2026-11-13; PG-D10 y PG-D11, el 2026-11-14).
 
 - **PG-D1 · Inicio con varias sesiones** · **decidida por Dirección el 2026-11-13: la que sigue y «Otra sesión»; revisa DL-077 para Inicio.**
   - *Recomiendo:* la tarjeta con la que sigue en el orden del plan, después de la última registrada, y «Otra sesión»
@@ -519,12 +520,12 @@ respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan 
     («en 2 semanas») y las revisiones marcadas, en otra vuelta.
   - *Alternativa:* todo junto, como en el catálogo. Corre el riesgo de no llegar al 17/11, y el congelamiento del 23/11
     deja poco margen.
-- **PG-D10 · Dónde viaja la nota para tu profe** · **a ratificar (espera el sí).**
+- **PG-D10 · Dónde viaja la nota para tu profe** · **aprobada por Dirección el 2026-11-14 («Tienes mi sí para las notas»): las dos operaciones nuevas, aparte de confirmar.** Lo programado está en §11.
   - *Recomiendo:* las dos operaciones nuevas de PG-15 (API-TRN-25 y su lista), aparte de confirmar la sesión. Las APK
     instaladas no cambian, y si la nota falla, la sesión ya quedó registrada.
   - *Alternativa:* un campo opcional en API-TRN-18. Es una operación menos, pero cambia lo que manda la APK al confirmar
     y va contra DL-137 D-7.
-- **PG-D11 · Quién ve las notas propias del profesional** · **a ratificar (espera el sí).**
+- **PG-D11 · Quién ve las notas propias del profesional** · **aprobada por Dirección el 2026-11-14 («Tienes mi sí para las notas»): solo su autor, y entran en la exportación de la persona.** Lo programado está en §11.
   - *Recomiendo:* solo su autor. La persona no las ve en la app, pero entran en lo que puede pedir de sus datos: son
     datos sobre ella (derecho de acceso).
   - *Alternativa:* que la persona las vea siempre, en «Quién ve qué». Es más transparente, pero el profesional deja de
@@ -707,3 +708,92 @@ editor (TB-48 y TEST-EDP-026) cambian solo la forma del cálculo que leen: ahora
 3. **El código 404 en `test`** se mide después de integrar, con una dirección inventada.
 4. **La mirada en pantalla** (Azul noche y Claro, 360 y 1440 px, el QR a 30 cm en 1366 × 768, el lector de pantalla en el calendario): queda para la evidencia de la tanda, con el website de `test`.
 5. `/invitacion` sigue ofreciendo la página de publicaciones si no hay app: lo cambia PG-17 (tanda B).
+
+## 11. Lo programado · tanda B · las notas (rama `wp-pulido-b-notas`)
+
+> Programado el 2026-11-14 sobre `main` `1089fc24`, con PG-D10 y PG-D11 aprobadas por Dirección ese mismo día («Tienes mi
+> sí para las notas»). PR #271, sin integrar. Cubre PG-15 y PG-16 en la API, el website y la APK, con una sola migración
+> que solo agrega: es la ventana de redespliegue de la API de la tanda B (§3). Las decisiones nuevas (PG-T60 a PG-T73)
+> están **a ratificar**; mientras tanto, rige lo programado.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| PG-15 · API | **API-TRN-25** `POST /training/executions/{executionId}/notes`: la persona agrega una nota a una sesión suya ya registrada, hasta 280 caracteres, con Idempotency-Key, solo agrega (hasta 20 por sesión). **API-TRN-25-LISTA** `GET /advisees/{adviseeId}/training/execution-notes`: el profesional de Entrenamiento lee las de las sesiones de sus planes, por período (hasta 92 días). **API-TRN-25-PROPIA** `GET /me/training/executions/{executionId}/notes`: la persona lee las suyas. API-TRN-18 no cambia | `entrenamiento/notas-de-la-sesion.service.ts` y `.controller.ts` | TEST-PG-014 |
+| PG-15 · website | En Registros de Entrenamiento, la fila dice «Con nota» (un rótulo, sin color de alarma ni contador) y el detalle de la sesión muestra «Lo que contó la persona al terminar», con su hora. Se lee aparte, con el mismo período: si falla, las sesiones se ven igual | `training/ejecuciones.tsx` | TEST-PG-014 |
+| PG-15 · APK | «¿Algo para contarle a tu profe?» en la pantalla de la sesión ya registrada (la que abre «Finalizar», con «Sesión registrada» arriba, y la de cada sesión de «Tu historial»): tres frases a un toque y un campo corto. Se manda aparte, con su clave; «Le contaste a tu profe» solo con la respuesta; si falla, «No se mandó» con «Reintentar» y la sesión sigue registrada. Finalizar no cambia | `nota-para-tu-profe.ts`, `pantallas/nota-para-tu-profe.tsx`, `pantallas/entrenamiento.tsx` | TEST-PG-014 |
+| PG-16 · API | Familia propia **NPP**: **API-NPP-01** `POST /advisees/{adviseeId}/professional-notes` (hasta 1000 caracteres, sin ancla o atada a un ejercicio del catálogo o a una comida por su nombre), **API-NPP-02** `GET` de la misma ruta (las propias, activas y archivadas, hasta 200) y **API-NPP-03** `POST /professional-notes/{noteId}/archive`. Solo el autor, mientras acompaña a la persona en algún área; el ancla pide su área. Cada ancla dice si hoy está en el plan (`inPlan`) | `notas-propias/` (servicio, controlador, ejecutor y módulo); `entrenamiento/catalogo.service.ts` (`ejercicioCitable`) | TEST-PG-015 |
+| PG-16 · website | «Tus notas» en el Resumen de la ficha, después de las notas del equipo, en las tres disposiciones: qué son, escribir, la lista con su fecha y su ancla («Del ejercicio X, que ya no está en el plan»), «Archivar» y «Archivadas (n)» plegado. En los dos editores (DL-167), una sola lectura por editor: las notas al lado de cada ejercicio y cada comida, con el candado de «solo vos», y «Anotar sobre este ejercicio» o «… esta comida» en su menú, con el cuadro enfocado | `seguimiento/tus-notas.tsx`, `notas-propias.tsx`, `training/ejercicio-del-editor.tsx`, `nutrition/comida-del-editor.tsx`, los dos `plan.tsx` | TEST-PG-015 |
+| La base | Una migración que solo agrega un tipo y tres tablas (`nota_de_ejecucion`, `nota_propia` y `archivo_de_nota_propia`), de solo agregar (trigger), con sus guardias: la nota de una sesión es de la persona que la registró; el ancla es coherente con su tipo; una nota propia la archiva su autor, una sola vez | `prisma/migrations/20261114120000_notas_de_la_sesion_y_propias` | TEST-PG-014 y 015 |
+| La exportación | Suma `notasPropiasDeSusProfesionales` (siempre, con el autor, el ancla y si se archivó; PG-D11) y `entrenamiento.notasParaSuProfesional` | `derechos/exportacion.ts` | TEST-PG-015 |
+| El contrato | Las seis operaciones en `openapi.ts`, el OpenAPI al día y el cliente compartido. La guardia de trazabilidad declara la familia NPP con DL-173, y API-TRN-25 como un ID nuevo de la familia TRN del 09 (que llega a API-TRN-24), con sus sufijos LISTA y PROPIA | `packages/domain`, `scripts/trazabilidad-de-operaciones.test.cjs` | TEST-CT |
+
+**Oráculos.** TEST-PG-014 y TEST-PG-015 viven en cuatro lugares: la parte pura en `packages/domain/src/notas-propias.test.ts`;
+la de la APK en `apps/mobile/src/nota-para-tu-profe.test.ts`; la del website en `apps/web/test/pulido-grandes.test.mjs`; y la
+de la API, contra PostgreSQL, en `test/integration/notas-pulido-grandes.int-spec.ts` (permiso, idempotencia, el largo, que
+solo agrega, el autor, archivar, sin vínculo, el ancla y la exportación). TEST-PG-019 suma los archivos nuevos a
+`scripts/copy-pantallas.test.cjs`, con todas las listas.
+
+| Oráculo | Mutación | Resultado |
+|---|---|---|
+| TEST-PG-014 (dominio) | Las notas de una sesión, de la más nueva a la más vieja | rojo |
+| TEST-PG-014 (APK) | Mandar la nota dentro de `finalizar()` | rojo |
+| TEST-PG-014 (APK) | Dar por enviada una nota sin respuesta del servidor | rojo |
+| TEST-PG-014 (APK) | Tratar el 404 (sin acceso) como reintentable | rojo |
+| TEST-PG-014 (APK) | Las frases en el orden en que se tocaron | rojo |
+| TEST-PG-015 (dominio) | Comparar las comidas sin sacar las tildes | rojo |
+| TEST-PG-015 (dominio) | Una archivada al lado de su ejercicio | rojo |
+| TEST-PG-015 (dominio) | «Sobre…» cuando el ejercicio ya no está en el plan | rojo |
+| TEST-PG-015 (website) | Sacar «Tus notas» de una disposición del Resumen | rojo |
+| TEST-PG-015 (website) | Leer las notas en cada ejercicio | rojo |
+
+Las mutaciones de la API (dejar leer las notas de las sesiones a otra área, filtrar las notas propias por la persona y no
+por el autor, dejar que el profesional del plan escriba por la persona, borrar al archivar) quedaron **descritas en la
+prueba y sin correr**: piden la base de la CI. Las de la APK se corrieron sobre el módulo transpilado, con las mismas
+comprobaciones de su prueba.
+
+**Decisiones del continuador, a ratificar:**
+- **PG-T60 · Quién escribe la nota para el profe y con qué permiso:** solo la persona de la sesión, con el permiso con
+  que corrige su registro (el PDP del par con su profesional). El profesional del plan la lee y no escribe por ella (el
+  mismo 404 que lo ajeno). *Alternativa:* solo con el A3 de la persona; quedaría guardada aunque el profesional ya no la
+  pueda leer.
+- **PG-T61 · Hasta 20 notas por sesión** (después, 422 VALIDATION_FAILED con NOTE_LIMIT_REACHED), contadas con la
+  ejecución tomada. *Alternativa:* sin tope.
+- **PG-T62 · Las frases a un toque se suman al texto**, en el orden de la lista y cada una con su punto; la API guarda
+  solo el texto. *Alternativa:* guardarlas aparte, como datos; se podrían contar, y eso es calificar.
+- **PG-T63 · Dónde se escribe en la APK:** en la pantalla de la sesión ya registrada, a la que lleva «Finalizar», y no en
+  el cuadro de «Finalizar». Así la nota nunca está en el camino de confirmar, y sirve también desde «Tu historial».
+  *Alternativa:* el renglón en el cuadro de «Finalizar», mandado después de confirmar.
+- **PG-T64 · API-TRN-25-PROPIA:** la persona ve lo que le mandó a su profe, con su A3, como «Tu historial». No estaba en
+  §4.2. *Alternativa:* sin lectura; lo enviado se vería solo mientras la pantalla está abierta.
+- **PG-T65 · API-TRN-25-LISTA por período**, el mismo de Registros (hasta 92 días): una lectura para todas las sesiones
+  a la vista. *Alternativa:* una lectura por sesión, al abrir su detalle.
+- **PG-T66 · Lo que ve el profesional:** «Con nota» en la fila y el texto con su hora en el detalle de la sesión; sin
+  aviso, sin novedad y sin contador.
+- **PG-T67 · El ancla de una nota propia:** un ejercicio del catálogo (no su versión), que aparece en cualquier sesión y
+  versión del plan; una comida por su nombre, sin tildes ni mayúsculas, que aparece en cada día tipo con ese nombre.
+  *Alternativa:* el identificador de la comida en una versión; se pierde en otro día tipo y al copiar.
+- **PG-T68 · «Que ya no está»:** se mira contra la última versión del plan del autor con esa persona en esa área (la que
+  prepara o, si no hay, la vigente). Sin plan de esa área, no se dice.
+- **PG-T69 · API-NPP-02 trae hasta 200 notas**, archivadas incluidas, sin páginas (`page.hasMore` dice si quedaron más).
+  *Alternativa:* paginar.
+- **PG-T70 · Archivar dos veces responde lo mismo**, sin error; en esta vuelta no hay «desarchivar».
+- **PG-T71 · El permiso de una nota sin ancla:** alguna área con la persona (la primera que el PDP permite: Entrenamiento,
+  Nutrición, Antropometría), decidida y registrada para que el reintento vuelva a decidir; con ancla, la del ancla.
+- **PG-T72 · La exportación:** `notasPropiasDeSusProfesionales` va siempre (son datos sobre la persona, PG-D11) y
+  `entrenamiento.notasParaSuProfesional`, con Entrenamiento.
+- **PG-T73 · «Ocultar nombres»:** el texto de las notas propias se oculta hasta «Mostrar en esta pantalla»: la pantalla
+  se está mostrando a otros. Las notas de la persona en Registros se ven como el resto del detalle (como el motivo que
+  escribe la persona). *Alternativa:* mostrarlas igual, como las notas de coordinación.
+
+**Lo que falta para cerrar la parte de las notas:**
+1. Probarlo en el teléfono: la nota al terminar una sesión, con TalkBack (las frases dicen si están elegidas) y la letra
+   ×1,3; sin señal, «No se mandó» y «Reintentar».
+2. La mirada en pantalla del website (Azul noche y Claro, 360 y 1440 px): el bloc, las notas al lado, el cuadro y «Con
+   nota» en Registros, con el lector de pantalla.
+3. Correr las mutaciones de la API con la base de la CI.
+4. `WP-PULIDO-GRANDES-ORACULOS.md` con los trece campos: en modo liviano, como la tanda A, los oráculos quedaron en las
+   pruebas, con su mutación.
+5. Congelar lo que la APK empieza a leer y a escribir (API-TRN-25 y API-TRN-25-PROPIA) con la candidata que la lleve
+   (DL-152): lo hace quien la publica. Si esta rama entra antes de cortar la 0.28, la 0.28 ya trae la nota; si no, va en
+   la 0.29, como dice §3.
+6. La ventana de redespliegue de la API: la migración solo agrega, y la API nueva sale con ella, en un solo cambio.
