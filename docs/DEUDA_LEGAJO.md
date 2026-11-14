@@ -176,7 +176,8 @@
 | DL-170 | Decisión de Dirección · 2026-11-11 (WP-APP-VUELTA-2) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · DL-166 (PV-2, PV-5, PV-11 y AVD-2) · DL-117 · DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · WP-ENTRENAMIENTO-SERIES §7.7 · GUIA-UX-UI I.6, I.8, III.3 y III.4 · F-143 | La APK se siente plana: el fondo es liso, las tarjetas son mates y opacas y el botón principal es casi blanco. Además, el Inicio de la 0.23 tiene seis errores de lógica: «Empezar» con una sesión en curso, «la que sigue» sin mirar lo hecho hoy, la figura cortada en Evolución, «Cómo se lee» desalineado, ceros en Tu historial y una actividad que se lee de dos maneras | **DECIDIDA por Dirección el 2026-11-11 · etapa A programada, sin integrar (#255)**: «Sí, Inicio + glassy en toda la app», en la misma APK que UF-01 y antes del congelamiento del 25/11; primero, el Inicio real en el teléfono de Dirección. Aprobadas la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; la etapa B espera el visto bueno a la muestra (`docs/paquetes/WP-APP-VUELTA-2.md` §10) |
 | DL-171 | Decisión de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; DJ-1 y DJ-2 del juicio del paquete V3) | 09v10:356 · 06:5431 · REG-06-182 · INV-06-192 · REG-06-202 a 207 · B10-06:426-431 · B10-08 · INV-06-152 · DL-126 · DL-161 · DL-167 | El legajo dice que BE no fija una fórmula de repetición máxima, y un RIR registrado puede ser el del plan sin marca; Dirección pide seguir la fuerza desde lo que se hizo, no desde lo indicado | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · el método, en programación (etapa 1)**: Epley v1 (n/30, bandas sobre las repeticiones equivalentes, RIR de 0 a 2), solo para el profesional y en el website, desde una serie que observa el profesional o que escribió la persona, con la procedencia por campo en la APK de esta actualización; el profesional elige un % y BE sugiere los kilos, que él confirma. Enmienda 09v10:356 sin tocar el legajo. ED-70 a ED-76; ED-D17 a ED-D21, decididas el 2026-11-12 como se recomendaban; el website le explica al profesional la regla del RIR de 0 a 2 (R3) |
 | DL-172 | Pedido de Dirección · 2026-11-13 («ve adelantando las cosas según prioridad»; WP-RF068-RF004) | 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.16.1 §4 · 09 v0.12 §12 y §16 · 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 | El 09 vigente (v0.16.1 §4) les da familia (`ACC-P2` y `ADM-P1`) sin IDs ni contratos; el v0.12 bosqueja las rutas. RF-068 estaba fuera de WP-USO-FINAL y RF-004 en parte | **PROGRAMADA en `wp-rf068-rf004` (PR en borrador) · D-1 a D-12 a ratificar**: familias propias INC (API-INC-01 a 05) y MET (API-MET-01 a 03) con las rutas del bosquejo; dos migraciones que solo agregan |
-| DL-173 | Pedido de Dirección · 2026-11-13 («Armá el paquete con sus IDs y decime cuándo sale cada cosa»; WP-PULIDO-GRANDES) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · B10-06 (feedback háptico opcional) · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 | De la página «Pulido como las grandes», Dirección eligió quince ideas, y al probar la 0.27 dejó cuatro de Inicio, la carga y la cabecera; ninguna tenía ID ni fecha de salida | **DECLARADA el 2026-11-13, sin programar** (`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador): 19 partes (PG-01 a PG-04, las de Inicio; PG-05 a PG-19, las quince elegidas). Tanda A, APK 0.28, objetivo martes 17/11 (PG-01 a PG-10 y PG-14); tanda B, APK 0.29, objetivo viernes 20/11 (PG-11 a PG-13 y PG-15 a PG-17); después del 25/11, PG-18 y PG-19. Desde el 23/11, solo arreglos; lo de la B que no esté estable el 20/11 pasa a después del 25/11. PG-D1 a PG-D15, a ratificar |
+| DL-173 | Pedido de Dirección · 2026-11-13 («Armá el paquete con sus IDs y decime cuándo sale cada cosa»; WP-PULIDO-GRANDES) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · B10-06 (feedback háptico opcional) · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 | De la página «Pulido como las grandes», Dirección eligió quince ideas, y al probar la 0.27 dejó cuatro de Inicio, la carga y la cabecera; ninguna tenía ID ni fecha de salida | **DECLARADA el 2026-11-13, sin programar** (`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador): 19 partes (PG-01 a PG-04, las de Inicio; PG-05 a PG-19, las quince elegidas). Tanda A, APK 0.28, objetivo martes 17/11 (PG-01 a PG-10 y PG-14); tanda B, APK 0.29, objetivo viernes 20/11 (PG-11 a PG-13 y PG-15 a PG-17); después del 25/11, PG-18 y PG-19. Desde el 23/11, solo arreglos; lo de la B que no esté estable el 20/11 pasa a después del 25/11. PG-D1 a PG-D15, a ratificar, salvo PG-D1 (decidida por Dirección el 2026-11-13) y PG-D10 y PG-D11 (aprobadas el 2026-11-14: «Tienes mi sí para las notas») |
+| DL-174 | Pedido de Dirección · 2026-11-14 («Aprobadas las 25 sugerencias de gráficos»; WP-GRAFICOS) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · RF-025 · REG-06-105 · REG-06-162 · REG-06-165 y 166 · B10-07 · B10-08 §21-§23 · B10-09 §15-§28 · 09 v0.11 §18-§23 · INV-06-153 · INV-06-192 · M-11 · DL-126 · DL-128 · DL-137 D-7 · DL-152 · DL-153 · DL-158 · DL-161 · DL-163 · DL-165 · DL-167 · DL-169 · DL-171 · DL-173 | La propuesta de gráficos (25 gráficos y ocho cruces) no tenía IDs ni fases fechadas en el repo. Dirección sumó ver los gráficos alineados o superpuestos si comparten la x (DL-126 solo deja superponer con la misma familia y unidad) y un conjunto de gráficos favoritos por persona o por plan, que no tiene operación | **DECLARADA el 2026-11-14** (`docs/paquetes/WP-GRAFICOS.md`, sin integrar): GR-01 a GR-27 y SP-01 a SP-08. Fase 1 (GR-01, GR-04 y GR-16) en `wp-graficos-fase-1`, antes del 23/11; fase 2 adelantada, programada desde el 14/11 en cinco ramas: antes del 23/11 entra solo lo sólido, y lo demás, desde el 26/11; fases 3 a 5, en 2027. Familia propia GRF (API-GRF-01 a 07, los enfoques), con una migración que solo agrega. Amplía DL-126 (dos unidades en «Superpuestas», GR-T04). GR-D0 a GR-D10, tomadas por la delegación de Dirección según la recomendación; GR-T01 a GR-T19, a ratificar |
 
 ---
 
@@ -8134,7 +8135,8 @@ ni contratos.
 **Prioridad:** media (pulido de uso; ninguna parte cambia una garantía del legajo) · **Documento:** TEST-PRJ-009 ·
 RNF-ACC-001 y B10-10 · B10-06 · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137
 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 · **Estado:** DECLARADA el 2026-11-13, sin programar
-(`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador). PG-D1 a PG-D15, a ratificar.
+(`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador). PG-D1 a PG-D15, a ratificar, salvo PG-D1 (decidida por
+Dirección el 2026-11-13) y PG-D10 y PG-D11 (aprobadas el 2026-11-14: «Tienes mi sí para las notas»).
 
 **El pedido.** El 2026-11-13, Dirección eligió quince ideas de la página «Pulido como las grandes» y pidió: «Armá el
 paquete con sus IDs y decime cuándo sale cada cosa». Ese mismo día, al probar la 0.27, dejó cuatro ideas de Inicio, la
@@ -8171,3 +8173,70 @@ en #266 y queda como antecedente, no como parte.
 - **A (recomendada):** ratificar PG-D1 a PG-D15 como se recomiendan y programar por tandas, con el calendario de arriba.
 - **B:** lo mismo, con PG-D1 en su alternativa (el desplegable, sin destacar ninguna sesión), y PG-15 y PG-16 después
   del 25/11, para que la tanda B no toque la API.
+
+---
+
+## DL-174 — Los gráficos de BE: la historia de la persona en el tiempo, alineada o superpuesta, y los enfoques del profesional
+
+**Prioridad:** alta (la visión longitudinal de BE; amplía una regla de «Analizar» y suma una familia de operaciones, sin
+cambiar una garantía del legajo) · **Documento:** TEST-PRJ-009 · RNF-ACC-001 y B10-10 · RF-025 · REG-06-105 ·
+REG-06-162 · REG-06-165 y 166 · B10-07 · B10-08 §21-§23 · B10-09 §15-§28 · 09 v0.11 §18-§23 · INV-06-153 · INV-06-192 ·
+M-11 · DL-126 · DL-128 · DL-137 D-7 · DL-152 · DL-153 · DL-158 · DL-161 · DL-163 · DL-165 · DL-167 · DL-169 · DL-171 ·
+DL-173 · **Estado:** DECLARADA el 2026-11-14 (`docs/paquetes/WP-GRAFICOS.md`, sin integrar). GR-D0 a GR-D10, tomadas
+por la delegación de Dirección según la recomendación; GR-T01 a GR-T19, a ratificar.
+
+**El pedido.** El 2026-11-14, Dirección aprobó la propuesta de gráficos («Aprobadas las 25 sugerencias de gráficos») y
+sumó dos ideas: que los profesionales puedan ver los gráficos «uno arriba del otro, superpuestos en el mismo gráfico si
+comparten la x o alineados uno arriba del otro […] además de los sugeridos», y «su stand de gráficos favoritos para
+elegir ver en ese plan o persona hasta que lo vayan cambiando». Pidió, además, empezar ya («ya tienes que ponerte a
+trabajar en eso»). Las decisiones de la propuesta se toman por la delegación vigente: «a menos que sea una decisión
+crítica con criterio haz lo que me recomiendes».
+
+**Las partes.**
+- **GR-01 a GR-25**, los 25 gráficos de la propuesta: diez de Entrenamiento (GR-01 a GR-10), cinco de Nutrición (GR-11
+  a GR-15), siete de Antropometría (GR-16 a GR-22) y tres que cruzan áreas (GR-23 a GR-25: la cinta del tiempo, dos
+  etapas y lo de sus semanas anteriores).
+- **SP-01 a SP-08**, los ocho cruces entre áreas, cada uno con su ventana de lectura fijada antes de mirar, lo que
+  también cambió, la frase «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.» y su prueba del caso
+  negado.
+- **GR-26, «Armá tu gráfico»:** «Alineadas» (por defecto) y «Superpuestas» (si comparten el eje X), en «Analizar» y en
+  «Patrones».
+- **GR-27, los enfoques:** conjuntos de hasta seis gráficos, propios del profesional, que se eligen para una persona o
+  para uno de sus planes y quedan hasta que se cambien.
+- **«Patrones»:** una vista nueva de la ficha, entre «Resumen» y «Línea de tiempo», y una pestaña del panel de la
+  estación en los dos editores.
+
+**El calendario.**
+- **Sin congelamiento (Dirección, 2026-11-14):** «Todo se integra lo antes posible una vez que esté aprobado, no
+  retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo». Aprobado = la revisión
+  adversaria sin altas ni medias pendientes y la CI en verde.
+- **Fase 1:** GR-01 (reducida), GR-04 (la marca) y GR-16, en `wp-graficos-fase-1`, programada el 14/11.
+- **Fase 2, adelantada:** se programa desde el 14/11 en cinco ramas (la base; Entrenamiento; Nutrición y Antropometría;
+  los cruces y «Analizar»; «Patrones» y los enfoques), y cada una entra apenas queda aprobada: la base primero; la API
+  de los enfoques, después de la base y de la rama de los cruces.
+- **Fases 3 y 4, a continuación:** lo ratificado que espera programación y el caso 2 (fase 3), y lo que pide una DL o un
+  desafío del legajo (fase 4). **Fase 5, después del piloto** (una condición de producto ratificada, que Dirección puede
+  adelantar): el peso en casa, los hábitos y otras áreas.
+
+**Lo que toca el legajo o una DL.**
+- **DL-126 (se amplía, no se cambia; GR-T04):** dos series comparten un eje solo si comparten familia y unidad, como
+  hoy. Por el pedido de Dirección, «Superpuestas» admite además dos unidades, una a cada lado, con hasta tres series del
+  mismo eje X, la escala de «Alineadas» y la frase. En la URL y en API-VAN siguen `PANELS` y `OVERLAY`, y las vistas
+  guardadas de antes se ven igual. La regla de la propuesta de no usar doble eje sigue en los sugeridos y en los cruces
+  preparados.
+- **DL-137 D-7:** GR-27 suma una familia propia de BE, **GRF** (API-GRF-01 a 07), que la guardia de trazabilidad declara
+  con esta DL al programarse, y dos tablas con una migración que solo agrega. La APK no la lee (DL-152).
+- **ED-75 (DL-171):** el cuadro del ejercicio se abre para todos los ejercicios («La vez pasada» en la fase 1; el
+  historial de GR-03, GR-05 y GR-06 en la fase 2). La tarjeta de fuerza sigue solo en la lista de la v1 (RM-16).
+- **RF-025 y DJ-14 (GR-D6):** los gráficos arrancan en el inicio del acompañamiento y lo dicen. Abrir la historia de un
+  profesional anterior sería un desafío, después del piloto.
+- **INV-06-153 y M-11:** la palabra prohibida sigue prohibida; GR-09 espera su término (GR-D2, con su DL en la fase 3) y
+  GR-08 entra solo como desafío de M-11.
+- **DL-163 D-13:** el caso 2 de los cruces llega por API-RES, después de TB-29 y de la revisión legal (fase 3).
+- **Las DL que se abren después, cada una en su fase:** GR-D2 (el término de TB-34), GR-D4 (el error técnico de
+  medición), GR-D8 (lo de sus semanas anteriores), GR-D9 (el perímetro corregido) y GR-D10 (las versiones anteriores de
+  los hábitos).
+
+**Opciones para Dirección.**
+- **A (vigente, por la delegación):** las decisiones como se recomiendan, y todo se integra apenas queda aprobado.
+- **B:** lo mismo, pero «Superpuestas» solo con una unidad (la regla de hoy de DL-126, sin doble eje).
