@@ -33,7 +33,6 @@ export const COPY_DESCARGA = {
   escanea: 'Escaneá para bajar BE',
   conLaCamara: 'Apuntá la cámara del teléfono al código: el archivo baja directo.',
   bajar: 'Bajar BE',
-  enEstaCompu: 'O bajá el archivo en esta compu',
   /** La versión y el tamaño, en una línea: salen de la última publicación, nunca escritos a mano. */
   version: (version: string, tamano: string) => `Versión ${version} · ${tamano}`,
   etiquetaDelQr: `Código QR para bajar BE. Lleva a ${APK_DE_LA_ULTIMA}`,

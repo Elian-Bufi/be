@@ -17611,9 +17611,9 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.25rem;
 }
 
-/* En la compu, el QR; el botón grande es para el teléfono. */
-.descarga__en-el-telefono {
-  display: none;
+/* El botón, siempre (en la compu, al lado del QR; Dirección, 2026-11-14). */
+.descarga__boton {
+  margin-top: 0.75rem;
 }
 
 .descarga__pasos-y-marca h3 {
@@ -17769,7 +17769,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
     display: none;
   }
 
-  .descarga__en-el-telefono {
+  .descarga__boton {
     display: inline-flex;
     width: 100%;
     justify-content: center;

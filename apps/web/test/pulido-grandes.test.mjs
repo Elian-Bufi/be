@@ -92,11 +92,13 @@ test('TEST-PG-005 · la versión y el tamaño salen de la última publicación; 
   for (const r of ['src/app/page.tsx', 'src/components/descarga-de-la-app.tsx', 'src/lib/descarga-de-la-app.ts']) assert.doesNotMatch(leer(r), /Versión \d|0\.\d+\.\d+-candidata/, r);
 });
 
-test('TEST-PG-005 · con el ancho de un teléfono no hay QR: hay un botón; los tres pasos, en castellano y por marca', () => {
+test('TEST-PG-005 · el botón siempre; con el ancho de un teléfono, sin QR; los tres pasos, en castellano y por marca', () => {
   const css = leer('src/app/globals.css');
   const telefono = css.slice(css.indexOf('/* Con el ancho de un teléfono: sin QR'));
-  assert.match(telefono, /^[^]*?@media \(max-width: 40rem\) \{[^]*?\.descarga__qr \{\n\s*display: none;\n\s*\}[^]*?\.descarga__en-el-telefono \{\n\s*display: inline-flex;/);
-  assert.match(css, /\.descarga__en-el-telefono \{\n\s*display: none;\n\}/);
+  assert.match(telefono, /^[^]*?@media \(max-width: 40rem\) \{[^]*?\.descarga__qr \{\n\s*display: none;\n\s*\}[^]*?\.descarga__boton \{\n\s*display: inline-flex;/);
+  // Dirección, 2026-11-14: «el QR para descargar y un botón de descarga también». En la compu, los dos a la vista.
+  assert.doesNotMatch(css.slice(0, css.indexOf('/* Con el ancho de un teléfono: sin QR')), /\.descarga__boton \{[^}]*display: none/);
+  assert.match(leer('src/components/descarga-de-la-app.tsx'), /<a className="boton boton--primario descarga__boton" href=\{APK_DE_LA_ULTIMA\} download data-bajar-la-app>/);
   assert.deepEqual(Object.keys(D.PASOS_DE_LA_INSTALACION), ['samsung', 'motorola', 'xiaomi']);
   for (const [marca, pasos] of Object.entries(D.PASOS_DE_LA_INSTALACION)) {
     assert.equal(pasos.length, 3, marca);
