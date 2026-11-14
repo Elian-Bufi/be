@@ -3,18 +3,31 @@
  * vigencias de los planes. Acá no se suma, promedia ni interpola nada: se cambia la forma y se decide la marca con el
  * dominio (`marcaDelPunto`), para que lo precargado del plan nunca se dibuje como dato de la persona.
  *
- * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`. Lo indicado del entrenamiento (API-TRN-21 y API-SER-01)
- * llega en el próximo commit de la rama base.
+ * Lo indicado del entrenamiento (GR-03 y GR-05; GR-T14) sale del comparador «Planificado y registrado»: las sesiones de
+ * API-TRN-21 y los objetivos por serie de cada versión (API-SER-01), con `observacionesDelEjercicio` y `evolucion` del
+ * dominio. Cada sesión se lee contra la prescripción de la versión que rigió ese día (REG-06-105), nunca contra la de hoy.
+ *
+ * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
 import {
+  evolucion,
+  MARCA_SEGUN_EL_DATO,
   marcaDelPunto,
   marcaDelPuntoDeFuerza,
+  numero,
+  observacionesDelEjercicio,
   type AreaDeMetrica,
+  type EjecucionDeEntrenamiento,
+  type Medida,
+  type ObjetivosDeLaVersion,
+  type PlanConObjetivos,
   type PuntoAnalitico,
+  type PuntoDeEvolucion,
   type PuntoDeFuerza,
   type ResultadoDeEstimacionDeFuerza,
   type SerieAnalitica,
   type SerieDisponible,
+  type ValorPlanificado,
   type VigenciaDePlan,
 } from '@be/domain';
 import type { BandaDeVersion, CarrilDePuntos, EscalaDelCarril, PuntoDelCarril } from './carriles';
@@ -140,4 +153,120 @@ export function puntosDeLaFuerza(puntos: readonly PuntoDeFuerza[], unidad: 'kg' 
       tarde: false,
       lectura: lectura(p),
     }));
+}
+
+// ─── Lo indicado del entrenamiento (GR-03 y GR-05; GR-T14) ──────────────────────────────────────
+
+/**
+ * Los objetivos por serie de una versión leída con API-SER-01, por prescripción: lo que pide la comparación del dominio.
+ * Es lo mismo que arma `objetivosDe` en `training/ejecuciones.tsx`, sin la pantalla.
+ */
+export function objetivosDelPlanLeido(plan: PlanConObjetivos): ObjetivosDeLaVersion {
+  return new Map(plan.blocks.flatMap((b) => [...b.sessions, ...b.microcycles.flatMap((m) => m.sessions)]).flatMap((s) => s.prescriptions.map((p) => [p.prescriptionId, p.sets] as const)));
+}
+
+export interface OpcionesDeLoIndicado {
+  /** `e:<exerciseId>` o `v:<versionId>`, como en el selector de «Analizar». */
+  readonly exerciseKey: string;
+  /** El número de la serie (`setIndex`): lo indicado es el de esa serie, nunca un promedio entre series. */
+  readonly serie: number;
+  readonly medida: Medida;
+  readonly desde: string;
+  readonly hasta: string;
+}
+
+/** Cada sesión del ejercicio en el período, con lo que indicaba para esa serie la versión que la rigió. */
+function loIndicadoEnCadaSesion(ejecuciones: readonly EjecucionDeEntrenamiento[], objetivosPorVersion: ReadonlyMap<string, ObjetivosDeLaVersion>, o: OpcionesDeLoIndicado): PuntoDeEvolucion[] {
+  // La identidad del ejercicio sale de todas las sesiones leídas, como en el comparador; después se recorta al período.
+  const observaciones = observacionesDelEjercicio(ejecuciones, o.exerciseKey, ejecuciones, objetivosPorVersion).filter((x) => x.comparacion.fecha >= o.desde && x.comparacion.fecha <= o.hasta);
+  return evolucion(observaciones, o.medida, o.serie);
+}
+
+/**
+ * Lo indicado en palabras («RIR 2», «8 a 10 rep», «40 kg (sugerida)»), o `null` si no hay un número que dibujar: sin
+ * fijar, un % RM (no se convierte a kg), otra unidad (kg y lb nunca van juntas), una serie que la versión no tenía o lo
+ * indicado para otro ejercicio (una sustitución).
+ */
+export function lecturaDeLoIndicado(v: ValorPlanificado, medida: Medida): string | null {
+  const unidad = medida.variable === 'carga' ? medida.unidad : 'rep';
+  if (v.tipo === 'valor') return medida.variable === 'rir' ? `RIR ${numero(v.valor)}` : `${numero(v.valor)} ${unidad}${v.sugerida ? ' (sugerida)' : ''}`;
+  if (v.tipo === 'rango') return medida.variable === 'rir' ? `RIR ${numero(v.min)} a ${numero(v.max)}` : `${numero(v.min)} a ${numero(v.max)} ${unidad}`;
+  return null;
+}
+
+/**
+ * Lo indicado como puntos huecos de un carril, en la fecha (y la hora) de cada sesión: el mismo lugar que lo registrado
+ * de esa sesión. Un valor es un punto; un rango («8 a 10 rep»), un segmento hueco sin valor del medio. La línea une solo
+ * las sesiones de la misma prescripción de la misma versión: otra versión u otra sesión del plan la corta (GR-T27).
+ */
+export function puntosDeLoIndicado(ejecuciones: readonly EjecucionDeEntrenamiento[], objetivosPorVersion: ReadonlyMap<string, ObjetivosDeLaVersion>, o: OpcionesDeLoIndicado): PuntoDelCarril[] {
+  return loIndicadoEnCadaSesion(ejecuciones, objetivosPorVersion, o).flatMap((p): PuntoDelCarril[] => {
+    const v = p.planificado;
+    if (v.tipo !== 'valor' && v.tipo !== 'rango') return [];
+    const lectura = lecturaDeLoIndicado(v, o.medida);
+    if (lectura === null) return [];
+    const c = p.observacion.comparacion;
+    const base = { clave: `indicado:${c.executionId}:${c.prescriptionId}:${o.serie}`, fecha: c.fecha, hasta: null, en: c.ocurrio, marca: MARCA_SEGUN_EL_DATO.INDICADO, tarde: false, lectura };
+    return v.tipo === 'rango'
+      ? [{ ...base, valor: null, rango: { desde: v.min, hasta: v.max }, tramo: `indicado-rango:${c.executionId}:${c.prescriptionId}` }]
+      : [{ ...base, valor: v.valor, rango: null, tramo: `indicado:${p.tramoPlanificado ?? c.executionId}` }];
+  });
+}
+
+/**
+ * Lo indicado como serie analítica, para «Analizar» y para `leerSerieDelCatalogo` (`entrenamiento.rir-indicado`). Solo
+ * los valores: un rango no se vuelve un número (la nota lo dice) y lo que no está fijado no es un punto.
+ */
+export function serieDeLoIndicado(
+  ejecuciones: readonly EjecucionDeEntrenamiento[],
+  objetivosPorVersion: ReadonlyMap<string, ObjetivosDeLaVersion>,
+  o: OpcionesDeLoIndicado & { readonly metricId: string; readonly nombre: string; readonly escala: SerieAnalitica['scale'] },
+): SerieAnalitica {
+  const puntos: PuntoAnalitico[] = [];
+  let conRango = 0;
+  for (const p of loIndicadoEnCadaSesion(ejecuciones, objetivosPorVersion, o)) {
+    const v = p.planificado;
+    if (v.tipo === 'rango') conRango++;
+    if (v.tipo !== 'valor') continue;
+    const c = p.observacion.comparacion;
+    puntos.push({
+      pointId: `indicado:${c.executionId}:${c.prescriptionId}:${o.serie}`,
+      date: c.fecha,
+      dateEnd: null,
+      at: c.ocurrio,
+      value: v.valor,
+      quality: 'COMPLETE',
+      n: 1,
+      segment: `indicado:${p.tramoPlanificado ?? c.executionId}`,
+      corrected: false,
+      partialBucket: false,
+      dataClass: null,
+      method: null,
+      planVersionIds: [c.planId],
+      coverage: null,
+      missing: [],
+      detail: [
+        { label: 'Sesión', value: c.sesion },
+        { label: 'De dónde sale', value: v.origen === 'serie' ? 'El objetivo de esta serie en la versión que rigió' : 'Lo indicado para toda la prescripción en la versión que rigió' },
+      ],
+      sources: [{ type: 'TRAINING_PLAN_VERSION', id: c.planId }],
+      sourcesTruncated: false,
+    });
+  }
+  const tramos = [...new Set(puntos.map((p) => p.segment))];
+  return {
+    metricId: o.metricId,
+    label: o.nombre,
+    unit: o.medida.variable === 'carga' ? o.medida.unidad : o.medida.variable === 'rir' ? 'RIR' : 'rep',
+    scale: o.escala,
+    grain: 'ORIGINAL',
+    aggregation: 'NONE',
+    points: puntos,
+    gaps: [],
+    segments: tramos.map((segment, i) => ({ segment, label: 'Lo indicado por una misma prescripción de una misma versión', breakReason: i === 0 ? null : 'Otra versión del plan u otra prescripción' })),
+    notes: [
+      'Es lo que indicaba el plan para esa serie, no lo que hizo la persona.',
+      ...(conRango > 0 ? [`${conRango === 1 ? '1 sesión indicaba' : `${conRango} sesiones indicaban`} un rango: no se dibuja como un número.`] : []),
+    ],
+  };
 }

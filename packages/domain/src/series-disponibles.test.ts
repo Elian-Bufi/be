@@ -74,12 +74,16 @@ test('TEST-GRF-002 · seriesOfrecidas no ofrece nada de un área sin acceso, y l
   const todo = seriesOfrecidas(acceso(['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'], { NUTRICION: true, ENTRENAMIENTO: true, ANTROPOMETRIA: true }));
   assert.ok(todo.every((s) => s.estado === 'OFRECIDA'));
   assert.ok(!todo.some((s) => s.id === 'entrenamiento.volumen-carga-externa' || s.id === 'nutricion.energia-prevista-del-dia'));
-  // Una serie de dos áreas, si se ofreciera, pide lo propio en las dos.
+  // Una serie de dos áreas, ya ofrecida, pide los dos alcances y lo propio en las dos. Se prueba la función real con un
+  // catálogo de prueba, porque en el de BE los g/kg siguen EN_PREPARACION hasta que los programe la rama C.
   const porKilo = { ...serie('nutricion.proteinas-por-kilo'), estado: 'OFRECIDA' as const };
-  const ofrecida = (a: AccesoDeLaPersona) => a.alcances.length > 0 && porKilo.acceso.alcances.every((x) => a.alcances.includes(x)) && porKilo.acceso.alcances.every((x) => a.propios[x]);
-  assert.equal(ofrecida(acceso(['NUTRICION'], { NUTRICION: true })), false);
-  assert.equal(ofrecida(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true })), false);
-  assert.equal(ofrecida(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true, ANTROPOMETRIA: true })), true);
+  const conPorKilo = [porKilo, serie('nutricion.proteinas')];
+  const ids = (a: AccesoDeLaPersona) => seriesOfrecidas(a, conPorKilo).map((s) => s.id);
+  assert.deepEqual(ids(acceso(['NUTRICION'], { NUTRICION: true })), ['nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true })), ['nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['NUTRICION', 'ANTROPOMETRIA'], { ANTROPOMETRIA: true })), ['nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true, ANTROPOMETRIA: true })), ['nutricion.proteinas-por-kilo', 'nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['ANTROPOMETRIA'], { NUTRICION: true, ANTROPOMETRIA: true })), []);
   assert.deepEqual(porKilo.acceso.alcances, ['NUTRICION', 'ANTROPOMETRIA']);
 });
 
