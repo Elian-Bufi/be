@@ -12,8 +12,8 @@
  * - «Cómo se calculó», la tabla (en el gráfico) y lo que mueve un RIR.
  *
  * Lee la estimación (API-PRJ-01 `TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE`, con el interruptor apagado y encendido, como
- * ED-74) y el comparador (lo indicado de cada versión y lo cargado después), que comparte con los otros gráficos del
- * historial mientras está en vuelo.
+ * ED-74) y el comparador (lo indicado de cada versión y lo cargado después): en el historial, el que lee una vez
+ * `ProveedorDelComparador` para todos sus gráficos.
  */
 import { entraEnLaEstimacion, type SentidoDeLaMarca } from '@be/domain';
 import { useId, useMemo, useState } from 'react';

@@ -6,18 +6,19 @@
  * de cada sesión va hueco en el panel del RIR. Un RIR sin escribir no es 0, y lo tildado sin escribir va hueco y gris.
  *
  * Lee la carga, las repeticiones y el RIR del número de serie elegido (API-PRJ-01, por `leerSerieDelCatalogo`) y el
- * comparador (lo indicado y lo cargado después), que comparte con los otros gráficos del historial mientras está en vuelo.
+ * comparador (lo indicado y lo cargado después): en el historial, el que lee una vez `ProveedorDelComparador` para todos.
  */
 import type { SentidoDeLaMarca } from '@be/domain';
 import { useMemo } from 'react';
 import type { EstadoDeSerie } from '../../seguimiento/series';
+import { puntosDeLoIndicado } from '../adaptadores';
+import { COPY_DE_LOS_GRAFICOS as G } from '../copy';
 import { inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import { PanelesAlineados } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
-import { carrilesDeCargaRepeticionesYRir, rirIndicadoPorSesion } from './carga-repeticiones-y-rir';
+import { carrilesDeCargaRepeticionesYRir } from './carga-repeticiones-y-rir';
 import { cargadasDespues, fechasCargadasDespues, observacionesDelPeriodo } from './comparador';
-import { COPY_DE_LOS_GRAFICOS as G } from '../copy';
 import { COPY_CARGA_REPETICIONES_Y_RIR as C } from './copy';
 import { useComparador, useLecturaDeLaSerie } from './lecturas-del-ejercicio';
 
@@ -33,12 +34,15 @@ export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, b
 
   const carriles = useMemo(() => {
     if (!leida || !exerciseKey) return [];
-    const observaciones =
-      comparador.tipo === 'lista' ? observacionesDelPeriodo(comparador.ejecuciones, exerciseKey, comparador.objetivosPorVersion, inicioDelEje(periodo), periodo.hasta) : [];
-    const tardias = comparador.tipo === 'lista' ? cargadasDespues(comparador.ejecuciones) : new Set<string>();
+    const desde = inicioDelEje(periodo);
+    const lista = comparador.tipo === 'lista' ? comparador : null;
+    const observaciones = lista ? observacionesDelPeriodo(lista.ejecuciones, exerciseKey, lista.objetivosPorVersion, desde, periodo.hasta) : [];
+    // Lo indicado de cada sesión para esta serie, de la versión que la rigió: hueco, en el panel del RIR.
+    const indicado = lista ? puntosDeLoIndicado(lista.ejecuciones, lista.objetivosPorVersion, { exerciseKey, serie: numero, medida: { variable: 'rir' }, desde, hasta: periodo.hasta }) : [];
+    const tardias = lista ? cargadasDespues(lista.ejecuciones) : new Set<string>();
     return carrilesDeCargaRepeticionesYRir(
       { carga: serieDe(leida.carga), repeticiones: serieDe(leida.repeticiones), rir: serieDe(leida.rir) },
-      { serie: numero, indicado: rirIndicadoPorSesion(observaciones, numero), cargadoTarde: fechasCargadasDespues(observaciones, tardias) },
+      { serie: numero, indicado, cargadoTarde: fechasCargadasDespues(observaciones, tardias) },
     );
   }, [leida, exerciseKey, comparador, periodo, numero]);
 

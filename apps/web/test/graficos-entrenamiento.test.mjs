@@ -371,16 +371,21 @@ test('TEST-GRF-027 · GR-03: un RIR sin escribir no es 0: no se dibuja y la tabl
 test('TEST-GRF-028 · GR-03: lo tildado sin escribir va hueco y gris y lo dice; el RIR indicado de cada sesión va hueco en el panel del RIR (mutación: la carga rápida llena)', () => {
   const rapida = { detail: [{ label: DETALLE_DE_CARGA_RAPIDA.label, value: DETALLE_DE_CARGA_RAPIDA.value }] };
   const rir = serieAnalitica('entrenamiento.rir', 'RIR', [punto('i1', '2026-10-05', 2, rapida), punto('i2', '2026-10-12', 1)]);
-  const indicado = CR.rirIndicadoPorSesion(OBSERVACIONES.slice(0, 3), 1);
-  assert.deepEqual(
-    indicado.map((p) => [p.fecha, p.valor, p.marca]),
-    [
-      ['2026-10-05', 2, 'HUECA'],
-      ['2026-10-09', 2, 'HUECA'],
-      ['2026-10-13', 2, 'HUECA'],
-    ],
-  );
+  // Lo indicado de cada sesión, como lo arma `puntosDeLoIndicado` de la base (probado en graficos-base.test.mjs): huecos.
+  const indicado = ['2026-10-05', '2026-10-09', '2026-10-13'].map((fecha, i) => ({
+    clave: `indicado:${ex(i + 1)}:p1:1`,
+    fecha,
+    hasta: null,
+    en: `${fecha}T15:00:00-03:00`,
+    valor: 2,
+    rango: null,
+    tramo: 'indicado:1',
+    marca: 'HUECA',
+    tarde: false,
+    lectura: 'RIR 2',
+  }));
   const [c] = CR.carrilesDeCargaRepeticionesYRir({ carga: null, repeticiones: null, rir }, { serie: 1, indicado, cargadoTarde: new Set(['2026-10-12']) });
+  assert.equal(c.indicado, indicado, 'lo indicado va en el mismo panel que lo registrado, aparte');
   assert.equal(c.puntos[0].marca, 'HUECA_GRIS');
   assert.notEqual(c.puntos[0].marca, 'LLENA');
   assert.match(c.puntos[0].lectura, /carga rápida/);
@@ -389,6 +394,10 @@ test('TEST-GRF-028 · GR-03: lo tildado sin escribir va hueco y gris y lo dice; 
   assert.ok(g.indicado.length === 3 && g.indicado.every((m) => m.marca === 'HUECA'));
   // La tabla dice lo indicado al lado de lo registrado, sin mezclarlos.
   assert.equal(TE.lecturaDeLaFecha(TE.tablaEquivalente([c]), '2026-10-05')[0].texto, 'RIR 2 · carga rápida (tildada sin escribir: los valores del plan) · indicado: RIR 2');
+  // En pantalla, lo indicado es el RIR de esa serie en la versión que rigió cada sesión, del comparador.
+  const pantalla = leer('graficos/entrenamiento/carga-repeticiones-y-rir-en-pantalla.tsx');
+  assert.match(pantalla, /puntosDeLoIndicado\(lista\.ejecuciones, lista\.objetivosPorVersion, \{ exerciseKey, serie: numero, medida: \{ variable: 'rir' \}/);
+  assert.match(pantalla, /leyenda=\{LEYENDA\}/);
 });
 
 // ─── GR-05 · el RIR indicado y el registrado ─────────────────────────────────────────────────────
@@ -606,21 +615,23 @@ test('TEST-GRF-036 · el RIR indicado es una serie ofrecida del catálogo, hueca
   const conEntrenamiento = { alcances: ['ENTRENAMIENTO'], propios: { NUTRICION: false, ENTRENAMIENTO: true, ANTROPOMETRIA: false } };
   assert.ok(seriesOfrecidas(conEntrenamiento).some((x) => x.id === 'entrenamiento.rir-indicado'));
   assert.ok(!seriesOfrecidas({ alcances: ['NUTRICION'], propios: { NUTRICION: true, ENTRENAMIENTO: false, ANTROPOMETRIA: false } }).some((x) => x.id === 'entrenamiento.rir-indicado'));
+  // La lee `leerSerieDelCatalogo` con lo indicado de la base (el comparador en tramos de 92 días y API-SER-01).
   const lecturas = leer('graficos/lecturas.ts');
-  assert.match(lecturas, /if \(serie\.fuente\.tipo === 'CONTEXTO_DE_REVISION'\) return \(await import\('\.\/entrenamiento\/lecturas-del-ejercicio'\)\)\.leerElRirIndicado\(p, ref\);/);
-  const serie = RI.serieDelRirIndicado(OBSERVACIONES, 1);
-  assert.equal(serie.metricId, 'entrenamiento.rir-indicado');
-  assert.deepEqual(
-    serie.points.map((p) => p.value),
-    [2, 2, 2, 1, 1, 1, 1],
-  );
-  assert.equal(new Set(serie.points.map((p) => p.segment)).size, 2, 'otra versión corta la línea');
-  assert.ok(serie.points.every((p) => marcaDelPunto(p, s) === 'HUECA'));
+  assert.match(lecturas, /if \(serie\.fuente\.tipo === 'CONTEXTO_DE_REVISION'\) return leerLoIndicado\(p, ref, serie\);/);
+  // Lo que viene de esa lectura es lo indicado: hueco, aunque el punto sea completo.
+  assert.equal(marcaDelPunto(punto('i1', '2026-10-05', 2), s), 'HUECA');
+  // Los gráficos de la rama leen el comparador con las lecturas de la base, y en el historial una sola vez para todos.
   const leyendo = leer('graficos/entrenamiento/lecturas-del-ejercicio.ts');
-  // En tramos de 92 días, con los objetivos por serie de cada versión (API-SER-01), y compartido mientras está en vuelo.
-  assert.match(leyendo, /leerEnTramos\(p\.periodo, 92, \(desde, hasta\) => api\.contextoDeRevisionDeEntrenamiento\(p\.token, p\.asesoradoId, \{ periodStart: desde, periodEnd: hasta \}\)\)/);
-  assert.match(leyendo, /limitarLectura\(\(\) => api\.planConObjetivos\(p\.token, planId\)\)/);
-  assert.match(leyendo, /return compartirLecturaEnCurso\(`comparador-de-entrenamiento\|/);
+  assert.match(leyendo, /const sesiones = await leerLasSesionesEnTramos\(p\);/);
+  assert.match(leyendo, /const objetivos = await leerLosObjetivosDeLasVersiones\(p, sesiones\.ejecuciones\.map\(\(x\) => x\.planId\)\);/);
+  assert.match(leyendo, /if \(objetivos\.tipo !== 'lista'\) return objetivos;/, 'una versión que no se leyó es una falla, no lo indicado de otra');
+  assert.match(leyendo, /const propio = useComparadorPropio\(lectura, periodo, activo && !delProveedor\);/);
+  const historial = leer('graficos/entrenamiento/historial-del-ejercicio.tsx');
+  assert.ok(historial.indexOf('<ProveedorDelComparador lectura={lectura} periodo={periodo}>') < historial.indexOf('<CargaRepeticionesYRir {...props} />'));
+  // La cinta del tiempo (GR-23) va debajo de GR-03 y GR-05, con solo lo de Entrenamiento y de este ejercicio.
+  assert.ok(historial.indexOf('<RirIndicadoYRegistrado {...props} />') < historial.indexOf('<CintaDelEjercicio '));
+  assert.match(historial, /alcances=\{\['ENTRENAMIENTO'\]\}/);
+  assert.match(historial, /exerciseKey=\{exerciseKey\}\n\s*periodo=\{periodo\}/);
 });
 
 test('TEST-GRF-037 · lo cargado en un día posterior se marca, en el día de la zona de la persona (mutación: comparar en UTC)', () => {

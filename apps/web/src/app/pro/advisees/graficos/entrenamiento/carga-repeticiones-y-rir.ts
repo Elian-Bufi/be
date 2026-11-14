@@ -8,11 +8,12 @@
  * - El eje del RIR va de 0 al máximo registrado, con 5 como mínimo: el contrato admite de 0 a 20, con decimales.
  * - Un RIR sin escribir no es 0: no es un punto, y la tabla dice «sin dato». Lo tildado sin escribir (carga rápida) son
  *   los valores del plan: va hueco y gris, nunca lleno (`marcaDelPunto`).
- * - El RIR indicado sale del comparador (GR-T14): la prescripción de la versión que rigió esa sesión.
+ * - El RIR indicado sale del comparador (GR-T14), con `puntosDeLoIndicado` de la base: la prescripción de la versión que
+ *   rigió esa sesión, hueca y en la fecha y la hora de la sesión.
  *
  * Es puro: lo prueba `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
-import { DETALLE_DE_SERIE, esPuntoDeCargaRapida, evolucion, numero, serieDisponible, type ObservacionDeEvolucion, type PuntoAnalitico, type SerieAnalitica } from '@be/domain';
+import { DETALLE_DE_SERIE, esPuntoDeCargaRapida, numero, serieDisponible, type PuntoAnalitico, type SerieAnalitica } from '@be/domain';
 import { carrilDeSerie } from '../adaptadores';
 import type { CarrilDePuntos, EscalaDelCarril, PuntoDelCarril } from '../carriles';
 import { COPY_CARGA_REPETICIONES_Y_RIR as C } from './copy';
@@ -41,23 +42,6 @@ export const lecturaDeLasRepeticiones = (p: PuntoAnalitico): string => conLoQueS
 
 /** «RIR 1», con lo que se sabe del punto. */
 export const lecturaDelRir = (p: PuntoAnalitico): string => conLoQueSeSabe(p.value === null ? SIN_DATO : C.rirEnPalabras(numero(p.value)), p);
-
-/**
- * El RIR indicado de cada sesión para la serie elegida, como marca hueca (GR-03): lo que indicaba la versión que ejecutó
- * esa sesión. Un rango indicado («RIR 1 a 2») es un segmento hueco. Sin RIR indicado (o con otro ejercicio planificado),
- * no hay marca.
- */
-export function rirIndicadoPorSesion(observaciones: readonly ObservacionDeEvolucion[], serie: number): PuntoDelCarril[] {
-  return evolucion(observaciones, { variable: 'rir' }, serie).flatMap((p): PuntoDelCarril[] => {
-    const c = p.observacion.comparacion;
-    const base = { clave: `i:${c.executionId}:${c.prescriptionId}:${serie}`, fecha: c.fecha, hasta: null, en: c.ocurrio, tramo: `indicado-${p.tramoPlanificado ?? 0}`, marca: 'HUECA' as const, tarde: false };
-    if (p.planificado.tipo === 'valor') return [{ ...base, valor: p.planificado.valor, rango: null, lectura: C.rirIndicadoEnPalabras(numero(p.planificado.valor), numero(p.planificado.valor)) }];
-    if (p.planificado.tipo === 'rango') {
-      return [{ ...base, valor: null, rango: { desde: p.planificado.min, hasta: p.planificado.max }, lectura: C.rirIndicadoEnPalabras(numero(p.planificado.min), numero(p.planificado.max)) }];
-    }
-    return [];
-  });
-}
 
 export interface SeriesDeLaSerie {
   readonly carga: SerieAnalitica | null;

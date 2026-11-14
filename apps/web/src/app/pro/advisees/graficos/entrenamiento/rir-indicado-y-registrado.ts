@@ -11,11 +11,9 @@
  * - Lo tildado sin escribir (carga rápida) son los valores del plan: va hueco y gris y no entra en lo que se describe.
  * - Se describe lo que se ve, por versión; no se resume en una cifra ni se nombra con palabras prohibidas.
  *
- * Y el adaptador del RIR indicado como serie del catálogo (`entrenamiento.rir-indicado`), para `leerSerieDelCatalogo`.
- *
  * Es puro: lo prueba `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
-import { DETALLE_DE_SERIE, definicionDeMetrica, evolucion, numero, serieDisponible, type ObservacionDeEvolucion, type PuntoAnalitico, type SerieAnalitica } from '@be/domain';
+import { evolucion, numero, type ObservacionDeEvolucion } from '@be/domain';
 import type { BandaDeVersion, CarrilDePuntos, EscalonDelCarril, PuntoDelCarril } from '../carriles';
 import { textoDeLaMarca } from '../eje-de-fechas';
 import { ESCALA_DEL_RIR } from './carga-repeticiones-y-rir';
@@ -228,52 +226,4 @@ export function loQueSeVe(sesiones: readonly SesionDelRir[], bandas: readonly Ba
     }
   }
   return lineas;
-}
-
-/**
- * El RIR indicado como serie del catálogo (`entrenamiento.rir-indicado`, GR-T14), para que «Analizar» y los enfoques lo
- * lean por `leerSerieDelCatalogo`: un punto por sesión, con lo que indicaba la versión que la ejecutó. Lo indicado se
- * une solo entre sesiones de la misma prescripción de la misma versión (`evolucion`). Es lo indicado, no lo registrado.
- */
-export function serieDelRirIndicado(observaciones: readonly ObservacionDeEvolucion[], serie: number): SerieAnalitica {
-  const definicion = serieDisponible('entrenamiento.rir-indicado')?.definicion ?? definicionDeMetrica('entrenamiento.rir');
-  const puntos = evolucion(observaciones, { variable: 'rir' }, serie).flatMap((p): PuntoAnalitico[] => {
-    if (p.planificado.tipo !== 'valor') return [];
-    const c = p.observacion.comparacion;
-    return [
-      {
-        pointId: `i:${c.executionId}:${c.prescriptionId}:${serie}`,
-        date: c.fecha,
-        dateEnd: null,
-        at: c.ocurrio,
-        value: p.planificado.valor,
-        quality: 'COMPLETE',
-        n: 1,
-        segment: `p${p.tramoPlanificado ?? 0}`,
-        corrected: false,
-        partialBucket: false,
-        dataClass: null,
-        method: null,
-        planVersionIds: [c.planId],
-        coverage: null,
-        missing: [],
-        detail: [{ label: DETALLE_DE_SERIE.SESION, value: c.sesion }],
-        sources: [],
-        sourcesTruncated: false,
-      },
-    ];
-  });
-  const tramos = [...new Set(puntos.map((p) => p.segment))];
-  return {
-    metricId: 'entrenamiento.rir-indicado',
-    label: definicion?.nombre ?? 'RIR indicado en la serie',
-    unit: 'RIR',
-    scale: definicion?.escala ?? 'ORDINAL',
-    grain: 'ORIGINAL',
-    aggregation: 'NONE',
-    points: puntos,
-    gaps: [],
-    segments: tramos.map((segment, i) => ({ segment, label: `Serie ${serie}`, breakReason: i === 0 ? null : 'Otra prescripción u otra versión del plan corta la línea.' })),
-    notes: [...(definicion?.limites ?? [])],
-  };
 }

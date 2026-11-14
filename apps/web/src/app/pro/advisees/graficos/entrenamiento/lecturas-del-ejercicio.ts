@@ -4,9 +4,10 @@
  * Las lecturas de los gráficos de Entrenamiento (WP-GRAFICOS fase 2, rama B; DL-174). Todas van a la API, que decide con
  * el PDP en cada una: no hay caché de datos de salud en el navegador. Dos gráficos que piden lo mismo a la vez comparten
  * la lectura en vuelo (`compartirLecturaEnCurso`), que se descarta al responder; todo pasa por `limitarLectura`.
- * - **El comparador** (GR-T14): API-TRN-21 en tramos de 92 días y API-SER-01 por versión, lo mismo que arma «Planificado
- *   y registrado». De ahí salen el RIR indicado (GR-03 y GR-05), las series de la persona (GR-06), lo indicado de cada
- *   versión (la primera línea de GR-02) y lo cargado después.
+ * - **El comparador** (GR-T14): las sesiones de API-TRN-21 en tramos de 92 días y los objetivos por serie de cada versión
+ *   (API-SER-01), con las lecturas de la base (`leerLasSesionesEnTramos` y `leerLosObjetivosDeLasVersiones`). De ahí
+ *   salen el RIR indicado (GR-03 y GR-05), las series de la persona (GR-06), lo indicado de cada versión (la primera línea
+ *   de GR-02) y lo cargado después. Dentro del historial del cuadro, un proveedor lo lee una vez para todos sus gráficos.
  * - **El índice** del período: API-PRJ-01 `TRAINING_PROGRESSION_BY_EXERCISE` sin ejercicio, con las sesiones, los
  *   números de serie y las unidades de cada ejercicio, y las versiones del plan.
  * - **La serie** de GR-03: la carga, las repeticiones y el RIR de un número de serie, por `leerSerieDelCatalogo`.
@@ -20,21 +21,15 @@ import {
   type ReferenciaDeMetrica,
   type VigenciaDePlan,
 } from '@be/domain';
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, createElement, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api, type Resultado } from '../../../../../lib/api';
 import { motivoDeFalla, type MotivoDeFalla } from '../../../../../lib/fallas';
 import { useSesion } from '../../../../../lib/sesion';
 import { limitarLectura } from '../../seguimiento/contexto';
 import { inicioDelAcompanamiento } from '../../seguimiento/estado';
 import type { EstadoDeSerie } from '../../seguimiento/series';
-import { objetivosDe } from '../../training/ejecuciones';
 import { inicioDelEje, type PeriodoDelGrafico } from '../eje-de-fechas';
-import { compartirLecturaEnCurso, leerEnTramos, leerSerieDelCatalogo, type ParametrosDeLectura } from '../lecturas';
-import { observacionesDelPeriodo } from './comparador';
-import { serieDelRirIndicado } from './rir-indicado-y-registrado';
-
-/** La zona de BE en la demostración, si una respuesta no dice la suya (DL-009). */
-const ZONA = 'America/Argentina/Buenos_Aires';
+import { compartirLecturaEnCurso, leerLasSesionesEnTramos, leerLosObjetivosDeLasVersiones, leerSerieDelCatalogo, type ParametrosDeLectura } from '../lecturas';
 
 type Falla = { readonly tipo: 'sin-acceso' } | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
 
@@ -86,55 +81,50 @@ export type LecturaDelComparador =
       /** Se leyó en más de un tramo de 92 días: la pantalla lo dice. */
       readonly enTramos: boolean;
       readonly zona: string;
-      readonly leidoEl: string;
     };
 
 /**
- * Las sesiones registradas del período en los planes de quien mira (API-TRN-21, en tramos de 92 días, sin días repetidos
- * ni perdidos) y los objetivos por serie de cada versión que ejecutaron (API-SER-01). Si un tramo o una versión falla,
- * falla todo: lo que falta no es «sin datos».
+ * Las sesiones registradas del período en los planes de quien mira y los objetivos por serie de cada versión que
+ * ejecutaron. Si un tramo o una versión falla, falla todo: lo que falta no es «sin datos», y lo indicado no se dibuja con
+ * la prescripción de otra versión en su lugar.
  */
-export function leerElComparador(p: ParametrosDeLectura): Promise<LecturaDelComparador> {
-  return compartirLecturaEnCurso(`comparador-de-entrenamiento|${p.asesoradoId}|${claveDelPeriodo(p.periodo)}`, async (): Promise<LecturaDelComparador> => {
-    const t = await leerEnTramos(p.periodo, 92, (desde, hasta) => api.contextoDeRevisionDeEntrenamiento(p.token, p.asesoradoId, { periodStart: desde, periodEnd: hasta }));
-    if (t.falla) return fallaDe(t.falla, p.sesionPerdida) ?? { tipo: 'cargando' };
-    const vistas = new Set<string>();
-    const ejecuciones: EjecucionDeEntrenamiento[] = [];
-    for (const parte of t.partes) {
-      for (const x of parte.data.registeredExecutions) {
-        if (vistas.has(x.executionId)) continue;
-        vistas.add(x.executionId);
-        ejecuciones.push(x);
-      }
-    }
-    const versiones = [...new Set(ejecuciones.map((x) => x.planId))];
-    const planes = await Promise.all(versiones.map((planId) => limitarLectura(() => api.planConObjetivos(p.token, planId))));
-    const fallida = planes.find((r) => !r.ok);
-    if (fallida) return fallaDe(fallida, p.sesionPerdida) ?? { tipo: 'cargando' };
-    const objetivosPorVersion = new Map(planes.flatMap((r) => (r.ok ? [[r.datos.data.planId, objetivosDe(r.datos.data)] as const] : [])));
-    const ultima = t.partes[t.partes.length - 1];
-    return { tipo: 'lista', ejecuciones, objetivosPorVersion, enTramos: t.enTramos, zona: ultima?.data.period.timeZone ?? ZONA, leidoEl: new Date().toISOString() };
-  });
+export async function leerElComparador(p: ParametrosDeLectura): Promise<LecturaDelComparador> {
+  const sesiones = await leerLasSesionesEnTramos(p);
+  if (sesiones === null) return { tipo: 'cargando' };
+  if (sesiones.tipo !== 'lista') return sesiones;
+  const objetivos = await leerLosObjetivosDeLasVersiones(p, sesiones.ejecuciones.map((x) => x.planId));
+  if (objetivos === null) return { tipo: 'cargando' };
+  if (objetivos.tipo !== 'lista') return objetivos;
+  return { tipo: 'lista', ejecuciones: sesiones.ejecuciones, objetivosPorVersion: objetivos.objetivos, enTramos: sesiones.enTramos, zona: sesiones.zona };
 }
 
-/** El comparador del período, para los gráficos. `activo` en falso: no lee (el gráfico no se va a dibujar). */
-export function useComparador(lectura: Omit<ParametrosDeLectura, 'periodo'>, periodo: PeriodoDelGrafico, activo = true): { readonly comparador: LecturaDelComparador; readonly recargar: () => void } {
+interface ComparadorLeido {
+  readonly comparador: LecturaDelComparador;
+  readonly recargar: () => void;
+}
+
+function useComparadorPropio(lectura: Omit<ParametrosDeLectura, 'periodo'>, periodo: PeriodoDelGrafico, activo: boolean): ComparadorLeido {
   const { leido, recargar } = useLeido(activo ? `${lectura.asesoradoId}|${claveDelPeriodo(periodo)}` : null, () => leerElComparador({ ...lectura, periodo }));
   return { comparador: leido ?? { tipo: 'cargando' }, recargar };
 }
 
+const ContextoDelComparador = createContext<(ComparadorLeido & { readonly clave: string }) | null>(null);
+
 /**
- * `entrenamiento.rir-indicado` para `leerSerieDelCatalogo` (fuente `CONTEXTO_DE_REVISION`): el comparador del período y,
- * del ejercicio y la serie pedidos, lo que indicaba la versión que rigió cada sesión.
+ * Una sola lectura del comparador para todos los gráficos de adentro (el historial del cuadro): con el mismo período y la
+ * misma persona, `useComparador` toma esta en lugar de leer de nuevo. No guarda nada: vive mientras está el paso.
  */
-export async function leerElRirIndicado(p: ParametrosDeLectura, ref: ReferenciaDeMetrica): Promise<EstadoDeSerie> {
-  if (!ref.exerciseKey) return { tipo: 'error', motivo: 'OTRO' };
-  const l = await leerElComparador(p);
-  if (l.tipo !== 'lista') return l.tipo === 'error' ? { tipo: 'error', motivo: l.motivo } : l.tipo === 'sin-acceso' ? { tipo: 'sin-acceso' } : { tipo: 'cargando' };
-  const observaciones = observacionesDelPeriodo(l.ejecuciones, ref.exerciseKey, l.objetivosPorVersion, inicioDelEje(p.periodo), p.periodo.hasta);
-  const serie = serieDelRirIndicado(observaciones, ref.setIndex ?? 1);
-  if (serie.points.length === 0) return { tipo: 'sin-datos' };
-  return { tipo: 'lista', serie, observaciones: serie, bandas: [], objetivo: [], escalones: [], indicado: null, parcial: false, generada: l.leidoEl, zona: l.zona };
+export function ProveedorDelComparador({ lectura, periodo, children }: { lectura: Omit<ParametrosDeLectura, 'periodo'>; periodo: PeriodoDelGrafico; children: ReactNode }) {
+  const leido = useComparadorPropio(lectura, periodo, true);
+  return createElement(ContextoDelComparador.Provider, { value: { ...leido, clave: `${lectura.asesoradoId}|${claveDelPeriodo(periodo)}` } }, children);
+}
+
+/** El comparador del período, para los gráficos. `activo` en falso: no lee (el gráfico no se va a dibujar). */
+export function useComparador(lectura: Omit<ParametrosDeLectura, 'periodo'>, periodo: PeriodoDelGrafico, activo = true): ComparadorLeido {
+  const compartido = useContext(ContextoDelComparador);
+  const delProveedor = compartido !== null && compartido.clave === `${lectura.asesoradoId}|${claveDelPeriodo(periodo)}`;
+  const propio = useComparadorPropio(lectura, periodo, activo && !delProveedor);
+  return delProveedor && compartido ? { comparador: compartido.comparador, recargar: compartido.recargar } : propio;
 }
 
 // ─── El índice del período (API-PRJ-01 sin ejercicio) ───────────────────────────────────────────

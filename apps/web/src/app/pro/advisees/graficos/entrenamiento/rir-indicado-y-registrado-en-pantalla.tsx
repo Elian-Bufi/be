@@ -6,8 +6,8 @@
  * puntos. «A igual carga» deja solo las sesiones con exactamente esa carga y esa unidad, y lo que se ve se dice en
  * palabras, por versión, sin resumirlo en una cifra.
  *
- * Lee el comparador «Planificado y registrado» (API-TRN-21 y API-SER-01, GR-T14), que comparte con los otros gráficos del
- * historial mientras está en vuelo.
+ * Lee el comparador «Planificado y registrado» (API-TRN-21 y API-SER-01, GR-T14): en el historial, el que lee una vez
+ * `ProveedorDelComparador` para todos sus gráficos.
  */
 import type { SentidoDeLaMarca } from '@be/domain';
 import { useId, useMemo, useState } from 'react';
