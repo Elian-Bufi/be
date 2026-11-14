@@ -210,14 +210,16 @@ export function geometriaDeValores(p: PanelDeValores, escala: EscalaDeFechas, al
   };
 }
 
-/** El alto de cada fila de la tira por comida. */
-export const ALTO_DE_LA_FILA_DE_LA_TIRA = 16;
+/** El alto de cada fila de la tira por comida: el nombre de la comida arriba y sus celdas debajo. */
+export const ALTO_DE_LA_FILA_DE_LA_TIRA = 30;
 
 export interface GeometriaDeTira {
   readonly alto: number;
   readonly filas: readonly {
     readonly clave: string;
     readonly nombre: string;
+    /** Donde va el nombre de la comida, adentro del dibujo y arriba de sus celdas. */
+    readonly yDelNombre: number;
     readonly y: number;
     readonly celdas: readonly { readonly fecha: string; readonly estado: EstadoDeLaComida; readonly x: number; readonly ancho: number }[];
   }[];
@@ -231,7 +233,8 @@ export function geometriaDeTira(p: PanelDeTira, escala: EscalaDeFechas): Geometr
     filas: p.filas.map((f, i) => ({
       clave: f.clave,
       nombre: f.nombre,
-      y: 2 + i * ALTO_DE_LA_FILA_DE_LA_TIRA + ALTO_DE_LA_FILA_DE_LA_TIRA / 2,
+      yDelNombre: 2 + i * ALTO_DE_LA_FILA_DE_LA_TIRA + 8,
+      y: 2 + i * ALTO_DE_LA_FILA_DE_LA_TIRA + 21,
       celdas: f.celdas.filter((c) => dentro(c.fecha, escala)).map((c) => ({ fecha: c.fecha, estado: c.estado, x: escala.x(c.fecha), ancho })),
     })),
   };

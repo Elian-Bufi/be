@@ -14,10 +14,10 @@ import { LETRA_MINIMA } from '../../seguimiento/geometria';
 import { COPY_DE_LOS_GRAFICOS } from '../copy';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import { colorDelCarril } from '../marcas';
+import { useAnchoDelGrafico } from '../medidas-del-grafico';
 import { useGraficoLeido } from '../nutricion-y-cuerpo/grafico-leido';
 import type { GraficoLeido } from '../nutricion-y-cuerpo/leido';
 import { diaYMes } from '../nutricion-y-cuerpo/lienzo';
-import { useAncho } from '../nutricion-y-cuerpo/lienzo-en-pantalla';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { COPY_ANTROPOMETRIA_EN_GRAFICOS as C } from './copy';
 import { leerTomasDelPeriodo } from './lecturas-de-antropometria';
@@ -43,7 +43,7 @@ function MarcaDelValor({ v, x, y, antes }: { v: ValorDelSitio; x: number; y: num
 }
 
 function GrupoEnPantalla({ g }: { g: GrupoDelPerfil }) {
-  const [ref, ancho] = useAncho();
+  const [ref, ancho] = useAnchoDelGrafico();
   const nombres = Math.round(Math.min(240, Math.max(120, ancho * 0.38)));
   const izquierda = nombres + 8;
   const derecha = ancho - ANCHO_DE_LA_DIFERENCIA - 8;

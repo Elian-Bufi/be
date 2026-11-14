@@ -14,7 +14,7 @@
  * estado además del color.
  */
 import { MARCA_SEGUN_EL_DATO, type MarcaSemantica } from '@be/domain';
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useConPuntero } from '../../../../../lib/graficos';
 import { LETRA_MINIMA, medidaDeMarca, type EstadoDeMarca } from '../../seguimiento/geometria';
 import { COPY_DE_LOS_GRAFICOS } from '../copy';
@@ -23,6 +23,7 @@ import { escalaDeFechas, moverElCursor, type EscalaDeFechas, type PeriodoDelGraf
 import { NotaDelInicio } from '../estado-del-grafico';
 import { LecturaEnLaFecha } from '../lectura-en-la-fecha';
 import { colorDelCarril, MarcaDelCarril } from '../marcas';
+import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_DERECHO, MARGEN_IZQUIERDO, useAnchoDelGrafico } from '../medidas-del-grafico';
 import type { DensidadDelGrafico } from '../paneles-alineados';
 import { TablaEquivalente } from '../tabla-equivalente-en-pantalla';
 import {
@@ -38,30 +39,12 @@ import {
   type TemporadaUbicada,
 } from './lienzo';
 
-const MARGEN_IZQUIERDO = 88;
-const MARGEN_DERECHO = 16;
-const ALTO_DEL_EJE_DE_FECHAS = 24;
+/** Los márgenes y el eje de fechas son los de la base (`medidas-del-grafico.ts`): en «Patrones», una fecha cae en el mismo
+ * lugar en la cinta y en todas las tarjetas. El alto de cada panel, también. */
 const ALTO_DE_LOS_ROTULOS = 18;
-const ALTO_DEL_PANEL: Readonly<Record<DensidadDelGrafico, number>> = { COMPLETA: 132, COMPACTA: 92 };
-const ANCHO_INICIAL = 720;
+const ALTO_DEL_PANEL: Readonly<Record<DensidadDelGrafico, number>> = { COMPLETA: 140, COMPACTA: 96 };
 /** Con menos lugar por día, el rótulo de una unión no entra: lo dicen la lectura y la tabla. */
 const LUGAR_PARA_EL_ROTULO = 40;
-
-/** El ancho del contenedor, medido: el SVG no se estira, así la letra no baja de 12,5 px. */
-export function useAncho(): [RefObject<HTMLDivElement | null>, number] {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [ancho, setAncho] = useState(ANCHO_INICIAL);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const medir = () => setAncho(Math.max(300, Math.round(el.getBoundingClientRect().width)));
-    medir();
-    const o = new ResizeObserver(medir);
-    o.observe(el);
-    return () => o.disconnect();
-  }, []);
-  return [ref, ancho];
-}
 
 const formato = (v: number, decimales: number): string => v.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
 
@@ -210,7 +193,6 @@ function DibujoDeTira({ panel, ...d }: PropsDelDibujo & { panel: PanelDeTira }) 
   const g = geometriaDeTira(panel, escala);
   const arriba = d.conRotulos ? ALTO_DE_LOS_ROTULOS : 0;
   const total = arriba + g.alto + (d.ultimo ? ALTO_DEL_EJE_DE_FECHAS : 0);
-  const recortar = (nombre: string) => (nombre.length > 11 ? `${nombre.slice(0, 10)}…` : nombre);
   return (
     <svg width="100%" height={total} viewBox={`0 0 ${escala.derecha + MARGEN_DERECHO} ${total}`} aria-hidden="true" className="grafico-base__svg">
       {d.conRotulos ? <RotulosDeLasTemporadas escala={escala} temporadas={d.temporadas} /> : null}
@@ -218,8 +200,8 @@ function DibujoDeTira({ panel, ...d }: PropsDelDibujo & { panel: PanelDeTira }) 
         <Fondo escala={escala} temporadas={d.temporadas} alto={g.alto} tramo={d.tramo} />
         {g.filas.map((f) => (
           <g key={f.clave}>
-            <text x={MARGEN_IZQUIERDO - 6} y={f.y} textAnchor="end" dominantBaseline="middle" fontSize={LETRA_MINIMA} fill="var(--tenue)">
-              {recortar(f.nombre)}
+            <text x={escala.izquierda + 2} y={f.yDelNombre} dominantBaseline="middle" fontSize={LETRA_MINIMA} fill="var(--tenue)" stroke="var(--superficie)" strokeWidth={3} paintOrder="stroke">
+              {f.nombre}
             </text>
             {f.celdas.map((c) => (
               <CeldaDeLaComida key={c.fecha} estado={c.estado} x={c.x} y={f.y} ancho={c.ancho} />
@@ -280,7 +262,7 @@ export interface PropsDelLienzo {
 }
 
 export function LienzoDeNutricionYCuerpo({ titulo, periodo, grafico, densidad = 'COMPLETA', antes = null }: PropsDelLienzo) {
-  const [ref, ancho] = useAncho();
+  const [ref, ancho] = useAnchoDelGrafico();
   const conPuntero = useConPuntero();
   const cursor = useCursorDeFechas();
   const idDelResumen = useId();
