@@ -7,6 +7,8 @@
  *   no está en el plan» (PG-T68). Sin plan de esa área, solo «Sobre…».
  * - **Lo que dicen las pantallas**, en un solo lugar: el bloc dice que solo las ve quien las escribe y que la persona las
  *   recibe si pide sus datos (PG-D11). Nada califica ni resume.
+ * - **Con «Ocultar nombres»** (PG-T73) la pantalla se está mostrando a otros: el texto de las notas no se ve hasta que el
+ *   profesional lo pide, en esa pantalla.
  */
 import type { AnclaDeNotaPropia, NotaPropia } from './contratos-notas-propias';
 
@@ -35,6 +37,13 @@ export const COPY_NOTAS_PROPIAS = {
   noSePudoLeer: 'No pudimos leer tus notas.',
   sinAcceso: 'Hoy no acompañás a esta persona: tus notas quedan guardadas, y no se pueden leer ni agregar.',
   hayMas: (tope: number) => `Se ven las ${tope} más nuevas.`,
+  soloVos: 'Solo las ves vos',
+  faltaElTexto: 'Escribí la nota para guardarla.',
+  quedan: (n: number) => (n === 1 ? 'Te queda 1 carácter.' : `Te quedan ${n} caracteres.`),
+  // PG-T73: con «Ocultar nombres» la pantalla se muestra a otros: el texto de las notas no se ve hasta pedirlo.
+  ocultas: 'Ocultas mientras «Ocultar nombres» está prendido.',
+  mostrar: 'Mostrar en esta pantalla',
+  volverAOcultar: 'Volver a ocultar',
 } as const;
 
 /** El nombre de una comida para compararlo: sin tildes, en minúsculas y con un solo espacio entre palabras. */
@@ -63,14 +72,14 @@ export function notasArchivadas(notas: readonly NotaPropia[]): NotaPropia[] {
 const deLaMasNueva = (a: NotaPropia, b: NotaPropia): number => b.recordedAt.localeCompare(a.recordedAt) || b.noteId.localeCompare(a.noteId);
 
 /** Las notas activas atadas a un ejercicio del catálogo: las que el editor muestra al lado de ese ejercicio. */
-export function notasDelEjercicio(notas: readonly NotaPropia[], exerciseId: string | null): NotaPropia[] {
+export function notasPropiasDelEjercicio(notas: readonly NotaPropia[], exerciseId: string | null): NotaPropia[] {
   if (!exerciseId) return [];
   const id = exerciseId.toLowerCase();
   return notasActivas(notas).filter((n) => n.anchor?.type === 'EXERCISE' && n.anchor.exerciseId.toLowerCase() === id);
 }
 
 /** Las notas activas atadas a una comida con ese nombre: las que el editor muestra al lado de esa comida. */
-export function notasDeLaComida(notas: readonly NotaPropia[], nombre: string): NotaPropia[] {
+export function notasPropiasDeLaComida(notas: readonly NotaPropia[], nombre: string): NotaPropia[] {
   if (claveDeLaComida(nombre) === '') return [];
   return notasActivas(notas).filter((n) => n.anchor?.type === 'MEAL' && mismaComida(n.anchor.mealLabel, nombre));
 }

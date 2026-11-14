@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { AgregarNotaDeLaSesionRequestSchema, MAXIMO_DE_CARACTERES_DE_LA_NOTA_DE_LA_SESION, NotaDeLaSesionSchema } from './contratos-notas-de-la-sesion';
 import { AgregarNotaPropiaRequestSchema, MAXIMO_DE_CARACTERES_DE_LA_NOTA_PROPIA, type NotaPropia } from './contratos-notas-propias';
 import { notasPorSesion } from './copy-notas-de-la-sesion';
-import { claveDeLaComida, mismaComida, notasActivas, notasArchivadas, notasDeLaComida, notasDelEjercicio, rotuloDelAncla } from './notas-propias';
+import { claveDeLaComida, mismaComida, notasActivas, notasArchivadas, notasPropiasDeLaComida, notasPropiasDelEjercicio, rotuloDelAncla } from './notas-propias';
 
 const SENTADILLA = '4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e01';
 const BANCA = '4f1b2c6e-7a01-4c01-9e01-6a6d2b6a0e02';
@@ -46,14 +46,14 @@ test('TEST-PG-015 · al lado del ejercicio, solo sus notas activas, de la más n
     nota('d', { anchor: delEjercicio(BANCA) }),
     nota('e'),
   ];
-  assert.deepEqual(notasDelEjercicio(notas, SENTADILLA.toUpperCase()).map((n) => n.noteId), ['b', 'a']);
-  assert.deepEqual(notasDelEjercicio(notas, null), []);
+  assert.deepEqual(notasPropiasDelEjercicio(notas, SENTADILLA.toUpperCase()).map((n) => n.noteId), ['b', 'a']);
+  assert.deepEqual(notasPropiasDelEjercicio(notas, null), []);
 });
 
 test('TEST-PG-015 · al lado de cada comida con ese nombre, en cualquier día tipo', () => {
   const notas = [nota('a', { anchor: deLaComida('Almuerzo') }), nota('b', { anchor: deLaComida('Cena') }), nota('c', { anchor: deLaComida('almuerzo'), archivedAt: '2026-11-11T10:00:00.000Z' })];
-  assert.deepEqual(notasDeLaComida(notas, 'ALMUERZO').map((n) => n.noteId), ['a']);
-  assert.deepEqual(notasDeLaComida(notas, '   '), []);
+  assert.deepEqual(notasPropiasDeLaComida(notas, 'ALMUERZO').map((n) => n.noteId), ['a']);
+  assert.deepEqual(notasPropiasDeLaComida(notas, '   '), []);
 });
 
 test('TEST-PG-015 · archivar no borra: la nota pasa de las activas a las archivadas', () => {
