@@ -140,6 +140,8 @@ export async function leerSerieDelCatalogo(p: ParametrosDeLectura, ref: Referenc
   const serie = serieDisponible(ref.metricId, ref.unit ?? undefined);
   if (!serie) return { tipo: 'error', motivo: 'OTRO' };
   const periodo = { preset: null, desde: inicioDelEje(p.periodo), hasta: p.periodo.hasta } as const;
+  // Rama B (GR-T14): lo indicado del entrenamiento, del comparador en tramos de 92 días (se carga al pedirlo).
+  if (serie.fuente.tipo === 'CONTEXTO_DE_REVISION') return (await import('./entrenamiento/lecturas-del-ejercicio')).leerElRirIndicado(p, ref);
   if (serie.fuente.tipo !== 'PROYECCION') return { tipo: 'sin-especificacion' };
   if (serie.fuente.clave === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE') {
     const exerciseId = ref.exerciseKey ? ref.exerciseKey.replace(/^e:/, '') : null;

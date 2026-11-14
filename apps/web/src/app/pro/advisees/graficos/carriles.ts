@@ -237,7 +237,10 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
     rotulo: e.rotulo,
   }));
   const paso = (extremos.arriba - extremos.abajo) / 2;
-  const marcasY = [extremos.abajo, extremos.abajo + paso, extremos.arriba].map((valor) => ({ valor, y: y(valor) }));
+  // La marca del medio va solo si se escribe con los decimales de las otras dos: de 0 a 5 diría «3» donde va 2,5 (rama B).
+  const medio = extremos.abajo + paso;
+  const medioSeEscribe = Math.abs(Number(medio.toFixed(extremos.decimales)) - medio) < 1e-9;
+  const marcasY = [extremos.abajo, ...(medioSeEscribe ? [medio] : []), extremos.arriba].map((valor) => ({ valor, y: y(valor) }));
   return { tipo: 'PUNTOS', extremos, marcasY, lineas, marcas, indicado: indicadoUbicado, escalones, fueraDeLaEscala: puntos.filter((p) => conValor(p) && fuera(p.valor)).length };
 }
 

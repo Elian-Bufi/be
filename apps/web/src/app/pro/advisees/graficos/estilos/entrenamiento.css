@@ -1,1 +1,129 @@
 /* WP-GRAFICOS fase 2 (DL-174): los estilos de Entrenamiento. Los escribe solo la rama B. */
+
+/*
+ * El historial del ejercicio en el cuadro de la estación (GR-02, GR-03, GR-05 y GR-06): el período arriba, cada gráfico
+ * en su bloque con «Abrir en Analizar» debajo. La letra de los gráficos no baja de 12,5 px (la pone `paneles-alineados`).
+ */
+.historial-del-ejercicio {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.historial-del-ejercicio > .nota {
+  margin: 0;
+}
+
+.historial-del-ejercicio__periodo {
+  margin: 0;
+}
+
+.historial-del-ejercicio__elecciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.historial-del-ejercicio__grafico {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--borde);
+}
+
+.historial-del-ejercicio__grafico:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.historial-del-ejercicio__analizar {
+  margin: 0;
+}
+
+/* La entrada al historial, en los dos cuadros del ejercicio. */
+.acceso-al-historial {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.acceso-al-historial > p {
+  margin: 0;
+}
+
+.acceso-al-historial__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Cada gráfico de Entrenamiento: lo que va arriba (la primera línea), el gráfico y lo que va debajo. */
+.grafico-de-entrenamiento {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/*
+ * GR-02: la primera línea dice que lo indicado cambió entre versiones, antes del gráfico. Va con borde y no con color de
+ * aviso: es un dato para leer la estimación, no una alarma.
+ */
+.grafico-de-entrenamiento__primera-linea {
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.5rem 1.75rem;
+  border: 1px solid var(--borde);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--fondo-suave);
+  font-size: 0.875rem;
+}
+
+.grafico-de-entrenamiento__primera-linea li + li {
+  margin-top: 0.25rem;
+}
+
+.grafico-de-entrenamiento__interruptor {
+  font-size: 0.875rem;
+}
+
+.grafico-de-entrenamiento__subtitulo {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.grafico-de-entrenamiento__por-version ul,
+.grafico-de-entrenamiento__lo-que-se-ve {
+  margin: 0.25rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.grafico-de-entrenamiento__por-version li + li,
+.grafico-de-entrenamiento__lo-que-se-ve li + li {
+  margin-top: 0.25rem;
+}
+
+.grafico-de-entrenamiento__filtro {
+  max-width: 20rem;
+}
+
+.grafico-de-entrenamiento__como {
+  font-size: 0.875rem;
+}
+
+/* El triángulo de la marca queda (`list-item`): el alto de toque sale del relleno. */
+.grafico-de-entrenamiento__como summary {
+  padding-block: 0.625rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.grafico-de-entrenamiento__como p {
+  margin: 0.25rem 0 0;
+}
+
+/* GR-06: la dispersión, con el foco del teclado visible como en los paneles alineados (`grafico-base__area`). */
+.perfil-de-carga__area {
+  cursor: pointer;
+}

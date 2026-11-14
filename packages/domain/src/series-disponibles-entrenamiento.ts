@@ -37,8 +37,9 @@ function deEntrenamiento(id: string, estado: EstadoDeLaSerie, graficos: readonly
 
 /**
  * El RIR indicado por el plan para esa serie en cada sesión (GR-05; GR-T14): la prescripción de la versión que rigió,
- * leída del comparador (API-TRN-21 en tramos de 92 días y API-SER-01 por versión, con `seriesParaGraficar`). Un rango
- * indicado se dibuja como segmento hueco. La ofrece la rama B al usarla.
+ * leída del comparador (API-TRN-21 en tramos de 92 días y API-SER-01 por versión, con `evolucion`). Un rango indicado se
+ * dibuja como segmento hueco. La ofrece la rama B, que la usa en GR-03 y GR-05 y la lee por `leerSerieDelCatalogo`
+ * (`graficos/entrenamiento/lecturas-del-ejercicio.ts`).
  */
 const RIR_INDICADO: SerieDisponible = (() => {
   const base = delDiccionario('entrenamiento.rir');
@@ -48,7 +49,7 @@ const RIR_INDICADO: SerieDisponible = (() => {
     nombre: 'RIR indicado en la serie',
     nombreCorto: 'RIR indicado',
     clase: 'DERIVABLE',
-    implementada: false,
+    implementada: true,
     parametro: null,
     explicacion: 'Las repeticiones en reserva que indicaba el plan para la serie elegida, en la versión que rigió cada sesión.',
     comoSeCalcula: 'Sale de la prescripción de la versión del plan que rigió ese día (el objetivo de la serie o, si no tiene, el de la prescripción). Es lo indicado, no lo registrado.',
@@ -67,7 +68,7 @@ const RIR_INDICADO: SerieDisponible = (() => {
     marca: 'INDICADO',
     requiere: { ejercicio: true, serie: true, listaV1: false },
     rangoMinimoDelEje: null,
-    estado: 'EN_PREPARACION',
+    estado: 'OFRECIDA',
     graficos: ['GR-03', 'GR-05'],
   };
 })();
