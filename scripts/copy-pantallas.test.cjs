@@ -234,6 +234,22 @@ const DOMINIOS = [
     prohibidos: (texto) => [...new Set([...terminosProhibidosDeAdministracionEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeCarteraEn(texto)])],
     minimo: 14,
   },
+  {
+    // WP-PULIDO-GRANDES (DL-173), tanda B: quién miró lo compartido (PG-12), la primera vez en la app (PG-13) y el plan en
+    // papel o en PDF (PG-17). Hablan de todas las áreas: pasan por todas las listas (TEST-PG-019).
+    nombre: 'el pulido grande, tanda B',
+    archivos: [
+      ...['quien-miro.ts', 'presentacion.ts'].map(movil),
+      inicio('presentacion.tsx'),
+      join(RAIZ, 'apps/web/src/lib/hoja-del-plan.ts'),
+      join(RAIZ, 'apps/web/src/components/hoja-del-plan.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/descargar-el-plan.tsx'),
+    ],
+    prohibidos: (texto) => [
+      ...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeCarteraEn(texto)]),
+    ],
+    minimo: 6,
+  },
 ];
 
 /**
