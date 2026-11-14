@@ -24,6 +24,9 @@
  *   una ausencia de diferencias.
  * - El período, la vista, los filtros y la sesión abierta viven en la dirección: «Actualizar» y volver atrás los
  *   conservan.
+ * - PG-15 (WP-PULIDO-GRANDES; DL-173, PG-D10): la nota que la persona deja al terminar una sesión, para su profesional.
+ *   La fila dice «Con nota», sin color de alarma ni contador, y el detalle la muestra con su hora, como contexto. Se lee
+ *   aparte (API-TRN-25-LISTA, el mismo período): si esa lectura falla, las sesiones se ven igual y el detalle lo dice.
  */
 import {
   cantidad,
@@ -32,6 +35,7 @@ import {
   COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
+  COPY_NOTAS_DE_LA_SESION,
   COPY_REGISTRO_POR_NIVELES,
   ejerciciosComparables,
   esCargaCompleta,
@@ -39,6 +43,7 @@ import {
   ETIQUETA_DE_GRANULARIDAD,
   etiquetaDeCondicionRegistrada,
   identidadDeVersiones,
+  notasPorSesion,
   numero,
   observacionesDelEjercicio,
   repeticionesPlanificadas,
@@ -52,6 +57,7 @@ import {
   type EjercicioDeSesion,
   type FilaDeSesion,
   type IdentidadDeVersiones,
+  type NotaDeLaSesion,
   type ObjetivosDeLaVersion,
   type PlanConObjetivos,
   type Prescripcion,
@@ -88,6 +94,9 @@ const PARAMETRO_DE_LA_VISTA = Object.fromEntries(Object.entries(VISTA_DEL_PARAME
 const UNIDAD: readonly [string, string] = ['sesión', 'sesiones'];
 /** Cuántas sesiones se muestran de una vez; «Ver sesiones anteriores» suma otras tantas. La lectura trae el período entero. */
 const SESIONES_DE_UNA_VEZ = 15;
+
+/** PG-15: las notas de las sesiones del período, por sesión; `error`: no se pudieron leer (las sesiones se ven igual). */
+type NotasLeidas = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly porSesion: ReadonlyMap<string, readonly NotaDeLaSesion[]> } | { readonly tipo: 'error' };
 
 /** Los objetivos por serie de cada versión del plan que aparece en el período; `null`: esa versión no se pudo leer. */
 type Planes = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly porVersion: ReadonlyMap<string, PlanConObjetivos | null> };
@@ -140,6 +149,23 @@ export function VistaDeEjecuciones() {
   }, [token, asesoradoId]);
 
   const contexto = r?.ok ? r.datos : null;
+
+  // PG-15: las notas del mismo período, aparte. Se vuelven a leer cada vez que se lee el período (también con «Actualizar»).
+  const [notas, setNotas] = useState<NotasLeidas>({ tipo: 'cargando' });
+  const periodoLeido = contexto ? `${contexto.period.start}|${contexto.period.end}` : null;
+  useEffect(() => {
+    if (periodoLeido === null) return;
+    const [desde, hasta] = periodoLeido.split('|') as [string, string];
+    let vigente = true;
+    setNotas({ tipo: 'cargando' });
+    void api.notasDeLasSesiones(token, asesoradoId, { periodStart: desde, periodEnd: hasta }).then((x) => {
+      if (!vigente || sesionPerdida(x)) return;
+      setNotas(x.ok ? { tipo: 'listo', porSesion: notasPorSesion(x.datos.data.notes) } : { tipo: 'error' });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, asesoradoId, sesionPerdida, periodoLeido]);
   const reintentarLosPlanes = () => {
     if (planes.tipo !== 'listo') return;
     const sinLeer = [...planes.porVersion].filter(([, plan]) => plan === null).map(([planId]) => planId);
@@ -161,7 +187,7 @@ export function VistaDeEjecuciones() {
         {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} /> : null}
       </div>
       <EstadoDeLectura r={r} onReintentar={() => void cargar()}>
-        {contexto ? planes.tipo === 'cargando' ? <Cargando /> : <Sesiones contexto={contexto} planes={planes.porVersion} numeros={numeros} hoy={hoy} pedido={pedido} onReintentarLosPlanes={reintentarLosPlanes} /> : null}
+        {contexto ? planes.tipo === 'cargando' ? <Cargando /> : <Sesiones contexto={contexto} planes={planes.porVersion} numeros={numeros} hoy={hoy} pedido={pedido} notas={notas} onReintentarLosPlanes={reintentarLosPlanes} /> : null}
       </EstadoDeLectura>
     </section>
   );
@@ -173,6 +199,7 @@ function Sesiones({
   numeros,
   hoy,
   pedido,
+  notas,
   onReintentarLosPlanes,
 }: {
   contexto: Contexto;
@@ -180,6 +207,7 @@ function Sesiones({
   numeros: ReadonlyMap<string, number>;
   hoy: string;
   pedido: PeriodoDeUnArea | null;
+  notas: NotasLeidas;
   onReintentarLosPlanes: () => void;
 }) {
   const { asesoradoId, parametros, ir } = useEntrenamiento();
@@ -257,7 +285,7 @@ function Sesiones({
   const tituloDeLaAbierta = abierta ? tituloDeLaSesion(abierta.sesion) : '';
   const contenidoDeLaAbierta =
     abierta && ejecucionAbierta ? (
-      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} />
+      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} notas={notas} />
     ) : null;
 
   // A Analizar va con el período que se está mirando, si es uno elegido: allá el ejercicio se elige de nuevo.
@@ -367,7 +395,7 @@ function Sesiones({
             </div>
             <ul className="sesiones__filas">
               {aLaVista.slice(0, hasta).map((f) => (
-                <Fila key={f.id} fila={f} hoy={hoy} elegida={f.id === idDeLaAbierta} onAbrir={() => ir({ sesion: f.id })} />
+                <Fila key={f.id} fila={f} hoy={hoy} elegida={f.id === idDeLaAbierta} conNota={notas.tipo === 'listo' && (notas.porSesion.get(f.id)?.length ?? 0) > 0} onAbrir={() => ir({ sesion: f.id })} />
               ))}
             </ul>
             {aLaVista.length > hasta ? (
@@ -445,7 +473,7 @@ const Corregida = () => (
   </span>
 );
 
-function Fila({ fila, hoy, elegida, onAbrir }: { fila: FilaDeSesion; hoy: string; elegida: boolean; onAbrir: () => void }) {
+function Fila({ fila, hoy, elegida, conNota, onAbrir }: { fila: FilaDeSesion; hoy: string; elegida: boolean; conNota: boolean; onAbrir: () => void }) {
   return (
     <li className="sesion-registrada" data-clase={fila.clase}>
       <button type="button" className="sesion-registrada__fila" data-sesion={fila.id} aria-current={elegida ? 'true' : undefined} onClick={onAbrir}>
@@ -457,6 +485,14 @@ function Fila({ fila, hoy, elegida, onAbrir }: { fila: FilaDeSesion; hoy: string
           <strong>{fila.sesion}</strong>
           <Condicion fila={fila} />
           {fila.fuente.tipo === 'correccion' ? <Corregida /> : null}
+          {/* PG-15: la persona dejó una nota al terminar. Un rótulo tranquilo, sin color de alarma ni contador. */}
+          {conNota ? (
+            <span className="etiqueta-de-dato" data-con-nota>
+              <Icono nombre="texto" tamano={15} />
+              <span aria-hidden="true">{COPY_NOTAS_DE_LA_SESION.enLaFila}</span>
+              <span className="visualmente-oculto">{COPY_NOTAS_DE_LA_SESION.enLaFilaParaElLector}</span>
+            </span>
+          ) : null}
         </Dato>
         <Dato rotulo="Series" className="sesion-registrada__series">
           <FraseEnPartes texto={fila.series} />
@@ -520,6 +556,7 @@ function DetalleDeLaSesion({
   identidad,
   objetivos,
   version,
+  notas,
 }: {
   fila: FilaDeSesion;
   ejecucion: EjecucionDeEntrenamiento;
@@ -527,6 +564,8 @@ function DetalleDeLaSesion({
   objetivos: ObjetivosDeLaVersion | null;
   /** «versión 3», o «activado el 3 ago» si el número no se pudo saber. */
   version: string;
+  /** PG-15: las notas de las sesiones del período. */
+  notas: NotasLeidas;
 }) {
   const { deQuien } = useNombres();
   const tiempos = useTiemposDeLaSesion(x.executionId);
@@ -549,6 +588,7 @@ function DetalleDeLaSesion({
           <strong>Motivo que escribió la persona:</strong> «{fila.motivo}»
         </p>
       ) : null}
+      <NotasDeLaPersona notas={notas.tipo === 'listo' ? (notas.porSesion.get(x.executionId) ?? []) : notas.tipo === 'error' ? null : []} ejecucion={x} />
       {fila.resumenDeLaSesion ? (
         <p>
           <strong>Resumen de la sesión:</strong> «{fila.resumenDeLaSesion}»
@@ -801,4 +841,39 @@ function planificadasPara(planificado: readonly Prescripcion[], prescriptionId: 
   const reps = serie ? repeticionesPlanificadas(serie) : null;
   if (reps === null) return '';
   return ` · ${reps === '1' ? COPY_ENTRENAMIENTO.planificada : COPY_ENTRENAMIENTO.planificadas} ${reps}`;
+}
+
+/**
+ * PG-15: lo que la persona le contó a su profesional al terminar esta sesión, de la nota más vieja a la más nueva, con su
+ * hora (la de la sesión si fue ese día; si no, con su fecha). `null`: las notas no se pudieron leer, y se dice.
+ */
+function NotasDeLaPersona({ notas, ejecucion: x }: { notas: readonly NotaDeLaSesion[] | null; ejecucion: EjecucionDeEntrenamiento }) {
+  if (notas === null) return <p className="nota">{COPY_NOTAS_DE_LA_SESION.noSePudoLeer}</p>;
+  if (notas.length === 0) return null;
+  const cuando = (n: NotaDeLaSesion): string => {
+    const hora = horaEnZona(n.recordedAt, x.timeZone);
+    let elMismoDia = false;
+    try {
+      elMismoDia = new Intl.DateTimeFormat('en-CA', { timeZone: x.timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(n.recordedAt)) === x.date;
+    } catch {
+      elMismoDia = false;
+    }
+    return elMismoDia ? COPY_NOTAS_DE_LA_SESION.aLas(hora) : COPY_NOTAS_DE_LA_SESION.elDia(dia(n.recordedAt), hora);
+  };
+  return (
+    <div className="detalle-de-sesion__notas" data-notas-de-la-persona>
+      <p className="detalle-de-sesion__notas-titulo">
+        <Icono nombre="texto" tamano={18} />
+        <strong>{COPY_NOTAS_DE_LA_SESION.tituloEnElDetalle}</strong>
+      </p>
+      <ul className="notas-al-lado__lista">
+        {notas.map((n) => (
+          <li key={n.noteId}>
+            <span className="notas-al-lado__texto">«{n.text}»</span> <span className="nota">{cuando(n)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="nota">{COPY_NOTAS_DE_LA_SESION.ayudaEnElDetalle}</p>
+    </div>
+  );
 }
