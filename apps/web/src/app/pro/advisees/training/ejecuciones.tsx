@@ -852,13 +852,15 @@ function NotasDeLaPersona({ notas, ejecucion: x }: { notas: readonly NotaDeLaSes
   if (notas.length === 0) return null;
   const cuando = (n: NotaDeLaSesion): string => {
     const hora = horaEnZona(n.recordedAt, x.timeZone);
-    let elMismoDia = false;
+    // El día y la hora, en la zona de la sesión (la de «Ocurrió el…»): no uno en la del navegador y la otra en la de la sesión.
+    let diaDeLaNota: string | null = null;
     try {
-      elMismoDia = new Intl.DateTimeFormat('en-CA', { timeZone: x.timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(n.recordedAt)) === x.date;
+      diaDeLaNota = new Intl.DateTimeFormat('en-CA', { timeZone: x.timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(n.recordedAt));
     } catch {
-      elMismoDia = false;
+      diaDeLaNota = null;
     }
-    return elMismoDia ? COPY_NOTAS_DE_LA_SESION.aLas(hora) : COPY_NOTAS_DE_LA_SESION.elDia(dia(n.recordedAt), hora);
+    if (diaDeLaNota === x.date) return COPY_NOTAS_DE_LA_SESION.aLas(hora);
+    return COPY_NOTAS_DE_LA_SESION.elDia(diaDeLaNota ? diaDelAnioEnCurso(diaDeLaNota, hoyEn()) : dia(n.recordedAt), hora);
   };
   return (
     <div className="detalle-de-sesion__notas" data-notas-de-la-persona>
