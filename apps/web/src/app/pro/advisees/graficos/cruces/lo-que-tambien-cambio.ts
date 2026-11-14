@@ -38,14 +38,16 @@ const unir = (a: Rango | null, desde: number, hasta: number): Rango => (a === nu
 
 /**
  * Lo indicado para el ejercicio en cada versión del plan de entrenamiento: el RIR del criterio de intensidad y las
- * repeticiones de sus series, como valor o como rango, de las prescripciones de las sesiones registradas en esa versión
- * (cada sesión, en la versión que regía su fecha). Una versión sin sesiones del ejercicio no tiene entrada.
+ * repeticiones de sus series, como valor o como rango, de las prescripciones de las sesiones registradas en esa versión.
+ * Cada sesión va a la versión que ejecutó (su `planId`, la instantánea que la rigió: REG-06-105), aunque se haya
+ * registrado después; si esa versión no está entre las bandas leídas, a la que regía su fecha. Una versión sin sesiones
+ * del ejercicio no tiene entrada.
  */
 export function objetivosPorVersion(ejecuciones: readonly EjecucionDeEntrenamiento[], exerciseId: string, bandas: readonly VigenciaDePlan[]): ReadonlyMap<string, ObjetivoDeLaSerie> {
   const deEntrenamiento = bandas.filter((b) => b.domain === 'TRAINING');
   const acumulado = new Map<string, { rir: Rango | null; repeticiones: Rango | null }>();
   for (const x of ejecuciones) {
-    const banda = deEntrenamiento.find((b) => enLaVigencia(x.date, b));
+    const banda = deEntrenamiento.find((b) => b.planVersionId === x.planId) ?? deEntrenamiento.find((b) => enLaVigencia(x.date, b));
     if (!banda) continue;
     for (const p of x.plannedSession.prescriptions) {
       if (p.exerciseId !== exerciseId) continue;

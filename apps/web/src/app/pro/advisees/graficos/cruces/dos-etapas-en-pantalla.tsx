@@ -14,7 +14,7 @@
  * la tabla se abre con un botón.
  */
 import { entraEnLaEstimacion, etapasDelArea, serieDisponible, valorConUnidad, type DefinicionDeMetrica, type ReferenciaDeMetrica, type SerieAnalitica } from '@be/domain';
-import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { LETRA_MINIMA } from '../../seguimiento/geometria';
 import { definicionDeLaSerie, ejercicioDeLaClave, escalaDeLaSerie, lecturaDelPunto } from '../arma-tu-grafico/compositor';
 import { COPY_DE_LOS_GRAFICOS } from '../copy';
@@ -22,6 +22,7 @@ import { inicioDelEje, textoDeLaMarca } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla, NotaDelInicio, type EstadoDelGrafico } from '../estado-del-grafico';
 import { leerSerieDelCatalogo } from '../lecturas';
 import { colorDelCarril, MarcaDelCarril } from '../marcas';
+import { useAnchoDelGrafico } from '../medidas-del-grafico';
 import type { DensidadDelGrafico } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { COPY_DE_LOS_CRUCES } from './copy';
@@ -31,22 +32,6 @@ import { LO_QUE_BE_NO_REGISTRA } from './lo-que-tambien-cambio';
 
 const C = COPY_DE_LOS_CRUCES.dosEtapas;
 const ALTO: Readonly<Record<DensidadDelGrafico, number>> = { COMPLETA: 180, COMPACTA: 124 };
-
-/** El ancho del contenedor, medido: el SVG no se estira, así la letra no baja de 12,5 px. */
-function useAnchoMedido(): [RefObject<HTMLDivElement | null>, number] {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [ancho, setAncho] = useState(560);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const medir = () => setAncho(Math.max(280, Math.round(el.getBoundingClientRect().width)));
-    medir();
-    const o = new ResizeObserver(medir);
-    o.observe(el);
-    return () => o.disconnect();
-  }, []);
-  return [ref, ancho];
-}
 
 const formato = (v: number, decimales: number): string => v.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
 
@@ -66,7 +51,7 @@ export function DosEtapasEnPantalla({
   densidad?: DensidadDelGrafico;
   nivel?: 3 | 4;
 }) {
-  const [ref, ancho] = useAnchoMedido();
+  const [ref, ancho] = useAnchoDelGrafico();
   const id = useId();
   const [tabla, setTabla] = useState(false);
   const Titulo = nivel === 3 ? 'h3' : 'h4';

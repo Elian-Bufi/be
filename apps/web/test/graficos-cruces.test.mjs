@@ -591,12 +591,17 @@ test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección
 
 test('TEST-GRF-077 · lo indicado de cada versión sale de las sesiones de esa versión, y lo que cambió se dice en la primera línea (mutación: asignar una sesión a la versión de hoy)', () => {
   const bandas = [vigencia('TRAINING', 'tv3', 'v3', '2026-08-01', '2026-09-15'), vigencia('TRAINING', 'tv4', 'v4', '2026-09-15', null)];
-  const ejecucion = (date, rir, sets) => ({ date, plannedSession: { prescriptions: [{ exerciseId: SENTADILLA, intensity: { criterion: 'RIR', target: { value: rir, reference: null } }, sets }, { exerciseId: OTRO_EJERCICIO, intensity: null, sets: [] }] } });
+  const ejecucion = (date, rir, sets, planId = 'plan-sin-banda') => ({ date, planId, plannedSession: { prescriptions: [{ exerciseId: SENTADILLA, intensity: { criterion: 'RIR', target: { value: rir, reference: null } }, sets }, { exerciseId: OTRO_EJERCICIO, intensity: null, sets: [] }] } });
   const series5y6 = [
     { setIndex: 1, repetitions: { value: 5 }, note: null },
     { setIndex: 2, repetitions: { min: 5, max: 6 }, note: null },
   ];
-  const objetivos = TC.objetivosPorVersion([ejecucion('2026-09-10', 2, series5y6), ejecucion('2026-09-14', 2, series5y6), ejecucion('2026-09-20', 1, series5y6)], SENTADILLA, bandas);
+  // La sesión del 18/9 ejecutó la versión 3 aunque se registró con la 4 vigente: va a la 3 (la que la rigió).
+  const objetivos = TC.objetivosPorVersion(
+    [ejecucion('2026-09-10', 2, series5y6), ejecucion('2026-09-14', 2, series5y6), ejecucion('2026-09-20', 1, series5y6), ejecucion('2026-09-18', 2, series5y6, 'tv3')],
+    SENTADILLA,
+    bandas,
+  );
   assert.deepEqual(objetivos.get('tv3'), { rir: { desde: 2, hasta: 2 }, repeticiones: { desde: 5, hasta: 6 } });
   assert.deepEqual(objetivos.get('tv4'), { rir: { desde: 1, hasta: 1 }, repeticiones: { desde: 5, hasta: 6 } });
   assert.deepEqual(TC.cambiosDeLoIndicado(objetivos, bandas, '2026-08-01', '2026-10-31'), ['Con la versión 4 del plan de entrenamiento (desde el 15/9), el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no.']);

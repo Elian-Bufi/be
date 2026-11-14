@@ -5,15 +5,16 @@
  * - `leerLaFuerza`: el 1RM estimado de un ejercicio (API-PRJ-01 `TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE`) con sus puntos
  *   tal como llegan, porque la mediana del RIR y el rango de repeticiones de cada etapa salen de ahí, y con las versiones
  *   del plan de entrenamiento de la misma respuesta.
- * - `leerLoIndicado`: lo indicado para el ejercicio en cada versión, de las sesiones registradas (API-TRN-21, en tramos
- *   de 92 días; GR-T54). Si una lectura falla, `null`: la pantalla dice que no se sabe, no que no cambió.
+ * - `leerLoIndicadoDelEjercicio`: lo indicado para el ejercicio en cada versión, de las sesiones registradas (API-TRN-21,
+ *   en tramos de 92 días, con la lectura compartida de la base: `leerLasSesionesEnTramos`; GR-T54). Si la lectura falla,
+ *   `null`: la pantalla dice que no se sabe, no que no cambió.
  */
 import { type ObjetivoDeLaSerie, type PuntoDeFuerza, type ResultadoDeEstimacionDeFuerza, type SerieAnalitica, type VigenciaDePlan } from '@be/domain';
 import { api } from '../../../../../lib/api';
 import { limitarLectura, motivoDeFalla, type MotivoDeFalla } from '../../seguimiento/contexto';
 import { serieDeLaFuerza } from '../adaptadores';
 import { inicioDelEje } from '../eje-de-fechas';
-import { leerEnTramos, type ParametrosDeLectura } from '../lecturas';
+import { leerLasSesionesEnTramos, type ParametrosDeLectura } from '../lecturas';
 import { objetivosPorVersion } from './lo-que-tambien-cambio';
 
 export type LecturaDeLaFuerza =
@@ -48,13 +49,9 @@ export async function leerLaFuerza(p: ParametrosDeLectura, exerciseId: string, u
   return { tipo: 'lista', serie, puntos, bandas: res.planVersions, generada: d.generatedAt, zona: d.period.timeZone, parcial: d.partialView };
 }
 
-/** Lo indicado para el ejercicio en cada versión del plan de entrenamiento; `null` si alguna lectura no se pudo hacer. */
-export async function leerLoIndicado(p: ParametrosDeLectura, exerciseId: string, bandas: readonly VigenciaDePlan[]): Promise<ReadonlyMap<string, ObjetivoDeLaSerie> | null> {
-  const { partes, falla } = await leerEnTramos(p.periodo, 92, (desde, hasta) => api.contextoDeRevisionDeEntrenamiento(p.token, p.asesoradoId, { periodStart: desde, periodEnd: hasta }));
-  if (falla !== null) return null;
-  return objetivosPorVersion(
-    partes.flatMap((x) => x.data.registeredExecutions),
-    exerciseId,
-    bandas,
-  );
+/** Lo indicado para el ejercicio en cada versión del plan de entrenamiento; `null` si la lectura no se pudo hacer. */
+export async function leerLoIndicadoDelEjercicio(p: ParametrosDeLectura, exerciseId: string, bandas: readonly VigenciaDePlan[]): Promise<ReadonlyMap<string, ObjetivoDeLaSerie> | null> {
+  const sesiones = await leerLasSesionesEnTramos(p);
+  if (sesiones === null || sesiones.tipo !== 'lista') return null;
+  return objetivosPorVersion(sesiones.ejecuciones, exerciseId, bandas);
 }

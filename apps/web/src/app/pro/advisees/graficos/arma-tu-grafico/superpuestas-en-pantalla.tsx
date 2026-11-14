@@ -11,7 +11,7 @@
  * que el dibujo, con una columna por serie y su unidad.
  */
 import type { SentidoDeLaMarca } from '@be/domain';
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import { useId, useMemo, useState, type KeyboardEvent } from 'react';
 import { useConPuntero } from '../../../../../lib/graficos';
 import { LETRA_MINIMA } from '../../seguimiento/geometria';
 import { fechasConObservacion, type BandaDeVersion, type CarrilDePuntos } from '../carriles';
@@ -21,6 +21,7 @@ import { escalaDeFechas, moverElCursor, type PeriodoDelGrafico } from '../eje-de
 import { NotaDelInicio } from '../estado-del-grafico';
 import { LecturaEnLaFecha } from '../lectura-en-la-fecha';
 import { colorDelCarril, Leyenda, MarcaDelCarril } from '../marcas';
+import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_IZQUIERDO, useAnchoDelGrafico } from '../medidas-del-grafico';
 import type { DensidadDelGrafico } from '../paneles-alineados';
 import { tablaEquivalente } from '../tabla-equivalente';
 import { TablaEquivalente } from '../tabla-equivalente-en-pantalla';
@@ -42,26 +43,9 @@ export interface PropsDeSuperpuestas {
   readonly frase: string | null;
 }
 
-const MARGEN_IZQUIERDO = 56;
 const EJE_DERECHO = 52;
 const LUGAR_DE_LOS_NOMBRES = 128;
-const ALTO_DEL_EJE_DE_FECHAS = 24;
 const ALTO: Readonly<Record<DensidadDelGrafico, number>> = { COMPLETA: 240, COMPACTA: 160 };
-
-function useAnchoMedido(): [RefObject<HTMLDivElement | null>, number] {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [ancho, setAncho] = useState(720);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const medir = () => setAncho(Math.max(320, Math.round(el.getBoundingClientRect().width)));
-    medir();
-    const o = new ResizeObserver(medir);
-    o.observe(el);
-    return () => o.disconnect();
-  }, []);
-  return [ref, ancho];
-}
 
 const formato = (v: number, decimales: number): string => v.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
 
@@ -80,7 +64,7 @@ function GlifoDelEje({ eje }: { eje: EjeSuperpuesto }) {
 }
 
 export function GraficoSuperpuesto({ titulo, periodo, carriles, lados, nombresCortos, bandas = [], densidad = 'COMPLETA', leyenda = [], frase }: PropsDeSuperpuestas) {
-  const [ref, ancho] = useAnchoMedido();
+  const [ref, ancho] = useAnchoDelGrafico();
   const conPuntero = useConPuntero();
   const cursor = useCursorDeFechas();
   const idDelResumen = useId();

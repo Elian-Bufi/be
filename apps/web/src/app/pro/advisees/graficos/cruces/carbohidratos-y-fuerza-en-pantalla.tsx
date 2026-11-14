@@ -22,7 +22,7 @@ import { COPY_DE_LOS_CRUCES } from './copy';
 import { dosEtapasLadoALado, type DosEtapasLadoALado } from './dos-etapas';
 import { DosEtapasEnPantalla } from './dos-etapas-en-pantalla';
 import { LecturaDelCruce } from './lectura-del-cruce';
-import { leerLaFuerza, leerLoIndicado } from './lecturas-de-los-cruces';
+import { leerLaFuerza, leerLoIndicadoDelEjercicio } from './lecturas-de-los-cruces';
 
 const C = COPY_DE_LOS_CRUCES.carbohidratosYFuerza;
 
@@ -60,7 +60,7 @@ export default function CarbohidratosYFuerza({ lectura, periodo, densidad, ejerc
       if (fallida && fallida.tipo === 'error') return setEstado({ tipo: 'ERROR', motivo: fallida.motivo });
       if (carbohidratos.tipo !== 'lista' || energia.tipo !== 'lista') return setEstado({ tipo: 'SIN_DATOS', texto: 'Sin registros de comida con cantidades desde el inicio del acompañamiento en este período.' });
       if (fuerza.tipo !== 'lista') return setEstado({ tipo: 'SIN_DATOS', texto: 'Sin sesiones de este ejercicio que permitan estimar el 1RM en este período.' });
-      const objetivos = await leerLoIndicado(p, id, fuerza.bandas);
+      const objetivos = await leerLoIndicadoDelEjercicio(p, id, fuerza.bandas);
       if (!vigente) return;
       setEstado({
         tipo: 'LISTA',
