@@ -4,7 +4,8 @@
  * PG-06 de WP-PULIDO-GRANDES (DL-173): «La app para Android» de la portada, sin pasar por GitHub.
  * - Desde la compu, un QR con «Escaneá para bajar BE»: se apunta con el teléfono y la APK baja directo, porque el QR
  *   lleva al archivo de la última publicación (`be.apk`, PG-D5), no a una página. Al lado, la versión y el tamaño.
- * - Desde el teléfono, en lugar del QR, un botón «Bajar BE» (el QR no se dibuja con el ancho de un teléfono).
+ * - Siempre, un botón «Bajar BE» (pedido de Dirección del 2026-11-14: el QR y el botón, los dos). En la compu va al lado
+ *   del QR; con el ancho de un teléfono va solo y a todo el ancho, porque el QR no se puede escanear desde la misma pantalla.
  * - Debajo, los tres pasos para permitir la instalación, en castellano, con la marca elegible y su dibujo.
  * El QR se arma en el navegador con `CodigoQr` (DL-136), sin servicios externos. La versión y el tamaño se leen de la
  * lectura pública de GitHub (`lib/descarga-de-la-app.ts`); sin respuesta, la línea no se dibuja y el QR y el botón
@@ -57,8 +58,8 @@ export function DescargaDeLaApp({ textoDelBoton }: { textoDelBoton: string }) {
             </p>
           ) : null}
           <p className="nota">{C.fueraDeGooglePlay}</p>
-          {/* En el teléfono, el botón en lugar del QR. */}
-          <a className="boton boton--primario descarga__en-el-telefono" href={APK_DE_LA_ULTIMA} download data-bajar-en-el-telefono>
+          {/* El botón, siempre; el QR, solo en la compu. */}
+          <a className="boton boton--primario descarga__boton" href={APK_DE_LA_ULTIMA} download data-bajar-la-app>
             <Icono nombre="descargar" tamano={20} />
             {textoDelBoton}
           </a>
@@ -68,9 +69,6 @@ export function DescargaDeLaApp({ textoDelBoton }: { textoDelBoton: string }) {
           <figcaption>
             <strong>{C.escanea}</strong>
             <span className="nota">{C.conLaCamara}</span>
-            <a className="boton boton--enlace" href={APK_DE_LA_ULTIMA} download data-bajar-en-la-compu>
-              {C.enEstaCompu}
-            </a>
           </figcaption>
         </figure>
       </div>
