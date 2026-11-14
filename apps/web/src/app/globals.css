@@ -18169,3 +18169,9 @@ html:has(.estacion:not([data-en-el-asistente])) {
   font-weight: 700;
   background: var(--fondo-suave);
 }
+
+/* GR-16: el método de un resultado calculado, debajo de su nombre y sin la negrita del encabezado de la fila. */
+.desde-el-inicio__metodo {
+  display: block;
+  font-weight: 400;
+}

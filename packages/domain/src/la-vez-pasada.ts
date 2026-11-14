@@ -26,6 +26,7 @@ import { esElMismoEjercicio, observacionesDelEjercicio, type ObservacionDeEvoluc
 import { CAMPOS_CON_ORIGEN, type CampoConOrigen, type EjecucionDeEntrenamiento } from './contratos-entrenamiento';
 import { cantidad, numero } from './formato-numeros';
 import { registradoTarde } from './linea-de-tiempo';
+import { duracionParaMostrar } from './tiempos-de-entrenamiento';
 
 /** Cuántas veces muestra el editor del profesional (GR-01, fase 1). La APK muestra una sola (PG-11). */
 export const VECES_EN_EL_EDITOR = 3;
@@ -38,6 +39,11 @@ export interface SerieDeLaVezPasada {
   readonly repeticiones: number | null;
   /** `null` es «sin informar»; RIR 0 es una respuesta. */
   readonly rir: number | null;
+  /**
+   * Cuánto duró la serie, en segundos (DL-161), si se midió o se escribió; `null` si no. Se dice solo cuando la serie no
+   * tiene carga ni repeticiones (una plancha): es lo único que quedó registrado, y no es «sin dato».
+   */
+  readonly duracion: number | null;
   /** DL-161: se tildó sin escribir, con los valores del plan a la vista («carga rápida»; en la APK, «como el plan»). */
   readonly cargaRapida: boolean;
   /**
@@ -61,6 +67,11 @@ export type ComoSeHizo =
 
 export interface VezPasada {
   readonly executionId: string;
+  /**
+   * La prescripción de esa sesión: el mismo ejercicio puede estar dos veces en una sesión (dos bloques), y cada una es
+   * una vez. Con `executionId`, identifica la vez.
+   */
+  readonly prescriptionId: string;
   /** La fecha civil de la sesión. */
   readonly fecha: string;
   /** El nombre de la sesión del plan: «Piernas A». */
@@ -96,6 +107,7 @@ function vezDe(o: ObservacionDeEvolucion, x: EjecucionDeEntrenamiento | undefine
   if (!c.realizado) return null;
   const base = {
     executionId: c.executionId,
+    prescriptionId: c.prescriptionId,
     fecha: c.fecha,
     sesion: c.sesion,
     cargadaOtroDia: x ? registradoTarde(x.date, x.recordedAt, x.timeZone) : false,
@@ -114,6 +126,7 @@ function vezDe(o: ObservacionDeEvolucion, x: EjecucionDeEntrenamiento | undefine
         carga: s.load ? { value: s.load.value, unit: s.load.unit } : null,
         repeticiones: s.completedRepetitions,
         rir: s.rir,
+        duracion: s.durationSeconds ?? null,
         cargaRapida: rapida,
         // En una tildada sin escribir todo es del plan: lo dice `cargaRapida`, no la lista.
         delPlan: rapida ? [] : CAMPOS_CON_ORIGEN.filter((campo) => s.fieldOrigins?.[campo] === 'PLAN' && s[campo] !== null),
@@ -181,13 +194,15 @@ function enUnaFrase(partes: readonly string[]): string {
 const NOMBRE_DEL_VALOR: Readonly<Record<CampoConOrigen, string>> = { load: 'la carga', completedRepetitions: 'las repeticiones', rir: 'el RIR' };
 
 /**
- * La serie como se escribe en GR-01: «20 kg × 8 · RIR 2». Sin carga, «8 rep. · RIR 2»; sin repeticiones, «20 kg». El RIR
- * va solo si se informó. Nada se completa: lo que no se registró no aparece.
+ * La serie como se escribe en GR-01: «20 kg × 8 · RIR 2». Sin carga, «8 rep. · RIR 2»; sin repeticiones, «20 kg». Sin
+ * carga ni repeticiones, el tiempo, si quedó registrado («tiempo 00:45», el mismo formato de la tabla de la sesión): una
+ * plancha no es «sin dato». El RIR va solo si se informó. Nada se completa: lo que no se registró no aparece.
  */
-export function textoDeLaSerie(s: Pick<SerieDeLaVezPasada, 'carga' | 'repeticiones' | 'rir'>): string {
+export function textoDeLaSerie(s: Pick<SerieDeLaVezPasada, 'carga' | 'repeticiones' | 'rir'> & { readonly duracion?: number | null }): string {
   const carga = s.carga ? cantidad(s.carga.value, s.carga.unit) : null;
   const repeticiones = s.repeticiones === null ? null : numero(s.repeticiones);
-  const base = carga && repeticiones ? `${carga} × ${repeticiones}` : (carga ?? (repeticiones ? `${repeticiones} rep.` : 'sin dato'));
+  const tiempo = s.duracion === null || s.duracion === undefined ? null : duracionParaMostrar(s.duracion * 1000);
+  const base = carga && repeticiones ? `${carga} × ${repeticiones}` : (carga ?? (repeticiones ? `${repeticiones} rep.` : tiempo ? `tiempo ${tiempo}` : 'sin dato'));
   return s.rir === null ? base : `${base} · RIR ${numero(s.rir)}`;
 }
 

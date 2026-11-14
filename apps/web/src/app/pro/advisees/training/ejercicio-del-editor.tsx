@@ -219,7 +219,8 @@ export function EjercicioDelEditor({
   const [seriesDeLaCarga, setSeriesDeLaCarga] = useState<readonly number[] | null>(null);
   const [detalle, setDetalle] = useState(false);
   // GR-01 (WP-GRAFICOS, fase 1): «La vez pasada» de un ejercicio fuera de la lista de la v1, en su propio cuadro lateral,
-  // sin la fuerza estimada. Los de la lista la ven dentro del detalle (ED-75), que no cambia de alcance.
+  // sin la fuerza estimada. Los de la lista la ven dentro del detalle (ED-75): DL-174 abre el cuadro para todos, y la
+  // fuerza estimada sigue solo en la lista de la v1 (GR-T70).
   const conLaVezPasada = !conFuerza && exerciseId !== null;
   const [vezPasada, setVezPasada] = useState(false);
   return (

@@ -9,13 +9,27 @@
  *
  * Los resultados esperados se escriben a mano. Datos sintéticos validados contra el esquema estricto de API-ANT-06.
  * Mutaciones que estas pruebas ponen en rojo: comparar por `comparabilityGroup` (el nombre de cada respuesta) en vez de
- * por protocolo, método y unidad; tomar la anterior de cualquier grupo; contar dos veces un punto repetido entre tramos.
+ * por protocolo, método y unidad; tomar la anterior de cualquier grupo; comparar con una toma posterior a esta; mostrar un
+ * resultado calculado sin su método; no decir los días con más de una toma. (Que un punto repetido entre tramos se cuente
+ * una sola vez no cambia ningún valor de la tabla: no tiene una mutación que se vea.)
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { terminosProhibidosDeAntropometriaEn } from './copy-antropometria';
 import { EvolucionResponseSchema, type EvolucionResponse, type PuntoDeSerieApi, type SerieApi } from './contratos-antropometria';
-import { COPY_DESDE_EL_INICIO, desdeElInicioYLaAnterior, diasEntreLasTomas, diferenciaDeLaFila, MAXIMO_DE_TRAMOS_DE_LAS_TOMAS, tramosDeLasTomas, valorDeLaFila } from './desde-el-inicio';
+import {
+  COPY_DESDE_EL_INICIO,
+  desdeElInicioYLaAnterior,
+  diasConVariasTomas,
+  diasEntreLasTomas,
+  diferenciaDeLaFila,
+  enLosDias,
+  MAXIMO_DE_TRAMOS_DE_LAS_TOMAS,
+  metodoDeLaFila,
+  tramosDeLasTomas,
+  valorDeLaFila,
+} from './desde-el-inicio';
+import { metodoEnPalabras } from './evolucion-antropometrica';
 import { diasEntreFechas } from './fechas-civiles';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -116,6 +130,26 @@ test('TEST-GR-016 · la toma del medio se compara solo con lo anterior a ella; d
     serie('peso', [punto('ev-1', '2026-09-02', 70, PESO_A), punto('ev-2', '2026-09-20', 69.4, PESO_A), punto('ev-2', '2026-09-20', 69.6, PESO_A, { occurredAt: '2026-09-20T13:30:00.000Z' })], [PESO_A]),
   ]);
   assert.deepEqual(desdeElInicioYLaAnterior([repetida], 'ev-2')!.medidas[0]!.desdeLaAnterior, { delta: -0.4, unidad: 'kg', desde: '2026-09-02', dias: 18 });
+});
+
+test('TEST-GR-016 · un resultado calculado dice su método; una medición, no', () => {
+  const t = desdeElInicioYLaAnterior(TRAMOS, 'ev-septiembre')!;
+  const imc = t.resultados.find((f) => f.metrica === 'imc')!;
+  assert.equal(imc.metodo, 'imc-v1');
+  assert.equal(metodoDeLaFila(imc, true), metodoEnPalabras('imc-v1'));
+  assert.match(metodoDeLaFila(imc, true)!, /^Calculado con el método/);
+  assert.equal(metodoDeLaFila(t.medidas.find((f) => f.metrica === 'peso')!, false), null);
+});
+
+test('TEST-GR-016 · dos tomas el mismo día se dicen: la lectura trae una sola por día y por medida', () => {
+  assert.deepEqual(diasConVariasTomas(['2026-09-24', '2026-05-10', '2026-09-24', '2026-07-15', '2026-05-10']), ['2026-05-10', '2026-09-24']);
+  assert.deepEqual(diasConVariasTomas(['2026-05-10', '2026-07-15']), []);
+  assert.equal(enLosDias(['24 sept']), 'el 24 sept');
+  assert.equal(enLosDias(['10 may', '15 jul', '24 sept']), 'el 10 may, el 15 jul y el 24 sept');
+  assert.equal(
+    COPY_DESDE_EL_INICIO.variasElMismoDia(enLosDias(['24 sept'])),
+    'Hay más de una toma el 24 sept: la lectura de las tomas trae una sola por día y por medida, así que la tabla puede no usar todas las de ese día.',
+  );
 });
 
 test('TEST-GR-016 · con tomas de otro profesional en lo leído, se dice', () => {
