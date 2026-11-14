@@ -38,6 +38,18 @@ type Datos = EvolucionResponse['data'];
 
 // Recharts se carga solo cuando hay algo que graficar: la pestaña no paga su peso de entrada.
 const EvolucionDeMetrica = dynamic(() => import('./grafico-de-evolucion').then((m) => m.EvolucionDeMetrica), { ssr: false, loading: () => <Cargando /> });
+// WP-GRAFICOS (DL-174), GR-18 y GR-20: «Por sitio» y «Por método», con la misma lectura; su código se carga al elegirlas.
+const PorSitio = dynamic(() => import('../graficos/antropometria/vistas-de-evolucion').then((m) => m.PorSitioEnEvolucion), { ssr: false, loading: () => <Cargando /> });
+const PorMetodo = dynamic(() => import('../graficos/antropometria/vistas-de-evolucion').then((m) => m.PorMetodoEnEvolucion), { ssr: false, loading: () => <Cargando /> });
+
+/** Cómo se mira la evolución (`como=` en la dirección): de a una medida (la de siempre), por sitio o por método. */
+const MANERAS = [
+  { clave: 'medida', texto: 'Por medida', bajada: 'Cada medición en el tiempo, de a una métrica. Ubica cada valor: no califica ninguno.' },
+  { clave: 'sitio', texto: 'Por sitio', bajada: 'Cada sitio en dos tomas, con la diferencia escrita. Ubica cada valor: no califica ninguno.' },
+  { clave: 'metodo', texto: 'Por método', bajada: 'Las masas según cada método, con un eje común por masa. Ubica cada valor: no califica ninguno.' },
+] as const;
+type Manera = (typeof MANERAS)[number]['clave'];
+const maneraPedida = (valor: string | null): Manera => (valor === 'sitio' || valor === 'metodo' ? valor : 'medida');
 
 /** Sin un período pedido ni una respuesta, el control dice el de siempre: los últimos 90 días, como la API. */
 const DIAS_POR_OMISION = 90;
@@ -70,22 +82,44 @@ export function VistaDeEvolucion() {
     periodoALaVista(pedido, datos ? { start: datos.period.start, end: datos.period.end } : null, hoy) ??
     ({ preset: DIAS_POR_OMISION, desde: restarDias(hoy, DIAS_POR_OMISION - 1), hasta: hoy } as PeriodoDeUnArea);
   const elegirPeriodo = (p: PeriodoDeUnArea) => ir(cambiosDePeriodo(p));
+  const manera = maneraPedida(parametros.get('como'));
 
   return (
     <section className="evolucion" aria-labelledby="titulo-evolucion">
       <div className="evolucion__encabezado">
         <h2 id="titulo-evolucion">{COPY_ANTROPOMETRIA.evolucion}</h2>
-        <p className="nota evolucion__bajada">Cada medición en el tiempo, de a una métrica. Ubica cada valor: no califica ninguno.</p>
+        <p className="nota evolucion__bajada">{MANERAS.find((m) => m.clave === manera)?.bajada}</p>
         <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} />
       </div>
+      <div className="vistas-de-evolucion" role="group" aria-label="Cómo mirar la evolución">
+        {MANERAS.map((m) => (
+          <button key={m.clave} type="button" className="chip" aria-pressed={manera === m.clave} onClick={() => ir({ como: m.clave === 'medida' ? null : m.clave })}>
+            {m.texto}
+          </button>
+        ))}
+      </div>
       <EstadoDeLectura r={r} onReintentar={cargar}>
-        {datos ? <Evolucion datos={datos} metricaPedida={metricaPedida} onMetrica={setMetricaPedida} onAbrirEvaluacion={(evaluationId) => irA('evaluaciones', evaluationId)} /> : null}
+        {datos ? <Evolucion datos={datos} manera={manera} hoy={hoy} metricaPedida={metricaPedida} onMetrica={setMetricaPedida} onAbrirEvaluacion={(evaluationId) => irA('evaluaciones', evaluationId)} /> : null}
       </EstadoDeLectura>
     </section>
   );
 }
 
-function Evolucion({ datos, metricaPedida, onMetrica, onAbrirEvaluacion }: { datos: Datos; metricaPedida: string | null; onMetrica: (m: string) => void; onAbrirEvaluacion: (evaluationId: string) => void }) {
+function Evolucion({
+  datos,
+  manera,
+  hoy,
+  metricaPedida,
+  onMetrica,
+  onAbrirEvaluacion,
+}: {
+  datos: Datos;
+  manera: Manera;
+  hoy: string;
+  metricaPedida: string | null;
+  onMetrica: (m: string) => void;
+  onAbrirEvaluacion: (evaluationId: string) => void;
+}) {
   const metrica = metricaVigente(datos.metrics, metricaPedida);
   const serie = datos.metrics.find((m) => m.metricCode === metrica) ?? null;
   const cambio = metricaPedida !== null && metrica !== metricaPedida;
@@ -96,7 +130,9 @@ function Evolucion({ datos, metricaPedida, onMetrica, onAbrirEvaluacion }: { dat
           <p>{COPY_ANTROPOMETRIA.vistaParcial}</p>
         </Aviso>
       ) : null}
-      {datos.metrics.length === 0 ? (
+      {manera === 'sitio' ? <PorSitio datos={datos} /> : null}
+      {manera === 'metodo' ? <PorMetodo datos={datos} hoy={hoy} /> : null}
+      {manera !== 'medida' ? null : datos.metrics.length === 0 ? (
         <p>{COPY_ANTROPOMETRIA.sinMediciones}</p>
       ) : (
         <div className="campo grafico__controles">
@@ -112,8 +148,8 @@ function Evolucion({ datos, metricaPedida, onMetrica, onAbrirEvaluacion }: { dat
           </select>
         </div>
       )}
-      {cambio ? <p className="nota">{COPY_EVOLUCION.metricaCambio}</p> : null}
-      {serie ? <EvolucionDeMetrica key={`${serie.metricCode}|${datos.period.start}|${datos.period.end}`} serie={serie} zonaHoraria={datos.period.timeZone} periodo={datos.period} onAbrirEvaluacion={onAbrirEvaluacion} /> : null}
+      {manera === 'medida' && cambio ? <p className="nota">{COPY_EVOLUCION.metricaCambio}</p> : null}
+      {manera === 'medida' && serie ? <EvolucionDeMetrica key={`${serie.metricCode}|${datos.period.start}|${datos.period.end}`} serie={serie} zonaHoraria={datos.period.timeZone} periodo={datos.period} onAbrirEvaluacion={onAbrirEvaluacion} /> : null}
     </div>
   );
 }

@@ -1,1 +1,88 @@
-/* WP-GRAFICOS fase 2 (DL-174): los estilos de Nutrición y Antropometría. Los escribe solo la rama C. */
+/* WP-GRAFICOS fase 2 (DL-174): los estilos de Nutrición y Antropometría. Los escribe solo la rama C.
+ *
+ * El lienzo (grafico-capas) se apoya en las clases de la base (grafico-base__*): acá solo va lo que suma. La letra de los
+ * dibujos no baja de 12,5 px y las marcas usan los tokens de la base (--metrica-*, --grafico-indicado, --tenue), con 3:1
+ * contra el fondo en los dos temas. Nunca verde ni rojo: la forma dice el estado además del color.
+ */
+
+/* ─── El lienzo ──────────────────────────────────────────────────────────────────────────────── */
+
+.grafico-capas__temporadas {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.grafico-capas__rotulo {
+  font-weight: 600;
+}
+
+.grafico-capas .grafico-base__leyenda li {
+  max-width: 100%;
+}
+
+/* ─── «Día por día» en Registros de Nutrición (GR-14) ────────────────────────────────────────── */
+
+.dia-por-dia {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--superficie);
+  min-width: 0;
+}
+
+.dia-por-dia__acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ─── «Evolución» de Antropometría: por medida, por sitio, por método (GR-18 y GR-20) ────────── */
+
+.vistas-de-evolucion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+/* ─── El perfil por sitio entre dos tomas (GR-18) ────────────────────────────────────────────── */
+
+.perfil-por-sitio__tomas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+}
+
+.perfil-por-sitio__eleccion {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.perfil-por-sitio__eleccion select {
+  min-height: 44px;
+  max-width: 100%;
+}
+
+.perfil-por-sitio__grupo {
+  min-width: 0;
+}
+
+.perfil-por-sitio__grupo + .perfil-por-sitio__grupo {
+  margin-top: 0.75rem;
+}
+
+.perfil-por-sitio .grafico-base__tabla th[scope='rowgroup'] {
+  padding-top: 0.75rem;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .dia-por-dia {
+    padding: 0.5rem 0.75rem 0.75rem;
+  }
+}

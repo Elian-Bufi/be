@@ -5,8 +5,8 @@
  * hay caché de datos de salud en el navegador. Todo pasa por `limitarLectura` (cuatro a la vez).
  *
  * - `leerSerieDelCatalogo` despacha por la fuente de la serie: una proyección (con el adaptador de la fuerza cuando la
- *   clave es la de la estimación); el contexto de revisión y las derivadas responden «sin especificación» hasta que las
- *   programen las ramas de Entrenamiento (B) y de Nutrición (C).
+ *   clave es la de la estimación); las derivadas (los g/kg) las lee la rama de Nutrición (C, `leerSeriePorKilo`); el
+ *   contexto de revisión responde «sin especificación» hasta que lo programe la rama de Entrenamiento (B).
  * - `leerEnTramos` parte el período en tramos de 92 días, sin días repetidos ni perdidos.
  * - `compartirLecturaEnCurso` evita pedir dos veces lo mismo mientras está en vuelo, y no guarda nada después.
  * - `leerDisponibles` es lo que hacía `useDisponibles` por dentro, sin depender del contexto de la ficha, para que el
@@ -29,6 +29,7 @@ import { limitarLectura, motivoDeFalla, type MotivoDeFalla } from '../seguimient
 import { granoPara, leerSerie, type EstadoDeSerie } from '../seguimiento/series';
 import { serieDeLaFuerza } from './adaptadores';
 import { inicioDelEje, tramosDe, type PeriodoDelGrafico } from './eje-de-fechas';
+import { leerSeriePorKilo } from './nutricion/lecturas-de-nutricion';
 
 export interface ParametrosDeLectura {
   readonly token: string;
@@ -140,6 +141,7 @@ export async function leerSerieDelCatalogo(p: ParametrosDeLectura, ref: Referenc
   const serie = serieDisponible(ref.metricId, ref.unit ?? undefined);
   if (!serie) return { tipo: 'error', motivo: 'OTRO' };
   const periodo = { preset: null, desde: inicioDelEje(p.periodo), hasta: p.periodo.hasta } as const;
+  if (serie.fuente.tipo === 'DERIVADA') return leerSeriePorKilo(p, serie);
   if (serie.fuente.tipo !== 'PROYECCION') return { tipo: 'sin-especificacion' };
   if (serie.fuente.clave === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE') {
     const exerciseId = ref.exerciseKey ? ref.exerciseKey.replace(/^e:/, '') : null;
