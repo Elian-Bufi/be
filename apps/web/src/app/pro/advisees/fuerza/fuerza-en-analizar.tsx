@@ -15,6 +15,11 @@
  * - Con el interruptor apagado, una sesión que solo tuvo series de más de 10 a 12 es un hueco con su fila.
  * - La columna «Sesión» de la maqueta espera que la clave traiga el nombre de la sesión (EDT-55).
  *
+ * WP-GRAFICOS GR-02 (fase 2, rama B; DL-174): el ruido antes que el cambio. Arriba del gráfico, la primera línea dice si
+ * lo indicado cambió entre versiones (del comparador, GR-T14); debajo, cada versión con la mediana del RIR registrado,
+ * las repeticiones de la serie usada y el ruido propio (GR-T16); en la lectura, el de la versión del punto elegido. El
+ * eje abarca 10 kg o 22 lb como mínimo (GR-T15).
+ *
  * Como la composición (TA-25), la pregunta vive en el website y no se guarda como vista: su identificador no entra en
  * `ID_DE_PREGUNTAS`, que valida la API. El período es el de la ficha, que la API recorta al inicio del acompañamiento.
  */
@@ -28,6 +33,10 @@ import { ICONO_DE_FALLA } from '../../../../lib/fallas';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 import { useSeguimiento } from '../seguimiento/contexto';
 import { parametrosDePregunta } from '../seguimiento/estado';
+import { observacionesDelPeriodo } from '../graficos/entrenamiento/comparador';
+import { COPY_FUERZA_ESTIMADA } from '../graficos/entrenamiento/copy';
+import { cambiosDeLoIndicado, lecturaDeLaVersionEn, lecturasPorVersion, objetivosDeLasVersiones, rangoMinimoDeLaFuerza, type LecturaDeLaVersion } from '../graficos/entrenamiento/fuerza-estimada';
+import { useComparador } from '../graficos/entrenamiento/lecturas-del-ejercicio';
 import { ComoSeCalculo, COPY_COMO_SE_CALCULO, fechaLarga } from './como-se-calculo';
 import {
   diaConSemana,
@@ -102,6 +111,15 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
   const puntos = linea?.puntos ?? [];
   const elegido = puntos.find((p) => p.pointId === elegidoId) ?? puntos[puntos.length - 1] ?? null;
   const unidades = lectura.tipo === 'lista' ? (lectura.ejercicios.find((e) => e.exerciseId === exerciseId)?.units ?? []) : [];
+  // GR-02 (WP-GRAFICOS, DL-174): cada versión, con su ruido, y lo que cambió en lo indicado entre versiones, del comparador.
+  const delPeriodo = useMemo(() => ({ desde: periodo.desde, hasta: periodo.hasta, hoy: periodo.hasta, desdeElVinculo: null }), [periodo.desde, periodo.hasta]);
+  const { comparador } = useComparador({ token, asesoradoId, sesionPerdida }, delPeriodo, exerciseId !== null);
+  const porVersion = useMemo(() => (linea ? lecturasPorVersion(linea.puntos, versiones, linea.unidad) : []), [linea, versiones]);
+  const cambios = useMemo(() => {
+    if (!linea || !exerciseId || comparador.tipo !== 'lista') return [];
+    const observaciones = observacionesDelPeriodo(comparador.ejecuciones, `e:${exerciseId}`, comparador.objetivosPorVersion, delPeriodo.desde, delPeriodo.hasta);
+    return cambiosDeLoIndicado(versiones, objetivosDeLasVersiones(linea.puntos, observaciones, versiones));
+  }, [linea, exerciseId, comparador, versiones, delPeriodo]);
   const cambiar = (c: Record<string, string | null>) => {
     setElegidoId(null);
     ir(c);
@@ -161,10 +179,19 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
       ) : (
         <div className="fuerza-en-analizar__zonas">
           <div>
+            {cambios.length > 0 ? (
+              <ul className="grafico-de-entrenamiento__primera-linea" data-cambio-de-lo-indicado>
+                {cambios.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            ) : null}
+            {comparador.tipo === 'error' ? <p className="nota">{COPY_FUERZA_ESTIMADA.sinIndicado}</p> : null}
             <Grafico linea={linea} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} hasta={lectura.hoy} desde={lectura.desde} zona={lectura.zona} soloOrientativas={soloOrientativas} versiones={versiones} />
+            <PorVersion lecturas={porVersion} />
             <TablaDeOrigen linea={linea} asesoradoId={asesoradoId} onComo={setComo} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} soloOrientativas={soloOrientativas} />
           </div>
-          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} soloOrientativas={soloOrientativas} versiones={versiones} />
+          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} soloOrientativas={soloOrientativas} versiones={versiones} porVersion={porVersion} />
         </div>
       )}
       {lectura.tipo === 'lista' && lectura.deOtros ? <p className="nota">{C.deOtros}</p> : null}
@@ -232,16 +259,28 @@ function Grafico({
   versiones: readonly VersionDelPlanEnElPeriodo[];
 }) {
   const puntos = linea?.puntos ?? [];
+  const unidad = linea?.unidad ?? 'kg';
   const geo = useMemo(() => {
     const valores = puntos.map((p) => p.estimate.value);
-    const min = Math.floor(Math.min(...valores) - 2);
-    const max = Math.ceil(Math.max(...valores) + 2);
+    let min = Math.floor(Math.min(...valores) - 2);
+    let max = Math.ceil(Math.max(...valores) + 2);
+    // GR-T15 (WP-GRAFICOS, DL-174): el eje abarca 10 kg o 22 lb como mínimo, para que el ruido de un RIR no parezca un salto.
+    const rango = rangoMinimoDeLaFuerza(unidad) ?? 0;
+    if (max - min < rango) {
+      const centro = (min + max) / 2;
+      min = Math.floor(centro - rango / 2);
+      max = Math.ceil(centro + rango / 2);
+      if (min < 0) {
+        max -= min;
+        min = 0;
+      }
+    }
     const t0 = Date.parse(`${desde}T12:00:00Z`);
     const t1 = Math.max(Date.parse(`${hasta}T12:00:00Z`), t0 + 86_400_000);
     const x = (fecha: string) => MARGEN.izq + ((Date.parse(`${fecha}T12:00:00Z`) - t0) / (t1 - t0)) * (ANCHO - MARGEN.izq - MARGEN.der);
     const y = (v: number) => MARGEN.arr + (1 - (v - min) / Math.max(max - min, 1)) * (ALTO - MARGEN.arr - MARGEN.abj);
     return { x, y, min, max };
-  }, [puntos, desde, hasta]);
+  }, [puntos, unidad, desde, hasta]);
   if (!linea || puntos.length === 0) {
     const falta = loQueHaceFalta(linea?.noEntraron ?? []);
     return (
@@ -443,8 +482,28 @@ function TablaDeOrigen({
 }
 
 /**
- * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día, la
- * diferencia con el anterior y lo que no entra, una línea por sesión.
+ * GR-02 (WP-GRAFICOS, DL-174): cada versión del plan con estimaciones de la persona, con la mediana del RIR registrado,
+ * las repeticiones de la serie usada y el ruido propio, en texto (sin el signo más-menos ni porcentajes).
+ */
+function PorVersion({ lecturas }: { lecturas: readonly LecturaDeLaVersion[] }) {
+  if (lecturas.length === 0) return null;
+  return (
+    <div className="grafico-de-entrenamiento__por-version">
+      <p className="grafico-de-entrenamiento__subtitulo">{COPY_FUERZA_ESTIMADA.porVersion}</p>
+      <ul data-lectura-por-version>
+        {lecturas.map((v) => (
+          <li key={v.planVersionId}>
+            <strong>{v.rotulo}:</strong> {v.texto}.
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día y su ruido
+ * (GR-02: antes que la diferencia), la diferencia con el anterior y lo que no entra, una línea por sesión.
  */
 function Lectura({
   linea,
@@ -453,6 +512,7 @@ function Lectura({
   onComo,
   soloOrientativas,
   versiones,
+  porVersion,
 }: {
   linea: LineaDeFuerza | null;
   elegido: PuntoDeFuerza | null;
@@ -460,6 +520,7 @@ function Lectura({
   onComo: (p: PuntoDeFuerza) => void;
   soloOrientativas: readonly PuntoDeFuerza[];
   versiones: readonly VersionDelPlanEnElPeriodo[];
+  porVersion: readonly LecturaDeLaVersion[];
 }) {
   const nombres = useNombres();
   if (!linea || !elegido) return null;
@@ -470,6 +531,7 @@ function Lectura({
   const diferencia = anterior ? diferenciaEntreEstimaciones(estimacionDelPunto(anterior, ''), e) : null;
   const sesion = haciaLaSesion(asesoradoId, elegido);
   const version = elegido.source === 'PERSON' ? versionDelPlanEn(elegido.date, versiones) : null;
+  const ruido = elegido.source === 'PERSON' ? lecturaDeLaVersionEn(elegido.date, porVersion) : null;
   const noEntra = loQueNoEntraPorFecha(puntos, linea.noEntraron, soloOrientativas);
   return (
     <aside className="fuerza-en-analizar__lectura" aria-live="polite" data-lectura-de-fuerza>
@@ -490,6 +552,11 @@ function Lectura({
         </button>
         {sesion ? <Enlace href={sesion}>Ver la sesión</Enlace> : null}
       </p>
+      {ruido ? (
+        <p className="nota" data-ruido-de-la-version>
+          {ruido.rotulo}: {ruido.texto}.
+        </p>
+      ) : null}
       {anterior && diferencia ? (
         <div className="fuerza-en-analizar__diferencia">
           <p>
