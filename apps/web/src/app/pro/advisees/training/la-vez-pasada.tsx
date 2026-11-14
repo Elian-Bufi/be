@@ -5,9 +5,9 @@
  * WP-PULIDO-GRANDES): en el cuadro lateral del ejercicio, debajo de «Lo que indica el plan» y nunca mezclado con eso, lo
  * que la persona registró las últimas tres veces que hizo el ejercicio, serie por serie (carga con su unidad ×
  * repeticiones · RIR). Las reglas son las del dominio (`la-vez-pasada.ts`); acá solo se lee y se dibuja:
- * - **La lectura** es API-TRN-21 (las sesiones registradas en los planes de quien mira) de los últimos 91 días, armada en
- *   el cliente: la propuesta de gráficos lo pide así para la fase 1. Se lee al abrir el cuadro, cada vez: no hay caché de
- *   datos de salud en el navegador. La tabla dice desde cuándo leyó.
+ * - **La lectura** es API-TRN-21 (las sesiones registradas en los planes de quien mira, y lo dice: «en tus planes») de los
+ *   últimos 91 días, armada en el cliente: la propuesta de gráficos lo pide así para la fase 1. Se lee al abrir el cuadro,
+ *   cada vez: no hay caché de datos de salud en el navegador. La tabla dice desde cuándo leyó.
  * - **Lo escrito va lleno y lo precargado del plan, hueco y en gris,** con su texto: «carga rápida» (DL-161) o «con la
  *   carga del plan» (ED-70). Lo cargado otro día y lo corregido llevan su etiqueta. Nada es solo color.
  * - **Una vez hecha con otro ejercicio lo dice** («Se hizo con Prensa de piernas») y no se toma como el mismo; una
@@ -44,8 +44,8 @@ const DIAS_QUE_SE_LEEN = 91;
 
 export const COPY_LA_VEZ_PASADA_EN_EL_EDITOR = {
   abrir: 'La vez pasada',
-  queEs: (persona: string, desde: string) => `Lo que registró ${persona} las últimas veces que hizo este ejercicio, serie por serie, desde el ${desde}.`,
-  ninguna: (desde: string) => `Sin sesiones registradas con este ejercicio desde el ${desde}.`,
+  queEs: (persona: string, desde: string) => `Lo que registró ${persona} las últimas veces que hizo este ejercicio en tus planes, serie por serie, desde el ${desde}.`,
+  ninguna: (desde: string) => `Sin sesiones registradas con este ejercicio en tus planes desde el ${desde}.`,
   sesion: 'Sesión',
   serie: (n: number) => `Serie ${n}`,
   loRegistrado: 'Lo registrado',
