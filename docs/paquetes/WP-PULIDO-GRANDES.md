@@ -104,8 +104,9 @@ Hoy es el viernes 13/11. La entrega es el miércoles 25/11.
 | **Después del 25/11** | Sin fecha | PG-18 y PG-19 | «Tu ejercicio en el tiempo», con el paquete de gráficos, y «Lo que anotás sin señal», que es grande |
 
 **Las reglas del calendario:**
-- **Congelamiento:** desde el lunes 23/11, solo arreglos. Nada nuevo entra a `main` después de esa fecha hasta la
-  entrega.
+- **Sin congelamiento desde el 2026-11-14.** Dirección: «Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo». Cada parte entra apenas queda aprobada (la revisión
+  sin altas ni medias pendientes y la CI en verde), y la APK sale apenas `main` tiene algo que la justifique: la 0.28
+  salió el 14/11. *Antes:* desde el lunes 23/11, solo arreglos.
 - **Si una parte de la B no está estable el viernes 20/11, pasa a después del 25/11.** «Estable» quiere decir: sus
   criterios de aceptación cumplidos, su oráculo en verde con su mutación, la CI en verde y probada en el teléfono o en el
   website de `test`.

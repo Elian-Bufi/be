@@ -154,7 +154,7 @@ cada una (§4.8).
 de Nutrición ni de Entrenamiento y la persona no ve el 1RM estimado (DL-171). Lo que ve sale del mismo diseño, con lo
 que ella puede ver:
 - «La vez pasada» es una sola pieza para las dos superficies: GR-01 en el editor y PG-11 en la sesión en curso;
-- «Tu ejercicio en el tiempo» (PG-18, después del 25/11) usa las marcas y la función de comparabilidad de este paquete;
+- «Tu ejercicio en el tiempo» (PG-18 de WP-PULIDO-GRANDES) usa las marcas y la función de comparabilidad de este paquete;
 - la exportación de su propia historia (registros, tomas y versiones de sus planes) es un derecho propio y pide su DL
   (GR-D6).
 
@@ -169,33 +169,35 @@ que ella puede ver:
 
 ## 3. El calendario: las fases
 
-Hoy es el sábado 14/11. La APK 0.28 sale el jueves 19/11 desde `main`; desde el lunes 23/11, solo arreglos; la entrega
-es el miércoles 25/11. Las fases son las de la propuesta, con la fase 2 adelantada por el pedido de Dirección del
-2026-11-14.
+Hoy es el sábado 14/11 y la entrega es el miércoles 25/11. **La regla de Dirección del 2026-11-14:** «Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo».
+«Aprobado» quiere decir: la revisión adversaria sin hallazgos altos ni medios pendientes y la CI en verde. No hay
+congelamiento ni ventanas: cada rama entra apenas queda aprobada, y la APK sale apenas `main` tiene algo que la
+justifique (la 0.28 salió el mismo 14/11, no el 19/11). Las fases ordenan el trabajo; no lo hacen esperar.
 
 | Fase | Cuándo | IDs | Rama | Qué lleva |
 |---|---|---|---|---|
-| **1** | Se programa ya; entra antes del 23/11 | GR-01 (reducida), GR-04 (solo la marca) y GR-16 | `wp-graficos-fase-1` | Tres piezas de solo lectura, con datos que ya existen y sin tocar el lienzo de «Analizar» |
-| **2 · adelantada** | Se programa desde el 14/11; antes del 23/11 entra solo lo sólido; lo demás, desde el 26/11 | GR-02, GR-03, GR-05, GR-06, GR-11 a GR-14, GR-18, GR-20, GR-23, GR-24, GR-26, GR-27, SP-01 y SP-02 (caso 1) y «Patrones» | Las cinco de §11 | El historial en el cuadro del ejercicio, Nutrición y Antropometría en el tiempo, los cruces del caso 1, «Armá tu gráfico», los enfoques y «Patrones» |
-| **3** | Enero y febrero de 2027 | GR-07, GR-09, GR-10, GR-15, GR-22, SP-03, SP-05, SP-07 y el caso 2 de SP-01 y SP-02 | — | Lo ratificado que espera programación (D-14, D-15, D-16 y D-20; TB-31, TB-34, TB-35 y TB-38) y los cruces entre profesionales distintos, por API-RES, después de TB-29 y de la revisión legal |
-| **4** | Desde marzo de 2027, una DL por convención | GR-08, GR-17, GR-19, GR-25 y SP-04 | — | Lo que pide una DL o un desafío del legajo |
-| **5** | Después del piloto, área por área | GR-21, SP-06 y SP-08 | — | El peso en casa (D-16, TB-37, API-PCA), los hábitos versionados (DL-165 D-9) y otras áreas |
+| **1** | Programada el 14/11; entra apenas queda aprobada | GR-01 (reducida), GR-04 (solo la marca) y GR-16 | `wp-graficos-fase-1` | Tres piezas de solo lectura, con datos que ya existen y sin tocar el lienzo de «Analizar» |
+| **2 · adelantada** | Programada desde el 14/11; cada rama entra apenas queda aprobada | GR-02, GR-03, GR-05, GR-06, GR-11 a GR-14, GR-18, GR-20, GR-23, GR-24, GR-26, GR-27, SP-01 y SP-02 (caso 1) y «Patrones» | Las cinco de §11 | El historial en el cuadro del ejercicio, Nutrición y Antropometría en el tiempo, los cruces del caso 1, «Armá tu gráfico», los enfoques y «Patrones» |
+| **3** | A continuación de la fase 2 (su diseño se hace desde el 14/11) | GR-07, GR-09, GR-10, GR-15, GR-22, SP-03, SP-05, SP-07 y el caso 2 de SP-01 y SP-02 | — | Lo ratificado que espera programación (D-14, D-15, D-16 y D-20; TB-31, TB-34, TB-35 y TB-38) y los cruces entre profesionales distintos, por API-RES, después de TB-29 y de la revisión legal |
+| **4** | A continuación de la fase 3; cada una abre su DL al programarse | GR-08, GR-17, GR-19, GR-25 y SP-04 | — | Lo que pide una DL o un desafío del legajo |
+| **5** | Después del piloto, área por área: es una condición de producto ratificada, no de calendario, y Dirección puede adelantarla | GR-21, SP-06 y SP-08 | — | El peso en casa (D-16, TB-37, API-PCA), los hábitos versionados (DL-165 D-9) y otras áreas |
 
 De la fase 2 de la propuesta quedan sin rama en este reparto GR-01 completa y la vista previa de GR-04: las dos piden
 una lectura nueva (§4.7).
 
 **Las reglas del calendario:**
-- **«Sólido»** quiere decir lo mismo que «estable» en WP-PULIDO-GRANDES §3: los criterios de aceptación cumplidos, el
-  oráculo en verde con su mutación, la CI en verde y la pieza probada en el website de `test`. Lo que no llega así al
-  domingo 22/11 se integra desde el jueves 26/11.
-- **GR-D1 rige para la fase 1, y el pedido del 14/11 adelanta la fase 2:** se programa ya, sin apurar su integración.
-- **La rama base (A) entra primero.** Puede entrar antes que las demás si no cambia nada visible y su CI está en verde.
+- **«Aprobado»:** la revisión adversaria sin altas ni medias pendientes y la CI en verde. Con eso, la rama se integra en
+  el momento, sin esperar una fecha. La prueba en el website de `test` se hace después de integrar, y lo que aparezca
+  se arregla en una rama nueva.
+- **GR-D1 rige para la fase 1, y los pedidos del 14/11 adelantan todo lo demás:** se programa ya y se integra apenas
+  queda aprobado.
+- **La rama base (A) entra primero.** B, C, D y E salen de su primer commit y entran después de ella.
 - **«Analizar» lo toca una sola rama (D).**
-- **La API de los enfoques (rama E)** entra en una sola ventana de redespliegue, después de la tanda B de
-  WP-PULIDO-GRANDES (PG-15 y PG-16), con su migración que solo agrega. Si no está sólida antes del 23/11, entra después
-  del 25/11 (GR-T18).
-- **SP-01 en la defensa:** con la cuenta de Dirección, que lleva las dos áreas (caso 1). En vivo si la rama D entró
-  sólida; si no, como maqueta y visión (GR-D1).
+- **La API de los enfoques (rama E)** entra después de la base y de la rama D, con su migración que solo agrega. Si la
+  tanda B de WP-PULIDO-GRANDES (PG-15 y PG-16) ya entró, trae `main` antes, y la carpeta de su migración lleva una
+  fecha posterior a todas (GR-T18).
+- **SP-01 en la defensa:** con la cuenta de Dirección, que lleva las dos áreas (caso 1). En vivo si la rama D ya entró;
+  si no, como maqueta y visión (GR-D1).
 - **La APK:** del lado de la persona, la misma pieza de GR-01 es PG-11, que sale según el calendario de
   WP-PULIDO-GRANDES y lee lo que la APK ya leía (API-TRN-19-LISTA). Este paquete no suma lecturas a la APK.
 
@@ -259,7 +261,7 @@ prioridad propia: van por su fase.
 | SP-08 | Hábitos declarados × carga y RIR registrados | Entrenamiento y hábitos | La cinta y «Ver la relación» | — | 5 | Sí (las versiones anteriores de API-HBT-05) | GR-D10 | Al programar |
 | — | Ningún texto nuevo usa las palabras prohibidas; con Nutrición, sin el signo de porcentaje | Todas | — | — | Todas | — | — | La guardia unida (A) en las pruebas de cada rama |
 
-### 4.1 Fase 1 · rama `wp-graficos-fase-1` (antes del 23/11)
+### 4.1 Fase 1 · rama `wp-graficos-fase-1` (programada el 14/11)
 
 **GR-01 · «La vez pasada»: las últimas sesiones del ejercicio, serie por serie**
 - *Qué ve el profesional:* en el cuadro del ejercicio del editor, debajo de «Lo que indica el plan» y nunca mezclado con
@@ -840,15 +842,15 @@ Dirección delegó: «a menos que sea una decisión crítica con criterio haz lo
 crítica en ese sentido (ninguna cambia una garantía del legajo ni abre datos de salud a otro profesional), así que rige
 la recomendación de la propuesta. Las que piden su propia DL la abren al programarse, en su fase.
 
-- **GR-D1 · La fase 1 antes del congelamiento** · **rige la recomendación; la fase 2 se adelantó el 2026-11-14.**
+- **GR-D1 · La fase 1 de solo lectura** · **rige la recomendación; el 2026-11-14 se adelantó la fase 2 y se levantó el congelamiento.**
   - *La pregunta:* ¿se declara el paquete con estos IDs y entra antes del 23/11 una fase 1 de solo lectura: la marca
     «con historial» (GR-04), la tabla desde el inicio y desde la anterior (GR-16) y «La vez pasada» reducida (GR-01)?
   - *Rige:* sí, y SP-01 en la defensa con la cuenta de Dirección, que lleva las dos áreas. El pedido del 14/11 («ya
-    tienes que ponerte a trabajar en eso») adelanta la fase 2: se programa ya, y antes del 23/11 entra solo lo sólido
-    (§3).
+    tienes que ponerte a trabajar en eso») adelanta la fase 2, y la regla del mismo día («Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo») levanta el
+    congelamiento: cada rama entra apenas queda aprobada (§3).
   - *Alternativa descartada:* no programar nada nuevo antes del 25/11 y presentar la propuesta como visión.
   - *En el código:* ninguna rama de la fase 2 toca GR-01, GR-04 ni GR-16; SP-01 se muestra en vivo solo si la rama D
-    entró sólida.
+    ya entró.
 - **GR-D2 · El término de TB-34** · **rige la recomendación.**
   - *La pregunta:* ¿qué término de pantalla reemplaza a la palabra prohibida para TB-34 (DL-163 D-15), y con qué
     convención para la mancuerna única, lo unilateral y el peso corporal?
@@ -963,11 +965,11 @@ Mientras no haya respuesta, rigen. Cada una con su alternativa, cuando la hay.
 - **GR-T17 · La API valida los IDs de gráficos y de series de un enfoque con una expresión,** no con una lista cerrada
   (`^(entrenamiento|nutricion|antropometria|cruce)\.[a-z0-9-]+$` para los gráficos): un gráfico nuevo no obliga a
   redesplegarla, y el website ignora un ID que no conoce.
-- **GR-T18 · El calendario de la fase 2** (actualizada al declarar, por el pedido de Dirección del 14/11): se programa
-  del 14 al 18/11; antes del congelamiento del 23/11 entra solo lo sólido, empezando por la rama base, que puede entrar
-  antes si no cambia nada visible y su CI está en verde; lo demás, desde el 26/11. La API de los enfoques entra en una
-  sola ventana de redespliegue, después de la tanda B; si no llega sólida antes del 23/11, después del 25/11. *Antes:*
-  el diseño integraba toda la fase 2 desde el 26/11.
+- **GR-T18 · El calendario de la fase 2** (actualizada el 2026-11-14 por dos pedidos de Dirección): se programa desde
+  el 14/11 y cada rama se integra apenas queda aprobada (la revisión adversaria sin altas ni medias pendientes y la CI en
+  verde), empezando por la base; la API de los enfoques, después de la base y de la rama D. No hay congelamiento:
+  «Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo». *Antes:* el diseño integraba toda la fase 2 desde el 26/11, y la primera declaración, solo lo sólido antes
+  del 23/11.
 - **GR-T19 · Los rangos por rama, para no pisarse:** TEST-GRF-001 a 019 (A), 020 a 039 (B), 040 a 059 (C), 060 a 079
   (D) y 080 a 099 (E); las decisiones al programar, en bloques de diez (§6.3); una hoja de estilos por rama, importada
   una sola vez en `app/layout.tsx`, sin tocar `globals.css`.
@@ -1054,9 +1056,9 @@ vista previa por lote (GR-04). Se declaran con su ID y su DL al programarse.
 - **Que el profesional nuevo vea los gráficos vacíos,** contra «cuanto más se usa, mejor». *Cómo se cuida:* el límite
   dicho en pantalla («La historia empieza el día que empezaste a acompañarla») y la exportación propia de la persona
   (GR-D6).
-- **Que la presión de la entrega meta antes del 23/11 algo que no está sólido o que pide una DL.** *Cómo se cuida:* la
-  regla de «sólido» (§3); lo que pide DL queda en su fase y se dice como próximo paso en la guía de la demo, no a medio
-  hacer.
+- **Que la velocidad meta algo que no está aprobado o que pide una DL.** *Cómo se cuida:* nada entra sin la revisión
+  adversaria y la CI en verde (§3); lo que pide una DL la abre antes de programarse, y lo que no llegue a la defensa se
+  dice como próximo paso en la guía de la demo, no a medio hacer.
 - **Que las lecturas acotadas** (92 días en API-ANT-06, API-NUT-17 y API-TRN-21; 366 en API-PRJ-01) **hagan lentos los
   paneles largos o pasen el límite de 120 por minuto.** *Cómo se cuida:* tramos de 92 días dichos en pantalla, de a
   cuatro y sin pedir dos veces lo que está en vuelo, 12 semanas por defecto en la estación y grano semanal para más de
@@ -1157,12 +1159,11 @@ Las rutas de `fuerza/`, `training/`, `nutrition/`, `anthropometry/` y `seguimien
 
 ### 11.3 El orden de integración
 
-- **Sábado 14/11:** A publica su primer commit; E empieza la API.
-- **Domingo 15 a martes 17/11:** B, C, D y E programan; A suma la cinta y el ruido.
-- **Miércoles 18/11:** cada rama con su PR, la CI en verde y su evidencia; quedan las revisiones.
-- **Jueves 19 a domingo 22/11:** entra lo sólido: A primero; después B, C y D, en cualquier orden; E al final, después
-  de la tanda B, para que la API se redespliegue una sola vez con su migración.
-- **Desde el jueves 26/11:** lo que no entró.
+- **Sábado 14/11:** A publica su primer commit; B, C, D y E salen de él, y E empieza por la API.
+- **Cada rama, apenas queda aprobada** (la revisión adversaria sin altas ni medias pendientes y la CI en verde), se
+  integra: A primero; B, C y D después de A, en el orden en que queden aprobadas; E después de A y de D, porque guarda en
+  los enfoques los gráficos armados con «Armá tu gráfico».
+- **Las fases 3 y 4** se programan a continuación, con el diseño que se hace en paralelo desde el 14/11.
 
 ## 12. Los referentes
 

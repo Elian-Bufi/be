@@ -8207,12 +8207,16 @@ crítica con criterio haz lo que me recomiendes».
   estación en los dos editores.
 
 **El calendario.**
-- **Fase 1, antes del 23/11:** GR-01 (reducida), GR-04 (la marca) y GR-16, en `wp-graficos-fase-1`.
+- **Sin congelamiento (Dirección, 2026-11-14):** «Todo se integra lo antes posible una vez que esté aprobado, no
+  retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo». Aprobado = la revisión
+  adversaria sin altas ni medias pendientes y la CI en verde.
+- **Fase 1:** GR-01 (reducida), GR-04 (la marca) y GR-16, en `wp-graficos-fase-1`, programada el 14/11.
 - **Fase 2, adelantada:** se programa desde el 14/11 en cinco ramas (la base; Entrenamiento; Nutrición y Antropometría;
-  los cruces y «Analizar»; «Patrones» y los enfoques). Antes del 23/11 entra solo lo sólido; lo demás, desde el 26/11.
-  La API de los enfoques, en una sola ventana de redespliegue, después de la tanda B de WP-PULIDO-GRANDES.
-- **Fases 3 a 5, en 2027:** lo ratificado que espera programación y el caso 2 (fase 3), lo que pide una DL o un desafío
-  del legajo (fase 4) y el peso en casa, los hábitos y otras áreas, después del piloto (fase 5).
+  los cruces y «Analizar»; «Patrones» y los enfoques), y cada una entra apenas queda aprobada: la base primero; la API
+  de los enfoques, después de la base y de la rama de los cruces.
+- **Fases 3 y 4, a continuación:** lo ratificado que espera programación y el caso 2 (fase 3), y lo que pide una DL o un
+  desafío del legajo (fase 4). **Fase 5, después del piloto** (una condición de producto ratificada, que Dirección puede
+  adelantar): el peso en casa, los hábitos y otras áreas.
 
 **Lo que toca el legajo o una DL.**
 - **DL-126 (se amplía, no se cambia; GR-T04):** dos series comparten un eje solo si comparten familia y unidad, como
@@ -8234,7 +8238,5 @@ crítica con criterio haz lo que me recomiendes».
   los hábitos).
 
 **Opciones para Dirección.**
-- **A (vigente, por la delegación):** las decisiones como se recomiendan; la fase 1 antes del 23/11 y la fase 2
-  adelantada, con lo sólido antes del 23/11.
-- **B:** lo mismo, pero «Superpuestas» solo con una unidad (la regla de hoy de DL-126, sin doble eje) y los enfoques
-  después del 25/11, para que la API no se redespliegue antes de la entrega.
+- **A (vigente, por la delegación):** las decisiones como se recomiendan, y todo se integra apenas queda aprobado.
+- **B:** lo mismo, pero «Superpuestas» solo con una unidad (la regla de hoy de DL-126, sin doble eje).
