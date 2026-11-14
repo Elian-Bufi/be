@@ -10,7 +10,9 @@
  *
  * Los resultados esperados se escriben a mano, desde la propuesta de gráficos. Datos sintéticos.
  * Mutaciones que estas pruebas ponen en rojo: tomar `sustituido` como el mismo ejercicio (en `esDelMismoEjercicio`);
- * leer el original en vez de la corrección que rige; no saltear las no realizadas; perder la marca de carga rápida.
+ * leer el original en vez de la corrección que rige; no saltear las no realizadas (una registrada así que traiga el
+ * ejercicio resumido); perder la marca de carga rápida; decir «sin dato» de una serie que solo tiene su tiempo; identificar
+ * una vez sin su prescripción (el mismo ejercicio dos veces en una sesión).
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -256,6 +258,42 @@ test('TEST-GR-001 · resumida: no tiene series y lo dice; no se sintetizan', () 
   assert.equal(vez!.comparable, false);
   assert.equal(loQueSeHizo(vez!, 'persona'), 'la registraste resumida, sin series');
   assert.equal(loQueSeHizo(vez!, 'profesional'), 'se registró resumida, sin series');
+});
+
+test('TEST-GR-001 · una sesión registrada como no realizada no es una vez, aunque su registro traiga el ejercicio', () => {
+  // El contrato no impide que una no realizada traiga ejercicios: si trae uno resumido, sigue sin ser una vez.
+  const conResumen = ejecucion('2026-11-08', [{ prescripto: SENTADILLA, resumen: 'No pude ir' }]);
+  const noRealizada = EjecucionDeEntrenamientoSchema.parse({ ...conResumen, original: { ...conResumen.original, granularity: null, sessionCondition: 'NOT_COMPLETED' } });
+  assert.deepEqual(vecesPasadas([noRealizada], SENTADILLA.exerciseId), []);
+  assert.equal(vecesPasadas([conResumen], SENTADILLA.exerciseId).length, 1);
+});
+
+test('TEST-GR-001 · el mismo ejercicio dos veces en una sesión: dos veces, cada una con su prescripción; la APK toma la última', () => {
+  const historia = [
+    ejecucion('2026-11-03', [
+      { prescripto: SENTADILLA, series: [escrita(1, 20, 10)] },
+      { prescripto: PRENSA, series: [escrita(1, 80, 10)] },
+      { prescripto: SENTADILLA, series: [escrita(1, 30, 5)] },
+    ]),
+  ];
+  const veces = vecesPasadas(historia, SENTADILLA.exerciseId);
+  // La misma sesión y la misma fecha: lo que las distingue es la prescripción (la clave de cada fila de la tabla).
+  assert.equal(new Set(veces.map((v) => v.executionId)).size, 1);
+  assert.equal(new Set(veces.map((v) => `${v.executionId}|${v.prescriptionId}`)).size, 2);
+  assert.deepEqual(
+    veces.map((v) => loQueSeHizo(v, 'profesional')),
+    ['30 kg × 5 · RIR 2', '20 kg × 10 · RIR 2'],
+  );
+  assert.equal(loQueSeHizo(vecesPasadas(historia, SENTADILLA.exerciseId, { cuantas: 1 })[0]!, 'persona'), '30 kg × 5 · RIR 2');
+});
+
+test('TEST-GR-001 · una serie con solo su tiempo dice el tiempo, no «sin dato»; con carga o repeticiones, el tiempo no se suma', () => {
+  const plancha = (setIndex: number, segundos: number): SerieEjecutadaApi => ({ ...escrita(setIndex, null, null, null), durationSeconds: segundos });
+  const [vez] = vecesPasadas([ejecucion('2026-11-03', [{ prescripto: SENTADILLA, series: [plancha(1, 45), plancha(2, 50), { ...escrita(3, 20, 8), durationSeconds: 40 }] }])], SENTADILLA.exerciseId);
+  assert.equal(loQueSeHizo(vez!, 'persona'), 'tiempo 00:45, tiempo 00:50, 20 kg × 8 · RIR 2');
+  assert.equal(textoDeLaSerie({ carga: null, repeticiones: null, rir: 1, duracion: 30 }), 'tiempo 00:30 · RIR 1');
+  // Sin nada registrado, «sin dato»: nunca un cero.
+  assert.equal(textoDeLaSerie({ carga: null, repeticiones: null, rir: null, duracion: null }), 'sin dato');
 });
 
 test('TEST-GR-001 · una serie que falta queda sin dato: cada serie dice su número, nunca se corre ni se completa', () => {

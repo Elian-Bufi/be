@@ -4,11 +4,12 @@
  * `historial-del-buscador.test.ts` y `desde-el-inicio.test.ts`).
  *  1. TEST-GR-004 · la marca «Con historial» en cada resultado del buscador, del índice de API-PRJ-01 del último año;
  *  2. TEST-GR-001 · «La vez pasada» debajo de «Lo que indica el plan» y antes de la tarjeta de fuerza; fuera de la lista de
- *     la v1, en su propio cuadro, sin cambiar el alcance de ED-75; API-TRN-21 de los últimos 91 días;
+ *     la v1, en su propio cuadro, con la fuerza estimada solo en la v1 (GR-T70); API-TRN-21 de los últimos 91 días;
  *  3. TEST-GR-016 · la tabla al final de la toma abierta, con la línea del error de medición siempre debajo.
  *
  * Mutaciones que estas pruebas ponen en rojo: dibujar «La vez pasada» arriba de lo indicado; abrir el detalle con la fuerza
- * estimada para cualquier ejercicio; poner la línea del error de medición antes de la tabla.
+ * estimada para cualquier ejercicio; poner la línea del error de medición antes de la tabla; identificar cada fila de «La
+ * vez pasada» sin su prescripción; callar los días con más de una toma; mostrar un resultado calculado sin su método.
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
  */
@@ -37,7 +38,7 @@ test('TEST-GR-001 · «La vez pasada» va debajo de «Lo que indica el plan»; f
   const tarjeta = detalle.indexOf('<TarjetaDeFuerza');
   assert.ok(plan > 0 && plan < vez && vez < tarjeta, 'lo indicado arriba y lo registrado abajo, nunca mezclados');
   assert.match(detalle, /useLaVezPasada\(token, asesoradoId, abierto \? exerciseId : undefined, sesionPerdida\)/);
-  // ED-75 no cambia de alcance: la fuerza estimada sigue solo para la lista de la v1.
+  // La fuerza estimada sigue solo para la lista de la v1 (GR-T70): DL-174 abre el cuadro para todos, no la tarjeta.
   const editor = leer('training/ejercicio-del-editor.tsx');
   assert.match(editor, /const conFuerza = exerciseId !== null && entraEnLaEstimacion\(exerciseId\);/);
   assert.match(editor, /const conLaVezPasada = !conFuerza && exerciseId !== null;/);
@@ -53,6 +54,9 @@ test('TEST-GR-001 · «La vez pasada» va debajo de «Lo que indica el plan»; f
   // Lo precargado del plan, hueco y con su texto: nunca solo el color.
   assert.match(pieza, /<MarcaDeOrigen hueca=\{serie\.cargaRapida\} \/>/);
   assert.match(pieza, /marcaDelPlan\(serie, COPY_LA_VEZ_PASADA\.cargaRapida\)/);
+  // Cada fila es una vez: la sesión y su prescripción (el mismo ejercicio puede estar dos veces en una sesión).
+  assert.match(pieza, /<tr key=\{\x60\$\{v\.executionId\}\|\$\{v\.prescriptionId\}\x60\}/);
+  assert.doesNotMatch(pieza, /key=\{v\.executionId\}/);
 });
 
 test('TEST-GR-016 · la tabla va al final de la toma abierta y la línea del error de medición, siempre debajo de ella', () => {
@@ -67,6 +71,12 @@ test('TEST-GR-016 · la tabla va al final de la toma abierta y la línea del err
   assert.match(seccion, /api\.evolucionAntropometrica\(token, asesoradoId, \{ periodStart: t\.desde, periodEnd: t\.hasta \}\)/);
   // La primera toma no lee nada.
   assert.match(seccion, /if \(esLaPrimera \|\| tramos\.length === 0\) return;/);
+  // Dos tomas el mismo día: la lectura trae una sola por día y por medida, y la sección lo dice.
+  assert.match(seccion, /diasConVariasTomas\(fechas\.filter\(\(f\) => f <= dia\)\)/);
+  assert.match(seccion, /data-varias-el-mismo-dia>\n\s*\{C\.variasElMismoDia\(enLosDias\(repetidos\.map\(diaCivil\)\)\)\}/);
+  // Un resultado calculado, con su método; una medición, sin.
+  assert.match(seccion, /const metodo = metodoDeLaFila\(f, derivada\);/);
+  assert.match(seccion, /derivada=\{g\.clave === 'resultados'\}/);
   // Sin una columna vacía del error, y sin colores de juicio.
   assert.doesNotMatch(seccion, /<th[^>]*>[^<]*error de medici/i);
   assert.doesNotMatch(seccion, /className="[^"]*(verde|rojo|exito|peligro)/);

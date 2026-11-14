@@ -5,7 +5,8 @@
  * - Sin el primer valor ni el último, sin flecha y sin juicio.
  *
  * Mutaciones que estas pruebas ponen en rojo: atar la marca por nombre en vez de por ejercicio; marcar un ejercicio con 0
- * sesiones; tomar una versión sin ejercicio conocido (`v:`) como si fuera del catálogo.
+ * sesiones; tomar una versión sin ejercicio conocido (`v:`) como si fuera del catálogo; callar que la cuenta incluye las
+ * sesiones registradas como no realizadas o hechas con otro ejercicio.
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -49,6 +50,13 @@ test('TEST-GR-004 · sin sesiones, o sin ejercicio conocido, no hay marca', () =
   assert.deepEqual([...INDICE.keys()].sort(), [PRENSA, SENTADILLA].sort());
   // Sin la fecha de la última, solo la cuenta.
   assert.equal(marcaDeHistorial(historialPorEjercicio([entrada(`e:${SENTADILLA}`, 'Sentadilla goblet', 2, null)]), SENTADILLA, HOY), 'Con historial · 2 sesiones');
+});
+
+test('TEST-GR-004 · qué cuenta la marca se dice entero: también las registradas como no realizadas o hechas con otro ejercicio', () => {
+  // El índice de PRJ-01 no separa lo hecho de lo que no: «la última el 3 nov» no puede leerse como «lo hizo el 3 nov».
+  assert.match(COPY_HISTORIAL_DEL_BUSCADOR.queCuenta, /registradas como no realizadas o hechas con otro ejercicio/);
+  assert.match(COPY_HISTORIAL_DEL_BUSCADOR.queCuenta, /en el último año/);
+  assert.match(COPY_HISTORIAL_DEL_BUSCADOR.queCuenta, /«La vez pasada»/);
 });
 
 test('TEST-GR-004 · sin flecha, sin primero y último, sin juicio', () => {

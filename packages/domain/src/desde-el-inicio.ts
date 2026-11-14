@@ -14,7 +14,7 @@
  * - **Lo que no hay no se completa:** una medida sin toma anterior lo dice; nada se interpola ni se arrastra.
  */
 import type { EvolucionResponse } from './contratos-antropometria';
-import { textoDeDiferenciaAntropometrica } from './evolucion-antropometrica';
+import { metodoEnPalabras, textoDeDiferenciaAntropometrica } from './evolucion-antropometrica';
 import { diaSiguiente, diasEntreFechas, fechaCivil } from './fechas-civiles';
 import { cantidad, numero } from './formato-numeros';
 import { nombreDeMetrica } from './nombres-de-metricas';
@@ -53,6 +53,18 @@ export function tramosDeLasTomas(fechas: readonly string[], hoy: string, maximo 
   return { tramos: tramos.slice(Math.max(0, tramos.length - maximo)), completo: tramos.length <= maximo };
 }
 
+/**
+ * Los días civiles con más de una toma, ordenados. API-ANT-06 trae un solo punto por día y por medida (el de su
+ * checkpoint), así que de dos tomas del mismo día la tabla puede no ver las dos: puede faltar una medida de esta toma, o
+ * la anterior puede no ser la última de ese día. No se arregla en silencio: la sección lo dice con estos días.
+ */
+export function diasConVariasTomas(fechas: readonly string[]): string[] {
+  const vistas = new Set<string>();
+  const repetidas = new Set<string>();
+  for (const f of fechas) (vistas.has(f) ? repetidas : vistas).add(f);
+  return [...repetidas].sort();
+}
+
 /** Una diferencia con otra toma del mismo grupo: la resta, su unidad, la fecha de la otra toma y los días entre las dos. */
 export interface DiferenciaDesdeOtraToma {
   readonly delta: number;
@@ -77,6 +89,11 @@ export interface FilaDesdeElInicio {
    * protocolo, método o unidad (REG-06-162/164).
    */
   readonly motivo: 'SIN_PREVIA' | 'OTRO_GRUPO' | null;
+  /**
+   * La versión del método que produjo el valor (`methodVersionId` de su grupo), o `null` si no tiene. Un resultado
+   * calculado se muestra con su método (`metodoDeLaFila`): un número sin método no se puede firmar.
+   */
+  readonly metodo: string | null;
 }
 
 export interface DesdeElInicio {
@@ -101,6 +118,7 @@ interface Dato {
   readonly valor: number;
   readonly unidad: string;
   readonly derivado: boolean;
+  readonly metodo: string | null;
   /** Protocolo, método y unidad: dos datos se comparan solo si comparten esta clave. */
   readonly comparable: string;
 }
@@ -129,6 +147,7 @@ function datosPorMetrica(respuestas: readonly DatosDeLaEvolucion[]): Map<string,
           valor: p.value,
           unidad: g?.unit ?? p.unit,
           derivado: p.dataClass === 'DERIVED',
+          metodo: g?.methodVersionId ?? null,
           // Sin su grupo no se sabe con qué se compara: no se compara con nada.
           comparable: g ? `${g.protocolVersionId}|${g.methodVersionId ?? ''}|${g.unit}` : `sin-grupo|${p.sourceId}`,
         });
@@ -177,6 +196,7 @@ export function desdeElInicioYLaAnterior(respuestas: readonly DatosDeLaEvolucion
       desdeElInicio: inicio ? diferencia(inicio, actual) : null,
       desdeLaAnterior: anterior ? diferencia(anterior, actual) : null,
       motivo: delGrupo.length > 0 ? null : antes.length > 0 ? 'OTRO_GRUPO' : 'SIN_PREVIA',
+      metodo: actual.metodo,
       derivada: actual.derivado,
     });
   }
@@ -215,7 +235,19 @@ export const COPY_DESDE_EL_INICIO = {
     [inicio ? `Inicio: la toma del ${inicio}` : null, anterior ? `anterior: la del ${anterior}` : null].filter((x): x is string => x !== null).join('; '),
   desdeCuandoSeLeyo: (fecha: string) => `Se leyeron las tomas desde el ${fecha}: «Desde el inicio» empieza ahí.`,
   parcial: 'Hay tomas de otro profesional que no se muestran: no entran en la tabla.',
+  /** Dos tomas el mismo día (`diasConVariasTomas`): la lectura trae una sola por día y por medida, y se dice. */
+  variasElMismoDia: (dias: string) =>
+    `Hay más de una toma ${dias}: la lectura de las tomas trae una sola por día y por medida, así que la tabla puede no usar todas las de ese día.`,
 } as const;
+
+/** «el 3 nov», «el 3 nov y el 10 nov», «el 3 nov, el 10 nov y el 2 dic»: los días ya escritos, para `variasElMismoDia`. */
+export function enLosDias(dias: readonly string[]): string {
+  const con = dias.map((d) => `el ${d}`);
+  return con.length <= 1 ? (con[0] ?? '') : `${con.slice(0, -1).join(', ')} y ${con[con.length - 1]}`;
+}
+
+/** El método de un resultado calculado, en palabras («Calculado con el método «…»»); `null` para una medición. */
+export const metodoDeLaFila = (f: Pick<FilaDesdeElInicio, 'metodo'>, derivada: boolean): string | null => (derivada && f.metodo ? metodoEnPalabras(f.metodo) : null);
 
 /** «el mismo día» o «84 días»: los días de calendario entre las dos fechas, para la celda. */
 export const diasEntreLasTomas = (dias: number): string => (dias === 0 ? 'el mismo día' : `${numero(dias)} ${dias === 1 ? 'día' : 'días'}`);

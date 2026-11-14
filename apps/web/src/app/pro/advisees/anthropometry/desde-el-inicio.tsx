@@ -16,9 +16,12 @@
 import {
   COPY_DESDE_EL_INICIO as C,
   desdeElInicioYLaAnterior,
+  diasConVariasTomas,
   diasEntreLasTomas,
   diferenciaDeLaFila,
+  enLosDias,
   fechaCivil,
+  metodoDeLaFila,
   tramosDeLasTomas,
   valorDeLaFila,
   type DesdeElInicio,
@@ -65,10 +68,15 @@ function CeldaDeDiferencia({ d, comun }: { d: DiferenciaDesdeOtraToma; comun: st
   );
 }
 
-function FilaDeLaTabla({ f, tabla }: { f: FilaDesdeElInicio; tabla: DesdeElInicio }) {
+function FilaDeLaTabla({ f, tabla, derivada }: { f: FilaDesdeElInicio; tabla: DesdeElInicio; derivada: boolean }) {
+  // Un resultado calculado va con su método: un número sin método no se puede firmar (las reglas de honestidad, 6).
+  const metodo = metodoDeLaFila(f, derivada);
   return (
     <tr data-medida={f.metrica}>
-      <th scope="row">{f.nombre}</th>
+      <th scope="row">
+        {f.nombre}
+        {metodo ? <span className="nota desde-el-inicio__metodo">{metodo}</span> : null}
+      </th>
       <td className="desde-el-inicio__valor">
         <EnPartes texto={valorDeLaFila(f)} />
       </td>
@@ -119,7 +127,7 @@ function TablaDesdeElInicio({ tabla, completo, desde }: { tabla: DesdeElInicio; 
                 </tr>
               ) : null}
               {g.filas.map((f) => (
-                <FilaDeLaTabla key={f.metrica} f={f} tabla={tabla} />
+                <FilaDeLaTabla key={f.metrica} f={f} tabla={tabla} derivada={g.clave === 'resultados'} />
               ))}
             </tbody>
           ))}
@@ -139,6 +147,13 @@ export function SeccionDesdeElInicio({ evaluacionId, ocurrio, tomas }: { evaluac
   // Las tomas hasta esta (por cuándo se tomaron), y esta: lo que hay que leer para el inicio y la anterior.
   const hastaEsta = useMemo(() => [...tomas.filter((t) => t.id !== evaluacionId && t.ocurrio <= ocurrio).map((t) => t.ocurrio), ocurrio], [tomas, evaluacionId, ocurrio]);
   const esLaPrimera = hastaEsta.length === 1;
+  // Los días con más de una toma, hasta el de esta (también una del mismo día tomada después): API-ANT-06 trae una sola
+  // por día y por medida, así que la tabla puede no usarlas todas, y se dice.
+  const repetidos = useMemo(() => {
+    const dia = fechaCivil(ocurrio, ZONA);
+    const fechas = [...tomas.filter((t) => t.id !== evaluacionId).map((t) => fechaCivil(t.ocurrio, ZONA)), dia];
+    return diasConVariasTomas(fechas.filter((f) => f <= dia));
+  }, [tomas, evaluacionId, ocurrio]);
   const { tramos, completo } = useMemo(() => tramosDeLasTomas(hastaEsta.map((o) => fechaCivil(o, ZONA)), hoyEn()), [hastaEsta]);
   const claveDeLosTramos = tramos.map((t) => `${t.desde}|${t.hasta}`).join(',');
   const desde = useMemo(() => [...hastaEsta.map((o) => fechaCivil(o, ZONA))].sort().find((f) => f >= (tramos[0]?.desde ?? '')) ?? null, [hastaEsta, tramos]);
@@ -183,17 +198,26 @@ export function SeccionDesdeElInicio({ evaluacionId, ocurrio, tomas }: { evaluac
         </BloqueDeEstado>
       ) : lectura.tipo === 'no-disponible' ? (
         <p className="nota">{C.noSeLeyo}</p>
-      ) : !lectura.tabla || lectura.tabla.medidas.length + lectura.tabla.resultados.length === 0 ? (
-        <p className="nota" data-sin-medidas>
-          {C.sinMedidas}
-        </p>
       ) : (
         <>
-          <TablaDesdeElInicio tabla={lectura.tabla} completo={completo} desde={desde} />
-          {/* GR-16: la línea fija, siempre debajo de la tabla, y no una columna vacía. */}
-          <p className="nota desde-el-inicio__error-de-medicion" data-error-de-medicion>
-            {C.sinErrorDeMedicion}
-          </p>
+          {repetidos.length > 0 ? (
+            <p className="nota" data-varias-el-mismo-dia>
+              {C.variasElMismoDia(enLosDias(repetidos.map(diaCivil)))}
+            </p>
+          ) : null}
+          {!lectura.tabla || lectura.tabla.medidas.length + lectura.tabla.resultados.length === 0 ? (
+            <p className="nota" data-sin-medidas>
+              {C.sinMedidas}
+            </p>
+          ) : (
+            <>
+              <TablaDesdeElInicio tabla={lectura.tabla} completo={completo} desde={desde} />
+              {/* GR-16: la línea fija, siempre debajo de la tabla, y no una columna vacía. */}
+              <p className="nota desde-el-inicio__error-de-medicion" data-error-de-medicion>
+                {C.sinErrorDeMedicion}
+              </p>
+            </>
+          )}
         </>
       )}
     </section>

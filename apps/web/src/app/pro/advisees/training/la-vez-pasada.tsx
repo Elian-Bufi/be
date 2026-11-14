@@ -16,7 +16,8 @@
  *   estimación», ED-76, que confirma el profesional) y no califica una vez frente a otra.
  *
  * Los ejercicios de la lista de la v1 (RM-16) la ven dentro de «Detalle y fuerza estimada» (ED-75); los demás, en
- * `CuadroDeLaVezPasada`, el mismo cuadro lateral sin la fuerza estimada: el alcance de ED-75 no cambia.
+ * `CuadroDeLaVezPasada`, el mismo cuadro lateral sin la fuerza estimada: DL-174 abre el cuadro para todos los ejercicios, y
+ * la fuerza estimada sigue solo en la lista de la v1 (GR-T70).
  */
 import {
   COPY_LA_VEZ_PASADA,
@@ -51,7 +52,7 @@ export const COPY_LA_VEZ_PASADA_EN_EL_EDITOR = {
   loRegistrado: 'Lo registrado',
   caption: (persona: string, nombre: string) => `${COPY_LA_VEZ_PASADA.titulo}: lo que registró ${persona} de ${nombre}, por sesión y por serie`,
   sinDato: 'sin dato',
-  escrito: 'Escrito por la persona',
+  escrito: 'Escrita por la persona (si algún valor vino del plan, la serie lo dice)',
   delPlan: 'Carga rápida: tildada sin escribir, con los valores del plan',
   cargadaOtroDia: 'Cargada otro día',
   corregida: 'Corregida',
@@ -152,7 +153,7 @@ function TablaDeLaVezPasada({ veces, hoy, persona, nombre }: { veces: readonly V
           </thead>
           <tbody>
             {veces.map((v) => (
-              <tr key={`${v.executionId}|${v.fecha}|${v.sesion}`} data-vez={v.executionId}>
+              <tr key={`${v.executionId}|${v.prescriptionId}`} data-vez={v.executionId}>
                 <th scope="row">
                   <span className="la-vez-pasada__fecha">{fechaEnPocasPalabras(v.fecha, hoy)}</span>
                   <span className="visualmente-oculto"> ({fechaEnPocasPalabras(v.fecha, hoy, true)})</span>
@@ -213,7 +214,7 @@ function TablaDeLaVezPasada({ veces, hoy, persona, nombre }: { veces: readonly V
       ) : null}
       {veces.some((v) => v.como.tipo === 'series' && v.como.enLugarDe) ? (
         <ul className="nota la-vez-pasada__en-lugar-de">
-          {veces.flatMap((v) => (v.como.tipo === 'series' && v.como.enLugarDe ? [<li key={v.executionId}>{`${fechaEnPocasPalabras(v.fecha, hoy)}: ${COPY_LA_VEZ_PASADA.enLugarDe(v.como.enLugarDe)}`}</li>] : []))}
+          {veces.flatMap((v) => (v.como.tipo === 'series' && v.como.enLugarDe ? [<li key={`${v.executionId}|${v.prescriptionId}`}>{`${fechaEnPocasPalabras(v.fecha, hoy)}: ${COPY_LA_VEZ_PASADA.enLugarDe(v.como.enLugarDe)}`}</li>] : []))}
         </ul>
       ) : null}
     </>

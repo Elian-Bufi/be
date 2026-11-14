@@ -10,6 +10,12 @@
  * Lo que no hace, a propósito (la propuesta, «cuidado»): no dice el primer valor ni el último, no dibuja una flecha y no
  * usa color. La vista previa con el último valor y el mínimo y el máximo, que pide una lectura por lote, queda para la
  * fase 2. Un ejercicio sin sesiones no lleva marca: ni «0», ni «sin historial».
+ *
+ * **Qué cuenta, dicho entero.** `sessions` y `lastDate` son de las sesiones registradas en las que el ejercicio aparece
+ * (el contrato de PRJ-01): también las registradas como no realizadas, las que no lo incluyeron y las hechas con otro
+ * ejercicio en su lugar. El índice no las separa, así que la línea de arriba de los resultados lo dice, para que «la
+ * última el 3 nov» no se lea como «lo hizo el 3 nov»; lo que hizo, serie por serie, está en «La vez pasada» (GR-01).
+ * Contar solo las hechas pide la lectura por lote de la fase 2.
  */
 import type { EjercicioDelPeriodo } from './contratos-analisis';
 import { numero } from './formato-numeros';
@@ -17,8 +23,9 @@ import { fechaEnPocasPalabras } from './la-vez-pasada';
 
 export const COPY_HISTORIAL_DEL_BUSCADOR = {
   conHistorial: 'Con historial',
-  /** Qué cuenta la marca, dicho una vez arriba de los resultados. */
-  queCuenta: '«Con historial»: las sesiones registradas en las que aparece el ejercicio, en tus planes con esta persona, en el último año.',
+  /** Qué cuenta la marca, dicho una vez arriba de los resultados, con lo que el índice no separa. */
+  queCuenta:
+    '«Con historial»: en cuántas sesiones registradas de tus planes con esta persona estuvo el ejercicio en el último año, y la última. Cuentan también las registradas como no realizadas o hechas con otro ejercicio: lo que hizo, serie por serie, está en «La vez pasada» del ejercicio.',
   noSeLeyo: 'No pudimos leer las sesiones registradas de la persona, así que los resultados no dicen cuáles ya hizo.',
   reintentar: 'Reintentar',
 } as const;
