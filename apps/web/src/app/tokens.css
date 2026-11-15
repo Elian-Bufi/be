@@ -121,6 +121,13 @@
   /* WP-INVITACION (DL-136): el QR de una invitación va negro sobre blanco en los dos temas, como lo leen las cámaras. */
   --qr-fondo: #ffffff;
   --qr-modulo: #000000;
+  /* PG-17 (WP-PULIDO-GRANDES, DL-173): la hoja del plan, impresa o en PDF. El papel no tiene tema: negro sobre blanco en
+     los dos, con un gris para lo secundario y otro para las líneas, que se leen en una impresora en blanco y negro.
+     `scripts/contraste.test.cjs` mide los tres. */
+  --hoja-texto: #000000;
+  --hoja-fondo: #ffffff;
+  --hoja-tenue: #404040;
+  --hoja-borde: #6b6b6b;
   /* ED-18 (WP-EDITORES-PROFESIONAL; DL-170): el vidrio del website, solo en la estación, el asistente, sus cuadros y su
      panel. `#rrggbbaa`: el vidrio de afuera (la barra, los cuadros, el panel), el de adentro (lo que va dentro de un
      cuadro, sin sombra), la línea de luz del borde, el brillo de arriba, los dos destellos del fondo y el resplandor del
