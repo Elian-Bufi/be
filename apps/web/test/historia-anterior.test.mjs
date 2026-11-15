@@ -1,10 +1,12 @@
 /**
  * WP-HISTORIA-ANTERIOR (DL-175) · TEST-HA-050 a 056 · «Historia anterior» en el website, sin React:
- *  - TEST-HA-050: la dirección (el área, el tramo, el enlace con la vuelta) y el área con que la abre la ficha;
- *  - TEST-HA-051: sin la autorización (el 404 de API-HIA-04, por la causa que sea), cómo pedírsela, sin un dato;
+ *  - TEST-HA-050: la dirección (el área, el tramo de hasta 90 días, el enlace con la vuelta) y el área con que la abre la
+ *    ficha;
+ *  - TEST-HA-051: sin la autorización (el 404 de API-HIA-04, por la causa que sea), lo que hace falta y cómo pedírsela,
+ *    sin un dato;
  *  - TEST-HA-052: las versiones de los planes, con sus fechas, de otro profesional y sin su nombre;
  *  - TEST-HA-053: lo registrado, por semana;
- *  - TEST-HA-054: las tomas, con su protocolo y lo calculado con su método;
+ *  - TEST-HA-054: las tomas, con su protocolo, el origen de lo que no midió el profesional y lo calculado con su método;
  *  - TEST-HA-055: las decisiones de las revisiones (resultado, fundamento y próxima acción) y los tramos;
  *  - TEST-HA-056: la pantalla y la ficha, leyendo el código: solo lee, dice el aviso fijo, la ficha la ofrece en «Más» y
  *    nada de los gráficos se toca; los textos, sin las palabras prohibidas ni «%».
@@ -20,7 +22,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { COPY_HISTORIA_ANTERIOR as C, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeEntrenamientoEn, terminosProhibidosEn } from '@be/domain';
+import { COPY_HISTORIA_ANTERIOR as C, nombreDeMetrica, terminosProhibidosDeAntropometriaEn, terminosProhibidosDeEntrenamientoEn, terminosProhibidosEn } from '@be/domain';
 
 const H = await import('../src/app/pro/advisees/previous-history/historia-anterior.ts');
 const {
@@ -112,6 +114,10 @@ test('TEST-HA-050 · la dirección: el área, el tramo y el enlace con la vuelta
   assert.equal(leerTramo(new URLSearchParams('desde=2026-08-01')), null);
   assert.equal(leerTramo(new URLSearchParams('desde=2026-02-30&hasta=2026-03-10')), null);
   assert.equal(leerTramo(new URLSearchParams('desde=2026-10-29&hasta=2026-08-01')), null);
+  // Hasta 90 días, los tramos de la página: una dirección escrita a mano no pide un año entero en una sola lectura.
+  assert.deepEqual(leerTramo(new URLSearchParams('desde=2026-08-01&hasta=2026-10-29')), { desde: '2026-08-01', hasta: '2026-10-29' });
+  assert.equal(leerTramo(new URLSearchParams('desde=2026-08-01&hasta=2026-10-30')), null);
+  assert.equal(leerTramo(new URLSearchParams('desde=2025-11-01&hasta=2026-10-31')), null);
   assert.equal(hrefDeLaHistoriaAnterior(PERSONA, 'NUTRICION'), `${RUTA_DE_LA_HISTORIA_ANTERIOR}?id=${PERSONA}&area=NUTRICION`);
   assert.equal(
     hrefDeLaHistoriaAnterior(PERSONA, 'ANTROPOMETRIA', { desde: '2026-05-01', hasta: '2026-07-29' }, 'vista=linea&p=30'),
@@ -139,10 +145,12 @@ test('TEST-HA-051 · sin la autorización: el 404, por la causa que sea, dice c�
   assert.deepEqual(estadoDeLaLectura({ ok: false, tipo: 'RED' }), { tipo: 'error' });
   for (const area of ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']) {
     const s = sinAutorizacion(area);
-    assert.deepEqual(Object.keys(s), ['titulo', 'cuerpo', 'sinAcceso']);
-    // Un condicional: no afirma que haya habido otro profesional ni que haya datos.
-    assert.match(s.cuerpo, /^Si la persona tuvo antes otro profesional de /);
-    assert.match(s.cuerpo, /«Quién ve qué»/);
+    assert.deepEqual(Object.keys(s), ['titulo', 'cuerpo', 'donde']);
+    // Primero lo que hace falta: acompañarla en esa área (en un área que no acompaña, la entrada de la app no existe para él).
+    assert.match(s.cuerpo, /^Hacen falta dos cosas: que acompañes a la persona en /);
+    // Después, con un condicional, dónde lo autoriza ella: no afirma que haya habido otro profesional ni que haya datos.
+    assert.match(s.donde, /^Si antes tuvo otro profesional de /);
+    assert.match(s.donde, /«Quién ve qué»/);
     for (const t of Object.values(s)) assert.doesNotMatch(t, /\d/, t);
   }
 });
@@ -193,9 +201,10 @@ test('TEST-HA-054 · las tomas: cada medición con su valor y unidad, el protoco
     takenAt: '2026-09-10T14:00:00.000Z',
     date: '2026-09-10',
     measurements: [
-      { metric: 'peso', magnitude: { value: 72.5, unit: 'kg' }, protocolName: 'ISAK 2', origin: 'OBSERVED', corrected: false },
-      { metric: 'perimetro-cintura', magnitude: { value: 81, unit: 'cm' }, protocolName: 'ISAK 2', origin: 'OBSERVED', corrected: true },
-      { metric: 'talla', magnitude: null, protocolName: 'ISAK 2', origin: 'OBSERVED', corrected: false },
+      { metric: 'peso', magnitude: { value: 72.5, unit: 'kg' }, protocolName: 'ISAK 2', origin: 'SELF_REPORTED', corrected: false },
+      { metric: 'perimetro-cintura', magnitude: { value: 81, unit: 'cm' }, protocolName: 'ISAK 2', origin: 'DIRECT_CAPTURE', corrected: true },
+      { metric: 'talla', magnitude: null, protocolName: 'ISAK 2', origin: 'DIRECT_CAPTURE', corrected: false },
+      { metric: 'pliegue-triceps', magnitude: { value: 12, unit: 'mm' }, protocolName: 'ISAK 2', origin: 'CONTROLLED_IMPORT', corrected: false },
     ],
     derivedResults: [{ metric: 'imc', magnitude: { value: 23.1, unit: 'kg/m²' }, methodName: 'IMC (Quetelet)' }],
   };
@@ -207,7 +216,8 @@ test('TEST-HA-054 · las tomas: cada medición con su valor y unidad, el protoco
     titulo: '10/09/2026',
     autor: 'De otro profesional',
     protocolos: ['Protocolo: ISAK 2'],
-    mediciones: ['Peso: 72,5 kg', 'Perímetro de cintura: 81 cm (corregida después)', `Talla: ${C.sinValor}`],
+    // Lo que no midió el profesional dice de dónde salió, como en el resto del website (ETIQUETA_DE_ORIGEN).
+    mediciones: ['Peso: 72,5 kg · Lo informó la persona', 'Perímetro de cintura: 81 cm (corregida después)', `Talla: ${C.sinValor}`, `${nombreDeMetrica('pliegue-triceps')}: 12 mm · Importado con procedencia`],
     calculos: ['Índice de masa corporal: 23,1 kg/m² · Método: IMC (Quetelet)'],
   });
 });
@@ -246,6 +256,8 @@ test('TEST-HA-056 · la pantalla y la ficha: solo lee, dice el aviso fijo, se of
   // Una sola lectura (API-HIA-04) y ninguna escritura.
   assert.deepEqual([...pantalla.matchAll(/api\.(\w+)\(/g)].map((m) => m[1]), ['historiaAnterior']);
   assert.match(pantalla, /<strong>\{C\.aviso\}<\/strong>/);
+  // Sin nada de antes, solo «no hay nada de antes»: el aviso de «Lo que sigue…» no se dibuja.
+  assert.match(pantalla, /\{h\.extent === null \? null : \(\s*<Aviso tipo="info">/);
   assert.match(pantalla, /if \(estado\.tipo === 'sin-autorizacion'\) return <ComoPedirla area=\{area\} \/>;/);
   assert.doesNotMatch(pantalla, /<button|onClick=\{\(\) => api/);
   // Los colores salen de las clases de siempre: nada escrito a mano.

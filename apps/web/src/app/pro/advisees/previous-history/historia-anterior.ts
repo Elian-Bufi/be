@@ -11,8 +11,11 @@
  * - **Todo es de otro profesional y sin su nombre:** cada cosa lleva «De otro profesional», con su número solo si hubo
  *   más de uno (`rotuloDelAutor`).
  * - **Lo que se muestra:** las versiones de los planes con sus fechas; lo registrado por semana; las tomas, con su
- *   protocolo y lo que calculó BE con su método; y las decisiones de las revisiones (resultado, fundamento y próxima
+ *   protocolo, de dónde salió cada medición si no la midió el profesional («Lo informó la persona», como en el resto del
+ *   website) y lo que calculó BE con su método; y las decisiones de las revisiones (resultado, fundamento y próxima
  *   acción). Las fechas llegan formateadas por quien llama (`dia`), para que esto no dependa del navegador.
+ * - **El tramo que pide la dirección** es como mucho el de la página (90 días): uno más largo vuelve al de la API. La API
+ *   acepta hasta 366, pero la lectura de un año entero es para otros usos (la segunda etapa), no para esta página.
  *
  * La integración con los gráficos (WP-GRAFICOS) queda para una segunda etapa: esto no toca `graficos/**`, «Analizar» ni
  * la cinta.
@@ -20,9 +23,12 @@
 import {
   ALCANCES,
   COPY_HISTORIA_ANTERIOR as C,
+  DIAS_DEL_TRAMO,
   ETIQUETA_DE_ALCANCE,
+  ETIQUETA_DE_ORIGEN,
   ETIQUETA_DE_RESULTADO,
   cantidad,
+  diasEntreFechas,
   esAlcance,
   esFechaCivil,
   etiquetaDeCondicionRegistrada,
@@ -52,11 +58,15 @@ export type Dia = (fechaCivil: string) => string;
 /** El área de la dirección; sin una válida, Nutrición (la ficha siempre la pone). */
 export const leerArea = (valor: string | null): Alcance => (esAlcance(valor) ? valor : 'NUTRICION');
 
-/** El tramo de la dirección: las dos fechas juntas, válidas y en orden. Si no, `null` (el tramo por omisión de la API). */
+/**
+ * El tramo de la dirección: las dos fechas juntas, válidas, en orden y de hasta 90 días (los tramos de la página). Si no,
+ * `null` (el tramo por omisión de la API): una dirección escrita a mano no pide un año entero en una sola lectura.
+ */
 export function leerTramo(params: URLSearchParams): TramoDeFechas | null {
   const desde = params.get('desde');
   const hasta = params.get('hasta');
   if (!esFechaCivil(desde) || !esFechaCivil(hasta) || desde > hasta) return null;
+  if (diasEntreFechas(desde, hasta) + 1 > DIAS_DEL_TRAMO) return null;
   return { desde, hasta };
 }
 
@@ -99,9 +109,12 @@ export function estadoDeLaLectura(r: Resultado<HistoriaAnteriorResponse> | null)
   return { tipo: 'error' };
 }
 
-/** Lo que dice la página sin la autorización: cómo pedirla. Ni un dato, ni un número, ni si hubo alguien antes. */
-export function sinAutorizacion(area: Alcance): { readonly titulo: string; readonly cuerpo: string; readonly sinAcceso: string } {
-  return { titulo: C.comoPedirla.titulo, cuerpo: C.comoPedirla.cuerpo(area), sinAcceso: C.comoPedirla.sinAcceso };
+/**
+ * Lo que dice la página sin la autorización: primero lo que hace falta (acompañarla en esa área y que ella la autorice) y
+ * después dónde lo encuentra ella. Ni un dato, ni un número, ni si hubo alguien antes.
+ */
+export function sinAutorizacion(area: Alcance): { readonly titulo: string; readonly cuerpo: string; readonly donde: string } {
+  return { titulo: C.comoPedirla.titulo, cuerpo: C.comoPedirla.cuerpo(area), donde: C.comoPedirla.donde(area) };
 }
 
 // ─── El tramo ───────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -216,7 +229,14 @@ export interface TomaEnPantalla {
   readonly calculos: readonly string[];
 }
 
-/** Las tomas, de la más nueva a la más vieja: cada medición con su valor, el protocolo y lo calculado con su método (TEST-HA-054). */
+/** De dónde salió una medición, solo si no la midió el profesional: «Lo informó la persona» o «Importado con procedencia». */
+const origenDe = (origen: keyof typeof ETIQUETA_DE_ORIGEN): string => (origen === 'DIRECT_CAPTURE' ? '' : ` · ${ETIQUETA_DE_ORIGEN[origen]}`);
+
+/**
+ * Las tomas, de la más nueva a la más vieja: cada medición con su valor y, si no la midió el profesional, de dónde salió;
+ * el protocolo y lo calculado con su método (TEST-HA-054). «Ubicar, nunca calificar»: quien lee no conoce a la persona ni
+ * al profesional anterior, y un peso que ella contó no se ve igual que uno medido.
+ */
 export function tomasEnPantalla(h: HistoriaAnterior, dia: Dia): readonly TomaEnPantalla[] {
   return [...h.measurements]
     .sort(masNuevoPrimero((t) => t.takenAt, (t) => t.evaluationId))
@@ -225,7 +245,7 @@ export function tomasEnPantalla(h: HistoriaAnterior, dia: Dia): readonly TomaEnP
       titulo: dia(t.date),
       autor: rotuloDelAutor(t.author, h.otherProfessionals),
       protocolos: [...new Set(t.measurements.map((m) => m.protocolName))].map(C.protocolo),
-      mediciones: t.measurements.map((m) => `${nombreDeMetrica(m.metric)}: ${m.magnitude ? cantidad(m.magnitude.value, m.magnitude.unit) : C.sinValor}${m.corrected ? ` (${C.corregida.toLowerCase()})` : ''}`),
+      mediciones: t.measurements.map((m) => `${nombreDeMetrica(m.metric)}: ${m.magnitude ? cantidad(m.magnitude.value, m.magnitude.unit) : C.sinValor}${origenDe(m.origin)}${m.corrected ? ` (${C.corregida.toLowerCase()})` : ''}`),
       calculos: t.derivedResults.map((d) => `${nombreDeMetrica(d.metric)}: ${cantidad(d.magnitude.value, d.magnitude.unit)} · ${C.metodo(d.methodName)}`),
     }));
 }

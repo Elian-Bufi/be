@@ -10,9 +10,9 @@
  * - **Con la autorización:** el aviso fijo («Lo que sigue pasó con otro profesional, antes de tu acompañamiento. Solo
  *   lectura»), el tramo con sus vecinos y las secciones del área: las versiones de los planes con sus fechas, lo
  *   registrado por semana, las tomas con su método y las decisiones de las revisiones. Cada cosa, «De otro profesional»,
- *   sin su nombre.
- * - **Sin la autorización** (el 404 de API-HIA-04, sea cual sea la causa): cómo pedírsela a la persona, sin mostrar ni
- *   insinuar datos.
+ *   sin su nombre. Si no hay nada de antes, solo eso: el aviso de «Lo que sigue…» no anuncia algo que no está.
+ * - **Sin la autorización** (el 404 de API-HIA-04, sea cual sea la causa): primero lo que hace falta (acompañarla en esa
+ *   área y que ella la autorice) y después dónde la autoriza ella, sin mostrar ni insinuar datos.
  * - **Nada escribe.** No hay botones que cambien algo: solo enlaces a otro tramo o a otra área.
  *
  * Usa las clases de siempre (`secciones`, `seccion`, `lista`, `insignia`, `datos`): sin colores propios, los dos temas.
@@ -109,14 +109,14 @@ function LecturaDeLaHistoria({
   return <LaHistoria historia={estado.historia} id={id} area={area} volver={volver} />;
 }
 
-/** Sin la autorización: cómo pedírsela a la persona. El mismo texto para cualquier causa del 404. */
+/** Sin la autorización: lo que hace falta y cómo pedírsela a la persona. El mismo texto para cualquier causa del 404. */
 function ComoPedirla({ area }: { area: Alcance }) {
   const s = sinAutorizacion(area);
   return (
     <section className="seccion" aria-labelledby="historia-anterior-como-pedirla" data-historia-anterior="sin-autorizacion">
       <h2 id="historia-anterior-como-pedirla">{s.titulo}</h2>
       <p>{s.cuerpo}</p>
-      <p className="nota">{s.sinAcceso}</p>
+      <p className="nota">{s.donde}</p>
     </section>
   );
 }
@@ -125,12 +125,15 @@ function LaHistoria({ historia: h, id, area, volver }: { historia: HistoriaAnter
   const nav = navegacionDelTramo(h, diaCivil);
   return (
     <div className="secciones" data-historia-anterior="lista">
-      {/* El aviso fijo que pidió Dirección: siempre arriba, con o sin datos en el tramo. */}
-      <Aviso tipo="info">
-        <p>
-          <strong>{C.aviso}</strong>
-        </p>
-      </Aviso>
+      {/* El aviso fijo que pidió Dirección: siempre arriba cuando hay algo de antes, tenga o no datos el tramo. Sin nada de
+          antes, solo eso (el «Lo que sigue…» anunciaría algo que no está). */}
+      {h.extent === null ? null : (
+        <Aviso tipo="info">
+          <p>
+            <strong>{C.aviso}</strong>
+          </p>
+        </Aviso>
+      )}
       {h.extent === null ? (
         <p className="nota">{C.sinHistoria}</p>
       ) : (
