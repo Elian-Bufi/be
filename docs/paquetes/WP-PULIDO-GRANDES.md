@@ -812,7 +812,7 @@ comprobaciones de su prueba.
    pruebas, con su mutación.
 5. Congelar lo que la APK empieza a leer y a escribir (API-TRN-25 y API-TRN-25-PROPIA) con la candidata que la lleve
    (DL-152): lo hace quien la publica. Si esta rama entra antes de cortar la 0.28, la 0.28 ya trae la nota; si no, va en
-   la 0.29, como dice §3.
+   la 0.29, como dice §3. *Hecho con la 0.29.0-candidata.1 (2026-11-14; ver §12.4).*
 6. La ventana de redespliegue de la API: la migración solo agrega, y la API nueva sale con ella, en un solo cambio.
 
 ## 12. Lo programado · tanda B · el resto (rama `wp-pulido-b-resto`)
@@ -914,10 +914,12 @@ los tres tokens de la hoja (`--hoja-texto`, `--hoja-tenue` y `--hoja-borde`, sob
 
 ### 12.4 Lo que falta para cerrar la tanda B (el resto)
 
+**Publicada el 2026-11-14 como la 0.29.0-candidata.1 (latest, con `be.apk`; versionCode 43; commit 2b5ba83).** Trae la tanda B en la APK (PG-12, PG-13 y PG-15) y GR-01, «La vez pasada», de la fase 1 de WP-GRAFICOS. Lo que lee la 0.29 quedó congelado (`packages/domain/fixtures/lecturas-de-la-apk/0.29.0-candidata.1.json`): las 98 operaciones de la 0.28, con la misma forma, y tres más, cada una con su escenario en `lecturas-de-las-apk.int-spec.ts`: API-RES-01 (quién miró, PG-12), API-TRN-25 y API-TRN-25-PROPIA (la nota para tu profe, PG-15). Con eso quedan hechos el punto 5 de §11 y el congelamiento de esta lista. Lo que sigue se prueba sobre la 0.29.
+
 - Probarlo en el teléfono: la presentación con TalkBack y con «reducir movimiento», el gesto, el permiso de avisos en un
   Android 13, y la línea de quién miró con la cuenta de la cohorte que comparte su plan (Diego Sosa, con Lic. Sofía Paz).
 - Mirar la hoja en el navegador: impresa y en PDF, en Chrome y en Firefox, en A4 y en carta, desde Azul noche y desde
   Claro, y el QR del papel escaneado con un teléfono.
-- Congelar `GET /me/summary-sharing` con la candidata que lleve PG-12 (DL-152).
+- ~~Congelar `GET /me/summary-sharing` con la candidata que lleve PG-12 (DL-152).~~ Hecho con la 0.29.0-candidata.1.
 - `WP-PULIDO-GRANDES-ORACULOS.md` con los trece campos: como en la tanda A, los oráculos quedaron en las pruebas, con su
   mutación; la ficha se escribe al cerrar la tanda.

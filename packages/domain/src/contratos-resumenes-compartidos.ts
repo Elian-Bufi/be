@@ -16,8 +16,9 @@
  * - API-RES-09 · `GET /me/summary-sharing/access-requests` — la persona: los pedidos que esperan su respuesta.
  * - API-RES-10 · `POST /me/summary-sharing/access-requests/{accessRequestId}/answer` — la persona responde: sí o no, por ahora.
  *
- * API-RES-05 (las series de un resumen para «Analizar», TB-29) no está en este tramo. Ninguna APK instalada lee estas
- * operaciones: lo que leen no cambia (DL-152). Objetos estrictos, como el resto de los contratos (09v7 T12).
+ * API-RES-05 (las series de un resumen para «Analizar», TB-29) no está en este tramo. Desde la 0.29.0-candidata.1, la APK
+ * lee API-RES-01 (quién miró lo que compartiste, PG-12), congelada con ella (DL-152): su forma no cambia sin una APK que
+ * la lea; las demás no las lee ninguna APK. Objetos estrictos, como el resto de los contratos (09v7 T12).
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
