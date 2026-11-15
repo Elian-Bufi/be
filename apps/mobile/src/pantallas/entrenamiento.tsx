@@ -2122,7 +2122,7 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
       <Parrafo tenue>{fechaCivil(x.date)}</Parrafo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
       {/* PG-15 (DL-173): «¿Algo para contarle a tu profe?», opcional y aparte de confirmar: la sesión ya quedó registrada. */}
-      <NotaParaTuProfe token={token} executionId={x.executionId} sesionPerdida={sesionPerdida} />
+      <NotaParaTuProfe token={token} executionId={x.executionId} zona={x.timeZone} fechaDeLaSesion={x.date} sesionPerdida={sesionPerdida} />
       {vigente ? (
         <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente} icono="corregido">
           <Parrafo tenue>

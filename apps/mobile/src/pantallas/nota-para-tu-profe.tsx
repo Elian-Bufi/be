@@ -12,14 +12,35 @@ import type { NotaDeLaSesion, Resultado } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { api } from '../api';
-import { hora } from '../formato';
+import { fecha, hora, hoyEnZona } from '../formato';
 import { useClaveDeIntento } from '../intento';
 import { alternarFrase, caracteresQueQuedan, FRASES_PARA_TU_PROFE, sePuedeMandar, TEXTO_DEL_MOTIVO, TEXTOS_DE_LA_NOTA as T, textoDeLaNota, trasMandar, type MotivoDeNoEnvio } from '../nota-para-tu-profe';
 import { Aviso, Boton, Campo, estilosPorTema, Parrafo, Seccion, Subtitulo } from '../ui';
 
 type Envio = { readonly tipo: 'escribiendo' } | { readonly tipo: 'mandando' } | { readonly tipo: 'no-se-mando'; readonly motivo: MotivoDeNoEnvio; readonly reintentable: boolean };
 
-export function NotaParaTuProfe({ token, executionId, sesionPerdida }: { token: string; executionId: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
+/**
+ * Cuándo la mandó, en la zona de la sesión: la hora si fue el día de la sesión; si no (desde «Tu historial»), el día y la
+ * hora. Así una nota de otro día no se lee como del día de la sesión.
+ */
+function cuandoDeLaNota(recordedAt: string, zona: string, fechaDeLaSesion: string): string {
+  return hoyEnZona(zona, new Date(recordedAt)) === fechaDeLaSesion ? hora(recordedAt, zona) : fecha(recordedAt, zona);
+}
+
+export function NotaParaTuProfe({
+  token,
+  executionId,
+  zona,
+  fechaDeLaSesion,
+  sesionPerdida,
+}: {
+  token: string;
+  executionId: string;
+  /** La zona y el día civil de la sesión (los de «Ocurrió el…»). */
+  zona: string;
+  fechaDeLaSesion: string;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+}) {
   const [enviadas, setEnviadas] = useState<readonly NotaDeLaSesion[]>([]);
   const [lecturaFallo, setLecturaFallo] = useState(false);
   const [frases, setFrases] = useState<readonly string[]>([]);
@@ -79,7 +100,7 @@ export function NotaParaTuProfe({ token, executionId, sesionPerdida }: { token: 
           <Subtitulo>{T.leContaste}</Subtitulo>
           {enviadas.map((n) => (
             <Parrafo key={n.noteId}>
-              «{n.text}» · {hora(n.recordedAt)}
+              «{n.text}» · {cuandoDeLaNota(n.recordedAt, zona, fechaDeLaSesion)}
             </Parrafo>
           ))}
         </View>

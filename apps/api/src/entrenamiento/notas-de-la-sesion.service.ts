@@ -117,6 +117,11 @@ export class NotasDeLaSesionService {
     if (typeof periodStart !== 'string' || !FECHA.test(periodStart) || typeof periodEnd !== 'string' || !FECHA.test(periodEnd)) {
       throw errores.solicitudInvalida([{ code: 'PERIOD_REQUIRED', path: 'periodStart' }]);
     }
+    // Una fecha que no existe («2026-02-31») no se corre al mes siguiente: la respuesta repite el período, y su contrato
+    // (`FechaLocalSchema`) la rechazaría.
+    for (const [path, f] of [['periodStart', periodStart], ['periodEnd', periodEnd]] as const) {
+      if (Number.isNaN(comoFecha(f).getTime()) || fechaDe(comoFecha(f)) !== f) throw errores.solicitudInvalida([{ code: 'INVALID_DATE', path }]);
+    }
     const dias = (comoFecha(periodEnd).getTime() - comoFecha(periodStart).getTime()) / 86_400_000;
     if (Number.isNaN(dias) || dias < 0 || dias >= DIAS_MAXIMOS_DE_LAS_NOTAS_DE_LAS_SESIONES) throw errores.solicitudInvalida([{ code: 'PERIOD_INVALID', path: 'periodEnd' }]);
     return this.ejecutor.leer({

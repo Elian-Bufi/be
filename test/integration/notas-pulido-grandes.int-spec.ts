@@ -139,6 +139,9 @@ describe('TEST-PG-014 · la nota para tu profe: aparte de confirmar, solo agrega
     await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/training/execution-notes`).expect(400);
     await conSesion(app, c.pro.token).get(notasDelPeriodo(c.ase.id, diasAntes(c.fecha, 92), c.fecha)).expect(400);
     await conSesion(app, c.pro.token).get(notasDelPeriodo(c.ase.id, diasAntes(c.fecha, 91), c.fecha)).expect(200);
+    // Una fecha que no existe no se corre al mes siguiente (la respuesta repetiría un período que su contrato rechaza).
+    const inexistente = await conSesion(app, c.pro.token).get(notasDelPeriodo(c.ase.id, '2026-02-01', '2026-02-31')).expect(400);
+    expect(inexistente.body.error).toMatchObject({ code: 'INVALID_REQUEST', details: { issues: [{ code: 'INVALID_DATE', path: 'periodEnd' }] } });
   });
 
   it('otro profesional de Entrenamiento de la misma persona no ve las notas de sesiones que no son de sus planes', async () => {
