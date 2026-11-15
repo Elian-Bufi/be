@@ -21,6 +21,7 @@ import {
 import type { Prisma, TipoDePerfilProfesional, TipoDeEventoDeVinculo, VersionDeTexto } from '@prisma/client';
 import { PublicadorDeNovedades } from '../novedades/publicador';
 import { PdpService } from '../autorizacion/pdp.service';
+import { retirarHistoriaAnteriorPorRevocacion } from '../historia-anterior/autorizaciones';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
 import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '../http/paginacion';
@@ -316,6 +317,10 @@ export class ConsentimientoProfesionalService {
           [{ tipo: 'CONSENTIMIENTO_REVOCADO', destinatarioId: fila.profesional_id, alcance: av.alcance, fuenteId: actor.identidadId, referencia: { tipo: 'Consentimiento', id: fila.id }, identidadDelHecho: version.id, momentoDeOcurrencia: ahora }],
           procedencia,
         );
+        // DL-175 (HA-T14): la historia anterior que la persona compartía con ese profesional, en ese componente, se retira
+        // con el B2: el 08 §14.1 la ata al alcance del consentimiento, y un B2 otorgado de nuevo no la devuelve sola. Al final,
+        // con el componente y el consentimiento ya tomados: el cerrojo de la historia es el último del orden único.
+        await retirarHistoriaAnteriorPorRevocacion(tx, { personaId: actor.identidadId, alcanceDeVinculoId: fila.alcance_de_vinculo_id, procedencia });
         await this.auditar(tx, operacion, actor.identidadId, fila.id, ctx);
         return { data: { consentId: fila.id, state: 'REVOKED', revokedAt: ahora.toISOString() } };
       }));

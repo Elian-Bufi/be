@@ -7,10 +7,13 @@
  *   invitación (API-INV-05, que crea la solicitud del profesional) y la acepta (REL-03), en ese orden. Aceptar no
  *   autoriza el acceso: el paso siguiente es revisar el consentimiento, como en Vínculos (TEST-AUTH-006).
  * - Si ya había una solicitud igual pendiente, se acepta en Vínculos, donde está.
+ * - WP-HISTORIA-ANTERIOR (DL-175): aceptada, si en esa área ya hubo otro profesional, la tarjeta opcional que ofrece
+ *   compartirle la historia anterior, la misma que en Vínculos (`historia-anterior.tsx`; por omisión, no se comparte).
  */
 import { COPY, COPY_INVITACION, COPY_VINCULO, normalizarCodigo, type Resultado, type SecretoDeInvitacionRequest, type VistaPreviaDeInvitacionResponse } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
+import { HistoriaAnteriorAlAceptar } from '../historia-anterior';
 import { useClaveDeIntento } from '../intento';
 import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Parrafo, Titulo } from '../ui';
@@ -170,6 +173,9 @@ export function PantallaDeInvitacion({
           <Boton texto={COPY_VINCULO.revisarConsentimiento} onPress={() => ir({ nombre: 'consentimiento', vinculoId: estado.vinculoId })} />
         </Aviso>
       ) : null}
+      {/* DL-175: aceptar por invitación es el camino principal (DL-136). Si en esa área ya hubo otro profesional, la misma
+          oferta opcional que al aceptar desde Vínculos (por omisión, no se comparte). */}
+      {estado.tipo === 'aceptada' ? <HistoriaAnteriorAlAceptar token={token} relationshipId={estado.vinculoId} sesionPerdida={sesionPerdida} irAPrivacidad={() => ir({ nombre: 'privacidad' })} /> : null}
 
       {estado.tipo === 'sin-salida' ? (
         <>

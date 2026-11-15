@@ -40,7 +40,7 @@
  * título es la referencia neutral y el monograma lleva el ícono; el nombre que reciben las vistas (la exportación de
  * «Analizar», el diálogo de la nota) es el mismo que se ve.
  */
-import { COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
+import { COPY_HISTORIA_ANTERIOR, COPY_PISTAS, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, referenciaCorta, todasLasPaginas, type DominioDeAnalisis, type NombreDeIcono, type Vinculo } from '@be/domain';
 import { Enlace } from '../../../components/enlace';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -60,6 +60,7 @@ import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesi
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
 import { accionDeLaFicha, rutaDeLaAccion, type AccionDeLaFicha } from './accion-de-la-ficha';
 import { DialogoDeNota } from './nota-de-coordinacion';
+import { areaParaAbrir, hrefDeLaHistoriaAnterior } from './previous-history/historia-anterior';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
 import { conRetorno, hoyEn, inicioDelAcompanamiento, leerPeriodo, leerVista, periodoDesdeElVinculo, periodoEnInstantes, sinPeriodoEnLaUrl, valorDeRetorno, type Acompanamiento, type Periodo } from './seguimiento/estado';
@@ -249,6 +250,8 @@ export function Workspace() {
   const disponible = panel.tipo !== 'no-disponible';
   const accion = panel.tipo === 'listo' ? accionDeLaFicha(panel.datos.domains, hoyEn()) : null;
   const retorno = valorDeRetorno(new URLSearchParams(parametros.toString()));
+  // DL-175: el área con que se abre «Historia anterior» (la primera aceptada de quien lee); sin ninguna, no se ofrece.
+  const areaDeLaHistoria = encabezado.tipo === 'listo' ? areaParaAbrir(encabezado.vinculos) : null;
 
   /**
    * El marco (B10-01): quién es, el acceso actual por área y cuándo se consultó; nada de ficha clínica. Con la ficha
@@ -292,6 +295,19 @@ export function Workspace() {
               alineado="izquierda"
               acciones={[
                 { clave: 'nota', texto: COPY_NOTAS_DE_COORDINACION.escribirCorto, detalle: COPY_PISTAS.ficha.notaDeCoordinacion, icono: <Icono nombre="texto" tamano={18} />, alElegir: () => abrirNota({}) },
+                // WP-HISTORIA-ANTERIOR (DL-175): lo de antes en su área, si la persona lo autorizó. Abre en la primera de
+                // sus áreas aceptadas; la página tiene las otras en pestañas.
+                ...(areaDeLaHistoria
+                  ? [
+                      {
+                        clave: 'historia-anterior',
+                        texto: COPY_HISTORIA_ANTERIOR.ruta,
+                        detalle: COPY_HISTORIA_ANTERIOR.pistaEnLaFicha,
+                        icono: <Icono nombre="linea-de-tiempo" tamano={18} />,
+                        alElegir: () => antesDeSalir(() => router.push(hrefDeLaHistoriaAnterior(id, areaDeLaHistoria, null, retorno))),
+                      },
+                    ]
+                  : []),
               ]}
             />
           ) : null}

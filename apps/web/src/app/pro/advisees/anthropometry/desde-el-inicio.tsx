@@ -12,13 +12,20 @@
  * - **La primera toma** no lee nada: dice que todavía no hay con qué compararla.
  * - **Sin flechas ni colores:** la diferencia es una resta con su signo y su unidad. Una medida tomada antes con otro
  *   protocolo, método o unidad lo dice en la fila, y no se compara.
+ *
+ * La pasada visual (WP-GRAFICOS, 15/11; DISENO-VISUAL §2, GR-16):
+ * - **Una medida que ya es un porcentaje** (la grasa corporal) se resta en puntos: «−6,1 puntos», nunca «−6,1 %», que se
+ *   leería como un porcentaje del valor (`diferenciaEnPuntos`).
+ * - **Sin la fila «Edad»:** la edad al momento de la toma no es una medida que cambie con el trabajo; está en la toma.
+ * - **«Desde el inicio» arranca en la primera toma de la persona:** se lee toda la historia, en los tramos que tienen
+ *   tomas (`TODA_LA_HISTORIA`), y no los últimos dos años.
+ * - **La tabla, más angosta y con las cifras alineadas a la derecha,** con cifras de ancho fijo y sin partir un valor.
  */
 import {
   COPY_DESDE_EL_INICIO as C,
   desdeElInicioYLaAnterior,
   diasConVariasTomas,
   diasEntreLasTomas,
-  diferenciaDeLaFila,
   enLosDias,
   fechaCivil,
   metodoDeLaFila,
@@ -37,9 +44,16 @@ import { diaCivil } from '../../../../lib/formato';
 import { limitarLectura } from '../seguimiento/contexto';
 import { hoyEn } from '../seguimiento/estado';
 import { useAntropometria } from './antropometria';
+import { diferenciaEnPuntos, FUERA_DE_LA_TABLA } from './diferencia-en-puntos';
 
 /** La zona en la que se leen las fechas de las tomas para armar los tramos (la de la API); cada tramo deja un día de margen. */
 const ZONA = 'America/Argentina/Buenos_Aires';
+
+/**
+ * Sin tope de tramos: «Desde el inicio» es la primera toma de la persona (pasada visual del 15/11). Solo se leen los
+ * tramos que tienen tomas, de a pocos a la vez (`limitarLectura`).
+ */
+const TODA_LA_HISTORIA = Number.POSITIVE_INFINITY;
 
 type Lectura =
   | { readonly tipo: 'cargando' }
@@ -58,7 +72,7 @@ function CeldaDeDiferencia({ d, comun }: { d: DiferenciaDesdeOtraToma; comun: st
   return (
     <td className="desde-el-inicio__celda">
       <span className="desde-el-inicio__diferencia">
-        <EnPartes texto={diferenciaDeLaFila(d)} />
+        <EnPartes texto={diferenciaEnPuntos(d)} />
       </span>
       <span className="nota desde-el-inicio__dias">
         {d.desde !== comun ? `${diaCivil(d.desde)} · ` : ''}
@@ -98,8 +112,8 @@ function FilaDeLaTabla({ f, tabla, derivada }: { f: FilaDesdeElInicio; tabla: De
 function TablaDesdeElInicio({ tabla, completo, desde }: { tabla: DesdeElInicio; completo: boolean; desde: string | null }) {
   const referencias = C.inicioYAnterior(tabla.fechaDelInicio ? diaCivil(tabla.fechaDelInicio) : null, tabla.fechaDeLaAnterior ? diaCivil(tabla.fechaDeLaAnterior) : null);
   const grupos = [
-    { clave: 'medidas', titulo: C.mediciones, filas: tabla.medidas },
-    { clave: 'resultados', titulo: C.resultados, filas: tabla.resultados },
+    { clave: 'medidas', titulo: C.mediciones, filas: tabla.medidas.filter((f) => !FUERA_DE_LA_TABLA.has(f.metrica)) },
+    { clave: 'resultados', titulo: C.resultados, filas: tabla.resultados.filter((f) => !FUERA_DE_LA_TABLA.has(f.metrica)) },
   ].filter((g) => g.filas.length > 0);
   return (
     <>
@@ -154,7 +168,7 @@ export function SeccionDesdeElInicio({ evaluacionId, ocurrio, tomas }: { evaluac
     const fechas = [...tomas.filter((t) => t.id !== evaluacionId).map((t) => fechaCivil(t.ocurrio, ZONA)), dia];
     return diasConVariasTomas(fechas.filter((f) => f <= dia));
   }, [tomas, evaluacionId, ocurrio]);
-  const { tramos, completo } = useMemo(() => tramosDeLasTomas(hastaEsta.map((o) => fechaCivil(o, ZONA)), hoyEn()), [hastaEsta]);
+  const { tramos, completo } = useMemo(() => tramosDeLasTomas(hastaEsta.map((o) => fechaCivil(o, ZONA)), hoyEn(), TODA_LA_HISTORIA), [hastaEsta]);
   const claveDeLosTramos = tramos.map((t) => `${t.desde}|${t.hasta}`).join(',');
   const desde = useMemo(() => [...hastaEsta.map((o) => fechaCivil(o, ZONA))].sort().find((f) => f >= (tramos[0]?.desde ?? '')) ?? null, [hastaEsta, tramos]);
   const [lectura, setLectura] = useState<Lectura>({ tipo: 'cargando' });
