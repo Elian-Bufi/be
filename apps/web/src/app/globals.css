@@ -5968,6 +5968,32 @@ a.observacion__fila:focus-visible {
   font-size: 0.92rem;
 }
 
+/* GR-24 (pasada visual): lo que cambió en lo indicado, debajo de la diferencia; «Por semana» y «Día por día». */
+.tabla-de-etapas__lo-indicado {
+  display: block;
+  font-weight: 400;
+}
+
+.graficos-de-etapas__grano {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.graficos-de-etapas__grano .chip-de-zona {
+  min-height: 2rem;
+  padding-block: 0.15rem;
+  font-size: 0.8125rem;
+}
+
+.pie-de-etapas .grafico-base__frase {
+  margin-left: auto;
+}
+
+.pie-de-etapas__como-leerlo[open] {
+  flex: 1 1 100%;
+  order: 3;
+}
+
 .graficos-de-etapas .bajo-los-graficos {
   margin: 0.5rem 0 0.4rem;
 }
@@ -18679,32 +18705,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   display: block;
   font-weight: 400;
   font-size: 0.8125rem;
-}
-
-/* GR-24 (pasada visual): lo que cambió en lo indicado, debajo de la diferencia; «Por semana» y «Día por día». */
-.tabla-de-etapas__lo-indicado {
-  display: block;
-  font-weight: 400;
-}
-
-.graficos-de-etapas__grano {
-  display: inline-flex;
-  gap: 0.35rem;
-}
-
-.graficos-de-etapas__grano .chip-de-zona {
-  min-height: 2rem;
-  padding-block: 0.15rem;
-  font-size: 0.8125rem;
-}
-
-.pie-de-etapas .grafico-base__frase {
-  margin-left: auto;
-}
-
-.pie-de-etapas__como-leerlo[open] {
-  flex: 1 1 100%;
-  order: 3;
 }
 
 /* ─── PG-15 y PG-16 (WP-PULIDO-GRANDES; DL-173): la nota para el profe y las notas propias del profesional ───────── */
