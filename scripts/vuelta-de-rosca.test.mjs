@@ -290,12 +290,23 @@ test('TEST-AVR-008 · en pausa, terminado o sin A3: dice que no ve, y por qué',
   assert.ok(sinA3.tarjetas.every((t) => t.areas.every((a) => !a.ve)), 'sin A3, nadie ve');
 });
 
-test('TEST-AVR-009 · «Quién ve qué» solo lee, y no dice nada que prohíba 10-B04', () => {
+test('TEST-AVR-009 · «Quién ve qué» escribe solo con sus interruptores, y no dice nada que prohíba 10-B04', () => {
   const pantalla = leer('pantallas/quien-ve-que.tsx');
   const llamadas = [...pantalla.matchAll(/api\.([a-zA-Z0-9]+)\(/g)].map((m) => m[1]).sort();
   // PG-12 (WP-PULIDO-GRANDES): también lee lo que la persona comparte de otras áreas, para decir quién lo miró. Sigue
   // siendo una lectura: ninguna escritura sale de esta pantalla.
-  assert.deepEqual(llamadas, ['consultarConsentimientos', 'consultarRequisitoA3', 'consultarVinculos', 'misHabitos', 'misResumenesCompartidos', 'pedidosDeAccesoAMisHabitos']);
+  // WP-HISTORIA-ANTERIOR (DL-175): y su historia anterior de cada área (API-HIA-01). La pantalla sigue sin escribir: la
+  // única escritura es la del interruptor «Compartir mi historia anterior», que vive en su pieza (`historia-anterior.tsx`)
+  // y solo autoriza o retira esa historia (API-HIA-02 y 03), como lo decidió Dirección el 2026-11-15.
+  // WP-COMPARTIR (DL-176; Dirección, 2026-11-15): «Quién ve qué» deja de ser solo de lectura. La pantalla lee además lo
+  // que se puede compartir (API-CMP-01) y los pedidos de ver un plan (API-RES-09); las escrituras viven en sus piezas: los
+  // interruptores de lo de otras áreas y de los hábitos, y la respuesta a los pedidos (compartir.tsx), y el de la historia
+  // anterior (historia-anterior.tsx). El B2 y el A3 se siguen cambiando en el vínculo y en Privacidad.
+  assert.deepEqual(llamadas, ['consultarConsentimientos', 'consultarRequisitoA3', 'consultarVinculos', 'loQueSePuedeCompartir', 'miHistoriaAnterior', 'misHabitos', 'misResumenesCompartidos', 'pedidosDeAccesoAMisHabitos', 'pedidosDePlan']);
+  const pieza = leer('historia-anterior.tsx');
+  assert.deepEqual([...new Set([...pieza.matchAll(/api\.([a-zA-Z0-9]+)\(/g)].map((m) => m[1]))].sort(), ['autorizarHistoriaAnterior', 'retirarHistoriaAnterior']);
+  const deCompartir = leer('compartir.tsx');
+  assert.deepEqual([...new Set([...deCompartir.matchAll(/api\.([a-zA-Z0-9]+)\(/g)].map((m) => m[1]))].sort(), ['compartirLoElegido', 'dejarDeCompartirUnaCosa', 'loQueSePuedeCompartir', 'responderPedidoDeAcceso', 'responderPedidoDePlan']);
   // Lo que se muestra, sin los comentarios (que citan la regla de 10-B04).
   const textos = (leer('textos-de-la-vuelta.ts') + leer('quien-ve-que.ts') + leer('quien-miro.ts') + pantalla).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(textos, /todos tus datos|toda tu información|puede ver todo/i);
@@ -942,7 +953,8 @@ test('TEST-AV2-027 · arriba de todo, transparente; con contenido detrás, un fo
  * Lo que sigue opaco por decisión: los diálogos y la hoja (nada se ve a través de ellos), la fila fija de la sesión
  * (PV-11), la lámina de la toma y sus tarjetas (Indicadores y Progreso, con su sombra), los controles (los campos, las
  * fichas de las comidas y los Segmentos, que la receta cubre dentro de una tarjeta), el aviso informativo (la receta lo
- * cubre con el vidrio prendido) y el círculo de la nube de la recuperación, que no es una tarjeta.
+ * cubre con el vidrio prendido) y el círculo de la nube de la recuperación, que no es una tarjeta. El diálogo para compartir
+ * la historia anterior (DL-175, HA-T16) es uno más de los diálogos.
  */
 const OPACO_POR_DECISION = [
   'campos-de-formulario.tsx · chip',
@@ -952,6 +964,7 @@ const OPACO_POR_DECISION = [
   'dialogo.tsx · opcionElegida',
   'evidencia-visual.tsx · dialogo',
   'fila-fija.tsx · fila',
+  'historia-anterior.tsx · dialogo',
   'indicadores.tsx · tarjeta',
   'nutricion-hoy.tsx · ficha',
   'progreso.tsx · tarjeta',

@@ -22,6 +22,11 @@ export const MARCA_SEGUN_EL_DATO = {
   CARGA_RAPIDA: 'HUECA_GRIS',
   /** El 1RM estimado de 10 a 12 repeticiones equivalentes. */
   ORIENTATIVA: 'HUECA',
+  /**
+   * El 1RM estimado hasta 10 repeticiones equivalentes: lleno, como lo registrado, pero no se llama «registrado» (es una
+   * estimación, no una repetición máxima registrada: RM-22). Rama B de WP-GRAFICOS, revisión del 15/11.
+   */
+  NUCLEO_DE_LA_ESTIMACION: 'LLENA',
   /** API-FZA-01: la serie que observó el profesional. */
   OBSERVADA_POR_EL_PROFESIONAL: 'ROMBO',
   REPORTADO: 'CONTORNO_CORTADO',

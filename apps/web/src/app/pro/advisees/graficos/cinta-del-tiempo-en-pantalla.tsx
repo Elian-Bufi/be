@@ -67,7 +67,7 @@ function LeyendaDeLaCinta({ g }: { g: GeometriaDeLaCinta }) {
         return [
           <li key={t}>
             <span className="grafico-base__glifo">
-              <Icono nombre={ICONO_DEL_HECHO[t]} tamano={15} />
+              <Icono nombre={ICONO_DEL_HECHO[t]} tamano={18} />
               {SENTIDO_DEL_HECHO[t]}
             </span>
           </li>,

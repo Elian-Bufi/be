@@ -75,7 +75,8 @@ test('TEST-GRF-002 · seriesOfrecidas no ofrece nada de un área sin acceso, y l
   assert.ok(todo.every((s) => s.estado === 'OFRECIDA'));
   assert.ok(!todo.some((s) => s.id === 'entrenamiento.volumen-carga-externa' || s.id === 'nutricion.energia-prevista-del-dia'));
   // Una serie de dos áreas, ya ofrecida, pide los dos alcances y lo propio en las dos. Se prueba la función real con un
-  // catálogo de prueba, porque en el de BE los g/kg siguen EN_PREPARACION hasta que los programe la rama C.
+  // catálogo de prueba, que deja la regla a la vista aunque cambie el catálogo de BE (la rama C ya ofrece los g/kg:
+  // TEST-GRF-051 lo prueba con el catálogo de BE).
   const porKilo = { ...serie('nutricion.proteinas-por-kilo'), estado: 'OFRECIDA' as const };
   const conPorKilo = [porKilo, serie('nutricion.proteinas')];
   const ids = (a: AccesoDeLaPersona) => seriesOfrecidas(a, conPorKilo).map((s) => s.id);

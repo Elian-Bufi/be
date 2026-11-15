@@ -9,6 +9,7 @@
  * - las de WP-06: la familia TRN, la carga manual de ejercicios y la lectura por período (docs/paquetes/WP-06.md §4).
  * - las de WP-07: la familia FRM, transversal a los tres dominios (docs/paquetes/WP-07.md §4).
  * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
+ * - las de WP-COMPARTIR: la familia CMP, la pantalla única de consentimiento (docs/paquetes/WP-COMPARTIR.md §2; DL-176).
  * - las de WP-NOTAS-DE-COORDINACION: API-CRD-01 y sus dos variantes (docs/paquetes/WP-NOTAS-DE-COORDINACION.md; DL-140).
  * - las de WP-FORMULARIOS-DE-INICIO: la familia FRI, los formularios V2 y la propuesta que la persona confirma (DL-164).
  * - las de WP-TABLERO-ALTA-GAMA: API-DSH-02 y las familias PLN y PLE, como descartar un borrador (DL-163 D-6 y D-21), y la
@@ -312,6 +313,14 @@ import {
   ResumenesCompartidosEstadoResponseSchema,
   ResumenesParaElProfesionalResponseSchema,
 } from './contratos-resumenes-compartidos';
+import {
+  AutorizarHistoriaAnteriorRequestSchema,
+  HistoriaAnteriorDeUnAreaResponseSchema,
+  HistoriaAnteriorResponseSchema,
+  MiHistoriaAnteriorResponseSchema,
+  RetirarHistoriaAnteriorRequestSchema,
+} from './contratos-historia-anterior';
+import { CompartirLoElegidoRequestSchema, DejarDeCompartirUnaCosaRequestSchema, LoElegidoCompartidoResponseSchema, LoQueSePuedeCompartirResponseSchema, UnaCosaRetiradaResponseSchema } from './contratos-compartir';
 import {
   AsociarImagenDeEjercicioRequestSchema,
   EjercicioPropioResponseSchema,
@@ -820,7 +829,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-CON-04',
     metodo: 'post',
     ruta: '/me/consents/{consentId}/revoke',
-    resumen: 'Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo.',
+    resumen:
+      'Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo. En la misma transacción retira la autorización de la historia anterior de ese componente, si estaba dada (DL-175, HA-T14): otorgar el B2 de nuevo no la devuelve.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: ConsentimientoRevocadoResponseSchema }],
@@ -3186,6 +3196,117 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: 'DL-163 D-13, ampliada · TA-95 · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-25 · 08 §12.2, C-12 · RNF-PRI-002',
   },
+  // ─── WP-HISTORIA-ANTERIOR · HIA: la historia anterior de un área, para el profesional nuevo (DL-175; 08 §14.1, «Cambio de
+  // profesional»; REG-06-55; RF-025). Familia propia de BE: el 09 no la tiene. La APK la empieza a leer con su próxima
+  // candidata, y se congela con ella (DL-152). ─────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-HIA-01',
+    metodo: 'get',
+    ruta: '/me/previous-history',
+    resumen:
+      'Lo que la persona decidió de su historia anterior: por cada profesional que la acompaña hoy en un área (vínculo aceptado o en pausa) y por cada vínculo terminado con el que la miraron, si antes hubo otro profesional en esa área (sin decir si dejó datos), qué vería (las partes de esa área), la última versión de su autorización (GRANTED o WITHDRAWN, con desde cuándo; null si nunca decidió), si hoy ese profesional tiene acceso a esa área (accessInEffect: el PDP de ese componente, sin registrar; compartida y sin acceso, no la ve) y la última vez que la miró con ese componente; el texto que se acepta al autorizar (una propuesta, PENDING_APPROVAL) y las últimas 50 lecturas, con quién, qué área y cuándo (08 §19.7). No pide el A3: retirar tiene que poder hacerse siempre.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MiHistoriaAnteriorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T06, HA-T08, HA-T15) · 08 §14.1 y §19.7 · REG-06-55 · RF-025',
+  },
+  {
+    id: 'API-HIA-02',
+    metodo: 'put',
+    ruta: '/me/previous-history/{relationshipId}',
+    resumen:
+      'La persona autoriza al profesional de ese componente de vínculo (aceptado o en pausa) a ver su historia anterior de esa área, con la última versión que vio (null si nunca decidió; si no es la última, 409 VERSION_CONFLICT) y el texto mostrado, que tiene que ser el vigente (si no, 409 CONSENT_VERSION_STALE). Pide el A3 (403). Si ya está autorizada, responde lo mismo sin agregar otra versión. Un componente ajeno, terminado o inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AutorizarHistoriaAnteriorRequestSchema,
+    exitos: [{ status: 200, schema: HistoriaAnteriorDeUnAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T04, HA-T05) · 08 §12.2 y §14.1 · REG-06-55',
+  },
+  {
+    id: 'API-HIA-03',
+    metodo: 'post',
+    ruta: '/me/previous-history/{relationshipId}/withdrawal',
+    resumen:
+      'La persona deja de compartir su historia anterior con ese profesional, desde ese momento (RNF-PRI-002): una versión nueva WITHDRAWN, con la vigente que vio (si no es la vigente, 409 VERSION_CONFLICT). No pide el A3 ni borra nada; vale también con el vínculo terminado. Un componente ajeno o inexistente, 404. Revocar el B2 de ese componente (API-CON-04) y cerrar la cuenta también la retiran.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RetirarHistoriaAnteriorRequestSchema,
+    exitos: [{ status: 200, schema: HistoriaAnteriorDeUnAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T04) · RNF-PRI-002 · 08 §13',
+  },
+  {
+    id: 'API-HIA-04',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/previous-history/{area}',
+    resumen:
+      'Para el profesional: la historia anterior de un área de la persona, en solo lectura, por tramos de fechas (sin fechas, los últimos 90 días de esa historia; hasta 366). Es lo de otros profesionales en esa misma área, de antes del comienzo de su acompañamiento y como estaba en ese momento (las correcciones, anulaciones, rectificaciones y recálculos posteriores no entran): las versiones ACTIVADAS de sus planes con su contenido como lo vio la persona (nunca un borrador), lo que la persona registró bajo esos planes (sin fotos), las tomas registradas con su protocolo, el origen de cada medición y lo calculado con su método para el soporte antropométrico, y las decisiones de las revisiones (resultado, fundamento y próxima acción; ni la interpretación ni las evidencias). Cada cosa va marcada como de otro profesional (author.kind OTHER_PROFESSIONAL, con su orden) y sin nombrarlo. Nunca las notas propias, otra área ni lo propio de quien lee. Autoriza con el PDP de esa área (vínculo aceptado, B2 vigente, cuentas y el A3 de la persona) y la autorización vigente de la persona para ese componente: si falta cualquiera, el 404 de lo inexistente. Cada lectura queda registrada y la persona la ve en API-HIA-01.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Primer día del tramo (fecha civil, inclusive). Va con periodEnd.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Último día del tramo (fecha civil, inclusive), hasta 366 días después del primero. Va con periodStart.', schema: { type: 'string', format: 'date' } },
+    ],
+    exitos: [{ status: 200, schema: HistoriaAnteriorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T02, HA-T03, HA-T07) · 08 §14.1 y §19.7 · REG-06-55 · RF-025 · PG-16',
+  },
+  // ─── WP-COMPARTIR · CMP: compartir casi por omisión, con una sola pantalla de consentimiento al aceptar el vínculo (DL-176;
+  // decisión de Dirección del 2026-11-15). Familia propia de BE: el 09 no la tiene. La APK la empieza a leer con su próxima
+  // candidata, y se congela con ella (DL-152). ─────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-CMP-01',
+    metodo: 'get',
+    ruta: '/me/sharing-proposal',
+    resumen:
+      'Lo que la persona puede compartir y lo que ya comparte, cada cosa con su clave, si está dada (y desde cuándo), si se puede dar ahora, si la pantalla única la trae marcada y el texto que se acepta: el tratamiento de sus datos de salud (A3), la autorización de acceso a cada área (B2, con el aviso del perfil del profesional), el resumen y el plan vigente de cada área para cada uno de sus otros profesionales (el resumen solo, en Antropometría), la historia anterior de un área (solo si antes hubo otro profesional en ella) y los hábitos (si ya los comparte o tiene hábitos). Lo que nunca decidió va marcado; lo que retiró antes, no. Con relationshipId, solo lo que toca a ese componente de vínculo (la pantalla al aceptarlo): lo de las otras áreas para ese profesional y lo de su área para los demás; uno terminado no tiene nada para dar. La versión (version) va en API-CMP-02. Los textos son los vigentes, con su hash; algunos son propuestas (PENDING_APPROVAL). No pide el A3: retirar tiene que poder hacerse siempre. Un componente ajeno o inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [{ nombre: 'relationshipId', descripcion: 'El componente de vínculo de la pantalla al aceptarlo (o al revisarlo desde el vínculo). Sin él, todo.', schema: { type: 'string', format: 'uuid' } }],
+    exitos: [{ status: 200, schema: LoQueSePuedeCompartirResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D5) · Ley 25.326 art. 5 · 08 §12.2 y §12.3 · DL-163 D-13 · DL-165 D-9 · DL-175',
+  },
+  {
+    id: 'API-CMP-02',
+    metodo: 'post',
+    ruta: '/me/sharing-choices',
+    resumen:
+      'Un toque escribe todo lo elegido, en una sola transacción (todo o nada): el A3, el B2 de cada área, lo de otras áreas, los hábitos y la historia anterior, cada acto con su texto, su versión, su hecho y su fila de auditoría, como lo dejaría su operación de siempre, y solo lo elegido (no extiende en silencio lo que ya se compartía). Lleva la versión que se vio (si algo cambió, 409 VERSION_CONFLICT), los textos mostrados (uno que no es el vigente, 409 CONSENT_VERSION_STALE; si falta el de algo elegido, 422 SHARING_TEXT_REQUIRED) y las claves de API-CMP-01 (una que hoy no se puede dar —ya dada, ajena o inexistente, lo mismo—, 422 SHARING_CHOICE_NOT_AVAILABLE con un issue por cada una). Lo de otras áreas, la historia anterior y los hábitos piden el A3 vigente o elegido en el mismo toque (si no, 403). Acepta los pedidos pendientes de quienes pasan a ver lo pedido. Un componente ajeno o inexistente en relationshipId, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CompartirLoElegidoRequestSchema,
+    exitos: [{ status: 200, schema: LoElegidoCompartidoResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'],
+      422: ['SHARING_CHOICE_NOT_AVAILABLE', 'SHARING_TEXT_REQUIRED'],
+    },
+    detalleDe422: {
+      codigo: 'SHARING_CHOICE_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.literal('SHARING_CHOICE_NOT_AVAILABLE'), path: z.string() })).min(1) }),
+      descripcion: 'details.issues trae un issue por cada cosa elegida que hoy no se puede dar (ya está dada, no existe o es ajena: lo mismo), con path choices[i]. SHARING_TEXT_REQUIRED trae el issue con path acceptedTextIds.',
+    },
+    fuente: 'DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D8) · Ley 25.326 art. 5 · 08 §12.2 y C-12 · 09v7 T18 · DL-115 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 · TB-56',
+  },
+  {
+    id: 'API-CMP-03',
+    metodo: 'post',
+    ruta: '/me/sharing-choices/withdrawal',
+    resumen:
+      'La persona deja de compartir una cosa desde ese momento (RNF-PRI-002): lo de un área con un profesional (SUMMARY:…) o sus hábitos con uno (HABITS:…). Es una versión nueva de esa autorización que ya no lo nombra (si no queda nadie, retirada), con la hora de la base tomado el cerrojo; nunca se borra nada. No pide el A3 ni la versión vista. Si ya no se compartía, responde 200 con withdrawn: false, sin escribir. El A3, el B2 y la historia anterior se retiran con su operación de siempre (API-CON-08, API-CON-04 y API-HIA-03). Un profesional que nunca acompañó a la persona (ajeno o inexistente), 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: DejarDeCompartirUnaCosaRequestSchema,
+    exitos: [{ status: 200, schema: UnaCosaRetiradaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'DL-176 · WP-COMPARTIR (CMP-D9) · RNF-PRI-002 · 08 §13 · DL-163 D-13 · DL-165 D-9',
+  },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
     id: 'API-REC-01',
@@ -4573,6 +4694,11 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-RES-06',
   'API-RES-07',
   'API-RES-09',
+  // WP-HISTORIA-ANTERIOR (DL-175).
+  'API-HIA-01',
+  'API-HIA-04',
+  // WP-COMPARTIR (DL-176).
+  'API-CMP-01',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',

@@ -386,6 +386,20 @@ import {
   type PedirVerElPlanRequest,
   type ResponderPedidoDePlanRequest,
 } from './contratos-resumenes-compartidos';
+import {
+  HistoriaAnteriorDeUnAreaResponseSchema,
+  HistoriaAnteriorResponseSchema,
+  MiHistoriaAnteriorResponseSchema,
+  type AutorizarHistoriaAnteriorRequest,
+  type RetirarHistoriaAnteriorRequest,
+} from './contratos-historia-anterior';
+import {
+  LoElegidoCompartidoResponseSchema,
+  LoQueSePuedeCompartirResponseSchema,
+  UnaCosaRetiradaResponseSchema,
+  type CompartirLoElegidoRequest,
+  type DejarDeCompartirUnaCosaRequest,
+} from './contratos-compartir';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -1939,6 +1953,41 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-RES-10: responder un pedido: «Sí, que lo vea» o «No, por ahora». */
     responderPedidoDePlan(token: string, pedidoId: string, cuerpo: ResponderPedidoDePlanRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/me/summary-sharing/access-requests/${encodeURIComponent(pedidoId)}/answer`, { token, claveDeIdempotencia, esquema: PedidoDePlanRespondidoResponseSchema, cuerpo });
+    },
+
+    // ─── WP-HISTORIA-ANTERIOR · HIA: la historia anterior de un área, para el profesional nuevo (DL-175) ─────────────
+    /** API-HIA-01: por cada profesional de hoy en un área, si hubo otro antes, lo que decidí y cuándo la miró. */
+    miHistoriaAnterior(token: string) {
+      return llamar('GET', '/me/previous-history', { token, esquema: MiHistoriaAnteriorResponseSchema });
+    },
+    /** API-HIA-02: autorizar al profesional de ese componente a ver mi historia anterior de esa área. */
+    autorizarHistoriaAnterior(token: string, relationshipId: string, cuerpo: AutorizarHistoriaAnteriorRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/me/previous-history/${encodeURIComponent(relationshipId)}`, { token, claveDeIdempotencia, esquema: HistoriaAnteriorDeUnAreaResponseSchema, cuerpo });
+    },
+    /** API-HIA-03: dejar de compartirla, desde ahora. */
+    retirarHistoriaAnterior(token: string, relationshipId: string, cuerpo: RetirarHistoriaAnteriorRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/me/previous-history/${encodeURIComponent(relationshipId)}/withdrawal`, { token, claveDeIdempotencia, esquema: HistoriaAnteriorDeUnAreaResponseSchema, cuerpo });
+    },
+    /** API-HIA-04: la historia anterior de un área de la persona, por tramos (sin tramo, los últimos 90 días de esa historia). */
+    historiaAnterior(token: string, asesoradoId: string, area: Alcance, tramo: { readonly desde: string; readonly hasta: string } | null = null) {
+      const consulta = tramo ? `?periodStart=${encodeURIComponent(tramo.desde)}&periodEnd=${encodeURIComponent(tramo.hasta)}` : '';
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/previous-history/${encodeURIComponent(area)}${consulta}`, { token, esquema: HistoriaAnteriorResponseSchema });
+    },
+
+    // ─── WP-COMPARTIR · CMP: la pantalla única de consentimiento (DL-176). La APK las empieza a leer con su próxima
+    // candidata y se congelan con ella (DL-152). ─────────────────────────────────────────────────────────────────────
+    /** API-CMP-01: lo que puedo compartir y lo que ya comparto; con un componente, lo que toca a ese vínculo. */
+    loQueSePuedeCompartir(token: string, relationshipId: string | null = null) {
+      const consulta = relationshipId ? `?relationshipId=${encodeURIComponent(relationshipId)}` : '';
+      return llamar('GET', `/me/sharing-proposal${consulta}`, { token, esquema: LoQueSePuedeCompartirResponseSchema });
+    },
+    /** API-CMP-02: un toque escribe todo lo elegido, en una sola transacción. */
+    compartirLoElegido(token: string, cuerpo: CompartirLoElegidoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/sharing-choices', { token, claveDeIdempotencia, esquema: LoElegidoCompartidoResponseSchema, cuerpo });
+    },
+    /** API-CMP-03: dejar de compartir una cosa (lo de un área con un profesional, o los hábitos con uno), desde ahora. */
+    dejarDeCompartirUnaCosa(token: string, cuerpo: DejarDeCompartirUnaCosaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/sharing-choices/withdrawal', { token, claveDeIdempotencia, esquema: UnaCosaRetiradaResponseSchema, cuerpo });
     },
   };
 }

@@ -33,6 +33,8 @@ import { MediosModule } from './medios/medios.module';
 import { NutricionModule } from './nutricion/nutricion.module';
 import { ProcesoModule } from './proceso/proceso.module';
 import { ResumenesModule } from './resumenes/resumenes.module';
+import { HistoriaAnteriorModule } from './historia-anterior/historia-anterior.module';
+import { CompartirModule } from './compartir/compartir.module';
 
 export interface OpcionesApp {
   readonly entorno: Entorno;
@@ -106,6 +108,10 @@ export class AppModule {
         ContactoModule,
         // DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56): lo que la persona comparte de otras áreas.
         ResumenesModule,
+        // WP-HISTORIA-ANTERIOR (DL-175): la historia anterior de un área, para el profesional nuevo, con el permiso de la persona.
+        HistoriaAnteriorModule,
+        // WP-COMPARTIR (DL-176): compartir casi por omisión, con una sola pantalla de consentimiento al aceptar el vínculo.
+        CompartirModule,
         // RF-068 (DL-172): las incidencias administrativas mínimas.
         IncidenciasModule,
       ],

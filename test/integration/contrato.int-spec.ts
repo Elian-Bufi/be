@@ -2731,6 +2731,117 @@ it('TEST-CT (WP-PULIDO-GRANDES, DL-173): la nota para tu profe (TRN-25, LISTA y 
   await request(servidor).post(archivo).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
 });
 
+it('TEST-CT (WP-HISTORIA-ANTERIOR, DL-175): HIA-01 a 04 — la historia anterior de un área, para el profesional nuevo, con éxitos y errores declarados', async () => {
+  const c = await circuitoConPlanActivo(app, 'ct-hia');
+  await finalizar(app, c.ase.token, c.vinculoId, await versionDeVinculo(app, c.ase.token, c.vinculoId)).expect(200);
+  const nuevo = await prepararProfesional(app, 'ct-hia-nuevo', ['NUTRICION']);
+  const ajeno = await prepararProfesional(app, 'ct-hia-ajeno', ['NUTRICION']);
+  const { vinculoId } = await vinculoCompleto(app, nuevo, c.ase, 'NUTRICION');
+  const yo = conSesion(app, c.ase.token);
+  const delNuevo = conSesion(app, nuevo.token);
+  const servidor = app.getHttpServer();
+  const LEER = `/api/v1/advisees/${c.ase.id}/previous-history/NUTRICION`;
+  const AUTORIZAR = `/api/v1/me/previous-history/${vinculoId}`;
+  const RETIRAR = `${AUTORIZAR}/withdrawal`;
+
+  // HIA-01 — lo que decidí
+  const texto = (await yo.get('/api/v1/me/previous-history').expect(200)).body.data.text.id as string;
+  await yo.get('/api/v1/me/previous-history?x=1').expect(400); // INVALID_REQUEST
+  await request(servidor).get('/api/v1/me/previous-history').expect(401);
+
+  // HIA-04 sin la autorización de la persona: el 404 de lo inexistente
+  await delNuevo.get(LEER).expect(404);
+
+  // HIA-02 — autorizar
+  const clave = claveDeIdempotencia();
+  await yo.put(AUTORIZAR, clave).send({ expectedVersion: null, textVersionId: texto }).expect(200);
+  await yo.put(AUTORIZAR, clave).send({ expectedVersion: null, textVersionId: texto }).expect(200); // replay
+  await yo.put(AUTORIZAR, clave).send({ expectedVersion: 'v1', textVersionId: texto }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await yo.put(AUTORIZAR).send({ expectedVersion: null, textVersionId: texto }).expect(409); // VERSION_CONFLICT
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v1', textVersionId: 'otro-texto' }).expect(409); // CONSENT_VERSION_STALE
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v1', textVersionId: texto, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v1' }).expect(400); // INVALID_REQUEST
+  await yo.put(`/api/v1/me/previous-history/${c.vinculoId}`).send({ expectedVersion: null, textVersionId: texto }).expect(404); // terminado
+  await request(servidor).put(AUTORIZAR).set('Idempotency-Key', claveDeIdempotencia()).send({ expectedVersion: null, textVersionId: texto }).expect(401);
+
+  // HIA-04 — la historia anterior, para el profesional
+  await delNuevo.get(LEER).expect(200);
+  await delNuevo.get(`${LEER}?periodStart=2026-01-01`).expect(400); // INVALID_REQUEST
+  await delNuevo.get(`${LEER}?x=1`).expect(400); // INVALID_REQUEST
+  await conSesion(app, ajeno.token).get(LEER).expect(404);
+  await request(servidor).get(LEER).expect(401);
+
+  // HIA-03 — retirar
+  const claveDelRetiro = claveDeIdempotencia();
+  await yo.post(RETIRAR, claveDelRetiro).send({ expectedVersion: 'v1' }).expect(200);
+  await yo.post(RETIRAR, claveDelRetiro).send({ expectedVersion: 'v1' }).expect(200); // replay
+  await yo.post(RETIRAR, claveDelRetiro).send({ expectedVersion: 'v2' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await yo.post(RETIRAR).send({ expectedVersion: 'v2' }).expect(409); // VERSION_CONFLICT: ya está retirada
+  await yo.post(RETIRAR).send({ expectedVersion: null }).expect(400); // INVALID_REQUEST
+  await yo.post(RETIRAR).send({ expectedVersion: 'v2', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post(`/api/v1/me/previous-history/${randomUUID()}/withdrawal`).send({ expectedVersion: 'v1' }).expect(404);
+  await request(servidor).post(RETIRAR).set('Idempotency-Key', claveDeIdempotencia()).send({ expectedVersion: 'v2' }).expect(401);
+
+  // HIA-02 sin el A3: 403
+  await yo.post(`/api/v1/me/health-data-consents/${await a3Vigente(app, c.ase.token)}/revoke`).send({}).expect(200);
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v2', textVersionId: texto }).expect(403); // ACTION_FORBIDDEN
+});
+
+it('TEST-CT (WP-COMPARTIR, DL-176): CMP-01 a 03 — la pantalla única de consentimiento, con éxitos y errores declarados', async () => {
+  const ase = await prepararAsesorado(app, 'ct-cmp');
+  const otra = await prepararAsesorado(app, 'ct-cmp-otra');
+  const ruiz = await prepararProfesional(app, 'ct-cmp-ruiz', ['ENTRENAMIENTO']);
+  const paz = await prepararProfesional(app, 'ct-cmp-paz', ['NUTRICION']);
+  const ajeno = await prepararProfesional(app, 'ct-cmp-ajeno', ['NUTRICION']);
+  await vinculoCompleto(app, ruiz, ase, 'ENTRENAMIENTO');
+  const { vinculoId } = await vinculoCompleto(app, paz, ase, 'NUTRICION', { b2: false });
+  const deOtra = await vinculoCompleto(app, ajeno, otra, 'NUTRICION', { b2: false });
+  const yo = conSesion(app, ase.token);
+  const servidor = app.getHttpServer();
+  const PROPUESTA = '/api/v1/me/sharing-proposal';
+  const ELEGIR = '/api/v1/me/sharing-choices';
+  const RETIRAR = '/api/v1/me/sharing-choices/withdrawal';
+
+  // CMP-01 — lo que puedo compartir
+  const p = (await yo.get(`${PROPUESTA}?relationshipId=${vinculoId}`).expect(200)).body.data as { version: string; items: { key: string; kind: string; textId: string; offered: boolean }[] };
+  await yo.get(PROPUESTA).expect(200);
+  await yo.get(`${PROPUESTA}?x=1`).expect(400); // INVALID_REQUEST
+  await yo.get(`${PROPUESTA}?relationshipId=${deOtra.vinculoId}`).expect(404); // ajeno
+  await yo.get(`${PROPUESTA}?relationshipId=${randomUUID()}`).expect(404); // inexistente
+  await request(servidor).get(PROPUESTA).expect(401);
+
+  // CMP-02 — un toque
+  const resumen = p.items.find((i) => i.kind === 'SUMMARY')!;
+  const area = p.items.find((i) => i.kind === 'AREA_CONSENT')!;
+  const a3 = p.items.find((i) => i.kind === 'HEALTH_DATA')!;
+  const cuerpo = (choices: string[], extra: Record<string, unknown> = {}) => ({ relationshipId: vinculoId, expectedVersion: p.version, acceptedTextIds: [...new Set(p.items.filter((i) => choices.includes(i.key)).map((i) => i.textId))], choices, ...extra });
+  await yo.post(ELEGIR).send(cuerpo([resumen.key])).expect(403); // ACTION_FORBIDDEN: sin el A3
+  await yo.post(ELEGIR).send(cuerpo([`HABITS:${ajeno.id}`])).expect(422); // SHARING_CHOICE_NOT_AVAILABLE
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key, resumen.key]), acceptedTextIds: [a3.textId] }).expect(422); // SHARING_TEXT_REQUIRED
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key]), acceptedTextIds: ['otro-texto'] }).expect(409); // CONSENT_VERSION_STALE
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key]), expectedVersion: 'p0' }).expect(409); // VERSION_CONFLICT
+  await yo.post(ELEGIR).send(cuerpo([a3.key], { extra: 1 })).expect(400); // UNKNOWN_FIELD
+  await yo.post(ELEGIR).send(cuerpo([])).expect(400); // INVALID_REQUEST
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key]), relationshipId: deOtra.vinculoId }).expect(404); // ajeno
+  const clave = claveDeIdempotencia();
+  const todo = cuerpo([a3.key, area.key, resumen.key]);
+  await yo.post(ELEGIR, clave).send(todo).expect(200);
+  await yo.post(ELEGIR, clave).send(todo).expect(200); // replay
+  await yo.post(ELEGIR, clave).send(cuerpo([a3.key])).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await request(servidor).post(ELEGIR).set('Idempotency-Key', claveDeIdempotencia()).send(todo).expect(401);
+
+  // CMP-03 — dejar de compartir una cosa
+  const claveDelRetiro = claveDeIdempotencia();
+  await yo.post(RETIRAR, claveDelRetiro).send({ key: resumen.key }).expect(200);
+  await yo.post(RETIRAR, claveDelRetiro).send({ key: resumen.key }).expect(200); // replay
+  await yo.post(RETIRAR, claveDelRetiro).send({ key: `HABITS:${ruiz.id}` }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await yo.post(RETIRAR).send({ key: resumen.key }).expect(200); // ya no se compartía: withdrawn false
+  await yo.post(RETIRAR).send({ key: 'HEALTH_DATA' }).expect(400); // INVALID_REQUEST: el A3 se retira en Privacidad
+  await yo.post(RETIRAR).send({ key: resumen.key, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post(RETIRAR).send({ key: `HABITS:${ajeno.id}` }).expect(404); // un profesional que nunca la acompañó
+  await request(servidor).post(RETIRAR).set('Idempotency-Key', claveDeIdempotencia()).send({ key: resumen.key }).expect(401);
+});
+
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
   const noDeclaradas: string[] = [];
   const porOperacion = new Map<string, Set<string>>();

@@ -34,10 +34,14 @@ export function serieDisponibleAntropometrica(codigo: string, unidad: string, es
 export const SERIES_DE_ANTROPOMETRIA: readonly SerieDisponible[] = [
   serieDisponibleAntropometrica('peso', 'kg', 'OFRECIDA', ['SP-02', 'GR-13']),
   serieDisponibleAntropometrica('suma-6-pliegues-isak', 'mm', 'OFRECIDA', ['GR-16']),
+  // GR-18: los pliegues, perímetros y diámetros de cada sitio se resuelven por su código (`antropometria.<código>`).
   serieDisponibleAntropometrica('masa-grasa-durnin-womersley', 'kg', 'OFRECIDA', ['GR-20']),
   serieDisponibleAntropometrica('masa-grasa-faulkner', 'kg', 'OFRECIDA', ['GR-20']),
   serieDisponibleAntropometrica('masa-libre-de-grasa-durnin-womersley', 'kg', 'OFRECIDA', ['GR-20']),
   serieDisponibleAntropometrica('masa-libre-de-grasa-faulkner', 'kg', 'OFRECIDA', ['GR-20']),
+  // GR-20: la masa muscular esquelética de Lee va aparte, en su panel y con su eje, porque estima otra cosa.
+  serieDisponibleAntropometrica('masa-muscular-esqueletica-lee', 'kg', 'OFRECIDA', ['GR-20']),
+  serieDisponibleAntropometrica('masa-muscular-esqueletica-lee-peso', 'kg', 'OFRECIDA', ['GR-20']),
   // GR-19 y GR-D9: el perímetro corregido por pliegue es de la fase 4 y pide su DL; no se ofrece.
   serieDisponibleAntropometrica('perimetro-corregido', 'cm', 'PIDE_DL', ['GR-19'], {
     ...definicionAntropometrica('perimetro-corregido', 'cm'),

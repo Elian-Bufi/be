@@ -1,1 +1,121 @@
 /* WP-GRAFICOS fase 2 (DL-174): los estilos de Entrenamiento. Los escribe solo la rama B. */
+
+/*
+ * El historial del ejercicio en el cuadro de la estación (GR-02, GR-03, GR-05 y GR-06): el período arriba, cada gráfico
+ * en su bloque con «Abrir en Analizar» debajo. La letra de los gráficos no baja de 12,5 px (la pone `paneles-alineados`).
+ */
+.historial-del-ejercicio {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.historial-del-ejercicio > .nota {
+  margin: 0;
+}
+
+.historial-del-ejercicio__periodo {
+  margin: 0;
+}
+
+.historial-del-ejercicio__elecciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.historial-del-ejercicio__grafico {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--borde);
+}
+
+.historial-del-ejercicio__grafico:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.historial-del-ejercicio__analizar {
+  margin: 0;
+}
+
+/* La entrada al historial, en los dos cuadros del ejercicio. */
+.acceso-al-historial {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.acceso-al-historial > p {
+  margin: 0;
+}
+
+.acceso-al-historial__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/*
+ * Cada gráfico de Entrenamiento (con la pasada visual del 15/11): el gráfico de la base y, debajo, lo que va a la vista (el
+ * interruptor, cada versión con su ruido, lo que se ve), compacto y en la letra de las notas.
+ */
+.grafico-de-entrenamiento {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.grafico-de-entrenamiento__interruptor {
+  font-size: 0.875rem;
+}
+
+.grafico-de-entrenamiento__subtitulo {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.grafico-de-entrenamiento__por-version ul,
+.grafico-de-entrenamiento__lo-que-se-ve {
+  margin: 0.125rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--texto);
+}
+
+.grafico-de-entrenamiento__lo-que-se-ve {
+  margin: 0;
+}
+
+.grafico-de-entrenamiento__por-version li + li,
+.grafico-de-entrenamiento__lo-que-se-ve li + li {
+  margin-top: 0.125rem;
+}
+
+.grafico-de-entrenamiento__filtro {
+  max-width: 20rem;
+}
+
+/*
+ * La cinta del cuadro del ejercicio: la lectura viva vacía no guarda su renglón (sin nada elegido, abajo va la nota que
+ * dice cómo elegir); al elegir un hecho, la lectura ocupa su lugar.
+ */
+.historial-del-ejercicio .grafico-cinta .grafico-base__lectura:empty {
+  min-height: 0;
+}
+
+/* GR-06: la dispersión, con el foco del teclado visible como en los paneles alineados (`grafico-base__area`). */
+.perfil-de-carga__area {
+  cursor: pointer;
+}
+
+/*
+ * La leyenda de la cinta tiene renglones largos («Versión de un plan: una barra, desde el día que empezó a regir»): en el
+ * cuadro de 480 px (1024) una ficha que no se parte ensanchaba la cinta más que el cuadro y cortaba el texto a la derecha.
+ * En la cinta del cuadro, la ficha se parte si no entra.
+ */
+.historial-del-ejercicio .grafico-cinta .grafico-base__glifo {
+  white-space: normal;
+}

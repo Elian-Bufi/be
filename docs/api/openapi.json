@@ -5988,7 +5988,7 @@
     "/me/consents/{consentId}/revoke": {
       "post": {
         "operationId": "API-CON-04",
-        "summary": "Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo.",
+        "summary": "Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo. En la misma transacción retira la autorización de la historia anterior de ese componente, si estaba dada (DL-175, HA-T14): otorgar el B2 de nuevo no la devuelve.",
         "description": "Fuente: 09v8:1699-1758. AuthN: SESSION.",
         "security": [
           {
@@ -101406,6 +101406,3562 @@
                       }
                     }
                   ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/previous-history": {
+      "get": {
+        "operationId": "API-HIA-01",
+        "summary": "Lo que la persona decidió de su historia anterior: por cada profesional que la acompaña hoy en un área (vínculo aceptado o en pausa) y por cada vínculo terminado con el que la miraron, si antes hubo otro profesional en esa área (sin decir si dejó datos), qué vería (las partes de esa área), la última versión de su autorización (GRANTED o WITHDRAWN, con desde cuándo; null si nunca decidió), si hoy ese profesional tiene acceso a esa área (accessInEffect: el PDP de ese componente, sin registrar; compartida y sin acceso, no la ve) y la última vez que la miró con ese componente; el texto que se acepta al autorizar (una propuesta, PENDING_APPROVAL) y las últimas 50 lecturas, con quién, qué área y cuándo (08 §19.7). No pide el A3: retirar tiene que poder hacerse siempre.",
+        "description": "Fuente: DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T06, HA-T08, HA-T15) · 08 §14.1 y §19.7 · REG-06-55 · RF-025. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "textHash": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}$"
+                            },
+                            "effectiveFrom": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "approval": {
+                              "type": "string",
+                              "enum": [
+                                "PENDING_APPROVAL",
+                                "APPROVED"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "text",
+                            "textHash",
+                            "effectiveFrom",
+                            "approval"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "relationshipId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "area": {
+                                "type": "string",
+                                "enum": [
+                                  "NUTRICION",
+                                  "ENTRENAMIENTO",
+                                  "ANTROPOMETRIA"
+                                ]
+                              },
+                              "professional": {
+                                "type": "object",
+                                "properties": {
+                                  "identityId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "displayName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "identityId",
+                                  "displayName"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "relationshipState": {
+                                "type": "string",
+                                "enum": [
+                                  "ACEPTADO",
+                                  "PAUSADO",
+                                  "FINALIZADO"
+                                ]
+                              },
+                              "hadEarlierProfessional": {
+                                "type": "boolean"
+                              },
+                              "includes": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "PLANS",
+                                    "RECORDS",
+                                    "MEASUREMENTS",
+                                    "DECISIONS"
+                                  ]
+                                }
+                              },
+                              "authorization": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "state": {
+                                        "type": "string",
+                                        "enum": [
+                                          "GRANTED",
+                                          "WITHDRAWN"
+                                        ]
+                                      },
+                                      "version": {
+                                        "type": "string",
+                                        "pattern": "^v[1-9]\\d*$"
+                                      },
+                                      "since": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "state",
+                                      "version",
+                                      "since"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "accessInEffect": {
+                                "type": "boolean"
+                              },
+                              "lastReadAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "relationshipId",
+                              "area",
+                              "professional",
+                              "relationshipState",
+                              "hadEarlierProfessional",
+                              "includes",
+                              "authorization",
+                              "accessInEffect",
+                              "lastReadAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "accesses": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "professional": {
+                                "type": "object",
+                                "properties": {
+                                  "identityId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "displayName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "identityId",
+                                  "displayName"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "area": {
+                                "type": "string",
+                                "enum": [
+                                  "NUTRICION",
+                                  "ENTRENAMIENTO",
+                                  "ANTROPOMETRIA"
+                                ]
+                              },
+                              "readAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "professional",
+                              "area",
+                              "readAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "text",
+                        "items",
+                        "accesses"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/previous-history/{relationshipId}": {
+      "put": {
+        "operationId": "API-HIA-02",
+        "summary": "La persona autoriza al profesional de ese componente de vínculo (aceptado o en pausa) a ver su historia anterior de esa área, con la última versión que vio (null si nunca decidió; si no es la última, 409 VERSION_CONFLICT) y el texto mostrado, que tiene que ser el vigente (si no, 409 CONSENT_VERSION_STALE). Pide el A3 (403). Si ya está autorizada, responde lo mismo sin agregar otra versión. Un componente ajeno, terminado o inexistente, 404.",
+        "description": "Fuente: DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T04, HA-T05) · 08 §12.2 y §14.1 · REG-06-55. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationshipId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^v[1-9]\\d*$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "textVersionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "textVersionId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "relationshipId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "area": {
+                          "type": "string",
+                          "enum": [
+                            "NUTRICION",
+                            "ENTRENAMIENTO",
+                            "ANTROPOMETRIA"
+                          ]
+                        },
+                        "professional": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "relationshipState": {
+                          "type": "string",
+                          "enum": [
+                            "ACEPTADO",
+                            "PAUSADO",
+                            "FINALIZADO"
+                          ]
+                        },
+                        "hadEarlierProfessional": {
+                          "type": "boolean"
+                        },
+                        "includes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "PLANS",
+                              "RECORDS",
+                              "MEASUREMENTS",
+                              "DECISIONS"
+                            ]
+                          }
+                        },
+                        "authorization": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "GRANTED",
+                                    "WITHDRAWN"
+                                  ]
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "pattern": "^v[1-9]\\d*$"
+                                },
+                                "since": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "state",
+                                "version",
+                                "since"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "accessInEffect": {
+                          "type": "boolean"
+                        },
+                        "lastReadAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "relationshipId",
+                        "area",
+                        "professional",
+                        "relationshipState",
+                        "hadEarlierProfessional",
+                        "includes",
+                        "authorization",
+                        "accessInEffect",
+                        "lastReadAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | CONSENT_VERSION_STALE | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/previous-history/{relationshipId}/withdrawal": {
+      "post": {
+        "operationId": "API-HIA-03",
+        "summary": "La persona deja de compartir su historia anterior con ese profesional, desde ese momento (RNF-PRI-002): una versión nueva WITHDRAWN, con la vigente que vio (si no es la vigente, 409 VERSION_CONFLICT). No pide el A3 ni borra nada; vale también con el vínculo terminado. Un componente ajeno o inexistente, 404. Revocar el B2 de ese componente (API-CON-04) y cerrar la cuenta también la retiran.",
+        "description": "Fuente: DL-175 · WP-HISTORIA-ANTERIOR (HA-T04) · RNF-PRI-002 · 08 §13. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationshipId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "string",
+                    "pattern": "^v[1-9]\\d*$"
+                  }
+                },
+                "required": [
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "relationshipId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "area": {
+                          "type": "string",
+                          "enum": [
+                            "NUTRICION",
+                            "ENTRENAMIENTO",
+                            "ANTROPOMETRIA"
+                          ]
+                        },
+                        "professional": {
+                          "type": "object",
+                          "properties": {
+                            "identityId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identityId",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "relationshipState": {
+                          "type": "string",
+                          "enum": [
+                            "ACEPTADO",
+                            "PAUSADO",
+                            "FINALIZADO"
+                          ]
+                        },
+                        "hadEarlierProfessional": {
+                          "type": "boolean"
+                        },
+                        "includes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "PLANS",
+                              "RECORDS",
+                              "MEASUREMENTS",
+                              "DECISIONS"
+                            ]
+                          }
+                        },
+                        "authorization": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "state": {
+                                  "type": "string",
+                                  "enum": [
+                                    "GRANTED",
+                                    "WITHDRAWN"
+                                  ]
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "pattern": "^v[1-9]\\d*$"
+                                },
+                                "since": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "state",
+                                "version",
+                                "since"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "accessInEffect": {
+                          "type": "boolean"
+                        },
+                        "lastReadAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "relationshipId",
+                        "area",
+                        "professional",
+                        "relationshipState",
+                        "hadEarlierProfessional",
+                        "includes",
+                        "authorization",
+                        "accessInEffect",
+                        "lastReadAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advisees/{adviseeId}/previous-history/{area}": {
+      "get": {
+        "operationId": "API-HIA-04",
+        "summary": "Para el profesional: la historia anterior de un área de la persona, en solo lectura, por tramos de fechas (sin fechas, los últimos 90 días de esa historia; hasta 366). Es lo de otros profesionales en esa misma área, de antes del comienzo de su acompañamiento y como estaba en ese momento (las correcciones, anulaciones, rectificaciones y recálculos posteriores no entran): las versiones ACTIVADAS de sus planes con su contenido como lo vio la persona (nunca un borrador), lo que la persona registró bajo esos planes (sin fotos), las tomas registradas con su protocolo, el origen de cada medición y lo calculado con su método para el soporte antropométrico, y las decisiones de las revisiones (resultado, fundamento y próxima acción; ni la interpretación ni las evidencias). Cada cosa va marcada como de otro profesional (author.kind OTHER_PROFESSIONAL, con su orden) y sin nombrarlo. Nunca las notas propias, otra área ni lo propio de quien lee. Autoriza con el PDP de esa área (vínculo aceptado, B2 vigente, cuentas y el A3 de la persona) y la autorización vigente de la persona para ese componente: si falta cualquiera, el 404 de lo inexistente. Cada lectura queda registrada y la persona la ve en API-HIA-01.",
+        "description": "Fuente: DL-175 · WP-HISTORIA-ANTERIOR (HA-T02, HA-T03, HA-T07) · 08 §14.1 y §19.7 · REG-06-55 · RF-025 · PG-16. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "area",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "periodStart",
+            "in": "query",
+            "required": false,
+            "description": "Primer día del tramo (fecha civil, inclusive). Va con periodEnd.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "periodEnd",
+            "in": "query",
+            "required": false,
+            "description": "Último día del tramo (fecha civil, inclusive), hasta 366 días después del primero. Va con periodStart.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "area": {
+                          "type": "string",
+                          "enum": [
+                            "NUTRICION",
+                            "ENTRENAMIENTO",
+                            "ANTROPOMETRIA"
+                          ]
+                        },
+                        "beforeYourStart": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "period": {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "to": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "extent": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "otherProfessionals": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "includes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "PLANS",
+                              "RECORDS",
+                              "MEASUREMENTS",
+                              "DECISIONS"
+                            ]
+                          }
+                        },
+                        "planVersions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "planVersionId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "author": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "OTHER_PROFESSIONAL"
+                                  },
+                                  "ordinal": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "ordinal"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "number": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "activatedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "from": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "to": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "endReason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "SUCCESSOR_ACTIVATED",
+                                      "FOLLOW_UP_CLOSED"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "inEffectAtYourStart": {
+                                "type": "boolean"
+                              },
+                              "content": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "NUTRITION"
+                                      },
+                                      "dayTypes": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "dayTypeId": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "label": {
+                                              "type": "string"
+                                            },
+                                            "order": {
+                                              "type": "integer",
+                                              "exclusiveMinimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "meals": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "mealId": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  },
+                                                  "label": {
+                                                    "type": "string"
+                                                  },
+                                                  "order": {
+                                                    "type": "integer",
+                                                    "exclusiveMinimum": 0,
+                                                    "maximum": 9007199254740991
+                                                  },
+                                                  "prescriptionMode": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "DISH_OPTIONS",
+                                                      "EXCHANGE_PORTIONS"
+                                                    ]
+                                                  },
+                                                  "options": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "optionId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "order": {
+                                                          "type": "integer",
+                                                          "exclusiveMinimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "items": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "itemId": {
+                                                                "type": "string",
+                                                                "minLength": 1
+                                                              },
+                                                              "catalogItemId": {
+                                                                "type": "string",
+                                                                "minLength": 1
+                                                              },
+                                                              "catalogItemVersionId": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string",
+                                                                    "minLength": 1
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "name": {
+                                                                "type": "string"
+                                                              },
+                                                              "quantity": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                      "value": {
+                                                                        "type": "number",
+                                                                        "exclusiveMinimum": 0
+                                                                      },
+                                                                      "unit": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                          "g",
+                                                                          "ml",
+                                                                          "unit"
+                                                                        ]
+                                                                      }
+                                                                    },
+                                                                    "required": [
+                                                                      "value",
+                                                                      "unit"
+                                                                    ],
+                                                                    "additionalProperties": false
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "preparationState": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                      "RAW",
+                                                                      "COOKED",
+                                                                      "AS_PURCHASED"
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "note": {
+                                                                "type": [
+                                                                  "string",
+                                                                  "null"
+                                                                ]
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "itemId",
+                                                              "catalogItemId",
+                                                              "catalogItemVersionId",
+                                                              "name",
+                                                              "quantity",
+                                                              "preparationState",
+                                                              "note"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "optionId",
+                                                        "label",
+                                                        "order",
+                                                        "items"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "mealId",
+                                                  "label",
+                                                  "order",
+                                                  "prescriptionMode",
+                                                  "options"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            }
+                                          },
+                                          "required": [
+                                            "dayTypeId",
+                                            "label",
+                                            "order",
+                                            "meals"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "dayTypes"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "TRAINING"
+                                      },
+                                      "blocks": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "blockId": {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            "label": {
+                                              "type": "string"
+                                            },
+                                            "order": {
+                                              "type": "integer",
+                                              "exclusiveMinimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "purpose": {
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
+                                            },
+                                            "microcycles": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "microcycleId": {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  "label": {
+                                                    "type": "string"
+                                                  },
+                                                  "order": {
+                                                    "type": "integer",
+                                                    "exclusiveMinimum": 0,
+                                                    "maximum": 9007199254740991
+                                                  },
+                                                  "purpose": {
+                                                    "type": [
+                                                      "string",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "sessions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "sessionId": {
+                                                          "type": "string",
+                                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "order": {
+                                                          "type": "integer",
+                                                          "exclusiveMinimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "instructions": {
+                                                          "type": [
+                                                            "string",
+                                                            "null"
+                                                          ]
+                                                        },
+                                                        "prescriptions": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "prescriptionId": {
+                                                                "type": "string",
+                                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                              },
+                                                              "order": {
+                                                                "type": "integer",
+                                                                "exclusiveMinimum": 0,
+                                                                "maximum": 9007199254740991
+                                                              },
+                                                              "exerciseId": {
+                                                                "type": "string",
+                                                                "minLength": 1
+                                                              },
+                                                              "exerciseVersionId": {
+                                                                "type": "string",
+                                                                "minLength": 1
+                                                              },
+                                                              "exerciseName": {
+                                                                "type": "string"
+                                                              },
+                                                              "sets": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "setIndex": {
+                                                                      "type": "integer",
+                                                                      "exclusiveMinimum": 0,
+                                                                      "maximum": 9007199254740991
+                                                                    },
+                                                                    "repetitions": {
+                                                                      "anyOf": [
+                                                                        {
+                                                                          "anyOf": [
+                                                                            {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "value": {
+                                                                                  "type": "integer",
+                                                                                  "exclusiveMinimum": 0,
+                                                                                  "maximum": 1000
+                                                                                }
+                                                                              },
+                                                                              "required": [
+                                                                                "value"
+                                                                              ],
+                                                                              "additionalProperties": false
+                                                                            },
+                                                                            {
+                                                                              "type": "object",
+                                                                              "properties": {
+                                                                                "min": {
+                                                                                  "type": "integer",
+                                                                                  "exclusiveMinimum": 0,
+                                                                                  "maximum": 1000
+                                                                                },
+                                                                                "max": {
+                                                                                  "type": "integer",
+                                                                                  "exclusiveMinimum": 0,
+                                                                                  "maximum": 1000
+                                                                                }
+                                                                              },
+                                                                              "required": [
+                                                                                "min",
+                                                                                "max"
+                                                                              ],
+                                                                              "additionalProperties": false
+                                                                            }
+                                                                          ]
+                                                                        },
+                                                                        {
+                                                                          "type": "null"
+                                                                        }
+                                                                      ]
+                                                                    },
+                                                                    "note": {
+                                                                      "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                      ]
+                                                                    }
+                                                                  },
+                                                                  "required": [
+                                                                    "setIndex",
+                                                                    "repetitions",
+                                                                    "note"
+                                                                  ],
+                                                                  "additionalProperties": false
+                                                                }
+                                                              },
+                                                              "intensity": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                      "criterion": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                          "PERCENT_RM",
+                                                                          "RIR"
+                                                                        ]
+                                                                      },
+                                                                      "target": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                          "value": {
+                                                                            "type": "number"
+                                                                          },
+                                                                          "reference": {
+                                                                            "anyOf": [
+                                                                              {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                  "description": {
+                                                                                    "type": "string"
+                                                                                  }
+                                                                                },
+                                                                                "required": [
+                                                                                  "description"
+                                                                                ],
+                                                                                "additionalProperties": false
+                                                                              },
+                                                                              {
+                                                                                "type": "null"
+                                                                              }
+                                                                            ]
+                                                                          }
+                                                                        },
+                                                                        "required": [
+                                                                          "value",
+                                                                          "reference"
+                                                                        ],
+                                                                        "additionalProperties": false
+                                                                      }
+                                                                    },
+                                                                    "required": [
+                                                                      "criterion",
+                                                                      "target"
+                                                                    ],
+                                                                    "additionalProperties": false
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "suggestedLoad": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                      "value": {
+                                                                        "type": "number",
+                                                                        "minimum": 0
+                                                                      },
+                                                                      "unit": {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                          "kg",
+                                                                          "lb"
+                                                                        ]
+                                                                      }
+                                                                    },
+                                                                    "required": [
+                                                                      "value",
+                                                                      "unit"
+                                                                    ],
+                                                                    "additionalProperties": false
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "professionalParameters": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "label": {
+                                                                      "type": "string",
+                                                                      "minLength": 1,
+                                                                      "maxLength": 60
+                                                                    },
+                                                                    "value": {
+                                                                      "anyOf": [
+                                                                        {
+                                                                          "type": "string",
+                                                                          "minLength": 1,
+                                                                          "maxLength": 120
+                                                                        },
+                                                                        {
+                                                                          "type": "number"
+                                                                        }
+                                                                      ]
+                                                                    },
+                                                                    "unit": {
+                                                                      "anyOf": [
+                                                                        {
+                                                                          "type": "string",
+                                                                          "maxLength": 20
+                                                                        },
+                                                                        {
+                                                                          "type": "null"
+                                                                        }
+                                                                      ]
+                                                                    }
+                                                                  },
+                                                                  "required": [
+                                                                    "label",
+                                                                    "value"
+                                                                  ],
+                                                                  "additionalProperties": false
+                                                                }
+                                                              },
+                                                              "note": {
+                                                                "type": [
+                                                                  "string",
+                                                                  "null"
+                                                                ]
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "prescriptionId",
+                                                              "order",
+                                                              "exerciseId",
+                                                              "exerciseVersionId",
+                                                              "exerciseName",
+                                                              "sets",
+                                                              "intensity",
+                                                              "suggestedLoad",
+                                                              "professionalParameters",
+                                                              "note"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "sessionId",
+                                                        "label",
+                                                        "order",
+                                                        "instructions",
+                                                        "prescriptions"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "microcycleId",
+                                                  "label",
+                                                  "order",
+                                                  "purpose",
+                                                  "sessions"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            },
+                                            "sessions": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                  "sessionId": {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  "label": {
+                                                    "type": "string"
+                                                  },
+                                                  "order": {
+                                                    "type": "integer",
+                                                    "exclusiveMinimum": 0,
+                                                    "maximum": 9007199254740991
+                                                  },
+                                                  "instructions": {
+                                                    "type": [
+                                                      "string",
+                                                      "null"
+                                                    ]
+                                                  },
+                                                  "prescriptions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "prescriptionId": {
+                                                          "type": "string",
+                                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                        },
+                                                        "order": {
+                                                          "type": "integer",
+                                                          "exclusiveMinimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "exerciseId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "exerciseVersionId": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        },
+                                                        "exerciseName": {
+                                                          "type": "string"
+                                                        },
+                                                        "sets": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "setIndex": {
+                                                                "type": "integer",
+                                                                "exclusiveMinimum": 0,
+                                                                "maximum": 9007199254740991
+                                                              },
+                                                              "repetitions": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "anyOf": [
+                                                                      {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                          "value": {
+                                                                            "type": "integer",
+                                                                            "exclusiveMinimum": 0,
+                                                                            "maximum": 1000
+                                                                          }
+                                                                        },
+                                                                        "required": [
+                                                                          "value"
+                                                                        ],
+                                                                        "additionalProperties": false
+                                                                      },
+                                                                      {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                          "min": {
+                                                                            "type": "integer",
+                                                                            "exclusiveMinimum": 0,
+                                                                            "maximum": 1000
+                                                                          },
+                                                                          "max": {
+                                                                            "type": "integer",
+                                                                            "exclusiveMinimum": 0,
+                                                                            "maximum": 1000
+                                                                          }
+                                                                        },
+                                                                        "required": [
+                                                                          "min",
+                                                                          "max"
+                                                                        ],
+                                                                        "additionalProperties": false
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "note": {
+                                                                "type": [
+                                                                  "string",
+                                                                  "null"
+                                                                ]
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "setIndex",
+                                                              "repetitions",
+                                                              "note"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "intensity": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "criterion": {
+                                                                  "type": "string",
+                                                                  "enum": [
+                                                                    "PERCENT_RM",
+                                                                    "RIR"
+                                                                  ]
+                                                                },
+                                                                "target": {
+                                                                  "type": "object",
+                                                                  "properties": {
+                                                                    "value": {
+                                                                      "type": "number"
+                                                                    },
+                                                                    "reference": {
+                                                                      "anyOf": [
+                                                                        {
+                                                                          "type": "object",
+                                                                          "properties": {
+                                                                            "description": {
+                                                                              "type": "string"
+                                                                            }
+                                                                          },
+                                                                          "required": [
+                                                                            "description"
+                                                                          ],
+                                                                          "additionalProperties": false
+                                                                        },
+                                                                        {
+                                                                          "type": "null"
+                                                                        }
+                                                                      ]
+                                                                    }
+                                                                  },
+                                                                  "required": [
+                                                                    "value",
+                                                                    "reference"
+                                                                  ],
+                                                                  "additionalProperties": false
+                                                                }
+                                                              },
+                                                              "required": [
+                                                                "criterion",
+                                                                "target"
+                                                              ],
+                                                              "additionalProperties": false
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "suggestedLoad": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "value": {
+                                                                  "type": "number",
+                                                                  "minimum": 0
+                                                                },
+                                                                "unit": {
+                                                                  "type": "string",
+                                                                  "enum": [
+                                                                    "kg",
+                                                                    "lb"
+                                                                  ]
+                                                                }
+                                                              },
+                                                              "required": [
+                                                                "value",
+                                                                "unit"
+                                                              ],
+                                                              "additionalProperties": false
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "professionalParameters": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "label": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "maxLength": 60
+                                                              },
+                                                              "value": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string",
+                                                                    "minLength": 1,
+                                                                    "maxLength": 120
+                                                                  },
+                                                                  {
+                                                                    "type": "number"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "unit": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string",
+                                                                    "maxLength": 20
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "label",
+                                                              "value"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "note": {
+                                                          "type": [
+                                                            "string",
+                                                            "null"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "prescriptionId",
+                                                        "order",
+                                                        "exerciseId",
+                                                        "exerciseVersionId",
+                                                        "exerciseName",
+                                                        "sets",
+                                                        "intensity",
+                                                        "suggestedLoad",
+                                                        "professionalParameters",
+                                                        "note"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                },
+                                                "required": [
+                                                  "sessionId",
+                                                  "label",
+                                                  "order",
+                                                  "instructions",
+                                                  "prescriptions"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            }
+                                          },
+                                          "required": [
+                                            "blockId",
+                                            "label",
+                                            "order",
+                                            "purpose",
+                                            "microcycles",
+                                            "sessions"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "blocks"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "planVersionId",
+                              "author",
+                              "number",
+                              "activatedAt",
+                              "from",
+                              "to",
+                              "endReason",
+                              "inEffectAtYourStart",
+                              "content"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "records": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "MEAL"
+                                  },
+                                  "recordId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "author": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "OTHER_PROFESSIONAL"
+                                      },
+                                      "ordinal": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "ordinal"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "planVersionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "date": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "PLAN_OPTION",
+                                      "DIFFERENT"
+                                    ]
+                                  },
+                                  "meal": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "option": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "description": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "annulled": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "recordId",
+                                  "author",
+                                  "planVersionId",
+                                  "date",
+                                  "type",
+                                  "meal",
+                                  "option",
+                                  "description",
+                                  "annulled"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "SESSION"
+                                  },
+                                  "recordId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "author": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "OTHER_PROFESSIONAL"
+                                      },
+                                      "ordinal": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "ordinal"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "planVersionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "date": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "session": {
+                                    "type": "string"
+                                  },
+                                  "condition": {
+                                    "type": "string",
+                                    "enum": [
+                                      "COMPLETED",
+                                      "COMPLETED_WITH_DEVIATION",
+                                      "NOT_COMPLETED"
+                                    ]
+                                  },
+                                  "corrected": {
+                                    "type": "boolean"
+                                  },
+                                  "exercises": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "recordId",
+                                  "author",
+                                  "planVersionId",
+                                  "date",
+                                  "session",
+                                  "condition",
+                                  "corrected",
+                                  "exercises"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "measurements": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "evaluationId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "author": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "OTHER_PROFESSIONAL"
+                                  },
+                                  "ordinal": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "ordinal"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "takenAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "measurements": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "metric": {
+                                      "type": "string"
+                                    },
+                                    "magnitude": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "value": {
+                                              "type": "number"
+                                            },
+                                            "unit": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 24
+                                            }
+                                          },
+                                          "required": [
+                                            "value",
+                                            "unit"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "protocolName": {
+                                      "type": "string"
+                                    },
+                                    "origin": {
+                                      "type": "string",
+                                      "enum": [
+                                        "DIRECT_CAPTURE",
+                                        "SELF_REPORTED",
+                                        "CONTROLLED_IMPORT"
+                                      ]
+                                    },
+                                    "corrected": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "metric",
+                                    "magnitude",
+                                    "protocolName",
+                                    "origin",
+                                    "corrected"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "derivedResults": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "metric": {
+                                      "type": "string"
+                                    },
+                                    "magnitude": {
+                                      "type": "object",
+                                      "properties": {
+                                        "value": {
+                                          "type": "number"
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 24
+                                        }
+                                      },
+                                      "required": [
+                                        "value",
+                                        "unit"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "methodName": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "metric",
+                                    "magnitude",
+                                    "methodName"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "evaluationId",
+                              "author",
+                              "takenAt",
+                              "date",
+                              "measurements",
+                              "derivedResults"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "decisions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "reviewId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "author": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "OTHER_PROFESSIONAL"
+                                  },
+                                  "ordinal": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "ordinal"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "reviewedPeriod": {
+                                "type": "object",
+                                "properties": {
+                                  "from": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "to": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  }
+                                },
+                                "required": [
+                                  "from",
+                                  "to"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "result": {
+                                "type": "string",
+                                "enum": [
+                                  "MAINTAIN",
+                                  "ADJUST",
+                                  "REPLACE",
+                                  "RESCHEDULE_REVIEW",
+                                  "CHANGE_OBJECTIVE",
+                                  "FINALIZE"
+                                ]
+                              },
+                              "rationale": {
+                                "type": "string"
+                              },
+                              "nextAction": {
+                                "type": "object",
+                                "properties": {
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "nextReviewAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "description",
+                                  "nextReviewAt"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "reviewId",
+                              "author",
+                              "recordedAt",
+                              "date",
+                              "reviewedPeriod",
+                              "result",
+                              "rationale",
+                              "nextAction"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "area",
+                        "beforeYourStart",
+                        "period",
+                        "extent",
+                        "otherProfessionals",
+                        "includes",
+                        "planVersions",
+                        "records",
+                        "measurements",
+                        "decisions"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/sharing-proposal": {
+      "get": {
+        "operationId": "API-CMP-01",
+        "summary": "Lo que la persona puede compartir y lo que ya comparte, cada cosa con su clave, si está dada (y desde cuándo), si se puede dar ahora, si la pantalla única la trae marcada y el texto que se acepta: el tratamiento de sus datos de salud (A3), la autorización de acceso a cada área (B2, con el aviso del perfil del profesional), el resumen y el plan vigente de cada área para cada uno de sus otros profesionales (el resumen solo, en Antropometría), la historia anterior de un área (solo si antes hubo otro profesional en ella) y los hábitos (si ya los comparte o tiene hábitos). Lo que nunca decidió va marcado; lo que retiró antes, no. Con relationshipId, solo lo que toca a ese componente de vínculo (la pantalla al aceptarlo): lo de las otras áreas para ese profesional y lo de su área para los demás; uno terminado no tiene nada para dar. La versión (version) va en API-CMP-02. Los textos son los vigentes, con su hash; algunos son propuestas (PENDING_APPROVAL). No pide el A3: retirar tiene que poder hacerse siempre. Un componente ajeno o inexistente, 404.",
+        "description": "Fuente: DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D5) · Ley 25.326 art. 5 · 08 §12.2 y §12.3 · DL-163 D-13 · DL-165 D-9 · DL-175. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationshipId",
+            "in": "query",
+            "required": false,
+            "description": "El componente de vínculo de la pantalla al aceptarlo (o al revisarlo desde el vínculo). Sin él, todo.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "relationshipId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^p[0-9a-z]{1,16}$"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "HEALTH_DATA"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "AREA_CONSENT"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "relationshipId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "professional": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "scope": {
+                                    "type": "object",
+                                    "properties": {
+                                      "code": {
+                                        "type": "string",
+                                        "enum": [
+                                          "NUTRICION",
+                                          "ENTRENAMIENTO",
+                                          "ANTROPOMETRIA"
+                                        ]
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "code",
+                                      "label"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "profileNotice": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "relationshipId",
+                                  "professional",
+                                  "scope",
+                                  "profileNotice"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "SUMMARY"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "recipient": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "area": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRICION",
+                                      "ENTRENAMIENTO",
+                                      "ANTROPOMETRIA"
+                                    ]
+                                  },
+                                  "level": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SUMMARY",
+                                      "SUMMARY_AND_PLAN"
+                                    ]
+                                  },
+                                  "givenLevel": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "SUMMARY",
+                                          "SUMMARY_AND_PLAN"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "from": {
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "identityId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "displayName": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "identityId",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "recipient",
+                                  "area",
+                                  "level",
+                                  "givenLevel",
+                                  "from"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "PREVIOUS_HISTORY"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "relationshipId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "professional": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "area": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRICION",
+                                      "ENTRENAMIENTO",
+                                      "ANTROPOMETRIA"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "relationshipId",
+                                  "professional",
+                                  "area"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "HABITS"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "recipient": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "recipient"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "texts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "HEALTH_DATA",
+                                  "AREA_CONSENT",
+                                  "SUMMARY",
+                                  "SUMMARY_AND_PLAN",
+                                  "PREVIOUS_HISTORY",
+                                  "HABITS"
+                                ]
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "textHash": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              },
+                              "effectiveFrom": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "approval": {
+                                "type": "string",
+                                "enum": [
+                                  "PENDING_APPROVAL",
+                                  "APPROVED"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "kind",
+                              "title",
+                              "text",
+                              "textHash",
+                              "effectiveFrom",
+                              "approval"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "relationshipId",
+                        "version",
+                        "items",
+                        "texts"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/sharing-choices": {
+      "post": {
+        "operationId": "API-CMP-02",
+        "summary": "Un toque escribe todo lo elegido, en una sola transacción (todo o nada): el A3, el B2 de cada área, lo de otras áreas, los hábitos y la historia anterior, cada acto con su texto, su versión, su hecho y su fila de auditoría, como lo dejaría su operación de siempre, y solo lo elegido (no extiende en silencio lo que ya se compartía). Lleva la versión que se vio (si algo cambió, 409 VERSION_CONFLICT), los textos mostrados (uno que no es el vigente, 409 CONSENT_VERSION_STALE; si falta el de algo elegido, 422 SHARING_TEXT_REQUIRED) y las claves de API-CMP-01 (una que hoy no se puede dar —ya dada, ajena o inexistente, lo mismo—, 422 SHARING_CHOICE_NOT_AVAILABLE con un issue por cada una). Lo de otras áreas, la historia anterior y los hábitos piden el A3 vigente o elegido en el mismo toque (si no, 403). Acepta los pedidos pendientes de quienes pasan a ver lo pedido. Un componente ajeno o inexistente en relationshipId, 404.",
+        "description": "Fuente: DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D8) · Ley 25.326 art. 5 · 08 §12.2 y C-12 · 09v7 T18 · DL-115 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 · TB-56. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "relationshipId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "string",
+                    "pattern": "^p[0-9a-z]{1,16}$"
+                  },
+                  "acceptedTextIds": {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "choices": {
+                    "minItems": 1,
+                    "maxItems": 80,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                    }
+                  }
+                },
+                "required": [
+                  "relationshipId",
+                  "expectedVersion",
+                  "acceptedTextIds",
+                  "choices"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "given": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string",
+                                "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "HEALTH_DATA",
+                                  "AREA_CONSENT",
+                                  "SUMMARY",
+                                  "PREVIOUS_HISTORY",
+                                  "HABITS"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "kind"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "recordedAt",
+                        "given"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | CONSENT_VERSION_STALE | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: SHARING_CHOICE_NOT_AVAILABLE | SHARING_TEXT_REQUIRED. SHARING_CHOICE_NOT_AVAILABLE: details.issues trae un issue por cada cosa elegida que hoy no se puede dar (ya está dada, no existe o es ajena: lo mismo), con path choices[i]. SHARING_TEXT_REQUIRED trae el issue con path acceptedTextIds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "details": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "issues": {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "code": {
+                                        "type": "string",
+                                        "const": "SHARING_CHOICE_NOT_AVAILABLE"
+                                      },
+                                      "path": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "code",
+                                      "path"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "issues"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/sharing-choices/withdrawal": {
+      "post": {
+        "operationId": "API-CMP-03",
+        "summary": "La persona deja de compartir una cosa desde ese momento (RNF-PRI-002): lo de un área con un profesional (SUMMARY:…) o sus hábitos con uno (HABITS:…). Es una versión nueva de esa autorización que ya no lo nombra (si no queda nadie, retirada), con la hora de la base tomado el cerrojo; nunca se borra nada. No pide el A3 ni la versión vista. Si ya no se compartía, responde 200 con withdrawn: false, sin escribir. El A3, el B2 y la historia anterior se retiran con su operación de siempre (API-CON-08, API-CON-04 y API-HIA-03). Un profesional que nunca acompañó a la persona (ajeno o inexistente), 404.",
+        "description": "Fuente: DL-176 · WP-COMPARTIR (CMP-D9) · RNF-PRI-002 · 08 §13 · DL-163 D-13 · DL-165 D-9. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^(SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                  }
+                },
+                "required": [
+                  "key"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "pattern": "^(SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                        },
+                        "withdrawn": {
+                          "type": "boolean"
+                        },
+                        "withdrawnAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "withdrawn",
+                        "withdrawnAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }

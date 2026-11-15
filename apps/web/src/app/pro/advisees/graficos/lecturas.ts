@@ -6,8 +6,8 @@
  *
  * - `leerSerieDelCatalogo` despacha por la fuente de la serie: una proyección (con el adaptador de la fuerza cuando la
  *   clave es la de la estimación) o el contexto de revisión (lo indicado del entrenamiento: API-TRN-21 en tramos de 92
- *   días y API-SER-01 por versión, GR-T14). Las derivadas responden «sin especificación» hasta que la rama de Nutrición
- *   (C) programe los g/kg (GR-T13).
+ *   días y API-SER-01 por versión, GR-T14). Las derivadas (los g/kg, GR-T13) las lee la rama de Nutrición (C,
+ *   `leerSeriePorKilo`).
  * - `leerEnTramos` parte el período en tramos de 92 días, sin días repetidos ni perdidos.
  * - `compartirLecturaEnCurso` evita pedir dos veces lo mismo mientras está en vuelo, y no guarda nada después.
  * - `leerDisponibles` es lo que hacía `useDisponibles` por dentro, sin depender del contexto de la ficha, para que el
@@ -43,6 +43,7 @@ import { granoPara, leerSerie, type EstadoDeSerie } from '../seguimiento/series'
 import { ejercicioDeLaEstimacion, objetivosDelPlanLeido, serieDeLaFuerza, serieDeLoIndicado } from './adaptadores';
 import { ESTADOS_DE_LA_CINTA, TIPOS_DE_HITO_DE_LA_CINTA, tramosDeLaCinta, ZONA_POR_DEFECTO, type NotaDeLaSesionDeLaCinta } from './cinta-del-tiempo';
 import { inicioDelEje, tramosDe, type PeriodoDelGrafico } from './eje-de-fechas';
+import { leerSeriePorKilo } from './nutricion/lecturas-de-nutricion';
 
 export interface ParametrosDeLectura {
   readonly token: string;
@@ -333,6 +334,7 @@ export async function leerSerieDelCatalogo(p: ParametrosDeLectura, ref: Referenc
   if (!serie) return { tipo: 'error', motivo: 'OTRO' };
   const periodo = { preset: null, desde: inicioDelEje(p.periodo), hasta: p.periodo.hasta } as const;
   if (serie.fuente.tipo === 'CONTEXTO_DE_REVISION') return leerLoIndicado(p, ref, serie);
+  if (serie.fuente.tipo === 'DERIVADA') return leerSeriePorKilo(p, serie);
   if (serie.fuente.tipo !== 'PROYECCION') return { tipo: 'sin-especificacion' };
   if (serie.fuente.clave === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE') {
     // La serie pide un ejercicio del catálogo (`e:`) de la lista de la v1 (RM-16, DL-171): una versión suelta (`v:`) o

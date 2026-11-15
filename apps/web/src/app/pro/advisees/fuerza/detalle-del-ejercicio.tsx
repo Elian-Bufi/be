@@ -15,6 +15,9 @@
  * ejercicio, serie por serie, de `training/la-vez-pasada.tsx`) y después la tarjeta de fuerza: lo registrado va abajo,
  * nunca mezclado con lo indicado.
  *
+ * WP-GRAFICOS fase 2, rama B (DL-174): después de «La vez pasada», «En el tiempo» abre dos pasos más en el mismo cuadro,
+ * «Historial» (GR-02, GR-03 y GR-05) y «Perfil» (GR-06), de `graficos/entrenamiento/` y cargados al abrirlos.
+ *
  * Abrirlo no cambia nada de la prescripción (TEST-EDP-065).
  */
 import { useEffect, useState, type ReactNode } from 'react';
@@ -35,6 +38,7 @@ import { useLecturaDeFuerza, type LecturaDeFuerza } from './lectura-de-fuerza';
 import { COPY_SERIE_OBSERVADA, SerieObservada, useSerieObservada } from './serie-observada';
 import { TarjetaDeFuerza } from './tarjeta';
 import { LaVezPasada, useLaVezPasada } from '../training/la-vez-pasada';
+import { AccesoAlHistorial, COPY_DEL_HISTORIAL, PasoDelHistorialDiferido } from '../graficos/entrenamiento/acceso-al-historial';
 
 /** `desde: 'carga'`: «Cómo se calculó» abierto desde la lista del cuadro de la carga (ED-73), que vuelve a ella con «Atrás». */
 type Paso =
@@ -42,7 +46,10 @@ type Paso =
   | { readonly tipo: 'como'; readonly punto: PuntoDeFuerza; readonly desde?: 'carga' }
   | { readonly tipo: 'observar' }
   | { readonly tipo: 'carga' }
-  | { readonly tipo: 'suceder'; readonly punto: PuntoDeFuerza };
+  | { readonly tipo: 'suceder'; readonly punto: PuntoDeFuerza }
+  /** WP-GRAFICOS (DL-174): el historial del ejercicio (GR-02, GR-03 y GR-05) y su perfil (GR-06). */
+  | { readonly tipo: 'historial' }
+  | { readonly tipo: 'perfil' };
 
 /** Una serie de la prescripción, con lo único que el cuadro de la carga toca en ella. */
 type SerieParaLaCarga = { readonly suggestedLoad?: { readonly value: number; readonly unit: 'kg' | 'lb' } | null };
@@ -217,6 +224,9 @@ export function DetalleDelEjercicio({
       enviando: sucesion.enviando,
       textoEnviando: COPY_SUCESION.guardando,
     };
+  } else if (paso.tipo === 'historial' || paso.tipo === 'perfil') {
+    titulo = COPY_DEL_HISTORIAL.titulo[paso.tipo];
+    cuerpo = <PasoDelHistorialDiferido paso={paso.tipo} token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} exerciseId={exerciseId} nombre={nombre} />;
   } else if (paso.tipo === 'observar') {
     titulo = COPY_SERIE_OBSERVADA.titulo;
     cuerpo = <SerieObservada persona={persona} hoy={hoy} formulario={observar} />;
@@ -289,6 +299,7 @@ export function DetalleDelEjercicio({
           </p>
         </section>
         <LaVezPasada lectura={vezPasada} recargar={recargarLaVezPasada} nombre={nombre} />
+        <AccesoAlHistorial nombre={nombre} onAbrir={(p) => abrir({ tipo: p })} />
         <TarjetaDeFuerza
           lectura={lectura}
           nombre={nombre}
