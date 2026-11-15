@@ -1052,6 +1052,14 @@ test('TEST-GRVD-004 · SP-01 y SP-02 con el lenguaje de la base: la frase una so
   assert.match(A.COMO_LEER_DOS_EJES, /que dos líneas se crucen o se separen no quiere decir nada/);
   const css = leer(join(GRAFICOS, 'estilos', 'cruces.css'));
   assert.match(css, /\.analizar__pie-de-la-frase \.analizar__como-leerlo\[open\] \{\s*flex: 1 1 100%;/);
+  // «Superpuestas» en SVG propio: la leyenda arriba del dibujo, la lectura con `hoy` (la de la base), la frase con su
+  // pieza y el nombre de cada línea entero o ninguno (mutación: volver a cortarlo con «…»).
+  const sup = leer(join(GRAFICOS, 'arma-tu-grafico/superpuestas-en-pantalla.tsx'));
+  assert.ok(sup.indexOf('<Leyenda sentidos={leyenda} />') < sup.indexOf('className="grafico-base__area"'), 'la leyenda arriba del dibujo');
+  assert.match(sup, /<LecturaEnLaFecha tabla=\{tabla\} fecha=\{cursor\.fecha\} tramo=\{cursor\.tramo\} hoy=\{periodo\.hoy\} \/>/);
+  assert.match(sup, /\{frase \? <FraseDeLaCoincidencia texto=\{frase\} \/> : null\}/);
+  assert.doesNotMatch(sup, /\.slice\(0, 17\)/);
+  assert.match(sup, /s\.rotulo\.texto\.length \* ANCHO_DE_UNA_LETRA <= LUGAR_DE_LOS_NOMBRES - 8/);
 });
 
 test('TEST-GRVD-005 · «Agrupar por: Semana» de Nutrición en «Analizar» dibuja la media de GR-12, no la semana de la API con los subtotales (mutación: pedir la semana a API-PRJ-01; dibujar la semana sin media como un cero)', () => {

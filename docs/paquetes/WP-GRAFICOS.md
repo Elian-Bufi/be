@@ -1818,7 +1818,9 @@ teclado; ninguna palabra prohibida, ni negada (TEST-GRVC-008).
 > #271 y #272, la tanda B; #279, la APK 0.29). Terminada el 15/11 con lo que faltaba del diseño (§3.4, §3.8 y §4.3): lo
 > indicado del entrenamiento en «Analizar» y la cinta con la fecha elegida de los gráficos. Sin integrar al escribir
 > esto. Sin operaciones nuevas en la API, sin migraciones y sin dependencias nuevas; la APK no suma lecturas. Las
-> decisiones GR-T50 a GR-T59 están **a ratificar**; mientras tanto, rigen.
+> decisiones GR-T50 a GR-T59 están **a ratificar**; mientras tanto, rigen. El 15/11 a la noche trajo otra vez `main` (#283,
+> #284, #280, #285 y #281) y pasó por la pasada visual y una tercera revisión (abajo): una sola media semanal (GR-VC13),
+> GR-12 y GR-13 en «Analizar» y las decisiones GR-VD01 a GR-VD09, también a ratificar.
 
 | Parte | Qué quedó | Dónde | Oráculo |
 |---|---|---|---|
@@ -1933,6 +1935,72 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
 | Baja | GR-24 en «Patrones» con un ejercicio y sin el alcance de Entrenamiento pedía «Elegí un ejercicio… Entrenamiento»: nombraba un área sin acceso | Sin ese alcance (o sin saber el acceso), el gráfico no está |
 | Baja | SP-01 y SP-02 llevaban una leyenda fija (con lo reportado o lo observado aunque no hubiera ninguno) | La leyenda sale de lo dibujado (`leyendaDeLosCarriles`) |
 | Baja (queda) | En «Superpuestas» de dos áreas, el lienzo dibuja las bandas de las versiones de las dos, una sobre otra (rotuladas con su área) | Elegir qué bandas van con dos áreas es una decisión de diseño de la vista; queda para la revisión en pantalla |
+
+#### La pasada visual y la tercera revisión (15/11, noche)
+
+La rama trajo `main` con un merge, sin rebase: la pasada visual (#283), la historia anterior (#284), la rama B (#280),
+compartir casi por omisión (#285) y la rama C (#281). Dos choques: en «Analizar», el pie de «Comparar dos etapas» quedó
+como en `main` (la frase fija como pieza y el límite en «Cómo leerlo»); en `etapas.tsx`, los dos comentarios y, de los
+imports, `serieDisponible` (GR-24). Las piezas comunes quedan como en `main` y la rama D suma lo suyo; lo de B y C se
+hereda al usarlas (los números de lo lleno sin repetir un extremo, la cinta de filas de 30 px, el lienzo de C con las
+temporadas, el eje de 3 a 5 marcas redondas y la barra semanal de GR-12). Al traerlo no compilaba: «Superpuestas» en SVG
+propio no le pasaba `hoy` a la lectura de la base.
+
+**Una sola media semanal para todo BE (GR-VC13).** La media de una semana de Nutrición es la de GR-12
+(`mediasDeLasSemanas`, §4.4: los días con cantidades en todos sus registros, si son 4 o más; dice con cuántos días se
+hizo y por qué quedaron afuera los otros). La rama D tenía tres más y las tres pasan a esa:
+
+| Dónde | Antes | Ahora | Oráculo |
+|---|---|---|---|
+| GR-24 por semana («Las mismas métricas, en el tiempo») | La media de los días con valor, con los subtotales adentro («1.912 kcal, media de 2 de 6 días (2 subtotales)») | La de GR-12, por medio de `cruces/semanas-de-nutricion.ts`, que no calcula ninguna media: corta el período en las etapas y le pide cada tramo a `mediasDeLasSemanas`. La semana con días y sin media va con su contorno cortado, sin relleno, y sus días se ven igual; la columna gris queda para la que no tiene ningún día con valor. De entrada va por semana solo si alguna semana tiene media (GR-VD04). La leyenda dice solo lo que se ve y «Cómo se arma cada barra» dice la regla de GR-12 | TEST-GRVD-001 |
+| SP-02, el carril de la media semanal | Una media propia, sin mínimo de días | La de GR-12; la barra hueca si quedó algún día afuera, el contorno cortado si no hay media; sus fichas en la leyenda y la semana sin media también en la tabla | TEST-GRVD-001 y TEST-GRF-067 |
+| «Analizar», «Agrupar por: Semana» con una métrica de Nutrición | La semana de API-PRJ-01, que promedia también los subtotales | Se leen los días (una sola lectura) y se arma la semana de GR-12 (`serieSemanalDeNutricion`, GR-VD03). Sin media, el punto no tiene valor; lleno solo con los siete días. El «Cómo se calcula» del diccionario (textos v3, de esta rama) dice la misma regla | TEST-GRVD-005 |
+
+Las piezas de la base solo suman campos opcionales (las semanas ya calculadas, su texto, «con días y sin media», la barra
+hueca del carril semanal y sus fichas): sin ellos, todo sigue como antes. `semanasDeLosDias` queda en la base como la
+media genérica, sin ningún gráfico de Nutrición que la use.
+
+**GR-12 y GR-13 en «Analizar»** (lo que §4.4 pone ahí y §13.4 dejó para la rama D): una pregunta propia, «¿Qué registró
+en Nutrición, por día y por semana?», que responde con las pantallas de la rama C (las calorías por día y los
+macronutrientes, también en g/kg si se ofrecen), con el período de la ficha. **«Ver la relación»** también llega a
+«Analizar», con SP-01 y SP-02, mientras «Patrones» (rama E) no está: SP-01 con el ejercicio más registrado de la lista
+de la v1 y los otros a elegir. Las dos, como la composición y la fuerza (TA-25), viven en el website y no se guardan como
+vista; cada gráfico se ofrece con la regla de su registro y el acceso de hoy, y la tarjeta de la pregunta solo aparece si
+se ofrece alguno. Abierta por la dirección sin nada que ofrecer, vuelve a «Analizar» sin pregunta: responde igual que una
+que no existe (GR-VD01, GR-VD02 y GR-VD08). Lo fija TEST-GRVD-003.
+
+**La guía visual en los gráficos de la rama** (`DISENO-VISUAL` §1 y §2 «D»; §5 manda sobre la guía):
+
+| Gráfico | Antes | Después | Oráculo |
+|---|---|---|---|
+| GR-24 · lado a lado | El eje con el piso, el medio y el techo («4, 4, 3» con las repeticiones); la leyenda fija y repetida en cada métrica; tres renglones por etapa; «Lo que también cambió» decía que no había otro cambio aunque el plan pasó de 4 a 3 repeticiones | El eje de 3 a 5 marcas redondas de la base, con su grilla tenue; el título de la base con su línea tenue (la unidad y qué es cada punto); la leyenda en fichas una sola vez, arriba, solo con lo que se ve; cada etapa en dos renglones (cuándo, y cuánto con su mediana) y, tenue, lo que no entra; «Lo que también cambió» lista primero lo indicado para el ejercicio («Lo indicado para Sentadilla trasera con barra: de 4 a 3 repeticiones (de la versión 7 a la 8)»), también con el 1RM estimado solo, y si no se pudo leer lo dice | TEST-GRVD-002 |
+| SP-01 y SP-02 | La frase dos veces (en las notas y en la lectura), la lectura afuera de la tarjeta y un «Cómo leerlo» propio sin el nombre de su gráfico | Una sola tarjeta: la frase una vez, tenue, en las notas; la lectura del cruce (la ventana, lo que cambió en lo indicado, cada etapa, lo que también cambió y lo que BE no registra) a la vista adentro; Henselmans 2022 y Hall 2011, en el «Cómo leerlo» de la base | TEST-GRVD-004 |
+| «Analizar» · el pie | El límite de la pregunta y la frase en un mismo párrafo | La frase con la pieza de la base, a la vista; el límite de la pregunta en «Cómo leerlo», último (GR-T50 y GR-V08) | TEST-GRVD-004 y TEST-GRF-076 |
+| «Analizar» · «Superpuestas» con dos ejes | — | Sin cambios de fondo: cada eje dice su unidad y sus series, nada se sombrea entre líneas y «que dos líneas se crucen o se separen no quiere decir nada» va a la vista debajo del gráfico | TEST-GRVD-004 |
+| «Superpuestas» en SVG propio («Patrones») | El nombre de cada línea cortado con «…»; la leyenda debajo | El título con su línea tenue, la leyenda arriba, la frase con su pieza, «Cómo leerlo» con dos ejes y el nombre de cada línea entero o ninguno (lo dicen su eje y la leyenda) | La CI (typecheck) |
+
+**Decisiones del continuador en esta pasada, a ratificar:**
+- **GR-VD01 · GR-12 y GR-13 en «Analizar» como una pregunta propia**, con las pantallas de la rama C y el período de la
+  ficha, solo si se ofrecen. *Alternativa:* esperar a «Patrones» (rama E).
+- **GR-VD02 · «Ver la relación» también en «Analizar»** (SP-01 y SP-02, caso 1), mientras «Patrones» no está; SP-01 con el
+  ejercicio más registrado de la lista de la v1, con los otros a elegir. Cuando entre la rama E, quedan en los dos
+  lugares. *Alternativa:* solo en «Patrones», como dice §4.5.
+- **GR-VD03 · La semana de Nutrición en «Analizar» se arma en el website** con la media de GR-12, con una lectura de los
+  días (antes eran dos lecturas: la semana y los días). *Alternativa:* cambiar la agregación semanal de API-PRJ-01, que
+  pide la API y su DL.
+- **GR-VD04 · GR-24 arranca por semana solo si alguna semana tiene media** (como GR-VC12): con la cohorte, ninguna llega a
+  4 días sin faltantes y por semana se vería solo «sin media». *Alternativa:* por semana siempre con más de seis semanas.
+- **GR-VD05 · «Lo que también cambió» de GR-24 lista primero el cambio de lo indicado para el ejercicio** (las repeticiones
+  y el RIR, de las sesiones que ejecutaron cada versión), además de la diferencia de la tabla. *Alternativa:* solo en la
+  diferencia, como dejó #283.
+- **GR-VD06 · La leyenda de «Lado a lado», una vez arriba**, con lo que se ve en todas las métricas; cada etapa en dos
+  renglones. *Alternativa:* una leyenda por métrica.
+- **GR-VD07 · En SP-01 y SP-02, la lectura del cruce va adentro de la tarjeta**, en lo que la base pone a la vista, y la
+  frase una sola vez. *Alternativa:* la lectura debajo, afuera de la tarjeta.
+- **GR-VD08 · Una pregunta con gráficos abierta por la dirección sin nada que ofrecer** vuelve a «Analizar» sin pregunta,
+  sin el título ni un aviso. *Alternativa:* un estado vacío neutro con el título.
+- **GR-VD09 · Las piezas de la base solo suman campos opcionales** y `semanasDeLosDias` queda como la media genérica sin
+  usuarios de Nutrición. *Alternativa:* borrarla o pasarla a la regla de GR-12, que cambia las pruebas de #283.
 
 ### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
 
