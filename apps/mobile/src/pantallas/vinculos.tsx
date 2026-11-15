@@ -78,7 +78,7 @@ export function PantallaDeVinculos({
         </Aviso>
       ) : null}
       {/* DL-175: si en esa área ya hubo otro profesional, la oferta opcional de compartirle la historia anterior. */}
-      {decision?.tipo === 'aceptada' ? <HistoriaAnteriorAlAceptar token={token} relationshipId={decision.vinculoId} sesionPerdida={sesionPerdida} /> : null}
+      {decision?.tipo === 'aceptada' ? <HistoriaAnteriorAlAceptar token={token} relationshipId={decision.vinculoId} sesionPerdida={sesionPerdida} irAPrivacidad={() => ir({ nombre: 'privacidad' })} /> : null}
       {decision?.tipo === 'rechazada' ? <Aviso tipo="exito" titulo={COPY_VINCULO.solicitudRechazada} /> : null}
 
       <Seccion titulo="Solicitudes recibidas">

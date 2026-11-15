@@ -12,8 +12,9 @@
  * si falla, la línea no se dibuja y lo demás sigue igual.
  *
  * WP-HISTORIA-ANTERIOR (DL-175): debajo de cada área, «Tu historia anterior de …» cuando antes hubo otro profesional en esa
- * área (o ya se decidió algo), con su explicación, el interruptor para compartirla o retirarla y cuándo la miró
- * (`historia-anterior.tsx`, TEST-HA-040 a 045). Sale de su propia lectura (API-HIA-01): si falla, no se dibuja.
+ * área (o ya se decidió algo), con su explicación, el interruptor para compartirla o retirarla y cuándo la miró; debajo de
+ * un vínculo terminado con el que la miraron, solo cuándo (`historia-anterior.tsx`, TEST-HA-040 a 046). Sale de su propia
+ * lectura (API-HIA-01): si falla, no se dibuja.
  */
 import { useCallback, useState } from 'react';
 import type { HistoriaAnteriorDeUnArea } from '@be/domain';
@@ -125,6 +126,7 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
                         texto={deLaHistoria.text}
                         alCambiar={alCambiarLaHistoria}
                         actualizar={actualizarLaHistoria}
+                        irAPrivacidad={() => ir({ nombre: 'privacidad' })}
                       />
                     ) : null}
                   </View>

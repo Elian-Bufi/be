@@ -1,18 +1,23 @@
 /**
- * APK · «Tu historia anterior» (WP-HISTORIA-ANTERIOR, DL-175): las dos piezas que la dibujan. Las decisiones están en
- * `historia-anterior-en-el-telefono.ts`, con su prueba (TEST-HA-040 a 045).
+ * APK · «Tu historia anterior» (WP-HISTORIA-ANTERIOR, DL-175): las piezas que la dibujan. Las decisiones están en
+ * `historia-anterior-en-el-telefono.ts`, con su prueba (TEST-HA-040 a 046).
  * - `HistoriaAnteriorDelArea`, en «Quién ve qué», debajo del profesional de un área: el título, la explicación corta, el
- *   interruptor para compartirla o dejar de compartirla, el texto completo plegado y la línea de cuándo la miró.
- * - `HistoriaAnteriorAlAceptar`, al aceptar a un profesional nuevo de un área en la que ya hubo otro: la misma oferta, con
- *   «Compartir mi historia anterior» y «Ahora no». Por omisión no se comparte, y «Ahora no» no escribe nada.
+ *   interruptor para compartirla o dejar de compartirla, el texto completo plegado y la línea de cuándo la miró. Con el
+ *   vínculo terminado, solo el estado y cuándo la miró.
+ * - `HistoriaAnteriorAlAceptar`, al aceptar a un profesional nuevo de un área en la que ya hubo otro (por Vínculos o por
+ *   invitación): la misma oferta, con «Compartir mi historia anterior» y «Ahora no». Por omisión no se comparte, y «Ahora
+ *   no» no escribe nada.
+ * - `DialogoParaCompartir`: compartirla, desde cualquiera de las dos, abre **el texto entero a la vista** (como los hábitos:
+ *   lo que se acepta no se pliega, 08 §12.2) con dos respuestas del mismo peso. Recién al confirmar sale API-HIA-02.
  *
- * Accesibilidad: el interruptor es una fila tocable con rol de interruptor, su nombre («Compartir tu historia anterior de
- * Nutrición con …») y su estado; el `Switch` de adentro no se recorre. El texto respeta la letra grande del teléfono (no se
- * fija `allowFontScaling`), y los colores salen del tema (Claro y Azul noche), sin colores que juzguen.
+ * Accesibilidad: el interruptor es una fila tocable con rol de interruptor; su etiqueta dice qué hace, con quién y el estado
+ * que se ve (también «Compartiendo…»), y la sugerencia, qué pasa al tocarlo; el `Switch` de adentro no se recorre. El texto
+ * respeta la letra grande del teléfono (no se fija `allowFontScaling`), y los colores salen del tema (Claro y Azul noche),
+ * sin colores que juzguen.
  */
 import { COPY_HISTORIA_ANTERIOR as C, type HistoriaAnteriorDeUnArea, type Resultado } from '@be/domain';
 import { useCallback, useState } from 'react';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { api } from './api';
 import { DialogoDeConfirmacion } from './dialogo';
 import { fechaCivilDeUnInstante, dia } from './formato';
@@ -20,11 +25,25 @@ import { Icono } from './icono';
 import { falloDe, useClaveDeIntento, type Fallo } from './intento';
 import { useLecturaRecordada } from './lecturas';
 import { TextoDesplegable } from './texto-versionado';
-import { conLoNuevo, loQuePideElInterruptor, mensajeDelRechazo, pedidoDeAutorizar, pedidoDeRetirar, seOfreceAlAceptar, vistasDeLaHistoriaAnterior, type MiHistoriaAnterior, type VistaDeLaHistoriaAnterior } from './historia-anterior-en-el-telefono';
-import { Aviso, Boton, COLOR, estilosPorTema, Parrafo, Superficie } from './ui';
+import {
+  conLoNuevo,
+  etiquetaDelInterruptor,
+  exitoAlCompartir,
+  loQuePideElInterruptor,
+  mensajeDelRechazo,
+  partesDelTexto,
+  pedidoDeAutorizar,
+  pedidoDeRetirar,
+  seOfreceAlAceptar,
+  vistasDeLaHistoriaAnterior,
+  type MiHistoriaAnterior,
+  type VistaDeLaHistoriaAnterior,
+} from './historia-anterior-en-el-telefono';
+import { Aviso, Boton, COLOR, estilos as ui, estilosPorTema, Parrafo, Superficie } from './ui';
 
 type Texto = MiHistoriaAnterior['text'];
 type Respuesta = Resultado<{ readonly data: HistoriaAnteriorDeUnArea }>;
+type Rechazo = ReturnType<typeof mensajeDelRechazo>;
 
 /** Las vistas de la lectura, por componente de vínculo: lo que «Quién ve qué» dibuja debajo de cada área. */
 export function useVistasDeLaHistoriaAnterior(mia: MiHistoriaAnterior | null): ReadonlyMap<string, VistaDeLaHistoriaAnterior> {
@@ -35,7 +54,7 @@ export function useVistasDeLaHistoriaAnterior(mia: MiHistoriaAnterior | null): R
 function useCambioDeLaHistoria(token: string, alCambiar: (nuevo: HistoriaAnteriorDeUnArea) => void) {
   const intento = useClaveDeIntento();
   const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState<{ readonly mensaje: string; readonly actualizar: boolean } | null>(null);
+  const [error, setError] = useState<Rechazo | null>(null);
   const [fallo, setFallo] = useState<Fallo | null>(null);
   const [hecho, setHecho] = useState<string | null>(null);
   const enviar = useCallback(
@@ -54,7 +73,8 @@ function useCambioDeLaHistoria(token: string, alCambiar: (nuevo: HistoriaAnterio
       intento.registrar(r);
       setEnviando(false);
       if (r.ok) {
-        setHecho(que === 'COMPARTIR' ? C.compartida(item.professional.displayName) : C.retirada(item.professional.displayName));
+        // El éxito dice lo mismo que el estado (HA-T15): «puede verla» solo si hoy tiene acceso a esa área.
+        setHecho(que === 'COMPARTIR' ? exitoAlCompartir(r.datos.data) : C.retirada(item.professional.displayName));
         alCambiar(r.datos.data);
         return true;
       }
@@ -64,12 +84,96 @@ function useCambioDeLaHistoria(token: string, alCambiar: (nuevo: HistoriaAnterio
     },
     [token, intento, alCambiar],
   );
-  return { enviar, enviando, error, fallo, hecho, descartar: () => intento.descartar() };
+  const limpiar = useCallback(() => {
+    intento.descartar();
+    setError(null);
+    setFallo(null);
+  }, [intento]);
+  return { enviar, enviando, error, fallo, hecho, limpiar };
+}
+
+/** Los botones que siguen a un rechazo: «Actualizar» si algo cambió; «Ir a Privacidad» si falta el A3 y hay a dónde ir. */
+function SalidasDelRechazo({ error, actualizar, irAPrivacidad }: { error: Rechazo; actualizar: () => void; irAPrivacidad?: () => void }) {
+  return (
+    <>
+      {error.actualizar ? <Boton texto={C.actualizar} tipo="secundario" onPress={actualizar} /> : null}
+      {error.privacidad && irAPrivacidad ? <Boton texto={C.irAPrivacidad} tipo="secundario" icono="derecha" iconoAlFinal onPress={irAPrivacidad} /> : null}
+    </>
+  );
+}
+
+/**
+ * Compartirla: el texto entero, a la vista, y dos respuestas del mismo peso. Recién «Compartir mi historia anterior» manda
+ * API-HIA-02; «Ahora no» (o el «atrás» de Android) cierra sin escribir nada.
+ */
+function DialogoParaCompartir({
+  visible,
+  item,
+  texto,
+  enviando,
+  error,
+  onCompartir,
+  onAhoraNo,
+  actualizar,
+  irAPrivacidad,
+}: {
+  visible: boolean;
+  item: HistoriaAnteriorDeUnArea;
+  texto: Texto;
+  enviando: boolean;
+  error: Rechazo | null;
+  onCompartir: () => void;
+  onAhoraNo: () => void;
+  actualizar: () => void;
+  irAPrivacidad?: () => void;
+}) {
+  const { titulo, parrafos } = partesDelTexto(texto.text);
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => {
+        if (!enviando) onAhoraNo();
+      }}
+    >
+      <View style={estilos.velo}>
+        <ScrollView contentContainerStyle={estilos.centrado}>
+          <View style={estilos.dialogo} accessibilityViewIsModal>
+            <Text style={ui.tituloDeSeccion} accessibilityRole="header">
+              {C.alAceptar.titulo(item.professional.displayName, item.area)}
+            </Text>
+            <Parrafo>{C.explicacion(item.professional.displayName, item.area)}</Parrafo>
+            <Parrafo tenue>{C.leeAntes}</Parrafo>
+            {texto.approval === 'PENDING_APPROVAL' ? <Aviso tipo="info" titulo={C.propuesta} /> : null}
+            <Superficie style={estilos.textoDelActo}>
+              <Text style={[ui.parrafo, ui.negrita]} accessibilityRole="header">
+                {titulo}
+              </Text>
+              {parrafos.map((p, i) => (
+                <Text key={i} style={ui.parrafo}>
+                  {p}
+                </Text>
+              ))}
+            </Superficie>
+            {error ? (
+              <Aviso tipo="error" titulo={error.mensaje}>
+                <SalidasDelRechazo error={error} actualizar={actualizar} irAPrivacidad={irAPrivacidad} />
+              </Aviso>
+            ) : null}
+            {/* Las dos respuestas, del mismo peso: ninguna es la «correcta». */}
+            <Boton texto={enviando ? C.compartiendo : C.alAceptar.compartir} tipo="secundario" ocupado={enviando} deshabilitado={enviando || error?.actualizar === true} onPress={onCompartir} />
+            <Boton texto={C.alAceptar.ahoraNo} tipo="secundario" deshabilitado={enviando} onPress={onAhoraNo} />
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
 }
 
 /**
  * Debajo del profesional de un área, en «Quién ve qué». `alCambiar` recibe lo que respondió la API; `actualizar` vuelve a
- * leer (cuando algo cambió mientras se miraba).
+ * leer (cuando algo cambió mientras se miraba); `irAPrivacidad`, cuando falta el A3.
  */
 export function HistoriaAnteriorDelArea({
   token,
@@ -78,6 +182,7 @@ export function HistoriaAnteriorDelArea({
   texto,
   alCambiar,
   actualizar,
+  irAPrivacidad,
 }: {
   token: string;
   item: HistoriaAnteriorDeUnArea;
@@ -85,71 +190,97 @@ export function HistoriaAnteriorDelArea({
   texto: Texto;
   alCambiar: (nuevo: HistoriaAnteriorDeUnArea) => void;
   actualizar: () => void;
+  irAPrivacidad?: () => void;
 }) {
   const cambio = useCambioDeLaHistoria(token, alCambiar);
-  const [confirmando, setConfirmando] = useState(false);
+  const [dialogo, setDialogo] = useState<'compartir' | 'retirar' | null>(null);
+  const cerrar = () => {
+    cambio.limpiar();
+    setDialogo(null);
+  };
+  const actualizarYCerrar = () => {
+    cerrar();
+    actualizar();
+  };
   const tocar = () => {
     if (cambio.enviando) return;
-    if (loQuePideElInterruptor(item) === 'RETIRAR') setConfirmando(true);
-    else void cambio.enviar(item, 'COMPARTIR', texto);
+    cambio.limpiar();
+    setDialogo(loQuePideElInterruptor(item) === 'RETIRAR' ? 'retirar' : 'compartir');
   };
+  const estadoVisible = cambio.enviando ? (vista.compartida ? C.retirando : C.compartiendo) : vista.estado;
+  const cabeza = (
+    <View style={estilos.cabeza}>
+      <Icono nombre="linea-de-tiempo" tamano={18} tono="acento" />
+      <Text style={estilos.titulo} accessibilityRole="header">
+        {vista.titulo}
+      </Text>
+    </View>
+  );
+  const miro = vista.miro ? (
+    <View style={estilos.linea} accessible accessibilityLabel={vista.miro}>
+      <Icono nombre="reloj" tamano={18} tono="tenue" />
+      <Text style={[estilos.texto, estilos.tenue]}>{vista.miro}</Text>
+    </View>
+  ) : null;
+  // Un vínculo terminado: ya no la ve, y queda cuándo la miró (HA-T08). Sin interruptor ni texto que aceptar.
+  if (vista.soloLectura) {
+    return (
+      <View style={estilos.bloque}>
+        {cabeza}
+        <Text style={[estilos.texto, estilos.tenue]}>{vista.estado}</Text>
+        {miro}
+      </View>
+    );
+  }
   return (
     <View style={estilos.bloque}>
-      <View style={estilos.cabeza}>
-        <Icono nombre="linea-de-tiempo" tamano={18} tono="acento" />
-        <Text style={estilos.titulo} accessibilityRole="header">
-          {vista.titulo}
-        </Text>
-      </View>
+      {cabeza}
       <Text style={estilos.texto}>{vista.explicacion}</Text>
       <Pressable
         accessibilityRole="switch"
-        accessibilityLabel={vista.paraLeer}
-        accessibilityHint={vista.estado}
+        accessibilityLabel={etiquetaDelInterruptor(vista, estadoVisible)}
+        accessibilityHint={vista.sugerencia}
         accessibilityState={{ checked: vista.compartida, disabled: cambio.enviando, busy: cambio.enviando }}
         onPress={tocar}
         style={({ pressed }) => [estilos.fila, pressed && estilos.presionada]}
       >
         <View style={estilos.textosDeLaFila}>
           <Text style={estilos.rotulo}>{C.interruptor}</Text>
-          <Text style={[estilos.texto, estilos.tenue]}>{cambio.enviando ? (vista.compartida ? C.retirando : C.compartiendo) : vista.estado}</Text>
+          <Text style={[estilos.texto, estilos.tenue]}>{estadoVisible}</Text>
         </View>
         <View accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none">
           <Switch value={vista.compartida} disabled={cambio.enviando} trackColor={{ false: COLOR.borde, true: COLOR.acento }} />
         </View>
       </Pressable>
-      {vista.miro ? (
-        <View style={estilos.linea} accessible accessibilityLabel={vista.miro}>
-          <Icono nombre="reloj" tamano={18} tono="tenue" />
-          <Text style={[estilos.texto, estilos.tenue]}>{vista.miro}</Text>
-        </View>
-      ) : null}
+      {miro}
       <TextoDesplegable version={{ id: texto.id, text: texto.text, textHash: texto.textHash, effectiveFrom: texto.effectiveFrom }} textoDelBoton={C.leerElTexto} />
       {texto.approval === 'PENDING_APPROVAL' ? <Parrafo tenue>{C.propuesta}</Parrafo> : null}
       {cambio.hecho ? <Aviso tipo="exito" titulo={cambio.hecho} /> : null}
-      {cambio.error && !confirmando ? (
-        <Aviso tipo="error" titulo={cambio.error.mensaje}>
-          {cambio.error.actualizar ? <Boton texto="Actualizar" tipo="secundario" onPress={actualizar} /> : null}
-        </Aviso>
-      ) : null}
+      <DialogoParaCompartir
+        visible={dialogo === 'compartir'}
+        item={item}
+        texto={texto}
+        enviando={cambio.enviando}
+        error={dialogo === 'compartir' ? cambio.error : null}
+        onCompartir={() => {
+          void cambio.enviar(item, 'COMPARTIR', texto).then((ok) => ok && setDialogo(null));
+        }}
+        onAhoraNo={cerrar}
+        actualizar={actualizarYCerrar}
+        irAPrivacidad={irAPrivacidad}
+      />
       <DialogoDeConfirmacion
-        visible={confirmando}
+        visible={dialogo === 'retirar'}
         titulo={C.confirmarRetiro.titulo}
         textoConfirmar={C.confirmarRetiro.confirmar}
         textoEnviando={C.retirando}
         enviando={cambio.enviando}
-        fallo={confirmando ? cambio.fallo : null}
-        onVolver={() => {
-          cambio.descartar();
-          setConfirmando(false);
-        }}
+        fallo={dialogo === 'retirar' ? cambio.fallo : null}
+        onVolver={cerrar}
         onConfirmar={() => {
-          void cambio.enviar(item, 'RETIRAR', texto).then((ok) => ok && setConfirmando(false));
+          void cambio.enviar(item, 'RETIRAR', texto).then((ok) => ok && setDialogo(null));
         }}
-        onActualizar={() => {
-          setConfirmando(false);
-          actualizar();
-        }}
+        onActualizar={actualizarYCerrar}
       >
         <Parrafo>{C.confirmarRetiro.cuerpo(item.professional.displayName)}</Parrafo>
       </DialogoDeConfirmacion>
@@ -158,18 +289,36 @@ export function HistoriaAnteriorDelArea({
 }
 
 /**
- * Al aceptar a un profesional nuevo (Vínculos): si en esa área ya hubo otro, una tarjeta opcional que ofrece compartir la
- * historia anterior. Lee API-HIA-01 aparte: si falla, la tarjeta no se dibuja y el resto sigue igual.
+ * Al aceptar a un profesional nuevo (por Vínculos o por invitación): si en esa área ya hubo otro, una tarjeta opcional que
+ * ofrece compartir la historia anterior. Lee API-HIA-01 aparte: si falla, la tarjeta no se dibuja y el resto sigue igual.
+ * Compartir abre el texto entero; si algo cambió mientras se miraba, «Actualizar» vuelve a leer; sin el A3, «Ir a
+ * Privacidad» (si la pantalla da el camino).
  */
-export function HistoriaAnteriorAlAceptar({ token, relationshipId, sesionPerdida }: { token: string; relationshipId: string; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
+export function HistoriaAnteriorAlAceptar({
+  token,
+  relationshipId,
+  sesionPerdida,
+  irAPrivacidad,
+}: {
+  token: string;
+  relationshipId: string;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  irAPrivacidad?: () => void;
+}) {
   const lectura = useLecturaRecordada(token, `historia-anterior-al-aceptar-${relationshipId}`, useCallback(() => api.miHistoriaAnterior(token), [token]), sesionPerdida);
   const [ahoraNo, setAhoraNo] = useState(false);
+  const [abierto, setAbierto] = useState(false);
   const [compartida, setCompartida] = useState<HistoriaAnteriorDeUnArea | null>(null);
   const cambio = useCambioDeLaHistoria(token, setCompartida);
   const mia = lectura.r?.ok ? lectura.r.datos.data : null;
   const item = mia ? seOfreceAlAceptar(compartida ? conLoNuevo(mia, compartida) : mia, relationshipId) : null;
+  const actualizar = () => {
+    cambio.limpiar();
+    setAbierto(false);
+    void lectura.cargar();
+  };
   if (ahoraNo || !mia) return null;
-  if (compartida) return <Aviso tipo="exito" titulo={C.compartida(compartida.professional.displayName)} />;
+  if (compartida) return <Aviso tipo="exito" titulo={exitoAlCompartir(compartida)} />;
   if (!item) return null;
   return (
     <Superficie style={estilos.tarjeta}>
@@ -181,12 +330,38 @@ export function HistoriaAnteriorAlAceptar({ token, relationshipId, sesionPerdida
       </View>
       <Text style={estilos.texto}>{C.explicacion(item.professional.displayName, item.area)}</Text>
       <Text style={[estilos.texto, estilos.tenue]}>{C.alAceptar.opcional}</Text>
-      <TextoDesplegable version={{ id: mia.text.id, text: mia.text.text, textHash: mia.text.textHash, effectiveFrom: mia.text.effectiveFrom }} textoDelBoton={C.leerElTexto} />
-      {mia.text.approval === 'PENDING_APPROVAL' ? <Parrafo tenue>{C.propuesta}</Parrafo> : null}
-      {cambio.error ? <Aviso tipo="error" titulo={cambio.error.mensaje} /> : null}
-      {/* Las dos respuestas, del mismo peso: ninguna es la «correcta». */}
-      <Boton texto={cambio.enviando ? C.compartiendo : C.alAceptar.compartir} tipo="secundario" ocupado={cambio.enviando} deshabilitado={cambio.enviando} onPress={() => void cambio.enviar(item, 'COMPARTIR', mia.text)} />
+      {cambio.error && !abierto ? (
+        <Aviso tipo="error" titulo={cambio.error.mensaje}>
+          <SalidasDelRechazo error={cambio.error} actualizar={actualizar} irAPrivacidad={irAPrivacidad} />
+        </Aviso>
+      ) : null}
+      {/* Las dos respuestas, del mismo peso: ninguna es la «correcta». «Compartir» abre el texto antes de escribir nada. */}
+      <Boton
+        texto={C.alAceptar.compartir}
+        tipo="secundario"
+        deshabilitado={cambio.enviando}
+        onPress={() => {
+          cambio.limpiar();
+          setAbierto(true);
+        }}
+      />
       <Boton texto={C.alAceptar.ahoraNo} tipo="secundario" deshabilitado={cambio.enviando} onPress={() => setAhoraNo(true)} />
+      <DialogoParaCompartir
+        visible={abierto}
+        item={item}
+        texto={mia.text}
+        enviando={cambio.enviando}
+        error={abierto ? cambio.error : null}
+        onCompartir={() => {
+          void cambio.enviar(item, 'COMPARTIR', mia.text).then((ok) => ok && setAbierto(false));
+        }}
+        onAhoraNo={() => {
+          cambio.limpiar();
+          setAbierto(false);
+        }}
+        actualizar={actualizar}
+        irAPrivacidad={irAPrivacidad}
+      />
     </Superficie>
   );
 }
@@ -203,4 +378,8 @@ const estilos = estilosPorTema((COLOR) => ({
   presionada: { opacity: 0.7 },
   textosDeLaFila: { flexShrink: 1, gap: 2 },
   linea: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  velo: { flex: 1, backgroundColor: COLOR.velo },
+  centrado: { flexGrow: 1, justifyContent: 'center', padding: 16 },
+  dialogo: { backgroundColor: COLOR.superficie, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLOR.borde, gap: 8 },
+  textoDelActo: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, padding: 12, gap: 4 },
 }));
