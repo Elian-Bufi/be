@@ -2,7 +2,9 @@
  * Los gráficos de los cruces (rama D: GR-24, SP-01 y SP-02), para el registro común (`registros.ts`). Lo edita solo esa
  * rama.
  *
- * - **GR-24** se ofrece con un área con plan propio (las etapas son las versiones de ese plan).
+ * - **GR-24** se ofrece con un área con plan propio (las etapas son las versiones de ese plan) y algo que comparar en
+ *   ella: en Entrenamiento, un ejercicio con sesiones. Sin ejercicio compara las calorías, solo con Nutrición propia
+ *   (`referenciaDeLaComparacion`): no pide un área sin acceso. «Patrones» le pasa el `acceso` con que lo ofreció.
  * - **SP-01 y SP-02** se ofrecen solo en el caso 1 (`caso-de-acceso.ts`): las dos áreas permitidas y con planes o tomas
  *   propios en las dos. SP-01 pide además un ejercicio de la lista de la v1 con sesiones en el período; SP-02, tomas de
  *   peso. Si no, no aparecen: ni en gris ni con candado.
@@ -47,7 +49,7 @@ export const GRAFICOS_DE_CRUCES: readonly GraficoRegistrado[] = [
     series: [],
     // Con un ejercicio compara su 1RM estimado o su carga; sin ejercicio, las calorías registradas (GR-T56).
     requiere: { ejercicio: false, listaV1: false, medida: false },
-    ofrecido: (c: ContextoDelRegistro) => dosEtapasOfrecida(c.acceso),
+    ofrecido: (c: ContextoDelRegistro) => dosEtapasOfrecida(c.acceso, (c.ejercicios ?? []).length > 0),
     Grafico: aPedido(() => import('./dos-etapas-en-pantalla')),
   },
   {

@@ -18,7 +18,19 @@ import { leerSerieDelCatalogo, type ParametrosDeLectura } from '../lecturas';
 import type { PeriodoDelGrafico } from '../eje-de-fechas';
 import { PanelesAlineados, type DensidadDelGrafico } from '../paneles-alineados';
 import { leerLaFuerza } from '../cruces/lecturas-de-los-cruces';
-import { ejercicioDeLaClave, escalaDeLaSerie, lecturaDelPunto, motivoDeSuperpuestas, NOMBRE_DEL_MODO, serieElegidaDe, superposicionDeLasElegidas, type ModoArmado } from './compositor';
+import {
+  ejercicioDeLaClave,
+  escalaDeLaSerie,
+  esLoIndicado,
+  lecturaDelPunto,
+  leyendaDeLasSeries,
+  motivoDeSuperpuestas,
+  NOMBRE_DEL_MODO,
+  serieElegidaDe,
+  superposicionDeLasElegidas,
+  unirLaSerie,
+  type ModoArmado,
+} from './compositor';
 import { GraficoSuperpuesto } from './superpuestas-en-pantalla';
 
 /** Lo que guarda un gráfico propio de un enfoque (`GraficoDelEnfoqueSchema`, `kind: 'CUSTOM'`): solo referencias. */
@@ -81,7 +93,7 @@ async function leerUna(
   const unidad = leida.serie.unit;
   const elegida = serieElegidaDe(ref.metricId, unidad, grano);
   if (!elegida) return { tipo: 'sin-datos' };
-  const carril = carrilDeSerie(leida.serie, elegida.serie, {
+  const delCatalogo = carrilDeSerie(leida.serie, elegida.serie, {
     id: `${catalogo.id}|${indice}`,
     nombre: nombreDe(ref, elegida.serie.definicion.nombre, ejercicios),
     indice,
@@ -90,6 +102,8 @@ async function leerUna(
     descripcion: `${numero(leida.serie.points.filter((x) => x.value !== null).length, 0)} observaciones con valor.`,
     lectura: (x) => lecturaDelPunto(x, elegida.serie.definicion, unidad),
   });
+  // GR-T59: lo indicado (el RIR indicado) va suelto, sin línea, como en «Analizar».
+  const carril: CarrilDePuntos = { ...delCatalogo, unir: unirLaSerie(elegida.serie) };
   return { tipo: 'lista', serie: { carril, nombreCorto: elegida.serie.definicion.nombreCorto, elegida } };
 }
 
@@ -138,6 +152,11 @@ export function GraficoArmadoEnPantalla({
   const carriles = estado.series.map((s) => s.carril);
   const nombres = estado.series.map((s) => s.nombreCorto);
   const superposicion = grafico.mode === 'OVERLAY' ? superposicionDeLasElegidas(elegidas) : null;
+  // La leyenda dice solo lo que está dibujado, con lo que quiere decir cada forma en su serie.
+  const leyenda = leyendaDeLasSeries(estado.series.map((s) => ({ id: s.elegida.serie.id, indicada: esLoIndicado(s.elegida.serie), marcas: s.carril.puntos.filter((p) => p.valor !== null).map((p) => p.marca) })));
+  // Una serie de un área sin acceso no se dibuja y no deja rastro: si por eso quedó una sola, no se dice que
+  // «Superpuestas» pide dos (sería decir que falta una).
+  const sinTodas = estado.series.length < grafico.series.length;
   if (superposicion?.permitida) {
     return (
       <GraficoSuperpuesto
@@ -147,12 +166,12 @@ export function GraficoArmadoEnPantalla({
         lados={superposicion.lados}
         nombresCortos={nombres}
         densidad={densidad}
-        leyenda={['REGISTRADO', 'SUBTOTAL']}
+        leyenda={leyenda}
         frase={fraseDeLaCoincidencia(elegidas, 'OVERLAY', superposicion.composicion?.ejesY.length ?? 1)}
       />
     );
   }
   const frase = fraseDeLaCoincidencia(elegidas, 'PANELS', elegidas.length);
-  const motivo = superposicion && superposicion.motivo ? `${NOMBRE_DEL_MODO.OVERLAY}: ${motivoDeSuperpuestas(superposicion.motivo, superposicion.grupos, nombres).replace(/^«Superpuestas» /, '')}` : null;
-  return <PanelesAlineados titulo={grafico.title} periodo={periodo} carriles={carriles} densidad={densidad} leyenda={['REGISTRADO', 'SUBTOTAL']} notas={[...(motivo ? [motivo] : []), ...(frase ? [frase] : [])]} />;
+  const motivo = superposicion && superposicion.motivo && !sinTodas ? `${NOMBRE_DEL_MODO.OVERLAY}: ${motivoDeSuperpuestas(superposicion.motivo, superposicion.grupos, nombres).replace(/^«Superpuestas» /, '')}` : null;
+  return <PanelesAlineados titulo={grafico.title} periodo={periodo} carriles={carriles} densidad={densidad} leyenda={leyenda} notas={[...(motivo ? [motivo] : []), ...(frase ? [frase] : [])]} />;
 }

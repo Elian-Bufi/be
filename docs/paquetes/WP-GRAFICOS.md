@@ -1429,22 +1429,22 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
 | TEST-GRF-060 | Importar un `.tsx` en el registro |
 | TEST-GRF-061 | Dibujar «Dos etapas» con 4 de un lado; asignar una sesión a la versión de su fecha y no a la que ejecutó |
 | TEST-GRF-062 | Perder la observación que no entra en la mediana |
-| TEST-GRF-063 | Ofrecer SP-01 con una sola área |
+| TEST-GRF-063 | Ofrecer SP-01 con una sola área; que GR-24 sin ejercicio compare las calorías aunque falte Nutrición |
 | TEST-GRF-064 | Pedir la lectura de comidas en el caso negado de SP-02 |
 | TEST-GRF-065 | Sacar las calorías de SP-01 |
-| TEST-GRF-066 | Aceptar una etapa del objetivo de 2 semanas |
+| TEST-GRF-066 | Aceptar una etapa del objetivo de 2 semanas; aceptar dos etapas con otra versión del objetivo en el medio |
 | TEST-GRF-067 | Tomar la toma de otro protocolo |
 | TEST-GRF-068 | Un solo eje con dos unidades |
-| TEST-GRF-069 | Dejar «Superpuestas» con tres unidades; darle a lo indicado su propio eje |
+| TEST-GRF-069 | Dejar «Superpuestas» con tres unidades; darle a lo indicado su propio eje; apagar «Agregar al enfoque» con el motivo de «Superpuestas»; poner lo indicado en el eje del RIR de otro ejercicio |
 | TEST-GRF-070 | Superponer una serie semanal con una de sesión |
 | TEST-GRF-071 | Abrir siempre el segundo eje en una vista con `OVERLAY` de antes |
 | TEST-GRF-072 | Un «%» en la lectura de un cruce; devolverle a un límite del diccionario el término prohibido que decía en negación |
-| TEST-GRF-073 | Unir las tomas de Antropometría; unir lo indicado con una línea o dibujarlo lleno |
+| TEST-GRF-073 | Unir las tomas de Antropometría; unir lo indicado con una línea o dibujarlo lleno, también en un gráfico armado; la leyenda fija de antes |
 | TEST-GRF-074 | Ofrecer el 1RM estimado con cualquier ejercicio |
 | TEST-GRF-075 | Leer el 1RM estimado como métrica del diccionario |
-| TEST-GRF-076 | Volver a «Juntas»; sacar la cinta de arriba de «Analizar» o su proveedor del cursor |
+| TEST-GRF-076 | Volver a «Juntas»; sacar la cinta de arriba de «Analizar» o su proveedor del cursor; que la cinta vea la fecha acotada y pierda el evento que empieza antes de lo que se ve |
 | TEST-GRF-077 | Asignar una sesión por su fecha; decir un cambio fuera de la ventana |
-| TEST-GRF-078 | Perder la marca de la orientativa |
+| TEST-GRF-078 | Perder la marca de la orientativa; dejar automático el eje del 1RM estimado en «Analizar» |
 | TEST-GRF-079 | Guardar en `localStorage` |
 
 #### Decisiones del continuador al programar (a ratificar)
@@ -1467,7 +1467,11 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
   de «Comparar dos etapas» sigue con su media de siempre.
 - **GR-T56 · GR-24 en «Patrones»** compara la versión vigente con la anterior: con un ejercicio, en Entrenamiento (el 1RM
   estimado si está en la lista de la v1; si no, la carga de la serie); sin ejercicio, en Nutrición (las calorías). Una
-  medida corporal no se compara entre etapas en esta versión.
+  medida corporal no se compara entre etapas en esta versión. *Ampliada el 15/11, en la revisión:* sin ejercicio compara
+  las calorías **solo** si el profesional tiene Nutrición con un plan propio; si no (un entrenador sin Nutrición), no
+  lee nada y pide un ejercicio, para no pedir un área sin acceso. Por eso GR-24 se ofrece con Nutrición propia o con
+  Entrenamiento propio y algún ejercicio con sesiones, y los gráficos del registro reciben `acceso` (una prop opcional
+  que solo agrega, en `registro-de-graficos.ts`): sin él, GR-24 sin ejercicio tampoco lee.
 - **GR-T57 · Los gráficos del registro se cargan con `React.lazy` y su propio `Suspense`**, para que el registro siga
   siendo un `.ts` sin JSX que las pruebas cargan en Node.
 - **GR-T58 · Los `.tsx` de la rama se llaman «…-en-pantalla»** (como GR-T23), y la rama suma en sus carpetas
@@ -1487,8 +1491,24 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
   estas piezas; SP-01 en vivo para la defensa depende de eso. La cinta arriba de SP-01 la pone «Patrones».
 - Lo indicado del entrenamiento en «Analizar» se ve recién cuando se integre la rama B (#280), que ofrece el RIR
   indicado; hasta entonces no se puede elegir.
+- «Patrones» (rama E) tiene que pasarles `acceso` a los gráficos del registro: GR-24 sin ejercicio lo usa para no leer
+  Nutrición sin el alcance, y sin él no lee nada.
 - La evidencia en pantalla (1440, 1280 y 1024) y la revisión con lector de pantalla: no se corrió el website local (la PC
   tiene poca memoria); lo juzgan la CI, los recorridos del navegador y las capturas de #282.
+
+#### La revisión del 15/11 (ojo adversario) y lo que se arregló
+
+| Severidad | Hallazgo | Arreglo |
+|---|---|---|
+| Media | La cinta de «Analizar» acotaba la fecha elegida a lo que se ve: un evento que empieza antes (la barra de una versión vigente desde antes) dejaba de verse elegido, y con el teclado la flecha volvía siempre al primero | El proveedor del cursor recibe `limites`, le avisa a la página la fecha acotada y la cinta sigue viendo la suya (`fechaVistaAdentro`); un clic en un gráfico sigue mandando. Elegir un tramo deja la fecha adentro del tramo |
+| Media | El 1RM estimado elegido en «Analizar» tenía el eje automático: 2 kg de ruido ocupaban todo el alto, contra GR-T15 | El lienzo usa el rango mínimo del catálogo en cada eje (10 kg o 22 lb), en «Alineadas» y en «Superpuestas»; en «Cambio relativo», no (`dominioConRangoMinimo`) |
+| Media | GR-24 en «Patrones» sin ejercicio leía las calorías aunque el profesional no tuviera Nutrición: pedía un área sin acceso | `referenciaDeLaComparacion` decide con el acceso y no lee si falta; el registro lo ofrece con Nutrición propia o con Entrenamiento propio y ejercicios (GR-T56 ampliada) |
+| Media | En el compositor, con «Superpuestas» elegida y después una sola serie (o tres unidades), «Agregar al enfoque» quedaba apagado mientras se veía «Alineadas» marcada, y tocarla no cambiaba nada | Se ve y se guarda «Alineadas» y el botón sigue (`modoDelCompositor`) |
+| Media | Un gráfico armado de «Patrones» unía lo indicado (el RIR indicado, cuando #280 lo ofrezca) con una línea, como lo registrado, y su leyenda era fija (sin el rombo de lo observado ni lo indicado) | Lo indicado va suelto (`unirLaSerie`) y la leyenda dice lo que está dibujado (`leyendaDeLasSeries`) |
+| Baja | La ventana de SP-01 tomaba como seguidas dos etapas del objetivo con otra versión en el medio (una versión sin los carbohidratos no trae su escalón) | Se exige que B empiece el día después del último de A |
+| Baja | Un gráfico armado que perdió una serie por falta de acceso decía «Superpuestas: pide dos series o tres», un rastro de lo que no se ve | Sin ese motivo cuando faltan series |
+| Baja | Con el RIR registrado de dos ejercicios y un RIR indicado, lo indicado iba al eje del primero, aunque fuera del otro ejercicio | Con dos registrados de su unidad, lo indicado no se une a ninguno: quedan tres ejes y «Superpuestas» dice por qué |
+| Baja (queda) | GR-24 en «Patrones» dice lo que BE no registra, pero no lista las versiones de la otra área que se activaron entre las etapas (en «Analizar» sí) | Pide una lectura más de la otra área, con su alcance: queda para cuando «Patrones» esté en pantalla (rama E) |
 
 ### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
 

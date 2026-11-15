@@ -19,6 +19,7 @@ import type { PeriodoDelGrafico } from '../eje-de-fechas';
 import type { ParametrosDeLectura } from '../lecturas';
 import {
   AREAS_DEL_SELECTOR,
+  modoDelCompositor,
   motivoDeSuperpuestas,
   NOMBRE_DEL_AREA,
   NOMBRE_DEL_MODO,
@@ -127,8 +128,11 @@ export function CompositorDeGraficos({ abierto, acceso, ejercicios, medidas, lec
   });
   const superposicion = seriesElegidas.length > 0 ? superposicionDeLasElegidas(seriesElegidas) : null;
   const motivo = superposicion && superposicion.motivo ? motivoDeSuperpuestas(superposicion.motivo, superposicion.grupos, elegidas.map((e) => e.nombre)) : null;
-  const modoEfectivo: ModoArmado = modo === 'OVERLAY' && motivo === null ? 'OVERLAY' : 'PANELS';
-  const apagado = elegidas.length === 0 ? C.faltaSerie : titulo.trim() === '' ? C.faltaNombre : modo === 'OVERLAY' && motivo !== null ? motivo : null;
+  // Si «Superpuestas» no se puede, se ve y se guarda «Alineadas» (lo que muestra el modo elegido): el botón no se apaga
+  // por eso, porque tocar «Alineadas», ya marcada, no cambiaría nada.
+  const delCompositor = modoDelCompositor({ modo, series: elegidas.length, titulo, motivo });
+  const modoEfectivo: ModoArmado = delCompositor.modo;
+  const apagado = delCompositor.apagado === 'FALTA_SERIE' ? C.faltaSerie : delCompositor.apagado === 'FALTA_NOMBRE' ? C.faltaNombre : null;
   const nombresDeEjercicios = useMemo(() => new Map((ejercicios ?? []).map((x): [string, string] => [x.exerciseKey, x.name])), [ejercicios]);
   const grafico: GraficoArmado = { title: titulo.trim() || C.vistaPrevia, series: elegidas.map((e) => e.ref), mode: modoEfectivo };
 

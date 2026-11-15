@@ -43,5 +43,12 @@ export function areasConEtapas(acceso: AccesoDeLaPersona): ('NUTRICION' | 'ENTRE
   return (['ENTRENAMIENTO', 'NUTRICION'] as const).filter((area) => conLoPropio(acceso, area));
 }
 
-/** GR-24 se ofrece si hay al menos un área con plan propio: las etapas son las versiones de ese plan. */
-export const dosEtapasOfrecida = (acceso: AccesoDeLaPersona): boolean => areasConEtapas(acceso).length > 0;
+/**
+ * GR-24 se ofrece si hay un área con plan propio, porque las etapas son las versiones de ese plan, y con algo para
+ * comparar en ella: en Nutrición, las calorías; en Entrenamiento, un ejercicio con sesiones en el período (sin
+ * ejercicio, el gráfico no tiene qué comparar y no pide las comidas de un área sin acceso).
+ */
+export const dosEtapasOfrecida = (acceso: AccesoDeLaPersona, hayEjercicios: boolean): boolean => {
+  const areas = areasConEtapas(acceso);
+  return areas.includes('NUTRICION') || (areas.includes('ENTRENAMIENTO') && hayEjercicios);
+};

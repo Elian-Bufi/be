@@ -49,6 +49,7 @@ const { COPY_DE_LOS_CRUCES } = await import('../src/app/pro/advisees/graficos/cr
 const A = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/compositor.ts');
 const S = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/superpuestas.ts');
 const E = await import('../src/app/pro/advisees/graficos/eje-de-fechas.ts');
+const FC = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/fecha-compartida.ts');
 
 // ─── Datos de prueba (sintéticos) ─────────────────────────────────────────────────────────────────
 
@@ -234,6 +235,22 @@ test('TEST-GRF-063 · SP-01 existe solo en el caso 1, y el caso negado no se ofr
   const gr24 = delRegistro('GR-24');
   assert.equal(gr24.ofrecido(contexto(acceso(['NUTRICION'], { NUTRICION: true }))), true);
   assert.equal(gr24.ofrecido(contexto(acceso(['NUTRICION', 'ANTROPOMETRIA'], { ANTROPOMETRIA: true }))), false);
+  // Un entrenador sin Nutrición: GR-24 se ofrece con un ejercicio con sesiones, y sin ejercicio no pide las comidas de un
+  // área sin acceso (mutación: comparar las calorías sin ejercicio aunque falte Nutrición).
+  const soloEntrenamiento = acceso(['ENTRENAMIENTO'], { ENTRENAMIENTO: true });
+  assert.equal(gr24.ofrecido(contexto(soloEntrenamiento)), false, 'sin un ejercicio con sesiones no hay qué comparar');
+  assert.equal(gr24.ofrecido(contexto(soloEntrenamiento, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO)] })), true);
+  assert.equal(D.referenciaDeLaComparacion(null, soloEntrenamiento), null, 'sin ejercicio y sin Nutrición no se lee nada');
+  assert.equal(D.referenciaDeLaComparacion(null, null), null, 'sin saber el acceso, tampoco');
+  assert.equal(D.referenciaDeLaComparacion(null, acceso(['NUTRICION', 'ENTRENAMIENTO'], { ENTRENAMIENTO: true })), null, 'Nutrición sin un plan propio no tiene etapas propias');
+  assert.deepEqual(D.referenciaDeLaComparacion(null, acceso(['NUTRICION'], { NUTRICION: true })), { metricId: 'nutricion.energia', exerciseKey: null, setIndex: null, unit: null });
+  const sentadilla = { exerciseKey: `e:${SENTADILLA}`, nombre: 'Sentadilla trasera con barra', unidad: 'kg', serie: null };
+  assert.deepEqual(D.referenciaDeLaComparacion(sentadilla, soloEntrenamiento), { metricId: 'entrenamiento.1rm-estimado', exerciseKey: `e:${SENTADILLA}`, setIndex: null, unit: 'kg' });
+  assert.deepEqual(D.referenciaDeLaComparacion({ ...sentadilla, exerciseKey: `e:${OTRO_EJERCICIO}`, serie: 2 }, soloEntrenamiento), { metricId: 'entrenamiento.carga', exerciseKey: `e:${OTRO_EJERCICIO}`, setIndex: 2, unit: 'kg' });
+  assert.equal(D.referenciaDeLaComparacion(sentadilla, acceso(['NUTRICION'], { NUTRICION: true })), null, 'un ejercicio sin el alcance de Entrenamiento no se lee');
+  const enPantalla = leer(join(GRAFICOS, 'cruces/dos-etapas-en-pantalla.tsx'));
+  assert.match(enPantalla, /const elegida = referenciaDeLaComparacion\(ejercicio, acceso\);/);
+  assert.match(enPantalla, /if \(elegida === null\) \{\s*setEstado\(\{ tipo: 'SIN_DATOS', texto: C\.elegiUnEjercicio \}\);\s*return;/);
   assert.deepEqual(ACCESO.areasConEtapas(CASO_1_SP01), ['ENTRENAMIENTO', 'NUTRICION']);
 });
 
@@ -340,6 +357,11 @@ test('TEST-GRF-066 · la ventana de SP-01 se fija con las versiones del objetivo
   const v = V.ventanaDelObjetivo(tres);
   assert.equal(v.tipo, 'LISTA');
   assert.deepEqual([v.a.objectiveVersionId, v.b.objectiveVersionId], ['o2', 'o3']);
+  // Seguidas de verdad: una versión del objetivo sin los carbohidratos no trae su escalón, y las de alrededor no son
+  // seguidas (mutación: aceptar dos etapas con otra versión en el medio).
+  const conUnaEnElMedio = V.etapasDelObjetivo([escalon('o1', '2026-07-01', '2026-08-25', 250), escalon('o3', '2026-09-01', null, 300)], periodo);
+  assert.deepEqual(conUnaEnElMedio.map((e) => [e.desde, e.hasta]), [['2026-08-01', '2026-08-24'], ['2026-09-01', '2026-10-31']]);
+  assert.deepEqual(V.ventanaDelObjetivo(conUnaEnElMedio), { tipo: 'FALTA', motivo: 'ETAPAS_CORTAS' });
   // Los días de Nutrición: solo los que tienen cantidades en todos sus registros, y hoy no entra.
   const d = V.diasDeNutricion(serie('nutricion.energia', 'kcal', 'DAY', [punto('2026-11-10', 2000), punto('2026-11-11', 1500, { quality: 'PARTIAL' }), punto('2026-11-13', 2100), punto('2026-11-14', 300)]), '2026-11-10', '2026-11-14', '2026-11-14');
   assert.deepEqual([d.incluidos.length, d.conFaltantes, d.sinRegistro, d.enCurso, d.mediana], [2, 1, 1, true, 2050]);
@@ -482,8 +504,19 @@ test('TEST-GRF-069 · tres unidades apagan «Superpuestas» y dicen por qué; do
   assert.equal(conLaCarga.composicion.ejesY.length, 2);
   // Sin lo registrado de su unidad, lo indicado va en su propio eje.
   assert.deepEqual(A.superposicionDeLasElegidas([rirIndicado, carga]).lados, ['IZQUIERDA', 'DERECHA']);
+  // Con el RIR registrado de dos ejercicios, lo indicado no se pone en el eje de uno de ellos: no se sabe de cuál es, y
+  // quedan tres ejes (mutación: ponerlo en el eje del primero que aparece).
+  const dosRir = A.superposicionDeLasElegidas([rir, rir, rirIndicado]);
+  assert.equal(dosRir.permitida, false);
+  assert.equal(dosRir.motivo, 'MAS_DE_DOS_UNIDADES');
   assert.equal(A.esLoIndicadoDe('entrenamiento.rir-indicado'), true);
   assert.equal(A.esLoIndicadoDe('entrenamiento.rir'), false);
+  // El compositor no se traba: con «Superpuestas» elegida y una sola serie (o tres unidades), se ve y se guarda
+  // «Alineadas», que es lo que muestra el modo, y «Agregar al enfoque» sigue (mutación: apagarlo con el motivo).
+  assert.deepEqual(A.modoDelCompositor({ modo: 'OVERLAY', series: 1, titulo: 'Fuerza', motivo: '«Superpuestas» pide dos series o tres.' }), { modo: 'PANELS', apagado: null });
+  assert.deepEqual(A.modoDelCompositor({ modo: 'OVERLAY', series: 2, titulo: 'Fuerza', motivo: null }), { modo: 'OVERLAY', apagado: null });
+  assert.deepEqual(A.modoDelCompositor({ modo: 'PANELS', series: 0, titulo: 'Fuerza', motivo: null }), { modo: 'PANELS', apagado: 'FALTA_SERIE' });
+  assert.deepEqual(A.modoDelCompositor({ modo: 'PANELS', series: 2, titulo: '  ', motivo: null }), { modo: 'PANELS', apagado: 'FALTA_NOMBRE' });
 });
 
 test('TEST-GRF-070 · series con distinto eje X no se superponen: una agrupada por semana va solo con otras semanales (mutación: superponer semana con sesión)', () => {
@@ -571,6 +604,19 @@ test('TEST-GRF-073 · Antropometría sigue en puntos sueltos también superpuest
   const analizar = leer(join(SEGUIMIENTO, 'analizar.tsx'));
   assert.match(analizar, /indicada: esLoIndicadoDe\(s\.ref\.metricId\),/);
   assert.match(analizar, /data-leyenda="indicado"/);
+  // En un gráfico armado de «Patrones», lo indicado también va suelto: el catálogo deja unir el RIR indicado (mutación:
+  // unirlo con una línea, como lo registrado).
+  assert.equal(A.unirLaSerie(serieDisponible('entrenamiento.rir-indicado')), false);
+  assert.equal(A.unirLaSerie(serieDisponible('entrenamiento.rir')), true);
+  assert.equal(A.unirLaSerie(serieDisponible('antropometria.peso')), false);
+  const armado = leer(join(GRAFICOS, 'arma-tu-grafico/grafico-armado.tsx'));
+  assert.match(armado, /const carril: CarrilDePuntos = \{ \.\.\.delCatalogo, unir: unirLaSerie\(elegida\.serie\) \};/);
+  // La leyenda dice lo que está dibujado y qué es cada forma en su serie (mutación: la leyenda fija de antes, sin el
+  // rombo de lo observado ni lo indicado).
+  assert.deepEqual(A.leyendaDeLasSeries([{ id: 'entrenamiento.rir', indicada: false, marcas: ['LLENA', 'HUECA_GRIS'] }, { id: 'entrenamiento.rir-indicado', indicada: true, marcas: ['HUECA'] }]), ['REGISTRADO', 'INDICADO', 'CARGA_RAPIDA']);
+  assert.deepEqual(A.leyendaDeLasSeries([{ id: 'entrenamiento.1rm-estimado', indicada: false, marcas: ['LLENA', 'HUECA', 'ROMBO'] }]), ['REGISTRADO', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL']);
+  assert.deepEqual(A.leyendaDeLasSeries([{ id: 'nutricion.energia', indicada: false, marcas: ['LLENA', 'HUECA'] }, { id: 'antropometria.peso', indicada: false, marcas: ['CONTORNO_CORTADO', 'PUNTO_ADENTRO'] }]), ['REGISTRADO', 'SUBTOTAL', 'REPORTADO', 'CALCULADO']);
+  assert.doesNotMatch(armado, /leyenda=\{\['REGISTRADO', 'SUBTOTAL'\]\}/);
 });
 
 test('TEST-GRF-074 · el selector ofrece el catálogo con el acceso de hoy: sin un área no hay nada de ella, el 1RM estimado solo con la lista de la v1 y los sugeridos primero (mutación: ofrecer el 1RM con cualquier ejercicio)', () => {
@@ -628,11 +674,24 @@ test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección
   // «Analizar». Mutación: sacar el proveedor (la cinta vuelve a su propio cursor y no mueve la lectura).
   assert.match(
     analizar,
-    /\{dibujables\.length > 0 && !disponibles\.cargando \? \(\s*<ProveedorDelCursor fecha=\{fecha\} alElegirFecha=\{\(f\) => cambiar\(\{ fecha: f === null \? null : f < desde \? desde : f > hasta \? hasta : f \}\)\}>\s*<CintaDelTiempoLeida lectura=\{\{ token, asesoradoId, sesionPerdida \}\} alcances=\{alcancesDeLaCinta\} vigencias=\{vigenciasDeLaCinta\} periodo=\{\{ desde, hasta, hoy, desdeElVinculo: null \}\} \/>\s*<\/ProveedorDelCursor>/,
+    /\{dibujables\.length > 0 && !disponibles\.cargando \? \(\s*<ProveedorDelCursor fecha=\{fecha\} limites=\{\{ desde, hasta \}\} alElegirFecha=\{\(f\) => cambiar\(\{ fecha: f \}\)\}>\s*<CintaDelTiempoLeida lectura=\{\{ token, asesoradoId, sesionPerdida \}\} alcances=\{alcancesDeLaCinta\} vigencias=\{vigenciasDeLaCinta\} periodo=\{\{ desde, hasta, hoy, desdeElVinculo: null \}\} \/>\s*<\/ProveedorDelCursor>/,
   );
   const cursor = leer(join(GRAFICOS, 'cursor-de-fechas.tsx'));
   assert.match(cursor, /if \(!alElegirFecha\) return null;/, 'sin quién decida afuera, el cursor es propio, como siempre');
   assert.match(cursor, /<Contexto\.Provider value=\{controlado \?\? propio\}>/);
+  // Lo que cae antes de lo que se ve se lleva a su borde, y la cinta sigue viendo elegido el evento que empieza antes (la
+  // barra de una versión vigente desde antes): si no, la flecha volvía siempre al primero (mutación: que la cinta vea la
+  // fecha acotada de la página).
+  const intervalo = { desde: '2026-10-01', hasta: '2026-10-31' };
+  assert.equal(FC.acotarAlIntervalo('2026-09-15', intervalo), '2026-10-01');
+  assert.equal(FC.acotarAlIntervalo('2026-11-03', intervalo), '2026-10-31');
+  assert.equal(FC.acotarAlIntervalo('2026-10-12', intervalo), '2026-10-12');
+  assert.equal(FC.fechaVistaAdentro('2026-10-01', '2026-09-15', intervalo), '2026-09-15', 'la cinta sigue viendo su evento');
+  assert.equal(FC.fechaVistaAdentro('2026-10-20', '2026-09-15', intervalo), '2026-10-20', 'si la página cambió la fecha por otro lado, manda la página');
+  assert.equal(FC.fechaVistaAdentro('2026-10-20', null, intervalo), '2026-10-20');
+  assert.equal(FC.fechaVistaAdentro('2026-10-01', '2026-09-15', null), '2026-10-01', 'sin límites, la de la página, como siempre');
+  assert.match(cursor, /const vista = fechaVistaAdentro\(fecha, pedida, intervalo\);/);
+  assert.match(cursor, /alElegirFecha\(f === null \|\| intervalo === null \? f : acotarAlIntervalo\(f, intervalo\)\);/);
   assert.match(analizar, /const alcancesDeLaCinta = useMemo\(\(\) => accesoDeLosDisponibles\(disponibles\)\.alcances, \[disponibles\]\);/);
   assert.ok(analizar.indexOf('<CintaDelTiempoLeida') < analizar.indexOf('<Lienzo'), 'la cinta va arriba de los gráficos');
   const etapas = leer(join(SEGUIMIENTO, 'etapas.tsx'));
@@ -674,6 +733,20 @@ test('TEST-GRF-078 · la lectura de cada punto dice lo que hace falta para leerl
   assert.deepEqual(A.escalaDeLaSerie(serieDisponible('entrenamiento.1rm-estimado'), 'lb'), { enteros: false, rangoMinimo: 22 });
   assert.deepEqual(A.escalaDeLaSerie(serieDisponible('entrenamiento.rir'), 'RIR'), { enteros: true, desdeCero: true, minimoDelMaximo: 5 });
   assert.deepEqual(A.escalaDeLaSerie(serieDisponible('entrenamiento.repeticiones'), 'rep'), { enteros: true });
+  // GR-T15 también en «Analizar»: el eje del 1RM estimado abarca 10 kg (22 lb) como mínimo, en «Alineadas» y en
+  // «Superpuestas» (mutación: dejar el dominio automático, que estira 2 kg de ruido a todo el alto).
+  assert.equal(A.rangoMinimoDelCatalogo('entrenamiento.1rm-estimado', 'kg'), 10);
+  assert.equal(A.rangoMinimoDelCatalogo('entrenamiento.1rm-estimado', 'lb'), 22);
+  assert.equal(A.rangoMinimoDelCatalogo('entrenamiento.carga', 'kg'), undefined);
+  assert.deepEqual(A.dominioConRangoMinimo([100.2, 101.8, 99.6], 10), [95, 106]);
+  assert.equal(A.dominioConRangoMinimo([90, 104], 10), null, 'si los valores ya abarcan el rango, el eje queda como siempre');
+  assert.equal(A.dominioConRangoMinimo([], 10), null);
+  assert.equal(A.dominioConRangoMinimo([100], undefined), null);
+  const lienzo = leer(join(SEGUIMIENTO, 'lienzo.tsx'));
+  assert.match(lienzo, /<YAxis width=\{ANCHO_DEL_EJE\} domain=\{dominioDelEje\(false\)\}/);
+  assert.match(lienzo, /<YAxis yAxisId="derecha" orientation="right" width=\{ANCHO_DEL_EJE\} domain=\{dominioDelEje\(true\)\}/);
+  assert.match(lienzo, /if \(modo === 'RELATIVE'\) return DOMINIO_AUTOMATICO;/);
+  assert.match(leer(join(SEGUIMIENTO, 'analizar.tsx')), /rangoMinimo: rangoMinimoDelCatalogo\(s\.ref\.metricId, s\.estado\.serie\.unit\),/);
 });
 
 test('TEST-GRF-079 · nada de la rama guarda datos de salud en el navegador, y ningún .ts choca con un .tsx del mismo nombre (GR-T23)', () => {

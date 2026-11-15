@@ -29,6 +29,7 @@ export const COPY_DE_LOS_CRUCES = {
     sinEtapas: 'Para comparar dos etapas hacen falta dos versiones activadas del plan en el período.',
     sinPlan: 'No hay un plan tuyo en esta área: las etapas son las versiones de tus planes.',
     sinSerie: 'No hay observaciones de esta medida en las dos etapas.',
+    elegiUnEjercicio: 'Elegí un ejercicio para comparar dos etapas del plan de Entrenamiento.',
     etapaDe: (letra: string, rotulo: string, fechas: string) => `Etapa ${letra} · ${rotulo} · ${fechas}`,
     detalleDeLaSerie: (nombre: string, area: string) => `${nombre}, entre las dos últimas versiones del plan de ${area}.`,
   },

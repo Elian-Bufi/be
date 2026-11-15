@@ -40,6 +40,12 @@ export interface PropsDelGrafico {
   readonly medida: string | null;
   /** Las versiones del plan del área del gráfico, de fondo. */
   readonly bandas: readonly BandaDeVersion[];
+  /**
+   * Lo que el PDP dejó leer con esta persona: el mismo `acceso` con que el registro lo ofreció. Un gráfico que elige qué
+   * área leer (GR-24 sin un ejercicio) lo usa para no pedir un área sin acceso; sin él, ese gráfico no lee nada (rama D;
+   * un cambio que solo agrega).
+   */
+  readonly acceso?: AccesoDeLaPersona;
 }
 
 export interface GraficoRegistrado {

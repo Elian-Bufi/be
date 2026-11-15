@@ -112,7 +112,7 @@ import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion
 import { FuerzaEnAnalizar, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
 import { accesoDeLosDisponibles, nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerieDelAnalisis, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
-import { COMO_LEER_DOS_EJES, enumerar, esLoIndicadoDe, motivoDeSuperpuestas, NOMBRE_DEL_MODO, serieElegidaDe, superposicionDeLasElegidas } from '../graficos/arma-tu-grafico/compositor';
+import { COMO_LEER_DOS_EJES, enumerar, esLoIndicadoDe, motivoDeSuperpuestas, NOMBRE_DEL_MODO, rangoMinimoDelCatalogo, serieElegidaDe, superposicionDeLasElegidas } from '../graficos/arma-tu-grafico/compositor';
 import { ProveedorDelCursor } from '../graficos/cursor-de-fechas';
 import { valorParaMostrar } from './valores';
 import { VistasGuardadas, vistaRecienAbierta } from './vistas-guardadas';
@@ -348,6 +348,8 @@ function AnalizarConSusPreguntas() {
       cobertura: partesDeLaCobertura(resumirPeriodo(s.estado.observaciones, s.definicion, desde, hasta, hoy)).filter((parte, i) => i === 0 || /sin registros$/.test(parte)),
       // GR-T59: lo indicado en el plan elegido como serie (el RIR indicado) va en rombos huecos sueltos, no como registrado.
       indicada: esLoIndicadoDe(s.ref.metricId),
+      // GR-T15: el rango mínimo del eje que fija el catálogo (el 1RM estimado abarca 10 kg o 22 lb), en los dos modos.
+      rangoMinimo: rangoMinimoDelCatalogo(s.ref.metricId, s.estado.serie.unit),
       // GR-26: en «Superpuestas», de qué lado va su eje.
       ...(modo === 'OVERLAY' ? { lado: ladoDe.get(s.clave) ?? 'IZQUIERDA' } : {}),
     };
@@ -653,9 +655,10 @@ function AnalizarConSusPreguntas() {
               {/* GR-23: la cinta del tiempo arriba de los gráficos, sobre el intervalo que se ve (DL-174). Espera a saber qué
                   áreas hay, para no leer dos veces; sin acceso, no deja nada. Comparte la fecha elegida con los gráficos
                   (§3.8): elegir en la cinta la elige en los gráficos y en la lectura, y al revés, la cinta dice lo que regía
-                  en la fecha que se lee. Lo que cae antes o después del intervalo se lleva a su borde. */}
+                  en la fecha que se lee. Lo que cae antes o después del intervalo se lleva a su borde (`limites`), y la cinta
+                  sigue viendo elegido el evento que empieza antes: si no, la flecha volvía siempre al primero. */}
               {dibujables.length > 0 && !disponibles.cargando ? (
-                <ProveedorDelCursor fecha={fecha} alElegirFecha={(f) => cambiar({ fecha: f === null ? null : f < desde ? desde : f > hasta ? hasta : f })}>
+                <ProveedorDelCursor fecha={fecha} limites={{ desde, hasta }} alElegirFecha={(f) => cambiar({ fecha: f })}>
                   <CintaDelTiempoLeida lectura={{ token, asesoradoId, sesionPerdida }} alcances={alcancesDeLaCinta} vigencias={vigenciasDeLaCinta} periodo={{ desde, hasta, hoy, desdeElVinculo: null }} />
                 </ProveedorDelCursor>
               ) : null}

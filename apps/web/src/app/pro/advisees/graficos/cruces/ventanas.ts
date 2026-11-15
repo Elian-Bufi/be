@@ -86,7 +86,10 @@ export function ventanaDelObjetivo(etapas: readonly EtapaDelObjetivo[]): Ventana
   for (let i = etapas.length - 1; i >= 1; i--) {
     const a = etapas[i - 1] as EtapaDelObjetivo;
     const b = etapas[i] as EtapaDelObjetivo;
-    if (a.dias >= DIAS_MINIMOS_DE_UNA_ETAPA_DEL_OBJETIVO && b.dias >= DIAS_MINIMOS_DE_UNA_ETAPA_DEL_OBJETIVO) return { tipo: 'LISTA', a, b };
+    // Seguidas de verdad: B empieza el día después del último de A. Una versión del objetivo sin los carbohidratos no
+    // trae su escalón, y sin esto las dos de alrededor se leían como seguidas.
+    const seguidas = diaSiguiente(a.hasta) === b.desde;
+    if (seguidas && a.dias >= DIAS_MINIMOS_DE_UNA_ETAPA_DEL_OBJETIVO && b.dias >= DIAS_MINIMOS_DE_UNA_ETAPA_DEL_OBJETIVO) return { tipo: 'LISTA', a, b };
   }
   return { tipo: 'FALTA', motivo: 'ETAPAS_CORTAS' };
 }

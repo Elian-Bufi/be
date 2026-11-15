@@ -13,7 +13,7 @@
  * Accesibilidad: el dibujo no se lee (`aria-hidden`); el grupo tiene nombre y su descripción es el resumen en texto, y
  * la tabla se abre con un botón.
  */
-import { entraEnLaEstimacion, etapasDelArea, serieDisponible, valorConUnidad, type DefinicionDeMetrica, type ReferenciaDeMetrica, type SerieAnalitica } from '@be/domain';
+import { etapasDelArea, serieDisponible, valorConUnidad, type DefinicionDeMetrica, type SerieAnalitica } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { LETRA_MINIMA } from '../../seguimiento/geometria';
 import { definicionDeLaSerie, ejercicioDeLaClave, escalaDeLaSerie, lecturaDelPunto } from '../arma-tu-grafico/compositor';
@@ -26,7 +26,7 @@ import { useAnchoDelGrafico } from '../medidas-del-grafico';
 import type { DensidadDelGrafico } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { COPY_DE_LOS_CRUCES } from './copy';
-import { dosEtapasLadoALado, etapaDeLaPlanificacion, fechasDeLaEtapa, fuerzaEnPalabras, geometriaDeDosEtapas, MARGEN_DE_DOS_ETAPAS, type DosEtapasLadoALado } from './dos-etapas';
+import { dosEtapasLadoALado, etapaDeLaPlanificacion, fechasDeLaEtapa, fuerzaEnPalabras, geometriaDeDosEtapas, MARGEN_DE_DOS_ETAPAS, referenciaDeLaComparacion, type DosEtapasLadoALado } from './dos-etapas';
 import { leerLaFuerza } from './lecturas-de-los-cruces';
 import { LO_QUE_BE_NO_REGISTRA } from './lo-que-tambien-cambio';
 
@@ -172,22 +172,23 @@ export function DosEtapasEnPantalla({
 
 type EstadoDeDosEtapas = EstadoDelGrafico | { readonly tipo: 'LISTA'; readonly d: DosEtapasLadoALado; readonly definicion: DefinicionDeMetrica; readonly detalle: string };
 
-/** La serie que compara GR-24 en «Patrones»: con un ejercicio, su 1RM estimado (v1) o su carga; sin ejercicio, las calorías. */
-function referenciaDeLaComparacion(ejercicio: PropsDelGrafico['ejercicio']): ReferenciaDeMetrica {
-  if (!ejercicio) return { metricId: 'nutricion.energia', exerciseKey: null, setIndex: null, unit: null };
-  const id = ejercicioDeLaClave(ejercicio.exerciseKey);
-  if (id !== null && entraEnLaEstimacion(id)) return { metricId: 'entrenamiento.1rm-estimado', exerciseKey: ejercicio.exerciseKey, setIndex: null, unit: ejercicio.unidad ?? 'kg' };
-  return { metricId: 'entrenamiento.carga', exerciseKey: ejercicio.exerciseKey, setIndex: ejercicio.serie ?? 1, unit: ejercicio.unidad ?? 'kg' };
-}
-
-/** GR-24 en «Patrones»: la versión vigente del plan frente a la anterior, con todas las observaciones de cada una. */
-export default function GraficoDeDosEtapas({ lectura, periodo, densidad, ejercicio }: PropsDelGrafico) {
+/**
+ * GR-24 en «Patrones»: la versión vigente del plan frente a la anterior, con todas las observaciones de cada una. La
+ * serie sale de `referenciaDeLaComparacion`, que no pide un área sin acceso: sin ejercicio y sin Nutrición propia, no lee
+ * nada y pide un ejercicio.
+ */
+export default function GraficoDeDosEtapas({ lectura, periodo, densidad, ejercicio, acceso = null }: PropsDelGrafico) {
   const [estado, setEstado] = useState<EstadoDeDosEtapas>({ tipo: 'CARGANDO' });
   const [vuelta, setVuelta] = useState(0);
-  const ref = referenciaDeLaComparacion(ejercicio);
-  const clave = `${lectura.asesoradoId}|${periodo.desde}|${periodo.hasta}|${ref.metricId}|${ref.exerciseKey ?? ''}|${ref.setIndex ?? ''}|${ref.unit ?? ''}|${vuelta}`;
+  const elegida = referenciaDeLaComparacion(ejercicio, acceso);
+  const clave = `${lectura.asesoradoId}|${periodo.desde}|${periodo.hasta}|${JSON.stringify(elegida)}|${vuelta}`;
   useEffect(() => {
     let vigente = true;
+    if (elegida === null) {
+      setEstado({ tipo: 'SIN_DATOS', texto: C.elegiUnEjercicio });
+      return;
+    }
+    const ref = elegida;
     setEstado({ tipo: 'CARGANDO' });
     const p = { ...lectura, periodo };
     void (async () => {

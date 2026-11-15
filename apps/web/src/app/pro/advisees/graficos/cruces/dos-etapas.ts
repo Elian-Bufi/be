@@ -15,20 +15,42 @@
  * Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs`.
  */
 import {
+  entraEnLaEstimacion,
   esPuntoDeCargaRapida,
   marcaDelPunto,
   numero,
   valorConUnidad,
+  type AccesoDeLaPersona,
   type AreaDeMetrica,
   type DefinicionDeMetrica,
   type EtapaDePlanificacion,
   type MarcaSemantica,
   type PuntoAnalitico,
   type PuntoDeFuerza,
+  type ReferenciaDeMetrica,
   type SerieAnalitica,
 } from '@be/domain';
+import { ejercicioDeLaClave } from '../arma-tu-grafico/compositor';
 import { extremosDelCarril, type EscalaDelCarril } from '../carriles';
+import type { EjercicioDelGraficoElegido } from '../registro-de-graficos';
+import { areasConEtapas } from './caso-de-acceso';
 import { diaYMes, mediana } from './ventanas';
+
+/**
+ * La serie que compara GR-24 en «Patrones» (GR-T56): con un ejercicio, en Entrenamiento (su 1RM estimado si está en la
+ * lista de la v1; si no, la carga de la serie); sin ejercicio, las calorías registradas, **solo** si el profesional
+ * tiene Nutrición con un plan propio con esta persona. Si no, `null`: no se pide la lectura de un área sin acceso (un
+ * entrenador sin Nutrición no lee comidas), y la pantalla pide un ejercicio. Sin saber el acceso, tampoco se lee.
+ */
+export function referenciaDeLaComparacion(ejercicio: EjercicioDelGraficoElegido | null, acceso: AccesoDeLaPersona | null): ReferenciaDeMetrica | null {
+  if (ejercicio) {
+    if (acceso !== null && !acceso.alcances.includes('ENTRENAMIENTO')) return null;
+    const id = ejercicioDeLaClave(ejercicio.exerciseKey);
+    if (id !== null && entraEnLaEstimacion(id)) return { metricId: 'entrenamiento.1rm-estimado', exerciseKey: ejercicio.exerciseKey, setIndex: null, unit: ejercicio.unidad ?? 'kg' };
+    return { metricId: 'entrenamiento.carga', exerciseKey: ejercicio.exerciseKey, setIndex: ejercicio.serie ?? 1, unit: ejercicio.unidad ?? 'kg' };
+  }
+  return acceso !== null && areasConEtapas(acceso).includes('NUTRICION') ? { metricId: 'nutricion.energia', exerciseKey: null, setIndex: null, unit: null } : null;
+}
 
 /** Con menos observaciones de un lado, dos etapas no se dibujan como patrón (Bearable y WHOOP; Kravitz y Duan 2014). */
 export const MINIMO_POR_LADO = 5;

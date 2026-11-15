@@ -42,6 +42,7 @@ import type { Modo } from './estado';
 // Dónde cae un punto en el eje de fechas: lo comparte con el minigráfico del Resumen, que no carga esta biblioteca.
 import { DIA, estadoDeMarca, fechaDeX, LETRA_MINIMA, medidaDeMarca, medidaDelAro, medidaDelRombo, mediodia, xDe } from './geometria';
 import { Aro, ESTILOS, Marca, Punto, Rombo } from './marca';
+import { dominioConRangoMinimo } from '../graficos/arma-tu-grafico/compositor';
 
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
 const LETRA = LETRA_MINIMA;
@@ -92,7 +93,15 @@ export interface SerieParaDibujar {
   readonly indicada?: boolean;
   /** En «Superpuestas» con dos unidades (GR-26): de qué lado va su eje. Sin lado, a la izquierda. */
   readonly lado?: 'IZQUIERDA' | 'DERECHA';
+  /**
+   * El rango mínimo de su eje, del catálogo (GR-T15: el 1RM estimado abarca 10 kg o 22 lb), para que el ruido de un RIR
+   * no parezca un salto. Vale igual en «Alineadas» y en «Superpuestas»; en «Cambio relativo», no.
+   */
+  readonly rangoMinimo?: number;
 }
+
+/** El dominio vertical de siempre: lo calcula la biblioteca con los datos. */
+const DOMINIO_AUTOMATICO = ['auto', 'auto'] as const;
 
 /** El ancho de un eje vertical, y el lugar que deja a la derecha el segundo (GR-26). */
 const ANCHO_DEL_EJE = 58;
@@ -388,6 +397,20 @@ function Panel({
   const medidaDe = (pt: PuntoAnalitico) => medidaDeMarca(estadoDeMarca(pt), espacioPorDia);
   /** Las series que son lo indicado en el plan (GR-T59): sus marcas son rombos huecos y no las une ninguna línea. */
   const indicadas = new Set(series.filter((s) => s.indicada === true).map((s) => s.indice));
+  /**
+   * El dominio de cada eje (GR-T15): el de siempre, salvo que una serie del eje tenga un rango mínimo y sus valores no lo
+   * abarquen; entonces, ese rango centrado en los valores. La misma regla en «Alineadas» y en «Superpuestas».
+   */
+  const dominioDelEje = (derecha: boolean): typeof DOMINIO_AUTOMATICO | readonly [number, number] => {
+    if (modo === 'RELATIVE') return DOMINIO_AUTOMATICO;
+    const delEje = series.filter((s) => derechaDe(s.indice) === derecha);
+    const rangos = delEje.flatMap((s) => (s.rangoMinimo === undefined ? [] : [s.rangoMinimo]));
+    if (rangos.length === 0) return DOMINIO_AUTOMATICO;
+    const indices = new Set(delEje.map((s) => s.indice));
+    const claves = new Set(tramos.filter((t) => indices.has(t.indice)).map((t) => t.clave));
+    const valores = filas.flatMap((f) => Object.entries(f).filter(([k, v]) => claves.has(k) && v !== null).map(([, v]) => v as number));
+    return dominioConRangoMinimo(valores, Math.max(...rangos)) ?? DOMINIO_AUTOMATICO;
+  };
   const esElegido = (pt: PuntoAnalitico): boolean => fecha !== null && pt.date <= fecha && fecha <= (pt.dateEnd ?? pt.date);
   // El aro de la fecha elegida, alrededor de cada marca de esa fecha. Va en una capa aparte de las líneas: sus puntos se
   // recortan al área de dibujo, y el aro del último día quedaba cortado contra el borde derecho.
@@ -614,10 +637,10 @@ function Panel({
               tickLine={{ stroke: 'var(--borde-control)' }}
             />
             {/* Una métrica entera (repeticiones, RIR, conteos) no tiene marcas como «5,25 rep». La unidad va en el encabezado. */}
-            <YAxis width={ANCHO_DEL_EJE} domain={['auto', 'auto']} allowDecimals={modo === 'RELATIVE' || series.some((s) => !aLaDerecha(s) && s.decimales > 0)} tickFormatter={(v: number) => (modo === 'RELATIVE' ? `${v > 0 ? '+' : ''}${numero(v)} %` : numero(v))} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
+            <YAxis width={ANCHO_DEL_EJE} domain={dominioDelEje(false)} allowDecimals={modo === 'RELATIVE' || series.some((s) => !aLaDerecha(s) && s.decimales > 0)} tickFormatter={(v: number) => (modo === 'RELATIVE' ? `${v > 0 ? '+' : ''}${numero(v)} %` : numero(v))} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
             {/* GR-26: el segundo eje de «Superpuestas», con su escala propia, como la de su panel en «Alineadas». */}
             {dosEjes ? (
-              <YAxis yAxisId="derecha" orientation="right" width={ANCHO_DEL_EJE} domain={['auto', 'auto']} allowDecimals={series.some((s) => aLaDerecha(s) && s.decimales > 0)} tickFormatter={(v: number) => numero(v)} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="derecha" orientation="right" width={ANCHO_DEL_EJE} domain={dominioDelEje(true)} allowDecimals={series.some((s) => aLaDerecha(s) && s.decimales > 0)} tickFormatter={(v: number) => numero(v)} tick={{ fill: 'var(--tenue)', fontSize: LETRA }} axisLine={false} tickLine={false} />
             ) : null}
             {/* Lo planificado: un tramo horizontal por escalón, discontinuo y sin puntos. El eje vertical lo incluye. */}
             {escalones.map((e, i) => {

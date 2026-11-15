@@ -31,9 +31,11 @@ import {
   type ComposicionDeSeries,
   type DefinicionDeMetrica,
   type EjeX,
+  type MarcaSemantica,
   type MotivoSinComposicion,
   type PuntoAnalitico,
   type ReferenciaDeMetrica,
+  type SentidoDeLaMarca,
   type SerieDisponible,
   type SerieElegida,
 } from '@be/domain';
@@ -101,11 +103,19 @@ export const esLoIndicadoDe = (metricId: string): boolean => {
 };
 
 /**
+ * Si los puntos de una serie se unen con una línea: lo que dice el catálogo, salvo lo indicado, que va siempre suelto
+ * (GR-T59, como lo indicado de Nutrición). El catálogo deja `unirPuntos` en el RIR indicado, y en un gráfico armado de
+ * «Patrones» se habría visto unido, como lo registrado.
+ */
+export const unirLaSerie = (s: Pick<SerieDisponible, 'unirPuntos' | 'marca'>): boolean => s.unirPuntos && !esLoIndicado(s);
+
+/**
  * Los grupos con la regla de `composicionPermitida`, por posición: kg y lb de una misma serie son dos grupos. Y una
  * más (GR-T59): **lo indicado va en el eje de lo registrado de su misma unidad** («lo indicado y lo registrado van en el
  * mismo panel solo si comparten la unidad»). El RIR indicado y el RIR registrado no tienen familia, y cada uno sería su
  * propio eje «RIR», con otra escala: así, lo indicado se lee contra lo registrado en la misma escala. Sin lo registrado
- * de esa unidad, lo indicado va en su propio eje.
+ * de esa unidad, lo indicado va en su propio eje; con dos registrados de esa unidad (el RIR de dos ejercicios), también:
+ * no se sabe de cuál es, y no se lo pone en el eje del otro.
  */
 export function gruposDeLasSeries(elegidas: readonly SerieElegida[]): GrupoDeSeries[] {
   const grupos: { clave: string; unidad: string; familia: string | null; indices: number[] }[] = [];
@@ -119,8 +129,9 @@ export function gruposDeLasSeries(elegidas: readonly SerieElegida[]): GrupoDeSer
   const soloLoIndicado = (g: { readonly indices: readonly number[] }): boolean => g.indices.every((i) => esLoIndicado((elegidas[i] as SerieElegida).serie));
   const unidos = grupos.filter((g) => {
     if (!soloLoIndicado(g)) return true;
-    const registrado = grupos.find((h) => h !== g && h.unidad === g.unidad && !soloLoIndicado(h));
-    if (!registrado) return true;
+    const deSuUnidad = grupos.filter((h) => h !== g && h.unidad === g.unidad && !soloLoIndicado(h));
+    if (deSuUnidad.length !== 1) return true;
+    const registrado = deSuUnidad[0] as (typeof grupos)[number];
     registrado.indices.push(...g.indices);
     registrado.indices.sort((a, b) => a - b);
     return false;
@@ -194,6 +205,65 @@ export function motivoDeSuperpuestas(motivo: MotivoSinSuperponer, grupos: readon
       return `«Superpuestas» admite dos ejes, uno a cada lado. ${enumerar(medidas)} son medidas distintas: miralas alineadas.`;
     }
   }
+}
+
+/**
+ * El modo con que se guarda el gráfico del compositor y si «Agregar al enfoque» está apagado. Si «Superpuestas» no se
+ * puede (quedó una sola serie, o tres unidades), el gráfico se ve y se guarda en «Alineadas», que es lo que muestra el
+ * modo elegido: el botón no se apaga por eso. Si se apagaba con el motivo, tocar «Alineadas», que ya se veía marcada, no
+ * cambiaba nada, y el compositor quedaba trabado hasta sumar otra serie.
+ */
+export function modoDelCompositor(o: { readonly modo: ModoArmado; readonly series: number; readonly titulo: string; readonly motivo: string | null }): {
+  readonly modo: ModoArmado;
+  readonly apagado: 'FALTA_SERIE' | 'FALTA_NOMBRE' | null;
+} {
+  const modo: ModoArmado = o.modo === 'OVERLAY' && o.motivo === null ? 'OVERLAY' : 'PANELS';
+  return { modo, apagado: o.series === 0 ? 'FALTA_SERIE' : o.titulo.trim() === '' ? 'FALTA_NOMBRE' : null };
+}
+
+/** El orden de la leyenda de un gráfico armado: lo registrado, lo indicado y después lo que se lee distinto. */
+const ORDEN_DE_LA_LEYENDA: readonly SentidoDeLaMarca[] = ['REGISTRADO', 'INDICADO', 'SUBTOTAL', 'ORIENTATIVA', 'CARGA_RAPIDA', 'OBSERVADA_POR_EL_PROFESIONAL', 'REPORTADO', 'CALCULADO'];
+
+/**
+ * La leyenda de un gráfico armado: solo lo que está dibujado, con lo que quiere decir cada marca en su serie (una marca
+ * hueca es lo indicado en el RIR indicado, una estimación orientativa en el 1RM estimado y un subtotal en lo demás). La
+ * forma dice el estado además del color, y la leyenda dice qué forma es cuál.
+ */
+export function leyendaDeLasSeries(series: readonly { readonly id: string; readonly indicada: boolean; readonly marcas: readonly MarcaSemantica[] }[]): SentidoDeLaMarca[] {
+  const sentidos = new Set<SentidoDeLaMarca>();
+  for (const s of series) {
+    for (const m of s.marcas) {
+      if (m === 'LLENA') sentidos.add('REGISTRADO');
+      else if (m === 'HUECA') sentidos.add(s.indicada ? 'INDICADO' : s.id === 'entrenamiento.1rm-estimado' ? 'ORIENTATIVA' : 'SUBTOTAL');
+      else if (m === 'HUECA_GRIS') sentidos.add('CARGA_RAPIDA');
+      else if (m === 'ROMBO') sentidos.add('OBSERVADA_POR_EL_PROFESIONAL');
+      else if (m === 'CONTORNO_CORTADO') sentidos.add('REPORTADO');
+      else sentidos.add('CALCULADO');
+    }
+  }
+  return ORDEN_DE_LA_LEYENDA.filter((s) => sentidos.has(s));
+}
+
+/** El rango mínimo del eje que fija el catálogo para una serie elegida, en la unidad de sus datos (`undefined` si no). */
+export function rangoMinimoDelCatalogo(metricId: string, unidad: string): number | undefined {
+  return serieDisponible(metricId, unidad || undefined)?.rangoMinimoDelEje?.[unidad];
+}
+
+/**
+ * El dominio vertical de un eje de «Analizar» con el rango mínimo del catálogo (GR-T15: el 1RM estimado abarca 10 kg o
+ * 22 lb, para que el ruido de un RIR no parezca un salto). `null` si no hace falta (sin rango mínimo, sin valores, o si
+ * los valores ya lo abarcan): entonces el eje queda como siempre. Si hace falta, el rango centrado en los valores, en
+ * enteros y conteniéndolos a todos. Es la misma regla en «Alineadas» y en «Superpuestas».
+ */
+export function dominioConRangoMinimo(valores: readonly number[], rangoMinimo: number | undefined): readonly [number, number] | null {
+  if (rangoMinimo === undefined || !(rangoMinimo > 0)) return null;
+  const finitos = valores.filter((v) => Number.isFinite(v));
+  if (finitos.length === 0) return null;
+  const minimo = Math.min(...finitos);
+  const maximo = Math.max(...finitos);
+  if (maximo - minimo >= rangoMinimo) return null;
+  const centro = (minimo + maximo) / 2;
+  return [Math.floor(centro - rangoMinimo / 2), Math.ceil(centro + rangoMinimo / 2)];
 }
 
 /** Con dos ejes, «Cómo leerlo» lo dice debajo del gráfico (Few 2008): un cruce de líneas no quiere decir nada. */

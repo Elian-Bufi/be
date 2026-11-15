@@ -8,6 +8,7 @@
  * fecha con sus gráficos (WP-GRAFICOS §3.8; rama D).
  */
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { acotarAlIntervalo, fechaVistaAdentro, type IntervaloQueSeVe } from './arma-tu-grafico/fecha-compartida';
 import type { CursorDeFechas } from './eje-de-fechas';
 
 export type { CursorDeFechas } from './eje-de-fechas';
@@ -44,31 +45,48 @@ export interface PropsDelProveedorDelCursor {
    */
   readonly fecha?: string | null;
   readonly alElegirFecha?: (fecha: string | null) => void;
+  /**
+   * Lo que se ve, si la página acota la fecha elegida a eso (la de «Analizar»). El proveedor le avisa la fecha ya acotada
+   * y recuerda la que se eligió adentro: un evento de la cinta que empieza antes de lo que se ve (la barra de una versión
+   * vigente desde antes) sigue elegido, y la flecha pasa al siguiente (`fechaVistaAdentro`).
+   */
+  readonly limites?: IntervaloQueSeVe | null;
 }
 
-export function ProveedorDelCursor({ children, fecha = null, alElegirFecha }: PropsDelProveedorDelCursor) {
+export function ProveedorDelCursor({ children, fecha = null, alElegirFecha, limites = null }: PropsDelProveedorDelCursor) {
   const propio = useCursorPropio();
   const [tramo, setTramo] = useState<CursorDeFechas['tramo']>(null);
+  const [pedida, setPedida] = useState<string | null>(null);
+  const desde = limites?.desde ?? null;
+  const hasta = limites?.hasta ?? null;
   const controlado = useMemo<CursorConAcciones | null>(() => {
     if (!alElegirFecha) return null;
-    const vigente = tramo !== null && fecha !== null && fecha >= tramo.desde && fecha <= tramo.hasta ? tramo : null;
+    const intervalo = desde !== null && hasta !== null ? { desde, hasta } : null;
+    const vista = fechaVistaAdentro(fecha, pedida, intervalo);
+    const vigente = tramo !== null && vista !== null && vista >= tramo.desde && vista <= tramo.hasta ? tramo : null;
+    /** Le avisa a la página la fecha elegida adentro, acotada a lo que se ve, y la recuerda. */
+    const avisar = (f: string | null) => {
+      setPedida(f);
+      alElegirFecha(f === null || intervalo === null ? f : acotarAlIntervalo(f, intervalo));
+    };
     return {
-      fecha,
+      fecha: vista,
       tramo: vigente,
       elegir: (f: string | null) => {
         setTramo(null);
-        alElegirFecha(f);
+        avisar(f);
       },
       elegirTramo: (t: CursorDeFechas['tramo']) => {
         setTramo(t);
-        alElegirFecha(t ? (fecha ?? t.hasta) : fecha);
+        // La fecha queda dentro del tramo: si la de ahora cae afuera, el tramo se perdería en el próximo dibujo.
+        avisar(t ? (vista !== null && vista >= t.desde && vista <= t.hasta ? vista : t.hasta) : vista);
       },
       fijar: (c: CursorDeFechas) => {
         setTramo(c.tramo);
-        alElegirFecha(c.fecha);
+        avisar(c.fecha);
       },
     };
-  }, [alElegirFecha, fecha, tramo]);
+  }, [alElegirFecha, fecha, pedida, tramo, desde, hasta]);
   return <Contexto.Provider value={controlado ?? propio}>{children}</Contexto.Provider>;
 }
 
