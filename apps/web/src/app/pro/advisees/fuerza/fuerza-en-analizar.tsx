@@ -27,7 +27,7 @@
  *   indicado (el RIR o las repeticiones), «v8 · de 4 a 3 repeticiones», del comparador (`lectura-de-lo-indicado.ts`).
  * - **La lectura del costado,** sin «154,5 → 160,5 kg» ni flecha (§5.12): primero lo que mueve un RIR en esa estimación
  *   y después «La anterior (2 nov): ≈ 154,5 kg».
- * - **A la vista, debajo del gráfico** (revisión de #283, §5.6 y §5.12): el rango de validez («Solo series de RIR 0 a 2 y
+ * - **A la vista, debajo del gráfico** (revisión del 15/11, §5.6 y §5.12): el rango de validez («Solo series de RIR 0 a 2 y
  *   hasta 10 repeticiones equivalentes») y lo que mueve un RIR en el período; los cambios de lo indicado que no entran en
  *   la línea de su versión, en texto. La guía visual los llevaba a «Cómo leerlo»: ahí chocaba con §5, y §5 manda.
  * - **«Cómo leerlo»** (cerrado) tiene la fórmula, por qué el RIR 0 a 2, las versiones y lo que no entra, una línea por
@@ -511,7 +511,7 @@ function Grafico({
           {sobre ? <Globo x={geo.x(sobre.date)} y={geo.y(sobre.estimate.value)} texto={globoDelPunto(sobre)} ancho={ancho} /> : null}
         </svg>
       </div>
-      {/* Debajo, a la vista (revisión de #283): el rango de validez (§5.6) y lo que mueve un RIR (§5.12), antes que cualquier
+      {/* Debajo, a la vista (revisión del 15/11): el rango de validez (§5.6) y lo que mueve un RIR (§5.12), antes que cualquier
           comparación. Ya no va «la más baja… la más alta…»: con la estimación que sube, se leía como primero → último. */}
       <p className="fuerza-en-analizar__linea-de-lectura" data-ruido-y-validez>
         {COPY_DEL_RUIDO.validez(conOrientativas)}

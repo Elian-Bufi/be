@@ -4,7 +4,7 @@
  * (no en el borde izquierdo, que no es un cambio) y el rótulo arriba: «v8 · de 4 a 3 repeticiones» si entra hasta la
  * versión siguiente; si no, «v8»; si tampoco, nada. Nada de bloques grises que dominen el gráfico.
  *
- * El SVG no se lee: el cambio de lo indicado también va en texto (revisión de #283, §5.12). `cambiosEnTexto` los dice
+ * El SVG no se lee: el cambio de lo indicado también va en texto (revisión del 15/11, §5.12). `cambiosEnTexto` los dice
  * todos, para el nombre del gráfico; `cambiosQueNoEntran`, los que no entraron enteros en su línea, para decirlos a la vista
  * debajo del gráfico.
  *

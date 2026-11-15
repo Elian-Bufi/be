@@ -112,7 +112,7 @@ export function tablaEquivalente(carriles: readonly Carril[]): FilasDeLaTabla {
 }
 
 /**
- * Lo último de cada carril, con su fecha (revisión de #283; GR-V12): la última celda con algo registrado de cada columna,
+ * Lo último de cada carril, con su fecha (revisión del 15/11; GR-V12): la última celda con algo registrado de cada columna,
  * no la fila de la fecha más nueva de todas. Con Peso del 10 nov y Calorías del 14 nov, el peso dice el suyo, no «sin
  * dato». Un carril sin nada registrado dice «sin dato».
  */

@@ -927,7 +927,7 @@ test('TEST-GRV-006 · la leyenda, solo con las marcas que se ven (mutación: la 
   // Un punto sin valor no es una marca: no pide su leyenda.
   assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'CALCULADO'], [carril([punto('a', '2026-11-02', null, { marca: 'PUNTO_ADENTRO' })])]), []);
   // La forma hueca dice más de una cosa: un subtotal de comida no pide «De más de 10 a 12 rep. equivalentes», ni al
-  // revés (revisión de #283). El adaptador le pone a cada punto su sentido.
+  // revés (revisión del 15/11). El adaptador le pone a cada punto su sentido.
   const sub = carril([punto('a', '2026-11-02', 2000), punto('b', '2026-11-03', 900, { marca: 'HUECA', sentido: 'SUBTOTAL' })]);
   assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'SUBTOTAL', 'ORIENTATIVA'], [sub]), ['REGISTRADO', 'SUBTOTAL']);
   const ori = carril([punto('a', '2026-11-02', 150), punto('b', '2026-11-03', 152, { marca: 'HUECA', sentido: 'ORIENTATIVA' })]);
@@ -1008,7 +1008,7 @@ test('TEST-GRV-009 · GR-24: la diferencia dice lo que cambió en lo indicado, N
   assert.doesNotMatch(regla, /order:/, 'sin `order` que lo mueva al abrirse');
 });
 
-// ─── Revisión de #283 (pasada visual): §5 manda sobre la guía visual ─────────────────────────────
+// ─── Revisión del 15/11 (pasada visual): §5 manda sobre la guía visual ─────────────────────────────
 
 test('TEST-GRV-013 · GR-24 por semana: cada media dice a la vista con qué días se hizo, cuántos subtotales, qué quedó afuera y por qué, y la barra llena llega a 3:1 (mutación: contar los subtotales en silencio; el «5 de 7 días» solo en un globo)', () => {
   const S2 = S;

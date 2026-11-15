@@ -27,7 +27,7 @@
  *   La pasada visual (15/11; DISENO-VISUAL §2, GR-04): la marca es una ficha compacta en el renglón del origen («47
  *   sesiones · la última, 9 nov», con su ícono; el lector de pantalla oye la frase entera), y qué cuenta va en una sola
  *   línea, con «Cómo se cuenta» al lado: en 1440 × 900 se ven al menos seis resultados sin desplazar.
- *   Revisión de #283: la ficha dice que la fecha es la última (no «desde el 9 nov»); la línea dice a la vista que cuentan
+ *   Revisión del 15/11: la ficha dice que la fecha es la última (no «desde el 9 nov»); la línea dice a la vista que cuentan
  *   también las registradas como no realizadas o hechas con otro ejercicio (por eso «Analizar» puede contar menos filas);
  *   «Cómo se cuenta» se ve escrito, no solo como una «i» con su nombre en un globo que no llega con el teclado ni al tocar.
  */
@@ -86,7 +86,8 @@ type Busqueda =
  */
 /** GR-04 en una línea (pasada visual del 15/11): qué cuenta la marca, corto; el detalle, detrás de «Cómo se cuenta». */
 export const COPY_MARCA_DEL_BUSCADOR = {
-  enUnaLinea: 'Con historial: sesiones registradas en tus planes en el último año, también las no realizadas o hechas con otro ejercicio.',
+  /** Del dominio, con el resto del texto de la marca: «no realizadas» no se escribe en las pantallas (WP-06 §9.2). */
+  enUnaLinea: COPY_HISTORIAL_DEL_BUSCADOR.enUnaLinea,
   comoSeCuenta: 'Cómo se cuenta',
 } as const;
 

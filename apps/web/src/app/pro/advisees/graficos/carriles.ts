@@ -37,7 +37,7 @@ export interface PuntoDelCarril {
   /** Lo que dicen la lectura y la tabla: «96 kg · 5 rep · RIR 1». */
   readonly lectura: string;
   /**
-   * Qué dice la marca, cuando una forma sirve para más de un sentido (revisión de #283): una marca hueca es un subtotal en
+   * Qué dice la marca, cuando una forma sirve para más de un sentido (revisión del 15/11): una marca hueca es un subtotal en
    * Nutrición y una orientativa en el 1RM estimado. Sin esto, la leyenda decide por la forma.
    */
   readonly sentido?: SentidoDeLaMarca;
@@ -275,7 +275,7 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
  * Los sentidos de la leyenda que se ven en el dibujo (DISENO-VISUAL §1, principio 7): una marca de la leyenda que no
  * aparece en ningún carril es un error. Lo indicado está si algún carril lo dibuja; lo demás, si alguna marca de lo
  * registrado tiene esa forma **y ese sentido**: SUBTOTAL y ORIENTATIVA comparten la forma hueca, y un día de comida con
- * algo que falta no pide «De más de 10 a 12 rep. equivalentes» (revisión de #283). Un punto sin `sentido` vale por su
+ * algo que falta no pide «De más de 10 a 12 rep. equivalentes» (revisión del 15/11). Un punto sin `sentido` vale por su
  * forma. Mantiene el orden pedido.
  */
 export function sentidosQueSeVen(sentidos: readonly SentidoDeLaMarca[], carriles: readonly Carril[]): SentidoDeLaMarca[] {

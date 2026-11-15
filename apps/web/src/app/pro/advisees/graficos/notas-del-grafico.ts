@@ -1,5 +1,5 @@
 /**
- * Lo que dice a la vista un gráfico de la base, debajo y arriba del dibujo (WP-GRAFICOS §5; revisión de #283). La pasada
+ * Lo que dice a la vista un gráfico de la base, debajo y arriba del dibujo (WP-GRAFICOS §5; revisión del 15/11). La pasada
  * visual mandaba a «Cómo leerlo» (cerrado) todo lo que no fuera exactamente la frase fija de los cruces, y con un solo
  * carril el método dejaba de verse. §5 manda sobre la guía visual:
  * - **Las notas se ven todas** (`notasALaVista`): la frase fija (también con algo agregado: «… Ventana: 4 semanas»), lo

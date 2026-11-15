@@ -76,7 +76,7 @@ export function Minigrafico({
   // WP-GRAFICOS, pasada visual (15/11): con el eje fino (la comparación de etapas), las marcas redondas del medio, para
   // que el eje tenga de 3 a 5 números y no solo el tope y la base (DISENO-VISUAL §1, principio 4). Solo las que caen en
   // la grilla de los extremos y con sus mismos decimales (`marcasDelMedio`): el canal del eje se midió con los extremos,
-  // y «80,5» entre «80» y «81» se cortaba a la izquierda (revisión de #283).
+  // y «80,5» entre «80» y «81» se cortaba a la izquierda (revisión del 15/11).
   const intermedias = useMemo(() => {
     const [tope, base] = g.eje;
     if (!ejeFino || !tope || !base) return [];

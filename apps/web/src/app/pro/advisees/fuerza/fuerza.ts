@@ -557,7 +557,7 @@ export function filasConLosMotivosSeguidos(filas: readonly FilaDeLaEvolucion[]):
 /** Una vigencia del plan de entrenamiento, como la trae la clave (`planVersions`). */
 export interface VersionDelPlanEnElPeriodo {
   readonly domain: string;
-  /** La versión (API-ANA, `planVersions`): cada sesión cuenta en la versión que la ejecutó (revisión de #283). */
+  /** La versión (API-ANA, `planVersions`): cada sesión cuenta en la versión que la ejecutó (revisión del 15/11). */
   readonly planVersionId?: string;
   readonly label: string;
   readonly from: string;
@@ -585,7 +585,7 @@ export function fechasDelEje(desde: string, hasta: string, cuantas = 5): string[
 }
 
 /**
- * Los textos de las fechas del eje (revisión de #283; GR-V13): «16 nov»; si el período cruza un año, la primera marca y
+ * Los textos de las fechas del eje (revisión del 15/11; GR-V13): «16 nov»; si el período cruza un año, la primera marca y
  * la primera de cada año llevan el año («16 nov 2025 … 15 nov 2026»), para que «16 nov … 15 nov» no se lea como un mes.
  */
 export function textosDelEjeDeLaFuerza(fechas: readonly string[]): string[] {
@@ -601,7 +601,7 @@ function motivoDeLaSesion(series: readonly SerieQueNoEntro[]): string {
   return `ninguna serie entra: ${COPY_FUERZA.motivo[motivo]}`;
 }
 
-// ─── El ruido antes que el cambio (revisión de #283; WP-GRAFICOS §5.6 y §5.12) ────────────────────────
+// ─── El ruido antes que el cambio (revisión del 15/11; WP-GRAFICOS §5.6 y §5.12) ────────────────────────
 
 /**
  * Lo que queda a la vista debajo del gráfico y al lado de «La anterior»: el rango de validez de la estimación (§5.6) y

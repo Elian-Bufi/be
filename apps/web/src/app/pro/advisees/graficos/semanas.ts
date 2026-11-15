@@ -5,7 +5,7 @@
  * se hizo.
  * - **La media es la de la tabla:** los días con valor, los subtotales incluidos (como `resumirPeriodo` del dominio), sin
  *   hoy, que sigue en curso. Así la barra y la columna de la etapa dicen lo mismo.
- * - **Cada media dice con qué días se hizo, cuántos quedaron afuera y por qué** (§5.13; revisión de #283): cuántos días
+ * - **Cada media dice con qué días se hizo, cuántos quedaron afuera y por qué** (§5.13; revisión del 15/11): cuántos días
  *   con valor y cuántos de ellos son subtotales; cuántos sin registros, cuántos con registros sin valor y si hoy quedó
  *   afuera (`lecturaDeLaSemana`).
  * - **Un hueco es un hueco:** un tramo sin ningún día con dato no tiene valor (nunca un cero) y se dibuja como una
@@ -250,7 +250,7 @@ export interface GeometriaPorSemana {
 }
 
 /**
- * El relleno de la semana entera y el de la hueca, y el de los puntos de los días (revisión de #283; DISENO-VISUAL §1,
+ * El relleno de la semana entera y el de la hueca, y el de los puntos de los días (revisión del 15/11; DISENO-VISUAL §1,
  * principio 10): la entera llega a 3:1 contra la superficie en los dos temas (y contra la hueca), y la hueca se distingue
  * además por su contorno entero. Los puntos de los días, también a 3:1 donde no los tapa una barra. Lo mide
  * TEST-GRV-013 con los colores de `tokens.css`.

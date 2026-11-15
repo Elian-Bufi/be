@@ -9,7 +9,7 @@
  * elegida dice lo último de cada carril, no una instrucción: cómo se recorre con el teclado está en el nombre del gráfico
  * y en «Cómo leerlo».
  *
- * Revisión de #283:
+ * Revisión del 15/11:
  * - **«Lo último» es lo último de cada carril, con su fecha** (`loUltimoDeCadaCarril`): «Lo último · Peso: 80 kg (10 nov)
  *   · Calorías: 2.150 kcal (14 nov)». Antes leía una sola fecha, la más nueva de todas, y el carril sin dato ese día decía
  *   «sin dato» aunque tuviera un último valor.

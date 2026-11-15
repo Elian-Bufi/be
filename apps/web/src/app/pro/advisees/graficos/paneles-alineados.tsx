@@ -20,7 +20,7 @@
  * - **Debajo, la línea de lectura y las notas a la vista;** las aclaraciones, en «Cómo leerlo» (cerrado), junto a «Ver la
  *   tabla».
  *
- * La revisión de #283 (WP-GRAFICOS §5 manda sobre la guía visual):
+ * La revisión del 15/11 (WP-GRAFICOS §5 manda sobre la guía visual):
  * - **Las notas se ven todas** (`notas`): la frase fija de los cruces, también con algo agregado («… Ventana: 4
  *   semanas»), lo que también cambió en esa ventana (§5.1), una media con su cantidad (§5.13), lo cargado después (§5.14)
  *   y lo que no entra en la escala, que explica la muesca. A «Cómo leerlo» va solo lo que el llamador pide (`aclaraciones`).
@@ -72,7 +72,7 @@ export interface PropsDePanelesAlineados {
   readonly leyenda?: readonly SentidoDeLaMarca[];
   /**
    * Las notas que se ven, debajo del gráfico: la frase fija de los cruces (en su línea tenue, también con algo agregado),
-   * lo que también cambió en la ventana, una media con su cantidad. Ninguna se esconde (revisión de #283).
+   * lo que también cambió en la ventana, una media con su cantidad. Ninguna se esconde (revisión del 15/11).
    */
   readonly notas?: readonly string[];
   /** Las aclaraciones que van en «Cómo leerlo» («se leyó en tramos de 92 días», la explicación fisiológica con su fuente). */
@@ -164,7 +164,7 @@ function DibujoDelCarril({
     const elegido = fecha === null ? null : (conValor.find((p) => p.fecha === fecha)?.clave ?? null);
     const ultimoPunto = conValor[conValor.length - 1]?.clave ?? null;
     // El mínimo y el máximo del período, solo entre lo registrado sin hueco: un subtotal (le falta algo) o una carga rápida
-    // (los números del plan) no se rotulan como el extremo (revisión de #283). El elegido y el último, siempre.
+    // (los números del plan) no se rotulan como el extremo (revisión del 15/11). El elegido y el último, siempre.
     const { claves, minimo } = rotulosDeLoLleno(conValor, elegido);
     const candidatos = claves.flatMap((c) => {
       const p = conValor.find((x) => x.clave === c);
@@ -284,7 +284,7 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
   const tarde = carriles.flatMap((c) => (c.tipo === 'PUNTOS' ? [lineaDeLoCargadoTarde(c)] : [])).filter((t): t is string => t !== null);
   const fueraDeLaEscala = geometrias.reduce((n, x) => n + (x.tipo === 'CARRIL' && x.g.tipo === 'PUNTOS' ? x.g.fueraDeLaEscala : 0), 0);
   const unSoloCarril = conDatos.length === 1;
-  // Todas las notas se ven (revisión de #283): la frase fija (también con algo agregado) en su línea tenue, las demás
+  // Todas las notas se ven (revisión del 15/11): la frase fija (también con algo agregado) en su línea tenue, las demás
   // como notas; lo cargado después (§5.14) y lo que no entra en la escala (la muesca) también.
   const visiblesAbajo = notasALaVista({ notas, tarde, fueraDeLaEscala, cambiosRecortados });
   const visibles = sentidosQueSeVen(leyenda, carriles);

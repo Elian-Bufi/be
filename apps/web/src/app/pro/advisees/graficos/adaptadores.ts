@@ -68,7 +68,7 @@ export function puntoDelCarril(p: PuntoAnalitico, serie: Pick<SerieDisponible, '
   const estimacion = esDeLaEstimacion(serie);
   const marca = estimacion ? marcaDelPuntoAnaliticoDeFuerza(p) : marcaDelPunto(p, serie);
   // La forma hueca dice tres cosas: orientativa en el 1RM estimado, lo indicado en una serie de lo indicado y, en lo demás,
-  // un subtotal. La leyenda pide la que es (revisión de #283).
+  // un subtotal. La leyenda pide la que es (revisión del 15/11).
   const sentido = marca !== 'HUECA' ? undefined : estimacion ? ('ORIENTATIVA' as const) : serie.marca === 'INDICADO' ? ('INDICADO' as const) : ('SUBTOTAL' as const);
   return { clave: p.pointId, fecha: p.date, hasta: p.dateEnd, en: p.at, valor: p.value, rango: null, tramo: p.segment, marca, tarde, lectura: lectura(p), ...(sentido ? { sentido } : {}) };
 }

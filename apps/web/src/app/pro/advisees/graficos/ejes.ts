@@ -39,7 +39,7 @@ function pasosRedondos(desde: number): number[] {
 
 /**
  * Los decimales que necesita un número para escribirse entero: hasta 4. Antes cortaba en 2, y un paso de 0,005 (un rango
- * menor que 0,05: el índice cintura/talla de 0,49 a 0,50) dejaba «0,49 / 0,50 / 0,50» (revisión de #283).
+ * menor que 0,05: el índice cintura/talla de 0,49 a 0,50) dejaba «0,49 / 0,50 / 0,50» (revisión del 15/11).
  */
 const decimalesDe = (v: number): number => {
   for (let d = 0; d < 4; d++) if (Number.isInteger(sinRuido(v * 10 ** d))) return d;
@@ -174,7 +174,7 @@ export function puntosConRotulo<T extends { readonly clave: string; readonly val
 }
 
 /**
- * Qué puntos de un carril llevan su número (revisión de #283; §5.5 y §5.13): el elegido y el último, siempre; el máximo y
+ * Qué puntos de un carril llevan su número (revisión del 15/11; §5.5 y §5.13): el elegido y el último, siempre; el máximo y
  * el mínimo del período, solo entre lo registrado lleno y con 4 o más de esos. Un subtotal (marca hueca: al día le falta
  * algo) o una carga rápida (hueca y gris: los números del plan, no escritos por la persona) no se rotulan como el extremo
  * del período. `minimo` es el que va abajo de su punto.

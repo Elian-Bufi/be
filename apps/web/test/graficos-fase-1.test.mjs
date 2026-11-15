@@ -21,6 +21,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { COPY_HISTORIAL_DEL_BUSCADOR } from '@be/domain';
 
 const leer = (ruta) => readFileSync(new URL(`../src/app/pro/advisees/${ruta}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
@@ -37,11 +38,12 @@ test('TEST-GR-004 · cada resultado del buscador lleva la marca del índice de A
   // Qué cuenta se dice una vez, en una línea, con el detalle entero detrás de «Cómo se cuenta»; si la lectura falla, se
   // dice y se reintenta, y los resultados se ven igual.
   assert.match(b, /\{COPY_MARCA_DEL_BUSCADOR\.enUnaLinea\}/);
-  // Revisión de #283: «47 sesiones · la última, 9 nov» (no «desde el 9 nov»); la línea dice a la vista que cuentan también
+  // Revisión del 15/11: «47 sesiones · la última, 9 nov» (no «desde el 9 nov»); la línea dice a la vista que cuentan también
   // las no realizadas o hechas con otro ejercicio; «Cómo se cuenta» se ve escrito (una «i» sola no llega con el teclado
   // ni al tocar).
   assert.match(corta, /\$\{sesiones\} · la última, \$\{/);
-  assert.match(b, /enUnaLinea: 'Con historial: sesiones registradas en tus planes en el último año, también las no realizadas o hechas con otro ejercicio\.'/);
+  assert.match(b, /enUnaLinea: COPY_HISTORIAL_DEL_BUSCADOR.enUnaLinea,/);
+  assert.equal(COPY_HISTORIAL_DEL_BUSCADOR.enUnaLinea, 'Con historial: sesiones registradas en tus planes en el último año, también las no realizadas o hechas con otro ejercicio.');
   assert.match(b, /<ComoLeerlo titulo=\{COPY_MARCA_DEL_BUSCADOR\.comoSeCuenta\}>\n\s*<p>\{COPY_HISTORIAL_DEL_BUSCADOR\.queCuenta\}<\/p>/);
   assert.match(b, /onClick=\{releerElHistorial\}/);
 });
@@ -61,7 +63,7 @@ test('TEST-GR-001 · «La vez pasada» va debajo de «Lo que indica el plan»; f
   const pieza = leer('training/la-vez-pasada.tsx');
   assert.match(pieza, /const DIAS_QUE_SE_LEEN = 91;/);
   assert.match(pieza, /api\.contextoDeRevisionDeEntrenamiento\(token, asesoradoId, \{ periodStart: restarDias\(hoyEn\(\), DIAS_QUE_SE_LEEN - 1\) \}\)/);
-  // Se arman todas las veces de lo leído (revisión de #283; antes, doce), y se ven las tres últimas: las demás, con «Ver
+  // Se arman todas las veces de lo leído (revisión del 15/11; antes, doce), y se ven las tres últimas: las demás, con «Ver
   // las N anteriores». La cuenta la prueba TEST-GRV-020 ejecutándola.
   assert.match(pieza, /vecesPasadas\(d\.registeredExecutions, exerciseId, \{ cuantas: TODAS_LAS_VECES \}\)/);
   assert.match(pieza, /const aLaVista = todas \? veces : veces\.slice\(0, VECES_EN_EL_EDITOR\);/);
@@ -127,7 +129,7 @@ test('TEST-GRV-011 · GR-01 en fichas: una fila por sesión, las series que no s
   // El lector de pantalla oye la serie entera, con su número, aunque la ficha sea corta.
   assert.match(pieza, /<span className="visualmente-oculto">\{`\$\{C\.serie\(serie\.numero\)\}: \$\{textoDeLaSerie\(serie\)\}`\}<\/span>/);
   assert.match(pieza, /<ComoLeerlo>\n\s*<p>\{C\.queEs\(persona/);
-  // Revisión de #283: la línea de arriba dice que es lo registrado, y la unidad sale de todas las veces, abierta o cerrada.
+  // Revisión del 15/11: la línea de arriba dice que es lo registrado, y la unidad sale de todas las veces, abierta o cerrada.
   assert.match(pieza, /deDonde: \(persona: string, desde: string, unidad: string \| null\) => \`Lo registrado por \$\{persona\} en tus planes, desde el/);
   assert.match(pieza, /\{C\.deDonde\(persona, fechaEnPocasPalabras\(lectura\.desde, lectura\.hoy\), unidadComun\(lectura\.veces\)\)\}/);
   assert.match(pieza, /unidad=\{unidadComun\(lectura\.veces\)\} \/>/);

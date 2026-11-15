@@ -22,7 +22,7 @@
  * dice «137,5 × 3 · RIR 2»; el lector de pantalla oye la serie entera. Se ven las últimas tres; «Ver las 9 anteriores»
  * muestra las demás de lo leído. Lo que aclara (qué es y que no se mezcla con lo indicado), en «Cómo leerlo».
  *
- * La revisión de #283 (las cuentas están en `lista-de-la-vez-pasada.ts`, que se prueba ejecutándola):
+ * La revisión del 15/11 (las cuentas están en `lista-de-la-vez-pasada.ts`, que se prueba ejecutándola):
  * - **Se arman todas las veces de los 91 días leídos,** no doce: «Ver las N anteriores» cuenta bien y la lista llega
  *   hasta el «desde el …» de arriba. El botón cuenta filas (una vez por prescripción), no sesiones.
  * - **La unidad sale de todas las veces,** no de las que se ven: arriba y en las fichas es la misma, abierta o cerrada.

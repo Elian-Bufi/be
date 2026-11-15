@@ -1,5 +1,5 @@
 /**
- * El resumen en texto de un gráfico chico de «Comparar dos etapas» (GR-24), para el lector de pantalla (revisión de #283):
+ * El resumen en texto de un gráfico chico de «Comparar dos etapas» (GR-24), para el lector de pantalla (revisión del 15/11):
  * el del dominio (`partesDelResumenTextual`) **sin** «la primera, …; la última, …», que es el encuadre de primero contra
  * último que las reglas de los gráficos no permiten (WP-GRAFICOS §5.12). Lo demás queda: cuántas observaciones con valor,
  * cuántos subtotales, lo reportado, lo calculado, la carga rápida y los días sin completar.

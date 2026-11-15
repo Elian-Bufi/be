@@ -89,8 +89,8 @@ export interface TramoDeVersion {
 }
 
 /**
- * El cambio de lo indicado en cada versión que lo tuvo, por su clave: **la versión contra la inmediata anterior** (revisión
- * de #283). Lo indicado de cada versión sale de sus sesiones: las que ejecutaron esa versión (por `planVersionId`) o, sin
+ * El cambio de lo indicado en cada versión que lo tuvo, por su clave: **la versión contra la inmediata anterior** (revisión del
+ * 15/11). Lo indicado de cada versión sale de sus sesiones: las que ejecutaron esa versión (por `planVersionId`) o, sin
  * él, las de sus fechas. Si la anterior no tiene ninguna sesión del ejercicio, no se sabe qué indicaba: la versión va sin
  * rótulo de cambio, nunca contra una más vieja (eso afirmaría un cambio que no ocurrió en esa línea).
  */

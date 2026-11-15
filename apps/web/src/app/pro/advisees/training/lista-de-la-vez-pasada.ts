@@ -1,5 +1,5 @@
 /**
- * Las cuentas de la lista de «La vez pasada» (GR-01; pasada visual del 15/11 y revisión de #283), aparte del componente
+ * Las cuentas de la lista de «La vez pasada» (GR-01; pasada visual del 15/11 y revisión del 15/11), aparte del componente
  * para que se prueben ejecutándolas:
  * - **Todas las veces de lo leído:** la lectura ya trae los 91 días; se arman todas, no las doce primeras. Así «Ver las 9
  *   anteriores» dice cuántas hay de verdad, y abrirlas llega hasta el «desde el …» de la línea de arriba.

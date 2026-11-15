@@ -26,7 +26,7 @@
  *   (`lectura-de-lo-indicado.ts`), con la versión que ejecutó cada sesión.
  * - **Nutrición, por semana:** una barra por semana con la media de los días con dato y los días como puntos tenues
  *   detrás (`MinigraficoPorSemana`), sin el peine de los días sin registros. «Día por día», a un toque.
- * - **Revisión de #283:** cada gráfico por semana dice a la vista con cuántos días se hizo cada media, cuántos son
+ * - **Revisión del 15/11:** cada gráfico por semana dice a la vista con cuántos días se hizo cada media, cuántos son
  *   subtotales y cuántos quedaron afuera (§5.13), con el teclado y para el lector de pantalla; las semanas no cruzan el
  *   cambio de etapa; las marcas tienen su leyenda una vez, arriba. La descripción de cada gráfico chico ya no dice «la
  *   primera…; la última…» (§5.12). Si cambian las etapas, el modo vuelve al que conviene para el período nuevo.

@@ -6,7 +6,7 @@
  * dato, desde cero; los días, como puntos tenues detrás. Lo usa «Comparar dos etapas» (GR-24) en Nutrición, con «Día por
  * día» a un toque. La geometría y los textos son puros (`semanas.ts`).
  *
- * La revisión de #283 (§5.4 y §5.13: cada media con su cantidad, lo que quedó afuera y por qué):
+ * La revisión del 15/11 (§5.4 y §5.13: cada media con su cantidad, lo que quedó afuera y por qué):
  * - **La lectura, a la vista:** debajo del dibujo, una línea dice el tramo elegido entero («Semana del 3 nov: 1.850 kcal,
  *   media de 5 de 7 días (1 subtotal); fuera de la media: 2 días sin registros»). De entrada, el último con valor; pasar
  *   el mouse lo cambia mientras está encima, y tocar o hacer clic lo fija. Antes, el «5 de 7 días» estaba solo en el

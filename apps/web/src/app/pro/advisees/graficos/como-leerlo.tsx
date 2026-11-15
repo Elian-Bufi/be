@@ -20,7 +20,7 @@ export const COPY_COMO_LEERLO = {
 /**
  * `soloIcono`: el resumen es solo la «i», con su nombre para el lector de pantalla (sin `title`: algunos lectores lo
  * leían dos veces). Se ve solo la «i», así que úsese solo donde el nombre se entienda sin leerlo.
- * `de`: de qué gráfico es, para el lector de pantalla (revisión de #283): con varios gráficos en una página, la lista de
+ * `de`: de qué gráfico es, para el lector de pantalla (revisión del 15/11): con varios gráficos en una página, la lista de
  * controles no muestra varios «Cómo leerlo» iguales («Cómo leerlo: Peso y calorías»).
  */
 export function ComoLeerlo({
