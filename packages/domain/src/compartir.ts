@@ -357,7 +357,7 @@ export function renglonesAlCompartir(p: {
   readonly ahora: string;
 }): RenglonDeResumen[] {
   const ids = new Set(p.componentes.map((c) => c.alcanceDeVinculoId));
-  const renglones = new Map(p.anteriores.filter((r) => ids.has(r.alcanceDeVinculoId) && ids.has(r.origenId)).map((r) => [`${r.alcanceDeVinculoId}|${r.origenId}`, r] as const));
+  const renglones = new Map<string, RenglonDeResumen>(p.anteriores.filter((r) => ids.has(r.alcanceDeVinculoId) && ids.has(r.origenId)).map((r): [string, RenglonDeResumen] => [`${r.alcanceDeVinculoId}|${r.origenId}`, r]));
   for (const e of p.elegidos) {
     const propios = p.componentes.filter((c) => c.profesionalId === e.profesionalId);
     const origenes = p.componentes.filter((c) => c.profesionalId !== e.profesionalId && c.alcance === e.area);

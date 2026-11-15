@@ -93,7 +93,7 @@ test('TEST-CMP-001 · al aceptar: el A3, su área, lo de las otras áreas para e
   assert.equal((de(items, `SUMMARY:${PAZ}:ANTROPOMETRIA`) as { nivel: string }).nivel, 'SUMMARY');
   assert.equal(de(items, `SUMMARY:${PAZ}:ANTROPOMETRIA`).textoId, 'res');
   assert.equal(de(items, `SUMMARY:${RUIZ}:NUTRICION`).textoId, 'resp');
-  assert.deepEqual((de(items, `SUMMARY:${RUIZ}:NUTRICION`) as { deQuienes: string[] }).deQuienes, [PAZ]);
+  assert.deepEqual((de(items, `SUMMARY:${RUIZ}:NUTRICION`) as { deQuienes: readonly string[] }).deQuienes, [PAZ]);
 });
 
 test('TEST-CMP-002 · sin componente: todo lo que se puede compartir entre todos, y nada de un vínculo terminado', () => {
