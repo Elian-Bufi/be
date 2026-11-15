@@ -17,7 +17,8 @@
  *   comida del plan.
  * - El día es el de la API: a la medianoche cambia, y las tarjetas de hoy vuelven a leer (`useDiaDeLaApi`).
  * - Desde DL-170 (WP-APP-VUELTA-2 AV2-07, la maqueta de §1.1): el título es la fecha («Lunes 9 de noviembre»), sin
- *   «Hola»; de arriba abajo, el paso que falta para el acceso (si hace falta), la tira de la semana, Entrenamiento,
+ *   «Hola»; de arriba abajo, el paso que falta para el acceso (si hace falta), la tarjeta única para compartir (DL-176,
+ *   una vez, si hay algo para compartir entre tus profesionales), la tira de la semana, Entrenamiento,
  *   Comidas, «Para responder» (si hay algo) y, lado a lado, la medida de la última toma y la actividad (en una columna
  *   con letra ×1,3 o si su título no entra). Sin el rótulo «Para mirar». Es la única pantalla con el vidrio prendido
  *   hasta el visto bueno de Dirección (App.tsx).
@@ -35,6 +36,7 @@ import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
 import { HoraDeLoQueVes } from '../hora-en-pantalla';
 import { estilosPorTema, Titulo } from '../ui';
+import { CompartirConTusProfesionales } from '../compartir';
 import { AccesoIncompleto } from './inicio-acceso';
 import { ActividadDeEntrenamiento, EntrenamientoDeHoy } from './inicio-entrenamiento';
 import { Pendientes } from './inicio-informacion';
@@ -42,7 +44,7 @@ import { Mediciones } from './inicio-mediciones';
 import { NutricionDeHoy } from './inicio-nutricion';
 import { TiraDeLaSemana } from './tira-de-la-semana';
 
-export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (m: Salida) => void; ir: Ir }) {
+export function PantallaDeInicio({ token, identidadId, salir, ir }: { token: string; identidadId: string; salir: (m: Salida) => void; ir: Ir }) {
   const sesionPerdida = useSesionPerdida(salir);
   const hoy = useDiaDeLaApi();
   // La sesión de hoy (API-TRN-14), con la misma clave que Entrenamiento: para su tarjeta y para lo de hoy en la tira.
@@ -68,6 +70,8 @@ export function PantallaDeInicio({ token, salir, ir }: { token: string; salir: (
       {/* PG-09 (WP-PULIDO-GRANDES): de cuándo es lo que se ve; tirar hacia abajo lo vuelve a leer (App.tsx). */}
       <HoraDeLoQueVes />
       <AccesoIncompleto token={token} sesionPerdida={sesionPerdida} ir={ir} />
+      {/* WP-COMPARTIR (DL-176): para quien ya tiene vínculos, la tarjeta única «Compartir todo con tus profesionales», una vez. */}
+      <CompartirConTusProfesionales token={token} identidadId={identidadId} sesionPerdida={sesionPerdida} ir={ir} />
       {conTira ? <TiraDeLaSemana tira={tira} /> : null}
       <EntrenamientoDeHoy token={token} dia={hoy} lectura={entrenamientoDeHoy} registradas={actividad.r ? (actividad.r.ok ? actividad.r.datos.sesiones : null) : undefined} sesionPerdida={sesionPerdida} ir={ir} />
       <NutricionDeHoy token={token} sesionPerdida={sesionPerdida} ir={ir} />
