@@ -1303,7 +1303,7 @@ no se corre nada pesado, así que ponerlas en rojo una por una queda para la rev
 | TEST-GRF-012 (b) | Dejar solo en la forma de la marca lo tildado sin escribir, lo observado, lo reportado o lo calculado |
 | TEST-GRF-013 | Tramos de 93 días; leer API-TRN-21 sin tramos; leer la cinta en un solo pedido o del tramo más antiguo al más reciente |
 | TEST-GRF-019 | Dejar los eventos de un área denegada; dibujar un hábito o lo anulado |
-| TEST-GRF-019 (b) | Dejar en la cinta una nota de un área denegada o una nota propia archivada; usar el día UTC de una nota propia; mostrar en el cuadro de un ejercicio las notas de otras sesiones |
+| TEST-GRF-019 (b) | Dejar en la cinta una nota de un área denegada o una nota propia archivada; usar el día UTC de una nota propia; mostrar en el cuadro de un ejercicio las notas de otras sesiones; dejar el texto de las notas a la vista con «Ocultar nombres» |
 
 #### Decisiones del continuador al programar (a ratificar)
 
@@ -1338,7 +1338,9 @@ no se corre nada pesado, así que ponerlas en rojo una por una queda para la rev
   Nutrición) o en la de las notas, con el ícono «a mano» para no confundirlas con una nota de coordinación. Las propias
   **archivadas no entran**: quien la escribió la sacó de lo que tiene a mano. En el cuadro de un ejercicio, solo las notas
   de las sesiones con ese ejercicio (si esas sesiones no se leyeron, ninguna) y las propias atadas a él. Una nota que no
-  se pudo leer es una falla con «Reintentar», no «sin notas». *Alternativa:* mostrar también las archivadas, marcadas.
+  se pudo leer es una falla con «Reintentar», no «sin notas». Con «Ocultar nombres» (PG-T73), las notas están con su día y
+  su ancla pero sin su texto, hasta «Mostrar en esta pantalla». La cinta es el tercer lector de API-NPP-02, una vez por
+  cinta (TEST-PG-015 lo dice). *Alternativa:* mostrar también las archivadas, marcadas.
 - **GR-T29 · Cómo se ve la cinta:** una fila por área, con su ícono, y una para las notas; la barra de una versión va
   del día que empezó a regir al anterior al corte; lo que cae a menos de 18 px se agrupa en un círculo con la cantidad
   («2 hitos», o «3 hechos» si hay una sesión o una sustitución); se leen hasta cuatro páginas de 50 por pedido, en

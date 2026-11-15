@@ -84,6 +84,8 @@ export const COPY_DE_LA_CINTA = {
   queSeReintenta: 'la cinta del tiempo',
   barra: 'Versión de un plan: una barra, desde el día que empezó a regir',
   grupo: 'Varios hechos juntos: un círculo con la cantidad',
+  notasOcultas: 'El texto de las notas va oculto mientras «Ocultar nombres» está prendido.',
+  mostrarLasNotas: 'Mostrar en esta pantalla',
   leidaHastaElTope: (n: number) => `Se leyeron los ${n} hechos más recientes del período: los anteriores no están en la cinta.`,
 } as const;
 
@@ -200,10 +202,10 @@ function sesionesDelEjercicio(ejecuciones: readonly EjecucionDeEntrenamiento[], 
  * ejercicio, solo las de las sesiones en las que estuvo ese ejercicio; si esas sesiones no se leyeron, ninguna (no se
  * adivina de qué sesión habla una nota).
  */
-export function eventosDeLasNotasDeLaSesion(notas: readonly NotaDeLaSesionDeLaCinta[], exerciseKey: string | null, ejecuciones?: readonly EjecucionDeEntrenamiento[]): EventoDeLaCinta[] {
+export function eventosDeLasNotasDeLaSesion(notas: readonly NotaDeLaSesionDeLaCinta[], exerciseKey: string | null, ejecuciones?: readonly EjecucionDeEntrenamiento[], conTexto = true): EventoDeLaCinta[] {
   const del = exerciseKey === null ? null : sesionesDelEjercicio(ejecuciones ?? [], exerciseKey);
   return notas.flatMap((n): EventoDeLaCinta[] =>
-    del !== null && !del.has(n.executionId) ? [] : [{ clave: `nota-de-la-persona:${n.noteId}`, tipo: 'NOTA_DE_LA_PERSONA', area: 'ENTRENAMIENTO', desde: n.executionDate, hasta: null, rotulo: 'Nota de la persona', detalle: n.text, agrupados: 1 }],
+    del !== null && !del.has(n.executionId) ? [] : [{ clave: `nota-de-la-persona:${n.noteId}`, tipo: 'NOTA_DE_LA_PERSONA', area: 'ENTRENAMIENTO', desde: n.executionDate, hasta: null, rotulo: 'Nota de la persona', detalle: conTexto ? n.text : null, agrupados: 1 }],
   );
 }
 
@@ -212,13 +214,13 @@ export function eventosDeLasNotasDeLaSesion(notas: readonly NotaDeLaSesionDeLaCi
  * ancla (un ejercicio, Entrenamiento; una comida, Nutrición) o en la de las notas. Las archivadas no están (GR-T28): quien
  * la escribió la sacó de lo que tiene a mano. En el cuadro de un ejercicio, solo las de ese ejercicio.
  */
-export function eventosDeLasNotasPropias(notas: readonly NotaPropia[], zona: string, exerciseKey: string | null): EventoDeLaCinta[] {
+export function eventosDeLasNotasPropias(notas: readonly NotaPropia[], zona: string, exerciseKey: string | null, conTexto = true): EventoDeLaCinta[] {
   return notas.flatMap((n): EventoDeLaCinta[] => {
     if (n.archivedAt !== null) return [];
     if (exerciseKey !== null && !(n.anchor?.type === 'EXERCISE' && `e:${n.anchor.exerciseId}` === exerciseKey)) return [];
     const area: AreaDeMetrica | null = n.anchor === null ? null : n.anchor.type === 'EXERCISE' ? 'ENTRENAMIENTO' : 'NUTRICION';
     const sobre = n.anchor === null ? null : n.anchor.type === 'EXERCISE' ? n.anchor.exerciseName : n.anchor.mealLabel;
-    return [{ clave: `nota-propia:${n.noteId}`, tipo: 'NOTA_PROPIA', area, desde: fechaCivil(n.recordedAt, zona), hasta: null, rotulo: sobre ? `Nota propia sobre ${sobre}` : 'Nota propia', detalle: n.text, agrupados: 1 }];
+    return [{ clave: `nota-propia:${n.noteId}`, tipo: 'NOTA_PROPIA', area, desde: fechaCivil(n.recordedAt, zona), hasta: null, rotulo: sobre ? `Nota propia sobre ${sobre}` : 'Nota propia', detalle: conTexto ? n.text : null, agrupados: 1 }];
   });
 }
 
@@ -237,6 +239,11 @@ export interface FuentesDeLaCinta {
   readonly notasPropias?: readonly NotaPropia[];
   /** La zona de la persona, para el día civil de una nota propia. */
   readonly zona?: string;
+  /**
+   * `false` con «Ocultar nombres» prendido y sin pedir verlas (PG-T73): las notas están, con su día y su ancla, pero sin su
+   * texto.
+   */
+  readonly conTextoDeLasNotas?: boolean;
   /** Otras fuentes que sume quien usa la cinta. */
   readonly otras?: readonly EventoDeLaCinta[];
   /** En el cuadro del ejercicio: las sesiones con cambios y las sustituciones de ese ejercicio solamente. */
@@ -256,8 +263,8 @@ export function eventosDeLaCinta(f: FuentesDeLaCinta): EventoDeLaCinta[] {
       return evento ? [evento] : [];
     }),
     ...(f.ejecuciones ? eventosDeSustitucion(f.ejecuciones, exerciseKey) : []),
-    ...eventosDeLasNotasDeLaSesion(f.notasDeLaSesion ?? [], exerciseKey, f.ejecuciones),
-    ...eventosDeLasNotasPropias(f.notasPropias ?? [], f.zona ?? ZONA_POR_DEFECTO, exerciseKey),
+    ...eventosDeLasNotasDeLaSesion(f.notasDeLaSesion ?? [], exerciseKey, f.ejecuciones, f.conTextoDeLasNotas ?? true),
+    ...eventosDeLasNotasPropias(f.notasPropias ?? [], f.zona ?? ZONA_POR_DEFECTO, exerciseKey, f.conTextoDeLasNotas ?? true),
     ...(f.otras ?? []),
   ].filter(permitido);
   const vistos = new Set<string>();

@@ -639,6 +639,16 @@ test('TEST-GRF-019 (b) · las notas de la tanda B en la cinta: las de la persona
     ['nota-propia:np-2', 'nota-de-la-persona:ns-1'],
   );
   assert.deepEqual(K.eventosDeLasNotasDeLaSesion(deLaSesion, 'e:ej-banca'), [], 'sin las sesiones leídas no se adivina de qué sesión habla una nota');
+  // Con «Ocultar nombres» (PG-T73), las notas están con su día y su ancla, pero sin su texto hasta pedirlo (mutación: dejar
+  // el texto a la vista).
+  const ocultas = K.eventosDeLaCinta({ ...fuentes(['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), conTextoDeLasNotas: false }).filter((e) => e.tipo === 'NOTA_DE_LA_PERSONA' || e.tipo === 'NOTA_PROPIA');
+  assert.equal(ocultas.length, notas.length);
+  assert.ok(ocultas.every((e) => e.detalle === null));
+  assert.ok(!ocultas.map(K.textoDelEvento).join(' ').includes('hombro'));
+  const pantalla = readFileSync(join(GRAFICOS, 'cinta-del-tiempo-en-pantalla.tsx'), 'utf8');
+  assert.match(pantalla, /const ocultos = useNombresOcultos\(\);/);
+  assert.match(pantalla, /const conTextoDeLasNotas = !ocultos \|\| verLasNotas;/);
+  assert.match(pantalla, /\{COPY_DE_LA_CINTA\.mostrarLasNotas\}/);
   // La forma distingue la nota propia de la de coordinación, y los textos pasan la guardia de las tres áreas.
   assert.notEqual(K.ICONO_DEL_HECHO.NOTA_PROPIA, K.ICONO_DEL_HECHO.NOTA_DE_COORDINACION);
   for (const t of [...notas.map(K.textoDelEvento), K.resumenDeLaCinta(notas)]) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], t);
