@@ -295,7 +295,12 @@ test('TEST-AVR-009 · «Quién ve qué» solo lee, y no dice nada que prohíba 1
   const llamadas = [...pantalla.matchAll(/api\.([a-zA-Z0-9]+)\(/g)].map((m) => m[1]).sort();
   // PG-12 (WP-PULIDO-GRANDES): también lee lo que la persona comparte de otras áreas, para decir quién lo miró. Sigue
   // siendo una lectura: ninguna escritura sale de esta pantalla.
-  assert.deepEqual(llamadas, ['consultarConsentimientos', 'consultarRequisitoA3', 'consultarVinculos', 'misHabitos', 'misResumenesCompartidos', 'pedidosDeAccesoAMisHabitos']);
+  // WP-HISTORIA-ANTERIOR (DL-175): y su historia anterior de cada área (API-HIA-01). La pantalla sigue sin escribir: la
+  // única escritura es la del interruptor «Compartir mi historia anterior», que vive en su pieza (`historia-anterior.tsx`)
+  // y solo autoriza o retira esa historia (API-HIA-02 y 03), como lo decidió Dirección el 2026-11-15.
+  assert.deepEqual(llamadas, ['consultarConsentimientos', 'consultarRequisitoA3', 'consultarVinculos', 'miHistoriaAnterior', 'misHabitos', 'misResumenesCompartidos', 'pedidosDeAccesoAMisHabitos']);
+  const pieza = leer('historia-anterior.tsx');
+  assert.deepEqual([...new Set([...pieza.matchAll(/api\.([a-zA-Z0-9]+)\(/g)].map((m) => m[1]))].sort(), ['autorizarHistoriaAnterior', 'miHistoriaAnterior', 'retirarHistoriaAnterior']);
   // Lo que se muestra, sin los comentarios (que citan la regla de 10-B04).
   const textos = (leer('textos-de-la-vuelta.ts') + leer('quien-ve-que.ts') + leer('quien-miro.ts') + pantalla).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   assert.doesNotMatch(textos, /todos tus datos|toda tu información|puede ver todo/i);

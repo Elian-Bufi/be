@@ -193,10 +193,11 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     const toma = await borradorSembrado(prisma, c);
     await medicionSembrada(prisma, c, toma, { metrica: 'peso', valor: 71.2, unidad: 'kg' });
     const anulada = await medicionSembrada(prisma, c, toma, { metrica: 'cintura', valor: 80, unidad: 'cm' });
+    // Anular es el camino posterior al registro (REG-06-214 inciso 5): primero se registra la toma.
+    await registrarBorrador(prisma, toma);
     await prisma.$executeRawUnsafe(
       `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia") VALUES ('${randomUUID()}','${anulada}','${c.pro.id}','Error de carga','{"prueba":"ha"}', now())`,
     );
-    await registrarBorrador(prisma, toma);
     const enPreparacion = await borradorSembrado(prisma, c);
     await medicionSembrada(prisma, c, enPreparacion, { metrica: 'peso', valor: 99, unidad: 'kg' });
     const X = await prepararProfesional(app, `ha-x-${contador}`, ['NUTRICION', 'ANTROPOMETRIA']);
