@@ -162,12 +162,16 @@ describe('TEST-HA-045 · las pantallas la dibujan, con TalkBack y los dos temas'
     expect(pantalla).toContain('api.miHistoriaAnterior(token)');
     expect(pantalla).toContain('<HistoriaAnteriorDelArea');
   });
-  test('al aceptar un vínculo, la tarjeta opcional: desde Vínculos y desde una invitación (enlace, QR o código)', () => {
+  test('al aceptar un vínculo (desde Vínculos o desde una invitación), la historia anterior va en la pantalla única de consentimiento (DL-176)', () => {
+    // WP-COMPARTIR reemplazó la tarjeta opcional (HA-T01): aceptar lleva enseguida a la pantalla única, donde la historia
+    // anterior es una de las cosas, preseleccionada si antes hubo otro profesional en esa área (API-CMP-01).
     for (const pantalla of ['vinculos.tsx', 'invitacion.tsx']) {
       const codigo = readFileSync(join(__dirname, 'pantallas', pantalla), 'utf8');
-      expect(codigo).toContain('<HistoriaAnteriorAlAceptar');
-      expect(codigo).toContain("irAPrivacidad={() => ir({ nombre: 'privacidad' })}");
+      expect(codigo).not.toContain('<HistoriaAnteriorAlAceptar');
+      expect(codigo).toContain("ir({ nombre: 'consentimiento', vinculoId: ");
+      expect(codigo).toContain('recienAceptado: true }');
     }
+    expect(readFileSync(join(__dirname, 'pantallas', 'consentimiento.tsx'), 'utf8')).toContain('api.loQueSePuedeCompartir(token, vinculoId)');
   });
   test('el interruptor se lee con su nombre y el estado que se ve (en la etiqueta), y los colores salen del tema', () => {
     const pieza = readFileSync(join(__dirname, 'historia-anterior.tsx'), 'utf8');

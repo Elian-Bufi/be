@@ -62,6 +62,7 @@ export const COPY_COMPARTIR = {
   actualizar: 'Actualizar',
   noSePudo: 'No se pudo guardar. Probá de nuevo.',
   vinculoNoAceptado: 'Este vínculo no está aceptado: por ahora no hay nada para compartir.',
+  nadaPendiente: 'Ya compartís todo lo que se puede compartir desde acá.',
 
   // ── La tarjeta única, para quien ya tiene vínculos ──
   tarjeta: {
@@ -107,7 +108,7 @@ export function textosDeCompartir(): readonly string[] {
     C.introDeTodo, C.loQueCompartis, C.yaLoCompartis, C.nuncaSeComparte, C.podesRetirar, C.alTocar, C.losTextos, C.propuestos, C.aceptarYCompartir, C.compartirLoElegido,
     C.elegir, C.ahoraNo, C.nadaElegido, C.compartiendo, C.linea.HEALTH_DATA, C.linea.HABITS('Lic. Sofía Paz'), C.desde('3/11/2026'), C.pideElA3,
     C.interruptorParaLeer('Tus hábitos, para Lic. Sofía Paz.', true), C.interruptorParaLeer('Tus hábitos, para Lic. Sofía Paz.', false), C.sugerenciaDelInterruptor(true), C.sugerenciaDelInterruptor(false),
-    C.listo, C.listoDetalle, C.irAQuienVeQue, C.verVinculo, C.cambioAntes, C.actualizar, C.noSePudo, C.vinculoNoAceptado,
+    C.listo, C.listoDetalle, C.irAQuienVeQue, C.verVinculo, C.cambioAntes, C.actualizar, C.noSePudo, C.vinculoNoAceptado, C.nadaPendiente,
     ...Object.values(C.tarjeta), C.queVeDeOtrasAreas, C.interruptorDeHabitos, C.loVe('3/11/2026'), C.noLoVe, C.retirando,
     C.confirmarRetiro.titulo, C.confirmarRetiro.cuerpo('tus hábitos', 'Lic. Sofía Paz'), C.confirmarRetiro.confirmar,
     C.confirmarDar.titulo, C.confirmarDar.leeAntes, C.confirmarDar.confirmar, C.confirmarDar.cancelar,
