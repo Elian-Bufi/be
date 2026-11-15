@@ -17,7 +17,7 @@ import { colorDelCarril } from '../marcas';
 import { useAnchoDelGrafico } from '../medidas-del-grafico';
 import { useGraficoLeido } from '../nutricion-y-cuerpo/grafico-leido';
 import type { GraficoLeido } from '../nutricion-y-cuerpo/leido';
-import { diaYMes } from '../nutricion-y-cuerpo/lienzo';
+import { diaYMes, valoresDelEjeVertical } from '../nutricion-y-cuerpo/lienzo';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { COPY_ANTROPOMETRIA_EN_GRAFICOS as C } from './copy';
 import { leerTomasDelPeriodo } from './lecturas-de-antropometria';
@@ -50,8 +50,7 @@ function GrupoEnPantalla({ g }: { g: GrupoDelPerfil }) {
   const x = (v: number) => xDelValor(v, g.extremos, izquierda, derecha);
   const letras = Math.max(8, Math.floor(nombres / ANCHO_DE_UNA_LETRA));
   const recortar = (n: string) => (n.length > letras ? `${n.slice(0, letras - 1)}…` : n);
-  const paso = (g.extremos.arriba - g.extremos.abajo) / 2;
-  const marcasDelEje = [g.extremos.abajo, g.extremos.abajo + paso, g.extremos.arriba];
+  const marcasDelEje = valoresDelEjeVertical(g.extremos);
   const alto = ALTO_DEL_EJE + g.filas.length * ALTO_DE_LA_FILA;
   const dibujable = (v: ValorDelSitio | null): v is ValorDelSitio => v !== null && v.unidad === g.unidad;
   return (

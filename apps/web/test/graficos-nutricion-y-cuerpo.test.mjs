@@ -566,6 +566,15 @@ test('TEST-GRF-050 · el lienzo: la línea une solo marcas de la misma serie y d
   const tira = L.geometriaDeTira({ tipo: 'TIRA', id: 't', nombre: 'Comidas', filas: [{ clave: 'c', nombre: 'Cena', celdas: [{ fecha: '2026-11-02', estado: 'SIN_REGISTRO' }] }] }, e);
   assert.ok(tira.filas[0].celdas[0].ancho < e.porDia);
   assert.deepEqual(L.huecosEnTexto([{ from: '2026-10-30', to: '2026-11-03' }], '2026-11-02', '2026-11-08'), ['del 2/11 al 3/11, sin registros']);
+  // La marca del medio del eje vertical va solo si se escribe tal cual: de 0 a 5 sin decimales diría «3» donde va 2,5.
+  assert.deepEqual(L.valoresDelEjeVertical({ abajo: 0, arriba: 5, decimales: 0 }), [0, 5]);
+  assert.deepEqual(L.valoresDelEjeVertical({ abajo: 0, arriba: 2000, decimales: 0 }), [0, 1000, 2000]);
+  assert.deepEqual(L.valoresDelEjeVertical({ abajo: 1, arriba: 2, decimales: 1 }), [1, 1.5, 2]);
+  assert.deepEqual(
+    g.marcasY.map((m) => m.valor),
+    L.valoresDelEjeVertical(g.extremos),
+  );
+  assert.match(readFileSync(join(GRAFICOS, 'antropometria/perfil-por-sitio-en-pantalla.tsx'), 'utf8'), /const marcasDelEje = valoresDelEjeVertical\(g\.extremos\);/, 'GR-18 escribe su eje con la misma regla');
 });
 
 test('TEST-GRF-051 · los registros: cada gráfico se ofrece solo con su área, los g/kg solo con Nutrición y Antropometría y lo propio en las dos, y el registro se lee sin cargar ninguna pantalla (mutación: ofrecer los g/kg con una sola área)', () => {

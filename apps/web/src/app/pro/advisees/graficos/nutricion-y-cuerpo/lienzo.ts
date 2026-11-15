@@ -164,6 +164,17 @@ export interface GeometriaDeValores {
 const dentro = (fecha: string, e: Pick<EscalaDeFechas, 'desde' | 'hasta'>): boolean => fecha >= e.desde && fecha <= e.hasta;
 
 /**
+ * Los valores que se escriben en un eje vertical: abajo, arriba y, si se escribe tal cual con los mismos decimales, el del
+ * medio (de 0 a 5 sin decimales diría «3» donde va 2,5). Es la regla que la rama B le puso a la base en `carriles.ts`; la
+ * usan el lienzo y los ejes de GR-18.
+ */
+export function valoresDelEjeVertical(extremos: { readonly abajo: number; readonly arriba: number; readonly decimales: number }): number[] {
+  const medio = extremos.abajo + (extremos.arriba - extremos.abajo) / 2;
+  const seEscribe = Math.abs(Number(medio.toFixed(extremos.decimales)) - medio) < 1e-9;
+  return [extremos.abajo, ...(seEscribe ? [medio] : []), extremos.arriba];
+}
+
+/**
  * La geometría de un panel de valores en una caja de `alto` píxeles. Lo anterior al vínculo y lo de fuera del período no
  * se dibuja (TB-16). El eje vertical abarca todo lo que se dibuja en el panel (las marcas, las uniones, el objetivo y las
  * medias): dos series del mismo panel comparten el eje, que es lo que pide GR-20 (uno por método agrandaría cualquier
@@ -198,10 +209,9 @@ export function geometriaDeValores(p: PanelDeValores, escala: EscalaDeFechas, al
     cerrar();
   }
   const horizontal = (t: TramoDelPanel) => ({ clave: t.clave, x1: escala.x(t.desde) - escala.porDia / 2, x2: escala.x(t.hasta) + escala.porDia / 2, y: y(t.valor), color: t.color });
-  const paso = (extremos.arriba - extremos.abajo) / 2;
   return {
     extremos,
-    marcasY: [extremos.abajo, extremos.abajo + paso, extremos.arriba].map((valor) => ({ valor, y: y(valor) })),
+    marcasY: valoresDelEjeVertical(extremos).map((valor) => ({ valor, y: y(valor) })),
     marcas: ubicadas,
     lineas,
     uniones: uniones.map((u) => ({ clave: u.clave, x: xDe(u.fecha, u.en), y1: y(u.desde), y2: y(u.hasta), rotulo: u.rotulo, forma: u.forma })),
