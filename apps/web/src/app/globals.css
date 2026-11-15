@@ -5968,6 +5968,82 @@ a.observacion__fila:focus-visible {
   font-size: 0.92rem;
 }
 
+/* GR-24 (pasada visual): lo que cambió en lo indicado, debajo de la diferencia; «Por semana» y «Día por día». */
+.tabla-de-etapas__lo-indicado {
+  display: block;
+  font-weight: 400;
+}
+
+.graficos-de-etapas__grano {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.graficos-de-etapas__grano .chip-de-zona {
+  min-height: 2rem;
+  padding-block: 0.15rem;
+  font-size: 0.8125rem;
+}
+
+/* GR-24 por semana (revisión del 15/11): las marcas del dibujo, una vez, como fichas; cada gráfico recibe el foco y dice
+   debajo, a la vista, con cuántos días se hizo la media que se lee. */
+.leyenda-por-semana {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  margin: 0.15rem 0 0.6rem;
+}
+
+.leyenda-por-semana__fichas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+}
+
+.leyenda-por-semana__fichas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.minigrafico-por-semana__lienzo {
+  border-radius: 4px;
+}
+
+.minigrafico-por-semana__lienzo:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.minigrafico-por-semana__lienzo svg {
+  display: block;
+}
+
+.minigrafico-por-semana__lectura {
+  min-height: 2.5em;
+  margin: 0.2rem 0 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+.pie-de-etapas .grafico-base__frase {
+  margin-left: auto;
+}
+
+/* «Cómo leerlo» va último en el pie: abierto, ocupa el renglón de abajo sin cambiar de lugar en el orden del foco. */
+.pie-de-etapas__como-leerlo[open] {
+  flex: 1 1 100%;
+}
+
 .graficos-de-etapas .bajo-los-graficos {
   margin: 0.5rem 0 0.4rem;
 }
@@ -17101,7 +17177,9 @@ p.cifra-del-espacio__desglose {
   margin-bottom: 0.25rem;
 }
 
-/* ED-74 · la evolución en «Analizar» */
+/* ED-74 · la evolución en «Analizar». Con la pasada visual de WP-GRAFICOS (15/11; DISENO-VISUAL §1 y §2): el título
+   con la marca de lo estimado y su línea tenue, la leyenda como fichas, la grilla tenue, las versiones discretas, sin un
+   número en cada punto y la tabla sin valores partidos. */
 .fuerza-en-analizar__controles {
   display: flex;
   flex-wrap: wrap;
@@ -17113,7 +17191,7 @@ p.cifra-del-espacio__desglose {
 .fuerza-en-analizar__zonas {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 @media (min-width: 64rem) {
@@ -17123,43 +17201,78 @@ p.cifra-del-espacio__desglose {
   }
 }
 
-.fuerza-en-analizar__grafico {
-  margin: 0 0 1rem;
+.fuerza-en-analizar__principal {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.fuerza-en-analizar__grafico figcaption {
+.fuerza-en-analizar__grafico {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.fuerza-en-analizar__cabecera {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.25rem 1rem;
-  margin-bottom: 0.5rem;
+  align-items: baseline;
+  gap: 0.125rem 0.75rem;
 }
 
-.fuerza-en-analizar__grafico svg {
+.fuerza-en-analizar__titulo {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.fuerza-en-analizar__detalle {
+  font-size: 0.8125rem;
+  color: var(--tenue);
+}
+
+.fuerza-en-analizar__lienzo {
+  min-width: 0;
+  border-radius: 8px;
+  outline-offset: 2px;
+}
+
+.fuerza-en-analizar__lienzo:focus-visible {
+  outline: 3px solid var(--foco);
+}
+
+.fuerza-en-analizar__lienzo svg {
   display: block;
-  width: 100%;
-  height: auto;
+  max-width: 100%;
   overflow: visible;
+  font-variant-numeric: tabular-nums;
 }
 
+/* La leyenda: fichas cortas en una línea, arriba del gráfico, solo con las marcas que se ven. */
 .fuerza-en-analizar__leyenda {
   display: flex;
+  flex: 1 1 100%;
   flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  gap: 0.25rem 0.875rem;
+  margin-top: 0.25rem;
   color: var(--tenue);
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
+}
+
+.fuerza-en-analizar__leyenda span {
+  white-space: nowrap;
 }
 
 .fuerza-en-analizar__leyenda span::before {
   content: "";
   display: inline-block;
-  width: 0.65rem;
-  height: 0.65rem;
+  width: 0.55rem;
+  height: 0.55rem;
   margin-inline-end: 0.35rem;
   border: 2px solid var(--metrica-1);
   border-radius: 50%;
   background: var(--metrica-1);
-  vertical-align: -0.05rem;
+  vertical-align: -0.02rem;
 }
 
 .fuerza-en-analizar__leyenda [data-forma="hueco"]::before {
@@ -17169,67 +17282,6 @@ p.cifra-del-espacio__desglose {
 .fuerza-en-analizar__leyenda [data-forma="rombo"]::before {
   border-radius: 1px;
   transform: rotate(45deg) scale(0.85);
-}
-
-.fuerza-en-analizar__guia {
-  stroke: var(--borde);
-  stroke-width: 1;
-}
-
-.fuerza-en-analizar__eje,
-.fuerza-en-analizar__valor {
-  fill: var(--tenue);
-  font-size: 12px;
-}
-
-.fuerza-en-analizar__valor {
-  fill: var(--texto);
-  font-weight: 600;
-}
-
-.fuerza-en-analizar__linea {
-  stroke: var(--metrica-1);
-  stroke-width: 2;
-}
-
-.fuerza-en-analizar__punto {
-  cursor: pointer;
-}
-
-.fuerza-en-analizar__punto circle,
-.fuerza-en-analizar__punto rect {
-  fill: var(--metrica-1);
-  stroke: var(--metrica-1);
-  stroke-width: 2.5;
-}
-
-.fuerza-en-analizar__punto[data-forma="hueco"] circle {
-  fill: var(--superficie);
-}
-
-.fuerza-en-analizar__punto .fuerza-en-analizar__aro {
-  fill: none;
-  stroke: var(--texto);
-  stroke-width: 2;
-}
-
-/* Las versiones del plan, en franjas alternadas; la línea de hoy y la marca de cada sesión sin estimación (maqueta 15). */
-.fuerza-en-analizar__franja rect {
-  fill: transparent;
-}
-
-.fuerza-en-analizar__franja[data-par] rect {
-  fill: var(--fondo-suave);
-}
-
-.fuerza-en-analizar__hoy line {
-  stroke: var(--ahora);
-  stroke-width: 2;
-}
-
-.fuerza-en-analizar__sin-estimacion {
-  stroke: var(--tenue);
-  stroke-width: 2;
 }
 
 .fuerza-en-analizar__leyenda [data-forma="marca"]::before,
@@ -17245,8 +17297,133 @@ p.cifra-del-espacio__desglose {
   background: var(--ahora);
 }
 
+/* La grilla, muy tenue; los números del eje y de las fechas, tenues y de 12 px. */
+.fuerza-en-analizar__guia {
+  stroke: var(--borde);
+  stroke-width: 1;
+  opacity: 0.8;
+}
+
+.fuerza-en-analizar__eje {
+  fill: var(--tenue);
+  font-size: 12px;
+}
+
+/* El número de un punto: solo el último, el elegido, el máximo y el mínimo, y nunca dos encimados. */
+.fuerza-en-analizar__valor {
+  fill: var(--tenue);
+  font-size: 12px;
+}
+
+.fuerza-en-analizar__valor[data-fuerte] {
+  fill: var(--texto);
+  font-weight: 600;
+}
+
+.fuerza-en-analizar__linea {
+  stroke: var(--metrica-1);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.fuerza-en-analizar__punto {
+  cursor: pointer;
+}
+
+.fuerza-en-analizar__punto circle,
+.fuerza-en-analizar__punto rect {
+  fill: var(--metrica-1);
+  stroke: var(--metrica-1);
+  stroke-width: 2;
+}
+
+.fuerza-en-analizar__punto[data-forma="hueco"] circle {
+  fill: var(--superficie);
+}
+
+.fuerza-en-analizar__punto .fuerza-en-analizar__toque {
+  fill: transparent;
+  stroke: none;
+}
+
+.fuerza-en-analizar__punto .fuerza-en-analizar__aro {
+  fill: none;
+  stroke: var(--texto);
+  stroke-width: 1.5;
+}
+
+/* Las versiones del plan: un tono muy tenue que alterna, una línea fina en el cambio y «v8» arriba (con lo que cambió
+   en lo indicado, si cambió). La línea de hoy y la marca de cada sesión sin estimación (maqueta 15). */
+.fuerza-en-analizar__franja rect {
+  fill: transparent;
+}
+
+.fuerza-en-analizar__franja[data-par] rect {
+  fill: var(--banda);
+  fill-opacity: 0.35;
+}
+
+.fuerza-en-analizar__cambio {
+  stroke: var(--borde-control);
+  stroke-width: 1;
+}
+
+.fuerza-en-analizar__franja[data-con-cambio] .fuerza-en-analizar__version {
+  fill: var(--texto);
+}
+
+.fuerza-en-analizar__hoy line {
+  stroke: var(--ahora);
+  stroke-width: 1.5;
+}
+
+.fuerza-en-analizar__sin-estimacion {
+  stroke: var(--tenue);
+  stroke-width: 2;
+}
+
+/* El globo de un punto al pasar el mouse. */
+.fuerza-en-analizar__globo rect {
+  fill: var(--superficie);
+  stroke: var(--borde-control);
+  stroke-width: 1;
+}
+
+.fuerza-en-analizar__globo text {
+  fill: var(--texto);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fuerza-en-analizar__linea-de-lectura {
+  margin: 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La tabla de origen: una fila por renglón, cifras de ancho fijo y ningún valor partido. Con menos ancho, menos
+   columnas (el componente las elige por el ancho medido): nunca un número cortado. */
+.fuerza-en-analizar__tabla {
+  font-variant-numeric: tabular-nums;
+}
+
+.fuerza-en-analizar__tabla tbody th,
+.fuerza-en-analizar__tabla tbody td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.fuerza-en-analizar__tabla tbody td.fuerza-en-analizar__motivo {
+  white-space: normal;
+  color: var(--tenue);
+}
+
 .fuerza-en-analizar__tabla tr[data-elegida] {
   background: var(--fondo-suave);
+}
+
+.fuerza-en-analizar__ver-todas {
+  margin-top: 0.5rem;
 }
 
 .fuerza-en-analizar__no-entra {
@@ -17259,7 +17436,7 @@ p.cifra-del-espacio__desglose {
 
 .fuerza-en-analizar__lectura h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .fuerza-en-analizar__lectura h4 {
@@ -17267,10 +17444,30 @@ p.cifra-del-espacio__desglose {
   font-size: 1rem;
 }
 
-.fuerza-en-analizar__diferencia {
-  margin-top: 0.75rem;
+/* Revisión del 15/11 (§5.12): el ruido va antes que la anterior, y la raya separa a los dos de lo de arriba. */
+.fuerza-en-analizar__ruido {
+  margin: 0.75rem 0 0;
   padding-top: 0.75rem;
   border-top: 1px solid var(--borde);
+}
+
+.fuerza-en-analizar__anterior {
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+  font-variant-numeric: tabular-nums;
+}
+
+.fuerza-en-analizar__ruido + .fuerza-en-analizar__anterior {
+  margin-top: 0.35rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* La fila que avisa cuántas quedan entre las recientes y la elegida, si es más vieja. */
+.fuerza-en-analizar__salto td {
+  padding-block: 0.35rem;
+  text-align: center;
 }
 
 .lista-de-ejercicios-con-fuerza {
@@ -18299,18 +18496,94 @@ html:has(.estacion:not([data-en-el-asistente])) {
 }
 
 /* ─── WP-GRAFICOS (DL-174), fase 1: GR-04, GR-01 y GR-16 ───────────────────────────────────────────────────────── */
+/* Con la pasada visual del 15/11 (DISENO-VISUAL §1 y §2): las fichas, una fila por renglón, cifras de ancho fijo y el
+   cuadro lateral del editor según la pantalla. */
 
-/* GR-04: «Con historial» en la fila del resultado del buscador, con el ícono a la altura del texto. Lo dice el texto: sin
-   un color propio ni una flecha. */
-.ejercicios-del-catalogo__historial {
+/* El cuadro lateral del editor (el del ejercicio y «Agregar ejercicio»): 480 px hasta 1280, 560 a 1440 y 640 a 1920. */
+.cajon.detalle-con-fuerza,
+.cajon:has(.agregar-ejercicio) {
+  width: min(30rem, 100vw);
+}
+
+@media (min-width: 90rem) {
+  .cajon.detalle-con-fuerza,
+  .cajon:has(.agregar-ejercicio) {
+    width: min(35rem, 100vw);
+  }
+}
+
+@media (min-width: 120rem) {
+  .cajon.detalle-con-fuerza,
+  .cajon:has(.agregar-ejercicio) {
+    width: min(40rem, 100vw);
+  }
+}
+
+/* GR-04: la marca, una ficha compacta en el renglón del origen («47 sesiones · 9 nov»), con el ícono a la altura del
+   texto. Lo dice el texto: sin un color propio ni una flecha. */
+.ejercicios-del-catalogo__renglon {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+}
+
+.ejercicios-del-catalogo__renglon .alimentos-del-catalogo__detalle {
+  display: inline;
+  margin: 0;
+}
+
+.ejercicios-del-catalogo__historial {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo-suave);
+  color: var(--texto);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Qué cuenta la marca, en una sola línea; el detalle, detrás de «Cómo se cuenta». */
+.ejercicios-del-catalogo__que-cuenta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.75rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.ejercicios-del-catalogo__que-cuenta > .nota {
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
 }
 
-.ejercicios-del-catalogo__que-cuenta,
+.ejercicios-del-catalogo__que-cuenta > .grafico-base__como-leerlo[open] {
+  flex: 1 1 100%;
+}
+
 .ejercicios-del-catalogo__sin-historial {
   margin: 0.25rem 0 0.5rem;
+}
+
+/* Las filas del buscador, más compactas: en 1440 × 900 se ven seis resultados o más sin desplazar. El encabezado
+   («Ejercicio») sigue para el lector de pantalla, sin ocupar un renglón a la vista. */
+.agregar-ejercicio .ejercicios-del-catalogo thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.agregar-ejercicio .ejercicios-del-catalogo tbody th,
+.agregar-ejercicio .ejercicios-del-catalogo tbody td {
+  padding-block: 0.3rem;
 }
 
 /* GR-01: «La vez pasada» en el cuadro del ejercicio, debajo de «Lo que indica el plan» y nunca mezclada con eso. */
@@ -18318,56 +18591,137 @@ html:has(.estacion:not([data-en-el-asistente])) {
   display: grid;
   gap: 0.5rem;
   margin-top: 1rem;
+  container-type: inline-size;
 }
 
 .la-vez-pasada > p {
   margin: 0;
 }
 
-.la-vez-pasada__tabla th,
-.la-vez-pasada__tabla td {
-  vertical-align: top;
+/* Una fila por sesión: la fecha y la sesión a la izquierda, las series como fichas a la derecha. */
+.la-vez-pasada__lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--borde);
 }
 
-.la-vez-pasada__tabla th[scope='row'] {
-  min-width: 7.5rem;
+.la-vez-pasada__vez {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  align-items: start;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--borde);
 }
 
-.la-vez-pasada__fecha,
-.la-vez-pasada__sesion {
-  display: block;
+.la-vez-pasada__cuando {
+  display: grid;
+  gap: 0.1rem;
+}
+
+/* Con el cuadro angosto (480 px), la fecha y la sesión van en un renglón arriba y las fichas tienen todo el ancho. */
+@container (max-width: 26rem) {
+  .la-vez-pasada__vez {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .la-vez-pasada__cuando {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.1rem 0.6rem;
+  }
 }
 
 .la-vez-pasada__fecha {
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.la-vez-pasada__sesion {
+  color: var(--tenue);
+  font-size: 0.875rem;
 }
 
 .la-vez-pasada__etiqueta {
   margin-top: 0.25rem;
+  justify-self: start;
 }
 
-/* Cada serie: la marca (llena si la escribió la persona, hueca si vino del plan) y el texto, con cifras alineadas. */
-.la-vez-pasada__serie {
-  display: inline-flex;
-  align-items: baseline;
+.la-vez-pasada__series {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada serie, una ficha que no se parte: la marca (llena si la escribió la persona, hueca si vino del plan) y el texto. */
+.la-vez-pasada__ficha {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo-suave);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
+}
+
+.la-vez-pasada__valor {
+  white-space: nowrap;
+}
+
+.la-vez-pasada__ficha--sin-dato {
+  color: var(--tenue);
+  border-style: dashed;
+  background: transparent;
 }
 
 .la-vez-pasada__marca-de-origen {
   flex: none;
-  align-self: center;
+  color: var(--metrica-1);
 }
 
 /* Lo precargado del plan va en gris: la marca hueca y el texto «carga rápida» lo dicen también sin el color. */
 .la-vez-pasada__serie--del-plan {
   color: var(--tenue);
+  background: transparent;
+}
+
+.la-vez-pasada__serie--del-plan .la-vez-pasada__marca-de-origen {
+  color: var(--grafico-carga-rapida);
 }
 
 .la-vez-pasada__del-plan {
-  display: block;
-  font-size: 0.85rem;
+  flex-basis: 100%;
+  font-size: 0.8125rem;
   color: var(--tenue);
+}
+
+.la-vez-pasada__otra {
+  margin: 0;
+  color: var(--tenue);
+}
+
+.la-vez-pasada__ver-mas {
+  justify-self: start;
+}
+
+.la-vez-pasada__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--tenue);
+  font-size: 0.8125rem;
 }
 
 .la-vez-pasada__leyenda li {
@@ -18381,7 +18735,8 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding-left: 1.1rem;
 }
 
-/* GR-16: «Desde el inicio y desde la anterior», al final de la toma abierta. La diferencia es una resta: sin color. */
+/* GR-16: «Desde el inicio y desde la anterior», al final de la toma abierta. La diferencia es una resta: sin color. La
+   tabla, angosta y con las cifras a la derecha, de ancho fijo y sin partir un valor. */
 .desde-el-inicio {
   display: grid;
   gap: 0.5rem;
@@ -18393,18 +18748,53 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0;
 }
 
+/* La caja que se desplaza mide lo que la tabla, y sus tapas son las de la tarjeta: sin franjas a los costados cuando la
+   tabla entra entera. */
+.desde-el-inicio .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.desde-el-inicio__tabla {
+  width: auto;
+  min-width: min(100%, 40rem);
+  max-width: 52rem;
+}
+
 .desde-el-inicio__tabla th,
 .desde-el-inicio__tabla td {
   vertical-align: top;
 }
 
+.desde-el-inicio__tabla thead th {
+  white-space: nowrap;
+}
+
+.desde-el-inicio__tabla thead th:not(:first-child),
+.desde-el-inicio__tabla td {
+  text-align: end;
+  padding-inline-start: 1.5rem;
+}
+
 .desde-el-inicio__tabla td {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.desde-el-inicio__tabla td.desde-el-inicio__sin-comparar {
+  text-align: start;
+  white-space: normal;
 }
 
 .desde-el-inicio__diferencia,
 .desde-el-inicio__dias {
   display: block;
+}
+
+.desde-el-inicio__dias {
+  font-size: 0.8125rem;
 }
 
 .desde-el-inicio__grupo {
@@ -18416,6 +18806,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .desde-el-inicio__metodo {
   display: block;
   font-weight: 400;
+  font-size: 0.8125rem;
 }
 
 /* ─── PG-15 y PG-16 (WP-PULIDO-GRANDES; DL-173): la nota para el profe y las notas propias del profesional ───────── */

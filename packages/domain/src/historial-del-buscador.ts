@@ -23,6 +23,13 @@ import { fechaEnPocasPalabras } from './la-vez-pasada';
 
 export const COPY_HISTORIAL_DEL_BUSCADOR = {
   conHistorial: 'Con historial',
+  /**
+   * Qué cuenta la marca, en una línea a la vista arriba de los resultados (WP-GRAFICOS, revisión del 15/11 de la pasada
+   * visual): dice que entran también las registradas como no realizadas o hechas con otro ejercicio, por eso «Analizar»
+   * puede contar menos filas. Vive acá, con el resto del texto de la marca: «No realizada» es una condición registrada
+   * (WP-06 §9.2), y su texto no se escribe en las pantallas.
+   */
+  enUnaLinea: 'Con historial: sesiones registradas en tus planes en el último año, también las no realizadas o hechas con otro ejercicio.',
   /** Qué cuenta la marca, dicho una vez arriba de los resultados, con lo que el índice no separa. */
   queCuenta:
     '«Con historial»: en cuántas sesiones registradas de tus planes con esta persona estuvo el ejercicio en el último año, y la última. Cuentan también las registradas como no realizadas o hechas con otro ejercicio: lo que hizo, serie por serie, está en «La vez pasada» del ejercicio.',
