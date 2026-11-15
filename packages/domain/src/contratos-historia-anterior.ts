@@ -48,13 +48,21 @@ export const HistoriaAnteriorDeUnAreaSchema = z.strictObject({
   relationshipId: IdOpaco,
   area: AlcanceSchema,
   professional: ResumenDeActorSchema,
-  /** En API-HIA-01, solo ACEPTADO o PAUSADO; FINALIZADO, en la respuesta de un retiro sobre un vínculo ya terminado. */
+  /**
+   * En API-HIA-01, ACEPTADO o PAUSADO; FINALIZADO solo si ese profesional la miró alguna vez con ese componente (para que la
+   * persona siga viendo cuándo, HA-T08) y en la respuesta de un retiro sobre un vínculo ya terminado.
+   */
   relationshipState: EstadoDeVinculoSchema,
   /** Si antes hubo otro profesional en esta área (HA-T06). No dice si dejó datos. */
   hadEarlierProfessional: z.boolean(),
   includes: z.array(ParteDeLaHistoriaAnteriorSchema),
   authorization: AutorizacionDeHistoriaAnteriorSchema.nullable(),
-  /** La última vez que este profesional la miró; `null` si nunca. */
+  /**
+   * Si hoy ese profesional ve los datos de esta área: el PDP de ese componente, sin registrar (vínculo aceptado, B2
+   * vigente, las cuentas y el A3). Compartida y con esto en `false`, no la ve (HA-T15): la app no dice «La ve».
+   */
+  accessInEffect: z.boolean(),
+  /** La última vez que este profesional la miró **con este componente** (HA-T08); `null` si nunca. */
   lastReadAt: Instante.nullable(),
 });
 export type HistoriaAnteriorDeUnArea = z.infer<typeof HistoriaAnteriorDeUnAreaSchema>;
@@ -67,7 +75,7 @@ export const MiHistoriaAnteriorResponseSchema = z.strictObject({
   data: z.strictObject({
     text: TextoDeLaHistoriaAnteriorSchema,
     items: z.array(HistoriaAnteriorDeUnAreaSchema),
-    /** Las últimas 50 lecturas, de la más nueva a la más vieja. */
+    /** Las últimas 50 lecturas, de la más nueva a la más vieja (el registro crudo; la app muestra `lastReadAt` por componente). */
     accesses: z.array(LecturaDeLaHistoriaAnteriorSchema),
   }),
 });

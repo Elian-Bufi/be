@@ -7,9 +7,12 @@
 -- Garantías en la base, aunque el código se equivoque:
 --   - solo se agrega, también frente a TRUNCATE (08 §29);
 --   - la da y la retira la persona del componente, y el profesional y el área son los de ese componente;
---   - cada versión sucede a la última del mismo componente, sin bifurcar la cadena;
---   - una VIGENTE lleva su texto y su hash, una RETIRADA no lleva ninguno, y no se da sobre un componente terminado.
--- Las lecturas del profesional (API-HIA-04) quedan en `decision_de_acceso`, como toda decisión del PDP: la persona las ve.
+--   - cada versión sucede a la última del mismo componente, sin bifurcar la cadena, y cambia su estado: la primera la da
+--     (VIGENTE), y después se alternan (nunca dos VIGENTE ni dos RETIRADA seguidas);
+--   - una VIGENTE lleva su texto y su hash, una RETIRADA no lleva ninguno, y no se da sobre un componente terminado (el
+--     trigger toma el componente en modo compartido: quien lo termina espera, o espera él).
+-- Las lecturas del profesional (API-HIA-04) quedan en `decision_de_acceso`, como toda decisión del PDP: la persona las ve, con
+-- un índice parcial para esas lecturas (al final).
 
 -- CreateEnum
 CREATE TYPE "EstadoDeAutorizacionDeHistoriaAnterior" AS ENUM ('VIGENTE', 'RETIRADA');
@@ -39,9 +42,6 @@ CREATE UNIQUE INDEX "autorizacion_de_historia_anterior_predecesora_id_key" ON "a
 
 -- CreateIndex
 CREATE INDEX "autorizacion_de_historia_anterior_asesorado_id_idx" ON "autorizacion_de_historia_anterior"("asesorado_id");
-
--- CreateIndex
-CREATE INDEX "autorizacion_de_historia_anterior_lector_idx" ON "autorizacion_de_historia_anterior"("profesional_id", "asesorado_id", "alcance");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "autorizacion_de_historia_anterior_componente_version_key" ON "autorizacion_de_historia_anterior"("alcance_de_vinculo_id", "version");
@@ -75,17 +75,20 @@ ALTER TABLE "autorizacion_de_historia_anterior" ADD CONSTRAINT "autorizacion_de_
 ALTER TABLE "autorizacion_de_historia_anterior" ADD CONSTRAINT "autorizacion_de_historia_anterior_procedencia_es_objeto" CHECK (COALESCE(jsonb_typeof("procedencia") = 'object', FALSE));
 
 -- ─── Cada versión es del componente que nombra y sucede a la última del mismo componente ────────────────────────────
--- El componente tiene que ser de un vínculo de esa persona con ese profesional, en esa área. La primera versión no tiene
--- predecesora y es la única primera del componente; las siguientes suceden a la última. Una VIGENTE no se da sobre un
--- componente terminado (una RETIRADA, sí: retirar siempre se puede).
+-- El componente tiene que ser de un vínculo de esa persona con ese profesional, en esa área, y se toma en modo compartido
+-- (`FOR SHARE`): terminarlo lo toma `FOR NO KEY UPDATE`, así que una VIGENTE y el cierre del componente no se cruzan. La
+-- primera versión no tiene predecesora, es la única primera del componente y la da (VIGENTE); las siguientes suceden a la
+-- última y cambian su estado. Una VIGENTE no se da sobre un componente terminado (una RETIRADA, sí: retirar siempre se puede).
 CREATE FUNCTION "be_autorizacion_de_historia_anterior_guardar"() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   v_estado "EstadoDeAlcanceDeVinculo";
+  v_anterior "EstadoDeAutorizacionDeHistoriaAnterior";
 BEGIN
   SELECT av."estado" INTO v_estado
     FROM "alcance_de_vinculo" av JOIN "vinculo" v ON v."id" = av."vinculo_id"
    WHERE av."id" = NEW."alcance_de_vinculo_id" AND v."asesorado_id" = NEW."asesorado_id" AND v."profesional_id" = NEW."profesional_id"
-     AND av."alcance" = NEW."alcance";
+     AND av."alcance" = NEW."alcance"
+     FOR SHARE OF av;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'BE: la autorización de la historia anterior nombra un componente de esa persona con ese profesional, en esa área' USING ERRCODE = 'check_violation';
   END IF;
@@ -96,12 +99,31 @@ BEGIN
     IF EXISTS (SELECT 1 FROM "autorizacion_de_historia_anterior" WHERE "alcance_de_vinculo_id" = NEW."alcance_de_vinculo_id") THEN
       RAISE EXCEPTION 'BE: la autorización de la historia anterior de este componente ya tiene una primera versión' USING ERRCODE = 'check_violation';
     END IF;
-  ELSIF NOT EXISTS (
-    SELECT 1 FROM "autorizacion_de_historia_anterior"
+    IF NEW."estado" <> 'VIGENTE' THEN
+      RAISE EXCEPTION 'BE: la primera versión de la autorización de la historia anterior la da (VIGENTE)' USING ERRCODE = 'check_violation';
+    END IF;
+  ELSE
+    SELECT "estado" INTO v_anterior
+      FROM "autorizacion_de_historia_anterior"
      WHERE "id" = NEW."predecesora_id" AND "alcance_de_vinculo_id" = NEW."alcance_de_vinculo_id" AND "version" = NEW."version" - 1
-       AND "version" = (SELECT MAX("version") FROM "autorizacion_de_historia_anterior" WHERE "alcance_de_vinculo_id" = NEW."alcance_de_vinculo_id")) THEN
-    RAISE EXCEPTION 'BE: una versión de la autorización de la historia anterior sucede a la última del mismo componente' USING ERRCODE = 'check_violation';
+       AND "version" = (SELECT MAX("version") FROM "autorizacion_de_historia_anterior" WHERE "alcance_de_vinculo_id" = NEW."alcance_de_vinculo_id");
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'BE: una versión de la autorización de la historia anterior sucede a la última del mismo componente' USING ERRCODE = 'check_violation';
+    END IF;
+    IF v_anterior = NEW."estado" THEN
+      RAISE EXCEPTION 'BE: una versión de la autorización de la historia anterior cambia el estado de la anterior' USING ERRCODE = 'check_violation';
+    END IF;
   END IF;
   RETURN NEW;
 END $$;
 CREATE TRIGGER "autorizacion_de_historia_anterior_guardar" BEFORE INSERT ON "autorizacion_de_historia_anterior" FOR EACH ROW EXECUTE FUNCTION "be_autorizacion_de_historia_anterior_guardar"();
+
+-- ─── Quién miró la historia anterior (API-HIA-01, 08 §19.7) ─────────────────────────────────────────────────────────
+-- La persona lee las lecturas permitidas de API-HIA-04 sobre ella: las últimas 50 y la última por componente de vínculo,
+-- cada vez que abre «Quién ve qué» y en cada autorizar o retirar (con el cerrojo de la persona tomado). Sin este índice,
+-- esas lecturas recorrerían toda `decision_de_acceso`, que crece con cada decisión del PDP de BE: ninguno de sus índices
+-- empieza por el sujeto (sin «skip scan» en PostgreSQL 16) y el parcial de RES es de otra operación. Parcial, como aquel:
+-- solo esas decisiones, que son pocas al lado del resto. Las consultas (`autorizaciones.ts`) escriben la operación y el
+-- resultado como constantes, para que el predicado coincida también con un plan genérico.
+CREATE INDEX "decision_de_acceso_lecturas_de_la_historia_anterior" ON "decision_de_acceso" ("sujeto_id", "secuencia" DESC)
+  WHERE "operacion" = 'API-HIA-04' AND "resultado" = 'PERMITIDA';

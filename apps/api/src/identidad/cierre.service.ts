@@ -105,8 +105,10 @@ export class CierreService {
           await retirarAutorizacionDeHabitosPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
           // DL-163 D-13, ampliada (TB-55): también la de lo de otras áreas, con su cerrojo, después de la de los hábitos.
           await retirarAutorizacionDeResumenesPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
-          // DL-175 (WP-HISTORIA-ANTERIOR): y cada autorización de su historia anterior, con su cerrojo, al final.
-          await retirarHistoriaAnteriorPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
+          // DL-175 (WP-HISTORIA-ANTERIOR): y cada autorización de su historia anterior, con su cerrojo, al final. La hora del
+          // retiro es la de la base con el cerrojo tomado, no la de llegada (prisma/concurrencia.ts): una lectura que estaba en
+          // curso queda antes del retiro también en el tiempo.
+          await retirarHistoriaAnteriorPorCierre(tx, { personaId: actor.identidadId, procedencia });
 
           const registrada = await tx.solicitudDeCierreDeCuenta.create({
             data: {

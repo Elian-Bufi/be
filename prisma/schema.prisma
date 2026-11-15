@@ -4591,6 +4591,5 @@ model AutorizacionDeHistoriaAnterior {
 
   @@unique([alcanceDeVinculoId, version], map: "autorizacion_de_historia_anterior_componente_version_key")
   @@index([asesoradoId])
-  @@index([profesionalId, asesoradoId, alcance], map: "autorizacion_de_historia_anterior_lector_idx")
   @@map("autorizacion_de_historia_anterior")
 }

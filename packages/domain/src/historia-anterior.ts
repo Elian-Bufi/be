@@ -16,11 +16,14 @@
  *
  * «Anterior» quiere decir **antes de que empezara el acompañamiento de quien lee** (HA-T03): el corte es el comienzo de su
  * componente de vínculo en esa área. Lo que otro profesional registró después (porque la acompañaba a la vez) no es
- * historia anterior, y el aviso del website («antes de tu acompañamiento») dice la verdad.
+ * historia anterior, y el aviso del website («antes de tu acompañamiento») dice la verdad. Tampoco lo que cambió después
+ * sobre lo de antes: las correcciones, anulaciones, rectificaciones y recálculos posteriores al corte no entran, y cada
+ * cosa se ve como estaba cuando empezó el acompañamiento de quien lee (`correccionesAlCorte`).
  */
 import { ETIQUETA_DE_ALCANCE, type Alcance } from './alcance';
 import { diaSiguiente, diasEntreFechas, esFechaCivil } from './fechas-civiles';
 import { lunesDe } from './series-del-analisis';
+import { resolverVistaEfectiva } from './versionado';
 
 // ─── Lo que entra de cada área ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -60,16 +63,16 @@ Texto de demostración para el trabajo final BE. No es un texto legal ni se apli
 
 Texto propuesto, pendiente de validación jurídica.
 
-Esta autorización es para que el profesional que te acompaña ahora en un área vea lo que pasó en esa misma área con otros profesionales, antes de que él empezara a acompañarte.
+Esta autorización es para que el profesional que te acompaña ahora en un área vea lo que pasó en esa misma área con otros profesionales, antes de que empezara a acompañarte.
 
-Qué ve, en solo lectura y marcado como de otro profesional, sin su nombre: en Nutrición y en Entrenamiento, las versiones de los planes que se activaron (nunca los borradores), lo que registraste bajo esos planes y las decisiones de las revisiones, con su resultado, su fundamento y la próxima acción; en Antropometría, las tomas, con su método.
+Qué ve, en solo lectura y marcado como de otro profesional, sin su nombre: en Nutrición y en Entrenamiento, las versiones de los planes que se activaron (nunca los borradores), lo que registraste bajo esos planes y las decisiones de las revisiones, con su resultado, su fundamento y la próxima acción; en Antropometría, las tomas, cada una con su método. Lo ve como estaba cuando empezó a acompañarte.
 
 Qué no ve nunca: las notas privadas de los otros profesionales, sus borradores ni sus notas internas. Tampoco ve lo de otras áreas.
 
-La autorización es para ese profesional y para esa área. La podés retirar cuando quieras desde «Quién ve qué», en tu Perfil: desde ese momento deja de verla, y no se borra nada. Cada vez que la mira queda registrado, y lo ves ahí mismo.
+La autorización es para ese profesional y para esa área. La podés retirar cuando quieras desde «Quién ve qué», en tu Perfil: desde ese momento deja de verla, y no se borra nada. Si revocás tu autorización de acceso a esa área, también se retira: para que la vuelva a ver, la tenés que compartir de nuevo. Cada vez que la mira queda registrado, y en «Quién ve qué» ves la última vez que la miró, también después de que termine el vínculo.
 
-Para verla, además, ese profesional tiene que acompañarte en esa área, con tu autorización de acceso vigente.`,
-  hash: '444117df85d68a53be4e46a67124261908c1c6f575b96825795370f6c38d019b',
+Para verla, además, ese profesional tiene que acompañarte en esa área, con tu autorización de acceso y la de tus datos de salud vigentes.`,
+  hash: 'a637aac1a86ebd5735d679f44ef4b9b6bdd526ad3db6284ee3a6d0c00b9b6397',
   propuesta: true,
 } as const;
 
@@ -78,30 +81,45 @@ Para verla, además, ese profesional tiene que acompañarte en esa área, con tu
 /** El área con las palabras de BE. */
 const area = (a: Alcance): string => ETIQUETA_DE_ALCANCE[a];
 
-/** Lo que entra, dicho para la persona: «tus planes, registros y decisiones anteriores de Nutrición». */
+/** Lo que entra, dicho para la persona: «tus planes, lo que registraste y las decisiones de las revisiones». */
 export function loQueLeMuestra(a: Alcance): string {
-  if (a === 'ANTROPOMETRIA') return `tus tomas anteriores de ${area(a)}, con su método`;
-  return `tus planes, registros y decisiones anteriores de ${area(a)}`;
+  if (a === 'ANTROPOMETRIA') return 'tus tomas, cada una con su método';
+  return 'tus planes, lo que registraste y las decisiones de las revisiones';
 }
 
 export const COPY_HISTORIA_ANTERIOR = {
   // ── La persona, en la APK ──
   titulo: (a: Alcance) => `Tu historia anterior de ${area(a)}`,
-  /** La explicación corta de «Quién ve qué» y de la tarjeta al aceptar a alguien nuevo. */
-  explicacion: (nombre: string, a: Alcance) => `Le muestra a ${nombre} ${loQueLeMuestra(a)}, con otros profesionales. Sus notas privadas no se comparten.`,
+  /**
+   * La explicación corta de «Quién ve qué» y de la tarjeta al aceptar a alguien nuevo. Con sujeto («Compartirla») y sin un
+   * «sus» que se pueda leer como de quien la recibe: las notas que no se comparten son las de los otros profesionales.
+   */
+  explicacion: (nombre: string, a: Alcance) =>
+    `Compartirla le muestra a ${nombre} lo que pasó antes en ${area(a)} con otros profesionales: ${loQueLeMuestra(a)}. Las notas privadas de esos profesionales no se comparten.`,
   interruptor: 'Compartir mi historia anterior',
   interruptorParaLeer: (nombre: string, a: Alcance) => `Compartir tu historia anterior de ${area(a)} con ${nombre}`,
+  /** Lo que hace el interruptor, para TalkBack (la sugerencia): el estado va en la etiqueta, que se lee siempre. */
+  paraCompartir: 'Abre el texto para que lo leas antes de compartirla',
+  paraRetirar: 'Pide confirmación para dejar de compartirla',
   laVe: (desde: string) => `La ve desde el ${desde}`,
   noLaVe: 'No la ve',
   enPausa: 'Con el vínculo en pausa no la ve, aunque la compartas',
+  /** Compartida, pero sin el acceso de hoy a esa área (B2 revocado, sin el A3, una cuenta suspendida): no la ve (HA-T15). */
+  sinAcceso: (a: Alcance) => `La compartís, pero mientras no tenga acceso a tus datos de ${area(a)} no la ve`,
+  /** Un vínculo terminado que la miró: queda la línea de cuándo, en solo lectura (HA-T08). */
+  terminado: 'El vínculo terminó: ya no la ve',
   miro: (cuando: string) => `Miró tu historia anterior ${cuando}`,
   todaviaNoLaMiro: 'Todavía no miró tu historia anterior',
   leerElTexto: 'Leer el texto completo',
   propuesta: 'Texto propuesto, pendiente de validación jurídica.',
   compartiendo: 'Compartiendo…',
   retirando: 'Dejando de compartir…',
+  /** El éxito de compartirla dice lo mismo que el estado: solo «puede verla» si hoy tiene acceso a esa área (HA-T15). */
   compartida: (nombre: string) => `Listo: ${nombre} puede ver tu historia anterior.`,
+  compartidaSinAcceso: (nombre: string, a: Alcance) => `Listo: la compartiste. ${nombre} la va a poder ver cuando tenga acceso a tus datos de ${area(a)}.`,
   retirada: (nombre: string) => `Listo: ${nombre} ya no ve tu historia anterior. No se borró nada.`,
+  /** Al compartir se lee el texto entero, como en los hábitos: lo que se acepta no se pliega (08 §12.2). */
+  leeAntes: 'Leé el texto antes de decidir: es lo que aceptás si la compartís.',
   confirmarRetiro: {
     titulo: 'Dejar de compartir tu historia anterior',
     cuerpo: (nombre: string) => `${nombre} deja de verla desde ahora. No se borra nada, y la podés volver a compartir cuando quieras.`,
@@ -118,22 +136,28 @@ export const COPY_HISTORIA_ANTERIOR = {
   noSePudo: 'No se pudo guardar. Probá de nuevo.',
   cambioAntes: 'Esto cambió mientras lo mirabas. Actualizá la vista y probá de nuevo.',
   sinElA3: 'Para compartirla, primero tenés que autorizar el tratamiento de tus datos de salud, en Privacidad.',
+  actualizar: 'Actualizar',
+  irAPrivacidad: 'Ir a Privacidad',
 
   // ── El profesional, en el website ──
   ruta: 'Historia anterior',
-  /** La pista de la entrada del menú «Más» de la ficha. */
-  pistaEnLaFicha: 'Lo que pasó en tu área con otro profesional, antes de tu acompañamiento. Lo ves si la persona te autoriza.',
+  /** La pista de la entrada del menú «Más» de la ficha: sin dar por hecho que hubo otro profesional. */
+  pistaEnLaFicha: 'Lo que pasó en tu área con otros profesionales, si los hubo y la persona te autoriza.',
   tituloDelArea: (a: Alcance) => `Historia anterior de ${area(a)}`,
   /** El nombre de la navegación de las áreas, para el lector de pantalla. */
   areasParaLeer: 'Áreas de la historia anterior',
   tramosParaLeer: 'Tramos de la historia anterior',
   aviso: 'Lo que sigue pasó con otro profesional, antes de tu acompañamiento. Solo lectura.',
-  /** Sin la autorización: cómo pedírsela, sin mostrar ni insinuar datos. */
+  /**
+   * Sin la autorización: cómo pedírsela, sin mostrar ni insinuar datos. Primero lo que hace falta (acompañarla en esa área
+   * es la primera condición: en un área que no acompaña, la entrada de la app no existe para él), y después dónde está.
+   */
   comoPedirla: {
     titulo: 'Para ver la historia anterior, la persona tiene que autorizarte',
     cuerpo: (a: Alcance) =>
-      `Si la persona tuvo antes otro profesional de ${area(a)}, puede autorizarte a ver esa historia desde su app: en Perfil, «Quién ve qué», debajo de tu nombre, «Tu historia anterior de ${area(a)}». Pedíselo en la próxima consulta; BE no le manda ningún aviso desde acá.`,
-    sinAcceso: 'También hace falta que la acompañes hoy en esta área, con su autorización de acceso vigente.',
+      `Hacen falta dos cosas: que acompañes a la persona en ${area(a)}, con su autorización de acceso vigente, y que ella te autorice a ver esa historia desde su app.`,
+    donde: (a: Alcance) =>
+      `Si antes tuvo otro profesional de ${area(a)}, lo encuentra en Perfil, «Quién ve qué», debajo de tu nombre: «Tu historia anterior de ${area(a)}». Pedíselo en la próxima consulta; BE no le manda ningún aviso desde acá.`,
   },
   deOtroProfesional: 'De otro profesional',
   deOtroProfesionalN: (n: number) => `De otro profesional (${n}.º)`,
@@ -321,6 +345,28 @@ export function vigenciaHastaElCorte(v: { readonly desde: string; readonly hasta
   return { desde: v.desde, hasta: seguia ? null : v.hasta, seguiaVigente: seguia };
 }
 
+/**
+ * HA-T03, ampliada en la revisión: lo de antes se muestra **como estaba en el corte**. Las correcciones registradas después
+ * (por otro profesional que la sigue acompañando, o por la persona) no entran, y la vista efectiva se resuelve solo con las
+ * de antes (REG-06-16). Devuelve las correcciones que quedan y la vista que dan, con los tokens del contrato. Las fechas
+ * son instantes ISO de la misma forma (`toISOString`), así que se comparan como texto.
+ */
+export function correccionesAlCorte<C extends { readonly correctionId: string; readonly previousCorrectionId: string | null; readonly recordedAt: string }>(
+  originalId: string,
+  correcciones: readonly C[],
+  corte: string,
+): { readonly correcciones: readonly C[]; readonly vista: { readonly kind: 'ORIGINAL' } | { readonly kind: 'CORRECTED'; readonly correctionId: string } | { readonly kind: 'NOT_RESOLVABLE' } } {
+  const antes = correcciones.filter((c) => c.recordedAt < corte);
+  const vista = resolverVistaEfectiva(
+    originalId,
+    antes.map((c) => ({ id: c.correctionId, originalId, correccionPreviaId: c.previousCorrectionId })),
+  );
+  return {
+    correcciones: antes,
+    vista: vista.tipo === 'ORIGINAL' ? { kind: 'ORIGINAL' } : vista.tipo === 'CORREGIDA' ? { kind: 'CORRECTED', correctionId: vista.id } : { kind: 'NOT_RESOLVABLE' },
+  };
+}
+
 /** La extensión de la historia: de la fecha más vieja a la más nueva de todo lo que entra; `null` si no hay nada. */
 export function extensionDe(fechas: readonly (string | null | undefined)[]): TramoDeFechas | null {
   const validas = fechas.filter((f): f is string => typeof f === 'string' && esFechaCivil(f)).sort();
@@ -349,11 +395,21 @@ export function textosDeLaHistoriaAnterior(): readonly string[] {
   const areas: readonly Alcance[] = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
   return [
     TEXTO_DE_LA_HISTORIA_ANTERIOR.texto,
-    ...areas.flatMap((a) => [C.titulo(a), C.explicacion('Lic. Sofía Paz', a), C.interruptorParaLeer('Lic. Sofía Paz', a), C.alAceptar.titulo('Lic. Sofía Paz', a), C.tituloDelArea(a), C.comoPedirla.cuerpo(a)]),
-    C.interruptor, C.laVe('3/11/2026'), C.noLaVe, C.enPausa, C.miro('ayer a las 18:20'), C.todaviaNoLaMiro, C.leerElTexto, C.propuesta, C.compartida('Lic. Sofía Paz'), C.retirada('Lic. Sofía Paz'),
+    ...areas.flatMap((a) => [
+      C.titulo(a),
+      C.explicacion('Lic. Sofía Paz', a),
+      C.interruptorParaLeer('Lic. Sofía Paz', a),
+      C.alAceptar.titulo('Lic. Sofía Paz', a),
+      C.tituloDelArea(a),
+      C.comoPedirla.cuerpo(a),
+      C.comoPedirla.donde(a),
+      C.sinAcceso(a),
+      C.compartidaSinAcceso('Lic. Sofía Paz', a),
+    ]),
+    C.interruptor, C.paraCompartir, C.paraRetirar, C.laVe('3/11/2026'), C.noLaVe, C.enPausa, C.terminado, C.miro('ayer a las 18:20'), C.todaviaNoLaMiro, C.leerElTexto, C.propuesta, C.compartida('Lic. Sofía Paz'), C.retirada('Lic. Sofía Paz'), C.leeAntes,
     C.confirmarRetiro.titulo, C.confirmarRetiro.cuerpo('Lic. Sofía Paz'), C.confirmarRetiro.confirmar, C.confirmarRetiro.cancelar,
-    C.alAceptar.opcional, C.alAceptar.compartir, C.alAceptar.ahoraNo, C.noSePudo, C.cambioAntes, C.sinElA3,
-    C.ruta, C.pistaEnLaFicha, C.areasParaLeer, C.tramosParaLeer, C.sinValor, C.aviso, C.comoPedirla.titulo, C.comoPedirla.sinAcceso, C.deOtroProfesional, C.deOtroProfesionalN(2),
+    C.alAceptar.opcional, C.alAceptar.compartir, C.alAceptar.ahoraNo, C.noSePudo, C.cambioAntes, C.sinElA3, C.actualizar, C.irAPrivacidad,
+    C.ruta, C.pistaEnLaFicha, C.areasParaLeer, C.tramosParaLeer, C.sinValor, C.aviso, C.comoPedirla.titulo, C.deOtroProfesional, C.deOtroProfesionalN(2),
     ...Object.values(C.secciones), ...Object.values(C.vacio), C.sinHistoria, C.tramo('1/9/2026', '29/11/2026'), C.tramoAnterior, C.tramoSiguiente, C.laHistoriaVa('1/3/2026', '29/11/2026'),
     C.version(2), C.vigencia('1/9/2026', null), C.vigencia('1/9/2026', '1/10/2026'), C.seguiaVigente, ...Object.values(C.motivoDelCorte), C.semana('3/11', '9/11'),
     C.comidasRegistradas(1), C.comidasRegistradas(4), C.sesionesRegistradas(1), C.sesionesRegistradas(3), C.opcionDelPlan, C.algoDiferente, C.anulado, C.corregida, C.ejercicios(1), C.ejercicios(5),

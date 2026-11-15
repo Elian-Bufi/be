@@ -7,17 +7,22 @@
  *   (los que empezaron a acompañarla en esa área antes que quien lee, sin él) y por las tablas de esa área. Nada de otra
  *   área tiene por dónde entrar: Nutrición lee ingestas y revisiones nutricionales; Entrenamiento, ejecuciones y revisiones
  *   de entrenamiento; Antropometría, evaluaciones;
- * - **solo lo anterior:** lo registrado antes del comienzo del acompañamiento de quien lee (HA-T03);
+ * - **solo lo anterior, y como estaba entonces:** lo registrado antes del comienzo del acompañamiento de quien lee (HA-T03),
+ *   sin las correcciones, anulaciones, rectificaciones ni recálculos registrados después (los haga quien los haga: otro
+ *   profesional que la sigue acompañando, o la persona). Todo lo que cambia una fila de antes se filtra por su
+ *   `momentoDeRegistro` contra el mismo corte;
  * - **solo lo que la persona vio o hizo:** versiones ACTIVADAS (la lectura del titular, sin origen de plantilla ni recetas),
- *   evaluaciones REGISTRADAS, ingestas y ejecuciones registradas, y de las revisiones solo resultado, fundamento y próxima
- *   acción. Las notas propias (PG-16), las notas internas de una evaluación, los borradores, las fotos y los autores de las
- *   correcciones no se consultan;
+ *   evaluaciones REGISTRADAS con lo calculado para el soporte antropométrico (lo que ve la persona en su evolución, no el
+ *   soporte de un objetivo nutricional), ingestas y ejecuciones registradas, y de las revisiones solo resultado, fundamento y
+ *   próxima acción. Las notas propias (PG-16), las notas internas de una evaluación, los borradores, las fotos y los autores
+ *   de las correcciones no se consultan;
  * - **sin nombrar al otro:** cada cosa lleva `author: { kind: 'OTHER_PROFESSIONAL', ordinal }`.
  */
 import {
   LO_QUE_ENTRA,
   RESULTADO_HACIA_API,
   autorDeOtro,
+  correccionesAlCorte,
   extensionDe,
   ordinalesDeLosAnteriores,
   registroVigente,
@@ -132,7 +137,13 @@ async function versionesDelTramo(tx: Tx, s: ServiciosDeLaHistoria, p: { readonly
   return salida.sort((a, b) => (a.activatedAt < b.activatedAt ? -1 : a.activatedAt > b.activatedAt ? 1 : 0));
 }
 
-/** Lo registrado bajo los planes de los otros en el tramo, antes del corte: comidas (sin fotos) o sesiones. */
+/** Lo que cambia una fila de antes (una corrección, una rectificación, una anulación) entra solo si se registró antes del corte. */
+const antesDelCorte =
+  (corte: Date) =>
+  (x: { readonly momentoDeRegistro: Date }): boolean =>
+    x.momentoDeRegistro.getTime() < corte.getTime();
+
+/** Lo registrado bajo los planes de los otros en el tramo, antes del corte: comidas (sin fotos) o sesiones, como estaban en el corte. */
 async function registrosDelTramo(tx: Tx, s: ServiciosDeLaHistoria, p: { readonly personaId: string; readonly area: 'NUTRICION' | 'ENTRENAMIENTO'; readonly ordinales: ReadonlyMap<string, number>; readonly corte: Date; readonly tramo: TramoDeFechas }): Promise<RegistroAnterior[]> {
   const donde = {
     asesoradoId: p.personaId,
@@ -142,7 +153,15 @@ async function registrosDelTramo(tx: Tx, s: ServiciosDeLaHistoria, p: { readonly
   };
   const orden = [{ fechaLocal: 'asc' as const }, { momentoDeOcurrencia: 'asc' as const }, { id: 'asc' as const }];
   if (p.area === 'NUTRICION') {
-    const filas = await tx.ingestaNutricional.findMany({ where: donde, include: { ...INCLUIR_REGISTRO, versionDePlan: { select: { plan: { select: { profesionalId: true } } } } }, orderBy: orden });
+    const leidas = await tx.ingestaNutricional.findMany({ where: donde, include: { ...INCLUIR_REGISTRO, versionDePlan: { select: { plan: { select: { profesionalId: true } } } } }, orderBy: orden });
+    // Como estaban en el corte: sin las correcciones, las rectificaciones ni la anulación registradas después.
+    const enElCorte = antesDelCorte(p.corte);
+    const filas = leidas.map((f) => ({
+      ...f,
+      correcciones: f.correcciones.filter(enElCorte),
+      rectificaciones: f.rectificaciones.filter(enElCorte),
+      anulacion: f.anulacion && enElCorte(f.anulacion) ? f.anulacion : null,
+    }));
     const deQuien = new Map(filas.map((f) => [f.id, f.versionDePlan.plan.profesionalId] as const));
     return (await registrosApi(tx, filas)).map((r) => ({
       kind: 'MEAL' as const,
@@ -159,7 +178,11 @@ async function registrosDelTramo(tx: Tx, s: ServiciosDeLaHistoria, p: { readonly
   }
   const filas = await tx.ejecucionDeEntrenamiento.findMany({ where: donde, select: { id: true, versionDePlan: { select: { plan: { select: { profesionalId: true } } } } }, orderBy: orden });
   const deQuien = new Map(filas.map((f) => [f.id, f.versionDePlan.plan.profesionalId] as const));
-  return (await s.ejecuciones.ejecucionesApi(tx, filas.map((f) => f.id))).map((x) => {
+  const corte = p.corte.toISOString();
+  return (await s.ejecuciones.ejecucionesApi(tx, filas.map((f) => f.id))).map((registrada) => {
+    // Como estaba en el corte: la vista efectiva solo con las correcciones registradas antes (REG-06-16).
+    const enElCorte = correccionesAlCorte(registrada.executionId, registrada.corrections, corte);
+    const x = { ...registrada, corrections: [...enElCorte.correcciones], effectiveView: enElCorte.vista };
     const vigente = registroVigente(x);
     return {
       kind: 'SESSION' as const,
@@ -175,7 +198,10 @@ async function registrosDelTramo(tx: Tx, s: ServiciosDeLaHistoria, p: { readonly
   });
 }
 
-/** Las tomas registradas de los otros en el tramo, antes del corte: lo medido vigente y lo calculado vigente. */
+/**
+ * Las tomas registradas de los otros en el tramo, antes del corte, como estaban en el corte: lo medido vigente (con las
+ * correcciones y anulaciones de antes) y lo calculado para el soporte antropométrico, también de antes.
+ */
 async function tomasDelTramo(tx: Tx, p: { readonly personaId: string; readonly ordinales: ReadonlyMap<string, number>; readonly corte: Date; readonly tramo: TramoDeFechas }): Promise<TomaAnterior[]> {
   const filas = await tx.evaluacionAntropometrica.findMany({
     where: {
@@ -186,13 +212,20 @@ async function tomasDelTramo(tx: Tx, p: { readonly personaId: string; readonly o
       momentoDeOcurrencia: { gte: inicioDelDiaLocal(p.tramo.desde, ZONA), lt: finDelDiaLocal(p.tramo.hasta, ZONA) },
     },
     include: {
-      mediciones: { include: { protocoloVersion: true, correcciones: { orderBy: { momentoDeRegistro: 'asc' } }, anulacion: true }, orderBy: { momentoDeRegistro: 'asc' } },
-      ejecuciones: { include: { metodoVersion: true }, orderBy: { momentoDeRegistro: 'asc' } },
+      mediciones: {
+        include: { protocoloVersion: true, correcciones: { where: { momentoDeRegistro: { lt: p.corte } }, orderBy: { momentoDeRegistro: 'asc' } }, anulacion: true },
+        orderBy: { momentoDeRegistro: 'asc' },
+      },
+      // Lo que la persona ve en su evolución (`antropometria/evolucion.service.ts`): el soporte antropométrico, no el de un
+      // objetivo nutricional. Y solo las corridas de antes del corte: un recálculo posterior no reemplaza a la de entonces.
+      ejecuciones: { where: { finalidad: 'SOPORTE_ANTROPOMETRICO', momentoDeRegistro: { lt: p.corte } }, include: { metodoVersion: true }, orderBy: { momentoDeRegistro: 'asc' } },
     },
     orderBy: [{ momentoDeOcurrencia: 'asc' }, { id: 'asc' }],
   });
+  const enElCorte = antesDelCorte(p.corte);
   return filas.map((e) => {
-    // Un recálculo reemplaza al anterior y no lo sobrescribe (REG-06-161): se muestra solo el último de cada cadena.
+    // Un recálculo reemplaza al anterior y no lo sobrescribe (REG-06-161): se muestra solo el último de cada cadena, entre
+    // los de antes del corte.
     const reemplazados = new Set(e.ejecuciones.flatMap((x) => (x.reemplazaAId ? [x.reemplazaAId] : [])));
     return {
       evaluationId: e.id,
@@ -200,7 +233,7 @@ async function tomasDelTramo(tx: Tx, p: { readonly personaId: string; readonly o
       takenAt: e.momentoDeOcurrencia.toISOString(),
       date: fechaLocalEn(e.momentoDeOcurrencia, ZONA),
       measurements: e.mediciones
-        .filter((m) => m.anulacion === null)
+        .filter((m) => m.anulacion === null || !enElCorte(m.anulacion))
         .map((m) => ({ metric: m.metrica, magnitude: magnitudEfectiva(m), protocolName: m.protocoloVersion.nombre, origin: ORIGEN_API[m.origen], corrected: m.correcciones.length > 0 })),
       derivedResults: e.ejecuciones.filter((x) => !reemplazados.has(x.id)).map((x) => ({ metric: x.metrica, magnitude: { value: Number(x.valor), unit: x.unidad }, methodName: x.metodoVersion.nombre })),
     };

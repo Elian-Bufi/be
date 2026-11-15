@@ -1,5 +1,5 @@
 /**
- * WP-HISTORIA-ANTERIOR (DL-175) · la lógica pura de la historia anterior, TEST-HA-001 a TEST-HA-012. Cada prueba dice la
+ * WP-HISTORIA-ANTERIOR (DL-175) · la lógica pura de la historia anterior, TEST-HA-001 a TEST-HA-014. Cada prueba dice la
  * mutación que la tiene que poner en rojo; las de TEST-HA-003, 004, 005, 007 y 009 se verificaron mutando el código
  * (docs/paquetes/WP-HISTORIA-ANTERIOR.md §7). Lo que pasa con la base y la API, en
  * test/integration/historia-anterior.int-spec.ts (TEST-HA-020 a 031).
@@ -12,6 +12,7 @@ import { terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
 import { terminosProhibidosEn } from './copy-nutricion';
 import {
   AutorizarHistoriaAnteriorRequestSchema,
+  HistoriaAnteriorDeUnAreaSchema,
   HistoriaAnteriorResponseSchema,
   MiHistoriaAnteriorResponseSchema,
   RegistroAnteriorSchema,
@@ -25,6 +26,7 @@ import {
   LO_QUE_ENTRA,
   TEXTO_DE_LA_HISTORIA_ANTERIOR as T,
   autorizacionVigente,
+  correccionesAlCorte,
   decidirCambioDeAutorizacion,
   extensionDe,
   huboOtroAntes,
@@ -58,14 +60,31 @@ test('TEST-HA-001 · el texto que se acepta: su hash es el de su texto, es una p
   assert.match(T.texto, /queda registrado/);
   assert.match(T.texto, /sin su nombre/);
   assert.match(T.id, /^historia-anterior-\d{4}-\d{2}-propuesta$/);
+  // La revisión del 2026-11-15: lo de antes se ve como estaba (HA-T03), revocar el acceso a esa área la retira (HA-T14), la
+  // persona ve la última vez que la miró, también con el vínculo terminado (HA-T08), y el texto no tiene género.
+  assert.match(T.texto, /Lo ve como estaba cuando empezó a acompañarte/);
+  assert.match(T.texto, /Si revocás tu autorización de acceso a esa área, también se retira/);
+  assert.match(T.texto, /ves la última vez que la miró, también después de que termine el vínculo/);
+  // (`\b` no sirve con «é»: se busca la palabra suelta, entre espacios o signos.)
+  assert.doesNotMatch(T.texto, /(^|\s)(él|ella)(?=[\s.,;:])/);
+  assert.match('antes de que él empezara', /(^|\s)(él|ella)(?=[\s.,;:])/);
+  assert.doesNotMatch(T.texto, /lo ves ahí mismo/);
 });
 
 test('TEST-HA-002 · lo que entra de cada área: Antropometría solo sus tomas; Nutrición y Entrenamiento, planes, registros y decisiones (mutación: sumar las tomas a Nutrición)', () => {
   assert.deepEqual(LO_QUE_ENTRA, { NUTRICION: ['PLANS', 'RECORDS', 'DECISIONS'], ENTRENAMIENTO: ['PLANS', 'RECORDS', 'DECISIONS'], ANTROPOMETRIA: ['MEASUREMENTS'] });
-  // La explicación de la app dice lo mismo, con las palabras de la persona.
-  assert.equal(C.explicacion('Lic. Sofía Paz', 'NUTRICION'), 'Le muestra a Lic. Sofía Paz tus planes, registros y decisiones anteriores de Nutrición, con otros profesionales. Sus notas privadas no se comparten.');
-  assert.equal(C.explicacion('Prof. Lucía Benítez', 'ANTROPOMETRIA'), 'Le muestra a Prof. Lucía Benítez tus tomas anteriores de Antropometría, con su método, con otros profesionales. Sus notas privadas no se comparten.');
+  // La explicación de la app dice lo mismo, con las palabras de la persona: con sujeto («Compartirla») y sin un «sus» que se
+  // pueda leer como las notas de quien la recibe.
+  assert.equal(
+    C.explicacion('Lic. Sofía Paz', 'NUTRICION'),
+    'Compartirla le muestra a Lic. Sofía Paz lo que pasó antes en Nutrición con otros profesionales: tus planes, lo que registraste y las decisiones de las revisiones. Las notas privadas de esos profesionales no se comparten.',
+  );
+  assert.equal(
+    C.explicacion('Prof. Lucía Benítez', 'ANTROPOMETRIA'),
+    'Compartirla le muestra a Prof. Lucía Benítez lo que pasó antes en Antropometría con otros profesionales: tus tomas, cada una con su método. Las notas privadas de esos profesionales no se comparten.',
+  );
   assert.doesNotMatch(C.explicacion('X', 'NUTRICION'), /tomas/);
+  assert.doesNotMatch(C.explicacion('X', 'ANTROPOMETRIA'), /Sus notas|con su método, con otros/);
 });
 
 test('TEST-HA-003 · los otros profesionales, numerados por cuándo empezaron: sin quien lee, sin los que empezaron después del corte y cada uno una vez (mutaciones: no excluir a quien lee; usar <= en el corte; ordenar al revés)', () => {
@@ -184,6 +203,11 @@ test('TEST-HA-010 · los contratos son estrictos y no tienen dónde llevar el no
   assert.equal(AutorizarHistoriaAnteriorRequestSchema.safeParse({ expectedVersion: null, textVersionId: T.id, area: 'NUTRICION' }).success, false);
   assert.equal(RetirarHistoriaAnteriorRequestSchema.safeParse({ expectedVersion: null }).success, false);
   assert.equal(MiHistoriaAnteriorResponseSchema.safeParse({ data: { text: { id: T.id, title: T.titulo, text: T.texto, textHash: T.hash, effectiveFrom: T.vigenteDesde, approval: 'PENDING_APPROVAL' }, items: [], accesses: [] } }).success, true);
+  // HA-T15: cada componente dice si hoy hay acceso a esa área; sin ese dato, la app no podría no decir «La ve».
+  const item = { relationshipId: 'c1', area: 'NUTRICION', professional: { identityId: A, displayName: 'Lic. X' }, relationshipState: 'ACEPTADO', hadEarlierProfessional: true, includes: ['PLANS'], authorization: null, accessInEffect: false, lastReadAt: null };
+  assert.equal(HistoriaAnteriorDeUnAreaSchema.safeParse(item).success, true);
+  const sinElDato = Object.fromEntries(Object.entries(item).filter(([k]) => k !== 'accessInEffect'));
+  assert.equal(HistoriaAnteriorDeUnAreaSchema.safeParse(sinElDato).success, false);
 });
 
 test('TEST-HA-011 · los textos de las pantallas: sin las palabras prohibidas de las tres áreas, sin «asesorado», «cumplimiento», «adherencia», «racha», «puntaje» ni «%» (mutación: «Tu adherencia anterior»)', () => {
@@ -199,8 +223,11 @@ test('TEST-HA-011 · los textos de las pantallas: sin las palabras prohibidas de
   assert.notDeepEqual(terminosProhibidosEn('Tu adherencia anterior'), []);
   // El aviso del website es el que fijó Dirección.
   assert.equal(C.aviso, 'Lo que sigue pasó con otro profesional, antes de tu acompañamiento. Solo lectura.');
-  // Sin la autorización, se dice cómo pedirla con un condicional: no se afirma que haya algo.
-  assert.match(C.comoPedirla.cuerpo('NUTRICION'), /^Si la persona tuvo antes otro profesional de Nutrición/);
+  // Sin la autorización: primero lo que hace falta (acompañarla en esa área) y, con un condicional, dónde está la entrada;
+  // no se afirma que haya algo. La pista de la ficha tampoco da por hecho que hubo otro profesional.
+  assert.match(C.comoPedirla.cuerpo('NUTRICION'), /^Hacen falta dos cosas: que acompañes a la persona en Nutrición/);
+  assert.match(C.comoPedirla.donde('NUTRICION'), /^Si antes tuvo otro profesional de Nutrición/);
+  assert.match(C.pistaEnLaFicha, /si los hubo/);
 });
 
 test('TEST-HA-012 · lo registrado por semana, de lunes a domingo y de la más nueva a la más vieja; el rótulo lleva el número solo con más de un profesional (mutación: semanas de domingo a sábado)', () => {
@@ -227,4 +254,20 @@ test('TEST-HA-013 · la familia HIA: cuatro operaciones, cada una cita DL-175; l
   const cuatro = hia[3]!;
   assert.deepEqual((cuatro.query ?? []).map((q) => q.nombre), ['periodStart', 'periodEnd']);
   assert.deepEqual(cuatro.errores[404], ['RESOURCE_NOT_FOUND']);
+});
+
+test('TEST-HA-014 · lo de antes, como estaba en el corte: solo las correcciones registradas antes, y la vista que dan (mutaciones: no filtrar por el corte; usar <= en el corte)', () => {
+  const corte = '2026-11-01T12:00:00.000Z';
+  const c = (correctionId: string, previousCorrectionId: string | null, recordedAt: string) => ({ correctionId, previousCorrectionId, recordedAt });
+  const primera = c('k1', null, '2026-10-20T10:00:00.000Z');
+  const segunda = c('k2', 'k1', '2026-10-30T10:00:00.000Z');
+  // Otro profesional corrige después de que empezó quien lee: no entra, y la vista queda en la de antes.
+  const despues = c('k3', 'k2', '2026-11-05T10:00:00.000Z');
+  assert.deepEqual(correccionesAlCorte('x', [primera, segunda, despues], corte), { correcciones: [primera, segunda], vista: { kind: 'CORRECTED', correctionId: 'k2' } });
+  // Sin ninguna de antes, el original.
+  assert.deepEqual(correccionesAlCorte('x', [c('k9', null, '2026-11-02T00:00:00.000Z')], corte), { correcciones: [], vista: { kind: 'ORIGINAL' } });
+  // Justo en el corte ya no es de antes.
+  assert.deepEqual(correccionesAlCorte('x', [c('k1', null, corte)], corte).vista, { kind: 'ORIGINAL' });
+  // Una cadena rota antes del corte sigue sin resolverse (REG-06-16), como en la lectura del titular.
+  assert.deepEqual(correccionesAlCorte('x', [c('k1', null, '2026-10-01T00:00:00.000Z'), c('k2', null, '2026-10-02T00:00:00.000Z')], corte).vista, { kind: 'NOT_RESOLVABLE' });
 });

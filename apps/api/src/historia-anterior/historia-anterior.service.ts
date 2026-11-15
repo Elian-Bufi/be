@@ -13,6 +13,7 @@ import {
   type HistoriaAnteriorResponse,
   type MiHistoriaAnteriorResponse,
 } from '@be/domain';
+import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
 import { exigirA3Vigente } from '../consentimiento/a3-del-titular';
 import { EjecucionesDeEntrenamientoService } from '../entrenamiento/ejecuciones.service';
@@ -24,6 +25,7 @@ import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import {
   agregarVersion,
+  componenteTomado,
   estadoDeLaPersona,
   inicioDe,
   momentoDeLaHistoriaAnterior,
@@ -31,6 +33,7 @@ import {
   RECURSO_DE_LA_HISTORIA_ANTERIOR,
   tomarLaHistoriaAnterior,
   versionesDelComponente,
+  type AccesoDeHoy,
 } from './autorizaciones';
 import { EjecutorDeHistoriaAnterior, esUuid } from './ejecutor';
 import { leerHistoriaAnterior } from './lectura-historia-anterior';
@@ -47,12 +50,14 @@ const noLaComparte = (motivo: string): ErrorDeApi => new ErrorDeApi(404, CodigoD
  * REG-06-55; RF-025). Lo que garantiza este servicio, con la base detrás (migración 20261115120000):
  * - **la autorización es de la persona y explícita**, por profesional y por área (el componente de vínculo): darla pide el
  *   A3 y el texto vigente (08 §12.2); retirarla corta en el momento, sin pedir nada (RNF-PRI-002), también con el vínculo
- *   terminado. Cerrar la cuenta la retira. Cada cambio queda en la auditoría y es una versión nueva;
+ *   terminado. Revocar el B2 de ese componente y cerrar la cuenta también la retiran (HA-T14). Cada cambio queda en la
+ *   auditoría y es una versión nueva;
  * - **el profesional** lee (API-HIA-04) solo con el PDP del área que pide (vínculo aceptado, B2 vigente, cuentas y el A3 de
  *   la persona) y la autorización vigente de la persona para su componente en esa área. Si falta cualquiera, el mismo 404
- *   que lo inexistente. Cada lectura queda registrada como una decisión del PDP, y la persona la ve en API-HIA-01;
- * - **lo que lee** es lo de otros profesionales en esa área, de antes de su acompañamiento, sin nombrarlos y sin las notas
- *   propias, los borradores ni las notas internas (`lectura-historia-anterior.ts`).
+ *   que lo inexistente. Cada lectura queda registrada como una decisión del PDP, y la persona la ve en API-HIA-01, con si
+ *   hoy ese profesional tiene acceso a esa área (HA-T15: compartida no es lo mismo que vista);
+ * - **lo que lee** es lo de otros profesionales en esa área, de antes de su acompañamiento y como estaba entonces, sin
+ *   nombrarlos y sin las notas propias, los borradores ni las notas internas (`lectura-historia-anterior.ts`).
  */
 @Injectable()
 export class HistoriaAnteriorService {
@@ -73,8 +78,20 @@ export class HistoriaAnteriorService {
       actor,
       ctx,
       recursoIntentado: null,
-      lectura: async (tx) => ({ data: await estadoDeLaPersona(tx, actor.identidadId) }),
+      lectura: async (tx) => ({ data: await estadoDeLaPersona(tx, actor.identidadId, this.accesoDeHoy(tx, actor.identidadId)) }),
     });
+  }
+
+  /**
+   * HA-T15 · si hoy el profesional de un componente ve los datos de su área: la misma evaluación del PDP, **sin registrar**
+   * (`evaluarSinRegistrar`, como el modo de acceso de las listas, RF-023) y para ese componente. No toma cerrojos: es una
+   * lectura, también dentro de la transacción de autorizar o retirar.
+   */
+  private accesoDeHoy(tx: Prisma.TransactionClient, personaId: string): AccesoDeHoy {
+    return async (c) => {
+      const d = await this.pdp.evaluarSinRegistrar(tx, c.profesionalId, personaId, c.alcance);
+      return d.permitida && d.alcanceDeVinculoId === c.id;
+    };
   }
 
   // ─── API-HIA-02 · autorizar ──────────────────────────────────────────────────────────────────
@@ -102,10 +119,10 @@ export class HistoriaAnteriorService {
       efecto: async (tx, pedido, procedencia) => {
         const personaId = actor.identidadId;
         // El componente tiene que ser de la persona: ajeno o inexistente, el mismo 404. Para autorizar, además, sin terminar.
-        const fila = esUuid(relationshipId)
-          ? await tx.alcanceDeVinculo.findUnique({ where: { id: relationshipId.toLowerCase() }, select: { id: true, alcance: true, estado: true, vinculo: { select: { asesoradoId: true, profesionalId: true } } } })
-          : null;
-        if (!fila || fila.vinculo.asesoradoId !== personaId) throw this.ejecutor.noRevelable({ operacion, actorId: personaId, recurso }, ctx);
+        // Se toma en modo compartido antes que nada (su lugar en el orden único): quien lo termina o le revoca el B2 lo toma
+        // en modo exclusivo, así que autorizar y terminar no se cruzan (una VIGENTE nunca queda sobre uno terminado).
+        const fila = esUuid(relationshipId) ? await componenteTomado(tx, personaId, relationshipId.toLowerCase()) : null;
+        if (!fila) throw this.ejecutor.noRevelable({ operacion, actorId: personaId, recurso }, ctx);
         if (que === 'AUTORIZAR' && fila.estado === 'FINALIZADO') throw this.ejecutor.noRevelable({ operacion, actorId: personaId, recurso, sujetoId: personaId, alcance: fila.alcance }, ctx);
         if (que === 'AUTORIZAR') {
           // Dar la autorización pide el A3, con el acto tomado (DL-115), antes del cerrojo; y el texto que se mostró tiene que
@@ -118,14 +135,14 @@ export class HistoriaAnteriorService {
         const ultima = ultimaVersion(versiones);
         const decision = decidirCambioDeAutorizacion({ ultima, pedido: que, versionVista: pedido.expectedVersion });
         if (decision.tipo === 'CONFLICTO') throw errores.conflictoDeVersion();
-        const componente = { id: fila.id, profesionalId: fila.vinculo.profesionalId, alcance: fila.alcance };
+        const componente = { id: fila.id, profesionalId: fila.profesionalId, alcance: fila.alcance };
         const nueva =
           decision.tipo === 'AGREGAR'
             ? await agregarVersion(tx, { componente, personaId, anterior: ultima, estado: decision.estado, procedencia, momento: await momentoDeLaHistoriaAnterior(tx) })
             : (ultima as NonNullable<typeof ultima>);
         // La respuesta es cómo queda ese componente, con lo que esta misma transacción acaba de escribir (también uno
         // terminado, al retirar).
-        const [item] = (await estadoDeLaPersona(tx, personaId, fila.id)).items;
+        const [item] = (await estadoDeLaPersona(tx, personaId, this.accesoDeHoy(tx, personaId), fila.id)).items;
         return { estadoHttp: 200, cuerpo: { data: item }, sujetoId: personaId, recurso: { tipo: RECURSO_DE_LA_AUTORIZACION, id: nueva.id } };
       },
     });

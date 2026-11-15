@@ -15,12 +15,22 @@
  * - TEST-HA-029: Entrenamiento: el plan y las sesiones registradas.
  * - TEST-HA-030: lo ajeno y lo terminado, el A3 y el cierre de la cuenta.
  * - TEST-HA-031: la base sostiene lo suyo aunque el código se equivoque.
+ * Y lo que sumó la revisión adversaria (2026-11-15):
+ * - TEST-HA-032: la última lectura es del componente de vínculo, no del par profesional–área; un vínculo terminado con el
+ *   que la miraron sigue en API-HIA-01, en solo lectura.
+ * - TEST-HA-033: las carreras, ordenadas por la base y no por el tiempo: un retiro y una lectura nunca se cruzan, autorizar
+ *   espera a quien está terminando el componente, y el retiro de un cierre lleva la hora de después del cerrojo.
+ * - TEST-HA-034: las lecturas de API-HIA-01 usan su índice parcial, no recorren `decision_de_acceso`.
+ * (TEST-HA-026 a 028 suman lo de antes «como estaba» y el cálculo que no es de Antropometría; TEST-HA-027, que revocar el
+ * B2 la retira y otorgarlo de nuevo no la devuelve; TEST-HA-030, que sin el A3 no hay acceso hoy.)
  */
 import type { INestApplication } from '@nestjs/common';
 import { HistoriaAnteriorDeUnAreaResponseSchema, HistoriaAnteriorResponseSchema, MiHistoriaAnteriorResponseSchema, TEXTO_DE_LA_HISTORIA_ANTERIOR } from '@be/domain';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { consultasDeLasLecturas } from '../../apps/api/src/historia-anterior/autorizaciones';
 import { appDePrueba, claveDeIdempotencia, conSesion, cuerpoDeCierre } from './soporte-api';
+import { esperarQueEsperen, pidDeLaTransaccion } from './soporte-concurrencia';
 import { borradorSembrado, circuitoAntropometrico, medicionSembrada, registrarBorrador } from './soporte-antropometria';
 import { circuitoConPlanDeEntrenamientoActivo } from './soporte-entrenamiento';
 import { activar, alimento, circuitoConPlanActivo, crearBorrador, cuerpoDeEvaluacion, cuerpoDeObjetivo, cuerpoDeRevision, registrarComida, registrarLibre, type Circuito } from './soporte-nutricion';
@@ -92,7 +102,29 @@ async function cambioDeProfesional(etiqueta: string) {
   await finalizarVinculo(ase, vA.vinculoId);
   // R vuelve: un componente nuevo, con su B2. Su comienzo es el corte.
   const vR = await vinculoCompleto(app, R, ase, 'NUTRICION');
-  return { ase, R, A, planDeR: r.planId, planA, revision, nota, borrador, relR: vR.vinculoId, consentR: vR.consentId as string };
+  return { ase, R, A, planDeR: r.planId, planA, revision, nota, borrador, relA: vA.vinculoId, relR: vR.vinculoId, consentR: vR.consentId as string };
+}
+
+/** Una versión de la autorización escrita a mano (las pruebas de la base y de las carreras), con la sesión que se pase. */
+function insertarVersion(
+  cliente: Pick<PrismaClient, '$executeRawUnsafe'>,
+  v: { asesorado: string; profesional: string; alcance: string; componente: string; version: number; predecesora: string | null; estado: 'VIGENTE' | 'RETIRADA'; actor: string },
+) {
+  const vigente = v.estado === 'VIGENTE';
+  return cliente.$executeRawUnsafe(
+    `INSERT INTO "autorizacion_de_historia_anterior" ("asesorado_id","profesional_id","alcance","alcance_de_vinculo_id","version","predecesora_id","estado","texto_id","hash_del_texto","actor_id","procedencia","momento_de_ocurrencia")
+     VALUES ('${v.asesorado}','${v.profesional}','${v.alcance}','${v.componente}',${v.version},${v.predecesora ? `'${v.predecesora}'` : 'NULL'},'${v.estado}',${vigente ? `'${TEXTO}'` : 'NULL'},${vigente ? `'${TEXTO_DE_LA_HISTORIA_ANTERIOR.hash}'` : 'NULL'},'${v.actor}','{"prueba":"ha"}', now())`,
+  );
+}
+
+/** Una corrida de cálculo sobre una toma, escrita a mano como en las pruebas de la base de WP-05 (`maquinas-wp05`). */
+async function corridaSembrada(c: { pro: Parte; metodoVersionId: string }, evaluacionId: string, x: { valor: number; finalidad: 'SOPORTE_ANTROPOMETRICO' | 'SOPORTE_DE_OBJETIVO_NUTRICIONAL'; reemplazaA?: string }): Promise<string> {
+  const id = randomUUID();
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO "ejecucion_de_calculo" ("id","evaluacion_id","metodo_version_id","autor_id","metrica","valor","unidad","decimales","modo_de_redondeo","finalidad","regla","reemplaza_a_id","procedencia")
+     VALUES ('${id}','${evaluacionId}','${c.metodoVersionId}','${c.pro.id}','indice-demo',${x.valor},'kg/m2',2,'MEDIO_ARRIBA','${x.finalidad}','demo/peso-sobre-talla-cuadrado@1',${x.reemplazaA ? `'${x.reemplazaA}'` : 'NULL'},'{"prueba":"ha"}')`,
+  );
+  return id;
 }
 
 describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el profesional nuevo (DL-175)', () => {
@@ -105,7 +137,18 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     expect(antes.text).toMatchObject({ id: TEXTO, textHash: TEXTO_DE_LA_HISTORIA_ANTERIOR.hash, approval: 'PENDING_APPROVAL' });
     // Solo los profesionales de hoy: A terminó y no figura; R figura con su componente nuevo, y antes hubo otro.
     expect(antes.items).toEqual([
-      { relationshipId: e.relR, area: 'NUTRICION', professional: { identityId: e.R.id, displayName: expect.any(String) }, relationshipState: 'ACEPTADO', hadEarlierProfessional: true, includes: ['PLANS', 'RECORDS', 'DECISIONS'], authorization: null, lastReadAt: null },
+      {
+        relationshipId: e.relR,
+        area: 'NUTRICION',
+        professional: { identityId: e.R.id, displayName: expect.any(String) },
+        relationshipState: 'ACEPTADO',
+        hadEarlierProfessional: true,
+        includes: ['PLANS', 'RECORDS', 'DECISIONS'],
+        authorization: null,
+        // Hoy R la acompaña con el B2 y el A3 de la persona: si la compartiera, la vería (HA-T15).
+        accessInEffect: true,
+        lastReadAt: null,
+      },
     ]);
     expect(antes.accesses).toEqual([]);
     const sinAutorizar = await hia(e.R.token).leer(e.ase.id, 'NUTRICION').expect(404);
@@ -191,8 +234,12 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     // preparación. Después llega X, que la acompaña en Nutrición y en Antropometría.
     const c = await circuitoAntropometrico(app, prisma, `ha-ant-${++contador}`);
     const toma = await borradorSembrado(prisma, c);
-    await medicionSembrada(prisma, c, toma, { metrica: 'peso', valor: 71.2, unidad: 'kg' });
+    const peso = await medicionSembrada(prisma, c, toma, { metrica: 'peso', valor: 71.2, unidad: 'kg' });
     const anulada = await medicionSembrada(prisma, c, toma, { metrica: 'cintura', valor: 80, unidad: 'cm' });
+    // Lo que calculó A sobre la toma: una corrida para el soporte antropométrico (lo que la persona ve en su evolución) y
+    // otra para el soporte de un objetivo nutricional, que no es de Antropometría para la persona y no entra.
+    const corrida = await corridaSembrada(c, toma, { valor: 23.67, finalidad: 'SOPORTE_ANTROPOMETRICO' });
+    await corridaSembrada(c, toma, { valor: 31.5, finalidad: 'SOPORTE_DE_OBJETIVO_NUTRICIONAL' });
     // Anular es el camino posterior al registro (REG-06-214 inciso 5): primero se registra la toma.
     await registrarBorrador(prisma, toma);
     await prisma.$executeRawUnsafe(
@@ -226,6 +273,9 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     expect(ant.measurements).toHaveLength(1);
     expect(ant.measurements[0]).toMatchObject({ evaluationId: toma, author: { kind: 'OTHER_PROFESSIONAL', ordinal: 1 }, measurements: [{ metric: 'peso', magnitude: { value: 71.2, unit: 'kg' }, origin: 'DIRECT_CAPTURE', corrected: false }] });
     expect(ant.measurements[0]!.measurements[0]!.protocolName).toEqual(expect.any(String));
+    // Lo calculado: solo la corrida del soporte antropométrico, con su método; la del objetivo nutricional, no.
+    expect(ant.measurements[0]!.derivedResults).toEqual([{ metric: 'indice-demo', magnitude: { value: 23.67, unit: 'kg/m2' }, methodName: expect.any(String) }]);
+    expect(JSON.stringify(ant)).not.toContain('31.5');
     expect(JSON.stringify(ant)).not.toContain(enPreparacion);
     expect(JSON.stringify(ant)).not.toContain(c.pro.id);
 
@@ -234,18 +284,50 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     await medicionSembrada(prisma, c, nueva, { metrica: 'peso', valor: 70.4, unidad: 'kg' });
     await registrarBorrador(prisma, nueva);
     expect((await leerOk(X, c.ase, 'ANTROPOMETRIA')).measurements.map((m) => m.evaluationId)).toEqual([toma]);
+    // Y lo que cambia sobre la toma de antes, después del comienzo de X, tampoco: una corrección del peso, un recálculo que
+    // reemplaza la corrida y, al final, la anulación del peso. X la sigue viendo como estaba cuando empezó (HA-T03).
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "correccion_de_medicion" ("id","medicion_id","autor_id","motivo","valor","unidad_de_origen","procedencia") VALUES ('${randomUUID()}','${peso}','${c.pro.id}','Recarga',69.9,'kg','{"prueba":"ha"}')`,
+    );
+    await corridaSembrada(c, toma, { valor: 24.1, finalidad: 'SOPORTE_ANTROPOMETRICO', reemplazaA: corrida });
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia") VALUES ('${randomUUID()}','${peso}','${c.pro.id}','Error de carga','{"prueba":"ha"}', now())`,
+    );
+    const comoEstaba = (await leerOk(X, c.ase, 'ANTROPOMETRIA')).measurements[0]!;
+    expect(comoEstaba.measurements).toEqual([{ metric: 'peso', magnitude: { value: 71.2, unit: 'kg' }, protocolName: expect.any(String), origin: 'DIRECT_CAPTURE', corrected: false }]);
+    expect(comoEstaba.derivedResults).toEqual([{ metric: 'indice-demo', magnitude: { value: 23.67, unit: 'kg/m2' }, methodName: expect.any(String) }]);
+    expect(JSON.stringify(comoEstaba)).not.toMatch(/69\.9|24\.1/);
 
     // ─── TEST-HA-027 · sin el vínculo aceptado o sin el B2 vigentes, 404 ───
     await pausar(app, c.ase.token, vAnt.vinculoId, await versionDeVinculo(app, c.ase.token, vAnt.vinculoId)).expect(200);
     expect((await hia(X.token).leer(c.ase.id, 'ANTROPOMETRIA').expect(404)).body).toEqual(inexistente.body);
-    // En pausa, la persona la sigue viendo y puede retirarla o darla.
-    expect((await miaDe(c.ase)).items.find((i) => i.relationshipId === vAnt.vinculoId)).toMatchObject({ relationshipState: 'PAUSADO', authorization: { state: 'GRANTED' } });
+    // En pausa, la persona la sigue viendo y puede retirarla o darla; y la API dice que hoy no tiene acceso (la APK no dice
+    // «La ve», HA-T15).
+    expect((await miaDe(c.ase)).items.find((i) => i.relationshipId === vAnt.vinculoId)).toMatchObject({ relationshipState: 'PAUSADO', authorization: { state: 'GRANTED' }, accessInEffect: false });
     await reanudar(app, c.ase.token, vAnt.vinculoId, await versionDeVinculo(app, c.ase.token, vAnt.vinculoId)).expect(200);
+    expect((await miaDe(c.ase)).items.find((i) => i.relationshipId === vAnt.vinculoId)).toMatchObject({ relationshipState: 'ACEPTADO', accessInEffect: true });
     await leerOk(X, c.ase, 'ANTROPOMETRIA');
     await revocarB2(app, c.ase, vAnt.consentId as string).expect(200);
     expect((await hia(X.token).leer(c.ase.id, 'ANTROPOMETRIA').expect(404)).body).toEqual(inexistente.body);
-    // La autorización sigue dada: lo que corta es el acceso, no la decisión de la persona.
-    expect((await miaDe(c.ase)).items.find((i) => i.relationshipId === vAnt.vinculoId)!.authorization).toMatchObject({ state: 'GRANTED' });
+    // HA-T14: revocar el B2 de ese componente retira también la historia anterior, en la misma transacción y con la
+    // persona como actor. Hoy no tiene acceso, y la APK lo dice.
+    const revocada = (await miaDe(c.ase)).items.find((i) => i.relationshipId === vAnt.vinculoId)!;
+    expect(revocada).toMatchObject({ authorization: { state: 'WITHDRAWN', version: 'v2' }, accessInEffect: false });
+    const cadena = await prisma.autorizacionDeHistoriaAnterior.findMany({ where: { alcanceDeVinculoId: vAnt.vinculoId }, orderBy: { version: 'asc' } });
+    expect(cadena.map((v) => [v.estado, v.actorId])).toEqual([
+      ['VIGENTE', c.ase.id],
+      ['RETIRADA', c.ase.id],
+    ]);
+    expect(cadena[1]!.procedencia).toMatchObject({ operacion: 'API-CON-04' });
+    // Otorgar el B2 de nuevo (API-CON-02, OtorgarNuevamente sobre el mismo componente) devuelve el acceso, no la historia:
+    // el B2 nuevo no dice nada de ella, y la persona tiene que volver a compartirla (08 §14.1).
+    const requisitos = await conSesion(app, c.ase.token).get(`/api/v1/relationships/${vAnt.vinculoId}/consent-requirements`).expect(200);
+    await conSesion(app, c.ase.token).post(`/api/v1/relationships/${vAnt.vinculoId}/consents`).send({ consentVersionId: requisitos.body.data.consentVersion.id }).expect(200);
+    expect((await miaDe(c.ase)).items.find((i) => i.relationshipId === vAnt.vinculoId)).toMatchObject({ authorization: { state: 'WITHDRAWN', version: 'v2' }, accessInEffect: true });
+    expect((await hia(X.token).leer(c.ase.id, 'ANTROPOMETRIA').expect(404)).body).toEqual(inexistente.body);
+    // Compartirla otra vez es una decisión nueva, con el texto vigente: v3.
+    expect(HistoriaAnteriorDeUnAreaResponseSchema.parse((await autorizar(c.ase, vAnt.vinculoId)).body).data).toMatchObject({ authorization: { state: 'GRANTED', version: 'v3' }, accessInEffect: true });
+    await leerOk(X, c.ase, 'ANTROPOMETRIA');
 
     // El tramo: las dos fechas juntas, válidas y hasta 366 días; nada más en la query.
     const tramoVacio = await leerOk(X, c.ase, 'NUTRICION', '?periodStart=2020-01-01&periodEnd=2020-03-01');
@@ -287,7 +369,10 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     // Darla pide el A3; retirarla, no.
     await autorizar(e.ase, e.relR);
     await conSesion(app, e.ase.token).post(`/api/v1/me/health-data-consents/${await a3Vigente(app, e.ase.token)}/revoke`).send({}).expect(200);
-    expect((await miaDe(e.ase)).items[0]!.authorization).toMatchObject({ state: 'GRANTED', version: 'v1' });
+    // Sin el A3 la autorización sigue dada (como los hábitos y lo de otras áreas: el A3 es de todo BE, HA-T14), pero hoy no
+    // tiene acceso, y la API lo dice para que la APK no diga «La ve» (HA-T15).
+    expect((await miaDe(e.ase)).items[0]).toMatchObject({ authorization: { state: 'GRANTED', version: 'v1' }, accessInEffect: false });
+    await hia(e.R.token).leer(e.ase.id, 'NUTRICION').expect(404);
     const retirada = HistoriaAnteriorDeUnAreaResponseSchema.parse((await hia(e.ase.token).retirar(e.relR, { expectedVersion: 'v1' }).expect(200)).body).data;
     expect(retirada.authorization).toMatchObject({ state: 'WITHDRAWN' });
     expect((await hia(e.ase.token).autorizar(e.relR, { expectedVersion: 'v2', textVersionId: TEXTO }).expect(403)).body.error.code).toBe('ACTION_FORBIDDEN');
@@ -332,13 +417,135 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     await expect(insertar({ estado: 'VIGENTE' })).rejects.toThrow(regla);
     await expect(insertar({ version: '3' })).rejects.toThrow(regla);
     await expect(insertar({ version: '1', predecesora: 'NULL' })).rejects.toThrow();
+    // Cada versión cambia el estado de la anterior (la revisión): una VIGENTE, con su texto, sobre otra VIGENTE, no entra.
+    await expect(insertar({ estado: 'VIGENTE', texto: `'${TEXTO}'`, hash: `'${TEXTO_DE_LA_HISTORIA_ANTERIOR.hash}'` })).rejects.toThrow(/cambia el estado de la anterior/);
+    // Y la primera versión la da: un componente sin decisión no empieza retirado (el de A, terminado, nunca la tuvo).
+    await expect(insertar({ profesional: e.A.id, componente: e.relA, version: '1', predecesora: 'NULL' })).rejects.toThrow(/historia anterior la da \(VIGENTE\)/);
     // Lo válido entra: una RETIRADA que sucede a la última.
     await insertar({});
+    // Una RETIRADA sobre otra RETIRADA, tampoco.
+    const segunda = await prisma.autorizacionDeHistoriaAnterior.findFirstOrThrow({ where: { alcanceDeVinculoId: e.relR, version: 2 } });
+    await expect(insertar({ version: '3', predecesora: `'${segunda.id}'` })).rejects.toThrow(/cambia el estado de la anterior/);
     // Y una VIGENTE no se da sobre un vínculo terminado.
     await finalizarVinculo(e.ase, e.relR);
-    const segunda = await prisma.autorizacionDeHistoriaAnterior.findFirstOrThrow({ where: { alcanceDeVinculoId: e.relR, version: 2 } });
     await expect(
       insertar({ version: '3', predecesora: `'${segunda.id}'`, estado: 'VIGENTE', texto: `'${TEXTO}'`, hash: `'${TEXTO_DE_LA_HISTORIA_ANTERIOR.hash}'` }),
-    ).rejects.toThrow(regla);
+    ).rejects.toThrow(/no se autoriza sobre un v.nculo terminado/);
   }, 240_000);
+
+  it('TEST-HA-032 · la última lectura es del componente de vínculo: la de un vínculo anterior con el mismo profesional no aparece debajo del nuevo; el terminado queda, en solo lectura', async () => {
+    const e = await cambioDeProfesional('miro');
+    await autorizar(e.ase, e.relR);
+    await leerOk(e.R, e.ase, 'NUTRICION');
+    await finalizarVinculo(e.ase, e.relR);
+    // R vuelve otra vez: un componente nuevo, que la persona nunca autorizó.
+    const vR3 = await vinculoCompleto(app, e.R, e.ase, 'NUTRICION');
+    const mia = await miaDe(e.ase);
+    const nuevo = mia.items.find((i) => i.relationshipId === vR3.vinculoId)!;
+    expect(nuevo).toMatchObject({ relationshipState: 'ACEPTADO', hadEarlierProfessional: true, authorization: null, accessInEffect: true, lastReadAt: null });
+    // El vínculo terminado con el que la miró sigue en la lista, con su última lectura, para que la persona sepa cuándo
+    // (HA-T08): sin acceso hoy.
+    const terminado = mia.items.find((i) => i.relationshipId === e.relR)!;
+    expect(terminado).toMatchObject({ relationshipState: 'FINALIZADO', accessInEffect: false, authorization: { state: 'GRANTED', version: 'v1' } });
+    expect(terminado.lastReadAt).toEqual(mia.accesses[0]!.readAt);
+    // Los terminados con los que nadie la miró no aparecen (el primero de R y el de A).
+    expect(mia.items.map((i) => i.relationshipId).sort()).toEqual([e.relR, vR3.vinculoId].sort());
+    // Autorizado de nuevo, todavía no la miró con este componente; cuando la mira, la línea es la de este.
+    expect(HistoriaAnteriorDeUnAreaResponseSchema.parse((await autorizar(e.ase, vR3.vinculoId)).body).data).toMatchObject({ authorization: { state: 'GRANTED', version: 'v1' }, lastReadAt: null });
+    await leerOk(e.R, e.ase, 'NUTRICION');
+    const despues = await miaDe(e.ase);
+    const leido = despues.items.find((i) => i.relationshipId === vR3.vinculoId)!.lastReadAt;
+    expect(leido).toEqual(despues.accesses[0]!.readAt);
+    expect(leido).not.toEqual(terminado.lastReadAt);
+  }, 240_000);
+
+  it('TEST-HA-033 · las carreras, por la base: autorizar espera a quien termina el componente; un retiro queda antes o después de cada lectura; el retiro de un cierre lleva la hora de después del cerrojo', async () => {
+    const e = await cambioDeProfesional('carrera');
+    const tomar = `hashtextextended('historia-anterior|${e.ase.id}', 0)`;
+    /** Una transacción de la prueba que retiene algo mientras llega el pedido; lo suelta cuando la base dice que espera. */
+    async function mientrasRetengo<T>(retener: (tx: Prisma.TransactionClient) => Promise<unknown>, pedido: () => Promise<T>, que: string): Promise<{ respuesta: T; soltadoEn: Date }> {
+      let respuesta: Promise<T> | undefined;
+      let termino = false;
+      let soltadoEn = new Date(0);
+      await prisma.$transaction(
+        async (tx) => {
+          await retener(tx);
+          const pid = await pidDeLaTransaccion(tx);
+          respuesta = pedido().finally(() => {
+            termino = true;
+          });
+          await esperarQueEsperen(prisma, 1, { bloqueadoPor: pid, yaPaso: () => termino, que });
+          // Si el pedido terminó sin esperar, la barrera no prueba nada: la carrera no está ordenada por la base.
+          expect(termino).toBe(false);
+          const [ahora] = await tx.$queryRaw<{ ahora: Date }[]>`SELECT clock_timestamp() AS "ahora"`;
+          soltadoEn = ahora!.ahora;
+        },
+        { timeout: 40_000, maxWait: 10_000 },
+      );
+      return { respuesta: await (respuesta as Promise<T>), soltadoEn };
+    }
+
+    // 1 · Autorizar toma el componente en modo compartido: quien lo está terminando (FOR NO KEY UPDATE) va primero.
+    const autorizada = await mientrasRetengo(
+      (tx) => tx.$queryRaw`SELECT 1 FROM "alcance_de_vinculo" WHERE "id" = ${e.relR}::uuid FOR NO KEY UPDATE`,
+      () => hia(e.ase.token).autorizar(e.relR, { expectedVersion: null, textVersionId: TEXTO }).then((r) => r),
+      'autorizar esperando el componente',
+    );
+    expect(autorizada.respuesta.status).toBe(200);
+
+    // 2 · Un retiro en curso (con el cerrojo de la historia, exclusivo) y una lectura que llega: la lectura espera, y cuando
+    // sigue ya lo ve retirado. El mismo 404 de lo inexistente.
+    const v1 = await prisma.autorizacionDeHistoriaAnterior.findFirstOrThrow({ where: { alcanceDeVinculoId: e.relR, version: 1 } });
+    const leida = await mientrasRetengo(
+      async (tx) => {
+        await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(${tomar})`);
+        await insertarVersion(tx, { asesorado: e.ase.id, profesional: e.R.id, alcance: 'NUTRICION', componente: e.relR, version: 2, predecesora: v1.id, estado: 'RETIRADA', actor: e.ase.id });
+      },
+      () => hia(e.R.token).leer(e.ase.id, 'NUTRICION').then((r) => r),
+      'la lectura esperando el retiro',
+    );
+    expect(leida.respuesta.status).toBe(404);
+
+    // 3 · Al revés: una lectura en curso (el cerrojo compartido) y un retiro que llega. El retiro espera, y su hora es la de
+    // la base después del cerrojo: queda después de la lectura también en el tiempo.
+    await autorizar(e.ase, e.relR);
+    const retirada = await mientrasRetengo(
+      (tx) => tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock_shared(${tomar})`),
+      () => hia(e.ase.token).retirar(e.relR, { expectedVersion: 'v3' }).then((r) => r),
+      'el retiro esperando la lectura',
+    );
+    expect(retirada.respuesta.status).toBe(200);
+    const v4 = await prisma.autorizacionDeHistoriaAnterior.findFirstOrThrow({ where: { alcanceDeVinculoId: e.relR, version: 4 } });
+    expect(v4.estado).toBe('RETIRADA');
+    expect(v4.momentoDeOcurrencia.getTime()).toBeGreaterThanOrEqual(retirada.soltadoEn.getTime());
+
+    // 4 · Cerrar la cuenta con una lectura en curso: el cierre espera el cerrojo de la historia, y su RETIRADA lleva la hora
+    // de la base de después, no la de llegada del pedido (prisma/concurrencia.ts).
+    await autorizar(e.ase, e.relR);
+    const cerrada = await mientrasRetengo(
+      (tx) => tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock_shared(${tomar})`),
+      () => conSesion(app, e.ase.token).post('/api/v1/me/account-closure-requests').send(cuerpoDeCierre()).then((r) => r),
+      'el cierre esperando la lectura',
+    );
+    expect(cerrada.respuesta.status).toBe(201);
+    const v6 = await prisma.autorizacionDeHistoriaAnterior.findFirstOrThrow({ where: { alcanceDeVinculoId: e.relR, version: 6 } });
+    expect(v6.estado).toBe('RETIRADA');
+    expect(v6.momentoDeOcurrencia.getTime()).toBeGreaterThanOrEqual(cerrada.soltadoEn.getTime());
+  }, 240_000);
+
+  it('TEST-HA-034 · las lecturas de API-HIA-01 usan su índice parcial, no recorren decision_de_acceso; el índice que nadie usaba no está', async () => {
+    const persona = randomUUID();
+    for (const consulta of [consultasDeLasLecturas.recientes(persona, 50), consultasDeLasLecturas.ultimaPorComponente(persona)]) {
+      // Sin el recorrido secuencial, el plan tiene que elegir entre los índices: el parcial de la historia es el que sirve.
+      const plan = await prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe('SET LOCAL enable_seqscan = off');
+        return tx.$queryRaw<{ 'QUERY PLAN': string }[]>(Prisma.sql`EXPLAIN ${consulta}`);
+      });
+      expect(plan.map((f) => f['QUERY PLAN']).join('\n')).toContain('decision_de_acceso_lecturas_de_la_historia_anterior');
+    }
+    const [indice] = await prisma.$queryRaw<{ indexdef: string }[]>`SELECT indexdef FROM pg_indexes WHERE indexname = 'decision_de_acceso_lecturas_de_la_historia_anterior'`;
+    expect(indice?.indexdef).toContain('(sujeto_id, secuencia DESC)');
+    expect(indice?.indexdef).toContain("'API-HIA-04'");
+    expect(await prisma.$queryRaw<unknown[]>`SELECT 1 FROM pg_indexes WHERE indexname = 'autorizacion_de_historia_anterior_lector_idx'`).toEqual([]);
+  }, 60_000);
 });
