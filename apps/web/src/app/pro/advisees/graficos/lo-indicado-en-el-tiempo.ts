@@ -93,15 +93,22 @@ export interface TramoDeVersion {
  * 15/11). Lo indicado de cada versión sale de sus sesiones: las que ejecutaron esa versión (por `planVersionId`) o, sin
  * él, las de sus fechas. Si la anterior no tiene ninguna sesión del ejercicio, no se sabe qué indicaba: la versión va sin
  * rótulo de cambio, nunca contra una más vieja (eso afirmaría un cambio que no ocurrió en esa línea).
+ *
+ * `serie`: lo indicado solo para ese número de serie (rama B: GR-03 y GR-05 son de una serie). Sin ella, el de todas las
+ * series del ejercicio, como siempre. Así un gráfico de una serie no rotula un cambio que fue de otra.
  */
-export function cambiosPorVersion(observaciones: readonly ObservacionDeEvolucion[], versiones: readonly TramoDeVersion[]): ReadonlyMap<string, string> {
+export function cambiosPorVersion(
+  observaciones: readonly ObservacionDeEvolucion[],
+  versiones: readonly TramoDeVersion[],
+  opciones: { readonly serie?: number | null } = {},
+): ReadonlyMap<string, string> {
   const ordenadas = [...versiones].sort((x, y) => (x.desde < y.desde ? -1 : x.desde > y.desde ? 1 : 0));
   const deLaVersion = (v: TramoDeVersion) => (o: ObservacionDeEvolucion) =>
     v.planVersionId ? o.comparacion.planId === v.planVersionId : o.comparacion.fecha >= v.desde && (v.hasta === null || o.comparacion.fecha < v.hasta);
   const cambios = new Map<string, string>();
   let anterior: LoIndicadoEnElTramo | null = null;
   for (const v of ordenadas) {
-    const actual = loIndicadoEnElTramo(observaciones, deLaVersion(v));
+    const actual = loIndicadoEnElTramo(observaciones, deLaVersion(v), { serie: opciones.serie ?? null });
     const cambio = cambioCortoDeLoIndicado(anterior, actual);
     if (cambio) cambios.set(v.clave, cambio);
     anterior = actual;

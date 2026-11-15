@@ -284,14 +284,18 @@ export const FILAS_DE_LA_CINTA: readonly FilaDeLaCinta[] = ['ENTRENAMIENTO', 'NU
 export const filaDelEvento = (e: Pick<EventoDeLaCinta, 'area'>): FilaDeLaCinta => e.area ?? 'NOTAS';
 export const NOMBRE_DE_LA_FILA: Readonly<Record<FilaDeLaCinta, string>> = { ...NOMBRE_DEL_AREA, NOTAS: 'Notas' };
 
-/** El alto de una fila: el ícono de 15 px arriba y la barra de las versiones abajo, sin pisarse. */
-export const ALTO_DE_LA_FILA_DE_LA_CINTA = 26;
+/**
+ * El alto de una fila: el ícono de 18 px arriba y la barra de las versiones abajo, sin pisarse. Con la pasada visual (rama
+ * B; DISENO-VISUAL §2: «la cinta GR-23 con íconos legibles y sin superposiciones»), el ícono pasó de 15 a 18 px con su
+ * fondo de 22, y la fila de 26 a 30 para que el fondo no toque la barra.
+ */
+export const ALTO_DE_LA_FILA_DE_LA_CINTA = 30;
 /** Dónde va el centro del ícono y dónde la barra, desde el borde de arriba de la fila. */
-export const CENTRO_DEL_ICONO = 10;
-export const BARRA_DESDE = 20;
+export const CENTRO_DEL_ICONO = 12;
+export const BARRA_DESDE = 24;
 export const ALTO_DE_LA_BARRA = 4;
-/** Dos íconos más cerca que esto se agrupan: un ícono mide 15 px. */
-export const SEPARACION_MINIMA_DE_HECHOS = 18;
+/** Dos íconos más cerca que esto se agrupan: un ícono mide 18 px y su fondo, 22; así dos fondos nunca se pisan. */
+export const SEPARACION_MINIMA_DE_HECHOS = 22;
 /** El ancho aproximado de una letra de 12,5 px, para saber si un rótulo entra. */
 const ANCHO_DE_UNA_LETRA = 7;
 
