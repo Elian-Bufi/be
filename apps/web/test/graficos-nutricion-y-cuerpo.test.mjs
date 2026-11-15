@@ -994,6 +994,7 @@ test('TEST-GRVC-003 · sin rótulo en cada punto: el elegido, el último y los e
   assert.ok(sinElegir.length >= 1 && sinElegir.length <= 3, `pocos rótulos, no uno por punto: ${sinElegir.length} (mutación: rotularlos todos)`);
   assert.ok(sinElegir.some((r) => r.clave === 'm19'), 'el último lleva su número');
   assert.ok(!sinElegir.some((r) => r.clave === 'm3'), 'un subtotal no se rotula como el mínimo del período');
+  assert.ok(sinElegir.every((r) => r.fuerte === (r.clave === 'm19')), 'el último marcado; el mínimo y el máximo, discretos');
   const conElegido = L.rotulosDelPanel(geo, e, 240, fechas[7], 'DIA', 16);
   assert.equal(conElegido[0].clave, 'm7', 'el elegido va primero');
   for (const lista of [sinElegir, conElegido])
