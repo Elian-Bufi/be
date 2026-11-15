@@ -313,6 +313,13 @@ import {
   ResumenesParaElProfesionalResponseSchema,
 } from './contratos-resumenes-compartidos';
 import {
+  AutorizarHistoriaAnteriorRequestSchema,
+  HistoriaAnteriorDeUnAreaResponseSchema,
+  HistoriaAnteriorResponseSchema,
+  MiHistoriaAnteriorResponseSchema,
+  RetirarHistoriaAnteriorRequestSchema,
+} from './contratos-historia-anterior';
+import {
   AsociarImagenDeEjercicioRequestSchema,
   EjercicioPropioResponseSchema,
   ListaDeEjerciciosPropiosResponseSchema,
@@ -820,7 +827,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-CON-04',
     metodo: 'post',
     ruta: '/me/consents/{consentId}/revoke',
-    resumen: 'Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo.',
+    resumen:
+      'Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo. En la misma transacción retira la autorización de la historia anterior de ese componente, si estaba dada (DL-175, HA-T14): otorgar el B2 de nuevo no la devuelve.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: ConsentimientoRevocadoResponseSchema }],
@@ -3186,6 +3194,63 @@ const DEFINIDAS: readonly Operacion[] = [
     },
     fuente: 'DL-163 D-13, ampliada · TA-95 · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-25 · 08 §12.2, C-12 · RNF-PRI-002',
   },
+  // ─── WP-HISTORIA-ANTERIOR · HIA: la historia anterior de un área, para el profesional nuevo (DL-175; 08 §14.1, «Cambio de
+  // profesional»; REG-06-55; RF-025). Familia propia de BE: el 09 no la tiene. La APK la empieza a leer con su próxima
+  // candidata, y se congela con ella (DL-152). ─────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-HIA-01',
+    metodo: 'get',
+    ruta: '/me/previous-history',
+    resumen:
+      'Lo que la persona decidió de su historia anterior: por cada profesional que la acompaña hoy en un área (vínculo aceptado o en pausa) y por cada vínculo terminado con el que la miraron, si antes hubo otro profesional en esa área (sin decir si dejó datos), qué vería (las partes de esa área), la última versión de su autorización (GRANTED o WITHDRAWN, con desde cuándo; null si nunca decidió), si hoy ese profesional tiene acceso a esa área (accessInEffect: el PDP de ese componente, sin registrar; compartida y sin acceso, no la ve) y la última vez que la miró con ese componente; el texto que se acepta al autorizar (una propuesta, PENDING_APPROVAL) y las últimas 50 lecturas, con quién, qué área y cuándo (08 §19.7). No pide el A3: retirar tiene que poder hacerse siempre.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MiHistoriaAnteriorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T06, HA-T08, HA-T15) · 08 §14.1 y §19.7 · REG-06-55 · RF-025',
+  },
+  {
+    id: 'API-HIA-02',
+    metodo: 'put',
+    ruta: '/me/previous-history/{relationshipId}',
+    resumen:
+      'La persona autoriza al profesional de ese componente de vínculo (aceptado o en pausa) a ver su historia anterior de esa área, con la última versión que vio (null si nunca decidió; si no es la última, 409 VERSION_CONFLICT) y el texto mostrado, que tiene que ser el vigente (si no, 409 CONSENT_VERSION_STALE). Pide el A3 (403). Si ya está autorizada, responde lo mismo sin agregar otra versión. Un componente ajeno, terminado o inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AutorizarHistoriaAnteriorRequestSchema,
+    exitos: [{ status: 200, schema: HistoriaAnteriorDeUnAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T04, HA-T05) · 08 §12.2 y §14.1 · REG-06-55',
+  },
+  {
+    id: 'API-HIA-03',
+    metodo: 'post',
+    ruta: '/me/previous-history/{relationshipId}/withdrawal',
+    resumen:
+      'La persona deja de compartir su historia anterior con ese profesional, desde ese momento (RNF-PRI-002): una versión nueva WITHDRAWN, con la vigente que vio (si no es la vigente, 409 VERSION_CONFLICT). No pide el A3 ni borra nada; vale también con el vínculo terminado. Un componente ajeno o inexistente, 404. Revocar el B2 de ese componente (API-CON-04) y cerrar la cuenta también la retiran.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RetirarHistoriaAnteriorRequestSchema,
+    exitos: [{ status: 200, schema: HistoriaAnteriorDeUnAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T04) · RNF-PRI-002 · 08 §13',
+  },
+  {
+    id: 'API-HIA-04',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/previous-history/{area}',
+    resumen:
+      'Para el profesional: la historia anterior de un área de la persona, en solo lectura, por tramos de fechas (sin fechas, los últimos 90 días de esa historia; hasta 366). Es lo de otros profesionales en esa misma área, de antes del comienzo de su acompañamiento y como estaba en ese momento (las correcciones, anulaciones, rectificaciones y recálculos posteriores no entran): las versiones ACTIVADAS de sus planes con su contenido como lo vio la persona (nunca un borrador), lo que la persona registró bajo esos planes (sin fotos), las tomas registradas con su protocolo, el origen de cada medición y lo calculado con su método para el soporte antropométrico, y las decisiones de las revisiones (resultado, fundamento y próxima acción; ni la interpretación ni las evidencias). Cada cosa va marcada como de otro profesional (author.kind OTHER_PROFESSIONAL, con su orden) y sin nombrarlo. Nunca las notas propias, otra área ni lo propio de quien lee. Autoriza con el PDP de esa área (vínculo aceptado, B2 vigente, cuentas y el A3 de la persona) y la autorización vigente de la persona para ese componente: si falta cualquiera, el 404 de lo inexistente. Cada lectura queda registrada y la persona la ve en API-HIA-01.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Primer día del tramo (fecha civil, inclusive). Va con periodEnd.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Último día del tramo (fecha civil, inclusive), hasta 366 días después del primero. Va con periodStart.', schema: { type: 'string', format: 'date' } },
+    ],
+    exitos: [{ status: 200, schema: HistoriaAnteriorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T02, HA-T03, HA-T07) · 08 §14.1 y §19.7 · REG-06-55 · RF-025 · PG-16',
+  },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
     id: 'API-REC-01',
@@ -4573,6 +4638,9 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-RES-06',
   'API-RES-07',
   'API-RES-09',
+  // WP-HISTORIA-ANTERIOR (DL-175).
+  'API-HIA-01',
+  'API-HIA-04',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',
