@@ -20,7 +20,8 @@
 //   dos etapas» (GR-24) y «Patrones», en la ficha y en la estación (GR-27);
 // - con Lic. Sofía Paz (Nutrición y Antropometría): «Desde el inicio y desde la anterior» (GR-16), «Día por día» (GR-14),
 //   «Por sitio» (GR-18) y «Por método» (GR-20), «Superpuestas» y «Alineadas» (GR-26), «Comparar dos etapas» (GR-24),
-//   «Patrones» con «Ver la relación» (SP-02) y «Armá tu gráfico» (GR-26).
+//   «Patrones» con «Ver la relación» (SP-02) y «Armá tu gráfico» (GR-26); con la rama D, GR-12 y GR-13 en «Analizar» y
+//   «Ver la relación» (SP-02) en «Analizar»; y, con el entrenador, que esas preguntas no aparecen (el caso negado).
 // La misma lista sirve en cada rama de WP-GRAFICOS apenas trae main: una pantalla que la rama todavía no tiene se anota y
 // se saltea, y una que falla queda anotada con una captura del momento; ninguna corta la corrida. Cada pantalla deja la
 // ventana visible y, si un gráfico no entra entero en ella, el recorte de su panel. `indice.md` dice qué es cada imagen,
@@ -542,6 +543,24 @@ function pantallas({ diego, versiones }) {
     await esperarQueCargue(page, nota, '.comparacion-de-etapas');
     nota(`etapas: las dos últimas versiones activadas del plan de ${area === 'ENTRENAMIENTO' ? 'Entrenamiento («Fuerza 2» y «Fuerza 3»), con la sentadilla, serie 1, en kg' : 'Nutrición'}`);
     if (!(await page.$('.etapas-lado-a-lado'))) nota('sin «Lado a lado, con todas las observaciones» (GR-24): llega con la rama D (wp-graficos-cruces-y-analizar)');
+    // GR-VC13 (rama D): por semana, la media de GR-12. Con la cohorte puede arrancar día por día (ninguna semana con media):
+    // se elige «Por semana» para ver las semanas sin media con su contorno cortado.
+    if (area === 'NUTRICION' && (await siAparece(page, '.graficos-de-etapas [data-por-semana][aria-pressed="false"]', null, 4_000))) {
+      nota('«Las mismas métricas, en el tiempo» arrancó día por día: se eligió «Por semana»');
+      await page.click('.graficos-de-etapas [data-por-semana]');
+      await asentar(page);
+    }
+  };
+  /** Una de las preguntas de «Analizar» que responden con gráficos del registro (rama D, GR-VD01 y GR-VD02). */
+  const preguntaConGraficos = (pregunta, exigir) => async (page, nota) => {
+    await ir(page, enLaFicha({ vista: 'analizar', pregunta, p: '365' }));
+    if (!(await siAparece(page, '.graficos-en-analizar', null, 20_000))) throw new NoEstaEnLaRama('las preguntas de «Analizar» con GR-12 y GR-13 y con «Ver la relación» las monta la rama D (wp-graficos-cruces-y-analizar).');
+    await esperarQueCargue(page, nota, '.graficos-en-analizar', 45_000);
+    const graficos = await page.$$eval('.graficos-en-analizar [data-grafico]', (xs) => xs.map((x) => x.getAttribute('data-grafico')));
+    nota(`gráficos: ${graficos.join(', ') || 'ninguno'}`);
+    for (const id of exigir) if (!graficos.includes(id)) throw new Error(`falta ${id} en la pregunta ${pregunta}`);
+    const semanales = await page.$$eval('.graficos-en-analizar [data-por-semana][aria-pressed="true"]', (xs) => xs.length);
+    nota(`${semanales} gráficos arrancaron por semana`);
   };
   const patrones = { entera: true, graficos: '.ficha__cuerpo', enfocar: (page) => page.evaluate(() => window.scrollTo(0, 0)) };
   return {
@@ -686,6 +705,21 @@ function pantallas({ diego, versiones }) {
         ],
       },
       {
+        nombre: '22-caso-negado-del-entrenador',
+        codigo: 'SP-01, SP-02, GR-12 y GR-13',
+        de: 'rama D (wp-graficos-cruces-y-analizar)',
+        que: 'Las preguntas de «Analizar» para el entrenador sin Nutrición: no aparecen «¿Qué registró en Nutrición…?» ni «Ver la relación» (el caso negado no se ofrece, ni en gris ni con candado). SP-01 en el caso 1 pide el mismo profesional con Nutrición y Entrenamiento, y la cohorte no tiene ninguno.',
+        llegar: async (page, nota) => {
+          await ir(page, enLaFicha({ vista: 'analizar', p: '365' }));
+          await visible(page, '.preguntas-profesionales', null, 30_000);
+          await asentar(page);
+          const ofrecidas = await page.$$eval('[data-pregunta-con-graficos]', (xs) => xs.map((x) => x.getAttribute('data-pregunta-con-graficos')));
+          if (ofrecidas.length > 0) throw new Error(`al entrenador se le ofrecen preguntas de un área sin acceso: ${ofrecidas.join(', ')}`);
+          nota('ni «¿Qué registró en Nutrición…?» ni «Ver la relación»: el caso negado no aparece');
+        },
+        enfocar: '.preguntas-profesionales',
+      },
+      {
         nombre: '10-patrones-con-entrenamiento',
         codigo: '«Patrones» y GR-27',
         de: 'rama E (wp-graficos-patrones-y-enfoques)',
@@ -826,6 +860,29 @@ function pantallas({ diego, versiones }) {
         },
         paneles: [{ nombre: 'compositor', selector: 'dialog[open]' }],
         graficos: 'body',
+      },
+      {
+        nombre: '21-gr12-gr13-en-analizar',
+        codigo: 'GR-12 y GR-13',
+        de: 'rama C (los gráficos) y rama D (en «Analizar»)',
+        que: '«Analizar · ¿Qué registró en Nutrición, por día y por semana?» con el último año: las calorías por día con lo que se sabe de cada día, el objetivo y la media de cada semana (GR-12), y los macronutrientes en paneles y en g/kg (GR-13), como arrancan.',
+        llegar: preguntaConGraficos('nutricion-por-dia-y-por-semana', ['nutricion.energia-por-dia', 'nutricion.macros-en-paneles']),
+        enfocar: '.graficos-en-analizar',
+        paneles: [
+          { nombre: 'gr12', selector: '[data-grafico="nutricion.energia-por-dia"]' },
+          { nombre: 'gr13', selector: '[data-grafico="nutricion.macros-en-paneles"]' },
+        ],
+        graficos: '.graficos-en-analizar',
+      },
+      {
+        nombre: '23-sp02-ver-la-relacion',
+        codigo: 'SP-02',
+        de: 'rama D (wp-graficos-cruces-y-analizar)',
+        que: '«Analizar · Ver la relación» con el último año: las calorías por día, su media semanal (la de GR-12) y el peso de cada toma en puntos sueltos, con la ventana entre dos tomas, lo que también cambió, lo que BE no registra y la frase fija.',
+        llegar: preguntaConGraficos('ver-la-relacion', ['cruce.energia-y-peso']),
+        enfocar: '[data-grafico="cruce.energia-y-peso"]',
+        paneles: [{ nombre: 'sp02', selector: '[data-grafico="cruce.energia-y-peso"]' }],
+        graficos: '.graficos-en-analizar',
       },
       {
         nombre: '20-gr14-por-semana',

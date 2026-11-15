@@ -731,7 +731,7 @@ function AnalizarConSusPreguntas() {
                       ) : null}
                       {hayHuecos ? (
                         <li>
-                          <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), o día o semana sin completar
+                          <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), día o semana sin completar, o semana con días afuera de la media
                         </li>
                       ) : null}
                       {hayCargaRapida ? (

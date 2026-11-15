@@ -9,8 +9,8 @@
  * El período es el de la ficha, que la API recorta al inicio del acompañamiento. Cada gráfico pide sus lecturas con el
  * acceso de este momento: si un permiso cambió, el gráfico no se dibuja y no deja rastro.
  */
-import { useState } from 'react';
-import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
+import { useEffect, useState } from 'react';
+import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { contextoDelRegistro, ejercicioDelCruce, ejerciciosDeLaListaV1, graficosDeLaPregunta, PREGUNTAS_CON_GRAFICOS, type PreguntaConGraficos } from '../graficos/cruces/preguntas-con-graficos';
 import { textoDeFalla, useSeguimiento } from './contexto';
@@ -28,6 +28,13 @@ export function GraficosEnAnalizar({ tituloId, pregunta }: { tituloId: string; p
   const ejercicio = ejercicioDelCruce(disponibles.ejercicios, elegido);
   const v1 = ejerciciosDeLaListaV1(disponibles.ejercicios);
   const periodoDelGrafico = { desde: periodo.desde, hasta: periodo.hasta, hoy: hoyEn(), desdeElVinculo: null };
+  // Abierta por la dirección sin ningún gráfico que se ofrezca (un área sin acceso, o nada en el período), responde igual
+  // que una pregunta que no existe: «Analizar» sin pregunta. No dice el título ni por qué: no delata qué hay.
+  const sinNadaQueOfrecer = !disponibles.cargando && !disponibles.falla && graficos.length === 0;
+  useEffect(() => {
+    if (sinNadaQueOfrecer) ir(parametrosDePregunta(null));
+  }, [sinNadaQueOfrecer, ir]);
+  if (disponibles.cargando || sinNadaQueOfrecer) return <Cargando />;
   return (
     <section className="seccion analizar graficos-en-analizar" aria-labelledby={tituloId}>
       <div className="pregunta-en-curso pregunta-activa">
@@ -40,15 +47,11 @@ export function GraficosEnAnalizar({ tituloId, pregunta }: { tituloId: string; p
           </button>
         </div>
       </div>
-      {disponibles.cargando ? (
-        <Cargando />
-      ) : graficos.length === 0 && disponibles.falla ? (
+      {graficos.length === 0 && disponibles.falla ? (
         // Una falla no es una ausencia: no se sabe si habría gráficos.
         <BloqueDeEstado tipo="error" icono="aviso" onReintentar={disponibles.recargar} textoDelBoton="Reintentar" rol="alert">
-          {textoDeFalla(disponibles.falla)}
+          {textoDeFalla(disponibles.falla, 'qué datos hay en el período')}
         </BloqueDeEstado>
-      ) : graficos.length === 0 ? (
-        <EstadoVacio titulo={P.sinGraficos} icono="analizar" />
       ) : (
         <div className="graficos-en-analizar__lista">
           {graficos.map((g) => (

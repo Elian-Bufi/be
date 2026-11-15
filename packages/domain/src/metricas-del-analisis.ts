@@ -101,7 +101,7 @@ function nutricional(id: string, nombre: string, nombreCorto: string, parametro:
     resumenDePeriodo: 'MEDIA_DE_DIAS_CON_DATOS',
     explicacion: `${nombre} en los registros de comida con cantidades, por día.`,
     comoSeCalcula:
-      'Cada registro efectivo aporta lo que calculó BE con sus cantidades confirmadas o informadas (método SUM_SOURCE_PER_100G_V1, con las kcal de la fuente: no 4/4/9). El día es la suma de lo conocido; la semana es la media de los días con valor, y dice cuántos días tuvo.',
+      'Cada registro efectivo aporta lo que calculó BE con sus cantidades confirmadas o informadas (método SUM_SOURCE_PER_100G_V1, con las kcal de la fuente: no 4/4/9). El día es la suma de lo conocido. Por semana, la media de la semana (v1): el promedio de los días con cantidades en todos sus registros, si son 4 o más; los demás quedan afuera y se cuentan, y la semana dice con cuántos días se hizo.',
     ausencias:
       'Un registro sin cantidades, una comida diferente con solo texto o foto, o un alimento sin el dato del nutriente no aportan número: el día queda como subtotal y dice qué falta. Lo previsto de la opción no se cuenta como consumido.',
     limites: [LIMITE_REGISTRADO, 'Un registro anulado queda en el historial y fuera del número; una rectificación cuenta una sola vez.'],

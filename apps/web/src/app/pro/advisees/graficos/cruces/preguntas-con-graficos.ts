@@ -10,7 +10,8 @@
  * Como la composición y la fuerza (TA-25), viven en el website y no se guardan como vista: sus identificadores no entran
  * en `ID_DE_PREGUNTAS`, que valida la API. Cada gráfico se ofrece con la regla de su registro (`ofrecido`, con el acceso
  * de hoy): un área sin acceso no aparece, ni en gris ni con candado, y la tarjeta de la pregunta tampoco si no se ofrece
- * ningún gráfico. Abierta por la dirección sin nada que mostrar, dice lo mismo que con un área que no existe.
+ * ningún gráfico. Abierta por la dirección sin nada que ofrecer, responde como una pregunta que no existe («Analizar» sin
+ * pregunta).
  *
  * Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs` (TEST-GRVD-003).
  */
@@ -25,19 +26,17 @@ export const PREGUNTA_DE_LA_RELACION = 'ver-la-relacion';
 export type PreguntaConGraficos = typeof PREGUNTA_DE_NUTRICION_POR_DIA | typeof PREGUNTA_DE_LA_RELACION;
 
 export const PREGUNTAS_CON_GRAFICOS: Readonly<
-  Record<PreguntaConGraficos, { readonly pregunta: string; readonly muestra: string; readonly graficos: readonly string[]; readonly sinGraficos: string }>
+  Record<PreguntaConGraficos, { readonly pregunta: string; readonly muestra: string; readonly graficos: readonly string[] }>
 > = {
   [PREGUNTA_DE_NUTRICION_POR_DIA]: {
     pregunta: '¿Qué registró en Nutrición, por día y por semana?',
     muestra: 'Las calorías y los macronutrientes registrados de cada día, con lo que se sabe de cada uno, el objetivo y la media de cada semana.',
     graficos: ['nutricion.energia-por-dia', 'nutricion.macros-en-paneles', 'nutricion.macros-por-kilo'],
-    sinGraficos: 'No hay gráficos de Nutrición para mostrar con tus áreas en este período.',
   },
   [PREGUNTA_DE_LA_RELACION]: {
     pregunta: '¿Qué pasó en dos áreas en el mismo tiempo?',
     muestra: 'Ver la relación: dos áreas sobre el mismo eje de fechas, con una ventana fijada antes de mirar y lo que también cambió. Que coincidan no dice que una cosa cause la otra.',
     graficos: ['cruce.carbohidratos-y-fuerza', 'cruce.energia-y-peso'],
-    sinGraficos: 'No hay cruces para mostrar con tus áreas y lo registrado en este período.',
   },
 };
 

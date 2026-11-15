@@ -1022,9 +1022,13 @@ test('TEST-GRVD-003 · GR-12 y GR-13 en «Analizar», y «Ver la relación» con
   const pieza = leer(join(SEGUIMIENTO, 'graficos-en-analizar.tsx'));
   assert.match(pieza, /graficosDeLaPregunta\(pregunta, contextoDelRegistro\(acceso, disponibles\)\)/);
   assert.match(pieza, /acceso=\{acceso\}/, 'cada gráfico recibe el acceso con que se ofreció');
-  assert.match(pieza, /<EstadoVacio titulo=\{P\.sinGraficos\}/);
-  for (const p of Object.values(PG.PREGUNTAS_CON_GRAFICOS)) for (const x of [p.pregunta, p.muestra, p.sinGraficos]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], x);
-  assert.doesNotMatch(PG.PREGUNTAS_CON_GRAFICOS[relacion].sinGraficos, /Nutrición|Entrenamiento|Antropometría|acceso/, 'sin nada que mostrar no se nombra un área (no delata qué hay)');
+  // Abierta por la dirección sin nada que ofrecer (un entrenador que escribe «pregunta=ver-la-relacion»), responde como una
+  // pregunta que no existe: vuelve a «Analizar» sin pregunta, sin el título ni un aviso que delate qué hay.
+  assert.match(pieza, /const sinNadaQueOfrecer = !disponibles\.cargando && !disponibles\.falla && graficos\.length === 0;/);
+  assert.match(pieza, /if \(sinNadaQueOfrecer\) ir\(parametrosDePregunta\(null\)\);/);
+  assert.match(pieza, /if \(disponibles\.cargando \|\| sinNadaQueOfrecer\) return <Cargando \/>;/);
+  assert.ok(pieza.indexOf('if (disponibles.cargando || sinNadaQueOfrecer) return') < pieza.indexOf('<h2 id={tituloId}>'), 'el título no se ve antes de saber si se ofrece');
+  for (const p of Object.values(PG.PREGUNTAS_CON_GRAFICOS)) for (const x of [p.pregunta, p.muestra]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], x);
 });
 
 test('TEST-GRVD-004 · SP-01 y SP-02 con el lenguaje de la base: la frase una sola vez, la lectura a la vista adentro de la tarjeta y lo fisiológico en su «Cómo leerlo»; «Analizar» con la frase y el límite en «Cómo leerlo» (mutación: la frase dos veces; un desplegable propio sin el nombre de su gráfico)', () => {
@@ -1048,4 +1052,43 @@ test('TEST-GRVD-004 · SP-01 y SP-02 con el lenguaje de la base: la frase una so
   assert.match(A.COMO_LEER_DOS_EJES, /que dos líneas se crucen o se separen no quiere decir nada/);
   const css = leer(join(GRAFICOS, 'estilos', 'cruces.css'));
   assert.match(css, /\.analizar__pie-de-la-frase \.analizar__como-leerlo\[open\] \{\s*flex: 1 1 100%;/);
+});
+
+test('TEST-GRVD-005 · «Agrupar por: Semana» de Nutrición en «Analizar» dibuja la media de GR-12, no la semana de la API con los subtotales (mutación: pedir la semana a API-PRJ-01; dibujar la semana sin media como un cero)', () => {
+  const puntos = [
+    diaLleno('2026-11-02', 2000),
+    diaLleno('2026-11-03', 2200),
+    diaLleno('2026-11-05', 2400),
+    diaLleno('2026-11-06', 1600),
+    diaSubtotal('2026-11-07', 1000),
+    diaLleno('2026-11-09', 2100),
+    diaSubtotal('2026-11-12', 800),
+  ];
+  const dias = serie('nutricion.energia', 'kcal', 'DAY', puntos);
+  const [desde, hasta, hoy] = ['2026-11-02', '2026-11-15', '2026-11-20'];
+  const semanal = SN.serieSemanalDeNutricion(dias, 'ENERGY', desde, hasta, hoy);
+  const gr12 = G12.mediasDeLasSemanas(puntos, 'ENERGY', desde, hasta, hoy);
+  assert.equal(semanal.grain, 'WEEK');
+  assert.deepEqual(
+    semanal.points.map((p) => [p.date, p.dateEnd, p.value, p.n, p.quality]),
+    [
+      ['2026-11-02', '2026-11-08', gr12[0].valor, 4, 'PARTIAL'],
+      ['2026-11-09', '2026-11-15', null, 1, 'UNKNOWN'],
+    ],
+    'la media de GR-12 (2.050 kcal, sin el subtotal); la semana sin media no tiene valor (no es un cero)',
+  );
+  assert.equal(semanal.points[0].value, 2050);
+  assert.deepEqual(semanal.points[0].detail, [{ label: SN.DETALLE_DE_LA_MEDIA_DE_LA_SEMANA, value: gr12[0].texto }]);
+  assert.ok(semanal.points.every((p) => p.segment === 'semana-v1'));
+  assert.equal(semanal.points[0].partialBucket, false);
+  assert.equal(SN.serieSemanalDeNutricion(dias, 'ENERGY', '2026-11-04', hasta, hoy).points[0].partialBucket, true, 'una semana cortada por el período es un balde sin completar');
+  // El despacho: con una métrica de Nutrición por semana se leen los días (una lectura) y se arma la semana de GR-12.
+  const series = leer(join(SEGUIMIENTO, 'series.ts'));
+  assert.match(series, /const conMediaDeLaSemana = p\.grano === 'WEEK' \? metricaConMediaDeLaSemana\(p\.definicion\) : null;/);
+  assert.match(series, /const deLosDias = pedidoDe\(p\.ref, p\.definicion, 'DAY', periodo\);/);
+  assert.match(series, /serie: serieSemanalDeNutricion\(estado\.observaciones, conMediaDeLaSemana, periodo\.desde, periodo\.hasta, hoyEn\(estado\.zona\)\)/);
+  assert.ok(series.indexOf('if (conMediaDeLaSemana !== null)') < series.indexOf('const pedido = pedidoDe(p.ref, p.definicion, p.grano, periodo);'), 'decide antes de pedir la semana a la API');
+  // El diccionario dice la misma regla en «Cómo se calcula».
+  assert.match(definicionDeMetrica('nutricion.energia').comoSeCalcula, /Por semana, la media de la semana \(v1\): el promedio de los días con cantidades en todos sus registros, si son 4 o más/);
+  assert.doesNotMatch(definicionDeMetrica('nutricion.energia').comoSeCalcula, /la semana es la media de los días con valor/);
 });

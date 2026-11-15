@@ -35,7 +35,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type Resultado } from '../../../../lib/api';
 import { limitarLectura, motivoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
-import { claveDeLaReferencia, type GranoElegido, type Periodo } from './estado';
+import { claveDeLaReferencia, hoyEn, type GranoElegido, type Periodo } from './estado';
+import { metricaConMediaDeLaSemana, serieSemanalDeNutricion } from '../graficos/cruces/semanas-de-nutricion';
 import { caminoDeLaLectura, definicionDeLaSerie, ejercicioDeLaClave } from '../graficos/arma-tu-grafico/compositor';
 import { leerLaFuerza } from '../graficos/cruces/lecturas-de-los-cruces';
 import { leerDisponibles, leerSerieDelCatalogo, type Disponibles } from '../graficos/lecturas';
@@ -164,6 +165,17 @@ export interface SeriePedida {
  * las observaciones. La usan la pantalla y la exportación, que vuelve a preguntar antes de armar el archivo.
  */
 export async function leerSerie(token: string, asesoradoId: string, p: SeriePedida, periodo: Periodo): Promise<{ readonly estado: EstadoDeSerie; readonly respuestas: readonly Respuesta[] }> {
+  // Una sola media semanal para todo BE (GR-VC13, GR-VD03): Nutrición por semana es la media de GR-12, que se calcula acá
+  // con los días (una sola lectura), no la semana de API-PRJ-01, que promedia también los subtotales.
+  const conMediaDeLaSemana = p.grano === 'WEEK' ? metricaConMediaDeLaSemana(p.definicion) : null;
+  if (conMediaDeLaSemana !== null) {
+    const deLosDias = pedidoDe(p.ref, p.definicion, 'DAY', periodo);
+    if (!deLosDias) return { estado: { tipo: 'error', motivo: 'OTRO' }, respuestas: [] };
+    const r = await limitarLectura(() => api.proyeccion(token, asesoradoId, deLosDias.clave, deLosDias.filtro));
+    const estado = estadoDe(r, null);
+    if (estado.tipo !== 'lista') return { estado, respuestas: [r] };
+    return { estado: { ...estado, serie: serieSemanalDeNutricion(estado.observaciones, conMediaDeLaSemana, periodo.desde, periodo.hasta, hoyEn(estado.zona)) }, respuestas: [r] };
+  }
   const pedido = pedidoDe(p.ref, p.definicion, p.grano, periodo);
   if (!pedido) return { estado: { tipo: 'error', motivo: 'OTRO' }, respuestas: [] };
   const grano = granoDeObservacion(p.definicion);

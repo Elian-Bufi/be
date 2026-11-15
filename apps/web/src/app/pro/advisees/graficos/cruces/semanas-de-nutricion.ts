@@ -12,9 +12,12 @@
  * tramo a `mediasDeLasSemanas`, y lo pasa a la forma que dibujan el gráfico chico por semana (`semanas.ts`) y el carril
  * semanal de la base (`carriles.ts`).
  *
- * Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs` (TEST-GRVD-001).
+ * También «Agrupar por: Semana» de «Analizar» en Nutrición (`serieSemanalDeNutricion`, GR-VD03): antes pedía la semana a
+ * API-PRJ-01, que promedia también los subtotales.
+ *
+ * Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs` (TEST-GRVD-001 y 005).
  */
-import { fechasDelRango, type DefinicionDeMetrica, type PuntoAnalitico } from '@be/domain';
+import { fechasDelRango, type DefinicionDeMetrica, type PuntoAnalitico, type SerieAnalitica } from '@be/domain';
 import type { SemanaDelCarril } from '../carriles';
 import { saberDelDia, type MetricaDelGrafico } from '../nutricion/dias-de-nutricion';
 import { mediasDeLasSemanas, type MediaDeLaSemana } from '../nutricion/por-semana';
@@ -112,4 +115,49 @@ export function semanasDelCarril(puntos: readonly PuntoAnalitico[], metrica: Met
     entera: s.completa,
     conDias: s.conDias === true,
   }));
+}
+
+/** El detalle de un punto semanal: lo que dice la media de GR-12 de esa semana, con sus días. */
+export const DETALLE_DE_LA_MEDIA_DE_LA_SEMANA = 'Media de la semana (v1)';
+
+/**
+ * La serie semanal de una métrica de Nutrición para «Analizar» («Agrupar por: Semana»; GR-VC13 y GR-VD03): un punto por
+ * semana de BE que toca el período, con la media de GR-12 de los días de esa semana dentro del período. Sin media (menos
+ * de 4 días con cantidades en todos sus registros), el punto no tiene valor: la línea se corta, no es un cero. El punto
+ * va lleno solo con los siete días adentro; si no, hueco, como una semana sin completar. Su detalle dice con cuántos días
+ * se hizo la media y por qué quedaron afuera los otros. Los resúmenes y las comparaciones siguen con los días.
+ */
+export function serieSemanalDeNutricion(dias: SerieAnalitica, metrica: MetricaDelGrafico, desde: string, hasta: string, hoy: string): SerieAnalitica {
+  const semanas = semanasDeNutricion(dias.points, metrica, desde, hasta, hoy);
+  return {
+    ...dias,
+    grain: 'WEEK',
+    aggregation: 'MEAN_OF_DAYS_WITH_DATA',
+    points: semanas.map((s): PuntoAnalitico => {
+      const domingo = new Date(Date.parse(`${s.lunes}T12:00:00Z`) + 6 * DIA).toISOString().slice(0, 10);
+      const delTramo = dias.points.filter((p) => p.date >= s.desde && p.date <= s.hasta);
+      return {
+        pointId: `semana-v1:${s.lunes}`,
+        date: s.lunes,
+        dateEnd: domingo,
+        at: null,
+        value: s.valor,
+        quality: s.valor === null ? 'UNKNOWN' : s.completa ? 'COMPLETE' : 'PARTIAL',
+        n: s.conDato,
+        segment: 'semana-v1',
+        corrected: false,
+        partialBucket: s.conHoy || s.cortada,
+        dataClass: null,
+        method: null,
+        planVersionIds: [...new Set(delTramo.flatMap((p) => p.planVersionIds))],
+        coverage: null,
+        missing: [],
+        detail: [{ label: DETALLE_DE_LA_MEDIA_DE_LA_SEMANA, value: s.texto ?? '' }],
+        sources: [],
+        sourcesTruncated: false,
+      };
+    }),
+    gaps: [],
+    segments: [],
+  };
 }
