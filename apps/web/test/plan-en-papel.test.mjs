@@ -230,7 +230,7 @@ test('TEST-PG-016 · el QR baja la app, el mismo archivo de la portada, sin dato
   const componente = sinComentarios(leer('src/components/hoja-del-plan.tsx'));
   assert.match(componente, /<CodigoQr texto=\{hoja\.app\.enlace\} etiqueta=\{hoja\.app\.etiqueta\}/, 'el QR se dibuja en el navegador, sin servicios externos');
   assert.doesNotMatch(componente, /https?:\/\//, 'ningún servicio externo para el QR');
-  assert.match(componente, /<a className="hoja-del-plan__bajar" href=\{hoja\.app\.enlace\}>\s*\{hoja\.app\.bajar\}\s*<\/a>/, '«Bajar BE», al archivo del QR');
+  assert.match(componente, /<a className="hoja-del-plan__bajar" href=\{hoja\.app\.enlace\} download>\s*\{hoja\.app\.bajar\}\s*<\/a>/, '«Bajar BE», al archivo del QR');
 });
 
 // ── 3. La hoja impresa no imprime la navegación ────────────────────────────────────────────────────────────────
@@ -278,7 +278,7 @@ test('TEST-PG-016 · la hoja va aparte de la página y no tiene nada que se toqu
   // El único enlace es «Bajar BE», al archivo de la app: nada que lleve a la página ni a datos de la persona.
   assert.deepEqual(
     [...componente.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]),
-    ['<a className="hoja-del-plan__bajar" href={hoja.app.enlace}>'],
+    ['<a className="hoja-del-plan__bajar" href={hoja.app.enlace} download>'],
   );
   assert.deepEqual(
     [...componente.matchAll(/href=\{([^}]*)\}/g)].map((m) => m[1]),

@@ -44,7 +44,7 @@ function Hoja({ hoja }: { hoja: HojaDelPlan }) {
           <figcaption>
             <strong>{hoja.app.titulo}</strong>
             <span>{hoja.app.texto}</span>
-            <a className="hoja-del-plan__bajar" href={hoja.app.enlace}>
+            <a className="hoja-del-plan__bajar" href={hoja.app.enlace} download>
               {hoja.app.bajar}
             </a>
           </figcaption>
