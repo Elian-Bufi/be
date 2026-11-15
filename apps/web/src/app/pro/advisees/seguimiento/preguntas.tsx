@@ -37,6 +37,7 @@ import { diaCivil } from '../../../../lib/formato';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
 import { LA_PREGUNTA_DE_LA_COMPOSICION, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
 import { LA_PREGUNTA_DE_LA_FUERZA, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
+import { PREGUNTAS_CON_GRAFICOS, type PreguntaConGraficos } from '../graficos/cruces/preguntas-con-graficos';
 import { hoyEn, parametrosDePregunta, restarDias } from './estado';
 import type { Disponibles } from './series';
 
@@ -119,7 +120,7 @@ const ICONO_DE_PREGUNTA: Readonly<Record<IdDePregunta, NombreDeIcono>> = {
  * Las preguntas, cuando todavía no se eligió ninguna: una fila por pregunta, con su ícono, lo que muestra y una flecha.
  * Las filas de una lista miden lo mismo (E-18).
  */
-export function ListaDePreguntas() {
+export function ListaDePreguntas({ conGraficos = [] }: { conGraficos?: readonly PreguntaConGraficos[] } = {}) {
   const { ir, panel } = useSeguimiento();
   const id = useId();
   const elegir = (p: IdDePregunta) => ir(parametrosDePregunta({ id: p, params: {} }), { agregarAlHistorial: true });
@@ -174,6 +175,19 @@ export function ListaDePreguntas() {
         {principales.map(fila)}
         {composicion}
         {fuerza}
+        {/* WP-GRAFICOS (rama D): las que responden con gráficos del registro, solo las que se ofrecen con esta persona. */}
+        {conGraficos.map((p) => (
+          <li key={p}>
+            <button type="button" className="tarjeta-de-pregunta" data-pregunta-con-graficos={p} onClick={() => ir({ ...parametrosDePregunta(null), pregunta: p, m: null, f: null }, { agregarAlHistorial: true })}>
+              <Icono nombre={p === 'ver-la-relacion' ? 'juntas' : 'nutricion'} tamano={20} />
+              <span className="tarjeta-de-pregunta__textos">
+                <span className="tarjeta-de-pregunta__pregunta">{PREGUNTAS_CON_GRAFICOS[p].pregunta}</span>
+                <span className="tarjeta-de-pregunta__muestra">{PREGUNTAS_CON_GRAFICOS[p].muestra}</span>
+              </span>
+              <Icono nombre="derecha" tamano={18} />
+            </button>
+          </li>
+        ))}
       </ul>
       <details className="preguntas-profesionales__mas">
         <summary>Más preguntas ({otras.length})</summary>

@@ -32,6 +32,7 @@ import {
 } from '@be/domain';
 import { ejercicioDeLaClave } from '../arma-tu-grafico/compositor';
 import { extremosDelCarril, type EscalaDelCarril } from '../carriles';
+import type { MarcasDelEje } from '../ejes';
 import type { EjercicioDelGraficoElegido } from '../registro-de-graficos';
 import { areasConEtapas } from './caso-de-acceso';
 import { diaYMes, mediana } from './ventanas';
@@ -124,7 +125,8 @@ export interface DosEtapasLadoALado {
   readonly dibujable: boolean;
   /** Cuánto hay de cada lado, si no alcanza. */
   readonly falta: { readonly hacen: number; readonly hay: readonly [number, number]; readonly unidad: string } | null;
-  readonly extremos: { readonly abajo: number; readonly arriba: number; readonly decimales: number };
+  /** El eje vertical: de 3 a 5 marcas redondas (las de la base), con los extremos en la primera y la última. */
+  readonly extremos: MarcasDelEje;
   /** El resumen en texto, para el lector de pantalla y para quien no mira el dibujo. */
   readonly descripcion: string;
 }
@@ -275,6 +277,28 @@ export function geometriaDeDosEtapas(d: DosEtapasLadoALado, ancho: number, alto:
       mediana: l.mediana === null ? null : { y: y(l.mediana) },
     };
   });
-  const paso = (d.extremos.arriba - d.extremos.abajo) / 2;
-  return { columnas, marcasY: [d.extremos.abajo, d.extremos.abajo + paso, d.extremos.arriba].map((valor) => ({ valor, y: y(valor) })) };
+  // Las marcas redondas de la base (DISENO-VISUAL §1, principio 4): antes eran el piso, el medio y el techo, y con dos
+  // valores enteros seguidos el medio se escribía igual que un extremo («4, 4, 3»).
+  return { columnas, marcasY: d.extremos.valores.map((valor) => ({ valor, y: y(valor) })) };
+}
+
+/** Las marcas que se ven en unas comparaciones lado a lado: la leyenda va una vez, con solo esas (principio 7). */
+export interface MarcasDeDosEtapas {
+  readonly enLaMediana: boolean;
+  readonly afuera: boolean;
+  readonly cargaRapida: boolean;
+  readonly observada: boolean;
+  readonly mediana: boolean;
+}
+
+export function marcasDeDosEtapas(ds: readonly DosEtapasLadoALado[]): MarcasDeDosEtapas {
+  const dibujadas = ds.filter((d) => d.dibujable);
+  const puntos = dibujadas.flatMap((d) => d.lados.flatMap((l) => l.puntos));
+  return {
+    enLaMediana: puntos.some((p) => p.enLaMediana),
+    afuera: puntos.some((p) => !p.enLaMediana && (p.marca === 'HUECA' || p.marca === 'CONTORNO_CORTADO' || p.marca === 'PUNTO_ADENTRO' || p.marca === 'LLENA')),
+    cargaRapida: puntos.some((p) => !p.enLaMediana && p.marca === 'HUECA_GRIS'),
+    observada: puntos.some((p) => p.marca === 'ROMBO'),
+    mediana: dibujadas.some((d) => d.lados.some((l) => l.mediana !== null)),
+  };
 }

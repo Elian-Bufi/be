@@ -61,9 +61,9 @@ import {
 } from '@be/domain';
 import { escalaDeLaSerie, lecturaDelPunto } from '../graficos/arma-tu-grafico/compositor';
 import { COPY_DE_LOS_CRUCES } from '../graficos/cruces/copy';
-import { dosEtapasLadoALado, etapaDeLaPlanificacion } from '../graficos/cruces/dos-etapas';
-import { DosEtapasEnPantalla } from '../graficos/cruces/dos-etapas-en-pantalla';
-import { LO_QUE_BE_NO_REGISTRA, versionesEntreLasEtapas } from '../graficos/cruces/lo-que-tambien-cambio';
+import { dosEtapasLadoALado, etapaDeLaPlanificacion, marcasDeDosEtapas } from '../graficos/cruces/dos-etapas';
+import { DosEtapasEnPantalla, LeyendaDeDosEtapas } from '../graficos/cruces/dos-etapas-en-pantalla';
+import { cambioDeLoIndicadoEntreLasEtapas, LO_QUE_BE_NO_REGISTRA, versionesEntreLasEtapas } from '../graficos/cruces/lo-que-tambien-cambio';
 import dynamic from 'next/dynamic';
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
@@ -77,7 +77,7 @@ import { iconoDeLaReferencia } from './iconos-de-metrica';
 import { Marca } from './marca';
 import { Minigrafico } from './minigrafico';
 import { useLoIndicadoDelEjercicio } from '../graficos/lectura-de-lo-indicado';
-import { diferenciaDeLoIndicado, loIndicadoEnElTramo } from '../graficos/lo-indicado-en-el-tiempo';
+import { cambioCortoDeLoIndicado, diferenciaDeLoIndicado, loIndicadoEnElTramo } from '../graficos/lo-indicado-en-el-tiempo';
 import { LeyendaPorSemana, MarcaDeBarra, MinigraficoPorSemana } from '../graficos/minigrafico-por-semana';
 import { diasDeLaSerieDeNutricion, metricaConMediaDeLaSemana, porSemanaDeEntrada, semanasDeNutricion } from '../graficos/cruces/semanas-de-nutricion';
 import { marcasPorSemanaQueSeVen, type SemanaDeLaSerie } from '../graficos/semanas';
@@ -158,8 +158,10 @@ export function ComparacionDeEtapas({
   const leido = useMemo(() => periodoDeLasEtapas(a, b, hoy, 366), [a, b, hoy]);
   const periodo = useMemo(() => ({ preset: null, desde: leido.desde, hasta: leido.hasta }), [leido.desde, leido.hasta]);
   const { series, reintentarFallidas } = useSeriesDelAnalisis(metricas, 'DAY', periodo);
-  // Lo indicado del ejercicio de las métricas por serie, para decir qué cambió de A a B (solo en Entrenamiento).
-  const exerciseKey = area === 'ENTRENAMIENTO' ? (metricas.find((m) => m.exerciseKey !== null && medidaDeLaMetrica(m) !== null)?.exerciseKey ?? null) : null;
+  // Lo indicado del ejercicio de las métricas, para decir qué cambió de A a B (solo en Entrenamiento): en la diferencia de
+  // una métrica por serie y en «Lo que también cambió». También con el 1RM estimado solo, que no tiene medida por serie
+  // pero sí lo indicado que lo mueve (antes no se leía, y la lista decía que no había otro cambio).
+  const exerciseKey = area === 'ENTRENAMIENTO' ? (metricas.find((m) => m.exerciseKey !== null && medidaDeLaMetrica(m) !== null)?.exerciseKey ?? metricas.find((m) => m.exerciseKey !== null)?.exerciseKey ?? null) : null;
   const indicado = useLoIndicadoDelEjercicio({ token, asesoradoId, sesionPerdida }, exerciseKey, leido.desde, leido.hasta);
   const loIndicadoEnLaDiferencia = (ref: ReferenciaDeMetrica): string | null => {
     const medida = medidaDeLaMetrica(ref);
@@ -230,6 +232,13 @@ export function ComparacionDeEtapas({
   // con dos etapas de hace meses, lo de entonces no estaba ahí y se decía que no había cambiado nada.
   const [primera, segunda]: readonly [EtapaDePlanificacion, EtapaDePlanificacion] = a.desde <= b.desde ? [a, b] : [b, a];
   const tambienCambio = etapasDeLaOtraArea === null ? null : versionesEntreLasEtapas([...etapas, ...etapasDeLaOtraArea], primera, segunda, segunda.ultimoDia ?? leido.hasta);
+  // Y primero, lo que cambió en lo indicado para el ejercicio de una versión a la otra (DISENO-VISUAL §2 «D»: el cambio de
+  // 4 a 3 repeticiones no aparecía), con lo indicado de las sesiones que ejecutaron cada versión. Si no se pudo leer, se dice.
+  const nombreDelEjercicio = exerciseKey === null ? null : (disponibles.ejercicios?.find((x) => x.exerciseKey === exerciseKey)?.name ?? 'el ejercicio');
+  const loIndicadoDeLaEtapa = (e: EtapaDePlanificacion) => (indicado.tipo === 'lista' ? loIndicadoEnElTramo(indicado.observaciones, (o) => o.comparacion.planId === e.planVersionId) : null);
+  const cambioDeLoIndicado = nombreDelEjercicio === null ? null : cambioDeLoIndicadoEntreLasEtapas(cambioCortoDeLoIndicado(loIndicadoDeLaEtapa(primera), loIndicadoDeLaEtapa(segunda)), nombreDelEjercicio, primera, segunda);
+  const sinLoIndicado = exerciseKey !== null && indicado.tipo === 'sin-dato';
+  const marcasDelLadoALado = marcasDeDosEtapas(ladoALado.map((x) => x.d));
 
   const tarjeta = (e: EtapaDePlanificacion, lado: 'A' | 'B') => {
     const otra = lado === 'A' ? b : a;
@@ -398,22 +407,37 @@ export function ComparacionDeEtapas({
       {ladoALado.length > 0 ? (
         <section className="tarjeta-de-etapas etapas-lado-a-lado" aria-labelledby={`${id}-lado-a-lado`}>
           <h4 id={`${id}-lado-a-lado`}>Lado a lado, con todas las observaciones</h4>
+          {/* La leyenda, una vez para todas las métricas y solo con las marcas que se ven (DISENO-VISUAL §1, principio 7). */}
+          <LeyendaDeDosEtapas marcas={marcasDelLadoALado} />
           {ladoALado.map(({ s, indice, d }) => (
-            <DosEtapasEnPantalla key={s.clave} titulo={tituloDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios)} d={d} decimales={s.definicion.decimales} indice={indice} densidad="COMPACTA" nivel={4} />
+            <DosEtapasEnPantalla
+              key={s.clave}
+              titulo={tituloDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios)}
+              detalle={`${s.estado.serie.unit} · ${CADA_PUNTO[s.definicion.area]}`}
+              d={d}
+              decimales={s.definicion.decimales}
+              indice={indice}
+              densidad="COMPACTA"
+              nivel={4}
+              conLeyenda={false}
+            />
           ))}
-          <div className="cruce__tambien">
+          <div className="cruce__tambien" data-tambien-cambio>
             <h4>{COPY_DE_LOS_CRUCES.tambienCambio}</h4>
-            {tambienCambio === null ? (
-              <p className="nota">{COPY_DE_LOS_CRUCES.sinLasVersiones}</p>
-            ) : tambienCambio.length > 0 ? (
+            {cambioDeLoIndicado !== null || (tambienCambio?.length ?? 0) > 0 ? (
               <ul>
-                {tambienCambio.map((t) => (
+                {cambioDeLoIndicado !== null ? (
+                  <li key="lo-indicado" data-cambio-de-lo-indicado>
+                    {cambioDeLoIndicado}.
+                  </li>
+                ) : null}
+                {(tambienCambio ?? []).map((t) => (
                   <li key={t}>{t}.</li>
                 ))}
               </ul>
-            ) : (
-              <p className="nota">{COPY_DE_LOS_CRUCES.sinCambiosQueSeSepan}</p>
-            )}
+            ) : null}
+            {sinLoIndicado ? <p className="nota">{COPY_DE_LOS_CRUCES.sinLoIndicadoDeLasEtapas}</p> : null}
+            {tambienCambio === null ? <p className="nota">{COPY_DE_LOS_CRUCES.sinLasVersiones}</p> : tambienCambio.length === 0 ? <p className="nota">{COPY_DE_LOS_CRUCES.sinCambiosQueSeSepan}</p> : null}
             <p className="nota">
               {COPY_DE_LOS_CRUCES.noRegistra}: {LO_QUE_BE_NO_REGISTRA['GR-24'].join('; ')}.
             </p>

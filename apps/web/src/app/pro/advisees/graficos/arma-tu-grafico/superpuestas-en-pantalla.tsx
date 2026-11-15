@@ -9,6 +9,10 @@
  * Accesibilidad, como `PanelesAlineados`: el área es un grupo con nombre que recibe el foco (flechas, Inicio, Fin,
  * Mayúscula con flechas y Escape), el SVG no se lee, la lectura de la fecha es una región viva y la tabla dice lo mismo
  * que el dibujo, con una columna por serie y su unidad.
+ *
+ * La pasada visual (15/11; DISENO-VISUAL §1): el título con su línea tenue, la leyenda en fichas arriba del dibujo, la
+ * frase fija con la pieza de la base y, con dos ejes, que un cruce de líneas no quiere decir nada, a la vista debajo. El
+ * nombre al final de cada línea va entero o no va (lo dicen el rótulo de su eje y la leyenda): antes se cortaba con «…».
  */
 import type { SentidoDeLaMarca } from '@be/domain';
 import { useId, useMemo, useState, type KeyboardEvent } from 'react';
@@ -17,7 +21,8 @@ import { LETRA_MINIMA } from '../../seguimiento/geometria';
 import { fechasConObservacion, type BandaDeVersion, type CarrilDePuntos } from '../carriles';
 import { COPY_DE_LOS_GRAFICOS } from '../copy';
 import { useCursorDeFechas } from '../cursor-de-fechas';
-import { escalaDeFechas, moverElCursor, type PeriodoDelGrafico } from '../eje-de-fechas';
+import { diaYMes, escalaDeFechas, inicioDelEje, moverElCursor, type PeriodoDelGrafico } from '../eje-de-fechas';
+import { ComoLeerlo, FraseDeLaCoincidencia } from '../como-leerlo';
 import { NotaDelInicio } from '../estado-del-grafico';
 import { LecturaEnLaFecha } from '../lectura-en-la-fecha';
 import { colorDelCarril, Leyenda, MarcaDelCarril } from '../marcas';
@@ -46,6 +51,8 @@ export interface PropsDeSuperpuestas {
 const EJE_DERECHO = 52;
 const LUGAR_DE_LOS_NOMBRES = 128;
 const ALTO: Readonly<Record<DensidadDelGrafico, number>> = { COMPLETA: 240, COMPACTA: 160 };
+/** El ancho de una letra del rótulo de 12,5 px: un nombre que no entra en su lugar no se dibuja (no se corta). */
+const ANCHO_DE_UNA_LETRA = 7;
 
 const formato = (v: number, decimales: number): string => v.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
 
@@ -93,12 +100,19 @@ export function GraficoSuperpuesto({ titulo, periodo, carriles, lados, nombresCo
     return escala.fechaDeX(((e.clientX - caja.left) * ancho) / Math.max(1, caja.width));
   };
   const descripcion = carriles.map((c, i) => `${c.nombre} (${c.unidad}, eje ${lados[i] === 'DERECHA' ? 'derecho' : 'izquierdo'}): ${c.descripcion}`).join(' ');
-  const notas = [...(frase ? [frase] : []), ...(dosEjes ? [COMO_LEER_DOS_EJES] : []), ...(fuera > 0 ? [COPY_DE_LOS_GRAFICOS.fueraDeLaEscala(fuera)] : [])];
+  // A la vista: con dos ejes, que un cruce de líneas no quiere decir nada (GR-26), y lo que no entra en la escala. La frase
+  // fija va aparte, tenue, con la pieza de la base.
+  const notas = [...(dosEjes ? [COMO_LEER_DOS_EJES] : []), ...(fuera > 0 ? [COPY_DE_LOS_GRAFICOS.fueraDeLaEscala(fuera)] : [])];
+  const unidades = [...new Set(carriles.map((c) => c.unidad))].join(' y ');
 
   return (
     <div className={`grafico-base superpuestas grafico-base--${densidad.toLowerCase()}`}>
-      <h3 className="grafico-base__titulo">{titulo}</h3>
+      <div className="grafico-base__cabecera">
+        <h3 className="grafico-base__titulo">{titulo}</h3>
+        <p className="grafico-base__detalle">{`${unidades} · del ${diaYMes(inicioDelEje(periodo), periodo.hoy)} al ${diaYMes(periodo.hasta, periodo.hoy)}`}</p>
+      </div>
       <NotaDelInicio periodo={periodo} />
+      <Leyenda sentidos={leyenda} />
       <div className="superpuestas__ejes">
         {izquierdo ? (
           <p className="superpuestas__eje" data-lado="IZQUIERDA">
@@ -168,9 +182,9 @@ export function GraficoSuperpuesto({ titulo, periodo, carriles, lados, nombresCo
                 {s.marcas.map((m) => (
                   <MarcaDelCarril key={m.clave} marca={m.marca} cx={m.x} cy={m.y} porDia={escala.porDia} color={color} tarde={m.tarde} />
                 ))}
-                {s.rotulo ? (
+                {s.rotulo && s.rotulo.texto.length * ANCHO_DE_UNA_LETRA <= LUGAR_DE_LOS_NOMBRES - 8 ? (
                   <text x={s.rotulo.x} y={s.rotulo.y} dominantBaseline="central" fontSize={LETRA_MINIMA} fontWeight={600} fill="var(--texto)">
-                    {s.rotulo.texto.length > 18 ? `${s.rotulo.texto.slice(0, 17).trimEnd()}…` : s.rotulo.texto}
+                    {s.rotulo.texto}
                   </text>
                 ) : null}
               </g>
@@ -182,14 +196,22 @@ export function GraficoSuperpuesto({ titulo, periodo, carriles, lados, nombresCo
       <p id={idDelResumen} className="visualmente-oculto">
         {descripcion}
       </p>
-      <LecturaEnLaFecha tabla={tabla} fecha={cursor.fecha} tramo={cursor.tramo} />
-      <Leyenda sentidos={leyenda} />
+      <LecturaEnLaFecha tabla={tabla} fecha={cursor.fecha} tramo={cursor.tramo} hoy={periodo.hoy} />
       {notas.map((n) => (
         <p key={n} className="nota grafico-base__nota">
           {n}
         </p>
       ))}
-      <TablaEquivalente titulo={titulo} tabla={tabla} />
+      {frase ? <FraseDeLaCoincidencia texto={frase} /> : null}
+      <div className="grafico-base__pie">
+        <TablaEquivalente titulo={titulo} tabla={tabla} />
+        {dosEjes ? (
+          <ComoLeerlo de={titulo}>
+            <p>{COMO_LEER_DOS_EJES}</p>
+            <p>Cada eje dice su unidad y sus series; el dibujo no sombrea entre las líneas ni marca dónde se cruzan.</p>
+          </ComoLeerlo>
+        ) : null}
+      </div>
     </div>
   );
 }

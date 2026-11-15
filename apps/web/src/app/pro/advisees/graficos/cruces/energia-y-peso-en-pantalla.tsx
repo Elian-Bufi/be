@@ -7,18 +7,22 @@
  *
  * **Solo en el caso 1** (Nutrición y Antropometría con planes o tomas propios). Si un permiso cambió y una lectura dice
  * «sin acceso», no se dibuja nada.
+ *
+ * La pasada visual (15/11): una sola tarjeta con el lenguaje de la base. La frase fija, una vez, en las notas del gráfico;
+ * la lectura del cruce, a la vista adentro de la tarjeta; la explicación fisiológica con su fuente, en su «Cómo leerlo»; y
+ * la leyenda del carril semanal (la media de GR-12, GR-VC13) dice solo las semanas que se ven.
  */
 import type { ReferenciaDeMetrica } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { leyendaDeLosCarriles } from '../arma-tu-grafico/compositor';
-import type { BandaDeVersion } from '../carriles';
+import type { BandaDeVersion, CarrilDeBarrasSemanales } from '../carriles';
 import { inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla, type EstadoDelGrafico } from '../estado-del-grafico';
 import { leerSerieDelCatalogo } from '../lecturas';
 import { PanelesAlineados } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { COPY_DE_LOS_CRUCES } from './copy';
-import { carrilesDeEnergiaYPeso, lecturaDeEnergiaYPeso, type EntradaDeEnergiaYPeso } from './energia-y-peso';
+import { carrilesDeEnergiaYPeso, fichasDeLasSemanas, lecturaDeEnergiaYPeso, type EntradaDeEnergiaYPeso } from './energia-y-peso';
 import { LecturaDelCruce } from './lectura-del-cruce';
 
 const C = COPY_DE_LOS_CRUCES.energiaYPeso;
@@ -66,11 +70,22 @@ export default function EnergiaYPeso({ lectura, periodo, densidad }: PropsDelGra
   const l = lecturaDeEnergiaYPeso(estado.entrada);
   const bandas: BandaDeVersion[] = l.ventana ? [{ area: 'NUTRICION', desde: l.ventana.a.desde, hasta: l.ventana.b.hasta, rotulo: 'Ventana de lectura' }] : [];
   const carriles = carrilesDeEnergiaYPeso(estado.entrada);
+  const semanal = carriles.find((c): c is CarrilDeBarrasSemanales => c.tipo === 'BARRAS_SEMANALES');
   return (
     <section className="cruce" aria-label={C.titulo}>
       <p className="cruce__pregunta">{C.pregunta}</p>
-      <PanelesAlineados titulo={C.titulo} periodo={periodo} carriles={carriles} bandas={bandas} densidad={densidad} leyenda={leyendaDeLosCarriles(carriles)} notas={[COPY_DE_LOS_CRUCES.frase]} />
-      <LecturaDelCruce lectura={l} ventana={C.ventana} comoLeerlo={C.comoLeerlo} />
+      <PanelesAlineados
+        titulo={C.titulo}
+        periodo={periodo}
+        carriles={carriles}
+        bandas={bandas}
+        densidad={densidad}
+        leyenda={leyendaDeLosCarriles(carriles)}
+        fichas={semanal ? fichasDeLasSemanas(semanal.semanas) : []}
+        notas={[COPY_DE_LOS_CRUCES.frase]}
+        aclaraciones={C.comoLeerlo}
+        aLaVista={<LecturaDelCruce lectura={l} ventana={C.ventana} />}
+      />
     </section>
   );
 }

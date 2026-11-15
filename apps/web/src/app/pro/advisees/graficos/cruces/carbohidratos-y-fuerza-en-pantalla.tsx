@@ -8,6 +8,9 @@
  * **Solo en el caso 1.** El registro no lo ofrece sin las dos áreas con planes propios (`caso-de-acceso.ts`), y si un
  * permiso cambió entre que se ofreció y que se lee, una lectura «sin acceso» hace que no se dibuje nada (`SIN_ACCESO`):
  * un área sin acceso no deja rastro.
+ *
+ * La pasada visual (15/11): una sola tarjeta con el lenguaje de la base. La frase fija, una vez, en las notas del gráfico;
+ * la lectura del cruce, a la vista adentro de la tarjeta; Henselmans 2022 y el ruido del RIR, en su «Cómo leerlo».
  */
 import { entraEnLaEstimacion, type ReferenciaDeMetrica } from '@be/domain';
 import { useEffect, useState } from 'react';
@@ -154,12 +157,13 @@ export default function CarbohidratosYFuerza({ lectura, periodo, densidad, ejerc
         densidad={densidad}
         leyenda={leyendaDeLosCarriles(carriles)}
         notas={[COPY_DE_LOS_CRUCES.frase]}
+        aclaraciones={C.comoLeerlo}
+        aLaVista={<LecturaDelCruce lectura={lecturaDelCruce} ventana={C.ventana} />}
       />
-      <LecturaDelCruce lectura={lecturaDelCruce} ventana={C.ventana} comoLeerlo={C.comoLeerlo} />
       {etapas ? (
         <div className="cruce__etapas">
-          <DosEtapasEnPantalla titulo="Carbohidratos registrados en las dos etapas del objetivo" d={etapas.carbohidratos} decimales={0} indice={0} densidad={densidad} />
-          <DosEtapasEnPantalla titulo={`1RM estimado (Epley v1) de ${e.ejercicio} en las dos etapas`} d={etapas.fuerza} decimales={1} indice={2} densidad={densidad} />
+          <DosEtapasEnPantalla titulo="Carbohidratos registrados en las dos etapas del objetivo" detalle={`${e.carbohidratos.unit} · por día`} d={etapas.carbohidratos} decimales={0} indice={0} densidad={densidad} />
+          <DosEtapasEnPantalla titulo={`1RM estimado (Epley v1) de ${e.ejercicio} en las dos etapas`} detalle={`${e.unidad} · cada sesión · Epley v1`} d={etapas.fuerza} decimales={1} indice={2} densidad={densidad} />
         </div>
       ) : null}
     </section>

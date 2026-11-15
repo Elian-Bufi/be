@@ -14,42 +14,84 @@
  * la tabla se abre con un botón.
  */
 import { etapasDelArea, serieDisponible, valorConUnidad, type DefinicionDeMetrica, type SerieAnalitica } from '@be/domain';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { LETRA_MINIMA } from '../../seguimiento/geometria';
 import { definicionDeLaSerie, ejercicioDeLaClave, escalaDeLaSerie, lecturaDelPunto } from '../arma-tu-grafico/compositor';
+import { ComoLeerlo, FraseDeLaCoincidencia } from '../como-leerlo';
 import { COPY_DE_LOS_GRAFICOS } from '../copy';
 import { inicioDelEje, textoDeLaMarca } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla, NotaDelInicio, type EstadoDelGrafico } from '../estado-del-grafico';
 import { leerSerieDelCatalogo } from '../lecturas';
+import { textoDeLaMarcaDelEje } from '../ejes';
 import { colorDelCarril, MarcaDelCarril } from '../marcas';
 import { useAnchoDelGrafico } from '../medidas-del-grafico';
 import type { DensidadDelGrafico } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { COPY_DE_LOS_CRUCES } from './copy';
-import { dosEtapasLadoALado, etapaDeLaPlanificacion, fechasDeLaEtapa, fuerzaEnPalabras, geometriaDeDosEtapas, MARGEN_DE_DOS_ETAPAS, referenciaDeLaComparacion, type DosEtapasLadoALado } from './dos-etapas';
+import { dosEtapasLadoALado, etapaDeLaPlanificacion, fechasDeLaEtapa, fuerzaEnPalabras, geometriaDeDosEtapas, MARGEN_DE_DOS_ETAPAS, marcasDeDosEtapas, referenciaDeLaComparacion, type DosEtapasLadoALado, type MarcasDeDosEtapas } from './dos-etapas';
 import { leerLaFuerza } from './lecturas-de-los-cruces';
 import { LO_QUE_BE_NO_REGISTRA } from './lo-que-tambien-cambio';
 
 const C = COPY_DE_LOS_CRUCES.dosEtapas;
 const ALTO: Readonly<Record<DensidadDelGrafico, number>> = { COMPLETA: 180, COMPACTA: 124 };
 
-const formato = (v: number, decimales: number): string => v.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+/**
+ * La leyenda de «Lado a lado», en fichas cortas y una sola vez para todas las métricas (DISENO-VISUAL §1, principio 7):
+ * solo las marcas que se ven en los dibujos. Lo corto se ve; lo largo, el lector de pantalla.
+ */
+export function LeyendaDeDosEtapas({ marcas, indice = 0 }: { marcas: MarcasDeDosEtapas; indice?: number }) {
+  const L = COPY_DE_LOS_CRUCES.leyenda;
+  const color = colorDelCarril(indice);
+  const fichas: { clave: string; texto: { corto: string; largo: string }; glifo: ReactNode }[] = [
+    ...(marcas.enLaMediana ? [{ clave: 'en-la-mediana', texto: L.enLaMediana, glifo: <MarcaDelCarril marca="LLENA" cx={9} cy={9} porDia={10} color={color} /> }] : []),
+    ...(marcas.afuera ? [{ clave: 'afuera', texto: L.afuera, glifo: <MarcaDelCarril marca="HUECA" cx={9} cy={9} porDia={10} color={color} /> }] : []),
+    ...(marcas.cargaRapida ? [{ clave: 'carga-rapida', texto: L.cargaRapida, glifo: <MarcaDelCarril marca="HUECA_GRIS" cx={9} cy={9} porDia={10} color={color} /> }] : []),
+    ...(marcas.observada ? [{ clave: 'observada', texto: L.observada, glifo: <MarcaDelCarril marca="ROMBO" cx={9} cy={9} porDia={10} color={color} /> }] : []),
+    ...(marcas.mediana ? [{ clave: 'mediana', texto: L.mediana, glifo: <line x1={1} x2={17} y1={9} y2={9} stroke={color} strokeWidth={2} strokeDasharray="6 4" /> }] : []),
+  ];
+  if (fichas.length === 0) return null;
+  return (
+    <ul className="grafico-base__leyenda dos-etapas__leyenda" aria-label="Cómo se leen las marcas" data-leyenda-de-dos-etapas>
+      {fichas.map((x) => (
+        <li key={x.clave} data-ficha={x.clave}>
+          <span className="grafico-base__glifo">
+            <svg width={14} height={14} viewBox="0 0 18 18" aria-hidden="true">
+              {x.glifo}
+            </svg>
+            <span aria-hidden="true">{x.texto.corto}</span>
+            <span className="visualmente-oculto">{x.texto.largo}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
-/** Las dos columnas, lo que dice cada etapa y la tabla. Con menos de 5 de un lado, solo cuánto hay. */
+/**
+ * Las dos columnas, lo que dice cada etapa y la tabla. Con menos de 5 de un lado, solo cuánto hay. Con el lenguaje de la
+ * base (la pasada visual): el título (16 px) con su línea tenue, la leyenda en fichas arriba (o una sola vez para todas,
+ * con `conLeyenda={false}`), el eje de 3 a 5 marcas redondas con su grilla tenue y, debajo, cada etapa en dos renglones.
+ */
 export function DosEtapasEnPantalla({
   titulo,
+  detalle,
   d,
   decimales,
   indice = 0,
   densidad = 'COMPLETA',
   nivel = 4,
+  conLeyenda = true,
 }: {
   titulo: string;
+  /** La línea tenue debajo del título: la unidad y qué es cada punto. */
+  detalle?: string;
   d: DosEtapasLadoALado;
   decimales: number;
   indice?: number;
   densidad?: DensidadDelGrafico;
   nivel?: 3 | 4;
+  /** `false` si la leyenda va una sola vez arriba de varias comparaciones («Comparar dos etapas»). */
+  conLeyenda?: boolean;
 }) {
   const [ref, ancho] = useAnchoDelGrafico();
   const id = useId();
@@ -58,10 +100,16 @@ export function DosEtapasEnPantalla({
   const alto = ALTO[densidad];
   const color = colorDelCarril(indice);
   const enUnidad = (v: number): string => valorConUnidad(v, d.unidad, decimales);
+  const cabecera = (
+    <div className="grafico-base__cabecera">
+      <Titulo className="grafico-base__titulo dos-etapas__titulo">{titulo}</Titulo>
+      {detalle ? <p className="grafico-base__detalle">{detalle}</p> : null}
+    </div>
+  );
   if (!d.dibujable && d.falta) {
     return (
       <div className="dos-etapas">
-        <Titulo className="dos-etapas__titulo">{titulo}</Titulo>
+        {cabecera}
         <EstadoDelGraficoEnPantalla estado={{ tipo: 'FALTA_HISTORIA', hay: [...d.falta.hay], hacen: d.falta.hacen, unidad: d.falta.unidad }} />
         <p className="nota">{d.descripcion}</p>
       </div>
@@ -70,13 +118,19 @@ export function DosEtapasEnPantalla({
   const g = geometriaDeDosEtapas(d, ancho, alto);
   return (
     <div className={`dos-etapas dos-etapas--${densidad.toLowerCase()}`}>
-      <Titulo className="dos-etapas__titulo">{titulo}</Titulo>
+      {cabecera}
+      {conLeyenda ? <LeyendaDeDosEtapas marcas={marcasDeDosEtapas([d])} indice={indice} /> : null}
       <div ref={ref} className="dos-etapas__area" role="group" aria-roledescription="gráfico" aria-label={titulo} aria-describedby={`${id}-descripcion`}>
         <svg width="100%" height={alto} viewBox={`0 0 ${ancho} ${alto}`} aria-hidden="true" className="dos-etapas__svg">
           {g.marcasY.map((m) => (
-            <text key={m.valor} x={MARGEN_DE_DOS_ETAPAS.izquierda - 6} y={m.y} textAnchor="end" dominantBaseline="middle" fontSize={LETRA_MINIMA} fill="var(--tenue)">
-              {formato(m.valor, d.extremos.decimales)}
-            </text>
+            <g key={m.valor} className="dos-etapas__marca">
+              {g.columnas.map((c) => (
+                <line key={c.letra} x1={c.x1} x2={c.x2} y1={Math.round(m.y) + 0.5} y2={Math.round(m.y) + 0.5} stroke="var(--borde)" strokeWidth={1} opacity={0.7} />
+              ))}
+              <text x={MARGEN_DE_DOS_ETAPAS.izquierda - 6} y={m.y} textAnchor="end" dominantBaseline="middle" fontSize={LETRA_MINIMA} fill="var(--tenue)">
+                {textoDeLaMarcaDelEje(m.valor, d.extremos.decimales)}
+              </text>
+            </g>
           ))}
           {g.columnas.map((c) => (
             <g key={c.letra} data-etapa={c.letra}>
@@ -97,44 +151,26 @@ export function DosEtapasEnPantalla({
       </p>
       <div className="dos-etapas__lados">
         {d.lados.map((l) => (
-          <dl key={l.etapa.letra} className="dos-etapas__lado">
-            <div>
-              <dt>Etapa {l.etapa.letra}</dt>
-              <dd>
-                {l.etapa.rotulo} · {fechasDeLaEtapa(l.etapa)}
-              </dd>
-            </div>
-            <div>
-              <dt>Cantidad</dt>
-              <dd>{l.cantidad}</dd>
-            </div>
-            <div>
-              <dt>Mediana</dt>
-              <dd>{l.mediana === null ? 'Sin mediana' : enUnidad(l.mediana)}</dd>
-            </div>
+          <div key={l.etapa.letra} className="dos-etapas__lado" data-lado={l.etapa.letra}>
+            <p className="dos-etapas__etapa">
+              <strong>Etapa {l.etapa.letra}</strong> · {l.etapa.rotulo} · {fechasDeLaEtapa(l.etapa)}
+            </p>
+            <p className="dos-etapas__cifras">
+              {l.cantidad} · {l.mediana === null ? 'sin mediana' : `mediana ${enUnidad(l.mediana)}`}
+            </p>
             {l.afuera.length > 0 ? (
-              <div>
-                <dt>{COPY_DE_LOS_CRUCES.fueraDeLaMediana}</dt>
-                <dd>{l.afuera.join(', ')}</dd>
-              </div>
+              <p className="dos-etapas__afuera">
+                {COPY_DE_LOS_CRUCES.fueraDeLaMediana}: {l.afuera.join(', ')}
+              </p>
             ) : null}
-            {l.fuerza ? (
-              <div>
-                <dt>RIR y repeticiones</dt>
-                <dd>{fuerzaEnPalabras(l.fuerza)}</dd>
-              </div>
-            ) : null}
-          </dl>
+            {l.fuerza ? <p className="dos-etapas__fuerza">{fuerzaEnPalabras(l.fuerza)}</p> : null}
+          </div>
         ))}
       </div>
-      <ul className="grafico-base__leyenda" aria-label="Cómo se leen las marcas">
-        <li>{COPY_DE_LOS_CRUCES.leyendaEntra}</li>
-        <li>{COPY_DE_LOS_CRUCES.leyendaAfuera}</li>
-        <li>Raya discontinua: la {COPY_DE_LOS_CRUCES.mediana} de la etapa</li>
-      </ul>
       <div className="grafico-base__tabla">
         <button type="button" className="boton boton--enlace" aria-expanded={tabla} aria-controls={`${id}-tabla`} onClick={() => setTabla((t) => !t)}>
           {tabla ? COPY_DE_LOS_GRAFICOS.ocultarLaTabla : COPY_DE_LOS_GRAFICOS.verLaTabla}
+          <span className="visualmente-oculto">{`: ${titulo}`}</span>
         </button>
         <div id={`${id}-tabla`} hidden={!tabla}>
           {tabla ? (
@@ -237,18 +273,18 @@ export default function GraficoDeDosEtapas({ lectura, periodo, densidad, ejercic
       <p className="cruce__pregunta">{C.pregunta}</p>
       <p className="nota">{estado.detalle}</p>
       <DosEtapasEnPantalla titulo={C.titulo} d={estado.d} decimales={estado.definicion.decimales} densidad={densidad} nivel={3} />
-      <details className="cruce__como-leerlo">
-        <summary>{COPY_DE_LOS_CRUCES.comoLeerlo}</summary>
+      {/* Lo que BE no registra, a la vista (§5.1: la lista de lo que también pudo cambiar); la explicación, en «Cómo leerlo». */}
+      <p className="nota">
+        {COPY_DE_LOS_CRUCES.noRegistra}: {LO_QUE_BE_NO_REGISTRA['GR-24'].join('; ')}.
+      </p>
+      <FraseDeLaCoincidencia />
+      <ComoLeerlo de={C.titulo}>
         <ul>
           {C.comoLeerlo.map((t) => (
             <li key={t}>{t}</li>
           ))}
-          <li>
-            {COPY_DE_LOS_CRUCES.noRegistra}: {LO_QUE_BE_NO_REGISTRA['GR-24'].join('; ')}.
-          </li>
         </ul>
-      </details>
-      <p className="cruce__frase">{COPY_DE_LOS_CRUCES.frase}</p>
+      </ComoLeerlo>
     </section>
   );
 }

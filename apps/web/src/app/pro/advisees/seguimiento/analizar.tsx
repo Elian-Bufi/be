@@ -80,7 +80,6 @@ import {
   referenciaElegida,
   resumenTextual,
   resumirPeriodo,
-  FRASE_DE_LA_COINCIDENCIA,
   TIPOS_DE_HITO_DE_PLANIFICACION,
   valorConUnidad,
   type DefinicionDeMetrica,
@@ -111,6 +110,7 @@ import { ElegirMetricasDeEntrada } from './entrada';
 import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, ParametrosDelEjercicio, useEtapasDelAno } from './preguntas';
 import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
 import { FuerzaEnAnalizar, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
+import { contextoDelRegistro, esPreguntaConGraficos, graficosDeLaPregunta, PREGUNTA_DE_LA_RELACION, PREGUNTA_DE_NUTRICION_POR_DIA } from '../graficos/cruces/preguntas-con-graficos';
 import { accesoDeLosDisponibles, nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerieDelAnalisis, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
 import { COMO_LEER_DOS_EJES, enumerar, esLoIndicadoDe, motivoDeSuperpuestas, NOMBRE_DEL_MODO, rangoMinimoDelCatalogo, serieElegidaDe, superposicionDeLasElegidas, unirLaSerieDe } from '../graficos/arma-tu-grafico/compositor';
@@ -124,6 +124,8 @@ const OrigenDelDato = dynamic(() => import('./origen-del-dato').then((m) => m.Or
 const ComparacionDeEtapas = dynamic(() => import('./etapas').then((m) => m.ComparacionDeEtapas), { ssr: false, loading: () => <Cargando /> });
 const EtapasDelPeriodo = dynamic(() => import('./etapas').then((m) => m.EtapasDelPeriodo), { ssr: false });
 const ContrasteConLoIndicado = dynamic(() => import('./contraste').then((m) => m.ContrasteConLoIndicado), { ssr: false, loading: () => <Cargando /> });
+// GR-12 y GR-13, y «Ver la relación» (rama D): se cargan cuando se abre su pregunta.
+const GraficosEnAnalizar = dynamic(() => import('./graficos-en-analizar').then((m) => m.GraficosEnAnalizar), { ssr: false, loading: () => <Cargando /> });
 const InformacionParaRevisar = dynamic(() => import('./informacion').then((m) => m.InformacionParaRevisar), { ssr: false, loading: () => <Cargando /> });
 // GR-23 (DL-174): la cinta del tiempo arriba de los gráficos. Tiene su propio «Cargando» con alto fijo.
 const CintaDelTiempoLeida = dynamic(() => import('../graficos/cinta-del-tiempo-en-pantalla').then((m) => m.CintaDelTiempoLeida), { ssr: false });
@@ -168,6 +170,10 @@ export function Analizar() {
   const id = useId();
   // ED-74: la fuerza estimada, como la composición, con su propia pieza (TA-25: no se guarda como vista).
   if (parametros.get('pregunta') === PREGUNTA_DE_LA_FUERZA) return <FuerzaEnAnalizar tituloId={`${id}-titulo`} />;
+  // WP-GRAFICOS (rama D, GR-VD01 y GR-VD02): GR-12 y GR-13, y «Ver la relación» (SP-01 y SP-02), con los gráficos del
+  // registro; tampoco se guardan como vista.
+  const preguntaConGraficos = parametros.get('pregunta');
+  if (esPreguntaConGraficos(preguntaConGraficos)) return <GraficosEnAnalizar tituloId={`${id}-titulo`} pregunta={preguntaConGraficos} />;
   return parametros.get('pregunta') === PREGUNTA_DE_LA_COMPOSICION ? <ComposicionEnAnalizar tituloId={`${id}-titulo`} /> : <AnalizarConSusPreguntas />;
 }
 
@@ -180,6 +186,13 @@ function AnalizarConSusPreguntas() {
   // La cinta del tiempo (GR-23) lee con lo que el PDP deja hoy con esta persona y dibuja las versiones de los planes propios.
   const alcancesDeLaCinta = useMemo(() => accesoDeLosDisponibles(disponibles).alcances, [disponibles]);
   const vigenciasDeLaCinta = useMemo(() => [...disponibles.vigencias.nutricion, ...disponibles.vigencias.entrenamiento], [disponibles.vigencias]);
+  // Las preguntas que responden con gráficos del registro (GR-VD01 y GR-VD02): solo las que tienen algún gráfico que se
+  // ofrece con esta persona hoy. Una que no, no aparece: ni en gris ni con candado.
+  const preguntasConGraficos = useMemo(() => {
+    if (disponibles.cargando) return [];
+    const c = contextoDelRegistro(accesoDeLosDisponibles(disponibles), disponibles);
+    return ([PREGUNTA_DE_NUTRICION_POR_DIA, PREGUNTA_DE_LA_RELACION] as const).filter((p) => graficosDeLaPregunta(p, c).length > 0);
+  }, [disponibles]);
 
   // La pregunta (eje 2): se resuelve con el dominio y con lo que hay de este asesorado.
   const pregunta = useMemo(() => leerPregunta(parametros), [parametros]);
@@ -751,10 +764,16 @@ function AnalizarConSusPreguntas() {
                     {estado.bandas && bandas.length > 0 && !conEtapas ? <BotonDelPie que="etapas" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="comparar" texto="Comparar etapas" /> : null}
                     <BotonDelPie que="calculo" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="info" texto="Cómo se calcula" />
                   </div>
-                  <p className="pie-de-graficos__limite">
-                    {enCurso && laPregunta ? `${laPregunta.limite} ` : ''}
-                    {FRASE_DE_LA_COINCIDENCIA}
-                  </p>
+                  {/* La pasada visual (GR-T50 y GR-V08, como el pie de «Comparar dos etapas»): la frase fija siempre a la vista,
+                      tenue; el límite de la pregunta, en «Cómo leerlo», último, para que al abrirse no cambie de lugar. */}
+                  <div className="analizar__pie-de-la-frase">
+                    <FraseDeLaCoincidencia />
+                    {enCurso && laPregunta ? (
+                      <ComoLeerlo className="analizar__como-leerlo" de="los gráficos de la pregunta">
+                        <p>{laPregunta.limite}</p>
+                      </ComoLeerlo>
+                    ) : null}
+                  </div>
                 </>
               ) : null}
             </div>
@@ -905,7 +924,7 @@ function AnalizarConSusPreguntas() {
       {sinEntrada ? (
         <div className="entrada-de-analizar">
           <div className="entrada-de-analizar__columna">
-            <ListaDePreguntas />
+            <ListaDePreguntas conGraficos={preguntasConGraficos} />
             {/* Retomar una vista guardada también desde el comienzo: antes había que armar un análisis cualquiera para verlas. */}
             <VistasGuardadas estado={estado} pregunta={null} soloAbrir />
           </div>

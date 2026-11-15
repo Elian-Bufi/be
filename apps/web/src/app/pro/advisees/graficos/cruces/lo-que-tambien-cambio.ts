@@ -52,6 +52,23 @@ export function versionesEntreLasEtapas(
     .map((e) => `${NOMBRE_DEL_DOMINIO[e.dominio]}: se activó la versión ${numeroDeVersion(e.etiqueta)} el ${diaYMes(e.desde)}`);
 }
 
+/**
+ * Lo que cambió en lo indicado para el ejercicio entre las dos etapas, en una línea de «Lo que también cambió» (la pasada
+ * visual, DISENO-VISUAL §2 «D»): «Lo indicado para Sentadilla trasera con barra: de 4 a 3 repeticiones (de la versión 7 a
+ * la 8)». Entre dos versiones seguidas no se activó otra, pero el plan sí cambió lo que pedía, y eso mueve lo registrado y
+ * la estimación aunque la fuerza no cambie (§5.12): antes la lista decía que no había otro cambio. `cambio` es el corto
+ * de `cambioCortoDeLoIndicado` (con lo indicado de las sesiones que ejecutaron cada versión); `null` si no cambió o no se
+ * sabe.
+ */
+export function cambioDeLoIndicadoEntreLasEtapas(
+  cambio: string | null,
+  ejercicio: string,
+  a: Pick<EtapaDePlanificacion, 'etiqueta'>,
+  b: Pick<EtapaDePlanificacion, 'etiqueta'>,
+): string | null {
+  return cambio === null ? null : `Lo indicado para ${ejercicio}: ${cambio} (de la versión ${numeroDeVersion(a.etiqueta)} a la ${numeroDeVersion(b.etiqueta)})`;
+}
+
 type Rango = { readonly desde: number; readonly hasta: number };
 const unir = (a: Rango | null, desde: number, hasta: number): Rango => (a === null ? { desde, hasta } : { desde: Math.min(a.desde, desde), hasta: Math.max(a.hasta, hasta) });
 

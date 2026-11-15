@@ -56,6 +56,9 @@ const G12 = await import('../src/app/pro/advisees/graficos/nutricion/energia-por
 const SEM = await import('../src/app/pro/advisees/graficos/semanas.ts');
 const CAR = await import('../src/app/pro/advisees/graficos/carriles.ts');
 const TE = await import('../src/app/pro/advisees/graficos/tabla-equivalente.ts');
+const EJE = await import('../src/app/pro/advisees/graficos/ejes.ts');
+const LI = await import('../src/app/pro/advisees/graficos/lo-indicado-en-el-tiempo.ts');
+const PG = await import('../src/app/pro/advisees/graficos/cruces/preguntas-con-graficos.ts');
 
 // ─── Datos de prueba (sintéticos) ─────────────────────────────────────────────────────────────────
 
@@ -720,7 +723,9 @@ test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección
   assert.match(analizar, /texto=\{NOMBRE_DEL_MODO\.OVERLAY\}/);
   assert.doesNotMatch(analizar, /texto="Juntas"|texto="Separadas"/);
   assert.doesNotMatch(analizar, /Coincidencia temporal: no indica causa/);
-  assert.equal((analizar.match(/\{FRASE_DE_LA_COINCIDENCIA\}/g) ?? []).length, 2, 'al pie de los gráficos y al pie de las etapas');
+  // La frase fija con la pieza de la base, a la vista, al pie de los gráficos y al pie de las etapas (la pasada visual).
+  assert.equal((analizar.match(/<FraseDeLaCoincidencia \/>/g) ?? []).length, 2, 'al pie de los gráficos y al pie de las etapas');
+  assert.doesNotMatch(analizar, /\{FRASE_DE_LA_COINCIDENCIA\}/);
   assert.match(analizar, /\{dosEjes \? <p className="nota analizar__dos-ejes">\{COMO_LEER_DOS_EJES\}<\/p> : null\}/);
   assert.deepEqual(A.NOMBRE_DEL_MODO, { PANELS: 'Alineadas', OVERLAY: 'Superpuestas' });
   // GR-23 arriba de «Analizar» (WP-GRAFICOS §4.2): sobre el intervalo que se ve, con los alcances de hoy y las versiones
@@ -786,7 +791,7 @@ test('TEST-GRF-077 · lo indicado de cada versión sale de las sesiones de esa v
   const etapasTsx = leer(join(SEGUIMIENTO, 'etapas.tsx'));
   assert.match(etapasTsx, /versionesEntreLasEtapas\(\[\.\.\.etapas, \.\.\.etapasDeLaOtraArea\], primera, segunda, segunda\.ultimoDia \?\? leido\.hasta\)/);
   assert.doesNotMatch(etapasTsx, /disponibles\.vigencias/, 'no sale de las versiones del período de la ficha');
-  assert.match(etapasTsx, /tambienCambio === null \? \(\s*<p className="nota">\{COPY_DE_LOS_CRUCES\.sinLasVersiones\}<\/p>/, 'si no se pudieron leer, se dice que no se sabe');
+  assert.match(etapasTsx, /tambienCambio === null \? \(?\s*<p className="nota">\{COPY_DE_LOS_CRUCES\.sinLasVersiones\}<\/p>/, 'si no se pudieron leer, se dice que no se sabe');
   assert.match(leer(join(SEGUIMIENTO, 'analizar.tsx')), /etapasDeLaOtraArea=\{etapasDelAno\.fallaDe\[destino\.area === 'NUTRICION' \? 'TRAINING' : 'NUTRITION'\] \? null : etapasDelAno\.etapas\[destino\.area === 'NUTRICION' \? 'TRAINING' : 'NUTRITION'\]\}/);
 });
 
@@ -927,4 +932,120 @@ test('TEST-GRVD-001 · una sola media semanal (GR-VC13): GR-24 por semana y SP-0
   assert.equal(SN.porSemanaDeEntrada('2026-09-01', '2026-11-15', [[gr24[1]]]), false, 'sin ninguna media, día por día');
   assert.equal(SN.porSemanaDeEntrada('2026-11-02', '2026-11-15', [gr24]), false, 'dos semanas: día por día');
   for (const x of [lectura, ...sp02.map((s) => s.lectura), ...COPY_DE_LOS_CRUCES.porSemana.comoSeArma, SEM.resumenDeLasSemanas(gr24, 'kcal')]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION']), [], x);
+});
+
+test('TEST-GRVD-002 · GR-24 lado a lado: el eje con 3 a 5 marcas redondas sin números repetidos, la leyenda una sola vez con lo que se ve y «Lo que también cambió» con el cambio de lo indicado (mutación: el «4, 4, 3» del eje; la leyenda fija en cada métrica; perder el cambio de 4 a 3 repeticiones)', () => {
+  // Las repeticiones de la serie 1: 4 en toda la etapa A y 3 en toda la B. Antes las marcas eran el piso, el medio y el
+  // techo, y con dos enteros seguidos el medio se escribía igual que un extremo: «4, 4, 3».
+  const puntos = [];
+  for (let i = 0; i < 5; i++) puntos.push(punto(dia('2026-09-02', i * 5), 4), punto(dia('2026-10-02', i * 5), 3));
+  const d = D.dosEtapasLadoALado({
+    serie: serie('entrenamiento.repeticiones', 'rep', 'ORIGINAL', puntos),
+    definicion: { id: 'entrenamiento.repeticiones', area: 'ENTRENAMIENTO', decimales: 0 },
+    a: ETAPA_A,
+    b: ETAPA_B,
+    leido: LEIDO,
+    escala: { enteros: true },
+    lectura: () => '',
+  });
+  assert.equal(d.dibujable, true);
+  const g = D.geometriaDeDosEtapas(d, 640, 124);
+  const textos = g.marcasY.map((m) => EJE.textoDeLaMarcaDelEje(m.valor, d.extremos.decimales));
+  assert.ok(g.marcasY.length >= 3 && g.marcasY.length <= 5, textos.join(', '));
+  assert.equal(new Set(textos).size, textos.length, `ningún número repetido: ${textos.join(', ')}`);
+  assert.ok(g.marcasY.every((m) => Number.isInteger(m.valor)), 'las repeticiones, en enteros');
+  // La leyenda, una vez y con lo que se ve: acá todo entra en la mediana (sin «fuera», sin rombo).
+  assert.deepEqual(D.marcasDeDosEtapas([d]), { enLaMediana: true, afuera: false, cargaRapida: false, observada: false, mediana: true });
+  const conAfuera = D.dosEtapasLadoALado({
+    serie: serie('nutricion.energia', 'kcal', 'DAY', [...[0, 1, 2, 3, 4].map((i) => punto(dia('2026-09-02', i), 2000)), punto(dia('2026-09-10', 0), 900, { quality: 'PARTIAL' }), ...[0, 1, 2, 3, 4].map((i) => punto(dia('2026-10-02', i), 2100))]),
+    definicion: { id: 'nutricion.energia', area: 'NUTRICION', decimales: 0 },
+    a: ETAPA_A,
+    b: ETAPA_B,
+    leido: LEIDO,
+    escala: { enteros: false, desdeCero: true },
+    lectura: () => '',
+  });
+  assert.equal(D.marcasDeDosEtapas([d, conAfuera]).afuera, true, 'el subtotal fuera de la mediana tiene su ficha');
+  // Lo que también cambió: el cambio de lo indicado, de la versión 7 a la 8, en una línea (antes: «no hay otro cambio»).
+  const cambio = LI.cambioCortoDeLoIndicado({ rir: null, repeticiones: { desde: 4, hasta: 4 }, carga: null }, { rir: null, repeticiones: { desde: 3, hasta: 3 }, carga: null });
+  assert.equal(cambio, 'de 4 a 3 repeticiones');
+  assert.equal(TC.cambioDeLoIndicadoEntreLasEtapas(cambio, 'Sentadilla trasera con barra', { etiqueta: 'v7' }, { etiqueta: 'v8' }), 'Lo indicado para Sentadilla trasera con barra: de 4 a 3 repeticiones (de la versión 7 a la 8)');
+  assert.equal(TC.cambioDeLoIndicadoEntreLasEtapas(null, 'Sentadilla trasera con barra', { etiqueta: 'v7' }, { etiqueta: 'v8' }), null);
+  const etapas = leer(join(SEGUIMIENTO, 'etapas.tsx'));
+  // También con el 1RM estimado solo (sin una métrica por serie): antes no se leía lo indicado y la lista quedaba vacía.
+  assert.match(etapas, /\?\? metricas\.find\(\(m\) => m\.exerciseKey !== null\)\?\.exerciseKey \?\? null/);
+  assert.match(etapas, /cambioDeLoIndicadoEntreLasEtapas\(cambioCortoDeLoIndicado\(loIndicadoDeLaEtapa\(primera\), loIndicadoDeLaEtapa\(segunda\)\), nombreDelEjercicio, primera, segunda\)/);
+  assert.match(etapas, /loIndicadoEnElTramo\(indicado\.observaciones, \(o\) => o\.comparacion\.planId === e\.planVersionId\)/, 'lo indicado de cada etapa, el de la versión que ejecutó cada sesión');
+  assert.match(etapas, /<li key="lo-indicado" data-cambio-de-lo-indicado>/);
+  assert.match(etapas, /\{sinLoIndicado \? <p className="nota">\{COPY_DE_LOS_CRUCES\.sinLoIndicadoDeLasEtapas\}<\/p> : null\}/, 'si no se pudo leer, se dice');
+  assert.match(etapas, /<LeyendaDeDosEtapas marcas=\{marcasDelLadoALado\} \/>/);
+  assert.equal((etapas.match(/conLeyenda=\{false\}/g) ?? []).length, 1, 'cada métrica sin su propia leyenda');
+  const pantalla = leer(join(GRAFICOS, 'cruces/dos-etapas-en-pantalla.tsx'));
+  assert.match(pantalla, /\{textoDeLaMarcaDelEje\(m\.valor, d\.extremos\.decimales\)\}/);
+  assert.match(pantalla, /className="grafico-base__titulo dos-etapas__titulo"/, 'el título de la base (16 px)');
+  assert.doesNotMatch(pantalla, /<details|cruce__frase/, '«Cómo leerlo» y la frase, con las piezas de la base');
+  for (const x of [COPY_DE_LOS_CRUCES.sinLoIndicadoDeLasEtapas, ...Object.values(COPY_DE_LOS_CRUCES.leyenda).flatMap((v) => [v.corto, v.largo])]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION', 'ENTRENAMIENTO']), [], x);
+});
+
+test('TEST-GRVD-003 · GR-12 y GR-13 en «Analizar», y «Ver la relación» con SP-01 y SP-02, solo con lo que se ofrece hoy; el caso negado no aparece (mutación: ofrecer la pregunta de la relación a un entrenador; leer un área sin acceso)', () => {
+  const ids = (p, c) => PG.graficosDeLaPregunta(p, c).map((g) => g.id);
+  const nutri = PG.PREGUNTA_DE_NUTRICION_POR_DIA;
+  const relacion = PG.PREGUNTA_DE_LA_RELACION;
+  // Un entrenador sin Nutrición: ninguna de las dos (no aparecen, ni en gris).
+  const entrenador = PG.contextoDelRegistro(acceso(['ENTRENAMIENTO'], { ENTRENAMIENTO: true }), { ejercicios: [ejercicioDelPeriodo(SENTADILLA)], antropometria: null });
+  assert.deepEqual(ids(nutri, entrenador), []);
+  assert.deepEqual(ids(relacion, entrenador), []);
+  // La nutricionista que también lleva Antropometría con tomas de peso: GR-12, GR-13 (también en g/kg) y SP-02.
+  const nutricionista = PG.contextoDelRegistro(CASO_1_SP02, { ejercicios: null, antropometria: [{ metricCode: 'peso', observations: 3 }, { metricCode: 'cintura', observations: 0 }] });
+  assert.deepEqual(nutricionista.medidas, ['peso'], 'solo las medidas con tomas en el período');
+  assert.deepEqual(ids(nutri, nutricionista), ['nutricion.energia-por-dia', 'nutricion.macros-en-paneles', 'nutricion.macros-por-kilo']);
+  assert.deepEqual(ids(relacion, nutricionista), ['cruce.energia-y-peso']);
+  // Sin tomas de peso, SP-02 no está; sin Antropometría propia, tampoco los g/kg.
+  assert.deepEqual(ids(relacion, PG.contextoDelRegistro(CASO_1_SP02, { ejercicios: null, antropometria: [] })), []);
+  assert.deepEqual(ids(nutri, PG.contextoDelRegistro(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true }), { ejercicios: null, antropometria: [{ metricCode: 'peso', observations: 3 }] })), ['nutricion.energia-por-dia', 'nutricion.macros-en-paneles']);
+  // El caso 1 de SP-01: con un ejercicio de la lista de la v1, sí; con otro, no.
+  const conLaV1 = PG.contextoDelRegistro(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO), ejercicioDelPeriodo(SENTADILLA)], antropometria: null });
+  assert.deepEqual(ids(relacion, conLaV1), ['cruce.carbohidratos-y-fuerza']);
+  assert.deepEqual(ids(relacion, PG.contextoDelRegistro(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO)], antropometria: null })), []);
+  // El ejercicio de SP-01: el más registrado de la lista de la v1, o el elegido; nunca uno fuera de la lista.
+  assert.deepEqual(PG.ejercicioDelCruce([ejercicioDelPeriodo(OTRO_EJERCICIO), ejercicioDelPeriodo(SENTADILLA)], null), { exerciseKey: `e:${SENTADILLA}`, nombre: 'Sentadilla trasera con barra', unidad: 'kg', serie: null });
+  assert.equal(PG.ejercicioDelCruce([ejercicioDelPeriodo(SENTADILLA)], `e:${OTRO_EJERCICIO}`).exerciseKey, `e:${SENTADILLA}`);
+  assert.equal(PG.ejercicioDelCruce([ejercicioDelPeriodo(OTRO_EJERCICIO)], null), null);
+  assert.equal(PG.esPreguntaConGraficos('ver-la-relacion'), true);
+  assert.equal(PG.esPreguntaConGraficos('comparar-etapas'), false);
+  // En pantalla: «Analizar» las abre con su pieza y la lista ofrece solo las que tienen algún gráfico ofrecido.
+  const analizar = leer(join(SEGUIMIENTO, 'analizar.tsx'));
+  assert.match(analizar, /if \(esPreguntaConGraficos\(preguntaConGraficos\)\) return <GraficosEnAnalizar tituloId=\{`\$\{id\}-titulo`\} pregunta=\{preguntaConGraficos\} \/>;/);
+  assert.match(analizar, /\.filter\(\(p\) => graficosDeLaPregunta\(p, c\)\.length > 0\)/);
+  assert.match(analizar, /<ListaDePreguntas conGraficos=\{preguntasConGraficos\} \/>/);
+  assert.match(leer(join(SEGUIMIENTO, 'preguntas.tsx')), /\{conGraficos\.map\(\(p\) => \(/);
+  const pieza = leer(join(SEGUIMIENTO, 'graficos-en-analizar.tsx'));
+  assert.match(pieza, /graficosDeLaPregunta\(pregunta, contextoDelRegistro\(acceso, disponibles\)\)/);
+  assert.match(pieza, /acceso=\{acceso\}/, 'cada gráfico recibe el acceso con que se ofreció');
+  assert.match(pieza, /<EstadoVacio titulo=\{P\.sinGraficos\}/);
+  for (const p of Object.values(PG.PREGUNTAS_CON_GRAFICOS)) for (const x of [p.pregunta, p.muestra, p.sinGraficos]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], x);
+  assert.doesNotMatch(PG.PREGUNTAS_CON_GRAFICOS[relacion].sinGraficos, /Nutrición|Entrenamiento|Antropometría|acceso/, 'sin nada que mostrar no se nombra un área (no delata qué hay)');
+});
+
+test('TEST-GRVD-004 · SP-01 y SP-02 con el lenguaje de la base: la frase una sola vez, la lectura a la vista adentro de la tarjeta y lo fisiológico en su «Cómo leerlo»; «Analizar» con la frase y el límite en «Cómo leerlo» (mutación: la frase dos veces; un desplegable propio sin el nombre de su gráfico)', () => {
+  for (const archivo of ['cruces/carbohidratos-y-fuerza-en-pantalla.tsx', 'cruces/energia-y-peso-en-pantalla.tsx']) {
+    const fuente = leer(join(GRAFICOS, archivo));
+    assert.equal((fuente.match(/COPY_DE_LOS_CRUCES\.frase/g) ?? []).length, 1, archivo);
+    assert.match(fuente, /aclaraciones=\{C\.comoLeerlo\}/, archivo);
+    assert.match(fuente, /aLaVista=\{<LecturaDelCruce lectura=\{\w+\} ventana=\{C\.ventana\} \/>\}/, archivo);
+  }
+  const lectura = leer(join(GRAFICOS, 'cruces/lectura-del-cruce.tsx'));
+  assert.doesNotMatch(lectura, /<details|lectura\.frase/, 'la frase y «Cómo leerlo» no se repiten en la lectura');
+  // Lo de §5.1 sigue a la vista: la ventana, lo que también cambió y lo que BE no registra.
+  for (const x of ['COPY_DE_LOS_CRUCES.ventana', 'COPY_DE_LOS_CRUCES.tambienCambio', 'COPY_DE_LOS_CRUCES.noRegistra']) assert.ok(lectura.includes(x), x);
+  assert.match(leer(join(GRAFICOS, 'cruces/energia-y-peso-en-pantalla.tsx')), /fichas=\{semanal \? fichasDeLasSemanas\(semanal\.semanas\) : \[\]\}/);
+  const analizar = leer(join(SEGUIMIENTO, 'analizar.tsx'));
+  const pie = analizar.slice(analizar.indexOf('<div className="analizar__pie-de-la-frase">'));
+  assert.ok(pie.indexOf('<FraseDeLaCoincidencia />') < pie.indexOf('<ComoLeerlo className="analizar__como-leerlo"'), 'la frase a la vista; el límite, último, en «Cómo leerlo»');
+  assert.match(pie, /<ComoLeerlo className="analizar__como-leerlo" de="los gráficos de la pregunta">\n\s*<p>\{laPregunta\.limite\}<\/p>/);
+  // Con dos ejes, que un cruce de líneas no quiere decir nada va a la vista, debajo del gráfico (GR-26).
+  assert.match(analizar, /\{dosEjes \? <p className="nota analizar__dos-ejes">\{COMO_LEER_DOS_EJES\}<\/p> : null\}/);
+  assert.match(A.COMO_LEER_DOS_EJES, /que dos líneas se crucen o se separen no quiere decir nada/);
+  const css = leer(join(GRAFICOS, 'estilos', 'cruces.css'));
+  assert.match(css, /\.analizar__pie-de-la-frase \.analizar__como-leerlo\[open\] \{\s*flex: 1 1 100%;/);
 });

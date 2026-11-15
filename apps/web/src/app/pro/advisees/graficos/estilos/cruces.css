@@ -21,8 +21,7 @@
 }
 
 .cruce__ventana,
-.cruce__primera-linea,
-.cruce__frase {
+.cruce__primera-linea {
   margin: 0;
 }
 
@@ -52,22 +51,6 @@
   font-size: 0.875rem;
 }
 
-.cruce__como-leerlo summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.cruce__como-leerlo ul {
-  margin: 0.25rem 0 0;
-  padding-inline-start: 1.25rem;
-  font-size: 0.875rem;
-}
-
-.cruce__frase {
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
 .cruce__etapas {
   display: grid;
   gap: 1rem;
@@ -83,7 +66,6 @@
 
 .dos-etapas__titulo {
   margin: 0;
-  font-size: 0.9375rem;
 }
 
 .dos-etapas__area {
@@ -101,29 +83,26 @@
   gap: 0.5rem 1.5rem;
 }
 
+/* Cada etapa en dos renglones (cuándo, y cuánto con su mediana); lo que no entra, tenue debajo; la fuerza, a la vista (§5.12). */
 .dos-etapas__lado {
   display: grid;
   gap: 0.125rem;
+  min-width: 0;
   margin: 0;
   font-size: 0.875rem;
 }
 
-.dos-etapas__lado div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.375rem;
-}
-
-.dos-etapas__lado dt {
-  font-weight: 600;
-}
-
-.dos-etapas__lado dt::after {
-  content: ':';
-}
-
-.dos-etapas__lado dd {
+.dos-etapas__lado p {
   margin: 0;
+}
+
+.dos-etapas__cifras {
+  font-variant-numeric: tabular-nums;
+}
+
+.dos-etapas__afuera {
+  font-size: 0.8125rem;
+  color: var(--tenue);
 }
 
 .etapas-lado-a-lado {
@@ -133,6 +112,24 @@
 
 .etapas-lado-a-lado > h4 {
   margin: 0;
+}
+
+.etapas-lado-a-lado > .dos-etapas__leyenda {
+  margin-top: -0.25rem;
+}
+
+/* ─── El pie de «Analizar»: la frase fija a la vista y, último, «Cómo leerlo» con el límite de la pregunta ─── */
+
+.analizar__pie-de-la-frase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.25rem;
+}
+
+.analizar__pie-de-la-frase .analizar__como-leerlo[open] {
+  flex: 1 1 100%;
 }
 
 /* ─── «Superpuestas»: los rótulos de los ejes ──────────────────────────────────────────────────── */
@@ -211,4 +208,22 @@
   .dos-etapas__lados {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ─── Las preguntas de «Analizar» que responden con gráficos del registro (GR-12 y GR-13; «Ver la relación») ─── */
+
+.graficos-en-analizar__lista {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.graficos-en-analizar__grafico {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.graficos-en-analizar__ejercicio {
+  justify-self: start;
 }

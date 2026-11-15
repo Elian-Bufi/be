@@ -16,10 +16,17 @@ export const COPY_DE_LOS_CRUCES = {
   // que nada más cambió (para eso va la lista de lo que BE no registra).
   sinCambiosQueSeSepan: 'En los planes que se leyeron no se activó otra versión en ese tramo.',
   sinLasVersiones: 'No se pudieron leer las versiones de tus otros planes: no se sabe si cambió alguna en ese tramo.',
+  sinLoIndicadoDeLasEtapas: 'No se pudo leer lo indicado en cada versión del plan: no se sabe si cambió lo que pedía para el ejercicio.',
   mediana: 'mediana',
   fueraDeLaMediana: 'Fuera de la mediana',
-  leyendaEntra: 'Entra en la mediana: llena',
-  leyendaAfuera: 'Se ve y no entra en la mediana: hueca, o en rombo si la observó el profesional',
+  // La leyenda de «Lado a lado», en fichas: lo corto se ve; lo largo, el lector de pantalla. Solo las marcas que se ven.
+  leyenda: {
+    enLaMediana: { corto: 'En la mediana', largo: 'Punto lleno: entra en la mediana de la etapa' },
+    afuera: { corto: 'Fuera de la mediana', largo: 'Punto hueco: se ve y no entra en la mediana (un día con algo que falta, hoy o una estimación orientativa)' },
+    cargaRapida: { corto: 'Carga rápida', largo: 'Punto hueco y gris: los números del plan, precargados; no entra en la mediana' },
+    observada: { corto: 'Observada', largo: 'Rombo: una serie observada por el profesional; no entra en la mediana' },
+    mediana: { corto: 'Mediana', largo: 'Raya discontinua: la mediana de la etapa' },
+  },
   dosEtapas: {
     titulo: 'Dos etapas del plan, lado a lado',
     pregunta: '¿Qué pasó con esta medida en la versión vigente del plan, comparada con la anterior?',
