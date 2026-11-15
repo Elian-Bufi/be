@@ -7,13 +7,14 @@
  *   la APK y esta página ni se ve.
  * - En una computadora, el mismo enlace como QR, para escanearlo con el teléfono.
  * - El token sale del fragmento y queda en el navegador: esta página no llama a la API.
+ * - Sin la app, la descarga va al archivo de la última publicación, el mismo de la portada (PG-06), y no a la página de
+ *   publicaciones de GitHub, en inglés (PG-17 de WP-PULIDO-GRANDES, §10 punto 5).
  */
 import { COPY_INVITACION, tokenDelFragmento } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { CodigoQr } from '../../components/codigo-qr';
+import { APK_DE_LA_ULTIMA } from '../../lib/descarga-de-la-app';
 
-/** La APK se distribuye como release de GitHub (la misma descarga que la página de inicio). */
-const APK = 'https://github.com/Elian-Bufi/be/releases/latest';
 const PAQUETE = 'com.elianbufi.be';
 
 type Lectura = { tipo: 'leyendo' } | { tipo: 'sin-invitacion' } | { tipo: 'lista'; token: string; android: boolean; enlace: string };
@@ -43,7 +44,7 @@ export function AbrirInvitacion() {
         <p>
           <a
             className="boton boton--primario"
-            href={`intent://invitacion?t=${encodeURIComponent(lectura.token)}#Intent;scheme=be;package=${PAQUETE};S.browser_fallback_url=${encodeURIComponent(APK)};end`}
+            href={`intent://invitacion?t=${encodeURIComponent(lectura.token)}#Intent;scheme=be;package=${PAQUETE};S.browser_fallback_url=${encodeURIComponent(APK_DE_LA_ULTIMA)};end`}
           >
             {COPY_INVITACION.abrirEnLaApp}
           </a>
@@ -55,7 +56,7 @@ export function AbrirInvitacion() {
         </figure>
       )}
       <p>
-        <a className="boton boton--secundario" href={APK} rel="noopener noreferrer">
+        <a className="boton boton--secundario" href={APK_DE_LA_ULTIMA} download rel="noopener noreferrer" data-bajar-la-app>
           {COPY_INVITACION.descargar}
         </a>
       </p>
