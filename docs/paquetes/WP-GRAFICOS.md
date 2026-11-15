@@ -1197,7 +1197,67 @@ sus decisiones a ratificar (§6.3); y lo que falta para cerrar.
 
 ### 13.1 Fase 1 · `wp-graficos-fase-1`
 
-> En programación al declarar este paquete. Sin integrar.
+> Programada el 2026-11-14 desde `main` `1089fc24`, con `main` integrado hasta #275; PR #273, revisado con ojo adversario
+> el mismo día. Sin integrar al escribir esto. Sin operaciones nuevas en la API, sin migraciones y sin dependencias
+> nuevas; la APK no suma lecturas (lee «Tu historial», que ya está en lo que lee la 0.28).
+
+| Parte | Lo que quedó | Dónde | Oráculo |
+|---|---|---|---|
+| GR-04 | «Con historial · 9 sesiones · la última el mar 3 nov» en cada resultado de «Agregar ejercicio» que la persona ya tiene en sus sesiones registradas, del índice de API-PRJ-01 del último año, leído al abrir el cajón. Arriba de los resultados, una vez, qué cuenta: también las sesiones registradas como no realizadas o hechas con otro ejercicio (GR-T73). Si la lectura falla, se dice y se reintenta. Sin flecha, sin color, sin primero y último | `training/agregar-ejercicio.tsx`, `packages/domain/src/historial-del-buscador.ts` | TEST-GR-004 |
+| GR-01 (website) | «La vez pasada»: las últimas tres veces del ejercicio, serie por serie (carga × repeticiones · RIR; sin carga ni repeticiones, el tiempo), debajo de «Lo que indica el plan» y nunca mezclada. Lo escrito, en marca llena; la carga rápida, hueca y en gris, con su texto; «con la carga del plan» si solo una parte vino del plan; lo cargado otro día y lo corregido, con su etiqueta; una vez hecha con otro ejercicio lo dice y no es comparable. Lee API-TRN-21 de los últimos 91 días y dice desde cuándo | `training/la-vez-pasada.tsx`, `fuerza/detalle-del-ejercicio.tsx`, `training/ejercicio-del-editor.tsx`, `packages/domain/src/la-vez-pasada.ts` | TEST-GR-001 |
+| GR-01 · PG-11 (APK, solo lectura) | Debajo del ejercicio, en la sesión en curso, una línea tenue: «La vez pasada, mar 10 nov: 22 kg × 8 · RIR 2, 20 kg × 10 · RIR 2 (como el plan)», la última vez del mismo ejercicio en los 90 días hasta la fecha de la sesión (PG-D6), con la misma función del dominio. TalkBack la lee con la fecha entera | `apps/mobile/src/la-vez-pasada-en-la-sesion.ts`, `pantallas/entrenamiento.tsx`, `pantallas/sesion-enfocada.tsx` | TEST-PG-010 |
+| GR-16 | Al final de cada toma abierta de «Tomas», «Desde el inicio y desde la anterior»: cada medida con su valor, la resta con su signo contra la primera toma y contra la anterior del mismo protocolo, método y unidad, y los días de calendario. Los resultados calculados, aparte y con su método. Si hay más de una toma el mismo día, lo dice (GR-T79). Debajo, siempre, la línea del error de medición | `anthropometry/desde-el-inicio.tsx`, `anthropometry/evaluaciones.tsx`, `packages/domain/src/desde-el-inicio.ts` | TEST-GR-016 |
+
+**Las pruebas:** `la-vez-pasada.test.ts`, `historial-del-buscador.test.ts` y `desde-el-inicio.test.ts` (el dominio),
+`la-vez-pasada-en-la-sesion.test.ts` (la APK) y `apps/web/test/graficos-fase-1.test.mjs` (dónde va cada pieza en el
+website). **Las mutaciones** están escritas en el encabezado de cada archivo y se revisaron leyendo el código, sin
+correrlas (la PC no tiene memoria para las pruebas; la CI es el juez de que pasan). En la revisión, dos no ponían nada en
+rojo y se arreglaron: «no saltear las no realizadas» (ahora la prueba usa una no realizada que trae el ejercicio
+resumido) y «contar dos veces un punto repetido entre tramos» (no cambia ningún valor de la tabla: se reemplazó por
+«comparar con una toma posterior a esta»).
+
+**Decisiones del continuador al programar, a ratificar (§6.3):**
+- **GR-T70 · El cuadro del ejercicio para todos (ED-75, ampliado por DL-174):** los ejercicios de la lista de la v1 (RM-16)
+  ven «La vez pasada» dentro de «Detalle y fuerza estimada»; los demás, en un cuadro lateral propio («La vez pasada», en
+  el ejercicio y en «Más») con «Lo que indica el plan» arriba y sin la fuerza estimada, que sigue solo en la v1.
+  *Alternativa:* un solo cuadro con la tarjeta de fuerza escondida fuera de la v1, que espera a la rama B.
+- **GR-T71 · La ventana del editor:** API-TRN-21 de los últimos 91 días (la API acepta 92 y su hoy puede ir un día
+  adelante del navegador). Como API-TRN-21 trae solo las sesiones de los planes de quien mira, la tabla dice «en tus
+  planes, … desde el …», y sin historial, «Sin sesiones registradas con este ejercicio en tus planes desde el …», no
+  «desde el inicio del acompañamiento». *Alternativa:* la lectura nueva de GR-01 completa (§4.7).
+- **GR-T72 · Lo que indicaba el plan en cada sesión pasada no se muestra:** arriba va lo indicado hoy; el comparador
+  «Planificado y registrado» sigue en «Sesiones registradas». *Alternativa:* una fila por sesión con lo que indicaba, que
+  pide leer los objetivos por serie de cada versión (API-SER-01).
+- **GR-T73 · Qué cuenta la marca del buscador:** las sesiones registradas de los planes de quien mira en las que aparece
+  el ejercicio, en el último año, que es lo que da el índice de API-PRJ-01: también las registradas como no realizadas,
+  las que no lo incluyeron y las hechas con otro ejercicio en su lugar. El índice no las separa, así que la línea de
+  arriba de los resultados lo dice entero, para que «la última el 3 nov» no se lea como «lo hizo el 3 nov».
+  *Alternativa:* contar solo las hechas con el mismo ejercicio, que pide la lectura por lote de §4.7.
+- **GR-T74 · Dónde va GR-16 y cuánto lee:** al final de cada toma abierta en «Tomas»; «Patrones» es de la fase 2. Se leen
+  como mucho 8 tramos de 92 días (dos años de tomas seguidas); si hay más, «Desde el inicio» dice desde cuándo leyó. La
+  primera toma no lee nada y dice que todavía no hay con qué compararla.
+- **GR-T75 · La APK sin «cargada otro día»** (la persona sabe cuándo la cargó) **y sin la línea si sustituyó el ejercicio
+  en esta sesión** (sería de otro ejercicio). Si la lectura falla o no hay red, la línea no se dibuja y la sesión sigue
+  igual.
+- **GR-T76 · El RIR en la línea de la APK** («20 kg × 8 · RIR 2»), con el formato de GR-01, aunque el ejemplo de PG-11 no
+  lo traía. *Alternativa:* sin RIR, más corta.
+- **GR-T77 · La línea de la APK va debajo del ejercicio,** como describe PG-11, y no como una columna más de la tabla de
+  series: con Serie, carga, Rep., RIR, Tiempo y la casilla, no entra en 360 dp.
+- **GR-T78 · Las fechas en pocas palabras,** como el campo de fecha del website (PG-14): «mar 3 nov», con el año si no es
+  el de hoy, y «hoy»; el lector oye «martes 3 de noviembre».
+- **GR-T79 · Dos tomas el mismo día en GR-16 se dicen, no se corrigen:** API-ANT-06 trae un punto por día y por medida
+  (el de su checkpoint), así que de dos tomas del mismo día la tabla puede no ver las dos: puede faltar una medida de la
+  toma abierta, o la anterior puede no ser la última de ese día. La sección nombra esos días. *Alternativa:* leer con
+  `ANTHROPOMETRY_LONGITUDINAL` de API-PRJ-01, que trae todas las tomas (hasta tres medidas por pedido), en la fase 2.
+
+**Lo que falta para cerrar:**
+1. **PG-11, el resto (tanda B de WP-PULIDO-GRANDES):** tocar la línea para copiar los números en los campos vacíos de la
+   fila que sigue, con «Deshacer». `comparable` y `esDelMismoEjercicio` ya dicen qué se puede copiar.
+2. **GR-01 completa y la vista previa de GR-04:** las lecturas nuevas de §4.7, declaradas ante Dirección.
+3. **GR-16 en «Patrones»** (fase 2) y la columna del error de medición cuando exista (GR-17, GR-D4).
+4. **La evidencia en pantalla:** Azul noche y Claro; 1440, 1280 y 1024; el lector de pantalla en las tablas; en el
+   teléfono, la línea con la letra ×1,3 y TalkBack.
+5. **Correr las mutaciones** de cada prueba (descritas en cada archivo).
 
 ### 13.2 Rama A · `wp-graficos-base`
 
