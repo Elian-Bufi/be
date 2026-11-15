@@ -345,7 +345,8 @@ prioridad propia: van por su fase.
   que una cosa cause la otra.».
 - **El ruido de la estimación** (`lectura-de-la-estimacion.ts`): por versión, la mediana del RIR, el rango de
   repeticiones y la mayor diferencia entre estimaciones seguidas del núcleo (GR-T16), y el cambio de lo indicado entre
-  versiones («el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no»).
+  versiones («el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie»: dice lo que puede
+  pasar, sin afirmar qué pasó con la fuerza).
 
 **GR-23 · La cinta del tiempo de la persona**
 - *Qué ve el profesional:* una banda fina fija arriba de los gráficos, sobre el mismo eje de fechas: las versiones de los
@@ -1261,7 +1262,135 @@ resumido) y «contar dos veces un punto repetido entre tramos» (no cambia ning�
 
 ### 13.2 Rama A · `wp-graficos-base`
 
-> Sin programar al declarar este paquete.
+> **Estado:** programada el 2026-11-14 en `wp-graficos-base` (#276), desde `main` `7cb79d3a`, con `main` `b55414d2`
+> traído (#273, la fase 1, ya integrada) y después `main` `03d2b3d2` (#271, la tanda B: las notas de PG-15 y PG-16).
+> Revisada con ojo adversario el mismo día (ver «La revisión», abajo). Sin integrar. Sin API y sin cambio visible: las
+> piezas las montan las ramas B a E. El primer commit (`257912a6`) fijó el contrato del que salieron las otras ramas; los
+> siguientes solo agregan. Las decisiones GR-T20 a GR-T29 están **a ratificar**; mientras tanto, rigen.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| El catálogo de series | Envuelve el diccionario de DL-126 sin cambiarlo (`BE-SERIES-2026-11-v1`): cada serie con su eje X, su fuente, sus alcances, su método, su marca y su estado. Se ofrecen las del diccionario y el 1RM estimado (Epley v1); el RIR indicado y los g/kg quedan EN_PREPARACION; el descanso, las calorías previstas, el perímetro corregido y la entrada de carga × repeticiones, PIDE_DL. `composicionPermitida` y `fraseDeLaCoincidencia` para «Armá tu gráfico» | `packages/domain/src/series-disponibles*.ts` | TEST-GRF-001, 002, 003 y 009 |
+| Los IDs de los sugeridos | Los 14 IDs estables, validados con una expresión (GR-T17) | `graficos-sugeridos.ts` | TEST-GRF-007 |
+| La guardia unida y la frase | La unión de las listas de las áreas del gráfico, cada una con su regla, más lo que no va en ningún lado; «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.» | `vocabulario-de-los-graficos.ts` | TEST-GRF-004, 005 y 018 |
+| Las marcas por su sentido | Lleno lo registrado; hueco lo indicado y el subtotal; hueco y gris la carga rápida; rombo lo observado; contorno cortado lo reportado; punto adentro lo calculado | `marcas-de-los-graficos.ts`, `graficos/marcas.tsx` | TEST-GRF-006 |
+| El ruido de la estimación | Por versión: sesiones, mediana del RIR, rango de repeticiones y la mayor diferencia entre estimaciones seguidas del núcleo desde cuatro sesiones; el cambio de lo indicado en palabras | `lectura-de-la-estimacion.ts` | TEST-GRF-008 |
+| El eje de fechas y los paneles alineados | Un solo eje, las marcas sin pisarse, los carriles con su escala, las bandas de las versiones con su etiqueta, la tira de cobertura (el estado del día por la altura, con una muesca en lo cargado después), la cuenta de lo que no entra en la escala y la cinta como carril | `eje-de-fechas.ts`, `carriles.ts`, `paneles-alineados.tsx`, `medidas-del-grafico.ts` | TEST-GRF-010 y 011 |
+| El cursor, la lectura y la tabla | El cursor compartido con teclado (flechas, Inicio, Fin, Mayúscula y Escape), la lectura viva y la tabla con los tramos sin registros en texto | `cursor-de-fechas.tsx`, `lectura-en-la-fecha.tsx`, `tabla-equivalente*.ts(x)` | TEST-GRF-012, 014 y 015 |
+| Los estados | Cargando con alto fijo, sin datos, falta historia, falla con «Reintentar» y sin acceso, que no dibuja nada | `estado-del-grafico.tsx` | TEST-GRF-015 |
+| Las lecturas | Todo a la API, sin caché de datos de salud: en tramos de 92 días, compartidas solo mientras están en vuelo, de a cuatro. Lo indicado del entrenamiento: API-TRN-21 en tramos y API-SER-01 por versión, con el comparador del dominio (GR-T14 y GR-T27) | `lecturas.ts`, `adaptadores.ts` | TEST-GRF-011, 013 y 015 |
+| **GR-23** · la cinta del tiempo | Las versiones como barras, las tomas, las revisiones, las sesiones con cambios, las sustituciones y las notas de coordinación como íconos, una fila por área; lo que cae junto, agrupado; elegir una barra o un grupo elige su tramo en todos los gráficos; la lista en palabras, la leyenda y la lectura viva. `CintaDelTiempoLeida` lee API-DSH-04 | `cinta-del-tiempo.ts`, `cinta-del-tiempo-en-pantalla.tsx`, `dibujo-de-la-cinta.tsx` | TEST-GRF-019 |
+| Los registros, las hojas y los tokens | Un registro por rama, una hoja por rama importada una vez y `--grafico-indicado`, `--grafico-carga-rapida` y `--grafico-cursor` con 3:1 en los dos temas | `registro-de-graficos.ts`, `registros.ts`, `estilos/`, `tokens.css` | TEST-GRF-016 y 017 |
+
+**Los oráculos y sus mutaciones** (en `packages/domain/src/series-disponibles.test.ts` y
+`apps/web/test/graficos-base.test.mjs`). Cada prueba fija exactamente la propiedad que su mutación rompe; en esta máquina
+no se corre nada pesado, así que ponerlas en rojo una por una queda para la revisión:
+
+| Oráculo | Mutación que lo pone en rojo |
+|---|---|
+| TEST-GRF-001 | Una serie de Nutrición sin el alcance NUTRICION |
+| TEST-GRF-002 | Ofrecer los g/kg con una sola área o sin lo propio en las dos (ahora con la función real y un catálogo de prueba) |
+| TEST-GRF-003 | Dejar tres unidades en «Superpuestas» |
+| TEST-GRF-004 | Sacar la frase con dos áreas o con dos ejes |
+| TEST-GRF-005 | Aplicar solo la lista de la primera área |
+| TEST-GRF-006 | La carga rápida, llena |
+| TEST-GRF-008 | Decir el ruido con dos sesiones |
+| TEST-GRF-003 | Mirar solo el eje X del catálogo y no el grano elegido (una serie de día vista por semana, superpuesta con una de sesión) |
+| TEST-GRF-008 | Afirmar en el cambio de lo indicado que la fuerza no cambió |
+| TEST-GRF-011 | Unir a través de un hueco; unir lo indicado de dos versiones |
+| TEST-GRF-011 (b) | Marcar lo observado por el profesional como dato de la persona en el 1RM estimado; pedir la estimación con una versión suelta o con un ejercicio fuera de la lista de la v1; dibujar una semana fuera del eje; una banda que pisa el día del corte |
+| TEST-GRF-012 | Perder los subtotales en la tabla |
+| TEST-GRF-012 (b) | Dejar solo en la forma de la marca lo tildado sin escribir, lo observado, lo reportado o lo calculado |
+| TEST-GRF-013 | Tramos de 93 días; leer API-TRN-21 sin tramos; leer la cinta en un solo pedido o del tramo más antiguo al más reciente |
+| TEST-GRF-019 | Dejar los eventos de un área denegada; dibujar un hábito o lo anulado |
+| TEST-GRF-019 (b) | Dejar en la cinta una nota de un área denegada o una nota propia archivada; usar el día UTC de una nota propia; mostrar en el cuadro de un ejercicio las notas de otras sesiones; dejar el texto de las notas a la vista con «Ocultar nombres» |
+
+#### Decisiones del continuador al programar (a ratificar)
+
+- **GR-T20 · El tipo de la fuente se llama `FuenteDeLaSerieDisponible`:** `FuenteDeLaSerie` ya lo exporta la estimación
+  de fuerza con otro sentido. Por lo mismo, la constructora de Antropometría es `serieDisponibleAntropometrica`.
+- **GR-T21 · Una serie de dos áreas (los g/kg) se ofrece solo con los dos alcances y con planes o tomas propios en las
+  dos** (caso 1). Una de un área pide solo su alcance.
+- **GR-T22 · `FALTA_HISTORIA` lleva `hay` como lista** (un número por lado, o uno solo), para decir «hay 3 y 7».
+- **GR-T23 · Un archivo puro y su pantalla no comparten nombre** (`tabla-equivalente.ts` y
+  `tabla-equivalente-en-pantalla.tsx`; `cinta-del-tiempo.ts` y `cinta-del-tiempo-en-pantalla.tsx`): con `.ts` y `.tsx`
+  del mismo nombre, TypeScript y el empaquetador resuelven archivos distintos.
+- **GR-T24 · `leerDisponibles` devuelve lo leído y las áreas que respondieron «sin acceso»,** o `null` si la sesión se
+  perdió; `leerEnTramos` devuelve también la primera falla.
+- **GR-T25 · El 1RM estimado tiene su propia familia** (`estimacion-de-fuerza`): nunca comparte un eje con la carga
+  registrada.
+- **GR-T26 · La guardia prohíbe en todo gráfico, también en negación,** los términos de B05 y TEST-PRJ-009.
+- **GR-T27 · Lo indicado del entrenamiento sale del comparador del dominio** (`observacionesDelEjercicio` y `evolucion`)
+  con los objetivos por serie de API-SER-01. Si una versión no se puede leer, es una falla con «Reintentar» y no se cae
+  a lo de la prescripción, que puede no ser el de esa serie (DL-122). Un rango es un segmento hueco sin valor del medio;
+  un % RM y otra unidad no se dibujan, y la línea de lo indicado se corta al cambiar de versión o de prescripción.
+  *Alternativa:* dibujar lo de la prescripción con una nota cuando falta una versión.
+- **GR-T28 · Qué entra en la cinta:** las versiones (de las vigencias, no de las activaciones, para no repetirlas), las
+  tomas, las revisiones, las notas de coordinación, las sesiones registradas con cambios y las sustituciones de otro
+  ejercicio. Las notas de coordinación no se filtran por área: no son datos de un área sino una comunicación dirigida a
+  quien la lee, y la API decide quién la ve (DL-140). Las sustituciones salen del registro de cada sesión (API-TRN-21)
+  cuando quien usa la cinta ya leyó esas sesiones: API-DSH-04 no las marca y la cinta no suma lecturas por ellas.
+  Quedan fuera los objetivos, los seguimientos abiertos o cerrados, los formularios y lo anulado. *Alternativa:* sumar
+  los objetivos como hitos de la cinta. **Con la tanda B integrada (#271), la cinta lee también las notas:** las de la
+  persona al finalizar (PG-15, API-TRN-25-LISTA en tramos de 92 días, solo con Entrenamiento), el día de su sesión y en la
+  fila de Entrenamiento; y las notas propias del profesional (PG-16, API-NPP-02, que solo le devuelve las suyas), el día
+  de Buenos Aires en que se escribieron, en la fila del área de su ancla (un ejercicio, Entrenamiento; una comida,
+  Nutrición) o en la de las notas, con el ícono «a mano» para no confundirlas con una nota de coordinación. Las propias
+  **archivadas no entran**: quien la escribió la sacó de lo que tiene a mano. En el cuadro de un ejercicio, solo las notas
+  de las sesiones con ese ejercicio (si esas sesiones no se leyeron, ninguna) y las propias atadas a él. Una nota que no
+  se pudo leer es una falla con «Reintentar», no «sin notas». Con «Ocultar nombres» (PG-T73), las notas están con su día y
+  su ancla pero sin su texto, hasta «Mostrar en esta pantalla». La cinta es el tercer lector de API-NPP-02, una vez por
+  cinta (TEST-PG-015 lo dice). *Alternativa:* mostrar también las archivadas, marcadas.
+- **GR-T29 · Cómo se ve la cinta:** una fila por área, con su ícono, y una para las notas; la barra de una versión va
+  del día que empezó a regir al anterior al corte; lo que cae a menos de 18 px se agrupa en un círculo con la cantidad
+  («2 hitos», o «3 hechos» si hay una sesión o una sustitución); se leen hasta cuatro páginas de 50 por pedido, en
+  tramos de 366 días (lo que admite API-DSH-04) del más reciente al más antiguo, y, si hay más, la cinta dice que
+  faltan los más antiguos. *Alternativa:* una sola fila con todos los hechos.
+
+#### La revisión (2026-11-14)
+
+Con ojo adversario sobre el diff de la rama, el diseño y el código vecino. Ninguna alta. Lo arreglado:
+
+- **Media · lo observado por el profesional se dibujaba como dato de la persona** cuando el 1RM estimado llegaba por
+  `carrilDeSerie` (la serie de `serieDeLaFuerza` no dice la procedencia en la marca del dominio). Ahora va en rombo, lo
+  orientativo hueco y el núcleo lleno (`marcaDelPuntoAnaliticoDeFuerza`), y el carril toma el rango mínimo del catálogo
+  (10 kg o 22 lb, GR-T15).
+- **Media · la estimación se pedía con cualquier clave:** una versión suelta (`v:`) viajaba como `exerciseId` y un
+  ejercicio fuera de la lista de la v1 se pedía igual. Ahora solo `e:` de la lista (RM-16); sin ejercicio, falla; otro,
+  «sin especificación».
+- **Media · las notas de la tanda B no entraban en la cinta** aunque #271 ya está en `main` (§3.8 del diseño). Entran
+  con GR-T28 ampliada.
+- **Media · «Superpuestas» dejaba juntar una serie de día vista por semana con una de sesión:** `SerieElegida` suma el
+  grano, y por semana el eje X es el de las semanales (GR-T03).
+- **Media · la tabla no decía con palabras lo que dice la forma** (lo tildado sin escribir, lo observado, lo reportado y
+  lo calculado): el lector de pantalla no ve la marca. Ahora lo dice, sin repetir lo que la lectura ya dice.
+- **Baja · el cambio de lo indicado afirmaba que la fuerza no cambió:** ahora dice que la estimación puede cambiar aunque
+  la fuerza no cambie.
+- **Baja · las barras semanales no se recortaban al eje** (una semana anterior al vínculo salía de la caja y estiraba la
+  escala) y **las bandas de las versiones pisaban el día del corte**, al revés que las barras de la cinta.
+- **Baja · la nota propia y la de coordinación tenían el mismo ícono** en la cinta.
+
+Queda, en baja y sin arreglar: si la lectura de la cinta llega al tope de páginas justo al terminar un tramo, dice que
+faltan los más antiguos aunque el tramo anterior pudiera estar vacío (lo conservador es avisar).
+
+#### Lo que falta para cerrar
+
+- Poner en rojo, una por una, las mutaciones de la tabla de oráculos (en esta máquina no se corre nada pesado; la CI
+  corre las pruebas tal cual).
+- Las capturas y la evidencia: la rama no cambia nada visible. Van con la primera rama que monte las piezas.
+- `WP-GRAFICOS-ORACULOS.md` con los trece campos: en modo liviano, los oráculos quedaron en las pruebas.
+- **Para B:** el adaptador de lo indicado ya está (`puntosDeLoIndicado`, `serieDeLoIndicado` y
+  `leerSerieDelCatalogo` para `entrenamiento.rir-indicado`); B lo ofrece al usarlo, cambiando su estado a OFRECIDA.
+- **Para C:** los g/kg (fuente DERIVADA) siguen respondiendo «sin especificación» en `leerSerieDelCatalogo` hasta que C
+  programe la regla y su lectura; si la engancha ahí, lo dice en su PR antes de tocar `lecturas.ts`.
+- **Para D y E:** `CintaDelTiempoLeida` va arriba de «Analizar» (D) y fija arriba de «Patrones» (E), con los alcances y
+  las vigencias de `leerDisponibles`; en el cuadro del ejercicio (B), con `exerciseKey` y las sesiones ya leídas, que
+  suman las sustituciones y filtran las notas de la persona. Las notas de la tanda B ya las lee la cinta (GR-T28).
+- **Para B y D:** el cambio de lo indicado se dice «la estimación puede cambiar aunque la fuerza no cambie» (lo devuelve
+  `cambioDeLoIndicado`); los ejemplos de §4.3 y §4.5 con la frase anterior se leen con esta.
+- **Hallazgo fuera del paquete (severidad baja), para D:** tres textos de límites del diccionario de DL-126 que muestra
+  «Analizar» tienen un término prohibido en negación (`nutricion.registros`, `entrenamiento.carga` y
+  `entrenamiento.series-registradas`); la guardia unida no los admite. Se ajustan al pasar «Analizar» al catálogo.
 
 ### 13.3 Rama B · `wp-graficos-entrenamiento`
 

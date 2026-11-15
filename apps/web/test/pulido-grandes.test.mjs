@@ -351,12 +351,13 @@ test('TEST-PG-015 · los dos editores leen las notas una sola vez y las muestran
   for (const ruta of ['src/app/pro/advisees/training/plan.tsx', 'src/app/pro/advisees/nutrition/plan.tsx']) assert.match(leer(ruta), /<ProveedorDeNotasPropias token=\{token\} asesoradoId=\{asesoradoId\} sesionPerdida=\{sesionPerdida\}>/);
   assert.match(leer('src/app/pro/advisees/training/ejercicio-del-editor.tsx'), /<NotasAlLado ejercicio=\{exerciseId\} \/>/);
   assert.match(leer('src/app/pro/advisees/nutrition/comida-del-editor.tsx'), /<NotasAlLado comida=\{comida\.label\} \/>/);
-  // API-NPP-02 se lee en el proveedor del editor y en el bloc del Resumen; nunca por ejercicio ni por comida.
+  // API-NPP-02 se lee en el proveedor del editor, en el bloc del Resumen y, una vez por cinta, en la cinta del tiempo de los
+  // gráficos (GR-23, WP-GRAFICOS GR-T28); nunca por ejercicio ni por comida.
   const conLectura = archivos(join(WEB, 'src'))
     .filter((r) => readFileSync(r, 'utf8').includes('api.notasPropias('))
     .map(nombre)
     .sort();
-  assert.deepEqual(conLectura, ['src/app/pro/advisees/notas-propias.tsx', 'src/app/pro/advisees/seguimiento/tus-notas.tsx']);
+  assert.deepEqual(conLectura, ['src/app/pro/advisees/graficos/lecturas.ts', 'src/app/pro/advisees/notas-propias.tsx', 'src/app/pro/advisees/seguimiento/tus-notas.tsx']);
 });
 
 test('TEST-PG-015 · con «Ocultar nombres», el texto de las notas no se ve hasta pedirlo (PG-T73)', () => {
