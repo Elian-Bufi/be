@@ -19,8 +19,11 @@ export type EstadoDelGrafico =
   | { readonly tipo: 'ERROR'; readonly motivo: MotivoDeFalla }
   | { readonly tipo: 'SIN_ACCESO' };
 
-/** El alto que guarda un gráfico mientras carga, para que la página no salte al llegar los datos. */
-export const ALTO_MIENTRAS_CARGA = 160;
+/**
+ * El alto que guarda un gráfico mientras carga, para que la página no salte al llegar los datos: el de un gráfico
+ * principal (de 240 a 280 px, DISENO-VISUAL §1, principio 1) con su cabecera.
+ */
+export const ALTO_MIENTRAS_CARGA = 280;
 
 export function EstadoDelGraficoEnPantalla({ estado, onReintentar, alto = ALTO_MIENTRAS_CARGA }: { estado: EstadoDelGrafico; onReintentar?: () => void; alto?: number }) {
   switch (estado.tipo) {

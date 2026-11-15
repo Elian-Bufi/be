@@ -56,21 +56,44 @@ export const SEPARACION_MINIMA_DE_MARCAS = 56;
 const PASOS_EN_DIAS = [1, 2, 7, 14] as const;
 
 /** Las fechas que llevan marca: cada 1, 2, 7 o 14 días (los lunes desde la semana) o el primero de cada mes o trimestre. */
-function fechasDeLasMarcas(desde: string, hasta: string, porDia: number): string[] {
+function fechasDeLasMarcas(desde: string, hasta: string, porDia: number): { readonly fechas: string[]; readonly porMes: boolean } {
   const dias = Math.round((mediodia(hasta) - mediodia(desde)) / DIA) + 1;
   const todas = Array.from({ length: dias }, (_, i) => fechaDe(mediodia(desde) + i * DIA));
   const paso = PASOS_EN_DIAS.find((n) => n * porDia >= SEPARACION_MINIMA_DE_MARCAS);
-  if (paso === 1 || paso === 2) return todas.filter((_, i) => i % paso === 0);
+  if (paso === 1 || paso === 2) return { fechas: todas.filter((_, i) => i % paso === 0), porMes: false };
   if (paso !== undefined) {
     const lunes = todas.filter((f) => new Date(`${f}T12:00:00Z`).getUTCDay() === 1);
-    return paso === 7 ? lunes : lunes.filter((_, i) => i % 2 === 0);
+    return { fechas: paso === 7 ? lunes : lunes.filter((_, i) => i % 2 === 0), porMes: false };
   }
   const primeros = todas.filter((f) => f.endsWith('-01'));
-  return 30 * porDia >= SEPARACION_MINIMA_DE_MARCAS ? primeros : primeros.filter((f) => (Number(f.slice(5, 7)) - 1) % 3 === 0);
+  return { fechas: 30 * porDia >= SEPARACION_MINIMA_DE_MARCAS ? primeros : primeros.filter((f) => (Number(f.slice(5, 7)) - 1) % 3 === 0), porMes: true };
 }
 
-/** «3/11»: el día y el mes, como el resto del espacio profesional. */
+/** «3/11»: el día y el mes, como el resto del espacio profesional. Lo usan los textos (los tramos sin registros). */
 export const textoDeLaMarca = (fecha: string): string => `${Number(fecha.slice(8, 10))}/${Number(fecha.slice(5, 7))}`;
+
+/** Los meses cortos del website («sept», como en el dominio: `la-vez-pasada.ts`), para que una fecha se lea igual en GR-01 y GR-04. */
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'] as const;
+const DIAS_DE_LA_SEMANA = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'] as const;
+
+/**
+ * El texto de una marca del eje de fechas, abreviado y sin repetir el año (DISENO-VISUAL §1, principio 4): «3 nov» con
+ * marcas por día o por semana; «nov» con marcas por mes, y el año solo donde hace falta («nov 2025», «ene 2026»).
+ */
+export function textoDelEje(fecha: string, porMes: boolean, conAnio = false): string {
+  const mes = MESES[Number(fecha.slice(5, 7)) - 1] ?? '';
+  if (!porMes) return `${Number(fecha.slice(8, 10))} ${mes}`;
+  return conAnio ? `${mes} ${fecha.slice(0, 4)}` : mes;
+}
+
+/** Una fecha en pocas palabras, para la lectura y la tabla: «lun 3 nov», con el año si no es el de `hoy`. */
+export function fechaCorta(fecha: string, hoy: string): string {
+  const dia = DIAS_DE_LA_SEMANA[new Date(`${fecha}T12:00:00Z`).getUTCDay()] ?? '';
+  return `${dia} ${diaYMes(fecha, hoy)}`;
+}
+
+/** El día y el mes, con el año solo si no es el de `hoy`: «3 nov», «16 nov 2025». Para la línea tenue del período. */
+export const diaYMes = (fecha: string, hoy: string): string => `${textoDelEje(fecha, false)}${fecha.slice(0, 4) !== hoy.slice(0, 4) ? ` ${fecha.slice(0, 4)}` : ''}`;
 
 /** La escala de un período en una caja horizontal (en píxeles, de `izquierda` a `derecha`). */
 export function escalaDeFechas(p: PeriodoDelGrafico, caja: { readonly izquierda: number; readonly derecha: number }): EscalaDeFechas {
@@ -95,7 +118,14 @@ export function escalaDeFechas(p: PeriodoDelGrafico, caja: { readonly izquierda:
     const acotado = Math.min(Math.max(ms, inicio), fin - 1);
     return fechaDe(mediodia(fechaDe(acotado)));
   };
-  const marcas = fechasDeLasMarcas(desde, hasta, porDia).map((fecha) => ({ fecha, x: x(fecha), texto: textoDeLaMarca(fecha) }));
+  const deLasMarcas = fechasDeLasMarcas(desde, hasta, porDia);
+  const cruzaUnAnio = desde.slice(0, 4) !== hasta.slice(0, 4);
+  // El año va en la primera marca y en la de enero, solo si el período cruza un año: nunca repetido en cada marca.
+  const marcas = deLasMarcas.fechas.map((fecha, i) => ({
+    fecha,
+    x: x(fecha),
+    texto: textoDelEje(fecha, deLasMarcas.porMes, cruzaUnAnio && deLasMarcas.porMes && (i === 0 || fecha.slice(5, 7) === '01')),
+  }));
   return { desde, hasta, x, xDePunto, fechaDeX, marcas, porDia, izquierda: caja.izquierda, derecha: caja.derecha };
 }
 
