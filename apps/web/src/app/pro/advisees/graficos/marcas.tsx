@@ -9,7 +9,7 @@
 import { MARCA_SEGUN_EL_DATO, type MarcaSemantica, type SentidoDeLaMarca } from '@be/domain';
 import { medidaDeMarca, type EstadoDeMarca } from '../seguimiento/geometria';
 import { ESTILOS, Punto, Rombo } from '../seguimiento/marca';
-import { SENTIDO_EN_LA_LEYENDA } from './copy';
+import { SENTIDO_CORTO, SENTIDO_EN_LA_LEYENDA } from './copy';
 
 const ESTADO_DE_LA_MARCA: Readonly<Record<Exclude<MarcaSemantica, 'ROMBO'>, EstadoDeMarca>> = {
   LLENA: 'lleno',
@@ -36,19 +36,24 @@ export function MarcaDelCarril({ marca, cx, cy, porDia, color, tarde = false, yH
   );
 }
 
-/** El glifo de la leyenda de un sentido, con su texto al lado. */
+/**
+ * El glifo de la leyenda de un sentido, con su texto corto al lado (la pasada visual del 15/11: fichas cortas en una
+ * línea). El lector de pantalla oye el sentido entero («Registrado: lleno»), que dice también la forma.
+ */
 export function GlifoDeLaLeyenda({ sentido, indice = 0 }: { sentido: SentidoDeLaMarca; indice?: number }) {
   const marca = MARCA_SEGUN_EL_DATO[sentido];
   return (
     <span className="grafico-base__glifo">
-      <svg width={18} height={18} viewBox="0 0 18 18" aria-hidden="true">
+      <svg width={14} height={14} viewBox="0 0 18 18" aria-hidden="true">
         <MarcaDelCarril marca={marca} cx={9} cy={9} porDia={10} color={colorDelCarril(indice)} />
       </svg>
-      {SENTIDO_EN_LA_LEYENDA[sentido]}
+      <span aria-hidden="true">{SENTIDO_CORTO[sentido]}</span>
+      <span className="visualmente-oculto">{SENTIDO_EN_LA_LEYENDA[sentido]}</span>
     </span>
   );
 }
 
+/** La leyenda: fichas cortas en una línea, arriba del gráfico, solo con las marcas que se ven (`sentidosQueSeVen`). */
 export function Leyenda({ sentidos, indice = 0 }: { sentidos: readonly SentidoDeLaMarca[]; indice?: number }) {
   if (sentidos.length === 0) return null;
   return (

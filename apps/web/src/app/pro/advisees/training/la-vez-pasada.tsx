@@ -3,11 +3,11 @@
 /**
  * «La vez pasada» en el editor del plan (WP-GRAFICOS GR-01, DL-174, fase 1; la misma pieza que PG-11 de
  * WP-PULIDO-GRANDES): en el cuadro lateral del ejercicio, debajo de «Lo que indica el plan» y nunca mezclado con eso, lo
- * que la persona registró las últimas tres veces que hizo el ejercicio, serie por serie (carga con su unidad ×
- * repeticiones · RIR). Las reglas son las del dominio (`la-vez-pasada.ts`); acá solo se lee y se dibuja:
+ * que la persona registró las últimas veces que hizo el ejercicio, serie por serie (carga con su unidad × repeticiones ·
+ * RIR). Las reglas son las del dominio (`la-vez-pasada.ts`); acá solo se lee y se dibuja:
  * - **La lectura** es API-TRN-21 (las sesiones registradas en los planes de quien mira, y lo dice: «en tus planes») de los
  *   últimos 91 días, armada en el cliente: la propuesta de gráficos lo pide así para la fase 1. Se lee al abrir el cuadro,
- *   cada vez: no hay caché de datos de salud en el navegador. La tabla dice desde cuándo leyó.
+ *   cada vez: no hay caché de datos de salud en el navegador. La lista dice desde cuándo leyó.
  * - **Lo escrito va lleno y lo precargado del plan, hueco y en gris,** con su texto: «carga rápida» (DL-161) o «con la
  *   carga del plan» (ED-70). Lo cargado otro día y lo corregido llevan su etiqueta. Nada es solo color.
  * - **Una vez hecha con otro ejercicio lo dice** («Se hizo con Prensa de piernas») y no se toma como el mismo; una
@@ -15,31 +15,36 @@
  * - **Sin flechas ni juicios:** no compara una vez con otra, no sugiere una carga (eso es «Calcular la carga desde la
  *   estimación», ED-76, que confirma el profesional) y no califica una vez frente a otra.
  *
+ * La pasada visual (WP-GRAFICOS, 15/11; DISENO-VISUAL §2, GR-01): en lugar de una tabla con una columna por serie (que en
+ * el cuadro partía «137,5 kg × 3 · RIR 2» en cuatro renglones y cortaba la serie 4), una lista: una fila por sesión, con
+ * la fecha y la sesión a la izquierda y las series como fichas que pasan al renglón siguiente si no entran, cada una con su
+ * marca llena o hueca delante. Con una sola unidad, la unidad va una vez arriba («kg × repeticiones · RIR») y cada ficha
+ * dice «137,5 × 3 · RIR 2»; el lector de pantalla oye la serie entera. Se ven las últimas tres; «Ver las 9 anteriores»
+ * muestra las demás de lo leído. Lo que aclara (qué es y que no se mezcla con lo indicado), en «Cómo leerlo».
+ *
+ * La revisión del 15/11 (las cuentas están en `lista-de-la-vez-pasada.ts`, que se prueba ejecutándola):
+ * - **Se arman todas las veces de los 91 días leídos,** no doce: «Ver las N anteriores» cuenta bien y la lista llega
+ *   hasta el «desde el …» de arriba. El botón cuenta filas (una vez por prescripción), no sesiones.
+ * - **La unidad sale de todas las veces,** no de las que se ven: arriba y en las fichas es la misma, abierta o cerrada.
+ * - **La línea de arriba dice que es lo registrado** («Lo registrado por Diego Sosa en tus planes, desde el …»): las fichas
+ *   tienen el formato de una prescripción y «En tus planes» solo podía leerse como lo indicado.
+ *
  * Los ejercicios de la lista de la v1 (RM-16) la ven dentro de «Detalle y fuerza estimada» (ED-75); los demás, en
  * `CuadroDeLaVezPasada`, el mismo cuadro lateral sin la fuerza estimada: DL-174 abre el cuadro para todos los ejercicios, y
  * la fuerza estimada sigue solo en la lista de la v1 (GR-T70).
  */
-import {
-  COPY_LA_VEZ_PASADA,
-  fechaEnPocasPalabras,
-  loQueSeHizo,
-  marcaDelPlan,
-  textoDeLaSerie,
-  VECES_EN_EL_EDITOR,
-  vecesPasadas,
-  type SerieDeLaVezPasada,
-  type VezPasada,
-} from '@be/domain';
+import { COPY_LA_VEZ_PASADA, fechaEnPocasPalabras, loQueSeHizo, marcaDelPlan, textoDeLaSerie, VECES_EN_EL_EDITOR, vecesPasadas, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
-import { EnPartes } from '../../../../components/en-partes';
 import { BloqueDeEstado } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
 import { api, type Resultado } from '../../../../lib/api';
 import { ICONO_DE_FALLA, motivoDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
+import { ComoLeerlo } from '../graficos/como-leerlo';
 import { usePersonaDelArea } from '../marco-del-area';
 import { hoyEn, restarDias } from '../seguimiento/estado';
 import { AccesoAlHistorial, COPY_DEL_HISTORIAL, PasoDelHistorialDiferido, type PasoDelHistorial } from '../graficos/entrenamiento/acceso-al-historial';
+import { anterioresQueQuedan, textoDeLaFicha, TODAS_LAS_VECES, unidadComun } from './lista-de-la-vez-pasada';
 
 /** Cuántos días se leen: 91 con hoy. API-TRN-21 acepta 92, y el hoy de la API puede ir un día adelante del navegador. */
 const DIAS_QUE_SE_LEEN = 91;
@@ -47,14 +52,18 @@ const DIAS_QUE_SE_LEEN = 91;
 export const COPY_LA_VEZ_PASADA_EN_EL_EDITOR = {
   abrir: 'La vez pasada',
   queEs: (persona: string, desde: string) => `Lo que registró ${persona} las últimas veces que hizo este ejercicio en tus planes, serie por serie, desde el ${desde}.`,
+  /** La línea tenue de arriba de la lista: de dónde sale y, con una sola unidad, cómo se lee cada ficha. */
+  deDonde: (persona: string, desde: string, unidad: string | null) => `Lo registrado por ${persona} en tus planes, desde el ${desde}${unidad ? ` · ${unidad} × repeticiones · RIR` : ''}`,
   ninguna: (desde: string) => `Sin sesiones registradas con este ejercicio en tus planes desde el ${desde}.`,
   sesion: 'Sesión',
   serie: (n: number) => `Serie ${n}`,
   loRegistrado: 'Lo registrado',
   caption: (persona: string, nombre: string) => `${COPY_LA_VEZ_PASADA.titulo}: lo que registró ${persona} de ${nombre}, por sesión y por serie`,
   sinDato: 'sin dato',
-  escrito: 'Escrita por la persona (si algún valor vino del plan, la serie lo dice)',
+  escrito: 'Escrita por la persona',
+  escritoLargo: 'Escrita por la persona (si algún valor vino del plan, la serie lo dice)',
   delPlan: 'Carga rápida: tildada sin escribir, con los valores del plan',
+  delPlanCorto: 'Carga rápida (los valores del plan)',
   cargadaOtroDia: 'Cargada otro día',
   corregida: 'Corregida',
   noSeComparan: 'Lo que indica el plan está arriba y no se mezcla con esto: no se comparan ni se suma nada.',
@@ -62,6 +71,9 @@ export const COPY_LA_VEZ_PASADA_EN_EL_EDITOR = {
   noDisponible: 'Con el acceso de ahora no podés ver los registros de Entrenamiento de esta persona.',
   persona: 'la persona',
   loQueIndicaElPlan: 'Lo que indica el plan',
+  /** Cuenta filas (una vez por prescripción), no sesiones: el mismo ejercicio dos veces en una sesión son dos. */
+  verMas: (n: number) => (n === 1 ? 'Ver la anterior' : `Ver las ${n} anteriores`),
+  verMenos: 'Ver menos',
 } as const;
 const C = COPY_LA_VEZ_PASADA_EN_EL_EDITOR;
 
@@ -92,7 +104,7 @@ export function useLaVezPasada(
       if (!vigente || sesionPerdida(r)) return;
       if (!r.ok) return setLectura(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'no-disponible' } : { tipo: 'error', motivo: motivoDeFalla(r) });
       const d = r.datos.data;
-      setLectura({ tipo: 'lista', veces: vecesPasadas(d.registeredExecutions, exerciseId, { cuantas: VECES_EN_EL_EDITOR }), hoy: d.period.end, desde: d.period.start });
+      setLectura({ tipo: 'lista', veces: vecesPasadas(d.registeredExecutions, exerciseId, { cuantas: TODAS_LAS_VECES }), hoy: d.period.end, desde: d.period.start });
     });
     return () => {
       vigente = false;
@@ -105,117 +117,109 @@ export function useLaVezPasada(
 /** La marca de cada serie: llena si la escribió la persona; hueca si vino toda del plan (carga rápida). Sigue al texto. */
 function MarcaDeOrigen({ hueca = false }: { hueca?: boolean }) {
   return (
-    <svg width={12} height={12} viewBox="0 0 12 12" aria-hidden="true" className="la-vez-pasada__marca-de-origen">
+    <svg width={10} height={10} viewBox="0 0 12 12" aria-hidden="true" className="la-vez-pasada__marca-de-origen">
       <circle cx={6} cy={6} r={hueca ? 4 : 4.5} fill={hueca ? 'none' : 'currentColor'} stroke="currentColor" strokeWidth={hueca ? 1.5 : 0} />
     </svg>
   );
 }
 
-/** Una serie registrada: el texto, su marca y, si vino del plan, lo que vino del plan dicho en palabras. */
-function CeldaDeSerie({ serie }: { serie: SerieDeLaVezPasada }) {
+/** Una serie registrada como ficha: su marca, el texto (que no se parte) y, si vino del plan, lo que vino del plan. */
+function FichaDeSerie({ serie, unidad }: { serie: SerieDeLaVezPasada; unidad: 'kg' | 'lb' | null }) {
   const delPlan = marcaDelPlan(serie, COPY_LA_VEZ_PASADA.cargaRapida);
+  const corto = textoDeLaFicha(serie, unidad);
   return (
-    <span className={serie.cargaRapida ? 'la-vez-pasada__serie la-vez-pasada__serie--del-plan' : 'la-vez-pasada__serie'} data-carga-rapida={serie.cargaRapida ? '' : undefined}>
+    <li className={serie.cargaRapida ? 'la-vez-pasada__ficha la-vez-pasada__serie--del-plan' : 'la-vez-pasada__ficha'} data-carga-rapida={serie.cargaRapida ? '' : undefined}>
       <MarcaDeOrigen hueca={serie.cargaRapida} />
-      <span>
-        <EnPartes texto={textoDeLaSerie(serie)} />
-        {delPlan ? <span className="la-vez-pasada__del-plan">{delPlan}</span> : null}
+      <span className="la-vez-pasada__valor" aria-hidden="true">
+        {corto}
       </span>
-    </span>
+      <span className="visualmente-oculto">{`${C.serie(serie.numero)}: ${textoDeLaSerie(serie)}`}</span>
+      {delPlan ? <span className="la-vez-pasada__del-plan">{delPlan}</span> : null}
+    </li>
   );
 }
 
-/** «Se hizo con Prensa de piernas»: la frase del dominio, con mayúscula, para una celda sola. */
+/** «Se hizo con Prensa de piernas»: la frase del dominio, con mayúscula, para una fila sola. */
 const conMayuscula = (t: string): string => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 
-/** La tabla de las veces: una fila por sesión, una columna por número de serie. */
-function TablaDeLaVezPasada({ veces, hoy, persona, nombre }: { veces: readonly VezPasada[]; hoy: string; persona: string; nombre: string }) {
-  const numeros = [...new Set(veces.flatMap((v) => (v.como.tipo === 'series' ? v.como.series.map((s) => s.numero) : [])))].sort((a, b) => a - b);
+/** La lista de las veces: una fila por sesión, con la fecha y la sesión a la izquierda y las series como fichas. */
+function ListaDeLaVezPasada({ veces, hoy, persona, nombre, unidad }: { veces: readonly VezPasada[]; hoy: string; persona: string; nombre: string; unidad: 'kg' | 'lb' | null }) {
+  const [todas, setTodas] = useState(false);
+  const aLaVista = todas ? veces : veces.slice(0, VECES_EN_EL_EDITOR);
+  const numeros = [...new Set(aLaVista.flatMap((v) => (v.como.tipo === 'series' ? v.como.series.map((s) => s.numero) : [])))].sort((a, b) => a - b);
   const conSeries = numeros.length > 0;
-  const hayDelPlan = veces.some((v) => v.como.tipo === 'series' && v.como.series.some((s) => s.cargaRapida));
+  const hayDelPlan = aLaVista.some((v) => v.como.tipo === 'series' && v.como.series.some((s) => s.cargaRapida));
+  const quedan = anterioresQueQuedan(veces, VECES_EN_EL_EDITOR);
   return (
     <>
-      <div className="desplazable-x">
-        <table className="tabla la-vez-pasada__tabla">
-          <caption className="visualmente-oculto">{C.caption(persona, nombre)}</caption>
-          <thead>
-            <tr>
-              <th scope="col">{C.sesion}</th>
-              {conSeries ? (
-                numeros.map((n) => (
-                  <th scope="col" key={n}>
-                    {C.serie(n)}
-                  </th>
-                ))
-              ) : (
-                <th scope="col">{C.loRegistrado}</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {veces.map((v) => (
-              <tr key={`${v.executionId}|${v.prescriptionId}`} data-vez={v.executionId}>
-                <th scope="row">
-                  <span className="la-vez-pasada__fecha">{fechaEnPocasPalabras(v.fecha, hoy)}</span>
-                  <span className="visualmente-oculto"> ({fechaEnPocasPalabras(v.fecha, hoy, true)})</span>
-                  <span className="nota la-vez-pasada__sesion">{v.sesion}</span>
-                  {v.cargadaOtroDia ? (
-                    <span className="etiqueta-de-dato la-vez-pasada__etiqueta" data-cargada-otro-dia>
-                      <Icono nombre="cargado-otro-dia" tamano={15} />
-                      {C.cargadaOtroDia}
-                    </span>
-                  ) : null}
-                  {v.corregida ? (
-                    <span className="etiqueta-de-dato la-vez-pasada__etiqueta" data-corregida>
-                      <Icono nombre="corregido" tamano={15} />
-                      {C.corregida}
-                    </span>
-                  ) : null}
-                </th>
-                {v.como.tipo === 'series' ? (
-                  numeros.map((n) => {
-                    const s = v.como.tipo === 'series' ? v.como.series.find((x) => x.numero === n) : undefined;
-                    return (
-                      <td key={n}>
-                        {s ? (
-                          <CeldaDeSerie serie={s} />
-                        ) : (
-                          <span className="nota">
-                            <span aria-hidden="true">—</span>
-                            <span className="visualmente-oculto">{C.sinDato}</span>
-                          </span>
-                        )}
-                      </td>
-                    );
-                  })
-                ) : (
-                  <td colSpan={Math.max(1, numeros.length)} className="la-vez-pasada__otra">
-                    {conMayuscula(loQueSeHizo(v, 'profesional'))}
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {/* Cada serie dice en texto si vino del plan; la leyenda explica las dos marcas una vez. */}
+      <ol className="la-vez-pasada__lista" aria-label={C.caption(persona, nombre)}>
+        {aLaVista.map((v) => (
+          <li key={`${v.executionId}|${v.prescriptionId}`} data-vez={v.executionId} className="la-vez-pasada__vez">
+            <div className="la-vez-pasada__cuando">
+              <span className="la-vez-pasada__fecha">
+                <span aria-hidden="true">{fechaEnPocasPalabras(v.fecha, hoy)}</span>
+                <span className="visualmente-oculto">{fechaEnPocasPalabras(v.fecha, hoy, true)}</span>
+              </span>
+              <span className="la-vez-pasada__sesion">{v.sesion}</span>
+              {v.cargadaOtroDia ? (
+                <span className="etiqueta-de-dato la-vez-pasada__etiqueta" data-cargada-otro-dia>
+                  <Icono nombre="cargado-otro-dia" tamano={15} />
+                  {C.cargadaOtroDia}
+                </span>
+              ) : null}
+              {v.corregida ? (
+                <span className="etiqueta-de-dato la-vez-pasada__etiqueta" data-corregida>
+                  <Icono nombre="corregido" tamano={15} />
+                  {C.corregida}
+                </span>
+              ) : null}
+            </div>
+            {v.como.tipo === 'series' ? (
+              <ul className="la-vez-pasada__series">
+                {numeros.map((n) => {
+                  const s = v.como.tipo === 'series' ? v.como.series.find((x) => x.numero === n) : undefined;
+                  return s ? (
+                    <FichaDeSerie key={n} serie={s} unidad={unidad} />
+                  ) : (
+                    // Una serie que falta queda «—», sin dato: nunca un cero y nunca corrida al lugar de otra.
+                    <li key={n} className="la-vez-pasada__ficha la-vez-pasada__ficha--sin-dato">
+                      <span aria-hidden="true">—</span>
+                      <span className="visualmente-oculto">{`${C.serie(n)}: ${C.sinDato}`}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="la-vez-pasada__otra">{conMayuscula(loQueSeHizo(v, 'profesional'))}</p>
+            )}
+          </li>
+        ))}
+      </ol>
+      {quedan > 0 ? (
+        <button type="button" className="boton boton--enlace la-vez-pasada__ver-mas" aria-expanded={todas} onClick={() => setTodas((t) => !t)} data-ver-mas-sesiones>
+          {todas ? C.verMenos : C.verMas(quedan)}
+        </button>
+      ) : null}
+      {/* Cada serie dice en texto si vino del plan; la leyenda explica las dos marcas una vez, como fichas cortas. */}
       {conSeries ? (
         <ul className="leyenda la-vez-pasada__leyenda">
           <li>
             <MarcaDeOrigen />
-            {C.escrito}
+            <span aria-hidden="true">{C.escrito}</span>
+            <span className="visualmente-oculto">{C.escritoLargo}</span>
           </li>
           {hayDelPlan ? (
             <li>
               <MarcaDeOrigen hueca />
-              {C.delPlan}
+              <span aria-hidden="true">{C.delPlanCorto}</span>
+              <span className="visualmente-oculto">{C.delPlan}</span>
             </li>
           ) : null}
         </ul>
       ) : null}
-      {veces.some((v) => v.como.tipo === 'series' && v.como.enLugarDe) ? (
+      {aLaVista.some((v) => v.como.tipo === 'series' && v.como.enLugarDe) ? (
         <ul className="nota la-vez-pasada__en-lugar-de">
-          {veces.flatMap((v) => (v.como.tipo === 'series' && v.como.enLugarDe ? [<li key={`${v.executionId}|${v.prescriptionId}`}>{`${fechaEnPocasPalabras(v.fecha, hoy)}: ${COPY_LA_VEZ_PASADA.enLugarDe(v.como.enLugarDe)}`}</li>] : []))}
+          {aLaVista.flatMap((v) => (v.como.tipo === 'series' && v.como.enLugarDe ? [<li key={`${v.executionId}|${v.prescriptionId}`}>{`${fechaEnPocasPalabras(v.fecha, hoy)}: ${COPY_LA_VEZ_PASADA.enLugarDe(v.como.enLugarDe)}`}</li>] : []))}
         </ul>
       ) : null}
     </>
@@ -250,9 +254,14 @@ export function LaVezPasada({ lectura, recargar, nombre }: { lectura: LecturaDeL
           </p>
         ) : (
           <>
-            <p className="nota la-vez-pasada__que-es">{C.queEs(persona, fechaEnPocasPalabras(lectura.desde, lectura.hoy))}</p>
-            <TablaDeLaVezPasada veces={lectura.veces} hoy={lectura.hoy} persona={persona} nombre={nombre} />
-            <p className="nota la-vez-pasada__no-se-comparan">{C.noSeComparan}</p>
+            {/* La unidad, una sola para la línea de arriba y las fichas: la de todas las veces, no la de las que se ven. */}
+            <p className="nota la-vez-pasada__que-es">{C.deDonde(persona, fechaEnPocasPalabras(lectura.desde, lectura.hoy), unidadComun(lectura.veces))}</p>
+            <ListaDeLaVezPasada veces={lectura.veces} hoy={lectura.hoy} persona={persona} nombre={nombre} unidad={unidadComun(lectura.veces)} />
+            <ComoLeerlo>
+              <p>{C.queEs(persona, fechaEnPocasPalabras(lectura.desde, lectura.hoy))}</p>
+              <p className="la-vez-pasada__no-se-comparan">{C.noSeComparan}</p>
+              <p>{C.escritoLargo}.</p>
+            </ComoLeerlo>
           </>
         )
       ) : null}

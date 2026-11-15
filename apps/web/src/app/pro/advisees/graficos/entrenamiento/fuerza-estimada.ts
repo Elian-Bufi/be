@@ -135,6 +135,8 @@ export interface LecturaDeLaVersion {
   readonly rotulo: string;
   /** «5 sesiones · mediana del RIR registrado: 1 · de 5 a 6 repeticiones en la serie usada · entre sesiones…». */
   readonly texto: string;
+  /** El ruido propio de la versión, en una frase para la lectura del costado (§5.12): «Entre sesiones de la versión 8…». */
+  readonly ruido: string;
   readonly desde: string;
   readonly hasta: string | null;
 }
@@ -154,7 +156,8 @@ export function lecturasPorVersion(puntos: readonly PuntoDeFuerza[], vigencias: 
       ...(l.repeticiones ? [C.repeticiones(numero(l.repeticiones.desde), numero(l.repeticiones.hasta))] : []),
       l.diferenciaEntreSesiones === null ? C.ruidoSinAlcanzar : C.ruido(numero(l.diferenciaEntreSesiones, 1), unidad),
     ];
-    return [{ planVersionId: l.planVersionId, rotulo: C.version(v.label, textoDeLaMarca(v.from)), texto: partes.join(' · '), desde: v.from, hasta: v.to }];
+    const ruido = l.diferenciaEntreSesiones === null ? C.ruidoDeLaVersionSinAlcanzar(C.versionCorta(v.label)) : C.ruidoDeLaVersion(C.versionCorta(v.label), numero(l.diferenciaEntreSesiones, 1), unidad);
+    return [{ planVersionId: l.planVersionId, rotulo: C.version(v.label, textoDeLaMarca(v.from)), texto: partes.join(' · '), ruido, desde: v.from, hasta: v.to }];
   });
 }
 

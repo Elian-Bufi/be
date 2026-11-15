@@ -182,6 +182,8 @@ test('TEST-GRF-021 · todos los textos de la rama pasan la guardia de Entrenamie
     [TX.COPY_FUERZA_ESTIMADA.medianaDelRir, [['1,5']]],
     [TX.COPY_FUERZA_ESTIMADA.repeticiones, [['5', '6'], ['5', '5']]],
     [TX.COPY_FUERZA_ESTIMADA.ruido, [['3', 'kg']]],
+    [TX.COPY_FUERZA_ESTIMADA.ruidoDeLaVersion, [['la versión 3', '3', 'kg']]],
+    [TX.COPY_FUERZA_ESTIMADA.ruidoDeLaVersionSinAlcanzar, [['la versión 2']]],
     [TX.COPY_FUERZA_ESTIMADA.cambio, [['la versión 2', 'la versión 3', 'el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie']]],
     [TX.COPY_FUERZA_ESTIMADA.unRirMueve, [['80', 'kg', '2,7']]],
     [TX.COPY_FUERZA_ESTIMADA.extremos, [['≈ 92 kg', '3/10', '≈ 98 kg', '12/11']]],
@@ -679,15 +681,31 @@ test('TEST-GRF-038 · el registro ofrece GR-02 solo con un ejercicio de la lista
   for (const g of GRAFICOS_DE_ENTRENAMIENTO) assert.equal(typeof g.Grafico, 'function', g.id);
 });
 
-test('TEST-GRF-039 · en «Analizar · Fuerza», GR-02 suma la primera línea, cada versión con su ruido y el rango mínimo del eje, y el ruido va antes que la diferencia (mutación: sacar el rango mínimo)', () => {
+test('TEST-GRF-039 · en «Analizar · Fuerza», GR-02 suma cada versión con su ruido a la vista y el ruido de la versión antes que la anterior; el cambio de lo indicado es uno solo, el de la pasada visual (mutaciones: llevar la lista por versión a «Cómo leerlo», poner el ruido después de la anterior o volver a la primera línea propia)', () => {
   const fuente = leer('fuerza/fuerza-en-analizar.tsx');
   const zonas = fuente.slice(fuente.indexOf('<div className="fuerza-en-analizar__zonas">'));
-  assert.ok(zonas.indexOf('data-cambio-de-lo-indicado') < zonas.indexOf('<Grafico '), 'la primera línea, arriba del gráfico');
-  assert.ok(zonas.indexOf('<Grafico ') < zonas.indexOf('<PorVersion lecturas={porVersion} />'));
-  assert.match(fuente, /return cambiosDeLoIndicado\(versiones, objetivosDeLasVersiones\(linea\.puntos, observaciones, versiones\)\);/);
-  assert.match(fuente, /const rango = rangoMinimoDeLaFuerza\(unidad\) \?\? 0;/);
+  // §5.12: la mediana del RIR, las repeticiones y el ruido de cada versión, a la vista: debajo del gráfico y fuera de
+  // «Cómo leerlo».
+  assert.ok(zonas.indexOf('<Grafico') < zonas.indexOf('<PorVersion lecturas={porVersion} />'), 'cada versión, debajo del gráfico');
+  assert.ok(zonas.indexOf('<PorVersion lecturas={porVersion} />') < zonas.indexOf('<ComoLeerLaFuerza'), 'y antes de «Cómo leerlo», no adentro');
+  const como = fuente.slice(fuente.indexOf('function ComoLeerLaFuerza('), fuente.indexOf('type Columnas'));
+  assert.ok(!como.includes('PorVersion'), 'la lista por versión no va escondida');
+  // El cambio de lo indicado, una sola lectura: la de la pasada visual (en la línea de la versión y, si no entra, debajo).
+  assert.match(fuente, /cambiosPorVersion\(/);
+  assert.ok(!fuente.includes('data-cambio-de-lo-indicado'), 'sin la primera línea propia de la rama B');
+  assert.ok(!fuente.includes('objetivosDeLasVersiones'), 'sin la segunda lectura de lo indicado');
+  // El rango mínimo del eje (GR-T15), del catálogo.
+  assert.match(fuente, /const rango = rangoMinimo\(unidad\);/);
+  // El ruido antes que el cambio: lo que mueve un RIR y el ruido de la versión, antes que «La anterior».
   const lectura = fuente.slice(fuente.indexOf('function Lectura('));
-  assert.ok(lectura.indexOf('data-ruido-de-la-version') > 0 && lectura.indexOf('data-ruido-de-la-version') < lectura.indexOf('{anterior && diferencia ? ('), 'el ruido antes que la diferencia');
+  const ruido = lectura.indexOf('data-ruido-de-la-version');
+  assert.ok(ruido > 0 && lectura.indexOf('data-ruido-de-la-lectura') < ruido && ruido < lectura.indexOf('data-la-anterior'), 'el ruido de la versión, antes que la anterior');
+  assert.match(lectura, /lecturaDeLaVersionEn\(elegido\.date, porVersion\)/);
+  // La frase del ruido de la versión: en texto, sin «±» ni porcentaje; con menos de 4 sesiones, dice que no alcanza.
+  const [v2, v3] = FE.lecturasPorVersion(FUERZA, VIGENCIAS, 'kg');
+  assert.equal(v3.ruido, 'Entre sesiones de la versión 3 aparecen diferencias de hasta 3 kg.');
+  assert.match(v2.ruido, /^En la versión 2, con menos de 4 sesiones/);
+  for (const t of [v2.ruido, v3.ruido]) assert.doesNotMatch(t, /[±→%]/, t);
   // Lo de antes sigue (ED-74): la tabla elige el punto con el teclado.
   assert.match(fuente, /<TablaDeOrigen [^\n]*onElegir=\{\(p\) => setElegidoId\(p\.pointId\)\}/);
 });

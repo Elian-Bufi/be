@@ -557,6 +557,8 @@ export function filasConLosMotivosSeguidos(filas: readonly FilaDeLaEvolucion[]):
 /** Una vigencia del plan de entrenamiento, como la trae la clave (`planVersions`). */
 export interface VersionDelPlanEnElPeriodo {
   readonly domain: string;
+  /** La versión (API-ANA, `planVersions`): cada sesión cuenta en la versión que la ejecutó (revisión del 15/11). */
+  readonly planVersionId?: string;
   readonly label: string;
   readonly from: string;
   readonly to: string | null;
@@ -582,10 +584,60 @@ export function fechasDelEje(desde: string, hasta: string, cuantas = 5): string[
   return [...new Set(fechas)];
 }
 
+/**
+ * Los textos de las fechas del eje (revisión del 15/11; GR-V13): «16 nov»; si el período cruza un año, la primera marca y
+ * la primera de cada año llevan el año («16 nov 2025 … 15 nov 2026»), para que «16 nov … 15 nov» no se lea como un mes.
+ */
+export function textosDelEjeDeLaFuerza(fechas: readonly string[]): string[] {
+  const cruza = new Set(fechas.map((f) => f.slice(0, 4))).size > 1;
+  return fechas.map((f, i) => (cruza && (i === 0 || f.slice(0, 4) !== fechas[i - 1]!.slice(0, 4)) ? `${diaDeLaEstimacion(f)} ${f.slice(0, 4)}` : diaDeLaEstimacion(f)));
+}
+
 /** El motivo más frecuente de una sesión sin punto, en palabras: «ninguna serie entra: el RIR es mayor que 2». */
 function motivoDeLaSesion(series: readonly SerieQueNoEntro[]): string {
   const cuenta = new Map<MotivoFueraDeLaEstimacion, number>();
   for (const s of series) cuenta.set(s.reason, (cuenta.get(s.reason) ?? 0) + 1);
   const [motivo] = [...cuenta.entries()].sort((a, b) => b[1] - a[1])[0]!;
   return `ninguna serie entra: ${COPY_FUERZA.motivo[motivo]}`;
+}
+
+// ─── El ruido antes que el cambio (revisión del 15/11; WP-GRAFICOS §5.6 y §5.12) ────────────────────────
+
+/**
+ * Lo que queda a la vista debajo del gráfico y al lado de «La anterior»: el rango de validez de la estimación (§5.6) y
+ * lo que mueve un RIR (§5.12). La pasada visual los había llevado a «Cómo leerlo», cerrado; §5 pide que se vean, y que el
+ * ruido vaya antes que cualquier comparación.
+ */
+export const COPY_DEL_RUIDO = {
+  validez: (conOrientativas: boolean): string =>
+    conOrientativas ? 'Solo series de RIR 0 a 2 y hasta 12 repeticiones equivalentes (de más de 10 a 12, orientativas).' : 'Solo series de RIR 0 a 2 y hasta 10 repeticiones equivalentes.',
+  ruido: (cuanto: string): string => `Un RIR de diferencia mueve cada estimación ${cuanto}.`,
+  ruidoDeLaElegida: (cuanto: string): string => `Un RIR de diferencia mueve esta estimación ${cuanto}.`,
+  /** Los cambios de lo indicado que no entran en la línea de su versión, dichos en texto (§5.12). */
+  cambios: (lista: readonly string[]): string => `Lo indicado cambió: ${lista.join('; ')}.`,
+} as const;
+
+/**
+ * Lo que mueve un RIR en la estimación de Epley: la carga ÷ 30 por cada repetición equivalente. Con las cargas de las
+ * estimaciones a la vista: «≈ 4,6 kg», o «≈ 3,8 a 4,6 kg» si cambian. `null` sin cargas.
+ */
+export function loQueMueveUnRir(cargas: readonly number[], unidad: string): string | null {
+  const validas = cargas.filter((c) => Number.isFinite(c) && c > 0);
+  if (validas.length === 0) return null;
+  const decimal = (n: number): string => (Math.round(n * 10) / 10).toLocaleString('es-AR', { maximumFractionDigits: 1 });
+  const bajo = decimal(Math.min(...validas) / 30);
+  const alto = decimal(Math.max(...validas) / 30);
+  return bajo === alto ? `≈ ${bajo} ${unidad}` : `≈ ${bajo} a ${alto} ${unidad}`;
+}
+
+/**
+ * El cambio de lo indicado de cada versión, en palabras: «v8, desde el dom 17 may: de 4 a 3 repeticiones». Sale de los
+ * mismos cambios que rotulan las líneas de las versiones (`cambiosPorVersion`, por el primer día de cada una); la que
+ * empieza antes del período no es un cambio a la vista.
+ */
+export function cambiosDeLoIndicadoEnPalabras(versiones: readonly VersionDelPlanEnElPeriodo[], cambios: ReadonlyMap<string, string>, desde: string): string[] {
+  return versiones
+    .filter((v) => v.domain === 'TRAINING' && v.from > desde && cambios.has(v.from))
+    .sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0))
+    .map((v) => `${v.label}, desde el ${diaConSemana(v.from)}: ${cambios.get(v.from)}`);
 }
