@@ -224,10 +224,13 @@ test('TEST-PG-016 · el QR baja la app, el mismo archivo de la portada, sin dato
     const qr = JSON.stringify(hoja.app);
     for (const dato of [PERSONA, 'Diego', ASESORADO, PLAN, 'Sofía']) assert.ok(!qr.includes(dato), `el QR no lleva «${dato}»`);
     assert.equal(hoja.app.titulo, 'Escaneá para bajar BE');
+    // Y el botón de descarga, al mismo archivo, para quien abre el PDF en el teléfono (Dirección, 2026-11-14).
+    assert.equal(hoja.app.bajar, 'Bajar BE');
   }
   const componente = sinComentarios(leer('src/components/hoja-del-plan.tsx'));
   assert.match(componente, /<CodigoQr texto=\{hoja\.app\.enlace\} etiqueta=\{hoja\.app\.etiqueta\}/, 'el QR se dibuja en el navegador, sin servicios externos');
   assert.doesNotMatch(componente, /https?:\/\//, 'ningún servicio externo para el QR');
+  assert.match(componente, /<a className="hoja-del-plan__bajar" href=\{hoja\.app\.enlace\}>\s*\{hoja\.app\.bajar\}\s*<\/a>/, '«Bajar BE», al archivo del QR');
 });
 
 // ── 3. La hoja impresa no imprime la navegación ────────────────────────────────────────────────────────────────
@@ -271,7 +274,16 @@ test('TEST-PG-016 · la hoja va aparte de la página y no tiene nada que se toqu
   const componente = sinComentarios(leer('src/components/hoja-del-plan.tsx'));
   assert.match(componente, /createPortal\(<Hoja hoja=\{hoja\} \/>, document\.body\)/, 'hija directa de <body>');
   assert.match(componente, /<article className="hoja-del-plan"/);
-  assert.doesNotMatch(componente, /<(nav|button|a|input|select|textarea|Link|Enlace)\b|onClick|href=/, 'ni navegación, ni botones, ni enlaces');
+  assert.doesNotMatch(componente, /<(nav|button|input|select|textarea|Link|Enlace)\b|onClick/, 'ni navegación, ni botones');
+  // El único enlace es «Bajar BE», al archivo de la app: nada que lleve a la página ni a datos de la persona.
+  assert.deepEqual(
+    [...componente.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]),
+    ['<a className="hoja-del-plan__bajar" href={hoja.app.enlace}>'],
+  );
+  assert.deepEqual(
+    [...componente.matchAll(/href=\{([^}]*)\}/g)].map((m) => m[1]),
+    ['hoja.app.enlace'],
+  );
 });
 
 // ── 4. El botón, en las dos pantallas ──────────────────────────────────────────────────────────────────────────

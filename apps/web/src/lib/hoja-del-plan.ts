@@ -7,6 +7,8 @@
  * - **La hoja lleva un QR para bajar la app** (Dirección, 2026-11-14: «tiene que tener el QR para descargar»): el mismo
  *   archivo que ofrece la portada (`APK_DE_LA_ULTIMA`, PG-06). No lleva datos de la persona: ni su nombre, ni su
  *   identificador, ni el del plan. Se dibuja en el navegador (`components/codigo-qr.tsx`), sin servicios externos.
+ * - **Y un botón para bajarla** («y un botón de descarga también»): «Bajar BE», al mismo archivo. En el PDF se toca, para
+ *   quien lo abre en el mismo teléfono y no puede escanear su propia pantalla; en el papel queda como un rótulo.
  * - **El papel no avisa cuando queda viejo:** la hoja dice qué versión muestra, el día en que se descargó y que lo
  *   vigente está siempre en la app.
  * - **Las fechas, en palabras** («martes 10 de noviembre de 2026»), las mismas de PG-14 (`fecha-en-palabras.ts`).
@@ -70,7 +72,8 @@ export const COPY_HOJA_DEL_PLAN = {
   sinObjetivo: COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo,
   seriesDe: (ejercicio: string) => `Series de ${ejercicio}`,
   appTitulo: COPY_DESCARGA.escanea,
-  appTexto: 'Apuntá la cámara del teléfono al código para bajar BE, la app para Android. Ahí ves lo vigente de tu plan y registrás lo que hacés.',
+  appTexto: 'Apuntá la cámara del teléfono al código para bajar BE, la app para Android; si abrís este PDF en el teléfono, tocá «Bajar BE». En la app ves lo vigente de tu plan y registrás lo que hacés.',
+  appBajar: COPY_DESCARGA.bajar,
   descargadaEl: (dia: string) => `Descargada el ${dia}.`,
   loVigente: (numero: number) => `Este papel muestra la versión ${numero}. Si tu profesional la cambia, lo vigente está siempre en la app.`,
   // «Ocultar nombres» (TB-05), antes de descargar.
@@ -167,7 +170,7 @@ export interface HojaDelPlan {
   readonly datos: readonly DatoDeLaHoja[];
   readonly cuerpo: CuerpoDeLaHoja;
   /** El QR para bajar la app: el archivo de la última publicación, sin datos de la persona. */
-  readonly app: { readonly enlace: string; readonly titulo: string; readonly texto: string; readonly etiqueta: string };
+  readonly app: { readonly enlace: string; readonly titulo: string; readonly texto: string; readonly etiqueta: string; readonly bajar: string };
   readonly pie: readonly string[];
 }
 
@@ -190,7 +193,7 @@ function armar(area: AreaDeLaHoja, c: ContextoDeLaHoja, activadaEl: string | nul
     titulo: C.titulo(NOMBRE_DEL_AREA[area]),
     datos: datosDeLaHoja(c, activadaEl),
     cuerpo,
-    app: { enlace: APK_DE_LA_ULTIMA, titulo: C.appTitulo, texto: C.appTexto, etiqueta: COPY_DESCARGA.etiquetaDelQr },
+    app: { enlace: APK_DE_LA_ULTIMA, titulo: C.appTitulo, texto: C.appTexto, etiqueta: COPY_DESCARGA.etiquetaDelQr, bajar: C.appBajar },
     pie: [C.descargadaEl(fechaCompleta(c.hoy)), C.loVigente(c.numero)],
   };
 }
@@ -260,7 +263,7 @@ export function hojaDeEntrenamiento(version: Pick<PlanConObjetivos, 'activatedAt
 
 /** Los textos de la hoja que se ven, para la prueba de palabras: ubican, no califican. */
 export function textosDeLaHoja(h: HojaDelPlan): string[] {
-  const textos = [h.titulo, ...h.datos.flatMap((d) => [d.rotulo, d.valor]), h.app.titulo, h.app.texto, ...h.pie];
+  const textos = [h.titulo, ...h.datos.flatMap((d) => [d.rotulo, d.valor]), h.app.titulo, h.app.texto, h.app.bajar, ...h.pie];
   if (h.cuerpo.area === 'NUTRICION') {
     for (const d of h.cuerpo.dias) {
       textos.push(d.titulo, ...(d.vacio ? [d.vacio] : []));

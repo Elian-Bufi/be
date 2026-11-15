@@ -7,8 +7,10 @@
  * - **Va aparte de la página:** un portal, hijo directo de `<body>`. En pantalla no se ve (`.hoja-del-plan`, en
  *   globals.css); al imprimir se ve solo ella, y el resto de la página —el encabezado, la navegación, los botones, los
  *   avisos— no sale en el papel (TEST-PG-016).
- * - **Sin nada que se toque:** ni botones, ni enlaces, ni navegación. Es papel.
- * - **El QR para bajar la app** es el de la portada (`CodigoQr`, dibujado en el navegador), sin datos de la persona.
+ * - **Sin nada que se toque, salvo «Bajar BE»:** ni botones, ni navegación. Es papel; el único enlace es el de la app,
+ *   para quien abre el PDF en el teléfono.
+ * - **El QR para bajar la app** es el de la portada (`CodigoQr`, dibujado en el navegador), sin datos de la persona, y
+ *   «Bajar BE» lleva al mismo archivo.
  * - **Negro sobre blanco en los dos temas,** con los tokens de la hoja; sin cortar una comida ni una sesión entre dos
  *   páginas (cada una, un bloque que no se parte), en A4 y en carta.
  */
@@ -42,6 +44,9 @@ function Hoja({ hoja }: { hoja: HojaDelPlan }) {
           <figcaption>
             <strong>{hoja.app.titulo}</strong>
             <span>{hoja.app.texto}</span>
+            <a className="hoja-del-plan__bajar" href={hoja.app.enlace}>
+              {hoja.app.bajar}
+            </a>
           </figcaption>
         </figure>
       </header>

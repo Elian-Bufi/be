@@ -18196,6 +18196,17 @@ html:has(.estacion:not([data-en-el-asistente])) {
     line-height: 1.3;
   }
 
+  /* «Bajar BE»: en el PDF se toca; en el papel, un rótulo con borde, sin subrayado ni color. */
+  .hoja-del-plan__bajar {
+    justify-self: center;
+    margin-top: 0.5mm;
+    padding: 0.8mm 3mm;
+    border: 0.3mm solid var(--hoja-texto);
+    border-radius: 1.5mm;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
   /* Un bloque es una comida o una sesión: nunca queda partido entre dos páginas. */
   .hoja-del-plan__bloque {
     padding: 2.5mm 0;

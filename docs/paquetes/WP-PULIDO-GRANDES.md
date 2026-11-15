@@ -820,7 +820,7 @@ comprobaciones de su prueba.
 > Programado el 2026-11-14 sobre `main` `1089fc24`, con el pedido de Dirección de ese día para el plan: «tiene que tener
 > el QR para descargar y un botón de descarga también». Cubre PG-12 y PG-13 (la APK) y PG-17 (el website), y el punto 5
 > de §10. PG-11 va con GR-01, y PG-15 y PG-16 con las notas, en otras ramas. Sin integrar: #272. Las decisiones nuevas
-> (PG-T60 a PG-T70) están **a ratificar**; mientras tanto, rige lo programado.
+> (PG-T80 a PG-T90) están **a ratificar**; mientras tanto, rige lo programado.
 
 | Parte | Commit | Qué quedó | Oráculo |
 |---|---|---|---|
@@ -839,39 +839,39 @@ Resumen de la ficha (API-DSH-03) para la próxima revisión, con el mismo permis
 
 ### 12.1 Decisiones del continuador al programar (a ratificar)
 
-- **PG-T60 · La tercera tarjeta no promete anotar comidas sin plan.** *Elegí:* «Tu profesional arma el plan; mientras,
+- **PG-T80 · La tercera tarjeta no promete anotar comidas sin plan.** *Elegí:* «Tu profesional arma el plan; mientras,
   podés contar tus hábitos». Registrar una comida pide el plan activo (el registro de comidas lo lleva siempre), así que
   lo que decía el paquete no se podía cumplir. La tarjeta dice que con el plan se registra desde Inicio y que, mientras
   tanto, se cuentan los hábitos en «Mis hábitos». *Alternativa:* dejar registrar comidas sin plan, que es una operación
   nueva y queda fuera de PG-13.
-- **PG-T61 · Quién ve la presentación.** *Elegí:* toda cuenta, una vez en cada teléfono, también las que ya usaban BE: la
+- **PG-T81 · Quién ve la presentación.** *Elegí:* toda cuenta, una vez en cada teléfono, también las que ya usaban BE: la
   ven una vez al actualizar y la saltan con un toque. *Alternativa:* solo las cuentas nuevas, que pide leer la fecha de
   alta.
-- **PG-T62 · Los avisos en la tercera.** *Elegí:* «Activar avisos» y «Ahora no» del mismo peso (los dos secundarios), y
+- **PG-T82 · Los avisos en la tercera.** *Elegí:* «Activar avisos» y «Ahora no» del mismo peso (los dos secundarios), y
   activar hace lo mismo que en Cuenta: el permiso de Android, el registro y, la primera vez, los dos recordatorios. La
   respuesta se dice con las palabras de Cuenta y sigue «Entrar a BE». *Alternativa:* «Activar avisos» como principal.
-- **PG-T63 · Si el teléfono no deja leer lo visto,** o tarda más de un segundo y medio, cuenta como vista: es mejor
+- **PG-T83 · Si el teléfono no deja leer lo visto,** o tarda más de un segundo y medio, cuenta como vista: es mejor
   perderse la presentación que verla cada vez.
-- **PG-T64 · Qué dice la línea de quién miró.** *Elegí:* lo que miró, sin repetir el nombre, que es el título de la
+- **PG-T84 · Qué dice la línea de quién miró.** *Elegí:* lo que miró, sin repetir el nombre, que es el título de la
   tarjeta: «Miró tu plan de Nutrición el martes 10 a las 18:20». La API registra la lectura del plan de otra área que la
   persona comparte, y «Lo miró Laura, de Nutrición» se leía como si Laura fuera de Nutrición. La fecha: «hoy», «ayer»,
   «el martes 10» en el mismo mes, con el mes si es otro y con el año si es de otro año.
-- **PG-T65 · «Todavía no miró», solo cuando se sabe:** con un plan compartido para mirar («resumen y plan») y la lista de
+- **PG-T85 · «Todavía no miró», solo cuando se sabe:** con un plan compartido para mirar («resumen y plan») y la lista de
   lecturas sin llenar (menos de 50). Lo que se comparte solo como resumen no se registra como lectura: de eso no se dice
   nada, ni que lo miró ni que no.
-- **PG-T66 · El QR de la hoja baja la app** (Dirección, 2026-11-14), el mismo archivo de la portada, en lugar de abrir el
+- **PG-T86 · El QR de la hoja baja la app** (Dirección, 2026-11-14), el mismo archivo de la portada, en lugar de abrir el
   plan en la app (la recomendación de PG-D12). No hacen falta `/plan` ni un enlace nuevo en la APK, y la hoja dice qué
   versión muestra y que lo vigente está siempre en la app. *Alternativa:* el QR a `/plan`, que la APK abriría en el plan.
-- **PG-T67 · Cómo se descarga.** *Elegí:* «Descargar el plan en PDF» abre la ventana de impresión del navegador con la
+- **PG-T87 · Cómo se descarga.** *Elegí:* «Descargar el plan en PDF» abre la ventana de impresión del navegador con la
   hoja, donde «Guardar como PDF» la descarga; la pista del botón lo dice antes de tocarlo. El título de la pestaña no
   cambia (TEST-TAG-004), así que el navegador nombra el PDF con el título de siempre. *Alternativa:* armar el PDF en el
   navegador con una biblioteca, que es una dependencia nueva.
-- **PG-T68 · La próxima revisión de la hoja** es la acordada hoy, la del Resumen de la ficha, leída al tocar el botón
+- **PG-T88 · La próxima revisión de la hoja** es la acordada hoy, la del Resumen de la ficha, leída al tocar el botón
   (hasta 8 s). Si no contesta, o mientras tanto se activó otra versión, la hoja sale sin esa línea; nunca con la fecha
   que fijó la versión al activarse, que pudo quedar vieja.
-- **PG-T69 · Con «Ocultar nombres»,** la hoja sale como la pantalla, con la referencia, y antes se avisa cómo sacarla con
+- **PG-T89 · Con «Ocultar nombres»,** la hoja sale como la pantalla, con la referencia, y antes se avisa cómo sacarla con
   el nombre. *Alternativa:* imprimir con el nombre aunque la pantalla lo oculte, que lo mostraría en la vista previa.
-- **PG-T70 · Qué lleva la hoja.** Nutrición: todos los días tipo, cada comida con sus opciones y cantidades (y la receta,
+- **PG-T90 · Qué lleva la hoja.** Nutrición: todos los días tipo, cada comida con sus opciones y cantidades (y la receta,
   si la opción sale de una). Entrenamiento: cada bloque y microciclo, con sus sesiones, los días de la agenda si los hay,
   y cada ejercicio con su renglón, la tabla de series y lo general. Arriba, los datos y el QR; abajo, el día en que se
   descargó y que lo vigente está en la app.
@@ -898,7 +898,21 @@ en rojo su prueba:
 TEST-AVR-009 suma la lectura nueva a las de «Quién ve qué», que sigue sin escribir nada, y la prueba de contraste mide
 los tres tokens de la hoja (`--hoja-texto`, `--hoja-tenue` y `--hoja-borde`, sobre `--hoja-fondo`).
 
-### 12.3 Lo que falta para cerrar la tanda B (el resto)
+### 12.3 La revisión adversaria (2026-11-14)
+
+- **Las decisiones de esta rama se renumeraron de PG-T60–PG-T70 a PG-T80–PG-T90:** §11 (las notas, ya en `main`) usa
+  PG-T60 a PG-T73, y los mismos números decían dos cosas distintas.
+- **«Activar avisos» ya no deja la tercera tarjeta esperando:** si el teléfono tira un error a mitad de camino (el
+  permiso o el almacén), la respuesta es «No pudimos activar los avisos…» y sigue «Entrar a BE». Antes quedaba en «Un
+  momento…», con «Saltar» y «Ahora no» apagados, y solo se salía cerrando la app. Lo fija TEST-PG-012.
+- **La hoja suma «Bajar BE»** (Dirección: «tiene que tener el QR para descargar y un botón de descarga también»): un
+  enlace al mismo `be.apk` del QR, junto a él. En el PDF se toca, para quien lo abre en el mismo teléfono y no puede
+  escanear su propia pantalla; en el papel queda como un rótulo. Es el único enlace de la hoja (TEST-PG-016).
+- Sin cambios, después de mirarlo: la línea de quién miró usa la zona del teléfono, como el resto de la APK; la hoja,
+  la de Buenos Aires; lo que se imprime es lo que el profesional ya ve con su Alcance, y la próxima revisión sale de la
+  misma lectura del Resumen, con el mismo permiso.
+
+### 12.4 Lo que falta para cerrar la tanda B (el resto)
 
 - Probarlo en el teléfono: la presentación con TalkBack y con «reducir movimiento», el gesto, el permiso de avisos en un
   Android 13, y la línea de quién miró con la cuenta de la cohorte que comparte su plan (Diego Sosa, con Lic. Sofía Paz).
