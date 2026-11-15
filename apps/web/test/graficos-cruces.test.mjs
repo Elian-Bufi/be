@@ -17,6 +17,7 @@ import {
   esIdDeGrafico,
   FRASE_DE_LA_COINCIDENCIA,
   fraseDeLaCoincidencia,
+  SERIES_DISPONIBLES,
   serieDisponible,
   terminosProhibidosEnUnGrafico,
 } from '@be/domain';
@@ -302,7 +303,7 @@ test('TEST-GRF-065 · SP-01: las calorías van al lado de los carbohidratos, el 
   assert.equal(carriles[2].puntos.find((p) => p.fecha === '2026-10-14').marca, 'HUECA', 'lo orientativo va hueco');
   const l = SP1.lecturaDeCarbohidratosYFuerza(e);
   assert.deepEqual(l.ventana, { a: { desde: '2026-08-01', hasta: '2026-08-31' }, b: { desde: '2026-09-01', hasta: '2026-10-31' } });
-  assert.deepEqual(l.primeraLinea, ['Con la versión 4 del plan de entrenamiento (desde el 15/9), el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no.']);
+  assert.deepEqual(l.primeraLinea, ['Con la versión 4 del plan de entrenamiento (desde el 15/9), el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie.']);
   assert.equal(
     l.lineas[0],
     'Etapa A (objetivo desde el 1/8, 31 días): mediana de carbohidratos registrados de 260 g/día, con los 24 días que tienen cantidades en todos sus registros y ninguna comida del plan sin registro (7 quedaron afuera: 3 sin registro y 4 con algún dato faltante).',
@@ -522,6 +523,15 @@ test('TEST-GRF-072 · los textos de la rama pasan la guardia unida de las áreas
   for (const t of textos) assert.deepEqual(terminosProhibidosEnUnGrafico(t, todas), [], t);
   // La prueba de la prueba: un porcentaje en la lectura de un cruce con Nutrición se detecta.
   assert.deepEqual(terminosProhibidosEnUnGrafico('Los carbohidratos subieron un 12 % en la etapa B', ['NUTRICION', 'ENTRENAMIENTO']), ['%']);
+  // Lo que «Analizar» muestra de cada serie que ofrece (el nombre, cómo se calcula, las ausencias y los límites) pasa la
+  // guardia de su área: el hallazgo de la base (tres límites con un término prohibido dicho en negación) queda corregido
+  // (mutación: devolverle a `nutricion.registros` el término prohibido que decía en negación).
+  const ofrecidas = SERIES_DISPONIBLES.filter((s) => s.estado === 'OFRECIDA');
+  assert.ok(ofrecidas.length > 10, `se revisaron ${ofrecidas.length} series`);
+  for (const s of ofrecidas) {
+    const d = s.definicion;
+    for (const t of [d.nombre, d.nombreCorto, d.explicacion, d.comoSeCalcula, d.ausencias, ...d.limites]) assert.deepEqual(terminosProhibidosEnUnGrafico(t, [d.area]), [], `${s.id}: ${t}`);
+  }
 });
 
 test('TEST-GRF-073 · Antropometría sigue en puntos sueltos también superpuesta (mutación: unir las tomas)', () => {
@@ -572,7 +582,7 @@ test('TEST-GRF-075 · el despacho: lo del diccionario se lee como siempre y lo q
   assert.match(leer(join(SEGUIMIENTO, 'analizar.tsx')), /leerSerieDelAnalisis\(token, asesoradoId, s, periodo, sesionPerdida\)/);
 });
 
-test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección, la frase de la coincidencia y «Dos etapas» lado a lado (mutación: volver a «Juntas»)', () => {
+test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección, la frase de la coincidencia, «Dos etapas» lado a lado y la cinta del tiempo arriba (mutación: volver a «Juntas»; sacar la cinta)', () => {
   const analizar = leer(join(SEGUIMIENTO, 'analizar.tsx'));
   assert.match(analizar, /superposicionDeLasElegidas\(elegidasParaSuperponer\)/);
   assert.doesNotMatch(analizar, /superposicionPermitida\(/);
@@ -583,6 +593,12 @@ test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección
   assert.equal((analizar.match(/\{FRASE_DE_LA_COINCIDENCIA\}/g) ?? []).length, 2, 'al pie de los gráficos y al pie de las etapas');
   assert.match(analizar, /\{dosEjes \? <p className="nota analizar__dos-ejes">\{COMO_LEER_DOS_EJES\}<\/p> : null\}/);
   assert.deepEqual(A.NOMBRE_DEL_MODO, { PANELS: 'Alineadas', OVERLAY: 'Superpuestas' });
+  // GR-23 arriba de «Analizar» (WP-GRAFICOS §4.2): sobre el intervalo que se ve, con los alcances de hoy y las versiones
+  // propias, y solo cuando ya se sabe qué áreas hay (así no lee dos veces).
+  assert.match(analizar, /import\('\.\.\/graficos\/cinta-del-tiempo-en-pantalla'\)\.then\(\(m\) => m\.CintaDelTiempoLeida\)/);
+  assert.match(analizar, /\{dibujables\.length > 0 && !disponibles\.cargando \? \(\s*<CintaDelTiempoLeida lectura=\{\{ token, asesoradoId, sesionPerdida \}\} alcances=\{alcancesDeLaCinta\} vigencias=\{vigenciasDeLaCinta\} periodo=\{\{ desde, hasta, hoy, desdeElVinculo: null \}\} \/>/);
+  assert.match(analizar, /const alcancesDeLaCinta = useMemo\(\(\) => accesoDeLosDisponibles\(disponibles\)\.alcances, \[disponibles\]\);/);
+  assert.ok(analizar.indexOf('<CintaDelTiempoLeida') < analizar.indexOf('<Lienzo'), 'la cinta va arriba de los gráficos');
   const etapas = leer(join(SEGUIMIENTO, 'etapas.tsx'));
   assert.match(etapas, /dosEtapasLadoALado\(\{/);
   assert.match(etapas, /Lado a lado, con todas las observaciones/);
@@ -604,7 +620,7 @@ test('TEST-GRF-077 · lo indicado de cada versión sale de las sesiones de esa v
   );
   assert.deepEqual(objetivos.get('tv3'), { rir: { desde: 2, hasta: 2 }, repeticiones: { desde: 5, hasta: 6 } });
   assert.deepEqual(objetivos.get('tv4'), { rir: { desde: 1, hasta: 1 }, repeticiones: { desde: 5, hasta: 6 } });
-  assert.deepEqual(TC.cambiosDeLoIndicado(objetivos, bandas, '2026-08-01', '2026-10-31'), ['Con la versión 4 del plan de entrenamiento (desde el 15/9), el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no.']);
+  assert.deepEqual(TC.cambiosDeLoIndicado(objetivos, bandas, '2026-08-01', '2026-10-31'), ['Con la versión 4 del plan de entrenamiento (desde el 15/9), el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie.']);
   assert.deepEqual(TC.cambiosDeLoIndicado(objetivos, bandas, '2026-09-20', '2026-10-31'), [], 'un cambio fuera de la ventana no se dice');
   assert.deepEqual(TC.versionesQueSeActivaron([vigencia('NUTRITION', 'nv2', 'v2', '2026-10-04', null), vigencia('NUTRITION', 'nv1', 'v1', '2026-08-01', '2026-10-04')], '2026-09-01', '2026-10-31'), ['Nutrición: se activó la versión 2 el 4/10']);
 });

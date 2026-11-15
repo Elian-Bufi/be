@@ -67,7 +67,7 @@ export function objetivosPorVersion(ejecuciones: readonly EjecucionDeEntrenamien
 
 /**
  * Lo que cambió en lo indicado, versión a versión, dentro del tramo: «Con la versión 4 del plan de entrenamiento (desde
- * el 2/10), el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no». Va en la primera línea.
+ * el 2/10), el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie». Va en la primera línea.
  */
 export function cambiosDeLoIndicado(objetivos: ReadonlyMap<string, ObjetivoDeLaSerie>, bandas: readonly VigenciaDePlan[], desde: string, hasta: string): string[] {
   const deEntrenamiento = [...bandas].filter((b) => b.domain === 'TRAINING').sort((a, b) => a.from.localeCompare(b.from));

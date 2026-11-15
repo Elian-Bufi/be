@@ -110,7 +110,7 @@ import { ElegirMetricasDeEntrada } from './entrada';
 import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, ParametrosDelEjercicio, useEtapasDelAno } from './preguntas';
 import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
 import { FuerzaEnAnalizar, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
-import { nombreDeLaReferencia, SelectorDeMetricas } from './selector';
+import { accesoDeLosDisponibles, nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerieDelAnalisis, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
 import { COMO_LEER_DOS_EJES, motivoDeSuperpuestas, NOMBRE_DEL_MODO, serieElegidaDe, superposicionDeLasElegidas } from '../graficos/arma-tu-grafico/compositor';
 import { valorParaMostrar } from './valores';
@@ -123,6 +123,8 @@ const ComparacionDeEtapas = dynamic(() => import('./etapas').then((m) => m.Compa
 const EtapasDelPeriodo = dynamic(() => import('./etapas').then((m) => m.EtapasDelPeriodo), { ssr: false });
 const ContrasteConLoIndicado = dynamic(() => import('./contraste').then((m) => m.ContrasteConLoIndicado), { ssr: false, loading: () => <Cargando /> });
 const InformacionParaRevisar = dynamic(() => import('./informacion').then((m) => m.InformacionParaRevisar), { ssr: false, loading: () => <Cargando /> });
+// GR-23 (DL-174): la cinta del tiempo arriba de los gráficos. Tiene su propio «Cargando» con alto fijo.
+const CintaDelTiempoLeida = dynamic(() => import('../graficos/cinta-del-tiempo-en-pantalla').then((m) => m.CintaDelTiempoLeida), { ssr: false });
 
 /** El máximo que lee el análisis en la web (un año, con el día de hoy): el de la comparación de etapas. */
 const DIAS_MAXIMOS_DEL_ANALISIS = 366;
@@ -168,11 +170,14 @@ export function Analizar() {
 }
 
 function AnalizarConSusPreguntas() {
-  const { token, asesoradoId, periodo, parametros, ir, panel, recargarPanel } = useSeguimiento();
+  const { token, asesoradoId, periodo, parametros, ir, panel, recargarPanel, sesionPerdida } = useSeguimiento();
   const id = useId();
   const estado = useMemo(() => leerAnalisis(parametros), [parametros]);
   const cambiar = (c: Partial<EstadoDeAnalisis>) => ir(parametrosDeAnalisis({ ...estado, ...c }));
   const disponibles = useDisponibles();
+  // La cinta del tiempo (GR-23) lee con lo que el PDP deja hoy con esta persona y dibuja las versiones de los planes propios.
+  const alcancesDeLaCinta = useMemo(() => accesoDeLosDisponibles(disponibles).alcances, [disponibles]);
+  const vigenciasDeLaCinta = useMemo(() => [...disponibles.vigencias.nutricion, ...disponibles.vigencias.entrenamiento], [disponibles.vigencias]);
 
   // La pregunta (eje 2): se resuelve con el dominio y con lo que hay de este asesorado.
   const pregunta = useMemo(() => leerPregunta(parametros), [parametros]);
@@ -640,6 +645,12 @@ function AnalizarConSusPreguntas() {
                     </div>
                   ))}
               {listas.some((s) => s.estado.parcial) ? <p className="nota">Vista parcial: hay datos de esta área que no ves (los de otro profesional).</p> : null}
+              {/* GR-23: la cinta del tiempo arriba de los gráficos, sobre el intervalo que se ve (DL-174). Espera a saber qué
+                  áreas hay, para no leer dos veces; sin acceso, no deja nada. Tiene su propio cursor: elegir en la cinta dice
+                  lo que pasó ese día, sin mover la fecha elegida de los gráficos. */}
+              {dibujables.length > 0 && !disponibles.cargando ? (
+                <CintaDelTiempoLeida lectura={{ token, asesoradoId, sesionPerdida }} alcances={alcancesDeLaCinta} vigencias={vigenciasDeLaCinta} periodo={{ desde, hasta, hoy, desdeElVinculo: null }} />
+              ) : null}
               {dibujables.length > 0 ? (
                 <>
                   <Lienzo
