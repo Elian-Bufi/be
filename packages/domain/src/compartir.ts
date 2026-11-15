@@ -309,8 +309,10 @@ export const CODIGO_DE_PROBLEMA_DE_LA_ELECCION = {
 
 export type ResultadoDeLaEleccion =
   | { readonly ok: true; readonly elegidos: readonly LoQueSeComparte[] }
-  | { readonly ok: false; readonly motivo: 'NO_DISPONIBLE' | 'FALTA_EL_TEXTO'; readonly issues: readonly { readonly code: string; readonly path: string }[] }
-  | { readonly ok: false; readonly motivo: 'SIN_EL_A3' | 'TEXTO_VIEJO' };
+  | { readonly ok: false; readonly motivo: 'NO_DISPONIBLE'; readonly issues: readonly { readonly code: string; readonly path: string }[] }
+  | { readonly ok: false; readonly motivo: 'FALTA_EL_TEXTO'; readonly issues: readonly { readonly code: string; readonly path: string }[] }
+  | { readonly ok: false; readonly motivo: 'SIN_EL_A3' }
+  | { readonly ok: false; readonly motivo: 'TEXTO_VIEJO' };
 
 /**
  * Lo que pide API-CMP-02 de la elección, en orden (la versión ya se comparó antes):
