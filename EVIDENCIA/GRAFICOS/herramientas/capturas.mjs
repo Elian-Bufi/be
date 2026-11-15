@@ -3,7 +3,8 @@
 // API, el website y PostgreSQL juntos, así que corre en el trabajo `capturas-de-los-graficos`
 // (.github/workflows/capturas-de-los-graficos.yml) y deja las imágenes como artefacto. No es un check de la integración:
 // no bloquea ni despliega nada. Solo datos sintéticos: la cohorte (08 §33), con los ejercicios del catálogo de DL-141 que
-// entran en la estimación de la fuerza (BE_COHORTE_CON_LA_ESTIMACION=si, catalogo.mjs).
+// entran en la estimación de la fuerza y la procedencia de cada valor escrito (BE_COHORTE_CON_LA_ESTIMACION=si,
+// catalogo.mjs e historia.mjs).
 //
 // Uso:  BE_E2E_DATABASE_URL=postgresql://be_test:be_test@localhost:5432/be_test_cohorte BE_COHORTE_CON_LA_ESTIMACION=si \
 //         node capturas.mjs <salida>
@@ -64,7 +65,7 @@ const PERSONA = {
   clave: 'diego',
   nombre: 'Diego Sosa',
   descripcion:
-    'persona sintética de la cohorte (ninguna persona es real): 36 años, tres años en BE; nunca había entrenado y pasó de 104,5 a 80,8 kg y la sentadilla de 20 a 135 kg. Nutrición y Antropometría con Lic. Sofía Paz; Entrenamiento con Prof. Martín Acosta, cuatro días por semana. Con BE_COHORTE_CON_LA_ESTIMACION=si, la sentadilla, la banca, el peso muerto, el press militar y el remo son los del catálogo de DL-141 que entran en la estimación de la fuerza.',
+    'persona sintética de la cohorte (ninguna persona es real): 36 años, tres años en BE; nunca había entrenado y pasó de 104,5 a 80,8 kg y la sentadilla de 20 a 135 kg. Nutrición y Antropometría con Lic. Sofía Paz; Entrenamiento con Prof. Martín Acosta, cuatro días por semana. Con BE_COHORTE_CON_LA_ESTIMACION=si, la sentadilla, la banca, el peso muerto, el press militar y el remo son los del catálogo de DL-141 que entran en la estimación de la fuerza, y cada valor escrito de una serie dice que lo escribió la persona (ED-70): sin eso, el 1RM estimado quedaría vacío.',
 };
 const PROFESIONALES = { PRO_T: 'Prof. Martín Acosta (Entrenamiento)', PRO_N: 'Lic. Sofía Paz (Nutrición y Antropometría)' };
 const SOLO = (process.env.BE_CAPTURAS_SOLO ?? '')
@@ -302,12 +303,24 @@ const enteroALaVista = (page, selector) =>
 /**
  * El recorte de un panel: la ventana se estira hasta que el panel entra entero (los cuadros laterales crecen con ella y
  * dejan de desplazarse adentro), se lo centra, se captura y se vuelve al tamaño de antes. Con `fullPage`, los gráficos que
- * miden su ancho se quedan sin dibujo: por eso se estira la ventana.
+ * miden su ancho se quedan sin dibujo: por eso se estira la ventana. Si el panel se desplaza adentro de un cuadro, se
+ * suma lo que ocupan la cabecera y el pie fijos del cuadro: si no, lo tapan.
  */
 async function recortar(page, selector, archivo, ancho, alto) {
-  const h = await page.$eval(selector, (e) => e.getBoundingClientRect().height).catch(() => 0);
+  const { h, fijo } = await page
+    .$eval(selector, (e) => {
+      let fijo = 0;
+      for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) {
+        if (/(auto|scroll)/.test(getComputedStyle(p).overflowY)) {
+          fijo = Math.max(0, innerHeight - p.clientHeight);
+          break;
+        }
+      }
+      return { h: e.getBoundingClientRect().height, fijo };
+    })
+    .catch(() => ({ h: 0, fijo: 0 }));
   if (h < 8) return false;
-  const necesario = Math.min(Math.ceil(h) + 240, 6000);
+  const necesario = Math.min(Math.ceil(h + fijo) + 240, 6000);
   const estirada = necesario > alto;
   try {
     if (estirada) {
@@ -554,8 +567,13 @@ function pantallas({ diego, versiones }) {
           nota(`búsqueda: «${mejor.termino}»; ${mejor.cuantos} de ${total} resultados llevan la marca`);
           if (await page.$('dialog[open] [data-historial-sin-leer]')) nota('el cajón dice que no pudo leer el historial');
         },
+        // El principio de los resultados (cuántos son y qué cuenta la marca); si así no se ve ninguna marca, la primera.
         enfocar: (page) =>
-          page.evaluate(() => (document.querySelector('dialog[open] [data-con-historial]')?.closest('tr') ?? document.querySelector('dialog[open] [data-resultados]'))?.scrollIntoView({ block: 'center' })),
+          page.evaluate(() => {
+            document.querySelector('dialog[open] [data-resultados]')?.scrollIntoView({ block: 'start' });
+            const fila = document.querySelector('dialog[open] [data-con-historial]')?.closest('tr');
+            if (fila && fila.getBoundingClientRect().bottom > innerHeight - 260) fila.scrollIntoView({ block: 'center' });
+          }),
         paneles: [{ nombre: 'resultados', selector: 'dialog[open] .agregar-item__resultados' }],
       },
       {
