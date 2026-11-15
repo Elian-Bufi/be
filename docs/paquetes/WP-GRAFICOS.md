@@ -1484,7 +1484,7 @@ a la vista queda a la vista.
 | GR-03 | La tira de cada sesión debajo de cada panel, sin leyenda; tres notas debajo; «3» rotulado dos veces en una serie pareja | La tira en la leyenda («Cada sesión», con una raya baja donde falta el dato: en el panel del RIR, la sesión con el RIR sin escribir o solo indicado, como en GR-05); lo que aclara cada marca, en «Cómo leerlo»; a la vista, lo que falta (si el comparador no se leyó); un número que ya está escrito no se repite; tres paneles de 96 px | TEST-GRF-040, 041 y 043 |
 | GR-05 | Puntos que no se veían; la línea cortada explicada en una nota; dos «Cómo leerlo» (el de la base y uno propio) y «lo que se ve» debajo de los dos | 240 px; los puntos de una sesión; la línea cortada («Indicado por versión») y la tira en la leyenda; «lo que se ve», a la vista antes del pie; un solo «Cómo leerlo» con lo que aclara | TEST-GRF-040, 041 y 043 |
 | GR-06 | El eje X de 0 a 12 con los puntos apiñados entre 3 y 6; las curvas rotuladas en el margen; la leyenda abajo en renglones largos; cinco párrafos de texto | Los dos ejes ajustados a los datos con un margen y marcas redondas (X de 2 a 8 con series de 3 a 6; Y con un 8 % de aire y 10 kg como mínimo); las curvas recortadas y rotuladas donde salen del dibujo, sin pisarse y con un halo que la línea no cruza; título, línea tenue y leyenda en fichas arriba; qué entra, en una línea a la vista (§5.6); lo demás en «Cómo leerlo» | TEST-GRF-042 y 043 |
-| La cinta (GR-23) | Íconos de 15 px pegados a la barra; en el margen, el ícono del área, que a ese tamaño se leía como una flecha «↔» | Íconos de 18 px sobre un fondo de 22 que no toca la barra (la fila, de 30 px; dos íconos a menos de 22 px se agrupan); con una sola fila, sin el ícono del área | TEST-GRF-019 (la geometría de la cinta, de la base) |
+| La cinta (GR-23) | Íconos de 15 px pegados a la barra; en el margen, el ícono del área, que a ese tamaño se leía como una flecha «↔» | Íconos de 18 px sobre un fondo de 22 que no toca la barra (la fila, de 30 px; dos íconos a menos de 22 px se agrupan); con una sola fila, sin el ícono del área; en el cuadro de 1024, la leyenda larga se parte y ya no corta la cinta a la derecha | TEST-GRF-019 (la geometría de la cinta, de la base) |
 
 **Lo que la rama sumó a la base, sin cambiar lo de antes:** `porSesion` en el carril de puntos (la marca se mide con
 8,75 px por día como mínimo); fichas de la leyenda para lo que no es un punto (la tira y la línea cortada, con su texto
@@ -1517,6 +1517,16 @@ TEST-GRV-008 se ajustó a la línea nueva.
   en el perfil (§5.6); en «Cómo leerlo», cómo se calcula, que la persona no lo ve, qué es cada marca, «a igual carga» y
   qué son las curvas. *Alternativa:* también cada versión en «Cómo leerlo», como pide la guía para lo que no es una
   cifra.
+
+**Lo que no quedó como pide la guía, y por qué:**
+- **Cada versión con su ruido sigue a la vista** (GR-02 y «Analizar»): la guía manda a «Cómo leerlo» lo que no es la cifra,
+  pero §5.12 pide la mediana del RIR, las repeticiones y el ruido propio de cada tramo a la vista. §5 manda.
+- **La leyenda de la cinta sigue abajo y en renglones largos:** es de la base y la usan las otras ramas; el pedido para
+  la rama B era que los íconos se lean y no se pisen. En el cuadro, se parte para no cortar la cinta.
+- **Los colores siguen siendo los de las métricas** y no los de cada área, como en §13.7.
+- **Lo bajo que queda:** en GR-03, el mínimo de la carga (el primer punto, en el borde de abajo del eje) va arriba de su
+  punto y la línea que sube pasa cerca del número; en GR-05, la línea de lo registrado y la cortada de lo indicado se
+  superponen cuando son iguales (es lo que dicen los datos: RIR 2 indicado y registrado).
 
 **Quedan superadas:** GR-T32 en lo de los extremos (ya no van en una nota: el máximo y el mínimo se rotulan en el dibujo,
 GR-V09), GR-T33 (por GR-T40) y GR-T34 (la pasada visual cambió «Frente a la del…» por «La anterior (2 nov): ≈ 154,5 kg»,

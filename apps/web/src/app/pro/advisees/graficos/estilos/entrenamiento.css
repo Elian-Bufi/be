@@ -110,3 +110,12 @@
 .perfil-de-carga__area {
   cursor: pointer;
 }
+
+/*
+ * La leyenda de la cinta tiene renglones largos («Versión de un plan: una barra, desde el día que empezó a regir»): en el
+ * cuadro de 480 px (1024) una ficha que no se parte ensanchaba la cinta más que el cuadro y cortaba el texto a la derecha.
+ * En la cinta del cuadro, la ficha se parte si no entra.
+ */
+.historial-del-ejercicio .grafico-cinta .grafico-base__glifo {
+  white-space: normal;
+}
