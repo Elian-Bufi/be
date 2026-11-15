@@ -25,8 +25,11 @@
  *   con el último valor y el mínimo y el máximo es de la fase 2. Si la lectura falla, se dice y se reintenta; los
  *   resultados se ven igual.
  *   La pasada visual (15/11; DISENO-VISUAL §2, GR-04): la marca es una ficha compacta en el renglón del origen («47
- *   sesiones · 9 nov», con su ícono; el lector de pantalla oye la frase entera), y qué cuenta va en una sola línea con
- *   «Cómo se cuenta» detrás de su «i»: en 1440 × 900 se ven al menos seis resultados sin desplazar.
+ *   sesiones · la última, 9 nov», con su ícono; el lector de pantalla oye la frase entera), y qué cuenta va en una sola
+ *   línea, con «Cómo se cuenta» al lado: en 1440 × 900 se ven al menos seis resultados sin desplazar.
+ *   Revisión de #283: la ficha dice que la fecha es la última (no «desde el 9 nov»); la línea dice a la vista que cuentan
+ *   también las registradas como no realizadas o hechas con otro ejercicio (por eso «Analizar» puede contar menos filas);
+ *   «Cómo se cuenta» se ve escrito, no solo como una «i» con su nombre en un globo que no llega con el teclado ni al tocar.
  */
 import {
   COPY_ENTRENAMIENTO,
@@ -83,7 +86,7 @@ type Busqueda =
  */
 /** GR-04 en una línea (pasada visual del 15/11): qué cuenta la marca, corto; el detalle, detrás de «Cómo se cuenta». */
 export const COPY_MARCA_DEL_BUSCADOR = {
-  enUnaLinea: 'Con historial: sesiones en tus planes, en el último año.',
+  enUnaLinea: 'Con historial: sesiones registradas en tus planes en el último año, también las no realizadas o hechas con otro ejercicio.',
   comoSeCuenta: 'Cómo se cuenta',
 } as const;
 
@@ -326,7 +329,7 @@ function ContenidoDeAgregarEjercicio({
     const e = historial.tipo === 'listo' ? historial.porEjercicio.get(exerciseId.toLowerCase()) : undefined;
     if (!e || e.sessions <= 0 || historial.tipo !== 'listo') return null;
     const sesiones = `${e.sessions} ${e.sessions === 1 ? 'sesión' : 'sesiones'}`;
-    return e.lastDate ? `${sesiones} · ${e.lastDate === historial.hoy ? 'hoy' : diaYMes(e.lastDate, historial.hoy)}` : sesiones;
+    return e.lastDate ? `${sesiones} · la última, ${e.lastDate === historial.hoy ? 'hoy' : diaYMes(e.lastDate, historial.hoy)}` : sesiones;
   };
   const algunoConHistorial = ejercicios.some((ej) => marcaDe(ej.exerciseId) !== null);
   return (
@@ -433,7 +436,7 @@ function ContenidoDeAgregarEjercicio({
               <Icono nombre="linea-de-tiempo" tamano={15} />
               {COPY_MARCA_DEL_BUSCADOR.enUnaLinea}
             </span>
-            <ComoLeerlo titulo={COPY_MARCA_DEL_BUSCADOR.comoSeCuenta} soloIcono>
+            <ComoLeerlo titulo={COPY_MARCA_DEL_BUSCADOR.comoSeCuenta}>
               <p>{COPY_HISTORIAL_DEL_BUSCADOR.queCuenta}</p>
             </ComoLeerlo>
           </div>
