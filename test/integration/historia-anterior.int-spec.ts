@@ -239,7 +239,8 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     // Lo que calculó A sobre la toma: una corrida para el soporte antropométrico (lo que la persona ve en su evolución) y
     // otra para el soporte de un objetivo nutricional, que no es de Antropometría para la persona y no entra.
     const corrida = await corridaSembrada(c, toma, { valor: 23.67, finalidad: 'SOPORTE_ANTROPOMETRICO' });
-    await corridaSembrada(c, toma, { valor: 31.5, finalidad: 'SOPORTE_DE_OBJETIVO_NUTRICIONAL' });
+    // (Valores que no pueden aparecer en una hora ISO de la respuesta: los minutos y los segundos no pasan de 59.)
+    await corridaSembrada(c, toma, { valor: 987.65, finalidad: 'SOPORTE_DE_OBJETIVO_NUTRICIONAL' });
     // Anular es el camino posterior al registro (REG-06-214 inciso 5): primero se registra la toma.
     await registrarBorrador(prisma, toma);
     await prisma.$executeRawUnsafe(
@@ -275,7 +276,7 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     expect(ant.measurements[0]!.measurements[0]!.protocolName).toEqual(expect.any(String));
     // Lo calculado: solo la corrida del soporte antropométrico, con su método; la del objetivo nutricional, no.
     expect(ant.measurements[0]!.derivedResults).toEqual([{ metric: 'indice-demo', magnitude: { value: 23.67, unit: 'kg/m2' }, methodName: expect.any(String) }]);
-    expect(JSON.stringify(ant)).not.toContain('31.5');
+    expect(JSON.stringify(ant)).not.toContain('987.65');
     expect(JSON.stringify(ant)).not.toContain(enPreparacion);
     expect(JSON.stringify(ant)).not.toContain(c.pro.id);
 
@@ -289,14 +290,14 @@ describe('WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el prof
     await prisma.$executeRawUnsafe(
       `INSERT INTO "correccion_de_medicion" ("id","medicion_id","autor_id","motivo","valor","unidad_de_origen","procedencia") VALUES ('${randomUUID()}','${peso}','${c.pro.id}','Recarga',69.9,'kg','{"prueba":"ha"}')`,
     );
-    await corridaSembrada(c, toma, { valor: 24.1, finalidad: 'SOPORTE_ANTROPOMETRICO', reemplazaA: corrida });
+    await corridaSembrada(c, toma, { valor: 88.88, finalidad: 'SOPORTE_ANTROPOMETRICO', reemplazaA: corrida });
     await prisma.$executeRawUnsafe(
       `INSERT INTO "anulacion_de_medicion" ("id","medicion_id","autor_id","motivo","procedencia","momento_de_ocurrencia") VALUES ('${randomUUID()}','${peso}','${c.pro.id}','Error de carga','{"prueba":"ha"}', now())`,
     );
     const comoEstaba = (await leerOk(X, c.ase, 'ANTROPOMETRIA')).measurements[0]!;
     expect(comoEstaba.measurements).toEqual([{ metric: 'peso', magnitude: { value: 71.2, unit: 'kg' }, protocolName: expect.any(String), origin: 'DIRECT_CAPTURE', corrected: false }]);
     expect(comoEstaba.derivedResults).toEqual([{ metric: 'indice-demo', magnitude: { value: 23.67, unit: 'kg/m2' }, methodName: expect.any(String) }]);
-    expect(JSON.stringify(comoEstaba)).not.toMatch(/69\.9|24\.1/);
+    expect(JSON.stringify(comoEstaba)).not.toMatch(/69\.9|88\.88/);
 
     // ─── TEST-HA-027 · sin el vínculo aceptado o sin el B2 vigentes, 404 ───
     await pausar(app, c.ase.token, vAnt.vinculoId, await versionDeVinculo(app, c.ase.token, vAnt.vinculoId)).expect(200);
