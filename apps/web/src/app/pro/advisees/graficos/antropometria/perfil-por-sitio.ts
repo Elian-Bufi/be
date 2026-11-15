@@ -16,6 +16,7 @@
  */
 import { cantidad, compararPorCatalogo, FAMILIA_DE_METRICA, nombreDeMetrica, textoDeDiferenciaAntropometrica } from '@be/domain';
 import { extremosDelCarril } from '../carriles';
+import type { MarcasDelEje } from '../ejes';
 import { diaYMes } from '../nutricion-y-cuerpo/lienzo';
 import { COPY_ANTROPOMETRIA_EN_GRAFICOS as C } from './copy';
 import type { ObservacionDeLaToma } from './tomas';
@@ -90,7 +91,7 @@ export interface GrupoDelPerfil {
   readonly unidad: string;
   readonly filas: readonly FilaDelPerfil[];
   /** El eje común de la familia: abarca los valores de las dos tomas en esta unidad. */
-  readonly extremos: { readonly abajo: number; readonly arriba: number; readonly decimales: number };
+  readonly extremos: MarcasDelEje;
 }
 
 export interface PerfilPorSitio {
@@ -159,4 +160,64 @@ export function filaEnPalabras(f: FilaDelPerfil, antes: TomaDelPerfil, despues: 
 export function xDelValor(valor: number, extremos: GrupoDelPerfil['extremos'], izquierda: number, derecha: number): number {
   const rango = extremos.arriba - extremos.abajo || 1;
   return izquierda + ((valor - extremos.abajo) / rango) * (derecha - izquierda);
+}
+
+// ─── La pasada visual (GR-VC07) ─────────────────────────────────────────────────────────────────
+
+/** El ancho aproximado de una letra de 12,5 px, para medir el nombre de un sitio (el de la base). */
+const ANCHO_DE_UNA_LETRA = 6.6;
+const ALTO_DE_UNA_FILA = 26;
+const ALTO_DE_UN_RENGLON = 15;
+
+/**
+ * El nombre de un sitio en uno o dos renglones, **entero** (nunca cortado con «…»): si no entra en `letras`, se parte en el
+ * espacio que deja los dos renglones más parejos.
+ */
+export function nombreEnRenglones(nombre: string, letras: number): string[] {
+  if (nombre.length <= letras) return [nombre];
+  const espacios = [...nombre.matchAll(/ /g)].map((m) => m.index ?? 0);
+  if (espacios.length === 0) return [nombre];
+  const corte = espacios.reduce((mejor, i) => (Math.abs(i - nombre.length / 2) < Math.abs(mejor - nombre.length / 2) ? i : mejor), espacios[0]!);
+  return [nombre.slice(0, corte), nombre.slice(corte + 1)];
+}
+
+/**
+ * Cómo se acomodan las filas de una familia en un ancho: la columna de los nombres mide lo que el nombre más largo (entre
+ * 120 px y el 42 % del ancho) y cada fila, uno o dos renglones.
+ */
+export function filasDelGrupo(g: Pick<GrupoDelPerfil, 'filas'>, ancho: number): { readonly nombres: number; readonly alto: number; readonly filas: readonly { readonly fila: FilaDelPerfil; readonly y: number; readonly renglones: readonly string[] }[] } {
+  const largo = Math.max(...g.filas.map((f) => f.nombre.length), 1);
+  const nombres = Math.round(Math.min(Math.max(120, largo * ANCHO_DE_UNA_LETRA + 4), Math.max(120, ancho * 0.42)));
+  const letras = Math.max(8, Math.floor(nombres / ANCHO_DE_UNA_LETRA));
+  let y = 0;
+  const filas = g.filas.map((fila) => {
+    const renglones = nombreEnRenglones(fila.nombre, letras);
+    const alto = ALTO_DE_UNA_FILA + (renglones.length - 1) * ALTO_DE_UN_RENGLON;
+    const centro = y + alto / 2;
+    y += alto;
+    return { fila, y: centro, renglones };
+  });
+  return { nombres, alto: y, filas };
+}
+
+/** La línea tenue: qué familias y en qué unidades, y entre qué tomas («pliegues en mm y perímetros en cm · entre…»). */
+export function detalleDelPerfil(p: Pick<PerfilPorSitio, 'grupos' | 'antes' | 'despues'>): string {
+  const familias = p.grupos.map((g) => C.perfil.familiaEnElDetalle(g.nombre.toLowerCase(), g.unidad));
+  const lista = familias.length <= 1 ? (familias[0] ?? '') : `${familias.slice(0, -1).join(', ')} y ${familias[familias.length - 1]}`;
+  return C.perfil.detalle(lista, diaYMes(p.antes.fecha, p.despues.fecha), diaYMes(p.despues.fecha));
+}
+
+/**
+ * Lo que se ve debajo del perfil y lo que va a «Cómo leerlo» (§5 manda sobre la guía): a la vista, el error de medición
+ * (§5.7), los sitios sin par o de otro grupo (lo que no se compara) y lo de otro profesional; en «Cómo leerlo», qué es la
+ * línea, que no hay reducción localizada (la explicación fisiológica, con su fuente: §5.1), el eje común y el orden.
+ */
+export function notasDelPerfil(p: Pick<PerfilPorSitio, 'grupos'>, o: { readonly parcial: boolean; readonly enTramos: boolean }): { readonly notas: string[]; readonly aclaraciones: string[] } {
+  const filas = p.grupos.flatMap((g) => g.filas);
+  const sinPar = filas.filter((f) => f.estado === 'SOLO_ANTES' || f.estado === 'SOLO_DESPUES').length;
+  const otroGrupo = filas.filter((f) => f.estado === 'OTRO_GRUPO').length;
+  return {
+    notas: [C.sinErrorDeMedicion, ...(sinPar > 0 ? [C.perfil.sinPar(sinPar)] : []), ...(otroGrupo > 0 ? [C.perfil.otroGrupoEnLaNota(otroGrupo)] : []), ...(o.parcial ? [C.parcial] : [])],
+    aclaraciones: [C.perfil.segmento, C.perfil.sinReduccionLocalizada, C.perfil.ejeComun, C.perfil.ordenAnatomico, ...(o.enTramos ? [C.leidoEnTramos] : [])],
+  };
 }

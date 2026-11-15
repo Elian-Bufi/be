@@ -4,49 +4,71 @@
  * El lienzo de los gráficos de Nutrición y Antropometría, en pantalla (WP-GRAFICOS fase 2, rama C; DL-174; GR-T40). Se
  * comporta como los paneles alineados de la base y usa sus piezas: un solo eje de fechas escrito bajo el último panel, el
  * cursor compartido de la página (`useCursorDeFechas`), el teclado de la base (`moverElCursor`: flechas, Inicio, Fin,
- * Mayúscula con flechas para un tramo y Escape), la lectura viva de la fecha y la tabla equivalente. Suma las capas que
- * estos gráficos necesitan (`lienzo.ts`): las temporadas con su rótulo y su línea de cambio, varias series con un eje,
- * las uniones, las medias de cada semana y la tira por comida.
+ * Mayúscula con flechas para un tramo y Escape), la lectura viva de la fecha, la tabla equivalente y «Cómo leerlo».
+ *
+ * La pasada visual de la rama C (15/11; DISENO-VISUAL §1 y §2 «C»), con el lenguaje que #283 le dio a la base:
+ * - **Arriba,** el título (16 px) y una línea tenue con la unidad, cómo se agrupa, el período y el método (§5.6: a la
+ *   vista); debajo, «Por semana | Día por día» si el gráfico los tiene, y la leyenda como fichas cortas, solo con lo que
+ *   se ve (el lector de pantalla oye el texto entero de cada una).
+ * - **El gráfico ocupa el ancho:** 240 px con un panel; 140 con más. Con tres paneles o más, las fechas van también
+ *   arriba, para que se lean sin bajar hasta el final.
+ * - **Los ejes, sobrios:** de 3 a 5 marcas redondas con su grilla tenue; las versiones del plan con un tono tenue que
+ *   alterna y una línea fina en el cambio.
+ * - **Sin rótulo en cada punto:** el elegido, el último y, si suma, el mínimo y el máximo, sin pisarse (`rotulosDelPanel`).
+ * - **Por semana** (GR-VC01): una barra por semana (llena con los siete días, hueca si no), una columna gris sin media,
+ *   los días como puntos tenues detrás y la tira de cada día; la lectura de la semana elegida, a la vista y con el
+ *   teclado (las flechas eligen la semana), y su tabla.
+ * - **Debajo,** una línea de lectura, las notas que §5 pide a la vista, y al pie «Ver la tabla» y «Cómo leerlo».
  *
  * Accesibilidad: el contenedor es un grupo con nombre, su descripción apunta al resumen en texto y el SVG no se lee.
- * Pasar el mouse mueve la regla solo con un puntero fino; tocar o hacer clic la fija. La lectura de la fecha y la tabla
- * salen de las mismas filas, así que no pueden decir otra cosa que el dibujo. Nunca verde ni rojo: la forma dice el
- * estado además del color.
+ * Pasar el mouse mueve la regla solo con un puntero fino; tocar o hacer clic la fija; la región viva cambia solo con un
+ * clic, un toque o el teclado. La lectura y la tabla salen de las mismas filas, así que no dicen otra cosa que el dibujo.
+ * Nunca verde ni rojo: la forma dice el estado además del color.
  */
 import { MARCA_SEGUN_EL_DATO, type MarcaSemantica } from '@be/domain';
 import { useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useConPuntero } from '../../../../../lib/graficos';
 import { LETRA_MINIMA, medidaDeMarca, type EstadoDeMarca } from '../../seguimiento/geometria';
+import { ComoLeerlo } from '../como-leerlo';
 import { COPY_DE_LOS_GRAFICOS } from '../copy';
 import { useCursorDeFechas } from '../cursor-de-fechas';
-import { escalaDeFechas, moverElCursor, type EscalaDeFechas, type PeriodoDelGrafico } from '../eje-de-fechas';
+import { diaYMes as diaYMesDelEje, escalaDeFechas, fechaCorta, inicioDelEje, moverElCursor, type EscalaDeFechas, type PeriodoDelGrafico } from '../eje-de-fechas';
+import { textoDeLaMarcaDelEje } from '../ejes';
 import { NotaDelInicio } from '../estado-del-grafico';
 import { LecturaEnLaFecha } from '../lectura-en-la-fecha';
 import { colorDelCarril, MarcaDelCarril } from '../marcas';
 import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_DERECHO, MARGEN_IZQUIERDO, useAnchoDelGrafico } from '../medidas-del-grafico';
-import type { DensidadDelGrafico } from '../paneles-alineados';
+import { COPY_NUTRICION_EN_GRAFICOS } from '../nutricion/copy';
+import { nombreDelTramo } from '../nutricion/por-semana';
+import { altoDelCarril, type DensidadDelGrafico } from '../paneles-alineados';
+import { convienePorSemana, OPACIDAD_DE_LOS_DIAS, RELLENO_ENTERA, RELLENO_HUECA } from '../semanas';
 import { TablaEquivalente } from '../tabla-equivalente-en-pantalla';
 import {
   geometriaDeTira,
   geometriaDeValores,
+  rotulosDelPanel,
+  semanaDeLaFecha,
   temporadasUbicadas,
+  tramoDeEntrada,
   type ElementoDeLaLeyenda,
   type EstadoDeLaComida,
   type FormaDeLaSerie,
   type GraficoArmado,
+  type ModoDelLienzo,
   type PanelDeTira,
   type PanelDeValores,
+  type PorSemanaDelGrafico,
   type TemporadaUbicada,
+  type TramoDeLasSemanas,
 } from './lienzo';
 
-/** Los márgenes y el eje de fechas son los de la base (`medidas-del-grafico.ts`): en «Patrones», una fecha cae en el mismo
- * lugar en la cinta y en todas las tarjetas. El alto de cada panel, también. */
-const ALTO_DE_LOS_ROTULOS = 18;
-const ALTO_DEL_PANEL: Readonly<Record<DensidadDelGrafico, number>> = { COMPLETA: 140, COMPACTA: 96 };
-/** Con menos lugar por día, el rótulo de una unión no entra: lo dicen la lectura y la tabla. */
-const LUGAR_PARA_EL_ROTULO = 40;
+const CS = COPY_NUTRICION_EN_GRAFICOS.porSemana;
 
-const formato = (v: number, decimales: number): string => v.toLocaleString('es-AR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+/** La franja de arriba del primer panel, para el rótulo de cada versión del plan (la de la base). */
+const FRANJA_DE_ROTULOS = 18;
+/** La tira de cobertura de «Por semana»: 5 de alto, 4 de aire arriba y 4 abajo (la del gráfico chico de la base). */
+const ALTO_DE_LA_TIRA = 5;
+const ZONA_DE_LA_TIRA = ALTO_DE_LA_TIRA + 8;
 
 const tintaDe = (color: number | null): string => (color === null ? 'var(--grafico-indicado)' : colorDelCarril(color));
 
@@ -90,36 +112,45 @@ function CeldaDeLaComida({ estado, x, y, ancho }: { estado: EstadoDeLaComida; x:
 interface PropsDelDibujo {
   readonly escala: EscalaDeFechas;
   readonly temporadas: readonly TemporadaUbicada[];
+  /** El primer panel lleva la franja de los rótulos de las temporadas (si alguno entra) y, con 3 paneles o más, las fechas. */
+  readonly primero: boolean;
   readonly conRotulos: boolean;
+  readonly ejeArriba: boolean;
+  readonly ultimo: boolean;
   readonly fecha: string | null;
   readonly tramo: { readonly desde: string; readonly hasta: string } | null;
-  readonly ultimo: boolean;
+  readonly modo: ModoDelLienzo;
+  /** «Por semana»: la semana que se lee, con un fondo apenas marcado. */
+  readonly semana: { readonly desde: string; readonly hasta: string } | null;
 }
 
-/** Lo que va detrás de cada panel: las bandas del plan, el tramo elegido, las marcas de las fechas y las líneas de cambio. */
-function Fondo({ escala, temporadas, alto, tramo }: Pick<PropsDelDibujo, 'escala' | 'temporadas' | 'tramo'> & { alto: number }) {
+/** Lo que va arriba del primer panel: las fechas (con 3 paneles o más) y la franja de los rótulos de las temporadas. */
+function alturaDeArriba(d: PropsDelDibujo): number {
+  return (d.primero && d.ejeArriba ? ALTO_DEL_EJE_DE_FECHAS - 4 : 0) + (d.primero && d.conRotulos ? FRANJA_DE_ROTULOS : 0);
+}
+
+/** Lo que va detrás de cada panel: las versiones del plan (tenues, alternadas), lo elegido y las líneas de cambio. */
+function Fondo({ escala, temporadas, alto, tramo, semana, modo }: Pick<PropsDelDibujo, 'escala' | 'temporadas' | 'tramo' | 'semana' | 'modo'> & { alto: number }) {
+  const elegido = modo === 'SEMANA' ? semana : tramo;
   return (
     <>
-      {temporadas.map((t) => (t.banda === 0 && t.x2 > t.x1 ? <rect key={`b${t.clave}`} x={t.x1} y={0} width={t.x2 - t.x1} height={alto} fill="var(--banda)" /> : null))}
-      {tramo ? <rect x={escala.x(tramo.desde) - escala.porDia / 2} y={0} width={escala.x(tramo.hasta) - escala.x(tramo.desde) + escala.porDia} height={alto} fill="var(--grafico-cursor)" opacity={0.08} /> : null}
-      {escala.marcas.map((m) => (
-        <line key={m.fecha} x1={m.x} x2={m.x} y1={0} y2={alto} stroke="var(--borde)" strokeWidth={1} opacity={0.5} />
-      ))}
+      {temporadas.map((t) => (t.tenue && t.x2 > t.x1 ? <rect key={`b${t.clave}`} className="grafico-capas__temporada" x={t.x1} y={0} width={t.x2 - t.x1} height={alto} fill="var(--banda)" fillOpacity={0.35} /> : null))}
+      {elegido ? <rect x={escala.x(elegido.desde) - escala.porDia / 2} y={0} width={escala.x(elegido.hasta) - escala.x(elegido.desde) + escala.porDia} height={alto} fill="var(--grafico-cursor)" opacity={modo === 'SEMANA' ? 0.1 : 0.08} /> : null}
       {temporadas.map((t) =>
-        t.conCambio ? <line key={`c${t.clave}`} x1={t.x1} x2={t.x1} y1={0} y2={alto} stroke="var(--tenue)" strokeWidth={1} strokeDasharray={t.tipo === 'OBJETIVO' ? '2 3' : undefined} /> : null,
+        t.conCambio ? <line key={`c${t.clave}`} x1={t.x1} x2={t.x1} y1={0} y2={alto} stroke="var(--borde-control)" strokeWidth={1} strokeDasharray={t.tipo === 'OBJETIVO' ? '2 3' : undefined} /> : null,
       )}
     </>
   );
 }
 
-/** Los rótulos cortos de las temporadas, arriba del primer panel. */
-function RotulosDeLasTemporadas({ escala, temporadas }: { escala: EscalaDeFechas; temporadas: readonly TemporadaUbicada[] }) {
+/** Los rótulos de las temporadas, en su franja: el entero si entra, si no el corto, si no nada. */
+function RotulosDeLasTemporadas({ escala, temporadas, y }: { escala: EscalaDeFechas; temporadas: readonly TemporadaUbicada[]; y: number }) {
   return (
     <>
       {temporadas.map((t) =>
-        t.conRotulo ? (
-          <text key={`r${t.clave}`} x={Math.max(t.x1, escala.izquierda) + 3} y={ALTO_DE_LOS_ROTULOS - 5} fontSize={LETRA_MINIMA} fill="var(--tenue)">
-            {t.corto}
+        t.texto ? (
+          <text key={`r${t.clave}`} className="grafico-base__rotulo-de-version" x={Math.max(t.x1, escala.izquierda) + 4} y={y + FRANJA_DE_ROTULOS / 2} dominantBaseline="middle" fontSize={12} fill="var(--tenue)">
+            {t.texto}
           </text>
         ) : null,
       )}
@@ -139,50 +170,112 @@ function EjeDeFechas({ escala, y }: { escala: EscalaDeFechas; y: number }) {
   );
 }
 
+/** Lo de arriba del primer panel: las fechas (con 3 paneles o más) y, debajo, la franja de los rótulos de las temporadas. */
+function Arriba({ d }: { d: PropsDelDibujo }) {
+  if (!d.primero) return null;
+  return (
+    <>
+      {d.ejeArriba ? <EjeDeFechas escala={d.escala} y={-6} /> : null}
+      {d.conRotulos ? <RotulosDeLasTemporadas escala={d.escala} temporadas={d.temporadas} y={d.ejeArriba ? ALTO_DEL_EJE_DE_FECHAS - 4 : 0} /> : null}
+    </>
+  );
+}
+
+/** La tira de cobertura de «Por semana»: el alto dice el estado del día además del color. */
+function TiraDeCobertura({ panel, escala, y }: { panel: PanelDeValores; escala: EscalaDeFechas; y: number }) {
+  const ancho = Math.max(0.5, escala.porDia - (escala.porDia >= 4 ? 1 : 0));
+  const color = colorDelCarril(0);
+  return (
+    <g className="grafico-capas__tira" shapeRendering="crispEdges">
+      {panel.cobertura
+        .filter((d) => d.fecha >= escala.desde && d.fecha <= escala.hasta)
+        .map((d) => {
+          const x = escala.x(d.fecha) - escala.porDia / 2;
+          if (d.estado === 'con') return <rect key={d.fecha} x={x} y={y} width={ancho} height={ALTO_DE_LA_TIRA} fill={color} data-estado="con" />;
+          if (d.estado === 'hueco') return <rect key={d.fecha} x={x} y={y + ALTO_DE_LA_TIRA / 2} width={ancho} height={ALTO_DE_LA_TIRA / 2} fill={color} data-estado="hueco" />;
+          if (d.estado === 'hoy') return <rect key={d.fecha} x={x} y={y + ALTO_DE_LA_TIRA - 2} width={Math.max(2, ancho)} height={2} fill="var(--ahora)" data-estado="hoy" />;
+          return <rect key={d.fecha} x={x} y={y + ALTO_DE_LA_TIRA - 1.5} width={ancho} height={1.5} fill="var(--grafico-hueco)" data-estado="sin" />;
+        })}
+    </g>
+  );
+}
+
 function DibujoDeValores({ panel, alto, ...d }: PropsDelDibujo & { panel: PanelDeValores; alto: number }) {
   const { escala } = d;
-  const g = geometriaDeValores(panel, escala, alto);
-  const arriba = d.conRotulos ? ALTO_DE_LOS_ROTULOS : 0;
-  const total = arriba + alto + (d.ultimo ? ALTO_DEL_EJE_DE_FECHAS : 0);
-  const conRotulo = escala.porDia >= LUGAR_PARA_EL_ROTULO;
+  const semanal = d.modo === 'SEMANA' && panel.semanas.length > 0;
+  const g = geometriaDeValores(panel, escala, alto, d.modo);
+  const arriba = alturaDeArriba(d);
+  const conTira = semanal && panel.cobertura.length > 0;
+  const total = arriba + alto + (conTira ? ZONA_DE_LA_TIRA : 0) + (d.ultimo ? ALTO_DEL_EJE_DE_FECHAS : 0);
+  const rotulos = rotulosDelPanel(g, escala, alto, d.fecha, d.modo, MARGEN_DERECHO);
   // Lo indicado va primero: lo registrado del mismo día se ve encima.
   const marcas = [...g.marcas].sort((a, b) => (a.color === null ? 0 : 1) - (b.color === null ? 0 : 1));
+  const color = colorDelCarril(0);
   return (
     <svg width="100%" height={total} viewBox={`0 0 ${escala.derecha + MARGEN_DERECHO} ${total}`} aria-hidden="true" className="grafico-base__svg">
-      {d.conRotulos ? <RotulosDeLasTemporadas escala={escala} temporadas={d.temporadas} /> : null}
+      <Arriba d={d} />
       <g transform={`translate(0 ${arriba})`}>
-        <Fondo escala={escala} temporadas={d.temporadas} alto={alto} tramo={d.tramo} />
+        <Fondo escala={escala} temporadas={d.temporadas} alto={alto} tramo={d.tramo} semana={d.semana} modo={d.modo} />
+        {/* Una semana sin media: una columna gris de todo el alto, que no se lee como una barra en cero. */}
+        {g.vacias.map((v) => (
+          <rect key={`v${v.clave}`} className="grafico-capas__sin-media" x={v.x1} y={0} width={Math.max(1, v.x2 - v.x1)} height={alto} fill="var(--grafico-hueco)" fillOpacity={0.18} />
+        ))}
         {g.marcasY.map((m) => (
-          <text key={m.valor} x={MARGEN_IZQUIERDO - 6} y={m.y} textAnchor="end" dominantBaseline="middle" fontSize={LETRA_MINIMA} fill="var(--tenue)">
-            {formato(m.valor, g.extremos.decimales)}
-          </text>
+          <g key={`y${m.valor}`} className="grafico-base__grilla">
+            <line x1={MARGEN_IZQUIERDO} x2={escala.derecha} y1={Math.round(m.y) + 0.5} y2={Math.round(m.y) + 0.5} stroke="var(--borde)" strokeWidth={1} />
+            <text x={MARGEN_IZQUIERDO - 8} y={m.y} textAnchor="end" dominantBaseline="middle" fontSize={LETRA_MINIMA} fill="var(--tenue)">
+              {textoDeLaMarcaDelEje(m.valor, g.extremos.decimales)}
+            </text>
+          </g>
         ))}
-        {g.medias.map((t) => (
-          <line key={t.clave} x1={t.x1} x2={t.x2} y1={t.y} y2={t.y} stroke={tintaDe(t.color)} strokeWidth={4} strokeLinecap="round" opacity={0.55} />
-        ))}
+        {semanal ? (
+          <>
+            {/* Los días, como puntos tenues detrás de las barras: se ve de qué sale cada media; lo indicado, rombos tenues. */}
+            {marcas.map((m) =>
+              m.color === null ? (
+                <g key={m.clave} opacity={OPACIDAD_DE_LOS_DIAS}>
+                  <MarcaDelCarril marca="ROMBO" cx={m.x} cy={m.y} porDia={Math.min(escala.porDia, 6)} color={tintaDe(null)} />
+                </g>
+              ) : (
+                <circle key={m.clave} className="grafico-capas__dia" cx={m.x} cy={m.y} r={1.75} fill={tintaDe(m.color)} opacity={OPACIDAD_DE_LOS_DIAS} />
+              ),
+            )}
+            {g.barras.map((b) => (
+              <g key={b.clave} className="grafico-capas__semana" data-entera={b.entera ? '' : undefined}>
+                <rect x={b.x1} y={b.y} width={Math.max(1, b.x2 - b.x1)} height={Math.max(0, b.base - b.y)} fill={color} fillOpacity={b.entera ? RELLENO_ENTERA : RELLENO_HUECA} />
+                {b.entera ? (
+                  <line x1={b.x1} x2={b.x2} y1={b.y + 1} y2={b.y + 1} stroke={color} strokeWidth={2} />
+                ) : (
+                  <path d={`M ${b.x1 + 0.75} ${b.base} V ${b.y + 0.75} H ${b.x2 - 0.75} V ${b.base}`} fill="none" stroke={color} strokeWidth={1.5} />
+                )}
+              </g>
+            ))}
+          </>
+        ) : null}
         {g.escalones.map((t) => (
           <line key={t.clave} x1={t.x1} x2={t.x2} y1={t.y} y2={t.y} stroke={tintaDe(t.color)} strokeWidth={1.5} strokeDasharray="6 4" />
         ))}
-        {g.uniones.map((u) => (
-          <line key={u.clave} x1={u.x} x2={u.x} y1={u.y1} y2={u.y2} stroke="var(--tenue)" strokeWidth={u.forma === 'DIFERENCIA' ? 1.5 : 1} strokeDasharray={u.forma === 'SEPARACION' ? '2 2' : undefined} />
+        {semanal ? null : (
+          <>
+            {g.uniones.map((u) => (
+              <line key={u.clave} x1={u.x} x2={u.x} y1={u.y1} y2={u.y2} stroke="var(--tenue)" strokeWidth={u.forma === 'DIFERENCIA' ? 1.5 : 1} strokeDasharray={u.forma === 'SEPARACION' ? '2 2' : undefined} />
+            ))}
+            {g.lineas.map((l, i) => (
+              <polyline key={`l${l.serie}${i}`} points={l.puntos.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={tintaDe(l.color)} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+            ))}
+            {marcas.map((m) => (
+              <Marca key={m.clave} marca={m.marca} forma={m.forma} cx={m.x} cy={m.y} porDia={escala.porDia} color={tintaDe(m.color)} tarde={m.tarde} />
+            ))}
+          </>
+        )}
+        {rotulos.map((r) => (
+          <text key={`r${r.clave}`} className="grafico-base__rotulo-del-punto" x={r.tx} y={r.ty} textAnchor={r.ancla} fontSize={12} fontWeight={600} fill="var(--texto)">
+            {r.texto}
+          </text>
         ))}
-        {g.lineas.map((l, i) => (
-          <polyline key={`l${l.serie}${i}`} points={l.puntos.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={tintaDe(l.color)} strokeWidth={1.5} />
-        ))}
-        {marcas.map((m) => (
-          <Marca key={m.clave} marca={m.marca} forma={m.forma} cx={m.x} cy={m.y} porDia={escala.porDia} color={tintaDe(m.color)} tarde={m.tarde} />
-        ))}
-        {conRotulo
-          ? g.uniones.map((u) =>
-              u.rotulo ? (
-                <text key={`r${u.clave}`} x={u.x + 6} y={Math.min(u.y1, u.y2) - 6} fontSize={LETRA_MINIMA} fill="var(--texto)">
-                  {u.rotulo}
-                </text>
-              ) : null,
-            )
-          : null}
-        {d.fecha ? <line x1={escala.x(d.fecha)} x2={escala.x(d.fecha)} y1={0} y2={alto} stroke="var(--grafico-cursor)" strokeWidth={1.5} /> : null}
-        {d.ultimo ? <EjeDeFechas escala={escala} y={alto} /> : null}
+        {!semanal && d.fecha ? <line x1={escala.x(d.fecha)} x2={escala.x(d.fecha)} y1={0} y2={alto} stroke="var(--grafico-cursor)" strokeWidth={1} opacity={0.7} /> : null}
+        {conTira ? <TiraDeCobertura panel={panel} escala={escala} y={alto + 4} /> : null}
+        {d.ultimo ? <EjeDeFechas escala={escala} y={alto + (conTira ? ZONA_DE_LA_TIRA : 0)} /> : null}
       </g>
     </svg>
   );
@@ -191,13 +284,13 @@ function DibujoDeValores({ panel, alto, ...d }: PropsDelDibujo & { panel: PanelD
 function DibujoDeTira({ panel, ...d }: PropsDelDibujo & { panel: PanelDeTira }) {
   const { escala } = d;
   const g = geometriaDeTira(panel, escala);
-  const arriba = d.conRotulos ? ALTO_DE_LOS_ROTULOS : 0;
+  const arriba = alturaDeArriba(d);
   const total = arriba + g.alto + (d.ultimo ? ALTO_DEL_EJE_DE_FECHAS : 0);
   return (
     <svg width="100%" height={total} viewBox={`0 0 ${escala.derecha + MARGEN_DERECHO} ${total}`} aria-hidden="true" className="grafico-base__svg">
-      {d.conRotulos ? <RotulosDeLasTemporadas escala={escala} temporadas={d.temporadas} /> : null}
+      <Arriba d={d} />
       <g transform={`translate(0 ${arriba})`}>
-        <Fondo escala={escala} temporadas={d.temporadas} alto={g.alto} tramo={d.tramo} />
+        <Fondo escala={escala} temporadas={d.temporadas} alto={g.alto} tramo={d.tramo} semana={d.semana} modo={d.modo} />
         {g.filas.map((f) => (
           <g key={f.clave}>
             <text x={escala.izquierda + 2} y={f.yDelNombre} dominantBaseline="middle" fontSize={LETRA_MINIMA} fill="var(--tenue)" stroke="var(--superficie)" strokeWidth={3} paintOrder="stroke">
@@ -208,34 +301,51 @@ function DibujoDeTira({ panel, ...d }: PropsDelDibujo & { panel: PanelDeTira }) 
             ))}
           </g>
         ))}
-        {d.fecha ? <line x1={escala.x(d.fecha)} x2={escala.x(d.fecha)} y1={0} y2={g.alto} stroke="var(--grafico-cursor)" strokeWidth={1.5} /> : null}
+        {d.modo === 'DIA' && d.fecha ? <line x1={escala.x(d.fecha)} x2={escala.x(d.fecha)} y1={0} y2={g.alto} stroke="var(--grafico-cursor)" strokeWidth={1} opacity={0.7} /> : null}
         {d.ultimo ? <EjeDeFechas escala={escala} y={g.alto} /> : null}
       </g>
     </svg>
   );
 }
 
-/** La muestra de un renglón de la leyenda, con la misma tinta y la misma forma que el dibujo. */
+/** La muestra de una ficha de la leyenda, con la misma tinta y la misma forma que el dibujo. */
 function Muestra({ e }: { e: ElementoDeLaLeyenda }) {
   const m = e.muestra;
   return (
-    <svg width={28} height={18} viewBox="0 0 28 18" aria-hidden="true">
-      {m.tipo === 'MARCA' ? <Marca marca={m.marca} forma={m.forma} cx={14} cy={9} porDia={10} color={tintaDe(m.color)} tarde={false} /> : null}
-      {m.tipo === 'TARDE' ? <MarcaDelCarril marca={MARCA_SEGUN_EL_DATO.REGISTRADO} cx={14} cy={11} porDia={10} color={colorDelCarril(0)} tarde /> : null}
-      {m.tipo === 'ESCALON' ? <line x1={2} x2={26} y1={9} y2={9} stroke={tintaDe(m.color)} strokeWidth={1.5} strokeDasharray="6 4" /> : null}
-      {m.tipo === 'MEDIA' ? <line x1={4} x2={24} y1={9} y2={9} stroke={tintaDe(m.color)} strokeWidth={4} strokeLinecap="round" opacity={0.55} /> : null}
-      {m.tipo === 'UNION' ? <line x1={14} x2={14} y1={2} y2={16} stroke="var(--tenue)" strokeWidth={1.5} strokeDasharray={m.forma === 'SEPARACION' ? '2 2' : undefined} /> : null}
-      {m.tipo === 'COMIDA' ? <CeldaDeLaComida estado={m.estado} x={14} y={9} ancho={10} /> : null}
+    <svg width={18} height={14} viewBox="0 0 18 14" aria-hidden="true">
+      {m.tipo === 'MARCA' ? <Marca marca={m.marca} forma={m.forma} cx={9} cy={7} porDia={10} color={tintaDe(m.color)} tarde={false} /> : null}
+      {m.tipo === 'TARDE' ? <MarcaDelCarril marca={MARCA_SEGUN_EL_DATO.REGISTRADO} cx={9} cy={9} porDia={10} color={colorDelCarril(0)} tarde /> : null}
+      {m.tipo === 'ESCALON' ? <line x1={1} x2={17} y1={7} y2={7} stroke={tintaDe(m.color)} strokeWidth={1.5} strokeDasharray="5 3" /> : null}
+      {m.tipo === 'UNION' ? <line x1={9} x2={9} y1={1} y2={13} stroke="var(--tenue)" strokeWidth={1.5} strokeDasharray={m.forma === 'SEPARACION' ? '2 2' : undefined} /> : null}
+      {m.tipo === 'COMIDA' ? <CeldaDeLaComida estado={m.estado} x={9} y={7} ancho={10} /> : null}
       {m.tipo === 'TEMPORADA' ? (
         <>
-          <rect x={2} y={2} width={12} height={14} fill="var(--banda)" />
-          <line x1={14} x2={14} y1={2} y2={16} stroke="var(--tenue)" strokeWidth={1} />
+          <rect x={2} y={1} width={8} height={12} fill="var(--banda)" fillOpacity={0.6} />
+          <line x1={10} x2={10} y1={1} y2={13} stroke="var(--borde-control)" strokeWidth={1} />
+        </>
+      ) : null}
+      {m.tipo === 'SEMANA' && m.forma === 'ENTERA' ? (
+        <>
+          <rect x={4} y={3} width={10} height={10} fill={colorDelCarril(m.color)} fillOpacity={RELLENO_ENTERA} />
+          <line x1={4} x2={14} y1={3.75} y2={3.75} stroke={colorDelCarril(m.color)} strokeWidth={1.5} />
+        </>
+      ) : null}
+      {m.tipo === 'SEMANA' && m.forma === 'HUECA' ? <path d="M 4.75 13 V 3.75 H 13.25 V 13" fill="none" stroke={colorDelCarril(m.color)} strokeWidth={1.5} /> : null}
+      {m.tipo === 'SEMANA' && m.forma === 'SIN_MEDIA' ? <rect x={4} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} /> : null}
+      {m.tipo === 'DIA_TENUE' ? <circle cx={9} cy={7} r={2} fill={colorDelCarril(m.color)} opacity={OPACIDAD_DE_LOS_DIAS} /> : null}
+      {m.tipo === 'COBERTURA' ? (
+        <>
+          <circle cx={9} cy={4} r={1.75} fill={colorDelCarril(m.color)} opacity={OPACIDAD_DE_LOS_DIAS} />
+          <rect x={1} y={8} width={4} height={5} fill={colorDelCarril(m.color)} />
+          <rect x={7} y={10.5} width={4} height={2.5} fill={colorDelCarril(m.color)} />
+          <rect x={13} y={11.5} width={4} height={1.5} fill="var(--grafico-hueco)" />
         </>
       ) : null}
     </svg>
   );
 }
 
+/** La leyenda: fichas cortas en una línea, arriba del gráfico; el lector de pantalla oye el texto entero de cada una. */
 export function LeyendaDelLienzo({ elementos }: { elementos: readonly ElementoDeLaLeyenda[] }) {
   if (elementos.length === 0) return null;
   return (
@@ -244,11 +354,127 @@ export function LeyendaDelLienzo({ elementos }: { elementos: readonly ElementoDe
         <li key={e.clave}>
           <span className="grafico-base__glifo">
             <Muestra e={e} />
-            {e.texto}
+            <span aria-hidden="true">{e.texto}</span>
+            <span className="visualmente-oculto">{e.largo}</span>
           </span>
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Lo que dice una semana, en una línea: «Semana del 3 nov · Calorías registradas: 1.950 kcal por día de media · con…». */
+function LineaDeLaSemana({ s, t }: { s: PorSemanaDelGrafico; t: TramoDeLasSemanas }) {
+  return (
+    <p className="grafico-base__lectura-linea">
+      <span className="grafico-base__lectura-fecha">{nombreDelTramo(t)}</span>
+      {s.columnas.map((c, i) => (
+        <span key={c.id} className="grafico-base__lectura-valor">
+          {s.columnas.length > 1 ? <span className="grafico-base__lectura-nombre">{c.nombre}: </span> : null}
+          {t.textos[i]}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+/**
+ * La lectura de «Por semana», a la vista (§5.13: cada media con sus días): la semana elegida o, sin elegir, la última con
+ * media. La región viva cambia con el teclado, un clic o un toque; al pasar el mouse se ve la de abajo del puntero en un
+ * renglón que el lector de pantalla no oye.
+ */
+function LecturaDeLaSemana({ s, tramos, fecha, encima }: { s: PorSemanaDelGrafico; tramos: readonly TramoDeLasSemanas[]; fecha: string | null; encima: string | null }) {
+  const elegida = semanaDeLaFecha(tramos, fecha) ?? tramoDeEntrada(tramos);
+  const bajo = semanaDeLaFecha(tramos, encima);
+  return (
+    <>
+      <div className={bajo ? 'grafico-base__lectura visualmente-oculto' : 'grafico-base__lectura'} aria-live="polite" data-lectura-de-la-semana>
+        {elegida ? <LineaDeLaSemana s={s} t={elegida} /> : <p className="nota">{CS.sinElegir}</p>}
+      </div>
+      {bajo ? (
+        <div className="grafico-base__lectura" aria-hidden="true" data-lectura-bajo-el-mouse>
+          <LineaDeLaSemana s={s} t={bajo} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/** «Ver la tabla» de «Por semana»: una fila por semana, una columna por panel, con lo que dice cada media. */
+function TablaDeLasSemanas({ titulo, s }: { titulo: string; s: PorSemanaDelGrafico }) {
+  const [abierta, setAbierta] = useState(false);
+  const id = useId();
+  return (
+    <div className="grafico-base__tabla">
+      <button type="button" className="boton boton--enlace" aria-expanded={abierta} aria-controls={id} onClick={() => setAbierta((a) => !a)}>
+        {abierta ? COPY_DE_LOS_GRAFICOS.ocultarLaTabla : COPY_DE_LOS_GRAFICOS.verLaTabla}
+      </button>
+      <div id={id} hidden={!abierta}>
+        {abierta ? (
+          <div className="grafico-base__tabla-desplazable">
+            <table data-tabla-de-las-semanas>
+              <caption>{CS.tabla(titulo)}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{CS.semana}</th>
+                  {s.columnas.map((c) => (
+                    <th key={c.id} scope="col">
+                      {c.nombre} ({c.unidad})
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {s.tramos.map((t) => (
+                  <tr key={t.desde}>
+                    <th scope="row">{nombreDelTramo(t)}</th>
+                    {t.textos.map((x, i) => (
+                      <td key={s.columnas[i]?.id ?? i}>{x}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Un gráfico que va como tabla a la vista (GR-20 con menos de 4 tomas): la misma tabla equivalente, abierta y sin botón. */
+function TablaALaVista({ titulo, grafico, hoy }: { titulo: string; grafico: GraficoArmado; hoy: string }) {
+  const t = grafico.tabla;
+  return (
+    <div className="grafico-base__tabla grafico-capas__tabla-a-la-vista">
+      <div className="grafico-base__tabla-desplazable">
+        <table data-como-tabla>
+          <caption className="visualmente-oculto">{titulo}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{COPY_DE_LOS_GRAFICOS.fecha}</th>
+              {t.columnas.map((c) => (
+                <th key={c.id} scope="col">
+                  {c.nombre} ({c.unidad})
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {t.filas.map((f) => (
+              <tr key={f.fecha}>
+                <th scope="row">{fechaCorta(f.fecha, hoy)}</th>
+                {f.celdas.map((c, i) => (
+                  <td key={t.columnas[i]?.id ?? i} data-marca={c?.marca ?? undefined}>
+                    {c ? c.texto : COPY_DE_LOS_GRAFICOS.sinDato}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -261,21 +487,48 @@ export interface PropsDelLienzo {
   readonly antes?: ReactNode;
 }
 
+/** La línea tenue de debajo del título: las unidades, cómo se agrupa, el período y el método (§5.6, a la vista). */
+export function lineaTenueDelLienzo(grafico: GraficoArmado, periodo: PeriodoDelGrafico, modo: ModoDelLienzo): string {
+  const unidades = [...new Set(grafico.paneles.flatMap((p) => (p.tipo === 'VALORES' ? [p.unidad] : [])))].join(' y ');
+  const desde = inicioDelEje(periodo);
+  const hasta = periodo.hasta >= periodo.hoy ? null : diaYMesDelEje(periodo.hasta, periodo.hoy);
+  const agrupado = grafico.porSemana === null ? null : modo === 'SEMANA' ? grafico.porSemana.detalle : CS.detalleDiaPorDia;
+  return [unidades, agrupado, COPY_DE_LOS_GRAFICOS.periodo(diaYMesDelEje(desde, periodo.hoy), hasta), grafico.metodo].filter((x): x is string => Boolean(x)).join(' · ');
+}
+
 export function LienzoDeNutricionYCuerpo({ titulo, periodo, grafico, densidad = 'COMPLETA', antes = null }: PropsDelLienzo) {
   const [ref, ancho] = useAnchoDelGrafico();
   const conPuntero = useConPuntero();
   const cursor = useCursorDeFechas();
   const idDelResumen = useId();
+  const desde = inicioDelEje(periodo);
+  const porSemana = grafico.porSemana;
+  // Por semana de entrada con más de seis semanas (GR-V01, como «Comparar dos etapas»); el pedido vale para su período.
+  const deEntrada: ModoDelLienzo = porSemana !== null && convienePorSemana(desde, periodo.hasta) ? 'SEMANA' : 'DIA';
+  const clave = `${desde}|${periodo.hasta}`;
+  const [pedido, setPedido] = useState<{ readonly modo: ModoDelLienzo; readonly para: string } | null>(null);
+  const modo: ModoDelLienzo = porSemana === null ? 'DIA' : pedido !== null && pedido.para === clave ? pedido.modo : deEntrada;
+  const semanal = modo === 'SEMANA' && porSemana !== null;
   const escala = useMemo(() => escalaDeFechas(periodo, { izquierda: MARGEN_IZQUIERDO, derecha: ancho - MARGEN_DERECHO }), [periodo, ancho]);
   const temporadas = useMemo(() => temporadasUbicadas(grafico.temporadas, escala), [grafico.temporadas, escala]);
-  const fechas = useMemo(() => grafico.tabla.filas.map((f) => f.fecha).filter((f) => f >= escala.desde && f <= escala.hasta), [grafico.tabla, escala]);
+  const tramos = useMemo(() => (porSemana?.tramos ?? []).filter((t) => t.hasta >= escala.desde && t.desde <= escala.hasta), [porSemana, escala]);
+  const fechas = useMemo(
+    () => (semanal ? tramos.map((t) => t.desde) : grafico.tabla.filas.map((f) => f.fecha).filter((f) => f >= escala.desde && f <= escala.hasta)),
+    [semanal, tramos, grafico.tabla, escala],
+  );
   const [encima, setEncima] = useState<string | null>(null);
   const fecha = encima ?? cursor.fecha;
-  const alto = ALTO_DEL_PANEL[densidad];
-  const conRotulos = temporadas.some((t) => t.conRotulo);
+  const deValores = grafico.paneles.filter((p) => p.tipo === 'VALORES').length;
+  const alto = altoDelCarril(densidad, deValores);
+  const conRotulos = temporadas.some((t) => t.texto !== null);
+  const ejeArriba = grafico.paneles.length >= 3;
+  const unSolo = grafico.paneles.length === 1;
+  const semanaElegida = semanal ? (semanaDeLaFecha(tramos, fecha) ?? (fecha === null ? tramoDeEntrada(tramos) : null)) : null;
 
   const alTeclear = (e: KeyboardEvent<HTMLDivElement>) => {
-    const nuevo = moverElCursor(fechas, { fecha: cursor.fecha, tramo: cursor.tramo }, e.key, e.shiftKey);
+    // Por semana, las flechas eligen la semana: se parte de la semana elegida (o de la que se lee de entrada).
+    const actual = semanal ? { fecha: (semanaDeLaFecha(tramos, cursor.fecha) ?? tramoDeEntrada(tramos))?.desde ?? null, tramo: null } : { fecha: cursor.fecha, tramo: cursor.tramo };
+    const nuevo = moverElCursor(fechas, actual, e.key, semanal ? false : e.shiftKey);
     if (nuevo === null) return;
     e.preventDefault();
     cursor.fijar(nuevo);
@@ -290,59 +543,102 @@ export function LienzoDeNutricionYCuerpo({ titulo, periodo, grafico, densidad = 
       <>
         {p.nombre}
         <span className="grafico-base__unidad"> · {p.unidad}</span>
-        {p.metodo ? <span className="grafico-base__metodo"> · {p.metodo}</span> : null}
       </>
     ) : (
       p.nombre
     );
+  const elegir = (m: ModoDelLienzo) => setPedido({ modo: m, para: clave });
+  const comoSeUsa = semanal ? CS.comoSeUsa : COPY_DE_LOS_GRAFICOS.comoSeUsa;
+  const aclaraciones = [...grafico.aclaraciones, ...(semanal && porSemana ? porSemana.aclaraciones : [])];
 
   return (
-    <div className={`grafico-base grafico-capas grafico-base--${densidad.toLowerCase()}`}>
-      <h3 className="grafico-base__titulo">{titulo}</h3>
-      <NotaDelInicio periodo={periodo} />
-      {antes}
-      {grafico.temporadas.length > 0 ? (
-        <p className="nota grafico-capas__temporadas">
-          <span className="grafico-capas__rotulo">Temporadas: </span>
-          {grafico.temporadas.map((t) => t.rotulo).join(' · ')}
-        </p>
-      ) : null}
-      <div
-        ref={ref}
-        className="grafico-base__area"
-        tabIndex={0}
-        role="group"
-        aria-roledescription="gráfico"
-        aria-label={`${titulo}. ${COPY_DE_LOS_GRAFICOS.comoSeUsa}`}
-        aria-describedby={idDelResumen}
-        onKeyDown={alTeclear}
-        onPointerMove={(e) => {
-          if (conPuntero && e.pointerType === 'mouse') setEncima(fechaDelPuntero(e));
-        }}
-        onPointerLeave={() => setEncima(null)}
-        onClick={(e) => cursor.elegir(fechaDelPuntero(e))}
-      >
-        {grafico.paneles.map((p, i) => {
-          const comun: PropsDelDibujo = { escala, temporadas, conRotulos: conRotulos && i === 0, fecha, tramo: cursor.tramo, ultimo: i === grafico.paneles.length - 1 };
-          return (
-            <div key={p.id} className="grafico-base__carril">
-              <p className="grafico-base__carril-nombre">{nombreDelPanel(p)}</p>
-              {p.tipo === 'VALORES' ? <DibujoDeValores panel={p} alto={alto} {...comun} /> : <DibujoDeTira panel={p} {...comun} />}
-            </div>
-          );
-        })}
+    <div className={`grafico-base grafico-capas grafico-base--${densidad.toLowerCase()}`} data-modo={grafico.comoTabla ? 'TABLA' : modo}>
+      <div className="grafico-base__cabecera">
+        <h3 className="grafico-base__titulo">{titulo}</h3>
+        <p className="grafico-base__detalle">{lineaTenueDelLienzo(grafico, periodo, modo)}</p>
       </div>
-      <p id={idDelResumen} className="visualmente-oculto">
-        {grafico.descripcion}
-      </p>
-      <LecturaEnLaFecha tabla={grafico.tabla} fecha={cursor.fecha} encima={encima} tramo={cursor.tramo} hoy={periodo.hoy} />
-      <LeyendaDelLienzo elementos={grafico.leyenda} />
+      <NotaDelInicio periodo={periodo} />
+      {porSemana !== null || antes !== null ? (
+        <div className="grafico-capas__controles">
+          {porSemana !== null ? (
+            <div className="grafico-capas__modo" role="group" aria-label={CS.comoSeAgrupa}>
+              <button type="button" className="chip-de-zona" aria-pressed={modo === 'SEMANA'} onClick={() => elegir('SEMANA')} data-por-semana>
+                {CS.porSemana}
+              </button>
+              <button type="button" className="chip-de-zona" aria-pressed={modo === 'DIA'} onClick={() => elegir('DIA')} data-dia-por-dia>
+                {CS.diaPorDia}
+              </button>
+            </div>
+          ) : null}
+          {antes}
+        </div>
+      ) : null}
+      {grafico.comoTabla ? (
+        <TablaALaVista titulo={titulo} grafico={grafico} hoy={periodo.hoy} />
+      ) : (
+        <>
+          <LeyendaDelLienzo elementos={semanal && porSemana ? porSemana.leyenda : grafico.leyenda} />
+          <div
+            ref={ref}
+            className="grafico-base__area"
+            tabIndex={0}
+            role="group"
+            aria-roledescription="gráfico"
+            aria-label={`${titulo}${semanal ? `, ${CS.porSemana.toLowerCase()}` : ''}. ${comoSeUsa}`}
+            aria-describedby={idDelResumen}
+            onKeyDown={alTeclear}
+            onPointerMove={(e) => {
+              if (conPuntero && e.pointerType === 'mouse') setEncima(fechaDelPuntero(e));
+            }}
+            onPointerLeave={() => setEncima(null)}
+            onClick={(e) => cursor.elegir(fechaDelPuntero(e))}
+          >
+            {grafico.paneles.map((p, i) => {
+              const comun: PropsDelDibujo = {
+                escala,
+                temporadas,
+                primero: i === 0,
+                conRotulos,
+                ejeArriba,
+                ultimo: i === grafico.paneles.length - 1,
+                fecha,
+                tramo: cursor.tramo,
+                modo: semanal ? 'SEMANA' : 'DIA',
+                semana: semanaElegida,
+              };
+              return (
+                <div key={p.id} className="grafico-base__carril">
+                  {/* Con un solo panel, el título y la línea tenue ya dicen qué es: el nombre del panel no se repite. */}
+                  {unSolo ? null : <p className="grafico-base__carril-nombre">{nombreDelPanel(p)}</p>}
+                  {p.tipo === 'VALORES' ? <DibujoDeValores panel={p} alto={alto} {...comun} /> : <DibujoDeTira panel={p} {...comun} />}
+                </div>
+              );
+            })}
+          </div>
+          <p id={idDelResumen} className="visualmente-oculto">
+            {semanal && porSemana ? `${grafico.descripcion} ${porSemana.descripcion}` : grafico.descripcion}
+          </p>
+          {semanal && porSemana ? (
+            <LecturaDeLaSemana s={porSemana} tramos={tramos} fecha={cursor.fecha} encima={encima} />
+          ) : (
+            <LecturaEnLaFecha tabla={grafico.tabla} fecha={cursor.fecha} encima={encima} tramo={cursor.tramo} hoy={periodo.hoy} />
+          )}
+        </>
+      )}
       {grafico.notas.map((n) => (
         <p key={n} className="nota grafico-base__nota">
           {n}
         </p>
       ))}
-      <TablaEquivalente titulo={titulo} tabla={grafico.tabla} />
+      <div className="grafico-base__pie">
+        {grafico.comoTabla ? null : semanal && porSemana ? <TablaDeLasSemanas titulo={titulo} s={porSemana} /> : <TablaEquivalente titulo={titulo} tabla={grafico.tabla} hoy={periodo.hoy} />}
+        <ComoLeerlo de={titulo}>
+          {aclaraciones.map((n) => (
+            <p key={n}>{n}</p>
+          ))}
+          {grafico.comoTabla ? null : <p>{comoSeUsa}</p>}
+        </ComoLeerlo>
+      </div>
     </div>
   );
 }

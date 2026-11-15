@@ -7,17 +7,27 @@
 
 /* ─── El lienzo ──────────────────────────────────────────────────────────────────────────────── */
 
-.grafico-capas__temporadas {
-  margin: 0;
-  font-size: 0.8125rem;
+/* «Por semana | Día por día» y los controles del gráfico, en una línea que se parte si no entra. */
+.grafico-capas__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
 }
 
-.grafico-capas__rotulo {
-  font-weight: 600;
+.grafico-capas__modo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
 }
 
 .grafico-capas .grafico-base__leyenda li {
   max-width: 100%;
+}
+
+/* GR-20 con menos de 4 tomas: la tabla a la vista, con las cifras de ancho fijo y sin partir un valor (la de la base). */
+.grafico-capas__tabla-a-la-vista table {
+  min-width: min(100%, 36rem);
 }
 
 /* ─── «Día por día» en Registros de Nutrición (GR-14) ────────────────────────────────────────── */

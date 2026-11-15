@@ -36,6 +36,17 @@ export const COPY_ANTROPOMETRIA_EN_GRAFICOS = {
     leyendaAntes: 'Toma anterior: cuadrado',
     leyendaDespues: 'Toma más nueva: círculo',
     leyendaReportado: 'Reportado por la persona, no medido: contorno cortado',
+    /** Las fichas cortas de la leyenda, con la fecha de cada toma («Anterior · 2/10»). */
+    fichaAntes: (fecha: string) => `Anterior · ${fecha}`,
+    fichaDespues: (fecha: string) => `Más nueva · ${fecha}`,
+    fichaReportado: 'Reportado',
+    /** La línea tenue: qué se compara y en qué unidades. */
+    detalle: (familias: string, antes: string, despues: string) => `${familias} · entre la toma del ${antes} y la del ${despues}`,
+    familiaEnElDetalle: (nombre: string, unidad: string) => `${nombre} en ${unidad}`,
+    sinPar: (n: number) => `${n} ${n === 1 ? 'sitio tiene' : 'sitios tienen'} dato en una sola de las dos tomas: van sin línea.`,
+    otroGrupoEnLaNota: (n: number) => `${n} ${n === 1 ? 'sitio se tomó' : 'sitios se tomaron'} con otro protocolo, método o unidad en una de las dos: no se comparan.`,
+    ejeComun: 'Cada familia (los pliegues en mm, los perímetros en cm) tiene su eje común: uno por sitio agrandaría cualquier diferencia chica.',
+    ordenAnatomico: 'Los sitios van en el orden de la planilla de la toma.',
     descripcion: (antes: string, despues: string, pares: number, sinPar: number) =>
       `Perfil por sitio entre la toma del ${antes} y la del ${despues}: ${pares} ${pares === 1 ? 'sitio con las dos tomas' : 'sitios con las dos tomas'}${sinPar > 0 ? `; ${sinPar} ${sinPar === 1 ? 'sitio sin par' : 'sitios sin par'}` : ''}.`,
   },
@@ -57,6 +68,12 @@ export const COPY_ANTROPOMETRIA_EN_GRAFICOS = {
     columnaSeparacion: (panel: string) => `${panel}: cuánto se separan`,
     sinMasas: 'Sin masas calculadas en las tomas de estas fechas: cada método pide sus pliegues y sus datos de la persona.',
     leyendaSeparacion: 'Dos métodos de la misma toma, unidos por una línea fina: cuánto se separan',
+    fichaSeparacion: 'Separación de la misma toma',
+    /** La ficha de un método: «Durnin y Womersley»; en el panel de Lee, «Lee con perímetros». */
+    fichaDelMetodo: (panel: string, nombre: string) => (panel === 'masa-muscular' ? `Lee ${nombre}` : nombre),
+    fichaLarga: (metodo: string, forma: string) => `${metodo}: ${forma}, con un punto adentro (calculado)`,
+    comoTabla: (tomas: number, minimo: number) => `Con ${tomas === 1 ? '1 toma' : `${tomas} tomas`} va como tabla: hacen falta ${minimo} para dibujarlo, porque con tan pocos puntos un gráfico parece estable o parece un salto.`,
+    metodo: 'cada número, con su método y su versión',
     metodoSinNombre: 'método identificado, sin nombre en BE',
     /** Lo que dicen el punto adentro y el contorno cortado, con palabras (la tabla y la lectura). */
     calculado: 'calculado',

@@ -2,7 +2,8 @@
 
 /**
  * GR-14 en «Registros» de Nutrición (WP-GRAFICOS fase 2, rama C; DL-174): arriba de la lista, el gráfico de lo indicado y
- * lo registrado, día por día, para el mismo período que la lista y con las comidas que la vista ya leyó (API-NUT-17).
+ * lo registrado (por semana con más de seis semanas, o día por día), para el mismo período que la lista y con las comidas
+ * que la vista ya leyó (API-NUT-17).
  * Arranca abierto, para que el patrón se vea de entrada, y se pliega con un botón: plegado no lee nada (GR-T49).
  */
 import type { ContrasteDescriptivo } from '@be/domain';
@@ -11,9 +12,9 @@ import { DiaPorDia } from './indicado-y-registrado-por-dia-en-pantalla';
 import type { LecturaBase } from './lecturas-de-nutricion';
 
 export const COPY_DIA_POR_DIA = {
-  ocultar: 'Ocultar el gráfico día por día',
-  mostrar: 'Ver el gráfico día por día',
-  nombre: 'Día por día',
+  ocultar: 'Ocultar el gráfico',
+  mostrar: 'Ver el gráfico de lo indicado y lo registrado',
+  nombre: 'Lo indicado y lo registrado, en un gráfico',
 } as const;
 
 export function DiaPorDiaEnRegistros({ lectura, desde, hasta, hoy, contraste }: { lectura: LecturaBase; desde: string; hasta: string; hoy: string; contraste: ContrasteDescriptivo['days'] }) {

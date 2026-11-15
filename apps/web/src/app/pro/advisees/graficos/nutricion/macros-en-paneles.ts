@@ -4,18 +4,23 @@
  * - Cuatro paneles apilados con el mismo eje de fechas, cada uno con su eje, el objetivo de cada versión en escalón y
  *   las temporadas de fondo (GR-11). Nunca barras apiladas: invitan a leer proporciones.
  * - Cada día dice lo que BE sabe de él (`dias-de-nutricion.ts`): la fibra desconocida no es cero, es un subtotal.
+ * - **Por semana** (GR-VC01; de entrada con más de seis semanas), cada panel con la media de la semana (v1) de GR-12,
+ *   con sus días; «Día por día», a un toque.
  * - **En g/kg** (GR-T13), los mismos días divididos por el peso de la última toma propia en ese día o antes
- *   (`gramos-por-kilo.ts`), con la fecha del peso en cada punto y la lista de los pesos usados. Sin cambio relativo y sin
- *   el signo de porcentaje. Los rangos de la literatura no se dibujan: los elige el profesional (TB-39).
+ *   (`gramos-por-kilo.ts`), con la fecha del peso en cada punto y la lista de los pesos usados, a la vista. Sin cambio
+ *   relativo y sin el signo de porcentaje. Los rangos de la literatura no se dibujan: los elige el profesional (TB-39).
+ *   **Los g/kg van solo día por día** (GR-VC02): cada día usa el peso de su toma, la línea se corta donde cambia el peso, y
+ *   una media de la semana mezclaría dos pesos sin decirlo.
  *
  * Es puro: lo prueba `apps/web/test/graficos-nutricion-y-cuerpo.test.mjs`.
  */
 import { numero, type PuntoAnalitico, type ResultadoDeProyeccionNutricional } from '@be/domain';
 import type { CeldaDeLaTabla, FilaDeLaTabla } from '../tabla-equivalente';
-import { diaYMes, huecosEnTexto, type ElementoDeLaLeyenda, type GraficoArmado, type MarcaDelPanel, type PanelDeValores } from '../nutricion-y-cuerpo/lienzo';
+import { diaYMes, huecosEnTexto, type GraficoArmado, type MarcaDelPanel, type PanelDeValores } from '../nutricion-y-cuerpo/lienzo';
 import { COPY_NUTRICION_EN_GRAFICOS as C, contar, enumerar } from './copy';
 import { calidadDelDia, lecturaDelDia, marcaDelDia, puntosPorFecha, type MetricaDelGrafico } from './dias-de-nutricion';
-import { leyendaDeLosDias, marcasDeLosDias, notasDeLaVistaParcial, notasDeLoCargadoDespues } from './energia-por-dia';
+import { aclaracionesDeLaSuma, leyendaDeLosDias, leyendaDelObjetivoYLasTemporadas, marcasDeLosDias, notasDeLaVistaParcial, notasDeLoCargadoDespues, temporadasEnTexto } from './energia-por-dia';
+import { coberturaDeLosDias, loCargadoDespuesEnElPeriodo, mediasDeLasSemanas, porSemanaDelGrafico, semanasDelPanel } from './por-semana';
 import { pesoDelDia, pesoEnPalabras, pesosUsados, serieAnaliticaPorKilo, type PesoDeLaToma } from './gramos-por-kilo';
 import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, temporadasDeNutricion } from './temporadas';
 
@@ -46,6 +51,8 @@ export interface EntradaDeMacros {
   readonly cargadoTardeSabidoDesde?: string | null;
   readonly desde: string;
   readonly hasta: string;
+  /** Hoy: no entra en la media de su semana (sigue en curso). Sin esto, el día siguiente al último del gráfico. */
+  readonly hoy?: string;
   /** Alguna lectura respondió con `partialView`: hay registros de comida de otro profesional que no se ven ni suman. */
   readonly parcial?: boolean;
 }
@@ -68,6 +75,7 @@ function filasDeLosMacros(porMacro: readonly Map<string, PuntoAnalitico>[], celd
 /** GR-13 en gramos por día. */
 export function graficoDeMacros(e: EntradaDeMacros): GraficoArmado {
   const { desde, hasta } = e;
+  const hoy = e.hoy ?? diaSiguiente(hasta);
   const paneles = e.macros.map((m, i): PanelDeValores => {
     const r = e.resultados[i]!;
     return {
@@ -80,7 +88,8 @@ export function graficoDeMacros(e: EntradaDeMacros): GraficoArmado {
       marcas: marcasDeLosDias(r.recorded.points, desde, hasta, e.cargadoTarde, 0, m.serie),
       uniones: [],
       escalones: escalonesDelObjetivo(r.prescribed.objectiveSteps, desde, hasta, 0),
-      medias: [],
+      semanas: semanasDelPanel(mediasDeLasSemanas(r.recorded.points, m.metrica, desde, hasta, hoy), m.serie),
+      cobertura: coberturaDeLosDias(r.recorded.points, desde, hasta, hoy),
     };
   });
   const porMacro = e.resultados.map((r) => puntosPorFecha(r.recorded.points, desde, hasta));
@@ -101,20 +110,17 @@ export function graficoDeMacros(e: EntradaDeMacros): GraficoArmado {
     descripcion: `${C.macros.titulo}: ${contar(dias, 'día con algún valor', 'días con algún valor')}. ${e.macros
       .map((m, i) => `${m.nombre}: ${contar(paneles[i]!.marcas.length, 'día', 'días')}`)
       .join('; ')}.`,
-    leyenda: [
-      ...leyendaDeLosDias(marcas, 0),
-      ...(conObjetivo ? [{ clave: 'objetivo', texto: C.leyenda.objetivo, muestra: { tipo: 'ESCALON', color: 0 } } as const] : []),
-      ...(temporadas.length > 0 ? [{ clave: 'temporada', texto: C.leyenda.temporada, muestra: { tipo: 'TEMPORADA' } } as const] : []),
-    ],
+    leyenda: [...leyendaDeLosDias(marcas, 0), ...leyendaDelObjetivoYLasTemporadas(conObjetivo, temporadas.length > 0)],
     notas: [
-      `${C.metodoDeLaSuma}. ${C.loRegistrado}`,
-      C.macros.sinBarrasApiladas,
-      C.macros.fibraDesconocida,
-      C.diaSinRegistros,
       ...e.macros.flatMap((m, i) => proporcionesDelObjetivo(e.resultados[i]!.prescribed.objectiveSteps, m.metrica, m.nombre, desde, hasta)),
+      ...loCargadoDespuesEnElPeriodo(unaPorFecha(marcas)),
       ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde, hasta),
       ...notasDeLaVistaParcial(e.parcial),
     ],
+    aclaraciones: [...aclaracionesDeLaSuma(), C.macros.sinBarrasApiladas, C.macros.fibraDesconocida, ...temporadasEnTexto(temporadas)],
+    metodo: C.metodoDeLaSuma,
+    porSemana: porSemanaDelGrafico({ paneles, leyendaExtra: leyendaDelObjetivoYLasTemporadas(conObjetivo, temporadas.length > 0) }),
+    comoTabla: false,
   };
 }
 
@@ -146,7 +152,8 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
     }),
     uniones: [],
     escalones: [],
-    medias: [],
+    semanas: [],
+    cobertura: [],
   }));
   const porMacro = series.map((s) => puntosPorFecha(s.points, desde, hasta));
   const filas = filasDeLosMacros(porMacro, (i, p, fecha) => {
@@ -175,20 +182,39 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
       sinRegistros: primera ? huecosEnTexto(primera.recorded.gaps, desde, hasta) : [],
     },
     descripcion: `${C.porKilo.titulo}: ${contar(new Set(marcas.map((x) => x.fecha)).size, 'día con valor', 'días con valor')}.${usados.length > 0 ? ` ${C.porKilo.pesosUsados(listaDePesos)}` : ''}`,
-    leyenda: [
-      ...leyendaDeLosDias(marcas, 0),
-      ...(temporadas.length > 0 ? [{ clave: 'temporada', texto: C.leyenda.temporada, muestra: { tipo: 'TEMPORADA' } } as const] : []),
-    ] satisfies ElementoDeLaLeyenda[],
+    leyenda: [...leyendaDeLosDias(marcas, 0), ...leyendaDelObjetivoYLasTemporadas(false, temporadas.length > 0)],
     notas: [
-      `${C.porKilo.metodo}. ${C.porKilo.reglaDelPeso}`,
-      C.porKilo.pesoViejo,
+      // Los pesos usados, a la vista: cada punto es de su toma, y el profesional tiene que ver con qué peso se dividió.
       ...(usados.length > 0 ? [C.porKilo.pesosUsados(listaDePesos)] : e.pesos.length === 0 ? [C.porKilo.sinPesos] : []),
-      ...(sinPeso > 0 ? [C.porKilo.diasSinPeso(sinPeso)] : []),
-      ...(e.pesoBuscadoDesde !== null ? [C.porKilo.buscadoDesde(diaYMes(e.pesoBuscadoDesde, hasta))] : []),
-      C.loRegistrado,
+      ...(sinPeso > 0 ? [C.porKilo.diasSinPeso(sinPeso), ...(e.pesoBuscadoDesde !== null ? [C.porKilo.buscadoDesde(diaYMes(e.pesoBuscadoDesde, hasta))] : [])] : []),
+      ...loCargadoDespuesEnElPeriodo(unaPorFecha(marcas)),
       ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde, hasta),
       ...notasDeLaVistaParcial(e.parcial),
       ...(e.pesosParciales ? [C.porKilo.tomasDeOtro] : []),
     ],
+    aclaraciones: [
+      `${C.porKilo.metodo}. ${C.porKilo.reglaDelPeso}`,
+      C.porKilo.pesoViejo,
+      C.porKilo.soloDiaPorDia,
+      ...(sinPeso === 0 && e.pesoBuscadoDesde !== null ? [C.porKilo.buscadoDesde(diaYMes(e.pesoBuscadoDesde, hasta))] : []),
+      C.loRegistrado,
+      ...temporadasEnTexto(temporadas),
+    ],
+    metodo: C.porKilo.metodo,
+    porSemana: null,
+    comoTabla: false,
   };
+}
+
+/** El día siguiente: sin un «hoy», lo que va hasta el último día del gráfico cuenta entero. */
+const diaSiguiente = (fecha: string): string => new Date(Date.parse(`${fecha}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+/** Una marca por fecha (los cuatro paneles repiten el día): para contar los días cargados después una sola vez. */
+function unaPorFecha(marcas: readonly MarcaDelPanel[]): MarcaDelPanel[] {
+  const vistas = new Map<string, MarcaDelPanel>();
+  for (const m of marcas) {
+    const antes = vistas.get(m.fecha);
+    if (!antes || (m.tarde && !antes.tarde)) vistas.set(m.fecha, m);
+  }
+  return [...vistas.values()];
 }

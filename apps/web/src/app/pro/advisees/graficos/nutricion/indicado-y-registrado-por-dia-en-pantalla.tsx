@@ -20,12 +20,12 @@ import { leerComidasDeCadaDia, leerMetricasNutricionales, type LecturaBase, type
 type DiasDelContraste = ContrasteDescriptivo['days'];
 
 /** El gráfico armado con lo leído, o «sin datos» si no hay nada registrado ni indicado en el período. */
-function armar(metricas: Leido<readonly LecturaNutricional[]>, contraste: DiasDelContraste | null, desde: string, hasta: string, enTramos: boolean): GraficoLeido<GraficoArmado> {
+function armar(metricas: Leido<readonly LecturaNutricional[]>, contraste: DiasDelContraste | null, desde: string, hasta: string, hoy: string, enTramos: boolean): GraficoLeido<GraficoArmado> {
   if (metricas.tipo !== 'LISTO') return metricas;
   const resultados = metricas.datos.flatMap((m) => (m.resultado ? [m.resultado] : []));
   const conAlgo = resultados.some((r) => r.recorded.points.length > 0 || r.prescribed.planned.days.some((d) => d.state === 'DETERMINED'));
   if (resultados.length < METRICAS_DE_LA_COMPARACION.length || !conAlgo) return { tipo: 'SIN_DATOS', texto: C.sinRegistrosEnElPeriodo };
-  return { tipo: 'LISTO', datos: graficoDeLaComparacion({ resultados, contraste, desde, hasta, enTramos, parcial: metricas.datos.some((m) => m.parcial) }) };
+  return { tipo: 'LISTO', datos: graficoDeLaComparacion({ resultados, contraste, desde, hasta, hoy, enTramos, parcial: metricas.datos.some((m) => m.parcial) }) };
 }
 
 const METRICAS = METRICAS_DE_LA_COMPARACION.map((m) => m.metrica);
@@ -35,8 +35,8 @@ export function IndicadoYRegistradoPorDia({ lectura, periodo, densidad }: PropsD
     const desde = inicioDelEje(periodo);
     const [metricas, comidas] = await Promise.all([leerMetricasNutricionales(lectura, METRICAS, desde, periodo.hasta), leerComidasDeCadaDia(lectura, periodo)]);
     if (comidas.tipo === 'SESION') return comidas;
-    return armar(metricas, comidas.tipo === 'LISTO' ? comidas.datos.dias : null, desde, periodo.hasta, comidas.tipo === 'LISTO' && comidas.datos.enTramos);
-  }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.desdeElVinculo]);
+    return armar(metricas, comidas.tipo === 'LISTO' ? comidas.datos.dias : null, desde, periodo.hasta, periodo.hoy, comidas.tipo === 'LISTO' && comidas.datos.enTramos);
+  }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.hoy, periodo.desdeElVinculo]);
   return <GraficoOEstado titulo={C.indicadoYRegistrado.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad={densidad} />;
 }
 
@@ -48,8 +48,8 @@ export function IndicadoYRegistradoPorDia({ lectura, periodo, densidad }: PropsD
 export function DiaPorDia({ lectura, desde, hasta, hoy, contraste }: { lectura: LecturaBase; desde: string; hasta: string; hoy: string; contraste: DiasDelContraste }) {
   const periodo = useMemo((): PeriodoDelGrafico => ({ desde, hasta, hoy, desdeElVinculo: null }), [desde, hasta, hoy]);
   const { estado, reintentar } = useGraficoLeido(
-    async (): Promise<GraficoLeido<GraficoArmado>> => armar(await leerMetricasNutricionales(lectura, METRICAS, desde, hasta), contraste, desde, hasta, false),
-    [lectura.token, lectura.asesoradoId, desde, hasta],
+    async (): Promise<GraficoLeido<GraficoArmado>> => armar(await leerMetricasNutricionales(lectura, METRICAS, desde, hasta), contraste, desde, hasta, hoy, false),
+    [lectura.token, lectura.asesoradoId, desde, hasta, hoy],
     [contraste],
   );
   return <GraficoOEstado titulo={C.indicadoYRegistrado.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad="COMPLETA" />;

@@ -11,6 +11,14 @@
  * - Los dos métodos salen de los mismos pliegues de la misma toma: que se muevan juntos es por construcción, y se dice.
  *   Cada número es la estimación de un método, nunca una medición directa de la grasa de la persona.
  *
+ * La pasada visual de la rama C (DISENO-VISUAL §2 «C»; GR-VC05 y GR-VC06):
+ * - **Con menos de 4 tomas va como tabla a la vista**, no como un gráfico de dos o tres puntitos: con tan pocos puntos un
+ *   dibujo parece estable o parece un salto (§5.8).
+ * - **Nunca se nombra un método que no aparece:** las columnas, la leyenda, la descripción y las notas dicen solo los
+ *   métodos que tienen alguna masa en estas fechas; «se mueven juntos por construcción» va solo si están los dos.
+ * - A la vista, lo que §5 pide (por construcción, el error de medición, lo de otro profesional); lo demás, en «Cómo
+ *   leerlo».
+ *
  * Es puro: lo prueba `apps/web/test/graficos-nutricion-y-cuerpo.test.mjs`.
  */
 import { cantidad, nombreDeMetodo, type MarcaSemantica } from '@be/domain';
@@ -73,6 +81,9 @@ export function masaEnPalabras(o: ObservacionDeLaToma): string {
   return [`${cantidad(o.valor, o.unidad)}${clase ? ` (${clase})` : ''}`, ...(metodo ? [metodo] : []), ...(o.corregido ? ['corregido'] : [])].join(' · ');
 }
 
+/** Con menos tomas, GR-20 va como tabla a la vista (GR-VC05): dos o tres puntos parecen estables o un salto (§5.8). */
+export const MINIMO_DE_TOMAS_PARA_DIBUJAR = 4;
+
 /** GR-20 armado; `null` si no hay ninguna masa en estas fechas. */
 export function graficoDeMasas(observaciones: readonly ObservacionDeLaToma[], desde: string, hasta: string, opciones: { readonly parcial: boolean; readonly enTramos: boolean }): GraficoArmado | null {
   const enElPeriodo = observaciones.filter((o) => o.fecha >= desde && o.fecha <= hasta && o.unidad === UNIDAD);
@@ -92,55 +103,66 @@ export function graficoDeMasas(observaciones: readonly ObservacionDeLaToma[], de
         if (!b) return [];
         return [{ clave: `${p.id}:${a.evaluacionId}`, fecha: a.fecha, en: a.en, desde: Math.min(a.valor, b.valor), hasta: Math.max(a.valor, b.valor), rotulo: cantidad(Number(Math.abs(a.valor - b.valor).toPrecision(12)), UNIDAD), forma: 'SEPARACION' }];
       });
-    return { tipo: 'VALORES', id: p.id, nombre: p.nombre, unidad: UNIDAD, metodo: null, escala: { enteros: false }, marcas, uniones, escalones: [], medias: [] };
+    return { tipo: 'VALORES', id: p.id, nombre: p.nombre, unidad: UNIDAD, metodo: null, escala: { enteros: false }, marcas, uniones, escalones: [], semanas: [], cobertura: [] };
   });
+  const presentes = new Set(enElPeriodo.map((o) => o.metrica));
+  // Solo los métodos que aparecen (nunca nombrar uno que no está) y la separación solo con los dos.
+  const metodosDe = (p: PanelDeMasa) => p.metodos.filter((m) => presentes.has(m.metrica));
+  const conLosDos = (p: PanelDeMasa) => metodosDe(p).length === 2;
   const columnas = conDatos.flatMap((p) => [
-    ...p.metodos.map((m) => ({ id: m.metrica, nombre: `${p.nombre} ${m.nombre}`, unidad: UNIDAD })),
-    { id: `${p.id}:separacion`, nombre: C.masas.columnaSeparacion(p.nombre), unidad: UNIDAD },
+    ...metodosDe(p).map((m) => ({ id: m.metrica, nombre: `${p.nombre} ${m.nombre}`, unidad: UNIDAD })),
+    ...(conLosDos(p) ? [{ id: `${p.id}:separacion`, nombre: C.masas.columnaSeparacion(p.nombre), unidad: UNIDAD }] : []),
   ]);
   const fechas = [...new Set(enElPeriodo.filter((o) => MEDIDAS_DE_GR20.includes(o.metrica)).map((o) => o.fecha))].sort();
   const filas = fechas.map((fecha) => ({
     fecha,
     celdas: conDatos.flatMap((p, i): (CeldaDeLaTabla | null)[] => {
       const delDia = (m: MetodoDeLaMasa) => enElPeriodo.filter((o) => o.metrica === m.metrica && o.fecha === fecha);
-      const metodos = p.metodos.map((m): CeldaDeLaTabla | null => {
+      const metodos = metodosDe(p).map((m): CeldaDeLaTabla | null => {
         const lista = delDia(m);
         return lista.length === 0 ? null : { texto: lista.map(masaEnPalabras).join(' · '), marca: marcaDeLaClase(lista[0]!.clase), tarde: false, registrada: true };
       });
       const separaciones = paneles[i]!.uniones.filter((u) => u.fecha === fecha && u.rotulo !== null).map((u) => C.masas.separan(u.rotulo as string));
-      return [...metodos, separaciones.length > 0 ? { texto: separaciones.join(' · '), marca: null, tarde: false, registrada: true } : null];
+      return [...metodos, ...(conLosDos(p) ? [separaciones.length > 0 ? { texto: separaciones.join(' · '), marca: null, tarde: false, registrada: true } : null] : [])];
     }),
   }));
-  const presentes = new Set(enElPeriodo.map((o) => o.metrica));
+  // Una ficha por método (Durnin y Womersley vale para la masa grasa y la libre de grasa): el nombre corto a la vista y,
+  // para el lector de pantalla, la forma y lo que dice.
+  const fichas = new Map<string, ElementoDeLaLeyenda>();
+  for (const p of conDatos) {
+    for (const m of metodosDe(p)) {
+      const corto = C.masas.fichaDelMetodo(p.id, m.nombre.replace(/^según /, ''));
+      if (!fichas.has(corto)) fichas.set(corto, { clave: m.metrica, texto: corto, largo: C.masas.fichaLarga(corto, m.forma === 'CIRCULO' ? 'círculo' : 'cuadrado'), muestra: { tipo: 'MARCA', marca: 'PUNTO_ADENTRO', forma: m.forma, color: m.color } });
+    }
+  }
   const leyenda: ElementoDeLaLeyenda[] = [
-    ...conDatos.flatMap((p) =>
-      p.metodos
-        .filter((m) => presentes.has(m.metrica))
-        .map((m): ElementoDeLaLeyenda => ({ clave: m.metrica, texto: `${p.nombre} ${m.nombre}: ${m.forma === 'CIRCULO' ? 'círculo' : 'cuadrado'}, con un punto adentro (calculado)`, muestra: { tipo: 'MARCA', marca: 'PUNTO_ADENTRO', forma: m.forma, color: m.color } })),
-    ),
-    ...(paneles.some((p) => p.uniones.length > 0) ? [{ clave: 'separacion', texto: C.masas.leyendaSeparacion, muestra: { tipo: 'UNION', forma: 'SEPARACION' } } as const] : []),
+    ...fichas.values(),
+    ...(paneles.some((p) => p.uniones.length > 0) ? [{ clave: 'separacion', texto: C.masas.fichaSeparacion, largo: C.masas.leyendaSeparacion, muestra: { tipo: 'UNION', forma: 'SEPARACION' } } as const] : []),
   ];
   const tomas = new Set(enElPeriodo.filter((o) => MEDIDAS_DE_GR20.includes(o.metrica)).map((o) => o.evaluacionId)).size;
   const cuantas = (m: MetodoDeLaMasa) => new Set(enElPeriodo.filter((o) => o.metrica === m.metrica).map((o) => o.evaluacionId)).size;
   const descripcion = `${C.masas.titulo}: ${tomas} ${tomas === 1 ? 'toma con alguna masa calculada' : 'tomas con alguna masa calculada'}. ${conDatos
-    .map((p) => `${p.nombre}: ${p.metodos.map((m) => `${m.nombre} en ${cuantas(m)} ${cuantas(m) === 1 ? 'toma' : 'tomas'}`).join(', ')}`)
+    .map((p) => `${p.nombre}: ${metodosDe(p).map((m) => `${m.nombre} en ${cuantas(m)} ${cuantas(m) === 1 ? 'toma' : 'tomas'}`).join(', ')}`)
     .join('. ')}.`;
+  const comoTabla = tomas < MINIMO_DE_TOMAS_PARA_DIBUJAR;
+  const durninYFaulknerJuntos = conDatos.some((p) => p.id !== 'masa-muscular' && conLosDos(p));
   return {
     paneles,
     temporadas: [],
     tabla: { columnas, filas, sinRegistros: [] },
     descripcion,
     leyenda,
-    notas: [
-      C.masas.porConstruccion,
-      C.masas.separacionNoEsCambio,
+    notas: [...(durninYFaulknerJuntos ? [C.masas.porConstruccion] : []), C.sinErrorDeMedicion, ...(opciones.parcial ? [C.parcial] : [])],
+    aclaraciones: [
+      ...(comoTabla ? [C.masas.comoTabla(tomas, MINIMO_DE_TOMAS_PARA_DIBUJAR)] : []),
       C.masas.cadaNumero,
-      C.masas.ejeComun,
+      ...(paneles.some((p) => p.uniones.length > 0) ? [C.masas.separacionNoEsCambio] : []),
+      ...(comoTabla ? [] : [C.masas.ejeComun, C.soloPuntos]),
       ...(conDatos.some((p) => p.id === 'masa-muscular') ? [C.masas.leeAparte] : []),
-      C.soloPuntos,
-      C.sinErrorDeMedicion,
-      ...(opciones.parcial ? [C.parcial] : []),
       ...(opciones.enTramos ? [C.leidoEnTramos] : []),
     ],
+    metodo: C.masas.metodo,
+    porSemana: null,
+    comoTabla,
   };
 }

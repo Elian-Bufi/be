@@ -46,21 +46,53 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
   sinObjetivo: 'sin objetivo',
   objetivoEnLaCelda: (texto: string) => `objetivo ${texto}`,
 
-  // ─── La leyenda ──────────────────────────────────────────────────────────────────────────────
+  // ─── La leyenda: fichas cortas a la vista, y el texto entero (con la forma) para el lector de pantalla ───
   leyenda: {
-    conTodo: 'Con cantidades en todos sus registros y sin comidas del plan sin registro: lleno',
-    subtotal: 'Subtotal, con algo que falta: hueco',
-    sinSaber: 'No se puede saber si faltan comidas: contorno cortado',
-    tarde: 'Cargado después: una muesca arriba de la marca',
-    objetivo: 'Objetivo del profesional: línea discontinua',
-    media: 'Media de la semana: tramo continuo',
-    indicado: 'Indicado en el plan: rombo hueco',
-    diferencia: 'Lo indicado y lo registrado del mismo día, unidos: la diferencia va escrita',
-    conOpcion: 'Comida con la opción del plan: cuadrado lleno',
-    comidaDiferente: 'Comida con una comida diferente: cuadrado con una raya',
-    sinRegistro: 'Comida sin registro: guion',
-    temporada: 'Cada versión del plan, de fondo; una línea fina donde cambia el plan o el objetivo',
+    conTodo: { texto: 'Sin faltantes', largo: 'Con cantidades en todos sus registros y sin comidas del plan sin registro: lleno' },
+    subtotal: { texto: 'Subtotal', largo: 'Subtotal, con algo que falta: hueco' },
+    sinSaber: { texto: 'Sin saber si faltan comidas', largo: 'No se puede saber si faltan comidas (no regía un plan o no se sabe qué día tipo era): contorno cortado' },
+    tarde: { texto: 'Cargado después', largo: 'Cargado después: una muesca arriba de la marca' },
+    objetivo: { texto: 'Objetivo', largo: 'Objetivo del profesional: línea discontinua' },
+    indicado: { texto: 'Indicado', largo: 'Indicado en el plan para el día: rombo hueco' },
+    diferencia: { texto: 'Diferencia', largo: 'Lo indicado y lo registrado del mismo día, unidos por una línea: la diferencia se escribe en la fecha elegida y en la última, y está en la lectura y en la tabla' },
+    conOpcion: { texto: 'Opción del plan', largo: 'Comida con la opción del plan: cuadrado lleno' },
+    comidaDiferente: { texto: 'Comida diferente', largo: 'Comida con una comida diferente: cuadrado con una raya' },
+    sinRegistro: { texto: 'Sin registro', largo: 'Comida del plan sin registro: guion' },
+    temporada: { texto: 'Versión del plan', largo: 'Cada versión del plan, de fondo con un tono que alterna; una línea fina donde cambia el plan o el objetivo' },
   },
+
+  // ─── Por semana (GR-VC01): la media de la semana (v1) de GR-12, la misma en GR-12, GR-13 y GR-14 ───
+  porSemana: {
+    porSemana: 'Por semana',
+    diaPorDia: 'Día por día',
+    comoSeAgrupa: 'Cómo se agrupan los días',
+    detalle: 'media de la semana (v1)',
+    detalleDiaPorDia: 'día por día',
+    unidadDeLaColumna: (unidad: string) => `${unidad} por día, media de la semana`,
+    tabla: (titulo: string) => `${titulo}: la media de cada semana, con sus días`,
+    semana: 'Semana',
+    leyenda: {
+      entera: { texto: 'Semana entera', largo: 'Barra llena: los siete días de la semana entran en la media, con cantidades en todos sus registros y sin comidas del plan sin registro' },
+      hueca: { texto: 'Con días afuera', largo: 'Barra hueca, con su contorno: algún día quedó afuera de la media, o la semana está cortada por el período o tiene hoy' },
+      sinMedia: { texto: 'Sin media', largo: 'Columna gris: la semana no llega a 4 días con cantidades en todos sus registros; no es un cero' },
+      cadaDia: { texto: 'Cada día', largo: 'Los días, como puntos tenues detrás de las barras; debajo, la tira de cada día: entera sin faltantes, a media altura con algo que falta, una raya baja sin registros' },
+      indicado: { texto: 'Indicado', largo: 'Lo indicado en el plan para cada día, como rombos huecos tenues detrás de las barras' },
+    },
+    comoSeArma: (minimo: number) => [
+      `Cada barra es la media de la semana (v1), de lunes a domingo: el promedio de los días con cantidades en todos sus registros, si son ${minimo} o más. Es la misma media en las calorías, los macronutrientes y lo indicado y lo registrado.`,
+      'Los días con algo que falta (un subtotal, una comida del plan sin registro) quedan afuera de la media y se cuentan: la lectura de cada semana dice con cuántos días se hizo y por qué quedaron afuera los otros. Promediar solo los días registrados con cuidado deja afuera a los demás, y por eso se dice.',
+      'Una semana sin media no es un cero: es una columna gris. Hoy no cuenta hasta que termine el día.',
+      'La barra va llena solo si entran los siete días; si no, va hueca, con su contorno. Los puntos tenues de detrás son los días.',
+    ],
+    resumen: (nombre: string, conMedia: number, semanas: number, bajo: string, alto: string, enteras: number) =>
+      `${nombre}: ${conMedia} de ${semanas} ${semanas === 1 ? 'semana tiene' : 'semanas tienen'} media${bajo === alto ? `, de ${bajo}` : `, entre ${bajo} y ${alto}`}; ${enteras} con los siete días.`,
+    resumenSinMedia: (nombre: string, semanas: number) => `${nombre}: ninguna de ${semanas} ${semanas === 1 ? 'semana tiene' : 'semanas tienen'} media.`,
+    cadaMediaEnLaTabla: 'Cada media, con sus días, está en la tabla de las semanas.',
+    sinElegir: 'Elegí una semana con las flechas o tocando el gráfico.',
+    comoSeUsa: 'Flechas: la semana anterior o la siguiente. Inicio y Fin: la primera y la última.',
+  },
+  /** «3 de 21 días con registros cargados después.»: lo cargado después, a la vista (§5.14). */
+  tardeEnElPeriodo: (tarde: number, dias: number) => `${tarde.toLocaleString('es-AR')} de ${dias.toLocaleString('es-AR')} ${dias === 1 ? 'día con registros cargado' : 'días con registros cargados'} después.`,
 
   // ─── Lo común de las notas ───────────────────────────────────────────────────────────────────
   metodoDeLaSuma: 'Suma de lo registrado con cantidades (v1)',
@@ -116,11 +148,12 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
     sinPesos: 'Ninguna de tus tomas hasta estas fechas tiene un peso medido: sin un peso, los gramos por kilo no se calculan.',
     buscadoDesde: (fecha: string) => `El peso anterior se buscó desde el ${fecha}.`,
     tomasDeOtro: 'Hay tomas de otro profesional en estas fechas: no las ves y su peso no se usa.',
+    soloDiaPorDia: 'Los g/kg van día por día: cada día se divide por el peso de su toma, y una media de la semana mezclaría dos pesos sin decirlo.',
   },
 
   // ─── GR-14 · lo indicado y lo registrado ─────────────────────────────────────────────────────
   indicadoYRegistrado: {
-    titulo: 'Lo indicado y lo registrado, día por día',
+    titulo: 'Lo indicado y lo registrado',
     pregunta: '¿En qué días y en qué comidas lo registrado se aparta de lo indicado, y hacia dónde?',
     tira: 'Comidas del plan',
     columnaComidas: 'Comidas del plan',
@@ -139,5 +172,11 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
     comidasSinDiaTipo: 'día tipo sin determinar: no se conocen sus comidas',
     sinRegistros: 'sin registros',
     comidaEnLaCelda: (comida: string, estado: string) => `${comida}: ${estado}`,
+    /** Una sola línea, a la vista, cuando ningún día tiene un indicado del día (el párrafo entero va a «Cómo leerlo»). */
+    sinIndicadoCorto: (motivo: string) => `Sin indicado del día en estas fechas: ${motivo}.`,
+    /** Lo indicado de los días de una semana, en «Por semana»: sin media (es otro cálculo), el rango y cuántos días. */
+    indicadoDeLaSemana: (dias: number, desde: string, hasta: string) => (desde === hasta ? `indicado del día ${desde} en ${dias === 1 ? '1 día' : `${dias} días`}` : `indicado del día de ${desde} a ${hasta} en ${dias} días`),
+    sinIndicadoEnLaSemana: 'sin indicado del día',
+    laDiferenciaVaDiaPorDia: 'La diferencia entre lo indicado y lo registrado va en «Día por día»: es de cada día, y solo de los días con cantidades en todos sus registros y sin comidas del plan sin registro.',
   },
 } as const;

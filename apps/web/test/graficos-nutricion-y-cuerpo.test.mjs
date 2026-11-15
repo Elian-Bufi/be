@@ -93,7 +93,10 @@ function textosDe(g) {
   return [
     g.descripcion,
     ...g.notas,
-    ...g.leyenda.map((e) => e.texto),
+    ...g.aclaraciones,
+    g.metodo ?? '',
+    ...g.leyenda.flatMap((e) => [e.texto, e.largo]),
+    ...(g.porSemana ? [g.porSemana.detalle, g.porSemana.descripcion, ...g.porSemana.aclaraciones, ...g.porSemana.leyenda.flatMap((e) => [e.texto, e.largo]), ...g.porSemana.columnas.flatMap((c) => [c.nombre, c.unidad]), ...g.porSemana.tramos.flatMap((t) => t.textos)] : []),
     ...g.temporadas.flatMap((t) => [t.rotulo, t.corto]),
     ...g.paneles.flatMap((p) => [p.nombre, ...(p.tipo === 'VALORES' ? [p.unidad, p.metodo ?? '', ...p.uniones.map((u) => u.rotulo ?? '')] : p.filas.map((f) => f.nombre))]),
     ...g.tabla.columnas.flatMap((c) => [c.nombre, c.unidad]),
@@ -166,17 +169,20 @@ test('TEST-GRF-041 · GR-11: una proporción de las calorías se escribe y no se
   );
   const ubicadas = L.temporadasUbicadas(temporadas, escala('2026-09-15', '2026-10-20'));
   assert.deepEqual(
-    ubicadas.map((t) => [t.clave, t.banda, t.conCambio]),
+    ubicadas.map((t) => [t.clave, t.tenue, t.conCambio]),
     [
       ['objetivo:o1', null, false],
-      ['plan:v2', 0, false],
+      ['plan:v2', false, false],
       ['objetivo:o2', null, true],
-      ['plan:v3', 1, true],
+      ['plan:v3', true, true],
     ],
+    'las versiones del plan alternan como en la base: la primera sin fondo, la siguiente con el tono tenue',
   );
-  // Dos rótulos cortos nunca se pisan: el que no entra queda en la lista de temporadas, en texto.
-  const conRotulo = ubicadas.filter((t) => t.conRotulo);
-  for (let i = 1; i < conRotulo.length; i++) assert.ok(Math.max(conRotulo[i].x1, 88) >= Math.max(conRotulo[i - 1].x1, 88) + conRotulo[i - 1].corto.length * 7, 'los rótulos no se pisan');
+  // Dos rótulos nunca se pisan: cada uno es el entero, el corto o nada (y la temporada sigue en el texto).
+  const conRotulo = ubicadas.filter((t) => t.texto !== null);
+  assert.ok(conRotulo.length > 0);
+  for (const t of conRotulo) assert.ok(t.texto === t.rotulo || t.texto === t.corto, t.texto);
+  for (let i = 1; i < conRotulo.length; i++) assert.ok(Math.max(conRotulo[i].x1, 88) + 4 >= Math.max(conRotulo[i - 1].x1, 88) + 4 + conRotulo[i - 1].texto.length * 6.6 + 8, 'los rótulos no se pisan');
 });
 
 test('TEST-GRF-042 · GR-12: un día lleno con todo registrado, hueco si es un subtotal, cortado sin poder saber si faltan comidas y nada sin registros; la tabla dice lo mismo (mutación: un día sin registros como cero)', () => {
@@ -254,12 +260,13 @@ test('TEST-GRF-043 · GR-12: la media de la semana dice con qué días se hizo y
   assert.equal(corta.valor, null);
   assert.equal(corta.dias, 4);
   assert.equal(corta.texto, 'sin media: hacen falta 4 días con cantidades en todos sus registros · con 2 de 4 días; 1 sin registro y 1 con cantidades faltantes · hoy no cuenta');
-  // En el dibujo, la media es un tramo continuo sobre los días de su semana; sin media, no hay tramo.
+  // En el dibujo «Por semana», la media es la barra de su semana: hueca, porque no entraron los siete días.
   const g = G12.graficoDeEnergia({ resultado: resultado('ENERGY', semana), cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-10' });
   assert.deepEqual(
-    g.paneles[0].medias.map((t) => [t.desde, t.hasta, t.valor]),
-    [['2026-11-02', '2026-11-08', 2050]],
+    g.paneles[0].semanas.map((t) => [t.desde, t.hasta, t.valor, t.entera]),
+    [['2026-11-02', '2026-11-08', 2050, false]],
   );
+  assert.deepEqual(g.porSemana.tramos.map((t) => t.textos), [[media.texto]], 'la lectura de la semana dice la misma media, con sus días');
   assert.ok(g.tabla.filas.every((f) => f.celdas[2]?.texto === media.texto), 'cada día de la semana dice la media de su semana');
   textosGenerados.NUTRICION.push(...textosDe(g), corta.texto);
 });
@@ -292,7 +299,7 @@ test('TEST-GRF-044 · GR-13: cuatro paneles con su eje y su objetivo, la fibra s
   const fila = g.tabla.filas.find((f) => f.fecha === '2026-11-03');
   assert.equal(fila.celdas[3].texto, 'sin valor: 2 registros sin el dato de este nutriente');
   assert.match(fila.celdas[0].texto, /^125,0 g · con cantidades en todos sus registros y sin comidas del plan sin registro · objetivo 120 g$/);
-  assert.ok(g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.macros.sinBarrasApiladas));
+  assert.ok(g.aclaraciones.includes(COPY_NUTRICION_EN_GRAFICOS.macros.sinBarrasApiladas), 'en «Cómo leerlo»');
 });
 
 test('TEST-GRF-045 · GR-13 en g/kg: cada día con el peso medido de la última toma en ese día o antes, sin valor sin una toma anterior, y la línea se corta donde cambia el peso (mutación: usar la última toma del período para un día anterior)', () => {
@@ -405,7 +412,7 @@ test('TEST-GRF-046 · GR-14: la diferencia con su signo va solo en los días con
   assert.match(celda('2026-11-02', 0), /^registrado 2\.150 kcal \(.*\) · indicado 2\.012 kcal · diferencia \+138 kcal$/);
   assert.match(celda('2026-11-03', 0), /sin diferencia escrita: lo registrado es un subtotal$/);
   assert.match(celda('2026-11-04', 0), /· sin indicado: comidas con varias opciones$/);
-  assert.ok(g.notas.some((n) => n.startsWith('La diferencia es lo registrado menos lo indicado')));
+  assert.ok(g.aclaraciones.some((n) => n.startsWith('La diferencia es lo registrado menos lo indicado')));
   assert.ok(g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.indicadoYRegistrado.sinTira), 'sin la lectura de las comidas, la tira no está y se dice');
   assert.ok(!g.paneles.some((p) => p.tipo === 'TIRA'));
   // Con registros de otro profesional que no se ven, la diferencia no es contra todo lo registrado: se dice.
@@ -452,7 +459,7 @@ test('TEST-GRF-047 · GR-14: la tira por comida dice con la opción del plan, co
   assert.equal(registrado.valor, 900, 'lo registrado es lo conocido: la comida diferente sin cantidades no suma 0 g ni otro número');
   assert.equal(g.paneles[0].uniones.length, 0);
   assert.match(g.tabla.filas.find((f) => f.fecha === '2026-11-02').celdas[0].texto, /1 comida diferente sin cantidades/);
-  assert.ok(g.notas.includes('Las comidas de cada día se leyeron en tramos de 92 días.'));
+  assert.ok(g.aclaraciones.includes('Las comidas de cada día se leyeron en tramos de 92 días.'));
   assert.ok(g.leyenda.some((e) => e.muestra.tipo === 'COMIDA' && e.muestra.estado === 'COMIDA_DIFERENTE'));
 });
 
@@ -568,9 +575,10 @@ test('TEST-GRF-049 · GR-20: los métodos de una masa comparten el eje, Lee va a
   const fila = g.tabla.filas.find((f) => f.fecha === '2026-09-10');
   assert.equal(fila.celdas[0].texto, '14,2 kg (calculado) · Masa grasa (Durnin y Womersley), hombres', 'el punto adentro, dicho con palabras');
   assert.equal(fila.celdas[2].texto, 'se separan 2,2 kg');
-  for (const nota of [COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.porConstruccion, COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.leeAparte, COPY_ANTROPOMETRIA_EN_GRAFICOS.sinErrorDeMedicion, COPY_ANTROPOMETRIA_EN_GRAFICOS.parcial]) {
+  for (const nota of [COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.porConstruccion, COPY_ANTROPOMETRIA_EN_GRAFICOS.sinErrorDeMedicion, COPY_ANTROPOMETRIA_EN_GRAFICOS.parcial]) {
     assert.ok(g.notas.includes(nota), nota);
   }
+  assert.ok(g.aclaraciones.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.leeAparte));
   assert.equal(M.graficoDeMasas([], '2026-09-01', '2026-11-14', { parcial: false, enTramos: false }), null);
 });
 
@@ -594,29 +602,34 @@ test('TEST-GRF-050 · el lienzo: la línea une solo marcas de la misma serie y d
     ],
     uniones: [{ clave: 'u', fecha: '2026-11-02', en: null, desde: 90, hasta: 100, rotulo: '+10 g', forma: 'DIFERENCIA' }],
     escalones: [{ clave: 'o', desde: '2026-10-01', hasta: '2026-11-30', valor: 160, color: 0 }],
-    medias: [{ clave: 'm', desde: '2026-11-02', hasta: '2026-11-08', valor: 50, color: 0 }],
+    semanas: [{ clave: 'm', desde: '2026-11-02', hasta: '2026-11-08', valor: 50, entera: false, texto: '50 g' }],
+    cobertura: [],
   };
   const e = escala('2026-11-02', '2026-11-08');
   const g = L.geometriaDeValores(panel, e, 132);
   assert.equal(g.lineas.length, 2, 'dos tramos de lo registrado; lo indicado no se une');
   assert.ok(g.lineas.every((l) => l.serie === 'registrado' && l.puntos.length === 2));
   assert.ok(!g.marcas.some((m) => m.clave === 'fuera'), 'lo de fuera del período no se dibuja');
-  assert.ok(g.extremos.abajo <= 50 && g.extremos.arriba >= 160, 'el eje abarca la media y el objetivo');
+  assert.ok(g.extremos.abajo <= 90 && g.extremos.arriba >= 160, 'el eje abarca lo indicado de la unión y el objetivo');
+  assert.equal(g.barras.length, 0, 'día por día no hay barras');
+  const porSemana = L.geometriaDeValores(panel, e, 132, 'SEMANA');
+  assert.equal(porSemana.extremos.abajo, 0, 'por semana, el eje arranca en cero, como las barras de la base');
+  assert.ok(porSemana.extremos.arriba >= 160);
+  assert.equal(porSemana.lineas.length, 0, 'por semana, los días van sueltos detrás');
   assert.equal(g.escalones[0].x1, e.x('2026-11-02') - e.porDia / 2, 'el objetivo se recorta al período');
   assert.equal(g.uniones[0].x, e.x('2026-11-02'));
   // La tira por comida: cada celda en su día, sin pisar la del día siguiente.
   const tira = L.geometriaDeTira({ tipo: 'TIRA', id: 't', nombre: 'Comidas', filas: [{ clave: 'c', nombre: 'Cena', celdas: [{ fecha: '2026-11-02', estado: 'SIN_REGISTRO' }] }] }, e);
   assert.ok(tira.filas[0].celdas[0].ancho < e.porDia);
   assert.deepEqual(L.huecosEnTexto([{ from: '2026-10-30', to: '2026-11-03' }], '2026-11-02', '2026-11-08'), ['del 2/11 al 3/11, sin registros']);
-  // La marca del medio del eje vertical va solo si se escribe tal cual: de 0 a 5 sin decimales diría «3» donde va 2,5.
-  assert.deepEqual(L.valoresDelEjeVertical({ abajo: 0, arriba: 5, decimales: 0 }), [0, 5]);
-  assert.deepEqual(L.valoresDelEjeVertical({ abajo: 0, arriba: 2000, decimales: 0 }), [0, 1000, 2000]);
-  assert.deepEqual(L.valoresDelEjeVertical({ abajo: 1, arriba: 2, decimales: 1 }), [1, 1.5, 2]);
+  // Las marcas del eje vertical son las redondas de la base (de 3 a 5, sin un número repetido); GR-18 usa las mismas.
   assert.deepEqual(
     g.marcasY.map((m) => m.valor),
-    L.valoresDelEjeVertical(g.extremos),
+    g.extremos.valores,
   );
-  assert.match(readFileSync(join(GRAFICOS, 'antropometria/perfil-por-sitio-en-pantalla.tsx'), 'utf8'), /const marcasDelEje = valoresDelEjeVertical\(g\.extremos\);/, 'GR-18 escribe su eje con la misma regla');
+  assert.ok(g.marcasY.length >= 3 && g.marcasY.length <= 5);
+  assert.equal(new Set(g.marcasY.map((m) => m.valor)).size, g.marcasY.length);
+  assert.match(readFileSync(join(GRAFICOS, 'antropometria/perfil-por-sitio-en-pantalla.tsx'), 'utf8'), /g\.extremos\.valores\.map\(/, 'GR-18 escribe su eje con las marcas redondas de la base');
 });
 
 test('TEST-GRF-051 · los registros: cada gráfico se ofrece solo con su área, los g/kg solo con Nutrición y Antropometría y lo propio en las dos, y el registro se lee sin cargar ninguna pantalla (mutación: ofrecer los g/kg con una sola área)', () => {
@@ -706,7 +719,7 @@ test('TEST-GRF-054 · las pantallas que ya existían: «Registros» suma «Día 
   assert.match(leido, /\}, \[\.\.\.deps, \.\.\.refrescos, vuelta\]\);/);
   assert.match(
     readFileSync(join(GRAFICOS, 'nutricion/indicado-y-registrado-por-dia-en-pantalla.tsx'), 'utf8'),
-    /\[lectura\.token, lectura\.asesoradoId, desde, hasta\],\s*\[contraste\],/,
+    /\[lectura\.token, lectura\.asesoradoId, desde, hasta, hoy\],\s*\[contraste\],/,
     'las comidas releídas son un refresco, no otra lectura',
   );
   const evolucion = readFileSync(join(WEB, 'src/app/pro/advisees/anthropometry/evolucion.tsx'), 'utf8');

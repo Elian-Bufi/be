@@ -41,10 +41,11 @@ export function MacrosEnPaneles({ lectura, periodo, densidad }: PropsDelGrafico)
         cargadoTardeSabidoDesde: leido?.sabidoDesde ?? null,
         desde,
         hasta: periodo.hasta,
+        hoy: periodo.hoy,
         parcial: macros.datos.some((m) => m.parcial),
       }),
     };
-  }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.desdeElVinculo]);
+  }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.hoy, periodo.desdeElVinculo]);
   return <GraficoOEstado titulo={C.macros.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad={densidad} />;
 }
 
