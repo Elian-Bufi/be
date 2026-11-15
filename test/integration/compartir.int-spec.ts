@@ -13,12 +13,15 @@
  * - TEST-CMP-025: compartir el plan de un área con quien lo pidió acepta su pedido (TB-56).
  * - TEST-CMP-026 (de la revisión): lo retirado de a una cosa, con otras todavía compartidas, y un «Ahora no» a un pedido
  *   no vuelven marcados; lo nunca decidido, sí; y cada cosa dice en qué nivel la ve hoy.
+ * - TEST-CMP-027 (de la revisión): retirar una cosa espera a la lectura en curso (el mismo cerrojo) y lleva la hora de la
+ *   base de después, en lo de otras áreas y en los hábitos.
  */
 import type { INestApplication } from '@nestjs/common';
 import { LoElegidoCompartidoResponseSchema, LoQueSePuedeCompartirResponseSchema, TEXTO_DE_LA_HISTORIA_ANTERIOR, UnaCosaRetiradaResponseSchema, VERSION_VIGENTE } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, conSesion } from './soporte-api';
+import { esperarQueEsperen, pidDeLaTransaccion } from './soporte-concurrencia';
 import { a3Vigente, finalizar, otorgarA3, prepararAsesorado, prepararProfesional, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -290,6 +293,54 @@ describe('WP-COMPARTIR · la pantalla única de consentimiento (DL-176)', () => 
     await cmp(e.ase.token).elegir(elegir(despues, [ruizNutricion])).expect(200);
     expect((await recibe(e.ruiz, e.ase)).NUTRICION).toBe('SUMMARY_AND_PLAN');
   });
+
+  it('TEST-CMP-027 · retirar una cosa espera a la lectura en curso y lleva la hora de después: lo de otras áreas y los hábitos', async () => {
+    // Revisión del PR: API-CMP-03 tiene que tomar el mismo cerrojo que toman las lecturas (compartido, después del PDP) y
+    // la hora de la base después de tomarlo; si tomara otro, un retiro no esperaría a la lectura en curso. Mutación: otra
+    // clave de cerrojo en API-CMP-03 la pone en rojo (el retiro no espera).
+    const e = await escenario('027');
+    await cmp(e.ase.token).elegir(elegir(await propuestaDe(e.ase, e.vinculoDePaz))).expect(200);
+    await conSesion(app, e.ase.token).post('/api/v1/me/habits').send({ expectedVersion: null, answers: [{ fieldCode: 'horas_de_sueno', answer: { type: 'NUMBER', number: 7, unit: 'h' } }] }).expect(201);
+    await cmp(e.ase.token).elegir(elegir(await propuestaDe(e.ase), [`HABITS:${e.paz.id}`])).expect(200);
+    await conSesion(app, e.paz.token).get(`/api/v1/advisees/${e.ase.id}/habits`).expect(200);
+
+    /** Una lectura en curso (el cerrojo compartido de la autorización) mientras llega el retiro; la suelta cuando espera. */
+    async function conUnaLecturaEnCurso<T>(cerrojo: string, pedido: () => Promise<T>, que: string): Promise<{ respuesta: T; soltadoEn: Date }> {
+      let respuesta: Promise<T> | undefined;
+      let termino = false;
+      let soltadoEn = new Date(0);
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${cerrojo}, 0))`;
+          const pid = await pidDeLaTransaccion(tx);
+          respuesta = pedido().finally(() => {
+            termino = true;
+          });
+          await esperarQueEsperen(prisma, 1, { bloqueadoPor: pid, yaPaso: () => termino, que });
+          // Si el retiro terminó sin esperar, no tomó el cerrojo de las lecturas.
+          expect(termino).toBe(false);
+          const [ahora] = await tx.$queryRaw<{ ahora: Date }[]>`SELECT clock_timestamp() AS "ahora"`;
+          soltadoEn = ahora!.ahora;
+        },
+        { timeout: 40_000, maxWait: 10_000 },
+      );
+      return { respuesta: await (respuesta as Promise<T>), soltadoEn };
+    }
+
+    const res = await conUnaLecturaEnCurso(`autorizacion-de-resumenes|${e.ase.id}`, () => cmp(e.ase.token).retirar(`SUMMARY:${e.ruiz.id}:NUTRICION`).then((r) => r), 'el retiro de lo de otras áreas esperando la lectura');
+    expect(res.respuesta.status).toBe(200);
+    const deRes = UnaCosaRetiradaResponseSchema.parse(res.respuesta.body).data;
+    expect(deRes.withdrawn).toBe(true);
+    expect(new Date(deRes.withdrawnAt!).getTime()).toBeGreaterThanOrEqual(res.soltadoEn.getTime());
+    expect((await recibe(e.ruiz, e.ase)).NUTRICION).toBeNull();
+
+    const hbt = await conUnaLecturaEnCurso(`autorizacion-de-habitos|${e.ase.id}`, () => cmp(e.ase.token).retirar(`HABITS:${e.paz.id}`).then((r) => r), 'el retiro de los hábitos esperando la lectura');
+    expect(hbt.respuesta.status).toBe(200);
+    const deHbt = UnaCosaRetiradaResponseSchema.parse(hbt.respuesta.body).data;
+    expect(deHbt.withdrawn).toBe(true);
+    expect(new Date(deHbt.withdrawnAt!).getTime()).toBeGreaterThanOrEqual(hbt.soltadoEn.getTime());
+    await conSesion(app, e.paz.token).get(`/api/v1/advisees/${e.ase.id}/habits`).expect(404);
+  }, 120_000);
 
   it('TEST-CMP-025 · compartir el plan de un área con quien lo pidió acepta su pedido', async () => {
     const e = await escenario('025');

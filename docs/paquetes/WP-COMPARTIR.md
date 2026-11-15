@@ -175,6 +175,7 @@ Ninguna operación de siempre cambia su contrato.
 | TEST-CMP-024 | Lo ajeno igual que lo inexistente (404 y 422 con el mismo cuerpo); sin el A3, 403; el texto viejo y lo que cambió, 409, sin escribir nada | ídem |
 | TEST-CMP-025 | Compartir el plan con quien lo pidió acepta su pedido | ídem |
 | TEST-CMP-026 | (De la revisión.) Con la autorización todavía activa, lo retirado de a una cosa y un «Ahora no» a un pedido no vuelven marcados; lo nunca decidido, sí; cada cosa dice el nivel en que se ve | ídem |
+| TEST-CMP-027 | (De la revisión.) Retirar una cosa espera a la lectura en curso (el mismo cerrojo que las lecturas) y lleva la hora de la base de después, en lo de otras áreas y en los hábitos; sin pausas, con `pg_stat_activity` | ídem |
 | TEST-CT (CMP) | Cada código observado de CMP-01 a 03 está declarado en el contrato | `test/integration/contrato.int-spec.ts` |
 | TEST-CMP-040 a 047 | La APK: lo marcado al entrar, elegir con el A3 como condición, lo que manda el toque, los rechazos en palabras, cada cosa en una línea, la tarjeta una sola vez, los interruptores y los pedidos de «Quién ve qué», y las pantallas (TalkBack, los dos temas) | `apps/mobile/src/compartir-en-el-telefono.test.ts` |
 | TEST-AVR-009, TEST-HA-045 | Las guardias que cambian: «Quién ve qué» escribe solo en sus piezas; aceptar lleva a la pantalla única y no dibuja la tarjeta opcional de la historia anterior | `scripts/vuelta-de-rosca.test.mjs`, `apps/mobile/src/historia-anterior-en-el-telefono.test.ts` |
