@@ -55,6 +55,13 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
  */
 const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169', FZA: 'DL-171', INC: 'DL-172', MET: 'DL-172', NPP: 'DL-173' };
 /**
+ * HIA (DL-175, WP-HISTORIA-ANTERIOR; decidido por Dirección el 2026-11-15): la historia anterior de un área, para el
+ * profesional nuevo, con el permiso de la persona (08 §14.1, «Cambio de profesional»; REG-06-55; RF-025). El 09 no la tiene,
+ * y no es HAN (los habituales de Nutrición, DL-109) ni RES (lo de otras áreas, DL-163). Se declara aparte de la lista para
+ * que se integre sin pisar a otra familia que se sume en paralelo.
+ */
+FAMILIAS_DE_BE.HIA = 'DL-175';
+/**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
  * de una revisión, DL-154).
@@ -191,4 +198,11 @@ test('PG-15 y PG-16 · API-TRN-25 y sus variantes, y la familia NPP, citan DL-17
   assert.deepEqual(notas.map((o) => o.id), ['API-TRN-25', 'API-TRN-25-LISTA', 'API-TRN-25-PROPIA', 'API-NPP-01', 'API-NPP-02', 'API-NPP-03']);
   for (const o of notas) assert.ok(o.fuente.includes('DL-173'), `${o.id} no cita DL-173`);
   assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-NPP-') || id.startsWith('API-TRN-25')), []);
+});
+
+test('DL-175 · la familia HIA son las cuatro operaciones de la historia anterior, cada una cita DL-175 y el 09 no la usa (TEST-HA-013)', () => {
+  const hia = OPERACIONES.filter((o) => o.id.startsWith('API-HIA-'));
+  assert.deepEqual(hia.map((o) => o.id), ['API-HIA-01', 'API-HIA-02', 'API-HIA-03', 'API-HIA-04']);
+  for (const o of hia) assert.ok(o.fuente.includes('DL-175'), `${o.id} no cita DL-175`);
+  assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-HIA-')), []);
 });

@@ -58,6 +58,9 @@ export * from './habitos-de-la-persona';
 export * from './contratos-habitos-de-la-persona';
 export * from './contratos-resumenes-compartidos';
 export * from './resumenes-compartidos';
+// WP-HISTORIA-ANTERIOR (DL-175): la historia anterior de un área, para el profesional nuevo, con el permiso de la persona.
+export * from './historia-anterior';
+export * from './contratos-historia-anterior';
 export * from './copy-habitos-de-la-persona';
 export * from './errores-de-formulario';
 export * from './recuperacion-de-formulario';

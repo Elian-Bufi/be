@@ -316,6 +316,10 @@ model Identidad {
   notasPropiasEscritas   NotaPropia[]          @relation("NotaPropiaDelProfesional")
   notasPropiasSobreElla  NotaPropia[]          @relation("NotaPropiaSobreLaPersona")
   archivosDeNotasPropias ArchivoDeNotaPropia[] @relation("ArchivoDeNotaPropiaDelProfesional")
+  // WP-HISTORIA-ANTERIOR (DL-175): como persona, las versiones de su autorización de la historia anterior; como
+  // profesional, las que lo nombran.
+  autorizacionesDeHistoriaAnterior     AutorizacionDeHistoriaAnterior[] @relation("AutorizacionDeHistoriaAnteriorDeLaPersona")
+  autorizacionesDeHistoriaAnteriorRecibidas AutorizacionDeHistoriaAnterior[] @relation("AutorizacionDeHistoriaAnteriorDelProfesional")
 
   @@map("identidad")
 }
@@ -892,6 +896,9 @@ model AlcanceDeVinculo {
   destinatariosDeResumenes DestinatarioDeResumenes[] @relation("DestinatarioDeResumenesDelReceptor")
   origenDeResumenes        DestinatarioDeResumenes[] @relation("DestinatarioDeResumenesDelOrigen")
   pedidosDeAccesoAPlan     PedidoDeAccesoAPlan[]
+  /// DL-175: las versiones de la autorización de la persona para que el profesional de este componente vea su historia
+  /// anterior de esta área.
+  autorizacionesDeHistoriaAnterior AutorizacionDeHistoriaAnterior[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -4540,4 +4547,50 @@ model ArchivoDeNotaPropia {
   profesional Identidad  @relation("ArchivoDeNotaPropiaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("archivo_de_nota_propia")
+}
+
+// ─── WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el profesional nuevo (DL-175) ──────────────────────
+// 08 §14.1 («Cambio de profesional»: el nuevo ve la historia previa solo si el titular lo consiente), REG-06-55 y RF-025.
+// Lo que Prisma no modela está en la migración 20261115120000: la sucesión por componente, la coherencia con el vínculo,
+// que solo la da la persona y que VIGENTE lleva el texto aceptado con su hash; solo se agrega.
+
+/// DL-175 (HA-T01): el estado de una versión de la autorización. Retirarla es una versión nueva, nunca un cambio de la
+/// anterior.
+enum EstadoDeAutorizacionDeHistoriaAnterior {
+  VIGENTE
+  RETIRADA
+}
+
+/// DL-175 (HA-T01, HA-T04): la autorización de la persona para que el profesional de un componente de vínculo vea su
+/// historia anterior de esa área (lo de otros profesionales en la misma área, antes de su acompañamiento). Un acto
+/// distinto de A3, de B2, de los hábitos y de lo de otras áreas. Versionada por componente: cada cambio es una fila que
+/// sucede a la anterior (1, 2, 3…). La VIGENTE guarda el texto que aceptó, con su hash (08 §12.2); la da y la retira
+/// siempre la persona (`actor_id` = `asesorado_id`). El profesional y el área son los del componente (trigger).
+model AutorizacionDeHistoriaAnterior {
+  id                  String                                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String                                 @map("asesorado_id") @db.Uuid
+  profesionalId       String                                 @map("profesional_id") @db.Uuid
+  alcance             Alcance
+  alcanceDeVinculoId  String                                 @map("alcance_de_vinculo_id") @db.Uuid
+  version             Int
+  predecesoraId       String?                                @unique @map("predecesora_id") @db.Uuid
+  estado              EstadoDeAutorizacionDeHistoriaAnterior
+  /// El texto aceptado (`TEXTO_DE_LA_HISTORIA_ANTERIOR` de @be/domain) y su hash; solo en una VIGENTE.
+  textoId             String?                                @map("texto_id")
+  hashDelTexto        String?                                @map("hash_del_texto")
+  actorId             String                                 @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado        Identidad                       @relation("AutorizacionDeHistoriaAnteriorDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional      Identidad                       @relation("AutorizacionDeHistoriaAnteriorDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo                @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora      AutorizacionDeHistoriaAnterior? @relation("SucesionDeAutorizacionDeHistoriaAnterior", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora         AutorizacionDeHistoriaAnterior? @relation("SucesionDeAutorizacionDeHistoriaAnterior")
+
+  @@unique([alcanceDeVinculoId, version], map: "autorizacion_de_historia_anterior_componente_version_key")
+  @@index([asesoradoId])
+  @@index([profesionalId, asesoradoId, alcance], map: "autorizacion_de_historia_anterior_lector_idx")
+  @@map("autorizacion_de_historia_anterior")
 }

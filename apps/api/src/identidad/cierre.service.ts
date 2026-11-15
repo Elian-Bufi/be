@@ -9,6 +9,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import { retirarAutorizacionDeHabitosPorCierre } from '../formularios/habitos-de-la-persona';
 import { retirarAutorizacionDeResumenesPorCierre } from '../resumenes/resumenes-de-la-persona';
+import { retirarHistoriaAnteriorPorCierre } from '../historia-anterior/autorizaciones';
 import { retirarPropuestasPendientesDelTitular } from '../formularios/propuestas-del-titular';
 import { procedenciaDe, type ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi, errores } from '../http/errores';
@@ -104,6 +105,8 @@ export class CierreService {
           await retirarAutorizacionDeHabitosPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
           // DL-163 D-13, ampliada (TB-55): también la de lo de otras áreas, con su cerrojo, después de la de los hábitos.
           await retirarAutorizacionDeResumenesPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
+          // DL-175 (WP-HISTORIA-ANTERIOR): y cada autorización de su historia anterior, con su cerrojo, al final.
+          await retirarHistoriaAnteriorPorCierre(tx, { personaId: actor.identidadId, procedencia, momento: ctx.momentoDeRecepcion });
 
           const registrada = await tx.solicitudDeCierreDeCuenta.create({
             data: {
