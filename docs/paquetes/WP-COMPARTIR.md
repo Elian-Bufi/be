@@ -79,7 +79,7 @@ para responder»: «Prof. Martín Ruiz te pidió ver el resumen y el plan de Nut
 
 | ID | Método y ruta | AuthN | Qué hace |
 |---|---|---|---|
-| API-CMP-01 | `GET /me/sharing-proposal[?relationshipId=]` | SESSION | Lo que la persona puede compartir y lo que ya comparte, cada cosa con su clave, si está dada (y desde cuándo), si se puede dar, si va marcada y su texto; con `relationshipId`, solo lo que toca a ese componente. La versión de lo que se ve y los textos vigentes, con su hash. No pide el A3 |
+| API-CMP-01 | `GET /me/sharing-proposal[?relationshipId=]` | SESSION | Lo que la persona puede compartir y lo que ya comparte, cada cosa con su clave, si está dada (y desde cuándo), si se puede dar, si va marcada y su texto; lo de otras áreas, además, el nivel que se da (`level`) y el que se ve hoy (`givenLevel`); con `relationshipId`, solo lo que toca a ese componente. La versión de lo que se ve y los textos vigentes, con su hash. No pide el A3 |
 | API-CMP-02 | `POST /me/sharing-choices` | SESSION + Idempotency-Key | Un toque: todo lo elegido en una sola transacción (el A3, el B2 de cada área, lo de otras áreas, los hábitos y la historia anterior), cada acto con su texto, su versión, su hecho y su fila de auditoría. Con la versión vista y los textos mostrados |
 | API-CMP-03 | `POST /me/sharing-choices/withdrawal` | SESSION + Idempotency-Key | Dejar de compartir una cosa (lo de un área con un profesional, o los hábitos con uno), desde ahora. Sin el A3 ni la versión |
 
@@ -106,7 +106,13 @@ Ninguna operación de siempre cambia su contrato.
   única y «Quién ve qué», todo lo de todos.
 - **CMP-D3 · Lo nunca decidido va marcado; lo retirado antes, no.** Un A3 revocado, un B2 revocado, lo de otras áreas o los
   hábitos retirados (o un «no» a un profesional), y una historia anterior retirada se ofrecen sin marcar: «casi por
-  omisión» no pisa una decisión de la persona. Un B2 vigente con una versión vieja del texto se ofrece marcado.
+  omisión» no pisa una decisión de la persona. Un B2 vigente con una versión vieja del texto se ofrece marcado. **Desde la
+  revisión del PR**, «retirado» no se lee solo de la versión vigente (que no lo dice si quedan otras cosas compartidas):
+  API-CMP-01 lee cada renglón que tuvo alguna versión de lo de otras áreas y de los hábitos, y el último pedido de cada
+  profesional. No vuelve marcado lo de un área que la persona compartió y hoy no comparte en ese nivel (lo retiró de a una
+  cosa, lo retiró todo o lo bajó de nivel), lo de un pedido al que dijo «Ahora no» (mientras no lo comparta), ni los
+  hábitos de un profesional que alguna versión nombró. Un renglón que se fue porque el vínculo de origen terminó no cuenta:
+  el profesional nuevo del área se ofrece marcado, porque la persona no decidió nada sobre él.
 - **CMP-D4 · El A3, en la misma pantalla.** «Simplemente el permiso es por el área legal y su consentimiento de datos de
   salud»: si falta el A3, es una cosa más de la pantalla, con su texto (sin él, ningún profesional ve nada). Lo de otras
   áreas, la historia anterior y los hábitos lo piden, como sus operaciones de siempre: sin el A3 dado ni marcado, no se
@@ -161,12 +167,14 @@ Ninguna operación de siempre cambia su contrato.
 |---|---|---|
 | TEST-CMP-001 a 012 | El dominio: qué se ofrece al aceptar y en todo, lo retirado sin marcar, lo dado y lo completo, la historia anterior y los hábitos «si corresponde», el A3 como condición, la revisión de la elección (lo ajeno igual que lo inexistente), solo lo elegido en lo de otras áreas y en los hábitos, la versión, los contratos estrictos y el vocabulario. Cada una con su mutación | `packages/domain/src/compartir.test.ts` |
 | TEST-CMP-013 | La familia CMP son tres operaciones, citan DL-176 y el 09 no la usa | `scripts/trazabilidad-de-operaciones.test.cjs` |
+| TEST-CMP-014 | (De la revisión.) Lo retirado de a una cosa, lo bajado de nivel, un «Ahora no» y los hábitos de antes de un retiro de todo no vuelven marcados; lo que se fue porque un vínculo terminó, sí; el nivel que se ve hoy | `packages/domain/src/compartir.test.ts` |
 | TEST-CMP-020 | Al aceptar: la propuesta y un toque que escribe todo, cada acto con su texto y su hash, la auditoría por acto, solo lo elegido; después no queda nada para dar, y la misma clave responde lo mismo | `test/integration/compartir.int-spec.ts` |
 | TEST-CMP-021 | Todo o nada: con una falla de la base en el último acto, no queda ninguno; después, el mismo toque escribe todo | ídem |
 | TEST-CMP-022 | Retirar cada cosa corta desde ese momento sin tocar lo demás (también sin el A3); dos veces, lo mismo; lo retirado vuelve sin marcar y pide el A3 | ídem |
 | TEST-CMP-023 | Los hábitos: al elegido sí, al que no se nombró no; retirarlos corta | ídem |
 | TEST-CMP-024 | Lo ajeno igual que lo inexistente (404 y 422 con el mismo cuerpo); sin el A3, 403; el texto viejo y lo que cambió, 409, sin escribir nada | ídem |
 | TEST-CMP-025 | Compartir el plan con quien lo pidió acepta su pedido | ídem |
+| TEST-CMP-026 | (De la revisión.) Con la autorización todavía activa, lo retirado de a una cosa y un «Ahora no» a un pedido no vuelven marcados; lo nunca decidido, sí; cada cosa dice el nivel en que se ve | ídem |
 | TEST-CT (CMP) | Cada código observado de CMP-01 a 03 está declarado en el contrato | `test/integration/contrato.int-spec.ts` |
 | TEST-CMP-040 a 047 | La APK: lo marcado al entrar, elegir con el A3 como condición, lo que manda el toque, los rechazos en palabras, cada cosa en una línea, la tarjeta una sola vez, los interruptores y los pedidos de «Quién ve qué», y las pantallas (TalkBack, los dos temas) | `apps/mobile/src/compartir-en-el-telefono.test.ts` |
 | TEST-AVR-009, TEST-HA-045 | Las guardias que cambian: «Quién ve qué» escribe solo en sus piezas; aceptar lleva a la pantalla única y no dibuja la tarjeta opcional de la historia anterior | `scripts/vuelta-de-rosca.test.mjs`, `apps/mobile/src/historia-anterior-en-el-telefono.test.ts` |
@@ -178,7 +186,10 @@ Ninguna operación de siempre cambia su contrato.
    («Elegir qué compartir») o de no hacer nada («Ahora no»). La práctica europea (el caso Planet49 del TJUE) no acepta
    casillas premarcadas como consentimiento; acá no hay casillas marcadas que se acepten por quedarse quietas, sino un
    botón que dice qué acepta. ¿Alcanza para el art. 5 y, sobre todo, para los datos sensibles del art. 7? CAND-10-CON-A
-   (10-B04) pedía el B2 «sin casilla premarcada»: se tensiona.
+   (10-B04) pedía el B2 «sin casilla premarcada»: se tensiona. **Además (lo declara la revisión del PR):** los botones no
+   pesan lo mismo. «Aceptar y compartir» es el principal, «Elegir qué compartir» el secundario y «Ahora no» un enlace, más
+   discreto; en los pedidos de «Quién ve qué», en cambio, «Sí, compartir» y «Ahora no» pesan igual. Si el «libre» pide que
+   decir que no sea tan fácil como decir que sí, «Ahora no» tiene que subir a un botón del mismo peso.
 2. **Varios consentimientos en un toque.** Cada acto queda separado (con su texto, su versión y su auditoría), pero se dan
    juntos. ¿Es suficientemente granular, o hace falta un toque por finalidad (la del área, la de las otras áreas, la de la
    historia anterior, la de los hábitos)?
@@ -198,7 +209,8 @@ Ninguna operación de siempre cambia su contrato.
 - **El congelamiento:** las lecturas nuevas de la APK (API-CMP-01 a 03, y API-RES-09 y 10, que ahora lee y escribe) se
   congelan con la próxima candidata (DL-152).
 - **Verlo en el teléfono:** TalkBack, la letra grande y los dos temas en un teléfono real, y la evidencia de pantalla.
-- **La validación jurídica** de las dudas del §5.
+- **La validación jurídica** de las dudas del §5 (si pide que decir que no pese lo mismo, «Ahora no» pasa a ser un botón
+  como «Elegir qué compartir»: es un cambio de una línea).
 - **El website:** no cambia (el profesional sigue viendo lo compartido por API-RES-04 y 06 y la historia anterior); la
   pantalla de la persona en el website (si se suma) es otro paquete.
 - **La marca de la tarjeta en la base** (CMP-D12), si Dirección la quiere en todos los teléfonos.
@@ -212,3 +224,4 @@ Ninguna operación de siempre cambia su contrato.
 | Fecha | Qué |
 |---|---|
 | 2026-11-15 | Programado en `wp-compartir` (PR abierto), con la CI. CMP-D1 a CMP-D16, a ratificar. |
+| 2026-11-15 | Revisión adversaria (privacidad, datos y experiencia): lo retirado de a una cosa volvía marcado (alta), «Quién ve qué» decía «el resumen y el plan» de lo que se ve solo con el resumen (media) y tres detalles de TalkBack y de textos (bajas); arreglados en la rama, con TEST-CMP-014 y 026 y las pruebas de la APK ampliadas. La tabla, en el PR. |

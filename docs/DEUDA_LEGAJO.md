@@ -8397,7 +8397,13 @@ candidata (D15); y HA-T01 actualizada (D16).
 **Las dudas legales** (para la validación jurídica): lo preseleccionado con un solo botón frente al art. 5 y el art. 7 (y
 frente a CAND-10-CON-A); varios consentimientos en un toque (¿es granular?); el A3 junto al B2 y a lo demás (10-B02 lo
 trata como un acto aparte); los textos en capas (¿alcanza para «informado» y 08 §12.2?); lo recíproco (la persona comparte
-un plan que escribió otro profesional); y que los textos siguen siendo propuestas o de demostración (ninguno nuevo).
+un plan que escribió otro profesional); que los textos siguen siendo propuestas o de demostración (ninguno nuevo); y, lo
+sumó la revisión del PR, que los botones no pesan lo mismo («Aceptar y compartir» es el principal y «Ahora no» un enlace).
+
+**Lo que corrigió la revisión del PR (2026-11-15).** Lo retirado de a una cosa en «Quién ve qué», con otras todavía
+compartidas, volvía marcado en «Compartir todo» y en lo recíproco al aceptar a otro profesional (la versión vigente no lo
+dice): ahora la propuesta lee lo que la persona ya decidió (cada renglón que tuvo alguna versión y el último pedido de cada
+profesional), y CMP-D3 lo detalla. «Quién ve qué» dice el nivel en que se ve hoy, no el que se ofrece.
 
 **Opciones para Dirección.**
 - **A (programada):** el vínculo aparte, y después una pantalla única con todo preseleccionado y un toque.
