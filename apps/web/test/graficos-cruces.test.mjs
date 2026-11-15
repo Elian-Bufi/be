@@ -249,7 +249,7 @@ test('TEST-GRF-063 · SP-01 existe solo en el caso 1, y el caso negado no se ofr
   assert.deepEqual(D.referenciaDeLaComparacion({ ...sentadilla, exerciseKey: `e:${OTRO_EJERCICIO}`, serie: 2 }, soloEntrenamiento), { metricId: 'entrenamiento.carga', exerciseKey: `e:${OTRO_EJERCICIO}`, setIndex: 2, unit: 'kg' });
   assert.equal(D.referenciaDeLaComparacion(sentadilla, acceso(['NUTRICION'], { NUTRICION: true })), null, 'un ejercicio sin el alcance de Entrenamiento no se lee');
   const enPantalla = leer(join(GRAFICOS, 'cruces/dos-etapas-en-pantalla.tsx'));
-  assert.match(enPantalla, /const elegida = referenciaDeLaComparacion\(ejercicio, acceso\);/);
+  assert.match(enPantalla, /const elegida = referenciaDeLaComparacion\(ejercicio, acceso \?\? null\);/);
   assert.match(enPantalla, /if \(elegida === null\) \{\s*setEstado\(\{ tipo: 'SIN_DATOS', texto: C\.elegiUnEjercicio \}\);\s*return;/);
   assert.deepEqual(ACCESO.areasConEtapas(CASO_1_SP01), ['ENTRENAMIENTO', 'NUTRICION']);
 });

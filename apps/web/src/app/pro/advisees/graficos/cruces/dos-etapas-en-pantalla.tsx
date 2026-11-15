@@ -177,10 +177,10 @@ type EstadoDeDosEtapas = EstadoDelGrafico | { readonly tipo: 'LISTA'; readonly d
  * serie sale de `referenciaDeLaComparacion`, que no pide un área sin acceso: sin ejercicio y sin Nutrición propia, no lee
  * nada y pide un ejercicio.
  */
-export default function GraficoDeDosEtapas({ lectura, periodo, densidad, ejercicio, acceso = null }: PropsDelGrafico) {
+export default function GraficoDeDosEtapas({ lectura, periodo, densidad, ejercicio, acceso }: PropsDelGrafico) {
   const [estado, setEstado] = useState<EstadoDeDosEtapas>({ tipo: 'CARGANDO' });
   const [vuelta, setVuelta] = useState(0);
-  const elegida = referenciaDeLaComparacion(ejercicio, acceso);
+  const elegida = referenciaDeLaComparacion(ejercicio, acceso ?? null);
   const clave = `${lectura.asesoradoId}|${periodo.desde}|${periodo.hasta}|${JSON.stringify(elegida)}|${vuelta}`;
   useEffect(() => {
     let vigente = true;
