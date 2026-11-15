@@ -18,7 +18,8 @@
  *   o un macro en gramos) es una línea discontinua del mismo color, sin puntos: un escalón por cada versión del objetivo.
  *   **Lo indicado en el plan** (DL-158) es un rombo hueco por día, suelto: solo los días en que el plan no dejaba elegir.
  *   Las tres capas van solo en su propio panel y se distinguen por la forma y por su nombre en la leyenda, no solo por
- *   el color.
+ *   el color. **Lo indicado del entrenamiento** (el RIR indicado, cuando se elige como serie; GR-T59) se dibuja igual:
+ *   rombos huecos sueltos, sin línea; en «Superpuestas» va en el eje del RIR registrado, con su misma escala.
  * - **Puntos reales:** la línea une solo puntos del mismo tramo; los huecos y los cambios de método la cortan (F-02). Un
  *   subtotal, el día en curso y una semana sin completar son puntos huecos; lo desconocido no es un punto. Una serie de
  *   carga rápida (DL-161: tildada sin escribir, con los valores del plan) también: sigue en su línea y lleva la leyenda
@@ -84,6 +85,11 @@ export interface SerieParaDibujar {
   readonly cortes?: readonly { readonly fecha: string; readonly texto: string }[];
   /** La cobertura del panel, en partes cortas (el texto es del dominio). */
   readonly cobertura?: readonly string[];
+  /**
+   * La serie entera es lo indicado en el plan y no lo registrado (el RIR indicado, GR-05; GR-T59): rombos huecos sueltos,
+   * sin línea que los una, como lo indicado de Nutrición (DL-158). En «Superpuestas» va en el eje de lo registrado.
+   */
+  readonly indicada?: boolean;
   /** En «Superpuestas» con dos unidades (GR-26): de qué lado va su eje. Sin lado, a la izquierda. */
   readonly lado?: 'IZQUIERDA' | 'DERECHA';
 }
@@ -380,6 +386,8 @@ function Panel({
   const espacioPorDia = ancho > 0 ? (ancho - 62 - margenDerecho - ejeDerecho) / Math.max(1, Math.round((x1 - x0) / DIA)) : 12;
   /** La marca de un punto, con la regla de los cuatro gráficos (TB-02): una hueca, cortada o con un punto adentro tiene su mínimo. */
   const medidaDe = (pt: PuntoAnalitico) => medidaDeMarca(estadoDeMarca(pt), espacioPorDia);
+  /** Las series que son lo indicado en el plan (GR-T59): sus marcas son rombos huecos y no las une ninguna línea. */
+  const indicadas = new Set(series.filter((s) => s.indicada === true).map((s) => s.indice));
   const esElegido = (pt: PuntoAnalitico): boolean => fecha !== null && pt.date <= fecha && fecha <= (pt.dateEnd ?? pt.date);
   // El aro de la fecha elegida, alrededor de cada marca de esa fecha. Va en una capa aparte de las líneas: sus puntos se
   // recortan al área de dibujo, y el aro del último día quedaba cortado contra el borde derecho.
@@ -399,11 +407,13 @@ function Panel({
       // DL-161: una serie de carga rápida (tildada sin escribir) también es hueca, con su leyenda «carga rápida».
       const cargaRapida = esPuntoDeCargaRapida(info.punto);
       const clase = info.punto.dataClass === 'REPORTED' || info.punto.dataClass === 'DERIVED' ? info.punto.dataClass : null;
-      // GR-26: en el 1RM estimado, una serie observada por el profesional (API-FZA-01) es un rombo, no un punto.
+      // GR-26: en el 1RM estimado, una serie observada por el profesional (API-FZA-01) es un rombo, no un punto. Lo
+      // indicado en el plan (GR-T59) también: un rombo hueco, como lo indicado de Nutrición.
       const observada = info.punto.segment.startsWith('observada:');
+      const indicada = indicadas.has(info.indice);
       return (
-        <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-observada={observada ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
-          {observada ? <Rombo cx={cx} cy={cy} porDia={espacioPorDia} color={e.color} /> : <Punto cx={cx} cy={cy} color={e.color} medida={medidaDe(info.punto)} />}
+        <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-observada={observada ? 'si' : undefined} data-indicado={indicada ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
+          {observada || indicada ? <Rombo cx={cx} cy={cy} porDia={espacioPorDia} color={e.color} /> : <Punto cx={cx} cy={cy} color={e.color} medida={medidaDe(info.punto)} />}
         </g>
       );
     };
@@ -467,7 +477,7 @@ function Panel({
     <figure className="grafico grafico__figura">
       <figcaption className="grafico__encabezado">
         <span className="grafico__titulo">
-          {unica ? <Marca indice={unica.indice} /> : null}
+          {unica ? <Marca indice={unica.indice} indicado={unica.indicada === true} /> : null}
           <strong>{nombre}</strong> <span className="grafico__detalle">{detalle}</span>
         </span>
         {unica && ((unica.plan?.escalones.length ?? 0) > 0 || indicados.length > 0) ? (
@@ -491,7 +501,7 @@ function Panel({
           <span className="grafico__muestras">
             {series.map((s) => (
               <span key={s.indice} className="grafico__muestra">
-                <Marca indice={s.indice} /> {rotulos.get(s.indice)}
+                <Marca indice={s.indice} indicado={s.indicada === true} /> {rotulos.get(s.indice)}
               </span>
             ))}
           </span>
@@ -501,7 +511,7 @@ function Panel({
             {ejes.map((e) => (
               <span key={e.lado} className="grafico__eje" data-lado={e.lado}>
                 {e.delLado.map((s) => (
-                  <Marca key={s.indice} indice={s.indice} />
+                  <Marca key={s.indice} indice={s.indice} indicado={s.indicada === true} />
                 ))}{' '}
                 {e.lado === 'IZQUIERDA' ? 'Eje izquierdo' : 'Eje derecho'}: {e.texto}
               </span>
@@ -646,7 +656,9 @@ function Panel({
             ))}
             {tramos.map((t) => {
               const e = ESTILOS[t.indice] ?? ESTILOS[0];
-              return <Line key={t.clave} {...enSuEje(derechaDe(t.indice))} dataKey={t.clave} type="linear" stroke={e.color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
+              // Lo indicado va suelto (GR-T59): sin línea, solo sus rombos.
+              const suelta = indicadas.has(t.indice);
+              return <Line key={t.clave} {...enSuEje(derechaDe(t.indice))} dataKey={t.clave} type="linear" stroke={suelta ? 'none' : e.color} strokeWidth={suelta ? 0 : 1.5} strokeLinejoin="round" strokeLinecap="round" connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
             })}
             {/* El nombre de cada línea, a la derecha de su último punto, en el margen: va en una capa aparte, porque los
                 puntos de una línea se recortan al área de dibujo. */}

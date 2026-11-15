@@ -1404,14 +1404,15 @@ faltan los más antiguos aunque el tramo anterior pudiera estar vacío (lo conse
 
 > **Estado:** programada del 14 al 15/11 en `wp-graficos-cruces-y-analizar` (#278), desde el primer commit de la base
 > (`257912a6`), con la base traída dos veces y después `main` `899c5a1d` (#276, la base, ya integrada; #273, la fase 1;
-> #271 y #272, la tanda B; #279, la APK 0.29). Sin integrar al escribir esto. Sin operaciones nuevas en la API, sin
-> migraciones y sin dependencias nuevas; la APK no suma lecturas. Las decisiones GR-T50 a GR-T59 están **a ratificar**;
-> mientras tanto, rigen.
+> #271 y #272, la tanda B; #279, la APK 0.29). Terminada el 15/11 con lo que faltaba del diseño (§3.4, §3.8 y §4.3): lo
+> indicado del entrenamiento en «Analizar» y la cinta con la fecha elegida de los gráficos. Sin integrar al escribir
+> esto. Sin operaciones nuevas en la API, sin migraciones y sin dependencias nuevas; la APK no suma lecturas. Las
+> decisiones GR-T50 a GR-T59 están **a ratificar**; mientras tanto, rigen.
 
 | Parte | Qué quedó | Dónde | Oráculo |
 |---|---|---|---|
-| **GR-26** en «Analizar» | Los modos se llaman **«Alineadas»** (por defecto) y **«Superpuestas»**; en la URL y en las vistas guardadas siguen `PANELS` y `OVERLAY`. «Superpuestas» sigue `composicionPermitida`: el mismo eje X (una serie por semana va solo con otras semanales), hasta tres series y dos unidades, un eje a cada lado (`yAxisId`) rotulado con su muestra, el nombre corto de sus series y la unidad; el nombre de cada línea va al final. Cada eje con la escala de «Alineadas», sin sombrear entre líneas. Si no se puede, se apaga y dice qué hacer. Una vista guardada con `OVERLAY` de antes se ve igual (un eje). El selector ofrece el catálogo con el acceso de hoy, con las series de los sugeridos primero; el 1RM estimado (Epley v1) solo con un ejercicio de la lista de la v1, sin las orientativas y con lo observado en rombo. La frase de la coincidencia al pie y, con dos ejes, «Cómo leerlo» | `seguimiento/analizar.tsx`, `lienzo.tsx`, `selector.tsx`, `series.ts` (el despacho), `graficos/arma-tu-grafico/compositor.ts` | TEST-GRF-068 a 071, 074 a 076 y 078 |
-| **GR-23** arriba de «Analizar» | La cinta del tiempo de la base arriba de los gráficos, sobre el intervalo que se ve, con los alcances de hoy y las versiones de los planes propios; se lee cuando ya se sabe qué áreas hay. Tiene su propio cursor | `seguimiento/analizar.tsx` | TEST-GRF-076 |
+| **GR-26** en «Analizar» | Los modos se llaman **«Alineadas»** (por defecto) y **«Superpuestas»**; en la URL y en las vistas guardadas siguen `PANELS` y `OVERLAY`. «Superpuestas» sigue `composicionPermitida`: el mismo eje X (una serie por semana va solo con otras semanales), hasta tres series y dos unidades, un eje a cada lado (`yAxisId`) rotulado con su muestra, el nombre corto de sus series y la unidad; el nombre de cada línea va al final. Cada eje con la escala de «Alineadas», sin sombrear entre líneas. Si no se puede, se apaga y dice qué hacer. Una vista guardada con `OVERLAY` de antes se ve igual (un eje). El selector ofrece el catálogo con el acceso de hoy, con las series de los sugeridos primero; el 1RM estimado (Epley v1) solo con un ejercicio de la lista de la v1, sin las orientativas y con lo observado en rombo. **Lo indicado del entrenamiento** elegido como serie (el RIR indicado, cuando la rama B lo ofrezca) va como lo indicado de Nutrición: rombos huecos sueltos, sin línea, con su leyenda; y en «Superpuestas», en el eje de lo registrado de su misma unidad, con su escala (no suma un eje). La frase de la coincidencia al pie y, con dos ejes, «Cómo leerlo» | `seguimiento/analizar.tsx`, `lienzo.tsx`, `selector.tsx`, `series.ts` (el despacho), `graficos/arma-tu-grafico/compositor.ts` | TEST-GRF-068 a 071, 073 a 076 y 078 |
+| **GR-23** arriba de «Analizar» | La cinta del tiempo de la base arriba de los gráficos, sobre el intervalo que se ve, con los alcances de hoy y las versiones de los planes propios; se lee cuando ya se sabe qué áreas hay. **Comparte la fecha elegida con los gráficos** (§3.8): elegir en la cinta la elige en los gráficos y en la lectura, y la cinta dice lo que regía en la fecha que se lee. Para eso, el proveedor del cursor de la base admite una fecha de afuera (un cambio que solo agrega: sin ella, el cursor es propio, como siempre) | `seguimiento/analizar.tsx`, `graficos/cursor-de-fechas.tsx` | TEST-GRF-076 |
 | **GR-24** · dos etapas lado a lado | Debajo de la tabla de «Comparar dos etapas», «Lado a lado, con todas las observaciones»: cada métrica en dos columnas, cada día, sesión o toma en su fecha dentro de la etapa, la mediana como raya y la cantidad escrita. Con menos de 5 de un lado no se dibuja y dice cuánto hay. Lo que no entra en la mediana se ve hueco o en rombo y se cuenta con su motivo. Con el 1RM estimado, la mediana del RIR registrado y el rango de repeticiones de cada etapa. Lo que también cambió y lo que BE no registra. Cada una con su tabla | `graficos/cruces/dos-etapas.ts` y `dos-etapas-en-pantalla.tsx`, `seguimiento/etapas.tsx` | TEST-GRF-061 y 062 |
 | **SP-01** · carbohidratos × 1RM estimado | Tres carriles alineados (los carbohidratos por día con el objetivo en escalón, las calorías al lado y el 1RM estimado por sesión, con un eje de 10 kg o 22 lb como mínimo), las dos etapas del objetivo de fondo, «Dos etapas» de los carbohidratos y del 1RM, y la lectura: la ventana fijada antes de mirar, lo que cambió en lo indicado en la primera línea, cada etapa con sus días (cuántos entran en la mediana y cuántos quedaron afuera, y por qué), el 1RM entre ≈ y ≈ con la mediana del RIR y las repeticiones, el ruido propio antes del cambio, las calorías de cada etapa, lo que también cambió, lo que BE no registra, «Cómo leerlo» (Henselmans 2022) y la frase | `graficos/cruces/carbohidratos-y-fuerza.ts` y `-en-pantalla.tsx`, `ventanas.ts`, `lo-que-tambien-cambio.ts`, `lecturas-de-los-cruces.ts`, `lectura-del-cruce.tsx` | TEST-GRF-063, 065, 066 y 077 |
 | **SP-02** · energía × peso | Las calorías por día con el objetivo, su media semanal que dice con cuántos días se hizo, y el peso de cada toma en puntos sueltos con los días desde la anterior; la ventana entre dos tomas del mismo protocolo con 14 días o más; el error de medición que BE no tiene cargado; «Lo registrado puede no ser todo lo comido»; «Cómo leerlo» (Hall 2011) y la frase | `graficos/cruces/energia-y-peso.ts` y `-en-pantalla.tsx`, `ventanas.ts` | TEST-GRF-064 y 067 |
@@ -1434,14 +1435,14 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
 | TEST-GRF-066 | Aceptar una etapa del objetivo de 2 semanas |
 | TEST-GRF-067 | Tomar la toma de otro protocolo |
 | TEST-GRF-068 | Un solo eje con dos unidades |
-| TEST-GRF-069 | Dejar «Superpuestas» con tres unidades |
+| TEST-GRF-069 | Dejar «Superpuestas» con tres unidades; darle a lo indicado su propio eje |
 | TEST-GRF-070 | Superponer una serie semanal con una de sesión |
 | TEST-GRF-071 | Abrir siempre el segundo eje en una vista con `OVERLAY` de antes |
 | TEST-GRF-072 | Un «%» en la lectura de un cruce; devolverle a un límite del diccionario el término prohibido que decía en negación |
-| TEST-GRF-073 | Unir las tomas de Antropometría |
+| TEST-GRF-073 | Unir las tomas de Antropometría; unir lo indicado con una línea o dibujarlo lleno |
 | TEST-GRF-074 | Ofrecer el 1RM estimado con cualquier ejercicio |
 | TEST-GRF-075 | Leer el 1RM estimado como métrica del diccionario |
-| TEST-GRF-076 | Volver a «Juntas»; sacar la cinta de arriba de «Analizar» |
+| TEST-GRF-076 | Volver a «Juntas»; sacar la cinta de arriba de «Analizar» o su proveedor del cursor |
 | TEST-GRF-077 | Asignar una sesión por su fecha; decir un cambio fuera de la ventana |
 | TEST-GRF-078 | Perder la marca de la orientativa |
 | TEST-GRF-079 | Guardar en `localStorage` |
@@ -1473,15 +1474,19 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
   `grafico-armado.tsx`, `lectura-del-cruce.tsx` y `lecturas-de-los-cruces.ts`.
 - **GR-T59 · En «Analizar», el 1RM estimado elegido a mano se lee sin las orientativas** (como «Fuerza» en «Analizar»,
   ED-74) y una serie observada se dibuja en rombo con su leyenda. En SP-01, las orientativas van huecas y no entran en el
-  rango.
+  rango. *Ampliada el 15/11:* **lo indicado del entrenamiento elegido como serie** (el RIR indicado) se dibuja en
+  «Analizar» como lo indicado de Nutrición (DL-158): rombos huecos sueltos, sin línea, con una leyenda que dice cuál es; y
+  en «Superpuestas» (en «Analizar» y en «Patrones») va en el eje de lo registrado de su misma unidad, con la misma escala:
+  el RIR indicado y el RIR registrado no tienen familia, y sin esto serían dos ejes «RIR» con escalas distintas. Por eso
+  no suma un eje: con el RIR registrado, el RIR indicado y la carga quedan dos y se puede. *Alternativa:* darle al RIR
+  indicado la familia del RIR en el catálogo (archivo de la rama B), que cambiaría la regla para todos los gráficos.
 
 #### Lo que falta para cerrar
 
 - «Ver la relación», «Comparaciones» y «Armá tu gráfico» **en «Patrones»** los muestra la rama E con este registro y
   estas piezas; SP-01 en vivo para la defensa depende de eso. La cinta arriba de SP-01 la pone «Patrones».
-- **La cinta de «Analizar» no mueve la fecha elegida de los gráficos** (y al revés): el cursor de la base no se puede
-  controlar desde afuera y los gráficos de «Analizar» son de la biblioteca. Para unirlos hace falta un proveedor del
-  cursor controlado en la base (`cursor-de-fechas.tsx`).
+- Lo indicado del entrenamiento en «Analizar» se ve recién cuando se integre la rama B (#280), que ofrece el RIR
+  indicado; hasta entonces no se puede elegir.
 - La evidencia en pantalla (1440, 1280 y 1024) y la revisión con lector de pantalla: no se corrió el website local (la PC
   tiene poca memoria); lo juzgan la CI, los recorridos del navegador y las capturas de #282.
 

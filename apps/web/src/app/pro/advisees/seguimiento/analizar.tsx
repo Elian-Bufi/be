@@ -112,7 +112,8 @@ import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion
 import { FuerzaEnAnalizar, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
 import { accesoDeLosDisponibles, nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerieDelAnalisis, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
-import { COMO_LEER_DOS_EJES, motivoDeSuperpuestas, NOMBRE_DEL_MODO, serieElegidaDe, superposicionDeLasElegidas } from '../graficos/arma-tu-grafico/compositor';
+import { COMO_LEER_DOS_EJES, enumerar, esLoIndicadoDe, motivoDeSuperpuestas, NOMBRE_DEL_MODO, serieElegidaDe, superposicionDeLasElegidas } from '../graficos/arma-tu-grafico/compositor';
+import { ProveedorDelCursor } from '../graficos/cursor-de-fechas';
 import { valorParaMostrar } from './valores';
 import { VistasGuardadas, vistaRecienAbierta } from './vistas-guardadas';
 
@@ -345,6 +346,8 @@ function AnalizarConSusPreguntas() {
       // cuántos días no tienen registros (lo gris). Los subtotales y el día en curso se ven como puntos huecos, con su
       // leyenda; la cobertura entera está en «Resumen en texto» y en las comparaciones.
       cobertura: partesDeLaCobertura(resumirPeriodo(s.estado.observaciones, s.definicion, desde, hasta, hoy)).filter((parte, i) => i === 0 || /sin registros$/.test(parte)),
+      // GR-T59: lo indicado en el plan elegido como serie (el RIR indicado) va en rombos huecos sueltos, no como registrado.
+      indicada: esLoIndicadoDe(s.ref.metricId),
       // GR-26: en «Superpuestas», de qué lado va su eje.
       ...(modo === 'OVERLAY' ? { lado: ladoDe.get(s.clave) ?? 'IZQUIERDA' } : {}),
     };
@@ -474,6 +477,8 @@ function AnalizarConSusPreguntas() {
   const hayCargaRapida = puntosDibujados.some(esPuntoDeCargaRapida);
   // GR-26: en el 1RM estimado, una serie observada por el profesional va en rombo, con su leyenda.
   const hayObservadas = puntosDibujados.some((p) => p.segment.startsWith('observada:'));
+  // GR-T59: lo indicado en el plan elegido como serie va en rombos sueltos; la leyenda dice cuáles son, por su nombre.
+  const indicadasALaVista = dibujables.filter((d) => d.indicada === true).map((d) => `«${d.nombreCorto ?? d.nombre}»`);
   // Varios cortes en un gráfico llevan un número (el motivo escrito se pisaba): acá, cuál es cada uno. Con uno solo, el
   // gráfico ya lo dice.
   const cortesNumerados =
@@ -646,10 +651,13 @@ function AnalizarConSusPreguntas() {
                   ))}
               {listas.some((s) => s.estado.parcial) ? <p className="nota">Vista parcial: hay datos de esta área que no ves (los de otro profesional).</p> : null}
               {/* GR-23: la cinta del tiempo arriba de los gráficos, sobre el intervalo que se ve (DL-174). Espera a saber qué
-                  áreas hay, para no leer dos veces; sin acceso, no deja nada. Tiene su propio cursor: elegir en la cinta dice
-                  lo que pasó ese día, sin mover la fecha elegida de los gráficos. */}
+                  áreas hay, para no leer dos veces; sin acceso, no deja nada. Comparte la fecha elegida con los gráficos
+                  (§3.8): elegir en la cinta la elige en los gráficos y en la lectura, y al revés, la cinta dice lo que regía
+                  en la fecha que se lee. Lo que cae antes o después del intervalo se lleva a su borde. */}
               {dibujables.length > 0 && !disponibles.cargando ? (
-                <CintaDelTiempoLeida lectura={{ token, asesoradoId, sesionPerdida }} alcances={alcancesDeLaCinta} vigencias={vigenciasDeLaCinta} periodo={{ desde, hasta, hoy, desdeElVinculo: null }} />
+                <ProveedorDelCursor fecha={fecha} alElegirFecha={(f) => cambiar({ fecha: f === null ? null : f < desde ? desde : f > hasta ? hasta : f })}>
+                  <CintaDelTiempoLeida lectura={{ token, asesoradoId, sesionPerdida }} alcances={alcancesDeLaCinta} vigencias={vigenciasDeLaCinta} periodo={{ desde, hasta, hoy, desdeElVinculo: null }} />
+                </ProveedorDelCursor>
               ) : null}
               {dibujables.length > 0 ? (
                 <>
@@ -690,11 +698,16 @@ function AnalizarConSusPreguntas() {
                   {/* GR-26: con dos ejes, «Cómo leerlo» lo dice debajo del gráfico (Few 2008). */}
                   {dosEjes ? <p className="nota analizar__dos-ejes">{COMO_LEER_DOS_EJES}</p> : null}
                   {/* Cómo se lee una marca: solo lo que está dibujado. La métrica no va acá: la nombran su gráfico y su línea. */}
-                  {hayHuecos || hayCargaRapida || hayObservadas || clases.has('REPORTED') || clases.has('DERIVED') || cortesNumerados.length > 0 ? (
+                  {hayHuecos || hayCargaRapida || hayObservadas || indicadasALaVista.length > 0 || clases.has('REPORTED') || clases.has('DERIVED') || cortesNumerados.length > 0 ? (
                     <ul className="leyenda" aria-label="Cómo se lee cada marca">
                       {hayObservadas ? (
                         <li data-leyenda="observada">
                           <Marca indice={0} indicado /> Rombo: una serie observada por el profesional, no escrita por la persona
+                        </li>
+                      ) : null}
+                      {indicadasALaVista.length > 0 ? (
+                        <li data-leyenda="indicado">
+                          <Marca indice={0} indicado /> Rombo suelto en {enumerar(indicadasALaVista)}: lo indicado en el plan para cada sesión, en la versión que la rigió; no es lo registrado
                         </li>
                       ) : null}
                       {hayHuecos ? (

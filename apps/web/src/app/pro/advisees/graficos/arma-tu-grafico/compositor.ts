@@ -20,6 +20,8 @@ import {
   definicionDeMetrica,
   entraEnLaEstimacion,
   esPuntoDeCargaRapida,
+  fraseDeLaCoincidencia,
+  MAXIMO_DE_EJES_SUPERPUESTOS,
   MAXIMO_DE_SERIES_EN_UN_GRAFICO,
   serieDisponible,
   seriesOfrecidas,
@@ -89,7 +91,22 @@ export interface GrupoDeSeries {
   readonly indices: readonly number[];
 }
 
-/** Los grupos con la regla de `composicionPermitida`, por posición: kg y lb de una misma serie son dos grupos. */
+/** Si la serie es lo indicado en el plan (el RIR indicado, GR-05) y no lo registrado: se dibuja hueca y suelta. */
+export const esLoIndicado = (s: Pick<SerieDisponible, 'marca'>): boolean => s.marca === 'INDICADO';
+
+/** Lo mismo, por el identificador de una referencia elegida (la de «Analizar» o la de un enfoque). */
+export const esLoIndicadoDe = (metricId: string): boolean => {
+  const serie = serieDisponible(metricId);
+  return serie !== null && esLoIndicado(serie);
+};
+
+/**
+ * Los grupos con la regla de `composicionPermitida`, por posición: kg y lb de una misma serie son dos grupos. Y una
+ * más (GR-T59): **lo indicado va en el eje de lo registrado de su misma unidad** («lo indicado y lo registrado van en el
+ * mismo panel solo si comparten la unidad»). El RIR indicado y el RIR registrado no tienen familia, y cada uno sería su
+ * propio eje «RIR», con otra escala: así, lo indicado se lee contra lo registrado en la misma escala. Sin lo registrado
+ * de esa unidad, lo indicado va en su propio eje.
+ */
 export function gruposDeLasSeries(elegidas: readonly SerieElegida[]): GrupoDeSeries[] {
   const grupos: { clave: string; unidad: string; familia: string | null; indices: number[] }[] = [];
   elegidas.forEach((s, i) => {
@@ -99,7 +116,16 @@ export function gruposDeLasSeries(elegidas: readonly SerieElegida[]): GrupoDeSer
     if (grupo) grupo.indices.push(i);
     else grupos.push({ clave, unidad: s.unidad, familia, indices: [i] });
   });
-  return grupos.map(({ unidad, familia, indices }) => ({ unidad, familia, indices }));
+  const soloLoIndicado = (g: { readonly indices: readonly number[] }): boolean => g.indices.every((i) => esLoIndicado((elegidas[i] as SerieElegida).serie));
+  const unidos = grupos.filter((g) => {
+    if (!soloLoIndicado(g)) return true;
+    const registrado = grupos.find((h) => h !== g && h.unidad === g.unidad && !soloLoIndicado(h));
+    if (!registrado) return true;
+    registrado.indices.push(...g.indices);
+    registrado.indices.sort((a, b) => a - b);
+    return false;
+  });
+  return unidos.map(({ unidad, familia, indices }) => ({ unidad, familia, indices }));
 }
 
 /** Por qué «Superpuestas» no se puede usar: los motivos del dominio y uno propio, una sola serie. */
@@ -115,13 +141,30 @@ export interface SuperposicionDeLasElegidas {
   readonly grupos: readonly GrupoDeSeries[];
 }
 
-/** Si las series elegidas se pueden superponer, con qué ejes y de qué lado va cada una. */
+/**
+ * Si las series elegidas se pueden superponer, con qué ejes y de qué lado va cada una. Decide el dominio
+ * (`composicionPermitida`), con una salvedad: lo indicado que va en el eje de lo registrado no suma un eje (el dominio lo
+ * cuenta aparte), así que con el RIR registrado, el RIR indicado y la carga quedan dos ejes y se puede. Los demás motivos
+ * (más de tres series, otro eje de fechas) siguen igual.
+ */
 export function superposicionDeLasElegidas(elegidas: readonly SerieElegida[]): SuperposicionDeLasElegidas {
   const grupos = gruposDeLasSeries(elegidas);
   if (elegidas.length === 1) return { permitida: false, motivo: 'UNA_SOLA', composicion: null, lados: [], grupos };
-  const composicion = composicionPermitida(elegidas, 'OVERLAY');
-  if (!composicion.permitida) return { permitida: false, motivo: composicion.motivo, composicion: null, lados: [], grupos };
-  const ladoDelGrupo = (i: number): Lado => (grupos.findIndex((g) => g.indices.includes(i)) === 0 ? 'IZQUIERDA' : 'DERECHA');
+  const delDominio = composicionPermitida(elegidas, 'OVERLAY');
+  const permitida = delDominio.permitida || (delDominio.motivo === 'MAS_DE_DOS_UNIDADES' && grupos.length <= MAXIMO_DE_EJES_SUPERPUESTOS);
+  if (!permitida) return { permitida: false, motivo: delDominio.motivo, composicion: null, lados: [], grupos };
+  const ladoDelIndice = (i: number): Lado => (i === 0 ? 'IZQUIERDA' : 'DERECHA');
+  // Sin lo indicado unido a lo registrado, los ejes son los del dominio, tal cual.
+  const composicion: ComposicionDeSeries =
+    delDominio.permitida && delDominio.ejesY.length === grupos.length
+      ? delDominio
+      : {
+          permitida: true,
+          motivo: null,
+          ejesY: grupos.map((g, i) => ({ lado: ladoDelIndice(i), unidad: g.unidad, familia: g.familia, series: g.indices.map((j) => (elegidas[j] as SerieElegida).serie.id) })),
+          frase: fraseDeLaCoincidencia(elegidas, 'OVERLAY', grupos.length),
+        };
+  const ladoDelGrupo = (i: number): Lado => ladoDelIndice(grupos.findIndex((g) => g.indices.includes(i)));
   return { permitida: true, motivo: null, composicion, lados: elegidas.map((_, i) => ladoDelGrupo(i)), grupos };
 }
 

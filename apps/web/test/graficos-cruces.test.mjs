@@ -448,7 +448,7 @@ test('TEST-GRF-068 · «Superpuestas» con dos unidades: un eje a cada lado, cad
   assert.equal(S.geometriaSuperpuesta([carbohidratos, uno], ['IZQUIERDA', 'IZQUIERDA'], ['Carbohidratos', '1RM estimado'], escala, 200, 562).ejes.length, 1);
 });
 
-test('TEST-GRF-069 · tres unidades apagan «Superpuestas» y dicen por qué; dos unidades la permiten con un eje a cada lado y la frase (mutación: dejar tres unidades)', () => {
+test('TEST-GRF-069 · tres unidades apagan «Superpuestas» y dicen por qué; dos unidades la permiten con un eje a cada lado y la frase; lo indicado va en el eje de lo registrado (mutación: dejar tres unidades; darle a lo indicado su eje)', () => {
   const tres = [A.serieElegidaDe('entrenamiento.carga', 'kg', 'ORIGINAL'), A.serieElegidaDe('nutricion.carbohidratos', 'g', 'DAY'), A.serieElegidaDe('entrenamiento.rir', 'RIR', 'ORIGINAL')];
   const s = A.superposicionDeLasElegidas(tres);
   assert.equal(s.permitida, false);
@@ -465,6 +465,25 @@ test('TEST-GRF-069 · tres unidades apagan «Superpuestas» y dicen por qué; do
   assert.deepEqual(d.lados, ['IZQUIERDA', 'DERECHA']);
   assert.equal(d.composicion.ejesY.length, 2);
   assert.equal(d.composicion.frase, FRASE_DE_LA_COINCIDENCIA, 'dos áreas o dos ejes llevan la frase');
+  // GR-T59: lo indicado va en el eje de lo registrado de su misma unidad. El RIR registrado y el RIR indicado no tienen
+  // familia: sin esta regla serían dos ejes «RIR» con escalas distintas. Mutación: darle a lo indicado su propio eje.
+  const rir = A.serieElegidaDe('entrenamiento.rir', 'RIR', 'ORIGINAL');
+  const rirIndicado = A.serieElegidaDe('entrenamiento.rir-indicado', 'RIR', 'ORIGINAL');
+  const carga = A.serieElegidaDe('entrenamiento.carga', 'kg', 'ORIGINAL');
+  const conLoIndicado = A.superposicionDeLasElegidas([rir, rirIndicado]);
+  assert.equal(conLoIndicado.permitida, true);
+  assert.deepEqual(conLoIndicado.lados, ['IZQUIERDA', 'IZQUIERDA'], 'lo indicado comparte el eje y la escala de lo registrado');
+  assert.deepEqual(conLoIndicado.composicion.ejesY.map((e) => e.series), [['entrenamiento.rir', 'entrenamiento.rir-indicado']]);
+  assert.equal(conLoIndicado.composicion.frase, null, 'una sola área y un solo eje no llevan la frase');
+  // Lo indicado no suma un eje: con la carga quedan dos, aunque el dominio cuente tres grupos.
+  const conLaCarga = A.superposicionDeLasElegidas([rirIndicado, carga, rir]);
+  assert.equal(conLaCarga.permitida, true);
+  assert.deepEqual(conLaCarga.lados, ['DERECHA', 'IZQUIERDA', 'DERECHA']);
+  assert.equal(conLaCarga.composicion.ejesY.length, 2);
+  // Sin lo registrado de su unidad, lo indicado va en su propio eje.
+  assert.deepEqual(A.superposicionDeLasElegidas([rirIndicado, carga]).lados, ['IZQUIERDA', 'DERECHA']);
+  assert.equal(A.esLoIndicadoDe('entrenamiento.rir-indicado'), true);
+  assert.equal(A.esLoIndicadoDe('entrenamiento.rir'), false);
 });
 
 test('TEST-GRF-070 · series con distinto eje X no se superponen: una agrupada por semana va solo con otras semanales (mutación: superponer semana con sesión)', () => {
@@ -534,7 +553,7 @@ test('TEST-GRF-072 · los textos de la rama pasan la guardia unida de las áreas
   }
 });
 
-test('TEST-GRF-073 · Antropometría sigue en puntos sueltos también superpuesta (mutación: unir las tomas)', () => {
+test('TEST-GRF-073 · Antropometría sigue en puntos sueltos también superpuesta, y lo indicado del entrenamiento va suelto y en rombo (mutación: unir las tomas; unir lo indicado)', () => {
   const escala = E.escalaDeFechas(PERIODO, { izquierda: 56, derecha: 500 });
   const energia = carrilDe('energia', 'kcal', 0, [puntoDelCarril('2026-11-02', 2000), puntoDelCarril('2026-11-03', 2100), puntoDelCarril('2026-11-04', 2050)]);
   const peso = carrilDe('peso', 'kg', 1, [puntoDelCarril('2026-11-02', 81.2), puntoDelCarril('2026-11-09', 80.9)], { unir: false });
@@ -543,6 +562,15 @@ test('TEST-GRF-073 · Antropometría sigue en puntos sueltos también superpuest
   assert.equal(g.series[1].lineas.length, 0, 'nada une dos tomas');
   assert.equal(g.series[1].marcas.length, 2);
   assert.equal(serieDisponible('antropometria.peso').unirPuntos, false);
+  // GR-T59: lo indicado del entrenamiento elegido en «Analizar» también va suelto: rombos huecos, sin línea, con su
+  // leyenda. Mutación: unir lo indicado con una línea o dibujarlo con el punto lleno de lo registrado.
+  const lienzo = leer(join(SEGUIMIENTO, 'lienzo.tsx'));
+  assert.match(lienzo, /const indicadas = new Set\(series\.filter\(\(s\) => s\.indicada === true\)\.map\(\(s\) => s\.indice\)\);/);
+  assert.match(lienzo, /stroke=\{suelta \? 'none' : e\.color\}/);
+  assert.match(lienzo, /\{observada \|\| indicada \? <Rombo /);
+  const analizar = leer(join(SEGUIMIENTO, 'analizar.tsx'));
+  assert.match(analizar, /indicada: esLoIndicadoDe\(s\.ref\.metricId\),/);
+  assert.match(analizar, /data-leyenda="indicado"/);
 });
 
 test('TEST-GRF-074 · el selector ofrece el catálogo con el acceso de hoy: sin un área no hay nada de ella, el 1RM estimado solo con la lista de la v1 y los sugeridos primero (mutación: ofrecer el 1RM con cualquier ejercicio)', () => {
@@ -582,7 +610,7 @@ test('TEST-GRF-075 · el despacho: lo del diccionario se lee como siempre y lo q
   assert.match(leer(join(SEGUIMIENTO, 'analizar.tsx')), /leerSerieDelAnalisis\(token, asesoradoId, s, periodo, sesionPerdida\)/);
 });
 
-test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección, la frase de la coincidencia, «Dos etapas» lado a lado y la cinta del tiempo arriba (mutación: volver a «Juntas»; sacar la cinta)', () => {
+test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección, la frase de la coincidencia, «Dos etapas» lado a lado y la cinta del tiempo arriba, con la fecha elegida compartida (mutación: volver a «Juntas»; sacar la cinta o su proveedor)', () => {
   const analizar = leer(join(SEGUIMIENTO, 'analizar.tsx'));
   assert.match(analizar, /superposicionDeLasElegidas\(elegidasParaSuperponer\)/);
   assert.doesNotMatch(analizar, /superposicionPermitida\(/);
@@ -596,7 +624,15 @@ test('TEST-GRF-076 · «Analizar» usa la regla nueva, los nombres de Dirección
   // GR-23 arriba de «Analizar» (WP-GRAFICOS §4.2): sobre el intervalo que se ve, con los alcances de hoy y las versiones
   // propias, y solo cuando ya se sabe qué áreas hay (así no lee dos veces).
   assert.match(analizar, /import\('\.\.\/graficos\/cinta-del-tiempo-en-pantalla'\)\.then\(\(m\) => m\.CintaDelTiempoLeida\)/);
-  assert.match(analizar, /\{dibujables\.length > 0 && !disponibles\.cargando \? \(\s*<CintaDelTiempoLeida lectura=\{\{ token, asesoradoId, sesionPerdida \}\} alcances=\{alcancesDeLaCinta\} vigencias=\{vigenciasDeLaCinta\} periodo=\{\{ desde, hasta, hoy, desdeElVinculo: null \}\} \/>/);
+  // La cinta comparte la fecha elegida con los gráficos (§3.8): el proveedor del cursor, controlado por la fecha de
+  // «Analizar». Mutación: sacar el proveedor (la cinta vuelve a su propio cursor y no mueve la lectura).
+  assert.match(
+    analizar,
+    /\{dibujables\.length > 0 && !disponibles\.cargando \? \(\s*<ProveedorDelCursor fecha=\{fecha\} alElegirFecha=\{\(f\) => cambiar\(\{ fecha: f === null \? null : f < desde \? desde : f > hasta \? hasta : f \}\)\}>\s*<CintaDelTiempoLeida lectura=\{\{ token, asesoradoId, sesionPerdida \}\} alcances=\{alcancesDeLaCinta\} vigencias=\{vigenciasDeLaCinta\} periodo=\{\{ desde, hasta, hoy, desdeElVinculo: null \}\} \/>\s*<\/ProveedorDelCursor>/,
+  );
+  const cursor = leer(join(GRAFICOS, 'cursor-de-fechas.tsx'));
+  assert.match(cursor, /if \(!alElegirFecha\) return null;/, 'sin quién decida afuera, el cursor es propio, como siempre');
+  assert.match(cursor, /<Contexto\.Provider value=\{controlado \?\? propio\}>/);
   assert.match(analizar, /const alcancesDeLaCinta = useMemo\(\(\) => accesoDeLosDisponibles\(disponibles\)\.alcances, \[disponibles\]\);/);
   assert.ok(analizar.indexOf('<CintaDelTiempoLeida') < analizar.indexOf('<Lienzo'), 'la cinta va arriba de los gráficos');
   const etapas = leer(join(SEGUIMIENTO, 'etapas.tsx'));
