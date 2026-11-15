@@ -947,7 +947,8 @@ test('TEST-AV2-027 · arriba de todo, transparente; con contenido detrás, un fo
  * Lo que sigue opaco por decisión: los diálogos y la hoja (nada se ve a través de ellos), la fila fija de la sesión
  * (PV-11), la lámina de la toma y sus tarjetas (Indicadores y Progreso, con su sombra), los controles (los campos, las
  * fichas de las comidas y los Segmentos, que la receta cubre dentro de una tarjeta), el aviso informativo (la receta lo
- * cubre con el vidrio prendido) y el círculo de la nube de la recuperación, que no es una tarjeta.
+ * cubre con el vidrio prendido) y el círculo de la nube de la recuperación, que no es una tarjeta. El diálogo para compartir
+ * la historia anterior (DL-175, HA-T16) es uno más de los diálogos.
  */
 const OPACO_POR_DECISION = [
   'campos-de-formulario.tsx · chip',
@@ -957,6 +958,7 @@ const OPACO_POR_DECISION = [
   'dialogo.tsx · opcionElegida',
   'evidencia-visual.tsx · dialogo',
   'fila-fija.tsx · fila',
+  'historia-anterior.tsx · dialogo',
   'indicadores.tsx · tarjeta',
   'nutricion-hoy.tsx · ficha',
   'progreso.tsx · tarjeta',
