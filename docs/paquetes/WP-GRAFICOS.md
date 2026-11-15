@@ -1420,6 +1420,19 @@ faltan los más antiguos aunque el tramo anterior pudiera estar vacío (lo conse
 el título de cada prueba y se revisaron leyendo el código, sin correrlas (la PC no tiene memoria para las pruebas; la CI
 es el juez de que pasan).
 
+**La segunda revisión (2026-11-15)** sumó tres arreglos, sin cambiar ninguna regla de arriba:
+- **Lo de otro profesional se dice.** Cuando API-PRJ-01 de Nutrición responde con `partialView` (hay registros de comida
+  de otro profesional en esas fechas), GR-12, GR-13 (también en g/kg) y GR-14 lo dicen en una nota: esos registros no se
+  ven y no están en los números, así que un día no se lee como todo lo que la persona registró. En los g/kg, lo mismo con
+  las tomas de otro profesional: su peso no se usa. Lo fijan TEST-GRF-042, 045 y 046.
+- **Las fechas de otro año llevan el año.** El peso de los g/kg se busca hasta un año antes (GR-T44): sin el año, «peso
+  del 20/12» se leería como reciente y «se buscó desde el 2/11» como el primer día del período. La fecha del peso, la de
+  la búsqueda, las temporadas, el objetivo y las tomas de GR-18 llevan el año cuando no es el del último día del gráfico
+  (o de la toma más nueva), como el selector de fechas de PG-14. Lo fijan TEST-GRF-042, 045 y 048.
+- **«Día por día» no salta.** «Registros» relee en silencio después de guardar una estimación, para que la lista no
+  salte; el gráfico de arriba volvía a «cargando» y movía la lista igual. Ahora, con la misma persona y el mismo período,
+  lo que se ve sigue a la vista hasta que llega lo nuevo (`esLaMismaLectura`). Lo fija TEST-GRF-054.
+
 **Decisiones del continuador al programar, a ratificar (§6.3):**
 - **GR-T40 · Un lienzo propio de la rama** (`graficos/nutricion-y-cuerpo/`, una carpeta que el reparto no nombraba), sobre
   las piezas puras de la base y sus medidas, porque los paneles alineados no dibujan dos series con un eje (GR-20), las
@@ -1456,6 +1469,12 @@ es el juez de que pasan).
 3. **La evidencia en pantalla:** Azul noche y Claro; 1440, 1280 y 1024; el lector de pantalla en las tablas.
 4. **El error de medición** (GR-17, GR-D4, fase 4): la columna y la franja de GR-18 y GR-20.
 5. **Correr las mutaciones** de cada prueba.
+6. **GR-18 en «Analizar»:** §4.4 lo pone también ahí, pero el reparto (§11) no se lo da a ninguna rama: hoy está en
+   «Evolución › Por sitio» y en el registro, para «Patrones». Queda para quien integre «Analizar» (rama D) o para la
+   fase 3.
+7. **Los g/kg en «Analizar»:** `leerSerieDelCatalogo` los lee con `leerSeriePorKilo`, que no recibe el acceso. El
+   selector de la rama D los tiene que ofrecer solo con `seriesOfrecidas`, y una vista guardada con los g/kg, abierta sin
+   Antropometría, no debería pedir la lectura del peso (hoy la API la responde con 404 y no se ve nada).
 
 ### 13.5 Rama D · `wp-graficos-cruces-y-analizar`
 
