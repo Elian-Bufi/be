@@ -251,7 +251,7 @@ test('TEST-CMP-011 · las claves y los contratos son estrictos', () => {
   // Mutación: aceptar una clave en mayúsculas o con otra forma la pone en rojo.
   assert.deepEqual(leerClave(claveDe.resumen(PAZ, 'NUTRICION')), { tipo: 'SUMMARY', profesionalId: PAZ, area: 'NUTRICION' });
   assert.deepEqual(leerClave(claveDe.area(C_PAZ)), { tipo: 'AREA_CONSENT', componenteId: C_PAZ });
-  assert.equal(leerClave(`SUMMARY:${PAZ.toUpperCase()}:NUTRICION`), null);
+  assert.equal(leerClave(`SUMMARY:${C_PAZ.toUpperCase()}:NUTRICION`), null);
   assert.equal(leerClave('HABITS:otro'), null);
   const pedido = { relationshipId: C_PAZ, expectedVersion: 'pabc', acceptedTextIds: ['a3'], choices: ['HEALTH_DATA'] };
   assert.ok(CompartirLoElegidoRequestSchema.safeParse(pedido).success);
