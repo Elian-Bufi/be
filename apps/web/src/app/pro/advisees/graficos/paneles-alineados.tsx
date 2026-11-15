@@ -50,7 +50,7 @@ import { useCursorDeFechas } from './cursor-de-fechas';
 import { diaYMes, escalaDeFechas, inicioDelEje, moverElCursor, type EscalaDeFechas, type PeriodoDelGrafico } from './eje-de-fechas';
 import { rotulosDeLoLleno, rotulosSinPisarse, textoDeLaMarcaDelEje } from './ejes';
 import { LecturaEnLaFecha } from './lectura-en-la-fecha';
-import { colorDelCarril, Leyenda, MarcaDelCarril } from './marcas';
+import { colorDelCarril, Leyenda, MarcaDelCarril, type FichaDeLaLeyenda } from './marcas';
 import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_DERECHO, MARGEN_IZQUIERDO, useAnchoDelGrafico } from './medidas-del-grafico';
 import { NotaDelInicio } from './estado-del-grafico';
 import { esLaFraseFija, lineaTenueDelGrafico, notasALaVista } from './notas-del-grafico';
@@ -81,6 +81,16 @@ export interface PropsDePanelesAlineados {
   readonly detalle?: string;
   /** Más contenido para «Cómo leerlo», después de las notas. */
   readonly comoLeerlo?: ReactNode;
+  /**
+   * Las fichas de la leyenda de lo que no es un punto (rama B): la tira de cobertura y la línea cortada de lo indicado.
+   * Quien las pasa sabe que se ven; van después de las marcas, en la misma línea.
+   */
+  readonly fichas?: readonly FichaDeLaLeyenda[];
+  /**
+   * Lo que el gráfico dice a la vista además de las notas (rama B): un control y una lista, como cada versión con su ruido
+   * (§5.12). Va debajo de las notas y antes de «Ver la tabla» y «Cómo leerlo».
+   */
+  readonly aLaVista?: ReactNode;
 }
 
 /** El alto de un carril: un gráfico principal de un carril, 240 px (DISENO-VISUAL §1, principio 1); con más, 140 cada uno. */
@@ -95,6 +105,12 @@ const FRANJA_DE_ROTULOS = 18;
 const SEPARACION_DE_LA_TIRA = 4;
 const ALTO_DE_LA_TIRA = 6;
 const ZONA_DE_LA_TIRA = SEPARACION_DE_LA_TIRA + ALTO_DE_LA_TIRA + 4;
+/**
+ * El lugar con que se mide la marca de un carril de un punto por sesión (`porSesion`, rama B): el del día más ancho que
+ * deja la marca llena en su tamaño mayor (`medidaDeMarca`: 0,4 × 8,75 = 3,5 de radio, con su halo). Así un punto se ve
+ * sobre la línea aunque el período sea de un año.
+ */
+const LUGAR_DE_UNA_SESION = 8.75;
 
 /** Un valor de un punto, con sus decimales (hasta uno): «160,5», «1.850». */
 const valorCorto = (v: number): string => v.toLocaleString('es-AR', { maximumFractionDigits: 1 });
@@ -152,6 +168,7 @@ function DibujoDelCarril({
   const xDe = (f: string) => escala.x(f);
   const g = geometria.tipo === 'CARRIL' ? geometria.g : null;
   const versiones = versionesEnElEje(bandas, escala);
+  const porDiaDeLaMarca = carril.tipo === 'PUNTOS' && carril.porSesion ? Math.max(escala.porDia, LUGAR_DE_UNA_SESION) : escala.porDia;
   // Los números de los puntos: el elegido, el último y, con 4 o más, el máximo y el mínimo, sin pisarse.
   const rotulos = useMemo(() => {
     if (!g || g.tipo !== 'PUNTOS' || carril.tipo !== 'PUNTOS') return [];
@@ -207,10 +224,10 @@ function DibujoDelCarril({
               <polyline key={`l${i}`} points={l.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
             ))}
             {g.indicado.map((m) => (
-              <MarcaDelCarril key={`i${m.clave}`} marca={m.marca} cx={m.x} cy={m.y} yHasta={m.yHasta} porDia={escala.porDia} color={color} />
+              <MarcaDelCarril key={`i${m.clave}`} marca={m.marca} cx={m.x} cy={m.y} yHasta={m.yHasta} porDia={porDiaDeLaMarca} color={color} />
             ))}
             {g.marcas.map((m) => (
-              <MarcaDelCarril key={m.clave} marca={m.marca} cx={m.x} cy={m.y} porDia={escala.porDia} color={color} tarde={m.tarde} />
+              <MarcaDelCarril key={m.clave} marca={m.marca} cx={m.x} cy={m.y} porDia={porDiaDeLaMarca} color={color} tarde={m.tarde} />
             ))}
             {rotulos.map((r) => (
               <text key={`r${r.clave}`} className="grafico-base__rotulo-del-punto" x={r.tx} y={r.ty} textAnchor={r.ancla} fontSize={12} fontWeight={r.fuerte ? 600 : 400} fill={r.fuerte ? 'var(--texto)' : 'var(--tenue)'}>
@@ -245,7 +262,7 @@ function DibujoDelCarril({
   );
 }
 
-export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densidad = 'COMPLETA', leyenda = [], notas = [], aclaraciones = [], detalle, comoLeerlo }: PropsDePanelesAlineados) {
+export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densidad = 'COMPLETA', leyenda = [], notas = [], aclaraciones = [], detalle, comoLeerlo, fichas = [], aLaVista = null }: PropsDePanelesAlineados) {
   const [ref, ancho] = useAnchoDelGrafico();
   const conPuntero = useConPuntero();
   const cursor = useCursorDeFechas();
@@ -305,7 +322,7 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
         <p className="grafico-base__detalle">{lineaTenue}</p>
       </div>
       <NotaDelInicio periodo={periodo} />
-      <Leyenda sentidos={visibles} />
+      <Leyenda sentidos={visibles} fichas={fichas} />
       <div
         ref={ref}
         className="grafico-base__area"
@@ -361,6 +378,7 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
           </p>
         ),
       )}
+      {aLaVista}
       <div className="grafico-base__pie">
         <TablaEquivalente titulo={titulo} tabla={tabla} hoy={periodo.hoy} />
         <ComoLeerlo de={titulo}>

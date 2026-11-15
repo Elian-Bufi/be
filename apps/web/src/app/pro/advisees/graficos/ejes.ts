@@ -178,6 +178,9 @@ export function puntosConRotulo<T extends { readonly clave: string; readonly val
  * el mínimo del período, solo entre lo registrado lleno y con 4 o más de esos. Un subtotal (marca hueca: al día le falta
  * algo) o una carga rápida (hueca y gris: los números del plan, no escritos por la persona) no se rotulan como el extremo
  * del período. `minimo` es el que va abajo de su punto.
+ *
+ * Un extremo con el mismo número que uno ya escrito no se rotula (rama B, con la pasada visual: «si suma»): en una serie
+ * pareja (las repeticiones, todas 3) el último ya dice «3», y otro «3» en el primer punto no ubica nada.
  */
 export function rotulosDeLoLleno<T extends { readonly clave: string; readonly valor: number; readonly marca: string }>(
   puntos: readonly T[],
@@ -185,6 +188,13 @@ export function rotulosDeLoLleno<T extends { readonly clave: string; readonly va
 ): { readonly claves: string[]; readonly minimo: string | null } {
   const llenos = puntos.filter((p) => p.marca !== 'HUECA' && p.marca !== 'HUECA_GRIS');
   const orden = [...llenos].sort((a, b) => a.valor - b.valor);
-  const extremos = orden.length >= 4 ? [orden[orden.length - 1]!.clave, orden[0]!.clave] : [];
-  return { claves: [...new Set([...puntosConRotulo(puntos, elegido, false), ...extremos])], minimo: orden[0]?.clave ?? null };
+  const base = puntosConRotulo(puntos, elegido, false);
+  const escritos = new Set(base.map((c) => puntos.find((p) => p.clave === c)?.valor));
+  const extremos: string[] = [];
+  for (const p of orden.length >= 4 ? [orden[orden.length - 1]!, orden[0]!] : []) {
+    if (escritos.has(p.valor)) continue;
+    escritos.add(p.valor);
+    extremos.push(p.clave);
+  }
+  return { claves: [...new Set([...base, ...extremos])], minimo: orden[0]?.clave ?? null };
 }
