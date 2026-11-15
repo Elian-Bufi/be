@@ -12,7 +12,7 @@
  *   saltando, no se vuelven a pedir: se activan cuando la persona quiera, en Cuenta (PG-D8). Activarlos hace lo mismo que
  *   en Cuenta, también encender los recordatorios la primera vez.
  * - **La tercera no promete lo que BE no hace:** registrar una comida pide el plan activo, así que no dice que se pueden
- *   anotar comidas sin plan (decisión del continuador, a ratificar: PG-T60 en el paquete).
+ *   anotar comidas sin plan (decisión del continuador, a ratificar: PG-T80 en el paquete).
  */
 import type { EstadoDeAvisos } from './avisos';
 import type { AlmacenDeTexto } from './descanso-automatico';
@@ -234,10 +234,17 @@ export interface PasosParaActivar {
 /**
  * «Activar avisos» desde la tercera tarjeta: lo mismo que en Cuenta. Activos por primera vez, los recordatorios se
  * encienden, porque se activan para eso; si eso falla, los avisos quedan activos igual y los recordatorios se encienden
- * desde Cuenta.
+ * desde Cuenta. Si el teléfono falla a mitad de camino (el permiso o el almacén tiran un error), la tarjeta no se queda
+ * esperando: «Saltar» y «Ahora no» están apagados mientras se piden, así que se responde que no se pudieron activar y se
+ * sigue con «Entrar a BE».
  */
 export async function activarDesdeLaPresentacion(pasos: PasosParaActivar): Promise<EstadoDeAvisos> {
-  const estado = await pasos.activar();
+  let estado: EstadoDeAvisos;
+  try {
+    estado = await pasos.activar();
+  } catch {
+    return { tipo: 'apagados' };
+  }
   if (estado.tipo !== 'activos') return estado;
   const primeraVez = await pasos.primeraVez().catch(() => null);
   if (primeraVez) await pasos.encenderLosRecordatorios().catch(() => undefined);

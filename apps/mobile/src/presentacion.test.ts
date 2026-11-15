@@ -207,6 +207,25 @@ describe('TEST-PG-012 · activar, como en Cuenta', () => {
     expect(encendidos).toBe(1);
   });
 
+  test('si el teléfono tira un error al activarlos, la tarjeta no se queda esperando: dice que no se pudieron', async () => {
+    let encendidos = 0;
+    const estado = await activarDesdeLaPresentacion({
+      activar: () => Promise.reject(new Error('el permiso no respondió')),
+      primeraVez: async () => true,
+      encenderLosRecordatorios: async () => {
+        encendidos++;
+      },
+    });
+    expect(estado).toEqual({ tipo: 'apagados' });
+    expect(encendidos).toBe(0);
+    // Con la respuesta, la tercera deja de esperar y ofrece «Entrar a BE».
+    const pidiendo = presentacionTras(presentacionTras(presentacionTras(PRESENTACION_AL_EMPEZAR, { tipo: 'siguiente' }), { tipo: 'siguiente' }), { tipo: 'pedir-avisos' });
+    const respondida = presentacionTras(pidiendo, { tipo: 'avisos-respondidos', estado });
+    expect(respondida.avisos).toEqual({ tipo: 'respondidos', estado: { tipo: 'apagados' } });
+    expect(respuestaDeLosAvisos(estado, { activos: 'a', sinPermiso: 's', noDisponibles: 'n' })).toBe(TEXTOS_DE_LA_PRESENTACION.noSePudoActivar);
+    expect(presentacionTras(respondida, { tipo: 'entrar' }).terminada).toBe(true);
+  });
+
   test('si los recordatorios no se pueden encender, los avisos quedan activos igual', async () => {
     const estado = await activarDesdeLaPresentacion({ activar: async () => ACTIVOS, primeraVez: async () => true, encenderLosRecordatorios: () => Promise.reject(new Error('sin red')) });
     expect(estado).toEqual(ACTIVOS);
