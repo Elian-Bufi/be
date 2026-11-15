@@ -53,12 +53,23 @@ export interface SeriesDeLaSerie {
 const conValor = (s: SerieAnalitica | null): number => (s ? s.points.filter((p) => p.value !== null).length : 0);
 
 /**
+ * La tira de un panel de GR-03, una marca por sesión (con la pasada visual: «Cada sesión» en la leyenda): lo que ya dice
+ * el carril y, además, una raya baja en cada sesión sin el dato: un punto sin valor (un RIR sin escribir no es 0) o, en
+ * el panel del RIR, una sesión con el RIR indicado y sin registrar. Una sesión con el dato sigue entera.
+ */
+export function coberturaPorSesion(c: Pick<CarrilDePuntos, 'cobertura' | 'puntos'>, sinDato: readonly string[] = []): CarrilDePuntos['cobertura'] {
+  const estados = new Map(c.cobertura.map((d) => [d.fecha, d.estado] as const));
+  for (const fecha of [...c.puntos.filter((p) => p.valor === null).map((p) => p.fecha), ...sinDato]) if (!estados.has(fecha)) estados.set(fecha, 'sin');
+  return [...estados.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([fecha, estado]) => ({ fecha, estado }));
+}
+
+/**
  * Los tres carriles de GR-03, en este orden: la carga (en la unidad de la serie), las repeticiones y el RIR, con el RIR
  * indicado hueco en su panel. `cargadoTarde`: las fechas con la sesión cargada en un día posterior.
  */
 export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonly serie: number; readonly indicado: readonly PuntoDelCarril[]; readonly cargadoTarde: ReadonlySet<string> }): CarrilDePuntos[] {
   const carriles: CarrilDePuntos[] = [];
-  const porSesion = (c: CarrilDePuntos): CarrilDePuntos => ({ ...c, porSesion: true });
+  const porSesion = (c: CarrilDePuntos, sinDato: readonly string[] = []): CarrilDePuntos => ({ ...c, porSesion: true, cobertura: coberturaPorSesion(c, sinDato) });
   const carga = s.carga ? serieDisponible('entrenamiento.carga', s.carga.unit) : null;
   if (s.carga && carga) {
     carriles.push(
@@ -102,7 +113,7 @@ export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonl
         lectura: lecturaDelRir,
         cargadoTarde: o.cargadoTarde,
         indicado: o.indicado,
-      })),
+      }), o.indicado.map((p) => p.fecha)),
     );
   }
   return carriles;

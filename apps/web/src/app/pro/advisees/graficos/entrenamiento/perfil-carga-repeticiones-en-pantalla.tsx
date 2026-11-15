@@ -245,7 +245,7 @@ export function PerfilCargaRepeticiones({ lectura, periodo, densidad, ejercicio 
             />
           ))}
           {rotulos.map((r) => (
-            <text key={r.clave} x={r.tx} y={r.ty} textAnchor={r.ancla} fontSize={12} fill="var(--tenue)" data-rotulo-de-la-curva="">
+            <text key={r.clave} x={r.tx} y={r.ty} textAnchor={r.ancla} fontSize={12} fill="var(--tenue)" stroke="var(--superficie)" strokeWidth={4} strokeLinejoin="round" paintOrder="stroke" data-rotulo-de-la-curva="">
               {r.texto}
             </text>
           ))}

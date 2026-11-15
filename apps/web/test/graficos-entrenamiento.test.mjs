@@ -795,6 +795,18 @@ test('TEST-GRF-041 · la tira de cada sesión va en la leyenda de GR-02, GR-03 y
     { fecha: '2026-10-02', estado: 'con' },
     { fecha: '2026-10-06', estado: 'sin' },
   ]);
+  // GR-03: en el panel del RIR, la sesión con el RIR sin escribir y la que solo tiene lo indicado van con la raya baja.
+  const rirConHuecos = serieAnalitica('entrenamiento.rir', 'RIR', [punto('i1', '2026-10-05', 2), punto('i2', '2026-10-09', null)]);
+  const indicadoSolo = [{ clave: 'indicado:x', fecha: '2026-10-13', hasta: null, en: null, valor: 2, rango: null, tramo: 'i', marca: 'HUECA', tarde: false, lectura: 'RIR 2' }];
+  const [cRir] = CR.carrilesDeCargaRepeticionesYRir({ carga: null, repeticiones: null, rir: rirConHuecos }, { serie: 1, indicado: indicadoSolo, cargadoTarde: new Set() });
+  assert.deepEqual(
+    cRir.cobertura.map((d) => [d.fecha, d.estado]),
+    [
+      ['2026-10-05', 'con'],
+      ['2026-10-09', 'sin'],
+      ['2026-10-13', 'sin'],
+    ],
+  );
   // Las fichas: «Cada sesión», con lo que dice cada altura para el lector de pantalla; la línea cortada de GR-05.
   assert.equal(TX.FICHA_DE_LA_TIRA.fuerza.corto, 'Cada sesión');
   assert.match(TX.FICHA_DE_LA_TIRA.fuerza.largo, /una raya baja sin estimación/);

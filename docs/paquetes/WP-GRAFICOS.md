@@ -1463,8 +1463,68 @@ lo incluye (`versionDeLaFecha`, TEST-GRF-030). El cambio de lo indicado se dice 
 puede cambiar aunque la fuerza no cambie». Las notas de la tanda B (PG-15 y PG-16) ya las lee la cinta del cuadro, con
 el ejercicio que se mira.
 
+#### Al traer la pasada visual (#283, 15/11)
+
+La rama trajo `main` con la pasada visual (un merge, sin rebase) y aplicó la guía (`DISENO-VISUAL` §2 «B ·
+Entrenamiento») a sus gráficos con las piezas comunes de main. **§5 manda sobre la guía**, como en §13.7: lo que §5 pide
+a la vista queda a la vista.
+
+**Los choques, resueltos con la versión de main y lo que suma la rama:**
+- `graficos/carriles.ts`: las marcas redondas de main (de 3 a 5, sin un número repetido) cubren el arreglo de la marca
+  del medio de la rama (el hallazgo de arriba); queda el de main.
+- `training/la-vez-pasada.tsx`: la lista de GR-01 de main y el acceso al historial de la rama (dos imports).
+- `fuerza/fuerza-en-analizar.tsx`: la pieza de main entera, más lo de la rama que main no tiene y §5.12 pide a la vista:
+  cada versión con la mediana del RIR, las repeticiones y el ruido propio, debajo del gráfico, y el ruido de la versión
+  del punto elegido antes de «La anterior». **El cambio de lo indicado queda uno solo, el de main** (GR-V02, en la línea
+  de la versión y, si no entra, debajo): la primera línea propia de la rama sale de «Analizar» y del historial.
+
+| Gráfico | Antes | Después | Prueba |
+|---|---|---|---|
+| GR-02 | 96 px; la leyenda decía «Registrado: lleno» y se veía la línea sin los puntos (la marca medía con el ancho de un día: 1,8 de radio bajo una línea de 2 px); el número del último decía «160,4» y la lectura «≈ 160,5 kg»; debajo, cuatro notas largas (los extremos, la carga sobre 30, «solo lo ves vos»), la primera línea propia arriba y un segundo «Cómo se calculó» | 240 px; un punto por sesión con su tamaño (`porSesion`: 3,5 de radio con su halo, también en un año); la leyenda en fichas, solo con lo que se ve, y la tira («Cada sesión»: entera con estimación, una raya baja sin); el número del punto es el de la lectura, al medio kilo; el cambio de lo indicado en la línea de la versión; a la vista, la línea de validez y ruido de «Analizar» y cada versión con su ruido; en «Cómo leerlo», cómo se calcula y que la persona no lo ve | TEST-GRF-040, 041 y 043 |
+| GR-03 | La tira de cada sesión debajo de cada panel, sin leyenda; tres notas debajo; «3» rotulado dos veces en una serie pareja | La tira en la leyenda («Cada sesión», con una raya baja donde falta el dato: en el panel del RIR, la sesión con el RIR sin escribir o solo indicado, como en GR-05); lo que aclara cada marca, en «Cómo leerlo»; a la vista, lo que falta (si el comparador no se leyó); un número que ya está escrito no se repite; tres paneles de 96 px | TEST-GRF-040, 041 y 043 |
+| GR-05 | Puntos que no se veían; la línea cortada explicada en una nota; dos «Cómo leerlo» (el de la base y uno propio) y «lo que se ve» debajo de los dos | 240 px; los puntos de una sesión; la línea cortada («Indicado por versión») y la tira en la leyenda; «lo que se ve», a la vista antes del pie; un solo «Cómo leerlo» con lo que aclara | TEST-GRF-040, 041 y 043 |
+| GR-06 | El eje X de 0 a 12 con los puntos apiñados entre 3 y 6; las curvas rotuladas en el margen; la leyenda abajo en renglones largos; cinco párrafos de texto | Los dos ejes ajustados a los datos con un margen y marcas redondas (X de 2 a 8 con series de 3 a 6; Y con un 8 % de aire y 10 kg como mínimo); las curvas recortadas y rotuladas donde salen del dibujo, sin pisarse y con un halo que la línea no cruza; título, línea tenue y leyenda en fichas arriba; qué entra, en una línea a la vista (§5.6); lo demás en «Cómo leerlo» | TEST-GRF-042 y 043 |
+| La cinta (GR-23) | Íconos de 15 px pegados a la barra; en el margen, el ícono del área, que a ese tamaño se leía como una flecha «↔» | Íconos de 18 px sobre un fondo de 22 que no toca la barra (la fila, de 30 px; dos íconos a menos de 22 px se agrupan); con una sola fila, sin el ícono del área | TEST-GRF-019 (la geometría de la cinta, de la base) |
+
+**Lo que la rama sumó a la base, sin cambiar lo de antes:** `porSesion` en el carril de puntos (la marca se mide con
+8,75 px por día como mínimo); fichas de la leyenda para lo que no es un punto (la tira y la línea cortada, con su texto
+largo para el lector de pantalla); un lugar «a la vista» entre las notas y el pie (`aLaVista`); que un extremo con el
+número del último no se rotule (`rotulosDeLoLleno`); y la geometría de la cinta (18 px). La prueba de la leyenda de
+TEST-GRV-008 se ajustó a la línea nueva.
+
+**Decisiones del continuador en la pasada visual, a ratificar:**
+- **GR-T40 · Una sola lectura del cambio de lo indicado, la de main (GR-V02):** todas las series del ejercicio en las
+  sesiones que ejecutaron cada versión, contra la inmediata anterior, en la línea de la versión de GR-02, GR-03 y GR-05
+  (`bandasConElCambio`, del comparador que ya lee el historial) y en «Analizar». Reemplaza GR-T33 y la primera línea.
+  *Alternativa:* la de la rama (las series que usó la regla de cada sesión), como primera línea arriba del gráfico.
+- **GR-T41 · Un punto por sesión con su tamaño:** en los carriles de Entrenamiento, la marca se mide con 8,75 px por día
+  como mínimo (3,5 de radio, con halo), no con el ancho real del día. Con sesiones muy seguidas en un año, los puntos se
+  tocan; el halo los separa. *Alternativa:* medirla con la distancia mínima entre dos sesiones.
+- **GR-T42 · La tira de Entrenamiento es por sesión, y está en la leyenda:** en GR-02, entera con estimación y una raya
+  baja en la sesión sin estimación (el corte de la línea se lee como lo que es); en GR-03 y GR-05, una raya baja donde
+  falta el dato (un RIR sin escribir). *Alternativa:* sacar la tira de GR-02, que repite los puntos.
+- **GR-T43 · El número del punto del 1RM estimado es el de la lectura** (al medio kilo o a la libra) y el punto se dibuja
+  ahí: se corre menos de un cuarto de kilo. *Alternativa:* dibujar el valor exacto y rotular el redondeado.
+- **GR-T44 · Los ejes de GR-06, ajustados a los datos:** X de una repetición equivalente menos que la menor a una más que
+  la mayor, en marcas enteras; Y con un 8 % de aire y el rango mínimo de 10 kg o 22 lb; las curvas, recortadas.
+  *Alternativa:* X fijo de 1 a 12, con la curva de la fórmula entera.
+- **GR-T45 · Los altos en el historial:** GR-02 y GR-05, 240 px (los principales del paso); GR-03, tres paneles de 96;
+  GR-06, 240. *Alternativa:* todos compactos, para ver más sin desplazar.
+- **GR-T46 · La cinta del cuadro:** íconos de 18 px y fila de 30; sin el ícono del área con una sola fila.
+  *Alternativa:* el ícono del área siempre, a 18 px.
+- **GR-T47 · Qué va a la vista y qué a «Cómo leerlo» en la rama (§5 manda):** a la vista, el rango de validez y lo que
+  mueve un RIR (GR-02, §5.6 y §5.12), cada versión con su ruido (§5.12), lo que falta, lo que se ve (GR-05) y qué entra
+  en el perfil (§5.6); en «Cómo leerlo», cómo se calcula, que la persona no lo ve, qué es cada marca, «a igual carga» y
+  qué son las curvas. *Alternativa:* también cada versión en «Cómo leerlo», como pide la guía para lo que no es una
+  cifra.
+
+**Quedan superadas:** GR-T32 en lo de los extremos (ya no van en una nota: el máximo y el mínimo se rotulan en el dibujo,
+GR-V09), GR-T33 (por GR-T40) y GR-T34 (la pasada visual cambió «Frente a la del…» por «La anterior (2 nov): ≈ 154,5 kg»,
+sin diferencia: GR-02 ya no da una diferencia entre dos puntos sueltos en ningún lado).
+
 **Lo que falta para cerrar:**
-1. **La evidencia en pantalla:** el cuadro en Azul noche y Claro, en 1440, 1280 y 1024, con el lector de pantalla.
+1. **El lector de pantalla** en el cuadro, en los dos temas (las capturas de la CI muestran el cuadro en 1024, 1280,
+   1440 y 1920).
 2. **GR-03 y GR-05 en «Patrones» y en «Analizar»:** el registro ya los ofrece; los muestran las ramas E y D.
 3. **Correr las mutaciones** de cada prueba (descritas en su título).
 
