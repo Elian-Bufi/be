@@ -286,7 +286,7 @@ test('TEST-GRF-023 · GR-02: el cambio de lo indicado es uno solo, el de la pasa
   const V1 = vigencia('pv1', 'v1', '2026-09-01', '2026-10-01');
   const sinLaDelMedio = OBSERVACIONES.filter((o) => o.comparacion.planId !== 'pv2').concat([observacion(ex(9), '2026-09-10', 'pv1', [fila(1, hecha(1, kg(80), 5, 2))], { rirObjetivo: 2 })]);
   assert.equal(CO.bandasConElCambio([V1, V2, V3], sinLaDelMedio)[2].cambio, null, 'la v3 no se compara con la v1');
-  // El historial pone esas bandas en los tres gráficos (GR-02 con todas las series; GR-03 y GR-05 con la suya: TEST-GRF-044);
+  // El historial pone esas bandas en los tres gráficos (GR-02 con todas las series; GR-03 y GR-05 con la suya: TEST-GRVB-005);
   // la pantalla de GR-02 ya no lee lo indicado por su cuenta.
   const historial = leer('graficos/entrenamiento/historial-del-ejercicio.tsx');
   assert.match(historial, /return \{ delEjercicio: bandasConElCambio\(vigencias, observaciones\), deLaSerie: bandasConElCambio\(vigencias, observaciones, serie\) \};/);
@@ -738,7 +738,7 @@ test('TEST-GRF-039 · en «Analizar · Fuerza», GR-02 suma cada versión con su
 const GE = await import('../src/app/pro/advisees/seguimiento/geometria.ts');
 const EJE = await import('../src/app/pro/advisees/graficos/ejes.ts');
 
-test('TEST-GRF-040 · GR-02, GR-03 y GR-05 dibujan los puntos que dice la leyenda: un punto por sesión con su tamaño, y la leyenda solo con lo que se ve (mutaciones: medir la marca con el ancho del día, dejar lo hueco sin su sentido)', () => {
+test('TEST-GRVB-001 · GR-02, GR-03 y GR-05 dibujan los puntos que dice la leyenda: un punto por sesión con su tamaño, y la leyenda solo con lo que se ve (mutaciones: medir la marca con el ancho del día, dejar lo hueco sin su sentido)', () => {
   // En 12 semanas en el cuadro (≈ 4 px por día), la marca con el ancho del día no pasa de 1,8 de radio: se pierde en la
   // línea de 2 px. Con el lugar de una sesión, 3,5 con su halo.
   assert.ok(GE.medidaDeMarca('lleno', 4).R < 2);
@@ -762,7 +762,7 @@ test('TEST-GRF-040 · GR-02, GR-03 y GR-05 dibujan los puntos que dice la leyend
   const distintas = [130, 132.5, 137.5, 132.5, 137.5].map((valor, i) => ({ clave: `k${i}`, valor, marca: 'LLENA' }));
   assert.deepEqual(EJE.rotulosDeLoLleno(distintas, null).claves, ['k4', 'k0'], 'el último ya es el máximo: va el mínimo');
   // Lo hueco del 1RM estimado es lo orientativo: la leyenda dice «De más de 10 a 12…» solo si hay una, y nunca «Subtotal».
-  // Lo lleno es «Hasta 10 rep. equivalentes», nunca «Registrado» (revisión del 15/11: es una estimación; TEST-GRF-044).
+  // Lo lleno es «Hasta 10 rep. equivalentes», nunca «Registrado» (revisión del 15/11: es una estimación; TEST-GRVB-005).
   const LEYENDA = ['NUCLEO_DE_LA_ESTIMACION', 'REGISTRADO', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL', 'SUBTOTAL'];
   assert.deepEqual(CA.sentidosQueSeVen(LEYENDA, [fuerza]), ['NUCLEO_DE_LA_ESTIMACION']);
   const conHueca = FE.puntosDelCarrilDeFuerza([...FUERZA, deSesion(ex(8), '2026-11-02', 70, 10, 1)], []);
@@ -779,7 +779,7 @@ test('TEST-GRF-040 · GR-02, GR-03 y GR-05 dibujan los puntos que dice la leyend
   assert.match(historial, /<CargaRepeticionesYRir \{\.\.\.conBandasDeLaSerie\} densidad="COMPACTA" \/>/);
 });
 
-test('TEST-GRF-041 · la tira de cada sesión va en la leyenda de GR-02, GR-03 y GR-05, y dice lo que falta (mutaciones: dejar la tira sin ficha, marcar con la tira entera una sesión sin estimación)', () => {
+test('TEST-GRVB-002 · la tira de cada sesión va en la leyenda de GR-02, GR-03 y GR-05, y dice lo que falta (mutaciones: dejar la tira sin ficha, marcar con la tira entera una sesión sin estimación)', () => {
   // GR-02: entera con estimación, una raya baja en la sesión sin estimación (el corte de la línea se lee como lo que es).
   const puntos = FE.puntosDelCarrilDeFuerza(FUERZA, []);
   assert.deepEqual(
@@ -825,7 +825,7 @@ test('TEST-GRF-041 · la tira de cada sesión va en la leyenda de GR-02, GR-03 y
   assert.match(marcas, /<span className="visualmente-oculto">\{ficha\.largo\}<\/span>/);
 });
 
-test('TEST-GRF-042 · GR-06 ajusta los dos ejes a los datos, con un margen y marcas redondas, y cada curva se rotula adentro del dibujo (mutación: volver al eje de 0 a 12)', () => {
+test('TEST-GRVB-003 · GR-06 ajusta los dos ejes a los datos, con un margen y marcas redondas, y cada curva se rotula adentro del dibujo (mutación: volver al eje de 0 a 12)', () => {
   const serie = (equivalentes, carga, i) => ({ clave: `s${i}`, fecha: '2026-11-01', unidad: 'kg', repeticiones: equivalentes - 2, rir: 2, reciente: true, lectura: '', equivalentes, carga });
   const puntos = [
     [3, 132.5],
@@ -864,7 +864,7 @@ test('TEST-GRF-042 · GR-06 ajusta los dos ejes a los datos, con un margen y mar
   assert.ok(!pantalla.includes('extremosDelEje'));
 });
 
-test('TEST-GRF-043 · lo que pide §5 queda a la vista y lo que aclara va a un solo «Cómo leerlo» por gráfico (mutaciones: llevar el ruido por versión o lo que se ve a «Cómo leerlo», volver al desplegable propio)', () => {
+test('TEST-GRVB-004 · lo que pide §5 queda a la vista y lo que aclara va a un solo «Cómo leerlo» por gráfico (mutaciones: llevar el ruido por versión o lo que se ve a «Cómo leerlo», volver al desplegable propio)', () => {
   const fuerza = leer('graficos/entrenamiento/fuerza-estimada-en-pantalla.tsx');
   // §5.6 y §5.12: el rango de validez y lo que mueve un RIR, como nota a la vista; cada versión con su ruido, a la vista.
   assert.match(fuerza, /notas=\{\[dibujo\.validezYRuido, \.\.\.\(comparador\.tipo === 'error' \? \[C\.sinIndicado\] : \[\]\)\]\}/);
@@ -912,7 +912,7 @@ const CON_HUECOS = [
   observacion(ex(44), '2026-10-28', 'pv3', [fila(1, hecha(1, kg(80), 5, 1))], { rirObjetivo: 1 }),
 ];
 
-test('TEST-GRF-044 · revisión del 15/11: GR-03 y GR-05 rotulan el cambio de lo indicado de su serie; una sesión no realizada no es una sesión sin el dato; las tres tiras de GR-03 marcan las mismas sesiones (mutaciones: rotular el cambio de todas las series en un gráfico de una serie, contar la sesión no realizada, marcar la sesión sin series solo en el panel del RIR)', () => {
+test('TEST-GRVB-005 · revisión del 15/11: GR-03 y GR-05 rotulan el cambio de lo indicado de su serie; una sesión no realizada no es una sesión sin el dato; las tres tiras de GR-03 marcan las mismas sesiones (mutaciones: rotular el cambio de todas las series en un gráfico de una serie, contar la sesión no realizada, marcar la sesión sin series solo en el panel del RIR)', () => {
   // La serie 1 pasa de RIR 2 a RIR 1 en la v3; la serie 2 sigue en RIR 2.
   const porSerie = [
     observacion(ex(31), '2026-10-05', 'pv2', [conObjetivo(1, 2), conObjetivo(2, 2)]),
@@ -991,7 +991,7 @@ test('TEST-GRF-044 · revisión del 15/11: GR-03 y GR-05 rotulan el cambio de lo
   assert.match(pantalla, /sesiones: fechasConElEjercicio\(observaciones\) \}/);
 });
 
-test('TEST-GRF-045 · revisión del 15/11: GR-02 corta la línea en una sesión sin series escritas, su leyenda dice «Hasta 10 rep. equivalentes» y no «Registrado», cuenta «sesiones con estimación» y, si no pudo leer lo indicado, lo dice (mutaciones: unir a través de la sesión sin series, volver a «Registrado», callar que lo indicado no se leyó)', () => {
+test('TEST-GRVB-006 · revisión del 15/11: GR-02 corta la línea en una sesión sin series escritas, su leyenda dice «Hasta 10 rep. equivalentes» y no «Registrado», cuenta «sesiones con estimación» y, si no pudo leer lo indicado, lo dice (mutaciones: unir a través de la sesión sin series, volver a «Registrado», callar que lo indicado no se leyó)', () => {
   // La sesión del 7/10 se hizo sin anotar las series: entre el 5/10 y el 9/10 la línea se corta y la tira la marca.
   const unidos = FE.puntosDelCarrilDeFuerza(FUERZA, []);
   assert.equal(unidos[0].tramo, unidos[1].tramo);
