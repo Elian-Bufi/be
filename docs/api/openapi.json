@@ -103905,6 +103905,1075 @@
         }
       }
     },
+    "/me/sharing-proposal": {
+      "get": {
+        "operationId": "API-CMP-01",
+        "summary": "Lo que la persona puede compartir y lo que ya comparte, cada cosa con su clave, si está dada (y desde cuándo), si se puede dar ahora, si la pantalla única la trae marcada y el texto que se acepta: el tratamiento de sus datos de salud (A3), la autorización de acceso a cada área (B2, con el aviso del perfil del profesional), el resumen y el plan vigente de cada área para cada uno de sus otros profesionales (el resumen solo, en Antropometría), la historia anterior de un área (solo si antes hubo otro profesional en ella) y los hábitos (si ya los comparte o tiene hábitos). Lo que nunca decidió va marcado; lo que retiró antes, no. Con relationshipId, solo lo que toca a ese componente de vínculo (la pantalla al aceptarlo): lo de las otras áreas para ese profesional y lo de su área para los demás; uno terminado no tiene nada para dar. La versión (version) va en API-CMP-02. Los textos son los vigentes, con su hash; algunos son propuestas (PENDING_APPROVAL). No pide el A3: retirar tiene que poder hacerse siempre. Un componente ajeno o inexistente, 404.",
+        "description": "Fuente: DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D5) · Ley 25.326 art. 5 · 08 §12.2 y §12.3 · DL-163 D-13 · DL-165 D-9 · DL-175. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relationshipId",
+            "in": "query",
+            "required": false,
+            "description": "El componente de vínculo de la pantalla al aceptarlo (o al revisarlo desde el vínculo). Sin él, todo.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "relationshipId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^p[0-9a-z]{1,16}$"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "HEALTH_DATA"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "AREA_CONSENT"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "relationshipId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "professional": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "scope": {
+                                    "type": "object",
+                                    "properties": {
+                                      "code": {
+                                        "type": "string",
+                                        "enum": [
+                                          "NUTRICION",
+                                          "ENTRENAMIENTO",
+                                          "ANTROPOMETRIA"
+                                        ]
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "code",
+                                      "label"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "profileNotice": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "relationshipId",
+                                  "professional",
+                                  "scope",
+                                  "profileNotice"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "SUMMARY"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "recipient": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "area": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRICION",
+                                      "ENTRENAMIENTO",
+                                      "ANTROPOMETRIA"
+                                    ]
+                                  },
+                                  "level": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SUMMARY",
+                                      "SUMMARY_AND_PLAN"
+                                    ]
+                                  },
+                                  "from": {
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "identityId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "displayName": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "identityId",
+                                        "displayName"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "recipient",
+                                  "area",
+                                  "level",
+                                  "from"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "PREVIOUS_HISTORY"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "relationshipId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "professional": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "area": {
+                                    "type": "string",
+                                    "enum": [
+                                      "NUTRICION",
+                                      "ENTRENAMIENTO",
+                                      "ANTROPOMETRIA"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "relationshipId",
+                                  "professional",
+                                  "area"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "HABITS"
+                                  },
+                                  "key": {
+                                    "type": "string",
+                                    "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                                  },
+                                  "given": {
+                                    "type": "boolean"
+                                  },
+                                  "since": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "offered": {
+                                    "type": "boolean"
+                                  },
+                                  "preselected": {
+                                    "type": "boolean"
+                                  },
+                                  "textId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "recipient": {
+                                    "type": "object",
+                                    "properties": {
+                                      "identityId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "displayName": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "identityId",
+                                      "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "key",
+                                  "given",
+                                  "since",
+                                  "offered",
+                                  "preselected",
+                                  "textId",
+                                  "recipient"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "texts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "HEALTH_DATA",
+                                  "AREA_CONSENT",
+                                  "SUMMARY",
+                                  "SUMMARY_AND_PLAN",
+                                  "PREVIOUS_HISTORY",
+                                  "HABITS"
+                                ]
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "text": {
+                                "type": "string"
+                              },
+                              "textHash": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              },
+                              "effectiveFrom": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "approval": {
+                                "type": "string",
+                                "enum": [
+                                  "PENDING_APPROVAL",
+                                  "APPROVED"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "kind",
+                              "title",
+                              "text",
+                              "textHash",
+                              "effectiveFrom",
+                              "approval"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "relationshipId",
+                        "version",
+                        "items",
+                        "texts"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/sharing-choices": {
+      "post": {
+        "operationId": "API-CMP-02",
+        "summary": "Un toque escribe todo lo elegido, en una sola transacción (todo o nada): el A3, el B2 de cada área, lo de otras áreas, los hábitos y la historia anterior, cada acto con su texto, su versión, su hecho y su fila de auditoría, como lo dejaría su operación de siempre, y solo lo elegido (no extiende en silencio lo que ya se compartía). Lleva la versión que se vio (si algo cambió, 409 VERSION_CONFLICT), los textos mostrados (uno que no es el vigente, 409 CONSENT_VERSION_STALE; si falta el de algo elegido, 422 SHARING_TEXT_REQUIRED) y las claves de API-CMP-01 (una que hoy no se puede dar —ya dada, ajena o inexistente, lo mismo—, 422 SHARING_CHOICE_NOT_AVAILABLE con un issue por cada una). Lo de otras áreas, la historia anterior y los hábitos piden el A3 vigente o elegido en el mismo toque (si no, 403). Acepta los pedidos pendientes de quienes pasan a ver lo pedido. Un componente ajeno o inexistente en relationshipId, 404.",
+        "description": "Fuente: DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D8) · Ley 25.326 art. 5 · 08 §12.2 y C-12 · 09v7 T18 · DL-115 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 · TB-56. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "relationshipId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expectedVersion": {
+                    "type": "string",
+                    "pattern": "^p[0-9a-z]{1,16}$"
+                  },
+                  "acceptedTextIds": {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "choices": {
+                    "minItems": 1,
+                    "maxItems": 80,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                    }
+                  }
+                },
+                "required": [
+                  "relationshipId",
+                  "expectedVersion",
+                  "acceptedTextIds",
+                  "choices"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "given": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string",
+                                "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "HEALTH_DATA",
+                                  "AREA_CONSENT",
+                                  "SUMMARY",
+                                  "PREVIOUS_HISTORY",
+                                  "HABITS"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "kind"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "recordedAt",
+                        "given"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | CONSENT_VERSION_STALE | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: SHARING_CHOICE_NOT_AVAILABLE | SHARING_TEXT_REQUIRED. SHARING_CHOICE_NOT_AVAILABLE: details.issues trae un issue por cada cosa elegida que hoy no se puede dar (ya está dada, no existe o es ajena: lo mismo), con path choices[i]. SHARING_TEXT_REQUIRED trae el issue con path acceptedTextIds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "details": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "issues": {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "code": {
+                                        "type": "string",
+                                        "const": "SHARING_CHOICE_NOT_AVAILABLE"
+                                      },
+                                      "path": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "code",
+                                      "path"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "issues"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/sharing-choices/withdrawal": {
+      "post": {
+        "operationId": "API-CMP-03",
+        "summary": "La persona deja de compartir una cosa desde ese momento (RNF-PRI-002): lo de un área con un profesional (SUMMARY:…) o sus hábitos con uno (HABITS:…). Es una versión nueva de esa autorización que ya no lo nombra (si no queda nadie, retirada), con la hora de la base tomado el cerrojo; nunca se borra nada. No pide el A3 ni la versión vista. Si ya no se compartía, responde 200 con withdrawn: false, sin escribir. El A3, el B2 y la historia anterior se retiran con su operación de siempre (API-CON-08, API-CON-04 y API-HIA-03). Un profesional que nunca acompañó a la persona (ajeno o inexistente), 404.",
+        "description": "Fuente: DL-176 · WP-COMPARTIR (CMP-D9) · RNF-PRI-002 · 08 §13 · DL-163 D-13 · DL-165 D-9. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^(SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                  }
+                },
+                "required": [
+                  "key"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "pattern": "^(SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+                        },
+                        "withdrawn": {
+                          "type": "boolean"
+                        },
+                        "withdrawnAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "key",
+                        "withdrawn",
+                        "withdrawnAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/nutrition/recipes": {
       "post": {
         "operationId": "API-REC-01",
