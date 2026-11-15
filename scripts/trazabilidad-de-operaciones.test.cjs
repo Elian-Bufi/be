@@ -62,6 +62,12 @@ const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-1
  */
 FAMILIAS_DE_BE.HIA = 'DL-175';
 /**
+ * CMP (DL-176, WP-COMPARTIR; decidido por Dirección el 2026-11-15): compartir casi por omisión, con una sola pantalla de
+ * consentimiento al aceptar el vínculo y un toque que escribe todo lo elegido. El 09 no la tiene, y no es RES, HBT ni HIA:
+ * agrupa sus actos en una transacción y les suma el A3 y el B2.
+ */
+FAMILIAS_DE_BE.CMP = 'DL-176';
+/**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
  * de una revisión, DL-154).
@@ -205,4 +211,11 @@ test('DL-175 · la familia HIA son las cuatro operaciones de la historia anterio
   assert.deepEqual(hia.map((o) => o.id), ['API-HIA-01', 'API-HIA-02', 'API-HIA-03', 'API-HIA-04']);
   for (const o of hia) assert.ok(o.fuente.includes('DL-175'), `${o.id} no cita DL-175`);
   assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-HIA-')), []);
+});
+
+test('DL-176 · la familia CMP son las tres operaciones de la pantalla única, cada una cita DL-176 y el 09 no la usa (TEST-CMP-013)', () => {
+  const cmp = OPERACIONES.filter((o) => o.id.startsWith('API-CMP-'));
+  assert.deepEqual(cmp.map((o) => o.id), ['API-CMP-01', 'API-CMP-02', 'API-CMP-03']);
+  for (const o of cmp) assert.ok(o.fuente.includes('DL-176'), `${o.id} no cita DL-176`);
+  assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-CMP-')), []);
 });

@@ -393,6 +393,13 @@ import {
   type AutorizarHistoriaAnteriorRequest,
   type RetirarHistoriaAnteriorRequest,
 } from './contratos-historia-anterior';
+import {
+  LoElegidoCompartidoResponseSchema,
+  LoQueSePuedeCompartirResponseSchema,
+  UnaCosaRetiradaResponseSchema,
+  type CompartirLoElegidoRequest,
+  type DejarDeCompartirUnaCosaRequest,
+} from './contratos-compartir';
 import { z } from 'zod';
 import { FINALIDAD_DE_ALCANCE, type Alcance } from './alcance';
 import { HEADER_DE_CAPACIDADES, valorDeCapacidades, type CapacidadDeCliente } from './compatibilidad-de-clientes';
@@ -1965,6 +1972,22 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     historiaAnterior(token: string, asesoradoId: string, area: Alcance, tramo: { readonly desde: string; readonly hasta: string } | null = null) {
       const consulta = tramo ? `?periodStart=${encodeURIComponent(tramo.desde)}&periodEnd=${encodeURIComponent(tramo.hasta)}` : '';
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/previous-history/${encodeURIComponent(area)}${consulta}`, { token, esquema: HistoriaAnteriorResponseSchema });
+    },
+
+    // ─── WP-COMPARTIR · CMP: la pantalla única de consentimiento (DL-176). La APK las empieza a leer con su próxima
+    // candidata y se congelan con ella (DL-152). ─────────────────────────────────────────────────────────────────────
+    /** API-CMP-01: lo que puedo compartir y lo que ya comparto; con un componente, lo que toca a ese vínculo. */
+    loQueSePuedeCompartir(token: string, relationshipId: string | null = null) {
+      const consulta = relationshipId ? `?relationshipId=${encodeURIComponent(relationshipId)}` : '';
+      return llamar('GET', `/me/sharing-proposal${consulta}`, { token, esquema: LoQueSePuedeCompartirResponseSchema });
+    },
+    /** API-CMP-02: un toque escribe todo lo elegido, en una sola transacción. */
+    compartirLoElegido(token: string, cuerpo: CompartirLoElegidoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/sharing-choices', { token, claveDeIdempotencia, esquema: LoElegidoCompartidoResponseSchema, cuerpo });
+    },
+    /** API-CMP-03: dejar de compartir una cosa (lo de un área con un profesional, o los hábitos con uno), desde ahora. */
+    dejarDeCompartirUnaCosa(token: string, cuerpo: DejarDeCompartirUnaCosaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/me/sharing-choices/withdrawal', { token, claveDeIdempotencia, esquema: UnaCosaRetiradaResponseSchema, cuerpo });
     },
   };
 }
