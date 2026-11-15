@@ -17,8 +17,20 @@
  *   pisarse (`rotulosSinPisarse`). El resto se lee al pasar el mouse, con el teclado o en la lectura.
  * - **Las versiones, discretas:** un fondo de un tono muy tenue que alterna, una línea fina en cada cambio y «v8» arriba;
  *   si cambió lo indicado, «v8 · de 4 a 3 repeticiones» (`BandaDeVersion.cambio`).
- * - **Debajo, una sola línea de lectura;** la frase fija de los cruces, siempre a la vista; el resto de las notas, en
- *   «Cómo leerlo» (cerrado), junto a «Ver la tabla».
+ * - **Debajo, la línea de lectura y las notas a la vista;** las aclaraciones, en «Cómo leerlo» (cerrado), junto a «Ver la
+ *   tabla».
+ *
+ * La revisión de #283 (WP-GRAFICOS §5 manda sobre la guía visual):
+ * - **Las notas se ven todas** (`notas`): la frase fija de los cruces, también con algo agregado («… Ventana: 4
+ *   semanas»), lo que también cambió en esa ventana (§5.1), una media con su cantidad (§5.13), lo cargado después (§5.14)
+ *   y lo que no entra en la escala, que explica la muesca. A «Cómo leerlo» va solo lo que el llamador pide (`aclaraciones`).
+ * - **El método, a la vista con un solo carril:** va en la línea tenue, aunque el llamador pase la suya (§5.6).
+ * - **El cambio de lo indicado, en texto** (§5.12): todos en el nombre del gráfico; a la vista, los que no entran enteros
+ *   en la línea de su versión.
+ * - **«Lo último» es lo último de cada carril,** con su fecha, y la región viva no sigue al mouse.
+ * - **El mínimo y el máximo rotulados** son de lo registrado lleno: un subtotal o una carga rápida no se rotulan como el
+ *   extremo del período (§5.5 y §5.13).
+ * - **Una semana sin datos** es una columna gris de todo el alto, nunca una raya sobre el cero.
  *
  * Accesibilidad: el contenedor es un grupo con nombre y su descripción apunta al resumen en texto; el SVG no se lee. El
  * área del gráfico recibe el foco: flechas, Inicio, Fin, Mayúscula con flechas (un tramo) y Escape. Pasar el mouse mueve
@@ -43,7 +55,7 @@ import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_DERECHO, MARGEN_IZQUIERDO, useAnchoDelGr
 import { NotaDelInicio } from './estado-del-grafico';
 import { tablaEquivalente } from './tabla-equivalente';
 import { TablaEquivalente } from './tabla-equivalente-en-pantalla';
-import { versionesEnElEje } from './versiones-en-el-eje';
+import { cambiosEnTexto, cambiosQueNoEntran, versionesEnElEje } from './versiones-en-el-eje';
 
 export type DensidadDelGrafico = 'COMPLETA' | 'COMPACTA';
 
@@ -58,10 +70,12 @@ export interface PropsDePanelesAlineados {
   /** Los sentidos que puede tener el gráfico: la leyenda muestra solo los que se ven en el dibujo. */
   readonly leyenda?: readonly SentidoDeLaMarca[];
   /**
-   * Las aclaraciones (el método, «se leyó en tramos de 92 días», qué no entra). La frase fija de los cruces va siempre a
-   * la vista, en una línea tenue; las demás, en «Cómo leerlo».
+   * Las notas que se ven, debajo del gráfico: la frase fija de los cruces (en su línea tenue, también con algo agregado),
+   * lo que también cambió en la ventana, una media con su cantidad. Ninguna se esconde (revisión de #283).
    */
   readonly notas?: readonly string[];
+  /** Las aclaraciones que van en «Cómo leerlo» («se leyó en tramos de 92 días», la explicación fisiológica con su fuente). */
+  readonly aclaraciones?: readonly string[];
   /** La línea tenue debajo del título: la unidad y qué es cada punto. Sin esto, la unidad de los carriles y el período. */
   readonly detalle?: string;
   /** Más contenido para «Cómo leerlo», después de las notas. */
@@ -143,13 +157,19 @@ function DibujoDelCarril({
     const conValor = g.marcas
       .flatMap((m) => {
         const p = carril.puntos.find((x) => x.clave === m.clave);
-        return p && p.valor !== null ? [{ clave: m.clave, valor: p.valor, x: m.x, y: m.y, fecha: p.fecha }] : [];
+        return p && p.valor !== null ? [{ clave: m.clave, valor: p.valor, x: m.x, y: m.y, fecha: p.fecha, marca: m.marca }] : [];
       })
       .sort((a, b) => a.x - b.x);
     const elegido = fecha === null ? null : (conValor.find((p) => p.fecha === fecha)?.clave ?? null);
     const ultimoPunto = conValor[conValor.length - 1]?.clave ?? null;
-    const minimo = [...conValor].sort((a, b) => a.valor - b.valor)[0]?.clave ?? null;
-    const candidatos = puntosConRotulo(conValor, elegido).flatMap((c) => {
+    // El mínimo y el máximo del período, solo entre lo registrado sin hueco: un subtotal (le falta algo) o una carga rápida
+    // (los números del plan) no se rotulan como el extremo (revisión de #283). El elegido y el último, siempre.
+    const llenos = conValor.filter((p) => p.marca !== 'HUECA' && p.marca !== 'HUECA_GRIS');
+    const orden = [...llenos].sort((a, b) => a.valor - b.valor);
+    const extremos = orden.length >= 4 ? [orden[orden.length - 1]!.clave, orden[0]!.clave] : [];
+    const minimo = [...llenos].sort((a, b) => a.valor - b.valor)[0]?.clave ?? null;
+    const claves = [...new Set([...puntosConRotulo(conValor, elegido, false), ...extremos])];
+    const candidatos = claves.flatMap((c) => {
       const p = conValor.find((x) => x.clave === c);
       return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor), abajo: c === minimo && c !== ultimoPunto }] : [];
     });
@@ -207,8 +227,9 @@ function DibujoDelCarril({
             {g.barras.map((b) => (
               <rect key={b.lunes} x={b.x1 + 1} y={b.y} width={Math.max(1, b.x2 - b.x1 - 2)} height={Math.max(0, b.base - b.y)} rx={2} fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1} />
             ))}
+            {/* Una semana sin días con dato: una columna gris de todo el alto, que no se lee como una barra en cero. */}
             {g.vacias.map((b) => (
-              <line key={`v${b.lunes}`} className="grafico-base__semana-vacia" x1={b.x1 + 2} x2={Math.max(b.x1 + 3, b.x2 - 2)} y1={b.base - 1} y2={b.base - 1} stroke="var(--grafico-hueco)" strokeWidth={1.5} strokeDasharray="2 2" />
+              <rect key={`v${b.lunes}`} className="grafico-base__semana-vacia" x={b.x1 + 1} y={0} width={Math.max(1, b.x2 - b.x1 - 2)} height={b.base} fill="var(--grafico-hueco)" fillOpacity={0.18} />
             ))}
           </>
         ) : null}
@@ -227,7 +248,7 @@ function DibujoDelCarril({
   );
 }
 
-export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densidad = 'COMPLETA', leyenda = [], notas = [], detalle, comoLeerlo }: PropsDePanelesAlineados) {
+export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densidad = 'COMPLETA', leyenda = [], notas = [], aclaraciones = [], detalle, comoLeerlo }: PropsDePanelesAlineados) {
   const [ref, ancho] = useAnchoDelGrafico();
   const conPuntero = useConPuntero();
   const cursor = useCursorDeFechas();
@@ -242,7 +263,11 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
     [carriles, escala, alto],
   );
   const [encima, setEncima] = useState<string | null>(null);
+  // El dibujo sigue al mouse (la regla); la región viva de la lectura, no: solo el clic, el toque y el teclado.
   const fecha = encima ?? cursor.fecha;
+  const versiones = useMemo(() => versionesEnElEje(bandas, escala), [bandas, escala]);
+  const cambios = cambiosEnTexto(versiones, periodo.hoy);
+  const cambiosRecortados = cambiosQueNoEntran(versiones, periodo.hoy);
 
   const alTeclear = (e: KeyboardEvent<HTMLDivElement>) => {
     const nuevo = moverElCursor(fechas, { fecha: cursor.fecha, tramo: cursor.tramo }, e.key, e.shiftKey);
@@ -255,24 +280,28 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
     const escalaX = (escala.derecha + MARGEN_DERECHO) / Math.max(1, caja.width);
     return escala.fechaDeX((e.clientX - caja.left) * escalaX);
   };
-  const descripcion = carriles
-    .map((c) => (c.tipo === 'EVENTOS' ? `${c.nombre}: ${resumenDeLaCinta(c.eventos)}` : `${c.nombre} (${c.unidad}): ${c.descripcion}`))
-    .join(' ');
+  const descripcion = [
+    ...carriles.map((c) => (c.tipo === 'EVENTOS' ? `${c.nombre}: ${resumenDeLaCinta(c.eventos)}` : `${c.nombre} (${c.unidad}): ${c.descripcion}`)),
+    ...(cambios.length > 0 ? [COPY_DE_LOS_GRAFICOS.cambiosDeLoIndicado(cambios)] : []),
+  ].join(' ');
   const tarde = carriles.flatMap((c) => (c.tipo === 'PUNTOS' ? [lineaDeLoCargadoTarde(c)] : [])).filter((t): t is string => t !== null);
   const fueraDeLaEscala = geometrias.reduce((n, x) => n + (x.tipo === 'CARRIL' && x.g.tipo === 'PUNTOS' ? x.g.fueraDeLaEscala : 0), 0);
   const unSoloCarril = conDatos.length === 1;
-  // La frase fija de los cruces, siempre a la vista; las demás notas, en «Cómo leerlo».
-  const frase = notas.find((n) => n === FRASE_DE_LA_COINCIDENCIA) ?? null;
-  const aclaraciones = [
-    ...notas.filter((n) => n !== FRASE_DE_LA_COINCIDENCIA),
-    ...tarde.map((t) => `${t.charAt(0).toUpperCase()}${t.slice(1)}.`),
+  // Todas las notas se ven (revisión de #283): la frase fija (también con algo agregado) en su línea tenue, las demás
+  // como notas; lo cargado después (§5.14) y lo que no entra en la escala (la muesca) también.
+  const visiblesAbajo = [
+    ...notas,
+    ...tarde.map((x) => `${x.charAt(0).toUpperCase()}${x.slice(1)}.`),
     ...(fueraDeLaEscala > 0 ? [COPY_DE_LOS_GRAFICOS.fueraDeLaEscala(fueraDeLaEscala)] : []),
+    ...(cambiosRecortados.length > 0 ? [COPY_DE_LOS_GRAFICOS.cambiosDeLoIndicado(cambiosRecortados)] : []),
   ];
   const visibles = sentidosQueSeVen(leyenda, carriles);
   const unidades = [...new Set(conDatos.map((c) => c.unidad))].join(' y ');
   const hasta = periodo.hasta >= periodo.hoy ? null : diaYMes(periodo.hasta, periodo.hoy);
-  const lineaTenue = detalle ?? [unidades, COPY_DE_LOS_GRAFICOS.periodo(diaYMes(inicioDelEje(periodo), periodo.hoy), hasta)].filter(Boolean).join(' · ');
+  // Con un solo carril no se dibuja su renglón: el método va en la línea tenue, aunque el llamador pase la suya (§5.6).
   const metodo = unSoloCarril && conDatos[0]?.tipo === 'PUNTOS' ? conDatos[0].metodo : null;
+  const base = detalle ?? [unidades, COPY_DE_LOS_GRAFICOS.periodo(diaYMes(inicioDelEje(periodo), periodo.hoy), hasta)].filter(Boolean).join(' · ');
+  const lineaTenue = metodo && !base.includes(metodo) ? `${base} · ${metodo}` : base;
 
   return (
     <div className={`grafico-base grafico-base--${densidad.toLowerCase()}`}>
@@ -327,12 +356,19 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
       <p id={idDelResumen} className="visualmente-oculto">
         {descripcion}
       </p>
-      <LecturaEnLaFecha tabla={tabla} fecha={fecha} tramo={cursor.tramo} hoy={periodo.hoy} porDefecto={fechas[fechas.length - 1] ?? null} />
-      {frase ? <FraseDeLaCoincidencia texto={frase} /> : null}
+      <LecturaEnLaFecha tabla={tabla} fecha={cursor.fecha} encima={encima} tramo={cursor.tramo} hoy={periodo.hoy} />
+      {visiblesAbajo.map((n) =>
+        n.startsWith(FRASE_DE_LA_COINCIDENCIA) ? (
+          <FraseDeLaCoincidencia key={n} texto={n} />
+        ) : (
+          <p key={n} className="nota grafico-base__nota">
+            {n}
+          </p>
+        ),
+      )}
       <div className="grafico-base__pie">
         <TablaEquivalente titulo={titulo} tabla={tabla} hoy={periodo.hoy} />
-        <ComoLeerlo>
-          {metodo && conDatos[0] ? <p>{`${conDatos[0].nombre}: ${metodo}.`}</p> : null}
+        <ComoLeerlo de={titulo}>
           {aclaraciones.map((n) => (
             <p key={n}>{n}</p>
           ))}

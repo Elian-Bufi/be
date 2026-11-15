@@ -72,7 +72,8 @@ function fechasDeLasMarcas(desde: string, hasta: string, porDia: number): { read
 /** «3/11»: el día y el mes, como el resto del espacio profesional. Lo usan los textos (los tramos sin registros). */
 export const textoDeLaMarca = (fecha: string): string => `${Number(fecha.slice(8, 10))}/${Number(fecha.slice(5, 7))}`;
 
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
+/** Los meses cortos del website («sept», como en el dominio: `la-vez-pasada.ts`), para que una fecha se lea igual en GR-01 y GR-04. */
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'] as const;
 const DIAS_DE_LA_SEMANA = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'] as const;
 
 /**

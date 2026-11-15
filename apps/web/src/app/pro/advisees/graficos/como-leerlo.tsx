@@ -18,15 +18,30 @@ export const COPY_COMO_LEERLO = {
 } as const;
 
 /**
- * `soloIcono`: el resumen es solo la «i», con su nombre para el lector de pantalla y al pasar el mouse (el buscador,
- * donde cada renglón cuenta: «Cómo se cuenta» detrás de su «i»).
+ * `soloIcono`: el resumen es solo la «i», con su nombre para el lector de pantalla (sin `title`: algunos lectores lo
+ * leían dos veces). Se ve solo la «i», así que úsese solo donde el nombre se entienda sin leerlo.
+ * `de`: de qué gráfico es, para el lector de pantalla (revisión de #283): con varios gráficos en una página, la lista de
+ * controles no muestra varios «Cómo leerlo» iguales («Cómo leerlo: Peso y calorías»).
  */
-export function ComoLeerlo({ children, titulo = COPY_COMO_LEERLO.titulo, className = '', soloIcono = false }: { children: ReactNode; titulo?: string; className?: string; soloIcono?: boolean }) {
+export function ComoLeerlo({
+  children,
+  titulo = COPY_COMO_LEERLO.titulo,
+  className = '',
+  soloIcono = false,
+  de,
+}: {
+  children: ReactNode;
+  titulo?: string;
+  className?: string;
+  soloIcono?: boolean;
+  de?: string;
+}) {
   return (
     <details className={['grafico-base__como-leerlo', soloIcono ? 'grafico-base__como-leerlo--icono' : '', className].filter(Boolean).join(' ')} data-como-leerlo>
-      <summary title={soloIcono ? titulo : undefined}>
+      <summary>
         <Icono nombre="info" tamano={15} />
         {soloIcono ? <span className="visualmente-oculto">{titulo}</span> : titulo}
+        {de ? <span className="visualmente-oculto">{`: ${de}`}</span> : null}
       </summary>
       <div className="grafico-base__como-leerlo-cuerpo">{children}</div>
     </details>
