@@ -178,7 +178,8 @@
 | DL-172 | Pedido de Dirección · 2026-11-13 («ve adelantando las cosas según prioridad»; WP-RF068-RF004) | 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.16.1 §4 · 09 v0.12 §12 y §16 · 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 | El 09 vigente (v0.16.1 §4) les da familia (`ACC-P2` y `ADM-P1`) sin IDs ni contratos; el v0.12 bosqueja las rutas. RF-068 estaba fuera de WP-USO-FINAL y RF-004 en parte | **PROGRAMADA en `wp-rf068-rf004` (PR en borrador) · D-1 a D-12 a ratificar**: familias propias INC (API-INC-01 a 05) y MET (API-MET-01 a 03) con las rutas del bosquejo; dos migraciones que solo agregan |
 | DL-173 | Pedido de Dirección · 2026-11-13 («Armá el paquete con sus IDs y decime cuándo sale cada cosa»; WP-PULIDO-GRANDES) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · B10-06 (feedback háptico opcional) · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 | De la página «Pulido como las grandes», Dirección eligió quince ideas, y al probar la 0.27 dejó cuatro de Inicio, la carga y la cabecera; ninguna tenía ID ni fecha de salida | **DECLARADA el 2026-11-13, sin programar** (`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador): 19 partes (PG-01 a PG-04, las de Inicio; PG-05 a PG-19, las quince elegidas). Tanda A, APK 0.28, objetivo martes 17/11 (PG-01 a PG-10 y PG-14); tanda B, APK 0.29, objetivo viernes 20/11 (PG-11 a PG-13 y PG-15 a PG-17); después del 25/11, PG-18 y PG-19. Desde el 23/11, solo arreglos; lo de la B que no esté estable el 20/11 pasa a después del 25/11. PG-D1 a PG-D15, a ratificar, salvo PG-D1 (decidida por Dirección el 2026-11-13) y PG-D10 y PG-D11 (aprobadas el 2026-11-14: «Tienes mi sí para las notas») |
 | DL-174 | Pedido de Dirección · 2026-11-14 («Aprobadas las 25 sugerencias de gráficos»; WP-GRAFICOS) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · RF-025 · REG-06-105 · REG-06-162 · REG-06-165 y 166 · B10-07 · B10-08 §21-§23 · B10-09 §15-§28 · 09 v0.11 §18-§23 · INV-06-153 · INV-06-192 · M-11 · DL-126 · DL-128 · DL-137 D-7 · DL-152 · DL-153 · DL-158 · DL-161 · DL-163 · DL-165 · DL-167 · DL-169 · DL-171 · DL-173 | La propuesta de gráficos (25 gráficos y ocho cruces) no tenía IDs ni fases fechadas en el repo. Dirección sumó ver los gráficos alineados o superpuestos si comparten la x (DL-126 solo deja superponer con la misma familia y unidad) y un conjunto de gráficos favoritos por persona o por plan, que no tiene operación | **DECLARADA el 2026-11-14** (`docs/paquetes/WP-GRAFICOS.md`, sin integrar): GR-01 a GR-27 y SP-01 a SP-08. Fase 1 (GR-01, GR-04 y GR-16) en `wp-graficos-fase-1`, antes del 23/11; fase 2 adelantada, programada desde el 14/11 en cinco ramas: antes del 23/11 entra solo lo sólido, y lo demás, desde el 26/11; fases 3 a 5, en 2027. Familia propia GRF (API-GRF-01 a 07, los enfoques), con una migración que solo agrega. Amplía DL-126 (dos unidades en «Superpuestas», GR-T04). GR-D0 a GR-D10, tomadas por la delegación de Dirección según la recomendación; GR-T01 a GR-T19, a ratificar |
-| DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **PROGRAMADA en `wp-historia-anterior` (PR abierto, sin integrar), con la revisión adversaria arreglada · HA-T01 a HA-T16 a ratificar**: la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
+| DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **INTEGRADA en `main` (#284), con la revisión adversaria arreglada · HA-T01 a HA-T16 a ratificar · HA-T01 actualizada por DL-176** (la historia anterior va preseleccionada en la pantalla única de consentimiento; la tarjeta opcional al aceptar se retiró): la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
+| DL-176 | Decisión de Dirección · 2026-11-15 («casi por default»; WP-COMPARTIR) | Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9 («Aceptar y compartir datos», CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) | Compartir entre áreas no tenía pantalla (la API lo permitía, nadie lo escribía), la historia anterior se pedía como opt-in y aceptar a un profesional eran varios actos separados (el vínculo, el B2, el A3 y los hábitos aparte); Dirección pide que lo único con rozamiento sea conectar y que lo demás sea «casi como aceptar todo» | **PROGRAMADA en `wp-compartir` (PR abierto, sin integrar) · CMP-D1 a CMP-D16 a ratificar**: después de aceptar el vínculo (que sigue siendo aparte, 10-B04), una sola pantalla de consentimiento con todo preseleccionado (su área, el A3 si falta, el resumen y el plan de las otras áreas para ese profesional y lo de su área para los demás, la historia anterior y los hábitos si corresponde), «Aceptar y compartir» y «Elegir qué compartir»; un toque escribe todos los actos en una transacción, cada uno con su texto, su versión y su auditoría. «Quién ve qué» suma un interruptor por cosa y los pedidos para responder; quien ya tiene vínculos ve una tarjeta única en Inicio. Familia propia CMP (API-CMP-01 a 03), sin migración (`docs/paquetes/WP-COMPARTIR.md`). Actualiza HA-T01 de DL-175 |
 
 ---
 
@@ -8322,6 +8323,11 @@ arrancando en el inicio del acompañamiento hasta la segunda etapa, cuando entre
 - Las lecturas nuevas de la APK se congelan con su próxima candidata (DL-152); los fixtures no se tocaron.
 - La validación jurídica del texto (es una propuesta, HA-T05), TalkBack en el teléfono y la evidencia de pantalla.
 
+**Lo que cambió después (DL-176, WP-COMPARTIR, 2026-11-15).** Dirección pidió que compartir sea casi por omisión: al
+aceptar a un profesional nuevo, la historia anterior es una cosa más de la pantalla única de consentimiento, **marcada** si
+antes hubo otro profesional en esa área, y se desmarca con «Elegir qué compartir». HA-T01 quedó actualizada en el paquete;
+la tarjeta opcional (HA-07) se retiró. La autorización, su texto, su retiro y la lectura del profesional no cambian.
+
 **Opciones para Dirección.**
 - **A (programada):** la autorización aparte, como está, con HA-T01 a HA-T16 como se recomiendan.
 - **B:** sumar la historia previa como un alcance del B2 (otra versión del texto del vínculo, que las personas vuelven a
@@ -8329,3 +8335,76 @@ arrancando en el inicio del acompañamiento hasta la segunda etapa, cuando entre
 - **Sobre HA-T14:** como está (revocar el B2 la retira; el A3 y la pausa, no, y la APK dice que no la ve), o más estricta
   (también el A3 la retira, distinto de los hábitos y de lo de otras áreas), o como antes de la revisión (ninguna la
   retira, y la APK solo avisa que vuelve sola).
+
+## DL-176 — Compartir casi por omisión: una sola pantalla de consentimiento al aceptar el vínculo
+
+**Prioridad:** alta (Dirección lo pone en el centro de la app: «que se pueda ver el historial para planificar con
+conciencia de otras áreas») · **Documento:** Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9
+(«Aceptar y compartir datos»; CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163
+D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) · **Estado:** PROGRAMADA el 2026-11-15 en `wp-compartir` (PR abierto,
+sin integrar). CMP-D1 a CMP-D16, a ratificar.
+
+**La decisión de Dirección (2026-11-15, textual).** «tiene que ser algo casi por default, o que la opción sea súper
+sencilla, lo único que tiene que generar rozamiento debería ser el conectar con el profesional, sea por QR, link, o lo que
+sea, pero después los permisos para que vean los datos y que puedan compartir los datos de otras áreas etc… sea casi como
+aceptar todo, pero es el centro de la app casi, que se pueda ver el historial para planificar con conciencia de otras
+áreas… simplemente el permiso es por el área legal y su consentimiento de datos de salud».
+
+**Qué había.**
+- **Compartir entre áreas no tenía pantalla.** API-RES-02 y 03 y API-RES-09 y 10 existían, la APK solo leía API-RES-01
+  («quién miró», PG-12) y ni la APK ni el website escribían: solo las cuentas de la cohorte, cargadas así.
+- **La historia anterior era opt-in** (DL-175, HA-T01: la tarjeta al aceptar, con «Ahora no» por omisión).
+- **Aceptar a un profesional eran varios actos:** aceptar el vínculo, autorizar su área (B2) en otra pantalla, el A3 si
+  faltaba (el «último paso»), y los hábitos en «Mis hábitos».
+
+**Qué dice el legajo, y dónde tensiona.**
+- **10-B04 §7-§9:** el botón para aceptar el vínculo es «Aceptar vínculo», y «Aceptar y compartir datos» está prohibido
+  «porque fusiona vínculo + B2»; el siguiente paso es revisar el consentimiento. **INV-06-53:** aceptar no crea el B2.
+  Se respetan: el vínculo se sigue aceptando aparte, y «Aceptar y compartir» es el botón de la pantalla de consentimiento,
+  que aparece enseguida (CMP-D1).
+- **CAND-10-CON-A (10-B04):** el B2 es un acto explícito, «sin casilla premarcada». **10-B02 §7:** el A3 es un acto aparte.
+  Se tensionan: la pantalla única trae todo marcado y un toque lo acepta. El acto sigue siendo explícito (nada se escribe
+  sin tocar «Aceptar y compartir», que dice qué acepta) y cada cosa queda como un acto separado, con su texto, su versión y
+  su auditoría; pero van juntos y preseleccionados. Es la duda legal principal (abajo).
+- **Ley 25.326, art. 5:** libre, expreso e informado. La pantalla dice en pocas líneas qué ve el profesional y para qué,
+  cada cosa en una línea (qué, de quién, para quién y para qué) y los textos completos de lo marcado en la misma pantalla,
+  plegados con su versión y su huella; «Elegir qué compartir» deja desmarcar cada cosa y «Ahora no» no escribe nada.
+- **08 §12.2 (la mostrada es la aceptada) y C-12 (ampliar es una aceptación nueva):** el toque manda los ids de los textos
+  mostrados y la API los exige vigentes; cada ampliación es una versión nueva de su autorización.
+
+**Qué se hizo** (`docs/paquetes/WP-COMPARTIR.md`).
+- **La familia CMP** (DL-137 D-7), sin migración: API-CMP-01 (lo que la persona puede compartir y lo que ya comparte, con la
+  versión de lo que vio y los textos), API-CMP-02 (un toque: todos los actos elegidos en una sola transacción, todo o nada,
+  cada uno con su texto, su versión, su hecho y su fila de auditoría) y API-CMP-03 (dejar de compartir una cosa, desde
+  ahora, sin el A3). El B2 y el A3 se otorgan con la misma lógica de API-CON-02 y 06, ahora dentro de otra transacción.
+- **La APK:** la pantalla única al aceptar (en Vínculos y por el enlace, el QR o el código), con «Aceptar y compartir»,
+  «Elegir qué compartir» y «Ahora no»; la tarjeta única de Inicio para quien ya tiene vínculos («Compartir todo con tus
+  profesionales», una vez); y en «Quién ve qué», un interruptor por cosa debajo de cada profesional y los pedidos para
+  responder («Sí, compartir» / «Ahora no»).
+- **Las reglas que no cambian:** retirar siempre se puede y corta hacia adelante; lo ajeno o no autorizado responde igual
+  que lo inexistente; las notas privadas del profesional nunca se comparten; Administración no ve datos de salud; el
+  vocabulario (ubicar, nunca calificar; sin «asesorado», «cumplimiento», «adherencia», «racha» ni «puntaje»; en Nutrición,
+  sin «%»); TalkBack, la letra grande y los dos temas.
+
+**Decisiones a ratificar** (CMP-D1 a CMP-D16, con el detalle en el §3 del paquete): el vínculo aparte y la pantalla
+enseguida (D1); qué trae marcado, con lo recíproco (D2); lo retirado antes no vuelve marcado (D3); el A3 en la misma
+pantalla y como condición de lo demás (D4); los hábitos «si corresponde» (D5); la versión de lo que se vio (D6); solo lo
+elegido, sin extender en silencio (D7); los textos en capas (D8, distinto de HA-T16 en esta pantalla); retirar una cosa con
+CMP-03 (D9); lo ajeno igual que lo inexistente (D10); la auditoría por acto (D11); la tarjeta marcada en el teléfono (D12);
+«Quién ve qué» deja de ser solo de lectura (D13); los pedidos (D14); una familia propia, congelada con la próxima
+candidata (D15); y HA-T01 actualizada (D16).
+
+**Las dudas legales** (para la validación jurídica): lo preseleccionado con un solo botón frente al art. 5 y el art. 7 (y
+frente a CAND-10-CON-A); varios consentimientos en un toque (¿es granular?); el A3 junto al B2 y a lo demás (10-B02 lo
+trata como un acto aparte); los textos en capas (¿alcanza para «informado» y 08 §12.2?); lo recíproco (la persona comparte
+un plan que escribió otro profesional); y que los textos siguen siendo propuestas o de demostración (ninguno nuevo).
+
+**Opciones para Dirección.**
+- **A (programada):** el vínculo aparte, y después una pantalla única con todo preseleccionado y un toque.
+- **B:** un solo toque que acepte el vínculo y comparta (cambia 10-B04 e INV-06-53; los mismos toques que A).
+- **C (más conservadora):** la misma pantalla, sin nada preseleccionado más que su área (el B2), y «Compartir todo» como
+  segundo botón (menos «casi por omisión», más cerca de CAND-10-CON-A).
+
+**Lo que queda.** Congelar las lecturas nuevas de la APK con la próxima candidata (DL-152); verlo en el teléfono (TalkBack,
+la letra grande, los dos temas) con la evidencia de pantalla; la validación jurídica de las dudas; y, si Dirección lo
+quiere, la marca de la tarjeta en la base (CMP-D12).
