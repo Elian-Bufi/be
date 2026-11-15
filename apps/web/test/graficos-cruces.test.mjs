@@ -1,7 +1,8 @@
 /**
  * WP-GRAFICOS fase 2 (DL-174), los cruces y «Armá tu gráfico» (GR-24, SP-01, SP-02 y GR-26).
- * Este archivo lo escribe solo la rama de los cruces y «Analizar» (D), con sus IDs (TEST-GRF-060 a 079); la rama base
- * dejó la primera prueba de su registro. Cada prueba dice la mutación que la pone en rojo.
+ * Este archivo lo escribe solo la rama de los cruces y «Analizar» (D), con sus IDs (TEST-GRF-060 a 079 y, desde la pasada
+ * visual y la revisión del 15/11, TEST-GRVD-001 en adelante); la rama base dejó la primera prueba de su registro. Cada
+ * prueba dice la mutación que la pone en rojo.
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
  */
@@ -50,6 +51,11 @@ const A = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/composi
 const S = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/superpuestas.ts');
 const E = await import('../src/app/pro/advisees/graficos/eje-de-fechas.ts');
 const FC = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/fecha-compartida.ts');
+const SN = await import('../src/app/pro/advisees/graficos/cruces/semanas-de-nutricion.ts');
+const G12 = await import('../src/app/pro/advisees/graficos/nutricion/energia-por-dia.ts');
+const SEM = await import('../src/app/pro/advisees/graficos/semanas.ts');
+const CAR = await import('../src/app/pro/advisees/graficos/carriles.ts');
+const TE = await import('../src/app/pro/advisees/graficos/tabla-equivalente.ts');
 
 // ─── Datos de prueba (sintéticos) ─────────────────────────────────────────────────────────────────
 
@@ -442,9 +448,10 @@ test('TEST-GRF-067 · SP-02: de una toma a otra con 14 días o más y el mismo p
   assert.equal(carriles[2].unir, false, 'nada une dos tomas');
   assert.match(carriles[2].puntos.find((p) => p.fecha === '2026-10-28').lectura, /7 días después de la toma anterior/);
   // La media semanal dice con cuántos días se hizo; una semana sin días enteros no tiene media (no es un cero).
-  const semanas = SP2.mediaSemanal(e.energia, e.hoy);
+  // GR-VC13: es la media de la semana de GR-12, con cuándo es la semana y con cuántos días se hizo (TEST-GRVD-001).
+  const semanas = SP2.mediaSemanal(e.energia, e.periodo.desde, e.periodo.hasta, e.hoy);
   assert.ok(semanas.every((s) => s.dias >= 0));
-  assert.match(semanas.find((s) => s.valor !== null).lectura, /^media de .* con \d+ días? con cantidades en todos sus registros/);
+  assert.match(semanas.find((s) => s.valor !== null).lectura, /^Semana del \d+ \S+: .* por día de media · con \d+ de \d+ días/);
   // Sin dos tomas a 14 días, no hay ventana y se dice.
   const sinVentana = SP2.lecturaDeEnergiaYPeso({ ...e, peso: serie('antropometria.peso', 'kg', 'ORIGINAL', [punto('2026-10-21', 80.3), punto('2026-10-28', 80.1)]) });
   assert.equal(sinVentana.falta, COPY_DE_LOS_CRUCES.energiaYPeso.sinVentana);
@@ -818,4 +825,106 @@ test('TEST-GRF-079 · nada de la rama guarda datos de salud en el navegador, y n
     for (const a of archivos) assert.doesNotMatch(leer(join(GRAFICOS, carpeta, a)), /localStorage|sessionStorage|indexedDB/, `${carpeta}/${a}`);
     for (const a of archivos.filter((x) => x.endsWith('.ts'))) assert.ok(!existsSync(join(GRAFICOS, carpeta, a.replace(/\.ts$/, '.tsx'))), `${carpeta}/${a} choca con su .tsx`);
   }
+});
+
+// ─── La pasada visual y la revisión del 15/11 (TEST-GRVD-*) ───────────────────────────────────────────
+
+/** Un día de Nutrición con cantidades en todos sus registros y las comidas del plan conocidas (lleno en GR-12). */
+const comidasConocidas = { daysKnown: 1, daysUndetermined: [], expected: 3, withPlanOption: 3, withDifferentMeal: 0, withoutRecord: 0 };
+const diaLleno = (fecha, valor) => punto(fecha, valor, { coverage: { records: 2, recordsWithQuantities: 2, recordsWithoutQuantities: 0, daysWithData: null, daysInBucket: null, planMeals: comidasConocidas } });
+const diaSubtotal = (fecha, valor) => punto(fecha, valor, { quality: 'PARTIAL', missing: [{ reason: 'SIN_CANTIDADES', count: 1 }] });
+
+test('TEST-GRVD-001 · una sola media semanal (GR-VC13): GR-24 por semana y SP-02 dan lo mismo que GR-12 para la misma semana; un subtotal no entra y una semana con días sin media no es un cero ni un tramo vacío (mutación: promediar también los subtotales en GR-24; dibujar la semana sin media como la vacía; calcular otra media)', () => {
+  // Semana del 2 nov: 4 días sin faltantes (2.000, 2.200, 2.400 y 1.600), 2 subtotales (1.000 y 1.300) y el 4 sin registros.
+  // Semana del 9 nov: 3 días sin faltantes y 1 subtotal: tiene días, pero no media.
+  const puntos = [
+    diaLleno('2026-11-02', 2000),
+    diaLleno('2026-11-03', 2200),
+    diaLleno('2026-11-05', 2400),
+    diaLleno('2026-11-06', 1600),
+    diaSubtotal('2026-11-07', 1000),
+    diaSubtotal('2026-11-08', 1300),
+    diaLleno('2026-11-09', 2100),
+    diaLleno('2026-11-10', 2000),
+    diaLleno('2026-11-11', 1900),
+    diaSubtotal('2026-11-12', 800),
+  ];
+  const [desde, hasta, hoy] = ['2026-11-02', '2026-11-15', '2026-11-20'];
+  const gr12 = G12.mediasDeLasSemanas(puntos, 'ENERGY', desde, hasta, hoy);
+  const gr24 = SN.semanasDeNutricion(puntos, 'ENERGY', desde, hasta, hoy);
+  assert.equal(gr12[0].valor, 2050, 'GR-12: los cuatro días sin faltantes');
+  assert.deepEqual(
+    gr24.map((s) => [s.lunes, s.desde, s.hasta, s.valor, s.conDato, s.completa, s.conDias, s.texto]),
+    gr12.map((m) => [m.lunes, m.desde, m.hasta, m.valor, m.incluidos, m.entera, m.conDias, m.texto]),
+    'GR-24 por semana es la misma media que GR-12, con el mismo texto',
+  );
+  // La media de antes (con los subtotales adentro) daba 1.750 kcal con «6 de 7 días (2 subtotales)»: ya no se dice.
+  const lectura = SEM.lecturaDeLaSemana(gr24[0], 'kcal');
+  assert.equal(lectura, `Semana del 2 nov: ${gr12[0].texto}`);
+  assert.doesNotMatch(lectura, /1\.750|subtotal/);
+  assert.equal(gr24[1].valor, null);
+  assert.equal(gr24[1].conDias, true);
+  // En el dibujo: una barra (la semana con media), la semana sin media con su contorno cortado (no la columna gris) y los
+  // días de las dos, también el subtotal, como puntos; la tira marca el subtotal a media altura.
+  const g = SEM.geometriaPorSemana({ dias: SN.diasDeLaSerieDeNutricion(puntos), desde, hasta, hoy, ancho: 420, alto: 132, semanas: gr24 });
+  assert.deepEqual(g.barras.map((b) => b.semana.valor), [2050]);
+  assert.deepEqual(g.sinMedia.map((b) => b.semana.desde), ['2026-11-09']);
+  assert.equal(g.vacias.length, 0, 'una semana con días no es una semana vacía');
+  assert.ok(g.dias.some((d) => d.fecha === '2026-11-12'), 'los días de la semana sin media se ven igual');
+  assert.equal(g.tira.find((d) => d.fecha === '2026-11-07').estado, 'hueco');
+  assert.equal(g.tira.find((d) => d.fecha === '2026-11-02').estado, 'con');
+  assert.deepEqual(SEM.marcasPorSemanaQueSeVen(gr24), { entera: false, hueca: true, sinMedia: true, vacia: false }, 'la leyenda dice solo lo que se ve');
+  assert.match(SEM.resumenDeLasSemanas(gr24, 'kcal'), /1 tramo con media, de 2\.050 kcal; 0 con todos sus días con valor; 1 tramo con días y sin media/);
+  // Las semanas siguen partidas en el cambio de etapa, y cada tramo es la media de GR-12 de ese tramo.
+  const etapas = [
+    { desde: '2026-10-01', hasta: '2026-11-04' },
+    { desde: '2026-11-05', hasta: '2026-11-30' },
+  ];
+  const cortadas = SN.semanasDeNutricion(puntos, 'ENERGY', desde, hasta, hoy, etapas);
+  assert.deepEqual(
+    cortadas.map((s) => [s.desde, s.hasta]),
+    [
+      ['2026-11-02', '2026-11-04'],
+      ['2026-11-05', '2026-11-08'],
+      ['2026-11-09', '2026-11-15'],
+    ],
+  );
+  assert.equal(cortadas[0].texto, G12.mediasDeLasSemanas(puntos, 'ENERGY', '2026-11-02', '2026-11-04', hoy)[0].texto);
+  assert.ok(cortadas.every((s) => !s.completa), 'un tramo cortado no va lleno');
+  // SP-02: la misma media, en el carril semanal de la base.
+  const sp02 = SP2.mediaSemanal(serie('nutricion.energia', 'kcal', 'DAY', puntos), desde, hasta, hoy);
+  assert.deepEqual(
+    sp02.map((s) => [s.lunes, s.valor, s.dias, s.entera, s.conDias]),
+    gr12.map((m) => [m.lunes, m.valor, m.incluidos, m.entera, m.conDias]),
+  );
+  assert.equal(sp02[0].lectura, `Semana del 2 nov: ${gr12[0].texto}`);
+  const carril = { tipo: 'BARRAS_SEMANALES', id: 'nutricion.energia-media-semanal', nombre: 'Media', unidad: 'kcal', semanas: sp02, descripcion: '' };
+  const escala = E.escalaDeFechas({ desde, hasta, hoy, desdeElVinculo: null }, { izquierda: 40, derecha: 400 });
+  const gc = CAR.geometriaDelCarril(carril, escala, 140);
+  assert.deepEqual([gc.barras.length, gc.barras[0].hueca, gc.sinMedia.length, gc.vacias.length], [1, true, 1, 0]);
+  // La tabla equivalente tiene también la semana sin media, que dice por qué (no cuenta como lo último registrado).
+  const tabla = TE.tablaEquivalente([carril]);
+  assert.deepEqual(tabla.filas.map((f) => [f.fecha, f.celdas[0].registrada]), [['2026-11-02', true], ['2026-11-09', false]]);
+  assert.match(tabla.filas[1].celdas[0].texto, /sin media: hacen falta 4 días/);
+  assert.deepEqual(
+    SP2.fichasDeLasSemanas(sp02).map((x) => x.glifo),
+    ['SEMANA_HUECA', 'SEMANA_SIN_MEDIA'],
+  );
+  // Una sola implementación: el adaptador y SP-02 llaman a la de GR-12, no calculan otra (mutación: otra media).
+  const fuente = leer(join(GRAFICOS, 'cruces', 'semanas-de-nutricion.ts'));
+  assert.match(fuente, /import \{ mediasDeLasSemanas, type MediaDeLaSemana \} from '\.\.\/nutricion\/por-semana';/);
+  assert.doesNotMatch(fuente, /\.reduce\(/, 'el adaptador no promedia nada');
+  assert.doesNotMatch(leer(join(GRAFICOS, 'cruces', 'energia-y-peso.ts')), /incluidos\.push|\.reduce\(\(t, v\)/);
+  const pantalla = leer(join(SEGUIMIENTO, 'etapas.tsx'));
+  assert.match(pantalla, /semanasDeNutricion\(s\.estado\.observaciones\.points, metrica, leido\.desde, leido\.hasta, hoy, bandas\)/);
+  assert.doesNotMatch(pantalla, /parcial: p\.quality === 'PARTIAL'/);
+  // Los g/kg y la cantidad de registros no tienen media de la semana: van día por día (GR-VC02).
+  assert.equal(SN.metricaConMediaDeLaSemana({ area: 'NUTRICION', parametro: 'RECORDS' }), null);
+  assert.equal(SN.metricaConMediaDeLaSemana({ area: 'NUTRICION', parametro: 'ENERGY' }), 'ENERGY');
+  assert.equal(SN.metricaConMediaDeLaSemana({ area: 'ENTRENAMIENTO', parametro: 'ENERGY' }), null);
+  // De entrada por semana solo con alguna media (GR-VC12), y con más de seis semanas.
+  assert.equal(SN.porSemanaDeEntrada('2026-09-01', '2026-11-15', [gr24]), true);
+  assert.equal(SN.porSemanaDeEntrada('2026-09-01', '2026-11-15', [[gr24[1]]]), false, 'sin ninguna media, día por día');
+  assert.equal(SN.porSemanaDeEntrada('2026-11-02', '2026-11-15', [gr24]), false, 'dos semanas: día por día');
+  for (const x of [lectura, ...sp02.map((s) => s.lectura), ...COPY_DE_LOS_CRUCES.porSemana.comoSeArma, SEM.resumenDeLasSemanas(gr24, 'kcal')]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION']), [], x);
 });

@@ -4,6 +4,9 @@
  *
  * - **Paneles apilados:** las calorías por día, con el objetivo en escalón; su media semanal, que dice con cuántos días se
  *   hizo; y abajo el peso de cada toma como punto suelto, sin unir ni suavizar, con los días desde la toma anterior.
+ * - **La media semanal es la de GR-12** (GR-VC13, una sola media semanal para todo BE): los días con cantidades en todos
+ *   sus registros, si son 4 o más (`semanas-de-nutricion.ts`). Una semana con días pero sin media va con su contorno
+ *   cortado, y la que no tiene ningún día, en gris: ninguna es un cero.
  *   Sin mínimo y máximo semanal mientras no exista el peso en casa.
  * - **La ventana**, fijada antes de mirar: de una toma de peso a la última, con 14 días o más entre las dos y el mismo
  *   protocolo (`ventanas.ts`). Las calorías se leen desde esa toma, o desde el cambio de objetivo si fue después, hasta el
@@ -17,9 +20,11 @@ import { diasEntreFechas, numero, valorConUnidad, type EscalonDelObjetivoApi, ty
 import { carrilDeSerie } from '../adaptadores';
 import { escalaDeLaSerie, lecturaDelPunto } from '../arma-tu-grafico/compositor';
 import type { CarrilDeBarrasSemanales, CarrilDePuntos, SemanaDelCarril } from '../carriles';
+import type { FichaDeLaLeyenda } from '../marcas';
 import { delCatalogo, descripcionDeNutricion, diasEnPalabras, escalonesDelObjetivo, type LecturaDeUnCruce } from './carbohidratos-y-fuerza';
 import { COPY_DE_LOS_CRUCES } from './copy';
 import { LO_QUE_BE_NO_REGISTRA, versionesQueSeActivaron } from './lo-que-tambien-cambio';
+import { semanasDelCarril } from './semanas-de-nutricion';
 import { diasDeNutricion, diaYMes, elDiaAnterior, tomasDe, ventanaDeLasTomas } from './ventanas';
 
 const C = COPY_DE_LOS_CRUCES.energiaYPeso;
@@ -77,39 +82,24 @@ export function lecturaDeEnergiaYPeso(e: EntradaDeEnergiaYPeso): LecturaDeUnCruc
   };
 }
 
-/** El lunes de la semana de una fecha civil. */
-export function lunesDeLaSemana(fecha: string): string {
-  const t = Date.parse(`${fecha}T12:00:00Z`);
-  const desdeElLunes = (new Date(t).getUTCDay() + 6) % 7;
-  return new Date(t - desdeElLunes * 86_400_000).toISOString().slice(0, 10);
+/**
+ * La media semanal de las calorías: la de GR-12 (GR-VC13), con los días de cada semana dentro del período. Cada semana dice
+ * con cuántos días se hizo y cuáles quedaron afuera, y por qué; sin 4 días con cantidades en todos sus registros no hay
+ * media, y no es un cero. Una semana que no tiene ningún día con valor queda vacía.
+ */
+export function mediaSemanal(serie: SerieAnalitica, desde: string, hasta: string, hoy: string): SemanaDelCarril[] {
+  return semanasDelCarril(serie.points, 'ENERGY', desde, hasta, hoy);
 }
 
-/**
- * La media semanal de las calorías, con los días que BE puede leer enteros (con cantidades en todos sus registros y sin
- * comidas del plan sin registro), y cuántos días tuvo. Una semana sin ninguno de esos días no tiene media: no es un cero.
- */
-export function mediaSemanal(serie: SerieAnalitica, hoy: string): SemanaDelCarril[] {
-  const porSemana = new Map<string, { incluidos: number[]; afuera: number }>();
-  for (const p of serie.points) {
-    if (p.partialBucket || p.date === hoy) continue;
-    const lunes = lunesDeLaSemana(p.date);
-    const semana = porSemana.get(lunes) ?? { incluidos: [], afuera: 0 };
-    if (p.value !== null && p.quality === 'COMPLETE') semana.incluidos.push(p.value);
-    else semana.afuera += 1;
-    porSemana.set(lunes, semana);
-  }
-  return [...porSemana.entries()]
-    .sort(([x], [y]) => x.localeCompare(y))
-    .map(([lunes, s]) => {
-      const n = s.incluidos.length;
-      const valor = n === 0 ? null : s.incluidos.reduce((t, v) => t + v, 0) / n;
-      const afuera = s.afuera > 0 ? `; ${numero(s.afuera, 0)} con algún dato faltante ${s.afuera === 1 ? 'quedó afuera' : 'quedaron afuera'}` : '';
-      const lectura =
-        valor === null
-          ? `semana del ${diaYMes(lunes)}: sin días con cantidades en todos sus registros${afuera}`
-          : `media de ${porDia(valor, serie.unit)} con ${numero(n, 0)} ${n === 1 ? 'día' : 'días'} con cantidades en todos sus registros${afuera}`;
-      return { lunes, valor, dias: n, lectura };
-    });
+/** Las fichas de la leyenda del carril semanal: solo las semanas que se ven en el dibujo (DISENO-VISUAL §1, principio 7). */
+export function fichasDeLasSemanas(semanas: readonly SemanaDelCarril[]): FichaDeLaLeyenda[] {
+  const F = C.fichas;
+  return [
+    ...(semanas.some((s) => s.valor !== null && s.entera !== false) ? [{ glifo: 'SEMANA_ENTERA' as const, ...F.entera }] : []),
+    ...(semanas.some((s) => s.valor !== null && s.entera === false) ? [{ glifo: 'SEMANA_HUECA' as const, ...F.hueca }] : []),
+    ...(semanas.some((s) => s.valor === null && s.conDias === true) ? [{ glifo: 'SEMANA_SIN_MEDIA' as const, ...F.sinMedia }] : []),
+    ...(semanas.some((s) => s.valor === null && s.conDias !== true) ? [{ glifo: 'SEMANA_SIN_DIAS' as const, ...F.sinDias }] : []),
+  ];
 }
 
 /** El peso de cada toma, con los días desde la anterior del mismo tramo comparable. */
@@ -128,8 +118,9 @@ function lecturaDelPeso(serie: SerieAnalitica): (p: PuntoAnalitico) => string {
 export function carrilesDeEnergiaYPeso(e: EntradaDeEnergiaYPeso): (CarrilDePuntos | CarrilDeBarrasSemanales)[] {
   const energia = delCatalogo('nutricion.energia');
   const peso = delCatalogo('antropometria.peso');
-  const semanas = mediaSemanal(e.energia, e.hoy);
+  const semanas = mediaSemanal(e.energia, e.periodo.desde, e.periodo.hasta, e.hoy);
   const conMedia = semanas.filter((s) => s.valor !== null).length;
+  const sinMedia = semanas.filter((s) => s.valor === null && s.conDias === true).length;
   return [
     carrilDeSerie(e.energia, energia, {
       id: energia.id,
@@ -147,7 +138,7 @@ export function carrilesDeEnergiaYPeso(e: EntradaDeEnergiaYPeso): (CarrilDePunto
       nombre: C.carriles.mediaSemanal,
       unidad: e.energia.unit,
       semanas,
-      descripcion: `${C.carriles.mediaSemanal}: ${numero(conMedia, 0)} ${conMedia === 1 ? 'semana con media' : 'semanas con media'}; cada una dice con cuántos días se hizo.`,
+      descripcion: `${C.carriles.mediaSemanal}: ${numero(conMedia, 0)} ${conMedia === 1 ? 'semana con media' : 'semanas con media'}${sinMedia > 0 ? ` y ${numero(sinMedia, 0)} con días y sin media` : ''}; cada una dice con cuántos días se hizo.`,
     },
     carrilDeSerie(e.peso, peso, {
       id: peso.id,

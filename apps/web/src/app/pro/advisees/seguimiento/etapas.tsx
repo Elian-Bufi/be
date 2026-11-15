@@ -36,6 +36,13 @@
  *   subtotales y cuántos quedaron afuera (§5.13), con el teclado y para el lector de pantalla; las semanas no cruzan el
  *   cambio de etapa; las marcas tienen su leyenda una vez, arriba. La descripción de cada gráfico chico ya no dice «la
  *   primera…; la última…» (§5.12). Si cambian las etapas, el modo vuelve al que conviene para el período nuevo.
+ *
+ * **Una sola media semanal (GR-VC13, rama D):** por semana, cada barra es la media de la semana de GR-12
+ * (`semanasDeNutricion`, que llama a `mediasDeLasSemanas`): los días con cantidades en todos sus registros, si son 4 o
+ * más; un subtotal no entra y se cuenta. Las semanas se siguen partiendo en el cambio de etapa. Una semana con días pero
+ * sin media va con su contorno cortado y sus días se ven igual; de entrada va por semana solo si alguna semana tiene media
+ * (GR-VC12, como GR-12). Los g/kg y la cantidad de registros van día por día. La tabla de arriba sigue con su criterio
+ * de siempre (el de cada métrica): resume la etapa entera, no estas semanas.
  */
 import {
   compararEtapas,
@@ -72,7 +79,8 @@ import { Minigrafico } from './minigrafico';
 import { useLoIndicadoDelEjercicio } from '../graficos/lectura-de-lo-indicado';
 import { diferenciaDeLoIndicado, loIndicadoEnElTramo } from '../graficos/lo-indicado-en-el-tiempo';
 import { LeyendaPorSemana, MarcaDeBarra, MinigraficoPorSemana } from '../graficos/minigrafico-por-semana';
-import { convienePorSemana } from '../graficos/semanas';
+import { diasDeLaSerieDeNutricion, metricaConMediaDeLaSemana, porSemanaDeEntrada, semanasDeNutricion } from '../graficos/cruces/semanas-de-nutricion';
+import { marcasPorSemanaQueSeVen, type SemanaDeLaSerie } from '../graficos/semanas';
 import { etapaEnPalabras } from './preguntas';
 import { resumenSinPrimeroNiUltimo } from './resumen-del-grafico-chico';
 import { nombreDeLaReferencia, tituloDeLaReferencia } from './selector';
@@ -90,8 +98,8 @@ const CRITERIO: Readonly<Record<string, string>> = {
 
 /** Qué es cada punto de un gráfico chico: va después del nombre de la métrica, con su unidad. */
 const CADA_PUNTO: Readonly<Record<string, string>> = { NUTRICION: 'por día', ENTRENAMIENTO: 'cada sesión', ANTROPOMETRIA: 'cada toma' };
-/** Lo mismo, cuando una serie diaria va por semana (Nutrición, de entrada): la barra es la media de los días con dato. */
-const POR_SEMANA = 'media por semana de los días con dato';
+/** Lo mismo, cuando una serie diaria va por semana (Nutrición): la barra es la media de la semana de GR-12 (GR-VC13). */
+const POR_SEMANA = 'media de la semana (v1)';
 
 /** La medida del comparador de una métrica registrada de Entrenamiento por serie, o `null` si no tiene lo indicado. */
 function medidaDeLaMetrica(ref: ReferenciaDeMetrica): Medida | null {
@@ -159,10 +167,10 @@ export function ComparacionDeEtapas({
     const enLaEtapa = (e: EtapaDePlanificacion) => loIndicadoEnElTramo(indicado.observaciones, (o) => o.comparacion.planId === e.planVersionId, { serie: ref.setIndex, unidad: ref.unit ?? undefined });
     return diferenciaDeLoIndicado(enLaEtapa(a), enLaEtapa(b), medida);
   };
-  // Nutrición va por semana de entrada (DISENO-VISUAL §1, principio 6); «Día por día», a un toque.
-  const [porSemana, setPorSemana] = useState(() => convienePorSemana(leido.desde, leido.hasta));
-  // Con otras etapas (sin volver a montar la comparación), el modo vuelve al que conviene para el período nuevo.
-  useEffect(() => setPorSemana(convienePorSemana(leido.desde, leido.hasta)), [leido.desde, leido.hasta]);
+  // Nutrición va por semana de entrada (DISENO-VISUAL §1, principio 6) si alguna semana tiene media (GR-VC12); «Día por
+  // día», a un toque. Lo elegido a mano manda hasta que cambien las etapas: entonces vuelve al que conviene.
+  const [porSemanaElegido, setPorSemana] = useState<boolean | null>(null);
+  useEffect(() => setPorSemana(null), [leido.desde, leido.hasta]);
   // Las que no se pudieron leer: cada fila lo dice, y se reintentan juntas, con un solo botón debajo de la tabla.
   const fallidas = series.filter((s) => s.estado.tipo === 'error').length;
   const [plan, setPlan] = useState<{ origen: OrigenDeDato; titulo: string; numero: number } | null>(null);
@@ -189,6 +197,15 @@ export function ComparacionDeEtapas({
   // y el final de lo leído).
   const bandas = useMemo(() => [a, b].flatMap((e, i) => (e.ultimoDia ? [{ desde: e.desde, hasta: e.ultimoDia, rotulo: i === 0 ? 'A' : 'B' }] : [])), [a, b]);
   const fechasDelPie = useMemo(() => [leido.desde, b.desde, leido.hasta], [leido.desde, leido.hasta, b.desde]);
+  // GR-VC13: las semanas de cada métrica de Nutrición con la media de GR-12, partidas en el cambio de etapa.
+  const semanasDe = new Map<string, SemanaDeLaSerie[]>(
+    dibujables.flatMap(({ s }) => {
+      const metrica = metricaConMediaDeLaSemana(s.definicion);
+      return metrica !== null && s.estado.observaciones.grain === 'DAY' ? [[s.clave, semanasDeNutricion(s.estado.observaciones.points, metrica, leido.desde, leido.hasta, hoy, bandas)] as const] : [];
+    }),
+  );
+  const porSemana = porSemanaElegido ?? porSemanaDeEntrada(leido.desde, leido.hasta, [...semanasDe.values()]);
+  const conPorSemana = !enGrande && area === 'NUTRICION' && semanasDe.size > 0;
   // GR-24: cada métrica lado a lado, con todas sus observaciones (5 por lado como mínimo para dibujarse).
   const ladoALado = dibujables.map(({ s, indice }) => {
     const unidad = s.estado.serie.unit;
@@ -407,7 +424,7 @@ export function ComparacionDeEtapas({
         <div className="graficos-de-etapas__cabecera">
           <h4>Las mismas métricas, en el tiempo</h4>
           {enGrande ? null : <p className="graficos-de-etapas__nota">A y B son las dos etapas.</p>}
-          {!enGrande && area === 'NUTRICION' && dibujables.length > 0 ? (
+          {conPorSemana ? (
             <div className="graficos-de-etapas__grano" role="group" aria-label="Cómo se ven los días">
               <button type="button" className="chip-de-zona" aria-pressed={porSemana} onClick={() => setPorSemana(true)} data-por-semana>
                 Por semana
@@ -425,13 +442,14 @@ export function ComparacionDeEtapas({
           ) : null}
         </div>
         {/* Las marcas del dibujo por semana, una vez para los tres gráficos, con cómo se arma cada barra. */}
-        {!enGrande && porSemana && area === 'NUTRICION' && dibujables.length > 0 ? <LeyendaPorSemana /> : null}
+        {conPorSemana && porSemana ? <LeyendaPorSemana que={marcasPorSemanaQueSeVen([...semanasDe.values()].flat())} comoSeArma={COPY_DE_LOS_CRUCES.porSemana.comoSeArma} /> : null}
         {enGrande ? null : dibujables.length > 0 ? (
           <ul className="graficos-de-etapas__lista">
             {dibujables.map(({ s, indice }) => {
               const titulo = tituloDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios);
               const conObjetivo = s.estado.objetivo.length > 0;
-              const semanal = porSemana && s.definicion.area === 'NUTRICION' && s.estado.observaciones.grain === 'DAY';
+              const semanas = semanasDe.get(s.clave) ?? null;
+              const semanal = porSemana && semanas !== null;
               return (
                 <li key={s.clave} className="grafico-chico" data-metrica={s.clave}>
                   <p className="grafico-chico__titulo">
@@ -448,7 +466,8 @@ export function ComparacionDeEtapas({
                   </p>
                   {semanal ? (
                     <MinigraficoPorSemana
-                      dias={s.estado.observaciones.points.map((p) => ({ fecha: p.date, valor: p.value, parcial: p.quality === 'PARTIAL', conRegistros: p.value === null, enCurso: p.partialBucket }))}
+                      dias={diasDeLaSerieDeNutricion(s.estado.observaciones.points)}
+                      semanas={semanas ?? undefined}
                       unidad={s.estado.serie.unit}
                       desde={leido.desde}
                       hasta={leido.hasta}

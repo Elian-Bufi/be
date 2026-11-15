@@ -36,6 +36,16 @@ export const COPY_DE_LOS_CRUCES = {
     etapaDe: (letra: string, rotulo: string, fechas: string) => `Etapa ${letra} · ${rotulo} · ${fechas}`,
     detalleDeLaSerie: (nombre: string, area: string) => `${nombre}, entre las dos últimas versiones del plan de ${area}.`,
   },
+  // GR-24 por semana, con la media de GR-12 (GR-VC13): cómo se arma cada barra, en «Cómo se arma cada barra».
+  porSemana: {
+    comoSeArma: [
+      'Cada barra es la media de la semana (v1), de lunes a domingo, la misma que las calorías y los macronutrientes por día: el promedio de los días con cantidades en todos sus registros, si son 4 o más.',
+      'Un subtotal (un día al que le falta alguna cantidad) o un día con una comida del plan sin registro no entra en la media, y se cuenta: la línea de debajo de cada gráfico dice con cuántos días se hizo y por qué quedaron afuera los otros. Pasá el mouse, tocá una barra o usá las flechas para leer otra semana.',
+      'Una semana con días pero sin media va con su contorno cortado, y una sin ningún día con valor, en gris: ninguna es un cero. Hoy no cuenta hasta que termine el día.',
+      'Una semana que cruza el cambio de etapa se parte en dos tramos, uno de cada lado: ninguna media mezcla días de A con días de B.',
+      'La tabla de arriba resume cada etapa entera con el criterio que dice debajo de cada métrica: no es la media de estas semanas.',
+    ],
+  },
   carbohidratosYFuerza: {
     titulo: 'Carbohidratos registrados y 1RM estimado (Epley v1), en el mismo tiempo',
     pregunta: 'En la temporada en que cambiaron los carbohidratos, ¿también se movió el 1RM estimado?',
@@ -63,12 +73,19 @@ export const COPY_DE_LOS_CRUCES = {
     ventana: 'De una toma de peso a la última, con el mismo protocolo y 14 días o más entre las dos. Una sola ventana.',
     comoLeerlo: [
       'En estudios de grupos, el peso del día varía por el agua, el glucógeno y el sodio, y el equilibrio nuevo tarda mucho más que unas semanas (Hall 2011).',
-      'La media semanal dice con cuántos días se hizo: un día con algún dato faltante o con una comida del plan sin registro no entra.',
+      'La media semanal es la de las calorías por día (v1): el promedio de los días con cantidades en todos sus registros, si son 4 o más. Un día con algún dato faltante o con una comida del plan sin registro no entra, y se cuenta.',
       'Las tomas van como puntos sueltos: nada une dos tomas ni suaviza el peso.',
     ],
     sinVentana: 'Hacen falta dos tomas de peso con el mismo protocolo y 14 días o más entre las dos.',
     errorDeMedicion: (diferencia: string) => `BE no tiene cargado el error de medición de quien mide ni las condiciones de cada toma: no se puede decir si ${diferencia} lo supera.`,
     loRegistrado: 'Lo registrado puede no ser todo lo comido.',
     carriles: { energia: 'Calorías registradas', mediaSemanal: 'Media semanal de las calorías registradas', peso: 'Peso de cada toma' },
+    // La leyenda del carril semanal: lo corto se ve; lo largo, el lector de pantalla.
+    fichas: {
+      entera: { corto: 'Semana entera', largo: 'Barra llena: los siete días de la semana entran en la media' },
+      hueca: { corto: 'Con días afuera', largo: 'Barra hueca, con su contorno: algún día de la semana quedó afuera de la media' },
+      sinMedia: { corto: 'Sin media', largo: 'Contorno cortado, sin relleno: la semana tiene días con valor, pero no llega a 4 días con cantidades en todos sus registros; no es un cero' },
+      sinDias: { corto: 'Sin días con valor', largo: 'Columna gris: ningún día de la semana tiene valor; no es un cero' },
+    },
   },
 } as const;

@@ -994,9 +994,11 @@ test('TEST-GRV-009 · GR-24: la diferencia dice lo que cambió en lo indicado, N
   const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8').replace(/\r\n/g, '\n');
   assert.match(etapas, /return diferenciaDeLoIndicado\(enLaEtapa\(a\), enLaEtapa\(b\), medida\);/);
   assert.match(etapas, /o\.comparacion\.planId === e\.planVersionId/, 'lo indicado de cada etapa es el de la versión que ejecutó cada sesión');
-  assert.match(etapas, /useState\(\(\) => convienePorSemana\(leido\.desde, leido\.hasta\)\)/);
+  // Rama D (GR-VC13 y GR-VC12): de entrada por semana con más de seis semanas y alguna media (`porSemanaDeEntrada`, que usa
+  // `convienePorSemana`); lo elegido a mano manda hasta que cambian las etapas.
+  assert.match(etapas, /const porSemana = porSemanaElegido \?\? porSemanaDeEntrada\(leido\.desde, leido\.hasta, \[\.\.\.semanasDe\.values\(\)\]\);/);
   // Con otras etapas sin volver a montar la comparación, el modo vuelve al que conviene para el período nuevo.
-  assert.match(etapas, /useEffect\(\(\) => setPorSemana\(convienePorSemana\(leido\.desde, leido\.hasta\)\), \[leido\.desde, leido\.hasta\]\);/);
+  assert.match(etapas, /useEffect\(\(\) => setPorSemana\(null\), \[leido\.desde, leido\.hasta\]\);/);
   assert.match(etapas, /\{semanal \? \(\n\s*<MinigraficoPorSemana/);
   assert.match(etapas, /data-dia-por-dia/);
   const analizar = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/analizar.tsx'), 'utf8').replace(/\r\n/g, '\n');
@@ -1054,8 +1056,10 @@ test('TEST-GRV-013 · GR-24 por semana: cada media dice a la vista con qué día
   assert.doesNotMatch(pieza, /<title>/, 'nada solo en el globo nativo');
   const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8');
   assert.match(etapas, /\{semanal \? <MarcaDeBarra indice=\{indice\} \/> : <Marca indice=\{indice\} \/>\}/);
-  assert.match(etapas, /<LeyendaPorSemana \/>/);
-  assert.match(etapas, /parcial: p\.quality === 'PARTIAL', conRegistros: p\.value === null, enCurso: p\.partialBucket/);
+  // Rama D (GR-VC13): la leyenda, una vez, con las marcas que se ven y la regla de la media de GR-12; los días, con lo que BE
+  // sabe de cada uno (un subtotal va a media altura en la tira), y las semanas, las de GR-12.
+  assert.match(etapas, /<LeyendaPorSemana que=\{marcasPorSemanaQueSeVen\(\[\.\.\.semanasDe\.values\(\)\]\.flat\(\)\)\} comoSeArma=\{COPY_DE_LOS_CRUCES\.porSemana\.comoSeArma\} \/>/);
+  assert.match(etapas, /dias=\{diasDeLaSerieDeNutricion\(s\.estado\.observaciones\.points\)\}\n\s*semanas=\{semanas \?\? undefined\}/);
   // Contraste (DISENO-VISUAL §1, principio 10): la barra llena a 3:1 contra la superficie y contra la hueca, y los puntos
   // de los días a 3:1 contra la superficie, en Claro y en Azul noche, con cada color de métrica.
   const css = readFileSync(join(WEB, 'src/app/tokens.css'), 'utf8');
