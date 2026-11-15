@@ -17,12 +17,16 @@ export const COPY_COMO_LEERLO = {
   titulo: 'Cómo leerlo',
 } as const;
 
-export function ComoLeerlo({ children, titulo = COPY_COMO_LEERLO.titulo, className = '' }: { children: ReactNode; titulo?: string; className?: string }) {
+/**
+ * `soloIcono`: el resumen es solo la «i», con su nombre para el lector de pantalla y al pasar el mouse (el buscador,
+ * donde cada renglón cuenta: «Cómo se cuenta» detrás de su «i»).
+ */
+export function ComoLeerlo({ children, titulo = COPY_COMO_LEERLO.titulo, className = '', soloIcono = false }: { children: ReactNode; titulo?: string; className?: string; soloIcono?: boolean }) {
   return (
-    <details className={['grafico-base__como-leerlo', className].filter(Boolean).join(' ')} data-como-leerlo>
-      <summary>
-        <Icono nombre="informacion" tamano={15} />
-        {titulo}
+    <details className={['grafico-base__como-leerlo', soloIcono ? 'grafico-base__como-leerlo--icono' : '', className].filter(Boolean).join(' ')} data-como-leerlo>
+      <summary title={soloIcono ? titulo : undefined}>
+        <Icono nombre="info" tamano={15} />
+        {soloIcono ? <span className="visualmente-oculto">{titulo}</span> : titulo}
       </summary>
       <div className="grafico-base__como-leerlo-cuerpo">{children}</div>
     </details>

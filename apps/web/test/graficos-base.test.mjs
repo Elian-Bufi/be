@@ -804,15 +804,18 @@ test('TEST-GRV-002 · sin rótulo en cada punto: el elegido, el último, el máx
     [
       { clave: 'a', x: 100, y: 100, texto: '160,5' },
       { clave: 'b', x: 106, y: 102, texto: '154,5' },
-      { clave: 'c', x: 300, y: 100, texto: '141' },
+      { clave: 'd', x: 104, y: 101, texto: '157,5' },
+      { clave: 'c', x: 300, y: 100, texto: '141', abajo: true },
     ],
     caja,
   );
   assert.deepEqual(
     juntos.map((r) => r.clave),
-    ['a', 'c'],
-    'el segundo pisaría al primero: no se dibuja',
+    ['a', 'b', 'c'],
+    'el segundo va abajo porque arriba pisaría al primero; el tercero pisaría en los dos lugares: no se dibuja',
   );
+  assert.ok(juntos[1].ty > 102, 'el segundo, abajo de su punto');
+  assert.ok(juntos[2].ty > 100, 'el mínimo, abajo de su punto');
   // Al borde, el rótulo se alinea hacia adentro; arriba de todo, va debajo del punto.
   const borde = J.rotulosSinPisarse([{ clave: 'z', x: 398, y: 4, texto: '99,5' }], caja);
   assert.equal(borde[0].ancla, 'end');
@@ -943,7 +946,9 @@ test('TEST-GRV-007 · las versiones, discretas: un tono que alterna, una línea 
 test('TEST-GRV-008 · «Cómo leerlo» es un desplegable accesible y cerrado; la frase fija queda a la vista y la tabla no parte un valor (mutación: esconder la frase)', () => {
   const como = readFileSync(join(GRAFICOS, 'como-leerlo.tsx'), 'utf8');
   assert.match(como, /<details className=\{\['grafico-base__como-leerlo'/);
-  assert.match(como, /<summary>\n\s*<Icono nombre="informacion" tamano=\{15\} \/>/);
+  assert.match(como, /<summary title=\{soloIcono \? titulo : undefined\}>\n\s*<Icono nombre="info" tamano=\{15\} \/>/);
+  // Con solo la «i», el lector de pantalla oye su nombre.
+  assert.match(como, /\{soloIcono \? <span className="visualmente-oculto">\{titulo\}<\/span> : titulo\}/);
   assert.doesNotMatch(como, /<details[^>]*\bopen\b/, 'cerrado de entrada');
   const paneles = readFileSync(join(GRAFICOS, 'paneles-alineados.tsx'), 'utf8');
   const frase = paneles.indexOf('{frase ? <FraseDeLaCoincidencia texto={frase} /> : null}');

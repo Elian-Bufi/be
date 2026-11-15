@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { diaYMesCivil } from '../../../../lib/formato';
 import { diasSinRegistros, escalaDeLaUnidad, FRANJA_DE_ROTULOS, geometriaDelIndicador, geometriaDelMinigrafico, LETRA_MINIMA, LUGAR_PARA_MARCAR_CADA_DIA } from './geometria';
 import { ESTILOS, Punto } from './marca';
+import { marcasRedondas, textoDeLaMarcaDelEje } from '../graficos/ejes';
 
 const ALTO = 60;
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
@@ -72,6 +73,16 @@ export function Minigrafico({
     () => geometriaDelMinigrafico({ puntos: serie.points, sinRegistros: sombreados, desde, hasta, ancho, alto, inicioDelPlan, bandas, fechas, plan, divisionesDelEje: ejeFino ? 4 : 2, enteros: escalaDeLaUnidad(serie.unit).enteros }),
     [serie, sombreados, desde, hasta, ancho, alto, inicioDelPlan, bandas, fechas, plan, ejeFino],
   );
+  // WP-GRAFICOS, pasada visual (15/11): con el eje fino (la comparación de etapas), las marcas redondas del medio, para
+  // que el eje tenga de 3 a 5 números y no solo el tope y la base (DISENO-VISUAL §1, principio 4).
+  const intermedias = useMemo(() => {
+    const [tope, base] = g.eje;
+    if (!ejeFino || !tope || !base || tope.valor <= base.valor) return [];
+    const m = marcasRedondas(base.valor, tope.valor, { enteros: escalaDeLaUnidad(serie.unit).enteros });
+    return m.valores
+      .filter((v) => v > base.valor && v < tope.valor)
+      .map((valor) => ({ valor, y: base.y + ((valor - base.valor) / (tope.valor - base.valor)) * (tope.y - base.y), texto: textoDeLaMarcaDelEje(valor, m.decimales) }));
+  }, [g.eje, ejeFino, serie.unit]);
   const color = (ESTILOS[indice] ?? ESTILOS[0]).color;
   return (
     <div ref={setCaja} className="minigrafico" role="img" aria-label={descripcion} style={{ height: alto }}>
@@ -93,7 +104,7 @@ export function Minigrafico({
           {g.sinRegistros.map((h) => (
             <rect key={`sin-${h.x}`} className="minigrafico__sin-registros" x={h.x} y={2} width={h.ancho} height={g.caja.abajo + 6 - 2} fill="var(--grafico-hueco)" fillOpacity={0.2} />
           ))}
-          {g.eje.map((m) => (
+          {[...g.eje, ...intermedias].map((m) => (
             <g key={m.valor} className="minigrafico__marca">
               {/* La grilla, solo horizontal y alineada al medio píxel (TB-03). */}
               <line x1={g.caja.izquierda} x2={g.caja.derecha} y1={Math.round(m.y) + 0.5} y2={Math.round(m.y) + 0.5} stroke="var(--borde)" strokeWidth={1} />

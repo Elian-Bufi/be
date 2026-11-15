@@ -87,6 +87,8 @@ export interface RotuloCandidato {
   readonly x: number;
   readonly y: number;
   readonly texto: string;
+  /** Va abajo del punto si entra (el mínimo del período: arriba suele estar la línea). */
+  readonly abajo?: boolean;
 }
 
 export interface RotuloUbicado extends RotuloCandidato {
@@ -120,12 +122,15 @@ export function rotulosSinPisarse(
     const ancla: RotuloUbicado['ancla'] = c.x - ancho / 2 < caja.izquierda ? 'start' : c.x + ancho / 2 > caja.derecha ? 'end' : 'middle';
     const x1 = ancla === 'start' ? c.x - 4 : ancla === 'end' ? c.x - ancho + 4 : c.x - ancho / 2;
     const tx = ancla === 'start' ? c.x - 4 : ancla === 'end' ? c.x + 4 : c.x;
+    // Arriba del punto, o abajo si se pide (el mínimo) o si arriba no entra; si el primer lugar pisa algo, el otro.
     const arriba = c.y - separacion;
-    const ty = arriba - ALTO_DE_UN_ROTULO + 2 >= caja.arriba ? arriba : c.y + separacion + ALTO_DE_UN_ROTULO - 4;
-    const r: RotuloUbicado = { ...c, tx, ty, ancla, caja: { x1, x2: x1 + ancho, y1: ty - ALTO_DE_UN_ROTULO + 3, y2: ty + 3 } };
-    if (r.caja.y2 > caja.abajo + 4) continue;
-    if ([...puestos.map((p) => p.caja), ...ocupadas].some((o) => sePisan(o, r.caja, aire))) continue;
-    puestos.push(r);
+    const abajo = c.y + separacion + ALTO_DE_UN_ROTULO - 4;
+    const lugares = (c.abajo ? [abajo, arriba] : [arriba, abajo]).filter((ty) => ty - ALTO_DE_UN_ROTULO + 2 >= caja.arriba && ty + 3 <= caja.abajo + 4);
+    const ocupado = [...puestos.map((p) => p.caja), ...ocupadas];
+    const r = lugares
+      .map((ty): RotuloUbicado => ({ ...c, tx, ty, ancla, caja: { x1, x2: x1 + ancho, y1: ty - ALTO_DE_UN_ROTULO + 3, y2: ty + 3 } }))
+      .find((x) => !ocupado.some((o) => sePisan(o, x.caja, aire)));
+    if (r) puestos.push(r);
   }
   return puestos;
 }

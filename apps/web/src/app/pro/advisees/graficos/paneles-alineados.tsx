@@ -148,9 +148,10 @@ function DibujoDelCarril({
       .sort((a, b) => a.x - b.x);
     const elegido = fecha === null ? null : (conValor.find((p) => p.fecha === fecha)?.clave ?? null);
     const ultimoPunto = conValor[conValor.length - 1]?.clave ?? null;
+    const minimo = [...conValor].sort((a, b) => a.valor - b.valor)[0]?.clave ?? null;
     const candidatos = puntosConRotulo(conValor, elegido).flatMap((c) => {
       const p = conValor.find((x) => x.clave === c);
-      return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor) }] : [];
+      return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor), abajo: c === minimo && c !== ultimoPunto }] : [];
     });
     const ejeY = g.marcasY.map((m) => ({ x1: 0, x2: MARGEN_IZQUIERDO - 4, y1: m.y - 8, y2: m.y + 8 }));
     return rotulosSinPisarse(candidatos, { izquierda: MARGEN_IZQUIERDO, derecha: escala.derecha + MARGEN_DERECHO - 2, arriba: 0, abajo: alto }, ejeY).map((r) => ({ ...r, fuerte: r.clave === elegido || r.clave === ultimoPunto }));

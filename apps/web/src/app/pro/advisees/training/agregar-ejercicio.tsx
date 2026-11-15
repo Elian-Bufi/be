@@ -433,7 +433,7 @@ function ContenidoDeAgregarEjercicio({
               <Icono nombre="linea-de-tiempo" tamano={15} />
               {COPY_MARCA_DEL_BUSCADOR.enUnaLinea}
             </span>
-            <ComoLeerlo titulo={COPY_MARCA_DEL_BUSCADOR.comoSeCuenta}>
+            <ComoLeerlo titulo={COPY_MARCA_DEL_BUSCADOR.comoSeCuenta} soloIcono>
               <p>{COPY_HISTORIAL_DEL_BUSCADOR.queCuenta}</p>
             </ComoLeerlo>
           </div>

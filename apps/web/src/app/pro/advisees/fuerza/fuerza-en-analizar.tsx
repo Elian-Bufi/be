@@ -359,11 +359,13 @@ function Grafico({
   const conValor = ordenados.map((p) => ({ clave: p.pointId, valor: p.estimate.value }));
   const claves = puntosConRotulo(conValor, elegido?.pointId ?? null);
   const ultimo = ordenados[ordenados.length - 1]?.pointId ?? null;
+  // El mínimo va abajo de su punto: arriba suele pasar la línea.
+  const minimo = [...conValor].sort((a, b) => a.valor - b.valor)[0]?.clave ?? null;
   const ejeY = geo.eje.valores.map((v) => ({ x1: 0, x2: MARGEN.izq - 4, y1: geo.y(v) - 8, y2: geo.y(v) + 8 }));
   const rotulos = rotulosSinPisarse(
     claves.flatMap((c) => {
       const p = puntos.find((x) => x.pointId === c);
-      return p ? [{ clave: c, x: geo.x(p.date), y: geo.y(p.estimate.value), texto: numeroDelPunto(p) }] : [];
+      return p ? [{ clave: c, x: geo.x(p.date), y: geo.y(p.estimate.value), texto: numeroDelPunto(p), abajo: c === minimo && c !== ultimo }] : [];
     }),
     { izquierda: MARGEN.izq, derecha: geo.derecha + MARGEN.der - 2, arriba: MARGEN.arr - 4, abajo },
     ejeY,

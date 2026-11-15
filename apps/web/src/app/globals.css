@@ -18501,15 +18501,20 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0.25rem 0 0.5rem;
 }
 
-/* Las filas del buscador, más compactas: en 1440 × 900 se ven seis resultados o más sin desplazar. */
-.agregar-ejercicio .ejercicios-del-catalogo thead th {
-  padding-block: 0.2rem;
-  font-size: 0.8125rem;
+/* Las filas del buscador, más compactas: en 1440 × 900 se ven seis resultados o más sin desplazar. El encabezado
+   («Ejercicio») sigue para el lector de pantalla, sin ocupar un renglón a la vista. */
+.agregar-ejercicio .ejercicios-del-catalogo thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .agregar-ejercicio .ejercicios-del-catalogo tbody th,
 .agregar-ejercicio .ejercicios-del-catalogo tbody td {
-  padding-block: 0.4rem;
+  padding-block: 0.3rem;
 }
 
 /* GR-01: «La vez pasada» en el cuadro del ejercicio, debajo de «Lo que indica el plan» y nunca mezclada con eso. */
@@ -18517,6 +18522,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
   display: grid;
   gap: 0.5rem;
   margin-top: 1rem;
+  container-type: inline-size;
 }
 
 .la-vez-pasada > p {
@@ -18544,6 +18550,20 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .la-vez-pasada__cuando {
   display: grid;
   gap: 0.1rem;
+}
+
+/* Con el cuadro angosto (480 px), la fecha y la sesión van en un renglón arriba y las fichas tienen todo el ancho. */
+@container (max-width: 26rem) {
+  .la-vez-pasada__vez {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .la-vez-pasada__cuando {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.1rem 0.6rem;
+  }
 }
 
 .la-vez-pasada__fecha {
@@ -18668,6 +18688,10 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .desde-el-inicio__tabla th,
 .desde-el-inicio__tabla td {
   vertical-align: top;
+}
+
+.desde-el-inicio__tabla thead th {
+  white-space: nowrap;
 }
 
 .desde-el-inicio__tabla thead th:not(:first-child),

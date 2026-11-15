@@ -37,7 +37,7 @@ test('TEST-GR-004 · cada resultado del buscador lleva la marca del índice de A
   // Qué cuenta se dice una vez, en una línea, con el detalle entero detrás de «Cómo se cuenta»; si la lectura falla, se
   // dice y se reintenta, y los resultados se ven igual.
   assert.match(b, /\{COPY_MARCA_DEL_BUSCADOR\.enUnaLinea\}/);
-  assert.match(b, /<ComoLeerlo titulo=\{COPY_MARCA_DEL_BUSCADOR\.comoSeCuenta\}>\n\s*<p>\{COPY_HISTORIAL_DEL_BUSCADOR\.queCuenta\}<\/p>/);
+  assert.match(b, /<ComoLeerlo titulo=\{COPY_MARCA_DEL_BUSCADOR\.comoSeCuenta\} soloIcono>\n\s*<p>\{COPY_HISTORIAL_DEL_BUSCADOR\.queCuenta\}<\/p>/);
   assert.match(b, /onClick=\{releerElHistorial\}/);
 });
 

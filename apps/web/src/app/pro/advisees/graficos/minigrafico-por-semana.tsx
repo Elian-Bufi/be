@@ -84,12 +84,15 @@ export function MinigraficoPorSemana({
           ))}
           {/* Los días, como puntos tenues detrás de las barras: se ve de qué sale cada media. */}
           {g.dias.map((d) => (
-            <circle key={`dia-${d.fecha}`} className="minigrafico-por-semana__dia" cx={d.x} cy={d.y} r={1.75} fill={color} opacity={0.4} />
+            <circle key={`dia-${d.fecha}`} className="minigrafico-por-semana__dia" cx={d.x} cy={d.y} r={1.5} fill={color} opacity={0.3} />
           ))}
+          {/* Cada semana, una barra de un tono con su tope marcado; la que no está completa (la corta el período, tiene
+              hoy o algún subtotal) va más clara: la forma lo dice además del texto del globo. */}
           {g.barras.map((b) => (
             <g key={b.lunes} className="minigrafico-por-semana__semana" data-hueca={b.hueca ? '' : undefined} data-dias={b.semana.conDato}>
               <title>{lecturaDeLaSemana(b.lunes, b.semana.valor, unidad, b.semana)}</title>
-              <rect x={b.x} y={b.y} width={b.ancho} height={Math.max(0, g.caja.abajo - b.y)} rx={2} fill={color} fillOpacity={b.hueca ? 0.12 : 0.3} stroke={color} strokeWidth={1.25} strokeDasharray={b.hueca ? '3 2' : undefined} />
+              <rect x={b.x} y={b.y} width={b.ancho} height={Math.max(0, g.caja.abajo - b.y)} fill={color} fillOpacity={b.hueca ? 0.16 : 0.34} />
+              <line x1={b.x} x2={b.x + b.ancho} y1={b.y + 1} y2={b.y + 1} stroke={color} strokeWidth={2} />
             </g>
           ))}
           {g.vacias.map((b) => (

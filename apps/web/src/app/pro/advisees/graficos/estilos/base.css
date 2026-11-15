@@ -160,6 +160,13 @@
   border-radius: 6px;
 }
 
+/* Solo la «i» (el buscador): un toque chico, con su nombre al pasar el mouse y para el lector de pantalla. */
+.grafico-base__como-leerlo--icono > summary {
+  min-height: 1.5rem;
+  min-width: 1.5rem;
+  justify-content: center;
+}
+
 .grafico-base__como-leerlo > summary::-webkit-details-marker {
   display: none;
 }
