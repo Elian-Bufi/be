@@ -37,7 +37,7 @@
  * la regla solo con un puntero fino; tocar o hacer clic la fija. La lectura de la fecha y la tabla dicen lo mismo que el
  * dibujo.
  */
-import { FRASE_DE_LA_COINCIDENCIA, type SentidoDeLaMarca } from '@be/domain';
+import type { SentidoDeLaMarca } from '@be/domain';
 import { useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useConPuntero } from '../../../../lib/graficos';
 import { LETRA_MINIMA } from '../seguimiento/geometria';
@@ -48,11 +48,12 @@ import { DibujoDeLaCinta } from './dibujo-de-la-cinta';
 import { COPY_DE_LOS_GRAFICOS } from './copy';
 import { useCursorDeFechas } from './cursor-de-fechas';
 import { diaYMes, escalaDeFechas, inicioDelEje, moverElCursor, type EscalaDeFechas, type PeriodoDelGrafico } from './eje-de-fechas';
-import { puntosConRotulo, rotulosSinPisarse, textoDeLaMarcaDelEje } from './ejes';
+import { rotulosDeLoLleno, rotulosSinPisarse, textoDeLaMarcaDelEje } from './ejes';
 import { LecturaEnLaFecha } from './lectura-en-la-fecha';
 import { colorDelCarril, Leyenda, MarcaDelCarril } from './marcas';
 import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_DERECHO, MARGEN_IZQUIERDO, useAnchoDelGrafico } from './medidas-del-grafico';
 import { NotaDelInicio } from './estado-del-grafico';
+import { esLaFraseFija, lineaTenueDelGrafico, notasALaVista } from './notas-del-grafico';
 import { tablaEquivalente } from './tabla-equivalente';
 import { TablaEquivalente } from './tabla-equivalente-en-pantalla';
 import { cambiosEnTexto, cambiosQueNoEntran, versionesEnElEje } from './versiones-en-el-eje';
@@ -164,11 +165,7 @@ function DibujoDelCarril({
     const ultimoPunto = conValor[conValor.length - 1]?.clave ?? null;
     // El mínimo y el máximo del período, solo entre lo registrado sin hueco: un subtotal (le falta algo) o una carga rápida
     // (los números del plan) no se rotulan como el extremo (revisión de #283). El elegido y el último, siempre.
-    const llenos = conValor.filter((p) => p.marca !== 'HUECA' && p.marca !== 'HUECA_GRIS');
-    const orden = [...llenos].sort((a, b) => a.valor - b.valor);
-    const extremos = orden.length >= 4 ? [orden[orden.length - 1]!.clave, orden[0]!.clave] : [];
-    const minimo = [...llenos].sort((a, b) => a.valor - b.valor)[0]?.clave ?? null;
-    const claves = [...new Set([...puntosConRotulo(conValor, elegido, false), ...extremos])];
+    const { claves, minimo } = rotulosDeLoLleno(conValor, elegido);
     const candidatos = claves.flatMap((c) => {
       const p = conValor.find((x) => x.clave === c);
       return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor), abajo: c === minimo && c !== ultimoPunto }] : [];
@@ -289,19 +286,17 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
   const unSoloCarril = conDatos.length === 1;
   // Todas las notas se ven (revisión de #283): la frase fija (también con algo agregado) en su línea tenue, las demás
   // como notas; lo cargado después (§5.14) y lo que no entra en la escala (la muesca) también.
-  const visiblesAbajo = [
-    ...notas,
-    ...tarde.map((x) => `${x.charAt(0).toUpperCase()}${x.slice(1)}.`),
-    ...(fueraDeLaEscala > 0 ? [COPY_DE_LOS_GRAFICOS.fueraDeLaEscala(fueraDeLaEscala)] : []),
-    ...(cambiosRecortados.length > 0 ? [COPY_DE_LOS_GRAFICOS.cambiosDeLoIndicado(cambiosRecortados)] : []),
-  ];
+  const visiblesAbajo = notasALaVista({ notas, tarde, fueraDeLaEscala, cambiosRecortados });
   const visibles = sentidosQueSeVen(leyenda, carriles);
   const unidades = [...new Set(conDatos.map((c) => c.unidad))].join(' y ');
   const hasta = periodo.hasta >= periodo.hoy ? null : diaYMes(periodo.hasta, periodo.hoy);
   // Con un solo carril no se dibuja su renglón: el método va en la línea tenue, aunque el llamador pase la suya (§5.6).
   const metodo = unSoloCarril && conDatos[0]?.tipo === 'PUNTOS' ? conDatos[0].metodo : null;
-  const base = detalle ?? [unidades, COPY_DE_LOS_GRAFICOS.periodo(diaYMes(inicioDelEje(periodo), periodo.hoy), hasta)].filter(Boolean).join(' · ');
-  const lineaTenue = metodo && !base.includes(metodo) ? `${base} · ${metodo}` : base;
+  const lineaTenue = lineaTenueDelGrafico({
+    detalle,
+    porDefecto: [unidades, COPY_DE_LOS_GRAFICOS.periodo(diaYMes(inicioDelEje(periodo), periodo.hoy), hasta)].filter(Boolean).join(' · '),
+    metodo,
+  });
 
   return (
     <div className={`grafico-base grafico-base--${densidad.toLowerCase()}`}>
@@ -358,7 +353,7 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
       </p>
       <LecturaEnLaFecha tabla={tabla} fecha={cursor.fecha} encima={encima} tramo={cursor.tramo} hoy={periodo.hoy} />
       {visiblesAbajo.map((n) =>
-        n.startsWith(FRASE_DE_LA_COINCIDENCIA) ? (
+        esLaFraseFija(n) ? (
           <FraseDeLaCoincidencia key={n} texto={n} />
         ) : (
           <p key={n} className="nota grafico-base__nota">

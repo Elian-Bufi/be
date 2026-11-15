@@ -17,6 +17,7 @@ import {
   EjecucionDeEntrenamientoSchema,
   EJERCICIOS_DE_LA_ESTIMACION_V1,
   EntradaDeLineaDeTiempoSchema,
+  FRASE_DE_LA_COINCIDENCIA,
   NotaPropiaSchema,
   NotasDeLasSesionesResponseSchema,
   observacionesDelEjercicio,
@@ -846,7 +847,7 @@ test('TEST-GRV-003 · las fechas del eje, abreviadas y sin repetir el año (muta
   assert.equal(semana[0], '2 nov');
 });
 
-test('TEST-GRV-004 · una serie diaria con huecos, por semana: la media de los días con dato, una semana sin dato vacía y nunca en cero (mutación: dibujar la semana vacía en cero)', () => {
+test('TEST-GRV-004 · una serie diaria con huecos, por semana: la media de los días con valor, sin hoy ni en el denominador, una semana sin dato vacía y nunca en cero (mutación: dibujar la semana vacía en cero; contar hoy en el «de 7»)', () => {
   const dias = [
     { fecha: '2026-11-02', valor: 2000 },
     { fecha: '2026-11-03', valor: null },
@@ -855,18 +856,25 @@ test('TEST-GRV-004 · una serie diaria con huecos, por semana: la media de los d
   ];
   const semanas = S.semanasDeLosDias(dias, '2026-11-02', '2026-11-15', '2026-11-15');
   assert.deepEqual(
-    semanas.map((s) => [s.lunes, s.valor, s.conDato, s.dias, s.hueca]),
+    semanas.map((x) => [x.lunes, x.valor, x.conDato, x.dias, x.conHoy, x.hueca]),
     [
-      ['2026-11-02', 1900, 2, 7, false],
-      ['2026-11-09', null, 0, 7, true],
+      ['2026-11-02', 1900, 2, 7, false, true],
+      ['2026-11-09', null, 0, 7, true, true],
     ],
-    'hoy sigue en curso: no entra en la media y su semana va hueca',
+    'hoy sigue en curso: no entra en la media; una semana con 2 días de 7 no va llena',
   );
   assert.equal(S.denominadorDeLaSemana(semanas[0]), '2 de 7 días');
-  assert.equal(S.denominadorDeLaSemana(semanas[1]), 'sin días con dato');
-  // Un subtotal hace hueca a su semana; un período que corta la semana, también.
+  assert.equal(S.denominadorDeLaSemana(semanas[1]), 'ningún día con valor');
+  // Hoy no cuenta en el denominador: una semana entera hasta ayer dice «6 de 6 días», no «6 de 7».
+  const hastaAyer = Array.from({ length: 6 }, (_, i) => ({ fecha: `2026-11-0${i + 2}`, valor: 2000 }));
+  const conHoy = S.semanasDeLosDias([...hastaAyer, { fecha: '2026-11-08', valor: 900 }], '2026-11-02', '2026-11-08', '2026-11-08')[0];
+  assert.equal(S.denominadorDeLaSemana(conHoy), '6 de 6 días');
+  assert.equal(conHoy.valor, 2000, 'el valor de hoy (900, a medio día) no baja la media');
+  // Un subtotal hace hueca a su semana; un período que corta la semana, también; siete de siete, llena.
   assert.equal(S.semanasDeLosDias([{ fecha: '2026-11-02', valor: 2000, parcial: true }], '2026-11-02', '2026-11-08', '2026-11-20')[0].hueca, true);
   assert.equal(S.semanasDeLosDias([{ fecha: '2026-11-04', valor: 2000 }], '2026-11-04', '2026-11-08', '2026-11-20')[0].hueca, true);
+  const siete = Array.from({ length: 7 }, (_, i) => ({ fecha: `2026-11-0${i + 2}`, valor: 2000 }));
+  assert.equal(S.semanasDeLosDias(siete, '2026-11-02', '2026-11-08', '2026-11-20')[0].hueca, false, 'siete días con valor: llena');
   assert.equal(S.convienePorSemana('2025-11-15', '2026-11-14'), true);
   assert.equal(S.convienePorSemana('2026-11-01', '2026-11-14'), false, 'un período corto se lee día por día');
   const g = S.geometriaPorSemana({ dias, desde: '2026-11-02', hasta: '2026-11-15', hoy: '2026-11-15', ancho: 400, alto: 132, fechas: ['2026-11-02', '2026-11-15'] });
@@ -875,7 +883,7 @@ test('TEST-GRV-004 · una serie diaria con huecos, por semana: la media de los d
   assert.equal(g.eje[0].valor, 0, 'las barras arrancan en cero');
   assert.ok(g.eje.length >= 3 && g.eje.length <= 5);
   assert.ok(g.barras.every((b) => b.y < g.caja.abajo), 'ninguna barra en cero');
-  assert.equal(g.dias.length, 3, 'los días con dato van detrás, como puntos');
+  assert.deepEqual(g.dias.map((d) => d.fecha), ['2026-11-02', '2026-11-04'], 'los días con valor van detrás, como puntos; hoy no, porque no entra en la media');
 });
 
 test('TEST-GRV-005 · lo que cambió en lo indicado, dicho en la versión y en la diferencia de dos etapas (mutación: «−1 rep» suelto)', () => {
@@ -918,6 +926,17 @@ test('TEST-GRV-006 · la leyenda, solo con las marcas que se ven (mutación: la 
   assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'SUBTOTAL', 'INDICADO', 'OBSERVADA_POR_EL_PROFESIONAL'], [conHueco]), ['REGISTRADO', 'SUBTOTAL', 'INDICADO']);
   // Un punto sin valor no es una marca: no pide su leyenda.
   assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'CALCULADO'], [carril([punto('a', '2026-11-02', null, { marca: 'PUNTO_ADENTRO' })])]), []);
+  // La forma hueca dice más de una cosa: un subtotal de comida no pide «De más de 10 a 12 rep. equivalentes», ni al
+  // revés (revisión de #283). El adaptador le pone a cada punto su sentido.
+  const sub = carril([punto('a', '2026-11-02', 2000), punto('b', '2026-11-03', 900, { marca: 'HUECA', sentido: 'SUBTOTAL' })]);
+  assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'SUBTOTAL', 'ORIENTATIVA'], [sub]), ['REGISTRADO', 'SUBTOTAL']);
+  const ori = carril([punto('a', '2026-11-02', 150), punto('b', '2026-11-03', 152, { marca: 'HUECA', sentido: 'ORIENTATIVA' })]);
+  assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'SUBTOTAL', 'ORIENTATIVA'], [ori]), ['REGISTRADO', 'ORIENTATIVA']);
+  const analitico = (quality) => ({ pointId: 'p', date: '2026-11-03', dateEnd: null, at: null, value: 1, quality, n: 1, segment: 's1', corrected: false, partialBucket: false, dataClass: null, method: null, planVersionIds: [], coverage: null, missing: [], detail: [] });
+  const fuente = (clave) => ({ marca: 'REGISTRADO', fuente: { tipo: 'PROYECCION', clave } });
+  assert.equal(A.puntoDelCarril(analitico('PARTIAL'), fuente('TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE'), () => '').sentido, 'ORIENTATIVA');
+  assert.equal(A.puntoDelCarril(analitico('PARTIAL'), fuente('NUTRITION_ENERGY_BY_DAY'), () => '').sentido, 'SUBTOTAL');
+  assert.equal(A.puntoDelCarril(analitico('COMPLETE'), fuente('NUTRITION_ENERGY_BY_DAY'), () => '').sentido, undefined);
   const leyenda = readFileSync(join(GRAFICOS, 'marcas.tsx'), 'utf8');
   assert.match(leyenda, /<span className="visualmente-oculto">\{SENTIDO_EN_LA_LEYENDA\[sentido\]\}<\/span>/, 'el lector de pantalla oye el sentido entero');
   for (const t of Object.values(SENTIDO_CORTO)) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], t);
@@ -943,18 +962,22 @@ test('TEST-GRV-007 · las versiones, discretas: un tono que alterna, una línea 
   assert.equal(V.versionesEnElEje(bandas, minima)[1].texto, null, 'sin lugar para nada, nada');
 });
 
-test('TEST-GRV-008 · «Cómo leerlo» es un desplegable accesible y cerrado; la frase fija queda a la vista y la tabla no parte un valor (mutación: esconder la frase)', () => {
-  const como = readFileSync(join(GRAFICOS, 'como-leerlo.tsx'), 'utf8');
+test('TEST-GRV-008 · «Cómo leerlo» es un desplegable accesible y cerrado, con el nombre de su gráfico; las notas y la frase fija quedan a la vista y la tabla no parte un valor (mutación: esconder la frase o una nota)', () => {
+  const como = readFileSync(join(GRAFICOS, 'como-leerlo.tsx'), 'utf8').replace(/\r\n/g, '\n');
   assert.match(como, /<details className=\{\['grafico-base__como-leerlo'/);
-  assert.match(como, /<summary title=\{soloIcono \? titulo : undefined\}>\n\s*<Icono nombre="info" tamano=\{15\} \/>/);
-  // Con solo la «i», el lector de pantalla oye su nombre.
+  // Sin `title` (algunos lectores lo leían dos veces); con solo la «i», el lector oye su nombre y de qué gráfico es.
+  assert.match(como, /<summary>\n\s*<Icono nombre="info" tamano=\{15\} \/>/);
   assert.match(como, /\{soloIcono \? <span className="visualmente-oculto">\{titulo\}<\/span> : titulo\}/);
+  assert.match(como, /\{de \? <span className="visualmente-oculto">\{`: \$\{de\}`\}<\/span> : null\}/);
   assert.doesNotMatch(como, /<details[^>]*\bopen\b/, 'cerrado de entrada');
-  const paneles = readFileSync(join(GRAFICOS, 'paneles-alineados.tsx'), 'utf8');
-  const frase = paneles.indexOf('{frase ? <FraseDeLaCoincidencia texto={frase} /> : null}');
-  const pie = paneles.indexOf('<ComoLeerlo>');
-  assert.ok(frase > 0 && pie > frase, 'la frase va afuera de «Cómo leerlo»');
-  assert.match(paneles, /\.\.\.notas\.filter\(\(n\) => n !== FRASE_DE_LA_COINCIDENCIA\)/);
+  const paneles = readFileSync(join(GRAFICOS, 'paneles-alineados.tsx'), 'utf8').replace(/\r\n/g, '\n');
+  // Todas las notas, a la vista y antes del pie (`notasALaVista`, que prueba TEST-GRV-018); a «Cómo leerlo», las aclaraciones.
+  const notas = paneles.indexOf('{visiblesAbajo.map((n) =>');
+  const pie = paneles.indexOf('<ComoLeerlo de={titulo}>');
+  assert.ok(notas > 0 && pie > notas, 'las notas van afuera de «Cómo leerlo»');
+  assert.match(paneles, /const visiblesAbajo = notasALaVista\(\{ notas, tarde, fueraDeLaEscala, cambiosRecortados \}\);/);
+  assert.match(paneles, /esLaFraseFija\(n\) \? \(\n\s*<FraseDeLaCoincidencia key=\{n\} texto=\{n\} \/>/);
+  assert.match(paneles, /<ComoLeerlo de=\{titulo\}>\n\s*\{aclaraciones\.map/);
   assert.ok(paneles.indexOf('<Leyenda sentidos={visibles} />') < paneles.indexOf('className="grafico-base__area"'), 'la leyenda va arriba del gráfico');
   assert.match(paneles, /return carriles <= 1 \? 240 : 140;/, 'un gráfico principal de 240 px');
   const css = readFileSync(join(GRAFICOS, 'estilos', 'base.css'), 'utf8');
@@ -963,16 +986,314 @@ test('TEST-GRV-008 · «Cómo leerlo» es un desplegable accesible y cerrado; la
   assert.match(css, /\.grafico-base__como-leerlo > summary:focus-visible \{/);
 });
 
-test('TEST-GRV-009 · GR-24: la diferencia dice lo que cambió en lo indicado, Nutrición va por semana y la frase fija al pie (mutación: el peine de los días)', () => {
-  const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8');
+test('TEST-GRV-009 · GR-24: la diferencia dice lo que cambió en lo indicado, Nutrición va por semana, la frase fija al pie y «Cómo leerlo» último (mutación: el peine de los días; el desplegable que salta antes de la frase)', () => {
+  const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8').replace(/\r\n/g, '\n');
   assert.match(etapas, /return diferenciaDeLoIndicado\(enLaEtapa\(a\), enLaEtapa\(b\), medida\);/);
   assert.match(etapas, /o\.comparacion\.planId === e\.planVersionId/, 'lo indicado de cada etapa es el de la versión que ejecutó cada sesión');
   assert.match(etapas, /useState\(\(\) => convienePorSemana\(leido\.desde, leido\.hasta\)\)/);
+  // Con otras etapas sin volver a montar la comparación, el modo vuelve al que conviene para el período nuevo.
+  assert.match(etapas, /useEffect\(\(\) => setPorSemana\(convienePorSemana\(leido\.desde, leido\.hasta\)\), \[leido\.desde, leido\.hasta\]\);/);
   assert.match(etapas, /\{semanal \? \(\n\s*<MinigraficoPorSemana/);
   assert.match(etapas, /data-dia-por-dia/);
-  const analizar = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/analizar.tsx'), 'utf8');
+  const analizar = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/analizar.tsx'), 'utf8').replace(/\r\n/g, '\n');
   const pie = analizar.slice(analizar.indexOf('<div className="pie-de-etapas">'), analizar.indexOf('debajo={', analizar.indexOf('<div className="pie-de-etapas">')));
   assert.match(pie, /<FraseDeLaCoincidencia \/>/);
   assert.match(pie, /<ComoLeerlo className="pie-de-etapas__como-leerlo">\n\s*<p>\{laPregunta\.limite\}<\/p>/);
+  assert.ok(pie.indexOf('<FraseDeLaCoincidencia />') < pie.indexOf('<ComoLeerlo'), '«Cómo leerlo» va último: abierto, no cambia de lugar en el orden del foco');
   assert.doesNotMatch(pie, /no indica causa/);
+  const css = readFileSync(join(WEB, 'src/app/globals.css'), 'utf8').replace(/\r\n/g, '\n');
+  const regla = css.slice(css.indexOf('.pie-de-etapas__como-leerlo[open] {')).split('}')[0];
+  assert.doesNotMatch(regla, /order:/, 'sin `order` que lo mueva al abrirse');
+});
+
+// ─── Revisión de #283 (pasada visual): §5 manda sobre la guía visual ─────────────────────────────
+
+test('TEST-GRV-013 · GR-24 por semana: cada media dice a la vista con qué días se hizo, cuántos subtotales, qué quedó afuera y por qué, y la barra llena llega a 3:1 (mutación: contar los subtotales en silencio; el «5 de 7 días» solo en un globo)', () => {
+  const S2 = S;
+  // Una semana con un subtotal, un día con registros sin este valor y uno sin registros.
+  const dias = [
+    { fecha: '2026-11-02', valor: 2000 },
+    { fecha: '2026-11-03', valor: 1500, parcial: true },
+    { fecha: '2026-11-04', valor: null, conRegistros: true },
+    { fecha: '2026-11-05', valor: 1900 },
+    { fecha: '2026-11-06', valor: 2100 },
+    { fecha: '2026-11-08', valor: 1800 },
+  ];
+  const [semana] = S2.semanasDeLosDias(dias, '2026-11-02', '2026-11-08', '2026-11-20');
+  assert.deepEqual([semana.conDato, semana.subtotales, semana.sinValor, semana.sinRegistros, semana.hueca], [5, 1, 1, 1, true]);
+  assert.equal(S2.lecturaDeLaSemana(semana, 'kcal'), 'Semana del 2 nov: 1.860 kcal, media de 5 de 7 días (1 subtotal); fuera de la media: 1 día sin registros, 1 día con registros sin este valor');
+  // Hoy: fuera de la media, dicho. Una semana cuyo único dato es hoy no tiene media y lo dice (no «sin días con dato» con
+  // un punto encima): el punto de hoy no se dibuja.
+  const soloHoy = S2.semanasDeLosDias([{ fecha: '2026-11-16', valor: 2300 }], '2026-11-16', '2026-11-16', '2026-11-16');
+  assert.equal(S2.lecturaDeLaSemana(soloHoy[0], 'kcal'), 'El 16 nov: ningún día con valor; fuera de la media: hoy, que sigue en curso (entra cuando termine)');
+  const g = S2.geometriaPorSemana({ dias: [{ fecha: '2026-11-16', valor: 2300 }], desde: '2026-11-16', hasta: '2026-11-16', hoy: '2026-11-16', ancho: 300, alto: 132 });
+  assert.equal(g.dias.length, 0, 'hoy no se dibuja como un punto sobre una semana sin media');
+  assert.deepEqual(g.tira.map((t) => t.estado), ['hoy']);
+  // El día que la API marca en curso (`partialBucket`) cuenta como hoy, aunque el navegador ya esté en otro día.
+  const enCurso = S2.semanasDeLosDias([{ fecha: '2026-11-09', valor: 2000 }, { fecha: '2026-11-10', valor: 600, enCurso: true }], '2026-11-09', '2026-11-10', '2026-11-11');
+  assert.equal(enCurso[0].valor, 2000);
+  // La tira dice el estado de cada día: con valor, con algo que falta (subtotal o sin este valor), sin registros.
+  const tira = S2.geometriaPorSemana({ dias, desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-20', ancho: 300, alto: 132 }).tira.map((t) => t.estado);
+  assert.deepEqual(tira, ['con', 'hueco', 'hueco', 'con', 'con', 'sin', 'con']);
+  // El nombre para el lector, sin primero contra último (§5.12); cada media, en la tabla de las semanas.
+  const resumen = S2.resumenDeLasSemanas([semana], 'kcal');
+  assert.doesNotMatch(resumen, /primer|últim/);
+  assert.match(resumen, /1 tramo con media, de 1\.860 kcal; 0 con todos sus días con valor/);
+  for (const t of [S2.lecturaDeLaSemana(semana, 'kcal'), resumen]) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['NUTRICION']), [], t);
+  // El componente: la lectura a la vista y viva, el foco con flechas, la tabla de las semanas, la columna vacía de todo el
+  // alto (no una raya sobre el cero) y el glifo de barra en el título.
+  const pieza = readFileSync(join(GRAFICOS, 'minigrafico-por-semana.tsx'), 'utf8').replace(/\r\n/g, '\n');
+  assert.match(pieza, /tabIndex=\{0\}\n\s*role="group"/);
+  assert.match(pieza, /aria-live="polite" data-lectura-de-la-semana>\n\s*\{semanaElegida \? lecturaDeLaSemana\(semanaElegida, unidad\) : null\}/);
+  assert.match(pieza, /<table className="visualmente-oculto" data-tabla-de-las-semanas>/);
+  assert.match(pieza, /className="minigrafico-por-semana__vacia" x=\{b\.x\} y=\{g\.caja\.arriba\} width=\{b\.ancho\} height=\{g\.caja\.abajo - g\.caja\.arriba\}/);
+  assert.doesNotMatch(pieza, /<title>/, 'nada solo en el globo nativo');
+  const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8');
+  assert.match(etapas, /\{semanal \? <MarcaDeBarra indice=\{indice\} \/> : <Marca indice=\{indice\} \/>\}/);
+  assert.match(etapas, /<LeyendaPorSemana \/>/);
+  assert.match(etapas, /parcial: p\.quality === 'PARTIAL', conRegistros: p\.value === null, enCurso: p\.partialBucket/);
+  // Contraste (DISENO-VISUAL §1, principio 10): la barra llena a 3:1 contra la superficie y contra la hueca, y los puntos
+  // de los días a 3:1 contra la superficie, en Claro y en Azul noche, con cada color de métrica.
+  const css = readFileSync(join(WEB, 'src/app/tokens.css'), 'utf8');
+  const bloque = (selector) => css.slice(css.indexOf(selector), css.indexOf('\n}', css.indexOf(selector)));
+  const valor = (texto, token) => texto.match(new RegExp(`\\s${token}:\\s*(#[0-9a-fA-F]{6})`))[1];
+  const mezcla = (color, alfa, fondo) =>
+    `#${[1, 3, 5].map((i) => Math.round(parseInt(color.slice(i, i + 2), 16) * alfa + parseInt(fondo.slice(i, i + 2), 16) * (1 - alfa)).toString(16).padStart(2, '0')).join('')}`;
+  for (const selector of [':root {', "[data-tema='azul-noche'] {"]) {
+    const b = bloque(selector);
+    const superficie = valor(b, '--superficie');
+    for (const token of ['--metrica-1', '--metrica-2', '--metrica-3']) {
+      const llena = mezcla(valor(b, token), S2.RELLENO_ENTERA, superficie);
+      const hueca = mezcla(valor(b, token), S2.RELLENO_HUECA, superficie);
+      assert.ok(contraste(llena, superficie) >= 3, `${token} lleno en ${selector}: ${contraste(llena, superficie).toFixed(2)}:1`);
+      assert.ok(contraste(llena, hueca) >= 3, `${token} llena contra hueca en ${selector}: ${contraste(llena, hueca).toFixed(2)}:1`);
+      const dia = mezcla(valor(b, token), S2.OPACIDAD_DE_LOS_DIAS, superficie);
+      assert.ok(contraste(dia, superficie) >= 3, `${token}, los días, en ${selector}: ${contraste(dia, superficie).toFixed(2)}:1`);
+    }
+  }
+});
+
+test('TEST-GRV-014 · GR-24 por semana: ninguna barra mezcla días de A con días de B; la semana del cambio se parte en dos tramos (mutación: agrupar de lunes a domingo sin mirar las etapas)', () => {
+  // B se activa un miércoles (4 nov): la semana del 2 nov son dos tramos, uno de cada lado de la línea.
+  const etapas = [
+    { desde: '2026-10-01', hasta: '2026-11-03', rotulo: 'A' },
+    { desde: '2026-11-04', hasta: '2026-11-30', rotulo: 'B' },
+  ];
+  const dias = [];
+  for (let d = 26; d <= 31; d++) dias.push({ fecha: `2026-10-${d}`, valor: 2000 });
+  for (let d = 1; d <= 15; d++) dias.push({ fecha: `2026-11-${String(d).padStart(2, '0')}`, valor: d <= 3 ? 2000 : 2400 });
+  const cortes = S.cortesDeLasEtapas(etapas).filter((f) => f > '2026-10-26' && f <= '2026-11-15');
+  const tramos = S.semanasDeLosDias(dias, '2026-10-26', '2026-11-15', '2026-11-20', cortes);
+  assert.deepEqual(
+    tramos.map((t) => [S.cuandoEsLaSemana(t), t.valor, t.dias]),
+    [
+      ['Semana del 26 oct', 2000, 7],
+      ['Del 2 al 3 nov', 2000, 2],
+      ['Del 4 al 8 nov', 2400, 5],
+      ['Semana del 9 nov', 2400, 7],
+    ],
+  );
+  assert.ok(tramos.filter((t) => t.cortada).every((t) => t.hueca), 'un tramo cortado no va lleno');
+  // En el dibujo: ninguna barra cruza la línea del cambio.
+  const g = S.geometriaPorSemana({ dias, desde: '2026-10-26', hasta: '2026-11-15', hoy: '2026-11-20', ancho: 600, alto: 132, bandas: etapas });
+  const linea = g.bandas[1].x;
+  assert.ok(g.barras.every((b) => b.x + b.ancho <= linea || b.x >= linea), 'cada barra queda de un lado de la línea A|B');
+  // A y B no contiguas: lo de en medio es su propio tramo, ni de A ni de B.
+  const separadas = S.cortesDeLasEtapas([
+    { desde: '2026-10-01', hasta: '2026-11-03' },
+    { desde: '2026-11-06', hasta: '2026-11-30' },
+  ]);
+  assert.deepEqual(separadas, ['2026-10-01', '2026-11-04', '2026-11-06', '2026-12-01']);
+  // Las fechas del pie se miden por su texto: «15 nov 2025» no queda pegada a «2 mar».
+  const largo = S.geometriaPorSemana({
+    dias: [],
+    desde: '2025-11-15',
+    hasta: '2026-11-14',
+    hoy: '2026-11-15',
+    ancho: 520,
+    alto: 132,
+    fechas: ['2025-11-15', '2025-12-01', '2026-03-02', '2026-11-14'],
+    textoDeLaFecha: (f) => E.diaYMes(f, '2026-11-15'),
+  });
+  const marcas = largo.fechas.map((f) => ({ ...f, ancho: E.diaYMes(f.fecha, '2026-11-15').length * 7 }));
+  for (let i = 1; i < marcas.length; i++) {
+    const a = marcas[i - 1];
+    const b = marcas[i];
+    const finA = a.ancla === 'start' ? a.x + a.ancho : a.ancla === 'end' ? a.x : a.x + a.ancho / 2;
+    const inicioB = b.ancla === 'start' ? b.x : b.ancla === 'end' ? b.x - b.ancho : b.x - b.ancho / 2;
+    assert.ok(inicioB - finA >= 8, `${a.fecha} y ${b.fecha} no se pegan (${(inicioB - finA).toFixed(1)} px)`);
+  }
+});
+
+test('TEST-GRV-015 · los ejes, sin números repetidos en rangos chicos y sin marcas del medio que pidan decimales que el canal no tiene (mutación: cortar los decimales en 2; volver a la marca 80,5 entre 80 y 81)', () => {
+  for (const [min, max] of [
+    [0.49, 0.5],
+    [0.85, 0.87],
+    [1.5, 1.52],
+  ]) {
+    const m = J.marcasRedondas(min, max);
+    const textos = m.valores.map((v) => J.textoDeLaMarcaDelEje(v, m.decimales));
+    assert.equal(new Set(textos).size, textos.length, `${min} a ${max}: ${textos.join(' / ')}`);
+    assert.ok(m.valores.length >= J.MARCAS_MINIMAS && m.valores.length <= J.MARCAS_MAXIMAS);
+  }
+  assert.deepEqual(J.marcasRedondas(0.49, 0.5).valores, [0.49, 0.495, 0.5]);
+  // Las del medio del gráfico chico: solo en la grilla de los extremos y con sus decimales.
+  assert.deepEqual(J.marcasDelMedio(80, 81, 0), [], '«80,5» entre «80» y «81» no entra en el canal: ninguna');
+  assert.deepEqual(J.marcasDelMedio(3, 8, 0, { enteros: true }), [], '3, 4, 6, 8 sería una grilla despareja: ninguna');
+  assert.deepEqual(J.marcasDelMedio(1800, 2400, 0), [2000, 2200]);
+  assert.deepEqual(J.marcasDelMedio(80, 82, 1), [80.5, 81, 81.5], 'con un decimal en los extremos, las del medio pueden llevarlo');
+  const mini = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/minigrafico.tsx'), 'utf8');
+  assert.match(mini, /marcasDelMedio\(base\.valor, tope\.valor, decimales, \{ enteros: escalaDeLaUnidad\(serie\.unit\)\.enteros \}\)/);
+});
+
+test('TEST-GRV-016 · el cambio de lo indicado es contra la versión inmediata anterior y cada sesión cuenta en la versión que la ejecutó (mutación: comparar con la última versión con sesiones; asignar por fecha)', () => {
+  const rx = (id, reps) => prescripcion(id, [{ value: reps }]);
+  const v6 = rx('rx-6', 4);
+  const v7 = rx('rx-7', 5);
+  const v8 = rx('rx-8', 3);
+  const versiones = [
+    { clave: 'v6', desde: '2026-10-01', hasta: '2026-11-09', planVersionId: 'tv6' },
+    { clave: 'v7', desde: '2026-11-09', hasta: '2026-11-16', planVersionId: 'tv7' },
+    { clave: 'v8', desde: '2026-11-16', hasta: null, planVersionId: 'tv8' },
+  ];
+  const cambios = (sesiones) => [...L.cambiosPorVersion(observacionesDelEjercicio(sesiones, 'e:ej-banca', sesiones, new Map()), versiones).entries()];
+  const s6 = sesion({ id: 's6', fecha: '2026-11-02', planId: 'tv6', rx: v6, series: [serieRegistrada(1, 60, 4, 1)] });
+  const s8 = sesion({ id: 's8', fecha: '2026-11-18', planId: 'tv8', rx: v8, series: [serieRegistrada(1, 65, 3, 1)] });
+  // La v7 (5 repeticiones) no tiene sesiones: no se sabe qué indicaba, y la v8 no lleva un «de 4 a 3» que no ocurrió.
+  assert.deepEqual(cambios([s6, s8]), []);
+  const s7 = sesion({ id: 's7', fecha: '2026-11-10', planId: 'tv7', rx: v7, series: [serieRegistrada(1, 62.5, 5, 1)] });
+  assert.deepEqual(cambios([s6, s7, s8]), [
+    ['v7', 'de 4 a 5 repeticiones'],
+    ['v8', 'de 5 a 3 repeticiones'],
+  ]);
+  // Una sesión del día del cambio hecha con la v7 cuenta en la v7, no en la v8 (REG-06-105).
+  const s7b = sesion({ id: 's7b', fecha: '2026-11-16', planId: 'tv7', rx: v7, series: [serieRegistrada(1, 62.5, 5, 1)] });
+  assert.deepEqual(cambios([s6, s7, s7b, s8]), [
+    ['v7', 'de 4 a 5 repeticiones'],
+    ['v8', 'de 5 a 3 repeticiones'],
+  ]);
+  // Sin `planVersionId`, por la fecha (como antes): la del día del cambio cae en la v8 y la mezcla.
+  const porFecha = L.cambiosPorVersion(
+    observacionesDelEjercicio([s6, s7, s7b, s8], 'e:ej-banca', [s6, s7, s7b, s8], new Map()),
+    versiones.map(({ planVersionId, ...v }) => v),
+  );
+  assert.equal(porFecha.get('v8'), 'de 5 a 3–5 repeticiones');
+  const fuerza = readFileSync(join(WEB, 'src/app/pro/advisees/fuerza/fuerza-en-analizar.tsx'), 'utf8');
+  assert.match(fuerza, /planVersionId: v\.planVersionId \?\? null/);
+});
+
+test('TEST-GRV-017 · el cambio de lo indicado también en texto: en el nombre del gráfico y a la vista si no entra en la línea de su versión (mutación: dejarlo solo en el SVG)', () => {
+  const bandas = [
+    { area: 'ENTRENAMIENTO', desde: '2025-11-16', hasta: '2026-05-16', rotulo: 'v7 · desde el 16/11' },
+    { area: 'ENTRENAMIENTO', desde: '2026-05-17', hasta: null, rotulo: 'v8 · desde el 17/5', cambio: 'de 4 a 3 repeticiones' },
+  ];
+  const ancha = V.versionesEnElEje(bandas, E.escalaDeFechas(periodo('2026-01-01', '2026-12-31'), { izquierda: 0, derecha: 1000 }));
+  const angosta = V.versionesEnElEje(bandas, E.escalaDeFechas(periodo('2026-01-01', '2026-12-31'), { izquierda: 0, derecha: 200 }));
+  assert.deepEqual(V.cambiosEnTexto(ancha, '2026-12-31'), ['v8, desde el 17 may: de 4 a 3 repeticiones']);
+  assert.deepEqual(V.cambiosQueNoEntran(ancha, '2026-12-31'), [], 'si entra en su línea, no se repite abajo');
+  assert.deepEqual(V.cambiosEnTexto(angosta, '2026-12-31'), ['v8, desde el 17 may: de 4 a 3 repeticiones']);
+  assert.deepEqual(V.cambiosQueNoEntran(angosta, '2026-12-31'), ['v8, desde el 17 may: de 4 a 3 repeticiones'], 'si no entra, se dice a la vista');
+  assert.equal(COPY_DE_LOS_GRAFICOS.cambiosDeLoIndicado(V.cambiosEnTexto(angosta, '2026-12-31')), 'Lo indicado cambió: v8, desde el 17 may: de 4 a 3 repeticiones.');
+  const paneles = readFileSync(join(GRAFICOS, 'paneles-alineados.tsx'), 'utf8');
+  assert.match(paneles, /\.\.\.\(cambios\.length > 0 \? \[COPY_DE_LOS_GRAFICOS\.cambiosDeLoIndicado\(cambios\)\] : \[\]\),/, 'en la descripción que oye el lector');
+});
+
+test('TEST-GRV-018 · la base: todas las notas a la vista, el método con un solo carril, los extremos de lo lleno, «Lo último» de cada carril y la región viva sin el mouse (mutación: llevar una nota a «Cómo leerlo»; rotular un subtotal como el mínimo; leer una sola fecha)', async () => {
+  const N = await import('../src/app/pro/advisees/graficos/notas-del-grafico.ts');
+  const frase = `${FRASE_DE_LA_COINCIDENCIA} Ventana: 4 semanas.`;
+  const notas = N.notasALaVista({
+    notas: ['Se leyó en tramos de 92 días.', frase, 'Media de 5 de 7 días.'],
+    tarde: ['3 de 21 días cargados después'],
+    fueraDeLaEscala: 2,
+    cambiosRecortados: ['v8, desde el 17 may: de 4 a 3 repeticiones'],
+  });
+  assert.deepEqual(notas, [
+    'Se leyó en tramos de 92 días.',
+    frase,
+    'Media de 5 de 7 días.',
+    '3 de 21 días cargados después.',
+    '2 valores no entran en la escala: llevan una muesca.',
+    'Lo indicado cambió: v8, desde el 17 may: de 4 a 3 repeticiones.',
+  ]);
+  assert.equal(N.esLaFraseFija(frase), true, 'la frase fija con algo agregado sigue siendo la frase fija');
+  assert.equal(N.esLaFraseFija('Se leyó en tramos de 92 días.'), false);
+  // El método, a la vista con un solo carril, aunque el llamador pase su línea; sin repetirlo si ya está.
+  assert.equal(N.lineaTenueDelGrafico({ detalle: '% · del 3 nov a hoy', porDefecto: 'x', metodo: 'Durnin y Womersley' }), '% · del 3 nov a hoy · Durnin y Womersley');
+  assert.equal(N.lineaTenueDelGrafico({ detalle: '% · Durnin y Womersley', porDefecto: 'x', metodo: 'Durnin y Womersley' }), '% · Durnin y Womersley');
+  assert.equal(N.lineaTenueDelGrafico({ detalle: undefined, porDefecto: 'kg · del 3 nov a hoy', metodo: null }), 'kg · del 3 nov a hoy');
+  // Los extremos rotulados son de lo registrado lleno: el subtotal de 900 kcal no es «el mínimo del período».
+  const puntos = [
+    { clave: 'a', valor: 2000, marca: 'LLENA' },
+    { clave: 'b', valor: 900, marca: 'HUECA' },
+    { clave: 'c', valor: 2100, marca: 'LLENA' },
+    { clave: 'd', valor: 1950, marca: 'LLENA' },
+    { clave: 'e', valor: 2050, marca: 'LLENA' },
+    { clave: 'f', valor: 2400, marca: 'HUECA_GRIS' },
+  ];
+  assert.deepEqual(J.rotulosDeLoLleno(puntos, null), { claves: ['f', 'c', 'd'], minimo: 'd' }, 'el último siempre; el máximo y el mínimo, de lo lleno');
+  assert.deepEqual(J.rotulosDeLoLleno(puntos, 'b'), { claves: ['b', 'f', 'c', 'd'], minimo: 'd' }, 'el elegido, aunque sea un subtotal');
+  // «Lo último» es lo último registrado de cada carril, con su fecha; lo indicado solo no cuenta.
+  const peso = carril([punto('p1', '2026-11-02', 80, { lectura: '80 kg' }), punto('p2', '2026-11-10', 79.5, { lectura: '79,5 kg' })], { id: 'peso', nombre: 'Peso' });
+  const kcal = carril([punto('c1', '2026-11-14', 2150, { lectura: '2.150 kcal' })], {
+    id: 'kcal',
+    nombre: 'Calorías',
+    unidad: 'kcal',
+    indicado: [punto('i1', '2026-11-15', 2300, { marca: 'HUECA', lectura: '2.300 kcal' })],
+  });
+  assert.deepEqual(T.loUltimoDeCadaCarril(T.tablaEquivalente([peso, kcal])), [
+    { nombre: 'Peso', texto: '79,5 kg', fecha: '2026-11-10' },
+    { nombre: 'Calorías', texto: '2.150 kcal', fecha: '2026-11-14' },
+  ]);
+  assert.deepEqual(T.loUltimoDeCadaCarril(T.tablaEquivalente([carril([punto('x', '2026-11-02', null)], { nombre: 'Pliegues' })])), [{ nombre: 'Pliegues', texto: T.TEXTO_SIN_DATO, fecha: null }]);
+  // La región viva cambia con el clic, el toque o el teclado; lo de abajo del mouse va en un renglón que el lector no oye.
+  const paneles = readFileSync(join(GRAFICOS, 'paneles-alineados.tsx'), 'utf8');
+  assert.match(paneles, /<LecturaEnLaFecha tabla=\{tabla\} fecha=\{cursor\.fecha\} encima=\{encima\} tramo=\{cursor\.tramo\} hoy=\{periodo\.hoy\} \/>/);
+  const lectura = readFileSync(join(GRAFICOS, 'lectura-en-la-fecha.tsx'), 'utf8');
+  assert.match(lectura, /aria-live="polite" data-lectura-viva>/);
+  assert.match(lectura, /<div className="grafico-base__lectura" aria-hidden="true" data-lectura-bajo-el-mouse>/);
+  assert.match(lectura, /const vivo = fecha === null \? <LineaDeLoUltimo tabla=\{tabla\} hoy=\{hoy\} \/>/);
+  // Una semana sin datos en un carril de barras: una columna de todo el alto, no una raya sobre el cero.
+  assert.match(paneles, /className="grafico-base__semana-vacia" x=\{b\.x1 \+ 1\} y=\{0\} width=\{Math\.max\(1, b\.x2 - b\.x1 - 2\)\} height=\{b\.base\}/);
+});
+
+test('TEST-GRV-019 · GR-24: la descripción de cada gráfico chico para el lector, sin «la primera…; la última…» (mutación: volver a `resumenTextual`)', async () => {
+  const { resumenSinPrimeroNiUltimo } = await import('../src/app/pro/advisees/seguimiento/resumen-del-grafico-chico.ts');
+  const p = (date, value, quality = 'COMPLETE') => ({ pointId: date, date, dateEnd: null, value, quality, partialBucket: false, segment: 's1', dataClass: null, coverage: null, detail: [] });
+  const serie = { label: 'Calorías registradas', unit: 'kcal', grain: 'DAY', points: [p('2026-11-02', 2000), p('2026-11-03', 1500, 'PARTIAL'), p('2026-11-04', null, 'UNKNOWN'), p('2026-11-05', 2100)] };
+  const texto = resumenSinPrimeroNiUltimo(serie, { decimales: 0 }, '2026-11-02', '2026-11-08');
+  assert.doesNotMatch(texto, /la primera|la última/);
+  assert.match(texto, /^Calorías registradas \(kcal\), del .*: 3 observaciones con valor; 1 es un subtotal de lo registrado; 1 sin valor conocido\.$/);
+  assert.equal(resumenSinPrimeroNiUltimo({ ...serie, points: [] }, { decimales: 0 }, '2026-11-02', '2026-11-08').endsWith('no hay datos en este período.'), true);
+  const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8');
+  assert.doesNotMatch(etapas, /resumenTextual\(/);
+});
+
+test('TEST-GRV-020 · GR-01: «Ver las N anteriores» cuenta todas las veces de los 91 días leídos y la unidad es una sola para toda la lista (mutación: armar doce; sacar la unidad de las que se ven)', async () => {
+  const V2 = await import('../src/app/pro/advisees/training/lista-de-la-vez-pasada.ts');
+  const { vecesPasadas, VECES_EN_EL_EDITOR, textoDeLaSerie } = await import('@be/domain');
+  // Dos veces por semana durante 13 semanas: 26 veces en los 91 días.
+  const rx = prescripcion('rx-banca', [{ value: 8 }]);
+  const sesiones = [];
+  for (let i = 0; i < 26; i++) {
+    const dia = new Date(Date.UTC(2026, 7, 17 + Math.floor(i / 2) * 7 + (i % 2) * 3, 12)).toISOString().slice(0, 10);
+    sesiones.push(sesion({ id: `v-${String(i).padStart(2, '0')}`, fecha: dia, planId: 'tv1', rx, series: [serieRegistrada(1, 60 + i, 8, 2)] }));
+  }
+  const veces = vecesPasadas(sesiones, 'ej-banca', { cuantas: V2.TODAS_LAS_VECES });
+  assert.equal(veces.length, 26, 'todas las veces de lo leído, no doce');
+  assert.equal(veces[veces.length - 1].fecha, sesiones[0].date, 'abierta, la lista llega hasta la vez más vieja de lo leído');
+  assert.equal(V2.anterioresQueQuedan(veces, VECES_EN_EL_EDITOR), 23, '«Ver las 23 anteriores», no «9»');
+  // La unidad: las tres últimas sin carga (dominadas sin lastre) y una vieja con 10 kg. Arriba y en las fichas, la misma.
+  const sinCarga = (id, fecha) => sesion({ id, fecha, planId: 'tv1', rx, series: [{ setIndex: 1, load: null, completedRepetitions: 8, rir: 2, perceivedExertion: null }] });
+  const mezcla = [
+    sesion({ id: 'm-1', fecha: '2026-11-02', planId: 'tv1', rx, series: [serieRegistrada(1, 10, 8, 1)] }),
+    sinCarga('m-2', '2026-11-04'),
+    sinCarga('m-3', '2026-11-06'),
+    sinCarga('m-4', '2026-11-09'),
+  ];
+  const lista = vecesPasadas(mezcla, 'ej-banca', { cuantas: V2.TODAS_LAS_VECES });
+  assert.equal(V2.unidadComun(lista), 'kg', 'la unidad de todas las veces, no de las tres que se ven');
+  assert.equal(V2.unidadComun(lista.slice(0, VECES_EN_EL_EDITOR)), null, 'con solo las que se ven no habría unidad: era el error');
+  const vieja = lista[lista.length - 1].como.series[0];
+  assert.equal(V2.textoDeLaFicha(vieja, V2.unidadComun(lista)), textoDeLaSerie(vieja).replace(' kg ×', ' ×'));
+  assert.match(V2.textoDeLaFicha(vieja, null), / kg × /, 'sin una unidad arriba, la ficha la dice');
 });

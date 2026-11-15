@@ -36,6 +36,11 @@ export interface PuntoDelCarril {
   readonly tarde: boolean;
   /** Lo que dicen la lectura y la tabla: «96 kg · 5 rep · RIR 1». */
   readonly lectura: string;
+  /**
+   * Qué dice la marca, cuando una forma sirve para más de un sentido (revisión de #283): una marca hueca es un subtotal en
+   * Nutrición y una orientativa en el 1RM estimado. Sin esto, la leyenda decide por la forma.
+   */
+  readonly sentido?: SentidoDeLaMarca;
 }
 
 /** El objetivo, en escalón discontinuo: un valor desde una fecha hasta otra (o hasta hoy). */
@@ -269,14 +274,16 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
 /**
  * Los sentidos de la leyenda que se ven en el dibujo (DISENO-VISUAL §1, principio 7): una marca de la leyenda que no
  * aparece en ningún carril es un error. Lo indicado está si algún carril lo dibuja; lo demás, si alguna marca de lo
- * registrado tiene esa forma. Mantiene el orden pedido.
+ * registrado tiene esa forma **y ese sentido**: SUBTOTAL y ORIENTATIVA comparten la forma hueca, y un día de comida con
+ * algo que falta no pide «De más de 10 a 12 rep. equivalentes» (revisión de #283). Un punto sin `sentido` vale por su
+ * forma. Mantiene el orden pedido.
  */
 export function sentidosQueSeVen(sentidos: readonly SentidoDeLaMarca[], carriles: readonly Carril[]): SentidoDeLaMarca[] {
   const puntos = carriles.flatMap((c) => (c.tipo === 'PUNTOS' ? c.puntos.filter((p) => p.valor !== null || p.rango !== null) : []));
-  const formas = new Set(puntos.map((p) => p.marca));
   const conIndicado = carriles.some((c) => c.tipo === 'PUNTOS' && c.indicado.some((p) => p.valor !== null || p.rango !== null));
   const conSemanas = carriles.some((c) => c.tipo === 'BARRAS_SEMANALES' && c.semanas.some((s) => s.valor !== null));
-  return sentidos.filter((s) => (s === 'INDICADO' ? conIndicado : formas.has(MARCA_SEGUN_EL_DATO[s]) || (s === 'REGISTRADO' && conSemanas)));
+  const seVe = (s: SentidoDeLaMarca): boolean => puntos.some((p) => p.marca === MARCA_SEGUN_EL_DATO[s] && (p.sentido === undefined || p.sentido === s));
+  return sentidos.filter((s) => (s === 'INDICADO' ? conIndicado || puntos.some((p) => p.sentido === 'INDICADO') : seVe(s) || (s === 'REGISTRADO' && conSemanas)));
 }
 
 /** Las fechas con alguna observación en algún carril, ordenadas: por ellas se mueve el cursor con el teclado. */

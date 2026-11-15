@@ -584,6 +584,15 @@ export function fechasDelEje(desde: string, hasta: string, cuantas = 5): string[
   return [...new Set(fechas)];
 }
 
+/**
+ * Los textos de las fechas del eje (revisión de #283; GR-V13): «16 nov»; si el período cruza un año, la primera marca y
+ * la primera de cada año llevan el año («16 nov 2025 … 15 nov 2026»), para que «16 nov … 15 nov» no se lea como un mes.
+ */
+export function textosDelEjeDeLaFuerza(fechas: readonly string[]): string[] {
+  const cruza = new Set(fechas.map((f) => f.slice(0, 4))).size > 1;
+  return fechas.map((f, i) => (cruza && (i === 0 || f.slice(0, 4) !== fechas[i - 1]!.slice(0, 4)) ? `${diaDeLaEstimacion(f)} ${f.slice(0, 4)}` : diaDeLaEstimacion(f)));
+}
+
 /** El motivo más frecuente de una sesión sin punto, en palabras: «ninguna serie entra: el RIR es mayor que 2». */
 function motivoDeLaSesion(series: readonly SerieQueNoEntro[]): string {
   const cuenta = new Map<MotivoFueraDeLaEstimacion, number>();

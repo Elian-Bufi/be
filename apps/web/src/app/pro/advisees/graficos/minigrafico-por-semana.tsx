@@ -18,20 +18,30 @@
  * - **La forma dice la cobertura:** la barra va llena solo con la semana entera (siete días con valor, sin subtotales y
  *   sin hoy); si no, hueca, con su contorno. Un tramo sin días con valor es una columna gris de todo el alto, nunca una
  *   raya sobre el cero. Debajo, la tira de cobertura dice el estado de cada día.
- * - **Contraste:** el relleno de la semana entera, al 60 %, y el contorno y el tope, enteros: las dos formas se distinguen
- *   por el contorno, no por un tono (DISENO-VISUAL §1, principio 10).
+ * - **Contraste:** el relleno de la semana entera llega a 3:1 contra la superficie y contra la hueca en los dos temas, y el
+ *   contorno y el tope van enteros: las dos formas se distinguen por el contorno, no solo por un tono (DISENO-VISUAL §1,
+ *   principio 10; `RELLENO_ENTERA` en `semanas.ts`).
  * - **Las etapas no se mezclan:** una semana que cruza el cambio de etapa son dos tramos, uno de cada lado de la línea.
  */
 import { useCallback, useEffect, useId, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { ESTILOS } from '../seguimiento/marca';
 import { ComoLeerlo } from './como-leerlo';
 import { diaYMes } from './eje-de-fechas';
-import { ALTO_DE_LA_TIRA, cuandoEsLaSemana, geometriaPorSemana, lecturaDeLaSemana, resumenDeLasSemanas, tramoDeEntrada, tramoEnX, type DiaDeLaSerie } from './semanas';
+import {
+  ALTO_DE_LA_TIRA,
+  cuandoEsLaSemana,
+  geometriaPorSemana,
+  lecturaDeLaSemana,
+  OPACIDAD_DE_LOS_DIAS,
+  RELLENO_ENTERA,
+  RELLENO_HUECA,
+  resumenDeLasSemanas,
+  tramoDeEntrada,
+  tramoEnX,
+  type DiaDeLaSerie,
+} from './semanas';
 
 const LETRA = 12.5;
-/** El relleno de la semana entera y el de la hueca: la hueca se distingue por su contorno entero, no por el tono. */
-const RELLENO_ENTERA = 0.6;
-const RELLENO_HUECA = 0.06;
 
 export const COPY_POR_SEMANA = {
   grafico: (titulo: string) => `${titulo}, por semana, con las etapas A y B`,
@@ -227,7 +237,7 @@ export function MinigraficoPorSemana({
             ))}
             {/* Los días, como puntos tenues detrás de las barras: se ve de qué sale cada media. Hoy no va: no entra. */}
             {g.dias.map((d) => (
-              <circle key={`dia-${d.fecha}`} className="minigrafico-por-semana__dia" cx={d.x} cy={d.y} r={1.5} fill={color} opacity={0.4} />
+              <circle key={`dia-${d.fecha}`} className="minigrafico-por-semana__dia" cx={d.x} cy={d.y} r={1.5} fill={color} opacity={OPACIDAD_DE_LOS_DIAS} />
             ))}
             {/* Cada tramo con valor, una barra con su tope: llena si la semana está entera; si no, hueca, con su contorno. */}
             {g.barras.map((b) => (

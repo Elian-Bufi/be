@@ -172,3 +172,19 @@ export function puntosConRotulo<T extends { readonly clave: string; readonly val
   }
   return [...new Set(claves)];
 }
+
+/**
+ * Qué puntos de un carril llevan su número (revisión de #283; §5.5 y §5.13): el elegido y el último, siempre; el máximo y
+ * el mínimo del período, solo entre lo registrado lleno y con 4 o más de esos. Un subtotal (marca hueca: al día le falta
+ * algo) o una carga rápida (hueca y gris: los números del plan, no escritos por la persona) no se rotulan como el extremo
+ * del período. `minimo` es el que va abajo de su punto.
+ */
+export function rotulosDeLoLleno<T extends { readonly clave: string; readonly valor: number; readonly marca: string }>(
+  puntos: readonly T[],
+  elegido: string | null,
+): { readonly claves: string[]; readonly minimo: string | null } {
+  const llenos = puntos.filter((p) => p.marca !== 'HUECA' && p.marca !== 'HUECA_GRIS');
+  const orden = [...llenos].sort((a, b) => a.valor - b.valor);
+  const extremos = orden.length >= 4 ? [orden[orden.length - 1]!.clave, orden[0]!.clave] : [];
+  return { claves: [...new Set([...puntosConRotulo(puntos, elegido, false), ...extremos])], minimo: orden[0]?.clave ?? null };
+}

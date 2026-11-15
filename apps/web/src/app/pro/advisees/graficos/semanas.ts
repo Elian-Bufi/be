@@ -152,10 +152,13 @@ export const denominadorDeLaSemana = (s: Pick<SemanaDeLaSerie, 'conDato' | 'dias
   return s.conDato === 0 ? 'ningún día con valor' : `${s.conDato} de ${plural(cerrados, 'día', 'días')}`;
 };
 
-/** Cuándo es un tramo: «Semana del 3 nov» si es la semana entera; «Del 4 al 8 mar» o «El 2 mar» si está cortado. */
+/** Cuándo es un tramo: «Semana del 3 nov» si es la semana entera; «Del 4 al 8 mar», «Del 30 nov al 2 dic» o «El 2 mar» si está cortado. */
 export function cuandoEsLaSemana(s: Pick<SemanaDeLaSerie, 'lunes' | 'desde' | 'hasta' | 'cortada'>): string {
   if (!s.cortada) return `Semana del ${textoDelEje(s.lunes, false)}`;
-  return s.desde === s.hasta ? `El ${textoDelEje(s.desde, false)}` : `Del ${textoDelEje(s.desde, false)} al ${textoDelEje(s.hasta, false)}`;
+  if (s.desde === s.hasta) return `El ${textoDelEje(s.desde, false)}`;
+  // «Del 2 al 3 nov» si es el mismo mes; «Del 30 nov al 2 dic» si no.
+  const desde = s.desde.slice(0, 7) === s.hasta.slice(0, 7) ? String(Number(s.desde.slice(8, 10))) : textoDelEje(s.desde, false);
+  return `Del ${desde} al ${textoDelEje(s.hasta, false)}`;
 }
 
 /** Un número de la lectura: sin decimales desde 100, con uno por debajo («1.850», «3,8»). */
@@ -245,6 +248,16 @@ export interface GeometriaPorSemana {
   readonly plan: readonly { readonly x1: number; readonly x2: number; readonly y: number }[];
   readonly fechas: readonly { readonly x: number; readonly fecha: string; readonly ancla: 'start' | 'middle' | 'end' }[];
 }
+
+/**
+ * El relleno de la semana entera y el de la hueca, y el de los puntos de los días (revisión de #283; DISENO-VISUAL §1,
+ * principio 10): la entera llega a 3:1 contra la superficie en los dos temas (y contra la hueca), y la hueca se distingue
+ * además por su contorno entero. Los puntos de los días, también a 3:1 donde no los tapa una barra. Lo mide
+ * TEST-GRV-013 con los colores de `tokens.css`.
+ */
+export const RELLENO_ENTERA = 0.72;
+export const RELLENO_HUECA = 0.06;
+export const OPACIDAD_DE_LOS_DIAS = 0.72;
 
 const FRANJA_DE_LETRAS = 14;
 const PIE = 18;

@@ -37,7 +37,7 @@
  * Como la composición (TA-25), la pregunta vive en el website y no se guarda como vista: su identificador no entra en
  * `ID_DE_PREGUNTAS`, que valida la API. El período es el de la ficha, que la API recorta al inicio del acompañamiento.
  */
-import { COPY_FUERZA, diaDeLaEstimacion, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, numero, rotuloDeLaEstimacion, serieDisponible, type PuntoDeFuerza } from '@be/domain';
+import { COPY_FUERZA, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, numero, rotuloDeLaEstimacion, serieDisponible, type PuntoDeFuerza } from '@be/domain';
 import { useId, useMemo, useState, type KeyboardEvent } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
@@ -70,6 +70,7 @@ import {
   loQueNoEntraPorFecha,
   PREGUNTA_DE_LA_FUERZA,
   rangoDeSesiones,
+  textosDelEjeDeLaFuerza,
   sesionesSoloOrientativas,
   tramosDeLaLinea,
   versionDelPlanEn,
@@ -464,7 +465,7 @@ function Grafico({
           ))}
           {fechasDelEje(desde, hasta).map((f, i, todas) => (
             <text key={f} x={geo.x(f)} y={ALTO - 6} textAnchor={i === 0 ? 'start' : i === todas.length - 1 ? 'end' : 'middle'} className="fuerza-en-analizar__eje">
-              {diaDeLaEstimacion(f)}
+              {textosDelEjeDeLaFuerza(todas)[i]}
             </text>
           ))}
           {sinEstimacion.map((f) => (

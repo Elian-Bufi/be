@@ -912,12 +912,13 @@ function AnalizarConSusPreguntas() {
                 {/* Lo que la comparación no dice, una sola vez: con los gráficos grandes abiertos lo dice su pie. */}
                 {/* WP-GRAFICOS, pasada visual (15/11): la frase fija de los cruces, siempre a la vista y tenue; lo que la
                     comparación no resta, en «Cómo leerlo». */}
+                <FraseDeLaCoincidencia />
+                {/* Al final del pie: al abrirse ocupa el renglón de abajo sin cambiar de lugar en el orden del foco. */}
                 {laPregunta ? (
                   <ComoLeerlo className="pie-de-etapas__como-leerlo">
                     <p>{laPregunta.limite}</p>
                   </ComoLeerlo>
                 ) : null}
-                <FraseDeLaCoincidencia />
               </div>
             }
             debajo={

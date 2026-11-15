@@ -6039,9 +6039,9 @@ a.observacion__fila:focus-visible {
   margin-left: auto;
 }
 
+/* «Cómo leerlo» va último en el pie: abierto, ocupa el renglón de abajo sin cambiar de lugar en el orden del foco. */
 .pie-de-etapas__como-leerlo[open] {
   flex: 1 1 100%;
-  order: 3;
 }
 
 .graficos-de-etapas .bajo-los-graficos {
