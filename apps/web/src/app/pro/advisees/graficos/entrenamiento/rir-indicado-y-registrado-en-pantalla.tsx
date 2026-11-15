@@ -8,16 +8,22 @@
  *
  * Lee el comparador «Planificado y registrado» (API-TRN-21 y API-SER-01, GR-T14): en el historial, el que lee una vez
  * `ProveedorDelComparador` para todos sus gráficos.
+ *
+ * Con la pasada visual (DISENO-VISUAL §2 «B · Entrenamiento»): la línea cortada y la tira de cada sesión van en la
+ * leyenda, con las marcas que se ven; lo que se ve, en palabras y a la vista debajo del gráfico (GR-05: «lo que se ve se
+ * describe»); lo que aclara (qué es el escalón, «a igual carga», por qué lo indicado va hueco), en el «Cómo leerlo» de la
+ * base, uno solo.
  */
 import type { SentidoDeLaMarca } from '@be/domain';
 import { useId, useMemo, useState } from 'react';
 import { COPY_DE_LOS_GRAFICOS } from '../copy';
+import type { FichaDeLaLeyenda } from '../marcas';
 import { inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import { PanelesAlineados } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { cargadasDespues, observacionesDelPeriodo } from './comparador';
-import { COPY_RIR_INDICADO_Y_REGISTRADO as C } from './copy';
+import { COPY_RIR_INDICADO_Y_REGISTRADO as C, FICHAS_DE_ENTRENAMIENTO } from './copy';
 import { useComparador } from './lecturas-del-ejercicio';
 import { aIgualCarga, cargaEnPalabras, cargasDeLaSerie, carrilDelRirIndicadoYRegistrado, loQueSeVe, sesionesDelRir } from './rir-indicado-y-registrado';
 
@@ -57,11 +63,26 @@ export function RirIndicadoYRegistrado({ lectura, periodo, densidad, ejercicio, 
     ...(carril.indicado.length > 0 ? (['INDICADO'] as const) : []),
     ...(carril.puntos.some((p) => p.marca === 'HUECA_GRIS') ? (['CARGA_RAPIDA'] as const) : []),
   ];
-  const notas = [
+  // La línea cortada y la tira, en la leyenda, solo si se ven.
+  const fichas: FichaDeLaLeyenda[] = [
+    ...(carril.escalones.length > 0 ? [{ ...FICHAS_DE_ENTRENAMIENTO.escalon, indice: carril.indice }] : []),
+    ...(carril.cobertura.length > 0 ? [FICHAS_DE_ENTRENAMIENTO.tiraDeLaSerie] : []),
+  ];
+  const aclaraciones = [
+    ...C.comoLeerloTexto,
     ...(carril.escalones.length > 0 ? [C.escalonEnLaLeyenda] : []),
     ...(carril.indicado.length > 0 ? [C.varia] : []),
     ...(comparador.enTramos ? [COPY_DE_LOS_GRAFICOS.leidoEnTramos] : []),
   ];
+  // GR-05: lo que se ve se describe, a la vista, por versión y en palabras.
+  const loQueSeVeALaVista =
+    lineas.length > 0 ? (
+      <ul className="grafico-de-entrenamiento__lo-que-se-ve" data-lo-que-se-ve>
+        {lineas.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+      </ul>
+    ) : null;
   return (
     <section className="grafico-de-entrenamiento" aria-label={C.titulo(numero)} data-grafico="GR-05">
       {cargas.length > 0 ? (
@@ -80,21 +101,18 @@ export function RirIndicadoYRegistrado({ lectura, periodo, densidad, ejercicio, 
       {filtradas.length === 0 ? (
         <EstadoDelGraficoEnPantalla estado={{ tipo: 'SIN_DATOS', texto: C.sinSesionesConEsaCarga }} />
       ) : (
-        <PanelesAlineados titulo={C.titulo(numero)} periodo={periodo} carriles={[carril]} bandas={bandas} densidad={densidad} leyenda={leyenda} notas={notas} />
+        <PanelesAlineados
+          titulo={C.titulo(numero)}
+          periodo={periodo}
+          carriles={[carril]}
+          bandas={bandas}
+          densidad={densidad}
+          leyenda={leyenda}
+          fichas={fichas}
+          aclaraciones={aclaraciones}
+          aLaVista={loQueSeVeALaVista}
+        />
       )}
-      {lineas.length > 0 ? (
-        <ul className="grafico-de-entrenamiento__lo-que-se-ve" data-lo-que-se-ve>
-          {lineas.map((t) => (
-            <li key={t}>{t}</li>
-          ))}
-        </ul>
-      ) : null}
-      <details className="grafico-de-entrenamiento__como">
-        <summary>{C.comoLeerlo}</summary>
-        {C.comoLeerloTexto.map((t) => (
-          <p key={t}>{t}</p>
-        ))}
-      </details>
     </section>
   );
 }

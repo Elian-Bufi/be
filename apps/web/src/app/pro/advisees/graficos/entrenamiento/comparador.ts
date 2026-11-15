@@ -6,7 +6,10 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
-import { observacionesDelEjercicio, type EjecucionDeEntrenamiento, type ObjetivosDeLaVersion, type ObservacionDeEvolucion } from '@be/domain';
+import { observacionesDelEjercicio, type EjecucionDeEntrenamiento, type ObjetivosDeLaVersion, type ObservacionDeEvolucion, type VigenciaDePlan } from '@be/domain';
+import { bandasDeVersion } from '../adaptadores';
+import type { BandaDeVersion } from '../carriles';
+import { cambiosPorVersion } from '../lo-indicado-en-el-tiempo';
 
 /** El día civil de un instante en una zona («AAAA-MM-DD»), sin pasar por la zona del navegador. */
 export function diaCivilEn(instante: string, zona: string): string {
@@ -50,4 +53,19 @@ export function mediana(valores: readonly number[]): number | null {
   const v = [...valores].sort((a, b) => a - b);
   const m = Math.floor(v.length / 2);
   return v.length % 2 === 1 ? v[m]! : (v[m - 1]! + v[m]!) / 2;
+}
+
+/**
+ * Las versiones del plan del historial, con lo que cambió en lo indicado al empezar cada una (pasada visual del 15/11): la
+ * misma lectura que la fuerza de «Analizar» (`cambiosPorVersion`, la versión contra la inmediata anterior, por las
+ * sesiones que ejecutaron cada versión), para que la línea de la versión diga «v8 · de 4 a 3 repeticiones» en GR-02,
+ * GR-03 y GR-05. Una sola lectura del cambio en toda la página: la primera línea propia de la rama B ya no está.
+ */
+export function bandasConElCambio(vigencias: readonly VigenciaDePlan[], observaciones: readonly ObservacionDeEvolucion[]): BandaDeVersion[] {
+  const deEntrenamiento = vigencias.filter((v) => v.domain === 'TRAINING');
+  const cambios = cambiosPorVersion(
+    observaciones,
+    deEntrenamiento.map((v) => ({ clave: v.from, desde: v.from, hasta: v.to, planVersionId: v.planVersionId })),
+  );
+  return bandasDeVersion(vigencias, 'ENTRENAMIENTO').map((b) => ({ ...b, cambio: cambios.get(b.desde) ?? null }));
 }

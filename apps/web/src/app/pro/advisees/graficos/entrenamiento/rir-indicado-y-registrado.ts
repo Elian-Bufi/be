@@ -191,9 +191,20 @@ export function carrilDelRirIndicadoYRegistrado(
     escalones,
     unir: !o.filtrado,
     escala: ESCALA_DEL_RIR,
-    cobertura: [...new Set(puntos.map((p) => p.fecha))].sort().map((fecha) => ({ fecha, estado: 'con' as const })),
+    cobertura: coberturaDelRir(sesiones),
     descripcion: lineas.join(' '),
+    // Con la pasada visual: un punto por sesión, con la marca de su tamaño, para que se vea sobre la línea.
+    porSesion: true,
   };
+}
+
+/**
+ * La tira de GR-05, una marca por sesión de la serie: entera con el RIR escrito y una raya baja sin RIR escrito (que no
+ * es 0: no se dibuja). Con dos sesiones el mismo día, alcanza con una que lo tenga.
+ */
+export function coberturaDelRir(sesiones: readonly SesionDelRir[]): CarrilDePuntos['cobertura'] {
+  const con = new Set(sesiones.filter((s) => s.registrado !== null).map((s) => s.fecha));
+  return [...new Set(sesiones.map((s) => s.fecha))].sort().map((fecha) => ({ fecha, estado: con.has(fecha) ? ('con' as const) : ('sin' as const) }));
 }
 
 /**

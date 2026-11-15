@@ -184,11 +184,10 @@ test('TEST-GRF-021 · todos los textos de la rama pasan la guardia de Entrenamie
     [TX.COPY_FUERZA_ESTIMADA.ruido, [['3', 'kg']]],
     [TX.COPY_FUERZA_ESTIMADA.ruidoDeLaVersion, [['la versión 3', '3', 'kg']]],
     [TX.COPY_FUERZA_ESTIMADA.ruidoDeLaVersionSinAlcanzar, [['la versión 2']]],
-    [TX.COPY_FUERZA_ESTIMADA.cambio, [['la versión 2', 'la versión 3', 'el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie']]],
-    [TX.COPY_FUERZA_ESTIMADA.unRirMueve, [['80', 'kg', '2,7']]],
-    [TX.COPY_FUERZA_ESTIMADA.extremos, [['≈ 92 kg', '3/10', '≈ 98 kg', '12/11']]],
+    [TX.COPY_FUERZA_ESTIMADA.detalle, [['kg', 'del 24 ago a hoy']]],
     [TX.COPY_FUERZA_ESTIMADA.descripcion, [[1, '≈ 92 kg', '≈ 92 kg'], [7, '≈ 92 kg', '≈ 98 kg']]],
     [TX.COPY_CARGA_REPETICIONES_Y_RIR.titulo, [[1]]],
+    [TX.COPY_CARGA_REPETICIONES_Y_RIR.detalle, [['del 24 ago a hoy']]],
     [TX.COPY_CARGA_REPETICIONES_Y_RIR.carga, [[1]]],
     [TX.COPY_CARGA_REPETICIONES_Y_RIR.repeticiones, [[1]]],
     [TX.COPY_CARGA_REPETICIONES_Y_RIR.rir, [[1]]],
@@ -212,7 +211,8 @@ test('TEST-GRF-021 · todos los textos de la rama pasan la guardia de Entrenamie
     [TX.COPY_RIR_INDICADO_Y_REGISTRADO.igual, [['80 kg', 'la versión 2', 'la versión 3', '1']]],
     [TX.COPY_RIR_INDICADO_Y_REGISTRADO.sinVersion, [['3/11']]],
     [TX.COPY_RIR_INDICADO_Y_REGISTRADO.sinSesiones, [[1]]],
-    [TX.COPY_PERFIL.titulo, [['kg']]],
+    [TX.COPY_PERFIL.detalle, [['kg', 'del 24 ago a hoy']]],
+    [TX.COPY_PERFIL.rotuloCortoDeLaCurva, [['145']]],
     [TX.COPY_PERFIL.queEs, [['kg']]],
     [TX.COPY_PERFIL.lasCurvas, [[['≈ 95 kg · de la fórmula']], [['≈ 95 kg · de la fórmula', '≈ 100 kg · de la fórmula']]]],
     [TX.COPY_PERFIL.ejeY, [['kg']]],
@@ -228,6 +228,8 @@ test('TEST-GRF-021 · todos los textos de la rama pasan la guardia de Entrenamie
     ...todosLosTextos(TX.COPY_RIR_INDICADO_Y_REGISTRADO, muestras),
     ...todosLosTextos(TX.COPY_PERFIL, muestras),
     ...Object.values(TX.PREGUNTAS_DE_ENTRENAMIENTO),
+    // Las fichas de la leyenda de lo que no es un punto (la tira y la línea cortada), con la pasada visual.
+    ...Object.values(TX.FICHAS_DE_ENTRENAMIENTO).flatMap((f) => [f.corto, f.largo]),
   ];
   assert.ok(textos.length > 90, `se esperaban todos los textos, hay ${textos.length}`);
   for (const t of textos) {
@@ -263,28 +265,42 @@ test('TEST-GRF-022 · GR-02: la mediana del RIR y el rango de repeticiones de ca
   assert.match(conObservada[0].texto, /^3 sesiones/);
 });
 
-test('TEST-GRF-023 · GR-02: la primera línea dice que cambió lo indicado entre versiones, sin flecha ni el primer punto contra el último (mutación: comparar con la versión de hoy)', () => {
-  const objetivos = FE.objetivosDeLasVersiones(FUERZA, OBSERVACIONES, VIGENCIAS);
-  assert.deepEqual(objetivos.get('pv2'), { rir: { desde: 2, hasta: 2 }, repeticiones: { desde: 5, hasta: 5 } });
-  assert.deepEqual(objetivos.get('pv3'), { rir: { desde: 1, hasta: 1 }, repeticiones: { desde: 5, hasta: 5 } });
-  const cambios = FE.cambiosDeLoIndicado(VIGENCIAS, objetivos);
-  assert.deepEqual(cambios, ['De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie.']);
-  // Sin cambio en lo indicado, no hay primera línea.
+test('TEST-GRF-023 · GR-02: el cambio de lo indicado es uno solo, el de la pasada visual: va en la línea de la versión de los gráficos del historial, contra la inmediata anterior, sin flecha ni el primer punto contra el último (mutaciones: comparar con la versión de hoy, volver a la primera línea propia)', () => {
+  // Las versiones del historial llevan lo que cambió al empezar cada una («RIR de 2 a 1»), de la lectura de main.
+  const bandas = CO.bandasConElCambio(VIGENCIAS, OBSERVACIONES);
+  assert.deepEqual(
+    bandas.map((b) => [b.rotulo.split(' · ')[0], b.cambio]),
+    [
+      ['v2', null],
+      ['v3', 'RIR de 2 a 1'],
+    ],
+  );
+  // Sin cambio en lo indicado, ninguna versión lo rotula.
   const igual = FUERZA.map((p, i) => observacion(p.origin.id, p.date, i < 3 ? 'pv2' : 'pv3', [fila(1, hecha(1, kg(80), 5, 1))], { rirObjetivo: 2 }));
-  assert.deepEqual(FE.cambiosDeLoIndicado(VIGENCIAS, FE.objetivosDeLasVersiones(FUERZA, igual, VIGENCIAS)), []);
-  // Un rango de repeticiones que cambia también mueve la estimación.
+  assert.ok(CO.bandasConElCambio(VIGENCIAS, igual).every((b) => b.cambio === null));
+  // Un rango de repeticiones que cambia también mueve la estimación: «de 4–6 a 8–10 repeticiones».
   const conRango = FUERZA.map((p, i) => observacion(p.origin.id, p.date, i < 3 ? 'pv2' : 'pv3', [fila(1, hecha(1, kg(80), 5, 1), i < 3 ? { min: 4, max: 6 } : { min: 8, max: 10 })], { rirObjetivo: 2 }));
-  assert.deepEqual(FE.cambiosDeLoIndicado(VIGENCIAS, FE.objetivosDeLasVersiones(FUERZA, conRango, VIGENCIAS)), [
-    'De la versión 2 a la versión 3, las repeticiones indicadas pasaron de entre 4 y 6 a entre 8 y 10: la estimación puede cambiar aunque la fuerza no cambie.',
-  ]);
-  // Ningún texto de la fuerza compara dos puntos con una flecha ni da un porcentaje.
-  const textos = [...cambios, ...FE.lecturasPorVersion(FUERZA, VIGENCIAS, 'kg').map((x) => x.texto), FE.extremosDeLaFuerza(FUERZA), FE.cuantoMueveUnRir(FUERZA[6])];
+  assert.equal(CO.bandasConElCambio(VIGENCIAS, conRango)[1].cambio, 'de 4–6 a 8–10 repeticiones');
+  // Una versión cuya anterior no tiene sesiones del ejercicio no se compara con una más vieja.
+  const V1 = vigencia('pv1', 'v1', '2026-09-01', '2026-10-01');
+  const sinLaDelMedio = OBSERVACIONES.filter((o) => o.comparacion.planId !== 'pv2').concat([observacion(ex(9), '2026-09-10', 'pv1', [fila(1, hecha(1, kg(80), 5, 2))], { rirObjetivo: 2 })]);
+  assert.equal(CO.bandasConElCambio([V1, V2, V3], sinLaDelMedio)[2].cambio, null, 'la v3 no se compara con la v1');
+  // El historial pone esas bandas en los tres gráficos; la pantalla de GR-02 ya no lee lo indicado por su cuenta.
+  const historial = leer('graficos/entrenamiento/historial-del-ejercicio.tsx');
+  assert.match(historial, /return bandasConElCambio\(vigencias, observaciones\);/);
+  assert.match(historial, /const conBandas: PropsDelGrafico = \{ \.\.\.props, bandas \};/);
+  const pantalla = leer('graficos/entrenamiento/fuerza-estimada-en-pantalla.tsx');
+  assert.ok(!pantalla.includes('data-cambio-de-lo-indicado') && !pantalla.includes('cambiosDeLoIndicado'), 'sin la primera línea propia');
+  assert.equal(FE.cambiosDeLoIndicado, undefined, 'la lectura propia de lo indicado ya no está');
+  // Ningún texto de la fuerza compara dos puntos con una flecha ni da un porcentaje; el ruido va con el rango de validez.
+  const linea = FE.validezYRuidoDeLaFuerza(FUERZA, 'kg', false);
+  assert.equal(linea, 'Solo series de RIR 0 a 2 y hasta 10 repeticiones equivalentes. Un RIR de diferencia mueve cada estimación ≈ 2,7 a 2,9 kg.');
+  assert.match(FE.validezYRuidoDeLaFuerza(FUERZA, 'kg', true), /^Solo series de RIR 0 a 2 y hasta 12 repeticiones equivalentes/);
+  const textos = [linea, ...FE.lecturasPorVersion(FUERZA, VIGENCIAS, 'kg').flatMap((x) => [x.texto, x.ruido]), ...bandas.map((b) => b.cambio ?? '')];
   for (const t of textos) {
     assert.doesNotMatch(t, /[→±%]/, t);
     assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['ENTRENAMIENTO']), [], t);
   }
-  assert.equal(FE.extremosDeLaFuerza(FUERZA), 'El valor más bajo del período: ≈ 98,5 kg (5/10); el más alto: ≈ 105 kg (30/10).');
-  assert.equal(FE.cuantoMueveUnRir(FUERZA[6]), 'Con Epley, un RIR de diferencia mueve la estimación en la carga sobre 30: con 87,5 kg, unos 2,9 kg.');
 });
 
 test('TEST-GRF-024 · GR-02: el eje del 1RM estimado abarca 10 kg (22 lb) como mínimo, del catálogo, y sus marcas dicen su valor (mutación: sin el rango mínimo)', () => {
@@ -575,8 +591,9 @@ test('TEST-GRF-034 · el cuadro se abre con el historial para todos los ejercici
   assert.match(historial, /\{enLaLista \? \(\n\s*<div className="historial-del-ejercicio__grafico">\n\s*<FuerzaEstimada /);
   assert.match(leer('graficos/entrenamiento/fuerza-estimada-en-pantalla.tsx'), /if \(!enLaLista\) return null;/);
   // GR-03 y GR-05 comparten el cursor (un solo eje de fechas) y el paso se carga recién al abrirlo.
-  assert.ok(historial.indexOf('<ProveedorDelCursor>') < historial.indexOf('<CargaRepeticionesYRir {...props} />'));
-  assert.ok(historial.indexOf('<CargaRepeticionesYRir {...props} />') < historial.indexOf('<RirIndicadoYRegistrado {...props} />'));
+  const graficos = historial.slice(historial.indexOf('function GraficosDelHistorial('), historial.indexOf('/** «Abrir en Analizar»'));
+  assert.ok(graficos.indexOf('<ProveedorDelCursor>') > 0 && graficos.indexOf('<ProveedorDelCursor>') < graficos.indexOf('<CargaRepeticionesYRir {...conBandas}'));
+  assert.ok(graficos.indexOf('<CargaRepeticionesYRir {...conBandas}') < graficos.indexOf('<RirIndicadoYRegistrado {...conBandas}'));
   assert.match(leer('graficos/entrenamiento/acceso-al-historial.tsx'), /dynamic\(\(\) => import\('\.\/historial-del-ejercicio'\)\.then\(\(m\) => m\.PasoDelHistorial\), \{ ssr: false/);
 });
 
@@ -637,9 +654,12 @@ test('TEST-GRF-036 · el RIR indicado es una serie ofrecida del catálogo, hueca
   assert.match(leyendo, /if \(objetivos\.tipo !== 'lista'\) return objetivos;/, 'una versión que no se leyó es una falla, no lo indicado de otra');
   assert.match(leyendo, /const propio = useComparadorPropio\(lectura, periodo, activo && !delProveedor\);/);
   const historial = leer('graficos/entrenamiento/historial-del-ejercicio.tsx');
-  assert.ok(historial.indexOf('<ProveedorDelComparador lectura={lectura} periodo={periodo}>') < historial.indexOf('<CargaRepeticionesYRir {...props} />'));
+  // Los gráficos del paso van adentro del proveedor: una sola lectura del comparador para todos (y para las bandas).
+  const proveedor = historial.indexOf('<ProveedorDelComparador lectura={lectura} periodo={periodo}>');
+  const usados = historial.indexOf('<GraficosDelHistorial');
+  assert.ok(proveedor > 0 && proveedor < usados && usados < historial.indexOf('</ProveedorDelComparador>'));
   // La cinta del tiempo (GR-23) va debajo de GR-03 y GR-05, con solo lo de Entrenamiento y de este ejercicio.
-  assert.ok(historial.indexOf('<RirIndicadoYRegistrado {...props} />') < historial.indexOf('<CintaDelEjercicio '));
+  assert.ok(historial.indexOf('<RirIndicadoYRegistrado {...conBandas}') < historial.indexOf('<CintaDelEjercicio '));
   assert.match(historial, /alcances=\{\['ENTRENAMIENTO'\]\}/);
   assert.match(historial, /exerciseKey=\{exerciseKey\}\n\s*periodo=\{periodo\}/);
 });
@@ -708,4 +728,138 @@ test('TEST-GRF-039 · en «Analizar · Fuerza», GR-02 suma cada versión con su
   for (const t of [v2.ruido, v3.ruido]) assert.doesNotMatch(t, /[±→%]/, t);
   // Lo de antes sigue (ED-74): la tabla elige el punto con el teclado.
   assert.match(fuente, /<TablaDeOrigen [^\n]*onElegir=\{\(p\) => setElegidoId\(p\.pointId\)\}/);
+});
+
+// ─── La pasada visual (#283) en los gráficos de la rama B ──────────────────────────────────────────
+
+const GE = await import('../src/app/pro/advisees/seguimiento/geometria.ts');
+const EJE = await import('../src/app/pro/advisees/graficos/ejes.ts');
+
+test('TEST-GRF-040 · GR-02, GR-03 y GR-05 dibujan los puntos que dice la leyenda: un punto por sesión con su tamaño, y la leyenda solo con lo que se ve (mutaciones: medir la marca con el ancho del día, dejar lo hueco sin su sentido)', () => {
+  // En 12 semanas en el cuadro (≈ 4 px por día), la marca con el ancho del día no pasa de 1,8 de radio: se pierde en la
+  // línea de 2 px. Con el lugar de una sesión, 3,5 con su halo.
+  assert.ok(GE.medidaDeMarca('lleno', 4).R < 2);
+  assert.equal(GE.medidaDeMarca('lleno', 8.75).R, 3.5);
+  assert.equal(GE.medidaDeMarca('lleno', 8.75).halo, true);
+  const paneles = leer('graficos/paneles-alineados.tsx');
+  assert.match(paneles, /const porDiaDeLaMarca = carril\.tipo === 'PUNTOS' && carril\.porSesion \? Math\.max\(escala\.porDia, LUGAR_DE_UNA_SESION\) : escala\.porDia;/);
+  assert.match(paneles, /const LUGAR_DE_UNA_SESION = 8\.75;/);
+  assert.equal((paneles.match(/porDia=\{porDiaDeLaMarca\}/g) ?? []).length, 2, 'lo registrado y lo indicado, con la marca de la sesión');
+  // Los tres gráficos son de un punto por sesión.
+  const fuerza = FE.carrilDeLaFuerza(FE.puntosDelCarrilDeFuerza(FUERZA, []), FUERZA, 'kg');
+  assert.equal(fuerza.porSesion, true);
+  const carga = serieAnalitica('entrenamiento.carga', 'kg', [punto('c1', '2026-10-05', 80)]);
+  assert.ok(CR.carrilesDeCargaRepeticionesYRir({ carga, repeticiones: null, rir: null }, { serie: 1, indicado: [], cargadoTarde: new Set() }).every((c) => c.porSesion === true));
+  const sesiones = RI.sesionesDelRir(CARGAS, 1);
+  assert.equal(RI.carrilDelRirIndicadoYRegistrado(sesiones, { serie: 1, bandas: BANDAS, tardias: new Set(), filtrado: false }).porSesion, true);
+  // Lo hueco del 1RM estimado es lo orientativo: la leyenda dice «De más de 10 a 12…» solo si hay una, y nunca «Subtotal».
+  const LEYENDA = ['REGISTRADO', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL', 'SUBTOTAL'];
+  assert.deepEqual(CA.sentidosQueSeVen(LEYENDA, [fuerza]), ['REGISTRADO']);
+  const conHueca = FE.puntosDelCarrilDeFuerza([...FUERZA, deSesion(ex(8), '2026-11-02', 70, 10, 1)], []);
+  assert.equal(conHueca.find((x) => x.marca === 'HUECA').sentido, 'ORIENTATIVA');
+  assert.deepEqual(CA.sentidosQueSeVen(LEYENDA, [FE.carrilDeLaFuerza(conHueca, FUERZA, 'kg')]), ['REGISTRADO', 'ORIENTATIVA']);
+  // El número del punto es el de la lectura (al medio kilo): «160,5», no «160,4».
+  const nueve = deSesion(ex(9), '2026-11-09', 137.5, 3, 2);
+  assert.equal(FE.estimacionEnPalabras(nueve), '≈ 160,5 kg');
+  assert.equal(FE.valorALaVista(nueve), 160.5);
+  assert.equal(FE.puntosDelCarrilDeFuerza([nueve], [])[0].valor, 160.5);
+  // GR-02 va como gráfico principal en el historial (240 px) y GR-03, en tres paneles de 96.
+  const historial = leer('graficos/entrenamiento/historial-del-ejercicio.tsx');
+  assert.match(historial, /<FuerzaEstimada \{\.\.\.conBandas\} densidad="COMPLETA"/);
+  assert.match(historial, /<CargaRepeticionesYRir \{\.\.\.conBandas\} densidad="COMPACTA" \/>/);
+});
+
+test('TEST-GRF-041 · la tira de cada sesión va en la leyenda de GR-02, GR-03 y GR-05, y dice lo que falta (mutaciones: dejar la tira sin ficha, marcar con la tira entera una sesión sin estimación)', () => {
+  // GR-02: entera con estimación, una raya baja en la sesión sin estimación (el corte de la línea se lee como lo que es).
+  const puntos = FE.puntosDelCarrilDeFuerza(FUERZA, []);
+  assert.deepEqual(
+    FE.coberturaDeLaFuerza(puntos, ['2026-10-16', '2026-10-05']).filter((d) => d.fecha === '2026-10-16' || d.fecha === '2026-10-05'),
+    [
+      { fecha: '2026-10-05', estado: 'con' },
+      { fecha: '2026-10-16', estado: 'sin' },
+    ],
+  );
+  assert.equal(FE.carrilDeLaFuerza(puntos, FUERZA, 'kg', ['2026-10-16']).cobertura.find((d) => d.fecha === '2026-10-16').estado, 'sin');
+  // GR-05: un RIR sin escribir no es 0: la tira lo dice con la raya baja.
+  const rir = [
+    { fecha: '2026-10-02', registrado: 2 },
+    { fecha: '2026-10-06', registrado: null },
+  ];
+  assert.deepEqual(RI.coberturaDelRir(rir), [
+    { fecha: '2026-10-02', estado: 'con' },
+    { fecha: '2026-10-06', estado: 'sin' },
+  ]);
+  // Las fichas: «Cada sesión», con lo que dice cada altura para el lector de pantalla; la línea cortada de GR-05.
+  assert.equal(TX.FICHA_DE_LA_TIRA.fuerza.corto, 'Cada sesión');
+  assert.match(TX.FICHA_DE_LA_TIRA.fuerza.largo, /una raya baja sin estimación/);
+  assert.match(TX.FICHA_DE_LA_TIRA.serie.largo, /una raya baja sin el dato/);
+  assert.equal(TX.FICHAS_DE_ENTRENAMIENTO.escalon.glifo, 'LINEA_CORTADA');
+  // Las pantallas las pasan a la leyenda de la base, que las dibuja en la misma línea que las marcas.
+  assert.match(leer('graficos/entrenamiento/fuerza-estimada-en-pantalla.tsx'), /fichas=\{conTira \? \[FICHA_DE_LA_TIRA\.fuerza\] : \[\]\}/);
+  assert.match(leer('graficos/entrenamiento/carga-repeticiones-y-rir-en-pantalla.tsx'), /fichas=\{conTira \? \[FICHA_DE_LA_TIRA\.serie\] : \[\]\}/);
+  assert.match(leer('graficos/entrenamiento/rir-indicado-y-registrado-en-pantalla.tsx'), /\.\.\.\(carril\.escalones\.length > 0 \? \[\{ \.\.\.FICHAS_DE_ENTRENAMIENTO\.escalon, indice: carril\.indice \}\] : \[\]\)/);
+  const marcas = leer('graficos/marcas.tsx');
+  assert.match(marcas, /\{fichas\.map\(\(f\) => \(\n\s*<li key=\{`\$\{f\.glifo\}-\$\{f\.corto\}`\} data-ficha=\{f\.glifo\}>/);
+  assert.match(marcas, /<span className="visualmente-oculto">\{ficha\.largo\}<\/span>/);
+});
+
+test('TEST-GRF-042 · GR-06 ajusta los dos ejes a los datos, con un margen y marcas redondas, y cada curva se rotula adentro del dibujo (mutación: volver al eje de 0 a 12)', () => {
+  const serie = (equivalentes, carga, i) => ({ clave: `s${i}`, fecha: '2026-11-01', unidad: 'kg', repeticiones: equivalentes - 2, rir: 2, reciente: true, lectura: '', equivalentes, carga });
+  const puntos = [
+    [3, 132.5],
+    [4, 135],
+    [5, 130],
+    [5, 137.5],
+    [6, 125],
+  ].map(([e, c], i) => serie(e, c, i));
+  const caja = { izquierda: 52, derecha: 600, arriba: 14, abajo: 196 };
+  const g = PE.geometriaDelPerfil(puntos, 'kg', caja);
+  // En X, de las repeticiones de los datos con una de margen: nunca de 0 a 12 con los puntos apiñados a la izquierda.
+  assert.ok(g.ejeX.abajo >= 1 && g.ejeX.abajo <= 2, `desde ${g.ejeX.abajo}`);
+  assert.ok(g.ejeX.arriba >= 7 && g.ejeX.arriba <= 8, `hasta ${g.ejeX.arriba}`);
+  const xs = puntos.map((p) => g.x(p.equivalentes));
+  assert.ok(Math.max(...xs) - Math.min(...xs) >= (caja.derecha - caja.izquierda) * 0.45, 'los puntos ocupan casi la mitad del ancho, no un sexto');
+  // En Y, con un margen: ningún punto queda en el borde; el rango, al menos 10 kg; de 3 a 5 marcas, sin repetir.
+  for (const p of puntos) {
+    const y = g.y(p.carga);
+    assert.ok(y > caja.arriba + 4 && y < caja.abajo - 4, `${p.carga} kg en el borde`);
+  }
+  assert.ok(g.extremos.arriba - g.extremos.abajo >= 10);
+  assert.ok(g.marcasY.length >= 3 && g.marcasY.length <= EJE.MARCAS_MAXIMAS);
+  assert.equal(new Set(g.marcasY.map((m) => EJE.textoDeLaMarcaDelEje(m.valor, g.extremos.decimales))).size, g.marcasY.length);
+  assert.ok(g.marcasX.every((m) => Number.isInteger(m.valor)), 'las repeticiones, en enteros');
+  // Cada curva se rotula donde sale del dibujo, adentro; una que no pasa por el dibujo, no.
+  for (const c of PE.curvasDeLaFormula(puntos, 'kg')) {
+    const lugar = PE.dondeSeRotulaLaCurva(c, g, caja);
+    assert.ok(lugar && lugar.x >= caja.izquierda - 1 && lugar.x <= caja.derecha + 1 && lugar.y >= caja.arriba - 1 && lugar.y <= caja.abajo + 1, String(c.valor));
+  }
+  assert.equal(PE.dondeSeRotulaLaCurva({ puntos: [{ equivalentes: 1, carga: 400 }, { equivalentes: 12, carga: 300 }] }, g, caja), null);
+  // La pantalla: la leyenda como fichas arriba, qué entra a la vista y lo que aclara en «Cómo leerlo».
+  const pantalla = leer('graficos/entrenamiento/perfil-carga-repeticiones-en-pantalla.tsx');
+  assert.ok(pantalla.indexOf('<ul className="grafico-base__leyenda"') < pantalla.indexOf('className="grafico-base__area perfil-de-carga__area"'), 'la leyenda arriba del gráfico');
+  assert.match(pantalla, /data-validez-del-perfil/);
+  assert.match(pantalla, /<ComoLeerlo de=\{titulo\}>/);
+  assert.ok(!pantalla.includes('extremosDelEje'));
+});
+
+test('TEST-GRF-043 · lo que pide §5 queda a la vista y lo que aclara va a un solo «Cómo leerlo» por gráfico (mutaciones: llevar el ruido por versión o lo que se ve a «Cómo leerlo», volver al desplegable propio)', () => {
+  const fuerza = leer('graficos/entrenamiento/fuerza-estimada-en-pantalla.tsx');
+  // §5.6 y §5.12: el rango de validez y lo que mueve un RIR, como nota a la vista; cada versión con su ruido, a la vista.
+  assert.match(fuerza, /notas=\{\[dibujo\.validezYRuido\]\}/);
+  assert.ok(fuerza.indexOf('aLaVista={') < fuerza.indexOf('data-lectura-por-version'), 'cada versión, a la vista');
+  assert.match(fuerza, /aclaraciones=\{\[\.\.\.C\.comoSeCalculoTexto, C\.soloVos\]\}/);
+  const rir = leer('graficos/entrenamiento/rir-indicado-y-registrado-en-pantalla.tsx');
+  // GR-05: lo que se ve se describe, a la vista; lo que aclara, en el «Cómo leerlo» de la base.
+  assert.match(rir, /aLaVista=\{loQueSeVeALaVista\}/);
+  assert.match(rir, /aclaraciones=\{aclaraciones\}/);
+  const carga = leer('graficos/entrenamiento/carga-repeticiones-y-rir-en-pantalla.tsx');
+  assert.match(carga, /const notas = comparador\.tipo === 'error' \? \[C\.sinIndicado\] : \[\];/, 'a la vista, lo que falta');
+  // Un solo «Cómo leerlo» por gráfico: el de la base; ningún desplegable propio.
+  for (const ruta of ['fuerza-estimada-en-pantalla.tsx', 'rir-indicado-y-registrado-en-pantalla.tsx', 'carga-repeticiones-y-rir-en-pantalla.tsx', 'perfil-carga-repeticiones-en-pantalla.tsx']) {
+    const fuente = leer(`graficos/entrenamiento/${ruta}`);
+    assert.ok(!fuente.includes('grafico-de-entrenamiento__como'), ruta);
+  }
+  // La base pone lo que va a la vista antes del pie («Ver la tabla» y «Cómo leerlo»).
+  const paneles = leer('graficos/paneles-alineados.tsx');
+  assert.ok(paneles.indexOf('{aLaVista}') > paneles.indexOf('{visiblesAbajo.map((n) =>') && paneles.indexOf('{aLaVista}') < paneles.indexOf('<div className="grafico-base__pie">'));
 });

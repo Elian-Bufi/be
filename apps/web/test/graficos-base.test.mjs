@@ -980,7 +980,9 @@ test('TEST-GRV-008 · «Cómo leerlo» es un desplegable accesible y cerrado, co
   assert.match(paneles, /const visiblesAbajo = notasALaVista\(\{ notas, tarde, fueraDeLaEscala, cambiosRecortados \}\);/);
   assert.match(paneles, /esLaFraseFija\(n\) \? \(\n\s*<FraseDeLaCoincidencia key=\{n\} texto=\{n\} \/>/);
   assert.match(paneles, /<ComoLeerlo de=\{titulo\}>\n\s*\{aclaraciones\.map/);
-  assert.ok(paneles.indexOf('<Leyenda sentidos={visibles} />') < paneles.indexOf('className="grafico-base__area"'), 'la leyenda va arriba del gráfico');
+  // La leyenda, con las fichas de lo que no es un punto (la tira, la línea cortada: rama B), arriba del gráfico.
+  const leyenda = paneles.indexOf('<Leyenda sentidos={visibles} fichas={fichas} />');
+  assert.ok(leyenda > 0 && leyenda < paneles.indexOf('className="grafico-base__area"'), 'la leyenda va arriba del gráfico');
   assert.match(paneles, /return carriles <= 1 \? 240 : 140;/, 'un gráfico principal de 240 px');
   const css = readFileSync(join(GRAFICOS, 'estilos', 'base.css'), 'utf8');
   assert.match(css, /\.grafico-base__tabla td \{[^}]*white-space: nowrap;/);

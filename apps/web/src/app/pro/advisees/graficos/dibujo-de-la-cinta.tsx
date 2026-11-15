@@ -5,6 +5,10 @@
  * ícono de su área en el margen) y una para las notas; las versiones de los planes como barras, con su etiqueta si entra;
  * cada hecho con su ícono de la familia de BE y lo que cae junto en un círculo con la cantidad. Lo usan la cinta
  * (`cinta-del-tiempo-en-pantalla.tsx`) y los carriles de eventos de `PanelesAlineados`. No lee nada: dibuja la geometría.
+ *
+ * Con la pasada visual (rama B; DISENO-VISUAL §2): los íconos de 16 px sobre un fondo de 20 que no toca la barra; con una
+ * sola fila (el cuadro de un ejercicio: solo Entrenamiento) no va el ícono del área en el margen, que a ese tamaño no se
+ * entendía y no decía nada que no dijeran el título y la barra; con varias, en el color del texto.
  */
 import { Icono } from '../../../../components/icono';
 import { LETRA_MINIMA } from '../seguimiento/geometria';
@@ -24,14 +28,17 @@ function AroDeLoElegido({ elegido }: { elegido: ElegibleDeLaCinta }) {
 }
 
 export function DibujoDeLaCinta({ g, escala, elegido = null }: { g: GeometriaDeLaCinta; escala: EscalaDeFechas; elegido?: ElegibleDeLaCinta | null }) {
+  const conIconoDelArea = g.filas.length > 1;
   return (
     <g className="grafico-cinta__dibujo">
       {g.filas.map((f) => (
         <g key={f.fila} data-fila={f.fila}>
           <line x1={escala.izquierda} x2={escala.derecha} y1={f.y + ALTO_DE_LA_FILA_DE_LA_CINTA - 0.5} y2={f.y + ALTO_DE_LA_FILA_DE_LA_CINTA - 0.5} stroke="var(--borde)" strokeWidth={1} opacity={0.6} />
-          <g transform={`translate(${MARGEN_IZQUIERDO - 15 - 14} ${f.y + CENTRO_DEL_ICONO - 7.5})`} style={{ color: 'var(--tenue)' }}>
-            <Icono nombre={ICONO_DE_LA_FILA[f.fila]} tamano={15} />
-          </g>
+          {conIconoDelArea ? (
+            <g transform={`translate(${MARGEN_IZQUIERDO - 16 - 14} ${f.y + CENTRO_DEL_ICONO - 8})`} style={{ color: 'var(--texto)' }}>
+              <Icono nombre={ICONO_DE_LA_FILA[f.fila]} tamano={16} />
+            </g>
+          ) : null}
           {f.barras.map((b, i) => (
             <g key={b.clave} data-tipo="VERSION_DE_PLAN">
               <rect x={b.x1} y={f.y + BARRA_DESDE} width={b.x2 - b.x1} height={ALTO_DE_LA_BARRA} rx={1} fill={i % 2 === 0 ? 'var(--grafico-indicado)' : 'var(--borde-control)'} />
@@ -48,7 +55,7 @@ export function DibujoDeLaCinta({ g, escala, elegido = null }: { g: GeometriaDeL
             if (h.hechos.length > 1 || icono === null) {
               return (
                 <g key={h.clave} data-tipo="GRUPO">
-                  <circle cx={h.x} cy={f.y + CENTRO_DEL_ICONO} r={h.evento.agrupados > 9 ? 9.5 : 8.5} fill="var(--superficie)" stroke="var(--texto)" strokeWidth={1.5} />
+                  <circle cx={h.x} cy={f.y + CENTRO_DEL_ICONO} r={h.evento.agrupados > 9 ? 9.5 : 9} fill="var(--superficie)" stroke="var(--texto)" strokeWidth={1.5} />
                   <text x={h.x} y={f.y + CENTRO_DEL_ICONO} textAnchor="middle" dominantBaseline="central" fontSize={LETRA_MINIMA} fill="var(--texto)">
                     {h.evento.agrupados}
                   </text>
@@ -56,9 +63,9 @@ export function DibujoDeLaCinta({ g, escala, elegido = null }: { g: GeometriaDeL
               );
             }
             return (
-              <g key={h.clave} data-tipo={h.evento.tipo} transform={`translate(${h.x - 7.5} ${f.y + CENTRO_DEL_ICONO - 7.5})`} style={{ color: 'var(--texto)' }}>
-                <rect x={-1.5} y={-1.5} width={18} height={18} rx={4} fill="var(--superficie)" />
-                <Icono nombre={icono} tamano={15} />
+              <g key={h.clave} data-tipo={h.evento.tipo} transform={`translate(${h.x - 8} ${f.y + CENTRO_DEL_ICONO - 8})`} style={{ color: 'var(--texto)' }}>
+                <rect x={-2} y={-2} width={20} height={20} rx={5} fill="var(--superficie)" stroke="var(--borde)" strokeWidth={1} />
+                <Icono nombre={icono} tamano={16} />
               </g>
             );
           })}

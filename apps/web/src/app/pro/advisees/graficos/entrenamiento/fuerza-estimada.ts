@@ -1,33 +1,24 @@
 /**
  * GR-02 · El 1RM estimado (Epley v1), sesión a sesión, con las versiones del plan de fondo (WP-GRAFICOS fase 2, rama B;
  * DL-174 y DL-171). Lo puro: el carril, la lectura de cada versión (la mediana del RIR registrado, las repeticiones de la
- * serie usada y el ruido propio), lo que cambió en lo indicado entre versiones (la primera línea) y los extremos.
+ * serie usada y el ruido propio) y la línea de validez y ruido que va a la vista.
  *
  * - Lleno hasta 10 repeticiones equivalentes, hueco de más de 10 a 12 y rombo para lo observado por el profesional
  *   (`marcaDelPuntoDeFuerza`). La línea no cruza una sesión sin estimación (`tramosDeLaLinea`, ED-74) y lo observado no se
  *   une con lo de la persona: cada observación es su propio tramo.
  * - El eje abarca 10 kg o 22 lb como mínimo (GR-T15), como dice el catálogo: dos o tres kilos no parecen un salto.
- * - Cada punto va a la versión que regía ese día (GR-T16, `lecturaPorVersion`). Lo indicado de cada versión sale del
- *   comparador (API-TRN-21 y API-SER-01, GR-T14): el RIR y las repeticiones de las series que usó la regla por sesión.
+ * - Cada punto va a la versión que regía ese día (GR-T16, `lecturaPorVersion`).
+ * - El cambio de lo indicado es uno solo para toda la página, el de la pasada visual (`cambiosPorVersion` de la base, en
+ *   la línea de cada versión): la primera línea propia de la rama B se fue al traer la pasada visual del 15/11.
+ * - Con la pasada visual: un punto por sesión con su tamaño (`porSesion`), lo hueco con su sentido (la leyenda pide
+ *   «De más de 10 a 12…» y no «Subtotal») y la tira de abajo con cada sesión: entera con estimación, una raya baja sin.
  * - Nunca el signo más-menos, nunca porcentaje y nunca el primer punto contra el último: el ruido se dice antes que el
  *   cambio.
  *
  * Es puro: lo prueba `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
-import {
-  cambioDeLoIndicado,
-  estimacionALaVista,
-  lecturaPorVersion,
-  marcaDelPuntoDeFuerza,
-  numero,
-  serieDisponible,
-  valorPlanificado,
-  type ObjetivoDeLaSerie,
-  type ObservacionDeEvolucion,
-  type PuntoDeFuerza,
-  type VigenciaDePlan,
-} from '@be/domain';
-import { estimacionDelPunto, laSerie, tramosDeLaLinea, type SerieQueNoEntro } from '../../fuerza/fuerza';
+import { estimacionALaVista, lecturaPorVersion, marcaDelPuntoDeFuerza, numero, serieDisponible, type PuntoDeFuerza, type VigenciaDePlan } from '@be/domain';
+import { COPY_DEL_RUIDO, estimacionDelPunto, laSerie, loQueMueveUnRir, tramosDeLaLinea, type SerieQueNoEntro } from '../../fuerza/fuerza';
 import type { CarrilDePuntos, PuntoDelCarril } from '../carriles';
 import { textoDeLaMarca } from '../eje-de-fechas';
 import { COPY_FUERZA_ESTIMADA as C } from './copy';
@@ -39,6 +30,17 @@ export const ejercicioDeLaClave = (exerciseKey: string | null | undefined): stri
 
 /** «≈ 98 kg», al medio kilo o a la libra entera, como la tarjeta (ED-75). */
 export const estimacionEnPalabras = (p: PuntoDeFuerza): string => estimacionALaVista(estimacionDelPunto(p, ''));
+
+/**
+ * El número de la estimación tal como se escribe (al medio kilo o a la libra entera, como la tarjeta): el del punto en el
+ * dibujo y el de su rótulo. Así el rótulo dice «160,5» donde la lectura dice «≈ 160,5 kg», y no «160,4» (la cuenta sin
+ * redondear). Se corre menos de un cuarto de kilo: no se ve en el dibujo.
+ */
+export function valorALaVista(p: PuntoDeFuerza): number {
+  const texto = estimacionEnPalabras(p).replace('≈ ', '').replace(` ${p.estimate.load.unit}`, '');
+  const valor = Number(texto.replace(/\./g, '').replace(',', '.'));
+  return Number.isFinite(valor) ? valor : p.estimate.value;
+}
 
 /** Lo que dicen la lectura y la tabla de un punto: «≈ 98 kg · 70 kg × 12 · RIR 0 · orientativa». */
 export function lecturaDelPuntoDeFuerza(p: PuntoDeFuerza): string {
@@ -75,17 +77,20 @@ export function puntosDelCarrilDeFuerza(
   });
   return [...deLaPersona, ...observadas].map((p) => {
     const origen = p.origin;
+    const marca = marcaDelPuntoDeFuerza(p);
     return {
       clave: p.pointId,
       fecha: p.date,
       hasta: null,
       en: null,
-      valor: p.estimate.value,
+      valor: valorALaVista(p),
       rango: null,
       tramo: tramoDe.get(p.pointId) ?? `observada:${p.pointId}`,
-      marca: marcaDelPuntoDeFuerza(p),
+      marca,
       tarde: origen.type === 'TRAINING_EXECUTION' && tardias.has(origen.id),
       lectura: lecturaDelPuntoDeFuerza(p),
+      // Lo hueco del 1RM estimado es lo orientativo, no un subtotal: la leyenda lo dice así (revisión del 15/11).
+      ...(marca === 'HUECA' ? { sentido: 'ORIENTATIVA' as const } : {}),
     };
   });
 }
@@ -95,8 +100,13 @@ export function rangoMinimoDeLaFuerza(unidad: 'kg' | 'lb'): number | undefined {
   return serieDisponible('entrenamiento.1rm-estimado')?.rangoMinimoDelEje?.[unidad];
 }
 
-/** El carril de GR-02: un punto por sesión (y por observación), con su método y el rango mínimo del catálogo. */
-export function carrilDeLaFuerza(puntos: readonly PuntoDelCarril[], fuerza: readonly PuntoDeFuerza[], unidad: 'kg' | 'lb'): CarrilDePuntos {
+/**
+ * El carril de GR-02: un punto por sesión (y por observación), con su método y el rango mínimo del catálogo. La tira de
+ * abajo dice cada sesión del ejercicio en el período: entera con estimación y una raya baja sin estimación
+ * (`sinEstimacion`: las fechas de las sesiones que no entraron, o que solo tuvieron orientativas con el interruptor
+ * apagado). Así un corte de la línea se lee como lo que es: una sesión sin estimación, no un día sin entrenar.
+ */
+export function carrilDeLaFuerza(puntos: readonly PuntoDelCarril[], fuerza: readonly PuntoDeFuerza[], unidad: 'kg' | 'lb', sinEstimacion: readonly string[] = []): CarrilDePuntos {
   const orden = [...fuerza].sort((a, b) => a.estimate.value - b.estimate.value);
   const bajo = orden[0];
   const alto = orden[orden.length - 1];
@@ -113,19 +123,30 @@ export function carrilDeLaFuerza(puntos: readonly PuntoDelCarril[], fuerza: read
     escalones: [],
     unir: true,
     escala: rangoMinimo === undefined ? { enteros: false } : { rangoMinimo, enteros: false },
-    cobertura: [...new Set(puntos.filter((p) => p.valor !== null).map((p) => p.fecha))].sort().map((fecha) => ({ fecha, estado: 'con' as const })),
+    cobertura: coberturaDeLaFuerza(puntos, sinEstimacion),
+    porSesion: true,
     descripcion: bajo && alto ? C.descripcion(fuerza.length, estimacionEnPalabras(bajo), estimacionEnPalabras(alto)) : C.sinPuntos,
   };
 }
 
-/** «El valor más bajo del período: ≈ 92 kg (3/10); el más alto: ≈ 98 kg (12/11)», o `null` con un solo valor. */
-export function extremosDeLaFuerza(puntos: readonly PuntoDeFuerza[]): string | null {
-  if (puntos.length < 2) return null;
-  const orden = [...puntos].sort((a, b) => a.estimate.value - b.estimate.value);
-  const bajo = orden[0]!;
-  const alto = orden[orden.length - 1]!;
-  if (estimacionEnPalabras(bajo) === estimacionEnPalabras(alto)) return null;
-  return C.extremos(estimacionEnPalabras(bajo), textoDeLaMarca(bajo.date), estimacionEnPalabras(alto), textoDeLaMarca(alto.date));
+/** La tira de GR-02: cada sesión con estimación, entera; cada sesión sin estimación (y sin otra que sí), una raya baja. */
+export function coberturaDeLaFuerza(puntos: readonly PuntoDelCarril[], sinEstimacion: readonly string[]): CarrilDePuntos['cobertura'] {
+  const con = new Set(puntos.filter((p) => p.valor !== null).map((p) => p.fecha));
+  const sin = sinEstimacion.filter((f) => !con.has(f));
+  return [...new Set([...con, ...sin])].sort().map((fecha) => ({ fecha, estado: con.has(fecha) ? ('con' as const) : ('sin' as const) }));
+}
+
+/**
+ * La línea que va a la vista debajo de GR-02, la misma que en «Analizar · Fuerza» (§5.6 y §5.12): el rango de validez y
+ * lo que mueve un RIR en las estimaciones del período («Solo series de RIR 0 a 2 y hasta 10 repeticiones equivalentes.
+ * Un RIR de diferencia mueve cada estimación ≈ 4,3 a 4,6 kg.»).
+ */
+export function validezYRuidoDeLaFuerza(puntos: readonly PuntoDeFuerza[], unidad: 'kg' | 'lb', conOrientativas: boolean): string {
+  const ruido = loQueMueveUnRir(
+    puntos.map((p) => p.estimate.load.value),
+    unidad,
+  );
+  return ruido ? `${COPY_DEL_RUIDO.validez(conOrientativas)} ${COPY_DEL_RUIDO.ruido(ruido)}` : COPY_DEL_RUIDO.validez(conOrientativas);
 }
 
 /** La lectura de una versión, para la lista de abajo del gráfico: su rótulo y lo que se sabe de sus sesiones. */
@@ -164,63 +185,4 @@ export function lecturasPorVersion(puntos: readonly PuntoDeFuerza[], vigencias: 
 /** La lectura de la versión que regía una fecha (el día del corte ya rige la siguiente), o `null`. */
 export function lecturaDeLaVersionEn(fecha: string, lecturas: readonly LecturaDeLaVersion[]): LecturaDeLaVersion | null {
   return lecturas.find((l) => fecha >= l.desde && (l.hasta === null || fecha < l.hasta)) ?? null;
-}
-
-const enLaVigencia = (fecha: string, v: Pick<VigenciaDePlan, 'from' | 'to'>): boolean => fecha >= v.from && (v.to === null || fecha < v.to);
-
-const rangoDe = (valores: readonly number[]): { readonly desde: number; readonly hasta: number } | null =>
-  valores.length === 0 ? null : { desde: Math.min(...valores), hasta: Math.max(...valores) };
-
-/**
- * Lo indicado para las series que usó la regla en cada versión (la versión que regía el día de cada punto): el RIR y las
- * repeticiones que indicaba esa versión para esas series, de las observaciones del comparador. Si la regla usó series con
- * objetivos distintos, el rango los abarca. Una versión sin nada indicado para esas series no está.
- */
-export function objetivosDeLasVersiones(puntos: readonly PuntoDeFuerza[], observaciones: readonly ObservacionDeEvolucion[], vigencias: readonly VigenciaDePlan[]): ReadonlyMap<string, ObjetivoDeLaSerie> {
-  const porClave = new Map(observaciones.map((o) => [`${o.comparacion.executionId}|${o.comparacion.prescriptionId}`, o] as const));
-  const objetivos = new Map<string, ObjetivoDeLaSerie>();
-  for (const v of vigencias) {
-    if (v.domain !== 'TRAINING') continue;
-    const rir: number[] = [];
-    const repeticiones: number[] = [];
-    for (const p of puntos) {
-      const origen = p.origin;
-      if (p.source !== 'PERSON' || origen.type !== 'TRAINING_EXECUTION' || !enLaVigencia(p.date, v)) continue;
-      const o = porClave.get(`${origen.id}|${origen.prescriptionId}`);
-      const fila = o?.comparacion.filas.find((f) => f.numero === origen.setIndex);
-      if (!o || !fila || o.rol !== 'planificado-y-registrado') continue;
-      const r = valorPlanificado(o.comparacion, fila, { variable: 'rir' });
-      if (r.tipo === 'valor') rir.push(r.valor);
-      const n = valorPlanificado(o.comparacion, fila, { variable: 'repeticiones' });
-      if (n.tipo === 'valor') repeticiones.push(n.valor);
-      if (n.tipo === 'rango') repeticiones.push(n.min, n.max);
-    }
-    if (rir.length === 0 && repeticiones.length === 0) continue;
-    objetivos.set(v.planVersionId, { rir: rangoDe(rir), repeticiones: rangoDe(repeticiones) });
-  }
-  return objetivos;
-}
-
-/**
- * La primera línea de GR-02: lo que cambió en lo indicado entre dos versiones seguidas con estimaciones, que mueve la
- * estimación aunque la fuerza no («De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación cambia
- * aunque la fuerza no.»). Vacía si nada cambió.
- */
-export function cambiosDeLoIndicado(vigencias: readonly VigenciaDePlan[], objetivos: ReadonlyMap<string, ObjetivoDeLaSerie>): string[] {
-  const conObjetivo = vigencias.filter((v) => v.domain === 'TRAINING' && objetivos.has(v.planVersionId)).sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
-  const lineas: string[] = [];
-  for (let i = 1; i < conObjetivo.length; i++) {
-    const a = conObjetivo[i - 1]!;
-    const b = conObjetivo[i]!;
-    const texto = cambioDeLoIndicado(objetivos.get(a.planVersionId) ?? null, objetivos.get(b.planVersionId) ?? null);
-    if (texto) lineas.push(C.cambio(C.versionCorta(a.label), C.versionCorta(b.label), texto));
-  }
-  return lineas;
-}
-
-/** «Con Epley, un RIR de diferencia mueve la estimación en la carga sobre 30: con 80 kg, unos 2,7 kg.» */
-export function cuantoMueveUnRir(p: PuntoDeFuerza | null): string | null {
-  if (!p) return null;
-  const { value, unit } = p.estimate.load;
-  return C.unRirMueve(numero(value), unit, numero(value / 30, 1));
 }

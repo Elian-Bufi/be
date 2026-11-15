@@ -10,6 +10,7 @@
  *   los valores del plan: va hueco y gris, nunca lleno (`marcaDelPunto`).
  * - El RIR indicado sale del comparador (GR-T14), con `puntosDeLoIndicado` de la base: la prescripción de la versión que
  *   rigió esa sesión, hueca y en la fecha y la hora de la sesión.
+ * - Con la pasada visual: cada carril es de un punto por sesión (`porSesion`), así la marca se ve sobre la línea.
  *
  * Es puro: lo prueba `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
@@ -57,10 +58,11 @@ const conValor = (s: SerieAnalitica | null): number => (s ? s.points.filter((p) 
  */
 export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonly serie: number; readonly indicado: readonly PuntoDelCarril[]; readonly cargadoTarde: ReadonlySet<string> }): CarrilDePuntos[] {
   const carriles: CarrilDePuntos[] = [];
+  const porSesion = (c: CarrilDePuntos): CarrilDePuntos => ({ ...c, porSesion: true });
   const carga = s.carga ? serieDisponible('entrenamiento.carga', s.carga.unit) : null;
   if (s.carga && carga) {
     carriles.push(
-      carrilDeSerie(s.carga, carga, {
+      porSesion(carrilDeSerie(s.carga, carga, {
         id: 'carga',
         nombre: C.carga(o.serie),
         indice: 0,
@@ -69,13 +71,13 @@ export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonl
         descripcion: C.descripcion(conValor(s.carga), o.serie),
         lectura: lecturaDeLaCarga(s.carga.unit),
         cargadoTarde: o.cargadoTarde,
-      }),
+      })),
     );
   }
   const repeticiones = serieDisponible('entrenamiento.repeticiones');
   if (s.repeticiones && repeticiones) {
     carriles.push(
-      carrilDeSerie(s.repeticiones, repeticiones, {
+      porSesion(carrilDeSerie(s.repeticiones, repeticiones, {
         id: 'repeticiones',
         nombre: C.repeticiones(o.serie),
         indice: 1,
@@ -84,13 +86,13 @@ export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonl
         descripcion: C.descripcion(conValor(s.repeticiones), o.serie),
         lectura: lecturaDeLasRepeticiones,
         cargadoTarde: o.cargadoTarde,
-      }),
+      })),
     );
   }
   const rir = serieDisponible('entrenamiento.rir');
   if (s.rir && rir) {
     carriles.push(
-      carrilDeSerie(s.rir, rir, {
+      porSesion(carrilDeSerie(s.rir, rir, {
         id: 'rir',
         nombre: C.rir(o.serie),
         indice: 2,
@@ -100,7 +102,7 @@ export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonl
         lectura: lecturaDelRir,
         cargadoTarde: o.cargadoTarde,
         indicado: o.indicado,
-      }),
+      })),
     );
   }
   return carriles;

@@ -7,6 +7,7 @@
  * Es puro: lo leen las pruebas de `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
 import { COPY_FUERZA } from '@be/domain';
+import type { FichaDeLaLeyenda } from '../marcas';
 
 /** El período del historial (GR-T31): 12 semanas, 6 meses o desde que la acompañás, como mucho un año. */
 export type OpcionDePeriodo = 'DOCE_SEMANAS' | 'SEIS_MESES' | 'DESDE_EL_VINCULO';
@@ -47,6 +48,8 @@ export const COPY_FUERZA_ESTIMADA = {
   carril: COPY_FUERZA.nombreDeLaMetrica,
   metodo: COPY_FUERZA.metodo,
   incluir: 'Incluir las de más de 10 a 12 repeticiones equivalentes',
+  /** La línea tenue debajo del título: «kg · una estimación por sesión · del 24 ago a hoy» (el método lo suma la base). */
+  detalle: (unidad: string, periodo: string) => `${unidad} · una estimación por sesión · ${periodo}`,
   porVersion: 'Cada versión del plan',
   version: (etiqueta: string, desde: string) => `${etiqueta.replace(/^v/, 'Versión ')}, desde el ${desde}`,
   versionCorta: (etiqueta: string) => etiqueta.replace(/^v/, 'la versión '),
@@ -58,17 +61,11 @@ export const COPY_FUERZA_ESTIMADA = {
   /** El ruido de la versión del punto elegido, en la lectura del costado de «Analizar · Fuerza»: antes que la anterior. */
   ruidoDeLaVersion: (version: string, diferencia: string, unidad: string) => `Entre sesiones de ${version} aparecen diferencias de hasta ${diferencia} ${unidad}.`,
   ruidoDeLaVersionSinAlcanzar: (version: string) => `En ${version}, con menos de 4 sesiones de hasta 10 repeticiones equivalentes, todavía no alcanza para decir cuánto cambia entre sesiones.`,
-  /** «De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie.» */
-  cambio: (de: string, a: string, texto: string) => `De ${de} a ${a}, ${texto}.`,
-  unRirMueve: (carga: string, unidad: string, cuanto: string) => `Con Epley, un RIR de diferencia mueve la estimación en la carga sobre 30: con ${carga} ${unidad}, unos ${cuanto} ${unidad}.`,
-  extremos: (bajo: string, cuandoBajo: string, alto: string, cuandoAlto: string) => `El valor más bajo del período: ${bajo} (${cuandoBajo}); el más alto: ${alto} (${cuandoAlto}).`,
   descripcion: (n: number, bajo: string, alto: string) =>
     n === 1 ? `Una estimación en el período: ${bajo}.` : bajo === alto ? `${n} estimaciones en el período, todas de ${bajo}.` : `${n} estimaciones en el período, entre ${bajo} y ${alto}.`,
   lecturaOrientativa: 'orientativa',
   lecturaObservada: 'observada por vos',
-  sinIndicado: 'No pudimos leer lo que indicaba cada versión del plan: falta saber si cambió el RIR o las repeticiones indicadas.',
   sinPuntos: 'En este período no hay estimaciones de este ejercicio en esta unidad.',
-  comoSeCalculo: 'Cómo se calculó',
   comoSeCalculoTexto: [
     COPY_FUERZA.queEs,
     'Repeticiones equivalentes = repeticiones + RIR. Estimación = carga × (1 + repeticiones equivalentes / 30); con una sola repetición equivalente, la carga.',
@@ -78,9 +75,37 @@ export const COPY_FUERZA_ESTIMADA = {
   soloVos: 'Solo lo ves vos: la persona no ve estimaciones.',
 } as const;
 
+/**
+ * Las fichas de la leyenda de lo que no es un punto (pasada visual: lo que se ve en el dibujo está en la leyenda). La
+ * tira de abajo de cada gráfico de Entrenamiento tiene una marca por sesión, no por día; la línea cortada de GR-05 es lo
+ * que indicaba cada versión.
+ */
+export const FICHAS_DE_ENTRENAMIENTO = {
+  tiraDeLaFuerza: {
+    glifo: 'TIRA',
+    corto: 'Cada sesión',
+    largo: 'La tira de abajo del gráfico, una marca por sesión del ejercicio: entera con estimación, una raya baja sin estimación',
+  },
+  tiraDeLaSerie: {
+    glifo: 'TIRA',
+    corto: 'Cada sesión',
+    largo: 'La tira de abajo de cada panel, una marca por sesión: entera con el dato escrito, a media altura con algo que falta y una raya baja sin el dato',
+  },
+  escalon: {
+    glifo: 'LINEA_CORTADA',
+    corto: 'Indicado por versión',
+    largo: 'Línea cortada: el RIR que indicaba cada versión del plan para esta serie, del primer al último día con sesiones de esa versión',
+  },
+} as const satisfies Record<string, FichaDeLaLeyenda>;
+
+/** La ficha de la tira de GR-02 y la de GR-03, con nombres cortos para las pantallas. */
+export const FICHA_DE_LA_TIRA = { fuerza: FICHAS_DE_ENTRENAMIENTO.tiraDeLaFuerza, serie: FICHAS_DE_ENTRENAMIENTO.tiraDeLaSerie } as const;
+
 /** GR-03: carga, repeticiones y RIR de la misma serie, en tres paneles alineados. */
 export const COPY_CARGA_REPETICIONES_Y_RIR = {
   titulo: (serie: number) => `Carga, repeticiones y RIR de la serie ${serie}`,
+  /** La línea tenue: cada panel tiene su unidad, así que dice qué es cada punto y el período. */
+  detalle: (periodo: string) => `un punto por sesión, sin promediar · ${periodo}`,
   carga: (serie: number) => `Carga registrada en la serie ${serie}`,
   repeticiones: (serie: number) => `Repeticiones registradas en la serie ${serie}`,
   rir: (serie: number) => `RIR registrado en la serie ${serie}`,
@@ -124,7 +149,6 @@ export const COPY_RIR_INDICADO_Y_REGISTRADO = {
   sinVersion: (desde: string) => `las sesiones desde el ${desde}`,
   escalonEnLaLeyenda: 'Línea cortada: el RIR que indicaba cada versión del plan para esta serie, del primer al último día con sesiones de esa versión.',
   varia: 'Donde lo indicado cambia según la sesión, va como marca hueca en cada sesión y no como escalón.',
-  comoLeerlo: 'Cómo leerlo',
   comoLeerloTexto: [
     'El escalón es el RIR que indicaba cada versión del plan para esta serie; los puntos, el que escribió la persona. Están en el mismo panel porque tienen la misma unidad.',
     '«A igual carga» deja solo las sesiones con exactamente esa carga y esa unidad: así lo registrado se lee sin que cambie la carga de por medio.',
@@ -136,7 +160,9 @@ export const COPY_RIR_INDICADO_Y_REGISTRADO = {
 
 /** GR-06: el perfil de carga y repeticiones de la persona en el ejercicio. */
 export const COPY_PERFIL = {
-  titulo: (unidad: string) => `Perfil de carga y repeticiones · ${unidad}`,
+  /** El título, sin la unidad: la unidad y el período van en la línea tenue (DISENO-VISUAL §1, principio 1). */
+  titulo: 'Perfil de carga y repeticiones',
+  detalle: (unidad: string, periodo: string) => `${unidad} según las repeticiones equivalentes · una marca por serie · ${periodo}`,
   queEs: (unidad: string) => `En X, las repeticiones equivalentes de cada serie (repeticiones + RIR); en Y, la carga en ${unidad}. Un ejercicio y una unidad por gráfico.`,
   leyenda: 'Cómo se leen las marcas',
   lasCurvas: (rotulos: readonly string[]) =>
@@ -145,6 +171,8 @@ export const COPY_PERFIL = {
   ejeY: (unidad: string) => `Carga (${unidad})`,
   recientes: 'Últimas 4 semanas: punto lleno',
   anteriores: 'Antes: cruz',
+  /** La leyenda como fichas cortas: la forma la dice el glifo; el lector de pantalla oye el texto largo. */
+  leyendaCorta: { recientes: 'Últimas 4 semanas', anteriores: 'Antes', curva: 'Igual 1RM estimado, de la fórmula' },
   recientesCorto: 'últimas 4 semanas',
   anterioresCorto: 'antes',
   curva: 'Curva de igual 1RM estimado (Epley v1), de la fórmula: línea cortada',
@@ -153,6 +181,10 @@ export const COPY_PERFIL = {
   queSonLasCurvas: 'Las curvas son de la fórmula de Epley v1, no de la persona: cada una une las cargas que darían la misma estimación. Solo llegan hasta 12 repeticiones equivalentes.',
   sinCurvas: 'Este ejercicio no está en la lista de la estimación (Epley v1): van solo los puntos, sin las curvas de la fórmula.',
   queEntra: 'Entran solo las series que escribió la persona con RIR de 0 a 2: lo tildado sin escribir (carga rápida), lo que vino del plan y lo que no dice quién lo escribió quedan afuera.',
+  /** Lo que entra, en una línea a la vista (§5.6: el rango de validez a la vista); el detalle, en «Cómo leerlo». */
+  validez: 'Solo las series que escribió la persona, con RIR de 0 a 2.',
+  /** El rótulo de una curva adentro del dibujo: «≈ 145»; la unidad está en la línea tenue y «de la fórmula», en la leyenda. */
+  rotuloCortoDeLaCurva: (valor: string) => `≈ ${valor}`,
   fuera: (n: number) => (n === 1 ? '1 serie registrada no entra por eso.' : `${n} series registradas no entran por eso.`),
   lectura: (carga: string, repeticiones: number, rir: string, equivalentes: string, cuando: string) => `${carga} × ${repeticiones} · RIR ${rir} · ${equivalentes} repeticiones equivalentes · ${cuando}`,
   descripcion: (n: number, recientes: number) => `${n === 1 ? '1 serie' : `${n} series`} escritas por la persona; ${recientes === 1 ? '1 es' : `${recientes} son`} de las últimas 4 semanas.`,

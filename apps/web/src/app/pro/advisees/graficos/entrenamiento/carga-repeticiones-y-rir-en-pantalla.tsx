@@ -5,6 +5,10 @@
  * DL-174). Un panel por magnitud, con el mismo eje de fechas y la regla del cursor común: sin doble eje. El RIR indicado
  * de cada sesión va hueco en el panel del RIR. Un RIR sin escribir no es 0, y lo tildado sin escribir va hueco y gris.
  *
+ * Con la pasada visual (DISENO-VISUAL §2 «B · Entrenamiento»): la tira de abajo de cada panel va en la leyenda («Cada
+ * sesión»), junto a las marcas que se ven; lo que aclara cada marca (el RIR sin escribir, lo tildado, lo indicado) va en
+ * «Cómo leerlo»; a la vista queda solo lo que falta, si el comparador no se pudo leer.
+ *
  * Lee la carga, las repeticiones y el RIR del número de serie elegido (API-PRJ-01, por `leerSerieDelCatalogo`) y el
  * comparador (lo indicado y lo cargado después): en el historial, el que lee una vez `ProveedorDelComparador` para todos.
  */
@@ -13,13 +17,13 @@ import { useMemo } from 'react';
 import type { EstadoDeSerie } from '../../seguimiento/series';
 import { puntosDeLoIndicado } from '../adaptadores';
 import { COPY_DE_LOS_GRAFICOS as G } from '../copy';
-import { inicioDelEje } from '../eje-de-fechas';
+import { diaYMes, inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import { PanelesAlineados } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
 import { carrilesDeCargaRepeticionesYRir } from './carga-repeticiones-y-rir';
 import { cargadasDespues, fechasCargadasDespues, observacionesDelPeriodo } from './comparador';
-import { COPY_CARGA_REPETICIONES_Y_RIR as C } from './copy';
+import { COPY_CARGA_REPETICIONES_Y_RIR as C, FICHA_DE_LA_TIRA } from './copy';
 import { useComparador, useLecturaDeLaSerie } from './lecturas-del-ejercicio';
 
 const LEYENDA: readonly SentidoDeLaMarca[] = ['REGISTRADO', 'INDICADO', 'CARGA_RAPIDA'];
@@ -55,10 +59,24 @@ export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, b
   if (falla) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'ERROR', motivo: falla.motivo }} onReintentar={recargar} />;
   if (estados.some((e) => e.tipo === 'cargando')) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'CARGANDO' }} />;
   if (carriles.every((c) => c.puntos.every((p) => p.valor === null))) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'SIN_DATOS', texto: C.sinDatos(numero) }} />;
-  const notas = [C.sinRirEscrito, C.rirDelPlan, comparador.tipo === 'error' ? C.sinIndicado : C.indicadoHueco, ...(comparador.tipo === 'lista' && comparador.enTramos ? [G.leidoEnTramos] : [])];
+  // A la vista, solo lo que falta (el RIR indicado, si el comparador no se leyó); lo que aclara cada marca, en «Cómo leerlo».
+  const notas = comparador.tipo === 'error' ? [C.sinIndicado] : [];
+  const aclaraciones = [C.sinRirEscrito, C.rirDelPlan, ...(comparador.tipo === 'error' ? [] : [C.indicadoHueco]), ...(comparador.tipo === 'lista' && comparador.enTramos ? [G.leidoEnTramos] : [])];
+  const conTira = carriles.some((c) => c.cobertura.length > 0);
   return (
     <section className="grafico-de-entrenamiento" aria-label={C.titulo(numero)} data-grafico="GR-03">
-      <PanelesAlineados titulo={C.titulo(numero)} periodo={periodo} carriles={carriles} bandas={bandas} densidad={densidad} leyenda={LEYENDA} notas={notas} />
+      <PanelesAlineados
+        titulo={C.titulo(numero)}
+        periodo={periodo}
+        carriles={carriles}
+        bandas={bandas}
+        densidad={densidad}
+        leyenda={LEYENDA}
+        fichas={conTira ? [FICHA_DE_LA_TIRA.serie] : []}
+        detalle={C.detalle(G.periodo(diaYMes(inicioDelEje(periodo), periodo.hoy), periodo.hasta >= periodo.hoy ? null : diaYMes(periodo.hasta, periodo.hoy)))}
+        notas={notas}
+        aclaraciones={aclaraciones}
+      />
     </section>
   );
 }

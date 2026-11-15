@@ -82,6 +82,12 @@ export interface CarrilDePuntos {
   readonly cobertura: readonly { readonly fecha: string; readonly estado: EstadoDelDiaEnLaTira }[];
   /** El resumen en texto, para el lector de pantalla. */
   readonly descripcion: string;
+  /**
+   * Un punto por sesión, no por día (Entrenamiento, rama B): la marca se mide con el lugar de una sesión y no con el ancho
+   * de un día, para que se vea sobre la línea en 12 semanas o en un año (DISENO-VISUAL §1, principio 7: lo que dice la
+   * leyenda se ve en el dibujo). Sin esto, la marca sigue al ancho del día, como siempre.
+   */
+  readonly porSesion?: boolean;
 }
 
 export interface SemanaDelCarril {

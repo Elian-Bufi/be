@@ -12,6 +12,10 @@
  *
  * Las series salen del comparador (API-TRN-21 y API-SER-01): todas las series de cada sesión, con su procedencia (GR-T36).
  *
+ * Con la pasada visual (DISENO-VISUAL §2 «B · Entrenamiento»): los dos ejes se ajustan a los datos, con un margen, y van
+ * con 3 a 5 marcas redondas (`marcasRedondas` de la base): los puntos ya no quedan apiñados en un eje de 0 a 12. Las
+ * curvas se recortan al dibujo y cada una lleva su rótulo donde sale de él (`dondeSeRotulaLaCurva`).
+ *
  * Es puro: lo prueba `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
 import {
@@ -22,8 +26,8 @@ import {
   type ObservacionDeEvolucion,
   type SerieEjecutadaApi,
 } from '@be/domain';
-import { extremosDelEje } from '../../seguimiento/geometria';
 import { textoDeLaMarca } from '../eje-de-fechas';
+import { marcasRedondas, type MarcasDelEje } from '../ejes';
 import { COPY_PERFIL as C } from './copy';
 import { mediana } from './comparador';
 import { rangoMinimoDeLaFuerza } from './fuerza-estimada';
@@ -171,18 +175,29 @@ export interface CajaDelPerfil {
 export interface GeometriaDelPerfil {
   readonly x: (equivalentes: number) => number;
   readonly y: (carga: number) => number;
-  readonly maximoX: number;
-  readonly extremos: { readonly abajo: number; readonly arriba: number; readonly decimales: number };
+  /** El eje X: las repeticiones equivalentes de los datos, con una de margen a cada lado (enteros). */
+  readonly ejeX: MarcasDelEje;
+  /** El eje Y: la carga de los datos con un margen, el rango mínimo del 1RM estimado (10 kg o 22 lb) y marcas redondas. */
+  readonly extremos: MarcasDelEje;
   readonly marcasX: readonly { readonly valor: number; readonly x: number }[];
   readonly marcasY: readonly { readonly valor: number; readonly y: number }[];
 }
 
+/** El margen de la carga, arriba y abajo de los datos: una fracción del rango, para que ningún punto quede en el borde. */
+const MARGEN_DE_LA_CARGA = 0.08;
+
 /**
- * Las escalas del perfil: en X, de 0 a 12 repeticiones equivalentes (o al máximo, si hay más); en Y, la carga de los
- * puntos con el mismo rango mínimo que el 1RM estimado (10 kg o 22 lb), para que dos kilos no parezcan una pendiente.
+ * Las escalas del perfil, ajustadas a los datos (DISENO-VISUAL §2: «GR-06 ajusta el eje a los datos, con un margen»):
+ * - **En X,** las repeticiones equivalentes de los puntos, con una de margen a cada lado (nunca menos de 0), en marcas
+ *   redondas y enteras. Antes iba siempre de 0 a 12, y con series de 3 a 6 los puntos quedaban apiñados a la izquierda.
+ * - **En Y,** la carga de los puntos con un margen, y el mismo rango mínimo que el 1RM estimado (10 kg o 22 lb), para que
+ *   dos kilos no parezcan una pendiente; las marcas, de 3 a 5, redondas y sin repetir.
  */
 export function geometriaDelPerfil(puntos: readonly PuntoDelPerfil[], unidad: 'kg' | 'lb', caja: CajaDelPerfil): GeometriaDelPerfil {
-  const maximoX = Math.max(TOPE_DE_LA_ESTIMACION, Math.ceil(Math.max(0, ...puntos.map((p) => p.equivalentes))));
+  const equivalentes = puntos.map((p) => p.equivalentes);
+  const minimoX = equivalentes.length > 0 ? Math.min(...equivalentes) : 1;
+  const maximoX = equivalentes.length > 0 ? Math.max(...equivalentes) : TOPE_DE_LA_ESTIMACION;
+  const ejeX = marcasRedondas(Math.max(0, Math.floor(minimoX) - 1), Math.ceil(maximoX) + 1, { enteros: true });
   const cargas = puntos.map((p) => p.carga);
   let minimo = cargas.length > 0 ? Math.min(...cargas) : 0;
   let maximo = cargas.length > 0 ? Math.max(...cargas) : 1;
@@ -192,15 +207,39 @@ export function geometriaDelPerfil(puntos: readonly PuntoDelPerfil[], unidad: 'k
     minimo = Math.max(0, centro - rango / 2);
     maximo = minimo + rango;
   }
-  const extremos = extremosDelEje(minimo, maximo, 2, false);
+  const margen = (maximo - minimo) * MARGEN_DE_LA_CARGA;
+  const extremos = marcasRedondas(Math.max(0, minimo - margen), maximo + margen);
   const ancho = Math.max(1, caja.derecha - caja.izquierda);
   const alto = Math.max(1, caja.abajo - caja.arriba);
-  const x = (n: number): number => caja.izquierda + (n / maximoX) * ancho;
+  const x = (n: number): number => caja.izquierda + ((n - ejeX.abajo) / (ejeX.arriba - ejeX.abajo || 1)) * ancho;
   const y = (c: number): number => caja.abajo - ((c - extremos.abajo) / (extremos.arriba - extremos.abajo || 1)) * alto;
-  const pasoX = maximoX <= 12 ? 2 : 4;
-  const marcasX = Array.from({ length: Math.floor(maximoX / pasoX) + 1 }, (_, i) => i * pasoX).map((valor) => ({ valor, x: x(valor) }));
-  const medio = (extremos.abajo + extremos.arriba) / 2;
-  const medioSeEscribe = Math.abs(Number(medio.toFixed(extremos.decimales)) - medio) < 1e-9;
-  const marcasY = [extremos.abajo, ...(medioSeEscribe ? [medio] : []), extremos.arriba].map((valor) => ({ valor, y: y(valor) }));
-  return { x, y, maximoX, extremos, marcasX, marcasY };
+  return {
+    x,
+    y,
+    ejeX,
+    extremos,
+    marcasX: ejeX.valores.map((valor) => ({ valor, x: x(valor) })),
+    marcasY: extremos.valores.map((valor) => ({ valor, y: y(valor) })),
+  };
+}
+
+/**
+ * Dónde se rotula una curva de la fórmula: el último lugar de la curva (de menos a más repeticiones equivalentes) que
+ * queda adentro del dibujo, o `null` si no pasa por él. Así el rótulo va donde la curva sale del dibujo, a la derecha o
+ * abajo, y no en un margen donde ya no está.
+ */
+export function dondeSeRotulaLaCurva(curva: Pick<CurvaDeLaFormula, 'puntos'>, g: Pick<GeometriaDelPerfil, 'x' | 'y'>, caja: CajaDelPerfil): { readonly x: number; readonly y: number } | null {
+  const adentro = (px: number, py: number): boolean => px >= caja.izquierda - 0.5 && px <= caja.derecha + 0.5 && py >= caja.arriba - 0.5 && py <= caja.abajo + 0.5;
+  let ultimo: { x: number; y: number } | null = null;
+  const pantalla = curva.puntos.map((p) => ({ x: g.x(p.equivalentes), y: g.y(p.carga) }));
+  for (let i = 0; i < pantalla.length; i++) {
+    const a = pantalla[i]!;
+    const b = pantalla[i + 1] ?? a;
+    for (let t = 0; t <= 1; t += 0.05) {
+      const px = a.x + (b.x - a.x) * t;
+      const py = a.y + (b.y - a.y) * t;
+      if (adentro(px, py)) ultimo = { x: px, y: py };
+    }
+  }
+  return ultimo;
 }

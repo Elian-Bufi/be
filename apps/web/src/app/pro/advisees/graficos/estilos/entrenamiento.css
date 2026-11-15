@@ -57,29 +57,14 @@
   gap: 0.5rem;
 }
 
-/* Cada gráfico de Entrenamiento: lo que va arriba (la primera línea), el gráfico y lo que va debajo. */
+/*
+ * Cada gráfico de Entrenamiento (con la pasada visual del 15/11): el gráfico de la base y, debajo, lo que va a la vista (el
+ * interruptor, cada versión con su ruido, lo que se ve), compacto y en la letra de las notas.
+ */
 .grafico-de-entrenamiento {
   display: grid;
   gap: 0.5rem;
   min-width: 0;
-}
-
-/*
- * GR-02: la primera línea dice que lo indicado cambió entre versiones, antes del gráfico. Va con borde y no con color de
- * aviso: es un dato para leer la estimación, no una alarma.
- */
-.grafico-de-entrenamiento__primera-linea {
-  margin: 0;
-  padding: 0.5rem 0.75rem 0.5rem 1.75rem;
-  border: 1px solid var(--borde);
-  border-left-width: 4px;
-  border-radius: 8px;
-  background: var(--fondo-suave);
-  font-size: 0.875rem;
-}
-
-.grafico-de-entrenamiento__primera-linea li + li {
-  margin-top: 0.25rem;
 }
 
 .grafico-de-entrenamiento__interruptor {
@@ -88,39 +73,37 @@
 
 .grafico-de-entrenamiento__subtitulo {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
 .grafico-de-entrenamiento__por-version ul,
 .grafico-de-entrenamiento__lo-que-se-ve {
-  margin: 0.25rem 0 0;
+  margin: 0.125rem 0 0;
   padding-inline-start: 1.25rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--texto);
+}
+
+.grafico-de-entrenamiento__lo-que-se-ve {
+  margin: 0;
 }
 
 .grafico-de-entrenamiento__por-version li + li,
 .grafico-de-entrenamiento__lo-que-se-ve li + li {
-  margin-top: 0.25rem;
+  margin-top: 0.125rem;
 }
 
 .grafico-de-entrenamiento__filtro {
   max-width: 20rem;
 }
 
-.grafico-de-entrenamiento__como {
-  font-size: 0.875rem;
-}
-
-/* El triángulo de la marca queda (`list-item`): el alto de toque sale del relleno. */
-.grafico-de-entrenamiento__como summary {
-  padding-block: 0.625rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.grafico-de-entrenamiento__como p {
-  margin: 0.25rem 0 0;
+/*
+ * La cinta del cuadro del ejercicio: la lectura viva vacía no guarda su renglón (sin nada elegido, abajo va la nota que
+ * dice cómo elegir); al elegir un hecho, la lectura ocupa su lugar.
+ */
+.historial-del-ejercicio .grafico-cinta .grafico-base__lectura:empty {
+  min-height: 0;
 }
 
 /* GR-06: la dispersión, con el foco del teclado visible como en los paneles alineados (`grafico-base__area`). */
