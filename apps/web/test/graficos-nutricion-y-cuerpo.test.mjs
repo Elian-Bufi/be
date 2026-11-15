@@ -850,3 +850,323 @@ test('TEST-GRF-059 · la tabla dice con palabras lo que dice la forma: la masa c
     ['NUTRICION', 'ANTROPOMETRIA'],
   );
 });
+
+// ─── La pasada visual de la rama C (15/11; DISENO-VISUAL §1 y §2 «C»; WP-GRAFICOS §13.4): TEST-GRVC-001 a 008 ───────
+
+const PS = await import('../src/app/pro/advisees/graficos/nutricion/por-semana.ts');
+const SEMANAS = await import('../src/app/pro/advisees/graficos/semanas.ts');
+
+/** Siete días seguidos desde un lunes, con un valor cada uno (o lo que diga `cambio`). */
+const semanaDe = (lunes, valor, cambio = {}) =>
+  Array.from({ length: 7 }, (_, i) => {
+    const fecha = new Date(Date.parse(`${lunes}T12:00:00Z`) + i * 86_400_000).toISOString().slice(0, 10);
+    return cambio[fecha] === undefined ? dia(fecha, valor) : cambio[fecha];
+  }).filter((p) => p !== null);
+
+test('TEST-GRVC-001 · Nutrición por semana: la media de la semana (v1) como barra, llena solo con los siete días, una semana sin media es una columna gris y nunca una barra en cero, hoy no cuenta y GR-12, GR-13 y GR-14 dicen la misma media (mutaciones: dibujar la semana sin media en cero; llenar la barra con 6 de 7)', () => {
+  // Tres semanas: la primera entera, la segunda con un subtotal (6 de 7), la tercera con 2 días (sin media) y hoy adentro.
+  const puntos = [
+    ...semanaDe('2026-10-19', 2000),
+    ...semanaDe('2026-10-26', 2100, { '2026-10-28': subtotal('2026-10-28', 900, 'SIN_CANTIDADES') }),
+    dia('2026-11-02', 1800),
+    dia('2026-11-03', 1900),
+  ];
+  const g = G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos), cargadoTarde: new Set(), desde: '2026-10-19', hasta: '2026-11-05', hoy: '2026-11-05' });
+  const [entera, conUnoAfuera, corta] = g.paneles[0].semanas;
+  assert.deepEqual([entera.valor, entera.entera], [2000, true], 'siete días, todos con todo registrado: llena');
+  assert.deepEqual([conUnoAfuera.valor, conUnoAfuera.entera], [2100, false], 'con un subtotal afuera, hueca (mutación: llenarla con 6 de 7)');
+  assert.match(conUnoAfuera.texto, /con 6 de 7 días; 1 con cantidades faltantes/);
+  assert.equal(corta.valor, null, 'dos días no alcanzan: sin media');
+  assert.match(corta.texto, /^sin media: hacen falta 4 días/);
+  assert.match(corta.texto, /hoy no cuenta/);
+  // En el dibujo: dos barras desde cero y una columna gris de todo el alto, nunca una barra en cero.
+  const e = escala('2026-10-19', '2026-11-05');
+  const geo = L.geometriaDeValores(g.paneles[0], e, 240, 'SEMANA');
+  assert.equal(geo.barras.length, 2);
+  assert.equal(geo.vacias.length, 1, 'la semana sin media es una columna');
+  assert.ok(!geo.barras.some((b) => b.valor === 0), 'ninguna barra en cero (mutación: dibujarla en cero)');
+  assert.equal(geo.extremos.abajo, 0);
+  assert.ok(geo.barras.every((b) => b.base > b.y && b.x2 > b.x1));
+  // Dos semanas seguidas no se pegan: hay aire entre una barra y la siguiente.
+  assert.ok(geo.barras[0].x2 < geo.barras[1].x1);
+  // La tira de cada día: con todo, con algo que falta, sin registros y hoy aparte.
+  const tira = new Map(g.paneles[0].cobertura.map((d) => [d.fecha, d.estado]));
+  assert.equal(tira.get('2026-10-19'), 'con');
+  assert.equal(tira.get('2026-10-28'), 'hueco');
+  assert.equal(tira.get('2026-11-04'), 'sin');
+  assert.equal(tira.get('2026-11-05'), 'hoy');
+  // La lectura de cada semana dice su media con sus días; de entrada, la última con media.
+  assert.equal(g.porSemana.tramos.length, 3);
+  assert.equal(L.tramoDeEntrada(g.porSemana.tramos).desde, '2026-10-26');
+  assert.equal(PS.nombreDelTramo(g.porSemana.tramos[0]), 'Semana del 19 oct');
+  assert.equal(PS.nombreDelTramo(g.porSemana.tramos[2]), 'Del 2 al 5 nov', 'la semana cortada por el período dice sus días');
+  // La leyenda de «Por semana», solo con lo que se ve: llena, hueca, sin media y los días.
+  assert.deepEqual(
+    g.porSemana.leyenda.map((x) => x.clave),
+    ['semana-entera', 'semana-hueca', 'sin-media', 'cada-dia'],
+  );
+  const soloEnteras = G12.graficoDeEnergia({ resultado: resultado('ENERGY', semanaDe('2026-10-19', 2000)), cargadoTarde: new Set(), desde: '2026-10-19', hasta: '2026-10-25', hoy: '2026-11-05' });
+  assert.deepEqual(
+    soloEnteras.porSemana.leyenda.map((x) => x.clave),
+    ['semana-entera', 'cada-dia'],
+    'sin semanas huecas ni sin media, esas fichas no van',
+  );
+  // GR-13 y GR-14 usan la misma media de la semana que GR-12: el mismo número para la misma semana.
+  const macros = G13.graficoDeMacros({ resultados: G13.MACROS_DEL_GRAFICO.map((m) => resultado(m.metrica, puntos)), macros: G13.MACROS_DEL_GRAFICO, cargadoTarde: new Set(), desde: '2026-10-19', hasta: '2026-11-05', hoy: '2026-11-05' });
+  assert.deepEqual(
+    macros.paneles[0].semanas.map((s) => s.valor),
+    g.paneles[0].semanas.map((s) => s.valor),
+  );
+  const comparacion = G14.graficoDeLaComparacion({ resultados: G14.METRICAS_DE_LA_COMPARACION.map((m) => resultado(m.metrica, puntos)), contraste: null, desde: '2026-10-19', hasta: '2026-11-05', hoy: '2026-11-05', enTramos: false });
+  assert.deepEqual(
+    comparacion.paneles[0].semanas.map((s) => s.valor),
+    g.paneles[0].semanas.map((s) => s.valor),
+  );
+  // De entrada por semana solo con más de seis semanas (la regla de la base); con menos, día por día.
+  assert.equal(SEMANAS.convienePorSemana('2026-08-01', '2026-11-05'), true);
+  assert.equal(SEMANAS.convienePorSemana('2026-10-07', '2026-11-05'), false);
+  sinPalabrasProhibidas([...textosDe(g), ...textosDe(macros), ...textosDe(comparacion)], ['NUTRICION']);
+});
+
+test('TEST-GRVC-002 · GR-14 por semana: lo indicado de los días de la semana sin promediarlo y sin diferencia (va solo día por día); sin indicado del día, una sola línea a la vista y el párrafo en «Cómo leerlo»; los g/kg van solo día por día (mutaciones: restar dos medias; llevar el párrafo entero a la vista)', () => {
+  const indicado = (fecha, valor) => ({ date: fecha, state: 'DETERMINED', value: valor, planVersionId: 'v1', dayTypeId: 'dt', dayType: 'Día habitual' });
+  const conOpciones = (fecha) => ({ date: fecha, state: 'UNDETERMINED', reason: 'SEVERAL_OPTIONS', planVersionId: 'v1', mealsWithSeveralOptions: [{ meal: 'Almuerzo', options: 2 }] });
+  const puntos = semanaDe('2026-11-02', 2000);
+  const dias = [indicado('2026-11-02', 2100), indicado('2026-11-03', 2200), indicado('2026-11-04', 2100)];
+  const resultados = G14.METRICAS_DE_LA_COMPARACION.map((m, i) => resultado(m.metrica, i === 0 ? puntos : [], i === 0 ? { dias } : {}));
+  const g = G14.graficoDeLaComparacion({ resultados, contraste: null, desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-10', enTramos: false });
+  const [energia] = g.porSemana.tramos[0].textos;
+  assert.match(energia, /^2\.000 kcal por día de media · con 7 de 7 días · indicado del día de 2\.100 kcal a 2\.200 kcal en 3 días$/);
+  assert.doesNotMatch(energia, /diferencia|[+−]\d/, 'por semana no hay diferencia: restar dos medias de días distintos no es una diferencia');
+  assert.ok(g.porSemana.aclaraciones.includes(COPY_NUTRICION_EN_GRAFICOS.indicadoYRegistrado.laDiferenciaVaDiaPorDia));
+  assert.ok(g.porSemana.leyenda.some((x) => x.clave === 'indicado'), 'los rombos tenues de lo indicado están en la leyenda de la semana');
+  // Por semana no hay uniones ni líneas: los días van sueltos detrás de la barra.
+  const geo = L.geometriaDeValores(g.paneles[0], escala('2026-11-02', '2026-11-08'), 140, 'SEMANA');
+  assert.equal(geo.uniones.length, 0);
+  assert.equal(geo.lineas.length, 0);
+  // Sin indicado del día en todo el período: una sola línea, corta, a la vista; el párrafo del dominio, en «Cómo leerlo».
+  const sinIndicado = G14.graficoDeLaComparacion({
+    resultados: G14.METRICAS_DE_LA_COMPARACION.map((m, i) => resultado(m.metrica, i === 0 ? puntos : [], i === 0 ? { dias: [conOpciones('2026-11-02'), conOpciones('2026-11-03')] } : {})),
+    contraste: null,
+    desde: '2026-11-02',
+    hasta: '2026-11-08',
+    hoy: '2026-11-10',
+    enTramos: false,
+  });
+  const linea = sinIndicado.notas.find((n) => n.startsWith('Sin indicado del día'));
+  assert.equal(linea, 'Sin indicado del día en estas fechas: comidas con varias opciones.');
+  assert.ok(!sinIndicado.notas.some((n) => n.includes('«Ver origen»')), 'el párrafo entero no va a la vista');
+  assert.ok(sinIndicado.aclaraciones.some((n) => n.includes('«Ver origen»')), 'va en «Cómo leerlo»');
+  assert.ok(!sinIndicado.aclaraciones.includes(COPY_NUTRICION_EN_GRAFICOS.indicadoYRegistrado.comoSeLeeLaDiferencia), 'sin indicado, no se explica una diferencia que no hay');
+  // Los g/kg van solo día por día: una media de la semana mezclaría dos pesos sin decirlo.
+  const pesos = [{ clave: 'm:a', fecha: '2026-11-01', en: null, valor: 80 }];
+  const porKilo = G13.graficoDeMacrosPorKilo({ resultados: G13.MACROS_POR_KILO.map((m) => resultado(m.metrica, puntos)), macros: G13.MACROS_POR_KILO, cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-08', pesos, pesoBuscadoDesde: null });
+  assert.equal(porKilo.porSemana, null);
+  assert.ok(porKilo.paneles.every((p) => p.tipo === 'VALORES' && p.semanas.length === 0));
+  assert.ok(porKilo.aclaraciones.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.soloDiaPorDia));
+  sinPalabrasProhibidas([...textosDe(g), ...textosDe(sinIndicado)], ['NUTRICION']);
+  sinPalabrasProhibidas(textosDe(porKilo), ['NUTRICION', 'ANTROPOMETRIA']);
+});
+
+test('TEST-GRVC-003 · sin rótulo en cada punto: el elegido, el último y los extremos de lo lleno, sin pisarse; con dos métodos, el elegido y el último de cada uno; la diferencia de GR-14 solo en la fecha elegida y la última; por semana, la media de la semana elegida (mutación: rotular todos los puntos)', () => {
+  const e = escala('2026-11-02', '2026-11-29');
+  const marca = (clave, fecha, valor, extra = {}) => ({ clave, serie: 'registrado', fecha, en: null, valor, marca: 'LLENA', forma: 'CIRCULO', color: 0, tarde: false, tramo: 't', ...extra });
+  const fechas = Array.from({ length: 20 }, (_, i) => new Date(Date.parse('2026-11-02T12:00:00Z') + i * 86_400_000).toISOString().slice(0, 10));
+  const panel = {
+    tipo: 'VALORES',
+    id: 'p',
+    nombre: 'Prueba',
+    unidad: 'kcal',
+    metodo: null,
+    escala: { enteros: true, desdeCero: true },
+    marcas: fechas.map((f, i) => (i === 3 ? marca(`m${i}`, f, 500, { marca: 'HUECA' }) : marca(`m${i}`, f, 2000 + (i % 5) * 100))),
+    uniones: [],
+    escalones: [],
+    semanas: [],
+    cobertura: [],
+  };
+  const geo = L.geometriaDeValores(panel, e, 240);
+  const sinElegir = L.rotulosDelPanel(geo, e, 240, null, 'DIA', 16);
+  assert.ok(sinElegir.length >= 1 && sinElegir.length <= 3, `pocos rótulos, no uno por punto: ${sinElegir.length} (mutación: rotularlos todos)`);
+  assert.ok(sinElegir.some((r) => r.clave === 'm19'), 'el último lleva su número');
+  assert.ok(!sinElegir.some((r) => r.clave === 'm3'), 'un subtotal no se rotula como el mínimo del período');
+  const conElegido = L.rotulosDelPanel(geo, e, 240, fechas[7], 'DIA', 16);
+  assert.equal(conElegido[0].clave, 'm7', 'el elegido va primero');
+  for (const lista of [sinElegir, conElegido])
+    for (let i = 0; i < lista.length; i++)
+      for (let j = i + 1; j < lista.length; j++) {
+        const a = lista[i].caja;
+        const b = lista[j].caja;
+        assert.ok(a.x2 <= b.x1 || b.x2 <= a.x1 || a.y2 <= b.y1 || b.y2 <= a.y1, 'dos rótulos no se pisan');
+      }
+  // Dos métodos en el mismo panel (GR-20): el elegido y el último de cada uno, sin el máximo de los dos juntos.
+  const dosMetodos = {
+    ...panel,
+    marcas: [
+      marca('d1', '2026-11-03', 14, { serie: 'dw', tramo: null }),
+      marca('d2', '2026-11-20', 13.5, { serie: 'dw', tramo: null }),
+      marca('f1', '2026-11-03', 12, { serie: 'fk', forma: 'CUADRADO', color: 1, tramo: null }),
+      marca('f2', '2026-11-20', 11.8, { serie: 'fk', forma: 'CUADRADO', color: 1, tramo: null }),
+    ],
+  };
+  const geo2 = L.geometriaDeValores(dosMetodos, e, 140);
+  const r2 = L.rotulosDelPanel(geo2, e, 140, null, 'DIA', 16).map((r) => r.clave);
+  assert.ok(r2.includes('d2') && r2.includes('f2'), 'el último de cada método');
+  assert.ok(!r2.includes('d1') && !r2.includes('f1'), 'sin elegir, nada más');
+  // La diferencia de GR-14: solo en la fecha elegida y en la última, no en cada día.
+  const conUniones = {
+    ...panel,
+    marcas: fechas.slice(0, 6).map((f, i) => marca(`r${i}`, f, 2000 + i * 10)),
+    uniones: fechas.slice(0, 6).map((f, i) => ({ clave: `u${i}`, fecha: f, en: null, desde: 1900, hasta: 2000 + i * 10, rotulo: `+${100 + i * 10} kcal`, forma: 'DIFERENCIA' })),
+  };
+  const geo3 = L.geometriaDeValores(conUniones, e, 240);
+  const diferencias = L.rotulosDelPanel(geo3, e, 240, fechas[2], 'DIA', 16).filter((r) => r.clave.startsWith('u:'));
+  assert.ok(diferencias.length >= 1 && diferencias.length <= 2, 'una o dos diferencias, no una por día');
+  for (const d of diferencias) assert.ok(['+120 kcal', '+150 kcal'].includes(d.texto), `la del día elegido y la del último: ${d.texto}`);
+  // Por semana: la media de la semana elegida (o, sin elegir, la de la última con media), arriba de su barra.
+  const g = G12.graficoDeEnergia({ resultado: resultado('ENERGY', [...semanaDe('2026-11-02', 2000), ...semanaDe('2026-11-09', 2100)]), cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-15', hoy: '2026-11-20' });
+  const e2 = escala('2026-11-02', '2026-11-15');
+  const geoS = L.geometriaDeValores(g.paneles[0], e2, 240, 'SEMANA');
+  assert.deepEqual(
+    L.rotulosDelPanel(geoS, e2, 240, null, 'SEMANA', 16).map((r) => r.texto),
+    ['2.100'],
+  );
+  assert.deepEqual(
+    L.rotulosDelPanel(geoS, e2, 240, '2026-11-04', 'SEMANA', 16).map((r) => r.texto),
+    ['2.000'],
+  );
+});
+
+test('TEST-GRVC-004 · lo que §5 pide a la vista no se esconde en «Cómo leerlo»: el método en la línea tenue, lo cargado después, lo de otro profesional, una proporción que no se dibuja y los pesos de los g/kg; lo que aclara va a «Cómo leerlo» (mutación: llevar lo cargado después o los pesos usados a «Cómo leerlo»)', () => {
+  const objetivo = [{ objectiveVersionId: 'o2', from: '2026-11-01', to: null, amount: null, energyShare: 30 }];
+  const puntos = [dia('2026-11-02', 2000), dia('2026-11-03', 2100), dia('2026-11-04', 1900)];
+  const g = G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos, { objetivo }), cargadoTarde: new Set(['2026-11-03']), desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-09', parcial: true });
+  assert.equal(g.metodo, COPY_NUTRICION_EN_GRAFICOS.metodoDeLaSuma, 'el método va a la línea tenue (§5.6)');
+  assert.ok(g.notas.includes('1 de 3 días con registros cargados después.'), 'lo cargado después, a la vista (§5.14)');
+  assert.ok(g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.deOtroProfesional));
+  assert.ok(g.notas.some((n) => n.includes('(proporción): BE no la convierte a gramos ni la dibuja')), 'lo que no se dibuja se dice a la vista');
+  for (const n of g.notas) assert.ok(!g.aclaraciones.includes(n), `una nota no va dos veces: ${n}`);
+  assert.ok(g.aclaraciones.some((n) => n.startsWith(COPY_NUTRICION_EN_GRAFICOS.metodoDeLaSuma)), 'el método entero, en «Cómo leerlo»');
+  assert.ok(g.aclaraciones.includes(COPY_NUTRICION_EN_GRAFICOS.diaSinRegistros));
+  assert.ok(!g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.diaSinRegistros), 'el dibujo ya lo muestra: la explicación va a «Cómo leerlo»');
+  // Los g/kg: los pesos usados y los días sin peso, a la vista; la regla del peso, en «Cómo leerlo».
+  const pesos = [{ clave: 'm:a', fecha: '2026-11-03', en: null, valor: 80 }];
+  const porKilo = G13.graficoDeMacrosPorKilo({ resultados: G13.MACROS_POR_KILO.map((m) => resultado(m.metrica, puntos)), macros: G13.MACROS_POR_KILO, cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-08', pesos, pesoBuscadoDesde: '2025-11-02' });
+  assert.equal(porKilo.metodo, COPY_NUTRICION_EN_GRAFICOS.porKilo.metodo);
+  assert.ok(porKilo.notas.includes('Pesos usados: 80 kg (toma del 3/11).'), 'los pesos usados, a la vista');
+  assert.ok(porKilo.notas.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.diasSinPeso(1)));
+  assert.ok(porKilo.notas.includes('El peso anterior se buscó desde el 2/11/2025.'), 'con días sin peso, desde cuándo se buscó va a la vista');
+  assert.ok(porKilo.aclaraciones.some((n) => n.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.reglaDelPeso)));
+  // La leyenda: una ficha corta a la vista y el texto entero, con la forma, para el lector de pantalla.
+  for (const x of [g, porKilo]) for (const f of x.leyenda) assert.ok(f.texto.length <= 30 && f.largo.length > f.texto.length, `${f.texto} / ${f.largo}`);
+  sinPalabrasProhibidas([...textosDe(g)], ['NUTRICION']);
+});
+
+test('TEST-GRVC-005 · GR-20: con menos de 4 tomas va como tabla a la vista; nunca nombra un método que no aparece; «por construcción» solo con los dos métodos, y el error de medición siempre a la vista (mutaciones: nombrar a Faulkner sin datos; dibujar dos puntitos)', () => {
+  const dw = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f29';
+  const fk = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f1c';
+  const calculada = { dataClass: 'DERIVED' };
+  const tomasDe = (fechas, metodos) =>
+    TOMAS.observacionesDeLasTomas([
+      evolucion(metodos.map((m) => metrica(m.codigo, fechas.map((f, i) => toma(`${m.codigo}${i}`, `ev${i}`, f, m.valor + i * 0.1, m.grupo, 'kg', calculada)), [grupo(m.grupo, 'isak', 'kg', m.metodo)]))),
+    ]);
+  const soloDW = [
+    { codigo: 'masa-grasa-durnin-womersley', valor: 15, grupo: 'g1', metodo: dw },
+    { codigo: 'masa-libre-de-grasa-durnin-womersley', valor: 64, grupo: 'g2', metodo: dw },
+  ];
+  const dos = M.graficoDeMasas(tomasDe(['2026-09-30', '2026-11-12'], soloDW), '2026-08-18', '2026-11-15', { parcial: false, enTramos: false });
+  assert.equal(dos.comoTabla, true, 'con dos tomas, tabla (mutación: dibujar dos puntitos)');
+  assert.ok(dos.aclaraciones.some((n) => n.startsWith('Con 2 tomas va como tabla')));
+  const todos = [...textosDe(dos), ...dos.tabla.columnas.map((c) => c.nombre)];
+  assert.ok(!todos.some((t) => /Faulkner/.test(t)), `Faulkner no aparece y no se nombra: ${todos.filter((t) => /Faulkner/.test(t)).join(' | ')}`);
+  assert.ok(!dos.notas.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.porConstruccion), 'sin los dos métodos, no hay «por construcción»');
+  assert.ok(dos.notas.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.sinErrorDeMedicion), 'el error de medición, a la vista (§5.7)');
+  assert.deepEqual(
+    dos.leyenda.map((f) => f.texto),
+    ['Durnin y Womersley'],
+    'una ficha por método, aunque esté en dos paneles',
+  );
+  assert.deepEqual(
+    dos.tabla.columnas.map((c) => c.nombre),
+    ['Masa grasa según Durnin y Womersley', 'Masa libre de grasa según Durnin y Womersley'],
+    'sin la columna de un método ausente ni la de la separación',
+  );
+  // Con 4 tomas y los dos métodos, va como gráfico, con «por construcción» a la vista y la separación.
+  const ambos = [soloDW[0], { codigo: 'masa-grasa-faulkner', valor: 12, grupo: 'g3', metodo: fk }];
+  const cuatro = M.graficoDeMasas(tomasDe(['2026-08-20', '2026-09-20', '2026-10-20', '2026-11-12'], ambos), '2026-08-18', '2026-11-15', { parcial: false, enTramos: false });
+  assert.equal(cuatro.comoTabla, false);
+  assert.ok(cuatro.notas.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.porConstruccion));
+  assert.ok(cuatro.tabla.columnas.some((c) => c.id === 'masa-grasa:separacion'));
+  assert.equal(cuatro.metodo, COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.metodo, 'cada número con su método: en la línea tenue');
+  sinPalabrasProhibidas([...textosDe(dos), ...textosDe(cuatro)], ['ANTROPOMETRIA']);
+});
+
+test('TEST-GRVC-006 · GR-18: el nombre de cada sitio entero (en dos renglones si no entra, nunca con «…»), la línea tenue con qué se compara, el error de medición a la vista y la reducción localizada en «Cómo leerlo» (mutación: cortar el nombre con «…»)', () => {
+  assert.deepEqual(P.nombreEnRenglones('Pliegue tricipital', 30), ['Pliegue tricipital']);
+  const largo = 'Perímetro del brazo flexionado y contraído';
+  const partido = P.nombreEnRenglones(largo, 24);
+  assert.equal(partido.length, 2);
+  assert.equal(partido.join(' '), largo, 'entero, sin «…»');
+  const datos = evolucion([
+    metrica('perimetro-cintura', [toma('b1', 'ev1', '2026-10-02', 80, 'c1', 'cm'), toma('b2', 'ev2', '2026-11-12', 79.2, 'c1', 'cm')], [grupo('c1', 'isak', 'cm')]),
+    metrica('pliegue-triceps', [toma('t1', 'ev1', '2026-10-02', 12, 'c2', 'mm'), toma('t2', 'ev2', '2026-11-12', 12.2, 'c2', 'mm')], [grupo('c2', 'isak', 'mm')]),
+  ]);
+  const obs = TOMAS.observacionesDeLasTomas([datos]);
+  const tomas = P.tomasConSitios(obs);
+  const perfil = P.perfilPorSitio(obs, tomas, 'ev1', 'ev2');
+  assert.equal(P.detalleDelPerfil(perfil), 'pliegues en mm y perímetros en cm · entre la toma del 2/10 y la del 12/11');
+  const fila = perfil.grupos[1].filas[0];
+  const angosto = P.filasDelGrupo({ filas: [{ ...fila, nombre: largo }] }, 300);
+  assert.ok(angosto.filas[0].renglones.length === 2 && angosto.alto > 26, 'en poco ancho, dos renglones y la fila más alta');
+  assert.ok(!angosto.filas[0].renglones.some((r) => r.includes('…')));
+  const ancho = P.filasDelGrupo({ filas: [{ ...fila, nombre: largo }] }, 1400);
+  assert.equal(ancho.filas[0].renglones.length, 1, 'con lugar, un renglón');
+  const textos = P.notasDelPerfil(perfil, { parcial: true, enTramos: true });
+  assert.ok(textos.notas.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.sinErrorDeMedicion), '§5.7: a la vista');
+  assert.ok(textos.notas.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.parcial));
+  assert.ok(textos.aclaraciones.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.perfil.sinReduccionLocalizada), 'la explicación fisiológica, con su fuente, en «Cómo leerlo» (§5.1)');
+  assert.ok(textos.aclaraciones.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.leidoEnTramos));
+  // El eje de cada familia: de 3 a 5 marcas redondas, sin repetir.
+  for (const g of perfil.grupos) {
+    assert.ok(g.extremos.valores.length >= 3 && g.extremos.valores.length <= 5, g.extremos.valores.join(', '));
+    assert.equal(new Set(g.extremos.valores).size, g.extremos.valores.length);
+  }
+  const pantalla = readFileSync(join(GRAFICOS, 'antropometria/perfil-por-sitio-en-pantalla.tsx'), 'utf8');
+  assert.doesNotMatch(pantalla.replace(/\/\*[\s\S]*?\*\//g, ''), /…/, 'GR-18 no corta un nombre (fuera de los comentarios)');
+  assert.match(pantalla, /<ComoLeerlo de=\{C\.perfil\.titulo\}>/);
+  sinPalabrasProhibidas([P.detalleDelPerfil(perfil), ...textos.notas, ...textos.aclaraciones, ...P.nombreEnRenglones(largo, 24)], ['ANTROPOMETRIA']);
+});
+
+test('TEST-GRVC-007 · en pantalla: «Por semana | Día por día» con aria-pressed y por semana de entrada con más de seis semanas, la lectura de la semana es una región viva, su tabla tiene caption y encabezados con alcance, la leyenda tiene su texto entero para el lector, «Cómo leerlo» lleva el nombre de su gráfico y la hoja usa solo tokens (mutación: decidir el modo sin la regla de la base)', () => {
+  const lienzo = readFileSync(join(GRAFICOS, 'nutricion-y-cuerpo/lienzo-en-pantalla.tsx'), 'utf8');
+  assert.match(lienzo, /convienePorSemana\(desde, periodo\.hasta\) \? 'SEMANA' : 'DIA'/, 'la regla de la base (GR-V01)');
+  assert.match(lienzo, /aria-pressed=\{modo === 'SEMANA'\}/);
+  assert.match(lienzo, /aria-pressed=\{modo === 'DIA'\}/);
+  assert.match(lienzo, /aria-live="polite" data-lectura-de-la-semana/);
+  assert.match(lienzo, /<caption>\{CS\.tabla\(titulo\)\}<\/caption>/);
+  assert.match(lienzo, /<th scope="row">\{nombreDelTramo\(t\)\}<\/th>/);
+  assert.match(lienzo, /<span className="visualmente-oculto">\{e\.largo\}<\/span>/, 'la ficha corta y el texto entero para el lector');
+  assert.match(lienzo, /<ComoLeerlo de=\{titulo\}>/);
+  assert.match(lienzo, /RELLENO_ENTERA : RELLENO_HUECA/, 'las barras con el relleno de la base, medido a 3:1 en los dos temas (TEST-GRV-013)');
+  assert.match(lienzo, /className="grafico-base__cabecera"/);
+  assert.match(lienzo, /altoDelCarril\(densidad, deValores\)/, '240 px con un panel, 140 con más (la base)');
+  assert.doesNotMatch(lienzo, /valoresDelEjeVertical/, 'el eje de la base, sin la regla vieja de tres marcas');
+  // «Registros»: el botón dice qué gráfico es, sin «día por día» (también va por semana).
+  const registros = readFileSync(join(GRAFICOS, 'nutricion/dia-por-dia-en-registros.tsx'), 'utf8');
+  assert.match(registros, /ocultar: 'Ocultar el gráfico'/);
+  assert.equal(COPY_NUTRICION_EN_GRAFICOS.indicadoYRegistrado.titulo, 'Lo indicado y lo registrado');
+  const hoja = readFileSync(join(GRAFICOS, 'estilos/nutricion-y-cuerpo.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(hoja, /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/);
+});
+
+test('TEST-GRVC-008 · las palabras: ningún archivo de la rama dice «asesorado», «cumplimiento», «adherencia», «racha» ni «puntaje», ni siquiera negados, y los textos nuevos pasan la guardia unida (mutación: «sin racha» en una ficha)', () => {
+  const archivos = ['nutricion', 'antropometria', 'nutricion-y-cuerpo'].flatMap((c) => readdirSync(join(GRAFICOS, c)).map((a) => join(GRAFICOS, c, a)));
+  for (const archivo of [...archivos, join(GRAFICOS, 'estilos/nutricion-y-cuerpo.css')]) {
+    const fuente = readFileSync(archivo, 'utf8').replace(/asesoradoId/g, '');
+    assert.doesNotMatch(fuente, /asesorad|cumplimiento|adherencia|racha|puntaje/i, archivo);
+  }
+  sinPalabrasProhibidas(textosDelCopy(COPY_NUTRICION_EN_GRAFICOS), ['NUTRICION']);
+  sinPalabrasProhibidas(textosDelCopy(COPY_ANTROPOMETRIA_EN_GRAFICOS), ['ANTROPOMETRIA']);
+  // La prueba muerde: «sin racha» cae en la expresión de arriba.
+  assert.match('Sin racha esta semana', /asesorad|cumplimiento|adherencia|racha|puntaje/i);
+});
