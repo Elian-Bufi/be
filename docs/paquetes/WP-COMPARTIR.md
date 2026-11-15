@@ -121,7 +121,8 @@ Ninguna operación de siempre cambia su contrato.
 - **CMP-D7 · Solo lo elegido.** Lo de otras áreas se escribe renglón por renglón: lo que ya valía queda igual y se suman los
   pares elegidos (un renglón por cada componente de quien recibe y cada componente de origen). No es como API-RES-02, que
   rearma la lista desde los permisos y extendería en silencio un par ya dado a un profesional nuevo del área de origen. En
-  los hábitos, los que ya los reciben siguen, se suman los elegidos y los ofrecidos y desmarcados quedan dichos («no»).
+  los hábitos, los que ya los reciben siguen y se suman los elegidos; lo no elegido queda como estaba (el toque no sabe qué
+  vio la persona, por ejemplo con un interruptor de «Quién ve qué», así que no dice «no» por ella).
 - **CMP-D8 · Los textos, en capas.** La pantalla dice cada cosa en una línea y deja los textos completos de lo marcado en la
   misma pantalla, plegados, cada uno con su versión y su huella; el botón dice que tocarlo los acepta. Es distinto de HA-T16
   (compartir la historia anterior abría el texto entero), que sigue valiendo en «Quién ve qué»: prender un interruptor ahí

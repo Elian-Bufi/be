@@ -155,8 +155,8 @@ export function PantallaDeConsentimiento({
 
   const p = carga.propuesta;
   const { ofrecidas, dadas } = partesDeLaPropuesta(p);
-  const area = p.items.find((i) => i.kind === 'AREA_CONSENT' && i.relationshipId === vinculoId);
-  const avisoDelPerfil = area?.kind === 'AREA_CONSENT' && area.offered ? area.profileNotice : null;
+  // 08 §12.3: el aviso del perfil de cada profesional cuya área se autoriza acá (con su nombre, si es más de uno).
+  const avisosDelPerfil = p.items.flatMap((i) => (i.kind === 'AREA_CONSENT' && i.offered ? [{ key: i.key, nombre: i.professional.displayName, aviso: i.profileNotice }] : []));
   const enviando = acto.tipo === 'enviando';
   const rechazo = acto.tipo === 'fallo' ? acto.rechazo : null;
 
@@ -182,8 +182,10 @@ export function PantallaDeConsentimiento({
         </>
       ) : (
         <>
-          {avisoDelPerfil ? <Parrafo>{avisoDelPerfil}</Parrafo> : null}
-          {avisoDelPerfil ? <Aviso tipo="info" titulo={COPY_VINCULO.aclaracionDeConsentimiento} /> : null}
+          {avisosDelPerfil.map((a) => (
+            <Parrafo key={a.key}>{avisosDelPerfil.length > 1 ? `${a.nombre}: ${a.aviso}` : a.aviso}</Parrafo>
+          ))}
+          {avisosDelPerfil.length > 0 ? <Aviso tipo="info" titulo={COPY_VINCULO.aclaracionDeConsentimiento} /> : null}
 
           <Subtitulo>{C.loQueCompartis}</Subtitulo>
           <LoQueSeComparte propuesta={p} marcadas={marcadas} eligiendo={eligiendo} alCambiar={setMarcadas} deshabilitado={enviando} />

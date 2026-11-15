@@ -185,7 +185,7 @@ export class CompartirService {
           if (i.tipo !== 'AREA_CONSENT') continue;
           await otorgarB2EnTransaccion(tx, { actorId: personaId, vinculoId: i.componenteId, consentVersionId: i.textoId, ctx, procedencia, auditar: (id) => auditar('Consentimiento', id) });
         }
-        await this.darLosHabitos(tx, { personaId, items, elegidos, procedencia, momento, auditar });
+        await this.darLosHabitos(tx, { personaId, elegidos, procedencia, momento, auditar });
         await this.darLoDeOtrasAreas(tx, { personaId, elegidos, procedencia, momento, auditar });
         for (const i of elegidos) {
           if (i.tipo !== 'PREVIOUS_HISTORY') continue;
@@ -204,14 +204,15 @@ export class CompartirService {
     });
   }
 
-  /** Los hábitos elegidos: los que hoy los reciben siguen, se suman los elegidos y los desmarcados quedan dichos (CMP-D7). */
-  private async darLosHabitos(tx: Tx, p: { personaId: string; items: readonly LoQueSeComparte[]; elegidos: readonly LoQueSeComparte[]; procedencia: Procedencia; momento: Date; auditar: (tipo: string, id: string) => Promise<void> }): Promise<void> {
+  /**
+   * Los hábitos elegidos: los que hoy los reciben siguen y se suman los elegidos (CMP-D7). Lo no elegido queda como estaba:
+   * el toque no sabe qué vio la persona (un interruptor de «Quién ve qué» da una sola cosa), así que no dice «no» por ella.
+   */
+  private async darLosHabitos(tx: Tx, p: { personaId: string; elegidos: readonly LoQueSeComparte[]; procedencia: Procedencia; momento: Date; auditar: (tipo: string, id: string) => Promise<void> }): Promise<void> {
     const elegidos = p.elegidos.flatMap((i) => (i.tipo === 'HABITS' ? [i.profesionalId] : []));
     if (elegidos.length === 0) return;
-    const elegidas = new Set(p.elegidos.map((i) => i.clave));
-    const declinados = p.items.flatMap((i) => (i.tipo === 'HABITS' && i.ofrecido && !elegidas.has(i.clave) ? [i.profesionalId] : []));
     const [vigente, profesionales] = await Promise.all([autorizacionDeHabitosVigente(tx, p.personaId), profesionalesDeLaPersona(tx, p.personaId)]);
-    const renglones = habitosAlCompartir({ profesionales, anteriores: vigente?.fila.estado === 'ACTIVA' ? vigente.renglones : null, elegidos, declinados, ahora: p.momento.toISOString() });
+    const renglones = habitosAlCompartir({ profesionales, anteriores: vigente?.fila.estado === 'ACTIVA' ? vigente.renglones : null, elegidos, declinados: [], ahora: p.momento.toISOString() });
     const texto = VERSION_VIGENTE.HABITOS_COMPARTIDOS;
     const fila = await agregarVersionDeAutorizacion(tx, { personaId: p.personaId, anterior: vigente?.fila ?? null, estado: 'ACTIVA', texto: { id: texto.id, hash: texto.hash }, renglones, procedencia: p.procedencia, momento: p.momento });
     // Quien había pedido verlos y ahora los recibe: su pedido queda aceptado (D-25), como en API-HBT-03.

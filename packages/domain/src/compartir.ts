@@ -387,9 +387,9 @@ export function renglonesSinElPar(anteriores: readonly RenglonDeResumen[], compo
 }
 
 /**
- * Los renglones de la versión nueva de los hábitos (CMP-D7): los que hoy los reciben siguen, se suman los elegidos, y los
- * que se ofrecieron y se desmarcaron quedan nombrados como que no los ven (la persona les dijo que no en este acto). Quien
- * no se nombró sigue como estaba (o `NOT_ASKED`).
+ * Los renglones de la versión nueva de los hábitos (CMP-D7): los que hoy los reciben siguen y se suman los elegidos. Los
+ * `declinados` quedan nombrados como que no los ven, si quien llama sabe que la persona les dijo que no en este acto
+ * (API-CMP-02 no lo sabe y no manda ninguno). Quien no se nombró sigue como estaba (o `NOT_ASKED`).
  */
 export function habitosAlCompartir(p: {
   readonly profesionales: readonly ProfesionalDeLaPersona[];
