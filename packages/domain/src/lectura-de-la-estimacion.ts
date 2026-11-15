@@ -74,12 +74,13 @@ const iguales = (a: ObjetivoDeLaSerie['rir'], b: ObjetivoDeLaSerie['rir']): bool
 
 /**
  * Lo que cambió en lo indicado entre dos versiones, dicho en la primera línea del gráfico: «el RIR indicado pasó de 2 a
- * 1: la estimación cambia aunque la fuerza no». `null` si no cambió nada que mueva la estimación.
+ * 1: la estimación puede cambiar aunque la fuerza no cambie». Dice lo que puede pasar, sin afirmar qué pasó con la
+ * fuerza (GR-T16). `null` si no cambió nada que mueva la estimación.
  */
 export function cambioDeLoIndicado(a: ObjetivoDeLaSerie | null, b: ObjetivoDeLaSerie | null): string | null {
   if (a === null || b === null) return null;
   const partes: string[] = [];
   if (!iguales(a.rir, b.rir)) partes.push(`el RIR indicado pasó de ${rango(a.rir)} a ${rango(b.rir)}`);
   if (!iguales(a.repeticiones, b.repeticiones)) partes.push(`las repeticiones indicadas pasaron de ${rango(a.repeticiones)} a ${rango(b.repeticiones)}`);
-  return partes.length === 0 ? null : `${partes.join('; ')}: la estimación cambia aunque la fuerza no`;
+  return partes.length === 0 ? null : `${partes.join('; ')}: la estimación puede cambiar aunque la fuerza no cambie`;
 }

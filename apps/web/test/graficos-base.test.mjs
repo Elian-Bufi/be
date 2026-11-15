@@ -13,7 +13,15 @@ import { register } from 'node:module';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { EjecucionDeEntrenamientoSchema, EntradaDeLineaDeTiempoSchema, terminosProhibidosEnUnGrafico } from '@be/domain';
+import {
+  EjecucionDeEntrenamientoSchema,
+  EJERCICIOS_DE_LA_ESTIMACION_V1,
+  EntradaDeLineaDeTiempoSchema,
+  NotaPropiaSchema,
+  NotasDeLasSesionesResponseSchema,
+  serieDisponible,
+  terminosProhibidosEnUnGrafico,
+} from '@be/domain';
 
 // Los módulos de la base importan sin extensión (como pide el website): el gancho prueba con `.ts`.
 const gancho = `export async function resolve(especificador, contexto, siguiente) {
@@ -276,6 +284,24 @@ test('TEST-GRF-013 · los tramos de 92 días cubren el período sin días repeti
   assert.match(lecturas, /export const DIAS_POR_LECTURA_DE_LAS_SESIONES = 92;/);
   assert.match(lecturas, /leerEnTramos\(p\.periodo, DIAS_POR_LECTURA_DE_LAS_SESIONES, \(d, h\) => api\.contextoDeRevisionDeEntrenamiento\(/);
   assert.equal(lecturas.match(/api\.contextoDeRevisionDeEntrenamiento\(/g)?.length, 1, 'API-TRN-21 no se lee de otra manera');
+  // La cinta (API-DSH-04) admite hasta 366 días por pedido: un período más largo se lee en tramos, del más reciente al más
+  // antiguo, para que lo que quede afuera del tope de páginas sea lo más antiguo (mutación: tramos del más antiguo al más
+  // reciente, o un solo pedido con todo el período).
+  assert.equal(K.DIAS_POR_LECTURA_DE_LA_CINTA, 366);
+  const deLaCinta = K.tramosDeLaCinta('2024-09-01', '2026-11-14');
+  assert.equal(deLaCinta.length, 3);
+  assert.deepEqual(deLaCinta[0], { desde: '2026-09-03', hasta: '2026-11-14' });
+  assert.equal(deLaCinta.at(-1).desde, '2024-09-01');
+  for (const t of deLaCinta) assert.ok(dias(t) <= 366, `${t.desde} a ${t.hasta}`);
+  assert.equal(
+    deLaCinta.reduce((n, t) => n + dias(t), 0),
+    dias({ desde: '2024-09-01', hasta: '2026-11-14' }),
+  );
+  for (let i = 1; i < deLaCinta.length; i++) assert.equal(Date.parse(`${deLaCinta[i - 1].desde}T12:00:00Z`) - Date.parse(`${deLaCinta[i].hasta}T12:00:00Z`), 86_400_000);
+  assert.deepEqual(K.tramosDeLaCinta('2026-08-01', '2026-11-14'), [{ desde: '2026-08-01', hasta: '2026-11-14' }]);
+  assert.match(lecturas, /for \(const tramo of tramosDeLaCinta\(desde, hasta\)\)/);
+  assert.match(lecturas, /periodStart: tramo\.desde, periodEnd: tramo\.hasta/);
+  assert.equal(lecturas.match(/api\.lineaDeTiempo\(/g)?.length, 1, 'API-DSH-04 se lee solo por tramos');
   // Lo que se comparte en vuelo se descarta al responder: no queda nada guardado.
   assert.match(lecturas, /leer\(\)\.finally\(\(\) => enVuelo\.delete\(clave\)\)/);
 });
@@ -563,4 +589,159 @@ test('TEST-GRF-019 · la cinta del tiempo (GR-23): nada de un área sin acceso, 
   assert.match(lecturas, /type: TIPOS_DE_HITO_DE_LA_CINTA\.join\(','\)/);
   assert.match(lecturas, /state: ESTADOS_DE_LA_CINTA\.join\(','\)/);
   assert.deepEqual(K.ESTADOS_DE_LA_CINTA, ['EFFECTIVE', 'RECTIFIED', 'CORRECTED']);
+});
+
+test('TEST-GRF-019 (b) · las notas de la tanda B en la cinta: las de la persona el día de su sesión y solo con Entrenamiento; las propias activas, en el día de Buenos Aires y en la fila de su ancla (mutación: dejar las de un área denegada o las archivadas)', () => {
+  const deLaSesion = NotasDeLasSesionesResponseSchema.parse({
+    data: {
+      period: { start: '2026-11-01', end: '2026-11-14', timeZone: 'America/Argentina/Buenos_Aires' },
+      notes: [
+        { noteId: 'ns-1', executionId: 'x-sus', text: 'Me dolió el hombro en la última', recordedAt: '2026-11-10T20:00:00.000Z', executionDate: '2026-11-10' },
+        { noteId: 'ns-2', executionId: 'x-otra', text: 'Llegué tarde', recordedAt: '2026-11-12T20:00:00.000Z', executionDate: '2026-11-12' },
+      ],
+    },
+  }).data.notes;
+  const propia = (noteId, recordedAt, anchor, archivedAt = null) => NotaPropiaSchema.parse({ noteId, adviseeId: 'persona-1', text: `Nota ${noteId}`, anchor, recordedAt, archivedAt });
+  const propias = [
+    // 23:30 del 7 en Buenos Aires: en UTC ya es el 8.
+    propia('np-1', '2026-11-08T02:30:00.000Z', null),
+    propia('np-2', '2026-11-09T15:00:00.000Z', { type: 'EXERCISE', exerciseId: 'ej-banca', exerciseName: 'Press de banca', inPlan: true }),
+    propia('np-3', '2026-11-09T15:00:00.000Z', { type: 'MEAL', mealLabel: 'Almuerzo', inPlan: null }),
+    propia('np-4', '2026-11-09T15:00:00.000Z', null, '2026-11-11T15:00:00.000Z'),
+  ];
+  const sustituida = sesion({ id: 'x-sus', fecha: '2026-11-10', planId: 'tv2', rx: prescripcion('rx-banca-2', [{ value: 6 }]), series: [serieRegistrada(1, 30, 8, 2)], realizado: { versionId: 'ver-mancuernas-1', nombre: 'Press con mancuernas' } });
+  const fuentes = (alcances, exerciseKey = null) => ({ alcances, entradas: [], vigencias: [], ejecuciones: [sustituida], notasDeLaSesion: deLaSesion, notasPropias: propias, zona: 'America/Argentina/Buenos_Aires', exerciseKey });
+
+  const todo = K.eventosDeLaCinta(fuentes(['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']));
+  const notas = todo.filter((e) => e.tipo === 'NOTA_DE_LA_PERSONA' || e.tipo === 'NOTA_PROPIA');
+  assert.deepEqual(
+    notas.map((e) => [e.clave, e.desde, e.area]),
+    [
+      ['nota-propia:np-1', '2026-11-07', null],
+      ['nota-propia:np-2', '2026-11-09', 'ENTRENAMIENTO'],
+      ['nota-propia:np-3', '2026-11-09', 'NUTRICION'],
+      ['nota-de-la-persona:ns-1', '2026-11-10', 'ENTRENAMIENTO'],
+      ['nota-de-la-persona:ns-2', '2026-11-12', 'ENTRENAMIENTO'],
+    ],
+  );
+  assert.equal(K.filaDelEvento(notas[0]), 'NOTAS');
+  assert.equal(K.textoDelEvento(notas[1]), '9/11 · Entrenamiento · Nota propia sobre Press de banca (Nota np-2)');
+  assert.equal(K.textoDelEvento(notas[3]), '10/11 · Entrenamiento · Nota de la persona (Me dolió el hombro en la última)');
+  // Sin Entrenamiento no hay notas de la persona ni las propias atadas a un ejercicio; las archivadas no están nunca.
+  const soloNutricion = K.eventosDeLaCinta(fuentes(['NUTRICION'])).map((e) => e.clave);
+  assert.deepEqual(soloNutricion, ['nota-propia:np-1', 'nota-propia:np-3']);
+  assert.ok(!todo.some((e) => e.clave === 'nota-propia:np-4'), 'una nota archivada no está en la cinta');
+  // En el cuadro de un ejercicio: solo las notas de las sesiones con ese ejercicio y las propias atadas a él.
+  assert.deepEqual(
+    K.eventosDeLaCinta(fuentes(['ENTRENAMIENTO'], 'e:ej-banca'))
+      .filter((e) => e.tipo === 'NOTA_DE_LA_PERSONA' || e.tipo === 'NOTA_PROPIA')
+      .map((e) => e.clave),
+    ['nota-propia:np-2', 'nota-de-la-persona:ns-1'],
+  );
+  assert.deepEqual(K.eventosDeLasNotasDeLaSesion(deLaSesion, 'e:ej-banca'), [], 'sin las sesiones leídas no se adivina de qué sesión habla una nota');
+  // Con «Ocultar nombres» (PG-T73), las notas están con su día y su ancla, pero sin su texto hasta pedirlo (mutación: dejar
+  // el texto a la vista).
+  const ocultas = K.eventosDeLaCinta({ ...fuentes(['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), conTextoDeLasNotas: false }).filter((e) => e.tipo === 'NOTA_DE_LA_PERSONA' || e.tipo === 'NOTA_PROPIA');
+  assert.equal(ocultas.length, notas.length);
+  assert.ok(ocultas.every((e) => e.detalle === null));
+  assert.ok(!ocultas.map(K.textoDelEvento).join(' ').includes('hombro'));
+  const pantalla = readFileSync(join(GRAFICOS, 'cinta-del-tiempo-en-pantalla.tsx'), 'utf8');
+  assert.match(pantalla, /const ocultos = useNombresOcultos\(\);/);
+  assert.match(pantalla, /const conTextoDeLasNotas = !ocultos \|\| verLasNotas;/);
+  assert.match(pantalla, /\{COPY_DE_LA_CINTA\.mostrarLasNotas\}/);
+  // La forma distingue la nota propia de la de coordinación, y los textos pasan la guardia de las tres áreas.
+  assert.notEqual(K.ICONO_DEL_HECHO.NOTA_PROPIA, K.ICONO_DEL_HECHO.NOTA_DE_COORDINACION);
+  for (const t of [...notas.map(K.textoDelEvento), K.resumenDeLaCinta(notas)]) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], t);
+  // La lectura: las de la persona solo con Entrenamiento y en tramos de 92 días; las propias de API-NPP-02; una falla que no
+  // es un 404 se dice, no se vuelve «sin notas».
+  const lecturas = readFileSync(join(GRAFICOS, 'lecturas.ts'), 'utf8');
+  assert.match(lecturas, /conSesiones \? leerEnTramos\(p\.periodo, DIAS_MAXIMOS_DE_LAS_NOTAS_DE_LAS_SESIONES, \(d, h\) => api\.notasDeLasSesiones\(/);
+  assert.match(lecturas, /limitarLectura\(\(\) => api\.notasPropias\(p\.token, p\.asesoradoId\)\)/);
+  assert.match(lecturas, /if \(falla === null \|\| sinAcceso\(falla\)\) continue;/);
+});
+
+test('TEST-GRF-012 (b) · la tabla dice con palabras lo que dice la forma: lo tildado sin escribir, lo observado, lo reportado y lo calculado (mutación: dejarlo solo en la marca)', () => {
+  const c = carril([
+    punto('a', '2026-11-02', 80, { marca: 'HUECA_GRIS', lectura: '80 kg · 8 rep' }),
+    punto('b', '2026-11-03', 99, { marca: 'ROMBO', lectura: '99 kg' }),
+    punto('c', '2026-11-04', 70, { marca: 'CONTORNO_CORTADO', lectura: '70 kg' }),
+    punto('d', '2026-11-05', 14, { marca: 'PUNTO_ADENTRO', lectura: '14 kg (calculado con Durnin y Womersley)' }),
+    punto('e', '2026-11-06', 81, { marca: 'LLENA', lectura: '81 kg', tarde: true }),
+  ]);
+  const t = T.tablaEquivalente([c]);
+  assert.deepEqual(
+    t.filas.map((f) => f.celdas[0].texto),
+    ['80 kg · 8 rep (tildado sin escribir: los números del plan)', '99 kg (observado por el profesional)', '70 kg (reportado)', '14 kg (calculado con Durnin y Womersley)', '81 kg (cargado después)'],
+  );
+  for (const f of t.filas) assert.deepEqual(terminosProhibidosEnUnGrafico(f.celdas[0].texto, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], f.celdas[0].texto);
+});
+
+test('TEST-GRF-011 (b) · el 1RM estimado por carrilDeSerie: lo observado por el profesional en rombo, lo orientativo hueco, el eje de 10 kg del catálogo y solo la lista de la v1; las semanas y las bandas no salen del eje (mutación: marcar lo observado como dato de la persona)', () => {
+  const fuerza = (pointId, fecha, valor, extra = {}) => ({
+    pointId,
+    date: fecha,
+    source: extra.observada ? 'OBSERVED' : 'PERSON',
+    origin: extra.observada ? { type: 'STRENGTH_OBSERVATION', id: 'obs-1' } : { type: 'TRAINING_EXECUTION', id: 'x-1', prescriptionId: 'rx-1', setIndex: 1, corrected: false },
+    estimate: { band: extra.banda ?? 'CORE', load: { value: 80, unit: 'kg' }, completedRepetitions: 5, rir: 1, equivalentRepetitions: 6, value: valor },
+  });
+  const s = A.serieDeLaFuerza({ estimate: { unit: 'kg', points: [fuerza('p1', '2026-11-02', 96), fuerza('p2', '2026-11-04', 97, { banda: 'ORIENTATIVE' }), fuerza('p3', '2026-11-05', 99, { observada: true })] } });
+  const opciones = { id: 'f', nombre: '1RM estimado (Epley v1)', indice: 0, metodo: 'Epley v1', escala: { enteros: false }, descripcion: '', lectura: (p) => `${p.value} kg` };
+  const c = A.carrilDeSerie(s, serieDisponible('entrenamiento.1rm-estimado'), opciones);
+  assert.deepEqual(
+    c.puntos.map((p) => [p.clave, p.marca]),
+    [
+      ['p1', 'LLENA'],
+      ['p2', 'HUECA'],
+      ['p3', 'ROMBO'],
+    ],
+  );
+  assert.equal(c.escala.rangoMinimo, 10, 'el rango mínimo del catálogo manda (GR-T15)');
+  assert.notEqual(c.puntos[0].tramo, c.puntos[2].tramo, 'lo observado no se une con lo de la persona');
+  // Otra serie del catálogo sigue con la marca del dominio: un tramo con ese nombre no la vuelve rombo.
+  const carga = A.carrilDeSerie({ ...s, points: s.points.map((p) => ({ ...p, segment: 'observada:x' })) }, serieDisponible('entrenamiento.carga', 'kg'), opciones);
+  assert.ok(!carga.puntos.some((p) => p.marca === 'ROMBO'));
+  assert.equal(carga.escala.rangoMinimo, undefined);
+  // Solo un ejercicio del catálogo de la lista de la v1 tiene estimación: una versión suelta u otro ejercicio no se piden.
+  const deLaLista = EJERCICIOS_DE_LA_ESTIMACION_V1[0].exerciseId;
+  assert.equal(A.ejercicioDeLaEstimacion(`e:${deLaLista}`), deLaLista);
+  assert.equal(A.ejercicioDeLaEstimacion(`v:${deLaLista}`), null);
+  assert.equal(A.ejercicioDeLaEstimacion('e:00000000-0000-4000-8000-000000000000'), null);
+  assert.equal(A.ejercicioDeLaEstimacion(null), null);
+  const lecturas = readFileSync(join(GRAFICOS, 'lecturas.ts'), 'utf8');
+  assert.match(lecturas, /const exerciseId = ejercicioDeLaEstimacion\(ref\.exerciseKey\);/);
+  assert.doesNotMatch(lecturas, /exerciseKey\.replace\(/);
+
+  // Una semana que empieza antes del vínculo se dibuja desde el primer día del eje; una que cae afuera, no.
+  const escala = E.escalaDeFechas(periodo('2026-11-02', '2026-11-15', '2026-11-04'), { izquierda: 0, derecha: 1200 });
+  const semanas = C.geometriaDelCarril(
+    {
+      tipo: 'BARRAS_SEMANALES',
+      id: 's',
+      nombre: 'Series por semana',
+      unidad: 'series',
+      semanas: [
+        { lunes: '2026-10-26', valor: 40, dias: 3, lectura: '' },
+        { lunes: '2026-11-02', valor: 12, dias: 2, lectura: '' },
+        { lunes: '2026-11-09', valor: 14, dias: 3, lectura: '' },
+      ],
+      descripcion: '',
+    },
+    escala,
+    140,
+  );
+  assert.deepEqual(
+    semanas.barras.map((b) => b.lunes),
+    ['2026-11-02', '2026-11-09'],
+  );
+  assert.equal(semanas.barras[0].x1, escala.x('2026-11-04') - escala.porDia / 2);
+  assert.ok(semanas.barras.every((b) => b.x2 <= escala.x(escala.hasta) + escala.porDia / 2));
+  assert.ok(semanas.extremos.arriba < 40, 'una semana fuera del eje no estira la escala');
+  // Las bandas van del día que empezó a regir al anterior al corte, como las barras de la cinta: no se pisan.
+  assert.deepEqual(
+    A.bandasDeVersion([vigencia('TRAINING', 'tv1', 'v1', '2026-10-01', '2026-11-04'), vigencia('TRAINING', 'tv2', 'v2', '2026-11-04', null), vigencia('NUTRITION', 'nv1', 'v1', '2026-10-15', null)], 'ENTRENAMIENTO').map((b) => [b.desde, b.hasta]),
+    [
+      ['2026-10-01', '2026-11-03'],
+      ['2026-11-04', null],
+    ],
+  );
 });

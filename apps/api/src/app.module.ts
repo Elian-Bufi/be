@@ -28,6 +28,7 @@ import { EntrenamientoModule } from './entrenamiento/entrenamiento.module';
 import { FormulariosModule } from './formularios/formularios.module';
 import { NovedadesModule } from './novedades/novedades.module';
 import { CoordinacionModule } from './coordinacion/coordinacion.module';
+import { NotasPropiasModule } from './notas-propias/notas-propias.module';
 import { MediosModule } from './medios/medios.module';
 import { NutricionModule } from './nutricion/nutricion.module';
 import { ProcesoModule } from './proceso/proceso.module';
@@ -93,6 +94,8 @@ export class AppModule {
         NovedadesModule,
         // DL-140: las notas de coordinación entre los profesionales de una persona.
         CoordinacionModule,
+        // PG-16 de WP-PULIDO-GRANDES (DL-173): las notas propias del profesional, que solo lee su autor.
+        NotasPropiasModule,
         // WP-ADMINISTRACION (DL-155): la administración de profesionales por área, con segundo factor.
         AdministracionModule,
         // UF-06 de WP-USO-FINAL (DL-169): los derechos de la persona.

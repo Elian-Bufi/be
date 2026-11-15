@@ -175,6 +175,23 @@ const DOMINIOS = [
     minimo: 12,
   },
   {
+    // WP-PULIDO-GRANDES (DL-173), TEST-PG-019: la nota para tu profe (PG-15) en la APK y en Registros, y las notas propias
+    // del profesional (PG-16) en el Resumen y en los dos editores. Hablan de cualquier área: pasan por todas las listas.
+    nombre: 'las notas de la tanda B de WP-PULIDO-GRANDES',
+    archivos: [
+      movil('nota-para-tu-profe.ts'),
+      inicio('nota-para-tu-profe.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/notas-propias.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/seguimiento/tus-notas.tsx'),
+      join(RAIZ, 'packages/domain/src/notas-propias.ts'),
+      join(RAIZ, 'packages/domain/src/copy-notas-de-la-sesion.ts'),
+    ],
+    prohibidos: (texto) => [
+      ...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeCarteraEn(texto)]),
+    ],
+    minimo: 6,
+  },
+  {
     // WP-NOTAS-DE-COORDINACION (DL-140): el diálogo y el Resumen del website, la pantalla de la APK y su copy. Una nota habla
     // de cualquier área: pasa por la lista de nutrición y por la de la cartera, que ya reúne las de entrenamiento,
     // antropometría e información.
@@ -233,6 +250,22 @@ const DOMINIOS = [
     ],
     prohibidos: (texto) => [...new Set([...terminosProhibidosDeAdministracionEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeCarteraEn(texto)])],
     minimo: 14,
+  },
+  {
+    // WP-PULIDO-GRANDES (DL-173), tanda B: quién miró lo compartido (PG-12), la primera vez en la app (PG-13) y el plan en
+    // papel o en PDF (PG-17). Hablan de todas las áreas: pasan por todas las listas (TEST-PG-019).
+    nombre: 'el pulido grande, tanda B',
+    archivos: [
+      ...['quien-miro.ts', 'presentacion.ts'].map(movil),
+      inicio('presentacion.tsx'),
+      join(RAIZ, 'apps/web/src/lib/hoja-del-plan.ts'),
+      join(RAIZ, 'apps/web/src/components/hoja-del-plan.tsx'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/descargar-el-plan.tsx'),
+    ],
+    prohibidos: (texto) => [
+      ...new Set([...terminosProhibidosDeFormulariosEn(texto), ...terminosProhibidosEn(texto), ...terminosProhibidosDeEntrenamientoEn(texto), ...terminosProhibidosDeAntropometriaEn(texto), ...terminosProhibidosDeCarteraEn(texto)]),
+    ],
+    minimo: 6,
   },
 ];
 

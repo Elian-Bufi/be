@@ -243,6 +243,21 @@ export class CatalogoDeEjerciciosService {
   }
 
   /**
+   * PG-16 (DL-173): el ejercicio del catálogo (no una versión) que un profesional puede citar en una nota propia: el que
+   * ve en el buscador. Devuelve su identificador, o `null` si no existe o no lo ve. Sin el perfil de Entrenamiento ve solo
+   * lo de todos (lo sembrado y lo importado), y no se responde 403: la nota lo dice con su propio motivo.
+   */
+  async ejercicioCitable(cliente: Cliente, actorId: string, ejercicioId: string): Promise<string | null> {
+    if (!UUID.test(ejercicioId)) return null;
+    const creadores = (await this.esProfesionalDeEntrenamiento(cliente, actorId)) ? [actorId] : [];
+    const [fila] = await cliente.$queryRaw<{ id: string }[]>`
+      SELECT e."id"::text AS "id" FROM "ejercicio_de_catalogo" e
+       WHERE e."id" = ${ejercicioId.toLowerCase()}::uuid
+         AND ${this.visibles(creadores)}`;
+    return fila?.id ?? null;
+  }
+
+  /**
    * DL-141 D-1: el ejercicio de un ítem externo de wger, en su versión vigente y tal como lo ve cualquier profesional (es
    * de todos). Lo usa la importación para ofrecer el que ya está y para apuntar la resolución a él.
    */

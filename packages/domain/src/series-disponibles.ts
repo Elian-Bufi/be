@@ -140,7 +140,15 @@ export interface SerieElegida {
   readonly serie: SerieDisponible;
   /** La unidad de los datos (kg o lb en la carga; la de la toma en Antropometría). */
   readonly unidad: string;
+  /**
+   * El grano elegido, si la serie admite más de uno: una serie de día o de sesión vista por semana va en baldes de lunes a
+   * domingo, y entonces su eje X es el de las semanales.
+   */
+  readonly grano?: Grano;
 }
+
+/** El eje X con que se dibuja una serie elegida: por semana, el de las semanales (GR-T03). */
+export const ejeXDeLaElegida = (s: SerieElegida): EjeX => (s.grano === 'WEEK' ? 'SEMANA' : s.serie.ejeX);
 
 export type MotivoSinComposicion = 'NINGUNA' | 'MAS_DE_TRES' | 'EJE_X_DISTINTO' | 'MAS_DE_DOS_UNIDADES';
 
@@ -190,7 +198,7 @@ export function composicionPermitida(series: readonly SerieElegida[], modo: 'PAN
     return { permitida: true, motivo: null, ejesY, frase: fraseDeLaCoincidencia(series, modo, ejesY.length) };
   }
   for (let i = 0; i < series.length; i++) {
-    for (let j = i + 1; j < series.length; j++) if (!ejesCompatibles(series[i].serie.ejeX, series[j].serie.ejeX)) return negada('EJE_X_DISTINTO');
+    for (let j = i + 1; j < series.length; j++) if (!ejesCompatibles(ejeXDeLaElegida(series[i]), ejeXDeLaElegida(series[j]))) return negada('EJE_X_DISTINTO');
   }
   const grupos: { clave: string; unidad: string; familia: string | null; series: string[] }[] = [];
   for (const s of series) {

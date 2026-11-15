@@ -14,8 +14,9 @@
  * El dibujo solo está en `dibujo-de-la-cinta.tsx`: lo usan esta cinta y los carriles de eventos de `PanelesAlineados`.
  */
 import type { Alcance, EjecucionDeEntrenamiento, VigenciaDePlan } from '@be/domain';
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
+import { useNombresOcultos } from '../../../../lib/nombres-ocultos';
 import { LETRA_MINIMA } from '../seguimiento/geometria';
 import {
   ALTO_DE_LA_FILA_DE_LA_CINTA,
@@ -96,9 +97,11 @@ export interface PropsDeLaCinta {
   readonly fija?: boolean;
   /** Si la lectura llegó al tope de páginas: cuántos hechos se leyeron (los más recientes). */
   readonly leidaHastaElTope?: number | null;
+  /** Una línea al pie, dentro de la cinta (el aviso de las notas ocultas). */
+  readonly pie?: ReactNode;
 }
 
-export function CintaDelTiempo({ periodo, eventos, titulo = COPY_DE_LA_CINTA.titulo, densidad = 'COMPLETA', fija = false, leidaHastaElTope = null }: PropsDeLaCinta) {
+export function CintaDelTiempo({ periodo, eventos, titulo = COPY_DE_LA_CINTA.titulo, densidad = 'COMPLETA', fija = false, leidaHastaElTope = null, pie = null }: PropsDeLaCinta) {
   const [ref, ancho] = useAnchoDelGrafico();
   const cursor = useCursorDeFechas();
   const idDelResumen = useId();
@@ -201,6 +204,7 @@ export function CintaDelTiempo({ periodo, eventos, titulo = COPY_DE_LA_CINTA.tit
           ) : null}
           <LeyendaDeLaCinta g={g} />
           {leidaHastaElTope !== null ? <p className="nota grafico-base__nota">{COPY_DE_LA_CINTA.leidaHastaElTope(leidaHastaElTope)}</p> : null}
+          {pie}
           <div className="grafico-base__tabla">
             <button type="button" className="boton boton--enlace" aria-expanded={conLista} aria-controls={idDeLaLista} onClick={() => setConLista((a) => !a)}>
               {conLista ? COPY_DE_LA_CINTA.ocultarLaLista : COPY_DE_LA_CINTA.verLaLista}
@@ -215,7 +219,7 @@ export function CintaDelTiempo({ periodo, eventos, titulo = COPY_DE_LA_CINTA.tit
   );
 }
 
-export interface PropsDeLaCintaLeida extends Omit<PropsDeLaCinta, 'eventos' | 'leidaHastaElTope'> {
+export interface PropsDeLaCintaLeida extends Omit<PropsDeLaCinta, 'eventos' | 'leidaHastaElTope' | 'pie'> {
   /** Las lecturas van a la API con el acceso de este momento: no se guarda nada en el navegador. */
   readonly lectura: Omit<ParametrosDeLectura, 'periodo'>;
   /** Lo que el PDP dejó leer con esta persona hoy (los alcances de `leerDisponibles`). */
@@ -224,7 +228,7 @@ export interface PropsDeLaCintaLeida extends Omit<PropsDeLaCinta, 'eventos' | 'l
   readonly vigencias: readonly VigenciaDePlan[];
   /** Las sesiones de API-TRN-21, si ya se leyeron: de ahí salen las sustituciones. */
   readonly ejecuciones?: readonly EjecucionDeEntrenamiento[];
-  /** Otras fuentes de la cinta (las notas de la tanda B). */
+  /** Otras fuentes de la cinta (las notas de la tanda B ya las lee la cinta). */
   readonly otras?: readonly EventoDeLaCinta[];
   /** En el cuadro del ejercicio: solo lo de ese ejercicio. */
   readonly exerciseKey?: string | null;
@@ -250,12 +254,30 @@ export function CintaDelTiempoLeida({ lectura, alcances, vigencias, ejecuciones,
       vigente = false;
     };
   }, [token, asesoradoId, desde, hasta, hoy, desdeElVinculo, deLosAlcances, vuelta]);
+  // PG-T73: con «Ocultar nombres», el texto de las notas no se ve hasta pedirlo; las notas siguen, con su día y su ancla.
+  const ocultos = useNombresOcultos();
+  const [verLasNotas, setVerLasNotas] = useState(false);
+  const conTextoDeLasNotas = !ocultos || verLasNotas;
   const eventos = useMemo(
-    () => (estado?.tipo === 'lista' ? eventosDeLaCinta({ alcances, entradas: estado.entradas, vigencias, ejecuciones, otras, exerciseKey }) : []),
-    [estado, alcances, vigencias, ejecuciones, otras, exerciseKey],
+    () =>
+      estado?.tipo === 'lista'
+        ? eventosDeLaCinta({ alcances, entradas: estado.entradas, vigencias, ejecuciones, notasDeLaSesion: estado.notasDeLaSesion, notasPropias: estado.notasPropias, zona: estado.zona, conTextoDeLasNotas, otras, exerciseKey })
+        : [],
+    [estado, alcances, vigencias, ejecuciones, otras, exerciseKey, conTextoDeLasNotas],
   );
+  const conNotas = eventos.some((e) => e.tipo === 'NOTA_DE_LA_PERSONA' || e.tipo === 'NOTA_PROPIA');
   if (estado === null) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'CARGANDO' }} alto={2 * ALTO_DE_LA_FILA_DE_LA_CINTA + ALTO_DEL_EJE_DE_FECHAS} />;
   if (estado.tipo === 'sin-acceso') return <EstadoDelGraficoEnPantalla estado={{ tipo: 'SIN_ACCESO' }} />;
   if (estado.tipo === 'error') return <EstadoDelGraficoEnPantalla estado={{ tipo: 'ERROR', motivo: estado.motivo }} onReintentar={() => setVuelta((v) => v + 1)} />;
-  return <CintaDelTiempo {...cinta} eventos={eventos} leidaHastaElTope={estado.truncada ? estado.entradas.length : null} />;
+  const leidos = estado.entradas.length + estado.notasDeLaSesion.length + estado.notasPropias.length;
+  const pie =
+    conNotas && !conTextoDeLasNotas ? (
+      <p className="nota grafico-base__nota">
+        {COPY_DE_LA_CINTA.notasOcultas}{' '}
+        <button type="button" className="boton boton--enlace" onClick={() => setVerLasNotas(true)}>
+          {COPY_DE_LA_CINTA.mostrarLasNotas}
+        </button>
+      </p>
+    ) : null;
+  return <CintaDelTiempo {...cinta} eventos={eventos} leidaHastaElTope={estado.truncada ? leidos : null} pie={pie} />;
 }
