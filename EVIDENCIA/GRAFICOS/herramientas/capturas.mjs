@@ -827,6 +827,20 @@ function pantallas({ diego, versiones }) {
         paneles: [{ nombre: 'compositor', selector: 'dialog[open]' }],
         graficos: 'body',
       },
+      {
+        nombre: '20-gr14-por-semana',
+        codigo: 'GR-14 (y GR-11)',
+        de: 'rama C (wp-graficos-nutricion-y-cuerpo), pasada visual',
+        que: 'Lo indicado y lo registrado arriba de «Registros» de Nutrición con 90 días: por semana de entrada (más de seis semanas), con la media de cada semana como barra, las semanas sin media en gris y los días tenues detrás.',
+        llegar: async (page) => {
+          await ir(page, `/pro/advisees/nutrition?id=${diego}&vista=registros&p=90`);
+          await asentar(page);
+          if (!(await siAparece(page, '.dia-por-dia', null, 15_000))) await faltaOError(page, 'Lo indicado y lo registrado (GR-14), arriba de «Registros» de Nutrición, lo monta la rama C (wp-graficos-nutricion-y-cuerpo).');
+        },
+        enfocar: '.dia-por-dia',
+        paneles: [{ nombre: 'por-semana', selector: '.dia-por-dia' }],
+        graficos: '.dia-por-dia',
+      },
     ],
   };
 }
