@@ -224,7 +224,7 @@ export interface PropsDeLaCintaLeida extends Omit<PropsDeLaCinta, 'eventos' | 'l
   readonly vigencias: readonly VigenciaDePlan[];
   /** Las sesiones de API-TRN-21, si ya se leyeron: de ahí salen las sustituciones. */
   readonly ejecuciones?: readonly EjecucionDeEntrenamiento[];
-  /** Otras fuentes de la cinta (las notas de la tanda B). */
+  /** Otras fuentes de la cinta (las notas de la tanda B ya las lee la cinta). */
   readonly otras?: readonly EventoDeLaCinta[];
   /** En el cuadro del ejercicio: solo lo de ese ejercicio. */
   readonly exerciseKey?: string | null;
@@ -251,11 +251,15 @@ export function CintaDelTiempoLeida({ lectura, alcances, vigencias, ejecuciones,
     };
   }, [token, asesoradoId, desde, hasta, hoy, desdeElVinculo, deLosAlcances, vuelta]);
   const eventos = useMemo(
-    () => (estado?.tipo === 'lista' ? eventosDeLaCinta({ alcances, entradas: estado.entradas, vigencias, ejecuciones, otras, exerciseKey }) : []),
+    () =>
+      estado?.tipo === 'lista'
+        ? eventosDeLaCinta({ alcances, entradas: estado.entradas, vigencias, ejecuciones, notasDeLaSesion: estado.notasDeLaSesion, notasPropias: estado.notasPropias, zona: estado.zona, otras, exerciseKey })
+        : [],
     [estado, alcances, vigencias, ejecuciones, otras, exerciseKey],
   );
   if (estado === null) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'CARGANDO' }} alto={2 * ALTO_DE_LA_FILA_DE_LA_CINTA + ALTO_DEL_EJE_DE_FECHAS} />;
   if (estado.tipo === 'sin-acceso') return <EstadoDelGraficoEnPantalla estado={{ tipo: 'SIN_ACCESO' }} />;
   if (estado.tipo === 'error') return <EstadoDelGraficoEnPantalla estado={{ tipo: 'ERROR', motivo: estado.motivo }} onReintentar={() => setVuelta((v) => v + 1)} />;
-  return <CintaDelTiempo {...cinta} eventos={eventos} leidaHastaElTope={estado.truncada ? estado.entradas.length : null} />;
+  const leidos = estado.entradas.length + estado.notasDeLaSesion.length + estado.notasPropias.length;
+  return <CintaDelTiempo {...cinta} eventos={eventos} leidaHastaElTope={estado.truncada ? leidos : null} />;
 }
