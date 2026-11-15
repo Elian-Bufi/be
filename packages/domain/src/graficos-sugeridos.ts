@@ -58,6 +58,8 @@ export const GRAFICOS_SUGERIDOS: readonly GraficoSugerido[] = [
   sugerido('entrenamiento.perfil-carga-repeticiones', 'GR-06', 'ENTRENAMIENTO', 2, 'COMPARACION', ['ENTRENAMIENTO'], ['entrenamiento.carga', 'entrenamiento.repeticiones'], { ejercicio: true }),
   sugerido('nutricion.energia-por-dia', 'GR-12', 'NUTRICION', 2, 'EN_EL_TIEMPO', ['NUTRICION'], ['nutricion.energia']),
   sugerido('nutricion.macros-en-paneles', 'GR-13', 'NUTRICION', 2, 'EN_EL_TIEMPO', ['NUTRICION'], ['nutricion.proteinas', 'nutricion.carbohidratos', 'nutricion.grasas', 'nutricion.fibra']),
+  // GR-13 en g/kg (GR-T48, rama C): una tarjeta propia, con los dos alcances y tomas y planes propios en los dos.
+  sugerido('nutricion.macros-por-kilo', 'GR-13', 'NUTRICION', 2, 'EN_EL_TIEMPO', ['NUTRICION', 'ANTROPOMETRIA'], ['nutricion.proteinas-por-kilo', 'nutricion.carbohidratos-por-kilo', 'nutricion.grasas-por-kilo']),
   sugerido('nutricion.indicado-y-registrado-por-dia', 'GR-14', 'NUTRICION', 2, 'EN_EL_TIEMPO', ['NUTRICION'], ['nutricion.energia', 'nutricion.proteinas', 'nutricion.carbohidratos', 'nutricion.grasas']),
   sugerido('antropometria.desde-el-inicio', 'GR-16', 'ANTROPOMETRIA', 1, 'COMPARACION', ['ANTROPOMETRIA'], [], { medida: true }),
   sugerido('antropometria.perfil-por-sitio', 'GR-18', 'ANTROPOMETRIA', 2, 'COMPARACION', ['ANTROPOMETRIA'], []),

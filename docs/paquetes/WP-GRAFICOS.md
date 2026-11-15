@@ -1482,10 +1482,10 @@ a la vista queda a la vista.
 
 | Gráfico | Antes | Después | Prueba |
 |---|---|---|---|
-| GR-02 | 96 px; la leyenda decía «Registrado: lleno» y se veía la línea sin los puntos (la marca medía con el ancho de un día: 1,8 de radio bajo una línea de 2 px); el número del último decía «160,4» y la lectura «≈ 160,5 kg»; debajo, cuatro notas largas (los extremos, la carga sobre 30, «solo lo ves vos»), la primera línea propia arriba y un segundo «Cómo se calculó» | 240 px; un punto por sesión con su tamaño (`porSesion`: 3,5 de radio con su halo, también en un año); la leyenda en fichas, solo con lo que se ve, y la tira («Cada sesión»: entera con estimación, una raya baja sin); el número del punto es el de la lectura, al medio kilo; el cambio de lo indicado en la línea de la versión; a la vista, la línea de validez y ruido de «Analizar» y cada versión con su ruido; en «Cómo leerlo», cómo se calcula y que la persona no lo ve | TEST-GRF-040, 041 y 043 |
-| GR-03 | La tira de cada sesión debajo de cada panel, sin leyenda; tres notas debajo; «3» rotulado dos veces en una serie pareja | La tira en la leyenda («Cada sesión», con una raya baja donde falta el dato: en el panel del RIR, la sesión con el RIR sin escribir o solo indicado, como en GR-05); lo que aclara cada marca, en «Cómo leerlo»; a la vista, lo que falta (si el comparador no se leyó); un número que ya está escrito no se repite; tres paneles de 96 px | TEST-GRF-040, 041 y 043 |
-| GR-05 | Puntos que no se veían; la línea cortada explicada en una nota; dos «Cómo leerlo» (el de la base y uno propio) y «lo que se ve» debajo de los dos | 240 px; los puntos de una sesión; la línea cortada («Indicado por versión») y la tira en la leyenda; «lo que se ve», a la vista antes del pie; un solo «Cómo leerlo» con lo que aclara | TEST-GRF-040, 041 y 043 |
-| GR-06 | El eje X de 0 a 12 con los puntos apiñados entre 3 y 6; las curvas rotuladas en el margen; la leyenda abajo en renglones largos; cinco párrafos de texto | Los dos ejes ajustados a los datos con un margen y marcas redondas (X de 2 a 8 con series de 3 a 6; Y con un 8 % de aire y 10 kg como mínimo); las curvas recortadas y rotuladas donde salen del dibujo, sin pisarse y con un halo que la línea no cruza; título, línea tenue y leyenda en fichas arriba; qué entra, en una línea a la vista (§5.6); lo demás en «Cómo leerlo» | TEST-GRF-042 y 043 |
+| GR-02 | 96 px; la leyenda decía «Registrado: lleno» y se veía la línea sin los puntos (la marca medía con el ancho de un día: 1,8 de radio bajo una línea de 2 px); el número del último decía «160,4» y la lectura «≈ 160,5 kg»; debajo, cuatro notas largas (los extremos, la carga sobre 30, «solo lo ves vos»), la primera línea propia arriba y un segundo «Cómo se calculó» | 240 px; un punto por sesión con su tamaño (`porSesion`: 3,5 de radio con su halo, también en un año); la leyenda en fichas, solo con lo que se ve, y la tira («Cada sesión»: entera con estimación, una raya baja sin); el número del punto es el de la lectura, al medio kilo; el cambio de lo indicado en la línea de la versión; a la vista, la línea de validez y ruido de «Analizar» y cada versión con su ruido; en «Cómo leerlo», cómo se calcula y que la persona no lo ve | TEST-GRVB-001, 002 y 004 |
+| GR-03 | La tira de cada sesión debajo de cada panel, sin leyenda; tres notas debajo; «3» rotulado dos veces en una serie pareja | La tira en la leyenda («Cada sesión», con una raya baja donde falta el dato: en el panel del RIR, la sesión con el RIR sin escribir o solo indicado, como en GR-05); lo que aclara cada marca, en «Cómo leerlo»; a la vista, lo que falta (si el comparador no se leyó); un número que ya está escrito no se repite; tres paneles de 96 px | TEST-GRVB-001, 002 y 004 |
+| GR-05 | Puntos que no se veían; la línea cortada explicada en una nota; dos «Cómo leerlo» (el de la base y uno propio) y «lo que se ve» debajo de los dos | 240 px; los puntos de una sesión; la línea cortada («Indicado por versión») y la tira en la leyenda; «lo que se ve», a la vista antes del pie; un solo «Cómo leerlo» con lo que aclara | TEST-GRVB-001, 002 y 004 |
+| GR-06 | El eje X de 0 a 12 con los puntos apiñados entre 3 y 6; las curvas rotuladas en el margen; la leyenda abajo en renglones largos; cinco párrafos de texto | Los dos ejes ajustados a los datos con un margen y marcas redondas (X de 2 a 8 con series de 3 a 6; Y con un 8 % de aire y 10 kg como mínimo); las curvas recortadas y rotuladas donde salen del dibujo, sin pisarse y con un halo que la línea no cruza; título, línea tenue y leyenda en fichas arriba; qué entra, en una línea a la vista (§5.6); lo demás en «Cómo leerlo» | TEST-GRVB-003 y 004 |
 | La cinta (GR-23) | Íconos de 15 px pegados a la barra; en el margen, el ícono del área, que a ese tamaño se leía como una flecha «↔» | Íconos de 18 px sobre un fondo de 22 que no toca la barra (la fila, de 30 px; dos íconos a menos de 22 px se agrupan); con una sola fila, sin el ícono del área; en el cuadro de 1024, la leyenda larga se parte y ya no corta la cinta a la derecha | TEST-GRF-019 (la geometría de la cinta, de la base) |
 
 **Lo que la rama sumó a la base, sin cambiar lo de antes:** `porSesion` en el carril de puntos (la marca se mide con
@@ -1549,12 +1549,12 @@ lo de la rama; de la rama se perdió un aviso, que volvió (abajo).
 
 | Hallazgo | Severidad | Qué se hizo | Prueba |
 |---|---|---|---|
-| GR-03 y GR-05, que son de una serie, rotulaban en la línea de la versión el cambio de lo indicado de **todas** las series: en GR-05 el escalón de la serie 2 podía seguir en RIR 2 mientras su versión decía «RIR de 2 a 1» por la serie 1 | Media | El cambio de lo indicado de la serie elegida (`bandasConElCambio` con la serie; `cambiosPorVersion` la admite sin cambiar lo de antes); GR-02 sigue con todas | TEST-GRF-044 |
-| Una sesión «no realizada» (o con el ejercicio del plan sin registrar, o hecho otro en su lugar) entraba en GR-05 como sesión: la contaba («12 sesiones»), dibujaba su RIR indicado y la tira la marcaba «sin el dato»; GR-03 también dibujaba su RIR indicado | Media | `seHizoElEjercicio`: esas sesiones no se cuentan ni se dibujan; la línea se corta, como en la progresión por serie de la API | TEST-GRF-044 |
-| GR-03: solo la tira del RIR marcaba la sesión con el ejercicio hecho sin series escritas; en la carga y las repeticiones la línea se cortaba sin que la tira dijera por qué | Media | Las tres tiras marcan las mismas sesiones (`fechasConElEjercicio`), cada una con su raya baja donde falta el dato | TEST-GRF-044 |
-| GR-02 (historial y «Analizar») unía la línea a través de una sesión con el ejercicio hecho sin series (un registro resumido): la API no la cuenta entre las que no entraron, y la tira no la marcaba; GR-03, debajo, sí cortaba | Media | `fechasSinSeries`: la línea se corta y la sesión va como «sin estimación», en el historial y en «Analizar» | TEST-GRF-045 |
-| La leyenda de GR-02 llamaba «Registrado» al 1RM estimado lleno; «Analizar» dice «Hasta 10 rep. equivalentes» (es una estimación, RM-22) | Media | Un sentido nuevo del dominio, `NUCLEO_DE_LA_ESTIMACION` («Hasta 10 rep. equivalentes»), en los puntos llenos de GR-02 | TEST-GRF-040 y 045 |
-| Al traer la pasada visual se perdió el aviso de que no se pudo leer lo indicado (la rama lo tenía en «Analizar»): GR-02 callaba el cambio de lo indicado sin decir por qué | Media | «No pudimos leer lo que indicaba el plan…», a la vista en el historial y en «Analizar», antes de cada versión | TEST-GRF-043 y 045 |
+| GR-03 y GR-05, que son de una serie, rotulaban en la línea de la versión el cambio de lo indicado de **todas** las series: en GR-05 el escalón de la serie 2 podía seguir en RIR 2 mientras su versión decía «RIR de 2 a 1» por la serie 1 | Media | El cambio de lo indicado de la serie elegida (`bandasConElCambio` con la serie; `cambiosPorVersion` la admite sin cambiar lo de antes); GR-02 sigue con todas | TEST-GRVB-005 |
+| Una sesión «no realizada» (o con el ejercicio del plan sin registrar, o hecho otro en su lugar) entraba en GR-05 como sesión: la contaba («12 sesiones»), dibujaba su RIR indicado y la tira la marcaba «sin el dato»; GR-03 también dibujaba su RIR indicado | Media | `seHizoElEjercicio`: esas sesiones no se cuentan ni se dibujan; la línea se corta, como en la progresión por serie de la API | TEST-GRVB-005 |
+| GR-03: solo la tira del RIR marcaba la sesión con el ejercicio hecho sin series escritas; en la carga y las repeticiones la línea se cortaba sin que la tira dijera por qué | Media | Las tres tiras marcan las mismas sesiones (`fechasConElEjercicio`), cada una con su raya baja donde falta el dato | TEST-GRVB-005 |
+| GR-02 (historial y «Analizar») unía la línea a través de una sesión con el ejercicio hecho sin series (un registro resumido): la API no la cuenta entre las que no entraron, y la tira no la marcaba; GR-03, debajo, sí cortaba | Media | `fechasSinSeries`: la línea se corta y la sesión va como «sin estimación», en el historial y en «Analizar» | TEST-GRVB-006 |
+| La leyenda de GR-02 llamaba «Registrado» al 1RM estimado lleno; «Analizar» dice «Hasta 10 rep. equivalentes» (es una estimación, RM-22) | Media | Un sentido nuevo del dominio, `NUCLEO_DE_LA_ESTIMACION` («Hasta 10 rep. equivalentes»), en los puntos llenos de GR-02 | TEST-GRVB-001 y 006 |
+| Al traer la pasada visual se perdió el aviso de que no se pudo leer lo indicado (la rama lo tenía en «Analizar»): GR-02 callaba el cambio de lo indicado sin decir por qué | Media | «No pudimos leer lo que indicaba el plan…», a la vista en el historial y en «Analizar», antes de cada versión | TEST-GRVB-004 y 006 |
 | La misma versión decía «9 sesiones» en GR-02 y «12 sesiones» en GR-05: cuentan cosas distintas | Baja | GR-02 dice «9 sesiones con estimación» | TEST-GRF-022 y 045 |
 | Las decisiones de la pasada visual usaban GR-T40 a GR-T47, el rango de la rama C (§6.3) | Baja | Pasan a GR-VB01 a GR-VB08; las de esta revisión, GR-VB09 a GR-VB12 | — |
 | TEST-GRF-036 comparaba con un texto que ya no existía (`indexOf` daba −1 y la comparación pasaba siempre) | Baja | Compara con el texto de ahora y exige que esté | TEST-GRF-036 |
@@ -1588,7 +1588,228 @@ lo de la rama; de la rama se perdió un aviso, que volvió (abajo).
 
 ### 13.4 Rama C · `wp-graficos-nutricion-y-cuerpo`
 
-> Sin programar al declarar este paquete.
+> Programada el 2026-11-14 desde el primer commit de la base (`257912a6`) y terminada el 2026-11-15 con `main` traído
+> (#271, #272, #276 y #279 integrados); el 2026-11-15 trajo otra vez `main` (#283, #284, #280 y #285) y pasó por la pasada visual
+> (abajo, «Pasada visual de la rama C»). Sin integrar al escribir esto. Sin operaciones nuevas en la API, sin migraciones y
+> sin dependencias nuevas; la APK no lee nada de esta rama. Fuera de sus archivos toca, con lo mínimo,
+> `graficos/lecturas.ts` (de la base: un import y una línea, para que `leerSerieDelCatalogo` lea los g/kg),
+> `packages/domain/src/graficos-sugeridos.ts` (una línea: la tarjeta de los g/kg, GR-T48), un comentario de
+> `series-disponibles.test.ts` que todavía decía que los g/kg estaban en preparación y, como pedía el reparto,
+> `nutrition/registros.tsx` y `anthropometry/evolucion.tsx`; con la pasada visual, una escena de la herramienta de capturas
+> (`EVIDENCIA/GRAFICOS/herramientas/capturas.mjs`).
+
+| Parte | Lo que quedó | Dónde | Oráculo |
+|---|---|---|---|
+| GR-11 | La capa de temporadas de todo gráfico de Nutrición: las versiones del plan de fondo, alternadas y sin color de juicio, con su rótulo arriba del primer panel («Plan v3»); una línea fina donde empieza cada versión del plan o del objetivo; la lista entera en texto («Plan v3 · desde el 5/10 · Objetivo desde el 1/10»); el objetivo en kcal o g por día en escalón, leído contra la versión que regía cada día. Una proporción de las calorías se escribe («30 de las calorías (proporción): BE no la convierte a gramos ni la dibuja») y no se dibuja | `graficos/nutricion/temporadas.ts` | TEST-GRF-041 |
+| GR-12 | Las calorías registradas por día: lleno con todo registrado, hueco si es un subtotal (dice qué falta) u hoy, contorno cortado si no se puede saber si faltan comidas, y nada sin registros; lo cargado después con su muesca (API-DSH-04 con `late`; si la lectura queda a medias, la nota dice desde qué día se sabe y lo anterior no se marca); el objetivo en escalón y la media de cada semana, que dice con qué días se hizo y cuáles quedaron afuera («con 4 de 7 días; 1 sin registro, 1 con cantidades faltantes y 1 con comidas del plan sin registro»), o cuánto le falta | `graficos/nutricion/energia-por-dia.ts` y `-en-pantalla.tsx`, `dias-de-nutricion.ts` | TEST-GRF-042, 043, 056 y 058 |
+| GR-13 | Proteínas, carbohidratos, grasas y fibra, cada uno en su panel con su eje desde cero y su objetivo; la fibra sin dato es un subtotal, no un cero. Los g/kg, en una tarjeta propia: cada día dividido por el peso medido de la última toma propia en ese día o antes, con la fecha del peso en cada punto, la lista de los pesos usados y los días sin peso anterior (cada uno lo dice una vez en la tabla, sin marca); la línea se corta donde cambia el peso. En el catálogo, los g/kg pasan a ofrecidos y «Analizar» los lee, con el motivo «sin toma de peso anterior» escrito con palabras | `graficos/nutricion/macros-en-paneles.ts` y `-en-pantalla.tsx`, `gramos-por-kilo.ts`, `lecturas-de-nutricion.ts`, `series-disponibles-nutricion.ts` | TEST-GRF-044, 045, 051 y 059 |
+| GR-14 | Lo indicado y lo registrado, día por día, en calorías y en los tres macronutrientes: un rombo hueco para lo indicado del día (solo si el plan no deja elegir) y la marca del día para lo registrado, unidos con la diferencia con su signo («+18 g») solo en los días con todo registrado. Debajo, la tira por comida de API-NUT-17 (con la opción del plan, con una comida diferente, sin registro); un día sin registros es un hueco. En «Registros» de Nutrición va arriba de la lista, como «Día por día» | `graficos/nutricion/indicado-y-registrado-por-dia.ts` y `-en-pantalla.tsx`, `dia-por-dia-en-registros.tsx`, `nutrition/registros.tsx` | TEST-GRF-046 y 047 |
+| GR-18 | El perfil por sitio entre dos tomas (por omisión, la más nueva y la anterior; se elige otro par): una fila por sitio en el orden del catálogo, cada familia con su eje común, la toma anterior en cuadrado y la más nueva en círculo, unidas solo dentro del mismo grupo de comparabilidad, y la diferencia escrita. Un sitio medido en una sola toma es un hueco. Debajo, que no hay reducción localizada y la línea del error de medición. Con una sola toma en las fechas, dice que en «Tomas» cada toma ya dice cuánto cambió desde la anterior (GR-16). Es la vista «Por sitio» de «Evolución» | `graficos/antropometria/perfil-por-sitio.ts` y `-en-pantalla.tsx`, `tomas.ts`, `vistas-de-evolucion.tsx`, `anthropometry/evolucion.tsx` | TEST-GRF-048 |
+| GR-20 | La masa grasa según Durnin y Womersley y según Faulkner en un panel con un eje común, la libre de grasa en otro y la muscular de Lee aparte; cada método con su forma y su versión, calculado con su punto adentro (y la tabla lo dice: «14,2 kg (calculado)»); nada une dos tomas, y una línea fina dice cuánto se separan los dos métodos de la misma toma. Dice que se mueven juntos por construcción. Es la vista «Por método» de «Evolución» | `graficos/antropometria/masa-grasa-por-metodo.ts` y `-en-pantalla.tsx`, `series-disponibles-antropometria.ts` | TEST-GRF-049 y 059 |
+| El lienzo y el registro | Un lienzo propio para estas capas, sobre las piezas puras de la base y con sus medidas comunes (una fecha cae en el mismo lugar que en la cinta), con el mismo teclado, cursor compartido, lectura viva y tabla; la marca del medio del eje vertical va solo si se escribe tal cual (la regla que la rama B le puso a `carriles.ts`; también en los ejes de GR-18). Seis gráficos en los registros de la rama, ofrecidos solo si se ofrecen todas sus series; cada pantalla se carga al dibujarse. El registro y `GRAFICOS_SUGERIDOS` del dominio dicen lo mismo de cada gráfico (código, área, lugar, series y alcances) | `graficos/nutricion-y-cuerpo/`, `graficos/nutricion/registro.ts`, `graficos/antropometria/registro.ts`, `graficos-sugeridos.ts` | TEST-GRF-040, 050 a 055 y 057 |
+
+**Las pruebas:** `apps/web/test/graficos-nutricion-y-cuerpo.test.mjs` (TEST-GRF-040 a 059; las de la pasada visual, TEST-GRVC-001 a 008). **Las mutaciones** están en
+el título de cada prueba y se revisaron leyendo el código, sin correrlas (la PC no tiene memoria para las pruebas; la CI
+es el juez de que pasan).
+
+**La segunda revisión (2026-11-15)** sumó tres arreglos, sin cambiar ninguna regla de arriba:
+- **Lo de otro profesional se dice.** Cuando API-PRJ-01 de Nutrición responde con `partialView` (hay registros de comida
+  de otro profesional en esas fechas), GR-12, GR-13 (también en g/kg) y GR-14 lo dicen en una nota: esos registros no se
+  ven y no están en los números, así que un día no se lee como todo lo que la persona registró. En los g/kg, lo mismo con
+  las tomas de otro profesional: su peso no se usa. Lo fijan TEST-GRF-042, 045 y 046.
+- **Las fechas de otro año llevan el año.** El peso de los g/kg se busca hasta un año antes (GR-T44): sin el año, «peso
+  del 20/12» se leería como reciente y «se buscó desde el 2/11» como el primer día del período. La fecha del peso, la de
+  la búsqueda, las temporadas, el objetivo y las tomas de GR-18 llevan el año cuando no es el del último día del gráfico
+  (o de la toma más nueva), como el selector de fechas de PG-14. Lo fijan TEST-GRF-042, 045 y 048.
+- **«Día por día» no salta.** «Registros» relee en silencio después de guardar una estimación, para que la lista no
+  salte; el gráfico de arriba volvía a «cargando» y movía la lista igual. Ahora, con la misma persona y el mismo período,
+  lo que se ve sigue a la vista hasta que llega lo nuevo (`esLaMismaLectura`). Lo fija TEST-GRF-054.
+
+**Decisiones del continuador al programar, a ratificar (§6.3):**
+- **GR-T40 · Un lienzo propio de la rama** (`graficos/nutricion-y-cuerpo/`, una carpeta que el reparto no nombraba), sobre
+  las piezas puras de la base y sus medidas, porque los paneles alineados no dibujan dos series con un eje (GR-20), las
+  uniones (GR-14), las medias semanales (GR-12) ni la tira por comida. *Alternativa:* sumar esas capas a
+  `paneles-alineados.tsx`, de la rama A.
+- **GR-T41 · Tres marcas para un día de Nutrición:** lleno, hueco y, sin poder saber si faltan comidas (sin plan vigente o
+  sin día tipo), contorno cortado. *Alternativa:* lleno, con la duda solo en la lectura.
+- **GR-T42 · La media de la semana (v1):** el promedio de los días con cantidades en todos sus registros, con 4 o más;
+  hoy no cuenta; dice cuántos y cuáles quedaron afuera, por motivo. *Alternativa:* la media por semana de API-PRJ-01, que
+  promedia también los subtotales.
+- **GR-T43 · En los g/kg, solo el peso medido en kg** de las tomas propias; uno reportado o en otra unidad no se usa.
+- **GR-T44 · El peso anterior se busca hasta un año antes del período,** sin pasar del inicio del vínculo; la nota dice
+  desde cuándo.
+- **GR-T45 · GR-14:** lo indicado es un rombo hueco, como en «Analizar» (el círculo hueco ya es el subtotal); la
+  diferencia va solo en los días llenos; suma las calorías, como el sugerido del dominio; sin líneas entre días.
+- **GR-T46 · GR-18:** «en orden anatómico» es el orden del catálogo de medidas (el de la planilla); una familia, un eje;
+  las dos tomas se ordenan en el tiempo aunque se elijan al revés.
+- **GR-T47 · GR-20:** la línea fina entre los dos métodos de una toma; Lee con perímetros y con peso y talla en su panel;
+  las otras masas siguen en «Por medida».
+- **GR-T48 · Los g/kg en una tarjeta propia del registro** (`nutricion.macros-por-kilo`, GR-13), que pide las dos áreas y
+  lo propio en las dos: el gráfico no recibe el acceso, y así nunca pide la lectura de un área que no está. Está en
+  `GRAFICOS_SUGERIDOS` con esos dos alcances (una línea, al terminar la rama). *Alternativa:* un conmutador dentro de
+  GR-13, que pide pasarle el acceso al gráfico.
+- **GR-T49 · Lo demás de la pantalla:** las pantallas del registro se cargan al dibujarse (React.lazy, sin JSX en el
+  registro); «Día por día» arranca abierto y se pliega; en pantalla, «Calorías» (C-28); los ejes de Nutrición desde cero;
+  «Por sitio» y «Por método» usan la lectura de «Evolución» (API-ANT-06, un punto por día y por medida, como GR-T79); lo
+  cargado después se lee de a 50 y hasta 10 páginas: si no alcanzan, se dice desde qué día se sabe y lo anterior no se
+  marca, en vez de pedir más páginas o de dejarlo pasar por cargado a tiempo.
+
+**Lo que falta para cerrar:**
+1. **«Patrones» (rama E):** los seis gráficos se ven ahí cuando entre; las series de GR-12, GR-13 y GR-20, también en
+   «Analizar» (rama D).
+2. **GR-11 detrás de otra área, a pedido:** las ramas B y D usan `temporadasDeNutricion` con su conmutador.
+3. **La evidencia en pantalla:** Azul noche y Claro; 1440, 1280 y 1024; el lector de pantalla en las tablas.
+4. **El error de medición** (GR-17, GR-D4, fase 4): la columna y la franja de GR-18 y GR-20.
+5. **Correr las mutaciones** de cada prueba.
+6. **GR-18 en «Analizar»:** §4.4 lo pone también ahí, pero el reparto (§11) no se lo da a ninguna rama: hoy está en
+   «Evolución › Por sitio» y en el registro, para «Patrones». Queda para quien integre «Analizar» (rama D) o para la
+   fase 3.
+7. **Los g/kg en «Analizar»:** `leerSerieDelCatalogo` los lee con `leerSeriePorKilo`, que no recibe el acceso. El
+   selector de la rama D los tiene que ofrecer solo con `seriesOfrecidas`, y una vista guardada con los g/kg, abierta sin
+   Antropometría, no debería pedir la lectura del peso (hoy la API la responde con 404 y no se ve nada).
+
+#### Pasada visual de la rama C (15/11)
+
+La rama trajo `main` tres veces con un merge, sin rebase: primero la pasada visual (#283) y la historia anterior (#284);
+después, la rama B (#280), y al final #285 (compartir casi por omisión). No hubo choques: las piezas comunes quedan como en `main` y la rama C solo suma lo suyo. Lo que
+B cambió en las piezas comunes lo hereda por usarlas: un número ya escrito no se repite como extremo
+(`rotulosDeLoLleno`, que ahora usa el lienzo de la rama); la cinta (filas de 30 px, sin el ícono del área con una sola
+fila) no la dibuja ningún gráfico de C. Al traer #283 la rama no compilaba: la tabla de la base pide en cada celda si es
+de lo registrado (`registrada`, para «Lo último») y la lectura pide `hoy`; las celdas de GR-12, GR-13, GR-14 y GR-20 lo
+dicen (en GR-14, lo indicado solo no cuenta como registrado).
+
+Después aplicó la guía visual (`DISENO-VISUAL` §1 y §2 «C») a sus gráficos con el mismo lenguaje que #283 le dio a la
+fase 1 y a la base. **§5 manda sobre la guía**, como en §13.7 y §13.3: lo que §5 pide a la vista queda a la vista.
+
+| Gráfico | Antes | Después | Oráculo |
+|---|---|---|---|
+| El lienzo de la rama (todos) | El título suelto, la lista de temporadas en un renglón, las versiones del plan como bloques de color pleno, el eje con tres marcas (abajo, medio, arriba) y una línea vertical en cada fecha, 140 px aunque hubiera un solo panel, la leyenda en renglones largos debajo, la instrucción del teclado como lectura y todas las notas en párrafos | El título (16 px) con su línea tenue (la unidad, cómo se agrupa, el período y el método, §5.6); «Por semana \| Día por día» si el gráfico los tiene; la leyenda en fichas cortas arriba, solo con lo que se ve, con el texto entero para el lector de pantalla; 240 px con un panel y 140 con más; el eje con 3 a 5 marcas redondas y su grilla tenue (las de la base); las versiones con un tono tenue que alterna y una línea fina en el cambio, con «Plan v5 · desde el 2/3» si entra; un número solo en el elegido, el último y los extremos (discretos), sin pisarse; con tres paneles o más, las fechas también arriba; debajo, «Lo último» de cada columna, lo que §5 pide a la vista y, al pie, «Ver la tabla» y «Cómo leerlo» | TEST-GRF-041 y 050, TEST-GRVC-003, 004 y 007 |
+| GR-12 y GR-13 · por semana | Un punto por día con un tramo corto de la media de cada semana encima: un peine con muchos días sin registro | Con más de seis semanas y alguna semana con media, de entrada, una barra por semana con la media de la semana (v1, GR-T42), llena solo si entran los siete días y hueca si no; una semana con días pero sin media es un contorno cortado sin relleno, y una sin ningún día con valor, la columna gris de la base: nunca una barra en cero; los días, tenues detrás; debajo, la tira de cada día (con lo cargado después marcado, §5.14); la lectura de la semana elegida a la vista, con el teclado (las flechas eligen la semana) y para el lector de pantalla, y la tabla de las semanas; «Día por día», a un toque. La misma media en GR-12, GR-13 y GR-14 | TEST-GRF-043, TEST-GRVC-001 |
+| GR-13 · g/kg | Las notas en párrafos | Solo día por día (GR-VC02); los pesos usados y los días sin peso, a la vista; la regla del peso, en «Cómo leerlo» | TEST-GRVC-002 y 004 |
+| GR-14 | La diferencia escrita en cada día con lugar («+138 kcal» en cada mancuerna); sin indicado del día, un párrafo de tres líneas; el título «…, día por día» | La diferencia, solo en el día elegido y en el último (la lectura y la tabla la dicen siempre); sin indicado del día, una sola línea («Sin indicado del día en estas fechas: comidas con varias opciones.») y el párrafo en «Cómo leerlo»; por semana, lo registrado como barra y lo indicado de cada día como rombos tenues, con la lectura «indicado del día de 2.100 kcal a 2.200 kcal en 3 días» y sin diferencia (va día por día, GR-VC04); el título «Lo indicado y lo registrado», y en «Registros» el botón «Ocultar el gráfico» | TEST-GRF-046, TEST-GRVC-002 y 003 |
+| GR-18 | Los nombres largos cortados con «…» («Perímetro del brazo flexionado y …»); el eje con tres marcas (0, 75, 150); la leyenda en renglones; cinco notas a la vista | El nombre entero, en dos renglones si no entra; el eje de cada familia con 3 a 5 marcas redondas y su grilla; la columna de la diferencia con su encabezado; la línea tenue dice qué se compara («pliegues en mm y perímetros en cm · entre la toma del 2/10 y la del 12/11»); las tomas como fichas con su fecha; a la vista, el error de medición (§5.7) y lo que no se compara; la línea, el eje común y que no hay reducción localizada (la explicación fisiológica, con su fuente, §5.1), en «Cómo leerlo» | TEST-GRVC-006 |
+| GR-20 | Con dos tomas, dos puntitos en un gráfico de 140 px; nombraba a Faulkner sin datos de Faulkner («Durnin y Womersley y Faulkner salen de los mismos pliegues…», columnas vacías, «según Faulkner en 0 tomas»); seis notas a la vista | Con menos de 4 tomas, la tabla a la vista (GR-VC05); solo los métodos que aparecen, en las columnas, la leyenda, la descripción y las notas; «por construcción» solo con los dos; a la vista, el error de medición y lo de otro profesional; lo demás, en «Cómo leerlo» | TEST-GRF-049, TEST-GRVC-005 |
+
+**Las mutaciones** están en el título de cada prueba (dibujar la semana sin media en cero, llenar la barra con 6 de 7,
+perder lo cargado después por semana, restar dos medias en GR-14, llevar el párrafo de lo indicado a la vista, rotular
+todos los puntos, llevar lo cargado después o los pesos a «Cómo leerlo», nombrar a Faulkner sin datos, dibujar dos
+puntitos, cortar un nombre con «…», decidir el modo sin la regla de la base, «sin racha» en una ficha). Las de la lógica
+ejecutan las funciones puras; las de la pantalla leen el código. La CI es la que las corre.
+
+**Las capturas** (`capturas-de-los-graficos`) suman una escena, `20-gr14-por-semana`: lo indicado y lo registrado con 90
+días, para ver «Por semana» en pantalla. GR-12 y GR-13 no están todavía en ninguna pantalla (los muestran «Analizar» y
+«Patrones», ramas D y E): los fijan las pruebas.
+
+**Decisiones del continuador en la pasada visual, a ratificar:**
+- **GR-VC01 · Nutrición por semana en GR-12, GR-13 y GR-14,** de entrada con más de seis semanas (`convienePorSemana`, la
+  regla de GR-V01) y «Día por día» a un toque. La barra es la **media de la semana (v1) de GR-12** (GR-T42: los días con
+  cantidades en todos sus registros, si son 4 o más; los demás afuera y contados), no la de GR-24, que promedia también
+  los subtotales: §4.4 pide para GR-12 la media que deja afuera los días con cantidades faltantes y lo dice. Llena solo
+  con los siete días; hueca si no; sin media, una columna gris. *Alternativa:* la media de GR-24 (GR-V01), una sola media
+  semanal en todo BE.
+- **GR-VC02 · Los g/kg van solo día por día:** cada día usa el peso de su toma y la línea se corta donde cambia el peso;
+  una media de la semana mezclaría dos pesos sin decirlo. *Alternativa:* la media de la semana de los g/kg de cada día,
+  con los pesos usados en su lectura.
+- **GR-VC03 · Los números del dibujo:** con una serie, el elegido, el último y, con 4 o más llenos, el mínimo y el máximo
+  de lo lleno (discretos); con dos métodos (GR-20), el elegido y el último de cada uno, sin extremos; la diferencia de
+  GR-14, solo en el día elegido y en el último; por semana, la media de la semana elegida o, sin elegir, la de la última
+  con media. *Alternativa:* la diferencia de GR-14 en cada día con lugar, como antes.
+- **GR-VC04 · GR-14 por semana no escribe una diferencia:** lo registrado es la barra de la media de la semana y lo
+  indicado, el rango de lo indicado de cada día («de 2.100 kcal a 2.200 kcal en 3 días»), sin promediarlo; la diferencia
+  queda en «Día por día», donde es de cada día. *Alternativa:* la media de las diferencias de los días con todo
+  registrado e indicado del día, con sus días.
+- **GR-VC05 · GR-20 va como tabla a la vista con menos de 4 tomas** (§5.8: con tan pocos puntos un gráfico parece estable
+  o un salto). *Alternativa:* el umbral en 3 tomas.
+- **GR-VC06 · GR-20 nombra solo los métodos que aparecen:** una ficha por método aunque esté en dos paneles («Durnin y
+  Womersley»), la separación solo con los dos, «por construcción» solo con los dos, y en la línea tenue «cada número, con
+  su método y su versión». En la tabla, la versión del método va una vez en el encabezado si toda la columna es de la
+  misma (si no, en cada celda).
+- **GR-VC07 · GR-18 con el lenguaje de la base:** el nombre del sitio entero en uno o dos renglones (la columna mide lo que
+  el más largo, entre 120 px y el 42 % del ancho), el eje redondo con su grilla, la columna de la diferencia con su
+  encabezado, las fichas con la fecha de cada toma y la línea tenue de qué se compara.
+- **GR-VC08 · Qué se ve y qué va a «Cómo leerlo» en la rama (§5 manda):** a la vista, el método (en la línea tenue), lo
+  cargado después (la cuenta y la nota si la lectura quedó a medias), lo de otro profesional, un objetivo en proporción
+  (no se dibuja), los pesos usados y los días sin peso de los g/kg, sin indicado del día (una línea), el error de
+  medición, lo que no se compara en GR-18 y «por construcción» en GR-20; en «Cómo leerlo», el método entero, que es lo
+  registrado y no la ingesta, por qué un día sin registros no es un cero, cómo se arma cada barra, cómo se lee la
+  diferencia, la regla del peso, la reducción localizada, el eje común y las temporadas enteras.
+- **GR-VC09 · La ficha del día con todo registrado dice «Sin faltantes»** (el lector de pantalla oye «Con cantidades en
+  todos sus registros y sin comidas del plan sin registro: lleno»). *Alternativa:* «Registrado», como la ficha de la
+  base, que deja al subtotal como si no fuera registrado.
+- **GR-VC10 · Con tres paneles o más (GR-13 y GR-14), las fechas van también arriba:** a 1440 × 900 el eje de abajo queda
+  debajo del pliegue. *Alternativa:* paneles más bajos.
+- **GR-VC11 · GR-14 se llama «Lo indicado y lo registrado»**, sin «día por día» (también va por semana); en «Registros», el
+  botón dice «Ocultar el gráfico» y «Ver el gráfico de lo indicado y lo registrado». *Alternativa:* el nombre de §4.4,
+  con «día por día» solo en ese modo.
+- **GR-VC12 · Por semana de entrada solo si alguna semana tiene media,** y la semana con días pero sin media no es un hueco:
+  con la cohorte de prueba (Diego Sosa, 90 días) ninguna semana llega a 4 días sin faltantes, y «por semana» quedaba todo
+  en columnas grises. Sin ninguna media, de entrada va día por día (por semana sigue a un toque y dice por qué no hay
+  media); la semana con días pero sin media es un contorno cortado sin relleno («Sin media») y la columna gris queda para
+  la semana sin ningún día con valor («Sin días con valor»), como en la base. *Alternativa:* la media de GR-24, que con
+  los subtotales adentro tendría barras para la misma persona (ver lo que queda abierto).
+
+**Lo que no quedó como pide la guía, y por qué:**
+- **GR-12 por semana no usa la media de GR-24** (GR-VC01): §4.4 define la media semanal de GR-12, y §5.13 pide que diga qué
+  quedó afuera; la de GR-24 cuenta los subtotales adentro.
+- **Lo que §5 pide a la vista sigue a la vista** (GR-VC08): el error de medición, lo cargado después, los pesos de los g/kg
+  y «por construcción» no van a «Cómo leerlo», aunque la guía mande ahí las aclaraciones.
+- **Los colores siguen siendo los de las métricas** y no los de cada área, como en §13.7.
+- **«Lo último» de GR-14 es largo:** dice lo registrado, lo indicado y la diferencia de cada métrica, y las comidas; con
+  cuatro métricas son cinco renglones. Es la misma fila que la tabla.
+
+#### Revisión adversaria de la pasada visual (15/11)
+
+Tres miradas, una después de la otra: la honestidad (§5 manda sobre la guía), el código (el merge, los cálculos, las
+semanas, los husos, los estados vacíos y las pruebas) y la accesibilidad y el texto (el teclado, el lector de pantalla, la
+tabla, el contraste en Azul noche, nada cortado a 1024, 1280, 1440 y 1920 y las palabras). Las capturas de la CI
+(`capturas-de-los-graficos`, en Claro y Azul noche a los cuatro anchos) se miraron después de cada tanda.
+
+| Hallazgo | Severidad | Arreglo | Prueba |
+|---|---|---|---|
+| Al traer #283 la rama no compilaba: la tabla de la base pide `registrada` en cada celda y la lectura, `hoy` | Alta | Las celdas lo dicen (en GR-14, lo indicado solo no cuenta como registrado); la lectura recibe `hoy` | La CI (typecheck y build) |
+| GR-12 y GR-13 sin «Por semana»: un peine con muchos días sin registro (principio 6 y GR-V01) | Media | Por semana con la media de la semana v1 y sus días a la vista (GR-VC01) | TEST-GRF-043, TEST-GRVC-001 |
+| Por semana, todo en columnas grises con los datos de la cohorte: la semana con días pero sin media se dibujaba como la que no tiene ningún día, y arrancaba así | Media | Contorno cortado para «sin media», la columna gris solo sin ningún día; de entrada por semana solo con alguna media (GR-VC12) | TEST-GRVC-001 |
+| Por semana, lo cargado después dejaba de verse: los puntos tenues no llevan muesca (§5.14) | Media | La tira de cada día lo marca y la leyenda de la semana tiene su ficha | TEST-GRVC-001 y 007 |
+| GR-20 nombraba a Faulkner sin datos de Faulkner: la nota de «por construcción», columnas vacías y «según Faulkner en 0 tomas» | Media | Solo los métodos que aparecen; «por construcción» solo con los dos | TEST-GRVC-005 |
+| GR-20 con dos tomas dibujaba dos puntitos, que parecen estables o un salto (§5.8) | Media | Con menos de 4 tomas, tabla a la vista (GR-VC05) | TEST-GRVC-005 |
+| GR-18 cortaba los nombres largos con «…» | Media | Enteros, en dos renglones si no entran | TEST-GRVC-006 |
+| GR-14 escribía la diferencia en cada día con lugar: un rótulo en cada punto, que se pisaban | Media | Solo en el día elegido y en el último (GR-VC03) | TEST-GRVC-003 |
+| GR-14 sin indicado del día: un párrafo de tres líneas a la vista | Media | Una línea; el párrafo, en «Cómo leerlo» | TEST-GRVC-002 |
+| Las versiones del plan, como bloques de color pleno que dominaban el gráfico | Media | Un tono tenue que alterna y una línea fina en el cambio | TEST-GRF-041 |
+| El eje con tres marcas (abajo, medio, arriba) y una raya vertical en cada fecha | Media | De 3 a 5 marcas redondas con la grilla de la base | TEST-GRF-050 |
+| Los selectores de las tomas de GR-18, grises y sin el estilo del website en Azul noche | Media | Los tokens de los campos del website | Las capturas (Azul noche) |
+| Los números de las calorías en el dibujo con decimal («2.460,9») y en la lectura enteros («2.461 kcal») | Baja | Con los decimales de la lectura | TEST-GRVC-003 |
+| La ficha «Versión del plan» sin fondo ni cambio que mostrar (una sola versión que viene de antes) | Baja | Va solo si se ve un fondo o un cambio | TEST-GRVC-004 |
+| Por semana, cada columna de GR-14 repetía «sin indicado del día» con la línea de abajo ya diciéndolo | Baja | Sale de la lectura de la semana cuando ningún día tiene indicado | TEST-GRVC-002 |
+| GR-20 como tabla empujaba 3 px el cuadro a 1024 (la grilla no la dejaba achicarse) | Baja | La tabla se achica y se desplaza ella | Las capturas (1024) |
+| GR-20 como tabla, a 1024: la versión del método repetida en cada celda dejaba el valor de la segunda columna cortado contra el borde | Media | Si toda la columna es de la misma versión, va una vez en el encabezado («Masa grasa (Durnin y Womersley), hombres») y cada celda dice su valor; con versiones distintas, cada celda la suya | TEST-GRF-049 y 059, TEST-GRVC-005 |
+| Todo a la vista en párrafos: el método entero, por qué un hueco no es cero, la reducción localizada | Baja | A «Cómo leerlo»; a la vista, lo que §5 pide (GR-VC08) | TEST-GRVC-004 y 006 |
+| Lo cargado después solo en la muesca, sin la cuenta que da la base | Baja | «1 de 3 días con registros cargados después.», a la vista | TEST-GRVC-004 |
+| El mínimo y el máximo rotulados con el mismo peso que el último | Baja | Discretos, como la base | TEST-GRVC-003 |
+| GR-13 no releía al cambiar el día (`hoy` fuera de sus dependencias) | Baja | Suma `periodo.hoy` | — |
+| Un «#283» en un comentario lo leía como un color la guardia de los tokens | Baja | Otra redacción | `scripts/contraste.test.cjs` |
+
+**Revisado sin hallazgos:** ninguno de los gráficos de C es un cruce (la frase fija no aplica); lo indicado y lo registrado
+van separados (rombo hueco y marca del día; por semana, rombos tenues y su rango en la lectura); sin flechas ni «primero →
+último» (el resumen de las semanas dice «entre» el mínimo y el máximo); sin el signo de porcentaje en Nutrición; los g/kg
+con el último peso de cada día (nunca uno posterior); las semanas, de lunes a domingo con fechas civiles (sin husos de por
+medio); hoy no entra en ninguna media; un área sin acceso no deja rastro; «Cómo leerlo» es un `<details>` con el nombre de
+su gráfico; las tablas tienen caption y encabezados con alcance; la región viva cambia solo con un clic, un toque o el
+teclado; ninguna palabra prohibida, ni negada (TEST-GRVC-008).
+
+**Resuelto al integrar (15/11):**
+- **Una sola media semanal para todo BE (GR-VC13, a ratificar):** la de §4.4 (GR-12 v1), que cuenta solo los días sin
+  faltantes y pide cuatro o más. Un subtotal no entra en una media: es un día a medias, y sumarlo la baja sin que se vea
+  (un hueco es un hueco). La semana dice siempre sus días; sin media, los días se ven igual. GR-24, que hoy promedia
+  también los subtotales, se alinea con esta regla en la rama D.
+- **Los números de las pruebas de la rama B:** las de la pasada visual de #280 pasaron de TEST-GRF-040 a 045 a
+  TEST-GRVB-001 a 006 (en `graficos-entrenamiento.test.mjs` y §13.3), y el rango TEST-GRF-040 a 059 queda para la rama C.
+
+**Lo que queda abierto:**
+- **GR-12 y GR-13 no están en ninguna pantalla todavía** (baja): los muestran «Analizar» y «Patrones» (ramas D y E); los
+  fijan las pruebas, no las capturas.
+- **El lector de pantalla real** (NVDA, TalkBack) no se probó; las pruebas leen el código (baja).
+- **Correr las mutaciones** de cada prueba (baja).
 
 ### 13.5 Rama D · `wp-graficos-cruces-y-analizar`
 

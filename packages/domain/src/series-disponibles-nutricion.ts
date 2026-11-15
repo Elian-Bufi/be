@@ -39,7 +39,8 @@ function deNutricion(id: string, graficos: readonly string[]): SerieDisponible {
 /**
  * Los gramos por kilo de lo registrado (GR-13; GR-T13): los gramos del día ÷ el peso medido de la última toma del mismo
  * profesional en ese día o antes. Sin una toma anterior, sin valor; cada punto dice la fecha del peso. Sin cambio
- * relativo. Hasta que la rama C la programe, no se ofrece.
+ * relativo. La programó la rama C: la deriva el website (`graficos/nutricion/gramos-por-kilo.ts`) con dos lecturas que
+ * ya decide el PDP, y se ofrece solo con los dos alcances y planes y tomas propios en los dos (`seriesOfrecidas`).
  */
 function porKilo(nutriente: 'carbohidratos' | 'proteinas' | 'grasas', nombre: string, registrados: 'registrados' | 'registradas'): SerieDisponible {
   const base = delDiccionario(`nutricion.${nutriente}`);
@@ -51,7 +52,7 @@ function porKilo(nutriente: 'carbohidratos' | 'proteinas' | 'grasas', nombre: st
     nombreCorto: `${nombre} por kilo`,
     unidad: 'g/kg',
     clase: 'DERIVABLE',
-    implementada: false,
+    implementada: true,
     parametro: null,
     granos: [{ grano: 'DAY', agregacion: 'SUM_OF_KNOWN' }],
     granoPorDefecto: 'DAY',
@@ -76,16 +77,16 @@ function porKilo(nutriente: 'carbohidratos' | 'proteinas' | 'grasas', nombre: st
     marca: 'REGISTRADO',
     requiere: { ejercicio: false, serie: false, listaV1: false },
     rangoMinimoDelEje: null,
-    estado: 'EN_PREPARACION',
+    estado: 'OFRECIDA',
     graficos: ['GR-13'],
   };
 }
 
 export const SERIES_DE_NUTRICION: readonly SerieDisponible[] = [
-  deNutricion('nutricion.energia', ['GR-11', 'GR-12', 'SP-01', 'SP-02']),
-  deNutricion('nutricion.carbohidratos', ['GR-13', 'SP-01']),
-  deNutricion('nutricion.grasas', ['GR-13']),
-  deNutricion('nutricion.proteinas', ['GR-13']),
+  deNutricion('nutricion.energia', ['GR-11', 'GR-12', 'GR-14', 'SP-01', 'SP-02']),
+  deNutricion('nutricion.carbohidratos', ['GR-13', 'GR-14', 'SP-01']),
+  deNutricion('nutricion.grasas', ['GR-13', 'GR-14']),
+  deNutricion('nutricion.proteinas', ['GR-13', 'GR-14']),
   deNutricion('nutricion.fibra', ['GR-13']),
   deNutricion('nutricion.registros', []),
   porKilo('carbohidratos', 'Carbohidratos', 'registrados'),
