@@ -25,6 +25,8 @@ export const COPY_DE_LOS_GRAFICOS = {
   tramoElegido: (desde: string, hasta: string) => `Del ${desde} al ${hasta}`,
   /** La lectura de entrada, sin una fecha elegida: el último valor de cada carril (pasada visual del 15/11). */
   loUltimo: 'Lo último',
+  /** El cambio de lo indicado en texto (el SVG no se lee): en el nombre del gráfico y, si no entra en su línea, a la vista. */
+  cambiosDeLoIndicado: (lista: readonly string[]) => `Lo indicado cambió: ${lista.join('; ')}.`,
   /** La línea tenue del período, debajo del título. */
   periodo: (desde: string, hasta: string | null) => (hasta === null ? `del ${desde} a hoy` : `del ${desde} al ${hasta}`),
 } as const;
@@ -38,7 +40,7 @@ export const SENTIDO_CORTO = {
   INDICADO: 'Indicado',
   SUBTOTAL: 'Subtotal',
   CARGA_RAPIDA: 'Carga rápida',
-  ORIENTATIVA: 'De 10 a 12 rep. equivalentes',
+  ORIENTATIVA: 'De más de 10 a 12 rep. equivalentes',
   OBSERVADA_POR_EL_PROFESIONAL: 'Observado',
   REPORTADO: 'Reportado',
   CALCULADO: 'Calculado',
@@ -50,7 +52,7 @@ export const SENTIDO_EN_LA_LEYENDA = {
   INDICADO: 'Indicado por el plan: hueco',
   SUBTOTAL: 'Día con algo que falta: hueco',
   CARGA_RAPIDA: 'Tildado sin escribir (los números del plan): hueco y gris',
-  ORIENTATIVA: 'De 10 a 12 repeticiones equivalentes: hueco',
+  ORIENTATIVA: 'De más de 10 a 12 repeticiones equivalentes: hueco',
   OBSERVADA_POR_EL_PROFESIONAL: 'Observado por el profesional: rombo',
   REPORTADO: 'Reportado por la persona: contorno cortado',
   CALCULADO: 'Calculado con un método: punto adentro',

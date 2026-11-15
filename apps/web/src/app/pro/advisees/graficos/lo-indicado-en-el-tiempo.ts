@@ -81,19 +81,27 @@ export interface TramoDeVersion {
   readonly desde: string;
   /** El día del corte (ya rige la siguiente); `null` si sigue vigente. */
   readonly hasta: string | null;
+  /**
+   * La versión (`planVersionId`): con ella, cada sesión cuenta en la versión que la ejecutó (REG-06-105), como en GR-24,
+   * aunque se haya registrado el día del corte. Sin ella, por la fecha.
+   */
+  readonly planVersionId?: string | null;
 }
 
 /**
- * El cambio de lo indicado en cada versión que lo tuvo, por su clave: la versión contra la anterior con algo indicado.
- * Lo indicado de cada versión sale de las sesiones de sus fechas.
+ * El cambio de lo indicado en cada versión que lo tuvo, por su clave: **la versión contra la inmediata anterior** (revisión
+ * de #283). Lo indicado de cada versión sale de sus sesiones: las que ejecutaron esa versión (por `planVersionId`) o, sin
+ * él, las de sus fechas. Si la anterior no tiene ninguna sesión del ejercicio, no se sabe qué indicaba: la versión va sin
+ * rótulo de cambio, nunca contra una más vieja (eso afirmaría un cambio que no ocurrió en esa línea).
  */
 export function cambiosPorVersion(observaciones: readonly ObservacionDeEvolucion[], versiones: readonly TramoDeVersion[]): ReadonlyMap<string, string> {
   const ordenadas = [...versiones].sort((x, y) => (x.desde < y.desde ? -1 : x.desde > y.desde ? 1 : 0));
+  const deLaVersion = (v: TramoDeVersion) => (o: ObservacionDeEvolucion) =>
+    v.planVersionId ? o.comparacion.planId === v.planVersionId : o.comparacion.fecha >= v.desde && (v.hasta === null || o.comparacion.fecha < v.hasta);
   const cambios = new Map<string, string>();
   let anterior: LoIndicadoEnElTramo | null = null;
   for (const v of ordenadas) {
-    const actual = loIndicadoEnElTramo(observaciones, (o) => o.comparacion.fecha >= v.desde && (v.hasta === null || o.comparacion.fecha < v.hasta));
-    if (actual === null) continue;
+    const actual = loIndicadoEnElTramo(observaciones, deLaVersion(v));
     const cambio = cambioCortoDeLoIndicado(anterior, actual);
     if (cambio) cambios.set(v.clave, cambio);
     anterior = actual;

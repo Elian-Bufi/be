@@ -25,8 +25,13 @@
  *   no se achica en 1024 ni se agranda en 1920.
  * - **Las versiones, discretas:** un tono muy tenue que alterna, una línea fina en el cambio y «v8» arriba; si cambió lo
  *   indicado (el RIR o las repeticiones), «v8 · de 4 a 3 repeticiones», del comparador (`lectura-de-lo-indicado.ts`).
- * - **La lectura del costado,** sin «154,5 → 160,5 kg» ni flecha (§5.12): «La anterior (2 nov): ≈ 154,5 kg».
- * - **«Cómo leerlo»** (cerrado) tiene el método, lo que mueve un RIR y lo que no entra, una línea por sesión.
+ * - **La lectura del costado,** sin «154,5 → 160,5 kg» ni flecha (§5.12): primero lo que mueve un RIR en esa estimación
+ *   y después «La anterior (2 nov): ≈ 154,5 kg».
+ * - **A la vista, debajo del gráfico** (revisión de #283, §5.6 y §5.12): el rango de validez («Solo series de RIR 0 a 2 y
+ *   hasta 10 repeticiones equivalentes») y lo que mueve un RIR en el período; los cambios de lo indicado que no entran en
+ *   la línea de su versión, en texto. La guía visual los llevaba a «Cómo leerlo»: ahí chocaba con §5, y §5 manda.
+ * - **«Cómo leerlo»** (cerrado) tiene la fórmula, por qué el RIR 0 a 2, las versiones y lo que no entra, una línea por
+ *   sesión.
  * - **La tabla,** una fila por renglón y sin partir un valor: con menos ancho, menos columnas, no números cortados.
  *
  * Como la composición (TA-25), la pregunta vive en el website y no se guarda como vista: su identificador no entra en
@@ -50,6 +55,8 @@ import { useSeguimiento } from '../seguimiento/contexto';
 import { parametrosDePregunta } from '../seguimiento/estado';
 import { ComoSeCalculo, COPY_COMO_SE_CALCULO, fechaLarga } from './como-se-calculo';
 import {
+  cambiosDeLoIndicadoEnPalabras,
+  COPY_DEL_RUIDO,
   diaConSemana,
   diaDelPunto,
   estimacionDelPunto,
@@ -59,6 +66,7 @@ import {
   haciaLaSesion,
   laSerie,
   loQueHaceFalta,
+  loQueMueveUnRir,
   loQueNoEntraPorFecha,
   PREGUNTA_DE_LA_FUERZA,
   rangoDeSesiones,
@@ -101,9 +109,11 @@ export const LA_PREGUNTA_DE_LA_FUERZA = {
   /** La pasada visual (15/11): el título del gráfico lleva la marca de lo estimado; la línea tenue, la unidad y el período. */
   titulo: '1RM estimado (Epley v1)',
   detalle: (unidad: string, desde: string, hasta: string | null) => `${unidad} · una estimación por sesión · del ${desde} ${hasta === null ? 'a hoy' : `al ${hasta}`}`,
-  enElPeriodo: (bajo: string, diaBajo: string, alto: string, diaAlto: string) => `En el período, la más baja: ${bajo} (${diaBajo}); la más alta: ${alto} (${diaAlto}).`,
   metodo: 'Epley v1 estima la repetición máxima con una serie: la carga × (1 + repeticiones equivalentes / 30), donde las repeticiones equivalentes son las hechas más el RIR. Se usa solo con series de RIR 0 a 2 y hasta 12 repeticiones equivalentes.',
-  versiones: 'El fondo alterna con cada versión del plan; la línea fina marca el cambio. Si cambió lo indicado (el RIR o las repeticiones), el rótulo lo dice: la estimación puede cambiar aunque la fuerza no cambie.',
+  versiones:
+    'El fondo alterna con cada versión del plan; la línea fina marca el cambio. Si cambió lo indicado (el RIR o las repeticiones), lo dice el rótulo de la línea o, si no entra, la línea de debajo del gráfico: la estimación puede cambiar aunque la fuerza no cambie.',
+  /** La fila que avisa que entre las recientes y la elegida hay filas que no se ven. */
+  salto: (n: number) => (n === 1 ? '… 1 fila más, en «Ver las filas»' : `… ${n} filas más, en «Ver las filas»`),
   conElTeclado: 'Con el teclado, en el gráfico: las flechas eligen la estimación anterior o la siguiente; Inicio y Fin, la primera y la última. En la tabla, cada fecha elige la suya.',
   verTodas: (n: number) => `Ver las ${n} filas`,
   verMenos: 'Ver menos',
@@ -145,7 +155,7 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
       indicado.tipo === 'lista'
         ? cambiosPorVersion(
             indicado.observaciones,
-            versiones.filter((v) => v.domain === 'TRAINING').map((v) => ({ clave: v.from, desde: v.from, hasta: v.to })),
+            versiones.filter((v) => v.domain === 'TRAINING').map((v) => ({ clave: v.from, desde: v.from, hasta: v.to, planVersionId: v.planVersionId ?? null })),
           )
         : new Map<string, string>(),
     [indicado, versiones],
@@ -209,11 +219,22 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
       ) : (
         <div className="fuerza-en-analizar__zonas">
           <div className="fuerza-en-analizar__principal">
-            <Grafico linea={linea} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} hasta={lectura.hoy} desde={lectura.desde} zona={lectura.zona} soloOrientativas={soloOrientativas} versiones={versiones} cambios={cambios} />
-            {linea && puntos.length > 0 ? <ComoLeerLaFuerza linea={linea} elegido={elegido} soloOrientativas={soloOrientativas} /> : null}
+            <Grafico
+              linea={linea}
+              elegido={elegido}
+              onElegir={(p) => setElegidoId(p.pointId)}
+              hasta={lectura.hoy}
+              desde={lectura.desde}
+              zona={lectura.zona}
+              soloOrientativas={soloOrientativas}
+              versiones={versiones}
+              cambios={cambios}
+              conOrientativas={encendido}
+            />
+            {linea && puntos.length > 0 ? <ComoLeerLaFuerza linea={linea} soloOrientativas={soloOrientativas} /> : null}
             <TablaDeOrigen linea={linea} asesoradoId={asesoradoId} onComo={setComo} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} soloOrientativas={soloOrientativas} />
           </div>
-          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} versiones={versiones} />
+          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} versiones={versiones} cambios={cambios} />
         </div>
       )}
       {lectura.tipo === 'lista' && lectura.deOtros ? <p className="nota">{C.deOtros}</p> : null}
@@ -288,6 +309,7 @@ function Grafico({
   soloOrientativas,
   versiones,
   cambios,
+  conOrientativas,
 }: {
   linea: LineaDeFuerza | null;
   elegido: PuntoDeFuerza | null;
@@ -299,6 +321,8 @@ function Grafico({
   versiones: readonly VersionDelPlanEnElPeriodo[];
   /** El cambio de lo indicado al empezar cada versión, por su primer día. */
   cambios: ReadonlyMap<string, string>;
+  /** El interruptor de las de más de 10 a 12: cambia el rango de validez que se dice. */
+  conOrientativas: boolean;
 }) {
   const [ref, ancho] = useAnchoDelGrafico();
   const [encima, setEncima] = useState<string | null>(null);
@@ -383,6 +407,18 @@ function Grafico({
   const hayNucleo = puntos.some((p) => p.source !== 'OBSERVED' && p.estimate.band !== 'ORIENTATIVE');
   const hayOrientativas = puntos.some((p) => p.source !== 'OBSERVED' && p.estimate.band === 'ORIENTATIVE');
   const hayObservadas = puntos.some((p) => p.source === 'OBSERVED');
+  // §5.12: el cambio de lo indicado, en texto. Todos van en el nombre del gráfico (el SVG no se lee); a la vista, los que
+  // no entraron enteros en la línea de su versión.
+  const cambiosEnTexto = cambiosDeLoIndicadoEnPalabras(versiones, cambios, desde);
+  const recortados = cambiosDeLoIndicadoEnPalabras(
+    rotulosDeVersion.filter((f) => !f.conCambio).map((f) => f.v),
+    cambios,
+    desde,
+  );
+  const ruido = loQueMueveUnRir(
+    puntos.map((p) => p.estimate.load.value),
+    linea.unidad,
+  );
   return (
     <figure className="fuerza-en-analizar__grafico">
       <figcaption className="fuerza-en-analizar__cabecera">
@@ -403,7 +439,7 @@ function Grafico({
         tabIndex={0}
         role="group"
         aria-roledescription="gráfico"
-        aria-label={`Evolución de la fuerza estimada, en ${linea.unidad}: ${puntos.length} ${puntos.length === 1 ? 'estimación' : 'estimaciones'}. ${C.conElTeclado}`}
+        aria-label={`Evolución de la fuerza estimada, en ${linea.unidad}: ${puntos.length} ${puntos.length === 1 ? 'estimación' : 'estimaciones'}. ${cambiosEnTexto.length > 0 ? `${COPY_DEL_RUIDO.cambios(cambiosEnTexto)} ` : ''}${C.conElTeclado}`}
         onKeyDown={alTeclear}
       >
         <svg width={ancho} height={ALTO} viewBox={`0 0 ${ancho} ${ALTO}`} aria-hidden="true" focusable="false">
@@ -474,8 +510,17 @@ function Grafico({
           {sobre ? <Globo x={geo.x(sobre.date)} y={geo.y(sobre.estimate.value)} texto={globoDelPunto(sobre)} ancho={ancho} /> : null}
         </svg>
       </div>
-      {/* Una sola línea de lectura debajo: dónde estuvo la estimación en el período, sin primero contra último (§5.12). */}
-      <LineaDelPeriodo puntos={ordenados} />
+      {/* Debajo, a la vista (revisión de #283): el rango de validez (§5.6) y lo que mueve un RIR (§5.12), antes que cualquier
+          comparación. Ya no va «la más baja… la más alta…»: con la estimación que sube, se leía como primero → último. */}
+      <p className="fuerza-en-analizar__linea-de-lectura" data-ruido-y-validez>
+        {COPY_DEL_RUIDO.validez(conOrientativas)}
+        {ruido ? ` ${COPY_DEL_RUIDO.ruido(ruido)}` : ''}
+      </p>
+      {recortados.length > 0 ? (
+        <p className="fuerza-en-analizar__linea-de-lectura" data-cambios-de-lo-indicado>
+          {COPY_DEL_RUIDO.cambios(recortados)}
+        </p>
+      ) : null}
     </figure>
   );
 }
@@ -496,27 +541,16 @@ function Globo({ x, y, texto, ancho }: { x: number; y: number; texto: string; an
   );
 }
 
-function LineaDelPeriodo({ puntos }: { puntos: readonly PuntoDeFuerza[] }) {
-  if (puntos.length < 2) return null;
-  const orden = [...puntos].sort((a, b) => a.estimate.value - b.estimate.value);
-  const bajo = orden[0]!;
-  const alto = orden[orden.length - 1]!;
-  const enPalabras = (p: PuntoDeFuerza) => estimacionALaVista(estimacionDelPunto(p, ''));
-  if (enPalabras(bajo) === enPalabras(alto)) return null;
-  return <p className="fuerza-en-analizar__linea-de-lectura">{C.enElPeriodo(enPalabras(bajo), diaConSemana(bajo.date), enPalabras(alto), diaConSemana(alto.date))}</p>;
-}
-
 /**
- * «Cómo leerlo», debajo del gráfico y cerrado: el método, lo que mueve un RIR, las versiones y lo que no entra, una
- * línea por sesión. Es lo que antes iba a la vista en la lectura del costado (DISENO-VISUAL §2: «Lo que no entra», a
- * «Cómo leerlo»).
+ * «Cómo leerlo», debajo del gráfico y cerrado: la fórmula, por qué solo el RIR 0 a 2, las versiones y lo que no entra,
+ * una línea por sesión (DISENO-VISUAL §2: «Lo que no entra», a «Cómo leerlo»). El rango de validez y lo que mueve un RIR
+ * quedan a la vista, debajo del gráfico y en la lectura del costado (§5.6 y §5.12).
  */
-function ComoLeerLaFuerza({ linea, elegido, soloOrientativas }: { linea: LineaDeFuerza; elegido: PuntoDeFuerza | null; soloOrientativas: readonly PuntoDeFuerza[] }) {
+function ComoLeerLaFuerza({ linea, soloOrientativas }: { linea: LineaDeFuerza; soloOrientativas: readonly PuntoDeFuerza[] }) {
   const noEntra = loQueNoEntraPorFecha(linea.puntos, linea.noEntraron, soloOrientativas);
   return (
     <ComoLeerlo className="fuerza-en-analizar__como-leerlo">
       <p>{C.metodo}</p>
-      {elegido ? <p>{C.diferencia(elegido.estimate.load.value, elegido.estimate.load.unit)}</p> : null}
       <p>{COPY_FUERZA.reglaDelRir}</p>
       <p>{C.versiones}</p>
       <h4>{C.loQueNoEntra}</h4>
@@ -571,6 +605,8 @@ function TablaDeOrigen({
   // La fila elegida se ve aunque sea vieja: elegirla desde el gráfico no la deja escondida.
   const indiceElegida = filas.findIndex((f) => f.tipo === 'punto' && f.punto.pointId === elegido?.pointId);
   const aLaVista = todas ? filas : filas.filter((_, i) => i < FILAS_A_LA_VISTA || i === indiceElegida);
+  // Si la elegida es más vieja que las recientes, una fila dice cuántas quedan entre medio: no se lee como la siguiente.
+  const salto = !todas && indiceElegida >= FILAS_A_LA_VISTA ? indiceElegida - FILAS_A_LA_VISTA : 0;
   const verLaSesion = (f: { readonly fecha: string; readonly executionId: string }) =>
     `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}&vista=ejecuciones&desde=${f.fecha}&hasta=${f.fecha}&sesion=${encodeURIComponent(f.executionId)}`;
   return (
@@ -589,7 +625,31 @@ function TablaDeOrigen({
           </tr>
         </thead>
         <tbody>
-          {aLaVista.map((f) => {
+          {aLaVista.flatMap((f, i) => {
+            const fila = filaDeOrigen(f);
+            if (salto > 0 && i === FILAS_A_LA_VISTA) {
+              return [
+                <tr key="salto" className="fuerza-en-analizar__salto" data-salto>
+                  <td colSpan={cuantas} className="nota">
+                    {C.salto(salto)}
+                  </td>
+                </tr>,
+                fila,
+              ];
+            }
+            return [fila];
+          })}
+        </tbody>
+      </table>
+      {filas.length > FILAS_A_LA_VISTA ? (
+        <button type="button" className="boton boton--enlace fuerza-en-analizar__ver-todas" aria-expanded={todas} onClick={() => setTodas((t) => !t)}>
+          {todas ? C.verMenos : C.verTodas(filas.length)}
+        </button>
+      ) : null}
+    </div>
+  );
+
+  function filaDeOrigen(f: (typeof filas)[number]) {
             if (f.tipo === 'sin-estimacion-seguidas') {
               // PG-10: el mismo motivo en sesiones seguidas, en una fila con el rango; se abre para ver cada una.
               return (
@@ -658,22 +718,13 @@ function TablaDeOrigen({
                 </td>
               </tr>
             );
-          })}
-        </tbody>
-      </table>
-      {filas.length > FILAS_A_LA_VISTA ? (
-        <button type="button" className="boton boton--enlace fuerza-en-analizar__ver-todas" aria-expanded={todas} onClick={() => setTodas((t) => !t)}>
-          {todas ? C.verMenos : C.verTodas(filas.length)}
-        </button>
-      ) : null}
-    </div>
-  );
+  }
 }
 
 /**
- * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día y la
- * anterior, con su fecha y su valor: sin flecha y sin «primero → último» (§5.12). Lo que no entra, el método y lo que
- * mueve un RIR están en «Cómo leerlo», debajo del gráfico.
+ * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día (y lo que
+ * cambió en lo indicado al empezar), lo que mueve un RIR en esa estimación y, después, la anterior con su fecha y su
+ * valor: sin flecha y sin «primero → último» (§5.12). Lo que no entra y la fórmula están en «Cómo leerlo».
  */
 function Lectura({
   linea,
@@ -681,12 +732,14 @@ function Lectura({
   asesoradoId,
   onComo,
   versiones,
+  cambios,
 }: {
   linea: LineaDeFuerza | null;
   elegido: PuntoDeFuerza | null;
   asesoradoId: string;
   onComo: (p: PuntoDeFuerza) => void;
   versiones: readonly VersionDelPlanEnElPeriodo[];
+  cambios: ReadonlyMap<string, string>;
 }) {
   const nombres = useNombres();
   if (!linea || !elegido) return null;
@@ -696,10 +749,22 @@ function Lectura({
   const e = estimacionDelPunto(elegido, '');
   const sesion = haciaLaSesion(asesoradoId, elegido);
   const version = elegido.source === 'PERSON' ? versionDelPlanEn(elegido.date, versiones) : null;
+  // El cambio de lo indicado al empezar la versión de esta estimación (§5.12): en la primera línea, con la versión.
+  const deLaVersion = version
+    ? versiones.filter((v) => v.domain === 'TRAINING' && v.from <= elegido.date && (v.to === null || elegido.date < v.to)).sort((a, b) => (a.from < b.from ? 1 : -1))[0]
+    : undefined;
+  const cambio = deLaVersion ? cambios.get(deLaVersion.from) : undefined;
+  const ruido = loQueMueveUnRir([elegido.estimate.load.value], elegido.estimate.load.unit);
+  const aclaracionDeLaAnterior = anterior ? (anterior.source === 'OBSERVED' ? C.laObservasteVos : anterior.estimate.band === 'ORIENTATIVE' ? C.orientativa : null) : null;
   return (
     <aside className="fuerza-en-analizar__lectura" aria-live="polite" data-lectura-de-fuerza>
       <h3>{C.lectura(fechaLarga(elegido.date))}</h3>
-      {version ? <p className="nota">{C.planDeLaLectura(version)}</p> : null}
+      {version ? (
+        <p className="nota" data-version-de-la-lectura>
+          {C.planDeLaLectura(version)}
+          {cambio && deLaVersion ? ` · desde el ${diaConSemana(deLaVersion.from)}: ${cambio}` : ''}
+        </p>
+      ) : null}
       <p className="tarjeta-de-fuerza__valor">
         <span className="tarjeta-de-fuerza__numero">{estimacionALaVista(e)}</span>
       </p>
@@ -715,9 +780,16 @@ function Lectura({
         </button>
         {sesion ? <Enlace href={sesion}>Ver la sesión</Enlace> : null}
       </p>
+      {/* §5.12: el ruido antes que el cambio. Primero lo que mueve un RIR en esta estimación; después, la anterior. */}
+      {ruido ? (
+        <p className="nota fuerza-en-analizar__ruido" data-ruido-de-la-lectura>
+          {COPY_DEL_RUIDO.ruidoDeLaElegida(ruido)}
+        </p>
+      ) : null}
       {anterior ? (
         <p className="fuerza-en-analizar__anterior" data-la-anterior>
           {C.anterior(diaDelPunto(anterior))} <strong>{estimacionALaVista(estimacionDelPunto(anterior, ''))}</strong>
+          {aclaracionDeLaAnterior ? <span className="nota"> · {aclaracionDeLaAnterior}</span> : null}
         </p>
       ) : null}
     </aside>
