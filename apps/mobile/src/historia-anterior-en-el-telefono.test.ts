@@ -182,15 +182,17 @@ describe('TEST-HA-045 · las pantallas la dibujan, con TalkBack y los dos temas'
     expect(pieza).toContain('estilosPorTema');
     expect(pieza).not.toMatch(/#[0-9a-f]{3,6}\b/i);
   });
-  test('compartirla abre el texto entero, con dos respuestas del mismo peso; la tarjeta al aceptar tiene «Actualizar»', () => {
+  test('compartirla abre el texto entero, con dos respuestas del mismo peso, y «Actualizar» si algo cambió', () => {
     const pieza = readFileSync(join(__dirname, 'historia-anterior.tsx'), 'utf8');
-    // Las dos piezas comparten por el diálogo, que muestra el texto partido en párrafos (nada plegado).
-    expect(pieza.match(/<DialogoParaCompartir/g)).toHaveLength(2);
+    // En «Quién ve qué», el interruptor comparte por el diálogo, que muestra el texto partido en párrafos (nada plegado). La
+    // tarjeta al aceptar se retiró con DL-176: al aceptar, la historia anterior va en la pantalla única de consentimiento.
+    expect(pieza.match(/<DialogoParaCompartir/g)).toHaveLength(1);
     expect(pieza).toContain('partesDelTexto(texto.text)');
-    // Tocar el interruptor o «Compartir» no escribe: abre el diálogo. Solo el diálogo manda API-HIA-02.
-    expect(pieza.match(/cambio\.enviar\(item, 'COMPARTIR'/g)).toHaveLength(2);
+    // Tocar el interruptor no escribe: abre el diálogo. Solo el diálogo manda API-HIA-02.
+    expect(pieza.match(/cambio\.enviar\(item, 'COMPARTIR'/g)).toHaveLength(1);
     expect(pieza).not.toMatch(/onPress=\{\(\) => void cambio\.enviar\(item, 'COMPARTIR'/);
-    expect(pieza).toContain('<SalidasDelRechazo error={cambio.error} actualizar={actualizar} irAPrivacidad={irAPrivacidad} />');
+    expect(pieza).toContain('<SalidasDelRechazo error={error} actualizar={actualizar} irAPrivacidad={irAPrivacidad} />');
+    expect(pieza).not.toContain('HistoriaAnteriorAlAceptar');
   });
 });
 
