@@ -120,6 +120,8 @@ import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrad
 import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
 import { EscribirRangosRequestSchema, RangosDelPlanResponseSchema } from './contratos-rangos-de-nutricion';
 import { ListaDeSeriesObservadasResponseSchema, RegistrarSerieObservadaRequestSchema, SerieObservadaResponseSchema, SucederSerieObservadaRequestSchema, SucesionDeSerieObservadaResponseSchema } from './contratos-fuerza';
+import { AgregarNotaDeLaSesionRequestSchema, NotaDeLaSesionResponseSchema, NotasDeLasSesionesResponseSchema, NotasDeUnaSesionResponseSchema } from './contratos-notas-de-la-sesion';
+import { AgregarNotaPropiaRequestSchema, ListaDeNotasPropiasDelProfesionalResponseSchema, NotaPropiaResponseSchema } from './contratos-notas-propias';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -4423,6 +4425,87 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['STEP_UP_REQUIRED', 'MFA_REQUIRED'], 404: ['RESOURCE_NOT_FOUND'], 409: ['LAST_ACCESS_METHOD'], 422: ['VALIDATION_FAILED'] },
     fuente: '09 v0.12 §12 («DELETE /me/access-methods/{methodId}», P2: «no permitir eliminar el último método de acceso utilizable»; «la remoción puede exigir step-up») · 04 RF-004 · 05 UC-E06 · 06 REG-06-22 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172',
   },
+  // ─── WP-PULIDO-GRANDES (DL-173): PG-15, la nota para tu profe (PG-D10), y PG-16, las notas propias del profesional ──
+  // (PG-D11), las dos aprobadas por Dirección el 2026-11-14. Operaciones nuevas (DL-137 D-7): API-TRN-18 no cambia.
+  {
+    id: 'API-TRN-25',
+    metodo: 'post',
+    ruta: '/training/executions/{executionId}/notes',
+    resumen:
+      'Agregar una nota a una sesión propia ya registrada, para su profesional («¿Algo para contarle a tu profe?»). Hasta 280 caracteres, sin los espacios de los bordes. Solo agrega: una nota no se edita ni se borra, y una nueva queda debajo, con su hora; hasta 20 por sesión (después, 422 VALIDATION_FAILED con NOTE_LIMIT_REACHED). La escribe solo la persona de la sesión, con el permiso con que corrige la sesión (API-TRN-20): mientras su profesional la acompaña. Una sesión ajena, inexistente o sin ese permiso: el mismo 404. No cambia la sesión, no dispara avisos y no depende de su condición ni de su motivo (REG-06-131). API-TRN-18 no cambia: la nota viaja aparte, después de confirmar.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AgregarNotaDeLaSesionRequestSchema,
+    exitos: [{ status: 201, schema: NotaDeLaSesionResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'WP-PULIDO-GRANDES PG-15 y PG-D10 (aprobada por Dirección el 2026-11-14) · ID nuevo en la familia TRN del 09, que el 09 no usa · DEUDA_LEGAJO DL-173 · DL-137 D-7',
+  },
+  {
+    id: 'API-TRN-25-LISTA',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/training/execution-notes',
+    resumen:
+      'Para el profesional de Entrenamiento: las notas que la persona dejó en las sesiones que él ya puede ver (las registradas en sus planes con ella, como API-TRN-19 y API-TRN-21), de las sesiones con fecha en el período (obligatorio, hasta 92 días). De la sesión más nueva a la más vieja y, dentro de una sesión, de la nota más vieja a la más nueva. El PDP de Entrenamiento; sin acceso, el 404 de lo inexistente. Sin contadores ni interpretación del texto.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+      { nombre: 'periodEnd', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+    ],
+    exitos: [{ status: 200, schema: NotasDeLasSesionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante de API-TRN-25 · WP-PULIDO-GRANDES PG-15 · ID propio de BE (sufijo LISTA) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-TRN-25-PROPIA',
+    metodo: 'get',
+    ruta: '/me/training/executions/{executionId}/notes',
+    resumen:
+      'Las notas que la persona dejó en una sesión suya, de la más vieja a la más nueva. Es su historia: exige solo su A3 vigente (403 sin él), como «Tu historial» (DL-089 opción A). Una sesión ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: NotasDeUnaSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante del titular de API-TRN-25 · WP-PULIDO-GRANDES PG-15 (decisión del continuador PG-T64, a ratificar) · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-NPP-01',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/professional-notes',
+    resumen:
+      'Agregar una nota propia del profesional sobre una persona que hoy acompaña en algún área (el PDP de alguna): hasta 1000 caracteres, sin los espacios de los bordes, opcionalmente atada a un ejercicio del catálogo que él puede citar (pide Entrenamiento con la persona) o a una comida del plan por su nombre (pide Nutrición). Un ejercicio que no existe o que no puede citar: 422 VALIDATION_FAILED con ANCHOR_NOT_AVAILABLE. Solo agrega. Solo la lee su autor; no se manda a nadie ni dispara avisos. Sin acceso a la persona: el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AgregarNotaPropiaRequestSchema,
+    exitos: [{ status: 201, schema: NotaPropiaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 (aprobada por Dirección el 2026-11-14) · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-NPP-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/professional-notes',
+    resumen:
+      'Las notas propias de quien consulta sobre esa persona, las activas y las archivadas (con archivedAt), de la más nueva a la más vieja, hasta 200 (page.hasMore dice si quedaron más viejas afuera). Las de otro profesional no aparecen nunca, aunque sea del mismo equipo o área. Cada ancla dice si hoy está en la última versión del plan del autor con esa persona en su área (inPlan; null sin plan). El PDP de alguna área; sin acceso, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeNotasPropiasDelProfesionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-NPP-03',
+    metodo: 'post',
+    ruta: '/professional-notes/{noteId}/archive',
+    resumen:
+      'Archivar una nota propia: deja de verse entre las activas y queda en la historia, con la fecha en que se archivó; nunca se borra. Archivar una ya archivada responde 200 con la misma nota, sin cambiar nada. Solo su autor, mientras acompaña a la persona en algún área; una nota de otro profesional o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CuerpoVacioSchema,
+    exitos: [{ status: 200, schema: NotaPropiaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
+  },
 ];
 
 /**
@@ -4501,6 +4584,10 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-23-EVIDENCIA',
   'API-CRD-01-LISTA',
   'API-CRD-01-PROPIA',
+  // WP-PULIDO-GRANDES (DL-173): la nota para el profe y las notas propias del profesional.
+  'API-TRN-25-LISTA',
+  'API-TRN-25-PROPIA',
+  'API-NPP-02',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
