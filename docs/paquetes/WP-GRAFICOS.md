@@ -1589,7 +1589,7 @@ lo de la rama; de la rama se perdió un aviso, que volvió (abajo).
 ### 13.4 Rama C · `wp-graficos-nutricion-y-cuerpo`
 
 > Programada el 2026-11-14 desde el primer commit de la base (`257912a6`) y terminada el 2026-11-15 con `main` traído
-> (#271, #272, #276 y #279 integrados); el 2026-11-15 trajo otra vez `main` (#283, #284 y #280) y pasó por la pasada visual
+> (#271, #272, #276 y #279 integrados); el 2026-11-15 trajo otra vez `main` (#283, #284, #280 y #285) y pasó por la pasada visual
 > (abajo, «Pasada visual de la rama C»). Sin integrar al escribir esto. Sin operaciones nuevas en la API, sin migraciones y
 > sin dependencias nuevas; la APK no lee nada de esta rama. Fuera de sus archivos toca, con lo mínimo,
 > `graficos/lecturas.ts` (de la base: un import y una línea, para que `leerSerieDelCatalogo` lea los g/kg),
@@ -1670,8 +1670,8 @@ es el juez de que pasan).
 
 #### Pasada visual de la rama C (15/11)
 
-La rama trajo `main` dos veces con un merge, sin rebase: primero la pasada visual (#283) y la historia anterior (#284);
-después, la rama B (#280). No hubo choques: las piezas comunes quedan como en `main` y la rama C solo suma lo suyo. Lo que
+La rama trajo `main` tres veces con un merge, sin rebase: primero la pasada visual (#283) y la historia anterior (#284);
+después, la rama B (#280), y al final #285 (compartir casi por omisión). No hubo choques: las piezas comunes quedan como en `main` y la rama C solo suma lo suyo. Lo que
 B cambió en las piezas comunes lo hereda por usarlas: un número ya escrito no se repite como extremo
 (`rotulosDeLoLleno`, que ahora usa el lienzo de la rama); la cinta (filas de 30 px, sin el ícono del área con una sola
 fila) no la dibuja ningún gráfico de C. Al traer #283 la rama no compilaba: la tabla de la base pide en cada celda si es
