@@ -9,8 +9,9 @@
  * lectura suya tenga escenario.
  *
  * UF-00 de WP-USO-FINAL (2026-11-11, enmienda de DL-152): mientras Dirección no establezca una estable, la congelada es
- * solo la última distribuida, hoy la 0.27.0-candidata.1 (desde el 2026-11-13; reemplazó a la 0.24.0-candidata.1, que el
- * 2026-11-12 había reemplazado a la 0.23.0-candidata.2 sumando API-ACC-07). La 0.27 suma nueve lecturas, cada una con su
+ * solo la última distribuida, hoy la 0.28.0-candidata.1 (desde el 2026-11-14; lee lo mismo que la 0.27.0-candidata.1, que
+ * el 2026-11-13 reemplazó a la 0.24.0-candidata.1, que el 2026-11-12 había reemplazado a la 0.23.0-candidata.2 sumando
+ * API-ACC-07). La 0.27 sumó nueve lecturas, cada una con su
  * escenario: los textos (ACC-08 y 09), la ayuda (SOP-01), los derechos y la exportación (RGT-01 y 03, EXP-01 y 02) y la
  * recuperación del acceso (ACC-P1-01 y 02). Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
  * (antes, el 2026-11-05, la 0.17.0-candidata.3 y la 0.18.0-candidata.1). Los escenarios de lo que solo leían ellas (FRM,

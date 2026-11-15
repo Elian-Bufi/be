@@ -19,12 +19,21 @@
  * - WP-CATALOGO-VISUAL (etapa 2; DL-081 y DL-162): cada fila dice sus zonas musculares en un renglón (vienen en la
  *   búsqueda), y el botón del ojo abre debajo el detalle del ejercicio: su imagen y la figura de sus zonas (la ficha
  *   visual, API-EJE-05). Uno abierto por vez; una búsqueda nueva lo cierra.
+ * - WP-GRAFICOS GR-04 (DL-174, fase 1): si la persona ya hizo el ejercicio, la fila lo dice en un renglón más: «Con
+ *   historial · 9 sesiones · la última el mar 3 nov». Sale del índice de API-PRJ-01 del último año, que se lee una vez al
+ *   abrir el cajón (`historial-del-buscador.ts`). Sin flecha, sin el primer valor ni el último y sin color: la vista previa
+ *   con el último valor y el mínimo y el máximo es de la fase 2. Si la lectura falla, se dice y se reintenta; los
+ *   resultados se ven igual.
  */
 import {
   COPY_ENTRENAMIENTO,
   COPY_FIGURA_DE_ZONAS,
   COPY_HABITUALES,
+  COPY_HISTORIAL_DEL_BUSCADOR,
   COPY_INTEGRACIONES,
+  historialPorEjercicio,
+  marcaDeHistorial,
+  type EjercicioDelPeriodo,
   habitualesQueCoinciden,
   leerPrescripcion,
   nombreDeZona,
@@ -36,7 +45,7 @@ import {
   type EjercicioDeCatalogo,
   type EjercicioEncontrado,
 } from '@be/domain';
-import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
+import { Fragment, useCallback, useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
 import { Cargando } from '../../../../components/estados';
@@ -45,6 +54,8 @@ import { Icono } from '../../../../components/icono';
 import { OrigenEnElCatalogo } from '../../../../components/origen-en-el-catalogo';
 import { api } from '../../../../lib/api';
 import { DetalleVisualPorLeer } from '../../exercises/detalle-visual';
+import { unAnioAntes } from '../fuerza/lectura-de-fuerza';
+import { hoyEn } from '../seguimiento/estado';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
@@ -59,6 +70,40 @@ type Busqueda =
   | { readonly tipo: 'buscando'; readonly texto: string }
   | { readonly tipo: 'lista'; readonly texto: string; readonly ejercicios: readonly EjercicioEncontrado[] }
   | { readonly tipo: 'falla'; readonly texto: string; readonly motivo: string };
+
+/**
+ * GR-04: lo que la persona ya hizo, por ejercicio del catálogo: el índice de API-PRJ-01 (`TRAINING_PROGRESSION_BY_EXERCISE`
+ * sin ejercicio) del último año, con el «hoy» de la API para decir la fecha de la última. `sin-acceso`: con el acceso de
+ * ahora no se ven los registros de Entrenamiento, y los resultados van sin marca y sin aviso.
+ */
+type HistorialDelBuscador =
+  | { readonly tipo: 'cargando' }
+  | { readonly tipo: 'listo'; readonly porEjercicio: ReadonlyMap<string, EjercicioDelPeriodo>; readonly hoy: string }
+  | { readonly tipo: 'sin-acceso' }
+  | { readonly tipo: 'falla' };
+
+/** Lee el índice una vez, al abrirse el cajón (lo de adentro vive solo mientras está abierto), y con «Reintentar». */
+function useHistorialDelBuscador(): { readonly historial: HistorialDelBuscador; readonly recargar: () => void } {
+  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const [historial, setHistorial] = useState<HistorialDelBuscador>({ tipo: 'cargando' });
+  const [vuelta, setVuelta] = useState(0);
+  useEffect(() => {
+    let vigente = true;
+    setHistorial({ tipo: 'cargando' });
+    // Sin `periodEnd`: la API toma su hoy (el del navegador puede ir un día adelante).
+    void api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', { periodStart: unAnioAntes(hoyEn()) }).then((r) => {
+      if (!vigente || sesionPerdida(r)) return;
+      if (!r.ok) return setHistorial(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'sin-acceso' } : { tipo: 'falla' });
+      const x = r.datos.data.result;
+      setHistorial({ tipo: 'listo', porEjercicio: historialPorEjercicio(x?.kind === 'TRAINING_PROGRESSION_BY_EXERCISE' ? x.exercises : []), hoy: r.datos.data.period.end });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, asesoradoId, sesionPerdida, vuelta]);
+  const recargar = useCallback(() => setVuelta((v) => v + 1), []);
+  return { historial, recargar };
+}
 
 /** ED-21: los textos de los chips por zona. */
 const COPY_ZONAS_DEL_BUSCADOR = {
@@ -186,6 +231,8 @@ function ContenidoDeAgregarEjercicio({
   const [detalle, setDetalle] = useState<string | null>(null);
   // ED-21: las zonas elegidas en los chips (sobre lo encontrado).
   const [zonasElegidas, setZonasElegidas] = useState<readonly string[]>([]);
+  // GR-04: qué ejercicios ya hizo la persona, para la marca «Con historial» de cada resultado.
+  const { historial, recargar: releerElHistorial } = useHistorialDelBuscador();
   const pedido = useRef(0);
 
   // Al volver de crear o de importar, el foco vuelve al campo. Al abrirse, lo pone el cajón (`focoInicial`).
@@ -261,6 +308,9 @@ function ContenidoDeAgregarEjercicio({
   const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
   // Con el catálogo ya buscado con ese texto, los habituales no repiten que se busca con Enter: el resultado está debajo.
   const catalogoBuscado = busqueda.tipo !== 'sin-buscar' && busqueda.texto === filtro;
+  // GR-04: la marca de cada resultado, si la persona ya lo hizo; qué cuenta se dice una vez, si alguno la lleva.
+  const marcaDe = (exerciseId: string): string | null => (historial.tipo === 'listo' ? marcaDeHistorial(historial.porEjercicio, exerciseId, historial.hoy) : null);
+  const algunoConHistorial = ejercicios.some((ej) => marcaDe(ej.exerciseId) !== null);
   return (
     <div className="agregar-item agregar-ejercicio">
       <form onSubmit={enviar} className="agregar-item__buscador" role="search">
@@ -350,6 +400,20 @@ function ContenidoDeAgregarEjercicio({
           </div>
         ) : null}
         {busqueda.tipo === 'buscando' ? <Cargando /> : null}
+        {/* GR-04: si no se pudo leer lo que ya hizo la persona, se dice: sin marca no quiere decir «nunca lo hizo». */}
+        {busqueda.tipo === 'lista' && ejercicios.length > 0 && historial.tipo === 'falla' ? (
+          <p className="nota ejercicios-del-catalogo__sin-historial" role="status" data-historial-sin-leer>
+            {COPY_HISTORIAL_DEL_BUSCADOR.noSeLeyo}{' '}
+            <button type="button" className="boton boton--enlace" onClick={releerElHistorial}>
+              {COPY_HISTORIAL_DEL_BUSCADOR.reintentar}
+            </button>
+          </p>
+        ) : null}
+        {busqueda.tipo === 'lista' && algunoConHistorial ? (
+          <p className="nota ejercicios-del-catalogo__que-cuenta" data-que-cuenta-el-historial>
+            {COPY_HISTORIAL_DEL_BUSCADOR.queCuenta}
+          </p>
+        ) : null}
         {busqueda.tipo === 'falla' ? (
           <Aviso tipo="error">
             <p>No pudimos buscar en el catálogo. {busqueda.motivo}</p>
@@ -387,6 +451,7 @@ function ContenidoDeAgregarEjercicio({
                   const marcado = habituales.esHabitual(ej.exerciseId);
                   const zonas = zonasEnUnRenglon(ej.muscleZones);
                   const abierto = detalle === ej.exerciseId;
+                  const conHistorial = marcaDe(ej.exerciseId);
                   return (
                     <Fragment key={ej.versionId}>
                       <tr data-ejercicio-del-catalogo={ej.versionId} data-detalle-abierto={abierto ? '' : undefined}>
@@ -403,6 +468,13 @@ function ContenidoDeAgregarEjercicio({
                             <span className="nota alimentos-del-catalogo__detalle ejercicios-del-catalogo__zonas" data-zonas-del-ejercicio>
                               <span className="visualmente-oculto">{COPY_FIGURA_DE_ZONAS.titulo}: </span>
                               {zonas}
+                            </span>
+                          ) : null}
+                          {/* GR-04: lo dice el texto, no un color ni una flecha. */}
+                          {conHistorial ? (
+                            <span className="nota alimentos-del-catalogo__detalle ejercicios-del-catalogo__historial" data-con-historial>
+                              <Icono nombre="linea-de-tiempo" tamano={15} />
+                              {conHistorial}
                             </span>
                           ) : null}
                         </th>

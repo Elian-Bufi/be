@@ -65,7 +65,7 @@ export const COPY_AYUDA = {
   /** Los casos más comunes, con lo que conviene escribir. */
   casos: [
     { titulo: 'No puedo entrar', texto: 'Probá primero «¿Olvidaste tu contraseña?». Si no te llega el código, escribí a soporte desde el correo de tu cuenta.' },
-    // RF-004 (DL-172): la APK congelada (la 0.24 y, desde el 2026-11-13, la 0.27) no conoce GOOGLE_ACCOUNT_UNLINKED y
+    // RF-004 (DL-172): la APK congelada (la 0.24, la 0.27 y, desde el 2026-11-14, la 0.28) no conoce GOOGLE_ACCOUNT_UNLINKED y
     // muestra su aviso general de servicio no disponible al entrar con una cuenta de Google desvinculada. Este caso le dice a la persona qué hacer.
     {
       titulo: 'Desvinculé Google y no puedo entrar',

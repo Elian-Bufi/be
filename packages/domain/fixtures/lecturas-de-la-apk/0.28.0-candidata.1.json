@@ -1,11 +1,11 @@
 {
  "apk": {
-  "version": "0.27.0-candidata.1",
-  "versionCode": 41,
-  "tag": "be-apk-0.27.0-candidata.1",
-  "commit": "e145af9ee4734c36134c14fbff9574410e3cd96d"
+  "version": "0.28.0-candidata.1",
+  "versionCode": 42,
+  "tag": "be-apk-0.28.0-candidata.1",
+  "commit": "7729c2b7de834f3755980696059e1d437958855a"
  },
- "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.27.0-candidata.1» desde las fuentes del commit e145af9 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
+ "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.28.0-candidata.1» desde las fuentes del commit 7729c2b (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
  "cabeceras": {
   "X-BE-Surface": "APK",
   "X-BE-Capabilities": "training-set-targets-1,forms-format-3,pending-steps-texts-1"
@@ -61,6 +61,23 @@
   "noRepresentado": [],
   "detalles": {
    "GOOGLE_ACCOUNT_NOT_FOUND": {
+    "esquema": "DetalleDeCuentaDeGoogleSchema",
+    "respuesta": {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "type": "object",
+     "properties": {
+      "email": {
+       "type": "string",
+       "minLength": 1
+      }
+     },
+     "required": [
+      "email"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "GOOGLE_EMAIL_MISMATCH": {
     "esquema": "DetalleDeCuentaDeGoogleSchema",
     "respuesta": {
      "$schema": "https://json-schema.org/draft/2020-12/schema",

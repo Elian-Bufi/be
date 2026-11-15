@@ -73,15 +73,17 @@ import { corridaAbierta, enVivoDeLaCorrida, estadoLocal, eventosDeLaCorrida, typ
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { entrenamientoLocal, useEntrenamientoLocal } from '../entrenamiento-en-curso';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
-import { fecha, fechaCivil, fechaLarga, hora as horaDe } from '../formato';
+import { fecha, fechaCivil, fechaLarga, hora as horaDe, ultimosDiasHasta } from '../formato';
 import { Icono } from '../icono';
 import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
+import { DIAS_DE_LA_VEZ_PASADA, lineaDeLaVezPasadaDelEjercicio } from '../la-vez-pasada-en-la-sesion';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { VISTA_RECORDADA } from '../volver-a-hoy';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { enCursoDeLaApi, enCursoEnElTelefono, marchaDeLaSesionEnCurso, otraSesionEnCurso, sePuedeIniciar, sesionEnCursoParaMostrar, vistaDeLaSesion, type EnCurso, type MarchaDeLaCorrida } from '../sesion-en-curso';
+import { NotaParaTuProfe } from './nota-para-tu-profe';
 import { condicionQueCorresponde, horaTomadaAlEmpezar, inicioDeLaCorrida, motivoParaNoFinalizar, motivoQueViaja, renglonesDelResultado, TEXTOS_DEL_CIERRE, tiempoDeLaSesionAbierta, tiemposResumidos } from '../cierre-de-la-sesion';
 import { cuentaDelRecorrido, posicionEnLaSesion, segundosMedidosDeLaFila, tiempoDelEjercicioEnVivo, tramosDelRecorrido } from '../franja-de-la-sesion';
 import {
@@ -1090,6 +1092,22 @@ export function PantallaDeSesion({
     [],
   );
 
+  // PG-11 · GR-01: «La vez pasada» de cada ejercicio sale de «Tu historial» (API-TRN-19-LISTA, que la APK ya lee), de los
+  // 90 días hasta la fecha de la sesión, leído una vez al entrar. Si falla o no hay red, la línea no se dibuja.
+  const [historia, setHistoria] = useState<readonly EjecucionDeEntrenamiento[] | null>(null);
+  const sesionPerdidaDeLaHistoria = useRef(sesionPerdida);
+  sesionPerdidaDeLaHistoria.current = sesionPerdida;
+  useEffect(() => {
+    let vigente = true;
+    void api.misEjecucionesDeEntrenamiento(token, ultimosDiasHasta(fechaDeLaSesion, DIAS_DE_LA_VEZ_PASADA)).then((r) => {
+      if (!vigente || sesionPerdidaDeLaHistoria.current(r)) return;
+      if (r.ok) setHistoria(r.datos.data.executions);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, fechaDeLaSesion]);
+
   // ─── Lo que se deriva ───
   const estado = local ? estadoLocal(local.corrida) : null;
   const corre = !!estado && estado.runId !== null && estado.cierre === null && (!estado.pausada || estado.medicionAbierta !== null);
@@ -1877,6 +1895,8 @@ export function PantallaDeSesion({
   const elegidaEnTecnica = dialogo?.tipo === 'tecnica' ? (s.prescriptions.find((x) => x.prescriptionId === dialogo.prescriptionId) ?? null) : null;
   // La sustitución del ejercicio activo (DL-151): lo planificado y lo ejecutado según el borrador, y si se ofrece.
   const sustitucion = sustitucionDe(p, borrador, local.series);
+  // PG-11 · GR-01: la vez pasada del ejercicio activo, si la hay; no si se sustituyó en esta sesión.
+  const vezPasada = lineaDeLaVezPasadaDelEjercicio(historia, { exerciseId: p.exerciseId, fechaDeLaSesion, hoy, sustituido: sustitucion.ejecutado !== null });
   const aSustituir = dialogo?.tipo === 'sustituir' ? (s.prescriptions.find((x) => x.prescriptionId === dialogo.prescriptionId) ?? null) : null;
 
   return (
@@ -1918,6 +1938,7 @@ export function PantallaDeSesion({
         total={s.prescriptions.length}
         bases={bases}
         ejecutado={sustitucion.ejecutado?.nombre ?? null}
+        vezPasada={vezPasada}
         conNombre={false}
         onVerTecnica={() => setDialogo({ tipo: 'tecnica', prescriptionId: p.prescriptionId })}
         onSustituir={
@@ -2100,6 +2121,8 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
       <Titulo>{x.plannedSession.label}</Titulo>
       <Parrafo tenue>{fechaCivil(x.date)}</Parrafo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
+      {/* PG-15 (DL-173): «¿Algo para contarle a tu profe?», opcional y aparte de confirmar: la sesión ya quedó registrada. */}
+      <NotaParaTuProfe token={token} executionId={x.executionId} zona={x.timeZone} fechaDeLaSesion={x.date} sesionPerdida={sesionPerdida} />
       {vigente ? (
         <Seccion titulo={COPY_ENTRENAMIENTO.correccionVigente} icono="corregido">
           <Parrafo tenue>
