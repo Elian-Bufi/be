@@ -752,6 +752,12 @@ test('TEST-GRF-040 · GR-02, GR-03 y GR-05 dibujan los puntos que dice la leyend
   assert.ok(CR.carrilesDeCargaRepeticionesYRir({ carga, repeticiones: null, rir: null }, { serie: 1, indicado: [], cargadoTarde: new Set() }).every((c) => c.porSesion === true));
   const sesiones = RI.sesionesDelRir(CARGAS, 1);
   assert.equal(RI.carrilDelRirIndicadoYRegistrado(sesiones, { serie: 1, bandas: BANDAS, tardias: new Set(), filtrado: false }).porSesion, true);
+  // Un número que ya está escrito no se repite: en una serie pareja (repeticiones, todas 3) solo el último dice «3»; con
+  // valores distintos, el máximo y el mínimo siguen (mutación: rotular el extremo aunque repita el número del último).
+  const parejas = ['a', 'b', 'c', 'd', 'e'].map((clave) => ({ clave, valor: 3, marca: 'LLENA' }));
+  assert.deepEqual(EJE.rotulosDeLoLleno(parejas, null).claves, ['e']);
+  const distintas = [130, 132.5, 137.5, 132.5, 137.5].map((valor, i) => ({ clave: `k${i}`, valor, marca: 'LLENA' }));
+  assert.deepEqual(EJE.rotulosDeLoLleno(distintas, null).claves, ['k4', 'k0'], 'el último ya es el máximo: va el mínimo');
   // Lo hueco del 1RM estimado es lo orientativo: la leyenda dice «De más de 10 a 12…» solo si hay una, y nunca «Subtotal».
   const LEYENDA = ['REGISTRADO', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL', 'SUBTOTAL'];
   assert.deepEqual(CA.sentidosQueSeVen(LEYENDA, [fuerza]), ['REGISTRADO']);

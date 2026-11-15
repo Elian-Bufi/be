@@ -6,7 +6,7 @@
  * cada hecho con su ícono de la familia de BE y lo que cae junto en un círculo con la cantidad. Lo usan la cinta
  * (`cinta-del-tiempo-en-pantalla.tsx`) y los carriles de eventos de `PanelesAlineados`. No lee nada: dibuja la geometría.
  *
- * Con la pasada visual (rama B; DISENO-VISUAL §2): los íconos de 16 px sobre un fondo de 20 que no toca la barra; con una
+ * Con la pasada visual (rama B; DISENO-VISUAL §2): los íconos de 18 px sobre un fondo de 22 que no toca la barra; con una
  * sola fila (el cuadro de un ejercicio: solo Entrenamiento) no va el ícono del área en el margen, que a ese tamaño no se
  * entendía y no decía nada que no dijeran el título y la barra; con varias, en el color del texto.
  */
@@ -24,7 +24,7 @@ function AroDeLoElegido({ elegido }: { elegido: ElegibleDeLaCinta }) {
   if (elegido.barra) {
     return <rect className="grafico-cinta__aro" x={elegido.barra.x1 - 3} y={elegido.y - ALTO_DE_LA_BARRA / 2 - 3} width={elegido.barra.x2 - elegido.barra.x1 + 6} height={ALTO_DE_LA_BARRA + 6} rx={3} fill="none" stroke="var(--grafico-cursor)" strokeWidth={2} />;
   }
-  return <circle className="grafico-cinta__aro" cx={elegido.x} cy={elegido.y} r={12} fill="none" stroke="var(--grafico-cursor)" strokeWidth={2} />;
+  return <circle className="grafico-cinta__aro" cx={elegido.x} cy={elegido.y} r={13} fill="none" stroke="var(--grafico-cursor)" strokeWidth={2} />;
 }
 
 export function DibujoDeLaCinta({ g, escala, elegido = null }: { g: GeometriaDeLaCinta; escala: EscalaDeFechas; elegido?: ElegibleDeLaCinta | null }) {
@@ -35,8 +35,8 @@ export function DibujoDeLaCinta({ g, escala, elegido = null }: { g: GeometriaDeL
         <g key={f.fila} data-fila={f.fila}>
           <line x1={escala.izquierda} x2={escala.derecha} y1={f.y + ALTO_DE_LA_FILA_DE_LA_CINTA - 0.5} y2={f.y + ALTO_DE_LA_FILA_DE_LA_CINTA - 0.5} stroke="var(--borde)" strokeWidth={1} opacity={0.6} />
           {conIconoDelArea ? (
-            <g transform={`translate(${MARGEN_IZQUIERDO - 16 - 14} ${f.y + CENTRO_DEL_ICONO - 8})`} style={{ color: 'var(--texto)' }}>
-              <Icono nombre={ICONO_DE_LA_FILA[f.fila]} tamano={16} />
+            <g transform={`translate(${MARGEN_IZQUIERDO - 18 - 12} ${f.y + CENTRO_DEL_ICONO - 9})`} style={{ color: 'var(--texto)' }}>
+              <Icono nombre={ICONO_DE_LA_FILA[f.fila]} tamano={18} />
             </g>
           ) : null}
           {f.barras.map((b, i) => (
@@ -55,7 +55,7 @@ export function DibujoDeLaCinta({ g, escala, elegido = null }: { g: GeometriaDeL
             if (h.hechos.length > 1 || icono === null) {
               return (
                 <g key={h.clave} data-tipo="GRUPO">
-                  <circle cx={h.x} cy={f.y + CENTRO_DEL_ICONO} r={h.evento.agrupados > 9 ? 9.5 : 9} fill="var(--superficie)" stroke="var(--texto)" strokeWidth={1.5} />
+                  <circle cx={h.x} cy={f.y + CENTRO_DEL_ICONO} r={h.evento.agrupados > 9 ? 10.5 : 10} fill="var(--superficie)" stroke="var(--texto)" strokeWidth={1.5} />
                   <text x={h.x} y={f.y + CENTRO_DEL_ICONO} textAnchor="middle" dominantBaseline="central" fontSize={LETRA_MINIMA} fill="var(--texto)">
                     {h.evento.agrupados}
                   </text>
@@ -63,9 +63,9 @@ export function DibujoDeLaCinta({ g, escala, elegido = null }: { g: GeometriaDeL
               );
             }
             return (
-              <g key={h.clave} data-tipo={h.evento.tipo} transform={`translate(${h.x - 8} ${f.y + CENTRO_DEL_ICONO - 8})`} style={{ color: 'var(--texto)' }}>
-                <rect x={-2} y={-2} width={20} height={20} rx={5} fill="var(--superficie)" stroke="var(--borde)" strokeWidth={1} />
-                <Icono nombre={icono} tamano={16} />
+              <g key={h.clave} data-tipo={h.evento.tipo} transform={`translate(${h.x - 9} ${f.y + CENTRO_DEL_ICONO - 9})`} style={{ color: 'var(--texto)' }}>
+                <rect x={-2} y={-2} width={22} height={22} rx={5} fill="var(--superficie)" stroke="var(--borde)" strokeWidth={1} />
+                <Icono nombre={icono} tamano={18} />
               </g>
             );
           })}
