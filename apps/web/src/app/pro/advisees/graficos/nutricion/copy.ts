@@ -74,7 +74,8 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
     leyenda: {
       entera: { texto: 'Semana entera', largo: 'Barra llena: los siete días de la semana entran en la media, con cantidades en todos sus registros y sin comidas del plan sin registro' },
       hueca: { texto: 'Con días afuera', largo: 'Barra hueca, con su contorno: algún día quedó afuera de la media, o la semana está cortada por el período o tiene hoy' },
-      sinMedia: { texto: 'Sin media', largo: 'Columna gris: la semana no llega a 4 días con cantidades en todos sus registros; no es un cero' },
+      sinMedia: { texto: 'Sin media', largo: 'Contorno cortado, sin relleno: la semana tiene días con valor, pero no llega a 4 días con cantidades en todos sus registros; no es un cero' },
+      sinDias: { texto: 'Sin días con valor', largo: 'Columna gris: ningún día de la semana tiene un valor; no es un cero' },
       cadaDia: { texto: 'Cada día', largo: 'Los días, como puntos tenues detrás de las barras; debajo, la tira de cada día: entera sin faltantes, a media altura con algo que falta, una raya baja sin registros' },
       indicado: { texto: 'Indicado', largo: 'Lo indicado en el plan para cada día, como rombos huecos tenues detrás de las barras' },
       tarde: { texto: 'Cargado después', largo: 'Un día con registros cargados después: una muesca arriba de su lugar en la tira' },

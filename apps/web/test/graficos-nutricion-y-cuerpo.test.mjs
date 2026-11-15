@@ -863,7 +863,7 @@ const semanaDe = (lunes, valor, cambio = {}) =>
     return cambio[fecha] === undefined ? dia(fecha, valor) : cambio[fecha];
   }).filter((p) => p !== null);
 
-test('TEST-GRVC-001 · Nutrición por semana: la media de la semana (v1) como barra, llena solo con los siete días, una semana sin media es una columna gris y nunca una barra en cero, hoy no cuenta y GR-12, GR-13 y GR-14 dicen la misma media (mutaciones: dibujar la semana sin media en cero; llenar la barra con 6 de 7)', () => {
+test('TEST-GRVC-001 · Nutrición por semana: la media de la semana (v1) como barra, llena solo con los siete días; una semana con días pero sin media es un contorno cortado y una sin ningún día, una columna gris, nunca una barra en cero; hoy no cuenta; GR-12, GR-13 y GR-14 dicen la misma media, y de entrada va por semana solo si alguna semana tiene media (mutaciones: dibujar la semana sin media en cero; llenar la barra con 6 de 7; arrancar por semana sin ninguna media)', () => {
   // Tres semanas: la primera entera, la segunda con un subtotal (6 de 7), la tercera con 2 días (sin media) y hoy adentro.
   const puntos = [
     ...semanaDe('2026-10-19', 2000),
@@ -883,7 +883,16 @@ test('TEST-GRVC-001 · Nutrición por semana: la media de la semana (v1) como ba
   const e = escala('2026-10-19', '2026-11-05');
   const geo = L.geometriaDeValores(g.paneles[0], e, 240, 'SEMANA');
   assert.equal(geo.barras.length, 2);
-  assert.equal(geo.vacias.length, 1, 'la semana sin media es una columna');
+  assert.equal(geo.sinMedia.length, 1, 'la semana con dos días no alcanza: un contorno cortado, no un hueco');
+  assert.equal(geo.vacias.length, 0);
+  // Una semana sin ningún día con valor sí es un hueco: la columna gris de la base.
+  const conHueco = G12.graficoDeEnergia({ resultado: resultado('ENERGY', [...semanaDe('2026-10-19', 2000), ...semanaDe('2026-11-02', 2000)]), cargadoTarde: new Set(), desde: '2026-10-19', hasta: '2026-11-08', hoy: '2026-11-10' });
+  const geoHueco = L.geometriaDeValores(conHueco.paneles[0], escala('2026-10-19', '2026-11-08'), 240, 'SEMANA');
+  assert.deepEqual([geoHueco.barras.length, geoHueco.vacias.length, geoHueco.sinMedia.length], [2, 1, 0]);
+  assert.deepEqual(
+    conHueco.porSemana.leyenda.map((x) => x.clave),
+    ['semana-entera', 'sin-dias', 'cada-dia'],
+  );
   assert.ok(!geo.barras.some((b) => b.valor === 0), 'ninguna barra en cero (mutación: dibujarla en cero)');
   assert.equal(geo.extremos.abajo, 0);
   assert.ok(geo.barras.every((b) => b.base > b.y && b.x2 > b.x1));
@@ -926,9 +935,14 @@ test('TEST-GRVC-001 · Nutrición por semana: la media de la semana (v1) como ba
     comparacion.paneles[0].semanas.map((s) => s.valor),
     g.paneles[0].semanas.map((s) => s.valor),
   );
-  // De entrada por semana solo con más de seis semanas (la regla de la base); con menos, día por día.
+  // De entrada por semana solo con más de seis semanas (la regla de la base) y si alguna semana tiene media (GR-VC12).
   assert.equal(SEMANAS.convienePorSemana('2026-08-01', '2026-11-05'), true);
   assert.equal(SEMANAS.convienePorSemana('2026-10-07', '2026-11-05'), false);
+  assert.equal(L.modoDeEntrada(g, '2026-08-01', '2026-11-05'), 'SEMANA');
+  assert.equal(L.modoDeEntrada(g, '2026-10-07', '2026-11-05'), 'DIA', 'con menos de seis semanas, día por día');
+  const sinMedias = G12.graficoDeEnergia({ resultado: resultado('ENERGY', [dia('2026-10-20', 2000), subtotal('2026-10-27', 900, 'SIN_CANTIDADES')]), cargadoTarde: new Set(), desde: '2026-08-01', hasta: '2026-11-05', hoy: '2026-11-05' });
+  assert.equal(L.modoDeEntrada(sinMedias, '2026-08-01', '2026-11-05'), 'DIA', 'sin ninguna media, por semana se vería solo «sin media»: de entrada, día por día');
+  assert.equal(L.modoDeEntrada({ ...g, porSemana: null }, '2026-08-01', '2026-11-05'), 'DIA', 'sin «Por semana» (los g/kg), día por día');
   sinPalabrasProhibidas([...textosDe(g), ...textosDe(macros), ...textosDe(comparacion)], ['NUTRICION']);
 });
 
@@ -1028,16 +1042,22 @@ test('TEST-GRVC-003 · sin rótulo en cada punto: el elegido, el último y los e
   const diferencias = L.rotulosDelPanel(geo3, e, 240, fechas[2], 'DIA', 16).filter((r) => r.clave.startsWith('u:'));
   assert.ok(diferencias.length >= 1 && diferencias.length <= 2, 'una o dos diferencias, no una por día');
   for (const d of diferencias) assert.ok(['+120 kcal', '+150 kcal'].includes(d.texto), `la del día elegido y la del último: ${d.texto}`);
+  // Con kcal, el número es el de la lectura: entero («2.461», no «2.460,9»).
+  const enKcal = { ...panel, marcas: [marca('k1', '2026-11-03', 2460.9), marca('k2', '2026-11-05', 1874.7)] };
+  assert.deepEqual(
+    L.rotulosDelPanel(L.geometriaDeValores(enKcal, e, 240), e, 240, '2026-11-03', 'DIA', 16, 0).map((r) => r.texto),
+    ['2.461', '1.875'],
+  );
   // Por semana: la media de la semana elegida (o, sin elegir, la de la última con media), arriba de su barra.
   const g = G12.graficoDeEnergia({ resultado: resultado('ENERGY', [...semanaDe('2026-11-02', 2000), ...semanaDe('2026-11-09', 2100)]), cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-15', hoy: '2026-11-20' });
   const e2 = escala('2026-11-02', '2026-11-15');
   const geoS = L.geometriaDeValores(g.paneles[0], e2, 240, 'SEMANA');
   assert.deepEqual(
-    L.rotulosDelPanel(geoS, e2, 240, null, 'SEMANA', 16).map((r) => r.texto),
+    L.rotulosDelPanel(geoS, e2, 240, null, 'SEMANA', 16, 0).map((r) => r.texto),
     ['2.100'],
   );
   assert.deepEqual(
-    L.rotulosDelPanel(geoS, e2, 240, '2026-11-04', 'SEMANA', 16).map((r) => r.texto),
+    L.rotulosDelPanel(geoS, e2, 240, '2026-11-04', 'SEMANA', 16, 0).map((r) => r.texto),
     ['2.000'],
   );
 });
@@ -1062,6 +1082,13 @@ test('TEST-GRVC-004 · lo que §5 pide a la vista no se esconde en «Cómo leerl
   assert.ok(porKilo.notas.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.diasSinPeso(1)));
   assert.ok(porKilo.notas.includes('El peso anterior se buscó desde el 2/11/2025.'), 'con días sin peso, desde cuándo se buscó va a la vista');
   assert.ok(porKilo.aclaraciones.some((n) => n.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.reglaDelPeso)));
+  // La ficha de las versiones del plan va solo si se ve algo más que su rótulo: un cambio adentro o un fondo que alterna.
+  const una = [version('v5', 'v5', '2026-03-02', null)];
+  assert.equal(T.seVenLasTemporadas(T.temporadasDeNutricion(una, [], '2026-10-17', '2026-11-15'), '2026-10-17'), false, 'una sola versión de antes: solo su rótulo (mutación: la ficha sin nada que mostrar)');
+  const dos = [version('v5', 'v5', '2026-03-02', '2026-11-01'), version('v6', 'v6', '2026-11-01', null)];
+  assert.equal(T.seVenLasTemporadas(T.temporadasDeNutricion(dos, [], '2026-10-17', '2026-11-15'), '2026-10-17'), true);
+  const conUna = G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos, { versiones: una }), cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-09' });
+  assert.ok(!conUna.leyenda.some((x) => x.clave === 'temporada'));
   // La leyenda: una ficha corta a la vista y el texto entero, con la forma, para el lector de pantalla.
   for (const x of [g, porKilo]) for (const f of x.leyenda) assert.ok(f.texto.length <= 30 && f.largo.length > f.texto.length, `${f.texto} / ${f.largo}`);
   sinPalabrasProhibidas([...textosDe(g)], ['NUTRICION']);
@@ -1144,7 +1171,7 @@ test('TEST-GRVC-006 · GR-18: el nombre de cada sitio entero (en dos renglones s
 
 test('TEST-GRVC-007 · en pantalla: «Por semana | Día por día» con aria-pressed y por semana de entrada con más de seis semanas, la lectura de la semana es una región viva, su tabla tiene caption y encabezados con alcance, la leyenda tiene su texto entero para el lector, «Cómo leerlo» lleva el nombre de su gráfico y la hoja usa solo tokens (mutación: decidir el modo sin la regla de la base)', () => {
   const lienzo = readFileSync(join(GRAFICOS, 'nutricion-y-cuerpo/lienzo-en-pantalla.tsx'), 'utf8');
-  assert.match(lienzo, /convienePorSemana\(desde, periodo\.hasta\) \? 'SEMANA' : 'DIA'/, 'la regla de la base (GR-V01)');
+  assert.ok(lienzo.includes('const deEntrada: ModoDelLienzo = modoDeEntrada(grafico, desde, periodo.hasta);'), 'la regla de la base (GR-V01), en una función pura');
   assert.match(lienzo, /aria-pressed=\{modo === 'SEMANA'\}/);
   assert.match(lienzo, /aria-pressed=\{modo === 'DIA'\}/);
   assert.match(lienzo, /aria-live="polite" data-lectura-de-la-semana/);

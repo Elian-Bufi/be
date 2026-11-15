@@ -23,6 +23,7 @@ import type { MarcaSemantica } from '@be/domain';
 import { AIRE_DEL_CARRIL, extremosDelCarril, type EscalaDelCarril } from '../carriles';
 import { textoDeLaMarca, type EscalaDeFechas } from '../eje-de-fechas';
 import { rotulosDeLoLleno, rotulosSinPisarse, type MarcasDelEje, type RotuloCandidato, type RotuloUbicado } from '../ejes';
+import { convienePorSemana } from '../semanas';
 import type { FilasDeLaTabla } from '../tabla-equivalente';
 
 /** La forma de una serie cuando dos comparten un panel (GR-20): la marca dice el dato; la forma, de qué método es. */
@@ -79,6 +80,11 @@ export interface SemanaDelPanel {
   readonly entera: boolean;
   /** «2.050 kcal por día de media · con 4 de 7 días; 1 sin registro…». */
   readonly texto: string;
+  /**
+   * Algún día de la semana (sin hoy) tiene un valor: sin media, no es un hueco, es una semana que no alcanza (un contorno
+   * cortado de todo el alto); sin ningún día con valor, sí es un hueco (la columna gris de la base).
+   */
+  readonly conDias: boolean;
 }
 
 /** El estado de un día en la tira de cobertura de «Por semana»: con todo, con algo que falta, sin registros u hoy. */
@@ -143,7 +149,7 @@ export type MuestraDeLaLeyenda =
   | { readonly tipo: 'COMIDA'; readonly estado: EstadoDeLaComida }
   | { readonly tipo: 'TEMPORADA' }
   | { readonly tipo: 'TARDE' }
-  | { readonly tipo: 'SEMANA'; readonly forma: 'ENTERA' | 'HUECA' | 'SIN_MEDIA'; readonly color: number }
+  | { readonly tipo: 'SEMANA'; readonly forma: 'ENTERA' | 'HUECA' | 'SIN_MEDIA' | 'SIN_DIAS'; readonly color: number }
   | { readonly tipo: 'DIA_TENUE'; readonly color: number }
   | { readonly tipo: 'COBERTURA'; readonly color: number };
 
@@ -233,8 +239,10 @@ export interface GeometriaDeValores {
   readonly escalones: readonly { readonly clave: string; readonly x1: number; readonly x2: number; readonly y: number; readonly color: number }[];
   /** «Por semana»: una barra por semana con media, desde cero (`y` es su tope). */
   readonly barras: readonly { readonly clave: string; readonly desde: string; readonly hasta: string; readonly x1: number; readonly x2: number; readonly y: number; readonly base: number; readonly entera: boolean; readonly valor: number }[];
-  /** «Por semana»: las semanas sin media, una columna gris de todo el alto (nunca una barra en cero). */
+  /** «Por semana»: las semanas sin ningún día con valor, una columna gris de todo el alto (nunca una barra en cero). */
   readonly vacias: readonly { readonly clave: string; readonly desde: string; readonly hasta: string; readonly x1: number; readonly x2: number }[];
+  /** «Por semana»: las semanas con días pero sin media (no alcanzan): un contorno cortado de todo el alto, sin relleno. */
+  readonly sinMedia: readonly { readonly clave: string; readonly desde: string; readonly hasta: string; readonly x1: number; readonly x2: number }[];
 }
 
 const dentro = (fecha: string, e: Pick<EscalaDeFechas, 'desde' | 'hasta'>): boolean => fecha >= e.desde && fecha <= e.hasta;
@@ -295,12 +303,13 @@ export function geometriaDeValores(p: PanelDeValores, escala: EscalaDeFechas, al
     uniones: uniones.map((u) => ({ clave: u.clave, fecha: u.fecha, x: xDe(u.fecha, u.en), y1: y(u.desde), y2: y(u.hasta), rotulo: u.rotulo, forma: u.forma })),
     escalones: escalones.map((t) => ({ clave: t.clave, ...horizontal(t), y: y(t.valor), color: t.color })),
     barras: semanas.flatMap((s) => (s.valor === null ? [] : [{ clave: s.clave, desde: s.desde, hasta: s.hasta, ...columna(s), y: y(s.valor), base, entera: s.entera, valor: s.valor }])),
-    vacias: semanas.filter((s) => s.valor === null).map((s) => ({ clave: s.clave, desde: s.desde, hasta: s.hasta, ...columna(s) })),
+    vacias: semanas.filter((s) => s.valor === null && !s.conDias).map((s) => ({ clave: s.clave, desde: s.desde, hasta: s.hasta, ...columna(s) })),
+    sinMedia: semanas.filter((s) => s.valor === null && s.conDias).map((s) => ({ clave: s.clave, desde: s.desde, hasta: s.hasta, ...columna(s) })),
   };
 }
 
-/** Un número de un rótulo, como lo escribe la base: hasta un decimal («160,5», «1.850»). */
-export const valorDelRotulo = (v: number): string => v.toLocaleString('es-AR', { maximumFractionDigits: 1 });
+/** Un número de un rótulo, como lo escribe la lectura: las kcal enteras («2.461»), lo demás con hasta un decimal («160,5»). */
+export const valorDelRotuloEn = (v: number, decimales = 1): string => v.toLocaleString('es-AR', { maximumFractionDigits: decimales });
 
 /**
  * Los números que se escriben en el dibujo de un panel (DISENO-VISUAL §1, principio 3; GR-VC03): nunca uno en cada punto.
@@ -312,12 +321,21 @@ export const valorDelRotulo = (v: number): string => v.toLocaleString('es-AR', {
  * Lo indicado no lleva número: lo dicen la lectura y la tabla. Dos rótulos nunca se pisan, ni pisan un número del eje.
  * `fuerte`: el elegido, el último y la diferencia van marcados; el mínimo y el máximo, discretos (como en la base).
  */
-export function rotulosDelPanel(g: GeometriaDeValores, escala: Pick<EscalaDeFechas, 'izquierda' | 'derecha'>, alto: number, fecha: string | null, modo: ModoDelLienzo, margenDerecho: number): (RotuloUbicado & { readonly fuerte: boolean })[] {
+export function rotulosDelPanel(
+  g: GeometriaDeValores,
+  escala: Pick<EscalaDeFechas, 'izquierda' | 'derecha'>,
+  alto: number,
+  fecha: string | null,
+  modo: ModoDelLienzo,
+  margenDerecho: number,
+  decimales = 1,
+): (RotuloUbicado & { readonly fuerte: boolean })[] {
+  const valorDelRotulo = (v: number) => valorDelRotuloEn(v, decimales);
   const caja = { izquierda: escala.izquierda, derecha: escala.derecha + margenDerecho - 2, arriba: 0, abajo: alto };
   const ejeY = g.marcasY.map((m) => ({ x1: 0, x2: escala.izquierda - 4, y1: m.y - 8, y2: m.y + 8 }));
-  if (modo === 'SEMANA' && (g.barras.length > 0 || g.vacias.length > 0)) {
+  if (modo === 'SEMANA' && (g.barras.length > 0 || g.vacias.length > 0 || g.sinMedia.length > 0)) {
     const elegida = fecha === null ? null : (g.barras.find((b) => fecha >= b.desde && fecha <= b.hasta) ?? null);
-    const sinElegir = fecha === null || (elegida === null && !g.vacias.some((v) => fecha >= v.desde && fecha <= v.hasta));
+    const sinElegir = fecha === null || (elegida === null && ![...g.vacias, ...g.sinMedia].some((v) => fecha >= v.desde && fecha <= v.hasta));
     const barra = elegida ?? (sinElegir ? (g.barras[g.barras.length - 1] ?? null) : null);
     return barra ? rotulosSinPisarse([{ clave: barra.clave, x: (barra.x1 + barra.x2) / 2, y: barra.y, texto: valorDelRotulo(barra.valor) }], caja, ejeY).map((r) => ({ ...r, fuerte: true })) : [];
   }
@@ -425,6 +443,16 @@ export function temporadasUbicadas(temporadas: readonly TemporadaDelLienzo[], es
 /** La semana (de las de un panel) que contiene una fecha, o `null`. */
 export const semanaDeLaFecha = <T extends { readonly desde: string; readonly hasta: string }>(semanas: readonly T[], fecha: string | null): T | null =>
   fecha === null ? null : (semanas.find((s) => fecha >= s.desde && fecha <= s.hasta) ?? null);
+
+/**
+ * Cómo arranca un gráfico de Nutrición (GR-VC01 y GR-VC12): por semana con más de seis semanas (`convienePorSemana`, la
+ * regla de la base) **y si alguna semana tiene media**; si ninguna llega, por semana se vería solo «sin media» y de entrada
+ * va día por día (por semana sigue a un toque, y dice por qué no hay media).
+ */
+export function modoDeEntrada(grafico: Pick<GraficoArmado, 'porSemana' | 'paneles'>, desde: string, hasta: string): ModoDelLienzo {
+  if (grafico.porSemana === null || !convienePorSemana(desde, hasta)) return 'DIA';
+  return grafico.paneles.some((p) => p.tipo === 'VALORES' && p.semanas.some((s) => s.valor !== null)) ? 'SEMANA' : 'DIA';
+}
 
 /** El tramo que se lee de entrada en «Por semana»: el último con alguna media (o el último, si ninguno tiene). */
 export function tramoDeEntrada(tramos: readonly TramoDeLasSemanas[]): TramoDeLasSemanas | null {

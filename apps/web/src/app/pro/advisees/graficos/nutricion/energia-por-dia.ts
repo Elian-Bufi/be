@@ -21,7 +21,7 @@ import { diaYMes, huecosEnTexto, type ElementoDeLaLeyenda, type GraficoArmado, t
 import { COPY_NUTRICION_EN_GRAFICOS as C, contar, enumerar } from './copy';
 import { lecturaDelDia, marcaDelDia, puntosPorFecha, saberDelDia } from './dias-de-nutricion';
 import { coberturaDeLosDias, loCargadoDespuesEnElPeriodo, mediasDeLasSemanas, MINIMO_DE_DIAS_PARA_LA_MEDIA, porSemanaDelGrafico, semanasDelPanel } from './por-semana';
-import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, temporadasDeNutricion } from './temporadas';
+import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, seVenLasTemporadas, temporadasDeNutricion } from './temporadas';
 
 export { mediasDeLasSemanas, MINIMO_DE_DIAS_PARA_LA_MEDIA, type MediaDeLaSemana } from './por-semana';
 
@@ -131,7 +131,7 @@ export function graficoDeEnergia(e: EntradaDeEnergia): GraficoArmado {
     ...(objetivos.length > 0 ? [`Objetivo del profesional: ${enumerar(objetivos)}.`] : []),
     ...(temporadas.length > 0 ? [`${C.temporadas}: ${temporadas.map((t) => t.rotulo).join('; ')}.`] : []),
   ].join(' ');
-  const comunes = leyendaDelObjetivoYLasTemporadas(escalones.length > 0, temporadas.length > 0);
+  const comunes = leyendaDelObjetivoYLasTemporadas(escalones.length > 0, seVenLasTemporadas(temporadas, desde));
   return {
     paneles: [panel],
     temporadas,

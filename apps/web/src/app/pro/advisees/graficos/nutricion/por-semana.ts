@@ -37,6 +37,8 @@ export interface MediaDeLaSemana {
   readonly dias: number;
   /** Los siete días entran, todos con todo registrado (sin días sin saber si faltan comidas) y sin hoy: la barra va llena. */
   readonly entera: boolean;
+  /** Algún día de la semana (sin hoy) tiene un valor, aunque no entre en la media: sin media no es un hueco. */
+  readonly conDias: boolean;
   /** «1.950 kcal por día de media · con 5 de 7 días; 1 sin registro y 1 con cantidades faltantes». */
   readonly texto: string;
 }
@@ -89,6 +91,7 @@ export function mediasDeLasSemanas(puntos: readonly PuntoAnalitico[], metrica: M
       incluidos: valores.length,
       dias: cuentan.length,
       entera: valor !== null && !conHoy && cuentan.length === 7 && valores.length === 7 && sinSaber === 0,
+      conDias: cuentan.some((f) => (porFecha.get(f)?.value ?? null) !== null),
       texto: valor === null ? C.media.sinMedia(MINIMO_DE_DIAS_PARA_LA_MEDIA, conCuantos) : C.media.valor(valorDelDia(valor, metrica), conCuantos),
     };
   });
@@ -96,7 +99,7 @@ export function mediasDeLasSemanas(puntos: readonly PuntoAnalitico[], metrica: M
 
 /** Las semanas de un panel, para el lienzo: cada media con su tramo y lo que dice. */
 export const semanasDelPanel = (medias: readonly MediaDeLaSemana[], id: string): SemanaDelPanel[] =>
-  medias.map((m) => ({ clave: `${id}:${m.desde}`, desde: m.desde, hasta: m.hasta, valor: m.valor, entera: m.entera, texto: m.texto }));
+  medias.map((m) => ({ clave: `${id}:${m.desde}`, desde: m.desde, hasta: m.hasta, valor: m.valor, entera: m.entera, texto: m.texto, conDias: m.conDias }));
 
 /**
  * El estado de cada día del período en la tira de cobertura: entero con todo registrado, a media altura con algo que
@@ -120,7 +123,8 @@ export function leyendaPorSemana(paneles: readonly PanelDeValores[], extras: rea
   return [
     ...(semanas.some((s) => s.valor !== null && s.entera) ? [{ clave: 'semana-entera', ...L.entera, muestra: { tipo: 'SEMANA', forma: 'ENTERA', color: 0 } } as const] : []),
     ...(semanas.some((s) => s.valor !== null && !s.entera) ? [{ clave: 'semana-hueca', ...L.hueca, muestra: { tipo: 'SEMANA', forma: 'HUECA', color: 0 } } as const] : []),
-    ...(semanas.some((s) => s.valor === null) ? [{ clave: 'sin-media', ...L.sinMedia, muestra: { tipo: 'SEMANA', forma: 'SIN_MEDIA', color: 0 } } as const] : []),
+    ...(semanas.some((s) => s.valor === null && s.conDias) ? [{ clave: 'sin-media', ...L.sinMedia, muestra: { tipo: 'SEMANA', forma: 'SIN_MEDIA', color: 0 } } as const] : []),
+    ...(semanas.some((s) => s.valor === null && !s.conDias) ? [{ clave: 'sin-dias', ...L.sinDias, muestra: { tipo: 'SEMANA', forma: 'SIN_DIAS', color: 0 } } as const] : []),
     ...(paneles.some((p) => p.marcas.some((m) => m.color !== null)) ? [{ clave: 'cada-dia', ...L.cadaDia, muestra: { tipo: 'COBERTURA', color: 0 } } as const] : []),
     ...(paneles.some((p) => p.marcas.some((m) => m.tarde && m.color !== null)) ? [{ clave: 'tarde', ...L.tarde, muestra: { tipo: 'TARDE' } } as const] : []),
     ...extras,

@@ -6,7 +6,7 @@
  * cursor compartido de la página (`useCursorDeFechas`), el teclado de la base (`moverElCursor`: flechas, Inicio, Fin,
  * Mayúscula con flechas para un tramo y Escape), la lectura viva de la fecha, la tabla equivalente y «Cómo leerlo».
  *
- * La pasada visual de la rama C (15/11; DISENO-VISUAL §1 y §2 «C»), con el lenguaje que #283 le dio a la base:
+ * La pasada visual de la rama C (15/11; DISENO-VISUAL §1 y §2 «C»), con el lenguaje que la pasada visual le dio a la base:
  * - **Arriba,** el título (16 px) y una línea tenue con la unidad, cómo se agrupa, el período y el método (§5.6: a la
  *   vista); debajo, «Por semana | Día por día» si el gráfico los tiene, y la leyenda como fichas cortas, solo con lo que
  *   se ve (el lector de pantalla oye el texto entero de cada una).
@@ -41,11 +41,12 @@ import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_DERECHO, MARGEN_IZQUIERDO, useAnchoDelGr
 import { COPY_NUTRICION_EN_GRAFICOS } from '../nutricion/copy';
 import { nombreDelTramo } from '../nutricion/por-semana';
 import { altoDelCarril, type DensidadDelGrafico } from '../paneles-alineados';
-import { convienePorSemana, OPACIDAD_DE_LOS_DIAS, RELLENO_ENTERA, RELLENO_HUECA } from '../semanas';
+import { OPACIDAD_DE_LOS_DIAS, RELLENO_ENTERA, RELLENO_HUECA } from '../semanas';
 import { TablaEquivalente } from '../tabla-equivalente-en-pantalla';
 import {
   geometriaDeTira,
   geometriaDeValores,
+  modoDeEntrada,
   rotulosDelPanel,
   semanaDeLaFecha,
   temporadasUbicadas,
@@ -214,7 +215,8 @@ function DibujoDeValores({ panel, alto, ...d }: PropsDelDibujo & { panel: PanelD
   const arriba = alturaDeArriba(d);
   const conTira = semanal && panel.cobertura.length > 0;
   const total = arriba + alto + (conTira ? ZONA_DE_LA_TIRA : 0) + (d.ultimo ? ALTO_DEL_EJE_DE_FECHAS : 0);
-  const rotulos = rotulosDelPanel(g, escala, alto, d.fecha, d.modo, MARGEN_DERECHO);
+  // Los números del dibujo con los decimales de la lectura: las kcal enteras.
+  const rotulos = rotulosDelPanel(g, escala, alto, d.fecha, d.modo, MARGEN_DERECHO, panel.escala.enteros ? 0 : 1);
   // Lo indicado va primero: lo registrado del mismo día se ve encima.
   const marcas = [...g.marcas].sort((a, b) => (a.color === null ? 0 : 1) - (b.color === null ? 0 : 1));
   const color = colorDelCarril(0);
@@ -223,9 +225,13 @@ function DibujoDeValores({ panel, alto, ...d }: PropsDelDibujo & { panel: PanelD
       <Arriba d={d} />
       <g transform={`translate(0 ${arriba})`}>
         <Fondo escala={escala} temporadas={d.temporadas} alto={alto} tramo={d.tramo} semana={d.semana} modo={d.modo} />
-        {/* Una semana sin media: una columna gris de todo el alto, que no se lee como una barra en cero. */}
+        {/* Una semana sin ningún día con valor: una columna gris de todo el alto, que no se lee como una barra en cero. */}
         {g.vacias.map((v) => (
-          <rect key={`v${v.clave}`} className="grafico-capas__sin-media" x={v.x1} y={0} width={Math.max(1, v.x2 - v.x1)} height={alto} fill="var(--grafico-hueco)" fillOpacity={0.18} />
+          <rect key={`v${v.clave}`} className="grafico-capas__sin-dias" x={v.x1} y={0} width={Math.max(1, v.x2 - v.x1)} height={alto} fill="var(--grafico-hueco)" fillOpacity={0.18} />
+        ))}
+        {/* Una semana con días pero sin media (no llega a 4 sin faltantes): un contorno cortado, sin relleno ni altura. */}
+        {g.sinMedia.map((v) => (
+          <rect key={`s${v.clave}`} className="grafico-capas__sin-media" x={v.x1 + 0.75} y={0.75} width={Math.max(1, v.x2 - v.x1 - 1.5)} height={alto - 1.5} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="3 3" />
         ))}
         {g.marcasY.map((m) => (
           <g key={`y${m.valor}`} className="grafico-base__grilla">
@@ -338,7 +344,8 @@ function Muestra({ e }: { e: ElementoDeLaLeyenda }) {
         </>
       ) : null}
       {m.tipo === 'SEMANA' && m.forma === 'HUECA' ? <path d="M 4.75 13 V 3.75 H 13.25 V 13" fill="none" stroke={colorDelCarril(m.color)} strokeWidth={1.5} /> : null}
-      {m.tipo === 'SEMANA' && m.forma === 'SIN_MEDIA' ? <rect x={4} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} /> : null}
+      {m.tipo === 'SEMANA' && m.forma === 'SIN_MEDIA' ? <rect x={4.5} y={1.5} width={9} height={11} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="2 2" /> : null}
+      {m.tipo === 'SEMANA' && m.forma === 'SIN_DIAS' ? <rect x={4} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} /> : null}
       {m.tipo === 'DIA_TENUE' ? <circle cx={9} cy={7} r={2} fill={colorDelCarril(m.color)} opacity={OPACIDAD_DE_LOS_DIAS} /> : null}
       {m.tipo === 'COBERTURA' ? (
         <>
@@ -510,8 +517,9 @@ export function LienzoDeNutricionYCuerpo({ titulo, periodo, grafico, densidad = 
   const idDelResumen = useId();
   const desde = inicioDelEje(periodo);
   const porSemana = grafico.porSemana;
-  // Por semana de entrada con más de seis semanas (GR-V01, como «Comparar dos etapas»); el pedido vale para su período.
-  const deEntrada: ModoDelLienzo = porSemana !== null && convienePorSemana(desde, periodo.hasta) ? 'SEMANA' : 'DIA';
+  // Por semana de entrada con más de seis semanas (GR-V01, como «Comparar dos etapas») y si alguna semana tiene media
+  // (GR-VC12); el pedido vale para su período.
+  const deEntrada: ModoDelLienzo = modoDeEntrada(grafico, desde, periodo.hasta);
   const clave = `${desde}|${periodo.hasta}`;
   const [pedido, setPedido] = useState<{ readonly modo: ModoDelLienzo; readonly para: string } | null>(null);
   const modo: ModoDelLienzo = porSemana === null ? 'DIA' : pedido !== null && pedido.para === clave ? pedido.modo : deEntrada;

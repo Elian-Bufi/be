@@ -22,7 +22,7 @@ import { calidadDelDia, lecturaDelDia, marcaDelDia, puntosPorFecha, type Metrica
 import { aclaracionesDeLaSuma, leyendaDeLosDias, leyendaDelObjetivoYLasTemporadas, marcasDeLosDias, notasDeLaVistaParcial, notasDeLoCargadoDespues, temporadasEnTexto } from './energia-por-dia';
 import { coberturaDeLosDias, loCargadoDespuesEnElPeriodo, mediasDeLasSemanas, porSemanaDelGrafico, semanasDelPanel } from './por-semana';
 import { pesoDelDia, pesoEnPalabras, pesosUsados, serieAnaliticaPorKilo, type PesoDeLaToma } from './gramos-por-kilo';
-import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, temporadasDeNutricion } from './temporadas';
+import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, seVenLasTemporadas, temporadasDeNutricion } from './temporadas';
 
 /** Un macronutriente de GR-13: su métrica de API-PRJ-01, su serie del catálogo y su nombre. */
 export interface MacroDelGrafico {
@@ -110,7 +110,7 @@ export function graficoDeMacros(e: EntradaDeMacros): GraficoArmado {
     descripcion: `${C.macros.titulo}: ${contar(dias, 'día con algún valor', 'días con algún valor')}. ${e.macros
       .map((m, i) => `${m.nombre}: ${contar(paneles[i]!.marcas.length, 'día', 'días')}`)
       .join('; ')}.`,
-    leyenda: [...leyendaDeLosDias(marcas, 0), ...leyendaDelObjetivoYLasTemporadas(conObjetivo, temporadas.length > 0)],
+    leyenda: [...leyendaDeLosDias(marcas, 0), ...leyendaDelObjetivoYLasTemporadas(conObjetivo, seVenLasTemporadas(temporadas, desde))],
     notas: [
       ...e.macros.flatMap((m, i) => proporcionesDelObjetivo(e.resultados[i]!.prescribed.objectiveSteps, m.metrica, m.nombre, desde, hasta)),
       ...loCargadoDespuesEnElPeriodo(unaPorFecha(marcas)),
@@ -119,7 +119,7 @@ export function graficoDeMacros(e: EntradaDeMacros): GraficoArmado {
     ],
     aclaraciones: [...aclaracionesDeLaSuma(), C.macros.sinBarrasApiladas, C.macros.fibraDesconocida, ...temporadasEnTexto(temporadas)],
     metodo: C.metodoDeLaSuma,
-    porSemana: porSemanaDelGrafico({ paneles, leyendaExtra: leyendaDelObjetivoYLasTemporadas(conObjetivo, temporadas.length > 0) }),
+    porSemana: porSemanaDelGrafico({ paneles, leyendaExtra: leyendaDelObjetivoYLasTemporadas(conObjetivo, seVenLasTemporadas(temporadas, desde)) }),
     comoTabla: false,
   };
 }
@@ -182,7 +182,7 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
       sinRegistros: primera ? huecosEnTexto(primera.recorded.gaps, desde, hasta) : [],
     },
     descripcion: `${C.porKilo.titulo}: ${contar(new Set(marcas.map((x) => x.fecha)).size, 'día con valor', 'días con valor')}.${usados.length > 0 ? ` ${C.porKilo.pesosUsados(listaDePesos)}` : ''}`,
-    leyenda: [...leyendaDeLosDias(marcas, 0), ...leyendaDelObjetivoYLasTemporadas(false, temporadas.length > 0)],
+    leyenda: [...leyendaDeLosDias(marcas, 0), ...leyendaDelObjetivoYLasTemporadas(false, seVenLasTemporadas(temporadas, desde))],
     notas: [
       // Los pesos usados, a la vista: cada punto es de su toma, y el profesional tiene que ver con qué peso se dividió.
       ...(usados.length > 0 ? [C.porKilo.pesosUsados(listaDePesos)] : e.pesos.length === 0 ? [C.porKilo.sinPesos] : []),

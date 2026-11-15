@@ -35,7 +35,7 @@ import { COPY_NUTRICION_EN_GRAFICOS as C, contar } from './copy';
 import { calidadDelDia, marcaDelDia, puntosPorFecha, saberDelDia, valorDelDia, type MetricaDelGrafico } from './dias-de-nutricion';
 import { aclaracionesDeLaSuma, fichaDeLaLeyenda, leyendaDeLosDias, leyendaDelObjetivoYLasTemporadas, notasDeLaVistaParcial, temporadasEnTexto } from './energia-por-dia';
 import { coberturaDeLosDias, mediasDeLasSemanas, porSemanaDelGrafico, semanasDelPanel } from './por-semana';
-import { temporadasDeNutricion } from './temporadas';
+import { seVenLasTemporadas, temporadasDeNutricion } from './temporadas';
 
 type DiaDelContraste = ContrasteDescriptivo['days'][number];
 
@@ -193,11 +193,11 @@ export function graficoDeLaComparacion(e: EntradaDeLaComparacion): GraficoArmado
   const leyendaDeLaTira: ElementoDeLaLeyenda[] = (['CON_OPCION', 'COMIDA_DIFERENTE', 'SIN_REGISTRO'] as const)
     .filter((s) => estados.has(s))
     .map((s): ElementoDeLaLeyenda => fichaDeLaLeyenda(`comida-${s}`, s === 'CON_OPCION' ? C.leyenda.conOpcion : s === 'COMIDA_DIFERENTE' ? C.leyenda.comidaDiferente : C.leyenda.sinRegistro, { tipo: 'COMIDA', estado: s }));
-  const temporadasYTira = [...leyendaDeLaTira, ...leyendaDelObjetivoYLasTemporadas(false, temporadas.length > 0)];
+  const temporadasYTira = [...leyendaDeLaTira, ...leyendaDelObjetivoYLasTemporadas(false, seVenLasTemporadas(temporadas, desde))];
   // Lo indicado de los días de una semana, para su lectura: sin promediar (es otro cálculo), de cuánto a cuánto y en cuántos días.
   const indicadoDeLaSemana = (panel: number, tramo: { readonly desde: string; readonly hasta: string }): string | null => {
     const fila = porMetrica[panel];
-    if (!fila) return null;
+    if (!fila || sinIndicado) return null;
     const valores = [...fila.indicados.values()].filter((d) => d.state === 'DETERMINED' && d.date >= tramo.desde && d.date <= tramo.hasta).map((d) => (d.state === 'DETERMINED' ? d.value : 0));
     if (valores.length === 0) return C.indicadoYRegistrado.sinIndicadoEnLaSemana;
     const texto = (v: number) => valorDeLaMetrica(v, fila.m.metrica);

@@ -81,3 +81,11 @@ export function objetivoDelDia(objetivo: readonly EscalonDelObjetivoApi[], metri
   const texto = objetivoEnCelda(objetivo, metrica, fecha, fecha);
   return texto === null ? null : C.objetivoEnLaCelda(texto);
 }
+
+/**
+ * Si las temporadas se ven en el dibujo más allá de su rótulo (DISENO-VISUAL §1, principio 7: una ficha de la leyenda que
+ * no se ve es un error): hay un cambio adentro del período (su línea fina) o más de una versión del plan (el fondo que
+ * alterna). Con una sola versión que viene de antes, se ve solo su rótulo («Plan v5 · desde el 2/3»), que se lee solo.
+ */
+export const seVenLasTemporadas = (temporadas: readonly TemporadaDelLienzo[], desde: string): boolean =>
+  temporadas.some((t) => t.desde > desde) || temporadas.filter((t) => t.tipo === 'PLAN').length > 1;

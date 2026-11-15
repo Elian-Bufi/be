@@ -25,9 +25,11 @@
   max-width: 100%;
 }
 
-/* GR-20 con menos de 4 tomas: la tabla a la vista, con las cifras de ancho fijo y sin partir un valor (la de la base). */
-.grafico-capas__tabla-a-la-vista table {
-  min-width: min(100%, 36rem);
+/* GR-20 con menos de 4 tomas: la tabla a la vista, con las cifras de ancho fijo y sin partir un valor (la de la base). En
+ * la grilla del gráfico se puede achicar: si no entra, se desplaza ella y no empuja el cuadro. */
+.grafico-capas__tabla-a-la-vista {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ─── «Día por día» en Registros de Nutrición (GR-14) ────────────────────────────────────────── */
@@ -73,9 +75,16 @@
   gap: 0.4rem;
 }
 
+/* Los selectores de las tomas, como los campos del website (los mismos tokens en los dos temas). */
 .perfil-por-sitio__eleccion select {
   min-height: 44px;
   max-width: 100%;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
 }
 
 .perfil-por-sitio__grupo {
