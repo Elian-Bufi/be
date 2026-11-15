@@ -157,14 +157,21 @@ export function SalidasDelRechazo({ rechazo, actualizar, irAPrivacidad }: { rech
 
 /**
  * Para quien ya tiene vínculos: una tarjeta, una sola vez, que ofrece lo mismo que la pantalla al aceptar. Lee API-CMP-01
- * aparte: si falla, no se dibuja. Cualquiera de los dos botones la da por vista en este teléfono.
+ * aparte: si falla, no se dibuja. Cualquiera de los dos botones la da por vista en este teléfono. Ya vista (o mientras no
+ * se sabe), no lee nada: Inicio no pide API-CMP-01 de más.
  */
 export function CompartirConTusProfesionales({ token, identidadId, sesionPerdida, ir }: { token: string; identidadId: string; sesionPerdida: (r: Resultado<unknown>) => boolean; ir: Ir }) {
-  const lectura = useLecturaRecordada(token, 'compartir-todo', useCallback(() => api.loQueSePuedeCompartir(token), [token]), sesionPerdida);
   const vista = useSyncExternalStore(marcaDeLaTarjeta.suscribir, () => marcaDeLaTarjeta.vista(identidadId));
   useEffect(() => {
     void marcaDeLaTarjeta.leer(identidadId);
   }, [identidadId]);
+  if (vista !== false) return null;
+  return <TarjetaParaCompartirTodo token={token} identidadId={identidadId} sesionPerdida={sesionPerdida} ir={ir} />;
+}
+
+function TarjetaParaCompartirTodo({ token, identidadId, sesionPerdida, ir }: { token: string; identidadId: string; sesionPerdida: (r: Resultado<unknown>) => boolean; ir: Ir }) {
+  const lectura = useLecturaRecordada(token, 'compartir-todo', useCallback(() => api.loQueSePuedeCompartir(token), [token]), sesionPerdida);
+  const vista = useSyncExternalStore(marcaDeLaTarjeta.suscribir, () => marcaDeLaTarjeta.vista(identidadId));
   const propuesta = lectura.r?.ok ? lectura.r.datos.data : null;
   if (!seMuestraLaTarjeta(propuesta, vista)) return null;
   return (
