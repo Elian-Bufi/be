@@ -1407,3 +1407,80 @@ faltan los más antiguos aunque el tramo anterior pudiera estar vacío (lo conse
 ### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
 
 > Sin programar al declarar este paquete.
+
+### 13.7 Pasada visual · `wp-graficos-pulido-visual`
+
+> Programada el 2026-11-15 desde `main` `899c5a1d` (con #282, las capturas de la CI), después de que Dirección preguntó si
+> se había preparado cómo se iban a ver los gráficos «como lo haría una gran empresa de calidad». La especificación es
+> `DISENO-VISUAL` (doce principios y un apartado por componente): cambia dónde y cómo se dicen las cosas, **no qué se
+> dice** — las reglas de honestidad de §5 no se tocan. Sin API, sin migraciones, sin dependencias y sin la APK. Toca la
+> fase 1 (GR-01, GR-04 y GR-16), la fuerza estimada de «Analizar» (ED-74, que usan GR-02 y GR-26), «Comparar dos etapas»
+> (GR-24) y las piezas comunes de la base, que las ramas B a E heredan al traer `main`.
+
+| Parte | Lo que cambió | Dónde | Oráculo |
+|---|---|---|---|
+| Las piezas comunes | El título en 16 px con su línea tenue (unidad y período); la leyenda como fichas cortas arriba, **solo con las marcas que se ven** (`sentidosQueSeVen`); 240 px con un carril; el eje con 3 a 5 marcas redondas y una grilla tenue (`marcasRedondas`), sin números repetidos; las fechas abreviadas y el año solo donde hace falta (`textoDelEje`); un número solo en el elegido, el último, el máximo y el mínimo, sin pisarse (`rotulosSinPisarse`); las versiones con un tono tenue que alterna, una línea fina en el cambio y «v8 · de 4 a 3 repeticiones» si entra (`versionesEnElEje`); debajo, una sola línea de lectura, la frase fija siempre a la vista y el resto en «Cómo leerlo» (un `<details>` cerrado con su «i»); las barras semanales con la semana vacía como una marca fina; la tabla sin partir un valor | `graficos/ejes.ts`, `versiones-en-el-eje.ts`, `semanas.ts`, `como-leerlo.tsx`, `paneles-alineados.tsx`, `carriles.ts`, `marcas.tsx`, `lectura-en-la-fecha.tsx`, `tabla-equivalente-en-pantalla.tsx`, `eje-de-fechas.ts`, `estilos/base.css` | TEST-GRV-001 a 004 y 006 a 008 |
+| Lo indicado en el tiempo | Lo que indicaba el plan para un ejercicio en un tramo (una versión, una etapa) y cómo se dice que cambió: corto en la línea de la versión, en palabras en la diferencia de dos etapas | `graficos/lo-indicado-en-el-tiempo.ts`, `lectura-de-lo-indicado.ts` | TEST-GRV-005 |
+| GR-01 · «La vez pasada» | Una lista: una fila por sesión, la fecha y la sesión a la izquierda y las series como fichas que no se parten («137,5 × 3 · RIR 2», con la unidad una vez arriba y la serie entera para el lector); «—» para una serie que falta; las tres últimas y «Ver más sesiones»; lo que aclara, en «Cómo leerlo»; el cuadro lateral de 480, 560 y 640 px | `training/la-vez-pasada.tsx`, `globals.css` | TEST-GR-001, TEST-GRV-011 |
+| GR-04 · la marca del buscador | Una ficha compacta en el renglón del origen («47 sesiones · 9 nov»; el lector oye la frase entera); qué cuenta, en una línea, con «Cómo se cuenta» detrás de su «i»; filas más compactas | `training/agregar-ejercicio.tsx`, `globals.css` | TEST-GR-004 |
+| La fuerza estimada en «Analizar» | Al ancho medido (la letra no cambia entre 1024 y 1920); «1RM estimado (Epley v1)» como título; sin un número en cada punto; el globo al pasar el mouse y las flechas en el gráfico; las versiones discretas con el cambio de lo indicado; la lectura del costado con «La anterior (2 nov): ≈ 154,5 kg», sin flecha (§5.12); el método, lo que mueve un RIR y lo que no entra, en «Cómo leerlo»; la tabla con 8 filas a la vista y, con menos ancho, menos columnas | `fuerza/fuerza-en-analizar.tsx`, `globals.css` | TEST-GRV-012 y las de ED-74 (`fuerza.test.mjs`) |
+| GR-16 · «Desde el inicio» | Lo que ya es un porcentaje se resta en puntos («−6,1 puntos»); sin la fila «Edad»; toda la historia, desde la primera toma; la tabla angosta y con las cifras a la derecha | `anthropometry/desde-el-inicio.tsx`, `anthropometry/diferencia-en-puntos.ts` | TEST-GR-016, TEST-GRV-010 |
+| GR-24 · «Comparar dos etapas» | Debajo de la diferencia de una métrica registrada por serie, lo que cambió en lo indicado («el plan indica 1 repetición menos»); Nutrición por semana de entrada, con «Día por día» a un toque; al pie, la frase fija y el límite en «Cómo leerlo» | `seguimiento/etapas.tsx`, `seguimiento/analizar.tsx`, `graficos/minigrafico-por-semana.tsx` | TEST-GRV-009 |
+
+**Las mutaciones** están en el nombre de cada prueba (dejar el «4, 4, 3» del eje, dibujar todos los rótulos, repetir el
+año en cada marca, dibujar una semana vacía en cero, dejar «−1 rep» suelto, poner en la leyenda una marca que no se ve,
+volver al bloque gris con «Plan · versión 7», esconder la frase, volver al peine de los días, dejar «−6,1 %», volver a la
+tabla de columnas de GR-01, volver a «154,5 → 160,5 kg»). Se revisaron leyendo el código; la CI es la que las corre.
+
+#### Decisiones del continuador en la pasada visual (a ratificar)
+
+- **GR-V01 · Nutrición por semana de entrada en GR-24** (y en la base, `convienePorSemana`: con más de seis semanas de
+  período). La barra es la media de los días con dato de esa semana, sin hoy; una semana incompleta, con hoy o con un
+  subtotal va hueca; una sin ningún día con dato es una marca fina en la base, nunca una barra en cero. «5 de 7 días» va
+  al pasar el mouse. *Alternativa:* «Día por día» de entrada y la semana a un toque.
+- **GR-V02 · El cambio de lo indicado en la línea de la versión del 1RM estimado:** solo el RIR y las repeticiones, que
+  son lo que mueve la estimación de Epley; lo indicado de una versión es el de todas las series del ejercicio en las
+  sesiones de sus fechas (un rango si difieren). Suma una lectura del comparador (API-TRN-21 en tramos de 92 días y
+  API-SER-01 por versión, compartidas en vuelo y sin caché); si falla, las versiones van sin ese rótulo. *Alternativa:*
+  lo indicado solo para las series que usó la regla de cada sesión, que es lo que hace la rama B en su primera línea.
+- **GR-V03 · «El plan indica 1 repetición menos» en GR-24:** va debajo de la diferencia, que conserva su número con
+  signo; lo indicado de cada etapa es el de las sesiones que ejecutaron esa versión, para la serie de la métrica. Vale
+  para las repeticiones, el RIR («el plan indica RIR 1 (antes 2)») y la carga sugerida («el plan sugiere 2,5 kg más»).
+  *Alternativa:* reemplazar el número por palabras («1 repetición menos en B»).
+- **GR-V04 · «Ver más sesiones» en GR-01:** se arman hasta 12 veces de los mismos 91 días que ya se leían (sin otra
+  lectura) y se ven las tres últimas. Con una sola unidad, la unidad va una vez arriba y cada ficha sin ella; con kg y lb
+  a la vez, cada ficha dice la suya. *Alternativa:* «Ver más» que abra el historial del ejercicio (rama B).
+- **GR-V05 · GR-16 lee toda la historia (reemplaza el tope de GR-T74):** sin tope de tramos de 92 días; se leen solo los
+  tramos con tomas, de a pocos a la vez. Cada tramo es una lectura protegida que cuenta para el cupo del profesional:
+  Diego Sosa, con tres años de tomas, suma unos trece. *Alternativa:* un tope más alto (16 tramos, cuatro años).
+- **GR-V06 · GR-16 en puntos y sin la edad:** la resta de una medida en porcentaje se escribe en puntos; la edad al
+  momento de la toma sale de la tabla (no es una medida para restar; sigue en la toma).
+- **GR-V07 · El cuadro lateral del editor** mide 480 px hasta 1280, 560 a 1440 y 640 a 1920: el del ejercicio y también
+  «Agregar ejercicio».
+- **GR-V08 · La frase fija al pie de GR-24** reemplaza «Coincidencia temporal: no indica causa.»; el límite de la pregunta
+  («no se restan totales de duraciones distintas…») va a «Cómo leerlo». El pie de los gráficos de «Analizar» fuera de
+  GR-24 sigue como estaba: es de la rama D.
+- **GR-V09 · Los rótulos de los puntos:** el elegido, el último y, con cuatro puntos o más, el máximo y el mínimo, en 12
+  px; uno que pisaría a otro (o a un número del eje) no se dibuja. La leyenda corta («Registrado», «Subtotal») lleva el
+  sentido entero para el lector de pantalla («Registrado: lleno»).
+- **GR-V10 · El eje vertical de la base:** pasos de 1, 2 o 5 por una potencia de diez (y 25, 250…, nunca 2,5, que deja
+  «102,5»), de 3 a 5 marcas, con los extremos en la primera y la última. Cambia los extremos de los carriles (antes, tres
+  marcas con la del medio); el rango mínimo del catálogo (10 kg o 22 lb para el 1RM) sigue mandando.
+- **GR-V11 · La tabla de origen de la fuerza:** las 8 filas más recientes a la vista (y la elegida, si es más vieja), con
+  «Ver las N filas»; con menos de 900 px van sin «Quién la escribió» ni «Banda» (lo que dicen pasa al lado del valor:
+  «la observaste vos», «orientativa») y con menos de 600, también sin las repeticiones equivalentes, que están en «Cómo
+  se calculó».
+- **GR-V12 · La lectura de los paneles sin una fecha elegida** dice lo último de cada carril («Lo último · lun 9 nov»), no
+  una instrucción: cómo se recorre con el teclado está en el nombre del gráfico y en «Cómo leerlo».
+- **GR-V13 · Las fechas del eje** van abreviadas («3 nov», «nov») y con el año solo en la primera marca y en enero, si el
+  período cruza un año. Los textos (la tabla, los tramos sin registros) siguen con «3/11».
+
+#### Lo que no quedó como pide la especificación
+
+- **Los colores de las áreas:** el website no tiene tokens por área; los gráficos siguen con los de las métricas
+  (`--metrica-1` a `--metrica-3`), sin verde ni rojo. Sumar tokens de área pide medir el contraste en los dos temas
+  (`scripts/contraste.test.cjs`) y queda para una pasada con Dirección.
+- **«5 de 7 días» al pasar el mouse en GR-24** usa el globo nativo del navegador (el `title` del SVG), no uno propio: los
+  gráficos chicos no reciben el foco; la tabla de datos tiene cada día.
+- **Los gráficos grandes de GR-24 («Abrir estos gráficos en grande») y el pie de «Analizar»** siguen como estaban: son de
+  la rama D, que los pasa al catálogo y a los paneles alineados de la base.
