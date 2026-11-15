@@ -1397,11 +1397,13 @@ faltan los más antiguos aunque el tramo anterior pudiera estar vacío (lo conse
 > **Estado:** programada el 2026-11-14 en `wp-graficos-entrenamiento`, desde el primer commit de la base (`257912a6`),
 > con la base (#276) y la fase 1 (#273) traídas: depende de las dos. El 2026-11-15 trajo la pasada visual (#283, §13.7)
 > y aplicó la guía a sus gráficos (abajo, «Al traer la pasada visual»). Sin integrar. Sin API, sin migraciones y sin
-> dependencias nuevas; la APK no cambia. Las decisiones GR-T30 a GR-T47 están **a ratificar**; mientras tanto, rigen.
+> dependencias nuevas; la APK no cambia. Las decisiones GR-T30 a GR-T39 y GR-VB01 a GR-VB12 están **a ratificar**;
+> mientras tanto, rigen. (Las de la pasada visual se llamaban GR-T40 a GR-T47, el rango de la rama C en §6.3: con el de
+> B ya completo, pasan a GR-VB, «pasada visual de B», como las GR-V de §13.7; la revisión del 15/11 lo corrigió.)
 
 | Parte | Qué quedó | Dónde | Oráculo |
 |---|---|---|---|
-| GR-02 | El 1RM estimado (Epley v1) sesión a sesión, con las versiones del plan de fondo: lleno hasta 10 repeticiones equivalentes, hueco de más de 10 a 12 (con «Incluir…» encendido) y rombo para lo observado; la línea no cruza una sesión sin estimación y lo observado no la corta; el eje abarca 10 kg o 22 lb como mínimo y dice los extremos. El cambio de lo indicado, en la línea de su versión («v8 · de 4 a 3 repeticiones»: la lectura de la pasada visual, GR-T40); debajo, a la vista, el rango de validez y lo que mueve un RIR y cada versión con la mediana del RIR registrado, las repeticiones de la serie usada y el ruido propio desde 4 sesiones del núcleo; cómo se calcula, en «Cómo leerlo» | `graficos/entrenamiento/fuerza-estimada.ts` y `-en-pantalla.tsx` | TEST-GRF-022 a 025, 040 y 043 |
+| GR-02 | El 1RM estimado (Epley v1) sesión a sesión, con las versiones del plan de fondo: lleno hasta 10 repeticiones equivalentes, hueco de más de 10 a 12 (con «Incluir…» encendido) y rombo para lo observado; la línea no cruza una sesión sin estimación y lo observado no la corta; el eje abarca 10 kg o 22 lb como mínimo y dice los extremos. El cambio de lo indicado, en la línea de su versión («v8 · de 4 a 3 repeticiones»: la lectura de la pasada visual, GR-VB01); debajo, a la vista, el rango de validez y lo que mueve un RIR y cada versión con la mediana del RIR registrado, las repeticiones de la serie usada y el ruido propio desde 4 sesiones del núcleo; cómo se calcula, en «Cómo leerlo» | `graficos/entrenamiento/fuerza-estimada.ts` y `-en-pantalla.tsx` | TEST-GRF-022 a 025, 040 y 043 |
 | GR-02 en «Analizar · Fuerza» | Sobre la pieza de la pasada visual (el cambio de lo indicado es el suyo): cada versión con su ruido, a la vista debajo del gráfico, y el ruido de la versión del punto elegido antes de «La anterior» | `fuerza/fuerza-en-analizar.tsx` | TEST-GRF-039 |
 | GR-03 | Carga, repeticiones y RIR de la misma serie en tres paneles alineados, sin doble eje; el RIR de 0 al máximo, con 5 como mínimo; el RIR indicado de cada sesión, hueco en su panel (`puntosDeLoIndicado`); un RIR sin escribir no es 0; la carga rápida, hueca y gris; lo cargado después, marcado | `graficos/entrenamiento/carga-repeticiones-y-rir.ts` y `-en-pantalla.tsx` | TEST-GRF-026 a 028 |
 | GR-05 | El RIR indicado por versión en escalón discontinuo (hueco en cada sesión si cambia según la sesión) y el registrado en puntos; «a igual carga» con la misma carga y la misma unidad; lo que se ve, por versión y en palabras, sin la carga rápida | `graficos/entrenamiento/rir-indicado-y-registrado.ts` y `-en-pantalla.tsx` | TEST-GRF-029 y 030 |
@@ -1409,7 +1411,7 @@ faltan los más antiguos aunque el tramo anterior pudiera estar vacío (lo conse
 | El historial en el cuadro | «En el tiempo» abre en el mismo cuadro «Historial» (GR-02 en la v1, GR-03 y GR-05 con un solo cursor y la cinta del tiempo debajo) y «Perfil» (GR-06), con el período, la serie, la unidad y «Abrir en Analizar» con lo elegido. Va en «Detalle y fuerza estimada» y en el cuadro de «La vez pasada»: el cuadro se abre con el historial para todos los ejercicios, y la tarjeta de fuerza sigue solo en la v1 | `graficos/entrenamiento/historial-del-ejercicio.tsx`, `acceso-al-historial.tsx`, `fuerza/detalle-del-ejercicio.tsx`, `training/la-vez-pasada.tsx` | TEST-GRF-034 y 035 |
 | El catálogo y el registro | `entrenamiento.rir-indicado` pasa a OFRECIDA (lo lee el despacho de la base); el registro ofrece GR-02 solo con un ejercicio de la lista de la v1 y nada sin Entrenamiento, y carga cada gráfico al dibujarse | `series-disponibles-entrenamiento.ts`, `graficos/entrenamiento/registro.ts` | TEST-GRF-020, 036 y 038 |
 
-**Las pruebas:** `apps/web/test/graficos-entrenamiento.test.mjs` (TEST-GRF-020 a 043): la lógica pura, con datos; las
+**Las pruebas:** `apps/web/test/graficos-entrenamiento.test.mjs` (TEST-GRF-020 a 045): la lógica pura, con datos; las
 pantallas, el cuadro del ejercicio y «Analizar · Fuerza», leyendo el código. TEST-GRF-021 pasa todos los textos de la
 rama por la guardia de Entrenamiento, sin el signo más-menos, porcentajes ni flechas. Las mutaciones están en el título
 de cada prueba y se revisaron leyendo el código, sin correrlas (la PC no tiene memoria para las pruebas; la CI es el
@@ -1493,26 +1495,26 @@ número del último no se rotule (`rotulosDeLoLleno`); y la geometría de la cin
 TEST-GRV-008 se ajustó a la línea nueva.
 
 **Decisiones del continuador en la pasada visual, a ratificar:**
-- **GR-T40 · Una sola lectura del cambio de lo indicado, la de main (GR-V02):** todas las series del ejercicio en las
+- **GR-VB01 · Una sola lectura del cambio de lo indicado, la de main (GR-V02):** todas las series del ejercicio en las
   sesiones que ejecutaron cada versión, contra la inmediata anterior, en la línea de la versión de GR-02, GR-03 y GR-05
   (`bandasConElCambio`, del comparador que ya lee el historial) y en «Analizar». Reemplaza GR-T33 y la primera línea.
   *Alternativa:* la de la rama (las series que usó la regla de cada sesión), como primera línea arriba del gráfico.
-- **GR-T41 · Un punto por sesión con su tamaño:** en los carriles de Entrenamiento, la marca se mide con 8,75 px por día
+- **GR-VB02 · Un punto por sesión con su tamaño:** en los carriles de Entrenamiento, la marca se mide con 8,75 px por día
   como mínimo (3,5 de radio, con halo), no con el ancho real del día. Con sesiones muy seguidas en un año, los puntos se
   tocan; el halo los separa. *Alternativa:* medirla con la distancia mínima entre dos sesiones.
-- **GR-T42 · La tira de Entrenamiento es por sesión, y está en la leyenda:** en GR-02, entera con estimación y una raya
+- **GR-VB03 · La tira de Entrenamiento es por sesión, y está en la leyenda:** en GR-02, entera con estimación y una raya
   baja en la sesión sin estimación (el corte de la línea se lee como lo que es); en GR-03 y GR-05, una raya baja donde
   falta el dato (un RIR sin escribir). *Alternativa:* sacar la tira de GR-02, que repite los puntos.
-- **GR-T43 · El número del punto del 1RM estimado es el de la lectura** (al medio kilo o a la libra) y el punto se dibuja
+- **GR-VB04 · El número del punto del 1RM estimado es el de la lectura** (al medio kilo o a la libra) y el punto se dibuja
   ahí: se corre menos de un cuarto de kilo. *Alternativa:* dibujar el valor exacto y rotular el redondeado.
-- **GR-T44 · Los ejes de GR-06, ajustados a los datos:** X de una repetición equivalente menos que la menor a una más que
+- **GR-VB05 · Los ejes de GR-06, ajustados a los datos:** X de una repetición equivalente menos que la menor a una más que
   la mayor, en marcas enteras; Y con un 8 % de aire y el rango mínimo de 10 kg o 22 lb; las curvas, recortadas.
   *Alternativa:* X fijo de 1 a 12, con la curva de la fórmula entera.
-- **GR-T45 · Los altos en el historial:** GR-02 y GR-05, 240 px (los principales del paso); GR-03, tres paneles de 96;
+- **GR-VB06 · Los altos en el historial:** GR-02 y GR-05, 240 px (los principales del paso); GR-03, tres paneles de 96;
   GR-06, 240. *Alternativa:* todos compactos, para ver más sin desplazar.
-- **GR-T46 · La cinta del cuadro:** íconos de 18 px y fila de 30; sin el ícono del área con una sola fila.
+- **GR-VB07 · La cinta del cuadro:** íconos de 18 px y fila de 30; sin el ícono del área con una sola fila.
   *Alternativa:* el ícono del área siempre, a 18 px.
-- **GR-T47 · Qué va a la vista y qué a «Cómo leerlo» en la rama (§5 manda):** a la vista, el rango de validez y lo que
+- **GR-VB08 · Qué va a la vista y qué a «Cómo leerlo» en la rama (§5 manda):** a la vista, el rango de validez y lo que
   mueve un RIR (GR-02, §5.6 y §5.12), cada versión con su ruido (§5.12), lo que falta, lo que se ve (GR-05) y qué entra
   en el perfil (§5.6); en «Cómo leerlo», cómo se calcula, que la persona no lo ve, qué es cada marca, «a igual carga» y
   qué son las curvas. *Alternativa:* también cada versión en «Cómo leerlo», como pide la guía para lo que no es una
@@ -1529,7 +1531,7 @@ TEST-GRV-008 se ajustó a la línea nueva.
   superponen cuando son iguales (es lo que dicen los datos: RIR 2 indicado y registrado).
 
 **Quedan superadas:** GR-T32 en lo de los extremos (ya no van en una nota: el máximo y el mínimo se rotulan en el dibujo,
-GR-V09), GR-T33 (por GR-T40) y GR-T34 (la pasada visual cambió «Frente a la del…» por «La anterior (2 nov): ≈ 154,5 kg»,
+GR-V09), GR-T33 (por GR-VB01) y GR-T34 (la pasada visual cambió «Frente a la del…» por «La anterior (2 nov): ≈ 154,5 kg»,
 sin diferencia: GR-02 ya no da una diferencia entre dos puntos sueltos en ningún lado).
 
 **Lo que falta para cerrar:**
@@ -1537,6 +1539,52 @@ sin diferencia: GR-02 ya no da una diferencia entre dos puntos sueltos en ningú
    1440 y 1920).
 2. **GR-03 y GR-05 en «Patrones» y en «Analizar»:** el registro ya los ofrece; los muestran las ramas E y D.
 3. **Correr las mutaciones** de cada prueba (descritas en su título).
+
+#### Revisión adversaria con la pasada visual (15/11)
+
+Tres miradas, en este orden: la honestidad (§5 manda sobre la guía), el código (el merge y las piezas comunes) y lo
+visible (las capturas de la CI en Claro y Azul noche, a 1024, 1440 y 1920). El merge no perdió nada de `main`:
+`carriles.ts` es el de `main`, `la-vez-pasada.tsx` suma solo el acceso al historial y `fuerza-en-analizar.tsx` suma solo
+lo de la rama; de la rama se perdió un aviso, que volvió (abajo).
+
+| Hallazgo | Severidad | Qué se hizo | Prueba |
+|---|---|---|---|
+| GR-03 y GR-05, que son de una serie, rotulaban en la línea de la versión el cambio de lo indicado de **todas** las series: en GR-05 el escalón de la serie 2 podía seguir en RIR 2 mientras su versión decía «RIR de 2 a 1» por la serie 1 | Media | El cambio de lo indicado de la serie elegida (`bandasConElCambio` con la serie; `cambiosPorVersion` la admite sin cambiar lo de antes); GR-02 sigue con todas | TEST-GRF-044 |
+| Una sesión «no realizada» (o con el ejercicio del plan sin registrar, o hecho otro en su lugar) entraba en GR-05 como sesión: la contaba («12 sesiones»), dibujaba su RIR indicado y la tira la marcaba «sin el dato»; GR-03 también dibujaba su RIR indicado | Media | `seHizoElEjercicio`: esas sesiones no se cuentan ni se dibujan; la línea se corta, como en la progresión por serie de la API | TEST-GRF-044 |
+| GR-03: solo la tira del RIR marcaba la sesión con el ejercicio hecho sin series escritas; en la carga y las repeticiones la línea se cortaba sin que la tira dijera por qué | Media | Las tres tiras marcan las mismas sesiones (`fechasConElEjercicio`), cada una con su raya baja donde falta el dato | TEST-GRF-044 |
+| GR-02 (historial y «Analizar») unía la línea a través de una sesión con el ejercicio hecho sin series (un registro resumido): la API no la cuenta entre las que no entraron, y la tira no la marcaba; GR-03, debajo, sí cortaba | Media | `fechasSinSeries`: la línea se corta y la sesión va como «sin estimación», en el historial y en «Analizar» | TEST-GRF-045 |
+| La leyenda de GR-02 llamaba «Registrado» al 1RM estimado lleno; «Analizar» dice «Hasta 10 rep. equivalentes» (es una estimación, RM-22) | Media | Un sentido nuevo del dominio, `NUCLEO_DE_LA_ESTIMACION` («Hasta 10 rep. equivalentes»), en los puntos llenos de GR-02 | TEST-GRF-040 y 045 |
+| Al traer la pasada visual se perdió el aviso de que no se pudo leer lo indicado (la rama lo tenía en «Analizar»): GR-02 callaba el cambio de lo indicado sin decir por qué | Media | «No pudimos leer lo que indicaba el plan…», a la vista en el historial y en «Analizar», antes de cada versión | TEST-GRF-043 y 045 |
+| La misma versión decía «9 sesiones» en GR-02 y «12 sesiones» en GR-05: cuentan cosas distintas | Baja | GR-02 dice «9 sesiones con estimación» | TEST-GRF-022 y 045 |
+| Las decisiones de la pasada visual usaban GR-T40 a GR-T47, el rango de la rama C (§6.3) | Baja | Pasan a GR-VB01 a GR-VB08; las de esta revisión, GR-VB09 a GR-VB12 | — |
+| TEST-GRF-036 comparaba con un texto que ya no existía (`indexOf` daba −1 y la comparación pasaba siempre) | Baja | Compara con el texto de ahora y exige que esté | TEST-GRF-036 |
+
+**Decisiones del continuador en la revisión, a ratificar:**
+- **GR-VB09 · El cambio de lo indicado, por serie en GR-03 y GR-05:** de la serie elegida; en GR-02, de todas las series
+  (de cada sesión entra la de mayor carga). Afina GR-VB01. *Alternativa:* todas las series en los tres, como antes.
+- **GR-VB10 · Una sesión en la que no se hizo el ejercicio no es una sesión de la serie:** ni se cuenta ni se dibuja lo
+  que indicaba, y la tira no la marca; la línea se corta en ella. *Alternativa:* dibujarla con una marca de «no realizada».
+- **GR-VB11 · Una sesión del ejercicio sin series escritas corta la línea de GR-02** (historial y «Analizar») y va en la
+  tira como sin estimación; las tres tiras de GR-03 marcan las mismas sesiones. *Alternativa:* que la API la cuente entre
+  las que no entraron (cambia API-PRJ-01 y API-FZA).
+- **GR-VB12 · Lo lleno del 1RM estimado se llama «Hasta 10 rep. equivalentes»**, con un sentido del dominio
+  (`NUCLEO_DE_LA_ESTIMACION`), y cada versión cuenta «sesiones con estimación». *Alternativa:* una ficha propia de la rama
+  sin tocar el dominio.
+
+**Lo que la revisión deja abierto (bajo):**
+- **«v8 · de 4 a 3 repeticiones» no dice «indicadas»:** en el panel de las repeticiones registradas de GR-03 se puede leer
+  como lo registrado. Es el texto de `main` (GR-V02); el lector de pantalla y «Cómo leerlo» dicen «lo indicado».
+  *Propuesta:* «v8 · indicado: de 4 a 3 repeticiones», en la pieza de `main`, para todas las ramas.
+- **GR-03:** el mínimo de la carga en el borde de abajo (el «130» del primer punto) lo cruza la línea que sube y queda al
+  lado del «130» del eje (ya estaba declarado).
+- **GR-06:** una serie de las últimas 4 semanas y una anterior en el mismo lugar se tapan (el punto sobre la cruz); la
+  tabla dice cuántas hay.
+- **Las fechas de la lista por versión** van como «desde el 17/5» y las del eje, «24 ago».
+- **«Analizar · Fuerza»:** la sesión sin series corta la línea y lleva su marca, pero la tabla de origen no la lista (la
+  tabla sale de lo que devuelve la API).
+- **Lo que la rama cambia para todas las ramas en las piezas comunes:** un extremo con el número ya escrito no se rotula
+  (`rotulosDeLoLleno`), y la cinta mide 30 px por fila, agrupa los íconos a menos de 22 px y, con una sola fila, no lleva
+  el ícono del área. Las ramas C, D y E lo heredan al traer `main` después de B.
 
 ### 13.4 Rama C · `wp-graficos-nutricion-y-cuerpo`
 
