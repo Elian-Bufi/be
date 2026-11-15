@@ -178,7 +178,7 @@
 | DL-172 | Pedido de Dirección · 2026-11-13 («ve adelantando las cosas según prioridad»; WP-RF068-RF004) | 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.16.1 §4 · 09 v0.12 §12 y §16 · 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 | El 09 vigente (v0.16.1 §4) les da familia (`ACC-P2` y `ADM-P1`) sin IDs ni contratos; el v0.12 bosqueja las rutas. RF-068 estaba fuera de WP-USO-FINAL y RF-004 en parte | **PROGRAMADA en `wp-rf068-rf004` (PR en borrador) · D-1 a D-12 a ratificar**: familias propias INC (API-INC-01 a 05) y MET (API-MET-01 a 03) con las rutas del bosquejo; dos migraciones que solo agregan |
 | DL-173 | Pedido de Dirección · 2026-11-13 («Armá el paquete con sus IDs y decime cuándo sale cada cosa»; WP-PULIDO-GRANDES) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · B10-06 (feedback háptico opcional) · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 | De la página «Pulido como las grandes», Dirección eligió quince ideas, y al probar la 0.27 dejó cuatro de Inicio, la carga y la cabecera; ninguna tenía ID ni fecha de salida | **DECLARADA el 2026-11-13, sin programar** (`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador): 19 partes (PG-01 a PG-04, las de Inicio; PG-05 a PG-19, las quince elegidas). Tanda A, APK 0.28, objetivo martes 17/11 (PG-01 a PG-10 y PG-14); tanda B, APK 0.29, objetivo viernes 20/11 (PG-11 a PG-13 y PG-15 a PG-17); después del 25/11, PG-18 y PG-19. Desde el 23/11, solo arreglos; lo de la B que no esté estable el 20/11 pasa a después del 25/11. PG-D1 a PG-D15, a ratificar, salvo PG-D1 (decidida por Dirección el 2026-11-13) y PG-D10 y PG-D11 (aprobadas el 2026-11-14: «Tienes mi sí para las notas») |
 | DL-174 | Pedido de Dirección · 2026-11-14 («Aprobadas las 25 sugerencias de gráficos»; WP-GRAFICOS) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · RF-025 · REG-06-105 · REG-06-162 · REG-06-165 y 166 · B10-07 · B10-08 §21-§23 · B10-09 §15-§28 · 09 v0.11 §18-§23 · INV-06-153 · INV-06-192 · M-11 · DL-126 · DL-128 · DL-137 D-7 · DL-152 · DL-153 · DL-158 · DL-161 · DL-163 · DL-165 · DL-167 · DL-169 · DL-171 · DL-173 | La propuesta de gráficos (25 gráficos y ocho cruces) no tenía IDs ni fases fechadas en el repo. Dirección sumó ver los gráficos alineados o superpuestos si comparten la x (DL-126 solo deja superponer con la misma familia y unidad) y un conjunto de gráficos favoritos por persona o por plan, que no tiene operación | **DECLARADA el 2026-11-14** (`docs/paquetes/WP-GRAFICOS.md`, sin integrar): GR-01 a GR-27 y SP-01 a SP-08. Fase 1 (GR-01, GR-04 y GR-16) en `wp-graficos-fase-1`, antes del 23/11; fase 2 adelantada, programada desde el 14/11 en cinco ramas: antes del 23/11 entra solo lo sólido, y lo demás, desde el 26/11; fases 3 a 5, en 2027. Familia propia GRF (API-GRF-01 a 07, los enfoques), con una migración que solo agrega. Amplía DL-126 (dos unidades en «Superpuestas», GR-T04). GR-D0 a GR-D10, tomadas por la delegación de Dirección según la recomendación; GR-T01 a GR-T19, a ratificar |
-| DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **PROGRAMADA en `wp-historia-anterior` (PR abierto, sin integrar) · HA-T01 a HA-T13 a ratificar**: la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
+| DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **PROGRAMADA en `wp-historia-anterior` (PR abierto, sin integrar), con la revisión adversaria arreglada · HA-T01 a HA-T16 a ratificar**: la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
 
 ---
 
@@ -8250,7 +8250,7 @@ crítica con criterio haz lo que me recomiendes».
 cambiar una garantía del legajo) · **Documento:** 08 §14.1 (la fila «Cambio de profesional») · REG-06-55 · RF-025 ·
 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 ·
 DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) · **Estado:** PROGRAMADA el 2026-11-15 en `wp-historia-anterior` (PR
-abierto, sin integrar). HA-T01 a HA-T13, a ratificar.
+abierto, sin integrar), con la revisión adversaria del mismo día arreglada. HA-T01 a HA-T16, a ratificar.
 
 **Qué dice el legajo.**
 - **08 §14.1, la fila «Cambio de profesional»:** «El nuevo profesional NO hereda acceso: nuevo Vínculo + nuevo
@@ -8300,7 +8300,17 @@ previa sería un alcance más del B2 del vínculo nuevo. Se programó como una a
 tres razones: el B2 es un texto legal que las personas ya aceptaron (cambiarlo pide una revisión legal y una versión nueva
 que todas tendrían que volver a aceptar); una autorización aparte se da y se retira sin tocar el acceso del vínculo
 (RNF-PRI-002); y es el patrón que BE ya usa para lo que la persona comparte con un profesional. El consentimiento del
-vínculo sigue siendo condición: sin el B2 vigente, el profesional no la ve (HA-T09).
+vínculo sigue siendo condición: sin el B2 vigente, el profesional no la ve (HA-T09). Y desde la revisión adversaria, la
+autorización vive dentro del B2 de su componente: revocarlo la retira, y otorgarlo de nuevo no la devuelve (HA-T14).
+
+**La revisión adversaria (2026-11-15).** Veinticuatro hallazgos (privacidad, datos y experiencia), nueve medios. Se
+arreglaron todos los medios y los bajos con su prueba, salvo dos: el tope de filas (el website pide hasta 90 días y la
+medición del tramo de 366 queda para la cohorte) y el objetivo nuevo de «Cambiar objetivo» (declarado en HA-T07). Lo
+principal: la última lectura es por componente de vínculo; revocar el B2 retira la historia (HA-T14); API-HIA-01 dice si
+hoy hay acceso, y la APK no dice «La ve» sin él (HA-T15); compartir abre el texto entero (HA-T16); lo de antes se ve como
+estaba en el corte (HA-T03); la tarjeta también al aceptar por invitación; el origen de cada medición en el website; un
+índice parcial para las lecturas que ve la persona; y las carreras, probadas contra la base. El texto que se acepta
+cambió antes de integrar, con su hash nuevo. La tabla, en el §6 del paquete.
 
 **Lo que amplía.** DJ-14 (DL-167) y GR-D6 (DL-174) quedan ampliadas, no reemplazadas: el profesional nuevo ve la historia
 anterior **solo con la autorización de la persona y en su página propia**; los gráficos, «Analizar» y la cinta siguen
@@ -8313,6 +8323,9 @@ arrancando en el inicio del acompañamiento hasta la segunda etapa, cuando entre
 - La validación jurídica del texto (es una propuesta, HA-T05), TalkBack en el teléfono y la evidencia de pantalla.
 
 **Opciones para Dirección.**
-- **A (programada):** la autorización aparte, como está, con HA-T01 a HA-T13 como se recomiendan.
+- **A (programada):** la autorización aparte, como está, con HA-T01 a HA-T16 como se recomiendan.
 - **B:** sumar la historia previa como un alcance del B2 (otra versión del texto del vínculo, que las personas vuelven a
   aceptar); la autorización aparte quedaría como el interruptor dentro de ese consentimiento.
+- **Sobre HA-T14:** como está (revocar el B2 la retira; el A3 y la pausa, no, y la APK dice que no la ve), o más estricta
+  (también el A3 la retira, distinto de los hábitos y de lo de otras áreas), o como antes de la revisión (ninguna la
+  retira, y la APK solo avisa que vuelve sola).
