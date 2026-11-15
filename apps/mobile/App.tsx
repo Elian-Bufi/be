@@ -791,7 +791,7 @@ function Contenido() {
           {requiereSesion(ruta) && sesion && dejaSeguir(compuerta) && presentacion === 'vista' ? (
             <>
               {/* Volver, sin depender del botón ni de un gesto del sistema (10-B10 §9), está en la cabecera. */}
-              {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'inicio' ? <PantallaDeInicio token={sesion.token} identidadId={sesion.identidadId} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'perfil' ? <PantallaDePerfil token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'quien-ve-que' ? <PantallaDeQuienVeQue token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'tus-datos' ? <PantallaDeTusDatos token={sesion.token} salir={salir} ir={ir} /> : null}
@@ -809,8 +809,10 @@ function Contenido() {
                 <PantallaDeVinculo key={ruta.id} token={sesion.token} identidadId={sesion.identidadId} id={ruta.id} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
               {ruta.nombre === 'consentimiento' ? (
-                <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} salir={salir} ir={ir} volver={volver} subir={subir} />
+                <PantallaDeConsentimiento key={ruta.vinculoId} token={sesion.token} vinculoId={ruta.vinculoId} recienAceptado={ruta.recienAceptado} salir={salir} ir={ir} volver={volver} subir={subir} />
               ) : null}
+              {/* WP-COMPARTIR (DL-176): la misma pantalla, para todo lo que se puede compartir entre tus profesionales. */}
+              {ruta.nombre === 'compartir-todo' ? <PantallaDeConsentimiento key="todo" token={sesion.token} vinculoId={null} salir={salir} ir={ir} volver={volver} subir={subir} /> : null}
               {ruta.nombre === 'hoy' ? <PantallaDeHoy token={sesion.token} salir={salir} ir={ir} subir={subir} accion={ruta.accion} comida={ruta.comida} llevarA={llevarA} /> : null}
               {ruta.nombre === 'plan-actual' ? <PantallaDePlanActual token={sesion.token} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'revisiones' ? <PantallaDeRevisiones key={ruta.area} token={sesion.token} area={ruta.area} salir={salir} ir={ir} /> : null}

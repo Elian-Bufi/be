@@ -162,12 +162,16 @@ describe('TEST-HA-045 · las pantallas la dibujan, con TalkBack y los dos temas'
     expect(pantalla).toContain('api.miHistoriaAnterior(token)');
     expect(pantalla).toContain('<HistoriaAnteriorDelArea');
   });
-  test('al aceptar un vínculo, la tarjeta opcional: desde Vínculos y desde una invitación (enlace, QR o código)', () => {
+  test('al aceptar un vínculo (desde Vínculos o desde una invitación), la historia anterior va en la pantalla única de consentimiento (DL-176)', () => {
+    // WP-COMPARTIR reemplazó la tarjeta opcional (HA-T01): aceptar lleva enseguida a la pantalla única, donde la historia
+    // anterior es una de las cosas, preseleccionada si antes hubo otro profesional en esa área (API-CMP-01).
     for (const pantalla of ['vinculos.tsx', 'invitacion.tsx']) {
       const codigo = readFileSync(join(__dirname, 'pantallas', pantalla), 'utf8');
-      expect(codigo).toContain('<HistoriaAnteriorAlAceptar');
-      expect(codigo).toContain("irAPrivacidad={() => ir({ nombre: 'privacidad' })}");
+      expect(codigo).not.toContain('<HistoriaAnteriorAlAceptar');
+      expect(codigo).toContain("ir({ nombre: 'consentimiento', vinculoId: ");
+      expect(codigo).toContain('recienAceptado: true }');
     }
+    expect(readFileSync(join(__dirname, 'pantallas', 'consentimiento.tsx'), 'utf8')).toContain('api.loQueSePuedeCompartir(token, vinculoId)');
   });
   test('el interruptor se lee con su nombre y el estado que se ve (en la etiqueta), y los colores salen del tema', () => {
     const pieza = readFileSync(join(__dirname, 'historia-anterior.tsx'), 'utf8');
@@ -178,15 +182,17 @@ describe('TEST-HA-045 · las pantallas la dibujan, con TalkBack y los dos temas'
     expect(pieza).toContain('estilosPorTema');
     expect(pieza).not.toMatch(/#[0-9a-f]{3,6}\b/i);
   });
-  test('compartirla abre el texto entero, con dos respuestas del mismo peso; la tarjeta al aceptar tiene «Actualizar»', () => {
+  test('compartirla abre el texto entero, con dos respuestas del mismo peso, y «Actualizar» si algo cambió', () => {
     const pieza = readFileSync(join(__dirname, 'historia-anterior.tsx'), 'utf8');
-    // Las dos piezas comparten por el diálogo, que muestra el texto partido en párrafos (nada plegado).
-    expect(pieza.match(/<DialogoParaCompartir/g)).toHaveLength(2);
+    // En «Quién ve qué», el interruptor comparte por el diálogo, que muestra el texto partido en párrafos (nada plegado). La
+    // tarjeta al aceptar se retiró con DL-176: al aceptar, la historia anterior va en la pantalla única de consentimiento.
+    expect(pieza.match(/<DialogoParaCompartir/g)).toHaveLength(1);
     expect(pieza).toContain('partesDelTexto(texto.text)');
-    // Tocar el interruptor o «Compartir» no escribe: abre el diálogo. Solo el diálogo manda API-HIA-02.
-    expect(pieza.match(/cambio\.enviar\(item, 'COMPARTIR'/g)).toHaveLength(2);
+    // Tocar el interruptor no escribe: abre el diálogo. Solo el diálogo manda API-HIA-02.
+    expect(pieza.match(/cambio\.enviar\(item, 'COMPARTIR'/g)).toHaveLength(1);
     expect(pieza).not.toMatch(/onPress=\{\(\) => void cambio\.enviar\(item, 'COMPARTIR'/);
-    expect(pieza).toContain('<SalidasDelRechazo error={cambio.error} actualizar={actualizar} irAPrivacidad={irAPrivacidad} />');
+    expect(pieza).toContain('<SalidasDelRechazo error={error} actualizar={actualizar} irAPrivacidad={irAPrivacidad} />');
+    expect(pieza).not.toContain('HistoriaAnteriorAlAceptar');
   });
 });
 

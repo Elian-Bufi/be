@@ -60,7 +60,10 @@ export type Ruta =
   // WP-INVITACION (DL-136): la invitación de un profesional, desde su enlace o desde «Tengo un código».
   | { readonly nombre: 'invitacion'; readonly secreto?: SecretoDeInvitacionRequest; readonly desde?: Ruta }
   | { readonly nombre: 'vinculo'; readonly id: string; readonly desde?: Ruta }
-  | { readonly nombre: 'consentimiento'; readonly vinculoId: string; readonly desde?: Ruta }
+  // WP-COMPARTIR (DL-176): la pantalla única de consentimiento; `recienAceptado`, si se llegó aceptando el vínculo.
+  | { readonly nombre: 'consentimiento'; readonly vinculoId: string; readonly recienAceptado?: boolean; readonly desde?: Ruta }
+  // WP-COMPARTIR (DL-176): «Compartir todo con tus profesionales», desde la tarjeta única de Inicio.
+  | { readonly nombre: 'compartir-todo'; readonly desde?: Ruta }
   | { readonly nombre: 'privacidad'; readonly desde?: Ruta }
   // UF-06 de WP-USO-FINAL (DL-169): «Tus datos», descargar lo propio y pedir el acceso, la rectificación o la supresión.
   | { readonly nombre: 'tus-datos'; readonly desde?: Ruta }
@@ -214,6 +217,7 @@ export function moduloDe(ruta: Ruta): Modulo | null {
     case 'vinculo':
     case 'invitacion':
     case 'consentimiento':
+    case 'compartir-todo':
     case 'privacidad':
     case 'tus-datos':
     case 'ayuda-y-contacto':
@@ -318,6 +322,8 @@ function madre(ruta: Ruta): Ruta | null {
       return { nombre: 'vinculos' };
     case 'consentimiento':
       return { nombre: 'vinculo', id: ruta.vinculoId };
+    case 'compartir-todo':
+      return { nombre: 'quien-ve-que' };
     default: {
       const sinMadre: never = ruta;
       return sinMadre;

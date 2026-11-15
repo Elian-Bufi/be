@@ -30,7 +30,7 @@
 | HA-04 | La historia anterior de un área, para el profesional (API-HIA-04), por tramos | `lectura-historia-anterior.ts` |
 | HA-05 | Los contratos estrictos y los textos | `packages/domain/src/contratos-historia-anterior.ts`, `historia-anterior.ts` |
 | HA-06 | «Tu historia anterior de …» en «Quién ve qué» | `apps/mobile/src/historia-anterior.tsx`, `pantallas/quien-ve-que.tsx` |
-| HA-07 | La tarjeta opcional al aceptar a un profesional nuevo, por Vínculos o por invitación | `historia-anterior.tsx`, `pantallas/vinculos.tsx`, `pantallas/invitacion.tsx` |
+| HA-07 | ~~La tarjeta opcional al aceptar a un profesional nuevo, por Vínculos o por invitación~~ **Retirada por DL-176 (WP-COMPARTIR):** al aceptar, la historia anterior es una cosa más de la pantalla única de consentimiento, marcada si antes hubo otro profesional en esa área | `pantallas/consentimiento.tsx` (antes `historia-anterior.tsx`, `pantallas/vinculos.tsx`, `pantallas/invitacion.tsx`) |
 | HA-08 | «Historia anterior» en el website, una ruta propia de la ficha | `apps/web/src/app/pro/advisees/previous-history/` |
 | HA-09 | La entrada en «Más» de la ficha | `apps/web/src/app/pro/advisees/workspace.tsx` |
 | HA-10 | Cerrar la cuenta y revocar el B2 de un componente retiran la autorización vigente | `apps/api/src/identidad/cierre.service.ts`, `apps/api/src/consentimiento/consentimiento-profesional.service.ts` |
@@ -44,7 +44,9 @@ martes 10 a las 18:20». Compartirla abre el texto entero, con «Compartir mi hi
 peso; dejar de compartirla pide confirmación y no borra nada. El estado dice «La ve desde el …» solo si hoy tiene acceso a
 esa área; en pausa, sin el B2 o sin el A3, dice que no la ve (HA-T15). Un vínculo terminado con el que la miraron queda en
 solo lectura, con cuándo la miró. Al aceptar a un profesional nuevo de un área en la que ya hubo otro (desde Vínculos o
-por invitación), una tarjeta ofrece lo mismo, con las dos respuestas del mismo peso; por omisión, no se comparte.
+por invitación), desde DL-176 (WP-COMPARTIR) la historia anterior es una de las cosas de la pantalla única de
+consentimiento, **marcada**, con su texto plegado en la misma pantalla: «Aceptar y compartir» la comparte junto con lo
+demás, y «Elegir qué compartir» deja desmarcarla (HA-T01, actualizada). La tarjeta opcional se retiró.
 
 **El profesional, en el website.** En la ficha, «Más» → «Historia anterior» abre `/pro/advisees/previous-history` en la
 primera de sus áreas aceptadas con esa persona, con las tres áreas en pestañas. Con la autorización: el aviso fijo («Lo
@@ -77,9 +79,15 @@ componente (HA-T14): cambia lo que hace, no su contrato.
 
 ## 3. Decisiones de continuador (HA-T01 a HA-T16, a ratificar)
 
-- **HA-T01 · Por omisión, no se comparte.** Sin una decisión de la persona, el profesional nuevo no ve nada. La tarjeta al
-  aceptar es opcional y «Ahora no» no escribe nada. En «Quién ve qué», la historia anterior aparece solo si antes hubo
-  otro profesional en esa área o si la persona ya decidió algo: sin nadie antes, no hay nada que compartir.
+- **HA-T01 · ~~Por omisión, no se comparte~~ Preseleccionada en la pantalla única (actualizada por DL-176, WP-COMPARTIR,
+  2026-11-15).** Sigue valiendo que sin una decisión de la persona el profesional nuevo no ve nada: nada se escribe sin
+  tocar «Aceptar y compartir». Lo que cambia es la pantalla: al aceptar a un profesional nuevo de un área en la que ya hubo
+  otro, la historia anterior va **marcada** en la pantalla única de consentimiento (CMP-D2 y CMP-D16), con su texto en la
+  misma pantalla, y se desmarca con «Elegir qué compartir»; la tarjeta opcional con «Ahora no» por omisión se retiró. Una
+  historia anterior que la persona retiró antes no vuelve marcada (CMP-D3). En «Quién ve qué», la historia anterior
+  aparece solo si antes hubo otro profesional en esa área o si la persona ya decidió algo: sin nadie antes, no hay nada que
+  compartir. Antes de DL-176 decía: «Por omisión, no se comparte. La tarjeta al aceptar es opcional y ‹Ahora no› no
+  escribe nada.»
 - **HA-T02 · Lo que entra, por área.** Nutrición y Entrenamiento: las versiones activadas de los planes (con su contenido
   como lo vio la persona), lo registrado bajo esos planes y las decisiones de las revisiones. Antropometría no tiene ciclo
   de plan propio (06:6221): sus tomas registradas, con su protocolo, el origen de cada medición y lo calculado **para el
@@ -226,4 +234,5 @@ se escribe), pero ordena mal en el tiempo; se arregla igual que acá, en su paqu
 | Fecha | Qué |
 |---|---|
 | 2026-11-15 | Programado en `wp-historia-anterior` (PR abierto), con la CI. |
+| 2026-11-15 | DL-176 (WP-COMPARTIR) actualiza HA-T01: la historia anterior va preseleccionada en la pantalla única de consentimiento; la tarjeta opcional al aceptar (HA-07) se retira. |
 | 2026-11-15 | Revisión adversaria: los nueve hallazgos medios y los bajos, arreglados con su prueba, salvo dos: el tope de filas (mitigado en el website; la medición, con la cohorte) y el objetivo nuevo de «Cambiar objetivo» (declarado en HA-T07). HA-T14 a HA-T16, nuevas. Falta: ratificar HA-T01 a HA-T16, integrar y verificar en test. |

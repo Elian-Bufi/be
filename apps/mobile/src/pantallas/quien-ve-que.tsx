@@ -15,11 +15,18 @@
  * área (o ya se decidió algo), con su explicación, el interruptor para compartirla o retirarla y cuándo la miró; debajo de
  * un vínculo terminado con el que la miraron, solo cuándo (`historia-anterior.tsx`, TEST-HA-040 a 046). Sale de su propia
  * lectura (API-HIA-01): si falla, no se dibuja.
+ *
+ * WP-COMPARTIR (DL-176; Dirección, 2026-11-15): «Quién ve qué» deja de ser solo de lectura. Debajo de cada profesional, lo
+ * que ve de tus otras áreas y tus hábitos, cada cosa con un interruptor para retirarla o volver a darla (API-CMP-02 y 03,
+ * `compartir.tsx`), y arriba los pedidos de un profesional para responder, con «Sí, compartir» y «Ahora no». Salen de su
+ * propia lectura (API-CMP-01, y los pedidos de API-RES-09 y API-HBT-08): si falla, no se dibujan y lo demás sigue igual.
+ * Tu área (el B2) y el tratamiento de tus datos de salud (el A3) se siguen cambiando en el vínculo y en Privacidad.
  */
 import { useCallback, useState } from 'react';
 import type { HistoriaAnteriorDeUnArea } from '@be/domain';
 import { Text, View } from 'react-native';
 import { api } from '../api';
+import { LoQueVeDeOtrasAreas, PedidosParaResponder } from '../compartir';
 import { dia, fechaCivilDeUnInstante } from '../formato';
 import { HistoriaAnteriorDelArea, useVistasDeLaHistoriaAnterior } from '../historia-anterior';
 import { conLoNuevo } from '../historia-anterior-en-el-telefono';
@@ -51,6 +58,13 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
   const actualizarLaHistoria = () => {
     setCambiadas([]);
     void historia.cargar();
+  };
+  // DL-176: lo que se puede compartir y lo que ya se comparte, y los pedidos de ver un plan. Completan la tarjeta.
+  const propuesta = useLecturaRecordada(token, 'quien-ve-que-compartir', useCallback(() => api.loQueSePuedeCompartir(token), [token]), sesionPerdida);
+  const pedidosDePlan = useLecturaRecordada(token, 'quien-ve-que-pedidos-de-plan', useCallback(() => api.pedidosDePlan(token), [token]), sesionPerdida);
+  const deCompartir = propuesta.r?.ok ? propuesta.r.datos.data : null;
+  const actualizarLoCompartido = () => {
+    for (const l of [propuesta, pedidosDePlan, pedidos, habitos, compartido]) void l.cargar();
   };
 
   const lecturas = [a3, vinculos, consentimientos];
@@ -87,6 +101,15 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
             <Text style={estilos.texto}>{vista.a3.texto}</Text>
             <Boton texto={T.cambiarEnPrivacidad} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'privacidad' })} />
           </Superficie>
+          {/* DL-176: los pedidos de un profesional, para responder acá mismo. */}
+          <PedidosParaResponder
+            token={token}
+            propuesta={deCompartir}
+            deUnPlan={pedidosDePlan.r?.ok ? pedidosDePlan.r.datos.data : []}
+            deHabitos={pedidos.r?.ok ? pedidos.r.datos.data : []}
+            actualizar={actualizarLoCompartido}
+            irAPrivacidad={() => ir({ nombre: 'privacidad' })}
+          />
           {vista.tarjetas.length === 0 ? <Parrafo tenue>{T.ningunVinculo}</Parrafo> : null}
           {vista.tarjetas.map((t) => {
             const lineaDeQuienMiro = lineaDe(lineasDeQuienMiro, t.profesionalId);
@@ -131,7 +154,10 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
                     ) : null}
                   </View>
                 ))}
-                {t.habitos ? (
+                {/* DL-176: lo que ve de tus otras áreas y tus hábitos, con un interruptor por cosa. */}
+                {deCompartir ? <LoQueVeDeOtrasAreas token={token} propuesta={deCompartir} profesionalId={t.profesionalId} nombre={t.nombre} actualizar={actualizarLoCompartido} /> : null}
+                {/* Sin la lectura de lo que se comparte, la línea de siempre, con el camino a «Mis hábitos». */}
+                {t.habitos && !deCompartir ? (
                   <View style={estilos.area}>
                     <View style={estilos.linea} accessible accessibilityLabel={habitosParaLeer(t.habitos)}>
                       <Icono nombre="habitos" tamano={18} tono="tenue" />

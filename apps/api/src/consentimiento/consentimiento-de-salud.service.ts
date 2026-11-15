@@ -6,6 +6,7 @@ import {
   type ConsentimientoDeSaludOtorgadoResponse,
   type ConsentimientoRevocadoResponse,
   type HistorialDeConsentimientoDeSaludResponse,
+  type Procedencia,
 } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import { retirarPropuestasPendientesDelTitular } from '../formularios/propuestas-del-titular';
@@ -53,44 +54,13 @@ export class ConsentimientoDeSaludService {
     const procedencia = procedenciaDe(ctx, 'UC-P25', operacion);
     try {
       return await this.idempotencia.ejecutar({ operacion, ambito: actor.identidadId, clave: clave as string, huella }, async (tx) => {
-        // «versión existente y aplicable a HEALTH_DATA_BE» (09:2472-2479).
-        if (pedido.consentVersionId !== vigente.id) {
-          const otra = await tx.versionDeTexto.findUnique({ where: { id: pedido.consentVersionId }, select: { tipo: true } });
-          throw otra?.tipo === 'DATOS_SALUD_BE' ? errores.versionDeConsentimientoVieja() : errores.consentimientoDeSaludNoDisponible();
-        }
-        // Serializa los otorgamientos del mismo titular; el índice parcial lo garantiza igual ante cualquier carrera.
-        // NO KEY UPDATE: no choca con las claves foráneas de hechos y decisiones (prisma/concurrencia.ts).
-        await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR NO KEY UPDATE`;
-        const activo = await tx.actoRegistrable.findFirst({ where: { identidadId: actor.identidadId, tipo: 'DATOS_SALUD_BE', estado: 'VIGENTE' }, select: { id: true } });
-        if (activo) throw errores.consentimientoYaVigente();
-        const acto = await tx.actoRegistrable.create({
-          data: {
-            identidadId: actor.identidadId,
-            tipo: 'DATOS_SALUD_BE',
-            versionDeTextoId: vigente.id,
-            hashDelTexto: vigente.hash,
-            finalidad: vigente.finalidad,
-            superficie: ctx.superficie,
-            direccionIp: ctx.direccionIp,
-            agenteDeUsuario: ctx.agenteDeUsuario,
-            actorId: actor.identidadId,
-            autoriaId: actor.identidadId,
-            procedencia: procedencia as unknown as Prisma.InputJsonValue,
-            momentoDeOcurrencia: ctx.momentoDeRecepcion,
-          },
+        const acto = await otorgarA3EnTransaccion(tx, {
+          actorId: actor.identidadId,
+          consentVersionId: pedido.consentVersionId,
+          ctx,
+          procedencia,
+          auditar: (actoId) => this.auditar(tx, operacion, actor.identidadId, actoId, ctx),
         });
-        await tx.eventoDeDominio.create({
-          data: {
-            tipo: 'ActoOtorgado',
-            identidadId: actor.identidadId,
-            actorId: actor.identidadId,
-            autoriaId: actor.identidadId,
-            procedencia: procedencia as unknown as Prisma.InputJsonValue,
-            momentoDeOcurrencia: ctx.momentoDeRecepcion,
-            datos: { actoId: acto.id, tipo: 'DATOS_SALUD_BE', versionDeTexto: vigente.id },
-          },
-        });
-        await this.auditar(tx, operacion, actor.identidadId, acto.id, ctx);
         const respuesta: ConsentimientoDeSaludOtorgadoResponse = {
           data: { consentId: acto.id, type: 'HEALTH_DATA_BE', consentVersionId: vigente.id, state: 'ACTIVE', acceptedAt: acto.momentoDeOcurrencia.toISOString() },
         };
@@ -205,4 +175,55 @@ export class ConsentimientoDeSaludService {
       momentoDeOcurrencia: ctx.momentoDeRecepcion,
     });
   }
+}
+
+/**
+ * El acto A3 dentro de una transacción ya abierta (API-CON-06 y, desde DL-176, la pantalla única de API-CMP-02): exige la
+ * versión vigente, toma la identidad (serializa los otorgamientos del mismo titular; el índice parcial lo garantiza igual
+ * ante cualquier carrera), rechaza un A3 ya vigente y crea el acto con su evidencia, su hecho y la auditoría de quien llama.
+ */
+export async function otorgarA3EnTransaccion(
+  tx: Prisma.TransactionClient,
+  p: { readonly actorId: string; readonly consentVersionId: string; readonly ctx: ContextoDeSolicitud; readonly procedencia: Procedencia; readonly auditar: (actoId: string) => Promise<void> },
+): Promise<{ readonly id: string; readonly momentoDeOcurrencia: Date }> {
+  const vigente = VERSION_VIGENTE.DATOS_SALUD_BE;
+  const { ctx, procedencia } = p;
+  // «versión existente y aplicable a HEALTH_DATA_BE» (09:2472-2479).
+  if (p.consentVersionId !== vigente.id) {
+    const otra = await tx.versionDeTexto.findUnique({ where: { id: p.consentVersionId }, select: { tipo: true } });
+    throw otra?.tipo === 'DATOS_SALUD_BE' ? errores.versionDeConsentimientoVieja() : errores.consentimientoDeSaludNoDisponible();
+  }
+  // NO KEY UPDATE: no choca con las claves foráneas de hechos y decisiones (prisma/concurrencia.ts).
+  await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${p.actorId}::uuid FOR NO KEY UPDATE`;
+  const activo = await tx.actoRegistrable.findFirst({ where: { identidadId: p.actorId, tipo: 'DATOS_SALUD_BE', estado: 'VIGENTE' }, select: { id: true } });
+  if (activo) throw errores.consentimientoYaVigente();
+  const acto = await tx.actoRegistrable.create({
+    data: {
+      identidadId: p.actorId,
+      tipo: 'DATOS_SALUD_BE',
+      versionDeTextoId: vigente.id,
+      hashDelTexto: vigente.hash,
+      finalidad: vigente.finalidad,
+      superficie: ctx.superficie,
+      direccionIp: ctx.direccionIp,
+      agenteDeUsuario: ctx.agenteDeUsuario,
+      actorId: p.actorId,
+      autoriaId: p.actorId,
+      procedencia: procedencia as unknown as Prisma.InputJsonValue,
+      momentoDeOcurrencia: ctx.momentoDeRecepcion,
+    },
+  });
+  await tx.eventoDeDominio.create({
+    data: {
+      tipo: 'ActoOtorgado',
+      identidadId: p.actorId,
+      actorId: p.actorId,
+      autoriaId: p.actorId,
+      procedencia: procedencia as unknown as Prisma.InputJsonValue,
+      momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      datos: { actoId: acto.id, tipo: 'DATOS_SALUD_BE', versionDeTexto: vigente.id },
+    },
+  });
+  await p.auditar(acto.id);
+  return acto;
 }

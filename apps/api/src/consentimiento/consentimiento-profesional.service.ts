@@ -15,6 +15,7 @@ import {
   type Finalidad,
   type ListaDeConsentimientosResponse,
   type MotivoDeRechazoDeConsentimiento,
+  type Procedencia,
   type RequisitosDeConsentimientoResponse,
   type TransicionDeConsentimiento,
 } from '@be/domain';
@@ -36,7 +37,7 @@ import { nombreDeProfesional, registrarEventoDeVinculo, resumenDeAlcance, resume
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-interface ComponenteDelTitular {
+export interface ComponenteDelTitular {
   readonly id: string;
   readonly estado: 'ACEPTADO' | 'PAUSADO' | 'FINALIZADO';
   readonly alcance: Alcance;
@@ -70,7 +71,7 @@ export class ConsentimientoProfesionalService {
     this.limitador.consumir('consultaProtegida', null, actor.identidadId);
     let c: ComponenteDelTitular;
     try {
-      c = await this.componenteDelTitular(this.prisma as unknown as Prisma.TransactionClient, actor.identidadId, vinculoId, false);
+      c = await componenteDelTitular(this.prisma as unknown as Prisma.TransactionClient, actor.identidadId, vinculoId, false);
     } catch (e) {
       // El 404 deja rastro con actor y recurso intentado: permite reconstruir un intento de enumeración.
       await this.auditarRechazo(e, 'API-CON-01', actor.identidadId, ctx, { tipo: 'AlcanceDeVinculo', id: vinculoId });
@@ -78,7 +79,7 @@ export class ConsentimientoProfesionalService {
     }
     const perfil = await this.prisma.perfilProfesional.findUnique({ where: { identidadId: c.profesionalId } });
     if (!perfil) throw errores.recursoNoEncontrado();
-    const version = await this.versionAplicable(this.prisma as unknown as Prisma.TransactionClient, perfil.tipo);
+    const version = await versionDeB2Aplicable(this.prisma as unknown as Prisma.TransactionClient, perfil.tipo);
     return {
       data: {
         relationshipId: c.id,
@@ -107,81 +108,15 @@ export class ConsentimientoProfesionalService {
     const procedencia = procedenciaDe(ctx, 'UC-P07', operacion);
     try {
       return await this.idempotencia.ejecutar({ operacion, ambito: actor.identidadId, clave: clave as string, huella }, async (tx) => {
-        // Bloquea el componente: serializa las decisiones sobre el mismo vínculo (09v8:1609-1617, «validaciones atómicas»).
-        const c = await this.componenteDelTitular(tx, actor.identidadId, vinculoId, true);
-        if (c.estado !== 'ACEPTADO') throw errores.vinculoNoListoParaConsentir();
-        const perfil = await tx.perfilProfesional.findUniqueOrThrow({ where: { identidadId: c.profesionalId } });
-        const aplicable = await this.versionAplicable(tx, perfil.tipo);
-        if (pedido.consentVersionId !== aplicable.id) throw errores.versionDeConsentimientoVieja();
-
-        const existente = await tx.consentimiento.findUnique({
-          where: { alcanceDeVinculoId_finalidad: { alcanceDeVinculoId: c.id, finalidad: c.finalidad } },
-          include: { versiones: true },
-        });
-        const cadena = existente ? resumenDeCadena(existente.versiones) : null;
-        const vigenteDeTexto = existente?.situacion === 'VIGENTE' ? cadena?.ultimaAceptacion.versionDeTextoId ?? null : null;
-        const transicion = transicionDeOtorgamiento(existente?.situacion ?? null, vigenteDeTexto, pedido.consentVersionId);
-
-        if (transicion === 'SIN_CAMBIO' && existente && cadena) {
-          // Ya vigente con esta versión: se devuelve el existente (09v8:1621 «200 en replay idempotente»).
-          await this.auditar(tx, operacion, actor.identidadId, existente.id, ctx);
-          return this.respuestaDeOtorgamiento(200, existente.id, c, pedido.consentVersionId, cadena.ultimaAceptacion.momentoDeOcurrencia);
-        }
-        const t = transicion as TransicionDeConsentimiento;
-        const evaluacion = evaluarTransicionDeConsentimiento(existente?.situacion ?? null, {
-          transicion: t,
-          actorEsTitular: true,
-          decisionExplicita: true,
-          versionPresentadaAplicable: true,
-          versionPresentadaEsSucesora: vigenteDeTexto !== pedido.consentVersionId,
-          alcanceDeVinculoAceptado: true,
-        });
-        if (!evaluacion.permitida) throw errorDeConsentimiento(evaluacion.motivo);
-
-        let consentimientoId: string;
-        if (!existente) {
-          const creado = await tx.consentimiento.create({
-            data: { alcanceDeVinculoId: c.id, finalidad: c.finalidad, momentoDeOcurrencia: ctx.momentoDeRecepcion },
-          });
-          consentimientoId = creado.id;
-        } else {
-          consentimientoId = existente.id;
-          await tx.consentimiento.update({ where: { id: existente.id }, data: { situacion: 'VIGENTE', version: existente.version + 1 } });
-        }
-        const version = await tx.versionDeConsentimiento.create({
-          data: {
-            consentimientoId,
-            predecesoraId: cadena?.cabeza.id ?? null,
-            decision: DECISION_DE_TRANSICION[t],
-            situacionResultante: 'VIGENTE',
-            versionDeTextoId: aplicable.id,
-            hashDelTexto: aplicable.hash,
-            alcance: c.alcance,
-            finalidad: c.finalidad,
-            superficie: ctx.superficie,
-            direccionIp: ctx.direccionIp,
-            agenteDeUsuario: ctx.agenteDeUsuario,
-            actorId: actor.identidadId,
-            autoriaId: actor.identidadId,
-            procedencia: procedencia as unknown as Prisma.InputJsonValue,
-            momentoDeOcurrencia: ctx.momentoDeRecepcion,
-          },
-        });
-        await registrarEventoDeVinculo(tx, {
-          tipo: evaluacion.transicion.evento as TipoDeEventoDeVinculo,
-          profesionalId: c.profesionalId,
-          asesoradoId: c.asesoradoId,
-          alcanceDeVinculoId: c.id,
-          consentimientoId,
-          versionDeConsentimientoId: version.id,
-          estadoPrevio: existente?.situacion ?? null,
-          estadoPosterior: 'VIGENTE',
-          actor: { identidadId: actor.identidadId },
+        const r = await otorgarB2EnTransaccion(tx, {
+          actorId: actor.identidadId,
+          vinculoId,
+          consentVersionId: pedido.consentVersionId,
+          ctx,
           procedencia,
-          momento: ctx.momentoDeRecepcion,
+          auditar: (consentimientoId) => this.auditar(tx, operacion, actor.identidadId, consentimientoId, ctx),
         });
-        await this.auditar(tx, operacion, actor.identidadId, consentimientoId, ctx);
-        return this.respuestaDeOtorgamiento(t === 'OtorgarConsentimiento' ? 201 : 200, consentimientoId, c, aplicable.id, ctx.momentoDeRecepcion);
+        return this.respuestaDeOtorgamiento(r.estadoHttp, r.consentimientoId, r.componente, r.versionDeTextoId, r.momento);
       });
     } catch (e) {
       await this.auditarRechazo(e, operacion, actor.identidadId, ctx, { tipo: 'AlcanceDeVinculo', id: vinculoId });
@@ -330,36 +265,6 @@ export class ConsentimientoProfesionalService {
     }
   }
 
-  /** Versión de texto de B2 aplicable al perfil: la cabeza de la cadena explícita de su tipo (REG-06-12; DL-038). */
-  private async versionAplicable(tx: Prisma.TransactionClient, tipo: TipoDePerfilProfesional): Promise<VersionDeTexto> {
-    const [v] = await tx.$queryRaw<VersionDeTexto[]>`
-      SELECT "id", "tipo", "titulo", "finalidad", "texto", "hash", "vigente_desde" AS "vigenteDesde",
-             "momento_de_registro" AS "momentoDeRegistro", "reemplaza_a_id" AS "reemplazaAId"
-        FROM "version_de_texto" v
-       WHERE v."tipo" = ${TIPO_DE_TEXTO_DE_B2[tipo]}::"TipoDeTexto"
-         AND NOT EXISTS (SELECT 1 FROM "version_de_texto" s WHERE s."reemplaza_a_id" = v."id")`;
-    if (!v) throw errores.interno();
-    return v;
-  }
-
-  /** El componente de vínculo, solo si el actor es su asesorado titular; si no, 404 idéntico. */
-  private async componenteDelTitular(tx: Prisma.TransactionClient, asesoradoId: string, vinculoId: string, bloquear: boolean): Promise<ComponenteDelTitular> {
-    if (!UUID.test(vinculoId)) throw errores.recursoNoEncontrado();
-    const filas = bloquear
-      ? await tx.$queryRaw<ComponenteDelTitular[]>`
-          SELECT av."id"::text AS "id", av."estado"::text AS "estado", av."alcance"::text AS "alcance", av."finalidad"::text AS "finalidad",
-                 vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
-            FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
-           WHERE av."id" = ${vinculoId}::uuid AND vi."asesorado_id" = ${asesoradoId}::uuid FOR NO KEY UPDATE OF av`
-      : await tx.$queryRaw<ComponenteDelTitular[]>`
-          SELECT av."id"::text AS "id", av."estado"::text AS "estado", av."alcance"::text AS "alcance", av."finalidad"::text AS "finalidad",
-                 vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
-            FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
-           WHERE av."id" = ${vinculoId}::uuid AND vi."asesorado_id" = ${asesoradoId}::uuid`;
-    if (!filas[0]) throw errores.recursoNoEncontrado();
-    return filas[0];
-  }
-
   private respuestaDeOtorgamiento(estado: 200 | 201, consentimientoId: string, c: ComponenteDelTitular, versionDeTextoId: string, momento: Date): ResultadoIdempotente {
     const respuesta: ConsentimientoOtorgadoResponse = {
       data: {
@@ -424,4 +329,142 @@ function errorDeConsentimiento(motivo: MotivoDeRechazoDeConsentimiento): ErrorDe
     default:
       return errores.estadoNoPermite();
   }
+}
+
+/**
+ * Versión de texto de B2 aplicable al perfil: la cabeza de la cadena explícita de su tipo (REG-06-12; DL-038). La usan
+ * API-CON-01 y 02 y la pantalla única de WP-COMPARTIR (API-CMP-01 y 02, DL-176).
+ */
+export async function versionDeB2Aplicable(tx: Prisma.TransactionClient, tipo: TipoDePerfilProfesional): Promise<VersionDeTexto> {
+  const [v] = await tx.$queryRaw<VersionDeTexto[]>`
+    SELECT "id", "tipo", "titulo", "finalidad", "texto", "hash", "vigente_desde" AS "vigenteDesde",
+           "momento_de_registro" AS "momentoDeRegistro", "reemplaza_a_id" AS "reemplazaAId"
+      FROM "version_de_texto" v
+     WHERE v."tipo" = ${TIPO_DE_TEXTO_DE_B2[tipo]}::"TipoDeTexto"
+       AND NOT EXISTS (SELECT 1 FROM "version_de_texto" s WHERE s."reemplaza_a_id" = v."id")`;
+  if (!v) throw errores.interno();
+  return v;
+}
+
+/** El componente de vínculo, solo si el actor es su asesorado titular; si no, 404 idéntico. */
+export async function componenteDelTitular(tx: Prisma.TransactionClient, asesoradoId: string, vinculoId: string, bloquear: boolean): Promise<ComponenteDelTitular> {
+  if (!UUID.test(vinculoId)) throw errores.recursoNoEncontrado();
+  const filas = bloquear
+    ? await tx.$queryRaw<ComponenteDelTitular[]>`
+        SELECT av."id"::text AS "id", av."estado"::text AS "estado", av."alcance"::text AS "alcance", av."finalidad"::text AS "finalidad",
+               vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
+          FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
+         WHERE av."id" = ${vinculoId}::uuid AND vi."asesorado_id" = ${asesoradoId}::uuid FOR NO KEY UPDATE OF av`
+    : await tx.$queryRaw<ComponenteDelTitular[]>`
+        SELECT av."id"::text AS "id", av."estado"::text AS "estado", av."alcance"::text AS "alcance", av."finalidad"::text AS "finalidad",
+               vi."profesional_id"::text AS "profesionalId", vi."asesorado_id"::text AS "asesoradoId"
+          FROM "alcance_de_vinculo" av JOIN "vinculo" vi ON vi."id" = av."vinculo_id"
+         WHERE av."id" = ${vinculoId}::uuid AND vi."asesorado_id" = ${asesoradoId}::uuid`;
+  if (!filas[0]) throw errores.recursoNoEncontrado();
+  return filas[0];
+}
+
+/** Lo que deja un otorgamiento de B2, para armar la respuesta de API-CON-02 (o lo que registra API-CMP-02). */
+export interface OtorgamientoDeB2 {
+  readonly estadoHttp: 200 | 201;
+  readonly consentimientoId: string;
+  readonly componente: ComponenteDelTitular;
+  readonly versionDeTextoId: string;
+  readonly momento: Date;
+  /** `false` si ya estaba vigente con esa versión: no se escribió nada. */
+  readonly escrito: boolean;
+}
+
+/**
+ * El acto B2 dentro de una transacción ya abierta (API-CON-02 y, desde DL-176, la pantalla única de API-CMP-02): bloquea el
+ * componente, exige el vínculo aceptado y la versión aplicable, y emite la versión del consentimiento con su evidencia y su
+ * hecho. `auditar` registra el éxito con la operación de quien llama, en la misma transacción.
+ */
+export async function otorgarB2EnTransaccion(
+  tx: Prisma.TransactionClient,
+  p: {
+    readonly actorId: string;
+    readonly vinculoId: string;
+    readonly consentVersionId: string;
+    readonly ctx: ContextoDeSolicitud;
+    readonly procedencia: Procedencia;
+    readonly auditar: (consentimientoId: string) => Promise<void>;
+  },
+): Promise<OtorgamientoDeB2> {
+  const { ctx, procedencia } = p;
+  // Bloquea el componente: serializa las decisiones sobre el mismo vínculo (09v8:1609-1617, «validaciones atómicas»).
+  const c = await componenteDelTitular(tx, p.actorId, p.vinculoId, true);
+  if (c.estado !== 'ACEPTADO') throw errores.vinculoNoListoParaConsentir();
+  const perfil = await tx.perfilProfesional.findUniqueOrThrow({ where: { identidadId: c.profesionalId } });
+  const aplicable = await versionDeB2Aplicable(tx, perfil.tipo);
+  if (p.consentVersionId !== aplicable.id) throw errores.versionDeConsentimientoVieja();
+
+  const existente = await tx.consentimiento.findUnique({
+    where: { alcanceDeVinculoId_finalidad: { alcanceDeVinculoId: c.id, finalidad: c.finalidad } },
+    include: { versiones: true },
+  });
+  const cadena = existente ? resumenDeCadena(existente.versiones) : null;
+  const vigenteDeTexto = existente?.situacion === 'VIGENTE' ? cadena?.ultimaAceptacion.versionDeTextoId ?? null : null;
+  const transicion = transicionDeOtorgamiento(existente?.situacion ?? null, vigenteDeTexto, p.consentVersionId);
+
+  if (transicion === 'SIN_CAMBIO' && existente && cadena) {
+    // Ya vigente con esta versión: se devuelve el existente (09v8:1621 «200 en replay idempotente»).
+    await p.auditar(existente.id);
+    return { estadoHttp: 200, consentimientoId: existente.id, componente: c, versionDeTextoId: p.consentVersionId, momento: cadena.ultimaAceptacion.momentoDeOcurrencia, escrito: false };
+  }
+  const t = transicion as TransicionDeConsentimiento;
+  const evaluacion = evaluarTransicionDeConsentimiento(existente?.situacion ?? null, {
+    transicion: t,
+    actorEsTitular: true,
+    decisionExplicita: true,
+    versionPresentadaAplicable: true,
+    versionPresentadaEsSucesora: vigenteDeTexto !== p.consentVersionId,
+    alcanceDeVinculoAceptado: true,
+  });
+  if (!evaluacion.permitida) throw errorDeConsentimiento(evaluacion.motivo);
+
+  let consentimientoId: string;
+  if (!existente) {
+    const creado = await tx.consentimiento.create({
+      data: { alcanceDeVinculoId: c.id, finalidad: c.finalidad, momentoDeOcurrencia: ctx.momentoDeRecepcion },
+    });
+    consentimientoId = creado.id;
+  } else {
+    consentimientoId = existente.id;
+    await tx.consentimiento.update({ where: { id: existente.id }, data: { situacion: 'VIGENTE', version: existente.version + 1 } });
+  }
+  const version = await tx.versionDeConsentimiento.create({
+    data: {
+      consentimientoId,
+      predecesoraId: cadena?.cabeza.id ?? null,
+      decision: DECISION_DE_TRANSICION[t],
+      situacionResultante: 'VIGENTE',
+      versionDeTextoId: aplicable.id,
+      hashDelTexto: aplicable.hash,
+      alcance: c.alcance,
+      finalidad: c.finalidad,
+      superficie: ctx.superficie,
+      direccionIp: ctx.direccionIp,
+      agenteDeUsuario: ctx.agenteDeUsuario,
+      actorId: p.actorId,
+      autoriaId: p.actorId,
+      procedencia: procedencia as unknown as Prisma.InputJsonValue,
+      momentoDeOcurrencia: ctx.momentoDeRecepcion,
+    },
+  });
+  await registrarEventoDeVinculo(tx, {
+    tipo: evaluacion.transicion.evento as TipoDeEventoDeVinculo,
+    profesionalId: c.profesionalId,
+    asesoradoId: c.asesoradoId,
+    alcanceDeVinculoId: c.id,
+    consentimientoId,
+    versionDeConsentimientoId: version.id,
+    estadoPrevio: existente?.situacion ?? null,
+    estadoPosterior: 'VIGENTE',
+    actor: { identidadId: p.actorId },
+    procedencia,
+    momento: ctx.momentoDeRecepcion,
+  });
+  await p.auditar(consentimientoId);
+  return { estadoHttp: t === 'OtorgarConsentimiento' ? 201 : 200, consentimientoId, componente: c, versionDeTextoId: aplicable.id, momento: ctx.momentoDeRecepcion, escrito: true };
 }

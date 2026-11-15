@@ -4,10 +4,10 @@
  * - `HistoriaAnteriorDelArea`, en «Quién ve qué», debajo del profesional de un área: el título, la explicación corta, el
  *   interruptor para compartirla o dejar de compartirla, el texto completo plegado y la línea de cuándo la miró. Con el
  *   vínculo terminado, solo el estado y cuándo la miró.
- * - `HistoriaAnteriorAlAceptar`, al aceptar a un profesional nuevo de un área en la que ya hubo otro (por Vínculos o por
- *   invitación): la misma oferta, con «Compartir mi historia anterior» y «Ahora no». Por omisión no se comparte, y «Ahora
- *   no» no escribe nada.
- * - `DialogoParaCompartir`: compartirla, desde cualquiera de las dos, abre **el texto entero a la vista** (como los hábitos:
+ * - Al aceptar a un profesional nuevo, desde WP-COMPARTIR (DL-176) la historia anterior es una de las cosas de la pantalla
+ *   única de consentimiento (`pantallas/consentimiento.tsx`), preseleccionada si antes hubo otro profesional en esa área:
+ *   la tarjeta opcional que vivía acá (HA-T01, «por omisión, no se comparte») ya no se dibuja.
+ * - `DialogoParaCompartir`: compartirla desde «Quién ve qué» abre **el texto entero a la vista** (como los hábitos:
  *   lo que se acepta no se pliega, 08 §12.2) con dos respuestas del mismo peso. Recién al confirmar sale API-HIA-02.
  *
  * Accesibilidad: el interruptor es una fila tocable con rol de interruptor; su etiqueta dice qué hace, con quién y el estado
@@ -23,10 +23,8 @@ import { DialogoDeConfirmacion } from './dialogo';
 import { fechaCivilDeUnInstante, dia } from './formato';
 import { Icono } from './icono';
 import { falloDe, useClaveDeIntento, type Fallo } from './intento';
-import { useLecturaRecordada } from './lecturas';
 import { TextoDesplegable } from './texto-versionado';
 import {
-  conLoNuevo,
   etiquetaDelInterruptor,
   exitoAlCompartir,
   loQuePideElInterruptor,
@@ -34,7 +32,6 @@ import {
   partesDelTexto,
   pedidoDeAutorizar,
   pedidoDeRetirar,
-  seOfreceAlAceptar,
   vistasDeLaHistoriaAnterior,
   type MiHistoriaAnterior,
   type VistaDeLaHistoriaAnterior,
@@ -288,87 +285,8 @@ export function HistoriaAnteriorDelArea({
   );
 }
 
-/**
- * Al aceptar a un profesional nuevo (por Vínculos o por invitación): si en esa área ya hubo otro, una tarjeta opcional que
- * ofrece compartir la historia anterior. Lee API-HIA-01 aparte: si falla, la tarjeta no se dibuja y el resto sigue igual.
- * Compartir abre el texto entero; si algo cambió mientras se miraba, «Actualizar» vuelve a leer; sin el A3, «Ir a
- * Privacidad» (si la pantalla da el camino).
- */
-export function HistoriaAnteriorAlAceptar({
-  token,
-  relationshipId,
-  sesionPerdida,
-  irAPrivacidad,
-}: {
-  token: string;
-  relationshipId: string;
-  sesionPerdida: (r: Resultado<unknown>) => boolean;
-  irAPrivacidad?: () => void;
-}) {
-  const lectura = useLecturaRecordada(token, `historia-anterior-al-aceptar-${relationshipId}`, useCallback(() => api.miHistoriaAnterior(token), [token]), sesionPerdida);
-  const [ahoraNo, setAhoraNo] = useState(false);
-  const [abierto, setAbierto] = useState(false);
-  const [compartida, setCompartida] = useState<HistoriaAnteriorDeUnArea | null>(null);
-  const cambio = useCambioDeLaHistoria(token, setCompartida);
-  const mia = lectura.r?.ok ? lectura.r.datos.data : null;
-  const item = mia ? seOfreceAlAceptar(compartida ? conLoNuevo(mia, compartida) : mia, relationshipId) : null;
-  const actualizar = () => {
-    cambio.limpiar();
-    setAbierto(false);
-    void lectura.cargar();
-  };
-  if (ahoraNo || !mia) return null;
-  if (compartida) return <Aviso tipo="exito" titulo={exitoAlCompartir(compartida)} />;
-  if (!item) return null;
-  return (
-    <Superficie style={estilos.tarjeta}>
-      <View style={estilos.cabeza}>
-        <Icono nombre="linea-de-tiempo" tamano={20} tono="acento" />
-        <Text style={estilos.titulo} accessibilityRole="header">
-          {C.alAceptar.titulo(item.professional.displayName, item.area)}
-        </Text>
-      </View>
-      <Text style={estilos.texto}>{C.explicacion(item.professional.displayName, item.area)}</Text>
-      <Text style={[estilos.texto, estilos.tenue]}>{C.alAceptar.opcional}</Text>
-      {cambio.error && !abierto ? (
-        <Aviso tipo="error" titulo={cambio.error.mensaje}>
-          <SalidasDelRechazo error={cambio.error} actualizar={actualizar} irAPrivacidad={irAPrivacidad} />
-        </Aviso>
-      ) : null}
-      {/* Las dos respuestas, del mismo peso: ninguna es la «correcta». «Compartir» abre el texto antes de escribir nada. */}
-      <Boton
-        texto={C.alAceptar.compartir}
-        tipo="secundario"
-        deshabilitado={cambio.enviando}
-        onPress={() => {
-          cambio.limpiar();
-          setAbierto(true);
-        }}
-      />
-      <Boton texto={C.alAceptar.ahoraNo} tipo="secundario" deshabilitado={cambio.enviando} onPress={() => setAhoraNo(true)} />
-      <DialogoParaCompartir
-        visible={abierto}
-        item={item}
-        texto={mia.text}
-        enviando={cambio.enviando}
-        error={abierto ? cambio.error : null}
-        onCompartir={() => {
-          void cambio.enviar(item, 'COMPARTIR', mia.text).then((ok) => ok && setAbierto(false));
-        }}
-        onAhoraNo={() => {
-          cambio.limpiar();
-          setAbierto(false);
-        }}
-        actualizar={actualizar}
-        irAPrivacidad={irAPrivacidad}
-      />
-    </Superficie>
-  );
-}
-
 const estilos = estilosPorTema((COLOR) => ({
   bloque: { borderTopWidth: 1, borderTopColor: COLOR.borde, marginTop: 8, paddingTop: 8, gap: 6 },
-  tarjeta: { borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 16, marginVertical: 8, gap: 8 },
   cabeza: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   titulo: { fontSize: 17, fontWeight: '800', color: COLOR.texto, flexShrink: 1 },
   texto: { fontSize: 16, lineHeight: 23, color: COLOR.texto, flexShrink: 1 },

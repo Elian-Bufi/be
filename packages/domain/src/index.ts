@@ -61,6 +61,10 @@ export * from './resumenes-compartidos';
 // WP-HISTORIA-ANTERIOR (DL-175): la historia anterior de un área, para el profesional nuevo, con el permiso de la persona.
 export * from './historia-anterior';
 export * from './contratos-historia-anterior';
+// WP-COMPARTIR (DL-176): la pantalla única de consentimiento y la familia CMP.
+export * from './compartir';
+export * from './contratos-compartir';
+export * from './copy-compartir';
 export * from './copy-habitos-de-la-persona';
 export * from './errores-de-formulario';
 export * from './recuperacion-de-formulario';
