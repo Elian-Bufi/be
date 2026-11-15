@@ -8,6 +8,20 @@ const HORAS = { Desayuno: [450, 540], Almuerzo: [750, 840], Merienda: [990, 1080
 const MOTIVOS_DE_FALTA = ['Trabajo', 'Turno médico', 'Me quedé dormido', 'Lluvia fuerte', 'Viaje por trabajo'];
 
 /**
+ * Las capturas de los gráficos (BE_COHORTE_CON_LA_ESTIMACION=si): cada valor escrito de una serie dice que lo escribió la
+ * persona (ED-70, `fieldOrigins`). Sin la procedencia, las series quedan como las registradas antes de ED-70 y la
+ * estimación de la fuerza no las usa («se registró antes de que la app guardara quién escribió cada dato»): el 1RM
+ * estimado, su detalle y los gráficos que lo usan se quedarían vacíos. No toca el azar: la historia es la misma. Sin la
+ * variable, las series son las de siempre.
+ */
+const CON_LA_PROCEDENCIA = process.env.BE_COHORTE_CON_LA_ESTIMACION === 'si';
+function conLaProcedencia(serie) {
+  if (!CON_LA_PROCEDENCIA) return serie;
+  const origenes = Object.fromEntries(['load', 'completedRepetitions', 'rir'].filter((c) => serie[c] !== null).map((c) => [c, 'PERSON']));
+  return Object.keys(origenes).length ? { ...serie, fieldOrigins: origenes } : serie;
+}
+
+/**
  * El identificador de una prescripción en su plan: único en todo el plan (la API lo exige). Si el mismo ejercicio está en
  * dos sesiones de la etapa, se le agrega la sesión.
  */
@@ -139,11 +153,11 @@ export function historia(p, hoy, ahora) {
           const ultima = j === x.series;
           if (x.sinCarga) {
             const reps = Math.max(1, Math.round(c(mes) - (j - 1) * 0.5 + r.ruido(0.5)));
-            sets.push({ setIndex: j, load: null, completedRepetitions: reps, rir: x.rir === null || sinRir ? null : Math.max(0, x.rir - (ultima ? 1 : 0)), perceivedExertion: null });
+            sets.push(conLaProcedencia({ setIndex: j, load: null, completedRepetitions: reps, rir: x.rir === null || sinRir ? null : Math.max(0, x.rir - (ultima ? 1 : 0)), perceivedExertion: null }));
           } else {
             const carga = Math.max(x.paso ?? 2.5, redondear(c(mes) * (1 + r.ruido(0.012)), x.paso ?? 2.5));
             const reps = Math.max(1, x.reps - (ultima && r.si(0.3) ? 1 : 0));
-            sets.push({ setIndex: j, load: { value: carga, unit: 'kg' }, completedRepetitions: reps, rir: x.rir === null || sinRir ? null : Math.max(0, x.rir - (ultima ? 1 : 0)), perceivedExertion: null });
+            sets.push(conLaProcedencia({ setIndex: j, load: { value: carga, unit: 'kg' }, completedRepetitions: reps, rir: x.rir === null || sinRir ? null : Math.max(0, x.rir - (ultima ? 1 : 0)), perceivedExertion: null }));
           }
         }
         base.ejercicios.push({ prescriptionId: idDePrescripcion(etapa, sesion, x), ejercicio: x.ejercicio, sets });
