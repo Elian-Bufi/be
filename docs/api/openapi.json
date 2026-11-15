@@ -104194,6 +104194,20 @@
                                       "SUMMARY_AND_PLAN"
                                     ]
                                   },
+                                  "givenLevel": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "SUMMARY",
+                                          "SUMMARY_AND_PLAN"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "from": {
                                     "minItems": 1,
                                     "type": "array",
@@ -104227,6 +104241,7 @@
                                   "recipient",
                                   "area",
                                   "level",
+                                  "givenLevel",
                                   "from"
                                 ],
                                 "additionalProperties": false

@@ -1,5 +1,6 @@
 /**
- * WP-COMPARTIR (DL-176) · la lógica pura de la pantalla única de consentimiento, TEST-CMP-001 a TEST-CMP-012. Cada prueba
+ * WP-COMPARTIR (DL-176) · la lógica pura de la pantalla única de consentimiento, TEST-CMP-001 a TEST-CMP-012 y TEST-CMP-014
+ * (de la revisión: lo retirado de a una cosa, lo bajado de nivel y un «Ahora no» no vuelven marcados). Cada prueba
  * dice la mutación que la tiene que poner en rojo. Lo que pasa con la base y la API (el toque único escribe todo o nada,
  * retirar cada cosa corta, los 404), en test/integration/compartir.int-spec.ts (TEST-CMP-020 a 029).
  */
@@ -7,6 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   CODIGO_DE_PROBLEMA_DE_LA_ELECCION,
+  SIN_DECISIONES_ANTERIORES,
   claveDe,
   eleccionCoherente,
   eleccionInicial,
@@ -67,6 +69,7 @@ function estado(cambios: Partial<EstadoParaCompartir> = {}): EstadoParaCompartir
     habitos: { estado: 'NUNCA', version: null, renglones: null, hayHabitos: true },
     historia: new Map(),
     textos: TEXTOS,
+    decisiones: SIN_DECISIONES_ANTERIORES,
     ...cambios,
   };
 }
@@ -284,4 +287,44 @@ test('TEST-CMP-012 · el vocabulario: ubicar, nunca calificar; sin «%», sin «
   assert.equal(COPY_COMPARTIR.aceptarYCompartir, 'Aceptar y compartir');
   assert.equal(COPY_COMPARTIR.elegir, 'Elegir qué compartir');
   assert.match(COPY_COMPARTIR.nuncaSeComparte, /notas privadas/);
+});
+
+test('TEST-CMP-014 · lo retirado de a una cosa, lo bajado de nivel y un «Ahora no» no vuelven marcados; lo nunca decidido, sí (CMP-D3)', () => {
+  // Mutación: decidir lo marcado solo con la versión vigente (sin las decisiones anteriores) la pone en rojo: Ruiz
+  // ← Antropometría, retirado desde «Quién ve qué» con otras cosas todavía compartidas, volvería marcado.
+  const renglon = (profesionalId: string, alcanceDeVinculoId: string, origenId: string, area: RenglonDeResumen['area'], nivel: RenglonDeResumen['nivel']): RenglonDeResumen => ({ profesionalId, alcanceDeVinculoId, origenId, area, nivel, desde: '2026-10-01T00:00:00.000Z' });
+  const historicos = [
+    renglon(RUIZ, C_RUIZ, C_GOMEZ, 'ANTROPOMETRIA', 'SUMMARY'), // lo retiró (la autorización sigue ACTIVA con otra cosa)
+    renglon(GOMEZ, C_GOMEZ, C_RUIZ, 'ENTRENAMIENTO', 'SUMMARY_AND_PLAN'), // lo bajó a «resumen»
+    renglon(RUIZ, C_RUIZ, C_VERA, 'NUTRICION', 'SUMMARY_AND_PLAN'), // se fue porque Vera terminó: no lo decidió ella
+  ];
+  const e = estado({
+    a3: { estado: 'VIGENTE', desde: '2026-02-01T00:00:00.000Z' },
+    resumenes: { estado: 'ACTIVA', version: 5, renglones: [renglon(GOMEZ, C_GOMEZ, C_RUIZ, 'ENTRENAMIENTO', 'SUMMARY')] },
+    habitos: { estado: 'ACTIVA', version: 4, renglones: [{ profesionalId: PAZ, alcanceDeVinculoId: C_PAZ, incluido: true, incluidoDesde: '2026-11-01T00:00:00.000Z' }], hayHabitos: true },
+    // Antes de un retiro de todo, Ruiz recibía los hábitos (la versión vigente ya no lo nombra).
+    decisiones: { resumenes: historicos, habitos: [{ profesionalId: RUIZ, alcanceDeVinculoId: C_RUIZ }], planesNoPorAhora: [], habitosNoPorAhora: [] },
+  });
+  const items = loQueSePuedeCompartir(e, null);
+  const marca = (k: string) => [de(items, k).ofrecido, de(items, k).preseleccionado];
+  assert.deepEqual(marca(`SUMMARY:${RUIZ}:ANTROPOMETRIA`), [true, false], 'retirado de a uno: sin marcar');
+  assert.deepEqual(marca(`SUMMARY:${GOMEZ}:ENTRENAMIENTO`), [true, false], 'bajado de nivel: subirlo no va marcado');
+  assert.deepEqual(marca(`SUMMARY:${RUIZ}:NUTRICION`), [true, true], 'Paz es nueva en Nutrición: nunca lo decidió');
+  assert.deepEqual(marca(`SUMMARY:${PAZ}:ENTRENAMIENTO`), [true, true], 'nunca decidido: marcado');
+  assert.deepEqual(marca(`HABITS:${RUIZ}`), [true, false], 'los hábitos que se le retiraron antes de un retiro de todo');
+  assert.deepEqual(marca(`HABITS:${GOMEZ}`), [true, true], 'a Gómez nunca se le preguntó');
+  // Lo que ve hoy, aunque se ofrezca más: el nivel dado (lo dice «Quién ve qué»).
+  const bajo = de(items, `SUMMARY:${GOMEZ}:ENTRENAMIENTO`);
+  assert.deepEqual(bajo.tipo === 'SUMMARY' && [bajo.nivel, bajo.nivelDado], ['SUMMARY_AND_PLAN', 'SUMMARY']);
+  const nunca = de(items, `SUMMARY:${PAZ}:ENTRENAMIENTO`);
+  assert.equal(nunca.tipo === 'SUMMARY' && nunca.nivelDado, null);
+
+  // Un «Ahora no» al pedido de un profesional (de ver un plan o los hábitos): lo que pidió no va marcado.
+  const conNo = loQueSePuedeCompartir(estado({ a3: e.a3, decisiones: { ...SIN_DECISIONES_ANTERIORES, planesNoPorAhora: [{ profesionalId: RUIZ, area: 'NUTRICION' }], habitosNoPorAhora: [GOMEZ] } }), null);
+  assert.deepEqual([de(conNo, `SUMMARY:${RUIZ}:NUTRICION`).preseleccionado, de(conNo, `HABITS:${GOMEZ}`).preseleccionado], [false, false]);
+  assert.equal(de(conNo, `SUMMARY:${GOMEZ}:NUTRICION`).preseleccionado, true, 'el «no» es a ese profesional y esa área');
+  // Al aceptar a Paz, lo recíproco que la persona retiró antes tampoco vuelve marcado.
+  const alAceptar = loQueSePuedeCompartir(estado({ a3: e.a3, decisiones: { ...SIN_DECISIONES_ANTERIORES, resumenes: [renglon(RUIZ, C_RUIZ, C_PAZ, 'NUTRICION', 'SUMMARY_AND_PLAN')] } }), C_PAZ);
+  assert.equal(de(alAceptar, `SUMMARY:${RUIZ}:NUTRICION`).preseleccionado, false);
+  assert.equal(de(alAceptar, `SUMMARY:${GOMEZ}:NUTRICION`).preseleccionado, true);
 });

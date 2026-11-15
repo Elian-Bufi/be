@@ -1,7 +1,8 @@
 /**
  * WP-COMPARTIR (DL-176) · lo que la propuesta necesita de la base, en una lectura: los componentes de vínculo de la persona
  * (también los terminados), el A3, el B2 de cada componente y su texto aplicable, las tres autorizaciones (lo de otras
- * áreas, los hábitos y la historia anterior) y los nombres. Sin reglas: las decide `compartir.ts` de @be/domain.
+ * áreas, los hábitos y la historia anterior), lo que la persona ya decidió antes (lo que retiró y los «Ahora no», CMP-D3) y
+ * los nombres. Sin reglas: las decide `compartir.ts` de @be/domain.
  *
  * Lo usan API-CMP-01 (sin cerrojos: es una lectura) y API-CMP-02 (con los cerrojos ya tomados, para comparar la versión que
  * vio la persona con la de ahora y escribir sobre eso mismo).
@@ -13,12 +14,14 @@ import {
   VERSION_VIGENTE,
   VERSIONES_PROPUESTAS,
   ultimaVersion,
+  type DecisionesAnteriores,
   type EstadoParaCompartir,
   type LoQueSeComparte,
   type LoQueSePuedeCompartirResponse,
+  type NivelDeResumen,
   type TextoDeLoQueSeComparte,
 } from '@be/domain';
-import type { Prisma, TipoDePerfilProfesional, VersionDeTexto } from '@prisma/client';
+import type { NivelDeResumenCompartido, Prisma, TipoDePerfilProfesional, VersionDeTexto } from '@prisma/client';
 import { versionDeB2Aplicable } from '../consentimiento/consentimiento-profesional.service';
 import { autorizacionVigente as autorizacionDeHabitosVigente, respuestasDeHabitos, ultimaVersionDeHabitos } from '../formularios/habitos-de-la-persona';
 import { componentesDeLaPersona, nombresDe } from '../historia-anterior/autorizaciones';
@@ -48,7 +51,7 @@ export async function leerLoQueSeComparte(tx: Tx, personaId: string): Promise<Lo
   const componentes = await componentesDeLaPersona(tx, personaId);
   const ids = componentes.map((c) => c.id);
   const profesionales = [...new Set(componentes.map((c) => c.profesionalId))];
-  const [a3Vigente, a3Alguno, consentimientos, resumenes, habitos, ultimosHabitos, historia, perfiles, nombres] = await Promise.all([
+  const [a3Vigente, a3Alguno, consentimientos, resumenes, habitos, ultimosHabitos, historia, perfiles, nombres, decisiones] = await Promise.all([
     tx.actoRegistrable.findFirst({ where: { identidadId: personaId, tipo: 'DATOS_SALUD_BE', estado: 'VIGENTE' }, select: { momentoDeOcurrencia: true } }),
     tx.actoRegistrable.findFirst({ where: { identidadId: personaId, tipo: 'DATOS_SALUD_BE' }, select: { id: true } }),
     tx.consentimiento.findMany({ where: { alcanceDeVinculoId: { in: ids } }, include: { versiones: true } }),
@@ -58,6 +61,7 @@ export async function leerLoQueSeComparte(tx: Tx, personaId: string): Promise<Lo
     tx.autorizacionDeHistoriaAnterior.findMany({ where: { asesoradoId: personaId, alcanceDeVinculoId: { in: ids } }, orderBy: { version: 'asc' } }),
     tx.perfilProfesional.findMany({ where: { identidadId: { in: profesionales } }, select: { identidadId: true, tipo: true } }),
     nombresDe(tx, profesionales),
+    decisionesAnteriores(tx, personaId),
   ]);
   const tipoDe = new Map(perfiles.map((p) => [p.identidadId, p.tipo] as const));
 
@@ -104,8 +108,40 @@ export async function leerLoQueSeComparte(tx: Tx, personaId: string): Promise<Lo
     },
     historia: ultimasDeLaHistoria,
     textos: TEXTOS_PARA_COMPARTIR,
+    decisiones,
   };
   return { estado, nombres, perfiles: tipoDe, textosDeB2: new Map([...porTipo.values()].map((v) => [v.id, v] as const)) };
+}
+
+const NIVEL_API: Readonly<Record<NivelDeResumenCompartido, NivelDeResumen>> = { RESUMEN: 'SUMMARY', RESUMEN_Y_PLAN: 'SUMMARY_AND_PLAN' };
+
+/**
+ * Lo que la persona ya decidió antes (CMP-D3): cada renglón que tuvo alguna versión de lo de otras áreas y de los hábitos (la
+ * vigente sola no dice qué retiró si quedan otras cosas compartidas, ni qué había antes de un retiro de todo) y el último
+ * pedido de cada profesional, si quedó en «Ahora no». Solo para lo que va marcado: no cambia la versión ni lo que se escribe.
+ */
+async function decisionesAnteriores(tx: Tx, personaId: string): Promise<DecisionesAnteriores> {
+  const [resumenes, habitos, pedidosDePlan, pedidosDeHabitos] = await Promise.all([
+    tx.destinatarioDeResumenes.findMany({
+      where: { autorizacion: { asesoradoId: personaId } },
+      select: { profesionalId: true, alcanceDeVinculoId: true, origenId: true, area: true, nivel: true },
+      distinct: ['profesionalId', 'alcanceDeVinculoId', 'origenId', 'area', 'nivel'],
+    }),
+    tx.destinatarioDeHabitos.findMany({ where: { autorizacion: { asesoradoId: personaId } }, select: { profesionalId: true, alcanceDeVinculoId: true }, distinct: ['profesionalId', 'alcanceDeVinculoId'] }),
+    tx.pedidoDeAccesoAPlan.findMany({ where: { asesoradoId: personaId }, select: { profesionalId: true, area: true, estado: true }, orderBy: [{ pedidoEn: 'desc' }, { momentoDeRegistro: 'desc' }] }),
+    tx.pedidoDeAccesoAHabitos.findMany({ where: { asesoradoId: personaId }, select: { profesionalId: true, estado: true }, orderBy: [{ pedidoEn: 'desc' }, { momentoDeRegistro: 'desc' }] }),
+  ]);
+  // El último pedido de cada profesional (y área): el primero en el orden, del más nuevo al más viejo.
+  const ultimoDePlan = new Map<string, (typeof pedidosDePlan)[number]>();
+  for (const p of pedidosDePlan) if (!ultimoDePlan.has(`${p.profesionalId}|${p.area}`)) ultimoDePlan.set(`${p.profesionalId}|${p.area}`, p);
+  const ultimoDeHabitos = new Map<string, (typeof pedidosDeHabitos)[number]>();
+  for (const p of pedidosDeHabitos) if (!ultimoDeHabitos.has(p.profesionalId)) ultimoDeHabitos.set(p.profesionalId, p);
+  return {
+    resumenes: resumenes.map((r) => ({ profesionalId: r.profesionalId, alcanceDeVinculoId: r.alcanceDeVinculoId, origenId: r.origenId, area: r.area, nivel: NIVEL_API[r.nivel] })),
+    habitos,
+    planesNoPorAhora: [...ultimoDePlan.values()].filter((p) => p.estado === 'NO_POR_AHORA').map((p) => ({ profesionalId: p.profesionalId, area: p.area })),
+    habitosNoPorAhora: [...ultimoDeHabitos.values()].filter((p) => p.estado === 'NO_POR_AHORA').map((p) => p.profesionalId),
+  };
 }
 
 const aprobacion = (id: string, propuesta: boolean): 'PENDING_APPROVAL' | 'APPROVED' => (propuesta || VERSIONES_PROPUESTAS.has(id) ? 'PENDING_APPROVAL' : 'APPROVED');
@@ -158,7 +194,7 @@ export function itemsApi(items: readonly LoQueSeComparte[], l: Pick<LoLeido, 'no
           profileNotice: COPY_VINCULO.avisoDePerfil[l.perfiles.get(i.profesionalId) ?? 'NO_SANITARIO'],
         };
       case 'SUMMARY':
-        return { kind: 'SUMMARY' as const, ...base, recipient: actor(i.profesionalId), area: i.area, level: i.nivel, from: i.deQuienes.map(actor) };
+        return { kind: 'SUMMARY' as const, ...base, recipient: actor(i.profesionalId), area: i.area, level: i.nivel, givenLevel: i.nivelDado, from: i.deQuienes.map(actor) };
       case 'PREVIOUS_HISTORY':
         return { kind: 'PREVIOUS_HISTORY' as const, ...base, relationshipId: i.componenteId, professional: actor(i.profesionalId), area: i.area };
       case 'HABITS':

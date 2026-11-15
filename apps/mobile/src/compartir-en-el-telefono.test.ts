@@ -16,6 +16,7 @@ import {
   claveDeLaTarjeta,
   coherentes,
   crearMarcaDeLaTarjeta,
+  etiquetaConDetalle,
   etiquetaDelInterruptor,
   interruptoresDe,
   laTarjetaTieneAlgo,
@@ -48,8 +49,8 @@ function propuesta(cambios: Partial<Record<string, Partial<Cosa>>> = {}): Propue
   const items: Cosa[] = [
     { kind: 'HEALTH_DATA', key: 'HEALTH_DATA', ...base, textId: 'a3' },
     { kind: 'AREA_CONSENT', key: `AREA_CONSENT:${VINCULO}`, ...base, textId: 'b2', relationshipId: VINCULO, professional: PAZ, scope: { code: 'NUTRICION', label: 'Nutrición' }, profileNotice: 'Es un profesional de la salud.' },
-    { kind: 'SUMMARY', key: `SUMMARY:${PAZ.identityId}:ENTRENAMIENTO`, ...base, textId: 'resp', recipient: PAZ, area: 'ENTRENAMIENTO', level: 'SUMMARY_AND_PLAN', from: [RUIZ] },
-    { kind: 'SUMMARY', key: `SUMMARY:${RUIZ.identityId}:NUTRICION`, ...base, textId: 'resp', recipient: RUIZ, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN', from: [PAZ] },
+    { kind: 'SUMMARY', key: `SUMMARY:${PAZ.identityId}:ENTRENAMIENTO`, ...base, textId: 'resp', recipient: PAZ, area: 'ENTRENAMIENTO', level: 'SUMMARY_AND_PLAN', givenLevel: null, from: [RUIZ] },
+    { kind: 'SUMMARY', key: `SUMMARY:${RUIZ.identityId}:NUTRICION`, ...base, textId: 'resp', recipient: RUIZ, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN', givenLevel: null, from: [PAZ] },
     { kind: 'PREVIOUS_HISTORY', key: `PREVIOUS_HISTORY:${VINCULO}`, ...base, textId: 'hia', relationshipId: VINCULO, professional: PAZ, area: 'NUTRICION' },
     { kind: 'HABITS', key: `HABITS:${PAZ.identityId}`, ...base, textId: 'hbt', recipient: PAZ },
   ].map((i) => ({ ...i, ...(cambios[i.key] ?? {}) }) as Cosa);
@@ -137,6 +138,10 @@ describe('TEST-CMP-045 · la tarjeta única: con algo para compartir, una sola v
     // Solo el A3 o el B2 pendientes: eso lo recuerda Inicio con su aviso, no la tarjeta.
     const soloElB2 = propuesta(Object.fromEntries(p.items.filter((i) => i.kind !== 'AREA_CONSENT').map((i) => [i.key, { offered: false, preselected: false, given: true }])));
     expect(laTarjetaTieneAlgo(soloElB2)).toBe(false);
+    // Revisión del PR: sin el A3 (revocado, que no vuelve marcado), lo que lo pide no queda marcado al entrar, y la tarjeta
+    // no promete «Compartir todo» para abrir una pantalla sin nada marcado. Mutación: contar lo preseleccionado sin la
+    // coherencia con el A3 la pone en rojo.
+    expect(laTarjetaTieneAlgo(propuesta({ HEALTH_DATA: { preselected: false } }))).toBe(false);
     const guardado = new Map<string, string>();
     const marca = crearMarcaDeLaTarjeta({ getItem: async (k) => guardado.get(k) ?? null, setItem: async (k, v) => void guardado.set(k, v) });
     expect(await marca.leer('cuenta-1')).toBe(false);
@@ -154,7 +159,7 @@ describe('TEST-CMP-045 · la tarjeta única: con algo para compartir, una sola v
 
 describe('TEST-CMP-046 · «Quién ve qué»: un interruptor por cosa, con el estado en la etiqueta; los pedidos con lo que los da', () => {
   test('interruptoresDe', () => {
-    const p = propuesta({ HEALTH_DATA: { given: true, offered: false, preselected: false }, [`SUMMARY:${PAZ.identityId}:ENTRENAMIENTO`]: { given: true, since: '2026-11-03T15:00:00.000Z', offered: false } });
+    const p = propuesta({ HEALTH_DATA: { given: true, offered: false, preselected: false }, [`SUMMARY:${PAZ.identityId}:ENTRENAMIENTO`]: { given: true, since: '2026-11-03T15:00:00.000Z', offered: false, givenLevel: 'SUMMARY_AND_PLAN' } });
     const deP = interruptoresDe(p, PAZ.identityId, dia);
     expect(deP.map((i) => [i.rotulo, i.estado, i.prendido, i.habilitado])).toEqual([
       ['El resumen y el plan de Entrenamiento', 'Lo ve desde el 3/11/2026', true, true],
@@ -167,6 +172,13 @@ describe('TEST-CMP-046 · «Quién ve qué»: un interruptor por cosa, con el es
       [false, C.pideElA3],
       [false, C.pideElA3],
     ]);
+    // Revisión del PR: prendido, dice lo que ve hoy. Si ve solo el resumen (aunque se le pueda dar el plan), el interruptor
+    // no dice «el resumen y el plan». Mutación: rotular con el nivel que se ofrece la pone en rojo.
+    const soloElResumen = propuesta({ HEALTH_DATA: { given: true, offered: false, preselected: false }, [`SUMMARY:${PAZ.identityId}:ENTRENAMIENTO`]: { given: true, since: '2026-11-03T15:00:00.000Z', offered: true, givenLevel: 'SUMMARY' } });
+    expect(interruptoresDe(soloElResumen, PAZ.identityId, dia)[0]?.rotulo).toBe('El resumen de Entrenamiento');
+    // TalkBack lee por qué no se puede prender (la etiqueta lleva el detalle), sin repetir lo que ya dice.
+    expect(etiquetaConDetalle('El resumen y el plan de Entrenamiento, para Lic. Sofía Paz. No lo ve.', C.pideElA3)).toBe(`El resumen y el plan de Entrenamiento, para Lic. Sofía Paz. No lo ve. ${C.pideElA3}`);
+    expect(etiquetaConDetalle('Tus hábitos, para Lic. Sofía Paz. No lo ve.', 'No lo ve')).toBe('Tus hábitos, para Lic. Sofía Paz. No lo ve.');
   });
   test('pedidosParaResponder', () => {
     const p = propuesta({ HEALTH_DATA: { given: true, offered: false, preselected: false } });
@@ -177,8 +189,12 @@ describe('TEST-CMP-046 · «Quién ve qué»: un interruptor por cosa, con el es
       ['PLAN', 'Prof. Martín Ruiz te pidió ver el resumen y el plan de Nutrición, para acompañarte en Entrenamiento.', `SUMMARY:${RUIZ.identityId}:NUTRICION`],
       ['HABITOS', 'Lic. Sofía Paz te pidió ver tus hábitos, para acompañarte en Nutrición.', `HABITS:${PAZ.identityId}`],
     ]);
-    // Sin el A3, «Sí, compartir» no se puede dar desde acá.
-    expect(pedidosParaResponder(propuesta(), deUnPlan, []).map((x) => x.cosa)).toEqual([null]);
+    expect(pedidos.map((x) => x.porQueNo)).toEqual([null, null]);
+    // Sin el A3, «Sí, compartir» no se puede dar desde acá, y se dice por qué.
+    expect(pedidosParaResponder(propuesta(), deUnPlan, []).map((x) => [x.cosa, x.porQueNo])).toEqual([[null, C.pideElA3]]);
+    // Revisión del PR: si la lectura de lo que se comparte falló, no se culpa al A3. Mutación: decir siempre «hace falta tu
+    // consentimiento» cuando no hay cosa la pone en rojo.
+    expect(pedidosParaResponder(null, deUnPlan, []).map((x) => [x.cosa, x.porQueNo])).toEqual([[null, null]]);
   });
 });
 

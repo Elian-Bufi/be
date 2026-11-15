@@ -21,6 +21,7 @@ import { api } from './api';
 import {
   alternar,
   crearMarcaDeLaTarjeta,
+  etiquetaConDetalle,
   etiquetaDelInterruptor,
   hayPropuestas,
   interruptoresDe,
@@ -49,12 +50,15 @@ import { Aviso, Boton, COLOR, Desplegable, estilosPorTema, Parrafo, Superficie }
 /** La marca de la tarjeta única, una vez por cuenta en este teléfono. */
 export const marcaDeLaTarjeta = crearMarcaDeLaTarjeta(AsyncStorage);
 
-/** Una fila con interruptor: rol de interruptor, el estado en la etiqueta, y el `Switch` de adentro sin recorrer. */
+/**
+ * Una fila con interruptor: rol de interruptor, el estado en la etiqueta, y el `Switch` de adentro sin recorrer. El detalle
+ * (por qué no se puede prender, por ejemplo) también va en la etiqueta: TalkBack no lee el texto de adentro por separado.
+ */
 function FilaConInterruptor({ rotulo, detalle, prendido, deshabilitado, ocupado, etiqueta, sugerencia, onPress }: { rotulo: string; detalle?: string | null; prendido: boolean; deshabilitado: boolean; ocupado?: boolean; etiqueta: string; sugerencia: string; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="switch"
-      accessibilityLabel={etiqueta}
+      accessibilityLabel={etiquetaConDetalle(etiqueta, detalle)}
       accessibilityHint={sugerencia}
       accessibilityState={{ checked: prendido, disabled: deshabilitado, busy: ocupado === true }}
       disabled={deshabilitado}
@@ -375,7 +379,8 @@ export function PedidosParaResponder({ token, propuesta, deUnPlan, deHabitos, ac
       {pedidos.map((p) => (
         <View key={p.id} style={estilos.bloque}>
           <Text style={estilos.texto}>{p.texto}</Text>
-          {p.cosa ? <TextosCompletos textos={propuesta?.texts.filter((t) => t.id === p.cosa?.textId) ?? []} /> : <Parrafo tenue>{C.pideElA3}</Parrafo>}
+          {p.cosa ? <TextosCompletos textos={propuesta?.texts.filter((t) => t.id === p.cosa?.textId) ?? []} /> : null}
+          {p.porQueNo ? <Parrafo tenue>{p.porQueNo}</Parrafo> : null}
           {/* Las dos respuestas, del mismo peso: ninguna es la «correcta». */}
           <Boton texto={enCurso === p.id ? C.compartiendo : C.pedidos.si} tipo="secundario" ocupado={enCurso === p.id} deshabilitado={enCurso !== null || !p.cosa} onPress={() => void responder(p, true)} />
           <Boton texto={C.pedidos.ahoraNo} tipo="secundario" deshabilitado={enCurso !== null} onPress={() => void responder(p, false)} />

@@ -11,6 +11,8 @@
  * - TEST-CMP-023: los hábitos, «si corresponde»: se dan al que se elige, no al que no se nombró; retirarlos corta.
  * - TEST-CMP-024: lo ajeno responde igual que lo inexistente; sin el A3, 403; si algo cambió, 409; el texto viejo, 409.
  * - TEST-CMP-025: compartir el plan de un área con quien lo pidió acepta su pedido (TB-56).
+ * - TEST-CMP-026 (de la revisión): lo retirado de a una cosa, con otras todavía compartidas, y un «Ahora no» a un pedido
+ *   no vuelven marcados; lo nunca decidido, sí; y cada cosa dice en qué nivel la ve hoy.
  */
 import type { INestApplication } from '@nestjs/common';
 import { LoElegidoCompartidoResponseSchema, LoQueSePuedeCompartirResponseSchema, TEXTO_DE_LA_HISTORIA_ANTERIOR, UnaCosaRetiradaResponseSchema, VERSION_VIGENTE } from '@be/domain';
@@ -251,6 +253,42 @@ describe('WP-COMPARTIR · la pantalla única de consentimiento (DL-176)', () => 
     const nueva = await propuestaDe(e.ase, e.vinculoDePaz);
     expect(nueva.items.find((i) => i.key === 'HEALTH_DATA')?.offered).toBe(false);
     await cmp(e.ase.token).elegir(elegir(nueva)).expect(200);
+  });
+
+  it('TEST-CMP-026 · lo retirado de a una cosa (con otras compartidas) y un «Ahora no» a un pedido no vuelven marcados (CMP-D3)', async () => {
+    // Revisión del PR: con la autorización todavía ACTIVA (quedan otras cosas compartidas), lo retirado desde «Quién ve qué»
+    // volvía marcado en «Compartir todo» y al aceptar a otro profesional. Mutación: decidir lo marcado solo con la versión
+    // vigente la pone en rojo.
+    const e = await escenario('026');
+    await cmp(e.ase.token).elegir(elegir(await propuestaDe(e.ase, e.vinculoDePaz))).expect(200);
+    const ruizNutricion = `SUMMARY:${e.ruiz.id}:NUTRICION`;
+    await cmp(e.ase.token).retirar(ruizNutricion).expect(200);
+    const ultima = await prisma.autorizacionDeResumenes.findFirstOrThrow({ where: { asesoradoId: e.ase.id }, orderBy: { version: 'desc' } });
+    expect(ultima.estado).toBe('ACTIVA');
+    const antes = await propuestaDe(e.ase);
+    const retirado = antes.items.find((i) => i.key === ruizNutricion)!;
+    expect([retirado.given, retirado.offered, retirado.preselected]).toEqual([false, true, false]);
+    // Lo nunca decidido sigue marcado (Ruiz ← Antropometría no tocaba a Paz), y lo que ve hoy dice su nivel.
+    const nunca = antes.items.find((i) => i.key === `SUMMARY:${e.ruiz.id}:ANTROPOMETRIA`)!;
+    expect([nunca.offered, nunca.preselected, nunca.kind === 'SUMMARY' && nunca.givenLevel]).toEqual([true, true, null]);
+    const visto = antes.items.find((i) => i.key === `SUMMARY:${e.paz.id}:ENTRENAMIENTO`)!;
+    expect(visto.kind === 'SUMMARY' && [visto.given, visto.givenLevel]).toEqual([true, 'SUMMARY_AND_PLAN']);
+
+    // Gómez (Antropometría) pide ver el plan de Entrenamiento: marcado mientras espera; con «Ahora no», ya no.
+    const gomezEntrenamiento = `SUMMARY:${e.gomez.id}:ENTRENAMIENTO`;
+    expect(antes.items.find((i) => i.key === gomezEntrenamiento)?.preselected).toBe(true);
+    await conSesion(app, e.gomez.token).post(`/api/v1/advisees/${e.ase.id}/shared-summaries/access-requests`).send({ scope: 'ANTROPOMETRIA', area: 'ENTRENAMIENTO' }).expect(201);
+    const [pedido] = (await conSesion(app, e.ase.token).get('/api/v1/me/summary-sharing/access-requests').expect(200)).body.data as { accessRequestId: string; version: string }[];
+    await conSesion(app, e.ase.token)
+      .post(`/api/v1/me/summary-sharing/access-requests/${pedido!.accessRequestId}/answer`)
+      .send({ expectedVersion: pedido!.version, answer: 'NOT_NOW', sharing: null })
+      .expect(200);
+    const despues = await propuestaDe(e.ase);
+    expect(despues.items.find((i) => i.key === gomezEntrenamiento)?.preselected).toBe(false);
+    expect(despues.items.find((i) => i.key === ruizNutricion)?.preselected).toBe(false);
+    // Elegirlo a mano sigue pudiéndose: sin marcar no es prohibido.
+    await cmp(e.ase.token).elegir(elegir(despues, [ruizNutricion])).expect(200);
+    expect((await recibe(e.ruiz, e.ase)).NUTRICION).toBe('SUMMARY_AND_PLAN');
   });
 
   it('TEST-CMP-025 · compartir el plan de un área con quien lo pidió acepta su pedido', async () => {

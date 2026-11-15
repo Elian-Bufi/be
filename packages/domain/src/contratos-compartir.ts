@@ -45,8 +45,11 @@ export const LoQueSeComparteSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('HEALTH_DATA'), ...Base }),
   /** La autorización de acceso a un área (B2), con el aviso del perfil del profesional (08 §12.3). */
   z.strictObject({ kind: z.literal('AREA_CONSENT'), ...Base, relationshipId: IdOpaco, professional: ResumenDeActorSchema, scope: ResumenDeAlcanceSchema, profileNotice: z.string() }),
-  /** Lo de un área (`area`) para un profesional (`recipient`), en un nivel; `from`, quién lleva hoy esa área. */
-  z.strictObject({ kind: z.literal('SUMMARY'), ...Base, recipient: ResumenDeActorSchema, area: AlcanceSchema, level: NivelDeResumenSchema, from: z.array(ResumenDeActorSchema).min(1) }),
+  /**
+   * Lo de un área (`area`) para un profesional (`recipient`): `level`, el nivel que se da al elegirla; `givenLevel`, en el
+   * que hoy lo ve (`null` si no lo ve), que puede ser menos (lo dice «Quién ve qué»); `from`, quién lleva hoy esa área.
+   */
+  z.strictObject({ kind: z.literal('SUMMARY'), ...Base, recipient: ResumenDeActorSchema, area: AlcanceSchema, level: NivelDeResumenSchema, givenLevel: NivelDeResumenSchema.nullable(), from: z.array(ResumenDeActorSchema).min(1) }),
   /** La historia anterior de un área, para el profesional de ese componente. */
   z.strictObject({ kind: z.literal('PREVIOUS_HISTORY'), ...Base, relationshipId: IdOpaco, professional: ResumenDeActorSchema, area: AlcanceSchema }),
   /** Los hábitos, para un profesional. */

@@ -151,8 +151,14 @@ export function rechazoDelToque(r: Resultado<unknown>): RechazoDelToque {
 /** Lo que muestra la tarjeta: lo de otras áreas, la historia anterior o los hábitos (el A3 y el B2 ya los recuerda Inicio). */
 const DE_LA_TARJETA: ReadonlySet<Cosa['kind']> = new Set(['SUMMARY', 'PREVIOUS_HISTORY', 'HABITS']);
 
-/** Si la tarjeta tiene algo para ofrecer: alguna de esas cosas, ofrecida y marcada. */
-export const laTarjetaTieneAlgo = (p: Propuesta): boolean => p.items.some((i) => DE_LA_TARJETA.has(i.kind) && i.offered && i.preselected);
+/**
+ * Si la tarjeta tiene algo para ofrecer: alguna de esas cosas, marcada al entrar a la pantalla (coherente: sin el A3 dado ni
+ * marcado, lo que lo pide no queda marcado, y la tarjeta no promete «Compartir todo» para abrir una pantalla sin nada).
+ */
+export const laTarjetaTieneAlgo = (p: Propuesta): boolean => {
+  const marcadas = marcadasAlEntrar(p.items);
+  return p.items.some((i) => DE_LA_TARJETA.has(i.kind) && marcadas.has(i.key));
+};
 
 export const claveDeLaTarjeta = (cuenta: string): string => `be:compartir-todo-vista:${cuenta}`;
 
@@ -227,8 +233,10 @@ export function interruptoresDe(p: Propuesta, profesionalId: string, dia: (iso: 
   return p.items.flatMap((cosa): Interruptor[] => {
     if (cosa.kind !== 'SUMMARY' && cosa.kind !== 'HABITS') return [];
     if (cosa.recipient.identityId !== profesionalId) return [];
-    const rotulo = cosa.kind === 'SUMMARY' ? C.interruptorDeResumen(cosa.area, cosa.level === 'SUMMARY_AND_PLAN') : C.interruptorDeHabitos;
     const prendido = cosa.given;
+    // Prendido, lo que ve hoy (puede ser solo el resumen, aunque se le pueda dar el plan); apagado, lo que se le daría.
+    const nivel = cosa.kind === 'SUMMARY' ? (prendido && cosa.givenLevel ? cosa.givenLevel : cosa.level) : null;
+    const rotulo = cosa.kind === 'SUMMARY' ? C.interruptorDeResumen(cosa.area, nivel === 'SUMMARY_AND_PLAN') : C.interruptorDeHabitos;
     const puede = prendido || sePuedeMarcar(p.items, sinMarcar, cosa.key);
     return [{ cosa, rotulo, estado: prendido && cosa.since ? C.loVe(dia(cosa.since)) : C.noLoVe, prendido, habilitado: puede, porQueNo: puede ? null : C.pideElA3 }];
   });
@@ -238,6 +246,9 @@ export function interruptoresDe(p: Propuesta, profesionalId: string, dia: (iso: 
 export const etiquetaDelInterruptor = (i: Interruptor, nombre: string): string => `${i.rotulo}, para ${nombre}. ${i.estado}.`;
 export const sugerenciaDelInterruptor = (i: Interruptor): string => C.sugerenciaDelInterruptor(i.prendido);
 
+/** La etiqueta de una fila con interruptor, con su detalle (por qué no se puede prender) si todavía no lo dice. */
+export const etiquetaConDetalle = (etiqueta: string, detalle?: string | null): string => (detalle && !etiqueta.includes(detalle) ? `${etiqueta} ${detalle}` : etiqueta);
+
 /** Un pedido para responder: de ver un plan (API-RES-09) o los hábitos (API-HBT-08), con la cosa que lo da. */
 export interface PedidoParaResponder {
   readonly id: string;
@@ -246,6 +257,8 @@ export interface PedidoParaResponder {
   readonly texto: string;
   /** La cosa de la propuesta que lo da («Sí, compartir»); `null` si hoy no se puede dar desde acá (sin el A3, por ejemplo). */
   readonly cosa: Cosa | null;
+  /** Por qué no se puede dar desde acá, si es por el A3 (lo único que la persona puede resolver); si no, `null`. */
+  readonly porQueNo: string | null;
 }
 
 export function pedidosParaResponder(p: Propuesta | null, deUnPlan: readonly PedidoDePlanParaLaPersona[], deHabitos: readonly PedidoDeAccesoParaLaPersona[]): PedidoParaResponder[] {
@@ -253,8 +266,14 @@ export function pedidosParaResponder(p: Propuesta | null, deUnPlan: readonly Ped
     const cosa = p?.items.find((i) => i.key === key) ?? null;
     return cosa && p && sePuedeMarcar(p.items, new Set(), key) ? cosa : null;
   };
+  // «Hace falta tu consentimiento de datos de salud» solo si es por eso: se ofrece y falta el A3 (no si la lectura falló).
+  const porQueNo = (key: string): string | null => {
+    const cosa = p?.items.find((i) => i.key === key);
+    return p && cosa?.offered && !hayA3(p.items, new Set()) ? C.pideElA3 : null;
+  };
+  const conLaCosa = (key: string) => ({ cosa: cosaDe(key), porQueNo: porQueNo(key) });
   return [
-    ...deUnPlan.map((x) => ({ id: x.accessRequestId, tipo: 'PLAN' as const, version: x.version, texto: C.pedidos.deUnPlan(x.professional.displayName, x.area, x.scope.code), cosa: cosaDe(`SUMMARY:${x.professional.identityId}:${x.area}`) })),
-    ...deHabitos.map((x) => ({ id: x.accessRequestId, tipo: 'HABITOS' as const, version: x.version, texto: C.pedidos.deHabitos(x.professional.displayName, x.scope.code), cosa: cosaDe(`HABITS:${x.professional.identityId}`) })),
+    ...deUnPlan.map((x) => ({ id: x.accessRequestId, tipo: 'PLAN' as const, version: x.version, texto: C.pedidos.deUnPlan(x.professional.displayName, x.area, x.scope.code), ...conLaCosa(`SUMMARY:${x.professional.identityId}:${x.area}`) })),
+    ...deHabitos.map((x) => ({ id: x.accessRequestId, tipo: 'HABITOS' as const, version: x.version, texto: C.pedidos.deHabitos(x.professional.displayName, x.scope.code), ...conLaCosa(`HABITS:${x.professional.identityId}`) })),
   ];
 }

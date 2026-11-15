@@ -52,6 +52,25 @@ export interface TextosParaCompartir {
   readonly habitos: string;
 }
 
+/**
+ * Lo que la persona ya decidió antes (CMP-D3, revisión del PR de WP-COMPARTIR): lo que alguna vez compartió de otras áreas
+ * o de sus hábitos, y los pedidos a los que dijo «Ahora no». Con esto, lo que retiró (también una sola cosa, desde «Quién
+ * ve qué», con otras que siguen compartidas) o lo que bajó de nivel no vuelve marcado: la versión vigente sola no lo dice.
+ */
+export interface DecisionesAnteriores {
+  /** Cada renglón de lo de otras áreas que estuvo en alguna versión de la autorización (quién recibe, de qué origen y nivel). */
+  readonly resumenes: readonly Pick<RenglonDeResumen, 'profesionalId' | 'alcanceDeVinculoId' | 'origenId' | 'area' | 'nivel'>[];
+  /** Cada (profesional, componente) que alguna versión de la autorización de los hábitos nombró, los recibiera o no. */
+  readonly habitos: readonly { readonly profesionalId: string; readonly alcanceDeVinculoId: string }[];
+  /** Por profesional y área, los pedidos de ver un plan cuyo último quedó en «Ahora no». */
+  readonly planesNoPorAhora: readonly { readonly profesionalId: string; readonly area: Alcance }[];
+  /** Los profesionales cuyo último pedido de ver los hábitos quedó en «Ahora no». */
+  readonly habitosNoPorAhora: readonly string[];
+}
+
+/** Sin nada decidido antes: lo de una persona que nunca compartió nada ni respondió un pedido. */
+export const SIN_DECISIONES_ANTERIORES: DecisionesAnteriores = { resumenes: [], habitos: [], planesNoPorAhora: [], habitosNoPorAhora: [] };
+
 /** Lo que la persona tiene hoy, leído de la base: lo único que necesita la propuesta. */
 export interface EstadoParaCompartir {
   readonly componentes: readonly ComponenteParaCompartir[];
@@ -67,6 +86,8 @@ export interface EstadoParaCompartir {
   /** La última versión de la autorización de la historia anterior de cada componente que la tiene. */
   readonly historia: ReadonlyMap<string, { readonly estado: 'VIGENTE' | 'RETIRADA'; readonly version: number; readonly desde: string }>;
   readonly textos: TextosParaCompartir;
+  /** Lo que ya decidió antes: lo retirado o lo que dijo que no no vuelve marcado (CMP-D3). */
+  readonly decisiones: DecisionesAnteriores;
 }
 
 interface Base {
@@ -87,7 +108,16 @@ interface Base {
 export type LoQueSeComparte =
   | (Base & { readonly tipo: 'HEALTH_DATA' })
   | (Base & { readonly tipo: 'AREA_CONSENT'; readonly componenteId: string; readonly profesionalId: string; readonly area: Alcance })
-  | (Base & { readonly tipo: 'SUMMARY'; readonly profesionalId: string; readonly area: Alcance; readonly nivel: NivelDeResumen; readonly deQuienes: readonly string[] })
+  | (Base & {
+      readonly tipo: 'SUMMARY';
+      readonly profesionalId: string;
+      readonly area: Alcance;
+      /** El nivel que se ofrece (el que se da al elegirla). */
+      readonly nivel: NivelDeResumen;
+      /** El nivel en que hoy lo ve (el más alto de sus renglones), o `null` si no lo ve: puede ser menos que el que se ofrece. */
+      readonly nivelDado: NivelDeResumen | null;
+      readonly deQuienes: readonly string[];
+    })
   | (Base & { readonly tipo: 'PREVIOUS_HISTORY'; readonly componenteId: string; readonly profesionalId: string; readonly area: Alcance })
   | (Base & { readonly tipo: 'HABITS'; readonly profesionalId: string });
 
@@ -149,6 +179,36 @@ function renglonesVivos(e: EstadoParaCompartir): RenglonDeResumen[] {
   return e.resumenes.renglones.filter((r) => ids.has(r.alcanceDeVinculoId) && ids.has(r.origenId));
 }
 
+const ORDEN_DE_NIVEL: Readonly<Record<NivelDeResumen, number>> = { SUMMARY: 1, SUMMARY_AND_PLAN: 2 };
+
+/**
+ * Si la persona ya decidió no compartir lo de un área con un profesional (CMP-D3): alguna vez lo compartió (un renglón con
+ * los dos componentes sin terminar todavía) y hoy no lo comparte en ese nivel o más, porque lo retiró o lo bajó; o el último
+ * pedido de ese profesional para ver ese plan quedó en «Ahora no». Un renglón que se fue porque su componente terminó no
+ * cuenta: la persona no decidió nada (el profesional nuevo del área se ofrece marcado).
+ */
+function decidioNoCompartirLoDeUnArea(e: EstadoParaCompartir, receptor: string, area: Alcance, vivosIds: ReadonlySet<string>, existentes: readonly RenglonDeResumen[], nivelDado: NivelDeResumen | null): boolean {
+  const retiro = e.decisiones.resumenes.some(
+    (h) =>
+      h.profesionalId === receptor &&
+      h.area === area &&
+      vivosIds.has(h.alcanceDeVinculoId) &&
+      vivosIds.has(h.origenId) &&
+      !existentes.some((x) => x.alcanceDeVinculoId === h.alcanceDeVinculoId && x.origenId === h.origenId && ORDEN_DE_NIVEL[x.nivel] >= ORDEN_DE_NIVEL[h.nivel]),
+  );
+  // El «Ahora no» a un pedido de ver el plan vale mientras no lo comparta con plan (si después lo compartió, ya decidió otra cosa).
+  return retiro || (nivelDado !== 'SUMMARY_AND_PLAN' && e.decisiones.planesNoPorAhora.some((p) => p.profesionalId === receptor && p.area === area));
+}
+
+/**
+ * Si la persona ya decidió sobre sus hábitos con un profesional (CMP-D3): alguna versión de la autorización lo nombró con un
+ * componente que sigue sin terminar (los recibía y se los retiró, o le dijo que no), o el último pedido de ese profesional
+ * quedó en «Ahora no».
+ */
+function decidioSobreLosHabitos(e: EstadoParaCompartir, profesionalId: string, vivosIds: ReadonlySet<string>): boolean {
+  return e.decisiones.habitos.some((h) => h.profesionalId === profesionalId && vivosIds.has(h.alcanceDeVinculoId)) || e.decisiones.habitosNoPorAhora.includes(profesionalId);
+}
+
 /**
  * Los pares (quién recibe, de qué área) que se pueden compartir. Con un componente al aceptar, solo los que lo tocan: lo de
  * las otras áreas para ese profesional y, recíprocamente, lo de su área para los otros profesionales de la persona (CMP-D2).
@@ -189,6 +249,7 @@ export function loQueSePuedeCompartir(e: EstadoParaCompartir, alAceptar: string 
 
   // Lo de otras áreas (RES), por par: dado si ya recibe algo; se ofrece si falta algún renglón en el nivel que se ofrece.
   const existentes = renglonesVivos(e);
+  const vivosIds = new Set(comps.map((c) => c.id));
   for (const { receptor, area } of paresDeResumen(comps, este)) {
     const propios = comps.filter((c) => c.profesionalId === receptor);
     const origenes = comps.filter((c) => c.profesionalId !== receptor && c.alcance === area);
@@ -197,17 +258,20 @@ export function loQueSePuedeCompartir(e: EstadoParaCompartir, alAceptar: string 
     const delPar = existentes.filter((r) => r.profesionalId === receptor && r.area === area);
     const completo = propios.every((r) => origenes.every((o) => delPar.some((x) => x.alcanceDeVinculoId === r.id && x.origenId === o.id && x.nivel === nivel)));
     const dado = delPar.length > 0;
+    const nivelDado: NivelDeResumen | null = !dado ? null : delPar.some((r) => r.nivel === 'SUMMARY_AND_PLAN') ? 'SUMMARY_AND_PLAN' : 'SUMMARY';
     items.push({
       tipo: 'SUMMARY',
       clave: claveDe.resumen(receptor, area),
       profesionalId: receptor,
       area,
       nivel,
+      nivelDado,
       deQuienes: unicos(origenes.map((o) => o.profesionalId)).sort(),
       dado,
       desde: dado ? primero(delPar.map((r) => r.desde)) : null,
       ofrecido: !completo,
-      preseleccionado: !completo && e.resumenes.estado !== 'RETIRADA',
+      // Lo retirado (todo, o solo este par), lo bajado de nivel o un «Ahora no» a su pedido no vuelve marcado (CMP-D3).
+      preseleccionado: !completo && e.resumenes.estado !== 'RETIRADA' && !decidioNoCompartirLoDeUnArea(e, receptor, area, vivosIds, existentes, nivelDado),
       textoId: nivel === 'SUMMARY_AND_PLAN' ? e.textos.resumenYPlan : e.textos.resumen,
     });
   }
@@ -229,7 +293,8 @@ export function loQueSePuedeCompartir(e: EstadoParaCompartir, alAceptar: string 
     const dado = como.sharing === 'RECEIVES';
     const ofrecido = !dado && (e.habitos.estado === 'ACTIVA' || e.habitos.hayHabitos);
     if (!dado && !ofrecido) continue;
-    const preseleccionado = ofrecido && (e.habitos.estado === 'NUNCA' || (e.habitos.estado === 'ACTIVA' && como.sharing === 'NOT_ASKED'));
+    // Lo retirado o un «no» (también de una versión anterior a un retiro de todo) no vuelve marcado (CMP-D3).
+    const preseleccionado = ofrecido && (e.habitos.estado === 'NUNCA' || (e.habitos.estado === 'ACTIVA' && como.sharing === 'NOT_ASKED')) && !decidioSobreLosHabitos(e, p, vivosIds);
     items.push({ tipo: 'HABITS', clave: claveDe.habitos(p), profesionalId: p, dado, desde: dado ? como.sharedSince : null, ofrecido, preseleccionado, textoId: e.textos.habitos });
   }
   return items;
