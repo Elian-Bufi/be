@@ -29,7 +29,7 @@ import { inicioDelEje, type PeriodoDelGrafico } from '../eje-de-fechas';
 import { compartirLecturaEnCurso, leerEnTramos, type ParametrosDeLectura } from '../lecturas';
 import type { Leido } from '../nutricion-y-cuerpo/leido';
 import { inicioDeLaBusquedaDelPeso, pesosMedidos, serieAnaliticaPorKilo, type PesoDeLaToma } from './gramos-por-kilo';
-import type { MetricaDelGrafico } from './dias-de-nutricion';
+import { loCargadoDespues, type LoCargadoDespues, type MetricaDelGrafico } from './dias-de-nutricion';
 
 export type LecturaBase = Omit<ParametrosDeLectura, 'periodo'>;
 
@@ -73,8 +73,11 @@ export async function leerMetricasNutricionales(l: LecturaBase, metricas: readon
   return { tipo: 'LISTO', datos };
 }
 
-/** Los días con registros de comida cargados en un día posterior (API-DSH-04 con `late`). */
-export async function leerDiasCargadosDespues(l: LecturaBase, desde: string, hasta: string): Promise<Leido<ReadonlySet<string>>> {
+/**
+ * Los días con registros de comida cargados en un día posterior (API-DSH-04 con `late`), de a 50 y hasta 10 páginas. Si
+ * no alcanzan, se dice desde qué día se sabe (`loCargadoDespues`): lo que no se leyó no se marca como cargado a tiempo.
+ */
+export async function leerDiasCargadosDespues(l: LecturaBase, desde: string, hasta: string): Promise<Leido<LoCargadoDespues>> {
   const r = await compartirLecturaEnCurso(`tarde|${l.asesoradoId}|${desde}|${hasta}`, () =>
     todasLasPaginas(
       async (f) => {
@@ -86,7 +89,7 @@ export async function leerDiasCargadosDespues(l: LecturaBase, desde: string, has
   );
   if (l.sesionPerdida(r)) return { tipo: 'SESION' };
   if (!r.ok) return r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'SIN_ACCESO' } : { tipo: 'ERROR', motivo: motivoDeFalla(r) };
-  return { tipo: 'LISTO', datos: new Set(r.datos.data.filter((e) => e.recordedLate).map((e) => e.occurredDate)) };
+  return { tipo: 'LISTO', datos: loCargadoDespues(r.datos.data, r.datos.completa, desde) };
 }
 
 /** Las comidas de cada día (API-NUT-17), en tramos de 92 días que cubren el período. */

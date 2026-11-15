@@ -60,10 +60,17 @@ const UNIDAD = 'kg';
 /** La marca de una masa: calculada (punto adentro), reportada (contorno cortado) o medida (llena). */
 const marcaDeLaClase = (clase: ObservacionDeLaToma['clase']): MarcaSemantica => (clase === 'DERIVED' ? 'PUNTO_ADENTRO' : clase === 'REPORTED' ? 'CONTORNO_CORTADO' : 'LLENA');
 
-/** «14,2 kg · Masa grasa (Durnin y Womersley), mujeres»: el valor y la versión del método que lo calculó. */
+/** Lo que la marca dice con su forma, dicho con palabras para la tabla y la lectura (la forma no llega al lector de pantalla). */
+const CLASE_EN_PALABRAS: Readonly<Partial<Record<ObservacionDeLaToma['clase'], string>>> = { DERIVED: C.masas.calculado, REPORTED: C.masas.reportado };
+
+/**
+ * «14,2 kg (calculado) · Masa grasa (Durnin y Womersley), mujeres»: el valor, lo que dice su marca y la versión del método
+ * que lo calculó.
+ */
 export function masaEnPalabras(o: ObservacionDeLaToma): string {
   const metodo = o.metodoVersionId ? (nombreDeMetodo(o.metodoVersionId) ?? C.masas.metodoSinNombre) : null;
-  return [cantidad(o.valor, o.unidad), ...(metodo ? [metodo] : []), ...(o.corregido ? ['corregido'] : [])].join(' · ');
+  const clase = CLASE_EN_PALABRAS[o.clase];
+  return [`${cantidad(o.valor, o.unidad)}${clase ? ` (${clase})` : ''}`, ...(metodo ? [metodo] : []), ...(o.corregido ? ['corregido'] : [])].join(' · ');
 }
 
 /** GR-20 armado; `null` si no hay ninguna masa en estas fechas. */

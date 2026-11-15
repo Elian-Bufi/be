@@ -81,3 +81,23 @@ export const marcaDelDia = (p: PuntoAnalitico): MarcaSemantica | null => (p.valu
 export function puntosPorFecha(puntos: readonly PuntoAnalitico[], desde: string, hasta: string): Map<string, PuntoAnalitico> {
   return new Map(puntos.filter((p) => p.date >= desde && p.date <= hasta && p.dateEnd === null).map((p) => [p.date, p] as const));
 }
+
+/** Lo cargado después que se pudo leer (API-DSH-04 con `late`): los días con algún registro cargado en un día posterior. */
+export interface LoCargadoDespues {
+  readonly dias: ReadonlySet<string>;
+  /**
+   * `null` si se sabe de todo el período. Si la lectura no llegó al final (la línea de tiempo viene de la más reciente a
+   * la más vieja, de a páginas), el día más viejo que se leyó: antes de ese día, las marcas no lo dicen.
+   */
+  readonly sabidoDesde: string | null;
+}
+
+/**
+ * Lo cargado después de las entradas leídas. Con la lectura entera se sabe de todo el período; si quedó a medias, se sabe
+ * desde el día más viejo leído, y los días anteriores no se marcan como si no se hubieran cargado después.
+ */
+export function loCargadoDespues(entradas: readonly { readonly occurredDate: string; readonly recordedLate: boolean }[], completa: boolean, desde: string): LoCargadoDespues {
+  const dias = new Set(entradas.filter((e) => e.recordedLate).map((e) => e.occurredDate));
+  const masVieja = entradas.reduce<string | null>((min, e) => (min === null || e.occurredDate < min ? e.occurredDate : min), null);
+  return { dias, sabidoDesde: completa || masVieja === null || masVieja <= desde ? null : masVieja };
+}

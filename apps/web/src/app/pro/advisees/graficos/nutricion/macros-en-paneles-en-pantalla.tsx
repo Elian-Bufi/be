@@ -31,7 +31,11 @@ export function MacrosEnPaneles({ lectura, periodo, densidad }: PropsDelGrafico)
     if (tarde.tipo === 'SESION') return tarde;
     const resultados = macros.datos.flatMap((m) => (m.resultado ? [m.resultado] : []));
     if (resultados.length < MACROS_DEL_GRAFICO.length || resultados.every((r) => r.recorded.points.length === 0)) return { tipo: 'SIN_DATOS', texto: C.sinRegistrosEnElPeriodo };
-    return { tipo: 'LISTO', datos: graficoDeMacros({ resultados, macros: MACROS_DEL_GRAFICO, cargadoTarde: tarde.tipo === 'LISTO' ? tarde.datos : null, desde, hasta: periodo.hasta }) };
+    const leido = tarde.tipo === 'LISTO' ? tarde.datos : null;
+    return {
+      tipo: 'LISTO',
+      datos: graficoDeMacros({ resultados, macros: MACROS_DEL_GRAFICO, cargadoTarde: leido?.dias ?? null, cargadoTardeSabidoDesde: leido?.sabidoDesde ?? null, desde, hasta: periodo.hasta }),
+    };
   }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.desdeElVinculo]);
   return <GraficoOEstado titulo={C.macros.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad={densidad} />;
 }
@@ -55,12 +59,14 @@ export function MacrosPorKilo({ lectura, periodo, densidad }: PropsDelGrafico) {
     const primerDia = resultados.flatMap((r) => r.recorded.points.filter((p) => p.value !== null).map((p) => p.date)).sort()[0] ?? null;
     const pesos = await leerPesosParaLosDias(lectura, periodo, primerDia);
     if (pesos.tipo !== 'LISTO') return pesos;
+    const leido = tarde.tipo === 'LISTO' ? tarde.datos : null;
     return {
       tipo: 'LISTO',
       datos: graficoDeMacrosPorKilo({
         resultados,
         macros: MACROS_POR_KILO,
-        cargadoTarde: tarde.tipo === 'LISTO' ? tarde.datos : null,
+        cargadoTarde: leido?.dias ?? null,
+        cargadoTardeSabidoDesde: leido?.sabidoDesde ?? null,
         desde,
         hasta: periodo.hasta,
         pesos: pesos.datos.pesos,

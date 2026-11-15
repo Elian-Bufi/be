@@ -15,7 +15,7 @@ import type { CeldaDeLaTabla, FilaDeLaTabla } from '../tabla-equivalente';
 import { diaYMes, huecosEnTexto, type ElementoDeLaLeyenda, type GraficoArmado, type MarcaDelPanel, type PanelDeValores } from '../nutricion-y-cuerpo/lienzo';
 import { COPY_NUTRICION_EN_GRAFICOS as C, contar, enumerar } from './copy';
 import { calidadDelDia, lecturaDelDia, marcaDelDia, puntosPorFecha, type MetricaDelGrafico } from './dias-de-nutricion';
-import { leyendaDeLosDias, marcasDeLosDias } from './energia-por-dia';
+import { leyendaDeLosDias, marcasDeLosDias, notasDeLoCargadoDespues } from './energia-por-dia';
 import { pesoDelDia, pesoEnPalabras, pesosUsados, serieAnaliticaPorKilo, type PesoDeLaToma } from './gramos-por-kilo';
 import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, temporadasDeNutricion } from './temporadas';
 
@@ -42,6 +42,8 @@ export interface EntradaDeMacros {
   readonly resultados: readonly ResultadoDeProyeccionNutricional[];
   readonly macros: readonly MacroDelGrafico[];
   readonly cargadoTarde: ReadonlySet<string> | null;
+  /** Si la lectura de lo cargado después quedó a medias, desde qué día se sabe (`loCargadoDespues`). */
+  readonly cargadoTardeSabidoDesde?: string | null;
   readonly desde: string;
   readonly hasta: string;
 }
@@ -108,7 +110,7 @@ export function graficoDeMacros(e: EntradaDeMacros): GraficoArmado {
       C.macros.fibraDesconocida,
       C.diaSinRegistros,
       ...e.macros.flatMap((m, i) => proporcionesDelObjetivo(e.resultados[i]!.prescribed.objectiveSteps, m.metrica, m.nombre, desde, hasta)),
-      ...(e.cargadoTarde === null ? [C.sinLoCargadoDespues] : []),
+      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde),
     ],
   };
 }
@@ -146,8 +148,10 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
     if (!p) return null;
     const tarde = e.cargadoTarde?.has(fecha) ?? false;
     const peso = pesoDelDia(e.pesos, fecha);
+    // Sin una toma anterior no hay g/kg, aunque haya gramos: la celda lo dice una vez y sin marca (no se dibuja).
+    if (peso === null) return { texto: `${C.sinValor(C.porKilo.sinPesoAnterior)}${tarde ? ` (${C.cargadoDespues})` : ''}`, marca: null, tarde };
     const calidad = calidadDelDia(p, tarde);
-    const texto = p.value === null ? [calidad, ...(peso ? [] : [C.porKilo.sinPesoAnterior])].join(' · ') : [valorPorKilo(p.value), calidad, ...(peso ? [pesoEnPalabras(peso)] : [])].join(' · ');
+    const texto = p.value === null ? [calidad, pesoEnPalabras(peso)].join(' · ') : [valorPorKilo(p.value), calidad, pesoEnPalabras(peso)].join(' · ');
     return { texto, marca: marcaDelDia(p), tarde };
   });
   const conValorEnGramos = [...new Set(e.resultados.flatMap((r) => [...puntosPorFecha(r.recorded.points, desde, hasta).values()].filter((p) => p.value !== null).map((p) => p.date)))].sort();
@@ -177,7 +181,7 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
       ...(sinPeso > 0 ? [C.porKilo.diasSinPeso(sinPeso)] : []),
       ...(e.pesoBuscadoDesde !== null ? [C.porKilo.buscadoDesde(diaYMes(e.pesoBuscadoDesde))] : []),
       C.loRegistrado,
-      ...(e.cargadoTarde === null ? [C.sinLoCargadoDespues] : []),
+      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde),
     ],
   };
 }

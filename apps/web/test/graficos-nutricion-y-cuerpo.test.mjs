@@ -11,7 +11,7 @@ import { register } from 'node:module';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { esIdDeGrafico, serieDisponible, terminosProhibidosEnUnGrafico } from '@be/domain';
+import { esIdDeGrafico, GRAFICOS_SUGERIDOS, graficoSugerido, serieDisponible, terminosProhibidosEnUnGrafico, textoDeFaltante } from '@be/domain';
 
 // Los módulos de los gráficos importan sin extensión (como pide el website): el gancho prueba con `.ts`.
 const gancho = `export async function resolve(especificador, contexto, siguiente) {
@@ -115,6 +115,15 @@ function textosDelCopy(objeto) {
 }
 
 const textosGenerados = { NUTRICION: [], AMBAS: [], ANTROPOMETRIA: [] };
+
+/** La guardia unida sobre textos que arma una prueba posterior a TEST-GRF-055: las mismas reglas, en el lugar. */
+function sinPalabrasProhibidas(textos, areas) {
+  for (const t of textos) {
+    assert.deepEqual(terminosProhibidosEnUnGrafico(t, areas), [], t);
+    if (areas.includes('NUTRICION')) assert.doesNotMatch(t, /%|complet[oa]s?\b|consumid|consumo|ingerid/i, t);
+    assert.doesNotMatch(t, /→|←|↑|↓/, `sin flechas: ${t}`);
+  }
+}
 
 // ─── Las pruebas ────────────────────────────────────────────────────────────────────────────────
 
@@ -515,7 +524,7 @@ test('TEST-GRF-049 · GR-20: los métodos de una masa comparten el eje, Lee va a
     ],
   );
   const fila = g.tabla.filas.find((f) => f.fecha === '2026-09-10');
-  assert.equal(fila.celdas[0].texto, '14,2 kg · Masa grasa (Durnin y Womersley), hombres');
+  assert.equal(fila.celdas[0].texto, '14,2 kg (calculado) · Masa grasa (Durnin y Womersley), hombres', 'el punto adentro, dicho con palabras');
   assert.equal(fila.celdas[2].texto, 'se separan 2,2 kg');
   for (const nota of [COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.porConstruccion, COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.leeAparte, COPY_ANTROPOMETRIA_EN_GRAFICOS.sinErrorDeMedicion, COPY_ANTROPOMETRIA_EN_GRAFICOS.parcial]) {
     assert.ok(g.notas.includes(nota), nota);
@@ -688,4 +697,77 @@ test('TEST-GRF-056 · lo que dice cada día en Nutrición: los faltantes por mot
   assert.equal(D.faltanCantidades(subtotal('2026-11-02', 10, 'COMIDA_DEL_PLAN_SIN_REGISTRO')), false);
   assert.equal(D.faltanCantidades(subtotal('2026-11-02', 10, 'SIN_DATO_DEL_NUTRIENTE')), true);
   assert.equal(D.marcaDelDia(dia('2026-11-02', null)), null, 'sin valor no hay marca');
+});
+
+test('TEST-GRF-057 · el registro de la rama y los sugeridos del dominio dicen lo mismo: cada gráfico con su código, su área, su lugar, sus series y sus alcances (mutación: sacar la tarjeta de los g/kg de GRAFICOS_SUGERIDOS o dejarle un solo alcance)', () => {
+  const todos = [...GRAFICOS_DE_NUTRICION, ...GRAFICOS_DE_ANTROPOMETRIA];
+  const contexto = (alcances) => ({ acceso: { alcances, propios: { NUTRICION: true, ENTRENAMIENTO: true, ANTROPOMETRIA: true } }, ejercicios: null, medidas: null });
+  for (const g of todos) {
+    const s = graficoSugerido(g.id);
+    assert.ok(s, `${g.id} no está en GRAFICOS_SUGERIDOS: un enfoque que lo guarde no lo encontraría en el dominio`);
+    assert.deepEqual([s.codigo, s.area, s.ubicacion, [...s.series]], [g.codigo, g.area, g.ubicacion, [...g.series]], g.id);
+    assert.deepEqual(s.requiere, g.requiere, g.id);
+    // Con los alcances que declara el dominio (y lo propio en cada uno) se ofrece; sin uno de ellos, no.
+    assert.equal(g.ofrecido(contexto([...s.alcances])), true, `${g.id} con ${s.alcances.join(' y ')}`);
+    for (const a of s.alcances) assert.equal(g.ofrecido(contexto(s.alcances.filter((x) => x !== a))), false, `${g.id} sin ${a}`);
+  }
+  assert.deepEqual(graficoSugerido('nutricion.macros-por-kilo')?.alcances, ['NUTRICION', 'ANTROPOMETRIA']);
+  // Y al revés: los sugeridos de Nutrición y Antropometría de la fase 2 tienen todos su gráfico en el registro de la rama.
+  const ids = new Set(todos.map((g) => g.id));
+  for (const s of GRAFICOS_SUGERIDOS.filter((x) => x.fase === 2 && (x.area === 'NUTRICION' || x.area === 'ANTROPOMETRIA'))) assert.ok(ids.has(s.id), `${s.id} no está en el registro de la rama`);
+});
+
+test('TEST-GRF-058 · lo cargado después: si la lectura quedó a medias, se sabe desde el día más viejo leído, lo anterior no se marca y la nota lo dice; entera, sin nota (mutación: tomar una lectura a medias como entera)', () => {
+  const entrada = (fecha, tarde = true) => ({ occurredDate: fecha, recordedLate: tarde });
+  const entera = D.loCargadoDespues([entrada('2026-11-06'), entrada('2026-11-03')], true, '2026-11-02');
+  assert.deepEqual([...entera.dias].sort(), ['2026-11-03', '2026-11-06']);
+  assert.equal(entera.sabidoDesde, null);
+  // La línea de tiempo viene de la más reciente a la más vieja: si no se leyó entera, antes del día más viejo no se sabe.
+  const aMedias = D.loCargadoDespues([entrada('2026-11-08'), entrada('2026-11-06'), entrada('2026-11-05', false)], false, '2026-11-02');
+  assert.equal(aMedias.sabidoDesde, '2026-11-05');
+  assert.deepEqual([...aMedias.dias].sort(), ['2026-11-06', '2026-11-08']);
+  assert.equal(D.loCargadoDespues([entrada('2026-11-02')], false, '2026-11-02').sabidoDesde, null, 'si lo leído llega al primer día, se sabe de todo el período');
+  // GR-12 y GR-13 lo dicen en una nota, y marcan solo lo que se leyó.
+  const puntos = [dia('2026-11-02', 2000), dia('2026-11-06', 2100)];
+  const energia = (lo) => G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos), cargadoTarde: lo.dias, cargadoTardeSabidoDesde: lo.sabidoDesde, desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-09' });
+  const g = energia(aMedias);
+  assert.ok(g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.cargadoDespuesDesde('5/11')));
+  assert.deepEqual(
+    g.paneles[0].marcas.map((m) => [m.fecha, m.tarde]),
+    [
+      ['2026-11-02', false],
+      ['2026-11-06', true],
+    ],
+  );
+  assert.ok(!energia(entera).notas.some((n) => n.startsWith('Lo cargado después se leyó desde')), 'leída entera, no hay nota');
+  const macros = G13.graficoDeMacros({ resultados: G13.MACROS_DEL_GRAFICO.map((m) => resultado(m.metrica, puntos)), macros: G13.MACROS_DEL_GRAFICO, cargadoTarde: aMedias.dias, cargadoTardeSabidoDesde: aMedias.sabidoDesde, desde: '2026-11-02', hasta: '2026-11-08' });
+  assert.ok(macros.notas.includes(COPY_NUTRICION_EN_GRAFICOS.cargadoDespuesDesde('5/11')));
+  sinPalabrasProhibidas([...g.notas, ...macros.notas], ['NUTRICION']);
+  // La lectura lo usa: lo que no se leyó no se marca como cargado a tiempo.
+  assert.match(readFileSync(join(GRAFICOS, 'nutricion/lecturas-de-nutricion.ts'), 'utf8'), /loCargadoDespues\(r\.datos\.data, r\.datos\.completa, desde\)/);
+});
+
+test('TEST-GRF-059 · la tabla dice con palabras lo que dice la forma: la masa calculada lo dice, un día sin peso anterior lo dice una sola vez y sin marca, y el motivo de los g/kg se lee en «Analizar» (mutación: sacar «(calculado)» de la celda de una masa)', () => {
+  const datos = evolucion([metrica('masa-grasa-durnin-womersley', [toma('d1', 'ev1', '2026-09-10', 14.2, 'g1', 'kg', { dataClass: 'DERIVED' })], [grupo('g1', 'isak', 'kg', '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f29')])]);
+  const masas = M.graficoDeMasas(TOMAS.observacionesDeLasTomas([datos]), '2026-09-01', '2026-11-14', { parcial: false, enTramos: false });
+  assert.equal(masas.paneles[0].marcas[0].marca, 'PUNTO_ADENTRO');
+  const celda = masas.tabla.filas[0].celdas[0];
+  assert.equal(celda.marca, 'PUNTO_ADENTRO');
+  assert.match(celda.texto, /^14,2 kg \(calculado\) · /, 'el punto adentro no llega al lector de pantalla: la celda lo dice');
+  // Los g/kg de un día sin una toma anterior: sin valor, dicho una vez, y sin marca.
+  const pesos = [{ clave: 'm:a', fecha: '2026-11-03', en: '2026-11-03T13:00:00.000Z', valor: 80 }];
+  const resultados = G13.MACROS_POR_KILO.map((m) => resultado(m.metrica, [dia('2026-11-02', 160), dia('2026-11-03', 160)]));
+  const porKilo = G13.graficoDeMacrosPorKilo({ resultados, macros: G13.MACROS_POR_KILO, cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-08', pesos, pesoBuscadoDesde: null });
+  const sinPeso = porKilo.tabla.filas.find((f) => f.fecha === '2026-11-02').celdas[0];
+  assert.equal(sinPeso.texto, 'sin valor: sin una toma de peso anterior');
+  assert.equal(sinPeso.marca, null, 'no se dibuja');
+  assert.equal(porKilo.tabla.filas.find((f) => f.fecha === '2026-11-03').celdas[0].texto, '2 g/kg · con cantidades en todos sus registros y sin comidas del plan sin registro · peso del 3/11: 80 kg');
+  // «Analizar» y su exportación escriben con sus palabras los motivos que no conocen: el de los g/kg se lee entero.
+  assert.equal(K.SIN_TOMA_ANTERIOR, 'SIN_TOMA_DE_PESO_ANTERIOR');
+  assert.equal(textoDeFaltante(K.SIN_TOMA_ANTERIOR), 'sin toma de peso anterior');
+  sinPalabrasProhibidas([celda.texto], ['ANTROPOMETRIA']);
+  sinPalabrasProhibidas(
+    porKilo.tabla.filas.flatMap((f) => f.celdas.map((c) => c?.texto ?? '')).filter((t) => t !== ''),
+    ['NUTRICION', 'ANTROPOMETRIA'],
+  );
 });

@@ -14,7 +14,7 @@
  */
 import { fechasDelRango, numero, semanasDelPeriodo, type PuntoAnalitico, type ResultadoDeProyeccionNutricional } from '@be/domain';
 import type { CeldaDeLaTabla } from '../tabla-equivalente';
-import { huecosEnTexto, type ElementoDeLaLeyenda, type GraficoArmado, type MarcaDelPanel, type PanelDeValores, type TramoDelPanel } from '../nutricion-y-cuerpo/lienzo';
+import { diaYMes, huecosEnTexto, type ElementoDeLaLeyenda, type GraficoArmado, type MarcaDelPanel, type PanelDeValores, type TramoDelPanel } from '../nutricion-y-cuerpo/lienzo';
 import { COPY_NUTRICION_EN_GRAFICOS as C, contar, enumerar } from './copy';
 import { faltanCantidades, lecturaDelDia, marcaDelDia, puntosPorFecha, saberDelDia, valorDelDia, type MetricaDelGrafico } from './dias-de-nutricion';
 import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, temporadasDeNutricion } from './temporadas';
@@ -94,10 +94,18 @@ export interface EntradaDeEnergia {
   readonly resultado: ResultadoDeProyeccionNutricional;
   /** Los días con registros cargados después (API-DSH-04 con `late`); `null` si no se pudo leer. */
   readonly cargadoTarde: ReadonlySet<string> | null;
+  /** Si la lectura de lo cargado después quedó a medias, desde qué día se sabe (`loCargadoDespues`). */
+  readonly cargadoTardeSabidoDesde?: string | null;
   /** El primer día que se dibuja (el del período o el del vínculo) y el último. */
   readonly desde: string;
   readonly hasta: string;
   readonly hoy: string;
+}
+
+/** La nota de lo cargado después: no se pudo leer, o se sabe solo desde un día (la lectura quedó a medias). */
+export function notasDeLoCargadoDespues(cargadoTarde: ReadonlySet<string> | null, sabidoDesde: string | null | undefined): string[] {
+  if (cargadoTarde === null) return [C.sinLoCargadoDespues];
+  return sabidoDesde ? [C.cargadoDespuesDesde(diaYMes(sabidoDesde))] : [];
 }
 
 /** Los renglones de la leyenda de los días: solo los que aparecen en el dibujo, para que la leyenda diga lo que se ve. */
@@ -188,7 +196,7 @@ export function graficoDeEnergia(e: EntradaDeEnergia): GraficoArmado {
       C.energia.metodoDeLaMedia(MINIMO_DE_DIAS_PARA_LA_MEDIA),
       C.diaSinRegistros,
       ...proporcionesDelObjetivo(objetivo, 'ENERGY', C.energia.panel, desde, hasta),
-      ...(e.cargadoTarde === null ? [C.sinLoCargadoDespues] : []),
+      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde),
     ],
   };
 }

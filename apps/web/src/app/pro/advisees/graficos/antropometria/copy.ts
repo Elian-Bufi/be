@@ -27,7 +27,7 @@ export const COPY_ANTROPOMETRIA_EN_GRAFICOS = {
     soloAntes: (fecha: string) => `sin dato en la toma del ${fecha}`,
     soloDespues: (fecha: string) => `sin dato en la toma del ${fecha}`,
     otroGrupo: 'no se comparan: otro protocolo, método o unidad',
-    unaSolaToma: 'Hace falta otra toma con sitios medidos para comparar: hay una.',
+    unaSolaToma: 'En estas fechas hay una sola toma con sitios medidos: hace falta otra para comparar. En «Tomas», cada toma dice cuánto cambió desde la anterior, si la hay.',
     mismaToma: 'Elegí dos tomas distintas para compararlas.',
     sinTomas: 'Sin tomas con pliegues, perímetros o diámetros en estas fechas.',
     segmento: 'La línea une los dos valores del mismo sitio: es la diferencia entre dos tomas, no lo que pasó entre una y otra.',
@@ -58,5 +58,8 @@ export const COPY_ANTROPOMETRIA_EN_GRAFICOS = {
     sinMasas: 'Sin masas calculadas en las tomas de estas fechas: cada método pide sus pliegues y sus datos de la persona.',
     leyendaSeparacion: 'Dos métodos de la misma toma, unidos por una línea fina: cuánto se separan',
     metodoSinNombre: 'método identificado, sin nombre en BE',
+    /** Lo que dicen el punto adentro y el contorno cortado, con palabras (la tabla y la lectura). */
+    calculado: 'calculado',
+    reportado: 'reportado por la persona',
   },
 } as const;

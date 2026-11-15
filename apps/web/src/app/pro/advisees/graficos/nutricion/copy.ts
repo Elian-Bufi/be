@@ -32,7 +32,8 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
     COMIDA_DIFERENTE_SIN_CANTIDADES: ['comida diferente sin cantidades', 'comidas diferentes sin cantidades'],
     SIN_DATO_DEL_NUTRIENTE: ['registro sin el dato de este nutriente', 'registros sin el dato de este nutriente'],
     COMIDA_DEL_PLAN_SIN_REGISTRO: ['comida del plan sin registro', 'comidas del plan sin registro'],
-    SIN_TOMA_ANTERIOR: ['día sin una toma de peso anterior', 'días sin una toma de peso anterior'],
+    /** El de los g/kg (`SIN_TOMA_ANTERIOR` de `gramos-por-kilo.ts`). */
+    SIN_TOMA_DE_PESO_ANTERIOR: ['día sin una toma de peso anterior', 'días sin una toma de peso anterior'],
   } as Readonly<Record<string, readonly [string, string]>>,
 
   // ─── GR-11 · las temporadas ──────────────────────────────────────────────────────────────────
@@ -66,6 +67,7 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
   loRegistrado: 'Es lo registrado: si una comida no se registró, o se registró sin cantidades, no está en el número. No es la ingesta real.',
   diaSinRegistros: 'Un día sin registros no es cero: no se dibuja.',
   sinLoCargadoDespues: 'No se pudo leer qué registros se cargaron después: las marcas no lo dicen.',
+  cargadoDespuesDesde: (fecha: string) => `Lo cargado después se leyó desde el ${fecha}: antes de ese día, las marcas no lo dicen.`,
   sinRegistrosEnElPeriodo: 'Sin registros de comida en estas fechas.',
 
   // ─── GR-12 · las calorías por día ────────────────────────────────────────────────────────────

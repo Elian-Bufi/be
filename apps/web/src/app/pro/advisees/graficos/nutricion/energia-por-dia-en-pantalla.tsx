@@ -22,7 +22,8 @@ export function EnergiaPorDia({ lectura, periodo, densidad }: PropsDelGrafico) {
     if (tarde.tipo === 'SESION') return tarde;
     const resultado = energia.datos.resultado;
     if (!resultado || resultado.recorded.points.length === 0) return { tipo: 'SIN_DATOS', texto: C.sinRegistrosEnElPeriodo };
-    return { tipo: 'LISTO', datos: graficoDeEnergia({ resultado, cargadoTarde: tarde.tipo === 'LISTO' ? tarde.datos : null, desde, hasta: periodo.hasta, hoy: periodo.hoy }) };
+    const leido = tarde.tipo === 'LISTO' ? tarde.datos : null;
+    return { tipo: 'LISTO', datos: graficoDeEnergia({ resultado, cargadoTarde: leido?.dias ?? null, cargadoTardeSabidoDesde: leido?.sabidoDesde ?? null, desde, hasta: periodo.hasta, hoy: periodo.hoy }) };
   }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.hoy, periodo.desdeElVinculo]);
   return <GraficoOEstado titulo={C.energia.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad={densidad} />;
 }

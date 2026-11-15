@@ -26,8 +26,11 @@ export interface PesoDeLaToma {
   readonly valor: number;
 }
 
-/** El motivo que lleva un día sin una toma anterior (en `missing`): la lectura lo dice. */
-export const SIN_TOMA_ANTERIOR = 'SIN_TOMA_ANTERIOR';
+/**
+ * El motivo que lleva un día sin una toma anterior (en `missing`): la lectura lo dice. Se nombra entero porque «Analizar»
+ * y su exportación escriben los motivos que no conocen con sus palabras (`textoDeFaltante`): «sin toma de peso anterior».
+ */
+export const SIN_TOMA_ANTERIOR = 'SIN_TOMA_DE_PESO_ANTERIOR';
 
 /** La unidad de un tramo de Antropometría: la última parte de su rótulo («Protocolo · método · kg»). */
 const unidadDelTramo = (serie: SerieAnalitica, tramo: string): string | null => {
