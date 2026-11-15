@@ -8,12 +8,15 @@
  * - «Tus vínculos» (REL-05), con el estado del vínculo y el de tu consentimiento, y «Solicitudes anteriores».
  * Solo se listan los ítems en los que esta cuenta es el asesorado, y como recibidas las que inició el profesional: el
  * APK es la superficie del asesorado (10-B01:100-119). `expectedVersion` es la versión que la tarjeta mostró.
+ * - WP-HISTORIA-ANTERIOR (DL-175): al aceptar a un profesional nuevo de un área en la que ya hubo otro, una tarjeta opcional
+ *   ofrece compartirle la historia anterior de esa área (por omisión, no se comparte; `historia-anterior.tsx`).
  */
 import { COPY, COPY_INVITACION, COPY_NOTAS_DE_COORDINACION, COPY_VINCULO, ETIQUETA_DE_FINALIDAD, estadoParaMostrar, type Resultado, type SolicitudDeVinculo, type Vinculo } from '@be/domain';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
 import { EstadoDeCarga, VerMas } from '../estados';
+import { HistoriaAnteriorAlAceptar } from '../historia-anterior';
 import { dia, fecha } from '../formato';
 import { falloDe, useClaveDeIntento, type Fallo } from '../intento';
 import { useListaPaginada } from '../lista';
@@ -74,6 +77,8 @@ export function PantallaDeVinculos({
           <Boton texto={COPY_VINCULO.revisarConsentimiento} onPress={() => ir({ nombre: 'consentimiento', vinculoId: decision.vinculoId })} />
         </Aviso>
       ) : null}
+      {/* DL-175: si en esa área ya hubo otro profesional, la oferta opcional de compartirle la historia anterior. */}
+      {decision?.tipo === 'aceptada' ? <HistoriaAnteriorAlAceptar token={token} relationshipId={decision.vinculoId} sesionPerdida={sesionPerdida} /> : null}
       {decision?.tipo === 'rechazada' ? <Aviso tipo="exito" titulo={COPY_VINCULO.solicitudRechazada} /> : null}
 
       <Seccion titulo="Solicitudes recibidas">

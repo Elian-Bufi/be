@@ -10,11 +10,18 @@
  * PG-12 (WP-PULIDO-GRANDES, DL-173): debajo del nombre, una línea tranquila con la última vez que ese profesional miró lo
  * que le compartís, o que todavía no lo miró, cuando se sabe (`quien-miro.ts`, TEST-PG-011). Sale de una lectura aparte:
  * si falla, la línea no se dibuja y lo demás sigue igual.
+ *
+ * WP-HISTORIA-ANTERIOR (DL-175): debajo de cada área, «Tu historia anterior de …» cuando antes hubo otro profesional en esa
+ * área (o ya se decidió algo), con su explicación, el interruptor para compartirla o retirarla y cuándo la miró
+ * (`historia-anterior.tsx`, TEST-HA-040 a 045). Sale de su propia lectura (API-HIA-01): si falla, no se dibuja.
  */
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import type { HistoriaAnteriorDeUnArea } from '@be/domain';
 import { Text, View } from 'react-native';
 import { api } from '../api';
 import { dia, fechaCivilDeUnInstante } from '../formato';
+import { HistoriaAnteriorDelArea, useVistasDeLaHistoriaAnterior } from '../historia-anterior';
+import { conLoNuevo } from '../historia-anterior-en-el-telefono';
 import { Icono } from '../icono';
 import { useLecturaRecordada } from '../lecturas';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
@@ -34,6 +41,16 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
   // PG-12: lo que compartís de otras áreas y quién lo miró. Completa la tarjeta: si falla, la línea no se dibuja.
   const compartido = useLecturaRecordada(token, 'quien-ve-que-compartido', useCallback(() => api.misResumenesCompartidos(token), [token]), sesionPerdida);
   const lineasDeQuienMiro = compartido.r?.ok ? quienMiro(compartido.r.datos.data, fechaCivilDeUnInstante(new Date().toISOString())) : new Map<string, string>();
+  // DL-175: la historia anterior de cada área. Lo que responde una escritura se muestra enseguida, sin esperar otra lectura.
+  const historia = useLecturaRecordada(token, 'quien-ve-que-historia-anterior', useCallback(() => api.miHistoriaAnterior(token), [token]), sesionPerdida);
+  const [cambiadas, setCambiadas] = useState<readonly HistoriaAnteriorDeUnArea[]>([]);
+  const deLaHistoria = historia.r?.ok ? cambiadas.reduce(conLoNuevo, historia.r.datos.data) : null;
+  const vistasDeLaHistoria = useVistasDeLaHistoriaAnterior(deLaHistoria);
+  const alCambiarLaHistoria = (nuevo: HistoriaAnteriorDeUnArea) => setCambiadas((antes) => [...antes.filter((x) => x.relationshipId !== nuevo.relationshipId), nuevo]);
+  const actualizarLaHistoria = () => {
+    setCambiadas([]);
+    void historia.cargar();
+  };
 
   const lecturas = [a3, vinculos, consentimientos];
   const falla = lecturas.map((l) => l.r).find((r) => r && !r.ok);
@@ -99,6 +116,17 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
                       ))}
                     </Desplegable>
                     <Boton texto={T.cambiarEnElVinculo} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'vinculo', id: a.vinculoId })} />
+                    {/* DL-175: «Tu historia anterior de …», debajo del profesional de esta área. */}
+                    {deLaHistoria && vistasDeLaHistoria.get(a.vinculoId) ? (
+                      <HistoriaAnteriorDelArea
+                        token={token}
+                        item={deLaHistoria.items.find((i) => i.relationshipId === a.vinculoId)!}
+                        vista={vistasDeLaHistoria.get(a.vinculoId)!}
+                        texto={deLaHistoria.text}
+                        alCambiar={alCambiarLaHistoria}
+                        actualizar={actualizarLaHistoria}
+                      />
+                    ) : null}
                   </View>
                 ))}
                 {t.habitos ? (
