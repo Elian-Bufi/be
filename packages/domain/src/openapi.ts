@@ -3054,8 +3054,9 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'DL-165 D-17 (nueva, 2026-11-06) y D-25 · WP-FORMULARIOS-RONDA-2 §8 (FR-14) · 08 §12.2, C-12 · RNF-PRI-002',
   },
   // ─── WP-TABLERO-ALTA-GAMA · RES: lo que la persona comparte de otras áreas (DL-163 D-13, ampliada por Dirección el
-  // 2026-11-07; TB-52 a TB-56). Familia propia de BE. Ninguna APK instalada la lee (DL-152). API-RES-05 (las series de un
-  // resumen, TB-29) no está en este tramo. ─────────────────────────────────────────────────────────────────────────────
+  // 2026-11-07; TB-52 a TB-56). Familia propia de BE. Desde la 0.29.0-candidata.1, la APK lee API-RES-01 (PG-12), congelada
+  // con ella (DL-152); las demás no las lee ninguna APK. API-RES-05 (las series de un resumen, TB-29) no está en este
+  // tramo. ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
   {
     id: 'API-RES-01',
     metodo: 'get',
