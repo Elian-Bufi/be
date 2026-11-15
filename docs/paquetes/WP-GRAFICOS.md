@@ -1722,7 +1722,8 @@ días, para ver «Por semana» en pantalla. GR-12 y GR-13 no están todavía en 
   o un salto). *Alternativa:* el umbral en 3 tomas.
 - **GR-VC06 · GR-20 nombra solo los métodos que aparecen:** una ficha por método aunque esté en dos paneles («Durnin y
   Womersley»), la separación solo con los dos, «por construcción» solo con los dos, y en la línea tenue «cada número, con
-  su método y su versión».
+  su método y su versión». En la tabla, la versión del método va una vez en el encabezado si toda la columna es de la
+  misma (si no, en cada celda).
 - **GR-VC07 · GR-18 con el lenguaje de la base:** el nombre del sitio entero en uno o dos renglones (la columna mide lo que
   el más largo, entre 120 px y el 42 % del ancho), el eje redondo con su grilla, la columna de la diferencia con su
   encabezado, las fichas con la fecha de cada toma y la línea tenue de qué se compara.
@@ -1781,6 +1782,7 @@ tabla, el contraste en Azul noche, nada cortado a 1024, 1280, 1440 y 1920 y las 
 | La ficha «Versión del plan» sin fondo ni cambio que mostrar (una sola versión que viene de antes) | Baja | Va solo si se ve un fondo o un cambio | TEST-GRVC-004 |
 | Por semana, cada columna de GR-14 repetía «sin indicado del día» con la línea de abajo ya diciéndolo | Baja | Sale de la lectura de la semana cuando ningún día tiene indicado | TEST-GRVC-002 |
 | GR-20 como tabla empujaba 3 px el cuadro a 1024 (la grilla no la dejaba achicarse) | Baja | La tabla se achica y se desplaza ella | Las capturas (1024) |
+| GR-20 como tabla, a 1024: la versión del método repetida en cada celda dejaba el valor de la segunda columna cortado contra el borde | Media | Si toda la columna es de la misma versión, va una vez en el encabezado («Masa grasa (Durnin y Womersley), hombres») y cada celda dice su valor; con versiones distintas, cada celda la suya | TEST-GRF-049 y 059, TEST-GRVC-005 |
 | Todo a la vista en párrafos: el método entero, por qué un hueco no es cero, la reducción localizada | Baja | A «Cómo leerlo»; a la vista, lo que §5 pide (GR-VC08) | TEST-GRVC-004 y 006 |
 | Lo cargado después solo en la muesca, sin la cuenta que da la base | Baja | «1 de 3 días con registros cargados después.», a la vista | TEST-GRVC-004 |
 | El mínimo y el máximo rotulados con el mismo peso que el último | Baja | Discretos, como la base | TEST-GRVC-003 |

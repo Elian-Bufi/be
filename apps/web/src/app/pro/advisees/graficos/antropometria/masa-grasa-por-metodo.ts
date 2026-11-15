@@ -75,10 +75,24 @@ const CLASE_EN_PALABRAS: Readonly<Partial<Record<ObservacionDeLaToma['clase'], s
  * «14,2 kg (calculado) · Masa grasa (Durnin y Womersley), mujeres»: el valor, lo que dice su marca y la versión del método
  * que lo calculó.
  */
-export function masaEnPalabras(o: ObservacionDeLaToma): string {
-  const metodo = o.metodoVersionId ? (nombreDeMetodo(o.metodoVersionId) ?? C.masas.metodoSinNombre) : null;
+export function masaEnPalabras(o: ObservacionDeLaToma, conElMetodo = true): string {
+  const metodo = conElMetodo && o.metodoVersionId ? nombreDeLaVersion(o.metodoVersionId) : null;
   const clase = CLASE_EN_PALABRAS[o.clase];
   return [`${cantidad(o.valor, o.unidad)}${clase ? ` (${clase})` : ''}`, ...(metodo ? [metodo] : []), ...(o.corregido ? ['corregido'] : [])].join(' · ');
+}
+
+/** El nombre de la versión de un método: «Masa grasa (Durnin y Womersley), hombres». */
+const nombreDeLaVersion = (id: string): string => nombreDeMetodo(id) ?? C.masas.metodoSinNombre;
+
+/**
+ * La versión del método de una columna, si todas sus masas en estas fechas son de la misma (GR-VC06): va una vez, en el
+ * encabezado, y cada celda dice solo su valor (DISENO-VISUAL §1, principio 8: si no entra, se reduce el detalle, no se
+ * corta el número). Con versiones distintas en la misma columna, `null`: cada celda dice la suya.
+ */
+function versionDeLaColumna(observaciones: readonly ObservacionDeLaToma[]): string | null {
+  const versiones = new Set(observaciones.map((o) => o.metodoVersionId));
+  const [unica] = [...versiones];
+  return versiones.size === 1 && unica ? unica : null;
 }
 
 /** Con menos tomas, GR-20 va como tabla a la vista (GR-VC05): dos o tres puntos parecen estables o un salto (§5.8). */
@@ -109,8 +123,12 @@ export function graficoDeMasas(observaciones: readonly ObservacionDeLaToma[], de
   // Solo los métodos que aparecen (nunca nombrar uno que no está) y la separación solo con los dos.
   const metodosDe = (p: PanelDeMasa) => p.metodos.filter((m) => presentes.has(m.metrica));
   const conLosDos = (p: PanelDeMasa) => metodosDe(p).length === 2;
+  const versionDe = new Map(conDatos.flatMap((p) => metodosDe(p)).map((m) => [m.metrica, versionDeLaColumna(enElPeriodo.filter((o) => o.metrica === m.metrica))] as const));
   const columnas = conDatos.flatMap((p) => [
-    ...metodosDe(p).map((m) => ({ id: m.metrica, nombre: `${p.nombre} ${m.nombre}`, unidad: UNIDAD })),
+    ...metodosDe(p).map((m) => {
+      const version = versionDe.get(m.metrica) ?? null;
+      return { id: m.metrica, nombre: version ? nombreDeLaVersion(version) : `${p.nombre} ${m.nombre}`, unidad: UNIDAD };
+    }),
     ...(conLosDos(p) ? [{ id: `${p.id}:separacion`, nombre: C.masas.columnaSeparacion(p.nombre), unidad: UNIDAD }] : []),
   ]);
   const fechas = [...new Set(enElPeriodo.filter((o) => MEDIDAS_DE_GR20.includes(o.metrica)).map((o) => o.fecha))].sort();
@@ -120,7 +138,8 @@ export function graficoDeMasas(observaciones: readonly ObservacionDeLaToma[], de
       const delDia = (m: MetodoDeLaMasa) => enElPeriodo.filter((o) => o.metrica === m.metrica && o.fecha === fecha);
       const metodos = metodosDe(p).map((m): CeldaDeLaTabla | null => {
         const lista = delDia(m);
-        return lista.length === 0 ? null : { texto: lista.map(masaEnPalabras).join(' · '), marca: marcaDeLaClase(lista[0]!.clase), tarde: false, registrada: true };
+        const conElMetodo = (versionDe.get(m.metrica) ?? null) === null;
+        return lista.length === 0 ? null : { texto: lista.map((o) => masaEnPalabras(o, conElMetodo)).join(' · '), marca: marcaDeLaClase(lista[0]!.clase), tarde: false, registrada: true };
       });
       const separaciones = paneles[i]!.uniones.filter((u) => u.fecha === fecha && u.rotulo !== null).map((u) => C.masas.separan(u.rotulo as string));
       return [...metodos, ...(conLosDos(p) ? [separaciones.length > 0 ? { texto: separaciones.join(' · '), marca: null, tarde: false, registrada: true } : null] : [])];

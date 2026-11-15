@@ -573,7 +573,9 @@ test('TEST-GRF-049 · GR-20: los métodos de una masa comparten el eje, Lee va a
     ],
   );
   const fila = g.tabla.filas.find((f) => f.fecha === '2026-09-10');
-  assert.equal(fila.celdas[0].texto, '14,2 kg (calculado) · Masa grasa (Durnin y Womersley), hombres', 'el punto adentro, dicho con palabras');
+  assert.equal(fila.celdas[0].texto, '14,2 kg (calculado)', 'el punto adentro, dicho con palabras');
+  assert.equal(g.tabla.columnas[0].nombre, 'Masa grasa (Durnin y Womersley), hombres', 'una sola versión en la columna: va una vez, en el encabezado');
+  assert.equal(M.masaEnPalabras(TOMAS.observacionesDeLasTomas([datos])[0]), '14,2 kg (calculado) · Masa grasa (Durnin y Womersley), hombres', 'con versiones distintas, cada celda dice la suya');
   assert.equal(fila.celdas[2].texto, 'se separan 2,2 kg');
   for (const nota of [COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.porConstruccion, COPY_ANTROPOMETRIA_EN_GRAFICOS.sinErrorDeMedicion, COPY_ANTROPOMETRIA_EN_GRAFICOS.parcial]) {
     assert.ok(g.notas.includes(nota), nota);
@@ -832,7 +834,8 @@ test('TEST-GRF-059 · la tabla dice con palabras lo que dice la forma: la masa c
   assert.equal(masas.paneles[0].marcas[0].marca, 'PUNTO_ADENTRO');
   const celda = masas.tabla.filas[0].celdas[0];
   assert.equal(celda.marca, 'PUNTO_ADENTRO');
-  assert.match(celda.texto, /^14,2 kg \(calculado\) · /, 'el punto adentro no llega al lector de pantalla: la celda lo dice');
+  assert.match(celda.texto, /^14,2 kg \(calculado\)$/, 'el punto adentro no llega al lector de pantalla: la celda lo dice');
+  assert.equal(masas.tabla.columnas[0].nombre, 'Masa grasa (Durnin y Womersley), hombres', 'el método y su versión, en el encabezado (§5.6)');
   // Los g/kg de un día sin una toma anterior: sin valor, dicho una vez, y sin marca.
   const pesos = [{ clave: 'm:a', fecha: '2026-11-03', en: '2026-11-03T13:00:00.000Z', valor: 80 }];
   const resultados = G13.MACROS_POR_KILO.map((m) => resultado(m.metrica, [dia('2026-11-02', 160), dia('2026-11-03', 160)]));
@@ -1104,7 +1107,7 @@ test('TEST-GRVC-005 · GR-20: con menos de 4 tomas va como tabla a la vista; nun
     ]);
   const soloDW = [
     { codigo: 'masa-grasa-durnin-womersley', valor: 15, grupo: 'g1', metodo: dw },
-    { codigo: 'masa-libre-de-grasa-durnin-womersley', valor: 64, grupo: 'g2', metodo: dw },
+    { codigo: 'masa-libre-de-grasa-durnin-womersley', valor: 64, grupo: 'g2', metodo: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2b' },
   ];
   const dos = M.graficoDeMasas(tomasDe(['2026-09-30', '2026-11-12'], soloDW), '2026-08-18', '2026-11-15', { parcial: false, enTramos: false });
   assert.equal(dos.comoTabla, true, 'con dos tomas, tabla (mutación: dibujar dos puntitos)');
@@ -1120,8 +1123,8 @@ test('TEST-GRVC-005 · GR-20: con menos de 4 tomas va como tabla a la vista; nun
   );
   assert.deepEqual(
     dos.tabla.columnas.map((c) => c.nombre),
-    ['Masa grasa según Durnin y Womersley', 'Masa libre de grasa según Durnin y Womersley'],
-    'sin la columna de un método ausente ni la de la separación',
+    ['Masa grasa (Durnin y Womersley), hombres', 'Masa libre de grasa (Durnin y Womersley), hombres'],
+    'sin la columna de un método ausente ni la de la separación; la versión, una vez en el encabezado',
   );
   // Con 4 tomas y los dos métodos, va como gráfico, con «por construcción» a la vista y la separación.
   const ambos = [soloDW[0], { codigo: 'masa-grasa-faulkner', valor: 12, grupo: 'g3', metodo: fk }];
@@ -1129,6 +1132,7 @@ test('TEST-GRVC-005 · GR-20: con menos de 4 tomas va como tabla a la vista; nun
   assert.equal(cuatro.comoTabla, false);
   assert.ok(cuatro.notas.includes(COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.porConstruccion));
   assert.ok(cuatro.tabla.columnas.some((c) => c.id === 'masa-grasa:separacion'));
+  assert.ok(dos.tabla.filas.every((f) => f.celdas.every((c) => c === null || /^\d+(,\d+)? kg \(calculado\)$/.test(c.texto))), 'cada celda, solo su valor: no se corta a 1024');
   assert.equal(cuatro.metodo, COPY_ANTROPOMETRIA_EN_GRAFICOS.masas.metodo, 'cada número con su método: en la línea tenue');
   sinPalabrasProhibidas([...textosDe(dos), ...textosDe(cuatro)], ['ANTROPOMETRIA']);
 });
