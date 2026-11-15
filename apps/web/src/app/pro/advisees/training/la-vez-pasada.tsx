@@ -43,6 +43,7 @@ import { ICONO_DE_FALLA, motivoDeFalla, type MotivoDeFalla } from '../../../../l
 import { ComoLeerlo } from '../graficos/como-leerlo';
 import { usePersonaDelArea } from '../marco-del-area';
 import { hoyEn, restarDias } from '../seguimiento/estado';
+import { AccesoAlHistorial, COPY_DEL_HISTORIAL, PasoDelHistorialDiferido, type PasoDelHistorial } from '../graficos/entrenamiento/acceso-al-historial';
 import { anterioresQueQuedan, textoDeLaFicha, TODAS_LAS_VECES, unidadComun } from './lista-de-la-vez-pasada';
 
 /** Cuántos días se leen: 91 con hoy. API-TRN-21 acepta 92, y el hoy de la API puede ir un día adelante del navegador. */
@@ -271,6 +272,9 @@ export function LaVezPasada({ lectura, recargar, nombre }: { lectura: LecturaDeL
 /**
  * El cuadro lateral de un ejercicio que no está en la lista de la v1 (RM-16): «Lo que indica el plan» arriba y «La vez
  * pasada» abajo, el mismo diseño que el detalle con la fuerza estimada, sin la fuerza. Abrirlo no cambia nada del plan.
+ *
+ * WP-GRAFICOS fase 2, rama B (DL-174): debajo, «En el tiempo» abre en el mismo cuadro, con «Atrás», el historial del
+ * ejercicio (GR-03 y GR-05; sin GR-02, que es de la lista de la v1) y su perfil (GR-06).
  */
 export function CuadroDeLaVezPasada({
   abierto,
@@ -292,15 +296,35 @@ export function CuadroDeLaVezPasada({
   loQueIndica: ReactNode;
 }) {
   const { lectura, recargar } = useLaVezPasada(token, asesoradoId, abierto ? exerciseId : undefined, sesionPerdida);
+  // WP-GRAFICOS (DL-174): el paso abierto en el mismo cuadro; `null`, el cuadro con «La vez pasada».
+  const [paso, setPaso] = useState<PasoDelHistorial | null>(null);
+  const cerrar = () => {
+    setPaso(null);
+    onCerrar();
+  };
   return (
-    <CuadroEnfocado abierto={abierto} forma="panel" titulo={nombre} className="detalle-con-fuerza cuadro-de-la-vez-pasada" onCerrar={onCerrar}>
-      <div className="detalle-del-ejercicio">
-        <section className="detalle-del-ejercicio__plan" aria-label={C.loQueIndicaElPlan}>
-          <p className="ejercicio-del-plan__subtitulo">{C.loQueIndicaElPlan}</p>
-          <div className="detalle-del-ejercicio__indica">{loQueIndica}</div>
-        </section>
-        <LaVezPasada lectura={lectura} recargar={recargar} nombre={nombre} />
-      </div>
+    <CuadroEnfocado
+      abierto={abierto}
+      forma="panel"
+      titulo={paso ? COPY_DEL_HISTORIAL.titulo[paso] : nombre}
+      sobretitulo={paso ? nombre : null}
+      atras={paso ? { texto: `Atrás: ${nombre}`, alTocar: () => setPaso(null) } : null}
+      paso={paso ?? 'detalle'}
+      className="detalle-con-fuerza cuadro-de-la-vez-pasada"
+      onCerrar={cerrar}
+    >
+      {paso ? (
+        <PasoDelHistorialDiferido paso={paso} token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} exerciseId={exerciseId} nombre={nombre} />
+      ) : (
+        <div className="detalle-del-ejercicio">
+          <section className="detalle-del-ejercicio__plan" aria-label={C.loQueIndicaElPlan}>
+            <p className="ejercicio-del-plan__subtitulo">{C.loQueIndicaElPlan}</p>
+            <div className="detalle-del-ejercicio__indica">{loQueIndica}</div>
+          </section>
+          <LaVezPasada lectura={lectura} recargar={recargar} nombre={nombre} />
+          <AccesoAlHistorial nombre={nombre} onAbrir={setPaso} />
+        </div>
+      )}
     </CuadroEnfocado>
   );
 }

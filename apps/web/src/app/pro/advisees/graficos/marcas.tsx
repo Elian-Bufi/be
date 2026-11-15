@@ -53,14 +53,56 @@ export function GlifoDeLaLeyenda({ sentido, indice = 0 }: { sentido: SentidoDeLa
   );
 }
 
-/** La leyenda: fichas cortas en una línea, arriba del gráfico, solo con las marcas que se ven (`sentidosQueSeVen`). */
-export function Leyenda({ sentidos, indice = 0 }: { sentidos: readonly SentidoDeLaMarca[]; indice?: number }) {
-  if (sentidos.length === 0) return null;
+/**
+ * Una ficha más de la leyenda, para una marca del dibujo que no es un punto (rama B, con la pasada visual): la tira de
+ * cobertura de abajo de cada carril y la línea cortada de lo indicado por versión. Va solo si se ve en el dibujo: quien
+ * la pide lo sabe. `corto` se ve; `largo`, el lector de pantalla.
+ */
+export interface FichaDeLaLeyenda {
+  readonly glifo: 'TIRA' | 'LINEA_CORTADA';
+  readonly corto: string;
+  readonly largo: string;
+  /** El color del carril de la marca (la línea cortada va en el color de su carril). */
+  readonly indice?: number;
+}
+
+/** El glifo de una ficha que no es un punto: la tira (entera, a media altura y una raya baja) o la línea cortada. */
+function GlifoDeLaFicha({ ficha, indice }: { ficha: FichaDeLaLeyenda; indice: number }) {
+  return (
+    <span className="grafico-base__glifo">
+      {ficha.glifo === 'TIRA' ? (
+        <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">
+          <rect x={1} y={5} width={5} height={6} fill="var(--tenue)" />
+          <rect x={8} y={8} width={5} height={3} fill="var(--tenue)" />
+          <rect x={15} y={9.5} width={5} height={1.5} fill="var(--grafico-hueco)" />
+        </svg>
+      ) : (
+        <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">
+          <line x1={1} x2={21} y1={7} y2={7} stroke={colorDelCarril(ficha.indice ?? indice)} strokeWidth={1.5} strokeDasharray="6 4" />
+        </svg>
+      )}
+      <span aria-hidden="true">{ficha.corto}</span>
+      <span className="visualmente-oculto">{ficha.largo}</span>
+    </span>
+  );
+}
+
+/**
+ * La leyenda: fichas cortas en una línea, arriba del gráfico, solo con las marcas que se ven (`sentidosQueSeVen`) y, al
+ * final, las fichas de lo que no es un punto (la tira, la línea cortada), si se ven.
+ */
+export function Leyenda({ sentidos, indice = 0, fichas = [] }: { sentidos: readonly SentidoDeLaMarca[]; indice?: number; fichas?: readonly FichaDeLaLeyenda[] }) {
+  if (sentidos.length === 0 && fichas.length === 0) return null;
   return (
     <ul className="grafico-base__leyenda" aria-label="Cómo se leen las marcas">
       {sentidos.map((s) => (
         <li key={s}>
           <GlifoDeLaLeyenda sentido={s} indice={indice} />
+        </li>
+      ))}
+      {fichas.map((f) => (
+        <li key={`${f.glifo}-${f.corto}`} data-ficha={f.glifo}>
+          <GlifoDeLaFicha ficha={f} indice={indice} />
         </li>
       ))}
     </ul>

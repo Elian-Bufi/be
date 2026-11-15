@@ -41,6 +41,8 @@ export const SENTIDO_CORTO = {
   SUBTOTAL: 'Subtotal',
   CARGA_RAPIDA: 'Carga rápida',
   ORIENTATIVA: 'De más de 10 a 12 rep. equivalentes',
+  // El 1RM estimado lleno: como la leyenda de «Analizar · Fuerza» (revisión del 15/11, rama B).
+  NUCLEO_DE_LA_ESTIMACION: 'Hasta 10 rep. equivalentes',
   OBSERVADA_POR_EL_PROFESIONAL: 'Observado',
   REPORTADO: 'Reportado',
   CALCULADO: 'Calculado',
@@ -53,6 +55,7 @@ export const SENTIDO_EN_LA_LEYENDA = {
   SUBTOTAL: 'Día con algo que falta: hueco',
   CARGA_RAPIDA: 'Tildado sin escribir (los números del plan): hueco y gris',
   ORIENTATIVA: 'De más de 10 a 12 repeticiones equivalentes: hueco',
+  NUCLEO_DE_LA_ESTIMACION: 'Hasta 10 repeticiones equivalentes: lleno',
   OBSERVADA_POR_EL_PROFESIONAL: 'Observado por el profesional: rombo',
   REPORTADO: 'Reportado por la persona: contorno cortado',
   CALCULADO: 'Calculado con un método: punto adentro',

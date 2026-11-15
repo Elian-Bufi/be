@@ -12,11 +12,11 @@
  * Sin una unidad pedida, la de lo más reciente: si el ejercicio tiene registros en kg y en lb, se leen las dos y queda la
  * línea cuyo último punto es más nuevo (la API, sola, elige kg).
  */
-import type { PuntoDeFuerza } from '@be/domain';
+import type { PuntoDeFuerza, VigenciaDePlan } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Resultado } from '../../../../lib/api';
 import { motivoDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
-import type { SerieQueNoEntro, VersionDelPlanEnElPeriodo } from './fuerza';
+import type { SerieQueNoEntro } from './fuerza';
 
 /** Una línea de la evolución: los puntos de un ejercicio en una unidad, con las series que no entraron. */
 export interface LineaDeFuerza {
@@ -44,7 +44,7 @@ export type LecturaDeFuerza =
       /** «Hay registros con otro profesional que no ves». */
       readonly deOtros: boolean;
       /** Las vigencias del plan en el período: las franjas del gráfico y la versión de cada lectura (ED-74). */
-      readonly versiones: readonly VersionDelPlanEnElPeriodo[];
+      readonly versiones: readonly VigenciaDePlan[];
     };
 
 /** Casi un año para atrás: 365 días con hoy. La API acepta hasta 366, y el día de hoy del navegador puede ir uno adelante del de la API. */

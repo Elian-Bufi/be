@@ -34,6 +34,11 @@
  *   sesión.
  * - **La tabla,** una fila por renglón y sin partir un valor: con menos ancho, menos columnas, no números cortados.
  *
+ * WP-GRAFICOS GR-02 (fase 2, rama B; DL-174): el ruido antes que el cambio (§5.12). Debajo del gráfico, a la vista,
+ * cada versión con la mediana del RIR registrado, las repeticiones de la serie usada y el ruido propio (GR-T16); en la
+ * lectura del costado, el ruido de la versión del punto elegido, antes que «La anterior». El cambio de lo indicado es el
+ * de la pasada visual (en la línea de la versión y, si no entra, debajo): la primera línea de la rama B quedó en él.
+ *
  * Como la composición (TA-25), la pregunta vive en el website y no se guarda como vista: su identificador no entra en
  * `ID_DE_PREGUNTAS`, que valida la API. El período es el de la ficha, que la API recorta al inicio del acompañamiento.
  */
@@ -50,6 +55,9 @@ import { marcasRedondas, puntosConRotulo, rotulosSinPisarse, textoDeLaMarcaDelEj
 import { useLoIndicadoDelEjercicio } from '../graficos/lectura-de-lo-indicado';
 import { cambiosPorVersion } from '../graficos/lo-indicado-en-el-tiempo';
 import { diaYMes } from '../graficos/eje-de-fechas';
+import { fechasSinSeries } from '../graficos/entrenamiento/comparador';
+import { COPY_FUERZA_ESTIMADA } from '../graficos/entrenamiento/copy';
+import { lecturaDeLaVersionEn, lecturasPorVersion, type LecturaDeLaVersion } from '../graficos/entrenamiento/fuerza-estimada';
 import { useAnchoDelGrafico } from '../graficos/medidas-del-grafico';
 import { useSeguimiento } from '../seguimiento/contexto';
 import { parametrosDePregunta } from '../seguimiento/estado';
@@ -161,6 +169,11 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
         : new Map<string, string>(),
     [indicado, versiones],
   );
+  // GR-02 (WP-GRAFICOS, DL-174; §5.12): cada versión, con la mediana del RIR, las repeticiones y su ruido, a la vista.
+  const porVersion = useMemo(() => (linea ? lecturasPorVersion(linea.puntos, versiones, linea.unidad) : []), [linea, versiones]);
+  // GR-02 (revisión del 15/11, §5.4): las sesiones en las que se hizo el ejercicio sin ninguna serie escrita no tienen
+  // estimación y la API no las cuenta entre las que no entraron: la línea se corta en ellas, como en el historial.
+  const sinSeries = useMemo(() => (indicado.tipo === 'lista' ? fechasSinSeries(indicado.observaciones) : []), [indicado]);
   const cambiar = (c: Record<string, string | null>) => {
     setElegidoId(null);
     ir(c);
@@ -231,11 +244,20 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
               versiones={versiones}
               cambios={cambios}
               conOrientativas={encendido}
+              sinSeries={sinSeries}
             />
+            {/* §5.12: si no se pudo leer lo indicado, las versiones van sin su cambio, y se dice (la rama B lo tenía; se perdió
+                al traer la pasada visual). */}
+            {indicado.tipo === 'sin-dato' && puntos.length > 0 ? (
+              <p className="nota" data-sin-lo-indicado>
+                {COPY_FUERZA_ESTIMADA.sinIndicado}
+              </p>
+            ) : null}
+            <PorVersion lecturas={porVersion} />
             {linea && puntos.length > 0 ? <ComoLeerLaFuerza linea={linea} soloOrientativas={soloOrientativas} /> : null}
             <TablaDeOrigen linea={linea} asesoradoId={asesoradoId} onComo={setComo} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} soloOrientativas={soloOrientativas} />
           </div>
-          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} versiones={versiones} cambios={cambios} />
+          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} versiones={versiones} cambios={cambios} porVersion={porVersion} />
         </div>
       )}
       {lectura.tipo === 'lista' && lectura.deOtros ? <p className="nota">{C.deOtros}</p> : null}
@@ -311,6 +333,7 @@ function Grafico({
   versiones,
   cambios,
   conOrientativas,
+  sinSeries,
 }: {
   linea: LineaDeFuerza | null;
   elegido: PuntoDeFuerza | null;
@@ -324,6 +347,8 @@ function Grafico({
   cambios: ReadonlyMap<string, string>;
   /** El interruptor de las de más de 10 a 12: cambia el rango de validez que se dice. */
   conOrientativas: boolean;
+  /** Las fechas de las sesiones con el ejercicio hecho sin ninguna serie escrita: cortan la línea (GR-02, §5.4). */
+  sinSeries: readonly string[];
 }) {
   const [ref, ancho] = useAnchoDelGrafico();
   const [encima, setEncima] = useState<string | null>(null);
@@ -361,8 +386,9 @@ function Grafico({
       </div>
     );
   }
-  const tramos = tramosDeLaLinea(puntos, linea.noEntraron, soloOrientativas);
-  const sinEstimacion = [...new Set(filasDeLaEvolucion(puntos, linea.noEntraron, soloOrientativas).flatMap((f) => (f.tipo === 'sin-estimacion' ? [f.fecha] : [])))];
+  // Una sesión con el ejercicio hecho sin series escritas también corta la línea y lleva su marca (GR-02, §5.4).
+  const tramos = tramosDeLaLinea(puntos, linea.noEntraron, soloOrientativas).filter(([a, b]) => !sinSeries.some((f) => f > puntos[a]!.date && f < puntos[b]!.date));
+  const sinEstimacion = [...new Set([...filasDeLaEvolucion(puntos, linea.noEntraron, soloOrientativas).flatMap((f) => (f.tipo === 'sin-estimacion' ? [f.fecha] : [])), ...sinSeries])];
   const hoy = hoyEn(zona);
   const conHoy = hoy >= desde && hoy <= hasta;
   const abajo = ALTO - MARGEN.abj;
@@ -723,9 +749,31 @@ function TablaDeOrigen({
 }
 
 /**
+ * GR-02 (WP-GRAFICOS, DL-174; §5.12): cada versión del plan con estimaciones de la persona, con la mediana del RIR
+ * registrado, las repeticiones de la serie usada y el ruido propio, en texto y a la vista (sin el signo más-menos ni
+ * porcentajes). Va debajo del gráfico, antes de «Cómo leerlo».
+ */
+function PorVersion({ lecturas }: { lecturas: readonly LecturaDeLaVersion[] }) {
+  if (lecturas.length === 0) return null;
+  return (
+    <div className="grafico-de-entrenamiento__por-version">
+      <p className="grafico-de-entrenamiento__subtitulo">{COPY_FUERZA_ESTIMADA.porVersion}</p>
+      <ul data-lectura-por-version>
+        {lecturas.map((v) => (
+          <li key={v.planVersionId}>
+            <strong>{v.rotulo}:</strong> {v.texto}.
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
  * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día (y lo que
- * cambió en lo indicado al empezar), lo que mueve un RIR en esa estimación y, después, la anterior con su fecha y su
- * valor: sin flecha y sin «primero → último» (§5.12). Lo que no entra y la fórmula están en «Cómo leerlo».
+ * cambió en lo indicado al empezar), lo que mueve un RIR en esa estimación, el ruido de su versión (GR-02) y, después,
+ * la anterior con su fecha y su valor: sin flecha y sin «primero → último» (§5.12). Lo que no entra y la fórmula están
+ * en «Cómo leerlo».
  */
 function Lectura({
   linea,
@@ -734,6 +782,7 @@ function Lectura({
   onComo,
   versiones,
   cambios,
+  porVersion,
 }: {
   linea: LineaDeFuerza | null;
   elegido: PuntoDeFuerza | null;
@@ -741,6 +790,7 @@ function Lectura({
   onComo: (p: PuntoDeFuerza) => void;
   versiones: readonly VersionDelPlanEnElPeriodo[];
   cambios: ReadonlyMap<string, string>;
+  porVersion: readonly LecturaDeLaVersion[];
 }) {
   const nombres = useNombres();
   if (!linea || !elegido) return null;
@@ -757,6 +807,8 @@ function Lectura({
   const cambio = deLaVersion ? cambios.get(deLaVersion.from) : undefined;
   const ruido = loQueMueveUnRir([elegido.estimate.load.value], elegido.estimate.load.unit);
   const aclaracionDeLaAnterior = anterior ? (anterior.source === 'OBSERVED' ? C.laObservasteVos : anterior.estimate.band === 'ORIENTATIVE' ? C.orientativa : null) : null;
+  // GR-02 (§5.12): el ruido propio de la versión del punto elegido, también antes que la anterior.
+  const deSuVersion = elegido.source === 'PERSON' ? lecturaDeLaVersionEn(elegido.date, porVersion) : null;
   return (
     <aside className="fuerza-en-analizar__lectura" aria-live="polite" data-lectura-de-fuerza>
       <h3>{C.lectura(fechaLarga(elegido.date))}</h3>
@@ -785,6 +837,11 @@ function Lectura({
       {ruido ? (
         <p className="nota fuerza-en-analizar__ruido" data-ruido-de-la-lectura>
           {COPY_DEL_RUIDO.ruidoDeLaElegida(ruido)}
+        </p>
+      ) : null}
+      {deSuVersion ? (
+        <p className="nota fuerza-en-analizar__ruido" data-ruido-de-la-version>
+          {deSuVersion.ruido}
         </p>
       ) : null}
       {anterior ? (
