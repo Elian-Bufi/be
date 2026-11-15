@@ -105,10 +105,10 @@ export function graficoDeMasas(observaciones: readonly ObservacionDeLaToma[], de
       const delDia = (m: MetodoDeLaMasa) => enElPeriodo.filter((o) => o.metrica === m.metrica && o.fecha === fecha);
       const metodos = p.metodos.map((m): CeldaDeLaTabla | null => {
         const lista = delDia(m);
-        return lista.length === 0 ? null : { texto: lista.map(masaEnPalabras).join(' · '), marca: marcaDeLaClase(lista[0]!.clase), tarde: false };
+        return lista.length === 0 ? null : { texto: lista.map(masaEnPalabras).join(' · '), marca: marcaDeLaClase(lista[0]!.clase), tarde: false, registrada: true };
       });
       const separaciones = paneles[i]!.uniones.filter((u) => u.fecha === fecha && u.rotulo !== null).map((u) => C.masas.separan(u.rotulo as string));
-      return [...metodos, separaciones.length > 0 ? { texto: separaciones.join(' · '), marca: null, tarde: false } : null];
+      return [...metodos, separaciones.length > 0 ? { texto: separaciones.join(' · '), marca: null, tarde: false, registrada: true } : null];
     }),
   }));
   const presentes = new Set(enElPeriodo.map((o) => o.metrica));

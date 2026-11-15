@@ -56,7 +56,7 @@ const valorPorKilo = (v: number): string => `${numero(v, 2)} g/kg`;
 function celdaDelMacro(p: PuntoAnalitico | undefined, r: ResultadoDeProyeccionNutricional, m: MacroDelGrafico, fecha: string, tarde: boolean): CeldaDeLaTabla | null {
   if (!p) return null;
   const objetivo = objetivoDelDia(r.prescribed.objectiveSteps, m.metrica, fecha);
-  return { texto: [lecturaDelDia(p, m.metrica, tarde), ...(objetivo ? [objetivo] : [])].join(' · '), marca: marcaDelDia(p), tarde };
+  return { texto: [lecturaDelDia(p, m.metrica, tarde), ...(objetivo ? [objetivo] : [])].join(' · '), marca: marcaDelDia(p), tarde, registrada: true };
 }
 
 /** Las filas de la tabla: una por fecha con algún punto en algún panel. */
@@ -154,10 +154,10 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
     const tarde = e.cargadoTarde?.has(fecha) ?? false;
     const peso = pesoDelDia(e.pesos, fecha);
     // Sin una toma anterior no hay g/kg, aunque haya gramos: la celda lo dice una vez y sin marca (no se dibuja).
-    if (peso === null) return { texto: `${C.sinValor(C.porKilo.sinPesoAnterior)}${tarde ? ` (${C.cargadoDespues})` : ''}`, marca: null, tarde };
+    if (peso === null) return { texto: `${C.sinValor(C.porKilo.sinPesoAnterior)}${tarde ? ` (${C.cargadoDespues})` : ''}`, marca: null, tarde, registrada: true };
     const calidad = calidadDelDia(p, tarde);
     const texto = p.value === null ? [calidad, pesoEnPalabras(peso, hasta)].join(' · ') : [valorPorKilo(p.value), calidad, pesoEnPalabras(peso, hasta)].join(' · ');
-    return { texto, marca: marcaDelDia(p), tarde };
+    return { texto, marca: marcaDelDia(p), tarde, registrada: true };
   });
   const conValorEnGramos = [...new Set(e.resultados.flatMap((r) => [...puntosPorFecha(r.recorded.points, desde, hasta).values()].filter((p) => p.value !== null).map((p) => p.date)))].sort();
   const sinPeso = conValorEnGramos.filter((f) => pesoDelDia(e.pesos, f) === null).length;

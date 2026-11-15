@@ -162,11 +162,11 @@ export function graficoDeEnergia(e: EntradaDeEnergia): GraficoArmado {
   const mediaDe = (fecha: string) => medias.find((m) => fecha >= m.desde && fecha <= m.hasta) ?? null;
   const filas = [...porFecha.values()].map((p) => {
     const tarde = e.cargadoTarde?.has(p.date) ?? false;
-    const registrado: CeldaDeLaTabla = { texto: lecturaDelDia(p, 'ENERGY', tarde), marca: marcaDelDia(p), tarde };
+    const registrado: CeldaDeLaTabla = { texto: lecturaDelDia(p, 'ENERGY', tarde), marca: marcaDelDia(p), tarde, registrada: true };
     const objetivoDelDiaTexto = objetivoDelDia(objetivo, 'ENERGY', p.date);
-    const delObjetivo: CeldaDeLaTabla = { texto: objetivoDelDiaTexto ?? C.sinObjetivo, marca: null, tarde: false };
+    const delObjetivo: CeldaDeLaTabla = { texto: objetivoDelDiaTexto ?? C.sinObjetivo, marca: null, tarde: false, registrada: true };
     const media = mediaDe(p.date);
-    const deLaMedia: CeldaDeLaTabla | null = media ? { texto: media.texto, marca: null, tarde: false } : null;
+    const deLaMedia: CeldaDeLaTabla | null = media ? { texto: media.texto, marca: null, tarde: false, registrada: true } : null;
     return { fecha: p.date, celdas: [registrado, delObjetivo, deLaMedia] };
   });
   const conValor = [...porFecha.values()].filter((p) => p.value !== null);

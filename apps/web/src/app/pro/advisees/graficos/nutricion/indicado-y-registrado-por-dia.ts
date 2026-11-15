@@ -115,7 +115,7 @@ export function celdaDeLaComparacion(m: MetricaDeLaComparacion, p: PuntoAnalitic
     if (saber === 'CON_TODO') partes.push(C.indicadoYRegistrado.diferencia(diferenciaConSigno(p.value, conIndicado.value, m.unidad, m.decimales)));
     else partes.push(saber === 'CON_ALGO_QUE_FALTA' ? C.indicadoYRegistrado.subtotalSinDiferencia : C.indicadoYRegistrado.sinSaberSinDiferencia);
   }
-  return { texto: partes.join(' · '), marca: p ? marcaDelDia(p) : 'ROMBO', tarde: false };
+  return { texto: partes.join(' · '), marca: p ? marcaDelDia(p) : 'ROMBO', tarde: false, registrada: p !== undefined };
 }
 
 /** GR-14 armado: un panel por métrica, la tira por comida, la tabla y su texto. */
@@ -156,7 +156,7 @@ export function graficoDeLaComparacion(e: EntradaDeLaComparacion): GraficoArmado
       fecha,
       celdas: [
         ...porMetrica.map(({ m, puntos, indicados }) => celdaDeLaComparacion(m, puntos.get(fecha), indicados.get(fecha))),
-        ...(e.contraste ? [comidas === null ? null : ({ texto: comidas, marca: null, tarde: false } satisfies CeldaDeLaTabla)] : []),
+        ...(e.contraste ? [comidas === null ? null : ({ texto: comidas, marca: null, tarde: false, registrada: true } satisfies CeldaDeLaTabla)] : []),
       ],
     };
   });

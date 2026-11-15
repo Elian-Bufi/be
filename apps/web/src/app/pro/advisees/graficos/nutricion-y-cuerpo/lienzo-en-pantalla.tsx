@@ -335,7 +335,7 @@ export function LienzoDeNutricionYCuerpo({ titulo, periodo, grafico, densidad = 
       <p id={idDelResumen} className="visualmente-oculto">
         {grafico.descripcion}
       </p>
-      <LecturaEnLaFecha tabla={grafico.tabla} fecha={cursor.fecha} tramo={cursor.tramo} />
+      <LecturaEnLaFecha tabla={grafico.tabla} fecha={cursor.fecha} encima={encima} tramo={cursor.tramo} hoy={periodo.hoy} />
       <LeyendaDelLienzo elementos={grafico.leyenda} />
       {grafico.notas.map((n) => (
         <p key={n} className="nota grafico-base__nota">
