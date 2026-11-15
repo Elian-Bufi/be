@@ -5985,6 +5985,56 @@ a.observacion__fila:focus-visible {
   font-size: 0.8125rem;
 }
 
+/* GR-24 por semana (revisión de #283): las marcas del dibujo, una vez, como fichas; cada gráfico recibe el foco y dice
+   debajo, a la vista, con cuántos días se hizo la media que se lee. */
+.leyenda-por-semana {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  margin: 0.15rem 0 0.6rem;
+}
+
+.leyenda-por-semana__fichas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+}
+
+.leyenda-por-semana__fichas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.minigrafico-por-semana__lienzo {
+  border-radius: 4px;
+}
+
+.minigrafico-por-semana__lienzo:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.minigrafico-por-semana__lienzo svg {
+  display: block;
+}
+
+.minigrafico-por-semana__lectura {
+  min-height: 2.5em;
+  margin: 0.2rem 0 0;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
 .pie-de-etapas .grafico-base__frase {
   margin-left: auto;
 }
@@ -17394,11 +17444,30 @@ p.cifra-del-espacio__desglose {
   font-size: 1rem;
 }
 
+/* Revisión de #283 (§5.12): el ruido va antes que la anterior, y la raya separa a los dos de lo de arriba. */
+.fuerza-en-analizar__ruido {
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
 .fuerza-en-analizar__anterior {
   margin: 0.75rem 0 0;
   padding-top: 0.75rem;
   border-top: 1px solid var(--borde);
   font-variant-numeric: tabular-nums;
+}
+
+.fuerza-en-analizar__ruido + .fuerza-en-analizar__anterior {
+  margin-top: 0.35rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* La fila que avisa cuántas quedan entre las recientes y la elegida, si es más vieja. */
+.fuerza-en-analizar__salto td {
+  padding-block: 0.35rem;
+  text-align: center;
 }
 
 .lista-de-ejercicios-con-fuerza {

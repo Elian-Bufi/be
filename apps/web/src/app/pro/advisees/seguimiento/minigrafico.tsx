@@ -17,7 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { diaYMesCivil } from '../../../../lib/formato';
 import { diasSinRegistros, escalaDeLaUnidad, FRANJA_DE_ROTULOS, geometriaDelIndicador, geometriaDelMinigrafico, LETRA_MINIMA, LUGAR_PARA_MARCAR_CADA_DIA } from './geometria';
 import { ESTILOS, Punto } from './marca';
-import { marcasRedondas, textoDeLaMarcaDelEje } from '../graficos/ejes';
+import { marcasDelMedio, textoDeLaMarcaDelEje } from '../graficos/ejes';
 
 const ALTO = 60;
 /** La letra más chica de un gráfico (el criterio de diseño pide 12,5 px como mínimo). */
@@ -74,14 +74,18 @@ export function Minigrafico({
     [serie, sombreados, desde, hasta, ancho, alto, inicioDelPlan, bandas, fechas, plan, ejeFino],
   );
   // WP-GRAFICOS, pasada visual (15/11): con el eje fino (la comparación de etapas), las marcas redondas del medio, para
-  // que el eje tenga de 3 a 5 números y no solo el tope y la base (DISENO-VISUAL §1, principio 4).
+  // que el eje tenga de 3 a 5 números y no solo el tope y la base (DISENO-VISUAL §1, principio 4). Solo las que caen en
+  // la grilla de los extremos y con sus mismos decimales (`marcasDelMedio`): el canal del eje se midió con los extremos,
+  // y «80,5» entre «80» y «81» se cortaba a la izquierda (revisión de #283).
   const intermedias = useMemo(() => {
     const [tope, base] = g.eje;
-    if (!ejeFino || !tope || !base || tope.valor <= base.valor) return [];
-    const m = marcasRedondas(base.valor, tope.valor, { enteros: escalaDeLaUnidad(serie.unit).enteros });
-    return m.valores
-      .filter((v) => v > base.valor && v < tope.valor)
-      .map((valor) => ({ valor, y: base.y + ((valor - base.valor) / (tope.valor - base.valor)) * (tope.y - base.y), texto: textoDeLaMarcaDelEje(valor, m.decimales) }));
+    if (!ejeFino || !tope || !base) return [];
+    const decimales = Math.max(...[tope, base].map((m) => (m.texto.split(',')[1] ?? '').length));
+    return marcasDelMedio(base.valor, tope.valor, decimales, { enteros: escalaDeLaUnidad(serie.unit).enteros }).map((valor) => ({
+      valor,
+      y: base.y + ((valor - base.valor) / (tope.valor - base.valor)) * (tope.y - base.y),
+      texto: textoDeLaMarcaDelEje(valor, decimales),
+    }));
   }, [g.eje, ejeFino, serie.unit]);
   const color = (ESTILOS[indice] ?? ESTILOS[0]).color;
   return (

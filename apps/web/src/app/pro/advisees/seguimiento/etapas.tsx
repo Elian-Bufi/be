@@ -26,6 +26,10 @@
  *   (`lectura-de-lo-indicado.ts`), con la versión que ejecutó cada sesión.
  * - **Nutrición, por semana:** una barra por semana con la media de los días con dato y los días como puntos tenues
  *   detrás (`MinigraficoPorSemana`), sin el peine de los días sin registros. «Día por día», a un toque.
+ * - **Revisión de #283:** cada gráfico por semana dice a la vista con cuántos días se hizo cada media, cuántos son
+ *   subtotales y cuántos quedaron afuera (§5.13), con el teclado y para el lector de pantalla; las semanas no cruzan el
+ *   cambio de etapa; las marcas tienen su leyenda una vez, arriba. La descripción de cada gráfico chico ya no dice «la
+ *   primera…; la última…» (§5.12). Si cambian las etapas, el modo vuelve al que conviene para el período nuevo.
  */
 import {
   compararEtapas,
@@ -33,7 +37,6 @@ import {
   LENTE_DEL_AREA,
   numero,
   periodoDeLasEtapas,
-  resumenTextual,
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
   valorConUnidad,
   type EtapaDePlanificacion,
@@ -43,7 +46,7 @@ import {
   type ResumenDeEtapa,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { BloqueDeEstado } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -56,9 +59,10 @@ import { Marca } from './marca';
 import { Minigrafico } from './minigrafico';
 import { useLoIndicadoDelEjercicio } from '../graficos/lectura-de-lo-indicado';
 import { diferenciaDeLoIndicado, loIndicadoEnElTramo } from '../graficos/lo-indicado-en-el-tiempo';
-import { MinigraficoPorSemana } from '../graficos/minigrafico-por-semana';
+import { LeyendaPorSemana, MarcaDeBarra, MinigraficoPorSemana } from '../graficos/minigrafico-por-semana';
 import { convienePorSemana } from '../graficos/semanas';
 import { etapaEnPalabras } from './preguntas';
+import { resumenSinPrimeroNiUltimo } from './resumen-del-grafico-chico';
 import { nombreDeLaReferencia, tituloDeLaReferencia } from './selector';
 import { useSeriesDelAnalisis, type Disponibles, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
@@ -139,6 +143,8 @@ export function ComparacionDeEtapas({
   };
   // Nutrición va por semana de entrada (DISENO-VISUAL §1, principio 6); «Día por día», a un toque.
   const [porSemana, setPorSemana] = useState(() => convienePorSemana(leido.desde, leido.hasta));
+  // Con otras etapas (sin volver a montar la comparación), el modo vuelve al que conviene para el período nuevo.
+  useEffect(() => setPorSemana(convienePorSemana(leido.desde, leido.hasta)), [leido.desde, leido.hasta]);
   // Las que no se pudieron leer: cada fila lo dice, y se reintentan juntas, con un solo botón debajo de la tabla.
   const fallidas = series.filter((s) => s.estado.tipo === 'error').length;
   const [plan, setPlan] = useState<{ origen: OrigenDeDato; titulo: string; numero: number } | null>(null);
@@ -350,6 +356,8 @@ export function ComparacionDeEtapas({
             </button>
           ) : null}
         </div>
+        {/* Las marcas del dibujo por semana, una vez para los tres gráficos, con cómo se arma cada barra. */}
+        {!enGrande && porSemana && area === 'NUTRICION' && dibujables.length > 0 ? <LeyendaPorSemana /> : null}
         {enGrande ? null : dibujables.length > 0 ? (
           <ul className="graficos-de-etapas__lista">
             {dibujables.map(({ s, indice }) => {
@@ -359,7 +367,7 @@ export function ComparacionDeEtapas({
               return (
                 <li key={s.clave} className="grafico-chico" data-metrica={s.clave}>
                   <p className="grafico-chico__titulo">
-                    <Marca indice={indice} />
+                    {semanal ? <MarcaDeBarra indice={indice} /> : <Marca indice={indice} />}
                     <strong>{titulo}</strong>
                     <span className="grafico-chico__detalle">
                       {s.estado.serie.unit} · {semanal ? POR_SEMANA : CADA_PUNTO[s.definicion.area]}
@@ -372,7 +380,7 @@ export function ComparacionDeEtapas({
                   </p>
                   {semanal ? (
                     <MinigraficoPorSemana
-                      dias={s.estado.observaciones.points.map((p) => ({ fecha: p.date, valor: p.value, parcial: p.quality === 'PARTIAL' || p.partialBucket }))}
+                      dias={s.estado.observaciones.points.map((p) => ({ fecha: p.date, valor: p.value, parcial: p.quality === 'PARTIAL', conRegistros: p.value === null, enCurso: p.partialBucket }))}
                       unidad={s.estado.serie.unit}
                       desde={leido.desde}
                       hasta={leido.hasta}
@@ -382,7 +390,7 @@ export function ComparacionDeEtapas({
                       bandas={bandas}
                       fechas={fechasDelPie}
                       plan={s.estado.objetivo}
-                      descripcion={`Gráfico de ${titulo}, por semana, con las etapas A y B: cada barra es la media de los días con dato de esa semana. ${resumenTextual(s.estado.observaciones, s.definicion, leido.desde, leido.hasta)}`}
+                      titulo={titulo}
                     />
                   ) : (
                   <Minigrafico
@@ -397,7 +405,7 @@ export function ComparacionDeEtapas({
                     fechas={fechasDelPie}
                     plan={s.estado.objetivo}
                     ejeFino
-                    descripcion={`Gráfico de ${titulo}, con las etapas A y B. ${resumenTextual(s.estado.observaciones, s.definicion, leido.desde, leido.hasta)}`}
+                    descripcion={`Gráfico de ${titulo}, con las etapas A y B. ${resumenSinPrimeroNiUltimo(s.estado.observaciones, s.definicion, leido.desde, leido.hasta)}`}
                   />
                   )}
                 </li>

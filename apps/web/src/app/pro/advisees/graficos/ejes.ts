@@ -20,7 +20,7 @@ export interface MarcasDelEje {
   readonly paso: number;
   /** Las marcas, de abajo hacia arriba: la primera es `abajo` y la última, `arriba`. */
   readonly valores: readonly number[];
-  /** Los decimales que hacen falta para escribir todas las marcas iguales (0, 1 o 2). */
+  /** Los decimales que hacen falta para escribir todas las marcas iguales y distintas entre sí (de 0 a 4). */
   readonly decimales: number;
 }
 
@@ -37,7 +37,14 @@ function pasosRedondos(desde: number): number[] {
   return pasos.sort((a, b) => a - b);
 }
 
-const decimalesDe = (v: number): number => (Number.isInteger(sinRuido(v)) ? 0 : Number.isInteger(sinRuido(v * 10)) ? 1 : 2);
+/**
+ * Los decimales que necesita un número para escribirse entero: hasta 4. Antes cortaba en 2, y un paso de 0,005 (un rango
+ * menor que 0,05: el índice cintura/talla de 0,49 a 0,50) dejaba «0,49 / 0,50 / 0,50» (revisión de #283).
+ */
+const decimalesDe = (v: number): number => {
+  for (let d = 0; d < 4; d++) if (Number.isInteger(sinRuido(v * 10 ** d))) return d;
+  return 4;
+};
 
 /**
  * Las marcas del eje vertical para un mínimo y un máximo: el paso redondo más chico que deja 5 marcas o menos, y al
@@ -70,6 +77,21 @@ export function marcasRedondas(minimo: number, maximo: number, opciones: { reado
   const valores: number[] = [];
   for (let v = abajo; v <= arriba + paso / 1000; v = sinRuido(v + paso)) valores.push(v);
   return { abajo, arriba, paso, valores, decimales: Math.max(0, ...valores.map(decimalesDe)) };
+}
+
+/**
+ * Las marcas del medio entre dos extremos que ya están escritos (el tope y la base del gráfico chico de GR-24, que salen
+ * de la escala del Resumen): las de `marcasRedondas` entre los dos, **solo si** los dos extremos caen en su misma grilla
+ * (si no, la grilla queda despareja: 3, 4, 6, 8) y si no piden más decimales que los extremos (si no, «80,5» entre «80» y
+ * «81» no entra en el canal del eje, que se midió con los extremos, y se corta). Sin marcas que cumplan, ninguna: el eje
+ * queda con sus dos extremos, que no se repiten.
+ */
+export function marcasDelMedio(base: number, tope: number, decimalesDeLosExtremos: number, opciones: { readonly enteros?: boolean } = {}): number[] {
+  if (!(tope > base)) return [];
+  const m = marcasRedondas(base, tope, opciones);
+  const enLaGrilla = (v: number): boolean => Math.abs(sinRuido(v / m.paso) - Math.round(sinRuido(v / m.paso))) < 1e-6;
+  if (!enLaGrilla(base) || !enLaGrilla(tope) || m.decimales > decimalesDeLosExtremos) return [];
+  return m.valores.filter((v) => v > base && v < tope);
 }
 
 /** Un número del eje, en es-AR y con los decimales de todas las marcas: «1.850», «2,5». */
