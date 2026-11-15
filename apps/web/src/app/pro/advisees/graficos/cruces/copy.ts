@@ -12,7 +12,10 @@ export const COPY_DE_LOS_CRUCES = {
   comoLeerlo: 'Cómo leerlo',
   tambienCambio: 'Lo que también cambió',
   noRegistra: 'Lo que BE no registra y también pudo cambiar',
-  sinCambiosQueSeSepan: 'BE no tiene registrado otro cambio en ese tramo.',
+  // Dice solo lo que se leyó: las versiones de los planes de las áreas de esta lectura. Que no haya otra no quiere decir
+  // que nada más cambió (para eso va la lista de lo que BE no registra).
+  sinCambiosQueSeSepan: 'En los planes que se leyeron no se activó otra versión en ese tramo.',
+  sinLasVersiones: 'No se pudieron leer las versiones de tus otros planes: no se sabe si cambió alguna en ese tramo.',
   mediana: 'mediana',
   fueraDeLaMediana: 'Fuera de la mediana',
   leyendaEntra: 'Entra en la mediana: llena',

@@ -160,9 +160,14 @@ function marcaDe(p: PuntoAnalitico, d: EntradaDeDosEtapas['definicion']): MarcaS
   return marcaDelPunto(p, { marca: d.area === 'ANTROPOMETRIA' ? 'MEDIDO_O_CALCULADO' : 'REGISTRADO' });
 }
 
-/** Lo de la fuerza en una etapa, por fechas (el punto de fuerza no trae su versión): solo lo escrito por la persona. */
+/**
+ * Lo de la fuerza en una etapa, por fechas (el punto de fuerza no trae su versión): solo lo escrito por la persona y del
+ * núcleo, las mismas sesiones que entran en la mediana. Una orientativa (de 10 a 12 repeticiones equivalentes) se ve
+ * hueca y no entra: si entrara acá, el rango de repeticiones no diría de dónde sale la mediana, y la lectura de SP-01,
+ * que usa el núcleo, diría otra cosa en la misma pantalla.
+ */
 function fuerzaDe(puntos: readonly PuntoDeFuerza[], e: EtapaDeLaComparacion): FuerzaDeLaEtapa {
-  const propios = e.ultimoDia === null ? [] : puntos.filter((p) => p.source === 'PERSON' && p.date >= e.desde && p.date <= (e.ultimoDia as string));
+  const propios = e.ultimoDia === null ? [] : puntos.filter((p) => p.source === 'PERSON' && p.estimate.band === 'CORE' && p.date >= e.desde && p.date <= (e.ultimoDia as string));
   const reps = propios.map((p) => p.estimate.completedRepetitions);
   return {
     sesiones: propios.length,
@@ -219,7 +224,7 @@ export function dosEtapasLadoALado(e: EntradaDeDosEtapas): DosEtapasLadoALado {
 
 /** La fuerza de una etapa, en palabras: «RIR registrado de mediana 1; series de 5 a 6 repeticiones». */
 export function fuerzaEnPalabras(f: FuerzaDeLaEtapa): string {
-  if (f.sesiones === 0) return 'Sin sesiones de la persona en esta etapa.';
+  if (f.sesiones === 0) return 'Sin sesiones de la persona con una estimación del núcleo (hasta 10 repeticiones equivalentes) en esta etapa.';
   const rir = f.medianaDelRir === null ? 'sin RIR registrado' : `RIR registrado de mediana ${numero(f.medianaDelRir, 1)}`;
   const reps = f.repeticiones === null ? '' : f.repeticiones.desde === f.repeticiones.hasta ? `; series de ${f.repeticiones.desde} repeticiones` : `; series de ${f.repeticiones.desde} a ${f.repeticiones.hasta} repeticiones`;
   return `${rir}${reps}.`;

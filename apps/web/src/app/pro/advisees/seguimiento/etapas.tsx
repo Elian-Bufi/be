@@ -44,7 +44,7 @@ import { escalaDeLaSerie, lecturaDelPunto } from '../graficos/arma-tu-grafico/co
 import { COPY_DE_LOS_CRUCES } from '../graficos/cruces/copy';
 import { dosEtapasLadoALado, etapaDeLaPlanificacion } from '../graficos/cruces/dos-etapas';
 import { DosEtapasEnPantalla } from '../graficos/cruces/dos-etapas-en-pantalla';
-import { LO_QUE_BE_NO_REGISTRA, versionesQueSeActivaron } from '../graficos/cruces/lo-que-tambien-cambio';
+import { LO_QUE_BE_NO_REGISTRA, versionesEntreLasEtapas } from '../graficos/cruces/lo-que-tambien-cambio';
 import dynamic from 'next/dynamic';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
@@ -87,6 +87,7 @@ export function ComparacionDeEtapas({
   b,
   metricas,
   etapas,
+  etapasDeLaOtraArea,
   disponibles,
   enGrande,
   onEnGrande,
@@ -100,6 +101,11 @@ export function ComparacionDeEtapas({
   metricas: readonly ReferenciaDeMetrica[];
   /** Todas las etapas del área en el último año: las que cada tarjeta puede ofrecer. */
   etapas: readonly EtapaDePlanificacion[];
+  /**
+   * GR-24: las etapas del último año de la otra área (sus planes propios), para decir qué más se activó entre A y B.
+   * Vacías sin acceso o sin plan propio; `null` si no se pudieron leer (se dice que no se sabe, no que no cambió).
+   */
+  etapasDeLaOtraArea: readonly EtapaDePlanificacion[] | null;
   disponibles: Disponibles;
   /** Los gráficos grandes están abiertos debajo: los chicos no se repiten. */
   enGrande: boolean;
@@ -162,9 +168,11 @@ export function ComparacionDeEtapas({
       }),
     };
   });
-  // Lo que también cambió entre una etapa y otra: las versiones de la otra área que se activaron en el medio (si se leen).
-  const deLaOtraArea = area === 'NUTRICION' ? disponibles.vigencias.entrenamiento : disponibles.vigencias.nutricion;
-  const tambienCambio = versionesQueSeActivaron(deLaOtraArea, a.desde, b.ultimoDia ?? leido.hasta);
+  // Lo que también cambió entre una etapa y otra: las versiones de los planes propios (de esta área, entre A y B, y de la
+  // otra) que se activaron en el medio. Salen de las etapas del último año, no de las versiones del período de la ficha:
+  // con dos etapas de hace meses, lo de entonces no estaba ahí y se decía que no había cambiado nada.
+  const [primera, segunda]: readonly [EtapaDePlanificacion, EtapaDePlanificacion] = a.desde <= b.desde ? [a, b] : [b, a];
+  const tambienCambio = etapasDeLaOtraArea === null ? null : versionesEntreLasEtapas([...etapas, ...etapasDeLaOtraArea], primera, segunda, segunda.ultimoDia ?? leido.hasta);
 
   const tarjeta = (e: EtapaDePlanificacion, lado: 'A' | 'B') => {
     const otra = lado === 'A' ? b : a;
@@ -331,7 +339,9 @@ export function ComparacionDeEtapas({
           ))}
           <div className="cruce__tambien">
             <h4>{COPY_DE_LOS_CRUCES.tambienCambio}</h4>
-            {tambienCambio.length > 0 ? (
+            {tambienCambio === null ? (
+              <p className="nota">{COPY_DE_LOS_CRUCES.sinLasVersiones}</p>
+            ) : tambienCambio.length > 0 ? (
               <ul>
                 {tambienCambio.map((t) => (
                   <li key={t}>{t}.</li>

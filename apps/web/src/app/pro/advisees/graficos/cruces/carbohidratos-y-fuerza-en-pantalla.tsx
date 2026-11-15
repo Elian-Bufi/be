@@ -11,7 +11,7 @@
  */
 import { entraEnLaEstimacion, type ReferenciaDeMetrica } from '@be/domain';
 import { useEffect, useState } from 'react';
-import { ejercicioDeLaClave, escalaDeLaSerie, lecturaDelPunto } from '../arma-tu-grafico/compositor';
+import { ejercicioDeLaClave, escalaDeLaSerie, lecturaDelPunto, leyendaDeLosCarriles } from '../arma-tu-grafico/compositor';
 import { inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla, type EstadoDelGrafico } from '../estado-del-grafico';
 import { leerSerieDelCatalogo } from '../lecturas';
@@ -152,7 +152,7 @@ export default function CarbohidratosYFuerza({ lectura, periodo, densidad, ejerc
         carriles={carriles}
         bandas={bandasDeLaVentana(lecturaDelCruce)}
         densidad={densidad}
-        leyenda={['REGISTRADO', 'SUBTOTAL', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL']}
+        leyenda={leyendaDeLosCarriles(carriles)}
         notas={[COPY_DE_LOS_CRUCES.frase]}
       />
       <LecturaDelCruce lectura={lecturaDelCruce} ventana={C.ventana} comoLeerlo={C.comoLeerlo} />

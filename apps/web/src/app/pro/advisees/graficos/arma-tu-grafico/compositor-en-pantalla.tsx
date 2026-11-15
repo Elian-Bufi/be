@@ -281,7 +281,7 @@ export function CompositorDeGraficos({ abierto, acceso, ejercicios, medidas, lec
 
         <section className="compositor__vista-previa" aria-label={C.vistaPrevia}>
           <h3>{C.vistaPrevia}</h3>
-          {elegidas.length > 0 && abierto ? <GraficoArmadoEnPantalla grafico={grafico} lectura={lectura} periodo={periodo} densidad="COMPACTA" ejercicios={nombresDeEjercicios} /> : <p className="nota">{C.faltaSerie}</p>}
+          {elegidas.length > 0 && abierto ? <GraficoArmadoEnPantalla grafico={grafico} lectura={lectura} periodo={periodo} densidad="COMPACTA" ejercicios={nombresDeEjercicios} acceso={acceso} /> : <p className="nota">{C.faltaSerie}</p>}
         </section>
       </div>
     </CuadroEnfocado>

@@ -1428,8 +1428,8 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
 |---|---|
 | TEST-GRF-060 | Importar un `.tsx` en el registro |
 | TEST-GRF-061 | Dibujar «Dos etapas» con 4 de un lado; asignar una sesión a la versión de su fecha y no a la que ejecutó |
-| TEST-GRF-062 | Perder la observación que no entra en la mediana |
-| TEST-GRF-063 | Ofrecer SP-01 con una sola área; que GR-24 sin ejercicio compare las calorías aunque falte Nutrición |
+| TEST-GRF-062 | Perder la observación que no entra en la mediana; contar una orientativa en la mediana del RIR o en el rango de repeticiones |
+| TEST-GRF-063 | Ofrecer SP-01 con una sola área; que GR-24 sin ejercicio compare las calorías aunque falte Nutrición; pedirle un ejercicio a quien no tiene Entrenamiento; que un gráfico armado pida una serie de un área sin acceso |
 | TEST-GRF-064 | Pedir la lectura de comidas en el caso negado de SP-02 |
 | TEST-GRF-065 | Sacar las calorías de SP-01 |
 | TEST-GRF-066 | Aceptar una etapa del objetivo de 2 semanas; aceptar dos etapas con otra versión del objetivo en el medio |
@@ -1439,11 +1439,11 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
 | TEST-GRF-070 | Superponer una serie semanal con una de sesión |
 | TEST-GRF-071 | Abrir siempre el segundo eje en una vista con `OVERLAY` de antes |
 | TEST-GRF-072 | Un «%» en la lectura de un cruce; devolverle a un límite del diccionario el término prohibido que decía en negación |
-| TEST-GRF-073 | Unir las tomas de Antropometría; unir lo indicado con una línea o dibujarlo lleno, también en un gráfico armado; la leyenda fija de antes |
+| TEST-GRF-073 | Unir las tomas de Antropometría (también en el lienzo de «Analizar»); unir lo indicado con una línea o dibujarlo lleno, también en un gráfico armado; la leyenda fija de antes, también en SP-01 y SP-02 |
 | TEST-GRF-074 | Ofrecer el 1RM estimado con cualquier ejercicio |
 | TEST-GRF-075 | Leer el 1RM estimado como métrica del diccionario |
 | TEST-GRF-076 | Volver a «Juntas»; sacar la cinta de arriba de «Analizar» o su proveedor del cursor; que la cinta vea la fecha acotada y pierda el evento que empieza antes de lo que se ve |
-| TEST-GRF-077 | Asignar una sesión por su fecha; decir un cambio fuera de la ventana |
+| TEST-GRF-077 | Asignar una sesión por su fecha; decir un cambio fuera de la ventana; sacar lo que también cambió entre dos etapas de las versiones del período de la ficha |
 | TEST-GRF-078 | Perder la marca de la orientativa; dejar automático el eje del 1RM estimado en «Analizar» |
 | TEST-GRF-079 | Guardar en `localStorage` |
 
@@ -1492,7 +1492,8 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
 - Lo indicado del entrenamiento en «Analizar» se ve recién cuando se integre la rama B (#280), que ofrece el RIR
   indicado; hasta entonces no se puede elegir.
 - «Patrones» (rama E) tiene que pasarles `acceso` a los gráficos del registro: GR-24 sin ejercicio lo usa para no leer
-  Nutrición sin el alcance, y sin él no lee nada.
+  Nutrición sin el alcance, y sin él no lee nada. `GraficoArmadoEnPantalla` lo pide como obligatorio: con él no pide
+  una serie de un área sin acceso.
 - La evidencia en pantalla (1440, 1280 y 1024) y la revisión con lector de pantalla: no se corrió el website local (la PC
   tiene poca memoria); lo juzgan la CI, los recorridos del navegador y las capturas de #282.
 
@@ -1509,6 +1510,18 @@ correrlas en esta máquina; la CI corre las pruebas tal cual:
 | Baja | Un gráfico armado que perdió una serie por falta de acceso decía «Superpuestas: pide dos series o tres», un rastro de lo que no se ve | Sin ese motivo cuando faltan series |
 | Baja | Con el RIR registrado de dos ejercicios y un RIR indicado, lo indicado iba al eje del primero, aunque fuera del otro ejercicio | Con dos registrados de su unidad, lo indicado no se une a ninguno: quedan tres ejes y «Superpuestas» dice por qué |
 | Baja (queda) | GR-24 en «Patrones» dice lo que BE no registra, pero no lista las versiones de la otra área que se activaron entre las etapas (en «Analizar» sí) | Pide una lectura más de la otra área, con su alcance: queda para cuando «Patrones» esté en pantalla (rama E) |
+
+#### La segunda revisión del 15/11 (ojo adversario) y lo que se arregló
+
+| Severidad | Hallazgo | Arreglo |
+|---|---|---|
+| Media | En «Analizar», las tomas de Antropometría se unían con una línea, también en «Superpuestas» con las calorías, contra GR-D5 y §4.5 («Antropometría sigue en puntos sueltos, también superpuesta») | El lienzo deja sin línea lo que el catálogo no une (`unir: unirLaSerieDe(…)`), en todos los modos, como la pestaña Antropometría; lo indicado sigue en rombos |
+| Media | El gráfico armado (la vista previa del compositor y un gráfico propio de un enfoque) pedía cada serie aunque fuera de un área sin acceso, y esperaba el 404 de la API | `GraficoArmadoEnPantalla` recibe el `acceso` (obligatorio) y no pide lo que `serieConAcceso` no deja: ni se dibuja ni deja hueco |
+| Media | «Lo que también cambió» de «Comparar dos etapas» salía de las versiones del período de la ficha: con dos etapas de hace meses no listaba lo que se activó entre ellas y decía que no había otro cambio | Sale de las etapas del último año de las dos áreas (`versionesEntreLasEtapas`, con las versiones de la misma área entre A y B); si no se pudieron leer, dice que no se sabe. El texto sin cambios dice solo lo que se leyó |
+| Baja | En «Dos etapas», la mediana del RIR y el rango de repeticiones contaban las orientativas, que no entran en la mediana: en SP-01 decía otra cosa que la lectura del cruce | Solo el núcleo de lo escrito por la persona, como la mediana |
+| Baja | GR-24 en «Patrones» con un ejercicio y sin el alcance de Entrenamiento pedía «Elegí un ejercicio… Entrenamiento»: nombraba un área sin acceso | Sin ese alcance (o sin saber el acceso), el gráfico no está |
+| Baja | SP-01 y SP-02 llevaban una leyenda fija (con lo reportado o lo observado aunque no hubiera ninguno) | La leyenda sale de lo dibujado (`leyendaDeLosCarriles`) |
+| Baja (queda) | En «Superpuestas» de dos áreas, el lienzo dibuja las bandas de las versiones de las dos, una sobre otra (rotuladas con su área) | Elegir qué bandas van con dos áreas es una decisión de diseño de la vista; queda para la revisión en pantalla |
 
 ### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
 

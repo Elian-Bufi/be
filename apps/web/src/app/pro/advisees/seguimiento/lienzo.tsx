@@ -20,6 +20,8 @@
  *   Las tres capas van solo en su propio panel y se distinguen por la forma y por su nombre en la leyenda, no solo por
  *   el color. **Lo indicado del entrenamiento** (el RIR indicado, cuando se elige como serie; GR-T59) se dibuja igual:
  *   rombos huecos sueltos, sin línea; en «Superpuestas» va en el eje del RIR registrado, con su misma escala.
+ * - **Antropometría va en puntos sueltos**, en todos los modos (GR-D5 y WP-GRAFICOS §4.5, DL-174): ninguna línea une dos
+ *   tomas ni las suaviza, también superpuestas con otra serie. El catálogo lo dice (`unirPuntos`) y «Analizar» lo pasa.
  * - **Puntos reales:** la línea une solo puntos del mismo tramo; los huecos y los cambios de método la cortan (F-02). Un
  *   subtotal, el día en curso y una semana sin completar son puntos huecos; lo desconocido no es un punto. Una serie de
  *   carga rápida (DL-161: tildada sin escribir, con los valores del plan) también: sigue en su línea y lleva la leyenda
@@ -91,6 +93,11 @@ export interface SerieParaDibujar {
    * sin línea que los una, como lo indicado de Nutrición (DL-158). En «Superpuestas» va en el eje de lo registrado.
    */
   readonly indicada?: boolean;
+  /**
+   * `false`: sus puntos van sueltos, sin una línea que los una (Antropometría, GR-D5: nada une dos tomas, en ningún
+   * modo). Sin valor, se unen los del mismo tramo, como siempre.
+   */
+  readonly unir?: boolean;
   /** En «Superpuestas» con dos unidades (GR-26): de qué lado va su eje. Sin lado, a la izquierda. */
   readonly lado?: 'IZQUIERDA' | 'DERECHA';
   /**
@@ -397,6 +404,8 @@ function Panel({
   const medidaDe = (pt: PuntoAnalitico) => medidaDeMarca(estadoDeMarca(pt), espacioPorDia);
   /** Las series que son lo indicado en el plan (GR-T59): sus marcas son rombos huecos y no las une ninguna línea. */
   const indicadas = new Set(series.filter((s) => s.indicada === true).map((s) => s.indice));
+  /** Las series en puntos sueltos: lo indicado y lo que no se une (Antropometría, GR-D5), en todos los modos. */
+  const sinLinea = new Set(series.filter((s) => s.indicada === true || s.unir === false).map((s) => s.indice));
   /**
    * El dominio de cada eje (GR-T15): el de siempre, salvo que una serie del eje tenga un rango mínimo y sus valores no lo
    * abarquen; entonces, ese rango centrado en los valores. La misma regla en «Alineadas» y en «Superpuestas».
@@ -679,8 +688,8 @@ function Panel({
             ))}
             {tramos.map((t) => {
               const e = ESTILOS[t.indice] ?? ESTILOS[0];
-              // Lo indicado va suelto (GR-T59): sin línea, solo sus rombos.
-              const suelta = indicadas.has(t.indice);
+              // Lo indicado (GR-T59) y las tomas de Antropometría (GR-D5) van sueltos: sin línea, solo sus marcas.
+              const suelta = sinLinea.has(t.indice);
               return <Line key={t.clave} {...enSuEje(derechaDe(t.indice))} dataKey={t.clave} type="linear" stroke={suelta ? 'none' : e.color} strokeWidth={suelta ? 0 : 1.5} strokeLinejoin="round" strokeLinecap="round" connectNulls isAnimationActive={false} dot={punto(t.clave)} activeDot={false} />;
             })}
             {/* El nombre de cada línea, a la derecha de su último punto, en el margen: va en una capa aparte, porque los

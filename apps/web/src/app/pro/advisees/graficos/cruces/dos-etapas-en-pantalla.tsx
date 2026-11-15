@@ -175,17 +175,20 @@ type EstadoDeDosEtapas = EstadoDelGrafico | { readonly tipo: 'LISTA'; readonly d
 /**
  * GR-24 en «Patrones»: la versión vigente del plan frente a la anterior, con todas las observaciones de cada una. La
  * serie sale de `referenciaDeLaComparacion`, que no pide un área sin acceso: sin ejercicio y sin Nutrición propia, no lee
- * nada y pide un ejercicio.
+ * nada y pide un ejercicio, solo si hay Entrenamiento; sin él, el gráfico no está.
  */
 export default function GraficoDeDosEtapas({ lectura, periodo, densidad, ejercicio, acceso }: PropsDelGrafico) {
   const [estado, setEstado] = useState<EstadoDeDosEtapas>({ tipo: 'CARGANDO' });
   const [vuelta, setVuelta] = useState(0);
   const elegida = referenciaDeLaComparacion(ejercicio, acceso ?? null);
-  const clave = `${lectura.asesoradoId}|${periodo.desde}|${periodo.hasta}|${JSON.stringify(elegida)}|${vuelta}`;
+  const conEntrenamiento = acceso?.alcances.includes('ENTRENAMIENTO') ?? false;
+  const clave = `${lectura.asesoradoId}|${periodo.desde}|${periodo.hasta}|${JSON.stringify(elegida)}|${conEntrenamiento}|${vuelta}`;
   useEffect(() => {
     let vigente = true;
     if (elegida === null) {
-      setEstado({ tipo: 'SIN_DATOS', texto: C.elegiUnEjercicio });
+      // Pedir un ejercicio nombra Entrenamiento: solo con ese alcance. Sin él (o sin saber el acceso), el gráfico no
+      // está y no deja rastro de un área sin acceso.
+      setEstado(conEntrenamiento ? { tipo: 'SIN_DATOS', texto: C.elegiUnEjercicio } : { tipo: 'SIN_ACCESO' });
       return;
     }
     const ref = elegida;

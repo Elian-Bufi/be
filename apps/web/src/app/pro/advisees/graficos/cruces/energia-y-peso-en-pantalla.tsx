@@ -10,6 +10,7 @@
  */
 import type { ReferenciaDeMetrica } from '@be/domain';
 import { useEffect, useState } from 'react';
+import { leyendaDeLosCarriles } from '../arma-tu-grafico/compositor';
 import type { BandaDeVersion } from '../carriles';
 import { inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla, type EstadoDelGrafico } from '../estado-del-grafico';
@@ -64,10 +65,11 @@ export default function EnergiaYPeso({ lectura, periodo, densidad }: PropsDelGra
   if (estado.tipo !== 'LISTA') return <EstadoDelGraficoEnPantalla estado={estado} onReintentar={() => setVuelta((v) => v + 1)} />;
   const l = lecturaDeEnergiaYPeso(estado.entrada);
   const bandas: BandaDeVersion[] = l.ventana ? [{ area: 'NUTRICION', desde: l.ventana.a.desde, hasta: l.ventana.b.hasta, rotulo: 'Ventana de lectura' }] : [];
+  const carriles = carrilesDeEnergiaYPeso(estado.entrada);
   return (
     <section className="cruce" aria-label={C.titulo}>
       <p className="cruce__pregunta">{C.pregunta}</p>
-      <PanelesAlineados titulo={C.titulo} periodo={periodo} carriles={carrilesDeEnergiaYPeso(estado.entrada)} bandas={bandas} densidad={densidad} leyenda={['REGISTRADO', 'SUBTOTAL', 'REPORTADO', 'CALCULADO']} notas={[COPY_DE_LOS_CRUCES.frase]} />
+      <PanelesAlineados titulo={C.titulo} periodo={periodo} carriles={carriles} bandas={bandas} densidad={densidad} leyenda={leyendaDeLosCarriles(carriles)} notas={[COPY_DE_LOS_CRUCES.frase]} />
       <LecturaDelCruce lectura={l} ventana={C.ventana} comoLeerlo={C.comoLeerlo} />
     </section>
   );

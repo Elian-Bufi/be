@@ -112,7 +112,7 @@ import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion
 import { FuerzaEnAnalizar, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
 import { accesoDeLosDisponibles, nombreDeLaReferencia, SelectorDeMetricas } from './selector';
 import { leerSerieDelAnalisis, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
-import { COMO_LEER_DOS_EJES, enumerar, esLoIndicadoDe, motivoDeSuperpuestas, NOMBRE_DEL_MODO, rangoMinimoDelCatalogo, serieElegidaDe, superposicionDeLasElegidas } from '../graficos/arma-tu-grafico/compositor';
+import { COMO_LEER_DOS_EJES, enumerar, esLoIndicadoDe, motivoDeSuperpuestas, NOMBRE_DEL_MODO, rangoMinimoDelCatalogo, serieElegidaDe, superposicionDeLasElegidas, unirLaSerieDe } from '../graficos/arma-tu-grafico/compositor';
 import { ProveedorDelCursor } from '../graficos/cursor-de-fechas';
 import { valorParaMostrar } from './valores';
 import { VistasGuardadas, vistaRecienAbierta } from './vistas-guardadas';
@@ -348,6 +348,8 @@ function AnalizarConSusPreguntas() {
       cobertura: partesDeLaCobertura(resumirPeriodo(s.estado.observaciones, s.definicion, desde, hasta, hoy)).filter((parte, i) => i === 0 || /sin registros$/.test(parte)),
       // GR-T59: lo indicado en el plan elegido como serie (el RIR indicado) va en rombos huecos sueltos, no como registrado.
       indicada: esLoIndicadoDe(s.ref.metricId),
+      // GR-D5: las tomas de Antropometría van en puntos sueltos en todos los modos, también superpuestas (§4.5).
+      unir: unirLaSerieDe(s.ref.metricId, s.estado.serie.unit),
       // GR-T15: el rango mínimo del eje que fija el catálogo (el 1RM estimado abarca 10 kg o 22 lb), en los dos modos.
       rangoMinimo: rangoMinimoDelCatalogo(s.ref.metricId, s.estado.serie.unit),
       // GR-26: en «Superpuestas», de qué lado va su eje.
@@ -952,6 +954,8 @@ function AnalizarConSusPreguntas() {
             b={destino.b}
             metricas={destino.metricas}
             etapas={etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING']}
+            // GR-24: lo que también cambió entre A y B sale de las etapas del año de la otra área (sus planes propios).
+            etapasDeLaOtraArea={etapasDelAno.fallaDe[destino.area === 'NUTRICION' ? 'TRAINING' : 'NUTRITION'] ? null : etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'TRAINING' : 'NUTRITION']}
             disponibles={disponibles}
             enGrande={enGrande}
             onEnGrande={setEnGrande}

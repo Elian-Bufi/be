@@ -5,11 +5,12 @@
  * «Alineadas» o «Superpuestas». Lo usan la vista previa del compositor y «Patrones» (un gráfico propio de un enfoque).
  *
  * - **Guarda referencias, nunca datos:** cada vez que se dibuja, lee cada serie con el acceso de este momento.
- * - **Una serie de un área sin acceso no se dibuja** ni deja un hueco: si no queda ninguna, el gráfico no está.
+ * - **Una serie de un área sin acceso no se pide, no se dibuja ni deja un hueco** (`serieConAcceso`, con el `acceso` de
+ *   este momento): si no queda ninguna, el gráfico no está. La API decide igual en cada lectura.
  * - **«Superpuestas» con las reglas del dominio:** si las series no se pueden superponer (otro eje X, tres unidades),
  *   se dibujan alineadas y se dice por qué. La frase de la coincidencia va con dos áreas o con dos ejes.
  */
-import { entraEnLaEstimacion, estimacionALaVista, fraseDeLaCoincidencia, numero, serieDisponible, type ReferenciaDeMetrica, type SerieElegida } from '@be/domain';
+import { entraEnLaEstimacion, estimacionALaVista, fraseDeLaCoincidencia, numero, serieDisponible, type AccesoDeLaPersona, type ReferenciaDeMetrica, type SerieElegida } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { carrilDeSerie, puntosDeLaFuerza } from '../adaptadores';
 import type { CarrilDePuntos } from '../carriles';
@@ -26,6 +27,7 @@ import {
   leyendaDeLasSeries,
   motivoDeSuperpuestas,
   NOMBRE_DEL_MODO,
+  serieConAcceso,
   serieElegidaDe,
   superposicionDeLasElegidas,
   unirLaSerie,
@@ -60,9 +62,12 @@ async function leerUna(
   ref: ReferenciaDeMetrica,
   indice: number,
   ejercicios: ReadonlyMap<string, string>,
+  acceso: AccesoDeLaPersona,
 ): Promise<{ readonly tipo: 'lista'; readonly serie: SerieLeida } | { readonly tipo: 'sin-acceso' | 'sin-datos' | 'cargando' } | { readonly tipo: 'error'; readonly motivo: Extract<EstadoDelGrafico, { tipo: 'ERROR' }>['motivo'] }> {
   const catalogo = serieDisponible(ref.metricId);
   if (!catalogo) return { tipo: 'sin-datos' };
+  // Una serie de un área sin acceso no se pide: el enfoque guarda la referencia, no el permiso.
+  if (!serieConAcceso(catalogo, acceso)) return { tipo: 'sin-acceso' };
   const exerciseId = ref.exerciseKey ? ejercicioDeLaClave(ref.exerciseKey) : null;
   if (catalogo.id === 'entrenamiento.1rm-estimado') {
     if (!exerciseId || !entraEnLaEstimacion(exerciseId)) return { tipo: 'sin-datos' };
@@ -113,6 +118,7 @@ export function GraficoArmadoEnPantalla({
   periodo,
   densidad = 'COMPLETA',
   ejercicios,
+  acceso,
 }: {
   grafico: GraficoArmado;
   lectura: Omit<ParametrosDeLectura, 'periodo'>;
@@ -120,10 +126,13 @@ export function GraficoArmadoEnPantalla({
   densidad?: DensidadDelGrafico;
   /** Los nombres de los ejercicios del período, por su clave (`e:` o `v:`). */
   ejercicios: ReadonlyMap<string, string>;
+  /** Lo que el PDP deja leer hoy con esta persona: una serie de un área sin acceso no se pide. */
+  acceso: AccesoDeLaPersona;
 }) {
   const [estado, setEstado] = useState<EstadoDelArmado>({ tipo: 'CARGANDO' });
   const [vuelta, setVuelta] = useState(0);
-  const clave = `${lectura.asesoradoId}|${periodo.desde}|${periodo.hasta}|${JSON.stringify(grafico.series)}|${vuelta}`;
+  // El acceso entra en la clave: si cambió un permiso, se vuelve a decidir qué se pide.
+  const clave = `${lectura.asesoradoId}|${periodo.desde}|${periodo.hasta}|${JSON.stringify(grafico.series)}|${JSON.stringify(acceso)}|${vuelta}`;
   useEffect(() => {
     let vigente = true;
     if (grafico.series.length === 0) {
@@ -132,7 +141,7 @@ export function GraficoArmadoEnPantalla({
     }
     setEstado({ tipo: 'CARGANDO' });
     const p = { ...lectura, periodo };
-    void Promise.all(grafico.series.map((ref, i) => leerUna(p, ref, i, ejercicios))).then((leidas) => {
+    void Promise.all(grafico.series.map((ref, i) => leerUna(p, ref, i, ejercicios, acceso))).then((leidas) => {
       if (!vigente || leidas.some((l) => l.tipo === 'cargando')) return;
       const fallida = leidas.find((l) => l.tipo === 'error');
       if (fallida && fallida.tipo === 'error') return setEstado({ tipo: 'ERROR', motivo: fallida.motivo });

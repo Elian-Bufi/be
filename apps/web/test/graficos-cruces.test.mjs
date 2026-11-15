@@ -200,9 +200,19 @@ test('TEST-GRF-062 · «Dos etapas» dibuja todas las observaciones, la mediana 
     ].map(([c, r, rir], i) => fuerza(dia('2026-10-03', 4 * i), c, r, rir)),
   ];
   const observada = fuerza('2026-10-20', 90, 3, 1, { source: 'OBSERVED', origin: { type: 'STRENGTH_OBSERVATION', id: '00000000-0000-4000-8000-000000000003' } });
-  const puntos = [...deLaPersona, observada].map((p) => punto(p.date, p.estimate.value, { pointId: p.pointId, segment: p.source === 'OBSERVED' ? `observada:${p.pointId}` : 'estimacion' }));
-  const f = D.dosEtapasLadoALado({ serie: serie(uno.id, 'kg', 'ORIGINAL', puntos), definicion: uno.definicion, a: ETAPA_A, b: ETAPA_B, leido: LEIDO, escala: A.escalaDeLaSerie(uno, 'kg'), lectura: () => '', fuerza: [...deLaPersona, observada] });
+  // Una orientativa (11 repeticiones equivalentes) en la etapa A: se ve hueca y no entra en la mediana, ni en la del RIR
+  // ni en el rango de repeticiones (mutación: contar todo lo de la persona, como antes; el rango diría «de 5 a 9» y la
+  // lectura de SP-01, que usa el núcleo, «de 5 a 6», en la misma pantalla).
+  const base = fuerza('2026-09-25', 70, 9, 2);
+  const orientativa = { ...base, pointId: 'f-orientativa', estimate: { ...base.estimate, band: 'ORIENTATIVE' } };
+  const puntos = [...deLaPersona, orientativa, observada].map((p) =>
+    punto(p.date, p.estimate.value, { pointId: p.pointId, segment: p.source === 'OBSERVED' ? `observada:${p.pointId}` : 'estimacion', quality: p.estimate.band === 'CORE' ? 'COMPLETE' : 'PARTIAL' }),
+  );
+  const f = D.dosEtapasLadoALado({ serie: serie(uno.id, 'kg', 'ORIGINAL', puntos), definicion: uno.definicion, a: ETAPA_A, b: ETAPA_B, leido: LEIDO, escala: A.escalaDeLaSerie(uno, 'kg'), lectura: () => '', fuerza: [...deLaPersona, orientativa, observada] });
   assert.deepEqual(f.lados[0].fuerza, { sesiones: 5, medianaDelRir: 2, repeticiones: { desde: 5, hasta: 6 } });
+  assert.deepEqual(f.lados[0].afuera, ['1 orientativa']);
+  assert.equal(f.lados[0].puntos.find((p) => p.clave === 'f-orientativa').marca, 'HUECA');
+  assert.match(D.fuerzaEnPalabras({ sesiones: 0, medianaDelRir: null, repeticiones: null }), /núcleo/);
   assert.deepEqual(f.lados[1].fuerza, { sesiones: 5, medianaDelRir: 1, repeticiones: { desde: 5, hasta: 6 } });
   assert.equal(f.lados[1].puntos.find((p) => p.clave === observada.pointId).marca, 'ROMBO');
   assert.deepEqual(f.lados[1].afuera, ['1 observada por el profesional']);
@@ -250,7 +260,21 @@ test('TEST-GRF-063 · SP-01 existe solo en el caso 1, y el caso negado no se ofr
   assert.equal(D.referenciaDeLaComparacion(sentadilla, acceso(['NUTRICION'], { NUTRICION: true })), null, 'un ejercicio sin el alcance de Entrenamiento no se lee');
   const enPantalla = leer(join(GRAFICOS, 'cruces/dos-etapas-en-pantalla.tsx'));
   assert.match(enPantalla, /const elegida = referenciaDeLaComparacion\(ejercicio, acceso \?\? null\);/);
-  assert.match(enPantalla, /if \(elegida === null\) \{\s*setEstado\(\{ tipo: 'SIN_DATOS', texto: C\.elegiUnEjercicio \}\);\s*return;/);
+  // Pedir un ejercicio nombra Entrenamiento: solo con ese alcance; sin él (o sin saber el acceso), el gráfico no está
+  // (mutación: pedirle un ejercicio de Entrenamiento a una nutricionista sin ese alcance).
+  assert.match(enPantalla, /const conEntrenamiento = acceso\?\.alcances\.includes\('ENTRENAMIENTO'\) \?\? false;/);
+  assert.match(enPantalla, /if \(elegida === null\) \{[^}]*setEstado\(conEntrenamiento \? \{ tipo: 'SIN_DATOS', texto: C\.elegiUnEjercicio \} : \{ tipo: 'SIN_ACCESO' \}\);\s*return;/);
+  // Un gráfico armado no pide una serie de un área sin acceso (mutación: leer igual y esperar el 404 de la API).
+  assert.equal(A.serieConAcceso(serieDisponible('nutricion.energia'), soloEntrenamiento), false);
+  assert.equal(A.serieConAcceso(serieDisponible('entrenamiento.1rm-estimado'), soloEntrenamiento), true);
+  assert.equal(A.serieConAcceso(serieDisponible('antropometria.peso'), acceso(['NUTRICION'], { NUTRICION: true })), false);
+  assert.equal(A.serieConAcceso({ acceso: { alcances: ['NUTRICION', 'ANTROPOMETRIA'] } }, acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true })), false, 'una serie de dos áreas pide lo propio en las dos');
+  assert.equal(A.serieConAcceso({ acceso: { alcances: ['NUTRICION', 'ANTROPOMETRIA'] } }, CASO_1_SP02), true);
+  const armado = leer(join(GRAFICOS, 'arma-tu-grafico/grafico-armado.tsx'));
+  assert.match(armado, /if \(!serieConAcceso\(catalogo, acceso\)\) return \{ tipo: 'sin-acceso' \};/);
+  assert.ok(armado.indexOf('if (!serieConAcceso(catalogo, acceso))') < armado.indexOf('await leerLaFuerza('), 'decide antes de leer');
+  assert.match(armado, /leerUna\(p, ref, i, ejercicios, acceso\)/);
+  assert.match(leer(join(GRAFICOS, 'arma-tu-grafico/compositor-en-pantalla.tsx')), /<GraficoArmadoEnPantalla [^>]*acceso=\{acceso\}/);
   assert.deepEqual(ACCESO.areasConEtapas(CASO_1_SP01), ['ENTRENAMIENTO', 'NUTRICION']);
 });
 
@@ -601,8 +625,18 @@ test('TEST-GRF-073 · Antropometría sigue en puntos sueltos también superpuest
   assert.match(lienzo, /const indicadas = new Set\(series\.filter\(\(s\) => s\.indicada === true\)\.map\(\(s\) => s\.indice\)\);/);
   assert.match(lienzo, /stroke=\{suelta \? 'none' : e\.color\}/);
   assert.match(lienzo, /\{observada \|\| indicada \? <Rombo /);
+  // GR-D5 y §4.5 también en «Analizar»: las tomas de Antropometría van en puntos sueltos en todos los modos, también
+  // superpuestas con las calorías (mutación: unir las tomas en el lienzo, como antes).
+  assert.match(lienzo, /const sinLinea = new Set\(series\.filter\(\(s\) => s\.indicada === true \|\| s\.unir === false\)\.map\(\(s\) => s\.indice\)\);/);
+  assert.match(lienzo, /const suelta = sinLinea\.has\(t\.indice\);/);
+  assert.equal(A.unirLaSerieDe('antropometria.peso', 'kg'), false);
+  assert.equal(A.unirLaSerieDe('antropometria.perimetro-cintura', 'cm'), false, 'cualquier medida, no solo las del catálogo fijo');
+  assert.equal(A.unirLaSerieDe('nutricion.energia'), true);
+  assert.equal(A.unirLaSerieDe('entrenamiento.rir-indicado'), false);
+  assert.equal(A.unirLaSerieDe('entrenamiento.1rm-estimado', 'kg'), true);
   const analizar = leer(join(SEGUIMIENTO, 'analizar.tsx'));
   assert.match(analizar, /indicada: esLoIndicadoDe\(s\.ref\.metricId\),/);
+  assert.match(analizar, /unir: unirLaSerieDe\(s\.ref\.metricId, s\.estado\.serie\.unit\),/);
   assert.match(analizar, /data-leyenda="indicado"/);
   // En un gráfico armado de «Patrones», lo indicado también va suelto: el catálogo deja unir el RIR indicado (mutación:
   // unirlo con una línea, como lo registrado).
@@ -617,6 +651,21 @@ test('TEST-GRF-073 · Antropometría sigue en puntos sueltos también superpuest
   assert.deepEqual(A.leyendaDeLasSeries([{ id: 'entrenamiento.1rm-estimado', indicada: false, marcas: ['LLENA', 'HUECA', 'ROMBO'] }]), ['REGISTRADO', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL']);
   assert.deepEqual(A.leyendaDeLasSeries([{ id: 'nutricion.energia', indicada: false, marcas: ['LLENA', 'HUECA'] }, { id: 'antropometria.peso', indicada: false, marcas: ['CONTORNO_CORTADO', 'PUNTO_ADENTRO'] }]), ['REGISTRADO', 'SUBTOTAL', 'REPORTADO', 'CALCULADO']);
   assert.doesNotMatch(armado, /leyenda=\{\['REGISTRADO', 'SUBTOTAL'\]\}/);
+  // SP-01 y SP-02 también: la leyenda sale de lo dibujado (mutación: la lista fija, que decía «reportado» u «observada»
+  // aunque no hubiera ninguno).
+  const sp02 = SP2.carrilesDeEnergiaYPeso(entradaDeSp02());
+  const formas = A.leyendaDeLosCarriles(sp02);
+  assert.ok(formas.includes('REGISTRADO'));
+  for (const s of formas) {
+    const marca = { REGISTRADO: 'LLENA', SUBTOTAL: 'HUECA', REPORTADO: 'CONTORNO_CORTADO', CALCULADO: 'PUNTO_ADENTRO' }[s];
+    assert.ok(sp02.some((c) => c.tipo === 'PUNTOS' && c.puntos.some((p) => p.valor !== null && p.marca === marca)), `${s} está dibujado`);
+  }
+  assert.deepEqual(A.leyendaDeLosCarriles([{ tipo: 'PUNTOS', id: 'entrenamiento.1rm-estimado', puntos: [{ valor: 100, marca: 'LLENA' }, { valor: 101, marca: 'HUECA' }, { valor: null, marca: 'ROMBO' }] }]), ['REGISTRADO', 'ORIENTATIVA']);
+  for (const archivo of ['cruces/carbohidratos-y-fuerza-en-pantalla.tsx', 'cruces/energia-y-peso-en-pantalla.tsx']) {
+    const fuente = leer(join(GRAFICOS, archivo));
+    assert.match(fuente, /leyenda=\{leyendaDeLosCarriles\(carriles\)\}/, archivo);
+    assert.doesNotMatch(fuente, /leyenda=\{\[/, archivo);
+  }
 });
 
 test('TEST-GRF-074 · el selector ofrece el catálogo con el acceso de hoy: sin un área no hay nada de ella, el 1RM estimado solo con la lista de la v1 y los sugeridos primero (mutación: ofrecer el 1RM con cualquier ejercicio)', () => {
@@ -718,6 +767,20 @@ test('TEST-GRF-077 · lo indicado de cada versión sale de las sesiones de esa v
   assert.deepEqual(TC.cambiosDeLoIndicado(objetivos, bandas, '2026-08-01', '2026-10-31'), ['Con la versión 4 del plan de entrenamiento (desde el 15/9), el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie.']);
   assert.deepEqual(TC.cambiosDeLoIndicado(objetivos, bandas, '2026-09-20', '2026-10-31'), [], 'un cambio fuera de la ventana no se dice');
   assert.deepEqual(TC.versionesQueSeActivaron([vigencia('NUTRITION', 'nv2', 'v2', '2026-10-04', null), vigencia('NUTRITION', 'nv1', 'v1', '2026-08-01', '2026-10-04')], '2026-09-01', '2026-10-31'), ['Nutrición: se activó la versión 2 el 4/10']);
+  // «Comparar dos etapas»: lo que también cambió entre A y B sale de las etapas del año de las dos áreas, no de las
+  // versiones del período de la ficha. Dos etapas de Entrenamiento de junio a agosto, con la ficha en noviembre: la
+  // versión de Nutrición del 10/7 y la v3 de Entrenamiento entre A y B se dicen (mutación: leer solo lo del período de
+  // la ficha, que no las tiene, y decir que no se activó nada).
+  const etapaDe = (dominio, planVersionId, etiqueta, desde) => ({ dominio, planVersionId, etiqueta, desde });
+  const deEntrenamiento = [etapaDe('TRAINING', 't2', 'v2', '2026-06-01'), etapaDe('TRAINING', 't3', 'v3', '2026-07-01'), etapaDe('TRAINING', 't4', 'v4', '2026-08-01'), etapaDe('TRAINING', 't5', 'v5', '2026-10-01')];
+  const deNutricion = [etapaDe('NUTRITION', 'n1', 'v1', '2026-05-01'), etapaDe('NUTRITION', 'n2', 'v2', '2026-07-10'), etapaDe('NUTRITION', 'n3', 'v3', '2026-11-01')];
+  assert.deepEqual(TC.versionesEntreLasEtapas([...deEntrenamiento, ...deNutricion], deEntrenamiento[0], deEntrenamiento[2], '2026-08-31'), ['Entrenamiento: se activó la versión 3 el 1/7', 'Nutrición: se activó la versión 2 el 10/7']);
+  assert.deepEqual(TC.versionesEntreLasEtapas([...deEntrenamiento.slice(2, 4), ...deNutricion], deEntrenamiento[2], deEntrenamiento[3], '2026-10-31'), [], 'nada entre las dos: no se inventa');
+  const etapasTsx = leer(join(SEGUIMIENTO, 'etapas.tsx'));
+  assert.match(etapasTsx, /versionesEntreLasEtapas\(\[\.\.\.etapas, \.\.\.etapasDeLaOtraArea\], primera, segunda, segunda\.ultimoDia \?\? leido\.hasta\)/);
+  assert.doesNotMatch(etapasTsx, /disponibles\.vigencias/, 'no sale de las versiones del período de la ficha');
+  assert.match(etapasTsx, /tambienCambio === null \? \(\s*<p className="nota">\{COPY_DE_LOS_CRUCES\.sinLasVersiones\}<\/p>/, 'si no se pudieron leer, se dice que no se sabe');
+  assert.match(leer(join(SEGUIMIENTO, 'analizar.tsx')), /etapasDeLaOtraArea=\{etapasDelAno\.fallaDe\[destino\.area === 'NUTRICION' \? 'TRAINING' : 'NUTRITION'\] \? null : etapasDelAno\.etapas\[destino\.area === 'NUTRICION' \? 'TRAINING' : 'NUTRITION'\]\}/);
 });
 
 test('TEST-GRF-078 · la lectura de cada punto dice lo que hace falta para leerlo, y la escala de cada serie es la misma en los dos modos', () => {

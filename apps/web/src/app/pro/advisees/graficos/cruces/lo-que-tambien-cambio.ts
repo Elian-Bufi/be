@@ -11,7 +11,7 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs`.
  */
-import { cambioDeLoIndicado, type DominioDeAnalisis, type EjecucionDeEntrenamiento, type ObjetivoDeLaSerie, type VigenciaDePlan } from '@be/domain';
+import { cambioDeLoIndicado, type DominioDeAnalisis, type EjecucionDeEntrenamiento, type EtapaDePlanificacion, type ObjetivoDeLaSerie, type VigenciaDePlan } from '@be/domain';
 import { diaYMes } from './ventanas';
 
 const NOMBRE_DEL_DOMINIO: Readonly<Record<DominioDeAnalisis, string>> = { NUTRITION: 'Nutrición', TRAINING: 'Entrenamiento', ANTHROPOMETRY: 'Antropometría' };
@@ -31,6 +31,25 @@ export function versionesQueSeActivaron(vigencias: readonly VigenciaDePlan[], de
     .filter((v) => v.from > desde && v.from <= hasta)
     .sort((a, b) => a.from.localeCompare(b.from))
     .map((v) => `${NOMBRE_DEL_DOMINIO[v.domain]}: se activó la versión ${numeroDeVersion(v.label)} el ${diaYMes(v.from)}`);
+}
+
+/**
+ * Lo que también cambió entre dos etapas de «Comparar dos etapas» (GR-24 en «Analizar»): las versiones de los planes
+ * propios que se activaron después del primer día de A y hasta el último de B, sin contar A ni B. Sale de las etapas del
+ * último año de las dos áreas (las que lee «Analizar» para elegir las etapas), no de las versiones del período de la
+ * ficha: dos etapas de hace meses quedan fuera de ese período, y lo que se activó entre ellas no se veía. Un área sin
+ * acceso no tiene etapas y no aparece.
+ */
+export function versionesEntreLasEtapas(
+  etapas: readonly Pick<EtapaDePlanificacion, 'planVersionId' | 'dominio' | 'etiqueta' | 'desde'>[],
+  a: Pick<EtapaDePlanificacion, 'planVersionId' | 'desde'>,
+  b: Pick<EtapaDePlanificacion, 'planVersionId'>,
+  hasta: string,
+): string[] {
+  return [...etapas]
+    .filter((e) => e.planVersionId !== a.planVersionId && e.planVersionId !== b.planVersionId && e.desde > a.desde && e.desde <= hasta)
+    .sort((x, y) => x.desde.localeCompare(y.desde) || x.dominio.localeCompare(y.dominio))
+    .map((e) => `${NOMBRE_DEL_DOMINIO[e.dominio]}: se activó la versión ${numeroDeVersion(e.etiqueta)} el ${diaYMes(e.desde)}`);
 }
 
 type Rango = { readonly desde: number; readonly hasta: number };

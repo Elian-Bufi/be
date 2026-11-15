@@ -40,7 +40,7 @@ import {
   type SerieElegida,
 } from '@be/domain';
 import { escalaDeLaUnidad } from '../../seguimiento/geometria';
-import type { EscalaDelCarril } from '../carriles';
+import type { CarrilDeBarrasSemanales, CarrilDePuntos, EscalaDelCarril } from '../carriles';
 import { textoDeLaMarca } from '../eje-de-fechas';
 
 /** Cómo se dibuja una serie elegida: cada registro, por día o por semana. */
@@ -108,6 +108,26 @@ export const esLoIndicadoDe = (metricId: string): boolean => {
  * «Patrones» se habría visto unido, como lo registrado.
  */
 export const unirLaSerie = (s: Pick<SerieDisponible, 'unirPuntos' | 'marca'>): boolean => s.unirPuntos && !esLoIndicado(s);
+
+/**
+ * Lo mismo, por el identificador de una referencia elegida en «Analizar»: Antropometría va en puntos sueltos en todos los
+ * modos (GR-D5: nada une dos tomas ni las suaviza; WP-GRAFICOS §4.5, «Antropometría sigue en puntos sueltos, también
+ * superpuesta»), y lo indicado también. Lo que no está en el catálogo se une como siempre.
+ */
+export function unirLaSerieDe(metricId: string, unidad = ''): boolean {
+  const serie = serieDisponible(metricId, unidad || undefined);
+  return serie === null ? true : unirLaSerie(serie);
+}
+
+/**
+ * Si una serie del catálogo se puede pedir con esta persona: todos sus alcances permitidos y, si junta dos áreas (los
+ * g/kg), lo propio en cada una (la regla de `seriesOfrecidas`, sin mirar su estado). Un gráfico armado guarda solo
+ * referencias: una serie de un área sin acceso no se pide, no se dibuja ni deja hueco.
+ */
+export function serieConAcceso(s: Pick<SerieDisponible, 'acceso'>, acceso: AccesoDeLaPersona): boolean {
+  if (!s.acceso.alcances.every((a) => acceso.alcances.includes(a))) return false;
+  return s.acceso.alcances.length < 2 || s.acceso.alcances.every((a) => acceso.propios[a] === true);
+}
 
 /**
  * Los grupos con la regla de `composicionPermitida`, por posición: kg y lb de una misma serie son dos grupos. Y una
@@ -242,6 +262,21 @@ export function leyendaDeLasSeries(series: readonly { readonly id: string; reado
     }
   }
   return ORDEN_DE_LA_LEYENDA.filter((s) => sentidos.has(s));
+}
+
+/**
+ * La leyenda de unos carriles ya armados (SP-01, SP-02): la de `leyendaDeLasSeries` con las marcas de sus puntos con
+ * valor. Una forma que no está dibujada no va en la leyenda (antes iba una lista fija, con lo reportado o lo observado
+ * aunque no hubiera ninguno).
+ */
+export function leyendaDeLosCarriles(carriles: readonly (CarrilDePuntos | CarrilDeBarrasSemanales)[]): SentidoDeLaMarca[] {
+  return leyendaDeLasSeries(
+    carriles.flatMap((c) => {
+      if (c.tipo !== 'PUNTOS') return [];
+      const id = c.id.includes('|') ? c.id.slice(0, c.id.indexOf('|')) : c.id;
+      return [{ id, indicada: esLoIndicadoDe(id), marcas: c.puntos.filter((p) => p.valor !== null).map((p) => p.marca) }];
+    }),
+  );
 }
 
 /** El rango mínimo del eje que fija el catálogo para una serie elegida, en la unidad de sus datos (`undefined` si no). */
