@@ -10,6 +10,7 @@
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
 import {
+  EJERCICIOS_DE_LA_ESTIMACION_V1,
   evolucion,
   MARCA_SEGUN_EL_DATO,
   marcaDelPunto,
@@ -18,6 +19,7 @@ import {
   observacionesDelEjercicio,
   type AreaDeMetrica,
   type EjecucionDeEntrenamiento,
+  type MarcaSemantica,
   type Medida,
   type ObjetivosDeLaVersion,
   type PlanConObjetivos,
@@ -30,20 +32,41 @@ import {
   type ValorPlanificado,
   type VigenciaDePlan,
 } from '@be/domain';
+import { diaAnterior } from '../seguimiento/geometria';
 import type { BandaDeVersion, CarrilDePuntos, EscalaDelCarril, PuntoDelCarril } from './carriles';
 
 const AREA_DEL_DOMINIO: Readonly<Record<VigenciaDePlan['domain'], AreaDeMetrica>> = { NUTRITION: 'NUTRICION', TRAINING: 'ENTRENAMIENTO', ANTHROPOMETRY: 'ANTROPOMETRIA' };
 
-/** Las versiones de los planes de un área como bandas de fondo: «v3 · desde el 2/9». Contexto, no «plan cumplido». */
+/**
+ * Las versiones de los planes de un área como bandas de fondo: «v3 · desde el 2/9». Contexto, no «plan cumplido». Cada
+ * banda va del día que empezó a regir al anterior al corte (ese día ya rige la siguiente), como las barras de la cinta:
+ * dos bandas seguidas no se pisan.
+ */
 export function bandasDeVersion(vigencias: readonly VigenciaDePlan[], area: AreaDeMetrica): BandaDeVersion[] {
   return vigencias
     .filter((v) => AREA_DEL_DOMINIO[v.domain] === area)
-    .map((v) => ({ area, desde: v.from, hasta: v.to, rotulo: `${v.label} · desde el ${Number(v.from.slice(8, 10))}/${Number(v.from.slice(5, 7))}` }));
+    .map((v) => ({ area, desde: v.from, hasta: v.to === null ? null : v.to > v.from ? diaAnterior(v.to) : v.from, rotulo: `${v.label} · desde el ${Number(v.from.slice(8, 10))}/${Number(v.from.slice(5, 7))}` }));
 }
 
+/** El prefijo del tramo de una serie observada por el profesional en el 1RM estimado (`serieDeLaFuerza`). */
+const TRAMO_OBSERVADO = 'observada:';
+
+/**
+ * La marca de un punto del 1RM estimado que llega como serie analítica (`serieDeLaFuerza`): rombo lo observado por el
+ * profesional, hueca lo orientativo (de 10 a 12 repeticiones equivalentes) y llena el núcleo. Lo observado nunca se
+ * dibuja como dato de la persona.
+ */
+export function marcaDelPuntoAnaliticoDeFuerza(p: Pick<PuntoAnalitico, 'segment' | 'quality'>): MarcaSemantica {
+  if (p.segment.startsWith(TRAMO_OBSERVADO)) return MARCA_SEGUN_EL_DATO.OBSERVADA_POR_EL_PROFESIONAL;
+  return p.quality === 'COMPLETE' ? MARCA_SEGUN_EL_DATO.REGISTRADO : MARCA_SEGUN_EL_DATO.ORIENTATIVA;
+}
+
+const esDeLaEstimacion = (serie: Pick<SerieDisponible, 'fuente'>): boolean => serie.fuente.tipo === 'PROYECCION' && serie.fuente.clave === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE';
+
 /** Un punto analítico como punto de un carril, con la marca del dominio y la lectura que diga la pantalla. */
-export function puntoDelCarril(p: PuntoAnalitico, serie: Pick<SerieDisponible, 'marca'>, lectura: (p: PuntoAnalitico) => string, tarde = false): PuntoDelCarril {
-  return { clave: p.pointId, fecha: p.date, hasta: p.dateEnd, en: p.at, valor: p.value, rango: null, tramo: p.segment, marca: marcaDelPunto(p, serie), tarde, lectura: lectura(p) };
+export function puntoDelCarril(p: PuntoAnalitico, serie: Pick<SerieDisponible, 'marca' | 'fuente'>, lectura: (p: PuntoAnalitico) => string, tarde = false): PuntoDelCarril {
+  const marca = esDeLaEstimacion(serie) ? marcaDelPuntoAnaliticoDeFuerza(p) : marcaDelPunto(p, serie);
+  return { clave: p.pointId, fecha: p.date, hasta: p.dateEnd, en: p.at, valor: p.value, rango: null, tramo: p.segment, marca, tarde, lectura: lectura(p) };
 }
 
 export interface OpcionesDelCarril {
@@ -68,6 +91,7 @@ export function carrilDeSerie(s: SerieAnalitica, serie: SerieDisponible, o: Opci
   const conDato = new Set(s.points.filter((p) => p.value !== null).map((p) => p.date));
   const hueco = new Set(s.points.filter((p) => p.value !== null && (p.quality !== 'COMPLETE' || p.partialBucket)).map((p) => p.date));
   const fechas = [...new Set([...sin, ...conDato])].sort();
+  const minimoDelCatalogo = serie.rangoMinimoDelEje ? serie.rangoMinimoDelEje[s.unit] : undefined;
   return {
     tipo: 'PUNTOS',
     id: o.id,
@@ -79,7 +103,8 @@ export function carrilDeSerie(s: SerieAnalitica, serie: SerieDisponible, o: Opci
     indicado: o.indicado ?? [],
     escalones: o.escalones ?? [],
     unir: serie.unirPuntos,
-    escala: o.escala,
+    // El rango mínimo del catálogo manda sobre el de la unidad (el 1RM estimado, 10 kg o 22 lb: GR-T15).
+    escala: o.escala.rangoMinimo === undefined && minimoDelCatalogo !== undefined ? { ...o.escala, rangoMinimo: minimoDelCatalogo } : o.escala,
     cobertura: fechas.map((fecha): CarrilDePuntos['cobertura'][number] => ({ fecha, estado: sin.has(fecha) && !conDato.has(fecha) ? 'sin' : hueco.has(fecha) ? 'hueco' : 'con' })),
     descripcion: o.descripcion,
   };
@@ -89,6 +114,16 @@ function diasEntre(desde: string, hasta: string): string[] {
   const dias: string[] = [];
   for (let t = Date.parse(`${desde}T12:00:00Z`); t <= Date.parse(`${hasta}T12:00:00Z`); t += 86_400_000) dias.push(new Date(t).toISOString().slice(0, 10));
   return dias;
+}
+
+/**
+ * El `exerciseId` de una clave `e:` de la lista de la v1 de la estimación, o `null` si no es una de ellas: una versión
+ * suelta (`v:`) u otro ejercicio no tienen estimación (RM-16, DL-171), y no se piden.
+ */
+export function ejercicioDeLaEstimacion(exerciseKey: string | null): string | null {
+  if (exerciseKey === null || !exerciseKey.startsWith('e:')) return null;
+  const id = exerciseKey.slice(2);
+  return EJERCICIOS_DE_LA_ESTIMACION_V1.some((e) => e.exerciseId === id) ? id : null;
 }
 
 /**

@@ -15,6 +15,8 @@ import { HabitualesDeEntrenamientoController } from './habituales.controller';
 import { HabitualesDeEntrenamientoService } from './habituales.service';
 import { ImagenesDeEjercicioService } from './imagenes.service';
 import { ImportacionDeEjerciciosService } from './importacion.service';
+import { NotasDeLaSesionController } from './notas-de-la-sesion.controller';
+import { NotasDeLaSesionService } from './notas-de-la-sesion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
 import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
@@ -30,7 +32,7 @@ import { TiemposDeSesionService } from './tiempos.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule, MediosModule],
-  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController, FuerzaController],
+  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController, FuerzaController, NotasDeLaSesionController],
   providers: [
     EjecutorDeEntrenamiento,
     CatalogoDeEjerciciosService,
@@ -47,9 +49,12 @@ import { TiemposDeSesionService } from './tiempos.service';
     CompatibilidadDeClientesService,
     // ED-72 (DL-171): la serie observada por el profesional (API-FZA-01 a 03).
     SeriesObservadasService,
+    // PG-15 (DL-173): la nota para tu profe (API-TRN-25 y sus dos lecturas).
+    NotasDeLaSesionService,
   ],
   // El entorno profesional (AnalisisModule) lee cada sesión con el mismo modelo de API-TRN-19.
   // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.
-  exports: [EjecucionesDeEntrenamientoService, PlanesDeEntrenamientoService, EvaluacionesDeEntrenamientoService],
+  // PG-16 (DL-173): las notas propias del profesional citan un ejercicio del catálogo con la misma regla que el buscador.
+  exports: [EjecucionesDeEntrenamientoService, PlanesDeEntrenamientoService, EvaluacionesDeEntrenamientoService, CatalogoDeEjerciciosService],
 })
 export class EntrenamientoModule {}

@@ -6,14 +6,19 @@
  *
  * Verifica antes de mostrar, como toda zona (III.1): mientras falte una lectura, la estructura sin valores. La vista la
  * arma `quienVeQue` (`quien-ve-que.ts`), con su prueba.
+ *
+ * PG-12 (WP-PULIDO-GRANDES, DL-173): debajo del nombre, una línea tranquila con la última vez que ese profesional miró lo
+ * que le compartís, o que todavía no lo miró, cuando se sabe (`quien-miro.ts`, TEST-PG-011). Sale de una lectura aparte:
+ * si falla, la línea no se dibuja y lo demás sigue igual.
  */
 import { useCallback } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
-import { dia } from '../formato';
+import { dia, fechaCivilDeUnInstante } from '../formato';
 import { Icono } from '../icono';
 import { useLecturaRecordada } from '../lecturas';
 import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
+import { lineaDe, quienMiro } from '../quien-miro';
 import { habitosParaLeer, quienVeQue } from '../quien-ve-que';
 import { TEXTOS_DE_LA_VUELTA as T } from '../textos-de-la-vuelta';
 import { Boton, Desplegable, estilosPorTema, Parrafo, Superficie, Titulo } from '../ui';
@@ -26,6 +31,9 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
   const consentimientos = useLecturaRecordada(token, 'quien-ve-que-consentimientos', useCallback(() => api.consultarConsentimientos(token), [token]), sesionPerdida);
   const habitos = useLecturaRecordada(token, 'mis-habitos', useCallback(() => api.misHabitos(token), [token]), sesionPerdida);
   const pedidos = useLecturaRecordada(token, 'pedidos-de-acceso', useCallback(() => api.pedidosDeAccesoAMisHabitos(token), [token]), sesionPerdida);
+  // PG-12: lo que compartís de otras áreas y quién lo miró. Completa la tarjeta: si falla, la línea no se dibuja.
+  const compartido = useLecturaRecordada(token, 'quien-ve-que-compartido', useCallback(() => api.misResumenesCompartidos(token), [token]), sesionPerdida);
+  const lineasDeQuienMiro = compartido.r?.ok ? quienMiro(compartido.r.datos.data, fechaCivilDeUnInstante(new Date().toISOString())) : new Map<string, string>();
 
   const lecturas = [a3, vinculos, consentimientos];
   const falla = lecturas.map((l) => l.r).find((r) => r && !r.ok);
@@ -62,42 +70,52 @@ export function PantallaDeQuienVeQue({ token, salir, ir }: { token: string; sali
             <Boton texto={T.cambiarEnPrivacidad} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'privacidad' })} />
           </Superficie>
           {vista.tarjetas.length === 0 ? <Parrafo tenue>{T.ningunVinculo}</Parrafo> : null}
-          {vista.tarjetas.map((t) => (
-            <Superficie key={t.profesionalId} style={estilos.tarjeta}>
-              <Text style={estilos.titulo} accessibilityRole="header">
-                {t.nombre}
-              </Text>
-              <Text style={estilos.rotulo}>{T.loQueAutorizaste}</Text>
-              {t.areas.map((a) => (
-                <View key={a.vinculoId} style={estilos.area}>
-                  <View style={estilos.linea} accessible accessibilityLabel={a.linea}>
-                    <Icono nombre={a.ve ? 'ver' : 'oculto'} tamano={18} tono="tenue" />
-                    <Text style={estilos.texto}>{a.linea}</Text>
+          {vista.tarjetas.map((t) => {
+            const lineaDeQuienMiro = lineaDe(lineasDeQuienMiro, t.profesionalId);
+            return (
+              <Superficie key={t.profesionalId} style={estilos.tarjeta}>
+                <Text style={estilos.titulo} accessibilityRole="header">
+                  {t.nombre}
+                </Text>
+                {/* PG-12: la última vez que miró lo que le compartís. Solo se lee: quitar un permiso sigue en su lugar. */}
+                {lineaDeQuienMiro ? (
+                  <View style={[estilos.linea, estilos.quienMiro]} accessible accessibilityLabel={lineaDeQuienMiro}>
+                    <Icono nombre="reloj" tamano={18} tono="tenue" />
+                    <Text style={[estilos.texto, estilos.tenue]}>{lineaDeQuienMiro}</Text>
                   </View>
-                  <Desplegable titulo={T.queIncluye} variante="enlace">
-                    {a.queIncluye.map((q) => (
-                      <Parrafo key={q} tenue>
-                        {q}
-                      </Parrafo>
-                    ))}
-                  </Desplegable>
-                  <Boton texto={T.cambiarEnElVinculo} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'vinculo', id: a.vinculoId })} />
-                </View>
-              ))}
-              {t.habitos ? (
-                <View style={estilos.area}>
-                  <View style={estilos.linea} accessible accessibilityLabel={habitosParaLeer(t.habitos)}>
-                    <Icono nombre="habitos" tamano={18} tono="tenue" />
-                    <Text style={estilos.texto}>
-                      <Text style={estilos.negrita}>{T.tusHabitos}: </Text>
-                      {t.habitos}
-                    </Text>
+                ) : null}
+                <Text style={estilos.rotulo}>{T.loQueAutorizaste}</Text>
+                {t.areas.map((a) => (
+                  <View key={a.vinculoId} style={estilos.area}>
+                    <View style={estilos.linea} accessible accessibilityLabel={a.linea}>
+                      <Icono nombre={a.ve ? 'ver' : 'oculto'} tamano={18} tono="tenue" />
+                      <Text style={estilos.texto}>{a.linea}</Text>
+                    </View>
+                    <Desplegable titulo={T.queIncluye} variante="enlace">
+                      {a.queIncluye.map((q) => (
+                        <Parrafo key={q} tenue>
+                          {q}
+                        </Parrafo>
+                      ))}
+                    </Desplegable>
+                    <Boton texto={T.cambiarEnElVinculo} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'vinculo', id: a.vinculoId })} />
                   </View>
-                  <Boton texto={T.cambiarEnMisHabitos} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'mis-habitos' })} />
-                </View>
-              ) : null}
-            </Superficie>
-          ))}
+                ))}
+                {t.habitos ? (
+                  <View style={estilos.area}>
+                    <View style={estilos.linea} accessible accessibilityLabel={habitosParaLeer(t.habitos)}>
+                      <Icono nombre="habitos" tamano={18} tono="tenue" />
+                      <Text style={estilos.texto}>
+                        <Text style={estilos.negrita}>{T.tusHabitos}: </Text>
+                        {t.habitos}
+                      </Text>
+                    </View>
+                    <Boton texto={T.cambiarEnMisHabitos} tipo="enlace" icono="derecha" iconoAlFinal onPress={() => ir({ nombre: 'mis-habitos' })} />
+                  </View>
+                ) : null}
+              </Superficie>
+            );
+          })}
         </>
       ) : null}
     </View>
@@ -112,5 +130,8 @@ const estilos = estilosPorTema((COLOR) => ({
   area: { borderTopWidth: 1, borderTopColor: COLOR.borde, marginTop: 8, paddingTop: 8 },
   linea: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   texto: { fontSize: 16, lineHeight: 23, color: COLOR.texto, flexShrink: 1 },
+  // PG-12: tenue y sin color de estado; el tono es el del texto secundario, que mide la prueba de contraste.
+  quienMiro: { marginTop: 4 },
+  tenue: { color: COLOR.tenue },
   negrita: { fontWeight: '700' },
 }));

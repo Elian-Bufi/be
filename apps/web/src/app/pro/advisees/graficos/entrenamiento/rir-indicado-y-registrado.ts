@@ -94,9 +94,12 @@ export function aIgualCarga(sesiones: readonly SesionDelRir[], clave: string | n
   return sesiones.filter((s) => s.carga !== null && !s.cargaRapida && claveDeLaCarga(s.carga) === clave);
 }
 
-/** El rótulo de la versión que regía una fecha («v3 · desde el 2/9»), de las bandas del gráfico. */
+/**
+ * El rótulo de la versión que regía una fecha («v3 · desde el 2/9»), de las bandas del gráfico. Cada banda llega hasta el
+ * día anterior al corte, incluido (`bandasDeVersion`): el día del corte ya es de la siguiente.
+ */
 export function versionDeLaFecha(fecha: string, bandas: readonly BandaDeVersion[]): string {
-  return bandas.find((b) => fecha >= b.desde && (b.hasta === null || fecha < b.hasta))?.rotulo ?? C.sinVersion(textoDeLaMarca(fecha));
+  return bandas.find((b) => fecha >= b.desde && (b.hasta === null || fecha <= b.hasta))?.rotulo ?? C.sinVersion(textoDeLaMarca(fecha));
 }
 
 /** «v3 · desde el 2/9» dicho en una frase: «la versión 3 (desde el 2/9)». Otro rótulo queda como está. */

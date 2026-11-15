@@ -18056,6 +18056,248 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.75rem;
 }
 
+/* ─── PG-17 (WP-PULIDO-GRANDES, DL-173): el plan en papel o en PDF ────────────────────────────────
+   La hoja (`components/hoja-del-plan.tsx`) vive aparte, como hija directa de <body>, y en pantalla no se ve. Al imprimir
+   —o al guardar en PDF desde la ventana de impresión— se ve solo ella: lo demás de la página (el encabezado, la
+   navegación, los botones, los avisos, los cuadros) no sale en el papel (TEST-PG-016). Negro sobre blanco en los dos
+   temas, con los tokens de la hoja; sin un tamaño de papel fijo, para que sirva en A4 y en carta; y sin cortar una comida
+   ni una sesión entre dos páginas. */
+.hoja-del-plan {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 14mm 12mm;
+  }
+
+  /* Mientras la hoja está montada, la página entera es la hoja. */
+  html:has(> body > .hoja-del-plan),
+  body:has(> .hoja-del-plan) {
+    background: var(--hoja-fondo) !important;
+  }
+
+  body:has(> .hoja-del-plan) > :not(.hoja-del-plan) {
+    display: none !important;
+  }
+
+  .hoja-del-plan {
+    display: block;
+    color: var(--hoja-texto);
+    background: var(--hoja-fondo);
+    font-size: 10.5pt;
+    line-height: 1.4;
+  }
+
+  .hoja-del-plan * {
+    color: inherit;
+  }
+
+  .hoja-del-plan h1,
+  .hoja-del-plan h2,
+  .hoja-del-plan h3,
+  .hoja-del-plan h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .hoja-del-plan h1 {
+    margin: 0 0 3mm;
+    font-size: 18pt;
+    line-height: 1.15;
+  }
+
+  .hoja-del-plan h2 {
+    margin: 6mm 0 1mm;
+    padding-bottom: 1mm;
+    border-bottom: 0.4mm solid var(--hoja-borde);
+    font-size: 13pt;
+  }
+
+  .hoja-del-plan h3 {
+    margin: 0 0 1mm;
+    font-size: 11.5pt;
+  }
+
+  .hoja-del-plan h4 {
+    margin: 2mm 0 0.8mm;
+    font-size: 10.5pt;
+  }
+
+  .hoja-del-plan p {
+    margin: 0 0 1.2mm;
+  }
+
+  .hoja-del-plan__cabeza {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6mm;
+    align-items: start;
+    padding-bottom: 4mm;
+    border-bottom: 0.6mm solid var(--hoja-texto);
+  }
+
+  .hoja-del-plan__marca {
+    font-size: 8.5pt;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .hoja-del-plan__datos {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.8mm 4mm;
+    margin: 0;
+  }
+
+  .hoja-del-plan__datos > div,
+  .hoja-del-plan__general > div {
+    display: contents;
+  }
+
+  .hoja-del-plan__datos dt {
+    font-weight: 700;
+  }
+
+  .hoja-del-plan__datos dd,
+  .hoja-del-plan__general dd {
+    margin: 0;
+  }
+
+  .hoja-del-plan__app {
+    width: 40mm;
+    margin: 0;
+    text-align: center;
+  }
+
+  .hoja-del-plan__app .codigo-qr {
+    width: 32mm;
+    height: 32mm;
+    margin: 0 auto;
+    border: 0.3mm solid var(--hoja-borde);
+    background: var(--hoja-fondo);
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .hoja-del-plan__app .codigo-qr__fondo {
+    fill: var(--hoja-fondo);
+  }
+
+  .hoja-del-plan__app .codigo-qr__modulos {
+    fill: var(--hoja-texto);
+  }
+
+  .hoja-del-plan__app figcaption {
+    display: grid;
+    gap: 1mm;
+    margin-top: 1.5mm;
+    font-size: 8.5pt;
+    line-height: 1.3;
+  }
+
+  /* «Bajar BE»: en el PDF se toca; en el papel, un rótulo con borde, sin subrayado ni color. */
+  .hoja-del-plan__bajar {
+    justify-self: center;
+    margin-top: 0.5mm;
+    padding: 0.8mm 3mm;
+    border: 0.3mm solid var(--hoja-texto);
+    border-radius: 1.5mm;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  /* Un bloque es una comida o una sesión: nunca queda partido entre dos páginas. */
+  .hoja-del-plan__bloque {
+    padding: 2.5mm 0;
+    border-bottom: 0.3mm solid var(--hoja-borde);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .hoja-del-plan__opciones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(55mm, 1fr));
+    gap: 1mm 6mm;
+  }
+
+  .hoja-del-plan__opcion,
+  .hoja-del-plan__ejercicio {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .hoja-del-plan__items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hoja-del-plan__items li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 3mm;
+    padding: 0.6mm 0;
+    border-bottom: 0.2mm dotted var(--hoja-borde);
+  }
+
+  .hoja-del-plan__cantidad {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hoja-del-plan__nota {
+    grid-column: 1 / -1;
+    font-size: 9pt;
+  }
+
+  .hoja-del-plan__ejercicio {
+    margin-top: 2mm;
+  }
+
+  .hoja-del-plan__series {
+    width: 100%;
+    margin: 1mm 0;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hoja-del-plan__series th,
+  .hoja-del-plan__series td {
+    padding: 0.8mm 1.5mm;
+    border: 0.2mm solid var(--hoja-borde);
+    background: var(--hoja-fondo);
+    text-align: left;
+  }
+
+  .hoja-del-plan__general {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.5mm 3mm;
+    margin: 1mm 0 0;
+    font-size: 9pt;
+  }
+
+  .hoja-del-plan__pie {
+    margin-top: 6mm;
+    padding-top: 2mm;
+    border-top: 0.3mm solid var(--hoja-borde);
+    font-size: 9pt;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Lo secundario, en el gris de la hoja: después de `* { color: inherit }`, para que gane. */
+  .hoja-del-plan__tenue,
+  .hoja-del-plan__marca,
+  .hoja-del-plan__nota,
+  .hoja-del-plan__general dt,
+  .hoja-del-plan__pie {
+    color: var(--hoja-tenue);
+  }
+}
+
 /* ─── WP-GRAFICOS (DL-174), fase 1: GR-04, GR-01 y GR-16 ───────────────────────────────────────────────────────── */
 
 /* GR-04: «Con historial» en la fila del resultado del buscador, con el ícono a la altura del texto. Lo dice el texto: sin
@@ -18174,4 +18416,102 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .desde-el-inicio__metodo {
   display: block;
   font-weight: 400;
+}
+
+/* ─── PG-15 y PG-16 (WP-PULIDO-GRANDES; DL-173): la nota para el profe y las notas propias del profesional ───────── */
+
+/* «Tus notas», en el Resumen: la caja de «Notas recientes del equipo», con un campo para escribir arriba. */
+.tus-notas__escribir {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.tus-notas__escribir .campo {
+  align-self: stretch;
+  margin: 0;
+}
+
+.tus-notas__escribir textarea {
+  min-height: 3.5rem;
+  resize: vertical;
+}
+
+.tus-notas__nota {
+  padding: 0.45rem 0;
+}
+
+.tus-notas__datos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  margin: 0;
+}
+
+.tus-notas__archivadas > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tus-notas__ocultar {
+  align-self: flex-start;
+}
+
+/* Al lado de un ejercicio o de una comida, en los editores: chica, con el candado de «solo vos». */
+.notas-al-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--borde);
+  border-radius: 10px;
+  background: var(--superficie);
+}
+
+.notas-al-lado__titulo,
+.notas-al-lado__ayuda,
+.detalle-de-sesion__notas-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.notas-al-lado__titulo .icono,
+.notas-al-lado__ayuda .icono,
+.detalle-de-sesion__notas-titulo .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.notas-al-lado__lista {
+  display: grid;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* El texto como se escribió: con sus saltos de línea. */
+.notas-al-lado__texto {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* En el detalle de una sesión registrada: lo que la persona contó al terminar, como contexto. */
+.detalle-de-sesion__notas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
 }

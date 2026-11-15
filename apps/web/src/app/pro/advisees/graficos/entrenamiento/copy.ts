@@ -55,7 +55,7 @@ export const COPY_FUERZA_ESTIMADA = {
   repeticiones: (desde: string, hasta: string) => (desde === hasta ? `${desde} repeticiones en la serie usada` : `de ${desde} a ${hasta} repeticiones en la serie usada`),
   ruido: (diferencia: string, unidad: string) => `entre sesiones de esta versión aparecen diferencias de hasta ${diferencia} ${unidad}`,
   ruidoSinAlcanzar: 'con menos de 4 sesiones de hasta 10 repeticiones equivalentes, todavía no alcanza para decir cuánto cambia entre sesiones',
-  /** «De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no.» */
+  /** «De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie.» */
   cambio: (de: string, a: string, texto: string) => `De ${de} a ${a}, ${texto}.`,
   unRirMueve: (carga: string, unidad: string, cuanto: string) => `Con Epley, un RIR de diferencia mueve la estimación en la carga sobre 30: con ${carga} ${unidad}, unos ${cuanto} ${unidad}.`,
   extremos: (bajo: string, cuandoBajo: string, alto: string, cuandoAlto: string) => `El valor más bajo del período: ${bajo} (${cuandoBajo}); el más alto: ${alto} (${cuandoAlto}).`,

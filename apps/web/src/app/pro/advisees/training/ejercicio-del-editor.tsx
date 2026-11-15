@@ -40,6 +40,7 @@ import {
   type EstructuraDePlanDeEntrenamientoEntrada,
   type ImagenDeEjercicio,
   type OpcionDeLaCelda,
+  COPY_NOTAS_PROPIAS,
 } from '@be/domain';
 import { useEffect, useId, useState, type ComponentProps, type KeyboardEvent } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
@@ -58,6 +59,7 @@ import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
 import { COPY_LA_VEZ_PASADA_EN_EL_EDITOR, CuadroDeLaVezPasada } from './la-vez-pasada';
 import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
+import { NotasAlLado, useNotasPropias } from '../notas-propias';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 export type BloqueE = Bloques[number];
@@ -211,6 +213,8 @@ export function EjercicioDelEditor({
   exerciseId?: string | null;
 }) {
   const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  // PG-16 (DL-173): «Anotar sobre este ejercicio», si el editor tiene las notas propias y se sabe qué ejercicio es.
+  const notasPropias = useNotasPropias();
   const propio = useId();
   const plegado = ejercicioPlegadoDelEditor(p, problemas);
   // ED-75: el detalle con la fuerza estimada, solo en los ejercicios de la lista de la v1 (RM-16).
@@ -269,6 +273,7 @@ export function EjercicioDelEditor({
               acciones={[
                 ...(conFuerza ? [{ clave: 'detalle', texto: COPY_DETALLE_DEL_EJERCICIO.abrir, alElegir: () => setDetalle(true) }] : []),
                 ...(conLaVezPasada ? [{ clave: 'la-vez-pasada', texto: COPY_LA_VEZ_PASADA_EN_EL_EDITOR.abrir, alElegir: () => setVezPasada(true) }] : []),
+                ...(notasPropias && exerciseId !== null ? [{ clave: 'anotar', texto: COPY_NOTAS_PROPIAS.anotarSobreElEjercicio, alElegir: () => notasPropias.anotar({ tipo: 'EXERCISE', exerciseId, nombre }) }] : []),
                 { clave: 'duplicar', texto: EDICION.duplicarEjercicio, alElegir: onDuplicar },
                 // ED-23 (V3 E-02): un verbo para cada copia.
                 ...(onCopiar
@@ -284,6 +289,8 @@ export function EjercicioDelEditor({
           </div>
         ) : null}
       </div>
+      {/* PG-16: las notas propias atadas a este ejercicio, a la vista aunque esté plegado. */}
+      <NotasAlLado ejercicio={exerciseId} />
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo ejercicio-del-editor__cuerpo" hidden={!abierto}>
         {abierto ? (
           <>

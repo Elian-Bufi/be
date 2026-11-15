@@ -182,7 +182,7 @@ test('TEST-GRF-021 · todos los textos de la rama pasan la guardia de Entrenamie
     [TX.COPY_FUERZA_ESTIMADA.medianaDelRir, [['1,5']]],
     [TX.COPY_FUERZA_ESTIMADA.repeticiones, [['5', '6'], ['5', '5']]],
     [TX.COPY_FUERZA_ESTIMADA.ruido, [['3', 'kg']]],
-    [TX.COPY_FUERZA_ESTIMADA.cambio, [['la versión 2', 'la versión 3', 'el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no']]],
+    [TX.COPY_FUERZA_ESTIMADA.cambio, [['la versión 2', 'la versión 3', 'el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie']]],
     [TX.COPY_FUERZA_ESTIMADA.unRirMueve, [['80', 'kg', '2,7']]],
     [TX.COPY_FUERZA_ESTIMADA.extremos, [['≈ 92 kg', '3/10', '≈ 98 kg', '12/11']]],
     [TX.COPY_FUERZA_ESTIMADA.descripcion, [[1, '≈ 92 kg', '≈ 92 kg'], [7, '≈ 92 kg', '≈ 98 kg']]],
@@ -266,14 +266,14 @@ test('TEST-GRF-023 · GR-02: la primera línea dice que cambió lo indicado entr
   assert.deepEqual(objetivos.get('pv2'), { rir: { desde: 2, hasta: 2 }, repeticiones: { desde: 5, hasta: 5 } });
   assert.deepEqual(objetivos.get('pv3'), { rir: { desde: 1, hasta: 1 }, repeticiones: { desde: 5, hasta: 5 } });
   const cambios = FE.cambiosDeLoIndicado(VIGENCIAS, objetivos);
-  assert.deepEqual(cambios, ['De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no.']);
+  assert.deepEqual(cambios, ['De la versión 2 a la versión 3, el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie.']);
   // Sin cambio en lo indicado, no hay primera línea.
   const igual = FUERZA.map((p, i) => observacion(p.origin.id, p.date, i < 3 ? 'pv2' : 'pv3', [fila(1, hecha(1, kg(80), 5, 1))], { rirObjetivo: 2 }));
   assert.deepEqual(FE.cambiosDeLoIndicado(VIGENCIAS, FE.objetivosDeLasVersiones(FUERZA, igual, VIGENCIAS)), []);
   // Un rango de repeticiones que cambia también mueve la estimación.
   const conRango = FUERZA.map((p, i) => observacion(p.origin.id, p.date, i < 3 ? 'pv2' : 'pv3', [fila(1, hecha(1, kg(80), 5, 1), i < 3 ? { min: 4, max: 6 } : { min: 8, max: 10 })], { rirObjetivo: 2 }));
   assert.deepEqual(FE.cambiosDeLoIndicado(VIGENCIAS, FE.objetivosDeLasVersiones(FUERZA, conRango, VIGENCIAS)), [
-    'De la versión 2 a la versión 3, las repeticiones indicadas pasaron de entre 4 y 6 a entre 8 y 10: la estimación cambia aunque la fuerza no.',
+    'De la versión 2 a la versión 3, las repeticiones indicadas pasaron de entre 4 y 6 a entre 8 y 10: la estimación puede cambiar aunque la fuerza no cambie.',
   ]);
   // Ningún texto de la fuerza compara dos puntos con una flecha ni da un porcentaje.
   const textos = [...cambios, ...FE.lecturasPorVersion(FUERZA, VIGENCIAS, 'kg').map((x) => x.texto), FE.extremosDeLaFuerza(FUERZA), FE.cuantoMueveUnRir(FUERZA[6])];
@@ -463,6 +463,9 @@ test('TEST-GRF-030 · GR-05: el escalón de lo indicado por versión, hueco dond
     'La misma carga (80 kg), con menos RIR registrado en la versión 3 (desde el 20/10) que en la versión 2 (desde el 1/10): mediana de 1 frente a 2.',
   ]);
   for (const t of [...RI.loQueSeVe(a80, BANDAS, { value: 80, unit: 'kg' }), c.descripcion]) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['ENTRENAMIENTO']), [], t);
+  // Las bandas llegan al día anterior al corte, incluido: ese día es de la v2; el del corte, de la v3.
+  assert.equal(RI.versionDeLaFecha('2026-10-19', BANDAS), 'v2 · desde el 1/10');
+  assert.equal(RI.versionDeLaFecha('2026-10-20', BANDAS), 'v3 · desde el 20/10');
   // Un rango indicado es un segmento hueco.
   const conRango = RI.carrilDelRirIndicadoYRegistrado([{ ...sesiones[0], indicado: { desde: 1, hasta: 2 } }], { serie: 1, bandas: BANDAS, tardias: new Set(), filtrado: false });
   assert.deepEqual(conRango.indicado[0].rango, { desde: 1, hasta: 2 });
