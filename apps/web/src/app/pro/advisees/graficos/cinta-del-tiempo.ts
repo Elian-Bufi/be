@@ -33,7 +33,7 @@ import {
 } from '@be/domain';
 import { diaAnterior } from '../seguimiento/geometria';
 import type { CarrilDeEventos } from './carriles';
-import { textoDeLaMarca, type CursorDeFechas, type EscalaDeFechas } from './eje-de-fechas';
+import { textoDeLaMarca, tramosDe, type CursorDeFechas, type EscalaDeFechas } from './eje-de-fechas';
 
 export type TipoDeEventoDeLaCinta =
   | 'VERSION_DE_PLAN'
@@ -91,6 +91,19 @@ export const COPY_DE_LA_CINTA = {
  * los seguimientos y los formularios quedan en la línea de tiempo (GR-T28).
  */
 export const TIPOS_DE_HITO_DE_LA_CINTA: readonly TipoDeEvento[] = ['ANTHROPOMETRIC_EVALUATION_RECORDED', 'NUTRITION_REVIEW_RECORDED', 'TRAINING_REVIEW_RECORDED', 'COORDINATION_NOTE_RECORDED'];
+
+/**
+ * API-DSH-04 lee hasta 366 días por pedido (`DIAS_MAXIMOS_DEL_ANALISIS`; más es 400 PERIOD_TOO_LONG). Un período más largo
+ * («desde el inicio» de un acompañamiento de más de un año) se lee en tramos de 366 días.
+ */
+export const DIAS_POR_LECTURA_DE_LA_CINTA = 366;
+
+/**
+ * Los tramos en que se lee la cinta, del más reciente al más antiguo: si se llega al tope de páginas, lo que queda afuera
+ * es lo más antiguo, que es lo que la cinta dice que falta (GR-T29). Sin días repetidos ni perdidos.
+ */
+export const tramosDeLaCinta = (desde: string, hasta: string): readonly { readonly desde: string; readonly hasta: string }[] =>
+  [...tramosDe(desde, hasta, DIAS_POR_LECTURA_DE_LA_CINTA)].reverse();
 
 /** Los estados que se piden: lo anulado no está en la cinta. */
 export const ESTADOS_DE_LA_CINTA: readonly EstadoDeEntrada[] = ['EFFECTIVE', 'RECTIFIED', 'CORRECTED'];

@@ -276,6 +276,24 @@ test('TEST-GRF-013 · los tramos de 92 días cubren el período sin días repeti
   assert.match(lecturas, /export const DIAS_POR_LECTURA_DE_LAS_SESIONES = 92;/);
   assert.match(lecturas, /leerEnTramos\(p\.periodo, DIAS_POR_LECTURA_DE_LAS_SESIONES, \(d, h\) => api\.contextoDeRevisionDeEntrenamiento\(/);
   assert.equal(lecturas.match(/api\.contextoDeRevisionDeEntrenamiento\(/g)?.length, 1, 'API-TRN-21 no se lee de otra manera');
+  // La cinta (API-DSH-04) admite hasta 366 días por pedido: un período más largo se lee en tramos, del más reciente al más
+  // antiguo, para que lo que quede afuera del tope de páginas sea lo más antiguo (mutación: tramos del más antiguo al más
+  // reciente, o un solo pedido con todo el período).
+  assert.equal(K.DIAS_POR_LECTURA_DE_LA_CINTA, 366);
+  const deLaCinta = K.tramosDeLaCinta('2024-09-01', '2026-11-14');
+  assert.equal(deLaCinta.length, 3);
+  assert.deepEqual(deLaCinta[0], { desde: '2026-09-03', hasta: '2026-11-14' });
+  assert.equal(deLaCinta.at(-1).desde, '2024-09-01');
+  for (const t of deLaCinta) assert.ok(dias(t) <= 366, `${t.desde} a ${t.hasta}`);
+  assert.equal(
+    deLaCinta.reduce((n, t) => n + dias(t), 0),
+    dias({ desde: '2024-09-01', hasta: '2026-11-14' }),
+  );
+  for (let i = 1; i < deLaCinta.length; i++) assert.equal(Date.parse(`${deLaCinta[i - 1].desde}T12:00:00Z`) - Date.parse(`${deLaCinta[i].hasta}T12:00:00Z`), 86_400_000);
+  assert.deepEqual(K.tramosDeLaCinta('2026-08-01', '2026-11-14'), [{ desde: '2026-08-01', hasta: '2026-11-14' }]);
+  assert.match(lecturas, /for \(const tramo of tramosDeLaCinta\(desde, hasta\)\)/);
+  assert.match(lecturas, /periodStart: tramo\.desde, periodEnd: tramo\.hasta/);
+  assert.equal(lecturas.match(/api\.lineaDeTiempo\(/g)?.length, 1, 'API-DSH-04 se lee solo por tramos');
   // Lo que se comparte en vuelo se descarta al responder: no queda nada guardado.
   assert.match(lecturas, /leer\(\)\.finally\(\(\) => enVuelo\.delete\(clave\)\)/);
 });

@@ -1261,8 +1261,8 @@ resumido) y «contar dos veces un punto repetido entre tramos» (no cambia ning�
 
 ### 13.2 Rama A · `wp-graficos-base`
 
-> **Estado:** programada el 2026-11-14 en `wp-graficos-base` (#276), desde `main` `7cb79d3a`, con `main` `33320669`
-> traído. Sin integrar. Sin API y sin cambio visible: las piezas las montan las ramas B a E. El primer commit
+> **Estado:** programada el 2026-11-14 en `wp-graficos-base` (#276), desde `main` `7cb79d3a`, con `main` `b55414d2`
+> traído (#273, la fase 1, ya integrada). Sin integrar. Sin API y sin cambio visible: las piezas las montan las ramas B a E. El primer commit
 > (`257912a6`) fijó el contrato del que salieron las otras ramas; los siguientes solo agregan. Las decisiones GR-T20 a
 > GR-T29 están **a ratificar**; mientras tanto, rigen.
 
@@ -1295,7 +1295,7 @@ no se corre nada pesado, así que ponerlas en rojo una por una queda para la rev
 | TEST-GRF-008 | Decir el ruido con dos sesiones |
 | TEST-GRF-011 | Unir a través de un hueco; unir lo indicado de dos versiones |
 | TEST-GRF-012 | Perder los subtotales en la tabla |
-| TEST-GRF-013 | Tramos de 93 días; leer API-TRN-21 sin tramos |
+| TEST-GRF-013 | Tramos de 93 días; leer API-TRN-21 sin tramos; leer la cinta en un solo pedido o del tramo más antiguo al más reciente |
 | TEST-GRF-019 | Dejar los eventos de un área denegada; dibujar un hábito o lo anulado |
 
 #### Decisiones del continuador al programar (a ratificar)
@@ -1327,8 +1327,9 @@ no se corre nada pesado, así que ponerlas en rojo una por una queda para la rev
   los objetivos como hitos de la cinta.
 - **GR-T29 · Cómo se ve la cinta:** una fila por área, con su ícono, y una para las notas; la barra de una versión va
   del día que empezó a regir al anterior al corte; lo que cae a menos de 18 px se agrupa en un círculo con la cantidad
-  («2 hitos», o «3 hechos» si hay una sesión o una sustitución); se leen hasta cuatro páginas de 50 por pedido y, si
-  hay más, la cinta dice que faltan los más antiguos. *Alternativa:* una sola fila con todos los hechos.
+  («2 hitos», o «3 hechos» si hay una sesión o una sustitución); se leen hasta cuatro páginas de 50 por pedido, en
+  tramos de 366 días (lo que admite API-DSH-04) del más reciente al más antiguo, y, si hay más, la cinta dice que
+  faltan los más antiguos. *Alternativa:* una sola fila con todos los hechos.
 
 #### Lo que falta para cerrar
 

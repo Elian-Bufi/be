@@ -38,7 +38,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { limitarLectura, motivoDeFalla, type MotivoDeFalla } from '../seguimiento/contexto';
 import { granoPara, leerSerie, type EstadoDeSerie } from '../seguimiento/series';
 import { objetivosDelPlanLeido, serieDeLaFuerza, serieDeLoIndicado } from './adaptadores';
-import { ESTADOS_DE_LA_CINTA, TIPOS_DE_HITO_DE_LA_CINTA } from './cinta-del-tiempo';
+import { ESTADOS_DE_LA_CINTA, TIPOS_DE_HITO_DE_LA_CINTA, tramosDeLaCinta } from './cinta-del-tiempo';
 import { inicioDelEje, tramosDe, type PeriodoDelGrafico } from './eje-de-fechas';
 
 export interface ParametrosDeLectura {
@@ -236,19 +236,34 @@ export type LecturaDeLaCinta =
   | { readonly tipo: 'sin-acceso' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
 
-/** Todas las páginas de un pedido a API-DSH-04, hasta el tope; la primera falla corta. */
-async function leerLasPaginas(p: ParametrosDeLectura, filtro: FiltroDeLineaDeTiempo): Promise<{ readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly truncada: boolean } | { readonly falla: Resultado<unknown> }> {
+/**
+ * Todas las páginas de un pedido a API-DSH-04, por tramos de hasta 366 días del más reciente al más antiguo, hasta el tope
+ * de páginas del pedido; la primera falla corta. Si queda algo sin leer, `truncada`: lo que falta es lo más antiguo.
+ */
+async function leerLasPaginas(
+  p: ParametrosDeLectura,
+  filtro: FiltroDeLineaDeTiempo,
+  desde: string,
+  hasta: string,
+): Promise<{ readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly truncada: boolean } | { readonly falla: Resultado<unknown> }> {
   const entradas: EntradaDeLineaDeTiempo[] = [];
-  let cursor: string | null = null;
-  for (let pagina = 0; pagina < PAGINAS_DE_LA_CINTA; pagina++) {
-    const desde: string | null = cursor;
-    const r: Resultado<LineaDeTiempoResponse> = await limitarLectura(() => api.lineaDeTiempo(p.token, p.asesoradoId, { ...filtro, limit: String(POR_PAGINA), ...(desde ? { cursor: desde } : {}) }));
-    if (!r.ok) return { falla: r };
-    entradas.push(...r.datos.data.entries);
-    if (!r.datos.page.hasMore || r.datos.page.nextCursor === null) return { entradas, truncada: false };
-    cursor = r.datos.page.nextCursor;
+  let paginas = 0;
+  for (const tramo of tramosDeLaCinta(desde, hasta)) {
+    let cursor: string | null = null;
+    for (;;) {
+      if (paginas === PAGINAS_DE_LA_CINTA) return { entradas, truncada: true };
+      paginas++;
+      const deEstaPagina: string | null = cursor;
+      const r: Resultado<LineaDeTiempoResponse> = await limitarLectura(() =>
+        api.lineaDeTiempo(p.token, p.asesoradoId, { ...filtro, periodStart: tramo.desde, periodEnd: tramo.hasta, limit: String(POR_PAGINA), ...(deEstaPagina ? { cursor: deEstaPagina } : {}) }),
+      );
+      if (!r.ok) return { falla: r };
+      entradas.push(...r.datos.data.entries);
+      if (!r.datos.page.hasMore || r.datos.page.nextCursor === null) break;
+      cursor = r.datos.page.nextCursor;
+    }
   }
-  return { entradas, truncada: true };
+  return { entradas, truncada: false };
 }
 
 /**
@@ -261,10 +276,10 @@ export function leerLaCinta(p: ParametrosDeLectura, alcances: readonly Alcance[]
   const conSesiones = alcances.includes('ENTRENAMIENTO');
   return compartirLecturaEnCurso(`cinta|${p.asesoradoId}|${desde}|${p.periodo.hasta}|${conSesiones}`, async (): Promise<LecturaDeLaCinta | null> => {
     if (p.periodo.hasta < desde) return { tipo: 'lista', entradas: [], truncada: false };
-    const base: FiltroDeLineaDeTiempo = { periodStart: desde, periodEnd: p.periodo.hasta, state: ESTADOS_DE_LA_CINTA.join(',') };
+    const base: FiltroDeLineaDeTiempo = { state: ESTADOS_DE_LA_CINTA.join(',') };
     const [hitos, sesiones] = await Promise.all([
-      leerLasPaginas(p, { ...base, type: TIPOS_DE_HITO_DE_LA_CINTA.join(',') }),
-      conSesiones ? leerLasPaginas(p, { ...base, type: 'TRAINING_SESSION_RECORDED', quality: 'SESSION_WITH_DEVIATION' }) : Promise.resolve({ entradas: [], truncada: false }),
+      leerLasPaginas(p, { ...base, type: TIPOS_DE_HITO_DE_LA_CINTA.join(',') }, desde, p.periodo.hasta),
+      conSesiones ? leerLasPaginas(p, { ...base, type: 'TRAINING_SESSION_RECORDED', quality: 'SESSION_WITH_DEVIATION' }, desde, p.periodo.hasta) : Promise.resolve({ entradas: [], truncada: false }),
     ]);
     for (const parte of [hitos, sesiones]) {
       if (!('falla' in parte)) continue;
