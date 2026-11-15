@@ -18679,6 +18679,15 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0;
 }
 
+/* La caja que se desplaza mide lo que la tabla, y sus tapas son las de la tarjeta: sin franjas a los costados cuando la
+   tabla entra entera. */
+.desde-el-inicio .desplazable-x {
+  --tapa-izquierda: var(--superficie);
+  --tapa-derecha: var(--superficie);
+  width: fit-content;
+  max-width: 100%;
+}
+
 .desde-el-inicio__tabla {
   width: auto;
   min-width: min(100%, 40rem);
