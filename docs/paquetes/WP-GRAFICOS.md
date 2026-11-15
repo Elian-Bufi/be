@@ -1484,3 +1484,7 @@ tabla de columnas de GR-01, volver a «154,5 → 160,5 kg»). Se revisaron leyen
   gráficos chicos no reciben el foco; la tabla de datos tiene cada día.
 - **Los gráficos grandes de GR-24 («Abrir estos gráficos en grande») y el pie de «Analizar»** siguen como estaban: son de
   la rama D, que los pasa al catálogo y a los paneles alineados de la base.
+- **El eje de un gráfico chico de GR-24 con dos valores enteros seguidos** (las repeticiones, 3 y 4) queda con dos marcas:
+  sumar una afuera cambiaría la escala del dibujo, que es la del Resumen (`geometriaDelMinigrafico`).
+- **«Cómo leerlo» lleva la flecha de BE** delante de su «i», como todo desplegable sin clase propia del website: se dejó así
+  para que se lea igual que los demás.
