@@ -2,7 +2,7 @@
  * WP-HISTORIA-ANTERIOR (DEUDA_LEGAJO DL-175; 08 §14.1, la fila «Cambio de profesional»; REG-06-55; RF-025): la persona
  * autoriza, desde la app, al profesional nuevo de un área a ver su **historia anterior de esa área**, lo que pasó con otros
  * profesionales en esa misma área antes de que él la acompañara. Lógica pura, sin base ni red: la usan la API, la APK y el
- * website, y la prueban `historia-anterior.test.ts` (TEST-HA-001 a 012).
+ * website, y la prueban `historia-anterior.test.ts` (TEST-HA-001 a 013).
  *
  * Lo que decidió Dirección (2026-11-15, «Programarlo»), y que este módulo sostiene:
  * - **quién y cuándo:** la persona, por profesional y por área (el componente de vínculo de ese profesional en esa área);
@@ -121,7 +121,12 @@ export const COPY_HISTORIA_ANTERIOR = {
 
   // ── El profesional, en el website ──
   ruta: 'Historia anterior',
+  /** La pista de la entrada del menú «Más» de la ficha. */
+  pistaEnLaFicha: 'Lo que pasó en tu área con otro profesional, antes de tu acompañamiento. Lo ves si la persona te autoriza.',
   tituloDelArea: (a: Alcance) => `Historia anterior de ${area(a)}`,
+  /** El nombre de la navegación de las áreas, para el lector de pantalla. */
+  areasParaLeer: 'Áreas de la historia anterior',
+  tramosParaLeer: 'Tramos de la historia anterior',
   aviso: 'Lo que sigue pasó con otro profesional, antes de tu acompañamiento. Solo lectura.',
   /** Sin la autorización: cómo pedírsela, sin mostrar ni insinuar datos. */
   comoPedirla: {
@@ -156,6 +161,7 @@ export const COPY_HISTORIA_ANTERIOR = {
   anulado: 'Anulado',
   corregida: 'Corregida después',
   ejercicios: (n: number) => (n === 1 ? '1 ejercicio' : `${n} ejercicios`),
+  sinValor: 'Sin un valor que se pueda mostrar',
   metodo: (nombre: string) => `Método: ${nombre}`,
   protocolo: (nombre: string) => `Protocolo: ${nombre}`,
   calculado: 'Calculado por BE',
@@ -347,7 +353,7 @@ export function textosDeLaHistoriaAnterior(): readonly string[] {
     C.interruptor, C.laVe('3/11/2026'), C.noLaVe, C.enPausa, C.miro('ayer a las 18:20'), C.todaviaNoLaMiro, C.leerElTexto, C.propuesta, C.compartida('Lic. Sofía Paz'), C.retirada('Lic. Sofía Paz'),
     C.confirmarRetiro.titulo, C.confirmarRetiro.cuerpo('Lic. Sofía Paz'), C.confirmarRetiro.confirmar, C.confirmarRetiro.cancelar,
     C.alAceptar.opcional, C.alAceptar.compartir, C.alAceptar.ahoraNo, C.noSePudo, C.cambioAntes, C.sinElA3,
-    C.ruta, C.aviso, C.comoPedirla.titulo, C.comoPedirla.sinAcceso, C.deOtroProfesional, C.deOtroProfesionalN(2),
+    C.ruta, C.pistaEnLaFicha, C.areasParaLeer, C.tramosParaLeer, C.sinValor, C.aviso, C.comoPedirla.titulo, C.comoPedirla.sinAcceso, C.deOtroProfesional, C.deOtroProfesionalN(2),
     ...Object.values(C.secciones), ...Object.values(C.vacio), C.sinHistoria, C.tramo('1/9/2026', '29/11/2026'), C.tramoAnterior, C.tramoSiguiente, C.laHistoriaVa('1/3/2026', '29/11/2026'),
     C.version(2), C.vigencia('1/9/2026', null), C.vigencia('1/9/2026', '1/10/2026'), C.seguiaVigente, ...Object.values(C.motivoDelCorte), C.semana('3/11', '9/11'),
     C.comidasRegistradas(1), C.comidasRegistradas(4), C.sesionesRegistradas(1), C.sesionesRegistradas(3), C.opcionDelPlan, C.algoDiferente, C.anulado, C.corregida, C.ejercicios(1), C.ejercicios(5),
