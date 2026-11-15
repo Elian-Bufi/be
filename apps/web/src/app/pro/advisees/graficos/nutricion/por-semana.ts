@@ -122,6 +122,7 @@ export function leyendaPorSemana(paneles: readonly PanelDeValores[], extras: rea
     ...(semanas.some((s) => s.valor !== null && !s.entera) ? [{ clave: 'semana-hueca', ...L.hueca, muestra: { tipo: 'SEMANA', forma: 'HUECA', color: 0 } } as const] : []),
     ...(semanas.some((s) => s.valor === null) ? [{ clave: 'sin-media', ...L.sinMedia, muestra: { tipo: 'SEMANA', forma: 'SIN_MEDIA', color: 0 } } as const] : []),
     ...(paneles.some((p) => p.marcas.some((m) => m.color !== null)) ? [{ clave: 'cada-dia', ...L.cadaDia, muestra: { tipo: 'COBERTURA', color: 0 } } as const] : []),
+    ...(paneles.some((p) => p.marcas.some((m) => m.tarde && m.color !== null)) ? [{ clave: 'tarde', ...L.tarde, muestra: { tipo: 'TARDE' } } as const] : []),
     ...extras,
   ];
 }

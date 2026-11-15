@@ -185,8 +185,15 @@ function Arriba({ d }: { d: PropsDelDibujo }) {
 function TiraDeCobertura({ panel, escala, y }: { panel: PanelDeValores; escala: EscalaDeFechas; y: number }) {
   const ancho = Math.max(0.5, escala.porDia - (escala.porDia >= 4 ? 1 : 0));
   const color = colorDelCarril(0);
+  // Lo cargado después lleva su muesca arriba del día (§5.14): por semana, los puntos tenues no la llevan.
+  const tarde = new Set(panel.marcas.filter((m) => m.tarde && m.color !== null).map((m) => m.fecha));
   return (
     <g className="grafico-capas__tira" shapeRendering="crispEdges">
+      {[...tarde]
+        .filter((f) => f >= escala.desde && f <= escala.hasta)
+        .map((f) => (
+          <rect key={`t${f}`} x={escala.x(f) - 0.75} y={y - 3.5} width={1.5} height={2.5} fill="var(--texto)" data-tarde />
+        ))}
       {panel.cobertura
         .filter((d) => d.fecha >= escala.desde && d.fecha <= escala.hasta)
         .map((d) => {
@@ -269,7 +276,7 @@ function DibujoDeValores({ panel, alto, ...d }: PropsDelDibujo & { panel: PanelD
           </>
         )}
         {rotulos.map((r) => (
-          <text key={`r${r.clave}`} className="grafico-base__rotulo-del-punto" x={r.tx} y={r.ty} textAnchor={r.ancla} fontSize={12} fontWeight={600} fill="var(--texto)">
+          <text key={`r${r.clave}`} className="grafico-base__rotulo-del-punto" x={r.tx} y={r.ty} textAnchor={r.ancla} fontSize={12} fontWeight={r.fuerte ? 600 : 400} fill={r.fuerte ? 'var(--texto)' : 'var(--tenue)'}>
             {r.texto}
           </text>
         ))}

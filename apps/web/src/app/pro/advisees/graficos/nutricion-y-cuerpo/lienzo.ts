@@ -310,15 +310,16 @@ export const valorDelRotulo = (v: number): string => v.toLocaleString('es-AR', {
  *   juntos no ubica nada. La diferencia de una unión («+18 g»), solo en la fecha elegida y en la última.
  * - **Por semana:** la media de la semana elegida o, sin elegir, la de la última con media.
  * Lo indicado no lleva número: lo dicen la lectura y la tabla. Dos rótulos nunca se pisan, ni pisan un número del eje.
+ * `fuerte`: el elegido, el último y la diferencia van marcados; el mínimo y el máximo, discretos (como en la base).
  */
-export function rotulosDelPanel(g: GeometriaDeValores, escala: Pick<EscalaDeFechas, 'izquierda' | 'derecha'>, alto: number, fecha: string | null, modo: ModoDelLienzo, margenDerecho: number): RotuloUbicado[] {
+export function rotulosDelPanel(g: GeometriaDeValores, escala: Pick<EscalaDeFechas, 'izquierda' | 'derecha'>, alto: number, fecha: string | null, modo: ModoDelLienzo, margenDerecho: number): (RotuloUbicado & { readonly fuerte: boolean })[] {
   const caja = { izquierda: escala.izquierda, derecha: escala.derecha + margenDerecho - 2, arriba: 0, abajo: alto };
   const ejeY = g.marcasY.map((m) => ({ x1: 0, x2: escala.izquierda - 4, y1: m.y - 8, y2: m.y + 8 }));
   if (modo === 'SEMANA' && (g.barras.length > 0 || g.vacias.length > 0)) {
     const elegida = fecha === null ? null : (g.barras.find((b) => fecha >= b.desde && fecha <= b.hasta) ?? null);
     const sinElegir = fecha === null || (elegida === null && !g.vacias.some((v) => fecha >= v.desde && fecha <= v.hasta));
     const barra = elegida ?? (sinElegir ? (g.barras[g.barras.length - 1] ?? null) : null);
-    return barra ? rotulosSinPisarse([{ clave: barra.clave, x: (barra.x1 + barra.x2) / 2, y: barra.y, texto: valorDelRotulo(barra.valor) }], caja, ejeY) : [];
+    return barra ? rotulosSinPisarse([{ clave: barra.clave, x: (barra.x1 + barra.x2) / 2, y: barra.y, texto: valorDelRotulo(barra.valor) }], caja, ejeY).map((r) => ({ ...r, fuerte: true })) : [];
   }
   const registradas = g.marcas.filter((m) => m.color !== null).sort((a, b) => a.x - b.x);
   const series = [...new Set(registradas.map((m) => m.serie))];
@@ -326,6 +327,7 @@ export function rotulosDelPanel(g: GeometriaDeValores, escala: Pick<EscalaDeFech
   const unionDe = (f: string | null) => (f === null ? undefined : g.uniones.find((u) => u.fecha === f && u.rotulo !== null));
   const comoRotulo = (u: GeometriaDeValores['uniones'][number]): RotuloCandidato => ({ clave: `u:${u.clave}`, x: u.x + 4 + ((u.rotulo ?? '').length * 7) / 2, y: (u.y1 + u.y2) / 2 + 4, texto: u.rotulo ?? '' });
   const elegidaUnion = unionDe(fecha);
+  const discretos = new Set<string>();
   if (series.length <= 1) {
     const elegida = fecha === null ? null : (registradas.find((m) => m.fecha === fecha)?.clave ?? null);
     const { claves, minimo } = rotulosDeLoLleno(registradas, elegida);
@@ -333,6 +335,7 @@ export function rotulosDelPanel(g: GeometriaDeValores, escala: Pick<EscalaDeFech
     for (const c of claves) {
       const m = registradas.find((x) => x.clave === c);
       if (m) candidatos.push({ clave: m.clave, x: m.x, y: m.y, texto: valorDelRotulo(m.valor), abajo: c === minimo && c !== ultima });
+      if (m && c !== elegida && c !== ultima) discretos.add(c);
       // La diferencia del día elegido va enseguida de su valor; la del último día, enseguida del último.
       if (m && elegidaUnion && m.fecha === fecha) candidatos.push(comoRotulo(elegidaUnion));
     }
@@ -345,7 +348,7 @@ export function rotulosDelPanel(g: GeometriaDeValores, escala: Pick<EscalaDeFech
       for (const m of [elegida, deLaSerie[deLaSerie.length - 1]]) if (m) candidatos.push({ clave: m.clave, x: m.x, y: m.y, texto: valorDelRotulo(m.valor) });
     }
   }
-  return rotulosSinPisarse(candidatos, caja, ejeY);
+  return rotulosSinPisarse(candidatos, caja, ejeY).map((r) => ({ ...r, fuerte: !discretos.has(r.clave) }));
 }
 
 /** El alto de cada fila de la tira por comida: el nombre de la comida arriba y sus celdas debajo. */

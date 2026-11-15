@@ -77,6 +77,7 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
       sinMedia: { texto: 'Sin media', largo: 'Columna gris: la semana no llega a 4 días con cantidades en todos sus registros; no es un cero' },
       cadaDia: { texto: 'Cada día', largo: 'Los días, como puntos tenues detrás de las barras; debajo, la tira de cada día: entera sin faltantes, a media altura con algo que falta, una raya baja sin registros' },
       indicado: { texto: 'Indicado', largo: 'Lo indicado en el plan para cada día, como rombos huecos tenues detrás de las barras' },
+      tarde: { texto: 'Cargado después', largo: 'Un día con registros cargados después: una muesca arriba de su lugar en la tira' },
     },
     comoSeArma: (minimo: number) => [
       `Cada barra es la media de la semana (v1), de lunes a domingo: el promedio de los días con cantidades en todos sus registros, si son ${minimo} o más. Es la misma media en las calorías, los macronutrientes y lo indicado y lo registrado.`,

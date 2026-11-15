@@ -911,6 +911,10 @@ test('TEST-GRVC-001 · Nutrición por semana: la media de la semana (v1) como ba
     ['semana-entera', 'cada-dia'],
     'sin semanas huecas ni sin media, esas fichas no van',
   );
+  // Lo cargado después también se dice por semana (§5.14): una muesca en la tira y su ficha (mutación: perderla por semana).
+  const conTarde = G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos), cargadoTarde: new Set(['2026-10-20']), desde: '2026-10-19', hasta: '2026-11-05', hoy: '2026-11-05' });
+  assert.ok(conTarde.porSemana.leyenda.some((x) => x.clave === 'tarde'));
+  assert.ok(!g.porSemana.leyenda.some((x) => x.clave === 'tarde'), 'sin nada cargado después, sin ficha');
   // GR-13 y GR-14 usan la misma media de la semana que GR-12: el mismo número para la misma semana.
   const macros = G13.graficoDeMacros({ resultados: G13.MACROS_DEL_GRAFICO.map((m) => resultado(m.metrica, puntos)), macros: G13.MACROS_DEL_GRAFICO, cargadoTarde: new Set(), desde: '2026-10-19', hasta: '2026-11-05', hoy: '2026-11-05' });
   assert.deepEqual(
@@ -1149,6 +1153,7 @@ test('TEST-GRVC-007 · en pantalla: «Por semana | Día por día» con aria-pres
   assert.match(lienzo, /<ComoLeerlo de=\{titulo\}>/);
   assert.match(lienzo, /RELLENO_ENTERA : RELLENO_HUECA/, 'las barras con el relleno de la base, medido a 3:1 en los dos temas (TEST-GRV-013)');
   assert.match(lienzo, /className="grafico-base__cabecera"/);
+  assert.ok(lienzo.includes('const tarde = new Set(panel.marcas.filter((m) => m.tarde && m.color !== null)'), 'por semana, la tira marca lo cargado después (§5.14)');
   assert.match(lienzo, /altoDelCarril\(densidad, deValores\)/, '240 px con un panel, 140 con más (la base)');
   assert.doesNotMatch(lienzo, /valoresDelEjeVertical/, 'el eje de la base, sin la regla vieja de tres marcas');
   // «Registros»: el botón dice qué gráfico es, sin «día por día» (también va por semana).
