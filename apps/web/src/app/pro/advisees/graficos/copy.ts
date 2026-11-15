@@ -23,6 +23,25 @@ export const COPY_DE_LOS_GRAFICOS = {
   faltaHistoria: (hacen: number, unidad: string, hay: readonly number[]) =>
     hay.length > 1 ? `Se arma con ${hacen} ${unidad} por lado; hay ${hay.slice(0, -1).join(', ')} y ${hay[hay.length - 1]}.` : `Se arma con ${hacen} ${unidad}; hay ${hay[0] ?? 0}.`,
   tramoElegido: (desde: string, hasta: string) => `Del ${desde} al ${hasta}`,
+  /** La lectura de entrada, sin una fecha elegida: el último valor de cada carril (pasada visual del 15/11). */
+  loUltimo: 'Lo último',
+  /** La línea tenue del período, debajo del título. */
+  periodo: (desde: string, hasta: string | null) => (hasta === null ? `del ${desde} a hoy` : `del ${desde} al ${hasta}`),
+} as const;
+
+/**
+ * La leyenda como fichas cortas, en una línea arriba del gráfico (pasada visual del 15/11; DISENO-VISUAL §1, principio
+ * 7): la forma la dice el glifo, así que el texto se queda en lo esencial. El lector de pantalla oye el sentido entero.
+ */
+export const SENTIDO_CORTO = {
+  REGISTRADO: 'Registrado',
+  INDICADO: 'Indicado',
+  SUBTOTAL: 'Subtotal',
+  CARGA_RAPIDA: 'Carga rápida',
+  ORIENTATIVA: 'De 10 a 12 rep. equivalentes',
+  OBSERVADA_POR_EL_PROFESIONAL: 'Observado',
+  REPORTADO: 'Reportado',
+  CALCULADO: 'Calculado',
 } as const;
 
 /** Lo que dice cada glifo de la leyenda: la forma dice el estado además del color. */

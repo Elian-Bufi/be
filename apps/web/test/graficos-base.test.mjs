@@ -19,6 +19,7 @@ import {
   EntradaDeLineaDeTiempoSchema,
   NotaPropiaSchema,
   NotasDeLasSesionesResponseSchema,
+  observacionesDelEjercicio,
   serieDisponible,
   terminosProhibidosEnUnGrafico,
 } from '@be/domain';
@@ -41,9 +42,14 @@ const C = await import('../src/app/pro/advisees/graficos/carriles.ts');
 const T = await import('../src/app/pro/advisees/graficos/tabla-equivalente.ts');
 const R = await import('../src/app/pro/advisees/graficos/registro-de-graficos.ts');
 const { REGISTRO_DE_GRAFICOS } = await import('../src/app/pro/advisees/graficos/registros.ts');
-const { COPY_DE_LOS_GRAFICOS, SENTIDO_EN_LA_LEYENDA } = await import('../src/app/pro/advisees/graficos/copy.ts');
+const { COPY_DE_LOS_GRAFICOS, SENTIDO_CORTO, SENTIDO_EN_LA_LEYENDA } = await import('../src/app/pro/advisees/graficos/copy.ts');
 const A = await import('../src/app/pro/advisees/graficos/adaptadores.ts');
 const K = await import('../src/app/pro/advisees/graficos/cinta-del-tiempo.ts');
+// La pasada visual (15/11): los ejes y los rótulos, las semanas, lo indicado en el tiempo y las versiones en el eje.
+const J = await import('../src/app/pro/advisees/graficos/ejes.ts');
+const S = await import('../src/app/pro/advisees/graficos/semanas.ts');
+const L = await import('../src/app/pro/advisees/graficos/lo-indicado-en-el-tiempo.ts');
+const V = await import('../src/app/pro/advisees/graficos/versiones-en-el-eje.ts');
 
 // ─── Sesiones sintéticas de API-TRN-21, validadas contra el esquema estricto de la ejecución ──────
 const BANCA = { exerciseId: 'ej-banca', exerciseVersionId: 'ver-banca-1', exerciseName: 'Press de banca' };
@@ -392,7 +398,7 @@ test('TEST-GRF-017 · los registros de las cuatro ramas se unen sin IDs repetido
   const prueba = JSON.parse(readFileSync(join(WEB, 'package.json'), 'utf8')).scripts.test;
   for (const archivo of ['graficos-base', 'graficos-entrenamiento', 'graficos-nutricion-y-cuerpo', 'graficos-cruces', 'graficos-patrones']) assert.ok(prueba.includes(`test/${archivo}.test.mjs`), archivo);
   // Un archivo .ts y uno .tsx con el mismo nombre se resolverían distinto en TypeScript y en el empaquetador (GR-T23).
-  const nombres = ['adaptadores', 'carriles', 'cinta-del-tiempo', 'copy', 'eje-de-fechas', 'lecturas', 'medidas-del-grafico', 'registro-de-graficos', 'registros', 'tabla-equivalente'];
+  const nombres = ['adaptadores', 'carriles', 'cinta-del-tiempo', 'copy', 'eje-de-fechas', 'ejes', 'lecturas', 'lectura-de-lo-indicado', 'lo-indicado-en-el-tiempo', 'medidas-del-grafico', 'registro-de-graficos', 'registros', 'semanas', 'tabla-equivalente', 'versiones-en-el-eje'];
   for (const n of nombres) assert.ok(!existsSync(join(GRAFICOS, `${n}.tsx`)), `${n}.tsx choca con ${n}.ts`);
 });
 
@@ -405,6 +411,9 @@ test('TEST-GRF-018 · los textos comunes de los gráficos pasan la guardia unida
     COPY_DE_LOS_GRAFICOS.faltaHistoria(4, 'semanas', [2]),
     COPY_DE_LOS_GRAFICOS.tramoElegido('3/11', '9/11'),
     ...Object.values(SENTIDO_EN_LA_LEYENDA),
+    ...Object.values(SENTIDO_CORTO),
+    COPY_DE_LOS_GRAFICOS.periodo('3 nov', null),
+    COPY_DE_LOS_GRAFICOS.periodo('3 nov', '9 nov'),
     // La cinta del tiempo (GR-23) es de las tres áreas: sus textos pasan la unión de las tres listas.
     ...Object.values(K.COPY_DE_LA_CINTA).flatMap((v) => (typeof v === 'string' ? [v] : [])),
     K.COPY_DE_LA_CINTA.leidaHastaElTope(200),
@@ -744,4 +753,221 @@ test('TEST-GRF-011 (b) · el 1RM estimado por carrilDeSerie: lo observado por el
       ['2026-11-04', null],
     ],
   );
+});
+
+// ─── La pasada visual (15/11; DISENO-VISUAL §1): lo que heredan las ramas B a E ──────────────────────────────────
+
+test('TEST-GRV-001 · el eje vertical, sobrio: de 3 a 5 marcas redondas, sin un número repetido, que abarcan los datos (mutación: el «4, 4, 3» de la rama D)', () => {
+  assert.deepEqual(J.marcasRedondas(136, 163).valores, [130, 140, 150, 160, 170]);
+  assert.deepEqual(J.marcasRedondas(100, 110).valores, [100, 105, 110], 'el rango mínimo del 1RM (10 kg) sin «102,5»');
+  assert.deepEqual(J.marcasRedondas(3, 4, { enteros: true }).valores, [2, 3, 4], 'dos repeticiones distintas no dejan un eje con dos marcas iguales');
+  assert.deepEqual(J.marcasRedondas(0, 5, { enteros: true }).valores, [0, 2, 4, 6]);
+  assert.deepEqual(J.marcasRedondas(0, 2870).valores, [0, 1000, 2000, 3000]);
+  for (const [min, max, enteros] of [
+    [0.4, 0.9, false],
+    [12, 13, true],
+    [80.6, 80.6, false],
+    [1720, 2480, false],
+    [3, 3, true],
+    [0, 1, false],
+    [96.5, 99, false],
+    [117.5, 160.5, false],
+    [0, 14, false],
+  ]) {
+    const m = J.marcasRedondas(min, max, { enteros });
+    assert.ok(m.valores.length >= J.MARCAS_MINIMAS && m.valores.length <= J.MARCAS_MAXIMAS, `${min} a ${max}: ${m.valores.join(', ')}`);
+    assert.ok(m.abajo <= min && m.arriba >= max, `${min} a ${max} entra en ${m.abajo} a ${m.arriba}`);
+    const textos = m.valores.map((v) => J.textoDeLaMarcaDelEje(v, m.decimales));
+    assert.equal(new Set(textos).size, textos.length, `sin números repetidos: ${textos.join(', ')}`);
+    if (enteros) assert.ok(m.valores.every(Number.isInteger), 'lo que se cuenta va en enteros');
+    if (min >= 0) assert.ok(m.abajo >= 0, 'lo que no baja de cero no tiene marcas negativas');
+  }
+  // Las barras arrancan en cero; los puntos, no: el carril de un 1RM no se aplasta contra el cero.
+  const fuerza = C.geometriaDelCarril(carril([punto('x', '2026-11-02', 150), punto('y', '2026-11-04', 152)], { escala: { enteros: false, rangoMinimo: 10 } }), E.escalaDeFechas(periodo('2026-11-02', '2026-11-08'), { izquierda: 0, derecha: 700 }), 240);
+  assert.ok(fuerza.extremos.abajo > 0);
+  assert.ok(fuerza.marcasY.length >= 3 && fuerza.marcasY.length <= 5);
+});
+
+test('TEST-GRV-002 · sin rótulo en cada punto: el elegido, el último, el máximo y el mínimo, y nunca dos encimados (mutación: dibujar todos)', () => {
+  const puntos = [
+    { clave: 'a', valor: 141 },
+    { clave: 'b', valor: 138 },
+    { clave: 'c', valor: 160.5 },
+    { clave: 'd', valor: 154.5 },
+    { clave: 'e', valor: 157.5 },
+  ];
+  assert.deepEqual(J.puntosConRotulo(puntos, 'b'), ['b', 'e', 'c']);
+  assert.deepEqual(J.puntosConRotulo(puntos, null), ['e', 'c', 'b']);
+  assert.deepEqual(J.puntosConRotulo(puntos.slice(0, 3), null), ['c'], 'con menos de 4, solo el último');
+  const caja = { izquierda: 0, derecha: 400, arriba: 0, abajo: 200 };
+  const juntos = J.rotulosSinPisarse(
+    [
+      { clave: 'a', x: 100, y: 100, texto: '160,5' },
+      { clave: 'b', x: 106, y: 102, texto: '154,5' },
+      { clave: 'c', x: 300, y: 100, texto: '141' },
+    ],
+    caja,
+  );
+  assert.deepEqual(
+    juntos.map((r) => r.clave),
+    ['a', 'c'],
+    'el segundo pisaría al primero: no se dibuja',
+  );
+  // Al borde, el rótulo se alinea hacia adentro; arriba de todo, va debajo del punto.
+  const borde = J.rotulosSinPisarse([{ clave: 'z', x: 398, y: 4, texto: '99,5' }], caja);
+  assert.equal(borde[0].ancla, 'end');
+  assert.ok(borde[0].ty > 4);
+  // Con muchos candidatos al azar, ninguno de los que quedan se pisa con otro.
+  let semilla = 7;
+  const azar = () => ((semilla = (semilla * 9301 + 49297) % 233280) / 233280);
+  const muchos = Array.from({ length: 60 }, (_, i) => ({ clave: `p${i}`, x: azar() * 400, y: 20 + azar() * 170, texto: String(100 + Math.round(azar() * 60)) }));
+  const puestos = J.rotulosSinPisarse(muchos, caja);
+  for (let i = 0; i < puestos.length; i++)
+    for (let k = i + 1; k < puestos.length; k++) {
+      const [x, y] = [puestos[i].caja, puestos[k].caja];
+      assert.ok(!(x.x1 < y.x2 && y.x1 < x.x2 && x.y1 < y.y2 && y.y1 < x.y2), `${puestos[i].clave} y ${puestos[k].clave} se pisan`);
+    }
+});
+
+test('TEST-GRV-003 · las fechas del eje, abreviadas y sin repetir el año (mutación: «nov 2025, dic 2025, ene 2026…»)', () => {
+  assert.equal(E.textoDelEje('2026-11-03', false), '3 nov');
+  assert.equal(E.textoDelEje('2026-01-01', true, true), 'ene 2026');
+  assert.equal(E.textoDelEje('2026-02-01', true), 'feb');
+  assert.equal(E.fechaCorta('2026-11-09', '2026-11-15'), 'lun 9 nov');
+  assert.equal(E.diaYMes('2025-11-16', '2026-11-15'), '16 nov 2025');
+  const anio = E.escalaDeFechas(periodo('2025-11-15', '2026-11-14'), { izquierda: 0, derecha: 1100 }).marcas.map((m) => m.texto);
+  assert.equal(anio.filter((t) => /20\d\d/.test(t)).length, 2, `el año, en la primera y en enero: ${anio.join(', ')}`);
+  assert.equal(anio[0], 'dic 2025');
+  assert.ok(anio.includes('ene 2026'));
+  const semana = E.escalaDeFechas(periodo('2026-11-02', '2026-11-08'), { izquierda: 0, derecha: 700 }).marcas.map((m) => m.texto);
+  assert.equal(semana[0], '2 nov');
+});
+
+test('TEST-GRV-004 · una serie diaria con huecos, por semana: la media de los días con dato, una semana sin dato vacía y nunca en cero (mutación: dibujar la semana vacía en cero)', () => {
+  const dias = [
+    { fecha: '2026-11-02', valor: 2000 },
+    { fecha: '2026-11-03', valor: null },
+    { fecha: '2026-11-04', valor: 1800 },
+    { fecha: '2026-11-15', valor: 5000 },
+  ];
+  const semanas = S.semanasDeLosDias(dias, '2026-11-02', '2026-11-15', '2026-11-15');
+  assert.deepEqual(
+    semanas.map((s) => [s.lunes, s.valor, s.conDato, s.dias, s.hueca]),
+    [
+      ['2026-11-02', 1900, 2, 7, false],
+      ['2026-11-09', null, 0, 7, true],
+    ],
+    'hoy sigue en curso: no entra en la media y su semana va hueca',
+  );
+  assert.equal(S.denominadorDeLaSemana(semanas[0]), '2 de 7 días');
+  assert.equal(S.denominadorDeLaSemana(semanas[1]), 'sin días con dato');
+  // Un subtotal hace hueca a su semana; un período que corta la semana, también.
+  assert.equal(S.semanasDeLosDias([{ fecha: '2026-11-02', valor: 2000, parcial: true }], '2026-11-02', '2026-11-08', '2026-11-20')[0].hueca, true);
+  assert.equal(S.semanasDeLosDias([{ fecha: '2026-11-04', valor: 2000 }], '2026-11-04', '2026-11-08', '2026-11-20')[0].hueca, true);
+  assert.equal(S.convienePorSemana('2025-11-15', '2026-11-14'), true);
+  assert.equal(S.convienePorSemana('2026-11-01', '2026-11-14'), false, 'un período corto se lee día por día');
+  const g = S.geometriaPorSemana({ dias, desde: '2026-11-02', hasta: '2026-11-15', hoy: '2026-11-15', ancho: 400, alto: 132, fechas: ['2026-11-02', '2026-11-15'] });
+  assert.equal(g.barras.length, 1);
+  assert.equal(g.vacias.length, 1);
+  assert.equal(g.eje[0].valor, 0, 'las barras arrancan en cero');
+  assert.ok(g.eje.length >= 3 && g.eje.length <= 5);
+  assert.ok(g.barras.every((b) => b.y < g.caja.abajo), 'ninguna barra en cero');
+  assert.equal(g.dias.length, 3, 'los días con dato van detrás, como puntos');
+});
+
+test('TEST-GRV-005 · lo que cambió en lo indicado, dicho en la versión y en la diferencia de dos etapas (mutación: «−1 rep» suelto)', () => {
+  const v1 = prescripcion('rx-banca', [{ min: 8, max: 10 }, { value: 8 }], { intensity: { criterion: 'RIR', target: { value: 2, reference: null } } });
+  const v2 = prescripcion('rx-banca-2', [{ value: 6 }], { intensity: { criterion: 'RIR', target: { value: 1, reference: null } } });
+  const sesiones = [
+    sesion({ id: 'x-a', fecha: '2026-11-02', planId: 'tv1', rx: v1, series: [serieRegistrada(1, 60, 9, 2)] }),
+    sesion({ id: 'x-b', fecha: '2026-11-04', planId: 'tv1', rx: v1, series: [serieRegistrada(1, 62.5, 8, 1)] }),
+    sesion({ id: 'x-c', fecha: '2026-11-09', planId: 'tv2', rx: v2, series: [serieRegistrada(1, 65, 6, 1)] }),
+  ];
+  const objetivos = new Map([['tv2', new Map([['rx-banca-2', [{ setIndex: 1, target: { rir: 0, suggestedLoad: null }, targetOrigin: { rir: 'SET', suggestedLoad: 'NONE' } }]]])]]);
+  const observaciones = observacionesDelEjercicio(sesiones, 'e:ej-banca', sesiones, objetivos);
+  const cambios = L.cambiosPorVersion(observaciones, [
+    { clave: 'v1', desde: '2026-11-01', hasta: '2026-11-09' },
+    { clave: 'v2', desde: '2026-11-09', hasta: null },
+  ]);
+  assert.deepEqual([...cambios.entries()], [['v2', 'de 8–10 a 6 repeticiones · RIR de 2 a 0']]);
+  const enLaVersion = (planId) => L.loIndicadoEnElTramo(observaciones, (o) => o.comparacion.planId === planId, { serie: 1 });
+  assert.deepEqual(enLaVersion('tv2'), { rir: { desde: 0, hasta: 0 }, repeticiones: { desde: 6, hasta: 6 }, carga: null });
+  assert.equal(L.diferenciaDeLoIndicado(enLaVersion('tv1'), enLaVersion('tv2'), { variable: 'repeticiones' }), 'el plan indica 6 repeticiones (antes 8–10)');
+  assert.equal(L.diferenciaDeLoIndicado(enLaVersion('tv1'), enLaVersion('tv2'), { variable: 'rir' }), 'el plan indica RIR 0 (antes 2)');
+  const tres = { rir: null, repeticiones: { desde: 3, hasta: 3 }, carga: null };
+  const cuatro = { rir: null, repeticiones: { desde: 4, hasta: 4 }, carga: null };
+  assert.equal(L.diferenciaDeLoIndicado(cuatro, tres, { variable: 'repeticiones' }), 'el plan indica 1 repetición menos');
+  assert.equal(L.diferenciaDeLoIndicado(tres, cuatro, { variable: 'repeticiones' }), 'el plan indica 1 repetición más');
+  assert.equal(L.diferenciaDeLoIndicado(cuatro, cuatro, { variable: 'repeticiones' }), null, 'si no cambió, no se dice nada');
+  assert.equal(L.diferenciaDeLoIndicado(null, cuatro, { variable: 'repeticiones' }), null);
+  assert.equal(L.cambioCortoDeLoIndicado(cuatro, tres), 'de 4 a 3 repeticiones');
+  // Ubica, no califica: ningún texto lleva una palabra que juzgue, ni una flecha.
+  for (const t of [...cambios.values(), L.diferenciaDeLoIndicado(cuatro, tres, { variable: 'repeticiones' })]) {
+    assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['ENTRENAMIENTO']), [], t);
+    assert.doesNotMatch(t, /→|−\d/);
+  }
+});
+
+test('TEST-GRV-006 · la leyenda, solo con las marcas que se ven (mutación: la leyenda de GR-02 con puntos que no se dibujan)', () => {
+  const lleno = carril([punto('a', '2026-11-02', 10), punto('b', '2026-11-03', 11)]);
+  assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'SUBTOTAL', 'INDICADO', 'OBSERVADA_POR_EL_PROFESIONAL'], [lleno]), ['REGISTRADO']);
+  const conHueco = carril([punto('a', '2026-11-02', 10), punto('b', '2026-11-03', 11, { marca: 'HUECA' })], { indicado: [punto('i', '2026-11-02', 12, { marca: 'HUECA' })] });
+  assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'SUBTOTAL', 'INDICADO', 'OBSERVADA_POR_EL_PROFESIONAL'], [conHueco]), ['REGISTRADO', 'SUBTOTAL', 'INDICADO']);
+  // Un punto sin valor no es una marca: no pide su leyenda.
+  assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'CALCULADO'], [carril([punto('a', '2026-11-02', null, { marca: 'PUNTO_ADENTRO' })])]), []);
+  const leyenda = readFileSync(join(GRAFICOS, 'marcas.tsx'), 'utf8');
+  assert.match(leyenda, /<span className="visualmente-oculto">\{SENTIDO_EN_LA_LEYENDA\[sentido\]\}<\/span>/, 'el lector de pantalla oye el sentido entero');
+  for (const t of Object.values(SENTIDO_CORTO)) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], t);
+});
+
+test('TEST-GRV-007 · las versiones, discretas: un tono que alterna, una línea en cada cambio y «v8 · de 4 a 3 repeticiones» si entra (mutación: el bloque gris con «Plan · versión 7»)', () => {
+  const bandas = [
+    { area: 'ENTRENAMIENTO', desde: '2025-11-16', hasta: '2026-05-16', rotulo: 'v7 · desde el 16/11' },
+    { area: 'ENTRENAMIENTO', desde: '2026-05-17', hasta: null, rotulo: 'v8 · desde el 17/5', cambio: 'de 4 a 3 repeticiones' },
+  ];
+  const ancha = E.escalaDeFechas(periodo('2026-01-01', '2026-12-31'), { izquierda: 0, derecha: 1000 });
+  const [v7, v8] = V.versionesEnElEje(bandas, ancha);
+  assert.equal(v7.conLinea, false, 'el borde izquierdo no es un cambio');
+  assert.equal(v7.tenue, false);
+  assert.equal(v7.texto, 'v7');
+  assert.equal(v8.conLinea, true);
+  assert.equal(v8.tenue, true);
+  assert.equal(v8.texto, 'v8 · de 4 a 3 repeticiones');
+  assert.equal(v8.conCambio, true);
+  const angosta = E.escalaDeFechas(periodo('2026-01-01', '2026-12-31'), { izquierda: 0, derecha: 200 });
+  assert.equal(V.versionesEnElEje(bandas, angosta)[1].texto, 'v8', 'sin lugar, solo la versión');
+  const minima = E.escalaDeFechas(periodo('2026-01-01', '2026-12-31'), { izquierda: 0, derecha: 12 });
+  assert.equal(V.versionesEnElEje(bandas, minima)[1].texto, null, 'sin lugar para nada, nada');
+});
+
+test('TEST-GRV-008 · «Cómo leerlo» es un desplegable accesible y cerrado; la frase fija queda a la vista y la tabla no parte un valor (mutación: esconder la frase)', () => {
+  const como = readFileSync(join(GRAFICOS, 'como-leerlo.tsx'), 'utf8');
+  assert.match(como, /<details className=\{\['grafico-base__como-leerlo'/);
+  assert.match(como, /<summary>\n\s*<Icono nombre="informacion" tamano=\{15\} \/>/);
+  assert.doesNotMatch(como, /<details[^>]*\bopen\b/, 'cerrado de entrada');
+  const paneles = readFileSync(join(GRAFICOS, 'paneles-alineados.tsx'), 'utf8');
+  const frase = paneles.indexOf('{frase ? <FraseDeLaCoincidencia texto={frase} /> : null}');
+  const pie = paneles.indexOf('<ComoLeerlo>');
+  assert.ok(frase > 0 && pie > frase, 'la frase va afuera de «Cómo leerlo»');
+  assert.match(paneles, /\.\.\.notas\.filter\(\(n\) => n !== FRASE_DE_LA_COINCIDENCIA\)/);
+  assert.ok(paneles.indexOf('<Leyenda sentidos={visibles} />') < paneles.indexOf('className="grafico-base__area"'), 'la leyenda va arriba del gráfico');
+  assert.match(paneles, /return carriles <= 1 \? 240 : 140;/, 'un gráfico principal de 240 px');
+  const css = readFileSync(join(GRAFICOS, 'estilos', 'base.css'), 'utf8');
+  assert.match(css, /\.grafico-base__tabla td \{[^}]*white-space: nowrap;/);
+  assert.match(css, /\.grafico-base__tabla table \{[^}]*font-variant-numeric: tabular-nums;/);
+  assert.match(css, /\.grafico-base__como-leerlo > summary:focus-visible \{/);
+});
+
+test('TEST-GRV-009 · GR-24: la diferencia dice lo que cambió en lo indicado, Nutrición va por semana y la frase fija al pie (mutación: el peine de los días)', () => {
+  const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8');
+  assert.match(etapas, /return diferenciaDeLoIndicado\(enLaEtapa\(a\), enLaEtapa\(b\), medida\);/);
+  assert.match(etapas, /o\.comparacion\.planId === e\.planVersionId/, 'lo indicado de cada etapa es el de la versión que ejecutó cada sesión');
+  assert.match(etapas, /useState\(\(\) => convienePorSemana\(leido\.desde, leido\.hasta\)\)/);
+  assert.match(etapas, /\{semanal \? \(\n\s*<MinigraficoPorSemana/);
+  assert.match(etapas, /data-dia-por-dia/);
+  const analizar = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/analizar.tsx'), 'utf8');
+  const pie = analizar.slice(analizar.indexOf('<div className="pie-de-etapas">'), analizar.indexOf('debajo={', analizar.indexOf('<div className="pie-de-etapas">')));
+  assert.match(pie, /<FraseDeLaCoincidencia \/>/);
+  assert.match(pie, /<ComoLeerlo className="pie-de-etapas__como-leerlo">\n\s*<p>\{laPregunta\.limite\}<\/p>/);
+  assert.doesNotMatch(pie, /no indica causa/);
 });

@@ -24,6 +24,9 @@
  *   abrir el cajón (`historial-del-buscador.ts`). Sin flecha, sin el primer valor ni el último y sin color: la vista previa
  *   con el último valor y el mínimo y el máximo es de la fase 2. Si la lectura falla, se dice y se reintenta; los
  *   resultados se ven igual.
+ *   La pasada visual (15/11; DISENO-VISUAL §2, GR-04): la marca es una ficha compacta en el renglón del origen («47
+ *   sesiones · 9 nov», con su ícono; el lector de pantalla oye la frase entera), y qué cuenta va en una sola línea con
+ *   «Cómo se cuenta» detrás de su «i»: en 1440 × 900 se ven al menos seis resultados sin desplazar.
  */
 import {
   COPY_ENTRENAMIENTO,
@@ -54,6 +57,8 @@ import { Icono } from '../../../../components/icono';
 import { OrigenEnElCatalogo } from '../../../../components/origen-en-el-catalogo';
 import { api } from '../../../../lib/api';
 import { DetalleVisualPorLeer } from '../../exercises/detalle-visual';
+import { ComoLeerlo } from '../graficos/como-leerlo';
+import { diaYMes } from '../graficos/eje-de-fechas';
 import { unAnioAntes } from '../fuerza/lectura-de-fuerza';
 import { hoyEn } from '../seguimiento/estado';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
@@ -76,6 +81,12 @@ type Busqueda =
  * sin ejercicio) del último año, con el «hoy» de la API para decir la fecha de la última. `sin-acceso`: con el acceso de
  * ahora no se ven los registros de Entrenamiento, y los resultados van sin marca y sin aviso.
  */
+/** GR-04 en una línea (pasada visual del 15/11): qué cuenta la marca, corto; el detalle, detrás de «Cómo se cuenta». */
+export const COPY_MARCA_DEL_BUSCADOR = {
+  enUnaLinea: 'Con historial: sesiones en tus planes, en el último año.',
+  comoSeCuenta: 'Cómo se cuenta',
+} as const;
+
 type HistorialDelBuscador =
   | { readonly tipo: 'cargando' }
   | { readonly tipo: 'listo'; readonly porEjercicio: ReadonlyMap<string, EjercicioDelPeriodo>; readonly hoy: string }
@@ -310,6 +321,13 @@ function ContenidoDeAgregarEjercicio({
   const catalogoBuscado = busqueda.tipo !== 'sin-buscar' && busqueda.texto === filtro;
   // GR-04: la marca de cada resultado, si la persona ya lo hizo; qué cuenta se dice una vez, si alguno la lleva.
   const marcaDe = (exerciseId: string): string | null => (historial.tipo === 'listo' ? marcaDeHistorial(historial.porEjercicio, exerciseId, historial.hoy) : null);
+  // La ficha compacta de la marca (pasada visual del 15/11): «47 sesiones · 9 nov». La frase entera la oye el lector.
+  const marcaCortaDe = (exerciseId: string): string | null => {
+    const e = historial.tipo === 'listo' ? historial.porEjercicio.get(exerciseId.toLowerCase()) : undefined;
+    if (!e || e.sessions <= 0 || historial.tipo !== 'listo') return null;
+    const sesiones = `${e.sessions} ${e.sessions === 1 ? 'sesión' : 'sesiones'}`;
+    return e.lastDate ? `${sesiones} · ${e.lastDate === historial.hoy ? 'hoy' : diaYMes(e.lastDate, historial.hoy)}` : sesiones;
+  };
   const algunoConHistorial = ejercicios.some((ej) => marcaDe(ej.exerciseId) !== null);
   return (
     <div className="agregar-item agregar-ejercicio">
@@ -410,9 +428,15 @@ function ContenidoDeAgregarEjercicio({
           </p>
         ) : null}
         {busqueda.tipo === 'lista' && algunoConHistorial ? (
-          <p className="nota ejercicios-del-catalogo__que-cuenta" data-que-cuenta-el-historial>
-            {COPY_HISTORIAL_DEL_BUSCADOR.queCuenta}
-          </p>
+          <div className="ejercicios-del-catalogo__que-cuenta" data-que-cuenta-el-historial>
+            <span className="nota">
+              <Icono nombre="linea-de-tiempo" tamano={15} />
+              {COPY_MARCA_DEL_BUSCADOR.enUnaLinea}
+            </span>
+            <ComoLeerlo titulo={COPY_MARCA_DEL_BUSCADOR.comoSeCuenta}>
+              <p>{COPY_HISTORIAL_DEL_BUSCADOR.queCuenta}</p>
+            </ComoLeerlo>
+          </div>
         ) : null}
         {busqueda.tipo === 'falla' ? (
           <Aviso tipo="error">
@@ -460,21 +484,25 @@ function ContenidoDeAgregarEjercicio({
                             {ej.name}
                             {ej.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(ej.matchedAlternativeName)})</span> : null}
                           </span>
-                          {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. */}
-                          <span className="nota alimentos-del-catalogo__detalle">
-                            <OrigenEnElCatalogo item={ej} />
+                          {/* DL-141 D-6: de dónde sale, breve; el detalle, en la pista del origen. GR-04: la marca va en el
+                              mismo renglón, como ficha compacta. */}
+                          <span className="ejercicios-del-catalogo__renglon">
+                            <span className="nota alimentos-del-catalogo__detalle">
+                              <OrigenEnElCatalogo item={ej} />
+                            </span>
+                            {/* GR-04: lo dice el texto, no un color ni una flecha. */}
+                            {conHistorial ? (
+                              <span className="ejercicios-del-catalogo__historial" data-con-historial>
+                                <Icono nombre="linea-de-tiempo" tamano={15} />
+                                <span aria-hidden="true">{marcaCortaDe(ej.exerciseId) ?? conHistorial}</span>
+                                <span className="visualmente-oculto">{conHistorial}</span>
+                              </span>
+                            ) : null}
                           </span>
                           {zonas ? (
                             <span className="nota alimentos-del-catalogo__detalle ejercicios-del-catalogo__zonas" data-zonas-del-ejercicio>
                               <span className="visualmente-oculto">{COPY_FIGURA_DE_ZONAS.titulo}: </span>
                               {zonas}
-                            </span>
-                          ) : null}
-                          {/* GR-04: lo dice el texto, no un color ni una flecha. */}
-                          {conHistorial ? (
-                            <span className="nota alimentos-del-catalogo__detalle ejercicios-del-catalogo__historial" data-con-historial>
-                              <Icono nombre="linea-de-tiempo" tamano={15} />
-                              {conHistorial}
                             </span>
                           ) : null}
                         </th>

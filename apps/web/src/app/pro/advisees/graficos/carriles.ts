@@ -8,10 +8,11 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
-import type { AreaDeMetrica, MarcaSemantica } from '@be/domain';
-import { escalaDeLaUnidad, extremosDelEje } from '../seguimiento/geometria';
+import { MARCA_SEGUN_EL_DATO, type AreaDeMetrica, type MarcaSemantica, type SentidoDeLaMarca } from '@be/domain';
+import { escalaDeLaUnidad } from '../seguimiento/geometria';
 import type { EventoDeLaCinta } from './cinta-del-tiempo';
 import type { EscalaDeFechas } from './eje-de-fechas';
+import { marcasRedondas, type MarcasDelEje } from './ejes';
 
 export type { MarcaSemantica } from '@be/domain';
 
@@ -110,6 +111,11 @@ export interface BandaDeVersion {
   readonly desde: string;
   readonly hasta: string | null;
   readonly rotulo: string;
+  /**
+   * Lo que cambió en lo indicado al empezar esta versión («de 4 a 3 repeticiones», `cambioCortoDeLoIndicado`): va en la
+   * línea del cambio, con la versión («v8 · de 4 a 3 repeticiones»), si entra. Sin esto, solo «v8».
+   */
+  readonly cambio?: string | null;
 }
 
 // ─── La geometría ───────────────────────────────────────────────────────────────────────────────
@@ -145,16 +151,27 @@ export type GeometriaDelCarril =
       /** Lo que no entra en la escala: lleva su muesca y la cuenta en el pie. */
       readonly fueraDeLaEscala: number;
     }
-  | { readonly tipo: 'BARRAS_SEMANALES'; readonly extremos: { readonly abajo: number; readonly arriba: number; readonly decimales: number }; readonly barras: readonly { readonly lunes: string; readonly x1: number; readonly x2: number; readonly y: number; readonly base: number }[] }
+  | {
+      readonly tipo: 'BARRAS_SEMANALES';
+      readonly extremos: { readonly abajo: number; readonly arriba: number; readonly decimales: number };
+      readonly marcasY: readonly MarcaDelEjeY[];
+      readonly barras: readonly { readonly lunes: string; readonly x1: number; readonly x2: number; readonly y: number; readonly base: number }[];
+      /** Las semanas sin ningún día con dato: vacías, con una marca fina en la base (nunca una barra en cero). */
+      readonly vacias: readonly { readonly lunes: string; readonly x1: number; readonly x2: number; readonly base: number }[];
+    }
   | { readonly tipo: 'EVENTOS'; readonly eventos: readonly { readonly clave: string; readonly x1: number; readonly x2: number | null }[] };
 
 const conValor = (p: PuntoDelCarril): p is PuntoDelCarril & { readonly valor: number } => p.valor !== null && Number.isFinite(p.valor);
 
-/** Los extremos del eje vertical de un carril, con su escala: el rango mínimo de la serie manda sobre el de la unidad. */
-export function extremosDelCarril(valores: readonly number[], unidad: string, escala: EscalaDelCarril): { readonly abajo: number; readonly arriba: number; readonly decimales: number } {
+/**
+ * Los extremos del eje vertical de un carril, con su escala: el rango mínimo de la serie manda sobre el de la unidad.
+ * Desde la pasada visual (15/11), los extremos son la primera y la última de 3 a 5 marcas redondas (`marcasRedondas`):
+ * la grilla cierra arriba y abajo, y ningún número del eje se repite.
+ */
+export function extremosDelCarril(valores: readonly number[], unidad: string, escala: EscalaDelCarril): MarcasDelEje {
   const deLaUnidad = escalaDeLaUnidad(unidad);
   const rangoMinimo = escala.rangoMinimo ?? deLaUnidad.rangoMinimo;
-  if (valores.length === 0) return extremosDelEje(0, escala.minimoDelMaximo ?? 1, 2, escala.enteros);
+  if (valores.length === 0) return marcasRedondas(0, escala.minimoDelMaximo ?? 1, { enteros: escala.enteros });
   let minimo = Math.min(...valores);
   let maximo = Math.max(...valores);
   if (escala.desdeCero) minimo = Math.min(0, minimo);
@@ -168,7 +185,7 @@ export function extremosDelCarril(valores: readonly number[], unidad: string, es
       minimo = 0;
     }
   }
-  return extremosDelEje(minimo, maximo, 2, escala.enteros);
+  return marcasRedondas(minimo, maximo, { enteros: escala.enteros });
 }
 
 /**
@@ -204,16 +221,20 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
     // Una semana que empieza antes del eje (el vínculo, TB-16) se dibuja desde el primer día del eje; una que cae afuera, no.
     const izquierda = escala.x(escala.desde) - escala.porDia / 2;
     const derecha = escala.x(escala.hasta) + escala.porDia / 2;
-    const enElEje = c.semanas.filter((s) => s.valor !== null && escala.x(s.lunes) - escala.porDia / 2 + 7 * escala.porDia > izquierda && escala.x(s.lunes) - escala.porDia / 2 < derecha);
+    const tocaElEje = (s: SemanaDelCarril): boolean => escala.x(s.lunes) - escala.porDia / 2 + 7 * escala.porDia > izquierda && escala.x(s.lunes) - escala.porDia / 2 < derecha;
+    const enElEje = c.semanas.filter((s) => s.valor !== null && tocaElEje(s));
     const valores = enElEje.flatMap((s) => (s.valor === null ? [] : [s.valor]));
+    // Las barras arrancan en cero (lo único del eje que arranca en cero, DISENO-VISUAL §1, principio 4).
     const extremos = extremosDelCarril([0, ...valores], c.unidad, { enteros: false, desdeCero: true });
     const y = (v: number): number => AIRE_DEL_CARRIL + util - ((v - extremos.abajo) / (extremos.arriba - extremos.abajo || 1)) * util;
-    const barras = enElEje.flatMap((s) => {
-      if (s.valor === null) return [];
+    const base = y(Math.max(0, extremos.abajo));
+    const lugar = (s: SemanaDelCarril) => {
       const inicio = escala.x(s.lunes) - escala.porDia / 2;
-      return [{ lunes: s.lunes, x1: Math.max(izquierda, inicio), x2: Math.min(derecha, inicio + 7 * escala.porDia), y: y(s.valor), base: y(Math.max(0, extremos.abajo)) }];
-    });
-    return { tipo: 'BARRAS_SEMANALES', extremos, barras };
+      return { x1: Math.max(izquierda, inicio), x2: Math.min(derecha, inicio + 7 * escala.porDia) };
+    };
+    const barras = enElEje.flatMap((s) => (s.valor === null ? [] : [{ lunes: s.lunes, ...lugar(s), y: y(s.valor), base }]));
+    const vacias = c.semanas.filter((s) => s.valor === null && tocaElEje(s)).map((s) => ({ lunes: s.lunes, ...lugar(s), base }));
+    return { tipo: 'BARRAS_SEMANALES', extremos, marcasY: extremos.valores.map((valor) => ({ valor, y: y(valor) })), barras, vacias };
   }
   const visibles = (ps: readonly PuntoDelCarril[]) => ps.filter((p) => p.fecha >= escala.desde && p.fecha <= escala.hasta);
   const puntos = visibles(c.puntos);
@@ -240,9 +261,22 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
     y: acotada(e.valor),
     rotulo: e.rotulo,
   }));
-  const paso = (extremos.arriba - extremos.abajo) / 2;
-  const marcasY = [extremos.abajo, extremos.abajo + paso, extremos.arriba].map((valor) => ({ valor, y: y(valor) }));
+  // De 3 a 5 marcas redondas, sin un número repetido: la grilla tenue va en cada una (DISENO-VISUAL §1, principio 4).
+  const marcasY = extremos.valores.map((valor) => ({ valor, y: y(valor) }));
   return { tipo: 'PUNTOS', extremos, marcasY, lineas, marcas, indicado: indicadoUbicado, escalones, fueraDeLaEscala: puntos.filter((p) => conValor(p) && fuera(p.valor)).length };
+}
+
+/**
+ * Los sentidos de la leyenda que se ven en el dibujo (DISENO-VISUAL §1, principio 7): una marca de la leyenda que no
+ * aparece en ningún carril es un error. Lo indicado está si algún carril lo dibuja; lo demás, si alguna marca de lo
+ * registrado tiene esa forma. Mantiene el orden pedido.
+ */
+export function sentidosQueSeVen(sentidos: readonly SentidoDeLaMarca[], carriles: readonly Carril[]): SentidoDeLaMarca[] {
+  const puntos = carriles.flatMap((c) => (c.tipo === 'PUNTOS' ? c.puntos.filter((p) => p.valor !== null || p.rango !== null) : []));
+  const formas = new Set(puntos.map((p) => p.marca));
+  const conIndicado = carriles.some((c) => c.tipo === 'PUNTOS' && c.indicado.some((p) => p.valor !== null || p.rango !== null));
+  const conSemanas = carriles.some((c) => c.tipo === 'BARRAS_SEMANALES' && c.semanas.some((s) => s.valor !== null));
+  return sentidos.filter((s) => (s === 'INDICADO' ? conIndicado : formas.has(MARCA_SEGUN_EL_DATO[s]) || (s === 'REGISTRADO' && conSemanas)));
 }
 
 /** Las fechas con alguna observación en algún carril, ordenadas: por ellas se mueve el cursor con el teclado. */

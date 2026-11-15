@@ -11,21 +11,41 @@
  * - La tabla de origen, con «Cómo se calculó» en cada valor, y lo que no entra en palabras, una línea por sesión.
  * - El eje de fechas, la línea de hoy, una marca por sesión sin estimación y las franjas de las versiones del plan.
  * - **Con el teclado:** cada fecha de la tabla elige su punto (la lectura del costado y la diferencia con el anterior),
- *   como tocarlo en el gráfico (WCAG 2.1.1). La tabla es el texto del gráfico.
+ *   como tocarlo en el gráfico (WCAG 2.1.1); el gráfico también recibe el foco y las flechas eligen el punto anterior o
+ *   el siguiente. La tabla es el texto del gráfico.
  * - Con el interruptor apagado, una sesión que solo tuvo series de más de 10 a 12 es un hueco con su fila.
  * - La columna «Sesión» de la maqueta espera que la clave traiga el nombre de la sesión (EDT-55).
+ *
+ * La pasada visual (WP-GRAFICOS, 15/11; DISENO-VISUAL §1 y §2): es la pieza que también usan GR-02 y GR-26.
+ * - **Arriba,** «1RM estimado (Epley v1)» y, tenue, la unidad y el período; la leyenda como fichas, solo con las marcas
+ *   que se ven.
+ * - **Sin rótulo en cada punto:** el número va en el último, el elegido, el máximo y el mínimo, sin pisarse; el resto,
+ *   al pasar el mouse, con el teclado o en la lectura del costado.
+ * - **El eje,** de 3 a 5 marcas redondas, 10 kg o 22 lb como mínimo (GR-T15), y el gráfico al ancho medido: la letra
+ *   no se achica en 1024 ni se agranda en 1920.
+ * - **Las versiones, discretas:** un tono muy tenue que alterna, una línea fina en el cambio y «v8» arriba; si cambió lo
+ *   indicado (el RIR o las repeticiones), «v8 · de 4 a 3 repeticiones», del comparador (`lectura-de-lo-indicado.ts`).
+ * - **La lectura del costado,** sin «154,5 → 160,5 kg» ni flecha (§5.12): «La anterior (2 nov): ≈ 154,5 kg».
+ * - **«Cómo leerlo»** (cerrado) tiene el método, lo que mueve un RIR y lo que no entra, una línea por sesión.
+ * - **La tabla,** una fila por renglón y sin partir un valor: con menos ancho, menos columnas, no números cortados.
  *
  * Como la composición (TA-25), la pregunta vive en el website y no se guarda como vista: su identificador no entra en
  * `ID_DE_PREGUNTAS`, que valida la API. El período es el de la ficha, que la API recorta al inicio del acompañamiento.
  */
-import { COPY_FUERZA, diaDeLaEstimacion, diferenciaEntreEstimaciones, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, numero, rotuloDeLaEstimacion, type PuntoDeFuerza } from '@be/domain';
-import { useId, useMemo, useState } from 'react';
+import { COPY_FUERZA, diaDeLaEstimacion, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, numero, rotuloDeLaEstimacion, serieDisponible, type PuntoDeFuerza } from '@be/domain';
+import { useId, useMemo, useState, type KeyboardEvent } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Enlace } from '../../../../components/enlace';
 import { Icono } from '../../../../components/icono';
 import { ICONO_DE_FALLA } from '../../../../lib/fallas';
 import { useNombres } from '../../../../lib/nombres-ocultos';
+import { ComoLeerlo } from '../graficos/como-leerlo';
+import { marcasRedondas, puntosConRotulo, rotulosSinPisarse, textoDeLaMarcaDelEje } from '../graficos/ejes';
+import { useLoIndicadoDelEjercicio } from '../graficos/lectura-de-lo-indicado';
+import { cambiosPorVersion } from '../graficos/lo-indicado-en-el-tiempo';
+import { diaYMes } from '../graficos/eje-de-fechas';
+import { useAnchoDelGrafico } from '../graficos/medidas-del-grafico';
 import { useSeguimiento } from '../seguimiento/contexto';
 import { parametrosDePregunta } from '../seguimiento/estado';
 import { ComoSeCalculo, COPY_COMO_SE_CALCULO, fechaLarga } from './como-se-calculo';
@@ -56,7 +76,7 @@ export const LA_PREGUNTA_DE_LA_FUERZA = {
   ejercicio: 'Ejercicio',
   unidad: 'Unidad',
   orientativas: 'Incluir las de más de 10 a 12 repeticiones equivalentes',
-  leyenda: { nucleo: 'hasta 10 repeticiones equivalentes', orientativa: 'de más de 10 a 12', observada: 'observada por vos', sinEstimacion: 'sin estimación', hoy: 'hoy' },
+  leyenda: { nucleo: 'Hasta 10 rep. equivalentes', orientativa: 'De más de 10 a 12', observada: 'Observada por vos', sinEstimacion: 'Sin estimación', hoy: 'Hoy' },
   elegirEjercicio: 'Elegí un ejercicio de la lista de Epley v1.',
   sinNada: 'En este período no hay series de los ejercicios de la lista que permitan estimar.',
   sinPuntos: 'En este período no hay estimaciones de este ejercicio en esta unidad.',
@@ -70,16 +90,31 @@ export const LA_PREGUNTA_DE_LA_FUERZA = {
   quedan: (n: number) => (n === 1 ? 'Y 1 sesión más, en la tabla.' : `Y ${n} sesiones más, en la tabla.`),
   loQueNoEntra: 'Lo que no entra',
   lectura: (dia: string) => `Lectura del ${dia}`,
-  frente: (dia: string) => `Frente a la del ${dia}:`,
+  /** La anterior, sin flecha y sin «primero → último» (§5.12): su fecha y su valor, y el profesional compara. */
+  anterior: (dia: string) => `La anterior (${dia}):`,
   // Con Epley, un RIR de diferencia mueve la cuenta la carga sobre 30: se calcula con la serie elegida y su unidad.
   diferencia: (carga: number, unidad: string) => `Una diferencia entre dos estimaciones, en su unidad. Un RIR de diferencia mueve esta cuenta ≈ ${numero(carga / 30, 1)} ${unidad}.`,
   cambiarLaPregunta: 'Cambiar la pregunta',
   deOtros: 'Hay registros con otro profesional que no ves.',
   antes: 'Lo que la persona registró antes de la app nueva no dice quién escribió cada valor: no entra. Lo que observaste vos entra si se puede estimar; las de más de 10 a 12, con el interruptor encendido.',
   limite: 'Una estimación con una serie no es una repetición máxima medida, y no es una indicación de carga.',
+  /** La pasada visual (15/11): el título del gráfico lleva la marca de lo estimado; la línea tenue, la unidad y el período. */
+  titulo: '1RM estimado (Epley v1)',
+  detalle: (unidad: string, desde: string, hasta: string | null) => `${unidad} · una estimación por sesión · del ${desde} ${hasta === null ? 'a hoy' : `al ${hasta}`}`,
+  enElPeriodo: (bajo: string, diaBajo: string, alto: string, diaAlto: string) => `En el período, la más baja: ${bajo} (${diaBajo}); la más alta: ${alto} (${diaAlto}).`,
+  metodo: 'Epley v1 estima la repetición máxima con una serie: la carga × (1 + repeticiones equivalentes / 30), donde las repeticiones equivalentes son las hechas más el RIR. Se usa solo con series de RIR 0 a 2 y hasta 12 repeticiones equivalentes.',
+  versiones: 'El fondo alterna con cada versión del plan; la línea fina marca el cambio. Si cambió lo indicado (el RIR o las repeticiones), el rótulo lo dice: la estimación puede cambiar aunque la fuerza no cambie.',
+  conElTeclado: 'Con el teclado, en el gráfico: las flechas eligen la estimación anterior o la siguiente; Inicio y Fin, la primera y la última. En la tabla, cada fecha elige la suya.',
+  verTodas: (n: number) => `Ver las ${n} filas`,
+  verMenos: 'Ver menos',
+  orientativa: 'orientativa',
+  laObservasteVos: 'la observaste vos',
 } as const;
 
 const C = LA_PREGUNTA_DE_LA_FUERZA;
+
+/** Cuántas filas de la tabla de origen se ven de entrada: las más recientes. Las demás, a un toque. */
+const FILAS_A_LA_VISTA = 8;
 
 export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
   const { token, asesoradoId, periodo, parametros, sesionPerdida, ir } = useSeguimiento();
@@ -102,6 +137,19 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
   const puntos = linea?.puntos ?? [];
   const elegido = puntos.find((p) => p.pointId === elegidoId) ?? puntos[puntos.length - 1] ?? null;
   const unidades = lectura.tipo === 'lista' ? (lectura.ejercicios.find((e) => e.exerciseId === exerciseId)?.units ?? []) : [];
+  // Lo que cambió en lo indicado al empezar cada versión, para su línea («v8 · de 4 a 3 repeticiones»). Si no se puede
+  // leer, las versiones van sin ese rótulo: es una ayuda para leer, no un dato de la persona.
+  const indicado = useLoIndicadoDelEjercicio({ token, asesoradoId, sesionPerdida }, exerciseId ? `e:${exerciseId}` : null, periodo.desde, periodo.hasta);
+  const cambios = useMemo(
+    () =>
+      indicado.tipo === 'lista'
+        ? cambiosPorVersion(
+            indicado.observaciones,
+            versiones.filter((v) => v.domain === 'TRAINING').map((v) => ({ clave: v.from, desde: v.from, hasta: v.to })),
+          )
+        : new Map<string, string>(),
+    [indicado, versiones],
+  );
   const cambiar = (c: Record<string, string | null>) => {
     setElegidoId(null);
     ir(c);
@@ -160,11 +208,12 @@ export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
         </BloqueDeEstado>
       ) : (
         <div className="fuerza-en-analizar__zonas">
-          <div>
-            <Grafico linea={linea} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} hasta={lectura.hoy} desde={lectura.desde} zona={lectura.zona} soloOrientativas={soloOrientativas} versiones={versiones} />
+          <div className="fuerza-en-analizar__principal">
+            <Grafico linea={linea} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} hasta={lectura.hoy} desde={lectura.desde} zona={lectura.zona} soloOrientativas={soloOrientativas} versiones={versiones} cambios={cambios} />
+            {linea && puntos.length > 0 ? <ComoLeerLaFuerza linea={linea} elegido={elegido} soloOrientativas={soloOrientativas} /> : null}
             <TablaDeOrigen linea={linea} asesoradoId={asesoradoId} onComo={setComo} elegido={elegido} onElegir={(p) => setElegidoId(p.pointId)} soloOrientativas={soloOrientativas} />
           </div>
-          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} soloOrientativas={soloOrientativas} versiones={versiones} />
+          <Lectura linea={linea} elegido={elegido} asesoradoId={asesoradoId} onComo={setComo} versiones={versiones} />
         </div>
       )}
       {lectura.tipo === 'lista' && lectura.deOtros ? <p className="nota">{C.deOtros}</p> : null}
@@ -195,9 +244,11 @@ function EjerciciosConDatos({ lectura, onElegir }: { lectura: ReturnType<typeof 
   );
 }
 
-const ANCHO = 720;
-const ALTO = 260;
-const MARGEN = { izq: 48, der: 16, arr: 40, abj: 28 };
+/** El alto del dibujo: la franja de las versiones arriba, el lienzo (240 px) y el renglón de las fechas. */
+const ALTO = 296;
+const MARGEN = { izq: 52, der: 18, arr: 30, abj: 26 };
+/** El ancho aproximado de una letra de 12 px, para que un rótulo no se pise con otro. */
+const LETRA = 6.6;
 
 /** El día de hoy en la zona de la lectura, como fecha civil. */
 function hoyEn(zona: string): string {
@@ -208,9 +259,24 @@ function hoyEn(zona: string): string {
   }
 }
 
+/** El rango mínimo del eje del 1RM estimado, del catálogo (GR-T15): 10 kg o 22 lb. */
+const rangoMinimo = (unidad: string): number => serieDisponible('entrenamiento.1rm-estimado')?.rangoMinimoDelEje?.[unidad === 'lb' ? 'lb' : 'kg'] ?? 0;
+
+/** El número de un punto, sin el «≈» ni la unidad: «160,5». */
+const numeroDelPunto = (p: PuntoDeFuerza): string => estimacionALaVista(estimacionDelPunto(p, '')).replace('≈ ', '').replace(` ${p.estimate.load.unit}`, '');
+
+/** Lo que dice un punto al pasar el mouse o con el teclado: «lun 9 nov · ≈ 160,5 kg», y si es orientativa u observada. */
+function globoDelPunto(p: PuntoDeFuerza): string {
+  const partes = [diaConSemana(p.date), estimacionALaVista(estimacionDelPunto(p, ''))];
+  if (p.source === 'OBSERVED') partes.push(C.laObservasteVos);
+  else if (p.estimate.band === 'ORIENTATIVE') partes.push(C.orientativa);
+  return partes.join(' · ');
+}
+
 /**
  * El gráfico: un punto por sesión (lleno, hueco u observado), sin línea a través de un hueco; el eje de fechas, la
- * línea de hoy, una marca por sesión sin estimación y las franjas de las versiones del plan (maqueta 15).
+ * línea de hoy, una marca por sesión sin estimación y las franjas de las versiones del plan (maqueta 15), con la
+ * pasada visual del 15/11.
  */
 function Grafico({
   linea,
@@ -221,6 +287,7 @@ function Grafico({
   zona,
   soloOrientativas,
   versiones,
+  cambios,
 }: {
   linea: LineaDeFuerza | null;
   elegido: PuntoDeFuerza | null;
@@ -230,18 +297,32 @@ function Grafico({
   zona: string;
   soloOrientativas: readonly PuntoDeFuerza[];
   versiones: readonly VersionDelPlanEnElPeriodo[];
+  /** El cambio de lo indicado al empezar cada versión, por su primer día. */
+  cambios: ReadonlyMap<string, string>;
 }) {
+  const [ref, ancho] = useAnchoDelGrafico();
+  const [encima, setEncima] = useState<string | null>(null);
   const puntos = linea?.puntos ?? [];
+  const unidad = linea?.unidad ?? 'kg';
   const geo = useMemo(() => {
     const valores = puntos.map((p) => p.estimate.value);
-    const min = Math.floor(Math.min(...valores) - 2);
-    const max = Math.ceil(Math.max(...valores) + 2);
+    let min = Math.min(...valores);
+    let max = Math.max(...valores);
+    // GR-T15 (WP-GRAFICOS, DL-174): el eje abarca 10 kg o 22 lb como mínimo, para que el ruido de un RIR no parezca un salto.
+    const rango = rangoMinimo(unidad);
+    if (max - min < rango) {
+      const centro = (min + max) / 2;
+      min = Math.max(0, centro - rango / 2);
+      max = min + rango;
+    }
+    const eje = marcasRedondas(min, max);
     const t0 = Date.parse(`${desde}T12:00:00Z`);
     const t1 = Math.max(Date.parse(`${hasta}T12:00:00Z`), t0 + 86_400_000);
-    const x = (fecha: string) => MARGEN.izq + ((Date.parse(`${fecha}T12:00:00Z`) - t0) / (t1 - t0)) * (ANCHO - MARGEN.izq - MARGEN.der);
-    const y = (v: number) => MARGEN.arr + (1 - (v - min) / Math.max(max - min, 1)) * (ALTO - MARGEN.arr - MARGEN.abj);
-    return { x, y, min, max };
-  }, [puntos, desde, hasta]);
+    const derecha = Math.max(MARGEN.izq + 40, ancho - MARGEN.der);
+    const x = (fecha: string) => MARGEN.izq + ((Date.parse(`${fecha}T12:00:00Z`) - t0) / (t1 - t0)) * (derecha - MARGEN.izq);
+    const y = (v: number) => MARGEN.arr + (1 - (v - eje.abajo) / Math.max(eje.arriba - eje.abajo, 1)) * (ALTO - MARGEN.arr - MARGEN.abj);
+    return { x, y, eje, derecha };
+  }, [puntos, unidad, desde, hasta, ancho]);
   if (!linea || puntos.length === 0) {
     const falta = loQueHaceFalta(linea?.noEntraron ?? []);
     return (
@@ -258,85 +339,207 @@ function Grafico({
   const tramos = tramosDeLaLinea(puntos, linea.noEntraron, soloOrientativas);
   const sinEstimacion = [...new Set(filasDeLaEvolucion(puntos, linea.noEntraron, soloOrientativas).flatMap((f) => (f.tipo === 'sin-estimacion' ? [f.fecha] : [])))];
   const hoy = hoyEn(zona);
+  const conHoy = hoy >= desde && hoy <= hasta;
   const abajo = ALTO - MARGEN.abj;
   const franjas = versiones
     .filter((v) => v.domain === 'TRAINING' && (v.to === null || v.to > desde) && v.from <= hasta)
+    .sort((a, b) => (a.from < b.from ? -1 : 1))
     .map((v) => ({ v, x0: geo.x(v.from < desde ? desde : v.from), x1: geo.x(v.to === null || v.to > hasta ? hasta : v.to) }))
     .filter((f) => f.x1 > f.x0);
+  // El rótulo de cada versión: «v8 · de 4 a 3 repeticiones» si entra hasta la siguiente (o hasta «hoy»); si no, «v8».
+  const rotulosDeVersion = franjas.map((f, i) => {
+    const tope = (franjas[i + 1]?.x0 ?? (conHoy ? geo.x(hoy) - 34 : geo.derecha)) - 8;
+    const corto = f.v.label;
+    const cambio = f.v.from > desde ? cambios.get(f.v.from) : undefined;
+    const largo = cambio ? `${corto} · ${cambio}` : corto;
+    const texto = [largo, corto].find((t) => t.length * LETRA <= tope - f.x0 - 6) ?? null;
+    return { ...f, texto, conCambio: Boolean(cambio && texto === largo) };
+  });
+  const ordenados = [...puntos].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const conValor = ordenados.map((p) => ({ clave: p.pointId, valor: p.estimate.value }));
+  const claves = puntosConRotulo(conValor, elegido?.pointId ?? null);
+  const ultimo = ordenados[ordenados.length - 1]?.pointId ?? null;
+  const ejeY = geo.eje.valores.map((v) => ({ x1: 0, x2: MARGEN.izq - 4, y1: geo.y(v) - 8, y2: geo.y(v) + 8 }));
+  const rotulos = rotulosSinPisarse(
+    claves.flatMap((c) => {
+      const p = puntos.find((x) => x.pointId === c);
+      return p ? [{ clave: c, x: geo.x(p.date), y: geo.y(p.estimate.value), texto: numeroDelPunto(p) }] : [];
+    }),
+    { izquierda: MARGEN.izq, derecha: geo.derecha + MARGEN.der - 2, arriba: MARGEN.arr - 4, abajo },
+    ejeY,
+    13,
+  );
+  const sobre = puntos.find((p) => p.pointId === encima) ?? null;
+  const alTeclear = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = ordenados.findIndex((p) => p.pointId === elegido?.pointId);
+    const destino = e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? i - 1 : e.key === 'ArrowRight' || e.key === 'ArrowUp' ? i + 1 : e.key === 'Home' ? 0 : e.key === 'End' ? ordenados.length - 1 : null;
+    if (destino === null) return;
+    e.preventDefault();
+    const p = ordenados[Math.min(Math.max(destino, 0), ordenados.length - 1)];
+    if (p) onElegir(p);
+  };
+  const hayNucleo = puntos.some((p) => p.source !== 'OBSERVED' && p.estimate.band !== 'ORIENTATIVE');
+  const hayOrientativas = puntos.some((p) => p.source !== 'OBSERVED' && p.estimate.band === 'ORIENTATIVE');
+  const hayObservadas = puntos.some((p) => p.source === 'OBSERVED');
   return (
     <figure className="fuerza-en-analizar__grafico">
-      <figcaption>
-        <strong>{linea.unidad} · una estimación por sesión</strong>
+      <figcaption className="fuerza-en-analizar__cabecera">
+        <strong className="fuerza-en-analizar__titulo">{C.titulo}</strong>
+        <span className="fuerza-en-analizar__detalle">{C.detalle(linea.unidad, diaYMes(desde, hoy), hasta >= hoy ? null : diaYMes(hasta, hoy))}</span>
+        {/* La leyenda: fichas cortas, solo con las marcas que se ven en este gráfico. */}
         <span className="fuerza-en-analizar__leyenda">
-          <span data-forma="lleno">{C.leyenda.nucleo}</span>
-          <span data-forma="hueco">{C.leyenda.orientativa}</span>
-          <span data-forma="rombo">{C.leyenda.observada}</span>
-          <span data-forma="marca">{C.leyenda.sinEstimacion}</span>
-          <span data-forma="hoy">{C.leyenda.hoy}</span>
+          {hayNucleo ? <span data-forma="lleno">{C.leyenda.nucleo}</span> : null}
+          {hayOrientativas ? <span data-forma="hueco">{C.leyenda.orientativa}</span> : null}
+          {hayObservadas ? <span data-forma="rombo">{C.leyenda.observada}</span> : null}
+          {sinEstimacion.length > 0 ? <span data-forma="marca">{C.leyenda.sinEstimacion}</span> : null}
+          {conHoy ? <span data-forma="hoy">{C.leyenda.hoy}</span> : null}
         </span>
       </figcaption>
-      <svg viewBox={`0 0 ${ANCHO} ${ALTO}`} role="img" aria-label={`Evolución de la fuerza estimada, en ${linea.unidad}: ${puntos.length} ${puntos.length === 1 ? 'estimación' : 'estimaciones'}. La tabla de abajo tiene cada valor, y cada fecha elige su lectura.`}>
-        {franjas.map(({ v, x0, x1 }, i) => (
-          <g key={`${v.label}-${v.from}`} className="fuerza-en-analizar__franja" data-par={(i & 1) === 0 ? '' : undefined}>
-            <rect x={x0} y={0} width={x1 - x0} height={abajo} />
-            {x1 - x0 > 96 ? (
-              <text x={x0 + 6} y={12} className="fuerza-en-analizar__eje">
-                {C.plan(v.label.replace(/^v/, 'versión '))}
-              </text>
-            ) : null}
-          </g>
-        ))}
-        {fechasDelEje(desde, hasta).map((f, i, todas) => (
-          <text key={f} x={geo.x(f)} y={ALTO - 8} textAnchor={i === 0 ? 'start' : i === todas.length - 1 ? 'end' : 'middle'} className="fuerza-en-analizar__eje">
-            {diaDeLaEstimacion(f)}
-          </text>
-        ))}
-        {sinEstimacion.map((f) => (
-          <line key={`sin-${f}`} x1={geo.x(f)} x2={geo.x(f)} y1={abajo - 12} y2={abajo} className="fuerza-en-analizar__sin-estimacion" />
-        ))}
-        {hoy >= desde && hoy <= hasta ? (
-          <g className="fuerza-en-analizar__hoy">
-            <line x1={geo.x(hoy)} x2={geo.x(hoy)} y1={0} y2={abajo} />
-            <text x={geo.x(hoy) - 4} y={12} textAnchor="end" className="fuerza-en-analizar__eje">
-              {C.leyenda.hoy}
-            </text>
-          </g>
-        ) : null}
-        {[geo.min, (geo.min + geo.max) / 2, geo.max].map((v) => (
-          <g key={v}>
-            <line x1={MARGEN.izq} x2={ANCHO - MARGEN.der} y1={geo.y(v)} y2={geo.y(v)} className="fuerza-en-analizar__guia" />
-            <text x={MARGEN.izq - 6} y={geo.y(v) + 4} textAnchor="end" className="fuerza-en-analizar__eje">
-              {String(Math.round(v)).replace('.', ',')}
-            </text>
-          </g>
-        ))}
-        {tramos.map(([a, b]) => (
-          <line key={`${a}-${b}`} x1={geo.x(puntos[a]!.date)} y1={geo.y(puntos[a]!.estimate.value)} x2={geo.x(puntos[b]!.date)} y2={geo.y(puntos[b]!.estimate.value)} className="fuerza-en-analizar__linea" />
-        ))}
-        {puntos.map((p) => {
-          const cx = geo.x(p.date);
-          const cy = geo.y(p.estimate.value);
-          const forma = p.source === 'OBSERVED' ? 'rombo' : p.estimate.band === 'ORIENTATIVE' ? 'hueco' : 'lleno';
-          const elegidoEste = elegido?.pointId === p.pointId;
-          return (
-            <g key={p.pointId} className="fuerza-en-analizar__punto" data-forma={forma} data-elegido={elegidoEste ? '' : undefined} onClick={() => onElegir(p)}>
-              {elegidoEste ? <circle cx={cx} cy={cy} r={11} className="fuerza-en-analizar__aro" /> : null}
-              {forma === 'rombo' ? <rect x={cx - 6} y={cy - 6} width={12} height={12} transform={`rotate(45 ${cx} ${cy})`} /> : <circle cx={cx} cy={cy} r={6} />}
-              <text x={cx} y={cy - 12} textAnchor="middle" className="fuerza-en-analizar__valor">
-                {estimacionALaVista(estimacionDelPunto(p, '')).replace('≈ ', '').replace(` ${p.estimate.load.unit}`, '')}
+      <div
+        ref={ref}
+        className="fuerza-en-analizar__lienzo"
+        tabIndex={0}
+        role="group"
+        aria-roledescription="gráfico"
+        aria-label={`Evolución de la fuerza estimada, en ${linea.unidad}: ${puntos.length} ${puntos.length === 1 ? 'estimación' : 'estimaciones'}. ${C.conElTeclado}`}
+        onKeyDown={alTeclear}
+      >
+        <svg width={ancho} height={ALTO} viewBox={`0 0 ${ancho} ${ALTO}`} aria-hidden="true" focusable="false">
+          {rotulosDeVersion.map(({ v, x0, x1, texto, conCambio }, i) => (
+            <g key={`${v.label}-${v.from}`} className="fuerza-en-analizar__franja" data-par={(i & 1) === 1 ? '' : undefined} data-con-cambio={conCambio ? '' : undefined}>
+              <rect x={x0} y={MARGEN.arr - 6} width={x1 - x0} height={abajo - MARGEN.arr + 6} />
+              {v.from > desde ? <line x1={x0} x2={x0} y1={4} y2={abajo} className="fuerza-en-analizar__cambio" /> : null}
+              {texto ? (
+                <text x={x0 + 6} y={14} className="fuerza-en-analizar__eje fuerza-en-analizar__version">
+                  {texto}
+                </text>
+              ) : null}
+            </g>
+          ))}
+          {geo.eje.valores.map((v) => (
+            <g key={v}>
+              <line x1={MARGEN.izq} x2={geo.derecha} y1={Math.round(geo.y(v)) + 0.5} y2={Math.round(geo.y(v)) + 0.5} className="fuerza-en-analizar__guia" />
+              <text x={MARGEN.izq - 8} y={geo.y(v) + 4} textAnchor="end" className="fuerza-en-analizar__eje">
+                {textoDeLaMarcaDelEje(v, geo.eje.decimales)}
               </text>
             </g>
-          );
-        })}
-      </svg>
+          ))}
+          {fechasDelEje(desde, hasta).map((f, i, todas) => (
+            <text key={f} x={geo.x(f)} y={ALTO - 6} textAnchor={i === 0 ? 'start' : i === todas.length - 1 ? 'end' : 'middle'} className="fuerza-en-analizar__eje">
+              {diaDeLaEstimacion(f)}
+            </text>
+          ))}
+          {sinEstimacion.map((f) => (
+            <line key={`sin-${f}`} x1={geo.x(f)} x2={geo.x(f)} y1={abajo - 10} y2={abajo} className="fuerza-en-analizar__sin-estimacion" />
+          ))}
+          {conHoy ? (
+            <g className="fuerza-en-analizar__hoy">
+              <line x1={geo.x(hoy)} x2={geo.x(hoy)} y1={MARGEN.arr - 6} y2={abajo} />
+              <text x={geo.x(hoy) - 4} y={14} textAnchor="end" className="fuerza-en-analizar__eje">
+                {C.leyenda.hoy.toLowerCase()}
+              </text>
+            </g>
+          ) : null}
+          {tramos.map(([a, b]) => (
+            <line key={`${a}-${b}`} x1={geo.x(puntos[a]!.date)} y1={geo.y(puntos[a]!.estimate.value)} x2={geo.x(puntos[b]!.date)} y2={geo.y(puntos[b]!.estimate.value)} className="fuerza-en-analizar__linea" />
+          ))}
+          {puntos.map((p) => {
+            const cx = geo.x(p.date);
+            const cy = geo.y(p.estimate.value);
+            const forma = p.source === 'OBSERVED' ? 'rombo' : p.estimate.band === 'ORIENTATIVE' ? 'hueco' : 'lleno';
+            const elegidoEste = elegido?.pointId === p.pointId;
+            return (
+              <g
+                key={p.pointId}
+                className="fuerza-en-analizar__punto"
+                data-forma={forma}
+                data-elegido={elegidoEste ? '' : undefined}
+                onClick={() => onElegir(p)}
+                onMouseEnter={() => setEncima(p.pointId)}
+                onMouseLeave={() => setEncima((x) => (x === p.pointId ? null : x))}
+              >
+                <circle cx={cx} cy={cy} r={11} className="fuerza-en-analizar__toque" />
+                {elegidoEste ? <circle cx={cx} cy={cy} r={9} className="fuerza-en-analizar__aro" /> : null}
+                {forma === 'rombo' ? <rect x={cx - 4.5} y={cy - 4.5} width={9} height={9} transform={`rotate(45 ${cx} ${cy})`} /> : <circle cx={cx} cy={cy} r={4.5} />}
+              </g>
+            );
+          })}
+          {rotulos.map((r) => (
+            <text key={`r${r.clave}`} x={r.tx} y={r.ty} textAnchor={r.ancla} className="fuerza-en-analizar__valor" data-fuerte={r.clave === elegido?.pointId || r.clave === ultimo ? '' : undefined}>
+              {r.texto}
+            </text>
+          ))}
+          {sobre ? <Globo x={geo.x(sobre.date)} y={geo.y(sobre.estimate.value)} texto={globoDelPunto(sobre)} ancho={ancho} /> : null}
+        </svg>
+      </div>
+      {/* Una sola línea de lectura debajo: dónde estuvo la estimación en el período, sin primero contra último (§5.12). */}
+      <LineaDelPeriodo puntos={ordenados} />
     </figure>
   );
 }
 
+/** El globo de un punto al pasar el mouse: su fecha y su estimación, arriba del punto y adentro del dibujo. */
+function Globo({ x, y, texto, ancho }: { x: number; y: number; texto: string; ancho: number }) {
+  const w = texto.length * LETRA + 16;
+  const h = 24;
+  const gx = Math.min(Math.max(x - w / 2, 2), ancho - w - 2);
+  const gy = y - h - 14 >= 2 ? y - h - 14 : y + 14;
+  return (
+    <g className="fuerza-en-analizar__globo" pointerEvents="none">
+      <rect x={gx} y={gy} width={w} height={h} rx={6} />
+      <text x={gx + 8} y={gy + 16}>
+        {texto}
+      </text>
+    </g>
+  );
+}
+
+function LineaDelPeriodo({ puntos }: { puntos: readonly PuntoDeFuerza[] }) {
+  if (puntos.length < 2) return null;
+  const orden = [...puntos].sort((a, b) => a.estimate.value - b.estimate.value);
+  const bajo = orden[0]!;
+  const alto = orden[orden.length - 1]!;
+  const enPalabras = (p: PuntoDeFuerza) => estimacionALaVista(estimacionDelPunto(p, ''));
+  if (enPalabras(bajo) === enPalabras(alto)) return null;
+  return <p className="fuerza-en-analizar__linea-de-lectura">{C.enElPeriodo(enPalabras(bajo), diaConSemana(bajo.date), enPalabras(alto), diaConSemana(alto.date))}</p>;
+}
+
+/**
+ * «Cómo leerlo», debajo del gráfico y cerrado: el método, lo que mueve un RIR, las versiones y lo que no entra, una
+ * línea por sesión. Es lo que antes iba a la vista en la lectura del costado (DISENO-VISUAL §2: «Lo que no entra», a
+ * «Cómo leerlo»).
+ */
+function ComoLeerLaFuerza({ linea, elegido, soloOrientativas }: { linea: LineaDeFuerza; elegido: PuntoDeFuerza | null; soloOrientativas: readonly PuntoDeFuerza[] }) {
+  const noEntra = loQueNoEntraPorFecha(linea.puntos, linea.noEntraron, soloOrientativas);
+  return (
+    <ComoLeerlo className="fuerza-en-analizar__como-leerlo">
+      <p>{C.metodo}</p>
+      {elegido ? <p>{C.diferencia(elegido.estimate.load.value, elegido.estimate.load.unit)}</p> : null}
+      <p>{COPY_FUERZA.reglaDelRir}</p>
+      <p>{C.versiones}</p>
+      <h4>{C.loQueNoEntra}</h4>
+      {noEntra.lineas.length > 0 ? (
+        <ul className="fuerza-en-analizar__no-entra" data-no-entra-por-fecha>
+          {noEntra.lineas.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      ) : null}
+      {noEntra.quedan > 0 ? <p className="nota">{C.quedan(noEntra.quedan)}</p> : null}
+      <p className="nota">{C.antes}</p>
+      <p className="nota">{C.conElTeclado}</p>
+    </ComoLeerlo>
+  );
+}
+
+/** Las columnas de la tabla según el ancho: con menos lugar, menos detalle, nunca un número partido. */
+type Columnas = 'TODAS' | 'MEDIA' | 'CORTA';
+const columnasPara = (ancho: number): Columnas => (ancho >= 900 ? 'TODAS' : ancho >= 600 ? 'MEDIA' : 'CORTA');
+
 /**
  * La tabla de origen: la fecha, la serie que entra, quién la escribió, la banda, el valor y «Cómo se calculó». Cada fecha
  * de un punto es un botón que lo elige, como tocarlo en el gráfico: así se llega con el teclado y con un lector de
- * pantalla a la lectura del costado (WCAG 2.1.1).
+ * pantalla a la lectura del costado (WCAG 2.1.1). Se ven las filas más recientes; las demás, a un toque.
  */
 function TablaDeOrigen({
   linea,
@@ -354,13 +557,22 @@ function TablaDeOrigen({
   soloOrientativas: readonly PuntoDeFuerza[];
 }) {
   const nombres = useNombres();
+  const [ref, ancho] = useAnchoDelGrafico();
+  const [todas, setTodas] = useState(false);
   if (!linea) return null;
   const filas = filasConLosMotivosSeguidos(filasDeLaEvolucion(linea.puntos, linea.noEntraron, soloOrientativas));
   if (filas.length === 0) return null;
+  const columnas = columnasPara(ancho);
+  const conQuien = columnas === 'TODAS';
+  const conEquivalentes = columnas !== 'CORTA';
+  const cuantas = 3 + (conQuien ? 2 : 0) + (conEquivalentes ? 1 : 0);
+  // La fila elegida se ve aunque sea vieja: elegirla desde el gráfico no la deja escondida.
+  const indiceElegida = filas.findIndex((f) => f.tipo === 'punto' && f.punto.pointId === elegido?.pointId);
+  const aLaVista = todas ? filas : filas.filter((_, i) => i < FILAS_A_LA_VISTA || i === indiceElegida);
   const verLaSesion = (f: { readonly fecha: string; readonly executionId: string }) =>
     `/pro/advisees/training?id=${encodeURIComponent(asesoradoId)}&vista=ejecuciones&desde=${f.fecha}&hasta=${f.fecha}&sesion=${encodeURIComponent(f.executionId)}`;
   return (
-    <div className="grafico__desplazable">
+    <div ref={ref} className="grafico__desplazable fuerza-en-analizar__tabla-caja" data-columnas={columnas}>
       {linea.puntos.length > 1 ? <p className="nota">{C.elegirEnLaTabla}</p> : null}
       <table className="tabla fuerza-en-analizar__tabla" data-tabla-de-origen>
         <caption className="visualmente-oculto">Cada estimación con su serie de origen, y las sesiones sin estimación</caption>
@@ -368,20 +580,22 @@ function TablaDeOrigen({
           <tr>
             <th scope="col">Fecha</th>
             <th scope="col">Serie que entra</th>
-            <th scope="col">Quién la escribió</th>
-            <th scope="col">Repeticiones equivalentes</th>
-            <th scope="col">Banda</th>
+            {conQuien ? <th scope="col">Quién la escribió</th> : null}
+            {conEquivalentes ? <th scope="col">Repeticiones equivalentes</th> : null}
+            {conQuien ? <th scope="col">Banda</th> : null}
             <th scope="col">Estimación</th>
           </tr>
         </thead>
         <tbody>
-          {filas.map((f) => {
+          {aLaVista.map((f) => {
             if (f.tipo === 'sin-estimacion-seguidas') {
               // PG-10: el mismo motivo en sesiones seguidas, en una fila con el rango; se abre para ver cada una.
               return (
                 <tr key={f.filas[0]!.executionId} data-sin-estimacion data-seguidas={f.filas.length}>
                   <th scope="row">{rangoDeSesiones(f.filas.map((x) => x.fecha))}</th>
-                  <td colSpan={4}>{f.motivo}</td>
+                  <td colSpan={cuantas - 2} className="fuerza-en-analizar__motivo">
+                    {f.motivo}
+                  </td>
                   <td>
                     sin estimación ·{' '}
                     <details className="fuerza-en-analizar__seguidas">
@@ -402,7 +616,9 @@ function TablaDeOrigen({
               return (
                 <tr key={f.executionId} data-sin-estimacion>
                   <th scope="row">{diaConSemana(f.fecha)}</th>
-                  <td colSpan={4}>{f.motivo}</td>
+                  <td colSpan={cuantas - 2} className="fuerza-en-analizar__motivo">
+                    {f.motivo}
+                  </td>
                   <td>
                     sin estimación · <Enlace href={verLaSesion(f)}>Ver la sesión</Enlace>
                   </td>
@@ -412,6 +628,8 @@ function TablaDeOrigen({
             const p = f.punto;
             const e = estimacionDelPunto(p, '');
             const esLaElegida = elegido?.pointId === p.pointId;
+            // Sin las columnas de quién y de la banda, lo que dicen va junto al valor: nada se pierde, se acorta.
+            const aclaracion = conQuien ? null : p.source === 'OBSERVED' ? C.laObservasteVos : e.banda === 'ORIENTATIVA' ? C.orientativa : null;
             return (
               <tr key={p.pointId} data-elegida={esLaElegida ? '' : undefined}>
                 <th scope="row">
@@ -421,13 +639,16 @@ function TablaDeOrigen({
                   </button>
                 </th>
                 <td>{laSerie(p)}</td>
-                <td>{p.source === 'OBSERVED' ? 'La observaste vos' : `${nombres.deQuien(p.writtenBy, asesoradoId)}, en la app`}</td>
+                {conQuien ? <td>{p.source === 'OBSERVED' ? 'La observaste vos' : `${nombres.deQuien(p.writtenBy, asesoradoId)}, en la app`}</td> : null}
+                {conEquivalentes ? (
+                  <td>
+                    {String(e.repeticiones)} + {String(e.rir).replace('.', ',')} = {String(e.repeticionesEquivalentes).replace('.', ',')}
+                  </td>
+                ) : null}
+                {conQuien ? <td>{e.banda === 'ORIENTATIVA' ? 'de más de 10 a 12 · orientativa' : 'hasta 10'}</td> : null}
                 <td>
-                  {String(e.repeticiones)} + {String(e.rir).replace('.', ',')} = {String(e.repeticionesEquivalentes).replace('.', ',')}
-                </td>
-                <td>{e.banda === 'ORIENTATIVA' ? 'de más de 10 a 12 · orientativa' : 'hasta 10'}</td>
-                <td>
-                  <strong>{estimacionALaVista(e)}</strong>{' '}
+                  <strong>{estimacionALaVista(e)}</strong>
+                  {aclaracion ? <span className="nota"> · {aclaracion}</span> : null}{' '}
                   <button type="button" className="boton boton--enlace" onClick={() => onComo(p)}>
                     {COPY_COMO_SE_CALCULO.titulo}
                     <span className="visualmente-oculto"> del {diaDelPunto(p)}</span>
@@ -438,27 +659,31 @@ function TablaDeOrigen({
           })}
         </tbody>
       </table>
+      {filas.length > FILAS_A_LA_VISTA ? (
+        <button type="button" className="boton boton--enlace fuerza-en-analizar__ver-todas" aria-expanded={todas} onClick={() => setTodas((t) => !t)}>
+          {todas ? C.verMenos : C.verTodas(filas.length)}
+        </button>
+      ) : null}
     </div>
   );
 }
 
 /**
- * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día, la
- * diferencia con el anterior y lo que no entra, una línea por sesión.
+ * La lectura al costado: el punto elegido (el último, de entrada), con la versión del plan que regía ese día y la
+ * anterior, con su fecha y su valor: sin flecha y sin «primero → último» (§5.12). Lo que no entra, el método y lo que
+ * mueve un RIR están en «Cómo leerlo», debajo del gráfico.
  */
 function Lectura({
   linea,
   elegido,
   asesoradoId,
   onComo,
-  soloOrientativas,
   versiones,
 }: {
   linea: LineaDeFuerza | null;
   elegido: PuntoDeFuerza | null;
   asesoradoId: string;
   onComo: (p: PuntoDeFuerza) => void;
-  soloOrientativas: readonly PuntoDeFuerza[];
   versiones: readonly VersionDelPlanEnElPeriodo[];
 }) {
   const nombres = useNombres();
@@ -467,10 +692,8 @@ function Lectura({
   const i = puntos.findIndex((p) => p.pointId === elegido.pointId);
   const anterior = i > 0 ? puntos[i - 1]! : null;
   const e = estimacionDelPunto(elegido, '');
-  const diferencia = anterior ? diferenciaEntreEstimaciones(estimacionDelPunto(anterior, ''), e) : null;
   const sesion = haciaLaSesion(asesoradoId, elegido);
   const version = elegido.source === 'PERSON' ? versionDelPlanEn(elegido.date, versiones) : null;
-  const noEntra = loQueNoEntraPorFecha(puntos, linea.noEntraron, soloOrientativas);
   return (
     <aside className="fuerza-en-analizar__lectura" aria-live="polite" data-lectura-de-fuerza>
       <h3>{C.lectura(fechaLarga(elegido.date))}</h3>
@@ -490,27 +713,11 @@ function Lectura({
         </button>
         {sesion ? <Enlace href={sesion}>Ver la sesión</Enlace> : null}
       </p>
-      {anterior && diferencia ? (
-        <div className="fuerza-en-analizar__diferencia">
-          <p>
-            {C.frente(diaDelPunto(anterior))} <strong>{diferencia}</strong>
-          </p>
-          <p className="nota">{C.diferencia(elegido.estimate.load.value, elegido.estimate.load.unit)}</p>
-        </div>
+      {anterior ? (
+        <p className="fuerza-en-analizar__anterior" data-la-anterior>
+          {C.anterior(diaDelPunto(anterior))} <strong>{estimacionALaVista(estimacionDelPunto(anterior, ''))}</strong>
+        </p>
       ) : null}
-      <div>
-        <h4>{C.loQueNoEntra}</h4>
-        {noEntra.lineas.length > 0 ? (
-          <ul className="fuerza-en-analizar__no-entra" data-no-entra-por-fecha>
-            {noEntra.lineas.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-        ) : null}
-        {noEntra.quedan > 0 ? <p className="nota">{C.quedan(noEntra.quedan)}</p> : null}
-        <p className="nota">{C.antes}</p>
-        <p className="nota">{COPY_FUERZA.reglaDelRir}</p>
-      </div>
     </aside>
   );
 }

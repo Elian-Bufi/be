@@ -86,6 +86,7 @@ import {
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ComoLeerlo, FraseDeLaCoincidencia } from '../graficos/como-leerlo';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -909,7 +910,14 @@ function AnalizarConSusPreguntas() {
                   <BotonDelPie que="tabla" abierto={abierto} alternar={alternar} controla={`${id}-tabla-de-etapas`} icono="tabla" texto={`Tabla de datos (${numero(fechasDeLaTabla)} ${fechasDeLaTabla === 1 ? 'fecha' : 'fechas'})`} />
                 ) : null}
                 {/* Lo que la comparación no dice, una sola vez: con los gráficos grandes abiertos lo dice su pie. */}
-                <p className="pie-de-etapas__limite">{laPregunta ? `${laPregunta.limite} ` : ''}Coincidencia temporal: no indica causa.</p>
+                {/* WP-GRAFICOS, pasada visual (15/11): la frase fija de los cruces, siempre a la vista y tenue; lo que la
+                    comparación no resta, en «Cómo leerlo». */}
+                {laPregunta ? (
+                  <ComoLeerlo className="pie-de-etapas__como-leerlo">
+                    <p>{laPregunta.limite}</p>
+                  </ComoLeerlo>
+                ) : null}
+                <FraseDeLaCoincidencia />
               </div>
             }
             debajo={
