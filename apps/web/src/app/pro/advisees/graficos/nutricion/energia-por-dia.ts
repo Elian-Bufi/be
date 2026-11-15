@@ -100,12 +100,20 @@ export interface EntradaDeEnergia {
   readonly desde: string;
   readonly hasta: string;
   readonly hoy: string;
+  /**
+   * API-PRJ-01 respondió con `partialView`: hay registros de comida de otro profesional en estas fechas, que no se ven ni
+   * suman. Sin decirlo, un día se leería como todo lo que la persona registró.
+   */
+  readonly parcial?: boolean;
 }
 
+/** La nota de lo que no se ve: los registros de comida de otro profesional, que no están en los números. */
+export const notasDeLaVistaParcial = (parcial: boolean | undefined): string[] => (parcial ? [C.deOtroProfesional] : []);
+
 /** La nota de lo cargado después: no se pudo leer, o se sabe solo desde un día (la lectura quedó a medias). */
-export function notasDeLoCargadoDespues(cargadoTarde: ReadonlySet<string> | null, sabidoDesde: string | null | undefined): string[] {
+export function notasDeLoCargadoDespues(cargadoTarde: ReadonlySet<string> | null, sabidoDesde: string | null | undefined, hasta?: string): string[] {
   if (cargadoTarde === null) return [C.sinLoCargadoDespues];
-  return sabidoDesde ? [C.cargadoDespuesDesde(diaYMes(sabidoDesde))] : [];
+  return sabidoDesde ? [C.cargadoDespuesDesde(diaYMes(sabidoDesde, hasta))] : [];
 }
 
 /** Los renglones de la leyenda de los días: solo los que aparecen en el dibujo, para que la leyenda diga lo que se ve. */
@@ -164,7 +172,7 @@ export function graficoDeEnergia(e: EntradaDeEnergia): GraficoArmado {
   const conValor = [...porFecha.values()].filter((p) => p.value !== null);
   const cuenta = (s: ReturnType<typeof saberDelDia>) => conValor.filter((p) => saberDelDia(p) === s).length;
   const conMedia = medias.filter((m) => m.valor !== null).length;
-  const objetivos = escalones.map((t) => `${numero(t.valor)} kcal por día desde el ${Number(t.desde.slice(8, 10))}/${Number(t.desde.slice(5, 7))}`);
+  const objetivos = escalones.map((t) => `${numero(t.valor)} kcal por día desde el ${diaYMes(t.desde, hasta)}`);
   const descripcion = [
     `${C.energia.titulo}: ${contar(porFecha.size, 'día con registros', 'días con registros')}.`,
     `${contar(cuenta('CON_TODO'), 'día', 'días')} ${C.conTodo}; ${contar(cuenta('CON_ALGO_QUE_FALTA'), 'subtotal', 'subtotales')}; en ${contar(cuenta('SIN_SABER_SI_FALTAN_COMIDAS'), 'día', 'días')} no se puede saber si faltan comidas.`,
@@ -196,7 +204,8 @@ export function graficoDeEnergia(e: EntradaDeEnergia): GraficoArmado {
       C.energia.metodoDeLaMedia(MINIMO_DE_DIAS_PARA_LA_MEDIA),
       C.diaSinRegistros,
       ...proporcionesDelObjetivo(objetivo, 'ENERGY', C.energia.panel, desde, hasta),
-      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde),
+      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde, hasta),
+      ...notasDeLaVistaParcial(e.parcial),
     ],
   };
 }

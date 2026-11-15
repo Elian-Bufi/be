@@ -25,7 +25,7 @@ function armar(metricas: Leido<readonly LecturaNutricional[]>, contraste: DiasDe
   const resultados = metricas.datos.flatMap((m) => (m.resultado ? [m.resultado] : []));
   const conAlgo = resultados.some((r) => r.recorded.points.length > 0 || r.prescribed.planned.days.some((d) => d.state === 'DETERMINED'));
   if (resultados.length < METRICAS_DE_LA_COMPARACION.length || !conAlgo) return { tipo: 'SIN_DATOS', texto: C.sinRegistrosEnElPeriodo };
-  return { tipo: 'LISTO', datos: graficoDeLaComparacion({ resultados, contraste, desde, hasta, enTramos }) };
+  return { tipo: 'LISTO', datos: graficoDeLaComparacion({ resultados, contraste, desde, hasta, enTramos, parcial: metricas.datos.some((m) => m.parcial) }) };
 }
 
 const METRICAS = METRICAS_DE_LA_COMPARACION.map((m) => m.metrica);
@@ -40,12 +40,17 @@ export function IndicadoYRegistradoPorDia({ lectura, periodo, densidad }: PropsD
   return <GraficoOEstado titulo={C.indicadoYRegistrado.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad={densidad} />;
 }
 
-/** «Día por día» en «Registros»: el mismo gráfico, con las comidas que la vista ya leyó para ese período. */
+/**
+ * «Día por día» en «Registros»: el mismo gráfico, con las comidas que la vista ya leyó para ese período. Cuando la vista
+ * relee en silencio (después de guardar una estimación, para que la lista no salte), llegan otras comidas del mismo
+ * período: el gráfico se vuelve a leer sin pasar por «cargando», así tampoco salta lo de abajo.
+ */
 export function DiaPorDia({ lectura, desde, hasta, hoy, contraste }: { lectura: LecturaBase; desde: string; hasta: string; hoy: string; contraste: DiasDelContraste }) {
   const periodo = useMemo((): PeriodoDelGrafico => ({ desde, hasta, hoy, desdeElVinculo: null }), [desde, hasta, hoy]);
   const { estado, reintentar } = useGraficoLeido(
     async (): Promise<GraficoLeido<GraficoArmado>> => armar(await leerMetricasNutricionales(lectura, METRICAS, desde, hasta), contraste, desde, hasta, false),
-    [lectura.token, lectura.asesoradoId, desde, hasta, contraste],
+    [lectura.token, lectura.asesoradoId, desde, hasta],
+    [contraste],
   );
   return <GraficoOEstado titulo={C.indicadoYRegistrado.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad="COMPLETA" />;
 }

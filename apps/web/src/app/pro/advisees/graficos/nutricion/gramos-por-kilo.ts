@@ -57,14 +57,20 @@ export function pesoDelDia(pesos: readonly PesoDeLaToma[], fecha: string): PesoD
   return elegido;
 }
 
-/** «peso del 3/11: 72,4 kg»: lo que dice cada punto del peso que usó. */
-export const pesoEnPalabras = (p: PesoDeLaToma): string => C.porKilo.pesoUsado(`${numero(p.valor)} kg`, diaYMes(p.fecha));
+/**
+ * «peso del 3/11: 72,4 kg»: lo que dice cada punto del peso que usó. Con una `referencia` (el último día del gráfico) de
+ * otro año, la fecha lleva el año («peso del 20/12/2025»): el peso se busca hasta un año antes (GR-T44), y sin el año un
+ * peso viejo se leería como reciente.
+ */
+export const pesoEnPalabras = (p: PesoDeLaToma, referencia?: string): string => C.porKilo.pesoUsado(`${numero(p.valor)} kg`, diaYMes(p.fecha, referencia));
 
 /**
  * La serie en g/kg de una serie de gramos por día: el mismo punto, dividido por el peso de su día, con la fecha del peso
  * en el detalle. Un día sin peso anterior queda sin valor, con su motivo. El tramo se corta donde cambia el peso usado.
+ * `referencia` es el último día del gráfico (por omisión, el del último punto): decide si la fecha del peso lleva el año.
  */
-export function serieAnaliticaPorKilo(gramos: SerieAnalitica, pesos: readonly PesoDeLaToma[], metricId: string, nombre: string): SerieAnalitica {
+export function serieAnaliticaPorKilo(gramos: SerieAnalitica, pesos: readonly PesoDeLaToma[], metricId: string, nombre: string, referencia?: string): SerieAnalitica {
+  const alFinal = referencia ?? gramos.points[gramos.points.length - 1]?.date;
   const tramos = new Map<string, { label: string; peso: string | null }>();
   const puntos = gramos.points.map((p): PuntoAnalitico => {
     const peso = p.dateEnd === null ? pesoDelDia(pesos, p.date) : null;
@@ -83,13 +89,13 @@ export function serieAnaliticaPorKilo(gramos: SerieAnalitica, pesos: readonly Pe
       };
     }
     const segment = `${p.segment}|${peso.clave}`;
-    if (!tramos.has(segment)) tramos.set(segment, { label: pesoEnPalabras(peso), peso: peso.clave });
+    if (!tramos.has(segment)) tramos.set(segment, { label: pesoEnPalabras(peso, alFinal), peso: peso.clave });
     return {
       ...p,
       pointId,
       value: p.value === null ? null : p.value / peso.valor,
       segment,
-      detail: [...p.detail, { label: 'Peso usado', value: pesoEnPalabras(peso) }],
+      detail: [...p.detail, { label: 'Peso usado', value: pesoEnPalabras(peso, alFinal) }],
     };
   });
   let anterior: string | null | undefined;

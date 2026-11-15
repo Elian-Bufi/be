@@ -152,7 +152,7 @@ export async function leerSeriePorKilo(p: ParametrosDeLectura, serie: SerieDispo
   const primerDia = resultado.recorded.points.find((x) => x.value !== null)?.date ?? null;
   const pesos = await leerPesosParaLosDias(p, p.periodo, primerDia);
   if (pesos.tipo !== 'LISTO') return comoEstado(pesos);
-  const derivada = serieAnaliticaPorKilo(resultado.recorded, pesos.datos.pesos, serie.id, serie.definicion.nombre);
+  const derivada = serieAnaliticaPorKilo(resultado.recorded, pesos.datos.pesos, serie.id, serie.definicion.nombre, p.periodo.hasta);
   return {
     tipo: 'lista',
     serie: derivada,

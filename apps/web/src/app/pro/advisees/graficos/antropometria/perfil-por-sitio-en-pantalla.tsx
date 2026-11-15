@@ -94,7 +94,7 @@ function GrupoEnPantalla({ g }: { g: GrupoDelPerfil }) {
 function TablaDelPerfil({ perfil }: { perfil: Perfil }) {
   const [abierta, setAbierta] = useState(false);
   const id = useId();
-  const antes = `${perfil.antes.etiqueta} · ${diaYMes(perfil.antes.fecha)}`;
+  const antes = `${perfil.antes.etiqueta} · ${diaYMes(perfil.antes.fecha, perfil.despues.fecha)}`;
   const despues = `${perfil.despues.etiqueta} · ${diaYMes(perfil.despues.fecha)}`;
   return (
     <div className="grafico-base__tabla">
@@ -150,7 +150,7 @@ function ElegirToma({ etiqueta, tomas, elegida, onElegir }: { etiqueta: string; 
       <select id={id} value={elegida} onChange={(e) => onElegir(e.target.value)}>
         {tomas.map((t) => (
           <option key={t.evaluacionId} value={t.evaluacionId}>
-            {`${C.perfil.toma(diaYMes(t.fecha), t.etiqueta)} (${t.sitios} ${t.sitios === 1 ? 'sitio' : 'sitios'})`}
+            {`${C.perfil.toma(diaYMes(t.fecha, tomas[tomas.length - 1]?.fecha), t.etiqueta)} (${t.sitios} ${t.sitios === 1 ? 'sitio' : 'sitios'})`}
           </option>
         ))}
       </select>
@@ -206,7 +206,7 @@ export function PerfilEntreDosTomas({ observaciones, parcial, enTramos }: { obse
                 <svg width={18} height={18} viewBox="0 0 18 18" aria-hidden="true">
                   <rect x={4.5} y={4.5} width={9} height={9} fill={COLOR_ANTES} />
                 </svg>
-                {`${C.perfil.leyendaAntes} (${diaYMes(perfil.antes.fecha)})`}
+                {`${C.perfil.leyendaAntes} (${diaYMes(perfil.antes.fecha, perfil.despues.fecha)})`}
               </span>
             </li>
             <li>

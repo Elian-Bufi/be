@@ -69,6 +69,8 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
   sinLoCargadoDespues: 'No se pudo leer qué registros se cargaron después: las marcas no lo dicen.',
   cargadoDespuesDesde: (fecha: string) => `Lo cargado después se leyó desde el ${fecha}: antes de ese día, las marcas no lo dicen.`,
   sinRegistrosEnElPeriodo: 'Sin registros de comida en estas fechas.',
+  /** API-PRJ-01 con `partialView` (caso 1): lo de otro profesional existe, no se muestra y no suma. */
+  deOtroProfesional: 'Hay registros de comida de otro profesional en estas fechas: no los ves y no están en estos números.',
 
   // ─── GR-12 · las calorías por día ────────────────────────────────────────────────────────────
   energia: {
@@ -113,6 +115,7 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
       n === 1 ? '1 día con registros no tiene una toma de peso anterior: no tiene valor en g/kg.' : `${contar(n, 'día', 'días')} con registros no tienen una toma de peso anterior: no tienen valor en g/kg.`,
     sinPesos: 'Ninguna de tus tomas hasta estas fechas tiene un peso medido: sin un peso, los gramos por kilo no se calculan.',
     buscadoDesde: (fecha: string) => `El peso anterior se buscó desde el ${fecha}.`,
+    tomasDeOtro: 'Hay tomas de otro profesional en estas fechas: no las ves y su peso no se usa.',
   },
 
   // ─── GR-14 · lo indicado y lo registrado ─────────────────────────────────────────────────────

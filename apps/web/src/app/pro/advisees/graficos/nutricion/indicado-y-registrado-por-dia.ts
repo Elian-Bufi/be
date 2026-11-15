@@ -27,7 +27,7 @@ import type { CeldaDeLaTabla } from '../tabla-equivalente';
 import { huecosEnTexto, type ElementoDeLaLeyenda, type EstadoDeLaComida, type FilaDeLaTira, type GraficoArmado, type MarcaDelPanel, type PanelDeTira, type PanelDeValores, type UnionDelPanel } from '../nutricion-y-cuerpo/lienzo';
 import { COPY_NUTRICION_EN_GRAFICOS as C, contar } from './copy';
 import { calidadDelDia, marcaDelDia, puntosPorFecha, saberDelDia, valorDelDia, type MetricaDelGrafico } from './dias-de-nutricion';
-import { leyendaDeLosDias } from './energia-por-dia';
+import { leyendaDeLosDias, notasDeLaVistaParcial } from './energia-por-dia';
 import { temporadasDeNutricion } from './temporadas';
 
 type DiaDelContraste = ContrasteDescriptivo['days'][number];
@@ -96,6 +96,8 @@ export interface EntradaDeLaComparacion {
   readonly hasta: string;
   /** Se leyó en tramos de 92 días: la pantalla lo dice. */
   readonly enTramos: boolean;
+  /** Alguna lectura respondió con `partialView`: hay registros de comida de otro profesional que no se ven ni suman. */
+  readonly parcial?: boolean;
 }
 
 /** Lo de un día de una métrica: lo registrado (si hay), lo indicado y, si corresponde, la diferencia. */
@@ -195,6 +197,7 @@ export function graficoDeLaComparacion(e: EntradaDeLaComparacion): GraficoArmado
       ...(sinIndicado ? [sinIndicado] : []),
       ...(e.contraste === null ? [C.indicadoYRegistrado.sinTira] : []),
       ...(e.enTramos ? ['Las comidas de cada día se leyeron en tramos de 92 días.'] : []),
+      ...notasDeLaVistaParcial(e.parcial),
     ],
   };
 }

@@ -141,7 +141,7 @@ export function perfilPorSitio(observaciones: readonly ObservacionDeLaToma[], to
   const filas = listos.flatMap((g) => g.filas);
   const pares = filas.filter((f) => f.estado === 'PAR').length;
   const sinPar = filas.length - pares;
-  return { antes, despues, grupos: listos, pares, sinPar, descripcion: C.perfil.descripcion(diaYMes(antes.fecha), diaYMes(despues.fecha), pares, sinPar) };
+  return { antes, despues, grupos: listos, pares, sinPar, descripcion: C.perfil.descripcion(diaYMes(antes.fecha, despues.fecha), diaYMes(despues.fecha), pares, sinPar) };
 }
 
 const valorEnPalabras = (v: ValorDelSitio): string => `${cantidad(v.valor, v.unidad)}${v.clase === 'REPORTED' ? ' (reportado por la persona)' : ''}`;
@@ -149,7 +149,7 @@ const valorEnPalabras = (v: ValorDelSitio): string => `${cantidad(v.valor, v.uni
 /** Lo que dice una fila en la tabla: los dos valores y la diferencia, o qué falta y por qué no se resta. */
 export function filaEnPalabras(f: FilaDelPerfil, antes: TomaDelPerfil, despues: TomaDelPerfil): { readonly antes: string; readonly despues: string; readonly diferencia: string } {
   return {
-    antes: f.antes ? valorEnPalabras(f.antes) : C.perfil.soloDespues(diaYMes(antes.fecha)),
+    antes: f.antes ? valorEnPalabras(f.antes) : C.perfil.soloDespues(diaYMes(antes.fecha, despues.fecha)),
     despues: f.despues ? valorEnPalabras(f.despues) : C.perfil.soloAntes(diaYMes(despues.fecha)),
     diferencia: f.diferencia ?? (f.estado === 'OTRO_GRUPO' ? C.perfil.otroGrupo : '—'),
   };

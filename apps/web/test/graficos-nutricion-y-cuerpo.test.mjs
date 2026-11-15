@@ -42,6 +42,7 @@ const TOMAS = await import('../src/app/pro/advisees/graficos/antropometria/tomas
 const P = await import('../src/app/pro/advisees/graficos/antropometria/perfil-por-sitio.ts');
 const M = await import('../src/app/pro/advisees/graficos/antropometria/masa-grasa-por-metodo.ts');
 const { COPY_ANTROPOMETRIA_EN_GRAFICOS } = await import('../src/app/pro/advisees/graficos/antropometria/copy.ts');
+const LEIDO = await import('../src/app/pro/advisees/graficos/nutricion-y-cuerpo/leido.ts');
 
 // ─── Datos de prueba ────────────────────────────────────────────────────────────────────────────
 
@@ -218,6 +219,17 @@ test('TEST-GRF-042 · GR-12: un día lleno con todo registrado, hueco si es un s
   const sinTarde = G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos), cargadoTarde: null, desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-09' });
   assert.ok(sinTarde.notas.includes(COPY_NUTRICION_EN_GRAFICOS.sinLoCargadoDespues));
   assert.ok(sinTarde.paneles[0].marcas.every((m) => !m.tarde));
+  // Con registros de otro profesional que no se ven (`partialView`), el número del día no es todo lo registrado: se dice.
+  assert.ok(!g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.deOtroProfesional));
+  const parcial = G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos), cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-09', parcial: true });
+  assert.ok(parcial.notas.includes(COPY_NUTRICION_EN_GRAFICOS.deOtroProfesional), 'la vista parcial se dice (mutación: callarla)');
+  // Una versión que rige desde el año anterior lleva su año en la temporada.
+  const deAntes = G12.graficoDeEnergia({ resultado: resultado('ENERGY', puntos, { versiones: [version('v1', 'v1', '2025-12-01', null)] }), cargadoTarde: new Set(), desde: '2026-11-02', hasta: '2026-11-08', hoy: '2026-11-09' });
+  assert.deepEqual(
+    deAntes.temporadas.map((t) => t.rotulo),
+    ['Plan v1 · desde el 1/12/2025'],
+  );
+  textosGenerados.NUTRICION.push(...textosDe(parcial), ...textosDe(deAntes));
 });
 
 test('TEST-GRF-043 · GR-12: la media de la semana dice con qué días se hizo y cuáles quedaron afuera; con menos de 4 no hay media y hoy no cuenta (mutación: promediar también los subtotales)', () => {
@@ -336,8 +348,22 @@ test('TEST-GRF-045 · GR-13 en g/kg: cada día con el peso medido de la última 
   );
   assert.ok(g.notas.includes('Pesos usados: 80 kg (toma del 3/11).'));
   assert.ok(g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.diasSinPeso(1)));
-  assert.ok(g.notas.includes('El peso anterior se buscó desde el 2/11.'));
+  // La búsqueda empezó el año anterior: sin el año, «desde el 2/11» se leería como el primer día del período.
+  assert.ok(g.notas.includes('El peso anterior se buscó desde el 2/11/2025.'));
   assert.match(g.tabla.filas.find((f) => f.fecha === '2026-11-09').celdas[0].texto, /^1,95 g\/kg · .* · peso del 3\/11: 80 kg$/);
+  assert.ok(!g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.deOtroProfesional) && !g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.tomasDeOtro));
+  // Un peso del año anterior (GR-T44 lo busca hasta un año antes) lleva su año: no se lee como reciente (mutación: sacar el año).
+  const delAnioPasado = [{ clave: 'm:v', fecha: '2025-12-20', en: '2025-12-20T13:00:00.000Z', valor: 80 }];
+  const enero = G13.MACROS_POR_KILO.map((m) => resultado(m.metrica, [dia('2026-01-05', 160)]));
+  const viejo = G13.graficoDeMacrosPorKilo({ resultados: enero, macros: G13.MACROS_POR_KILO, cargadoTarde: new Set(), desde: '2026-01-01', hasta: '2026-01-31', pesos: delAnioPasado, pesoBuscadoDesde: '2025-01-01', parcial: true, pesosParciales: true });
+  textosGenerados.AMBAS.push(...textosDe(viejo));
+  assert.match(viejo.tabla.filas[0].celdas[0].texto, / · peso del 20\/12\/2025: 80 kg$/);
+  assert.ok(viejo.notas.includes('Pesos usados: 80 kg (toma del 20/12/2025).'));
+  assert.equal(K.serieAnaliticaPorKilo(enero[0].recorded, delAnioPasado, 'nutricion.proteinas-por-kilo', 'P').points[0].detail.at(-1).value, 'peso del 20/12/2025: 80 kg', '«Analizar» también');
+  assert.equal(L.diaYMes('2026-01-05', '2026-01-31'), '5/1');
+  // Lo de otro profesional no se ve y no suma: se dice, en los gramos y en el peso (mutación: no decirlo).
+  assert.ok(viejo.notas.includes(COPY_NUTRICION_EN_GRAFICOS.deOtroProfesional));
+  assert.ok(viejo.notas.includes(COPY_NUTRICION_EN_GRAFICOS.porKilo.tomasDeOtro));
 });
 
 test('TEST-GRF-046 · GR-14: la diferencia con su signo va solo en los días con todo registrado; sin indicado cuando el plan deja elegir, y no se inventa (mutación: restarle lo indicado a un subtotal)', () => {
@@ -382,6 +408,15 @@ test('TEST-GRF-046 · GR-14: la diferencia con su signo va solo en los días con
   assert.ok(g.notas.some((n) => n.startsWith('La diferencia es lo registrado menos lo indicado')));
   assert.ok(g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.indicadoYRegistrado.sinTira), 'sin la lectura de las comidas, la tira no está y se dice');
   assert.ok(!g.paneles.some((p) => p.tipo === 'TIRA'));
+  // Con registros de otro profesional que no se ven, la diferencia no es contra todo lo registrado: se dice.
+  assert.ok(!g.notas.includes(COPY_NUTRICION_EN_GRAFICOS.deOtroProfesional));
+  assert.ok(G14.graficoDeLaComparacion({ resultados, contraste: null, desde: '2026-11-02', hasta: '2026-11-08', enTramos: false, parcial: true }).notas.includes(COPY_NUTRICION_EN_GRAFICOS.deOtroProfesional));
+  // Las pantallas pasan la vista parcial de cada lectura a GR-12, GR-13 (también en g/kg, con la de los pesos) y GR-14.
+  const pantalla = (archivo) => readFileSync(join(GRAFICOS, 'nutricion', archivo), 'utf8');
+  assert.match(pantalla('energia-por-dia-en-pantalla.tsx'), /parcial: energia\.datos\.parcial/);
+  assert.equal(pantalla('macros-en-paneles-en-pantalla.tsx').match(/parcial: macros\.datos\.some\(\(m\) => m\.parcial\)/g)?.length, 2);
+  assert.match(pantalla('macros-en-paneles-en-pantalla.tsx'), /pesosParciales: pesos\.datos\.parcial/);
+  assert.match(pantalla('indicado-y-registrado-por-dia-en-pantalla.tsx'), /parcial: metricas\.datos\.some\(\(m\) => m\.parcial\)/);
 });
 
 test('TEST-GRF-047 · GR-14: la tira por comida dice con la opción del plan, con una comida diferente o sin registro; un día sin registros es un hueco y una comida diferente sin cantidades no es 0 g (mutación: dibujar un día sin registros como todas sin registro)', () => {
@@ -486,6 +521,13 @@ test('TEST-GRF-048 · GR-18: los pares por sitio solo dentro del mismo grupo de 
   assert.ok(pliegues.extremos.abajo <= 6 && pliegues.extremos.arriba >= 15, 'un eje común para la familia');
   assert.equal(P.xDelValor(pliegues.extremos.abajo, pliegues.extremos, 100, 500), 100);
   assert.equal(P.perfilPorSitio(observaciones, tomas, 'ev1', 'ev1'), null);
+  // Entre tomas de dos años, la más vieja lleva su año: «20/11» solo se leería como de este año (mutación: sacarlo).
+  const deDosAnios = TOMAS.observacionesDeLasTomas([
+    evolucion([metrica('pliegue-triceps', [toma('v1', 'ev0', '2025-11-20', 13, 'cmp-1', 'mm'), toma('v2', 'ev9', '2026-11-05', 10, 'cmp-1', 'mm')], [grupo('cmp-1', 'isak', 'mm')])]),
+  ]);
+  const dosAnios = P.perfilPorSitio(deDosAnios, P.tomasConSitios(deDosAnios), 'ev0', 'ev9');
+  assert.match(dosAnios.descripcion, /^Perfil por sitio entre la toma del 20\/11\/2025 y la del 5\/11:/);
+  assert.equal(P.filaEnPalabras({ ...dosAnios.grupos[0].filas[0], antes: null }, dosAnios.antes, dosAnios.despues).antes, 'sin dato en la toma del 20/11/2025');
   textosGenerados.ANTROPOMETRIA.push(perfil.descripcion, ...perfil.grupos.flatMap((g) => g.filas.flatMap((f) => Object.values(P.filaEnPalabras(f, perfil.antes, perfil.despues)))));
 });
 
@@ -648,10 +690,25 @@ test('TEST-GRF-053 · los archivos de la rama: ningún .ts con un .tsx del mismo
   }
 });
 
-test('TEST-GRF-054 · las pantallas que ya existían: «Registros» suma «Día por día» arriba de la lista y «Evolución» suma «Por sitio» y «Por método», con su código cargado al dibujarse', () => {
+test('TEST-GRF-054 · las pantallas que ya existían: «Registros» suma «Día por día» arriba de la lista (y al releer en silencio no salta) y «Evolución» suma «Por sitio» y «Por método», con su código cargado al dibujarse (mutación: volver a «cargando» al releer las comidas)', () => {
   const registros = readFileSync(join(WEB, 'src/app/pro/advisees/nutrition/registros.tsx'), 'utf8');
   assert.match(registros, /dynamic\(\(\) => import\('\.\.\/graficos\/nutricion\/dia-por-dia-en-registros'\)/);
   assert.ok(registros.indexOf('<DiaPorDia ') < registros.indexOf('<Contraste '), '«Día por día» va arriba de la lista');
+  // «Registros» relee en silencio después de guardar una estimación, para que la lista no salte: el gráfico de arriba
+  // tampoco vuelve a «cargando» (su alto cambiaría y movería la lista).
+  const vez = ['t', 'a', '2026-11-01', '2026-11-30', 0];
+  assert.equal(LEIDO.esLaMismaLectura(null, vez), false, 'la primera lectura carga');
+  assert.equal(LEIDO.esLaMismaLectura(vez, [...vez]), true, 'lo mismo, releído: sigue a la vista');
+  assert.equal(LEIDO.esLaMismaLectura(vez, ['t', 'a', '2026-10-01', '2026-11-30', 0]), false, 'otro período carga');
+  assert.equal(LEIDO.esLaMismaLectura(vez, ['t', 'a', '2026-11-01', '2026-11-30', 1]), false, '«Reintentar» carga');
+  const leido = readFileSync(join(GRAFICOS, 'nutricion-y-cuerpo/grafico-leido.tsx'), 'utf8');
+  assert.match(leido, /if \(!esLaMismaLectura\(leidoCon\.current, identidad\)\) setEstado\(\{ tipo: 'CARGANDO' \}\);/);
+  assert.match(leido, /\}, \[\.\.\.deps, \.\.\.refrescos, vuelta\]\);/);
+  assert.match(
+    readFileSync(join(GRAFICOS, 'nutricion/indicado-y-registrado-por-dia-en-pantalla.tsx'), 'utf8'),
+    /\[lectura\.token, lectura\.asesoradoId, desde, hasta\],\s*\[contraste\],/,
+    'las comidas releídas son un refresco, no otra lectura',
+  );
   const evolucion = readFileSync(join(WEB, 'src/app/pro/advisees/anthropometry/evolucion.tsx'), 'utf8');
   assert.match(evolucion, /import\('\.\.\/graficos\/antropometria\/vistas-de-evolucion'\)/);
   assert.match(evolucion, /aria-pressed=\{manera === m\.clave\}/, 'la vista elegida se dice, no solo se ve');

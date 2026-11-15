@@ -34,7 +34,15 @@ export function MacrosEnPaneles({ lectura, periodo, densidad }: PropsDelGrafico)
     const leido = tarde.tipo === 'LISTO' ? tarde.datos : null;
     return {
       tipo: 'LISTO',
-      datos: graficoDeMacros({ resultados, macros: MACROS_DEL_GRAFICO, cargadoTarde: leido?.dias ?? null, cargadoTardeSabidoDesde: leido?.sabidoDesde ?? null, desde, hasta: periodo.hasta }),
+      datos: graficoDeMacros({
+        resultados,
+        macros: MACROS_DEL_GRAFICO,
+        cargadoTarde: leido?.dias ?? null,
+        cargadoTardeSabidoDesde: leido?.sabidoDesde ?? null,
+        desde,
+        hasta: periodo.hasta,
+        parcial: macros.datos.some((m) => m.parcial),
+      }),
     };
   }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.desdeElVinculo]);
   return <GraficoOEstado titulo={C.macros.titulo} estado={estado} reintentar={reintentar} periodo={periodo} densidad={densidad} />;
@@ -71,6 +79,8 @@ export function MacrosPorKilo({ lectura, periodo, densidad }: PropsDelGrafico) {
         hasta: periodo.hasta,
         pesos: pesos.datos.pesos,
         pesoBuscadoDesde: pesos.datos.buscadoDesde,
+        parcial: macros.datos.some((m) => m.parcial),
+        pesosParciales: pesos.datos.parcial,
       }),
     };
   }, [lectura.token, lectura.asesoradoId, periodo.desde, periodo.hasta, periodo.desdeElVinculo]);

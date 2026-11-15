@@ -284,5 +284,12 @@ export function temporadasUbicadas(temporadas: readonly TemporadaDelLienzo[], es
   });
 }
 
-/** El mismo día y mes de la base («3/11»), para los rótulos de las temporadas. */
-export const diaYMes = (fecha: string): string => `${Number(fecha.slice(8, 10))}/${Number(fecha.slice(5, 7))}`;
+/**
+ * El mismo día y mes de la base («3/11»), para los rótulos. Con una `referencia` de otro año (el último día del gráfico o
+ * la toma más nueva), lleva el año («3/11/2025»): el peso de una toma de hace casi un año, o una versión que rige desde el
+ * año pasado, no se leen como de este año.
+ */
+export const diaYMes = (fecha: string, referencia?: string): string => {
+  const corto = `${Number(fecha.slice(8, 10))}/${Number(fecha.slice(5, 7))}`;
+  return referencia !== undefined && referencia.slice(0, 4) !== fecha.slice(0, 4) ? `${corto}/${fecha.slice(0, 4)}` : corto;
+};

@@ -22,3 +22,12 @@ export type GraficoLeido<T> =
 export type FallaDeLaLectura = Exclude<Leido<never>, { readonly tipo: 'LISTO' }>;
 
 export const esFalla = <T>(l: Leido<T>): l is Extract<Leido<T>, { readonly tipo: 'SIN_ACCESO' | 'ERROR' | 'SESION' }> => l.tipo !== 'LISTO';
+
+/**
+ * Si una lectura nueva es de lo mismo que la anterior (la misma persona y el mismo período, sin «Reintentar»): entonces lo
+ * que se ve sigue a la vista hasta que llega lo nuevo y la página no salta, como «Registros» cuando relee en silencio
+ * después de guardar. Compara cada dependencia con `Object.is`; sin una lectura anterior, no es la misma.
+ */
+export function esLaMismaLectura(anterior: readonly unknown[] | null, ahora: readonly unknown[]): boolean {
+  return anterior !== null && anterior.length === ahora.length && ahora.every((d, i) => Object.is(d, anterior[i]));
+}

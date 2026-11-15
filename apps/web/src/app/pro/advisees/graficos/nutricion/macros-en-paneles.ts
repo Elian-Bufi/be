@@ -15,7 +15,7 @@ import type { CeldaDeLaTabla, FilaDeLaTabla } from '../tabla-equivalente';
 import { diaYMes, huecosEnTexto, type ElementoDeLaLeyenda, type GraficoArmado, type MarcaDelPanel, type PanelDeValores } from '../nutricion-y-cuerpo/lienzo';
 import { COPY_NUTRICION_EN_GRAFICOS as C, contar, enumerar } from './copy';
 import { calidadDelDia, lecturaDelDia, marcaDelDia, puntosPorFecha, type MetricaDelGrafico } from './dias-de-nutricion';
-import { leyendaDeLosDias, marcasDeLosDias, notasDeLoCargadoDespues } from './energia-por-dia';
+import { leyendaDeLosDias, marcasDeLosDias, notasDeLaVistaParcial, notasDeLoCargadoDespues } from './energia-por-dia';
 import { pesoDelDia, pesoEnPalabras, pesosUsados, serieAnaliticaPorKilo, type PesoDeLaToma } from './gramos-por-kilo';
 import { escalonesDelObjetivo, objetivoDelDia, proporcionesDelObjetivo, temporadasDeNutricion } from './temporadas';
 
@@ -46,6 +46,8 @@ export interface EntradaDeMacros {
   readonly cargadoTardeSabidoDesde?: string | null;
   readonly desde: string;
   readonly hasta: string;
+  /** Alguna lectura respondió con `partialView`: hay registros de comida de otro profesional que no se ven ni suman. */
+  readonly parcial?: boolean;
 }
 
 const valorPorKilo = (v: number): string => `${numero(v, 2)} g/kg`;
@@ -110,7 +112,8 @@ export function graficoDeMacros(e: EntradaDeMacros): GraficoArmado {
       C.macros.fibraDesconocida,
       C.diaSinRegistros,
       ...e.macros.flatMap((m, i) => proporcionesDelObjetivo(e.resultados[i]!.prescribed.objectiveSteps, m.metrica, m.nombre, desde, hasta)),
-      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde),
+      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde, hasta),
+      ...notasDeLaVistaParcial(e.parcial),
     ],
   };
 }
@@ -120,12 +123,14 @@ export interface EntradaDeMacrosPorKilo extends EntradaDeMacros {
   readonly pesos: readonly PesoDeLaToma[];
   /** Desde cuándo se buscó el peso anterior al período; `null` si no se buscó antes. */
   readonly pesoBuscadoDesde: string | null;
+  /** La lectura de los pesos respondió con `partialView`: hay tomas de otro profesional, y su peso no se usa. */
+  readonly pesosParciales?: boolean;
 }
 
 /** GR-13 en gramos por kilo de peso: los mismos días, con la fecha del peso que usó cada uno. */
 export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado {
   const { desde, hasta } = e;
-  const series = e.macros.map((m, i) => serieAnaliticaPorKilo(e.resultados[i]!.recorded, e.pesos, `${m.serie}-por-kilo`, `${m.nombre} por kilo de peso`));
+  const series = e.macros.map((m, i) => serieAnaliticaPorKilo(e.resultados[i]!.recorded, e.pesos, `${m.serie}-por-kilo`, `${m.nombre} por kilo de peso`, hasta));
   const paneles = e.macros.map((m, i): PanelDeValores => ({
     tipo: 'VALORES',
     id: `${m.serie}-por-kilo`,
@@ -151,7 +156,7 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
     // Sin una toma anterior no hay g/kg, aunque haya gramos: la celda lo dice una vez y sin marca (no se dibuja).
     if (peso === null) return { texto: `${C.sinValor(C.porKilo.sinPesoAnterior)}${tarde ? ` (${C.cargadoDespues})` : ''}`, marca: null, tarde };
     const calidad = calidadDelDia(p, tarde);
-    const texto = p.value === null ? [calidad, pesoEnPalabras(peso)].join(' · ') : [valorPorKilo(p.value), calidad, pesoEnPalabras(peso)].join(' · ');
+    const texto = p.value === null ? [calidad, pesoEnPalabras(peso, hasta)].join(' · ') : [valorPorKilo(p.value), calidad, pesoEnPalabras(peso, hasta)].join(' · ');
     return { texto, marca: marcaDelDia(p), tarde };
   });
   const conValorEnGramos = [...new Set(e.resultados.flatMap((r) => [...puntosPorFecha(r.recorded.points, desde, hasta).values()].filter((p) => p.value !== null).map((p) => p.date)))].sort();
@@ -160,7 +165,7 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
   const primera = e.resultados[0];
   const temporadas = primera ? temporadasDeNutricion(primera.planVersions, primera.prescribed.objectiveSteps, desde, hasta) : [];
   const marcas = paneles.flatMap((p) => p.marcas);
-  const listaDePesos = enumerar(usados.map((p) => `${numero(p.valor)} kg (toma del ${diaYMes(p.fecha)})`));
+  const listaDePesos = enumerar(usados.map((p) => `${numero(p.valor)} kg (toma del ${diaYMes(p.fecha, hasta)})`));
   return {
     paneles,
     temporadas,
@@ -179,9 +184,11 @@ export function graficoDeMacrosPorKilo(e: EntradaDeMacrosPorKilo): GraficoArmado
       C.porKilo.pesoViejo,
       ...(usados.length > 0 ? [C.porKilo.pesosUsados(listaDePesos)] : e.pesos.length === 0 ? [C.porKilo.sinPesos] : []),
       ...(sinPeso > 0 ? [C.porKilo.diasSinPeso(sinPeso)] : []),
-      ...(e.pesoBuscadoDesde !== null ? [C.porKilo.buscadoDesde(diaYMes(e.pesoBuscadoDesde))] : []),
+      ...(e.pesoBuscadoDesde !== null ? [C.porKilo.buscadoDesde(diaYMes(e.pesoBuscadoDesde, hasta))] : []),
       C.loRegistrado,
-      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde),
+      ...notasDeLoCargadoDespues(e.cargadoTarde, e.cargadoTardeSabidoDesde, hasta),
+      ...notasDeLaVistaParcial(e.parcial),
+      ...(e.pesosParciales ? [C.porKilo.tomasDeOtro] : []),
     ],
   };
 }

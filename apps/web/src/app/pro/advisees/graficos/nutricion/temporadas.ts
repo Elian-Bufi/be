@@ -30,7 +30,7 @@ export function temporadasDeNutricion(versiones: readonly VigenciaDePlan[], obje
         tipo: 'PLAN',
         desde: v.from,
         hasta: v.to,
-        rotulo: C.temporadaDelPlan(v.label, diaYMes(v.from)),
+        rotulo: C.temporadaDelPlan(v.label, diaYMes(v.from, hasta)),
         corto: C.temporadaDelPlanCorta(v.label),
       }),
     );
@@ -44,7 +44,7 @@ export function temporadasDeNutricion(versiones: readonly VigenciaDePlan[], obje
         tipo: 'OBJETIVO',
         desde: e.from,
         hasta: e.to,
-        rotulo: C.temporadaDelObjetivo(diaYMes(e.from)),
+        rotulo: C.temporadaDelObjetivo(diaYMes(e.from, hasta)),
         corto: C.temporadaDelObjetivoCorta,
       }),
     );
@@ -73,7 +73,7 @@ export function escalonesDelObjetivo(objetivo: readonly EscalonDelObjetivoApi[],
 export function proporcionesDelObjetivo(objetivo: readonly EscalonDelObjetivoApi[], metrica: MetricaDelGrafico, nombre: string, desde: string, hasta: string): string[] {
   return escalonesDelRango(objetivo, desde, hasta)
     .filter((t) => t.escalon.amount === null)
-    .map((t) => C.proporcion(nombre, diaYMes(t.desde), objetivoEnPalabras(t.escalon, metrica)));
+    .map((t) => C.proporcion(nombre, diaYMes(t.desde, hasta), objetivoEnPalabras(t.escalon, metrica)));
 }
 
 /** El objetivo que regía un día, para la lectura y la tabla: «objetivo 2.200 kcal», o `null` si no regía ninguno. */

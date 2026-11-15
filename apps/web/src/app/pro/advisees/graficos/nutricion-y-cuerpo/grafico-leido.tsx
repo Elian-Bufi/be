@@ -6,23 +6,34 @@
  * lee guarda su alto (no mueve la página); sin acceso no dibuja nada, ni siquiera el título: un área sin acceso no deja
  * rastro. Una falla no es un vacío: lo dice y ofrece «Reintentar».
  */
-import { useEffect, useState, type DependencyList, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type DependencyList, type ReactNode } from 'react';
 import type { PeriodoDelGrafico } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import type { DensidadDelGrafico } from '../paneles-alineados';
-import type { GraficoLeido } from './leido';
+import { esLaMismaLectura, type GraficoLeido } from './leido';
 import type { GraficoArmado } from './lienzo';
 import { LienzoDeNutricionYCuerpo } from './lienzo-en-pantalla';
 
 export type EstadoDeLaLectura<T> = GraficoLeido<T> | { readonly tipo: 'CARGANDO' };
 
-/** Lee al montar y cada vez que cambian `deps`; `reintentar` vuelve a leer. */
-export function useGraficoLeido<T>(leer: () => Promise<GraficoLeido<T>>, deps: DependencyList): { readonly estado: EstadoDeLaLectura<T>; readonly reintentar: () => void } {
+/**
+ * Lee al montar y cada vez que cambian `deps` (la persona, el período): mientras lee, guarda su alto. Si cambia solo algo
+ * de `refrescos` (lo mismo, leído otra vez), lo que se ve sigue a la vista hasta que llega lo nuevo: la página no salta
+ * (`esLaMismaLectura`). `reintentar` vuelve a leer desde «cargando».
+ */
+export function useGraficoLeido<T>(
+  leer: () => Promise<GraficoLeido<T>>,
+  deps: DependencyList,
+  refrescos: DependencyList = [],
+): { readonly estado: EstadoDeLaLectura<T>; readonly reintentar: () => void } {
   const [estado, setEstado] = useState<EstadoDeLaLectura<T>>({ tipo: 'CARGANDO' });
   const [vuelta, setVuelta] = useState(0);
+  const leidoCon = useRef<readonly unknown[] | null>(null);
   useEffect(() => {
     let vigente = true;
-    setEstado({ tipo: 'CARGANDO' });
+    const identidad = [...deps, vuelta];
+    if (!esLaMismaLectura(leidoCon.current, identidad)) setEstado({ tipo: 'CARGANDO' });
+    leidoCon.current = identidad;
     leer().then(
       (r) => {
         // Con la sesión perdida la pantalla ya va al ingreso: no se cambia nada.
@@ -35,9 +46,9 @@ export function useGraficoLeido<T>(leer: () => Promise<GraficoLeido<T>>, deps: D
     return () => {
       vigente = false;
     };
-    // `leer` cambia en cada dibujo: lo que decide volver a leer son `deps` y «Reintentar».
+    // `leer` cambia en cada dibujo: lo que decide volver a leer son `deps`, `refrescos` y «Reintentar».
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, vuelta]);
+  }, [...deps, ...refrescos, vuelta]);
   return { estado, reintentar: () => setVuelta((v) => v + 1) };
 }
 
