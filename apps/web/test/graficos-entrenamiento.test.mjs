@@ -323,6 +323,11 @@ test('TEST-GRF-025 · GR-02: lleno hasta 10 repeticiones equivalentes, hueco de 
     [['2026-10-12', '2026-10-16']],
     'la línea no cruza el 9/10 ni pasa por lo observado',
   );
+  // Sin estimaciones en la unidad (la API trae la línea vacía, con las series que no entraron): no se dibuja un gráfico
+  // vacío, se dice qué falta, como la tarjeta (mutación: dibujar los paneles con el carril sin puntos).
+  const pantalla = leer('graficos/entrenamiento/fuerza-estimada-en-pantalla.tsx');
+  assert.ok(pantalla.includes('if (!dibujo || dibujo.carril.puntos.length === 0) {'), 'sin puntos, el estado vacío y no los paneles');
+  assert.ok(pantalla.includes('const falta = loQueHaceFalta(linea?.noEntraron ?? []);'), 'el estado vacío dice qué falta');
 });
 
 // ─── GR-03 · carga, repeticiones y RIR ──────────────────────────────────────────────────────────

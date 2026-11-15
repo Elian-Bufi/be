@@ -17,7 +17,7 @@
  */
 import { entraEnLaEstimacion, type SentidoDeLaMarca } from '@be/domain';
 import { useId, useMemo, useState } from 'react';
-import { sesionesSoloOrientativas } from '../../fuerza/fuerza';
+import { loQueHaceFalta, sesionesSoloOrientativas } from '../../fuerza/fuerza';
 import { useLecturaDeFuerza } from '../../fuerza/lectura-de-fuerza';
 import { inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
@@ -85,13 +85,22 @@ export function FuerzaEstimada({ lectura, periodo, densidad, ejercicio, bandas, 
       <span>{C.incluir}</span>
     </label>
   );
-  if (!dibujo) {
+  // Sin estimaciones en esta unidad (también cuando la API trae la línea vacía, con las series que no entraron): no se
+  // dibuja un gráfico vacío; se dice qué falta, como la tarjeta (ED-75) y «Analizar · Fuerza».
+  if (!dibujo || dibujo.carril.puntos.length === 0) {
+    const falta = loQueHaceFalta(linea?.noEntraron ?? []);
     return (
       <section className="grafico-de-entrenamiento" aria-labelledby={`${id}-titulo`} data-grafico="GR-02">
         <h3 id={`${id}-titulo`} className="grafico-base__titulo">
           {C.titulo}
         </h3>
         <EstadoDelGraficoEnPantalla estado={{ tipo: 'SIN_DATOS', texto: C.sinPuntos }} />
+        {falta.motivos ? (
+          <p className="nota" data-lo-que-hace-falta>
+            {falta.motivos}
+          </p>
+        ) : null}
+        <p className="nota">{falta.regla}</p>
         {interruptor}
       </section>
     );
