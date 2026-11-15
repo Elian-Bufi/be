@@ -6,8 +6,9 @@
  * Esta guardia lee el 09 (solo lectura: el legajo está en el manifiesto y no se toca) y exige:
  * 1. una operación con un ID del inventario P0 del 09 tiene el método y la ruta que el 09 le da;
  * 2. una operación con un ID que no está en el inventario es una extensión declarada de BE, con una familia propia
- *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES, MFA, SOP, FZA, INC, MET), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
- *    nombra o con un ID nuevo de una familia del 09 que el 09 no usa, declarado con su DL (API-ACC-07), y cita su fuente;
+ *    (TPL, TPN, HAB, HAN, CAR, REC, MED, ING, SER, EJE, TIE, EVI, VAN, NOV, INV, GOO, ADM, ZON, FRI, HBT, PLN, PLE, RES, MFA, SOP, FZA, INC, MET, NPP), con un sufijo sobre un ID del 09 (LISTA, PROPIA, PERIODO), con un ID P1 que el 09
+ *    nombra o con un ID nuevo de una familia del 09 que el 09 no usa, declarado con su DL (API-ACC-07, API-TRN-25), con o sin
+ *    sufijo, y cita su fuente;
  * 3. ningún ID se repite.
  * Requiere `npm run build:domain` antes.
  */
@@ -48,8 +49,11 @@ const { OPERACIONES } = require(path.join(RAIZ, 'packages/domain/dist/openapi.js
  * INC y MET (DL-172, pedido de Dirección del 2026-11-13): las incidencias de RF-068 y los métodos de acceso de RF-004. El 09
  * v0.12 los bosqueja como superficies candidatas (§16 y §12), con rutas y sin IDs; BE las declara como familias propias y
  * conserva las rutas del bosquejo (las de Administración, bajo /admin).
+ * NPP (DL-173, PG-16 de WP-PULIDO-GRANDES, con PG-D11 aprobada por Dirección el 2026-11-14): las notas propias del
+ * profesional sobre una persona, que solo lee su autor. El 09 no las tiene; no son la nota de coordinación (API-CRD-01),
+ * que se manda a otros profesionales.
  */
-const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169', FZA: 'DL-171', INC: 'DL-172', MET: 'DL-172' };
+const FAMILIAS_DE_BE = { TPL: 'DL-108', TPN: 'DL-108', HAB: 'DL-109', HAN: 'DL-109', CAR: 'DL-107 y DL-116', REC: 'DL-119', MED: 'DL-120', ING: 'DL-121', SER: 'DL-122', EJE: 'DL-123', TIE: 'DL-124', EVI: 'DL-125', VAN: 'DL-128', NOV: 'DL-133', INV: 'DL-136', AGE: 'DL-137', GOO: 'DL-138', ADM: 'DL-155', ZON: 'DL-081', FRI: 'DL-164', HBT: 'DL-165', PLN: 'DL-163', PLE: 'DL-163', RES: 'DL-163', MFA: 'DL-169', SOP: 'DL-169', FZA: 'DL-171', INC: 'DL-172', MET: 'DL-172', NPP: 'DL-173' };
 /**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
@@ -65,10 +69,12 @@ const IDS_DEL_09_FUERA_DEL_INVENTARIO = { 'API-RGT-01': 'DL-169', 'API-RGT-02': 
 /**
  * Los IDs nuevos dentro de una familia del 09 que el 09 no usa, cada uno con la DL que lo declara. El 09 tiene API-ACC-01
  * a 06 y las P1; DL-169 (WP-USO-FINAL, UF-D4, ratificada por Dirección el 2026-11-11) suma API-ACC-07, «Lo que falta para
- * seguir», y API-ACC-08, «Aceptar la versión vigente» de los términos o de la privacidad (UF-05). La guardia exige además
+ * seguir», y API-ACC-08, «Aceptar la versión vigente» de los términos o de la privacidad (UF-05). DL-173 (PG-15 de
+ * WP-PULIDO-GRANDES, con PG-D10 aprobada por Dirección el 2026-11-14) suma API-TRN-25, la nota para el profe al finalizar
+ * la sesión: el 09 llega a API-TRN-24. Sus variantes (LISTA y PROPIA) son sufijos sobre ese ID. La guardia exige además
  * que el 09 no tenga ese ID: si lo usara, serían dos operaciones con el mismo nombre.
  */
-const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169', 'API-ACC-08': 'DL-169', 'API-ACC-09': 'DL-169' };
+const IDS_NUEVOS_EN_FAMILIAS_DEL_09 = { 'API-ACC-07': 'DL-169', 'API-ACC-08': 'DL-169', 'API-ACC-09': 'DL-169', 'API-TRN-25': 'DL-173' };
 
 const normalizar = (ruta) => ruta.replace(/^\/api\/v1/, '').replace(/\?.*$/, '').replace(/\{[^}]+\}/g, '{}').replace(/\/$/, '');
 
@@ -135,7 +141,7 @@ test('un ID fuera del inventario es una extensión declarada de BE y cita su fue
     const p1 = /^API-[A-Z]+-P1-\d{2}$/.test(op.id) && del09.has(op.id);
     const nuevoEnFamiliaDel09 = op.id in IDS_NUEVOS_EN_FAMILIAS_DEL_09 && !del09.has(op.id);
     const del09FueraDelInventario = op.id in IDS_DEL_09_FUERA_DEL_INVENTARIO && del09.has(op.id);
-    const baseDelSufijo = sufijo && (inventario.has(sufijo[1]) || sufijo[1] in IDS_DEL_09_FUERA_DEL_INVENTARIO);
+    const baseDelSufijo = sufijo && (inventario.has(sufijo[1]) || sufijo[1] in IDS_DEL_09_FUERA_DEL_INVENTARIO || sufijo[1] in IDS_NUEVOS_EN_FAMILIAS_DEL_09);
     const declarada = (familia && familia[1] in FAMILIAS_DE_BE) || (baseDelSufijo && SUFIJOS_DE_BE.includes(sufijo[2])) || p1 || nuevoEnFamiliaDel09 || del09FueraDelInventario;
     if (!declarada || !op.fuente || !op.fuente.trim()) sinDeclarar.push(op.id);
   }
@@ -178,4 +184,11 @@ test('ED-72 · la familia FZA cita DL-171 en cada operación y el 09 no la usa (
   assert.deepEqual(fza.map((o) => o.id), ['API-FZA-01', 'API-FZA-02', 'API-FZA-03']);
   for (const o of fza) assert.ok(o.fuente.includes('DL-171'), `${o.id} no cita DL-171`);
   assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-FZA-')), []);
+});
+
+test('PG-15 y PG-16 · API-TRN-25 y sus variantes, y la familia NPP, citan DL-173; el 09 no usa ninguno (TEST-PG-014 y TEST-PG-015)', () => {
+  const notas = OPERACIONES.filter((o) => /^API-TRN-25(-|$)/.test(o.id) || o.id.startsWith('API-NPP-'));
+  assert.deepEqual(notas.map((o) => o.id), ['API-TRN-25', 'API-TRN-25-LISTA', 'API-TRN-25-PROPIA', 'API-NPP-01', 'API-NPP-02', 'API-NPP-03']);
+  for (const o of notas) assert.ok(o.fuente.includes('DL-173'), `${o.id} no cita DL-173`);
+  assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-NPP-') || id.startsWith('API-TRN-25')), []);
 });

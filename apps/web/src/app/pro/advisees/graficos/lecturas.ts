@@ -17,7 +17,9 @@
  */
 import {
   claveDeReferencia,
+  DIAS_MAXIMOS_DE_LAS_NOTAS_DE_LAS_SESIONES,
   definicionDeMetrica,
+  fechaCivil,
   serieDisponible,
   type Alcance,
   type DominioDeAnalisis,
@@ -26,7 +28,9 @@ import {
   type EntradaDeLineaDeTiempo,
   type FiltroDeLineaDeTiempo,
   type Grano,
+  type LineaDeTiempoResponse,
   type Medida,
+  type NotaPropia,
   type ObjetivosDeLaVersion,
   type ReferenciaDeMetrica,
   type ResultadoDeProyeccionNutricional,
@@ -36,8 +40,8 @@ import {
 import { api, type Resultado } from '../../../../lib/api';
 import { limitarLectura, motivoDeFalla, type MotivoDeFalla } from '../seguimiento/contexto';
 import { granoPara, leerSerie, type EstadoDeSerie } from '../seguimiento/series';
-import { objetivosDelPlanLeido, serieDeLaFuerza, serieDeLoIndicado } from './adaptadores';
-import { ESTADOS_DE_LA_CINTA, TIPOS_DE_HITO_DE_LA_CINTA } from './cinta-del-tiempo';
+import { ejercicioDeLaEstimacion, objetivosDelPlanLeido, serieDeLaFuerza, serieDeLoIndicado } from './adaptadores';
+import { ESTADOS_DE_LA_CINTA, TIPOS_DE_HITO_DE_LA_CINTA, tramosDeLaCinta, ZONA_POR_DEFECTO, type NotaDeLaSesionDeLaCinta } from './cinta-del-tiempo';
 import { inicioDelEje, tramosDe, type PeriodoDelGrafico } from './eje-de-fechas';
 
 export interface ParametrosDeLectura {
@@ -231,23 +235,48 @@ export const PAGINAS_DE_LA_CINTA = 4;
 const POR_PAGINA = 50;
 
 export type LecturaDeLaCinta =
-  | { readonly tipo: 'lista'; readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly truncada: boolean }
+  | {
+      readonly tipo: 'lista';
+      readonly entradas: readonly EntradaDeLineaDeTiempo[];
+      /** PG-15 (API-TRN-25-LISTA), vacía sin Entrenamiento. */
+      readonly notasDeLaSesion: readonly NotaDeLaSesionDeLaCinta[];
+      /** PG-16 (API-NPP-02). */
+      readonly notasPropias: readonly NotaPropia[];
+      /** La zona de la persona, para el día civil de una nota propia. */
+      readonly zona: string;
+      readonly truncada: boolean;
+    }
   | { readonly tipo: 'sin-acceso' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
 
-/** Todas las páginas de un pedido a API-DSH-04, hasta el tope; la primera falla corta. */
-async function leerLasPaginas(p: ParametrosDeLectura, filtro: FiltroDeLineaDeTiempo): Promise<{ readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly truncada: boolean } | { readonly falla: Resultado<unknown> }> {
+/**
+ * Todas las páginas de un pedido a API-DSH-04, por tramos de hasta 366 días del más reciente al más antiguo, hasta el tope
+ * de páginas del pedido; la primera falla corta. Si queda algo sin leer, `truncada`: lo que falta es lo más antiguo.
+ */
+async function leerLasPaginas(
+  p: ParametrosDeLectura,
+  filtro: FiltroDeLineaDeTiempo,
+  desde: string,
+  hasta: string,
+): Promise<{ readonly entradas: readonly EntradaDeLineaDeTiempo[]; readonly truncada: boolean } | { readonly falla: Resultado<unknown> }> {
   const entradas: EntradaDeLineaDeTiempo[] = [];
-  let cursor: string | null = null;
-  for (let pagina = 0; pagina < PAGINAS_DE_LA_CINTA; pagina++) {
-    const desde: string | null = cursor;
-    const r = await limitarLectura(() => api.lineaDeTiempo(p.token, p.asesoradoId, { ...filtro, limit: String(POR_PAGINA), ...(desde ? { cursor: desde } : {}) }));
-    if (!r.ok) return { falla: r };
-    entradas.push(...r.datos.data.entries);
-    if (!r.datos.page.hasMore || r.datos.page.nextCursor === null) return { entradas, truncada: false };
-    cursor = r.datos.page.nextCursor;
+  let paginas = 0;
+  for (const tramo of tramosDeLaCinta(desde, hasta)) {
+    let cursor: string | null = null;
+    for (;;) {
+      if (paginas === PAGINAS_DE_LA_CINTA) return { entradas, truncada: true };
+      paginas++;
+      const deEstaPagina: string | null = cursor;
+      const r: Resultado<LineaDeTiempoResponse> = await limitarLectura(() =>
+        api.lineaDeTiempo(p.token, p.asesoradoId, { ...filtro, periodStart: tramo.desde, periodEnd: tramo.hasta, limit: String(POR_PAGINA), ...(deEstaPagina ? { cursor: deEstaPagina } : {}) }),
+      );
+      if (!r.ok) return { falla: r };
+      entradas.push(...r.datos.data.entries);
+      if (!r.datos.page.hasMore || r.datos.page.nextCursor === null) break;
+      cursor = r.datos.page.nextCursor;
+    }
   }
-  return { entradas, truncada: true };
+  return { entradas, truncada: false };
 }
 
 /**
@@ -259,19 +288,42 @@ export function leerLaCinta(p: ParametrosDeLectura, alcances: readonly Alcance[]
   const desde = inicioDelEje(p.periodo);
   const conSesiones = alcances.includes('ENTRENAMIENTO');
   return compartirLecturaEnCurso(`cinta|${p.asesoradoId}|${desde}|${p.periodo.hasta}|${conSesiones}`, async (): Promise<LecturaDeLaCinta | null> => {
-    if (p.periodo.hasta < desde) return { tipo: 'lista', entradas: [], truncada: false };
-    const base: FiltroDeLineaDeTiempo = { periodStart: desde, periodEnd: p.periodo.hasta, state: ESTADOS_DE_LA_CINTA.join(',') };
-    const [hitos, sesiones] = await Promise.all([
-      leerLasPaginas(p, { ...base, type: TIPOS_DE_HITO_DE_LA_CINTA.join(',') }),
-      conSesiones ? leerLasPaginas(p, { ...base, type: 'TRAINING_SESSION_RECORDED', quality: 'SESSION_WITH_DEVIATION' }) : Promise.resolve({ entradas: [], truncada: false }),
+    if (p.periodo.hasta < desde) return { tipo: 'lista', entradas: [], notasDeLaSesion: [], notasPropias: [], zona: ZONA_POR_DEFECTO, truncada: false };
+    const base: FiltroDeLineaDeTiempo = { state: ESTADOS_DE_LA_CINTA.join(',') };
+    const [hitos, sesiones, notasDeLaSesion, notasPropias] = await Promise.all([
+      leerLasPaginas(p, { ...base, type: TIPOS_DE_HITO_DE_LA_CINTA.join(',') }, desde, p.periodo.hasta),
+      conSesiones ? leerLasPaginas(p, { ...base, type: 'TRAINING_SESSION_RECORDED', quality: 'SESSION_WITH_DEVIATION' }, desde, p.periodo.hasta) : Promise.resolve({ entradas: [], truncada: false }),
+      // PG-15: las notas de la persona al finalizar, solo con Entrenamiento y en tramos de 92 días (lo que admite la API).
+      conSesiones ? leerEnTramos(p.periodo, DIAS_MAXIMOS_DE_LAS_NOTAS_DE_LAS_SESIONES, (d, h) => api.notasDeLasSesiones(p.token, p.asesoradoId, { periodStart: d, periodEnd: h })) : Promise.resolve(null),
+      // PG-16: las notas propias; solo las lee su autor, y la API lo decide.
+      limitarLectura(() => api.notasPropias(p.token, p.asesoradoId)),
     ]);
     for (const parte of [hitos, sesiones]) {
       if (!('falla' in parte)) continue;
       if (p.sesionPerdida(parte.falla)) return null;
       return sinAcceso(parte.falla) ? { tipo: 'sin-acceso' } : { tipo: 'error', motivo: motivoDeFalla(parte.falla) };
     }
+    // Una nota que no se pudo leer no es «sin notas»: la cinta dice la falla. Un 404 es que esa fuente no está con esta persona.
+    for (const falla of [notasDeLaSesion?.falla ?? null, notasPropias.ok ? null : notasPropias]) {
+      if (falla === null || sinAcceso(falla)) continue;
+      if (p.sesionPerdida(falla)) return null;
+      return { tipo: 'error', motivo: motivoDeFalla(falla) };
+    }
     const leidas = [hitos, sesiones].flatMap((parte) => ('falla' in parte ? [] : [parte]));
-    return { tipo: 'lista', entradas: leidas.flatMap((parte) => parte.entradas), truncada: leidas.some((parte) => parte.truncada) };
+    const entradas = leidas.flatMap((parte) => parte.entradas);
+    const propias = notasPropias.ok ? notasPropias.datos.data : [];
+    const zona = entradas[0]?.timeZone ?? (notasDeLaSesion?.partes[0]?.data.period.timeZone ?? ZONA_POR_DEFECTO);
+    // API-NPP-02 trae las más nuevas primero: si quedaron más y la más vieja leída cae en el período, faltan las anteriores.
+    const masViejaLeida = propias.at(-1);
+    const propiasTruncadas = notasPropias.ok && notasPropias.datos.page.hasMore && masViejaLeida !== undefined && fechaCivil(masViejaLeida.recordedAt, zona) >= desde;
+    return {
+      tipo: 'lista',
+      entradas,
+      notasDeLaSesion: notasDeLaSesion && !notasDeLaSesion.falla ? notasDeLaSesion.partes.flatMap((x) => x.data.notes) : [],
+      notasPropias: propias,
+      zona,
+      truncada: leidas.some((parte) => parte.truncada) || propiasTruncadas,
+    };
   });
 }
 
@@ -283,12 +335,16 @@ export async function leerSerieDelCatalogo(p: ParametrosDeLectura, ref: Referenc
   if (serie.fuente.tipo === 'CONTEXTO_DE_REVISION') return leerLoIndicado(p, ref, serie);
   if (serie.fuente.tipo !== 'PROYECCION') return { tipo: 'sin-especificacion' };
   if (serie.fuente.clave === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE') {
-    const exerciseId = ref.exerciseKey ? ref.exerciseKey.replace(/^e:/, '') : null;
+    // La serie pide un ejercicio del catálogo (`e:`) de la lista de la v1 (RM-16, DL-171): una versión suelta (`v:`) o
+    // otro ejercicio no tienen estimación, y no se piden.
+    const exerciseId = ejercicioDeLaEstimacion(ref.exerciseKey);
+    if (ref.exerciseKey === null) return { tipo: 'error', motivo: 'OTRO' };
+    if (exerciseId === null) return { tipo: 'sin-especificacion' };
     const r = await limitarLectura(() =>
       api.proyeccion(p.token, p.asesoradoId, 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', {
         periodStart: periodo.desde,
         periodEnd: periodo.hasta,
-        ...(exerciseId ? { exerciseId } : {}),
+        exerciseId,
         ...(ref.unit ? { unit: ref.unit } : {}),
         includeOrientative: 'false',
       }),

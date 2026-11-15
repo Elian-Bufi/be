@@ -10,8 +10,10 @@
  *   filtra) y, si llegara, tampoco se dibuja como «algo pasó». Una nota de coordinación no es un dato de un área: es una
  *   comunicación dirigida a quien la lee (DL-140), y la API decide quién la ve.
  * - Lo anulado no está: ya no cuenta en ningún gráfico.
- * - Las notas de la persona al finalizar (PG-15) y las propias del profesional (PG-16) entran por `otras` cuando se integre
- *   la tanda B. Los hábitos versionados (SP-08) tienen su lugar reservado y no se dibujan hasta su DL (GR-D10).
+ * - Las notas de la persona al finalizar (PG-15, API-TRN-25-LISTA) van en la fila de Entrenamiento, el día de su sesión;
+ *   las notas propias del profesional (PG-16, API-NPP-02), activas, el día que se escribieron, en la fila del área de su
+ *   ancla o en la de las notas. Solo las lee su autor: la API lo decide. Los hábitos versionados (SP-08) tienen su lugar
+ *   reservado y no se dibujan hasta su DL (GR-D10).
  * - La cinta ubica, no explica: nada une un hecho con un cambio de otro gráfico.
  *
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs` (TEST-GRF-019).
@@ -27,13 +29,16 @@ import {
   type EjecucionDeEntrenamiento,
   type EntradaDeLineaDeTiempo,
   type EstadoDeEntrada,
+  fechaCivil,
   type NombreDeIcono,
+  type NotaDeLaSesion,
+  type NotaPropia,
   type TipoDeEvento,
   type VigenciaDePlan,
 } from '@be/domain';
 import { diaAnterior } from '../seguimiento/geometria';
 import type { CarrilDeEventos } from './carriles';
-import { textoDeLaMarca, type CursorDeFechas, type EscalaDeFechas } from './eje-de-fechas';
+import { textoDeLaMarca, tramosDe, type CursorDeFechas, type EscalaDeFechas } from './eje-de-fechas';
 
 export type TipoDeEventoDeLaCinta =
   | 'VERSION_DE_PLAN'
@@ -79,6 +84,8 @@ export const COPY_DE_LA_CINTA = {
   queSeReintenta: 'la cinta del tiempo',
   barra: 'Versión de un plan: una barra, desde el día que empezó a regir',
   grupo: 'Varios hechos juntos: un círculo con la cantidad',
+  notasOcultas: 'El texto de las notas va oculto mientras «Ocultar nombres» está prendido.',
+  mostrarLasNotas: 'Mostrar en esta pantalla',
   leidaHastaElTope: (n: number) => `Se leyeron los ${n} hechos más recientes del período: los anteriores no están en la cinta.`,
 } as const;
 
@@ -91,6 +98,22 @@ export const COPY_DE_LA_CINTA = {
  * los seguimientos y los formularios quedan en la línea de tiempo (GR-T28).
  */
 export const TIPOS_DE_HITO_DE_LA_CINTA: readonly TipoDeEvento[] = ['ANTHROPOMETRIC_EVALUATION_RECORDED', 'NUTRITION_REVIEW_RECORDED', 'TRAINING_REVIEW_RECORDED', 'COORDINATION_NOTE_RECORDED'];
+
+/**
+ * API-DSH-04 lee hasta 366 días por pedido (`DIAS_MAXIMOS_DEL_ANALISIS`; más es 400 PERIOD_TOO_LONG). Un período más largo
+ * («desde el inicio» de un acompañamiento de más de un año) se lee en tramos de 366 días.
+ */
+export const DIAS_POR_LECTURA_DE_LA_CINTA = 366;
+
+/**
+ * Los tramos en que se lee la cinta, del más reciente al más antiguo: si se llega al tope de páginas, lo que queda afuera
+ * es lo más antiguo, que es lo que la cinta dice que falta (GR-T29). Sin días repetidos ni perdidos.
+ */
+export const tramosDeLaCinta = (desde: string, hasta: string): readonly { readonly desde: string; readonly hasta: string }[] =>
+  [...tramosDe(desde, hasta, DIAS_POR_LECTURA_DE_LA_CINTA)].reverse();
+
+/** La zona de BE cuando la lectura no trae la de la persona. */
+export const ZONA_POR_DEFECTO = 'America/Argentina/Buenos_Aires';
 
 /** Los estados que se piden: lo anulado no está en la cinta. */
 export const ESTADOS_DE_LA_CINTA: readonly EstadoDeEntrada[] = ['EFFECTIVE', 'RECTIFIED', 'CORRECTED'];
@@ -163,6 +186,44 @@ function eventosDeSustitucion(ejecuciones: readonly EjecucionDeEntrenamiento[], 
   );
 }
 
+/** Una nota de API-TRN-25-LISTA: lo escrito por la persona, con la fecha de su sesión. */
+export type NotaDeLaSesionDeLaCinta = NotaDeLaSesion & { readonly executionDate: string };
+
+/** Las sesiones (de las leídas) en las que estuvo el ejercicio, indicado o registrado. */
+function sesionesDelEjercicio(ejecuciones: readonly EjecucionDeEntrenamiento[], exerciseKey: string): ReadonlySet<string> {
+  const versiones = identidadDeVersiones(ejecuciones);
+  return new Set(
+    ejecuciones.flatMap((x) => (compararEjecucion(x, versiones).some((c) => `e:${c.prescripto.exerciseId}` === exerciseKey || claveDelRealizado(c) === exerciseKey) ? [x.executionId] : [])),
+  );
+}
+
+/**
+ * Las notas de la persona al finalizar (PG-15) como hechos de Entrenamiento, el día de su sesión. En el cuadro de un
+ * ejercicio, solo las de las sesiones en las que estuvo ese ejercicio; si esas sesiones no se leyeron, ninguna (no se
+ * adivina de qué sesión habla una nota).
+ */
+export function eventosDeLasNotasDeLaSesion(notas: readonly NotaDeLaSesionDeLaCinta[], exerciseKey: string | null, ejecuciones?: readonly EjecucionDeEntrenamiento[], conTexto = true): EventoDeLaCinta[] {
+  const del = exerciseKey === null ? null : sesionesDelEjercicio(ejecuciones ?? [], exerciseKey);
+  return notas.flatMap((n): EventoDeLaCinta[] =>
+    del !== null && !del.has(n.executionId) ? [] : [{ clave: `nota-de-la-persona:${n.noteId}`, tipo: 'NOTA_DE_LA_PERSONA', area: 'ENTRENAMIENTO', desde: n.executionDate, hasta: null, rotulo: 'Nota de la persona', detalle: conTexto ? n.text : null, agrupados: 1 }],
+  );
+}
+
+/**
+ * Las notas propias del profesional (PG-16) como hechos, el día civil en que se escribieron: en la fila del área de su
+ * ancla (un ejercicio, Entrenamiento; una comida, Nutrición) o en la de las notas. Las archivadas no están (GR-T28): quien
+ * la escribió la sacó de lo que tiene a mano. En el cuadro de un ejercicio, solo las de ese ejercicio.
+ */
+export function eventosDeLasNotasPropias(notas: readonly NotaPropia[], zona: string, exerciseKey: string | null, conTexto = true): EventoDeLaCinta[] {
+  return notas.flatMap((n): EventoDeLaCinta[] => {
+    if (n.archivedAt !== null) return [];
+    if (exerciseKey !== null && !(n.anchor?.type === 'EXERCISE' && `e:${n.anchor.exerciseId}` === exerciseKey)) return [];
+    const area: AreaDeMetrica | null = n.anchor === null ? null : n.anchor.type === 'EXERCISE' ? 'ENTRENAMIENTO' : 'NUTRICION';
+    const sobre = n.anchor === null ? null : n.anchor.type === 'EXERCISE' ? n.anchor.exerciseName : n.anchor.mealLabel;
+    return [{ clave: `nota-propia:${n.noteId}`, tipo: 'NOTA_PROPIA', area, desde: fechaCivil(n.recordedAt, zona), hasta: null, rotulo: sobre ? `Nota propia sobre ${sobre}` : 'Nota propia', detalle: conTexto ? n.text : null, agrupados: 1 }];
+  });
+}
+
 export interface FuentesDeLaCinta {
   /** Lo que el PDP dejó leer con esta persona hoy: un hecho de otra área no se dibuja, aunque llegue. */
   readonly alcances: readonly Alcance[];
@@ -172,7 +233,18 @@ export interface FuentesDeLaCinta {
   readonly vigencias: readonly VigenciaDePlan[];
   /** Las sesiones de API-TRN-21, si quien usa la cinta ya las leyó: de ahí salen las sustituciones. */
   readonly ejecuciones?: readonly EjecucionDeEntrenamiento[];
-  /** Otras fuentes: las notas de la tanda B (PG-15 y PG-16). */
+  /** Las notas de la persona al finalizar (PG-15, API-TRN-25-LISTA), si Entrenamiento está permitido. */
+  readonly notasDeLaSesion?: readonly NotaDeLaSesionDeLaCinta[];
+  /** Las notas propias del profesional (PG-16, API-NPP-02). */
+  readonly notasPropias?: readonly NotaPropia[];
+  /** La zona de la persona, para el día civil de una nota propia. */
+  readonly zona?: string;
+  /**
+   * `false` con «Ocultar nombres» prendido y sin pedir verlas (PG-T73): las notas están, con su día y su ancla, pero sin su
+   * texto.
+   */
+  readonly conTextoDeLasNotas?: boolean;
+  /** Otras fuentes que sume quien usa la cinta. */
   readonly otras?: readonly EventoDeLaCinta[];
   /** En el cuadro del ejercicio: las sesiones con cambios y las sustituciones de ese ejercicio solamente. */
   readonly exerciseKey?: string | null;
@@ -191,6 +263,8 @@ export function eventosDeLaCinta(f: FuentesDeLaCinta): EventoDeLaCinta[] {
       return evento ? [evento] : [];
     }),
     ...(f.ejecuciones ? eventosDeSustitucion(f.ejecuciones, exerciseKey) : []),
+    ...eventosDeLasNotasDeLaSesion(f.notasDeLaSesion ?? [], exerciseKey, f.ejecuciones, f.conTextoDeLasNotas ?? true),
+    ...eventosDeLasNotasPropias(f.notasPropias ?? [], f.zona ?? ZONA_POR_DEFECTO, exerciseKey, f.conTextoDeLasNotas ?? true),
     ...(f.otras ?? []),
   ].filter(permitido);
   const vistos = new Set<string>();
@@ -448,7 +522,8 @@ export const ICONO_DEL_HECHO: Readonly<Record<Exclude<TipoDeEventoDeLaCinta, 'VE
   SUSTITUCION: 'comparar',
   NOTA_DE_COORDINACION: 'texto',
   NOTA_DE_LA_PERSONA: 'persona',
-  NOTA_PROPIA: 'texto',
+  // Escrita a mano por quien la lee: no se confunde con la nota de coordinación, que es un texto que llega.
+  NOTA_PROPIA: 'a-mano',
 };
 
 /** El ícono de cada fila, en el margen izquierdo. */

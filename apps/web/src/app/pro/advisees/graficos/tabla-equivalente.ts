@@ -7,7 +7,7 @@
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
 import type { MarcaSemantica } from '@be/domain';
-import type { Carril, CarrilDePuntos } from './carriles';
+import type { Carril, CarrilDePuntos, PuntoDelCarril } from './carriles';
 import { textoDeLaMarca } from './eje-de-fechas';
 
 export interface CeldaDeLaTabla {
@@ -32,12 +32,30 @@ export interface FilasDeLaTabla {
 
 export const TEXTO_SIN_DATO = 'sin dato';
 
+/**
+ * Lo que la forma de la marca dice y la tabla también tiene que decir con palabras (la forma no llega al lector de
+ * pantalla): lo precargado del plan, lo observado por el profesional, lo reportado y lo calculado. Si la lectura del punto
+ * ya lo dice, no se repite. Lo hueco (el subtotal, lo orientativo) lo dice la lectura de cada gráfico, que sabe por qué.
+ */
+const LO_QUE_DICE_LA_MARCA: Readonly<Partial<Record<MarcaSemantica, { readonly texto: string; readonly yaDicho: RegExp }>>> = {
+  HUECA_GRIS: { texto: 'tildado sin escribir: los números del plan', yaDicho: /tildad/i },
+  ROMBO: { texto: 'observado por el profesional', yaDicho: /observad/i },
+  CONTORNO_CORTADO: { texto: 'reportado', yaDicho: /reportad/i },
+  PUNTO_ADENTRO: { texto: 'calculado', yaDicho: /calculad/i },
+};
+
+function lecturaConSuMarca(p: PuntoDelCarril): string {
+  const marca = LO_QUE_DICE_LA_MARCA[p.marca];
+  const conMarca = marca && !marca.yaDicho.test(p.lectura) ? `${p.lectura} (${marca.texto})` : p.lectura;
+  return p.tarde ? `${conMarca} (cargado después)` : conMarca;
+}
+
 function celdaDe(c: CarrilDePuntos, fecha: string): CeldaDeLaTabla | null {
   const registrados = c.puntos.filter((p) => p.fecha === fecha && p.valor !== null);
   const indicados = c.indicado.filter((p) => p.fecha === fecha && (p.valor !== null || p.rango !== null));
   if (registrados.length === 0 && indicados.length === 0) return null;
   const partes = [
-    ...registrados.map((p) => (p.tarde ? `${p.lectura} (cargado después)` : p.lectura)),
+    ...registrados.map(lecturaConSuMarca),
     ...indicados.map((p) => `indicado: ${p.lectura}`),
   ];
   const primera = registrados[0] ?? indicados[0];

@@ -151,6 +151,11 @@ export * from './copy-acceso-google';
 export * from './pasos-de-acceso-google';
 export * from './contratos-notas-de-coordinacion';
 export * from './copy-notas-de-coordinacion';
+// WP-PULIDO-GRANDES PG-15 y PG-16 (DL-173): la nota para el profe y las notas propias del profesional.
+export * from './contratos-notas-de-la-sesion';
+export * from './copy-notas-de-la-sesion';
+export * from './contratos-notas-propias';
+export * from './notas-propias';
 export * from './administracion';
 export * from './contratos-administracion';
 export * from './copy-administracion';
@@ -175,3 +180,8 @@ export * from './carga-desde-la-estimacion';
 export * from './descripciones-de-plantillas';
 export * from './prescripcion-rapida';
 export * from './presets-de-be';
+// WP-GRAFICOS (DL-174), fase 1: «La vez pasada» (GR-01, la misma pieza que PG-11), la marca «Con historial» del buscador
+// (GR-04) y la tabla «Desde el inicio y desde la anterior» de cada toma (GR-16).
+export * from './la-vez-pasada';
+export * from './historial-del-buscador';
+export * from './desde-el-inicio';

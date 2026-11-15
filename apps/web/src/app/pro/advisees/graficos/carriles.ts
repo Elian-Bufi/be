@@ -201,13 +201,17 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
   }
   const util = Math.max(1, alto - 2 * AIRE_DEL_CARRIL);
   if (c.tipo === 'BARRAS_SEMANALES') {
-    const valores = c.semanas.flatMap((s) => (s.valor === null ? [] : [s.valor]));
+    // Una semana que empieza antes del eje (el vínculo, TB-16) se dibuja desde el primer día del eje; una que cae afuera, no.
+    const izquierda = escala.x(escala.desde) - escala.porDia / 2;
+    const derecha = escala.x(escala.hasta) + escala.porDia / 2;
+    const enElEje = c.semanas.filter((s) => s.valor !== null && escala.x(s.lunes) - escala.porDia / 2 + 7 * escala.porDia > izquierda && escala.x(s.lunes) - escala.porDia / 2 < derecha);
+    const valores = enElEje.flatMap((s) => (s.valor === null ? [] : [s.valor]));
     const extremos = extremosDelCarril([0, ...valores], c.unidad, { enteros: false, desdeCero: true });
     const y = (v: number): number => AIRE_DEL_CARRIL + util - ((v - extremos.abajo) / (extremos.arriba - extremos.abajo || 1)) * util;
-    const barras = c.semanas.flatMap((s) => {
+    const barras = enElEje.flatMap((s) => {
       if (s.valor === null) return [];
-      const x1 = escala.x(s.lunes) - escala.porDia / 2;
-      return [{ lunes: s.lunes, x1, x2: x1 + 7 * escala.porDia, y: y(s.valor), base: y(Math.max(0, extremos.abajo)) }];
+      const inicio = escala.x(s.lunes) - escala.porDia / 2;
+      return [{ lunes: s.lunes, x1: Math.max(izquierda, inicio), x2: Math.min(derecha, inicio + 7 * escala.porDia), y: y(s.valor), base: y(Math.max(0, extremos.abajo)) }];
     });
     return { tipo: 'BARRAS_SEMANALES', extremos, barras };
   }

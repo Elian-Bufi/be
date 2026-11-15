@@ -5,7 +5,8 @@
  * - **Arriba** (PA-02, Dirección del 2026-11-02): la franja con la sesión y «Ver rutina», el ejercicio, «Ejercicio 2 de 5 ·
  *   Serie 3 de 4», una línea de tramos (uno por ejercicio) y los tiempos de la sesión y del ejercicio.
  * - **El ejercicio activo:** su imagen de 112 dp (o la mancuerna de la app si no tiene), «Ver técnica» y «Sustituir
- *   ejercicio» (DL-151). Sustituido, dice también el ejecutado, con la insignia.
+ *   ejercicio» (DL-151). Sustituido, dice también el ejecutado, con la insignia. Debajo del nombre, «La vez pasada»
+ *   (PG-11 · GR-01): una línea tenue con lo que registró la última vez, sin flechas ni colores, que el lector lee entera.
  * - **La tabla:** Serie, carga con su unidad, Rep., RIR, Tiempo y una casilla al final de cada fila. Los campos vacíos
  *   muestran el objetivo de esa serie en gris (`placeholdersDeLaSerie`); lo escrito se ve en su fila aunque no esté
  *   activa (PA-01). Tildar registra la fila con lo escrito y, en lo vacío, lo planificado; la fila registrada va en el
@@ -211,6 +212,7 @@ export function EjercicioActivo({
   total,
   bases,
   ejecutado = null,
+  vezPasada = null,
   conNombre = true,
   onVerTecnica,
   onSustituir,
@@ -223,6 +225,8 @@ export function EjercicioActivo({
   bases: { readonly carga: string | null; readonly repeticiones: string | null };
   /** El ejercicio que se registra en lugar del planificado (DL-151); `null` sin sustitución. El nombre grande sigue siendo el planificado. */
   ejecutado?: string | null;
+  /** PG-11 · GR-01: «La vez pasada», lo que se ve y lo que lee el lector; `null`: no se dibuja. */
+  vezPasada?: { readonly texto: string; readonly paraLeer: string } | null;
   /** Sin el nombre ni «Ejercicio N de M»: en la sesión guiada los dice la franja de arriba (PA-02). */
   conNombre?: boolean;
   onVerTecnica: () => void;
@@ -251,6 +255,12 @@ export function EjercicioActivo({
         ) : null}
         {/* Las dos puntas a la vista: el nombre grande es el planificado, y esto lo que se registra (B10-06:772-778). */}
         {ejecutado ? <LineaDeLaSustitucion ejecutado={ejecutado} /> : null}
+        {/* PG-11 · GR-01: lo registrado la vez pasada, tenue, sin flechas ni colores; el lector lo lee con la fecha entera. */}
+        {vezPasada ? (
+          <Text style={estilos.detalle} accessibilityLabel={vezPasada.paraLeer} testID="la-vez-pasada">
+            {vezPasada.texto}
+          </Text>
+        ) : null}
         {conNombre ? <Text style={estilos.detalle}>{COPY_ENTRENAMIENTO_POR_SERIE.ejercicioDe(posicion, total)}</Text> : null}
         {bases.carga ? <Text style={estilos.detalle}>{`Carga: ${bases.carga}`}</Text> : null}
         {bases.repeticiones ? <Text style={estilos.detalle}>{`Repeticiones: ${bases.repeticiones}`}</Text> : null}
