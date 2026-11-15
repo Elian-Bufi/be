@@ -57,22 +57,26 @@ export function lecturaDelPuntoDeFuerza(p: PuntoDeFuerza): string {
  * observado por el profesional. Los de la persona se unen solo si entre dos no hubo una sesión del ejercicio sin
  * estimación (también una que solo tuvo orientativas con el interruptor apagado); lo observado va suelto, y como la línea
  * une solo puntos seguidos del mismo tramo, ir al final hace que una observación entre dos sesiones no la corte.
- * `tardias`: las ejecuciones cargadas en un día posterior.
+ * `tardias`: las ejecuciones cargadas en un día posterior. `sinSeries` (revisión del 15/11): las fechas de las sesiones
+ * en las que se hizo el ejercicio sin ninguna serie escrita (`fechasSinSeries`, del comparador): no tienen estimación y la
+ * API no las cuenta entre las que no entraron, así que la línea también se corta en ellas (un hueco es un hueco).
  */
 export function puntosDelCarrilDeFuerza(
   puntos: readonly PuntoDeFuerza[],
   noEntraron: readonly SerieQueNoEntro[],
   soloOrientativas: readonly PuntoDeFuerza[] = [],
   tardias: ReadonlySet<string> = new Set(),
+  sinSeries: readonly string[] = [],
 ): PuntoDelCarril[] {
   const ordenados = [...puntos].sort(porFecha);
   const deLaPersona = ordenados.filter((p) => p.source === 'PERSON');
   const observadas = ordenados.filter((p) => p.source !== 'PERSON');
   const unidos = new Set(tramosDeLaLinea(deLaPersona, noEntraron, soloOrientativas).map(([a, b]) => `${a}-${b}`));
+  const hayUnHuecoEntre = (a: string, b: string): boolean => sinSeries.some((f) => f > a && f < b);
   const tramoDe = new Map<string, string>();
   let tramo = 0;
   deLaPersona.forEach((p, i) => {
-    if (i > 0 && !unidos.has(`${i - 1}-${i}`)) tramo++;
+    if (i > 0 && (!unidos.has(`${i - 1}-${i}`) || hayUnHuecoEntre(deLaPersona[i - 1]!.date, p.date))) tramo++;
     tramoDe.set(p.pointId, `persona-${tramo}`);
   });
   return [...deLaPersona, ...observadas].map((p) => {
@@ -89,8 +93,9 @@ export function puntosDelCarrilDeFuerza(
       marca,
       tarde: origen.type === 'TRAINING_EXECUTION' && tardias.has(origen.id),
       lectura: lecturaDelPuntoDeFuerza(p),
-      // Lo hueco del 1RM estimado es lo orientativo, no un subtotal: la leyenda lo dice así (revisión del 15/11).
-      ...(marca === 'HUECA' ? { sentido: 'ORIENTATIVA' as const } : {}),
+      // Lo hueco del 1RM estimado es lo orientativo, no un subtotal; lo lleno, lo de hasta 10 repeticiones equivalentes, no
+      // «registrado»: es una estimación, no una repetición máxima registrada (RM-22). La leyenda lo dice así (revisión del 15/11).
+      ...(marca === 'HUECA' ? { sentido: 'ORIENTATIVA' as const } : marca === 'LLENA' ? { sentido: 'NUCLEO_DE_LA_ESTIMACION' as const } : {}),
     };
   });
 }
@@ -171,8 +176,10 @@ export function lecturasPorVersion(puntos: readonly PuntoDeFuerza[], vigencias: 
   return lecturaPorVersion(puntos, vigencias).flatMap((l) => {
     const v = vigencias.find((x) => x.planVersionId === l.planVersionId);
     if (!v) return [];
+    // «9 sesiones con estimación»: GR-05 cuenta las sesiones de la serie, con RIR escrito o sin él; sin decir qué se cuenta,
+    // la misma versión decía 9 en un gráfico y 12 en el otro (revisión del 15/11).
     const partes = [
-      C.sesiones(l.sesiones),
+      C.sesionesConEstimacion(l.sesiones),
       ...(l.medianaDelRir === null ? [] : [C.medianaDelRir(numero(l.medianaDelRir))]),
       ...(l.repeticiones ? [C.repeticiones(numero(l.repeticiones.desde), numero(l.repeticiones.hasta))] : []),
       l.diferenciaEntreSesiones === null ? C.ruidoSinAlcanzar : C.ruido(numero(l.diferenciaEntreSesiones, 1), unidad),

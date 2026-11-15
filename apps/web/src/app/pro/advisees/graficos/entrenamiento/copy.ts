@@ -54,6 +54,14 @@ export const COPY_FUERZA_ESTIMADA = {
   version: (etiqueta: string, desde: string) => `${etiqueta.replace(/^v/, 'Versión ')}, desde el ${desde}`,
   versionCorta: (etiqueta: string) => etiqueta.replace(/^v/, 'la versión '),
   sesiones,
+  /** Lo que cuenta cada versión: las sesiones con estimación (GR-05 cuenta las de la serie, con RIR escrito o sin él). */
+  sesionesConEstimacion: (n: number) => `${sesiones(n)} con estimación`,
+  /**
+   * Si no se pudo leer lo que indicaba el plan, la línea de cada versión va sin su cambio: se dice, porque callarlo haría
+   * leer un salto del RIR indicado como un cambio de la fuerza (§5.12). La rama lo tenía en «Analizar» y se perdió al
+   * traer la pasada visual (revisión del 15/11).
+   */
+  sinIndicado: 'No pudimos leer lo que indicaba el plan: si el RIR o las repeticiones indicadas cambiaron entre versiones, este gráfico no lo dice.',
   medianaDelRir: (rir: string) => `mediana del RIR registrado: ${rir}`,
   repeticiones: (desde: string, hasta: string) => (desde === hasta ? `${desde} repeticiones en la serie usada` : `de ${desde} a ${hasta} repeticiones en la serie usada`),
   ruido: (diferencia: string, unidad: string) => `entre sesiones de esta versión aparecen diferencias de hasta ${diferencia} ${unidad}`,

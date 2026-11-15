@@ -21,8 +21,8 @@ import { diaYMes, inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import { PanelesAlineados } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
-import { carrilesDeCargaRepeticionesYRir } from './carga-repeticiones-y-rir';
-import { cargadasDespues, fechasCargadasDespues, observacionesDelPeriodo } from './comparador';
+import { carrilesDeCargaRepeticionesYRir, indicadoDeLasSesionesHechas } from './carga-repeticiones-y-rir';
+import { cargadasDespues, ejecucionesConElEjercicio, fechasCargadasDespues, fechasConElEjercicio, observacionesDelPeriodo } from './comparador';
 import { COPY_CARGA_REPETICIONES_Y_RIR as C, FICHA_DE_LA_TIRA } from './copy';
 import { useComparador, useLecturaDeLaSerie } from './lecturas-del-ejercicio';
 
@@ -41,12 +41,15 @@ export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, b
     const desde = inicioDelEje(periodo);
     const lista = comparador.tipo === 'lista' ? comparador : null;
     const observaciones = lista ? observacionesDelPeriodo(lista.ejecuciones, exerciseKey, lista.objetivosPorVersion, desde, periodo.hasta) : [];
-    // Lo indicado de cada sesión para esta serie, de la versión que la rigió: hueco, en el panel del RIR.
-    const indicado = lista ? puntosDeLoIndicado(lista.ejecuciones, lista.objetivosPorVersion, { exerciseKey, serie: numero, medida: { variable: 'rir' }, desde, hasta: periodo.hasta }) : [];
+    // Lo indicado de cada sesión para esta serie, de la versión que la rigió: hueco, en el panel del RIR. Solo de las
+    // sesiones en las que se hizo el ejercicio: una «no realizada» no es una sesión sin RIR escrito (revisión del 15/11).
+    const todoLoIndicado = lista ? puntosDeLoIndicado(lista.ejecuciones, lista.objetivosPorVersion, { exerciseKey, serie: numero, medida: { variable: 'rir' }, desde, hasta: periodo.hasta }) : [];
+    const indicado = indicadoDeLasSesionesHechas(todoLoIndicado, ejecucionesConElEjercicio(observaciones));
     const tardias = lista ? cargadasDespues(lista.ejecuciones) : new Set<string>();
     return carrilesDeCargaRepeticionesYRir(
       { carga: serieDe(leida.carga), repeticiones: serieDe(leida.repeticiones), rir: serieDe(leida.rir) },
-      { serie: numero, indicado, cargadoTarde: fechasCargadasDespues(observaciones, tardias) },
+      // Las tres tiras marcan las mismas sesiones: cada una, con su raya baja donde a su panel le falta el dato.
+      { serie: numero, indicado, cargadoTarde: fechasCargadasDespues(observaciones, tardias), sesiones: fechasConElEjercicio(observaciones) },
     );
   }, [leida, exerciseKey, comparador, periodo, numero]);
 

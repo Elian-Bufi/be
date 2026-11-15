@@ -27,12 +27,16 @@ import { diaYMes, inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import { PanelesAlineados } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
-import { cargadasDespues } from './comparador';
+import { cargadasDespues, fechasSinSeries, observacionesDelPeriodo } from './comparador';
 import { COPY_FUERZA_ESTIMADA as C, FICHA_DE_LA_TIRA } from './copy';
 import { carrilDeLaFuerza, ejercicioDeLaClave, lecturasPorVersion, puntosDelCarrilDeFuerza, validezYRuidoDeLaFuerza } from './fuerza-estimada';
 import { useComparador } from './lecturas-del-ejercicio';
 
-const LEYENDA: readonly SentidoDeLaMarca[] = ['REGISTRADO', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL'];
+/**
+ * Lleno, «Hasta 10 rep. equivalentes» (no «Registrado»: es una estimación); hueco, de más de 10 a 12; rombo, lo
+ * observado. Como la leyenda de «Analizar · Fuerza» (revisión del 15/11).
+ */
+const LEYENDA: readonly SentidoDeLaMarca[] = ['NUCLEO_DE_LA_ESTIMACION', 'ORIENTATIVA', 'OBSERVADA_POR_EL_PROFESIONAL'];
 
 export function FuerzaEstimada({ lectura, periodo, densidad, ejercicio, bandas, incluirDeEntrada = false, onIncluir }: PropsDelGrafico & { readonly incluirDeEntrada?: boolean; readonly onIncluir?: (incluir: boolean) => void }) {
   const id = useId();
@@ -52,15 +56,21 @@ export function FuerzaEstimada({ lectura, periodo, densidad, ejercicio, bandas, 
     if (fuerza.tipo !== 'lista' || !linea) return null;
     const soloOrientativas = incluir ? [] : sesionesSoloOrientativas(fuerza.apagado?.puntos ?? [], fuerza.encendido?.unidad === fuerza.apagado?.unidad ? (fuerza.encendido?.puntos ?? []) : []);
     const tardias = comparador.tipo === 'lista' ? cargadasDespues(comparador.ejecuciones) : new Set<string>();
-    const puntos = puntosDelCarrilDeFuerza(linea.puntos, linea.noEntraron, soloOrientativas, tardias);
-    // La tira: las sesiones sin estimación (las que no entraron y, apagado, las que solo tuvieron orientativas).
-    const sinEstimacion = [...linea.noEntraron.map((n) => n.date), ...soloOrientativas.map((p) => p.date)];
+    // Las sesiones en las que se hizo el ejercicio sin ninguna serie escrita (un registro resumido): la API no las cuenta
+    // entre las que no entraron, pero tampoco tienen estimación. La línea se corta en ellas y la tira las marca (§5.4).
+    const exerciseKey = ejercicio?.exerciseKey ?? null;
+    const sinSeries =
+      comparador.tipo === 'lista' && exerciseKey ? fechasSinSeries(observacionesDelPeriodo(comparador.ejecuciones, exerciseKey, comparador.objetivosPorVersion, inicioDelEje(periodo), periodo.hasta)) : [];
+    const puntos = puntosDelCarrilDeFuerza(linea.puntos, linea.noEntraron, soloOrientativas, tardias, sinSeries);
+    // La tira: las sesiones sin estimación (las que no entraron, las que no tuvieron series escritas y, apagado, las que
+    // solo tuvieron orientativas).
+    const sinEstimacion = [...linea.noEntraron.map((n) => n.date), ...sinSeries, ...soloOrientativas.map((p) => p.date)];
     return {
       carril: carrilDeLaFuerza(puntos, linea.puntos, linea.unidad, sinEstimacion),
       porVersion: lecturasPorVersion(linea.puntos, fuerza.versiones, linea.unidad),
       validezYRuido: validezYRuidoDeLaFuerza(linea.puntos, linea.unidad, incluir),
     };
-  }, [fuerza, linea, incluir, comparador]);
+  }, [fuerza, linea, incluir, comparador, ejercicio?.exerciseKey, periodo]);
 
   if (!enLaLista) return null;
   if (fuerza.tipo === 'cargando') return <EstadoDelGraficoEnPantalla estado={{ tipo: 'CARGANDO' }} />;
@@ -112,7 +122,8 @@ export function FuerzaEstimada({ lectura, periodo, densidad, ejercicio, bandas, 
         fichas={conTira ? [FICHA_DE_LA_TIRA.fuerza] : []}
         detalle={detalle}
         // §5.6 y §5.12: el rango de validez y lo que mueve un RIR, a la vista y antes que cualquier comparación.
-        notas={[dibujo.validezYRuido]}
+        // Si no se pudo leer lo indicado, se dice: la línea de cada versión va sin su cambio (§5.12).
+        notas={[dibujo.validezYRuido, ...(comparador.tipo === 'error' ? [C.sinIndicado] : [])]}
         aclaraciones={[...C.comoSeCalculoTexto, C.soloVos]}
         aLaVista={
           <>

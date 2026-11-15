@@ -64,12 +64,29 @@ export function coberturaPorSesion(c: Pick<CarrilDePuntos, 'cobertura' | 'puntos
 }
 
 /**
+ * Lo indicado solo de las sesiones en las que se hizo el ejercicio (`ejecucionesConElEjercicio`): una sesión «no
+ * realizada», o con el ejercicio del plan sin registrar, no tiene un RIR indicado que leer contra nada (revisión del 15/11).
+ * La clave de un punto de lo indicado es la de la base: `indicado:<ejecución>:<prescripción>:<serie>`.
+ */
+export function indicadoDeLasSesionesHechas(indicado: readonly PuntoDelCarril[], hechas: ReadonlySet<string>): PuntoDelCarril[] {
+  return indicado.filter((p) => hechas.has(p.clave.split(':')[1] ?? ''));
+}
+
+/**
  * Los tres carriles de GR-03, en este orden: la carga (en la unidad de la serie), las repeticiones y el RIR, con el RIR
  * indicado hueco en su panel. `cargadoTarde`: las fechas con la sesión cargada en un día posterior.
+ *
+ * `sesiones` (revisión del 15/11): las fechas de las sesiones en las que se hizo el ejercicio. Las tres tiras marcan las
+ * mismas sesiones, cada una con su raya baja donde a su panel le falta el dato: antes solo la del RIR marcaba la sesión
+ * sin series escritas, y en la carga y las repeticiones la línea se cortaba sin que la tira dijera por qué.
  */
-export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonly serie: number; readonly indicado: readonly PuntoDelCarril[]; readonly cargadoTarde: ReadonlySet<string> }): CarrilDePuntos[] {
+export function carrilesDeCargaRepeticionesYRir(
+  s: SeriesDeLaSerie,
+  o: { readonly serie: number; readonly indicado: readonly PuntoDelCarril[]; readonly cargadoTarde: ReadonlySet<string>; readonly sesiones?: readonly string[] },
+): CarrilDePuntos[] {
   const carriles: CarrilDePuntos[] = [];
-  const porSesion = (c: CarrilDePuntos, sinDato: readonly string[] = []): CarrilDePuntos => ({ ...c, porSesion: true, cobertura: coberturaPorSesion(c, sinDato) });
+  const sesiones = o.sesiones ?? [];
+  const porSesion = (c: CarrilDePuntos, sinDato: readonly string[] = sesiones): CarrilDePuntos => ({ ...c, porSesion: true, cobertura: coberturaPorSesion(c, sinDato) });
   const carga = s.carga ? serieDisponible('entrenamiento.carga', s.carga.unit) : null;
   if (s.carga && carga) {
     carriles.push(
@@ -113,7 +130,7 @@ export function carrilesDeCargaRepeticionesYRir(s: SeriesDeLaSerie, o: { readonl
         lectura: lecturaDelRir,
         cargadoTarde: o.cargadoTarde,
         indicado: o.indicado,
-      }), o.indicado.map((p) => p.fecha)),
+      }), [...sesiones, ...o.indicado.map((p) => p.fecha)]),
     );
   }
   return carriles;

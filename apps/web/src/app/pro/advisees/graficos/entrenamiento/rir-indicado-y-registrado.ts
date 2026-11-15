@@ -17,7 +17,7 @@ import { evolucion, numero, type ObservacionDeEvolucion } from '@be/domain';
 import type { BandaDeVersion, CarrilDePuntos, EscalonDelCarril, PuntoDelCarril } from '../carriles';
 import { textoDeLaMarca } from '../eje-de-fechas';
 import { ESCALA_DEL_RIR } from './carga-repeticiones-y-rir';
-import { mediana } from './comparador';
+import { mediana, seHizoElEjercicio } from './comparador';
 import { COPY_RIR_INDICADO_Y_REGISTRADO as C } from './copy';
 
 type Carga = { readonly value: number; readonly unit: 'kg' | 'lb' };
@@ -42,9 +42,15 @@ export interface SesionDelRir {
   readonly tramo: number | null;
 }
 
-/** Las sesiones de la serie elegida, en el orden en que ocurrieron. Una sesión sin nada indicado ni registrado no está. */
+/**
+ * Las sesiones de la serie elegida, en el orden en que ocurrieron. Una sesión sin nada indicado ni registrado no está, y
+ * tampoco una en la que no se hizo el ejercicio (`seHizoElEjercicio`: «no realizada», el ejercicio del plan sin registrar
+ * o hecho otro en su lugar): no es una sesión sin RIR escrito, y contarla diría que se hizo (revisión del 15/11). Los
+ * tramos salen de todas las observaciones, como la progresión por serie de GR-03: una sesión sin hacer corta la línea.
+ */
 export function sesionesDelRir(observaciones: readonly ObservacionDeEvolucion[], serie: number): SesionDelRir[] {
   return evolucion(observaciones, { variable: 'rir' }, serie).flatMap((p): SesionDelRir[] => {
+    if (!seHizoElEjercicio(p.observacion)) return [];
     const c = p.observacion.comparacion;
     const r = p.fila?.registrada;
     const delEjercicio = p.observacion.rol === 'planificado-y-registrado' || p.observacion.rol === 'por-sustitucion';

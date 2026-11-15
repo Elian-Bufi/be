@@ -12,7 +12,8 @@
  *
  * Con la pasada visual del 15/11: las versiones del plan llegan a los tres gráficos con lo que cambió en lo indicado al
  * empezar cada una (`bandasConElCambio`, la misma lectura que la fuerza de «Analizar»): «v8 · de 4 a 3 repeticiones» en
- * la línea de la versión. GR-02 y GR-05 van a 240 px (los principales del paso); GR-03, tres paneles de 96.
+ * la línea de la versión; en GR-02, de todas las series, y en GR-03 y GR-05, de la serie elegida (revisión del 15/11).
+ * GR-02 y GR-05 van a 240 px (los principales del paso); GR-03, tres paneles de 96.
  */
 import { COPY_FUERZA, entraEnLaEstimacion, type VigenciaDePlan } from '@be/domain';
 import { useId, useMemo, useState, type ReactNode } from 'react';
@@ -59,15 +60,22 @@ function CintaDelEjercicio({ lectura, periodo, vigencias, exerciseKey }: { lectu
 
 /**
  * Las versiones del plan para los gráficos del historial, con el cambio de lo indicado del comparador que ya se leyó para
- * todos (`ProveedorDelComparador`). Mientras se lee, o si falla, van sin ese rótulo: es una ayuda para leer, no un dato.
+ * todos (`ProveedorDelComparador`). Mientras se lee, o si falla, van sin ese rótulo; si falla, GR-02 y GR-03 lo dicen.
+ *
+ * Dos juegos (revisión del 15/11): `delEjercicio`, con lo indicado en todas las series (GR-02: de cada sesión entra la
+ * serie de mayor carga), y `deLaSerie`, con lo indicado en la serie elegida (GR-03 y GR-05 son de una serie: su línea no
+ * dice un cambio que fue de otra).
  */
-function useBandasDelHistorial(lectura: Omit<ParametrosDeLectura, 'periodo'>, periodo: PeriodoDelGrafico, vigencias: readonly VigenciaDePlan[], exerciseKey: string) {
+function useBandasDelHistorial(lectura: Omit<ParametrosDeLectura, 'periodo'>, periodo: PeriodoDelGrafico, vigencias: readonly VigenciaDePlan[], exerciseKey: string, serie: number) {
   const { comparador } = useComparador(lectura, periodo);
   return useMemo(() => {
-    if (comparador.tipo !== 'lista') return bandasDeVersion(vigencias, 'ENTRENAMIENTO');
+    if (comparador.tipo !== 'lista') {
+      const sinCambio = bandasDeVersion(vigencias, 'ENTRENAMIENTO');
+      return { delEjercicio: sinCambio, deLaSerie: sinCambio };
+    }
     const observaciones = observacionesDelPeriodo(comparador.ejecuciones, exerciseKey, comparador.objetivosPorVersion, inicioDelEje(periodo), periodo.hasta);
-    return bandasConElCambio(vigencias, observaciones);
-  }, [comparador, vigencias, exerciseKey, periodo]);
+    return { delEjercicio: bandasConElCambio(vigencias, observaciones), deLaSerie: bandasConElCambio(vigencias, observaciones, serie) };
+  }, [comparador, vigencias, exerciseKey, periodo, serie]);
 }
 
 /** Los gráficos del paso «Historial», adentro del proveedor del comparador: con las versiones y su cambio. */
@@ -89,25 +97,27 @@ function GraficosDelHistorial({
   exerciseId: string;
 }) {
   const exerciseKey = `e:${exerciseId}`;
-  const bandas = useBandasDelHistorial(props.lectura, props.periodo, vigencias, exerciseKey);
-  const conBandas: PropsDelGrafico = { ...props, bandas };
   const { periodo, ejercicio, lectura } = props;
   const serie = ejercicio?.serie ?? 1;
   const unidad = ejercicio?.unidad ?? null;
+  const bandas = useBandasDelHistorial(lectura, periodo, vigencias, exerciseKey, serie);
+  // GR-02, con el cambio de lo indicado en todas las series; GR-03 y GR-05, con el de la serie elegida.
+  const conBandasDelEjercicio: PropsDelGrafico = { ...props, bandas: bandas.delEjercicio };
+  const conBandasDeLaSerie: PropsDelGrafico = { ...props, bandas: bandas.deLaSerie };
   return (
     <ProveedorDelCursor>
       {enLaLista ? (
         <div className="historial-del-ejercicio__grafico">
-          <FuerzaEstimada {...conBandas} densidad="COMPLETA" incluirDeEntrada={orientativas} onIncluir={onOrientativas} />
+          <FuerzaEstimada {...conBandasDelEjercicio} densidad="COMPLETA" incluirDeEntrada={orientativas} onIncluir={onOrientativas} />
           {unidad ? <AbrirEnAnalizar href={haciaLaFuerzaEnAnalizar(asesoradoId, exerciseId, unidad, orientativas, periodo)} que={COPY_FUERZA.nombreDeLaMetrica} /> : null}
         </div>
       ) : null}
       <div className="historial-del-ejercicio__grafico">
-        <CargaRepeticionesYRir {...conBandas} densidad="COMPACTA" />
+        <CargaRepeticionesYRir {...conBandasDeLaSerie} densidad="COMPACTA" />
         <AbrirEnAnalizar href={haciaElProgresoEnAnalizar(asesoradoId, exerciseKey, serie, unidad, periodo)} que={COPY_CARGA_REPETICIONES_Y_RIR.titulo(serie)} />
       </div>
       <div className="historial-del-ejercicio__grafico">
-        <RirIndicadoYRegistrado {...conBandas} densidad="COMPLETA" />
+        <RirIndicadoYRegistrado {...conBandasDeLaSerie} densidad="COMPLETA" />
         <AbrirEnAnalizar href={haciaLoIndicadoEnAnalizar(asesoradoId, exerciseKey, periodo)} que={COPY_RIR_INDICADO_Y_REGISTRADO.titulo(serie)} />
       </div>
       <div className="historial-del-ejercicio__grafico">

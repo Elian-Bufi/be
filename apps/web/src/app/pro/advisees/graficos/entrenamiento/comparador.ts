@@ -60,12 +60,46 @@ export function mediana(valores: readonly number[]): number | null {
  * misma lectura que la fuerza de «Analizar» (`cambiosPorVersion`, la versión contra la inmediata anterior, por las
  * sesiones que ejecutaron cada versión), para que la línea de la versión diga «v8 · de 4 a 3 repeticiones» en GR-02,
  * GR-03 y GR-05. Una sola lectura del cambio en toda la página: la primera línea propia de la rama B ya no está.
+ *
+ * `serie` (revisión del 15/11): GR-03 y GR-05 son de una serie, y su línea dice el cambio de lo indicado **para esa
+ * serie**; GR-02 (sin `serie`), el de todas las series del ejercicio, porque de cada sesión entra la serie de mayor carga.
+ * Con todas las series, el escalón de la serie 2 podía seguir igual mientras su versión decía «RIR de 2 a 1» por la serie 1.
  */
-export function bandasConElCambio(vigencias: readonly VigenciaDePlan[], observaciones: readonly ObservacionDeEvolucion[]): BandaDeVersion[] {
+export function bandasConElCambio(vigencias: readonly VigenciaDePlan[], observaciones: readonly ObservacionDeEvolucion[], serie: number | null = null): BandaDeVersion[] {
   const deEntrenamiento = vigencias.filter((v) => v.domain === 'TRAINING');
   const cambios = cambiosPorVersion(
     observaciones,
     deEntrenamiento.map((v) => ({ clave: v.from, desde: v.from, hasta: v.to, planVersionId: v.planVersionId })),
+    { serie },
   );
   return bandasDeVersion(vigencias, 'ENTRENAMIENTO').map((b) => ({ ...b, cambio: cambios.get(b.desde) ?? null }));
+}
+
+/**
+ * Si en esa sesión se hizo el ejercicio (con series o con un registro resumido, también en lugar de otro). No lo es una
+ * sesión declarada «no realizada», una en la que el ejercicio del plan no se registró ni una en la que se hizo otro en su
+ * lugar: lo indicado de esas sesiones no se dibuja ni se cuenta, y la tira no las marca como «sin el dato». Un hueco es un
+ * hueco (§5.4): una sesión que no ocurrió no es una sesión sin RIR escrito.
+ */
+export const seHizoElEjercicio = (o: Pick<ObservacionDeEvolucion, 'rol' | 'comparacion'>): boolean =>
+  (o.rol === 'planificado-y-registrado' || o.rol === 'por-sustitucion') && o.comparacion.condicion !== 'NOT_COMPLETED' && o.comparacion.realizado !== null;
+
+/** Las fechas de las sesiones en las que se hizo el ejercicio: la tira de cada panel marca cada una (GR-03). */
+export function fechasConElEjercicio(observaciones: readonly ObservacionDeEvolucion[]): string[] {
+  return [...new Set(observaciones.filter(seHizoElEjercicio).map((o) => o.comparacion.fecha))].sort();
+}
+
+/**
+ * Las fechas de las sesiones en las que se hizo el ejercicio sin ninguna serie escrita (un registro resumido, «hecho
+ * completo, sin anotar las series»): no tienen estimación y la API no las cuenta entre las que no entraron. GR-02 corta su
+ * línea en ellas y las marca en la tira, como a una sesión sin estimación.
+ */
+export function fechasSinSeries(observaciones: readonly ObservacionDeEvolucion[]): string[] {
+  const conSeries = new Set(observaciones.filter((o) => seHizoElEjercicio(o) && o.comparacion.filas.some((f) => f.registrada.tipo === 'registrada')).map((o) => o.comparacion.fecha));
+  return fechasConElEjercicio(observaciones).filter((f) => !conSeries.has(f));
+}
+
+/** Las ejecuciones de las sesiones en las que se hizo el ejercicio: lo indicado de las demás no se dibuja (GR-03). */
+export function ejecucionesConElEjercicio(observaciones: readonly ObservacionDeEvolucion[]): ReadonlySet<string> {
+  return new Set(observaciones.filter(seHizoElEjercicio).map((o) => o.comparacion.executionId));
 }
