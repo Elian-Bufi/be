@@ -934,6 +934,8 @@ test('TEST-GRV-006 · la leyenda, solo con las marcas que se ven (mutación: la 
   assert.deepEqual(C.sentidosQueSeVen(['REGISTRADO', 'SUBTOTAL', 'ORIENTATIVA'], [ori]), ['REGISTRADO', 'ORIENTATIVA']);
   const analitico = (quality) => ({ pointId: 'p', date: '2026-11-03', dateEnd: null, at: null, value: 1, quality, n: 1, segment: 's1', corrected: false, partialBucket: false, dataClass: null, method: null, planVersionIds: [], coverage: null, missing: [], detail: [] });
   const fuente = (clave) => ({ marca: 'REGISTRADO', fuente: { tipo: 'PROYECCION', clave } });
+  // «De más de 10 a 12»: el 10 ya no cae en dos categorías («Hasta 10» y «De 10 a 12»).
+  assert.equal(SENTIDO_CORTO.ORIENTATIVA, 'De más de 10 a 12 rep. equivalentes');
   assert.equal(A.puntoDelCarril(analitico('PARTIAL'), fuente('TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE'), () => '').sentido, 'ORIENTATIVA');
   assert.equal(A.puntoDelCarril(analitico('PARTIAL'), fuente('NUTRITION_ENERGY_BY_DAY'), () => '').sentido, 'SUBTOTAL');
   assert.equal(A.puntoDelCarril(analitico('COMPLETE'), fuente('NUTRITION_ENERGY_BY_DAY'), () => '').sentido, undefined);
@@ -1104,6 +1106,9 @@ test('TEST-GRV-014 · GR-24 por semana: ninguna barra mezcla días de A con día
     { desde: '2026-11-06', hasta: '2026-11-30' },
   ]);
   assert.deepEqual(separadas, ['2026-10-01', '2026-11-04', '2026-11-06', '2026-12-01']);
+  // Los meses del eje con «sept», como el dominio (`la-vez-pasada.ts`): una fecha se lee igual en GR-01 y en GR-04.
+  assert.equal(E.textoDelEje('2026-09-09', false), '9 sept');
+  assert.equal(E.diaYMes('2026-09-09', '2026-11-15'), '9 sept');
   // Las fechas del pie se miden por su texto: «15 nov 2025» no queda pegada a «2 mar».
   const largo = S.geometriaPorSemana({
     dias: [],
