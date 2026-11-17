@@ -1,0 +1,83 @@
+{
+  "fecha": "2026-10-20T03:13:24.442Z",
+  "web": "https://be-web-1ngj.onrender.com",
+  "api": "https://be-api-hndp.onrender.com",
+  "apiDesplegada": {
+    "aplicacion": "0.11.1",
+    "commit": "ad12d5421b233218632ec943a6980635b6f22511",
+    "construidoEn": "2026-10-20T01:54:18.579Z"
+  },
+  "corridas": [
+    {
+      "navegador": "Edge",
+      "version": "Edg/155.0.4283.62",
+      "resultados": [
+        {
+          "id": "entrar",
+          "ok": true,
+          "detalle": "aterriza en /account"
+        },
+        {
+          "id": "cookie de reanudación con sus atributos",
+          "ok": true,
+          "detalle": "dominio be-api-hndp.onrender.com, HttpOnly true, Secure true, SameSite None, Path /api/v1/auth/sessions, partición {\"sourceOrigin\":\"https://be-web-1ngj.onrender.com\",\"hasCrossSiteAncestor\":true}"
+        },
+        {
+          "id": "recargar conserva la sesión, sin pasar por la entrada",
+          "ok": true,
+          "detalle": "después de recargar: /account; caminos: /account → /account"
+        },
+        {
+          "id": "otra pestaña entra sola",
+          "ok": true,
+          "detalle": "segunda pestaña: /account"
+        },
+        {
+          "id": "ningún token en localStorage ni sessionStorage",
+          "ok": true,
+          "detalle": "tokens vistos: 3"
+        },
+        {
+          "id": "cerrar en una pestaña cierra la otra",
+          "ok": true,
+          "detalle": "primera pestaña: /login"
+        },
+        {
+          "id": "al cerrar, la cookie se borra",
+          "ok": true,
+          "detalle": ""
+        },
+        {
+          "id": "después de cerrar, recargar pide entrar",
+          "ok": true,
+          "detalle": "queda en /login"
+        },
+        {
+          "id": "entrar sin conexión dice «conexión», no «datos incorrectos»",
+          "ok": true,
+          "detalle": "No pudimos conectarnos con BE: no es un problema de tu correo ni de tu contraseña. Revisá la conexión y volvé a intentar."
+        },
+        {
+          "id": "recargar sin conexión lo dice (no «venció», no silencio)",
+          "ok": true,
+          "detalle": "aviso=sin-conexion"
+        },
+        {
+          "id": "al volver la conexión, la sesión sigue",
+          "ok": true,
+          "detalle": "queda en /account"
+        },
+        {
+          "id": "revocar todas desde otro lado (API)",
+          "ok": true,
+          "detalle": "estado 204"
+        },
+        {
+          "id": "una sesión revocada no se recupera al recargar",
+          "ok": true,
+          "detalle": "queda en /login (aviso=null)"
+        }
+      ]
+    }
+  ]
+}

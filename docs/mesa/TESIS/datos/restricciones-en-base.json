@@ -1,0 +1,19 @@
+{
+ "migraciones": 51,
+ "tablas": 113,
+ "funcionesDeDisparador": 73,
+ "funcionesTotales": 106,
+ "disparadores": 275,
+ "disparadoresDeRestriccion": 16,
+ "indicesUnicos": 125,
+ "indicesUnicosParciales": 34,
+ "clavesPrimarias": 113,
+ "checks": 134,
+ "clavesForaneas": 212,
+ "foraneasRestrict": 212,
+ "foraneasNoAction": 0,
+ "enums": 78,
+ "version": "PostgreSQL 16.14",
+ "fecha": "2026-10-20T07:30:34.665Z",
+ "como": "Las 51 migraciones de 0fb1bff aplicadas en orden en una base nueva y temporal (PostgreSQL local), contadas en el catálogo y borrada la base."
+}

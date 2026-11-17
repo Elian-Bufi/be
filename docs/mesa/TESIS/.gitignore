@@ -1,0 +1,6 @@
+# Datos privados que la variante de evaluación usa solo mientras compila (logotipo de la escuela, integrantes, credenciales).
+documento/.privado/
+# La variante de evaluación nunca se guarda en el repositorio.
+*-evaluacion.pdf
+# Temporales del motor de láminas.
+laminas/generado/_*

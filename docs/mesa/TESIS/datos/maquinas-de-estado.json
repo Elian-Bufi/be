@@ -1,0 +1,255 @@
+{
+ "fuente": "packages/domain/src (tablas TRANSICIONES_*)",
+ "maquinas": [
+  {
+   "id": "solicitud",
+   "nombre": "Solicitud de vínculo",
+   "archivo": "vinculo.ts",
+   "tabla": "TRANSICIONES_DE_SOLICITUD_DE_VINCULO",
+   "fuente": "packages/domain/src/vinculo.ts",
+   "transiciones": [
+    {
+     "transicion": "CrearSolicitud",
+     "origen": null,
+     "destino": "PENDIENTE",
+     "actores": [
+      "PROFESIONAL",
+      "ASESORADO"
+     ],
+     "evento": "SolicitudDeVinculoCreada"
+    },
+    {
+     "transicion": "AceptarSolicitud",
+     "origen": "PENDIENTE",
+     "destino": "ACEPTADA",
+     "actores": [
+      "ASESORADO"
+     ],
+     "evento": "SolicitudDeVinculoAceptada"
+    },
+    {
+     "transicion": "RechazarSolicitud",
+     "origen": "PENDIENTE",
+     "destino": "RECHAZADA",
+     "actores": [
+      "ASESORADO"
+     ],
+     "evento": "SolicitudDeVinculoRechazada"
+    },
+    {
+     "transicion": "CaducarSolicitud",
+     "origen": "PENDIENTE",
+     "destino": "CADUCADA",
+     "actores": [
+      "SISTEMA"
+     ],
+     "evento": "SolicitudDeVinculoCaducada"
+    },
+    {
+     "transicion": "InvalidarSolicitud",
+     "origen": "PENDIENTE",
+     "destino": "INVALIDADA",
+     "actores": [
+      "SISTEMA"
+     ],
+     "evento": "SolicitudDeVinculoInvalidada"
+    }
+   ]
+  },
+  {
+   "id": "alcance",
+   "nombre": "Alcance del vínculo",
+   "archivo": "vinculo.ts",
+   "tabla": "TRANSICIONES_DE_ALCANCE_DE_VINCULO",
+   "fuente": "packages/domain/src/vinculo.ts",
+   "transiciones": [
+    {
+     "transicion": "AceptarAlcanceDeVinculo",
+     "origen": null,
+     "destino": "ACEPTADO",
+     "actores": [
+      "ASESORADO"
+     ],
+     "evento": "AlcanceDeVinculoAceptado"
+    },
+    {
+     "transicion": "PausarAlcance",
+     "origen": "ACEPTADO",
+     "destino": "PAUSADO",
+     "actores": [
+      "ASESORADO",
+      "PROFESIONAL"
+     ],
+     "evento": "AlcanceDeVinculoPausado"
+    },
+    {
+     "transicion": "ReanudarAlcance",
+     "origen": "PAUSADO",
+     "destino": "ACEPTADO",
+     "actores": [
+      "ASESORADO",
+      "PROFESIONAL"
+     ],
+     "evento": "AlcanceDeVinculoReanudado"
+    },
+    {
+     "transicion": "FinalizarAlcance",
+     "origen": "ACEPTADO",
+     "destino": "FINALIZADO",
+     "actores": [
+      "ASESORADO",
+      "PROFESIONAL",
+      "SISTEMA"
+     ],
+     "evento": "AlcanceDeVinculoFinalizado"
+    },
+    {
+     "transicion": "FinalizarAlcance",
+     "origen": "PAUSADO",
+     "destino": "FINALIZADO",
+     "actores": [
+      "ASESORADO",
+      "PROFESIONAL",
+      "SISTEMA"
+     ],
+     "evento": "AlcanceDeVinculoFinalizado"
+    }
+   ]
+  },
+  {
+   "id": "consentimiento",
+   "nombre": "Consentimiento profesional",
+   "archivo": "consentimiento-profesional.ts",
+   "tabla": "TRANSICIONES_DE_CONSENTIMIENTO",
+   "fuente": "packages/domain/src/consentimiento-profesional.ts",
+   "transiciones": [
+    {
+     "transicion": "OtorgarConsentimiento",
+     "origen": null,
+     "destino": "VIGENTE",
+     "actores": [
+      "ASESORADO"
+     ],
+     "evento": "ConsentimientoOtorgado"
+    },
+    {
+     "transicion": "AceptarNuevaVersion",
+     "origen": "VIGENTE",
+     "destino": "VIGENTE",
+     "actores": [
+      "ASESORADO"
+     ],
+     "evento": "NuevaVersionDeConsentimientoAceptada"
+    },
+    {
+     "transicion": "RevocarConsentimiento",
+     "origen": "VIGENTE",
+     "destino": "REVOCADO",
+     "actores": [
+      "ASESORADO"
+     ],
+     "evento": "ConsentimientoRevocado"
+    },
+    {
+     "transicion": "OtorgarNuevamente",
+     "origen": "REVOCADO",
+     "destino": "VIGENTE",
+     "actores": [
+      "ASESORADO"
+     ],
+     "evento": "ConsentimientoOtorgadoNuevamente"
+    }
+   ]
+  },
+  {
+   "id": "version-de-plan",
+   "nombre": "Versión de plan",
+   "archivo": "nutricion.ts",
+   "tabla": "TRANSICIONES_DE_VERSION_DE_PLAN",
+   "fuente": "packages/domain/src/nutricion.ts",
+   "transiciones": [
+    {
+     "transicion": "CrearBorrador",
+     "origen": null,
+     "destino": "BORRADOR",
+     "actores": [
+      "PROFESIONAL"
+     ],
+     "evento": "BorradorDePlanCreado"
+    },
+    {
+     "transicion": "GuardarBorrador",
+     "origen": "BORRADOR",
+     "destino": "BORRADOR",
+     "actores": [
+      "PROFESIONAL"
+     ],
+     "evento": "BorradorDePlanGuardado"
+    },
+    {
+     "transicion": "ActivarVersion",
+     "origen": "BORRADOR",
+     "destino": "ACTIVADA",
+     "actores": [
+      "PROFESIONAL"
+     ],
+     "evento": "VersionDePlanActivada"
+    }
+   ]
+  },
+  {
+   "id": "proceso",
+   "nombre": "Proceso operativo",
+   "archivo": "proceso.ts",
+   "tabla": "TRANSICIONES_DE_PROCESO",
+   "fuente": "packages/domain/src/proceso.ts",
+   "transiciones": [
+    {
+     "transicion": "AbrirProceso",
+     "origen": null,
+     "destino": "ABIERTO",
+     "actores": [
+      "PROFESIONAL"
+     ],
+     "evento": "ProcesoOperativoAbierto"
+    },
+    {
+     "transicion": "AplicarContinuidad",
+     "origen": "ABIERTO",
+     "destino": "ABIERTO",
+     "actores": [
+      "PROFESIONAL"
+     ],
+     "evento": "ContinuidadOCierreAplicado"
+    },
+    {
+     "transicion": "CerrarPorRevision",
+     "origen": "ABIERTO",
+     "destino": "CERRADO",
+     "actores": [
+      "PROFESIONAL"
+     ],
+     "evento": "ProcesoOperativoCerrado"
+    },
+    {
+     "transicion": "CerrarPorFinalizacionVinculo",
+     "origen": "ABIERTO",
+     "destino": "CERRADO",
+     "actores": [
+      "SISTEMA"
+     ],
+     "evento": "ProcesoOperativoCerrado"
+    },
+    {
+     "transicion": "CerrarPorCierreCuenta",
+     "origen": "ABIERTO",
+     "destino": "CERRADO",
+     "actores": [
+      "SISTEMA"
+     ],
+     "evento": "ProcesoOperativoCerrado"
+    }
+   ]
+  }
+ ]
+}

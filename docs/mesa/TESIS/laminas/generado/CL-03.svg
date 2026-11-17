@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="CL-03">
+<title>Clases · Jerarquías de la API</title>
+<desc>Nivel de implementación: generalizaciones y realizaciones que existen en el código de la API. · Fuente: apps/api/src (plataforma/ejecutor.ts y las subclases de cada dominio, sesion, autorizacion, prisma, http/errores.ts) · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="10" y="418" width="730" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 20 430.5 L 49 430.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 50 430.5 L 40 436.5 L 40 424.5 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="58" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">generalización (extends)</text>
+<path d="M 259.75 430.5 L 288.75 430.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 289.75 430.5 L 279.75 436.5 L 279.75 424.5 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="297.75" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">realización (implements)</text>
+<rect x="498.54" y="424" width="30" height="13" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="536.54" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">clase de una biblioteca</text>
+<path d="M 90 120 L 90 105 Q 90 100 95 100 L 175 100 Q 180 100 180 95 L 180 77" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 180 67 L 186 77 L 174 77 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 270 120 L 270 105 Q 270 100 265 100 L 185 100 Q 180 100 180 95 L 180 67" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3" stroke-linejoin="round"/>
+<path d="M 475 120 L 475 63" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 475 53 L 481 63 L 469 63 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 660 82 L 660 63" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 660 53 L 666 63 L 654 63 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 660 175 L 660 152" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 660 142 L 666 152 L 654 152 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 215 252 L 250 252 Q 255 252 255 257 L 255 313.5 Q 255 318.5 260 318.5 L 280 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 290 318.5 L 280 324.5 L 280 312.5 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 215 296 L 250 296 Q 255 296 255 301 L 255 313.5 Q 255 318.5 260 318.5 L 290 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 215 340 L 250 340 Q 255 340 255 335 L 255 323.5 Q 255 318.5 260 318.5 L 290 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 215 384 L 250 384 Q 255 384 255 379 L 255 323.5 Q 255 318.5 260 318.5 L 290 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 535 252 L 500 252 Q 495 252 495 257 L 495 313.5 Q 495 318.5 490 318.5 L 470 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 460 318.5 L 470 312.5 L 470 324.5 Z" fill="#FFFFFF" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 535 296 L 500 296 Q 495 296 495 301 L 495 313.5 Q 495 318.5 490 318.5 L 460 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 535 340 L 500 340 Q 495 340 495 335 L 495 323.5 Q 495 318.5 490 318.5 L 460 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 535 384 L 500 384 Q 495 384 495 379 L 495 323.5 Q 495 318.5 490 318.5 L 460 318.5" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<rect x="95" y="8" width="170" height="59" rx="2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<rect x="95.6" y="8.6" width="168.8" height="32.4" fill="#F3F5F8"/>
+<line x1="95" y1="41" x2="265" y2="41" stroke="#5B6B80" stroke-width="0.8"/>
+<line x1="95" y1="47" x2="265" y2="47" stroke="#5B6B80" stroke-width="0.8"/>
+<text x="180" y="21.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«interface (NestJS)»</text>
+<text x="180" y="37" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">CanActivate</text>
+<text x="103" y="61" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">canActivate()</text>
+<rect x="10" y="120" width="160" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="120.6" width="158.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="140" x2="170" y2="140" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="146" x2="170" y2="146" stroke="#1453C9" stroke-width="0.8"/>
+<text x="90" y="136" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">SesionGuard</text>
+<text x="18" y="160" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">canActivate()</text>
+<rect x="190" y="120" width="160" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="190.6" y="120.6" width="158.8" height="19.4" fill="#DCE8FC"/>
+<line x1="190" y1="140" x2="350" y2="140" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="190" y1="146" x2="350" y2="146" stroke="#1453C9" stroke-width="0.8"/>
+<text x="270" y="136" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PdpGuard</text>
+<text x="198" y="160" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">canActivate()</text>
+<rect x="400" y="8" width="150" height="45" rx="2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<rect x="400.6" y="8.6" width="148.8" height="32.4" fill="#F3F5F8"/>
+<line x1="400" y1="41" x2="550" y2="41" stroke="#5B6B80" stroke-width="0.8"/>
+<line x1="400" y1="47" x2="550" y2="47" stroke="#5B6B80" stroke-width="0.8"/>
+<text x="475" y="21.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«biblioteca»</text>
+<text x="475" y="37" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PrismaClient</text>
+<rect x="400" y="120" width="150" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="400.6" y="120.6" width="148.8" height="19.4" fill="#DCE8FC"/>
+<line x1="400" y1="140" x2="550" y2="140" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="400" y1="146" x2="550" y2="146" stroke="#1453C9" stroke-width="0.8"/>
+<text x="475" y="136" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PrismaService</text>
+<text x="408" y="160" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">onModuleDestroy()</text>
+<rect x="580" y="8" width="160" height="45" rx="2" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<rect x="580.6" y="8.6" width="158.8" height="32.4" fill="#F3F5F8"/>
+<line x1="580" y1="41" x2="740" y2="41" stroke="#5B6B80" stroke-width="0.8"/>
+<line x1="580" y1="47" x2="740" y2="47" stroke="#5B6B80" stroke-width="0.8"/>
+<text x="660" y="21.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«JavaScript»</text>
+<text x="660" y="37" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Error</text>
+<rect x="580" y="82" width="160" height="60" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="580.6" y="82.6" width="158.8" height="19.4" fill="#DCE8FC"/>
+<line x1="580" y1="102" x2="740" y2="102" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="580" y1="136" x2="740" y2="136" stroke="#1453C9" stroke-width="0.8"/>
+<text x="660" y="98" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">ErrorDeApi</text>
+<text x="588" y="116" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">status, code</text>
+<text x="588" y="130" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">mensajeSeguro</text>
+<rect x="580" y="175" width="160" height="46" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="580.6" y="175.6" width="158.8" height="19.4" fill="#DCE8FC"/>
+<line x1="580" y1="195" x2="740" y2="195" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="580" y1="215" x2="740" y2="215" stroke="#1453C9" stroke-width="0.8"/>
+<text x="660" y="191" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">DenegacionDelPdp</text>
+<text x="588" y="209" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">decision</text>
+<rect x="290" y="268" width="170" height="101" rx="2" fill="#FFFFFF" stroke="#0A1F44" stroke-width="2"/>
+<rect x="290.6" y="268.6" width="168.8" height="32.4" fill="#DCE8FC"/>
+<line x1="290" y1="301" x2="460" y2="301" stroke="#0A1F44" stroke-width="0.8"/>
+<line x1="290" y1="321" x2="460" y2="321" stroke="#0A1F44" stroke-width="0.8"/>
+<text x="375" y="281.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">«abstract»</text>
+<text x="375" y="297" font-family="Inter" font-size="10.5" font-weight="600" font-style="italic" fill="#0A1F44" text-anchor="middle">EjecutorDeDominio</text>
+<text x="298" y="315" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">- alcance: Alcance</text>
+<text x="298" y="335" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">+ escribirIdempotente()</text>
+<text x="298" y="349" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">+ escribir()</text>
+<text x="298" y="363" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">+ leer()</text>
+<rect x="10" y="236" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="236.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="256" x2="215" y2="256" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="262" x2="215" y2="262" stroke="#1453C9" stroke-width="0.8"/>
+<text x="112.5" y="252" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorNutricional</text>
+<rect x="10" y="280" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="280.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="300" x2="215" y2="300" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="306" x2="215" y2="306" stroke="#1453C9" stroke-width="0.8"/>
+<text x="112.5" y="296" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorDeEntrenamiento</text>
+<rect x="10" y="324" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="324.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="344" x2="215" y2="344" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="350" x2="215" y2="350" stroke="#1453C9" stroke-width="0.8"/>
+<text x="112.5" y="340" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorAntropometrico</text>
+<rect x="10" y="368" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="10.6" y="368.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="10" y1="388" x2="215" y2="388" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="10" y1="394" x2="215" y2="394" stroke="#1453C9" stroke-width="0.8"/>
+<text x="112.5" y="384" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorDeFormularios</text>
+<rect x="535" y="236" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="535.6" y="236.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="535" y1="256" x2="740" y2="256" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="535" y1="262" x2="740" y2="262" stroke="#1453C9" stroke-width="0.8"/>
+<text x="637.5" y="252" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorDeCoordinacion</text>
+<rect x="535" y="280" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="535.6" y="280.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="535" y1="300" x2="740" y2="300" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="535" y1="306" x2="740" y2="306" stroke="#1453C9" stroke-width="0.8"/>
+<text x="637.5" y="296" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorDeVistas</text>
+<rect x="535" y="324" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="535.6" y="324.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="535" y1="344" x2="740" y2="344" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="535" y1="350" x2="740" y2="350" stroke="#1453C9" stroke-width="0.8"/>
+<text x="637.5" y="340" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorDeMedios</text>
+<rect x="535" y="368" width="205" height="32" rx="2" fill="#FFFFFF" stroke="#1453C9" stroke-width="1.2"/>
+<rect x="535.6" y="368.6" width="203.8" height="19.4" fill="#DCE8FC"/>
+<line x1="535" y1="388" x2="740" y2="388" stroke="#1453C9" stroke-width="0.8"/>
+<line x1="535" y1="394" x2="740" y2="394" stroke="#1453C9" stroke-width="0.8"/>
+<text x="637.5" y="384" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">EjecutorDePerfilPropio</text>
+</svg>

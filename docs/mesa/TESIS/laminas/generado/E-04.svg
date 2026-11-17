@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="E-04">
+<title>Estados · consentimiento, versión de plan y proceso</title>
+<desc>Tres máquinas reales del dominio: el consentimiento que se revoca y se vuelve a otorgar, el plan que se activa y el proceso que se cierra. · Fuente: packages/domain/src (consentimiento-profesional.ts, nutricion.ts, proceso.ts) · prisma/schema.prisma (EstadoDeVersionDePlan) · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="4" y="4" width="366" height="204" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="14" y="20" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Consentimiento</text>
+<rect x="380" y="4" width="366" height="204" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="390" y="20" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Versión de plan</text>
+<text x="475.16" y="20" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[nutrición y entrenamiento]</text>
+<rect x="4" y="216" width="742" height="202" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="14" y="232" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">Proceso operativo</text>
+<text x="112.83" y="232" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[uno abierto por profesional, asesorado y área]</text>
+<rect x="0" y="426" width="750" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<circle cx="25" cy="438.5" r="6" fill="#0A1F44"/>
+<text x="48" y="442.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado inicial</text>
+<rect x="194.77" y="432" width="30" height="13" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="232.77" y="442.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">estado</text>
+<path d="M 349.79 438.5 L 378.79 438.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 372.79 441.86 L 379.79 438.5 L 372.79 435.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="387.79" y="442.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">transición y quién la dispara</text>
+<circle cx="620.05" cy="438.5" r="6.5" fill="#FFFFFF" stroke="#0A1F44" stroke-width="1.3"/><circle cx="620.05" cy="438.5" r="3.5" fill="#0A1F44"/>
+<text x="643.05" y="442.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">fin</text>
+<path d="M 35 82 L 164 82" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 157 85.36 L 164 82 L 157 78.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 268 75.6 L 287 75.6 Q 292 75.6 292 70.6 L 292 47 Q 292 42 287 42 L 252.2 42 Q 247.2 42 247.2 47 L 247.2 66" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 243.84 59 L 247.2 66 L 250.56 59" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 190 98 L 190 119.96 Q 190 120 190.04 120 L 190.04 120 Q 190.08 120 190.08 120.04 L 190.08 142" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 186.72 135 L 190.08 142 L 193.44 135" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 241.92 142 L 241.92 120.04 Q 241.92 120 241.96 120 L 241.96 120 Q 242 120 242 119.96 L 242 98" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 245.36 105 L 242 98 L 238.64 105" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 411 82 L 497 82" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 490 85.36 L 497 82 L 490 78.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 607 75.6 L 626 75.6 Q 631 75.6 631 70.6 L 631 47 Q 631 42 626 42 L 590 42 Q 585 42 585 47 L 585 66" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 581.64 59 L 585 66 L 588.36 59" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 552 98 L 552 142" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 548.64 135 L 552 142 L 555.36 135" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 35 318 L 184 318" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 177 321.36 L 184 318 L 177 314.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 288 311.6 L 313 311.6 Q 318 311.6 318 306.6 L 318 281 Q 318 276 313 276 L 272.2 276 Q 267.2 276 267.2 281 L 267.2 302" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 263.84 295 L 267.2 302 L 270.56 295" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 288 318 L 508 318" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 501 321.36 L 508 318 L 501 314.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 612 318 L 691 318" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 684 321.36 L 691 318 L 684 314.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="28" cy="82" r="7" fill="#0A1F44"/>
+<rect x="164" y="66" width="104" height="32" rx="14" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="216" y="85.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">VIGENTE</text>
+<rect x="162" y="142" width="108" height="32" rx="14" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="216" y="161.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">REVOCADO</text>
+<circle cx="404" cy="82" r="7" fill="#0A1F44"/>
+<rect x="497" y="66" width="110" height="32" rx="14" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="552" y="85.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">BORRADOR</text>
+<rect x="500" y="142" width="104" height="32" rx="14" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="552" y="161.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">ACTIVADA</text>
+<path d="M 618 120 L 731 120 L 740 129 L 740 172.4 L 618 172.4 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 731 120 L 731 129 L 740 129" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="627" y="136.69" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Validar es condición</text>
+<text x="627" y="149.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">de activar, no un</text>
+<text x="627" y="162.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">estado.</text>
+<circle cx="28" cy="318" r="7" fill="#0A1F44"/>
+<rect x="184" y="302" width="104" height="32" rx="14" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="236" y="321.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">ABIERTO</text>
+<rect x="508" y="302" width="104" height="32" rx="14" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="560" y="321.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">CERRADO</text>
+<circle cx="700" cy="318" r="9" fill="#FFFFFF" stroke="#0A1F44" stroke-width="1.4"/>
+<circle cx="700" cy="318" r="5" fill="#0A1F44"/>
+<rect x="42.35" y="63.2" width="114.3" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="99.5" y="73.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">OtorgarConsentimiento</text>
+<rect x="215.69" y="23.2" width="107.83" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="269.6" y="33.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">AceptarNuevaVersion</text>
+<rect x="67.92" y="101.6" width="117.08" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="183" y="112.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="end">RevocarConsentimiento</text>
+<rect x="246.92" y="123.6" width="100.3" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="248.92" y="134.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">OtorgarNuevamente</text>
+<text x="14" y="199" font-family="Inter" font-size="10" font-weight="500" fill="#566881">Todas las decide el asesorado.</text>
+<rect x="418.08" y="63.2" width="71.85" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="454" y="73.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">CrearBorrador</text>
+<rect x="566.09" y="23.2" width="83.82" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="608" y="33.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">GuardarBorrador</text>
+<rect x="473.6" y="112.6" width="73.4" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="545" y="123.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="end">ActivarVersion</text>
+<text x="390" y="199" font-family="Inter" font-size="10" font-weight="500" fill="#566881">Todas las decide el profesional.</text>
+<rect x="45.72" y="273.6" width="127.57" height="40.4" fill="#FFFFFF" opacity="0.94"/>
+<text x="109.5" y="284.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">AbrirProceso: profesional,</text>
+<text x="109.5" y="297.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">al activar un plan sin</text>
+<text x="109.5" y="309.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">proceso abierto</text>
+<rect x="192.13" y="244.4" width="200.93" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="292.6" y="255.09" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">AplicarContinuidad: profesional, al aplicar</text>
+<text x="292.6" y="267.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">una revisión que no finaliza</text>
+<rect x="293.03" y="322" width="209.95" height="40.4" fill="#FFFFFF" opacity="0.94"/>
+<text x="398" y="332.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">CerrarPorRevision: profesional (FINALIZAR)</text>
+<text x="398" y="345.49" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">CerrarPorFinalizacionVinculo: sistema</text>
+<text x="398" y="358.29" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">CerrarPorCierreCuenta: sistema</text>
+<text x="14" y="408" font-family="Inter" font-size="10" font-weight="500" fill="#566881">CERRADO es terminal: no se reabre. Una relación nueva abre otro proceso.</text>
+</svg>

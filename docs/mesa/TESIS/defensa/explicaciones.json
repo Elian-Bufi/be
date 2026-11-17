@@ -1,0 +1,126 @@
+{
+ "palabrasPorMinuto": 140,
+ "resultados": [
+  {
+   "figura": "CU-00 · Vista general de los casos de uso",
+   "palabras": 96,
+   "segundos": 41,
+   "entra": true
+  },
+  {
+   "figura": "DER-00 · Vista general por dominios",
+   "palabras": 89,
+   "segundos": 38,
+   "entra": true
+  },
+  {
+   "figura": "CL-01 · Modelo de dominio del circuito nutricional",
+   "palabras": 94,
+   "segundos": 40,
+   "entra": true
+  },
+  {
+   "figura": "CL-02 · Implementación de una escritura protegida",
+   "palabras": 93,
+   "segundos": 40,
+   "entra": true
+  },
+  {
+   "figura": "CL-03 · Jerarquías de la API",
+   "palabras": 86,
+   "segundos": 37,
+   "entra": true
+  },
+  {
+   "figura": "ARQ-01 · Contexto",
+   "palabras": 97,
+   "segundos": 42,
+   "entra": true
+  },
+  {
+   "figura": "ARQ-02 · Contenedores",
+   "palabras": 95,
+   "segundos": 41,
+   "entra": true
+  },
+  {
+   "figura": "ARQ-03 · Despliegue",
+   "palabras": 102,
+   "segundos": 44,
+   "entra": true
+  },
+  {
+   "figura": "COMP-01 · Componentes del sistema",
+   "palabras": 97,
+   "segundos": 42,
+   "entra": true
+  },
+  {
+   "figura": "COMP-02 · La API por dentro",
+   "palabras": 86,
+   "segundos": 37,
+   "entra": true
+  },
+  {
+   "figura": "B-01 · Flujo integral profesional–asesorado",
+   "palabras": 109,
+   "segundos": 47,
+   "entra": true
+  },
+  {
+   "figura": "C-01 · Flujo de nutrición",
+   "palabras": 97,
+   "segundos": 42,
+   "entra": true
+  },
+  {
+   "figura": "C-02 · Flujo de entrenamiento",
+   "palabras": 95,
+   "segundos": 41,
+   "entra": true
+  },
+  {
+   "figura": "C-03 · Flujo de antropometría",
+   "palabras": 88,
+   "segundos": 38,
+   "entra": true
+  },
+  {
+   "figura": "D-00 · DFD de contexto",
+   "palabras": 94,
+   "segundos": 40,
+   "entra": true
+  },
+  {
+   "figura": "D-01 a D-03 · DFD de nivel 1",
+   "palabras": 105,
+   "segundos": 45,
+   "entra": true
+  },
+  {
+   "figura": "E-01 · Secuencia de activar un plan",
+   "palabras": 101,
+   "segundos": 43,
+   "entra": true
+  },
+  {
+   "figura": "E-02 · Secuencia de recuperar la sesión",
+   "palabras": 96,
+   "segundos": 41,
+   "entra": true
+  },
+  {
+   "figura": "E-03 · Estados del vínculo",
+   "palabras": 90,
+   "segundos": 39,
+   "entra": true
+  },
+  {
+   "figura": "E-04 · Estados del consentimiento, del plan y del proceso",
+   "palabras": 93,
+   "segundos": 40,
+   "entra": true
+  }
+ ],
+ "sinExplicar": []
+}
