@@ -729,7 +729,98 @@ async function resumen() {
   }
 }
 
-const FASES = { profesionales, ejercicios, personas, 'nombres-demo': nombresDemo, resumen };
+// ─── La etapa A del tablero, sobre una cohorte que ya estaba cargada (autorizado por Dirección el 2026-11-07) ─────
+
+/** A quiénes se les calculan las masas de Durnin y Womersley sobre las tomas que ya están: lo que pidió Dirección. */
+const MASAS_DE_LA_ETAPA_A = ['diego', 'camila'];
+
+/**
+ * Suma a una cohorte cargada antes de la etapa A lo que la etapa A necesita, solo agregando y por la API:
+ * 1. las masas de Durnin y Womersley (TB-24) sobre las tomas que ya están de Diego Sosa y Camila Ortiz. La fase
+ *    `calculos` no se repite porque su estado la da por hecha; acá cada toma calculada queda anotada en el estado, así una
+ *    corrida cortada sigue donde quedó y nunca calcula dos veces la misma toma;
+ * 2. lo compartido entre áreas (TB-52 a TB-56): Diego comparte y Lic. Sofía Paz le pide a Federico ver su plan
+ *    (`compartirEntreAreas`, que ya no corre si el estado lo da por hecho).
+ * 3. el músculo de Lee de Federico (TB-51), en una toma nueva de hoy (`tomaDeLeeDeFederico`): Lee pide el perímetro del
+ *    brazo relajado, que sus tomas registradas no tienen, y la base no deja agregarle una medición a una toma registrada
+ *    (`be_contenido_en_preparacion`). Dirección eligió esta salida el 2026-11-07.
+ * Uso: node cargar.mjs <local|test> etapa-a
+ */
+async function etapaA() {
+  for (const clave of MASAS_DE_LA_ETAPA_A) {
+    const p = PERSONAS.find((x) => x.clave === clave);
+    const estado = leerEstado(d).personas?.[clave];
+    if (!p || !p.masas || p.sinPliegues) throw new Error(`${clave}: no tiene las masas de Durnin y Womersley en personas.mjs`);
+    if (!estado?.aseId || !estado.tomas?.length) throw new Error(`${p.nombre}: el estado no tiene sus tomas; esta fase es para una cohorte ya cargada`);
+    const hechas = new Set(estado.masasDeLaEtapaA ?? []);
+    const pendientes = estado.tomas.filter((t) => !hechas.has(t.evaluacionId));
+    if (pendientes.length === 0) {
+      console.log(`${p.nombre}: las masas ya estaban calculadas en sus ${estado.tomas.length} tomas.`);
+      continue;
+    }
+    const token = await sesionDe(proDe(p, 'ANTROPOMETRIA'));
+    const metodos = await metodosDe(token);
+    let n = 0;
+    for (const toma of pendientes) {
+      for (const regla of METODOS.masas[p.sexo]) {
+        const m = metodos.find((x) => x.ruleId === regla);
+        if (!m) throw new Error(`el catálogo no ofrece ${regla}`);
+        const bindings = m.requiredInputs.map((i) => ({ inputCode: i.inputCode, sourceRef: toma.mediciones[i.metric] }));
+        if (bindings.some((b) => !b.sourceRef)) continue;
+        await api.pedir('POST', `/advisees/${estado.aseId}/calculations`, { token, cuerpo: { purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: m.methodVersionId, inputBindings: bindings } });
+        n++;
+      }
+      // Cada toma, anotada apenas se calcula: una corrida cortada no la repite.
+      const ahora = leerEstado(d).personas;
+      guardarEstado(d, { personas: { ...ahora, [clave]: { ...ahora[clave], masasDeLaEtapaA: [...(ahora[clave].masasDeLaEtapaA ?? []), toma.evaluacionId] } } });
+    }
+    console.log(`${p.nombre}: ${n} cálculos de las masas de Durnin y Womersley en ${pendientes.length} tomas.`);
+  }
+  await tomaDeLeeDeFederico();
+  await compartirEntreAreas();
+}
+
+/**
+ * Una toma nueva de Federico Álvarez, de hoy, por la API, como la cargaría su profesional de Antropometría: API-ANT-02 (la
+ * evaluación nace registrada, en un solo acto) con las medidas de la última toma de su historia (`historia.mjs`), que ya
+ * llevan el brazo relajado (el flexionado menos `brazoRelajado`, sin azar) y los pliegues de Durnin y Womersley, y con
+ * los métodos de siempre más las masas de Durnin y Womersley con Siri y la masa muscular esquelética de Lee con
+ * perímetros, calculados en el mismo acto. La clave de idempotencia es fija por día: repetirla no crea otra toma. Queda
+ * anotada en el estado.
+ */
+async function tomaDeLeeDeFederico() {
+  const p = PERSONAS.find((x) => x.clave === 'federico');
+  const estado = leerEstado(d).personas?.federico;
+  if (!estado?.aseId) throw new Error('Federico Álvarez: el estado no tiene su cuenta; esta fase es para una cohorte ya cargada');
+  if (estado.tomaDeLeeDeLaEtapaA) {
+    console.log('Federico Álvarez: la toma con el músculo de Lee ya estaba cargada.');
+    return;
+  }
+  const hoy = hoyCivil();
+  const ultima = historia(p, hoy).tomas.at(-1);
+  const medidas = ultima.mediciones.map(([metricCode, value, unit]) => ({ metricCode, value, unit }));
+  for (const metrica of ['perimetro-brazo-relajado', 'perimetro-muslo', 'perimetro-pantorrilla', 'pliegue-triceps', 'pliegue-muslo-frontal', 'pliegue-pantorrilla', 'pliegue-biceps', 'pliegue-subescapular', 'pliegue-cresta-iliaca']) {
+    if (!medidas.some((m) => m.metricCode === metrica)) throw new Error(`Federico Álvarez: a la toma le falta ${metrica}`);
+  }
+  const token = await sesionDe(proDe(p, 'ANTROPOMETRIA'));
+  const metodos = await metodosDe(token);
+  const reglas = [...METODOS[p.sexo], ...METODOS.masas[p.sexo], ...METODOS.musculoDeLee[p.sexo]];
+  const pedidos = reglas.map((regla) => {
+    const m = metodos.find((x) => x.ruleId === regla);
+    if (!m) throw new Error(`el catálogo no ofrece ${regla}`);
+    return { methodVersionId: m.methodVersionId };
+  });
+  const r = await api.pedir('POST', `/advisees/${estado.aseId}/anthropometry/evaluations`, {
+    token,
+    clave: `cohorte-etapa-a-toma-de-lee-federico-${hoy}`,
+    cuerpo: { occurredAt: new Date(Date.now() - 10 * 60_000).toISOString(), specificationVersionId: PROTOCOLO, source: { type: 'DIRECT_CAPTURE' }, directMeasurements: medidas, requestedDerivedMethods: pedidos },
+  });
+  const ahora = leerEstado(d).personas;
+  guardarEstado(d, { personas: { ...ahora, federico: { ...ahora.federico, tomaDeLeeDeLaEtapaA: r.data.evaluationId ?? r.data.id ?? true } } });
+  console.log(`Federico Álvarez: una toma de hoy con ${medidas.length} medidas y ${pedidos.length} métodos (Durnin y Womersley con Siri y Lee con perímetros, entre ellos).`);
+}
+
+const FASES = { profesionales, ejercicios, personas, 'etapa-a': etapaA, 'nombres-demo': nombresDemo, resumen };
 if (!FASES[fase]) throw new Error(`Fase desconocida «${fase}». Fases: ${Object.keys(FASES).join(', ')}.`);
 try {
   await FASES[fase]();
