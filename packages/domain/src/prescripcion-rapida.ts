@@ -19,6 +19,7 @@
 import type { EstructuraDePlanDeEntrenamientoEntrada } from './contratos-entrenamiento';
 import { ETIQUETA_DE_BASE_DE_CARGA, ETIQUETA_DE_BASE_DE_REPETICIONES } from './copy-entrenamiento-por-serie';
 import { esMilesConPunto, numero } from './formato-numeros';
+import { seriesDeCalentamiento, seriesEfectivas } from './tipos-de-serie';
 
 type PrescripcionEntrada = NonNullable<EstructuraDePlanDeEntrenamientoEntrada['blocks'][number]['sessions']>[number]['prescriptions'][number];
 type SerieEntrada = PrescripcionEntrada['sets'][number];
@@ -189,14 +190,17 @@ export function loQueSePierdeAlQuitarSeries(sets: readonly SerieEntrada[], desde
  * entonces se nombran en `sePierde`).
  */
 export function aplicarPrescripcion(p: PrescripcionEntrada, l: PrescripcionLeida): { readonly prescripcion: PrescripcionEntrada; readonly cambio: CambioDelEjercicio } {
-  const sePierde: string[] = [...loQueSePierdeAlQuitarSeries(p.sets, l.series)];
+  // DL-178: «4×8» describe las series efectivas. El calentamiento queda arriba, como estaba.
+  const calentamiento = seriesDeCalentamiento(p.sets);
+  const efectivas = seriesEfectivas(p.sets);
+  const sePierde: string[] = [...loQueSePierdeAlQuitarSeries(efectivas, l.series)];
   // DJ-8: un criterio % RM que la prescripción cambia por RIR se nombra antes, con su referencia.
   if (l.rir !== null && p.intensity?.criterion === 'PERCENT_RM') {
     const ref = p.intensity.target.reference?.description;
     sePierde.unshift(`Su criterio % RM (${numero(p.intensity.target.value)} %${ref ? `, referencia «${ref}»` : ''}) pasa a ser RIR ${numero(l.rir)}`);
   }
-  const sets: SerieEntrada[] = Array.from({ length: l.series }, (_, n) => {
-    const antes = p.sets[n];
+  const nuevas: SerieEntrada[] = Array.from({ length: l.series }, (_, n) => {
+    const antes = efectivas[n];
     const nueva: SerieEntrada = { repetitions: l.repeticiones };
     if (antes?.note) nueva.note = antes.note;
     if (antes?.suggestedLoad !== undefined) nueva.suggestedLoad = antes.suggestedLoad;
@@ -210,7 +214,8 @@ export function aplicarPrescripcion(p: PrescripcionEntrada, l: PrescripcionLeida
     }
     return nueva;
   });
-  const repsAntes = repsDelEjercicio(p);
+  const sets = [...calentamiento, ...nuevas];
+  const repsAntes = repsDelEjercicio({ ...p, sets: efectivas });
   const repsDespues = textoDeReps(l.repeticiones);
   const carga = l.carga ?? p.suggestedLoad ?? null;
   const conCargas = !!carga || p.sets.some((s) => !!s.suggestedLoad);
@@ -226,7 +231,7 @@ export function aplicarPrescripcion(p: PrescripcionEntrada, l: PrescripcionLeida
   return {
     prescripcion,
     cambio: {
-      series: { antes: p.sets.length, despues: l.series },
+      series: { antes: efectivas.length, despues: l.series },
       repeticiones: { antes: repsAntes, despues: repsDespues },
       intensidad: { antes: intensidadDe(p.intensity), despues: intensidadDe(intensity) },
       descanso: { antes: p.restSeconds ?? null, despues: l.descanso ?? p.restSeconds ?? null },

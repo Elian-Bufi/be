@@ -10,15 +10,17 @@
  * dirección son las del editor del plan de comidas (`editor-del-plan-de-nutricion.ts`): los dos editores hacen lo mismo.
  */
 import type { PrescripcionConObjetivos } from './contratos-entrenamiento-por-serie';
-import { cantidadDeSeries } from './copy-entrenamiento';
 import { COPY_ENTRENAMIENTO_POR_SERIE } from './copy-entrenamiento-por-serie';
 import { comidasAbiertasEnElEditor, pedidoDeComidasDelEditor, posicionPedida, type ProblemaDelEditor } from './editor-del-plan-de-nutricion';
 import { renglonDelEjercicio } from './lectura-del-plan-de-entrenamiento';
+import { cuentaDeSeries } from './tipos-de-serie';
 import { objetivosEfectivos, type SerieParaResolver } from './objetivos-por-serie';
 
 /** Lo que el editor necesita saber de la estructura: nombres, sesiones y lo que cada ejercicio pide. */
 interface SerieDelEditor extends SerieParaResolver {
   readonly note?: string | null;
+  /** DL-178: ausente es efectiva. */
+  readonly setKind?: 'WORKING' | 'WARM_UP';
 }
 interface ParametroDelEditor {
   readonly label: string;
@@ -236,6 +238,7 @@ function comoLoLeeElPlan(p: EjercicioDelEditor): Pick<PrescripcionConObjetivos, 
     sets: objetivosEfectivos(p).map((f, n) => ({
       setIndex: f.setIndex,
       note: p.sets[n]?.note ?? null,
+      ...(p.sets[n]?.setKind ? { setKind: p.sets[n]!.setKind } : {}),
       target: { repetitions: f.repetitions, rir: f.rir, suggestedLoad: f.suggestedLoad, restSeconds: f.restSeconds },
       targetOrigin: f.origin,
     })),
@@ -265,7 +268,7 @@ export function ejercicioPlegadoDelEditor(p: EjercicioDelEditor, problemas: numb
   const parametros = propios.filter((x) => x.code === P.parametroIncompleto).length;
   const ilegibles = propios.length - parametros - (faltaElObjetivo ? 1 : 0);
   return {
-    resumen: faltaElObjetivo || ilegibles > 0 ? cantidadDeSeries(p.sets.length) : renglonDelEjercicio(comoLoLeeElPlan(p)),
+    resumen: faltaElObjetivo || ilegibles > 0 ? cuentaDeSeries(p.sets) : renglonDelEjercicio(comoLoLeeElPlan(p)),
     avisos: [
       ...(faltaElObjetivo ? ['Falta el objetivo de intensidad'] : []),
       ...(ilegibles > 0 ? [unoOVarios(ilegibles, 'dato que no se entiende', 'datos que no se entienden')] : []),

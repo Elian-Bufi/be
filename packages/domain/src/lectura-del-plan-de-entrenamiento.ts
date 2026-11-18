@@ -14,11 +14,12 @@
  * - **Sin criterio de intensidad, se dice:** es legítimo, y el profesional tiene que verlo.
  */
 import type { PlanConObjetivos, PrescripcionConObjetivos, SesionConObjetivos } from './contratos-entrenamiento-por-serie';
-import { COPY_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO, cantidadDeSeries } from './copy-entrenamiento';
+import { COPY_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO, cantidadDeSeries as cantidadDeSeriesComun } from './copy-entrenamiento';
 import { ETIQUETA_DE_BASE_DE_CARGA, ETIQUETA_DE_BASE_DE_REPETICIONES, textoDeCarga, textoDeRepeticiones, textoDeRir, textoDeSegundos } from './copy-entrenamiento-por-serie';
 import { numero } from './formato-numeros';
 import { intensidadPlanificada } from './presentacion-de-prescripcion';
 import { COPY_DE_VERSIONES, elegidoPorOrden } from './versiones-de-plan';
+import { COPY_TIPOS_DE_SERIE, cuentaDeSeries, esDeCalentamiento, numerosEfectivos, seriesEfectivas, type ConTipoDeSerie } from './tipos-de-serie';
 
 type Bloque = PlanConObjetivos['blocks'][number];
 type Microciclo = Bloque['microcycles'][number];
@@ -60,11 +61,13 @@ export function sesionesDelBloque(bloque: { readonly sessions?: readonly unknown
   return cuantas === 1 ? '1 sesión' : `${numero(cuantas)} sesiones`;
 }
 
-/** «3 ejercicios · 12 series»: lo que tiene una sesión. Una cuenta de lo indicado, no de lo hecho. */
-export function cuentaDeLaSesion(sesion: { readonly prescriptions: readonly { readonly sets: readonly unknown[] }[] }): string {
+/**
+ * «3 ejercicios · 12 series»: lo que tiene una sesión. Una cuenta de lo indicado, no de lo hecho. Con calentamiento
+ * (DL-178) cuenta las efectivas y lo dice: «3 ejercicios · 10 series efectivas + 2 de calentamiento».
+ */
+export function cuentaDeLaSesion(sesion: { readonly prescriptions: readonly { readonly sets: readonly ConTipoDeSerie[] }[] }): string {
   const ejercicios = sesion.prescriptions.length;
-  const series = sesion.prescriptions.reduce((n, p) => n + p.sets.length, 0);
-  return `${ejercicios === 1 ? '1 ejercicio' : `${numero(ejercicios)} ejercicios`} · ${cantidadDeSeries(series)}`;
+  return `${ejercicios === 1 ? '1 ejercicio' : `${numero(ejercicios)} ejercicios`} · ${cuentaDeSeries(sesion.prescriptions.flatMap((p) => p.sets))}`;
 }
 
 // ─── Un ejercicio ───────────────────────────────────────────────────────────────────────────────
@@ -75,7 +78,7 @@ const todasIguales = (valores: readonly (string | null)[]): boolean => valores.e
 
 /** La cabecera de un ejercicio abierto: «4 series · criterio de intensidad: RIR». Sin criterio, lo dice. */
 export function encabezadoDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>): string {
-  return `${cantidadDeSeries(p.sets.length)} · ${p.intensity ? `criterio de intensidad: ${ETIQUETA_DE_CRITERIO[p.intensity.criterion]}` : SIN_CRITERIO}`;
+  return `${cuentaDeSeries(p.sets)} · ${p.intensity ? `criterio de intensidad: ${ETIQUETA_DE_CRITERIO[p.intensity.criterion]}` : SIN_CRITERIO}`;
 }
 
 /**
@@ -86,12 +89,16 @@ export function encabezadoDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' 
  * - Sin criterio de intensidad, lo dice. Con % RM, la intensidad es la general: no hay un % RM por serie.
  */
 export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>): string {
-  const cuantas = p.sets.length;
-  if (cuantas === 0) return COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSeries;
-  const repeticiones = p.sets.map((s) => textoDeRepeticiones(s.target.repetitions));
-  const cargas = p.sets.map((s) => textoDeCarga(s.target.suggestedLoad));
-  const rires = p.sets.map((s) => textoDeRir(s.target.rir));
-  const descansos = p.sets.map((s) => textoDeSegundos(s.target.restSeconds));
+  // DL-178: el renglón resume las series efectivas; el calentamiento se nombra aparte y no entra en el resumen.
+  const efectivas = seriesEfectivas(p.sets);
+  const calentamiento = p.sets.length - efectivas.length;
+  const cuantas = efectivas.length;
+  if (cuantas === 0) return calentamiento > 0 ? COPY_TIPOS_DE_SERIE.deCalentamiento(calentamiento) : COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSeries;
+  const cantidadDeSeries = (n: number) => (calentamiento > 0 ? COPY_TIPOS_DE_SERIE.efectivas(n) : cantidadDeSeriesComun(n));
+  const repeticiones = efectivas.map((s) => textoDeRepeticiones(s.target.repetitions));
+  const cargas = efectivas.map((s) => textoDeCarga(s.target.suggestedLoad));
+  const rires = efectivas.map((s) => textoDeRir(s.target.rir));
+  const descansos = efectivas.map((s) => textoDeSegundos(s.target.restSeconds));
   const conRir = p.intensity?.criterion === 'RIR';
   const todoIgual = todasIguales(repeticiones) && todasIguales(cargas) && todasIguales(descansos) && (!conRir || todasIguales(rires));
   const partes: string[] = [];
@@ -102,6 +109,7 @@ export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | '
     if (!todasIguales(repeticiones)) porSerie.push('repeticiones');
     else partes.push(repeticiones[0] ?? COPY_ENTRENAMIENTO.sinRepeticionesFijadas);
   }
+  if (calentamiento > 0) partes[0] = `${partes[0]} + ${COPY_TIPOS_DE_SERIE.deCalentamiento(calentamiento)}`;
   if (!todasIguales(cargas)) porSerie.push('carga');
   else if (cargas[0]) partes.push(cargas[0]);
   if (!p.intensity) partes.push(SIN_CRITERIO);
@@ -117,7 +125,10 @@ export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | '
 
 /** Una fila de «Lo que recibe tu asesorado»: el objetivo de una serie. `null`: sin objetivo. */
 export interface SerieDelPlan {
+  /** El número efectivo (DL-178): 1, 2, 3 sin contar el calentamiento. En una de calentamiento, su posición real. */
   readonly serie: number;
+  /** DL-178: solo en una serie de calentamiento, que se rotula «C» y no lleva número. */
+  readonly deCalentamiento?: true;
   readonly carga: string | null;
   readonly repeticiones: string | null;
   readonly rir: string | null;
@@ -130,10 +141,12 @@ export interface SerieDelPlan {
  * RIR o alguna serie tiene uno; la de la nota, si alguna serie la tiene.
  */
 export function seriesDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>): { readonly filas: readonly SerieDelPlan[]; readonly conRir: boolean; readonly conNota: boolean } {
+  const efectivos = numerosEfectivos(p.sets);
   const filas = [...p.sets]
     .sort((a, b) => a.setIndex - b.setIndex)
     .map((s) => ({
-      serie: s.setIndex,
+      serie: efectivos.get(s.setIndex) ?? s.setIndex,
+      ...(esDeCalentamiento(s) ? { deCalentamiento: true as const } : {}),
       carga: textoDeCarga(s.target.suggestedLoad),
       repeticiones: textoDeRepeticiones(s.target.repetitions),
       rir: textoDeRir(s.target.rir),
