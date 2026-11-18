@@ -123,8 +123,8 @@ test('una excepción acotada a un espacio no vale en otro: el zod de la CLI de E
 /**
  * Las dos excepciones como estaban declaradas hasta el 2026-11-11, copiadas tal cual. UF-12 (WP-USO-FINAL, UF-D13) las
  * retiró: node-forge salió del aviso con la 1.4.2 y la CLI de Expo 57.0.33 dejó de pedir zod (DL-114). El mecanismo de la
- * procedencia queda en el script, sin excepciones declaradas, para la próxima que decida Dirección: estas pruebas lo
- * siguen ejercitando con aquellas dos declaraciones.
+ * procedencia queda en el script para la próxima que la necesite (la de picomatch, del 2026-11-18, no la usa): estas
+ * pruebas lo siguen ejercitando con aquellas dos declaraciones.
  */
 const ZOD = {
   aviso: 'GHSA-mrhx-c7xc-m3w5',
@@ -393,8 +393,9 @@ function anterior(a, b) {
 }
 const copiasEnElLock = (lock, paquete) => Object.keys(lock.packages).filter((u) => u === `node_modules/${paquete}` || u.endsWith(`/node_modules/${paquete}`));
 
-test('TEST-UF-016 · no queda ninguna excepción: zod 3 o node-forge abarcado en la APK bloquean cualquier día, antes y después del 2026-11-30', () => {
-  assert.deepEqual(EXCEPCIONES, [], 'declarar o renovar una excepción es una decisión de Dirección (DL-114), no una prórroga de la CI');
+test('TEST-UF-016 · no queda ninguna excepción de zod ni de node-forge: en la APK bloquean cualquier día, antes y después del 2026-11-30', () => {
+  // Desde el 2026-11-18 la única declarada es la de picomatch (DL-114, decisión de Dirección de ese día).
+  assert.deepEqual(EXCEPCIONES.map((e) => `${e.paquete} ${e.aviso}`), ['picomatch GHSA-fc5q-39xc-vjpf'], 'declarar o renovar una excepción es una decisión de Dirección (DL-114), no una prórroga de la CI');
   for (const hoy of ['2026-11-11', '2026-11-30', '2026-12-01']) {
     const zod = evaluarSalida('@be/mobile', salidaDeLaApk(), EXCEPCIONES, hoy, contexto());
     assert.equal(zod.codigo, CODIGO.VULNERABILIDADES, `${hoy}: ${texto(zod)}`);
@@ -549,6 +550,89 @@ test('vencimiento de node-forge: el 2026-11-30 vale; desde el 2026-12-01 bloquea
   const r = evaluarSalida('@be/mobile', salidaConForge(), RETIRADAS, '2026-12-01', contexto());
   assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
   assert.match(texto(r), /excepción vencida el 2026-11-30 · node-forge · GHSA-86w9-cpqp-85rv: revisarla en DL-114/);
+});
+
+// ─── picomatch: declarada el 2026-11-18 por Dirección hasta el 2026-12-15, sin versión corregida (DL-114) ───────
+
+const PICOMATCH = EXCEPCIONES.find((e) => e.paquete === 'picomatch');
+const AVISO_PICOMATCH = {
+  source: 1,
+  name: 'picomatch',
+  dependency: 'picomatch',
+  title: 'picomatch vulnerable to ReDoS through single-branch repeated extglobs',
+  url: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+  severity: 'high',
+  range: '<=4.0.7',
+};
+
+/** La salida de npm con la forma real del 2026-11-18: en la APK, las tres copias; en la API, la de la raíz por fdir. */
+function salidaConPicomatch(espacio) {
+  const nodos = espacio === '@be/mobile' ? ['node_modules/jest-worker/node_modules/picomatch', 'node_modules/micromatch/node_modules/picomatch', 'node_modules/picomatch'] : ['node_modules/picomatch'];
+  const vulnerabilities = {
+    picomatch: { name: 'picomatch', severity: 'high', isDirect: false, via: [AVISO_PICOMATCH], effects: ['fdir'], range: '<=4.0.7', nodes: nodos, fixAvailable: false },
+    fdir: { name: 'fdir', severity: 'high', isDirect: false, via: ['picomatch'], effects: [], range: '*', nodes: ['node_modules/fdir'], fixAvailable: true },
+  };
+  return JSON.stringify({ auditReportVersion: 2, vulnerabilities, metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 2, critical: 0, total: 2 }, dependencies: { prod: 100, total: 100 } } });
+}
+
+test('picomatch: la excepción es solo de GHSA-fc5q-39xc-vjpf, en la API y la APK, sin procedencia, y vence el 2026-12-15', () => {
+  assert.ok(PICOMATCH, 'falta la excepción de picomatch');
+  assert.equal(PICOMATCH.aviso, 'GHSA-fc5q-39xc-vjpf');
+  assert.deepEqual(PICOMATCH.espacios, ['@be/api', '@be/mobile']);
+  assert.equal(PICOMATCH.vence, '2026-12-15');
+  assert.equal(PICOMATCH.procedencia, undefined);
+  assert.match(PICOMATCH.motivo, /patrones glob/);
+});
+
+test('picomatch hasta el 2026-12-15: se exceptúa en la API y la APK, sin construir el bundle; en el website bloquea', () => {
+  for (const espacio of ['@be/api', '@be/mobile']) {
+    const ctx = contexto();
+    const r = evaluarSalida(espacio, salidaConPicomatch(espacio), EXCEPCIONES, '2026-11-18', ctx);
+    assert.equal(r.codigo, CODIGO.APRUEBA, texto(r));
+    assert.match(texto(r), /exceptuado hasta el 2026-12-15 · picomatch · GHSA-fc5q-39xc-vjpf \(DL-114\)/);
+    assert.equal(ctx.bundlesPedidos, 0, espacio);
+    assert.equal(evaluarSalida(espacio, salidaConPicomatch(espacio), EXCEPCIONES, '2026-12-15', contexto()).codigo, CODIGO.APRUEBA);
+  }
+  const web = evaluarSalida('@be/web', salidaConPicomatch('@be/web'), EXCEPCIONES, '2026-11-18', contexto());
+  assert.equal(web.codigo, CODIGO.VULNERABILIDADES);
+  assert.match(texto(web), /✗ @be\/web: high · picomatch · GHSA-fc5q-39xc-vjpf/);
+});
+
+test('picomatch desde el 2026-12-16 bloquea en los dos espacios, y no se renueva sola', () => {
+  for (const espacio of ['@be/api', '@be/mobile']) {
+    const r = evaluarSalida(espacio, salidaConPicomatch(espacio), EXCEPCIONES, '2026-12-16', contexto());
+    assert.equal(r.codigo, CODIGO.VULNERABILIDADES);
+    assert.match(texto(r), /excepción vencida el 2026-12-15 · picomatch · GHSA-fc5q-39xc-vjpf: revisarla en DL-114/);
+  }
+});
+
+test('picomatch: otro aviso del mismo paquete, o el mismo aviso en otro paquete, no queda exceptuado', () => {
+  const otro = evaluarSalida('@be/mobile', salida(aviso('picomatch', 'GHSA-zzzz-yyyy-xxxx', 'high')), EXCEPCIONES, '2026-11-18', contexto());
+  assert.equal(otro.codigo, CODIGO.VULNERABILIDADES);
+  const ajeno = evaluarSalida('@be/mobile', salida(aviso('micromatch', 'GHSA-fc5q-39xc-vjpf', 'high')), EXCEPCIONES, '2026-11-18', contexto());
+  assert.equal(ajeno.codigo, CODIGO.VULNERABILIDADES);
+});
+
+test('picomatch: el motivo se sostiene, ningún código de BE importa una biblioteca de globs', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const raiz = path.resolve(__dirname, '..');
+  const bibliotecas = /(?:from\s+|require\(\s*|import\(\s*)['"](?:picomatch|micromatch|minimatch|anymatch|tinyglobby|fdir|fast-glob|glob|globby)(?:\/[^'"]*)?['"]/;
+  const carpetas = ['apps/api/src', 'apps/web/src', 'apps/mobile/src', 'apps/mobile/App.tsx', 'apps/mobile/index.ts', 'packages/domain/src'];
+  const encontrados = [];
+  const recorrer = (ruta) => {
+    const datos = fs.statSync(ruta);
+    if (datos.isDirectory()) {
+      for (const hijo of fs.readdirSync(ruta)) if (hijo !== 'node_modules') recorrer(path.join(ruta, hijo));
+    } else if (/\.(?:[cm]?[jt]sx?)$/.test(ruta) && bibliotecas.test(fs.readFileSync(ruta, 'utf8'))) encontrados.push(path.relative(raiz, ruta));
+  };
+  for (const c of carpetas) recorrer(path.join(raiz, c));
+  assert.deepEqual(encontrados, [], 'si BE empieza a usar globs, revisar la excepción de picomatch en DL-114');
+  // Y en las dependencias declaradas de los espacios, tampoco.
+  for (const espacio of ['apps/api', 'apps/web', 'apps/mobile', 'packages/domain']) {
+    const pkg = JSON.parse(fs.readFileSync(path.join(raiz, espacio, 'package.json'), 'utf8'));
+    for (const nombre of ['picomatch', 'micromatch', 'minimatch', 'tinyglobby', 'fdir', 'fast-glob', 'glob', 'globby']) assert.equal(pkg.dependencies?.[nombre], undefined, `${espacio} declara ${nombre}`);
+  }
 });
 
 test('braces ya no está exceptuado: si GitHub volviera a publicar el aviso, bloquea como cualquier otro', () => {

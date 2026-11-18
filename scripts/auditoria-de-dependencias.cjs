@@ -55,10 +55,31 @@ const CODIGO = { APRUEBA: 0, VULNERABILIDADES: 1, NO_SE_PUDO_AUDITAR: 2 };
  *   - zod (GHSA-mrhx-c7xc-m3w5): la CLI de Expo 57.0.33 (2026-11-05, del mismo SDK 57: «Remove the Zod production
  *     dependency») ya no lo pide. El zod 3 que queda en el lockfile lo usa solo chromium-bidi, de Puppeteer, que es de
  *     desarrollo. La APK sigue validando con el zod 4.6.6 de @be/domain.
- * El mecanismo de la procedencia queda para una excepción futura: se prueba con aquellas dos declaraciones, copiadas en
+ * El mecanismo de la procedencia se sigue probando con aquellas dos declaraciones, copiadas en
  * `auditoria-de-dependencias.test.cjs`. Declarar o renovar una excepción sigue siendo una decisión de Dirección.
+ *
+ * Declarada el 2026-11-18, por decisión de Dirección (DL-114), hasta el 2026-12-15: picomatch (GHSA-fc5q-39xc-vjpf, ReDoS
+ * con extglobs de una sola rama repetidos). GitHub publicó el aviso el 2026-10-19, abarca todo `<= 4.0.7` (la última
+ * publicada) y no tiene versión corregida, así que ni un `overrides` ni actualizar a quien lo pide lo saca. Entra:
+ *   - en la APK, solo por la cadena de construcción: la CLI de Expo y `@expo/metro-config` (la 4.0.7 de la raíz), Metro
+ *     (`metro-file-map` → micromatch → la 2.3.2 anidada), `jest-worker` de Metro (`jest-util` → la 2.3.2 anidada) y
+ *     tinyglobby (la 4.0.7), que piden `react-native` y `@react-native/codegen` para la generación de código;
+ *   - en la API, por un artefacto de `npm audit -w`: fdir → la 4.0.7, y a fdir solo lo usa `jest-haste-map`, de Jest,
+ *     que es de desarrollo. Ninguna dependencia de producción de la API llega a picomatch.
+ * Sin `procedencia`: el mecanismo exige una sola copia y una sola cadena, y aquí son tres copias y varios caminos. La
+ * acotan el aviso, el paquete, los dos espacios (en el website bloquea) y el vencimiento. Se retira apenas salga la
+ * corrección (con `overrides`, si quien lo pide no la toma solo) o GitHub retire el aviso.
  */
-const EXCEPCIONES = [];
+const EXCEPCIONES = [
+  {
+    aviso: 'GHSA-fc5q-39xc-vjpf',
+    paquete: 'picomatch',
+    espacios: ['@be/api', '@be/mobile'],
+    motivo:
+      'Sin versión corregida (abarca <= 4.0.7, la última). BE no recibe patrones glob de las personas: ningún código de BE importa picomatch, micromatch, tinyglobby, fdir ni otra biblioteca de globs, y los patrones que llegan a picomatch son los de Metro, la CLI de Expo, la generación de código de React Native y Jest, escritos en su configuración. El ReDoS no es alcanzable con datos de afuera; queda instalado en la cadena de construcción de la APK y en las herramientas de prueba de la API.',
+    vence: '2026-12-15',
+  },
+];
 
 /** El identificador del aviso: `GHSA-…`, tomado de su URL. */
 const idDelAviso = (via) => (typeof via.url === 'string' ? via.url.split('/').pop() : String(via.source));
