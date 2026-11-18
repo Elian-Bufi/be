@@ -36940,6 +36940,13 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
@@ -37295,6 +37302,13 @@
                                                   {
                                                     "type": "null"
                                                   }
+                                                ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
                                                 ]
                                               }
                                             },
@@ -37828,6 +37842,13 @@
                                                           "string",
                                                           "null"
                                                         ]
+                                                      },
+                                                      "setKind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "WORKING",
+                                                          "WARM_UP"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
@@ -38114,6 +38135,13 @@
                                                   "type": [
                                                     "string",
                                                     "null"
+                                                  ]
+                                                },
+                                                "setKind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "WORKING",
+                                                    "WARM_UP"
                                                   ]
                                                 }
                                               },
@@ -39066,6 +39094,13 @@
                                                           "string",
                                                           "null"
                                                         ]
+                                                      },
+                                                      "setKind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "WORKING",
+                                                          "WARM_UP"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
@@ -39352,6 +39387,13 @@
                                                   "type": [
                                                     "string",
                                                     "null"
+                                                  ]
+                                                },
+                                                "setKind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "WORKING",
+                                                    "WARM_UP"
                                                   ]
                                                 }
                                               },
@@ -39889,6 +39931,13 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
@@ -40244,6 +40293,13 @@
                                                   {
                                                     "type": "null"
                                                   }
+                                                ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
                                                 ]
                                               }
                                             },
@@ -40861,6 +40917,13 @@
                                                           "string",
                                                           "null"
                                                         ]
+                                                      },
+                                                      "setKind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "WORKING",
+                                                          "WARM_UP"
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
@@ -41147,6 +41210,13 @@
                                                   "type": [
                                                     "string",
                                                     "null"
+                                                  ]
+                                                },
+                                                "setKind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "WORKING",
+                                                    "WARM_UP"
                                                   ]
                                                 }
                                               },
@@ -43439,6 +43509,13 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
@@ -43794,6 +43871,13 @@
                                                   {
                                                     "type": "null"
                                                   }
+                                                ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
                                                 ]
                                               }
                                             },
@@ -44320,6 +44404,13 @@
                                                                 "type": "null"
                                                               }
                                                             ]
+                                                          },
+                                                          "setKind": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "WORKING",
+                                                              "WARM_UP"
+                                                            ]
                                                           }
                                                         },
                                                         "required": [
@@ -44675,6 +44766,13 @@
                                                         {
                                                           "type": "null"
                                                         }
+                                                      ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
                                                       ]
                                                     }
                                                   },
@@ -45604,6 +45702,13 @@
                                                                 "type": "null"
                                                               }
                                                             ]
+                                                          },
+                                                          "setKind": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "WORKING",
+                                                              "WARM_UP"
+                                                            ]
                                                           }
                                                         },
                                                         "required": [
@@ -45959,6 +46064,13 @@
                                                         {
                                                           "type": "null"
                                                         }
+                                                      ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
                                                       ]
                                                     }
                                                   },
@@ -46663,6 +46775,13 @@
                                                                 "type": "null"
                                                               }
                                                             ]
+                                                          },
+                                                          "setKind": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "WORKING",
+                                                              "WARM_UP"
+                                                            ]
                                                           }
                                                         },
                                                         "required": [
@@ -47018,6 +47137,13 @@
                                                         {
                                                           "type": "null"
                                                         }
+                                                      ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
                                                       ]
                                                     }
                                                   },
@@ -50033,6 +50159,13 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
@@ -50388,6 +50521,13 @@
                                                   {
                                                     "type": "null"
                                                   }
+                                                ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
                                                 ]
                                               }
                                             },
@@ -50914,6 +51054,13 @@
                                                                 "type": "null"
                                                               }
                                                             ]
+                                                          },
+                                                          "setKind": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "WORKING",
+                                                              "WARM_UP"
+                                                            ]
                                                           }
                                                         },
                                                         "required": [
@@ -51269,6 +51416,13 @@
                                                         {
                                                           "type": "null"
                                                         }
+                                                      ]
+                                                    },
+                                                    "setKind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "WORKING",
+                                                        "WARM_UP"
                                                       ]
                                                     }
                                                   },
@@ -52318,6 +52472,13 @@
                                                 "type": "null"
                                               }
                                             ]
+                                          },
+                                          "setKind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "WORKING",
+                                              "WARM_UP"
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -52858,6 +53019,13 @@
                                         "type": "null"
                                       }
                                     ]
+                                  },
+                                  "setKind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "WORKING",
+                                      "WARM_UP"
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -53249,6 +53417,13 @@
                                             {
                                               "type": "null"
                                             }
+                                          ]
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
                                           ]
                                         }
                                       },
@@ -53843,6 +54018,13 @@
                                             {
                                               "type": "null"
                                             }
+                                          ]
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
                                           ]
                                         }
                                       },
@@ -56018,6 +56200,13 @@
                                           "type": "null"
                                         }
                                       ]
+                                    },
+                                    "setKind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "WORKING",
+                                        "WARM_UP"
+                                      ]
                                     }
                                   },
                                   "required": [
@@ -56392,6 +56581,13 @@
                                   "type": "null"
                                 }
                               ]
+                            },
+                            "setKind": {
+                              "type": "string",
+                              "enum": [
+                                "WORKING",
+                                "WARM_UP"
+                              ]
                             }
                           },
                           "required": [
@@ -56667,6 +56863,13 @@
                                       {
                                         "type": "null"
                                       }
+                                    ]
+                                  },
+                                  "setKind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "WORKING",
+                                      "WARM_UP"
                                     ]
                                   }
                                 },
@@ -57113,6 +57316,13 @@
                                       {
                                         "type": "null"
                                       }
+                                    ]
+                                  },
+                                  "setKind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "WORKING",
+                                      "WARM_UP"
                                     ]
                                   }
                                 },
@@ -60650,6 +60860,13 @@
                                                   "string",
                                                   "null"
                                                 ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -61198,6 +61415,13 @@
                                                 "type": [
                                                   "string",
                                                   "null"
+                                                ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
                                                 ]
                                               }
                                             },
@@ -61758,6 +61982,13 @@
                                                   "string",
                                                   "null"
                                                 ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -62131,6 +62362,13 @@
                                                       }
                                                     },
                                                     "additionalProperties": false
+                                                  },
+                                                  "setKind": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "WORKING",
+                                                      "WARM_UP"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
@@ -62415,6 +62653,13 @@
                                                             }
                                                           },
                                                           "additionalProperties": false
+                                                        },
+                                                        "setKind": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "WORKING",
+                                                            "WARM_UP"
+                                                          ]
                                                         }
                                                       },
                                                       "required": [
@@ -62973,6 +63218,13 @@
                                             }
                                           },
                                           "additionalProperties": false
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -63339,6 +63591,13 @@
                                             }
                                           },
                                           "additionalProperties": false
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -63822,6 +64081,13 @@
                                             }
                                           },
                                           "additionalProperties": false
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -64237,6 +64503,13 @@
                                           }
                                         },
                                         "additionalProperties": false
+                                      },
+                                      "setKind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "WORKING",
+                                          "WARM_UP"
+                                        ]
                                       }
                                     },
                                     "required": [
@@ -64569,6 +64842,13 @@
                                             }
                                           },
                                           "additionalProperties": false
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -65167,6 +65447,13 @@
                                             "string",
                                             "null"
                                           ]
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -65540,6 +65827,13 @@
                                                 }
                                               },
                                               "additionalProperties": false
+                                            },
+                                            "setKind": {
+                                              "type": "string",
+                                              "enum": [
+                                                "WORKING",
+                                                "WARM_UP"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -65824,6 +66118,13 @@
                                                       }
                                                     },
                                                     "additionalProperties": false
+                                                  },
+                                                  "setKind": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "WORKING",
+                                                      "WARM_UP"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
@@ -66338,6 +66639,13 @@
                                           }
                                         },
                                         "additionalProperties": false
+                                      },
+                                      "setKind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "WORKING",
+                                          "WARM_UP"
+                                        ]
                                       }
                                     },
                                     "required": [
@@ -66585,6 +66893,13 @@
                                           "type": [
                                             "string",
                                             "null"
+                                          ]
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
                                           ]
                                         }
                                       },
@@ -66959,6 +67274,13 @@
                                                 }
                                               },
                                               "additionalProperties": false
+                                            },
+                                            "setKind": {
+                                              "type": "string",
+                                              "enum": [
+                                                "WORKING",
+                                                "WARM_UP"
+                                              ]
                                             }
                                           },
                                           "required": [
@@ -67243,6 +67565,13 @@
                                                       }
                                                     },
                                                     "additionalProperties": false
+                                                  },
+                                                  "setKind": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "WORKING",
+                                                      "WARM_UP"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
@@ -68031,6 +68360,13 @@
                                                   "string",
                                                   "null"
                                                 ]
+                                              },
+                                              "setKind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "WORKING",
+                                                  "WARM_UP"
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -68404,6 +68740,13 @@
                                                       }
                                                     },
                                                     "additionalProperties": false
+                                                  },
+                                                  "setKind": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "WORKING",
+                                                      "WARM_UP"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
@@ -68688,6 +69031,13 @@
                                                             }
                                                           },
                                                           "additionalProperties": false
+                                                        },
+                                                        "setKind": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "WORKING",
+                                                            "WARM_UP"
+                                                          ]
                                                         }
                                                       },
                                                       "required": [
@@ -69092,6 +69442,13 @@
                                                       }
                                                     },
                                                     "additionalProperties": false
+                                                  },
+                                                  "setKind": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "WORKING",
+                                                      "WARM_UP"
+                                                    ]
                                                   }
                                                 },
                                                 "required": [
@@ -71756,6 +72113,13 @@
                                                           }
                                                         ]
                                                       },
+                                                      "setKind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "WORKING",
+                                                          "WARM_UP"
+                                                        ]
+                                                      },
                                                       "target": {
                                                         "type": "object",
                                                         "properties": {
@@ -72351,6 +72715,13 @@
                                                     }
                                                   ]
                                                 },
+                                                "setKind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "WORKING",
+                                                    "WARM_UP"
+                                                  ]
+                                                },
                                                 "target": {
                                                   "type": "object",
                                                   "properties": {
@@ -72730,6 +73101,22 @@
                           ],
                           "additionalProperties": false
                         },
+                        "setKindsDelivery": {
+                          "type": "object",
+                          "properties": {
+                            "required": {
+                              "type": "boolean"
+                            },
+                            "adviseeClientCapable": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "required",
+                            "adviseeClientCapable"
+                          ],
+                          "additionalProperties": false
+                        },
                         "agenda": {
                           "anyOf": [
                             {
@@ -72834,6 +73221,7 @@
                         "nextReviewAt",
                         "blocks",
                         "setTargetsDelivery",
+                        "setKindsDelivery",
                         "agenda"
                       ],
                       "additionalProperties": false
@@ -73220,6 +73608,13 @@
                                             {
                                               "type": "null"
                                             }
+                                          ]
+                                        },
+                                        "setKind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "WORKING",
+                                            "WARM_UP"
                                           ]
                                         },
                                         "target": {
@@ -99839,6 +100234,13 @@
                                                                       "string",
                                                                       "null"
                                                                     ]
+                                                                  },
+                                                                  "setKind": {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                      "WORKING",
+                                                                      "WARM_UP"
+                                                                    ]
                                                                   }
                                                                 },
                                                                 "required": [
@@ -100125,6 +100527,13 @@
                                                               "type": [
                                                                 "string",
                                                                 "null"
+                                                              ]
+                                                            },
+                                                            "setKind": {
+                                                              "type": "string",
+                                                              "enum": [
+                                                                "WORKING",
+                                                                "WARM_UP"
                                                               ]
                                                             }
                                                           },
@@ -102909,6 +103318,13 @@
                                                                         "string",
                                                                         "null"
                                                                       ]
+                                                                    },
+                                                                    "setKind": {
+                                                                      "type": "string",
+                                                                      "enum": [
+                                                                        "WORKING",
+                                                                        "WARM_UP"
+                                                                      ]
                                                                     }
                                                                   },
                                                                   "required": [
@@ -103195,6 +103611,13 @@
                                                                 "type": [
                                                                   "string",
                                                                   "null"
+                                                                ]
+                                                              },
+                                                              "setKind": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                  "WORKING",
+                                                                  "WARM_UP"
                                                                 ]
                                                               }
                                                             },
