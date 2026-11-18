@@ -11,13 +11,14 @@ import {
   actuaComoProfesional,
   estadoDelSegundoFactorDelProfesional,
   finDelInicioReciente,
+  SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO,
   SegundoFactorDeLaSesionResponseSchema,
   segundoFactorDelProfesionalApi,
 } from './segundo-factor-del-profesional';
 
 const inicio = new Date('2026-11-12T12:00:00.000Z');
 const despues = (ms: number) => new Date(inicio.getTime() + ms);
-const base = { esProfesional: true, inicioDeLaSesion: inicio, verificadoEn: null, metodo: null, tieneAutenticadorActivo: false, ahora: despues(60_000) } as const;
+const base = { exigido: true, esProfesional: true, inicioDeLaSesion: inicio, verificadoEn: null, metodo: null, tieneAutenticadorActivo: false, ahora: despues(60_000) } as const;
 
 test('TEST-UF-014 · sin perfil profesional no se pide nada, y la sesión actúa como siempre', () => {
   const e = estadoDelSegundoFactorDelProfesional({ ...base, esProfesional: false });
@@ -70,4 +71,20 @@ test('TEST-UF-014 · el PDP: con todo a favor salvo el segundo factor de la sesi
   const sinSegundoFactor = evaluarAutorizacion({ ...favorables, actor: { ...favorables.actor, conSegundoFactor: false } });
   assert.equal(sinSegundoFactor.permitida, false);
   assert.deepEqual(sinSegundoFactor.dimensionesDesfavorables, ['SITUACION']);
+});
+
+test('DL-177 · sin la exigencia, el profesional actúa como profesional con su contraseña: no se pide ni se ofrece el autenticador', () => {
+  assert.equal(SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO, false, 'la política vigente (Dirección, 2026-11-18): solo contraseña hasta tener correo');
+  const casos = [
+    { ...base, exigido: false },
+    { ...base, exigido: false, tieneAutenticadorActivo: true, ahora: despues(3 * 60 * 60 * 1000) },
+    { ...base, exigido: false, ahora: despues(PLAZO_DEL_SEGUNDO_FACTOR_MS + 1) },
+    { ...base, exigido: false, verificadoEn: despues(30_000), metodo: 'TOTP' as const, tieneAutenticadorActivo: true },
+  ];
+  for (const p of casos) {
+    const e = estadoDelSegundoFactorDelProfesional(p);
+    assert.deepEqual(e, { estado: 'NO_REQUERIDO' }, JSON.stringify(p));
+    assert.equal(actuaComoProfesional(e), true);
+    assert.deepEqual(segundoFactorDelProfesionalApi(e), { state: 'NOT_REQUIRED' });
+  }
 });

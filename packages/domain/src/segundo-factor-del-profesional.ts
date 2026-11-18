@@ -14,6 +14,13 @@
  *   más privilegios. Cada sesión nueva pide el código otra vez.
  * - **Reemplazar el autenticador o generar códigos nuevos** pide el segundo factor vigente y una entrada reciente (los
  *   mismos 10 minutos): es la re-autenticación de 08 §25, igual para una cuenta con contraseña y para una de Google.
+ *
+ * **Desde el 2026-11-18 (DL-177, decisión de Dirección, a ratificar), el profesional no usa el autenticador:** entra con su
+ * contraseña (o con Google) y su sesión actúa como profesional sin que se le pida ni se le ofrezca el código. Lo decide
+ * una sola constante, `SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO`: en `false`, el estado de toda sesión común es
+ * `NO_REQUERIDO`, con perfil profesional o sin él. Las tablas, los autenticadores ya configurados y la familia MFA quedan
+ * como están, sin uso para el profesional, para la etapa siguiente (un código por correo, recomendado solo al entrar desde
+ * un dispositivo nuevo). Administración no pasa por acá: su segundo factor (DL-155) sigue igual, con su propio guard.
  */
 import { z } from 'zod';
 import { PLAZO_DEL_SEGUNDO_FACTOR_MS, type MetodoDelSegundoFactor } from './administracion';
@@ -21,7 +28,7 @@ import { IdOpaco, Instante } from './contratos';
 import { CodigosDeRecuperacionSchema } from './contratos-administracion';
 
 export type EstadoDelSegundoFactorDelProfesional =
-  /** La identidad no tiene perfil profesional: no hay nada que pedir. */
+  /** La identidad no tiene perfil profesional, o la política no lo exige (DL-177): no hay nada que pedir. */
   | { readonly estado: 'NO_REQUERIDO' }
   | { readonly estado: 'VERIFICADO'; readonly metodo: MetodoDelSegundoFactor }
   /** Tiene un autenticador activo y la sesión todavía no escribió un código. */
@@ -31,8 +38,18 @@ export type EstadoDelSegundoFactorDelProfesional =
   /** No tiene autenticador y el plazo pasó: para configurarlo, vuelve a entrar. */
   | { readonly estado: 'INICIO_RECIENTE_REQUERIDO' };
 
+/**
+ * DL-177 (Dirección, 2026-11-18; a ratificar): si la sesión común de un profesional tiene que verificar un segundo factor
+ * para actuar como profesional. Hoy no: «solo contraseña hasta tener correo». En `true` vuelve UF-11 tal como era (el
+ * autenticador obligatorio, configurado en los 10 minutos de entrar); la etapa siguiente no es esa, sino un código por
+ * correo, que todavía no existe. No toca a Administración.
+ */
+export const SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO: boolean = false;
+
 /** El estado del segundo factor de una sesión común, decidido con lo que guarda la base (nunca con el cliente). */
 export function estadoDelSegundoFactorDelProfesional(p: {
+  /** Si la política vigente lo exige: `SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO` (DL-177). */
+  readonly exigido: boolean;
   readonly esProfesional: boolean;
   readonly inicioDeLaSesion: Date;
   readonly verificadoEn: Date | null;
@@ -40,7 +57,8 @@ export function estadoDelSegundoFactorDelProfesional(p: {
   readonly tieneAutenticadorActivo: boolean;
   readonly ahora: Date;
 }): EstadoDelSegundoFactorDelProfesional {
-  if (!p.esProfesional) return { estado: 'NO_REQUERIDO' };
+  // DL-177: sin la exigencia, la contraseña (o Google) alcanza; un código verificado antes no cambia nada.
+  if (!p.esProfesional || !p.exigido) return { estado: 'NO_REQUERIDO' };
   if (p.verificadoEn) return { estado: 'VERIFICADO', metodo: p.metodo ?? 'TOTP' };
   if (p.tieneAutenticadorActivo) return { estado: 'REQUERIDO' };
   const plazo = finDelInicioReciente(p.inicioDeLaSesion);

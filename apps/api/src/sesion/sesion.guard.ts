@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { cuentaPermiteOperar, estadoDelSegundoFactorDelProfesional, type EstadoDelSegundoFactorDelProfesional, type EstadoOperativoDeCuenta } from '@be/domain';
+import { cuentaPermiteOperar, estadoDelSegundoFactorDelProfesional, SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO, type EstadoDelSegundoFactorDelProfesional, type EstadoOperativoDeCuenta } from '@be/domain';
 import type { Request } from 'express';
 import { errores } from '../http/errores';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,7 +15,8 @@ export interface ActorAutenticado {
   readonly expiraEn: Date;
   /**
    * UF-11 (DL-169): el segundo factor del profesional en esta sesión, leído de la base en este pedido. Sin perfil
-   * profesional, NO_REQUERIDO. Lo profesional lo pregunta con `puedeActuarComoProfesional` (sesion-de-la-solicitud.ts).
+   * profesional, NO_REQUERIDO; desde DL-177 (2026-11-18), también con él, mientras la política no lo exija. Lo
+   * profesional lo pregunta con `puedeActuarComoProfesional` (sesion-de-la-solicitud.ts).
    */
   readonly segundoFactor: EstadoDelSegundoFactorDelProfesional;
 }
@@ -68,7 +69,9 @@ export class SesionGuard implements CanActivate {
     // INV-06-28 / REG-06-23: SUSPENDIDA y CERRADA no operan, aunque la sesión siga marcada ACTIVA.
     if (!cuentaPermiteOperar(sesion.identidad.estadoOperativoDeCuenta as EstadoOperativoDeCuenta)) throw errores.sesionRevocada();
 
+    // DL-177: hoy el profesional entra solo con su contraseña (o Google); la política la fija el dominio, no el cliente.
     const segundoFactor = estadoDelSegundoFactorDelProfesional({
+      exigido: SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO,
       esProfesional: sesion.identidad.perfilProfesional !== null,
       inicioDeLaSesion: sesion.momentoDeOcurrencia,
       verificadoEn: sesion.segundoFactor?.verificadoEn ?? null,

@@ -4,7 +4,7 @@
  * - API-ADM-14: Administración incorpora una cuenta que ya existe, con una sesión administrativa con segundo factor y con
  *   fundamento. Crea el perfil con su matrícula y, por área, la presentación, la verificación y la habilitación, con los
  *   hechos de M-02 del administrador. Un rechazo no deja nada a medias.
- * - El profesional entra a /pro con su segundo factor (UF-11), y la persona que acepta su solicitud ve su nombre
+ * - El profesional entra a /pro con su contraseña (DL-177; antes, con su segundo factor, UF-11), y la persona que acepta su solicitud ve su nombre
  *   profesional.
  * - API-ADM-15: el nombre profesional cambia con fundamento y su hecho; la base no deja cambiarlo sin él.
  */
@@ -13,7 +13,6 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion, correoSintetico, registrarOk, tokenDe } from './soporte-api';
 import { adm, administradorListo, primerFactor } from './soporte-administracion';
-import { verificarSegundoFactor } from './soporte-segundo-factor';
 import { aceptar, prepararAsesorado, solicitar } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -108,15 +107,14 @@ describe('TEST-UF-009 · API-ADM-14: Administración incorpora a un profesional 
     expect(rechazos.length).toBeGreaterThanOrEqual(7);
   });
 
-  it('el profesional entra con su segundo factor, la persona ve su nombre profesional, y el nombre cambia solo con su hecho (API-ADM-15)', async () => {
+  it('el profesional entra con su contraseña, la persona ve su nombre profesional, y el nombre cambia solo con su hecho (API-ADM-15)', async () => {
     const a = await administradorListo(app, prisma, etiqueta('nombre'));
     const correo = correoSintetico('uf04-nombre');
     const id = await registrarOk(app, correo, 'WEB');
     await incorporar(a.token, cuerpo(correo)).expect(201);
-    // Entra a /pro: la primera vez configura su segundo factor (UF-11) y después opera como profesional.
+    // Entra a /pro solo con su contraseña (DL-177: el profesional ya no usa el autenticador) y opera como profesional.
     const token = await tokenDe(app, correo, 'WEB');
-    expect((await conSesion(app, token).get('/api/v1/me/second-factor').expect(200)).body.data.secondFactor.state).toBe('ENROLLMENT_REQUIRED');
-    await verificarSegundoFactor(app, id, token);
+    expect((await conSesion(app, token).get('/api/v1/me/second-factor').expect(200)).body.data.secondFactor.state).toBe('NOT_REQUIRED');
     const pro = { correo, id, token };
     const ase = await prepararAsesorado(app, 'uf04-persona', { a3: true });
     const solicitud = await solicitar(app, pro, ase.id, 'NUTRICION').expect(201);

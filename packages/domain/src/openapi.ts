@@ -4187,12 +4187,12 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/second-factor',
     resumen:
-      'El segundo factor de la sesión, como lo decide el servidor en este pedido. Una identidad con perfil profesional actúa como profesional solo con el segundo factor verificado en esa sesión: sin él, el PDP, las áreas y las listas donde es el profesional no responden nada de lo profesional, y lo de la persona sigue igual (la app de la persona no lo pide). Estados: NOT_REQUIRED (sin perfil profesional), VERIFIED (vale lo que dura la sesión), REQUIRED (tiene autenticador: falta el código en esta sesión), ENROLLMENT_REQUIRED (sin autenticador: se configura hasta deadline, 10 minutos después de entrar) y RECENT_SIGN_IN_REQUIRED (sin autenticador y el plazo pasó: volver a entrar). recentSignInUntil dice hasta cuándo se puede reemplazar el autenticador o generar códigos sin volver a entrar.',
+      'El segundo factor de la sesión, como lo decide el servidor en este pedido. Desde DL-177 (Dirección, 2026-11-18), la política no se lo exige al profesional: toda sesión común responde NOT_REQUIRED, el profesional actúa como profesional con su contraseña (o Google) y API-MFA-02 a 06 responden INVALID_STATE_TRANSITION; lo ya configurado queda guardado, sin uso. Cuando la política lo exige (UF-11, como era hasta DL-177): una identidad con perfil profesional actúa como profesional solo con el segundo factor verificado en esa sesión: sin él, el PDP, las áreas y las listas donde es el profesional no responden nada de lo profesional, y lo de la persona sigue igual (la app de la persona no lo pide). Estados: NOT_REQUIRED (sin perfil profesional), VERIFIED (vale lo que dura la sesión), REQUIRED (tiene autenticador: falta el código en esta sesión), ENROLLMENT_REQUIRED (sin autenticador: se configura hasta deadline, 10 minutos después de entrar) y RECENT_SIGN_IN_REQUIRED (sin autenticador y el plazo pasó: volver a entrar). recentSignInUntil dice hasta cuándo se puede reemplazar el autenticador o generar códigos sin volver a entrar.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: SegundoFactorDeLaSesionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
-    fuente: '08 §25 · 08 §42, condición 6 · UF-11 y UF-D12 de WP-USO-FINAL · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 · 08 §42, condición 6 · UF-11 y UF-D12 de WP-USO-FINAL · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-02',
@@ -4206,7 +4206,7 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'SECOND_FACTOR_LOCKED', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
     detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
-    fuente: '08 §25 (TOTP como línea base) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-05, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 (TOTP como línea base) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-05, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-03',
@@ -4220,7 +4220,7 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
     detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
-    fuente: '08 §25 (códigos de recuperación de un solo uso) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-06, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 (códigos de recuperación de un solo uso) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-06, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-04',
@@ -4234,7 +4234,7 @@ const DEFINIDAS: readonly Operacion[] = [
     requestOpcional: true,
     exitos: [{ status: 200, schema: ConfiguracionDelAutenticadorResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
-    fuente: '08 §25 (re-autenticación para cambiar el factor) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-07, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 (re-autenticación para cambiar el factor) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-07, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-05',
@@ -4248,7 +4248,7 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: ConfiguracionDeLaSesionConfirmadaResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
     detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
-    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-08, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-08, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-06',
@@ -4262,7 +4262,7 @@ const DEFINIDAS: readonly Operacion[] = [
     requestOpcional: true,
     exitos: [{ status: 200, schema: CodigosDeRecuperacionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
-    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-09, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-09, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   // ─── UF-04 de WP-USO-FINAL (DL-169; UF-D6 a UF-D8): la entrada de los profesionales reales ────────────────────────────
   {
@@ -4411,13 +4411,13 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/admin/professional-second-factor-resets',
     resumen:
-      'Restablecer el segundo factor de un profesional que perdió el autenticador y los códigos de recuperación, o al que otro le configuró uno: Administración lo verificó por el canal de ayuda y, para la cuenta de ese correo de acceso, con el fundamento (cómo lo verificó), en una transacción revoca el autenticador activo, descarta uno pendiente, invalida los códigos de recuperación y cierra todas las sesiones de la cuenta. Queda el hecho con el fundamento y el administrador, y la auditoría sin el fundamento. Al volver a entrar, el profesional lo configura de nuevo (API-MFA-04 y 05, dentro de los 10 minutos de la entrada). Sin idempotencia: repetirlo no cambia más de lo que ya cambió. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no es de un profesional o que no opera, 422 VALIDATION_FAILED.',
+      'Desde DL-177 (Dirección, 2026-11-18), el profesional no usa el autenticador: la operación sigue en el contrato y funciona igual (deja de valer lo configurado y cierra todas las sesiones de la cuenta), pero la consola no la ofrece mientras la política no lo exija. Restablecer el segundo factor de un profesional que perdió el autenticador y los códigos de recuperación, o al que otro le configuró uno: Administración lo verificó por el canal de ayuda y, para la cuenta de ese correo de acceso, con el fundamento (cómo lo verificó), en una transacción revoca el autenticador activo, descarta uno pendiente, invalida los códigos de recuperación y cierra todas las sesiones de la cuenta. Queda el hecho con el fundamento y el administrador, y la auditoría sin el fundamento. Al volver a entrar, el profesional lo configura de nuevo (API-MFA-04 y 05, dentro de los 10 minutos de la entrada). Sin idempotencia: repetirlo no cambia más de lo que ya cambió. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no es de un profesional o que no opera, 422 VALIDATION_FAILED.',
     autenticacion: 'SESSION_MFA',
     idempotencia: false,
     request: RestablecerSegundoFactorRequestSchema,
     exitos: [{ status: 200, schema: SegundoFactorRestablecidoResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
-    fuente: 'UF-11 de WP-USO-FINAL (UF-T56, revisión adversarial de la etapa 2: sin esto, un profesional sin su autenticador quedaba sin poder actuar como profesional) · 08 §25 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+    fuente: 'UF-11 de WP-USO-FINAL (UF-T56, revisión adversarial de la etapa 2: sin esto, un profesional sin su autenticador quedaba sin poder actuar como profesional) · 08 §25 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169, DL-155 y DL-177',
   },
   // ─── UF-07 de WP-USO-FINAL (DL-169): el canal de ayuda y contacto ─────────────────────────────────────────────────────
   {
