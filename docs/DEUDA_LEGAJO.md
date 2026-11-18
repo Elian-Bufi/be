@@ -118,7 +118,7 @@
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
-| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vencían el 2026-12-01 00:00 UTC (21:00 ART del 30/11) · **RETIRADAS LAS DOS** el 2026-11-11 con UF-12 de WP-USO-FINAL (UF-D13, ratificada por Dirección ese día), en el PR #253 sin integrar: node-forge pasa a la 1.4.3, fuera del aviso, y la CLI de Expo 57.0.33 (SDK 57) ya no pide zod; sin excepciones, la auditoría no vence |
+| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vencían el 2026-12-01 00:00 UTC (21:00 ART del 30/11) · **RETIRADAS LAS DOS** el 2026-11-11 con UF-12 de WP-USO-FINAL (UF-D13, ratificada por Dirección ese día), en el PR #253 sin integrar: node-forge pasa a la 1.4.3, fuera del aviso, y la CLI de Expo 57.0.33 (SDK 57) ya no pide zod; sin excepciones, la auditoría no vence · **DECLARADA** por Dirección el 2026-11-18: picomatch (GHSA-fc5q-39xc-vjpf, ReDoS, sin versión corregida), en `@be/api` y `@be/mobile`, **vence el 2026-12-15** |
 | DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios` (#133), integrada en `main` el 2026-10-03 con la candidata 0.13.2 (#140, `2f0c140`) y publicada en la APK 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección · la solución preparada (opción A, API-CAR-01) está en `main` desde el 2026-10-03 (#135, con la candidata 0.13.2, `2f0c140`) |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación integrada en `main` el 2026-10-06 (#146, `d727226`) |
@@ -2756,7 +2756,7 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 
 ## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
 
-**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría). **Desde la decisión del 2026-10-24 a la noche**, braces está retirada (GitHub retiró el aviso), y zod y node-forge están renovadas hasta el **2026-11-30** (UTC; el 30/11 a las 20:59:59 en Argentina), las dos con procedencia comprobada y solo en la APK. Detalle al final de esta entrada
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría). **Desde la decisión del 2026-10-24 a la noche**, braces está retirada (GitHub retiró el aviso), y zod y node-forge están renovadas hasta el **2026-11-30** (UTC; el 30/11 a las 20:59:59 en Argentina), las dos con procedencia comprobada y solo en la APK; **retiradas las dos el 2026-11-11** (UF-12). **Desde el 2026-11-18**, declarada por Dirección la de picomatch (GHSA-fc5q-39xc-vjpf) en la API y la APK, hasta el **2026-12-15**. Detalle al final de esta entrada
 
 **Qué pasó.**
 - El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
@@ -3047,6 +3047,46 @@ Las fuentes, revisadas el 2026-11-11 con `gh api advisories/<GHSA>` y `npm view`
   Que la app no se rompió se comprueba al construir la próxima candidata (0.24.0-candidata.1) y probarla en el
   teléfono. Si esa construcción fallara por la CLI, la salida es volver este cambio del lockfile y que Dirección decida
   si renueva la de zod hasta el SDK siguiente: la excepción no vuelve sola.
+
+**Declarada el 2026-11-18: picomatch, hasta el 2026-12-15 (decisión de Dirección).** Desde el 2026-11-15 la auditoría de
+dependencias fallaba en todas las ramas de BE, también en `main`, por un aviso alto nuevo.
+- **El aviso.** GHSA-fc5q-39xc-vjpf, «picomatch vulnerable to ReDoS through single-branch repeated extglobs»: un patrón
+  glob armado a propósito (un extglob de una sola rama repetido) hace que la expresión regular que picomatch genera tarde
+  muchísimo. GitHub lo publicó el 2026-10-19 y npm empezó a informarlo después. Revisado el 2026-11-18 con
+  `gh api advisories/GHSA-fc5q-39xc-vjpf` y `npm view picomatch`: abarca `<= 4.0.7`, la 4.0.7 es la última publicada
+  (2026-08-24) y **no hay versión corregida**; las líneas 2 y 3 (2.3.2 y 3.0.2) también quedan adentro.
+- **Por dónde entra** (`npm audit --omit=dev --json -w <espacio>` y el lockfile, el 2026-11-18):
+  - **APK:** tres copias, todas en la cadena de construcción. La 4.0.7 de la raíz la piden la CLI de Expo
+    (`expo/node_modules/@expo/cli` 57.0.33), `@expo/metro-config` y tinyglobby (con fdir), que a su vez piden
+    `react-native` y `@react-native/codegen` para la generación de código. La 2.3.2 anidada en micromatch viene de
+    Metro (`metro-file-map`), y la 2.3.2 anidada en `jest-worker` viene de los procesos de Metro (`jest-util` 29).
+  - **API:** la 4.0.7 de la raíz, por fdir. Es un artefacto de `npm audit -w`: a fdir solo lo usa `jest-haste-map`, de
+    Jest, que es de desarrollo, pero como la APK usa fdir en producción el paquete no queda marcado de desarrollo. Ninguna
+    dependencia de producción de la API llega a picomatch.
+  - **Website:** limpio.
+- **Por qué no un `overrides` ni una actualización.** No hay a qué versión llevarlo: todas las publicadas están en el
+  rango. Actualizar Expo, Metro o React Native no cambia nada, porque cualquier versión de picomatch que pidan está
+  abarcada.
+- **Por qué el riesgo no es alcanzable con datos de afuera.** BE no recibe patrones glob de las personas. Ningún código
+  de BE (`apps/api/src`, `apps/web/src`, `apps/mobile` y `packages/domain/src`) importa picomatch, micromatch,
+  minimatch, anymatch, tinyglobby, fdir, fast-glob, glob ni globby, y ningún espacio los declara como dependencia. Los
+  patrones que llegan a picomatch son los que escriben en su configuración Metro, la CLI de Expo, la generación de código
+  de React Native y Jest, al construir la APK o al correr las pruebas. Una prueba lo vigila: si BE empieza a usar globs,
+  falla y hay que revisar esta excepción.
+- **Lo que se exceptúa, y nada más:** el aviso GHSA-fc5q-39xc-vjpf, en el paquete picomatch, en las auditorías de
+  `@be/api` y `@be/mobile`. En el website, otro aviso de picomatch o el mismo aviso en otro paquete bloquean como
+  cualquier otro.
+- **Sin `procedencia`.** El mecanismo exige una sola copia y una sola cadena, y aquí son tres copias y varios caminos.
+  La excepción la acotan el aviso, el paquete, los dos espacios y el vencimiento; la auditoría no construye el bundle de
+  Android para ella. Que picomatch no viaja en la APK se sostiene por quién lo pide (todo es de construcción o de
+  generación de código), no por una medición del bundle: a prestar atención si se renueva.
+- **El vencimiento.** El **2026-12-15**, inclusive (hasta las 23:59:59 UTC; las 20:59:59 en Argentina). Desde el
+  2026-12-16 la auditoría vuelve a fallar. No hay renovación automática: renovarla es otra decisión de Dirección y un
+  cambio en el script.
+- **Cuándo se retira:** apenas salga la versión corregida (con `overrides` si quien lo pide no la toma solo) o GitHub
+  retire el aviso. Revisar las fuentes antes del 2026-12-15.
+- **Dónde quedó:** este registro, `EXCEPCIONES` en `scripts/auditoria-de-dependencias.cjs` y sus pruebas en
+  `scripts/auditoria-de-dependencias.test.cjs`.
 
 ---
 
