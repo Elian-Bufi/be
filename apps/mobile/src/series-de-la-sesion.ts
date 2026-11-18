@@ -190,9 +190,11 @@ export function basesDeLaPrescripcion(p: Pick<PrescripcionConObjetivos, 'loadBas
 }
 
 /** «3 ejercicios · 9 series». Con calentamiento (DL-178): «3 ejercicios · 9 series efectivas + 2 de calentamiento». */
-export function ejerciciosYSeries(prescripciones: readonly { readonly sets: readonly { readonly setKind?: TipoDeSerie | null }[] }[]): string {
+export function ejerciciosYSeries(prescripciones: readonly { readonly sets: readonly unknown[] }[]): string {
   const ejercicios = prescripciones.length;
-  return `${numero(ejercicios, 0)} ${ejercicios === 1 ? 'ejercicio' : 'ejercicios'} · ${cuentaDeSeries(prescripciones.flatMap((p) => p.sets))}`;
+  // Las series llegan de API-TRN-14 o de API-SER-02: las dos traen `setKind` a esta APK, que declara la capacidad.
+  const series = prescripciones.flatMap((p) => p.sets as readonly { readonly setKind?: TipoDeSerie | null }[]);
+  return `${numero(ejercicios, 0)} ${ejercicios === 1 ? 'ejercicio' : 'ejercicios'} · ${cuentaDeSeries(series)}`;
 }
 
 export { TEXTOS_DEL_CALENTAMIENTO };

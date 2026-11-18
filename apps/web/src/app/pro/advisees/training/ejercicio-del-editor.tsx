@@ -528,12 +528,12 @@ function SeriesDelEjercicio({
   /** DL-178: marca o desmarca una serie como calentamiento; el calentamiento sube arriba, sin cambiar el orden de cada tipo. */
   const marcarCalentamiento = (n: number) => {
     setElegidas(new Set());
-    const sets = p.sets.map((x, m) => {
+    const sets = p.sets.map((x, m): Serie => {
       if (m !== n) return x;
       const { setKind: _tipo, ...resto } = x;
-      return esDeCalentamiento(x) ? resto : { ...resto, setKind: 'WARM_UP' as const };
+      return esDeCalentamiento(x) ? resto : { ...resto, setKind: 'WARM_UP' };
     });
-    onCambiar({ sets: conElCalentamientoArriba(sets) });
+    onCambiar({ sets: conElCalentamientoArriba<Serie>(sets) });
   };
   // ED-23: las series elegidas, para escribirles un valor o devolverlas a lo general; y la serie que se va a quitar.
   const [elegidas, setElegidas] = useState<ReadonlySet<number>>(new Set());
