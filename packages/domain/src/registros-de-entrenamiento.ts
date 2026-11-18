@@ -201,7 +201,13 @@ function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndica
   return { ...base, indicado, registrado, frente: r.texto, frenteDeLaCarga: r.carga, conDiferencia: r.conDiferencia, conDatoSinRegistrar: r.conDatoSinRegistrar, comparada: !r.sinObjetivo };
 }
 
-const seriesRegistradas = (n: number, de: number): string => `${numero(n)} de ${numero(de)} ${de === 1 ? 'serie registrada' : 'series registradas'}`;
+const seriesRegistradas = (n: number, de: number, efectivas = false): string =>
+  `${numero(n)} de ${numero(de)} ${de === 1 ? (efectivas ? 'serie efectiva registrada' : 'serie registrada') : efectivas ? 'series efectivas registradas' : 'series registradas'}`;
+/** DL-178: el calentamiento registrado se nombra aparte; no entra en la cuenta ni se compara. */
+const deCalentamiento = (c: ComparacionDeEjercicio): string => {
+  const registrado = c.calentamiento.filter((s) => s.registrada !== null).length;
+  return c.calentamiento.length === 0 ? '' : ` · ${numero(registrado)} de ${numero(c.calentamiento.length)} de calentamiento`;
+};
 const adicionales = (n: number): string => (n === 0 ? '' : ` · ${numero(n)} ${n === 1 ? 'adicional' : 'adicionales'}`);
 
 function ejercicioDeSesion(c: ComparacionDeEjercicio, seLeyoLoIndicado: boolean): EjercicioDeSesion {
@@ -220,7 +226,7 @@ function ejercicioDeSesion(c: ComparacionDeEjercicio, seLeyoLoIndicado: boolean)
     identidad: c.identidad,
     aviso: NOTA_DE_IDENTIDAD[c.identidad] ?? null,
     resumen: c.resumen,
-    cuenta: c.resumen !== null ? 'Registro resumido' : `${seriesRegistradas(registradas, planificadas)}${adicionales(deMas)}`,
+    cuenta: c.resumen !== null ? 'Registro resumido' : `${seriesRegistradas(registradas, planificadas, c.calentamiento.length > 0)}${adicionales(deMas)}${deCalentamiento(c)}`,
     notaDeLoIndicado: !seLeyoLoIndicado ? null : sinCarga && sinRir ? 'sin carga ni RIR indicados' : sinCarga ? 'sin carga indicada' : sinRir ? 'sin RIR indicado' : null,
     registradas,
     planificadas,
