@@ -59,18 +59,36 @@ export function GlifoDeLaLeyenda({ sentido, indice = 0 }: { sentido: SentidoDeLa
  * la pide lo sabe. `corto` se ve; `largo`, el lector de pantalla.
  */
 export interface FichaDeLaLeyenda {
-  readonly glifo: 'TIRA' | 'LINEA_CORTADA';
+  /**
+   * Las de la barra semanal (rama D, GR-VC13; un cambio que solo agrega): la semana con los siete días en la media, la que
+   * tiene algún día afuera, la que tiene días pero no media y la que no tiene ningún día con valor.
+   */
+  readonly glifo: 'TIRA' | 'LINEA_CORTADA' | 'SEMANA_ENTERA' | 'SEMANA_HUECA' | 'SEMANA_SIN_MEDIA' | 'SEMANA_SIN_DIAS';
   readonly corto: string;
   readonly largo: string;
   /** El color del carril de la marca (la línea cortada va en el color de su carril). */
   readonly indice?: number;
 }
 
-/** El glifo de una ficha que no es un punto: la tira (entera, a media altura y una raya baja) o la línea cortada. */
+/** El glifo de una barra semanal en la leyenda: el mismo dibujo y el mismo tono que el carril (`paneles-alineados.tsx`). */
+function GlifoDeLaSemana({ glifo, color }: { glifo: 'SEMANA_ENTERA' | 'SEMANA_HUECA' | 'SEMANA_SIN_MEDIA' | 'SEMANA_SIN_DIAS'; color: string }) {
+  return (
+    <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
+      {glifo === 'SEMANA_ENTERA' ? <rect x={2.5} y={3.5} width={9} height={9.5} rx={1.5} fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1} /> : null}
+      {glifo === 'SEMANA_HUECA' ? <path d="M 2.5 13 V 3.5 H 11.5 V 13" fill="none" stroke={color} strokeWidth={1} /> : null}
+      {glifo === 'SEMANA_SIN_MEDIA' ? <line x1={1} x2={13} y1={12} y2={12} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" /> : null}
+      {glifo === 'SEMANA_SIN_DIAS' ? <rect x={2} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} /> : null}
+    </svg>
+  );
+}
+
+/** El glifo de una ficha que no es un punto: la tira (entera, a media altura y una raya baja), la línea cortada o una semana. */
 function GlifoDeLaFicha({ ficha, indice }: { ficha: FichaDeLaLeyenda; indice: number }) {
   return (
     <span className="grafico-base__glifo">
-      {ficha.glifo === 'TIRA' ? (
+      {ficha.glifo === 'SEMANA_ENTERA' || ficha.glifo === 'SEMANA_HUECA' || ficha.glifo === 'SEMANA_SIN_MEDIA' || ficha.glifo === 'SEMANA_SIN_DIAS' ? (
+        <GlifoDeLaSemana glifo={ficha.glifo} color="var(--grafico-hueco)" />
+      ) : ficha.glifo === 'TIRA' ? (
         <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">
           <rect x={1} y={5} width={5} height={6} fill="var(--tenue)" />
           <rect x={8} y={8} width={5} height={3} fill="var(--tenue)" />

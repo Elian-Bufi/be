@@ -23,9 +23,10 @@ import { FAMILIA_DE_METRICA, nombreDeMetrica } from './nombres-de-metricas';
 export const VERSION_DEL_DICCIONARIO = 'BE-METRICAS-2026-10-v1';
 /**
  * La versión de los textos del diccionario. v2 (2026-11-12, ED-63): el RIR de «Analizar» deja de llamarse «declarado»,
- * porque la app completa el campo vacío con el RIR del plan.
+ * porque la app completa el campo vacío con el RIR del plan. v3 (2026-11-15, WP-GRAFICOS, DL-174): tres límites que
+ * «Analizar» muestra dejan un término prohibido que decían en negación (la guardia unida de los gráficos no lo admite).
  */
-export const VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO = 'BE-METRICAS-TEXTOS-2026-11-v2';
+export const VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO = 'BE-METRICAS-TEXTOS-2026-11-v3';
 
 export type AreaDeMetrica = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
 
@@ -100,7 +101,7 @@ function nutricional(id: string, nombre: string, nombreCorto: string, parametro:
     resumenDePeriodo: 'MEDIA_DE_DIAS_CON_DATOS',
     explicacion: `${nombre} en los registros de comida con cantidades, por día.`,
     comoSeCalcula:
-      'Cada registro efectivo aporta lo que calculó BE con sus cantidades confirmadas o informadas (método SUM_SOURCE_PER_100G_V1, con las kcal de la fuente: no 4/4/9). El día es la suma de lo conocido; la semana es la media de los días con valor, y dice cuántos días tuvo.',
+      'Cada registro efectivo aporta lo que calculó BE con sus cantidades confirmadas o informadas (método SUM_SOURCE_PER_100G_V1, con las kcal de la fuente: no 4/4/9). El día es la suma de lo conocido. Por semana, la media de la semana (v1): el promedio de los días con cantidades en todos sus registros, si son 4 o más; los demás quedan afuera y se cuentan, y la semana dice con cuántos días se hizo.',
     ausencias:
       'Un registro sin cantidades, una comida diferente con solo texto o foto, o un alimento sin el dato del nutriente no aportan número: el día queda como subtotal y dice qué falta. Lo previsto de la opción no se cuenta como consumido.',
     limites: [LIMITE_REGISTRADO, 'Un registro anulado queda en el historial y fuera del número; una rectificación cuenta una sola vez.'],
@@ -140,7 +141,7 @@ const DE_NUTRICION: readonly DefinicionDeMetrica[] = [
     explicacion: 'Cuántos registros de comida efectivos hay por día, con y sin cantidades.',
     comoSeCalcula: 'Se cuentan los registros de comida efectivos del día (del plan o diferentes). Los anulados no cuentan; una rectificación no suma un registro.',
     ausencias: 'Un día sin registros no es un punto en cero: es un hueco.',
-    limites: ['Es cobertura del registro, no adherencia: 3 de 4 comidas con registro no dice que se registró todo lo que se comió.'],
+    limites: ['Es cobertura del registro: 3 de 4 comidas con registro no dice que se registró todo lo que se comió.'],
   },
   {
     id: 'nutricion.energia-prevista-del-dia',
@@ -196,7 +197,7 @@ const DE_ENTRENAMIENTO: readonly DefinicionDeMetrica[] = [
     explicacion: 'La carga registrada en la serie elegida del ejercicio, sesión por sesión.',
     comoSeCalcula: 'Sale del registro vigente de cada sesión (la corrección vigente o el original), con la identidad del ejercicio del catálogo. kg y lb son series distintas.',
     ausencias: 'Una serie sin carga, un registro resumido u otro ejercicio no son un punto: son «sin dato».',
-    limites: [...LIMITES_DE_LA_SERIE, 'No es 1RM ni fuerza máxima, y no es una marca personal.'],
+    limites: [...LIMITES_DE_LA_SERIE, 'No es 1RM ni fuerza máxima.'],
   },
   {
     id: 'entrenamiento.repeticiones',
@@ -278,7 +279,7 @@ const DE_ENTRENAMIENTO: readonly DefinicionDeMetrica[] = [
     explicacion: 'Cuántas series del ejercicio tienen algún dato en el registro vigente de cada sesión.',
     comoSeCalcula: 'Se cuentan las series del ejercicio con carga, repeticiones o RIR en el registro vigente. Una sesión registrada como «no realizada» aporta 0 series, y lo dice.',
     ausencias: 'Un registro resumido no tiene series: no se sintetizan.',
-    limites: ['Plan activado no implica ejecución. Más series no prueban mayor estímulo ni se convierten en volumen.'],
+    limites: ['Plan activado no implica ejecución. Más series no prueban mayor estímulo.'],
   },
   {
     id: 'entrenamiento.volumen-carga-externa',

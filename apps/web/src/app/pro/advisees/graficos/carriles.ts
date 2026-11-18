@@ -96,6 +96,13 @@ export interface SemanaDelCarril {
   /** Con cuántos días se hizo. */
   readonly dias: number;
   readonly lectura: string;
+  /**
+   * Con la media de GR-12 (GR-VC13, rama D; un cambio que solo agrega): `true` si entran los siete días (la barra va
+   * llena), `false` si quedó alguno afuera (hueca, con su contorno). Sin esto, la barra va como siempre.
+   */
+  readonly entera?: boolean;
+  /** La semana tiene días con valor aunque no tenga media (GR-VC12): va con su contorno cortado, no como semana vacía. */
+  readonly conDias?: boolean;
 }
 
 export interface CarrilDeBarrasSemanales {
@@ -166,9 +173,12 @@ export type GeometriaDelCarril =
       readonly tipo: 'BARRAS_SEMANALES';
       readonly extremos: { readonly abajo: number; readonly arriba: number; readonly decimales: number };
       readonly marcasY: readonly MarcaDelEjeY[];
-      readonly barras: readonly { readonly lunes: string; readonly x1: number; readonly x2: number; readonly y: number; readonly base: number }[];
+      /** `hueca`: con la media de GR-12, a la semana le quedó algún día afuera (`entera: false`). */
+      readonly barras: readonly { readonly lunes: string; readonly x1: number; readonly x2: number; readonly y: number; readonly base: number; readonly hueca: boolean }[];
       /** Las semanas sin ningún día con dato: vacías, con una marca fina en la base (nunca una barra en cero). */
       readonly vacias: readonly { readonly lunes: string; readonly x1: number; readonly x2: number; readonly base: number }[];
+      /** Las semanas con días pero sin media (GR-VC12): el contorno cortado de todo el alto, sin relleno. */
+      readonly sinMedia: readonly { readonly lunes: string; readonly x1: number; readonly x2: number; readonly base: number }[];
     }
   | { readonly tipo: 'EVENTOS'; readonly eventos: readonly { readonly clave: string; readonly x1: number; readonly x2: number | null }[] };
 
@@ -243,9 +253,10 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
       const inicio = escala.x(s.lunes) - escala.porDia / 2;
       return { x1: Math.max(izquierda, inicio), x2: Math.min(derecha, inicio + 7 * escala.porDia) };
     };
-    const barras = enElEje.flatMap((s) => (s.valor === null ? [] : [{ lunes: s.lunes, ...lugar(s), y: y(s.valor), base }]));
-    const vacias = c.semanas.filter((s) => s.valor === null && tocaElEje(s)).map((s) => ({ lunes: s.lunes, ...lugar(s), base }));
-    return { tipo: 'BARRAS_SEMANALES', extremos, marcasY: extremos.valores.map((valor) => ({ valor, y: y(valor) })), barras, vacias };
+    const barras = enElEje.flatMap((s) => (s.valor === null ? [] : [{ lunes: s.lunes, ...lugar(s), y: y(s.valor), base, hueca: s.entera === false }]));
+    const vacias = c.semanas.filter((s) => s.valor === null && s.conDias !== true && tocaElEje(s)).map((s) => ({ lunes: s.lunes, ...lugar(s), base }));
+    const sinMedia = c.semanas.filter((s) => s.valor === null && s.conDias === true && tocaElEje(s)).map((s) => ({ lunes: s.lunes, ...lugar(s), base }));
+    return { tipo: 'BARRAS_SEMANALES', extremos, marcasY: extremos.valores.map((valor) => ({ valor, y: y(valor) })), barras, vacias, sinMedia };
   }
   const visibles = (ps: readonly PuntoDelCarril[]) => ps.filter((p) => p.fecha >= escala.desde && p.fecha <= escala.hasta);
   const puntos = visibles(c.puntos);

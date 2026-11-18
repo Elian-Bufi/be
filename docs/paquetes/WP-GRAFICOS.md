@@ -1813,7 +1813,249 @@ teclado; ninguna palabra prohibida, ni negada (TEST-GRVC-008).
 
 ### 13.5 Rama D · `wp-graficos-cruces-y-analizar`
 
-> Sin programar al declarar este paquete.
+> **Estado:** programada del 14 al 15/11 en `wp-graficos-cruces-y-analizar` (#278), desde el primer commit de la base
+> (`257912a6`), con la base traída dos veces y después `main` `899c5a1d` (#276, la base, ya integrada; #273, la fase 1;
+> #271 y #272, la tanda B; #279, la APK 0.29). Terminada el 15/11 con lo que faltaba del diseño (§3.4, §3.8 y §4.3): lo
+> indicado del entrenamiento en «Analizar» y la cinta con la fecha elegida de los gráficos. Sin integrar al escribir
+> esto. Sin operaciones nuevas en la API, sin migraciones y sin dependencias nuevas; la APK no suma lecturas. Las
+> decisiones GR-T50 a GR-T59 están **a ratificar**; mientras tanto, rigen. El 15/11 a la noche trajo otra vez `main` (#283,
+> #284, #280, #285 y #281) y pasó por la pasada visual y una tercera revisión (abajo): una sola media semanal (GR-VC13),
+> GR-12 y GR-13 en «Analizar» y las decisiones GR-VD01 a GR-VD09, también a ratificar.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| **GR-26** en «Analizar» | Los modos se llaman **«Alineadas»** (por defecto) y **«Superpuestas»**; en la URL y en las vistas guardadas siguen `PANELS` y `OVERLAY`. «Superpuestas» sigue `composicionPermitida`: el mismo eje X (una serie por semana va solo con otras semanales), hasta tres series y dos unidades, un eje a cada lado (`yAxisId`) rotulado con su muestra, el nombre corto de sus series y la unidad; el nombre de cada línea va al final. Cada eje con la escala de «Alineadas», sin sombrear entre líneas. Si no se puede, se apaga y dice qué hacer. Una vista guardada con `OVERLAY` de antes se ve igual (un eje). El selector ofrece el catálogo con el acceso de hoy, con las series de los sugeridos primero; el 1RM estimado (Epley v1) solo con un ejercicio de la lista de la v1, sin las orientativas y con lo observado en rombo. **Lo indicado del entrenamiento** elegido como serie (el RIR indicado, cuando la rama B lo ofrezca) va como lo indicado de Nutrición: rombos huecos sueltos, sin línea, con su leyenda; y en «Superpuestas», en el eje de lo registrado de su misma unidad, con su escala (no suma un eje). La frase de la coincidencia al pie y, con dos ejes, «Cómo leerlo» | `seguimiento/analizar.tsx`, `lienzo.tsx`, `selector.tsx`, `series.ts` (el despacho), `graficos/arma-tu-grafico/compositor.ts` | TEST-GRF-068 a 071, 073 a 076 y 078 |
+| **GR-23** arriba de «Analizar» | La cinta del tiempo de la base arriba de los gráficos, sobre el intervalo que se ve, con los alcances de hoy y las versiones de los planes propios; se lee cuando ya se sabe qué áreas hay. **Comparte la fecha elegida con los gráficos** (§3.8): elegir en la cinta la elige en los gráficos y en la lectura, y la cinta dice lo que regía en la fecha que se lee. Para eso, el proveedor del cursor de la base admite una fecha de afuera (un cambio que solo agrega: sin ella, el cursor es propio, como siempre) | `seguimiento/analizar.tsx`, `graficos/cursor-de-fechas.tsx` | TEST-GRF-076 |
+| **GR-24** · dos etapas lado a lado | Debajo de la tabla de «Comparar dos etapas», «Lado a lado, con todas las observaciones»: cada métrica en dos columnas, cada día, sesión o toma en su fecha dentro de la etapa, la mediana como raya y la cantidad escrita. Con menos de 5 de un lado no se dibuja y dice cuánto hay. Lo que no entra en la mediana se ve hueco o en rombo y se cuenta con su motivo. Con el 1RM estimado, la mediana del RIR registrado y el rango de repeticiones de cada etapa. Lo que también cambió y lo que BE no registra. Cada una con su tabla | `graficos/cruces/dos-etapas.ts` y `dos-etapas-en-pantalla.tsx`, `seguimiento/etapas.tsx` | TEST-GRF-061 y 062 |
+| **SP-01** · carbohidratos × 1RM estimado | Tres carriles alineados (los carbohidratos por día con el objetivo en escalón, las calorías al lado y el 1RM estimado por sesión, con un eje de 10 kg o 22 lb como mínimo), las dos etapas del objetivo de fondo, «Dos etapas» de los carbohidratos y del 1RM, y la lectura: la ventana fijada antes de mirar, lo que cambió en lo indicado en la primera línea, cada etapa con sus días (cuántos entran en la mediana y cuántos quedaron afuera, y por qué), el 1RM entre ≈ y ≈ con la mediana del RIR y las repeticiones, el ruido propio antes del cambio, las calorías de cada etapa, lo que también cambió, lo que BE no registra, «Cómo leerlo» (Henselmans 2022) y la frase | `graficos/cruces/carbohidratos-y-fuerza.ts` y `-en-pantalla.tsx`, `ventanas.ts`, `lo-que-tambien-cambio.ts`, `lecturas-de-los-cruces.ts`, `lectura-del-cruce.tsx` | TEST-GRF-063, 065, 066 y 077 |
+| **SP-02** · energía × peso | Las calorías por día con el objetivo, su media semanal que dice con cuántos días se hizo, y el peso de cada toma en puntos sueltos con los días desde la anterior; la ventana entre dos tomas del mismo protocolo con 14 días o más; el error de medición que BE no tiene cargado; «Lo registrado puede no ser todo lo comido»; «Cómo leerlo» (Hall 2011) y la frase | `graficos/cruces/energia-y-peso.ts` y `-en-pantalla.tsx`, `ventanas.ts` | TEST-GRF-064 y 067 |
+| «Armá tu gráfico» · el compositor | `CompositorDeGraficos`, sobre `CuadroEnfocado`: hasta tres series con el ejercicio, la serie y la unidad cuando hacen falta, el modo con su motivo, la vista previa, el nombre con la pista «No pongas datos de salud: el enfoque se usa con varias personas.» y «Agregar al enfoque», que devuelve la forma del gráfico `CUSTOM` del enfoque. `GraficoSuperpuesto` en SVG propio para «Patrones», con un eje a cada lado, teclado, lectura, leyenda, la frase y la tabla | `graficos/arma-tu-grafico/` (`compositor.ts`, `compositor-en-pantalla.tsx`, `superpuestas.ts`, `superpuestas-en-pantalla.tsx`, `grafico-armado.tsx`) | TEST-GRF-068 a 070 y 073 |
+| El registro y el caso de acceso | `cruce.dos-etapas` («Comparaciones»), `cruce.carbohidratos-y-fuerza` y `cruce.energia-y-peso` («Ver la relación»), cargados a pedido. SP-01 y SP-02 solo en el caso 1; el caso negado no se ofrece, no aparece en gris y no pide ninguna lectura | `graficos/cruces/registro.ts`, `caso-de-acceso.ts` | TEST-GRF-060, 063 y 064 |
+| Los textos | La guardia unida de las áreas que se juntan corre sobre todos los textos de la rama y sobre lo que «Analizar» muestra de cada serie ofrecida. Los tres límites del diccionario que la base señaló (§13.2) dejan el término que decían en negación; los textos del diccionario pasan a `BE-METRICAS-TEXTOS-2026-11-v3` (la versión de las derivaciones, la que devuelve API-PRJ-01, no cambia) | `graficos/cruces/copy.ts`, `packages/domain/src/metricas-del-analisis.ts` | TEST-GRF-072 y TEST-EDP-050 |
+| Sin datos de salud en el navegador | Nada de la rama guarda en `localStorage`, `sessionStorage` ni IndexedDB; ningún `.ts` comparte nombre con un `.tsx` | toda la rama | TEST-GRF-079 |
+
+**Los oráculos y sus mutaciones** (en `apps/web/test/graficos-cruces.test.mjs`). Se revisaron leyendo el código, sin
+correrlas en esta máquina; la CI corre las pruebas tal cual:
+
+| Oráculo | Mutación que lo pone en rojo |
+|---|---|
+| TEST-GRF-060 | Importar un `.tsx` en el registro |
+| TEST-GRF-061 | Dibujar «Dos etapas» con 4 de un lado; asignar una sesión a la versión de su fecha y no a la que ejecutó |
+| TEST-GRF-062 | Perder la observación que no entra en la mediana; contar una orientativa en la mediana del RIR o en el rango de repeticiones |
+| TEST-GRF-063 | Ofrecer SP-01 con una sola área; que GR-24 sin ejercicio compare las calorías aunque falte Nutrición; pedirle un ejercicio a quien no tiene Entrenamiento; que un gráfico armado pida una serie de un área sin acceso |
+| TEST-GRF-064 | Pedir la lectura de comidas en el caso negado de SP-02 |
+| TEST-GRF-065 | Sacar las calorías de SP-01 |
+| TEST-GRF-066 | Aceptar una etapa del objetivo de 2 semanas; aceptar dos etapas con otra versión del objetivo en el medio |
+| TEST-GRF-067 | Tomar la toma de otro protocolo |
+| TEST-GRF-068 | Un solo eje con dos unidades |
+| TEST-GRF-069 | Dejar «Superpuestas» con tres unidades; darle a lo indicado su propio eje; apagar «Agregar al enfoque» con el motivo de «Superpuestas»; poner lo indicado en el eje del RIR de otro ejercicio |
+| TEST-GRF-070 | Superponer una serie semanal con una de sesión |
+| TEST-GRF-071 | Abrir siempre el segundo eje en una vista con `OVERLAY` de antes |
+| TEST-GRF-072 | Un «%» en la lectura de un cruce; devolverle a un límite del diccionario el término prohibido que decía en negación |
+| TEST-GRF-073 | Unir las tomas de Antropometría (también en el lienzo de «Analizar»); unir lo indicado con una línea o dibujarlo lleno, también en un gráfico armado; la leyenda fija de antes, también en SP-01 y SP-02 |
+| TEST-GRF-074 | Ofrecer el 1RM estimado con cualquier ejercicio |
+| TEST-GRF-075 | Leer el 1RM estimado como métrica del diccionario |
+| TEST-GRF-076 | Volver a «Juntas»; sacar la cinta de arriba de «Analizar» o su proveedor del cursor; que la cinta vea la fecha acotada y pierda el evento que empieza antes de lo que se ve |
+| TEST-GRF-077 | Asignar una sesión por su fecha; decir un cambio fuera de la ventana; sacar lo que también cambió entre dos etapas de las versiones del período de la ficha |
+| TEST-GRF-078 | Perder la marca de la orientativa; dejar automático el eje del 1RM estimado en «Analizar» |
+| TEST-GRF-079 | Guardar en `localStorage` |
+
+#### Decisiones del continuador al programar (a ratificar)
+
+- **GR-T50 · La frase va siempre al pie de «Analizar»**, como iba la anterior, y no solo con dos áreas o dos ejes: es lo
+  más conservador. Con dos ejes, además, «Cómo leerlo» debajo del gráfico.
+- **GR-T51 · «Superpuestas» con una sola serie se apaga** («pide dos series o tres»), además de los motivos del dominio.
+- **GR-T52 · La ventana de SP-02** es la última toma y la más reciente del mismo protocolo con 14 días o más antes (con
+  tomas semanales, no es la anterior inmediata). Las calorías se leen desde esa toma, o desde el cambio de objetivo si fue
+  después, hasta el día anterior a la última toma.
+- **GR-T53 · La ventana de SP-01** es la última pareja seguida de etapas del objetivo nutricional (los escalones del
+  objetivo de los carbohidratos) con 21 días o más cada una dentro del período. Sin ella, se dice por qué y los carriles
+  se ven igual.
+- **GR-T54 · Lo indicado de cada versión** (la primera línea de SP-01) sale de las prescripciones de las sesiones
+  registradas, con la lectura compartida de la base (`leerLasSesionesEnTramos`): el RIR del criterio de intensidad y las
+  repeticiones del ejercicio, por la versión que ejecutó cada sesión (`planId`). *Alternativa:* los objetivos por serie de
+  API-SER-01, una lectura más por versión.
+- **GR-T55 · Las medianas de Nutrición de los cruces y de «Dos etapas»** usan solo los días con cantidades en todos sus
+  registros y ninguna comida del plan sin registro; los demás se ven huecos y se cuentan afuera, con el motivo. La tabla
+  de «Comparar dos etapas» sigue con su media de siempre.
+- **GR-T56 · GR-24 en «Patrones»** compara la versión vigente con la anterior: con un ejercicio, en Entrenamiento (el 1RM
+  estimado si está en la lista de la v1; si no, la carga de la serie); sin ejercicio, en Nutrición (las calorías). Una
+  medida corporal no se compara entre etapas en esta versión. *Ampliada el 15/11, en la revisión:* sin ejercicio compara
+  las calorías **solo** si el profesional tiene Nutrición con un plan propio; si no (un entrenador sin Nutrición), no
+  lee nada y pide un ejercicio, para no pedir un área sin acceso. Por eso GR-24 se ofrece con Nutrición propia o con
+  Entrenamiento propio y algún ejercicio con sesiones, y los gráficos del registro reciben `acceso` (una prop opcional
+  que solo agrega, en `registro-de-graficos.ts`): sin él, GR-24 sin ejercicio tampoco lee.
+- **GR-T57 · Los gráficos del registro se cargan con `React.lazy` y su propio `Suspense`**, para que el registro siga
+  siendo un `.ts` sin JSX que las pruebas cargan en Node.
+- **GR-T58 · Los `.tsx` de la rama se llaman «…-en-pantalla»** (como GR-T23), y la rama suma en sus carpetas
+  `grafico-armado.tsx`, `lectura-del-cruce.tsx` y `lecturas-de-los-cruces.ts`.
+- **GR-T59 · En «Analizar», el 1RM estimado elegido a mano se lee sin las orientativas** (como «Fuerza» en «Analizar»,
+  ED-74) y una serie observada se dibuja en rombo con su leyenda. En SP-01, las orientativas van huecas y no entran en el
+  rango. *Ampliada el 15/11:* **lo indicado del entrenamiento elegido como serie** (el RIR indicado) se dibuja en
+  «Analizar» como lo indicado de Nutrición (DL-158): rombos huecos sueltos, sin línea, con una leyenda que dice cuál es; y
+  en «Superpuestas» (en «Analizar» y en «Patrones») va en el eje de lo registrado de su misma unidad, con la misma escala:
+  el RIR indicado y el RIR registrado no tienen familia, y sin esto serían dos ejes «RIR» con escalas distintas. Por eso
+  no suma un eje: con el RIR registrado, el RIR indicado y la carga quedan dos y se puede. *Alternativa:* darle al RIR
+  indicado la familia del RIR en el catálogo (archivo de la rama B), que cambiaría la regla para todos los gráficos.
+
+#### Lo que falta para cerrar
+
+- «Ver la relación», «Comparaciones» y «Armá tu gráfico» **en «Patrones»** los muestra la rama E con este registro y
+  estas piezas; SP-01 en vivo para la defensa depende de eso. La cinta arriba de SP-01 la pone «Patrones».
+- Lo indicado del entrenamiento en «Analizar» se ve recién cuando se integre la rama B (#280), que ofrece el RIR
+  indicado; hasta entonces no se puede elegir.
+- «Patrones» (rama E) tiene que pasarles `acceso` a los gráficos del registro: GR-24 sin ejercicio lo usa para no leer
+  Nutrición sin el alcance, y sin él no lee nada. `GraficoArmadoEnPantalla` lo pide como obligatorio: con él no pide
+  una serie de un área sin acceso.
+- La evidencia en pantalla (1440, 1280 y 1024) y la revisión con lector de pantalla: no se corrió el website local (la PC
+  tiene poca memoria); lo juzgan la CI, los recorridos del navegador y las capturas de #282.
+
+#### La revisión del 15/11 (ojo adversario) y lo que se arregló
+
+| Severidad | Hallazgo | Arreglo |
+|---|---|---|
+| Media | La cinta de «Analizar» acotaba la fecha elegida a lo que se ve: un evento que empieza antes (la barra de una versión vigente desde antes) dejaba de verse elegido, y con el teclado la flecha volvía siempre al primero | El proveedor del cursor recibe `limites`, le avisa a la página la fecha acotada y la cinta sigue viendo la suya (`fechaVistaAdentro`); un clic en un gráfico sigue mandando. Elegir un tramo deja la fecha adentro del tramo |
+| Media | El 1RM estimado elegido en «Analizar» tenía el eje automático: 2 kg de ruido ocupaban todo el alto, contra GR-T15 | El lienzo usa el rango mínimo del catálogo en cada eje (10 kg o 22 lb), en «Alineadas» y en «Superpuestas»; en «Cambio relativo», no (`dominioConRangoMinimo`) |
+| Media | GR-24 en «Patrones» sin ejercicio leía las calorías aunque el profesional no tuviera Nutrición: pedía un área sin acceso | `referenciaDeLaComparacion` decide con el acceso y no lee si falta; el registro lo ofrece con Nutrición propia o con Entrenamiento propio y ejercicios (GR-T56 ampliada) |
+| Media | En el compositor, con «Superpuestas» elegida y después una sola serie (o tres unidades), «Agregar al enfoque» quedaba apagado mientras se veía «Alineadas» marcada, y tocarla no cambiaba nada | Se ve y se guarda «Alineadas» y el botón sigue (`modoDelCompositor`) |
+| Media | Un gráfico armado de «Patrones» unía lo indicado (el RIR indicado, cuando #280 lo ofrezca) con una línea, como lo registrado, y su leyenda era fija (sin el rombo de lo observado ni lo indicado) | Lo indicado va suelto (`unirLaSerie`) y la leyenda dice lo que está dibujado (`leyendaDeLasSeries`) |
+| Baja | La ventana de SP-01 tomaba como seguidas dos etapas del objetivo con otra versión en el medio (una versión sin los carbohidratos no trae su escalón) | Se exige que B empiece el día después del último de A |
+| Baja | Un gráfico armado que perdió una serie por falta de acceso decía «Superpuestas: pide dos series o tres», un rastro de lo que no se ve | Sin ese motivo cuando faltan series |
+| Baja | Con el RIR registrado de dos ejercicios y un RIR indicado, lo indicado iba al eje del primero, aunque fuera del otro ejercicio | Con dos registrados de su unidad, lo indicado no se une a ninguno: quedan tres ejes y «Superpuestas» dice por qué |
+| Baja (queda) | GR-24 en «Patrones» dice lo que BE no registra, pero no lista las versiones de la otra área que se activaron entre las etapas (en «Analizar» sí) | Pide una lectura más de la otra área, con su alcance: queda para cuando «Patrones» esté en pantalla (rama E) |
+
+#### La segunda revisión del 15/11 (ojo adversario) y lo que se arregló
+
+| Severidad | Hallazgo | Arreglo |
+|---|---|---|
+| Media | En «Analizar», las tomas de Antropometría se unían con una línea, también en «Superpuestas» con las calorías, contra GR-D5 y §4.5 («Antropometría sigue en puntos sueltos, también superpuesta») | El lienzo deja sin línea lo que el catálogo no une (`unir: unirLaSerieDe(…)`), en todos los modos, como la pestaña Antropometría; lo indicado sigue en rombos |
+| Media | El gráfico armado (la vista previa del compositor y un gráfico propio de un enfoque) pedía cada serie aunque fuera de un área sin acceso, y esperaba el 404 de la API | `GraficoArmadoEnPantalla` recibe el `acceso` (obligatorio) y no pide lo que `serieConAcceso` no deja: ni se dibuja ni deja hueco |
+| Media | «Lo que también cambió» de «Comparar dos etapas» salía de las versiones del período de la ficha: con dos etapas de hace meses no listaba lo que se activó entre ellas y decía que no había otro cambio | Sale de las etapas del último año de las dos áreas (`versionesEntreLasEtapas`, con las versiones de la misma área entre A y B); si no se pudieron leer, dice que no se sabe. El texto sin cambios dice solo lo que se leyó |
+| Baja | En «Dos etapas», la mediana del RIR y el rango de repeticiones contaban las orientativas, que no entran en la mediana: en SP-01 decía otra cosa que la lectura del cruce | Solo el núcleo de lo escrito por la persona, como la mediana |
+| Baja | GR-24 en «Patrones» con un ejercicio y sin el alcance de Entrenamiento pedía «Elegí un ejercicio… Entrenamiento»: nombraba un área sin acceso | Sin ese alcance (o sin saber el acceso), el gráfico no está |
+| Baja | SP-01 y SP-02 llevaban una leyenda fija (con lo reportado o lo observado aunque no hubiera ninguno) | La leyenda sale de lo dibujado (`leyendaDeLosCarriles`) |
+| Baja (queda) | En «Superpuestas» de dos áreas, el lienzo dibuja las bandas de las versiones de las dos, una sobre otra (rotuladas con su área) | Elegir qué bandas van con dos áreas es una decisión de diseño de la vista; queda para la revisión en pantalla |
+
+#### La pasada visual y la tercera revisión (15/11, noche)
+
+La rama trajo `main` con un merge, sin rebase: la pasada visual (#283), la historia anterior (#284), la rama B (#280),
+compartir casi por omisión (#285) y la rama C (#281). Dos choques: en «Analizar», el pie de «Comparar dos etapas» quedó
+como en `main` (la frase fija como pieza y el límite en «Cómo leerlo»); en `etapas.tsx`, los dos comentarios y, de los
+imports, `serieDisponible` (GR-24). Las piezas comunes quedan como en `main` y la rama D suma lo suyo; lo de B y C se
+hereda al usarlas (los números de lo lleno sin repetir un extremo, la cinta de filas de 30 px, el lienzo de C con las
+temporadas, el eje de 3 a 5 marcas redondas y la barra semanal de GR-12). Al traerlo no compilaba: «Superpuestas» en SVG
+propio no le pasaba `hoy` a la lectura de la base.
+
+**Una sola media semanal para todo BE (GR-VC13).** La media de una semana de Nutrición es la de GR-12
+(`mediasDeLasSemanas`, §4.4: los días con cantidades en todos sus registros, si son 4 o más; dice con cuántos días se
+hizo y por qué quedaron afuera los otros). La rama D tenía tres más y las tres pasan a esa:
+
+| Dónde | Antes | Ahora | Oráculo |
+|---|---|---|---|
+| GR-24 por semana («Las mismas métricas, en el tiempo») | La media de los días con valor, con los subtotales adentro («1.912 kcal, media de 2 de 6 días (2 subtotales)») | La de GR-12, por medio de `cruces/semanas-de-nutricion.ts`, que no calcula ninguna media: corta el período en las etapas y le pide cada tramo a `mediasDeLasSemanas`. La semana con días y sin media va con su contorno cortado, sin relleno, y sus días se ven igual; la columna gris queda para la que no tiene ningún día con valor. De entrada va por semana solo si alguna semana tiene media (GR-VD04). La leyenda dice solo lo que se ve y «Cómo se arma cada barra» dice la regla de GR-12 | TEST-GRVD-001 |
+| SP-02, el carril de la media semanal | Una media propia, sin mínimo de días | La de GR-12; la barra hueca si quedó algún día afuera, el contorno cortado si no hay media; sus fichas en la leyenda y la semana sin media también en la tabla | TEST-GRVD-001 y TEST-GRF-067 |
+| «Analizar», «Agrupar por: Semana» con una métrica de Nutrición | La semana de API-PRJ-01, que promedia también los subtotales | Se leen los días (una sola lectura) y se arma la semana de GR-12 (`serieSemanalDeNutricion`, GR-VD03). Sin media, el punto no tiene valor; lleno solo con los siete días. El «Cómo se calcula» del diccionario (textos v3, de esta rama) dice la misma regla | TEST-GRVD-005 |
+
+Las piezas de la base solo suman campos opcionales (las semanas ya calculadas, su texto, «con días y sin media», la barra
+hueca del carril semanal y sus fichas): sin ellos, todo sigue como antes. `semanasDeLosDias` queda en la base como la
+media genérica, sin ningún gráfico de Nutrición que la use.
+
+**GR-12 y GR-13 en «Analizar»** (lo que §4.4 pone ahí y §13.4 dejó para la rama D): una pregunta propia, «¿Qué registró
+en Nutrición, por día y por semana?», que responde con las pantallas de la rama C (las calorías por día y los
+macronutrientes, también en g/kg si se ofrecen), con el período de la ficha. **«Ver la relación»** también llega a
+«Analizar», con SP-01 y SP-02, mientras «Patrones» (rama E) no está: SP-01 con el ejercicio más registrado de la lista
+de la v1 y los otros a elegir. Las dos, como la composición y la fuerza (TA-25), viven en el website y no se guardan como
+vista; cada gráfico se ofrece con la regla de su registro y el acceso de hoy, y la tarjeta de la pregunta solo aparece si
+se ofrece alguno. Abierta por la dirección sin nada que ofrecer, vuelve a «Analizar» sin pregunta: responde igual que una
+que no existe (GR-VD01, GR-VD02 y GR-VD08). Lo fija TEST-GRVD-003.
+
+**La guía visual en los gráficos de la rama** (`DISENO-VISUAL` §1 y §2 «D»; §5 manda sobre la guía):
+
+| Gráfico | Antes | Después | Oráculo |
+|---|---|---|---|
+| GR-24 · lado a lado | El eje con el piso, el medio y el techo («4, 4, 3» con las repeticiones); la leyenda fija y repetida en cada métrica; tres renglones por etapa; «Lo que también cambió» decía que no había otro cambio aunque el plan pasó de 4 a 3 repeticiones | El eje de 3 a 5 marcas redondas de la base, con su grilla tenue; el título de la base con su línea tenue (la unidad y qué es cada punto); la leyenda en fichas una sola vez, arriba, solo con lo que se ve; cada etapa en dos renglones (cuándo, y cuánto con su mediana) y, tenue, lo que no entra; «Lo que también cambió» lista primero lo indicado para el ejercicio («Lo indicado para Sentadilla trasera con barra: de 4 a 3 repeticiones (de la versión 7 a la 8)»), también con el 1RM estimado solo, y si no se pudo leer lo dice | TEST-GRVD-002 |
+| SP-01 y SP-02 | La frase dos veces (en las notas y en la lectura), la lectura afuera de la tarjeta y un «Cómo leerlo» propio sin el nombre de su gráfico | Una sola tarjeta: la frase una vez, tenue, en las notas; la lectura del cruce (la ventana, lo que cambió en lo indicado, cada etapa, lo que también cambió y lo que BE no registra) a la vista adentro; Henselmans 2022 y Hall 2011, en el «Cómo leerlo» de la base | TEST-GRVD-004 |
+| «Analizar» · el pie | El límite de la pregunta y la frase en un mismo párrafo | La frase con la pieza de la base, a la vista; el límite de la pregunta en «Cómo leerlo», último (GR-T50 y GR-V08) | TEST-GRVD-004 y TEST-GRF-076 |
+| «Analizar» · «Superpuestas» con dos ejes | — | Sin cambios de fondo: cada eje dice su unidad y sus series, nada se sombrea entre líneas y «que dos líneas se crucen o se separen no quiere decir nada» va a la vista debajo del gráfico | TEST-GRVD-004 |
+| «Superpuestas» en SVG propio («Patrones») | El nombre de cada línea cortado con «…»; la leyenda debajo | El título con su línea tenue, la leyenda arriba, la frase con su pieza, «Cómo leerlo» con dos ejes y el nombre de cada línea entero o ninguno (lo dicen su eje y la leyenda) | La CI (typecheck) |
+
+**Decisiones del continuador en esta pasada, a ratificar:**
+- **GR-VD01 · GR-12 y GR-13 en «Analizar» como una pregunta propia**, con las pantallas de la rama C y el período de la
+  ficha, solo si se ofrecen. *Alternativa:* esperar a «Patrones» (rama E).
+- **GR-VD02 · «Ver la relación» también en «Analizar»** (SP-01 y SP-02, caso 1), mientras «Patrones» no está; SP-01 con el
+  ejercicio más registrado de la lista de la v1, con los otros a elegir. Cuando entre la rama E, quedan en los dos
+  lugares. *Alternativa:* solo en «Patrones», como dice §4.5.
+- **GR-VD03 · La semana de Nutrición en «Analizar» se arma en el website** con la media de GR-12, con una lectura de los
+  días (antes eran dos lecturas: la semana y los días). *Alternativa:* cambiar la agregación semanal de API-PRJ-01, que
+  pide la API y su DL.
+- **GR-VD04 · GR-24 arranca por semana solo si alguna semana tiene media** (como GR-VC12): con la cohorte, ninguna llega a
+  4 días sin faltantes y por semana se vería solo «sin media». *Alternativa:* por semana siempre con más de seis semanas.
+- **GR-VD05 · «Lo que también cambió» de GR-24 lista primero el cambio de lo indicado para el ejercicio** (las repeticiones
+  y el RIR, de las sesiones que ejecutaron cada versión), además de la diferencia de la tabla. *Alternativa:* solo en la
+  diferencia, como dejó #283.
+- **GR-VD06 · La leyenda de «Lado a lado», una vez arriba**, con lo que se ve en todas las métricas; cada etapa en dos
+  renglones. *Alternativa:* una leyenda por métrica.
+- **GR-VD07 · En SP-01 y SP-02, la lectura del cruce va adentro de la tarjeta**, en lo que la base pone a la vista, y la
+  frase una sola vez. *Alternativa:* la lectura debajo, afuera de la tarjeta.
+- **GR-VD08 · Una pregunta con gráficos abierta por la dirección sin nada que ofrecer** vuelve a «Analizar» sin pregunta,
+  sin el título ni un aviso. *Alternativa:* un estado vacío neutro con el título.
+- **GR-VD10 · La semana sin media es una raya cortada y baja sobre el eje** (no una caja punteada de todo el alto, que
+  con la cohorte enrejaba el año y tapaba los días); la caja llena, solo para la semana con media, y la de «Con días
+  afuera», con un contorno fino. **De entrada va por semana solo si la mayoría de las semanas tienen media** (refina
+  GR-VD04 y GR-VC12); si no, día por día. Vale para GR-12, GR-13, GR-14, GR-24 y la media semanal de SP-02 (revisión de
+  las capturas v2, 18/11). *Alternativa:* la caja punteada, más tenue.
+- **GR-VD09 · Las piezas de la base solo suman campos opcionales** y `semanasDeLosDias` queda como la media genérica sin
+  usuarios de Nutrición. *Alternativa:* borrarla o pasarla a la regla de GR-12, que cambia las pruebas de #283.
+
+**La revisión adversaria (tres miradas, una después de la otra) y las capturas.** La honestidad (§5 manda sobre la guía),
+el código (el merge, los cálculos, las semanas, los husos, `composicionPermitida`, la URL, los estados vacíos, el acceso y
+las pruebas) y la accesibilidad y el texto (el teclado, el lector, la tabla, Azul noche, 1024 a 1920 y las palabras). Las
+capturas de la CI se miraron en Claro y Azul noche a los cuatro anchos (v1, de `cc6d4229`, y v2, de `399cf6e3`).
+
+| Hallazgo | Severidad | Arreglo | Prueba |
+|---|---|---|---|
+| Al traer `main`, «Superpuestas» en SVG no compilaba: la lectura de la base pide `hoy` | Alta | Se lo pasa | La CI (typecheck y build) |
+| GR-24 por semana promediaba también los subtotales: otra media que la de GR-12 para la misma semana (GR-VC13) | Alta | La de GR-12, por el adaptador | TEST-GRVD-001 |
+| SP-02 tenía su propia media semanal, sin mínimo de días | Media | La de GR-12, con barra hueca y «sin media» | TEST-GRVD-001, TEST-GRF-067 |
+| «Agrupar por: Semana» de Nutrición en «Analizar» dibujaba la semana de la API, con los subtotales | Media | La de GR-12, con los días (GR-VD03); el diccionario lo dice | TEST-GRVD-005 |
+| La semana con días y sin media se dibujaba como la que no tiene ninguno (columna gris) | Media | Contorno cortado, sin relleno; sus días se ven | TEST-GRVD-001 |
+| GR-24 lado a lado: el eje «4, 4, 3» (piso, medio y techo) | Media | Las marcas redondas de la base | TEST-GRVD-002 |
+| «Lo que también cambió» no listaba el cambio de 4 a 3 repeticiones del plan (DISENO-VISUAL §2 «D») | Media | Lo indicado para el ejercicio, primero, también con el 1RM solo | TEST-GRVD-002 |
+| La leyenda de «Lado a lado», fija (con el rombo aunque no hubiera) y repetida en cada métrica | Media | Una vez, con lo que se ve | TEST-GRVD-002 |
+| GR-12 y GR-13 sin ninguna pantalla; SP-01 y SP-02 sin pantalla hasta «Patrones» | Media | Dos preguntas de «Analizar», solo con lo que se ofrece (GR-VD01 y GR-VD02) | TEST-GRVD-003, capturas 21 a 23 |
+| Una de esas preguntas, abierta por la dirección por quien no tiene el área, mostraba su título | Media | Responde como una que no existe (GR-VD08) | TEST-GRVD-003 |
+| Capturas: el peso de cada toma era un píxel en un año, en «Analizar» (también «Superpuestas») y en SP-02 | Media | La marca con el lugar de una sesión, como la base; también las sesiones del 1RM de SP-01 | TEST-GRVD-006 |
+| Capturas: GR-24 por semana desbordaba la página a lo ancho (979 px a 1024) por la tabla oculta | Media | La tabla, dentro de un div oculto | TEST-GRVD-006, TEST-GRV-013 |
+| SP-01 y SP-02: la frase dos veces y un «Cómo leerlo» propio sin el nombre de su gráfico | Baja | La frase una vez; «Cómo leerlo» de la base | TEST-GRVD-004 |
+| El pie de «Analizar»: el límite de la pregunta a la vista, pegado a la frase | Baja | La frase con su pieza; el límite en «Cómo leerlo» | TEST-GRVD-004, TEST-GRF-076 |
+| «Superpuestas» en SVG: el nombre de cada línea cortado con «…» y la leyenda debajo | Baja | Entero o ninguno; la leyenda arriba | TEST-GRVD-004 |
+| Las kcal del dibujo con decimal («1.924,8») | Baja | Enteras | TEST-GRVD-006 |
+| Capturas v2 (Dirección): con casi todas las semanas «Sin media», las cajas punteadas de todo el alto enrejaban el año de GR-12 y tapaban los días | Media | Una raya baja sobre el eje; la hueca, con contorno fino; por semana de entrada solo con la mayoría con media (GR-VD10) | TEST-GRVD-007 |
+| La leyenda por semana, fija con todas las marcas | Baja | Solo las que se ven | TEST-GRVD-001 |
+
+**Revisado sin hallazgos:** ubica sin calificar (ningún «mejor» ni «peor», las etapas sin orden de valor); cada cálculo con
+su método (GR-12 v1, Epley v1, la mediana); la frase fija a la vista en los cruces, en «Superpuestas» con dos ejes y al
+pie de «Analizar»; lo indicado y lo registrado separados (rombos sueltos); sin flechas ni «primero → último» en los textos
+nuevos; en Nutrición, sin «%» en los textos de la rama; las semanas, de lunes a domingo con fechas civiles y hoy afuera;
+`composicionPermitida` sigue mandando en «Superpuestas»; las preguntas nuevas no se guardan como vista; un área sin acceso
+no deja rastro; «Cómo leerlo» es un `<details>` con el nombre de su gráfico; ninguna palabra prohibida en pantalla, ni
+negada; el caso negado del entrenador no ve las preguntas (captura 22).
+
+**Lo que queda abierto:**
+- **«Cambio relativo» con Nutrición escribe «%» en «Analizar»** (media): choca con §5.11, pero es DL-126 y GR-26 lo deja
+  como está. Lo decide Dirección.
+- **El eje de «Analizar» (Recharts) no usa las marcas redondas de la base** («0, 55, 110, 165, 220» en las proteínas)
+  ni la franja de las versiones de la guía (baja): pasar el lienzo a los paneles alineados de la base es un trabajo
+  aparte.
+- **En «Superpuestas» de dos áreas, las bandas de las versiones de las dos van una sobre otra** (baja, de la segunda
+  revisión).
+- **SP-01 no se ve en las capturas** (baja): la cohorte no tiene un profesional con Nutrición y Entrenamiento; lo fijan
+  las pruebas.
+- **`semanasDeLosDias` queda en la base con la media de antes**, sin ningún gráfico que la use (baja, GR-VD09).
+- **El lector de pantalla real** (NVDA, TalkBack) no se probó; las pruebas leen el código (baja).
+
+**Las pruebas de esta pasada:** TEST-GRVD-001 a 006 en `apps/web/test/graficos-cruces.test.mjs`. Se corrieron en esta
+máquina (la lógica pura, con Node) y en la CI.
 
 ### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
 
