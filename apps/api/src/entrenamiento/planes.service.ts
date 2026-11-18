@@ -27,6 +27,7 @@ import {
   type Procedencia,
   type ValidationIssue,
   type VersionDePlanDeEntrenamiento,
+  CAPACIDAD_TIPOS_DE_SERIE,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
@@ -43,7 +44,15 @@ import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import { capacidadDelClienteRequerida, CompatibilidadDeClientesService, entregaRetenida, exigeObjetivosPorSerie, seRetieneLaEntrega } from './compatibilidad-de-clientes';
+import {
+  calentamientoRequiereLaApp,
+  capacidadDelClienteRequerida,
+  CompatibilidadDeClientesService,
+  entregaRetenida,
+  exigeObjetivosPorSerie,
+  seRetieneLaEntrega,
+  tieneSeriesDeCalentamiento,
+} from './compatibilidad-de-clientes';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { registrarEventoDeEntrenamiento } from './eventos';
@@ -424,6 +433,8 @@ export class PlanesDeEntrenamientoService {
         // mostrarían los generales (DL-122, precierre del 2026-10-06). Después de la versión esperada, el PDP y la validación,
         // y antes de la instantánea: el 409 no deja nada cambiado, y un reintento con la misma clave vuelve a decidir.
         if (exigeObjetivosPorSerie(v.contenido) && !(await this.compatibilidad.titularCapaz(tx, v.asesoradoId))) throw capacidadDelClienteRequerida();
+        // 5 ter. DL-178: lo mismo con el calentamiento. Una app que no lo distingue lo mostraría y lo registraría como efectivo.
+        if (tieneSeriesDeCalentamiento(v.contenido) && !(await this.compatibilidad.titularCapaz(tx, v.asesoradoId, CAPACIDAD_TIPOS_DE_SERIE))) throw calentamientoRequiereLaApp();
         // 6. Preservar la instantánea ANTES de la vigencia (REG-06-104).
         const instantanea = construirInstantaneaDeEntrenamiento(v.contenido, catalogo);
         const evaluacion = evaluarTransicionDePlanDeEntrenamiento(v.estado, { transicion: 'ActivarVersion', borradorValido: true, instantaneaPreservable: instantanea !== null });

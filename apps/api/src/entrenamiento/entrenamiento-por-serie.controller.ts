@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
 import { HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
+import { SinTipoDeSerieInterceptor } from '../http/sin-tipo-de-serie.interceptor';
 import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { LimitadorService } from '../plataforma/limitador.service';
@@ -20,6 +21,7 @@ type Solicitud = SolicitudAutenticada & SolicitudConContexto;
  */
 @Controller()
 @UseGuards(SesionGuard)
+@UseInterceptors(SinTipoDeSerieInterceptor)
 export class EntrenamientoPorSerieController {
   constructor(
     private readonly objetivos: ObjetivosPorSerieService,

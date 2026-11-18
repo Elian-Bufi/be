@@ -201,6 +201,11 @@ export type EntregaDeObjetivosPorSerie = z.infer<typeof EntregaDeObjetivosPorSer
 export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ blocks: true }).extend({
   blocks: z.array(BloqueConObjetivosSchema),
   setTargetsDelivery: EntregaDeObjetivosPorSerieSchema,
+  /**
+   * DL-178: lo mismo para las series de calentamiento. `required`: alguna serie es de calentamiento;
+   * `adviseeClientCapable`: el titular ya usó una APK que declara `training-set-kinds-1`.
+   */
+  setKindsDelivery: EntregaDeObjetivosPorSerieSchema,
   /** DL-137: la agenda de la versión (los días de cada sesión, desde cuándo y lo movido), o `null` si no tiene. */
   agenda: AgendaDeEntrenamientoSchema.nullable(),
 });

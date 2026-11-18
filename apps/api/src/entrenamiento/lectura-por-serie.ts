@@ -3,6 +3,7 @@ import {
   codificarOcurrencia,
   objetivosEfectivos,
   sesionesDelPlan,
+  tipoDeSerie,
   type BaseDelRelojApi,
   type ContenidoDePlanDeEntrenamiento,
   type EjercicioCitable,
@@ -162,6 +163,8 @@ export function prescripcionConObjetivosApi(
         setIndex: o.setIndex,
         note: s.note,
         ...declaradoEnLaSerie(s),
+        // DL-178: explícito; a un cliente sin `training-set-kinds-1` se lo saca `SinTipoDeSerieInterceptor`.
+        setKind: tipoDeSerie(s),
         target: { repetitions: o.repetitions, rir: o.rir, suggestedLoad: o.suggestedLoad, restSeconds: o.restSeconds },
         targetOrigin: { rir: o.origin.rir, suggestedLoad: o.origin.suggestedLoad, restSeconds: o.origin.restSeconds },
       };

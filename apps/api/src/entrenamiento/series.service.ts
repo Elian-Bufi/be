@@ -8,6 +8,7 @@ import {
   type OrigenDePlanEnPlantilla,
   type PlanConObjetivos,
   type SesionParaRegistrar,
+  CAPACIDAD_TIPOS_DE_SERIE,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { PdpService } from '../autorizacion/pdp.service';
@@ -17,7 +18,7 @@ import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import { CompatibilidadDeClientesService, exigeObjetivosPorSerie } from './compatibilidad-de-clientes';
+import { CompatibilidadDeClientesService, exigeObjetivosPorSerie, tieneSeriesDeCalentamiento } from './compatibilidad-de-clientes';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, resolverDeInstantanea, seguimientoAbierto, versionDePlanApi } from './lectura-entrenamiento';
@@ -90,6 +91,8 @@ export class ObjetivosPorSerieService {
             templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null,
             blocks: bloquesConObjetivosApi(contenido, resolver, imagenes),
             setTargetsDelivery: { required: exigeObjetivosPorSerie(contenido), adviseeClientCapable: await this.compatibilidad.titularCapaz(tx, titular) },
+            // DL-178: lo mismo para el calentamiento.
+            setKindsDelivery: { required: tieneSeriesDeCalentamiento(contenido), adviseeClientCapable: await this.compatibilidad.titularCapaz(tx, titular, CAPACIDAD_TIPOS_DE_SERIE) },
             // DL-137: en una activada, la de la instantánea; en un borrador, la que se está editando.
             agenda: contenido.agenda ?? null,
           },
