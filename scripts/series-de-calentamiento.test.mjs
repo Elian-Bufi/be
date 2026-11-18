@@ -91,7 +91,11 @@ test('DL-178 · «Serie N de M», «Terminar calentamiento» y la cuenta de la s
   const filas = series.filasDelEjercicio(BANCA, [], []);
   assert.equal(franja.posicionEnLaSesion(1, 2, filas[0], 3), 'Ejercicio 1 de 2 · Calentamiento');
   assert.equal(franja.posicionEnLaSesion(1, 2, filas[2], 3), 'Ejercicio 1 de 2 · Serie 1 de 3');
-  const numeroDe = (i) => filas.find((f) => f.setIndex === i)?.numero ?? i;
+  // Como la pantalla: `null` (calentamiento) no es «no está».
+  const numeroDe = (i) => {
+    const fila = filas.find((f) => f.setIndex === i);
+    return fila ? fila.numero : i;
+  };
   const base = { pausada: false, prescriptionId: 'rx-banca', haySiguienteEjercicio: false, numeroDe };
   assert.equal(filaDeAcciones({ ...base, abierta: { kind: 'SET', prescriptionId: 'rx-banca', setIndex: 1 }, siguienteSinRegistrar: null }).medio.texto, 'Terminar calentamiento');
   assert.equal(filaDeAcciones({ ...base, abierta: { kind: 'SET', prescriptionId: 'rx-banca', setIndex: 3 }, siguienteSinRegistrar: null }).medio.texto, 'Terminar serie 1');
