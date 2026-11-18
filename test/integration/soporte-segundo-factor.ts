@@ -6,6 +6,9 @@
  * - después, API-MFA-02 con el código del paso siguiente al último usado (un código ya usado no vale otra vez) o, si el
  *   paso de 30 s todavía no avanzó, API-MFA-03 con uno de sus códigos de recuperación.
  * La clave y los códigos viven solo en la memoria de la prueba, nunca en un registro.
+ *
+ * Desde DL-177 (2026-11-18) la política no exige el segundo factor al profesional: la API responde NOT_REQUIRED y esto no
+ * hace nada. Queda para el día en que la exigencia vuelva (`SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO`).
  */
 import type { INestApplication } from '@nestjs/common';
 import * as OTPAuth from 'otpauth';

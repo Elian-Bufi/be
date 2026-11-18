@@ -377,6 +377,10 @@ antes de integrar las que cambian un contrato.
 - *Dado* un profesional sin segundo factor, *cuando* entra a `/pro`, *entonces* lo configura antes de ver a una
   persona.
 - *Dado* un profesional que lo perdió, *cuando* usa un código de recuperación, *entonces* entra y lo reemplaza.
+- **Suspendida por DL-177 (Dirección, 2026-11-18; a ratificar):** el profesional entra solo con su contraseña (o Google)
+  hasta que exista un código por correo, pedido al entrar desde un dispositivo nuevo. La política es
+  `SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO` (hoy `false`); lo programado acá queda en el código y en la base, sin uso.
+  Administración no cambia.
 
 **UF-12 · DL-114 antes del 30/11**
 - *Resuelve:* fila 20 del inventario.
