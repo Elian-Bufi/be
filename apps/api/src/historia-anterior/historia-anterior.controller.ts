@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { SinTipoDeSerieInterceptor } from '../http/sin-tipo-de-serie.interceptor';
 import { HEADER_IDEMPOTENCY_KEY, type HistoriaAnteriorResponse, type MiHistoriaAnteriorResponse } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
@@ -23,6 +24,8 @@ const DEL_TRAMO = new Set(['periodStart', 'periodEnd']);
  */
 @Controller()
 @UseGuards(SesionGuard)
+// DL-178: el tipo de cada serie sale explícito solo para el cliente que declara `training-set-kinds-1`.
+@UseInterceptors(SinTipoDeSerieInterceptor)
 export class HistoriaAnteriorController {
   constructor(
     private readonly historia: HistoriaAnteriorService,
