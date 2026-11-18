@@ -114,7 +114,8 @@ const ZONA_DE_LA_TIRA = SEPARACION_DE_LA_TIRA + ALTO_DE_LA_TIRA + 4;
 const LUGAR_DE_UNA_SESION = 8.75;
 
 /** Un valor de un punto, con sus decimales (hasta uno): «160,5», «1.850». */
-const valorCorto = (v: number): string => v.toLocaleString('es-AR', { maximumFractionDigits: 1 });
+/** El número de un rótulo: las kcal, enteras (como su lectura); lo demás, con un decimal como mucho. */
+const valorCorto = (v: number, unidad = ''): string => v.toLocaleString('es-AR', { maximumFractionDigits: unidad === 'kcal' ? 0 : 1 });
 
 type Geometria = { readonly tipo: 'CARRIL'; readonly g: GeometriaDelCarril } | { readonly tipo: 'CINTA'; readonly g: GeometriaDeLaCinta };
 
@@ -186,7 +187,7 @@ function DibujoDelCarril({
     const { claves, minimo } = rotulosDeLoLleno(conValor, elegido);
     const candidatos = claves.flatMap((c) => {
       const p = conValor.find((x) => x.clave === c);
-      return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor), abajo: c === minimo && c !== ultimoPunto }] : [];
+      return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor, carril.unidad), abajo: c === minimo && c !== ultimoPunto }] : [];
     });
     const ejeY = g.marcasY.map((m) => ({ x1: 0, x2: MARGEN_IZQUIERDO - 4, y1: m.y - 8, y2: m.y + 8 }));
     return rotulosSinPisarse(candidatos, { izquierda: MARGEN_IZQUIERDO, derecha: escala.derecha + MARGEN_DERECHO - 2, arriba: 0, abajo: alto }, ejeY).map((r) => ({ ...r, fuerte: r.clave === elegido || r.clave === ultimoPunto }));

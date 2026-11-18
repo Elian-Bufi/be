@@ -140,14 +140,19 @@ export function carrilesDeEnergiaYPeso(e: EntradaDeEnergiaYPeso): (CarrilDePunto
       semanas,
       descripcion: `${C.carriles.mediaSemanal}: ${numero(conMedia, 0)} ${conMedia === 1 ? 'semana con media' : 'semanas con media'}${sinMedia > 0 ? ` y ${numero(sinMedia, 0)} con días y sin media` : ''}; cada una dice con cuántos días se hizo.`,
     },
-    carrilDeSerie(e.peso, peso, {
-      id: peso.id,
-      nombre: C.carriles.peso,
-      indice: 1,
-      metodo: null,
-      escala: escalaDeLaSerie(peso, e.peso.unit),
-      descripcion: `${C.carriles.peso}: ${numero(tomasDe(e.peso).length, 0)} ${tomasDe(e.peso).length === 1 ? 'toma' : 'tomas'}, como puntos sueltos.`,
-      lectura: lecturaDelPeso(e.peso),
-    }),
+    // Cada toma, con su marca a la medida de una sesión (la pasada visual): en un año, a la medida de un día era un
+    // puntito casi invisible.
+    {
+      ...carrilDeSerie(e.peso, peso, {
+        id: peso.id,
+        nombre: C.carriles.peso,
+        indice: 1,
+        metodo: null,
+        escala: escalaDeLaSerie(peso, e.peso.unit),
+        descripcion: `${C.carriles.peso}: ${numero(tomasDe(e.peso).length, 0)} ${tomasDe(e.peso).length === 1 ? 'toma' : 'tomas'}, como puntos sueltos.`,
+        lectura: lecturaDelPeso(e.peso),
+      }),
+      porSesion: true,
+    },
   ];
 }

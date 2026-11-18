@@ -1100,3 +1100,15 @@ test('TEST-GRVD-005 · «Agrupar por: Semana» de Nutrición en «Analizar» dib
   assert.match(definicionDeMetrica('nutricion.energia').comoSeCalcula, /Por semana, la media de la semana \(v1\): el promedio de los días con cantidades en todos sus registros, si son 4 o más/);
   assert.doesNotMatch(definicionDeMetrica('nutricion.energia').comoSeCalcula, /la semana es la media de los días con valor/);
 });
+
+test('TEST-GRVD-006 · lo que mostraron las capturas: las tomas y las sesiones se ven en un año, las kcal del dibujo van enteras y la tabla oculta no desborda la página (mutación: medir la toma con el ancho de un día; «1.924,8 kcal» en el dibujo; la tabla con la clase oculta)', () => {
+  const sp02 = SP2.carrilesDeEnergiaYPeso(entradaDeSp02());
+  assert.equal(sp02.find((c) => c.id === 'antropometria.peso').porSesion, true, 'cada toma con la marca de una sesión');
+  assert.match(leer(join(GRAFICOS, 'cruces/carbohidratos-y-fuerza.ts')), /const fuerza: CarrilDePuntos = \{\n\s*tipo: 'PUNTOS',\n(?:\s*\/\/.*\n)*\s*porSesion: true,/);
+  const lienzo = leer(join(SEGUIMIENTO, 'lienzo.tsx'));
+  assert.match(lienzo, /medidaDeMarca\(estadoDeMarca\(pt\), sinLinea\.has\(indice\) \? Math\.max\(espacioPorDia, LUGAR_DE_UN_PUNTO_SUELTO\) : espacioPorDia\)/, 'en «Analizar», un punto suelto (una toma) no queda de un píxel');
+  const paneles = leer(join(GRAFICOS, 'paneles-alineados.tsx'));
+  assert.match(paneles, /maximumFractionDigits: unidad === 'kcal' \? 0 : 1/);
+  assert.match(paneles, /texto: valorCorto\(p\.valor, carril\.unidad\)/);
+  assert.doesNotMatch(leer(join(GRAFICOS, 'minigrafico-por-semana.tsx')), /<table className="visualmente-oculto"/);
+});

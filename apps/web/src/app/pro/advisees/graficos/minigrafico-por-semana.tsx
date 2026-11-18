@@ -322,23 +322,26 @@ export function MinigraficoPorSemana({
           {lecturaDeLaSemana(semanaEncima, unidad)}
         </p>
       ) : null}
-      <table className="visualmente-oculto" data-tabla-de-las-semanas>
-        <caption>{COPY_POR_SEMANA.tabla(titulo)}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{COPY_POR_SEMANA.tramo}</th>
-            <th scope="col">{COPY_POR_SEMANA.media}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {g.semanas.map((s) => (
-            <tr key={s.desde}>
-              <th scope="row">{cuandoEsLaSemana(s)}</th>
-              <td>{lecturaDeLaSemana(s, unidad).slice(cuandoEsLaSemana(s).length + 2)}</td>
+      {/* Oculta en un div: una tabla no se achica a 1 px y, con las medias largas, desbordaba la página a lo ancho. */}
+      <div className="visualmente-oculto">
+        <table data-tabla-de-las-semanas>
+          <caption>{COPY_POR_SEMANA.tabla(titulo)}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{COPY_POR_SEMANA.tramo}</th>
+              <th scope="col">{COPY_POR_SEMANA.media}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {g.semanas.map((s) => (
+              <tr key={s.desde}>
+                <th scope="row">{cuandoEsLaSemana(s)}</th>
+                <td>{lecturaDeLaSemana(s, unidad).slice(cuandoEsLaSemana(s).length + 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -217,6 +217,8 @@ export function carrilesDeCarbohidratosYFuerza(e: EntradaDeCarbohidratosYFuerza)
   const orientativas = propios.filter((p) => p.estimate.band === 'ORIENTATIVE').length;
   const fuerza: CarrilDePuntos = {
     tipo: 'PUNTOS',
+    // Un punto por sesión (la pasada visual): la marca se mide con el lugar de una sesión y se ve también en un año.
+    porSesion: true,
     id: uno.id,
     nombre: `${C.carriles.fuerza} · ${e.ejercicio}`,
     unidad: e.unidad,

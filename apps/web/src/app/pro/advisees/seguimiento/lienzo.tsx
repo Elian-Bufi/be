@@ -112,6 +112,8 @@ const DOMINIO_AUTOMATICO = ['auto', 'auto'] as const;
 
 /** El ancho de un eje vertical, y el lugar que deja a la derecha el segundo (GR-26). */
 const ANCHO_DEL_EJE = 58;
+/** El lugar con que se mide un punto suelto (una toma): el de una sesión en la base (`paneles-alineados.tsx`). */
+const LUGAR_DE_UN_PUNTO_SUELTO = 8.75;
 
 /** Si una serie va en el eje de la derecha. */
 const aLaDerecha = (s: Pick<SerieParaDibujar, 'lado'> | undefined): boolean => s?.lado === 'DERECHA';
@@ -401,7 +403,9 @@ function Panel({
   const ejeDerecho = dosEjes ? ANCHO_DEL_EJE : 0;
   const espacioPorDia = ancho > 0 ? (ancho - 62 - margenDerecho - ejeDerecho) / Math.max(1, Math.round((x1 - x0) / DIA)) : 12;
   /** La marca de un punto, con la regla de los cuatro gráficos (TB-02): una hueca, cortada o con un punto adentro tiene su mínimo. */
-  const medidaDe = (pt: PuntoAnalitico) => medidaDeMarca(estadoDeMarca(pt), espacioPorDia);
+  // Un punto suelto (una toma, sin línea que lo una) se mide con el lugar de una sesión, como en la base: medido con el
+  // ancho de un día, en un año quedaba de un píxel y el peso no se veía (rama D, pasada visual).
+  const medidaDe = (pt: PuntoAnalitico, indice: number) => medidaDeMarca(estadoDeMarca(pt), sinLinea.has(indice) ? Math.max(espacioPorDia, LUGAR_DE_UN_PUNTO_SUELTO) : espacioPorDia);
   /** Las series que son lo indicado en el plan (GR-T59): sus marcas son rombos huecos y no las une ninguna línea. */
   const indicadas = new Set(series.filter((s) => s.indicada === true).map((s) => s.indice));
   /** Las series en puntos sueltos: lo indicado y lo que no se une (Antropometría, GR-D5), en todos los modos. */
@@ -445,7 +449,7 @@ function Panel({
       const indicada = indicadas.has(info.indice);
       return (
         <g className="grafico__elegible" data-clase={clase ?? undefined} data-carga-rapida={cargaRapida ? 'si' : undefined} data-observada={observada ? 'si' : undefined} data-indicado={indicada ? 'si' : undefined} data-elegido={esElegido(info.punto) ? 'si' : undefined} onClick={() => onPunto(info.indice, info.punto)}>
-          {observada || indicada ? <Rombo cx={cx} cy={cy} porDia={espacioPorDia} color={e.color} /> : <Punto cx={cx} cy={cy} color={e.color} medida={medidaDe(info.punto)} />}
+          {observada || indicada ? <Rombo cx={cx} cy={cy} porDia={espacioPorDia} color={e.color} /> : <Punto cx={cx} cy={cy} color={e.color} medida={medidaDe(info.punto, info.indice)} />}
         </g>
       );
     };

@@ -1051,7 +1051,7 @@ test('TEST-GRV-013 · GR-24 por semana: cada media dice a la vista con qué día
   const pieza = readFileSync(join(GRAFICOS, 'minigrafico-por-semana.tsx'), 'utf8').replace(/\r\n/g, '\n');
   assert.match(pieza, /tabIndex=\{0\}\n\s*role="group"/);
   assert.match(pieza, /aria-live="polite" data-lectura-de-la-semana>\n\s*\{semanaElegida \? lecturaDeLaSemana\(semanaElegida, unidad\) : null\}/);
-  assert.match(pieza, /<table className="visualmente-oculto" data-tabla-de-las-semanas>/);
+  assert.match(pieza, /<div className="visualmente-oculto">\n\s*<table data-tabla-de-las-semanas>/,'la tabla, oculta en un div (rama D: la tabla sola desbordaba la página a lo ancho)');
   assert.match(pieza, /className="minigrafico-por-semana__vacia" x=\{b\.x\} y=\{g\.caja\.arriba\} width=\{b\.ancho\} height=\{g\.caja\.abajo - g\.caja\.arriba\}/);
   assert.doesNotMatch(pieza, /<title>/, 'nada solo en el globo nativo');
   const etapas = readFileSync(join(WEB, 'src/app/pro/advisees/seguimiento/etapas.tsx'), 'utf8');
