@@ -8,6 +8,7 @@ import {
   INTENTOS_DE_SEGUNDO_FACTOR_POR_SESION,
   normalizarCodigoDelAutenticador,
   normalizarCodigoDeRecuperacion,
+  SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO,
   segundoFactorDelProfesionalApi,
   SinCuerpoDelSegundoFactorSchema,
   UsarCodigoDeRecuperacionRequestSchema,
@@ -60,6 +61,13 @@ type Intento =
 interface FilaTomada {
   readonly estado: EstadoDelSegundoFactorDelProfesional;
   readonly inicioDeLaSesion: Date;
+  /** Si el estado es NO_REQUERIDO porque la identidad no es profesional (si no, es por la política, DL-177). */
+  readonly sinPerfil: boolean;
+}
+
+/** El motivo de la auditoría cuando no hay segundo factor que verificar o configurar: sin perfil, o sin exigencia (DL-177). */
+function motivoSinSegundoFactor(sinPerfil: boolean): string {
+  return sinPerfil ? 'SIN_PERFIL_PROFESIONAL' : 'SEGUNDO_FACTOR_NO_EXIGIDO';
 }
 
 /**
@@ -75,6 +83,9 @@ interface FilaTomada {
  * - **Cinco códigos fallidos en la sesión la revocan,** y diez seguidos en cualquier sesión bloquean el autenticador hasta
  *   que entra un código de recuperación. Diez intentos por identidad cada 15 minutos dan 429.
  * - **Sin perfil profesional no hay nada que configurar:** la persona no tiene segundo factor todavía (08 §25: opcional).
+ * - **DL-177 (Dirección, 2026-11-18; a ratificar):** mientras `SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO` sea `false`, el
+ *   profesional tampoco: API-MFA-01 responde NOT_REQUIRED y API-MFA-02 a 06 responden 422 INVALID_STATE_TRANSITION, sin
+ *   crear filas. Lo ya configurado queda guardado, sin uso, para la etapa siguiente (un código por correo).
  * Que lo profesional lo exija en cada pedido lo deciden `SesionGuard` y `puedeActuarComoProfesional`.
  */
 @Injectable()
@@ -109,8 +120,8 @@ export class SegundoFactorDeLaSesionService {
     await this.consumirIntento(actor, 'API-MFA-02', ctx);
     const intento = await conReintento(() =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
-        const { estado } = await this.tomarLaFila(tx, actor);
-        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: 'SIN_PERFIL_PROFESIONAL' };
+        const { estado, sinPerfil } = await this.tomarLaFila(tx, actor);
+        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: motivoSinSegundoFactor(sinPerfil) };
         if (estado.estado === 'CONFIGURACION_REQUERIDA' || estado.estado === 'INICIO_RECIENTE_REQUERIDO') return { tipo: 'paso', motivo: 'SIN_AUTENTICADOR_ACTIVO' };
         const [factor] = await tx.$queryRaw<{ id: string; secreto: string; ultimoPaso: bigint | null; fallos: number }[]>`
           SELECT "id"::text AS "id", "secreto_cifrado" AS "secreto", "ultimo_paso" AS "ultimoPaso", "fallos_seguidos" AS "fallos" FROM "factor_totp"
@@ -148,8 +159,8 @@ export class SegundoFactorDeLaSesionService {
     await this.consumirIntento(actor, 'API-MFA-03', ctx);
     const intento = await conReintento(() =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
-        const { estado } = await this.tomarLaFila(tx, actor);
-        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: 'SIN_PERFIL_PROFESIONAL' };
+        const { estado, sinPerfil } = await this.tomarLaFila(tx, actor);
+        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: motivoSinSegundoFactor(sinPerfil) };
         if (estado.estado === 'CONFIGURACION_REQUERIDA' || estado.estado === 'INICIO_RECIENTE_REQUERIDO') return { tipo: 'paso', motivo: 'SIN_AUTENTICADOR_ACTIVO' };
         const codigo = normalizarCodigoDeRecuperacion(pedido.recoveryCode);
         const usados = codigo
@@ -189,8 +200,8 @@ export class SegundoFactorDeLaSesionService {
         // La identidad primero y en modo exclusivo (el orden único de bloqueos): dos configuraciones a la vez quedan una
         // después de la otra, y la segunda descarta el pendiente de la primera.
         await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR NO KEY UPDATE`;
-        const { estado, inicioDeLaSesion } = await this.tomarLaFila(tx, actor);
-        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: 'SIN_PERFIL_PROFESIONAL' };
+        const { estado, inicioDeLaSesion, sinPerfil } = await this.tomarLaFila(tx, actor);
+        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: motivoSinSegundoFactor(sinPerfil) };
         const ahora = new Date();
         const activo = await tx.factorTotp.findFirst({ where: { identidadId: actor.identidadId, estado: 'ACTIVO' }, select: { id: true } });
         if (!activo) {
@@ -234,8 +245,8 @@ export class SegundoFactorDeLaSesionService {
     const intento = await conReintento(() =>
       this.prisma.$transaction(async (tx): Promise<Intento> => {
         await tx.$queryRaw`SELECT 1 FROM "identidad" WHERE "id" = ${actor.identidadId}::uuid FOR SHARE`;
-        const { estado } = await this.tomarLaFila(tx, actor);
-        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: 'SIN_PERFIL_PROFESIONAL' };
+        const { estado, sinPerfil } = await this.tomarLaFila(tx, actor);
+        if (estado.estado === 'NO_REQUERIDO') return { tipo: 'paso', motivo: motivoSinSegundoFactor(sinPerfil) };
         const [pendiente] = await tx.$queryRaw<{ id: string; secreto: string }[]>`
           SELECT "id"::text AS "id", "secreto_cifrado" AS "secreto" FROM "factor_totp"
            WHERE "identidad_id" = ${actor.identidadId}::uuid AND "estado" = 'PENDIENTE'
@@ -298,7 +309,9 @@ export class SegundoFactorDeLaSesionService {
       SELECT "estado"::text AS "estado", "momento_de_ocurrencia" AS "inicio" FROM "sesion" WHERE "id" = ${actor.sesionId}::uuid FOR SHARE`;
     if (!sesion || sesion.estado !== 'ACTIVA') throw errores.sesionRevocada();
     const perfil = await tx.perfilProfesional.findUnique({ where: { identidadId: actor.identidadId }, select: { id: true } });
-    if (!perfil) return { estado: { estado: 'NO_REQUERIDO' }, inicioDeLaSesion: sesion.inicio };
+    if (!perfil) return { estado: { estado: 'NO_REQUERIDO' }, inicioDeLaSesion: sesion.inicio, sinPerfil: true };
+    // DL-177: sin la exigencia, no hay nada que verificar ni configurar, y la sesión no guarda un segundo factor.
+    if (!SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO) return { estado: { estado: 'NO_REQUERIDO' }, inicioDeLaSesion: sesion.inicio, sinPerfil: false };
     await tx.$executeRaw`
       INSERT INTO "segundo_factor_de_sesion" ("sesion_id", "identidad_id") VALUES (${actor.sesionId}::uuid, ${actor.identidadId}::uuid)
       ON CONFLICT ("sesion_id") DO NOTHING`;
@@ -308,6 +321,7 @@ export class SegundoFactorDeLaSesionService {
     if (!fila || fila.intentosFallidos >= INTENTOS_DE_SEGUNDO_FACTOR_POR_SESION) throw errores.sesionRevocada();
     const activos = await tx.factorTotp.count({ where: { identidadId: actor.identidadId, estado: 'ACTIVO' } });
     const estado = estadoDelSegundoFactorDelProfesional({
+      exigido: SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO,
       esProfesional: true,
       inicioDeLaSesion: sesion.inicio,
       verificadoEn: fila.verificadoEn,
@@ -315,7 +329,7 @@ export class SegundoFactorDeLaSesionService {
       tieneAutenticadorActivo: activos > 0,
       ahora: new Date(),
     });
-    return { estado, inicioDeLaSesion: sesion.inicio };
+    return { estado, inicioDeLaSesion: sesion.inicio, sinPerfil: false };
   }
 
   /** El estado después de confirmar la transacción, para la respuesta. */
@@ -330,6 +344,7 @@ export class SegundoFactorDeLaSesionService {
     });
     if (!fila) throw errores.sesionInvalida();
     return estadoDelSegundoFactorDelProfesional({
+      exigido: SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO,
       esProfesional: fila.identidad.perfilProfesional !== null,
       inicioDeLaSesion: fila.momentoDeOcurrencia,
       verificadoEn: fila.segundoFactor?.verificadoEn ?? null,

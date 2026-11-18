@@ -24,6 +24,7 @@ import { Enlace } from './enlace';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { aplicarTema, leerTema, NOMBRE_DEL_TEMA, sePuedeGuardar, TEMA_PREDETERMINADO, TEMAS, temaValido, type Tema } from '../lib/apariencia';
+import { SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO } from '@be/domain';
 import { COPY } from '../lib/copy';
 import { CERRANDO_SESION, useCerrarSesion } from '../lib/cerrar-sesion';
 import { useNombrePropio } from '../lib/nombre-propio';
@@ -128,8 +129,9 @@ export function MenuDeCuenta() {
               </span>
             </Enlace>
           ) : null}
-          {/* UF-11 (DL-169): el segundo factor del profesional, en el espacio profesional. */}
-          {conSesion && ruta.startsWith('/pro') && ruta !== '/pro/security' ? (
+          {/* UF-11 (DL-169): el segundo factor del profesional, en el espacio profesional. Desde DL-177 no se usa: la opción
+              vuelve solo si la política lo exige otra vez. */}
+          {SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO && conSesion && ruta.startsWith('/pro') && ruta !== '/pro/security' ? (
             <Enlace href="/pro/security" className="menu-de-cuenta__opcion">
               <Icono nombre="persona" />
               <span>

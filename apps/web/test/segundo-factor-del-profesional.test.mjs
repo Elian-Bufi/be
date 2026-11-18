@@ -140,3 +140,27 @@ test('«Abrir en la aplicación de códigos» es el camino principal en el telé
   const css = readFileSync(join(WEB, 'src/app/globals.css'), 'utf8');
   assert.match(css, /@media not all and \(pointer: coarse\) \{\s*\.mfa-abrir-en-la-aplicacion,\s*\.mfa-desde-el-telefono \{\s*display: none;\s*\}\s*\}/);
 });
+
+test('DL-177 · sin la exigencia, el website no pide ni ofrece el autenticador al profesional; Administración sigue igual', async () => {
+  const { SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO, COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL } = await import('@be/domain');
+  assert.equal(SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO, false, 'la política vigente (Dirección, 2026-11-18)');
+  // La compuerta de /pro deja pasar con lo que dice la API hoy (NOT_REQUIRED) y no muestra ningún paso.
+  assert.deepEqual(S.pasoDelSegundoFactor(estado({ state: 'NOT_REQUIRED' })), { tipo: 'seguir' });
+  // El menú de la cuenta ofrece «Seguridad de tu acceso» solo si la política lo exige.
+  assert.match(leer('src/components/menu-de-cuenta.tsx'), /\{SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO && conSesion && ruta\.startsWith\('\/pro'\) && ruta !== '\/pro\/security' \?/);
+  // /pro/security, sin la exigencia, dice cómo entra y cómo cuidar la contraseña: ni el QR, ni los códigos, ni la API.
+  const seguridad = leer('src/app/pro/security/seguridad.tsx');
+  assert.match(seguridad, /return SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO \? <SeguridadConAutenticador \/> : <SeguridadSinAutenticador \/>;/);
+  const sin = seguridad.slice(seguridad.indexOf('function SeguridadSinAutenticador('), seguridad.indexOf('function SeguridadConAutenticador('));
+  assert.doesNotMatch(sin, /api\.|PasoDeConfiguracion|recoveryCodes/);
+  for (const clave of ['comoEntras', 'proximamente', 'cuidar', 'sospecha', 'cambiarContrasena', 'verComoEntras', 'autenticadorViejo']) {
+    assert.ok(COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL.seguridad.sinAutenticador[clave]?.trim(), clave);
+  }
+  assert.match(COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL.seguridad.sinAutenticador.proximamente, /correo/);
+  // La consola no ofrece restablecer un segundo factor que el profesional no usa; la recuperación asistida sigue.
+  const acceso = leer('src/app/admin/access/page.tsx');
+  assert.match(acceso, /\{SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO \? <RestablecerSegundoFactor \/> : null\}/);
+  assert.match(acceso, /<RecuperacionAsistida \/>/);
+  // Administración no depende de esta política: su compuerta y su código no la leen.
+  for (const archivo of ['src/app/admin/puerta.tsx', 'src/lib/sesion-administrativa.tsx']) assert.doesNotMatch(leer(archivo), /SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO/, archivo);
+});

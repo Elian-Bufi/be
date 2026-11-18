@@ -224,7 +224,7 @@ export async function datos(estado) {
   for (const [recorrido, r] of Object.entries(RECORRIDOS)) {
     const e = estado[recorrido];
     const pro = await sesion(e.pro.correo);
-    // UF-11 (DL-169): la primera sesión del profesional configura su segundo factor, como al entrar a /pro.
+    // UF-11 (DL-169): la primera sesión del profesional configuraba su segundo factor; desde DL-177 no hace nada.
     await verificarSegundoFactor(e.pro.correo, pro);
     const ase = await sesion(e.ase.correo, 'APK');
     e.ase.nombre = nombreDeLaPersona(recorrido);

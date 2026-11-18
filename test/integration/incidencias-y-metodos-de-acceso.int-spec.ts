@@ -2,7 +2,7 @@
  * RF-068 y RF-004 (DEUDA_LEGAJO DL-172; docs/paquetes/WP-RF068-RF004.md) contra PostgreSQL real y un Google falso local.
  * - TEST-INC-007 a 009: avisar un problema, verlo, y Administración que lo gestiona; la historia no se sobrescribe.
  * - TEST-MET-006 a 010: ver, vincular y desvincular Google desde la cuenta, sin quedarse nunca sin un método, con la
- *   entrada reciente y el segundo factor del profesional.
+ *   entrada reciente (el segundo factor del profesional ya no se pide desde DL-177).
  * - TEST-MET-013 a 015 (la revisión de DL-172): el hecho de cada retiro y reasociación, el aviso por correo de cada cambio
  *   (D-11) y que una cuenta de Google desvinculada ya no identifique la cuenta para recuperar el acceso. El correo va a un
  *   proveedor falso local.
@@ -195,7 +195,7 @@ describe('RF-004 · los métodos de acceso de una misma identidad', () => {
     await entrarConGoogle(tokenDeGoogle(sub, correo)).expect(201);
   });
 
-  it('TEST-MET-009 · desvincular pide una entrada reciente; el profesional, además, el segundo factor', async () => {
+  it('TEST-MET-009 · desvincular pide una entrada reciente; el profesional, desde DL-177, nada más', async () => {
     const correo = correoSintetico('met-reciente');
     const id = await registrarOk(app, correo);
     const yo = conSesion(app, await tokenDe(app, correo));
@@ -209,13 +209,11 @@ describe('RF-004 · los métodos de acceso de una misma identidad', () => {
     const vieja = await prisma.sesion.create({ data: { identidadId: id, momentoDeOcurrencia: new Date(ahora - 11 * 60_000), expiraEn: new Date(ahora + 3_600_000), versionDeControl: control.version } });
     const tokenViejo = app.get(TokensService).firmar({ sub: id, sid: vieja.id, tv: control.version }, vieja.expiraEn);
     expect((await conSesion(app, tokenViejo).delete(`/api/v1/me/access-methods/${deGoogle}`).expect(403)).body.error.code).toBe('STEP_UP_REQUIRED');
-    // El profesional con una sesión sin el código del autenticador no vincula ni desvincula.
+    // DL-177 (2026-11-18): el profesional ya no usa el autenticador; con una sesión nueva, solo con su contraseña, vincula.
     const pro = await prepararProfesional(app, 'met-pro', ['ENTRENAMIENTO']);
-    const sinCodigo = conSesion(app, await tokenDe(app, pro.correo, 'WEB'));
-    expect((await sinCodigo.post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenDeGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(403)).body.error.code).toBe('MFA_REQUIRED');
-    await sinCodigo.get('/api/v1/me/access-methods').expect(200);
-    // Con el código verificado, sí.
-    await conSesion(app, pro.token).post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenDeGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(201);
+    const soloContrasena = conSesion(app, await tokenDe(app, pro.correo, 'WEB'));
+    await soloContrasena.get('/api/v1/me/access-methods').expect(200);
+    await soloContrasena.post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenDeGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(201);
   });
 
   it('TEST-MET-010 · una cuenta de Google de otra identidad no se vincula; una desvinculada sin contraseña de ese correo dice que se desvinculó', async () => {

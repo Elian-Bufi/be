@@ -19,7 +19,7 @@
  *   descartar un borrador de plan que nunca se activó (DL-163 D-21; TB-47).
  *   Y la familia RES, lo que la persona comparte de otras áreas, el plan del otro y el pedido (DL-163 D-13, ampliada;
  *   TB-52 a TB-56).
- * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169).
+ * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169); desde DL-177, sin exigencia.
  * - WP-USO-FINAL (UF-04): API-ADM-14 y 15, la entrada de los profesionales reales y su nombre profesional (DL-169).
  * - WP-USO-FINAL (UF-03): API-ACC-P1-01 y 02 y API-ADM-18, recuperar el acceso y la recuperación asistida (DL-169).
  * - WP-USO-FINAL (UF-07): API-SOP-01, el canal de ayuda y contacto (DL-169).
@@ -41,7 +41,6 @@ import { TokensService } from '../../apps/api/src/sesion/tokens.service';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
 import { adm, administradorListo, codigoQueNoVale, codigoTotp, primerFactor, profesionalPendiente } from './soporte-administracion';
-import { codigoDelPaso } from './soporte-segundo-factor';
 import {
   appDePrueba,
   claveDeIdempotencia,
@@ -2143,42 +2142,32 @@ it('TEST-CT (WP-ADMINISTRACION): ADM-01 a 13, con éxitos y errores declarados (
   await adm(app).delete('/admin/auth/sessions/current').expect(401); // AUTHENTICATION_REQUIRED
 });
 
-it('TEST-CT (WP-USO-FINAL, UF-11): MFA-01 a 06 — el segundo factor del profesional, con éxitos y errores declarados (DL-169)', async () => {
+it('TEST-CT (WP-USO-FINAL, UF-11; DL-177): MFA-01 a 06 — sin la exigencia, el profesional no tiene segundo factor que verificar ni configurar', async () => {
   const ruta = '/api/v1/me/second-factor';
-  // Un profesional sin autenticador, recién entrado (como uno que incorpora Administración), y una persona.
+  // DL-177 (2026-11-18): el profesional entra solo con su contraseña. Un profesional recién incorporado y una persona.
   const correo = correoSintetico('ct-mfa');
   const id = await registrarOk(app, correo, 'WEB');
   await app.get(PrismaService).$transaction((tx) => app.get(VerificacionService).prepararProfesional(tx, id, { alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Contrato MFA' }, new Date()));
   const t = await tokenDe(app, correo, 'WEB');
   const persona = await prepararAsesorado(app, 'ct-mfa');
   // MFA-01.
-  expect((await conSesion(app, t).get(ruta).expect(200)).body.data.secondFactor.state).toBe('ENROLLMENT_REQUIRED');
+  expect((await conSesion(app, t).get(ruta).expect(200)).body.data.secondFactor.state).toBe('NOT_REQUIRED');
   await conSesion(app, t).get(`${ruta}?x=1`).expect(400); // INVALID_REQUEST
   await request(app.getHttpServer()).get(ruta).expect(401); // AUTHENTICATION_REQUIRED
-  // MFA-04 y 05: configurar.
-  await conSesion(app, persona.token).post(`${ruta}/enrollment`).send({}).expect(422); // INVALID_STATE_TRANSITION: sin perfil profesional
-  await conSesion(app, t).post(`${ruta}/enrollment`).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
-  const secreto = (await conSesion(app, t).post(`${ruta}/enrollment`).send({}).expect(200)).body.data.secret as string;
-  await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
-  await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: '123456', extra: 1 }).expect(400); // UNKNOWN_FIELD
-  const paso = Math.floor(Date.now() / 30_000);
-  const codigos = (await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: codigoDelPaso(secreto, paso) }).expect(200)).body.data.recoveryCodes as string[];
-  // MFA-02: otra sesión, con el código del paso siguiente.
-  const otra = await tokenDe(app, correo, 'WEB');
-  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
-  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: '123456', extra: 1 }).expect(400); // UNKNOWN_FIELD
-  await conSesion(app, persona.token).post(`${ruta}/verification`).send({ code: '123456' }).expect(422); // INVALID_STATE_TRANSITION
-  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: codigoDelPaso(secreto, paso + 1) }).expect(200);
-  // MFA-03: una tercera, con un código de recuperación.
-  const tercera = await tokenDe(app, correo, 'WEB');
-  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: 'AAAA-AAAA-AAAA' }).expect(422); // SECOND_FACTOR_INVALID
-  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: codigos[0], extra: 1 }).expect(400); // UNKNOWN_FIELD
-  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: codigos[0] }).expect(200);
-  // MFA-06: desde la sesión reciente y verificada; sin verificar, no.
-  const sinVerificar = await tokenDe(app, correo, 'WEB');
-  await conSesion(app, sinVerificar).post(`${ruta}/recovery-codes`).send({}).expect(422); // INVALID_STATE_TRANSITION
-  await conSesion(app, t).post(`${ruta}/recovery-codes`).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
-  expect((await conSesion(app, t).post(`${ruta}/recovery-codes`).send({}).expect(200)).body.data.recoveryCodes).toHaveLength(10);
+  // MFA-02 a 06: nada que verificar ni configurar, para el profesional y para la persona.
+  const pasos: readonly [string, Record<string, unknown>][] = [
+    ['verification', { code: '123456' }],
+    ['recovery-code', { recoveryCode: 'AAAA-AAAA-AAAA' }],
+    ['enrollment', {}],
+    ['enrollment/confirm', { code: '123456' }],
+    ['recovery-codes', {}],
+  ];
+  for (const [paso, cuerpo] of pasos) {
+    await conSesion(app, t).post(`${ruta}/${paso}`).send(cuerpo).expect(422); // INVALID_STATE_TRANSITION
+    await conSesion(app, persona.token).post(`${ruta}/${paso}`).send(cuerpo).expect(422); // INVALID_STATE_TRANSITION
+    await conSesion(app, t).post(`${ruta}/${paso}`).send({ ...cuerpo, extra: 1 }).expect(400); // UNKNOWN_FIELD
+    await request(app.getHttpServer()).post(`${ruta}/${paso}`).send(cuerpo).expect(401); // AUTHENTICATION_REQUIRED
+  }
 });
 
 it('TEST-CT (WP-USO-FINAL, UF-04): ADM-14 y ADM-15 — incorporar a un profesional y cambiar su nombre profesional, con éxitos y errores declarados (DL-169)', async () => {
@@ -2354,7 +2343,8 @@ it('TEST-CT (RF-004): MET-01 a 03 — los métodos de acceso de la cuenta propia
   await vincular({ idToken: tokenGoogle(sub, correo) }).expect(200);
   await vincular({ idToken: tokenGoogle(subSintetico(), correo) }).expect(409); // GOOGLE_ACCOUNT_ALREADY_LINKED
   const pro = await prepararProfesional(app, 'ct-met-pro', ['NUTRICION']);
-  await conSesion(app, await tokenDe(app, pro.correo, 'WEB')).post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(403); // MFA_REQUIRED
+  // DL-177: el profesional, con una sesión nueva y solo su contraseña, vincula como cualquiera (antes, 403 MFA_REQUIRED).
+  await conSesion(app, await tokenDe(app, pro.correo, 'WEB')).post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(201);
   // MET-03.
   const deGoogle = metodos.find((m) => m.type === 'GOOGLE')!.methodId;
   const contrasena = metodos.find((m) => m.type === 'PASSWORD')!.methodId;
