@@ -155,7 +155,7 @@ export const COPY_TIPOS_DE_SERIE = {
 export const COPY_CALENTAMIENTO_Y_LA_APP = {
   activacionBloqueadaTitulo: 'Todavía no podés activar este plan',
   activacionBloqueada:
-    'Este plan tiene series de calentamiento, y tu asesorado todavía no usó una versión de BE que las muestre. Con la versión que tiene las vería como series efectivas.',
+    'Este plan tiene series de calentamiento, y la persona todavía no usó una versión de BE que las muestre. Con la versión que tiene las vería como series efectivas.',
   queHacer: 'Podés activarlo cuando la persona abra Entrenamiento con BE actualizada, o quitar la marca «C» de las series para activarlo ahora.',
   listoParaActivar: 'La persona ya usa una versión de BE que muestra las series de calentamiento.',
 } as const;
