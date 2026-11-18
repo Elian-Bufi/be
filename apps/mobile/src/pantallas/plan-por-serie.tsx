@@ -6,7 +6,7 @@
  * composición (excepción 3 de `REFERENCIAS_VISUALES.md`). Cada sesión se lee al abrirla, no todas de entrada. Si API-SER-02
  * no responde, se muestran los objetivos generales de cada ejercicio, y se dice.
  */
-import { COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, type HoyDeEntrenamientoResponse, type Ocurrencia, type PrescripcionConObjetivos, type Resultado } from '@be/domain';
+import { COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, rotulosDeLasSeries, type HoyDeEntrenamientoResponse, type Ocurrencia, type PrescripcionConObjetivos, type Resultado } from '@be/domain';
 import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
@@ -75,9 +75,11 @@ function PrescripcionDelPlan({ prescripcion: p, token, sesionPerdida, onVerTecni
           <Boton texto={COPY_ENTRENAMIENTO_POR_SERIE.verTecnica} tipo="enlace" onPress={onVerTecnica} />
         </View>
       </View>
-      {p.sets.map((s) => {
-        const banda = bandaDeLaSerie(s.setIndex, s.target);
-        const texto = `${COPY_ENTRENAMIENTO.serie} ${s.setIndex}: ${banda.plan}${banda.descanso ? ` · ${banda.descanso}` : ''}${s.note ? ` · ${s.note}` : ''}`;
+      {p.sets.map((s, i) => {
+        // DL-178: el calentamiento se nombra así y no lleva número; las efectivas, 1, 2, 3.
+        const rotulo = rotulosDeLasSeries(p.sets)[i]!;
+        const banda = bandaDeLaSerie(s.setIndex, s.target, rotulo.numero);
+        const texto = `${rotulo.largo}: ${banda.plan}${banda.descanso ? ` · ${banda.descanso}` : ''}${s.note ? ` · ${s.note}` : ''}`;
         return (
           <Text key={s.setIndex} style={estilos.serie}>
             {texto}

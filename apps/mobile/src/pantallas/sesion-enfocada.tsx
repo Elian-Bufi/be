@@ -76,6 +76,9 @@ import {
   type ResumenDelEjercicio,
   type SerieLocal,
   type Unidad,
+  marcaDeLaFila,
+  nombreDeLaFila,
+  TEXTOS_DEL_CALENTAMIENTO,
 } from '../series-de-la-sesion';
 import { sustitutosPosibles, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado, type SustitucionDelEjercicio } from '../sustitucion-de-ejercicio';
 import { Aviso, Ayuda, Boton, Campo, Casilla, CasillaSola, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Segmentos, Superficie } from '../ui';
@@ -320,7 +323,7 @@ function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrit
       r.rir === null ? 'RIR no informado' : `RIR ${numero(r.rir)}`,
       ...(r.durationSeconds === null || r.durationSeconds === undefined ? [] : [`tiempo ${textoDeTiempo(r.durationSeconds)}`]),
     ];
-    return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}${activa ? `, ${COPY_ENTRENAMIENTO_POR_SERIE.serieActual}` : ''}, ${estado}, ${comoSeCargo(f)}: ${partes.join(', ')}`;
+    return `${nombreDeLaFila(f)}${activa ? `, ${COPY_ENTRENAMIENTO_POR_SERIE.serieActual}` : ''}, ${estado}, ${comoSeCargo(f)}: ${partes.join(', ')}`;
   }
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar;
@@ -328,7 +331,8 @@ function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrit
     escrita && hayAlgoEscrito(escrita)
       ? `. Escrito: ${[escrita.carga.trim() ? `carga ${escrita.carga} ${unidad}` : null, escrita.repeticiones.trim() ? `${escrita.repeticiones} repeticiones` : null, escrita.rir.trim() ? `RIR ${escrita.rir}` : null, (escrita.tiempo ?? '').trim() ? `tiempo ${escrita.tiempo}` : null].filter((x): x is string => x !== null).join(', ')}`
       : '';
-  return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}, ${estado}${escrito}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, RIR ${p.rir}`;
+  // DL-178: el calentamiento se nombra así y dice que no cuenta; las efectivas, con su número efectivo.
+  return `${nombreDeLaFila(f)}${f.numero === null ? `. ${TEXTOS_DEL_CALENTAMIENTO.queEs}` : ''}, ${estado}${escrito}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, RIR ${p.rir}`;
 }
 
 /** El reloj de las filas: el de la serie que corre, si hay una, y si se puede medir (en vivo, con la corrida y sin pausa). */
@@ -474,7 +478,7 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
           onPress={() => acciones.onEnfocar(f.setIndex)}
           style={({ pressed }) => [estilos.celdaSerie, pressed && estilos.presionado]}
         >
-          <Text style={estilos.numeroDeSerie}>{numero(f.setIndex, 0)}</Text>
+          <Text style={estilos.numeroDeSerie}>{marcaDeLaFila(f)}</Text>
         </Pressable>
         {editable ? (
           CAMPOS.map(({ campo, teclado }) => (
@@ -644,7 +648,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : f.estado === 'sin-registrar' ? (escrita && hayAlgoEscrito(escrita) ? t.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   // La tildada sin escribir nada lleva «como el plan» en su título; la escrita, nada más (DL-161).
   const comoElPlan = f.registrada?.recordedAs === 'AS_PLANNED' ? t.comoElPlan : null;
-  const titulo = [`${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}`, estado, comoElPlan].filter((x): x is string => x !== null).join(' · ');
+  const titulo = [nombreDeLaFila(f), estado, comoElPlan].filter((x): x is string => x !== null).join(' · ');
   const etiquetaDe = (campo: keyof FilaEscrita) =>
     campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : campo === 'rir' ? COPY_ENTRENAMIENTO_POR_SERIE.rirTitulo : `${t.columnaTiempo} (opcional)`;
   const casilla = (

@@ -41,6 +41,7 @@ import {
   type SerieConObjetivo,
   type SerieEjecutadaApi,
   type SesionConObjetivos,
+  tipoDeSerie,
 } from '@be/domain';
 import { fechaCorta } from './formato';
 import { FILA_VACIA, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita } from './series-de-la-sesion';
@@ -184,7 +185,8 @@ export function serieDelPlan(s: SerieConObjetivo): SerieEjecutadaApi | null {
   const carga = t.suggestedLoad ? { value: t.suggestedLoad.value, unit: t.suggestedLoad.unit } : null;
   if (repeticiones === null && carga === null) return null;
   const rir = t.rir !== null && t.rir >= 0 && t.rir <= 20 ? t.rir : null;
-  return { setIndex: s.setIndex, load: carga, completedRepetitions: repeticiones, rir, perceivedExertion: null, recordedAs: 'AS_PLANNED' };
+  // DL-178: una de calentamiento se registra con su tipo; una efectiva, sin el campo, como siempre.
+  return { setIndex: s.setIndex, load: carga, completedRepetitions: repeticiones, rir, perceivedExertion: null, recordedAs: 'AS_PLANNED', ...(s.setKind === 'WARM_UP' ? { setKind: 'WARM_UP' as const } : {}) };
 }
 
 /** Si el ejercicio tiene series y todas se pueden registrar con lo planificado, sin escribir nada. */
@@ -478,7 +480,7 @@ function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, error
       continue;
     }
     // Lo escrito y, en lo que quedó vacío, lo planificado que se veía en gris: la regla de la casilla de la sesión.
-    const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad);
+    const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad, tipoDeSerie(s));
     if (!leida.ok) {
       errores[claveDeSerie(p.prescriptionId, s.setIndex)] = leida.errores;
       primerProblema.motivo ??= leida.errores.fila ? T.faltaUnDato(p.exerciseName, s.setIndex) : T.revisaUnValor(p.exerciseName, s.setIndex);

@@ -53,6 +53,9 @@ import {
   type RegistroDeEjecucion,
   type Resultado,
   type SesionDeOcurrencia,
+  cuentaDeSeries,
+  rotulosDeLasSeries,
+  seriesEfectivas,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
@@ -952,7 +955,7 @@ function TarjetaDeOcurrencia({
       )}
       {o.plannedSession.prescriptions.map((p) => (
         <Text key={p.prescriptionId} style={estilos.ejercicioDeLaSesion}>
-          {`${p.exerciseName} · ${cantidadDeSeries(p.sets.length)}`}
+          {`${p.exerciseName} · ${cuentaDeSeries(p.sets)}`}
         </Text>
       ))}
       {o.plannedSession.instructions ? <Parrafo tenue>{o.plannedSession.instructions}</Parrafo> : null}
@@ -1291,7 +1294,7 @@ export function PantallaDeSesion({
           descansoEmpezado = descansoAuto !== null && medidos !== null;
           if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
         }
-        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila);
+        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila, f.tipo);
         if (!lectura.ok) {
           const anuncio = anuncioParaRegistrar(escrita, f.objetivo, f.setIndex, lectura.errores);
           enfocar(f.setIndex);
@@ -1634,6 +1637,11 @@ export function PantallaDeSesion({
           siguienteSinRegistrar: primeraSinRegistrar(filas)?.setIndex ?? null,
           haySiguienteEjercicio: ejercicioSiguiente !== null,
           porRegistrar: porRegistrar?.prescriptionId === p.prescriptionId && filas.some((f) => f.setIndex === porRegistrar.setIndex && f.estado === 'sin-registrar') ? porRegistrar : null,
+          // DL-178: «Terminar calentamiento», y las efectivas con su número efectivo.
+          numeroDe: (setIndex) => {
+            const fila = filas.find((f) => f.setIndex === setIndex);
+            return fila ? fila.numero : setIndex;
+          },
         })
       : null;
   usePublicarFilaFija(datosDeLaFila, ocupado, {
@@ -1858,7 +1866,7 @@ export function PantallaDeSesion({
   }
 
   const bases = basesDeLaPrescripcion(p);
-  const banda = filaActiva ? bandaDeLaSerie(filaActiva.setIndex, filaActiva.objetivo) : null;
+  const banda = filaActiva ? bandaDeLaSerie(filaActiva.setIndex, filaActiva.objetivo, filaActiva.numero) : null;
   // La serie que origina un descanso que se inicia ahora: la que se hizo, no la que viene (al tildar, el foco avanza).
   const serieDelDescanso = filaActiva ? serieQueOriginaElDescanso(filas, filaActiva.setIndex) : null;
   // Al terminar el descanso: la fila que quedará enfocada, si no es la misma del descanso.
@@ -1904,7 +1912,7 @@ export function PantallaDeSesion({
       <FranjaDeLaSesion
         sesion={s.label}
         ejercicio={p.exerciseName}
-        posicion={posicionEnLaSesion(indice + 1, s.prescriptions.length, filaActiva, p.sets.length)}
+        posicion={posicionEnLaSesion(indice + 1, s.prescriptions.length, filaActiva, seriesEfectivas(p.sets).length)}
         tramos={tramosDelRecorrido(resumen, p.prescriptionId)}
         cuenta={cuentaDelRecorrido(resumen)}
         tiempoDeLaSesion={temporizador}
@@ -2078,9 +2086,10 @@ function Registro({ registro }: { registro: RegistroDeEjecucion }) {
             valor={e.substituted ? `${COPY_ENTRENAMIENTO.ejecutado}: ${e.performedExerciseName}` : ''}
           />
           {/* La serie tildada sin escribir dice «como el plan», como en el website: sus valores son los del plan. */}
-          {(e.sets ?? []).map((s) => (
+          {/* DL-178: el calentamiento se nombra así; las efectivas, con su número efectivo. */}
+          {(e.sets ?? []).map((s, i, todas) => (
             <Parrafo key={s.setIndex}>
-              {COPY_ENTRENAMIENTO.serie} {s.setIndex}: {textoDeSerie(s)}
+              {rotulosDeLasSeries(todas)[i]!.largo}: {textoDeSerie(s)}
               {seCargoComoElPlan(s) ? ` · ${COPY_REGISTRO_POR_NIVELES.comoElPlan}` : ''}
             </Parrafo>
           ))}
