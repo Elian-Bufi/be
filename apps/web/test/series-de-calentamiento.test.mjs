@@ -54,3 +54,13 @@ test('DL-178 · el plan activo y la hoja muestran «C»; el editor avisa antes d
     assert.doesNotMatch(texto, /cumplimiento|adherencia|racha|puntaje|asesorado/i, texto);
   }
 });
+
+test('DL-178 · revisión adversaria: lo registrado se rotula por setIndex y con lo indicado; el editor abierto cuenta las efectivas', () => {
+  const EJECUCIONES = fuente('../src/app/pro/advisees/training/ejecuciones.tsx');
+  // Una serie salteada no renumera las que siguen, y el plan dice cuál es de calentamiento (D-5).
+  assert.match(EJECUCIONES, /rotuloPorIndice\(\[\.\.\.\(planificado\.find\(\(p\) => p\.prescriptionId === e\.prescriptionId\)\?\.sets \?\? \[\]\), \.\.\.todas\]\)\(s\.setIndex\)/);
+  assert.doesNotMatch(EJECUCIONES, /rotulosDeLasSeries\(todas\)/);
+  const r = d.rotuloPorIndice([{ setIndex: 1, setKind: 'WARM_UP' }, { setIndex: 2 }, { setIndex: 3 }, { setIndex: 1 }, { setIndex: 3 }]);
+  assert.deepEqual([r(1).largo, r(3).largo], ['Calentamiento', 'Serie 2']);
+  assert.match(EJERCICIO, /abierto \? cuentaDeSeries\(p\.sets\) : plegado\.resumen/);
+});

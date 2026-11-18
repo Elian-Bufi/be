@@ -137,6 +137,9 @@ describe('DL-178 · un plan con calentamiento', () => {
       (o) => o.plannedSession.sessionId === 'ses-a',
     )!;
     expect(ocurrencia.plannedSession.prescriptions.find((p) => p.prescriptionId === 'rx-banca')!.sets.map((s) => s.setKind)).toEqual(['WARM_UP', 'WORKING', 'WORKING']);
+    // Revisión adversaria: la sesión sin registrar tampoco le llega a la APK instalada (que muestra los objetivos por serie,
+    // pero no distingue el calentamiento): el mismo 404 que API-TRN-15.
+    await conLaApk(app, c.ase.token, valorDeCapacidades([CAPACIDAD_OBJETIVOS_POR_SERIE])).get(`/api/v1/training/occurrences/${ocurrencia.occurrenceId}/session`).expect(404);
     const sesion = (await apk.get(`/api/v1/training/occurrences/${ocurrencia.occurrenceId}/session`).expect(200)).body;
     expect((sesion.data.session.prescriptions as ({ prescriptionId: string } & Sets[number])[]).find((p) => p.prescriptionId === 'rx-banca')!.sets.map((s) => s.setKind)).toEqual([
       'WARM_UP',
@@ -146,6 +149,21 @@ describe('DL-178 · un plan con calentamiento', () => {
     const abierto = await apk.put(`/api/v1/training/occurrences/${ocurrencia.occurrenceId}/execution-draft`).send({});
     expect([200, 201]).toContain(abierto.status);
     const serie = (setIndex: number, kg: number, reps: number, extra: Record<string, unknown> = {}) => ({ setIndex, load: { value: kg, unit: 'kg' }, completedRepetitions: reps, rir: 2, perceivedExertion: null, ...extra });
+    // Revisión adversaria: lo registrado sigue el orden del plan. Una efectiva del plan marcada como calentamiento después
+    // de otra efectiva es un 422, y el borrador no cambia.
+    const fueraDeLugar = await apk
+      .patch(`/api/v1/training/execution-drafts/${abierto.body.data.draftId}`)
+      .send({
+        expectedVersion: abierto.body.data.version,
+        changes: {
+          granularity: 'SET',
+          sessionCondition: 'COMPLETED',
+          exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie(1, 40, 12, { setKind: 'WARM_UP' }), serie(2, 60, 8), serie(3, 60, 8, { setKind: 'WARM_UP' })] }],
+        },
+      })
+      .expect(422);
+    expect(fueraDeLugar.body.error.code).toBe('EXECUTION_VALUE_INVALID');
+    expect(fueraDeLugar.body.error.details.issues).toContainEqual({ code: 'WARM_UP_AFTER_WORKING_SET', path: 'changes.exercises[0].sets[2].setKind' });
     const editado = await apk
       .patch(`/api/v1/training/execution-drafts/${abierto.body.data.draftId}`)
       .send({

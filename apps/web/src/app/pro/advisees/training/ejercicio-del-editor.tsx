@@ -27,7 +27,7 @@ import {
   ETIQUETA_DE_BASE_DE_CARGA,
   ETIQUETA_DE_BASE_DE_REPETICIONES,
   ETIQUETA_DE_CRITERIO,
-  cantidadDeSeries,
+  cuentaDeSeries,
   celdaDeObjetivoDelEditor,
   ejercicioPlegadoDelEditor,
   esLoQueTieneLaCelda,
@@ -241,7 +241,7 @@ export function EjercicioDelEditor({
               <span className="comida-del-plan__nombre">{nombre}</span>
               {/* Plegado dice lo que piden sus series; abierto, cuántas son: el detalle está abajo. */}
               <span className="comida-del-plan__cuenta" data-resumen>
-                <EnPartes texto={abierto ? cantidadDeSeries(p.sets.length) : plegado.resumen} />
+                <EnPartes texto={abierto ? cuentaDeSeries(p.sets) : plegado.resumen} />
               </span>
               {revisar ? (
                 <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>

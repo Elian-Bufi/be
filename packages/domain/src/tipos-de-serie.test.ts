@@ -29,6 +29,8 @@ import {
   numerosEfectivos,
   registradasEfectivas,
   rotulosDeLasSeries,
+  rotuloPorIndice,
+  calentamientoRegistradoFueraDeLugar,
   seriesEfectivas,
   tipoDeSerie,
 } from './tipos-de-serie';
@@ -286,4 +288,34 @@ test('TEST-DL178-09 · la prescripción rápida («4×8») describe las efectiva
     ],
   );
   assert.deepEqual(cambio.series, { antes: 1, despues: 3 });
+});
+
+// ─── Revisión adversaria del PR #288 ────────────────────────────────────────────────────────────
+
+test('TEST-DL178-10 · lo registrado se rotula por setIndex: una serie salteada no renumera, y el plan dice qué es calentamiento', () => {
+  // Sin calentamiento, como antes de DL-178: la serie 2 salteada deja «Serie 3» en la tercera.
+  const sinCalentamiento = rotuloPorIndice([{ setIndex: 1 }, { setIndex: 3 }]);
+  assert.deepEqual([sinCalentamiento(1).largo, sinCalentamiento(3).largo], ['Serie 1', 'Serie 3']);
+  // Con calentamiento indicado (D-5): aunque el registro no traiga el campo, la 1 es calentamiento y la 3 es la serie 2.
+  const conPlan = rotuloPorIndice([{ setIndex: 1, ...C }, { setIndex: 2 }, { setIndex: 3 }, { setIndex: 1 }, { setIndex: 3 }]);
+  assert.deepEqual([conPlan(1).largo, conPlan(3).largo, conPlan(1).deLa, conPlan(3).deLa], ['Calentamiento', 'Serie 2', 'del calentamiento', 'de la serie 2']);
+  // Una serie de más, que no está en la lista, resta el calentamiento que tiene antes.
+  assert.equal(conPlan(5).largo, 'Serie 4');
+});
+
+test('TEST-DL178-11 · lo registrado sigue el orden del plan: no hay calentamiento después de una efectiva', () => {
+  const plan = [{ setIndex: 1, ...C }, { setIndex: 2 }, { setIndex: 3 }];
+  // Lo que manda la APK: el calentamiento indicado, con su tipo, y las efectivas sin el campo.
+  assert.equal(calentamientoRegistradoFueraDeLugar([{ setIndex: 1, ...C }, { setIndex: 2 }, { setIndex: 3 }], plan), null);
+  // Un registro sin calentamiento, o con el de la 1 sin el campo (D-5), también.
+  assert.equal(calentamientoRegistradoFueraDeLugar([{ setIndex: 2 }, { setIndex: 3 }], plan), null);
+  // Una efectiva del plan marcada como calentamiento después de otra efectiva: no.
+  assert.equal(calentamientoRegistradoFueraDeLugar([{ setIndex: 1, ...C }, { setIndex: 2 }, { setIndex: 3, ...C }], plan), 2);
+  // Una serie de más marcada como calentamiento, al final: tampoco.
+  assert.equal(calentamientoRegistradoFueraDeLugar([{ setIndex: 2 }, { setIndex: 4, ...C }], plan), 1);
+  // Sin plan, lo registrado solo: el calentamiento arriba se acepta; abajo, no.
+  assert.equal(calentamientoRegistradoFueraDeLugar([{ setIndex: 1, ...C }, { setIndex: 2 }]), null);
+  assert.equal(calentamientoRegistradoFueraDeLugar([{ setIndex: 1 }, { setIndex: 2, ...C }]), 1);
+  // Sin ninguna efectiva (solo calentamiento registrado), nada que ordenar.
+  assert.equal(calentamientoRegistradoFueraDeLugar([{ setIndex: 1, ...C }], plan), null);
 });

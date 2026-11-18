@@ -15,7 +15,7 @@
  *   y no lo toca (el PATCH reemplaza `exercises` entero).
  * - **La barra inferior queda a la vista**: no es la sesión enfocada. Salir con algo elegido pregunta antes.
  */
-import { COPY, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, type Ocurrencia, type PrescripcionConObjetivos, type Resultado, type SesionParaRegistrar } from '@be/domain';
+import { COPY, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, rotulosDeLasSeries, type Ocurrencia, type PrescripcionConObjetivos, type Resultado, type SesionParaRegistrar } from '@be/domain';
 import { Children, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Text, View } from 'react-native';
 import { api } from '../api';
@@ -408,7 +408,10 @@ export function PantallaDeRegistroRapido({
    */
   const filasDeSeries = (p: PrescripcionConObjetivos, e: EjercicioRapido, plegadas: boolean) => {
     const unidad = unidadDelEjercicio(p);
-    return p.sets.map((s) => {
+    // DL-178: el calentamiento se nombra así y las efectivas, con su número efectivo, como en la sesión.
+    const rotulos = rotulosDeLasSeries(p.sets);
+    return p.sets.map((s, i) => {
+      const rotulo = rotulos[i]!;
       const serie = e.series[s.setIndex];
       if (!serie) return null;
       const clave = claveDeSerie(p.prescriptionId, s.setIndex);
@@ -438,18 +441,18 @@ export function PantallaDeRegistroRapido({
           key={s.setIndex}
           marcada={serie.hecha}
           onCambio={(v) => cambiar(marcarSerie(r, p.prescriptionId, s.setIndex, v))}
-          titulo={T.serie(s.setIndex)}
+          titulo={T.serie(rotulo.numero)}
           texto={lineaDeLaSerie(s)}
           error={error?.fila}
         >
           {serie.hecha && abierta ? (
             <View style={estilos.celdas}>
-              {campo('carga', unidad, `Carga en ${unidad} de la serie ${s.setIndex}`, 'decimal-pad', gris.carga)}
-              {campo('repeticiones', COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones, `Repeticiones de la serie ${s.setIndex}`, 'number-pad', gris.repeticiones)}
-              {campo('rir', COPY_ENTRENAMIENTO_POR_SERIE.columnaRir, `RIR de la serie ${s.setIndex}, opcional`, 'decimal-pad', gris.rir)}
+              {campo('carga', unidad, `Carga en ${unidad} ${rotulo.deLa}`, 'decimal-pad', gris.carga)}
+              {campo('repeticiones', COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones, `Repeticiones ${rotulo.deLa}`, 'number-pad', gris.repeticiones)}
+              {campo('rir', COPY_ENTRENAMIENTO_POR_SERIE.columnaRir, `RIR ${rotulo.deLa}, opcional`, 'decimal-pad', gris.rir)}
             </View>
           ) : null}
-          {serie.hecha && !abierta ? <Boton texto={T.cambiarLaSerie(s.setIndex)} tipo="enlace" onPress={() => setAbiertas((a) => new Set(a).add(clave))} /> : null}
+          {serie.hecha && !abierta ? <Boton texto={T.cambiarLaSerie(rotulo.numero)} tipo="enlace" onPress={() => setAbiertas((a) => new Set(a).add(clave))} /> : null}
         </Casilla>
       );
     });

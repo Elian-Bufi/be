@@ -42,6 +42,9 @@ import {
   type SerieEjecutadaApi,
   type SesionConObjetivos,
   tipoDeSerie,
+  COPY_TIPOS_DE_SERIE,
+  seriesEfectivas,
+  rotulosDeLasSeries,
 } from '@be/domain';
 import { fechaCorta } from './formato';
 import { FILA_VACIA, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita } from './series-de-la-sesion';
@@ -76,7 +79,8 @@ export const TEXTOS_DEL_REGISTRO_RAPIDO = {
   comoSeRegistra: 'Cómo se registra',
   explicacionDelDetalle:
     'Una serie tildada sin escribir queda con lo planificado. Si escribís algo, se registra lo que escribiste y, en lo que quedó vacío, lo planificado. Una serie sin tildar no se registra.',
-  serie: (n: number) => `Serie ${n}`,
+  // DL-178: `n` es el número efectivo de la serie; `null`, una de calentamiento.
+  serie: (n: number | null) => (n === null ? 'Calentamiento' : `Serie ${n}`),
   carga: (unidad: string) => `Carga (${unidad})`,
   repeticiones: 'Repeticiones',
   rir: 'RIR',
@@ -111,13 +115,15 @@ export const TEXTOS_DEL_REGISTRO_RAPIDO = {
   sinRegistrar: 'Sin registrar',
   faltaAnotar: 'El plan no trae un número: anotá lo que hiciste.',
   seriesDe: (hechas: number, total: number) => `${hechas} de ${total} series`,
+  /** DL-178: «0 de 2 de calentamiento». */
+  calentamientoDe: (hechas: number, total: number) => `${hechas} de ${total} de calentamiento`,
   cambiadas: (n: number) => `${n} ${n === 1 ? 'cambiada' : 'cambiadas'}`,
   queCambioEn: (ejercicio: string) => `¿Qué cambió en ${ejercicio}?`,
   ayudaDelCambio: 'Destildá las series que no hiciste. Si una fue distinta, tocá «Cambiar la serie» y escribí solo lo que cambió: lo que dejes vacío queda con lo planificado, que ves en gris.',
   /** Un ejercicio que el plan trae sin series (el website lo permite): no hay qué registrar por serie. */
   sinSeriesEnElPlan: 'Sin series en el plan',
   contaloEnLaNota: 'Si lo hiciste, contalo en la nota.',
-  cambiarLaSerie: (n: number) => `Cambiar la serie ${n}`,
+  cambiarLaSerie: (n: number | null) => (n === null ? 'Cambiar el calentamiento' : `Cambiar la serie ${n}`),
   volverAlFinal: 'Volver al final',
   dejarComoElPlan: 'Dejarlo como el plan',
   notaDelFinal: 'Nota',
@@ -125,8 +131,8 @@ export const TEXTOS_DEL_REGISTRO_RAPIDO = {
   faltaElegir: 'Elegí cómo fue la sesión.',
   faltaTildar: 'Tildá al menos un ejercicio que hiciste.',
   faltaLaHora: 'Para una sesión de otro día, elegí a qué hora la hiciste.',
-  faltaUnDato: (ejercicio: string, n: number) => `${ejercicio}, serie ${n}: anotá la carga o las repeticiones que hiciste.`,
-  revisaUnValor: (ejercicio: string, n: number) => `${ejercicio}, serie ${n}: revisá lo que escribiste.`,
+  faltaUnDato: (ejercicio: string, n: number | null) => `${ejercicio}, ${n === null ? 'calentamiento' : `serie ${n}`}: anotá la carga o las repeticiones que hiciste.`,
+  revisaUnValor: (ejercicio: string, n: number | null) => `${ejercicio}, ${n === null ? 'calentamiento' : `serie ${n}`}: revisá lo que escribiste.`,
   sinPlanDeLaSerie: 'No pudimos leer el plan de cada serie. Sin él no se puede registrar con lo planificado: probá de nuevo.',
   yaEstabaRegistrada: 'Esta sesión ya estaba registrada.',
   conDatosCargados: 'Esa sesión ya tiene series o un resumen cargados. Para no pisarlos, continuala desde Entrenamiento.',
@@ -159,18 +165,23 @@ const repeticionesDe = (s: SerieConObjetivo): string | null => {
  * unidad. Una pirámide no se resume como si fuera pareja: «3 × 10/8/6».
  */
 export function lineaDelPlan(p: Pick<PrescripcionConObjetivos, 'sets'>): string {
-  const n = p.sets.length;
-  if (n === 0) return T.sinSeriesEnElPlan;
-  const reps = porSerie(p.sets.map(repeticionesDe));
-  const rir = porSerie(p.sets.map((s) => (s.target.rir === null ? null : numero(s.target.rir))));
-  const cargas = p.sets.map((s) => s.target.suggestedLoad);
+  if (p.sets.length === 0) return T.sinSeriesEnElPlan;
+  // DL-178: la línea resume las series efectivas; el calentamiento se nombra aparte («3 × 8 + 2 de calentamiento»).
+  const efectivas = seriesEfectivas(p.sets);
+  const calentamiento = p.sets.length - efectivas.length;
+  const conCalentamiento = (texto: string) => (calentamiento > 0 ? `${texto} + ${COPY_TIPOS_DE_SERIE.deCalentamiento(calentamiento)}` : texto);
+  const n = efectivas.length;
+  if (n === 0) return COPY_TIPOS_DE_SERIE.deCalentamiento(calentamiento);
+  const reps = porSerie(efectivas.map(repeticionesDe));
+  const rir = porSerie(efectivas.map((s) => (s.target.rir === null ? null : numero(s.target.rir))));
+  const cargas = efectivas.map((s) => s.target.suggestedLoad);
   const unidades = new Set(cargas.flatMap((c) => (c ? [c.unit] : [])));
   let carga: string | null = null;
   if (unidades.size === 1) {
     const valor = porSerie(cargas.map((c) => (c ? numero(c.value) : null)));
     carga = valor === null ? null : `${valor} ${[...unidades][0]}`;
   } else if (unidades.size > 1) carga = porSerie(cargas.map((c) => textoDeCarga(c)));
-  const series = reps === null ? `${numero(n, 0)} ${n === 1 ? 'serie' : 'series'}` : `${numero(n, 0)} × ${reps}`;
+  const series = conCalentamiento(reps === null ? `${numero(n, 0)} ${n === 1 ? 'serie' : 'series'}` : `${numero(n, 0)} × ${reps}`);
   return [series, rir === null ? null : `RIR ${rir}`, carga].filter((x): x is string => x !== null).join(' · ');
 }
 
@@ -309,7 +320,16 @@ export function estadoEnElFinal(p: PrescripcionConObjetivos, e: EjercicioRapido 
   if (hechas.some((s) => !tieneAlgoEscrito(series[s.setIndex]!.escrita) && serieDelPlan(s) === null)) return { estado: 'falta-anotar', texto: T.faltaAnotar };
   const escritas = hechas.filter((s) => tieneAlgoEscrito(series[s.setIndex]!.escrita)).length;
   if (hechas.length === p.sets.length && escritas === 0) return { estado: 'como-el-plan', texto: T.comoElPlan };
-  const partes = [hechas.length < p.sets.length ? T.seriesDe(hechas.length, p.sets.length) : seriesEnTexto(p.sets.length), escritas > 0 ? T.cambiadas(escritas) : null];
+  // DL-178: la cuenta es de las series efectivas; el calentamiento que no se hizo se nombra aparte.
+  const efectivas = seriesEfectivas(p.sets);
+  const hechasEfectivas = efectivas.filter((s) => series[s.setIndex]?.hecha).length;
+  const calentamiento = p.sets.length - efectivas.length;
+  const calentamientoHecho = hechas.length - hechasEfectivas;
+  const partes = [
+    hechasEfectivas < efectivas.length ? T.seriesDe(hechasEfectivas, efectivas.length) : seriesEnTexto(efectivas.length),
+    calentamientoHecho < calentamiento ? T.calentamientoDe(calentamientoHecho, calentamiento) : null,
+    escritas > 0 ? T.cambiadas(escritas) : null,
+  ];
   return { estado: 'cambiado', texto: partes.filter((x): x is string => x !== null).join(' · ') };
 }
 
@@ -464,7 +484,9 @@ export const claveDeSerie = (prescriptionId: string, setIndex: number): string =
 function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, errores: Record<string, ErroresDeFila>, primerProblema: { motivo: string | null; ejercicio: string | null }): SerieEjecutadaApi[] {
   const unidad = unidadDelEjercicio(p);
   const series: SerieEjecutadaApi[] = [];
-  for (const s of p.sets) {
+  const rotulos = rotulosDeLasSeries(p.sets);
+  for (const [i, s] of p.sets.entries()) {
+    const n = rotulos[i]!.numero;
     const r = e.series[s.setIndex];
     if (!r?.hecha) continue;
     const escrita = r.escrita;
@@ -474,7 +496,7 @@ function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, error
       if (delPlan) series.push(delPlan);
       else {
         errores[claveDeSerie(p.prescriptionId, s.setIndex)] = { fila: COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato };
-        primerProblema.motivo ??= T.faltaUnDato(p.exerciseName, s.setIndex);
+        primerProblema.motivo ??= T.faltaUnDato(p.exerciseName, n);
         primerProblema.ejercicio ??= p.prescriptionId;
       }
       continue;
@@ -483,7 +505,7 @@ function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, error
     const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad, tipoDeSerie(s));
     if (!leida.ok) {
       errores[claveDeSerie(p.prescriptionId, s.setIndex)] = leida.errores;
-      primerProblema.motivo ??= leida.errores.fila ? T.faltaUnDato(p.exerciseName, s.setIndex) : T.revisaUnValor(p.exerciseName, s.setIndex);
+      primerProblema.motivo ??= leida.errores.fila ? T.faltaUnDato(p.exerciseName, n) : T.revisaUnValor(p.exerciseName, n);
       primerProblema.ejercicio ??= p.prescriptionId;
       continue;
     }
@@ -520,7 +542,8 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
       continue;
     }
     const hechas = p.sets.filter((s) => e.series[s.setIndex]?.hecha).length;
-    if (hechas < p.sets.length) todoCompleto = false;
+    // DL-178: no hacer el calentamiento no deja la sesión incompleta: la condición mira las series efectivas.
+    if (seriesEfectivas(p.sets).some((s) => !e.series[s.setIndex]?.hecha)) todoCompleto = false;
     // Con todas sus series destildadas, el ejercicio no se hizo: no se manda (SET_REQUIRED).
     if (hechas === 0) continue;
     const sets = seriesDelDetalle(p, e, errores, primerProblema);

@@ -112,15 +112,54 @@ export interface RotuloDeSerie {
   readonly corto: string;
   /** «Calentamiento» o «Serie 2»: lo que se lee entero (y lo que dice un lector de pantalla). */
   readonly largo: string;
+  /** «del calentamiento» o «de la serie 2»: para armar una frase («Repeticiones de la serie 2»). */
+  readonly deLa: string;
 }
 
+/** El rótulo de un número efectivo (`null`: calentamiento). */
+export function rotuloDelNumero(n: number | null): RotuloDeSerie {
+  if (n === null) return { tipo: 'WARM_UP', numero: null, corto: COPY_TIPOS_DE_SERIE.marca, largo: COPY_TIPOS_DE_SERIE.calentamiento, deLa: 'del calentamiento' };
+  return { tipo: 'WORKING', numero: n, corto: numero(n), largo: `${COPY_TIPOS_DE_SERIE.serie} ${numero(n)}`, deLa: `de la serie ${numero(n)}` };
+}
+
+/**
+ * Los rótulos de una lista de series **contigua** (las de un plan, en su orden): la posición en la lista es la serie.
+ * Para series que pueden tener huecos (lo registrado: una serie salteada no renumera las demás), `rotuloPorIndice`.
+ */
 export function rotulosDeLasSeries(series: readonly ConTipoDeSerie[]): RotuloDeSerie[] {
   let n = 0;
   return series.map((s) => {
-    if (esDeCalentamiento(s)) return { tipo: 'WARM_UP', numero: null, corto: COPY_TIPOS_DE_SERIE.marca, largo: COPY_TIPOS_DE_SERIE.calentamiento };
+    if (esDeCalentamiento(s)) return rotuloDelNumero(null);
     n++;
-    return { tipo: 'WORKING', numero: n, corto: numero(n), largo: `${COPY_TIPOS_DE_SERIE.serie} ${numero(n)}` };
+    return rotuloDelNumero(n);
   });
+}
+
+/**
+ * El rótulo de cada serie por su `setIndex`, con todas las series que se conocen del ejercicio (las indicadas y las
+ * registradas): una serie es de calentamiento si cualquiera de las dos lo dice (D-5), y una serie salteada no renumera las
+ * que siguen. Un `setIndex` que no está en la lista (una serie de más) resta el calentamiento que tiene antes. Sin
+ * calentamiento, el número es el `setIndex`, como antes de DL-178.
+ */
+export function rotuloPorIndice(series: readonly (ConTipoDeSerie & { readonly setIndex: number })[]): (setIndex: number) => RotuloDeSerie {
+  const efectivos = numerosEfectivos(series);
+  const calentamiento = [...efectivos].flatMap(([i, n]) => (n === null ? [i] : []));
+  return (setIndex) => rotuloDelNumero(efectivos.has(setIndex) ? efectivos.get(setIndex)! : setIndex - calentamiento.filter((c) => c < setIndex).length);
+}
+
+/**
+ * La primera serie registrada de calentamiento que va después de una efectiva (registrada o indicada), por su posición en
+ * `registradas`, o `null`. Lo registrado sigue la misma regla que el plan: el calentamiento, antes de las efectivas. Una
+ * serie es de calentamiento si lo dice el registro o el plan (D-5); una efectiva es la que ninguno de los dos marca.
+ */
+export function calentamientoRegistradoFueraDeLugar(
+  registradas: readonly (ConTipoDeSerie & { readonly setIndex: number })[],
+  planificadas: readonly (ConTipoDeSerie & { readonly setIndex: number })[] = [],
+): number | null {
+  const efectivos = numerosEfectivos([...planificadas, ...registradas]);
+  const primeraEfectiva = Math.min(...[...efectivos].flatMap(([i, n]) => (n !== null ? [i] : [])));
+  const i = registradas.findIndex((s) => esDeCalentamiento(s) && s.setIndex > primeraEfectiva);
+  return i === -1 ? null : i;
 }
 
 /**

@@ -18,7 +18,7 @@ import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import { CompatibilidadDeClientesService, exigeObjetivosPorSerie, tieneSeriesDeCalentamiento } from './compatibilidad-de-clientes';
+import { CompatibilidadDeClientesService, distingueElCalentamiento, entregaRetenida, exigeObjetivosPorSerie, tieneSeriesDeCalentamiento } from './compatibilidad-de-clientes';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, resolverDeInstantanea, seguimientoAbierto, versionDePlanApi } from './lectura-entrenamiento';
@@ -151,6 +151,9 @@ export class ObjetivosPorSerieService {
           await this.decidir(tx, 'API-SER-02', actor, version.plan.profesionalId, actor.identidadId, { tipo: RECURSO_VERSION, id: version.id }, ctx);
           if (!borrador && !(await this.ejecutableAhora(tx, actor.identidadId, version.id, version.planId, o.sesionPlanificadaId, o.fechaLocal))) throw noLegible();
         }
+        // DL-178: una sesión con calentamiento no se le entrega, sin registrar, a un cliente que no lo distingue: la vería
+        // toda efectiva. El mismo 404 que API-TRN-15 (`seRetieneLaEntrega`). Lo registrado no se retiene (DL-122).
+        if (!borrador?.ejecucion && !distingueElCalentamiento(ctx) && tieneSeriesDeCalentamiento(instantanea.contenido)) throw entregaRetenida();
         const imagesAsOf = borrador?.ejecucion?.momentoDeRegistro ?? (await momentoDeLaBase(tx));
         const resolver = resolverDeInstantanea(instantanea);
         const imagenes = await imagenesDeEjercicios(tx, ejerciciosCitados([ubicada.sesion], resolver), imagesAsOf);

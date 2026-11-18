@@ -404,18 +404,35 @@ export type AlTerminarLaSerie =
  * - Si la medición lleva más que el máximo de una serie (diez horas: la sesión quedó abierta de otro día), no se escribe
  *   en la fila: `medicion-larga`, y se resuelve con el diálogo de la medición («Terminó ahora» o «Dejarla incompleta»).
  */
-export function alTerminarLaSerie(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, msMedidos: number | null): AlTerminarLaSerie {
-  const n = numero(setIndex, 0);
-  if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(n) };
+export function alTerminarLaSerie(
+  f: FilaEscrita,
+  objetivo: ObjetivoDeSerie | null,
+  setIndex: number,
+  unidad: Unidad,
+  msMedidos: number | null,
+  /** DL-178: el número efectivo (`null` en una de calentamiento); sin él, el `setIndex`. */
+  numeroEfectivo: number | null = setIndex,
+): AlTerminarLaSerie {
+  if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(laSerieOElCalentamiento(numeroEfectivo)) };
   const conTiempo = msMedidos === null ? f : { ...f, tiempo: textoDeTiempo(Math.max(0, Math.round(msMedidos / 1000))) };
   const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad);
   if (lectura.ok) return { tipo: 'registrar' };
-  return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores) };
+  return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores, numeroEfectivo) };
 }
 
+/** DL-178: «la serie 2» o «el calentamiento», para una frase que la nombra. */
+export const laSerieOElCalentamiento = (numeroEfectivo: number | null): string => (numeroEfectivo === null ? 'el calentamiento' : `la serie ${numero(numeroEfectivo, 0)}`);
+
 /** Lo que falta para registrar la serie N, dicho para el lector de pantalla y para la fila fija. */
-export function anuncioParaRegistrar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, errores: ErroresDeFila): string {
-  const n = numero(setIndex, 0);
+export function anuncioParaRegistrar(
+  f: FilaEscrita,
+  objetivo: ObjetivoDeSerie | null,
+  setIndex: number,
+  errores: ErroresDeFila,
+  /** DL-178: el número efectivo (`null` en una de calentamiento); sin él, el `setIndex`. */
+  numeroEfectivo: number | null = setIndex,
+): string {
+  const n = laSerieOElCalentamiento(numeroEfectivo);
   const rango = f.repeticiones.trim() === '' && objetivo?.repetitions && 'min' in objetivo.repetitions ? objetivo.repetitions : null;
   if (errores.fila && rango) return TEXTOS_DE_LA_SESION.paraRegistrarEnRango(n, `${numero(rango.min, 0)}–${numero(rango.max, 0)}`);
   const motivo = errores.fila ?? errores.repeticiones ?? errores.carga ?? errores.rir ?? errores.tiempo ?? COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato;

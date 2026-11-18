@@ -16,6 +16,7 @@ import {
   origenesQueAtribuyenALaPersona,
   problemasDeCoherencia,
   problemasParaConfirmar,
+  calentamientoRegistradoFueraDeLugar,
   resolverVistaEfectiva,
   serializacionCanonica,
   sesionesDelPlan,
@@ -889,6 +890,12 @@ export class EjecucionesDeEntrenamientoService {
     const valores = [
       ...coherencia.valores,
       ...r.contenido.exercises.flatMap((e: EjercicioRegistradoEntrada, i) => (prescriptas.has(e.prescriptionId) ? [] : [{ code: 'PRESCRIPTION_NOT_IN_SESSION', path: `exercises[${i}].prescriptionId` }])),
+      // DL-178: lo registrado sigue la regla del plan: el calentamiento, antes de las efectivas (lo diga el registro o el plan).
+      ...r.contenido.exercises.flatMap((e: EjercicioRegistradoEntrada, i) => {
+        if (!('sets' in e)) return [];
+        const j = calentamientoRegistradoFueraDeLugar(e.sets, sesion?.prescriptions.find((p) => p.prescriptionId === e.prescriptionId)?.sets ?? []);
+        return j === null ? [] : [{ code: 'WARM_UP_AFTER_WORKING_SET', path: `exercises[${i}].sets[${j}].setKind` }];
+      }),
     ];
     if (valores.length > 0) throw new ErrorDeApi(422, CodigoDeError.EXECUTION_VALUE_INVALID, 'Hay valores registrados que no se pueden guardar.', { issues: conPrefijo(valores) });
     const citables = await this.catalogo.citables(tx, actor.identidadId, ambito, r.contenido.exercises.map((e) => e.performedExerciseVersionId), profesionalDelPlan);

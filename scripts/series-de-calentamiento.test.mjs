@@ -23,7 +23,9 @@ register('data:text/javascript,' + encodeURIComponent(gancho), import.meta.url);
 const series = await import('../apps/mobile/src/series-de-la-sesion.ts');
 const franja = await import('../apps/mobile/src/franja-de-la-sesion.ts');
 const { filaDeAcciones } = await import('../apps/mobile/src/descanso-automatico.ts');
-const { serieDelPlan } = await import('../apps/mobile/src/registro-rapido.ts');
+const rapido = await import('../apps/mobile/src/registro-rapido.ts');
+const { serieDelPlan } = rapido;
+const textos = await import('../apps/mobile/src/textos-de-la-sesion.ts');
 
 const objetivo = (reps) => ({ repetitions: { value: reps }, rir: 2, suggestedLoad: { value: 60, unit: 'kg' }, restSeconds: 90 });
 const serie = (setIndex, reps, setKind) => ({
@@ -104,4 +106,50 @@ test('DL-178 · «Serie N de M», «Terminar calentamiento» y la cuenta de la s
   assert.equal(filaDeAcciones({ pausada: false, prescriptionId: 'rx-remo', haySiguienteEjercicio: false, abierta: { kind: 'SET', prescriptionId: 'rx-remo', setIndex: 2 }, siguienteSinRegistrar: null }).medio.texto, 'Terminar serie 2');
   assert.equal(series.ejerciciosYSeries([BANCA, SIN_CALENTAMIENTO]), '2 ejercicios · 5 series efectivas + 2 de calentamiento');
   assert.equal(series.ejerciciosYSeries([SIN_CALENTAMIENTO]), '1 ejercicio · 2 series');
+});
+
+// ─── Revisión adversaria del PR #288 ────────────────────────────────────────────────────────────
+
+const BANCA_CON_ID = { ...BANCA, exerciseVersionId: 'v-banca', suggestedLoad: null };
+
+test('DL-178 · registro rápido: la línea, la cuenta y la condición son de las efectivas; saltear el calentamiento no deja la sesión incompleta', () => {
+  assert.equal(rapido.lineaDelPlan(BANCA_CON_ID), '3 × 8 + 2 de calentamiento · RIR 2 · 60 kg');
+  assert.equal(rapido.lineaDelPlan(SIN_CALENTAMIENTO), '2 × 10 · RIR 2 · 60 kg', 'sin calentamiento, como siempre');
+  const hecha = { hecha: true, escrita: { ...series.FILA_VACIA } };
+  const sinHacer = { hecha: false, escrita: { ...series.FILA_VACIA } };
+  // Hizo las tres efectivas y salteó el calentamiento.
+  const sinCalentar = { hecho: true, cambio: true, series: { 1: sinHacer, 2: sinHacer, 3: hecha, 4: hecha, 5: hecha } };
+  assert.deepEqual(rapido.estadoEnElFinal(BANCA_CON_ID, sinCalentar), { estado: 'cambiado', texto: '3 series · 0 de 2 de calentamiento' });
+  const armado = rapido.armarRegistro(
+    { sesion: { prescriptions: [BANCA_CON_ID] }, fecha: '2026-11-18', hoy: '2026-11-18' },
+    { eleccion: 'todo', ejercicios: { 'rx-banca': sinCalentar }, nota: '', pidioNota: false, dia: '2026-11-18', hora: null },
+    new Date('2026-11-18T15:00:00Z'),
+  );
+  assert.equal(armado.ok, true);
+  assert.equal(armado.changes.sessionCondition, 'COMPLETED', 'el calentamiento no hecho no es un desvío');
+  // Saltear una efectiva sí lo es, y se cuenta entre las efectivas.
+  const sinUna = { hecho: true, cambio: true, series: { 1: hecha, 2: hecha, 3: hecha, 4: hecha, 5: sinHacer } };
+  assert.deepEqual(rapido.estadoEnElFinal(BANCA_CON_ID, sinUna), { estado: 'cambiado', texto: '2 de 3 series' });
+  const conDesvio = rapido.armarRegistro(
+    { sesion: { prescriptions: [BANCA_CON_ID] }, fecha: '2026-11-18', hoy: '2026-11-18' },
+    { eleccion: 'todo', ejercicios: { 'rx-banca': sinUna }, nota: '', pidioNota: false, dia: '2026-11-18', hora: null },
+    new Date('2026-11-18T15:00:00Z'),
+  );
+  assert.equal(conDesvio.changes.sessionCondition, 'COMPLETED_WITH_DEVIATION');
+  // Las filas y los avisos nombran el calentamiento, no «Serie 1».
+  assert.deepEqual([rapido.TEXTOS_DEL_REGISTRO_RAPIDO.serie(null), rapido.TEXTOS_DEL_REGISTRO_RAPIDO.serie(1), rapido.TEXTOS_DEL_REGISTRO_RAPIDO.faltaUnDato('Banca', null)], ['Calentamiento', 'Serie 1', 'Banca, calentamiento: anotá la carga o las repeticiones que hiciste.']);
+});
+
+test('DL-178 · TalkBack: lo que se anuncia nombra el calentamiento y las efectivas con su número efectivo', () => {
+  const vacia = { ...series.FILA_VACIA };
+  const sinDato = { fila: 'Falta un dato.' };
+  assert.match(series.anuncioParaRegistrar(vacia, null, 1, sinDato, null), /^Para registrar el calentamiento:/);
+  assert.match(series.anuncioParaRegistrar(vacia, null, 3, sinDato, 1), /^Para registrar la serie 1:/);
+  assert.match(series.anuncioParaRegistrar(vacia, null, 3, sinDato), /^Para registrar la serie 3:/, 'sin el número efectivo, como antes');
+  assert.equal(series.alTerminarLaSerie(vacia, null, 1, 'kg', 11 * 3600 * 1000, null).anuncio.startsWith('El calentamiento se está midiendo'), true);
+  const t = textos.TEXTOS_DE_LA_SESION;
+  assert.deepEqual(
+    [t.registrarLaSerie(null), t.registrarLaSerie(2), t.medirLaSerie(null), t.pararElReloj(2), t.serieRegistradaAnuncio(null), t.serieDestildada(null), t.tiempoDeLaSerie(null)],
+    ['Registrar el calentamiento', 'Registrar la serie 2', 'Medir el tiempo del calentamiento', 'Parar el reloj de la serie 2', 'Calentamiento registrado', 'Calentamiento sin registrar', 'Tiempo del calentamiento, opcional'],
+  );
 });
