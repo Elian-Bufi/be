@@ -1361,12 +1361,12 @@ export function SeriesDelResumen({ resumen }: { resumen: readonly ResumenDelEjer
           key={r.prescriptionId}
           style={estilos.itemDeRutina}
           accessible
-          accessibilityLabel={`${r.nombre}${r.ejecutado ? `. ${COPY_ENTRENAMIENTO.ejecutado}: ${r.ejecutado}, ${COPY_ENTRENAMIENTO.sustituido.toLowerCase()}` : ''}: ${seriesYEscritas(r)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}` : ''}`}
+          accessibilityLabel={`${r.nombre}${r.ejecutado ? `. ${COPY_ENTRENAMIENTO.ejecutado}: ${r.ejecutado}, ${COPY_ENTRENAMIENTO.sustituido.toLowerCase()}` : ''}: ${seriesYEscritas(r)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${r.numeros?.get(n) ?? n}`).join(', ')}` : ''}`}
         >
           <Text style={estilos.tituloDeBloque}>{r.nombre}</Text>
           {r.ejecutado ? <LineaDeLaSustitucion ejecutado={r.ejecutado} /> : null}
           <Text style={estilos.textoDeBloque}>{seriesYEscritas(r)}</Text>
-          {r.sinRegistrar.length > 0 ? <Text style={estilos.detalle}>{`${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}`}</Text> : null}
+          {r.sinRegistrar.length > 0 ? <Text style={estilos.detalle}>{`${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${r.numeros?.get(n) ?? n}`).join(', ')}`}</Text> : null}
         </View>
       ))}
     </View>

@@ -71,11 +71,13 @@ export const TEXTOS_DE_LA_SESION = {
   paraRegistrarEnRango: (laSerie: string, rango: string) => `Para registrar ${laSerie}, escribí cuántas repeticiones hiciste (${rango}) o la carga.`,
   paraRegistrar: (laSerie: string, motivo: string) => `Para registrar ${laSerie}: ${motivo}`,
   medicionResuelta: (deLaSerie: string) => `La medición ${deLaSerie} quedó resuelta: registrala con lo que hiciste.`,
-  medicionLarga: (laSerie: string) => `${laSerie.charAt(0).toUpperCase()}${laSerie.slice(1)} se está midiendo desde hace más de 10 horas: decidí si terminó ahora o si queda incompleta.`,
+  medicionLarga: (laSerie: string) => `${String(laSerie).charAt(0).toUpperCase()}${String(laSerie).slice(1)} se está midiendo desde hace más de 10 horas: decidí si terminó ahora o si queda incompleta.`,
   repeticionesEnRango: (rango: string) => `Las repeticiones del plan van en un rango (${rango}): anotá las que hiciste, o la carga.`,
   // Antes de finalizar
   escritasTitulo: 'Series escritas sin registrar',
-  escritasDe: (nombre: string, series: readonly number[]) => `${nombre}: ${lasSeries(series)}.`,
+  /** DL-178: `series` son los números efectivos; `conCalentamiento`, si también hay calentamiento escrito sin registrar. */
+  escritasDe: (nombre: string, series: readonly number[], conCalentamiento = false) =>
+    `${nombre}: ${[...(conCalentamiento ? ['el calentamiento'] : []), ...(series.length > 0 ? [lasSeries(series)] : [])].join(' y ')}.`,
   escritasPregunta: '¿Las registramos antes de finalizar? En lo que quedó vacío va lo planificado.',
   registrarlas: 'Registrarlas',
   descartarLoEscrito: 'Descartar lo escrito',

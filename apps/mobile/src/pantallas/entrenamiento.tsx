@@ -1777,8 +1777,12 @@ export function PantallaDeSesion({
     const deHoy = borrador ? borrador.date === hoyEn(borrador.timeZone) : true;
     const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion);
     const porEjercicio = s.prescriptions.flatMap((x) => {
-      const series = pendientes.filter((q) => q.prescriptionId === x.prescriptionId).map((q) => q.setIndex);
-      return series.length > 0 ? [{ prescriptionId: x.prescriptionId, nombre: x.exerciseName, series }] : [];
+      // DL-178: se nombran como en la tabla: las efectivas con su número efectivo, y el calentamiento por su nombre.
+      const numeros = new Map(filasDe(x).map((f) => [f.setIndex, f.numero] as const));
+      const indices = pendientes.filter((q) => q.prescriptionId === x.prescriptionId).map((q) => q.setIndex);
+      const series = indices.flatMap((i) => { const n = numeros.has(i) ? numeros.get(i)! : i; return n === null ? [] : [n]; });
+      const conCalentamiento = indices.some((i) => numeros.get(i) === null);
+      return indices.length > 0 ? [{ prescriptionId: x.prescriptionId, nombre: x.exerciseName, series, conCalentamiento }] : [];
     });
     const sugerida = condicionQueCorresponde(resumen);
     const condicion = borrador?.sessionCondition ?? sugerida;
@@ -1805,7 +1809,7 @@ export function PantallaDeSesion({
         {porEjercicio.length > 0 ? (
           <Seccion titulo={t.escritasTitulo} icono="borrador">
             {porEjercicio.map((x) => (
-              <Parrafo key={x.prescriptionId}>{t.escritasDe(x.nombre, x.series)}</Parrafo>
+              <Parrafo key={x.prescriptionId}>{t.escritasDe(x.nombre, x.series, x.conCalentamiento)}</Parrafo>
             ))}
             <Parrafo tenue>{t.escritasPregunta}</Parrafo>
             <Boton texto={t.registrarlas} onPress={registrarPendientes} deshabilitado={ocupado} />

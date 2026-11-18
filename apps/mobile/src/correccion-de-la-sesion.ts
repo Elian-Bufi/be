@@ -367,8 +367,10 @@ export const sePuedeAgregar = (ej: Pick<EjercicioEnCorreccion, 'filas'>): boolea
 /** «2 de 3 series registradas» o «Sin registrar», según lo que rige: lo que se escribe todavía no cuenta. */
 export function estadoDelEjercicio(ej: EjercicioEnCorreccion): string {
   if (ej.resumen !== null) return ej.estaba ? T.conResumen : T.sinRegistrar;
-  const registradas = ej.filas.filter((f) => f.origen === 'registrada').length;
-  const planificadas = ej.filas.filter((f) => f.origen !== 'nueva').length;
+  // DL-178: la cuenta es de las series efectivas; el calentamiento se corrige igual, pero no cuenta.
+  const efectivas = ej.filas.filter((f) => f.tipo !== 'WARM_UP');
+  const registradas = efectivas.filter((f) => f.origen === 'registrada').length;
+  const planificadas = efectivas.filter((f) => f.origen !== 'nueva').length;
   return registradas === 0 ? T.sinRegistrar : T.registradas(registradas, Math.max(planificadas, registradas));
 }
 

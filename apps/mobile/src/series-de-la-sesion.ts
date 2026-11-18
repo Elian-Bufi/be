@@ -692,6 +692,8 @@ export interface ResumenDelEjercicio {
   readonly sinRegistrar: readonly number[];
   /** Las series sin registrar que tienen algo escrito (PA-01): se nombran para registrarlas o descartarlas. */
   readonly escritas: readonly number[];
+  /** DL-178: el número efectivo de cada serie, por `setIndex` (`null`: calentamiento), para nombrarlas como la tabla. */
+  readonly numeros?: ReadonlyMap<number, number | null>;
 }
 
 /**
@@ -718,6 +720,7 @@ export function resumenDelRegistro(
       planificadas: filas.filter((f) => f.tipo === 'WORKING' && f.planificada).length,
       sinRegistrar: filas.filter((f) => f.tipo === 'WORKING' && f.planificada && f.estado === 'sin-registrar').map((f) => f.setIndex),
       escritas: filas.filter((f) => f.estado === 'sin-registrar' && hayAlgoEscrito(delEjercicio.get(f.setIndex) ?? FILA_VACIA)).map((f) => f.setIndex),
+      numeros: new Map(filas.map((f) => [f.setIndex, f.numero] as const)),
     };
   });
 }

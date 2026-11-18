@@ -26,6 +26,7 @@ const { filaDeAcciones } = await import('../apps/mobile/src/descanso-automatico.
 const rapido = await import('../apps/mobile/src/registro-rapido.ts');
 const { serieDelPlan } = rapido;
 const textos = await import('../apps/mobile/src/textos-de-la-sesion.ts');
+const correccion = await import('../apps/mobile/src/correccion-de-la-sesion.ts');
 
 const objetivo = (reps) => ({ repetitions: { value: reps }, rir: 2, suggestedLoad: { value: 60, unit: 'kg' }, restSeconds: 90 });
 const serie = (setIndex, reps, setKind) => ({
@@ -152,4 +153,20 @@ test('DL-178 · TalkBack: lo que se anuncia nombra el calentamiento y las efecti
     [t.registrarLaSerie(null), t.registrarLaSerie(2), t.medirLaSerie(null), t.pararElReloj(2), t.serieRegistradaAnuncio(null), t.serieDestildada(null), t.tiempoDeLaSerie(null)],
     ['Registrar el calentamiento', 'Registrar la serie 2', 'Medir el tiempo del calentamiento', 'Parar el reloj de la serie 2', 'Calentamiento registrado', 'Calentamiento sin registrar', 'Tiempo del calentamiento, opcional'],
   );
+});
+
+test('DL-178 · «Antes de finalizar» y la corrección nombran y cuentan como la tabla', () => {
+  const sesion = { prescriptions: [BANCA] };
+  const borrador = (sets) => ({ exercises: [{ prescriptionId: 'rx-banca', prescribedExerciseVersionId: 'v', prescribedExerciseName: 'Press de banca', performedExerciseVersionId: 'v', performedExerciseName: 'Press de banca', substituted: false, sets, executionSummary: null }] });
+  const [r] = series.resumenDelRegistro(sesion, borrador([registrada(1, 'WARM_UP'), registrada(2, 'WARM_UP'), registrada(3)]), []);
+  // Las que faltan son la 4 y la 5 por su posición, y la «serie 2» y la «serie 3» por su número efectivo.
+  assert.deepEqual(r.sinRegistrar.map((n) => r.numeros.get(n)), [2, 3]);
+  const t = textos.TEXTOS_DE_LA_SESION;
+  assert.equal(t.escritasDe('Press de banca', [2], true), 'Press de banca: el calentamiento y la serie 2.');
+  assert.equal(t.escritasDe('Press de banca', [], true), 'Press de banca: el calentamiento.');
+  assert.equal(t.escritasDe('Plancha', [1]), 'Plancha: la serie 1.', 'sin calentamiento, como siempre');
+  // La corrección: «1 de 3 series registradas», sin contar el calentamiento registrado.
+  const fila = (setIndex, origen, tipo) => ({ setIndex, origen, tipo, escrita: series.FILA_VACIA, unidad: 'kg', quitada: false, tildada: false, antes: null, objetivo: null });
+  const ej = { prescriptionId: 'rx-banca', nombre: 'Press de banca', resumen: null, estaba: true, filas: [fila(1, 'registrada', 'WARM_UP'), fila(2, 'registrada', 'WARM_UP'), fila(3, 'registrada', 'WORKING'), fila(4, 'planificada', 'WORKING'), fila(5, 'planificada', 'WORKING')] };
+  assert.equal(correccion.estadoDelEjercicio(ej), '1 de 3 series registradas');
 });
