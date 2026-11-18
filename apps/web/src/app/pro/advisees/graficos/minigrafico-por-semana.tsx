@@ -68,7 +68,7 @@ export const COPY_POR_SEMANA = {
     entera: 'Barra llena: los siete días de la semana tienen valor, sin subtotales y sin hoy',
     hueca: 'Barra hueca: a la semana le falta algún día, tiene un subtotal o tiene hoy, o el período o el cambio de etapa la cortan',
     vacia: 'Columna gris: ningún día del tramo tiene valor; no es un cero',
-    sinMedia: 'Contorno cortado, sin relleno: el tramo tiene días con valor, pero no los que hacen falta para la media; no es un cero',
+    sinMedia: 'Raya cortada sobre el eje: el tramo tiene días con valor, pero no los que hacen falta para la media; no es un cero',
     tira: 'La tira de abajo, un día por lugar: entera con valor, a media altura con algo que falta, una raya baja sin registros',
   },
   comoSeArma: [
@@ -114,7 +114,7 @@ export function LeyendaPorSemana({ que = TODAS_LAS_MARCAS, comoSeArma = COPY_POR
         {que.hueca ? (
           <li>
             <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
-              <path d="M 2.75 13 V 3.75 H 11.25 V 13" fill="none" stroke="var(--tenue)" strokeWidth={1.5} />
+              <path d="M 2.5 13 V 3.5 H 11.5 V 13" fill="none" stroke="var(--tenue)" strokeWidth={1} />
             </svg>
             <span aria-hidden="true">{C.leyenda.hueca}</span>
             <span className="visualmente-oculto">{C.leyendaLarga.hueca}</span>
@@ -123,7 +123,7 @@ export function LeyendaPorSemana({ que = TODAS_LAS_MARCAS, comoSeArma = COPY_POR
         {que.sinMedia ? (
           <li data-ficha="sin-media">
             <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
-              <rect x={2.5} y={1.5} width={9} height={11} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="2 2" />
+              <line x1={1} x2={13} y1={12} y2={12} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" />
             </svg>
             <span aria-hidden="true">{C.leyenda.sinMedia}</span>
             <span className="visualmente-oculto">{C.leyendaLarga.sinMedia}</span>
@@ -260,9 +260,9 @@ export function MinigraficoPorSemana({
             {g.vacias.map((b) => (
               <rect key={`vacia-${b.semana.desde}`} className="minigrafico-por-semana__vacia" x={b.x} y={g.caja.arriba} width={b.ancho} height={g.caja.abajo - g.caja.arriba} fill="var(--grafico-hueco)" fillOpacity={0.18} />
             ))}
-            {/* Un tramo con días pero sin media (GR-VC12): el contorno cortado de todo el alto, sin relleno; sus días, igual. */}
+            {/* Un tramo con días pero sin media: una raya cortada y baja sobre el eje, que no tapa los días (GR-VD10). */}
             {g.sinMedia.map((b) => (
-              <rect key={`sin-media-${b.semana.desde}`} className="minigrafico-por-semana__sin-media" x={b.x + 0.5} y={g.caja.arriba + 0.5} width={Math.max(1, b.ancho - 1)} height={g.caja.abajo - g.caja.arriba - 1} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="3 3" />
+              <line key={`sin-media-${b.semana.desde}`} className="minigrafico-por-semana__sin-media" x1={b.x} x2={b.x + Math.max(1, b.ancho)} y1={g.caja.abajo - 1} y2={g.caja.abajo - 1} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" />
             ))}
             {g.eje.map((m) => (
               <g key={m.valor} className="minigrafico__marca">
@@ -281,7 +281,7 @@ export function MinigraficoPorSemana({
               <g key={b.semana.desde} className="minigrafico-por-semana__semana" data-hueca={b.hueca ? '' : undefined} data-dias={b.semana.conDato}>
                 <rect x={b.x} y={b.y} width={b.ancho} height={Math.max(0, g.caja.abajo - b.y)} fill={color} fillOpacity={b.hueca ? RELLENO_HUECA : RELLENO_ENTERA} />
                 {b.hueca ? (
-                  <path d={`M ${b.x + 0.75} ${g.caja.abajo} V ${b.y + 0.75} H ${b.x + b.ancho - 0.75} V ${g.caja.abajo}`} fill="none" stroke={color} strokeWidth={1.5} />
+                  <path d={`M ${b.x + 0.5} ${g.caja.abajo} V ${b.y + 0.5} H ${b.x + b.ancho - 0.5} V ${g.caja.abajo}`} fill="none" stroke={color} strokeWidth={1} />
                 ) : (
                   <line x1={b.x} x2={b.x + b.ancho} y1={b.y + 1} y2={b.y + 1} stroke={color} strokeWidth={2} />
                 )}

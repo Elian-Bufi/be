@@ -561,6 +561,14 @@ function pantallas({ diego, versiones }) {
     for (const id of exigir) if (!graficos.includes(id)) throw new Error(`falta ${id} en la pregunta ${pregunta}`);
     const semanales = await page.$$eval('.graficos-en-analizar [data-por-semana][aria-pressed="true"]', (xs) => xs.length);
     nota(`${semanales} gráficos arrancaron por semana`);
+    // GR-VD10: con la cohorte, GR-12 arranca día por día (la mayoría de las semanas no tiene media). Se elige «Por semana»
+    // en el primero, para ver cómo queda la semana sin media.
+    const primero = '.graficos-en-analizar [data-grafico] [data-por-semana][aria-pressed="false"]';
+    if (await page.$(primero)) {
+      await page.click(primero);
+      await asentar(page);
+      nota('el primer gráfico arrancó día por día: se eligió «Por semana»');
+    }
   };
   const patrones = { entera: true, graficos: '.ficha__cuerpo', enfocar: (page) => page.evaluate(() => window.scrollTo(0, 0)) };
   return {

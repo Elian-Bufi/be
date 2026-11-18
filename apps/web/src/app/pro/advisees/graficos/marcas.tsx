@@ -75,8 +75,8 @@ function GlifoDeLaSemana({ glifo, color }: { glifo: 'SEMANA_ENTERA' | 'SEMANA_HU
   return (
     <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
       {glifo === 'SEMANA_ENTERA' ? <rect x={2.5} y={3.5} width={9} height={9.5} rx={1.5} fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1} /> : null}
-      {glifo === 'SEMANA_HUECA' ? <path d="M 2.75 13 V 3.75 H 11.25 V 13" fill="none" stroke={color} strokeWidth={1.5} /> : null}
-      {glifo === 'SEMANA_SIN_MEDIA' ? <rect x={2.5} y={1.5} width={9} height={11} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="2 2" /> : null}
+      {glifo === 'SEMANA_HUECA' ? <path d="M 2.5 13 V 3.5 H 11.5 V 13" fill="none" stroke={color} strokeWidth={1} /> : null}
+      {glifo === 'SEMANA_SIN_MEDIA' ? <line x1={1} x2={13} y1={12} y2={12} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" /> : null}
       {glifo === 'SEMANA_SIN_DIAS' ? <rect x={2} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} /> : null}
     </svg>
   );

@@ -1999,6 +1999,11 @@ que no existe (GR-VD01, GR-VD02 y GR-VD08). Lo fija TEST-GRVD-003.
   frase una sola vez. *Alternativa:* la lectura debajo, afuera de la tarjeta.
 - **GR-VD08 · Una pregunta con gráficos abierta por la dirección sin nada que ofrecer** vuelve a «Analizar» sin pregunta,
   sin el título ni un aviso. *Alternativa:* un estado vacío neutro con el título.
+- **GR-VD10 · La semana sin media es una raya cortada y baja sobre el eje** (no una caja punteada de todo el alto, que
+  con la cohorte enrejaba el año y tapaba los días); la caja llena, solo para la semana con media, y la de «Con días
+  afuera», con un contorno fino. **De entrada va por semana solo si la mayoría de las semanas tienen media** (refina
+  GR-VD04 y GR-VC12); si no, día por día. Vale para GR-12, GR-13, GR-14, GR-24 y la media semanal de SP-02 (revisión de
+  las capturas v2, 18/11). *Alternativa:* la caja punteada, más tenue.
 - **GR-VD09 · Las piezas de la base solo suman campos opcionales** y `semanasDeLosDias` queda como la media genérica sin
   usuarios de Nutrición. *Alternativa:* borrarla o pasarla a la regla de GR-12, que cambia las pruebas de #283.
 
@@ -2025,6 +2030,7 @@ capturas de la CI se miraron en Claro y Azul noche a los cuatro anchos (v1, de `
 | El pie de «Analizar»: el límite de la pregunta a la vista, pegado a la frase | Baja | La frase con su pieza; el límite en «Cómo leerlo» | TEST-GRVD-004, TEST-GRF-076 |
 | «Superpuestas» en SVG: el nombre de cada línea cortado con «…» y la leyenda debajo | Baja | Entero o ninguno; la leyenda arriba | TEST-GRVD-004 |
 | Las kcal del dibujo con decimal («1.924,8») | Baja | Enteras | TEST-GRVD-006 |
+| Capturas v2 (Dirección): con casi todas las semanas «Sin media», las cajas punteadas de todo el alto enrejaban el año de GR-12 y tapaban los días | Media | Una raya baja sobre el eje; la hueca, con contorno fino; por semana de entrada solo con la mayoría con media (GR-VD10) | TEST-GRVD-007 |
 | La leyenda por semana, fija con todas las marcas | Baja | Solo las que se ven | TEST-GRVD-001 |
 
 **Revisado sin hallazgos:** ubica sin calificar (ningún «mejor» ni «peor», las etapas sin orden de valor); cada cálculo con

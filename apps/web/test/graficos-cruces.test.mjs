@@ -53,6 +53,7 @@ const E = await import('../src/app/pro/advisees/graficos/eje-de-fechas.ts');
 const FC = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/fecha-compartida.ts');
 const SN = await import('../src/app/pro/advisees/graficos/cruces/semanas-de-nutricion.ts');
 const G12 = await import('../src/app/pro/advisees/graficos/nutricion/energia-por-dia.ts');
+const LZ = await import('../src/app/pro/advisees/graficos/nutricion-y-cuerpo/lienzo.ts');
 const SEM = await import('../src/app/pro/advisees/graficos/semanas.ts');
 const CAR = await import('../src/app/pro/advisees/graficos/carriles.ts');
 const TE = await import('../src/app/pro/advisees/graficos/tabla-equivalente.ts');
@@ -928,7 +929,9 @@ test('TEST-GRVD-001 · una sola media semanal (GR-VC13): GR-24 por semana y SP-0
   assert.equal(SN.metricaConMediaDeLaSemana({ area: 'NUTRICION', parametro: 'ENERGY' }), 'ENERGY');
   assert.equal(SN.metricaConMediaDeLaSemana({ area: 'ENTRENAMIENTO', parametro: 'ENERGY' }), null);
   // De entrada por semana solo con alguna media (GR-VC12), y con más de seis semanas.
-  assert.equal(SN.porSemanaDeEntrada('2026-09-01', '2026-11-15', [gr24]), true);
+  // GR-VD10: de entrada por semana solo si la mayoría de las semanas tienen media (acá, una de dos: día por día).
+  assert.equal(SN.porSemanaDeEntrada('2026-09-01', '2026-11-15', [[gr24[0], gr24[0], gr24[1]]]), true);
+  assert.equal(SN.porSemanaDeEntrada('2026-09-01', '2026-11-15', [gr24]), false, 'la mitad con media no alcanza');
   assert.equal(SN.porSemanaDeEntrada('2026-09-01', '2026-11-15', [[gr24[1]]]), false, 'sin ninguna media, día por día');
   assert.equal(SN.porSemanaDeEntrada('2026-11-02', '2026-11-15', [gr24]), false, 'dos semanas: día por día');
   for (const x of [lectura, ...sp02.map((s) => s.lectura), ...COPY_DE_LOS_CRUCES.porSemana.comoSeArma, SEM.resumenDeLasSemanas(gr24, 'kcal')]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION']), [], x);
@@ -1111,4 +1114,26 @@ test('TEST-GRVD-006 · lo que mostraron las capturas: las tomas y las sesiones s
   assert.match(paneles, /maximumFractionDigits: unidad === 'kcal' \? 0 : 1/);
   assert.match(paneles, /texto: valorCorto\(p\.valor, carril\.unidad\)/);
   assert.doesNotMatch(leer(join(GRAFICOS, 'minigrafico-por-semana.tsx')), /<table className="visualmente-oculto"/);
+});
+
+test('TEST-GRVD-007 · la semana sin media no enreja el año: una raya baja sobre el eje, la caja llena solo con media y la hueca con un contorno fino; por semana de entrada solo si la mayoría tiene media (GR-VD10) (mutación: volver a la caja punteada de todo el alto; arrancar por semana con una sola media)', () => {
+  const L = LZ;
+  assert.equal(L.laMayoriaConMedia([{ valor: 1 }, { valor: null }, { valor: 2 }]), true);
+  assert.equal(L.laMayoriaConMedia([{ valor: 1 }, { valor: null }]), false);
+  assert.equal(L.laMayoriaConMedia([]), false);
+  const panel = (valores) => ({ tipo: 'VALORES', semanas: valores.map((valor) => ({ valor })) });
+  assert.equal(L.modoDeEntrada({ porSemana: {}, paneles: [panel([2000, null, null, null])] }, '2026-08-01', '2026-11-15'), 'DIA', 'una de cuatro: día por día');
+  assert.equal(L.modoDeEntrada({ porSemana: {}, paneles: [panel([2000, 2100, null])] }, '2026-08-01', '2026-11-15'), 'SEMANA');
+  const piezas = {
+    'nutricion-y-cuerpo/lienzo-en-pantalla.tsx': /className="grafico-capas__sin-media" x1=\{v\.x1 \+ 1\} x2=\{[^}]+\} y1=\{alto - 1\.5\} y2=\{alto - 1\.5\}/,
+    'minigrafico-por-semana.tsx': /className="minigrafico-por-semana__sin-media" x1=\{b\.x\} x2=\{[^}]+\} y1=\{g\.caja\.abajo - 1\} y2=\{g\.caja\.abajo - 1\}/,
+    'paneles-alineados.tsx': /className="grafico-base__semana-sin-media" x1=\{b\.x1 \+ 1\} x2=\{[^}]+\} y1=\{b\.base - 1\} y2=\{b\.base - 1\}/,
+  };
+  for (const [archivo, raya] of Object.entries(piezas)) {
+    const fuente = leer(join(GRAFICOS, archivo));
+    assert.match(fuente, raya, `${archivo}: la semana sin media es una raya baja`);
+    assert.doesNotMatch(fuente, /sin-media"[^>]*height=/, `${archivo}: sin caja de todo el alto`);
+    assert.doesNotMatch(fuente, /V \$\{[^}]+\} H \$\{[^}]+\} V \$\{[^}]+\}`\} fill="none" stroke=\{color\} strokeWidth=\{1\.5\}/, `${archivo}: la hueca con contorno fino`);
+  }
+  assert.match(leer(join(GRAFICOS, 'cruces/semanas-de-nutricion.ts')), /convienePorSemana\(desde, hasta\) && laMayoriaConMedia\(semanas\.flat\(\)\)/);
 });

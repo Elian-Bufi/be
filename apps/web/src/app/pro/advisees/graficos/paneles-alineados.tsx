@@ -245,7 +245,7 @@ function DibujoDelCarril({
               b.hueca ? (
                 <g key={b.lunes} className="grafico-base__semana" data-hueca="">
                   <rect x={b.x1 + 1} y={b.y} width={Math.max(1, b.x2 - b.x1 - 2)} height={Math.max(0, b.base - b.y)} fill={color} fillOpacity={RELLENO_HUECA} />
-                  <path d={`M ${b.x1 + 1.75} ${b.base} V ${b.y + 0.75} H ${Math.max(b.x1 + 1.75, b.x2 - 1.75)} V ${b.base}`} fill="none" stroke={color} strokeWidth={1.5} />
+                  <path d={`M ${b.x1 + 1.5} ${b.base} V ${b.y + 0.5} H ${Math.max(b.x1 + 1.5, b.x2 - 1.5)} V ${b.base}`} fill="none" stroke={color} strokeWidth={1} />
                 </g>
               ) : (
                 <rect key={b.lunes} x={b.x1 + 1} y={b.y} width={Math.max(1, b.x2 - b.x1 - 2)} height={Math.max(0, b.base - b.y)} rx={2} fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1} />
@@ -255,9 +255,9 @@ function DibujoDelCarril({
             {g.vacias.map((b) => (
               <rect key={`v${b.lunes}`} className="grafico-base__semana-vacia" x={b.x1 + 1} y={0} width={Math.max(1, b.x2 - b.x1 - 2)} height={b.base} fill="var(--grafico-hueco)" fillOpacity={0.18} />
             ))}
-            {/* Una semana con días pero sin media (GR-VC12): el contorno cortado de todo el alto, sin relleno; no es un cero. */}
+            {/* Una semana con días pero sin media: una raya cortada y baja sobre el eje, que no tapa nada (GR-VD10). */}
             {g.sinMedia.map((b) => (
-              <rect key={`s${b.lunes}`} className="grafico-base__semana-sin-media" x={b.x1 + 1.5} y={0.75} width={Math.max(1, b.x2 - b.x1 - 3)} height={Math.max(0, b.base - 1.5)} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="3 3" />
+              <line key={`s${b.lunes}`} className="grafico-base__semana-sin-media" x1={b.x1 + 1} x2={Math.max(b.x1 + 2, b.x2 - 1)} y1={b.base - 1} y2={b.base - 1} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" />
             ))}
           </>
         ) : null}

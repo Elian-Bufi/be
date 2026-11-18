@@ -20,6 +20,7 @@
 import { fechasDelRango, type DefinicionDeMetrica, type PuntoAnalitico, type SerieAnalitica } from '@be/domain';
 import type { SemanaDelCarril } from '../carriles';
 import { saberDelDia, type MetricaDelGrafico } from '../nutricion/dias-de-nutricion';
+import { laMayoriaConMedia } from '../nutricion-y-cuerpo/lienzo';
 import { mediasDeLasSemanas, type MediaDeLaSemana } from '../nutricion/por-semana';
 import { convienePorSemana, cortesDeLasEtapas, cuandoEsLaSemana, type DiaDeLaSerie, type SemanaDeLaSerie } from '../semanas';
 
@@ -87,12 +88,12 @@ export function semanasDeNutricion(
 }
 
 /**
- * Si «Comparar dos etapas» arranca por semana (GR-VC12, como GR-12): con más de seis semanas de período y si alguna
- * semana de alguna métrica tiene media. Si ninguna llega, por semana se vería solo «sin media»: de entrada va día por día
- * y «Por semana» sigue a un toque.
+ * Si «Comparar dos etapas» arranca por semana (GR-VD10, la misma regla que GR-12): con más de seis semanas de período y si
+ * la mayoría de las semanas tienen media. Si no, por semana se vería casi todo «sin media»: de entrada va día por día y
+ * «Por semana» sigue a un toque.
  */
 export const porSemanaDeEntrada = (desde: string, hasta: string, semanas: readonly (readonly SemanaDeLaSerie[])[]): boolean =>
-  convienePorSemana(desde, hasta) && semanas.some((ss) => ss.some((s) => s.valor !== null));
+  convienePorSemana(desde, hasta) && laMayoriaConMedia(semanas.flat());
 
 /**
  * Los días de una serie de Nutrición para el gráfico chico por semana: los puntos tenues detrás de las barras y la tira de

@@ -48,7 +48,7 @@ export const COPY_DE_LOS_CRUCES = {
     comoSeArma: [
       'Cada barra es la media de la semana (v1), de lunes a domingo, la misma que las calorías y los macronutrientes por día: el promedio de los días con cantidades en todos sus registros, si son 4 o más.',
       'Un subtotal (un día al que le falta alguna cantidad) o un día con una comida del plan sin registro no entra en la media, y se cuenta: la línea de debajo de cada gráfico dice con cuántos días se hizo y por qué quedaron afuera los otros. Pasá el mouse, tocá una barra o usá las flechas para leer otra semana.',
-      'Una semana con días pero sin media va con su contorno cortado, y una sin ningún día con valor, en gris: ninguna es un cero. Hoy no cuenta hasta que termine el día.',
+      'Una semana con días pero sin media va con una raya cortada sobre el eje, y sus días se ven igual; una sin ningún día con valor, en gris: ninguna es un cero. Hoy no cuenta hasta que termine el día.',
       'Una semana que cruza el cambio de etapa se parte en dos tramos, uno de cada lado: ninguna media mezcla días de A con días de B.',
       'La tabla de arriba resume cada etapa entera con el criterio que dice debajo de cada métrica: no es la media de estas semanas.',
     ],
@@ -91,7 +91,7 @@ export const COPY_DE_LOS_CRUCES = {
     fichas: {
       entera: { corto: 'Semana entera', largo: 'Barra llena: los siete días de la semana entran en la media' },
       hueca: { corto: 'Con días afuera', largo: 'Barra hueca, con su contorno: algún día de la semana quedó afuera de la media' },
-      sinMedia: { corto: 'Sin media', largo: 'Contorno cortado, sin relleno: la semana tiene días con valor, pero no llega a 4 días con cantidades en todos sus registros; no es un cero' },
+      sinMedia: { corto: 'Sin media', largo: 'Raya cortada sobre el eje: la semana tiene días con valor, pero no llega a 4 días con cantidades en todos sus registros; no es un cero' },
       sinDias: { corto: 'Sin días con valor', largo: 'Columna gris: ningún día de la semana tiene valor; no es un cero' },
     },
   },

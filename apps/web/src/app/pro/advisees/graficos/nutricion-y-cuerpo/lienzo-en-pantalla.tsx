@@ -229,9 +229,10 @@ function DibujoDeValores({ panel, alto, ...d }: PropsDelDibujo & { panel: PanelD
         {g.vacias.map((v) => (
           <rect key={`v${v.clave}`} className="grafico-capas__sin-dias" x={v.x1} y={0} width={Math.max(1, v.x2 - v.x1)} height={alto} fill="var(--grafico-hueco)" fillOpacity={0.18} />
         ))}
-        {/* Una semana con días pero sin media (no llega a 4 sin faltantes): un contorno cortado, sin relleno ni altura. */}
+        {/* Una semana con días pero sin media (no llega a 4 sin faltantes): una raya cortada y baja sobre el eje, que no tapa
+            los días (GR-VD10: la caja punteada de todo el alto enrejaba el año y tapaba los puntos). */}
         {g.sinMedia.map((v) => (
-          <rect key={`s${v.clave}`} className="grafico-capas__sin-media" x={v.x1 + 0.75} y={0.75} width={Math.max(1, v.x2 - v.x1 - 1.5)} height={alto - 1.5} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="3 3" />
+          <line key={`s${v.clave}`} className="grafico-capas__sin-media" x1={v.x1 + 1} x2={Math.max(v.x1 + 2, v.x2 - 1)} y1={alto - 1.5} y2={alto - 1.5} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" />
         ))}
         {g.marcasY.map((m) => (
           <g key={`y${m.valor}`} className="grafico-base__grilla">
@@ -259,7 +260,7 @@ function DibujoDeValores({ panel, alto, ...d }: PropsDelDibujo & { panel: PanelD
                 {b.entera ? (
                   <line x1={b.x1} x2={b.x2} y1={b.y + 1} y2={b.y + 1} stroke={color} strokeWidth={2} />
                 ) : (
-                  <path d={`M ${b.x1 + 0.75} ${b.base} V ${b.y + 0.75} H ${b.x2 - 0.75} V ${b.base}`} fill="none" stroke={color} strokeWidth={1.5} />
+                  <path d={`M ${b.x1 + 0.5} ${b.base} V ${b.y + 0.5} H ${b.x2 - 0.5} V ${b.base}`} fill="none" stroke={color} strokeWidth={1} />
                 )}
               </g>
             ))}
@@ -343,8 +344,8 @@ function Muestra({ e }: { e: ElementoDeLaLeyenda }) {
           <line x1={4} x2={14} y1={3.75} y2={3.75} stroke={colorDelCarril(m.color)} strokeWidth={1.5} />
         </>
       ) : null}
-      {m.tipo === 'SEMANA' && m.forma === 'HUECA' ? <path d="M 4.75 13 V 3.75 H 13.25 V 13" fill="none" stroke={colorDelCarril(m.color)} strokeWidth={1.5} /> : null}
-      {m.tipo === 'SEMANA' && m.forma === 'SIN_MEDIA' ? <rect x={4.5} y={1.5} width={9} height={11} fill="none" stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="2 2" /> : null}
+      {m.tipo === 'SEMANA' && m.forma === 'HUECA' ? <path d="M 4.5 13 V 3.5 H 13.5 V 13" fill="none" stroke={colorDelCarril(m.color)} strokeWidth={1} /> : null}
+      {m.tipo === 'SEMANA' && m.forma === 'SIN_MEDIA' ? <line x1={3} x2={15} y1={12} y2={12} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" /> : null}
       {m.tipo === 'SEMANA' && m.forma === 'SIN_DIAS' ? <rect x={4} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} /> : null}
       {m.tipo === 'DIA_TENUE' ? <circle cx={9} cy={7} r={2} fill={colorDelCarril(m.color)} opacity={OPACIDAD_DE_LOS_DIAS} /> : null}
       {m.tipo === 'COBERTURA' ? (

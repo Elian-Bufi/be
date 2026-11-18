@@ -445,14 +445,18 @@ export const semanaDeLaFecha = <T extends { readonly desde: string; readonly has
   fecha === null ? null : (semanas.find((s) => fecha >= s.desde && fecha <= s.hasta) ?? null);
 
 /**
- * Cómo arranca un gráfico de Nutrición (GR-VC01 y GR-VC12): por semana con más de seis semanas (`convienePorSemana`, la
- * regla de la base) **y si alguna semana tiene media**; si ninguna llega, por semana se vería solo «sin media» y de entrada
- * va día por día (por semana sigue a un toque, y dice por qué no hay media).
+ * Cómo arranca un gráfico de Nutrición (GR-VC01, GR-VC12 y GR-VD10): por semana con más de seis semanas
+ * (`convienePorSemana`, la regla de la base) **y si la mayoría de las semanas tienen media**; si no, por semana se vería
+ * casi todo «sin media» y de entrada va día por día (por semana sigue a un toque, y dice por qué no hay media).
  */
 export function modoDeEntrada(grafico: Pick<GraficoArmado, 'porSemana' | 'paneles'>, desde: string, hasta: string): ModoDelLienzo {
   if (grafico.porSemana === null || !convienePorSemana(desde, hasta)) return 'DIA';
-  return grafico.paneles.some((p) => p.tipo === 'VALORES' && p.semanas.some((s) => s.valor !== null)) ? 'SEMANA' : 'DIA';
+  const semanas = grafico.paneles.flatMap((p) => (p.tipo === 'VALORES' ? p.semanas : []));
+  return laMayoriaConMedia(semanas) ? 'SEMANA' : 'DIA';
 }
+
+/** Si más de la mitad de las semanas tienen media (GR-VD10): la regla de entrada «por semana» de todo gráfico de Nutrición. */
+export const laMayoriaConMedia = (semanas: readonly { readonly valor: number | null }[]): boolean => semanas.length > 0 && semanas.filter((s) => s.valor !== null).length * 2 > semanas.length;
 
 /** El tramo que se lee de entrada en «Por semana»: el último con alguna media (o el último, si ninguno tiene). */
 export function tramoDeEntrada(tramos: readonly TramoDeLasSemanas[]): TramoDeLasSemanas | null {
