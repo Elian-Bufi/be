@@ -36,6 +36,7 @@
 import type { EjecucionDeEntrenamiento, EjercicioRegistrado, Prescripcion, SerieEjecutadaApi } from './contratos-entrenamiento';
 import { COPY_REGISTRO_POR_NIVELES, registroVigente } from './copy-entrenamiento';
 import { cantidad, numero } from './formato-numeros';
+import { numerosEfectivos } from './tipos-de-serie';
 
 type Carga = { readonly value: number; readonly unit: 'kg' | 'lb' };
 type Repeticiones = NonNullable<Prescripcion['sets'][number]['repetitions']>;
@@ -81,8 +82,13 @@ export type SerieRegistrada =
   | { readonly tipo: 'no-realizada' };
 
 export interface FilaDeSerie {
-  /** El número real de la serie (`setIndex`): no se renumera. */
+  /**
+   * El número efectivo de la serie (DL-178): las efectivas se numeran 1, 2, 3 sin contar el calentamiento, así la serie 1
+   * de hoy se compara con la serie 1 de una sesión sin calentamiento. Sin calentamiento es el `setIndex`, sin renumerar.
+   */
   readonly numero: number;
+  /** La posición real de la serie (`setIndex`), con la que se registró. Igual a `numero` si no hay calentamiento. */
+  readonly setIndex: number;
   readonly planificada: SeriePlanificada;
   readonly registrada: SerieRegistrada;
   /**
@@ -163,7 +169,13 @@ export interface ComparacionDeEjercicio {
   readonly nota: string | null;
   /** La prescripción completa de la instantánea, para mostrarla tal como se escribió. */
   readonly prescripcion: Prescripcion;
+  /** Solo las series efectivas (DL-178): el calentamiento no se compara, no se cuenta ni se grafica. */
   readonly filas: readonly FilaDeSerie[];
+  /**
+   * DL-178: las series de calentamiento, indicadas o registradas, para mostrarlas aparte («Calentamiento»). No entran en
+   * `filas` ni en ninguna cuenta. Vacío si no hubo.
+   */
+  readonly calentamiento: readonly { readonly setIndex: number; readonly planificada: boolean; readonly registrada: SerieEjecutadaApi | null }[];
 }
 
 const porOcurrencia = (a: EjecucionDeEntrenamiento, b: EjecucionDeEntrenamiento): number =>
@@ -232,14 +244,20 @@ export function compararEjecucion(x: EjecucionDeEntrenamiento, versiones: Identi
       const ejercicio = vigente?.exercises.find((e) => e.prescriptionId === p.prescriptionId) ?? null;
       const { identidad, exerciseId } = identidadDe(p, ejercicio, versiones);
       const enElOriginal = fuente.tipo === 'correccion' ? (x.original.exercises.find((e) => e.prescriptionId === p.prescriptionId) ?? null) : undefined;
-      const numeros = [...new Set([...p.sets.map((s) => s.setIndex), ...(ejercicio?.sets ?? []).map((s) => s.setIndex)])].sort((a, b) => a - b);
-      const filas = numeros.map((n): FilaDeSerie => {
+      // DL-178: el calentamiento queda afuera de las filas, y las efectivas llevan su número efectivo.
+      const efectivos = numerosEfectivos([...p.sets, ...(ejercicio?.sets ?? [])]);
+      const numeros = [...efectivos.keys()].sort((a, b) => a - b);
+      const calentamiento = numeros
+        .filter((n) => efectivos.get(n) === null)
+        .map((n) => ({ setIndex: n, planificada: p.sets.some((s) => s.setIndex === n), registrada: ejercicio?.sets?.find((s) => s.setIndex === n) ?? null }));
+      const filas = numeros.filter((n) => efectivos.get(n) !== null).map((n): FilaDeSerie => {
         const planificada = p.sets.find((s) => s.setIndex === n);
         const objetivo = objetivos?.get(p.prescriptionId)?.find((s) => s.setIndex === n);
         const registrada = registradaDe(condicion, ejercicio, n);
         const original = enElOriginal === undefined ? undefined : (enElOriginal?.sets?.find((s) => s.setIndex === n) ?? null);
         return {
-          numero: n,
+          numero: efectivos.get(n)!,
+          setIndex: n,
           planificada: planificada
             ? {
                 tipo: 'planificada',
@@ -275,6 +293,7 @@ export function compararEjecucion(x: EjecucionDeEntrenamiento, versiones: Identi
         nota: p.note,
         prescripcion: p,
         filas,
+        calentamiento,
       };
     });
 }

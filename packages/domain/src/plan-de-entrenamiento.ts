@@ -27,6 +27,7 @@ import type {
 import { CAMPOS_CON_ORIGEN } from './contratos-entrenamiento';
 import type { PlanConObjetivos } from './contratos-entrenamiento-por-serie';
 import { problemasDeObjetivosPorSerie } from './objetivos-por-serie';
+import { calentamientoFueraDeLugar, tipoGuardado } from './tipos-de-serie';
 import type { ValidationIssue } from './contratos';
 import type { CondicionDeSesion, GranularidadDeRegistro, MotivoDeIntensidadInvalida } from './entrenamiento';
 
@@ -46,6 +47,8 @@ export interface SeriePrescriptaGuardada {
   readonly rir?: number | null;
   readonly suggestedLoad?: { readonly value: number; readonly unit: 'kg' | 'lb' } | null;
   readonly restSeconds?: number | null;
+  /** DL-178: solo `WARM_UP` se guarda; ausente es efectiva, como todas las series de antes (`tipos-de-serie.ts`). */
+  readonly setKind?: 'WARM_UP';
 }
 export interface ParametroGuardado {
   readonly label: string;
@@ -120,6 +123,8 @@ export const CodigoDeProblemaDePlanDeEntrenamiento = {
   // Al guardar: estructura mal formada (TRAINING_PLAN_STRUCTURE_INVALID).
   DUPLICATE_NODE_ID: 'DUPLICATE_NODE_ID',
   SESSIONS_AND_MICROCYCLES_IN_BLOCK: 'SESSIONS_AND_MICROCYCLES_IN_BLOCK',
+  // DL-178: una serie de calentamiento después de una efectiva. El calentamiento va arriba.
+  WARM_UP_AFTER_WORKING_SET: 'WARM_UP_AFTER_WORKING_SET',
   // Al guardar: intensidad (INTENSITY_CRITERION_INVALID).
   INTENSITY_CRITERION_UNKNOWN: 'INTENSITY_CRITERION_UNKNOWN',
   INTENSITY_CRITERIA_COMBINED: 'INTENSITY_CRITERIA_COMBINED',
@@ -202,6 +207,9 @@ export function normalizarEstructuraDeEntrenamiento(entrada: EstructuraDePlanDeE
       if (!p.intensity || intensity) {
         for (const problema of problemasDeObjetivosPorSerie({ intensity, sets: p.sets })) intensidad.push({ code: P[problema.motivo], path: `${rp}.sets[${problema.setIndex - 1}].rir` });
       }
+      // DL-178: las de calentamiento, arriba. No se reordena en silencio: el profesional ve dónde está la que no va.
+      const fueraDeLugar = calentamientoFueraDeLugar(p.sets);
+      if (fueraDeLugar !== null) estructura.push({ code: P.WARM_UP_AFTER_WORKING_SET, path: `${rp}.sets[${fueraDeLugar}].setKind` });
       return {
         prescriptionId: id(p.prescriptionId, `${rp}.prescriptionId`),
         exerciseVersionId: p.exerciseVersionId,
@@ -212,6 +220,7 @@ export function normalizarEstructuraDeEntrenamiento(entrada: EstructuraDePlanDeE
           ...(x.rir !== undefined ? { rir: x.rir } : {}),
           ...(x.suggestedLoad !== undefined ? { suggestedLoad: x.suggestedLoad } : {}),
           ...(x.restSeconds !== undefined ? { restSeconds: x.restSeconds } : {}),
+          ...tipoGuardado(x),
         })),
         intensity,
         suggestedLoad: p.suggestedLoad ?? null,
@@ -530,7 +539,7 @@ export function estructuraComoEntrada(v: VersionDePlanDeEntrenamiento): Estructu
     prescriptions: s.prescriptions.map((p) => ({
       prescriptionId: p.prescriptionId,
       exerciseVersionId: p.exerciseVersionId,
-      sets: p.sets.map((x) => ({ repetitions: x.repetitions, note: x.note })),
+      sets: p.sets.map((x) => ({ repetitions: x.repetitions, note: x.note, ...tipoGuardado(x) })),
       intensity: p.intensity ? { criterion: p.intensity.criterion, target: { value: p.intensity.target.value, reference: p.intensity.target.reference } } : null,
       suggestedLoad: p.suggestedLoad,
       professionalParameters: p.professionalParameters.map((q) => ({ label: q.label, value: q.value, unit: q.unit })),
@@ -566,6 +575,7 @@ export function estructuraConObjetivosComoEntrada(v: PlanConObjetivos): Estructu
         ...(x.rir !== undefined ? { rir: x.rir } : {}),
         ...(x.suggestedLoad !== undefined ? { suggestedLoad: x.suggestedLoad } : {}),
         ...(x.restSeconds !== undefined ? { restSeconds: x.restSeconds } : {}),
+        ...tipoGuardado(x),
       })),
       intensity: p.intensity ? { criterion: p.intensity.criterion, target: { value: p.intensity.target.value, reference: p.intensity.target.reference } } : null,
       suggestedLoad: p.suggestedLoad,

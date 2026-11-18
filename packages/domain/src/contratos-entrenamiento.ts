@@ -213,6 +213,17 @@ export type BaseDeRepeticiones = z.infer<typeof BaseDeRepeticionesSchema>;
 export const DescansoRecomendadoSchema = z.number().int().min(0).max(3600);
 
 /**
+ * DL-178 (decisión de Dirección del 2026-11-18) · el tipo de una serie, la planificada y la registrada:
+ * - `WORKING`: efectiva. Es el valor por omisión: una serie sin el campo es efectiva, y así queda todo lo anterior;
+ * - `WARM_UP`: de calentamiento. Se indica y se registra, pero no entra en ningún cálculo (`tipos-de-serie.ts`).
+ * Es un enum y no un booleano para poder sumar otros tipos después. En lo que entra es opcional (ausente = `WORKING`); en
+ * lo que sale va explícito para el cliente que declara `training-set-kinds-1` (`compatibilidad-de-clientes.ts`), y no va
+ * para el que no la declara, que lo leería como un campo desconocido.
+ */
+export const TipoDeSerieSchema = z.enum(['WORKING', 'WARM_UP']);
+export type TipoDeSerie = z.infer<typeof TipoDeSerieSchema>;
+
+/**
  * Una serie planificada. Los tres campos de DL-122 tienen tres estados: ausente hereda de la prescripción, `null` quita
  * el objetivo en esta serie y un valor lo sobrescribe (`objetivosEfectivos`, en `objetivos-por-serie.ts`). El RIR
  * viaja como número sin rango para que uno fuera de 0 a 10, o sin criterio RIR, sea el 422 específico y no un 400.
@@ -223,6 +234,8 @@ export const SeriePrescriptaEntradaSchema = z.strictObject({
   rir: z.number().finite().nullable().optional(),
   suggestedLoad: CargaSchema.nullable().optional(),
   restSeconds: DescansoRecomendadoSchema.nullable().optional(),
+  /** DL-178: ausente es `WORKING`. Las de calentamiento van antes que las efectivas (`WARM_UP_AFTER_WORKING_SET`). */
+  setKind: TipoDeSerieSchema.optional(),
 });
 
 /**
@@ -295,7 +308,13 @@ export const IntensidadSchema = z.strictObject({
   criterion: CriterioDeIntensidadApiSchema,
   target: z.strictObject({ value: z.number().finite(), reference: z.strictObject({ description: z.string() }).nullable() }),
 });
-export const SeriePrescriptaSchema = z.strictObject({ setIndex: z.number().int().positive(), repetitions: RepeticionesPrescriptasSchema.nullable(), note: z.string().nullable() });
+export const SeriePrescriptaSchema = z.strictObject({
+  setIndex: z.number().int().positive(),
+  repetitions: RepeticionesPrescriptasSchema.nullable(),
+  note: z.string().nullable(),
+  /** DL-178: explícito para el cliente que declara `training-set-kinds-1`; ausente para el que no (y entonces es efectiva). */
+  setKind: TipoDeSerieSchema.optional(),
+});
 export const PrescripcionSchema = z.strictObject({
   prescriptionId: IdDeNodoSchema,
   order: z.number().int().positive(),
@@ -637,6 +656,12 @@ export const SerieEjecutadaSchema = z.strictObject({
   fieldOrigins: z
     .strictObject({ load: OrigenDelValorSchema.optional(), completedRepetitions: OrigenDelValorSchema.optional(), rir: OrigenDelValorSchema.optional() })
     .optional(),
+  /**
+   * DL-178: si la serie fue de calentamiento. Ausente = `WORKING`: así quedó todo lo registrado antes y lo que registra
+   * una APK que no conoce el campo. Se guarda solo `WARM_UP` (`serieEnSuForma`); sale explícito para el cliente que
+   * declara `training-set-kinds-1`.
+   */
+  setKind: TipoDeSerieSchema.optional(),
 });
 export type SerieEjecutadaApi = z.infer<typeof SerieEjecutadaSchema>;
 /** Cómo se cargó una serie; ausente se lee como `TYPED` (DL-161). */

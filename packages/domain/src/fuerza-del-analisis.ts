@@ -19,6 +19,7 @@ import type { ResultadoDeEstimacionDeFuerza, VigenciaDePlan } from './contratos-
 import type { BandaDeLaEstimacionApi, EstimacionDeFuerzaApi, PuntoDeFuerza, SerieQueNoEntroSchema } from './contratos-fuerza';
 import { registroVigente } from './copy-entrenamiento';
 import { sesionesDelPlan, type ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
+import { registradasEfectivas } from './tipos-de-serie';
 import {
   EJERCICIOS_DE_LA_ESTIMACION_V1,
   entraEnLaEstimacion,
@@ -105,7 +106,9 @@ export function seriesDeLasSesiones(ejecuciones: readonly EjecucionDeEntrenamien
     const registrados = r.exercises
       .map((e) => ({ e, prescripcion: x.plannedSession.prescriptions.find((p) => p.prescriptionId === e.prescriptionId) }))
       .sort((a, b) => (a.prescripcion?.order ?? 0) - (b.prescripcion?.order ?? 0));
-    for (const { e, prescripcion } of registrados) {
+    for (const { e: registrado, prescripcion } of registrados) {
+      // DL-178: el 1RM estimado sale solo de las series efectivas; el calentamiento no entra ni como descartado.
+      const e = registrado.sets && prescripcion ? { ...registrado, sets: registradasEfectivas(registrado.sets, prescripcion.sets) } : registrado;
       if (!prescripcion || !e.sets || e.sets.length === 0 || !entraEnLaEstimacion(prescripcion.exerciseId)) continue;
       const base = bases.get(x.planId)?.get(e.prescriptionId);
       const grupo = porEjercicio.get(prescripcion.exerciseId) ?? { ubicaciones: [], series: [] };

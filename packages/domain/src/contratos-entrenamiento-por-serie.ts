@@ -29,6 +29,7 @@ import {
   IntensidadSchema,
   ParametroProfesionalSchema,
   RepeticionesPrescriptasSchema,
+  TipoDeSerieSchema,
   VersionDePlanDeEntrenamientoSchema,
 } from './contratos-entrenamiento';
 import { ProcedenciaDeMedioSchema } from './contratos-medios';
@@ -127,6 +128,8 @@ export const SerieConObjetivoSchema = z.strictObject({
   rir: z.number().finite().nullable().optional(),
   suggestedLoad: CargaSchema.nullable().optional(),
   restSeconds: z.number().int().min(0).nullable().optional(),
+  /** DL-178: explícito para el cliente que declara `training-set-kinds-1`; ausente para el que no (y entonces es efectiva). */
+  setKind: TipoDeSerieSchema.optional(),
   /** El objetivo efectivo, resuelto con `objetivosEfectivos`. */
   target: ObjetivoDeSerieSchema,
   /** De dónde sale cada valor del objetivo efectivo. */
