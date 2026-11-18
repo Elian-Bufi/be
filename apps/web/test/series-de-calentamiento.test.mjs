@@ -35,7 +35,7 @@ test('DL-178 · marcar «C» sube la serie arriba; las efectivas se numeran 1, 2
   );
   // La planilla usa esas reglas: la casilla «C», el reorden y los rótulos.
   assert.match(EJERCICIO, /data-marcar-calentamiento=\{n \+ 1\}/);
-  assert.match(EJERCICIO, /onCambiar\(\{ sets: conElCalentamientoArriba\(sets\) \}\)/);
+  assert.match(EJERCICIO, /onCambiar\(\{ sets: conElCalentamientoArriba<Serie>\(sets\) \}\)/);
   assert.match(EJERCICIO, /rotulos\[n\]!\.corto/);
   assert.match(EJERCICIO, /COPY_TIPOS_DE_SERIE\.ayudaDelEditor/);
   // Las celdas se nombran con el rótulo: «Calentamiento: repeticiones», «Serie 1: carga sugerida».
