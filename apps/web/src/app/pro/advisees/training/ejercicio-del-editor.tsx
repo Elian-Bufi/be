@@ -41,6 +41,10 @@ import {
   type ImagenDeEjercicio,
   type OpcionDeLaCelda,
   COPY_NOTAS_PROPIAS,
+  conElCalentamientoArriba,
+  COPY_TIPOS_DE_SERIE,
+  esDeCalentamiento,
+  rotulosDeLasSeries,
 } from '@be/domain';
 import { useEffect, useId, useState, type ComponentProps, type KeyboardEvent } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
@@ -517,8 +521,20 @@ function SeriesDelEjercicio({
   const cargaGeneral = p.suggestedLoad && valido(p.suggestedLoad.value) ? numeroEnCampo(p.suggestedLoad.value) : null;
   const rirGeneral = conRir && p.intensity && valido(p.intensity.target.value) ? numeroEnCampo(p.intensity.target.value) : null;
   const descansoGeneral = valido(p.restSeconds) ? textoDeSegundos(p.restSeconds) : null;
-  const S = COPY_ENTRENAMIENTO.serie;
+  // DL-178: las efectivas se numeran 1, 2, 3 como siempre; las de calentamiento llevan «C» y van arriba.
+  const rotulos = rotulosDeLasSeries(p.sets);
+  const cual = (n: number): string => (rotulos[n]?.numero == null ? 'esta serie de calentamiento' : `la serie ${rotulos[n]!.numero}`);
   const cambiarLaSerie = (n: number, f: (s: Serie) => Serie) => onCambiar({ sets: p.sets.map((x, m) => (m === n ? f(x) : x)) });
+  /** DL-178: marca o desmarca una serie como calentamiento; el calentamiento sube arriba, sin cambiar el orden de cada tipo. */
+  const marcarCalentamiento = (n: number) => {
+    setElegidas(new Set());
+    const sets = p.sets.map((x, m) => {
+      if (m !== n) return x;
+      const { setKind: _tipo, ...resto } = x;
+      return esDeCalentamiento(x) ? resto : { ...resto, setKind: 'WARM_UP' as const };
+    });
+    onCambiar({ sets: conElCalentamientoArriba(sets) });
+  };
   // ED-23: las series elegidas, para escribirles un valor o devolverlas a lo general; y la serie que se va a quitar.
   const [elegidas, setElegidas] = useState<ReadonlySet<number>>(new Set());
   const [campo, setCampo] = useState<ObjetivoDeLaSerie>('restSeconds');
@@ -690,21 +706,29 @@ function SeriesDelEjercicio({
               <td />
             </tr>
             {p.sets.map((s, n) => (
-              <tr key={n} data-serie={n + 1} data-elegida={elegidas.has(n) ? '' : undefined}>
+              <tr key={n} data-serie={n + 1} data-elegida={elegidas.has(n) ? '' : undefined} data-calentamiento={esDeCalentamiento(s) ? '' : undefined}>
                 <td className="series-del-editor__elegir">
                   <input type="checkbox" checked={elegidas.has(n)} onChange={() => elegir(n)} aria-label={PL.elegir(n + 1)} />
                 </td>
                 <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
-                  {n + 1}
+                  <span className="series-del-editor__numero" title={rotulos[n]!.largo}>
+                    {rotulos[n]!.corto}
+                  </span>
+                  {/* DL-178: «C» marca la serie como calentamiento: se registra y no entra en los cálculos. */}
+                  <label className="series-del-editor__calentamiento" title={COPY_TIPOS_DE_SERIE.ayudaDelEditor}>
+                    <input type="checkbox" checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} data-marcar-calentamiento={n + 1} />
+                    <span aria-hidden="true">{COPY_TIPOS_DE_SERIE.marca}</span>
+                    <span className="visualmente-oculto">{`${COPY_TIPOS_DE_SERIE.marcarComoCalentamiento} (${rotulos[n]!.largo})`}</span>
+                  </label>
                 </th>
                 <td data-etiqueta="Repeticiones">
-                  <CeldaDeRepeticiones id={`${id}-serie-${n}`} rotulo={`${S} ${n + 1}: repeticiones (un número o un rango, 8-12)`} valor={s.repetitions} onCambiar={(r) => cambiarLaSerie(n, (x) => ({ ...x, repetitions: r }))} />
+                  <CeldaDeRepeticiones id={`${id}-serie-${n}`} rotulo={`${rotulos[n]!.largo}: repeticiones (un número o un rango, 8-12)`} valor={s.repetitions} onCambiar={(r) => cambiarLaSerie(n, (x) => ({ ...x, repetitions: r }))} />
                 </td>
                 <td data-etiqueta={`${C.cargaSugerida} (${unidad})`}>
                   <CeldaDeObjetivo
                     id={`${id}-serie-${n}-carga`}
-                    rotulo={`${S} ${n + 1}: carga sugerida (${unidad})`}
-                    queEs={`la carga sugerida de la serie ${n + 1}`}
+                    rotulo={`${rotulos[n]!.largo}: carga sugerida (${unidad})`}
+                    queEs={`la carga sugerida de ${cual(n)}`}
                     valor={s.suggestedLoad === undefined ? undefined : s.suggestedLoad === null ? null : s.suggestedLoad.value}
                     deLoGeneral={cargaGeneral}
                     escribir={numeroEnCampo}
@@ -716,8 +740,8 @@ function SeriesDelEjercicio({
                   <td data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}>
                     <CeldaDeObjetivo
                       id={`${id}-serie-${n}-rir`}
-                      rotulo={`${S} ${n + 1}: RIR objetivo (0 a 10)`}
-                      queEs={`el RIR de la serie ${n + 1}`}
+                      rotulo={`${rotulos[n]!.largo}: RIR objetivo (0 a 10)`}
+                      queEs={`el RIR de ${cual(n)}`}
                       valor={s.rir}
                       deLoGeneral={rirGeneral}
                       escribir={numeroEnCampo}
@@ -729,8 +753,8 @@ function SeriesDelEjercicio({
                 <td data-etiqueta={COPY_ENTRENAMIENTO.descanso}>
                   <CeldaDeObjetivo
                     id={`${id}-serie-${n}-descanso`}
-                    rotulo={`${S} ${n + 1}: descanso (como 02:30, o en segundos)`}
-                    queEs={`el descanso de la serie ${n + 1}`}
+                    rotulo={`${rotulos[n]!.largo}: descanso (como 02:30, o en segundos)`}
+                    queEs={`el descanso de ${cual(n)}`}
                     valor={s.restSeconds}
                     deLoGeneral={descansoGeneral}
                     escribir={(v) => textoDeSegundos(v) ?? ''}
@@ -744,7 +768,7 @@ function SeriesDelEjercicio({
                   <input
                     id={`${id}-serie-${n}-nota`}
                     className="celda-de-serie"
-                    aria-label={`${S} ${n + 1}: ${COPY_ENTRENAMIENTO.notaDeSerie}`}
+                    aria-label={`${rotulos[n]!.largo}: ${COPY_ENTRENAMIENTO.notaDeSerie}`}
                     value={s.note ?? ''}
                     maxLength={200}
                     onChange={(e) => cambiarLaSerie(n, (x) => ({ ...x, note: e.target.value || null }))}
@@ -787,6 +811,7 @@ function SeriesDelEjercicio({
           Agregar serie
         </button>
         {p.sets.length > 0 ? <p className="nota">{PL.atajo}</p> : null}
+        {p.sets.length > 0 ? <p className="nota" data-ayuda-del-calentamiento>{COPY_TIPOS_DE_SERIE.ayudaDelEditor}</p> : null}
         {p.sets.length > 0 ? <p className="nota">En gris, lo que la serie toma de lo general. Escribí un valor para que tenga el suyo, o elegí «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» con la flecha de la celda. Es lo que recibe la persona.</p> : null}
       </div>
     </div>

@@ -27,6 +27,7 @@ import {
   seriesDelEjercicio,
   type PrescripcionConObjetivos,
   type SesionConObjetivos,
+  COPY_TIPOS_DE_SERIE,
 } from '@be/domain';
 import { useId, type ReactNode } from 'react';
 import { EnPartes, conNumerosPegados } from '../../../../components/en-partes';
@@ -205,11 +206,12 @@ function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel 
                     </thead>
                     <tbody>
                       {filas.map((f) => (
-                        <tr key={f.serie} data-serie={f.serie}>
+                        <tr key={`${f.deCalentamiento ? 'c' : 'e'}${f.serie}`} data-serie={f.serie} data-calentamiento={f.deCalentamiento ? '' : undefined}>
                           {/* En una pantalla angosta la tabla se apila y no se ven los títulos de las columnas: cada dato lleva el
                               suyo (B10-10 §9), salvo los que ya dicen qué son («6 rep.», «RIR 1») y una nota que no hay. */}
                           <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
-                            {f.serie}
+                            {/* DL-178: el calentamiento se rotula «C» y no lleva número; las efectivas, 1, 2, 3. */}
+                            {f.deCalentamiento ? <abbr title={COPY_TIPOS_DE_SERIE.calentamiento}>{COPY_TIPOS_DE_SERIE.marca}</abbr> : f.serie}
                           </th>
                           <td data-etiqueta={C.cargaSugerida}>{f.carga ?? sinObjetivo}</td>
                           <td data-etiqueta={f.repeticiones === null ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : undefined}>{f.repeticiones ?? sinObjetivo}</td>

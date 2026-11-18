@@ -62,6 +62,8 @@ import {
   type PlanConObjetivos,
   type Prescripcion,
   type RegistroDeEjecucion,
+  esDeCalentamiento,
+  rotulosDeLasSeries,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { Enlace } from '../../../../components/enlace';
@@ -799,10 +801,11 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
             )}
             {e.sets ? (
               <ol>
-                {e.sets.map((s) => (
-                  <li key={s.setIndex}>
-                    {/* La serie planificada con el mismo número, de la prescripción que rigió (no de la versión vigente hoy). */}
-                    {COPY_ENTRENAMIENTO.serie} {numero(s.setIndex)}: {s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} ×{' '}
+                {e.sets.map((s, i, todas) => (
+                  <li key={s.setIndex} data-calentamiento={esDeCalentamiento(s) ? '' : undefined} className={esDeCalentamiento(s) ? 'series-de-la-ejecucion__calentamiento' : undefined}>
+                    {/* La serie planificada con el mismo número, de la prescripción que rigió (no de la versión vigente hoy). DL-178: el
+                        calentamiento se nombra así y las efectivas llevan su número efectivo. */}
+                    {rotulosDeLasSeries(todas)[i]!.largo}: {s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} ×{' '}
                     {s.completedRepetitions === null ? '—' : numero(s.completedRepetitions)} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
                     {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}` : ''}
                     {s.perceivedExertion !== null ? ` · esfuerzo percibido ${numero(s.perceivedExertion)}` : ''}

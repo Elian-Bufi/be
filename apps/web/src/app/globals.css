@@ -18906,3 +18906,36 @@ html:has(.estacion:not([data-en-el-asistente])) {
   border: 1px solid var(--borde);
   border-radius: 10px;
 }
+
+/* DL-178 · Las series de calentamiento en la planilla: el número (o «C») y, al lado, la marca para pasarla a calentamiento.
+   Una fila de calentamiento se distingue con un borde a la izquierda, no solo con color. */
+.series-del-editor__numero {
+  display: inline-block;
+  min-width: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.series-del-editor__calentamiento {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.4rem;
+  min-height: 2rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.series-del-editor__calentamiento input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.series-del-editor tr[data-calentamiento] > th {
+  box-shadow: inset 3px 0 0 var(--tenue);
+}
+
+.series-de-la-ejecucion__calentamiento {
+  color: var(--tenue);
+}

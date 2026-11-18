@@ -9,7 +9,7 @@
  * - Renombrar y describir, archivar y reactivar, con `expectedVersion`. La estructura no se edita acá: una versión
  *   nueva se guarda desde un plan («Guardar como plantilla»), que es donde el profesional la trabaja.
  */
-import { COPY_PLANTILLAS, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
+import { COPY_PLANTILLAS, cuentaDeSeries, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
 import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
@@ -248,7 +248,7 @@ function Estructura({ estructura, ejercicios }: { estructura: EstructuraDePlanDe
               {e && !e.available ? <span className="insignia"> no disponible</span> : null}
               <ul className="lista-compacta">
                 <li>
-                  {p.sets.length} {p.sets.length === 1 ? 'serie' : 'series'}
+                  {cuentaDeSeries(p.sets)}
                   {p.sets.length > 0 ? `: ${p.sets.map((x) => (x.repetitions === null ? '—' : 'value' in x.repetitions ? String(x.repetitions.value) : `${x.repetitions.min}-${x.repetitions.max}`)).join(' · ')} repeticiones` : ''}
                 </li>
                 {p.intensity ? <li>Intensidad: {p.intensity.criterion} {p.intensity.target.value}</li> : null}

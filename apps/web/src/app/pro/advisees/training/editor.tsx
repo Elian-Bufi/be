@@ -56,6 +56,8 @@ import {
   pedidoDeEjerciciosDelEditor,
   pedidoDeLaPosicion,
   planExigeObjetivosPorSerie,
+  planTieneCalentamiento,
+  COPY_CALENTAMIENTO_Y_LA_APP,
   problemasDelEjercicio,
   sesionesDelBloque,
   ubicacionDelProblemaDeEntrenamiento,
@@ -176,6 +178,7 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   PRESCRIPTION_REQUIRED: 'falta al menos un ejercicio',
   SESSIONS_AND_MICROCYCLES_IN_BLOCK: 'si el bloque tiene microciclos, las sesiones van dentro de ellos',
   DUPLICATE_NODE_ID: 'hay un elemento repetido',
+  WARM_UP_AFTER_WORKING_SET: 'las series de calentamiento van arriba, antes de las efectivas',
   INTENSITY_CRITERION_UNKNOWN: 'el criterio de intensidad no es % RM ni RIR',
   INTENSITY_CRITERIA_COMBINED: 'se eligen % RM o RIR, no los dos',
   PERCEIVED_EXERTION_AS_CRITERION: 'el esfuerzo percibido se registra en la sesión: no es un criterio de prescripción',
@@ -746,6 +749,9 @@ export function EditorDePlan({
     setMensaje(null);
   };
   const bloqueadoPorLaApp = exigeObjetivosPorSerie && !version.setTargetsDelivery.adviseeClientCapable;
+  // DL-178: lo mismo con las series de calentamiento: una app que no las distingue las vería y registraría como efectivas.
+  const conCalentamiento = planTieneCalentamiento({ blocks: bloques });
+  const calentamientoBloqueado = conCalentamiento && !version.setKindsDelivery.adviseeClientCapable;
 
   // ── Lo que se mira: el bloque, el microciclo y la sesión, por su posición, según la dirección ──────────────────
   const mira = loQueSeMiraEnElEditor(bloques, { bloque: parametros.get('bloque'), microciclo: parametros.get('micro'), sesion: parametros.get('sesion') });
@@ -819,6 +825,7 @@ export function EditorDePlan({
     ...impideGuardar.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
     ...(revision?.estado === 'lista' ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
     ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
+    ...(calentamientoBloqueado ? [{ texto: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada, ir: null }] : []),
   ];
   // TB-48: lo que queda sin completar no impide nada; se dice aparte, cada cosa con su lugar.
   // PG-10: los iguales del mismo ejercicio, en un renglón. Dentro del cuadro modal no se ofrece «Completar»: su
@@ -1118,6 +1125,7 @@ export function EditorDePlan({
     ...impideGuardar.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
     ...(revision?.estado === 'lista' && !sucio ? revision.problemas.map((p) => enElPanel(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
     ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
+    ...(calentamientoBloqueado ? [{ texto: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada, ir: null }] : []),
   ];
   const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), enElPanel);
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
@@ -1656,6 +1664,17 @@ export function EditorDePlan({
         <p className="nota editor-del-plan__que-es" data-listo-para-activar>
           {COPY_COMPATIBILIDAD_DE_CLIENTES.listoParaActivar}
         </p>
+      ) : null}
+      {calentamientoBloqueado ? (
+        <Aviso tipo="info">
+          <div id="motivo-sin-activar-calentamiento" data-calentamiento-bloqueado>
+            <p>
+              <strong>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueadaTitulo}</strong>
+            </p>
+            <p>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada}</p>
+            <p>{COPY_CALENTAMIENTO_Y_LA_APP.queHacer}</p>
+          </div>
+        </Aviso>
       ) : null}
       {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
