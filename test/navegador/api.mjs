@@ -68,6 +68,8 @@ export async function ponerNombre(token, nombre) {
 // Desde UF-11, una sesión de un profesional actúa como profesional solo con su segundo factor verificado. La preparación
 // lo configura por la API (como `/pro` la primera vez) y cada sesión nueva lo verifica: por la API, o en el navegador al
 // entrar a `/pro`. La clave y los códigos viven solo en memoria, como los de Administración: nunca en `estado.json`.
+// Desde DL-177 (2026-11-18) la API responde NOT_REQUIRED al profesional y `verificarSegundoFactor` no hace nada; queda
+// para cuando la exigencia vuelva.
 const AUTENTICADORES = new Map();
 const PERIODO_MS = 30_000;
 const pasoActual = () => Math.floor(Date.now() / PERIODO_MS);

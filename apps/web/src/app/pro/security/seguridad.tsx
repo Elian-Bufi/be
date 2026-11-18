@@ -5,8 +5,13 @@
  * reemplazar el autenticador (API-MFA-04 y 05) y generar códigos nuevos (API-MFA-06). Las dos cosas piden una entrada
  * reciente (los 10 minutos que siguen a entrar): es la re-autenticación de 08 §25, igual con contraseña que con Google.
  * Si ya pasó, se dice: hay que volver a entrar. Llega acá con el segundo factor verificado (la compuerta de `/pro`).
+ *
+ * DL-177 (2026-11-18): el profesional ya no usa el autenticador. Mientras la política no lo exija, la pantalla no pregunta
+ * nada a la API ni ofrece configurar: dice cómo entra hoy, qué viene después (un código por correo) y cómo cuidar la
+ * contraseña.
  */
-import { COPY, COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL, type SegundoFactorDeLaSesionResponse } from '@be/domain';
+import { COPY, COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL, SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO, type SegundoFactorDeLaSesionResponse } from '@be/domain';
+import { Enlace } from '../../../components/enlace';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { PasoDeConfiguracion } from '../../../components/segundo-factor-del-profesional';
@@ -22,6 +27,32 @@ const C = COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL;
 type Datos = SegundoFactorDeLaSesionResponse['data'];
 
 export function SeguridadDelProfesional() {
+  return SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO ? <SeguridadConAutenticador /> : <SeguridadSinAutenticador />;
+}
+
+/** DL-177: cómo entra hoy el profesional, qué viene y cómo cuidar la contraseña. Sin pedidos a la API. */
+function SeguridadSinAutenticador() {
+  const S = C.seguridad.sinAutenticador;
+  return (
+    <section className="panel">
+      <p className="bajada">{S.comoEntras}</p>
+      <p>{S.proximamente}</p>
+      <p>{S.cuidar}</p>
+      <p>{S.sospecha}</p>
+      <div className="acciones">
+        <Enlace href="/recover" className="boton boton--secundario">
+          {S.cambiarContrasena}
+        </Enlace>
+        <Enlace href="/account" className="boton boton--secundario">
+          {S.verComoEntras}
+        </Enlace>
+      </div>
+      <p className="nota">{S.autenticadorViejo}</p>
+    </section>
+  );
+}
+
+function SeguridadConAutenticador() {
   const ruta = usePathname();
   const { token, sesionPerdida } = useSesionRequerida(ruta);
   const [datos, setDatos] = useState<Datos | null>(null);

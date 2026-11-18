@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { codigoParaEntrar, CREDENCIAL, dominio, pedir, sesion as sesionPorApi, verificarSegundoFactor } from './api.mjs';
+import { CREDENCIAL, dominio, pedir, sesion as sesionPorApi, verificarSegundoFactor } from './api.mjs';
 import { API, WEB } from './entorno.mjs';
 import { NOMBRE_DEL_ADMINISTRADOR, NOMBRE_DEL_OTRO_ADMINISTRADOR, NOMBRE_DEL_PENDIENTE, SECRETOS, codigoTotp, nombreDelProfesional, sesionAdministrativa } from './preparar.mjs';
 
@@ -61,23 +61,21 @@ async function entrar(p, correo) {
   await clic(p, 'form button[type="submit"]', 'Iniciar sesión');
   // DL-025: el profesional entra directo a su espacio.
   await esperarCamino(p, '/pro');
-  await pasarElSegundoFactor(p, correo);
+  await sinPedirElSegundoFactor(p);
 }
 
 /**
- * UF-11 (DL-169): la compuerta de `/pro` pide el segundo factor una vez por sesión. La preparación ya lo configuró por la
- * API: acá se escribe el código del autenticador o, si el paso de 30 s no avanzó, uno de recuperación.
+ * DL-177 (2026-11-18): el profesional entra solo con su contraseña. Antes (UF-11), la compuerta de `/pro` pedía acá el
+ * código del autenticador; ahora se comprueba que no pide ni ofrece nada: ni el código, ni la recuperación, ni configurar.
  */
-async function pasarElSegundoFactor(p, correo) {
-  await p.waitForSelector('#mfa-codigo', { timeout: ESPERA });
-  const { tipo, codigo } = codigoParaEntrar(correo);
-  const campo = tipo === 'autenticador' ? '#mfa-codigo' : '#mfa-recuperacion';
-  if (tipo === 'recuperacion') await clic(p, 'button.mfa-cambiar-modo');
-  await p.waitForSelector(campo, { timeout: ESPERA });
-  await hidratado(p, campo);
-  await p.type(campo, codigo);
-  await clic(p, 'form button[type="submit"]', 'Confirmar');
-  await p.waitForFunction(() => !document.querySelector('#mfa-codigo') && !document.querySelector('#mfa-recuperacion'), { timeout: ESPERA, polling: 100 });
+async function sinPedirElSegundoFactor(p) {
+  await p.waitForNetworkIdle({ idleTime: 300, timeout: ESPERA }).catch(() => {});
+  const pide = await p.evaluate(
+    () =>
+      Boolean(document.querySelector('#mfa-codigo, #mfa-recuperacion, #mfa-codigo-nuevo, .mfa-empezar')) ||
+      ['Confirmá que sos vos', 'Configurá tu segundo factor', 'Volvé a entrar para configurar tu segundo factor'].some((t) => document.body.innerText.includes(t)),
+  );
+  assert.equal(pide, false, 'el profesional entra con su contraseña: /pro no pide ni ofrece el autenticador (DL-177)');
 }
 
 /** Abre la ficha de la persona desde «Tus asesorados». */
@@ -176,7 +174,7 @@ async function sesion({ contexto, p, d }) {
   await p.type('#contrasena', CREDENCIAL);
   await clic(p, 'form button[type="submit"]', 'Iniciar sesión');
   await esperarCamino(p, '/pro/advisees');
-  await pasarElSegundoFactor(p, d.pro.correo);
+  await sinPedirElSegundoFactor(p);
   const vuelta = ruta(p).parametros;
   assert.equal(vuelta.get('id'), d.ase.id, 'vuelve a la misma persona');
   assert.equal(vuelta.get('vista'), 'linea', 'con la misma vista');

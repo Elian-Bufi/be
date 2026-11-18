@@ -11,7 +11,8 @@
  * - **Desvincular Google**, solo si queda la contraseña y con una entrada reciente (los 10 minutos de DL-017). La
  *   contraseña no se retira: es el método que se recupera (RF-005) y el que queda cuando Google no está.
  * - **El segundo factor del profesional** se respeta: una sesión con perfil profesional cambia sus métodos solo con el
- *   segundo factor verificado en esa sesión (08 §25).
+ *   segundo factor verificado en esa sesión (08 §25). Desde DL-177 (2026-11-18) la política no se lo exige: la API
+ *   no responde MFA_REQUIRED a un profesional, y el texto `segundoFactor` queda para cuando la exigencia vuelva.
  * El método de acceso es de solo agregar (WP-02): retirarlo es un hecho nuevo, y volver a vincular la misma cuenta de
  * Google, otro. Nada de esto cambia la identidad, sus vínculos ni su historia.
  */
