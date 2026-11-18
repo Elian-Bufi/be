@@ -181,6 +181,7 @@
 | DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **INTEGRADA en `main` (#284), con la revisión adversaria arreglada · HA-T01 a HA-T16 a ratificar · HA-T01 actualizada por DL-176** (la historia anterior va preseleccionada en la pantalla única de consentimiento; la tarjeta opcional al aceptar se retiró): la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
 | DL-176 | Decisión de Dirección · 2026-11-15 («casi por default»; WP-COMPARTIR) | Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9 («Aceptar y compartir datos», CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) | Compartir entre áreas no tenía pantalla (la API lo permitía, nadie lo escribía), la historia anterior se pedía como opt-in y aceptar a un profesional eran varios actos separados (el vínculo, el B2, el A3 y los hábitos aparte); Dirección pide que lo único con rozamiento sea conectar y que lo demás sea «casi como aceptar todo» | **PROGRAMADA en `wp-compartir` (PR abierto, sin integrar) · CMP-D1 a CMP-D16 a ratificar**: después de aceptar el vínculo (que sigue siendo aparte, 10-B04), una sola pantalla de consentimiento con todo preseleccionado (su área, el A3 si falta, el resumen y el plan de las otras áreas para ese profesional y lo de su área para los demás, la historia anterior y los hábitos si corresponde), «Aceptar y compartir» y «Elegir qué compartir»; un toque escribe todos los actos en una transacción, cada uno con su texto, su versión y su auditoría. «Quién ve qué» suma un interruptor por cosa y los pedidos para responder; quien ya tiene vínculos ve una tarjeta única en Inicio. Familia propia CMP (API-CMP-01 a 03), sin migración (`docs/paquetes/WP-COMPARTIR.md`). Actualiza HA-T01 de DL-175 |
 | DL-177 | Decisión de Dirección · 2026-11-18 (el profesional sin el autenticador) | 08 §25 · 08 §42 (condición 6) · Ley 25.326 art. 9 · RNF-PRI-002 · DL-155 · DL-169 (UF-11, UF-D12 y UF-T56) · DL-172 | Para actuar como profesional había que configurar el autenticador y escribir el código de 6 dígitos en cada sesión; Dirección quiere que el profesional entre con su contraseña (o con Google) y, más adelante, con un código por correo | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-sin-autenticador-profesional` (PR abierto, sin integrar)**: «solo contraseña hasta tener correo», con una constante del dominio (`SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO = false`). Administración sigue con contraseña y autenticador; API-ADM-19 queda en el contrato y fuera de la consola; sin migraciones. A ratificar: la transición, la suspensión de 08 §25 y de la condición 6 de 08 §42, y el riesgo (una sola llave para datos de salud) |
+| DL-178 | Decisión de Dirección · 2026-11-18 (las series de calentamiento) | 06 REG-06-105 · 09v10 (comparación serie por serie) · DL-122 · DL-152 · DL-161 · DL-171 (BE-E1RM, Epley v1) | El plan y el registro no tenían un tipo de serie: un calentamiento entraba en la cuenta de series, en la barra de la sesión, en «La vez pasada», en el historial, en Analizar y en el 1RM estimado | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-series-de-calentamiento` (PR abierto, sin integrar), a ratificar D-1 a D-6**: `setKind` (`WORKING` por omisión, `WARM_UP`) en la serie indicada y en la registrada, sin reescribir nada (la ausencia es efectiva); explícito solo para el cliente que declara `training-set-kinds-1`; el calentamiento arriba, con «C», fuera de todo cálculo; las lecturas nuevas de la APK se congelan con la próxima candidata (DL-152) |
 
 ---
 
@@ -8563,3 +8564,109 @@ opción para quien lo quiera.
 - Declarar la etapa del correo con sus IDs.
 - Avisar a los profesionales que ya habían configurado el autenticador que no lo van a necesitar.
 - Llevar el riesgo a la validación jurídica.
+
+---
+
+## DL-178 — Las series de calentamiento: se indican y se registran, pero no cuentan
+
+**Qué decidió Dirección (2026-11-18).** Dentro de un mismo ejercicio, el profesional indica series de calentamiento,
+escalonadas en carga, antes de las efectivas. Las de calentamiento se registran, pero no cuentan.
+
+**Qué dice el legajo.** El 06 y el 09 no tienen un tipo de serie: toda serie planificada o registrada es una serie del
+ejercicio, y todo lo que compara, cuenta o estima las toma a todas (REG-06-105, la comparación serie por serie, DL-122,
+DL-161, la estimación BE-E1RM de DL-171). Un calentamiento cargado como serie entraba en:
+- la cuenta de series y la barra de la sesión;
+- «La vez pasada», el historial del ejercicio y Analizar;
+- el 1RM estimado: 140 kg × 5 de una aproximación pesaba como la serie efectiva más cargada del día.
+
+**Lo programado (`wp-series-de-calentamiento`, PR abierto, sin integrar).**
+- **El dato.**
+  - Cada serie, la indicada en el plan y la registrada por la persona, lleva `setKind`: `WORKING` (efectiva, el valor por
+    omisión) o `WARM_UP` (calentamiento).
+  - Es un enum y no un booleano, para sumar otros tipos después (`TipoDeSerieSchema`).
+  - Las reglas viven en un solo módulo del dominio, `packages/domain/src/tipos-de-serie.ts`, que usan la API, el website y
+    la APK.
+- **La migración.** Las series no son filas: viven dentro del JSONB de la versión de plan, de su instantánea, del borrador
+  y de la ejecución, como todo lo de cada serie (DL-122, DL-161). Por eso el «default `WORKING`» es la ausencia de la clave:
+  - no se reescribe ninguna fila ni ninguna huella de instantánea;
+  - todo lo indicado y registrado antes queda con todas sus series efectivas y responde igual;
+  - solo se guarda `WARM_UP` (`tipoGuardado`): una serie efectiva queda idéntica a las de antes;
+  - lo único que cambia en la base es la lista de capacidades que acepta `capacidad_de_cliente_declarada`, que suma
+    `training-set-kinds-1` (migración aditiva `20261118120000_capacidad_tipos_de_serie`).
+- **El contrato.** El campo es opcional en lo que entra (si falta, vale `WORKING`) y explícito en lo que sale. DL-152 pone
+  una condición: las APK instaladas validan con esquemas estrictos y rechazarían un campo que no conocen.
+  - La API arma cada serie con su tipo, `WORKING` incluido.
+  - Un interceptor de Entrenamiento (`SinTipoDeSerieInterceptor`) lo saca solo para el cliente que no declara
+    `training-set-kinds-1`. La 0.29.0-candidata.1 recibe exactamente lo de antes, y su prueba de lecturas no cambia.
+  - Un plan con calentamiento no se le entrega a un cliente sin la capacidad, que lo vería todo efectivo y lo registraría
+    así. «Hoy» lo informa como no disponible y el detalle es el 404 no revelador, como en DL-122.
+  - Un plan así no se activa mientras el titular no haya usado una APK que declare la capacidad (409
+    `CLIENT_CAPABILITY_REQUIRED`, con su texto). API-SER-01 se lo informa al profesional en `setKindsDelivery`, y el
+    editor lo dice antes de activar.
+  - La APK vieja no se rompe: sin el campo, todo es efectivo.
+- **El orden.** En el plan, las de calentamiento van arriba. La API rechaza una de calentamiento después de una efectiva
+  (`WARM_UP_AFTER_WORKING_SET`, dentro de `TRAINING_PLAN_STRUCTURE_INVALID`): no reordena en silencio.
+- **La numeración.**
+  - `setIndex` sigue siendo la posición real de la serie, contando el calentamiento. Es la identidad con la que se
+    registra, se corrige y se mide el tiempo.
+  - Lo que se muestra y lo que se compara entre sesiones es el **número efectivo**: las efectivas se numeran 1, 2, 3, como
+    hoy, y el calentamiento lleva «C».
+  - La serie 1 de hoy (la tercera que hizo) se compara con la serie 1 de una sesión sin calentamiento.
+  - Sin calentamiento, el número efectivo es el `setIndex`.
+- **Lo que no usa las de calentamiento.**
+  - La comparación serie por serie (`compararEjecucion`): saca el calentamiento de las filas y lo deja aparte. De ahí
+    salen la tira de cada sesión, «La vez pasada», el historial del ejercicio, la evolución por serie, Analizar
+    (`SETS_RECORDED` y las métricas por serie), las comparaciones de etapas y los cruces.
+  - El 1RM estimado (Epley v1): «la de mayor carga por sesión» se elige solo entre las efectivas (`seriesDeLasSesiones`).
+  - Las cuentas de series: la de la línea de tiempo («Series efectivas con datos»), la de «Registros» y la del plan.
+  - En la APK, la barra de la sesión y la cuenta del registro.
+  - Una serie es de calentamiento si lo dice el registro **o** el plan para ese `setIndex`: así tampoco entra un registro
+    hecho sin el campo.
+- **Los textos.** Cuando un texto cuenta las series de un ejercicio o de una sesión con calentamiento, dice «series
+  efectivas» y nombra el calentamiento aparte: «3 series efectivas + 2 de calentamiento». Sin calentamiento, el texto queda
+  como siempre («4 series»), así lo de antes responde igual.
+- **El website.**
+  - En la planilla del editor, cada serie tiene la marca «C». Al marcarla, la serie sube arriba del ejercicio, las
+    efectivas se numeran 1, 2, 3 y la ayuda dice que el calentamiento se registra y no entra en los cálculos.
+  - El plan, la hoja para descargar, las ejecuciones y los tiempos lo muestran como «C» o «Calentamiento».
+  - La prescripción rápida («4×8») describe las efectivas y deja el calentamiento como estaba.
+- **La APK.** Declara `training-set-kinds-1`.
+  - La fila de un calentamiento lleva «C» y se nombra «Calentamiento». El lector de pantalla dice además que no cuenta.
+  - Su banda dice «Plan del calentamiento», y la acción, «Empezar», «Terminar» o «Registrar calentamiento».
+  - Se registra con `setKind: WARM_UP`: en la sesión, en el registro rápido y en la corrección.
+  - La barra de la sesión, «Serie N de M» y la cuenta del registro son de las efectivas.
+
+**Por qué así y no de otra forma.**
+- **Una columna por serie** obligaba a sacar las series del JSONB. Era una migración de datos grande, con riesgo sobre las
+  huellas de las instantáneas, para un dato que el JSONB ya guarda con el mismo «default».
+- **Mandar `WORKING` también a la APK instalada** la rompía, porque valida con esquemas estrictos (DL-152).
+- **Renumerar `setIndex`** (que el calentamiento fuera 0, −1…) cambiaba la identidad de lo registrado, de las correcciones
+  y de los tiempos.
+
+**Opciones para Dirección.**
+- **A (programada):** lo de arriba. El calentamiento se ve en todas las pantallas, se registra y no entra en ningún cálculo.
+  Los textos dicen «series efectivas» solo donde hay calentamiento.
+- **B:** decir «series efectivas» en todos los textos que cuentan series, también sin calentamiento. Es más uniforme, pero
+  cambia textos que hoy leen las personas y las capturas de evidencia, sin que haya nada distinto que distinguir.
+- **C:** además, un tercer tipo (por ejemplo, «aproximación» o «vuelta a la calma»). El enum lo admite, pero cada tipo nuevo
+  pide decidir si cuenta.
+
+**Decisiones a ratificar.**
+- D-1: el «default `WORKING`» como ausencia de la clave en el JSONB, sin una columna nueva.
+- D-2: `setKind` explícito solo para el cliente que declara `training-set-kinds-1`, y el plan con calentamiento retenido
+  para el que no.
+- D-3: el calentamiento arriba como regla del contrato (422), no como reorden silencioso.
+- D-4: el número efectivo para mostrar y comparar, con `setIndex` como identidad.
+- D-5: una serie es de calentamiento si lo dice el registro o el plan.
+- D-6: «series efectivas» solo donde hay calentamiento (opción A).
+
+**Lo que queda.**
+- Integrar el PR.
+- **Congelar las lecturas nuevas de la APK con la próxima candidata (DL-152).** La APK que declara `training-set-kinds-1`
+  lee `setKind` en API-SER-02, API-TRN-09, 14, 14-PERIODO, 15 a 20 y 19-LISTA. Al publicarla, se congela con
+  `scripts/congelar-lo-que-lee-la-apk.mjs` y reemplaza a la 0.29.0-candidata.1 en `VIGENTES`.
+- Probar en el teléfono una sesión con calentamiento, también con TalkBack:
+  - la fila «C» y «Terminar calentamiento»;
+  - la barra que no avanza con el calentamiento;
+  - el registro con su tipo.
+- Revisar con un profesional si la marca «C» se entiende sin la ayuda.
