@@ -180,6 +180,7 @@
 | DL-174 | Pedido de Dirección · 2026-11-14 («Aprobadas las 25 sugerencias de gráficos»; WP-GRAFICOS) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · RF-025 · REG-06-105 · REG-06-162 · REG-06-165 y 166 · B10-07 · B10-08 §21-§23 · B10-09 §15-§28 · 09 v0.11 §18-§23 · INV-06-153 · INV-06-192 · M-11 · DL-126 · DL-128 · DL-137 D-7 · DL-152 · DL-153 · DL-158 · DL-161 · DL-163 · DL-165 · DL-167 · DL-169 · DL-171 · DL-173 | La propuesta de gráficos (25 gráficos y ocho cruces) no tenía IDs ni fases fechadas en el repo. Dirección sumó ver los gráficos alineados o superpuestos si comparten la x (DL-126 solo deja superponer con la misma familia y unidad) y un conjunto de gráficos favoritos por persona o por plan, que no tiene operación | **DECLARADA el 2026-11-14** (`docs/paquetes/WP-GRAFICOS.md`, sin integrar): GR-01 a GR-27 y SP-01 a SP-08. Fase 1 (GR-01, GR-04 y GR-16) en `wp-graficos-fase-1`, antes del 23/11; fase 2 adelantada, programada desde el 14/11 en cinco ramas: antes del 23/11 entra solo lo sólido, y lo demás, desde el 26/11; fases 3 a 5, en 2027. Familia propia GRF (API-GRF-01 a 07, los enfoques), con una migración que solo agrega. Amplía DL-126 (dos unidades en «Superpuestas», GR-T04). GR-D0 a GR-D10, tomadas por la delegación de Dirección según la recomendación; GR-T01 a GR-T19, a ratificar |
 | DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **INTEGRADA en `main` (#284), con la revisión adversaria arreglada · HA-T01 a HA-T16 a ratificar · HA-T01 actualizada por DL-176** (la historia anterior va preseleccionada en la pantalla única de consentimiento; la tarjeta opcional al aceptar se retiró): la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
 | DL-176 | Decisión de Dirección · 2026-11-15 («casi por default»; WP-COMPARTIR) | Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9 («Aceptar y compartir datos», CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) | Compartir entre áreas no tenía pantalla (la API lo permitía, nadie lo escribía), la historia anterior se pedía como opt-in y aceptar a un profesional eran varios actos separados (el vínculo, el B2, el A3 y los hábitos aparte); Dirección pide que lo único con rozamiento sea conectar y que lo demás sea «casi como aceptar todo» | **PROGRAMADA en `wp-compartir` (PR abierto, sin integrar) · CMP-D1 a CMP-D16 a ratificar**: después de aceptar el vínculo (que sigue siendo aparte, 10-B04), una sola pantalla de consentimiento con todo preseleccionado (su área, el A3 si falta, el resumen y el plan de las otras áreas para ese profesional y lo de su área para los demás, la historia anterior y los hábitos si corresponde), «Aceptar y compartir» y «Elegir qué compartir»; un toque escribe todos los actos en una transacción, cada uno con su texto, su versión y su auditoría. «Quién ve qué» suma un interruptor por cosa y los pedidos para responder; quien ya tiene vínculos ve una tarjeta única en Inicio. Familia propia CMP (API-CMP-01 a 03), sin migración (`docs/paquetes/WP-COMPARTIR.md`). Actualiza HA-T01 de DL-175 |
+| DL-177 | Decisión de Dirección · 2026-11-18 (el profesional sin el autenticador) | 08 §25 · 08 §42 (condición 6) · Ley 25.326 art. 9 · RNF-PRI-002 · DL-155 · DL-169 (UF-11, UF-D12 y UF-T56) · DL-172 | Para actuar como profesional había que configurar el autenticador y escribir el código de 6 dígitos en cada sesión; Dirección quiere que el profesional entre con su contraseña (o con Google) y, más adelante, con un código por correo | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-sin-autenticador-profesional` (PR abierto, sin integrar)**: «solo contraseña hasta tener correo», con una constante del dominio (`SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO = false`). Administración sigue con contraseña y autenticador; API-ADM-19 queda en el contrato y fuera de la consola; sin migraciones. A ratificar: la transición, la suspensión de 08 §25 y de la condición 6 de 08 §42, y el riesgo (una sola llave para datos de salud) |
 
 ---
 
@@ -8454,3 +8455,111 @@ profesional), y CMP-D3 lo detalla. «Quién ve qué» dice el nivel en que se ve
 **Lo que queda.** Congelar las lecturas nuevas de la APK con la próxima candidata (DL-152); verlo en el teléfono (TalkBack,
 la letra grande, los dos temas) con la evidencia de pantalla; la validación jurídica de las dudas; y, si Dirección lo
 quiere, la marca de la tarjeta en la base (CMP-D12).
+
+---
+
+## DL-177 — El profesional entra solo con su contraseña: sin el autenticador hasta tener un código por correo
+
+**Prioridad:** alta (toca el acceso a datos de salud de terceros) · **Documento:** 08 §25 (el segundo factor del
+profesional «antes de operar con datos reales») · 08 §42, condición 6 del gate · Ley 25.326 art. 2, 7 y 9 (datos
+sensibles y medidas de seguridad) · RNF-PRI-002 · DL-155 (Administración) · DL-169 (UF-11, UF-D12, UF-T19 y UF-T56) ·
+DL-172 (RF-004, la familia MET) · **Estado:** DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en
+`wp-sin-autenticador-profesional` (PR abierto, sin integrar) · la transición y lo demás, **a ratificar**.
+
+**La decisión de Dirección (2026-11-18).** El profesional ya no usa el autenticador (TOTP) para entrar: se loguea solo con
+su contraseña, o con Google, y nunca se le pide el código de 6 dígitos. Más adelante habrá una verificación por correo, que
+hoy está apagada y no se programa. Administración sigue igual: contraseña y autenticador, con su vencimiento de 15 minutos
+sin actividad. La persona no cambia: nunca tuvo segundo factor.
+
+**Qué había (UF-11, DL-169).** Una sesión común de una identidad con perfil profesional actuaba como profesional solo con
+el segundo factor verificado en esa sesión. Sin él, no respondían el PDP, las áreas, las listas donde es el profesional,
+las invitaciones, sus novedades como profesional ni vincular o desvincular Google. La primera vez lo configuraba dentro de
+los 10 minutos de entrar (el QR, la clave y diez códigos de recuperación), y en cada sesión nueva escribía el código
+(«Confirmá que sos vos»). Administración podía restablecerlo (API-ADM-19, UF-T56).
+
+**La transición elegida: «solo contraseña hasta tener correo».**
+- **Una sola llave de política, en el dominio:** `SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO`, hoy en `false`. Así,
+  `SesionGuard` decide NO_REQUERIDO para toda sesión común, con perfil profesional o sin él, y lo profesional responde con
+  la contraseña o con Google. No es una variable de entorno: cambiarla es un cambio de código revisado, no un interruptor
+  del servidor.
+- **API-MFA-01** responde NOT_REQUIRED, y **API-MFA-02 a 06**, 422 INVALID_STATE_TRANSITION sin crear filas. La auditoría
+  registra el motivo `SEGUNDO_FACTOR_NO_EXIGIDO`; la persona sigue con `SIN_PERFIL_PROFESIONAL`. El contrato conserva su
+  forma y solo cambia su descripción.
+- **Los datos no se tocan:** las tablas del autenticador, los autenticadores ya configurados, los códigos y los
+  restablecimientos quedan como están, sin uso para el profesional. No hay migraciones.
+- **En el website,** la compuerta de `/pro` sigue puesta y deja pasar, porque la API dice NOT_REQUIRED. «Seguridad de tu
+  acceso» sale del menú. Si alguien entra por la dirección, la pantalla dice cómo entra hoy, que vendrá un código por correo
+  y cómo cuidar la contraseña. También avisa que una aplicación de códigos ya configurada para BE se puede borrar. La APK
+  no tenía nada del segundo factor, así que no cambia.
+- **API-ADM-19 sigue en el contrato y funciona, pero la consola no la ofrece** mientras la política no lo exija. Las
+  razones:
+  - Ofrecer «restablecer el segundo factor» de algo que el profesional no usa confunde a quien administra.
+  - Borrar la operación obligaría a reescribirla y volver a probarla cuando vuelva una verificación.
+  - Por la API, todavía sirve para dar de baja un autenticador que configuró otra persona antes de que vuelva la política.
+
+  Para un profesional que no puede entrar, el camino es la recuperación asistida (API-ADM-18), que ya estaba en la misma
+  pantalla y cierra sus sesiones.
+- **Administración no se debilita:** no lee esta política, porque su guard y su segundo factor son los de DL-155. Las
+  pruebas fijan cuatro cosas:
+  - la contraseña sola no lee ni decide nada (403 MFA_REQUIRED);
+  - el código vence a los 15 minutos sin actividad;
+  - la sesión común de un profesional no sirve en la consola;
+  - su contraseña no abre la consola.
+
+**El riesgo, dicho con honestidad.**
+- **Una sola llave para datos de salud de terceros.** Hasta que exista el código por correo, alcanza con la contraseña de un
+  profesional para ver y decidir sobre los datos de salud de todas las personas que acompaña. Alguien puede conseguirla por
+  phishing, porque el profesional la reutilizó en otro sitio que se filtró o mirándola por encima del hombro. Con el
+  autenticador, la contraseña sola no alcanzaba.
+- **Ley 25.326:** el art. 9 obliga al responsable a adoptar medidas técnicas y organizativas que garanticen la seguridad y
+  la confidencialidad de los datos, y los de salud son sensibles (art. 2 y art. 7).
+  - Bajar a un factor no incumple la ley por sí solo, pero debilita una medida que el propio 08 §25 declaraba necesaria
+    «antes de operar con datos reales» y que 08 §42 ponía como condición 6 del gate.
+  - **Esta DL contradice esas dos líneas del legajo, por decisión de Dirección.** El gate queda con la condición 6
+    suspendida hasta la etapa siguiente, y conviene que la validación jurídica lo sepa.
+- **Lo que sigue protegiendo:**
+  - la contraseña, con su política y el límite de intentos de la API;
+  - las sesiones con vencimiento, y la revocación que vale desde el pedido siguiente;
+  - el aviso por correo al cambiar cómo se entra (DL-172 D-11);
+  - la auditoría de cada lectura profesional;
+  - el PDP, con el consentimiento de la persona;
+  - la recuperación asistida, que cierra todas las sesiones;
+  - si el profesional entra con Google, el segundo factor de su cuenta de Google.
+- **Mitigaciones sin código, recomendadas mientras tanto:**
+  - pedir a los profesionales reales una contraseña que no usen en otro lado, o que entren con Google con la verificación
+    en dos pasos activa;
+  - no usar BE en computadoras compartidas.
+
+  La pantalla «Seguridad de tu acceso» ya lo dice.
+
+**La etapa siguiente (no programada; a declarar con sus IDs).** Un código de un solo uso por correo, que se pide **solo al
+entrar desde un dispositivo nuevo** (o desde uno que no se usó en un tiempo), no en cada sesión. Es lo que hacen las apps
+líderes para que el profesional no sienta fricción todos los días. Necesita:
+- un envío de correo confiable en producción (hoy el correo es de mejor esfuerzo);
+- una marca de dispositivo conocido que no sea un dato de seguimiento;
+- el límite de intentos y la auditoría;
+- el texto de la pantalla.
+
+Cuando esté, la política vuelve a exigir un segundo factor, con el correo como método. El autenticador puede quedar como
+opción para quien lo quiera.
+
+**Opciones para Dirección.**
+- **A (programada):** solo contraseña hasta tener el correo, y la consola no ofrece API-ADM-19.
+- **B:** lo mismo, con el autenticador como opción para el profesional que lo quiera. Es más seguro para quien lo elige,
+  pero vuelve a mostrar la pantalla de configuración y suma un caso que probar.
+- **C (la más cuidadosa):** solo contraseña para los profesionales de prueba, y el autenticador obligatorio para los que
+  operan con datos reales hasta tener el correo. Respeta la condición 6 de 08 §42, con la fricción que Dirección quiso
+  sacar.
+
+**Decisiones a ratificar.**
+- La transición «solo contraseña hasta tener correo» (opción A).
+- Que la política sea una constante del dominio y no una variable de entorno.
+- Que API-ADM-19 quede en el contrato y fuera de la consola.
+- Que lo configurado no se borre.
+- La suspensión de 08 §25 y de la condición 6 de 08 §42 hasta la etapa siguiente.
+
+**Lo que queda.**
+- Integrar el PR.
+- Declarar la etapa del correo con sus IDs.
+- Avisar a los profesionales que ya habían configurado el autenticador que no lo van a necesitar.
+- Llevar el riesgo a la validación jurídica.
