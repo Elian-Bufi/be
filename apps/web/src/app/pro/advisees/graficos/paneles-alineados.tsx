@@ -53,6 +53,7 @@ import { LecturaEnLaFecha } from './lectura-en-la-fecha';
 import { colorDelCarril, Leyenda, MarcaDelCarril, type FichaDeLaLeyenda } from './marcas';
 import { ALTO_DEL_EJE_DE_FECHAS, MARGEN_DERECHO, MARGEN_IZQUIERDO, useAnchoDelGrafico } from './medidas-del-grafico';
 import { NotaDelInicio } from './estado-del-grafico';
+import { RELLENO_HUECA } from './semanas';
 import { esLaFraseFija, lineaTenueDelGrafico, notasALaVista } from './notas-del-grafico';
 import { tablaEquivalente } from './tabla-equivalente';
 import { TablaEquivalente } from './tabla-equivalente-en-pantalla';
@@ -113,7 +114,8 @@ const ZONA_DE_LA_TIRA = SEPARACION_DE_LA_TIRA + ALTO_DE_LA_TIRA + 4;
 const LUGAR_DE_UNA_SESION = 8.75;
 
 /** Un valor de un punto, con sus decimales (hasta uno): «160,5», «1.850». */
-const valorCorto = (v: number): string => v.toLocaleString('es-AR', { maximumFractionDigits: 1 });
+/** El número de un rótulo: las kcal, enteras (como su lectura); lo demás, con un decimal como mucho. */
+const valorCorto = (v: number, unidad = ''): string => v.toLocaleString('es-AR', { maximumFractionDigits: unidad === 'kcal' ? 0 : 1 });
 
 type Geometria = { readonly tipo: 'CARRIL'; readonly g: GeometriaDelCarril } | { readonly tipo: 'CINTA'; readonly g: GeometriaDeLaCinta };
 
@@ -185,7 +187,7 @@ function DibujoDelCarril({
     const { claves, minimo } = rotulosDeLoLleno(conValor, elegido);
     const candidatos = claves.flatMap((c) => {
       const p = conValor.find((x) => x.clave === c);
-      return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor), abajo: c === minimo && c !== ultimoPunto }] : [];
+      return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor, carril.unidad), abajo: c === minimo && c !== ultimoPunto }] : [];
     });
     const ejeY = g.marcasY.map((m) => ({ x1: 0, x2: MARGEN_IZQUIERDO - 4, y1: m.y - 8, y2: m.y + 8 }));
     return rotulosSinPisarse(candidatos, { izquierda: MARGEN_IZQUIERDO, derecha: escala.derecha + MARGEN_DERECHO - 2, arriba: 0, abajo: alto }, ejeY).map((r) => ({ ...r, fuerte: r.clave === elegido || r.clave === ultimoPunto }));
@@ -238,12 +240,24 @@ function DibujoDelCarril({
         ) : null}
         {g && g.tipo === 'BARRAS_SEMANALES' ? (
           <>
-            {g.barras.map((b) => (
-              <rect key={b.lunes} x={b.x1 + 1} y={b.y} width={Math.max(1, b.x2 - b.x1 - 2)} height={Math.max(0, b.base - b.y)} rx={2} fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1} />
-            ))}
+            {/* Con la media de GR-12 (GR-VC13), la barra hueca es la semana con algún día afuera: su contorno, sin relleno pleno. */}
+            {g.barras.map((b) =>
+              b.hueca ? (
+                <g key={b.lunes} className="grafico-base__semana" data-hueca="">
+                  <rect x={b.x1 + 1} y={b.y} width={Math.max(1, b.x2 - b.x1 - 2)} height={Math.max(0, b.base - b.y)} fill={color} fillOpacity={RELLENO_HUECA} />
+                  <path d={`M ${b.x1 + 1.5} ${b.base} V ${b.y + 0.5} H ${Math.max(b.x1 + 1.5, b.x2 - 1.5)} V ${b.base}`} fill="none" stroke={color} strokeWidth={1} />
+                </g>
+              ) : (
+                <rect key={b.lunes} x={b.x1 + 1} y={b.y} width={Math.max(1, b.x2 - b.x1 - 2)} height={Math.max(0, b.base - b.y)} rx={2} fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1} />
+              ),
+            )}
             {/* Una semana sin días con dato: una columna gris de todo el alto, que no se lee como una barra en cero. */}
             {g.vacias.map((b) => (
               <rect key={`v${b.lunes}`} className="grafico-base__semana-vacia" x={b.x1 + 1} y={0} width={Math.max(1, b.x2 - b.x1 - 2)} height={b.base} fill="var(--grafico-hueco)" fillOpacity={0.18} />
+            ))}
+            {/* Una semana con días pero sin media: una raya cortada y baja sobre el eje, que no tapa nada (GR-VD10). */}
+            {g.sinMedia.map((b) => (
+              <line key={`s${b.lunes}`} className="grafico-base__semana-sin-media" x1={b.x1 + 1} x2={Math.max(b.x1 + 2, b.x2 - 1)} y1={b.base - 1} y2={b.base - 1} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" />
             ))}
           </>
         ) : null}

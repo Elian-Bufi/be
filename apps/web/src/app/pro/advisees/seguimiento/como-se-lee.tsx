@@ -55,7 +55,7 @@ function DeAnalizar() {
           sobre un gráfico acerca ese intervalo.
         </Renglon>
         <Renglon muestra={<Icono nombre="juntas" tamano={20} />}>
-          <strong>«Juntas»</strong> pone las métricas en un solo gráfico y pide que tengan la misma unidad. <strong>«Cambio relativo»</strong> muestra cuánto cambió cada una frente a una referencia que se elige y queda a
+          <strong>«Superpuestas»</strong> pone las métricas en un solo gráfico si comparten el eje de fechas, con hasta dos unidades: un eje a cada lado, y la escala de cada una es la de «Alineadas». <strong>«Cambio relativo»</strong> muestra cuánto cambió cada una frente a una referencia que se elige y queda a
           la vista.
         </Renglon>
         <Renglon muestra={<Icono nombre="menu" tamano={20} />}>

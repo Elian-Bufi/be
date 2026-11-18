@@ -22,6 +22,12 @@
  *   contorno y el tope van enteros: las dos formas se distinguen por el contorno, no solo por un tono (DISENO-VISUAL §1,
  *   principio 10; `RELLENO_ENTERA` en `semanas.ts`).
  * - **Las etapas no se mezclan:** una semana que cruza el cambio de etapa son dos tramos, uno de cada lado de la línea.
+ *
+ * **Una sola media semanal (GR-VC13, rama D):** Nutrición le pasa las semanas ya calculadas con la media de GR-12
+ * (`semanas`): los subtotales no entran y, con menos de 4 días sin faltantes, no hay media. Una semana con días pero sin
+ * media va con su contorno cortado, sin relleno (`sinMedia`), y sus días se ven igual; la columna gris queda para la que
+ * no tiene ningún día con valor. La leyenda (`LeyendaPorSemana`) muestra solo las marcas que se ven y dice cómo se arma
+ * cada barra con la regla que se usó (`comoSeArma`).
  */
 import { useCallback, useEffect, useId, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { ESTILOS } from '../seguimiento/marca';
@@ -39,6 +45,8 @@ import {
   tramoDeEntrada,
   tramoEnX,
   type DiaDeLaSerie,
+  type MarcasPorSemanaQueSeVen,
+  type SemanaDeLaSerie,
 } from './semanas';
 
 const LETRA = 12.5;
@@ -53,12 +61,14 @@ export const COPY_POR_SEMANA = {
     entera: 'Semana entera',
     hueca: 'Con días afuera',
     vacia: 'Sin días con valor',
+    sinMedia: 'Sin media',
     tira: 'Cada día',
   },
   leyendaLarga: {
     entera: 'Barra llena: los siete días de la semana tienen valor, sin subtotales y sin hoy',
     hueca: 'Barra hueca: a la semana le falta algún día, tiene un subtotal o tiene hoy, o el período o el cambio de etapa la cortan',
     vacia: 'Columna gris: ningún día del tramo tiene valor; no es un cero',
+    sinMedia: 'Raya cortada sobre el eje: el tramo tiene días con valor, pero no los que hacen falta para la media; no es un cero',
     tira: 'La tira de abajo, un día por lugar: entera con valor, a media altura con algo que falta, una raya baja sin registros',
   },
   comoSeArma: [
@@ -80,34 +90,54 @@ export function MarcaDeBarra({ indice }: { indice: number }) {
   );
 }
 
-/** Las marcas del dibujo por semana, como fichas, y cómo se arma cada barra: una vez, arriba de los gráficos. */
-export function LeyendaPorSemana() {
+const TODAS_LAS_MARCAS: MarcasPorSemanaQueSeVen = { entera: true, hueca: true, sinMedia: false, vacia: true };
+
+/**
+ * Las marcas del dibujo por semana, como fichas, y cómo se arma cada barra: una vez, arriba de los gráficos. `que`: las
+ * que se ven (sin él, las de la media de la tabla); `comoSeArma`: la regla de la media que se usó.
+ */
+export function LeyendaPorSemana({ que = TODAS_LAS_MARCAS, comoSeArma = COPY_POR_SEMANA.comoSeArma }: { que?: MarcasPorSemanaQueSeVen; comoSeArma?: readonly string[] } = {}) {
   const C = COPY_POR_SEMANA;
   return (
     <div className="leyenda-por-semana" data-leyenda-por-semana>
       <ul className="leyenda-por-semana__fichas">
-        <li>
-          <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
-            <rect x={2} y={3} width={10} height={10} fill="var(--tenue)" fillOpacity={RELLENO_ENTERA} />
-            <line x1={2} x2={12} y1={3.75} y2={3.75} stroke="var(--tenue)" strokeWidth={1.5} />
-          </svg>
-          <span aria-hidden="true">{C.leyenda.entera}</span>
-          <span className="visualmente-oculto">{C.leyendaLarga.entera}</span>
-        </li>
-        <li>
-          <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
-            <path d="M 2.75 13 V 3.75 H 11.25 V 13" fill="none" stroke="var(--tenue)" strokeWidth={1.5} />
-          </svg>
-          <span aria-hidden="true">{C.leyenda.hueca}</span>
-          <span className="visualmente-oculto">{C.leyendaLarga.hueca}</span>
-        </li>
-        <li>
-          <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
-            <rect x={2} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} />
-          </svg>
-          <span aria-hidden="true">{C.leyenda.vacia}</span>
-          <span className="visualmente-oculto">{C.leyendaLarga.vacia}</span>
-        </li>
+        {que.entera ? (
+          <li>
+            <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
+              <rect x={2} y={3} width={10} height={10} fill="var(--tenue)" fillOpacity={RELLENO_ENTERA} />
+              <line x1={2} x2={12} y1={3.75} y2={3.75} stroke="var(--tenue)" strokeWidth={1.5} />
+            </svg>
+            <span aria-hidden="true">{C.leyenda.entera}</span>
+            <span className="visualmente-oculto">{C.leyendaLarga.entera}</span>
+          </li>
+        ) : null}
+        {que.hueca ? (
+          <li>
+            <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M 2.5 13 V 3.5 H 11.5 V 13" fill="none" stroke="var(--tenue)" strokeWidth={1} />
+            </svg>
+            <span aria-hidden="true">{C.leyenda.hueca}</span>
+            <span className="visualmente-oculto">{C.leyendaLarga.hueca}</span>
+          </li>
+        ) : null}
+        {que.sinMedia ? (
+          <li data-ficha="sin-media">
+            <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
+              <line x1={1} x2={13} y1={12} y2={12} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" />
+            </svg>
+            <span aria-hidden="true">{C.leyenda.sinMedia}</span>
+            <span className="visualmente-oculto">{C.leyendaLarga.sinMedia}</span>
+          </li>
+        ) : null}
+        {que.vacia ? (
+          <li>
+            <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
+              <rect x={2} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} />
+            </svg>
+            <span aria-hidden="true">{C.leyenda.vacia}</span>
+            <span className="visualmente-oculto">{C.leyendaLarga.vacia}</span>
+          </li>
+        ) : null}
         <li>
           <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">
             <rect x={1} y={5} width={5} height={6} fill="var(--tenue)" />
@@ -119,7 +149,7 @@ export function LeyendaPorSemana() {
         </li>
       </ul>
       <ComoLeerlo titulo={C.titulo} className="leyenda-por-semana__como-leerlo">
-        {C.comoSeArma.map((p) => (
+        {comoSeArma.map((p) => (
           <p key={p}>{p}</p>
         ))}
       </ComoLeerlo>
@@ -139,6 +169,7 @@ export function MinigraficoPorSemana({
   plan,
   fechas,
   titulo,
+  semanas,
 }: {
   dias: readonly DiaDeLaSerie[];
   unidad: string;
@@ -152,6 +183,8 @@ export function MinigraficoPorSemana({
   fechas?: readonly string[];
   /** El nombre de la métrica: el del gráfico y el de su tabla. */
   titulo: string;
+  /** Los tramos ya calculados con la regla de su área (Nutrición: la media de GR-12, GR-VC13); sin ellos, la de la tabla. */
+  semanas?: readonly SemanaDeLaSerie[];
 }) {
   const id = useId();
   const [caja, setCaja] = useState<HTMLDivElement | null>(null);
@@ -165,7 +198,7 @@ export function MinigraficoPorSemana({
     return () => observador.disconnect();
   }, [caja]);
   const textoDeLaFecha = useCallback((f: string) => diaYMes(f, hoy), [hoy]);
-  const g = useMemo(() => geometriaPorSemana({ dias, desde, hasta, hoy, ancho, alto, bandas, plan, fechas, textoDeLaFecha }), [dias, desde, hasta, hoy, ancho, alto, bandas, plan, fechas, textoDeLaFecha]);
+  const g = useMemo(() => geometriaPorSemana({ dias, desde, hasta, hoy, ancho, alto, bandas, plan, fechas, textoDeLaFecha, semanas }), [dias, desde, hasta, hoy, ancho, alto, bandas, plan, fechas, textoDeLaFecha, semanas]);
   // El tramo elegido (con el teclado o un toque) y el que está bajo el mouse. La región viva sigue solo al elegido.
   const [elegido, setElegido] = useState<number | null>(null);
   const [encima, setEncima] = useState<number | null>(null);
@@ -227,6 +260,10 @@ export function MinigraficoPorSemana({
             {g.vacias.map((b) => (
               <rect key={`vacia-${b.semana.desde}`} className="minigrafico-por-semana__vacia" x={b.x} y={g.caja.arriba} width={b.ancho} height={g.caja.abajo - g.caja.arriba} fill="var(--grafico-hueco)" fillOpacity={0.18} />
             ))}
+            {/* Un tramo con días pero sin media: una raya cortada y baja sobre el eje, que no tapa los días (GR-VD10). */}
+            {g.sinMedia.map((b) => (
+              <line key={`sin-media-${b.semana.desde}`} className="minigrafico-por-semana__sin-media" x1={b.x} x2={b.x + Math.max(1, b.ancho)} y1={g.caja.abajo - 1} y2={g.caja.abajo - 1} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" />
+            ))}
             {g.eje.map((m) => (
               <g key={m.valor} className="minigrafico__marca">
                 <line x1={g.caja.izquierda} x2={g.caja.derecha} y1={Math.round(m.y) + 0.5} y2={Math.round(m.y) + 0.5} stroke="var(--borde)" strokeWidth={1} opacity={0.7} />
@@ -244,7 +281,7 @@ export function MinigraficoPorSemana({
               <g key={b.semana.desde} className="minigrafico-por-semana__semana" data-hueca={b.hueca ? '' : undefined} data-dias={b.semana.conDato}>
                 <rect x={b.x} y={b.y} width={b.ancho} height={Math.max(0, g.caja.abajo - b.y)} fill={color} fillOpacity={b.hueca ? RELLENO_HUECA : RELLENO_ENTERA} />
                 {b.hueca ? (
-                  <path d={`M ${b.x + 0.75} ${g.caja.abajo} V ${b.y + 0.75} H ${b.x + b.ancho - 0.75} V ${g.caja.abajo}`} fill="none" stroke={color} strokeWidth={1.5} />
+                  <path d={`M ${b.x + 0.5} ${g.caja.abajo} V ${b.y + 0.5} H ${b.x + b.ancho - 0.5} V ${g.caja.abajo}`} fill="none" stroke={color} strokeWidth={1} />
                 ) : (
                   <line x1={b.x} x2={b.x + b.ancho} y1={b.y + 1} y2={b.y + 1} stroke={color} strokeWidth={2} />
                 )}
@@ -285,23 +322,26 @@ export function MinigraficoPorSemana({
           {lecturaDeLaSemana(semanaEncima, unidad)}
         </p>
       ) : null}
-      <table className="visualmente-oculto" data-tabla-de-las-semanas>
-        <caption>{COPY_POR_SEMANA.tabla(titulo)}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{COPY_POR_SEMANA.tramo}</th>
-            <th scope="col">{COPY_POR_SEMANA.media}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {g.semanas.map((s) => (
-            <tr key={s.desde}>
-              <th scope="row">{cuandoEsLaSemana(s)}</th>
-              <td>{lecturaDeLaSemana(s, unidad).slice(cuandoEsLaSemana(s).length + 2)}</td>
+      {/* Oculta en un div: una tabla no se achica a 1 px y, con las medias largas, desbordaba la página a lo ancho. */}
+      <div className="visualmente-oculto">
+        <table data-tabla-de-las-semanas>
+          <caption>{COPY_POR_SEMANA.tabla(titulo)}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{COPY_POR_SEMANA.tramo}</th>
+              <th scope="col">{COPY_POR_SEMANA.media}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {g.semanas.map((s) => (
+              <tr key={s.desde}>
+                <th scope="row">{cuandoEsLaSemana(s)}</th>
+                <td>{lecturaDeLaSemana(s, unidad).slice(cuandoEsLaSemana(s).length + 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

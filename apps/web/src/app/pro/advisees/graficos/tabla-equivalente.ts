@@ -94,14 +94,16 @@ export function tablaEquivalente(carriles: readonly Carril[]): FilasDeLaTabla {
   const fechas = new Set<string>();
   for (const c of columnas) {
     if (c.tipo === 'PUNTOS') for (const p of [...c.puntos, ...c.indicado]) if (p.valor !== null || p.rango !== null) fechas.add(p.fecha);
-    if (c.tipo === 'BARRAS_SEMANALES') for (const s of c.semanas) if (s.valor !== null) fechas.add(s.lunes);
+    if (c.tipo === 'BARRAS_SEMANALES') for (const s of c.semanas) if (s.valor !== null || s.conDias === true) fechas.add(s.lunes);
   }
   const filas = [...fechas].sort().map((fecha) => ({
     fecha,
     celdas: columnas.map((c): CeldaDeLaTabla | null => {
       if (c.tipo === 'PUNTOS') return celdaDe(c, fecha);
-      const s = c.semanas.find((x) => x.lunes === fecha && x.valor !== null);
-      return s ? { texto: s.lectura, marca: 'LLENA', tarde: false, registrada: true } : null;
+      const s = c.semanas.find((x) => x.lunes === fecha && (x.valor !== null || x.conDias === true));
+      // Una semana sin media (GR-VC12) dice por qué en su celda; no cuenta como lo último registrado.
+      if (s && s.valor === null) return { texto: s.lectura, marca: 'HUECA', tarde: false, registrada: false };
+      return s ? { texto: s.lectura, marca: s.entera === false ? 'HUECA' : 'LLENA', tarde: false, registrada: true } : null;
     }),
   }));
   return {

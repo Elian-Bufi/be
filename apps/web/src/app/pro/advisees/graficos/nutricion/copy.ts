@@ -74,7 +74,7 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
     leyenda: {
       entera: { texto: 'Semana entera', largo: 'Barra llena: los siete días de la semana entran en la media, con cantidades en todos sus registros y sin comidas del plan sin registro' },
       hueca: { texto: 'Con días afuera', largo: 'Barra hueca, con su contorno: algún día quedó afuera de la media, o la semana está cortada por el período o tiene hoy' },
-      sinMedia: { texto: 'Sin media', largo: 'Contorno cortado, sin relleno: la semana tiene días con valor, pero no llega a 4 días con cantidades en todos sus registros; no es un cero' },
+      sinMedia: { texto: 'Sin media', largo: 'Raya cortada sobre el eje: la semana tiene días con valor, pero no llega a 4 días con cantidades en todos sus registros; no es un cero' },
       sinDias: { texto: 'Sin días con valor', largo: 'Columna gris: ningún día de la semana tiene un valor; no es un cero' },
       cadaDia: { texto: 'Cada día', largo: 'Los días, como puntos tenues detrás de las barras; debajo, la tira de cada día: entera sin faltantes, a media altura con algo que falta, una raya baja sin registros' },
       indicado: { texto: 'Indicado', largo: 'Lo indicado en el plan para cada día, como rombos huecos tenues detrás de las barras' },
@@ -83,7 +83,7 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
     comoSeArma: (minimo: number) => [
       `Cada barra es la media de la semana (v1), de lunes a domingo: el promedio de los días con cantidades en todos sus registros, si son ${minimo} o más. Es la misma media en las calorías, los macronutrientes y lo indicado y lo registrado.`,
       'Los días con algo que falta (un subtotal, una comida del plan sin registro) quedan afuera de la media y se cuentan: la lectura de cada semana dice con cuántos días se hizo y por qué quedaron afuera los otros. Promediar solo los días registrados con cuidado deja afuera a los demás, y por eso se dice.',
-      'Una semana sin media no es un cero: es una columna gris. Hoy no cuenta hasta que termine el día.',
+      'Una semana con días pero sin media no es un cero: va con una raya cortada sobre el eje, y sus días se ven igual; una sin ningún día con valor, en gris. Hoy no cuenta hasta que termine el día.',
       'La barra va llena solo si entran los siete días; si no, va hueca, con su contorno. Los puntos tenues de detrás son los días.',
     ],
     resumen: (nombre: string, conMedia: number, semanas: number, bajo: string, alto: string, enteras: number) =>

@@ -17,6 +17,13 @@
  *   una semana que los cruza se parte en dos tramos, cada uno con su media. En una comparación de dos etapas, ninguna
  *   barra mezcla días de A con días de B.
  *
+ * **Una sola media semanal para todo BE (GR-VC13, a ratificar):** Nutrición no usa la media de `semanasDeLosDias`, que
+ * cuenta los subtotales adentro: usa la de GR-12 (`mediasDeLasSemanas`, la media de la semana v1), que se le pasa ya
+ * calculada en `semanas` con su `texto` y `conDias` (rama D, `cruces/semanas-de-nutricion.ts`). Con eso, una semana con
+ * días pero sin media va con su contorno cortado y sin relleno (`sinMedia`), no como la columna gris de la semana sin
+ * ningún día con valor; y la lectura dice el texto de GR-12. Sin `semanas`, todo sigue como antes (un cambio que solo
+ * agrega).
+ *
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
 import { lunesDe } from '@be/domain';
@@ -67,6 +74,13 @@ export interface SemanaDeLaSerie {
   readonly completa: boolean;
   /** Lo contrario de `completa`: la barra va hueca. */
   readonly hueca: boolean;
+  /**
+   * Lo que dice el tramo, después de cuándo es, cuando la media sale de otra regla (Nutrición: la de GR-12, GR-VC13):
+   * «1.950 kcal por día de media · con 5 de 7 días; 1 sin registro». Con él, `lecturaDeLaSemana` no arma su texto.
+   */
+  readonly texto?: string;
+  /** El tramo tiene días con valor aunque no tenga media (GR-VC12): sin media no es un tramo vacío. */
+  readonly conDias?: boolean;
 }
 
 /** Desde cuántos días de período una serie diaria va por semana por omisión; con menos, los días se leen sin peine. */
@@ -170,6 +184,7 @@ const valorEnPocas = (v: number): string => v.toLocaleString('es-AR', { maximumF
  * registros». Lo usan la lectura debajo del gráfico, el globo y la tabla de las semanas.
  */
 export function lecturaDeLaSemana(s: SemanaDeLaSerie, unidad: string): string {
+  if (s.texto !== undefined) return `${cuandoEsLaSemana(s)}: ${s.texto}`;
   const afuera = [
     ...(s.sinRegistros > 0 ? [plural(s.sinRegistros, 'día sin registros', 'días sin registros')] : []),
     ...(s.sinValor > 0 ? [plural(s.sinValor, 'día con registros sin este valor', 'días con registros sin este valor')] : []),
@@ -193,8 +208,14 @@ export const tramoDeEntrada = (semanas: readonly SemanaDeLaSerie[]): number => {
  */
 export function resumenDeLasSemanas(semanas: readonly SemanaDeLaSerie[], unidad: string): string {
   const conValor = semanas.filter((s) => s.valor !== null);
-  const vacias = semanas.length - conValor.length;
-  if (conValor.length === 0) return `Ningún tramo con valor: ${plural(semanas.length, 'tramo', 'tramos')} sin días con valor.`;
+  // Con la media de GR-12 (GR-VC13), un tramo sin media puede tener días: no es un tramo sin días con valor.
+  const sinMedia = semanas.filter((s) => s.valor === null && s.conDias === true).length;
+  const vacias = semanas.length - conValor.length - sinMedia;
+  const conDiasSinMedia = sinMedia > 0 ? [plural(sinMedia, 'tramo con días y sin media', 'tramos con días y sin media')] : [];
+  if (conValor.length === 0) {
+    if (sinMedia === 0) return `Ningún tramo con valor: ${plural(semanas.length, 'tramo', 'tramos')} sin días con valor.`;
+    return `Ningún tramo con media: ${[...conDiasSinMedia, ...(vacias > 0 ? [plural(vacias, 'tramo sin días con valor', 'tramos sin días con valor')] : [])].join('; ')}. Cada tramo, con sus días, está en la tabla de las semanas.`;
+  }
   const valores = conValor.map((s) => s.valor as number);
   const bajo = valorEnPocas(Math.min(...valores));
   const alto = valorEnPocas(Math.max(...valores));
@@ -202,8 +223,27 @@ export function resumenDeLasSemanas(semanas: readonly SemanaDeLaSerie[], unidad:
   return `${[
     `${plural(conValor.length, 'tramo con media', 'tramos con media')}${bajo === alto ? `, de ${bajo} ${unidad}` : `, entre ${bajo} y ${alto} ${unidad}`}`,
     `${enteras} con todos sus días con valor`,
+    ...conDiasSinMedia,
     ...(vacias > 0 ? [plural(vacias, 'tramo sin días con valor', 'tramos sin días con valor')] : []),
   ].join('; ')}. Cada media, con sus días, está en la tabla de las semanas.`;
+}
+
+/** Qué marcas se ven en los gráficos por semana de una página: la leyenda dice solo esas (DISENO-VISUAL §1, principio 7). */
+export interface MarcasPorSemanaQueSeVen {
+  readonly entera: boolean;
+  readonly hueca: boolean;
+  readonly sinMedia: boolean;
+  readonly vacia: boolean;
+}
+
+/** Las marcas que se ven en unos tramos: la barra llena, la hueca, la semana sin media y la vacía. */
+export function marcasPorSemanaQueSeVen(semanas: readonly SemanaDeLaSerie[]): MarcasPorSemanaQueSeVen {
+  return {
+    entera: semanas.some((s) => s.valor !== null && s.completa),
+    hueca: semanas.some((s) => s.valor !== null && s.hueca),
+    sinMedia: semanas.some((s) => s.valor === null && s.conDias === true),
+    vacia: semanas.some((s) => s.valor === null && s.conDias !== true),
+  };
 }
 
 // ─── El dibujo por semana de un gráfico chico (GR-24 y los que lo usen) ──────────────────────────
@@ -223,6 +263,11 @@ export interface EntradaPorSemana {
   readonly fechas?: readonly string[];
   /** Cómo se escribe una fecha del pie, para medir su ancho («15 nov 2025» mide más que «2 mar»). */
   readonly textoDeLaFecha?: (f: string) => string;
+  /**
+   * Los tramos ya calculados con la regla de su área (Nutrición: la media de GR-12, GR-VC13), cortados en las etapas. Sin
+   * ellos, se calculan con `semanasDeLosDias`.
+   */
+  readonly semanas?: readonly SemanaDeLaSerie[];
 }
 
 /** El estado de un día en la tira de cobertura: con valor, con algo que falta (subtotal o sin valor), sin registros u hoy. */
@@ -237,6 +282,11 @@ export interface GeometriaPorSemana {
   readonly barras: readonly { readonly lunes: string; readonly x: number; readonly ancho: number; readonly y: number; readonly hueca: boolean; readonly semana: SemanaDeLaSerie }[];
   /** Los tramos sin ningún día con dato: una columna gris de todo el alto, nunca una barra en cero. */
   readonly vacias: readonly { readonly lunes: string; readonly x: number; readonly ancho: number; readonly semana: SemanaDeLaSerie }[];
+  /**
+   * Los tramos con días pero sin media (GR-VC12, con la media de GR-12): el contorno cortado de todo el alto, sin relleno.
+   * Sus días se ven igual, como puntos tenues; no es un cero ni un tramo vacío.
+   */
+  readonly sinMedia: readonly { readonly lunes: string; readonly x: number; readonly ancho: number; readonly semana: SemanaDeLaSerie }[];
   /** Los días con dato (sin hoy, que no entra en la media), como puntos tenues detrás. */
   readonly dias: readonly { readonly fecha: string; readonly x: number; readonly y: number }[];
   /** La tira de cobertura, debajo del dibujo: un rectángulo por día, con su estado. */
@@ -274,7 +324,7 @@ const ANCHO_DE_UNA_LETRA = 7;
  */
 export function geometriaPorSemana(e: EntradaPorSemana): GeometriaPorSemana {
   const cortes = cortesDeLasEtapas(e.bandas ?? []).filter((f) => f > e.desde && f <= e.hasta);
-  const semanas = semanasDeLosDias(e.dias, e.desde, e.hasta, e.hoy, cortes);
+  const semanas = e.semanas ?? semanasDeLosDias(e.dias, e.desde, e.hasta, e.hoy, cortes);
   const diasConDato = e.dias.filter((d) => d.valor !== null && Number.isFinite(d.valor) && d.fecha >= e.desde && d.fecha <= e.hasta && d.fecha !== e.hoy && d.enCurso !== true);
   const valores = [0, ...semanas.flatMap((s) => (s.valor === null ? [] : [s.valor])), ...diasConDato.map((d) => d.valor as number), ...(e.plan ?? []).map((p) => p.valor)];
   const eje = marcasRedondas(0, Math.max(...valores, 1));
@@ -299,7 +349,8 @@ export function geometriaPorSemana(e: EntradaPorSemana): GeometriaPorSemana {
   };
   const tramos = semanas.map((s, indice) => ({ indice, ...lugar(s), y: s.valor === null ? null : yEn(s.valor), semana: s }));
   const barras = semanas.flatMap((s) => (s.valor === null ? [] : [{ lunes: s.lunes, ...lugar(s), y: yEn(s.valor), hueca: s.hueca, semana: s }]));
-  const vacias = semanas.filter((s) => s.valor === null).map((s) => ({ lunes: s.lunes, ...lugar(s), semana: s }));
+  const vacias = semanas.filter((s) => s.valor === null && s.conDias !== true).map((s) => ({ lunes: s.lunes, ...lugar(s), semana: s }));
+  const sinMedia = semanas.filter((s) => s.valor === null && s.conDias === true).map((s) => ({ lunes: s.lunes, ...lugar(s), semana: s }));
   const dias = diasConDato.map((d) => ({ fecha: d.fecha, x: xEn(mediodia(d.fecha)), y: yEn(d.valor as number) }));
   const porFecha = new Map(e.dias.map((d) => [d.fecha, d] as const));
   const porDia = anchoUtil / Math.max(1, diasDelPeriodo(e.desde, e.hasta));
@@ -346,6 +397,7 @@ export function geometriaPorSemana(e: EntradaPorSemana): GeometriaPorSemana {
     tramos,
     barras,
     vacias,
+    sinMedia,
     dias,
     tira,
     yDeLaTira: caja.abajo + 4,
