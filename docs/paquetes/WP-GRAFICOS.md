@@ -2002,6 +2002,55 @@ que no existe (GR-VD01, GR-VD02 y GR-VD08). Lo fija TEST-GRVD-003.
 - **GR-VD09 · Las piezas de la base solo suman campos opcionales** y `semanasDeLosDias` queda como la media genérica sin
   usuarios de Nutrición. *Alternativa:* borrarla o pasarla a la regla de GR-12, que cambia las pruebas de #283.
 
+**La revisión adversaria (tres miradas, una después de la otra) y las capturas.** La honestidad (§5 manda sobre la guía),
+el código (el merge, los cálculos, las semanas, los husos, `composicionPermitida`, la URL, los estados vacíos, el acceso y
+las pruebas) y la accesibilidad y el texto (el teclado, el lector, la tabla, Azul noche, 1024 a 1920 y las palabras). Las
+capturas de la CI se miraron en Claro y Azul noche a los cuatro anchos (v1, de `cc6d4229`, y v2, de `399cf6e3`).
+
+| Hallazgo | Severidad | Arreglo | Prueba |
+|---|---|---|---|
+| Al traer `main`, «Superpuestas» en SVG no compilaba: la lectura de la base pide `hoy` | Alta | Se lo pasa | La CI (typecheck y build) |
+| GR-24 por semana promediaba también los subtotales: otra media que la de GR-12 para la misma semana (GR-VC13) | Alta | La de GR-12, por el adaptador | TEST-GRVD-001 |
+| SP-02 tenía su propia media semanal, sin mínimo de días | Media | La de GR-12, con barra hueca y «sin media» | TEST-GRVD-001, TEST-GRF-067 |
+| «Agrupar por: Semana» de Nutrición en «Analizar» dibujaba la semana de la API, con los subtotales | Media | La de GR-12, con los días (GR-VD03); el diccionario lo dice | TEST-GRVD-005 |
+| La semana con días y sin media se dibujaba como la que no tiene ninguno (columna gris) | Media | Contorno cortado, sin relleno; sus días se ven | TEST-GRVD-001 |
+| GR-24 lado a lado: el eje «4, 4, 3» (piso, medio y techo) | Media | Las marcas redondas de la base | TEST-GRVD-002 |
+| «Lo que también cambió» no listaba el cambio de 4 a 3 repeticiones del plan (DISENO-VISUAL §2 «D») | Media | Lo indicado para el ejercicio, primero, también con el 1RM solo | TEST-GRVD-002 |
+| La leyenda de «Lado a lado», fija (con el rombo aunque no hubiera) y repetida en cada métrica | Media | Una vez, con lo que se ve | TEST-GRVD-002 |
+| GR-12 y GR-13 sin ninguna pantalla; SP-01 y SP-02 sin pantalla hasta «Patrones» | Media | Dos preguntas de «Analizar», solo con lo que se ofrece (GR-VD01 y GR-VD02) | TEST-GRVD-003, capturas 21 a 23 |
+| Una de esas preguntas, abierta por la dirección por quien no tiene el área, mostraba su título | Media | Responde como una que no existe (GR-VD08) | TEST-GRVD-003 |
+| Capturas: el peso de cada toma era un píxel en un año, en «Analizar» (también «Superpuestas») y en SP-02 | Media | La marca con el lugar de una sesión, como la base; también las sesiones del 1RM de SP-01 | TEST-GRVD-006 |
+| Capturas: GR-24 por semana desbordaba la página a lo ancho (979 px a 1024) por la tabla oculta | Media | La tabla, dentro de un div oculto | TEST-GRVD-006, TEST-GRV-013 |
+| SP-01 y SP-02: la frase dos veces y un «Cómo leerlo» propio sin el nombre de su gráfico | Baja | La frase una vez; «Cómo leerlo» de la base | TEST-GRVD-004 |
+| El pie de «Analizar»: el límite de la pregunta a la vista, pegado a la frase | Baja | La frase con su pieza; el límite en «Cómo leerlo» | TEST-GRVD-004, TEST-GRF-076 |
+| «Superpuestas» en SVG: el nombre de cada línea cortado con «…» y la leyenda debajo | Baja | Entero o ninguno; la leyenda arriba | TEST-GRVD-004 |
+| Las kcal del dibujo con decimal («1.924,8») | Baja | Enteras | TEST-GRVD-006 |
+| La leyenda por semana, fija con todas las marcas | Baja | Solo las que se ven | TEST-GRVD-001 |
+
+**Revisado sin hallazgos:** ubica sin calificar (ningún «mejor» ni «peor», las etapas sin orden de valor); cada cálculo con
+su método (GR-12 v1, Epley v1, la mediana); la frase fija a la vista en los cruces, en «Superpuestas» con dos ejes y al
+pie de «Analizar»; lo indicado y lo registrado separados (rombos sueltos); sin flechas ni «primero → último» en los textos
+nuevos; en Nutrición, sin «%» en los textos de la rama; las semanas, de lunes a domingo con fechas civiles y hoy afuera;
+`composicionPermitida` sigue mandando en «Superpuestas»; las preguntas nuevas no se guardan como vista; un área sin acceso
+no deja rastro; «Cómo leerlo» es un `<details>` con el nombre de su gráfico; ninguna palabra prohibida en pantalla, ni
+negada; el caso negado del entrenador no ve las preguntas (captura 22).
+
+**Lo que queda abierto:**
+- **«Cambio relativo» con Nutrición escribe «%» en «Analizar»** (media): choca con §5.11, pero es DL-126 y GR-26 lo deja
+  como está. Lo decide Dirección.
+- **El eje de «Analizar» (Recharts) no usa las marcas redondas de la base** («0, 55, 110, 165, 220» en las proteínas)
+  ni la franja de las versiones de la guía (baja): pasar el lienzo a los paneles alineados de la base es un trabajo
+  aparte.
+- **En «Superpuestas» de dos áreas, las bandas de las versiones de las dos van una sobre otra** (baja, de la segunda
+  revisión).
+- **SP-01 no se ve en las capturas** (baja): la cohorte no tiene un profesional con Nutrición y Entrenamiento; lo fijan
+  las pruebas.
+- **`semanasDeLosDias` queda en la base con la media de antes**, sin ningún gráfico que la use (baja, GR-VD09).
+- **El lector de pantalla real** (NVDA, TalkBack) no se probó; las pruebas leen el código (baja).
+
+**Las pruebas de esta pasada:** TEST-GRVD-001 a 006 en `apps/web/test/graficos-cruces.test.mjs`. Se corrieron en esta
+máquina (la lógica pura, con Node) y en la CI.
+
 ### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
 
 > Sin programar al declarar este paquete.
