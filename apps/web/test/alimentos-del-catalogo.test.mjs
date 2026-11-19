@@ -146,6 +146,8 @@ test('el formulario del alimento: la fibra vacía es «sin dato» (no se manda),
   // nombre de profesional. Nada de compartir.
   assert.match(FORMULARIO, /<p className="nota formulario-del-alimento__es-tuyo" data-es-tuyo>\n\s*<Icono nombre="info" tamano=\{18\} \/>\n\s*\{COPY_ALIMENTOS\.esTuyo\}/);
   assert.match(d.COPY_ALIMENTOS.esTuyo, /^Lo ves solo vos\. Administración lo puede ver, con tu nombre de profesional/);
+  // NUA-D07 (ratificada el 19/11): el aviso de no escribir datos de personas se mantiene, porque lo lee Administración.
+  assert.match(d.COPY_ALIMENTOS.esTuyo, /No escribas datos de personas en el nombre\.$/);
   assert.doesNotMatch(FORMULARIO, /role="switch"|compartirlo|share/);
   // NUA-08: las medidas caseras, una por tipo; vacía, sin esa medida; lo que no se entiende se dice en su campo.
   const conMedidas = valores({ nombre: 'Arroz', kcal: '130', c: '28', g: '0,3', p: '2,7', fibra: '', grupo: '', medidas: { CUP: '158', UNIT: '', TABLESPOON: 'abc' } });

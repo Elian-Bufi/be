@@ -241,10 +241,11 @@ export const COPY_ALIMENTOS = {
   elegirGrupo: 'Elegí su grupo',
   /**
    * NUA-D14 y D15: lo cargado a mano es de quien lo carga, y Administración lo ve con su nombre (para sumar al catálogo
-   * verificado lo que cargan varios). El formulario lo dice a la vista.
+   * verificado lo que cargan varios). El formulario lo dice a la vista. NUA-D07 (ratificada por Dirección el 19/11): el
+   * aviso de no escribir datos de personas en el nombre se mantiene, porque lo lee Administración.
    */
   esTuyo:
-    'Lo ves solo vos. Administración lo puede ver, con tu nombre de profesional, para sumar al catálogo verificado lo que cargan varios profesionales. Nunca ve a quién se lo indicaste.',
+    'Lo ves solo vos. Administración lo puede ver, con tu nombre de profesional, para sumar al catálogo verificado lo que cargan varios profesionales; nunca ve a quién se lo indicaste. No escribas datos de personas en el nombre.',
   /** NUA-D16: un nombre igual al de uno verificado, antes de crear el propio. */
   yaExisteVerificado: (nombre: string) => `Ya existe «${nombre}» verificado: ¿usarlo?`,
   usarElVerificado: 'Usar el verificado',

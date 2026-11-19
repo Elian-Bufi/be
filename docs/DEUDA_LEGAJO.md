@@ -8622,4 +8622,7 @@ y NUA-D13**.
 
 **Lo que queda.** Los micronutrientes clave (NUA-09) y los platos argentinos como recetas de ejemplo (NUA-10), declarados
 en el §5 del paquete; mostrar la medida casera en la APK (sin capacidad de cliente: Dirección dijo el 19/11 que nadie tiene
-APK viejas); ratificar NUA-D14 a D23.
+APK viejas); ratificar NUA-D14 a D23. **Dirección ratificó el 19/11 NUA-D01 a D13** con dos ajustes: NUA-D03 (una
+receta nueva o corregida no suma un alimento retirado: NUA-D18) y NUA-D07 (Administración ve el nombre de quien lo cargó,
+nunca a quién se le indicó; lo del canon nace como un alimento nuevo, con su fuente y sin el nombre de quien lo cargó; el
+aviso de no escribir datos de personas en el nombre se mantiene).

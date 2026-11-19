@@ -12,7 +12,9 @@
 >
 > Primer tramo: rama `wp-nutricion-alimentos` (#293), sobre `wp-nutricion-planificacion` (#290). Segundo tramo: rama
 > `wp-nutricion-alimentos-2`, sobre la primera. **No se integran solas:** Dirección integra la planificación entera junta.
-> DEUDA_LEGAJO **DL-180**. Las decisiones de continuador (**NUA-D01 a NUA-D23**) están **a ratificar**. El segundo tramo
+> DEUDA_LEGAJO **DL-180**. **Dirección ratificó el 19/11 las decisiones del primer tramo (NUA-D01 a D13)**, con dos ajustes
+> (NUA-D03 y NUA-D07, §4); NUA-D05 y D13 ya estaban sin efecto. Las del segundo tramo (**NUA-D14 a NUA-D23**) están **a
+> ratificar**, salvo lo que coincide con esos ajustes (NUA-D15, D16 y D18). El segundo tramo
 > llega hasta NUA-08 (las medidas caseras, en el website); **NUA-09 y NUA-10 quedan declarados como el tramo siguiente**,
 > sin nada a medias en el código.
 
@@ -110,14 +112,20 @@ Primer tramo:
 - **NUA-D02 · Retirar es terminal.** La versión RETIRADO conserva el nombre y la composición. Uno retirado no se corrige
   (422).
 - **NUA-D03 · Un borrador que ya cita uno retirado se sigue guardando**; validar y activar lo señalan. Un plan nuevo, una
-  plantilla o una comida habitual no lo aceptan (y, desde NUA-D17, tampoco un borrador que lo suma ahora).
+  plantilla o una comida habitual no lo aceptan (y, desde NUA-D17, tampoco un borrador que lo suma ahora). **Ratificada por
+  Dirección el 19/11, con un ajuste:** una receta nueva, o una corrección de receta, no puede sumar un alimento retirado;
+  así se cierra el camino por el que un retirado llegaba a un plan activado después del retiro. Es NUA-D18.
 - **NUA-D04 · Lo citado se lee por su identidad** (API-ALI-04), no buscando su nombre.
 - ~~**NUA-D05 · Qué se comparte.**~~ **Sin efecto (Dirección, 19/11):** lo cargado a mano no se comparte (NUA-D14).
 - **NUA-D06 · Los niveles.** «Verificado»: la tabla oficial, el canon o lo certificado; «Tuyo». Lo importado de Open Food
   Facts y lo de demostración conservan su origen, sin un nivel más. (El nivel «De otro profesional» y «mirar antes de
   sumar» se quitaron con NUA-D14.)
 - **NUA-D07 · La certificación es de una versión; el equivalente, del alimento.** Si su autor lo corrige, la versión nueva
-  vuelve a «sin revisar». Los planes viejos no cambian.
+  vuelve a «sin revisar». Los planes viejos no cambian. **Ratificada por Dirección el 19/11, con un ajuste:** Administración
+  ve quién cargó cada alimento (el nombre del profesional), nunca a qué persona se le indicó ni en qué plan (NUA-D15); lo que
+  se suma al canon nace como un alimento **nuevo**, con su fuente y sin el nombre de quien lo cargó (NUA-D16: un alimento de
+  BE sin profesional que lo cargue; el canon guarda de qué carga partió, nunca a su autor); y el aviso de no escribir datos
+  de personas en el nombre se mantiene en el formulario, porque ahora lo lee Administración.
 - **NUA-D08 · El grupo es un hecho aparte, no una versión.** Trece grupos; los doce íconos son una **propuesta a validar**.
 - **NUA-D09 · Una familia propia, ALI.**
 - **NUA-D10 · «Mis alimentos»** es un lugar propio (`/pro/foods`), no va en la barra.
@@ -236,7 +244,8 @@ Lo cargado a mano es solo de quien lo cargó (NUA-D14): retirarlo no cambia nada
 ## 8. Lo que queda abierto
 
 - NUA-09 y NUA-10 (§5); la medida casera en la APK (NUA-D21); sembrar las medidas de la tabla oficial desde USDA.
-- Ratificar NUA-D01 a NUA-D23 (NUA-D05 y D13, sin efecto); validar los doce íconos de los grupos.
+- Ratificar NUA-D14 a NUA-D23 (NUA-D01 a D13, ratificadas el 19/11; NUA-D05 y D13, sin efecto); validar los doce íconos
+  de los grupos.
 - El paso 2 del asistente de Entrenamiento tiene el mismo campo suelto que tenían los pasos 3 y 4 de Nutrición: no se tocó
   (otra rama trabaja ahí).
 - Una receta que cita un ingrediente retirado lo conserva, pero el editor de recetas todavía no lo marca «retirado».
