@@ -100,7 +100,9 @@ principio; el rediseño completo del asistente. **El panel de contexto de la per
   rango (dentro, encima, debajo, sin límite, sin dato); la suma de los rangos frente al objetivo (con el ejemplo de
   Dirección: grasas 50–75 g frente a 335 g), y sin tope o sin piso nunca «adentro» (con el caso de la captura 06); el
   caso real del objetivo (3.783 kcal frente a 2.500); el «%» con su base y su número; Enter (el siguiente que falta, el
-  primero, enviar); tocar afuera (adentro o afuera del cuadro, y lo escrito en «Crearlo a mano» o «Importarlo…»).
+  primero, enviar, y enviar si el que falta no recibe el foco); tocar afuera (adentro o afuera del cuadro, y lo escrito
+  en «Crearlo a mano» o «Importarlo…») y «Seguir editando» (el foco vuelve adonde se estaba); la «Opción 1» sin tocar en
+  el número de la copia y en los lugares libres; lo abierto de cada comida al subirla o bajarla.
 - **Del website:** cada prueba fija lo que protege y se verificó con una mutación (con el defecto, falla).
 - **Los detectores del «%»** del website exigen la base; el de la app de la persona no cambia.
 
@@ -115,26 +117,29 @@ principio; el rediseño completo del asistente. **El panel de contexto de la per
 - Escribir el reparto en «%» y que BE pase a gramos (con 4, 4 y 9 a la vista) no entra en este tramo: hoy se escribe en
   gramos y se ve el «%».
 
-**De la revisión adversaria (19/11), de severidad baja** (las de alta y media se corrigieron en la rama):
+**De la revisión adversaria (19/11), de severidad baja:** queda una, a propósito. Las de alta y media se corrigieron en
+la rama, y las otras bajas también (abajo, lo que se hizo).
 
-- «No se puede ubicar frente **del** rango de Almuerzo»: va «frente **al** rango» (`planificacion.ts`, en
-  `opcionFrenteAlRango` y `diaFrenteAlRango`). En el cuadro de la opción, una opción nueva todavía vacía ya muestra esas
-  líneas «sin dato»; la comida del editor las espera a que haya algo (`conAlgo`), el cuadro no.
-- «Copiar a Almuerzo como opción 2»: en una comida recién creada, la copia reemplaza a la «Opción 1» sin tocar (NUP-12) y
-  queda como opción 1; el número del botón (`numeroDeLaNueva` en `editor.tsx`) no lo sabe. Por lo mismo, al usar una
-  comida habitual, el lugar libre cuenta la opción que se va a reemplazar (una habitual de 12 opciones deja una afuera).
-- «Subir» y «Bajar» una comida intercambian su opción abierta con `?? 0` (`moverComida` en `editor.tsx`): una comida de
-  varias opciones que estaba plegada (NUP-D04) queda con la primera abierta después de moverla.
-- Enter (`enterAlQueFalta`): si el campo que falta no puede recibir el foco (apagado o escondido), Enter no lleva a
-  ningún lado y tampoco envía. No se encontró un formulario actual donde pase; conviene enviar si el foco no llegó.
-- Al tocar «Seguir editando» en la pregunta de cerrar (el diálogo de confirmación, como ya pasaba en el cuadro enfocado),
-  el botón desaparece y el foco queda en el documento: conviene devolverlo al campo donde se estaba.
-- El objetivo vigente con los macros en proporción de las kcal (datos viejos, `energy_share`) muestra en el paso 2 «Con
-  los tres macros escritos se ve cuántas kcal suman», aunque estén escritos: en proporción no hay gramos que sumar.
 - Cada fila redondea su aporte (kcal enteras, gramos a un decimal) y el total también: sumadas a ojo, las filas pueden
-  diferir del total en 0,1 g o 1 kcal. La cuenta exacta coincide (NUP-D01).
-- La comida plegada dice «kcal sin dato · P Sin dato»: las mayúsculas no coinciden.
-- En el editor, con la columna principal más angosta, la tabla de la suma parte «desde 1.026 kcal» en dos renglones
-  (la ubicación sin tope es más larga que «adentro»): la columna de la suma podría no cortarse.
-- Dos comentarios quedaron viejos: «ningún texto de Nutrición dice «%»» (`asistente-de-nutricion.ts`) y «Sin «%»»
-  (`rangos.ts`).
+  diferir del total en 0,1 g o 1 kcal. La cuenta exacta coincide (NUP-D01). Queda así.
+
+Las bajas corregidas, cada una con su prueba (que falla sin la corrección) en
+`apps/web/test/planificacion-de-nutricion.test.mjs`:
+
+- «Frente **al** rango» (decía «frente del»); y en el cuadro, una opción nueva todavía vacía dice una sola cosa, «Todavía
+  no tiene alimentos: se ubica cuando sumes el primero.», en vez de una línea «sin dato» por macro (captura 14).
+- En una comida recién creada, «Copiar a Almuerzo como opción 1» dice el número que va a tener, y una comida habitual
+  cuenta los lugares libres sin la «Opción 1» sin tocar, que deja su lugar: una de doce opciones entra entera. Una sola
+  cuenta para los tres caminos y la receta (`opcionesQueSiguen`, en `receta-en-el-plan.ts`).
+- «Subir» y «Bajar» una comida: cada una conserva su opción abierta, y una de varias opciones que estaba plegada sigue
+  plegada (`elegidasTrasMover`, en `editar-la-estructura.ts`; la captura 07 sube y baja el almuerzo).
+- Enter: si el campo que falta no puede recibir el foco (apagado o escondido), envía como siempre, y el envío muestra lo
+  que falta (`enfocarLoQueFalta`, en `validacion-viva.ts`).
+- «Seguir editando», en el diálogo de confirmación y en el cuadro enfocado: el foco vuelve adonde se estaba (o al título
+  del cuadro, o al primer control del diálogo), no queda en el documento (`useSeguirEditando`, en `tocar-afuera.ts`).
+- El objetivo con macros en proporción de las kcal (datos viejos) dice en el paso 2 «El objetivo tiene Proteínas en
+  proporción de las kcal, no en gramos: no hay gramos que sumar.», y no «Con los tres macros escritos…».
+- La comida plegada dice «kcal Sin dato · P Sin dato», como la fila del alimento y el renglón de la opción.
+- La suma y el objetivo de la tabla de la suma no se cortan («desde 1.026 kcal» en un renglón): se acomoda la columna de
+  la ubicación (captura 06, entera).
+- Los comentarios de `asistente-de-nutricion.ts` y `rangos.ts` ya no dicen que Nutrición no tiene «%».
