@@ -226,6 +226,9 @@ test('NUA-04 · la consola pide la fuente para verificar y el equivalente para m
   assert.match(REVISION, /expectedVersion: alimento\.version,/);
   assert.match(REVISION, /if \(r\.tipo === 'API' && r\.codigo === 'VERSION_CONFLICT'\) return alDesactualizarse\(\);/);
   assert.doesNotMatch(REVISION, /professional|profesionalId|loadedBy|creadoPor/i, 'la consola no ve quién lo cargó');
+  // Segundo tramo (de la revisión adversaria): «Revisar» lleva el foco al formulario, por su título.
+  assert.match(REVISION, /useEffect\(\(\) => titulo\.current\?\.focus\(\), \[\]\);/);
+  assert.match(REVISION, /<h3 ref=\{titulo\} tabIndex=\{-1\} data-titulo-de-la-revision>/);
   // Nunca «certificación oficial» ni «certificado por BE» (B10-03 §20).
   for (const t of Object.values(d.COPY_REVISION_DE_ALIMENTOS).flatMap((v) => (typeof v === 'string' ? [v] : typeof v === 'object' ? Object.values(v).filter((x) => typeof x === 'string') : []))) {
     assert.deepEqual(d.terminosProhibidosDeAdministracionEn(t), [], t);

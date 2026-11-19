@@ -40,7 +40,7 @@ import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
 import { procedenciaDeElemento } from '../advisees/nutrition/importacion';
 import { TablaDeCalculo } from './calculo-de-receta';
-import { SIN_IMAGEN, type ImagenAlCrear, type ImagenPendiente } from './cargar-la-imagen';
+import { anotarLaImagenSinCargar, SIN_IMAGEN, type ImagenAlCrear, type ImagenPendiente } from './cargar-la-imagen';
 import { ImagenDeLaRecetaNueva, ImagenDeReceta, useImagenParaCargar } from './imagen-de-receta';
 
 type Detalle = DetalleDeRecetaResponse['data'];
@@ -278,7 +278,9 @@ export function EditorDeReceta({
     const creada = r.datos.data;
     const conImagen = imagen.elegida ? await imagen.cargar(creada, true) : null;
     setEnviando(false);
-    if (conImagen?.tipo === 'sesion-perdida') return;
+    // DL-180, segundo tramo: la sesión venció en medio de la carga. La receta ya está guardada; lo elegido queda anotado y,
+    // al volver de la entrada, la pantalla lo dice y ofrece reintentar.
+    if (conImagen?.tipo === 'sesion-perdida') return anotarLaImagenSinCargar(creada.name, conImagen.pendiente);
     setSucio(false);
     if (conImagen?.tipo === 'asociada') return onGuardada(conImagen.receta, `${COPY_RECETAS.guardada} ${COPY_RECETAS.imagenCargada}`, enLaComida, { tipo: 'cargada' });
     if (conImagen?.tipo === 'fallo') return onGuardada(creada, COPY_RECETAS.guardada, enLaComida, { tipo: 'pendiente', pendiente: conImagen.pendiente });

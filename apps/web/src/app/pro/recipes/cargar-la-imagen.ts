@@ -8,6 +8,9 @@
  * - Si la subida salió y la asociación no, el medio subido se conserva: el reintento solo asocia.
  * - Si la receta se acaba de guardar y la imagen no, la falla lo dice (`trasGuardar`) y lo elegido sigue, como
  *   `ImagenPendiente`, en la receta ya guardada: el reintento carga solo la imagen y la receta no se vuelve a crear.
+ * - DL-180, segundo tramo: si **la sesión vence** mientras se carga la imagen de una receta recién creada, la página va a
+ *   la entrada; lo elegido queda anotado en la memoria de la pestaña (como la sesión y `aviso-al-llegar.ts`) y, al volver,
+ *   la pantalla lo dice y ofrece reintentar (`anotarLaImagenSinCargar`, `laImagenSinCargar`, `tomarLaImagenSinCargar`).
  */
 import { COPY_RECETAS, COPY_VINCULO } from '@be/domain';
 import type { ProcedenciaDeMedio, Receta, Resultado } from '@be/domain';
@@ -42,8 +45,8 @@ export interface PasosDeLaCarga {
 
 export type ResultadoDeLaCarga =
   | { readonly tipo: 'asociada'; readonly receta: Receta }
-  /** La sesión venció: la página ya redirige y no se dice nada más. */
-  | { readonly tipo: 'sesion-perdida' }
+  /** La sesión venció: la página ya redirige. `subido`: el medio que ya está en BE, si venció al asociarlo. */
+  | { readonly tipo: 'sesion-perdida'; readonly subido: string | null }
   /** `subido`: el medio que ya está en BE, si la falla fue al asociarlo. */
   | { readonly tipo: 'fallo'; readonly motivo: MotivoDeLaFalla; readonly subido: string | null };
 
@@ -64,13 +67,13 @@ export async function cargarLaImagen(
   if (!medioId) {
     const subida = await pasos.subir(datos.claves.subida.actual(datos.queSeSube));
     datos.claves.subida.registrar(subida);
-    if (datos.sesionPerdida(subida)) return { tipo: 'sesion-perdida' };
+    if (datos.sesionPerdida(subida)) return { tipo: 'sesion-perdida', subido: null };
     if (!subida.ok) return { tipo: 'fallo', motivo: subida.tipo === 'API' && IMAGEN_RECHAZADA.has(subida.codigo) ? 'INVALIDA' : 'NO_CARGADA', subido: null };
     medioId = subida.datos.data.mediaId;
   }
   const asociada = await pasos.asociar(medioId, datos.version, datos.claves.asociacion.actual(`${medioId}|${datos.version}`));
   datos.claves.asociacion.registrar(asociada);
-  if (datos.sesionPerdida(asociada)) return { tipo: 'sesion-perdida' };
+  if (datos.sesionPerdida(asociada)) return { tipo: 'sesion-perdida', subido: medioId };
   if (!asociada.ok) return { tipo: 'fallo', motivo: asociada.tipo === 'API' && asociada.codigo === 'VERSION_CONFLICT' ? 'RECETA_CAMBIO' : 'NO_CARGADA', subido: medioId };
   return { tipo: 'asociada', receta: asociada.datos.data };
 }
@@ -107,6 +110,38 @@ export interface ImagenPendiente {
 export type ImagenAlCrear = { readonly tipo: 'sin-imagen' } | { readonly tipo: 'cargada' } | { readonly tipo: 'pendiente'; readonly pendiente: ImagenPendiente };
 
 export const SIN_IMAGEN: ImagenAlCrear = { tipo: 'sin-imagen' };
+
+// ─── La sesión venció mientras se cargaba (DL-180, segundo tramo) ────────────────────────────────────────────────
+
+/**
+ * La imagen de una receta recién creada que no quedó porque la sesión venció. Vive en la memoria de la pestaña, como la
+ * sesión (DL-012): sobrevive a la entrada y la vuelta, que no recargan la página, y se pierde al recargar. No va en la
+ * dirección ni en el almacenamiento del navegador: tiene el archivo elegido.
+ */
+let sinCargarPorLaSesion: { readonly nombre: string; readonly pendiente: ImagenPendiente } | null = null;
+
+/** La anota quien creó la receta, cuando la sesión venció en medio de la carga. Reemplaza a la que hubiera. */
+export function anotarLaImagenSinCargar(nombre: string, pendiente: ImagenPendiente): void {
+  sinCargarPorLaSesion = { nombre, pendiente };
+}
+
+/** La que hay anotada, sin tomarla: para decirlo en la pantalla a la que se vuelve. */
+export function laImagenSinCargar(): { readonly recetaId: string; readonly nombre: string } | null {
+  return sinCargarPorLaSesion ? { recetaId: sinCargarPorLaSesion.pendiente.recetaId, nombre: sinCargarPorLaSesion.nombre } : null;
+}
+
+/** La toma, una sola vez, el editor de esa receta (con «Reintentar la imagen»); otra receta no la toma. */
+export function tomarLaImagenSinCargar(recetaId: string): ImagenPendiente | null {
+  if (sinCargarPorLaSesion?.pendiente.recetaId !== recetaId) return null;
+  const { pendiente } = sinCargarPorLaSesion;
+  sinCargarPorLaSesion = null;
+  return pendiente;
+}
+
+/** «Ahora no»: se olvida. */
+export function olvidarLaImagenSinCargar(): void {
+  sinCargarPorLaSesion = null;
+}
 
 /**
  * ED-32 y NUA-06 · Qué hace el cuadro de «Receta nueva» del plan después de guardar, según la imagen elegida al crearla:

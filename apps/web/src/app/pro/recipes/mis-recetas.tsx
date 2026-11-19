@@ -20,9 +20,9 @@ import { cambiarLaDireccion } from '../../../lib/direccion';
 import { fecha } from '../../../lib/formato';
 import { useListaPaginada } from '../../../lib/lista';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
-import type { ImagenPendiente } from './cargar-la-imagen';
+import { tomarLaImagenSinCargar, type ImagenPendiente } from './cargar-la-imagen';
 import { EditorDeReceta } from './editor-de-receta';
-import { ImagenGuardada } from './imagen-de-receta';
+import { AvisoDeLaImagenSinCargar, ImagenGuardada } from './imagen-de-receta';
 import { EsperandoSesion } from '../../../lib/sesion';
 
 export function MisRecetas() {
@@ -37,7 +37,8 @@ export function MisRecetas() {
   const [sinArea, setSinArea] = useState(false);
   // NUA-06: la imagen elegida al crear la receta que no se pudo cargar. Se entrega una sola vez, al editor de esa receta
   // (que la toma al montarse); después se olvida, para que volver a abrirla no muestre una falla vieja.
-  const [imagenPendiente, setImagenPendiente] = useState<ImagenPendiente | null>(null);
+  // DL-180, segundo tramo: si se vuelve de la entrada directo a la receta cuya imagen quedó sin cargar, la toma.
+  const [imagenPendiente, setImagenPendiente] = useState<ImagenPendiente | null>(() => (recetaId ? tomarLaImagenSinCargar(recetaId) : null));
   useEffect(() => {
     if (imagenPendiente && imagenPendiente.recetaId === recetaId) setImagenPendiente(null);
   }, [imagenPendiente, recetaId]);
@@ -64,11 +65,24 @@ export function MisRecetas() {
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
   if (yo.tipo === 'sin-espacio') return <SinEspacioProfesional />;
 
-  const avisoFlotante = aviso ? (
-    <AvisoFlotante onCerrar={() => setAviso(null)}>
-      <p>{aviso}</p>
-    </AvisoFlotante>
-  ) : null;
+  const avisoFlotante = (
+    <>
+      {aviso ? (
+        <AvisoFlotante onCerrar={() => setAviso(null)}>
+          <p>{aviso}</p>
+        </AvisoFlotante>
+      ) : null}
+      {/* DL-180, segundo tramo: la sesión venció mientras se cargaba la imagen de una receta recién creada. */}
+      <AvisoDeLaImagenSinCargar
+        key={recetaId ?? 'lista'}
+        alReintentar={(id) => {
+          setImagenPendiente(tomarLaImagenSinCargar(id));
+          setMontaje((n) => n + 1);
+          ir(`receta=${encodeURIComponent(id)}`);
+        }}
+      />
+    </>
+  );
 
   if (recetaId || nueva) {
     return (

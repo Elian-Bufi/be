@@ -569,6 +569,79 @@ describe('NUA-D14 a D16 · compartir con control', () => {
   });
 });
 
+// ─── Segundo tramo · las bajas de la revisión adversaria que tocan lo retirado (NUA-D17 y D18) ───────
+
+describe('NUA-D17 y D18 · lo retirado: el borrador acepta solo lo que ya citaba; las recetas no lo suman', () => {
+  /** Una opción de receta en el día: la entrada trae la versión de la receta y los ítems vacíos (los arma el servidor). */
+  function estructuraConReceta(recetaVersionId: string, arroz: string) {
+    return {
+      dayTypes: [
+        {
+          label: 'Día habitual',
+          meals: [
+            {
+              label: 'Almuerzo',
+              prescriptionMode: 'DISH_OPTIONS',
+              options: [
+                { label: 'La receta', items: [], recipeVersionId: recetaVersionId },
+                { label: 'Arroz', items: [{ catalogItemId: arroz, quantity: { value: 100, unit: 'g' }, preparationState: 'COOKED' }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+  }
+  const guardar = (c: Circuito, planId: string, version: string, changes: unknown) => patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${planId}`).send({ expectedVersion: version, changes });
+  const validar = (c: Circuito, planId: string, version: string) => conSesion(app, c.pro.token).post(`/api/v1/nutrition/plans/${planId}/validate`).send({ expectedVersion: version });
+
+  it('un borrador no suma uno retirado que no citaba: el mismo CATALOG_REFERENCE_INVALID que un plan nuevo', async () => {
+    const c = await circuitoListoParaPlanificar(app, `nuad17-${unico()}`);
+    const creado = await cargarAMano(c.pro, `Zzret${unico()} turrón`);
+    const b = await crearBorrador(app, c);
+    await retirar(c.pro, creado.catalogItemId, 'v1').expect(200);
+    const r = await guardar(c, b.planId, b.version, estructuraCon(creado.catalogItemId, c.arroz));
+    expect(r.status).toBe(422);
+    expect(r.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
+    expect(r.body.error.details.issues).toEqual([{ code: 'CATALOG_REFERENCE_INVALID', path: 'dayTypes[0].meals[0].options[0].items[0].catalogItemId' }]);
+  });
+
+  it('una receta no cita ninguna versión de uno retirado, tampoco una vieja; la que ya lo citaba lo lleva a un borrador que validar y activar señalan', async () => {
+    const c = await circuitoListoParaPlanificar(app, `nuad18-${unico()}`);
+    const creado = await cargarAMano(c.pro, `Zzret${unico()} galleta`);
+    const corregido = AlimentoPropioResponseSchema.parse((await corregir(c.pro, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: { ...COMPOSICION, fatG: 6 } }).expect(200)).body).data;
+    // Una receta que cita la versión vieja, antes del retiro: se guarda.
+    const receta = (await recetaCon(c.pro, creado.catalogItemId, creado.versionId).expect(201)).body.data as { recipeId: string; recipeVersionId: string; version: string };
+    // La receta en un borrador, antes del retiro.
+    const conLaReceta = await conSesion(app, c.pro.token)
+      .post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`)
+      .send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructuraConReceta(receta.recipeVersionId, c.arroz) })
+      .expect(201);
+    await retirar(c.pro, creado.catalogItemId, corregido.version).expect(200);
+
+    // Retirado: ninguna versión se cita en una receta nueva, ni la vieja ni la última disponible.
+    for (const versionId of [creado.versionId, corregido.versionId]) {
+      const nueva = await recetaCon(c.pro, creado.catalogItemId, versionId);
+      expect(nueva.status).toBe(422);
+      expect(nueva.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
+    }
+    // El borrador que ya la tenía se guarda; validar y activar señalan el ingrediente retirado de la receta.
+    const plan = conLaReceta.body.data as { planId: string; version: string };
+    const guardado = await guardar(c, plan.planId, plan.version, estructuraConReceta(receta.recipeVersionId, c.arroz)).expect(200);
+    const validado = await validar(c, plan.planId, guardado.body.data.version).expect(200);
+    expect(validado.body.data.valid).toBe(false);
+    expect(validado.body.data.issues).toContainEqual({ code: 'CATALOG_REFERENCE_INVALID', path: 'dayTypes[0].meals[0].options[0].items[0].catalogItemId' });
+    const activacion = await activar(app, c.pro, plan.planId, guardado.body.data.version);
+    expect(activacion.status).toBe(422);
+    // Un borrador que no la tenía no la suma.
+    const otro = await circuitoListoParaPlanificar(app, `nuad18b-${unico()}`, c.pro);
+    const b = await crearBorrador(app, otro);
+    const sumarla = await guardar(otro, b.planId, b.version, estructuraConReceta(receta.recipeVersionId, otro.arroz));
+    expect(sumarla.status).toBe(422);
+    expect(sumarla.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
+  });
+});
+
 // ─── La base ─────────────────────────────────────────────────────────────────────────────────────
 
 describe('DL-180 · la base sostiene las guardias', () => {

@@ -19,7 +19,7 @@ import {
   type AlimentoVerificado,
   type DecidirSobreAlimentoRequest,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { apiAdministrativa } from '../../../lib/api-administrativa';
@@ -174,6 +174,10 @@ function Decidir({ token, alimento, alDecidir, alDesactualizarse }: { token: str
   const [falla, setFalla] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [clave] = useState(nuevaClaveAdministrativa);
+  // DL-180, segundo tramo (de la revisión adversaria): «Revisar» lleva el foco al formulario que abre, por su título; con
+  // el teclado, lo que sigue es decidir, no buscarlo.
+  const titulo = useRef<HTMLHeadingElement>(null);
+  useEffect(() => titulo.current?.focus(), []);
   const opciones: readonly Decision[] = alimento.review.state === 'PENDING' ? ['CERTIFY', 'EQUIVALENT'] : ['CERTIFY', 'EQUIVALENT', 'CLEAR'];
 
   async function buscarVerificados() {
@@ -208,7 +212,9 @@ function Decidir({ token, alimento, alDecidir, alDesactualizarse }: { token: str
 
   return (
     <form className="formulario decidir-sobre-alimento" onSubmit={(e) => void enviar(e)} noValidate data-decidir-sobre-alimento>
-      <h3>{C.revisarTitulo(alimento.name)}</h3>
+      <h3 ref={titulo} tabIndex={-1} data-titulo-de-la-revision>
+        {C.revisarTitulo(alimento.name)}
+      </h3>
       <fieldset className="campo">
         <legend>¿Qué decidís?</legend>
         {opciones.map((d) => (
