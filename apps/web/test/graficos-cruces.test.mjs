@@ -1025,12 +1025,27 @@ test('TEST-GRVD-003 · GR-12 y GR-13 en «Analizar», y «Ver la relación» con
   const pieza = leer(join(SEGUIMIENTO, 'graficos-en-analizar.tsx'));
   assert.match(pieza, /graficosDeLaPregunta\(pregunta, contextoDelRegistro\(acceso, disponibles\)\)/);
   assert.match(pieza, /acceso=\{acceso\}/, 'cada gráfico recibe el acceso con que se ofreció');
-  // Abierta por la dirección sin nada que ofrecer (un entrenador que escribe «pregunta=ver-la-relacion»), responde como una
-  // pregunta que no existe: vuelve a «Analizar» sin pregunta, sin el título ni un aviso que delate qué hay.
+  // GR-VD08, ratificado el 19/11: abierta sin nada que ofrecer (un entrenador que escribe «pregunta=ver-la-relacion», o un
+  // período sin lo que pide), muestra su título y un estado vacío que dice por qué; ya no vuelve a «Analizar» sin decir nada.
   assert.match(pieza, /const sinNadaQueOfrecer = !disponibles\.cargando && !disponibles\.falla && graficos\.length === 0;/);
-  assert.match(pieza, /if \(sinNadaQueOfrecer\) ir\(parametrosDePregunta\(null\)\);/);
-  assert.match(pieza, /if \(disponibles\.cargando \|\| sinNadaQueOfrecer\) return <Cargando \/>;/);
-  assert.ok(pieza.indexOf('if (disponibles.cargando || sinNadaQueOfrecer) return') < pieza.indexOf('<h2 id={tituloId}>'), 'el título no se ve antes de saber si se ofrece');
+  assert.match(pieza, /const vacio = sinNadaQueOfrecer \? porQueNoHayGraficos\(pregunta, contexto\) : null;/);
+  assert.match(pieza, /<BloqueDeEstado tipo="vacio" icono="informacion" titulo=\{vacio\.titulo\}>\s*\{vacio\.texto\}/);
+  assert.doesNotMatch(pieza, /if \(sinNadaQueOfrecer\) ir\(/, 'no vuelve sin decir nada');
+  assert.ok(pieza.indexOf('<h2 id={tituloId}>') < pieza.indexOf('<BloqueDeEstado tipo="vacio"'), 'el título de la pregunta va arriba del estado vacío');
+  // El porqué, con lo mismo que decide ofrecer cada gráfico.
+  assert.match(PG.porQueNoHayGraficos(nutri, entrenador).texto, /hoy no ves su Nutrición/);
+  assert.match(PG.porQueNoHayGraficos(relacion, entrenador).texto, /Nutrición con Entrenamiento, o Nutrición con Antropometría/);
+  assert.equal(PG.porQueNoHayGraficos(relacion, PG.contextoDelRegistro(CASO_1_SP02, { ejercicios: null, antropometria: [] })).texto, 'En el período no hay tomas de peso. Probá con otro período.');
+  assert.equal(
+    PG.porQueNoHayGraficos(relacion, PG.contextoDelRegistro(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO)], antropometria: null })).texto,
+    'En el período no hay sesiones de un ejercicio con el que se estima la fuerza. Probá con otro período.',
+  );
+  for (const p of [nutri, relacion]) {
+    for (const c of [entrenador, nutricionista]) {
+      const v = PG.porQueNoHayGraficos(p, c);
+      for (const x of [v.titulo, v.texto]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], x);
+    }
+  }
   for (const p of Object.values(PG.PREGUNTAS_CON_GRAFICOS)) for (const x of [p.pregunta, p.muestra]) assert.deepEqual(terminosProhibidosEnUnGrafico(x, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA']), [], x);
 });
 
