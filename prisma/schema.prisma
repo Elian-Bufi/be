@@ -324,6 +324,8 @@ model Identidad {
   // alimentos cargados a mano que registró.
   gruposDeAlimentoAsignados GrupoDeAlimentoAsignado[]          @relation("GrupoDeAlimentoDelAutor")
   revisionesDeAlimentos     RevisionAdministrativaDeAlimento[] @relation("RevisionDeAlimentoDelAdministrador")
+  // DL-180, segundo tramo: lo que compartió o dejó de compartir de sus alimentos cargados a mano.
+  cambiosDeAlimentosCompartidos CambioDeAlimentoCompartido[]    @relation("CambioDeAlimentoCompartidoDelAutor")
 
   @@map("identidad")
 }
@@ -1384,8 +1386,10 @@ model ElementoDeCatalogoNutricional {
   nombresAlternativos NombreAlternativoDeAlimento[]
   /// DL-180 (NUA-05): su grupo, para el ícono; un hecho aparte de sus versiones.
   grupos              GrupoDeAlimentoAsignado[]
-  /// DL-180 (NUA-03): desde cuándo lo ven los demás profesionales, si es una carga a mano.
+  /// DL-180 (NUA-03): desde cuándo lo ven los demás profesionales, si es una carga a mano (primer tramo; ya no se escribe).
   compartido          AlimentoCompartido?
+  /// DL-180, segundo tramo (NUA-D14 a D16): cada vez que su autor lo compartió o lo dejó de compartir.
+  cambiosDeCompartido CambioDeAlimentoCompartido[]
   /// DL-180 (NUA-04): lo que decidió Administración sobre él, y los alimentos de los que es el equivalente verificado.
   revisiones          RevisionAdministrativaDeAlimento[] @relation("RevisionDelAlimento")
   equivalenteDe       RevisionAdministrativaDeAlimento[] @relation("EquivalenteVerificado")
@@ -1410,6 +1414,8 @@ model VersionDeElementoNutricional {
   sucesora    VersionDeElementoNutricional? @relation("CadenaDeElemento")
   /// DL-180 (NUA-04): las decisiones de Administración que la revisaron.
   revisiones  RevisionAdministrativaDeAlimento[]
+  /// DL-180, segundo tramo: los cambios de compartido que la tenían como vigente.
+  cambiosDeCompartido CambioDeAlimentoCompartido[]
 
   @@index([elementoId])
   @@map("version_de_elemento_nutricional")
@@ -3097,7 +3103,8 @@ model GrupoDeAlimentoAsignado {
 
 /// DL-180 (NUA-03, NUA-D05) · un alimento cargado a mano que ven los demás profesionales de Nutrición, desde que su autor
 /// lo cargó o lo corrigió con el aviso a la vista. Lo cargado antes de DL-180 no se comparte solo. Una fila por alimento;
-/// append-only.
+/// append-only. **Desde el segundo tramo de DL-180 ya no se escribe:** lo reemplaza `CambioDeAlimentoCompartido`, y la
+/// migración `20261120120000_compartir_con_control` copió cada fila como su primer cambio. Queda como historia.
 model AlimentoCompartido {
   elementoId        String   @id @map("elemento_id") @db.Uuid
   procedencia       Json
@@ -3106,6 +3113,31 @@ model AlimentoCompartido {
   elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("alimento_compartido")
+}
+
+/// DL-180, segundo tramo (NUA-D14 a D16) · compartir un alimento cargado a mano con los demás profesionales de Nutrición, y
+/// dejar de compartirlo, son hechos de su autor: cada uno es una fila nueva, nunca se pisa. El estado vigente es el de mayor
+/// `numero`; sin filas, no se comparte. Cada cambio invierte el anterior: los impares comparten y los pares dejan de
+/// compartir (CHECK). `versionId` es la versión vigente al decidir: desde la última vez que se compartió, los demás pueden
+/// citar esa versión y las que la siguen, nunca las de antes. Lo escribe solo quien lo cargó (trigger). Append-only.
+model CambioDeAlimentoCompartido {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String   @map("elemento_id") @db.Uuid
+  numero            Int
+  /// `true`: lo comparte; `false`: deja de compartirlo.
+  compartido        Boolean
+  /// La versión vigente del alimento cuando se decidió.
+  versionId         String   @map("version_id") @db.Uuid
+  autorId           String   @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  version  VersionDeElementoNutricional  @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor    Identidad                     @relation("CambioDeAlimentoCompartidoDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@map("cambio_de_alimento_compartido")
 }
 
 /// DL-180 (NUA-04): lo que decide Administración sobre un alimento cargado a mano.
