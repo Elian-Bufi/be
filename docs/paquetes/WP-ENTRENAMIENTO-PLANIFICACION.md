@@ -35,7 +35,8 @@
 | C2 | El criterio arriba de las series | en esta rama |
 | C3 | Las acciones con el nombre del objeto | en esta rama |
 | C4 | «Copiar» a la vista y la edición conjunta de series, con repeticiones y rangos | en esta rama |
-| C5 a C11 | Los días junto a cada sesión, el catálogo, la escritura rápida, de dónde sale cada valor, guardar y revisar encadenados, la pestaña semanal, «Sesiones vacías» | **tramo siguiente** (§6) |
+| C10 | Sin la pestaña «Lo que trabaja la semana» mientras no tenga datos (era una línea) | en esta rama |
+| C5 a C9 y C11 | Los días junto a cada sesión, el catálogo, la escritura rápida, de dónde sale cada valor, guardar y revisar encadenados, «Sesiones vacías» | **tramo siguiente** (§6) |
 
 ## 2. El modelo de datos de los bloques (DL-181)
 
@@ -94,7 +95,7 @@ Sesión
 - **ENP-D06 · La APK instalada recibe lo de antes y no se le retiene nada.** A diferencia de DL-178, nada se registra ni se
   cuenta distinto: el registro sigue siendo por ejercicio. Sin la capacidad, la persona ve los mismos ejercicios en orden,
   sin el bloque; el editor lo dice en la ayuda del bloque. No hay migración de capacidades: no se registra ni se exige.
-- **ENP-D07 · La APK nueva** muestra los ejercicios agrupados bajo su bloque y, en uno «En vueltas», «Alterná estos 2
+- **ENP-D07 · La APK nueva** (en «Hoy», el detalle de cada sesión del plan, «Ver rutina», el plan tal como se aceptó y «Ya la hice»; en este último, sin «Alterná…»: la persona ya lo hizo) muestra los ejercicios agrupados bajo su bloque y, en uno «En vueltas», «Alterná estos 2
   ejercicios · 3 vueltas · descansá 90 s al terminar cada vuelta». El registro sigue por ejercicio. La guía alternada paso a
   paso **no** va ahora.
 - **ENP-D08 · Plantillas, sesiones habituales y copiar.** Las plantillas y las sesiones habituales guardan la estructura
@@ -148,7 +149,7 @@ Las capturas del editor en Claro y Azul noche, a 1280 × 800, 1536 × 730 (Windo
 Estados: implementado; verificado automáticamente; observado en captura (lo que diga el informe de la CI). Pendiente de
 prueba manual: el teclado y el lector de pantalla en el editor, y la APK con TalkBack.
 
-## 6. El tramo siguiente (C5 a C11, en este orden; nada de esto está a medias en el código)
+## 6. El tramo siguiente (C5 a C9 y C11, en este orden; nada de esto está a medias en el código)
 
 5. **Los días en un solo lugar,** junto a cada sesión, con «Ver próximas fechas» a pedido (`agenda-del-plan.tsx`).
 6. **El catálogo:** la selección a la vista y un pie fijo («Agregar 3 ejercicios a Sesión A»); crear o importar, bajo «No
@@ -157,5 +158,4 @@ prueba manual: el teclado y el lector de pantalla en el editor, y la APK con Tal
    salir; cambiar de RIR a % RM avisa y se puede deshacer.
 8. **De dónde sale cada valor:** común a todas las series, propio de esta serie o sin indicar.
 9. **Guardar y revisar encadenados,** con «Ir a…» al campo exacto y la vuelta a la revisión conservando el contexto.
-10. **La pestaña semanal vacía** («Lo que trabaja la semana») se saca mientras no tenga datos.
 11. **«Sesiones vacías»:** con una cantidad, arma A, B y C dentro de una fase inicial, sin pedir nombre ni propósito.
