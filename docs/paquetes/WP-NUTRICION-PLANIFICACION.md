@@ -63,12 +63,18 @@ principio; el rediseño completo del asistente. **El panel de contexto de la per
 - **NUP-D06 · La suma de los rangos.** Por macro, suma los mínimos (un mínimo vacío cuenta como cero) y los máximos; si
   alguna comida no tiene máximo para ese macro, la suma no tiene tope y se dice cuál. Las kcal de la suma salen de los
   gramos con 4, 4 y 9. Va arriba de las comidas, con su título y una nota que la separa de «Rangos y totales», que es lo
-  que aportan las opciones armadas.
+  que aportan las opciones armadas. **Sin tope o sin piso, nunca «adentro»** (revisión adversaria): de un lado que falta
+  no hay con qué comparar, así que se ubica frente al lado que hay. Sin tope: «desde 1.026 kcal» y «724 kcal por encima
+  del mínimo, sin tope para comparar» (o «… por debajo del mínimo», que sí se puede decir). Sin ningún mínimo indicado
+  (el cero de los mínimos vacíos no es un piso indicado): «hasta 75 g» y «21 g por debajo del máximo, sin mínimo para
+  comparar». Sin ninguno de los dos: «sin mínimo ni tope para comparar». Las kcal se comparan enteras, como se muestran.
 - **NUP-D07 · Cuándo coinciden las kcal del objetivo y las de los gramos.** Si la diferencia es de hasta el 5 % de las
   kcal indicadas (los factores 4, 4 y 9 son redondeos). Si no, un aviso neutro con la diferencia en kcal; se puede
   guardar igual.
 - **NUP-D08 · El «%» del objetivo.** Su base son las kcal indicadas: «18 % de las 2.500 kcal · 112 g · 448 kcal». Sin
-  kcal indicadas, no hay porcentaje. En la app de la persona no cambia nada.
+  kcal indicadas, no hay porcentaje. En la app de la persona no cambia nada. En el renglón compacto del objetivo vigente
+  también va con el número de su base («Proteínas 112 g · 18 % de las 2.500 kcal»): cuando los gramos no suman las kcal
+  indicadas, el renglón de arriba nombra dos cantidades de kcal y «de las kcal» no decía de cuáles.
 - **NUP-D09 · Enter.** En un campo de una línea, si falta algo en otro campo del formulario, Enter lleva al siguiente que
   falta (y si no hay ninguno después, al primero); si no falta nada, o falta solo el campo donde se está, envía como
   antes. No toca las áreas de texto, las listas ni los botones. Es una pieza común: `useAvisosVivos` la da a todos sus
@@ -77,10 +83,12 @@ principio; el rediseño completo del asistente. **El panel de contexto de la per
   «panel»), el diálogo de confirmación, el panel y la ayuda de la vista. Con algo escrito sin guardar, preguntan en el
   mismo cuadro antes de cerrar: el cuadro enfocado con `conCambios`, como ya hacía con Escape; el diálogo de
   confirmación, si se escribió algo adentro (también con Escape). Un toque que empezó adentro y terminó afuera (al
-  seleccionar texto) no cierra. «Volver» y «Cancelar» siguen siendo explícitos.
+  seleccionar texto) no cierra. «Volver» y «Cancelar» siguen siendo explícitos. El cuadro de la opción cuenta también lo
+  escrito en «Crearlo a mano» y en «Importarlo…», que todavía no está en la opción (revisión adversaria).
 - **NUP-D11 · El «%» en el website del profesional (decisión de Dirección del 18/11).** Permitido con su base dicha («de
-  las 2.500 kcal») y su número real al lado. Los detectores del website pasan a exigir eso; siguen prohibiendo el
-  porcentaje de cumplimiento o de adherencia. En la app de la persona, el detector sigue igual.
+  las 2.500 kcal») y su número real al lado. Los detectores del website pasan a exigir eso, con el número de la base
+  después de «de la(s)/lo(s)» (o la expresión que lo escribe): «18 % de las kcal» o «82 % de los días» se detectan.
+  Siguen prohibiendo el porcentaje de cumplimiento o de adherencia. En la app de la persona, el detector sigue igual.
 - **NUP-D12 · La comida vacía empieza por lo que más se usa.** «Una comida habitual · copiar de otra comida · una
   receta · alimentos»: los cuatro abren lo que ya existía (los cuadros de ED-33, el cajón de las recetas y la opción de
   alimentos).
@@ -90,8 +98,9 @@ principio; el rediseño completo del asistente. **El panel de contexto de la per
 - **Lógica** (`apps/web/test/planificacion-de-nutricion.test.mjs`): lo que aporta un alimento es la cuenta del dominio
   y la suma de las filas da el total; lo que falta se nombra; la comida de la que menos a la que más; ubicar frente al
   rango (dentro, encima, debajo, sin límite, sin dato); la suma de los rangos frente al objetivo (con el ejemplo de
-  Dirección: grasas 50–75 g frente a 335 g); el caso real del objetivo (3.783 kcal frente a 2.500); el «%» con su base;
-  Enter (el siguiente que falta, el primero, enviar); tocar afuera (adentro o afuera del cuadro).
+  Dirección: grasas 50–75 g frente a 335 g), y sin tope o sin piso nunca «adentro» (con el caso de la captura 06); el
+  caso real del objetivo (3.783 kcal frente a 2.500); el «%» con su base y su número; Enter (el siguiente que falta, el
+  primero, enviar); tocar afuera (adentro o afuera del cuadro, y lo escrito en «Crearlo a mano» o «Importarlo…»).
 - **Del website:** cada prueba fija lo que protege y se verificó con una mutación (con el defecto, falla).
 - **Los detectores del «%»** del website exigen la base; el de la app de la persona no cambia.
 
@@ -105,3 +114,25 @@ principio; el rediseño completo del asistente. **El panel de contexto de la per
   los gráficos; queda para que Dirección diga si el «%» con su base también vale ahí.
 - Escribir el reparto en «%» y que BE pase a gramos (con 4, 4 y 9 a la vista) no entra en este tramo: hoy se escribe en
   gramos y se ve el «%».
+
+**De la revisión adversaria (19/11), de severidad baja** (las de alta y media se corrigieron en la rama):
+
+- «No se puede ubicar frente **del** rango de Almuerzo»: va «frente **al** rango» (`planificacion.ts`, en
+  `opcionFrenteAlRango` y `diaFrenteAlRango`). En el cuadro de la opción, una opción nueva todavía vacía ya muestra esas
+  líneas «sin dato»; la comida del editor las espera a que haya algo (`conAlgo`), el cuadro no.
+- «Copiar a Almuerzo como opción 2»: en una comida recién creada, la copia reemplaza a la «Opción 1» sin tocar (NUP-12) y
+  queda como opción 1; el número del botón (`numeroDeLaNueva` en `editor.tsx`) no lo sabe. Por lo mismo, al usar una
+  comida habitual, el lugar libre cuenta la opción que se va a reemplazar (una habitual de 12 opciones deja una afuera).
+- «Subir» y «Bajar» una comida intercambian su opción abierta con `?? 0` (`moverComida` en `editor.tsx`): una comida de
+  varias opciones que estaba plegada (NUP-D04) queda con la primera abierta después de moverla.
+- Enter (`enterAlQueFalta`): si el campo que falta no puede recibir el foco (apagado o escondido), Enter no lleva a
+  ningún lado y tampoco envía. No se encontró un formulario actual donde pase; conviene enviar si el foco no llegó.
+- Al tocar «Seguir editando» en la pregunta de cerrar (el diálogo de confirmación, como ya pasaba en el cuadro enfocado),
+  el botón desaparece y el foco queda en el documento: conviene devolverlo al campo donde se estaba.
+- El objetivo vigente con los macros en proporción de las kcal (datos viejos, `energy_share`) muestra en el paso 2 «Con
+  los tres macros escritos se ve cuántas kcal suman», aunque estén escritos: en proporción no hay gramos que sumar.
+- Cada fila redondea su aporte (kcal enteras, gramos a un decimal) y el total también: sumadas a ojo, las filas pueden
+  diferir del total en 0,1 g o 1 kcal. La cuenta exacta coincide (NUP-D01).
+- La comida plegada dice «kcal sin dato · P Sin dato»: las mayúsculas no coinciden.
+- Dos comentarios quedaron viejos: «ningún texto de Nutrición dice «%»» (`asistente-de-nutricion.ts`) y «Sin «%»»
+  (`rangos.ts`).
