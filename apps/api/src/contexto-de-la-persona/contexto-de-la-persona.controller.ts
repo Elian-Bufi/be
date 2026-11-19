@@ -20,7 +20,7 @@ export class ContextoDeLaPersonaController {
   ) {}
 
   /** API-CTX-01: las respuestas vigentes a las Solicitudes propias, de las áreas con el PDP permitido. */
-  @Get('advisees/:adviseeId/person-context/form-answers')
+  @Get('advisees/:adviseeId/person-context/answers')
   respuestas(@Param('adviseeId') adviseeId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<RespuestasDelContextoResponse> {
     this.limitador.consumir('consultaProtegida', null, actorDe(req).identidadId);
     return this.contexto.respuestas(actorDe(req), adviseeId, query, contextoDe(req));
