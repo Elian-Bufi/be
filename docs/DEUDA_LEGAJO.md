@@ -181,6 +181,8 @@
 | DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **INTEGRADA en `main` (#284), con la revisión adversaria arreglada · HA-T01 a HA-T16 a ratificar · HA-T01 actualizada por DL-176** (la historia anterior va preseleccionada en la pantalla única de consentimiento; la tarjeta opcional al aceptar se retiró): la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
 | DL-176 | Decisión de Dirección · 2026-11-15 («casi por default»; WP-COMPARTIR) | Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9 («Aceptar y compartir datos», CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) | Compartir entre áreas no tenía pantalla (la API lo permitía, nadie lo escribía), la historia anterior se pedía como opt-in y aceptar a un profesional eran varios actos separados (el vínculo, el B2, el A3 y los hábitos aparte); Dirección pide que lo único con rozamiento sea conectar y que lo demás sea «casi como aceptar todo» | **PROGRAMADA en `wp-compartir` (PR abierto, sin integrar) · CMP-D1 a CMP-D16 a ratificar**: después de aceptar el vínculo (que sigue siendo aparte, 10-B04), una sola pantalla de consentimiento con todo preseleccionado (su área, el A3 si falta, el resumen y el plan de las otras áreas para ese profesional y lo de su área para los demás, la historia anterior y los hábitos si corresponde), «Aceptar y compartir» y «Elegir qué compartir»; un toque escribe todos los actos en una transacción, cada uno con su texto, su versión y su auditoría. «Quién ve qué» suma un interruptor por cosa y los pedidos para responder; quien ya tiene vínculos ve una tarjeta única en Inicio. Familia propia CMP (API-CMP-01 a 03), sin migración (`docs/paquetes/WP-COMPARTIR.md`). Actualiza HA-T01 de DL-175 |
 | DL-177 | Decisión de Dirección · 2026-11-18 (el profesional sin el autenticador) | 08 §25 · 08 §42 (condición 6) · Ley 25.326 art. 9 · RNF-PRI-002 · DL-155 · DL-169 (UF-11, UF-D12 y UF-T56) · DL-172 | Para actuar como profesional había que configurar el autenticador y escribir el código de 6 dígitos en cada sesión; Dirección quiere que el profesional entre con su contraseña (o con Google) y, más adelante, con un código por correo | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-sin-autenticador-profesional` (PR abierto, sin integrar)**: «solo contraseña hasta tener correo», con una constante del dominio (`SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO = false`). Administración sigue con contraseña y autenticador; API-ADM-19 queda en el contrato y fuera de la consola; sin migraciones. A ratificar: la transición, la suspensión de 08 §25 y de la condición 6 de 08 §42, y el riesgo (una sola llave para datos de salud) |
+| DL-178 | Decisión de Dirección · 2026-11-18 (las series de calentamiento) | 06 REG-06-105 · 09v10 (comparación serie por serie) · DL-122 · DL-152 · DL-161 · DL-171 (BE-E1RM, Epley v1) | El plan y el registro no tenían un tipo de serie: un calentamiento entraba en la cuenta de series, en la barra de la sesión, en «La vez pasada», en el historial, en Analizar y en el 1RM estimado | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-series-de-calentamiento` (PR abierto, sin integrar), a ratificar D-1 a D-6**: `setKind` (`WORKING` por omisión, `WARM_UP`) en la serie indicada y en la registrada, sin reescribir nada (la ausencia es efectiva); explícito solo para el cliente que declara `training-set-kinds-1`; el calentamiento arriba, con «C», fuera de todo cálculo; las lecturas nuevas de la APK se congelan con la próxima candidata (DL-152) |
+| DL-180 | Decisión de Dirección · 2026-11-16 (el segundo tramo de la planificación de Nutrición: los alimentos del catálogo) | REG-06-99 a 101 · REG-06-135 · RF-027 · RF-060 · DL-119 y DL-120 (el patrón de las recetas) · DL-141 (D-1, D-6) · DL-155 (WP-ADMINISTRACION) · DL-169 (UF-09) | Un alimento cargado a mano con un error no se podía corregir ni retirar; el buscador no distinguía lo verificado de lo cargado por cualquiera; Administración no tenía cómo revisar lo cargado a mano; los alimentos no tenían ícono por grupo; la imagen de la receta recién se ofrecía después del primer guardado | **PROGRAMADA en `wp-nutricion-alimentos` (PR en borrador contra `wp-nutricion-planificacion`, sin integrar) · NUA-D01 a NUA-D23 a ratificar** (NUA-D05 y D13, sin efecto por la decisión de Dirección del 2026-11-19): corregir emite una versión nueva y retirar una versión RETIRADO, en la cadena de siempre; **lo cargado a mano es de quien lo cargó** (segundo tramo, `wp-nutricion-alimentos-2`, PR en borrador contra `wp-nutricion-alimentos`); «Verificado» (la tabla oficial, el canon o lo certificado) y «Tuyo» en el buscador; Administración ve todas las cargas con el nombre de quien las cargó, las agrupa por nombre parecido, certifica con una fuente, marca equivalentes y **suma al canon**; un ícono por grupo; la imagen de la receta al crearla; los campos del asistente; las **medidas caseras** (NUA-08, en el website). Familia propia ALI (API-ALI-01 a 09), cinco migraciones aditivas. Micronutrientes y platos argentinos (NUA-09 y 10), declarados como el tramo siguiente (`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`) |
 
 ---
 
@@ -8563,3 +8565,284 @@ opción para quien lo quiera.
 - Declarar la etapa del correo con sus IDs.
 - Avisar a los profesionales que ya habían configurado el autenticador que no lo van a necesitar.
 - Llevar el riesgo a la validación jurídica.
+
+---
+
+## DL-178 — Las series de calentamiento: se indican y se registran, pero no cuentan
+
+**Qué decidió Dirección (2026-11-18).** Dentro de un mismo ejercicio, el profesional indica series de calentamiento,
+escalonadas en carga, antes de las efectivas. Las de calentamiento se registran, pero no cuentan.
+
+**Qué dice el legajo.** El 06 y el 09 no tienen un tipo de serie: toda serie planificada o registrada es una serie del
+ejercicio, y todo lo que compara, cuenta o estima las toma a todas (REG-06-105, la comparación serie por serie, DL-122,
+DL-161, la estimación BE-E1RM de DL-171). Un calentamiento cargado como serie entraba en:
+- la cuenta de series y la barra de la sesión;
+- «La vez pasada», el historial del ejercicio y Analizar;
+- el 1RM estimado: 140 kg × 5 de una aproximación pesaba como la serie efectiva más cargada del día.
+
+**Lo programado (`wp-series-de-calentamiento`, PR abierto, sin integrar).**
+- **El dato.**
+  - Cada serie, la indicada en el plan y la registrada por la persona, lleva `setKind`: `WORKING` (efectiva, el valor por
+    omisión) o `WARM_UP` (calentamiento).
+  - Es un enum y no un booleano, para sumar otros tipos después (`TipoDeSerieSchema`).
+  - Las reglas viven en un solo módulo del dominio, `packages/domain/src/tipos-de-serie.ts`, que usan la API, el website y
+    la APK.
+- **La migración.** Las series no son filas: viven dentro del JSONB de la versión de plan, de su instantánea, del borrador
+  y de la ejecución, como todo lo de cada serie (DL-122, DL-161). Por eso el «default `WORKING`» es la ausencia de la clave:
+  - no se reescribe ninguna fila ni ninguna huella de instantánea;
+  - todo lo indicado y registrado antes queda con todas sus series efectivas y responde igual;
+  - solo se guarda `WARM_UP` (`tipoGuardado`): una serie efectiva queda idéntica a las de antes;
+  - lo único que cambia en la base es la lista de capacidades que acepta `capacidad_de_cliente_declarada`, que suma
+    `training-set-kinds-1` (migración aditiva `20261118120000_capacidad_tipos_de_serie`).
+- **El contrato.** El campo es opcional en lo que entra (si falta, vale `WORKING`) y explícito en lo que sale. DL-152 pone
+  una condición: las APK instaladas validan con esquemas estrictos y rechazarían un campo que no conocen.
+  - La API arma cada serie con su tipo, `WORKING` incluido.
+  - Un interceptor de Entrenamiento (`SinTipoDeSerieInterceptor`) lo saca solo para el cliente que no declara
+    `training-set-kinds-1`. La 0.29.0-candidata.1 recibe exactamente lo de antes, y su prueba de lecturas no cambia.
+  - Un plan con calentamiento no se le entrega a un cliente sin la capacidad, que lo vería todo efectivo y lo registraría
+    así. «Hoy» lo informa como no disponible y el detalle es el 404 no revelador, como en DL-122.
+  - Un plan así no se activa mientras el titular no haya usado una APK que declare la capacidad (409
+    `CLIENT_CAPABILITY_REQUIRED`, con su texto). API-SER-01 se lo informa al profesional en `setKindsDelivery`, y el
+    editor lo dice antes de activar.
+  - La APK vieja no se rompe: sin el campo, todo es efectivo.
+- **El orden.** En el plan, las de calentamiento van arriba. La API rechaza una de calentamiento después de una efectiva
+  (`WARM_UP_AFTER_WORKING_SET`, dentro de `TRAINING_PLAN_STRUCTURE_INVALID`): no reordena en silencio.
+- **La numeración.**
+  - `setIndex` sigue siendo la posición real de la serie, contando el calentamiento. Es la identidad con la que se
+    registra, se corrige y se mide el tiempo.
+  - Lo que se muestra y lo que se compara entre sesiones es el **número efectivo**: las efectivas se numeran 1, 2, 3, como
+    hoy, y el calentamiento lleva «C».
+  - La serie 1 de hoy (la tercera que hizo) se compara con la serie 1 de una sesión sin calentamiento.
+  - Sin calentamiento, el número efectivo es el `setIndex`.
+- **Lo que no usa las de calentamiento.**
+  - La comparación serie por serie (`compararEjecucion`): saca el calentamiento de las filas y lo deja aparte. De ahí
+    salen la tira de cada sesión, «La vez pasada», el historial del ejercicio, la evolución por serie, Analizar
+    (`SETS_RECORDED` y las métricas por serie), las comparaciones de etapas y los cruces.
+  - El 1RM estimado (Epley v1): «la de mayor carga por sesión» se elige solo entre las efectivas (`seriesDeLasSesiones`).
+  - Las cuentas de series: la de la línea de tiempo («Series efectivas con datos»), la de «Registros» y la del plan.
+  - En la APK, la barra de la sesión y la cuenta del registro.
+  - Una serie es de calentamiento si lo dice el registro **o** el plan para ese `setIndex`: así tampoco entra un registro
+    hecho sin el campo.
+- **Los textos.** Cuando un texto cuenta las series de un ejercicio o de una sesión con calentamiento, dice «series
+  efectivas» y nombra el calentamiento aparte: «3 series efectivas + 2 de calentamiento». Sin calentamiento, el texto queda
+  como siempre («4 series»), así lo de antes responde igual.
+- **El website.**
+  - En la planilla del editor, cada serie tiene la marca «C». Al marcarla, la serie sube arriba del ejercicio, las
+    efectivas se numeran 1, 2, 3 y la ayuda dice que el calentamiento se registra y no entra en los cálculos.
+  - El plan, la hoja para descargar, las ejecuciones y los tiempos lo muestran como «C» o «Calentamiento».
+  - La prescripción rápida («4×8») describe las efectivas y deja el calentamiento como estaba.
+- **La APK.** Declara `training-set-kinds-1`.
+  - La fila de un calentamiento lleva «C» y se nombra «Calentamiento». El lector de pantalla dice además que no cuenta.
+  - Su banda dice «Plan del calentamiento», y la acción, «Empezar», «Terminar» o «Registrar calentamiento».
+  - Se registra con `setKind: WARM_UP`: en la sesión, en el registro rápido y en la corrección.
+  - La barra de la sesión, «Serie N de M» y la cuenta del registro son de las efectivas.
+
+**Por qué así y no de otra forma.**
+- **Una columna por serie** obligaba a sacar las series del JSONB. Era una migración de datos grande, con riesgo sobre las
+  huellas de las instantáneas, para un dato que el JSONB ya guarda con el mismo «default».
+- **Mandar `WORKING` también a la APK instalada** la rompía, porque valida con esquemas estrictos (DL-152).
+- **Renumerar `setIndex`** (que el calentamiento fuera 0, −1…) cambiaba la identidad de lo registrado, de las correcciones
+  y de los tiempos.
+
+**Opciones para Dirección.**
+- **A (programada):** lo de arriba. El calentamiento se ve en todas las pantallas, se registra y no entra en ningún cálculo.
+  Los textos dicen «series efectivas» solo donde hay calentamiento.
+- **B:** decir «series efectivas» en todos los textos que cuentan series, también sin calentamiento. Es más uniforme, pero
+  cambia textos que hoy leen las personas y las capturas de evidencia, sin que haya nada distinto que distinguir.
+- **C:** además, un tercer tipo (por ejemplo, «aproximación» o «vuelta a la calma»). El enum lo admite, pero cada tipo nuevo
+  pide decidir si cuenta.
+
+**Decisiones a ratificar.**
+- D-1: el «default `WORKING`» como ausencia de la clave en el JSONB, sin una columna nueva.
+- D-2: `setKind` explícito solo para el cliente que declara `training-set-kinds-1`, y el plan con calentamiento retenido
+  para el que no.
+- D-3: el calentamiento arriba como regla del contrato (422), no como reorden silencioso.
+- D-4: el número efectivo para mostrar y comparar, con `setIndex` como identidad.
+- D-5: una serie es de calentamiento si lo dice el registro o el plan.
+- D-6: «series efectivas» solo donde hay calentamiento (opción A).
+
+**Lo que queda.**
+- Integrar el PR.
+- **Congelar las lecturas nuevas de la APK con la próxima candidata (DL-152).** La APK que declara `training-set-kinds-1`
+  lee `setKind` en API-SER-02, API-TRN-09, 14, 14-PERIODO, 15 a 20 y 19-LISTA. Al publicarla, se congela con
+  `scripts/congelar-lo-que-lee-la-apk.mjs` y reemplaza a la 0.29.0-candidata.1 en `VIGENTES`.
+- Probar en el teléfono una sesión con calentamiento, también con TalkBack:
+  - la fila «C» y «Terminar calentamiento»;
+  - la barra que no avanza con el calentamiento;
+  - el registro con su tipo.
+- Revisar con un profesional si la marca «C» se entiende sin la ayuda.
+
+---
+
+## DL-179 — El contexto de la persona en el editor: el panel, la familia CTX y la cita en la evaluación de Nutrición
+
+**Prioridad:** alta (planificar con el contexto a la vista es el centro del trabajo del profesional) · **Documento:** 04
+RF-036, RF-057 y RF-071 · 06 §20.4, REG-06-109, CA-FOR-04 · 08 §11-bis, §19.7 y §27.3 · 10-B10:407 · B05 · DL-102 ·
+DL-137 D-7 · DL-163 D-13 · DL-164 y DL-165 · DL-173 · DL-176 · **Estado:** DECIDIDA por Dirección el 2026-11-18 (el panel y
+su alcance) · PROGRAMADA en `wp-contexto-de-la-persona` (PR abierto, sin integrar) · CTX-D01 a CTX-D18 y CTX-P01 a
+CTX-P09, **a ratificar**. Si al integrar el número choca con otro paquete de la misma planificación, se renumera.
+
+**La decisión de Dirección.** «El profesional tiene que tener el contexto de la persona a mano mientras planifica, sin salir
+del editor», en el editor del plan de Entrenamiento y de Nutrición, en la evaluación y en el objetivo, con cinco pestañas
+(Lo importante, Formularios, Cuerpo, Otras áreas y Notas) y «Citar» al lado de cada respuesta.
+
+**Lo que se declara.**
+- **Familia propia de BE, CTX** (el 09 no la tiene; DL-137 D-7): **API-CTX-01** `GET /advisees/{adviseeId}/person-context/answers`
+  (las respuestas vigentes a las Solicitudes propias, de las áreas con el PDP permitido) y **API-CTX-02**
+  `GET /advisees/{adviseeId}/person-context/body` (la última toma y la anterior: enteras para quien lleva Antropometría; el
+  peso y la composición en kilos, con su método, para quien recibe el resumen compartido, con la lectura registrada).
+- **API-NUT-01, 02 y 03, aditivas:** `formResponseReferences` en la evaluación de Nutrición, como DL-102 en Entrenamiento,
+  con la migración `20261118120000_citas_en_evaluacion_nutricional` (solo agrega una tabla y sus guardias).
+- **El criterio de «Lo importante»** por área (el §1 del paquete), con sus fuentes, aplicado solo a lo que los formularios
+  de BE preguntan. Lo que las guías piden y BE no pregunta queda propuesto (CTX-P01 a CTX-P05), sin campos nuevos.
+
+**Lo que no cambia.** Ninguna operación de siempre pierde un campo. El texto de «resumen» aceptado por la persona no se
+amplía: el cuerpo compartido es lo que ese texto ya promete («de Antropometría, el peso y la composición en kilos, con su
+método»). Administración no lee nada de esto. Detalle completo: `docs/paquetes/WP-CONTEXTO-DE-LA-PERSONA.md`.
+
+---
+
+## DL-180 — Los alimentos del catálogo: corregirlos, retirarlos, revisarlos y su grupo
+
+**Decisión de Dirección del 2026-11-16** (el alcance del segundo tramo de la planificación de Nutrición). Paquete:
+`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`. Reservada para Nutrición; si al integrar choca con otra, se renumera.
+
+**El hueco.** El legajo prevé que un elemento del catálogo tenga versiones inmutables y una disponibilidad (REG-06-99 a
+101), pero no había forma de corregir ni de retirar lo cargado a mano: un error de carga («Proteína en polvo» en test)
+quedaba para siempre en el buscador. El buscador tampoco distinguía una tabla oficial de lo que cargó cualquiera, y
+Administración no tenía cómo revisarlo.
+
+**Lo programado (NUA-01 a NUA-07).**
+- Corregir: una versión nueva, contra la versión vista, con el bloqueo y el conflicto de las recetas. Lo activado, las
+  recetas y los registros conservan la versión que citaban (REG-06-101).
+- Retirar: una versión RETIRADO. Sale del buscador y de todo lo nuevo; lo que lo cita lo sigue mostrando, marcado.
+- Tres niveles de origen: «Verificado», «Tuyo» y «De otro profesional». Lo cargado a mano desde DL-180 se comparte con los
+  demás profesionales de Nutrición (con el aviso a la vista); lo de antes, solo cuando su autor lo corrige.
+- Administración certifica con una fuente (vale para esa versión) o marca un equivalente de la tabla oficial, viendo solo
+  el nombre y los valores, y solo de lo compartido (lo que su autor no compartió lo ve solo él).
+- Un ícono por grupo (doce dibujos nuevos de la familia y «Otros» con el genérico), sembrado para la tabla oficial.
+- La imagen de la receta al crearla, y los campos de los pasos 3 y 4 del asistente con el estilo de BE.
+
+**Lo que no cambia.** La APK instalada recibe exactamente lo de antes. Nada se borra ni se reescribe: tres migraciones que
+solo agregan (tres tablas de solo agregar, sus guardias y la siembra de los grupos).
+
+**Decisiones a ratificar:** NUA-D01 a NUA-D13 (§4 del paquete). Las que más pesan: qué se comparte (NUA-D05), que un
+borrador con un alimento retirado se siga guardando (NUA-D03) y que la certificación sea de una versión (NUA-D07).
+
+**Lo que queda.** Medidas caseras, micronutrientes y platos argentinos (NUA-08 a 10, §5 del paquete); validar los íconos;
+retirar «Proteína en polvo» en test con la operación nueva, después de integrar (§6 del paquete).
+
+### DL-180, segundo tramo (rama `wp-nutricion-alimentos-2`, 2026-11-19)
+
+**Cambio de dirección de Dirección (Elián, 2026-11-19):** «si carga algo, que sea propio; Administración debe poder ver
+quién lo cargó y tener control; si hay x profesionales pidiendo eso, lo puede meter al canon; es un problema si cargan todos
+y son compartidos». Reemplaza el «compartir con control» que se había pedido esa misma mañana y deja **sin efecto NUA-D05
+y NUA-D13**.
+
+**Lo programado.**
+- **Lo propio es propio (NUA-D14):** lo cargado a mano lo ve y lo cita solo quien lo cargó; para los demás, el mismo 404 que
+  lo inexistente. No hay nivel «De otro profesional». `alimento_compartido` queda como historia y se cierra.
+- **Administración ve y controla (NUA-D15):** todas las cargas, con el nombre de profesional de quien las cargó (nunca sus
+  personas ni sus planes), agrupadas por nombre parecido con cuántos profesionales cargaron algo así (API-ALI-08).
+- **Sumar al canon (NUA-D16, API-ALI-09):** un alimento verificado de BE, de todos, con la fuente obligatoria; puede partir
+  de una carga y marcar las del grupo como equivalentes. El buscador de cada autor sugiere el verificado antes del suyo, y
+  crear uno con el nombre de un verificado se avisa antes de guardar, sin impedirlo.
+- **Las bajas de la revisión adversaria sobre lo retirado (NUA-D17 a D19):** el borrador acepta solo lo retirado que ya
+  citaba; una receta no cita ninguna versión de un alimento retirado; la imagen de una receta recién creada que no quedó
+  porque venció la sesión se avisa al volver, con su reintento; «Revisar» lleva el foco al formulario.
+- **Medidas caseras (NUA-08, NUA-D20 y D21):** la unidad, la cucharada, la taza y la porción, con su equivalencia; las
+  define quien carga el alimento; en la fila del plan se elige la cantidad con ellas; la cuenta va en gramos y la persona
+  recibe solo los gramos. La tabla oficial no trae medidas (no se inventan).
+
+**Lo que no cambia.** La APK instalada recibe exactamente lo de antes. Dos migraciones nuevas que solo agregan:
+`20261120120000_lo_propio_es_propio` y `20261120130000_medidas_caseras`.
+
+**Lo que queda.** Los micronutrientes clave (NUA-09) y los platos argentinos como recetas de ejemplo (NUA-10), declarados
+en el §5 del paquete; mostrar la medida casera en la APK (sin capacidad de cliente: Dirección dijo el 19/11 que nadie tiene
+APK viejas); ratificar NUA-D14 a D23. **Dirección ratificó el 19/11 NUA-D01 a D13** con dos ajustes: NUA-D03 (una
+receta nueva o corregida no suma un alimento retirado: NUA-D18) y NUA-D07 (Administración ve el nombre de quien lo cargó,
+nunca a quién se le indicó; lo del canon nace como un alimento nuevo, con su fuente y sin el nombre de quien lo cargó; el
+aviso de no escribir datos de personas en el nombre se mantiene).
+
+---
+
+## DL-181 — La planificación de Entrenamiento: «Fase» para la etapa de varias semanas y el bloque dentro de la sesión
+
+**Prioridad:** alta (es la forma en que el profesional arma cada sesión) · **Documento:** 09v10 §5-§6 (la jerarquía),
+B10-06 §8-§23 (el editor), REG-06-104, 105, 111 y 112 (la instantánea y su huella) · DL-122 · DL-152 · DL-178 · B05 ·
+**Estado:** DECIDIDA por Dirección el 2026-11-18 (la fase, el bloque y sus dos tipos) · PROGRAMADA en
+`wp-entrenamiento-planificacion` (PR abierto, sin integrar, con #288 y #289 adentro) · ENP-D01 a ENP-D16, **a ratificar**.
+La 180 queda para `wp-nutricion-planificacion`; si al integrar el número choca, se renumera.
+
+**Qué decidió Dirección.** Lo que se llamaba «Bloque» (la etapa de varias semanas, el mesociclo) se llama «Fase» en todas
+las pantallas, y la sesión suma un nivel opcional, el «Bloque» (Torso, Pierna, Core…), que agrupa ejercicios: «Seguido»
+(un título; los ejercicios de a uno) o «En vueltas» (dos o más alternados, con las vueltas y el descanso al terminar cada
+vuelta). Se guarda como dato aditivo: los planes existentes quedan iguales, con sus huellas e instantáneas.
+
+**Qué dice el legajo.** El 09 nombra «bloque» al mesociclo (`blocks`, `blockId`) y no tiene una agrupación de ejercicios
+dentro de la sesión: la sesión es una lista ordenada de prescripciones (REG-06-111).
+
+**Lo programado.**
+- **En pantalla, «Fase»; en el contrato, `blocks` sigue igual** (ENP-D01): renombrarlo tocaría el JSONB de cada versión y
+  de cada instantánea, la APK instalada y lo congelado de sus lecturas, sin ganancia para la persona.
+- **El bloque de la sesión es una marca sobre la lista** (ENP-D02): la sesión puede llevar `exerciseGroups` (`groupId`,
+  `label`, `kind` `SEQUENTIAL` o `ROUNDS`, y en `ROUNDS`, `rounds` y `restAfterRoundSeconds`) y cada prescripción, su
+  `exerciseGroupId`. Los ejercicios siguen en una sola lista, en orden: nada de lo que la recorre cambia. Lo que no tiene
+  bloques no lleva las claves, así que su huella no cambia, y no hay migración de base.
+- **Las reglas** (`packages/domain/src/bloques-de-la-sesion.ts`): al guardar, el bloque existe en la sesión, sus ejercicios
+  van seguidos y su identificador no se repite (422); para activar, ningún bloque vacío y ninguno «En vueltas» con menos de
+  dos ejercicios (API-TRN-11 y 12).
+- **La APK instalada recibe lo de antes** (ENP-D06, DL-152): la capacidad `training-session-groups-1` decide si salen las
+  dos claves; sin ella, `SinBloquesDeLaSesionInterceptor` las saca en el borde. A diferencia de DL-178 no se retiene ni se
+  bloquea nada: el registro sigue siendo por ejercicio y nada se cuenta distinto.
+- **La APK nueva** muestra los ejercicios bajo su bloque y, en uno «En vueltas», «Alterná estos 2 ejercicios · 3 vueltas ·
+  descansá 90 s al terminar cada vuelta». Sin guía alternada paso a paso.
+- **Las plantillas y las sesiones habituales** guardan la estructura tal como entra: conservan los bloques.
+
+**Lo que queda.**
+- Ratificar ENP-D01 a ENP-D16.
+- Congelar la lectura nueva de la APK con la próxima candidata (DL-152): la que declara `training-session-groups-1` lee
+  `exerciseGroups` y `exerciseGroupId` en API-SER-02, API-TRN-09, 14, 14-PERIODO, 15 a 20 y 19-LISTA.
+- Probar en el teléfono una sesión con un bloque «En vueltas», también con TalkBack.
+- Lo que dejó abierto la revisión adversaria del 2026-11-19 (todo de severidad baja: el preset con la sesión vacía
+  recordado por posición, el tope de 20 bloques en el editor, la lectura de la versión activa sin los bloques, entre
+  otros), en §7 del documento del paquete.
+- El tramo siguiente del paquete (C5 a C11). Detalle completo: `docs/paquetes/WP-ENTRENAMIENTO-PLANIFICACION.md`.
+
+---
+
+## DL-182 — Las plantillas de entrenamiento independientes: crearlas y editarlas sin una persona
+
+**Prioridad:** alta (preparar los planes base es trabajo diario del profesional) · **Documento:** RF-037 · DL-108 (PF-09)
+· DL-122 · DL-178 · DL-181 · B05 · **Estado:** DECIDIDA por Dirección el 2026-11-19 (crear y editar sin persona, con el
+mismo editor, y el recorte de la v1) · PROGRAMADA en `wp-plantillas-de-entrenamiento` (PR en borrador, sin integrar, sobre
+`wp-entrenamiento-planificacion-2`) · PLT-D01 a PLT-D18, **a ratificar**. Si al integrar el número choca con otro paquete,
+se renumera.
+
+**Qué decidió Dirección.** Que un profesional pueda crear y editar una plantilla de Entrenamiento desde «Mis plantillas»,
+sin elegir a nadie (en blanco o desde una existente), con el mismo núcleo del editor del plan, autoguardado, «Guardar
+plantilla» la primera vez y «Guardar nueva versión» después, con una revisión antes; que editarla no toque los planes ya
+creados y que el plan diga el número de la versión que se aplicó. Afuera, como lo siguiente: el historial con
+diferencias, el conflicto con un diff y «usar una versión vieja como base».
+
+**Qué dice el legajo.** El 09 no tiene plantillas: son una familia propia de BE (TPL, DL-108), que solo se creaba desde el
+plan de una persona. DL-108 fija que la plantilla no lleva nada de una persona (D-5) y que las cargas se copian solo con
+el interruptor (D-2).
+
+**Lo programado.**
+- **La preparación de una plantilla** (tabla nueva, migración aditiva escrita con `prisma migrate diff`): el trabajo en
+  curso, privado, que se autoguarda sin tocar ninguna versión; guardarla crea la plantilla o la versión siguiente (con
+  las escrituras de API-TPL-01 y 04) y la borra. Una por plantilla.
+- **Nueve operaciones aditivas, API-TPL-06 a 14:** crear (en blanco o copia), abrir la de una existente, listar, leer,
+  autoguardar, revisar, guardar, descartar y las versiones de una plantilla con cuántos planes salieron de cada una. Lo
+  ajeno es 404; las escrituras simultáneas, 409. Ninguna operación de antes cambia de forma, y la APK no recibe nada
+  nuevo.
+- **El website:** el editor del plan recibe qué edita y, con una plantilla, guarda, revisa y guarda como versión con sus
+  operaciones; lo de la persona no aparece. «Mis plantillas» suma «Nueva plantilla», lo que está en preparación,
+  «Editar» y «Crear otra desde esta», y el detalle agrupado por bloque con sus versiones. La nota de origen del plan dice
+  la versión aplicada (antes, la vigente).
+
+**Lo que queda.**
+- Ratificar PLT-D01 a PLT-D18.
+- Lo declarado como siguiente (arriba) y, fuera del paquete, el mismo error de la nota de origen en Nutrición.
+- La prueba manual con el teclado y un lector de pantalla. Detalle completo: `docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md`.

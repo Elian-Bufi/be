@@ -46,10 +46,12 @@ import {
   type PrescripcionConObjetivos,
   type Resultado,
   type SesionConObjetivos,
+  rotulosDeLasSeries,
 } from '@be/domain';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
 import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
+import { ejerciciosConSusBloques } from '../bloques-en-pantalla';
 import { useMovimientoReducido } from '../estados';
 import { BotonDeIcono, Icono } from '../icono';
 import { llenadoDeLaBarra, type AjustesDelDescanso, type PermisoDeAvisos } from '../descanso-automatico';
@@ -76,6 +78,9 @@ import {
   type ResumenDelEjercicio,
   type SerieLocal,
   type Unidad,
+  marcaDeLaFila,
+  nombreDeLaFila,
+  TEXTOS_DEL_CALENTAMIENTO,
 } from '../series-de-la-sesion';
 import { sustitutosPosibles, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado, type SustitucionDelEjercicio } from '../sustitucion-de-ejercicio';
 import { Aviso, Ayuda, Boton, Campo, Casilla, CasillaSola, COLOR, Dato, Desplegable, estilosPorTema, Insignia, Parrafo, Segmentos, Superficie } from '../ui';
@@ -320,7 +325,7 @@ function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrit
       r.rir === null ? 'RIR no informado' : `RIR ${numero(r.rir)}`,
       ...(r.durationSeconds === null || r.durationSeconds === undefined ? [] : [`tiempo ${textoDeTiempo(r.durationSeconds)}`]),
     ];
-    return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}${activa ? `, ${COPY_ENTRENAMIENTO_POR_SERIE.serieActual}` : ''}, ${estado}, ${comoSeCargo(f)}: ${partes.join(', ')}`;
+    return `${nombreDeLaFila(f)}${activa ? `, ${COPY_ENTRENAMIENTO_POR_SERIE.serieActual}` : ''}, ${estado}, ${comoSeCargo(f)}: ${partes.join(', ')}`;
   }
   const p = placeholdersDeLaSerie(f.objetivo, unidad);
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar;
@@ -328,7 +333,8 @@ function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrit
     escrita && hayAlgoEscrito(escrita)
       ? `. Escrito: ${[escrita.carga.trim() ? `carga ${escrita.carga} ${unidad}` : null, escrita.repeticiones.trim() ? `${escrita.repeticiones} repeticiones` : null, escrita.rir.trim() ? `RIR ${escrita.rir}` : null, (escrita.tiempo ?? '').trim() ? `tiempo ${escrita.tiempo}` : null].filter((x): x is string => x !== null).join(', ')}`
       : '';
-  return `${COPY_ENTRENAMIENTO.serie} ${f.setIndex}, ${estado}${escrito}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, RIR ${p.rir}`;
+  // DL-178: el calentamiento se nombra así y dice que no cuenta; las efectivas, con su número efectivo.
+  return `${nombreDeLaFila(f)}${f.numero === null ? `. ${TEXTOS_DEL_CALENTAMIENTO.queEs}` : ''}, ${estado}${escrito}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, RIR ${p.rir}`;
 }
 
 /** El reloj de las filas: el de la serie que corre, si hay una, y si se puede medir (en vivo, con la corrida y sin pausa). */
@@ -442,9 +448,10 @@ const CAMPOS: readonly { readonly campo: 'carga' | 'repeticiones' | 'rir'; reado
 const LARGO_DE_UNA_CELDA = 12;
 
 /** El nombre accesible de un campo de la fila activa: qué es, de qué serie, el plan de esa serie y el error si lo hay. */
-function etiquetaDelCampo(campo: keyof FilaEscrita, setIndex: number, unidad: Unidad, placeholder: string, error: string | undefined): string {
-  const que =
-    campo === 'carga' ? `Carga en ${unidad} de la serie ${setIndex}` : campo === 'repeticiones' ? `Repeticiones de la serie ${setIndex}` : campo === 'rir' ? `RIR de la serie ${setIndex}, opcional` : TEXTOS_DE_LA_SESION.tiempoDeLaSerie(setIndex);
+function etiquetaDelCampo(campo: keyof FilaEscrita, numeroEfectivo: number | null, unidad: Unidad, placeholder: string, error: string | undefined): string {
+  // DL-178: con el número efectivo, como lo dice la fila; una de calentamiento, «del calentamiento».
+  const de = numeroEfectivo === null ? 'del calentamiento' : `de la serie ${numeroEfectivo}`;
+  const que = campo === 'carga' ? `Carga en ${unidad} ${de}` : campo === 'repeticiones' ? `Repeticiones ${de}` : campo === 'rir' ? `RIR ${de}, opcional` : TEXTOS_DE_LA_SESION.tiempoDeLaSerie(numeroEfectivo);
   const plan = campo === 'tiempo' ? '' : placeholder === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? `. ${COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}` : `. Plan: ${placeholder}`;
   return `${que}${plan}${error ? `. Revisá este campo: ${error}` : ''}`;
 }
@@ -474,11 +481,11 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
           onPress={() => acciones.onEnfocar(f.setIndex)}
           style={({ pressed }) => [estilos.celdaSerie, pressed && estilos.presionado]}
         >
-          <Text style={estilos.numeroDeSerie}>{numero(f.setIndex, 0)}</Text>
+          <Text style={estilos.numeroDeSerie}>{marcaDeLaFila(f)}</Text>
         </Pressable>
         {editable ? (
           CAMPOS.map(({ campo, teclado }) => (
-            <CeldaEditable key={campo} valor={escrita?.[campo] ?? ''} placeholder={p[campo]} teclado={teclado} error={errores[campo]} etiqueta={etiquetaDelCampo(campo, f.setIndex, unidad, p[campo], errores[campo])} onCambiar={(t) => acciones.onEscribir(f.setIndex, campo, t)} />
+            <CeldaEditable key={campo} valor={escrita?.[campo] ?? ''} placeholder={p[campo]} teclado={teclado} error={errores[campo]} etiqueta={etiquetaDelCampo(campo, f.numero, unidad, p[campo], errores[campo])} onCambiar={(t) => acciones.onEscribir(f.setIndex, campo, t)} />
           ))
         ) : (
           // Tocar los datos de una fila la enfoca. El lector de pantalla ya los oye en el número de la serie.
@@ -532,7 +539,7 @@ function CeldaDeTiempo({ fila: f, activa, escrita, error, relojEnCurso, relojDis
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${t.pararElReloj(f.setIndex)}. ${t.relojEnCurso(f.setIndex, relojEnCurso.minutos)}`}
+        accessibilityLabel={`${t.pararElReloj(f.numero)}. ${t.relojEnCurso(f.numero, relojEnCurso.minutos)}`}
         accessibilityState={{ disabled: ocupado, busy: true }}
         disabled={ocupado}
         onPress={() => acciones.onReloj(f.setIndex)}
@@ -547,7 +554,7 @@ function CeldaDeTiempo({ fila: f, activa, escrita, error, relojEnCurso, relojDis
   const tiempo = escrita?.tiempo ?? '';
   // Se escribe en la fila activa cuando hay un tiempo para corregir, cuando se pidió escribirlo o cuando no hay reloj.
   if (activa && (tiempo !== '' || escribiendoTiempo || !relojDisponible)) {
-    return <CeldaEditable valor={tiempo} placeholder="" teclado="numbers-and-punctuation" error={error} etiqueta={etiquetaDelCampo('tiempo', f.setIndex, 'kg', '', error)} enfocarAlMostrar={escribiendoTiempo} onCambiar={(texto) => acciones.onEscribir(f.setIndex, 'tiempo', texto)} />;
+    return <CeldaEditable valor={tiempo} placeholder="" teclado="numbers-and-punctuation" error={error} etiqueta={etiquetaDelCampo('tiempo', f.numero, 'kg', '', error)} enfocarAlMostrar={escribiendoTiempo} onCambiar={(texto) => acciones.onEscribir(f.setIndex, 'tiempo', texto)} />;
   }
   if (tiempo !== '' || !relojDisponible) {
     return (
@@ -561,7 +568,7 @@ function CeldaDeTiempo({ fila: f, activa, escrita, error, relojEnCurso, relojDis
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={t.medirLaSerie(f.setIndex)}
+      accessibilityLabel={t.medirLaSerie(f.numero)}
       accessibilityHint={t.mantenerParaEscribir}
       accessibilityState={{ disabled: ocupado }}
       accessibilityActions={[{ name: 'longpress', label: t.escribirElTiempo }]}
@@ -593,7 +600,7 @@ function CasillaDeLaFila({ fila: f, ocupado, onTildar }: { fila: FilaDeLaTabla; 
       <CasillaSola
         marcada={marcada}
         onCambio={onTildar}
-        etiqueta={t.registrarLaSerie(f.setIndex)}
+        etiqueta={t.registrarLaSerie(f.numero)}
         pista={enConflicto ? t.enConflictoSinTilde : marcada ? t.pistaParaDestildar : t.pistaParaTildar}
         deshabilitada={ocupado || enConflicto}
       />
@@ -644,7 +651,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : f.estado === 'sin-registrar' ? (escrita && hayAlgoEscrito(escrita) ? t.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   // La tildada sin escribir nada lleva «como el plan» en su título; la escrita, nada más (DL-161).
   const comoElPlan = f.registrada?.recordedAs === 'AS_PLANNED' ? t.comoElPlan : null;
-  const titulo = [`${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}`, estado, comoElPlan].filter((x): x is string => x !== null).join(' · ');
+  const titulo = [nombreDeLaFila(f), estado, comoElPlan].filter((x): x is string => x !== null).join(' · ');
   const etiquetaDe = (campo: keyof FilaEscrita) =>
     campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : campo === 'rir' ? COPY_ENTRENAMIENTO_POR_SERIE.rirTitulo : `${t.columnaTiempo} (opcional)`;
   const casilla = (
@@ -653,15 +660,15 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
       onCambio={() => {
         if (!ocupado && f.estado !== 'en-conflicto') acciones.onTildar(f);
       }}
-      titulo={t.registrarLaSerie(f.setIndex)}
+      titulo={t.registrarLaSerie(f.numero)}
       texto={f.estado === 'en-conflicto' ? t.enConflictoSinTilde : f.estado === 'sin-registrar' ? t.pistaParaTildar : t.pistaParaDestildar}
       deshabilitada={ocupado || f.estado === 'en-conflicto'}
     />
   );
   const botonDelReloj = relojEnCurso ? (
-    <Boton texto={`${t.pararElReloj(f.setIndex)} · ${relojEnCurso.texto}`} tipo="secundario" onPress={() => acciones.onReloj(f.setIndex)} deshabilitado={ocupado} />
+    <Boton texto={`${t.pararElReloj(f.numero)} · ${relojEnCurso.texto}`} tipo="secundario" onPress={() => acciones.onReloj(f.setIndex)} deshabilitado={ocupado} />
   ) : relojDisponible && f.estado === 'sin-registrar' && (escrita?.tiempo ?? '') === '' ? (
-    <Boton texto={t.medirLaSerie(f.setIndex)} tipo="secundario" onPress={() => acciones.onReloj(f.setIndex)} deshabilitado={ocupado} />
+    <Boton texto={t.medirLaSerie(f.numero)} tipo="secundario" onPress={() => acciones.onReloj(f.setIndex)} deshabilitado={ocupado} />
   ) : null;
   if (activa && f.estado === 'sin-registrar') {
     return (
@@ -709,13 +716,20 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
 }
 
 /** Los errores de la fila que se quiso tildar, con texto, debajo de la tabla. El de cada campo también va en su nombre accesible. */
-export function ErroresDeLaFila({ errores }: { errores: { readonly setIndex: number; readonly errores: ErroresDeFila } | null }) {
+export function ErroresDeLaFila({
+  errores,
+  nombreDe,
+}: {
+  errores: { readonly setIndex: number; readonly errores: ErroresDeFila } | null;
+  /** DL-178: cómo se nombra la fila («Calentamiento», «Serie 1»); sin esto, «Serie» y su `setIndex`. */
+  nombreDe?: (setIndex: number) => string;
+}) {
   if (!errores) return null;
   const e = errores.errores;
   const nombres = { carga: COPY_ENTRENAMIENTO.carga, repeticiones: 'Repeticiones', rir: 'RIR', tiempo: TEXTOS_DE_LA_SESION.columnaTiempo } as const;
   const lista = [...(e.fila ? [e.fila] : []), ...(['carga', 'repeticiones', 'rir', 'tiempo'] as const).filter((c) => e[c]).map((c) => `${nombres[c]}: ${e[c]}`)];
   if (lista.length === 0) return null;
-  return <Aviso tipo="error" titulo={`${COPY_ENTRENAMIENTO.serie} ${numero(errores.setIndex, 0)}. ${lista.join(' ')}`} />;
+  return <Aviso tipo="error" titulo={`${nombreDe ? nombreDe(errores.setIndex) : `${COPY_ENTRENAMIENTO.serie} ${numero(errores.setIndex, 0)}`}. ${lista.join(' ')}`} />;
 }
 
 // ─── La banda y la ayuda de la tabla ────────────────────────────────────────────────────────────
@@ -758,8 +772,18 @@ export function AyudaDeLaTabla() {
 
 export type EstadoDelDescanso =
   /** Con el ajuste manual («Lo inicio yo»): el descanso de la serie que se hizo, para iniciarlo a mano. */
-  | { readonly tipo: 'disponible'; readonly serie: number; readonly recomendado: number | null }
-  | { readonly tipo: 'en-curso'; readonly serie: number; readonly ejercicio: string | null; readonly duracion: DuracionApi | null; readonly recomendado: number | null; readonly siguiente: number | null };
+  | { readonly tipo: 'disponible'; readonly serie: number; readonly recomendado: number | null; readonly numero?: number | null }
+  | {
+      readonly tipo: 'en-curso';
+      readonly serie: number;
+      readonly ejercicio: string | null;
+      readonly duracion: DuracionApi | null;
+      readonly recomendado: number | null;
+      readonly siguiente: number | null;
+      /** DL-178: cómo se nombran `serie` y `siguiente` (el número efectivo; `null`, calentamiento). Sin esto, su `setIndex`. */
+      readonly numero?: number | null;
+      readonly numeroDeLaSiguiente?: number | null;
+    };
 
 /** Lo que el bloque dice del permiso de avisos (AVD-8): la frase de para qué con «Permitir avisos», o que vibra solo con la app abierta. */
 export type AvisoDelPermiso = 'nada' | 'explicar' | 'solo-con-la-app-abierta';
@@ -816,7 +840,7 @@ export function BloqueDeDescanso({
   if (!estado) return null;
   const engranaje = <BotonDeIcono nombre="engranaje" etiqueta={T.ajustesDelDescanso} onPress={onAjustes} />;
   if (estado.tipo === 'disponible') {
-    const recomendado = estado.recomendado === null ? e.sinDescansoRecomendado : e.recomendadoTrasLaSerie(estado.serie, textoDeSegundos(estado.recomendado) ?? '');
+    const recomendado = estado.recomendado === null ? e.sinDescansoRecomendado : e.recomendadoTrasLaSerie(estado.numero === undefined ? estado.serie : estado.numero, textoDeSegundos(estado.recomendado) ?? '');
     return (
       <Superficie style={[estilos.tarjeta, estilos.descansoAlPie]}>
         <View style={estilos.cabezaDelDescanso}>
@@ -835,7 +859,7 @@ export function BloqueDeDescanso({
   }
   const ms = estado.duracion?.ms ?? null;
   const llenado = llenadoDeLaBarra(ms, estado.recomendado);
-  const titulo = T.descansoTrasLaSerie(estado.serie);
+  const titulo = T.descansoTrasLaSerie(estado.numero === undefined ? estado.serie : estado.numero);
   return (
     <View style={[estilos.tarjeta, estilos.descansoEnCurso]}>
       <View style={estilos.cabezaDelDescanso}>
@@ -860,7 +884,7 @@ export function BloqueDeDescanso({
       {estado.siguiente !== null ? (
         <View style={estilos.conIcono}>
           <Icono nombre="derecha" tamano={18} tono="tenue" />
-          <Text style={estilos.detalle}>{T.alTerminarSeguisCon(estado.siguiente)}</Text>
+          <Text style={estilos.detalle}>{T.alTerminarSeguisCon(estado.numeroDeLaSiguiente === undefined ? estado.siguiente : estado.numeroDeLaSiguiente)}</Text>
         </View>
       ) : (
         <Boton texto={e.finalizarDescanso} tipo="enlace" onPress={onFinalizar} deshabilitado={deshabilitado} />
@@ -1126,7 +1150,10 @@ function Dialogo({ visible, titulo, onCerrar, ocupado = false, children }: { vis
   );
 }
 
-/** «Ver rutina»: los ejercicios de la sesión. Ver la técnica de otro no cambia el activo; «Pasar a este ejercicio», sí. */
+/**
+ * «Ver rutina»: los ejercicios de la sesión, bajo su bloque si tiene (DL-181). Ver la técnica de otro no cambia el activo;
+ * «Pasar a este ejercicio», sí.
+ */
 export function RutinaDeLaSesion({
   visible,
   sesion,
@@ -1151,7 +1178,8 @@ export function RutinaDeLaSesion({
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
   return (
     <Dialogo visible={visible} titulo={sesion.label} onCerrar={onCerrar}>
-      {sesion.prescriptions.map((p, i) => {
+      {/* DL-181: los ejercicios, bajo su bloque si la sesión tiene, con el número de siempre (su lugar en la sesión). */}
+      {ejerciciosConSusBloques(sesion, (p, i) => {
         const r = resumen.find((x) => x.prescriptionId === p.prescriptionId);
         const esActivo = p.prescriptionId === activo;
         return (
@@ -1178,7 +1206,8 @@ export function TecnicaDelEjercicio({ visible, prescripcion: p, token, sesionPer
   if (!p) return null;
   const notas = [
     ...(p.note ? [`${COPY_ENTRENAMIENTO.notas}: ${p.note}`] : []),
-    ...p.sets.filter((s) => s.note).map((s) => `${COPY_ENTRENAMIENTO.serie} ${s.setIndex}: ${s.note}`),
+    // DL-178: con el rótulo de la serie («Calentamiento», «Serie 1»), como en la tabla.
+    ...p.sets.flatMap((s, i) => (s.note ? [`${rotulosDeLasSeries(p.sets)[i]!.largo}: ${s.note}`] : [])),
     ...p.professionalParameters.map((q) => `${q.label}: ${typeof q.value === 'number' ? numero(q.value) : q.value}${q.unit ? ` ${q.unit}` : ''}`),
   ];
   return (
@@ -1337,12 +1366,12 @@ export function SeriesDelResumen({ resumen }: { resumen: readonly ResumenDelEjer
           key={r.prescriptionId}
           style={estilos.itemDeRutina}
           accessible
-          accessibilityLabel={`${r.nombre}${r.ejecutado ? `. ${COPY_ENTRENAMIENTO.ejecutado}: ${r.ejecutado}, ${COPY_ENTRENAMIENTO.sustituido.toLowerCase()}` : ''}: ${seriesYEscritas(r)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}` : ''}`}
+          accessibilityLabel={`${r.nombre}${r.ejecutado ? `. ${COPY_ENTRENAMIENTO.ejecutado}: ${r.ejecutado}, ${COPY_ENTRENAMIENTO.sustituido.toLowerCase()}` : ''}: ${seriesYEscritas(r)}${r.sinRegistrar.length ? `. ${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${r.numeros?.get(n) ?? n}`).join(', ')}` : ''}`}
         >
           <Text style={estilos.tituloDeBloque}>{r.nombre}</Text>
           {r.ejecutado ? <LineaDeLaSustitucion ejecutado={r.ejecutado} /> : null}
           <Text style={estilos.textoDeBloque}>{seriesYEscritas(r)}</Text>
-          {r.sinRegistrar.length > 0 ? <Text style={estilos.detalle}>{`${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${n}`).join(', ')}`}</Text> : null}
+          {r.sinRegistrar.length > 0 ? <Text style={estilos.detalle}>{`${e.sinRegistrar}: ${r.sinRegistrar.map((n) => `${COPY_ENTRENAMIENTO.serie.toLowerCase()} ${r.numeros?.get(n) ?? n}`).join(', ')}`}</Text> : null}
         </View>
       ))}
     </View>

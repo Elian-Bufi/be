@@ -140,6 +140,15 @@ import {
   ListaDePlantillasNutricionalesResponseSchema,
   NuevaVersionDePlantillaNutricionalRequestSchema,
   PlantillaNutricionalResponseSchema,
+  AbrirPreparacionDePlantillaRequestSchema,
+  CrearPreparacionDePlantillaRequestSchema,
+  DescarteDePreparacionResponseSchema,
+  GuardarPreparacionDePlantillaRequestSchema,
+  ListaDePreparacionesDePlantillaResponseSchema,
+  PreparacionDePlantillaResponseSchema,
+  RevisionDePreparacionResponseSchema,
+  VersionDeLaPreparacionRequestSchema,
+  VersionesDePlantillaDeEntrenamientoResponseSchema,
 } from './contratos-plantillas';
 import {
   EditarHabitualRequestSchema,
@@ -320,6 +329,24 @@ import {
   MiHistoriaAnteriorResponseSchema,
   RetirarHistoriaAnteriorRequestSchema,
 } from './contratos-historia-anterior';
+import {
+  AlimentoParaRevisarResponseSchema,
+  AlimentoPropioResponseSchema,
+  AlimentosConsultadosResponseSchema,
+  BuscarVerificadosRequestSchema,
+  ConsultarAlimentosParaRevisarRequestSchema,
+  ConsultarAlimentosRequestSchema,
+  CorregirAlimentoRequestSchema,
+  DecidirSobreAlimentoRequestSchema,
+  ListaDeAlimentosParaRevisarResponseSchema,
+  ListaDeAlimentosPropiosResponseSchema,
+  ListaDeVerificadosResponseSchema,
+  RetirarAlimentoRequestSchema,
+  AlimentoDelCanonResponseSchema,
+  ConsultarParecidosRequestSchema,
+  ListaDeParecidosResponseSchema,
+  SumarAlCanonRequestSchema,
+} from './contratos-alimentos';
 import { CompartirLoElegidoRequestSchema, DejarDeCompartirUnaCosaRequestSchema, LoElegidoCompartidoResponseSchema, LoQueSePuedeCompartirResponseSchema, UnaCosaRetiradaResponseSchema } from './contratos-compartir';
 import {
   AsociarImagenDeEjercicioRequestSchema,
@@ -345,6 +372,7 @@ import {
   VistaDeAnalisisResponseSchema,
 } from './contratos-analisis';
 import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
+import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema } from './contratos-contexto-de-la-persona';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -1001,13 +1029,14 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-NUT-01',
     metodo: 'post',
     ruta: '/advisees/{adviseeId}/nutrition/evaluations',
-    resumen: 'Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores.',
+    resumen:
+      'Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores. DL-179: puede citar hasta 20 respuestas de formulario (formResponseReferences, opcional) de la persona, a Solicitudes propias de alcance NUTRICION, en su versión vigente; una cita inválida es el 422 neutral (FORM_RESPONSE_REFERENCE_INVALID) y una versión que cambió desde que se vio, 409 VERSION_CONFLICT (como DL-102 en Entrenamiento).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearEvaluacionRequestSchema,
     exitos: [{ status: 201, schema: CrearEvaluacionResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['NUTRITION_EVALUATION_INVALID'] },
-    fuente: '09v9:325-377 · DEUDA_LEGAJO DL-048, DL-055',
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['NUTRITION_EVALUATION_INVALID'] },
+    fuente: '09v9:325-377 · DEUDA_LEGAJO DL-048, DL-055 · DL-179 (las citas, aditivas)',
   },
   {
     id: 'API-NUT-02',
@@ -1250,13 +1279,131 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-INT-NUT-01',
     metodo: 'post',
     ruta: '/nutrition/catalog-items',
-    resumen: 'Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027).',
+    resumen:
+      'Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027). Desde DL-180: group, opcional, su grupo (el ícono). Lo cargado a mano lo ve y lo cita solo quien lo cargó (segundo tramo, NUA-D14; decisión de Dirección del 2026-11-19); Administración lo ve con su nombre de profesional (API-ALI-05 y 08).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearElementoDeCatalogoRequestSchema,
     exitos: [{ status: 201, schema: ElementoDeCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: '09v12:111-160 · RF-027',
+  },
+  // ─── WP-NUTRICION-ALIMENTOS · ALI: los alimentos cargados a mano y su revisión (DL-180) ─────────────────────────────
+  {
+    id: 'API-ALI-01',
+    metodo: 'get',
+    ruta: '/nutrition/catalog-items/mine',
+    resumen:
+      'Los alimentos que el profesional cargó a mano, también los retirados (available: false), el corregido más recientemente primero, cada uno en su versión vigente: el token para corregirlo o retirarlo (version, «v» y el número de versiones), su grupo, y lo que decidió Administración sobre la versión vigente (review). Solo profesionales de Nutrición.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeAlimentosPropiosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-01 y NUA-02 (aprobado por Dirección el 2026-11-16) · REG-06-99 a 101 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-02',
+    metodo: 'patch',
+    ruta: '/nutrition/catalog-items/{catalogItemId}',
+    resumen:
+      'Corregir un alimento propio cargado a mano: si cambian el nombre o la composición, nace una versión nueva e inmutable, sucesora de la vigente. Las instantáneas de los planes activados, las recetas (que citan su versión) y los registros conservan la versión que citaban; un borrador usa la vigente. group, opcional, cambia el grupo (su ícono) sin emitir una versión. Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT; uno retirado, 422 INVALID_STATE_TRANSITION. Uno ajeno, sembrado, importado o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CorregirAlimentoRequestSchema,
+    exitos: [{ status: 200, schema: AlimentoPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['INVALID_STATE_TRANSITION'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-01 · REG-06-99 a 101 · DL-120 (el patrón de las recetas) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-03',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-items/{catalogItemId}/retirement',
+    resumen:
+      'Retirar un alimento propio cargado a mano: una versión RETIRADO con el mismo nombre y la misma composición. Deja de aparecer en el buscador y no se puede sumar a nada nuevo (validar y activar un plan que lo cita lo señalan con CATALOG_REFERENCE_INVALID), pero no se borra: los planes, las recetas y los registros que lo citan lo siguen mostrando, con la marca «retirado», y un borrador que ya lo cita se sigue guardando. Retirar uno ya retirado responde 200 sin cambiar nada. Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT. Uno ajeno, sembrado, importado o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RetirarAlimentoRequestSchema,
+    exitos: [{ status: 200, schema: AlimentoPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-02 · REG-06-99 (la disponibilidad) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-04',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-items/lookup',
+    resumen:
+      'Los alimentos que el profesional ve, por su identidad (de 1 a 200, en el cuerpo), en su versión vigente y en el orden pedido: como una fila del buscador (con su grupo, el nivel de su origen, la certificación y el verificado equivalente) y si se retiró (retired). También los retirados: el editor del plan los marca donde ya se citan. Los que no ve no vuelven, sin revelar que existen. Es una lectura: 200, sin Idempotency-Key. Solo profesionales de Nutrición.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ConsultarAlimentosRequestSchema,
+    exitos: [{ status: 200, schema: AlimentosConsultadosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-02 a NUA-05 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-05',
+    metodo: 'post',
+    ruta: '/admin/foods/query',
+    resumen:
+      'Los alimentos que los profesionales cargaron a mano, para que Administración los revise: el nombre, los valores cada 100 g, el grupo, lo decidido sobre la versión vigente y, desde el segundo tramo (NUA-D15), quién lo cargó, por su nombre de profesional (loadedBy); nunca a quién se le indicó ni sus planes. Filtrados por texto (q) y por estado (PENDING, CERTIFIED o EQUIVALENT); sin estado, los que esperan revisión primero. Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarAlimentosParaRevisarRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeAlimentosParaRevisarResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD', 'INVALID_CURSOR'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-06',
+    metodo: 'post',
+    ruta: '/admin/foods/{catalogItemId}/decisions',
+    resumen:
+      'Lo que decide Administración sobre un alimento cargado a mano, contra la versión que vio (expectedVersion; si su autor lo corrigió mientras tanto, 409 VERSION_CONFLICT): CERTIFY, con la fuente citada (source, de 1 a 500; sin ella, 422 VALIDATION_FAILED con SOURCE_REQUIRED), que lo vuelve «Verificado» en el buscador para esa versión (si su autor lo corrige, la nueva vuelve a esperar revisión); EQUIVALENT, con un alimento de la tabla oficial disponible (equivalentCatalogItemId; si no lo es, EQUIVALENT_NOT_VERIFIED), que el buscador sugiere en su lugar sin tocar los planes que ya lo citan; o CLEAR, que quita lo decidido (sin nada decidido, 422 INVALID_STATE_TRANSITION). Cada decisión es una fila nueva: la historia no se pisa. Uno que no existe o que no es una carga a mano: el mismo 404. El equivalente es de la tabla oficial o del canon. La auditoría no guarda los textos. Devuelve el alimento como lo lista API-ALI-05.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: DecidirSobreAlimentoRequestSchema,
+    exitos: [{ status: 200, schema: AlimentoParaRevisarResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-07',
+    metodo: 'post',
+    ruta: '/admin/foods/verified/query',
+    resumen: `Los alimentos verificados (la tabla oficial, USDA FoodData Central · SR Legacy, y lo que Administración sumó al canon) disponibles que coinciden con lo escrito (q, en el cuerpo), para elegir el equivalente de uno cargado a mano. ${COMO_BUSCA_EL_CATALOGO} Queda auditada.`,
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: BuscarVerificadosRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeVerificadosResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-04 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-08',
+    metodo: 'post',
+    ruta: '/admin/foods/similar/query',
+    resumen:
+      'Las cargas a mano agrupadas por nombre parecido (sin tildes, sin mayúsculas, sin espacios de más y sin plurales simples), cada grupo con los nombres como se cargaron, cuántos profesionales distintos cargaron algo así y sus cargas, cada una con quién la cargó (su nombre de profesional; nunca a quién se le indicó). Lo que más profesionales cargaron va primero: es lo que conviene sumar al canon. Filtrados por texto (q) y por un mínimo de profesionales (minProfessionals). Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarParecidosRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeParecidosResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D15; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-09',
+    metodo: 'post',
+    ruta: '/admin/foods/canon',
+    resumen:
+      'Sumar al canon: un alimento verificado de BE, que ven todos los profesionales de Nutrición («Verificado» en el buscador, con su fuente), con el nombre, la composición cada 100 g, el grupo (opcional) y la fuente citada (source, obligatoria, de 1 a 500). Puede partir de los valores de una carga a mano (fromCatalogItemId) y marcar cargas a mano como sus equivalentes (equivalentCatalogItemIds, hasta 50): el buscador de cada autor le sugiere el verificado justo antes del suyo, y lo suyo no cambia en sus planes ni en sus registros. Una carga que no existe, que no es a mano o que está retirada: 422 VALIDATION_FAILED con su ruta. Queda auditada, sin los textos.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: SumarAlCanonRequestSchema,
+    exitos: [{ status: 201, schema: AlimentoDelCanonResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
   },
   {
     id: 'API-INT-NUT-02',
@@ -2049,6 +2196,136 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PlantillaDeEntrenamientoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'] },
     fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  // ─── PLT (DL-182) · la preparación de una plantilla de entrenamiento: crearla y editarla sin una persona ──────────
+  {
+    id: 'API-TPL-06',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts',
+    resumen:
+      'Empezar una plantilla nueva, sin persona: una preparación en blanco (una fase, sin sesiones) o, con fromTemplateVersionId, la copia de una versión propia (que puede estar archivada). La preparación es privada y no tiene plantilla hasta guardarse (API-TPL-12). Solo un profesional de Entrenamiento verificado y habilitado; una versión ajena o inexistente es 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPreparacionDePlantillaRequestSchema,
+    exitos: [{ status: 201, schema: PreparacionDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-07',
+    metodo: 'put',
+    ruta: '/training/plan-templates/{templateId}/draft',
+    resumen:
+      'Editar una plantilla propia: abre su preparación desde la versión vigente (201) o devuelve la que ya tiene (200): una por plantilla, y tocar «Editar» dos veces da la misma. Una archivada no se edita: 422 TEMPLATE_ARCHIVED (se reactiva antes). Ajena o inexistente: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: AbrirPreparacionDePlantillaRequestSchema,
+    requestOpcional: true,
+    exitos: [
+      { status: 201, schema: PreparacionDePlantillaResponseSchema },
+      { status: 200, schema: PreparacionDePlantillaResponseSchema },
+    ],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 422: ['TEMPLATE_ARCHIVED'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-08',
+    metodo: 'get',
+    ruta: '/training/plan-template-drafts',
+    resumen: 'Mis plantillas en preparación (solo las propias): las nuevas, todavía sin plantilla, y los cambios de una existente, con la versión de la que partieron. Sin la estructura.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDePreparacionesDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-09',
+    metodo: 'get',
+    ruta: '/training/plan-template-drafts/{draftId}',
+    resumen: 'Una preparación propia, con su estructura y el nombre vigente, la disponibilidad y la imagen de cada ejercicio. Ajena, inexistente, ya guardada o descartada: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PreparacionDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-10',
+    metodo: 'patch',
+    ruta: '/training/plan-template-drafts/{draftId}',
+    resumen:
+      'El autoguardado de una preparación: reemplaza la estructura entera, con expectedVersion (409 si cambió en otra pestaña), y la valida como el borrador de un plan (forma, criterios de intensidad y ejercicios que este profesional puede citar; uno que dejó de estar disponible se conserva y lo dice la revisión). El nombre y la descripción, solo en una plantilla nueva (en una existente, 422 VALIDATION_FAILED: se cambian con API-TPL-05). No cambia ninguna versión de la plantilla.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: GuardarPreparacionDePlantillaRequestSchema,
+    exitos: [{ status: 200, schema: PreparacionDePlantillaResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['VERSION_CONFLICT'],
+      422: ['VALIDATION_FAILED', 'TRAINING_PLAN_STRUCTURE_INVALID', 'INTENSITY_CRITERION_INVALID', 'EXERCISE_REFERENCE_INVALID'],
+    },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-11',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/review',
+    resumen:
+      'Revisar una preparación antes de guardarla. 200 aunque valid sea falso. issues impide guardar (el nombre de una plantilla nueva, el nombre tomado, ninguna sesión, un ejercicio que ya no está disponible, una plantilla archivada); toComplete queda para completar al adaptarla a una persona y no impide nada. Sin las reglas que dependen de una persona: ni objetivo ni días.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 200, schema: RevisionDePreparacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-12',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/publish',
+    resumen:
+      'Guardar la preparación: en una plantilla nueva, crea la plantilla con su versión 1 («Guardar plantilla»); en una existente, crea la versión siguiente («Guardar nueva versión»). Las versiones anteriores y los planes ya creados no cambian. Exige la versión de la preparación y que la plantilla siga en la versión de la que partió; sin cargas sugeridas salvo el interruptor (D-2 de DL-108). Lo que impide guardar es 422 OPERATION_NOT_READY con su lugar (lo mismo que dice API-TPL-11). Guardada, la preparación deja de existir.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 201, schema: PlantillaDeEntrenamientoResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'],
+      422: ['OPERATION_NOT_READY', 'TEMPLATE_ARCHIVED'],
+    },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-13',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/discard',
+    resumen: 'Descartar una preparación: lo preparado se pierde y las versiones de la plantilla quedan como estaban. Exige la versión de la preparación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDePreparacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-14',
+    metodo: 'get',
+    ruta: '/training/plan-templates/{templateId}/versions',
+    resumen: 'Las versiones de una plantilla propia, de la más nueva a la primera, con su fecha, sus sesiones, si conserva las cargas y cuántos planes (en preparación o activados) salieron de cada una, sin nombrar a nadie. Ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: VersionesDePlantillaDeEntrenamientoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
   },
   // ─── PF-09 bis · «Mis habituales» del profesional (DL-109, decidido el 2026-09-30) ──────────────────────
   {
@@ -4628,6 +4905,31 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
   },
+  // ─── WP-CONTEXTO-DE-LA-PERSONA (DL-179): el contexto de la persona en el editor ───────────────
+  {
+    id: 'API-CTX-01',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/person-context/answers',
+    resumen:
+      'Para el panel «Contexto de <nombre>»: lo que la persona respondió a las Solicitudes de quien consulta, de las áreas en que hoy la acompaña con el PDP permitido, en su versión vigente (la vista efectiva, como API-FRI-03), del más nuevo al más viejo. Cada formulario trae su versión (para citar, DL-102) y cada pregunta su rótulo, su categoría, el valor estructurado y en palabras. Lo que la persona le contó a otro profesional no sale nunca. Sin ninguna área permitida, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RespuestasDelContextoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-CONTEXTO-DE-LA-PERSONA (decisión de Dirección del 2026-11-18) · ID propio de BE (familia CTX) · DEUDA_LEGAJO DL-179',
+  },
+  {
+    id: 'API-CTX-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/person-context/body',
+    resumen:
+      'Para el panel «Contexto de <nombre>»: la última toma registrada y la anterior, por métrica, con el cambio (y el % con su base) solo si son comparables (mismo protocolo, método y unidad). Quien lleva Antropometría con la persona ve sus tomas enteras (access OWN_AREA). Quien recibe el resumen compartido de Antropometría ve el peso y la composición en kilos, con su método, de las tomas de quien lleva el área hoy, sin el contexto escrito (SHARED_SUMMARY), y la lectura queda en «Quién miró» (API-RES-01). Si no, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: CuerpoDelContextoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-CONTEXTO-DE-LA-PERSONA · ID propio de BE (familia CTX) · el texto de «resumen» aceptado (DL-163 D-13) · DEUDA_LEGAJO DL-179',
+  },
 ];
 
 /**
@@ -4715,11 +5017,14 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-25-LISTA',
   'API-TRN-25-PROPIA',
   'API-NPP-02',
+  // WP-CONTEXTO-DE-LA-PERSONA (DL-179).
+  'API-CTX-01',
+  'API-CTX-02',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
 // API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-PLN-03', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-PLN-03', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPL-07', 'API-TPL-10', 'API-TPL-11', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

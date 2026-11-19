@@ -61,13 +61,21 @@ export function esLaOpcionSinTocar(o: Opcion): boolean {
 }
 
 /**
+ * NUP-12: cuántas opciones de la comida siguen cuando se le suma algo (una receta, una copia de otra comida o una comida
+ * habitual): todas, salvo la opción inicial sin tocar de una comida recién creada, que deja su lugar a lo que se suma. Es
+ * también el lugar (desde 0) de la primera que se suma: con él se numera «Copiar a Almuerzo como opción 1» y se cuentan
+ * los lugares libres hasta doce.
+ */
+export const opcionesQueSiguen = (opciones: readonly Opcion[]): number => (opciones.length === 1 && esLaOpcionSinTocar(opciones[0]!) ? 0 : opciones.length);
+
+/**
  * Las opciones con la receta sumada, y en qué lugar quedó. Si la comida solo tiene su opción inicial sin tocar, la receta
  * la reemplaza; si no, va al final. No toca `opciones`.
  */
 export function opcionesConLaReceta(opciones: readonly Opcion[], receta: { readonly recipeVersionId: string; readonly name: string }): { readonly opciones: Opcion[]; readonly k: number } {
   const nueva: Opcion = { label: receta.name, items: [], recipeVersionId: receta.recipeVersionId };
-  if (opciones.length === 1 && esLaOpcionSinTocar(opciones[0]!)) return { opciones: [nueva], k: 0 };
-  return { opciones: [...opciones, nueva], k: opciones.length };
+  const k = opcionesQueSiguen(opciones);
+  return { opciones: [...opciones.slice(0, k), nueva], k };
 }
 
 /** Suma la receta como opción de la comida del lugar; no toca `e`, devuelve la estructura nueva. */
@@ -95,4 +103,6 @@ export const COPY_RECETA_NUEVA = {
     motivo === 'TOPE' ? `No se pudo agregar a ${comida}: ya tiene 12 opciones, el máximo. Quitá una y volvé a intentar.` : `No se pudo agregar a ${comida}: esa comida ya no está en la versión en preparación.`,
   agregarla: (comida: string) => `Agregarla a ${comida}`,
   cerrar: 'Cerrar sin agregarla',
+  /** NUA-06: la imagen elegida al crearla tampoco se pudo cargar; se reintenta en el paso que sigue. */
+  imagenSinCargar: 'La imagen elegida tampoco se pudo cargar: al agregarla, vas a poder reintentarla.',
 } as const;

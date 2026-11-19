@@ -12,9 +12,12 @@
  * - Lo guardado no se mueve: un peso más nuevo, o la toma usada corregida o anulada, se avisa en neutro y se usa solo si el
  *   profesional lo elige.
  * - Los rangos se guardan aparte de la estructura (su propia revisión): no esperan al autoguardado ni lo frenan.
+ * - **NUP-05 (WP-NUTRICION-PLANIFICACION):** el cuadro se abre desde donde se arma (cada comida del editor, los pasos 3 a 5
+ *   del asistente) y no solo desde la lista: qué rango está abierto vive en `useRangosIndicados`, y el cuadro se dibuja una
+ *   sola vez (`CuadroDelRangoIndicado`), aunque la lista aparezca en dos lugares.
  */
 
-import { MACROS_DEL_RANGO, type EscribirRangosRequest, type MacroDelRango, type RangosDelPlan } from '@be/domain';
+import { MACROS_DEL_RANGO, type EscribirRangosRequest, type MacroDelRango, type Rango, type RangosDelPlan } from '@be/domain';
 import { useCallback, useId, useRef, useState } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -55,6 +58,14 @@ export type EstadoDeLosRangos = { readonly estado: 'leyendo' } | { readonly esta
  */
 export function useRangosIndicados(token: string, planId: string) {
   const [estado, setEstado] = useState<EstadoDeLosRangos>({ estado: 'leyendo' });
+  // NUP-05: el rango que se está indicando (su cuadro) y lo que se dijo al guardarlo.
+  const [abierto, setAbierto] = useState<RangoAbierto | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const abrir = useCallback((donde: RangoAbierto) => {
+    setAviso(null);
+    setAbierto(donde);
+  }, []);
+  const cerrar = useCallback(() => setAbierto(null), []);
   const ultimo = useRef(0);
   const recargar = useCallback(async () => {
     const numero = ++ultimo.current;
@@ -66,7 +77,22 @@ export function useRangosIndicados(token: string, planId: string) {
     ultimo.current += 1;
     setEstado({ estado: 'listo', datos });
   }, []);
-  return { estado, recargar, setDatos };
+  return { estado, recargar, setDatos, abierto, abrir, cerrar, aviso, setAviso };
+}
+
+/** Un rango para indicar: dónde va y cómo se llama («Almuerzo», «Todo el día»). */
+export type RangoAbierto = DondeVaElRango & { readonly nombre: string };
+
+/** NUP-05: el rango indicado de un día tipo (`mealId` en `null`) o de una comida, si ya se leyó y hay uno. */
+export function rangoIndicadoDe(estado: EstadoDeLosRangos, dayTypeId: string | undefined, mealId: string | null | undefined): Rango | null {
+  if (estado.estado !== 'listo' || !dayTypeId || mealId === undefined) return null;
+  const d = estado.datos.dayTypes.find((x) => x.dayTypeId === dayTypeId);
+  return mealId === null ? (d?.day ?? null) : (d?.meals.find((m) => m.mealId === mealId)?.range ?? null);
+}
+
+/** NUP-05: si se puede indicar el rango ahí: la versión no está activada y lo que se mira ya se guardó (tiene identidad). */
+export function sePuedeIndicar(estado: EstadoDeLosRangos, dayTypeId: string | undefined, mealId: string | null | undefined): boolean {
+  return estado.estado === 'listo' && estado.datos.state !== 'ACTIVATED' && !!dayTypeId && mealId !== undefined;
 }
 
 export type RangosIndicadosHook = ReturnType<typeof useRangosIndicados>;
@@ -78,10 +104,8 @@ export interface DiaParaLosRangos {
   readonly comidas: readonly { readonly mealId?: string | undefined; readonly nombre: string }[];
 }
 
-export function RangosIndicados({ token, planId, rangos, dias, titulo = true }: { token: string; planId: string; rangos: RangosIndicadosHook; dias: readonly DiaParaLosRangos[]; titulo?: boolean }) {
-  const [abierto, setAbierto] = useState<(DondeVaElRango & { readonly nombre: string }) | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
-  const { estado } = rangos;
+export function RangosIndicados({ rangos, dias, titulo = true }: { rangos: RangosIndicadosHook; dias: readonly DiaParaLosRangos[]; titulo?: boolean }) {
+  const { estado, aviso } = rangos;
   if (estado.estado === 'leyendo') return <p className="nota" role="status">{C.leyendo}</p>;
   if (estado.estado === 'falla')
     return (
@@ -116,7 +140,7 @@ export function RangosIndicados({ token, planId, rangos, dias, titulo = true }: 
         {activada ? null : sinGuardar ? (
           <span className="nota">· {C.guardaPrimero}</span>
         ) : (
-          <button type="button" className="boton boton--enlace" onClick={() => (setAviso(null), setAbierto({ dayTypeId: dayTypeId!, mealId: mealId as string | null, nombre }))}>
+          <button type="button" className="boton boton--enlace" onClick={() => rangos.abrir({ dayTypeId: dayTypeId!, mealId: mealId as string | null, nombre })}>
             {r ? C.cambiar(nombre) : C.escribir(nombre)}
           </button>
         )}
@@ -145,23 +169,32 @@ export function RangosIndicados({ token, planId, rangos, dias, titulo = true }: 
           </ul>
         </div>
       ))}
-      {abierto ? (
-        <CuadroDelRango
-          key={`${abierto.dayTypeId}-${abierto.mealId}`}
-          token={token}
-          planId={planId}
-          datos={datos}
-          donde={abierto}
-          onGuardado={(nuevos, texto) => {
-            rangos.setDatos(nuevos);
-            setAviso(texto);
-            setAbierto(null);
-          }}
-          onReleer={() => rangos.recargar()}
-          onCerrar={() => setAbierto(null)}
-        />
-      ) : null}
     </section>
+  );
+}
+
+/**
+ * NUP-05: el cuadro del rango que está abierto, dibujado una sola vez por editor (lo abren la lista, cada comida y los
+ * pasos del asistente). Al guardar, el aviso queda en la lista.
+ */
+export function CuadroDelRangoIndicado({ token, planId, rangos }: { token: string; planId: string; rangos: RangosIndicadosHook }) {
+  const { estado, abierto } = rangos;
+  if (!abierto || estado.estado !== 'listo') return null;
+  return (
+    <CuadroDelRango
+      key={`${abierto.dayTypeId}-${abierto.mealId}`}
+      token={token}
+      planId={planId}
+      datos={estado.datos}
+      donde={abierto}
+      onGuardado={(nuevos, texto) => {
+        rangos.setDatos(nuevos);
+        rangos.setAviso(texto);
+        rangos.cerrar();
+      }}
+      onReleer={() => rangos.recargar()}
+      onCerrar={rangos.cerrar}
+    />
   );
 }
 

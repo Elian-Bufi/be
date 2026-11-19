@@ -8,10 +8,13 @@
  * - Lo que muestra lo decide quien lo abre: el panel es solo el marco.
  */
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useTocarAfuera } from './tocar-afuera';
 
 export function Panel({ abierto, titulo, onCerrar, children }: { abierto: boolean; titulo: string; onCerrar: () => void; children?: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
+  // NUP-11: tocar afuera lo cierra, como Escape (solo se lee: no hay nada que perder).
+  const afuera = useTocarAfuera(onCerrar);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -27,6 +30,7 @@ export function Panel({ abierto, titulo, onCerrar, children }: { abierto: boolea
         e.preventDefault();
         onCerrar();
       }}
+      {...afuera}
     >
       <div className="dialogo__encabezado">
         <h2 id={`${id}-titulo`}>{titulo}</h2>

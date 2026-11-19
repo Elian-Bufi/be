@@ -68,6 +68,19 @@ FAMILIAS_DE_BE.HIA = 'DL-175';
  */
 FAMILIAS_DE_BE.CMP = 'DL-176';
 /**
+ * CTX (DL-179, WP-CONTEXTO-DE-LA-PERSONA; decidido por Dirección el 2026-11-18): las lecturas del panel «Contexto de
+ * <nombre>» que BE no tenía (las respuestas propias, vigentes, y el cuerpo, propio o por el resumen compartido). El 09 no la
+ * tiene, y no es FRI (los formularios para la persona), RES (lo de otras áreas) ni ANT.
+ */
+FAMILIAS_DE_BE.CTX = 'DL-179';
+/**
+ * ALI (DL-180, WP-NUTRICION-ALIMENTOS; aprobado por Dirección el 2026-11-16): los alimentos que un profesional carga a mano
+ * (corregirlos con versiones, retirarlos y consultarlos por su identidad) y su revisión por Administración (certificarlos,
+ * marcarlos como equivalentes de uno verificado). El 09 no la tiene: no es NUT ni INT-NUT, que cargan y buscan, ni ADM,
+ * que administra profesionales. Se declara aparte de la lista para que se integre sin pisar a otra familia en paralelo.
+ */
+FAMILIAS_DE_BE.ALI = 'DL-180';
+/**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
  * de una revisión, DL-154).
@@ -211,6 +224,13 @@ test('DL-175 · la familia HIA son las cuatro operaciones de la historia anterio
   assert.deepEqual(hia.map((o) => o.id), ['API-HIA-01', 'API-HIA-02', 'API-HIA-03', 'API-HIA-04']);
   for (const o of hia) assert.ok(o.fuente.includes('DL-175'), `${o.id} no cita DL-175`);
   assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-HIA-')), []);
+});
+
+test('DL-179 · la familia CTX son las dos lecturas del contexto de la persona, cada una cita DL-179 y el 09 no la usa (TEST-CTX-010)', () => {
+  const ctx = OPERACIONES.filter((o) => o.id.startsWith('API-CTX-'));
+  assert.deepEqual(ctx.map((o) => o.id), ['API-CTX-01', 'API-CTX-02']);
+  for (const o of ctx) assert.ok(o.fuente.includes('DL-179'), `${o.id} no cita DL-179`);
+  assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-CTX-')), []);
 });
 
 test('DL-176 · la familia CMP son las tres operaciones de la pantalla única, cada una cita DL-176 y el 09 no la usa (TEST-CMP-013)', () => {

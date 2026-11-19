@@ -19,12 +19,13 @@
 import {
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
-  numero,
   registroVigente,
   type EjecucionDeEntrenamiento,
   type PrescripcionConObjetivos,
   type Resultado,
   type SesionConObjetivos,
+  rotuloPorIndice,
+  type RotuloDeSerie,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
@@ -311,6 +312,8 @@ function TarjetaDelEjercicio({
   noSePudoTildar: (prescriptionId: string, setIndex: number, errores: ErroresDeFila) => void;
 }) {
   const unidad = unidadDelEjercicioEnCorreccion(ej);
+  // DL-178: el calentamiento se nombra así y las efectivas, con su número efectivo (el tipo de la fila ya junta el registro y el plan).
+  const rotuloDe = rotuloPorIndice(ej.filas.map((x) => ({ setIndex: x.setIndex, setKind: x.tipo })));
   return (
     <Superficie style={estilos.tarjeta}>
       <CabezaDelEjercicio ej={ej} prescripcion={prescripcion} token={token} sesionPerdida={sesionPerdida} />
@@ -337,6 +340,7 @@ function TarjetaDelEjercicio({
         <FilaDeLaCorreccion
           key={f.setIndex}
           fila={f}
+          rotulo={rotuloDe(f.setIndex)}
           ejercicio={ej.nombre}
           errores={textoDeLosErrores(errores.get(claveDeFila(ej.prescriptionId, f.setIndex)))}
           disposicion={disposicion}
@@ -361,10 +365,10 @@ const CAMPOS: readonly { readonly campo: CampoDeLaCorreccion; readonly teclado: 
 ];
 
 /** Lo que es un campo, de qué serie, y el plan de esa serie: el nombre accesible de la celda. */
-function nombreDelCampo(campo: CampoDeLaCorreccion, f: FilaEnCorreccion, ejercicio: string, plan: string): string {
+function nombreDelCampo(campo: CampoDeLaCorreccion, f: FilaEnCorreccion, rotulo: RotuloDeSerie, ejercicio: string, plan: string): string {
   const que = campo === 'carga' ? `Carga en ${f.unidad}` : campo === 'repeticiones' ? 'Repeticiones' : 'RIR, opcional';
   const delPlan = plan === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? plan : `Plan: ${plan}`;
-  return `${que} de la serie ${f.setIndex} de ${ejercicio}. ${delPlan}`;
+  return `${que} ${rotulo.deLa} de ${ejercicio}. ${delPlan}`;
 }
 
 /** La acción de una fila, sin el ejercicio ni la serie, que los pone la tarjeta. */
@@ -377,6 +381,7 @@ type AccionDeFila = { readonly tipo: 'escribir'; readonly campo: keyof FilaEscri
  */
 function FilaDeLaCorreccion({
   fila: f,
+  rotulo,
   ejercicio,
   errores,
   disposicion,
@@ -384,6 +389,8 @@ function FilaDeLaCorreccion({
   noSePudoTildar,
 }: {
   fila: FilaEnCorreccion;
+  /** DL-178: «Calentamiento» o «Serie 1», como en la sesión: el número efectivo, no la posición. */
+  rotulo: RotuloDeSerie;
   ejercicio: string;
   errores: string | null;
   disposicion: 'tabla' | 'tarjetas';
@@ -398,14 +405,14 @@ function FilaDeLaCorreccion({
   };
   const casilla = (
     <View style={estilos.columnaCasilla}>
-      <CasillaSola marcada={filaTildada(f)} onCambio={tocarLaCasilla} etiqueta={T.casillaDeLaSerie(f.setIndex, ejercicio)} pista={pistaDeLaCasilla(f)} />
+      <CasillaSola marcada={filaTildada(f)} onCambio={tocarLaCasilla} etiqueta={`${rotulo.largo} de ${ejercicio}`} pista={pistaDeLaCasilla(f)} />
     </View>
   );
   if (estado === 'quitada') {
     return (
       <View style={estilos.filaQuitada}>
         <View style={estilos.textosDeLaQuitada}>
-          <Text style={estilos.textoQuitada}>{T.seQuita(f.setIndex)}</Text>
+          <Text style={estilos.textoQuitada}>{rotulo.numero === null ? `Se quita el calentamiento` : T.seQuita(rotulo.numero)}</Text>
           {f.antes ? <Text style={estilos.valoresQuitados}>{textoCortoDeSerie(f.antes)}</Text> : null}
           <Boton texto={T.deshacer} tipo="enlace" icono="deshacer" onPress={() => hacer({ tipo: 'deshacer' })} />
         </View>
@@ -420,7 +427,7 @@ function FilaDeLaCorreccion({
     return (
       <View style={estiloDeFila}>
         <View style={estilos.tituloDeLaTarjeta}>
-          <Text style={estilos.numeroEnTarjeta}>{`${COPY_ENTRENAMIENTO.serie} ${numero(f.setIndex, 0)}`}</Text>
+          <Text style={estilos.numeroEnTarjeta}>{rotulo.largo}</Text>
           <View style={estilos.espacio} />
           {casilla}
         </View>
@@ -443,10 +450,10 @@ function FilaDeLaCorreccion({
     <View style={estiloDeFila}>
       <View style={estilos.celdas}>
         <View style={estilos.celdaSerie}>
-          <Text style={estilos.numeroDeSerie}>{numero(f.setIndex, 0)}</Text>
+          <Text style={estilos.numeroDeSerie}>{rotulo.corto}</Text>
         </View>
         {CAMPOS.map(({ campo, teclado }) => (
-          <Celda key={campo} valor={f.escrita[campo]} plan={plan[campo]} teclado={teclado} etiqueta={`${nombreDelCampo(campo, f, ejercicio, plan[campo])}${errores ? `. Revisá: ${errores}` : ''}`} conError={errores !== null} onCambiar={(texto) => hacer({ tipo: 'escribir', campo, texto })} />
+          <Celda key={campo} valor={f.escrita[campo]} plan={plan[campo]} teclado={teclado} etiqueta={`${nombreDelCampo(campo, f, rotulo, ejercicio, plan[campo])}${errores ? `. Revisá: ${errores}` : ''}`} conError={errores !== null} onCambiar={(texto) => hacer({ tipo: 'escribir', campo, texto })} />
         ))}
         {casilla}
       </View>

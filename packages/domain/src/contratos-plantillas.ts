@@ -11,8 +11,9 @@
  *   su origen; cambiar la plantilla después no lo altera.
  */
 import { z } from 'zod';
-import { IdOpaco, Instante } from './contratos';
+import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
 import { EstructuraDePlanDeEntrenamientoEntradaSchema } from './contratos-entrenamiento';
+import { ImagenDeEjercicioSchema } from './contratos-entrenamiento-por-serie';
 import { PaginaSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
@@ -91,6 +92,100 @@ export const ListaDePlantillasDeEntrenamientoResponseSchema = z.strictObject({ d
 /** De qué plantilla y versión salió una versión de plan (solo en lecturas del profesional). */
 export const OrigenDePlanEnPlantillaSchema = z.strictObject({ templateId: IdOpaco, templateVersionId: IdOpaco });
 export type OrigenDePlanEnPlantilla = z.infer<typeof OrigenDePlanEnPlantillaSchema>;
+
+// ─── PLT (DL-182) · la preparación de una plantilla: crearla y editarla sin una persona ─────────────────────────────
+//
+// Una plantilla se prepara aparte de sus versiones: la preparación es el trabajo en curso del profesional, privado, que
+// se autoguarda (API-TPL-10) y no cambia ninguna versión. Publicarla (API-TPL-12) crea la plantilla, la primera vez, o
+// una versión nueva; descartarla (API-TPL-13) deja las versiones como estaban. Una preparación por plantilla; las de una
+// plantilla nueva no tienen plantilla hasta publicarse. Lo de la persona (objetivo, días, próxima revisión) no existe acá.
+
+/** API-TPL-06: una plantilla nueva, en blanco (una fase, sin sesiones) o como copia de una versión propia. */
+export const CrearPreparacionDePlantillaRequestSchema = z.strictObject({
+  /** PLT-D07: la versión propia que se copia («desde una existente»); ausente, en blanco. */
+  fromTemplateVersionId: IdOpaco.optional(),
+});
+export type CrearPreparacionDePlantillaRequest = z.infer<typeof CrearPreparacionDePlantillaRequestSchema>;
+
+/** API-TPL-07: editar una plantilla existente abre su preparación, o devuelve la que ya hay (PLT-D04). Sin cuerpo propio. */
+export const AbrirPreparacionDePlantillaRequestSchema = z.strictObject({});
+
+/**
+ * API-TPL-10: el autoguardado. La estructura viaja entera, como en API-TRN-10. El nombre y la descripción son de la
+ * preparación solo en una plantilla nueva (PLT-D05): los de una existente se cambian con API-TPL-05.
+ */
+export const GuardarPreparacionDePlantillaRequestSchema = z.strictObject({
+  expectedVersion: TokenDeVersionSchema,
+  structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** Puede quedar vacío mientras se prepara: el nombre se exige al guardar la plantilla. */
+  name: z.string().trim().max(120).optional(),
+  description: TextoOpcional(1000).optional(),
+  /** D-2 de DL-108: con `true`, las cargas sugeridas quedan en la versión como referencia. */
+  copySuggestedLoads: z.boolean().optional(),
+});
+export type GuardarPreparacionDePlantillaRequest = z.infer<typeof GuardarPreparacionDePlantillaRequestSchema>;
+
+/** Revisar, guardar como versión y descartar: con la versión de la preparación que se tiene a la vista. */
+export const VersionDeLaPreparacionRequestSchema = z.strictObject({ expectedVersion: TokenDeVersionSchema });
+
+/** Cada ejercicio de la preparación: su nombre vigente, si sigue disponible y su imagen (DL-123), para el editor. */
+export const EjercicioDeLaPreparacionSchema = EjercicioDePlantillaSchema.extend({ image: ImagenDeEjercicioSchema.nullable() });
+
+export const ResumenDePreparacionDePlantillaSchema = z.strictObject({
+  draftId: IdOpaco,
+  /** La plantilla que se cambia; `null`: una plantilla nueva, que nace al guardarla. */
+  templateId: IdOpaco.nullable(),
+  /** La versión de la que partió (la vigente al abrirla); `null` en una plantilla nueva. */
+  baseVersionId: IdOpaco.nullable(),
+  baseVersionNumber: z.number().int().positive().nullable(),
+  /** Token de concurrencia de la preparación: cambia con cada guardado. */
+  version: TokenDeVersionSchema,
+  /** En una plantilla nueva, el de la preparación (vacío mientras no tenga); en una existente, el de la plantilla. */
+  name: z.string(),
+  description: z.string().nullable(),
+  /** El estado de la plantilla que se cambia; `null` en una nueva. Una archivada no recibe versiones (TEMPLATE_ARCHIVED). */
+  templateState: EstadoDePlantillaSchema.nullable(),
+  copySuggestedLoads: z.boolean(),
+  sessionCount: z.number().int().nonnegative(),
+  createdAt: Instante,
+  updatedAt: Instante,
+});
+export type ResumenDePreparacionDePlantilla = z.infer<typeof ResumenDePreparacionDePlantillaSchema>;
+
+export const PreparacionDePlantillaSchema = ResumenDePreparacionDePlantillaSchema.extend({
+  /** La estructura en preparación, con los identificadores que le puso el servidor al guardarla. */
+  structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** Por `exerciseVersionId`, los que este profesional puede citar. */
+  exercises: z.record(IdOpaco, EjercicioDeLaPreparacionSchema),
+});
+export type PreparacionDePlantilla = z.infer<typeof PreparacionDePlantillaSchema>;
+export const PreparacionDePlantillaResponseSchema = z.strictObject({ data: PreparacionDePlantillaSchema });
+export const ListaDePreparacionesDePlantillaResponseSchema = z.strictObject({ data: z.array(ResumenDePreparacionDePlantillaSchema), page: PaginaSchema });
+
+/**
+ * API-TPL-11: la revisión antes de guardar. `issues` impide guardar la plantilla (el nombre, ninguna sesión, un ejercicio
+ * que ya no está disponible); `toComplete` es lo que queda para completar al adaptarla a una persona y no impide nada.
+ */
+export const RevisionDePreparacionResponseSchema = z.strictObject({
+  data: z.strictObject({ valid: z.boolean(), version: TokenDeVersionSchema, issues: z.array(ValidationIssueSchema), toComplete: z.array(ValidationIssueSchema) }),
+});
+export type RevisionDePreparacion = z.infer<typeof RevisionDePreparacionResponseSchema>['data'];
+
+/** API-TPL-13: la preparación se descartó; las versiones de la plantilla no cambian. */
+export const DescarteDePreparacionResponseSchema = z.strictObject({ data: z.strictObject({ draftId: IdOpaco, discardedAt: Instante }) });
+
+/** API-TPL-14: cada versión de una plantilla, de la más nueva a la primera, con cuántos planes salieron de ella. */
+export const VersionDePlantillaDeEntrenamientoSchema = z.strictObject({
+  versionId: IdOpaco,
+  versionNumber: z.number().int().positive(),
+  createdAt: Instante,
+  sessionCount: z.number().int().nonnegative(),
+  copiedLoads: z.boolean(),
+  /** PLT-D11: versiones de plan (en preparación o activadas; no las descartadas) creadas desde esta versión. Sin personas. */
+  plansCreated: z.number().int().nonnegative(),
+});
+export type VersionDePlantillaDeEntrenamiento = z.infer<typeof VersionDePlantillaDeEntrenamientoSchema>;
+export const VersionesDePlantillaDeEntrenamientoResponseSchema = z.strictObject({ data: z.array(VersionDePlantillaDeEntrenamientoSchema) });
 
 /** Cuenta sesiones de una estructura de entrada: bloques → microciclos o sesiones directas. */
 export function sesionesDeLaEstructura(structure: z.infer<typeof EstructuraDePlanDeEntrenamientoEntradaSchema>): number {

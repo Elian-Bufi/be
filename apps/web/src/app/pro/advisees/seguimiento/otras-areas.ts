@@ -197,7 +197,7 @@ export function lineaDelPlan(p: PlanCompartido, fecha: (iso: string) => string):
     const comidas = p.plan.dayTypes.reduce((n, d) => n + d.meals.length, 0);
     return [desde, contar(p.plan.dayTypes.length, 'día tipo', 'días tipo'), contar(comidas, 'comida', 'comidas')].join(' · ');
   }
-  return [desde, contar(p.plan.blocks.length, 'bloque', 'bloques'), contar(sesionesDelPlan(p.plan), 'sesión', 'sesiones')].join(' · ');
+  return [desde, contar(p.plan.blocks.length, 'fase', 'fases'), contar(sesionesDelPlan(p.plan), 'sesión', 'sesiones')].join(' · ');
 }
 
 const QUE_SE_REGISTRA = { SESSIONS: 'Sesiones registradas', MEAL_RECORDS: 'Comidas registradas' } as const;

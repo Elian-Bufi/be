@@ -188,7 +188,7 @@ test('TEST-TAG-039 · nada del panel escribe, salvo «Dejar una nota» y «Pedir
 
 test('TEST-TAG-039 · el plan en una línea, lo avanzado en cifras, el encabezado y la cita de la nota', () => {
   assert.equal(lineaDelPlan(plan.NUTRICION, fecha), 'Rige desde el 2026-10-02 · 1 día tipo · 2 comidas');
-  assert.equal(lineaDelPlan(plan.ENTRENAMIENTO, fecha), 'Rige desde el 2026-10-05 · 2 bloques · 3 sesiones');
+  assert.equal(lineaDelPlan(plan.ENTRENAMIENTO, fecha), 'Rige desde el 2026-10-05 · 2 fases · 3 sesiones');
   assert.equal(lineaDelAvance(plan.ENTRENAMIENTO.progress, diaCivil), 'Sesiones registradas por semana: 3, 2, 4 y 3 (desde la semana del «2026-10-12») · el plan prevé 3 por semana');
   assert.equal(lineaDelAvance(plan.NUTRICION.progress, diaCivil), 'Todavía no hay semanas registradas desde que rige.');
   assert.equal(lineaDelAvance({ unit: 'MEAL_RECORDS', plannedPerWeek: null, weeks: [{ weekStart: '2026-11-02', recorded: 0 }] }, diaCivil), 'Comidas registradas por semana: 0 (desde la semana del «2026-11-02»)', 'un cero es una cifra');

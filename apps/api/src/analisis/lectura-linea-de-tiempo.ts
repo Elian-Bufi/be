@@ -1,4 +1,5 @@
 import {
+  registradasEfectivas,
   COPY_REGISTRO_POR_NIVELES,
   comidaFrenteALoIndicado,
   ejerciciosComparables,
@@ -241,7 +242,11 @@ export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamient
     if (vigente?.sessionCondition === 'NOT_COMPLETED') calidad.push('SESSION_NOT_COMPLETED');
     if (vigente?.sessionCondition === 'COMPLETED_WITH_DEVIATION') calidad.push('SESSION_WITH_DEVIATION');
     if (vigente?.granularity === 'EXERCISE_OR_SESSION') calidad.push('SESSION_SUMMARY_ONLY');
-    const series = vigente?.exercises.flatMap((e) => e.sets ?? []) ?? [];
+    // DL-178: se cuentan las series efectivas; el calentamiento se registra, pero no entra en la cuenta.
+    const planificadas = (prescriptionId: string) => x.plannedSession.prescriptions.find((p) => p.prescriptionId === prescriptionId)?.sets ?? [];
+    const series = vigente?.exercises.flatMap((e) => registradasEfectivas(e.sets ?? [], planificadas(e.prescriptionId))) ?? [];
+    const calentamiento = vigente?.exercises.reduce((n, e) => n + (e.sets?.length ?? 0), 0) ?? 0;
+    const conCalentamiento = calentamiento > series.length;
     const conDato = series.filter((s) => s.load !== null || s.completedRepetitions !== null || s.rir !== null).length;
     const ejercicios = [...new Set(vigente?.exercises.map((e) => e.performedExerciseName) ?? [])];
     // DL-161: cómo se cargaron las series. Resumida y no realizada ya lo dicen «Registro» y «Condición».
@@ -258,7 +263,7 @@ export function entradasDeSesiones(ejecuciones: readonly EjecucionDeEntrenamient
       title: `Sesión registrada · ${x.plannedSession.label}`,
       details: [
         ...(vigente ? [{ label: 'Condición', value: CONDICION[vigente.sessionCondition] }] : [{ label: 'Registro vigente', value: 'no se puede resolver la corrección' }]),
-        ...(vigente?.granularity === 'SET' ? [{ label: 'Series con datos', value: String(conDato) }] : []),
+        ...(vigente?.granularity === 'SET' ? [{ label: conCalentamiento ? 'Series efectivas con datos' : 'Series con datos', value: String(conDato) }] : []),
         ...(esNivelPorSerie(nivel) ? [{ label: COPY_REGISTRO_POR_NIVELES.comoSeCargo, value: textoDelNivelDeDetalle(nivel) }] : []),
         ...(vigente?.granularity === 'EXERCISE_OR_SESSION' ? [{ label: 'Registro', value: 'resumido, sin series' }] : []),
         ...(ejercicios.length > 0 ? [{ label: 'Ejercicios', value: ejercicios.length > 4 ? `${ejercicios.slice(0, 4).join(', ')} y ${ejercicios.length - 4} más` : ejercicios.join(', ') }] : []),

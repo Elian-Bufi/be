@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Put, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { SinTipoDeSerieInterceptor } from '../http/sin-tipo-de-serie.interceptor';
+import { SinBloquesDeLaSesionInterceptor } from '../http/sin-bloques-de-la-sesion.interceptor';
 import {
   HEADER_IDEMPOTENCY_KEY,
   type LoQueSeComparteDeMiAreaResponse,
@@ -27,6 +29,8 @@ type Solicitud = SolicitudAutenticada & SolicitudConContexto;
  */
 @Controller()
 @UseGuards(SesionGuard)
+// DL-178: el tipo de cada serie sale explícito solo para el cliente que declara `training-set-kinds-1`.
+@UseInterceptors(SinTipoDeSerieInterceptor, SinBloquesDeLaSesionInterceptor)
 export class ResumenesController {
   constructor(
     private readonly resumenes: ResumenesService,

@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Param, Patch, Post, Put, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
 import { BusquedaDeEjerciciosRequestSchema, FichasVisualesRequestSchema, HEADER_IDEMPOTENCY_KEY, zonasMuscularesApi, type ZonaMuscular } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { comoConsultaDeLista } from '../http/paginacion';
+import { SinTipoDeSerieInterceptor } from '../http/sin-tipo-de-serie.interceptor';
+import { SinBloquesDeLaSesionInterceptor } from '../http/sin-bloques-de-la-sesion.interceptor';
 import { sinParametrosDeQuery, validarCuerpo } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { LimitadorService } from '../plataforma/limitador.service';
@@ -13,6 +15,7 @@ import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { ImportacionDeEjerciciosService } from './importacion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
 import { PlantillasDeEntrenamientoService } from './plantillas.service';
+import { PreparacionesDePlantillaService } from './preparaciones-de-plantilla.service';
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
 
 type Solicitud = SolicitudAutenticada & SolicitudConContexto;
@@ -24,6 +27,7 @@ type Solicitud = SolicitudAutenticada & SolicitudConContexto;
  */
 @Controller()
 @UseGuards(SesionGuard)
+@UseInterceptors(SinTipoDeSerieInterceptor, SinBloquesDeLaSesionInterceptor)
 export class EntrenamientoController {
   constructor(
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,
@@ -34,6 +38,7 @@ export class EntrenamientoController {
     private readonly limitador: LimitadorService,
     private readonly importacion: ImportacionDeEjerciciosService,
     private readonly plantillas: PlantillasDeEntrenamientoService,
+    private readonly preparaciones: PreparacionesDePlantillaService,
   ) {}
 
   // ─── Evaluación y objetivo (UC-P14) ─────────────────────────────────────────────────────────
@@ -207,6 +212,67 @@ export class EntrenamientoController {
   async editarPlantilla(@Param('templateId') templateId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
     sinParametrosDeQuery(query);
     return responder(res, await this.plantillas.editar(actorDe(req), templateId, cuerpo, contextoDe(req)));
+  }
+
+  // ─── PLT (DL-182): la preparación de una plantilla, sin persona ──────────────────────────────────
+  /** API-TPL-06. */
+  @Post('training/plan-template-drafts')
+  async crearPreparacion(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.preparaciones.crear(actorDe(req), cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TPL-07. `PUT`: una preparación por plantilla; 201 si la abrió, 200 si ya estaba. */
+  @Put('training/plan-templates/:templateId/draft')
+  async abrirPreparacion(@Param('templateId') templateId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.preparaciones.abrir(actorDe(req), templateId, cuerpo, contextoDe(req)));
+  }
+
+  /** API-TPL-08. */
+  @Get('training/plan-template-drafts')
+  listarPreparaciones(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.preparaciones.listar(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-TPL-09. */
+  @Get('training/plan-template-drafts/:draftId')
+  consultarPreparacion(@Param('draftId') draftId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.preparaciones.consultar(actorDe(req), draftId, query, contextoDe(req));
+  }
+
+  /** API-TPL-10. Sin Idempotency-Key: concurrencia por expectedVersion, como API-TRN-10. */
+  @Patch('training/plan-template-drafts/:draftId')
+  async guardarPreparacion(@Param('draftId') draftId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.preparaciones.guardar(actorDe(req), draftId, cuerpo, contextoDe(req)));
+  }
+
+  /** API-TPL-11. */
+  @Post('training/plan-template-drafts/:draftId/review')
+  async revisarPreparacion(@Param('draftId') draftId: string, @Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.preparaciones.revisar(actorDe(req), draftId, cuerpo, contextoDe(req)));
+  }
+
+  /** API-TPL-12. */
+  @Post('training/plan-template-drafts/:draftId/publish')
+  async publicarPreparacion(@Param('draftId') draftId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.preparaciones.publicar(actorDe(req), draftId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TPL-13. */
+  @Post('training/plan-template-drafts/:draftId/discard')
+  async descartarPreparacion(@Param('draftId') draftId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.preparaciones.descartar(actorDe(req), draftId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-TPL-14. */
+  @Get('training/plan-templates/:templateId/versions')
+  versionesDePlantilla(@Param('templateId') templateId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.preparaciones.versiones(actorDe(req), templateId, query, contextoDe(req));
   }
 
   // ─── Importación controlada de wger (UC-I07; WP-08) ─────────────────────────────────────────

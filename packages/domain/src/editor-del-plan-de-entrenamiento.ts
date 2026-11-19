@@ -10,15 +10,18 @@
  * dirección son las del editor del plan de comidas (`editor-del-plan-de-nutricion.ts`): los dos editores hacen lo mismo.
  */
 import type { PrescripcionConObjetivos } from './contratos-entrenamiento-por-serie';
-import { cantidadDeSeries } from './copy-entrenamiento';
 import { COPY_ENTRENAMIENTO_POR_SERIE } from './copy-entrenamiento-por-serie';
 import { comidasAbiertasEnElEditor, pedidoDeComidasDelEditor, posicionPedida, type ProblemaDelEditor } from './editor-del-plan-de-nutricion';
 import { renglonDelEjercicio } from './lectura-del-plan-de-entrenamiento';
+import { cuentaDeSeries } from './tipos-de-serie';
 import { objetivosEfectivos, type SerieParaResolver } from './objetivos-por-serie';
+import { nombreDelBloqueDeLaSesion } from './bloques-de-la-sesion';
 
 /** Lo que el editor necesita saber de la estructura: nombres, sesiones y lo que cada ejercicio pide. */
 interface SerieDelEditor extends SerieParaResolver {
   readonly note?: string | null;
+  /** DL-178: ausente es efectiva. */
+  readonly setKind?: 'WORKING' | 'WARM_UP';
 }
 interface ParametroDelEditor {
   readonly label: string;
@@ -34,6 +37,8 @@ export interface EjercicioDelEditor {
 interface SesionDelEditor {
   readonly label: string;
   readonly prescriptions: readonly EjercicioDelEditor[];
+  /** DL-181: los bloques de la sesión, con su nombre y, en uno «En vueltas», su descanso al terminar cada vuelta. */
+  readonly exerciseGroups?: readonly { readonly label: string; readonly restAfterRoundSeconds?: number | null }[] | null;
 }
 interface MicrocicloDelEditor {
   readonly label: string;
@@ -122,15 +127,24 @@ export function lugarDelProblemaDeEntrenamiento(ruta: string): LugarDelProblemaD
  * (B10-06:571-577). El bloque, el microciclo y la sesión van con su nombre; lo que no lo tiene, por lo que es y su
  * número. Lo que no se puede ubicar es del plan entero.
  */
+/** DL-181: el bloque de la sesión de un problema (`…sessions[1].exerciseGroups[0]`), por su posición, o `null`. */
+export function bloqueDeLaSesionDelProblema(ruta: string): number | null {
+  const m = /\.sessions\[\d+\]\.exerciseGroups\[(\d+)\]/.exec(ruta.replace(/^changes\./, '').replace(/\.(\d+)/g, '[$1]'));
+  return m ? Number(m[1]) : null;
+}
+
 export function ubicacionDelProblemaDeEntrenamiento(ruta: string, bloques: readonly BloqueDelEditor[]): string {
   const l = lugarDelProblemaDeEntrenamiento(ruta);
   if (l.bloque === null) return 'Plan';
   const bloque = bloques[l.bloque];
-  const partes = [bloque?.label.trim() || `Bloque ${l.bloque + 1}`];
+  const partes = [bloque?.label.trim() || `Fase ${l.bloque + 1}`];
   const microciclo = l.microciclo !== null ? bloque?.microcycles?.[l.microciclo] : undefined;
   if (l.microciclo !== null) partes.push(microciclo?.label.trim() || `Microciclo ${l.microciclo + 1}`);
   const sesiones = l.microciclo !== null ? microciclo?.sessions : bloque?.sessions;
   if (l.sesion !== null) partes.push(sesiones?.[l.sesion]?.label.trim() || `Sesión ${l.sesion + 1}`);
+  // DL-181: el bloque de la sesión, con su nombre.
+  const g = bloqueDeLaSesionDelProblema(ruta);
+  if (g !== null && l.sesion !== null) partes.push(`Bloque «${nombreDelBloqueDeLaSesion(sesiones?.[l.sesion]?.exerciseGroups?.[g] ?? { label: '' }, g)}»`);
   if (l.ejercicio !== null) partes.push(`Ejercicio ${l.ejercicio + 1}`);
   if (l.serie !== null) partes.push(`Serie ${l.serie + 1}`);
   return partes.join(' → ');
@@ -203,6 +217,11 @@ export function loQueNoDejaGuardarElEntrenamiento(bloques: readonly BloqueDelEdi
     sesiones.forEach((s, k) => {
       const deLaSesion = `${base}.sessions[${k}]`;
       if (sinNombre(s)) problemas.push({ code: P.faltaElNombre, path: deLaSesion });
+      // DL-181: el bloque pide su nombre, y su descanso al terminar cada vuelta, si se escribió, se tiene que entender.
+      (s.exerciseGroups ?? []).forEach((g, n) => {
+        if (sinNombre(g)) problemas.push({ code: P.faltaElNombre, path: `${deLaSesion}.exerciseGroups[${n}]` });
+        if (noSeEntiende(g.restAfterRoundSeconds)) problemas.push({ code: P.descansoIlegible, path: `${deLaSesion}.exerciseGroups[${n}]` });
+      });
       s.prescriptions.forEach((p, l) => problemas.push(...loQueNoDejaGuardarDelEjercicio(p, `${deLaSesion}.prescriptions[${l}]`)));
     });
   bloques.forEach((b, i) => {
@@ -236,6 +255,7 @@ function comoLoLeeElPlan(p: EjercicioDelEditor): Pick<PrescripcionConObjetivos, 
     sets: objetivosEfectivos(p).map((f, n) => ({
       setIndex: f.setIndex,
       note: p.sets[n]?.note ?? null,
+      ...(p.sets[n]?.setKind ? { setKind: p.sets[n]!.setKind } : {}),
       target: { repetitions: f.repetitions, rir: f.rir, suggestedLoad: f.suggestedLoad, restSeconds: f.restSeconds },
       targetOrigin: f.origin,
     })),
@@ -265,7 +285,7 @@ export function ejercicioPlegadoDelEditor(p: EjercicioDelEditor, problemas: numb
   const parametros = propios.filter((x) => x.code === P.parametroIncompleto).length;
   const ilegibles = propios.length - parametros - (faltaElObjetivo ? 1 : 0);
   return {
-    resumen: faltaElObjetivo || ilegibles > 0 ? cantidadDeSeries(p.sets.length) : renglonDelEjercicio(comoLoLeeElPlan(p)),
+    resumen: faltaElObjetivo || ilegibles > 0 ? cuentaDeSeries(p.sets) : renglonDelEjercicio(comoLoLeeElPlan(p)),
     avisos: [
       ...(faltaElObjetivo ? ['Falta el objetivo de intensidad'] : []),
       ...(ilegibles > 0 ? [unoOVarios(ilegibles, 'dato que no se entiende', 'datos que no se entienden')] : []),
@@ -364,5 +384,5 @@ export function esLoQueTieneLaCelda(escrito: number | undefined, valor: number |
 /** Lo que entra al activar, contado de la estructura: «2 bloques y 5 sesiones» (las de los microciclos también). */
 export function loQueEntraAlActivarElEntrenamiento(bloques: readonly BloqueDelEditor[]): string {
   const sesiones = bloques.reduce((n, b) => n + (b.sessions?.length ?? 0) + (b.microcycles ?? []).reduce((k, m) => k + m.sessions.length, 0), 0);
-  return `${unoOVarios(bloques.length, 'bloque', 'bloques')} y ${unoOVarios(sesiones, 'sesión', 'sesiones')}`;
+  return `${unoOVarios(bloques.length, 'fase', 'fases')} y ${unoOVarios(sesiones, 'sesión', 'sesiones')}`;
 }

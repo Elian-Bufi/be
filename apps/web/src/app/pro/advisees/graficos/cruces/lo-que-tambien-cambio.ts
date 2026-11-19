@@ -11,7 +11,7 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs`.
  */
-import { cambioDeLoIndicado, type DominioDeAnalisis, type EjecucionDeEntrenamiento, type EtapaDePlanificacion, type ObjetivoDeLaSerie, type VigenciaDePlan } from '@be/domain';
+import { cambioDeLoIndicado, seriesEfectivas, type DominioDeAnalisis, type EjecucionDeEntrenamiento, type EtapaDePlanificacion, type ObjetivoDeLaSerie, type VigenciaDePlan } from '@be/domain';
 import { diaYMes } from './ventanas';
 
 const NOMBRE_DEL_DOMINIO: Readonly<Record<DominioDeAnalisis, string>> = { NUTRITION: 'Nutrición', TRAINING: 'Entrenamiento', ANTHROPOMETRY: 'Antropometría' };
@@ -91,7 +91,8 @@ export function objetivosPorVersion(ejecuciones: readonly EjecucionDeEntrenamien
       let rir = actual.rir;
       let repeticiones = actual.repeticiones;
       if (p.intensity?.criterion === 'RIR') rir = unir(rir, p.intensity.target.value, p.intensity.target.value);
-      for (const s of p.sets) {
+      // DL-178: lo indicado son las series efectivas; las repeticiones del calentamiento no abren el rango.
+      for (const s of seriesEfectivas(p.sets)) {
         if (!s.repetitions) continue;
         repeticiones = 'value' in s.repetitions ? unir(repeticiones, s.repetitions.value, s.repetitions.value) : unir(repeticiones, s.repetitions.min, s.repetitions.max);
       }

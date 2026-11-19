@@ -44,13 +44,13 @@ export function notasDeLaEstructura(e: Estructura): NotaDeLaEstructura[] {
   const notas: NotaDeLaEstructura[] = [];
   e.blocks.forEach((b, i) => {
     const lb = `blocks[${i}]`;
-    if (tiene(b.purpose)) notas.push({ lugar: `${lb}.purpose`, rotulo: `Propósito del bloque «${b.label}»`, texto: b.purpose });
+    if (tiene(b.purpose)) notas.push({ lugar: `${lb}.purpose`, rotulo: `Propósito de la fase «${b.label}»`, texto: b.purpose });
     (b.microcycles ?? []).forEach((m, j) => {
       const lm = `${lb}.microcycles[${j}]`;
-      if (tiene(m.purpose)) notas.push({ lugar: `${lm}.purpose`, rotulo: `Propósito del microciclo «${m.label}» (bloque «${b.label}»)`, texto: m.purpose });
+      if (tiene(m.purpose)) notas.push({ lugar: `${lm}.purpose`, rotulo: `Propósito del microciclo «${m.label}» (fase «${b.label}»)`, texto: m.purpose });
       m.sessions.forEach((s, k) => notas.push(...notasDeSesion(s, `${lm}.sessions[${k}]`, ` (microciclo «${m.label}»)`)));
     });
-    (b.sessions ?? []).forEach((s, k) => notas.push(...notasDeSesion(s, `${lb}.sessions[${k}]`, ` (bloque «${b.label}»)`)));
+    (b.sessions ?? []).forEach((s, k) => notas.push(...notasDeSesion(s, `${lb}.sessions[${k}]`, ` (fase «${b.label}»)`)));
   });
   return notas;
 }
@@ -106,7 +106,8 @@ export function estructuraNutricionalComoEntrada(v: VersionDePlan): EstructuraDe
         options: m.options.map((o) => ({
           optionId: o.optionId,
           label: o.label,
-          items: o.items.map((i) => ({ itemId: i.itemId, catalogItemId: i.catalogItemId, quantity: i.quantity, preparationState: i.preparationState, note: i.note })),
+          // NUA-08 (DL-180, segundo tramo): la medida casera elegida viaja con su cantidad.
+          items: o.items.map((i) => ({ itemId: i.itemId, catalogItemId: i.catalogItemId, quantity: i.quantity, preparationState: i.preparationState, note: i.note, ...(i.householdMeasure ? { householdMeasure: i.householdMeasure } : {}) })),
         })),
       })),
     })),

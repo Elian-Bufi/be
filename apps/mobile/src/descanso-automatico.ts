@@ -22,6 +22,7 @@ import type { AccionDeTiempo } from './corrida-de-entrenamiento';
 import { disposicionDeLaBarra } from './disposicion-de-la-barra';
 import type { Zona } from './navegacion';
 import { TEXTOS_DEL_DESCANSO as T } from './textos-del-descanso';
+import { TEXTOS_DEL_CALENTAMIENTO } from './textos-del-calentamiento';
 
 // ─── Los ajustes del descanso, en el teléfono (AV-11; PV-10) ────────────────────────────────────
 
@@ -211,12 +212,20 @@ export function filaDeAcciones(d: {
   readonly haySiguienteEjercicio: boolean;
   /** La serie que «Terminar» no pudo registrar, con lo que falta; sigue sin registrar. */
   readonly porRegistrar?: { readonly setIndex: number; readonly nota: string } | null;
+  /** DL-178: el número efectivo de una serie (`null` si es de calentamiento). Sin esto, el `setIndex`. */
+  readonly numeroDe?: (setIndex: number) => number | null;
 }): FilaDeAcciones {
+  const numeroDe = d.numeroDe ?? ((i: number) => i);
+  const texto = (setIndex: number, deLaSerie: (n: number) => string, delCalentamiento: string): string => {
+    const n = numeroDe(setIndex);
+    return n === null ? delCalentamiento : deLaSerie(n);
+  };
   const izquierda = d.pausada ? { tipo: 'reanudar' as const, texto: T.reanudar } : { tipo: 'pausar' as const, texto: T.pausar };
   let medio: AccionDelMedio | null = null;
-  if (d.abierta?.kind === 'SET' && d.abierta.prescriptionId === d.prescriptionId) medio = { tipo: 'terminar-serie', setIndex: d.abierta.setIndex, texto: T.terminarSerie(d.abierta.setIndex) };
-  else if (d.porRegistrar) medio = { tipo: 'registrar-serie', setIndex: d.porRegistrar.setIndex, texto: T.registrarSerie(d.porRegistrar.setIndex) };
-  else if (d.siguienteSinRegistrar !== null) medio = { tipo: 'empezar-serie', setIndex: d.siguienteSinRegistrar, texto: T.empezarSerie(d.siguienteSinRegistrar) };
+  if (d.abierta?.kind === 'SET' && d.abierta.prescriptionId === d.prescriptionId)
+    medio = { tipo: 'terminar-serie', setIndex: d.abierta.setIndex, texto: texto(d.abierta.setIndex, T.terminarSerie, TEXTOS_DEL_CALENTAMIENTO.terminar) };
+  else if (d.porRegistrar) medio = { tipo: 'registrar-serie', setIndex: d.porRegistrar.setIndex, texto: texto(d.porRegistrar.setIndex, T.registrarSerie, TEXTOS_DEL_CALENTAMIENTO.registrar) };
+  else if (d.siguienteSinRegistrar !== null) medio = { tipo: 'empezar-serie', setIndex: d.siguienteSinRegistrar, texto: texto(d.siguienteSinRegistrar, T.empezarSerie, TEXTOS_DEL_CALENTAMIENTO.empezar) };
   return {
     izquierda,
     medio,

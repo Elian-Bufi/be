@@ -65,7 +65,7 @@ import { diaYMes } from '../graficos/eje-de-fechas';
 import { unAnioAntes } from '../fuerza/lectura-de-fuerza';
 import { hoyEn } from '../seguimiento/estado';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
-import { useEntrenamiento } from './entrenamiento';
+import { useEditorDeEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
 import { ImportacionDeWger } from './importacion';
 import { alternarMarcado, conLasZonas, COPY_VARIOS_A_LA_VEZ as V, sesionDeDonde, zonasDeLosResultados } from './varios-a-la-vez';
@@ -95,15 +95,21 @@ type HistorialDelBuscador =
   | { readonly tipo: 'cargando' }
   | { readonly tipo: 'listo'; readonly porEjercicio: ReadonlyMap<string, EjercicioDelPeriodo>; readonly hoy: string }
   | { readonly tipo: 'sin-acceso' }
+  // PLT (DL-182): el editor de una plantilla no tiene persona: no hay lo que hizo, y el buscador no marca nada.
+  | { readonly tipo: 'sin-persona' }
   | { readonly tipo: 'falla' };
 
 /** Lee el índice una vez, al abrirse el cajón (lo de adentro vive solo mientras está abierto), y con «Reintentar». */
 function useHistorialDelBuscador(): { readonly historial: HistorialDelBuscador; readonly recargar: () => void } {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida } = useEditorDeEntrenamiento();
   const [historial, setHistorial] = useState<HistorialDelBuscador>({ tipo: 'cargando' });
   const [vuelta, setVuelta] = useState(0);
   useEffect(() => {
     let vigente = true;
+    if (asesoradoId === null) {
+      setHistorial({ tipo: 'sin-persona' });
+      return;
+    }
     setHistorial({ tipo: 'cargando' });
     // Sin `periodEnd`: la API toma su hoy (el del navegador puede ir un día adelante).
     void api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', { periodStart: unAnioAntes(hoyEn()) }).then((r) => {
@@ -133,7 +139,10 @@ export function AgregarEjercicio({
   habituales,
   onAgregar,
   onCerrar,
+  prescripcionDeLaSesion = null,
 }: {
+  /** ENP-D10: el preset elegido con la sesión vacía; sin una prescripción escrita acá, los ejercicios entran con él. */
+  prescripcionDeLaSesion?: string | null;
   abierto: boolean;
   /** A qué sesión se le suma: «Fuerza: progresión · A · Tren inferior». */
   deDonde: string | null;
@@ -176,11 +185,30 @@ export function AgregarEjercicio({
       pie={
         modo === 'buscar' ? (
           <>
-            <label className="agregar-ejercicio__para-todos">
-              <span>{V.prescripcionParaTodos}</span>
-              <input type="text" value={linea} maxLength={80} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
+            {/* C6: los elegidos, a la vista en el pie fijo y en el orden en que entran; cada uno se quita sin perder la
+                búsqueda. */}
+            <div className="agregar-ejercicio__elegidos" data-elegidos={marcados.length}>
+              <p className="agregar-ejercicio__elegidos-titulo">{marcados.length === 0 ? V.ningunoElegido : V.elegidos(marcados.length)}</p>
+              {marcados.length > 0 ? (
+                <ul className="agregar-item__fichas agregar-ejercicio__fichas-elegidas">
+                  {marcados.map((m) => (
+                    <li key={m.versionId}>
+                      <button type="button" className="boton boton--quieto boton--compacto" aria-label={V.quitarDeLosElegidos(m.name)} title={m.name} onClick={() => setMarcados((x) => alternarMarcado(x, m))} data-quitar-elegido>
+                        {/* Revisión del tramo 2: las fichas bajan de renglón y ninguna queda cortada a medias; un nombre largo
+                            se recorta con «…» dentro de su ficha (entero en `title` y en lo que oye el lector). */}
+                        <span className="agregar-ejercicio__nombre-elegido">{m.name}</span>
+                        <Icono nombre="cerrar" tamano={15} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            <label className="agregar-ejercicio__para-todos" data-para-todos>
+              <span className="agregar-ejercicio__para-todos-rotulo">{V.prescripcionParaTodos}</span>
+              <input type="text" value={linea} maxLength={80} placeholder={V.prescripcionEjemplo} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
               <span id="prescripcion-para-todos" className={lectura && !lectura.ok ? 'campo__error' : 'nota'}>
-                {!lectura ? V.prescripcionAyuda : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
+                {!lectura ? (prescripcionDeLaSesion ? `Vacía, cada uno entra con «${prescripcionDeLaSesion}», la de la sesión.` : V.prescripcionAyuda) : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
               </span>
             </label>
             <p className="nota agregar-item__antes">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>
@@ -189,16 +217,10 @@ export function AgregarEjercicio({
                 {V.sinMarcados}
               </p>
             ) : null}
+            {/* C6: «Agregar 3 ejercicios a Sesión A», el único principal. Crear o importar va en «No encuentro el
+                ejercicio», al final de la búsqueda: no compiten con terminar la selección. */}
             <button type="button" className="boton boton--primario" data-agregar-marcados onClick={agregar}>
               {V.agregar(marcados.length, sesionDeDonde(deDonde))}
-            </button>
-            <button type="button" className="boton boton--quieto" onClick={() => setModo('manual')}>
-              <Icono nombre="mas" tamano={18} />
-              {EP.crear}
-            </button>
-            <button type="button" className="boton boton--quieto" onClick={() => setModo('importar')}>
-              <Icono nombre="descargar" tamano={18} />
-              {COPY_INTEGRACIONES.importarDesdeWger}
             </button>
           </>
         ) : null
@@ -236,7 +258,7 @@ function ContenidoDeAgregarEjercicio({
   /** Lo creado a mano o importado queda marcado. */
   onCreado: (e: EjercicioDeCatalogo) => void;
 }) {
-  const { token, sesionPerdida } = useEntrenamiento();
+  const { token, sesionPerdida } = useEditorDeEntrenamiento();
   const id = useId();
   const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState<Busqueda>({ tipo: 'sin-buscar' });
@@ -248,6 +270,8 @@ function ContenidoDeAgregarEjercicio({
   const [zonasElegidas, setZonasElegidas] = useState<readonly string[]>([]);
   // GR-04: qué ejercicios ya hizo la persona, para la marca «Con historial» de cada resultado.
   const { historial, recargar: releerElHistorial } = useHistorialDelBuscador();
+  // C6: «No encuentro el ejercicio», plegado; sin resultados, abierto.
+  const [noEncuentro, setNoEncuentro] = useState(false);
   const pedido = useRef(0);
 
   // Al volver de crear o de importar, el foco vuelve al campo. Al abrirse, lo pone el cajón (`focoInicial`).
@@ -318,6 +342,8 @@ function ContenidoDeAgregarEjercicio({
   const zonasEncontradas = zonasDeLosResultados(encontrados, ordenDeZona);
   const zonasVigentes = zonasElegidas.filter((z) => zonasEncontradas.includes(z));
   const ejercicios = conLasZonas(encontrados, zonasVigentes);
+  const sinResultados = busqueda.tipo === 'lista' && ejercicios.length === 0;
+  const noEncuentroAbierto = noEncuentro || sinResultados;
   // Los habituales se filtran mientras se escribe; el catálogo, al enviar (bloque 5).
   const filtro = texto.trim();
   const alaVista = habitualesQueCoinciden(habituales.habituales, filtro);
@@ -348,10 +374,11 @@ function ContenidoDeAgregarEjercicio({
         </button>
       </form>
 
-      {/* Lo que se acaba de sumar, dicho donde la persona está mirando: el editor quedó detrás del velo. */}
+      {/* Lo que se acaba de sumar, dicho donde la persona está mirando: el editor quedó detrás del velo. C6: los elegidos
+          se ven en el pie; acá se anuncian al lector, sin repetirlos a la vista. */}
       <p className="agregar-item__agregado" role="status" aria-live="polite" data-agregado>
         {creado ? `${V.creadoYMarcado(creado)} ` : ''}
-        {marcados.length > 0 ? `${V.marcados(marcados.length)}: ${marcados.map((m) => m.name).join(', ')}.` : null}
+        {marcados.length > 0 ? <span className="visualmente-oculto">{`${V.marcados(marcados.length)}: ${marcados.map((m) => m.name).join(', ')}.`}</span> : null}
       </p>
 
       <section className="agregar-item__habituales" aria-labelledby={`${id}-habituales`} data-habituales="ejercicios">
@@ -453,7 +480,7 @@ function ContenidoDeAgregarEjercicio({
         {busqueda.tipo === 'lista' && ejercicios.length === 0 ? (
           <>
             <p data-sin-resultados>
-              {busqueda.texto ? `Ningún ejercicio coincide con «${busqueda.texto}».` : 'El catálogo no trajo ejercicios.'} Podés crearlo a mano o importarlo, con los botones de abajo.
+              {busqueda.texto ? `Ningún ejercicio coincide con «${busqueda.texto}».` : 'El catálogo no trajo ejercicios.'} Podés crearlo o importarlo, en «{V.noEncuentro}».
             </p>
             <div className="acciones">
               <button type="button" className="boton boton--secundario boton--compacto" onClick={limpiar}>
@@ -552,6 +579,36 @@ function ContenidoDeAgregarEjercicio({
           </div>
         ) : null}
       </section>
+
+      {/* C6: crear o importar, bajo «No encuentro el ejercicio», al final de la búsqueda: siguen disponibles sin competir
+          con terminar la selección. Sin resultados, ya abierto. */}
+      <section className="agregar-ejercicio__no-encuentro" aria-labelledby={`${id}-no-encuentro`} data-no-encuentro>
+        <h3 className="agregar-item__titulo">
+          {sinResultados ? (
+            <span id={`${id}-no-encuentro`}>{V.noEncuentro}</span>
+          ) : (
+            <button type="button" id={`${id}-no-encuentro`} className="boton boton--enlace" aria-expanded={noEncuentroAbierto} aria-controls={`${id}-crear-o-importar`} onClick={() => setNoEncuentro((x) => !x)} data-abrir-no-encuentro>
+              <Icono nombre={noEncuentroAbierto ? 'abajo' : 'derecha'} tamano={18} />
+              {V.noEncuentro}
+            </button>
+          )}
+        </h3>
+        {noEncuentroAbierto ? (
+          <div id={`${id}-crear-o-importar`} className="agregar-ejercicio__crear-o-importar">
+            <p className="nota">{V.noEncuentroAyuda}</p>
+            <div className="acciones">
+              <button type="button" className="boton boton--quieto" onClick={() => alCambiarDeModo('manual')} data-crear-ejercicio>
+                <Icono nombre="mas" tamano={18} />
+                {EP.crear}
+              </button>
+              <button type="button" className="boton boton--quieto" onClick={() => alCambiarDeModo('importar')} data-importar-ejercicio>
+                <Icono nombre="descargar" tamano={18} />
+                {COPY_INTEGRACIONES.importarDesdeWger}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }
@@ -562,7 +619,7 @@ function ContenidoDeAgregarEjercicio({
  * marcado y entra con «Agregar», como lo demás (EDT-17).
  */
 function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: string; nombreInicial: string; onCreado: (e: EjercicioDeCatalogo) => void; onVolver: () => void }) {
-  const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
+  const { token, sesionPerdida, accesoRetirado } = useEditorDeEntrenamiento();
   const intento = useClaveDeIntento();
   const [nombre, setNombre] = useState(nombreInicial);
   const [falta, setFalta] = useState<string | null>(null);

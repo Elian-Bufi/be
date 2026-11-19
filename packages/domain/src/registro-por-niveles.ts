@@ -21,6 +21,7 @@
 import { CAMPOS_CON_ORIGEN, type EjecucionDeEntrenamiento, type EjercicioRegistradoEntrada, type RegistroDeEjecucion, type SerieEjecutadaApi } from './contratos-entrenamiento';
 import { ETIQUETA_DE_NIVEL_DE_DETALLE, etiquetaDeCondicionRegistrada, registroVigente } from './copy-entrenamiento';
 import { serializacionCanonica } from './versionado';
+import { tipoDeSerie, tipoGuardado } from './tipos-de-serie';
 
 /** La serie se registró con un toque, con los valores del plan que la persona tenía a la vista. */
 export const seCargoComoElPlan = (s: Pick<SerieEjecutadaApi, 'recordedAs'>): boolean => s.recordedAs === 'AS_PLANNED';
@@ -44,7 +45,21 @@ export function serieEnSuForma(s: SerieEjecutadaApi): SerieEjecutadaApi {
     ...(s.recordedAs === 'AS_PLANNED' ? { recordedAs: 'AS_PLANNED' as const } : {}),
     ...(typeof s.durationSeconds === 'number' ? { durationSeconds: s.durationSeconds } : {}),
     ...(origenes ? { fieldOrigins: origenes } : {}),
+    // DL-178: solo el calentamiento se guarda; una serie efectiva queda idéntica a las de antes.
+    ...tipoGuardado(s),
   };
+}
+
+/**
+ * DL-178: la serie como sale para un cliente que declara `training-set-kinds-1`: con su tipo explícito, `WORKING` incluido.
+ * Para uno que no la declara sale `serieEnSuForma` sin el tipo (`serieSinTipo`).
+ */
+export function serieConTipo(s: SerieEjecutadaApi): SerieEjecutadaApi {
+  return { ...serieEnSuForma(s), setKind: tipoDeSerie(s) };
+}
+export function serieSinTipo(s: SerieEjecutadaApi): SerieEjecutadaApi {
+  const { setKind: _tipo, ...resto } = serieEnSuForma(s);
+  return resto;
 }
 
 /** La procedencia por campo en el orden del contrato, o `undefined` si no dice nada (ED-70). */

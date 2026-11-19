@@ -23,12 +23,14 @@ import { IdOpaco, Instante } from './contratos';
 import {
   AgendaDeEntrenamientoSchema,
   BaseDeCargaSchema,
+  BloqueDeLaSesionSchema,
   BaseDeRepeticionesSchema,
   CargaSchema,
   IdDeNodoSchema,
   IntensidadSchema,
   ParametroProfesionalSchema,
   RepeticionesPrescriptasSchema,
+  TipoDeSerieSchema,
   VersionDePlanDeEntrenamientoSchema,
 } from './contratos-entrenamiento';
 import { ProcedenciaDeMedioSchema } from './contratos-medios';
@@ -127,6 +129,8 @@ export const SerieConObjetivoSchema = z.strictObject({
   rir: z.number().finite().nullable().optional(),
   suggestedLoad: CargaSchema.nullable().optional(),
   restSeconds: z.number().int().min(0).nullable().optional(),
+  /** DL-178: explícito para el cliente que declara `training-set-kinds-1`; ausente para el que no (y entonces es efectiva). */
+  setKind: TipoDeSerieSchema.optional(),
   /** El objetivo efectivo, resuelto con `objetivosEfectivos`. */
   target: ObjetivoDeSerieSchema,
   /** De dónde sale cada valor del objetivo efectivo. */
@@ -151,6 +155,8 @@ export const PrescripcionConObjetivosSchema = z.strictObject({
   repetitionBasis: BaseDeRepeticionesSchema.nullable(),
   professionalParameters: z.array(ParametroProfesionalSchema),
   note: z.string().nullable(),
+  /** DL-181: explícito (`null`: suelto) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroupId: IdDeNodoSchema.nullable().optional(),
 });
 export type PrescripcionConObjetivos = z.infer<typeof PrescripcionConObjetivosSchema>;
 
@@ -160,6 +166,8 @@ export const SesionConObjetivosSchema = z.strictObject({
   order: z.number().int().positive(),
   instructions: z.string().nullable(),
   prescriptions: z.array(PrescripcionConObjetivosSchema),
+  /** DL-181: explícito (vacío si no tiene) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroups: z.array(BloqueDeLaSesionSchema).optional(),
 });
 export type SesionConObjetivos = z.infer<typeof SesionConObjetivosSchema>;
 const MicrocicloConObjetivosSchema = z.strictObject({
@@ -198,6 +206,11 @@ export type EntregaDeObjetivosPorSerie = z.infer<typeof EntregaDeObjetivosPorSer
 export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ blocks: true }).extend({
   blocks: z.array(BloqueConObjetivosSchema),
   setTargetsDelivery: EntregaDeObjetivosPorSerieSchema,
+  /**
+   * DL-178: lo mismo para las series de calentamiento. `required`: alguna serie es de calentamiento;
+   * `adviseeClientCapable`: el titular ya usó una APK que declara `training-set-kinds-1`.
+   */
+  setKindsDelivery: EntregaDeObjetivosPorSerieSchema,
   /** DL-137: la agenda de la versión (los días de cada sesión, desde cuándo y lo movido), o `null` si no tiene. */
   agenda: AgendaDeEntrenamientoSchema.nullable(),
 });

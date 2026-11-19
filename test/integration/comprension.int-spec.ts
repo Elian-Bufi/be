@@ -188,7 +188,12 @@ describe('Búsqueda en los catálogos con el texto en el cuerpo (DL-130)', () =>
     // el origen de cada fila (D-6): solo lo cargado a mano tiene quién lo cargó, y el arroz no es una equivalencia aproximada.
     expect(porPost.data.map((i) => i.matchedAlternativeName)).toEqual(porPost.data.map(() => null));
     expect(porPost.data.map((i) => i.origin)).toEqual(porPost.data.map((i) => ({ loadedBy: i.provenance === 'PROFESSIONAL_MANUAL' ? 'YOU' : null, approximateCorrespondence: null })));
-    expect({ ...porPost, data: porPost.data.map(({ matchedAlternativeName: _, origin: __, ...i }) => i) }).toEqual(porGet);
+    // DL-180: suma también el grupo, el nivel del origen, la certificación y el equivalente; el GET legado no cambia.
+    expect(porPost.data.every((i) => i.originLevel !== undefined && i.foodGroup !== undefined)).toBe(true);
+    expect({
+      ...porPost,
+      data: porPost.data.map(({ matchedAlternativeName: _, origin: __, foodGroup: _g, originLevel: _n, certification: _c, verifiedEquivalent: _e, ...i }) => i),
+    }).toEqual(porGet);
 
     const TEXTO = 'Ingrediente con nombre propio';
     const lineas: string[] = [];

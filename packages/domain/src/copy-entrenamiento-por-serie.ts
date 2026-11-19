@@ -61,7 +61,8 @@ export const COPY_ENTRENAMIENTO_POR_SERIE = {
   iniciarDescanso: 'Iniciar descanso',
   finalizarDescanso: 'Finalizar descanso',
   descansoDeLaSerie: (n: number) => `Descanso · Serie ${numero(n, 0)}`,
-  recomendadoTrasLaSerie: (n: number, t: string) => `Recomendado tras la serie ${numero(n, 0)}: ${t}`,
+  /** DL-178: `null` es una serie de calentamiento. */
+  recomendadoTrasLaSerie: (n: number | null, t: string) => (n === null ? `Recomendado tras el calentamiento: ${t}` : `Recomendado tras la serie ${numero(n, 0)}: ${t}`),
   /** La frase del encargo de Dirección (§6) para una serie sin descanso recomendado: se puede medir igual. */
   sinDescansoRecomendado: 'Descanso sin duración indicada',
   recomendado: (t: string) => `Recomendado: ${t}`,
@@ -69,7 +70,8 @@ export const COPY_ENTRENAMIENTO_POR_SERIE = {
   cronometrarSerie: 'Cronometrar serie',
   finalizarSerie: 'Finalizar serie',
   finalizarDescansoEIniciarSerie: (n: number) => `Finalizar descanso e iniciar la serie ${numero(n, 0)}`,
-  serieEnCurso: (n: number) => `Serie ${numero(n, 0)} en curso`,
+  /** DL-178: `null` es una serie de calentamiento. */
+  serieEnCurso: (n: number | null) => (n === null ? 'Calentamiento en curso' : `Serie ${numero(n, 0)} en curso`),
   duracionMedida: 'Duración medida',
   duracionDesconocida: 'Duración desconocida',
   // Cerrar

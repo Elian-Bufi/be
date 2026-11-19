@@ -11,7 +11,7 @@
  *
  * Es lógica pura, sin React.
  */
-import { calcularTiempos, COPY_ENTRENAMIENTO_POR_SERIE, type DuracionApi, type EventoDeTiempo, type InstanteDeEventoApi } from '@be/domain';
+import { calcularTiempos, COPY_ENTRENAMIENTO_POR_SERIE, COPY_TIPOS_DE_SERIE, type DuracionApi, type EventoDeTiempo, type InstanteDeEventoApi } from '@be/domain';
 import { estadoLocal, eventosDeLaCorrida, type Corrida } from './corrida-de-entrenamiento';
 import type { ResumenDelEjercicio } from './series-de-la-sesion';
 import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
@@ -38,10 +38,19 @@ export function cuentaDelRecorrido(resumen: readonly ResumenDelEjercicio[]): { r
 }
 
 /** «Ejercicio 2 de 5 · Serie 3 de 4», o «… · Serie 4 · sin planificar» en una serie de más. */
-export function posicionEnLaSesion(ejercicio: number, total: number, serie: { readonly setIndex: number; readonly planificada: boolean } | null, planificadas: number): string {
+export function posicionEnLaSesion(
+  ejercicio: number,
+  total: number,
+  /** DL-178: `numero` es el número efectivo (`null` en una de calentamiento); sin él, el `setIndex`. */
+  serie: { readonly setIndex: number; readonly planificada: boolean; readonly numero?: number | null } | null,
+  /** Las series efectivas planificadas del ejercicio: el calentamiento no cuenta. */
+  planificadas: number,
+): string {
   const t = TEXTOS_DE_LA_SESION;
   if (!serie) return COPY_ENTRENAMIENTO_POR_SERIE.ejercicioDe(ejercicio, total);
-  return t.ejercicioYSerie(ejercicio, total, serie.planificada ? t.serieDe(serie.setIndex, planificadas) : t.serieDeMas(serie.setIndex));
+  if (serie.numero === null) return t.ejercicioYSerie(ejercicio, total, COPY_TIPOS_DE_SERIE.calentamiento);
+  const n = serie.numero ?? serie.setIndex;
+  return t.ejercicioYSerie(ejercicio, total, serie.planificada ? t.serieDe(n, planificadas) : t.serieDeMas(n));
 }
 
 /**

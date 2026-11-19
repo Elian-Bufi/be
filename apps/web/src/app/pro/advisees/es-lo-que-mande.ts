@@ -29,6 +29,11 @@ export interface CuerpoDelGuardado {
   readonly agenda?: unknown;
   /** La versión del objetivo con la que queda el borrador. */
   readonly objetivo: string | null;
+  /**
+   * PLT (DL-182): en la preparación de una plantilla, lo demás que viaja con la estructura (el nombre y la descripción de
+   * una nueva, el interruptor de las cargas). Ausente en los planes: su huella no cambia.
+   */
+  readonly metadatos?: unknown;
 }
 
 const vacio = (v: unknown): boolean => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
@@ -53,6 +58,7 @@ export function huellaDelGuardado(c: CuerpoDelGuardado): string {
     proximaRevision: c.proximaRevision || null,
     agenda: contenido(c.agenda ?? null, false) ?? null,
     objetivo: c.objetivo ?? null,
+    ...(c.metadatos !== undefined ? { metadatos: contenido(c.metadatos, false) ?? null } : {}),
   });
 }
 

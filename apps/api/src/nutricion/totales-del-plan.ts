@@ -1,4 +1,4 @@
-import { calcularNutrientes, nutrientesDelResultado, type ContenidoDeInstantanea, type ContenidoDePlan, type EstimacionDeLasOpcionesResponse, type ItemDeLaEstimacion } from '@be/domain';
+import { calcularNutrientes, nutrientesDelResultado, type ContenidoDeInstantanea, type ContenidoDePlan, type EstimacionDeLasOpcionesResponse, type GrupoDeAlimento, type ItemDeLaEstimacion } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import type { CatalogoService } from './catalogo.service';
 import { recetaCongelada, recetaDeLaOpcion } from './opciones-de-receta';
@@ -75,7 +75,10 @@ export async function estimacionDelBorrador(tx: Tx, catalogo: CatalogoService, p
     const v = (it as { catalogItemVersionId?: unknown }).catalogItemVersionId;
     return typeof v === 'string' ? v : null;
   };
-  const disponibles = await catalogo.disponibles(tx, profesionalId, [...new Set(opciones.flatMap((o) => o.items.map((i) => i.catalogItemId)))]);
+  const ids = [...new Set(opciones.flatMap((o) => o.items.map((i) => i.catalogItemId)))];
+  // NUA-02 (DL-180): uno retirado después de citarlo se sigue mostrando con su composición (la de su última versión); la
+  // validación lo señala antes de activar.
+  const disponibles = new Map([...(await catalogo.retirados(tx, profesionalId, ids)), ...(await catalogo.disponibles(tx, profesionalId, ids))]);
   const deRecetas = await catalogo.versionesPorId(tx, opciones.flatMap((o) => (recetaDeLaOpcion(o) ? o.items.flatMap((it) => citada(it) ?? []) : [])));
   return opcionesConEstimacion(
     contenido.dayTypes.map((d) => ({
@@ -107,4 +110,24 @@ export async function estimacionDelBorrador(tx: Tx, catalogo: CatalogoService, p
       })),
     })),
   );
+}
+
+/**
+ * DL-180: cada alimento de la estimación, con su grupo (para el ícono, NUA-05) y si se retiró del catálogo (para la marca
+ * discreta, NUA-02). Lo que la lectura no encuentra queda sin grupo y sin marca: nunca se inventa.
+ */
+export function conGruposYRetiros(dias: readonly DiaDeLaEstimacion[], mapa: ReadonlyMap<string, { readonly grupo: GrupoDeAlimento | null; readonly retirado: boolean }>): DiaDeLaEstimacion[] {
+  return dias.map((d) => ({
+    ...d,
+    meals: d.meals.map((m) => ({
+      ...m,
+      options: m.options.map((o) => ({
+        ...o,
+        items: o.items.map((it) => {
+          const x = mapa.get(it.catalogItemId);
+          return { ...it, foodGroup: x?.grupo ?? null, retired: x?.retirado ?? false };
+        }),
+      })),
+    })),
+  }));
 }

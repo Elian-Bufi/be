@@ -15,6 +15,7 @@
  *   páginas (cada una, un bloque que no se parte), en A4 y en carta.
  */
 import { createPortal } from 'react-dom';
+import { COPY_TIPOS_DE_SERIE } from '@be/domain';
 import { COPY_HOJA_DEL_PLAN as C, type CuerpoDeLaHoja, type EjercicioDeLaHoja, type HojaDelPlan } from '../lib/hoja-del-plan';
 import { CodigoQr } from './codigo-qr';
 
@@ -155,8 +156,9 @@ function Ejercicio({ ejercicio: e }: { ejercicio: EjercicioDeLaHoja }) {
           </thead>
           <tbody>
             {e.series.map((f) => (
-              <tr key={f.serie}>
-                <th scope="row">{f.serie}</th>
+              <tr key={`${f.deCalentamiento ? 'c' : 'e'}${f.serie}`}>
+                {/* DL-178: el calentamiento, «C»; las efectivas, 1, 2, 3. */}
+                <th scope="row">{f.deCalentamiento ? <abbr title={COPY_TIPOS_DE_SERIE.calentamiento}>{COPY_TIPOS_DE_SERIE.marca}</abbr> : f.serie}</th>
                 <td>{f.carga ?? C.sinObjetivo}</td>
                 <td>{f.repeticiones ?? C.sinObjetivo}</td>
                 {e.conRir ? <td>{f.rir ?? C.sinObjetivo}</td> : null}

@@ -18,7 +18,7 @@
  * - **La composición** (AV2-07): dos columnas con la letra de siempre y una con ×1,3, con la escala como la manda Android
  *   (`escala-de-letra.ts`), y además según lo que entra: ninguna palabra se parte a la mitad.
  */
-import { COPY_ANTROPOMETRIA, numero, textoDeDiferenciaAntropometrica, type HoyConOpcionesResponse, type MedidaDeLaToma, type Ocurrencia, type RegistroDeComida } from '@be/domain';
+import { COPY_ANTROPOMETRIA, cuentaDeSeries, numero, tieneCalentamiento, type ConTipoDeSerie, textoDeDiferenciaAntropometrica, type HoyConOpcionesResponse, type MedidaDeLaToma, type Ocurrencia, type RegistroDeComida } from '@be/domain';
 import { anchoDeLaPalabraMasLarga, estadosDeLasComidas, fichasPorFila, registroDeLaComida, type EstadoDeLaComida, type MedidasDeLaFicha } from './comidas-de-hoy';
 import type { VistaConPliegue } from './desplegable';
 import { esLetraGrande } from './escala-de-letra';
@@ -287,13 +287,14 @@ export function desgloseDeActividad(a: Pick<ActividadDeEntrenamiento, 'realizada
 // ─── La sesión de hoy, con su detalle plegado (AV-06) ───────────────────────────────────────────
 
 /** Lo que va plegado bajo «6 ejercicios · 18 series»: el bloque y la semana, y los tres primeros ejercicios. */
-export function detalleDeLaSesion(s: { readonly blockLabel?: string | null; readonly microcycleLabel?: string | null; readonly prescriptions: readonly { readonly exerciseName: string; readonly sets: readonly unknown[] }[] }): {
+export function detalleDeLaSesion(s: { readonly blockLabel?: string | null; readonly microcycleLabel?: string | null; readonly prescriptions: readonly { readonly exerciseName: string; readonly sets: readonly ConTipoDeSerie[] }[] }): {
   readonly bloque: string | null;
   readonly ejercicios: readonly string[];
   readonly yMas: string | null;
 } {
   const bloque = [s.blockLabel, s.microcycleLabel].filter(Boolean).join(' · ') || null;
-  const ejercicios = s.prescriptions.slice(0, 3).map((p) => `${p.exerciseName} · ${T.cuantos(p.sets.length, 'serie', 'series')}`);
+  // DL-178: con calentamiento, «3 series efectivas + 2 de calentamiento»; sin él, como siempre.
+  const ejercicios = s.prescriptions.slice(0, 3).map((p) => `${p.exerciseName} · ${tieneCalentamiento(p.sets) ? cuentaDeSeries(p.sets) : T.cuantos(p.sets.length, 'serie', 'series')}`);
   const resto = s.prescriptions.length - ejercicios.length;
   return { bloque, ejercicios, yMas: resto > 0 ? T.yMas(resto) : null };
 }

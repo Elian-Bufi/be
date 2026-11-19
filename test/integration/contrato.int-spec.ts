@@ -26,6 +26,7 @@
  * - WP-USO-FINAL (UF-05): API-ACC-08, aceptar la versión vigente de los términos o de la privacidad (DL-169).
  * - RF-068 y RF-004: las familias INC y MET, las incidencias y los métodos de acceso de la cuenta propia (DL-172).
  * - WP-PULIDO-GRANDES (DL-173): API-TRN-25 y sus variantes LISTA y PROPIA (PG-15) y la familia NPP (PG-16).
+ * - WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): API-TPL-06 a 14, la preparación de una plantilla sin persona.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -988,6 +989,45 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version }).expect(400);
   await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version, state: 'ARCHIVED' }).expect(200);
   await request(app.getHttpServer()).get('/api/v1/training/plan-templates').expect(401);
+
+  // TPL-06..14 (la preparación de una plantilla, sin persona; DL-182): crear en blanco y como copia, listar, leer,
+  // autoguardar, revisar, guardar como plantilla y como versión, descartar, editar una existente y sus versiones.
+  const preparaciones = '/api/v1/training/plan-template-drafts';
+  const enBlanco = (await pro.post(preparaciones).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.post(preparaciones).send({ fromTemplateVersionId: randomUUID() }).expect(404);
+  await pro.post(preparaciones).send({ adviseeId: randomUUID() }).expect(400);
+  await ase.post(preparaciones).send({}).expect(403);
+  await pro.get(preparaciones).expect(200);
+  await pro.get(`${preparaciones}?cursor=basura`).expect(400);
+  await pro.get(`${preparaciones}/${enBlanco.draftId}`).expect(200);
+  await pro.get(`${preparaciones}/${randomUUID()}`).expect(404);
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: 'v99', structure: estructuraDeEntrenamiento() }).expect(409);
+  const conOtroEjercicio = { blocks: [{ label: 'F', sessions: [{ label: 'A', prescriptions: [{ exerciseVersionId: randomUUID(), sets: [{ repetitions: { value: 8 } }], intensity: null }] }] }] };
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: conOtroEjercicio }).expect(422);
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: estructuraDeEntrenamiento(), extra: 1 }).expect(400);
+  const preparada = (await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: estructuraDeEntrenamiento(), name: 'Molde preparado' }).expect(200)).body.data as { draftId: string; version: string };
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/review`).send({ expectedVersion: preparada.version }).expect(200);
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/review`).send({ expectedVersion: 'v99' }).expect(409);
+  // Sin nombre ni sesiones: 422 OPERATION_NOT_READY. Con el nombre de otra: 409 TEMPLATE_NAME_TAKEN.
+  const sinNombre = (await pro.post(preparaciones).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/publish`).send({ expectedVersion: sinNombre.version }).expect(422);
+  const tomado = (await pro.patch(`${preparaciones}/${sinNombre.draftId}`).send({ expectedVersion: sinNombre.version, structure: estructuraDeEntrenamiento(), name: 'molde de contrato' }).expect(200)).body.data as { version: string };
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/publish`).send({ expectedVersion: tomado.version }).expect(409);
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/discard`).send({ expectedVersion: 'v99' }).expect(409);
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/discard`).send({ expectedVersion: tomado.version }).expect(200);
+  const guardadaComoPlantilla = (await pro.post(`${preparaciones}/${enBlanco.draftId}/publish`).send({ expectedVersion: preparada.version }).expect(201)).body.data as { templateId: string; versionId: string };
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/publish`).send({ expectedVersion: preparada.version }).expect(404);
+  // Editar la existente (201 y, otra vez, 200), una archivada (422) y una que no existe (404).
+  const deLaExistente = (await pro.put(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/draft`).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.put(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/draft`).send({}).expect(200);
+  await pro.put(`/api/v1/training/plan-templates/${plantillaId}/draft`).send({}).expect(422);
+  await pro.put(`/api/v1/training/plan-templates/${randomUUID()}/draft`).send({}).expect(404);
+  // Sin cambios frente a la versión de base: no se guarda una versión igual (PLT-D10).
+  await pro.post(`${preparaciones}/${deLaExistente.draftId}/publish`).send({ expectedVersion: deLaExistente.version }).expect(422);
+  await pro.post(preparaciones).send({ fromTemplateVersionId: guardadaComoPlantilla.versionId }).expect(201);
+  await pro.get(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/versions`).expect(200);
+  await pro.get(`/api/v1/training/plan-templates/${randomUUID()}/versions`).expect(404);
+  await ase.get(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/versions`).expect(403);
 
   // TPN-01..05 (plantillas de comidas, DL-108): con un circuito de nutrición.
   const nut = await circuitoListoParaPlanificar(app, 'contrato-tpn');
@@ -2721,6 +2761,29 @@ it('TEST-CT (WP-PULIDO-GRANDES, DL-173): la nota para tu profe (TRN-25, LISTA y 
   await request(servidor).post(archivo).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
 });
 
+it('TEST-CT (WP-CONTEXTO-DE-LA-PERSONA, DL-179): CTX-01 y CTX-02 — el contexto de la persona, con éxitos y errores declarados', async () => {
+  const c = await circuitoV2(app, prisma, 'ct-ctx', 'NUTRICION');
+  await fri(app, c.ase.token).responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201);
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  const servidor = app.getHttpServer();
+  // CTX-01
+  const respuestas = `/api/v1/advisees/${c.ase.id}/person-context/answers`;
+  await pro.get(respuestas).expect(200);
+  await pro.get(`${respuestas}?x=1`).expect(400);
+  await ase.get(respuestas).expect(404);
+  await pro.get(`/api/v1/advisees/${ajeno}/person-context/answers`).expect(404);
+  await request(servidor).get(respuestas).expect(401);
+  // CTX-02: quien lleva Antropometría (200); quien no la lleva y no la recibe compartida (404).
+  const ant = await circuitoAntropometrico(app, prisma, 'ct-ctx-cuerpo');
+  const cuerpo = `/api/v1/advisees/${ant.ase.id}/person-context/body`;
+  await conSesion(app, ant.pro.token).get(cuerpo).expect(200);
+  await conSesion(app, ant.pro.token).get(`${cuerpo}?x=1`).expect(400);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/person-context/body`).expect(404);
+  await request(servidor).get(cuerpo).expect(401);
+});
+
 it('TEST-CT (WP-HISTORIA-ANTERIOR, DL-175): HIA-01 a 04 — la historia anterior de un área, para el profesional nuevo, con éxitos y errores declarados', async () => {
   const c = await circuitoConPlanActivo(app, 'ct-hia');
   await finalizar(app, c.ase.token, c.vinculoId, await versionDeVinculo(app, c.ase.token, c.vinculoId)).expect(200);
@@ -2830,6 +2893,77 @@ it('TEST-CT (WP-COMPARTIR, DL-176): CMP-01 a 03 — la pantalla única de consen
   await yo.post(RETIRAR).send({ key: resumen.key, extra: 1 }).expect(400); // UNKNOWN_FIELD
   await yo.post(RETIRAR).send({ key: `HABITS:${ajeno.id}` }).expect(404); // un profesional que nunca la acompañó
   await request(servidor).post(RETIRAR).set('Idempotency-Key', claveDeIdempotencia()).send({ key: resumen.key }).expect(401);
+});
+
+it('TEST-CT (DL-180): ALI-01 a 09 — los alimentos cargados a mano y su revisión por Administración, con éxitos y errores declarados', async () => {
+  const servidor = app.getHttpServer();
+  const pro = await prepararProfesional(app, `ct-ali-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
+  const otro = await prepararProfesional(app, `ct-ali-otro-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
+  const persona = await prepararAsesorado(app, 'ct-ali');
+  const yo = conSesion(app, pro.token);
+  const composicion = { referenceAmount: '100g', energyKcal: 380, proteinG: 75, carbohydrateG: 8, fatG: 5 };
+  const cargar = async (nombre: string) => (await yo.post('/api/v1/nutrition/catalog-items').send({ name: nombre, itemType: 'FOOD', composition: composicion, group: 'DAIRY' }).expect(201)).body.data as { catalogItemId: string; versionId: string };
+  const uno = await cargar('Proteína en polvo del contrato');
+  const dos = await cargar('Galleta del contrato');
+  // ALI-01.
+  await yo.get('/api/v1/nutrition/catalog-items/mine').expect(200);
+  await yo.get('/api/v1/nutrition/catalog-items/mine?x=1').expect(400); // INVALID_REQUEST
+  await yo.get('/api/v1/nutrition/catalog-items/mine?cursor=no-es-un-cursor').expect(400); // INVALID_CURSOR
+  await conSesion(app, persona.token).get('/api/v1/nutrition/catalog-items/mine').expect(403); // ACTION_FORBIDDEN
+  await request(servidor).get('/api/v1/nutrition/catalog-items/mine').expect(401); // AUTHENTICATION_REQUIRED
+  // ALI-02.
+  const corregir = (token: string, id: string, cuerpo: Record<string, unknown>, clave = claveDeIdempotencia()) =>
+    request(servidor).patch(`/api/v1/nutrition/catalog-items/${id}`).set('Authorization', `Bearer ${token}`).set('Idempotency-Key', clave).send(cuerpo);
+  const correccion = { expectedVersion: 'v1', name: 'Proteína en polvo del contrato', composition: { ...composicion, energyKcal: 120 } };
+  const clave = claveDeIdempotencia();
+  await corregir(pro.token, uno.catalogItemId, correccion, clave).expect(200);
+  await corregir(pro.token, uno.catalogItemId, { ...correccion, name: 'Otro' }, clave).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await corregir(pro.token, uno.catalogItemId, correccion).expect(409); // VERSION_CONFLICT
+  await corregir(pro.token, uno.catalogItemId, { ...correccion, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await request(servidor).patch(`/api/v1/nutrition/catalog-items/${uno.catalogItemId}`).set('Authorization', `Bearer ${pro.token}`).send(correccion).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await corregir(otro.token, uno.catalogItemId, correccion).expect(404); // RESOURCE_NOT_FOUND: ajeno
+  await corregir(persona.token, uno.catalogItemId, correccion).expect(403); // ACTION_FORBIDDEN
+  // ALI-03.
+  const retirar = (token: string, id: string, cuerpo: Record<string, unknown>) => conSesion(app, token).post(`/api/v1/nutrition/catalog-items/${id}/retirement`).send(cuerpo);
+  await retirar(pro.token, dos.catalogItemId, { expectedVersion: 'v1', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await retirar(pro.token, dos.catalogItemId, { expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await retirar(otro.token, dos.catalogItemId, { expectedVersion: 'v1' }).expect(404); // RESOURCE_NOT_FOUND
+  await retirar(persona.token, dos.catalogItemId, { expectedVersion: 'v1' }).expect(403); // ACTION_FORBIDDEN
+  await retirar(pro.token, dos.catalogItemId, { expectedVersion: 'v1' }).expect(200);
+  await corregir(pro.token, dos.catalogItemId, { ...correccion, expectedVersion: 'v2', name: 'Galleta del contrato' }).expect(422); // INVALID_STATE_TRANSITION: retirado
+  // ALI-04.
+  const consultar = (token: string, cuerpo: Record<string, unknown>) => request(servidor).post('/api/v1/nutrition/catalog-items/lookup').set('Authorization', `Bearer ${token}`).send(cuerpo);
+  await consultar(pro.token, { catalogItemIds: [uno.catalogItemId, dos.catalogItemId] }).expect(200);
+  await consultar(pro.token, { catalogItemIds: [uno.catalogItemId], extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await consultar(persona.token, { catalogItemIds: [uno.catalogItemId] }).expect(403); // ACTION_FORBIDDEN
+  // ALI-05 a 07.
+  const a = await administradorListo(app, prisma, `ct-ali-${randomUUID().slice(0, 6)}`);
+  await adm(app, a.token).post('/admin/foods/query').send({ q: 'contrato' }).expect(200);
+  await adm(app, a.token).post('/admin/foods/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/query').send({ cursor: '###' }).expect(400); // INVALID_CURSOR
+  await adm(app, pro.token).post('/admin/foods/query').send({}).expect(403); // ACTION_FORBIDDEN
+  const verificados = (await adm(app, a.token).post('/admin/foods/verified/query').send({ q: 'arroz blanco de grano largo cocido' }).expect(200)).body.data as { catalogItemId: string }[];
+  await adm(app, a.token).post('/admin/foods/verified/query').send({ q: 'arroz', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const decidir = (id: string, cuerpo: Record<string, unknown>) => adm(app, a.token).post(`/admin/foods/${id}/decisions`).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo);
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'CERTIFY' }).expect(422); // VALIDATION_FAILED: sin fuente
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'CLEAR' }).expect(422); // INVALID_STATE_TRANSITION: nada decidido
+  await decidir(uno.catalogItemId, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo' }).expect(409); // VERSION_CONFLICT
+  await decidir(randomUUID(), { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo' }).expect(404); // RESOURCE_NOT_FOUND
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'CERTIFY', source: 'Rótulo', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'EQUIVALENT', equivalentCatalogItemId: verificados[0]!.catalogItemId }).expect(200);
+  // ALI-08 y 09 (segundo tramo): los parecidos y sumar al canon.
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ q: 'contrato' }).expect(200);
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ minProfessionals: 0 }).expect(400); // INVALID_REQUEST
+  await adm(app, pro.token).post('/admin/foods/similar/query').send({}).expect(403); // ACTION_FORBIDDEN
+  const canon = { name: 'Galleta verificada del contrato', composition: composicion, source: 'Rótulo sintético del contrato' };
+  const claveDeCanon = claveDeIdempotencia();
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeCanon).send(canon).expect(201);
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeCanon).send({ ...canon, name: 'Otra' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, source: undefined }).expect(400); // INVALID_REQUEST: sin fuente
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, fromCatalogItemId: randomUUID() }).expect(422); // VALIDATION_FAILED
+  await adm(app, pro.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send(canon).expect(403); // ACTION_FORBIDDEN
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

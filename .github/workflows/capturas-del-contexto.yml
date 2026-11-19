@@ -1,0 +1,69 @@
+# Capturas de WP-CONTEXTO-DE-LA-PERSONA (DL-179): el panel «Contexto de <nombre>» en los editores y en la evaluación, con
+# la cohorte sintética en un PostgreSQL efímero (y, encima, los formularios respondidos y el resumen compartido), la API y
+# el website compilados, y las capturas en Claro y Azul noche, a 1280 × 800, a 1536 × 730 y a 1920 × 950. Esta PC no levanta los
+# tres juntos: lo hace la CI.
+# No es un check de la integración: no bloquea nada y no despliega nada. Corre en las ramas del paquete cuando cambia la
+# herramienta o este archivo, y a pedido.
+name: capturas-del-contexto
+
+on:
+  push:
+    branches: ["wp-contexto-*"]
+    paths:
+      - "EVIDENCIA/CONTEXTO-DE-LA-PERSONA/herramientas/**"
+      - ".github/workflows/capturas-del-contexto.yml"
+      - "apps/web/src/app/pro/advisees/contexto/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capturas-del-contexto-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capturas:
+    name: capturas · contexto de la persona (website + API + PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: be_test
+          POSTGRES_PASSWORD: be_test
+          POSTGRES_DB: be_test_cohorte
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U be_test -d be_test_cohorte"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Build de la API
+        run: npm run build:api
+      - name: Build del website contra la API local
+        run: npm run build:web
+        env:
+          BE_API_BASE_URL: http://localhost:3001
+      - name: La cohorte y las capturas
+        run: node EVIDENCIA/CONTEXTO-DE-LA-PERSONA/herramientas/capturas.mjs capturas-del-contexto
+        env:
+          BE_E2E_DATABASE_URL: postgresql://be_test:be_test@localhost:5432/be_test_cohorte
+          BE_COHORTE_CON_LA_ESTIMACION: si
+          CHROME: /usr/bin/google-chrome
+          TZ: America/Argentina/Buenos_Aires
+      - name: Capturas y registro de la API (datos sintéticos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-del-contexto
+          path: capturas-del-contexto
+          if-no-files-found: warn
+          retention-days: 30

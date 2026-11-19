@@ -1,5 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { CAPACIDAD_OBJETIVOS_POR_SERIE, CodigoDeError, COPY_COMPATIBILIDAD_DE_CLIENTES, planExigeObjetivosPorSerie, type ContenidoDePlanDeEntrenamiento } from '@be/domain';
+import {
+  CAPACIDAD_OBJETIVOS_POR_SERIE,
+  CAPACIDAD_TIPOS_DE_SERIE,
+  CodigoDeError,
+  COPY_CALENTAMIENTO_Y_LA_APP,
+  COPY_COMPATIBILIDAD_DE_CLIENTES,
+  planExigeObjetivosPorSerie,
+  planTieneCalentamiento,
+  type ContenidoDePlanDeEntrenamiento,
+} from '@be/domain';
 import { Prisma } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
 import { ErrorDeApi } from '../http/errores';
@@ -38,9 +47,18 @@ export const muestraObjetivosPorSerie = (ctx: ContextoDeSolicitud): boolean => c
  */
 export const exigeObjetivosPorSerie = (contenido: ContenidoDePlanDeEntrenamiento): boolean => planExigeObjetivosPorSerie(contenido);
 
-/** Si una versión no se le entrega a este pedido: exige objetivos por serie y el cliente no declara que los muestra. */
+/** DL-178: si el pedido viene de un cliente que distingue las series de calentamiento. Sin la cabecera, no. */
+export const distingueElCalentamiento = (ctx: ContextoDeSolicitud): boolean => ctx.capacidades.has(CAPACIDAD_TIPOS_DE_SERIE);
+
+/** DL-178: si el contenido de una versión tiene alguna serie de calentamiento (de la activada se mira su instantánea). */
+export const tieneSeriesDeCalentamiento = (contenido: ContenidoDePlanDeEntrenamiento): boolean => planTieneCalentamiento(contenido);
+
+/**
+ * Si una versión no se le entrega a este pedido: exige objetivos por serie y el cliente no declara que los muestra, o
+ * (DL-178) tiene calentamiento y el cliente no declara que lo distingue: lo vería todo efectivo y lo registraría así.
+ */
 export const seRetieneLaEntrega = (ctx: ContextoDeSolicitud, contenido: ContenidoDePlanDeEntrenamiento): boolean =>
-  !muestraObjetivosPorSerie(ctx) && exigeObjetivosPorSerie(contenido);
+  (!muestraObjetivosPorSerie(ctx) && exigeObjetivosPorSerie(contenido)) || (!distingueElCalentamiento(ctx) && tieneSeriesDeCalentamiento(contenido));
 
 /** El 404 de lo inexistente (09:226), idéntico. El motivo real queda solo en la auditoría (`motivoDeAuditoria`). */
 export const entregaRetenida = (): ErrorDeApi =>
@@ -49,6 +67,14 @@ export const entregaRetenida = (): ErrorDeApi =>
 /** API-TRN-12: el titular todavía no usó una app que muestre los objetivos por serie. Es un 409 sin ningún cambio. */
 export const capacidadDelClienteRequerida = (): ErrorDeApi =>
   new ErrorDeApi(409, CodigoDeError.CLIENT_CAPABILITY_REQUIRED, COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada);
+
+/** DL-178 · API-TRN-12: el titular todavía no usó una app que distinga el calentamiento. El mismo 409, con su motivo. */
+export const calentamientoRequiereLaApp = (): ErrorDeApi =>
+  new ErrorDeApi(409, CodigoDeError.CLIENT_CAPABILITY_REQUIRED, COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada);
+
+/** Las capacidades de Entrenamiento que se registran cuando el titular las declara (las que deciden si se activa un plan). */
+const CAPACIDADES_QUE_SE_REGISTRAN = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_TIPOS_DE_SERIE] as const;
+type CapacidadQueSeRegistra = (typeof CAPACIDADES_QUE_SE_REGISTRAN)[number];
 
 @Injectable()
 export class CompatibilidadDeClientesService {
@@ -61,8 +87,8 @@ export class CompatibilidadDeClientesService {
   ) {}
 
   /** Si la identidad ya usó un cliente que muestra los objetivos por serie: lo registraron API-TRN-14 o API-SER-02. */
-  async titularCapaz(tx: Tx, identidadId: string): Promise<boolean> {
-    return (await tx.capacidadDeClienteDeclarada.count({ where: { identidadId, capacidad: CAPACIDAD_OBJETIVOS_POR_SERIE } })) > 0;
+  async titularCapaz(tx: Tx, identidadId: string, capacidad: CapacidadQueSeRegistra = CAPACIDAD_OBJETIVOS_POR_SERIE): Promise<boolean> {
+    return (await tx.capacidadDeClienteDeclarada.count({ where: { identidadId, capacidad } })) > 0;
   }
 
   /**
@@ -76,16 +102,19 @@ export class CompatibilidadDeClientesService {
    * identidad, la capacidad, la superficie y las dos fechas.
    */
   async registrarDeclaracion(identidadId: string, ctx: ContextoDeSolicitud): Promise<void> {
-    if (!muestraObjetivosPorSerie(ctx)) return;
+    for (const capacidad of CAPACIDADES_QUE_SE_REGISTRAN) if (ctx.capacidades.has(capacidad)) await this.registrarUna(identidadId, capacidad, ctx);
+  }
+
+  private async registrarUna(identidadId: string, capacidad: CapacidadQueSeRegistra, ctx: ContextoDeSolicitud): Promise<void> {
     try {
       const [reciente] = await this.prisma.$queryRaw<{ reciente: number }[]>`
         SELECT 1 AS "reciente" FROM "capacidad_de_cliente_declarada"
-         WHERE "identidad_id" = ${identidadId}::uuid AND "capacidad" = ${CAPACIDAD_OBJETIVOS_POR_SERIE}
+         WHERE "identidad_id" = ${identidadId}::uuid AND "capacidad" = ${capacidad}
            AND "momento_de_ultima_declaracion" > now() - interval '1 hour'`;
       if (reciente) return;
       await this.prisma.$executeRaw`
         INSERT INTO "capacidad_de_cliente_declarada" ("identidad_id", "capacidad", "superficie")
-        VALUES (${identidadId}::uuid, ${CAPACIDAD_OBJETIVOS_POR_SERIE}, ${ctx.superficie}::"Superficie")
+        VALUES (${identidadId}::uuid, ${capacidad}, ${ctx.superficie}::"Superficie")
         ON CONFLICT ("identidad_id", "capacidad") DO UPDATE
            SET "momento_de_ultima_declaracion" = EXCLUDED."momento_de_ultima_declaracion", "superficie" = EXCLUDED."superficie"
          WHERE "capacidad_de_cliente_declarada"."momento_de_ultima_declaracion" <= now() - interval '1 hour'`;

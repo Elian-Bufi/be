@@ -62,6 +62,7 @@ import {
   type PlanConObjetivos,
   type Prescripcion,
   type RegistroDeEjecucion,
+  rotuloPorIndice,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { Enlace } from '../../../../components/enlace';
@@ -799,19 +800,26 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
             )}
             {e.sets ? (
               <ol>
-                {e.sets.map((s) => (
-                  <li key={s.setIndex}>
-                    {/* La serie planificada con el mismo número, de la prescripción que rigió (no de la versión vigente hoy). */}
-                    {COPY_ENTRENAMIENTO.serie} {numero(s.setIndex)}: {s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} ×{' '}
-                    {s.completedRepetitions === null ? '—' : numero(s.completedRepetitions)} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
-                    {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}` : ''}
-                    {s.perceivedExertion !== null ? ` · esfuerzo percibido ${numero(s.perceivedExertion)}` : ''}
-                    {planificadasPara(planificado, e.prescriptionId, s.setIndex)}
-                    {/* DL-161: cómo se cargó y cuánto duró, si la serie lo trae. */}
-                    {seCargoComoElPlan(s) ? ` · ${COPY_REGISTRO_POR_NIVELES.comoElPlan}` : ''}
-                    {typeof s.durationSeconds === 'number' ? ` · ${COPY_REGISTRO_POR_NIVELES.duro(textoDeSegundos(s.durationSeconds) ?? '').toLowerCase()}` : ''}
-                  </li>
-                ))}
+                {e.sets.map((s, _i, todas) => {
+                  // DL-178: el rótulo por `setIndex`, con lo indicado: una serie salteada no renumera las que siguen, y es de
+                  // calentamiento si lo dice el registro o el plan (D-5).
+                  const rotulo = rotuloPorIndice([...(planificado.find((p) => p.prescriptionId === e.prescriptionId)?.sets ?? []), ...todas])(s.setIndex);
+                  const deCalentamiento = rotulo.numero === null;
+                  return (
+                    <li key={s.setIndex} data-calentamiento={deCalentamiento ? '' : undefined} className={deCalentamiento ? 'series-de-la-ejecucion__calentamiento' : undefined}>
+                      {/* La serie planificada con el mismo número, de la prescripción que rigió (no de la versión vigente hoy). DL-178: el
+                          calentamiento se nombra así y las efectivas llevan su número efectivo. */}
+                      {rotulo.largo}: {s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} ×{' '}
+                      {s.completedRepetitions === null ? '—' : numero(s.completedRepetitions)} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
+                      {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}` : ''}
+                      {s.perceivedExertion !== null ? ` · esfuerzo percibido ${numero(s.perceivedExertion)}` : ''}
+                      {planificadasPara(planificado, e.prescriptionId, s.setIndex)}
+                      {/* DL-161: cómo se cargó y cuánto duró, si la serie lo trae. */}
+                      {seCargoComoElPlan(s) ? ` · ${COPY_REGISTRO_POR_NIVELES.comoElPlan}` : ''}
+                      {typeof s.durationSeconds === 'number' ? ` · ${COPY_REGISTRO_POR_NIVELES.duro(textoDeSegundos(s.durationSeconds) ?? '').toLowerCase()}` : ''}
+                    </li>
+                  );
+                })}
               </ol>
             ) : null}
             {e.executionSummary ? <p>{e.executionSummary.description}</p> : null}

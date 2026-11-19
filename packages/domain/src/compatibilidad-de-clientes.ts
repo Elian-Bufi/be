@@ -18,6 +18,7 @@
 import type { z } from 'zod';
 import type { CargaSchema } from './contratos-entrenamiento';
 import { esCriterioRir, objetivosEfectivos, type PrescripcionParaResolver } from './objetivos-por-serie';
+import { tieneCalentamiento, type ConTipoDeSerie } from './tipos-de-serie';
 
 type Carga = z.infer<typeof CargaSchema>;
 
@@ -43,7 +44,26 @@ export const CAPACIDAD_FORMULARIOS_FORMATO_3 = 'forms-format-3';
  */
 export const CAPACIDAD_TEXTOS_VIGENTES = 'pending-steps-texts-1';
 
-export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES] as const;
+/**
+ * DL-178 · el cliente distingue las series de calentamiento: las muestra como «Calentamiento», las registra con
+ * `setKind: WARM_UP` y no las cuenta. Solo a quien la declara le salen las series con `setKind` explícito; a quien no, con
+ * la forma de siempre (su esquema estricto rechazaría el campo). Un plan con calentamiento no se le entrega a un cliente
+ * sin la capacidad (lo vería todo efectivo y lo registraría así) y no se activa mientras el titular no haya usado uno
+ * que la declare, igual que los objetivos por serie. La declaran el website, que se despliega con la API, y la APK nueva.
+ */
+export const CAPACIDAD_TIPOS_DE_SERIE = 'training-set-kinds-1';
+
+/**
+ * DL-181 (WP-ENTRENAMIENTO-PLANIFICACION, ENP-D06) · el cliente sabe mostrar los bloques de la sesión: lee `exerciseGroups`
+ * de cada sesión y `exerciseGroupId` de cada ejercicio y agrupa los ejercicios bajo su bloque. Solo a quien la declara le
+ * salen las dos claves; a quien no, `SinBloquesDeLaSesionInterceptor` se las saca en el borde (su esquema estricto las
+ * rechazaría) y recibe lo de antes: los mismos ejercicios en el mismo orden. A diferencia de DL-178, nada se retiene ni se
+ * bloquea: el registro sigue siendo por ejercicio y nada se cuenta distinto. Por eso no se registra. La declaran el
+ * website, que se despliega con la API, y la APK nueva.
+ */
+export const CAPACIDAD_BLOQUES_DE_LA_SESION = 'training-session-groups-1';
+
+export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, CAPACIDAD_BLOQUES_DE_LA_SESION] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 
 /** Un valor de cabecera más largo que esto no se lee: ninguna lista válida lo necesita. */
@@ -91,6 +111,20 @@ interface EstructuraConSesiones {
 export function planExigeObjetivosPorSerie(estructura: EstructuraConSesiones): boolean {
   return estructura.blocks.some((b) =>
     [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions ?? [])].some((s) => s.prescriptions.some(prescripcionExigeObjetivosPorSerie)),
+  );
+}
+
+interface SesionConSeries {
+  readonly prescriptions: readonly { readonly sets: readonly ConTipoDeSerie[] }[];
+}
+interface EstructuraConSeries {
+  readonly blocks: readonly { readonly sessions?: readonly SesionConSeries[] | null; readonly microcycles?: readonly { readonly sessions?: readonly SesionConSeries[] | null }[] | null }[];
+}
+
+/** DL-178: si alguna serie de un plan es de calentamiento. Un plan así queda para clientes que las distinguen. */
+export function planTieneCalentamiento(estructura: EstructuraConSeries): boolean {
+  return estructura.blocks.some((b) =>
+    [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions ?? [])].some((s) => s.prescriptions.some((p) => tieneCalentamiento(p.sets))),
   );
 }
 

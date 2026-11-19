@@ -9623,9 +9623,13 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 .menu-de-acciones__panel {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  z-index: 6;
+  /* ENP-D11: fijo respecto de la ventana (el componente calcula el lugar): sale entero por encima de los paneles que
+     desplazan su contenido. Hasta medir, invisible, para no parpadear en otro lugar. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  overflow-y: auto;
   width: max-content;
   min-width: 14rem;
   max-width: min(22rem, calc(100vw - 2rem));
@@ -9637,12 +9641,8 @@ button.comida-del-dia__fila > .icono:last-child {
   box-shadow: var(--sombra);
 }
 
-.menu-de-acciones__panel--derecha {
-  right: 0;
-}
-
-.menu-de-acciones__panel--izquierda {
-  left: 0;
+.menu-de-acciones__panel:not([data-ubicado]) {
+  visibility: hidden;
 }
 
 .menu-de-acciones__lista {
@@ -9885,91 +9885,120 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
-/* Las opciones, en pestañas; «Agregar opción», al final del renglón. */
+/* NUP-03 (WP-NUTRICION-PLANIFICACION): las opciones, cada una en su renglón plegable, con sus números a la vista; debajo,
+   por dónde empezar una comida vacía (NUP-12) y las dos clases de opción. */
 .comida-del-editor__opciones {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  border-bottom: 1px solid var(--borde);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
 }
 
 .comida-del-editor__opciones > .nota {
-  margin: 0 0 0.6rem;
+  margin: 0;
 }
 
-/* Sin opciones no hay pestañas que subrayar. */
-.comida-del-editor__opciones:not(:has(.pestanas-de-opcion)) {
-  border-bottom: 0;
-}
-
-.comida-del-editor__opciones > .menu-de-acciones {
-  margin-bottom: 0.5rem;
-}
-
-.pestanas-de-opcion {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.35rem;
-  min-width: 0;
+.opciones-plegables {
+  display: grid;
+  gap: 0.4rem;
   margin: 0;
   padding: 0;
-  border: 0;
+  list-style: none;
 }
 
-/* Una pestaña es una opción de un grupo: la nativa la cubre entera, invisible, y el teclado es el de siempre. */
-.pestana-de-opcion {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  max-width: 22rem;
-  padding: 0 0.85rem;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -1px;
-  color: var(--tenue);
-  font-weight: 600;
-  cursor: pointer;
+.opcion-plegable {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
 }
 
-.pestana-de-opcion > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* La abierta se distingue por su borde y su fondo, no por un color que califique. */
+.opcion-plegable[data-abierta] {
+  border-color: var(--borde-control);
+  box-shadow: inset 4px 0 0 var(--azul);
 }
 
-.pestana-de-opcion input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.opcion-plegable__titulo {
   margin: 0;
-  opacity: 0;
+  font-size: 1rem;
+}
+
+.opcion-plegable__boton {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
 
-.pestana-de-opcion:has(input:checked) {
-  border-bottom-color: var(--azul);
-  color: var(--texto);
+.opcion-plegable__boton:hover {
+  background: var(--fondo-suave);
 }
 
-/* La pestaña elegida muestra su nombre entero, en los renglones que haga falta: las demás lo cortan. */
-.pestana-de-opcion:has(input:checked) {
-  max-width: none;
-  padding-block: 0.35rem;
-}
-
-.pestana-de-opcion:has(input:checked) > span {
-  overflow: visible;
-  white-space: normal;
-}
-
-.pestana-de-opcion:has(input:focus-visible) {
+.opcion-plegable__boton:focus-visible {
   outline: 3px solid var(--foco);
   outline-offset: -3px;
-  border-radius: 8px 8px 0 0;
+}
+
+.opcion-plegable__nombre {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Los números de la opción: a la derecha del nombre, en cifras del mismo ancho, sin negrita (no compiten con el nombre). */
+.opcion-plegable__numeros {
+  color: var(--tenue);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.opcion-plegable__cuerpo:not([hidden]) {
+  padding: 0.25rem 0.85rem 0.85rem;
+}
+
+/* NUP-02: lo que aporta la comida plegada y su rango indicado, en su propio renglón del encabezado. */
+.comida-del-editor__aporta,
+.comida-del-editor__indicado {
+  flex-basis: 100%;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.comida-del-editor__indicado {
+  flex-basis: auto;
+}
+
+/* NUP-05: el rango de una comida o de un día, en un renglón, con su botón. */
+.rango-en-un-renglon {
+  margin: 0;
+}
+
+.rango-en-un-renglon .boton--enlace {
+  min-height: 2.25rem;
+}
+
+/* NUP-12: por dónde empezar la comida vacía. */
+.comida-del-editor__empeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin: 0;
+}
+
+.comida-del-editor__empeza > span:first-child {
+  font-weight: 600;
 }
 
 .opcion-del-editor {
@@ -9998,20 +10027,23 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 100%;
 }
 
+/* NUA-08 (de la revisión adversaria): la unidad entra entera también con una medida casera y su equivalencia
+   («cucharada (12,5 g)»), a 1280 de ancho. Lo pagan la cantidad (su campo sigue de 6,5rem), la preparación (lo justo para
+   que «Tal como se adquiere» siga entero) y el margen de «Quitar»: el alimento conserva casi el ancho que tenía. */
 .items-del-editor thead th:nth-child(2) {
-  width: 9rem;
+  width: 7.75rem;
 }
 
 .items-del-editor thead th:nth-child(3) {
-  width: 8rem;
+  width: 12rem;
 }
 
 .items-del-editor thead th:nth-child(4) {
-  width: 15.5rem;
+  width: 13.25rem;
 }
 
 .items-del-editor thead th:nth-child(5) {
-  width: 4.25rem;
+  width: 4rem;
 }
 
 /* El nombre del alimento, a la altura del texto de sus campos, aunque debajo de la cantidad haya un error. */
@@ -16203,6 +16235,12 @@ p.cifra-del-espacio__desglose {
   gap: 0.25rem;
 }
 
+/* WP-NUTRICION-ALIMENTOS · NUA-07: el nombre de cada comida en el paso 4 usa el campo común (`.campo`: la letra, el
+   borde y el alto de BE, en Claro y en Azul noche). La tarjeta ya separa con `gap`: el margen del campo sobra. */
+.campo.asistente__nombre {
+  margin: 0;
+}
+
 .asistente__acciones,
 .asistente__pie {
   display: flex;
@@ -16335,6 +16373,666 @@ p.cifra-del-espacio__desglose {
   background: var(--texto);
 }
 
+/* DL-178 · Las series de calentamiento en la planilla: el número (o «C») y, al lado, la marca para pasarla a calentamiento.
+   Una fila de calentamiento se distingue con un borde a la izquierda, no solo con color. */
+.series-del-editor__numero {
+  display: inline-block;
+  min-width: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.series-del-editor__calentamiento {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.4rem;
+  min-height: 2rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.series-del-editor__calentamiento input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.series-del-editor tr[data-calentamiento] > th {
+  box-shadow: inset 3px 0 0 var(--tenue);
+}
+
+.series-de-la-ejecucion__calentamiento {
+  color: var(--tenue);
+}
+
+/* ═══ WP-ENTRENAMIENTO-PLANIFICACION (DL-181) · el bloque de la sesión, la revisión honesta, el criterio arriba y la
+   edición conjunta de series. Los colores son los tokens de los dos temas; nada se anima. ═══════════════════════════ */
+
+/* ENP-D14 (C2): un ejercicio abierto es una sola columna: el criterio arriba, las series a todo el ancho, y abajo las notas
+   y los parámetros. La tabla no se desplaza adentro: tiene todo el ancho del centro. */
+.ejercicio-del-editor__cuerpo:not([hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ejercicio-del-editor__general {
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--borde);
+  border-left: 0;
+}
+
+.ejercicio-del-editor__general .lo-general-del-editor {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1.5rem;
+}
+
+.criterio-del-ejercicio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem 1rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo-suave);
+}
+
+.criterio-del-ejercicio .lo-general-del-editor__par,
+.criterio-del-ejercicio .lo-general-del-editor__carga,
+.criterio-del-ejercicio__bases {
+  display: contents;
+}
+
+.criterio-del-ejercicio .campo {
+  flex: 0 1 12rem;
+  min-width: 9rem;
+  margin: 0;
+}
+
+.criterio-del-ejercicio .campo select,
+.criterio-del-ejercicio .campo input {
+  width: 100%;
+}
+
+/* La referencia del % RM es un texto: ocupa su renglón. */
+.criterio-del-ejercicio > .campo:has(textarea),
+.criterio-del-ejercicio > .campo:has(input[id$='-referencia']) {
+  flex: 1 1 100%;
+}
+
+/* ENP-D16 (C4): «Seleccionar series» y la barra de lo elegido. */
+.series-del-editor__seleccionar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.4rem;
+}
+
+.ejercicio-del-editor__series[data-seleccionando] .series-del-editor__elegidas {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* DL-181: el bloque de la sesión. Una raya al costado agrupa sus ejercicios; la cabecera dice cómo se hacen. */
+.bloque-del-editor {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem 0.75rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-control);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.bloque-del-editor[data-tipo='ROUNDS'] {
+  border-left-color: var(--enlace);
+}
+
+.bloque-del-editor__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem 1rem;
+}
+
+.bloque-del-editor__titulo {
+  /* Cede lugar: a 1536 la cabecera entra en un renglón, con el «⋯» a la derecha. */
+  flex: 1 1 6rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.bloque-del-editor__rotulo {
+  margin-right: 0.3rem;
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bloque-del-editor__tipo {
+  margin: 0;
+}
+
+.bloque-del-editor__campo {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.bloque-del-editor__campo select {
+  width: 5rem;
+}
+
+.bloque-del-editor__campo input {
+  width: 7rem;
+}
+
+.bloque-del-editor__indicacion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.bloque-del-editor > .nota {
+  margin: 0;
+}
+
+.bloque-del-editor__ejercicios {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.bloque-del-editor__pie {
+  display: flex;
+}
+
+/* ENP-D13: la revisión honesta, con su estado arriba. */
+.revision-del-plan {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.revision-del-plan__estado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.revision-del-plan__estado > svg {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.revision-del-plan > .nota {
+  margin: 0;
+}
+
+.revision-del-plan > .boton {
+  width: fit-content;
+}
+
+.revision-del-plan__lista .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* ENP-D10: la prescripción de la sesión vacía, al lado de «Presets». */
+.estacion__acciones-de-la-sesion {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.estacion__prescripcion-de-la-sesion {
+  margin: 0;
+  white-space: normal;
+}
+
+/* ENP-D16: los controles de la barra de lo elegido, con el aspecto de los campos (en los dos temas). */
+.series-del-editor__elegidas {
+  background: var(--superficie);
+}
+
+.series-del-editor__elegidas select,
+.series-del-editor__elegidas input {
+  min-height: 40px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.series-del-editor__elegidas input {
+  width: 9rem;
+}
+
+.series-del-editor__elegidas input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+/* DL-181: las vueltas y el descanso del bloque, con el aspecto de los campos (en los dos temas). */
+.bloque-del-editor__campo select,
+.bloque-del-editor__campo input {
+  min-height: 40px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 400;
+}
+
+.bloque-del-editor__campo input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.bloque-del-editor__campo input[aria-invalid='true'] {
+  border-color: var(--error, var(--borde-control));
+}
+
+/* ENP-D15: «Agregar sesión» no se parte en dos renglones; si no entra al lado de «Sesiones», baja entero. */
+.estacion__sesiones-cabecera {
+  flex-wrap: wrap;
+}
+
+.estacion__sesiones-cabecera .boton {
+  white-space: nowrap;
+}
+
+/* ═══ WP-ENTRENAMIENTO-PLANIFICACION, tramo 2 ════════════════════════════════════════════════════════════════════════
+   §7: los bloques de la sesión en las lecturas (la versión activa y el plan compartido), con la raya del editor. */
+.bloque-del-plan {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem 0.7rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-control);
+  border-radius: 12px;
+}
+
+.bloque-del-plan[data-tipo='ROUNDS'] {
+  border-left-color: var(--enlace);
+}
+
+.bloque-del-plan__titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.bloque-del-plan__detalle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.bloque-del-plan__detalle > svg {
+  flex: none;
+}
+
+.bloque-del-plan__ejercicios {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.plan-compartido__bloque-de-la-sesion {
+  padding: 0.35rem 0 0.35rem 0.6rem;
+  border-left: 3px solid var(--borde-control);
+}
+
+.plan-compartido__bloque-de-la-sesion > p {
+  margin: 0;
+}
+
+/* ENP-D18: el preset de la sesión vacía, con dónde vive dicho debajo. */
+.estacion__prescripcion-de-la-sesion {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.estacion__prescripcion-de-la-sesion > p {
+  margin: 0;
+}
+
+.estacion__prescripcion-de-la-sesion .etiqueta-de-dato {
+  width: fit-content;
+  white-space: normal;
+}
+
+/* §7: «Agregar bloque» en el tope, con su motivo a la vista. */
+.editor-del-plan__tope {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* C9: «Volver a la revisión», fija arriba de la sesión mientras se corrige lo que dijo la revisión. */
+.estacion__volver {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.estacion__volver > .nota {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.revision-del-plan > [data-motivo-sin-revisar] {
+  margin: 0;
+}
+
+/* C7: la escritura rápida, con su rótulo a la vista y «Aplicar» al lado del campo. */
+.linea-de-prescripcion {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.linea-de-prescripcion__rotulo {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.linea-de-prescripcion__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 36rem;
+}
+
+.linea-de-prescripcion__fila > .linea-de-prescripcion__campo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.linea-de-prescripcion__fila > .boton {
+  flex: none;
+}
+
+/* Lo escrito sin aplicar se marca: el borde del campo, como un cambio que todavía no entró. */
+.linea-de-prescripcion[data-sin-aplicar] .linea-de-prescripcion__campo {
+  border-style: dashed;
+  border-color: var(--enlace);
+}
+
+.ejercicio-del-editor__sin-aplicar {
+  border-style: dashed;
+}
+
+/* C7: el aviso del criterio que cambió, con «Deshacer». */
+.criterio-del-ejercicio__aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.6rem;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* C5: el pie de la lista de sesiones: desde cuándo y «Ver próximas fechas». Las fechas se abren arriba de la sesión. */
+.estacion__fechas {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.estacion__fechas > .nota {
+  margin: 0;
+}
+
+.estacion__fechas > .boton {
+  justify-self: start;
+}
+
+[data-proximas-fechas] {
+  margin-bottom: 0.75rem;
+}
+
+[data-proximas-fechas] > .nota {
+  margin: 0 0 0.5rem;
+}
+
+/* C6: los elegidos del catálogo, a la vista en el pie fijo del cajón; si son muchos, la lista se desplaza sola. */
+.agregar-ejercicio__elegidos {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.35rem;
+}
+
+.agregar-ejercicio__elegidos-titulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.agregar-ejercicio__fichas-elegidas {
+  max-height: 5.5rem;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.agregar-ejercicio__fichas-elegidas .boton {
+  gap: 0.35rem;
+}
+
+/* C6: «No encuentro el ejercicio», al final de la búsqueda. */
+.agregar-ejercicio__no-encuentro {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.agregar-ejercicio__crear-o-importar > .nota {
+  margin: 0 0 0.5rem;
+}
+
+/* C8: de dónde sale cada valor de una serie, dicho en la celda: «común» (tenue) o «propio» (en el color de los enlaces),
+   a la izquierda del valor, que va a la derecha. Reemplaza el punto de lo propio: ahora lo dice una palabra. */
+.celda-de-objetivo {
+  position: relative;
+}
+
+.celda-de-objetivo[data-origen]::before {
+  content: none;
+}
+
+.celda-de-objetivo__origen {
+  position: absolute;
+  inset-inline-start: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tenue);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.celda-de-objetivo[data-origen='propio'] .celda-de-objetivo__origen {
+  color: var(--enlace);
+}
+
+.celda-de-objetivo[data-origen] > input {
+  padding-inline-start: 3.2rem;
+}
+
+
+/* C11: «Sesiones vacías», en la sesión vacía de la fase: la cantidad y «Armar Sesión A, B y C». */
+.estacion__sesiones-vacias {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+}
+
+.estacion__sesiones-vacias select {
+  min-height: 40px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.estacion__sesiones-vacias > .nota {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* C6 (revisión adversaria del tramo 2, escena 11): los elegidos en una sola fila que se desplazaba de costado cortaban la
+   tercera ficha contra el borde («Sentadilla» a medias) sin que se notara que seguía. Ahora las fichas bajan de renglón,
+   debajo de su título y con todo el ancho del pie: hasta dos renglones a la vista y, con más, la lista se desplaza hacia
+   abajo con su barra (el título dice cuántos son), sin cortar una ficha a medias. Ninguna queda cortada a lo ancho: un
+   nombre largo se recorta con «…» adentro de su ficha y entero en `title`. Y el pie no crece: la prescripción para todos
+   va en un renglón con su rótulo cuando entra, con el ejemplo adentro del campo. */
+.agregar-ejercicio__elegidos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+}
+
+.agregar-ejercicio__elegidos-titulo {
+  flex: 1 1 100%;
+}
+
+.agregar-ejercicio__fichas-elegidas {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+  max-height: calc(2 * 32px + 0.35rem + 0.2rem);
+  padding: 0 0 0.2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.agregar-ejercicio__fichas-elegidas > li {
+  flex: none;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.agregar-ejercicio__fichas-elegidas .boton {
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.86rem;
+}
+
+.agregar-ejercicio__nombre-elegido {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La prescripción para todos: el rótulo y el campo en un renglón (el campo baja si no entra), con el alto y el borde de
+   los campos del cajón. Antes el campo no tenía estilo y se veía como una línea finita. */
+.agregar-ejercicio__para-todos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+}
+
+.agregar-ejercicio__para-todos-rotulo {
+  flex: none;
+  font-weight: 600;
+}
+
+/* Con 15 rem entra el ejemplo entero («Ej.: 4×8-12 RIR 2 · 90 s»); si al lado del rótulo no entra, baja de renglón. */
+.agregar-ejercicio__para-todos > input {
+  flex: 1 1 15rem;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0.35rem 0.75rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.agregar-ejercicio__para-todos > input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.agregar-ejercicio__para-todos > input[aria-invalid='true'] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.agregar-ejercicio__para-todos > #prescripcion-para-todos {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+
+/* Revisión adversaria del tramo 2 (escenas 10 y 15): con muchas sesiones, el selector de la sesión pasa a ser una lista
+   desplegable, que no tenía el borde ni el fondo de los campos: se veía gris de sistema, también en Azul noche. */
+.nivel-del-plan__lista select {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+/* C8 (revisión adversaria del tramo 2, escena 09): la columna «Serie» lleva el rótulo «Común» de su fila. Con 3 rem (2,5
+   entre 40 y 46 rem), «Común» se pisaba con «en cada serie» de la columna de al lado. */
+.series-del-editor thead th.series-del-editor__columna-serie {
+  width: 4rem;
+}
+
+.series-del-editor tr.series-del-editor__general > th {
+  white-space: nowrap;
+}
+
+@container ejercicios (40rem < width <= 46rem) {
+  .series-del-editor thead th.series-del-editor__columna-serie {
+    width: 3.5rem;
+  }
+
+  .series-del-editor tr.series-del-editor__general > th {
+    font-size: 0.9rem;
+  }
+}
+
+
 /* ═══ ED-18 · El vidrio del website (WP-EDITORES-PROFESIONAL, §2.7; DL-170) ════════════════════════════════════════════
    Solo en la estación y el asistente de Entrenamiento: el fondo con dos destellos, y de vidrio la barra de comandos, el
    panel, la tarjeta del paso y los cuadros que se abren desde ahí. La planilla y las zonas de edición siguen opacas, para
@@ -16376,6 +17074,7 @@ p.cifra-del-espacio__desglose {
 
   /* El resplandor, solo en el principal de la vista: «Revisar y activar…» en la estación o el del paso en el asistente. */
   .estacion [data-barra-de-comandos] .boton--primario,
+  .estacion [data-barra-de-la-plantilla] .boton--primario,
   .asistente__siguiente {
     box-shadow: 0 0 1.25rem var(--resplandor);
   }
@@ -16399,6 +17098,7 @@ p.cifra-del-espacio__desglose {
   }
 
   .estacion [data-barra-de-comandos] .boton--primario,
+  .estacion [data-barra-de-la-plantilla] .boton--primario,
   .asistente__siguiente {
     box-shadow: none;
   }
@@ -16474,6 +17174,204 @@ p.cifra-del-espacio__desglose {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* NUP-01: lo que aporta cada alimento, debajo de su nombre, en cifras del mismo ancho para que no salte al escribir. La
+   pista que lo envuelve ocupa su propio renglón. */
+.item-del-editor__nombre > .pista {
+  display: flex;
+}
+
+.item-del-editor__aporte {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
+/* NUP-04: dónde queda la opción frente a los rangos indicados. Neutro: sin rojo ni verde; lo que queda afuera lleva una
+   marca de texto (la palabra «por encima» o «por debajo»), no un color. */
+.frente-a-los-rangos {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.frente-a-los-rangos__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.frente-a-los-rangos .lista-compacta {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.frente-a-los-rangos li[data-afuera] {
+  font-weight: 600;
+}
+
+/* En el cuadro de la opción ya va dentro de su tarjeta: sin otra caja adentro. */
+.cuadro-de-la-opcion__tarjeta .frente-a-los-rangos {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* NUP-06: la suma de los rangos indicados frente al objetivo, arriba de las comidas. */
+.suma-de-los-rangos {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.suma-de-los-rangos__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.suma-de-los-rangos > .nota {
+  margin: 0;
+}
+
+.suma-de-los-rangos__tabla {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Una tabla chica: un renglón por fila, con la franja en su propia columna. */
+.suma-de-los-rangos__tabla th,
+.suma-de-los-rangos__tabla td {
+  padding-block: 0.3rem;
+  vertical-align: middle;
+}
+
+.suma-de-los-rangos__celda-de-la-franja {
+  width: 11rem;
+}
+
+/* La suma y el objetivo, en un renglón: el número no se separa de su unidad («desde 1.026 kcal»). La que se acomoda es
+   la columna de la ubicación, que es texto. */
+.suma-de-los-rangos__cifra {
+  white-space: nowrap;
+}
+
+.suma-de-los-rangos__notas {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* La franja: la escala va de 0 a un poco más que el mayor de los números; la banda es la suma y la marca, el objetivo. */
+.suma-de-los-rangos__franja {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 10rem;
+  height: 0.6rem;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--fondo-suave);
+  outline: 1px solid var(--borde);
+}
+
+.suma-de-los-rangos__banda {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--desde) * 1%);
+  width: calc((var(--hasta) - var(--desde)) * 1%);
+  min-width: 3px;
+  border-radius: 999px;
+  background: var(--azul);
+  opacity: 0.55;
+}
+
+/* Sin tope, la banda se desvanece hacia la derecha: no tiene un final. */
+.suma-de-los-rangos__franja[data-abierta] .suma-de-los-rangos__banda {
+  background: linear-gradient(to right, var(--azul) 60%, transparent);
+}
+
+.suma-de-los-rangos__marca {
+  position: absolute;
+  top: -0.25rem;
+  bottom: -0.25rem;
+  left: calc(var(--objetivo) * 1%);
+  width: 3px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--texto);
+}
+
+/* NUP-07: las kcal de los gramos del objetivo, el aviso si no coinciden (neutro) y el porcentaje con su base. */
+.kcal-del-objetivo {
+  margin: 0.35rem 0 0;
+}
+
+.kcal-del-objetivo p {
+  margin: 0.15rem 0;
+}
+
+.kcal-del-objetivo__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.kcal-del-objetivo__aviso .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.kcal-del-objetivo--compacto {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.kcal-del-objetivo__porcentajes {
+  margin: 0.25rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* NUP-10: Proteínas, Carbohidratos y Grasas con los rótulos arriba: un error debajo de un campo no mueve a los otros. */
+.fila-de-dato--arriba {
+  align-items: flex-start;
+}
+
+/* NUP-11: la pregunta antes de cerrar un diálogo con algo escrito, en el lugar de sus acciones. */
+.dialogo__pregunta p {
+  margin: 0.25rem 0;
+}
+
+.dialogo__acciones-de-la-pregunta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* NUP-13: en el paso 5 del asistente, las cuatro formas de sumar una opción, en un renglón que baja si no entra. */
+.asistente__formas-de-sumar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  margin: 0.25rem 0 0;
 }
 
 /* Dos renglones reservados: el total y lo que falta. Cuando llega la composición y «leyendo» se va, lo de abajo no salta. */
@@ -18905,4 +19803,709 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--borde);
   border-radius: 10px;
+}
+
+/* ─── WP-CONTEXTO-DE-LA-PERSONA (DL-179): el botón y el panel «Contexto de <nombre>» ─────────────────────────────── */
+
+.boton-del-contexto {
+  gap: 0.4rem;
+}
+
+.boton-del-contexto--abierto {
+  box-shadow: inset 0 0 0 2px var(--cian);
+}
+
+.boton-del-contexto__atajo {
+  margin-left: 0.25rem;
+  padding: 0 0.3rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  font: inherit;
+  font-size: 0.75em;
+  opacity: 0.8;
+}
+
+/* CTX-D03: desde 1680 px, al costado y empujando (el editor queda entero al lado); debajo, un cajón encima del editor. */
+.ficha--con-contexto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 27.5rem;
+  align-items: start;
+}
+
+.ficha__principal {
+  min-width: 0;
+}
+
+.panel-de-contexto {
+  display: flex;
+  flex-direction: column;
+  background: var(--superficie);
+  color: var(--texto);
+  border-left: 1px solid var(--borde);
+  overflow: hidden;
+}
+
+.panel-de-contexto--costado {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.panel-de-contexto--cajon {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 60;
+  width: min(27.5rem, 92vw);
+  height: 100dvh;
+  box-shadow: var(--sombra);
+}
+
+.panel-de-contexto__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.panel-de-contexto__cabecera h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.panel-de-contexto__cabecera h2:focus {
+  outline: none;
+}
+
+.panel-de-contexto__cabecera h2:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.panel-de-contexto__acciones {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.25rem;
+}
+
+/* Las cinco pestañas en un renglón, cada etiqueta entera (revisión del PR: con cinco columnas iguales, «Lo importante» se
+   partía en dos renglones). Cada una ocupa lo que dice su etiqueta y reparten el resto; en un cajón más angosto que 440 px,
+   la fila se desplaza en lugar de partir una etiqueta o esconder la última. */
+.panel-de-contexto__pestanas {
+  display: flex;
+  gap: 0.1rem;
+  padding: 0.4rem 0.5rem 0;
+  border-bottom: 1px solid var(--borde);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.panel-de-contexto__pestana {
+  flex: 1 0 auto;
+  padding: 0.45rem 0.4rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--tenue);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.panel-de-contexto__pestana:hover {
+  color: var(--texto);
+}
+
+.panel-de-contexto__pestana--actual {
+  border-bottom-color: var(--cian);
+  color: var(--texto);
+}
+
+.panel-de-contexto__pestana:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+}
+
+.panel-de-contexto__contenido {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem 1rem 2rem;
+}
+
+.panel-de-contexto__contenido:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+}
+
+.panel-de-contexto__grupo,
+.panel-de-contexto__seccion {
+  margin-top: 1rem;
+}
+
+.panel-de-contexto__grupo h3,
+.panel-de-contexto__seccion h3,
+.panel-de-contexto__area h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.panel-de-contexto dl {
+  margin: 0;
+}
+
+.panel-de-contexto__dato {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.panel-de-contexto__dato dt {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.panel-de-contexto__dato dd {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0.15rem 0 0;
+}
+
+.panel-de-contexto__respuesta {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.panel-de-contexto__fuente,
+.panel-de-contexto__nota-fija {
+  font-size: 0.8rem;
+}
+
+/* CTX-D09: lo sensible, sin color ni alerta; plegado. */
+.panel-de-contexto__dato--sensible summary {
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.panel-de-contexto__citar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.panel-de-contexto__citar .nota:empty {
+  display: none;
+}
+
+.panel-de-contexto__formulario {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+}
+
+.panel-de-contexto__formulario > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.4rem;
+  cursor: pointer;
+}
+
+.panel-de-contexto__diferencia,
+.panel-de-contexto__porcentaje {
+  display: block;
+  white-space: nowrap;
+}
+
+.panel-de-contexto__buscar input {
+  width: 100%;
+}
+
+.panel-de-contexto__tabla {
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.panel-de-contexto__tabla th,
+.panel-de-contexto__tabla td {
+  padding: 0.35rem 0.4rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.panel-de-contexto__areas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-de-contexto__area {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+}
+
+.panel-de-contexto__area p {
+  margin: 0.2rem 0;
+}
+
+.panel-de-contexto__lista-de-notas {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-de-contexto__lista-de-notas li {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.panel-de-contexto__lista-de-notas p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.panel-de-contexto .campo textarea {
+  width: 100%;
+}
+
+/* La lista de respuestas citadas de la evaluación de Nutrición (DL-179). */
+.lista-de-citas {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-de-citas li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+/* ═══ PLT (DL-182) · La plantilla en el editor (`training/edicion-de-plantilla.tsx`) y en «Mis plantillas» ══════════════
+   La cabecera de la plantilla es la barra de comandos del editor, con lo que es de la plantilla: de dónde parte, su
+   nombre (el de una nueva se escribe acá), la descripción y el interruptor de las cargas, en una franja compacta debajo.
+   Las zonas del editor descuentan esa franja para seguir entrando en la pantalla. */
+.editor-de-la-plantilla__titulo {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.editor-de-la-plantilla__titulo h2 {
+  margin: 0;
+}
+
+.editor-de-la-plantilla__que-es {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.editor-de-la-plantilla__datos {
+  display: grid;
+  grid-template-columns: minmax(12rem, 20rem) minmax(12rem, 1fr) minmax(16rem, 1.3fr);
+  gap: 0.5rem 1rem;
+  align-items: start;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.editor-de-la-plantilla__datos .campo,
+.editor-de-la-plantilla__existente p,
+.editor-de-la-plantilla__cargas p {
+  margin: 0;
+}
+
+.editor-de-la-plantilla__existente {
+  display: grid;
+  grid-column: span 2;
+  gap: 0.2rem;
+}
+
+.editor-de-la-plantilla__cargas {
+  display: grid;
+  gap: 0.2rem;
+}
+
+@media (min-width: 64.0625rem) {
+  .estacion:has(.editor-de-la-plantilla__cabecera) .estacion__zonas {
+    height: calc(100dvh - 19rem);
+  }
+}
+
+@media (max-width: 64rem) {
+  .editor-de-la-plantilla__datos {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-de-la-plantilla__existente {
+    grid-column: auto;
+  }
+}
+
+
+.plantillas-y-habituales__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.plantillas-y-habituales__cabecera h2 {
+  margin: 0;
+}
+
+.lista__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.plantillas-en-preparacion {
+  margin-block: 0.75rem;
+}
+
+.detalle-de-la-plantilla__sesion h5 {
+  margin: 0.25rem 0;
+}
+
+.detalle-de-la-plantilla__bloque {
+  margin-block: 0.35rem;
+  padding-inline-start: 0.6rem;
+  border-inline-start: 3px solid var(--borde);
+}
+
+.detalle-de-la-plantilla__bloque > p {
+  margin: 0 0 0.2rem;
+}
+
+.versiones-de-la-plantilla__lista li {
+  margin-block: 0.2rem;
+}
+
+.editor-de-la-plantilla__cargas label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.editor-de-la-plantilla__cargas input[type='checkbox'] {
+  flex: none;
+  margin-top: 0.2rem;
+}
+
+.versiones-de-la-plantilla__lista {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.versiones-de-la-plantilla__lista .insignia {
+  margin-inline-start: 0.35rem;
+}
+
+/* PLT (DL-182), revisión del 2026-11-19 · el detalle de una plantilla usa el ancho, como las demás pantallas: con una
+   abierta, la sección de las plantillas de entrenamiento ocupa las dos columnas de «Plantillas y habituales», y el
+   detalle se reparte en dos: la estructura a la izquierda; las versiones, el nombre y la descripción a la derecha. */
+@media (min-width: 80rem) {
+  .plantillas-y-habituales > .seccion--con-detalle {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 64rem) {
+  .detalle-de-la-plantilla-abierta {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr);
+    align-items: start;
+    gap: 0 2rem;
+  }
+
+  .detalle-de-la-plantilla-abierta > .aviso {
+    grid-column: 1 / -1;
+  }
+
+  .detalle-de-la-plantilla-abierta__lateral {
+    padding-inline-start: 1.5rem;
+    border-inline-start: 1px solid var(--borde);
+  }
+}
+
+.detalle-de-la-plantilla-abierta__lateral > :first-child h4,
+.detalle-de-la-plantilla-abierta__estructura > :first-child h4 {
+  margin-top: 0;
+}
+
+/* ─── WP-NUTRICION-ALIMENTOS (DL-180) · los alimentos del catálogo ──────────────────────────────────────────────── */
+
+/* NUA-05: el ícono del grupo, al principio del nombre: en el buscador y en la fila de cada alimento de una opción. Toma
+   el color del texto (Claro y Azul noche) y no empuja el nombre al renglón siguiente. */
+.buscador-de-la-opcion__grupo,
+.item-del-editor__grupo,
+.mis-alimentos__icono {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--tenue);
+}
+
+.item-del-editor__grupo {
+  margin-right: 0.4rem;
+  vertical-align: -0.3rem;
+}
+
+/* NUA-03: el nivel del origen, a la vista. Ubica, no califica: el mismo aspecto para los tres. */
+.buscador-de-la-opcion__nivel {
+  font-weight: 400;
+}
+
+/* NUA-04: la sugerencia del verificado equivalente, en su propio renglón debajo del nombre. */
+.buscador-de-la-opcion__sugerido {
+  display: block;
+}
+
+/* NUA-02: la marca discreta de lo retirado, junto al nombre; la fila se ve igual. */
+.item-del-editor__retirado {
+  margin-left: 0.4rem;
+  font-weight: 400;
+}
+
+/* El formulario común del alimento: el grupo con su ícono al lado, y el aviso de que se comparte. */
+.formulario-del-alimento__grupo-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.formulario-del-alimento__grupo-fila select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* NUA-08: las medidas caseras, en su grupo, con los mismos campos que los valores. */
+.formulario-del-alimento__medidas {
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.25rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.formulario-del-alimento__medidas .campo__ayuda {
+  margin: 0 0 0.6rem;
+}
+
+.formulario-del-alimento__medidas legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+.formulario-del-alimento__es-tuyo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.formulario-del-alimento__es-tuyo .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+/* «Mis alimentos» (NUA-01 y NUA-02): el ícono, lo que es y lo que se puede hacer, en una fila que se acomoda. */
+.mis-alimentos__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem 1rem;
+}
+
+.mis-alimentos__cuerpo p {
+  margin: 0.15rem 0;
+}
+
+.mis-alimentos__cuerpo .lista__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mis-alimentos__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 40rem) {
+  .mis-alimentos__item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .mis-alimentos__acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* La revisión de Administración (NUA-04): cada alimento en su tarjeta, como en «Mis alimentos» (el ícono, lo que es y
+   «Revisar»); lo que se decide se abre debajo, a todo el ancho de la tarjeta. */
+.alimentos-para-revisar__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.5rem 1rem;
+}
+
+.alimentos-para-revisar__icono {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--tenue);
+}
+
+.alimentos-para-revisar__cuerpo p {
+  margin: 0.15rem 0;
+}
+
+.alimentos-para-revisar__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.alimentos-para-revisar__item > .decidir-sobre-alimento {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 40rem) {
+  .alimentos-para-revisar__item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .alimentos-para-revisar__acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+.decidir-sobre-alimento {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.decidir-sobre-alimento h3 {
+  margin-top: 0;
+}
+
+.decidir-sobre-alimento__verificados {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.decidir-sobre-alimento__buscar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.decidir-sobre-alimento__buscar input {
+  flex: 1;
+  min-width: 0;
+}
+
+.decidir-sobre-alimento .opcion-en-linea {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0;
+}
+
+.decidir-sobre-alimento fieldset {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+}
+
+.decidir-sobre-alimento legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+/* DL-180, segundo tramo (NUA-D15 y D16): la consola de alimentos con sus dos vistas y los grupos de parecidos. */
+.vistas-de-alimentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.parecidos__grupo {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.parecidos__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.parecidos__cargas {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parecidos__carga {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.parecidos__icono {
+  color: var(--tenue);
+  margin-top: 0.1rem;
+}
+
+.parecidos__grupo > .decidir-sobre-alimento {
+  margin-top: 0.5rem;
 }

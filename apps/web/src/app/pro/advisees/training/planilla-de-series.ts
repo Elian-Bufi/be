@@ -17,6 +17,28 @@ export type CampoDeLaSerie = ObjetivoDeLaSerie | 'repetitions' | 'note';
 
 const OBJETIVOS: readonly ObjetivoDeLaSerie[] = ['restSeconds', 'suggestedLoad', 'rir'];
 
+/** El tope de las repeticiones de una serie: el del contrato (`RepeticionesPrescriptasSchema`). */
+const TOPE_DE_REPETICIONES = 1000;
+
+/**
+ * Lo escrito en las repeticiones de una serie, en la celda y en la edición conjunta (ENP-D16): vacío es «sin repeticiones
+ * fijadas»; un entero de 1 a 1000, o un rango «8-12» que empieza en 1 o más y no termina antes de empezar. Lo demás
+ * —«12-8», «0-10», «abc»— queda como «no se entiende» (NaN), que no deja guardar y dice dónde. Antes, un rango al revés
+ * pasaba como bueno, la edición conjunta lo escribía en todas las elegidas y el guardado automático lo rechazaba en el
+ * servidor sin nombrar el lugar.
+ */
+export function leerRepeticiones(s: string): Serie['repetitions'] {
+  if (s.trim() === '') return null;
+  const valido = (n: number) => Number.isInteger(n) && n >= 1 && n <= TOPE_DE_REPETICIONES;
+  const rango = s.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/);
+  if (rango) {
+    const [min, max] = [Number(rango[1]), Number(rango[2])];
+    return valido(min) && valido(max) && max >= min ? { min, max } : { min: Number.NaN, max: Number.NaN };
+  }
+  const n = Number(s.trim());
+  return { value: valido(n) ? n : Number.NaN };
+}
+
 /** Escribe el mismo valor propio en las series elegidas; las demás no cambian. */
 export function escribirEnLasSeries<S extends Serie>(sets: readonly S[], elegidas: ReadonlySet<number>, campo: ObjetivoDeLaSerie, valor: S[ObjetivoDeLaSerie]): S[] {
   return sets.map((s, n) => (elegidas.has(n) ? { ...s, [campo]: valor } : s));
@@ -66,17 +88,55 @@ export const COPY_PLANILLA = {
   campo: 'Qué escribir',
   valor: 'Valor',
   escribir: 'Escribir en las elegidas',
-  volverALoGeneral: 'Volver a lo general',
+  // C8: «común» en lugar de «general»: lo que toman las series que no tienen uno propio.
+  volverALoGeneral: 'Usar el valor común',
   soltar: 'Soltar la selección',
   noSeEntiende: 'No se entiende el valor: no se escribió nada.',
   atajo: 'Ctrl+D copia en la celda el valor de la serie de arriba.',
   quitarTitulo: (n: number) => `¿Quitar la serie ${n}?`,
   quitar: (n: number) => `Quitar la serie ${n}`,
-  // ED-23: la fila «General» dentro de la tabla.
-  general: 'General',
+  // ED-23 y C8: la fila de los valores comunes dentro de la tabla.
+  general: 'Común',
+  generalDetalle: 'a todas las series',
   repeticionesPorSerie: 'en cada serie',
-  rirDeLaIntensidad: '· de la intensidad, abajo',
+  // El RIR común es el objetivo del criterio, que desde ENP-D14 va arriba de la tabla (decía «abajo»).
+  rirDeLaIntensidad: '· el del criterio, arriba',
   notaDeLoGeneral: 'Las notas, abajo',
-  loGeneralDeAbajo: 'La carga y el descanso generales están en la fila «General» de la tabla: los toman las series que no tienen uno propio.',
   unidadDeLaCarga: 'Unidad de la carga',
+  // C8: de dónde sale cada valor, en la celda.
+  comun: 'común',
+  propio: 'propio',
+  sinIndicar: 'Sin indicar',
+  usarElComun: 'Usar el valor común',
+  sinIndicarEnEstaSerie: 'Sin indicar en esta serie',
+  comoSeLee: 'Cada valor dice de dónde sale: «común», el de la fila Común (cambia si cambia el común); «propio», el de esa serie; «Sin indicar», ninguno en esa serie, aunque haya uno común. Es lo que recibe la persona.',
 } as const;
+
+/** C8: de dónde sale el valor de una celda de objetivo, dicho en la celda y para el lector. */
+export interface OrigenDeLaCelda {
+  /** Lo que se ve con la celda vacía: el valor común, o «Sin indicar». */
+  readonly placeholder: string;
+  /** La marca a la vista: «común» o «propio»; `null` sin indicar (lo dice el texto) o con algo que no se entiende. */
+  readonly marca: 'común' | 'propio' | null;
+  readonly descripcion: string;
+}
+
+/**
+ * C8 (WP-ENTRENAMIENTO-PLANIFICACION, tramo 2) · cada valor de una serie dice si es común a todas las series, propio de
+ * esa serie o sin indicar, sin recargar la tabla: una marca corta dentro de la celda («común», «propio») o el texto «Sin
+ * indicar». Los tres estados son los de DL-122 (`celdaDeObjetivoDelEditor`, del dominio, que no cambia); esto solo los
+ * dice. `comun` es el valor de la fila Común, ya escrito («62,5», «02:30»), o `null` si no hay.
+ */
+export function origenDeLaCelda(estado: 'de-lo-general' | 'propio' | 'sin-objetivo' | 'no-se-entiende', comun: string | null): OrigenDeLaCelda {
+  const P = COPY_PLANILLA;
+  switch (estado) {
+    case 'de-lo-general':
+      return comun ? { placeholder: comun, marca: 'común', descripcion: `Común a todas las series: ${comun}.` } : { placeholder: P.sinIndicar, marca: null, descripcion: 'Sin indicar: no hay un valor común.' };
+    case 'sin-objetivo':
+      return { placeholder: P.sinIndicar, marca: null, descripcion: comun ? `Sin indicar en esta serie; el valor común es ${comun}.` : 'Sin indicar en esta serie.' };
+    case 'propio':
+      return { placeholder: comun ?? P.sinIndicar, marca: 'propio', descripcion: comun ? `Propio de esta serie; el valor común es ${comun}.` : 'Propio de esta serie.' };
+    default:
+      return { placeholder: comun ?? P.sinIndicar, marca: null, descripcion: 'No se entiende lo escrito.' };
+  }
+}

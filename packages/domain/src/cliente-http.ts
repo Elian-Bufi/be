@@ -121,6 +121,7 @@ import {
   type ListaDeNotasPropiasDelProfesionalResponse,
   type NotaPropiaResponse,
 } from './contratos-notas-propias';
+import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema, type CuerpoDelContextoResponse, type RespuestasDelContextoResponse } from './contratos-contexto-de-la-persona';
 import {
   LineaDeTiempoResponseSchema,
   ListaDeVistasResponseSchema,
@@ -187,6 +188,13 @@ import {
   PlantillaNutricionalResponseSchema,
   type CrearPlantillaNutricionalRequest,
   type NuevaVersionDePlantillaNutricionalRequest,
+  DescarteDePreparacionResponseSchema,
+  ListaDePreparacionesDePlantillaResponseSchema,
+  PreparacionDePlantillaResponseSchema,
+  RevisionDePreparacionResponseSchema,
+  VersionesDePlantillaDeEntrenamientoResponseSchema,
+  type CrearPreparacionDePlantillaRequest,
+  type GuardarPreparacionDePlantillaRequest,
 } from './contratos-plantillas';
 import {
   ComidaHabitualResponseSchema,
@@ -261,6 +269,13 @@ import {
   type CrearRecetaRequest,
   type EditarRecetaRequest,
 } from './contratos-recetas';
+import {
+  AlimentoPropioResponseSchema,
+  AlimentosConsultadosResponseSchema,
+  ListaDeAlimentosPropiosResponseSchema,
+  type CorregirAlimentoRequest,
+  type RetirarAlimentoRequest,
+} from './contratos-alimentos';
 import {
   HoyConOpcionesResponseSchema,
   ListaDeRegistrosDeComidaResponseSchema,
@@ -986,6 +1001,43 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     editarPlantillaDeEntrenamiento(token: string, templateId: string, cuerpo: EditarPlantillaRequest) {
       return llamar('PATCH', `/training/plan-templates/${encodeURIComponent(templateId)}`, { token, cuerpo, esquema: PlantillaDeEntrenamientoResponseSchema });
     },
+    // ─── PLT (DL-182) · la preparación de una plantilla, sin persona ─────────────────────────────
+    /** API-TPL-06: una plantilla nueva, en blanco o como copia de una versión propia. */
+    crearPreparacionDePlantilla(token: string, cuerpo: CrearPreparacionDePlantillaRequest, clave: string) {
+      return llamar('POST', '/training/plan-template-drafts', { token, cuerpo, claveDeIdempotencia: clave, esquema: PreparacionDePlantillaResponseSchema });
+    },
+    /** API-TPL-07: editar una plantilla: abre su preparación (201) o devuelve la que ya tiene (200). */
+    abrirPreparacionDePlantilla(token: string, templateId: string) {
+      return llamar('PUT', `/training/plan-templates/${encodeURIComponent(templateId)}/draft`, { token, cuerpo: {}, esquema: PreparacionDePlantillaResponseSchema });
+    },
+    /** API-TPL-08: las plantillas en preparación del profesional. */
+    listarPreparacionesDePlantilla(token: string, filtro: { cursor?: string } = {}) {
+      return llamar('GET', `/training/plan-template-drafts${query(filtro)}`, { token, esquema: ListaDePreparacionesDePlantillaResponseSchema });
+    },
+    /** API-TPL-09. */
+    consultarPreparacionDePlantilla(token: string, draftId: string) {
+      return llamar('GET', `/training/plan-template-drafts/${encodeURIComponent(draftId)}`, { token, esquema: PreparacionDePlantillaResponseSchema });
+    },
+    /** API-TPL-10: el autoguardado de la preparación (sin Idempotency-Key: concurrencia por expectedVersion). */
+    guardarPreparacionDePlantilla(token: string, draftId: string, cuerpo: GuardarPreparacionDePlantillaRequest) {
+      return llamar('PATCH', `/training/plan-template-drafts/${encodeURIComponent(draftId)}`, { token, cuerpo, esquema: PreparacionDePlantillaResponseSchema });
+    },
+    /** API-TPL-11: la revisión antes de guardar la plantilla. */
+    revisarPreparacionDePlantilla(token: string, draftId: string, versionMostrada: string) {
+      return llamar('POST', `/training/plan-template-drafts/${encodeURIComponent(draftId)}/review`, { token, cuerpo: { expectedVersion: versionMostrada }, esquema: RevisionDePreparacionResponseSchema });
+    },
+    /** API-TPL-12: «Guardar plantilla» o «Guardar nueva versión». */
+    publicarPreparacionDePlantilla(token: string, draftId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/plan-template-drafts/${encodeURIComponent(draftId)}/publish`, { token, cuerpo: { expectedVersion: versionMostrada }, claveDeIdempotencia, esquema: PlantillaDeEntrenamientoResponseSchema });
+    },
+    /** API-TPL-13: descartar la preparación; las versiones quedan como estaban. */
+    descartarPreparacionDePlantilla(token: string, draftId: string, versionMostrada: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/plan-template-drafts/${encodeURIComponent(draftId)}/discard`, { token, cuerpo: { expectedVersion: versionMostrada }, claveDeIdempotencia, esquema: DescarteDePreparacionResponseSchema });
+    },
+    /** API-TPL-14: las versiones de una plantilla, con cuántos planes salieron de cada una. */
+    versionesDePlantillaDeEntrenamiento(token: string, templateId: string) {
+      return llamar('GET', `/training/plan-templates/${encodeURIComponent(templateId)}/versions`, { token, esquema: VersionesDePlantillaDeEntrenamientoResponseSchema });
+    },
     crearPlantillaNutricional(token: string, cuerpo: CrearPlantillaNutricionalRequest, clave: string) {
       return llamar('POST', '/nutrition/plan-templates', { token, cuerpo, claveDeIdempotencia: clave, esquema: PlantillaNutricionalResponseSchema });
     },
@@ -1180,6 +1232,22 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-INT-NUT-01. */
     crearElementoDeCatalogo(token: string, cuerpo: CrearElementoDeCatalogoRequest, claveDeIdempotencia: string) {
       return llamar('POST', '/nutrition/catalog-items', { token, claveDeIdempotencia, esquema: ElementoDeCatalogoResponseSchema, cuerpo });
+    },
+    /** API-ALI-01 (DL-180): los alimentos propios cargados a mano, también los retirados. */
+    alimentosPropios(token: string, cursor?: string) {
+      return llamar('GET', `/nutrition/catalog-items/mine${query({ limit: '50', cursor })}`, { token, esquema: ListaDeAlimentosPropiosResponseSchema });
+    },
+    /** API-ALI-02 (NUA-01): corregir uno propio; nace una versión nueva. */
+    corregirAlimento(token: string, alimentoId: string, cuerpo: CorregirAlimentoRequest, claveDeIdempotencia: string) {
+      return llamar('PATCH', `/nutrition/catalog-items/${encodeURIComponent(alimentoId)}`, { token, claveDeIdempotencia, esquema: AlimentoPropioResponseSchema, cuerpo });
+    },
+    /** API-ALI-03 (NUA-02): retirarlo; no se borra. */
+    retirarAlimento(token: string, alimentoId: string, cuerpo: RetirarAlimentoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/catalog-items/${encodeURIComponent(alimentoId)}/retirement`, { token, claveDeIdempotencia, esquema: AlimentoPropioResponseSchema, cuerpo });
+    },
+    /** API-ALI-04: los que se ven, por su identidad (también los retirados), para lo que ya está citado. */
+    consultarAlimentos(token: string, ids: readonly string[]) {
+      return llamar('POST', '/nutrition/catalog-items/lookup', { token, esquema: AlimentosConsultadosResponseSchema, cuerpo: { catalogItemIds: [...ids] } });
     },
     /** API-INT-NUT-02: consulta Open Food Facts y crea un candidato. Todavía no es un elemento del catálogo. */
     crearCandidatoDeAlimento(token: string, codigoDeBarras: string, claveDeIdempotencia: string) {
@@ -1773,6 +1841,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-NPP-02: las notas propias sobre esa persona, activas y archivadas. */
     notasPropias(token: string, asesoradoId: string): Promise<Resultado<ListaDeNotasPropiasDelProfesionalResponse>> {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/professional-notes`, { token, esquema: ListaDeNotasPropiasDelProfesionalResponseSchema });
+    },
+    // ─── WP-CONTEXTO-DE-LA-PERSONA (DL-179): el panel «Contexto de <nombre>» ─────────────────────
+    /** API-CTX-01: lo que la persona respondió a mis Solicitudes, vigente, de las áreas en que hoy la acompaño. */
+    respuestasDelContexto(token: string, asesoradoId: string): Promise<Resultado<RespuestasDelContextoResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/person-context/answers`, { token, esquema: RespuestasDelContextoResponseSchema });
+    },
+    /** API-CTX-02: la última toma y la anterior (enteras por mi área, o el peso y la composición por el resumen compartido). */
+    cuerpoDelContexto(token: string, asesoradoId: string): Promise<Resultado<CuerpoDelContextoResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/person-context/body`, { token, esquema: CuerpoDelContextoResponseSchema });
     },
     /** API-NPP-03: archivar una nota propia; queda en la historia. */
     archivarNotaPropia(token: string, noteId: string, claveDeIdempotencia: string): Promise<Resultado<NotaPropiaResponse>> {

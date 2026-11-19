@@ -57,6 +57,32 @@ export function idsDelCampo(elemento: { readonly id?: string; readonly parentEle
   return ids;
 }
 
+/**
+ * NUP-09 (WP-NUTRICION-PLANIFICACION; NUP-D09) · Enter en un campo, mientras falten datos: a qué campo pasa. Las
+ * posiciones son el orden del formulario: `actual`, la del campo donde se apretó; `faltan`, las de los campos que
+ * faltan o tienen algo por corregir. Pasa al siguiente que falta después del actual y, si no hay, al primero. `null`:
+ * no falta nada en otro campo (o falta solo el actual), y Enter envía como siempre.
+ */
+export function siguienteQueFalta(actual: number, faltan: readonly number[]): number | null {
+  const otros = [...new Set(faltan)].filter((p) => p !== actual).sort((a, b) => a - b);
+  if (otros.length === 0) return null;
+  return otros.find((p) => p > actual) ?? otros[0]!;
+}
+
+/** Lo que puede recibir el foco adentro de un lugar que falta (un grupo con su aviso, como un `fieldset`). */
+const ENFOCABLES = 'input, select, textarea, button, [tabindex]';
+
+/**
+ * NUP-09 · Enter, cuando hay a dónde ir: lleva el foco al lugar que falta (el campo, o el primero de adentro si es un
+ * grupo) y dice si llegó. Un campo apagado o escondido no lo recibe: entonces Enter no se frena y envía como siempre (y
+ * el envío muestra lo que falta), en vez de no hacer nada. Recibe el elemento: la prueba lo recorre sin navegador.
+ */
+export function enfocarLoQueFalta(lugar: HTMLElement): boolean {
+  const destino = (lugar.matches(ENFOCABLES) ? lugar : lugar.querySelector<HTMLElement>(ENFOCABLES)) ?? lugar;
+  destino.focus();
+  return destino.ownerDocument.activeElement === destino;
+}
+
 /** Lo que oye el lector cuando ya no queda nada por corregir, después de haber mostrado avisos; si no, nada. */
 export function anuncioDeLosAvisos(a: AvisosDelFormulario, listo: string): string {
   return a.huboAvisos && a.mostrados.length === 0 ? listo : '';

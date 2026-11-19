@@ -31,7 +31,7 @@ export interface LugarDeLaSesion {
 
 const TOPE = { delBloque: 30, delMicrociclo: 14, ejercicios: 40 } as const;
 
-const nombreDelBloque = (b: { readonly label: string }, i: number) => b.label.trim() || `Bloque ${i + 1}`;
+const nombreDelBloque = (b: { readonly label: string }, i: number) => b.label.trim() || `Fase ${i + 1}`;
 const nombreDelMicrociclo = (m: { readonly label: string }, j: number) => m.label.trim() || `Semana ${j + 1}`;
 const nombreDeLaSesion = (s: { readonly label: string }, k: number) => s.label.trim() || `Sesión ${k + 1}`;
 
@@ -103,7 +103,7 @@ export function copiarElEjercicio(b: Bloques, desde: LugarDelEjercicio, hacia: L
   if (destino.prescriptions.length >= TOPE.ejercicios) return { tipo: 'no-se-puede', motivo: 'TOPE' };
   const nuevos = structuredClone(b) as Bloques;
   const lista = sesionesDe(nuevos, hacia)![hacia.k]!.prescriptions;
-  const { prescriptionId: _id, ...copia } = structuredClone(p);
+  const { prescriptionId: _id, exerciseGroupId: _bloque, ...copia } = structuredClone(p);
   lista.push(copia as Prescripcion);
   return { tipo: 'copiada', bloques: nuevos, posicion: lista.length - 1 };
 }
@@ -114,10 +114,10 @@ export type QueSeCopia = 'prescripcion' | 'series';
 function conLoCopiado(destino: Prescripcion, origen: Prescripcion, que: QueSeCopia): Prescripcion {
   const o = structuredClone(origen);
   if (que === 'series') return { ...destino, sets: o.sets };
-  const { prescriptionId: _id, exerciseVersionId: _ej, note: _nota, ...prescripcion } = o;
-  const { prescriptionId, exerciseVersionId, note } = destino;
-  // Lo que el original no declara tampoco queda en el destino: la copia es la misma prescripción.
-  return { ...(prescriptionId ? { prescriptionId } : {}), exerciseVersionId, ...(note !== undefined ? { note } : {}), ...prescripcion } as Prescripcion;
+  const { prescriptionId: _id, exerciseVersionId: _ej, note: _nota, exerciseGroupId: _bloque, ...prescripcion } = o;
+  const { prescriptionId, exerciseVersionId, note, exerciseGroupId } = destino;
+  // Lo que el original no declara tampoco queda en el destino: la copia es la misma prescripción. El bloque es del destino.
+  return { ...(prescriptionId ? { prescriptionId } : {}), exerciseVersionId, ...(note !== undefined ? { note } : {}), ...prescripcion, ...(exerciseGroupId ? { exerciseGroupId } : {}) } as Prescripcion;
 }
 
 /** «Copiar la prescripción a…» o «Copiar estas series a…»: sobre otros ejercicios de la misma sesión. */
@@ -156,8 +156,8 @@ export function loQueSeReemplaza(b: Bloques, desde: LugarDelEjercicio, a: readon
 export const COPY_COPIAR = {
   copiarLaSesion: 'Copiar la sesión a…',
   copiarAOtraSemana: 'Copiar a otra semana',
-  sinOtraSemana: 'Este bloque no tiene otra semana.',
-  sinOtroLugar: 'El plan no tiene otro bloque ni otra semana.',
+  sinOtraSemana: 'Esta fase no tiene otra semana.',
+  sinOtroLugar: 'El plan no tiene otra fase ni otra semana.',
   copiarElEjercicio: 'Copiar el ejercicio a…',
   copiarLaPrescripcion: 'Copiar la prescripción a…',
   copiarLasSeries: 'Copiar estas series a…',

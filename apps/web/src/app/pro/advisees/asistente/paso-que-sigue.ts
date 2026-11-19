@@ -44,7 +44,8 @@ export const COPY_ASISTENTE = {
   sugerido: 'sugerido',
   siguiente: (n: PasoDelAsistente) => `Siguiente: ${PASOS_DEL_ASISTENTE[n - 1]}`,
   atras: 'Atrás',
-  seguirEnLaEstacion: 'Seguir en la estación',
+  // NUP-14 (WP-NUTRICION-PLANIFICACION): «estación» es jerga del código; para el profesional, es el plan.
+  seguirEnLaEstacion: 'Seguir en el plan',
   guardando: 'Guardando antes de seguir…',
   noAvanzo: 'No se pudo guardar, así que no se avanzó. Lo escrito sigue acá.',
   seguirConElAsistente: (n: number) => `Seguir con el asistente · paso ${n} de 7`,
@@ -58,7 +59,7 @@ export const COPY_ASISTENTE = {
   desdeUnPreset: 'Desde un preset',
   desdeUnPresetDetalle: 'Una estructura de BE: nombres de sesiones y días sugeridos, sin ejercicios.',
   enBlanco: 'En blanco',
-  enBlancoDetalle: 'Un bloque vacío: vos armás todo.',
+  enBlancoDetalle: 'Una fase vacía: vos armás todo.',
   yaHayBorrador: 'Este borrador ya tiene su punto de partida. Para empezar de otro, descartá la versión en preparación con el botón de abajo: lo armado se borra, y la versión activa no cambia.',
   salirDelAsistente: 'Salir del asistente',
   // Pasos 2 a 7
@@ -80,7 +81,7 @@ export const COPY_ASISTENTE = {
   diasAyuda: 'Los días son opcionales: sin días, la persona elige cuándo hacer cada sesión.',
   revisar: 'Lo que impide activar y lo que queda sin completar',
   revisarAyuda: 'Revisar mira la forma del plan, no la calidad del programa.',
-  irEnLaEstacion: 'Ir a corregirlo en la estación',
+  irEnLaEstacion: 'Corregirlo en el plan',
   activar: 'Activar la versión',
   activarAyuda: (persona: string) => `«Revisar y activar…» abre lo que va a ver ${persona}, la fecha de la próxima revisión y el botón para activar.`,
 } as const;
@@ -106,7 +107,7 @@ export function loQueLlevasArmado(bloques: Bloques, agenda: AgendaDeEntrenamient
   const sesiones = todasLasSesiones(bloques);
   const microciclos = bloques.reduce((n, b) => n + (b.microcycles?.length ?? 0), 0);
   const estructura = [
-    bloques.length === 1 ? '1 bloque' : `${bloques.length} bloques`,
+    bloques.length === 1 ? '1 fase' : `${bloques.length} fases`,
     ...(microciclos > 0 ? [microciclos === 1 ? '1 semana' : `${microciclos} semanas`] : []),
     sesiones.length === 1 ? '1 sesión' : `${sesiones.length} sesiones`,
   ].join(' · ');
@@ -128,4 +129,4 @@ export function loQueLlevasArmado(bloques: Bloques, agenda: AgendaDeEntrenamient
   return [estructura, ...filas, ...(resto > 0 ? [resto === 1 ? 'y 1 sesión más' : `y ${resto} sesiones más`] : [])];
 }
 
-export const COPY_LO_ARMADO = { titulo: 'Lo que llevás armado', queEs: 'Se guarda solo: es el mismo borrador que la estación.' } as const;
+export const COPY_LO_ARMADO = { titulo: 'Lo que llevás armado', queEs: 'Se guarda solo: es la misma versión en preparación que ves en el plan.' } as const;

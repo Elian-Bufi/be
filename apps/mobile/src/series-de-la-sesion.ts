@@ -46,8 +46,13 @@ import {
   type SerieEjecutadaApi,
   type SesionConObjetivos,
   type SesionDeOcurrencia,
+  cuentaDeSeries,
+  numerosEfectivos,
+  tipoDeSerie,
+  type TipoDeSerie,
 } from '@be/domain';
 import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
+import { TEXTOS_DEL_CALENTAMIENTO } from './textos-del-calentamiento';
 
 export type Unidad = 'kg' | 'lb';
 
@@ -163,8 +168,13 @@ export function placeholdersDeLaSerie(objetivo: ObjetivoDeSerie | null, unidadDe
 }
 
 /** La banda «Plan de la serie N»: el objetivo completo, que sigue a la vista aunque se escriba encima del placeholder. */
-export function bandaDeLaSerie(setIndex: number, objetivo: ObjetivoDeSerie | null): { readonly titulo: string; readonly plan: string; readonly descanso: string | null; readonly completa: string } {
-  const titulo = COPY_ENTRENAMIENTO_POR_SERIE.planDeLaSerie(setIndex);
+export function bandaDeLaSerie(
+  setIndex: number,
+  objetivo: ObjetivoDeSerie | null,
+  /** DL-178: el número efectivo de la serie, o `null` si es de calentamiento. Sin él, el `setIndex`. */
+  numeroEfectivo: number | null = setIndex,
+): { readonly titulo: string; readonly plan: string; readonly descanso: string | null; readonly completa: string } {
+  const titulo = numeroEfectivo === null ? TEXTOS_DEL_CALENTAMIENTO.planDelCalentamiento : COPY_ENTRENAMIENTO_POR_SERIE.planDeLaSerie(numeroEfectivo);
   const plan = objetivo ? textoDelPlanDeLaSerie(objetivo) : COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
   const segundos = objetivo?.restSeconds ?? null;
   const descanso = segundos === null ? null : `${COPY_ENTRENAMIENTO_POR_SERIE.descansoRecomendado} ${textoDeSegundos(segundos)}`;
@@ -179,12 +189,20 @@ export function basesDeLaPrescripcion(p: Pick<PrescripcionConObjetivos, 'loadBas
   };
 }
 
-/** «3 ejercicios · 9 series». */
+/** «3 ejercicios · 9 series». Con calentamiento (DL-178): «3 ejercicios · 9 series efectivas + 2 de calentamiento». */
 export function ejerciciosYSeries(prescripciones: readonly { readonly sets: readonly unknown[] }[]): string {
   const ejercicios = prescripciones.length;
-  const series = prescripciones.reduce((n, p) => n + p.sets.length, 0);
-  return `${numero(ejercicios, 0)} ${ejercicios === 1 ? 'ejercicio' : 'ejercicios'} · ${numero(series, 0)} ${series === 1 ? 'serie' : 'series'}`;
+  // Las series llegan de API-TRN-14 o de API-SER-02: las dos traen `setKind` a esta APK, que declara la capacidad.
+  const series = prescripciones.flatMap((p) => p.sets as readonly { readonly setKind?: TipoDeSerie | null }[]);
+  return `${numero(ejercicios, 0)} ${ejercicios === 1 ? 'ejercicio' : 'ejercicios'} · ${cuentaDeSeries(series)}`;
 }
+
+export { TEXTOS_DEL_CALENTAMIENTO };
+
+/** «Calentamiento» o «Serie 2»: cómo se nombra una fila. */
+export const nombreDeLaFila = (f: Pick<FilaDeLaTabla, 'setIndex' | 'numero'>): string => (f.numero === null ? TEXTOS_DEL_CALENTAMIENTO.calentamiento : `${COPY_ENTRENAMIENTO.serie} ${numero(f.numero, 0)}`);
+/** «C» o «2»: lo que va en la columna angosta. */
+export const marcaDeLaFila = (f: Pick<FilaDeLaTabla, 'numero'>): string => (f.numero === null ? TEXTOS_DEL_CALENTAMIENTO.marca : numero(f.numero, 0));
 
 /** Lo que dice la pantalla mientras usa la sesión de respaldo (`sesionDesdeLaOcurrencia`). */
 export const AVISO_SIN_PLAN_POR_SERIE =
@@ -198,6 +216,9 @@ export const AVISO_SIN_PLAN_POR_SERIE =
  * por eso no se muestran como objetivo de ninguna serie, ni como dato del ejercicio. Quedan las repeticiones de cada
  * serie, que sí son de esa serie, el ejercicio, sus series y las notas. Sin imágenes ni descanso estructurado. La
  * pantalla lo avisa y deja registrar igual: lo que se registra nunca sale de un objetivo.
+ * Los bloques (DL-181) pasan como vienen, solo si vienen: son lo que agrupa la lista, no un objetivo. El tipo de cada
+ * serie (DL-178) también: «Hoy» lo trae a esta APK, y sin él un calentamiento se vería, se numeraría y se registraría
+ * como una serie efectiva.
  */
 export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetivos {
   return {
@@ -217,6 +238,7 @@ export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetiv
         note: x.note,
         target: { repetitions: x.repetitions, rir: null, suggestedLoad: null, restSeconds: null },
         targetOrigin: { rir: 'NONE', suggestedLoad: 'NONE', restSeconds: 'NONE' },
+        ...(x.setKind !== undefined ? { setKind: x.setKind } : {}),
       })),
       intensity: null,
       suggestedLoad: null,
@@ -225,7 +247,9 @@ export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetiv
       repetitionBasis: null,
       professionalParameters: p.professionalParameters,
       note: p.note,
+      ...(p.exerciseGroupId !== undefined ? { exerciseGroupId: p.exerciseGroupId } : {}),
     })),
+    ...(s.exerciseGroups !== undefined ? { exerciseGroups: s.exerciseGroups } : {}),
   };
 }
 
@@ -329,7 +353,7 @@ export function origenesDeLaSerie(origenes: Partial<Record<CampoConOrigen, Orige
  * Un rango de repeticiones (10–12) no se convierte en un número: queda sin informar. Sin carga ni repeticiones, ni
  * escritas ni planificadas, no hay serie: el dominio exige una de las dos (`SET_WITHOUT_DATA`), y nunca se fabrica.
  */
-export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad): LecturaDeFila {
+export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, tipo: TipoDeSerie = 'WORKING'): LecturaDeFila {
   const { carga, repeticiones, rir, errores } = leerCampos(f);
   const tiempo = leerTiempo(f.tiempo ?? '');
   if (!tiempo.ok) errores.tiempo = tiempo.error;
@@ -363,6 +387,8 @@ export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, 
     recordedAs: escrita ? 'TYPED' : 'AS_PLANNED',
     ...(tiempo.segundos === null ? {} : { durationSeconds: tiempo.segundos }),
     ...(fieldOrigins ? { fieldOrigins } : {}),
+    // DL-178: el calentamiento se registra con su tipo; una efectiva no lleva el campo, como todas las de antes.
+    ...(tipo === 'WARM_UP' ? { setKind: 'WARM_UP' as const } : {}),
   };
   return { ok: true, serie };
 }
@@ -384,18 +410,35 @@ export type AlTerminarLaSerie =
  * - Si la medición lleva más que el máximo de una serie (diez horas: la sesión quedó abierta de otro día), no se escribe
  *   en la fila: `medicion-larga`, y se resuelve con el diálogo de la medición («Terminó ahora» o «Dejarla incompleta»).
  */
-export function alTerminarLaSerie(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, msMedidos: number | null): AlTerminarLaSerie {
-  const n = numero(setIndex, 0);
-  if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(n) };
+export function alTerminarLaSerie(
+  f: FilaEscrita,
+  objetivo: ObjetivoDeSerie | null,
+  setIndex: number,
+  unidad: Unidad,
+  msMedidos: number | null,
+  /** DL-178: el número efectivo (`null` en una de calentamiento); sin él, el `setIndex`. */
+  numeroEfectivo: number | null = setIndex,
+): AlTerminarLaSerie {
+  if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(laSerieOElCalentamiento(numeroEfectivo)) };
   const conTiempo = msMedidos === null ? f : { ...f, tiempo: textoDeTiempo(Math.max(0, Math.round(msMedidos / 1000))) };
   const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad);
   if (lectura.ok) return { tipo: 'registrar' };
-  return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores) };
+  return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores, numeroEfectivo) };
 }
 
+/** DL-178: «la serie 2» o «el calentamiento», para una frase que la nombra. */
+export const laSerieOElCalentamiento = (numeroEfectivo: number | null): string => (numeroEfectivo === null ? 'el calentamiento' : `la serie ${numero(numeroEfectivo, 0)}`);
+
 /** Lo que falta para registrar la serie N, dicho para el lector de pantalla y para la fila fija. */
-export function anuncioParaRegistrar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, errores: ErroresDeFila): string {
-  const n = numero(setIndex, 0);
+export function anuncioParaRegistrar(
+  f: FilaEscrita,
+  objetivo: ObjetivoDeSerie | null,
+  setIndex: number,
+  errores: ErroresDeFila,
+  /** DL-178: el número efectivo (`null` en una de calentamiento); sin él, el `setIndex`. */
+  numeroEfectivo: number | null = setIndex,
+): string {
+  const n = laSerieOElCalentamiento(numeroEfectivo);
   const rango = f.repeticiones.trim() === '' && objetivo?.repetitions && 'min' in objetivo.repetitions ? objetivo.repetitions : null;
   if (errores.fila && rango) return TEXTOS_DE_LA_SESION.paraRegistrarEnRango(n, `${numero(rango.min, 0)}–${numero(rango.max, 0)}`);
   const motivo = errores.fila ?? errores.repeticiones ?? errores.carga ?? errores.rir ?? errores.tiempo ?? COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato;
@@ -462,6 +505,10 @@ export interface FilaDeLaTabla {
   readonly objetivo: ObjetivoDeSerie | null;
   readonly nota: string | null;
   readonly planificada: boolean;
+  /** DL-178: el tipo de la serie, el del plan (una de más es efectiva). */
+  readonly tipo: TipoDeSerie;
+  /** DL-178: el número efectivo (1, 2, 3 sin contar el calentamiento); `null` en una de calentamiento. */
+  readonly numero: number | null;
   readonly estado: EstadoDeFila;
   /**
    * Una serie pendiente de enviar: si ya está guardada en el teléfono, si se está guardando o si está solo en la app
@@ -499,8 +546,9 @@ export function filasDelEjercicio(
 ): FilaDeLaTabla[] {
   const propias = locales.filter((l) => l.prescriptionId === p.prescriptionId);
   const filas = new Map<number, FilaDeLaTabla>();
-  for (const s of p.sets) filas.set(s.setIndex, { setIndex: s.setIndex, objetivo: s.target, nota: s.note, planificada: true, estado: 'sin-registrar', proteccion: null, registrada: null });
-  const sinPlan = (setIndex: number): FilaDeLaTabla => ({ setIndex, objetivo: null, nota: null, planificada: false, estado: 'sin-registrar', proteccion: null, registrada: null });
+  for (const s of p.sets)
+    filas.set(s.setIndex, { setIndex: s.setIndex, objetivo: s.target, nota: s.note, planificada: true, tipo: tipoDeSerie(s), numero: s.setIndex, estado: 'sin-registrar', proteccion: null, registrada: null });
+  const sinPlan = (setIndex: number): FilaDeLaTabla => ({ setIndex, objetivo: null, nota: null, planificada: false, tipo: 'WORKING', numero: setIndex, estado: 'sin-registrar', proteccion: null, registrada: null });
   for (const g of guardadas) filas.set(g.setIndex, { ...(filas.get(g.setIndex) ?? sinPlan(g.setIndex)), estado: 'guardada', proteccion: null, registrada: g });
   for (const l of propias) {
     const previa = filas.get(l.serie.setIndex) ?? sinPlan(l.serie.setIndex);
@@ -511,7 +559,10 @@ export function filasDelEjercicio(
   for (const n of conEscritas) if (Number.isInteger(n) && n > 0 && n <= MAXIMO_DE_SERIES && !filas.has(n)) filas.set(n, sinPlan(n));
   const maximo = Math.max(0, ...filas.keys());
   for (let i = 1; i <= extra && maximo + i <= MAXIMO_DE_SERIES; i++) filas.set(maximo + i, sinPlan(maximo + i));
-  return [...filas.values()].sort((a, b) => a.setIndex - b.setIndex);
+  // DL-178: las efectivas se numeran sin contar el calentamiento (lo registrado como calentamiento también lo es).
+  const conTipo = [...filas.values()].map((x) => (x.registrada?.setKind === 'WARM_UP' ? { ...x, tipo: 'WARM_UP' as const } : x));
+  const efectivos = numerosEfectivos(conTipo.map((x) => ({ setIndex: x.setIndex, setKind: x.tipo })));
+  return conTipo.map((x) => ({ ...x, numero: efectivos.get(x.setIndex) ?? null })).sort((a, b) => a.setIndex - b.setIndex);
 }
 
 /** La primera fila sin registrar después de `despuesDe` (o desde el principio), o `null`. */
@@ -647,6 +698,8 @@ export interface ResumenDelEjercicio {
   readonly sinRegistrar: readonly number[];
   /** Las series sin registrar que tienen algo escrito (PA-01): se nombran para registrarlas o descartarlas. */
   readonly escritas: readonly number[];
+  /** DL-178: el número efectivo de cada serie, por `setIndex` (`null`: calentamiento), para nombrarlas como la tabla. */
+  readonly numeros?: ReadonlyMap<number, number | null>;
 }
 
 /**
@@ -668,10 +721,12 @@ export function resumenDelRegistro(
       prescriptionId: p.prescriptionId,
       nombre: p.exerciseName,
       ejecutado: registrado?.substituted ? registrado.performedExerciseName : null,
-      registradas: filas.filter((f) => f.estado !== 'sin-registrar').length,
-      planificadas: p.sets.length,
-      sinRegistrar: filas.filter((f) => f.planificada && f.estado === 'sin-registrar').map((f) => f.setIndex),
+      // DL-178: la cuenta y la barra de la sesión son de las series efectivas; el calentamiento se registra y no cuenta.
+      registradas: filas.filter((f) => f.tipo === 'WORKING' && f.estado !== 'sin-registrar').length,
+      planificadas: filas.filter((f) => f.tipo === 'WORKING' && f.planificada).length,
+      sinRegistrar: filas.filter((f) => f.tipo === 'WORKING' && f.planificada && f.estado === 'sin-registrar').map((f) => f.setIndex),
       escritas: filas.filter((f) => f.estado === 'sin-registrar' && hayAlgoEscrito(delEjercicio.get(f.setIndex) ?? FILA_VACIA)).map((f) => f.setIndex),
+      numeros: new Map(filas.map((f) => [f.setIndex, f.numero] as const)),
     };
   });
 }
@@ -703,7 +758,7 @@ export function pendientesDeRegistrar(
     return filas.flatMap((f): PendienteDeRegistrar[] => {
       const escrita = delEjercicio.get(f.setIndex);
       if (f.estado !== 'sin-registrar' || !escrita || !hayAlgoEscrito(escrita)) return [];
-      return [{ prescriptionId: p.prescriptionId, nombre: p.exerciseName, setIndex: f.setIndex, planificada: f.planificada, lectura: serieAlTildar(escrita, f.objetivo, f.setIndex, escrita.unidad) }];
+      return [{ prescriptionId: p.prescriptionId, nombre: p.exerciseName, setIndex: f.setIndex, planificada: f.planificada, lectura: serieAlTildar(escrita, f.objetivo, f.setIndex, escrita.unidad, f.tipo) }];
     });
   });
 }
