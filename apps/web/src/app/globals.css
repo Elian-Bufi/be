@@ -16934,8 +16934,9 @@ p.cifra-del-espacio__desglose {
   font-weight: 600;
 }
 
+/* Con 15 rem entra el ejemplo entero («Ej.: 4×8-12 RIR 2 · 90 s»); si al lado del rótulo no entra, baja de renglón. */
 .agregar-ejercicio__para-todos > input {
-  flex: 1 1 10rem;
+  flex: 1 1 15rem;
   min-width: 0;
   min-height: 40px;
   padding: 0.35rem 0.75rem;

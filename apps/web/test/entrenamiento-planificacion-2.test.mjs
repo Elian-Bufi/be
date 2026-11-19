@@ -414,6 +414,9 @@ test('Revisión · escena 11: las fichas de los elegidos bajan de renglón y nin
   assert.equal(V.prescripcionEjemplo, 'Ej.: 4×8-12 RIR 2 · 90 s');
   assert.equal(V.prescripcionAyuda, 'Vacía, cada uno entra con una serie para completar.');
   assert.match(CATALOGO, /maxLength=\{80\} placeholder=\{V\.prescripcionEjemplo\}/);
+  // Con 10 rem el ejemplo se cortaba al lado del rótulo (a 1536): con 15, entra o el campo baja de renglón.
+  assert.match(regla('.agregar-ejercicio__para-todos > input'), /flex: 1 1 15rem;/);
+  assert.match(escena('11-catalogo-con-elegidos'), /no entra en el campo/);
   // Un nombre largo se recorta adentro de su ficha, entero en `title` y para el lector.
   assert.match(regla('.agregar-ejercicio__nombre-elegido'), /text-overflow: ellipsis;/);
   assert.match(CATALOGO, /aria-label=\{V\.quitarDeLosElegidos\(m\.name\)\} title=\{m\.name\}/);

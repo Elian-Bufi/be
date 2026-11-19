@@ -522,6 +522,14 @@ function pantallas(ids, lugar) {
           const campo = document.querySelector('[data-para-todos] input');
           const alto = campo?.getBoundingClientRect().height ?? 0;
           if (alto < 36) problemas.push(`el campo de la prescripción para todos mide ${Math.round(alto)} px de alto`);
+          // El ejemplo de adentro entra entero.
+          if (campo?.placeholder) {
+            const estilo = getComputedStyle(campo);
+            const lienzo = document.createElement('canvas').getContext('2d');
+            lienzo.font = estilo.font;
+            const libre = campo.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+            if (lienzo.measureText(campo.placeholder).width > libre + 1) problemas.push(`el ejemplo «${campo.placeholder}» no entra en el campo`);
+          }
           const lista = document.querySelector('[data-elegidos] ul');
           if (!lista) return [...problemas, 'no están los elegidos'];
           const l = lista.getBoundingClientRect();
