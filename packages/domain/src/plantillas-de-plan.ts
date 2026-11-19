@@ -113,3 +113,109 @@ export function estructuraNutricionalComoEntrada(v: VersionDePlan): EstructuraDe
     })),
   };
 }
+
+// ─── DL-108 D-3, ratificado el 19/11 · los nombres, los parámetros y la referencia del %RM ─────────────────────────
+
+/**
+ * Además de las notas, al guardar una plantilla viajan **textos que el profesional escribió y que pueden nombrar a la
+ * persona**: los nombres de fases, microciclos, sesiones y bloques de la sesión («Diego · piernas»), los parámetros del
+ * profesional de cada ejercicio y la referencia del %RM. Se muestran para confirmarlos o vaciarlos uno por uno, como las
+ * notas (Dirección, 19/11). En Nutrición, los nombres de días tipo, comidas y opciones.
+ *
+ * - Un nombre no puede quedar vacío (el contrato lo pide): **vaciarlo es cambiarlo por el genérico** de su lugar («Fase
+ *   2», «Sesión 1», «Bloque 1»). Los nombres que ya son genéricos no se listan: no dicen nada de nadie.
+ * - Un parámetro se quita entero (su rótulo, su valor y su unidad); la referencia del %RM queda sin referencia.
+ */
+export interface LoQueViajaALaPlantilla {
+  readonly tipo: 'NOMBRE' | 'PARAMETRO' | 'REFERENCIA';
+  /** El camino en la estructura: `blocks[0].label`, `…prescriptions[1].professionalParameters[0]`, `…intensity.target.reference`. */
+  readonly lugar: string;
+  /** Qué es, en palabras. */
+  readonly rotulo: string;
+  readonly texto: string;
+  /** Para un nombre: el genérico que queda al vaciarlo. */
+  readonly generico: string | null;
+}
+
+/** Un nombre que no dice nada de nadie: «Fase 2», «Semana 1», «Sesión A», «Bloque 3», «Día tipo 1», «Comida 2», «Opción B». */
+const NOMBRE_GENERICO = /^(Fase|Bloque|Microciclo|Semana|Sesi[oó]n|D[ií]a tipo|D[ií]a|Comida|Opci[oó]n)\s+([0-9]{1,2}|[A-Za-z])$/i;
+export const esNombreGenerico = (nombre: string): boolean => NOMBRE_GENERICO.test(nombre.trim());
+
+const nombre = (lugar: string, rotulo: string, texto: string, generico: string): LoQueViajaALaPlantilla[] =>
+  esNombreGenerico(texto) || texto.trim() === '' ? [] : [{ tipo: 'NOMBRE', lugar, rotulo, texto: texto.trim(), generico }];
+
+const valorDelParametro = (q: { readonly value: string | number; readonly unit?: string | null }): string => `${q.value}${q.unit ? ` ${q.unit}` : ''}`;
+
+/** El nombre que el editor les da a las sesiones nuevas: «Sesión A», «Sesión B»… */
+const sesionGenerica = (k: number): string => (k < 26 ? `Sesión ${String.fromCharCode(65 + k)}` : `Sesión ${k + 1}`);
+
+function deLaSesion(s: Sesion, lugar: string, k: number, contexto: string): LoQueViajaALaPlantilla[] {
+  const items: LoQueViajaALaPlantilla[] = [...nombre(`${lugar}.label`, `Nombre de la sesión ${k + 1}${contexto}`, s.label, sesionGenerica(k))];
+  const sesion = s.label.trim() || sesionGenerica(k);
+  (s.exerciseGroups ?? []).forEach((g, j) => items.push(...nombre(`${lugar}.exerciseGroups[${j}].label`, `Nombre del bloque ${j + 1} de «${sesion}»`, g.label, `Bloque ${j + 1}`)));
+  s.prescriptions.forEach((p, i) => {
+    (p.professionalParameters ?? []).forEach((q, j) =>
+      items.push({ tipo: 'PARAMETRO', lugar: `${lugar}.prescriptions[${i}].professionalParameters[${j}]`, rotulo: `Parámetro «${q.label}» del ejercicio ${i + 1} de «${sesion}»`, texto: valorDelParametro(q), generico: null }),
+    );
+    const referencia = p.intensity?.target.reference?.description;
+    if (tiene(referencia)) items.push({ tipo: 'REFERENCIA', lugar: `${lugar}.prescriptions[${i}].intensity.target.reference`, rotulo: `Referencia del %RM del ejercicio ${i + 1} de «${sesion}»`, texto: referencia, generico: null });
+  });
+  return items;
+}
+
+/** Los nombres, los parámetros del profesional y las referencias del %RM de una estructura de Entrenamiento, en orden de lectura. */
+export function loQueViajaALaPlantilla(e: Estructura): LoQueViajaALaPlantilla[] {
+  const items: LoQueViajaALaPlantilla[] = [];
+  e.blocks.forEach((b, i) => {
+    const lb = `blocks[${i}]`;
+    items.push(...nombre(`${lb}.label`, `Nombre de la fase ${i + 1}`, b.label, `Fase ${i + 1}`));
+    const fase = b.label.trim() || `Fase ${i + 1}`;
+    (b.microcycles ?? []).forEach((m, j) => {
+      const lm = `${lb}.microcycles[${j}]`;
+      items.push(...nombre(`${lm}.label`, `Nombre del microciclo ${j + 1} (fase «${fase}»)`, m.label, `Semana ${j + 1}`));
+      m.sessions.forEach((s, k) => items.push(...deLaSesion(s, `${lm}.sessions[${k}]`, k, ` (microciclo «${m.label.trim() || `Semana ${j + 1}`}»)`)));
+    });
+    (b.sessions ?? []).forEach((s, k) => items.push(...deLaSesion(s, `${lb}.sessions[${k}]`, k, ` (fase «${fase}»)`)));
+  });
+  return items;
+}
+
+/** Los nombres de días tipo, comidas y opciones de una estructura de comidas, en orden de lectura. */
+export function loQueViajaALaPlantillaNutricional(e: EstructuraDePlanEntrada): LoQueViajaALaPlantilla[] {
+  const items: LoQueViajaALaPlantilla[] = [];
+  e.dayTypes.forEach((d, i) => {
+    items.push(...nombre(`dayTypes[${i}].label`, `Nombre del día tipo ${i + 1}`, d.label, `Día tipo ${i + 1}`));
+    const dia = d.label.trim() || `Día tipo ${i + 1}`;
+    d.meals.forEach((m, j) => {
+      items.push(...nombre(`dayTypes[${i}].meals[${j}].label`, `Nombre de la comida ${j + 1} (${dia})`, m.label, `Comida ${j + 1}`));
+      const comida = m.label.trim() || `Comida ${j + 1}`;
+      m.options.forEach((o, k) => items.push(...nombre(`dayTypes[${i}].meals[${j}].options[${k}].label`, `Nombre de la opción ${k + 1} de «${comida}» (${dia})`, o.label, `Opción ${k + 1}`)));
+    });
+  });
+  return items;
+}
+
+/**
+ * La misma estructura con eso vaciado: el nombre, cambiado por su genérico; el parámetro, quitado; la referencia del
+ * %RM, sin referencia. No muta la entrada; un lugar que no existe no cambia nada.
+ */
+export function vaciarLoQueViaja<T extends object>(e: T, x: LoQueViajaALaPlantilla): T {
+  const copia = JSON.parse(JSON.stringify(e)) as T;
+  const partes = x.lugar.match(/[a-zA-Z]+|\d+/g) ?? [];
+  let nodo: unknown = copia;
+  for (let i = 0; i < partes.length - 1; i += 1) {
+    const clave = partes[i]!;
+    nodo = /^\d+$/.test(clave) ? (nodo as unknown[])[Number(clave)] : (nodo as Record<string, unknown>)[clave];
+    if (nodo === undefined || nodo === null) return e;
+  }
+  const ultima = partes[partes.length - 1];
+  if (ultima === undefined || typeof nodo !== 'object' || nodo === null) return e;
+  if (x.tipo === 'PARAMETRO') {
+    if (!Array.isArray(nodo) || !/^\d+$/.test(ultima) || Number(ultima) >= nodo.length) return e;
+    nodo.splice(Number(ultima), 1);
+    return copia;
+  }
+  if (!(ultima in (nodo as Record<string, unknown>))) return e;
+  (nodo as Record<string, unknown>)[ultima] = x.tipo === 'NOMBRE' ? x.generico : null;
+  return copia;
+}

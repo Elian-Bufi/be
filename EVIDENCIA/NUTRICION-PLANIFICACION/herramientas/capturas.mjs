@@ -541,6 +541,20 @@ function pantallas(norma) {
       },
     },
     {
+      // DL-108 D-3, ratificado el 19/11: «Guardar como plantilla» muestra, además de las notas, los nombres de días tipo,
+      // comidas y opciones, para confirmarlos o vaciarlos uno por uno.
+      nombre: '06b-guardar-como-plantilla-con-nombres',
+      llegar: async (page) => {
+        await clic(page, '[data-guardar-como-plantilla]');
+        await visible(page, 'dialog[open] [data-lo-que-viaja-a-la-plantilla]');
+        await page.$eval('dialog[open] [data-lo-que-viaja-a-la-plantilla]', (e) => e.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+        const nombres = await page.$$eval('dialog[open] [data-lo-que-viaja-a-la-plantilla] li[data-tipo="NOMBRE"]', (xs) => xs.length);
+        if (nombres === 0) throw new Error('no aparece ningún nombre para revisar');
+      },
+      despues: cerrarCuadros,
+    },
+    {
       nombre: '07-editor-comida-abierta-opciones-plegadas',
       llegar: async (page) => {
         // El almuerzo de Norma tiene tres opciones: plegadas, cada una con sus números.

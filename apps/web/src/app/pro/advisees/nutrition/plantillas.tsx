@@ -12,8 +12,10 @@ import {
   COPY_GUARDADO,
   COPY_PLANTILLAS,
   falloDeGuardado,
+  loQueViajaALaPlantillaNutricional,
   notaDeOrigenNutricional,
   notasDeLaEstructuraNutricional,
+  vaciarLoQueViaja,
   vaciarNota,
   type EstructuraDePlanEntrada,
   type OrigenDePlanEnPlantilla,
@@ -24,6 +26,7 @@ import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { LoQueViajaALaPlantillaParaRevisar } from '../lo-que-viaja-a-la-plantilla';
 
 export function DialogoGuardarPlantillaNutricional({
   token,
@@ -116,6 +119,14 @@ export function DialogoGuardarPlantillaNutricional({
           </ul>
         </>
       )}
+      {/* DL-108 D-3, ratificado el 19/11: los nombres de días tipo, comidas y opciones, también a la vista. */}
+      <LoQueViajaALaPlantillaParaRevisar
+        items={loQueViajaALaPlantillaNutricional(estructura)}
+        titulo={COPY_PLANTILLAS.nombresTitulo}
+        ayuda={COPY_PLANTILLAS.nombresAyuda}
+        vacio={COPY_PLANTILLAS.sinNombres}
+        onVaciar={(x) => setEstructura((e) => vaciarLoQueViaja(e, x))}
+      />
       {/* DL-113: lo que explica la plantilla, plegado y al final: así el foco del diálogo abre en el nombre. */}
       <Ayuda titulo="Qué se copia y quién lo ve">
         <p>{COPY_PLANTILLAS.queCopiaNutricion}</p>
