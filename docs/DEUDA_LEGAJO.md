@@ -8698,3 +8698,45 @@ del editor», en el editor del plan de Entrenamiento y de Nutrición, en la eval
 **Lo que no cambia.** Ninguna operación de siempre pierde un campo. El texto de «resumen» aceptado por la persona no se
 amplía: el cuerpo compartido es lo que ese texto ya promete («de Antropometría, el peso y la composición en kilos, con su
 método»). Administración no lee nada de esto. Detalle completo: `docs/paquetes/WP-CONTEXTO-DE-LA-PERSONA.md`.
+
+---
+
+## DL-181 — La planificación de Entrenamiento: «Fase» para la etapa de varias semanas y el bloque dentro de la sesión
+
+**Prioridad:** alta (es la forma en que el profesional arma cada sesión) · **Documento:** 09v10 §5-§6 (la jerarquía),
+B10-06 §8-§23 (el editor), REG-06-104, 105, 111 y 112 (la instantánea y su huella) · DL-122 · DL-152 · DL-178 · B05 ·
+**Estado:** DECIDIDA por Dirección el 2026-11-18 (la fase, el bloque y sus dos tipos) · PROGRAMADA en
+`wp-entrenamiento-planificacion` (PR abierto, sin integrar, con #288 y #289 adentro) · ENP-D01 a ENP-D16, **a ratificar**.
+La 180 queda para `wp-nutricion-planificacion`; si al integrar el número choca, se renumera.
+
+**Qué decidió Dirección.** Lo que se llamaba «Bloque» (la etapa de varias semanas, el mesociclo) se llama «Fase» en todas
+las pantallas, y la sesión suma un nivel opcional, el «Bloque» (Torso, Pierna, Core…), que agrupa ejercicios: «Seguido»
+(un título; los ejercicios de a uno) o «En vueltas» (dos o más alternados, con las vueltas y el descanso al terminar cada
+vuelta). Se guarda como dato aditivo: los planes existentes quedan iguales, con sus huellas e instantáneas.
+
+**Qué dice el legajo.** El 09 nombra «bloque» al mesociclo (`blocks`, `blockId`) y no tiene una agrupación de ejercicios
+dentro de la sesión: la sesión es una lista ordenada de prescripciones (REG-06-111).
+
+**Lo programado.**
+- **En pantalla, «Fase»; en el contrato, `blocks` sigue igual** (ENP-D01): renombrarlo tocaría el JSONB de cada versión y
+  de cada instantánea, la APK instalada y lo congelado de sus lecturas, sin ganancia para la persona.
+- **El bloque de la sesión es una marca sobre la lista** (ENP-D02): la sesión puede llevar `exerciseGroups` (`groupId`,
+  `label`, `kind` `SEQUENTIAL` o `ROUNDS`, y en `ROUNDS`, `rounds` y `restAfterRoundSeconds`) y cada prescripción, su
+  `exerciseGroupId`. Los ejercicios siguen en una sola lista, en orden: nada de lo que la recorre cambia. Lo que no tiene
+  bloques no lleva las claves, así que su huella no cambia, y no hay migración de base.
+- **Las reglas** (`packages/domain/src/bloques-de-la-sesion.ts`): al guardar, el bloque existe en la sesión, sus ejercicios
+  van seguidos y su identificador no se repite (422); para activar, ningún bloque vacío y ninguno «En vueltas» con menos de
+  dos ejercicios (API-TRN-11 y 12).
+- **La APK instalada recibe lo de antes** (ENP-D06, DL-152): la capacidad `training-session-groups-1` decide si salen las
+  dos claves; sin ella, `SinBloquesDeLaSesionInterceptor` las saca en el borde. A diferencia de DL-178 no se retiene ni se
+  bloquea nada: el registro sigue siendo por ejercicio y nada se cuenta distinto.
+- **La APK nueva** muestra los ejercicios bajo su bloque y, en uno «En vueltas», «Alterná estos 2 ejercicios · 3 vueltas ·
+  descansá 90 s al terminar cada vuelta». Sin guía alternada paso a paso.
+- **Las plantillas y las sesiones habituales** guardan la estructura tal como entra: conservan los bloques.
+
+**Lo que queda.**
+- Ratificar ENP-D01 a ENP-D16.
+- Congelar la lectura nueva de la APK con la próxima candidata (DL-152): la que declara `training-session-groups-1` lee
+  `exerciseGroups` y `exerciseGroupId` en API-SER-02, API-TRN-09, 14, 14-PERIODO, 15 a 20 y 19-LISTA.
+- Probar en el teléfono una sesión con un bloque «En vueltas», también con TalkBack.
+- El tramo siguiente del paquete (C5 a C11). Detalle completo: `docs/paquetes/WP-ENTRENAMIENTO-PLANIFICACION.md`.
