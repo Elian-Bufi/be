@@ -15,12 +15,16 @@ import {
   COPY_NUTRICION,
   ETIQUETA_DE_FUENTE,
   leerNumero,
+  MAXIMO_DE_CITAS_POR_EVALUACION,
   motivoDeNumeroIlegible,
   type CrearEvaluacionRequest,
   type CrearObjetivoRequest,
   type EvaluacionNutricional,
 } from '@be/domain';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import type { CitaPosible } from '@be/domain';
+import { useReceptorDeCitas, type ReceptorDeCitas } from '../contexto/citas';
+import { citasQueCambiaron, claveDeCita, claveDeCitaVista, fundamentoConCitas, sumarCitas } from '../contexto/panel-de-contexto';
 import { AnuncioDeLosAvisos, Aviso, Campo, erroresPorCampo, ResumenDeErrores, useAvisosVivos } from '../../../../components/formulario';
 import { COPY_AVISOS_VIVOS } from '../../../../components/validacion-viva';
 import { api } from '../../../../lib/api';
@@ -62,6 +66,36 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   const errores = avisos.errores;
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
+  // DL-179 (CTX-D12, CTX-D13): las respuestas citadas desde el panel del contexto, con la versión que se vio. El mismo tope
+  // de 20 que en Entrenamiento (DL-102); si una cambió antes de registrar, la API responde 409 y no se pierde ninguna.
+  const [citas, setCitas] = useState<readonly CitaPosible[]>([]);
+  const [citaCambiada, setCitaCambiada] = useState(false);
+  // Revisión del PR: cuáles cambiaron, según el 409, para señalarlas en la lista hasta que se vuelvan a citar.
+  const [cambiadas, setCambiadas] = useState<readonly string[]>([]);
+  const receptor = useMemo<ReceptorDeCitas>(
+    () => ({
+      area: 'NUTRICION',
+      destino: 'evaluacion',
+      // Con la versión vista: después de «Volver a leer», una que cambió se puede citar de nuevo y reemplaza a la vieja.
+      citadas: new Set(citas.map(claveDeCitaVista)),
+      maximo: MAXIMO_DE_CITAS_POR_EVALUACION,
+      citar: (nuevas) => {
+        const propias = nuevas.filter((c) => c.area === 'NUTRICION');
+        if (propias.length === 0) return 'otra-area';
+        // Las del renglón, juntas: entran todas o ninguna en el tope de 20.
+        const r = sumarCitas(citas, propias, MAXIMO_DE_CITAS_POR_EVALUACION);
+        if (r.resultado === 'citada') {
+          const citadasAhora = new Set(propias.map(claveDeCita));
+          setCitas(r.lista);
+          setCambiadas((xs) => xs.filter((x) => !citadasAhora.has(x)));
+          setCitaCambiada(false);
+        }
+        return r.resultado;
+      },
+    }),
+    [citas],
+  );
+  useReceptorDeCitas(receptor);
 
   const cambiar = (i: number, cambio: Partial<Dato>) => setDatos((ds) => ds.map((d, j) => (j === i ? { ...d, ...cambio } : d)));
   function elegirConcepto(c: ConceptoFrecuente) {
@@ -100,14 +134,20 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
       },
       evidenceReferences: [],
       professionalNotes: notas.trim() || null,
+      ...(citas.length > 0 ? { formResponseReferences: citas.map((c) => ({ formResponseId: c.formResponseId, fieldCode: c.fieldCode, expectedVersion: c.expectedVersion })) } : {}),
     };
     setEnviando(true);
     setFallo(null);
-    const r = await api.crearEvaluacion(token, asesoradoId, cuerpo, intento.actual());
+    const r = await api.crearEvaluacion(token, asesoradoId, cuerpo, intento.actual(JSON.stringify(cuerpo.formResponseReferences ?? [])));
     intento.registrar(r);
     setEnviando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(r) || accesoRetirado(r)) return;
+    if (!r.ok && r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+      // Nada se registró y nada se pierde: se señala cuál cambió, para volver a leerla y citarla.
+      setCambiadas(citasQueCambiaron(cuerpo.formResponseReferences ?? [], r.issues));
+      return setCitaCambiada(true);
+    }
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onRegistrada(r.datos.data.evaluationId);
   }
@@ -152,6 +192,33 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
         <button type="button" className="boton boton--secundario" onClick={() => setDatos((ds) => [...ds, datoVacio()])}>
           Agregar dato
         </button>
+      </fieldset>
+      <fieldset className="grupo respuestas-citadas">
+        <legend>Respuestas citadas (opcional)</legend>
+        <p className="campo__ayuda">
+          Lo que respondió la persona en tus formularios, como evidencia. Se cita desde «Contexto de la persona» (Alt + C), con «Citar». Hasta {MAXIMO_DE_CITAS_POR_EVALUACION}.
+        </p>
+        {citas.length === 0 ? <p className="nota">Todavía no citaste ninguna.</p> : null}
+        {citaCambiada ? (
+          <Aviso tipo="error" enfocar>
+            <p>Una respuesta citada cambió desde que la viste: tocá «Volver a leer» en el contexto y citala de nuevo. No se registró nada.</p>
+          </Aviso>
+        ) : null}
+        {citas.length > 0 ? (
+          <ul className="lista-de-citas">
+            {citas.map((c) => (
+              <li key={claveDeCita(c)}>
+                <span>
+                  <strong>{c.pregunta}:</strong> {c.respuesta} <span className="nota">· {c.fuente.nombre} · {dia(c.fuente.fecha)}</span>
+                  {cambiadas.includes(claveDeCita(c)) ? <span className="nota"> · Cambió desde que la viste: volvé a leer el contexto y citala de nuevo.</span> : null}
+                </span>
+                <button type="button" className="boton boton--enlace" aria-label={`Quitar la cita: ${c.pregunta}`} onClick={() => setCitas((xs) => xs.filter((x) => claveDeCita(x) !== claveDeCita(c)))}>
+                  Quitar
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </fieldset>
       <details className="campos-opcionales" open={contexto !== '' || notas !== '' ? true : undefined}>
         <summary>{COPY_DE_LA_EVALUACION.contextoYNotas}</summary>
@@ -349,6 +416,23 @@ export function FormularioDeObjetivo({
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [valores, setValores] = useState(objetivoVacio(evaluacionMasReciente(evaluaciones)));
+  // DL-179 (CTX-D12): «Citar» desde el panel suma un renglón con la cita y su fuente al fundamento (CTX-P07: sin citas
+  // estructurales en el objetivo). Nunca lo de salud: el objetivo viaja con el plan que la persona comparte (API-RES-06).
+  const receptorDelObjetivo = useMemo<ReceptorDeCitas>(
+    () => ({
+      area: 'NUTRICION',
+      destino: 'objetivo',
+      citadas: new Set<string>(),
+      maximo: null,
+      citar: (citas) => {
+        const r = fundamentoConCitas(valores.fundamento, citas, (iso) => dia(iso));
+        if (r.resultado === 'citada') setValores((v) => ({ ...v, fundamento: r.texto }));
+        return r.resultado;
+      },
+    }),
+    [valores.fundamento],
+  );
+  useReceptorDeCitas(receptorDelObjetivo);
   // En el primer plan, el formulario se abre apenas se registra la evaluación, antes de que la lista vuelva a leerse.
   useEffect(() => {
     if (evaluaciones.length > 0) setValores((v) => (v.evaluacionId ? v : { ...v, evaluacionId: evaluacionMasReciente(evaluaciones) }));

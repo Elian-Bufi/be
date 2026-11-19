@@ -18939,3 +18939,298 @@ html:has(.estacion:not([data-en-el-asistente])) {
   border: 1px solid var(--borde);
   border-radius: 10px;
 }
+
+/* ─── WP-CONTEXTO-DE-LA-PERSONA (DL-179): el botón y el panel «Contexto de <nombre>» ─────────────────────────────── */
+
+.boton-del-contexto {
+  gap: 0.4rem;
+}
+
+.boton-del-contexto--abierto {
+  box-shadow: inset 0 0 0 2px var(--cian);
+}
+
+.boton-del-contexto__atajo {
+  margin-left: 0.25rem;
+  padding: 0 0.3rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  font: inherit;
+  font-size: 0.75em;
+  opacity: 0.8;
+}
+
+/* CTX-D03: desde 1680 px, al costado y empujando (el editor queda entero al lado); debajo, un cajón encima del editor. */
+.ficha--con-contexto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 27.5rem;
+  align-items: start;
+}
+
+.ficha__principal {
+  min-width: 0;
+}
+
+.panel-de-contexto {
+  display: flex;
+  flex-direction: column;
+  background: var(--superficie);
+  color: var(--texto);
+  border-left: 1px solid var(--borde);
+  overflow: hidden;
+}
+
+.panel-de-contexto--costado {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.panel-de-contexto--cajon {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 60;
+  width: min(27.5rem, 92vw);
+  height: 100dvh;
+  box-shadow: var(--sombra);
+}
+
+.panel-de-contexto__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.panel-de-contexto__cabecera h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.panel-de-contexto__cabecera h2:focus {
+  outline: none;
+}
+
+.panel-de-contexto__cabecera h2:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.panel-de-contexto__acciones {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.25rem;
+}
+
+/* Las cinco pestañas en un renglón, cada etiqueta entera (revisión del PR: con cinco columnas iguales, «Lo importante» se
+   partía en dos renglones). Cada una ocupa lo que dice su etiqueta y reparten el resto; en un cajón más angosto que 440 px,
+   la fila se desplaza en lugar de partir una etiqueta o esconder la última. */
+.panel-de-contexto__pestanas {
+  display: flex;
+  gap: 0.1rem;
+  padding: 0.4rem 0.5rem 0;
+  border-bottom: 1px solid var(--borde);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.panel-de-contexto__pestana {
+  flex: 1 0 auto;
+  padding: 0.45rem 0.4rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--tenue);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.panel-de-contexto__pestana:hover {
+  color: var(--texto);
+}
+
+.panel-de-contexto__pestana--actual {
+  border-bottom-color: var(--cian);
+  color: var(--texto);
+}
+
+.panel-de-contexto__pestana:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+}
+
+.panel-de-contexto__contenido {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem 1rem 2rem;
+}
+
+.panel-de-contexto__contenido:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+}
+
+.panel-de-contexto__grupo,
+.panel-de-contexto__seccion {
+  margin-top: 1rem;
+}
+
+.panel-de-contexto__grupo h3,
+.panel-de-contexto__seccion h3,
+.panel-de-contexto__area h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.panel-de-contexto dl {
+  margin: 0;
+}
+
+.panel-de-contexto__dato {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.panel-de-contexto__dato dt {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.panel-de-contexto__dato dd {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0.15rem 0 0;
+}
+
+.panel-de-contexto__respuesta {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.panel-de-contexto__fuente,
+.panel-de-contexto__nota-fija {
+  font-size: 0.8rem;
+}
+
+/* CTX-D09: lo sensible, sin color ni alerta; plegado. */
+.panel-de-contexto__dato--sensible summary {
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.panel-de-contexto__citar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.panel-de-contexto__citar .nota:empty {
+  display: none;
+}
+
+.panel-de-contexto__formulario {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+}
+
+.panel-de-contexto__formulario > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.4rem;
+  cursor: pointer;
+}
+
+.panel-de-contexto__diferencia,
+.panel-de-contexto__porcentaje {
+  display: block;
+  white-space: nowrap;
+}
+
+.panel-de-contexto__buscar input {
+  width: 100%;
+}
+
+.panel-de-contexto__tabla {
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.panel-de-contexto__tabla th,
+.panel-de-contexto__tabla td {
+  padding: 0.35rem 0.4rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.panel-de-contexto__areas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-de-contexto__area {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+}
+
+.panel-de-contexto__area p {
+  margin: 0.2rem 0;
+}
+
+.panel-de-contexto__lista-de-notas {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-de-contexto__lista-de-notas li {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.panel-de-contexto__lista-de-notas p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.panel-de-contexto .campo textarea {
+  width: 100%;
+}
+
+/* La lista de respuestas citadas de la evaluación de Nutrición (DL-179). */
+.lista-de-citas {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-de-citas li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--borde);
+}

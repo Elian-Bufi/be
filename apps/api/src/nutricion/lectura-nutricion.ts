@@ -46,7 +46,8 @@ export async function nombreVisibleDe(cliente: Cliente, identidadId: string): Pr
 
 // ─── Evaluación ──────────────────────────────────────────────────────────────────────────────────
 
-export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string): EvaluacionNutricional {
+/** DL-179: `citas`, las respuestas citadas ya resueltas (`citasResueltasDeNutricion`); `[]` si no cita ninguna. */
+export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string, citas: EvaluacionNutricional['formResponseReferences'] = []): EvaluacionNutricional {
   return {
     evaluationId: e.id,
     version: token(1),
@@ -58,6 +59,7 @@ export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string): E
     assessment: e.valoracion as EvaluacionNutricional['assessment'],
     evidenceReferences: e.referencias as string[],
     professionalNotes: e.notas,
+    formResponseReferences: citas,
   };
 }
 

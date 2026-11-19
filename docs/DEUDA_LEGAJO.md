@@ -8670,3 +8670,31 @@ DL-161, la estimación BE-E1RM de DL-171). Un calentamiento cargado como serie e
   - la barra que no avanza con el calentamiento;
   - el registro con su tipo.
 - Revisar con un profesional si la marca «C» se entiende sin la ayuda.
+
+---
+
+## DL-179 — El contexto de la persona en el editor: el panel, la familia CTX y la cita en la evaluación de Nutrición
+
+**Prioridad:** alta (planificar con el contexto a la vista es el centro del trabajo del profesional) · **Documento:** 04
+RF-036, RF-057 y RF-071 · 06 §20.4, REG-06-109, CA-FOR-04 · 08 §11-bis, §19.7 y §27.3 · 10-B10:407 · B05 · DL-102 ·
+DL-137 D-7 · DL-163 D-13 · DL-164 y DL-165 · DL-173 · DL-176 · **Estado:** DECIDIDA por Dirección el 2026-11-18 (el panel y
+su alcance) · PROGRAMADA en `wp-contexto-de-la-persona` (PR abierto, sin integrar) · CTX-D01 a CTX-D18 y CTX-P01 a
+CTX-P09, **a ratificar**. Si al integrar el número choca con otro paquete de la misma planificación, se renumera.
+
+**La decisión de Dirección.** «El profesional tiene que tener el contexto de la persona a mano mientras planifica, sin salir
+del editor», en el editor del plan de Entrenamiento y de Nutrición, en la evaluación y en el objetivo, con cinco pestañas
+(Lo importante, Formularios, Cuerpo, Otras áreas y Notas) y «Citar» al lado de cada respuesta.
+
+**Lo que se declara.**
+- **Familia propia de BE, CTX** (el 09 no la tiene; DL-137 D-7): **API-CTX-01** `GET /advisees/{adviseeId}/person-context/answers`
+  (las respuestas vigentes a las Solicitudes propias, de las áreas con el PDP permitido) y **API-CTX-02**
+  `GET /advisees/{adviseeId}/person-context/body` (la última toma y la anterior: enteras para quien lleva Antropometría; el
+  peso y la composición en kilos, con su método, para quien recibe el resumen compartido, con la lectura registrada).
+- **API-NUT-01, 02 y 03, aditivas:** `formResponseReferences` en la evaluación de Nutrición, como DL-102 en Entrenamiento,
+  con la migración `20261118120000_citas_en_evaluacion_nutricional` (solo agrega una tabla y sus guardias).
+- **El criterio de «Lo importante»** por área (el §1 del paquete), con sus fuentes, aplicado solo a lo que los formularios
+  de BE preguntan. Lo que las guías piden y BE no pregunta queda propuesto (CTX-P01 a CTX-P05), sin campos nuevos.
+
+**Lo que no cambia.** Ninguna operación de siempre pierde un campo. El texto de «resumen» aceptado por la persona no se
+amplía: el cuerpo compartido es lo que ese texto ya promete («de Antropometría, el peso y la composición en kilos, con su
+método»). Administración no lee nada de esto. Detalle completo: `docs/paquetes/WP-CONTEXTO-DE-LA-PERSONA.md`.

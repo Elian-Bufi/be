@@ -351,13 +351,14 @@ test('TEST-PG-015 · los dos editores leen las notas una sola vez y las muestran
   for (const ruta of ['src/app/pro/advisees/training/plan.tsx', 'src/app/pro/advisees/nutrition/plan.tsx']) assert.match(leer(ruta), /<ProveedorDeNotasPropias token=\{token\} asesoradoId=\{asesoradoId\} sesionPerdida=\{sesionPerdida\}>/);
   assert.match(leer('src/app/pro/advisees/training/ejercicio-del-editor.tsx'), /<NotasAlLado ejercicio=\{exerciseId\} \/>/);
   assert.match(leer('src/app/pro/advisees/nutrition/comida-del-editor.tsx'), /<NotasAlLado comida=\{comida\.label\} \/>/);
-  // API-NPP-02 se lee en el proveedor del editor, en el bloc del Resumen y, una vez por cinta, en la cinta del tiempo de los
-  // gráficos (GR-23, WP-GRAFICOS GR-T28); nunca por ejercicio ni por comida.
+  // API-NPP-02 se lee en el proveedor del editor, en el bloc del Resumen, una vez por cinta en la cinta del tiempo de los
+  // gráficos (GR-23, WP-GRAFICOS GR-T28) y en la pestaña «Notas» del contexto (DL-179); nunca por ejercicio ni por comida.
   const conLectura = archivos(join(WEB, 'src'))
     .filter((r) => readFileSync(r, 'utf8').includes('api.notasPropias('))
     .map(nombre)
     .sort();
-  assert.deepEqual(conLectura, ['src/app/pro/advisees/graficos/lecturas.ts', 'src/app/pro/advisees/notas-propias.tsx', 'src/app/pro/advisees/seguimiento/tus-notas.tsx']);
+  // DL-179: y la pestaña «Notas» del panel del contexto, una vez al abrirla.
+  assert.deepEqual(conLectura, ['src/app/pro/advisees/contexto/panel.tsx', 'src/app/pro/advisees/graficos/lecturas.ts', 'src/app/pro/advisees/notas-propias.tsx', 'src/app/pro/advisees/seguimiento/tus-notas.tsx']);
 });
 
 test('TEST-PG-015 · con «Ocultar nombres», el texto de las notas no se ve hasta pedirlo (PG-T73)', () => {

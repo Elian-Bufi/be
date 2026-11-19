@@ -21,6 +21,7 @@ import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
 import { FuenteExternaDeAlimentoSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
+import { CitaDeRespuestaDeFormularioSchema, RespuestaCitadaSchema } from './contratos-citas-de-respuestas';
 
 // ─── Tipos comunes ──────────────────────────────────────────────────────────────────────────────
 /** Fecha local del asesorado, sin hora (RNF-DAT-005). */
@@ -62,6 +63,12 @@ export const CrearEvaluacionRequestSchema = z.strictObject({
   assessment: ValoracionSchema,
   evidenceReferences: z.array(Texto(200)).max(20),
   professionalNotes: TextoOpcional(4000),
+  /**
+   * DL-179 (WP-CONTEXTO-DE-LA-PERSONA): las respuestas de formulario citadas como evidencia, como en Entrenamiento
+   * (DL-102): de la persona, a una Solicitud propia de alcance NUTRICION, en su versión vigente. Opcional para no romper a
+   * los clientes que ya crean evaluaciones; ausente es lo mismo que `[]`.
+   */
+  formResponseReferences: z.array(CitaDeRespuestaDeFormularioSchema).max(20).optional(),
 });
 export type CrearEvaluacionRequest = z.infer<typeof CrearEvaluacionRequestSchema>;
 
@@ -81,6 +88,8 @@ export const EvaluacionNutricionalSchema = z.strictObject({
   assessment: ValoracionSchema,
   evidenceReferences: z.array(z.string()),
   professionalNotes: z.string().nullable(),
+  /** DL-179: las respuestas citadas, en el orden en que se citaron (`[]` si no cita ninguna). */
+  formResponseReferences: z.array(RespuestaCitadaSchema),
 });
 export type EvaluacionNutricional = z.infer<typeof EvaluacionNutricionalSchema>;
 export const EvaluacionResponseSchema = z.strictObject({ data: EvaluacionNutricionalSchema });

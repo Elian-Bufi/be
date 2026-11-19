@@ -2721,6 +2721,29 @@ it('TEST-CT (WP-PULIDO-GRANDES, DL-173): la nota para tu profe (TRN-25, LISTA y 
   await request(servidor).post(archivo).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
 });
 
+it('TEST-CT (WP-CONTEXTO-DE-LA-PERSONA, DL-179): CTX-01 y CTX-02 — el contexto de la persona, con éxitos y errores declarados', async () => {
+  const c = await circuitoV2(app, prisma, 'ct-ctx', 'NUTRICION');
+  await fri(app, c.ase.token).responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201);
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  const servidor = app.getHttpServer();
+  // CTX-01
+  const respuestas = `/api/v1/advisees/${c.ase.id}/person-context/answers`;
+  await pro.get(respuestas).expect(200);
+  await pro.get(`${respuestas}?x=1`).expect(400);
+  await ase.get(respuestas).expect(404);
+  await pro.get(`/api/v1/advisees/${ajeno}/person-context/answers`).expect(404);
+  await request(servidor).get(respuestas).expect(401);
+  // CTX-02: quien lleva Antropometría (200); quien no la lleva y no la recibe compartida (404).
+  const ant = await circuitoAntropometrico(app, prisma, 'ct-ctx-cuerpo');
+  const cuerpo = `/api/v1/advisees/${ant.ase.id}/person-context/body`;
+  await conSesion(app, ant.pro.token).get(cuerpo).expect(200);
+  await conSesion(app, ant.pro.token).get(`${cuerpo}?x=1`).expect(400);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/person-context/body`).expect(404);
+  await request(servidor).get(cuerpo).expect(401);
+});
+
 it('TEST-CT (WP-HISTORIA-ANTERIOR, DL-175): HIA-01 a 04 — la historia anterior de un área, para el profesional nuevo, con éxitos y errores declarados', async () => {
   const c = await circuitoConPlanActivo(app, 'ct-hia');
   await finalizar(app, c.ase.token, c.vinculoId, await versionDeVinculo(app, c.ase.token, c.vinculoId)).expect(200);

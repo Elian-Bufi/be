@@ -56,6 +56,8 @@ import { useEntrenamiento } from './entrenamiento';
 import { pedidoDesde } from '../forms/formulario-de-inicio';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
+import { useReceptorDeCitas, type ReceptorDeCitas } from '../contexto/citas';
+import { claveDeCitaVista, fundamentoConCitas, sumarCitas } from '../contexto/panel-de-contexto';
 
 interface Lecturas {
   readonly evaluaciones: Lectura<readonly EvaluacionDeEntrenamiento[]>;
@@ -342,8 +344,11 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
   );
 }
 
-/** Lo citado en una evaluación (DL-102): declarado por la persona, con fecha, y el aviso si lo actualizó después. */
-function ContextoCitado({ citas }: { citas: readonly RespuestaCitada[] }) {
+/**
+ * Lo citado en una evaluación (DL-102): declarado por la persona, con fecha, y el aviso si lo actualizó después. Desde DL-179
+ * también lo usa la evaluación de Nutrición, que cita igual.
+ */
+export function ContextoCitado({ citas }: { citas: readonly RespuestaCitada[] }) {
   return (
     <div>
       <p className="lista__titulo">{COPY_ENTRENAMIENTO.contextoCitado}</p>
@@ -469,6 +474,39 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     setConflicto(false);
     setCargaDeContexto('listo');
   }
+
+  // DL-179 (CTX-D12): «Citar» desde el panel del contexto suma las respuestas del renglón a las citadas de este formulario,
+  // con la versión que se vio en el panel, todas o ninguna en el tope de 20 (`sumarCitas`). Si no estaban entre las citables
+  // cargadas, se suman; si estaban con otra versión, se reemplazan en su lugar.
+  const receptor = useMemo<ReceptorDeCitas>(() => {
+    const elegidas = citables.filter((c) => citadas.includes(claveDe(c)));
+    return {
+      area: 'ENTRENAMIENTO',
+      destino: 'evaluacion',
+      citadas: new Set(elegidas.map(claveDeCitaVista)),
+      maximo: MAXIMO_DE_CITAS,
+      citar: (nuevas) => {
+        const propias = nuevas.filter((c) => c.area === 'ENTRENAMIENTO');
+        if (propias.length === 0) return 'otra-area';
+        const r = sumarCitas<Citable>(
+          elegidas,
+          propias.map((c) => ({ formResponseId: c.formResponseId, fieldCode: c.fieldCode, expectedVersion: c.expectedVersion, etiqueta: c.pregunta, valor: c.respuesta, fecha: c.fuente.fecha })),
+          MAXIMO_DE_CITAS,
+        );
+        if (r.resultado === 'tope') setTopeAvisado(true);
+        if (r.resultado !== 'citada') return r.resultado;
+        const porClave = new Map(r.lista.map((c) => [claveDe(c), c] as const));
+        setCitables((cs) => {
+          const ya = new Set(cs.map(claveDe));
+          return [...cs.map((x) => porClave.get(claveDe(x)) ?? x), ...r.lista.filter((c) => !ya.has(claveDe(c)))];
+        });
+        setCitadas(r.lista.map(claveDe));
+        setCambiadas((xs) => xs.filter((x) => !porClave.has(x)));
+        return 'citada';
+      },
+    };
+  }, [citadas, citables]);
+  useReceptorDeCitas(receptor);
 
   function alternar(c: Citable) {
     const r = alternarSeleccion(citadas, claveDe(c));
@@ -668,6 +706,24 @@ export function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { 
   }, [evaluaciones]);
   const [enunciado, setEnunciado] = useState('');
   const [fundamento, setFundamento] = useState('');
+  // DL-179 (CTX-D12): «Citar» desde el panel suma un renglón con la cita y su fuente al fundamento (el objetivo no tiene
+  // citas en su contrato: CTX-P07).
+  const receptorDelObjetivo = useMemo<ReceptorDeCitas>(
+    () => ({
+      area: 'ENTRENAMIENTO',
+      destino: 'objetivo',
+      citadas: new Set<string>(),
+      maximo: null,
+      // Nunca lo de salud: el objetivo viaja con el plan que la persona comparte (API-RES-06).
+      citar: (citas) => {
+        const r = fundamentoConCitas(fundamento, citas, (iso) => dia(iso));
+        if (r.resultado === 'citada') setFundamento(r.texto);
+        return r.resultado;
+      },
+    }),
+    [fundamento],
+  );
+  useReceptorDeCitas(receptorDelObjetivo);
   const [desde, setDesde] = useState(ahoraLocal());
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);

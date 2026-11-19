@@ -121,6 +121,7 @@ import {
   type ListaDeNotasPropiasDelProfesionalResponse,
   type NotaPropiaResponse,
 } from './contratos-notas-propias';
+import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema, type CuerpoDelContextoResponse, type RespuestasDelContextoResponse } from './contratos-contexto-de-la-persona';
 import {
   LineaDeTiempoResponseSchema,
   ListaDeVistasResponseSchema,
@@ -1773,6 +1774,15 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-NPP-02: las notas propias sobre esa persona, activas y archivadas. */
     notasPropias(token: string, asesoradoId: string): Promise<Resultado<ListaDeNotasPropiasDelProfesionalResponse>> {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/professional-notes`, { token, esquema: ListaDeNotasPropiasDelProfesionalResponseSchema });
+    },
+    // ─── WP-CONTEXTO-DE-LA-PERSONA (DL-179): el panel «Contexto de <nombre>» ─────────────────────
+    /** API-CTX-01: lo que la persona respondió a mis Solicitudes, vigente, de las áreas en que hoy la acompaño. */
+    respuestasDelContexto(token: string, asesoradoId: string): Promise<Resultado<RespuestasDelContextoResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/person-context/answers`, { token, esquema: RespuestasDelContextoResponseSchema });
+    },
+    /** API-CTX-02: la última toma y la anterior (enteras por mi área, o el peso y la composición por el resumen compartido). */
+    cuerpoDelContexto(token: string, asesoradoId: string): Promise<Resultado<CuerpoDelContextoResponse>> {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/person-context/body`, { token, esquema: CuerpoDelContextoResponseSchema });
     },
     /** API-NPP-03: archivar una nota propia; queda en la historia. */
     archivarNotaPropia(token: string, noteId: string, claveDeIdempotencia: string): Promise<Resultado<NotaPropiaResponse>> {

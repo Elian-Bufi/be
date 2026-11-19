@@ -298,6 +298,8 @@ describe('08 §29 — historia por adición', () => {
     'pedido_de_acceso_a_habitos',
     // Decisión de Dirección del 2026-11-13 (API-PLN-03): los rangos del plan (se reescriben con UPDATE; no se borran ni se truncan)
     'rangos_de_plan_nutricional',
+    // DL-179 (2026-11-18): las citas de la evaluación de Nutrición
+    'cita_de_respuesta_en_evaluacion_nutricional',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {
