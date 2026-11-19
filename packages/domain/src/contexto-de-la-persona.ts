@@ -149,8 +149,12 @@ interface Grupo {
   readonly parq?: boolean;
 }
 
-const NOTA_MEDICACION_ENTRENAMIENTO = 'Algunas medicaciones cambian el pulso o la respuesta al esfuerzo: si es así, dosificá por esfuerzo percibido.';
-const NOTA_MEDICACION_NUTRICION = 'Mirá si va con horarios o con algún alimento.';
+/**
+ * La nota de la medicación **ubica, no indica** (CTX-D08, ratificación del 19/11): dice por qué el dato importa y deja la
+ * decisión al profesional. Nunca un consejo de dosificación ni de qué hacer con la carga o con la comida.
+ */
+const NOTA_MEDICACION_ENTRENAMIENTO = 'Algunas medicaciones cambian el pulso o la respuesta al esfuerzo.';
+const NOTA_MEDICACION_NUTRICION = 'Algunas medicaciones van con horarios o con algún alimento.';
 
 /** Las siete preguntas generales del PAR-Q+ en «Antes de entrenar», con su detalle. */
 const PARQ: readonly Pregunta[] = [
