@@ -549,8 +549,11 @@ function pantallas(norma) {
         await visible(page, 'dialog[open] [data-lo-que-viaja-a-la-plantilla]');
         await page.$eval('dialog[open] [data-lo-que-viaja-a-la-plantilla]', (e) => e.scrollIntoView({ block: 'center' }));
         await pausa(300);
-        const nombres = await page.$$eval('dialog[open] [data-lo-que-viaja-a-la-plantilla] li[data-tipo="NOMBRE"]', (xs) => xs.length);
-        if (nombres === 0) throw new Error('no aparece ningún nombre para revisar');
+        const nombres = await page.$$eval('dialog[open] [data-lo-que-viaja-a-la-plantilla] li[data-tipo="NOMBRE"]', (xs) => xs.map((x) => x.textContent ?? ''));
+        if (nombres.length === 0) throw new Error('no aparece ningún nombre para revisar');
+        // Los nombres comunes (las comidas del día, «Día habitual») no nombran a nadie y no se listan (Dirección, 19/11).
+        const comunes = nombres.filter((t) => /: «(Desayuno|Almuerzo|Merienda|Cena|Colación|Día habitual)»/.test(t));
+        if (comunes.length > 0) throw new Error(`se listan nombres comunes: ${comunes.slice(0, 3).join(' | ')}`);
       },
       despues: cerrarCuadros,
     },

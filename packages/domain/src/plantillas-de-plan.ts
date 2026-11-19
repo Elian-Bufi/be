@@ -138,9 +138,44 @@ export interface LoQueViajaALaPlantilla {
   readonly generico: string | null;
 }
 
-/** Un nombre que no dice nada de nadie: «Fase 2», «Semana 1», «Sesión A», «Bloque 3», «Día tipo 1», «Comida 2», «Opción B». */
-const NOMBRE_GENERICO = /^(Fase|Bloque|Microciclo|Semana|Sesi[oó]n|D[ií]a tipo|D[ií]a|Comida|Opci[oó]n)\s+([0-9]{1,2}|[A-Za-z])$/i;
-export const esNombreGenerico = (nombre: string): boolean => NOMBRE_GENERICO.test(nombre.trim());
+/**
+ * **Los nombres comunes, que no nombran a nadie y no se listan** (Dirección, 19/11). Se comparan sin tildes, sin
+ * mayúsculas y con los guiones como espacios; cada uno puede llevar detrás un número o una letra («Piernas A», «Colación
+ * 2», «Pre-entreno»).
+ * - **Los de su lugar:** fase, bloque, microciclo, semana, sesión, día tipo, día, comida y opción.
+ * - **Nutrición:** las comidas del día (desayuno, media mañana, almuerzo, merienda, media tarde, cena, colación, pre
+ *   entreno, post entreno) y los días tipo que propone BE (día habitual, día de entrenamiento, día de descanso).
+ * - **Entrenamiento:** el nombre de un grupo muscular o de una parte del cuerpo solo (pierna, torso, core, tren
+ *   superior…) y lo que dice qué se trabaja (principal, complementarios, calentamiento, fuerza…).
+ * Cualquier otro nombre se lista, aunque no nombre a nadie: decide el profesional.
+ */
+const NOMBRES_COMUNES: ReadonlySet<string> = new Set([
+  // De su lugar.
+  'fase', 'bloque', 'microciclo', 'semana', 'sesion', 'dia tipo', 'dia', 'comida', 'opcion',
+  // Nutrición: las comidas del día y los días tipo de BE.
+  'desayuno', 'media manana', 'almuerzo', 'merienda', 'media tarde', 'cena', 'colacion', 'pre entreno', 'preentreno', 'post entreno', 'postentreno',
+  'dia habitual', 'dia de entrenamiento', 'dia de descanso',
+  // Entrenamiento: un grupo muscular o una parte del cuerpo, solos, y lo que se trabaja.
+  'pierna', 'piernas', 'torso', 'core', 'tren superior', 'tren inferior', 'cuerpo completo', 'full body', 'empuje', 'traccion',
+  'pecho', 'espalda', 'hombro', 'hombros', 'brazo', 'brazos', 'gluteo', 'gluteos', 'abdomen', 'abdominales', 'cadera', 'gemelos',
+  'cuadriceps', 'isquiotibiales', 'biceps', 'triceps',
+  'principal', 'complementarios', 'accesorios', 'calentamiento', 'vuelta a la calma', 'movilidad', 'fuerza', 'hipertrofia', 'potencia', 'resistencia',
+]);
+
+const normalizarNombre = (nombre: string): string =>
+  nombre
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[-_·.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/** Un nombre que no dice nada de nadie: uno común, solo o con un número o una letra detrás. */
+export function esNombreGenerico(nombre: string): boolean {
+  const n = normalizarNombre(nombre);
+  return NOMBRES_COMUNES.has(n) || NOMBRES_COMUNES.has(n.replace(/ ([0-9]{1,2}|[a-z])$/, ''));
+}
 
 const nombre = (lugar: string, rotulo: string, texto: string, generico: string): LoQueViajaALaPlantilla[] =>
   esNombreGenerico(texto) || texto.trim() === '' ? [] : [{ tipo: 'NOMBRE', lugar, rotulo, texto: texto.trim(), generico }];

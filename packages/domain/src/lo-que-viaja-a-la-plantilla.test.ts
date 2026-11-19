@@ -62,7 +62,9 @@ test('DL-108 D-3 · se listan los nombres propios, los parámetros y la referenc
   assert.equal(items[1]!.rotulo, 'Parámetro «Tempo» del ejercicio 1 de «Sesión A»');
   assert.equal(items[3]!.rotulo, 'Referencia del %RM del ejercicio 1 de «Sesión A»');
   for (const g of ['Fase 2', 'Bloque 1', 'Semana 3', 'Sesión B', 'Sesion 4', 'Día tipo 1', 'Comida 2', 'Opción 1']) assert.ok(esNombreGenerico(g), g);
-  for (const g of ['Diego · piernas', 'Piernas A', 'Bloque de fuerza']) assert.ok(!esNombreGenerico(g), g);
+  // Los nombres comunes, sin tildes ni mayúsculas (Dirección, 19/11): no nombran a nadie y no se listan.
+  for (const g of ['DESAYUNO', 'Colacion 2', 'Media mañana', 'Pre-entreno', 'Post entreno', 'Día habitual', 'Piernas A', 'Torso', 'core', 'Pierna', 'Tren superior B']) assert.ok(esNombreGenerico(g), g);
+  for (const g of ['Diego · piernas', 'Bloque de fuerza', 'Torso de Diego', 'Desayuno de Ana', 'Pretemporada']) assert.ok(!esNombreGenerico(g), g);
 });
 
 test('DL-108 D-3 · vaciar: el nombre pasa a su genérico (nunca vacío), el parámetro se quita, la referencia queda en null; la entrada no cambia', () => {
@@ -98,9 +100,10 @@ test('DL-108 D-3 · Nutrición: los nombres de días tipo, comidas y opciones, c
   const items = loQueViajaALaPlantillaNutricional(nut);
   assert.deepEqual(
     items.map((x) => x.texto),
-    ['Día de Diego', 'Desayuno', 'Lo que le gusta a Diego'],
+    // «Desayuno» es un nombre común: no se lista.
+    ['Día de Diego', 'Lo que le gusta a Diego'],
   );
-  assert.equal(items[2]!.rotulo, 'Nombre de la opción 2 de «Desayuno» (Día de Diego)');
+  assert.equal(items[1]!.rotulo, 'Nombre de la opción 2 de «Desayuno» (Día de Diego)');
   const limpia = items.reduce((e, x) => vaciarLoQueViaja(e, x), nut);
   assert.equal(limpia.dayTypes[0]!.label, 'Día tipo 1');
   assert.deepEqual(

@@ -92,7 +92,7 @@ export function relacionDeUnaSerie(objetivo: Pick<ObjetivoDeSerie, 'repetitions'
     conDiferencia: FUERA.includes(reps) || FUERA.includes(rir),
     conDatoSinRegistrar: reps === 'SIN_DATO' || rir === 'SIN_DATO',
     sinObjetivo,
-    texto: sinObjetivo ? 'Sin objetivo: no se compara' : sinObjetivoDeRepsNiDeRir ? 'Sin objetivo de repeticiones ni de RIR' : partes.length === 0 ? 'Dentro de lo indicado' : partes.join(' · '),
+    texto: sinObjetivo ? 'Sin indicar: no se compara' : sinObjetivoDeRepsNiDeRir ? 'Repeticiones y RIR sin indicar' : partes.length === 0 ? 'Dentro de lo indicado' : partes.join(' · '),
     carga:
       carga === 'DEBAJO' || carga === 'ENCIMA'
         ? `Carga: ${ETIQUETA_DE_RELACION[carga]} de la ${COPY_COMPARACION.sugerida}`
@@ -329,9 +329,9 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
     if (conDatoSinRegistrar > 0) partes.push(`${cantidadDeSeries(conDatoSinRegistrar)} con un dato sin registrar`);
   }
   if (sinComparar > 0) partes.push(sinComparar === 1 ? 'un ejercicio no se compara' : `${numero(sinComparar)} ejercicios no se comparan`);
-  // DL-161: las tildadas sin escribir van aparte, al final. No se comparan, y por ellas la sesión no dice «Sin objetivos».
+  // DL-161: las tildadas sin escribir van aparte, al final. No se comparan, y por ellas la sesión no dice «Nada indicado».
   const tildadas = series.filter((s) => s.estado === 'REGISTRADA' && s.comoElPlan === true).length;
-  const loComparado = partes.length > 0 ? partes.join(' · ') : series.some((s) => s.comparada) ? 'Dentro de lo indicado' : tildadas > 0 ? null : 'Sin objetivos que comparar';
+  const loComparado = partes.length > 0 ? partes.join(' · ') : series.some((s) => s.comparada) ? 'Dentro de lo indicado' : tildadas > 0 ? null : 'Nada indicado que comparar';
   const frente = mayuscula([loComparado, tildadas > 0 ? COPY_REGISTRO_POR_NIVELES.tildadasSinComparar(tildadas) : null].filter((p): p is string => p !== null).join(' · '));
   return {
     ...base,

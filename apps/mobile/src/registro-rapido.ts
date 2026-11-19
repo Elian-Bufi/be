@@ -611,7 +611,7 @@ export function lineaDeLaSerie(s: SerieConObjetivo): string {
   const t = s.target;
   const reps = repeticionesDe(s);
   const partes = [reps === null ? null : `${reps} rep.`, textoDeRir(t.rir), textoDeCarga(t.suggestedLoad)].filter((x): x is string => x !== null);
-  return partes.length > 0 ? partes.join(' · ') : 'Sin objetivo';
+  return partes.length > 0 ? partes.join(' · ') : COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
 }
 
 // ─── Cuándo se ofrece, y qué no se pisa ─────────────────────────────────────────────────────────

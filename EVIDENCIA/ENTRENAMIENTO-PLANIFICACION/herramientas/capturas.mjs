@@ -718,8 +718,9 @@ function pantallas(ids, lugar) {
         }, lugar.nombreViejo),
     },
     {
-      // DL-108 D-3, ratificado el 19/11: «Guardar como plantilla» muestra, además de las notas, los nombres (el bloque
-      // «Pierna», la sesión), los parámetros y la referencia del %RM, para confirmarlos o vaciarlos uno por uno.
+      // DL-108 D-3, ratificado el 19/11: «Guardar como plantilla» muestra, además de las notas, los nombres, los
+      // parámetros y la referencia del %RM, para confirmarlos o vaciarlos uno por uno. Los nombres comunes («Pierna»,
+      // «Piernas A», «Torso B») no nombran a nadie y no se listan.
       nombre: '15b-guardar-como-plantilla-con-nombres',
       llegar: async (page) => {
         await clic(page, '.menu-de-acciones__boton', 'Plantillas');
@@ -732,7 +733,11 @@ function pantallas(ids, lugar) {
         page.evaluate(() => {
           const lista = document.querySelector('dialog[open] [data-lo-que-viaja-a-la-plantilla]');
           const nombres = [...(lista?.querySelectorAll('li[data-tipo="NOMBRE"]') ?? [])].map((li) => li.textContent ?? '');
-          return nombres.some((t) => t.includes('Pierna')) ? [] : ['el bloque «Pierna» no aparece para revisar'];
+          const parametros = lista?.querySelectorAll('li[data-tipo="PARAMETRO"]').length ?? 0;
+          return [
+            ...(parametros > 0 ? [] : ['no aparece ningún parámetro para revisar']),
+            ...nombres.filter((t) => /: «(Pierna|Piernas A|Torso A)»/.test(t)).map((t) => `se lista un nombre común: ${t.slice(0, 80)}`),
+          ];
         }),
       despues: async (page) => {
         await page.keyboard.press('Escape');

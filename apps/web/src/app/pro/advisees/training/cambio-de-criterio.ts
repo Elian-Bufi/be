@@ -56,7 +56,7 @@ export interface CambioDeCriterio<I> {
   /** El criterio elegido: «Deshacer» se ofrece mientras siga ese (un guardado en el medio no lo retira). */
   readonly nuevo: Criterio | '';
   readonly intensidadDeAntes: I;
-  /** El RIR de cada serie, por posición: `undefined`, sin la clave (toma de lo general); `null`, «Sin objetivo». */
+  /** El RIR de cada serie, por posición: `undefined`, sin la clave (toma de lo general); `null`, «Sin indicar». */
   readonly rirDeAntes: readonly (number | null | undefined)[];
 }
 

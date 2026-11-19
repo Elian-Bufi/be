@@ -70,7 +70,7 @@ test('sin API-SER-02, la sesión de respaldo no lleva la carga ni el RIR general
   assert.equal(p.note, 'Tronco erguido.');
 });
 
-test('lo que se ve en la tabla y en la banda de la serie: las repeticiones, y «Sin objetivo» en la carga y el RIR', () => {
+test('lo que se ve en la tabla y en la banda de la serie: las repeticiones, y «Sin indicar» en la carga y el RIR', () => {
   const s = series.sesionDesdeLaOcurrencia(DE_HOY);
   const serie3 = s.prescriptions[0].sets[2];
   const placeholders = series.placeholdersDeLaSerie(serie3.target, 'kg');

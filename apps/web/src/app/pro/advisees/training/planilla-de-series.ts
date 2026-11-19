@@ -3,7 +3,7 @@
  * «Volver a lo general», copiar hacia abajo (Ctrl+D) y lo que se pierde al quitar una serie.
  *
  * Los tres estados de cada objetivo de una serie son los de DL-122 y no cambian: la clave ausente toma de lo general,
- * `null` es «Sin objetivo en esta serie» y un número es el propio. Escribir en varias deja el valor propio en cada una;
+ * `null` es «Sin indicar en esta serie» y un número es el propio. Escribir en varias deja el valor propio en cada una;
  * «Volver a lo general» quita la clave (TEST-EDP-024: lo que se ve como heredado es lo que la API guarda como heredado).
  */
 import { valoresPropiosDeLaSerie, type EstructuraDePlanDeEntrenamientoEntrada } from '@be/domain';
@@ -44,7 +44,7 @@ export function escribirEnLasSeries<S extends Serie>(sets: readonly S[], elegida
   return sets.map((s, n) => (elegidas.has(n) ? { ...s, [campo]: valor } : s));
 }
 
-/** «Volver a lo general»: las elegidas dejan sus objetivos propios (y «Sin objetivo») y toman de lo general. */
+/** «Volver a lo general»: las elegidas dejan sus objetivos propios (y «Sin indicar») y toman de lo general. */
 export function volverALoGeneral<S extends Serie>(sets: readonly S[], elegidas: ReadonlySet<number>): S[] {
   return sets.map((s, n) => {
     if (!elegidas.has(n)) return s;

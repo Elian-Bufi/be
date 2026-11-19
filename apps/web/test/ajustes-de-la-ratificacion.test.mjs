@@ -59,17 +59,20 @@ test('DL-108 D-3 · los diálogos de «Guardar como plantilla» muestran lo que 
 
 // ─── «Sin indicar» en seguimiento y gráficos ────────────────────────────────────────────────────────────────────
 
-test('«Sin indicar»: en seguimiento y en gráficos, lo que el profesional no indicó no se dice «Sin objetivo»', async () => {
+test('«Sin indicar» en todas las pantallas: lo que el profesional no indicó no se dice «Sin objetivo»', async () => {
   const { readdirSync, statSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
-  const raiz = fileURLToPath(new URL('../src/app/pro/advisees/', import.meta.url));
-  const archivos = (dir) => readdirSync(dir).flatMap((n) => (statSync(join(dir, n)).isDirectory() ? archivos(join(dir, n)) : /\.tsx?$/.test(n) ? [join(dir, n)] : []));
-  // Solo los textos (entre comillas), no los comentarios: un texto que empieza con «Sin objetivo».
-  for (const archivo of [...archivos(join(raiz, 'seguimiento')), ...archivos(join(raiz, 'graficos'))]) {
+  const raiz = (ruta) => fileURLToPath(new URL(ruta, import.meta.url));
+  const archivos = (dir) => readdirSync(dir).flatMap((n) => (n === 'node_modules' ? [] : statSync(join(dir, n)).isDirectory() ? archivos(join(dir, n)) : /\.tsx?$/.test(n) && !/\.test\./.test(n) ? [join(dir, n)] : []));
+  // Solo los textos (entre comillas), no los comentarios: ningún texto que empiece con «Sin objetivo» en el website, el
+  // dominio ni la APK (Dirección, 19/11: un valor que el profesional no indicó se dice «Sin indicar» en todas las pantallas).
+  for (const archivo of [...archivos(raiz('../src/')), ...archivos(raiz('../../../packages/domain/src/')), ...archivos(raiz('../../mobile/src/'))]) {
     const texto = readFileSync(archivo, 'utf8');
     assert.doesNotMatch(texto, /['"`][Ss]in objetivo/, archivo);
   }
+  const dominio = await import('@be/domain');
+  assert.equal(dominio.COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo, 'Sin indicar', 'el texto compartido: el editor, la versión activa, los registros y la APK');
   const C = await import('../src/app/pro/advisees/graficos/nutricion/copy.ts');
   assert.equal(C.COPY_NUTRICION_EN_GRAFICOS.sinObjetivo, 'Sin indicar');
   const d = await import('@be/domain');

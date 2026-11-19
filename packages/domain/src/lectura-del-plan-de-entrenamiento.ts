@@ -9,7 +9,7 @@
  * - **Un ejercicio plegado dice lo que pide en un renglón.** Si todas sus series piden lo mismo, «4 × 8–10 rep. · 47,5 kg
  *   · RIR 2 · descanso 02:00». Lo que cambia de una serie a otra no se resume con la primera ni con un rango: se dice
  *   «carga y RIR por serie».
- * - **Cada serie muestra el objetivo que recibe el teléfono,** el que resolvió la API (DL-122). `null` es «Sin objetivo»,
+ * - **Cada serie muestra el objetivo que recibe el teléfono,** el que resolvió la API (DL-122). `null` es «Sin indicar»,
  *   nunca un cero.
  * - **Sin criterio de intensidad, se dice:** es legítimo, y el profesional tiene que verlo.
  */

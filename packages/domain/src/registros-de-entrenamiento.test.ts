@@ -168,9 +168,9 @@ test('una serie frente a su objetivo: cuentan las repeticiones y el RIR; la carg
   assert.deepEqual([relacionDeUnaSerie(obj, serie(1, null, 7, 2)).texto, relacionDeUnaSerie(obj, serie(1, null, 7, 2)).carga], ['Dentro de lo indicado', 'Carga: sin dato']);
   assert.equal(relacionDeUnaSerie(obj, serie(1, { value: 135, unit: 'lb' }, 7, 2)).carga, 'Carga: otra unidad: no se compara');
   // Sin ningún objetivo no hay con qué comparar: no dice «dentro de lo indicado».
-  assert.deepEqual(relacionDeUnaSerie({ repetitions: null, rir: null, suggestedLoad: null }, serie(1, kg(60), 7, 2)), { conDiferencia: false, conDatoSinRegistrar: false, sinObjetivo: true, texto: 'Sin objetivo: no se compara', carga: null });
+  assert.deepEqual(relacionDeUnaSerie({ repetitions: null, rir: null, suggestedLoad: null }, serie(1, kg(60), 7, 2)), { conDiferencia: false, conDatoSinRegistrar: false, sinObjetivo: true, texto: 'Sin indicar: no se compara', carga: null });
   // Si lo único indicado es la carga, tampoco: de las repeticiones y del RIR no hay qué decir, y lo de la carga va aparte.
-  assert.deepEqual(relacionDeUnaSerie({ repetitions: null, rir: null, suggestedLoad: kg(60) }, serie(1, kg(70), 7, 2)), { conDiferencia: false, conDatoSinRegistrar: false, sinObjetivo: false, texto: 'Sin objetivo de repeticiones ni de RIR', carga: 'Carga: por encima de la sugerida' });
+  assert.deepEqual(relacionDeUnaSerie({ repetitions: null, rir: null, suggestedLoad: kg(60) }, serie(1, kg(70), 7, 2)), { conDiferencia: false, conDatoSinRegistrar: false, sinObjetivo: false, texto: 'Repeticiones y RIR sin indicar', carga: 'Carga: por encima de la sugerida' });
 });
 
 test('la fila de una sesión: «N de M registradas» y cuántas series quedaron con diferencias', () => {
@@ -360,10 +360,10 @@ test('si lo indicado no fija ningún objetivo, la sesión no dice «Dentro de lo
   const x = ejecucion({ fecha: '2026-09-14', prescripciones: [libre], registrado: [{ prescriptionId: 'rx-libre', sets: [serie(1, null, 8), serie(2, null, 7)] }] });
   const f = filaDeLaSesion(x, new Map([['rx-libre', [objetivo(1, null, null), objetivo(2, null, null)]]]));
   assert.equal(f.series, '2 de 2 registradas');
-  assert.equal(f.frente, 'Sin objetivos que comparar');
+  assert.equal(f.frente, 'Nada indicado que comparar');
   assert.deepEqual(f.ejercicios[0]!.series.map((s) => [s.indicado, s.frente, s.comparada]), [
-    ['Sin objetivo', 'Sin objetivo: no se compara', false],
-    ['Sin objetivo', 'Sin objetivo: no se compara', false],
+    ['Sin indicar', 'Sin indicar: no se compara', false],
+    ['Sin indicar', 'Sin indicar: no se compara', false],
   ]);
 });
 
@@ -459,7 +459,7 @@ test('DL-161 · cada serie dice si se cargó como el plan y cuánto duró; la se
   assert.equal(deBanca.cuenta, '4 de 4 series registradas');
   assert.equal(f.series, '12 de 12 registradas');
   assert.equal(f.frente, 'Dentro de lo indicado · 10 series tildadas sin escribir: no se comparan');
-  // Toda la sesión con un toque: nada se compara, y la sesión no dice «Sin objetivos que comparar».
+  // Toda la sesión con un toque: nada se compara, y la sesión no dice «Nada indicado que comparar».
   const todaComoElPlan = filaDeLaSesion(ejecucion({ fecha: '2026-11-03', prescripciones: SESION_B, registrado: TODO_DENTRO.map((e) => ({ ...e, sets: e.sets!.map(plan) })) }), OBJETIVOS);
   assert.deepEqual([todaComoElPlan.nivelDeDetalle, todaComoElPlan.detalle], ['COMO_EL_PLAN', 'Carga rápida']);
   assert.deepEqual([todaComoElPlan.series, todaComoElPlan.frente, todaComoElPlan.conDiferencias], ['12 de 12 registradas', '12 series tildadas sin escribir: no se comparan', 0]);
