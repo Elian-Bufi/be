@@ -12,7 +12,12 @@
  * - **No se pudo revisar,** con «Reintentar».
  * Lo que el editor sabe solo (un dato que no se entiende, la app de la persona) se lista siempre: es un hecho, no una
  * revisión. La validación final sigue siendo la de la API al activar.
+ *
+ * El título de la parte («Revisión para activar») no afirma nada: lo dice el estado, debajo. (Con «⚠ Impide activar»
+ * arriba de «✓ no se encontraron impedimentos», el panel se contradecía.) «Revisar ahora» no guarda mientras otro guardado
+ * está en curso: lo dice apagado, como «Guardar ahora».
  */
+import { useId } from 'react';
 import { Icono } from '../../../../components/icono';
 
 export type EstadoDeLaRevision = 'pendiente' | 'revisando' | 'lista' | 'fallo';
@@ -27,6 +32,8 @@ export interface Impedimento {
 }
 
 export const COPY_REVISION_DEL_PLAN = {
+  /** El título de la parte: no afirma nada; lo que hay lo dice el estado, debajo. */
+  titulo: 'Revisión para activar',
   pendiente: 'Revisión pendiente',
   pendienteAyuda: 'Se revisa sola cuando se guarda lo que escribiste.',
   conCambios: 'Hay cambios sin guardar: la revisión anterior ya no vale.',
@@ -48,6 +55,7 @@ export function RevisionDelPlan({
   sinGuardar,
   delServidor,
   delEditor,
+  motivoSinRevisar = null,
   onRevisar,
 }: {
   estado: EstadoDeLaRevision;
@@ -57,9 +65,15 @@ export function RevisionDelPlan({
   delServidor: readonly Impedimento[];
   /** Lo que el editor sabe solo: se lista en cualquier estado. */
   delEditor: readonly Impedimento[];
+  /**
+   * Por qué «Revisar ahora» no se puede tocar (un guardado en curso o un conflicto: guardar otra vez daría un conflicto
+   * falso), o `null`. Apagado con `aria-disabled`, que conserva el foco, y dice por qué.
+   */
+  motivoSinRevisar?: string | null;
   /** «Revisar ahora» o «Reintentar»: guarda si hace falta y pide la revisión. */
   onRevisar: () => void;
 }) {
+  const motivoId = useId();
   const lista = (cosas: readonly Impedimento[]) => (
     <ul className="estacion__lista-del-panel revision-del-plan__lista">
       {cosas.map((x, n) => (
@@ -95,10 +109,26 @@ export function RevisionDelPlan({
       </p>
       {estado === 'pendiente' ? <p className="nota">{sinGuardar ? COPY_REVISION_DEL_PLAN.conCambios : COPY_REVISION_DEL_PLAN.pendienteAyuda}</p> : null}
       {estado === 'pendiente' || estado === 'fallo' ? (
-        <button type="button" className="boton boton--quieto boton--compacto" onClick={onRevisar} data-revisar-ahora>
-          <Icono nombre="revision" tamano={15} />
-          {estado === 'fallo' ? COPY_REVISION_DEL_PLAN.reintentar : COPY_REVISION_DEL_PLAN.revisarAhora}
-        </button>
+        <>
+          <button
+            type="button"
+            className="boton boton--quieto boton--compacto"
+            aria-disabled={motivoSinRevisar ? true : undefined}
+            aria-describedby={motivoSinRevisar ? motivoId : undefined}
+            onClick={() => {
+              if (!motivoSinRevisar) onRevisar();
+            }}
+            data-revisar-ahora
+          >
+            <Icono nombre="revision" tamano={15} />
+            {estado === 'fallo' ? COPY_REVISION_DEL_PLAN.reintentar : COPY_REVISION_DEL_PLAN.revisarAhora}
+          </button>
+          {motivoSinRevisar ? (
+            <span id={motivoId} className="visualmente-oculto">
+              {motivoSinRevisar}
+            </span>
+          ) : null}
+        </>
       ) : null}
       {!terminada && delEditor.length > 0 ? <p className="nota">{COPY_REVISION_DEL_PLAN.yaSeSabe}</p> : null}
       {impiden.length > 0 ? lista(impiden) : null}

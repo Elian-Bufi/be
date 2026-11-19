@@ -8,8 +8,10 @@
  */
 import {
   bloqueDe,
+  bloqueDeLaSesionDelProblema,
   bloqueNuevo,
   conLosBloquesEnOrden,
+  PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO,
   partesDeLaSesion,
   posicionesDelBloque,
   seriesParaLasVueltas,
@@ -106,6 +108,31 @@ export function cambiarTipo(s: SesionE, groupId: string, tipo: TipoDeBloque): Ca
   const vueltas = efectivas >= 1 && efectivas <= 20 ? efectivas : VUELTAS_POR_OMISION;
   const conTipo: SesionE = { ...s, exerciseGroups: (s.exerciseGroups ?? []).map((x) => (x.groupId === groupId ? { groupId: x.groupId, label: x.label, kind: 'ROUNDS' as const, rounds: vueltas } : x)) };
   return cambiarVueltas(conTipo, groupId, vueltas);
+}
+
+/** El «Deshacer» de las vueltas: la sesión como estaba, en qué sesión del editor y en qué bloque. */
+export interface DeshacerLasVueltas {
+  /** La sesión en el editor (`b0-m1-s2`). */
+  readonly lugar: string;
+  readonly groupId: string;
+  /** Las vueltas que quedaron: lo dice el aviso. */
+  readonly vueltas: number;
+  /** La sesión como estaba antes del primero de los cambios de vueltas seguidos. */
+  readonly sesion: SesionE;
+}
+
+/**
+ * ENP-D05: el «Deshacer» después de cambiar las vueltas de un bloque (o de pasarlo a «En vueltas»). Si se cambian varias
+ * veces seguidas en el mismo bloque —con el teclado, la lista cambia en cada flecha: de 5 a 3 pasa por 4—, «Deshacer»
+ * vuelve a como estaba antes del primero, no al paso anterior: cada paso que baja las vueltas quita series, y deshacer
+ * solo el último perdía las de los pasos de antes. Cualquier otro cambio del editor corta la seguidilla (`previo` llega
+ * en `null`). Devuelve `null` si no hay nada que deshacer.
+ */
+export function deshacerTrasCambiarLasVueltas(previo: DeshacerLasVueltas | null, lugar: string, groupId: string, antes: SesionE, cambio: CambioDeVueltas): DeshacerLasVueltas | null {
+  const vueltas = (cambio.sesion.exerciseGroups ?? []).find((g) => g.groupId === groupId)?.rounds;
+  const sigue = previo !== null && previo.lugar === lugar && previo.groupId === groupId ? previo : null;
+  if (typeof vueltas !== 'number' || (cambio.antes.size === 0 && !sigue)) return null;
+  return { lugar, groupId, vueltas, sesion: sigue ? sigue.sesion : structuredClone(antes) };
 }
 
 /** Vuelve a escribir las prescripciones de antes (el «Deshacer» de las vueltas). */
@@ -206,3 +233,26 @@ export function agregarEjercicios(s: SesionE, nuevas: readonly PrescripcionE[], 
 
 /** Los bloques a los que se puede pasar un ejercicio: todos menos el suyo. */
 export const otrosBloques = (s: SesionE, l: number): readonly BloqueDeLaSesionEntrada[] => (s.exerciseGroups ?? []).filter((g) => g.groupId !== bloqueDe(s.prescriptions[l] ?? {}));
+
+// ─── «Ir a…» un problema de un bloque ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * A dónde lleva «Ir a…» un problema de un bloque de la sesión (`…sessions[k].exerciseGroups[n]`): sin nombre, abre su
+ * campo (`renombrar`: la clave del bloque en el editor); con el descanso ilegible, a ese campo; lo demás, a su título.
+ * `null` si el problema no es de un bloque de la sesión. `delGrupo` es el prefijo de la sesión en el editor (`b0-m1-s2`).
+ *
+ * El editor lo pregunta **antes** que el nombre de la sesión: la ruta de un bloque también es «de la sesión», y un
+ * «falta el nombre» del bloque abría el nombre de la sesión.
+ */
+export function destinoDelProblemaDelBloque(
+  p: { readonly code: string; readonly path: string },
+  sesion: Pick<SesionE, 'exerciseGroups'> | undefined,
+  delGrupo: string,
+): { readonly renombrar: string } | { readonly enfocar: string } | null {
+  const g = bloqueDeLaSesionDelProblema(p.path);
+  if (g === null) return null;
+  const bloque = sesion?.exerciseGroups?.[g];
+  if (p.code === PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO.faltaElNombre && bloque) return { renombrar: `${delGrupo}-${bloque.groupId}` };
+  if (p.code === PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO.descansoIlegible) return { enfocar: `${delGrupo}-g${g}-descanso` };
+  return { enfocar: `${delGrupo}-g${g}-titulo` };
+}

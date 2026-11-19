@@ -60,7 +60,6 @@ import {
   COPY_CALENTAMIENTO_Y_LA_APP,
   COPY_BLOQUES_DE_LA_SESION,
   PROBLEMA_DE_BLOQUES,
-  bloqueDeLaSesionDelProblema,
   nombreDelBloqueDeLaSesion,
   partesDeLaSesion,
   problemasDelEjercicio,
@@ -144,8 +143,25 @@ import { AgendaDelPlan, agendaVigente, sesionesParaLaAgenda } from './agenda-del
 import { AgregarEjercicio } from './agregar-ejercicio';
 import { EjercicioDelEditor, type BloqueE, type Bloques, type PrescripcionE, type SesionE } from './ejercicio-del-editor';
 import { BloqueDelEditor } from './bloque-del-editor';
-import { abiertosTrasReordenar, agregarBloque as agregarBloqueALaSesion, agregarEjercicios, cambiarBloque, cambiarTipo, cambiarVueltas, moverBloque, moverEjercicio as moverEnLaSesion, otrosBloques, pasarAlBloque, quitarBloque as quitarBloqueDeLaSesion, type CambioDeVueltas, type SesionReordenada } from './bloques-del-editor';
-import { destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
+import {
+  abiertosTrasReordenar,
+  agregarBloque as agregarBloqueALaSesion,
+  agregarEjercicios,
+  cambiarBloque,
+  cambiarTipo,
+  cambiarVueltas,
+  deshacerTrasCambiarLasVueltas,
+  destinoDelProblemaDelBloque,
+  moverBloque,
+  moverEjercicio as moverEnLaSesion,
+  otrosBloques,
+  pasarAlBloque,
+  quitarBloque as quitarBloqueDeLaSesion,
+  type CambioDeVueltas,
+  type DeshacerLasVueltas,
+  type SesionReordenada,
+} from './bloques-del-editor';
+import { COPY_REVISION_DEL_PLAN, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
 import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales } from './habituales';
@@ -348,7 +364,7 @@ export function EditorDePlan({
   // de las vueltas (la sesión como estaba).
   const [agregandoEn, setAgregandoEn] = useState<string | null>(null);
   const [renombrandoBloque, setRenombrandoBloque] = useState<string | null>(null);
-  const [deshacerLaSesion, setDeshacerLaSesion] = useState<{ readonly texto: string; readonly lugar: { readonly i: number; readonly j: number | null; readonly k: number }; readonly sesion: SesionE } | null>(null);
+  const [deshacerLaSesion, setDeshacerLaSesion] = useState<(DeshacerLasVueltas & { readonly donde: { readonly i: number; readonly j: number | null; readonly k: number } }) | null>(null);
   // ENP-D10: el preset elegido con la sesión vacía, que se aplica a cada ejercicio que se agregue, por sesión. Vive en la
   // pantalla: no es parte del plan.
   const [prescripcionDeLaSesion, setPrescripcionDeLaSesion] = useState<Readonly<Record<string, { readonly nombre: string; readonly aplicar: (p: PrescripcionE) => PrescripcionE }>>>({});
@@ -632,8 +648,15 @@ export function EditorDePlan({
     setRevision((x) => (x && x.version !== v.version ? x : r.ok ? { estado: 'lista', problemas: r.datos.data.issues, version: v.version } : { estado: 'fallo', problemas: [], version: v.version }));
   }
 
-  /** ENP-D13: «Revisar ahora»: si hay algo sin guardar, primero se guarda; después se revisa lo que quedó guardado. */
+  /**
+   * ENP-D13: «Revisar ahora»: si hay algo sin guardar, primero se guarda; después se revisa lo que quedó guardado. Con un
+   * guardado en curso (el autoguardado) o con un conflicto no se manda otro, como con «Guardar ahora»: dos guardados con
+   * la misma versión de base darían un conflicto falso (409) de la pantalla consigo misma. Lo guardado se revisa solo
+   * apenas termina. `motivoSinRevisar` dice por qué está apagado.
+   */
+  const motivoSinRevisar = sucio ? sinGuardarAhora : null;
   async function revisarAhora() {
+    if (motivoSinRevisar) return;
     const v = sucio ? await guardar() : version;
     if (v) await revisar(v);
   }
@@ -1021,18 +1044,23 @@ export function EditorDePlan({
     setRenombrandoBloque(claveDelBloque(r.bloque.groupId));
   };
   const cambiarLaSesion = (f: (s: SesionE) => SesionE) => cambiar((x) => ((lasSesiones(x)[k] = f(lasSesiones(x)[k]!)), x));
-  /** ENP-D05: las vueltas igualan las series; si alguna serie cambió, «Deshacer» devuelve la sesión como estaba. */
-  const conLasVueltas = (f: (s: SesionE) => CambioDeVueltas) => {
+  /**
+   * ENP-D05: las vueltas igualan las series; si alguna serie cambió, «Deshacer» devuelve la sesión como estaba. Varios
+   * cambios de vueltas seguidos en el mismo bloque (las flechas en la lista) se deshacen juntos: vuelve a como estaba antes
+   * del primero (`deshacerTrasCambiarLasVueltas`).
+   */
+  const conLasVueltas = (groupId: string, f: (s: SesionE) => CambioDeVueltas) => {
     if (!sesion) return;
     const r = f(sesion);
+    const previo = deshacerLaSesion;
     cambiar((x) => ((lasSesiones(x)[k] = r.sesion), x));
-    const vueltas = (r.sesion.exerciseGroups ?? []).find((g, n) => g.kind === 'ROUNDS' && JSON.stringify(g) !== JSON.stringify(sesion.exerciseGroups?.[n]))?.rounds;
-    if (r.antes.size > 0 && typeof vueltas === 'number') setDeshacerLaSesion({ texto: COPY_BLOQUES_DE_LA_SESION.igualadas(vueltas), lugar: { i, j, k }, sesion: structuredClone(sesion) });
+    const siguiente = deshacerTrasCambiarLasVueltas(previo, `${prefijo}-s${k}`, groupId, sesion, r);
+    if (siguiente) setDeshacerLaSesion({ ...siguiente, donde: { i, j, k } });
   };
   const deshacerLasVueltas = () => {
     if (!deshacerLaSesion) return;
-    const { lugar, sesion: antes } = deshacerLaSesion;
-    cambiar((x) => ((sesionesDelGrupo(x, lugar)[lugar.k] = structuredClone(antes)), x));
+    const { donde, sesion: antes } = deshacerLaSesion;
+    cambiar((x) => ((sesionesDelGrupo(x, donde)[donde.k] = structuredClone(antes)), x));
     setMensaje({ tipo: 'exito', texto: COPY_PRESETS.deshecho });
   };
   /** ENP-D10: el preset elegido con la sesión vacía, para los ejercicios que se agreguen a esta sesión. */
@@ -1193,20 +1221,19 @@ export function EditorDePlan({
       sesion: l.sesion === null ? null : pedidoDeLaPosicion(l.sesion),
       ejercicios: l.ejercicio === null ? null : pedidoDeEjerciciosDelEditor(new Set([l.ejercicio])),
     });
+    // DL-181: un problema de un bloque de la sesión lleva a su título (y, si le falta el nombre, abre su campo). Va antes
+    // que el nombre de la sesión: la ruta de un bloque (`…sessions[k].exerciseGroups[n]`) también es «de la sesión», y
+    // «Ir a…» abría el nombre de la sesión en lugar del suyo.
+    if (l.sesion !== null && l.ejercicio === null) {
+      const delGrupo = `b${l.bloque}${l.microciclo === null ? '' : `-m${l.microciclo}`}-s${l.sesion}`;
+      const s = (l.microciclo === null ? bloques[l.bloque]?.sessions : bloques[l.bloque]?.microcycles?.[l.microciclo]?.sessions)?.[l.sesion];
+      const delBloque = destinoDelProblemaDelBloque(p, s, delGrupo);
+      if (delBloque) return 'renombrar' in delBloque ? setRenombrandoBloque(delBloque.renombrar) : setParaEnfocar(delBloque.enfocar);
+    }
     if (p.code === N.faltaElNombre) {
       return setTexto({ de: l.sesion !== null ? 'nombre-de-la-sesion' : l.microciclo !== null ? 'nombre-del-microciclo' : 'nombre-del-bloque', i: l.bloque, j: l.microciclo, k: l.sesion });
     }
     if (l.sesion === null) return setParaEnfocar(l.microciclo === null ? 'menu-del-bloque' : 'menu-del-microciclo');
-    // DL-181: un problema de un bloque de la sesión lleva a su título (y, si le falta el nombre, abre su campo).
-    const g = bloqueDeLaSesionDelProblema(p.path);
-    if (g !== null && l.ejercicio === null) {
-      const delGrupo = `b${l.bloque}${l.microciclo === null ? '' : `-m${l.microciclo}`}-s${l.sesion}`;
-      const s = (l.microciclo === null ? bloques[l.bloque]?.sessions : bloques[l.bloque]?.microcycles?.[l.microciclo]?.sessions)?.[l.sesion];
-      const bloqueDelProblema = s?.exerciseGroups?.[g];
-      if (p.code === N.faltaElNombre && bloqueDelProblema) return setRenombrandoBloque(`${delGrupo}-${bloqueDelProblema.groupId}`);
-      if (p.code === N.descansoIlegible) return setParaEnfocar(`${delGrupo}-g${g}-descanso`);
-      return setParaEnfocar(`${delGrupo}-g${g}-titulo`);
-    }
     if (l.ejercicio === null) return setParaEnfocar('menu-de-la-sesion');
     setParaEnfocar(campoDelProblema(p, `b${l.bloque}${l.microciclo === null ? '' : `-m${l.microciclo}`}-s${l.sesion}-p${l.ejercicio}`, l.serie));
   };
@@ -1286,7 +1313,9 @@ export function EditorDePlan({
   ];
   const delServidor: Impedimento[] = revisionVigente?.estado === 'lista' ? revisionVigente.problemas.map(impedimento) : [];
   const cuantosImpiden = delEditor.length + delServidor.length;
-  const revisionEnElPanel = <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} onRevisar={() => void revisarAhora()} />;
+  const revisionEnElPanel = (
+    <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} motivoSinRevisar={motivoSinRevisar} onRevisar={() => void revisarAhora()} />
+  );
   const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), enElPanel);
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
   const nombreDeLaSesionPorId = (id: string): string => sesionesDeLaAgenda.find((x) => x.sessionId === id)?.nombre ?? C.sesion;
@@ -1615,7 +1644,9 @@ export function EditorDePlan({
           cuerpo: (
             <>
               <p className="nota">{CA.revisarAyuda}</p>
-              <h4>{CE.impide}</h4>
+              {/* Un título que no afirma nada: lo que hay lo dice la revisión, con su estado (el título «Impide activar»
+                  quedaba arriba de «no se encontraron impedimentos»). */}
+              <h4>{COPY_REVISION_DEL_PLAN.titulo}</h4>
               {/* ENP-D13: el mismo estado inequívoco que el panel. */}
               {revisionEnElPanel}
               <h4>
@@ -2183,8 +2214,8 @@ export function EditorDePlan({
                     onRenombrar={() => setRenombrandoBloque(clave)}
                     onTerminarDeRenombrar={() => setRenombrandoBloque(null)}
                     onCambiarNombre={(v) => cambiarLaSesion((s) => cambiarBloque(s, g.groupId, { label: v }))}
-                    onCambiarTipo={(tipo) => conLasVueltas((s) => cambiarTipo(s, g.groupId, tipo))}
-                    onCambiarVueltas={(v) => conLasVueltas((s) => cambiarVueltas(s, g.groupId, v))}
+                    onCambiarTipo={(tipo) => conLasVueltas(g.groupId, (s) => cambiarTipo(s, g.groupId, tipo))}
+                    onCambiarVueltas={(v) => conLasVueltas(g.groupId, (s) => cambiarVueltas(s, g.groupId, v))}
                     onCambiarDescanso={(v) => cambiarLaSesion((s) => cambiarBloque(s, g.groupId, { restAfterRoundSeconds: v }))}
                     onSubir={() => {
                       const r = moverBloque(sesion, g.groupId, -1);
@@ -2270,9 +2301,10 @@ export function EditorDePlan({
           </div>
           {pestana === 'antes' ? (
             <div role="tabpanel" id="panel-antes" aria-labelledby="pestana-antes" data-panel-en-vivo>
+              {/* Un título que no afirma nada: «⚠ Impide activar» quedaba arriba de «✓ … no se encontraron impedimentos». */}
               <h3>
-                <Icono nombre="aviso" tamano={15} />
-                {CE.impide}
+                <Icono nombre="revision" tamano={15} />
+                {COPY_REVISION_DEL_PLAN.titulo}
               </h3>
               {/* ENP-D13: el estado de la revisión, siempre dicho; nunca «nada impide» antes de que responda la API. */}
               {revisionEnElPanel}
@@ -2323,7 +2355,7 @@ export function EditorDePlan({
       {deshacerLaSesion ? (
         <AvisoFlotante onCerrar={() => setDeshacerLaSesion(null)} seQueda>
           <p>
-            {deshacerLaSesion.texto}{' '}
+            {COPY_BLOQUES_DE_LA_SESION.igualadas(deshacerLaSesion.vueltas)}{' '}
             <button type="button" className="boton boton--enlace" data-deshacer-las-vueltas onClick={deshacerLasVueltas}>
               <Icono nombre="deshacer" tamano={15} />
               {COPY_PRESETS.deshacer}
@@ -2478,7 +2510,9 @@ export function EditorDePlan({
         primera={!version.predecessorPlanId}
         impiden={impidenActivar}
         sinCompletar={sinCompletarAlActivar}
-        revisando={revision?.estado === 'revisando' || (!!revision && revision.version !== version.version)}
+        // ENP-D13: el cuadro no dice «Nada impide activar» antes de que la API revise esta versión. Sin su revisión (recién
+        // abierto, o con la de otra versión), está revisando; con cambios sin guardar, ofrece primero «Guardar ahora».
+        revisando={!sucio && (revision === null || revision.version !== version.version || revision.estado === 'revisando')}
         sinRevisar={revision?.estado === 'fallo' && revision.version === version.version}
         onVolverARevisar={() => void revisar(version)}
         sinGuardar={sucio}

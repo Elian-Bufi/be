@@ -194,3 +194,87 @@ test('El lenguaje: ubicar, nunca calificar', () => {
   const textos = [...Object.values(d.COPY_BLOQUES_DE_LA_SESION).filter((x) => typeof x === 'string'), ...Object.values(d.PROBLEMA_DE_BLOQUES), d.indicacionDeVueltas({ groupId: 'g', label: 'T', kind: 'ROUNDS', rounds: 3, restAfterRoundSeconds: 90 }, 2)];
   for (const t of textos) assert.doesNotMatch(t, /cumplimiento|adherencia|racha|puntaje|asesorad|volumen/i, t);
 });
+
+// ─── Revisión adversaria (2026-11-19) ────────────────────────────────────────────────────────────────────────────
+// Cada prueba de abajo queda en rojo sin su corrección (mutaciones verificadas el 2026-11-19).
+
+test('Revisión · el panel no se contradice: el título no dice «Impide activar» arriba de «no se encontraron impedimentos»', () => {
+  assert.doesNotMatch(EDITOR, /\{CE\.impide\}/, 'ni el panel ni el paso del asistente titulan «Impide activar»');
+  assert.match(REVISION, /titulo: 'Revisión para activar'/);
+  assert.match(EDITOR, /<Icono nombre="revision" tamano=\{15\} \/>\n\s*\{COPY_REVISION_DEL_PLAN\.titulo\}/);
+  assert.match(EDITOR, /<h4>\{COPY_REVISION_DEL_PLAN\.titulo\}<\/h4>/);
+});
+
+test('Revisión · «Revisar ahora» no guarda mientras otro guardado está en curso (un 409 de la pantalla consigo misma)', () => {
+  assert.match(EDITOR, /const motivoSinRevisar = sucio \? sinGuardarAhora : null;/);
+  assert.match(EDITOR, /async function revisarAhora\(\) \{\n\s*if \(motivoSinRevisar\) return;/);
+  assert.match(EDITOR, /motivoSinRevisar=\{motivoSinRevisar\}/);
+  // Apagado con `aria-disabled` (conserva el foco), y dice por qué.
+  assert.match(REVISION, /aria-disabled=\{motivoSinRevisar \? true : undefined\}/);
+  assert.match(REVISION, /if \(!motivoSinRevisar\) onRevisar\(\);/);
+  assert.equal(d.motivoSinGuardarAhora({ guardando: true, sucio: true, conflicto: false }), d.COPY_GUARDADO.yaSeEstaGuardando);
+});
+
+test('Revisión · el cuadro «Antes de activar» no dice «Nada impide activar» antes de que la API revise esta versión', () => {
+  // Recién abierto (sin revisión) o con la de otra versión, está revisando; y entonces «Activar» queda apagado.
+  assert.match(EDITOR, /revisando=\{!sucio && \(revision === null \|\| revision\.version !== version\.version \|\| revision\.estado === 'revisando'\)\}/);
+});
+
+test('Revisión · «Ir a…» un bloque sin nombre abre el nombre del bloque, no el de la sesión', () => {
+  const s = { exerciseGroups: [{ groupId: 'g-1', label: 'Pierna', kind: 'SEQUENTIAL' }, { groupId: 'g-7', label: '', kind: 'ROUNDS', rounds: 3, restAfterRoundSeconds: Number.NaN }] };
+  assert.deepEqual(B.destinoDelProblemaDelBloque({ code: 'NAME_REQUIRED', path: 'blocks[0].microcycles[1].sessions[2].exerciseGroups[1]' }, s, 'b0-m1-s2'), { renombrar: 'b0-m1-s2-g-7' });
+  assert.deepEqual(B.destinoDelProblemaDelBloque({ code: 'REST_NOT_READABLE', path: 'blocks[0].sessions[2].exerciseGroups[1]' }, s, 'b0-s2'), { enfocar: 'b0-s2-g1-descanso' });
+  assert.deepEqual(B.destinoDelProblemaDelBloque({ code: 'EXERCISE_GROUP_EMPTY', path: 'blocks[0].sessions[2].exerciseGroups[0]' }, s, 'b0-s2'), { enfocar: 'b0-s2-g0-titulo' });
+  assert.equal(B.destinoDelProblemaDelBloque({ code: 'NAME_REQUIRED', path: 'blocks[0].sessions[2]' }, s, 'b0-s2'), null, 'el nombre de la sesión no es del bloque');
+  // En el editor, el bloque se pregunta antes que el nombre de la sesión (su ruta también es «de la sesión»).
+  const ir = EDITOR.slice(EDITOR.indexOf('const irAlProblema = '), EDITOR.indexOf('const agregarUnBloque = ('));
+  assert.ok(ir.indexOf('destinoDelProblemaDelBloque(p, s, delGrupo)') > 0, 'irAlProblema usa el destino del bloque');
+  assert.ok(ir.indexOf('destinoDelProblemaDelBloque(p, s, delGrupo)') < ir.indexOf('if (p.code === N.faltaElNombre)'), 'y lo pregunta antes que el nombre de la sesión');
+});
+
+test('Revisión · varios cambios de vueltas seguidos (las flechas en la lista) se deshacen juntos, hasta como estaba', () => {
+  const serie = (n) => ({ repetitions: { value: n } });
+  const s5 = {
+    label: 'A',
+    exerciseGroups: [{ groupId: 'g-1', label: 'Pierna', kind: 'ROUNDS', rounds: 5 }],
+    prescriptions: [ej(1, { exerciseGroupId: 'g-1', sets: [serie(10), serie(9), serie(8), serie(7), serie(6)] }), ej(2, { exerciseGroupId: 'g-1', sets: [serie(5), serie(5), serie(5), serie(5), serie(5)] })],
+  };
+  // De 5 a 3 con el teclado: pasa por 4.
+  const a4 = B.cambiarVueltas(s5, 'g-1', 4);
+  const d1 = B.deshacerTrasCambiarLasVueltas(null, 'b0-s0', 'g-1', s5, a4);
+  const a3 = B.cambiarVueltas(a4.sesion, 'g-1', 3);
+  const d2 = B.deshacerTrasCambiarLasVueltas(d1, 'b0-s0', 'g-1', a4.sesion, a3);
+  assert.equal(d2.vueltas, 3, 'el aviso dice las vueltas que quedaron');
+  assert.deepEqual(d2.sesion, s5, '«Deshacer» vuelve a las 5 series, no a las 4 del paso anterior');
+  // Otra sesión u otro bloque empiezan de nuevo; sin cambios de series ni seguidilla, no hay nada que deshacer.
+  assert.deepEqual(B.deshacerTrasCambiarLasVueltas(d1, 'b0-s1', 'g-1', a4.sesion, a3).sesion, a4.sesion);
+  const conOtro = { ...a4.sesion, exerciseGroups: [...a4.sesion.exerciseGroups, { groupId: 'g-2', label: 'Core', kind: 'ROUNDS', rounds: 2 }], prescriptions: [...a4.sesion.prescriptions, ej(3, { exerciseGroupId: 'g-2', sets: [serie(1), serie(1)] }), ej(4, { exerciseGroupId: 'g-2', sets: [serie(1), serie(1)] })] };
+  const otro = B.cambiarVueltas(conOtro, 'g-2', 3);
+  assert.deepEqual(B.deshacerTrasCambiarLasVueltas(d1, 'b0-s0', 'g-2', conOtro, otro).sesion, conOtro);
+  assert.equal(B.deshacerTrasCambiarLasVueltas(null, 'b0-s0', 'g-1', s5, { sesion: s5, antes: new Map() }), null);
+  // En el editor: lo que había antes viaja al cambio siguiente.
+  assert.match(EDITOR, /const siguiente = deshacerTrasCambiarLasVueltas\(previo, `\$\{prefijo\}-s\$\{k\}`, groupId, sesion, r\);/);
+});
+
+test('Revisión · «Lo que cambia frente a la vigente» cuenta los bloques de la sesión (no dice «No cambia nada»)', async () => {
+  const CV = await import('../src/app/pro/advisees/comparar-versiones.ts');
+  const como = { nombreDelEjercicio: (id) => ({ e1: 'Sentadilla', e2: 'Zancadas', e3: 'Plancha' })[id] ?? 'Ejercicio', renglon: () => '3 × 8' };
+  const rx = (id, ev, extra = {}) => ({ prescriptionId: id, exerciseVersionId: ev, sets: [{ repetitions: { value: 8 } }], intensity: null, ...extra });
+  const sesion = (grupos, prescripciones) => [{ blockId: 'f1', label: 'Fuerza', sessions: [{ sessionId: 's1', label: 'Piernas A', prescriptions: prescripciones, ...(grupos ? { exerciseGroups: grupos } : {}) }] }];
+  const vueltas = (extra = {}) => ({ groupId: 'g-1', label: 'Pierna', kind: 'ROUNDS', rounds: 3, restAfterRoundSeconds: 90, ...extra });
+  const vigente = sesion([vueltas()], [rx('r1', 'e1', { exerciseGroupId: 'g-1' }), rx('r2', 'e2', { exerciseGroupId: 'g-1' }), rx('r3', 'e3')]);
+  // Solo el descanso al terminar cada vuelta: lo que la persona lee en «Alterná…» cambia.
+  const descanso = CV.compararEntrenamiento(vigente, sesion([vueltas({ restAfterRoundSeconds: 60 })], vigente[0].sessions[0].prescriptions), como);
+  assert.deepEqual(descanso.lista, ['Piernas A, bloque Pierna: descanso al terminar cada vuelta: 90 s → 1 min']);
+  // De «En vueltas» a «Seguido».
+  const seguido = CV.compararEntrenamiento(vigente, sesion([{ groupId: 'g-1', label: 'Pierna', kind: 'SEQUENTIAL' }], vigente[0].sessions[0].prescriptions), como);
+  assert.deepEqual(seguido.lista, ['Piernas A, bloque Pierna: En vueltas · 3 vueltas → Seguido · descanso al terminar cada vuelta: 90 s → sin indicar']);
+  // Un bloque nuevo y un ejercicio que pasa a él: se dicen con su nombre, no como «cambió lo indicado».
+  const nuevo = sesion([vueltas(), { groupId: 'g-2', label: 'Core', kind: 'SEQUENTIAL' }], [rx('r1', 'e1', { exerciseGroupId: 'g-1' }), rx('r2', 'e2', { exerciseGroupId: 'g-1' }), rx('r3', 'e3', { exerciseGroupId: 'g-2' })]);
+  assert.deepEqual(CV.compararEntrenamiento(vigente, nuevo, como).lista, ['+ bloque Core en Piernas A', 'Plancha: pasó al bloque Core']);
+  // Quitar el bloque: sus ejercicios salen de él.
+  const sinBloques = sesion(null, [rx('r1', 'e1'), rx('r2', 'e2'), rx('r3', 'e3')]);
+  assert.deepEqual(CV.compararEntrenamiento(vigente, sinBloques, como).lista, ['− bloque Pierna de Piernas A', 'Sentadilla: salió del bloque Pierna', 'Zancadas: salió del bloque Pierna']);
+  // Sin cambios, nada.
+  assert.equal(CV.compararEntrenamiento(vigente, structuredClone(vigente), como).lista.length, 0);
+});

@@ -7,7 +7,12 @@
  * califica: se dice qué cambió, no si está bien (TEST-PRJ-009).
  *
  * Sin React ni red.
+ *
+ * DL-181: los bloques de la sesión también son parte de lo que recibe la persona (el título del bloque y, en uno «En
+ * vueltas», «Alterná estos 2 ejercicios · 3 vueltas · descansá 90 s…»): se agregan, se quitan y cambian como cualquier
+ * parte. Sin esto, cambiar solo el descanso de las vueltas decía «No cambia nada frente a la vigente».
  */
+import { descansoEnPalabras, nombreDelBloqueDeLaSesion, resumenDelBloque, type TipoDeBloque } from '@be/domain';
 /**
  * Los identificadores que el servidor pone a cada parte de un plan. Es la misma lista que la de `es-lo-que-mande.ts` (una
  * prueba lo cuida): este módulo no importa a sus vecinos, para que la prueba lo cargue solo.
@@ -98,6 +103,17 @@ function cambioElOrden<T>(antes: readonly T[], ahora: readonly T[], id: (p: T) =
 export interface PrescripcionParaComparar {
   readonly prescriptionId?: string;
   readonly exerciseVersionId: string;
+  /** DL-181: el bloque de la sesión al que pertenece; ausente o `null`, suelto. */
+  readonly exerciseGroupId?: string | null;
+}
+
+/** DL-181: un bloque de la sesión («Seguido» o «En vueltas»), como lo lee la comparación. */
+export interface BloqueDeLaSesionParaComparar {
+  readonly groupId: string;
+  readonly label: string;
+  readonly kind: TipoDeBloque;
+  readonly rounds?: number | null;
+  readonly restAfterRoundSeconds?: number | null;
 }
 
 export interface SesionParaComparar<P extends PrescripcionParaComparar> {
@@ -105,6 +121,30 @@ export interface SesionParaComparar<P extends PrescripcionParaComparar> {
   readonly label: string;
   readonly instructions?: string | null;
   readonly prescriptions: readonly P[];
+  /** DL-181: los bloques de la sesión. */
+  readonly exerciseGroups?: readonly BloqueDeLaSesionParaComparar[] | null;
+}
+
+/** DL-181: el descanso al terminar cada vuelta, como se lee en el renglón de un cambio. */
+const descansoDeLaVuelta = (g: BloqueDeLaSesionParaComparar): string => {
+  const s = g.kind === 'ROUNDS' ? (g.restAfterRoundSeconds ?? null) : null;
+  return s === null ? 'sin indicar' : descansoEnPalabras(s);
+};
+
+/**
+ * DL-181: lo que cambió de un bloque de la sesión, en partes («Seguido → En vueltas · 3 vueltas», el descanso al terminar
+ * cada vuelta, el nombre). La persona lo ve en la app como el título del bloque y su indicación: es un cambio de lo que
+ * recibe, aunque ninguna serie cambie.
+ */
+function cambiosDelBloque(antes: BloqueDeLaSesionParaComparar, ahora: BloqueDeLaSesionParaComparar, n: number): string[] {
+  const partes: string[] = [];
+  const [na, nb] = [nombreDelBloqueDeLaSesion(antes, n), nombreDelBloqueDeLaSesion(ahora, n)];
+  if (na !== nb) partes.push(`nombre: ${na} → ${nb}`);
+  const [ra, rb] = [resumenDelBloque(antes), resumenDelBloque(ahora)];
+  if (ra !== rb) partes.push(`${ra} → ${rb}`);
+  const [da, db] = [descansoDeLaVuelta(antes), descansoDeLaVuelta(ahora)];
+  if (da !== db) partes.push(`descanso al terminar cada vuelta: ${da} → ${db}`);
+  return partes;
 }
 
 export interface BloqueParaComparar<P extends PrescripcionParaComparar> {
@@ -154,14 +194,36 @@ export function compararEntrenamiento<P extends PrescripcionParaComparar>(
     comparar: (antes, ahora) => {
       if (antes.label.trim() !== ahora.label.trim()) c.modificado(`Sesión: ${nombreDeSesion(antes)} → ${nombreDeSesion(ahora)}`);
       if ((antes.instructions ?? '') !== (ahora.instructions ?? '')) c.modificado(`${nombreDeSesion(ahora)}: cambiaron las indicaciones`);
+      // DL-181: los bloques de la sesión, por su identificador (es de la sesión: se conserva entre versiones).
+      const gruposAntes = antes.exerciseGroups ?? [];
+      const gruposAhora = ahora.exerciseGroups ?? [];
+      const nombreDelGrupo = (grupos: readonly BloqueDeLaSesionParaComparar[], groupId: string | null | undefined): string | null => {
+        const n = groupId ? grupos.findIndex((g) => g.groupId === groupId) : -1;
+        return n >= 0 ? nombreDelBloqueDeLaSesion(grupos[n]!, n) : null;
+      };
+      compararListas(gruposAntes, gruposAhora, (g) => g.groupId, {
+        agregado: (g) => c.agregado(`bloque ${nombreDelGrupo(gruposAhora, g.groupId)} en ${nombreDeSesion(ahora)}`),
+        quitado: (g) => c.quitado(`bloque ${nombreDelGrupo(gruposAntes, g.groupId)} de ${nombreDeSesion(ahora)}`),
+        comparar: (ga, gb) => {
+          const partes = cambiosDelBloque(ga, gb, gruposAhora.indexOf(gb));
+          if (partes.length > 0) c.modificado(`${nombreDeSesion(ahora)}, bloque ${nombreDelGrupo(gruposAhora, gb.groupId)}: ${partes.join(' · ')}`);
+        },
+      });
       const id = (p: P) => p.prescriptionId;
+      // Lo indicado se compara sin el bloque: pasar un ejercicio a otro bloque se dice aparte, con su nombre.
+      const sinBloque = ({ exerciseGroupId: _bloque, ...p }: P) => p;
       compararListas(antes.prescriptions, ahora.prescriptions, id, {
         agregado: (p) => c.agregado(`${como.nombreDelEjercicio(p.exerciseVersionId)} en ${nombreDeSesion(ahora)}`),
         quitado: (p) => c.quitado(`${como.nombreDelEjercicio(p.exerciseVersionId)} de ${nombreDeSesion(ahora)}`),
         comparar: (pa, pb) => {
-          if (igual(pa, pb)) return;
+          const nombre = como.nombreDelEjercicio(pb.exerciseVersionId);
+          const [ba, bb] = [nombreDelGrupo(gruposAntes, pa.exerciseGroupId), nombreDelGrupo(gruposAhora, pb.exerciseGroupId)];
+          if ((pa.exerciseGroupId ?? null) !== (pb.exerciseGroupId ?? null)) {
+            c.modificado(bb !== null ? `${nombre}: pasó al bloque ${bb}` : `${nombre}: salió del bloque ${ba ?? ''}`.trimEnd());
+          }
+          if (igual(sinBloque(pa), sinBloque(pb))) return;
           const [ra, rb] = [como.renglon(pa), como.renglon(pb)];
-          c.modificado(`${como.nombreDelEjercicio(pb.exerciseVersionId)}: ${ra === rb ? 'cambió lo indicado' : `${ra} → ${rb}`}`);
+          c.modificado(`${nombre}: ${ra === rb ? 'cambió lo indicado' : `${ra} → ${rb}`}`);
         },
       });
       if (cambioElOrden(antes.prescriptions, ahora.prescriptions, id)) c.modificado(`${nombreDeSesion(ahora)}: cambió el orden de los ejercicios`);
