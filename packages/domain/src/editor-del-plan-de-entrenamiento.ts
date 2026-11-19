@@ -11,6 +11,7 @@
  */
 import type { PrescripcionConObjetivos } from './contratos-entrenamiento-por-serie';
 import { COPY_ENTRENAMIENTO_POR_SERIE } from './copy-entrenamiento-por-serie';
+import { nombreDeLaFase } from './copy-entrenamiento';
 import { comidasAbiertasEnElEditor, pedidoDeComidasDelEditor, posicionPedida, type ProblemaDelEditor } from './editor-del-plan-de-nutricion';
 import { renglonDelEjercicio } from './lectura-del-plan-de-entrenamiento';
 import { cuentaDeSeries } from './tipos-de-serie';
@@ -137,7 +138,7 @@ export function ubicacionDelProblemaDeEntrenamiento(ruta: string, bloques: reado
   const l = lugarDelProblemaDeEntrenamiento(ruta);
   if (l.bloque === null) return 'Plan';
   const bloque = bloques[l.bloque];
-  const partes = [bloque?.label.trim() || `Fase ${l.bloque + 1}`];
+  const partes = [nombreDeLaFase(bloque?.label ?? '', l.bloque)];
   const microciclo = l.microciclo !== null ? bloque?.microcycles?.[l.microciclo] : undefined;
   if (l.microciclo !== null) partes.push(microciclo?.label.trim() || `Microciclo ${l.microciclo + 1}`);
   const sesiones = l.microciclo !== null ? microciclo?.sessions : bloque?.sessions;

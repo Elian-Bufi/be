@@ -267,6 +267,29 @@ export const COPY_ENTRENAMIENTO = {
   respuestaYaNoDisponible: 'Una respuesta que habías elegido ya no está disponible para citar.',
 } as const;
 
+/** El nombre automático que les ponía el editor a las fases antes de DL-181: «Bloque 1», «Bloque 2»… */
+const NOMBRE_AUTOMATICO_VIEJO_DE_LA_FASE = /^Bloque\s+(\d+)$/;
+
+/**
+ * ENP-D01, ratificado por Dirección el 19/11: **el nombre de una fase para mostrar.** Las fases de planes viejos que
+ * guardaron el nombre automático «Bloque N» se leen «Fase N» en el editor, en la versión activa, en lo compartido y en
+ * la APK: «bloque» hoy es otra cosa (la marca dentro de la sesión, DL-181). El dato guardado no cambia; solo lo que se
+ * lee. Un nombre propio («Bloque de fuerza», «Pretemporada») queda tal cual. Sin nombre, con `posicion` (desde cero),
+ * «Fase N»; sin posición, vacío.
+ */
+export function nombreDeLaFase(label: string, posicion?: number): string {
+  const nombre = label.trim();
+  const viejo = NOMBRE_AUTOMATICO_VIEJO_DE_LA_FASE.exec(nombre);
+  if (viejo) return `${COPY_ENTRENAMIENTO.bloque} ${viejo[1]}`;
+  if (nombre === '' && posicion !== undefined) return `${COPY_ENTRENAMIENTO.bloque} ${posicion + 1}`;
+  return nombre;
+}
+
+/** Las fases con el nombre para mostrar (`nombreDeLaFase`), para las lecturas que no editan. No toca el resto. */
+export function conNombresDeFase<T extends { readonly label: string }>(fases: readonly T[]): T[] {
+  return fases.map((f, i) => ({ ...f, label: nombreDeLaFase(f.label, i) }));
+}
+
 /**
  * El texto de una ocurrencia, **la única vía** por la que una pantalla muestra el estado de una sesión. Sin registro,
  * es «No iniciada» si es de hoy y «Sin registro» si ya pasó: nunca «No realizada» (H-09-TRN-01; B10-10:461). La

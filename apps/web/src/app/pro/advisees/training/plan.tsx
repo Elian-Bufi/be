@@ -29,6 +29,7 @@ import {
   COPY_ENTRENAMIENTO,
   COPY_PLANTILLAS,
   COPY_PREPARACION_DE_PLANTILLA,
+  conNombresDeFase,
   estructuraConObjetivosComoEntrada,
   historialDeVersiones,
   lineasDePrescripcion,
@@ -516,7 +517,9 @@ function SesionQueSeMira({
   /** Lo que va al lado de los ejercicios: el historial, en la sección «Plan». */
   alCostado?: ReactNode;
 }) {
-  const mira: LoQueSeMiraDelPlan = loQueSeMiraDelPlan(version.blocks, { bloque: pedido.bloque, microciclo: pedido.micro, sesion: pedido.sesion });
+  // ENP-D01: «Bloque N» de un plan viejo se lee «Fase N»; el nombre guardado no cambia.
+  const bloques = conNombresDeFase(version.blocks);
+  const mira: LoQueSeMiraDelPlan = loQueSeMiraDelPlan(bloques, { bloque: pedido.bloque, microciclo: pedido.micro, sesion: pedido.sesion });
   // Lo primero no se escribe: es lo que se ve sin pedir nada.
   const orden = <T extends { readonly order: number }>(lista: readonly T[], elegido: number): string | null => (Math.min(...lista.map((x) => x.order)) === elegido ? null : String(elegido));
   if (!mira.bloque) return <p className="nota">{C.sinBloques}</p>;
@@ -527,11 +530,11 @@ function SesionQueSeMira({
     <>
       {agenda ? (
         <p className="nota plan__agenda" data-agenda-del-plan>
-          <strong>{COPY_AGENDA_DE_ENTRENAMIENTO.titulo}:</strong> {resumenDeLaAgenda(agenda, sesionesParaLaAgenda(version.blocks))}
+          <strong>{COPY_AGENDA_DE_ENTRENAMIENTO.titulo}:</strong> {resumenDeLaAgenda(agenda, sesionesParaLaAgenda(bloques))}
         </p>
       ) : null}
       <div className="plan__niveles">
-        <SelectorDeNivel nivel="bloque" rotulo={C.bloque} opciones={version.blocks} elegido={mira.bloque} onElegir={(o) => alPedir({ bloque: orden(version.blocks, o), ...LO_DE_ADENTRO.bloque })}>
+        <SelectorDeNivel nivel="bloque" rotulo={C.bloque} opciones={bloques} elegido={mira.bloque} onElegir={(o) => alPedir({ bloque: orden(bloques, o), ...LO_DE_ADENTRO.bloque })}>
           <span className="nota nivel-del-plan__detalle">
             <EnPartes texto={[sesionesDelBloque(mira.bloque), ...(mira.bloque.purpose ? [`${C.proposito}: ${mira.bloque.purpose}`] : [])].join(' · ')} />
           </span>

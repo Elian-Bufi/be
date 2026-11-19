@@ -63,6 +63,7 @@ import {
   COPY_CALENTAMIENTO_Y_LA_APP,
   COPY_BLOQUES_DE_LA_SESION,
   PROBLEMA_DE_BLOQUES,
+  nombreDeLaFase,
   nombreDelBloqueDeLaSesion,
   partesDeLaSesion,
   problemasDelEjercicio,
@@ -315,7 +316,8 @@ const esDelEditor = (codigo: string): boolean => (Object.values(N) as readonly s
  */
 const sesionVacia = (n: number): SesionE => ({ sessionId: crypto.randomUUID(), label: `Sesión ${String.fromCharCode(64 + Math.min(n, 26))}`, instructions: null, prescriptions: [] });
 
-const nombreDelBloque = (b: { readonly label: string }, n: number): string => b.label.trim() || `${COPY_ENTRENAMIENTO.bloque} ${n + 1}`;
+// ENP-D01: «Bloque N» de un plan viejo se lee «Fase N»; el nombre guardado no cambia.
+const nombreDelBloque = (b: { readonly label: string }, n: number): string => nombreDeLaFase(b.label, n);
 const nombreDelMicrociclo = (m: { readonly label: string }, n: number): string => m.label.trim() || `${COPY_ENTRENAMIENTO.microciclo} ${n + 1}`;
 const nombreDeLaSesion = (s: { readonly label: string }, n: number): string => s.label.trim() || `${C.sesion} ${n + 1}`;
 
