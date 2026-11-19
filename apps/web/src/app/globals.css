@@ -19993,3 +19993,35 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .versiones-de-la-plantilla__lista .insignia {
   margin-inline-start: 0.35rem;
 }
+
+/* PLT (DL-182), revisión del 2026-11-19 · el detalle de una plantilla usa el ancho, como las demás pantallas: con una
+   abierta, la sección de las plantillas de entrenamiento ocupa las dos columnas de «Plantillas y habituales», y el
+   detalle se reparte en dos: la estructura a la izquierda; las versiones, el nombre y la descripción a la derecha. */
+@media (min-width: 80rem) {
+  .plantillas-y-habituales > .seccion--con-detalle {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 64rem) {
+  .detalle-de-la-plantilla-abierta {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr);
+    align-items: start;
+    gap: 0 2rem;
+  }
+
+  .detalle-de-la-plantilla-abierta > .aviso {
+    grid-column: 1 / -1;
+  }
+
+  .detalle-de-la-plantilla-abierta__lateral {
+    padding-inline-start: 1.5rem;
+    border-inline-start: 1px solid var(--borde);
+  }
+}
+
+.detalle-de-la-plantilla-abierta__lateral > :first-child h4,
+.detalle-de-la-plantilla-abierta__estructura > :first-child h4 {
+  margin-top: 0;
+}

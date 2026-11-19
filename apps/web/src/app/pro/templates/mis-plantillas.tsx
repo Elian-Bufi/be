@@ -87,6 +87,11 @@ export function MisPlantillas() {
   const preparaciones = usePreparaciones(token && listo && !sinArea ? token : null, sesionPerdida);
   const abrirElEditor = useAbrirElEditor(token, sesionPerdida, (texto) => setAviso({ tipo: 'error', texto }));
 
+  // PLT (DL-182), revisión del 2026-11-19: con una plantilla abierta, la sección toma el ancho entero (como las demás
+  // pantallas del espacio profesional) y el detalle va en dos columnas: la estructura a la izquierda; las versiones, el
+  // nombre y la descripción a la derecha. Sin una abierta, las dos columnas de «Plantillas y habituales» siguen igual.
+  const conDetalle = lista.estado.tipo === 'listo' && lista.estado.items.some((p) => p.templateId === abiertaId);
+
   if (!token) return <EsperandoSesion />;
   if (yo.tipo === 'cargando') return <Cargando />;
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
@@ -105,7 +110,7 @@ export function MisPlantillas() {
         </Aviso>
       ) : null}
       {sinArea ? null : (
-      <section className="seccion" aria-labelledby="titulo-plantillas">
+      <section className={conDetalle ? 'seccion seccion--con-detalle' : 'seccion'} aria-labelledby="titulo-plantillas" data-con-detalle={conDetalle ? '' : undefined}>
         <div className="plantillas-y-habituales__cabecera">
           <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
           {/* PLT (DL-182): una plantilla nueva, sin persona: abre el editor en blanco, sin pedir nada antes. */}
@@ -246,13 +251,17 @@ function DetalleDePlantilla({
   }
 
   return (
-    <div className="detalle-de-valores">
+    <div className="detalle-de-valores detalle-de-la-plantilla-abierta" data-detalle-de-la-plantilla>
       {error ? (
         <Aviso tipo="error">
           <p>{error}</p>
         </Aviso>
       ) : null}
-      <EstructuraAgrupada estructura={p.structure} ejercicios={p.exercises} />
+      {/* Al ancho: la estructura a la izquierda; lo de la plantilla (versiones, nombre y descripción) a la derecha. */}
+      <div className="detalle-de-la-plantilla-abierta__estructura">
+        <EstructuraAgrupada estructura={p.structure} ejercicios={p.exercises} />
+      </div>
+      <div className="detalle-de-la-plantilla-abierta__lateral" data-lateral-de-la-plantilla>
       <VersionesDeLaPlantilla token={token} templateId={p.templateId} sesionPerdida={sesionPerdida} />
       <p className="nota" data-usar-con-una-persona>
         {PLT.usarConUnaPersona}
@@ -273,6 +282,7 @@ function DetalleDePlantilla({
             {COPY_PLANTILLAS.reactivar}
           </button>
         )}
+      </div>
       </div>
     </div>
   );
