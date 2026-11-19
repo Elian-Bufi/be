@@ -156,7 +156,7 @@ export function AgregarEjercicio({
   const [linea, setLinea] = useState('');
   const [falta, setFalta] = useState(false);
   // Ratificación del 19/11 (a 1280 × 800 el pie tapaba los resultados): «Prescripción para todos» va plegada; se abre a
-  // pedido y queda abierta mientras tenga algo escrito.
+  // pedido, y se abre sola si lo escrito no se entiende al agregar.
   const [paraTodosAbierta, setParaTodosAbierta] = useState(false);
   // El campo de búsqueda: al abrirse el cajón, el foco va ahí.
   const campo = useRef<HTMLInputElement>(null);
@@ -172,8 +172,9 @@ export function AgregarEjercicio({
   const lectura = linea.trim() === '' ? null : leerPrescripcion(linea);
   const agregar = () => {
     if (marcados.length === 0) return setFalta(true);
-    // Lo que no se entiende no se aplica: se corrige o se borra antes (ED-22, nunca adivina).
-    if (lectura && !lectura.ok) return;
+    // Lo que no se entiende no se aplica: se corrige o se borra antes (ED-22, nunca adivina). Nunca un return mudo: el
+    // pliegue se abre para que se vea el motivo, aunque se haya cerrado con algo escrito (revisión adversaria del 19/11).
+    if (lectura && !lectura.ok) return setParaTodosAbierta(true);
     onAgregar(marcados, lectura?.ok ? lectura.leida : null);
     onCerrar();
   };
@@ -210,16 +211,16 @@ export function AgregarEjercicio({
             </div>
             {/* Ratificación del 19/11: a 1280 × 800 el pie (los elegidos, la prescripción para todos y el botón) tapaba la
                 lista: se veía el título del catálogo y no los ejercicios. La prescripción para todos va plegada, en el mismo
-                renglón que el aviso del catálogo y el botón; abierta (o con algo escrito), ocupa su renglón. */}
+                renglón que el aviso del catálogo y el botón; abierta, ocupa su renglón. */}
             <details
               className="agregar-ejercicio__para-todos-pliegue"
-              open={paraTodosAbierta || linea.trim() !== ''}
+              open={paraTodosAbierta}
               onToggle={(e) => setParaTodosAbierta(e.currentTarget.open)}
               data-para-todos-pliegue
             >
               <summary>
                 {V.prescripcionParaTodosCorta}
-                {lectura?.ok ? <span className="nota"> · {vistaPreviaDePrescripcion(lectura.leida)}</span> : null}
+                {lectura?.ok ? <span className="nota"> · {vistaPreviaDePrescripcion(lectura.leida)}</span> : lectura && !paraTodosAbierta ? <span className="campo__error"> · {V.prescripcionNoSeEntiende}</span> : null}
               </summary>
               <label className="agregar-ejercicio__para-todos" data-para-todos>
                 <span className="agregar-ejercicio__para-todos-rotulo visualmente-oculto">{V.prescripcionParaTodos}</span>

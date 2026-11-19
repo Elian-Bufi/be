@@ -177,6 +177,18 @@ export function esNombreGenerico(nombre: string): boolean {
   return NOMBRES_COMUNES.has(n) || NOMBRES_COMUNES.has(n.replace(/ ([0-9]{1,2}|[a-z])$/, ''));
 }
 
+/**
+ * El genérico que queda al vaciar un nombre, **sin repetir el de un hermano** (revisión adversaria del 19/11): en una
+ * fase con «Sesión B» y «Diego · piernas» (la A se borró), vaciar la segunda no deja dos «Sesión B». Se prueba primero el
+ * de su lugar; si un hermano ya lo usa (comparado como los nombres comunes), el siguiente libre de la misma serie.
+ */
+function genericoLibre(lugar: number, serie: (n: number) => string, hermanos: readonly string[]): string {
+  const ocupados = new Set(hermanos.filter((_, n) => n !== lugar).map(normalizarNombre));
+  if (!ocupados.has(normalizarNombre(serie(lugar)))) return serie(lugar);
+  for (let n = 0; n < hermanos.length + 1; n += 1) if (!ocupados.has(normalizarNombre(serie(n)))) return serie(n);
+  return serie(lugar);
+}
+
 const nombre = (lugar: string, rotulo: string, texto: string, generico: string): LoQueViajaALaPlantilla[] =>
   esNombreGenerico(texto) || texto.trim() === '' ? [] : [{ tipo: 'NOMBRE', lugar, rotulo, texto: texto.trim(), generico }];
 
@@ -185,10 +197,13 @@ const valorDelParametro = (q: { readonly value: string | number; readonly unit?:
 /** El nombre que el editor les da a las sesiones nuevas: «Sesión A», «Sesión B»… */
 const sesionGenerica = (k: number): string => (k < 26 ? `Sesión ${String.fromCharCode(65 + k)}` : `Sesión ${k + 1}`);
 
-function deLaSesion(s: Sesion, lugar: string, k: number, contexto: string): LoQueViajaALaPlantilla[] {
-  const items: LoQueViajaALaPlantilla[] = [...nombre(`${lugar}.label`, `Nombre de la sesión ${k + 1}${contexto}`, s.label, sesionGenerica(k))];
+function deLaSesion(s: Sesion, lugar: string, k: number, contexto: string, hermanas: readonly Sesion[]): LoQueViajaALaPlantilla[] {
+  const items: LoQueViajaALaPlantilla[] = [...nombre(`${lugar}.label`, `Nombre de la sesión ${k + 1}${contexto}`, s.label, genericoLibre(k, sesionGenerica, hermanas.map((x) => x.label)))];
   const sesion = s.label.trim() || sesionGenerica(k);
-  (s.exerciseGroups ?? []).forEach((g, j) => items.push(...nombre(`${lugar}.exerciseGroups[${j}].label`, `Nombre del bloque ${j + 1} de «${sesion}»`, g.label, `Bloque ${j + 1}`)));
+  const grupos = s.exerciseGroups ?? [];
+  grupos.forEach((g, j) =>
+    items.push(...nombre(`${lugar}.exerciseGroups[${j}].label`, `Nombre del bloque ${j + 1} de «${sesion}»`, g.label, genericoLibre(j, (n) => `Bloque ${n + 1}`, grupos.map((x) => x.label)))),
+  );
   s.prescriptions.forEach((p, i) => {
     (p.professionalParameters ?? []).forEach((q, j) =>
       items.push({ tipo: 'PARAMETRO', lugar: `${lugar}.prescriptions[${i}].professionalParameters[${j}]`, rotulo: `Parámetro «${q.label}» del ejercicio ${i + 1} de «${sesion}»`, texto: valorDelParametro(q), generico: null }),
@@ -204,14 +219,16 @@ export function loQueViajaALaPlantilla(e: Estructura): LoQueViajaALaPlantilla[] 
   const items: LoQueViajaALaPlantilla[] = [];
   e.blocks.forEach((b, i) => {
     const lb = `blocks[${i}]`;
-    items.push(...nombre(`${lb}.label`, `Nombre de la fase ${i + 1}`, b.label, `Fase ${i + 1}`));
+    // Las fases se comparan como se leen: «Bloque 2» de un plan viejo ocupa «Fase 2» (ENP-D01).
+    items.push(...nombre(`${lb}.label`, `Nombre de la fase ${i + 1}`, b.label, genericoLibre(i, (n) => `Fase ${n + 1}`, e.blocks.map((x, n) => nombreDeLaFase(x.label, n)))));
     const fase = nombreDeLaFase(b.label, i);
-    (b.microcycles ?? []).forEach((m, j) => {
+    const microciclos = b.microcycles ?? [];
+    microciclos.forEach((m, j) => {
       const lm = `${lb}.microcycles[${j}]`;
-      items.push(...nombre(`${lm}.label`, `Nombre del microciclo ${j + 1} (fase «${fase}»)`, m.label, `Semana ${j + 1}`));
-      m.sessions.forEach((s, k) => items.push(...deLaSesion(s, `${lm}.sessions[${k}]`, k, ` (microciclo «${m.label.trim() || `Semana ${j + 1}`}»)`)));
+      items.push(...nombre(`${lm}.label`, `Nombre del microciclo ${j + 1} (fase «${fase}»)`, m.label, genericoLibre(j, (n) => `Semana ${n + 1}`, microciclos.map((x) => x.label))));
+      m.sessions.forEach((s, k) => items.push(...deLaSesion(s, `${lm}.sessions[${k}]`, k, ` (microciclo «${m.label.trim() || `Semana ${j + 1}`}»)`, m.sessions)));
     });
-    (b.sessions ?? []).forEach((s, k) => items.push(...deLaSesion(s, `${lb}.sessions[${k}]`, k, ` (fase «${fase}»)`)));
+    (b.sessions ?? []).forEach((s, k, todas) => items.push(...deLaSesion(s, `${lb}.sessions[${k}]`, k, ` (fase «${fase}»)`, todas)));
   });
   return items;
 }
@@ -220,12 +237,14 @@ export function loQueViajaALaPlantilla(e: Estructura): LoQueViajaALaPlantilla[] 
 export function loQueViajaALaPlantillaNutricional(e: EstructuraDePlanEntrada): LoQueViajaALaPlantilla[] {
   const items: LoQueViajaALaPlantilla[] = [];
   e.dayTypes.forEach((d, i) => {
-    items.push(...nombre(`dayTypes[${i}].label`, `Nombre del día tipo ${i + 1}`, d.label, `Día tipo ${i + 1}`));
+    items.push(...nombre(`dayTypes[${i}].label`, `Nombre del día tipo ${i + 1}`, d.label, genericoLibre(i, (n) => `Día tipo ${n + 1}`, e.dayTypes.map((x) => x.label))));
     const dia = d.label.trim() || `Día tipo ${i + 1}`;
     d.meals.forEach((m, j) => {
-      items.push(...nombre(`dayTypes[${i}].meals[${j}].label`, `Nombre de la comida ${j + 1} (${dia})`, m.label, `Comida ${j + 1}`));
+      items.push(...nombre(`dayTypes[${i}].meals[${j}].label`, `Nombre de la comida ${j + 1} (${dia})`, m.label, genericoLibre(j, (n) => `Comida ${n + 1}`, d.meals.map((x) => x.label))));
       const comida = m.label.trim() || `Comida ${j + 1}`;
-      m.options.forEach((o, k) => items.push(...nombre(`dayTypes[${i}].meals[${j}].options[${k}].label`, `Nombre de la opción ${k + 1} de «${comida}» (${dia})`, o.label, `Opción ${k + 1}`)));
+      m.options.forEach((o, k) =>
+        items.push(...nombre(`dayTypes[${i}].meals[${j}].options[${k}].label`, `Nombre de la opción ${k + 1} de «${comida}» (${dia})`, o.label, genericoLibre(k, (n) => `Opción ${n + 1}`, m.options.map((x) => x.label)))),
+      );
     });
   });
   return items;

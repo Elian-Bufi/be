@@ -85,7 +85,11 @@ test('«Sin indicar» en todas las pantallas: lo que el profesional no indicó n
 
 test('El catálogo a 1280 × 800: «Prescripción para todos» va plegada y el pie comparte su último renglón; la escena 11 exige 3 resultados', () => {
   const catalogo = fuente('../src/app/pro/advisees/training/agregar-ejercicio.tsx');
-  assert.match(catalogo, /<details\n\s+className="agregar-ejercicio__para-todos-pliegue"\n\s+open=\{paraTodosAbierta \|\| linea\.trim\(\) !== ''\}/, 'plegada, salvo que tenga algo escrito');
+  assert.match(catalogo, /<details\n\s+className="agregar-ejercicio__para-todos-pliegue"\n\s+open=\{paraTodosAbierta\}/, 'plegada; la abre quien la usa');
+  // Revisión adversaria del 19/11: cerrada con algo que no se entiende, «Agregar» no es un return mudo. Antes el «open»
+  // seguía en true (había algo escrito), React no reabría el pliegue cerrado a mano y el motivo quedaba adentro, sin verse.
+  assert.match(catalogo, /if \(lectura && !lectura\.ok\) return setParaTodosAbierta\(true\);/, 'abre el pliegue para mostrar el motivo');
+  assert.match(catalogo, /lectura && !paraTodosAbierta \? <span className="campo__error"> · \{V\.prescripcionNoSeEntiende\}<\/span>/, 'cerrado, el rótulo avisa');
   assert.ok(catalogo.indexOf('<details') < catalogo.indexOf('<label className="agregar-ejercicio__para-todos" data-para-todos>'), 'el campo va adentro del pliegue');
   assert.match(catalogo, /setParaTodosAbierta\(false\);\n\s+\}, \[abierto\]\);/, 'cada apertura empieza plegada');
   const css = fuente('../src/app/globals.css');

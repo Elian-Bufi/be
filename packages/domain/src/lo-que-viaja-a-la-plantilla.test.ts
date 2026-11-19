@@ -117,3 +117,29 @@ test('DL-108 D-3 · los textos nuevos del diálogo no califican ni prometen', ()
     assert.deepEqual(terminosProhibidosDeEntrenamientoEn(t), [], t);
   }
 });
+
+test('DL-108 D-3 · vaciar no repite el nombre de un hermano: el genérico es el siguiente libre (revisión adversaria del 19/11)', () => {
+  // La «Sesión A» se borró: quedan «Sesión B» y una con el nombre de la persona. Vaciarla no deja dos «Sesión B».
+  const e = {
+    blocks: [
+      { label: 'Diego', sessions: [] },
+      // Un plan viejo: «Bloque 1» se lee «Fase 1» y ocupa ese nombre.
+      { label: 'Bloque 1', sessions: [{ label: 'Sesión B', prescriptions: [] }, { label: 'Piernas de Diego', prescriptions: [] }] },
+    ],
+  } as unknown as EstructuraDePlanDeEntrenamientoEntrada;
+  const items = loQueViajaALaPlantilla(e);
+  assert.deepEqual(
+    items.map((x) => x.generico),
+    ['Fase 2', 'Sesión A'],
+  );
+  const limpia = items.reduce((x, i) => vaciarLoQueViaja(x, i), e);
+  assert.deepEqual(limpia.blocks[1]!.sessions!.map((s) => s.label), ['Sesión B', 'Sesión A']);
+  // En Nutrición, igual: «Opción 2» ya está, la opción 2 con nombre propio pasa a «Opción 1».
+  const nut = {
+    dayTypes: [{ label: 'Día tipo 1', meals: [{ label: 'Cena', prescriptionMode: 'OPTIONS', options: [{ label: 'Opción 2', items: [] }, { label: 'La de Ana', items: [] }] }] }],
+  } as unknown as EstructuraDePlanEntrada;
+  assert.deepEqual(
+    loQueViajaALaPlantillaNutricional(nut).map((x) => x.generico),
+    ['Opción 1'],
+  );
+});

@@ -32,6 +32,8 @@ export const COPY_VARIOS_A_LA_VEZ = {
   prescripcionParaTodos: 'Prescripción para todos (opcional)',
   /** Ratificación del 19/11: el rótulo del pliegue, corto para que entre en el renglón del aviso del catálogo. */
   prescripcionParaTodosCorta: 'Prescripción para todos',
+  /** Con el pliegue cerrado y algo que no se entiende: el aviso corto en el rótulo (el motivo, adentro). */
+  prescripcionNoSeEntiende: 'no se entiende lo escrito',
   // Revisión del tramo 2: el ejemplo va adentro del campo, como en la escritura rápida (C7); la ayuda, en un renglón.
   prescripcionEjemplo: 'Ej.: 4×8-12 RIR 2 · 90 s',
   prescripcionAyuda: 'Vacía, cada uno entra con una serie para completar.',
