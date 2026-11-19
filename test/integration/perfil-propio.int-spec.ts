@@ -26,7 +26,7 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const REFERENCIA = /^Asesorado · [0-9a-f]{6}$/;
+const REFERENCIA = /^Persona · [0-9a-f]{6}$/;
 const leerPerfil = async (token: string) => PerfilPropioResponseSchema.parse((await conSesion(app, token).get('/api/v1/me/profile').expect(200)).body).data;
 const editar = (token: string, cuerpo: object) => conSesion(app, token).patch('/api/v1/me/profile').send(cuerpo);
 
