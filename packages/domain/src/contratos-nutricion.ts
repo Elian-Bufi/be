@@ -19,6 +19,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
+import { CertificacionDeAlimentoSchema, GrupoDeAlimentoSchema, NivelDeOrigenSchema } from './alimentos-del-catalogo';
 import { FuenteExternaDeAlimentoSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
@@ -297,6 +298,7 @@ export const ComposicionSchema = z.strictObject({
   /** DL-119: opcional. Ausente o `null` quiere decir desconocida, nunca cero. */
   fiberG: z.number().nonnegative().finite().nullable().optional(),
 });
+export type Composicion = z.infer<typeof ComposicionSchema>;
 /**
  * De dónde salió un elemento del catálogo: sembrado por BE, cargado a mano por un profesional, o **importado de un
  * proveedor externo después de su revisión** (WP-08; UC-I07). Lo comparten nutrición y entrenamiento.
@@ -320,11 +322,29 @@ export const ListaDeCatalogoResponseSchema = z.strictObject({ data: z.array(Elem
  * coincidió con lo buscado y (D-6) lo que hace falta para decir su origen en la fila. API-NUT-13 responde sin estos
  * campos: la forma de las lecturas legadas no cambia.
  */
+/**
+ * DL-180 (NUA-04): el alimento verificado que Administración marcó como equivalente de uno cargado a mano; el buscador lo
+ * sugiere en su lugar. Con la forma de un alimento del catálogo, para sumarlo como cualquier otro, y su grupo.
+ */
+export const EquivalenteVerificadoSchema = ElementoDeCatalogoSchema.extend({ foodGroup: GrupoDeAlimentoSchema.nullable() });
+export type EquivalenteVerificado = z.infer<typeof EquivalenteVerificadoSchema>;
 export const ElementoEncontradoSchema = ElementoDeCatalogoSchema.extend({
   /** El nombre alternativo que coincidió («Aguacate» al buscar «aguacate»), tal como está guardado; `null` si coincidió el principal, o sin texto. */
   matchedAlternativeName: z.string().nullable(),
   /** DL-141 D-6: quién lo cargó y si su correspondencia con la fuente es aproximada. */
   origin: OrigenEnElBuscadorSchema,
+  /**
+   * DL-180 (NUA-03 a NUA-05). Opcionales: una API anterior no los manda, y un campo ausente vale lo de siempre (sin grupo,
+   * sin nivel, sin certificación ni equivalente).
+   * - `foodGroup`: el grupo, para su ícono; `null` sin grupo.
+   * - `originLevel`: «Verificado», «Tuyo», «De otro profesional» o, en lo importado y lo de demostración, ninguno.
+   * - `certification`: la fuente que citó Administración al certificar la versión vigente.
+   * - `verifiedEquivalent`: el verificado que Administración marcó como su equivalente, si está disponible.
+   */
+  foodGroup: GrupoDeAlimentoSchema.nullable().optional(),
+  originLevel: NivelDeOrigenSchema.optional(),
+  certification: CertificacionDeAlimentoSchema.nullable().optional(),
+  verifiedEquivalent: EquivalenteVerificadoSchema.nullable().optional(),
 });
 export type ElementoEncontrado = z.infer<typeof ElementoEncontradoSchema>;
 export const BusquedaEnCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoEncontradoSchema), page: PaginaSchema });
@@ -340,7 +360,8 @@ export const BusquedaEnCatalogoRequestSchema = z.strictObject({
   cursor: z.string().max(400).optional(),
 });
 export type BusquedaEnCatalogoRequest = z.infer<typeof BusquedaEnCatalogoRequestSchema>;
-export const CrearElementoDeCatalogoRequestSchema = z.strictObject({ name: Texto(120), itemType: z.literal('FOOD'), composition: ComposicionSchema });
+/** DL-180 (NUA-05): `group`, opcional, el grupo del alimento (su ícono); sin él, queda sin grupo como antes. */
+export const CrearElementoDeCatalogoRequestSchema = z.strictObject({ name: Texto(120), itemType: z.literal('FOOD'), composition: ComposicionSchema, group: GrupoDeAlimentoSchema.optional() });
 export type CrearElementoDeCatalogoRequest = z.infer<typeof CrearElementoDeCatalogoRequestSchema>;
 export const ElementoDeCatalogoResponseSchema = z.strictObject({ data: ElementoDeCatalogoSchema });
 

@@ -83,7 +83,15 @@ const DOMINIOS = [
   {
     // NUP-08: las pantallas de Nutrición del website del profesional, con el «%» con su base.
     nombre: 'nutrición en el website del profesional',
-    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')), ...tsx(join(RAIZ, 'apps/web/src/app/pro/recipes'))],
+    // DL-180: «Mis alimentos», la lógica de los alimentos del catálogo y sus textos del dominio.
+    archivos: [
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')),
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/recipes')),
+      ...tsx(join(RAIZ, 'apps/web/src/app/pro/foods')),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition/alimentos-del-catalogo.ts'),
+      join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition/valores-del-alimento.ts'),
+      join(RAIZ, 'packages/domain/src/alimentos-del-catalogo.ts'),
+    ],
     prohibidos: prohibidosDelProfesionalEnNutricion,
     minimo: 8,
   },
@@ -261,6 +269,9 @@ const DOMINIOS = [
       ...tsx(join(RAIZ, 'apps/web/src/app/admin/security')),
       // RF-068 (DL-172): las incidencias en la consola y sus textos.
       ...tsx(join(RAIZ, 'apps/web/src/app/admin/incidents')),
+      // DL-180 (NUA-04): la revisión de los alimentos cargados a mano.
+      ...tsx(join(RAIZ, 'apps/web/src/app/admin/foods')),
+      join(RAIZ, 'apps/web/src/app/admin/foods/decision.ts'),
       join(RAIZ, 'packages/domain/src/incidencias.ts'),
       join(RAIZ, 'packages/domain/src/copy-administracion.ts'),
     ],

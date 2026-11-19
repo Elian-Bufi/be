@@ -14508,6 +14508,34 @@
                                                       "type": "null"
                                                     }
                                                   ]
+                                                },
+                                                "foodGroup": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "MEAT",
+                                                        "FISH",
+                                                        "EGGS",
+                                                        "DAIRY",
+                                                        "GRAINS",
+                                                        "LEGUMES",
+                                                        "VEGETABLES",
+                                                        "FRUITS",
+                                                        "FATS",
+                                                        "NUTS",
+                                                        "SWEETS",
+                                                        "DRINKS",
+                                                        "OTHER"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "retired": {
+                                                  "type": "boolean"
                                                 }
                                               },
                                               "required": [
@@ -17187,6 +17215,24 @@
                       "fatG"
                     ],
                     "additionalProperties": false
+                  },
+                  "group": {
+                    "type": "string",
+                    "enum": [
+                      "MEAT",
+                      "FISH",
+                      "EGGS",
+                      "DAIRY",
+                      "GRAINS",
+                      "LEGUMES",
+                      "VEGETABLES",
+                      "FRUITS",
+                      "FATS",
+                      "NUTS",
+                      "SWEETS",
+                      "DRINKS",
+                      "OTHER"
+                    ]
                   }
                 },
                 "required": [
@@ -17767,6 +17813,290 @@
                               "approximateCorrespondence"
                             ],
                             "additionalProperties": false
+                          },
+                          "foodGroup": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "MEAT",
+                                  "FISH",
+                                  "EGGS",
+                                  "DAIRY",
+                                  "GRAINS",
+                                  "LEGUMES",
+                                  "VEGETABLES",
+                                  "FRUITS",
+                                  "FATS",
+                                  "NUTS",
+                                  "SWEETS",
+                                  "DRINKS",
+                                  "OTHER"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "originLevel": {
+                            "type": "string",
+                            "enum": [
+                              "VERIFIED",
+                              "YOURS",
+                              "OTHER_PROFESSIONAL",
+                              "UNVERIFIED"
+                            ]
+                          },
+                          "certification": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 500
+                                  },
+                                  "certifiedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "certifiedAt"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "verifiedEquivalent": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "catalogItemId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "versionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "itemType": {
+                                    "type": "string",
+                                    "const": "FOOD"
+                                  },
+                                  "composition": {
+                                    "type": "object",
+                                    "properties": {
+                                      "referenceAmount": {
+                                        "type": "string",
+                                        "enum": [
+                                          "100g",
+                                          "100ml"
+                                        ]
+                                      },
+                                      "energyKcal": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "proteinG": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "carbohydrateG": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "fatG": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "fiberG": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "referenceAmount",
+                                      "energyKcal",
+                                      "proteinG",
+                                      "carbohydrateG",
+                                      "fatG"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "provenance": {
+                                    "type": "string",
+                                    "enum": [
+                                      "BE_SYNTHETIC_SEED",
+                                      "PROFESSIONAL_MANUAL",
+                                      "CONTROLLED_IMPORT"
+                                    ]
+                                  },
+                                  "externalSource": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "provider": {
+                                            "type": "string",
+                                            "enum": [
+                                              "OPEN_FOOD_FACTS",
+                                              "WGER",
+                                              "USDA_FDC_SR_LEGACY"
+                                            ]
+                                          },
+                                          "externalId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "receivedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                          },
+                                          "license": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "url": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "attribution": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "label",
+                                              "url",
+                                              "attribution"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "usdaReference": {
+                                            "type": "object",
+                                            "properties": {
+                                              "dataset": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "ndbNumber": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "originalDescription": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "publishedOn": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "preparationDescription": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "dataset",
+                                              "ndbNumber",
+                                              "originalDescription",
+                                              "publishedOn",
+                                              "preparationDescription"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "provider",
+                                          "externalId",
+                                          "receivedAt",
+                                          "license"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "available": {
+                                    "type": "boolean"
+                                  },
+                                  "foodGroup": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "MEAT",
+                                          "FISH",
+                                          "EGGS",
+                                          "DAIRY",
+                                          "GRAINS",
+                                          "LEGUMES",
+                                          "VEGETABLES",
+                                          "FRUITS",
+                                          "FATS",
+                                          "NUTS",
+                                          "SWEETS",
+                                          "DRINKS",
+                                          "OTHER"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "catalogItemId",
+                                  "versionId",
+                                  "name",
+                                  "itemType",
+                                  "composition",
+                                  "provenance",
+                                  "externalSource",
+                                  "available",
+                                  "foodGroup"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -17861,6 +18191,2828 @@
           },
           "503": {
             "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nutrition/catalog-items/mine": {
+      "get": {
+        "operationId": "API-ALI-01",
+        "summary": "Los alimentos que el profesional cargó a mano, también los retirados (available: false), el corregido más recientemente primero, cada uno en su versión vigente: el token para corregirlo o retirarlo (version, «v» y el número de versiones), su grupo, si lo ven los demás profesionales (shared) y lo que decidió Administración sobre la versión vigente (review). Solo profesionales de Nutrición.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-01 y NUA-02 (aprobado por Dirección el 2026-11-16) · REG-06-99 a 101 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tamaño de página (1 a 50; 20 por defecto).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Cursor opaco de la página siguiente.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "catalogItemId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "version": {
+                            "type": "string",
+                            "pattern": "^v[1-9]\\d*$"
+                          },
+                          "versionNumber": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "composition": {
+                            "type": "object",
+                            "properties": {
+                              "referenceAmount": {
+                                "type": "string",
+                                "enum": [
+                                  "100g",
+                                  "100ml"
+                                ]
+                              },
+                              "energyKcal": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "proteinG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "carbohydrateG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fatG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fiberG": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "referenceAmount",
+                              "energyKcal",
+                              "proteinG",
+                              "carbohydrateG",
+                              "fatG"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "foodGroup": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "MEAT",
+                                  "FISH",
+                                  "EGGS",
+                                  "DAIRY",
+                                  "GRAINS",
+                                  "LEGUMES",
+                                  "VEGETABLES",
+                                  "FRUITS",
+                                  "FATS",
+                                  "NUTS",
+                                  "SWEETS",
+                                  "DRINKS",
+                                  "OTHER"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "available": {
+                            "type": "boolean"
+                          },
+                          "shared": {
+                            "type": "boolean"
+                          },
+                          "review": {
+                            "type": "object",
+                            "properties": {
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "PENDING",
+                                  "CERTIFIED",
+                                  "EQUIVALENT"
+                                ]
+                              },
+                              "certification": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 500
+                                      },
+                                      "certifiedAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "certifiedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "equivalent": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "catalogItemId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "catalogItemId",
+                                      "name"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "certification",
+                              "equivalent"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "catalogItemId",
+                          "versionId",
+                          "version",
+                          "versionNumber",
+                          "name",
+                          "composition",
+                          "foodGroup",
+                          "available",
+                          "shared",
+                          "review",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nutrition/catalog-items/{catalogItemId}": {
+      "patch": {
+        "operationId": "API-ALI-02",
+        "summary": "Corregir un alimento propio cargado a mano: si cambian el nombre o la composición, nace una versión nueva e inmutable, sucesora de la vigente. Las instantáneas de los planes activados, las recetas (que citan su versión) y los registros conservan la versión que citaban; un borrador usa la vigente. group, opcional, cambia el grupo (su ícono) sin emitir una versión. Corregirlo lo comparte con los demás profesionales de Nutrición (el formulario lo dice). Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT; uno retirado, 422 INVALID_STATE_TRANSITION. Uno ajeno, sembrado, importado o inexistente: el mismo 404.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-01 · REG-06-99 a 101 · DL-120 (el patrón de las recetas) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalogItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "string",
+                    "pattern": "^v[1-9]\\d*$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "composition": {
+                    "type": "object",
+                    "properties": {
+                      "referenceAmount": {
+                        "type": "string",
+                        "enum": [
+                          "100g",
+                          "100ml"
+                        ]
+                      },
+                      "energyKcal": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "proteinG": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "carbohydrateG": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "fatG": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "fiberG": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "referenceAmount",
+                      "energyKcal",
+                      "proteinG",
+                      "carbohydrateG",
+                      "fatG"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "group": {
+                    "type": "string",
+                    "enum": [
+                      "MEAT",
+                      "FISH",
+                      "EGGS",
+                      "DAIRY",
+                      "GRAINS",
+                      "LEGUMES",
+                      "VEGETABLES",
+                      "FRUITS",
+                      "FATS",
+                      "NUTS",
+                      "SWEETS",
+                      "DRINKS",
+                      "OTHER"
+                    ]
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "name",
+                  "composition"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "catalogItemId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "versionNumber": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "composition": {
+                          "type": "object",
+                          "properties": {
+                            "referenceAmount": {
+                              "type": "string",
+                              "enum": [
+                                "100g",
+                                "100ml"
+                              ]
+                            },
+                            "energyKcal": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "proteinG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "carbohydrateG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fatG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fiberG": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "referenceAmount",
+                            "energyKcal",
+                            "proteinG",
+                            "carbohydrateG",
+                            "fatG"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "foodGroup": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "MEAT",
+                                "FISH",
+                                "EGGS",
+                                "DAIRY",
+                                "GRAINS",
+                                "LEGUMES",
+                                "VEGETABLES",
+                                "FRUITS",
+                                "FATS",
+                                "NUTS",
+                                "SWEETS",
+                                "DRINKS",
+                                "OTHER"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "available": {
+                          "type": "boolean"
+                        },
+                        "shared": {
+                          "type": "boolean"
+                        },
+                        "review": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "PENDING",
+                                "CERTIFIED",
+                                "EQUIVALENT"
+                              ]
+                            },
+                            "certification": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 500
+                                    },
+                                    "certifiedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "certifiedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "equivalent": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "catalogItemId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "catalogItemId",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "certification",
+                            "equivalent"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "catalogItemId",
+                        "versionId",
+                        "version",
+                        "versionNumber",
+                        "name",
+                        "composition",
+                        "foodGroup",
+                        "available",
+                        "shared",
+                        "review",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: INVALID_STATE_TRANSITION",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nutrition/catalog-items/{catalogItemId}/retirement": {
+      "post": {
+        "operationId": "API-ALI-03",
+        "summary": "Retirar un alimento propio cargado a mano: una versión RETIRADO con el mismo nombre y la misma composición. Deja de aparecer en el buscador y no se puede sumar a nada nuevo (validar y activar un plan que lo cita lo señalan con CATALOG_REFERENCE_INVALID), pero no se borra: los planes, las recetas y los registros que lo citan lo siguen mostrando, con la marca «retirado», y un borrador que ya lo cita se sigue guardando. Retirar uno ya retirado responde 200 sin cambiar nada. Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT. Uno ajeno, sembrado, importado o inexistente: el mismo 404.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-02 · REG-06-99 (la disponibilidad) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalogItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "string",
+                    "pattern": "^v[1-9]\\d*$"
+                  }
+                },
+                "required": [
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "catalogItemId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "versionNumber": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "composition": {
+                          "type": "object",
+                          "properties": {
+                            "referenceAmount": {
+                              "type": "string",
+                              "enum": [
+                                "100g",
+                                "100ml"
+                              ]
+                            },
+                            "energyKcal": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "proteinG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "carbohydrateG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fatG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fiberG": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "referenceAmount",
+                            "energyKcal",
+                            "proteinG",
+                            "carbohydrateG",
+                            "fatG"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "foodGroup": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "MEAT",
+                                "FISH",
+                                "EGGS",
+                                "DAIRY",
+                                "GRAINS",
+                                "LEGUMES",
+                                "VEGETABLES",
+                                "FRUITS",
+                                "FATS",
+                                "NUTS",
+                                "SWEETS",
+                                "DRINKS",
+                                "OTHER"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "available": {
+                          "type": "boolean"
+                        },
+                        "shared": {
+                          "type": "boolean"
+                        },
+                        "review": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "PENDING",
+                                "CERTIFIED",
+                                "EQUIVALENT"
+                              ]
+                            },
+                            "certification": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 500
+                                    },
+                                    "certifiedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "certifiedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "equivalent": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "catalogItemId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "catalogItemId",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "certification",
+                            "equivalent"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "catalogItemId",
+                        "versionId",
+                        "version",
+                        "versionNumber",
+                        "name",
+                        "composition",
+                        "foodGroup",
+                        "available",
+                        "shared",
+                        "review",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | VERSION_CONFLICT | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nutrition/catalog-items/lookup": {
+      "post": {
+        "operationId": "API-ALI-04",
+        "summary": "Los alimentos que el profesional ve, por su identidad (de 1 a 200, en el cuerpo), en su versión vigente y en el orden pedido: como una fila del buscador (con su grupo, el nivel de su origen, la certificación y el verificado equivalente) y si se retiró (retired). También los retirados: el editor del plan los marca donde ya se citan. Los que no ve no vuelven, sin revelar que existen. Es una lectura: 200, sin Idempotency-Key. Solo profesionales de Nutrición.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-02 a NUA-05 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "catalogItemIds": {
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "catalogItemIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "catalogItemId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "itemType": {
+                            "type": "string",
+                            "const": "FOOD"
+                          },
+                          "composition": {
+                            "type": "object",
+                            "properties": {
+                              "referenceAmount": {
+                                "type": "string",
+                                "enum": [
+                                  "100g",
+                                  "100ml"
+                                ]
+                              },
+                              "energyKcal": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "proteinG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "carbohydrateG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fatG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fiberG": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "referenceAmount",
+                              "energyKcal",
+                              "proteinG",
+                              "carbohydrateG",
+                              "fatG"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "provenance": {
+                            "type": "string",
+                            "enum": [
+                              "BE_SYNTHETIC_SEED",
+                              "PROFESSIONAL_MANUAL",
+                              "CONTROLLED_IMPORT"
+                            ]
+                          },
+                          "externalSource": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "provider": {
+                                    "type": "string",
+                                    "enum": [
+                                      "OPEN_FOOD_FACTS",
+                                      "WGER",
+                                      "USDA_FDC_SR_LEGACY"
+                                    ]
+                                  },
+                                  "externalId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "receivedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "license": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "label": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "url": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "attribution": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "label",
+                                      "url",
+                                      "attribution"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "usdaReference": {
+                                    "type": "object",
+                                    "properties": {
+                                      "dataset": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "ndbNumber": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "originalDescription": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "publishedOn": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "preparationDescription": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": [
+                                      "dataset",
+                                      "ndbNumber",
+                                      "originalDescription",
+                                      "publishedOn",
+                                      "preparationDescription"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "provider",
+                                  "externalId",
+                                  "receivedAt",
+                                  "license"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "available": {
+                            "type": "boolean"
+                          },
+                          "matchedAlternativeName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "origin": {
+                            "type": "object",
+                            "properties": {
+                              "loadedBy": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "YOU",
+                                      "ANOTHER_PROFESSIONAL"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "approximateCorrespondence": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "loadedBy",
+                              "approximateCorrespondence"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "foodGroup": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "MEAT",
+                                  "FISH",
+                                  "EGGS",
+                                  "DAIRY",
+                                  "GRAINS",
+                                  "LEGUMES",
+                                  "VEGETABLES",
+                                  "FRUITS",
+                                  "FATS",
+                                  "NUTS",
+                                  "SWEETS",
+                                  "DRINKS",
+                                  "OTHER"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "originLevel": {
+                            "type": "string",
+                            "enum": [
+                              "VERIFIED",
+                              "YOURS",
+                              "OTHER_PROFESSIONAL",
+                              "UNVERIFIED"
+                            ]
+                          },
+                          "certification": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 500
+                                  },
+                                  "certifiedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "certifiedAt"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "verifiedEquivalent": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "catalogItemId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "versionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "itemType": {
+                                    "type": "string",
+                                    "const": "FOOD"
+                                  },
+                                  "composition": {
+                                    "type": "object",
+                                    "properties": {
+                                      "referenceAmount": {
+                                        "type": "string",
+                                        "enum": [
+                                          "100g",
+                                          "100ml"
+                                        ]
+                                      },
+                                      "energyKcal": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "proteinG": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "carbohydrateG": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "fatG": {
+                                        "type": "number",
+                                        "minimum": 0
+                                      },
+                                      "fiberG": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "referenceAmount",
+                                      "energyKcal",
+                                      "proteinG",
+                                      "carbohydrateG",
+                                      "fatG"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "provenance": {
+                                    "type": "string",
+                                    "enum": [
+                                      "BE_SYNTHETIC_SEED",
+                                      "PROFESSIONAL_MANUAL",
+                                      "CONTROLLED_IMPORT"
+                                    ]
+                                  },
+                                  "externalSource": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "provider": {
+                                            "type": "string",
+                                            "enum": [
+                                              "OPEN_FOOD_FACTS",
+                                              "WGER",
+                                              "USDA_FDC_SR_LEGACY"
+                                            ]
+                                          },
+                                          "externalId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "receivedAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                          },
+                                          "license": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "url": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              },
+                                              "attribution": {
+                                                "type": [
+                                                  "string",
+                                                  "null"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "label",
+                                              "url",
+                                              "attribution"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "usdaReference": {
+                                            "type": "object",
+                                            "properties": {
+                                              "dataset": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "ndbNumber": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "originalDescription": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "publishedOn": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "preparationDescription": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "dataset",
+                                              "ndbNumber",
+                                              "originalDescription",
+                                              "publishedOn",
+                                              "preparationDescription"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "provider",
+                                          "externalId",
+                                          "receivedAt",
+                                          "license"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "available": {
+                                    "type": "boolean"
+                                  },
+                                  "foodGroup": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "MEAT",
+                                          "FISH",
+                                          "EGGS",
+                                          "DAIRY",
+                                          "GRAINS",
+                                          "LEGUMES",
+                                          "VEGETABLES",
+                                          "FRUITS",
+                                          "FATS",
+                                          "NUTS",
+                                          "SWEETS",
+                                          "DRINKS",
+                                          "OTHER"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "catalogItemId",
+                                  "versionId",
+                                  "name",
+                                  "itemType",
+                                  "composition",
+                                  "provenance",
+                                  "externalSource",
+                                  "available",
+                                  "foodGroup"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "retired": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "catalogItemId",
+                          "versionId",
+                          "name",
+                          "itemType",
+                          "composition",
+                          "provenance",
+                          "externalSource",
+                          "available",
+                          "matchedAlternativeName",
+                          "origin",
+                          "retired"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/foods/query": {
+      "post": {
+        "operationId": "API-ALI-05",
+        "summary": "Los alimentos que los profesionales cargaron a mano, para que Administración los revise: el nombre, los valores cada 100 g, el grupo y lo decidido sobre la versión vigente; nunca quién lo cargó ni a quién se le indicó. Filtrados por texto (q) y por estado (PENDING, CERTIFIED o EQUIVALENT); sin estado, los que esperan revisión primero. Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "PENDING",
+                      "CERTIFIED",
+                      "EQUIVALENT"
+                    ]
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "maxLength": 40
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "catalogItemId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "version": {
+                            "type": "string",
+                            "pattern": "^v[1-9]\\d*$"
+                          },
+                          "versionNumber": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "composition": {
+                            "type": "object",
+                            "properties": {
+                              "referenceAmount": {
+                                "type": "string",
+                                "enum": [
+                                  "100g",
+                                  "100ml"
+                                ]
+                              },
+                              "energyKcal": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "proteinG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "carbohydrateG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fatG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fiberG": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "referenceAmount",
+                              "energyKcal",
+                              "proteinG",
+                              "carbohydrateG",
+                              "fatG"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "foodGroup": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "MEAT",
+                                  "FISH",
+                                  "EGGS",
+                                  "DAIRY",
+                                  "GRAINS",
+                                  "LEGUMES",
+                                  "VEGETABLES",
+                                  "FRUITS",
+                                  "FATS",
+                                  "NUTS",
+                                  "SWEETS",
+                                  "DRINKS",
+                                  "OTHER"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "available": {
+                            "type": "boolean"
+                          },
+                          "review": {
+                            "type": "object",
+                            "properties": {
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "PENDING",
+                                  "CERTIFIED",
+                                  "EQUIVALENT"
+                                ]
+                              },
+                              "certification": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 500
+                                      },
+                                      "certifiedAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "certifiedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "equivalent": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "catalogItemId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "catalogItemId",
+                                      "name"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "decidedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "certification",
+                              "equivalent",
+                              "decidedAt"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "catalogItemId",
+                          "versionId",
+                          "version",
+                          "versionNumber",
+                          "name",
+                          "composition",
+                          "foodGroup",
+                          "available",
+                          "review",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor",
+                        "hasMore"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD | INVALID_CURSOR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/foods/{catalogItemId}/decisions": {
+      "post": {
+        "operationId": "API-ALI-06",
+        "summary": "Lo que decide Administración sobre un alimento cargado a mano, contra la versión que vio (expectedVersion; si su autor lo corrigió mientras tanto, 409 VERSION_CONFLICT): CERTIFY, con la fuente citada (source, de 1 a 500; sin ella, 422 VALIDATION_FAILED con SOURCE_REQUIRED), que lo vuelve «Verificado» en el buscador para esa versión (si su autor lo corrige, la nueva vuelve a esperar revisión); EQUIVALENT, con un alimento de la tabla oficial disponible (equivalentCatalogItemId; si no lo es, EQUIVALENT_NOT_VERIFIED), que el buscador sugiere en su lugar sin tocar los planes que ya lo citan; o CLEAR, que quita lo decidido (sin nada decidido, 422 INVALID_STATE_TRANSITION). Cada decisión es una fila nueva: la historia no se pisa. Uno que no existe o que no es una carga a mano: 404. La auditoría no guarda los textos. Devuelve el alimento como lo lista API-ALI-05.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "catalogItemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "string",
+                    "pattern": "^v[1-9]\\d*$"
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "CERTIFY",
+                      "EQUIVALENT",
+                      "CLEAR"
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "equivalentCatalogItemId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "decision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "catalogItemId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "version": {
+                          "type": "string",
+                          "pattern": "^v[1-9]\\d*$"
+                        },
+                        "versionNumber": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "composition": {
+                          "type": "object",
+                          "properties": {
+                            "referenceAmount": {
+                              "type": "string",
+                              "enum": [
+                                "100g",
+                                "100ml"
+                              ]
+                            },
+                            "energyKcal": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "proteinG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "carbohydrateG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fatG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fiberG": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "referenceAmount",
+                            "energyKcal",
+                            "proteinG",
+                            "carbohydrateG",
+                            "fatG"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "foodGroup": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "MEAT",
+                                "FISH",
+                                "EGGS",
+                                "DAIRY",
+                                "GRAINS",
+                                "LEGUMES",
+                                "VEGETABLES",
+                                "FRUITS",
+                                "FATS",
+                                "NUTS",
+                                "SWEETS",
+                                "DRINKS",
+                                "OTHER"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "available": {
+                          "type": "boolean"
+                        },
+                        "review": {
+                          "type": "object",
+                          "properties": {
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "PENDING",
+                                "CERTIFIED",
+                                "EQUIVALENT"
+                              ]
+                            },
+                            "certification": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 500
+                                    },
+                                    "certifiedAt": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "certifiedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "equivalent": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "catalogItemId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "catalogItemId",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "decidedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "state",
+                            "certification",
+                            "equivalent",
+                            "decidedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "catalogItemId",
+                        "versionId",
+                        "version",
+                        "versionNumber",
+                        "name",
+                        "composition",
+                        "foodGroup",
+                        "available",
+                        "review",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: VERSION_CONFLICT | IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED | INVALID_STATE_TRANSITION",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/foods/verified/query": {
+      "post": {
+        "operationId": "API-ALI-07",
+        "summary": "Los alimentos de la tabla oficial (USDA FoodData Central · SR Legacy) disponibles que coinciden con lo escrito (q, en el cuerpo), para elegir el equivalente de uno cargado a mano. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). En producción no ofrece lo sembrado como demostración (provenance BE_SYNTHETIC_SEED), y un plan, una plantilla, una receta o un habitual nuevos tampoco lo aceptan; en test y en desarrollo, sí (UF-09, DL-169). Queda auditada.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-04 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  }
+                },
+                "required": [
+                  "q"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "catalogItemId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "versionId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "composition": {
+                            "type": "object",
+                            "properties": {
+                              "referenceAmount": {
+                                "type": "string",
+                                "enum": [
+                                  "100g",
+                                  "100ml"
+                                ]
+                              },
+                              "energyKcal": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "proteinG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "carbohydrateG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fatG": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "fiberG": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "referenceAmount",
+                              "energyKcal",
+                              "proteinG",
+                              "carbohydrateG",
+                              "fatG"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "foodGroup": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "MEAT",
+                                  "FISH",
+                                  "EGGS",
+                                  "DAIRY",
+                                  "GRAINS",
+                                  "LEGUMES",
+                                  "VEGETABLES",
+                                  "FRUITS",
+                                  "FATS",
+                                  "NUTS",
+                                  "SWEETS",
+                                  "DRINKS",
+                                  "OTHER"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "catalogItemId",
+                          "versionId",
+                          "name",
+                          "composition",
+                          "foodGroup"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
             "content": {
               "application/json": {
                 "schema": {

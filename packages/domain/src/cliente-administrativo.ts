@@ -30,6 +30,14 @@ import { RecuperacionAsistidaResponseSchema, type EmitirRecuperacionAsistidaRequ
 import { DetalleDeIncidenciaResponseSchema, ListaAdministrativaDeIncidenciasResponseSchema, type CambiarEstadoDeIncidenciaRequest, type ConsultarIncidenciasRequest } from './incidencias';
 import { SegundoFactorRestablecidoResponseSchema, type RestablecerSegundoFactorRequest } from './segundo-factor-del-profesional';
 import type { Alcance } from './alcance';
+import {
+  AlimentoParaRevisarResponseSchema,
+  ListaDeAlimentosParaRevisarResponseSchema,
+  ListaDeVerificadosResponseSchema,
+  type BuscarVerificadosRequest,
+  type ConsultarAlimentosParaRevisarRequest,
+  type DecidirSobreAlimentoRequest,
+} from './contratos-alimentos';
 
 export type ResultadoAdministrativo<T> =
   | { readonly ok: true; readonly datos: T }
@@ -196,6 +204,18 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
     /** API-ADM-19 — restablecer el segundo factor de un profesional (UF-T56), con el fundamento. */
     restablecerSegundoFactor(token: string, pedido: RestablecerSegundoFactorRequest) {
       return llamar('POST', '/admin/professional-second-factor-resets', { token, cuerpo: pedido, esquema: SegundoFactorRestablecidoResponseSchema });
+    },
+    /** API-ALI-05 — los alimentos cargados a mano para revisar (DL-180, NUA-04): el nombre y los valores, nada más. */
+    alimentosParaRevisar(token: string, consulta: ConsultarAlimentosParaRevisarRequest) {
+      return llamar('POST', '/admin/foods/query', { token, cuerpo: consulta, esquema: ListaDeAlimentosParaRevisarResponseSchema });
+    },
+    /** API-ALI-06 — certificar, marcar como equivalente o quitar lo decidido, contra la versión vista, con su clave de idempotencia. */
+    decidirSobreAlimento(token: string, alimentoId: string, pedido: DecidirSobreAlimentoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/foods/${encodeURIComponent(alimentoId)}/decisions`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: AlimentoParaRevisarResponseSchema });
+    },
+    /** API-ALI-07 — los verificados de la tabla oficial, para elegir el equivalente. */
+    buscarVerificados(token: string, consulta: BuscarVerificadosRequest) {
+      return llamar('POST', '/admin/foods/verified/query', { token, cuerpo: consulta, esquema: ListaDeVerificadosResponseSchema });
     },
   };
 }
